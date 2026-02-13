@@ -2,5 +2,8 @@
 /.lake/
 /lake-packages/
 .DS_Store
+**/.DS_Store
 /references/
 /test/
+.claude/
+.vscode/
