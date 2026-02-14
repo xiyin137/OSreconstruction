@@ -94,6 +94,285 @@ lemma continuousAt_deriv_of_continuousOn [CompleteSpace E]
   -- and show the resulting circle integral is continuous in x
   sorry
 
+set_option maxHeartbeats 400000 in
+/-- Helper 1: p 1 applied to h equals deriv * h for Cauchy power series. -/
+private lemma cauchyPowerSeries_one_eq_deriv_mul (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+    (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ)) (h : ℂ) :
+    (cauchyPowerSeries g z₀ ρ 1) (fun _ => h) = deriv g z₀ * h := by
+  set R : NNReal := ⟨ρ, hρ.le⟩
+  have hR : (0 : NNReal) < R := by exact_mod_cast hρ
+  have hps := hg.hasFPowerSeriesOnBall hR
+  set p := cauchyPowerSeries g z₀ ρ
+  have hd : deriv g z₀ = (p 1) (fun _ => 1) := hps.hasFPowerSeriesAt.deriv
+  -- p 1 (fun _ => h) = h • p 1 (fun _ => 1) by multilinearity
+  have h_smul : (p 1) (fun _ => h) = h • (p 1) (fun _ => 1) := by
+    conv_lhs => rw [show (fun _ : Fin 1 => h) = (fun i => h • (fun _ : Fin 1 => (1:ℂ)) i) from
+      by ext; simp]
+    rw [(p 1).map_smul_univ (fun _ => h) (fun _ => 1)]
+    simp [Finset.prod_const, smul_eq_mul]
+  rw [h_smul, hd, smul_eq_mul, mul_comm]
+
+/-- Helper 2: Geometric tail bound Σ_{n≥0} M·r^(n+2) ≤ 2M·r² for r < 1/2. -/
+private lemma tsum_geometric_tail_le (M r : ℝ) (hM : 0 ≤ M)
+    (hr : 0 ≤ r) (hr2 : r < 1 / 2) :
+    ∑' n, M * r ^ (n + 2) ≤ 2 * M * r ^ 2 := by
+  have hr1 : r < 1 := by linarith
+  have h1r : 0 < 1 - r := by linarith
+  conv_lhs => rw [show (fun n => M * r ^ (n + 2)) = (fun n => M * r ^ 2 * r ^ n) from
+    by ext n; ring]
+  rw [tsum_mul_left, tsum_geometric_of_lt_one hr hr1]
+  calc M * r ^ 2 * (1 - r)⁻¹
+      ≤ M * r ^ 2 * 2 := by
+        apply mul_le_mul_of_nonneg_left _ (by positivity)
+        rw [inv_le_comm₀ h1r (by norm_num : (0:ℝ) < 2)]
+        linarith
+    _ = 2 * M * r ^ 2 := by ring
+
+set_option maxHeartbeats 800000 in
+/-- Helper 3: Cauchy coefficient bound ‖p(n)(fun _ => h)‖ ≤ M * (‖h‖/ρ)^n. -/
+private lemma cauchyPowerSeries_coeff_bound (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+    (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
+    (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M) (n : ℕ) (h : ℂ) :
+    ‖(cauchyPowerSeries g z₀ ρ n) (fun _ => h)‖ ≤ M * (‖h‖ / ρ) ^ n := by
+  set p := cauchyPowerSeries g z₀ ρ
+  -- Step 1: ‖p n (fun _ => h)‖ ≤ ‖p n‖ * ‖h‖^n
+  have h1 : ‖(p n) (fun _ => h)‖ ≤ ‖p n‖ * ‖h‖ ^ n := by
+    have := (p n).le_opNorm (fun _ => h)
+    simp only [Finset.prod_const, Finset.card_fin] at this
+    exact this
+  -- Step 2: ‖p n‖ ≤ A * |ρ|⁻¹^n by Cauchy estimates
+  have h2 := norm_cauchyPowerSeries_le g z₀ ρ n
+  set A := (2 * Real.pi)⁻¹ * ∫ θ : ℝ in (0 : ℝ)..2 * Real.pi, ‖g (circleMap z₀ ρ θ)‖ with hA_def
+  -- Step 3: A ≤ M (bound the integral)
+  have hg_cont : Continuous (fun θ => g (circleMap z₀ ρ θ)) :=
+    hg.continuousOn.comp_continuous (lipschitzWith_circleMap z₀ ρ).continuous
+      (fun θ => circleMap_mem_closedBall z₀ hρ.le θ)
+  have h_int_bound : ∫ θ : ℝ in (0 : ℝ)..2 * Real.pi,
+      ‖g (circleMap z₀ ρ θ)‖ ≤ 2 * Real.pi * M := by
+    have h_mono := intervalIntegral.integral_mono_on
+      (by positivity : (0 : ℝ) ≤ 2 * Real.pi)
+      (hg_cont.norm.intervalIntegrable _ _)
+      (intervalIntegrable_const (μ := MeasureTheory.MeasureSpace.volume))
+      (fun θ _ => hM _ (circleMap_mem_closedBall z₀ hρ.le θ))
+    rw [intervalIntegral.integral_const, sub_zero, smul_eq_mul] at h_mono
+    linarith
+  have hA_le : A ≤ M := by
+    calc A = (2 * Real.pi)⁻¹ * ∫ θ : ℝ in (0 : ℝ)..2 * Real.pi,
+        ‖g (circleMap z₀ ρ θ)‖ := rfl
+      _ ≤ (2 * Real.pi)⁻¹ * (2 * Real.pi * M) := by
+          apply mul_le_mul_of_nonneg_left h_int_bound (by positivity)
+      _ = M := by field_simp
+  -- Step 4: Combine all bounds
+  have hρ_abs : |ρ| = ρ := abs_of_pos hρ
+  have hM_nn : 0 ≤ M := le_trans (norm_nonneg _) (hM z₀ (Metric.mem_closedBall_self hρ.le))
+  calc ‖(p n) (fun _ => h)‖
+      ≤ ‖p n‖ * ‖h‖ ^ n := h1
+    _ ≤ A * |ρ|⁻¹ ^ n * ‖h‖ ^ n := by
+        exact mul_le_mul_of_nonneg_right h2 (pow_nonneg (norm_nonneg _) _)
+    _ ≤ M * |ρ|⁻¹ ^ n * ‖h‖ ^ n := by
+        exact mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_right hA_le (pow_nonneg (inv_nonneg.mpr (abs_nonneg _)) _))
+          (pow_nonneg (norm_nonneg _) _)
+    _ = M * (‖h‖ / ρ) ^ n := by
+        rw [hρ_abs, div_eq_mul_inv, mul_pow]; ring
+
+set_option maxHeartbeats 800000 in
+/-- Helper 4: Taylor remainder equals power series tail. -/
+private lemma taylor_remainder_eq_tsum (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+    (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
+    (h : ℂ) (hh : ‖h‖ < ρ) :
+    g (z₀ + h) - g z₀ - deriv g z₀ * h =
+      ∑' n, (cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h) := by
+  set R : NNReal := ⟨ρ, hρ.le⟩
+  have hR : (0 : NNReal) < R := by exact_mod_cast hρ
+  have hps := hg.hasFPowerSeriesOnBall hR
+  have hh_mem : h ∈ EMetric.ball (0 : ℂ) R := by
+    simp only [EMetric.mem_ball, edist_eq_enorm_sub, sub_zero]
+    exact_mod_cast hh
+  -- Full series sums to g(z₀ + h)
+  have h_hassum : HasSum (fun n => (cauchyPowerSeries g z₀ ρ n) (fun _ => h))
+      (g (z₀ + h)) := hps.hasSum hh_mem
+  -- Use hasSum_nat_add_iff' to extract the tail
+  have h_tail := (hasSum_nat_add_iff' (f := fun n =>
+      (cauchyPowerSeries g z₀ ρ n) (fun _ => h)) 2).mpr h_hassum
+  -- h_tail sums to g(z₀+h) - ∑ i in range 2, f i
+  have h_range : ∑ i ∈ Finset.range 2,
+      (cauchyPowerSeries g z₀ ρ i) (fun _ => h) =
+    (cauchyPowerSeries g z₀ ρ 0) (fun _ : Fin 0 => h) +
+    (cauchyPowerSeries g z₀ ρ 1) (fun _ => h) := by
+    simp [Finset.sum_range_succ]
+  -- Identify the two terms
+  have hf0 : (cauchyPowerSeries g z₀ ρ 0) (fun _ : Fin 0 => h) = g z₀ :=
+    hps.coeff_zero _
+  have hf1 := cauchyPowerSeries_one_eq_deriv_mul z₀ ρ hρ g hg h
+  rw [show g (z₀ + h) - g z₀ - deriv g z₀ * h =
+    g (z₀ + h) - (∑ i ∈ Finset.range 2, (cauchyPowerSeries g z₀ ρ i) (fun _ => h))
+    from by rw [h_range, hf0, hf1]; ring]
+  exact h_tail.tsum_eq.symm
+
+set_option maxHeartbeats 400000 in
+/-- Helper 5: The tail of the Cauchy power series is summable. -/
+private lemma taylor_tail_summable (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+    (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
+    (h : ℂ) (hh : ‖h‖ < ρ) :
+    Summable (fun n => (cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)) := by
+  set R : NNReal := ⟨ρ, hρ.le⟩
+  have hR : (0 : NNReal) < R := by exact_mod_cast hρ
+  have hps := hg.hasFPowerSeriesOnBall hR
+  have hh_mem : z₀ + h ∈ EMetric.ball z₀ R := by
+    simp only [EMetric.mem_ball, edist_eq_enorm_sub, add_sub_cancel_left]
+    exact_mod_cast hh
+  -- The full series is summable (HasSum implies Summable)
+  have h_sum := (hps.hasSum_sub hh_mem).summable
+  simp only [add_sub_cancel_left] at h_sum
+  -- The tail of a summable series is summable
+  exact h_sum.comp_injective (fun _ _ h => by omega)
+
+set_option maxHeartbeats 800000 in
+/-- Helper 6: Norm of tail tsum bounded by geometric series.
+    Combines coefficient bound + summability + geometric tail. -/
+private lemma taylor_tail_norm_le (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
+    (g : ℂ → ℂ) (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
+    (M : ℝ) (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
+    (h : ℂ) (hh : ‖h‖ < ρ / 2) :
+    ‖∑' n, (cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)‖ ≤
+      4 * M / ρ ^ 2 * ‖h‖ ^ 2 := by
+  have hh_lt_ρ : ‖h‖ < ρ := by linarith
+  have hM_nn : 0 ≤ M := le_trans (norm_nonneg _) (hM z₀ (Metric.mem_closedBall_self hρ.le))
+  -- Ratio r = ‖h‖/ρ < 1/2
+  set r := ‖h‖ / ρ with hr_def
+  have hr_nn : 0 ≤ r := div_nonneg (norm_nonneg _) hρ.le
+  have hr_half : r < 1 / 2 := by
+    rw [hr_def, div_lt_div_iff₀ hρ (by norm_num : (0:ℝ) < 2)]; linarith
+  -- Step 1: ‖∑' an‖ ≤ ∑' ‖an‖
+  -- Need summability of norms
+  have h_tail_sum := taylor_tail_summable z₀ ρ hρ g hg h hh_lt_ρ
+  have h_norm_sum : Summable (fun n => ‖(cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)‖) :=
+    h_tail_sum.norm
+  have h1 := norm_tsum_le_tsum_norm h_norm_sum
+  -- Step 2: ‖an‖ ≤ M * r^(n+2) by coefficient bound
+  have h_coeff : ∀ n, ‖(cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)‖ ≤ M * r ^ (n + 2) :=
+    fun n => cauchyPowerSeries_coeff_bound z₀ ρ hρ g hg M hM (n + 2) h
+  -- Step 3: ∑' ‖an‖ ≤ ∑' M * r^(n+2)
+  have h_geom_sum : Summable (fun n => M * r ^ (n + 2)) := by
+    have : Summable (fun n => M * r ^ 2 * r ^ n) :=
+      (summable_geometric_of_lt_one hr_nn (by linarith)).mul_left (M * r ^ 2)
+    convert this using 1; ext n; ring
+  have h2 : ∑' n, ‖(cauchyPowerSeries g z₀ ρ (n + 2)) (fun _ => h)‖ ≤
+      ∑' n, M * r ^ (n + 2) :=
+    h_norm_sum.tsum_le_tsum h_coeff h_geom_sum
+  -- Step 4: ∑' M * r^(n+2) ≤ 2 * M * r² by geometric tail
+  have h3 := tsum_geometric_tail_le M r hM_nn hr_nn hr_half
+  -- Step 5: 2 * M * r² ≤ 4 * M / ρ² * ‖h‖²
+  -- Since r = ‖h‖/ρ, r² = ‖h‖²/ρ², so M * r² = M * ‖h‖² / ρ²
+  have h4 : 2 * M * r ^ 2 ≤ 4 * M / ρ ^ 2 * ‖h‖ ^ 2 := by
+    rw [hr_def, div_pow]
+    have hρ2 : (ρ : ℝ) ^ 2 ≠ 0 := by positivity
+    field_simp
+    nlinarith [sq_nonneg ‖h‖]
+  linarith
+
+/-- Taylor remainder bound: ‖g(z₀+h) - g(z₀) - g'(z₀)·h‖ ≤ 4M/ρ² · ‖h‖² for ‖h‖ < ρ/2. -/
+private lemma taylor_remainder_single {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
+    {g : ℂ → ℂ} (hg : DifferentiableOn ℂ g (Metric.closedBall z₀ ρ))
+    {M : ℝ} (hM : ∀ w ∈ Metric.closedBall z₀ ρ, ‖g w‖ ≤ M)
+    {h : ℂ} (hh : ‖h‖ < ρ / 2) :
+    ‖g (z₀ + h) - g z₀ - deriv g z₀ * h‖ ≤ 4 * M / ρ ^ 2 * ‖h‖ ^ 2 := by
+  rw [taylor_remainder_eq_tsum z₀ ρ hρ g hg h (by linarith)]
+  exact taylor_tail_norm_le z₀ ρ hρ g hg M hM h hh
+
+/-- Auxiliary: ContinuousOn f on K ×ˢ V with K compact gives uniform bound near x₀.
+    Uses the generalized tube lemma: closedBall z₀ ρ × {x₀} is compact, and f is
+    bounded on this set. By ContinuousOn, the preimage of {‖·‖ < M₀+1} relative to
+    the domain contains this compact set. The tube lemma then gives a uniform δ. -/
+private lemma uniform_bound_near_point [CompleteSpace E]
+    {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
+    {V : Set E} (hV : IsOpen V)
+    (f : ℂ × E → ℂ)
+    (hf_cont : ContinuousOn f (Metric.closedBall z₀ ρ ×ˢ V))
+    {x₀ : E} (hx₀ : x₀ ∈ V) :
+    ∃ (M : ℝ) (δ : ℝ), 0 ≤ M ∧ 0 < δ ∧
+      ∀ w ∈ Metric.closedBall z₀ ρ, ∀ x ∈ V, ‖x - x₀‖ < δ → ‖f (w, x)‖ ≤ M := by
+  -- Step 1: f is bounded on the compact slice closedBall z₀ ρ × {x₀}
+  have hK₀ : IsCompact (Metric.closedBall z₀ ρ ×ˢ ({x₀} : Set E)) :=
+    (isCompact_closedBall z₀ ρ).prod isCompact_singleton
+  have hK₀_sub : Metric.closedBall z₀ ρ ×ˢ ({x₀} : Set E) ⊆ Metric.closedBall z₀ ρ ×ˢ V :=
+    Set.prod_mono le_rfl (Set.singleton_subset_iff.mpr hx₀)
+  obtain ⟨M₀, hM₀⟩ := hK₀.exists_bound_of_continuousOn (hf_cont.mono hK₀_sub)
+  set M := |M₀| + 1 with hM_def
+  -- Step 2: For each w ∈ closedBall z₀ ρ, ContinuousOn of f at (w, x₀) gives a neighborhood
+  -- where ‖f‖ < M. We use the open preimage approach.
+  -- The norm function (fun p => ‖f p‖) is ContinuousOn on the domain.
+  -- The set {p | ‖f p‖ < M} is open in the ambient space when f is continuous.
+  -- But f is only ContinuousOn, so we use nhdsWithin.
+  -- For each (w, x₀) with w ∈ closedBall z₀ ρ:
+  --   ‖f(w, x₀)‖ ≤ M₀ < |M₀| + 1 = M
+  --   By ContinuousWithinAt: {p | ‖f p‖ < M} ∈ nhdsWithin (w,x₀) (domain)
+  --   So there's an open U_w ∋ (w,x₀) with ‖f‖ < M on U_w ∩ domain
+  -- By compactness of closedBall z₀ ρ, finitely many U_w cover.
+  -- Extracting the "x-component" gives a uniform δ.
+  have hM₀_lt_M : ∀ w ∈ Metric.closedBall z₀ ρ, ‖f (w, x₀)‖ < M := by
+    intro w hw
+    have := hM₀ (w, x₀) ⟨hw, Set.mem_singleton x₀⟩
+    calc ‖f (w, x₀)‖ ≤ M₀ := this
+      _ ≤ |M₀| := le_abs_self M₀
+      _ < |M₀| + 1 := lt_add_one _
+  -- For each w, get a neighborhood where ‖f‖ < M
+  have h_nhds : ∀ w ∈ Metric.closedBall z₀ ρ,
+      ∃ ε > 0, ∀ w' x', ‖w' - w‖ < ε → ‖x' - x₀‖ < ε → x' ∈ V →
+        w' ∈ Metric.closedBall z₀ ρ → ‖f (w', x')‖ < M := by
+    intro w hw
+    have h_cont_at := hf_cont (w, x₀) ⟨hw, hx₀⟩
+    rw [ContinuousWithinAt, Metric.tendsto_nhdsWithin_nhds] at h_cont_at
+    obtain ⟨ε, hε, hδ_ball⟩ := h_cont_at (M - ‖f (w, x₀)‖) (by linarith [hM₀_lt_M w hw])
+    refine ⟨ε, hε, fun w' x' hw' hx' hxV hw'_ball => ?_⟩
+    have h_mem : (w', x') ∈ Metric.closedBall z₀ ρ ×ˢ V := ⟨hw'_ball, hxV⟩
+    have h_dist : dist (w', x') (w, x₀) < ε := by
+      rw [Prod.dist_eq]
+      exact max_lt (by rwa [dist_eq_norm]) (by rwa [dist_eq_norm])
+    have := hδ_ball h_mem h_dist
+    rw [dist_eq_norm] at this
+    have h_tri := norm_sub_norm_le (f (w', x')) (f (w, x₀))
+    linarith
+  -- Step 3: By compactness of closedBall z₀ ρ, extract finite subcover and uniform δ
+  -- Choose ε for each w (using classical choice; for w ∉ closedBall, pick 1)
+  have h_choice : ∀ w, ∃ ε > 0, w ∈ Metric.closedBall z₀ ρ →
+      ∀ w' x', ‖w' - w‖ < ε → ‖x' - x₀‖ < ε → x' ∈ V →
+        w' ∈ Metric.closedBall z₀ ρ → ‖f (w', x')‖ < M := by
+    intro w
+    by_cases hw : w ∈ Metric.closedBall z₀ ρ
+    · obtain ⟨ε, hε, hb⟩ := h_nhds w hw
+      exact ⟨ε, hε, fun _ => hb⟩
+    · exact ⟨1, one_pos, fun h => absurd h hw⟩
+  choose ε hε h_bound_ε using h_choice
+  -- Cover closedBall by balls
+  have hK : IsCompact (Metric.closedBall z₀ ρ) := isCompact_closedBall z₀ ρ
+  have h_cover_nhds : ∀ w ∈ Metric.closedBall z₀ ρ,
+      Metric.ball w (ε w) ∈ nhds w :=
+    fun w _ => Metric.ball_mem_nhds w (hε w)
+  obtain ⟨t, ht_sub, ht_cover⟩ := hK.elim_nhds_subcover (fun w => Metric.ball w (ε w)) h_cover_nhds
+  -- Take δ = min over t of ε values
+  have ht_ne : t.Nonempty := by
+    by_contra h_empty
+    rw [Finset.not_nonempty_iff_eq_empty] at h_empty
+    have := ht_cover (Metric.mem_closedBall_self (le_of_lt hρ))
+    simp [h_empty] at this
+  set δ₁ := t.inf' ht_ne ε
+  have hδ₁_pos : 0 < δ₁ := by
+    rw [Finset.lt_inf'_iff]
+    intro w _; exact hε w
+  refine ⟨M, δ₁, ?_, hδ₁_pos, fun w hw x hxV hxδ => ?_⟩
+  · linarith [abs_nonneg M₀]
+  -- For any w ∈ closedBall, find which ball in the cover contains it
+  have hw_cover := ht_cover hw
+  simp only [Set.mem_iUnion] at hw_cover
+  obtain ⟨wᵢ, hwᵢ_mem, hw_in_ball⟩ := hw_cover
+  rw [Metric.mem_ball, dist_eq_norm] at hw_in_ball
+  have hδ₁_le : δ₁ ≤ ε wᵢ := Finset.inf'_le _ hwᵢ_mem
+  have hwᵢ_in : wᵢ ∈ Metric.closedBall z₀ ρ := ht_sub wᵢ hwᵢ_mem
+  have := h_bound_ε wᵢ hwᵢ_in w x hw_in_ball (lt_of_lt_of_le hxδ hδ₁_le) hxV hw
+  linarith
+
 /-- Uniform Taylor remainder bound for a family of holomorphic functions.
 
     If f is continuous on closedBall z₀ ρ × V and holomorphic in z for each x ∈ V,
@@ -114,7 +393,10 @@ lemma taylor_remainder_bound [CompleteSpace E]
     ∃ (C : ℝ) (δ : ℝ), C ≥ 0 ∧ δ > 0 ∧
       ∀ (h : ℂ) (x : E), x ∈ V → ‖x - x₀‖ < δ → ‖h‖ < ρ / 2 →
       ‖f (z₀ + h, x) - f (z₀, x) - deriv (fun z => f (z, x)) z₀ * h‖ ≤ C * ‖h‖ ^ 2 := by
-  sorry
+  obtain ⟨M, δ, hM_nn, hδ_pos, h_bound⟩ :=
+    uniform_bound_near_point hρ hV f hf_cont hx₀
+  exact ⟨4 * M / ρ ^ 2, δ, by positivity, hδ_pos, fun h x hxV hxδ hh =>
+    taylor_remainder_single hρ (hf_z x hxV) (h_bound · · x hxV hxδ) hh⟩
 
 /-! ### Osgood's Lemma -/
 
