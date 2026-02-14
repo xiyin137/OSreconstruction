@@ -37,19 +37,21 @@ Wightman QFTs — OS reconstruction is strictly more general than the NuclearSpa
 These are needed for *constructive QFT* (building concrete examples of Schwinger functions)
 but not for the OS reconstruction theorems themselves.
 
-## Sorry Census (26 on critical path)
+## Sorry Census (25 on critical path)
 
-### SeparatelyAnalytic.lean — 3 sorrys (complex analysis infrastructure)
+### SeparatelyAnalytic.lean — 2 sorrys (complex analysis infrastructure)
 
 | # | Line | Theorem | Description | Blocked by |
 |---|------|---------|-------------|------------|
 | 0a | 72 | `differentiableOn_cauchyIntegral_param` | Cauchy integral with holomorphic parameter | — |
 | 0b1 | 95 | `continuousAt_deriv_of_continuousOn` | z-derivative continuous in x (Cauchy integral) | — |
-| 0b2 | 117 | `taylor_remainder_bound` | Uniform Taylor remainder O(\|h\|²) | — |
 
-**Note**: `osgood_lemma_prod` is PROVEN using #0b1 and #0b2 (2026-02-13).
+**Note**: `osgood_lemma_prod` is PROVEN using #0b1 and ~~#0b2~~ (2026-02-13).
 `osgood_lemma` (Fin m → ℂ version) is PROVEN by induction using `osgood_lemma_prod`.
 `holomorphic_extension_across_real` and `tube_domain_gluing` are PROVEN using `osgood_lemma`.
+`uniform_bound_near_point` ✅ PROVEN (2026-02-14) — compactness + finite subcover.
+`taylor_remainder_bound` ✅ PROVEN (2026-02-14) — combines helpers, no own sorry.
+`taylor_remainder_single` ✅ PROVEN (2026-02-14) — all 6 decomposed helpers sorry-free.
 
 ### AnalyticContinuation.lean — 2 sorrys
 
@@ -120,10 +122,17 @@ but not for the OS reconstruction theorems themselves.
   - Proof idea: Cauchy integral formula gives `deriv_z f(z₀,x) = (2πi)⁻¹ ∮ f(ζ,x)/(ζ-z₀)² dζ`
   - Integrand is continuous in x (from joint continuity), uniformly bounded on circle
   - Apply `continuous_of_dominated` to get continuity of the integral in x
-- **taylor_remainder_bound** (#0b2): Uniform Taylor remainder O(|h|²)
-  - Proof idea: Power series expansion, Cauchy estimates |aₙ(x)| ≤ M/ρⁿ
-  - M = sup|f| on compact set closedBall × K, continuous on compact ⟹ bounded
-  - Geometric series for remainder: |Σ_{n≥2} aₙ hⁿ| ≤ 2M|h|²/ρ²
+- ~~**taylor_remainder_single** (#0b2)~~: ✅ PROVEN (2026-02-14) — all helpers sorry-free
+  - `uniform_bound_near_point` ✅ PROVEN: compact slice + finite subcover
+  - `taylor_remainder_bound` ✅ PROVEN: combines helpers
+  - `taylor_remainder_single` ✅ PROVEN: delegates to decomposed helpers
+  - `cauchyPowerSeries_one_eq_deriv_mul` ✅ PROVEN: `p 1 (h) = deriv g z₀ * h`
+  - `tsum_geometric_tail_le` ✅ PROVEN: `Σ M·r^(n+2) ≤ 2M·r²`
+  - `cauchyPowerSeries_coeff_bound` ✅ PROVEN: Cauchy estimates via integral bound
+  - `taylor_remainder_eq_tsum` ✅ PROVEN: `hasSum_nat_add_iff'` decomposition
+  - `taylor_tail_summable` ✅ PROVEN: tail of convergent power series
+  - `taylor_tail_norm_le` ✅ PROVEN: `norm_tsum_le_tsum_norm` + geometric bound
+  - Note: `tsum_le_tsum` now uses SummationFilter; resolved via `Summable.tsum_le_tsum`
 - **differentiableOn_cauchyIntegral_param** (#0a): May follow from osgood_lemma_prod or prove independently
 
 ### Phase 1: Deep Complex Analysis (unblocks both R→E and E→R)
@@ -174,7 +183,7 @@ but not for the OS reconstruction theorems themselves.
 | OperatorDistribution.lean | 1 | Not blocking reconstruction |
 | Reconstruction/GNSConstruction.lean | 0 | ✅ Complete |
 | Reconstruction/Helpers/EdgeOfWedge.lean | 0 | ✅ Complete (1D edge-of-wedge) |
-| **Reconstruction/Helpers/SeparatelyAnalytic.lean** | **3** | 2 Osgood helpers + Cauchy param |
+| **Reconstruction/Helpers/SeparatelyAnalytic.lean** | **2** | Cauchy param + deriv continuity |
 | **Reconstruction/AnalyticContinuation.lean** | **2** | edge_of_wedge + BHW |
 | **Reconstruction/WickRotation.lean** | **17** | OS↔Wightman bridge |
 | **Reconstruction.lean** | **4** | Core theorems + wiring |
@@ -183,7 +192,7 @@ but not for the OS reconstruction theorems themselves.
 | NuclearSpaces/BochnerMinlos.lean | 3 | Deferred |
 | NuclearSpaces/SchwartzNuclear.lean | 4 | Deferred |
 | NuclearSpaces/EuclideanMeasure.lean | 1 | Deferred |
-| **Critical path total** | **26** | |
+| **Critical path total** | **25** | |
 
 ## Proven Infrastructure (sorry-free)
 
