@@ -34,8 +34,11 @@ The proof proceeds in two directions:
 | **R → E** (Wightman → OS) | `wightman_to_os` | Wick rotation t → it, verify E0–E4 |
 | **E → R** (OS → Wightman) | `os_to_wightman` | Analytic continuation back to Minkowski, GNS construction |
 
-**Current status:** 23 sorrys on the critical path (out of ~33 total). Infrastructure layers
+**Current status:** 23 sorrys on the critical path (47 total across project). Infrastructure layers
 (foundations, GNS, 1D edge-of-wedge, Osgood's lemma, Cauchy integral parameter) are complete.
+The multi-D edge-of-the-wedge 1D slicing (`edge_of_the_wedge_slice`) is fully proved;
+the full theorem is blocked by the gap-point extension problem (see
+[gap analysis](edge_of_the_wedge_gap_analysis.md)).
 
 ---
 
@@ -287,25 +290,34 @@ Tube domain geometry and the key theorems of axiomatic QFT.
 - `schwinger_euclidean_invariant` — Euclidean invariance of Schwinger functions
 - `schwinger_permutation_symmetric` — Permutation symmetry at Jost points
 
-#### Sorry: `edge_of_the_wedge` (line 457)
+#### Sorry: `edge_of_the_wedge` (line 727)
 
 **Multi-dimensional edge-of-the-wedge theorem (Bogoliubov):**
 
 > If F₊ is holomorphic on ℝⁿ + iΓ and F₋ is holomorphic on ℝⁿ − iΓ
-> (where Γ is an open cone), and their boundary values agree as distributions,
+> (where Γ is an open convex cone), and their continuous boundary values agree,
 > then they extend to a single holomorphic function on a complex neighborhood of ℝⁿ.
 
-**Planned proof strategy:**
-1. Fix (m−1) complex variables, reducing to 1D
-2. Apply `edge_of_the_wedge_1d` (proven)
-3. The resulting function is separately holomorphic and continuous
-4. Apply `osgood_lemma` (proven) to get joint holomorphicity
-5. Glue via `tube_domain_gluing` (proven)
+**Statement** (revised — see [statement changes](edge_of_the_wedge_statement_changes.md)):
+- Added cone condition (`hcone`) for positive scalar closure
+- Strengthened boundary values to `nhdsWithin` limits with explicit continuous `bv`
+- Added `sliceMap` infrastructure for dimensional reduction
+
+**What IS proved (sorry-free):**
+- `edge_of_the_wedge_slice` — 1D extension along any direction η ∈ C
+- All infrastructure: `sliceMap_*`, `tubeDomain_isOpen`, `tubeDomain_disjoint_neg`
+
+**What blocks completion: the gap-point problem**
+For m ≥ 2 with proper cones, points z near E with Im(z) ∉ C ∪ (-C) ∪ {0}
+exist. At these points, neither f_plus nor f_minus provides a value, and
+1D slicing cannot reach them. The standard proof requires iterated Cauchy
+integrals or the Bochner tube theorem, neither formalized in Mathlib.
+See [gap analysis](edge_of_the_wedge_gap_analysis.md) for full details.
 
 **Dependencies:** `osgood_lemma` (done), `edge_of_the_wedge_1d` (done),
-`tube_domain_gluing` (done). The infrastructure is essentially in place.
+`tube_domain_gluing` (done), **iterated Cauchy integrals (NOT in Mathlib)**.
 
-#### Sorry: `bargmann_hall_wightman` (line 501)
+#### Sorry: `bargmann_hall_wightman` (line 791)
 
 **Bargmann-Hall-Wightman theorem:**
 
@@ -499,7 +511,7 @@ Layer 6: Main Theorems
 
 | Category | IDs | Count | Notes |
 |----------|-----|-------|-------|
-| **Deep complex analysis** | ~~#0a, #0b1~~, #1 | 1 | #0a, #0b1 done; #1 nearly ready |
+| **Deep complex analysis** | ~~#0a, #0b1~~, #1 | 1 | #0a, #0b1 done; #1 blocked by gap-point problem ([details](edge_of_the_wedge_gap_analysis.md)) |
 | **BHW theorem** | #2 | 1 | Needs #1 |
 | **R→E axiom verification** | #3, #4, #5, #7 | 4 | Independent of each other |
 | **R→E needing BHW** | #6 | 1 | Needs #2 |
@@ -509,16 +521,17 @@ Layer 6: Main Theorems
 
 ### Next steps (recommended order)
 
-1. **#1 `edge_of_the_wedge`** — All ingredients proven (1D EOW, Osgood, tube gluing).
-   Induction on dimension, fix variables, apply 1D, glue via Osgood.
+1. **#1 `edge_of_the_wedge`** — 1D slicing proved; blocked by gap-point extension
+   (requires iterated Cauchy integrals, ~500-800 LOC to formalize).
+   See [gap analysis](edge_of_the_wedge_gap_analysis.md).
 
-2. **#2 `bargmann_hall_wightman`** — Once #1 is done. Identity theorem on complex
-   Lorentz group + edge-of-wedge gluing across permuted tubes.
+2. **#3–5, #7** (independent R→E theorems) — Can proceed in parallel.
+   Don't depend on #1.
 
-3. **#3–5, #7** (independent R→E theorems) — Can proceed in parallel once #2 is available.
-
-4. **#8–10** (E→R chain) — Can proceed independently of #1–2.
+3. **#8–10** (E→R chain) — Can proceed independently of #1–2.
    Laplace transform + Hartogs for #8, iteration for #9, growth estimates for #10.
+
+4. **#2 `bargmann_hall_wightman`** — Needs #1.
 
 5. **#11–17, #18–22** — Wiring, once the above are complete.
 
