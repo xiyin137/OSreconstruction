@@ -37,21 +37,18 @@ Wightman QFTs — OS reconstruction is strictly more general than the NuclearSpa
 These are needed for *constructive QFT* (building concrete examples of Schwinger functions)
 but not for the OS reconstruction theorems themselves.
 
-## Sorry Census (25 on critical path)
+## Sorry Census (23 on critical path)
 
-### SeparatelyAnalytic.lean — 2 sorrys (complex analysis infrastructure)
+### ~~SeparatelyAnalytic.lean — 0 sorrys~~ ✅ DONE (2026-02-15)
 
-| # | Line | Theorem | Description | Blocked by |
-|---|------|---------|-------------|------------|
-| 0a | 72 | `differentiableOn_cauchyIntegral_param` | Cauchy integral with holomorphic parameter | — |
-| 0b1 | 95 | `continuousAt_deriv_of_continuousOn` | z-derivative continuous in x (Cauchy integral) | — |
-
-**Note**: `osgood_lemma_prod` is PROVEN using #0b1 and ~~#0b2~~ (2026-02-13).
-`osgood_lemma` (Fin m → ℂ version) is PROVEN by induction using `osgood_lemma_prod`.
-`holomorphic_extension_across_real` and `tube_domain_gluing` are PROVEN using `osgood_lemma`.
-`uniform_bound_near_point` ✅ PROVEN (2026-02-14) — compactness + finite subcover.
-`taylor_remainder_bound` ✅ PROVEN (2026-02-14) — combines helpers, no own sorry.
-`taylor_remainder_single` ✅ PROVEN (2026-02-14) — all 6 decomposed helpers sorry-free.
+All theorems proven and verified `sorryAx`-free:
+- `continuousAt_deriv_of_continuousOn` ✅ — Cauchy integral for derivative + tube lemma
+- `differentiableOn_cauchyIntegral_param` ✅ — Leibniz rule + Osgood's lemma
+- `osgood_lemma_prod` ✅ — direct Fréchet derivative construction
+- `osgood_lemma` ✅ — induction using `osgood_lemma_prod`
+- `holomorphic_extension_across_real` ✅ — via `osgood_lemma`
+- `tube_domain_gluing` ✅ — via `osgood_lemma`
+- `differentiableOn_of_continuous_off_real_1d` ✅ — 1D holomorphic extension
 
 ### AnalyticContinuation.lean — 2 sorrys
 
@@ -249,27 +246,13 @@ Groups A and B converge at Tier 3 (constructWightmanFunctions fields need both B
 
 ## Execution Plan
 
-### Phase 0: Osgood's Lemma Helpers (unblocks Phase 1) ← CURRENT
+### ~~Phase 0: Osgood's Lemma Helpers~~ ✅ COMPLETE (2026-02-15)
 - ~~**osgood_lemma_prod**~~: ✅ PROVEN (2026-02-13) via direct Fréchet derivative construction
-  - Decomposes remainder into Taylor (T₁) + derivative variation (T₂) + Fréchet (T₃)
-  - Uses `hasFDerivAt_iff_isLittleO_nhds_zero`, `ContinuousLinearMap.coprod`
-  - Depends on two sorry'd helper lemmas:
-- **continuousAt_deriv_of_continuousOn** (#0b1): z-derivative varies continuously in x ← NEXT
-  - Proof idea: Cauchy integral formula gives `deriv_z f(z₀,x) = (2πi)⁻¹ ∮ f(ζ,x)/(ζ-z₀)² dζ`
-  - Integrand is continuous in x (from joint continuity), uniformly bounded on circle
-  - Apply `continuous_of_dominated` to get continuity of the integral in x
-- ~~**taylor_remainder_single** (#0b2)~~: ✅ PROVEN (2026-02-14) — all helpers sorry-free
-  - `uniform_bound_near_point` ✅ PROVEN: compact slice + finite subcover
-  - `taylor_remainder_bound` ✅ PROVEN: combines helpers
-  - `taylor_remainder_single` ✅ PROVEN: delegates to decomposed helpers
-  - `cauchyPowerSeries_one_eq_deriv_mul` ✅ PROVEN: `p 1 (h) = deriv g z₀ * h`
-  - `tsum_geometric_tail_le` ✅ PROVEN: `Σ M·r^(n+2) ≤ 2M·r²`
-  - `cauchyPowerSeries_coeff_bound` ✅ PROVEN: Cauchy estimates via integral bound
-  - `taylor_remainder_eq_tsum` ✅ PROVEN: `hasSum_nat_add_iff'` decomposition
-  - `taylor_tail_summable` ✅ PROVEN: tail of convergent power series
-  - `taylor_tail_norm_le` ✅ PROVEN: `norm_tsum_le_tsum_norm` + geometric bound
-  - Note: `tsum_le_tsum` now uses SummationFilter; resolved via `Summable.tsum_le_tsum`
-- **differentiableOn_cauchyIntegral_param** (#0a): May follow from osgood_lemma_prod or prove independently
+- ~~**continuousAt_deriv_of_continuousOn**~~: ✅ PROVEN (2026-02-14) — Cauchy integral + tube lemma
+- ~~**taylor_remainder_single**~~: ✅ PROVEN (2026-02-14) — all helpers sorry-free
+- ~~**differentiableOn_cauchyIntegral_param**~~: ✅ PROVEN (2026-02-15) — Leibniz rule + Osgood
+  - Key technique: Factor `(2πi)⁻¹ •` out of `H` in Osgood application to avoid kernel timeout
+  - Leibniz rule requires explicit `(F' := ...)` parameter for unification
 
 ### Phase 1: Deep Complex Analysis (unblocks both R→E and E→R)
 - **edge_of_the_wedge** (#1): Multi-D version via induction on dimension using 1D base case
@@ -319,7 +302,7 @@ Groups A and B converge at Tier 3 (constructWightmanFunctions fields need both B
 | OperatorDistribution.lean | 1 | Not blocking reconstruction |
 | Reconstruction/GNSConstruction.lean | 0 | ✅ Complete |
 | Reconstruction/Helpers/EdgeOfWedge.lean | 0 | ✅ Complete (1D edge-of-wedge) |
-| **Reconstruction/Helpers/SeparatelyAnalytic.lean** | **2** | Cauchy param + deriv continuity |
+| Reconstruction/Helpers/SeparatelyAnalytic.lean | 0 | ✅ Complete |
 | **Reconstruction/AnalyticContinuation.lean** | **2** | edge_of_wedge + BHW |
 | **Reconstruction/WickRotation.lean** | **17** | OS↔Wightman bridge |
 | **Reconstruction.lean** | **4** | Core theorems + wiring |
@@ -328,7 +311,7 @@ Groups A and B converge at Tier 3 (constructWightmanFunctions fields need both B
 | NuclearSpaces/BochnerMinlos.lean | 3 | Deferred |
 | NuclearSpaces/SchwartzNuclear.lean | 4 | Deferred |
 | NuclearSpaces/EuclideanMeasure.lean | 1 | Deferred |
-| **Critical path total** | **25** | |
+| **Critical path total** | **23** | |
 
 ## Proven Infrastructure (sorry-free)
 

@@ -38,7 +38,7 @@ The project builds cleanly. Remaining work is tracked via `sorry` placeholders:
 | Modular automorphisms | σ_t, Connes cocycle | ~13 |
 | KMS condition | Equilibrium states | ~9 |
 | Stone's theorem (inverse) | Generator construction | ~4 |
-| OS reconstruction bridge | Wick rotation, analytic continuation | ~26 (critical path) |
+| OS reconstruction bridge | Wick rotation, analytic continuation | ~23 (critical path) |
 
 See [`OSReconstruction/vNA/TODO.md`](OSReconstruction/vNA/TODO.md) and [`OSReconstruction/Wightman/TODO.md`](OSReconstruction/Wightman/TODO.md) for detailed status and execution plans.
 
