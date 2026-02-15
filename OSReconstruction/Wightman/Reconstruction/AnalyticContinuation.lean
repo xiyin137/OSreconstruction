@@ -6,6 +6,7 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
 import OSReconstruction.Wightman.Reconstruction.Helpers.SeparatelyAnalytic
+import OSReconstruction.Wightman.Reconstruction.Helpers.EdgeOfWedge
 import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
@@ -502,6 +503,208 @@ theorem continuous_sliceMap {m : ℕ} (x η : Fin m → ℝ) :
     Continuous (sliceMap x η) :=
   (differentiable_sliceMap x η).continuous
 
+theorem sliceMap_real {m : ℕ} (x η : Fin m → ℝ) (t : ℝ) :
+    sliceMap x η (t : ℂ) = fun i => ((x i + t * η i : ℝ) : ℂ) := by
+  ext i; simp [sliceMap, Complex.ofReal_add, Complex.ofReal_mul]
+
+/-! ### Tube Domain Infrastructure -/
+
+/-- A tube domain over an open cone is open. -/
+theorem tubeDomain_isOpen {m : ℕ} {C : Set (Fin m → ℝ)} (hC : IsOpen C) :
+    IsOpen (TubeDomain C) := by
+  have : TubeDomain C = (fun z : Fin m → ℂ => fun i => (z i).im) ⁻¹' C := rfl
+  rw [this]
+  exact hC.preimage (continuous_pi fun i => Complex.continuous_im.comp (continuous_apply i))
+
+/-- The negation image of an open set in `Fin m → ℝ` is open. -/
+theorem neg_image_isOpen {m : ℕ} {C : Set (Fin m → ℝ)} (hC : IsOpen C) :
+    IsOpen (Neg.neg '' C) := by
+  have heq : Neg.neg '' C = Neg.neg ⁻¹' C := by
+    ext x; constructor
+    · rintro ⟨y, hy, rfl⟩; simpa using hy
+    · intro hx; exact ⟨-x, hx, neg_neg x⟩
+  rw [heq]
+  exact hC.preimage (continuous_pi fun i => continuous_neg.comp (continuous_apply i))
+
+/-- Tube domains over C and -C are disjoint when C is convex and 0 ∉ C. -/
+theorem tubeDomain_disjoint_neg {m : ℕ} {C : Set (Fin m → ℝ)}
+    (hconv : Convex ℝ C) (h0 : (0 : Fin m → ℝ) ∉ C) :
+    Disjoint (TubeDomain C) (TubeDomain (Neg.neg '' C)) := by
+  rw [Set.disjoint_left]
+  intro z hz1 hz2
+  apply h0
+  -- hz1: Im(z) ∈ C, hz2: Im(z) ∈ Neg.neg '' C (so -Im(z) ∈ C)
+  obtain ⟨y, hy, hy_eq⟩ := hz2
+  -- y ∈ C and -y = Im(z), so Im(z) = -y and -Im(z) = y ∈ C
+  have h_neg_im : -(fun i => (z i).im) ∈ C := by
+    have : -(fun i => (z i).im) = y := by
+      ext i; have h := congr_fun hy_eq i
+      simp only [Pi.neg_apply] at h ⊢; linarith
+    rw [this]; exact hy
+  -- 0 = (1/2) • Im(z) + (1/2) • (-Im(z)) ∈ C by convexity
+  have h_zero : (0 : Fin m → ℝ) = (1/2 : ℝ) • (fun i => (z i).im) + (1/2 : ℝ) • (-(fun i => (z i).im)) := by
+    ext i; simp [Pi.smul_apply, Pi.add_apply, Pi.neg_apply]
+  rw [h_zero]
+  exact hconv hz1 h_neg_im (by positivity) (by positivity) (by norm_num)
+
+/-- Holomorphic extension along a 1D slice through a cone direction.
+
+    For each `x₀ ∈ E` and `η ∈ C`, composing `f_±` with `sliceMap x₀ η` gives
+    1D holomorphic functions on UHP/LHP with matching boundary values. The 1D
+    edge-of-the-wedge theorem provides holomorphic extension in the η-direction.
+
+    This is the key dimensional reduction step: it shows that f₊ and f₋ have a
+    common holomorphic extension along each cone direction through each boundary point. -/
+theorem edge_of_the_wedge_slice {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC : IsOpen C)
+    (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
+    (f_plus f_minus : (Fin m → ℂ) → ℂ)
+    (hf_plus : DifferentiableOn ℂ f_plus (TubeDomain C))
+    (hf_minus : DifferentiableOn ℂ f_minus (TubeDomain (Neg.neg '' C)))
+    (E : Set (Fin m → ℝ)) (hE : IsOpen E)
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hf_plus_bv : ∀ x ∈ E,
+      Filter.Tendsto f_plus (nhdsWithin (fun i => (x i : ℂ)) (TubeDomain C)) (nhds (bv x)))
+    (hf_minus_bv : ∀ x ∈ E,
+      Filter.Tendsto f_minus (nhdsWithin (fun i => (x i : ℂ)) (TubeDomain (Neg.neg '' C))) (nhds (bv x)))
+    (x₀ : Fin m → ℝ) (hx₀ : x₀ ∈ E) (η : Fin m → ℝ) (hη : η ∈ C) :
+    ∃ (V : Set ℂ) (G : ℂ → ℂ),
+      IsOpen V ∧ (0 : ℂ) ∈ V ∧
+      DifferentiableOn ℂ G V ∧
+      (∀ w ∈ V, w.im > 0 → G w = f_plus (sliceMap x₀ η w)) ∧
+      (∀ w ∈ V, w.im < 0 → G w = f_minus (sliceMap x₀ η w)) := by
+  -- Step 1: Find δ > 0 such that x₀ + t • η ∈ E for all |t| < δ
+  -- Use continuity of t ↦ x₀ + t • η at 0
+  have hcont_affine : Continuous (fun t : ℝ => x₀ + t • η) := by continuity
+  have haffine_zero : (fun t : ℝ => x₀ + t • η) 0 = x₀ := by simp
+  have hmem_preimage : (0 : ℝ) ∈ (fun t : ℝ => x₀ + t • η) ⁻¹' E := by
+    simp [Set.mem_preimage, haffine_zero, hx₀]
+  obtain ⟨δ, hδ_pos, hδ_sub'⟩ := Metric.isOpen_iff.mp
+    (hE.preimage hcont_affine) 0 hmem_preimage
+  have hδ_sub : ∀ t : ℝ, |t| < δ → x₀ + t • η ∈ E := by
+    intro t ht; exact hδ_sub' (by rwa [Metric.mem_ball, Real.dist_eq, sub_zero])
+  -- Step 2: Define the 1D functions for the slice
+  let g_plus : ℂ → ℂ := fun w =>
+    if 0 < w.im then f_plus (sliceMap x₀ η w)
+    else bv (fun i => x₀ i + w.re * η i)
+  let g_minus : ℂ → ℂ := fun w =>
+    if w.im < 0 then f_minus (sliceMap x₀ η w)
+    else bv (fun i => x₀ i + w.re * η i)
+  -- Step 3: Apply edge_of_the_wedge_1d with interval (-δ, δ)
+  have hab : -δ < δ := by linarith
+  -- g_plus is holomorphic on UHP (agrees with f_plus ∘ sliceMap there)
+  have hg_plus_holo : DifferentiableOn ℂ g_plus EOW.UpperHalfPlane := by
+    have h_comp : DifferentiableOn ℂ (fun w => f_plus (sliceMap x₀ η w)) EOW.UpperHalfPlane :=
+      hf_plus.comp (differentiable_sliceMap x₀ η).differentiableOn
+        (fun w hw => sliceMap_upper_mem_tubeDomain hcone hη hw)
+    exact h_comp.congr (fun w hw => if_pos hw)
+  -- g_minus is holomorphic on LHP
+  have hg_minus_holo : DifferentiableOn ℂ g_minus EOW.LowerHalfPlane := by
+    have h_comp : DifferentiableOn ℂ (fun w => f_minus (sliceMap x₀ η w)) EOW.LowerHalfPlane :=
+      hf_minus.comp (differentiable_sliceMap x₀ η).differentiableOn
+        (fun w hw => sliceMap_lower_mem_neg_tubeDomain hcone hη hw)
+    exact h_comp.congr (fun w hw => if_pos hw)
+  -- Boundary values match: g_plus(t) = g_minus(t) for t ∈ (-δ, δ)
+  have hmatch' : ∀ x : ℝ, -δ < x → x < δ → g_plus x = g_minus x := by
+    intro t _ _
+    simp only [g_plus, g_minus, Complex.ofReal_im, lt_irrefl, ite_false, not_lt_of_gt]
+  -- Boundary value from above: g_plus approaches g_plus(t) from UHP
+  -- This requires translating the multi-D boundary value (hf_plus_bv) to 1D via sliceMap
+  have hcont_plus : ∀ x : ℝ, -δ < x → x < δ →
+      Filter.Tendsto g_plus (nhdsWithin (x : ℂ) EOW.UpperHalfPlane) (nhds (g_plus x)) := by
+    intro t ht_lo ht_hi
+    have ht_abs : |t| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
+    have ht_E : x₀ + t • η ∈ E := hδ_sub t ht_abs
+    have hslice_eq : sliceMap x₀ η (↑t) = fun i => ↑((x₀ + t • η) i) := by
+      rw [sliceMap_real]; ext i; simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    -- sliceMap maps nhdsWithin t UHP into nhdsWithin (x₀+t•η)_ℂ (TubeDomain C)
+    have hslice_tends : Filter.Tendsto (sliceMap x₀ η)
+        (nhdsWithin (↑t) EOW.UpperHalfPlane)
+        (nhdsWithin (fun i => ↑((x₀ + t • η) i)) (TubeDomain C)) := by
+      have hcw : ContinuousWithinAt (sliceMap x₀ η) EOW.UpperHalfPlane (↑t) :=
+        (continuous_sliceMap x₀ η).continuousWithinAt
+      have h := hcw.tendsto_nhdsWithin
+        (fun w hw => sliceMap_upper_mem_tubeDomain hcone hη hw)
+      rwa [hslice_eq] at h
+    -- Compose: f_plus ∘ sliceMap → bv(x₀+t•η) from nhdsWithin t UHP
+    have h_comp := (hf_plus_bv (x₀ + t • η) ht_E).comp hslice_tends
+    -- g_plus ↑t = bv(x₀+t•η)
+    have hg_t_eq : g_plus (↑t) = bv (x₀ + t • η) := if_neg (by simp [Complex.ofReal_im])
+    rw [hg_t_eq]
+    have key : Filter.map g_plus (nhdsWithin (↑t) EOW.UpperHalfPlane) =
+               Filter.map (f_plus ∘ sliceMap x₀ η) (nhdsWithin (↑t) EOW.UpperHalfPlane) :=
+      Filter.map_congr (eventually_nhdsWithin_of_forall fun w hw => if_pos hw)
+    change Filter.map g_plus _ ≤ _
+    rw [key]
+    exact h_comp
+  -- Boundary value from below (symmetric argument)
+  have hcont_minus : ∀ x : ℝ, -δ < x → x < δ →
+      Filter.Tendsto g_minus (nhdsWithin (x : ℂ) EOW.LowerHalfPlane) (nhds (g_minus x)) := by
+    intro t ht_lo ht_hi
+    have ht_abs : |t| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
+    have ht_E : x₀ + t • η ∈ E := hδ_sub t ht_abs
+    have hslice_eq : sliceMap x₀ η (↑t) = fun i => ↑((x₀ + t • η) i) := by
+      rw [sliceMap_real]; ext i; simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    have hslice_tends : Filter.Tendsto (sliceMap x₀ η)
+        (nhdsWithin (↑t) EOW.LowerHalfPlane)
+        (nhdsWithin (fun i => ↑((x₀ + t • η) i)) (TubeDomain (Neg.neg '' C))) := by
+      have hcw : ContinuousWithinAt (sliceMap x₀ η) EOW.LowerHalfPlane (↑t) :=
+        (continuous_sliceMap x₀ η).continuousWithinAt
+      have h := hcw.tendsto_nhdsWithin
+        (fun w hw => sliceMap_lower_mem_neg_tubeDomain hcone hη hw)
+      rwa [hslice_eq] at h
+    have h_comp := (hf_minus_bv (x₀ + t • η) ht_E).comp hslice_tends
+    have hg_t_eq : g_minus (↑t) = bv (x₀ + t • η) := if_neg (by simp [Complex.ofReal_im])
+    rw [hg_t_eq]
+    have key : Filter.map g_minus (nhdsWithin (↑t) EOW.LowerHalfPlane) =
+               Filter.map (f_minus ∘ sliceMap x₀ η) (nhdsWithin (↑t) EOW.LowerHalfPlane) :=
+      Filter.map_congr (eventually_nhdsWithin_of_forall fun w hw => if_pos hw)
+    change Filter.map g_minus _ ≤ _
+    rw [key]
+    exact h_comp
+  -- Continuity of boundary value along real line:
+  -- g_plus restricted to {Im = 0} is t ↦ bv(x₀ + t•η), continuous by hbv_cont
+  have hbv_cont_1d : ∀ x₀' : ℝ, -δ < x₀' → x₀' < δ →
+      Filter.Tendsto g_plus (nhdsWithin (x₀' : ℂ) {c : ℂ | c.im = 0})
+        (nhds (g_plus x₀')) := by
+    intro t ht_lo ht_hi
+    have ht_abs : |t| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
+    have ht_E : x₀ + t • η ∈ E := hδ_sub t ht_abs
+    have hg_t_eq : g_plus (↑t) = bv (x₀ + t • η) := if_neg (by simp [Complex.ofReal_im])
+    rw [hg_t_eq]
+    -- g_plus = bv ∘ affine on {Im = 0}
+    have heq : ∀ᶠ (c : ℂ) in nhdsWithin (↑t) {c : ℂ | c.im = 0},
+        g_plus c = bv (fun i => x₀ i + c.re * η i) :=
+      eventually_nhdsWithin_of_forall fun c (hc : c.im = 0) =>
+        if_neg (by simp [hc])
+    have hcont_bv : Filter.Tendsto (fun c : ℂ => bv (fun i => x₀ i + c.re * η i))
+        (nhdsWithin (↑t) {c : ℂ | c.im = 0}) (nhds (bv (x₀ + t • η))) := by
+      have h_at_t : bv (fun i => x₀ i + (↑t : ℂ).re * η i) = bv (x₀ + t • η) := by
+        congr 1
+      rw [← h_at_t]
+      have hmem : (fun i : Fin m => x₀ i + (↑t : ℂ).re * η i) ∈ E := by
+        convert ht_E using 1
+      exact ((hbv_cont.continuousAt (hE.mem_nhds hmem)).comp
+        (continuous_pi fun i => continuous_const.add
+          (Complex.continuous_re.mul continuous_const)).continuousAt).continuousWithinAt
+    change Filter.map g_plus _ ≤ _
+    rw [Filter.map_congr heq]
+    exact hcont_bv
+  -- Apply 1D EOW
+  obtain ⟨V, G, hV_open, hV_contains, hG_holo, hG_plus, hG_minus⟩ :=
+    edge_of_the_wedge_1d (-δ) δ hab g_plus g_minus hg_plus_holo hg_minus_holo
+      hcont_plus hcont_minus hmatch' hbv_cont_1d
+  -- Step 4: Translate back to multi-D
+  refine ⟨V, G, hV_open, hV_contains 0 (by linarith) (by linarith), hG_holo, ?_, ?_⟩
+  · -- G agrees with f_plus ∘ sliceMap on V ∩ UHP
+    intro w hw_V hw_im
+    have h := hG_plus w (Set.mem_inter hw_V hw_im)
+    simp only [g_plus, if_pos hw_im] at h; exact h
+  · -- G agrees with f_minus ∘ sliceMap on V ∩ LHP
+    intro w hw_V hw_im
+    have h := hG_minus w (Set.mem_inter hw_V hw_im)
+    simp only [g_minus, if_pos hw_im] at h; exact h
+
 /-- The edge-of-the-wedge theorem (Bogoliubov): two holomorphic functions on opposite tube
     domains with matching continuous boundary values on a real open set extend to a single
     holomorphic function on a complex neighborhood.
@@ -542,6 +745,27 @@ theorem edge_of_the_wedge {m : ℕ}
       DifferentiableOn ℂ F U ∧
       (∀ z ∈ U ∩ TubeDomain C, F z = f_plus z) ∧
       (∀ z ∈ U ∩ TubeDomain (Neg.neg '' C), F z = f_minus z) := by
+  /- Proof sketch (1D slicing + holomorphic extension):
+     For each x₀ ∈ E, η ∈ C, the slice map `sliceMap x₀ η : ℂ → (Fin m → ℂ)` embeds
+     ℂ into ℂᵐ with UHP → TubeDomain(C) and LHP → TubeDomain(-C). Composing f_± with
+     sliceMap gives 1D holomorphic functions to which `edge_of_the_wedge_1d` applies.
+
+     The resulting 1D extensions define F in m independent directions. Combined with
+     `tube_domain_gluing` (continuous + holomorphic off totally real → holomorphic),
+     this yields the full extension.
+
+     The key technical step is defining F at "gap points" z where Im(z) ∉ C ∪ (-C) ∪ {0}
+     (which exist for m ≥ 2 with proper cones). This requires either:
+     - The Bochner tube theorem, or
+     - A Cauchy-Bochner integral representation
+     Neither is currently formalized. -/
+  -- Infrastructure
+  have hTC_open : IsOpen (TubeDomain C) := tubeDomain_isOpen hC
+  have hTC_neg_open : IsOpen (TubeDomain (Neg.neg '' C)) :=
+    tubeDomain_isOpen (neg_image_isOpen hC)
+  have hTC_disj : Disjoint (TubeDomain C) (TubeDomain (Neg.neg '' C)) :=
+    tubeDomain_disjoint_neg hconv h0
+  -- The full construction requires gap-point extension (see proof sketch above).
   sorry
 
 /-! ### Bargmann-Hall-Wightman Theorem -/
