@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+import OSReconstruction.Wightman.Reconstruction.Helpers.SeparatelyAnalytic
 import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
@@ -448,28 +449,93 @@ theorem euclidean_distinct_in_permutedTube {n : ℕ}
 def TubeDomain {m : ℕ} (C : Set (Fin m → ℝ)) : Set (Fin m → ℂ) :=
   { z | (fun i => (z i).im) ∈ C }
 
-/-- The edge-of-the-wedge theorem: two holomorphic functions on opposite tube domains
-    with matching distributional boundary values on a real open set extend to a
-    single holomorphic function on a complex neighborhood.
+/-! ### Slice Maps for Multi-dimensional Edge-of-the-Wedge
 
-    We state this using functions on the ambient space restricted via `DifferentiableOn`
-    to avoid subtype issues. -/
+The key technique for the multi-dimensional edge-of-the-wedge theorem is slicing:
+given a direction η in the cone C, the affine map w ↦ x_ℂ + w · η_ℂ embeds ℂ into ℂᵐ.
+The imaginary part of the slice is Im(w) · η, so:
+- Upper half-plane (Im w > 0) maps to TubeDomain(C) when η ∈ C
+- Lower half-plane (Im w < 0) maps to TubeDomain(-C) when η ∈ C
+
+This reduces the multi-dimensional problem to the 1D edge-of-the-wedge theorem
+applied to each slice. -/
+
+/-- The affine slice map w ↦ x_ℂ + w · η_ℂ embedding ℂ into ℂᵐ along direction η.
+    Im(sliceMap x η w) = Im(w) · η, so:
+    - Upper half-plane (Im w > 0) maps to TubeDomain(C) when η ∈ C
+    - Lower half-plane (Im w < 0) maps to TubeDomain(-C) when η ∈ C -/
+def sliceMap {m : ℕ} (x η : Fin m → ℝ) : ℂ → (Fin m → ℂ) :=
+  fun w i => (x i : ℂ) + w * (η i : ℂ)
+
+theorem sliceMap_im_eq_smul {m : ℕ} (x η : Fin m → ℝ) (w : ℂ) :
+    (fun i => (sliceMap x η w i).im) = w.im • η := by
+  ext i
+  simp only [sliceMap, Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+    Complex.ofReal_re, mul_zero, zero_add, Pi.smul_apply, smul_eq_mul]
+
+theorem sliceMap_at_zero {m : ℕ} (x η : Fin m → ℝ) :
+    sliceMap x η 0 = fun i => (x i : ℂ) := by
+  ext i; simp [sliceMap]
+
+theorem sliceMap_upper_mem_tubeDomain {m : ℕ} {C : Set (Fin m → ℝ)} {x : Fin m → ℝ}
+    (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
+    {η : Fin m → ℝ} (hη : η ∈ C) {w : ℂ} (hw : w.im > 0) :
+    sliceMap x η w ∈ TubeDomain C := by
+  show (fun i => (sliceMap x η w i).im) ∈ C
+  rw [sliceMap_im_eq_smul]; exact hcone w.im η hw hη
+
+theorem sliceMap_lower_mem_neg_tubeDomain {m : ℕ} {C : Set (Fin m → ℝ)} {x : Fin m → ℝ}
+    (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
+    {η : Fin m → ℝ} (hη : η ∈ C) {w : ℂ} (hw : w.im < 0) :
+    sliceMap x η w ∈ TubeDomain (Neg.neg '' C) := by
+  show (fun i => (sliceMap x η w i).im) ∈ Neg.neg '' C
+  rw [sliceMap_im_eq_smul]
+  exact ⟨(-w.im) • η, hcone (-w.im) η (by linarith) hη,
+    by ext i; simp [Pi.smul_apply, smul_eq_mul, Pi.neg_apply, neg_mul]⟩
+
+theorem differentiable_sliceMap {m : ℕ} (x η : Fin m → ℝ) :
+    Differentiable ℂ (sliceMap x η) := by
+  intro w; unfold sliceMap; rw [differentiableAt_pi]; intro i
+  fun_prop
+
+theorem continuous_sliceMap {m : ℕ} (x η : Fin m → ℝ) :
+    Continuous (sliceMap x η) :=
+  (differentiable_sliceMap x η).continuous
+
+/-- The edge-of-the-wedge theorem (Bogoliubov): two holomorphic functions on opposite tube
+    domains with matching continuous boundary values on a real open set extend to a single
+    holomorphic function on a complex neighborhood.
+
+    **Hypotheses:**
+    - `C` is an open convex cone (not containing the origin) in `ℝᵐ`
+    - `hcone`: `C` is closed under positive scalar multiplication (cone property)
+    - `f_plus`, `f_minus` are holomorphic on the tube domains `ℝᵐ + iC` and `ℝᵐ - iC`
+    - `bv` is a continuous function on the open set `E ⊂ ℝᵐ` giving the common boundary value
+    - `hf_plus_bv`, `hf_minus_bv`: `f_±` approach `bv` in the `nhdsWithin` sense
+
+    **Proof strategy** (1D slicing + Osgood's lemma):
+    For each η ∈ C, the slice map `w ↦ x_ℂ + w · η_ℂ` (`sliceMap`) embeds ℂ into ℂᵐ,
+    mapping `{Im w > 0}` to `TubeDomain(C)` and `{Im w < 0}` to `TubeDomain(-C)`.
+    The 1D edge-of-the-wedge theorem (`edge_of_the_wedge_1d`) gives holomorphic extension
+    in the η-direction. Extensions in m linearly independent directions from C, combined
+    with `holomorphic_extension_across_real`, yield joint holomorphicity.
+
+    See: Bogoliubov (1956), Streater-Wightman Ch. 2, Epstein (1960). -/
 theorem edge_of_the_wedge {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC : IsOpen C) (hconv : Convex ℝ C) (h0 : (0 : Fin m → ℝ) ∉ C)
+    (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
+    (hCne : C.Nonempty)
     (f_plus f_minus : (Fin m → ℂ) → ℂ)
     (hf_plus : DifferentiableOn ℂ f_plus (TubeDomain C))
     (hf_minus : DifferentiableOn ℂ f_minus (TubeDomain (Neg.neg '' C)))
     (E : Set (Fin m → ℝ)) (hE : IsOpen E)
-    (hmatch : ∀ x ∈ E, ∀ η ∈ C,
-      -- The boundary values from both sides agree:
-      -- lim_{t→0⁺} f₊(x + itη) = lim_{t→0⁺} f₋(x - itη)
-      ∃ (bv : ℂ),
-        Filter.Tendsto
-          (fun t : ℝ => f_plus (fun i => ↑(x i) + t * ↑(η i) * I))
-          (nhdsWithin 0 (Set.Ioi 0)) (nhds bv) ∧
-        Filter.Tendsto
-          (fun t : ℝ => f_minus (fun i => ↑(x i) - t * ↑(η i) * I))
-          (nhdsWithin 0 (Set.Ioi 0)) (nhds bv)) :
+    (bv : (Fin m → ℝ) → ℂ) (hbv_cont : ContinuousOn bv E)
+    (hf_plus_bv : ∀ x ∈ E,
+      Filter.Tendsto f_plus
+        (nhdsWithin (fun i => (x i : ℂ)) (TubeDomain C)) (nhds (bv x)))
+    (hf_minus_bv : ∀ x ∈ E,
+      Filter.Tendsto f_minus
+        (nhdsWithin (fun i => (x i : ℂ)) (TubeDomain (Neg.neg '' C))) (nhds (bv x))) :
     ∃ (U : Set (Fin m → ℂ)) (F : (Fin m → ℂ) → ℂ),
       IsOpen U ∧
       (∀ x ∈ E, (fun i => (x i : ℂ)) ∈ U) ∧

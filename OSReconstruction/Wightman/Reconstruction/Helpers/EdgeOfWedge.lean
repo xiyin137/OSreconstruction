@@ -59,21 +59,21 @@ open scoped Interval
 /-! ### 1D Edge-of-the-Wedge -/
 
 /-- The upper half-plane: {z ∈ ℂ : Im z > 0}. -/
-def UpperHalfPlane : Set ℂ := { z | z.im > 0 }
+def EOW.UpperHalfPlane : Set ℂ := { z | z.im > 0 }
 
 /-- The lower half-plane: {z ∈ ℂ : Im z < 0}. -/
-def LowerHalfPlane : Set ℂ := { z | z.im < 0 }
+def EOW.LowerHalfPlane : Set ℂ := { z | z.im < 0 }
 
 /-- The real line viewed as a subset of ℂ. -/
-def RealLine : Set ℂ := { z | z.im = 0 }
+def EOW.RealLine : Set ℂ := { z | z.im = 0 }
 
 /-- Embed a real interval into ℂ. -/
-def realInterval (a b : ℝ) : Set ℂ := { z | z.im = 0 ∧ a < z.re ∧ z.re < b }
+def EOW.realInterval (a b : ℝ) : Set ℂ := { z | z.im = 0 ∧ a < z.re ∧ z.re < b }
 
-theorem upperHalfPlane_isOpen : IsOpen UpperHalfPlane := by
+theorem EOW.upperHalfPlane_isOpen : IsOpen EOW.UpperHalfPlane := by
   exact isOpen_lt continuous_const Complex.continuous_im
 
-theorem lowerHalfPlane_isOpen : IsOpen LowerHalfPlane := by
+theorem EOW.lowerHalfPlane_isOpen : IsOpen EOW.LowerHalfPlane := by
   exact isOpen_lt Complex.continuous_im continuous_const
 
 /-- The glued function: f₊ on the upper half-plane, f₋ on the lower half-plane,
@@ -111,14 +111,14 @@ theorem gluedFunction_real {f_plus f_minus : ℂ → ℂ} {bv : ℝ → ℂ} {z 
     - Boundary values continuous along the real interval (hbv_cont) -/
 theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
     (f_plus f_minus : ℂ → ℂ)
-    (hf_plus : DifferentiableOn ℂ f_plus UpperHalfPlane)
-    (hf_minus : DifferentiableOn ℂ f_minus LowerHalfPlane)
+    (hf_plus : DifferentiableOn ℂ f_plus EOW.UpperHalfPlane)
+    (hf_minus : DifferentiableOn ℂ f_minus EOW.LowerHalfPlane)
     -- Continuous boundary values from above
     (hcont_plus : ∀ x : ℝ, a < x → x < b →
-      Filter.Tendsto f_plus (nhdsWithin (x : ℂ) UpperHalfPlane) (nhds (f_plus x)))
+      Filter.Tendsto f_plus (nhdsWithin (x : ℂ) EOW.UpperHalfPlane) (nhds (f_plus x)))
     -- Continuous boundary values from below
     (hcont_minus : ∀ x : ℝ, a < x → x < b →
-      Filter.Tendsto f_minus (nhdsWithin (x : ℂ) LowerHalfPlane) (nhds (f_minus x)))
+      Filter.Tendsto f_minus (nhdsWithin (x : ℂ) EOW.LowerHalfPlane) (nhds (f_minus x)))
     -- Boundary values match on the interval
     (hmatch : ∀ x : ℝ, a < x → x < b → f_plus x = f_minus x)
     -- Boundary values are continuous along the real interval
@@ -132,9 +132,9 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
       -- F is holomorphic on U
       DifferentiableOn ℂ F U ∧
       -- F agrees with f₊ on U ∩ upper half-plane
-      (∀ z ∈ U ∩ UpperHalfPlane, F z = f_plus z) ∧
+      (∀ z ∈ U ∩ EOW.UpperHalfPlane, F z = f_plus z) ∧
       -- F agrees with f₋ on U ∩ lower half-plane
-      (∀ z ∈ U ∩ LowerHalfPlane, F z = f_minus z) := by
+      (∀ z ∈ U ∩ EOW.LowerHalfPlane, F z = f_minus z) := by
   -- Step 1: Define the ball
   let mid : ℂ := ((a + b) / 2 : ℝ)
   let rad : ℝ := (b - a) / 2
@@ -170,9 +170,9 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
       -- Key: ↑z.re = z when z.im = 0
       have hzeq : (z.re : ℂ) = z := real_eq z hzim
       -- Convert hypotheses to use z instead of ↑z.re
-      have hcp : Tendsto f_plus (𝓝[UpperHalfPlane] z) (nhds (f_plus z)) := by
+      have hcp : Tendsto f_plus (𝓝[EOW.UpperHalfPlane] z) (nhds (f_plus z)) := by
         have := hcont_plus z.re hza hzb; rwa [hzeq] at this
-      have hcm : Tendsto f_minus (𝓝[LowerHalfPlane] z) (nhds (f_minus z)) := by
+      have hcm : Tendsto f_minus (𝓝[EOW.LowerHalfPlane] z) (nhds (f_minus z)) := by
         have := hcont_minus z.re hza hzb; rwa [hzeq] at this
       have hbvc : Tendsto f_plus (𝓝[{c | c.im = 0}] z) (nhds (f_plus z)) := by
         have := hbv_cont z.re hza hzb; rwa [hzeq] at this
@@ -209,12 +209,12 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
     · -- z not on real line: F is locally f_plus or f_minus
       rcases lt_or_gt_of_ne hzim with hlt | hgt
       · -- Im z < 0: F = f_minus near z
-        exact ((hf_minus.differentiableAt (lowerHalfPlane_isOpen.mem_nhds hlt)).continuousAt.congr
-          (by filter_upwards [lowerHalfPlane_isOpen.mem_nhds hlt] with w (hw : w.im < 0)
+        exact ((hf_minus.differentiableAt (EOW.lowerHalfPlane_isOpen.mem_nhds hlt)).continuousAt.congr
+          (by filter_upwards [EOW.lowerHalfPlane_isOpen.mem_nhds hlt] with w (hw : w.im < 0)
               simp only [F]; split_ifs with h1 <;> [linarith; rfl])).continuousWithinAt
       · -- Im z > 0: F = f_plus near z
-        exact ((hf_plus.differentiableAt (upperHalfPlane_isOpen.mem_nhds hgt)).continuousAt.congr
-          (by filter_upwards [upperHalfPlane_isOpen.mem_nhds hgt] with w (hw : w.im > 0)
+        exact ((hf_plus.differentiableAt (EOW.upperHalfPlane_isOpen.mem_nhds hgt)).continuousAt.congr
+          (by filter_upwards [EOW.upperHalfPlane_isOpen.mem_nhds hgt] with w (hw : w.im > 0)
               simp only [F, hw, ite_true])).continuousWithinAt
   -- Step 4: Prove IsConservativeOn F ball
   -- Helper: F = f_plus when im > 0, F = f_minus when im < 0
@@ -225,15 +225,15 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
   have hFdiff_upper : ∀ c : ℂ, c.im > 0 → DifferentiableAt ℂ F c := by
     intro c hc
     exact ((show f_plus =ᶠ[𝓝 c] F from by
-      filter_upwards [upperHalfPlane_isOpen.mem_nhds hc] with w hw
+      filter_upwards [EOW.upperHalfPlane_isOpen.mem_nhds hc] with w hw
       exact (hFup w hw).symm).differentiableAt_iff).mp
-        (hf_plus.differentiableAt (upperHalfPlane_isOpen.mem_nhds hc))
+        (hf_plus.differentiableAt (EOW.upperHalfPlane_isOpen.mem_nhds hc))
   have hFdiff_lower : ∀ c : ℂ, c.im < 0 → DifferentiableAt ℂ F c := by
     intro c hc
     exact ((show f_minus =ᶠ[𝓝 c] F from by
-      filter_upwards [lowerHalfPlane_isOpen.mem_nhds hc] with w hw
+      filter_upwards [EOW.lowerHalfPlane_isOpen.mem_nhds hc] with w hw
       exact (hFdn w hw).symm).differentiableAt_iff).mp
-        (hf_minus.differentiableAt (lowerHalfPlane_isOpen.mem_nhds hc))
+        (hf_minus.differentiableAt (EOW.lowerHalfPlane_isOpen.mem_nhds hc))
   have hFcons : IsConservativeOn F (Metric.ball mid rad) := by
     intro z w hrect
     apply eq_neg_of_add_eq_zero_left
