@@ -4,12 +4,16 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib.Analysis.Complex.CauchyIntegral
+import Mathlib.Analysis.Complex.Liouville
+import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.RemovableSingularity
 import Mathlib.Analysis.Complex.HasPrimitives
 import Mathlib.Analysis.Analytic.IsolatedZeros
 import Mathlib.Analysis.Calculus.FDeriv.Prod
 import Mathlib.Analysis.Calculus.FDeriv.Comp
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.Analysis.Calculus.ParametricIntervalIntegral
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
 
 /-!
 # Osgood's Lemma and Holomorphic Extension Infrastructure
@@ -52,25 +56,6 @@ open scoped Interval
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
 
-/-! ### Cauchy Integral with Holomorphic Parameter -/
-
-/-- **Cauchy integral with holomorphic parameter**: If f(ζ, x) is continuous on
-    (sphere z₀ r) × V and holomorphic in x for each ζ on the sphere, then
-    G(z, x) = (2πi)⁻¹ · ∮ f(ζ, x) / (ζ - z) dζ is jointly holomorphic
-    on (ball z₀ r) × V. -/
-theorem differentiableOn_cauchyIntegral_param [CompleteSpace E]
-    {z₀ : ℂ} {r : ℝ} (hr : 0 < r)
-    {V : Set E} (hV : IsOpen V)
-    (f : ℂ → E → ℂ)
-    (hf_cont : ContinuousOn (fun p : ℂ × E => f p.1 p.2)
-      (Metric.closedBall z₀ r ×ˢ V))
-    (hf_x_holo : ∀ ζ ∈ Metric.closedBall z₀ r, DifferentiableOn ℂ (f ζ) V) :
-    DifferentiableOn ℂ
-      (fun p : ℂ × E =>
-        (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2)
-      (Metric.ball z₀ r ×ˢ V) := by
-  sorry
-
 /-! ### Osgood's Lemma Infrastructure -/
 
 /-- The z-derivative of f(z,x) at z₀ varies continuously in x, when f is jointly
@@ -88,11 +73,92 @@ lemma continuousAt_deriv_of_continuousOn [CompleteSpace E]
     (hf_z : ∀ x ∈ V, DifferentiableOn ℂ (fun z => f (z, x)) (Metric.closedBall z₀ ρ))
     {x₀ : E} (hx₀ : x₀ ∈ V) :
     ContinuousAt (fun x => deriv (fun z => f (z, x)) z₀) x₀ := by
-  -- By Cauchy integral formula:
-  -- deriv(z ↦ f(z,x))(z₀) is a Cauchy integral, hence continuous in x
-  -- We express deriv via DifferentiableOn.deriv_eq_smul_circleIntegral
-  -- and show the resulting circle integral is continuous in x
-  sorry
+  -- Strategy: Use Complex.cderiv (Cauchy integral for derivative) at radius ρ/2.
+  -- cderiv = deriv by Cauchy formula, and norm_cderiv_sub_lt gives a Cauchy estimate.
+  -- Tube lemma gives uniform bound on sphere → bound on derivative difference.
+  rw [Metric.continuousAt_iff]
+  intro ε hε
+  -- Setup: radius ρ' = ρ/2 for cderiv, with closedBall z₀ ρ' ⊂ ball z₀ ρ
+  set ρ' := ρ / 2 with hρ'_def
+  have hρ' : 0 < ρ' := by positivity
+  have hρ'_lt : ρ' < ρ := by linarith
+  have h_sphere_sub : Metric.sphere z₀ ρ' ⊆ Metric.closedBall z₀ ρ :=
+    Metric.sphere_subset_closedBall.trans (Metric.closedBall_subset_closedBall hρ'_lt.le)
+  -- cderiv ρ' agrees with deriv for each x ∈ V
+  have h_cderiv : ∀ x ∈ V,
+      Complex.cderiv ρ' (fun z => f (z, x)) z₀ = deriv (fun z => f (z, x)) z₀ := by
+    intro x hx
+    exact Complex.cderiv_eq_deriv Metric.isOpen_ball
+      ((hf_z x hx).mono Metric.ball_subset_closedBall) hρ'
+      (Metric.closedBall_subset_ball hρ'_lt)
+  -- ContinuousOn on sphere for norm_cderiv_sub_lt
+  have h_cont_sp : ∀ x ∈ V,
+      ContinuousOn (fun z => f (z, x)) (Metric.sphere z₀ ρ') := by
+    intro x hx; exact ((hf_z x hx).continuousOn).mono h_sphere_sub
+  -- Get δ_V with ball x₀ δ_V ⊆ V
+  obtain ⟨δ_V, hδ_V, hball_V⟩ := Metric.isOpen_iff.mp hV x₀ hx₀
+  -- Tube lemma: uniform bound ‖f(w,x) - f(w,x₀)‖ < ε*ρ' on closedBall z₀ ρ
+  have h_nhds : ∀ w ∈ Metric.closedBall z₀ ρ,
+      ∃ εw > 0, ∀ w' ∈ Metric.closedBall z₀ ρ, ∀ x ∈ V,
+        ‖w' - w‖ < εw → ‖x - x₀‖ < εw → ‖f (w', x) - f (w, x₀)‖ < ε * ρ' / 2 := by
+    intro w hw
+    have h_cwa := hf_cont (w, x₀) ⟨hw, hx₀⟩
+    rw [ContinuousWithinAt, Metric.tendsto_nhdsWithin_nhds] at h_cwa
+    obtain ⟨δw, hδw, hball⟩ := h_cwa (ε * ρ' / 2) (by positivity)
+    refine ⟨δw, hδw, fun w' hw' x hx hw'_near hx_near => ?_⟩
+    have h_dist : dist (w', x) (w, x₀) < δw := by
+      rw [Prod.dist_eq]; exact max_lt (by rwa [dist_eq_norm]) (by rwa [dist_eq_norm])
+    have := hball ⟨hw', hx⟩ h_dist
+    rwa [dist_eq_norm] at this
+  have h_choice : ∀ w, ∃ εw > 0, w ∈ Metric.closedBall z₀ ρ →
+      ∀ w' ∈ Metric.closedBall z₀ ρ, ∀ x ∈ V,
+        ‖w' - w‖ < εw → ‖x - x₀‖ < εw → ‖f (w', x) - f (w, x₀)‖ < ε * ρ' / 2 := by
+    intro w
+    by_cases hw : w ∈ Metric.closedBall z₀ ρ
+    · obtain ⟨εw, hεw, hb⟩ := h_nhds w hw; exact ⟨εw, hεw, fun _ => hb⟩
+    · exact ⟨1, one_pos, fun h => absurd h hw⟩
+  choose εw hεw h_bound_εw using h_choice
+  obtain ⟨t, ht_sub, ht_cover⟩ := (isCompact_closedBall z₀ ρ).elim_nhds_subcover
+    (fun w => Metric.ball w (εw w)) (fun w _ => Metric.ball_mem_nhds w (hεw w))
+  have ht_ne : t.Nonempty := by
+    by_contra h_empty; rw [Finset.not_nonempty_iff_eq_empty] at h_empty
+    exact absurd (ht_cover (Metric.mem_closedBall_self hρ.le)) (by simp [h_empty])
+  set δ₁ := t.inf' ht_ne εw
+  have hδ₁ : 0 < δ₁ := by rw [Finset.lt_inf'_iff]; intro w _; exact hεw w
+  have h_unif : ∀ w ∈ Metric.closedBall z₀ ρ, ∀ x ∈ V, ‖x - x₀‖ < δ₁ →
+      ‖f (w, x) - f (w, x₀)‖ < ε * ρ' := by
+    intro w hw x hx hxδ
+    obtain ⟨wᵢ, hwᵢ_mem, hw_in_ball⟩ := Set.mem_iUnion₂.mp (ht_cover hw)
+    rw [Metric.mem_ball, dist_eq_norm] at hw_in_ball
+    have hδ₁_le : δ₁ ≤ εw wᵢ := Finset.inf'_le _ hwᵢ_mem
+    have hwᵢ_in := ht_sub wᵢ hwᵢ_mem
+    have h1 := h_bound_εw wᵢ hwᵢ_in w hw x hx hw_in_ball (lt_of_lt_of_le hxδ hδ₁_le)
+    have h2 := h_bound_εw wᵢ hwᵢ_in w hw x₀ hx₀ hw_in_ball
+      (by rw [sub_self, norm_zero]; exact hεw wᵢ)
+    have : f (w, x) - f (w, x₀) =
+        (f (w, x) - f (wᵢ, x₀)) + (f (wᵢ, x₀) - f (w, x₀)) := by ring
+    rw [this]
+    calc ‖(f (w, x) - f (wᵢ, x₀)) + (f (wᵢ, x₀) - f (w, x₀))‖
+        ≤ ‖f (w, x) - f (wᵢ, x₀)‖ + ‖f (wᵢ, x₀) - f (w, x₀)‖ := norm_add_le _ _
+      _ < ε * ρ' / 2 + ε * ρ' / 2 := add_lt_add h1 (by rwa [norm_sub_rev])
+      _ = ε * ρ' := by ring
+  -- Main conclusion via norm_cderiv_sub_lt
+  refine ⟨min δ₁ δ_V, lt_min hδ₁ hδ_V, fun x hx => ?_⟩
+  rw [dist_eq_norm] at hx
+  have hx_V : x ∈ V := hball_V (show dist x x₀ < δ_V by
+    rw [dist_eq_norm]; exact lt_of_lt_of_le hx (min_le_right _ _))
+  have hxδ₁ : ‖x - x₀‖ < δ₁ := lt_of_lt_of_le hx (min_le_left _ _)
+  -- Sphere bound (sphere ⊆ closedBall)
+  have h_sphere : ∀ w ∈ Metric.sphere z₀ ρ',
+      ‖(fun z => f (z, x)) w - (fun z => f (z, x₀)) w‖ < ε * ρ' :=
+    fun w hw => h_unif w (h_sphere_sub hw) x hx_V hxδ₁
+  -- Apply Cauchy estimate
+  have h_bound := Complex.norm_cderiv_sub_lt hρ' h_sphere (h_cont_sp x hx_V) (h_cont_sp x₀ hx₀)
+  rw [dist_eq_norm, ← h_cderiv x hx_V, ← h_cderiv x₀ hx₀]
+  calc ‖Complex.cderiv ρ' (fun z => f (z, x)) z₀ -
+        Complex.cderiv ρ' (fun z => f (z, x₀)) z₀‖
+      < ε * ρ' / ρ' := h_bound
+    _ = ε := mul_div_cancel_right₀ ε (ne_of_gt hρ')
 
 set_option maxHeartbeats 400000 in
 /-- Helper 1: p 1 applied to h equals deriv * h for Cauchy power series. -/
@@ -534,32 +600,28 @@ theorem osgood_lemma_prod [CompleteSpace E]
     _ ≤ c / 3 * ‖p‖ + c / 3 * ‖p‖ + c / 3 * ‖p‖ := by linarith
     _ = c * ‖p‖ := by ring
 
+/-! ### Osgood's Lemma (Fin m → ℂ version) -/
+
 /-- **Osgood's Lemma (Fin m → ℂ version)**: A continuous function on an open
     subset of ℂᵐ that is holomorphic in each coordinate separately (with the
     others fixed) is jointly holomorphic. -/
-theorem osgood_lemma {m : ℕ} {U : Set (Fin m → ℂ)} (hU : IsOpen U)
-    (f : (Fin m → ℂ) → ℂ)
-    (hf_cont : ContinuousOn f U)
-    (hf_sep : ∀ z ∈ U, ∀ i : Fin m,
-      DifferentiableAt ℂ (fun w => f (Function.update z i w)) (z i)) :
-    DifferentiableOn ℂ f U := by
+theorem osgood_lemma {m : ℕ} {U' : Set (Fin m → ℂ)} (hU' : IsOpen U')
+    (f' : (Fin m → ℂ) → ℂ)
+    (hf'_cont : ContinuousOn f' U')
+    (hf'_sep : ∀ z ∈ U', ∀ i : Fin m,
+      DifferentiableAt ℂ (fun w => f' (Function.update z i w)) (z i)) :
+    DifferentiableOn ℂ f' U' := by
   induction m with
   | zero =>
-    -- Fin 0 → ℂ is a singleton type, so U is a subsingleton set
     have : Subsingleton (Fin 0 → ℂ) := inferInstance
-    have hUsub : U.Subsingleton := fun a _ b _ => Subsingleton.elim a b
-    exact hUsub.differentiableOn
+    have hU'sub : U'.Subsingleton := fun a _ b _ => Subsingleton.elim a b
+    exact hU'sub.differentiableOn
   | succ n ih =>
-    -- At each point z, show DifferentiableWithinAt ℂ f U z
     intro z hz
-    -- Find a ball inside U
-    obtain ⟨ε, hε, hball⟩ := Metric.isOpen_iff.mp hU z hz
-    -- Use @Fin.cons with explicit non-dependent type to avoid elaboration issues
-    -- Define g(a, b) = f(Fin.cons a b) on ℂ × (Fin n → ℂ)
+    obtain ⟨ε, hε, hball⟩ := Metric.isOpen_iff.mp hU' z hz
     set cons' : ℂ → (Fin n → ℂ) → (Fin (n + 1) → ℂ) :=
       @Fin.cons n (fun _ => ℂ) with hcons'_def
-    set g : ℂ × (Fin n → ℂ) → ℂ := fun p => f (cons' p.1 p.2) with hg_def
-    -- Helper: cons' maps the product ball into ball(z, ε)
+    set g : ℂ × (Fin n → ℂ) → ℂ := fun p => f' (cons' p.1 p.2) with hg_def
     have hcons_in_ball : ∀ a ∈ Metric.ball (z 0) ε,
         ∀ b ∈ Metric.ball (Fin.tail z) ε,
         cons' a b ∈ Metric.ball z ε := by
@@ -572,7 +634,6 @@ theorem osgood_lemma {m : ℕ} {U : Set (Fin m → ℂ)} (hU : IsOpen U)
       | succ j =>
         simp only [hcons'_def, Fin.cons_succ]
         exact lt_of_le_of_lt (dist_le_pi_dist b (Fin.tail z) j) hb
-    -- cons' as a map from the product is continuous
     have hcons_cont : Continuous (fun p : ℂ × (Fin n → ℂ) => cons' p.1 p.2) := by
       apply continuous_pi; intro i
       refine Fin.cases ?_ (fun j => ?_) i
@@ -580,66 +641,472 @@ theorem osgood_lemma {m : ℕ} {U : Set (Fin m → ℂ)} (hU : IsOpen U)
         simp_rw [hcons'_def, Fin.cons_zero]; exact continuous_fst
       · show Continuous (fun p : ℂ × (Fin n → ℂ) => cons' p.1 p.2 j.succ)
         simp_rw [hcons'_def, Fin.cons_succ]; exact (continuous_apply j).comp continuous_snd
-    -- g is continuous on the product ball
     have hg_cont : ContinuousOn g
         (Metric.ball (z 0) ε ×ˢ Metric.ball (Fin.tail z) ε) :=
-      (hf_cont.mono (fun w hw => hball hw)).comp hcons_cont.continuousOn
+      (hf'_cont.mono (fun w hw => hball hw)).comp hcons_cont.continuousOn
         (fun ⟨a, b⟩ ⟨ha, hb⟩ => hcons_in_ball a ha b hb)
-    -- g is holomorphic in the first variable (from hf_sep for i = 0)
     have hg_z : ∀ b ∈ Metric.ball (Fin.tail z) ε,
         DifferentiableOn ℂ (fun a => g (a, b)) (Metric.ball (z 0) ε) := by
       intro b hb a ha
-      have hmem : cons' a b ∈ U := hball (hcons_in_ball a ha b hb)
-      have hsep := hf_sep (cons' a b) hmem 0
-      have hupd : (fun w => f (Function.update (cons' a b) 0 w)) =
+      have hmem : cons' a b ∈ U' := hball (hcons_in_ball a ha b hb)
+      have hsep := hf'_sep (cons' a b) hmem 0
+      have hupd : (fun w => f' (Function.update (cons' a b) 0 w)) =
           (fun w => g (w, b)) := by
         ext w; simp only [hg_def, hcons'_def, Fin.update_cons_zero]
       have hcons0 : cons' a b 0 = a := by simp [hcons'_def, Fin.cons_zero]
       rw [hupd, hcons0] at hsep
       exact hsep.differentiableWithinAt
-    -- g is holomorphic in the second variable (by induction hypothesis)
     have hg_x : ∀ a ∈ Metric.ball (z 0) ε,
         DifferentiableOn ℂ (fun b => g (a, b)) (Metric.ball (Fin.tail z) ε) := by
       intro a ha
-      -- Explicitly show the function to avoid unification timeout with g
-      show DifferentiableOn ℂ (fun b => f (cons' a b)) (Metric.ball (Fin.tail z) ε)
-      apply ih Metric.isOpen_ball (fun b => f (cons' a b))
-      · exact (hf_cont.mono (fun w hw => hball hw)).comp
+      show DifferentiableOn ℂ (fun b => f' (cons' a b)) (Metric.ball (Fin.tail z) ε)
+      apply ih Metric.isOpen_ball (fun b => f' (cons' a b))
+      · exact (hf'_cont.mono (fun w hw => hball hw)).comp
           (hcons_cont.comp (continuous_const.prodMk continuous_id)).continuousOn
           (fun b hb => hcons_in_ball a ha b hb)
       · intro b hb j
-        have hmem : cons' a b ∈ U := hball (hcons_in_ball a ha b hb)
-        have hsep := hf_sep (cons' a b) hmem j.succ
-        have hupd : (fun w => f (Function.update (cons' a b) j.succ w)) =
-            (fun w => f (cons' a (Function.update b j w))) := by
+        have hmem : cons' a b ∈ U' := hball (hcons_in_ball a ha b hb)
+        have hsep := hf'_sep (cons' a b) hmem j.succ
+        have hupd : (fun w => f' (Function.update (cons' a b) j.succ w)) =
+            (fun w => f' (cons' a (Function.update b j w))) := by
           ext w; simp only [hcons'_def]; congr 1; rw [← Fin.cons_update]
         have hconsj : cons' a b j.succ = b j := by simp [hcons'_def, Fin.cons_succ]
         rw [hupd, hconsj] at hsep
         exact hsep
-    -- Apply osgood_lemma_prod to g
     have hg_diff : DifferentiableOn ℂ g
         (Metric.ball (z 0) ε ×ˢ Metric.ball (Fin.tail z) ε) :=
       osgood_lemma_prod Metric.isOpen_ball Metric.isOpen_ball g hg_cont hg_z hg_x
-    -- g is DifferentiableAt at (z 0, Fin.tail z)
     have hg_at : DifferentiableAt ℂ g (z 0, Fin.tail z) := by
       have hmem : (z 0, Fin.tail z) ∈ Metric.ball (z 0) ε ×ˢ Metric.ball (Fin.tail z) ε :=
         ⟨Metric.mem_ball_self hε, Metric.mem_ball_self hε⟩
       exact (hg_diff _ hmem).differentiableAt
         ((Metric.isOpen_ball.prod Metric.isOpen_ball).mem_nhds hmem)
-    -- f(w) = g(w 0, Fin.tail w) by Fin.cons_self_tail
-    have hfg : ∀ w, f w = g (w 0, Fin.tail w) := by
+    have hfg : ∀ w, f' w = g (w 0, Fin.tail w) := by
       intro w; simp only [hg_def, hcons'_def, Fin.cons_self_tail]
-    -- ψ(w) = (w 0, Fin.tail w) is differentiable
     have hψ_diff : DifferentiableAt ℂ (fun w : Fin (n+1) → ℂ => (w 0, Fin.tail w)) z := by
       exact DifferentiableAt.prodMk (differentiableAt_apply (𝕜 := ℂ) 0 z)
         (differentiableAt_pi.mpr (fun j => by
           show DifferentiableAt ℂ (fun w : Fin (n+1) → ℂ => w j.succ) z
           exact differentiableAt_apply (𝕜 := ℂ) j.succ z))
-    -- f = g ∘ ψ is DifferentiableAt at z
-    have hf_at : DifferentiableAt ℂ f z := by
-      have : f = g ∘ (fun w => (w 0, Fin.tail w)) := by ext w; exact hfg w
+    have hf'_at : DifferentiableAt ℂ f' z := by
+      have : f' = g ∘ (fun w => (w 0, Fin.tail w)) := by ext w; exact hfg w
       rw [this]; exact hg_at.comp z hψ_diff
-    exact hf_at.differentiableWithinAt
+    exact hf'_at.differentiableWithinAt
+
+/-! ### Cauchy Integral with Holomorphic Parameter -/
+
+/-- The circle integral `∮ (ζ-z)⁻¹ f(ζ, L w) dζ` is differentiable in `w` when `f(ζ,·)` is
+    holomorphic and `f` is jointly continuous. Uses the Leibniz rule for parametric integrals
+    with a Cauchy estimate for the derivative bound. -/
+private theorem differentiableAt_circleIntegral_param_coord
+    [CompleteSpace E] [FiniteDimensional ℂ E]
+    {z₀ z : ℂ} {r : ℝ} (hr : 0 < r) (hzr : dist z z₀ < r)
+    {V : Set E} (hV : IsOpen V)
+    {f : ℂ → E → ℂ}
+    (hf_cont : ContinuousOn (fun p : ℂ × E => f p.1 p.2) (Metric.closedBall z₀ r ×ˢ V))
+    (hf_x_holo : ∀ ζ ∈ Metric.closedBall z₀ r, DifferentiableOn ℂ (f ζ) V)
+    {L : ℂ → E} (hL : Differentiable ℂ L) {w₀ : ℂ} (hLw₀ : L w₀ ∈ V) :
+    DifferentiableAt ℂ
+      (fun w => ∮ ζ in C(z₀, r), (ζ - z)⁻¹ • f ζ (L w)) w₀ := by
+  haveI : ProperSpace E := FiniteDimensional.proper ℂ E
+  haveI : ProperSpace ℂ := inferInstance
+  -- Neighborhood where L maps into V
+  obtain ⟨δ, hδ, hδV⟩ : ∃ δ > 0, ∀ w, dist w w₀ < δ → L w ∈ V :=
+    Metric.eventually_nhds_iff.mp (hL.continuous.isOpen_preimage V hV |>.mem_nhds
+      (Set.mem_preimage.mpr hLw₀))
+  -- Uniform bound M on |f| on the relevant compact set
+  have hcball_sub : L '' Metric.closedBall w₀ (3 * δ / 4) ⊆ V :=
+    fun _ ⟨w, hw, e⟩ => e ▸ hδV w (lt_of_le_of_lt (Metric.mem_closedBall.mp hw) (by linarith))
+  obtain ⟨M, hM⟩ := ((isCompact_closedBall z₀ r).prod
+    ((isCompact_closedBall w₀ (3 * δ / 4)).image hL.continuous)).exists_bound_of_continuousOn
+    (hf_cont.mono (Set.prod_mono le_rfl hcball_sub))
+  -- Differentiability of g_ζ(w) = f(ζ, L w) for ζ on the circle, w near w₀
+  have hg_diff : ∀ ζ ∈ Metric.closedBall z₀ r, ∀ w, dist w w₀ < δ →
+      DifferentiableAt ℂ (fun w => f ζ (L w)) w := by
+    intro ζ hζ w hw
+    exact ((hf_x_holo ζ hζ _ (hδV w hw)).differentiableAt
+      (hV.mem_nhds (hδV w hw))).comp w (hL w)
+  -- Cauchy estimate: ‖deriv g_ζ w‖ ≤ M / (δ/4) for w ∈ closedBall(w₀, δ/2)
+  have hderiv_bound : ∀ ζ ∈ Metric.closedBall z₀ r, ∀ w ∈ Metric.closedBall w₀ (δ / 2),
+      ‖deriv (fun w => f ζ (L w)) w‖ ≤ M / (δ / 4) := by
+    intro ζ hζ w hw
+    have hδ4 : (0 : ℝ) < δ / 4 := by positivity
+    have hw_near : ∀ η, dist η w ≤ δ / 4 → dist η w₀ < δ := by
+      intro η hη; calc dist η w₀ ≤ dist η w + dist w w₀ := dist_triangle η w w₀
+        _ ≤ δ / 4 + δ / 2 := by linarith [Metric.mem_closedBall.mp hw]
+        _ < δ := by linarith
+    apply Complex.norm_deriv_le_of_forall_mem_sphere_norm_le hδ4
+    · -- DiffContOnCl ℂ g_ζ (ball w (δ/4))
+      constructor
+      · intro η hη
+        exact (hg_diff ζ hζ η (hw_near η (Metric.mem_ball.mp hη).le)).differentiableWithinAt
+      · intro η hη
+        have := Metric.closure_ball_subset_closedBall hη
+        exact (hg_diff ζ hζ η (hw_near η (Metric.mem_closedBall.mp this))).continuousAt.continuousWithinAt
+    · intro η hη
+      exact hM ⟨ζ, L η⟩ ⟨hζ, ⟨η, Metric.mem_closedBall.mpr (by
+        calc dist η w₀ ≤ dist η w + dist w w₀ := dist_triangle η w w₀
+          _ = δ / 4 + dist w w₀ := by rw [Metric.mem_sphere.mp hη]
+          _ ≤ δ / 4 + δ / 2 := by linarith [Metric.mem_closedBall.mp hw]
+          _ ≤ 3 * δ / 4 := by linarith), rfl⟩⟩
+  -- Separation of z from the circle
+  have hd : 0 < r - dist z z₀ := by linarith
+  have hinv_bound : ∀ θ : ℝ, ‖(circleMap z₀ r θ - z)⁻¹‖ ≤ 1 / (r - dist z z₀) := by
+    intro θ; rw [norm_inv, one_div]
+    apply inv_anti₀ hd
+    have hζ_dist : dist (circleMap z₀ r θ) z₀ = r :=
+      Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
+    calc r - dist z z₀ = dist (circleMap z₀ r θ) z₀ - dist z z₀ := by rw [hζ_dist]
+      _ ≤ dist (circleMap z₀ r θ) z := by
+          linarith [dist_triangle (circleMap z₀ r θ) z z₀]
+      _ = ‖circleMap z₀ r θ - z‖ := dist_eq_norm _ _
+  -- Helper: continuity of integrand in θ for fixed w with L w ∈ V
+  have hF_cont : ∀ w, L w ∈ V → ContinuousOn (fun θ =>
+      deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ • f (circleMap z₀ r θ) (L w)))
+      (Set.uIoc 0 (2 * Real.pi)) := by
+    intro w hLw
+    apply ContinuousOn.smul ((contDiff_circleMap z₀ r).continuous_deriv le_top).continuousOn
+    apply ContinuousOn.smul
+    · exact ContinuousOn.inv₀
+        ((continuous_circleMap z₀ r).continuousOn.sub continuousOn_const) fun θ _ heq => by
+        rw [sub_eq_zero] at heq
+        have := Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
+        rw [heq] at this; linarith
+    · exact (hf_cont.mono (Set.prod_mono Metric.sphere_subset_closedBall (fun x hx => hx))).comp
+        ((continuous_circleMap z₀ r).continuousOn.prodMk continuousOn_const) fun θ _ =>
+        ⟨circleMap_mem_sphere z₀ hr.le θ, hLw⟩
+  -- Unfold circle integral
+  simp only [circleIntegral]
+  -- Apply Leibniz rule (derivative bound version)
+  set bnd := r * (1 / (r - dist z z₀)) * (M / (δ / 4))
+  suffices h : HasDerivAt (fun w => ∫ θ in (0:ℝ)..2 * Real.pi,
+      deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ • f (circleMap z₀ r θ) (L w)))
+    (∫ θ in (0:ℝ)..2 * Real.pi, deriv (circleMap z₀ r) θ •
+      ((circleMap z₀ r θ - z)⁻¹ • deriv (fun w => f (circleMap z₀ r θ) (L w)) w₀)) w₀
+    from h.differentiableAt
+  exact (intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    (s := Metric.closedBall w₀ (δ / 2)) (bound := fun _ => bnd)
+    (Metric.closedBall_mem_nhds w₀ (by positivity : (0:ℝ) < δ / 2))
+    (by -- AE measurability of F w for w near w₀
+      filter_upwards [Metric.ball_mem_nhds w₀ hδ] with w hw
+      exact (hF_cont w (hδV w hw)).aestronglyMeasurable measurableSet_uIoc)
+    (by -- IntervalIntegrable F w₀
+      exact (hF_cont w₀ hLw₀).intervalIntegrable_of_subset Set.uIoc_subset_uIcc_self
+        measurableSet_uIoc)
+    (by -- AE measurability of F' w₀ via limit of difference quotients
+      -- Define sequence hₙ = δ/(2(n+1)) → 0 with L(w₀+hₙ) ∈ V for all n
+      set hn : ℕ → ℂ := fun n => ((δ / (2 * ((n : ℝ) + 1)) : ℝ) : ℂ) with hn_def
+      have hn_pos : ∀ n, (0 : ℝ) < δ / (2 * ((n : ℝ) + 1)) := fun n => by positivity
+      have hn_ne : ∀ n, hn n ≠ 0 := fun n => by
+        simp only [hn_def, ne_eq, Complex.ofReal_eq_zero]; exact ne_of_gt (hn_pos n)
+      have hn_small : ∀ n, dist (w₀ + hn n) w₀ < δ := by
+        intro n; simp only [dist_eq_norm, add_sub_cancel_left, hn_def, Complex.norm_real,
+          abs_of_pos (hn_pos n)]
+        have hle : (2 : ℝ) ≤ 2 * ((n : ℝ) + 1) := by
+          have := Nat.cast_nonneg (α := ℝ) n; linarith
+        calc δ / (2 * ((n : ℝ) + 1)) ≤ δ / 2 :=
+              div_le_div_of_nonneg_left hδ (by positivity) hle
+          _ < δ := by linarith
+      have hn_tendsto : Tendsto hn atTop (𝓝 0) := by
+        rw [Metric.tendsto_atTop]; intro ε hε
+        obtain ⟨N, hN⟩ := exists_nat_gt (δ / (2 * ε))
+        exact ⟨N, fun n hn_ge => by
+          simp only [dist_zero_right, hn_def, Complex.norm_real, abs_of_pos (hn_pos n)]
+          have hNn : δ / (2 * ε) < (n : ℝ) + 1 := by
+            calc δ / (2 * ε) < ↑N := hN
+              _ ≤ ↑n := Nat.cast_le.mpr hn_ge
+              _ < (n : ℝ) + 1 := lt_add_one _
+          rwa [div_lt_iff (by positivity : (0:ℝ) < 2 * ((n : ℝ) + 1)),
+            ← div_lt_iff hε, div_lt_div_iff (by positivity : (0:ℝ) < 2 * ε)
+              (by positivity : (0:ℝ) < 2 * ((n : ℝ) + 1))]⟩
+      -- Each difference quotient is AE strongly measurable
+      apply aestronglyMeasurable_of_tendsto_ae (ι := ℕ) atTop
+        (f := fun n (θ : ℝ) =>
+          (deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
+            f (circleMap z₀ r θ) (L (w₀ + hn n))) -
+           deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
+            f (circleMap z₀ r θ) (L w₀))) / hn n)
+      · intro n
+        apply AEStronglyMeasurable.div_const
+        apply AEStronglyMeasurable.sub
+        · exact (hF_cont _ (hδV _ (hn_small n))).aestronglyMeasurable measurableSet_uIoc
+        · exact (hF_cont w₀ hLw₀).aestronglyMeasurable measurableSet_uIoc
+      · -- Pointwise convergence from HasDerivAt via slope
+        apply ae_of_all; intro θ
+        have hζ : circleMap z₀ r θ ∈ Metric.closedBall z₀ r :=
+          Metric.sphere_subset_closedBall (circleMap_mem_sphere z₀ hr.le θ)
+        have hda : HasDerivAt
+            (fun w => deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
+              f (circleMap z₀ r θ) (L w)))
+            (deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
+              deriv (fun w => f (circleMap z₀ r θ) (L w)) w₀))
+            w₀ :=
+          ((hg_diff _ hζ w₀ (by rw [dist_self]; exact hδ)).hasDerivAt.const_smul
+            ((circleMap z₀ r θ - z)⁻¹)).const_smul (deriv (circleMap z₀ r) θ)
+        -- Extract slope convergence from HasDerivAt
+        have hslope := hasDerivAt_iff_tendsto_slope.mp hda
+        -- Build Tendsto (fun n => w₀ + hn n) atTop (𝓝[≠] w₀)
+        have htend_ne : Tendsto (fun n => w₀ + hn n) atTop (𝓝[≠] w₀) :=
+          tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within _
+            (tendsto_const_nhds.add hn_tendsto)
+            (eventually_of_forall fun n => by simp [hn_ne n])
+        -- Compose: slope converges along the sequence
+        have hconv := hslope.comp htend_ne
+        -- slope f w₀ (w₀ + hn n) = (f(w₀+hn n) - f(w₀)) / hn n
+        simp only [Function.comp, slope, add_sub_cancel_left] at hconv
+        exact hconv)
+    (by -- Derivative bound: ‖F'(w, θ)‖ ≤ bnd
+      apply Filter.Eventually.of_forall; intro θ _; intro w hw
+      calc ‖deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
+            deriv (fun w => f (circleMap z₀ r θ) (L w)) w)‖
+          = ‖deriv (circleMap z₀ r) θ‖ * (‖(circleMap z₀ r θ - z)⁻¹‖ *
+            ‖deriv (fun w => f (circleMap z₀ r θ) (L w)) w‖) := by
+            rw [norm_smul, norm_smul]
+        _ ≤ r * (1 / (r - dist z z₀)) * (M / (δ / 4)) := by
+            apply mul_le_mul (mul_le_mul ?_ (hinv_bound θ) (norm_nonneg _) (by positivity))
+              (hderiv_bound _ (Metric.sphere_subset_closedBall
+                (circleMap_mem_sphere z₀ hr.le θ)) w hw) (norm_nonneg _) (by positivity)
+            rw [deriv_circleMap, norm_smul, Complex.norm_ofReal, Complex.norm_mul,
+              Complex.norm_ofReal, abs_of_pos hr, Complex.norm_I, mul_one])
+    intervalIntegrable_const
+    (by -- HasDerivAt for each θ and w ∈ s
+      apply Filter.Eventually.of_forall; intro θ _; intro w hw
+      have hwδ : dist w w₀ < δ :=
+        lt_of_le_of_lt (Metric.mem_closedBall.mp hw) (by linarith)
+      have hζ : circleMap z₀ r θ ∈ Metric.closedBall z₀ r :=
+        Metric.sphere_subset_closedBall (circleMap_mem_sphere z₀ hr.le θ)
+      exact ((hg_diff _ hζ w hwδ).hasDerivAt.const_smul
+        ((circleMap z₀ r θ - z)⁻¹)).const_smul (deriv (circleMap z₀ r) θ))).2
+
+/-- Helper: the Cauchy integral `G(z,x) = (2πi)⁻¹ ∮ (ζ-z)⁻¹ f(ζ,x) dζ` is
+    holomorphic in `x` for fixed `z`, given that `f(ζ,·)` is holomorphic for each `ζ`. -/
+private theorem cauchyIntegral_param_x_holo [CompleteSpace E] [FiniteDimensional ℂ E]
+    {z₀ : ℂ} {r : ℝ} (hr : 0 < r)
+    {V : Set E} (hV : IsOpen V)
+    (f : ℂ → E → ℂ)
+    (hf_cont : ContinuousOn (fun p : ℂ × E => f p.1 p.2)
+      (Metric.closedBall z₀ r ×ˢ V))
+    (hf_x_holo : ∀ ζ ∈ Metric.closedBall z₀ r, DifferentiableOn ℂ (f ζ) V)
+    (hG_cont : ContinuousOn
+      (fun p : ℂ × E => (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2)
+      (Metric.ball z₀ r ×ˢ V)) :
+    ∀ z ∈ Metric.ball z₀ r,
+      DifferentiableOn ℂ
+        (fun x => (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - z)⁻¹ • f ζ x) V := by
+  intro z hz
+  haveI : ProperSpace E := FiniteDimensional.proper ℂ E
+  have hzr := Metric.mem_ball.mp hz
+  -- Transfer to coordinates via φ : E ≃L[ℂ] (Fin n → ℂ)
+  set φ := (Module.finBasis ℂ E).equivFunL
+  have hV' : IsOpen (φ '' V) := φ.toHomeomorph.isOpenMap V hV
+  -- Define the transferred function
+  set H : (Fin (Module.finrank ℂ E) → ℂ) → ℂ :=
+    fun y => (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - z)⁻¹ • f ζ (φ.symm y)
+  -- Suffices: H is DifferentiableOn φ '' V
+  suffices hH : DifferentiableOn ℂ H (φ '' V) by
+    intro x₀ hx₀
+    have hda : DifferentiableAt ℂ (H ∘ φ) x₀ :=
+      ((hH _ ⟨x₀, hx₀, rfl⟩).differentiableAt (hV'.mem_nhds ⟨x₀, hx₀, rfl⟩)).comp
+        x₀ φ.toContinuousLinearMap.differentiableAt
+    have : (H ∘ φ) = fun x => (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - z)⁻¹ • f ζ x := by
+      ext x; simp [H, Function.comp, φ.symm_apply_apply]
+    rw [this] at hda
+    exact hda.differentiableWithinAt
+  -- Apply osgood_lemma to H
+  apply osgood_lemma hV' H
+  · -- ContinuousOn H (φ '' V)
+    show ContinuousOn (fun y => (2 * ↑Real.pi * I)⁻¹ •
+      ∮ ζ in C(z₀, r), (ζ - z)⁻¹ • f ζ (φ.symm y)) (φ '' V)
+    have : ContinuousOn (fun y => (fun p : ℂ × E =>
+        (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2)
+        (z, φ.symm y)) (φ '' V) :=
+      hG_cont.comp (continuous_const.prodMk φ.symm.continuous).continuousOn
+        (fun y (hy : y ∈ φ '' V) => by
+          obtain ⟨x, hx, rfl⟩ := hy
+          exact ⟨Metric.mem_ball.mpr hzr, by simp [φ.symm_apply_apply]; exact hx⟩)
+    convert this using 1
+  · -- Separately holomorphic in each coordinate
+    intro y hy i
+    obtain ⟨x₀, hx₀V, rfl⟩ := hy
+    -- H(update (φ x₀) i w) = (2πi)⁻¹ • ∮ (ζ-z)⁻¹ f(ζ, φ.symm(update (φ x₀) i w)) dζ
+    -- Use Leibniz rule for differentiating the circle integral in w
+    have hL_diff : Differentiable ℂ (fun w => φ.symm (Function.update (φ x₀) i w)) := by
+      apply φ.symm.differentiable.comp
+      exact differentiable_pi.mpr fun j => by
+        rcases eq_or_ne j i with rfl | hji
+        · exact differentiable_id.congr fun w => (Function.update_same i w (φ x₀)).symm
+        · exact (differentiable_const _).congr fun w => (Function.update_noteq hji w (φ x₀)).symm
+    have hLw₀_mem : φ.symm (Function.update (φ x₀) i (φ x₀ i)) ∈ V := by
+      rw [Function.update_eq_self, φ.symm_apply_apply]; exact hx₀V
+    exact (differentiableAt_circleIntegral_param_coord hr hzr hV hf_cont hf_x_holo
+      hL_diff hLw₀_mem).const_smul _
+
+/-- **Cauchy integral with holomorphic parameter**: If f(ζ, x) is continuous on
+    closedBall(z₀, r) × V and holomorphic in x for each ζ, then
+    G(z, x) = (2πi)⁻¹ · ∮ f(ζ, x) / (ζ - z) dζ is jointly holomorphic
+    on ball(z₀, r) × V.
+
+    The proof uses Osgood's lemma: G is continuous on ball × V, holomorphic
+    in z (by the Cauchy power series), and holomorphic in x (by parametric
+    differentiation under the integral sign). -/
+theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimensional ℂ E]
+    {z₀ : ℂ} {r : ℝ} (hr : 0 < r)
+    {V : Set E} (hV : IsOpen V)
+    (f : ℂ → E → ℂ)
+    (hf_cont : ContinuousOn (fun p : ℂ × E => f p.1 p.2)
+      (Metric.closedBall z₀ r ×ˢ V))
+    (hf_x_holo : ∀ ζ ∈ Metric.closedBall z₀ r, DifferentiableOn ℂ (f ζ) V) :
+    DifferentiableOn ℂ
+      (fun p : ℂ × E =>
+        (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2)
+      (Metric.ball z₀ r ×ˢ V) := by
+  -- Define G for readability
+  set G : ℂ × E → ℂ := fun p =>
+    (2 * ↑Real.pi * I)⁻¹ • ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2
+  -- Prove ContinuousOn as named hypothesis (needed for x-holomorphicity below)
+  have hG_cont : ContinuousOn G (Metric.ball z₀ r ×ˢ V) := by
+    -- G = (2πi)⁻¹ • (circle integral); suffices to show the integral is ContinuousOn
+    suffices h : ContinuousOn (fun p : ℂ × E =>
+        ∮ ζ in C(z₀, r), (ζ - p.1)⁻¹ • f ζ p.2) (Metric.ball z₀ r ×ˢ V)
+      from h.const_smul _
+    intro ⟨z', x'⟩ ⟨hz', hx'⟩
+    apply ContinuousAt.continuousWithinAt
+    simp only [circleIntegral]
+    haveI : ProperSpace E := FiniteDimensional.proper ℂ E
+    -- Distance from z' to the sphere
+    have hz'r : dist z' z₀ < r := Metric.mem_ball.mp hz'
+    set d := (r - dist z' z₀) / 2 with hd_def
+    have hd : 0 < d := by linarith
+    -- Compact neighborhood of x' inside V
+    obtain ⟨δ, hδ, hcball_V⟩ : ∃ δ > 0, Metric.closedBall x' δ ⊆ V := by
+      obtain ⟨ε, hε, hb⟩ := Metric.isOpen_iff.mp hV x' hx'
+      exact ⟨ε / 2, by positivity,
+        fun y hy => hb (lt_of_le_of_lt (Metric.mem_closedBall.mp hy) (by linarith))⟩
+    -- f bounded on compact sphere × closedBall(x', δ)
+    have hKsub : Metric.sphere z₀ r ×ˢ Metric.closedBall x' δ ⊆
+        Metric.closedBall z₀ r ×ˢ V :=
+      Set.prod_mono Metric.sphere_subset_closedBall hcball_V
+    obtain ⟨M, hM⟩ := ((isCompact_sphere z₀ r).prod
+      (isCompact_closedBall x' δ)).exists_bound_of_continuousOn (hf_cont.mono hKsub)
+    -- Neighborhood radius
+    set ε₀ := min d δ with hε₀_def
+    have hε₀ : 0 < ε₀ := lt_min hd hδ
+    -- Key facts about the neighborhood
+    have h_z_in_ball : ∀ p : ℂ × E, dist p (z', x') < ε₀ →
+        p.1 ∈ Metric.ball z₀ r := by
+      intro ⟨z, x⟩ hp
+      rw [Metric.mem_ball]
+      calc dist z z₀ ≤ dist z z' + dist z' z₀ := dist_triangle z z' z₀
+        _ < ε₀ + dist z' z₀ := by
+            have : dist z z' ≤ dist (z, x) (z', x') := by
+              simp [Prod.dist_eq, le_max_left]
+            linarith
+        _ ≤ d + dist z' z₀ := by linarith [min_le_left d δ]
+        _ < r := by linarith [hd_def]
+    have h_x_in_cball : ∀ p : ℂ × E, dist p (z', x') < ε₀ →
+        p.2 ∈ Metric.closedBall x' δ := by
+      intro ⟨z, x⟩ hp
+      rw [Metric.mem_closedBall]
+      calc dist x x' ≤ dist (z, x) (z', x') := by simp [Prod.dist_eq, le_max_right]
+        _ ≤ ε₀ := le_of_lt hp
+        _ ≤ δ := min_le_right d δ
+    have h_inv_bound : ∀ p : ℂ × E, dist p (z', x') < ε₀ → ∀ θ : ℝ,
+        ‖(circleMap z₀ r θ - p.1)⁻¹‖ ≤ 1 / d := by
+      intro ⟨z, x⟩ hp θ
+      rw [norm_inv, one_div]
+      apply inv_anti₀ hd
+      have hζ : dist (circleMap z₀ r θ) z₀ = r :=
+        Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
+      have hfst : dist z z' ≤ dist (z, x) (z', x') := by
+        simp [Prod.dist_eq, le_max_left]
+      calc d ≤ r - dist z' z₀ - dist z z' := by linarith [min_le_left d δ]
+        _ ≤ dist (circleMap z₀ r θ) z₀ - dist z₀ z' - dist z z' := by
+              rw [hζ, dist_comm z₀ z']
+        _ ≤ dist (circleMap z₀ r θ) z := by
+              linarith [dist_triangle (circleMap z₀ r θ) z z₀,
+                dist_triangle z z' z₀, dist_comm z' z₀]
+        _ = ‖circleMap z₀ r θ - z‖ := dist_eq_norm_sub _ _
+    have h_f_bound : ∀ p : ℂ × E, dist p (z', x') < ε₀ → ∀ θ : ℝ,
+        ‖f (circleMap z₀ r θ) p.2‖ ≤ M := by
+      intro ⟨z, x⟩ hp θ
+      exact hM ⟨circleMap z₀ r θ, x⟩ ⟨circleMap_mem_sphere z₀ hr.le θ, h_x_in_cball ⟨z, x⟩ hp⟩
+    -- Apply dominated convergence for continuity
+    apply intervalIntegral.continuousAt_of_dominated_interval
+      (bound := fun _ => r * (1 / d) * M)
+    · -- AEStronglyMeasurable of integrand for p near p₀
+      filter_upwards [Metric.ball_mem_nhds (z', x') hε₀] with p hp
+      apply (ContinuousOn.aestronglyMeasurable · measurableSet_uIoc)
+      apply ContinuousOn.smul ((contDiff_circleMap z₀ r).continuous_deriv le_top).continuousOn
+      apply ContinuousOn.smul
+      · -- (circleMap θ - z)⁻¹ continuous in θ on uIoc
+        apply ContinuousOn.inv₀
+          ((continuous_circleMap z₀ r).continuousOn.sub continuousOn_const) fun θ _ heq => by
+          rw [sub_eq_zero] at heq
+          have h1 := Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
+          rw [heq] at h1; exact absurd (Metric.mem_ball.mp (h_z_in_ball p hp)) (not_lt.mpr h1.ge)
+      · -- f(circleMap θ, x) continuous in θ on uIoc
+        apply ContinuousOn.comp (hf_cont.mono hKsub)
+          ((continuous_circleMap z₀ r).continuousOn.prodMk continuousOn_const)
+          fun θ _ => ⟨circleMap_mem_sphere z₀ hr.le θ, h_x_in_cball p hp⟩
+    · -- Uniform bound
+      filter_upwards [Metric.ball_mem_nhds (z', x') hε₀] with p hp
+      apply Eventually.of_forall; intro θ; intro _
+      calc ‖deriv (circleMap z₀ r) θ • (circleMap z₀ r θ - p.1)⁻¹ •
+              f (circleMap z₀ r θ) p.2‖
+          = ‖deriv (circleMap z₀ r) θ‖ * ‖(circleMap z₀ r θ - p.1)⁻¹‖ *
+              ‖f (circleMap z₀ r θ) p.2‖ := by
+              rw [norm_smul, norm_smul, mul_assoc]
+        _ ≤ r * (1 / d) * M := by
+            gcongr
+            · simp only [deriv_circleMap, norm_smul, norm_mul, norm_circleMap_zero,
+                norm_I, mul_one]; exact le_of_eq (abs_of_pos hr)
+            · exact h_inv_bound p hp θ
+            · exact h_f_bound p hp θ
+    · -- Bound integrable (constant)
+      exact intervalIntegrable_const
+    · -- Pointwise continuity of integrand in p at p₀
+      apply Eventually.of_forall; intro θ; intro _
+      apply ContinuousAt.smul continuousAt_const
+      apply ContinuousAt.smul
+      · -- (circleMap θ - p.1)⁻¹ ContinuousAt in p
+        apply ContinuousAt.inv₀ (continuousAt_const.sub continuous_fst.continuousAt)
+        intro heq; rw [sub_eq_zero] at heq
+        have h1 := Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
+        rw [heq] at h1; simp only [Prod.fst] at h1; linarith
+      · -- f(circleMap θ, p.2) ContinuousAt in p
+        -- Factor as (fun x => f (circleMap z₀ r θ) x) ∘ Prod.snd
+        -- f(circleMap θ, ·) is ContinuousOn V (slice of hf_cont)
+        have hfζ_cont : ContinuousOn (fun x => f (circleMap z₀ r θ) x) V :=
+          hf_cont.comp (continuous_const.prodMk continuous_id).continuousOn
+            (fun x hx => ⟨Metric.sphere_subset_closedBall
+              (circleMap_mem_sphere z₀ hr.le θ), hx⟩)
+        exact (hfζ_cont.continuousAt (hV.mem_nhds hx')).comp
+          continuous_snd.continuousAt
+  have hG_z : ∀ x ∈ V, DifferentiableOn ℂ (fun z => G (z, x)) (Metric.ball z₀ r) := by
+    -- For fixed x, the Cauchy integral has a power series in z
+    intro x hx
+    -- f(·, x) is continuous on closedBall, hence circle-integrable
+    have hfx_cont : ContinuousOn (fun ζ => f ζ x) (Metric.closedBall z₀ r) :=
+      hf_cont.comp (continuous_id.prodMk continuous_const).continuousOn
+        (fun ζ hζ => ⟨hζ, hx⟩)
+    have hci : CircleIntegrable (fun ζ => f ζ x) z₀ r :=
+      (hfx_cont.mono Metric.sphere_subset_closedBall).circleIntegrable hr.le
+    -- Power series representation
+    set R : NNReal := ⟨r, hr.le⟩
+    have hR : (0 : NNReal) < R := by exact_mod_cast hr
+    have hps := hasFPowerSeriesOn_cauchy_integral hci hR
+    -- Convert DifferentiableOn from EMetric.ball to Metric.ball
+    intro z hz
+    have hz_emem : (z : ℂ) ∈ EMetric.ball z₀ (↑R) := by
+      rw [EMetric.mem_ball, edist_dist]
+      have : ENNReal.ofReal r = (↑R : ENNReal) := by
+        simp [R, ENNReal.ofReal_eq_coe_nnreal hr.le]
+      rw [← this]
+      exact (ENNReal.ofReal_lt_ofReal_iff_of_nonneg dist_nonneg).mpr (Metric.mem_ball.mp hz)
+    exact (hps.analyticAt_of_mem hz_emem).differentiableAt.differentiableWithinAt
+  have hG_x : ∀ z ∈ Metric.ball z₀ r, DifferentiableOn ℂ (fun x => G (z, x)) V :=
+    cauchyIntegral_param_x_holo hr hV f hf_cont hf_x_holo hG_cont
+  exact osgood_lemma_prod Metric.isOpen_ball hV G hG_cont hG_z hG_x
 
 /-! ### 1D Extension Across the Real Line
 
