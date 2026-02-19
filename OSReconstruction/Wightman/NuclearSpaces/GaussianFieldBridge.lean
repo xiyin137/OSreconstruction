@@ -117,31 +117,68 @@ abbrev gfCrossMomentEqCovariance := @cross_moment_eq_covariance
 /-- The pairing ω(f) is Gaussian-distributed (sorry-free). -/
 abbrev gfPairingIsGaussian := @pairing_is_gaussian
 
+/-! ### Hahn-Banach for seminorms in locally convex spaces
+
+The key tool for the bridge: given a continuous seminorm `q` on a locally
+convex TVS, there exists a continuous linear functional `φ` with `φ(f) = q(f)`
+and `|φ(x)| ≤ q(x)` for all `x`. This is a standard corollary of the
+Hahn-Banach extension theorem. -/
+
+/-- **Hahn-Banach for continuous seminorms.**
+
+For a continuous seminorm `q` and any vector `f`, there exists a continuous
+linear functional `φ` attaining `q` at `f` and bounded by `q` everywhere. -/
+lemma exists_CLF_le_seminorm
+    {E : Type*} [AddCommGroup E] [Module ℝ E]
+    [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
+    (q : Seminorm ℝ E) (hq : Continuous q) (f : E) :
+    ∃ φ : E →L[ℝ] ℝ, φ f = q f ∧ ∀ x, |φ x| ≤ q x := by
+  by_cases hf : f = 0
+  · exact ⟨0, by simp [hf, map_zero], fun x => by simp⟩
+  · -- Define linear functional on span {f} with value q(f) at f
+    let f₀ := LinearPMap.mkSpanSingleton (K := ℝ) f (q f) hf
+    -- Apply Hahn-Banach extension with N = q (sublinear)
+    obtain ⟨g, hg_ext, hg_le⟩ := exists_extension_of_le_sublinear f₀ q
+      (fun c hc x => by -- positive homogeneity: q(c • x) = c * q(x) for c > 0
+        rw [map_smul_eq_mul]; simp [abs_of_pos hc])
+      (fun x y => map_add_le_add q x y) -- subadditivity
+      (fun ⟨x, hx⟩ => by -- bound: f₀(x) ≤ q(x) for x ∈ span {f}
+        obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hx
+        rw [LinearPMap.mkSpanSingleton'_apply]
+        simp only [smul_eq_mul]
+        calc c * q f ≤ |c| * q f :=
+              mul_le_mul_of_nonneg_right (le_abs_self c) (apply_nonneg q f)
+          _ = q (c • f) := by rw [map_smul_eq_mul]; simp)
+    -- g(f) = q(f)
+    have hg_f : g f = q f := by
+      have h := hg_ext ⟨f, Submodule.mem_span_singleton.mpr ⟨1, one_smul _ _⟩⟩
+      simp only [f₀, LinearPMap.mkSpanSingleton'_apply_self] at h
+      exact h
+    -- |g(x)| ≤ q(x) from g(x) ≤ q(x) and g(-x) ≤ q(-x) = q(x)
+    have hg_abs : ∀ x, |g x| ≤ q x := by
+      intro x; rw [abs_le]
+      constructor
+      · have h1 := hg_le (-x)
+        rw [map_neg, map_neg_eq_map] at h1
+        linarith
+      · exact hg_le x
+    -- g is continuous: bounded by continuous seminorm, hence continuous at 0
+    have hg_cont : Continuous g := by
+      apply continuous_of_continuousAt_zero g.toAddMonoidHom
+      rw [ContinuousAt, map_zero, Metric.tendsto_nhds]
+      intro ε hε
+      have hqε : {x : E | q x < ε} ∈ nhds (0 : E) :=
+        (hq.isOpen_preimage _ isOpen_Iio).mem_nhds (by simp [map_zero, hε])
+      exact Filter.mem_of_superset hqε (fun x hx => by
+        simp only [Real.dist_eq, sub_zero]
+        exact (hg_abs x).trans_lt hx)
+    exact ⟨⟨g, hg_cont⟩, hg_f, hg_abs⟩
+
 /-! ### Bridge: Dynin-Mityagin → Pietsch
 
 We prove that `GaussianField.NuclearSpace E` implies `NuclearSpace E` (Pietsch).
-The only sorry is a Hahn-Banach / triangle inequality lemma for seminorms
-applied to Schauder expansions. -/
-
-/-- **Hahn-Banach + triangle inequality for Schauder expansions.**
-
-For a continuous seminorm `q` and a Schauder basis with expansion
-`f = ∑ₘ cₘ(f) · ψₘ`, the triangle inequality gives
-`q(f) ≤ ∑ₘ |cₘ(f)| · q(ψₘ)`.
-
-This requires:
-1. The expansion converges in the topology (so `q` of partial sums converges)
-2. Lower semicontinuity of `q` (automatic for continuous seminorms)
-3. The triangle inequality for seminorms on series
-
-The proof combines the Hahn-Banach theorem (dual characterization of seminorms)
-with the Schauder expansion. -/
-lemma seminorm_le_nuclear_expansion
-    {E : Type*} [AddCommGroup E] [Module ℝ E]
-    [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
-    [hN : GaussianField.NuclearSpace E]
-    (q : Seminorm ℝ E) (hq : Continuous q) (f : E) :
-    q f ≤ ∑' m, |hN.coeff m f| * q (hN.basis m) := by sorry
+The proof uses the Hahn-Banach lemma above to establish the key seminorm bound
+from the Schauder expansion. -/
 
 /-- Auxiliary: a finset sup of seminorms applied to a sequence with polynomial
 growth in each seminorm has a uniform polynomial bound.
@@ -182,6 +219,77 @@ private lemma finset_sup_poly_bound {E : Type*} [AddCommGroup E] [Module ℝ E]
         _ ≤ (Ca + D₁) * (1 + (m : ℝ)) ^ (max ta S₁) :=
             mul_le_mul_of_nonneg_right (by linarith) (pow_nonneg (le_of_lt h1m) _)
     exact sup_le hle_sup_left hle_sup_right
+
+/-- **Seminorm bound from Schauder expansion.**
+
+For a continuous seminorm `q` and a Schauder basis with expansion
+`f = ∑ₘ cₘ(f) · ψₘ`, the triangle inequality gives
+`q(f) ≤ ∑ₘ |cₘ(f)| · q(ψₘ)`.
+
+The proof uses Hahn-Banach to find a CLF `φ` with `φ(f) = q(f)` and `|φ| ≤ q`,
+then applies the Schauder expansion to `φ` and bounds the resulting tsum. -/
+lemma seminorm_le_nuclear_expansion
+    {E : Type*} [AddCommGroup E] [Module ℝ E]
+    [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
+    [hN : GaussianField.NuclearSpace E]
+    (q : Seminorm ℝ E) (hq : Continuous q) (f : E) :
+    q f ≤ ∑' m, |hN.coeff m f| * q (hN.basis m) := by
+  -- Step 1: Hahn-Banach gives φ with φ(f) = q(f) and |φ| ≤ q
+  obtain ⟨φ, hφf, hφq⟩ := exists_CLF_le_seminorm q hq f
+  -- Step 2: Summability of the target series
+  -- |coeff m f| * q(basis m) is summable from coeff_decay + basis_growth
+  have hsumm : Summable (fun m => |hN.coeff m f| * q (hN.basis m)) := by
+    -- Bound q by defining seminorms
+    obtain ⟨s₁, C₁, hC₁ne, hqbound⟩ := Seminorm.bound_of_continuous hN.h_with q hq
+    have hC₁_pos : (0 : ℝ) < C₁ := by positivity
+    -- Basis growth for s₁.sup hN.p
+    have hgrowth : ∀ i ∈ s₁, ∃ C > 0, ∃ t : ℕ,
+        ∀ m, hN.p i (hN.basis m) ≤ C * (1 + (m : ℝ)) ^ t :=
+      fun i _ => hN.basis_growth i
+    classical
+    obtain ⟨D, hD, S, hDbound⟩ := finset_sup_poly_bound hN.p s₁ hN.basis hgrowth
+    -- Coefficient decay
+    obtain ⟨C₂, hC₂, s₂, hcoeff⟩ := hN.coeff_decay (S + 2)
+    -- Each term: |coeff m f| * q(basis m) ≤ const / (1+m)^2
+    have h1m_pos : ∀ m : ℕ, (0 : ℝ) < 1 + (m : ℝ) := fun m => by positivity
+    apply Summable.of_nonneg_of_le (fun m => mul_nonneg (abs_nonneg _) (apply_nonneg q _))
+    · intro m
+      calc |hN.coeff m f| * q (hN.basis m)
+          ≤ |hN.coeff m f| * ((C₁ : ℝ) * (s₁.sup hN.p) (hN.basis m)) := by
+            apply mul_le_mul_of_nonneg_left _ (abs_nonneg _)
+            have h := hqbound (hN.basis m)
+            simp [NNReal.smul_def] at h; exact h
+        _ ≤ |hN.coeff m f| * ((C₁ : ℝ) * (D * (1 + (m : ℝ)) ^ S)) := by
+            apply mul_le_mul_of_nonneg_left _ (abs_nonneg _)
+            exact mul_le_mul_of_nonneg_left (hDbound m) (le_of_lt hC₁_pos)
+        _ = (|hN.coeff m f| * (1 + (m : ℝ)) ^ (S + 2)) *
+            ((C₁ : ℝ) * D / (1 + (m : ℝ)) ^ 2) := by
+            rw [pow_add]; field_simp
+        _ ≤ (C₂ * (s₂.sup hN.p) f) * ((C₁ : ℝ) * D / (1 + (m : ℝ)) ^ 2) := by
+            apply mul_le_mul_of_nonneg_right (hcoeff f m)
+            apply div_nonneg (mul_nonneg (le_of_lt hC₁_pos) (le_of_lt hD))
+            positivity
+        _ = C₂ * (s₂.sup hN.p) f * (C₁ : ℝ) * D * (1 / ((m : ℝ) + 1) ^ 2) := by
+            field_simp; ring
+    · -- Summable: const * ∑ 1/(m+1)^2
+      have hsumm_shift : Summable (fun m : ℕ => (1 : ℝ) / ((m : ℝ) + 1) ^ 2) := by
+        have := (summable_nat_add_iff 1).mpr
+          (Real.summable_one_div_nat_pow.mpr (by norm_num : 1 < 2))
+        exact this.congr (fun m => by push_cast; ring_nf)
+      exact (hsumm_shift.const_smul (C₂ * (s₂.sup hN.p) f * (C₁ : ℝ) * D)).congr
+        (fun m => by simp [smul_eq_mul])
+  -- Step 3: Summability of the expansion terms (bounded by the above)
+  have hsumm' : Summable (fun m => hN.coeff m f * φ (hN.basis m)) :=
+    hsumm.of_norm_bounded (fun m => by
+      rw [Real.norm_eq_abs, abs_mul]
+      exact mul_le_mul_of_nonneg_left (hφq _) (abs_nonneg _))
+  -- Step 4: Apply expansion axiom and bound the tsum
+  rw [← hφf, hN.expansion φ f]
+  -- Each term: coeff m f * φ(basis m) ≤ |coeff m f| * q(basis m)
+  exact hsumm'.tsum_le_tsum (fun m =>
+    le_trans (le_abs_self _)
+      (le_trans (le_of_eq (abs_mul _ _))
+        (mul_le_mul_of_nonneg_left (hφq _) (abs_nonneg _)))) hsumm
 
 /-- **Dynin-Mityagin implies Pietsch nuclearity.**
 
