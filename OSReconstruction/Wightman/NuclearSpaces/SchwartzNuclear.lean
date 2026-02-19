@@ -6,34 +6,39 @@ Authors: ModularPhysics Contributors
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 import Mathlib.RingTheory.Polynomial.Hermite.Gaussian
 import OSReconstruction.Wightman.NuclearSpaces.NuclearSpace
+import OSReconstruction.Wightman.NuclearSpaces.GaussianFieldBridge
 
 /-!
 # Schwartz Space is Nuclear
 
-This file proves that the Schwartz space S(ℝⁿ) is a nuclear space.
+This file proves that the Schwartz space S(ℝⁿ) is a nuclear space, using two
+complementary characterizations:
+
+1. **Pietsch (OSReconstruction.NuclearSpace)**: nuclear dominance by seminorms.
+   The `NuclearFrechet` presentation and `SchwartzMap.instNuclearSpace` use this.
+
+2. **Dynin-Mityagin (GaussianField.NuclearSpace)**: Schauder basis with rapid decay.
+   This is imported from the `gaussian-field` library via `GaussianFieldBridge`.
+   The sorry-free Hermite function infrastructure lives there.
 
 ## Main Results
 
 * `SchwartzMap.nuclearFrechet` - Schwartz space presented as a nuclear Fréchet space
-* `SchwartzMap.instNuclearSpace` - S(ℝⁿ, ℝ) is a nuclear space
+* `SchwartzMap.instNuclearSpace` - S(ℝⁿ, ℝ) is nuclear (Pietsch, depends on sorry)
+* `GaussianField.NuclearSpace (SchwartzMap D ℝ)` - S(D, ℝ) is nuclear (Dynin-Mityagin,
+  sorry-free from gaussian-field, available via GaussianFieldBridge import)
 
-## Mathematical Background
+## Hermite Function Infrastructure
 
-The Schwartz space S(ℝⁿ) = S(ℝⁿ, ℝ) consists of smooth functions f : ℝⁿ → ℝ such that
-all derivatives decay faster than any polynomial:
-  sup_x |x^α ∂^β f(x)| < ∞  for all multi-indices α, β.
+The Hermite function definitions and theorems in this file are **superseded** by the
+sorry-free versions from gaussian-field. Use the `gf`-prefixed re-exports from
+`GaussianFieldBridge`:
 
-The topology on S(ℝⁿ) is defined by the family of seminorms:
-  p_{k,l}(f) = sup_x ‖x‖^k · ‖iteratedFDeriv ℝ l f x‖
-
-**Nuclearity proof sketch** (following Gel'fand-Vilenkin):
-1. The seminorms {p_{k,l}} define a Fréchet topology on S(ℝⁿ)
-2. The Hermite functions h_m(x) = H_m(x) exp(-x²/2) (normalized) form an
-   orthonormal basis of L²(ℝⁿ) that lies in S(ℝⁿ)
-3. For any p_{k,l}, the Hermite expansion f = Σ_m ⟨f, h_m⟩ h_m satisfies
-   p_{k,l}(h_m) ≤ C · m^{-N} for sufficiently large N depending on k', l'
-4. This means the "identity" from (S, p_{k',l'}) to (S, p_{k,l}) is nuclear
-   when k', l' are chosen large enough (nuclear trace converges)
+* `gfHermiteFunction` — Hermite function definition
+* `gfHermiteFunction_schwartz` — Schwartz membership (sorry-free)
+* `gfHermiteFunction_orthonormal` — L² orthonormality (sorry-free)
+* `gfHermiteFunction_seminorm_bound` — seminorm growth bounds (sorry-free)
+* `gfHermiteFunction_complete` — completeness in L² (sorry-free)
 
 ## References
 
@@ -186,49 +191,66 @@ def SchwartzMap.nuclearFrechet (n : ℕ) : NuclearFrechet where
     -- The Hermite coefficients satisfy |⟨f, h_m⟩| ≤ C · p_{k+N,k+N}(f) · m^{-N}
     -- for any N, where C depends on N and n.
     -- Choosing N large enough (N > n/2 + 1) makes the nuclear trace converge.
+    --
+    -- NOTE: The sorry-free proof of nuclearity exists in gaussian-field via
+    -- GaussianField.NuclearSpace (the Dynin-Mityagin characterization).
+    -- This Pietsch-style nuclear_step remains sorry'd pending the bridge
+    -- between the two characterizations.
     sorry
 
 /-! ### Schwartz Space is Nuclear -/
 
-/-- **The Schwartz space S(ℝⁿ, ℝ) is a nuclear space.**
+/-- **The Schwartz space S(ℝⁿ, ℝ) is a nuclear space (Pietsch characterization).**
 
     This follows from the nuclear Fréchet presentation: the Hermite function
     expansion provides the nuclear factorization at each level.
 
-    This is the key structural theorem needed for Minlos' theorem to apply
-    to quantum field theory: it allows us to construct probability measures
-    on the space of tempered distributions S'(ℝⁿ). -/
+    **Note:** A sorry-free `GaussianField.NuclearSpace` instance for `SchwartzMap D ℝ`
+    is available from the gaussian-field library (Dynin-Mityagin characterization).
+    Import `GaussianFieldBridge` to use it. -/
 theorem SchwartzMap.instNuclearSpace (n : ℕ) :
     NuclearSpace (𝓢(EuclideanSpace ℝ (Fin n), ℝ)) :=
   (SchwartzMap.nuclearFrechet n).toNuclearSpace
 
-/-! ### Hermite Function Infrastructure -/
+/-! ### Hermite Function Infrastructure
+
+**NOTE:** The definitions and theorems below are superseded by sorry-free versions
+from gaussian-field. Prefer the `gf`-prefixed re-exports from `GaussianFieldBridge`:
+- `gfHermiteFunction` / `gfHermiteFunction_schwartz` / `gfHermiteFunction_orthonormal`
+- `gfHermiteFunction_seminorm_bound` / `gfHermiteFunction_complete`
+
+The definitions below use Mathlib's physicists' Hermite polynomials, while
+gaussian-field uses probabilist Hermite polynomials. The two are related by
+a √2 rescaling. -/
 
 /-- The normalized Hermite functions form an orthonormal basis of L²(ℝ).
     h_m(x) = (2^m m! √π)^{-1/2} · H_m(x) · exp(-x²/2)
     where H_m is the m-th Hermite polynomial.
 
     Mathlib has `Polynomial.hermite m` (the physicists' Hermite polynomial).
-    The Hermite *function* multiplies by the Gaussian weight. -/
+    The Hermite *function* multiplies by the Gaussian weight.
+
+    **Superseded** by `gfHermiteFunction` from gaussian-field. -/
 def hermiteFunction (m : ℕ) : ℝ → ℝ :=
   fun x => ((Polynomial.hermite m).map (Int.castRingHom ℝ)).eval x *
     Real.exp (-x ^ 2 / 2) /
     Real.sqrt (2 ^ m * m.factorial * Real.sqrt Real.pi)
 
 /-- Hermite functions are in the Schwartz space.
-    Each h_m is smooth and rapidly decreasing (polynomial × Gaussian). -/
+    **Superseded** by `gfHermiteFunction_schwartz` (sorry-free). -/
 theorem hermiteFunction_schwartz (m : ℕ) :
     ∃ (f : 𝓢(ℝ, ℝ)), ∀ x, f x = hermiteFunction m x := by
   sorry
 
-/-- Hermite functions are orthonormal in L²(ℝ). -/
+/-- Hermite functions are orthonormal in L²(ℝ).
+    **Superseded** by `gfHermiteFunction_orthonormal` (sorry-free). -/
 theorem hermiteFunction_orthonormal :
     ∀ m₁ m₂ : ℕ, ∫ x : ℝ, hermiteFunction m₁ x * hermiteFunction m₂ x =
       if m₁ = m₂ then 1 else 0 := by
   sorry
 
 /-- The rapid decay property: Schwartz seminorms of Hermite functions decay polynomially.
-    p_{k,l}(h_m) ≤ C_{k,l,N} · m^{-N} for any N when k, l are fixed. -/
+    **Superseded** by `gfHermiteFunction_seminorm_bound` (sorry-free). -/
 theorem hermiteFunction_seminorm_decay (k l N : ℕ) :
     ∃ C : ℝ, 0 < C ∧ ∀ m : ℕ, 0 < m →
       SchwartzMap.schwartzSeminorm ℝ ℝ k l

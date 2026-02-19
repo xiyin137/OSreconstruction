@@ -8,6 +8,7 @@ import Mathlib.Analysis.Distribution.FourierSchwartz
 import Mathlib.Analysis.Fourier.FourierTransform
 import Mathlib.Analysis.Complex.OperatorNorm
 import OSReconstruction.Wightman.NuclearSpaces.BochnerMinlos
+import OSReconstruction.Wightman.NuclearSpaces.GaussianFieldBridge
 import OSReconstruction.Wightman.NuclearSpaces.SchwartzNuclear
 
 /-!

@@ -12,6 +12,7 @@ import Mathlib.Analysis.InnerProductSpace.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import OSReconstruction.Wightman.NuclearSpaces.NuclearSpace
+import OSReconstruction.Wightman.NuclearSpaces.GaussianFieldBridge
 import OSReconstruction.Wightman.NuclearSpaces.Helpers.PositiveDefiniteKernels
 
 /-!
