@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.TubeDomainExtension
 import OSReconstruction.SCV.IdentityTheorem
+import Mathlib.Analysis.Distribution.SchwartzSpace
 
 /-!
 # Distribution Theory Axioms for Tube Domains
@@ -95,13 +96,12 @@ namespace SCV
 axiom continuous_boundary_tube {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (h_bv : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (T : (Fin m → ℝ) → ℂ), ContinuousOn T Set.univ ∧
-        ∀ (f : (Fin m → ℝ) → ℂ), MeasureTheory.Integrable f →
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (∫ x, T x * f x)))
+    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ),
+      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
     (x : Fin m → ℝ) :
     ContinuousWithinAt F (TubeDomain C) (realEmbed x)
 
@@ -122,16 +122,15 @@ axiom distributional_uniqueness_tube {m : ℕ}
     {F₁ F₂ : (Fin m → ℂ) → ℂ}
     (hF₁ : DifferentiableOn ℂ F₁ (TubeDomain C))
     (hF₂ : DifferentiableOn ℂ F₂ (TubeDomain C))
-    -- Same distributional boundary values: for all approach directions η ∈ C
-    -- and all integrable test functions f, the boundary integrals agree.
-    (h_agree : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∀ (f : (Fin m → ℝ) → ℂ), MeasureTheory.Integrable f →
-        Filter.Tendsto (fun ε : ℝ =>
-          ∫ x : Fin m → ℝ,
-            (F₁ (fun i => ↑(x i) + ↑ε * ↑(η i) * I) -
-             F₂ (fun i => ↑(x i) + ↑ε * ↑(η i) * I)) * f x)
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds 0)) :
+    -- Same distributional boundary values: for all Schwartz test functions f
+    -- and approach directions η ∈ C, the boundary integrals of (F₁-F₂)*f → 0.
+    (h_agree : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin m → ℝ,
+          (F₁ (fun i => ↑(x i) + ↑ε * ↑(η i) * I) -
+           F₂ (fun i => ↑(x i) + ↑ε * ↑(η i) * I)) * f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds 0)) :
     ∀ z ∈ TubeDomain C, F₁ z = F₂ z
 
 /-! ### Axiom 2: Polynomial Growth Estimates -/

@@ -380,15 +380,30 @@ theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
   have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
     differentiableOn_flatten hF
   -- The boundary value condition transfers through the flattening
-  have hG_bv : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (T : (Fin (n * (d + 1)) → ℝ) → ℂ), ContinuousOn T Set.univ ∧
-        ∀ (f : (Fin (n * (d + 1)) → ℝ) → ℂ), MeasureTheory.Integrable f →
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin (n * (d + 1)) → ℝ,
-              G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (∫ x, T x * f x)) := by
-    sorry -- Transport of BV condition through flattening
+  -- Use SchwartzMap.compCLMOfContinuousLinearEquiv to compose Schwartz functions
+  -- with the flattening equivalence
+  have hG_bv : ∃ (T : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ),
+      ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) (η : Fin (n * (d + 1)) → ℝ),
+        η ∈ ForwardConeFlat d n →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin (n * (d + 1)) → ℝ,
+            G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)) := by
+    obtain ⟨T, hT⟩ := h_bv
+    -- Pull back Schwartz functions through the real flattening
+    let eR := flattenCLEquivReal n (d + 1)
+    let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+    refine ⟨fun f => T (pullback f), fun f η hη => ?_⟩
+    -- η ∈ ForwardConeFlat = eR '' ForwardConeAbs, so η = eR η' for some η' ∈ ForwardConeAbs
+    obtain ⟨η', hη', rfl⟩ := hη
+    -- pullback f = f ∘ eR.symm, a Schwartz function on NPointDomain
+    -- The key: G(x + iεη_flat) = F(eR.symm(x) + iε·η') when η_flat = eR(η')
+    -- So ∫ G(x+iεη_flat)f(x)dx = ∫ F(eR.symm x + iεη')f(x)dx
+    -- which by change of variables = ∫ F(y + iεη')(f ∘ eR)(y)dy = ∫ F(y+iεη')(pullback f)(y)dy
+    sorry -- Measure-theoretic change of variables through flatten
   -- Apply the general axiom
   have hcont_G := SCV.continuous_boundary_tube
     (forwardConeFlat_isOpen d n)
@@ -435,15 +450,18 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
     differentiableOn_flatten hF₁
   have hG₂_diff : DifferentiableOn ℂ G₂ (SCV.TubeDomain (ForwardConeFlat d n)) :=
     differentiableOn_flatten hF₂
-  have hG_agree : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∀ (f : (Fin (n * (d + 1)) → ℝ) → ℂ), MeasureTheory.Integrable f →
-        Filter.Tendsto (fun ε : ℝ =>
-          ∫ x : Fin (n * (d + 1)) → ℝ,
-            (G₁ (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) -
-             G₂ (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)) * f x)
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds 0) := by
-    sorry -- Transport of BV agreement through flattening
+  have hG_agree : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+      (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          (G₁ (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) -
+           G₂ (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)) * f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds 0) := by
+    intro f η hη
+    obtain ⟨η', hη', rfl⟩ := hη
+    -- Same approach: pull back f through flatten, apply h_agree
+    sorry -- Measure-theoretic change of variables through flatten
   -- Apply the general axiom
   have huniq := SCV.distributional_uniqueness_tube
     (forwardConeFlat_isOpen d n)
