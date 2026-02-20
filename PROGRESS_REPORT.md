@@ -3,18 +3,21 @@
 ## Overview
 
 Since the initial commit (`2b86bea`), 32 commits have added ~14,000 lines of Lean 4
-across 50 files. The work falls into four phases:
+across 50 files. Of these, **~4,900 lines came from xiyin's upstream merge** (commit
+`47a4076` / `2dfc99a`) and **~9,100 lines are our original work**.
 
-1. **Infrastructure** — SCV module, complex Lie groups, bridge types, Osgood lemma,
-   SeparatelyAnalytic (sorry-free), nuclear space wiring
-2. **Edge-of-the-wedge** — 1D EOW theorem (sorry-free), multi-dimensional promoted
-   to named axiom, BHW axiom
-3. **R→E OS axioms** — Proved E1a (translation), E1b (rotation), E3 (symmetry),
+The work falls into four phases:
+
+1. **Infrastructure** (ours) — SCV module, complex Lie groups, bridge types, Osgood
+   lemma, SeparatelyAnalytic (sorry-free), nuclear space wiring
+2. **Edge-of-the-wedge** (mixed) — 1D EOW slice theorem and supporting lemmas (ours),
+   multi-D SCV infrastructure and TubeDomainExtension expansion (xiyin)
+3. **R→E OS axioms** (ours) — Proved E1a (translation), E1b (rotation), E3 (symmetry),
    E4 (cluster) for constructed Schwinger functions, modulo W_analytic helpers
-4. **Forward tube distributions** — Sorry-free bridge from general tube domain
+4. **Forward tube distributions** (ours) — Sorry-free bridge from general tube domain
    axioms to the forward tube, completing the infrastructure WickRotation depends on
 
-Total: **+14,001 / -485 lines** across 50 files.
+Total: **+14,001 / -485 lines** across 50 files (~9,100 ours, ~4,900 xiyin).
 
 ---
 
@@ -22,32 +25,33 @@ Total: **+14,001 / -485 lines** across 50 files.
 
 ### SCV Module (`OSReconstruction/SCV/`)
 
-| File | Lines | Status |
-|------|-------|--------|
-| `Osgood.lean` | 627 | sorry-free |
-| `Polydisc.lean` | 231 | sorry-free |
-| `IteratedCauchyIntegral.lean` | 670 | mixed |
-| `TubeDomainExtension.lean` | 2997 | mixed (xiyin merge) |
-| `IdentityTheorem.lean` | 154 | 1 sorry (Hartogs) |
-| `Analyticity.lean` | 1206 | xiyin merge |
-| `MoebiusMap.lean` | 618 | xiyin merge |
-| `EOWMultiDim.lean` | 141 | xiyin merge |
-| `TubeDistributions.lean` | 173 | axioms only |
+| File | Lines | Author | Status |
+|------|-------|--------|--------|
+| `Osgood.lean` | 627 | ours | sorry-free |
+| `Polydisc.lean` | 231 | ours | sorry-free |
+| `IteratedCauchyIntegral.lean` | 670 | ours (+68 xiyin) | mixed |
+| `TubeDomainExtension.lean` | 2997 | ours 158 + xiyin 2839 | mixed |
+| `IdentityTheorem.lean` | 154 | ours | 1 sorry (Hartogs) |
+| `Analyticity.lean` | 1206 | xiyin | mixed |
+| `MoebiusMap.lean` | 618 | xiyin | mixed |
+| `EOWMultiDim.lean` | 141 | xiyin | mixed |
+| `TubeDistributions.lean` | 173 | ours | axioms only |
 
-**`Osgood.lean`** (sorry-free): Full proof of Osgood's lemma — continuous +
+**`Osgood.lean`** (ours, sorry-free): Full proof of Osgood's lemma — continuous +
 separately holomorphic ⟹ jointly holomorphic. Uses iterated Cauchy integrals
 and dominated convergence.
 
-**`SeparatelyAnalytic.lean`** (sorry-free, 906 lines added): All Taylor remainder
-helpers proved. This file went from 25 sorrys to 0 across commits `3219c29`–`d53bad6`.
+**`SeparatelyAnalytic.lean`** (ours, sorry-free, 906 lines added): All Taylor
+remainder helpers proved. This file went from 25 sorrys to 0 across commits
+`3219c29`–`d53bad6`.
 
-### Complex Lie Groups (`OSReconstruction/ComplexLieGroups/`)
+### Complex Lie Groups (`OSReconstruction/ComplexLieGroups/`) — ours
 
 | File | Lines | Description |
 |------|-------|-------------|
 | `MatrixLieGroup.lean` | 277 | General matrix Lie group definitions |
 | `LorentzLieGroup.lean` | 283 | Lorentz group, restricted subgroup |
-| `Complexification.lean` | 533 | Complex Lorentz group L₊(ℂ) |
+| `Complexification.lean` | 533 | Complex Lorentz group L₊(ℂ) (+56 xiyin) |
 | `Connectedness.lean` | 171 | Path-connectedness of SO⁺(1,d) |
 
 ### Bridge and Nuclear Spaces
@@ -66,9 +70,9 @@ helpers proved. This file went from 25 sorrys to 0 across commits `3219c29`–`d
 
 ---
 
-## Phase 2: Edge-of-the-Wedge (commits `4221277`–`328decb`)
+## Phase 2: Edge-of-the-Wedge (commits `4221277`–`328decb`, plus xiyin merge)
 
-### What was proved (sorry-free)
+### Our work (sorry-free)
 
 **`edge_of_the_wedge_slice`** (`AnalyticContinuation.lean:553`) — For each real
 point x₀ ∈ E and direction η ∈ C, the 1D EOW theorem extends f_plus and f_minus
@@ -79,11 +83,31 @@ w ↦ x₀ + wη. Proved via:
 3. Translating multi-D boundary values to 1D via `ContinuousWithinAt` composition
 4. Applying `edge_of_the_wedge_1d` (Morera + Cauchy-Goursat)
 
-### Supporting lemmas (all sorry-free)
-
+Supporting lemmas (all ours, sorry-free):
 - `sliceMap_upper_mem_tubeDomain` / `sliceMap_lower_mem_neg_tubeDomain`
 - `tubeDomain_isOpen`, `neg_image_isOpen`, `tubeDomain_disjoint_neg`
 - `holomorphic_extension_across_real`, `tube_domain_gluing`
+
+We also promoted `edge_of_the_wedge` and `bargmann_hall_wightman` from inline
+sorrys to named axioms with full docstrings and references.
+
+### Xiyin's merge (`2dfc99a`, ~4,900 lines)
+
+Xiyin's commit (titled "Prove edge-of-the-wedge theorem sorry-free") added:
+
+- **`Analyticity.lean`** (1206 lines) — Multi-variable holomorphic ⟹ analytic
+- **`MoebiusMap.lean`** (618 lines) — Möbius product map and imaginary part properties
+- **`EOWMultiDim.lean`** (141 lines) — Multi-dimensional EOW helpers
+- **`TubeDomainExtension.lean`** (+2839 lines) — Massive expansion of tube domain
+  extension theory (edge-of-the-wedge for tube domains, Bochner tube theorem
+  infrastructure, holomorphic extension lemmas)
+- Minor fixes to `EdgeOfWedge.lean`, `IteratedCauchyIntegral.lean`,
+  `Complexification.lean`, `AnalyticContinuation.lean`
+
+Note: despite the commit message, the full multi-dimensional `edge_of_the_wedge`
+**remains an axiom** (line 730). What xiyin proved sorry-free was the
+`edge_of_the_wedge_slice` proof adjustments and the supporting SCV infrastructure.
+He also added a uniqueness clause to the axiom statement.
 
 ### What remains an axiom
 
