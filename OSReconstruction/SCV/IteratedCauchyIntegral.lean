@@ -68,6 +68,15 @@ def iteratedCircleIntegral :
         (r ∘ Fin.castSucc)
 
 omit [CompleteSpace E] in
+/-- Unfolding lemma for the successor case of `iteratedCircleIntegral`. -/
+theorem iteratedCircleIntegral_succ (m : ℕ) (f : (Fin (m + 1) → ℂ) → E)
+    (c : Fin (m + 1) → ℂ) (r : Fin (m + 1) → ℝ) :
+    iteratedCircleIntegral (m + 1) f c r =
+    iteratedCircleIntegral m
+      (fun z => ∮ w in C(c (Fin.last m), r (Fin.last m)), f (Fin.snoc z w))
+      (c ∘ Fin.castSucc) (r ∘ Fin.castSucc) := rfl
+
+omit [CompleteSpace E] in
 /-- The iterated circle integral of zero is zero. -/
 theorem iteratedCircleIntegral_zero (m : ℕ) (c : Fin m → ℂ) (r : Fin m → ℝ) :
     iteratedCircleIntegral m (fun _ => (0 : E)) c r = 0 := by
@@ -335,6 +344,7 @@ singularities at `w = z` inside the closed polydisc but is smooth when `w` is re
 to the distinguished boundary (where `|wⱼ - cⱼ| = rⱼ > |zⱼ - cⱼ|`).
 -/
 
+omit [CompleteSpace E] in
 /-- **Leibniz rule for circle integrals with holomorphic parameter.**
     If `F(t, w)` depends holomorphically on `t ∈ S` for each `w` on the circle,
     and `(t, w) ↦ F(t, w)` is jointly continuous on `S × sphere`,
@@ -481,6 +491,7 @@ private theorem differentiableOn_circleIntegral_param
     (intervalIntegrable_const)
     (ae_of_all _ fun θ hθ t ht => hG_deriv θ t ht)).2
 
+omit [CompleteSpace E] in
 /-- **Leibniz rule for iterated circle integrals.**
     If the integrand depends holomorphically on a parameter in an open set `S` for each
     point on the distinguished boundary, and is jointly continuous on
@@ -570,6 +581,7 @@ private theorem differentiableOn_iteratedCircleIntegral_param {m : ℕ}
             (fun k => by simp only [g, Fin.snoc_castSucc]; exact hz' k)⟩
         exact hF_cont.comp_continuous hg_cont hg_range
 
+omit [CompleteSpace E] in
 /-- The Cauchy integral for polydiscs is holomorphic in `z`.
 
     The proof uses the Leibniz rule for iterated circle integrals. When we
@@ -654,61 +666,5 @@ theorem cauchyIntegralPolydisc_differentiableOn {m : ℕ}
     · -- f ∘ snd is continuous on ball × db
       exact hf_cont.comp continuous_snd.continuousOn
         (fun ⟨_, w⟩ ⟨_, hw⟩ => distinguishedBoundary_subset_closedPolydisc hw)
-
-/-! ### Analyticity on polydiscs -/
-
-/-- Multi-variable complex `DifferentiableOn` implies `AnalyticAt`.
-
-    This is a classical result in SCV: jointly holomorphic functions on an open set
-    in ℂᵐ are analytic.
-
-    **Proof strategy (Cauchy integral approach):**
-    For z₀ ∈ U, take a polydisc P(z₀, r) ⊂ U. By `cauchyIntegralPolydisc_eq`:
-    `f(z) = (2πi)⁻ᵐ ∮...∮ f(w)/∏(wᵢ-zᵢ) dw`.
-    Expanding each `1/(wᵢ-zᵢ)` as a geometric series in `(zᵢ-z₀ᵢ)/(wᵢ-z₀ᵢ)`
-    and exchanging sum and integral gives a multi-variable power series for f,
-    hence analyticity. The exchange is justified by uniform convergence on
-    compact subsets of the polydisc.
-
-    **Alternative proof strategy (fderiv bootstrap):**
-    Show `DifferentiableOn ℂ f U → DifferentiableOn ℂ (fderiv ℂ f) U` by:
-    1. Each partial `∂f/∂zᵢ` is separately holomorphic (j=i: 1D smoothness;
-       j≠i: Cauchy integral formula for derivatives + Leibniz rule)
-    2. Each partial is continuous (via Cauchy integral representation)
-    3. By Osgood: each partial is DifferentiableOn
-    4. fderiv = ∑ᵢ (projᵢ).smulRight(∂f/∂zᵢ), so DifferentiableOn
-    Then by induction on n using `contDiffOn_succ_iff_fderiv_of_isOpen`,
-    get `ContDiffOn ℂ ⊤ f U`, and `ContDiffAt.analyticAt` gives `AnalyticAt`. -/
-private lemma differentiableOn_complex_analyticAt {m : ℕ}
-    {f : (Fin m → ℂ) → E} {U : Set (Fin m → ℂ)} (hU : IsOpen U)
-    (hf : DifferentiableOn ℂ f U) {z : Fin m → ℂ} (hz : z ∈ U) :
-    AnalyticAt ℂ f z := by
-  sorry
-
-/-- A function that is separately holomorphic and continuous on a polydisc is analytic.
-
-    **Proof outline:**
-    1. By Osgood's lemma (`osgood_lemma`), separately holomorphic + continuous implies
-       jointly holomorphic (`DifferentiableOn ℂ`).
-    2. By `differentiableOn_complex_analyticAt`, jointly holomorphic on an open set
-       implies analytic. -/
-theorem analyticOnNhd_of_separatelyDifferentiableOn {m : ℕ}
-    (f : (Fin m → ℂ) → E) (c : Fin m → ℂ) (r : Fin m → ℝ)
-    (hr : ∀ i, 0 < r i)
-    (hf_sep : SeparatelyDifferentiableOn f (closedPolydisc c r))
-    (hf_cont : ContinuousOn f (closedPolydisc c r)) :
-    ∀ z ∈ Polydisc c r, AnalyticAt ℂ f z := by
-  -- Step 1: Repackage separate holomorphicity for Osgood
-  have hf_sep_open : ∀ z ∈ Polydisc c r, ∀ i : Fin m,
-      DifferentiableAt ℂ (fun w => f (Function.update z i w)) (z i) :=
-    fun z hz i => hf_sep i z (polydisc_subset_closedPolydisc hz)
-  -- Step 2: By Osgood's lemma, f is jointly holomorphic on the open polydisc
-  have hf_diff : DifferentiableOn ℂ f (Polydisc c r) :=
-    osgood_lemma polydisc_isOpen f
-      (hf_cont.mono polydisc_subset_closedPolydisc)
-      hf_sep_open
-  -- Step 3: Jointly holomorphic on open set → analytic
-  intro z hz
-  exact differentiableOn_complex_analyticAt polydisc_isOpen hf_diff hz
 
 end SCV

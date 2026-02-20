@@ -327,23 +327,6 @@ def ofEuclidean (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
       rw [← RingHom.map_det]; rfl]
     rw [hR]; push_cast; simp only [mul_one, mul_neg, Complex.I_mul_I, neg_neg]
 
-/-! ### Connectedness -/
-
-/-- **SO⁺(1,d;ℂ) is path-connected.**
-
-    This is the crucial fact for the Bargmann-Hall-Wightman theorem.
-    The proof uses the Wick rotation isomorphism: SO⁺(1,d;ℂ) ≅ SO(d+1;ℂ),
-    and SO(d+1;ℂ) is connected because:
-    1. Every A ∈ SO(d+1;ℂ) is exp(X) for X skew-symmetric (Lie algebra so(d+1;ℂ))
-    2. The exponential map t ↦ exp(tX) gives a path from I to A
-    3. The Lie algebra so(d+1;ℂ) is a vector space (hence connected)
-
-    If G is connected and f : G → ℂ is holomorphic with f|_{G_ℝ} = const,
-    then f = const on all of G (by the identity theorem). -/
-theorem isPathConnected :
-    IsPathConnected (Set.univ : Set (ComplexLorentzGroup d)) := by
-  sorry
-
 /-- The identity is in SO⁺(1,d;ℂ). -/
 theorem one_val : (one (d := d)).val = 1 := rfl
 
@@ -507,5 +490,44 @@ theorem joined_one_expLieAlg (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
       show expLieAlg _ _ = expLieAlg X hX
       ext; simp [expLieAlg]
   }⟩
+
+/-! ### Connectedness -/
+
+/-- Left multiplication in ComplexLorentzGroup is continuous. -/
+private theorem continuous_mul_left (a : ComplexLorentzGroup d) :
+    Continuous (a * · : ComplexLorentzGroup d → ComplexLorentzGroup d) := by
+  have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
+  rw [hind.continuous_iff]
+  change Continuous (fun x : ComplexLorentzGroup d => a.val * x.val)
+  exact continuous_const.mul continuous_val
+
+/-- If a and b are each joined to the identity, so is their product. -/
+private theorem joined_one_mul {a b : ComplexLorentzGroup d}
+    (ha : Joined one a) (hb : Joined one b) :
+    Joined one (a * b) := by
+  -- Left multiply path for b by a: t ↦ a * γ_b(t) gives path from a*1 to a*b
+  -- then cast a*1 = a using mul_one
+  have h : Joined a (a * b) :=
+    ⟨(hb.somePath.map (continuous_mul_left a)).cast (mul_one a).symm rfl⟩
+  exact ha.trans h
+
+/-- Every element of SO⁺(1,d;ℂ) is joined to the identity.
+
+    The proof uses the fact that SO⁺(1,d;ℂ) ≅ SO(d+1;ℂ) via Wick rotation,
+    and SO(d+1;ℂ) is connected because every element can be written as a product
+    of complex 2-plane rotations, each of which is exp of a Lie algebra element
+    and hence continuously connected to the identity. -/
+private theorem joined_one_all (Λ : ComplexLorentzGroup d) :
+    Joined (one : ComplexLorentzGroup d) Λ := by
+  sorry
+
+/-- **SO⁺(1,d;ℂ) is path-connected.**
+
+    This is the crucial fact for the Bargmann-Hall-Wightman theorem. -/
+theorem isPathConnected :
+    IsPathConnected (Set.univ : Set (ComplexLorentzGroup d)) := by
+  rw [← pathConnectedSpace_iff_univ]
+  exact PathConnectedSpace.mk ⟨one⟩ fun x y =>
+    (joined_one_all x).symm.trans (joined_one_all y)
 
 end ComplexLorentzGroup

@@ -127,6 +127,8 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
         (nhds (f_plus x₀))) :
     ∃ (U : Set ℂ) (F : ℂ → ℂ),
       IsOpen U ∧
+      Convex ℝ U ∧
+      (∀ z ∈ U, starRingEnd ℂ z ∈ U) ∧
       -- U contains the real interval
       (∀ x : ℝ, a < x → x < b → (x : ℂ) ∈ U) ∧
       -- F is holomorphic on U
@@ -134,7 +136,9 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
       -- F agrees with f₊ on U ∩ upper half-plane
       (∀ z ∈ U ∩ EOW.UpperHalfPlane, F z = f_plus z) ∧
       -- F agrees with f₋ on U ∩ lower half-plane
-      (∀ z ∈ U ∩ EOW.LowerHalfPlane, F z = f_minus z) := by
+      (∀ z ∈ U ∩ EOW.LowerHalfPlane, F z = f_minus z) ∧
+      -- U contains the ball of radius (b-a)/2 centered at (a+b)/2
+      Metric.ball (((a + b) / 2 : ℝ) : ℂ) ((b - a) / 2) ⊆ U := by
   -- Step 1: Define the ball
   let mid : ℂ := ((a + b) / 2 : ℝ)
   let rad : ℝ := (b - a) / 2
@@ -349,7 +353,15 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
           · exact (hFdiff_lower c (lt_of_lt_of_le (mem_Ioo.mp hc.2).2
               (hcross hlt))).differentiableWithinAt)
   -- Step 5: Apply Morera's theorem
-  refine ⟨Metric.ball mid rad, F, Metric.isOpen_ball, ?_, ?_, ?_, ?_⟩
+  refine ⟨Metric.ball mid rad, F, Metric.isOpen_ball, convex_ball mid rad, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- Conjugation symmetry: mid is real, so conj preserves distance to mid
+    intro z hz
+    rw [Metric.mem_ball] at hz ⊢
+    calc dist (starRingEnd ℂ z) mid
+        = dist (starRingEnd ℂ z) (starRingEnd ℂ mid) := by
+            rw [show starRingEnd ℂ mid = mid from Complex.conj_ofReal _]
+      _ = dist z mid := Complex.dist_conj_conj z mid
+      _ < rad := hz
   · -- The interval (a,b) is contained in the ball
     intro x hax hxb
     show dist (x : ℂ) mid < rad
@@ -369,6 +381,8 @@ theorem edge_of_the_wedge_1d (a b : ℝ) (hab : a < b)
     show F z = f_minus z
     have h1 : ¬(z.im > 0) := by linarith
     simp only [F, h1, ite_false, hz, ite_true]
+  · -- Ball containment is definitional
+    exact Subset.rfl
 
 /-! ### Multi-dimensional edge-of-the-wedge via 1D slicing
 

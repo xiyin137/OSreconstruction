@@ -5,6 +5,7 @@
 **/.DS_Store
 /references/
 /test/
+/deprecated/
 .claude/
 .vscode/
 CLAUDE.md

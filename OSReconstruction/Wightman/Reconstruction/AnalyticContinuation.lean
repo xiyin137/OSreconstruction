@@ -686,11 +686,11 @@ theorem edge_of_the_wedge_slice {m : ℕ}
     rw [Filter.map_congr heq]
     exact hcont_bv
   -- Apply 1D EOW
-  obtain ⟨V, G, hV_open, hV_contains, hG_holo, hG_plus, hG_minus⟩ :=
+  obtain ⟨V, G, hV_open, _, _, hV_int, hG_holo, hG_plus, hG_minus, _⟩ :=
     edge_of_the_wedge_1d (-δ) δ hab g_plus g_minus hg_plus_holo hg_minus_holo
       hcont_plus hcont_minus hmatch' hbv_cont_1d
   -- Step 4: Translate back to multi-D
-  refine ⟨V, G, hV_open, hV_contains 0 (by linarith) (by linarith), hG_holo, ?_, ?_⟩
+  refine ⟨V, G, hV_open, hV_int 0 (by linarith) (by linarith), hG_holo, ?_, ?_⟩
   · -- G agrees with f_plus ∘ sliceMap on V ∩ UHP
     intro w hw_V hw_im
     have h := hG_plus w (Set.mem_inter hw_V hw_im)
