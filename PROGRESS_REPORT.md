@@ -109,7 +109,11 @@ for `MeasurableEquiv.curry`.
 
 ### 5-6. Pre-existing axioms (`AnalyticContinuation.lean`)
 
-**`edge_of_the_wedge`** — Bogoliubov's edge-of-the-wedge theorem.
+**`edge_of_the_wedge`** — Bogoliubov's edge-of-the-wedge theorem (multi-dimensional).
+Note: the 1D slice version `edge_of_the_wedge_slice` IS proved (line 553), but the
+full multi-dimensional `edge_of_the_wedge` (line 730) remains an axiom — it requires
+reducing the general case to iterated 1D applications, which involves careful
+induction on dimension.
 
 **`bargmann_hall_wightman`** — The BHW theorem extending holomorphic functions
 from the forward tube to the permuted extended tube via Lorentz group action.
