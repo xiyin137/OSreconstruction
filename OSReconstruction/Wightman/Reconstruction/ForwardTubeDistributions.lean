@@ -176,6 +176,59 @@ private theorem convex_inOpenForwardCone (d : ℕ) [NeZero d] :
     · have ha_pos : 0 < a := lt_of_le_of_ne ha (Ne.symm ha0)
       nlinarith [sq_nonneg b, mul_nonneg ha hb, pow_pos ha_pos 2]
 
+/-- The open forward light cone is closed under positive scalar multiplication. -/
+private theorem inOpenForwardCone_smul (d : ℕ) [NeZero d]
+    (c : ℝ) (hc : c > 0) (η : Fin (d + 1) → ℝ) (hη : InOpenForwardCone d η) :
+    InOpenForwardCone d (c • η) := by
+  constructor
+  · simp [Pi.smul_apply, smul_eq_mul]; exact mul_pos hc hη.1
+  · rw [minkowskiNormSq_decomp]
+    have := minkowskiNormSq_decomp d η
+    simp only [Pi.smul_apply, smul_eq_mul]
+    have h1 : ∑ i : Fin d, (c * η (Fin.succ i)) ^ 2 =
+        c ^ 2 * ∑ i : Fin d, (η (Fin.succ i)) ^ 2 := by
+      simp_rw [mul_pow]; rw [← Finset.mul_sum]
+    rw [h1]; nlinarith [hη.2, pow_pos hc 2, minkowskiNormSq_decomp d η]
+
+/-- The open forward light cone is closed under addition (it's a convex cone). -/
+private theorem inOpenForwardCone_add (d : ℕ) [NeZero d]
+    (η η' : Fin (d + 1) → ℝ) (hη : InOpenForwardCone d η) (hη' : InOpenForwardCone d η') :
+    InOpenForwardCone d (η + η') := by
+  -- η + η' = 2 • ((1/2) • η + (1/2) • η'), where the inner part is in V₊ by convexity
+  have hmid : (2 : ℝ)⁻¹ • η + (2 : ℝ)⁻¹ • η' ∈
+      { η | InOpenForwardCone d η } :=
+    convex_inOpenForwardCone d hη hη' (by norm_num) (by norm_num) (by norm_num)
+  have heq : η + η' = (2 : ℝ) • ((2 : ℝ)⁻¹ • η + (2 : ℝ)⁻¹ • η') := by
+    ext i; simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
+  rw [heq]; exact inOpenForwardCone_smul d 2 (by norm_num) _ hmid
+
+/-- Elements of `ForwardConeAbs` have each component in the forward cone.
+    Since ForwardConeAbs requires η₀ ∈ V₊ and η_k - η_{k-1} ∈ V₊ for all k,
+    each η_k = η₀ + Σ_{j=1}^{k} (η_j - η_{j-1}) is a sum of V₊ elements,
+    and V₊ is closed under addition. -/
+theorem forwardConeAbs_implies_allForwardCone {d n : ℕ} [NeZero d]
+    (η : Fin n → Fin (d + 1) → ℝ) (hη : η ∈ ForwardConeAbs d n) :
+    ∀ k : Fin n, InOpenForwardCone d (η k) := by
+  intro ⟨kv, hkv⟩
+  -- Induction on the natural number index
+  induction kv with
+  | zero =>
+    have h0 := hη ⟨0, hkv⟩
+    simp only [ForwardConeAbs, Set.mem_setOf_eq, dite_true] at h0
+    convert h0 using 1; ext μ; simp
+  | succ k ih =>
+    -- η_{k+1} = η_k + (η_{k+1} - η_k), both in V₊
+    have hk : InOpenForwardCone d (η ⟨k, by omega⟩) := ih (by omega)
+    have hdiff := hη ⟨k + 1, hkv⟩
+    simp only [ForwardConeAbs, Set.mem_setOf_eq, Nat.succ_ne_zero, dite_false] at hdiff
+    have hprev : (⟨k + 1 - 1, by omega⟩ : Fin n) = ⟨k, by omega⟩ := by
+      ext; exact Nat.succ_sub_one k
+    rw [hprev] at hdiff
+    have heq : η ⟨k + 1, hkv⟩ = η ⟨k, by omega⟩ +
+        (fun μ => η ⟨k + 1, hkv⟩ μ - η ⟨k, by omega⟩ μ) := by
+      ext μ; simp
+    rw [heq]; exact inOpenForwardCone_add d _ _ hk hdiff
+
 theorem forwardConeAbs_convex (d n : ℕ) [NeZero d] :
     Convex ℝ (ForwardConeAbs d n) := by
   intro y hy y' hy' a b ha hb hab
@@ -282,6 +335,23 @@ theorem flattenCLEquiv_im (n d : ℕ) (z : Fin n → Fin d → ℂ) :
     (fun k => (flattenCLEquiv n d z k).im) =
       flattenCLEquivReal n d (fun i j => (z i j).im) := by
   ext k; simp
+
+/-- **Change of variables for the flatten equivalence.**
+
+    For any function `g`, integrals are preserved under the flatten coordinate change:
+    `∫ x, g(x) dx = ∫ y, g(flatten(y)) dy` where x ranges over `Fin (n*d) → ℝ`
+    and y over `Fin n → Fin d → ℝ`.
+
+    This is a standard fact: the flatten is a composition of
+    1. Uncurrying: `(Fin n → Fin d → ℝ) → (Fin n × Fin d → ℝ)` (associativity of
+       product measures / Fubini)
+    2. Reindexing: `(Fin n × Fin d → ℝ) → (Fin (n*d) → ℝ)` via `finProdFinEquiv`
+       (permutation of coordinates preserving volume by `volume_measurePreserving_piCongrLeft`)
+
+    The proof requires `measurePreserving_curry` (Fubini for product measures), which
+    is not yet in Mathlib. This axiom can be eliminated once it is available. -/
+axiom integral_flatten_change_of_variables (n d : ℕ) (g : (Fin (n * d) → ℝ) → ℂ) :
+    ∫ x, g x = ∫ y, g (flattenCLEquivReal n d y)
 
 /-- The flattened forward cone. -/
 def ForwardConeFlat (d n : ℕ) [NeZero d] : Set (Fin (n * (d + 1)) → ℝ) :=
@@ -399,11 +469,26 @@ theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
     refine ⟨fun f => T (pullback f), fun f η hη => ?_⟩
     -- η ∈ ForwardConeFlat = eR '' ForwardConeAbs, so η = eR η' for some η' ∈ ForwardConeAbs
     obtain ⟨η', hη', rfl⟩ := hη
-    -- pullback f = f ∘ eR.symm, a Schwartz function on NPointDomain
-    -- The key: G(x + iεη_flat) = F(eR.symm(x) + iε·η') when η_flat = eR(η')
-    -- So ∫ G(x+iεη_flat)f(x)dx = ∫ F(eR.symm x + iεη')f(x)dx
-    -- which by change of variables = ∫ F(y + iεη')(f ∘ eR)(y)dy = ∫ F(y+iεη')(pullback f)(y)dy
-    sorry -- Measure-theoretic change of variables through flatten
+    -- η' ∈ ForwardConeAbs implies each η'_k ∈ V₊, so hT applies
+    have hη'_all := forwardConeAbs_implies_allForwardCone η' hη'
+    have hconv := hT (pullback f) η' hη'_all
+    -- Show the integrands are equal pointwise, then use Filter.Tendsto.congr
+    have heq : ∀ ε : ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          (G fun i => ↑(x i) + ↑ε * ↑((flattenCLEquivReal n (d + 1)) η' i) * Complex.I) * f x =
+        ∫ y : NPointDomain d n,
+          (F fun k μ => ↑(y k μ) + ↑ε * ↑(η' k μ) * Complex.I) * (pullback f) y := by
+      intro ε
+      rw [integral_flatten_change_of_variables]
+      congr 1; ext y
+      -- G(eR(y) + iε·eR(η')) * f(eR(y)) = F(y + iε·η') * (pullback f)(y)
+      simp only [G, Function.comp, e, eR, pullback,
+        SchwartzMap.compCLMOfContinuousLinearEquiv]
+      congr 1
+      congr 1; funext k μ
+      simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+        ← finProdFinEquiv_symm_apply, Equiv.symm_apply_apply]
+    exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
   -- Apply the general axiom
   have hcont_G := SCV.continuous_boundary_tube
     (forwardConeFlat_isOpen d n)
@@ -460,8 +545,35 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
       (nhds 0) := by
     intro f η hη
     obtain ⟨η', hη', rfl⟩ := hη
-    -- Same approach: pull back f through flatten, apply h_agree
-    sorry -- Measure-theoretic change of variables through flatten
+    let eR := flattenCLEquivReal n (d + 1)
+    let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+    have hη'_all := forwardConeAbs_implies_allForwardCone η' hη'
+    have hconv := h_agree (pullback f) η' hη'_all
+    -- Key lemma: the argument of F₁/F₂ matches after unflattening
+    have harg : ∀ (y : NPointDomain d n) (ε : ℝ),
+        (flattenCLEquiv n (d + 1)).symm (fun i =>
+          ↑((flattenCLEquivReal n (d + 1)) y i) +
+          ↑ε * ↑((flattenCLEquivReal n (d + 1)) η' i) * Complex.I) =
+        fun k μ => ↑(y k μ) + ↑ε * ↑(η' k μ) * Complex.I := by
+      intro y ε; funext k μ
+      simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+        Equiv.symm_apply_apply]
+    have heq : ∀ ε : ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          ((G₁ fun i => ↑(x i) + ↑ε * ↑((flattenCLEquivReal n (d + 1)) η' i) * Complex.I) -
+           (G₂ fun i => ↑(x i) + ↑ε * ↑((flattenCLEquivReal n (d + 1)) η' i) * Complex.I)) * f x =
+        ∫ y : NPointDomain d n,
+          ((F₁ fun k μ => ↑(y k μ) + ↑ε * ↑(η' k μ) * Complex.I) -
+           (F₂ fun k μ => ↑(y k μ) + ↑ε * ↑(η' k μ) * Complex.I)) * (pullback f) y := by
+      intro ε
+      rw [integral_flatten_change_of_variables]
+      congr 1; ext y
+      show (F₁ (e.symm _) - F₂ (e.symm _)) * f (eR y) =
+        (F₁ _ - F₂ _) * (pullback f) y
+      rw [harg]; rfl
+    exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
   -- Apply the general axiom
   have huniq := SCV.distributional_uniqueness_tube
     (forwardConeFlat_isOpen d n)
