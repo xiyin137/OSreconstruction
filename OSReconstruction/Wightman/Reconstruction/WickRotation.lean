@@ -587,11 +587,26 @@ after `W_analytic_BHW` since they reference it. -/
 
     The n-point Wightman function W_n(z₁, ..., zₙ) depends only on the differences
     z_k - z_{k-1}, hence is invariant under simultaneous translation z_k ↦ z_k + c
-    for any constant c ∈ ℂ^{d+1}. The BHW extension inherits this property by
-    uniqueness of analytic continuation on the connected permuted extended tube.
+    for any constant c ∈ ℂ^{d+1}. The BHW extension inherits this property.
 
-    The PET is translation invariant because adding a constant to all arguments
-    preserves the successive differences of imaginary parts.
+    **Why this is an axiom rather than a theorem.** The natural proof strategy is:
+    define G(z) := F_ext(z + c) and show G = F_ext on PET by BHW uniqueness
+    (property 5 of `bargmann_hall_wightman`). This requires G to be holomorphic
+    on PET, which needs PET to be closed under z ↦ z + c. However, our
+    `ForwardTube` definition uses absolute coordinates with a special k = 0
+    condition (Im(z₀) ∈ V₊, where prev = 0), so ForwardTube—and hence PET—are
+    NOT closed under complex translations. (For k > 0 the constant shift cancels
+    in the successive differences, but for k = 0 it shifts Im(z₀) out of V₊.)
+
+    In the physics literature this issue doesn't arise because one works in
+    difference variables ξ_k = z_{k+1} - z_k, where translation invariance is
+    trivially built into the formalism (there is no k = 0 condition). Formalizing
+    this requires either refactoring `ForwardTube` to use difference variables, or
+    proving a more general identity theorem on PET ∩ (PET − c).
+
+    The mathematical content is elementary: W depends only on differences,
+    so F_ext(z + c) = F_ext(z). Only the formal plumbing with our coordinate
+    conventions is missing.
 
     Ref: Streater-Wightman §2.5 (translation invariance);
     Jost, "The General Theory of Quantized Fields" §III.1 -/
