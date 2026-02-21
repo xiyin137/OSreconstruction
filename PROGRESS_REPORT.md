@@ -157,10 +157,11 @@ Vladimirov (2002) §25-26:
 *Why axioms:* `continuous_boundary_tube` (#1) and `polynomial_growth_tube` (#4)
 require the Fourier-Laplace representation of tube-domain holomorphic functions
 (Vladimirov §25-26), which is not in Mathlib. `boundary_value_recovery` (#2) is
-the second half of Vladimirov's theorem. `bochner_tube_theorem` (#5) is a
-deep SCV result (convex hull extension). `distributional_uniqueness_tube` (#3) is
-proved from #1, #2, edge-of-the-wedge, and the identity theorem (2 localized sorrys:
-du Bois-Reymond lemma and cone scaling property).
+the second half of Vladimirov's theorem. `boundary_value_zero` (#3) combines
+the du Bois-Reymond lemma with boundary value recovery. `bochner_tube_theorem` (#5)
+is a deep SCV result (convex hull extension). `distributional_uniqueness_tube` is
+proved (sorry-free) from `boundary_value_zero`, edge-of-the-wedge, and the identity
+theorem.
 
 ---
 
@@ -216,37 +217,37 @@ function infrastructure. Went from 25 sorrys to 0 (sorry-free).
 
 ---
 
-## All Axioms (10 total)
+## All Axioms (12 total)
 
-### SCV/Distribution Theory Axioms (3)
+### SCV/Distribution Theory Axioms (5)
 
 | # | Axiom | File | Eliminable? |
 |---|-------|------|-------------|
 | 1 | `continuous_boundary_tube` | `SCV/TubeDistributions.lean` | Needs Paley-Wiener-Schwartz |
 | 2 | `boundary_value_recovery` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
-| 3 | `polynomial_growth_tube` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
-| 4 | `bochner_tube_theorem` | `SCV/TubeDistributions.lean` | Deep SCV (Bochner 1938) |
+| 3 | `boundary_value_zero` | `SCV/TubeDistributions.lean` | Combines du Bois-Reymond + BV recovery |
+| 4 | `polynomial_growth_tube` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
+| 5 | `bochner_tube_theorem` | `SCV/TubeDistributions.lean` | Deep SCV (Bochner 1938) |
 
 `distributional_uniqueness_tube` was converted from axiom to theorem, proved from
-`continuous_boundary_tube` + `boundary_value_recovery` + edge-of-the-wedge + identity
-theorem (2 localized sorrys: du Bois-Reymond lemma and cone scaling property).
+`boundary_value_zero` + edge-of-the-wedge + identity theorem (sorry-free).
 
 ### Analytic Continuation Axioms (2)
 
 | # | Axiom | File | Eliminable? |
 |---|-------|------|-------------|
-| 4 | `edge_of_the_wedge` | `AnalyticContinuation.lean` | ~300-600 LOC, see proof plan |
-| 5 | `bargmann_hall_wightman` | `AnalyticContinuation.lean` | Needs complex Lie group theory |
+| 5 | `edge_of_the_wedge` | `AnalyticContinuation.lean` | ~300-600 LOC, see proof plan |
+| 6 | `bargmann_hall_wightman` | `AnalyticContinuation.lean` | Needs complex Lie group theory |
 
 ### WickRotation Axioms (5)
 
 | # | Axiom | Ref | Eliminable? |
 |---|-------|-----|-------------|
-| 6 | `forward_tube_bv_integrable` | Vladimirov §26 | Needs polynomial growth + Schwartz decay |
-| 7 | `lorentz_covariant_distributional_bv` | Streater-Wightman §2.4 | Needs Schwartz COV + measure preservation |
-| 8 | `euclidean_points_in_permutedTube` | Jost §IV.5 | Jost's theorem: Wick-rotated points ∈ PET |
-| 9 | `bhw_translation_invariant` | S-W Thm 2.8 | ForwardTube coordinate convention gap |
-| 10 | `inductive_analytic_continuation` | OS II Thm 4.1 | Paley-Wiener half-plane extension |
+| 7 | `forward_tube_bv_integrable` | Vladimirov §26 | Needs polynomial growth + Schwartz decay |
+| 8 | `lorentz_covariant_distributional_bv` | Streater-Wightman §2.4 | Needs Schwartz COV + measure preservation |
+| 9 | `euclidean_points_in_permutedTube` | Jost §IV.5 | Jost's theorem: Wick-rotated points ∈ PET |
+| 10 | `bhw_translation_invariant` | S-W Thm 2.8 | ForwardTube coordinate convention gap |
+| 11 | `inductive_analytic_continuation` | OS II Thm 4.1 | Paley-Wiener half-plane extension |
 
 Axiom #4 has a concrete proof plan
 (`docs/edge_of_the_wedge_proof_plan.md`). Axioms #1-3 and #5 depend on large

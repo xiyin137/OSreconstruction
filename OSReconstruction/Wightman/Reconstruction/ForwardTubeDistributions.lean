@@ -177,7 +177,7 @@ private theorem convex_inOpenForwardCone (d : ℕ) [NeZero d] :
       nlinarith [sq_nonneg b, mul_nonneg ha hb, pow_pos ha_pos 2]
 
 /-- The open forward light cone is closed under positive scalar multiplication. -/
-private theorem inOpenForwardCone_smul (d : ℕ) [NeZero d]
+theorem inOpenForwardCone_smul (d : ℕ) [NeZero d]
     (c : ℝ) (hc : c > 0) (η : Fin (d + 1) → ℝ) (hη : InOpenForwardCone d η) :
     InOpenForwardCone d (c • η) := by
   constructor
@@ -421,6 +421,26 @@ theorem forwardConeFlat_nonempty (d n : ℕ) [NeZero d] :
     (ForwardConeFlat d n).Nonempty :=
   Set.Nonempty.image _ (forwardConeAbs_nonempty d n)
 
+/-- ForwardConeAbs is a cone: closed under positive scalar multiplication. -/
+theorem forwardConeAbs_smul (d n : ℕ) [NeZero d]
+    (t : ℝ) (ht : 0 < t) (y : Fin n → Fin (d + 1) → ℝ) (hy : y ∈ ForwardConeAbs d n) :
+    t • y ∈ ForwardConeAbs d n := by
+  intro k
+  have hk := hy k
+  -- The successive difference of t • y is t • (successive difference of y)
+  suffices InOpenForwardCone d
+      (t • fun μ => y k μ - (if h : k.val = 0 then 0 else y ⟨k.val - 1, by omega⟩) μ) from by
+    convert this using 1; ext μ; split <;> simp [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, mul_sub]
+  exact inOpenForwardCone_smul d t ht _ hk
+
+/-- ForwardConeFlat is a cone: closed under positive scalar multiplication. -/
+theorem forwardConeFlat_isCone (d n : ℕ) [NeZero d]
+    (t : ℝ) (ht : 0 < t) (y : Fin (n * (d + 1)) → ℝ) (hy : y ∈ ForwardConeFlat d n) :
+    t • y ∈ ForwardConeFlat d n := by
+  obtain ⟨y', hy', rfl⟩ := hy
+  refine ⟨t • y', forwardConeAbs_smul d n t ht y' hy', ?_⟩
+  exact (flattenCLEquivReal n (d + 1)).map_smul t y'
+
 /-! ### Tube Domain Correspondence -/
 
 /-- The forward tube, after flattening, equals `TubeDomain (ForwardConeFlat d n)`. -/
@@ -627,6 +647,7 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
     (forwardConeFlat_isOpen d n)
     (forwardConeFlat_convex d n)
     (forwardConeFlat_nonempty d n)
+    (forwardConeFlat_isCone d n)
     hG₁_diff hG₂_diff hG_agree
   -- Pull back: for z ∈ ForwardTube, e(z) ∈ TubeDomain(C_flat), so G₁(e(z)) = G₂(e(z))
   intro z hz
