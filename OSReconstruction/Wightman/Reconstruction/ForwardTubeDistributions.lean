@@ -336,22 +336,70 @@ theorem flattenCLEquiv_im (n d : ℕ) (z : Fin n → Fin d → ℂ) :
       flattenCLEquivReal n d (fun i j => (z i j).im) := by
   ext k; simp
 
+/-- The flattening as a `MeasurableEquiv`. Composition of uncurrying
+    `(Fin n → Fin d → ℝ) ≃ᵐ (Fin n × Fin d → ℝ)` with reindexing
+    `(Fin n × Fin d → ℝ) ≃ᵐ (Fin (n * d) → ℝ)`. -/
+def flattenMeasurableEquiv (n d : ℕ) : (Fin n → Fin d → ℝ) ≃ᵐ (Fin (n * d) → ℝ) :=
+  (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.trans
+    (MeasurableEquiv.piCongrLeft (fun _ => ℝ) finProdFinEquiv)
+
+@[simp] theorem flattenMeasurableEquiv_apply (n d : ℕ) (f : Fin n → Fin d → ℝ)
+    (k : Fin (n * d)) :
+    flattenMeasurableEquiv n d f k =
+      f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := by
+  simp [flattenMeasurableEquiv, MeasurableEquiv.trans_apply,
+    MeasurableEquiv.coe_curry_symm, MeasurableEquiv.piCongrLeft,
+    Equiv.piCongrLeft, Function.uncurry]
+
+/-- Uncurrying preserves the product Lebesgue measure. The measure on
+    `Fin n → Fin d → ℝ` is `∏_i ∏_j λ`, and the measure on `Fin n × Fin d → ℝ`
+    is `∏_{(i,j)} λ`. The curry map identifies these by associativity of
+    finite products: `∏_i ∏_j aᵢⱼ = ∏_{(i,j)} aᵢⱼ`. -/
+private theorem volume_map_curry_symm (n d : ℕ) :
+    (MeasureTheory.volume : MeasureTheory.Measure (Fin n → Fin d → ℝ)).map
+      (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm =
+    (MeasureTheory.volume : MeasureTheory.Measure (Fin n × Fin d → ℝ)) := by
+  symm; apply MeasureTheory.Measure.pi_eq; intro s hs
+  rw [MeasureTheory.Measure.map_apply
+    (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.measurable
+    (MeasurableSet.univ_pi hs)]
+  have h_preimage : (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm ⁻¹'
+      (Set.univ.pi s) = Set.univ.pi (fun i => Set.univ.pi (fun j => s (i, j))) := by
+    ext f
+    simp only [Set.mem_preimage, Set.mem_univ_pi, MeasurableEquiv.coe_curry_symm,
+      Function.uncurry]
+    exact ⟨fun h i j => h (i, j), fun h ⟨i, j⟩ => h i j⟩
+  rw [h_preimage, MeasureTheory.volume_pi_pi]
+  simp_rw [MeasureTheory.volume_pi_pi]
+  rw [← Finset.prod_product', ← Finset.univ_product_univ]
+
+/-- The flattening equivalence preserves Lebesgue measure. -/
+theorem flattenMeasurableEquiv_measurePreserving (n d : ℕ) :
+    MeasureTheory.MeasurePreserving (flattenMeasurableEquiv n d)
+      MeasureTheory.volume MeasureTheory.volume := by
+  exact (MeasureTheory.MeasurePreserving.mk
+    (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.measurable
+    (volume_map_curry_symm n d)).trans
+    (MeasureTheory.volume_measurePreserving_piCongrLeft (fun _ => ℝ) finProdFinEquiv)
+
 /-- **Change of variables for the flatten equivalence.**
 
     For any function `g`, integrals are preserved under the flatten coordinate change:
     `∫ x, g(x) dx = ∫ y, g(flatten(y)) dy` where x ranges over `Fin (n*d) → ℝ`
     and y over `Fin n → Fin d → ℝ`.
 
-    This is a standard fact: the flatten is a composition of
+    The flatten is a composition of:
     1. Uncurrying: `(Fin n → Fin d → ℝ) → (Fin n × Fin d → ℝ)` (associativity of
-       product measures / Fubini)
+       product measures)
     2. Reindexing: `(Fin n × Fin d → ℝ) → (Fin (n*d) → ℝ)` via `finProdFinEquiv`
-       (permutation of coordinates preserving volume by `volume_measurePreserving_piCongrLeft`)
-
-    The proof requires `measurePreserving_curry` (Fubini for product measures), which
-    is not yet in Mathlib. This axiom can be eliminated once it is available. -/
-axiom integral_flatten_change_of_variables (n d : ℕ) (g : (Fin (n * d) → ℝ) → ℂ) :
-    ∫ x, g x = ∫ y, g (flattenCLEquivReal n d y)
+       (permutation of coordinates, measure-preserving by
+       `volume_measurePreserving_piCongrLeft`) -/
+theorem integral_flatten_change_of_variables (n d : ℕ) (g : (Fin (n * d) → ℝ) → ℂ) :
+    ∫ x, g x = ∫ y, g (flattenCLEquivReal n d y) := by
+  rw [show (fun y => g (flattenCLEquivReal n d y)) =
+      (fun y => g (flattenMeasurableEquiv n d y)) from by
+    ext y; congr 1; ext k; simp [flattenMeasurableEquiv_apply]]
+  exact ((flattenMeasurableEquiv_measurePreserving n d).integral_comp' g).symm
 
 /-- The flattened forward cone. -/
 def ForwardConeFlat (d n : ℕ) [NeZero d] : Set (Fin (n * (d + 1)) → ℝ) :=
