@@ -43,18 +43,17 @@ but not for the OS reconstruction theorems themselves.
 
 ## Axiom and Sorry Census
 
-### Axioms (11 total: 4 in SCV, 2 in AnalyticContinuation, 5 in WickRotation)
+### Axioms (12 total: 5 in SCV, 2 in AnalyticContinuation, 5 in WickRotation)
 
-**SCV/TubeDistributions.lean — 4 axioms** (deep distribution theory / SCV, not in Mathlib):
+**SCV/TubeDistributions.lean — 5 axioms** (deep distribution theory / SCV, not in Mathlib):
 - `continuous_boundary_tube` — Vladimirov: tube holomorphic + tempered BV ⟹ continuous to boundary
 - `boundary_value_recovery` — continuous extension integrates to reproduce distributional BV
+- `boundary_value_zero` — zero distributional BV ⟹ zero boundary function (du Bois-Reymond + BV recovery)
 - `polynomial_growth_tube` — tube holomorphic + tempered BV ⟹ polynomial growth
 - `bochner_tube_theorem` — holomorphic on T(C) extends to T(conv C)
 
-`distributional_uniqueness_tube` — proved from `continuous_boundary_tube` + `boundary_value_recovery`
-+ edge-of-the-wedge + identity theorem. 2 localized sorrys remain:
-1. Du Bois-Reymond: ∫ h·f = 0 for all Schwartz f implies h = 0 pointwise
-2. Cone scaling: t > 0 ∧ y ∈ C → t • y ∈ C (holds for forward cones)
+`distributional_uniqueness_tube` — sorry-free theorem, proved from `boundary_value_zero`
++ edge-of-the-wedge + identity theorem.
 
 **AnalyticContinuation.lean — 2 axioms** (deep SCV, depend on edge-of-wedge):
 - `edge_of_the_wedge` (line 730) — multi-D Bogoliubov theorem
