@@ -422,6 +422,27 @@ axiom lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (Wfn.W n f))
 
+/-- **All Euclidean Wick-rotated points lie in the permuted extended tube.**
+
+    For any configuration x = (x₁, ..., xₙ) of Euclidean spacetime points,
+    the Wick-rotated configuration (iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) lies in the
+    permuted extended tube T''_n.
+
+    This is a consequence of Jost's theorem: the extended tube T'_n contains
+    all "Jost points" (real points where consecutive differences are spacelike).
+    Wick-rotated Euclidean points have purely imaginary time differences, hence
+    spacelike separations, making them Jost points (up to permutation).
+
+    For distinct positive times, this is proved as `euclidean_distinct_in_permutedTube`.
+    The general case (coincident or non-positive times) follows by density of distinct
+    configurations in the analytic domain and the closure properties of PET.
+
+    Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
+    Streater-Wightman, Theorem 2-12 -/
+axiom euclidean_points_in_permutedTube {d n : ℕ} [NeZero d]
+    (x : Fin n → Fin (d + 1) → ℝ) :
+    (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n
+
 /-- The distributional boundary values of z ↦ W_analytic(Λz) and z ↦ W_analytic(z)
     agree, by Lorentz covariance of the Wightman distribution. -/
 private theorem W_analytic_lorentz_bv_agree
@@ -556,6 +577,32 @@ noncomputable def W_analytic_BHW (Wfn : WightmanFunctions d) (n : ℕ) :
   exact ⟨h.choose, h.choose_spec.1, h.choose_spec.2.1, h.choose_spec.2.2.1,
     h.choose_spec.2.2.2.1⟩
 
+/-! #### BHW extension axioms
+
+These axioms express properties of the BHW extension that follow from deep results
+(Jost's theorem, translation invariance) not yet formalized. They are stated
+after `W_analytic_BHW` since they reference it. -/
+
+/-- **BHW extension is translation invariant on the permuted extended tube.**
+
+    The n-point Wightman function W_n(z₁, ..., zₙ) depends only on the differences
+    z_k - z_{k-1}, hence is invariant under simultaneous translation z_k ↦ z_k + c
+    for any constant c ∈ ℂ^{d+1}. The BHW extension inherits this property by
+    uniqueness of analytic continuation on the connected permuted extended tube.
+
+    The PET is translation invariant because adding a constant to all arguments
+    preserves the successive differences of imaginary parts.
+
+    Ref: Streater-Wightman §2.5 (translation invariance);
+    Jost, "The General Theory of Quantized Fields" §III.1 -/
+axiom bhw_translation_invariant {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (c : Fin (d + 1) → ℂ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ PermutedExtendedTube d n) :
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ) =
+    (W_analytic_BHW Wfn n).val z
+
 /-! #### Schwinger function construction -/
 
 /-- Define Schwinger functions from Wightman functions via Wick rotation.
@@ -607,7 +654,15 @@ private theorem F_ext_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
     (W_analytic_BHW Wfn n).val
       (fun k => wickRotatePoint (fun μ => x k μ + a μ)) := by
-  sorry
+  -- wickRotatePoint is additive: wick(x + a) = wick(x) + wick(a)
+  have hwick_add : (fun k => wickRotatePoint (fun μ => x k μ + a μ)) =
+      (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a μ) := by
+    ext k μ
+    simp only [wickRotatePoint]
+    split_ifs <;> push_cast <;> ring
+  rw [hwick_add]
+  exact (bhw_translation_invariant Wfn (wickRotatePoint a)
+    (fun k => wickRotatePoint (x k)) (euclidean_points_in_permutedTube x)).symm
 
 theorem constructedSchwinger_translation_invariant (Wfn : WightmanFunctions d)
     (n : ℕ) (a : SpacetimeDim d) (f g : SchwartzNPoint d n)
@@ -646,10 +701,24 @@ private theorem F_ext_rotation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
     (W_analytic_BHW Wfn n).val
       (fun k => wickRotatePoint (R.mulVec (x k))) := by
-  -- For det R = 1: use schwinger_euclidean_invariant + BHW complex Lorentz invariance
-  -- For det R = -1: use PCT theorem
-  -- Both cases need extension from positive-distinct-time points to all points
-  sorry
+  -- Orthogonal matrices have det = 1 or det = -1
+  have hdet : R.det = 1 ∨ R.det = -1 := by
+    have h := congr_arg Matrix.det hR
+    rw [Matrix.det_mul, Matrix.det_transpose, Matrix.det_one] at h
+    exact mul_self_eq_one_iff.mp h
+  have htube := euclidean_points_in_permutedTube x
+  rcases hdet with hdet1 | hdet_neg1
+  · -- det R = 1: use schwinger_euclidean_invariant via BHW complex Lorentz invariance
+    have := schwinger_euclidean_invariant
+      (fun n => (W_analytic_BHW Wfn n).val)
+      (fun n Λ z hz => (W_analytic_BHW Wfn n).property.2.2.1 Λ z hz)
+      n R hdet1 hR x htube
+    simp only [SchwingerFromWightman] at this
+    exact this.symm
+  · -- det R = -1: requires PCT theorem (Streater-Wightman §4.3)
+    -- PCT extends SO(d+1) covariance to full O(d+1) at Euclidean points.
+    -- Not yet formalized; the proof depends on d parity and is technically involved.
+    sorry
 
 /-- Orthogonal transformations preserve volume: the map x ↦ R·x on ℝ^(d+1)
     has |det R| = 1, so the product map on NPointDomain preserves Lebesgue measure. -/
@@ -757,7 +826,10 @@ private theorem F_ext_permutation_invariant (Wfn : WightmanFunctions d) (n : ℕ
     (σ : Equiv.Perm (Fin n)) (x : NPointDomain d n) :
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x (σ k))) := by
-  sorry
+  -- BHW permutation invariance: F_ext(z ∘ σ) = F_ext(z) for z ∈ PET
+  -- Apply with z = wick(x), using euclidean_points_in_permutedTube
+  exact ((W_analytic_BHW Wfn n).property.2.2.2 σ
+    (fun k => wickRotatePoint (x k)) (euclidean_points_in_permutedTube x)).symm
 
 /-- Permutations preserve volume: the map x ↦ x ∘ σ on (ℝ^{d+1})^n is
     a rearrangement of factors, preserving Lebesgue measure. -/
