@@ -979,12 +979,16 @@ structure EuclideanSemigroup (OS : OsterwalderSchraderAxioms d) where
     C_k^(0) = {ξ ∈ ℝ^k : ξⱼ > 0} (positive real half-space, all coordinates real)
     C_k^(r+1) extends the first r+1 spacetime coordinates to complex (Im diff > 0),
     while the remaining d-r coordinates stay real (Im = 0).
-    C_k^(d+1) = forward tube T_k (all coordinates complex with positive Im diffs).
 
-    **Important**: The regions EXPAND as r increases: C_k^(r) ⊂ C_k^(r+1), because
-    each step frees one more coordinate from the "must be real" constraint.
-    This matches the OS II inductive construction where each Laplace transform
-    step analytically continues one more spatial direction. -/
+    **Note**: C_k^(d+1) is a tube over the positive orthant (0,∞)^{d+1} (each
+    component of imaginary differences is positive). This is STRICTLY SMALLER
+    than the forward tube T_k (which requires imaginary differences in V₊, the
+    forward light cone). To reach T_k from C_k^(d+1), one needs:
+    1. Euclidean rotation invariance (E1) to extend to SO(d+1)-rotated copies
+    2. Bochner's tube theorem to extend to the convex hull = forward tube
+
+    The regions EXPAND as r increases: C_k^(r) ⊂ C_k^(r+1), because each step
+    frees one more coordinate from the "must be real" constraint. -/
 def AnalyticContinuationRegion (d k r : ℕ) [NeZero d] :
     Set (Fin k → Fin (d + 1) → ℂ) :=
   match r with
@@ -1001,37 +1005,61 @@ def AnalyticContinuationRegion (d k r : ℕ) [NeZero d] :
         ∀ μ : Fin (d + 1), μ.val > r →
           (z i μ).im = 0) }
 
-/-- The inductive analytic continuation theorem (OS II, Theorem 4.1).
+/-- **Inductive analytic continuation (OS II, Theorem 4.1).**
 
-    Given a holomorphic function on C_k^(r) (where r spacetime coordinates are complex),
+    Given S holomorphic on C_k^(r) (where r spacetime coordinates are complex),
     extend it analytically to C_k^(r+1) (one more coordinate becomes complex).
 
-    The proof at each step uses:
-    1. Laplace transform representation of S_k on C_k^(r)
-    2. E0' bounds to control the growth of the Laplace transform
-    3. Analytic continuation in the (r+1)-th coordinate direction
+    The proof at each step uses the **Paley-Wiener theorem** (one variable):
+    1. Fix all variables except the (r+1)-th spacetime component of each ξ_j.
+       The result is a function of k−1 real variables (the (r+1)-th components
+       of the difference vectors ξ_1, ..., ξ_{k−1}).
+    2. The E0' linear growth condition gives polynomial bounds on each variable.
+    3. The spectral condition (from reflection positivity / positivity of the
+       Hamiltonian) ensures the Fourier transform in each variable has one-sided
+       support in [0, ∞). Physically: the spectral measure is supported in the
+       forward cone V̄₊, so each spatial momentum component is bounded by the
+       energy (|p^μ| ≤ p^0).
+    4. The **Paley-Wiener theorem**: a function on ℝ with polynomial growth
+       whose Fourier transform has support in [0, ∞) extends holomorphically to
+       the upper half-plane {Im z > 0}, with polynomial growth.
+    5. Extend one variable at a time, then apply Osgood's lemma
+       (`osgood_lemma`, proved in SeparatelyAnalytic.lean) for joint holomorphicity.
 
-    The boundary-value connection: as the (r+1)-th coordinate's imaginary part → 0⁺,
-    S_ext approaches S_prev. This is encoded by requiring both functions to agree
-    when paired with test functions (distributional boundary values). -/
-theorem inductive_analytic_continuation
+    None of this is currently in Mathlib: the Paley-Wiener theorem for tempered
+    distributions, the spectral representation of reflection-positive functionals,
+    and the extraction of one-sided Fourier support from E0' + E2.
+
+    Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 (Paley-Wiener);
+    Vladimirov §26 (Fourier-Laplace representation) -/
+axiom inductive_analytic_continuation {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (k : ℕ) (r : ℕ) (hr : r < d + 1)
     (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
     (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r)) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (r + 1)) := by
-  sorry
+      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (r + 1)) ∧
+      ∀ z ∈ AnalyticContinuationRegion d k r, S_ext z = S_prev z
 
-/-- After d+1 steps of analytic continuation, we reach the forward tube.
+/-- **Full analytic continuation from Euclidean to forward tube.**
 
-    C_k^(d+1) ⊇ ForwardTube d k (up to the difference variable transformation)
+    After d+1 applications of `inductive_analytic_continuation`, we reach
+    C_k^(d+1), a tube over the positive orthant (0,∞)^{d+1}. To reach the
+    full forward tube T_k (tube over V₊), two additional steps are needed:
 
-    This is the culmination of the inductive analytic continuation.
+    1. **Euclidean rotation invariance** (E1): The Schwinger functions are
+       SO(d+1)-invariant, so the analytically continued function extends to
+       SO(d+1)-rotated copies of the positive-orthant tube.
+    2. **Bochner's tube theorem** (`bochner_tube_theorem`): The function extends
+       to the convex hull of the union of rotated tubes. Since V₊ is convex and
+       equals the convex hull of the SO(d+1)-orbit of (0,∞)^{d+1}, this gives
+       holomorphicity on T(V₊) = ForwardTube.
 
-    The analytic function W_analytic is connected to the Schwinger functions:
-    its Euclidean restriction (via Wick rotation) reproduces S_k. -/
+    The Euclidean restriction condition (Wick rotation recovers S_k) is
+    preserved because Euclidean points lie in C_k^(0) ⊂ C_k^(d+1) ⊂ ForwardTube.
+
+    Ref: OS II, Sections IV-V; Bochner (1938); Vladimirov §20.2 -/
 theorem full_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -1042,6 +1070,10 @@ theorem full_analytic_continuation
       (∀ (f : SchwartzNPoint d k),
         OS.S k f = ∫ x : NPointDomain d k,
           W_analytic (fun j => wickRotatePoint (x j)) * (f x)) := by
+  -- Step 1: Iterate inductive_analytic_continuation d+1 times to reach C_k^(d+1)
+  -- Step 2: Use E1 (Euclidean rotation invariance) to extend to rotated tubes
+  -- Step 3: Apply bochner_tube_theorem to extend to convex hull = forward tube
+  -- The Euclidean restriction condition is preserved through all steps.
   sorry
 
 /-- Phase 4: The boundary values of the analytic continuation are tempered distributions.

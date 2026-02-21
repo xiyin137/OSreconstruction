@@ -168,6 +168,33 @@ axiom polynomial_growth_tube {m : ℕ}
       ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
         ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N
 
+/-! ### Axiom 3: Bochner Tube Theorem -/
+
+/-- **Bochner's tube theorem (convex hull extension).**
+
+    If F is holomorphic on a tube domain T(C) = ℝᵐ + iC, then F extends to a
+    unique holomorphic function on T(conv C) = ℝᵐ + i(conv C), where conv C
+    is the convex hull of C.
+
+    This is a fundamental result in several complex variables: holomorphic functions
+    on tube domains automatically extend to the convex hull of the base.
+
+    In the OS reconstruction, this is used after the inductive analytic continuation
+    (which produces holomorphicity on a tube over the positive orthant) to extend
+    to the full forward tube (a tube over V₊, the forward light cone). The key:
+    the union of SO(d+1)-rotations of the positive orthant covers V₊, and
+    V₊ = conv(⋃_R R · (0,∞)^{d+1}) since V₊ is convex.
+
+    Ref: Bochner, "A theorem on analytic continuation of functions in several
+    variables" (1938); Vladimirov §20.2; Hörmander, "An Introduction to Complex
+    Analysis in Several Variables", Theorem 2.5.10 -/
+axiom bochner_tube_theorem {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C)) :
+    ∃ (F_ext : (Fin m → ℂ) → ℂ),
+      DifferentiableOn ℂ F_ext (TubeDomain (convexHull ℝ C)) ∧
+      ∀ z ∈ TubeDomain C, F_ext z = F z
+
 end SCV
 
 end
