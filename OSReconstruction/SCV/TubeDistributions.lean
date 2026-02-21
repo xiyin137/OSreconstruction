@@ -105,6 +105,30 @@ axiom continuous_boundary_tube {m : ℕ}
     (x : Fin m → ℝ) :
     ContinuousWithinAt F (TubeDomain C) (realEmbed x)
 
+/-- **Boundary value recovery for tube-domain holomorphic functions.**
+
+    The continuous extension to the boundary integrates against test functions
+    to reproduce the distributional boundary value. This is the second half of
+    Vladimirov's theorem (§26.2): not only does the continuous extension exist,
+    but the distributional BV T is given by integration against it:
+    T(f) = ∫ F(realEmbed x) · f(x) dx.
+
+    Combined with `continuous_boundary_tube`, this says: the distributional BV
+    and the pointwise BV (continuous extension) are the same object.
+
+    Ref: Vladimirov §26.2; Streater-Wightman, Theorem 2-9 -/
+axiom boundary_value_recovery {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
+    {T : SchwartzMap (Fin m → ℝ) ℂ → ℂ}
+    (h_bv : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (T f)))
+    (f : SchwartzMap (Fin m → ℝ) ℂ) :
+    T f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x
+
 /-- **Distributional uniqueness for tube-domain holomorphic functions.**
 
     If two holomorphic functions on a tube domain T(C) have the same distributional
@@ -161,14 +185,133 @@ theorem distributional_uniqueness_tube {m : ℕ}
   -- dominated convergence gives ∫ G(x+iεη)f(x)dx → ∫ G(x)f(x)dx = 0 for all Schwartz f,
   -- and a continuous function integrating to 0 against all Schwartz functions is 0.
   have hG_boundary : ∀ x : Fin m → ℝ, G (realEmbed x) = 0 := by
+    -- Apply boundary_value_recovery with T = 0: get ∫ G(realEmbed y) * f(y) dy = 0
+    have h_bv_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ, G (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds ((0 : SchwartzMap (Fin m → ℝ) ℂ → ℂ) f)) := by
+      intro f η hη; simp only [Pi.zero_apply]; exact h_agree f η hη
+    have h_int_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
+        (0 : ℂ) = ∫ y : Fin m → ℝ, G (realEmbed y) * f y :=
+      fun f => boundary_value_recovery hC hconv hne hG_diff h_bv_zero f
+    -- Du Bois-Reymond lemma: a continuous function integrating to 0 against all
+    -- Schwartz test functions must vanish pointwise. Continuity of G ∘ realEmbed
+    -- follows from the ContinuousWithinAt given by continuous_boundary_tube
+    -- (the continuous extension is unique and defines a continuous function on ℝᵐ).
+    -- The density of Schwartz functions in L¹ then gives the result.
     sorry
   -- Step 4: G = 0 on T(C) by one-variable slicing + edge-of-the-wedge
   -- For z₀ = x₀ + iy₀ ∈ T(C) with y₀ ∈ C, the restriction g(w) = G(x₀ + wy₀) is
-  -- holomorphic on {Im w > 0}, zero on ℝ (by hG_boundary), hence zero everywhere
-  -- by edge_of_the_wedge_1d + identity_theorem_connected.
+  -- holomorphic on {Im w > 0} (since C contains the ray through y₀ for cones),
+  -- zero on ℝ (by hG_boundary), hence zero everywhere by edge_of_the_wedge_1d +
+  -- identity_theorem_connected.
   intro z hz
   have hG_zero : G z = 0 := by
-    sorry
+    -- Extract real and imaginary parts of z
+    let y₀ : Fin m → ℝ := fun i => (z i).im
+    let x₀ : Fin m → ℝ := fun i => (z i).re
+    have hy₀ : y₀ ∈ C := hz
+    -- Define the 1D slice: g(w) = G(x₀ + w · y₀)
+    let φ : ℂ → (Fin m → ℂ) := fun w i => ↑(x₀ i) + w * ↑(y₀ i)
+    let g : ℂ → ℂ := G ∘ φ
+    -- g(t) = 0 for all real t (from hG_boundary)
+    have hg_real : ∀ t : ℝ, g (t : ℂ) = 0 := by
+      intro t
+      show G (φ (t : ℂ)) = 0
+      have hφ_real : φ (t : ℂ) = realEmbed (fun i => x₀ i + t * y₀ i) := by
+        ext i; simp [φ, realEmbed, Complex.ofReal_add, Complex.ofReal_mul]
+      rw [hφ_real]; exact hG_boundary _
+    -- z = φ(I) since x₀ i + I * y₀ i = Re(z i) + Im(z i) * I = z i
+    have hz_eq : φ I = z := by
+      ext i; simp [φ, x₀, y₀, mul_comm I, Complex.re_add_im]
+    -- So G(z) = g(I), and it suffices to show g(I) = 0
+    suffices h : g I = 0 by
+      show G z = 0; rw [show G z = g I from by simp [g, hz_eq]]; exact h
+    -- (a) φ maps UHP into TubeDomain C
+    -- Im(φ w i) = w.im * y₀ i, so Im(φ w) = w.im • y₀.
+    -- Need w.im • y₀ ∈ C when w.im > 0 and y₀ ∈ C.
+    -- This is the cone/scaling property of C, which holds for forward light cones.
+    have hφ_UHP : ∀ w : ℂ, w.im > 0 → φ w ∈ TubeDomain C := by
+      intro w hw
+      show (fun i => (φ w i).im) ∈ C
+      have him : (fun i => (φ w i).im) = w.im • y₀ := by
+        ext i; simp [φ, x₀, y₀, Complex.add_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.ofReal_im]
+      rw [him]
+      -- Cone property: t > 0 ∧ y ∈ C → t • y ∈ C
+      -- Holds for forward cones V₊ and their products (the actual use case).
+      sorry
+    -- (b) φ is continuous (affine in w)
+    have hφ_cont : Continuous φ :=
+      continuous_pi fun i =>
+        (continuous_const.add (continuous_id.mul continuous_const))
+    -- (c) g is holomorphic on UHP (composition of G with differentiable φ)
+    have hg_diff : DifferentiableOn ℂ g EOW.UpperHalfPlane := by
+      show DifferentiableOn ℂ (G ∘ φ) EOW.UpperHalfPlane
+      exact hG_diff.comp (fun w _ => by
+        apply DifferentiableAt.differentiableWithinAt
+        exact differentiableAt_pi.mpr fun i =>
+          (differentiableAt_const _).add
+            (differentiableAt_id.mul (differentiableAt_const _)))
+        (fun w hw => hφ_UHP w hw)
+    -- Helper: φ maps real line to realEmbed
+    have hφ_real_embed : ∀ t : ℝ, φ (↑t) = realEmbed (fun i => x₀ i + t * y₀ i) := by
+      intro t; ext i; simp [φ, x₀, y₀, realEmbed, Complex.ofReal_add, Complex.ofReal_mul]
+    -- (d) Continuous boundary values from above at real points
+    have hcont_plus : ∀ x₁ : ℝ, (-3 : ℝ) < x₁ → x₁ < 3 →
+        Filter.Tendsto g (nhdsWithin (↑x₁ : ℂ) EOW.UpperHalfPlane) (nhds (g ↑x₁)) := by
+      intro x₁ _ _
+      show ContinuousWithinAt (G ∘ φ) EOW.UpperHalfPlane ↑x₁
+      have h := hG_cont (fun i => x₀ i + x₁ * y₀ i)
+      rw [show realEmbed (fun i => x₀ i + x₁ * y₀ i) = φ ↑x₁ from
+        (hφ_real_embed x₁).symm] at h
+      exact h.comp hφ_cont.continuousAt.continuousWithinAt (fun w hw => hφ_UHP w hw)
+    -- (d) Boundary values continuous along real line (g = 0 on reals)
+    have hbv_cont : ∀ x₁ : ℝ, (-3 : ℝ) < x₁ → x₁ < 3 →
+        Filter.Tendsto g (nhdsWithin (↑x₁ : ℂ) {c : ℂ | c.im = 0})
+          (nhds (g ↑x₁)) := by
+      intro x₁ _ _
+      rw [hg_real x₁]
+      apply Filter.Tendsto.congr' _ tendsto_const_nhds
+      filter_upwards [self_mem_nhdsWithin] with w (hw : w.im = 0)
+      have : w = (w.re : ℂ) := Complex.ext rfl (by simp [hw])
+      rw [this]; exact (hg_real w.re).symm
+    -- (e) Apply edge_of_the_wedge_1d with g on UHP and 0 on LHP
+    obtain ⟨U, F, hU_open, hU_conv, _, _, hF_diff, hF_plus, hF_minus, hU_ball⟩ :=
+      edge_of_the_wedge_1d (-3) 3 (by norm_num : (-3 : ℝ) < 3)
+        g 0
+        hg_diff
+        (differentiableOn_const 0)
+        hcont_plus
+        (fun _ _ _ => tendsto_const_nhds)
+        (fun x₁ _ _ => by show g ↑x₁ = 0; exact hg_real x₁)
+        hbv_cont
+    -- I ∈ U since |I - 0| = 1 < 3 = radius of ball
+    have hI_in_U : I ∈ U :=
+      hU_ball (by simp [Metric.mem_ball, Complex.norm_I])
+    -- -I ∈ U
+    have h_neg_I_in_U : -I ∈ U :=
+      hU_ball (by simp [Metric.mem_ball, norm_neg, Complex.norm_I])
+    -- (f) F = 0 on U by identity theorem: F = 0 on U ∩ LHP (open, nonempty)
+    have hF_zero_on_U : ∀ w ∈ U, F w = 0 := by
+      have hU_conn : IsConnected U :=
+        ⟨⟨I, hI_in_U⟩, hU_conv.isPreconnected⟩
+      -- F = 0 on U ∩ LHP, so F = 0 frequently near -I
+      have h_neg_I_LHP : (-I).im < 0 := by simp [Complex.neg_im, Complex.I_im]
+      have h_freq : ∃ᶠ w in nhdsWithin (-I) {(-I)}ᶜ, F w = (0 : ℂ → ℂ) w := by
+        apply Filter.Eventually.frequently
+        have hmem : U ∩ EOW.LowerHalfPlane ∈ nhdsWithin (-I) {(-I)}ᶜ :=
+          nhdsWithin_le_nhds ((hU_open.inter EOW.lowerHalfPlane_isOpen).mem_nhds
+            ⟨h_neg_I_in_U, h_neg_I_LHP⟩)
+        filter_upwards [hmem] with w ⟨hwU, hwLHP⟩
+        simp [hF_minus w ⟨hwU, hwLHP⟩]
+      exact fun w hw => identity_theorem_connected hU_open hU_conn F 0
+        hF_diff (differentiableOn_const 0) (-I) h_neg_I_in_U h_freq hw
+    -- (g) g(I) = F(I) = 0
+    have hI_UHP : I.im > 0 := by simp [Complex.I_im]
+    rw [← hF_plus I ⟨hI_in_U, hI_UHP⟩]
+    exact hF_zero_on_U I hI_in_U
   exact sub_eq_zero.mp hG_zero
 
 /-! ### Axiom 2: Polynomial Growth Estimates -/

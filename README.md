@@ -28,7 +28,7 @@ This will fetch Mathlib and all dependencies automatically. The first build may 
 
 ## Project Status
 
-The project builds cleanly. The formalization uses 10 named axioms encoding textbook results from Vladimirov, Jost, Bochner, and Streater-Wightman; see [`PROGRESS_REPORT.md`](PROGRESS_REPORT.md) for the full list.
+The project builds cleanly. The formalization uses 11 named axioms encoding textbook results from Vladimirov, Jost, Bochner, and Streater-Wightman; see [`PROGRESS_REPORT.md`](PROGRESS_REPORT.md) for the full list.
 
 Remaining work is tracked via `sorry` placeholders (92 total across 20 files):
 

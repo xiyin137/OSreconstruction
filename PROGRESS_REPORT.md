@@ -149,16 +149,18 @@ pulling back ContinuousWithinAt through the homeomorphism.
 Vladimirov (2002) §25-26:
 
 1. `continuous_boundary_tube` — distributional BV ⟹ continuous boundary extension
-2. `distributional_uniqueness_tube` — same distributional BV ⟹ equal on tube
-3. `polynomial_growth_tube` — tempered BV ⟹ polynomial growth estimates
-4. `bochner_tube_theorem` — holomorphic on T(C) extends to T(conv C)
+2. `boundary_value_recovery` — continuous extension integrates to reproduce distributional BV
+3. `distributional_uniqueness_tube` — same distributional BV ⟹ equal on tube (theorem, not axiom)
+4. `polynomial_growth_tube` — tempered BV ⟹ polynomial growth estimates
+5. `bochner_tube_theorem` — holomorphic on T(C) extends to T(conv C)
 
-*Why axioms:* `continuous_boundary_tube` (#1) and `polynomial_growth_tube` (#3)
+*Why axioms:* `continuous_boundary_tube` (#1) and `polynomial_growth_tube` (#4)
 require the Fourier-Laplace representation of tube-domain holomorphic functions
-(Vladimirov §25-26), which is not in Mathlib. `bochner_tube_theorem` (#4) is a
-deep SCV result (convex hull extension). `distributional_uniqueness_tube` (#2) is
-a corollary of #1 + the identity theorem and could potentially be proved from
-the other axioms.
+(Vladimirov §25-26), which is not in Mathlib. `boundary_value_recovery` (#2) is
+the second half of Vladimirov's theorem. `bochner_tube_theorem` (#5) is a
+deep SCV result (convex hull extension). `distributional_uniqueness_tube` (#3) is
+proved from #1, #2, edge-of-the-wedge, and the identity theorem (2 localized sorrys:
+du Bois-Reymond lemma and cone scaling property).
 
 ---
 
@@ -221,12 +223,13 @@ function infrastructure. Went from 25 sorrys to 0 (sorry-free).
 | # | Axiom | File | Eliminable? |
 |---|-------|------|-------------|
 | 1 | `continuous_boundary_tube` | `SCV/TubeDistributions.lean` | Needs Paley-Wiener-Schwartz |
-| 2 | `polynomial_growth_tube` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
-| 3 | `bochner_tube_theorem` | `SCV/TubeDistributions.lean` | Deep SCV (Bochner 1938) |
+| 2 | `boundary_value_recovery` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
+| 3 | `polynomial_growth_tube` | `SCV/TubeDistributions.lean` | Needs Fourier-Laplace transforms |
+| 4 | `bochner_tube_theorem` | `SCV/TubeDistributions.lean` | Deep SCV (Bochner 1938) |
 
 `distributional_uniqueness_tube` was converted from axiom to theorem, proved from
-`continuous_boundary_tube` + identity theorem (2 localized sorrys remain for
-DCT boundary identification and 1D slicing).
+`continuous_boundary_tube` + `boundary_value_recovery` + edge-of-the-wedge + identity
+theorem (2 localized sorrys: du Bois-Reymond lemma and cone scaling property).
 
 ### Analytic Continuation Axioms (2)
 
