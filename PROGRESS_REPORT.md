@@ -287,7 +287,7 @@ transforms not yet available in the formalization.
 
 ## WickRotation.lean Sorry Status
 
-### R→E Direction (3 sorrys, 14 proven)
+### R→E Direction (2 sorrys, 15 proven)
 
 | Theorem | Status | Via |
 |---------|--------|-----|
@@ -296,8 +296,8 @@ transforms not yet available in the formalization.
 | `W_analytic_local_commutativity` | **done** | `analytic_boundary_local_commutativity` axiom (S-W Thm 3-5) |
 | `constructedSchwinger_tempered` (E0) | **done** | `wick_rotated_schwinger_tempered` axiom (OS I Prop 5.1) |
 | `constructedSchwinger_translation_invariant` (E1a) | **done** | `bhw_translation_invariant` axiom |
-| `constructedSchwinger_rotation_invariant` (E1b) | **done** (det=1) | `integral_orthogonal_eq_self` |
-| `F_ext_rotation_invariant` (det=-1) | sorry | Needs PCT theorem |
+| `constructedSchwinger_rotation_invariant` (E1b) | **done** | SO(d+1) only; det=-1 dropped (not implied by Wightman axioms) |
+| `F_ext_rotation_invariant` | **done** | SO(d+1) via `schwinger_euclidean_invariant` |
 | `constructedSchwinger_reflection_positive` (E2) | sorry | Needs Borchers involution + Wick rotation |
 | `constructedSchwinger_symmetric` (E3) | **done** | `integral_perm_eq_self` (sorry-free) |
 | `W_analytic_cluster_integral` (E4) | sorry | Needs cluster decomposition + dominated convergence |
@@ -316,11 +316,11 @@ transforms not yet available in the formalization.
 
 ## Full Sorry Census
 
-**87 total** across 20 files.
+**86 total** across 20 files.
 
 | Count | File | Category |
 |-------|------|----------|
-| 11 | `WickRotation.lean` | 3 R→E + 8 E→R |
+| 10 | `WickRotation.lean` | 2 R→E + 8 E→R |
 | 2 | `SCV/TubeDistributions.lean` | distributional_uniqueness_tube proof |
 | 14 | `vNA/ModularAutomorphism.lean` | Connes cocycle |
 | 11 | `vNA/MeasureTheory/CaratheodoryExtension.lean` | Measure theory |

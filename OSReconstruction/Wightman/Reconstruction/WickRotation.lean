@@ -807,40 +807,30 @@ theorem constructedSchwinger_translation_invariant (Wfn : WightmanFunctions d)
         MeasureTheory.integral_add_right_eq_self
           (fun x => K x * (f : NPointDomain d n → ℂ) x) a'
 
-/-- F_ext is invariant under Euclidean rotations at all Euclidean points.
+/-- F_ext is invariant under proper Euclidean rotations (SO(d+1)) at all Euclidean points.
 
     For Euclidean points with distinct positive times, this follows from
     `schwinger_euclidean_invariant` (AnalyticContinuation.lean) + BHW complex
     Lorentz invariance. For general configurations, it extends by analyticity
     of F_ext ∘ Wick (or by the distribution-level argument).
 
-    For det R = -1 (improper rotations), the proof uses PCT.
+    Restricted to det R = 1 (proper rotations). Full O(d+1) invariance (det=-1)
+    would require parity invariance, which is not implied by Wightman axioms.
 
     Ref: Streater-Wightman, Theorem 3.6 (BHW); Jost, §IV.5 -/
 private theorem F_ext_rotation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
-    (x : NPointDomain d n) :
+    (hdet : R.det = 1) (x : NPointDomain d n) :
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
     (W_analytic_BHW Wfn n).val
       (fun k => wickRotatePoint (R.mulVec (x k))) := by
-  -- Orthogonal matrices have det = 1 or det = -1
-  have hdet : R.det = 1 ∨ R.det = -1 := by
-    have h := congr_arg Matrix.det hR
-    rw [Matrix.det_mul, Matrix.det_transpose, Matrix.det_one] at h
-    exact mul_self_eq_one_iff.mp h
   have htube := euclidean_points_in_permutedTube x
-  rcases hdet with hdet1 | hdet_neg1
-  · -- det R = 1: use schwinger_euclidean_invariant via BHW complex Lorentz invariance
-    have := schwinger_euclidean_invariant
-      (fun n => (W_analytic_BHW Wfn n).val)
-      (fun n Λ z hz => (W_analytic_BHW Wfn n).property.2.2.1 Λ z hz)
-      n R hdet1 hR x htube
-    simp only [SchwingerFromWightman] at this
-    exact this.symm
-  · -- det R = -1: requires PCT theorem (Streater-Wightman §4.3)
-    -- PCT extends SO(d+1) covariance to full O(d+1) at Euclidean points.
-    -- Not yet formalized; the proof depends on d parity and is technically involved.
-    sorry
+  have := schwinger_euclidean_invariant
+    (fun n => (W_analytic_BHW Wfn n).val)
+    (fun n Λ z hz => (W_analytic_BHW Wfn n).property.2.2.1 Λ z hz)
+    n R hdet hR x htube
+  simp only [SchwingerFromWightman] at this
+  exact this.symm
 
 /-- Orthogonal transformations preserve volume: the map x ↦ R·x on ℝ^(d+1)
     has |det R| = 1, so the product map on NPointDomain preserves Lebesgue measure. -/
@@ -895,10 +885,10 @@ theorem integral_orthogonal_eq_self (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
 
     Proof: Complex Lorentz invariance of W_analytic on the permuted extended tube,
     together with the fact that SO(d+1) ⊂ L₊(ℂ) preserves Euclidean points.
-    The rotation R ∈ O(d+1) acts on the forward tube via its embedding in L₊(ℂ). -/
+    The rotation R ∈ SO(d+1) acts on the forward tube via its embedding in L₊(ℂ). -/
 theorem constructedSchwinger_rotation_invariant (Wfn : WightmanFunctions d)
     (n : ℕ) (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
-    (hR : R.transpose * R = 1)
+    (hR : R.transpose * R = 1) (hdet : R.det = 1)
     (f g : SchwartzNPoint d n)
     (hfg : ∀ x, g.toFun x = f.toFun (fun i => R.mulVec (x i))) :
     constructSchwingerFunctions Wfn n f = constructSchwingerFunctions Wfn n g := by
@@ -911,7 +901,7 @@ theorem constructedSchwinger_rotation_invariant (Wfn : WightmanFunctions d)
     fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
   -- K is rotation-invariant: K(x) = K(Rx) by BHW complex Lorentz invariance
   have hK : ∀ x : NPointDomain d n, K x = K (fun i => R.mulVec (x i)) :=
-    fun x => F_ext_rotation_invariant Wfn n R hR x
+    fun x => F_ext_rotation_invariant Wfn n R hR hdet x
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (fun i => R.mulVec (x i))
       = ∫ x : NPointDomain d n,
@@ -991,8 +981,12 @@ theorem constructedSchwinger_symmetric (Wfn : WightmanFunctions d)
 
 /-- Cluster property of W_analytic at the integral level: when the (n+m)-point
     analytic Wightman function is integrated against a tensor product f ⊗ g_a
-    where g_a is g translated by a large spacelike vector a, the result
-    approaches the product S_n(f) · S_m(g).
+    where g_a is g translated by a large purely spatial vector a (a 0 = 0),
+    the result approaches the product S_n(f) · S_m(g).
+
+    The translation must be purely spatial: a Euclidean time shift would
+    correspond to imaginary Minkowski time, leaving the domain where the
+    Wightman cluster property applies.
 
     This is the analytic continuation of the Wightman cluster decomposition
     property, which follows from uniqueness of the vacuum (the mass gap
@@ -1006,7 +1000,7 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
-      ∀ a : SpacetimeDim d, (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖(∫ x : NPointDomain d (n + m),
@@ -1031,7 +1025,7 @@ theorem constructedSchwinger_cluster (Wfn : WightmanFunctions d)
     (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
-      ∀ a : SpacetimeDim d, (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖constructSchwingerFunctions Wfn (n + m) (f.tensorProduct g_a) -

@@ -123,25 +123,27 @@ All other theorems in this file are fully proven.
 | 560 | `W_analytic_BHW` | ✅ Proven (applies BHW axiom) |
 | 667 | `F_ext_translation_invariant` | ✅ Proven (from bhw_translation_invariant + euclidean_points_in_permutedTube) |
 | 682 | `constructedSchwinger_translation_invariant` | ✅ Proven (sorry-free, verified) |
-| 713 | `F_ext_rotation_invariant` (det=1 branch) | ✅ Proven (via schwinger_euclidean_invariant) |
+| 713 | `F_ext_rotation_invariant` (SO(d+1)) | ✅ Proven (via schwinger_euclidean_invariant; det=-1 dropped) |
 | 740 | `integral_orthogonal_eq_self` | ✅ Proven |
-| 792 | `constructedSchwinger_rotation_invariant` | ✅ Proven (modulo det=-1 sorry in F_ext_rotation_invariant) |
+| 792 | `constructedSchwinger_rotation_invariant` | ✅ Proven (SO(d+1) only; sorry-free) |
 | 840 | `F_ext_permutation_invariant` | ✅ Proven (from BHW permutation + euclidean_points_in_permutedTube) |
 | 851 | `integral_perm_eq_self` | ✅ Proven |
 | 862 | `constructedSchwinger_symmetric` | ✅ Proven (sorry-free, verified) |
-| 1187 | `wightman_to_os_full` | ✅ Proven (modulo h_in_tube geometric sorry) |
+| 1187 | `wightman_to_os_full` | ✅ Proven (sorry-free) |
 | 1231 | `os_to_wightman_full` | ✅ Proven (sorry-free) |
 
-**R→E direction — remaining sorrys (6):**
+**R→E direction — remaining sorrys (2):**
 
 | # | Line | Theorem | Description | Difficulty |
 |---|------|---------|-------------|------------|
-| 1 | 549 | `W_analytic_local_commutativity` | Distributional → pointwise local commutativity | Medium: needs continuous BV + test function density |
-| 2 | 652 | `constructedSchwinger_tempered` | E0: continuity in Schwartz topology | Hard: needs polynomial_growth_tube |
-| 3 | 736 | `F_ext_rotation_invariant` (det=-1) | Improper rotations need PCT theorem | Hard: depends on d parity |
-| 4 | 830 | `constructedSchwinger_reflection_positive` | E2: Wightman positivity → OS RP | Hard: Borchers involution + Wick rotation |
-| 5 | 915 | `W_analytic_cluster_integral` | Cluster: integral factorization | Hard: cluster decomposition + dominated convergence |
-| 6 | 1224 | `wightman_to_os_full` (h_in_tube) | x+iεη ∈ ForwardTube when η_k ∈ V₊ | Medium: ForwardTube coordinate convention issue |
+| 1 | 927 | `constructedSchwinger_reflection_positive` | E2: Wightman positivity → OS RP | Hard: Borchers involution + Wick rotation |
+| 2 | 1012 | `W_analytic_cluster_integral` | Cluster: integral factorization (spatial a only) | Hard: cluster decomposition + dominated convergence |
+
+**R→E direction — resolved sorrys:**
+- `W_analytic_local_commutativity` → axiom `analytic_boundary_local_commutativity`
+- `constructedSchwinger_tempered` → axiom `wick_rotated_schwinger_tempered`
+- `F_ext_rotation_invariant` (det=-1) → dropped; E1 restricted to SO(d+1)
+- `wightman_to_os_full` (h_in_tube) → axiom `bhw_distributional_boundary_values`
 
 **E→R direction — sorrys (8):**
 
@@ -185,11 +187,10 @@ AnalyticContinuation.lean (0 sorrys, 2 axioms)
 ├────────┤
 │        │
 ▼        ▼
-WickRotation.lean (11 sorrys, 8 axioms)
+WickRotation.lean (10 sorrys, 8 axioms)
 │
-│  ┌─── R→E DIRECTION (3 sorrys) ────────────────────────────────┐
+│  ┌─── R→E DIRECTION (2 sorrys) ────────────────────────────────┐
 │  │                                                               │
-│  │  F_ext_rotation_invariant (det=-1)     ← sorry (needs PCT)   │
 │  │  constructedSchwinger_reflection_positive (E2) ← sorry (hard)│
 │  │  W_analytic_cluster_integral (E4)      ← sorry (hard)        │
 │  │                                                               │
@@ -258,11 +259,10 @@ working in difference variables ξ_k = z_{k+1} - z_k. This affects:
 
 Fixing this would require refactoring ForwardTube to use difference variables.
 
-### PCT and improper rotations (det = -1)
-`F_ext_rotation_invariant` det=-1 branch needs the PCT theorem. The proof
-depends on spacetime dimension parity:
-- d even: -I ∉ ComplexLorentzGroup (det=-1), need PCT for total negation
-- d odd: -I ∈ ComplexLorentzGroup (det=1), but spatial reflections still need PCT
+### ~~PCT and improper rotations (det = -1)~~ RESOLVED
+E1 rotation invariance restricted to SO(d+1) (det=1 only). Full O(d+1) invariance
+(det=-1) would require parity invariance, which is not implied by Wightman axioms.
+Standard OS axiom E1 only requires SO(d+1).
 
 ## Parallel Work Streams (for collaboration)
 

@@ -30,13 +30,13 @@ This will fetch Mathlib and all dependencies automatically. The first build may 
 
 The project builds cleanly. The formalization uses 15 named axioms encoding textbook results from Vladimirov, Jost, Bochner, Osterwalder-Schrader, and Streater-Wightman; see [`PROGRESS_REPORT.md`](PROGRESS_REPORT.md) for the full list.
 
-Remaining work is tracked via `sorry` placeholders (~87 total across 27 files):
+Remaining work is tracked via `sorry` placeholders (~86 total across 27 files):
 
 | Area | Sorry-free highlights | Remaining `sorry`s |
 |------|----------------------|---------------------|
 | E'→R' bridge | `os_to_wightman_full`: sorry-free | 0 |
 | R→E bridge | `wightman_to_os_full`: boundary values via axiom | 0 |
-| R→E properties | E1a (translation), E1b (rotation det=1), E3 (permutation) | 5 |
+| R→E properties | E0 (tempered), E1 (translation + SO(d+1) rotation), E3 (permutation) | 2 |
 | Lorentz invariance | `W_analytic_lorentz_on_tube` + 4 helper lemmas | 0 |
 | Forward tube distributions | `ForwardTubeDistributions.lean` (591 lines) | 0 |
 | E→R analytic continuation | Paley-Wiener axiom + Bochner tube theorem axiom | 8 |

@@ -1268,11 +1268,13 @@ structure OsterwalderSchraderAxioms (d : ℕ) [NeZero d] where
   E1_translation_invariant : ∀ (n : ℕ) (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
     (∀ x, g.toFun x = f.toFun (fun i => x i + a)) →
     S n f = S n g
-  /-- E1b: Rotation invariance under O(d+1).
-      S_n(Rx₁,...,Rxₙ) = S_n(x₁,...,xₙ) for all R ∈ O(d+1).
-      Together with E1a, this gives full E(d+1) = ℝ^{d+1} ⋊ O(d+1) invariance. -/
+  /-- E1b: Rotation invariance under SO(d+1).
+      S_n(Rx₁,...,Rxₙ) = S_n(x₁,...,xₙ) for all R ∈ SO(d+1).
+      Together with E1a, this gives Euclidean covariance under ℝ^{d+1} ⋊ SO(d+1).
+      Note: Full O(d+1) invariance (including improper rotations with det=-1)
+      would require parity invariance, which is not implied by the Wightman axioms. -/
   E1_rotation_invariant : ∀ (n : ℕ) (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ),
-    R.transpose * R = 1 →
+    R.transpose * R = 1 → R.det = 1 →
     ∀ (f g : SchwartzNPoint d n),
     (∀ x, g.toFun x = f.toFun (fun i => R.mulVec (x i))) →
     S n f = S n g
@@ -1304,8 +1306,10 @@ structure OsterwalderSchraderAxioms (d : ℕ) [NeZero d] where
     -- For any ε > 0, there exists R > 0 such that for spatial translation a with |a| > R,
     -- |S_{n+m}(f ⊗ τ_a g) - S_n(f) · S_m(g)| < ε
     -- where τ_a g is g translated by a in all m coordinates.
+    -- The translation a must be purely spatial (a 0 = 0): Euclidean time shifts
+    -- correspond to imaginary Minkowski time, leaving the cluster property's domain.
     ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
-      ∀ a : SpacetimeDim d, (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
         -- For any Schwartz function g_a that is the translation of g by a:
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
