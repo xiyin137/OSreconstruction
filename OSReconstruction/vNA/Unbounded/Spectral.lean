@@ -2610,56 +2610,36 @@ def UnboundedOperator.power (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
         rw [hre, Real.exp_zero]
       · simp)
 
-/-- T^0 = 1
+/-- T^0 = 1 for strictly positive T.
 
-    **Status:** FALSE as stated. The `power` definition uses `else 0` for λ ≤ 0,
-    making f(λ) = χ_{(0,∞)}(λ) at s = 0. This gives P(Ioi 0), not P(ℝ) = 1.
-    For operators with 0 in the point spectrum (e.g., T = 0), P({0}) ≠ 0
-    and the result fails. See the proof comment for fix options. -/
+    **Note:** This requires strict positivity (T injective), not just positivity.
+    For a merely positive T, `power 0` gives `P((0,∞))` (the projection onto ker(T)⊥),
+    which equals 1 only when T has trivial kernel. Counterexample: T = 0.
+    See Issue #4.
+
+    **Proof:** The function f(λ) = λ^0 = 1 for λ > 0 (and 0 elsewhere).
+    For strictly positive T, P({0}) = 0 (since 0 is not an eigenvalue),
+    so P((0,∞)) = P([0,∞)) = P(ℝ) = 1, giving ∫ f dP = 1.
+    Depends on: spectral support argument (P((-∞, 0]) = 0 for positive T). -/
 theorem UnboundedOperator.power_zero (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
-    (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive) :
+    (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive)
+    (hstrict : T.IsStrictlyPositive) :
     T.power hT hsa hpos 0 (by simp [Complex.zero_re]) = 1 := by
   /-
   PROOF STRUCTURE:
 
   1. The power function is: f(λ) = if λ > 0 then exp(0 * log λ) else 0
   2. For λ > 0: exp(0 * log λ) = exp(0) = 1
-  3. So f(λ) = 1 on (0, ∞) and f(λ) = 0 on (-∞, 0]
+  3. So f(λ) = χ_{(0,∞)}(λ) (indicator of positive reals)
 
-  For a positive operator T:
-  - The spectrum is contained in [0, ∞)
-  - The spectral projection P({0}) = 0 for strictly positive T
-    (If 0 is an eigenvalue with non-trivial projection, T would have a kernel)
-  - Therefore f = 1 on the support of P (up to a null set)
-  - And ∫ 1 dP = P(ℝ) = 1
+  For a strictly positive operator T:
+  - The spectrum is contained in [0, ∞) (by positivity)
+  - P({0}) = 0 (by strict positivity / injectivity)
+  - Therefore P((0, ∞)) = P([0, ∞)) = P(ℝ) = 1
+  - And ∫ χ_{(0,∞)} dP = P((0,∞)) = 1
 
-  The rigorous proof requires showing that for positive T:
-  - P((0, ∞)) = P(ℝ) = 1 (i.e., P((-∞, 0]) = 0)
-  - This uses positivity: ⟨x, Tx⟩ ≥ 0 implies spectrum ⊆ [0, ∞)
-  -/
-  /-
-  BUG: This theorem is FALSE as stated for non-injective positive operators.
-
-  The `power` function uses `else 0` for λ ≤ 0, so at s = 0:
-    f(λ) = if λ > 0 then exp(0 * log λ) else 0 = if λ > 0 then 1 else 0 = χ_{(0,∞)}
-
-  For T^0 = 1, we need functionalCalculus P χ_{(0,∞)} = 1, i.e., P(Ioi 0) = P(ℝ) = 1,
-  which requires P(Iic 0) = 0. In particular, P({0}) = 0.
-
-  Counterexample: For T = 0 (the zero operator), T is densely defined, self-adjoint,
-  and positive (⟨0, x⟩ = 0 ≥ 0). Its spectral measure is P({0}) = 1. Then:
-    power T ... 0 _ = functionalCalculus P χ_{(0,∞)} = P(Ioi 0) = 0 ≠ 1.
-
-  Fix options:
-  (A) Change `power` definition to use `else 1` instead of `else 0`.
-      This makes f(λ) = 1 for all λ at s = 0, giving functionalCalculus P 1 = P(ℝ) = 1.
-      power_add still holds: for λ ≤ 0, (f_s * f_t)(λ) = 1 * 1 = 1 = f_{s+t}(λ).
-  (B) Add hypothesis that T is injective (strictly positive), ensuring P({0}) = 0.
-  (C) Weaken the conclusion to hold a.e. w.r.t. the spectral measure.
-
-  Option (A) is recommended as it requires only a one-character change to the definition
-  and preserves all existing proofs (the boundedness/integrability proofs use ‖·‖ ≤ 1,
-  which holds for both 0 and 1).
+  FOUNDATIONAL: Requires showing P((-∞, 0]) = 0 for strictly positive T
+  and that the functional calculus of the constant 1 on support is the identity.
   -/
   sorry
 
@@ -2744,14 +2724,19 @@ theorem UnboundedOperator.power_add (T : UnboundedOperator H) (hT : T.IsDenselyD
         functionalCalculus P f_t (power_int t ht) ⟨1, zero_le_one, power_norm_le t ht⟩ := hmul
     _ = T.power hT hsa hpos s hs ∘L T.power hT hsa hpos t ht := rfl
 
-/-- For real t, T^{it} is unitary.
+/-- For real t, T^{it} is unitary (requires strict positivity).
+
+    **Note:** Like `power_zero`, this requires strict positivity (T injective).
+    For a merely positive T, T^0 = P((0,∞)) ≠ 1, so u* ∘ u = T^0 ≠ 1.
+    Counterexample: T = 0 gives T^{it} = 0 for all t, which is not unitary.
 
     **Proof:** Uses `functionalCalculus_star`. For real t:
     - (T^{it})* = ∫ conj(λ^{it}) dP = ∫ λ^{-it} dP = T^{-it}
     - T^{it} ∘ T^{-it} = T^0 = 1 (by `power_add` and `power_zero`)
     Depends on: `functionalCalculus_star`, `power_add`, `power_zero`. -/
 theorem UnboundedOperator.power_imaginary_unitary (T : UnboundedOperator H)
-    (hT : T.IsDenselyDefined) (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive) (t : ℝ) :
+    (hT : T.IsDenselyDefined) (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive)
+    (hstrict : T.IsStrictlyPositive) (t : ℝ) :
     let hs : (Complex.I * ↑t).re = 0 := by
       simp [Complex.mul_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im]
     let u := T.power hT hsa hpos (Complex.I * t) hs

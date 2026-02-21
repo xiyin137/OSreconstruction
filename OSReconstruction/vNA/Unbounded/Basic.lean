@@ -1072,6 +1072,18 @@ variable (T : UnboundedOperator H)
 def IsPositive : Prop :=
   ∀ x : T.domain, 0 ≤ (@inner ℂ H _ (T x) (x : H)).re
 
+/-- An operator is strictly positive if ⟨Tx, x⟩ > 0 for all nonzero x ∈ dom(T).
+    Equivalently, T is positive and injective (0 is not an eigenvalue).
+    In modular theory, the modular operator Δ is always strictly positive. -/
+def IsStrictlyPositive : Prop :=
+  ∀ x : T.domain, (x : H) ≠ 0 → 0 < (@inner ℂ H _ (T x) (x : H)).re
+
+theorem IsStrictlyPositive.isPositive (h : T.IsStrictlyPositive) : T.IsPositive :=
+  fun x => by
+    by_cases hx : (x : H) = 0
+    · simp [hx]
+    · exact le_of_lt (h x hx)
+
 /-- For symmetric operators, ⟨Tx, x⟩ is real -/
 theorem symmetric_inner_real (hsym : T.IsSymmetric) (x : T.domain) :
     (@inner ℂ H _ (T x) (x : H)).im = 0 := by

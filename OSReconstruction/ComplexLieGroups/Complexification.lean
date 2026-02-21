@@ -7,6 +7,7 @@ import Mathlib.Topology.Connected.PathConnected
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import OSReconstruction.ComplexLieGroups.LorentzLieGroup
+import OSReconstruction.ComplexLieGroups.SOConnected
 
 /-!
 # Complexification of the Lorentz Group
@@ -330,6 +331,10 @@ def ofEuclidean (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
 /-- The identity is in SO⁺(1,d;ℂ). -/
 theorem one_val : (one (d := d)).val = 1 := rfl
 
+@[simp] theorem one_val' : (1 : ComplexLorentzGroup d).val = 1 := rfl
+@[simp] theorem mul_val (Λ₁ Λ₂ : ComplexLorentzGroup d) :
+    (Λ₁ * Λ₂).val = Λ₁.val * Λ₂.val := rfl
+
 /-! ### Exponential map infrastructure -/
 
 /-- Two elements of `ComplexLorentzGroup` with the same matrix are equal. -/
@@ -511,6 +516,116 @@ private theorem joined_one_mul {a b : ComplexLorentzGroup d}
     ⟨(hb.somePath.map (continuous_mul_left a)).cast (mul_one a).symm rfl⟩
   exact ha.trans h
 
+/-! ### Wick rotation: ComplexLorentzGroup d ≅ SOComplex (d + 1) -/
+
+/-- Wick rotation matrix W = diag(i, 1, ..., 1). -/
+private def W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+  Matrix.diagonal (fun i => if i = (0 : Fin (d + 1)) then I else 1)
+
+/-- Inverse Wick rotation matrix W⁻¹ = diag(-i, 1, ..., 1). -/
+private def Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+  Matrix.diagonal (fun i => if i = (0 : Fin (d + 1)) then -I else 1)
+
+private theorem W_mul_Winv :
+    (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * Winv = 1 := by
+  simp only [W, Winv, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1; ext i; split_ifs <;> simp [I_mul_I]
+
+private theorem Winv_mul_W :
+    (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * W = 1 := by
+  simp only [W, Winv, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1; ext i; split_ifs <;> simp [I_mul_I]
+
+private theorem Winv_sq_eq_eta :
+    (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * Winv = ηℂ := by
+  simp only [Winv, ηℂ, Matrix.diagonal_mul_diagonal]
+  congr 1; ext i; simp only [minkowskiSignature]
+  split_ifs <;> push_cast <;> simp [I_mul_I]
+
+private theorem W_transpose_eq :
+    (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).transpose = W :=
+  Matrix.diagonal_transpose _
+
+private theorem Winv_transpose_eq :
+    (Winv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).transpose = Winv :=
+  Matrix.diagonal_transpose _
+
+private theorem W_eta_W :
+    (W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * ηℂ * W = 1 := by
+  simp only [W, ηℂ, Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1; ext i; simp only [minkowskiSignature]
+  split_ifs <;> push_cast <;> simp [I_mul_I]
+
+/-- Map from ComplexLorentzGroup to SOComplex via Wick rotation: Λ ↦ W⁻¹ Λ W. -/
+def toSOComplex (Λ : ComplexLorentzGroup d) : SOComplex (d + 1) where
+  val := Winv * Λ.val * W
+  orthogonal := by
+    have hWinvSq : ∀ M : Matrix _ _ ℂ,
+        (Winv (d := d)) * (Winv * M) = ηℂ * M :=
+      fun M => by rw [← Matrix.mul_assoc, Winv_sq_eq_eta]
+    have hΛmet : ∀ M : Matrix _ _ ℂ,
+        Λ.val.transpose * (ηℂ * (Λ.val * M)) = ηℂ * M := by
+      intro M
+      calc Λ.val.transpose * (ηℂ * (Λ.val * M))
+          = Λ.val.transpose * ηℂ * Λ.val * M := by simp only [Matrix.mul_assoc]
+        _ = ηℂ * M := by rw [metric_preserving_matrix Λ]
+    rw [Matrix.transpose_mul, Matrix.transpose_mul, W_transpose_eq, Winv_transpose_eq]
+    simp only [Matrix.mul_assoc]
+    rw [hWinvSq, hΛmet, ← Matrix.mul_assoc, W_eta_W]
+  proper := by
+    rw [Matrix.det_mul, Matrix.det_mul, Λ.proper, mul_one,
+      ← Matrix.det_mul, Winv_mul_W, Matrix.det_one]
+
+/-- Map from SOComplex to ComplexLorentzGroup via inverse Wick rotation: A ↦ W A W⁻¹. -/
+def fromSOComplex (A : SOComplex (d + 1)) : ComplexLorentzGroup d where
+  val := W * A.val * Winv
+  metric_preserving := by
+    apply of_metric_preserving_matrix
+    have hWηW : ∀ M : Matrix _ _ ℂ,
+        (W (d := d)) * (ηℂ * (W * M)) = M := by
+      intro M
+      calc W * (ηℂ * (W * M))
+          = W * ηℂ * W * M := by simp only [Matrix.mul_assoc]
+        _ = 1 * M := by rw [W_eta_W]
+        _ = M := Matrix.one_mul _
+    have hAorth : ∀ M : Matrix _ _ ℂ,
+        A.val.transpose * (A.val * M) = M := by
+      intro M
+      calc A.val.transpose * (A.val * M)
+          = (A.val.transpose * A.val) * M := by rw [Matrix.mul_assoc]
+        _ = 1 * M := by rw [A.orthogonal]
+        _ = M := Matrix.one_mul _
+    rw [Matrix.transpose_mul, Matrix.transpose_mul, W_transpose_eq, Winv_transpose_eq]
+    simp only [Matrix.mul_assoc]
+    rw [hWηW, hAorth, Winv_sq_eq_eta]
+  proper := by
+    rw [Matrix.det_mul, Matrix.det_mul, A.proper, mul_one,
+      ← Matrix.det_mul, W_mul_Winv, Matrix.det_one]
+
+private theorem fromSOComplex_toSOComplex (Λ : ComplexLorentzGroup d) :
+    fromSOComplex (toSOComplex Λ) = Λ := by
+  apply ext; show W * (Winv * Λ.val * W) * Winv = Λ.val
+  simp only [Matrix.mul_assoc]
+  rw [W_mul_Winv, Matrix.mul_one, ← Matrix.mul_assoc, W_mul_Winv, Matrix.one_mul]
+
+private theorem toSOComplex_fromSOComplex (A : SOComplex (d + 1)) :
+    toSOComplex (fromSOComplex A) = A := by
+  apply SOComplex.ext; show Winv * (W * A.val * Winv) * W = A.val
+  simp only [Matrix.mul_assoc]
+  rw [Winv_mul_W, Matrix.mul_one, ← Matrix.mul_assoc, Winv_mul_W, Matrix.one_mul]
+
+private theorem fromSOComplex_one :
+    fromSOComplex (SOComplex.one : SOComplex (d + 1)) = (one : ComplexLorentzGroup d) := by
+  apply ext; show W * SOComplex.one.val * Winv = one.val
+  simp [SOComplex.one, one, W_mul_Winv]
+
+private theorem continuous_fromSOComplex :
+    Continuous (fromSOComplex : SOComplex (d + 1) → ComplexLorentzGroup d) := by
+  have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
+  rw [hind.continuous_iff]
+  show Continuous (fun A : SOComplex (d + 1) => (W : Matrix _ _ ℂ) * A.val * Winv)
+  exact (continuous_const.mul SOComplex.continuous_val).mul continuous_const
+
 /-- Every element of SO⁺(1,d;ℂ) is joined to the identity.
 
     The proof uses the fact that SO⁺(1,d;ℂ) ≅ SO(d+1;ℂ) via Wick rotation,
@@ -519,7 +634,13 @@ private theorem joined_one_mul {a b : ComplexLorentzGroup d}
     and hence continuously connected to the identity. -/
 private theorem joined_one_all (Λ : ComplexLorentzGroup d) :
     Joined (one : ComplexLorentzGroup d) Λ := by
-  sorry
+  -- SOComplex (d + 1) is path-connected, so toSOComplex Λ is joined to SOComplex.one
+  obtain ⟨γ, _⟩ := (SOComplex.isPathConnected (d + 1)).joinedIn
+    SOComplex.one (Set.mem_univ _) (toSOComplex Λ) (Set.mem_univ _)
+  -- Map the path back to ComplexLorentzGroup via fromSOComplex (continuous)
+  have hpath : Joined (fromSOComplex SOComplex.one) (fromSOComplex (toSOComplex Λ)) :=
+    ⟨γ.map continuous_fromSOComplex⟩
+  rwa [fromSOComplex_one, fromSOComplex_toSOComplex] at hpath
 
 /-- **SO⁺(1,d;ℂ) is path-connected.**
 

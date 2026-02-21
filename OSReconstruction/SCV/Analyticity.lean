@@ -1153,7 +1153,7 @@ private lemma hasFPowerSeriesAt_cauchyPowerSeriesPolydisc {m : ℕ}
     rw [ENNReal.coe_pos]; exact Real.toNNReal_pos.mpr hρ
   -- Construct HasFPowerSeriesAt
   refine ⟨↑r, h_radius, h_pos, fun {y} hy => ?_⟩
-  rw [EMetric.mem_ball, edist_zero_right, enorm_lt_coe] at hy
+  rw [Metric.mem_eball, edist_zero_right, enorm_lt_coe] at hy
   have h_lt : (‖y‖₊ : ℝ) < (r : ℝ) := by exact_mod_cast hy
   rw [hr_val] at h_lt
   exact hasSum_cauchyPowerSeriesPolydisc_diag f z R Rw hR hRw hf_sep_Rw hf_cont_Rw h_lt
