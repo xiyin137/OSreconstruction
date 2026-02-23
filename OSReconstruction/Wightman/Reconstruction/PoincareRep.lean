@@ -65,6 +65,67 @@ private theorem affineCompNPoint_smooth (g : PoincareGroup d) {n : ℕ}
     (ContinuousLinearMap.proj (R := ℝ)
       (φ := fun _ : Fin n => SpacetimeDim d) i).contDiff
 
+/-- The n-point Poincaré action has temperate growth. -/
+private theorem poincareActNPoint_hasTemperateGrowth (g : PoincareGroup d) (n : ℕ) :
+    Function.HasTemperateGrowth
+      (poincareActNPointDomain g : NPointDomain d n → NPointDomain d n) := by
+  have hL : Function.HasTemperateGrowth
+      (ContinuousLinearMap.pi (fun i : Fin n =>
+        ((Matrix.mulVecLin g.lorentz.val).toContinuousLinearMap).comp
+          (ContinuousLinearMap.proj (R := ℝ) (φ := fun _ : Fin n => SpacetimeDim d) i)) :
+        NPointDomain d n → NPointDomain d n) :=
+    ContinuousLinearMap.hasTemperateGrowth _
+  have hC : Function.HasTemperateGrowth
+      (fun _ : NPointDomain d n => (fun _ : Fin n => g.translation)) :=
+    Function.HasTemperateGrowth.const _
+  convert hL.add hC using 1
+
+/-- The inverse Lorentz matrix recovers the original vector (n-point version). -/
+private theorem lorentz_inv_mulVec' (g : PoincareGroup d) (x : SpacetimeDim d) :
+    Matrix.mulVec g.lorentz⁻¹.val (Matrix.mulVec g.lorentz.val x) = x := by
+  have : g.lorentz⁻¹.val * g.lorentz.val = 1 := by
+    exact_mod_cast congr_arg Subtype.val (inv_mul_cancel (g.lorentz))
+  rw [Matrix.mulVec_mulVec, this, Matrix.one_mulVec]
+
+/-- Upper bound for n-point Poincaré action: ‖x‖ ≤ C * (1 + ‖g·x‖)^k. -/
+private theorem poincareActNPoint_upperBound (g : PoincareGroup d) (n : ℕ) :
+    ∃ (k : ℕ) (C : ℝ), ∀ (x : NPointDomain d n),
+      ‖x‖ ≤ C * (1 + ‖poincareActNPointDomain g x‖) ^ k := by
+  set Λ_inv := (Matrix.mulVecLin g.lorentz⁻¹.val).toContinuousLinearMap
+  refine ⟨1, ‖Λ_inv‖ * (1 + ‖g.translation‖) + 1, fun x => ?_⟩
+  simp only [pow_one]
+  -- For each component i, bound ‖x i‖
+  suffices h : ∀ i : Fin n, ‖x i‖ ≤
+      (‖Λ_inv‖ * (1 + ‖g.translation‖) + 1) * (1 + ‖poincareActNPointDomain g x‖) by
+    exact (pi_norm_le_iff_of_nonneg (by positivity)).mpr h
+  intro i
+  -- Step 1: ‖x i‖ ≤ ‖Λ_inv‖ * ‖Λ * (x i)‖
+  have h1 : ‖x i‖ ≤ ‖Λ_inv‖ * ‖g.lorentz.val.mulVec (x i)‖ := by
+    calc ‖x i‖ = ‖g.lorentz⁻¹.val.mulVec (g.lorentz.val.mulVec (x i))‖ := by
+            rw [lorentz_inv_mulVec']
+      _ ≤ ‖Λ_inv‖ * ‖g.lorentz.val.mulVec (x i)‖ := Λ_inv.le_opNorm _
+  -- Step 2: ‖Λ * (x i)‖ ≤ ‖act g (x i)‖ + ‖t‖
+  have h2 : ‖g.lorentz.val.mulVec (x i)‖ ≤
+      ‖PoincareGroup.act g (x i)‖ + ‖g.translation‖ := by
+    rw [show g.lorentz.val.mulVec (x i) = PoincareGroup.act g (x i) - g.translation from by
+      simp [PoincareGroup.act_def]]
+    exact norm_sub_le _ _
+  -- Step 3: ‖act g (x i)‖ ≤ ‖poincareActNPointDomain g x‖
+  have h3 : ‖PoincareGroup.act g (x i)‖ ≤ ‖poincareActNPointDomain g x‖ :=
+    norm_le_pi_norm (poincareActNPointDomain g x) i
+  -- Combine
+  have h4 : ‖g.lorentz.val.mulVec (x i)‖ ≤
+      ‖poincareActNPointDomain g x‖ + ‖g.translation‖ := by linarith
+  have h5 : ‖poincareActNPointDomain g x‖ + ‖g.translation‖ ≤
+      (1 + ‖g.translation‖) * (1 + ‖poincareActNPointDomain g x‖) := by
+    nlinarith [norm_nonneg (poincareActNPointDomain g x), norm_nonneg g.translation]
+  calc ‖x i‖ ≤ ‖Λ_inv‖ * ‖g.lorentz.val.mulVec (x i)‖ := h1
+    _ ≤ ‖Λ_inv‖ * ((1 + ‖g.translation‖) * (1 + ‖poincareActNPointDomain g x‖)) := by
+        exact mul_le_mul_of_nonneg_left (le_trans h4 h5) (norm_nonneg Λ_inv)
+    _ = ‖Λ_inv‖ * (1 + ‖g.translation‖) * (1 + ‖poincareActNPointDomain g x‖) := by ring
+    _ ≤ (‖Λ_inv‖ * (1 + ‖g.translation‖) + 1) * (1 + ‖poincareActNPointDomain g x‖) := by
+        nlinarith [norm_nonneg (poincareActNPointDomain g x)]
+
 /-- Decay for n-point Schwartz functions composed with Poincaré action.
     Generalizes `affineComp_decay` to n-point functions. -/
 private theorem affineCompNPoint_decay (g : PoincareGroup d) {n : ℕ}
@@ -72,7 +133,8 @@ private theorem affineCompNPoint_decay (g : PoincareGroup d) {n : ℕ}
     ∃ C, ∀ (x : NPointDomain d n),
       ‖x‖ ^ k * ‖iteratedFDeriv ℝ m
         (fun x => f (poincareActNPointDomain g x)) x‖ ≤ C := by
-  sorry
+  convert (SchwartzMap.compCLM ℂ (poincareActNPoint_hasTemperateGrowth g n)
+    (poincareActNPoint_upperBound g n) f).decay' k m using 2
 
 /-- The Poincaré action on n-point Schwartz functions:
     (g · f)(x₁,...,xₙ) = f(g⁻¹·x₁,...,g⁻¹·xₙ) -/

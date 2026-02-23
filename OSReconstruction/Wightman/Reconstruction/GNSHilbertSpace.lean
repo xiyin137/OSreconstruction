@@ -779,13 +779,58 @@ private theorem locality_setoid
   rw [← WightmanInnerProduct_expand_diff d Wfn.W Wfn.linear A B, hNullSelf]
   simp
 
+/-- Covariance identity at the SchwartzMap level:
+    prependField(f, g·h) = g · prependField(g⁻¹·f, h)
+    where g acts by precomposition with g⁻¹. -/
+private theorem prependField_poincareAct_comm
+    (g : PoincareGroup d) (f : SchwartzSpacetime d) {k : ℕ}
+    (h : SchwartzNPoint d k) :
+    SchwartzMap.prependField f (poincareActNPoint g h) =
+    poincareActNPoint g (SchwartzMap.prependField (poincareActSchwartz g⁻¹ f) h) := by
+  ext x
+  simp only [SchwartzMap.prependField_apply, poincareActNPoint_apply,
+             poincareActNPointDomain, poincareActSchwartz_apply, inv_inv]
+  -- Goal: f (x 0) * h (...) = f (act g (act g⁻¹ (x 0))) * h (...)
+  -- Second factors match; for first, g · g⁻¹ cancels
+  congr 1
+  congr 1
+  rw [← PoincareGroup.act_mul g g⁻¹, mul_inv_cancel, PoincareGroup.act_one]
+
+/-- Covariance at the Borchers sequence level (funcs-wise):
+    (φ(f)(g·Y)).funcs n = (g · φ(g⁻¹·f)(Y)).funcs n -/
+private theorem covariance_borchers_funcs (g : PoincareGroup d) (f : SchwartzSpacetime d)
+    (Y : BorchersSequence d) (n : ℕ) :
+    (fieldOperatorAction f (poincareActBorchers g Y)).funcs n =
+    (poincareActBorchers g (fieldOperatorAction (poincareActSchwartz g⁻¹ f) Y)).funcs n := by
+  cases n with
+  | zero =>
+    simp only [fieldOperatorAction_funcs_zero, poincareActBorchers]
+    exact (poincareActNPoint_zero g 0).symm
+  | succ k =>
+    simp only [fieldOperatorAction_funcs_succ, poincareActBorchers]
+    exact prependField_poincareAct_comm g f (Y.funcs k)
+
+/-- Covariance at the PreHilbertSpace level:
+    φ(f)(U(g)y) = U(g)(φ(g⁻¹·f)(y)) -/
+private theorem covariance_preHilbert (g : PoincareGroup d) (f : SchwartzSpacetime d)
+    (y : PreHilbertSpace Wfn) :
+    fieldOperator Wfn f (poincareActPreHilbert Wfn g y) =
+    poincareActPreHilbert Wfn g (fieldOperator Wfn (poincareActSchwartz g⁻¹ f) y) := by
+  induction y using Quotient.inductionOn with | h Y =>
+  exact mk_eq_of_funcs_eq Wfn _ _ (fun n => covariance_borchers_funcs g f Y n)
+
 /-- The Wightman QFT reconstructed from Wightman functions.
     The key result is that the Wightman functions are correctly reproduced.
     The domain is the image of the pre-Hilbert space (dense in the completion).
-    Remaining sorrys: Poincaré covariance, spectrum condition, cyclicity, etc. -/
+    Remaining sorrys: spectrum condition, cyclicity, vacuum uniqueness. -/
 noncomputable def gnsQFT : WightmanQFT d where
   HilbertSpace := GNSHilbertSpace Wfn
   poincare_rep := gnsPoincareRep Wfn
+  -- Spectrum condition requires Stone's theorem (one-parameter unitary groups ↔ self-adjoint
+  -- generators) and spectral theory for unbounded operators, neither of which are in Mathlib.
+  -- The proof would connect the Wightman functions' forward tube analyticity to the operator
+  -- spectral measure via: forward tube analyticity ⟹ Fourier support in forward cone
+  -- ⟹ σ(P) ⊆ V̄₊ ⟹ energy_nonneg and mass_shell.
   spectrum_condition := sorry
   vacuum := gnsVacuum Wfn
   vacuum_normalized := gnsVacuum_norm Wfn
@@ -818,10 +863,38 @@ noncomputable def gnsQFT : WightmanQFT d where
       exact matrix_element_continuous_aux Wfn x y
   }
   vacuum_in_domain := gnsVacuum_in_domain Wfn
+  -- Cyclicity requires the Schwartz nuclear theorem: finite tensor products
+  -- f₁(x₁)···fₙ(xₙ) are dense in the n-point Schwartz space S(ℝ^{nd}).
+  -- This is used to show that vectors φ(f₁)···φ(fₙ)Ω (whose n-th Borchers component
+  -- is productTensor [f₁,...,fₙ]) span all of PreHilbertSpace in the Wightman norm.
+  -- The nuclear theorem is not in Mathlib.
   cyclicity := sorry
   poincareActionOnSchwartz := poincareActSchwartz
   poincareAction_spec := fun g f x => poincareActSchwartz_toFun g f x
-  covariance := sorry
+  covariance := fun g f χ ψ hχ hψ => by
+    obtain ⟨x, rfl⟩ := hχ; obtain ⟨y, rfl⟩ := hψ
+    -- Bridge U(g) terms: (gnsPoincareRep Wfn).U g ↑z = ↑(poincareActPreHilbert Wfn g z)
+    have hUx : (gnsPoincareRep Wfn).U g (↑x : GNSHilbertSpace Wfn) =
+        (↑(poincareActPreHilbert Wfn g x) : GNSHilbertSpace Wfn) :=
+      poincareActGNS_coe Wfn g x
+    have hUy : (gnsPoincareRep Wfn).U g (↑y : GNSHilbertSpace Wfn) =
+        (↑(poincareActPreHilbert Wfn g y) : GNSHilbertSpace Wfn) :=
+      poincareActGNS_coe Wfn g y
+    rw [hUy, hUx]
+    -- Goal: ⟪↑(U_pre g x), φ(f)(↑(U_pre g y))⟫ = ⟪↑x, φ(g⁻¹·f)(↑y)⟫
+    -- where {anon}.operator is definitionally gnsFieldOp Wfn
+    -- Construct proof with explicit gnsFieldOp, then exact handles defEq
+    have h : ⟪(↑(poincareActPreHilbert Wfn g x) : GNSHilbertSpace Wfn),
+        gnsFieldOp Wfn f ↑(poincareActPreHilbert Wfn g y)⟫_ℂ =
+      ⟪(↑x : GNSHilbertSpace Wfn),
+        gnsFieldOp Wfn (poincareActSchwartz g⁻¹ f) ↑y⟫_ℂ := by
+      rw [gnsFieldOp_coe Wfn f (poincareActPreHilbert Wfn g y),
+        covariance_preHilbert Wfn g f y,
+        ← poincareActGNS_coe Wfn g (fieldOperator Wfn (poincareActSchwartz g⁻¹ f) y),
+        ← poincareActGNS_coe Wfn g x,
+        poincareActGNS_inner Wfn g,
+        ← gnsFieldOp_coe Wfn (poincareActSchwartz g⁻¹ f) y]
+    exact h
   locality := fun f g hfg ψ hψ => by
     obtain ⟨x, rfl⟩ := hψ
     show gnsFieldOp Wfn f (gnsFieldOp Wfn g (↑x)) = gnsFieldOp Wfn g (gnsFieldOp Wfn f (↑x))
@@ -829,7 +902,14 @@ noncomputable def gnsQFT : WightmanQFT d where
     congr 1
     exact Quotient.inductionOn x (fun F =>
       Quotient.sound (locality_setoid Wfn f g hfg F))
-  vacuum_unique := sorry
+  vacuum_unique :=
+    -- Part 1: Time-translation invariance follows from full Poincaré invariance
+    ⟨fun t => gnsVacuum_poincare_invariant Wfn _,
+    -- Part 2: Uniqueness (any time-translation-invariant vector is ∝ Ω)
+    -- This requires spectral theory: Stone's theorem gives H = P₀ as self-adjoint
+    -- generator of time translations, spectrum condition gives σ(H) ⊆ [0,∞),
+    -- and time-translation invariance ⟹ Hψ = 0 ⟹ ψ ∈ ker(H) = ℂ·Ω.
+    sorry⟩
 
 /-- The reconstructed QFT's field operatorPow applied to the vacuum gives
     the iterated field operator from the pre-Hilbert space, embedded in

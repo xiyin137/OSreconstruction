@@ -39,20 +39,48 @@ private theorem affineComp_smooth (g : PoincareGroup d) (f : SchwartzSpacetime d
   f.smooth'.comp (ContDiff.add
     ((Matrix.mulVecLin g.lorentz.val).toContinuousLinearMap).contDiff contDiff_const)
 
-/-- Composition of a Schwartz function with an invertible affine map has polynomial decay.
-    This is the key technical result: if f ∈ S(ℝⁿ) and g is an invertible affine map,
-    then f ∘ g has Schwartz decay.
+/-- The Poincaré action has temperate growth (affine maps are temperate). -/
+private theorem poincareAct_hasTemperateGrowth (g : PoincareGroup d) :
+    Function.HasTemperateGrowth (PoincareGroup.act g) := by
+  have hL : Function.HasTemperateGrowth
+      ((Matrix.mulVecLin g.lorentz.val).toContinuousLinearMap : SpacetimeDim d → SpacetimeDim d) :=
+    ContinuousLinearMap.hasTemperateGrowth _
+  convert (hL.add (Function.HasTemperateGrowth.const g.translation)) using 1
 
-    The proof uses:
-    1. The Faà di Bruno formula for iteratedFDeriv (f ∘ g), which simplifies for
-       affine g to: D^n(f ∘ g)(x) = D^n f(g(x)) ∘ (L, ..., L) where L is the linear part
-    2. The norm bound ‖x‖ ≤ C * (1 + ‖g(x)‖) from invertibility of g
-    3. The Schwartz decay of f: ‖x‖^k * ‖D^n f(x)‖ ≤ C_{k,n} -/
+/-- The inverse Lorentz matrix recovers the original vector. -/
+private theorem lorentz_inv_mulVec (g : PoincareGroup d) (x : SpacetimeDim d) :
+    Matrix.mulVec g.lorentz⁻¹.val (Matrix.mulVec g.lorentz.val x) = x := by
+  have : g.lorentz⁻¹.val * g.lorentz.val = 1 := by
+    exact_mod_cast congr_arg Subtype.val (inv_mul_cancel (g.lorentz))
+  rw [Matrix.mulVec_mulVec, this, Matrix.one_mulVec]
+
+/-- Upper bound: ‖x‖ ≤ C * (1 + ‖g·x‖)^k for Poincaré actions (from invertibility). -/
+private theorem poincareAct_upperBound (g : PoincareGroup d) :
+    ∃ (k : ℕ) (C : ℝ), ∀ (x : SpacetimeDim d),
+      ‖x‖ ≤ C * (1 + ‖PoincareGroup.act g x‖) ^ k := by
+  set Λ_inv := (Matrix.mulVecLin g.lorentz⁻¹.val).toContinuousLinearMap
+  refine ⟨1, ‖Λ_inv‖ * (1 + ‖g.translation‖), fun x => ?_⟩
+  simp only [pow_one]
+  have h1 : ‖x‖ ≤ ‖Λ_inv‖ * ‖g.lorentz.val.mulVec x‖ := by
+    calc ‖x‖ = ‖g.lorentz⁻¹.val.mulVec (g.lorentz.val.mulVec x)‖ := by rw [lorentz_inv_mulVec]
+      _ ≤ ‖Λ_inv‖ * ‖g.lorentz.val.mulVec x‖ := Λ_inv.le_opNorm _
+  have h2 : ‖g.lorentz.val.mulVec x‖ ≤ ‖PoincareGroup.act g x‖ + ‖g.translation‖ := by
+    rw [show g.lorentz.val.mulVec x = PoincareGroup.act g x - g.translation from by
+      simp [PoincareGroup.act_def]]
+    exact norm_sub_le _ _
+  have h3 : ‖PoincareGroup.act g x‖ + ‖g.translation‖ ≤
+      (1 + ‖g.translation‖) * (1 + ‖PoincareGroup.act g x‖) := by
+    nlinarith [norm_nonneg (PoincareGroup.act g x), norm_nonneg g.translation]
+  linarith [mul_le_mul_of_nonneg_left (le_trans h2 h3) (norm_nonneg Λ_inv)]
+
+/-- Composition of a Schwartz function with a Poincaré action has polynomial decay.
+    Uses `SchwartzMap.compCLM` which handles temperate growth compositions. -/
 private theorem affineComp_decay (g : PoincareGroup d) (f : SchwartzSpacetime d)
     (k n : ℕ) :
     ∃ C, ∀ (x : SpacetimeDim d),
       ‖x‖ ^ k * ‖iteratedFDeriv ℝ n (fun x => f (PoincareGroup.act g x)) x‖ ≤ C := by
-  sorry
+  convert (SchwartzMap.compCLM ℂ (poincareAct_hasTemperateGrowth g)
+    (poincareAct_upperBound g) f).decay' k n using 2
 
 /-! ### The Poincaré action on Schwartz test functions -/
 

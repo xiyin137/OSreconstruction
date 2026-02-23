@@ -174,23 +174,36 @@ moved to Reconstruction/Main.lean to resolve circular import constraints
 | 17 | `wightman_to_os` | ✅ Wired to `wightman_to_os_full` (WickRotation) |
 | 18 | `os_to_wightman` | ✅ Wired to `os_to_wightman_full` (WickRotation) |
 
-### GNSHilbertSpace.lean — 10 sorrys in gnsQFT, matching condition PROVED
+### GNSHilbertSpace.lean — 3 sorrys in gnsQFT (down from 10), matching condition PROVED
 
 **New file (2026-02-23).** Completes the GNS Hilbert space construction:
 - Phase 1: `AddCommGroup` + `Module ℂ` on `PreHilbertSpace` (sorry-free)
 - Phase 2: `InnerProductSpace.Core` (sorry-free)
 - Phase 3: `NormedAddCommGroup` + `InnerProductSpace` (sorry-free, diamond-free)
 - Phase 4: `GNSHilbertSpace` = Cauchy completion (sorry-free), `gnsVacuum_norm` proved
-- Phase 5: `gnsQFT` (WightmanQFT structure, 10 sorrys for hard axioms):
+- Phase 5: `gnsQFT` (WightmanQFT structure, 3 sorrys remaining):
   - **PROVED**: `vacuum_normalized`, `vacuum_in_domain`, `operator_domain`
   - **PROVED**: `operator_add`, `operator_smul`, `operator_vector_add`, `operator_vector_smul`
   - **PROVED**: `wightman_reconstruction'` — matching condition (Wightman functions reproduced)
-  - **SORRY**: `poincare_rep`, `spectrum_condition`, `vacuum_invariant`,
-    `matrix_element_continuous`, `cyclicity`, `poincareActionOnSchwartz`,
-    `poincareAction_spec`, `covariance`, `locality`, `vacuum_unique`
+  - **PROVED**: `poincare_rep`, `vacuum_invariant`, `matrix_element_continuous`
+  - **PROVED**: `poincareActionOnSchwartz`, `poincareAction_spec`, `covariance`, `locality`
+  - **PROVED**: `vacuum_unique` part 1 (time-translation invariance from Poincaré invariance)
+  - **SORRY**: `spectrum_condition` — needs Stone's theorem + spectral theory (not in Mathlib)
+  - **SORRY**: `cyclicity` — needs Schwartz nuclear theorem (tensor products dense, not in Mathlib)
+  - **SORRY**: `vacuum_unique` part 2 — needs spectral theory (ker(H) = ℂ·Ω, not in Mathlib)
 - Domain: `gnsDomainSubmodule` = image of PreHilbertSpace under completion embedding (not ⊤)
 - Domain density: `gnsDomain_dense` proved
 - Key lemmas (sorry-free): `gnsFieldOp_coe`, `operatorPow_gnsQFT_eq`, `gnsVacuum_norm`
+
+### PoincareAction.lean — 0 sorrys ✅
+
+Previously had `affineComp_decay` sorry. Now fully proven using `SchwartzMap.compCLM`
+with temperate growth and upper bound lemmas.
+
+### PoincareRep.lean — 0 sorrys ✅
+
+Previously had `affineCompNPoint_decay` sorry. Now fully proven using n-point versions
+of temperate growth and upper bound lemmas, with `SchwartzMap.compCLM`.
 
 ### GNSConstruction.lean — 0 sorrys ✅
 
@@ -301,7 +314,7 @@ These groups are **independent** and can be worked on simultaneously:
 - **Group A** (complex analysis): ~~Prove edge_of_the_wedge~~ (DONE) and BHW axiom
 - **Group B** (analytic continuation): full_analytic_continuation → boundary_values_tempered
 - **Group C** (R→E properties): local commutativity, E0, E2, E4, h_in_tube
-- **Group D** (GNS completion): gnsQFT remaining 10 sorrys (Poincaré, covariance, locality, cyclicity, etc.)
+- **Group D** (GNS completion): gnsQFT remaining 3 sorrys (spectral theory, nuclear theorem)
 
 Groups A and B converge at constructWightmanFunctions (needs both BHW and boundary values).
 
@@ -325,13 +338,13 @@ Groups A and B converge at constructWightmanFunctions (needs both BHW and bounda
 | **Reconstruction/WickRotation.lean** | **14** | **5** | OS↔Wightman bridge |
 | **Reconstruction.lean** | **0** | **0** | ✅ Complete (theorems moved to Main.lean) |
 | **Reconstruction/Main.lean** | **1** | **0** | Wiring file (wightman_uniqueness sorry) |
-| **Reconstruction/GNSHilbertSpace.lean** | **10** | **0** | GNS construction (10 QFT axiom sorrys) |
+| **Reconstruction/GNSHilbertSpace.lean** | **3** | **0** | GNS construction (3 deep sorrys: spectral theory, nuclear theorem) |
 | NuclearSpaces/NuclearOperator.lean | 0 | 0 | ✅ Complete (deferred, not blocking) |
 | NuclearSpaces/NuclearSpace.lean | 2 | 0 | Deferred |
 | NuclearSpaces/BochnerMinlos.lean | 3 | 0 | Deferred |
 | NuclearSpaces/SchwartzNuclear.lean | 5 | 0 | Deferred |
 | NuclearSpaces/EuclideanMeasure.lean | 1 | 0 | Deferred |
-| **Critical path total** | **27** | **10** | |
+| **Critical path total** | **20** | **10** | |
 
 ## Proven Infrastructure (sorry-free)
 
