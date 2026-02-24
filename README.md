@@ -32,7 +32,7 @@ This will fetch Mathlib and all dependencies automatically. The first build may 
 
 ## Project Status
 
-The project builds cleanly with **zero named axioms** — all former axioms have been converted to theorems. Remaining work is tracked via `sorry` placeholders (108 total across 19 files).
+The project builds cleanly with **zero named axioms** — all former axioms have been converted to theorems. Remaining work is tracked via `sorry` placeholders (115 total across 18 files).
 
 ### Key proved results
 
@@ -44,19 +44,20 @@ The project builds cleanly with **zero named axioms** — all former axioms have
 - **SCV module**: Polydiscs, Osgood, Hartogs, identity theorems, tube extension — zero sorrys
 - **Stone's theorem infrastructure**: Generator commutation, ODE kernel triviality, integral formula — proved (surjectivity pending)
 
-### Sorry breakdown
+### Sorry breakdown (115 total across 18 files)
 
 | Area | Proved | Remaining `sorry`s |
 |------|--------|---------------------|
-| R→E bridge theorems | `wightman_to_os_full`, E0, E1, E3 | 2 (E2 reflection positivity, E4 cluster) |
-| E→R analytic continuation | Structure complete | 28 (Paley-Wiener, Bochner, boundary values, transfer) |
-| BHW theorem chain | Properties 1-5, F perm invariance, PET connected | 7 (EOW flattening, orbit topology, Jost geometry) |
-| Jost points | Jost's lemma, swap existence | 4 (spatial rotations, connectivity) |
+| R→E bridge (WickRotation) | `wightman_to_os_full`, E0, E1, E3 | 2 (E2 reflection positivity, E4 cluster) |
+| E→R analytic continuation (WickRotation) | `os_to_wightman_full` structure | 26 (Paley-Wiener, boundary values, 6 transfers) |
+| BHW theorem chain (Connectedness) | Properties 1-5, complex Lorentz invariance | 7 (EOW flattening, orbit topology) |
+| Jost points (JostPoints) | Jost's lemma, swap existence | 4 (spatial rotations, connectivity) |
 | GNS Hilbert space | Hilbert space, Poincaré rep, matching | 3 (spectral condition, cyclicity, vacuum unique) |
-| SCV infrastructure | All core theorems | 14 (Fourier-Laplace, Paley-Wiener, Bochner local) |
-| Nuclear spaces | Subspace nuclear, product nuclear | 9 (gauge seminorms, Bochner-Minlos) |
+| SCV distribution theory | Core theorems (Polydisc–IdentityTheorem) | 14 (Fourier-Laplace, Paley-Wiener, Bochner) |
+| Wightman axiom infrastructure | | 4 (nuclear theorem, spectrum BV) |
+| Nuclear spaces / Bochner-Minlos | | 7 (gauge seminorms, Bochner-Minlos) |
 | Stone's theorem | Generator commutation, ODE, integral formula | 3 (self-adjointness, generates, time evolution) |
-| vNA (modular theory) | Tomita-Takesaki structure | ~34 (modular theory, KMS, spectral) |
+| vNA (modular theory + KMS + measure) | Tomita-Takesaki structure | 44 (modular, KMS, Carathéodory, spectral) |
 | Uniqueness | | 1 (`wightman_uniqueness`) |
 
 See also [`OSReconstruction/Wightman/TODO.md`](OSReconstruction/Wightman/TODO.md) and [`OSReconstruction/ComplexLieGroups/TODO.md`](OSReconstruction/ComplexLieGroups/TODO.md) for detailed execution plans.
@@ -81,6 +82,7 @@ OSReconstruction/
 │   ├── WightmanAxioms.lean       # Axiom formalization
 │   ├── OperatorDistribution.lean # Operator-valued distributions
 │   ├── SchwartzTensorProduct.lean# Schwartz space tensor products
+│   ├── ReconstructionBridge.lean # Wires WickRotation to top-level theorems
 │   ├── Groups/                   # Lorentz and Poincaré groups
 │   ├── Spacetime/                # Minkowski geometry
 │   ├── NuclearSpaces/            # Nuclear spaces, gaussian-field bridge
@@ -90,6 +92,8 @@ OSReconstruction/
 │       ├── GNSHilbertSpace.lean  # GNS Hilbert space + Poincaré rep
 │       ├── AnalyticContinuation.lean  # Tube domains, BHW, edge-of-wedge
 │       ├── ForwardTubeDistributions.lean  # Forward tube boundary values
+│       ├── PoincareAction.lean   # Poincaré action on Schwartz space (sorry-free)
+│       ├── PoincareRep.lean      # n-point Poincaré representations (sorry-free)
 │       ├── WickRotation.lean     # OS ↔ Wightman bridge
 │       ├── Main.lean             # Top-level theorem wiring
 │       └── Helpers/              # EdgeOfWedge, SeparatelyAnalytic
@@ -100,6 +104,9 @@ OSReconstruction/
 │   ├── Analyticity.lean          # Hartogs: separately → jointly analytic
 │   ├── TubeDomainExtension.lean  # Tube domain extension theorems
 │   ├── IdentityTheorem.lean      # Identity theorems (product types, totally real)
+│   ├── TotallyRealIdentity.lean  # Identity theorem on totally real submanifolds
+│   ├── EOWMultiDim.lean          # Multi-dimensional edge-of-the-wedge helpers
+│   ├── MoebiusMap.lean           # Möbius transformations for conformal maps
 │   ├── TubeDistributions.lean    # Distributional boundary values on tubes
 │   ├── BochnerTubeTheorem.lean   # Bochner tube theorem
 │   ├── LaplaceSchwartz.lean      # Fourier-Laplace representation

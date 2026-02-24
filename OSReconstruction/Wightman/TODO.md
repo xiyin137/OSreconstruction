@@ -23,8 +23,8 @@ Wightman QFTs — OS reconstruction is strictly more general than the NuclearSpa
 9. ~~**E1 translation invariance**~~ ✅ DONE (constructedSchwinger_translation_invariant, sorry-free)
 10. ~~**E1 rotation invariance (det=1)**~~ ✅ DONE (constructedSchwinger_rotation_invariant, det=1 branch)
 11. ~~**E'→R' theorem**~~ ✅ DONE (os_to_wightman_full, sorry-free)
-12. **edge_of_the_wedge** (multi-D, Bogoliubov's theorem) ← NEXT
-13. **bargmann_hall_wightman** (BHW, depends on 12)
+12. ~~**edge_of_the_wedge**~~ ✅ PROVED (via SCV.edge_of_the_wedge_theorem, sorry-free)
+13. ~~**bargmann_hall_wightman**~~ ✅ PROVED (via ComplexLieGroups/Connectedness.lean, modulo 3 sorrys)
 14. **R→E remaining sorrys** (local commutativity, E0, E2, E4, rotation det=-1, BV wiring)
 15. **E→R analytic continuation chain** (OS II §IV-V, independent of 12-14)
 16. **constructWightmanFunctions** (7 fields, depend on 13 + 15)
@@ -121,7 +121,7 @@ All theorems in this file are fully proven.
 | `os_inner_product_eq_wightman_positivity` | E2: Wightman positivity → OS RP | Hard: Borchers involution ↔ time reflection under Wick rotation |
 | `W_analytic_cluster_integral` | E4: integral factorization at large spatial separation | Hard: cluster decomposition + dominated convergence |
 
-**E→R direction — sorrys (28, decomposed from former axioms):**
+**E→R direction — sorrys (26, decomposed from former axioms):**
 
 The E→R chain has been fully decomposed into named sorry targets. The critical path is:
 1. `inductive_analytic_continuation` (Paley-Wiener one-step) → `full_analytic_continuation`
@@ -204,7 +204,7 @@ WickRotation.lean (28 sorrys, 0 axioms)
 │  │  E0, E1, E3 ✅ PROVEN    wightman_to_os_full ✅ PROVEN      │
 │  └───────────────────────────────────────────────────────────────┘
 │
-│  ┌─── E→R DIRECTION (28 sorrys, decomposed) ────────────────┐
+│  ┌─── E→R DIRECTION (26 sorrys, decomposed) ────────────────┐
 │  │                                                               │
 │  │  inductive_analytic_continuation ◀── PaleyWiener.lean         │
 │  │         ↓                                                     │
@@ -228,7 +228,7 @@ Reconstruction/Main.lean (1 sorry — wiring layer)
 │  wightman_to_os           ✅ WIRED to wightman_to_os_full (WickRotation)
 │  os_to_wightman           ✅ WIRED to os_to_wightman_full (WickRotation)
 │
-Reconstruction/GNSHilbertSpace.lean (10 sorrys — QFT axioms)
+Reconstruction/GNSHilbertSpace.lean (3 sorrys — QFT axioms)
 ```
 
 ## Two Critical Bottlenecks
@@ -268,6 +268,8 @@ These groups are **independent** and can be worked on simultaneously:
 
 ## Status Overview (2026-02-23)
 
+### Wightman Module
+
 | File | Sorrys | Status |
 |------|--------|--------|
 | Basic, Groups, Spacetime | 0 | ✅ Complete |
@@ -280,8 +282,36 @@ These groups are **independent** and can be worked on simultaneously:
 | **Reconstruction/WickRotation.lean** | **28** | **E2, E4 + E→R chain** |
 | Reconstruction/Main.lean | 1 | `wightman_uniqueness` |
 | Reconstruction/Helpers/ | 0 | ✅ Complete |
-| NuclearSpaces/ | 9 | Deferred |
-| **Critical path total** | **36** | **0 axioms** |
+| NuclearSpaces/ | 7 | Deferred (NuclearSpace 2, BochnerMinlos 5) |
+| **Wightman subtotal** | **43** | |
+
+### Full Project Sorry Census (115 total, 18 files, 0 axioms)
+
+| Module | File | Sorrys |
+|--------|------|--------|
+| **Wightman** | Reconstruction/WickRotation.lean | 28 |
+| | NuclearSpaces/BochnerMinlos.lean | 5 |
+| | WightmanAxioms.lean | 4 |
+| | Reconstruction/GNSHilbertSpace.lean | 3 |
+| | NuclearSpaces/NuclearSpace.lean | 2 |
+| | Reconstruction/Main.lean | 1 |
+| | **subtotal** | **43** |
+| **vNA** | MeasureTheory/CaratheodoryExtension.lean | 16 |
+| | KMS.lean | 10 |
+| | ModularAutomorphism.lean | 8 |
+| | ModularTheory.lean | 6 |
+| | Unbounded/StoneTheorem.lean | 3 |
+| | Predual.lean | 2 |
+| | Unbounded/Spectral.lean | 2 |
+| | **subtotal** | **47** |
+| **SCV** | LaplaceSchwartz.lean | 6 |
+| | PaleyWiener.lean | 6 |
+| | BochnerTubeTheorem.lean | 2 |
+| | **subtotal** | **14** |
+| **ComplexLieGroups** | Connectedness.lean | 7 |
+| | JostPoints.lean | 4 |
+| | **subtotal** | **11** |
+| **TOTAL** | **18 files** | **115** |
 
 ## Proven Infrastructure (sorry-free)
 
