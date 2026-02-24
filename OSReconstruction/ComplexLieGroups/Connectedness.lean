@@ -1222,352 +1222,39 @@ private lemma orbitSet_locallyPathConnected (w : Fin n → Fin (d + 1) → ℂ)
     _ = ‖X‖ := one_mul _
     _ < δ := hX_small
 
--- The orbit set O_w = {Λ | Λ·w ∈ FT} is preconnected.
---
--- The orbit set is the preimage of the forward tube under the continuous orbit
--- map Λ ↦ Λ·w. Preconnectedness follows from:
--- 1. The complex Lorentz group G is path-connected (hence connected)
--- 2. O_w is open in G (preimage of open FT under continuous map)
--- 3. O_w is locally path-connected (`orbitSet_locallyPathConnected`)
---
--- The proof uses the fact that connected components of a locally path-connected
--- open subset of a connected topological group are open and closed, and the
--- component containing 1 must be all of O_w since any element Λ ∈ O_w can be
--- "reached" from 1 via the group structure.
---
--- Mathematical content: this is a consequence of the orbit map G → G·w being
--- a submersion (open map from a connected group), combined with convexity of FT.
--- Formally captures: O_w is connected as an open subset of a connected Lie group
--- where the fiber structure (via the orbit map) prevents disconnection.
---
--- Blocker: the general statement that an open locally path-connected subset of
--- a connected topological group containing the identity is connected. This would
--- follow from showing the orbit map Λ ↦ Λ·w is an open map (submersion).
+/-- **The orbit set O_w = {Λ ∈ G : Λ·w ∈ FT} is preconnected.**
 
-/-- Helper: An open locally path-connected subset of a connected topological group
-    that contains the identity is preconnected.
+    The orbit set is an open subset of the connected complex Lorentz group G
+    containing the identity (since 1·w = w ∈ FT). It is locally path-connected
+    by `orbitSet_locallyPathConnected` (using the exponential map + convexity of FT).
 
-    Proof sketch: Let S be open, locally path-connected, and 1 ∈ S in a connected
-    group G. The path-component of 1 in S is open (by local path-connectedness)
-    and closed in S (path-components are always closed). Since S itself is open in G,
-    and path-components of locally path-connected spaces are open, every path-component
-    of S is open in G. If S had multiple path-components, they would form a nontrivial
-    clopen partition of the connected set S. But S being open + locally path-connected
-    means its path-components are open. The path-component of 1 is therefore clopen in S.
-    If S = O_w (orbit set), preconnectedness follows.
+    **Correct proof approach (Fiber/Quotient argument):**
+    The orbit map φ_w : G → G·w sending Λ ↦ Λ·w restricts to a map
+    O_w → G·w ∩ FT. The fiber of φ_w is the stabilizer Stab(w), which for
+    w with Im(w) ∈ V⁺ is isomorphic to SO(d;ℂ) — a connected group.
+    The base G·w ∩ FT is connected (intersection of an irreducible complex
+    variety with a convex tube domain). By the fiber bundle connectivity theorem
+    (connected fiber + connected base → connected total space), O_w is connected.
 
-    Blocked by: general topology argument for connected groups. This is a standard result
-    but not yet formalized in Mathlib for the general group-orbit setting. -/
-private lemma open_locally_path_connected_subset_preconnected
-    {G : Type*} [TopologicalSpace G] [Group G] [IsTopologicalGroup G]
-    [PathConnectedSpace G]
-    (S : Set G) (hS_open : IsOpen S) (h1S : (1 : G) ∈ S)
-    (hS_lpc : ∀ Λ ∈ S, ∀ U ∈ nhds Λ, ∃ V ∈ nhds Λ, V ⊆ S ∩ U ∧
-      ∀ x y : G, x ∈ V → y ∈ V → ∃ γ : Path x y, ∀ t, γ t ∈ S) :
-    IsPreconnected S := by
-  sorry
+    **Alternative (Polar decomposition):** Every Λ ∈ SO⁺(1,d;ℂ) decomposes
+    as Λ = R · exp(iX) with R ∈ SO⁺↑(1,d;ℝ) and X ∈ so(1,d;ℝ). The path
+    t ↦ R · exp(itX) connects R to Λ. Since R preserves FT and exp(iX)·w ∈ FT,
+    geodesic convexity of V⁺ under the Lorentz group gives exp(itX)·w ∈ FT
+    for all t ∈ [0,1].
 
-private lemma orbitSet_preconnected_via_convexFiber
-    (w : Fin n → Fin (d + 1) → ℂ) (hw : w ∈ ForwardTube d n) :
-    IsPreconnected {Λ : ComplexLorentzGroup d |
-      complexLorentzAction Λ w ∈ ForwardTube d n} := by
-  -- Apply the general topological lemma:
-  -- 1. O_w is open (preimage of open FT under continuous orbit map)
-  -- 2. 1 ∈ O_w (since 1·w = w ∈ FT)
-  -- 3. O_w is locally path-connected (orbitSet_locallyPathConnected)
-  sorry
+    Ref: Streater & Wightman, *PCT, Spin and Statistics*, proof of Theorem 2-11.
+    See also `test/proofideas_orbit_preconnected.lean` for detailed analysis.
 
-/-- For any Λ in the orbit set O_w = {Λ | Λ·w ∈ FT}, there exists a path from 1
-    to Λ staying within O_w. Uses `orbitSet_preconnected_via_convexFiber` for
-    preconnectedness and `orbitSet_locallyPathConnected` for local orbit paths.
-
-    The proof defines S = {Λ ∈ O_w | reachable from 1 by orbit-path}, shows
-    S is open and O_w \ S is open (via local path-connectedness), then uses
-    preconnectedness of O_w to conclude S = O_w. -/
-private lemma orbitSet_joined_one_direct (w : Fin n → Fin (d + 1) → ℂ)
-    (hw : w ∈ ForwardTube d n) (Λ : ComplexLorentzGroup d)
-    (hΛ : complexLorentzAction Λ w ∈ ForwardTube d n) :
-    ∃ γ : Path (1 : ComplexLorentzGroup d) Λ,
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n := by
-  -- Strategy: define S = {Λ ∈ O_w | ∃ orbit-path from 1 to Λ}, show S is clopen in O_w,
-  -- then use preconnectedness of O_w (which we prove independently).
-  --
-  -- We first establish IsPreconnected O_w via orbitSet_isPreconnected_via_fibers,
-  -- breaking the dependency on orbitSet_isPreconnected_direct.
-  set O_w := {Λ' : ComplexLorentzGroup d | complexLorentzAction Λ' w ∈ ForwardTube d n}
-  set S : Set (ComplexLorentzGroup d) :=
-    { Λ' | ∃ γ : Path (1 : ComplexLorentzGroup d) Λ',
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n }
-  suffices hΛ_in_S : Λ ∈ S from hΛ_in_S
-  -- S is open in G (by orbitSet_locallyPathConnected + concatenation)
-  have hS_open : IsOpen S := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨γ₀, hγ₀⟩
-    have hΛ₀_orbit : complexLorentzAction Λ₀ w ∈ ForwardTube d n := by
-      have := hγ₀ ⟨1, zero_le_one, le_refl _⟩
-      rwa [show γ₀ ⟨1, zero_le_one, le_refl _⟩ = Λ₀ from γ₀.target] at this
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    refine ⟨V, fun Λ' hΛ'V => ?_, hV_open, hΛ₀V⟩
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    exact ⟨γ₀.trans γ₁, fun t => by
-      simp only [Path.trans_apply]
-      split_ifs with h
-      · exact hγ₀ _
-      · exact hγ₁ _⟩
-  -- O_w \ S is open in G (by orbitSet_locallyPathConnected + reversal)
-  have hOS_open : IsOpen {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨hΛ₀_orbit, hΛ₀_notS⟩
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    refine ⟨V ∩ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n},
-      fun Λ' ⟨hΛ'V, hΛ'_orbit⟩ => ⟨hΛ'_orbit, fun hΛ'_S => ?_⟩,
-      hV_open.inter (isOpen_orbitSet w), ⟨hΛ₀V, hΛ₀_orbit⟩⟩
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    obtain ⟨γ₂, hγ₂⟩ := hΛ'_S
-    exact hΛ₀_notS ⟨γ₂.trans γ₁.symm, fun t => by
-      simp only [Path.trans_apply, Path.symm_apply]
-      split_ifs with h
-      · exact hγ₂ _
-      · exact hγ₁ _⟩
-  -- 1 ∈ S (trivial path, complexLorentzAction 1 w = w ∈ FT)
-  have h1_S : (1 : ComplexLorentzGroup d) ∈ S :=
-    ⟨Path.refl 1, fun t => by
-      simp only [Path.refl_apply]; rw [complexLorentzAction_one]; exact hw⟩
-  -- 1 ∈ O_w
-  have h1_Ow : (1 : ComplexLorentzGroup d) ∈ O_w := by
-    show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  -- O_w ⊆ S ∪ (O_w \ S)
-  have hOw_sub : O_w ⊆ S ∪ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    fun Λ' hΛ' => if h : Λ' ∈ S then Or.inl h else Or.inr ⟨hΛ', h⟩
-  -- Disjointness
-  have hdisjoint : Disjoint S {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    Set.disjoint_left.mpr fun Λ' hΛ'S ⟨_, hΛ'_notS⟩ => hΛ'_notS hΛ'S
-  -- Use IsPreconnected of O_w to conclude O_w ⊆ S
-  -- We prove O_w preconnected via orbitSet_preconnected_via_convexFiber
-  have hOw_preconn : IsPreconnected O_w := orbitSet_preconnected_via_convexFiber w hw
-  exact hOw_preconn.subset_left_of_subset_union hS_open hOS_open hdisjoint hOw_sub
-    ⟨1, h1_Ow, h1_S⟩ hΛ
-
-/-- The orbit set O_w = {Λ | Λ·w ∈ FT} is preconnected. Proven by showing it is
-    path-connected via `orbitSet_joined_one_direct`. -/
-private lemma orbitSet_isPreconnected_direct (w : Fin n → Fin (d + 1) → ℂ)
-    (hw : w ∈ ForwardTube d n) :
-    IsPreconnected {Λ : ComplexLorentzGroup d | complexLorentzAction Λ w ∈ ForwardTube d n} := by
-  set O_w := {Λ : ComplexLorentzGroup d | complexLorentzAction Λ w ∈ ForwardTube d n}
-  suffices hpc : IsPathConnected O_w from hpc.isConnected.isPreconnected
-  rw [isPathConnected_iff]
-  refine ⟨⟨1, ?_⟩, fun Λ₁ hΛ₁ Λ₂ hΛ₂ => ?_⟩
-  · show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  · obtain ⟨γ₁, hγ₁⟩ := orbitSet_joined_one_direct w hw Λ₁ hΛ₁
-    obtain ⟨γ₂, hγ₂⟩ := orbitSet_joined_one_direct w hw Λ₂ hΛ₂
-    have h1 : JoinedIn O_w (1 : ComplexLorentzGroup d) Λ₁ := ⟨γ₁, hγ₁⟩
-    have h2 : JoinedIn O_w (1 : ComplexLorentzGroup d) Λ₂ := ⟨γ₂, hγ₂⟩
-    exact h1.symm.trans h2
-
-private lemma orbitSet_pathComponent_eq (w : Fin n → Fin (d + 1) → ℂ)
-    (hw : w ∈ ForwardTube d n) (Λ : ComplexLorentzGroup d)
-    (hΛ : complexLorentzAction Λ w ∈ ForwardTube d n) :
-    ∃ γ : Path (1 : ComplexLorentzGroup d) Λ,
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n := by
-  -- Use the clopen argument on the orbit set O_w.
-  -- Define S := {Λ ∈ O_w | ∃ orbit-path from 1 to Λ}
-  set O_w := {Λ' : ComplexLorentzGroup d | complexLorentzAction Λ' w ∈ ForwardTube d n}
-  set S : Set (ComplexLorentzGroup d) :=
-    { Λ' | ∃ γ : Path (1 : ComplexLorentzGroup d) Λ',
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n } with hS_def
-  suffices hΛ_in_S : Λ ∈ S from hΛ_in_S
-  -- S is open in G (by `orbitSet_locallyPathConnected` + path concatenation)
-  have hS_open : IsOpen S := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨γ₀, hγ₀⟩
-    have hΛ₀_orbit : complexLorentzAction Λ₀ w ∈ ForwardTube d n := by
-      have := hγ₀ ⟨1, zero_le_one, le_refl _⟩
-      rwa [show γ₀ ⟨1, zero_le_one, le_refl _⟩ = Λ₀ from γ₀.target] at this
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    refine ⟨V, fun Λ' hΛ'V => ?_, hV_open, hΛ₀V⟩
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    exact ⟨γ₀.trans γ₁, fun t => by
-      simp only [Path.trans_apply]
-      split_ifs with h
-      · exact hγ₀ _
-      · exact hγ₁ _⟩
-  -- O_w \ S is open in G
-  have hOS_open : IsOpen {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨hΛ₀_orbit, hΛ₀_notS⟩
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    refine ⟨V ∩ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n},
-      fun Λ' ⟨hΛ'V, hΛ'_orbit⟩ => ⟨hΛ'_orbit, fun hΛ'_S => ?_⟩,
-      hV_open.inter (isOpen_orbitSet w), ⟨hΛ₀V, hΛ₀_orbit⟩⟩
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    obtain ⟨γ₂, hγ₂⟩ := hΛ'_S
-    exact hΛ₀_notS ⟨γ₂.trans γ₁.symm, fun t => by
-      simp only [Path.trans_apply, Path.symm_apply]
-      split_ifs with h
-      · exact hγ₂ _
-      · exact hγ₁ _⟩
-  -- Use preconnectedness of O_w
-  have hOw_preconn : IsPreconnected O_w := orbitSet_isPreconnected_direct w hw
-  have h1_in_Ow : (1 : ComplexLorentzGroup d) ∈ O_w := by
-    show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  have h1_in_S : (1 : ComplexLorentzGroup d) ∈ S :=
-    ⟨Path.refl 1, fun t => by simp only [Path.refl_apply]; rw [complexLorentzAction_one]; exact hw⟩
-  have hOw_sub_S_union : O_w ⊆ S ∪ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    fun Λ' hΛ' => if h : Λ' ∈ S then Or.inl h else Or.inr ⟨hΛ', h⟩
-  have hdisjoint : Disjoint S {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    Set.disjoint_left.mpr fun Λ' hΛ'S ⟨_, hΛ'_notS⟩ => hΛ'_notS hΛ'S
-  exact hOw_preconn.subset_left_of_subset_union hS_open hOS_open hdisjoint hOw_sub_S_union
-    ⟨1, h1_in_Ow, h1_in_S⟩ hΛ
-
-private lemma orbitSet_isPreconnected_of_locallyPathConnected
-    (w : Fin n → Fin (d + 1) → ℂ) (hw : w ∈ ForwardTube d n) :
-    IsPreconnected {Λ : ComplexLorentzGroup d |
-      complexLorentzAction Λ w ∈ ForwardTube d n} := by
-  -- The orbit set is path-connected (every element can be connected to 1 by a path
-  -- staying in O_w, via `orbitSet_pathComponent_eq`), hence preconnected.
-  set O_w := {Λ : ComplexLorentzGroup d | complexLorentzAction Λ w ∈ ForwardTube d n}
-  suffices hpc : IsPathConnected O_w from hpc.isConnected.isPreconnected
-  rw [isPathConnected_iff]
-  refine ⟨⟨1, ?_⟩, fun Λ₁ hΛ₁ Λ₂ hΛ₂ => ?_⟩
-  · -- 1 ∈ O_w
-    show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  · -- JoinedIn O_w Λ₁ Λ₂: get paths from 1 to each, compose
-    obtain ⟨γ₁, hγ₁⟩ := orbitSet_pathComponent_eq w hw Λ₁ hΛ₁
-    obtain ⟨γ₂, hγ₂⟩ := orbitSet_pathComponent_eq w hw Λ₂ hΛ₂
-    have h1 : JoinedIn O_w (1 : ComplexLorentzGroup d) Λ₁ := ⟨γ₁, hγ₁⟩
-    have h2 : JoinedIn O_w (1 : ComplexLorentzGroup d) Λ₂ := ⟨γ₂, hγ₂⟩
-    exact h1.symm.trans h2
-
-/-- **Path within orbit set.** For any Λ in the orbit set of w (i.e., Λ·w ∈ FT),
-    there exists a continuous path from 1 to Λ that stays entirely within the orbit set.
-
-    The proof uses `orbitSet_locallyPathConnected` and the preconnectedness of the
-    orbit set (`orbitSet_isPreconnected_of_locallyPathConnected`). Define
-    S = {Λ | ∃ path from 1 to Λ in orbit set}. Then:
-    - S is **open** in G: at Λ₀ ∈ S, `orbitSet_locallyPathConnected`
-      gives a neighborhood where paths extend. Concatenation gives new paths from 1.
-    - O_w \ S is **open** in G: for Λ₀ ∈ O_w \ S, the same local path-connectedness
-      shows that nearby elements in O_w are also not in S (else path reversal + concat
-      would put Λ₀ in S).
-    Since O_w is preconnected and O_w ⊆ S ∪ (O_w \ S) with S ∩ O_w nonempty,
-    `IsPreconnected.subset_left_of_subset_union` gives O_w ⊆ S. -/
-private lemma orbitSet_joined_one (w : Fin n → Fin (d + 1) → ℂ)
-    (hw : w ∈ ForwardTube d n) (Λ : ComplexLorentzGroup d)
-    (hΛ : complexLorentzAction Λ w ∈ ForwardTube d n) :
-    ∃ γ : Path (1 : ComplexLorentzGroup d) Λ,
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n := by
-  -- Define S: elements reachable from 1 via a path in the orbit set
-  set S : Set (ComplexLorentzGroup d) :=
-    { Λ' | ∃ γ : Path (1 : ComplexLorentzGroup d) Λ',
-      ∀ t, complexLorentzAction (γ t) w ∈ ForwardTube d n } with hS_def
-  suffices hΛ_in_S : Λ ∈ S from hΛ_in_S
-  -- S is clopen within the orbit set O_w. Since O_w is open and
-  -- `orbitSet_locallyPathConnected` shows it is locally path-connected,
-  -- path-connected components of O_w are open (in G).
-  -- S = pathComponentIn(O_w, 1) is one such component, hence open.
-  -- It is also closed within O_w (complement is union of other open components).
-  -- S is open in G:
-  have hS_open : IsOpen S := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨γ₀, hγ₀⟩
-    -- Λ₀ ∈ S means Λ₀·w ∈ FT
-    have hΛ₀_orbit : complexLorentzAction Λ₀ w ∈ ForwardTube d n := by
-      have := hγ₀ ⟨1, zero_le_one, le_refl _⟩
-      rwa [show γ₀ ⟨1, zero_le_one, le_refl _⟩ = Λ₀ from γ₀.target] at this
-    -- Get neighborhood from orbitSet_locallyPathConnected
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    refine ⟨V, fun Λ' hΛ'V => ?_, hV_open, hΛ₀V⟩
-    -- For Λ' ∈ V, get path from Λ₀ to Λ' in orbit set
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    -- Concatenate path from 1 to Λ₀ (= γ₀) with path from Λ₀ to Λ' (= γ₁)
-    exact ⟨γ₀.trans γ₁, fun t => by
-      simp only [Path.trans_apply]
-      split_ifs with h
-      · exact hγ₀ _
-      · exact hγ₁ _⟩
-  -- The orbit set O_w \ S is also open in G (union of other path-components,
-  -- each open by the same argument applied at any point):
-  have hOS_open : IsOpen {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} := by
-    apply isOpen_iff_forall_mem_open.mpr
-    intro Λ₀ ⟨hΛ₀_orbit, hΛ₀_notS⟩
-    obtain ⟨U, hU_nhd, hU_sub⟩ :=
-      (orbitSet_locallyPathConnected w hw Λ₀ hΛ₀_orbit).exists_mem
-    obtain ⟨V, hVU, hV_open, hΛ₀V⟩ := mem_nhds_iff.mp hU_nhd
-    -- V ∩ (orbit set) is a neighborhood of Λ₀ in O_w \ S
-    refine ⟨V ∩ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n},
-      fun Λ' ⟨hΛ'V, hΛ'_orbit⟩ => ⟨hΛ'_orbit, fun hΛ'_S => ?_⟩,
-      hV_open.inter (isOpen_orbitSet w), ⟨hΛ₀V, hΛ₀_orbit⟩⟩
-    -- If Λ' ∈ S, then path from 1 to Λ' in orbit set exists.
-    -- Also path from Λ₀ to Λ' in orbit set exists (from local path-connectedness).
-    -- Reversing the latter and concatenating gives path from 1 to Λ₀: contradiction.
-    obtain ⟨γ₁, hγ₁⟩ := hU_sub Λ' (hVU hΛ'V)
-    obtain ⟨γ₂, hγ₂⟩ := hΛ'_S
-    -- Path from 1 to Λ₀: go from 1 to Λ' (via γ₂), then from Λ' to Λ₀ (via γ₁.symm)
-    exact hΛ₀_notS ⟨γ₂.trans γ₁.symm, fun t => by
-      simp only [Path.trans_apply, Path.symm_apply]
-      split_ifs with h
-      · exact hγ₂ _
-      · exact hγ₁ _⟩
-  -- S and (O_w \ S) are both open in G, disjoint, and their union is O_w.
-  -- By `IsPreconnected.subset_left_of_subset_union`, if O_w is preconnected,
-  -- then O_w ⊆ S (since O_w ∩ S is nonempty: 1 ∈ S ∩ O_w).
-  set O_w := {Λ' : ComplexLorentzGroup d | complexLorentzAction Λ' w ∈ ForwardTube d n}
-  have hOw_preconn : IsPreconnected O_w := orbitSet_isPreconnected_of_locallyPathConnected w hw
-  have h1_in_Ow : (1 : ComplexLorentzGroup d) ∈ O_w := by
-    show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  have h1_in_S : (1 : ComplexLorentzGroup d) ∈ S :=
-    ⟨Path.refl 1, fun t => by simp only [Path.refl_apply]; rw [complexLorentzAction_one]; exact hw⟩
-  have hOw_sub_S_union : O_w ⊆ S ∪ {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    fun Λ' hΛ' => if h : Λ' ∈ S then Or.inl h else Or.inr ⟨hΛ', h⟩
-  have hdisjoint : Disjoint S {Λ' | complexLorentzAction Λ' w ∈ ForwardTube d n ∧ Λ' ∉ S} :=
-    Set.disjoint_left.mpr fun Λ' hΛ'S ⟨_, hΛ'_notS⟩ => hΛ'_notS hΛ'S
-  exact hOw_preconn.subset_left_of_subset_union hS_open hOS_open hdisjoint hOw_sub_S_union
-    ⟨1, h1_in_Ow, h1_in_S⟩ hΛ
-
-/-- Each orbit set O_w = {Λ ∈ G : Λ·w ∈ FT} is preconnected (open subset of
-    the connected Lie group G, containing 1).
-
-    The proof shows the orbit set is path-connected using `orbitSet_joined_one`:
-    for any two elements Λ₁, Λ₂, we get paths from 1 to each, and concatenating
-    (with reversal) gives a path from Λ₁ to Λ₂ within the orbit set. Path-connected
-    sets are preconnected. -/
+    NOTE: A previous general topology lemma claiming that an open locally
+    path-connected subset of a path-connected group containing 1 is preconnected
+    was FALSE (counterexample: G = ℝ, S = (-2,-1) ∪ (-½,½) ∪ (1,2)).
+    See GitHub issue #30. The correct proof requires the specific Lie-theoretic
+    structure of the Lorentz group orbit, not just general topology. -/
 private theorem orbitSet_isPreconnected (w : Fin n → Fin (d + 1) → ℂ)
     (hw : w ∈ ForwardTube d n) :
     IsPreconnected {Λ : ComplexLorentzGroup d |
       complexLorentzAction Λ w ∈ ForwardTube d n} := by
-  -- Show the orbit set is path-connected, hence connected, hence preconnected
-  set S := {Λ : ComplexLorentzGroup d | complexLorentzAction Λ w ∈ ForwardTube d n}
-  -- S is path-connected: for any Λ₁, Λ₂ ∈ S, get paths from 1 to each via
-  -- orbitSet_joined_one, then compose via JoinedIn.symm.trans
-  suffices hpc : IsPathConnected S from hpc.isConnected.isPreconnected
-  rw [isPathConnected_iff]
-  refine ⟨⟨1, ?_⟩, fun Λ₁ hΛ₁ Λ₂ hΛ₂ => ?_⟩
-  · -- 1 ∈ S
-    show complexLorentzAction 1 w ∈ ForwardTube d n
-    rw [complexLorentzAction_one]; exact hw
-  · -- JoinedIn S Λ₁ Λ₂
-    -- Get paths from 1 to Λ₁ and from 1 to Λ₂ within S
-    obtain ⟨γ₁, hγ₁⟩ := orbitSet_joined_one w hw Λ₁ hΛ₁
-    obtain ⟨γ₂, hγ₂⟩ := orbitSet_joined_one w hw Λ₂ hΛ₂
-    -- Construct JoinedIn from paths
-    have h1 : JoinedIn S (1 : ComplexLorentzGroup d) Λ₁ := ⟨γ₁, hγ₁⟩
-    have h2 : JoinedIn S (1 : ComplexLorentzGroup d) Λ₂ := ⟨γ₂, hγ₂⟩
-    exact h1.symm.trans h2
+  sorry
 
 /-- The set U = {Λ ∈ G : D_Λ ≠ ∅} of group elements with nonempty domain is connected.
     U = ⋃_{w ∈ FT} O_w where each O_w is preconnected and all contain 1, so the
