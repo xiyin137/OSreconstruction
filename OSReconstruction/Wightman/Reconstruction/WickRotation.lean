@@ -2515,17 +2515,84 @@ theorem constructedSchwinger_rotation_invariant (Wfn : WightmanFunctions d)
         integral_orthogonal_eq_self R hR
           (fun x => K x * (f : NPointDomain d n → ℂ) x)
 
+omit [NeZero d] in
+/-- Wick rotation of a time-reflected point equals componentwise conjugation
+    of the Wick-rotated point: Wick(θ(τ,x⃗)) = conj(Wick(τ,x⃗)).
+
+    This is because: θ(τ,x⃗) = (-τ,x⃗), and Wick(-τ,x⃗) = (-iτ,x⃗),
+    while conj(Wick(τ,x⃗)) = conj(iτ, x⃗) = (-iτ, x⃗) (spatial coords are real).
+
+    This identity connects the OS time-reflection involution to complex conjugation
+    in the tube domain, which is the bridge between the Euclidean and Minkowski
+    inner products. -/
+theorem wickRotatePoint_timeReflection (x : Fin (d + 1) → ℝ) (μ : Fin (d + 1)) :
+    wickRotatePoint (timeReflection d x) μ = starRingEnd ℂ (wickRotatePoint x μ) := by
+  simp only [wickRotatePoint, timeReflection]
+  by_cases hμ : μ = 0
+  · subst hμ; simp [Complex.conj_ofReal]
+  · simp [hμ, Complex.conj_ofReal]
+
+/-- Each (n,m)-term of the OS inner product with the constructed Schwinger functions
+    equals the corresponding term of the Wightman inner product.
+
+    The proof uses three key ingredients:
+    1. **Change of variables** (time reflection θ in first n coordinates):
+       converts osConj(f_n) = conj(f_n(θ·)) to conj(f_n(·)), and changes
+       F_ext evaluation from forward-tube to backward-tube for first n args.
+
+    2. **F_ext permutation invariance** (BHW property 4): allows reordering
+       the first n arguments, converting conj(f_n(y₁,...,yₙ)) to
+       conj(f_n(yₙ,...,y₁)) = borchersConj(f_n)(y₁,...,yₙ).
+
+    3. **Boundary value identity**: the integral of F_ext at mixed
+       backward/forward Euclidean points against a test function equals
+       the Wightman distributional pairing W(n+m)(·).
+
+    Steps 1-2 are provable from existing infrastructure. Step 3 is the
+    deep analytic content requiring the distributional boundary value theory
+    (Fourier-Laplace representation + Paley-Wiener).
+
+    Blocked by: `boundary_values_tempered` and distributional BV infrastructure.
+
+    Ref: OS I, Section 5; Streater-Wightman §3.4 -/
+private theorem schwinger_os_term_eq_wightman_term (Wfn : WightmanFunctions d)
+    (n m : ℕ) (f_n : SchwartzNPoint d n) (f_m : SchwartzNPoint d m)
+    (hsupp_n : ∀ x, f_n.toFun x ≠ 0 → x ∈ PositiveTimeRegion d n)
+    (hsupp_m : ∀ x, f_m.toFun x ≠ 0 → x ∈ PositiveTimeRegion d m) :
+    constructSchwingerFunctions Wfn (n + m) (f_n.osConjTensorProduct f_m) =
+    Wfn.W (n + m) (f_n.conjTensorProduct f_m) := by
+  sorry
+
+/-- The OS inner product for Wick-rotated Schwinger functions equals the
+    Wightman inner product for test functions supported at positive times.
+
+    This is the key identity: ⟨F,F⟩_OS = ⟨F,F⟩_W when F is supported at τ > 0.
+    Combined with Wightman positive definiteness (R2), this gives E2.
+
+    Proof: each (n,m)-term of the OS sum equals the (n,m)-term of the Wightman sum
+    (by `schwinger_os_term_eq_wightman_term`), so the sums are equal.
+
+    Ref: OS I, Section 5 -/
+private theorem os_inner_product_eq_wightman (Wfn : WightmanFunctions d)
+    (F : BorchersSequence d)
+    (hsupp : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
+      x ∈ PositiveTimeRegion d n) :
+    OSInnerProduct d (constructSchwingerFunctions Wfn) F F =
+    WightmanInnerProduct d Wfn.W F F := by
+  simp only [OSInnerProduct, WightmanInnerProduct]
+  congr 1
+  ext n
+  congr 1
+  ext m
+  exact schwinger_os_term_eq_wightman_term Wfn n m (F.funcs n) (F.funcs m)
+    (hsupp n) (hsupp m)
+
 /-- The OS inner product for Wick-rotated Schwinger functions reduces to
     the Wightman positivity form after the rotation.
 
-    For test functions F supported in τ > 0, the time-reflection θ sends
-    τ to -τ, which under Wick rotation corresponds to complex conjugation
-    of the time variables. The resulting quadratic form equals the Wightman
-    inner product, which is non-negative by R2.
-
-    Blocked by: the explicit computation showing that time-reflection + Wick rotation
-    = complex conjugation of the analytic continuation, and the identification of
-    the OS inner product with the Wightman inner product after this substitution.
+    For test functions F supported in τ > 0, the OS inner product equals
+    the Wightman inner product (by `os_inner_product_eq_wightman`), which
+    is non-negative by R2 (positive definiteness).
 
     Ref: OS I, Section 5 (proof that E2 follows from R2); Glimm-Jaffe Ch. 19 -/
 private theorem os_inner_product_eq_wightman_positivity (Wfn : WightmanFunctions d)
@@ -2533,7 +2600,8 @@ private theorem os_inner_product_eq_wightman_positivity (Wfn : WightmanFunctions
     (hsupp : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
       x ∈ PositiveTimeRegion d n) :
     (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 := by
-  sorry
+  rw [os_inner_product_eq_wightman Wfn F hsupp]
+  exact Wfn.positive_definite F
 
 theorem constructedSchwinger_reflection_positive (Wfn : WightmanFunctions d)
     (F : BorchersSequence d)
