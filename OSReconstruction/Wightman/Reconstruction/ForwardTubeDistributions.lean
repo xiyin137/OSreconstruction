@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.TubeDistributions
+import OSReconstruction.SCV.LaplaceSchwartz
 import OSReconstruction.Wightman.Reconstruction
 
 /-!
@@ -214,13 +215,13 @@ theorem forwardConeAbs_implies_allForwardCone {d n : ℕ} [NeZero d]
   induction kv with
   | zero =>
     have h0 := hη ⟨0, hkv⟩
-    simp only [ForwardConeAbs, Set.mem_setOf_eq, dite_true] at h0
+    simp only [dite_true] at h0
     convert h0 using 1; ext μ; simp
   | succ k ih =>
     -- η_{k+1} = η_k + (η_{k+1} - η_k), both in V₊
     have hk : InOpenForwardCone d (η ⟨k, by omega⟩) := ih (by omega)
     have hdiff := hη ⟨k + 1, hkv⟩
-    simp only [ForwardConeAbs, Set.mem_setOf_eq, Nat.succ_ne_zero, dite_false] at hdiff
+    simp only [Nat.succ_ne_zero, dite_false] at hdiff
     have hprev : (⟨k + 1 - 1, by omega⟩ : Fin n) = ⟨k, by omega⟩ := by
       ext; exact Nat.succ_sub_one k
     rw [hprev] at hdiff
@@ -231,8 +232,7 @@ theorem forwardConeAbs_implies_allForwardCone {d n : ℕ} [NeZero d]
 
 theorem forwardConeAbs_convex (d n : ℕ) [NeZero d] :
     Convex ℝ (ForwardConeAbs d n) := by
-  intro y hy y' hy' a b ha hb hab
-  intro k
+  intro y hy y' hy' a b ha hb hab k
   simp only [ForwardConeAbs, Set.mem_setOf_eq] at hy hy' ⊢
   -- The difference (a•y + b•y')_k - (a•y + b•y')_{k-1}
   --   = a•(y_k - y_{k-1}) + b•(y'_k - y'_{k-1})
@@ -260,7 +260,9 @@ theorem forwardConeAbs_convex (d n : ℕ) [NeZero d] :
     exact convex_inOpenForwardCone d hyk hy'k ha hb hab
   ext μ
   simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
-  split_ifs <;> simp [Pi.smul_apply, smul_eq_mul] <;> ring
+  split_ifs with hk
+  · simp
+  · simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]; ring
 
 /-- The forward cone is nonempty. -/
 theorem forwardConeAbs_nonempty (d n : ℕ) [NeZero d] :
@@ -270,7 +272,7 @@ theorem forwardConeAbs_nonempty (d n : ℕ) [NeZero d] :
   let η₀ : Fin (d + 1) → ℝ := Pi.single 0 1
   have hη₀ : InOpenForwardCone d η₀ := by
     constructor
-    · simp [η₀, Pi.single_apply]
+    · simp [η₀]
     · simp only [MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner, η₀,
         Pi.single_apply]
       have : ∀ i : Fin (d + 1), (MinkowskiSpace.metricSignature d i *
@@ -281,11 +283,11 @@ theorem forwardConeAbs_nonempty (d n : ℕ) [NeZero d] :
       norm_num
   refine ⟨fun k μ => (↑(k : ℕ) + 1 : ℝ) * η₀ μ, ?_⟩
   intro k
-  simp only [ForwardConeAbs, Set.mem_setOf_eq]
+  simp only []
   convert hη₀ using 1
   ext μ
   split_ifs with h
-  · simp [h, Pi.zero_apply]
+  · simp [h]
   · simp only
     have hk_pos : (k : ℕ) ≥ 1 := Nat.one_le_iff_ne_zero.mpr h
     have : (↑(↑k - 1 : ℕ) : ℝ) = (↑(k : ℕ) : ℝ) - 1 := by
@@ -430,7 +432,7 @@ theorem forwardConeAbs_smul (d n : ℕ) [NeZero d]
   -- The successive difference of t • y is t • (successive difference of y)
   suffices InOpenForwardCone d
       (t • fun μ => y k μ - (if h : k.val = 0 then 0 else y ⟨k.val - 1, by omega⟩) μ) from by
-    convert this using 1; ext μ; split <;> simp [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, mul_sub]
+    convert this using 1; ext μ; split <;> simp [Pi.smul_apply, smul_eq_mul, mul_sub]
   exact inOpenForwardCone_smul d t ht _ hk
 
 /-- ForwardConeFlat is a cone: closed under positive scalar multiplication. -/
@@ -469,7 +471,7 @@ theorem forwardTube_flatten_eq_tubeDomain (d n : ℕ) [NeZero d] :
       intro k μ
       simp only [e, flattenCLEquiv_symm_apply]
       have := congr_fun hyw (finProdFinEquiv (k, μ))
-      simp only [eR, flattenCLEquivReal_apply, Equiv.symm_apply_apply] at this
+      simp only [flattenCLEquivReal_apply, Equiv.symm_apply_apply] at this
       linarith
     intro k
     have hyk := hy k
@@ -503,7 +505,7 @@ private theorem differentiableOn_flatten {n : ℕ} {d : ℕ} [NeZero d]
 theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (h_bv : ∃ (T : SchwartzNPoint d n → ℂ),
+    (h_bv : ∃ (T : SchwartzNPoint d n → ℂ), Continuous T ∧
       ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
         (∀ k, InOpenForwardCone d (η k)) →
         Filter.Tendsto
@@ -520,7 +522,7 @@ theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
   -- The boundary value condition transfers through the flattening
   -- Use SchwartzMap.compCLMOfContinuousLinearEquiv to compose Schwartz functions
   -- with the flattening equivalence
-  have hG_bv : ∃ (T : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ),
+  have hG_bv : ∃ (T : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ), Continuous T ∧
       ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) (η : Fin (n * (d + 1)) → ℝ),
         η ∈ ForwardConeFlat d n →
         Filter.Tendsto (fun ε : ℝ =>
@@ -528,13 +530,13 @@ theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
             G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (T f)) := by
-    obtain ⟨T, hT⟩ := h_bv
+    obtain ⟨T, hT_cont, hT⟩ := h_bv
     -- Pull back Schwartz functions through the real flattening
     let eR := flattenCLEquivReal n (d + 1)
     let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
         SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
       SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
-    refine ⟨fun f => T (pullback f), fun f η hη => ?_⟩
+    refine ⟨fun f => T (pullback f), hT_cont.comp pullback.continuous, fun f η hη => ?_⟩
     -- η ∈ ForwardConeFlat = eR '' ForwardConeAbs, so η = eR η' for some η' ∈ ForwardConeAbs
     obtain ⟨η', hη', rfl⟩ := hη
     -- η' ∈ ForwardConeAbs implies each η'_k ∈ V₊, so hT applies
@@ -555,7 +557,7 @@ theorem continuous_boundary_forwardTube {d n : ℕ} [NeZero d]
       congr 1
       congr 1; funext k μ
       simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
-        ← finProdFinEquiv_symm_apply, Equiv.symm_apply_apply]
+        Equiv.symm_apply_apply]
     exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
   -- Apply the general axiom
   have hcont_G := SCV.continuous_boundary_tube
@@ -656,5 +658,336 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
   have := huniq (e z) hmem
   simp only [G₁, G₂, Function.comp, e.symm_apply_apply] at this
   exact this
+
+/-! ### Norm Preservation under Flattening -/
+
+/-- The real flattening preserves norms.
+    Both sides are the sup norm over all components `|x i j|`, just indexed differently.
+    Proof uses `Finset.sup_product_left` to relate `sup_{(i,j)} = sup_i (sup_j ...)`. -/
+theorem flattenCLEquivReal_norm_eq (n d : ℕ) (x : Fin n → Fin d → ℝ) :
+    ‖flattenCLEquivReal n d x‖ = ‖x‖ := by
+  simp only [Pi.norm_def]
+  congr 1
+  -- Goal: sup_{k : Fin (n*d)} ‖eR x k‖₊ = sup_{i : Fin n} ‖x i‖₊
+  simp only [Pi.nnnorm_def, flattenCLEquivReal_apply]
+  -- Goal: sup_{k : Fin (n*d)} ‖x (k.divNat) (k.modNat)‖₊ =
+  --       sup_{i : Fin n} sup_{j : Fin d} ‖x i j‖₊
+  apply le_antisymm
+  · apply Finset.sup_le
+    intro b _
+    exact Finset.le_sup_of_le (Finset.mem_univ (finProdFinEquiv.symm b).1)
+      (Finset.le_sup_of_le (Finset.mem_univ (finProdFinEquiv.symm b).2) (by simp))
+  · apply Finset.sup_le
+    intro i _
+    apply Finset.sup_le
+    intro j _
+    exact Finset.le_sup_of_le (Finset.mem_univ (finProdFinEquiv (i, j))) (by simp)
+
+/-! ### Polynomial Growth for the Forward Tube -/
+
+/-- **Polynomial growth of holomorphic functions on the forward tube.**
+
+    Derived from `SCV.polynomial_growth_tube` via the flattening equivalence.
+    A holomorphic function on `ForwardTube d n` with tempered distributional boundary
+    values satisfies polynomial growth estimates: for any compact K ⊆ ForwardConeAbs,
+    there exist C > 0 and N such that
+
+        ‖F(x + iy)‖ ≤ C · (1 + ‖x‖)^N
+
+    for all real x and imaginary part y ∈ K.
+
+    The boundary value condition is stated in the flat (Fin m → ℂ) coordinates
+    because that is the form required by `polynomial_growth_tube`. The caller
+    (typically `bhw_polynomial_growth_on_euclidean`) must convert from the
+    product-coordinate BV condition to this flat form.
+
+    Ref: Streater-Wightman, Theorem 2-6; Vladimirov §25.3 -/
+theorem polynomial_growth_forwardTube {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (h_bv : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
+      ∃ (T : (Fin (n * (d + 1)) → ℝ) → ℂ), ContinuousOn T Set.univ ∧
+        ∀ (f : (Fin (n * (d + 1)) → ℝ) → ℂ), MeasureTheory.Integrable f →
+          Filter.Tendsto (fun ε : ℝ =>
+            ∫ x : Fin (n * (d + 1)) → ℝ,
+              (F ∘ (flattenCLEquiv n (d + 1)).symm)
+                (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (∫ x, T x * f x)))
+    (K : Set (Fin n → Fin (d + 1) → ℝ)) (hK : IsCompact K)
+    (hK_sub : K ⊆ ForwardConeAbs d n) :
+    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (x : Fin n → Fin (d + 1) → ℝ) (y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
+        ‖F (fun k μ => ↑(x k μ) + ↑(y k μ) * Complex.I)‖ ≤
+          C_bd * (1 + ‖x‖) ^ N := by
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
+    differentiableOn_flatten hF
+  -- The compact subset in flat coordinates
+  let K_flat : Set (Fin (n * (d + 1)) → ℝ) := eR '' K
+  have hK_flat_compact : IsCompact K_flat := hK.image eR.continuous
+  have hK_flat_sub : K_flat ⊆ ForwardConeFlat d n :=
+    Set.image_mono hK_sub
+  -- Apply polynomial_growth_tube to G on the flattened tube
+  obtain ⟨C_bd, N, hC_pos, hgrowth_flat⟩ :=
+    SCV.polynomial_growth_tube
+      (forwardConeFlat_isOpen d n)
+      (forwardConeFlat_convex d n)
+      (forwardConeFlat_nonempty d n)
+      hG_diff h_bv K_flat hK_flat_compact hK_flat_sub
+  -- Transfer back to product coordinates
+  refine ⟨C_bd, N, hC_pos, fun x y hy => ?_⟩
+  -- The key: F(x + iy) = G(eR(x) + i·eR(y))
+  have harg : G (fun i => ↑(eR x i) + ↑(eR y i) * Complex.I) =
+      F (fun k μ => ↑(x k μ) + ↑(y k μ) * Complex.I) := by
+    show F (e.symm (fun i => ↑(eR x i) + ↑(eR y i) * Complex.I)) =
+      F (fun k μ => ↑(x k μ) + ↑(y k μ) * Complex.I)
+    congr 1; ext k μ
+    simp only [e, eR, flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+      Equiv.symm_apply_apply]
+  -- Apply the flat bound
+  have h_flat := hgrowth_flat (eR x) (eR y) ⟨y, hy, rfl⟩
+  rw [harg] at h_flat
+  -- The flattening preserves the sup norm: ‖eR x‖ = ‖x‖
+  -- Both are sup norms over finite index sets, and flattening just reindexes:
+  -- ‖x‖ = sup_i ‖x i‖ = sup_i (sup_j |x i j|) = sup_{(i,j)} |x i j| = ‖eR x‖
+  have h_norm : ‖eR x‖ = ‖x‖ := flattenCLEquivReal_norm_eq n (d + 1) x
+  rw [h_norm] at h_flat
+  exact h_flat
+
+/-- The boundary function of a holomorphic function on a tube domain (over a cone)
+    with distributional BVs is continuous.
+
+    Uses `continuous_boundary_tube` to get ContinuousWithinAt at each real point,
+    then an epsilon-triangle argument using the cone property (which allows approaching
+    the real boundary along arbitrarily small imaginary parts) and continuity of F
+    on the tube to upgrade to full continuity of the boundary restriction.
+
+    The cone property is essential: it ensures we can scale imaginary parts toward 0,
+    so that `realEmbed x` lies in the closure of `TubeDomain C`.
+
+    Ref: Vladimirov §26.2 -/
+private theorem boundary_function_continuous {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
+    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
+      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f))) :
+    Continuous (fun x => F (SCV.realEmbed x)) := by
+  -- The Fourier-Laplace representation gives full continuity of the boundary function.
+  obtain ⟨T, hT_cont, hT⟩ := h_bv
+  exact SCV.fourierLaplace_boundary_continuous hC hconv hne hF
+    (SCV.exists_fourierLaplaceRepr hC hconv hne hF hT_cont hT)
+
+/-- **Polynomial growth from Schwartz distributional boundary values.**
+
+    A holomorphic function on a tube domain T(C) (where C is an open convex cone)
+    with tempered distributional boundary values (in the Schwartz sense) satisfies
+    polynomial growth: for any compact K ⊆ C, there exist C_bd > 0 and N such that
+      |F(x + iy)| ≤ C_bd · (1 + ‖x‖)^N for all x ∈ ℝ^m and y ∈ K.
+
+    This is the same mathematical content as `polynomial_growth_tube` but takes
+    Schwartz-based BV as input rather than integrable-function BV. The proof uses
+    the Fourier-Laplace representation (Vladimirov §25.3): the Schwartz BV determines
+    a tempered distribution whose Fourier transform has support in the dual cone C*,
+    and the Laplace transform of such a distribution has polynomial growth.
+
+    Ref: Vladimirov §25.3; Streater-Wightman, Theorem 2-6 -/
+private theorem polynomial_growth_from_schwartz_bv {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
+    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
+      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
+    (K : Set (Fin m → ℝ)) (hK : IsCompact K) (hK_sub : K ⊆ C) :
+    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
+        ‖F (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
+  obtain ⟨T, hT_cont, hT⟩ := h_bv
+  exact SCV.fourierLaplace_polynomial_growth hC hconv hne hF
+    (SCV.exists_fourierLaplaceRepr hC hconv hne hF hT_cont hT) K hK hK_sub
+
+private theorem boundary_integral_convergence {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
+    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
+      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
+    (η : Fin m → ℝ) (hη : η ∈ C) :
+    ∀ (f : (Fin m → ℝ) → ℂ), MeasureTheory.Integrable f →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (∫ x, F (SCV.realEmbed x) * f x)) := by
+  intro f hf
+  -- Step 1: Pointwise convergence.
+  -- For each x, F(x + iεη) → F(realEmbed x) as ε → 0⁺.
+  -- Proof: x + iεη ∈ TubeDomain C (since εη ∈ C by cone) and x + iεη → realEmbed x.
+  -- By ContinuousWithinAt F (TubeDomain C) (realEmbed x) from continuous_boundary_tube.
+  have h_pw : ∀ x : Fin m → ℝ,
+      Filter.Tendsto (fun ε : ℝ => F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (F (SCV.realEmbed x))) := by
+    intro x
+    have h_cwa := SCV.continuous_boundary_tube hC hconv hne hF h_bv x
+    -- Define the path φ : ℝ → (Fin m → ℂ) by φ(ε) i = x i + ε * η i * I
+    let φ : ℝ → (Fin m → ℂ) := fun ε i => ↑(x i) + ↑ε * ↑(η i) * Complex.I
+    -- Goal: Tendsto (F ∘ φ) (nhdsWithin 0 (Ioi 0)) (nhds (F(realEmbed x)))
+    -- = Tendsto F (map φ (nhdsWithin 0 (Ioi 0))) (nhds (F(realEmbed x)))
+    -- It suffices to show: map φ (nhdsWithin 0 (Ioi 0)) ≤ nhdsWithin (realEmbed x) (TubeDomain C)
+    -- i.e., φ tends to realEmbed x AND φ maps (0,∞) into TubeDomain C.
+    change Filter.Tendsto (F ∘ φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds (F (SCV.realEmbed x)))
+    apply h_cwa.tendsto.comp
+    -- Need: Tendsto φ (nhdsWithin 0 (Ioi 0)) (nhdsWithin (realEmbed x) (TubeDomain C))
+    apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+    · -- φ(ε) → realEmbed x as ε → 0⁺ in nhds
+      apply Filter.Tendsto.mono_left _ nhdsWithin_le_nhds
+      show Filter.Tendsto φ (nhds 0) (nhds (SCV.realEmbed x))
+      have hφ0 : φ 0 = SCV.realEmbed x := by
+        ext i; simp [φ, SCV.realEmbed]
+      rw [← hφ0]
+      apply Continuous.tendsto
+      exact continuous_pi fun i =>
+        continuous_const.add
+          (((Complex.continuous_ofReal.comp continuous_id).mul continuous_const).mul
+            continuous_const)
+    · -- φ maps (0, ∞) into TubeDomain C
+      filter_upwards [self_mem_nhdsWithin] with ε (hε : 0 < ε)
+      show (fun i => (φ ε i).im) ∈ C
+      have him : (fun i => (φ ε i).im) = ε • η := by
+        ext i; simp [φ, Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.I_re, Complex.I_im]
+      rw [him]
+      exact hcone ε hε η hη
+  -- Step 2: Use the Fourier-Laplace representation for dominated convergence.
+  -- The representation gives both the boundary continuity and the growth bounds
+  -- needed for the dominated convergence argument.
+  obtain ⟨T, hT_cont, hT⟩ := h_bv
+  let hRepr : SCV.HasFourierLaplaceRepr C F :=
+    SCV.exists_fourierLaplaceRepr hC hconv hne hF hT_cont hT
+  -- The polynomial growth from the representation gives a dominating function.
+  -- For ε ∈ (0, 1], εη ∈ C (by cone), and {εη : ε ∈ [1/2, 1]} is compact ⊆ C.
+  -- Polynomial growth: |F(x+iy)| ≤ C_bd(1+‖x‖)^N for y in this compact set.
+  -- The Fourier-Laplace representation implies that the boundary limit exists
+  -- not just distributionally but in the L1-weak topology against integrable functions.
+  -- This follows from: (1) boundary continuity + polynomial growth control, and
+  -- (2) the Schwartz distributional BV determines the boundary function via
+  -- boundary_value_recovery, which integrates against all Schwartz test functions,
+  -- hence by density of Schwartz in L1, against all integrable functions.
+  --
+  -- The full dominated convergence argument requires:
+  -- (a) Pointwise: F(x+iεη) → F(realEmbed x) [proved in h_pw]
+  -- (b) Domination: |F(x+iεη)| ≤ g(x) where g is integrable
+  --     This requires the Fourier-Laplace representation to give bounds
+  --     that are integrable against f, not just polynomial growth.
+  -- (c) Apply MeasureTheory.tendsto_integral_of_dominated_convergence
+  --
+  -- This is a consequence of the Fourier-Laplace theory (Vladimirov §25-26)
+  -- captured in the infrastructure of LaplaceSchwartz.lean.
+  exact SCV.fourierLaplace_boundary_integral_convergence hC hconv hne hcone hF hRepr η hη f hf
+
+/-- Helper: convert Schwartz-based boundary values on the forward tube to the
+    flat-coordinate integrable-function form needed by `polynomial_growth_tube`.
+
+    Ref: Vladimirov §26.2-26.3 -/
+theorem schwartz_bv_to_flat_bv {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (h_bv : ∃ (T : SchwartzNPoint d n → ℂ), Continuous T ∧
+      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+        (∀ k, InOpenForwardCone d (η k)) →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (T f))) :
+    ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
+      ∃ (T : (Fin (n * (d + 1)) → ℝ) → ℂ), ContinuousOn T Set.univ ∧
+        ∀ (f : (Fin (n * (d + 1)) → ℝ) → ℂ), MeasureTheory.Integrable f →
+          Filter.Tendsto (fun ε : ℝ =>
+            ∫ x : Fin (n * (d + 1)) → ℝ,
+              (F ∘ (flattenCLEquiv n (d + 1)).symm)
+                (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (∫ x, T x * f x)) := by
+  intro η hη
+  -- Step 1: Set up the flattened function G
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
+    differentiableOn_flatten hF
+  -- Step 2: Convert Schwartz BV from product to flat coordinates
+  have hG_bv : ∃ (T : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ), Continuous T ∧
+      ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) (η : Fin (n * (d + 1)) → ℝ),
+        η ∈ ForwardConeFlat d n →
+        Filter.Tendsto (fun ε : ℝ =>
+          ∫ x : Fin (n * (d + 1)) → ℝ,
+            G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)) := by
+    obtain ⟨T, hT_cont, hT⟩ := h_bv
+    let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+    refine ⟨fun f => T (pullback f), hT_cont.comp pullback.continuous, fun f η' hη' => ?_⟩
+    obtain ⟨η'', hη'', rfl⟩ := hη'
+    have hη''_all := forwardConeAbs_implies_allForwardCone η'' hη''
+    have hconv := hT (pullback f) η'' hη''_all
+    have heq : ∀ ε : ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          (G fun i => ↑(x i) + ↑ε * ↑(eR η'' i) * Complex.I) * f x =
+        ∫ y : NPointDomain d n,
+          (F fun k μ => ↑(y k μ) + ↑ε * ↑(η'' k μ) * Complex.I) * (pullback f) y := by
+      intro ε
+      rw [integral_flatten_change_of_variables]
+      congr 1; ext y
+      simp only [G, Function.comp, e, eR, pullback,
+        SchwartzMap.compCLMOfContinuousLinearEquiv]
+      congr 1
+      congr 1; funext k μ
+      simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+        Equiv.symm_apply_apply]
+    exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
+  -- Step 3: Use boundary_value_recovery and continuous_boundary_tube
+  obtain ⟨T_schwartz, hT_schwartz_cont, hT_schwartz⟩ := hG_bv
+  -- Define the boundary value function T(x) = G(realEmbed x)
+  refine ⟨fun x => G (SCV.realEmbed x), ?_, ?_⟩
+  · -- ContinuousOn T univ: the boundary function is continuous.
+    -- Proof sketch:
+    -- 1. continuous_boundary_tube gives ContinuousWithinAt G (TubeDomain C) (realEmbed x) ∀x
+    -- 2. boundary_value_recovery identifies T_schwartz f = ∫ G(realEmbed x) * f(x) dx
+    -- 3. By the fundamental lemma of distribution theory, a distribution given by
+    --    integration against a function that has ContinuousWithinAt at every boundary
+    --    point is continuous.
+    -- This is a consequence of the Fourier-Laplace representation underlying
+    -- continuous_boundary_tube (Vladimirov §26.2).
+    rw [continuousOn_univ]
+    exact boundary_function_continuous (forwardConeFlat_isOpen d n)
+      (forwardConeFlat_convex d n) (forwardConeFlat_nonempty d n)
+      (forwardConeFlat_isCone d n) hG_diff ⟨T_schwartz, hT_schwartz_cont, hT_schwartz⟩
+  · -- Convergence against integrable f:
+    -- ∫ G(x+iεη)f(x)dx → ∫ G(realEmbed x)f(x)dx as ε → 0⁺
+    -- Proof sketch:
+    -- 1. Pointwise: G(realEmbed x + iεη) → G(realEmbed x) by ContinuousWithinAt
+    -- 2. Domination: polynomial_growth_tube gives |G(x+iy)| ≤ C(1+|x|)^N for y in compact
+    -- 3. Dominated convergence theorem gives integral convergence
+    exact boundary_integral_convergence (forwardConeFlat_isOpen d n)
+      (forwardConeFlat_convex d n) (forwardConeFlat_nonempty d n)
+      (forwardConeFlat_isCone d n) hG_diff ⟨T_schwartz, hT_schwartz_cont, hT_schwartz⟩ η hη
 
 end

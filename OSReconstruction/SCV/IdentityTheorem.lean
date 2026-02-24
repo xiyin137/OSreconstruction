@@ -72,7 +72,7 @@ theorem DifferentiableOn.analyticOnNhd_of_finiteDimensional
     {U : Set (Fin m → ℂ)} {f : (Fin m → ℂ) → F}
     (hf : DifferentiableOn ℂ f U) (hU : IsOpen U) :
     AnalyticOnNhd ℂ f U :=
-  fun z hz => SCV.differentiableOn_analyticAt hU hf hz
+  fun _z hz => SCV.differentiableOn_analyticAt hU hf hz
 
 /-! ### Identity Theorem -/
 
@@ -114,7 +114,7 @@ theorem SCV.tubeDomain'_isOpen {m : ℕ} {C : Set (Fin m → ℝ)} (hC : IsOpen 
 
 /-- Tube domains with convex nonempty cones are connected. -/
 theorem SCV.tubeDomain'_isConnected {m : ℕ} {C : Set (Fin m → ℝ)}
-    (hC_open : IsOpen C) (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty) :
+    (_hC_open : IsOpen C) (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty) :
     IsConnected (SCV.TubeDomain' C) := by
   constructor
   · obtain ⟨y, hy⟩ := hC_ne

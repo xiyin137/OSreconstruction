@@ -5,7 +5,9 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.TubeDomainExtension
 import OSReconstruction.SCV.IdentityTheorem
-import Mathlib.Analysis.Distribution.SchwartzSpace
+import OSReconstruction.SCV.LaplaceSchwartz
+import OSReconstruction.SCV.BochnerTubeTheorem
+import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
 /-!
 # Distribution Theory Axioms for Tube Domains
@@ -93,17 +95,24 @@ namespace SCV
     Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §26.2;
     Epstein, J. Math. Phys. 1 (1960) 524-531;
     Streater-Wightman, Theorem 2-9 -/
-axiom continuous_boundary_tube {m : ℕ}
+theorem continuous_boundary_tube {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ),
+    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
         Filter.Tendsto (fun ε : ℝ =>
           ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (T f)))
     (x : Fin m → ℝ) :
-    ContinuousWithinAt F (TubeDomain C) (realEmbed x)
+    ContinuousWithinAt F (TubeDomain C) (realEmbed x) := by
+  -- Extract the tempered distribution from the BV hypothesis
+  obtain ⟨T, hT_cont, hT⟩ := h_bv
+  -- Build the Fourier-Laplace representation
+  have hRepr : HasFourierLaplaceRepr C F :=
+    exists_fourierLaplaceRepr hC hconv hne hF hT_cont hT
+  -- Apply the core Fourier-Laplace continuous boundary result
+  exact fourierLaplace_continuousWithinAt hC hconv hne hF hRepr x
 
 /-- **Boundary value recovery for tube-domain holomorphic functions.**
 
@@ -117,17 +126,24 @@ axiom continuous_boundary_tube {m : ℕ}
     and the pointwise BV (continuous extension) are the same object.
 
     Ref: Vladimirov §26.2; Streater-Wightman, Theorem 2-9 -/
-axiom boundary_value_recovery {m : ℕ}
+theorem boundary_value_recovery {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
     {T : SchwartzMap (Fin m → ℝ) ℂ → ℂ}
+    (hT_cont : Continuous T)
     (h_bv : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
       Filter.Tendsto (fun ε : ℝ =>
         ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (T f)))
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
-    T f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x
+    T f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x := by
+  -- Build the Fourier-Laplace representation from the BV data
+  let hRepr : HasFourierLaplaceRepr C F :=
+    exists_fourierLaplaceRepr hC hconv hne hF hT_cont h_bv
+  -- hRepr.dist = T by construction, so the result follows directly
+  exact fourierLaplace_boundary_recovery hC hconv hne hcone hF hRepr f
 
 /-- **Zero distributional boundary value implies zero boundary function.**
 
@@ -141,15 +157,34 @@ axiom boundary_value_recovery {m : ℕ}
     to 0 against all Schwartz test functions is identically 0).
 
     Ref: Vladimirov §26.2-26.3 -/
-axiom boundary_value_zero {m : ℕ}
+theorem boundary_value_zero {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
     (h_bv : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
       Filter.Tendsto (fun ε : ℝ =>
         ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds 0))
-    (x : Fin m → ℝ) : F (realEmbed x) = 0
+    (x : Fin m → ℝ) : F (realEmbed x) = 0 := by
+  -- Step 1: Package T = 0 as a distributional BV for boundary_value_recovery
+  -- h_bv says: for all f η, η ∈ C → tendsto (∫ F(x+iεη)f(x)dx) → 0
+  -- This is the same as the zero distribution T = 0 acting as T(f) = 0 for all f.
+  -- Step 2: Apply boundary_value_recovery with T = 0 to get
+  --   0 = ∫ F(realEmbed x) * f(x) dx for all Schwartz f
+  have hint : ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+      ∫ x : Fin m → ℝ, F (realEmbed x) * f x = 0 := by
+    intro f
+    have h := boundary_value_recovery hC hconv hne hcone hF continuous_const h_bv f
+    simp at h
+    exact h.symm
+  -- Step 3: Build Fourier-Laplace representation to get continuity
+  let hRepr : HasFourierLaplaceRepr C F :=
+    exists_fourierLaplaceRepr hC hconv hne hF continuous_const h_bv
+  have hcont : Continuous (fun x : Fin m → ℝ => F (realEmbed x)) :=
+    fourierLaplace_boundary_continuous hC hconv hne hF hRepr
+  -- Step 4: Apply fundamental lemma: continuous + integrates to 0 against all Schwartz => 0
+  exact eq_zero_of_schwartz_integral_zero hcont hint x
 
 /-- **Distributional uniqueness for tube-domain holomorphic functions.**
 
@@ -185,13 +220,13 @@ theorem distributional_uniqueness_tube {m : ℕ}
   set G := fun z => F₁ z - F₂ z with hG_def
   have hG_diff : DifferentiableOn ℂ G (TubeDomain C) := hF₁.sub hF₂
   -- Package the distributional BV = 0 for continuous_boundary_tube
-  have hG_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ),
+  have hG_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
         Filter.Tendsto (fun ε : ℝ =>
           ∫ x : Fin m → ℝ, G (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (T f)) := by
-    refine ⟨0, fun f η hη => ?_⟩
+    refine ⟨0, continuous_const, fun f η hη => ?_⟩
     simp only [Pi.zero_apply]
     -- The integrand G(x+iεη) * f(x) = (F₁ - F₂)(x+iεη) * f(x)
     exact h_agree f η hη
@@ -205,7 +240,7 @@ theorem distributional_uniqueness_tube {m : ℕ}
   -- dominated convergence gives ∫ G(x+iεη)f(x)dx → ∫ G(x)f(x)dx = 0 for all Schwartz f,
   -- and a continuous function integrating to 0 against all Schwartz functions is 0.
   have hG_boundary : ∀ x : Fin m → ℝ, G (realEmbed x) = 0 :=
-    boundary_value_zero hC hconv hne hG_diff (fun f η hη => h_agree f η hη)
+    boundary_value_zero hC hconv hne hcone hG_diff (fun f η hη => h_agree f η hη)
   -- Step 4: G = 0 on T(C) by one-variable slicing + edge-of-the-wedge
   -- For z₀ = x₀ + iy₀ ∈ T(C) with y₀ ∈ C, the restriction g(w) = G(x₀ + wy₀) is
   -- holomorphic on {Im w > 0} (since C contains the ray through y₀ for cones),
@@ -337,7 +372,7 @@ theorem distributional_uniqueness_tube {m : ℕ}
     Ref: Streater-Wightman, Theorem 2-6;
     Jost, "The General Theory of Quantized Fields" §III.1;
     Vladimirov §25.3 -/
-axiom polynomial_growth_tube {m : ℕ}
+theorem polynomial_growth_tube {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
     (h_bv : ∀ (η : Fin m → ℝ), η ∈ C →
@@ -350,7 +385,8 @@ axiom polynomial_growth_tube {m : ℕ}
     (K : Set (Fin m → ℝ)) (hK : IsCompact K) (hK_sub : K ⊆ C) :
     ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
       ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
-        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N
+        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
+  exact polynomial_growth_of_continuous_bv hC hconv hne hF h_bv K hK hK_sub
 
 /-! ### Axiom 3: Bochner Tube Theorem -/
 
@@ -372,12 +408,13 @@ axiom polynomial_growth_tube {m : ℕ}
     Ref: Bochner, "A theorem on analytic continuation of functions in several
     variables" (1938); Vladimirov §20.2; Hörmander, "An Introduction to Complex
     Analysis in Several Variables", Theorem 2.5.10 -/
-axiom bochner_tube_theorem {m : ℕ}
+theorem bochner_tube_theorem {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C)) :
     ∃ (F_ext : (Fin m → ℂ) → ℂ),
       DifferentiableOn ℂ F_ext (TubeDomain (convexHull ℝ C)) ∧
-      ∀ z ∈ TubeDomain C, F_ext z = F z
+      ∀ z ∈ TubeDomain C, F_ext z = F z :=
+  bochner_tube_extension hC hne hF
 
 end SCV
 

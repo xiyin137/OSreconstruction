@@ -8,6 +8,8 @@ import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
 import OSReconstruction.Wightman.Reconstruction.Helpers.SeparatelyAnalytic
 import OSReconstruction.Wightman.Reconstruction.Helpers.EdgeOfWedge
 import OSReconstruction.SCV.TubeDomainExtension
+import OSReconstruction.ComplexLieGroups.Connectedness
+import OSReconstruction.Bridge.AxiomBridge
 import Mathlib.Data.Fin.Tuple.Sort
 
 /-!
@@ -78,153 +80,17 @@ open Complex
 
 variable {d : ℕ} [NeZero d]
 
-/-! ### Complex Lorentz Group -/
+/-! ### Complex Lorentz Group
 
-/-- The complex proper Lorentz group SO(1,d;ℂ) consists of complex matrices Λ
-    preserving the Minkowski metric: Λᵀ η Λ = η, with det(Λ) = 1.
+The `ComplexLorentzGroup d` structure and its `ofReal`/`ofEuclidean` constructors are imported
+from `OSReconstruction.ComplexLieGroups.Complexification` (via `Connectedness`). That definition
+uses `LorentzLieGroup.minkowskiSignature`, which equals `MinkowskiSpace.metricSignature` by `rfl`
+(see `minkowskiSignature_eq_metricSignature` in `AxiomBridge.lean`).
 
-    Over ℂ, this group is already connected (unlike the real Lorentz group
-    which has 4 connected components). No separate orthochronous condition
-    is needed. This is the complexification of SO⁺(1,d;ℝ) and is isomorphic
-    to SO(d+1;ℂ) as a complex Lie group.
-
-    Importantly, L₊(ℂ) is connected, which is why analytic continuation works:
-    the orbit of a tube domain under a connected group is also a tube domain. -/
-structure ComplexLorentzGroup (d : ℕ) [NeZero d] where
-  /-- The matrix Λ ∈ M_{(d+1)×(d+1)}(ℂ) -/
-  val : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ
-  /-- Preserves Minkowski metric: ΛᵀηΛ = η, where η = diag(-1,+1,...,+1).
-      Componentwise: Σ_α η(α) · Λ(α,μ) · Λ(α,ν) = η(μ) · δ_{μν} -/
-  metric_preserving : ∀ (μ ν : Fin (d + 1)),
-    ∑ α : Fin (d + 1),
-      (MinkowskiSpace.metricSignature d α : ℂ) * val α μ * val α ν =
-    if μ = ν then (MinkowskiSpace.metricSignature d μ : ℂ) else 0
-  /-- Proper: det(Λ) = 1 -/
-  proper : val.det = 1
-
-/-- The real Lorentz group embeds into the complex Lorentz group
-    by viewing real matrices as complex matrices. -/
-def ComplexLorentzGroup.ofReal (Λ : LorentzGroup.Restricted (d := d)) :
-    ComplexLorentzGroup d where
-  val := fun i j => (Λ.val.val i j : ℂ)
-  metric_preserving := by
-    intro μ ν
-    -- Extract componentwise from Λᵀ η Λ = η and simplify fully
-    have h := Λ.val.prop
-    have hentry := congr_fun (congr_fun h μ) ν
-    simp only [Matrix.mul_apply, Matrix.transpose_apply, minkowskiMatrix,
-      Matrix.diagonal_apply, mul_ite, mul_zero, Finset.sum_ite_eq',
-      Finset.mem_univ, ite_true] at hentry
-    -- hentry : ∑ α, Λ α μ * η α * Λ α ν = if μ = ν then η μ else 0
-    -- Each summand: cast to ℂ and rearrange
-    suffices hsumm : ∀ α, (MinkowskiSpace.metricSignature d α : ℂ) *
-        ↑(Λ.val.val α μ) * ↑(Λ.val.val α ν) =
-        ↑(Λ.val.val α μ * MinkowskiSpace.metricSignature d α * Λ.val.val α ν) by
-      simp_rw [hsumm, ← Complex.ofReal_sum, hentry]
-      split_ifs <;> simp
-    intro α; push_cast; ring
-  proper := by
-    have hdet : Λ.val.val.det = 1 := Λ.prop.1
-    show Matrix.det (fun i j => (Λ.val.val i j : ℂ)) = 1
-    -- Use RingHom.map_det to relate det of cast matrix to cast of det
-    have key := (algebraMap ℝ ℂ).map_det Λ.val.val
-    rw [hdet, map_one] at key
-    -- key : 1 = ((algebraMap ℝ ℂ).mapMatrix Λ.val.val).det
-    convert key.symm
-
-/-- SO(d+1) embeds into the complex Lorentz group via Wick rotation conjugation.
-
-    The embedding is R ↦ W R W⁻¹ where W = diag(i, 1, ..., 1).
-    This works because W^T η W = I (the identity/Euclidean metric), so:
-      (WRW⁻¹)^T η (WRW⁻¹) = (W⁻¹)^T R^T (W^T η W) R W⁻¹
-                             = (W⁻¹)^T R^T R W⁻¹ = (W⁻¹)^T W⁻¹ = η
-
-    The key property: this embedding maps Euclidean rotations to complex
-    Lorentz transformations that preserve Euclidean points:
-      (WRW⁻¹) · (iτ, x⃗) = (i(Rτ,x⃗)₀, (Rτ,x⃗)₁, ..., (Rτ,x⃗)_d) -/
-def ComplexLorentzGroup.ofEuclidean (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
-    (hR : R.det = 1) (horth : R.transpose * R = 1) :
-    ComplexLorentzGroup d where
-  val := fun μ ν =>
-    let wμ : ℂ := if μ = (0 : Fin (d + 1)) then I else 1
-    let wν_inv : ℂ := if ν = (0 : Fin (d + 1)) then -I else 1
-    wμ * (R μ ν : ℂ) * wν_inv
-  metric_preserving := by
-    intro μ ν
-    -- Key helper: η(α) · wα² = 1 for all α
-    -- (α=0: (-1)·i² = 1; α≠0: 1·1² = 1)
-    have eta_w_sq : ∀ α : Fin (d + 1),
-        (MinkowskiSpace.metricSignature d α : ℂ) *
-        (if α = (0 : Fin (d + 1)) then I else 1) *
-        (if α = (0 : Fin (d + 1)) then I else 1) = 1 := by
-      intro α
-      by_cases hα : α = (0 : Fin (d + 1))
-      · simp only [hα, ite_true, MinkowskiSpace.metricSignature, Complex.ofReal_neg,
-          Complex.ofReal_one]
-        rw [show -(1 : ℂ) * I * I = -(I * I) from by ring, ← sq, Complex.I_sq, neg_neg]
-      · simp only [hα, ite_false, MinkowskiSpace.metricSignature, Complex.ofReal_one]; ring
-    -- Extract (RᵀR = I) componentwise
-    have hRtR : ∀ μ' ν' : Fin (d + 1),
-        ∑ α, (R α μ' : ℂ) * (R α ν' : ℂ) =
-        if μ' = ν' then 1 else 0 := by
-      intro μ' ν'
-      have h := congr_fun (congr_fun horth μ') ν'
-      simp only [Matrix.mul_apply, Matrix.transpose_apply, Matrix.one_apply] at h
-      have : ∑ α, (R α μ' : ℂ) * (R α ν' : ℂ) =
-          (∑ α, R α μ' * R α ν' : ℝ) := by push_cast; rfl
-      rw [this, h]; split_ifs <;> simp
-    -- Factor: each summand = wμ⁻¹ · wν⁻¹ · R(α,μ) · R(α,ν) via eta_w_sq
-    suffices hfactor : ∀ α : Fin (d + 1),
-        (MinkowskiSpace.metricSignature d α : ℂ) *
-        ((if α = (0 : Fin (d + 1)) then I else 1) * ↑(R α μ) *
-          (if μ = (0 : Fin (d + 1)) then -I else 1)) *
-        ((if α = (0 : Fin (d + 1)) then I else 1) * ↑(R α ν) *
-          (if ν = (0 : Fin (d + 1)) then -I else 1)) =
-        (if μ = (0 : Fin (d + 1)) then -I else 1) *
-        (if ν = (0 : Fin (d + 1)) then -I else 1) *
-        ((R α μ : ℂ) * (R α ν : ℂ)) by
-      simp_rw [hfactor, ← Finset.mul_sum, hRtR]
-      by_cases hμν : μ = ν
-      · subst hμν; simp only [ite_true, MinkowskiSpace.metricSignature, mul_one]
-        split_ifs with h0
-        · simp only [Complex.ofReal_neg, Complex.ofReal_one]
-          rw [show (-I : ℂ) * -I = I * I from by ring, ← sq, Complex.I_sq]
-        · simp
-      · simp only [hμν, ite_false]; ring
-    -- Use linear_combination with eta_w_sq to close each summand
-    intro α
-    linear_combination
-      ↑(R α μ) * (if μ = (0 : Fin (d + 1)) then -I else (1 : ℂ)) *
-      (↑(R α ν) * (if ν = (0 : Fin (d + 1)) then -I else (1 : ℂ))) *
-      eta_w_sq α
-  proper := by
-    -- The val matrix = W * R_ℂ * W⁻¹ where W = diag(i,1,...,1)
-    let W : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
-      Matrix.diagonal (fun μ => if μ = (0 : Fin (d + 1)) then I else 1)
-    let W_inv : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
-      Matrix.diagonal (fun ν => if ν = (0 : Fin (d + 1)) then -I else 1)
-    let R_C : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
-      fun μ ν => (R μ ν : ℂ)
-    show Matrix.det (fun μ ν =>
-      (if μ = (0 : Fin (d + 1)) then I else 1) * ↑(R μ ν) *
-      (if ν = (0 : Fin (d + 1)) then -I else 1)) = 1
-    have hW : (fun μ ν : Fin (d + 1) =>
-        (if μ = (0 : Fin (d + 1)) then I else 1) * ↑(R μ ν) *
-        (if ν = (0 : Fin (d + 1)) then -I else 1)) = W * R_C * W_inv := by
-      ext μ ν
-      simp [W, W_inv, R_C, Matrix.mul_apply, Matrix.diagonal, Finset.sum_ite_eq',
-        Finset.mem_univ, mul_comm]
-    rw [hW, Matrix.det_mul, Matrix.det_mul, Matrix.det_diagonal, Matrix.det_diagonal]
-    have hdetR : R_C.det = 1 := by
-      have key := (algebraMap ℝ ℂ).map_det R
-      rw [hR, map_one] at key; exact key.symm
-    simp only [hdetR, mul_one]
-    -- ∏ i, (if i = 0 then I else 1) = I, ∏ i, (if i = 0 then -I else 1) = -I
-    have hp1 : ∏ i : Fin (d + 1), (if i = (0 : Fin (d + 1)) then I else (1 : ℂ)) = I := by
-      rw [Fin.prod_univ_succ]; simp [Fin.succ_ne_zero]
-    have hp2 : ∏ i : Fin (d + 1), (if i = (0 : Fin (d + 1)) then -I else (1 : ℂ)) = -I := by
-      rw [Fin.prod_univ_succ]; simp [Fin.succ_ne_zero]
-    rw [hp1, hp2, mul_neg, ← sq, Complex.I_sq, neg_neg]
+The imported `ComplexLorentzGroup.ofReal` takes `RestrictedLorentzGroup d` (from LorentzLieGroup).
+To construct from `LorentzGroup.Restricted`, use `wightmanToRestrictedLorentzGroup` from
+`AxiomBridge.lean`.
+-/
 
 /-! ### Extended Tube via Complex Lorentz Group -/
 
@@ -279,7 +145,7 @@ theorem ForwardTube_subset_ComplexExtended (d n : ℕ) [NeZero d] :
       intro α _
       split_ifs <;> simp_all
   · simp [Matrix.det_one]
-  · ext k μ; simp [Matrix.one_apply, Finset.sum_ite_eq', Finset.mem_univ]
+  · ext k μ; simp [Matrix.one_apply, Finset.mem_univ]
 
 /-- The complex extended forward tube is contained in the permuted extended tube
     (take π = identity). -/
@@ -298,6 +164,7 @@ def IsEuclidean (z : Fin n → Fin (d + 1) → ℂ) : Prop :=
   (∀ k : Fin n, (z k 0).re = 0) ∧  -- time component is purely imaginary
   (∀ k : Fin n, ∀ μ : Fin (d + 1), μ ≠ 0 → (z k μ).im = 0)  -- spatial components are real
 
+omit [NeZero d] in
 /-- Wick-rotated points are Euclidean. -/
 theorem wickRotatePoint_isEuclidean (xs : Fin n → Fin (d + 1) → ℝ) :
     IsEuclidean (fun k => wickRotatePoint (xs k)) := by
@@ -424,7 +291,7 @@ theorem euclidean_distinct_in_permutedTube {n : ℕ}
     · simp only [h, ite_false]
       apply Finset.sum_eq_zero; intro α _; split_ifs <;> simp_all
   · -- z = 1 · w = w
-    ext k μ; simp [Matrix.one_apply, Finset.sum_ite_eq', Finset.mem_univ]
+    ext k μ; simp [Matrix.one_apply, Finset.mem_univ]
 
 /-! ### Edge-of-the-Wedge Theorem -/
 
@@ -488,7 +355,7 @@ theorem sliceMap_lower_mem_neg_tubeDomain {m : ℕ} {C : Set (Fin m → ℝ)} {x
   show (fun i => (sliceMap x η w i).im) ∈ Neg.neg '' C
   rw [sliceMap_im_eq_smul]
   exact ⟨(-w.im) • η, hcone (-w.im) η (by linarith) hη,
-    by ext i; simp [Pi.smul_apply, smul_eq_mul, Pi.neg_apply, neg_mul]⟩
+    by ext i; simp [Pi.smul_apply, smul_eq_mul, Pi.neg_apply]⟩
 
 theorem differentiable_sliceMap {m : ℕ} (x η : Fin m → ℝ) :
     Differentiable ℂ (sliceMap x η) := by
@@ -552,7 +419,7 @@ theorem tubeDomain_disjoint_neg {m : ℕ} {C : Set (Fin m → ℝ)}
     This is the key dimensional reduction step: it shows that f₊ and f₋ have a
     common holomorphic extension along each cone direction through each boundary point. -/
 theorem edge_of_the_wedge_slice {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC : IsOpen C)
+    (C : Set (Fin m → ℝ)) (_hC : IsOpen C)
     (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
     (f_plus f_minus : (Fin m → ℂ) → ℂ)
     (hf_plus : DifferentiableOn ℂ f_plus (TubeDomain C))
@@ -574,7 +441,7 @@ theorem edge_of_the_wedge_slice {m : ℕ}
   have hcont_affine : Continuous (fun t : ℝ => x₀ + t • η) := by continuity
   have haffine_zero : (fun t : ℝ => x₀ + t • η) 0 = x₀ := by simp
   have hmem_preimage : (0 : ℝ) ∈ (fun t : ℝ => x₀ + t • η) ⁻¹' E := by
-    simp [Set.mem_preimage, haffine_zero, hx₀]
+    simp [Set.mem_preimage, hx₀]
   obtain ⟨δ, hδ_pos, hδ_sub'⟩ := Metric.isOpen_iff.mp
     (hE.preimage hcont_affine) 0 hmem_preimage
   have hδ_sub : ∀ t : ℝ, |t| < δ → x₀ + t • η ∈ E := by
@@ -603,7 +470,7 @@ theorem edge_of_the_wedge_slice {m : ℕ}
   -- Boundary values match: g_plus(t) = g_minus(t) for t ∈ (-δ, δ)
   have hmatch' : ∀ x : ℝ, -δ < x → x < δ → g_plus x = g_minus x := by
     intro t _ _
-    simp only [g_plus, g_minus, Complex.ofReal_im, lt_irrefl, ite_false, not_lt_of_gt]
+    simp only [g_plus, g_minus, Complex.ofReal_im, lt_irrefl, ite_false]
   -- Boundary value from above: g_plus approaches g_plus(t) from UHP
   -- This requires translating the multi-D boundary value (hf_plus_bv) to 1D via sliceMap
   have hcont_plus : ∀ x : ℝ, -δ < x → x < δ →
@@ -754,7 +621,39 @@ theorem edge_of_the_wedge {m : ℕ}
 
 /-! ### Bargmann-Hall-Wightman Theorem -/
 
-/-- **Axiom**: The Bargmann-Hall-Wightman (BHW) theorem.
+/-! ### Bridge lemmas: ForwardTube and PermutedExtendedTube equivalence
+
+These lemmas connect the BHW infrastructure (from `Connectedness.lean`, which uses
+`LorentzLieGroup.minkowskiSignature` and no `[NeZero d]`) with the Wightman definitions
+(from `WightmanAxioms.lean`, which uses `MinkowskiSpace.metricSignature` and `[NeZero d]`). -/
+
+/-- The BHW forward tube equals the Wightman forward tube. -/
+theorem BHW_forwardTube_eq : BHW.ForwardTube d n = ForwardTube d n := by
+  ext z; simp only [BHW.ForwardTube, ForwardTube, Set.mem_setOf_eq]
+  exact forall_congr' fun k => inOpenForwardCone_iff _
+
+/-- The BHW permuted forward tube equals the Wightman permuted forward tube. -/
+theorem BHW_permutedForwardTube_eq (π : Equiv.Perm (Fin n)) :
+    BHW.PermutedForwardTube d n π = PermutedForwardTube d n π := by
+  ext z; simp only [BHW.PermutedForwardTube, PermutedForwardTube, Set.mem_setOf_eq]
+  rw [← BHW_forwardTube_eq]
+
+/-- The BHW permuted extended tube equals the Wightman permuted extended tube. -/
+theorem BHW_permutedExtendedTube_eq :
+    BHW.PermutedExtendedTube d n = PermutedExtendedTube d n := by
+  have hft := BHW_forwardTube_eq (d := d) (n := n)
+  ext z
+  simp only [BHW.PermutedExtendedTube, PermutedExtendedTube, Set.mem_iUnion, Set.mem_setOf_eq,
+    BHW.PermutedForwardTube, PermutedForwardTube]
+  constructor
+  · rintro ⟨π, Λ, w, hw, hz⟩
+    refine ⟨π, Λ, w, hft ▸ hw, ?_⟩
+    rw [hz]; rfl
+  · rintro ⟨π, Λ, w, hw, hz⟩
+    refine ⟨π, Λ, w, hft ▸ hw, ?_⟩
+    rw [hz]; rfl
+
+/-- **The Bargmann-Hall-Wightman (BHW) theorem.**
 
     Given a holomorphic function F on the forward tube T_n that is:
     1. Invariant under the real Lorentz group L₊↑
@@ -771,33 +670,23 @@ theorem edge_of_the_wedge {m : ℕ}
     **Note on `hF_bv`:** Real points lie outside the forward tube (Im = 0 ∉ V₊),
     so F is not a priori meaningful at real points. The `hF_bv` hypothesis ensures
     that F(x_ℂ) equals the distributional boundary value lim_{ε→0⁺} F(x + iεη),
-    making `hF_local` well-defined. See `docs/bargmann_hall_wightman_gap_analysis.md`.
+    making `hF_local` well-defined.
 
-    This is promoted to a named axiom because the proof requires:
-    - Connectedness of SO⁺(1,d;ℂ) (complex Lie group theory)
-    - Identity theorem on complex manifolds
-    - Holomorphicity of the group action Λ ↦ F(Λ·z)
-    None of which are available in Mathlib. See `docs/bargmann_hall_wightman_gap_analysis.md`.
+    **Proof:** Delegates to `BHW.bargmann_hall_wightman_theorem` from
+    `Connectedness.lean` via the `AxiomBridge` type conversions.
 
     References:
     - Bargmann, Hall, Wightman (1957), Nuovo Cimento 5, 1-14
     - Streater & Wightman, PCT Spin and Statistics, Theorem 2-11
     - Jost (1965), The General Theory of Quantized Fields, Ch. IV -/
-axiom bargmann_hall_wightman (n : ℕ)
+theorem bargmann_hall_wightman (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
     (hF_lorentz : ∀ (Λ : LorentzGroup.Restricted (d := d))
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
       F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    -- F extends continuously to the real boundary of the forward tube.
-    -- This constrains F(x_ℂ) to equal the distributional boundary value
-    -- lim_{ε→0⁺} F(x + iεη). Without this, F(x_ℂ) is arbitrary since
-    -- real points lie outside ForwardTube (Im = 0 ∉ V₊).
     (hF_bv : ∀ (x : Fin n → Fin (d + 1) → ℝ),
       ContinuousWithinAt F (ForwardTube d n) (fun k μ => (x k μ : ℂ)))
-    -- Local commutativity: at spacelike-separated pairs, the boundary values
-    -- of F and F∘swap agree. Both sides are meaningful by hF_bv:
-    -- F(x_ℂ) is constrained by hF_bv at x, and F(swap(x)_ℂ) by hF_bv at swap(x).
     (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
       ∀ (x : Fin n → Fin (d + 1) → ℝ),
         MinkowskiSpace.minkowskiNormSq d
@@ -805,25 +694,63 @@ axiom bargmann_hall_wightman (n : ℕ)
         F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
         F (fun k μ => (x k μ : ℂ))) :
     ∃ (F_ext : (Fin n → Fin (d + 1) → ℂ) → ℂ),
-      -- F_ext is holomorphic on the permuted extended tube
       DifferentiableOn ℂ F_ext (PermutedExtendedTube d n) ∧
-      -- F_ext restricts to F on the forward tube
       (∀ z ∈ ForwardTube d n, F_ext z = F z) ∧
-      -- F_ext is invariant under the complex Lorentz group
       (∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
         z ∈ PermutedExtendedTube d n →
         F_ext (fun k μ => ∑ ν, Λ.val μ ν * z k ν) = F_ext z) ∧
-      -- F_ext is symmetric under permutations
       (∀ (π : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
         z ∈ PermutedExtendedTube d n →
         F_ext (fun k => z (π k)) = F_ext z) ∧
-      -- Uniqueness: any holomorphic function on PermutedExtendedTube agreeing with F
-      -- on ForwardTube must equal F_ext (by the identity theorem on the connected
-      -- permuted extended tube).
       (∀ (G : (Fin n → Fin (d + 1) → ℂ) → ℂ),
         DifferentiableOn ℂ G (PermutedExtendedTube d n) →
         (∀ z ∈ ForwardTube d n, G z = F z) →
-        ∀ z ∈ PermutedExtendedTube d n, G z = F_ext z)
+        ∀ z ∈ PermutedExtendedTube d n, G z = F_ext z) := by
+  -- Convert hypotheses from Wightman types to BHW types
+  have hft_eq := BHW_forwardTube_eq (d := d) (n := n)
+  have hpet_eq := BHW_permutedExtendedTube_eq (d := d) (n := n)
+  have hF_holo' : DifferentiableOn ℂ F (BHW.ForwardTube d n) :=
+    hft_eq ▸ hF_holo
+  have hF_lorentz' : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+      (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
+    intro Λ z hz
+    have hz' : z ∈ ForwardTube d n := hft_eq ▸ hz
+    exact hF_lorentz (restrictedLorentzGroupToWightman Λ) z hz'
+  have hF_bv' : ∀ (x : Fin n → Fin (d + 1) → ℝ),
+      ContinuousWithinAt F (BHW.ForwardTube d n) (fun k μ => (x k μ : ℂ)) :=
+    fun x => hft_eq ▸ hF_bv x
+  have hF_local' : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (d + 1) → ℝ),
+        ∑ μ, LorentzLieGroup.minkowskiSignature d μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)) := by
+    intro i hi x hsp
+    exact hF_local i hi x ((spacelike_condition_iff _).mp hsp)
+  -- Apply BHW theorem from Connectedness.lean
+  obtain ⟨F_ext, h1, h2, h3, h4, h5⟩ :=
+    BHW.bargmann_hall_wightman_theorem n F hF_holo' hF_lorentz' hF_bv' hF_local'
+  -- Convert the result back from BHW types to Wightman types
+  refine ⟨F_ext, ?_, ?_, ?_, ?_, ?_⟩
+  · -- DifferentiableOn on PermutedExtendedTube
+    rwa [← hpet_eq]
+  · -- Restriction to ForwardTube
+    intro z hz
+    exact h2 z (hft_eq ▸ hz)
+  · -- Complex Lorentz invariance
+    intro Λ z hz
+    have hz' : z ∈ BHW.PermutedExtendedTube d n := hpet_eq ▸ hz
+    have := h3 Λ z hz'
+    rwa [show BHW.complexLorentzAction Λ z = fun k μ => ∑ ν, Λ.val μ ν * z k ν from rfl] at this
+  · -- Permutation invariance
+    intro π z hz
+    exact h4 π z (hpet_eq ▸ hz)
+  · -- Uniqueness
+    intro G hG_holo hG_eq z hz
+    have hz' : z ∈ BHW.PermutedExtendedTube d n := hpet_eq ▸ hz
+    exact h5 G (hpet_eq ▸ hG_holo)
+      (fun w hw => hG_eq w (hft_eq ▸ hw)) z hz'
 
 /-! ### Jost Points -/
 
@@ -962,6 +889,7 @@ def SchwingerFromWightman (d : ℕ) [NeZero d]
 def complexWickRotate (z : Fin n → Fin (d + 1) → ℂ) : Fin n → Fin (d + 1) → ℂ :=
   fun k μ => if μ = 0 then I * z k 0 else z k μ
 
+omit [NeZero d] in
 /-- The ℂ-linear Wick rotation agrees with `wickRotatePoint` on real inputs. -/
 theorem complexWickRotate_eq_wickRotatePoint (xs : Fin n → Fin (d + 1) → ℝ) :
     complexWickRotate (fun k μ => (xs k μ : ℂ)) =
@@ -969,6 +897,7 @@ theorem complexWickRotate_eq_wickRotatePoint (xs : Fin n → Fin (d + 1) → ℝ
   ext k μ
   simp [complexWickRotate, wickRotatePoint]
 
+omit [NeZero d] in
 /-- The ℂ-linear Wick rotation is differentiable everywhere. -/
 theorem differentiable_complexWickRotate :
     Differentiable ℂ (complexWickRotate (d := d) (n := n)) := by
@@ -1020,6 +949,7 @@ def OmegaRegion (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℝ) :=
 
 /-! ### Key Properties for OS Axiom Verification -/
 
+omit [NeZero d] in
 /-- The Wick rotation intertwines Euclidean rotations with complex Lorentz transformations:
     wickRotatePoint(R · x) = (ofEuclidean R) · wickRotatePoint(x)
 
@@ -1065,11 +995,13 @@ theorem wickRotatePoint_ofEuclidean
     rw [Complex.ofReal_sum]
     congr 1; ext ν; push_cast; ring
 
+omit [NeZero d] in
 /-- The transpose of an orthogonal matrix with det 1 also has det 1. -/
 private lemma det_transpose_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hR_det : R.det = 1) : R.transpose.det = 1 := by
   rw [Matrix.det_transpose]; exact hR_det
 
+omit [NeZero d] in
 /-- The transpose of an orthogonal matrix R (with RᵀR = I) satisfies (Rᵀ)ᵀRᵀ = I. -/
 private lemma transpose_orth_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     (hR_orth : R.transpose * R = 1) : R.transpose.transpose * R.transpose = 1 := by
@@ -1077,6 +1009,7 @@ private lemma transpose_orth_of_SO {R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
   have : R * R.transpose = 1 := mul_eq_one_comm.mpr hR_orth
   exact this
 
+omit [NeZero d] in
 /-- The matrix product of ofEuclidean(Rᵀ) and ofEuclidean(R) is the identity.
 
     This follows from the fact that ofEuclidean is a group homomorphism:
@@ -1180,17 +1113,17 @@ theorem PermutedExtendedTube_euclidean_preimage
       -- = Σ_β Σ_γ (Σ_α η(α)*Λ_inv(α,β)*Λ_inv(α,γ)) * Λ(β,μ)*Λ(γ,ν)
       -- = Σ_β η(β)*Λ(β,μ)*Λ(β,ν) = η(μ)*δ_{μν}
       trans (∑ β : Fin (d + 1), ∑ γ : Fin (d + 1),
-            (∑ α : Fin (d + 1), (MinkowskiSpace.metricSignature d α : ℂ) *
+            (∑ α : Fin (d + 1), (LorentzLieGroup.minkowskiSignature d α : ℂ) *
               Λ_inv.val α β * Λ_inv.val α γ) * (Λ.val β μ * Λ.val γ ν))
       · -- Expand product of sums and swap sum order
-        trans (∑ α, ∑ β, ∑ γ, (MinkowskiSpace.metricSignature d α : ℂ) *
+        trans (∑ α, ∑ β, ∑ γ, (LorentzLieGroup.minkowskiSignature d α : ℂ) *
               Λ_inv.val α β * Λ_inv.val α γ * (Λ.val β μ * Λ.val γ ν))
         · -- Expand the product of sums
           refine Finset.sum_congr rfl fun α _ => ?_
-          rw [show (MinkowskiSpace.metricSignature d α : ℂ) *
+          rw [show (LorentzLieGroup.minkowskiSignature d α : ℂ) *
               (∑ j, Λ_inv.val α j * Λ.val j μ) *
               (∑ j, Λ_inv.val α j * Λ.val j ν) =
-            (MinkowskiSpace.metricSignature d α : ℂ) *
+            (LorentzLieGroup.minkowskiSignature d α : ℂ) *
               ((∑ j, Λ_inv.val α j * Λ.val j μ) *
               (∑ j, Λ_inv.val α j * Λ.val j ν)) from mul_assoc _ _ _,
             Finset.sum_mul_sum, Finset.mul_sum]
@@ -1272,7 +1205,7 @@ theorem PermutedExtendedTube_euclidean_preimage
     This follows from the fact that R is an infinite field and proper subspaces
     are nowhere dense (Baire category), or more directly from the algebraic result
     that a finite union of proper submodules over an infinite field ≠ the whole space. -/
-private lemma exists_avoiding_finite_hyperplanes (m : ℕ) (hm : 2 ≤ m)
+private lemma exists_avoiding_finite_hyperplanes (m : ℕ) (_hm : 2 ≤ m)
     (S : Finset (Fin m → ℝ)) (hS : ∀ s ∈ S, s ≠ 0) :
     ∃ w : Fin m → ℝ, ∀ s ∈ S, ∑ μ, w μ * s μ ≠ 0 := by
   induction S using Finset.induction with

@@ -58,6 +58,7 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
 
 /-! ### Osgood's Lemma Infrastructure -/
 
+omit [NormedSpace ℂ E] in
 /-- The z-derivative of f(z,x) at z₀ varies continuously in x, when f is jointly
     continuous and separately holomorphic in z.
 
@@ -252,7 +253,7 @@ private lemma taylor_remainder_eq_tsum (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
   set R : NNReal := ⟨ρ, hρ.le⟩
   have hR : (0 : NNReal) < R := by exact_mod_cast hρ
   have hps := hg.hasFPowerSeriesOnBall hR
-  have hh_mem : h ∈ EMetric.ball (0 : ℂ) R := by
+  have hh_mem : h ∈ Metric.eball (0 : ℂ) R := by
     show edist h 0 < ↑R
     rw [edist_eq_enorm_sub, sub_zero]
     exact_mod_cast hh
@@ -286,7 +287,7 @@ private lemma taylor_tail_summable (z₀ : ℂ) (ρ : ℝ) (hρ : 0 < ρ)
   set R : NNReal := ⟨ρ, hρ.le⟩
   have hR : (0 : NNReal) < R := by exact_mod_cast hρ
   have hps := hg.hasFPowerSeriesOnBall hR
-  have hh_mem : z₀ + h ∈ EMetric.ball z₀ R := by
+  have hh_mem : z₀ + h ∈ Metric.eball z₀ R := by
     show edist (z₀ + h) z₀ < ↑R
     rw [edist_eq_enorm_sub, add_sub_cancel_left]
     exact_mod_cast hh
@@ -349,13 +350,14 @@ private lemma taylor_remainder_single {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
   rw [taylor_remainder_eq_tsum z₀ ρ hρ g hg h (by linarith)]
   exact taylor_tail_norm_le z₀ ρ hρ g hg M hM h hh
 
+omit [NormedSpace ℂ E] in
 /-- Auxiliary: ContinuousOn f on K ×ˢ V with K compact gives uniform bound near x₀.
     Uses the generalized tube lemma: closedBall z₀ ρ × {x₀} is compact, and f is
     bounded on this set. By ContinuousOn, the preimage of {‖·‖ < M₀+1} relative to
     the domain contains this compact set. The tube lemma then gives a uniform δ. -/
 private lemma uniform_bound_near_point [CompleteSpace E]
     {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
-    {V : Set E} (hV : IsOpen V)
+    {V : Set E} (_hV : IsOpen V)
     (f : ℂ × E → ℂ)
     (hf_cont : ContinuousOn f (Metric.closedBall z₀ ρ ×ˢ V))
     {x₀ : E} (hx₀ : x₀ ∈ V) :
@@ -441,6 +443,7 @@ private lemma uniform_bound_near_point [CompleteSpace E]
   have := h_bound_ε wᵢ hwᵢ_in w x hw_in_ball (lt_of_lt_of_le hxδ hδ₁_le) hxV hw
   linarith
 
+omit [NormedSpace ℂ E] in
 /-- Uniform Taylor remainder bound for a family of holomorphic functions.
 
     If f is continuous on closedBall z₀ ρ × V and holomorphic in z for each x ∈ V,
@@ -856,7 +859,7 @@ private theorem differentiableAt_circleIntegral_param_coord
             hn_tendsto (Eventually.of_forall fun n => hn_ne n)
         exact hda.comp htend_ne)
     (by -- Derivative bound: ‖F'(w, θ)‖ ≤ bnd
-      apply Filter.Eventually.of_forall; intro θ _; intro w hw
+      apply Filter.Eventually.of_forall; intro θ _ w hw
       calc ‖deriv (circleMap z₀ r) θ • ((circleMap z₀ r θ - z)⁻¹ •
             deriv (fun w => f (circleMap z₀ r θ) (L w)) w)‖
           = ‖deriv (circleMap z₀ r) θ‖ * (‖(circleMap z₀ r θ - z)⁻¹‖ *
@@ -872,7 +875,7 @@ private theorem differentiableAt_circleIntegral_param_coord
                   (circleMap_mem_sphere z₀ hr.le θ)) w hw) (norm_nonneg _) (by positivity))
     intervalIntegrable_const
     (by -- HasDerivAt for each θ and w ∈ s
-      apply Filter.Eventually.of_forall; intro θ _; intro w hw
+      apply Filter.Eventually.of_forall; intro θ _ w hw
       have hwδ : dist w w₀ < δ :=
         lt_of_le_of_lt (Metric.mem_closedBall.mp hw) (by linarith)
       have hζ : circleMap z₀ r θ ∈ Metric.closedBall z₀ r :=
@@ -1024,7 +1027,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
       calc dist z z₀ ≤ dist z z' + dist z' z₀ := dist_triangle z z' z₀
         _ < ε₀ + dist z' z₀ := by
             have : dist z z' ≤ dist (z, x) (z', x') := by
-              simp [Prod.dist_eq, le_max_left]
+              simp [Prod.dist_eq]
             linarith
         _ ≤ d + dist z' z₀ := by linarith [min_le_left d δ]
         _ < r := by linarith [hd_def]
@@ -1032,7 +1035,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
         p.2 ∈ Metric.closedBall x' δ := by
       intro ⟨z, x⟩ hp
       rw [Metric.mem_closedBall]
-      calc dist x x' ≤ dist (z, x) (z', x') := by simp [Prod.dist_eq, le_max_right]
+      calc dist x x' ≤ dist (z, x) (z', x') := by simp [Prod.dist_eq]
         _ ≤ ε₀ := le_of_lt hp
         _ ≤ δ := min_le_right d δ
     have h_inv_bound : ∀ p : ℂ × E, dist p (z', x') < ε₀ → ∀ θ : ℝ,
@@ -1043,7 +1046,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
       have hζ : dist (circleMap z₀ r θ) z₀ = r :=
         Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
       have hfst : dist z z' ≤ dist (z, x) (z', x') := by
-        simp [Prod.dist_eq, le_max_left]
+        simp [Prod.dist_eq]
       calc d ≤ r - dist z' z₀ - dist z z' := by linarith [min_le_left d δ]
         _ ≤ dist (circleMap z₀ r θ) z₀ - dist z₀ z' - dist z z' := by
               rw [hζ, dist_comm z₀ z']
@@ -1083,7 +1086,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
               rw [norm_smul, norm_smul, mul_assoc]
         _ ≤ r * (1 / d) * M := by
             gcongr
-            · simp only [deriv_circleMap, norm_smul, norm_mul, norm_circleMap_zero,
+            · simp only [deriv_circleMap, norm_mul, norm_circleMap_zero,
                 norm_I, mul_one]; exact le_of_eq (abs_of_pos hr)
             · exact h_inv_bound p hp θ
             · exact h_f_bound p hp θ
@@ -1097,7 +1100,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
         apply ContinuousAt.inv₀ (continuousAt_const.sub continuous_fst.continuousAt)
         intro heq; rw [sub_eq_zero] at heq
         have h1 := Metric.mem_sphere.mp (circleMap_mem_sphere z₀ hr.le θ)
-        rw [heq] at h1; simp only [Prod.fst] at h1; linarith
+        rw [heq] at h1; linarith
       · -- f(circleMap θ, p.2) ContinuousAt in p
         -- Factor as (fun x => f (circleMap z₀ r θ) x) ∘ Prod.snd
         -- f(circleMap θ, ·) is ContinuousOn V (slice of hf_cont)
@@ -1122,7 +1125,7 @@ theorem differentiableOn_cauchyIntegral_param [CompleteSpace E] [FiniteDimension
     have hps := hasFPowerSeriesOn_cauchy_integral hci hR
     -- Convert DifferentiableOn from EMetric.ball to Metric.ball
     intro z hz
-    have hz_emem : (z : ℂ) ∈ EMetric.ball z₀ (↑R) := by
+    have hz_emem : (z : ℂ) ∈ Metric.eball z₀ (↑R) := by
       show edist z z₀ < ↑R
       rw [edist_eq_enorm_sub]
       have : dist z z₀ < r := Metric.mem_ball.mp hz

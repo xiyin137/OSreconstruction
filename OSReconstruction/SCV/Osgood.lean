@@ -316,7 +316,7 @@ private lemma taylor_remainder_single [CompleteSpace F]
 /-- ContinuousOn f on K ×ˢ V with K compact gives uniform bound near x₀ (F-valued). -/
 private lemma uniform_bound_near_point [CompleteSpace E] [CompleteSpace F]
     {z₀ : ℂ} {ρ : ℝ} (hρ : 0 < ρ)
-    {V : Set E} (hV : IsOpen V)
+    {V : Set E} (_hV : IsOpen V)
     (f : ℂ × E → F)
     (hf_cont : ContinuousOn f (Metric.closedBall z₀ ρ ×ˢ V))
     {x₀ : E} (hx₀ : x₀ ∈ V) :

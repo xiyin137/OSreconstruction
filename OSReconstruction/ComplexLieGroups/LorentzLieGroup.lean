@@ -1132,15 +1132,645 @@ private theorem spatialRot_preserves_col0 (i j : Fin d) (hij : i ≠ j) (θ : �
         (Ne.symm (Fin.succ_ne_zero j))]
     exact h00
 
--- Commented out: not needed for BHW. To be proved later.
--- See TODO.md Phase 3 for proof strategy (boost-rotation decomposition).
-/-
+/-- Spatial row zeroing: for any entry Λ (i+1) (j+1) in the spatial block,
+    there exists a spatial rotation S in the (i, m) plane that zeros out
+    Λ's (m+1, j+1) entry while preserving all entries in rows not involving
+    the i and m indices, and preserving col 0 = e₀.
+
+    Concretely: for the spatial block row m and column j, we can find θ such that
+    spatialRot(i, m, θ) * Λ has zero (m+1, j+1) entry, using `rotation_zero_entry`.
+
+    This is the spatial analogue of `boost_zero_entry`. -/
+private theorem spatial_zero_entry (i m : Fin d) (him : i ≠ m) (j : Fin d)
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (h00 : Λ 0 0 = 1) (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0) :
+    ∃ θ : ℝ, (spatialRot d i m θ * Λ) m.succ j.succ = 0 ∧
+    (∀ k : Fin d, (spatialRot d i m θ * Λ) k.succ 0 = 0) ∧
+    (spatialRot d i m θ * Λ) 0 0 = 1 ∧
+    (∀ k : Fin d, (spatialRot d i m θ * Λ) 0 k.succ = 0) := by
+  obtain ⟨θ, hθ⟩ := rotation_zero_entry (Λ i.succ j.succ) (Λ m.succ j.succ)
+  refine ⟨θ, ?_, (spatialRot_preserves_col0 d i m him θ h00 hcol).1,
+    (spatialRot_preserves_col0 d i m him θ h00 hcol).2, ?_⟩
+  · rw [spatialRot_mul_row_j d i m him θ Λ j.succ]; linarith
+  · intro k
+    rw [spatialRot_mul_row_other d i m θ Λ k.succ 0
+      (Ne.symm (Fin.succ_ne_zero i)) (Ne.symm (Fin.succ_ne_zero m))]
+    exact hrow k
+
+/-- If Λ is Lorentz with col 0 = e₀ and row 0 = e₀ᵀ, and the spatial block is the
+    identity (Λ (i+1) (j+1) = δ_{ij} for all i j), then Λ = 1. -/
+private theorem spatial_identity_implies_one
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (h00 : Λ 0 0 = 1) (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hspatial : ∀ i j : Fin d, Λ i.succ j.succ = if i = j then 1 else 0) :
+    Λ = 1 := by
+  ext a b
+  simp only [Matrix.one_apply]
+  rcases Fin.eq_zero_or_eq_succ a with rfl | ⟨a', rfl⟩
+  · rcases Fin.eq_zero_or_eq_succ b with rfl | ⟨b', rfl⟩
+    · simp [h00]
+    · simp [hrow b', Ne.symm (Fin.succ_ne_zero b')]
+  · rcases Fin.eq_zero_or_eq_succ b with rfl | ⟨b', rfl⟩
+    · simp [hcol a']
+    · rw [hspatial a' b']
+      simp [Fin.succ_inj]
+
+/-- Lorentz orthogonality for spatial columns: if Λ is Lorentz with col 0 = e₀ and
+    row 0 = e₀ᵀ, then the spatial columns are orthonormal:
+    ∑_k Λ_{k+1, i+1} * Λ_{k+1, j+1} = δ_{ij}. -/
+private theorem lorentz_spatial_col_orthonormal
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hL : IsLorentzMatrix d Λ) (_h00 : Λ 0 0 = 1)
+    (_hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0) (i j : Fin d) :
+    ∑ k : Fin d, Λ k.succ i.succ * Λ k.succ j.succ =
+    if i = j then 1 else 0 := by
+  -- From Λᵀ η Λ = η, extract the (i+1, j+1) entry
+  have h := congr_fun (congr_fun hL i.succ) j.succ
+  simp only [Matrix.mul_apply, Matrix.transpose_apply, minkowskiMatrix, Matrix.diagonal_apply,
+    minkowskiSignature, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
+    ite_true] at h
+  rw [Fin.sum_univ_succ] at h
+  simp only [Fin.succ_ne_zero, ↓reduceIte, hrow i, zero_mul, zero_add] at h
+  -- h : ∑ x, Λ x.succ i.succ * Λ x.succ j.succ = if i.succ = j.succ then 1 else 0
+  -- goal: same but with i = j
+  convert h using 1
+  simp [Fin.succ_inj]
+
+/-- When R = 1, (↑↑R * Λ) = Λ for matrices. -/
+private theorem one_val_val_eq :
+    (1 : RestrictedLorentzGroup d).val.val = (1 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) := rfl
+
+/-- Subdiagonal entry zeroing: for a single column j, zero out entries below the
+    diagonal, preserving col 0 = e₀, row 0 = e₀ᵀ, and any previously zeroed columns. -/
+private theorem spatial_subdiag_zeroing (j : Fin d)
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hprev_cols : ∀ c : Fin d, c.val < j.val → ∀ i : Fin d, c.val < i.val →
+      Λ i.succ c.succ = 0) :
+    ∀ n : ℕ, n ≤ d →
+    ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧
+      (∀ k : Fin d, (R.val.val * Λ) k.succ 0 = 0) ∧
+      (∀ k : Fin d, (R.val.val * Λ) 0 k.succ = 0) ∧
+      (R.val.val * Λ) 0 0 = 1 ∧
+      IsLorentzMatrix d (R.val.val * Λ) ∧
+      (∀ i : Fin d, j.val < i.val → i.val < j.val + 1 + n →
+        (R.val.val * Λ) i.succ j.succ = 0) ∧
+      (∀ c : Fin d, c.val < j.val → ∀ i : Fin d, c.val < i.val →
+        (R.val.val * Λ) i.succ c.succ = 0) := by
+  intro n hn
+  induction n with
+  | zero =>
+    refine ⟨1, Joined.refl 1, ?_, ?_, ?_, ?_, fun _ _ h => absurd h (by omega), ?_⟩
+    all_goals (rw [show (1 : RestrictedLorentzGroup d).val.val = 1 from rfl, Matrix.one_mul])
+    · exact hcol
+    · exact hrow
+    · exact h00
+    · exact hL
+    · exact hprev_cols
+  | succ m ih =>
+    obtain ⟨R', hJR', hcol', hrow', h00', hL', hzero', hprev'⟩ := ih (by omega)
+    -- Check if the next entry to zero is within range
+    by_cases hrange : j.val + 1 + m < d
+    · -- We need to zero out entry (j + 1 + m, j) in the spatial block
+      set target_row : Fin d := ⟨j.val + 1 + m, hrange⟩
+      have hjt : j ≠ target_row := by
+        intro h; exact absurd (congr_arg Fin.val h) (by simp [target_row]; omega)
+      obtain ⟨θ, hθzero, hθcol, hθ00, hθrow⟩ :=
+        spatial_zero_entry d j target_row hjt j h00' hcol' hrow'
+      set S := spatialRotElement d j target_row hjt θ
+      have hSmul : (S * R').val.val = S.val.val * R'.val.val := rfl
+      have hSval : S.val.val = spatialRot d j target_row θ := rfl
+      refine ⟨S * R', joined_one_mul_general (joined_one_spatialRotElement d j target_row hjt θ) hJR',
+        ?_, ?_, ?_, ?_, ?_, ?_⟩
+      -- col 0 preservation
+      · intro k; rw [hSmul, Matrix.mul_assoc, hSval]; exact hθcol k
+      -- row 0 preservation
+      · intro k; rw [hSmul, Matrix.mul_assoc, hSval]; exact hθrow k
+      -- (0,0) entry
+      · rw [hSmul, Matrix.mul_assoc, hSval]; exact hθ00
+      -- Lorentz property
+      · rw [hSmul, Matrix.mul_assoc]; exact IsLorentzMatrix.mul d S.val.prop hL'
+      -- Zeroed entries in column j (including the new one)
+      · intro i hij hi_bound
+        rw [hSmul, Matrix.mul_assoc, hSval]
+        by_cases hi_target : i = target_row
+        · rw [hi_target]; exact hθzero
+        · have hi_ne_j : i.succ ≠ j.succ := by
+            intro h; exact absurd (Fin.succ_injective _ h |>.symm |> congr_arg Fin.val) (by omega)
+          have hi_ne_t : i.succ ≠ target_row.succ :=
+            fun h => hi_target (Fin.succ_injective _ h)
+          rw [spatialRot_mul_row_other d j target_row θ (R'.val.val * Λ) j.succ i.succ
+            hi_ne_j hi_ne_t]
+          have hi_val_ne : i.val ≠ j.val + 1 + m := fun h => hi_target (Fin.ext h)
+          exact hzero' i hij (by omega)
+      -- Previously zeroed columns c < j are preserved
+      · intro c hcj i hci
+        rw [hSmul, Matrix.mul_assoc, hSval]
+        -- Rotation in (j, target_row) plane: rows j+1 and target_row+1 are modified.
+        -- For column c+1 with c < j: both j > c and target_row.val > j > c,
+        -- so entries at rows j+1 and target_row+1 in column c+1 were zero (from hprev').
+        -- The rotation's linear combination of zeros is zero.
+        -- For other rows: unchanged.
+        by_cases hi_j : i.succ = j.succ
+        · -- Row j+1: cos(θ) * old + sin(θ) * old_target
+          rw [show i = j from Fin.succ_injective _ hi_j,
+            spatialRot_mul_row_i d j target_row hjt θ (R'.val.val * Λ) c.succ]
+          have h1 := hprev' c hcj j (by omega)
+          have h2 := hprev' c hcj target_row (by simp [target_row]; omega)
+          rw [h1, h2]; ring
+        · by_cases hi_t : i.succ = target_row.succ
+          · -- Row target_row+1: -sin(θ) * old_j + cos(θ) * old_target
+            rw [show i = target_row from Fin.succ_injective _ hi_t,
+              spatialRot_mul_row_j d j target_row hjt θ (R'.val.val * Λ) c.succ]
+            have h1 := hprev' c hcj j (by omega)
+            have h2 := hprev' c hcj target_row (by simp [target_row]; omega)
+            rw [h1, h2]; ring
+          · -- Other rows: unchanged
+            rw [spatialRot_mul_row_other d j target_row θ (R'.val.val * Λ) c.succ i.succ
+              hi_j hi_t]
+            exact hprev' c hcj i hci
+    · -- Beyond range
+      refine ⟨R', hJR', hcol', hrow', h00', hL', ?_, hprev'⟩
+      intro i hij hi_bound
+      exact hzero' i hij (by omega)
+
+/-- Givens QR reduction of the spatial block: there exists R (product of spatial rotations,
+    Joined to 1) such that R * Λ has all sub-diagonal spatial entries zero.
+    This is the spatial analogue of boost_column_zeroing, extended to all columns.
+
+    Uses spatial_subdiag_zeroing iteratively for each column j = 0, ..., d-1.
+    Key invariant: the rotation for column j acts in rows > j, so it preserves
+    zeros created in columns < j (since those zeros are at positions (i, k) with
+    i > k and i ≤ j, and the rotation only affects rows > j). -/
+private theorem spatial_givens_reduction
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0) :
+    ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧
+      (∀ k : Fin d, (R.val.val * Λ) k.succ 0 = 0) ∧
+      (∀ k : Fin d, (R.val.val * Λ) 0 k.succ = 0) ∧
+      (R.val.val * Λ) 0 0 = 1 ∧
+      IsLorentzMatrix d (R.val.val * Λ) ∧
+      (∀ i j : Fin d, j.val < i.val → (R.val.val * Λ) i.succ j.succ = 0) := by
+  -- Outer induction on column index c
+  suffices h : ∀ c : ℕ, c ≤ d →
+      ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧
+        (∀ k : Fin d, (R.val.val * Λ) k.succ 0 = 0) ∧
+        (∀ k : Fin d, (R.val.val * Λ) 0 k.succ = 0) ∧
+        (R.val.val * Λ) 0 0 = 1 ∧
+        IsLorentzMatrix d (R.val.val * Λ) ∧
+        (∀ i j : Fin d, j.val < c → j.val < i.val → (R.val.val * Λ) i.succ j.succ = 0) from by
+    obtain ⟨R, hJ, hc, hr, h0, hL', hsub⟩ := h d le_rfl
+    exact ⟨R, hJ, hc, hr, h0, hL', fun i j hjlt => hsub i j j.isLt hjlt⟩
+  intro c hc
+  induction c with
+  | zero =>
+    refine ⟨1, Joined.refl 1, ?_, ?_, ?_, ?_, fun _ _ h => absurd h (Nat.not_lt_zero _)⟩
+    all_goals (rw [show (1 : RestrictedLorentzGroup d).val.val = 1 from rfl, Matrix.one_mul])
+    · exact hcol
+    · exact hrow
+    · exact h00
+    · exact hL
+  | succ m ihm =>
+    obtain ⟨R', hJR', hcol', hrow', h00', hL', hprev⟩ := ihm (by omega)
+    -- Process column m (if m < d)
+    by_cases hmd : m < d
+    · -- Use spatial_subdiag_zeroing on column ⟨m, hmd⟩
+      -- Need to provide the previously zeroed columns to spatial_subdiag_zeroing
+      have hprev_for_m : ∀ c : Fin d, c.val < (⟨m, hmd⟩ : Fin d).val →
+          ∀ i : Fin d, c.val < i.val → (R'.val.val * Λ) i.succ c.succ = 0 := by
+        intro c hcm i hci
+        exact hprev i c hcm hci
+      obtain ⟨S, hJS, hcol'', hrow'', h00'', hL'', hzero, hprev_cols'⟩ :=
+        spatial_subdiag_zeroing d ⟨m, hmd⟩ hL' h00' hcol' hrow' hprev_for_m d le_rfl
+      have hSR : (S * R').val.val = S.val.val * R'.val.val := rfl
+      have hSR_assoc : (S * R').val.val * Λ = S.val.val * (R'.val.val * Λ) := by
+        rw [hSR, Matrix.mul_assoc]
+      refine ⟨S * R', joined_one_mul_general hJS hJR', ?_, ?_, ?_, ?_, ?_⟩
+      · intro k; rw [hSR_assoc]; exact hcol'' k
+      · intro k; rw [hSR_assoc]; exact hrow'' k
+      · rw [hSR_assoc]; exact h00''
+      · rw [hSR_assoc]; exact IsLorentzMatrix.mul d S.val.prop hL'
+      · intro i j hjm hjlt
+        rw [hSR_assoc]
+        by_cases hjm' : j.val < m
+        · -- Column j was already processed. Use hprev_cols' from spatial_subdiag_zeroing.
+          exact hprev_cols' j hjm' i hjlt
+        · -- j.val = m (since j.val < m + 1 and j.val ≥ m)
+          push_neg at hjm'
+          have hjm_eq : j = ⟨m, hmd⟩ :=
+            Fin.ext (Nat.le_antisymm (Nat.lt_succ_iff.mp hjm) hjm')
+          subst hjm_eq
+          exact hzero i hjlt (by omega)
+    · -- m ≥ d, no more columns
+      exact ⟨R', hJR', hcol', hrow', h00', hL', fun i j hjm hjlt =>
+        hprev i j (by omega) hjlt⟩
+
+/-- From upper-triangular + column orthonormality, the above-diagonal entries in
+    the spatial block are also zero (by strong induction), and diagonal entries are ±1. -/
+private theorem upper_triangular_orthogonal_to_diagonal
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hsubdiag : ∀ i j : Fin d, j.val < i.val → Λ i.succ j.succ = 0) :
+    (∀ i j : Fin d, Λ i.succ j.succ = if i = j then Λ i.succ i.succ else 0) ∧
+    (∀ j : Fin d, Λ j.succ j.succ = 1 ∨ Λ j.succ j.succ = -1) := by
+  have horth := lorentz_spatial_col_orthonormal d hL h00 hcol hrow
+  -- Step 1: Prove all off-diagonal entries are 0, by strong induction on column index.
+  -- The above-diagonal zeros use the IH (columns k < j have only diagonal entry ≠ 0).
+  -- First, we prove the off-diagonal property:
+  have hoff : ∀ i j : Fin d, i ≠ j → Λ i.succ j.succ = 0 := by
+    -- Suffices: for each j, ∀ i < j, Λ_{i+1,j+1} = 0.
+    -- (The i > j case follows from hsubdiag.)
+    suffices above : ∀ n : ℕ, n ≤ d →
+        (∀ j : Fin d, j.val < n → ∀ i : Fin d, i.val < j.val → Λ i.succ j.succ = 0) by
+      intro i j hij
+      by_cases h : j.val < i.val
+      · exact hsubdiag i j h
+      · push_neg at h
+        have : i.val < j.val := lt_of_le_of_ne h (fun h' => hij (Fin.ext h'))
+        exact above d le_rfl j j.isLt i this
+    intro n hn
+    induction n with
+    | zero => intro j hj; exact absurd hj (Nat.not_lt_zero _)
+    | succ m ihm =>
+      intro j hj i hi
+      -- If j.val < m, use the IH directly
+      by_cases hjm : j.val < m
+      · exact ihm (by omega) j hjm i hi
+      · -- j.val = m. Need to show Λ_{i+1,j+1} = 0 for i < j.
+        push_neg at hjm
+        have hjm_eq : j.val = m := Nat.le_antisymm (Nat.lt_succ_iff.mp hj) hjm
+        -- Use orthonormality: ∑_k Λ_{k+1,i+1} * Λ_{k+1,j+1} = 0 (since i ≠ j)
+        have hij : i ≠ j := Fin.ne_of_val_ne (by omega)
+        have hsum := horth i j
+        simp only [hij, ite_false] at hsum
+        -- In the sum, only k = i contributes:
+        -- k > j: Λ_{k+1,j+1} = 0 (sub-diagonal)
+        -- i < k ≤ j: Λ_{k+1,i+1} = 0 (sub-diagonal in col i)
+        -- k < i: Λ_{k+1,i+1} = 0 (above-diagonal in col i, by IH since i < j = m)
+        have honly_i : ∀ k : Fin d, k ≠ i → Λ k.succ i.succ * Λ k.succ j.succ = 0 := by
+          intro k hki
+          by_cases hk_gt_j : j.val < k.val
+          · rw [hsubdiag k j hk_gt_j]; ring
+          · push_neg at hk_gt_j
+            by_cases hk_gt_i : i.val < k.val
+            · rw [hsubdiag k i hk_gt_i]; ring
+            · push_neg at hk_gt_i
+              have hk_lt_i : k.val < i.val :=
+                lt_of_le_of_ne hk_gt_i (fun h => hki (Fin.ext h))
+              -- k < i < m, so above-diagonal in col i which was processed by IH
+              rw [ihm (by omega) i (by omega) k hk_lt_i]; ring
+        -- Sum reduces to Λ_{i+1,i+1} * Λ_{i+1,j+1}
+        have hsum_eq : ∑ k : Fin d, Λ k.succ i.succ * Λ k.succ j.succ =
+            Λ i.succ i.succ * Λ i.succ j.succ := by
+          have h1 := Finset.add_sum_erase Finset.univ
+            (fun k : Fin d => Λ k.succ i.succ * Λ k.succ j.succ) (Finset.mem_univ i)
+          have h2 : ∑ k ∈ Finset.univ.erase i, Λ k.succ i.succ * Λ k.succ j.succ = 0 :=
+            Finset.sum_eq_zero (fun k hk => honly_i k (Finset.ne_of_mem_erase hk))
+          linarith
+        rw [hsum_eq] at hsum
+        -- hsum : Λ_{i+1,i+1} * Λ_{i+1,j+1} = 0
+        -- Λ_{i+1,i+1}^2 = 1, so Λ_{i+1,i+1} ≠ 0
+        have hii_sq : Λ i.succ i.succ ^ 2 = 1 := by
+          have honly_ii : ∀ k : Fin d, k ≠ i → Λ k.succ i.succ ^ 2 = 0 := by
+            intro k hki
+            by_cases hk_gt : i.val < k.val
+            · rw [hsubdiag k i hk_gt]; ring
+            · push_neg at hk_gt
+              have : k.val < i.val := lt_of_le_of_ne hk_gt (fun h => hki (Fin.ext h))
+              rw [ihm (by omega) i (by omega) k this]; ring
+          have hii_sum := horth i i
+          simp only [ite_true] at hii_sum
+          have h1 := Finset.add_sum_erase Finset.univ
+            (fun k : Fin d => Λ k.succ i.succ ^ 2) (Finset.mem_univ i)
+          have h2 : ∑ k ∈ Finset.univ.erase i, Λ k.succ i.succ ^ 2 = 0 :=
+            Finset.sum_eq_zero (fun k hk => honly_ii k (Finset.ne_of_mem_erase hk))
+          have h3 : ∑ k : Fin d, Λ k.succ i.succ ^ 2 = 1 := by
+            convert hii_sum using 1; congr 1; ext k; ring
+          linarith
+        have hii_ne : Λ i.succ i.succ ≠ 0 := by
+          intro h; rw [h] at hii_sq; simp at hii_sq
+        -- hsum is now: Λ i.succ i.succ * Λ i.succ j.succ = 0 (from rw [hsum_eq] above)
+        exact (mul_eq_zero.mp hsum).resolve_left hii_ne
+  -- Step 2: Derive diagonal = ±1 from off-diagonal = 0 and column orthonormality.
+  constructor
+  · -- Off-diagonal = 0 (with specific shape)
+    intro i j
+    by_cases hij : i = j
+    · simp [hij]
+    · simp [hij]; exact hoff i j hij
+  · -- Diagonal = ±1
+    intro j
+    have hsum := horth j j
+    simp only [ite_true] at hsum
+    -- All off-diagonal terms vanish, so Λ_{j+1,j+1}^2 = 1
+    have : ∑ k : Fin d, Λ k.succ j.succ ^ 2 = 1 := by
+      convert hsum using 1; congr 1; ext k; ring
+    have honly_jj : ∀ k : Fin d, k ≠ j → Λ k.succ j.succ ^ 2 = 0 := by
+      intro k hkj; rw [hoff k j hkj]; ring
+    have : Λ j.succ j.succ ^ 2 = 1 := by
+      have hsplit := (Finset.add_sum_erase Finset.univ
+        (fun k : Fin d => Λ k.succ j.succ ^ 2) (Finset.mem_univ j)).symm
+      have hrest : ∑ k ∈ Finset.univ.erase j, Λ k.succ j.succ ^ 2 = 0 :=
+        Finset.sum_eq_zero (fun k hk => honly_jj k (Finset.ne_of_mem_erase hk))
+      linarith
+    rcases mul_eq_zero.mp (show (Λ j.succ j.succ - 1) * (Λ j.succ j.succ + 1) = 0 by nlinarith) with h | h
+    · left; linarith
+    · right; linarith
+
+/-- A π-rotation in the (i,j)-plane applied to a diagonal spatial matrix
+    flips the signs of the i-th and j-th diagonal entries. -/
+private theorem pi_rotation_diag_flip (i j : Fin d) (hij : i ≠ j)
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hdiag : ∀ a b : Fin d, Λ a.succ b.succ = if a = b then Λ a.succ a.succ else 0) :
+    let S := spatialRot d i j Real.pi
+    (S * Λ) 0 0 = 1 ∧
+    (∀ k : Fin d, (S * Λ) k.succ 0 = 0) ∧
+    (∀ k : Fin d, (S * Λ) 0 k.succ = 0) ∧
+    (∀ a b : Fin d, (S * Λ) a.succ b.succ =
+      if a = b then (if a = i ∨ a = j then -Λ a.succ a.succ else Λ a.succ a.succ) else 0) := by
+  intro S
+  have hcos : Real.cos Real.pi = -1 := Real.cos_pi
+  have hsin : Real.sin Real.pi = 0 := Real.sin_pi
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- (S * Λ) 0 0 = 1: row 0 is unchanged
+    rw [spatialRot_mul_row_other d i j Real.pi Λ 0 0
+      (Fin.succ_ne_zero i).symm (Fin.succ_ne_zero j).symm]; exact h00
+  · -- col 0 preserved
+    intro k
+    by_cases hk_i : k = i
+    · rw [hk_i, spatialRot_mul_row_i d i j hij Real.pi Λ 0, hcol i, hcol j]; ring
+    · by_cases hk_j : k = j
+      · rw [hk_j, spatialRot_mul_row_j d i j hij Real.pi Λ 0, hcol i, hcol j]; ring
+      · rw [spatialRot_mul_row_other d i j Real.pi Λ 0 k.succ
+          (fun h => hk_i (Fin.succ_injective _ h)) (fun h => hk_j (Fin.succ_injective _ h))]
+        exact hcol k
+  · -- row 0 preserved
+    intro k
+    rw [spatialRot_mul_row_other d i j Real.pi Λ k.succ 0
+      (Fin.succ_ne_zero i).symm (Fin.succ_ne_zero j).symm]; exact hrow k
+  · -- spatial entries
+    intro a b
+    by_cases hab : a = b
+    · -- diagonal case
+      rw [hab]; simp only [ite_true]
+      by_cases hb_i : b = i
+      · rw [hb_i]; simp only [true_or, ite_true]
+        rw [spatialRot_mul_row_i d i j hij Real.pi Λ i.succ, hdiag i i, hdiag j i]
+        simp only [ite_true, hij.symm, ite_false]; rw [hcos, hsin]; ring
+      · by_cases hb_j : b = j
+        · rw [hb_j, if_pos (Or.inr rfl : j = i ∨ j = j)]
+          rw [spatialRot_mul_row_j d i j hij Real.pi Λ j.succ, hdiag i j, hdiag j j]
+          simp only [hij, ite_false, ite_true]; rw [hcos, hsin]; ring
+        · have : ¬(b = i ∨ b = j) := fun h => h.elim hb_i hb_j
+          simp only [this, ite_false]
+          rw [spatialRot_mul_row_other d i j Real.pi Λ b.succ b.succ
+            (fun h => hb_i (Fin.succ_injective _ h)) (fun h => hb_j (Fin.succ_injective _ h))]
+    · -- off-diagonal case
+      simp only [hab, ite_false]
+      by_cases ha_i : a = i
+      · rw [ha_i, spatialRot_mul_row_i d i j hij Real.pi Λ b.succ]
+        have hib : i ≠ b := fun h => hab (ha_i ▸ h)
+        rw [hdiag i b]; simp only [hib, ite_false]
+        rw [hcos, hsin]; ring
+      · by_cases ha_j : a = j
+        · rw [ha_j, spatialRot_mul_row_j d i j hij Real.pi Λ b.succ]
+          have hjb : j ≠ b := fun h => hab (ha_j ▸ h)
+          rw [hdiag j b]; simp only [hjb, ite_false]
+          rw [hcos, hsin]; ring
+        · rw [spatialRot_mul_row_other d i j Real.pi Λ b.succ a.succ
+            (fun h => ha_i (Fin.succ_injective _ h)) (fun h => ha_j (Fin.succ_injective _ h))]
+          rw [hdiag a b]; simp [hab]
+
+/-- Given a diagonal ±1 Lorentz matrix where all spatial diagonal entries are 1,
+    the matrix is the identity. -/
+private theorem diagonal_all_one_is_identity
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hdiag : ∀ i j : Fin d, Λ i.succ j.succ = if i = j then Λ i.succ i.succ else 0)
+    (hall : ∀ j : Fin d, Λ j.succ j.succ = 1) :
+    Λ = 1 := by
+  have hid : ∀ i j : Fin d, Λ i.succ j.succ = if i = j then 1 else 0 := by
+    intro i j; rw [hdiag i j]; split_ifs with h <;> [exact h ▸ hall i; rfl]
+  exact spatial_identity_implies_one d h00 hcol hrow hid
+
+/-- Given a diagonal ±1 Lorentz matrix with det = 1, products of π-rotations turn all
+    spatial diagonal entries to 1. Uses well-founded induction on negative-index count. -/
+private theorem diagonal_sign_fixing
+    {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
+    (hL : IsLorentzMatrix d Λ) (h00 : Λ 0 0 = 1)
+    (hcol : ∀ k : Fin d, Λ k.succ 0 = 0)
+    (hrow : ∀ k : Fin d, Λ 0 k.succ = 0)
+    (hdiag : ∀ i j : Fin d, Λ i.succ j.succ = if i = j then Λ i.succ i.succ else 0)
+    (hpm : ∀ j : Fin d, Λ j.succ j.succ = 1 ∨ Λ j.succ j.succ = -1)
+    (hdet : Matrix.det Λ = 1) :
+    ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧ R.val.val * Λ = 1 := by
+  -- Strong induction on the number of negative indices
+  set negCount := (Finset.univ.filter (fun j : Fin d => Λ j.succ j.succ = -1)).card
+  suffices key : ∀ (m : ℕ) {Λ' : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ},
+      IsLorentzMatrix d Λ' → Λ' 0 0 = 1 →
+      (∀ k : Fin d, Λ' k.succ 0 = 0) →
+      (∀ k : Fin d, Λ' 0 k.succ = 0) →
+      (∀ i j : Fin d, Λ' i.succ j.succ = if i = j then Λ' i.succ i.succ else 0) →
+      (∀ j : Fin d, Λ' j.succ j.succ = 1 ∨ Λ' j.succ j.succ = -1) →
+      Matrix.det Λ' = 1 →
+      (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card ≤ 2 * m →
+      ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧ R.val.val * Λ' = 1 by
+    have hle : (Finset.univ.filter (fun j : Fin d => Λ j.succ j.succ = -1)).card ≤ d :=
+      (Finset.card_filter_le _ _).trans (by simp)
+    exact key (d / 2 + 1) hL h00 hcol hrow hdiag hpm hdet (by omega)
+  intro m
+  induction m with
+  | zero =>
+    intro Λ' hL' h00' hcol' hrow' hdiag' hpm' hdet' hcard'
+    have hcard0 : (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card = 0 :=
+      by omega
+    have hall : ∀ j : Fin d, Λ' j.succ j.succ = 1 := by
+      intro j; rcases hpm' j with h | h
+      · exact h
+      · exfalso
+        have : j ∈ Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1) :=
+          Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩
+        rw [Finset.card_eq_zero.mp hcard0] at this; exact absurd this (Finset.notMem_empty _)
+    exact ⟨1, Joined.refl _, by
+      rw [show (1 : RestrictedLorentzGroup d).val.val = 1 from rfl, Matrix.one_mul]
+      exact diagonal_all_one_is_identity d h00' hcol' hrow' hdiag' hall⟩
+  | succ m ihm =>
+    intro Λ' hL' h00' hcol' hrow' hdiag' hpm' hdet' hcard'
+    -- If already no negatives, done
+    by_cases hcard0 : (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card = 0
+    · have hall : ∀ j : Fin d, Λ' j.succ j.succ = 1 := by
+        intro j; rcases hpm' j with h | h
+        · exact h
+        · exfalso
+          have : j ∈ Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1) :=
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩
+          rw [Finset.card_eq_zero.mp hcard0] at this; exact absurd this (Finset.notMem_empty _)
+      exact ⟨1, Joined.refl _, by
+        rw [show (1 : RestrictedLorentzGroup d).val.val = 1 from rfl, Matrix.one_mul]
+        exact diagonal_all_one_is_identity d h00' hcol' hrow' hdiag' hall⟩
+    · -- There exist negative indices. Need at least 2 (by even parity from det = 1).
+      -- Step 1: The number of -1 entries is even (from det = 1)
+      have hneg_even : Even (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card := by
+        -- First derive: product of spatial diagonal = 1
+        have hΛ'_diag_eq : Λ' = Matrix.diagonal (fun i => Λ' i i) := by
+          ext i j; rw [Matrix.diagonal_apply]
+          rcases Fin.eq_zero_or_eq_succ i with rfl | ⟨i', rfl⟩
+          · rcases Fin.eq_zero_or_eq_succ j with rfl | ⟨j', rfl⟩
+            · simp
+            · rw [if_neg (Fin.succ_ne_zero j').symm]; exact hrow' j'
+          · rcases Fin.eq_zero_or_eq_succ j with rfl | ⟨j', rfl⟩
+            · rw [if_neg (Fin.succ_ne_zero i')]; exact hcol' i'
+            · rw [hdiag' i' j']
+              split_ifs with h₁ h₂ h₂
+              · rfl
+              · exact absurd (congrArg Fin.succ h₁) h₂
+              · exact absurd (Fin.succ_injective _ h₂) h₁
+              · rfl
+        have hsprod : ∏ j : Fin d, Λ' j.succ j.succ = 1 := by
+          have hdet_prod := hdet'
+          rw [hΛ'_diag_eq, Matrix.det_diagonal, Fin.prod_univ_succ] at hdet_prod
+          rw [h00', one_mul] at hdet_prod; exact hdet_prod
+        -- Each diagonal entry is ±1 = (-1)^(0 or 1)
+        have heach : ∀ j : Fin d, Λ' j.succ j.succ =
+            (-1 : ℝ) ^ (if Λ' j.succ j.succ = -1 then 1 else 0) := by
+          intro j; rcases hpm' j with h | h <;> simp [h]
+        -- Product = (-1)^(card of neg set)
+        have hprod_pow : ∏ j : Fin d, Λ' j.succ j.succ =
+            (-1 : ℝ) ^ (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card := by
+          rw [show ∏ j : Fin d, Λ' j.succ j.succ =
+            ∏ j : Fin d, (-1 : ℝ) ^ (if Λ' j.succ j.succ = -1 then 1 else 0) from
+            Finset.prod_congr rfl (fun j _ => heach j)]
+          rw [Finset.prod_pow_eq_pow_sum, Finset.card_filter]
+        rw [hsprod] at hprod_pow
+        exact (neg_one_pow_eq_one_iff_even (by norm_num : (-1 : ℝ) ≠ 1)).mp hprod_pow.symm
+      -- Step 2: Since card ≥ 1 and even, card ≥ 2
+      have hcard_ge2 : 2 ≤ (Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1)).card := by
+        rcases hneg_even with ⟨k, hk⟩; omega
+      -- Step 3: Pick two distinct negative indices
+      set negS := Finset.univ.filter (fun j : Fin d => Λ' j.succ j.succ = -1) with negS_def
+      obtain ⟨i₀, hi₀_mem⟩ := Finset.card_pos.mp (by omega : 0 < negS.card)
+      have hi₀_neg : Λ' i₀.succ i₀.succ = -1 := (Finset.mem_filter.mp hi₀_mem).2
+      have hne2 : 0 < (negS.erase i₀).card := by
+        rw [Finset.card_erase_of_mem hi₀_mem]; omega
+      obtain ⟨j₀, hj₀⟩ := Finset.card_pos.mp hne2
+      have hj₀_neg : Λ' j₀.succ j₀.succ = -1 :=
+        (Finset.mem_filter.mp (Finset.mem_of_mem_erase hj₀)).2
+      have hij₀ : i₀ ≠ j₀ := (Finset.ne_of_mem_erase hj₀).symm
+      -- Step 4: Apply π-rotation to flip both signs
+      set S := spatialRotElement d i₀ j₀ hij₀ Real.pi
+      have hSval : S.val.val = spatialRot d i₀ j₀ Real.pi := rfl
+      obtain ⟨h00S, hcolS, hrowS, hdiagS⟩ :=
+        pi_rotation_diag_flip d i₀ j₀ hij₀ h00' hcol' hrow' hdiag'
+      -- Transfer from spatialRot to S.val.val
+      rw [← hSval] at h00S hcolS hrowS hdiagS
+      -- Step 5: S * Λ' preserves the ±1 diagonal structure
+      have hSΛ_pm : ∀ j : Fin d, (S.val.val * Λ') j.succ j.succ = 1 ∨
+          (S.val.val * Λ') j.succ j.succ = -1 := by
+        intro j; have hd := hdiagS j j; simp only [ite_true] at hd; rw [hd]
+        rcases hpm' j with h | h <;> by_cases hj_ij : j = i₀ ∨ j = j₀ <;> simp [hj_ij, h]
+      have hSΛ_diag : ∀ i j : Fin d, (S.val.val * Λ') i.succ j.succ =
+          if i = j then (S.val.val * Λ') i.succ i.succ else 0 := by
+        intro i j; have hd := hdiagS i j
+        by_cases h : i = j
+        · subst h; simp
+        · simp only [h, ite_false] at hd ⊢; exact hd
+      -- Step 6: The neg count drops by 2
+      have hcard_new : (Finset.univ.filter (fun j : Fin d =>
+          (S.val.val * Λ') j.succ j.succ = -1)).card ≤ 2 * m := by
+        -- The diagonal entry of S * Λ' at j: if j ∈ {i₀, j₀} then -Λ' else Λ'
+        have hSΛ_diag_val : ∀ j : Fin d, (S.val.val * Λ') j.succ j.succ =
+            if j = i₀ ∨ j = j₀ then -Λ' j.succ j.succ else Λ' j.succ j.succ := by
+          intro j; have := hdiagS j j; simp only [ite_true] at this; exact this
+        -- i₀ flips to 1, j₀ flips to 1
+        have hi₀_pos : (S.val.val * Λ') i₀.succ i₀.succ = 1 := by
+          rw [hSΛ_diag_val, if_pos (Or.inl rfl), hi₀_neg]; ring
+        have hj₀_pos : (S.val.val * Λ') j₀.succ j₀.succ = 1 := by
+          rw [hSΛ_diag_val, if_pos (Or.inr rfl), hj₀_neg]; ring
+        -- For j ∉ {i₀, j₀}, the entry is unchanged
+        have hother : ∀ j : Fin d, j ≠ i₀ → j ≠ j₀ →
+            (S.val.val * Λ') j.succ j.succ = Λ' j.succ j.succ := by
+          intro j hni hnj; rw [hSΛ_diag_val, if_neg (by push_neg; exact ⟨hni, hnj⟩)]
+        -- The new negative set is a subset of (negS.erase i₀).erase j₀
+        have hsub : Finset.univ.filter (fun j : Fin d => (S.val.val * Λ') j.succ j.succ = -1) ⊆
+            (negS.erase i₀).erase j₀ := by
+          intro j hj
+          rw [Finset.mem_filter] at hj
+          have hj_neg := hj.2
+          rw [Finset.mem_erase, Finset.mem_erase]
+          refine ⟨fun hjj₀ => by rw [hjj₀, hj₀_pos] at hj_neg; norm_num at hj_neg,
+                  fun hji₀ => by rw [hji₀, hi₀_pos] at hj_neg; norm_num at hj_neg, ?_⟩
+          rw [negS_def, Finset.mem_filter]
+          refine ⟨Finset.mem_univ _, ?_⟩
+          have hji : j ≠ i₀ := fun h => by rw [h, hi₀_pos] at hj_neg; norm_num at hj_neg
+          have hjj : j ≠ j₀ := fun h => by rw [h, hj₀_pos] at hj_neg; norm_num at hj_neg
+          rw [hother j hji hjj] at hj_neg; exact hj_neg
+        have hcard_sub : ((negS.erase i₀).erase j₀).card = negS.card - 2 := by
+          have hj₀_mem_erase : j₀ ∈ negS.erase i₀ := hj₀
+          rw [Finset.card_erase_of_mem hj₀_mem_erase, Finset.card_erase_of_mem hi₀_mem]; omega
+        calc (Finset.univ.filter (fun j : Fin d => (S.val.val * Λ') j.succ j.succ = -1)).card
+            ≤ ((negS.erase i₀).erase j₀).card := Finset.card_le_card hsub
+          _ = negS.card - 2 := hcard_sub
+          _ ≤ 2 * m := by omega
+      -- Step 7: S * Λ' is Lorentz with det 1
+      have hL_new : IsLorentzMatrix d (S.val.val * Λ') :=
+        IsLorentzMatrix.mul d S.val.prop hL'
+      have hdet_new : (S.val.val * Λ').det = 1 := by
+        rw [Matrix.det_mul, S.prop.1, hdet', one_mul]
+      -- Step 8: Apply IH
+      obtain ⟨R', hJR', hR'eq⟩ := ihm hL_new h00S hcolS hrowS hSΛ_diag hSΛ_pm hdet_new hcard_new
+      -- Step 9: Compose
+      exact ⟨R' * S, joined_one_mul_general hJR' (joined_one_spatialRotElement d i₀ j₀ hij₀ Real.pi),
+        by rw [show (R' * S).val.val = R'.val.val * S.val.val from rfl, Matrix.mul_assoc, hR'eq]⟩
+
+/-- Full spatial reduction: there exists R (product of spatial rotations, Joined to 1)
+    such that R * Λ = 1. -/
+private theorem spatial_full_reduction (Λ : RestrictedLorentzGroup d)
+    (hcol : ∀ k : Fin d, Λ.val.val k.succ 0 = 0) :
+    ∃ R : RestrictedLorentzGroup d, Joined 1 R ∧ R * Λ = 1 := by
+  -- Step 1: Extract key properties
+  have hL : IsLorentzMatrix d Λ.val.val := Λ.val.prop
+  have ho : Λ.val.val 0 0 ≥ 1 := Λ.prop.2
+  have h00 : Λ.val.val 0 0 = 1 := col0_zero_entry00_one d hL ho hcol
+  have hrow : ∀ k : Fin d, Λ.val.val 0 k.succ = 0 := col0_e0_implies_row0 d hL h00 hcol
+  -- Step 2: Apply Givens reduction to get upper triangular
+  obtain ⟨R₁, hJR₁, hcol₁, hrow₁, h00₁, hL₁, hsubdiag₁⟩ :=
+    spatial_givens_reduction d hL h00 hcol hrow
+  -- Step 3: Upper triangular + orthogonal → diagonal with ±1 entries
+  obtain ⟨hdiag₁, hpm₁⟩ := upper_triangular_orthogonal_to_diagonal d hL₁ h00₁ hcol₁ hrow₁ hsubdiag₁
+  -- Step 4: Fix diagonal signs using π-rotations via diagonal_sign_fixing
+  have hdet₁ : Matrix.det (R₁.val.val * Λ.val.val) = 1 := by
+    rw [Matrix.det_mul, R₁.prop.1, Λ.prop.1, one_mul]
+  obtain ⟨R₂, hJR₂, hR₂eq⟩ := diagonal_sign_fixing d hL₁ h00₁ hcol₁ hrow₁ hdiag₁ hpm₁ hdet₁
+  -- Now R₂.val.val * (R₁.val.val * Λ.val.val) = 1
+  -- So (R₂ * R₁) * Λ = 1
+  refine ⟨R₂ * R₁, joined_one_mul_general hJR₂ hJR₁, ?_⟩
+  apply Subtype.ext; apply Subtype.ext
+  show (R₂ * R₁).val.val * Λ.val.val = 1
+  rw [show (R₂ * R₁).val.val = R₂.val.val * R₁.val.val from rfl, Matrix.mul_assoc, hR₂eq]
+
 /-- Spatial column zeroing: Given Λ ∈ SO⁺(1,d) with col 0 = e₀, there exists S
     (product of spatial rotations, Joined 1) such that S * Λ = 1. -/
 private theorem spatial_reduction (Λ : RestrictedLorentzGroup d)
     (hcol : ∀ k : Fin d, Λ.val.val k.succ 0 = 0) :
     Joined 1 Λ := by
-  sorry
+  obtain ⟨R, hJR, heq⟩ := spatial_full_reduction d Λ hcol
+  have : Λ = R⁻¹ * 1 := by rw [← heq]; group
+  rw [this, mul_one]
+  exact joined_one_inv' d hJR
 
 /-- Every element of SO⁺(1,d) is Joined to 1. -/
 private theorem joined_one (Λ : RestrictedLorentzGroup d) : Joined 1 Λ := by
@@ -1157,7 +1787,6 @@ theorem RestrictedLorentzGroup.isPathConnected :
   refine ⟨1, Set.mem_univ _, ?_⟩
   intro _ _
   exact joinedIn_univ.mpr (joined_one d _)
--/
 
 /-! ### Embedding into GL -/
 
