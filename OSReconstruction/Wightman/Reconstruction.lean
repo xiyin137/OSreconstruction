@@ -545,6 +545,23 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
   hermitian : ∀ (n : ℕ) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
     W n g = starRingEnd ℂ (W n f)
+  /-- Cluster decomposition (R4): as the spacelike separation between two groups of
+      arguments grows, the Wightman function factorizes.
+
+      For any n, m, test functions f, g, and ε > 0, there exists R > 0 such that for
+      any purely spatial translation a with |a| > R:
+        |W_{n+m}(f ⊗ τ_a g) - W_n(f) · W_m(g)| < ε
+
+      This axiom is equivalent to uniqueness of the vacuum in the reconstructed
+      Hilbert space: the only translation-invariant vector is the vacuum.
+
+      Ref: Streater-Wightman, Theorem 3-5; Glimm-Jaffe, Theorem 19.4.1 -/
+  cluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+    ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖W (n + m) (f.tensorProduct g_a) - W n f * W m g‖ < ε
 
 /-! ### Inner Product Hermiticity and Cauchy-Schwarz -/
 

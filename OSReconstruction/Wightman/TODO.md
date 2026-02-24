@@ -90,36 +90,25 @@ All theorems proven and verified `sorryAx`-free:
 Both `edge_of_the_wedge` and `bargmann_hall_wightman` are now **proved theorems**.
 All theorems in this file are fully proven.
 
-### WickRotation.lean — 28 sorrys, 0 axioms
+### WickRotation/ — 28 sorrys, 0 axioms (split into 5 subfiles)
 
-**R→E direction — proven theorems:**
+Refactored from a single 3475-line file into a `WickRotation/` subfolder:
 
-| Line | Theorem | Status |
-|------|---------|--------|
-| 107 | `restricted_preserves_forward_cone` | ✅ Proven |
-| 270 | `restricted_preserves_forward_tube` | ✅ Proven |
-| 326 | `W_analytic_lorentz_holomorphic` | ✅ Proven |
-| 448 | `W_analytic_lorentz_bv_agree` | ✅ Proven |
-| 503 | `W_analytic_lorentz_on_tube` | ✅ Proven (distributional uniqueness) |
-| 524 | `W_analytic_continuous_boundary` | ✅ Proven (from SCV axiom) |
-| 560 | `W_analytic_BHW` | ✅ Proven (applies BHW axiom) |
-| 667 | `F_ext_translation_invariant` | ✅ Proven (from bhw_translation_invariant + euclidean_points_in_permutedTube) |
-| 682 | `constructedSchwinger_translation_invariant` | ✅ Proven (sorry-free, verified) |
-| 713 | `F_ext_rotation_invariant` (SO(d+1)) | ✅ Proven (via schwinger_euclidean_invariant; det=-1 dropped) |
-| 740 | `integral_orthogonal_eq_self` | ✅ Proven |
-| 792 | `constructedSchwinger_rotation_invariant` | ✅ Proven (SO(d+1) only; sorry-free) |
-| 840 | `F_ext_permutation_invariant` | ✅ Proven (from BHW permutation + euclidean_points_in_permutedTube) |
-| 851 | `integral_perm_eq_self` | ✅ Proven |
-| 862 | `constructedSchwinger_symmetric` | ✅ Proven (sorry-free, verified) |
-| 1187 | `wightman_to_os_full` | ✅ Proven (sorry-free) |
-| 1231 | `os_to_wightman_full` | ✅ Proven (sorry-free) |
+| File | Lines | Sorrys | Content |
+|------|-------|--------|---------|
+| `ForwardTubeLorentz.lean` | ~735 | 3 | Cone/tube preservation, Lorentz COV, distributional BV |
+| `BHWExtension.lean` | ~177 | 2 | BHW extension definition, local commutativity |
+| `BHWTranslation.lean` | ~1013 | 5 | Translation invariance, `constructSchwingerFunctions` |
+| `SchwingerAxioms.lean` | ~836 | 5 | E0-E4 axiom proofs |
+| `OSToWightman.lean` | ~752 | 13 | E'→R' direction, bridge theorems |
+| `WickRotation.lean` | barrel | 0 | Re-exports OSToWightman |
 
 **R→E direction — remaining sorrys (2, HARD):**
 
-| Theorem | Description | Difficulty |
-|---------|-------------|------------|
-| `os_inner_product_eq_wightman_positivity` | E2: Wightman positivity → OS RP | Hard: Borchers involution ↔ time reflection under Wick rotation |
-| `W_analytic_cluster_integral` | E4: integral factorization at large spatial separation | Hard: cluster decomposition + dominated convergence |
+| File | Theorem | Description | Difficulty |
+|------|---------|-------------|------------|
+| SchwingerAxioms | `schwinger_os_term_eq_wightman_term` | E2: distributional BV identity | Hard: Borchers involution ↔ time reflection |
+| SchwingerAxioms | `W_analytic_cluster_integral` | E4: integral factorization at large separation | Hard: cluster + dominated convergence |
 
 **E→R direction — sorrys (26, decomposed from former axioms):**
 
@@ -194,9 +183,11 @@ AnalyticContinuation.lean ✅ (0 sorrys, 0 axioms)
 │  bargmann_hall_wightman ✅ PROVED (via ComplexLieGroups/Connectedness.lean)
 │
 ▼
-WickRotation.lean (28 sorrys, 0 axioms)
+WickRotation/ (28 sorrys total, 0 axioms, 5 subfiles)
 │
-│  ┌─── R→E DIRECTION (2 hard sorrys) ──────────────────────────┐
+│  ForwardTubeLorentz ─→ BHWExtension ─→ BHWTranslation ─→ SchwingerAxioms ─→ OSToWightman
+│
+│  ┌─── R→E DIRECTION (2 hard sorrys, in SchwingerAxioms) ──────┐
 │  │                                                               │
 │  │  E2: reflection positivity         ← sorry (HARD)            │
 │  │  E4: cluster decomposition         ← sorry (HARD)            │
@@ -204,7 +195,7 @@ WickRotation.lean (28 sorrys, 0 axioms)
 │  │  E0, E1, E3 ✅ PROVEN    wightman_to_os_full ✅ PROVEN      │
 │  └───────────────────────────────────────────────────────────────┘
 │
-│  ┌─── E→R DIRECTION (26 sorrys, decomposed) ────────────────┐
+│  ┌─── E→R DIRECTION (26 sorrys, in OSToWightman) ──────────────┐
 │  │                                                               │
 │  │  inductive_analytic_continuation ◀── PaleyWiener.lean         │
 │  │         ↓                                                     │
@@ -279,7 +270,11 @@ These groups are **independent** and can be worked on simultaneously:
 | Reconstruction/GNSHilbertSpace.lean | 3 | Spectral, cyclicity, vacuum |
 | Reconstruction/AnalyticContinuation.lean | 0 | ✅ Complete |
 | Reconstruction/ForwardTubeDistributions.lean | 0 | ✅ Complete |
-| **Reconstruction/WickRotation.lean** | **28** | **E2, E4 + E→R chain** |
+| Reconstruction/WickRotation/ForwardTubeLorentz.lean | 3 | Polynomial growth, BV integrability |
+| Reconstruction/WickRotation/BHWExtension.lean | 2 | Local commutativity |
+| Reconstruction/WickRotation/BHWTranslation.lean | 5 | Translation chain, BV direction |
+| **Reconstruction/WickRotation/SchwingerAxioms.lean** | **5** | **E0, E2, E4** |
+| **Reconstruction/WickRotation/OSToWightman.lean** | **13** | **E→R chain** |
 | Reconstruction/Main.lean | 1 | `wightman_uniqueness` |
 | Reconstruction/Helpers/ | 0 | ✅ Complete |
 | NuclearSpaces/ | 7 | Deferred (NuclearSpace 2, BochnerMinlos 5) |
@@ -289,10 +284,14 @@ These groups are **independent** and can be worked on simultaneously:
 
 | Module | File | Sorrys |
 |--------|------|--------|
-| **Wightman** | Reconstruction/WickRotation.lean | 28 |
+| **Wightman** | WickRotation/OSToWightman.lean | 13 |
 | | NuclearSpaces/BochnerMinlos.lean | 5 |
+| | WickRotation/BHWTranslation.lean | 5 |
+| | WickRotation/SchwingerAxioms.lean | 5 |
 | | WightmanAxioms.lean | 4 |
+| | WickRotation/ForwardTubeLorentz.lean | 3 |
 | | Reconstruction/GNSHilbertSpace.lean | 3 |
+| | WickRotation/BHWExtension.lean | 2 |
 | | NuclearSpaces/NuclearSpace.lean | 2 |
 | | Reconstruction/Main.lean | 1 |
 | | **subtotal** | **43** |
@@ -337,7 +336,7 @@ These groups are **independent** and can be worked on simultaneously:
 - `identity_theorem_connected` — analytic identity theorem
 - `holomorphic_translation_invariant`
 
-### WickRotation.lean (proven 2026-02-20)
+### WickRotation/ (proven, across 5 subfiles)
 - `restricted_preserves_forward_cone` — Restricted Lorentz preserves V₊
 - `restricted_preserves_forward_tube` — Restricted Lorentz preserves ForwardTube
 - `W_analytic_lorentz_on_tube` — W_analytic is Lorentz invariant on ForwardTube
@@ -351,6 +350,7 @@ These groups are **independent** and can be worked on simultaneously:
 - `integral_perm_eq_self` — Permutation COV preserves Lebesgue measure
 - `integral_flatten_change_of_variables` — Fubini for tensor product integrals
 - `os_to_wightman_full` — E'→R' bridge theorem (sorry-free)
+- `wightman_to_os_full` — R→E bridge theorem (sorry-free)
 
 ### Reconstruction.lean
 - `IsWickRotationPair` — Wick rotation pair predicate
@@ -371,7 +371,7 @@ OperatorDistribution.lean ──> WightmanAxioms.lean
               Reconstruction/AnalyticContinuation.lean  (tube domains, BHW)
               Reconstruction/GNSConstruction.lean       (✅ sorry-free)
               Reconstruction/GNSHilbertSpace.lean       (GNS Hilbert space, 10 sorrys)
-              Reconstruction/WickRotation.lean          (OS↔Wightman bridge)
+              Reconstruction/WickRotation/              (OS↔Wightman bridge, 5 subfiles)
               Reconstruction/Main.lean                  (wiring, 1 sorry)
               Reconstruction/Helpers/EdgeOfWedge.lean   (✅ sorry-free, 1D)
 ```

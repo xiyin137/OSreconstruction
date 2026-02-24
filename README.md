@@ -94,7 +94,13 @@ OSReconstruction/
 │       ├── ForwardTubeDistributions.lean  # Forward tube boundary values
 │       ├── PoincareAction.lean   # Poincaré action on Schwartz space (sorry-free)
 │       ├── PoincareRep.lean      # n-point Poincaré representations (sorry-free)
-│       ├── WickRotation.lean     # OS ↔ Wightman bridge
+│       ├── WickRotation.lean     # OS ↔ Wightman bridge (barrel file)
+│       ├── WickRotation/         # WickRotation submodules
+│       │   ├── ForwardTubeLorentz.lean   # Forward tube Lorentz invariance
+│       │   ├── BHWExtension.lean         # BHW extension definition
+│       │   ├── BHWTranslation.lean       # Translation invariance
+│       │   ├── SchwingerAxioms.lean      # E0-E4 axiom proofs
+│       │   └── OSToWightman.lean         # E'→R' + bridge theorems
 │       ├── Main.lean             # Top-level theorem wiring
 │       └── Helpers/              # EdgeOfWedge, SeparatelyAnalytic
 ├── SCV/                          # Several complex variables
