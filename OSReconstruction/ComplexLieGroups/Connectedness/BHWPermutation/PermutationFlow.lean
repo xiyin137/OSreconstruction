@@ -23,6 +23,36 @@ private def etAdjStep (z : Fin n → Fin (d + 1) → ℂ)
       permAct (d := d) π₁ z ∈ ExtendedTube d n ∧
       permAct (d := d) π₂ z ∈ ExtendedTube d n
 
+/-- ET-preserving adjacent-chain existence from a one-step backward closure
+condition in permutation space. -/
+private theorem etAdj_chain_of_midCond
+    (y : Fin n → Fin (d + 1) → ℂ)
+    (hmidCond :
+      ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+        permAct (d := d) (σ * Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n →
+        permAct (d := d) σ y ∈ ExtendedTube d n)
+    (τ : Equiv.Perm (Fin n))
+    (_hy : y ∈ ExtendedTube d n)
+    (hτy : permAct (d := d) τ y ∈ ExtendedTube d n) :
+    Relation.ReflTransGen (etAdjStep (d := d) (n := n) y) 1 τ := by
+  revert hτy
+  refine Fin.Perm.adjSwap_induction_right (n := n)
+    (motive := fun τ =>
+      permAct (d := d) τ y ∈ ExtendedTube d n →
+      Relation.ReflTransGen (etAdjStep (d := d) (n := n) y) 1 τ)
+    ?base ?step τ
+  · intro h1
+    simpa [permAct] using Relation.ReflTransGen.refl
+  · intro σ i hi ih hσswap
+    have hσ : permAct (d := d) σ y ∈ ExtendedTube d n :=
+      hmidCond σ i hi hσswap
+    have hchainσ :
+        Relation.ReflTransGen (etAdjStep (d := d) (n := n) y) 1 σ := ih hσ
+    have htail :
+        etAdjStep (d := d) (n := n) y σ (σ * Equiv.swap i ⟨i.val + 1, hi⟩) :=
+      ⟨i, hi, rfl, hσ, hσswap⟩
+    exact Relation.ReflTransGen.tail hchainσ htail
+
 /-- Chain reduction for ET permutation invariance of `extendF`.
 If adjacent-swap ET invariance is known and `σ` is linked to `1` by an
 ET-preserving adjacent chain at `z`, then `extendF` is `σ`-invariant at `z`. -/
@@ -151,6 +181,99 @@ private theorem extendF_perm_overlap_of_adjSwap_connected_and_chain_hd2
   · exact extendF_adjSwap_all_of_connected_forwardOverlap_hd2
       n F hF_holo hF_real_inv hF_bv hF_local hd hFwd_conn
   · exact hChain
+
+/-- Alternative packaged reduction:
+if one can prove the one-step ET backward-closure condition
+`permAct (σ * swap) y ∈ ET → permAct σ y ∈ ET`, then chain existence follows
+via `etAdj_chain_of_midCond`. -/
+private theorem extendF_perm_overlap_of_adjSwap_connected_and_midCond_hd2
+    (n : ℕ)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_real_inv : ∀ (Λ : RestrictedLorentzGroup d)
+      (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin (d + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube d n) (realEmbed x))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (d + 1) → ℝ),
+        ∑ μ, minkowskiSignature d μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)))
+    (hd : 2 ≤ d)
+    (hFwd_conn : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      IsConnected (adjSwapForwardOverlapSet (d := d) n i hi))
+    (hmidCond :
+      ∀ (y : Fin n → Fin (d + 1) → ℂ)
+        (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+        permAct (d := d) (σ * Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n →
+        permAct (d := d) σ y ∈ ExtendedTube d n) :
+    ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ ExtendedTube d n →
+      permAct (d := d) σ z ∈ ExtendedTube d n →
+      extendF F (permAct (d := d) σ z) = extendF F z := by
+  have hChain :
+      ∀ (τ : Equiv.Perm (Fin n)) (y : Fin n → Fin (d + 1) → ℂ),
+        y ∈ ExtendedTube d n →
+        permAct (d := d) τ y ∈ ExtendedTube d n →
+        Relation.ReflTransGen (etAdjStep (d := d) (n := n) y) 1 τ := by
+    intro τ y hy hτy
+    have hmidCond_y :
+        ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+          permAct (d := d) (σ * Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n →
+          permAct (d := d) σ y ∈ ExtendedTube d n := by
+      intro σ i hi h
+      exact hmidCond y σ i hi h
+    exact etAdj_chain_of_midCond (d := d) (n := n) y hmidCond_y τ hy hτy
+  exact extendF_perm_overlap_of_adjSwap_connected_and_chain_hd2
+    (d := d) (n := n) F hF_holo hF_real_inv hF_bv hF_local hd hFwd_conn hChain
+
+/-- Packaged `d ≥ 2` reduction via index-set generation:
+if each adjacent-overlap forward slice is connected by a real double-coset
+generation hypothesis and one has the ET one-step backward closure condition,
+then full ET-overlap permutation invariance of `extendF` follows. -/
+private theorem extendF_perm_overlap_of_real_double_coset_generation_and_midCond_hd2
+    [NeZero d]
+    (n : ℕ)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_real_inv : ∀ (Λ : RestrictedLorentzGroup d)
+      (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin (d + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube d n) (realEmbed x))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (d + 1) → ℝ),
+        ∑ μ, minkowskiSignature d μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)))
+    (hd : 2 ≤ d)
+    (hgen :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        ∃ (Λ0 : ComplexLorentzGroup d),
+          Λ0 ∈ adjSwapForwardOverlapIndexSet (d := d) n i hi ∧
+          (∀ Λ ∈ adjSwapForwardOverlapIndexSet (d := d) n i hi,
+            ∃ R1 R2 : RestrictedLorentzGroup d,
+              Λ = ComplexLorentzGroup.ofReal R1 * Λ0 * ComplexLorentzGroup.ofReal R2))
+    (hmidCond :
+      ∀ (y : Fin n → Fin (d + 1) → ℂ)
+        (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+        permAct (d := d) (σ * Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n →
+        permAct (d := d) σ y ∈ ExtendedTube d n) :
+    ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ ExtendedTube d n →
+      permAct (d := d) σ z ∈ ExtendedTube d n →
+      extendF F (permAct (d := d) σ z) = extendF F z := by
+  have hFwd_conn : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      IsConnected (adjSwapForwardOverlapSet (d := d) n i hi) := by
+    intro i hi
+    rcases hgen i hi with ⟨Λ0, hΛ0, hgen_i⟩
+    exact isConnected_adjSwapForwardOverlapSet_of_real_double_coset_generation
+      (d := d) n i hi Λ0 hΛ0 hgen_i
+  exact extendF_perm_overlap_of_adjSwap_connected_and_midCond_hd2
+    (d := d) (n := n) F hF_holo hF_real_inv hF_bv hF_local hd hFwd_conn hmidCond
 
 /-- Build a holomorphic extension domain for a fixed permutation `σ` from
     the corresponding permutation-invariance hypothesis.

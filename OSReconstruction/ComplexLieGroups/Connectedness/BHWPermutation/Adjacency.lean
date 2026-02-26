@@ -1167,6 +1167,26 @@ theorem adjSwapForwardOverlap_nonempty [NeZero d]
     refine ⟨w, ?_⟩
     exact ⟨hwFT, hτw_ET⟩
 
+/-- Wrapper reduction: a real double-coset generation hypothesis on the
+adjacent-overlap index set implies connectedness of the corresponding forward
+overlap slice. -/
+theorem isConnected_adjSwapForwardOverlapSet_of_real_double_coset_generation [NeZero d]
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (Λ0 : ComplexLorentzGroup d)
+    (hΛ0 : Λ0 ∈ adjSwapForwardOverlapIndexSet (d := d) n i hi)
+    (hgen : ∀ Λ ∈ adjSwapForwardOverlapIndexSet (d := d) n i hi,
+      ∃ R1 R2 : RestrictedLorentzGroup d,
+        Λ = ComplexLorentzGroup.ofReal R1 * Λ0 * ComplexLorentzGroup.ofReal R2) :
+    IsConnected (adjSwapForwardOverlapSet (d := d) n i hi) := by
+  have hidx_conn : IsConnected (adjSwapForwardOverlapIndexSet (d := d) n i hi) :=
+    indexSet_isConnected_of_real_double_coset_generation
+      (d := d) n i hi Λ0 hΛ0 hgen
+  have hnonempty : (adjSwapForwardOverlapSet (d := d) n i hi).Nonempty :=
+    adjSwapForwardOverlap_nonempty (d := d) n i hi
+  simpa [adjSwapForwardOverlapIndexSet] using
+    isConnected_adjSwapForwardOverlapSet_of_indexConnected
+      (d := d) n i hi hidx_conn hnonempty
+
 /-- Conditional adjacent-swap ET invariance:
     connectedness of the ET overlap domain plus one real spacelike witness yields
     global equality `extendF(swap z) = extendF z` on that overlap domain. -/

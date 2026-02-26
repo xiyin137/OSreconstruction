@@ -187,6 +187,11 @@ permutations σ, so `eow_chain_adj_swap` can close the induction step.
 - The unresolved local goal is exactly `hExtPerm`: ET-overlap invariance of
   `extendF` under `σ`, equivalent via
   `permInvariance_forwardTube_iff_extendF_overlap`.
+- `PermutationFlow` now includes explicit chain-reduction infrastructure
+  (`etAdj_chain_of_midCond`,
+  `extendF_perm_overlap_of_adjSwap_connected_and_midCond_hd2`), so the
+  remaining gap is purely geometric (global ET-overlap control), not
+  permutation-chain boilerplate.
 
 **Independent status check (2026-02-25):**
 - Branch/history scan did not find a completed non-`sorry` version of this

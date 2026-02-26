@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.OrbitSetBasic
+import OSReconstruction.ComplexLieGroups.GeodesicConvexity
 
 noncomputable section
 
@@ -87,6 +88,51 @@ theorem differentiable_complexLorentzAction_snd (Λ : ComplexLorentzGroup d) :
 theorem isOpen_d_lambda (Λ : ComplexLorentzGroup d) :
     IsOpen {z | z ∈ ForwardTube d n ∧ complexLorentzAction Λ z ∈ ForwardTube d n} :=
   isOpen_forwardTube.inter (isOpen_forwardTube.preimage (continuous_complexLorentzAction_snd Λ))
+
+/-! ### Real-Lorentz preservation infrastructure -/
+
+/-- Complex difference vector associated to `imDiff`. -/
+private def diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) : Fin (d + 1) → ℂ :=
+  fun ν => z k ν - (if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩) ν
+
+/-- `imDiff` is the imaginary part of `diffVec`. -/
+private lemma imDiff_eq_im_diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
+    imDiff z k = fun μ => (diffVec z k μ).im := by
+  ext μ
+  simp [imDiff, diffVec]
+
+/-- The Lorentz action commutes with taking successive differences. -/
+private lemma diffVec_action (Λ : ComplexLorentzGroup d)
+    (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
+    diffVec (complexLorentzAction Λ z) k =
+    fun μ => ∑ ν, Λ.val μ ν * diffVec z k ν := by
+  ext μ
+  simp only [diffVec, complexLorentzAction]
+  by_cases hk : k.val = 0
+  · simp [hk, sub_zero]
+  · simp only [hk, ↓reduceDIte, complexLorentzAction]
+    rw [← Finset.sum_sub_distrib]
+    congr 1
+    ext ν
+    ring
+
+/-- Real Lorentz transformations preserve the forward tube.
+    This is the configuration-level lift of
+    `real_lorentz_preserves_forwardCone`. -/
+theorem ofReal_preserves_forwardTube_base (R : RestrictedLorentzGroup d)
+    (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) :
+    complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ ForwardTube d n := by
+  intro k
+  show InOpenForwardCone d (imDiff (complexLorentzAction (ComplexLorentzGroup.ofReal R) z) k)
+  rw [imDiff_eq_im_diffVec, diffVec_action]
+  have h_im : (fun μ => (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec z k ν).im) =
+      (fun μ => ∑ ν, R.val.val μ ν * (diffVec z k ν).im) := by
+    ext μ
+    exact ofReal_im_action R (diffVec z k) μ
+  rw [h_im]
+  have hk : InOpenForwardCone d (imDiff z k) := hz k
+  rw [imDiff_eq_im_diffVec] at hk
+  exact real_lorentz_preserves_forwardCone R _ hk
 
 /-- The forward tube is nonempty (for any n, d). -/
 theorem forwardTube_nonempty : (ForwardTube d n).Nonempty := by

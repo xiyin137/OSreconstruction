@@ -1005,28 +1005,6 @@ private lemma isOpen_orbitSet_pathComponent (w : Fin n → Fin (d + 1) → ℂ)
     See GitHub issue #30. The correct proof requires the specific Lie-theoretic
     structure of the Lorentz group orbit, not just general topology. -/
 
-/-- The complex difference vector for the k-th forward tube condition. -/
-private def diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) : Fin (d + 1) → ℂ :=
-  fun ν => z k ν - (if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩) ν
-
-/-- imDiff is the imaginary part of diffVec. -/
-private lemma imDiff_eq_im_diffVec (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
-    imDiff z k = fun μ => (diffVec z k μ).im := by
-  ext μ; simp [imDiff, diffVec]
-
-/-- The Lorentz action commutes with taking differences. -/
-private lemma diffVec_action (Λ : ComplexLorentzGroup d)
-    (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
-    diffVec (complexLorentzAction Λ z) k =
-    fun μ => ∑ ν, Λ.val μ ν * diffVec z k ν := by
-  ext μ
-  simp only [diffVec, complexLorentzAction]
-  by_cases hk : k.val = 0
-  · simp [hk, sub_zero]
-  · simp only [hk, ↓reduceDIte, complexLorentzAction]
-    rw [← Finset.sum_sub_distrib]
-    congr 1; ext ν; ring
-
 lemma ofReal_one_eq :
     ComplexLorentzGroup.ofReal (1 : RestrictedLorentzGroup d) = 1 := by
   ext i j
@@ -1055,19 +1033,7 @@ lemma continuous_ofReal :
 theorem ofReal_preserves_forwardTube (R : RestrictedLorentzGroup d)
     (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) :
     complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ ForwardTube d n := by
-  intro k
-  show InOpenForwardCone d (imDiff (complexLorentzAction (ComplexLorentzGroup.ofReal R) z) k)
-  rw [imDiff_eq_im_diffVec, diffVec_action]
-  -- Goal: InOpenForwardCone d (fun μ => (∑ ν, (ofReal R).val μ ν * diffVec z k ν).im)
-  -- By ofReal_im_action: the .im factors through R
-  have h_im : (fun μ => (∑ ν, (ComplexLorentzGroup.ofReal R).val μ ν * diffVec z k ν).im) =
-      (fun μ => ∑ ν, R.val.val μ ν * (diffVec z k ν).im) := by
-    ext μ; exact ofReal_im_action R (diffVec z k) μ
-  rw [h_im]
-  -- Now apply real_lorentz_preserves_forwardCone
-  have hk : InOpenForwardCone d (imDiff z k) := hz k
-  rw [imDiff_eq_im_diffVec] at hk
-  exact real_lorentz_preserves_forwardCone R _ hk
+  exact ofReal_preserves_forwardTube_base (d := d) (n := n) R z hz
 
 private lemma orbitSet_mem_mul_ofReal_left (w : Fin n → Fin (d + 1) → ℂ)
     (R : RestrictedLorentzGroup d)
