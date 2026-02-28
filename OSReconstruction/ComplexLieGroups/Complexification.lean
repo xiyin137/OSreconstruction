@@ -4,6 +4,8 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib.Topology.Connected.PathConnected
+import Mathlib.Topology.Compactness.SigmaCompact
+import Mathlib.Topology.Baire.LocallyCompactRegular
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import OSReconstruction.ComplexLieGroups.LorentzLieGroup
@@ -90,15 +92,15 @@ theorem continuous_entry (μ ν : Fin (d + 1)) :
 /-! ### Complex Minkowski matrix helpers -/
 
 /-- The complex Minkowski metric matrix η_ℂ = diag(-1, +1, ..., +1). -/
-private def ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+def ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
   Matrix.diagonal (fun i => (minkowskiSignature d i : ℂ))
 
-private theorem ηℂ_sq : (ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * ηℂ = 1 := by
+theorem ηℂ_sq : (ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * ηℂ = 1 := by
   simp only [ηℂ, Matrix.diagonal_mul_diagonal]
   ext i j; simp [Matrix.diagonal, Matrix.one_apply, minkowskiSignature]
   split_ifs <;> push_cast <;> ring
 
-private theorem ηℂ_transpose :
+theorem ηℂ_transpose :
     (ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).transpose = ηℂ := by
   simp [ηℂ, Matrix.diagonal_transpose]
 
@@ -112,7 +114,7 @@ theorem metric_preserving_matrix (Λ : ComplexLorentzGroup d) :
   apply Finset.sum_congr rfl; intro α _; ring
 
 /-- Recover the componentwise condition from the matrix equation. -/
-private theorem of_metric_preserving_matrix {M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+theorem of_metric_preserving_matrix {M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
     (h : M.transpose * ηℂ * M = ηℂ) :
     ∀ (μ ν : Fin (d + 1)),
     ∑ α : Fin (d + 1),
@@ -137,7 +139,7 @@ def one : ComplexLorentzGroup d where
     · subst h
       simp [Finset.sum_ite_eq', minkowskiSignature]
     · apply Finset.sum_eq_zero; intro α _
-      by_cases hα : α = μ <;> simp [hα, h, Matrix.one_apply]
+      by_cases hα : α = μ <;> simp [hα, h]
   proper := by simp
 
 /-- The product of two elements of SO⁺(1,d;ℂ) is in SO⁺(1,d;ℂ). -/
@@ -227,6 +229,113 @@ instance instGroup : Group (ComplexLorentzGroup d) where
             metric_preserving_matrix ⟨v, mp, pr⟩
           simpa using this
       _ = 1 := ηℂ_sq
+
+/-! ### Topological Group / Compactness Infrastructure -/
+
+instance instContinuousMul : ContinuousMul (ComplexLorentzGroup d) where
+  continuous_mul := by
+    apply continuous_induced_rng.mpr
+    change Continuous (fun p : ComplexLorentzGroup d × ComplexLorentzGroup d =>
+      p.1.val * p.2.val)
+    exact (continuous_val.comp continuous_fst).mul
+      (continuous_val.comp continuous_snd)
+
+instance instContinuousInv : ContinuousInv (ComplexLorentzGroup d) where
+  continuous_inv := by
+    apply continuous_induced_rng.mpr
+    change Continuous (fun a : ComplexLorentzGroup d =>
+      (ηℂ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) * a.val.transpose * ηℂ)
+    exact ((continuous_const.mul (continuous_val.matrix_transpose)).mul
+      continuous_const)
+
+instance instIsTopologicalGroup : IsTopologicalGroup (ComplexLorentzGroup d) :=
+  { instContinuousMul, instContinuousInv with }
+
+private theorem isClosed_range_val :
+    IsClosed (Set.range (ComplexLorentzGroup.val :
+      ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)) := by
+  let metricSet : Set (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :=
+    {M | ∀ (μ ν : Fin (d + 1)),
+      ∑ α : Fin (d + 1),
+        (minkowskiSignature d α : ℂ) * M α μ * M α ν =
+      if μ = ν then (minkowskiSignature d μ : ℂ) else 0}
+  let detSet : Set (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := {M | M.det = 1}
+  have hmetric_closed : IsClosed metricSet := by
+    let S : Fin (d + 1) → Fin (d + 1) →
+        Set (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :=
+      fun μ ν =>
+        {M | ∑ α : Fin (d + 1),
+            (minkowskiSignature d α : ℂ) * M α μ * M α ν =
+          if μ = ν then (minkowskiSignature d μ : ℂ) else 0}
+    have hS_closed : ∀ μ ν, IsClosed (S μ ν) := by
+      intro μ ν
+      have hcont : Continuous (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ =>
+          ∑ α : Fin (d + 1), (minkowskiSignature d α : ℂ) * M α μ * M α ν) := by
+        apply continuous_finset_sum Finset.univ
+        intro α _
+        have hentryμ : Continuous (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ => M α μ) :=
+          (continuous_apply μ).comp (continuous_apply α)
+        have hentryν : Continuous (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ => M α ν) :=
+          (continuous_apply ν).comp (continuous_apply α)
+        simpa [mul_assoc] using (continuous_const.mul (hentryμ.mul hentryν))
+      exact (isClosed_singleton
+          (x := if μ = ν then (minkowskiSignature d μ : ℂ) else 0)).preimage hcont
+    have hmetric_eq : metricSet = ⋂ μ : Fin (d + 1), ⋂ ν : Fin (d + 1), S μ ν := by
+      ext M
+      simp [metricSet, S]
+    rw [hmetric_eq]
+    exact isClosed_iInter (fun μ => isClosed_iInter (fun ν => hS_closed μ ν))
+  have hdet_closed : IsClosed detSet := by
+    exact (isClosed_singleton (x := (1 : ℂ))).preimage (continuous_id.matrix_det)
+  have h_range_eq :
+      Set.range (ComplexLorentzGroup.val :
+        ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) =
+      metricSet ∩ detSet := by
+    ext M
+    constructor
+    · rintro ⟨Λ, rfl⟩
+      exact ⟨Λ.metric_preserving, Λ.proper⟩
+    · intro hM
+      exact ⟨⟨M, hM.1, hM.2⟩, rfl⟩
+  simpa [h_range_eq] using hmetric_closed.inter hdet_closed
+
+private theorem isClosedEmbedding_val :
+    Topology.IsClosedEmbedding (ComplexLorentzGroup.val :
+      ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
+  have hind : Topology.IsInducing (ComplexLorentzGroup.val :
+      ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := ⟨rfl⟩
+  have hinj : Function.Injective (ComplexLorentzGroup.val :
+      ComplexLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
+    intro x y hxy
+    cases x
+    cases y
+    cases hxy
+    rfl
+  exact Topology.IsClosedEmbedding.mk ⟨hind, hinj⟩ isClosed_range_val
+
+instance instT2Space : T2Space (ComplexLorentzGroup d) :=
+  (isClosedEmbedding_val (d := d)).t2Space
+
+instance instLocallyCompactSpace : LocallyCompactSpace (ComplexLorentzGroup d) := by
+  letI : LocallyCompactSpace (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
+    simpa [Matrix] using
+      (inferInstance : LocallyCompactSpace
+        (Fin (d + 1) → Fin (d + 1) → ℂ))
+  exact (isClosedEmbedding_val (d := d)).locallyCompactSpace
+
+instance instBaireSpace : BaireSpace (ComplexLorentzGroup d) :=
+  BaireSpace.of_t2Space_locallyCompactSpace
+
+instance instSigmaCompactSpace : SigmaCompactSpace (ComplexLorentzGroup d) := by
+  letI : SecondCountableTopology (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
+    simpa [Matrix] using
+      (inferInstance : SecondCountableTopology
+        (Fin (d + 1) → Fin (d + 1) → ℂ))
+  letI : LocallyCompactSpace (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) := by
+    simpa [Matrix] using
+      (inferInstance : LocallyCompactSpace
+        (Fin (d + 1) → Fin (d + 1) → ℂ))
+  exact (isClosedEmbedding_val (d := d)).sigmaCompactSpace
 
 /-! ### Embedding of the real restricted Lorentz group -/
 
@@ -345,7 +454,7 @@ theorem ext {Λ₁ Λ₂ : ComplexLorentzGroup d}
 
 open NormedSpace in
 /-- ηℂ as a matrix unit (since ηℂ² = 1). -/
-private def ηℂ_unit : (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)ˣ where
+def ηℂ_unit : (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)ˣ where
   val := ηℂ
   inv := ηℂ
   val_inv := ηℂ_sq
@@ -576,6 +685,70 @@ def toSOComplex (Λ : ComplexLorentzGroup d) : SOComplex (d + 1) where
     rw [Matrix.det_mul, Matrix.det_mul, Λ.proper, mul_one,
       ← Matrix.det_mul, Winv_mul_W, Matrix.det_one]
 
+/-- Top-left entry is preserved by Wick rotation. -/
+theorem toSOComplex_entry_00 (Λ : ComplexLorentzGroup d) :
+    (toSOComplex Λ).val 0 0 = Λ.val 0 0 := by
+  change ((Winv (d := d)) * Λ.val * (W (d := d))) 0 0 = Λ.val 0 0
+  rw [Matrix.mul_apply, Finset.sum_eq_single 0]
+  · rw [Matrix.mul_apply, Finset.sum_eq_single 0]
+    · simp [W, Winv, mul_assoc]
+      have hI2 : (Complex.I : ℂ) ^ 2 = -1 := by norm_num
+      calc
+        -(Complex.I * (Λ.val 0 0 * Complex.I)) = -((Complex.I : ℂ) ^ 2 * Λ.val 0 0) := by
+          ring
+        _ = -((-1) * Λ.val 0 0) := by simp [hI2]
+        _ = Λ.val 0 0 := by ring
+    · intro j _ hj
+      have hWinv : Winv (d := d) 0 j = 0 := by
+        simp [Winv, hj.symm]
+      simp [hWinv]
+    · simp
+  · intro x _ hx
+    have hW : W x 0 = 0 := by simp [W, hx]
+    simp [hW]
+  · simp
+
+/-- Spatial first-column entries of `toSOComplex Λ` are `I` times those of `Λ`. -/
+theorem toSOComplex_entry_succ0 (Λ : ComplexLorentzGroup d) (i : Fin d) :
+    (toSOComplex Λ).val i.succ 0 = Λ.val i.succ 0 * Complex.I := by
+  change ((Winv (d := d)) * Λ.val * (W (d := d))) i.succ 0 =
+    Λ.val i.succ 0 * Complex.I
+  rw [Matrix.mul_apply, Finset.sum_eq_single 0]
+  · rw [Matrix.mul_apply, Finset.sum_eq_single i.succ]
+    · simp [W, Winv]
+    · intro j _ hj
+      have hWinv : Winv (d := d) i.succ j = 0 := by
+        simp [Winv, hj.symm]
+      simp [hWinv]
+    · simp
+  · intro x _ hx
+    have hW : W x 0 = 0 := by simp [W, hx]
+    simp [hW]
+  · simp
+
+/-- Wick rotation preserves the first-column-`e₀` condition. -/
+theorem toSOComplex_firstColEqE0_iff (Λ : ComplexLorentzGroup d) :
+    (∀ k : Fin (d + 1), (toSOComplex Λ).val k 0 = if k = 0 then 1 else 0) ↔
+      (∀ k : Fin (d + 1), Λ.val k 0 = if k = 0 then 1 else 0) := by
+  constructor
+  · intro h k
+    refine Fin.cases ?_ ?_ k
+    · simpa [toSOComplex_entry_00] using h 0
+    · intro i
+      have hi := h i.succ
+      have hmul : Λ.val i.succ 0 * Complex.I = 0 := by
+        simpa [toSOComplex_entry_succ0, Fin.succ_ne_zero] using hi
+      have hzero : Λ.val i.succ 0 = 0 := by
+        exact (mul_eq_zero.mp hmul).resolve_right Complex.I_ne_zero
+      simpa [Fin.succ_ne_zero] using hzero
+  · intro h k
+    refine Fin.cases ?_ ?_ k
+    · simpa [toSOComplex_entry_00] using h 0
+    · intro i
+      have hzero : Λ.val i.succ 0 = 0 := by
+        simpa [Fin.succ_ne_zero] using h i.succ
+      simp [toSOComplex_entry_succ0, Fin.succ_ne_zero, hzero]
+
 /-- Map from SOComplex to ComplexLorentzGroup via inverse Wick rotation: A ↦ W A W⁻¹. -/
 def fromSOComplex (A : SOComplex (d + 1)) : ComplexLorentzGroup d where
   val := W * A.val * Winv
@@ -602,24 +775,28 @@ def fromSOComplex (A : SOComplex (d + 1)) : ComplexLorentzGroup d where
     rw [Matrix.det_mul, Matrix.det_mul, A.proper, mul_one,
       ← Matrix.det_mul, W_mul_Winv, Matrix.det_one]
 
-private theorem fromSOComplex_toSOComplex (Λ : ComplexLorentzGroup d) :
+/-- `fromSOComplex` is a left inverse of `toSOComplex`. -/
+theorem fromSOComplex_toSOComplex (Λ : ComplexLorentzGroup d) :
     fromSOComplex (toSOComplex Λ) = Λ := by
   apply ext; show W * (Winv * Λ.val * W) * Winv = Λ.val
   simp only [Matrix.mul_assoc]
   rw [W_mul_Winv, Matrix.mul_one, ← Matrix.mul_assoc, W_mul_Winv, Matrix.one_mul]
 
-private theorem toSOComplex_fromSOComplex (A : SOComplex (d + 1)) :
+/-- `toSOComplex` is a left inverse of `fromSOComplex`. -/
+theorem toSOComplex_fromSOComplex (A : SOComplex (d + 1)) :
     toSOComplex (fromSOComplex A) = A := by
   apply SOComplex.ext; show Winv * (W * A.val * Winv) * W = A.val
   simp only [Matrix.mul_assoc]
   rw [Winv_mul_W, Matrix.mul_one, ← Matrix.mul_assoc, Winv_mul_W, Matrix.one_mul]
 
-private theorem fromSOComplex_one :
+/-- `fromSOComplex` sends the orthogonal identity to the Lorentz identity. -/
+theorem fromSOComplex_one :
     fromSOComplex (SOComplex.one : SOComplex (d + 1)) = (one : ComplexLorentzGroup d) := by
   apply ext; show W * SOComplex.one.val * Winv = one.val
   simp [SOComplex.one, one, W_mul_Winv]
 
-private theorem continuous_fromSOComplex :
+/-- Continuity of the inverse Wick-rotation map. -/
+theorem continuous_fromSOComplex :
     Continuous (fromSOComplex : SOComplex (d + 1) → ComplexLorentzGroup d) := by
   have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
   rw [hind.continuous_iff]

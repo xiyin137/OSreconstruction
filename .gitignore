@@ -5,8 +5,16 @@
 **/.DS_Store
 /references/
 /test/
+**/test/
+**/tests/
 /deprecated/
 .claude/
 .vscode/
 CLAUDE.md
+agent.md
 mcp_gemini/
+.mcp.json
+claude_to_codex.md
+codex_to_claude.md
+/PROGRESS_REPORT.md
+/PROOF_NOTES_*.md

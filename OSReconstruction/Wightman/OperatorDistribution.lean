@@ -319,8 +319,8 @@ def translationInDirection (d : ℕ) [NeZero d] (μ : Fin (d + 1)) (t : ℝ) : P
 
     We use Filter.Tendsto to express the limit rigorously. -/
 def momentumApplied (π : PoincareRepresentation d H) (μ : Fin (d + 1)) (ψ : H) : H :=
-  limUnder (nhds 0) (fun t : ℝ =>
-    if t = 0 then 0 else (Complex.I : ℂ)⁻¹ • (t⁻¹ • (π.U (translationInDirection d μ t) ψ - ψ)))
+  limUnder (𝓝[≠] (0 : ℝ)) (fun t : ℝ =>
+    (Complex.I : ℂ)⁻¹ • (t⁻¹ • (π.U (translationInDirection d μ t) ψ - ψ)))
 
 /-- The energy-momentum operators (generators of translations).
 
@@ -336,8 +336,8 @@ def momentum (π : PoincareRepresentation d H) (μ : Fin (d + 1)) : H → H :=
     P_μ ψ exists. -/
 def inMomentumDomain (π : PoincareRepresentation d H) (μ : Fin (d + 1)) (ψ : H) : Prop :=
   Filter.Tendsto (fun t : ℝ =>
-    if t = 0 then 0 else (Complex.I : ℂ)⁻¹ • (t⁻¹ • (π.U (translationInDirection d μ t) ψ - ψ)))
-    (nhds 0) (nhds (momentumApplied π μ ψ))
+    (Complex.I : ℂ)⁻¹ • (t⁻¹ • (π.U (translationInDirection d μ t) ψ - ψ)))
+    (𝓝[≠] 0) (nhds (momentumApplied π μ ψ))
 
 /-- The Hamiltonian H = P₀ (time component of momentum) -/
 def hamiltonian (π : PoincareRepresentation d H) : H → H :=
@@ -451,15 +451,11 @@ theorem momentum_eq_generator (π : PoincareRepresentation d H) (μ : Fin (d + 1
     (hcont : ∀ x : H, Continuous fun t => π.U (translationInDirection d μ t) x)
     (ψ : H) (hψ : ψ ∈ (π.translationGroup μ hcont).generatorDomain) :
     π.momentumApplied μ ψ = (π.translationGroup μ hcont).generatorApply ψ hψ := by
-  -- Both are limits of the same function; by uniqueness of limits (T2), they agree.
-  -- generatorApply_spec gives: Tendsto f (nhds 0) (nhds (generatorApply ψ hψ))
-  -- where f(t) = if t = 0 then 0 else I⁻¹ • t⁻¹ • (U(t)ψ - ψ)
-  -- momentumApplied = limUnder (nhds 0) f
-  -- By Filter.Tendsto.limUnder_eq, limUnder = the limit value.
+  -- Both are limits of the same function on 𝓝[≠] 0; by uniqueness of limits (T2), they agree.
   have hspec := (π.translationGroup μ hcont).generatorApply_spec ψ hψ
   -- Rewrite goal to use translationGroup.U instead of π.U (translationInDirection ...)
-  change limUnder (nhds 0) (fun t => if t = 0 then 0
-    else (Complex.I : ℂ)⁻¹ • (t⁻¹ • ((π.translationGroup μ hcont).U t ψ - ψ))) = _
+  change limUnder (𝓝[≠] (0 : ℝ)) (fun t =>
+    (Complex.I : ℂ)⁻¹ • (t⁻¹ • ((π.translationGroup μ hcont).U t ψ - ψ))) = _
   exact hspec.limUnder_eq
 
 end PoincareRepresentation

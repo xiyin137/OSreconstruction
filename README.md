@@ -12,6 +12,10 @@ This project formalizes the mathematical bridge between Euclidean and relativist
 
 - **`OSReconstruction.vNA`** — Von Neumann algebra foundations: cyclic/separating vectors, predual theory, Tomita-Takesaki modular theory, modular automorphism groups, KMS condition, spectral theory via Riesz-Markov-Kakutani, unbounded self-adjoint operators, and Stone's theorem.
 
+- **`OSReconstruction.SCV`** — Several complex variables infrastructure: polydiscs, iterated Cauchy integrals, Osgood's lemma, separately holomorphic implies jointly analytic (Hartogs), tube domain extension, identity theorems, distributional boundary values on tubes, Bochner tube theorem, Fourier-Laplace representation, and Paley-Wiener theorems. Core files (Polydisc through IdentityTheorem) are sorry-free; newer distribution theory files have sorrys at deep analytic steps.
+
+- **`OSReconstruction.ComplexLieGroups`** — Complex Lie group theory for the Bargmann-Hall-Wightman theorem: GL(n;C)/SL(n;C)/SO(n;C) path-connectedness, complex Lorentz group and its path-connectedness via Wick rotation, Jost's lemma (Wick rotation maps spacelike configurations into the extended tube), and the BHW theorem structure (extended tube, complex Lorentz invariance, permutation symmetry, uniqueness).
+
 ### Dependencies
 
 - [**gaussian-field**](https://github.com/mrdouglasny/gaussian-field) — Sorry-free Hermite function basis, Schwartz-Hermite expansion, Dynin-Mityagin and Pietsch nuclear space definitions, spectral theorem for compact self-adjoint operators, nuclear SVD, and Gaussian measure construction on weak duals.
@@ -26,31 +30,70 @@ lake build
 
 This will fetch Mathlib and all dependencies automatically. The first build may take a while.
 
+## Entrypoints
+
+- `import OSReconstruction` or `import OSReconstruction.OS` for the OS reconstruction critical path.
+- `import OSReconstruction.All` for the full stack (OS + vNA).
+- `import OSReconstruction.vNA` when working only on the von Neumann algebra development.
+
 ## Project Status
 
-The project builds cleanly with ~44,000 lines of Lean 4 across 69 files. The formalization uses 14 named axioms encoding textbook results from Vladimirov, Jost, Bochner, Osterwalder-Schrader, and Streater-Wightman; see [`PROGRESS_REPORT.md`](PROGRESS_REPORT.md) for the full list.
+The project builds cleanly with **zero `axiom` declarations**. Remaining work is tracked via direct
+`sorry` placeholders.
 
-Remaining work is tracked via `sorry` placeholders (~73 total across 24 files):
+Snapshot (2026-02-27, counted with `rg -n '^\s*sorry\b' OSReconstruction`):
 
-| Area | Sorry-free highlights | Remaining `sorry`s |
-|------|----------------------|---------------------|
-| E'→R' bridge | `os_to_wightman_full`: sorry-free | 0 |
-| R→E bridge | `wightman_to_os_full`: boundary values via axiom | 0 |
-| R→E properties | E0 (tempered), E1 (translation + SO(d+1) rotation), E3 (permutation) | 2 |
-| Lorentz invariance | `W_analytic_lorentz_on_tube` + 4 helper lemmas | 0 |
-| Forward tube distributions | `ForwardTubeDistributions.lean` (591 lines) | 0 |
-| E→R analytic continuation | Paley-Wiener axiom + Bochner tube theorem axiom | 8 |
-| GNS construction | Inner product, field operators, reproducing property | 0 |
-| Edge-of-the-wedge | Proved from SCV tube domain extension (was axiom) | 0 |
-| Spacetime geometry | Minkowski metric, Lorentz/Poincaré groups | 0 |
-| Complex Lie groups | SO⁺(1,d;ℂ) path-connectedness, complex Lorentz invariance | ~5 |
-| Modular theory | Tomita operator, modular operator/conjugation | ~6 |
-| Modular automorphisms | σ_t, Connes cocycle | ~8 |
-| KMS condition | Equilibrium states | ~10 |
-| Spectral/measure theory | Carathéodory extension, spectral integrals | ~17 |
-| Nuclear spaces | Schwartz nuclear, Bochner-Minlos, gaussian-field bridge | ~16 |
+| Module | Direct `sorry` lines |
+|--------|-----------------------|
+| `Wightman/` | 43 |
+| `SCV/` | 14 |
+| `ComplexLieGroups/` | 2 |
+| `vNA/` | 40 |
+| **Total** | **99** |
 
-See [`PROGRESS_REPORT.md`](PROGRESS_REPORT.md) for axioms, sorry census, and proof strategies. See [`HISTORY.md`](HISTORY.md) for detailed development history. See also [`OSReconstruction/vNA/TODO.md`](OSReconstruction/vNA/TODO.md) and [`OSReconstruction/Wightman/TODO.md`](OSReconstruction/Wightman/TODO.md) for execution plans.
+### OS-Critical Sorry Flow Toward Reconstruction
+
+```mermaid
+flowchart TD
+  M["Wightman/Reconstruction/Main.lean"]
+  M --> WR["wightman_reconstruction (proved)"]
+  M --> WU["wightman_uniqueness (1 sorry)"]
+  M --> RE["wightman_to_os"]
+  M --> ER["os_to_wightman"]
+
+  RE --> SA["WickRotation/SchwingerAxioms (5 sorrys)"]
+  SA --> BT["WickRotation/BHWTranslation (5)"]
+  BT --> BE["WickRotation/BHWExtension (2)"]
+  BE --> FL["WickRotation/ForwardTubeLorentz (2)"]
+  FL --> AC["Reconstruction/AnalyticContinuation (0)"]
+  AC --> CL["ComplexLieGroups/Connectedness/* (2)"]
+  AC --> JP["ComplexLieGroups/JostPoints (0)"]
+
+  ER --> OW["WickRotation/OSToWightman (14 sorrys)"]
+  OW --> PW["SCV/PaleyWiener (6)"]
+  OW --> LS["SCV/LaplaceSchwartz (6)"]
+  OW --> BO["SCV/BochnerTubeTheorem (2)"]
+```
+
+### Critical-Path Blockers (File Level)
+
+| File | Direct `sorry`s | Notes |
+|------|------------------|-------|
+| `Wightman/Reconstruction/Main.lean` | 1 | `wightman_uniqueness` |
+| `Wightman/Reconstruction/GNSHilbertSpace.lean` | 1 | `covariance_preHilbert` |
+| `Wightman/WightmanAxioms.lean` | 4 | nuclear extension + spectrum/BV infrastructure |
+| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 2 | growth + PET approach-direction plumbing |
+| `Wightman/Reconstruction/WickRotation/BHWExtension.lean` | 2 | swap/local-commutativity distributional agreement |
+| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 5 | translation/BV uniqueness chain |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 5 | E0/E2/E4 hard analytic steps |
+| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 14 | analytic continuation + BV transfer chain |
+| `SCV/PaleyWiener.lean` | 6 | one-step extension infrastructure |
+| `SCV/LaplaceSchwartz.lean` | 6 | boundary growth/continuity/convergence |
+| `SCV/BochnerTubeTheorem.lean` | 2 | local-to-global tube extension |
+| `ComplexLieGroups/Connectedness/ComplexInvariance/Core.lean` | 1 | orbit-set preconnectedness (`hjoin` branch) |
+| `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlow.lean` | 1 | permutation overlap extension (`hExtPerm` branch) |
+
+See also [`docs/development_plan_systematic.md`](docs/development_plan_systematic.md), [`OSReconstruction/Wightman/TODO.md`](OSReconstruction/Wightman/TODO.md), and [`OSReconstruction/ComplexLieGroups/TODO.md`](OSReconstruction/ComplexLieGroups/TODO.md) for the synchronized execution plan.
 
 ## File Structure
 
@@ -63,7 +106,7 @@ OSReconstruction/
 │   ├── ModularTheory.lean        # Tomita-Takesaki: S, Δ, J
 │   ├── ModularAutomorphism.lean  # σ_t, Connes cocycle
 │   ├── KMS.lean                  # KMS condition
-│   ├── Spectral/                 # Spectral theory via RMK (sorry-free)
+│   ├── Spectral/                 # Spectral theory via RMK (active work)
 │   ├── Unbounded/                # Unbounded operators, spectral theorem, Stone
 │   ├── MeasureTheory/            # Spectral integrals, Stieltjes, Carathéodory
 │   └── Bochner/                  # Operator Bochner integrals
@@ -72,15 +115,48 @@ OSReconstruction/
 │   ├── WightmanAxioms.lean       # Axiom formalization
 │   ├── OperatorDistribution.lean # Operator-valued distributions
 │   ├── SchwartzTensorProduct.lean# Schwartz space tensor products
+│   ├── ReconstructionBridge.lean # Wires WickRotation to top-level theorems
 │   ├── Groups/                   # Lorentz and Poincaré groups
 │   ├── Spacetime/                # Minkowski geometry
 │   ├── NuclearSpaces/            # Nuclear spaces, gaussian-field bridge
-│   ├── SCV/                      # Several complex variables infrastructure
+│   ├── SCV/                      # SCV helpers (bridges to top-level SCV/)
 │   └── Reconstruction/           # The reconstruction theorems
 │       ├── GNSConstruction.lean  # GNS construction (sorry-free)
+│       ├── GNSHilbertSpace.lean  # GNS Hilbert space + Poincaré rep
 │       ├── AnalyticContinuation.lean  # Tube domains, BHW, edge-of-wedge
-│       ├── WickRotation.lean     # OS ↔ Wightman bridge
+│       ├── ForwardTubeDistributions.lean  # Forward tube boundary values
+│       ├── PoincareAction.lean   # Poincaré action on Schwartz space (sorry-free)
+│       ├── PoincareRep.lean      # n-point Poincaré representations (sorry-free)
+│       ├── WickRotation.lean     # OS ↔ Wightman bridge (barrel file)
+│       ├── WickRotation/         # WickRotation submodules
+│       │   ├── ForwardTubeLorentz.lean   # Forward tube Lorentz invariance
+│       │   ├── BHWExtension.lean         # BHW extension definition
+│       │   ├── BHWTranslation.lean       # Translation invariance
+│       │   ├── SchwingerAxioms.lean      # E0-E4 axiom proofs
+│       │   └── OSToWightman.lean         # E'→R' + bridge theorems
+│       ├── Main.lean             # Top-level theorem wiring
 │       └── Helpers/              # EdgeOfWedge, SeparatelyAnalytic
+├── SCV/                          # Several complex variables
+│   ├── Polydisc.lean             # Polydisc definitions and properties
+│   ├── IteratedCauchyIntegral.lean  # Multi-variable Cauchy integrals
+│   ├── Osgood.lean               # Osgood's lemma
+│   ├── Analyticity.lean          # Hartogs: separately → jointly analytic
+│   ├── TubeDomainExtension.lean  # Tube domain extension theorems
+│   ├── IdentityTheorem.lean      # Identity theorems (product types, totally real)
+│   ├── TotallyRealIdentity.lean  # Identity theorem on totally real submanifolds
+│   ├── EOWMultiDim.lean          # Multi-dimensional edge-of-the-wedge helpers
+│   ├── MoebiusMap.lean           # Möbius transformations for conformal maps
+│   ├── TubeDistributions.lean    # Distributional boundary values on tubes
+│   ├── BochnerTubeTheorem.lean   # Bochner tube theorem
+│   ├── LaplaceSchwartz.lean      # Fourier-Laplace representation
+│   └── PaleyWiener.lean          # Paley-Wiener theorems
+├── ComplexLieGroups/              # Complex Lie groups for BHW theorem
+│   ├── MatrixLieGroup.lean       # GL(n;C), SL(n;C) path-connectedness
+│   ├── SOConnected.lean          # SO(n;C) path-connectedness
+│   ├── Complexification.lean     # Complex Lorentz group SO+(1,d;C)
+│   ├── LorentzLieGroup.lean      # Real Lorentz group infrastructure
+│   ├── JostPoints.lean           # Jost's lemma, Wick rotation, extendF
+│   └── Connectedness/            # BHW connectedness/permutation submodules
 └── Reconstruction.lean           # Top-level reconstruction theorems
 ```
 

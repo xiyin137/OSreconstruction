@@ -520,12 +520,12 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
       -- Holomorphicity on the forward tube (DifferentiableOn avoids subtype issues)
       DifferentiableOn ℂ W_analytic (ForwardTube d n) ∧
       -- Boundary values: W_analytic recovers W_n as imaginary parts approach zero.
-      -- For any test function f and approach direction η with components in V₊,
-      -- lim_{ε→0⁺} ∫ W_analytic(x + iεη) f(x) dx = W_n(f)
+      -- For any test function f and approach direction η ∈ ForwardConeAbs,
+      -- lim_{ε→0⁺} ∫ W_analytic(x + iε·η) f(x) dx = W_n(f)
       -- This is the distributional boundary value condition:
       -- the smeared analytic continuation converges to the Wightman distribution.
       (∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
-        (∀ k, InOpenForwardCone d (η k)) →
+        InForwardCone d n η →
         Filter.Tendsto
           (fun ε : ℝ => ∫ x : NPointDomain d n,
             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
@@ -545,6 +545,23 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
   hermitian : ∀ (n : ℕ) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
     W n g = starRingEnd ℂ (W n f)
+  /-- Cluster decomposition (R4): as the spacelike separation between two groups of
+      arguments grows, the Wightman function factorizes.
+
+      For any n, m, test functions f, g, and ε > 0, there exists R > 0 such that for
+      any purely spatial translation a with |a| > R:
+        |W_{n+m}(f ⊗ τ_a g) - W_n(f) · W_m(g)| < ε
+
+      This axiom is equivalent to uniqueness of the vacuum in the reconstructed
+      Hilbert space: the only translation-invariant vector is the vacuum.
+
+      Ref: Streater-Wightman, Theorem 3-5; Glimm-Jaffe, Theorem 19.4.1 -/
+  cluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+    ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖W (n + m) (f.tensorProduct g_a) - W n f * W m g‖ < ε
 
 /-! ### Inner Product Hermiticity and Cauchy-Schwarz -/
 
@@ -913,6 +930,42 @@ theorem fieldOperatorAction_funcs_sub (f : SchwartzSpacetime d) (F G : BorchersS
   | zero => simp
   | succ k => simp [SchwartzMap.prependField_sub_right]
 
+/-- Linearity in test function (addition): φ(f+g)F has same funcs as φ(f)F + φ(g)F. -/
+theorem fieldOperatorAction_add_test_funcs (f g : SchwartzSpacetime d)
+    (F : BorchersSequence d) (n : ℕ) :
+    (fieldOperatorAction (f + g) F).funcs n =
+    (fieldOperatorAction f F + fieldOperatorAction g F).funcs n := by
+  cases n with
+  | zero => simp
+  | succ k => simp [SchwartzMap.prependField_add_left, BorchersSequence.add_funcs]
+
+/-- Scalar linearity in test function: φ(c·f)F has same funcs as c·(φ(f)F). -/
+theorem fieldOperatorAction_smul_test_funcs (c : ℂ) (f : SchwartzSpacetime d)
+    (F : BorchersSequence d) (n : ℕ) :
+    (fieldOperatorAction (c • f) F).funcs n =
+    (c • fieldOperatorAction f F).funcs n := by
+  cases n with
+  | zero => simp
+  | succ k => simp [SchwartzMap.prependField_smul_left, BorchersSequence.smul_funcs]
+
+/-- Linearity in vector (addition): φ(f)(F+G) has same funcs as φ(f)F + φ(f)G. -/
+theorem fieldOperatorAction_add_vec_funcs (f : SchwartzSpacetime d)
+    (F G : BorchersSequence d) (n : ℕ) :
+    (fieldOperatorAction f (F + G)).funcs n =
+    (fieldOperatorAction f F + fieldOperatorAction f G).funcs n := by
+  cases n with
+  | zero => simp
+  | succ k => simp [SchwartzMap.prependField_add_right, BorchersSequence.add_funcs]
+
+/-- Scalar linearity in vector: φ(f)(c·F) has same funcs as c·(φ(f)F). -/
+theorem fieldOperatorAction_smul_vec_funcs (f : SchwartzSpacetime d)
+    (c : ℂ) (F : BorchersSequence d) (n : ℕ) :
+    (fieldOperatorAction f (c • F)).funcs n =
+    (c • fieldOperatorAction f F).funcs n := by
+  cases n with
+  | zero => simp
+  | succ k => simp [SchwartzMap.prependField_smul_right, BorchersSequence.smul_funcs]
+
 /-- Per-term adjoint identity: W_{(n+1)+m}((prependField f fn).conjTP gm) =
     W_{n+(m+1)}(fn.conjTP (prependField f̄ gm)). Both evaluate the Wightman function
     on pointwise-equal test functions (up to Fin.cast and mul_comm in ℂ). -/
@@ -1006,61 +1059,8 @@ end Reconstruction
 
 /-! ### The Reconstruction Theorem -/
 
-/-- The Wightman reconstruction theorem (statement).
-
-    Given a collection of Wightman functions W_n satisfying the required properties
-    (temperedness, Poincaré covariance, spectral condition, locality, positivity),
-    there exists a unique (up to unitary equivalence) Wightman QFT whose n-point
-    functions match W_n on product test functions.
-
-    The relationship between the QFT's smeared n-point function and W_n is:
-      ⟨Ω, φ(f₁)···φ(fₙ)Ω⟩ = W_n(f₁ ⊗ ··· ⊗ fₙ)
-
-    where f₁ ⊗ ··· ⊗ fₙ denotes the tensor product of test functions.
-
-    **Note**: The full proof requires:
-    1. GNS construction from the positive definite form on Borchers sequences
-    2. Verification that the constructed operators satisfy the Wightman axioms
-    3. Nuclear theorem to extend from product to general test functions
-
-    This is a foundational theorem of axiomatic QFT established by Wightman (1956)
-    and elaborated in Streater-Wightman (1964). -/
-theorem wightman_reconstruction (Wfn : WightmanFunctions d) :
-    ∃ (qft : WightmanQFT d),
-      -- The reconstructed QFT's n-point functions match W_n on product test functions:
-      -- ⟨Ω, φ(f₁)···φ(fₙ)Ω⟩ = W_n(f₁ ⊗ ··· ⊗ fₙ)
-      ∀ (n : ℕ) (fs : Fin n → SchwartzSpacetime d),
-        qft.wightmanFunction n fs = Wfn.W n (SchwartzMap.productTensor fs) := by
-  -- The construction proceeds via:
-  -- 1. Form the pre-Hilbert space of Borchers sequences quotient by null vectors
-  -- 2. Complete to obtain the Hilbert space H
-  -- 3. Define vacuum Ω as the class of (1, 0, 0, ...)
-  -- 4. Define field operators φ(f) via prepending f to sequences
-  -- 5. Verify all Wightman axioms (R0-R5)
-  -- 6. The key property: ⟨Ω, φ(f₁)···φ(fₙ)Ω⟩ = W_n(f₁ ⊗ ··· ⊗ fₙ)
-  --    follows from the definition of the inner product and field operator action
-  -- See Reconstruction/GNSConstruction.lean for the detailed construction.
-  sorry
-
-/-- The uniqueness part: two Wightman QFTs with the same smeared n-point functions
-    are unitarily equivalent.
-
-    More precisely, if for all n and all test functions f₁,...,fₙ we have
-      ⟨Ω₁, φ₁(f₁)···φ₁(fₙ)Ω₁⟩ = ⟨Ω₂, φ₂(f₁)···φ₂(fₙ)Ω₂⟩
-    then there exists a unitary U : H₁ → H₂ such that:
-      - U Ω₁ = Ω₂
-      - U φ₁(f) U⁻¹ = φ₂(f) for all f -/
-theorem wightman_uniqueness (qft₁ qft₂ : WightmanQFT d)
-    (h : ∀ n : ℕ, ∀ fs : Fin n → SchwartzSpacetime d,
-      qft₁.wightmanFunction n fs = qft₂.wightmanFunction n fs) :
-    ∃ U : qft₁.HilbertSpace →ₗᵢ[ℂ] qft₂.HilbertSpace,
-      -- U maps vacuum to vacuum
-      U qft₁.vacuum = qft₂.vacuum ∧
-      -- U intertwines the field operators: U φ₁(f) = φ₂(f) U on the domain
-      (∀ (f : SchwartzSpacetime d) (ψ : qft₁.HilbertSpace),
-        ψ ∈ qft₁.field.domain →
-        U (qft₁.field.operator f ψ) = qft₂.field.operator f (U ψ)) := by
-  sorry
+-- `wightman_reconstruction` and `wightman_uniqueness` moved to Reconstruction/Main.lean
+-- (proved via GNS construction in GNSHilbertSpace.lean)
 
 /-! ### Connection to Euclidean Field Theory
 
@@ -1361,10 +1361,10 @@ def IsWickRotationPair {d : ℕ} [NeZero d] (S : SchwingerFunctions d) (W : (n :
     -- F_analytic is holomorphic on the forward tube
     DifferentiableOn ℂ F_analytic (ForwardTube d n) ∧
     -- Boundary values of F_analytic = W_n (as distributions):
-    -- For each test function f and approach direction η ∈ V₊,
-    -- lim_{ε→0⁺} ∫ F_analytic(x + iεη) f(x) dx = W_n(f)
+    -- For each test function f and approach direction η ∈ ForwardConeAbs,
+    -- lim_{ε→0⁺} ∫ F_analytic(x + iε·η) f(x) dx = W_n(f)
     (∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
-      (∀ k, InOpenForwardCone d (η k)) →
+      InForwardCone d n η →
       Filter.Tendsto
         (fun ε : ℝ => ∫ x : NPointDomain d n,
           F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
@@ -1375,52 +1375,8 @@ def IsWickRotationPair {d : ℕ} [NeZero d] (S : SchwingerFunctions d) (W : (n :
       S n f = ∫ x : NPointDomain d n,
         F_analytic (fun k => wickRotatePoint (x k)) * (f x))
 
-/-- Theorem R→E (Wightman → OS): A Wightman QFT yields Schwinger functions
-    satisfying OS axioms E0-E4.
-
-    The Schwinger functions are related to the Wightman functions by Wick rotation
-    (analytic continuation): the Schwinger functions are Euclidean restrictions of the
-    analytic continuation whose boundary values are the Wightman functions.
-
-    The construction (OS I, Section 5) uses the Bargmann-Hall-Wightman theorem:
-    - The spectrum condition R3 implies W_n is analytic in the forward tube T_n
-    - BHW extends W_n to the permuted extended tube (invariant under complex Lorentz)
-    - Define S_n by restricting W_n to Euclidean points: S_n(x) = W_n(ix⁰₁, x⃗₁, ...)
-    - Euclidean points lie inside the permuted extended tube, so S_n is real-analytic
-
-    Key subtlety: In the forward tube, Im(z_k - z_{k-1}) ∈ V₊ forces time ordering.
-    But the permuted extended tube covers all orderings, yielding full permutation
-    symmetry (E3). Euclidean invariance (E1) follows from complex Lorentz invariance
-    of W_n: SO(d+1) ⊂ L₊(ℂ) is the subgroup preserving Euclidean points.
-
-    Temperedness (E0) requires Proposition 5.1 of OS I (a geometric lemma on Ω_n).
-    Reflection positivity (E2) follows from Wightman positivity (R2).
-    Cluster (E4) follows from R4. -/
-theorem wightman_to_os (Wfn : WightmanFunctions d) :
-    ∃ (OS : OsterwalderSchraderAxioms d),
-      IsWickRotationPair OS.S Wfn.W := by
-  -- See Reconstruction/WickRotation.lean for the detailed proof (wightman_to_os_full).
-  sorry
-
-/-- Theorem E'→R' (OS II): Schwinger functions satisfying the linear growth
-    condition E0' together with E1-E4 can be analytically continued to
-    Wightman distributions satisfying R0-R5.
-
-    The Wightman functions are the boundary values of the analytic continuation
-    of the Schwinger functions to the forward tube.
-
-    **Critical**: Without the linear growth condition, this theorem may be FALSE.
-    The issue is that analytic continuation involves infinitely many Sₖ, and
-    without growth control, the boundary values may fail to be tempered.
-
-    The reconstructed Wightman distributions also satisfy a linear growth
-    condition R0'. -/
-theorem os_to_wightman (OS : OsterwalderSchraderAxioms d)
-    (linear_growth : OSLinearGrowthCondition d OS) :
-    ∃ (Wfn : WightmanFunctions d),
-      IsWickRotationPair OS.S Wfn.W := by
-  -- See Reconstruction/WickRotation.lean for the detailed proof (os_to_wightman_full).
-  sorry
+-- `wightman_to_os` and `os_to_wightman` moved to Reconstruction/Main.lean
+-- (proved via WickRotation.lean: wightman_to_os_full, os_to_wightman_full)
 
 end
 

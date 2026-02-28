@@ -17,7 +17,7 @@ complementary characterizations:
 1. **Pietsch (OSReconstruction.NuclearSpace)**: nuclear dominance by seminorms.
    The `NuclearFrechet` presentation and `SchwartzMap.instNuclearSpace` use this.
 
-2. **Dynin-Mityagin (GaussianField.NuclearSpace)**: Schauder basis with rapid decay.
+2. **Dynin-Mityagin (GaussianField.DyninMityaginSpace)**: Schauder basis with rapid decay.
    This is imported from the `gaussian-field` library via `GaussianFieldBridge`.
    The sorry-free Hermite function infrastructure lives there.
 
@@ -25,7 +25,7 @@ complementary characterizations:
 
 * `schwartz_nuclearSpace_fin0` - S(ℝ⁰, ℝ) is nuclear (direct proof via evaluation)
 * `SchwartzMap.instNuclearSpace` - S(ℝⁿ, ℝ) is nuclear (combines n=0 and n>0 cases)
-* `GaussianField.NuclearSpace (SchwartzMap D ℝ)` - S(D, ℝ) is nuclear (Dynin-Mityagin,
+* `GaussianField.DyninMityaginSpace (SchwartzMap D ℝ)` - S(D, ℝ) is nuclear (Dynin-Mityagin,
   sorry-free from gaussian-field, available via GaussianFieldBridge import)
 
 ## Hermite Function Infrastructure
@@ -248,8 +248,8 @@ theorem schwartz_nuclearSpace_fin0 :
 
     * For **n > 0**: follows from the Dynin-Mityagin characterization via the
       Hermite function Schauder basis. The bridge
-      `GaussianField.NuclearSpace.toOSNuclearSpace` converts the
-      gaussian-field `GaussianField.NuclearSpace` instance to Pietsch form.
+      `GaussianField.DyninMityaginSpace.toOSNuclearSpace` converts the
+      gaussian-field `GaussianField.DyninMityaginSpace` instance to Pietsch form.
 
     * For **n = 0**: the domain `EuclideanSpace ℝ (Fin 0)` is a single point, so
       the Schwartz space is one-dimensional. Nuclear dominance is proved directly
@@ -263,53 +263,6 @@ theorem SchwartzMap.instNuclearSpace (n : ℕ) :
   · -- n > 0: EuclideanSpace ℝ (Fin n) is nontrivial, use the GF bridge
     haveI : Nonempty (Fin n) := ⟨⟨0, by omega⟩⟩
     haveI : Nontrivial (EuclideanSpace ℝ (Fin n)) := inferInstance
-    exact GaussianField.NuclearSpace.toOSNuclearSpace _
+    exact GaussianField.DyninMityaginSpace.toOSNuclearSpace _
 
-/-! ### Hermite Function Infrastructure
-
-**NOTE:** The definitions and theorems below are superseded by sorry-free versions
-from gaussian-field. Prefer the `gf`-prefixed re-exports from `GaussianFieldBridge`:
-- `gfHermiteFunction` / `gfHermiteFunction_schwartz` / `gfHermiteFunction_orthonormal`
-- `gfHermiteFunction_seminorm_bound` / `gfHermiteFunction_complete`
-
-The definitions below use Mathlib's physicists' Hermite polynomials, while
-gaussian-field uses probabilist Hermite polynomials. The two are related by
-a √2 rescaling. -/
-
-end -- close noncomputable section
-
-noncomputable section
-open scoped SchwartzMap
-open MeasureTheory
-namespace SchwartzHermiteLegacy
-
-/-- The normalized Hermite functions (physicists' convention).
-    **Superseded** by `gfHermiteFunction` from gaussian-field. -/
-def hermiteFunction (m : ℕ) : ℝ → ℝ :=
-  fun x => ((Polynomial.hermite m).map (Int.castRingHom ℝ)).eval x *
-    Real.exp (-x ^ 2 / 2) /
-    Real.sqrt (2 ^ m * m.factorial * Real.sqrt Real.pi)
-
-/-- Hermite functions are in the Schwartz space.
-    **Superseded** by `gfHermiteFunction_schwartz` (sorry-free). -/
-theorem hermiteFunction_schwartz (m : ℕ) :
-    ∃ (f : 𝓢(ℝ, ℝ)), ∀ x, f x = hermiteFunction m x := by
-  sorry
-
-/-- Hermite functions are orthonormal in L²(ℝ).
-    **Superseded** by `gfHermiteFunction_orthonormal` (sorry-free). -/
-theorem hermiteFunction_orthonormal :
-    ∀ m₁ m₂ : ℕ, ∫ x : ℝ, hermiteFunction m₁ x * hermiteFunction m₂ x =
-      if m₁ = m₂ then 1 else 0 := by
-  sorry
-
-/-- The rapid decay property: Schwartz seminorms of Hermite functions decay polynomially.
-    **Superseded** by `gfHermiteFunction_seminorm_bound` (sorry-free). -/
-theorem hermiteFunction_seminorm_decay (k l N : ℕ) :
-    ∃ C : ℝ, 0 < C ∧ ∀ m : ℕ, 0 < m →
-      SchwartzMap.schwartzSeminorm ℝ ℝ k l
-        (Classical.choose (hermiteFunction_schwartz m)) ≤ C * (m : ℝ) ^ (-(N : ℤ)) := by
-  sorry
-
-end SchwartzHermiteLegacy
 end

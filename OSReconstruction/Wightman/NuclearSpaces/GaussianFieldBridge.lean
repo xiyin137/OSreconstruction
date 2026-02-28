@@ -19,7 +19,7 @@ them for use in the OS reconstruction project.
 - Hermite functions: definition, orthonormality, Schwartz membership
 - Schwartz-Hermite expansion: `f = ∑ₙ cₙ(f) ψₙ` in Schwartz topology
 - Tensor product Hermite basis for S(ℝⁿ)
-- `GaussianField.NuclearSpace (SchwartzMap D ℝ)` instance (Dynin-Mityagin)
+- `GaussianField.DyninMityaginSpace (SchwartzMap D ℝ)` instance
 
 ### GaussianField (all sorry-free)
 - Spectral theorem for compact self-adjoint operators
@@ -33,13 +33,13 @@ them for use in the OS reconstruction project.
 
 This project (OSReconstruction) defines `NuclearSpace` via the Pietsch
 characterization (nuclear dominance by seminorms). The gaussian-field project
-defines `GaussianField.NuclearSpace` via the Dynin-Mityagin characterization
-(Schauder basis with rapid decay) and `GaussianField.PietschNuclearSpace`
+defines `GaussianField.DyninMityaginSpace` via the Dynin-Mityagin characterization
+(Schauder basis with rapid decay) and `GaussianField.NuclearSpace`
 via the Pietsch characterization.
 
 The DM → Pietsch bridge is proved in gaussian-field
-(`GaussianField.NuclearSpace.toPietschNuclearSpace`). This file provides
-the final conversion from `GaussianField.PietschNuclearSpace` to the
+(`GaussianField.DyninMityaginSpace.toNuclearSpace`). This file provides
+the final conversion from `GaussianField.NuclearSpace` to the
 OSReconstruction `NuclearSpace`.
 
 ## References
@@ -54,17 +54,17 @@ noncomputable section
 open GaussianField
 open scoped NNReal
 
-/-! ### Schwartz NuclearSpace instance
+/-! ### Schwartz DyninMityaginSpace instance
 
-The `schwartz_nuclearSpace` axiom from gaussian-field provides a
-`GaussianField.NuclearSpace` instance for `SchwartzMap D ℝ` whenever
+The `schwartz_dyninMityaginSpace` instance from gaussian-field provides a
+`GaussianField.DyninMityaginSpace` instance for `SchwartzMap D ℝ` whenever
 `D` is a nontrivial finite-dimensional normed space with a Borel σ-algebra.
 
 This instance is registered globally, so once this file is imported,
 typeclass synthesis will automatically find it. -/
 
 -- Verify the instance is available
-example : GaussianField.NuclearSpace (SchwartzMap (EuclideanSpace ℝ (Fin 4)) ℝ) :=
+example : GaussianField.DyninMityaginSpace (SchwartzMap (EuclideanSpace ℝ (Fin 4)) ℝ) :=
   inferInstance
 
 /-! ### Hermite function results
@@ -120,30 +120,30 @@ abbrev gfCrossMomentEqCovariance := @cross_moment_eq_covariance
 /-- The pairing ω(f) is Gaussian-distributed (sorry-free). -/
 abbrev gfPairingIsGaussian := @pairing_is_gaussian
 
-/-! ### Bridge: GaussianField.PietschNuclearSpace → NuclearSpace
+/-! ### Bridge: GaussianField.NuclearSpace → _root_.NuclearSpace
 
-The two Pietsch definitions (`GaussianField.PietschNuclearSpace` from gaussian-field
-and `NuclearSpace` from OSReconstruction) are structurally identical. This trivial
-conversion connects them. -/
+The two Pietsch definitions (`GaussianField.NuclearSpace` from gaussian-field
+and `NuclearSpace` from OSReconstruction) have identical `nuclear_dominance`
+fields. This trivial conversion connects them. -/
 
-/-- Convert `GaussianField.PietschNuclearSpace` to the OSReconstruction `NuclearSpace`.
+/-- Convert `GaussianField.NuclearSpace` to the OSReconstruction `NuclearSpace`.
 
 The two definitions have identical `nuclear_dominance` fields, so the
 conversion is just field extraction. -/
-theorem GaussianField.PietschNuclearSpace.toNuclearSpace (E : Type*)
+theorem GaussianField.NuclearSpace.toOSNuclearSpace_pietsch (E : Type*)
     [AddCommGroup E] [Module ℝ E] [TopologicalSpace E]
-    [h : GaussianField.PietschNuclearSpace E] : _root_.NuclearSpace E where
+    [h : GaussianField.NuclearSpace E] : _root_.NuclearSpace E where
   nuclear_dominance := h.nuclear_dominance
 
 /-- **Dynin-Mityagin implies OSReconstruction Pietsch nuclearity.**
 
-Composes the gaussian-field bridge (`NuclearSpace.toPietschNuclearSpace`)
+Composes the gaussian-field bridge (`DyninMityaginSpace.toNuclearSpace`)
 with the trivial conversion to the OSReconstruction `NuclearSpace`. -/
-theorem GaussianField.NuclearSpace.toOSNuclearSpace (E : Type*)
+theorem GaussianField.DyninMityaginSpace.toOSNuclearSpace (E : Type*)
     [AddCommGroup E] [Module ℝ E]
     [TopologicalSpace E] [IsTopologicalAddGroup E] [ContinuousSMul ℝ E]
-    [GaussianField.NuclearSpace E] : _root_.NuclearSpace E :=
-  letI := GaussianField.NuclearSpace.toPietschNuclearSpace E
-  GaussianField.PietschNuclearSpace.toNuclearSpace E
+    [GaussianField.DyninMityaginSpace E] : _root_.NuclearSpace E :=
+  letI := GaussianField.DyninMityaginSpace.toNuclearSpace E
+  GaussianField.NuclearSpace.toOSNuclearSpace_pietsch E
 
 end

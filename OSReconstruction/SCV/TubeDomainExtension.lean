@@ -8,11 +8,11 @@ import Mathlib.Analysis.Complex.MeanValue
 import Mathlib.Topology.Connected.PathConnected
 import Mathlib.Analysis.Convex.Basic
 import OSReconstruction.SCV.IteratedCauchyIntegral
-import OSReconstruction.Wightman.Reconstruction.Helpers.EdgeOfWedge
+import OSReconstruction.SCV.EdgeOfWedge
 import OSReconstruction.SCV.Analyticity
 import OSReconstruction.SCV.EOWMultiDim
 import OSReconstruction.SCV.MoebiusMap
-import OSReconstruction.Wightman.Reconstruction.Helpers.SeparatelyAnalytic
+import OSReconstruction.SCV.SeparatelyAnalytic
 
 /-!
 # Tube Domain Extension and the Edge-of-the-Wedge Theorem

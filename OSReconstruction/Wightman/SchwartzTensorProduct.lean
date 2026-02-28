@@ -966,6 +966,21 @@ theorem SchwartzMap.tensorProduct_continuous {m k : ℕ} :
                         (SchwartzMap.seminorm ℂ 0 0 a.1)]
           linarith
 
+/-- The tensor product is continuous in the first argument (for fixed second argument). -/
+theorem SchwartzMap.tensorProduct_continuous_left {m k : ℕ} (g : 𝓢(Fin k → E, ℂ)) :
+    Continuous (fun f : 𝓢(Fin m → E, ℂ) => f.tensorProduct g) :=
+  SchwartzMap.tensorProduct_continuous.comp (continuous_id.prodMk continuous_const)
+
+/-- The tensor product is continuous in the second argument (for fixed first argument). -/
+theorem SchwartzMap.tensorProduct_continuous_right {m k : ℕ} (f : 𝓢(Fin m → E, ℂ)) :
+    Continuous (fun g : 𝓢(Fin k → E, ℂ) => f.tensorProduct g) :=
+  SchwartzMap.tensorProduct_continuous.comp (continuous_const.prodMk continuous_id)
+
+/-- The conjugated tensor product is continuous in the second argument. -/
+theorem SchwartzMap.conjTensorProduct_continuous_right {m k : ℕ} (f : 𝓢(Fin m → E, ℂ)) :
+    Continuous (fun g : 𝓢(Fin k → E, ℂ) => f.conjTensorProduct g) :=
+  SchwartzMap.tensorProduct_continuous_right f.borchersConj
+
 /-- Scalar multiplication distributes over tensor product (right). -/
 theorem SchwartzMap.tensorProduct_smul_right {m k : ℕ}
     (f : 𝓢(Fin m → E, ℂ)) (c : ℂ) (g : 𝓢(Fin k → E, ℂ)) :
@@ -1270,6 +1285,38 @@ theorem SchwartzMap.prependField_smul_right {n : ℕ}
     (f : 𝓢(E, ℂ)) (c : ℂ) (g : 𝓢(Fin n → E, ℂ)) :
     f.prependField (c • g) = c • (f.prependField g) := by
   ext x; simp [mul_left_comm]
+
+theorem SchwartzMap.prependField_add_left {n : ℕ}
+    (f₁ f₂ : 𝓢(E, ℂ)) (g : 𝓢(Fin n → E, ℂ)) :
+    (f₁ + f₂).prependField g = f₁.prependField g + f₂.prependField g := by
+  ext x; simp [add_mul]
+
+theorem SchwartzMap.prependField_smul_left {n : ℕ}
+    (c : ℂ) (f : 𝓢(E, ℂ)) (g : 𝓢(Fin n → E, ℂ)) :
+    (c • f).prependField g = c • (f.prependField g) := by
+  ext x; simp [mul_assoc]
+
+/-- The prependField operation is continuous in the first argument (for fixed second argument).
+    This factors through: toOnePt ∘ (·.tensorProduct g) ∘ castReindex. -/
+theorem SchwartzMap.prependField_continuous_left {n : ℕ} (g : 𝓢(Fin n → E, ℂ)) :
+    Continuous (fun f : 𝓢(E, ℂ) => f.prependField g) := by
+  -- Factor as: reindex ∘ (·.tensorProduct g) ∘ toOnePt
+  let toOnePt : 𝓢(E, ℂ) →L[ℂ] 𝓢(Fin 1 → E, ℂ) :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (ContinuousLinearEquiv.funUnique (Fin 1) ℝ E)
+  let castCLE : (Fin (n + 1) → E) ≃L[ℝ] (Fin (1 + n) → E) :=
+    ContinuousLinearEquiv.piCongrLeft ℝ (fun _ : Fin (1 + n) => E) (finCongr (Nat.add_comm n 1))
+  let reindex : 𝓢(Fin (1 + n) → E, ℂ) →L[ℂ] 𝓢(Fin (n + 1) → E, ℂ) :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ castCLE
+  have hcont : Continuous (fun f => reindex ((toOnePt f).tensorProduct g)) :=
+    reindex.continuous.comp ((SchwartzMap.tensorProduct_continuous_left g).comp toOnePt.continuous)
+  refine hcont.congr (fun f => ?_)
+  ext x
+  simp only [reindex, toOnePt, castCLE, SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+    SchwartzMap.tensorProduct_apply, SchwartzMap.prependField_apply,
+    ContinuousLinearEquiv.coe_funUnique, Function.eval, Function.comp,
+    splitFirst, ContinuousLinearEquiv.piCongrLeft]
+  congr 1; congr 1; ext j
+  simp [splitLast, Homeomorph.piCongrLeft, Equiv.piCongrLeft, Equiv.piCongrLeft']
 
 /-! ### Splitting and Appending -/
 

@@ -1,10 +1,14 @@
 # Edge-of-the-Wedge Theorem: Gap Analysis
 
-## Status Summary
+> **STATUS: RESOLVED** — The `edge_of_the_wedge` axiom has been eliminated and
+> replaced with a proved theorem using `SCV.edge_of_the_wedge_theorem` from
+> `SCV/TubeDomainExtension.lean`. This document is retained for historical reference.
 
-The multi-dimensional edge-of-the-wedge theorem (`edge_of_the_wedge` in
+## Status Summary (OUTDATED)
+
+~~The multi-dimensional edge-of-the-wedge theorem (`edge_of_the_wedge` in
 `AnalyticContinuation.lean`) **cannot be fully proved** with the current
-Mathlib/Lean 4 infrastructure. This document explains why.
+Mathlib/Lean 4 infrastructure.~~ **NOW PROVED** as a theorem.
 
 ## What IS Proved
 

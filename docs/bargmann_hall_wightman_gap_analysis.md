@@ -1,5 +1,9 @@
 # Bargmann-Hall-Wightman Theorem: Gap Analysis
 
+> Status note (2026-02-27): Historical document.
+> `bargmann_hall_wightman` is now a theorem (not an axiom).
+> For current blockers, use `docs/development_plan_systematic.md`.
+
 ## Status Summary
 
 The Bargmann-Hall-Wightman (BHW) theorem (`bargmann_hall_wightman` in
@@ -27,7 +31,7 @@ The proof has 4 steps:
 |------|-------------|--------|
 | **1. Real -> Complex Lorentz** | Analytic continuation: F(Lambda*z) = F(z) for real Lambda extends to complex Lambda | **BLOCKED** |
 | **2. Jost point matching** | Local commutativity gives F(pi*x) = F(x) at spacelike real points | **Available** (jost_lemma proved, hF_local hypothesis) |
-| **3. Edge-of-the-wedge** | Glue functions on adjacent permuted tubes across Jost point boundaries | **Available** (edge_of_the_wedge axiom) |
+| **3. Edge-of-the-wedge** | Glue functions on adjacent permuted tubes across Jost point boundaries | **Available** (edge_of_the_wedge proved theorem) |
 | **4. Iterate over S_n** | Cover all permutations via adjacent transpositions | Feasible (combinatorics) |
 
 ## The Hard Blocker: Step 1
@@ -75,7 +79,7 @@ The following components ARE available:
 - `ForwardTube_subset_ComplexExtended` — inclusion (proved)
 - `ComplexExtended_subset_Permuted` — inclusion (proved)
 - `jost_lemma` — spacelike separation at Jost points (proved)
-- `edge_of_the_wedge` — axiom (available for Step 3)
+- `edge_of_the_wedge` — proved theorem (available for Step 3)
 
 ## Statement Refinements
 

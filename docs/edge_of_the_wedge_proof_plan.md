@@ -1,6 +1,10 @@
 # Proving `edge_of_the_wedge` via Iterated Cauchy Integrals
 
-## Goal
+> **STATUS: COMPLETED** — The `edge_of_the_wedge` axiom has been eliminated and
+> replaced with a proved theorem using `SCV.edge_of_the_wedge_theorem` from
+> `SCV/TubeDomainExtension.lean`. This document is retained for historical reference.
+
+## Goal (ACHIEVED)
 
 Eliminate the `edge_of_the_wedge` axiom in `AnalyticContinuation.lean` by proving
 the multi-dimensional theorem from `edge_of_the_wedge_slice` (already sorry-free)

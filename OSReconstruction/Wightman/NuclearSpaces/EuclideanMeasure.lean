@@ -7,6 +7,8 @@ import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 import Mathlib.Analysis.Distribution.FourierSchwartz
 import Mathlib.Analysis.Fourier.FourierTransform
 import Mathlib.Analysis.Complex.OperatorNorm
+import Mathlib.Probability.Distributions.Gaussian.Real
+import Mathlib.Probability.Moments.Variance
 import OSReconstruction.Wightman.NuclearSpaces.BochnerMinlos
 import OSReconstruction.Wightman.NuclearSpaces.GaussianFieldBridge
 import OSReconstruction.Wightman.NuclearSpaces.SchwartzNuclear
@@ -73,7 +75,7 @@ from the characteristic functional C. This is why:
 
 noncomputable section
 
-open MeasureTheory Complex SchwartzMap
+open MeasureTheory ProbabilityTheory Complex SchwartzMap
 open scoped SchwartzMap FourierTransform
 
 variable (d : ℕ) (m : ℝ)
@@ -270,7 +272,7 @@ private theorem quadIntegrable (hm : 0 < m)
     exact ((continuous_pow 2 |>.comp (continuous_norm.comp hFg_cont)).mul
       (continuous_const.div
         ((continuous_pow 2 |>.comp continuous_norm).add continuous_const)
-        (fun k => ne_of_gt (by simp only [Function.comp]; linarith [sq_nonneg ‖k‖, sq_pos_of_pos hm])))).aestronglyMeasurable
+        (fun k => ne_of_gt (by show 0 < ‖k‖ ^ 2 + m ^ 2; linarith [sq_nonneg ‖k‖, sq_pos_of_pos hm])))).aestronglyMeasurable
   -- Non-negativity of the dominating function
   have hdom_nn : ∀ k, 0 ≤ (C / m ^ 2) * ‖(Fg : V → ℂ) k‖ :=
     fun k => mul_nonneg (div_nonneg hC_nn (sq_nonneg m)) (norm_nonneg _)
@@ -736,16 +738,179 @@ def schwingerTwoPoint
   ∫ ω : (𝓢(EuclideanSpace ℝ (Fin d), ℝ) →L[ℝ] ℝ),
     (↑(ω δ_x) : ℂ) * ↑(ω δ_y) ∂μ
 
+/-! ### Helper Lemmas for Gaussian Moment Identification -/
+
+variable {d : ℕ} {m : ℝ}
+
+-- Abbreviation to reduce repetition in type signatures
+private abbrev S' (d : ℕ) := 𝓢(EuclideanSpace ℝ (Fin d), ℝ) →L[ℝ] ℝ
+
+/-- The characteristic function identity applied to `t • h` gives a Gaussian-type identity:
+    `C(t • h) = exp(-t² Q(h) / 2)` and equals `∫ exp(i t ω(h)) dμ(ω)`. -/
+private lemma charFun_scaled
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ)) (t : ℝ) :
+    exp (-(1/2 : ℂ) * ↑(t ^ 2 * freeFieldForm d m h)) =
+    ∫ ω : S' d, exp (↑(t * ω h) * I) ∂μ := by
+  have h1 := hchar (t • h)
+  simp only [freeFieldCharacteristic, freeFieldForm_smul] at h1
+  simp_rw [ContinuousLinearMap.map_smul, smul_eq_mul] at h1
+  exact h1
+
+/-- The pushforward of μ by evaluation at h equals `gaussianReal 0 (Q(h).toNNReal)`.
+    Uses Levy's uniqueness via `Measure.ext_of_charFun`. -/
+private lemma pushforward_eq_gaussian (hm : 0 ≤ m)
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hμ : IsProbabilityMeasure μ)
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ))
+    (hmeas : Measurable (fun ω : S' d => ω h)) :
+    μ.map (fun ω => ω h) =
+      gaussianReal 0 (freeFieldForm d m h).toNNReal := by
+  haveI : IsProbabilityMeasure (μ.map (fun ω => ω h)) :=
+    Measure.isProbabilityMeasure_map hmeas.aemeasurable
+  apply Measure.ext_of_charFun
+  funext t
+  rw [charFun_apply_real]
+  rw [integral_map hmeas.aemeasurable]
+  · simp_rw [show ∀ ω : S' d,
+        ↑t * ↑(ω h) * I = ↑(t * ω h) * I from fun ω => by push_cast; ring]
+    rw [← charFun_scaled μ hchar h t]
+    rw [charFun_gaussianReal]
+    congr 1
+    simp only [Complex.ofReal_zero, mul_zero, zero_mul, zero_sub]
+    rw [Real.coe_toNNReal _ (freeFieldForm_nonneg d m hm h)]
+    push_cast; ring
+  · exact (Complex.continuous_exp.comp
+      ((continuous_const.mul Complex.continuous_ofReal).mul continuous_const)).aestronglyMeasurable
+
+/-- The pairing ω(h) is in Lp for the Euclidean measure (Fernique-type). -/
+private lemma pairing_memLp_schwinger (hm : 0 ≤ m)
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hμ : IsProbabilityMeasure μ)
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ))
+    (hmeas : Measurable (fun ω : S' d => ω h))
+    (p : ℝ≥0) :
+    MemLp (fun ω : S' d => ω h) p μ := by
+  have hgauss := pushforward_eq_gaussian hm μ hμ hchar h hmeas
+  have hid : MemLp id p (gaussianReal 0 (freeFieldForm d m h).toNNReal) :=
+    memLp_id_gaussianReal p
+  rw [← hgauss] at hid
+  rwa [memLp_map_measure_iff hid.aestronglyMeasurable hmeas.aemeasurable] at hid
+
+/-- The measure is centered: E[ω(h)] = 0 for the Euclidean measure. -/
+private lemma measure_centered_schwinger (hm : 0 ≤ m)
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hμ : IsProbabilityMeasure μ)
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ))
+    (hmeas : Measurable (fun ω : S' d => ω h)) :
+    ∫ ω : S' d, ω h ∂μ = 0 := by
+  have hgauss := pushforward_eq_gaussian hm μ hμ hchar h hmeas
+  have h_map := integral_map hmeas.aemeasurable
+    (measurable_id.aestronglyMeasurable
+      (μ := μ.map (fun ω : S' d => ω h)))
+  simp only [id] at h_map
+  rw [h_map.symm, hgauss, integral_id_gaussianReal]
+
+/-- Second moment identity: `E[(ω h)²] = Q(h)` for the Euclidean measure. -/
+private lemma second_moment_eq_form (hm : 0 ≤ m)
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hμ : IsProbabilityMeasure μ)
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ))
+    (hmeas : Measurable (fun ω : S' d => ω h)) :
+    ∫ ω : S' d, (ω h) ^ 2 ∂μ = freeFieldForm d m h := by
+  set σ := (freeFieldForm d m h).toNNReal with hσ_def
+  have hgauss := pushforward_eq_gaussian hm μ hμ hchar h hmeas
+  have h_var : Var[fun ω : S' d => ω h; μ] = ∫ ω, (ω h) ^ 2 ∂μ :=
+    variance_of_integral_eq_zero hmeas.aemeasurable
+      (measure_centered_schwinger hm μ hμ hchar h hmeas)
+  have h_var2 : Var[fun ω : S' d => ω h; μ] = σ := by
+    have hv : Var[fun x : ℝ => x; μ.map (fun ω : S' d => ω h)] =
+        Var[fun ω : S' d => ω h; μ] :=
+      variance_map aemeasurable_id hmeas.aemeasurable
+    rw [← hv, hgauss, variance_fun_id_gaussianReal]
+  rw [← h_var, h_var2, hσ_def]
+  exact Real.coe_toNNReal _ (freeFieldForm_nonneg d m hm h)
+
+/-- Cross-moment identity via polarization:
+    E[ω(f)·ω(g)] = (Q(f+g) - Q(f-g))/4 = B(f,g). -/
+private lemma cross_moment_eq_bilinear (hm : 0 ≤ m)
+    [MeasurableSpace (S' d)]
+    (μ : Measure (S' d))
+    (hμ : IsProbabilityMeasure μ)
+    (hchar : ∀ f, freeFieldCharacteristic d m f =
+      ∫ ω : S' d, exp (↑(ω f) * I) ∂μ)
+    (f g : 𝓢(EuclideanSpace ℝ (Fin d), ℝ))
+    (hmeas : ∀ h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ),
+      Measurable (fun ω : S' d => ω h)) :
+    ∫ ω : S' d, ω f * ω g ∂μ = freeFieldBilinearForm d m f g := by
+  -- Polarization: 4 fg = (f+g)² - (f-g)²
+  have h_polar : ∀ ω : S' d,
+      (ω (f + g)) ^ 2 - (ω (f - g)) ^ 2 = 4 * (ω f * ω g) := by
+    intro ω; rw [map_add, map_sub]; ring
+  have hfg_sq : Integrable (fun ω : S' d => (ω (f + g)) ^ 2) μ :=
+    (pairing_memLp_schwinger hm μ hμ hchar (f + g) (hmeas (f + g)) 2).integrable_sq
+  have hfmg_sq : Integrable (fun ω : S' d => (ω (f - g)) ^ 2) μ :=
+    (pairing_memLp_schwinger hm μ hμ hchar (f - g) (hmeas (f - g)) 2).integrable_sq
+  have h_int_polar :
+      ∫ ω : S' d, ω f * ω g ∂μ =
+      (1/4) * (∫ ω, (ω (f + g)) ^ 2 ∂μ - ∫ ω, (ω (f - g)) ^ 2 ∂μ) := by
+    rw [← integral_sub hfg_sq hfmg_sq]
+    simp_rw [h_polar]
+    rw [integral_const_mul]; ring
+  rw [h_int_polar,
+      second_moment_eq_form hm μ hμ hchar (f + g) (hmeas (f + g)),
+      second_moment_eq_form hm μ hμ hchar (f - g) (hmeas (f - g))]
+  simp only [freeFieldBilinearForm]; ring
+
+variable (d : ℕ) (m : ℝ)
+
 /-- The two-point Schwinger function equals the bilinear form of the propagator.
-    S₂(f, g) = B(f, g) where B is the polarized bilinear form of Q. -/
+    S₂(f, g) = B(f, g) where B is the polarized bilinear form of Q.
+
+    This is the key identity connecting the Euclidean measure (from Minlos' theorem)
+    to the propagator (Green's function of the Klein-Gordon operator).
+    The proof proceeds via Gaussian moment identification:
+    1. The characteristic function hypothesis identifies the pushforward as Gaussian
+    2. The second moment of a centered Gaussian gives the quadratic form
+    3. Polarization gives the bilinear form
+
+    Note: The proof assumes evaluation maps ω ↦ ω(f) are measurable in the given
+    σ-algebra on S'(ℝᵈ). This holds for the cylinder σ-algebra from Minlos' theorem. -/
 theorem schwingerTwoPoint_eq_bilinear
     [MeasurableSpace (𝓢(EuclideanSpace ℝ (Fin d), ℝ) →L[ℝ] ℝ)]
     (μ : Measure (𝓢(EuclideanSpace ℝ (Fin d), ℝ) →L[ℝ] ℝ))
     (_hμ : IsProbabilityMeasure μ)
     (_hchar : ∀ f, freeFieldCharacteristic d m f =
       ∫ ω : (𝓢(EuclideanSpace ℝ (Fin d), ℝ) →L[ℝ] ℝ), exp (↑(ω f) * I) ∂μ)
+    (hm : 0 ≤ m)
+    (hmeas : ∀ h : 𝓢(EuclideanSpace ℝ (Fin d), ℝ),
+      Measurable (fun ω : S' d => ω h))
     (f g : 𝓢(EuclideanSpace ℝ (Fin d), ℝ)) :
     schwingerTwoPoint d μ f g = ↑(freeFieldBilinearForm d m f g) := by
-  sorry
+  -- The Schwinger two-point function is the complex integral ∫ (ω f : ℂ) * (ω g : ℂ) dμ
+  -- which equals ↑(∫ ω f * ω g dμ) since the integrand is real-valued cast to ℂ.
+  simp only [schwingerTwoPoint]
+  -- Rewrite complex multiplication of real casts: (↑a : ℂ) * (↑b : ℂ) = ↑(a * b)
+  simp_rw [← Complex.ofReal_mul]
+  -- Pull the ofReal cast out of the integral
+  rw [integral_complex_ofReal]
+  -- Now the goal is ↑(∫ ω, ω f * ω g ∂μ) = ↑(freeFieldBilinearForm d m f g)
+  congr 1
+  exact cross_moment_eq_bilinear hm μ _hμ _hchar f g hmeas
 
 end

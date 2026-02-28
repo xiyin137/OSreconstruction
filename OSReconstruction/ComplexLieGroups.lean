@@ -6,6 +6,7 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.ComplexLieGroups.MatrixLieGroup
 import OSReconstruction.ComplexLieGroups.LorentzLieGroup
 import OSReconstruction.ComplexLieGroups.Complexification
+import OSReconstruction.ComplexLieGroups.BHWCore
 import OSReconstruction.ComplexLieGroups.Connectedness
 
 /-!

@@ -1,5 +1,9 @@
 # Osterwalder-Schrader Reconstruction: Formal Proof Outline
 
+> Status note (2026-02-27): This file contains historical snapshots and stale counts.
+> For current blocker status, use `docs/development_plan_systematic.md`,
+> `OSReconstruction/Wightman/TODO.md`, and `OSReconstruction/ComplexLieGroups/TODO.md`.
+
 A complete outline of the Lean 4 formalization of the OS reconstruction theorems,
 mapping the mathematical proof structure to the codebase.
 
@@ -293,7 +297,7 @@ Tube domain geometry and the key theorems of axiomatic QFT.
 - `schwinger_euclidean_invariant` — Euclidean invariance of Schwinger functions
 - `schwinger_permutation_symmetric` — Permutation symmetry at Jost points
 
-#### Named axiom: `edge_of_the_wedge`
+#### ~~Named axiom~~ Proved theorem: `edge_of_the_wedge`
 
 **Multi-dimensional edge-of-the-wedge theorem (Bogoliubov):**
 
@@ -301,17 +305,10 @@ Tube domain geometry and the key theorems of axiomatic QFT.
 > (where Γ is an open convex cone), and their continuous boundary values agree,
 > then they extend to a single holomorphic function on a complex neighborhood of ℝⁿ.
 
-Promoted to a named axiom (no `sorryAx`). The statement has been revised
-(see [statement changes](edge_of_the_wedge_statement_changes.md)) with cone condition,
-strengthened boundary values, and `sliceMap` infrastructure.
-
-**What IS proved (sorry-free):**
-- `edge_of_the_wedge_slice` — 1D extension along any direction η ∈ C
-- All infrastructure: `sliceMap_*`, `tubeDomain_isOpen`, `tubeDomain_disjoint_neg`
-
-**Why axiom:** The gap-point problem for m ≥ 2 with proper cones requires
-iterated Cauchy integrals or the Bochner tube theorem, neither formalized in Mathlib.
-See [gap analysis](edge_of_the_wedge_gap_analysis.md) for full details.
+**NOW PROVED** (no longer an axiom). The full multi-dimensional theorem is proved
+in `SCV/TubeDomainExtension.lean` as `edge_of_the_wedge_theorem`, and
+`AnalyticContinuation.lean` delegates to it. The proof uses iterated Cauchy
+integrals and Osgood's lemma, all formalized in the `SCV/` module.
 
 #### Named axiom: `bargmann_hall_wightman`
 
@@ -463,7 +460,7 @@ Layer 3: Complex Analysis (all sorry-free)
 Layer 4: Analytic Continuation
   AnalyticContinuation.lean
        │
-       ├── edge_of_the_wedge (AXIOM) — gap-point problem
+       ├── edge_of_the_wedge (PROVED THEOREM) — SCV tube domain extension
        └── bargmann_hall_wightman (AXIOM) — complex Lie group theory
 
 Layer 5: Wick Rotation Bridge
@@ -483,7 +480,7 @@ Layer 6: Main Theorems
        └── os_to_wightman (#22) ← #18
 ```
 
-**Critical path:** ~~#0a, #0b1~~ (proved), ~~#1, #2~~ (axioms) → #3-7 (R→E) and independently #8 → #9 → #10 → #11-17 → #18 → #22.
+**Critical path:** ~~#0a, #0b1~~ (proved), ~~#1~~ (proved theorem), ~~#2~~ (axiom) → #3-7 (R→E) and independently #8 → #9 → #10 → #11-17 → #18 → #22.
 
 ---
 
@@ -494,16 +491,16 @@ Layer 6: Main Theorems
 | File | Sorrys | IDs |
 |------|--------|-----|
 | SeparatelyAnalytic.lean | 0 | ✅ Complete |
-| AnalyticContinuation.lean | 0 (2 axioms) | `edge_of_the_wedge`, `bargmann_hall_wightman` |
+| AnalyticContinuation.lean | 0 (1 axiom) | `bargmann_hall_wightman` (note: `edge_of_the_wedge` is now a proved theorem) |
 | WickRotation.lean | 17 | #3–7, #8–10, #11–17, #18 |
 | Reconstruction.lean | 4 | #19–22 |
-| **Total** | **21** (+2 axioms) | |
+| **Total** | **21** (+1 axiom) | |
 
 ### By difficulty and blocking status
 
 | Category | IDs | Count | Notes |
 |----------|-----|-------|-------|
-| **Deep complex analysis** | ~~#0a, #0b1, #1~~ | 0 | #0a, #0b1 proved; #1 promoted to axiom ([details](edge_of_the_wedge_gap_analysis.md)) |
+| **Deep complex analysis** | ~~#0a, #0b1, #1~~ | 0 | #0a, #0b1 proved; #1 now proved as theorem (was axiom, see [history](edge_of_the_wedge_gap_analysis.md)) |
 | **BHW theorem** | ~~#2~~ | 0 | Promoted to axiom ([details](bargmann_hall_wightman_gap_analysis.md)) |
 | **R→E axiom verification** | #3, #4, #5, #7 | 4 | Independent of each other |
 | **R→E needing BHW** | #6 | 1 | Needs #2 |

@@ -5,12 +5,12 @@ defaultTargets = ["OSReconstruction"]
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "6dc31c12d6ffdc9a63ebddee67264ea348cc06f8"
+rev = "v4.28.0"
 
 [[require]]
 name = "GaussianField"
 git = "https://github.com/mrdouglasny/gaussian-field.git"
-rev = "main"
+rev = "c2d47b72dd0757b6a4e0a4139d3841ead6c4f4a8"
 subDir = "."
 
 [[lean_lib]]
