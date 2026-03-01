@@ -8,8 +8,8 @@ This document is the active execution plan for closing `sorry`s on the OS recons
 
 - `bargmann_hall_wightman` is now a theorem (not an axiom), delegated through `Bridge/AxiomBridge.lean`.
 - Project-wide `axiom` declarations: `3` (in `ComplexLieGroups/Connectedness/BHWPermutation/OverlapConnected.lean`).
-  - `complexLorentzGroup_KAK` — Cartan/KAK decomposition for L₊(ℂ) (d ≥ 2)
-  - `isConnected_boostStrip_inter_sliceIndexSet` — boost restriction connected (d ≥ 2)
+  - `isConnected_principalBoostOverlap` — principal strip overlap connected (d ≥ 2)
+  - `sliceIndexSet_KAK_principal` — KAK with Weyl reflection (d ≥ 2)
   - `hExtPerm_of_d1` — dimension reduction for d=1 (via BHW invariant theory)
 - `isConnected_sliceIndexSet` is now a **theorem** derived from axioms 1a + 1b.
 - BHW-critical sorrys in `ComplexLieGroups`: **0** (all eliminated 2026-03-01).
@@ -34,18 +34,24 @@ Critical path total: **48** (`Wightman` critical subset 34 + `SCV` 14 + `Complex
 
 ### Phase A: ComplexLieGroups Axiom Elimination (Optional, Parallel)
 
-**Status (2026-03-01):** All sorrys eliminated. BHW theorem compiles with 2 axioms.
+**Status (2026-03-02):** All sorrys eliminated. BHW theorem compiles with 3 axioms.
 
 Remaining axioms (see `ComplexLieGroups/Connectedness/BHWPermutation/STATUS.md`):
-1a. `complexLorentzGroup_KAK` — Cartan/KAK decomposition (pure Lie theory)
-1b. `isConnected_boostStrip_inter_sliceIndexSet` — boost restriction connected
+1a. `isConnected_principalBoostOverlap` — principal strip overlap connected (pure analysis)
+1b. `sliceIndexSet_KAK_principal` — KAK with Weyl reflection (pure Lie theory)
 2. `hExtPerm_of_d1` — dimension reduction (d=1 algebraic invariant theory)
 
 `isConnected_sliceIndexSet` is now a theorem (derived from 1a + 1b + bi-invariance).
 
+Note: The previous axiom `isConnected_boostParameterOverlap` (on the full boost
+cylinder) was **mathematically false** for n ≥ 3. Both Im(t) = 0 (real boosts)
+and Im(t) = π (PT reversal) give empty slices, disconnecting the cylinder. The
+fix restricts to the **principal strip** {0 < Im(t) < π} and uses the Weyl
+reflection to cover both strips via KAK.
+
 Checklist:
-- [ ] Prove KAK polar decomposition for L₊(ℂ) (matrix logarithm on symmetric space).
-- [ ] Prove boost strip intersection connectedness (likely follows from path-connectedness + openness).
+- [ ] Prove principal strip overlap connectedness (dense open subset of convex strip).
+- [ ] Prove principal KAK decomposition (standard KAK + Weyl reflection + meridian exclusion).
 - [ ] (Optional) Prove d=1 algebraic invariant theory (SO₊(1,1;ℂ) ≅ ℂˣ, lightcone coordinates).
 - [ ] (Optional) Prove `hExtPerm_of_d1` via dimensional embedding + `hExtPerm_of_d2`.
 - [ ] (Alternative) Restrict BHW theorem to d ≥ 2, eliminating axiom 2 entirely.

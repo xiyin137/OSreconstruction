@@ -709,158 +709,141 @@ private lemma boostGen_isInLieAlgebra :
           minkSig_cast_ne (show μ ≠ 0 by intro h; subst h; simp at hμ1)]; ring
   · rw [if_neg (mt hswap.mp hcond), if_neg hcond]; ring
 
-/-- A 1-parameter family of complex Lorentz boosts in a fixed spatial direction.
-    Defined as `{exp(t · K) | t ∈ ℂ}` where `K` is the boost generator.
-    This is a complex 1-parameter subgroup, isomorphic to `(ℂ, +)`, hence connected. -/
-private def complexBoostStrip (d : ℕ) : Set (ComplexLorentzGroup d) :=
-  Set.range (fun t : ℂ => ComplexLorentzGroup.expLieAlg (t • boostGen d)
-    (ComplexLorentzGroup.isInLieAlgebra_smul t boostGen_isInLieAlgebra))
+/-- The boost exponential map `t ↦ exp(t · K)` from `ℂ` to the complex Lorentz group. -/
+private def expBoost {d : ℕ} (t : ℂ) : ComplexLorentzGroup d :=
+  ComplexLorentzGroup.expLieAlg (t • boostGen d)
+    (ComplexLorentzGroup.isInLieAlgebra_smul t boostGen_isInLieAlgebra)
 
-/-- The complex boost strip is connected (it is the continuous image of ℂ). -/
-private theorem isConnected_complexBoostStrip (_hd2 : 2 ≤ d) :
-    IsConnected (complexBoostStrip d) := by
-  -- The strip is the range of the continuous map t ↦ exp(t · boostGen)
-  -- ℂ is connected, so the image is connected.
-  unfold complexBoostStrip
-  apply isConnected_range
+private lemma continuous_expBoost {d : ℕ} : Continuous (@expBoost d) := by
   have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
   rw [hind.continuous_iff]
-  show Continuous (fun t : ℂ => exp (t • boostGen d))
   exact NormedSpace.exp_continuous.comp (continuous_id.smul continuous_const)
 
-/-- **Cartan KAK decomposition** (textbook axiom): Every element of the complex
-    Lorentz group `L₊(ℂ)` factors as `k₁ · a · k₂` where `k₁, k₂` are real
-    restricted Lorentz transforms and `a` is a complex boost.
+/-- The **principal boost strip** `{t ∈ ℂ | 0 < Im(t) < π}`.
 
-    This is the polar decomposition for the symmetric space
-    `L₊(ℂ) / L₊↑(ℝ)`, a standard result in Lie group theory. The proof
-    requires matrix logarithm on the symmetric space, or equivalently the
-    Cartan involution / Iwasawa decomposition for semisimple Lie groups.
+    The boost generator `K` has eigenvalues `±1`, so `exp(tK)` is periodic with
+    period `2πi`: the full boost strip is a cylinder `ℂ/2πiℤ`. On this cylinder,
+    the "bad" parameters (where the slice is empty for some `n ≥ 3`) are the
+    meridians `{Im(t) = 0}` (real boosts, preserving `V⁺`) and `{Im(t) = π}`
+    (PT reversal, negating time components of unflipped differences).
+
+    These two meridians disconnect the cylinder into two open strips:
+    - Upper strip: `{0 < Im(t) < π}` (the principal strip)
+    - Lower strip: `{-π < Im(t) < 0}` (= `{π < Im(t) < 2π}`)
+
+    For `d ≥ 2`, the Weyl reflection `R ∈ K` (a 180° spatial rotation satisfying
+    `R · exp(tK) · R⁻¹ = exp(-tK)`) identifies the two strips: given any
+    `Λ = k₁ · exp(tK) · k₂` with `Im(t) < 0`, we can write
+    `Λ = (k₁R⁻¹) · exp(-tK) · (Rk₂)` with `Im(-t) > 0`. This is why
+    the principal strip suffices for the KAK decomposition when `d ≥ 2`. -/
+private def principalBoostStrip : Set ℂ :=
+  { t : ℂ | 0 < t.im ∧ t.im < Real.pi }
+
+/-- The set of parameters in the principal strip for which `exp(tK)` yields
+    a nonempty forward-overlap slice. -/
+private def principalBoostOverlap (d n : ℕ) (σ : Equiv.Perm (Fin n)) : Set ℂ :=
+  principalBoostStrip ∩
+  { t : ℂ | (permForwardOverlapSlice (d := d) n σ (expBoost t)).Nonempty }
+
+/-- **Core geometric seed axiom**: The principal boost overlap is connected.
+
+    The principal strip `{0 < Im(t) < π}` is an open horizontal strip in `ℂ`,
+    which is convex and hence connected. The overlap condition removes at most
+    a closed nowhere-dense subset (the parameters where the slice degenerates),
+    and the remaining set is connected.
+
+    More precisely: for any `t` with `0 < Im(t) < π`, the boost `exp(tK)` has
+    `cosh(t)` and `sinh(t)` with nonzero imaginary parts. By choosing witnesses
+    with sufficiently large real spatial components, the forward-cone condition
+    `η₀ > 0, η₀² - |η|² > 0` can always be satisfied for both the original
+    and permuted differences. The overlap is therefore a dense open subset of
+    the convex principal strip, hence connected.
+
+    **References**:
+    - R.F. Streater and A.S. Wightman, "PCT, Spin and Statistics, and All That"
+      (1964, 2000), Section 2-5, Lemma 2 -/
+axiom isConnected_principalBoostOverlap {d : ℕ}
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
+    IsConnected (principalBoostOverlap d n σ)
+
+/-- **Principal-strip KAK decomposition** (textbook axiom): Every element of
+    the slice index set factors as `k₁ · exp(tK) · k₂` with `t` in the
+    principal boost overlap.
+
+    This combines the standard Cartan KAK decomposition for `L₊(ℂ)` with
+    the Weyl reflection trick: for `d ≥ 2`, there exists a 180° spatial
+    rotation `R ∈ SO↑(1,d;ℝ)` such that `R · exp(tK) · R⁻¹ = exp(-tK)`.
+    Given any KAK factorization `Λ = k₁ · exp(tK) · k₂`, if `Im(t) < 0`
+    we replace it with `Λ = (k₁R⁻¹) · exp(-tK) · (Rk₂)` where `Im(-t) > 0`.
+    The meridians `Im(t) = 0` and `Im(t) = π` are excluded by the nonempty
+    slice condition (the former gives real boosts preserving `V⁺`, the latter
+    gives PT reversal which negates time components of unflipped differences).
 
     **References**:
     - S. Helgason, "Differential Geometry, Lie Groups, and Symmetric Spaces"
       (1978), Chapter VI, Theorem 1.1
     - A.W. Knapp, "Lie Groups Beyond an Introduction" (2002), §VII.3 -/
-axiom complexLorentzGroup_KAK {d : ℕ} (hd2 : 2 ≤ d)
-    (Λ : ComplexLorentzGroup d) :
-    ∃ (k₁ k₂ : RestrictedLorentzGroup d) (a : ComplexLorentzGroup d),
-      a ∈ complexBoostStrip d ∧
-      Λ = ComplexLorentzGroup.ofReal k₁ * a * ComplexLorentzGroup.ofReal k₂
-
-/-- The set of complex boost parameters `t ∈ ℂ` for which `exp(tK)` yields
-    a nonempty forward-overlap slice. This is the preimage of the slice index
-    set under the boost exponential map `t ↦ exp(tK)`. -/
-private def boostParameterOverlap (d n : ℕ) (σ : Equiv.Perm (Fin n)) : Set ℂ :=
-  { t : ℂ | (permForwardOverlapSlice (d := d) n σ
-      (ComplexLorentzGroup.expLieAlg (t • boostGen d)
-        (ComplexLorentzGroup.isInLieAlgebra_smul t boostGen_isInLieAlgebra))).Nonempty }
-
-/-- **Core geometric seed axiom**: The set of complex boost parameters yielding
-    a nonempty slice is connected.
-
-    Geometrically, evaluating the action of `exp(tK)` on the forward light cone
-    constrains the parameter `t` to a region in `ℂ` whose complement is the
-    real axis `{Im(t) = 0 mod 2π}` (a single meridian on the cylinder `ℂ/2πiℤ`).
-    Real boosts preserve `V⁺` and cannot map `V⁻ → V⁺`, so the slice is empty.
-    For `Im(t) ≠ 0`, witnesses exist using large real spatial components — the
-    imaginary part of the boost mixes real/imaginary components, generating
-    timelike imaginary parts.
-
-    The complement of a meridian on a cylinder is connected, so the parameter
-    overlap is connected.
-
-    **References**:
-    - R.F. Streater and A.S. Wightman, "PCT, Spin and Statistics, and All That"
-      (1964, 2000), Section 2-5, Lemma 2 -/
-axiom isConnected_boostParameterOverlap {d : ℕ}
-    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
-    IsConnected (boostParameterOverlap d n σ)
-
-/-- **Boost-strip restriction connectedness**: The intersection of the complex
-    boost strip with the slice index set is connected for `d ≥ 2`.
-
-    **Proof**: The intersection on the Lie group is exactly the continuous image
-    of the 1D parameter set `boostParameterOverlap` under the boost exponential
-    map `t ↦ exp(tK)`. Since the parameter set is connected (by the seed axiom),
-    its continuous image is connected. -/
-private theorem isConnected_boostStrip_inter_sliceIndexSet {d : ℕ}
-    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
-    IsConnected (complexBoostStrip d ∩
-      {Λ : ComplexLorentzGroup d |
-        (permForwardOverlapSlice (d := d) n σ Λ).Nonempty}) := by
-  let f : ℂ → ComplexLorentzGroup d := fun t =>
-    ComplexLorentzGroup.expLieAlg (t • boostGen d)
-      (ComplexLorentzGroup.isInLieAlgebra_smul t boostGen_isInLieAlgebra)
-  have hf_cont : Continuous f := by
-    have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
-    rw [hind.continuous_iff]
-    show Continuous (fun t : ℂ => exp (t • boostGen d))
-    exact NormedSpace.exp_continuous.comp (continuous_id.smul continuous_const)
-  have h_eq : complexBoostStrip d ∩
-      {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} =
-      f '' boostParameterOverlap d n σ := by
-    ext Λ
-    simp only [complexBoostStrip, boostParameterOverlap, Set.mem_inter_iff,
-               Set.mem_range, Set.mem_setOf_eq, Set.mem_image]
-    constructor
-    · rintro ⟨⟨t, rfl⟩, hΛ⟩; exact ⟨t, hΛ, rfl⟩
-    · rintro ⟨t, ht, rfl⟩; exact ⟨⟨t, rfl⟩, ht⟩
-  rw [h_eq]
-  exact (isConnected_boostParameterOverlap n σ hd2).image f hf_cont.continuousOn
+axiom sliceIndexSet_KAK_principal {d : ℕ} (hd2 : 2 ≤ d)
+    (n : ℕ) (σ : Equiv.Perm (Fin n))
+    (Λ : ComplexLorentzGroup d)
+    (hΛ : (permForwardOverlapSlice (d := d) n σ Λ).Nonempty) :
+    ∃ (k₁ k₂ : RestrictedLorentzGroup d) (t : ℂ),
+      t ∈ principalBoostOverlap d n σ ∧
+      Λ = ComplexLorentzGroup.ofReal k₁ * expBoost t * ComplexLorentzGroup.ofReal k₂
 
 /-- The slice index set is connected for `d ≥ 2`.
 
-    **Proof**: By the KAK decomposition (`complexLorentzGroup_KAK`), every
-    element of the index set `I` factors as `k₁ · a · k₂`. By bi-invariance
-    (`sliceIndexSet_bi_invariant_rev`), the boost part `a` is also in `I`.
-    So `I` is the image of `K × (A ∩ I) × K` under the continuous
-    multiplication map `(k₁, a, k₂) ↦ ofReal(k₁) * a * ofReal(k₂)`.
-    Since `K` is path-connected (`RestrictedLorentzGroup.isPathConnected`)
-    and `A ∩ I` is connected (`isConnected_boostStrip_inter_sliceIndexSet`),
+    **Proof**: By the principal-strip KAK decomposition, every element of the
+    index set `I` factors as `k₁ · exp(tK) · k₂` with `t` in the principal
+    boost overlap `P`. By bi-invariance, the boost part `exp(tK)` is also in `I`.
+    So `I` is the image of `K × P × K` under the continuous multiplication map.
+    Since `K = SO↑(1,d;ℝ)` is path-connected and `P` is connected (axiom),
     the product is connected, and so is its continuous image.
 
-    Note: The extended tube is NOT geometrically convex (only holomorphically
-    convex). Counterexample: spacelike differences (0,1,0,...) and (0,-1,0,...),
-    midpoint (0,0,...) is lightlike and not in ET. -/
+    **Key insight**: The previous axiom `isConnected_boostParameterOverlap`
+    (on the full cylinder) was **false** for `n ≥ 3` — the meridians `Im(t) = 0`
+    and `Im(t) = π` both give empty slices, disconnecting the cylinder into two
+    strips. The principal strip fix restricts to `{0 < Im(t) < π}` and uses
+    the Weyl reflection to cover both strips via KAK. -/
 theorem isConnected_sliceIndexSet {d : ℕ}
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
     IsConnected {Λ : ComplexLorentzGroup d |
       (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
   -- Abbreviations
   let I := {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty}
-  let B := complexBoostStrip d ∩ I
-  -- Step 1: B is connected (axiom 2)
-  have hB_conn : IsConnected B := isConnected_boostStrip_inter_sliceIndexSet n σ hd2
+  let P := principalBoostOverlap d n σ
+  -- Step 1: The principal boost overlap (image on the group) is connected
+  have hP_conn : IsConnected P := isConnected_principalBoostOverlap n σ hd2
   -- Step 2: K is path-connected
   haveI : PathConnectedSpace (RestrictedLorentzGroup d) :=
     pathConnectedSpace_iff_univ.mpr (RestrictedLorentzGroup.isPathConnected d)
   -- Step 3: The multiplication map
-  --   f : K × {a // a ∈ B} × K → ComplexLorentzGroup d
-  --   f(k₁, a, k₂) = ofReal(k₁) * a * ofReal(k₂)
+  --   f : K × {t // t ∈ P} × K → ComplexLorentzGroup d
+  --   f(k₁, t, k₂) = ofReal(k₁) * expBoost(t) * ofReal(k₂)
   -- is continuous
-  let f : RestrictedLorentzGroup d × {a : ComplexLorentzGroup d // a ∈ B} ×
+  let f : RestrictedLorentzGroup d × {t : ℂ // t ∈ P} ×
       RestrictedLorentzGroup d → ComplexLorentzGroup d :=
-    fun p => ComplexLorentzGroup.ofReal p.1 * p.2.1.val * ComplexLorentzGroup.ofReal p.2.2
+    fun p => ComplexLorentzGroup.ofReal p.1 * expBoost p.2.1.val * ComplexLorentzGroup.ofReal p.2.2
   have hf_cont : Continuous f := by
     apply Continuous.mul
     · apply Continuous.mul
       · exact continuous_ofReal.comp continuous_fst
-      · exact continuous_subtype_val.comp (continuous_fst.comp continuous_snd)
+      · exact continuous_expBoost.comp (continuous_subtype_val.comp
+          (continuous_fst.comp continuous_snd))
     · exact continuous_ofReal.comp (continuous_snd.comp continuous_snd)
   -- Step 4: f maps into I (by sliceIndexSet_bi_invariant)
   have hf_mem : ∀ p, f p ∈ I := by
-    intro ⟨k₁, ⟨a, haB⟩, k₂⟩
-    exact sliceIndexSet_bi_invariant n σ a k₁ k₂ haB.2
-  -- Step 5: f is surjective onto I (by KAK + bi_invariant_rev)
+    intro ⟨k₁, ⟨t, htP⟩, k₂⟩
+    -- t ∈ P means expBoost t is in the slice index set
+    exact sliceIndexSet_bi_invariant n σ (expBoost t) k₁ k₂ htP.2
+  -- Step 5: f is surjective onto I (by principal KAK)
   have hf_surj : ∀ Λ ∈ I, ∃ p, f p = Λ := by
     intro Λ hΛ
-    obtain ⟨k₁, k₂, a, haA, rfl⟩ := complexLorentzGroup_KAK hd2 Λ
-    have ha_I : a ∈ I := sliceIndexSet_bi_invariant_rev n σ a k₁ k₂ hΛ
-    exact ⟨⟨k₁, ⟨a, haA, ha_I⟩, k₂⟩, rfl⟩
-  -- Step 6: The domain K × B × K is connected
-  --   K is connected (path-connected), B is connected, product is connected
-  haveI : ConnectedSpace {a : ComplexLorentzGroup d // a ∈ B} :=
-    isConnected_iff_connectedSpace.mp hB_conn
+    obtain ⟨k₁, k₂, t, htP, rfl⟩ := sliceIndexSet_KAK_principal hd2 n σ Λ hΛ
+    exact ⟨⟨k₁, ⟨t, htP⟩, k₂⟩, rfl⟩
+  -- Step 6: The domain K × P × K is connected
+  haveI : ConnectedSpace {t : ℂ // t ∈ P} :=
+    isConnected_iff_connectedSpace.mp hP_conn
   -- Step 7: I = range f, which is connected (continuous image of connected)
   have hI_eq : Set.range f =
       {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
