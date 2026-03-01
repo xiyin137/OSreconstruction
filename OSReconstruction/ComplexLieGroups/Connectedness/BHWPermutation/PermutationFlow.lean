@@ -2,6 +2,9 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SeedSlices
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.D1N3Witnesses
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.D1Nge4LinearWitness
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.LeftAdjAnchorBridge
 import OSReconstruction.ComplexLieGroups.D1OrbitSet
 
 noncomputable section
@@ -2606,75 +2609,6 @@ private theorem extendF_perm_overlap_of_leftAdjSwap_scheme
       (hConn (Equiv.swap i ⟨i.val + 1, hi⟩ * σ))
       (hAnchor σ i hi) z hz hτz
 
-/-- Anchor-set nonemptiness for a left-adjacent step can be reduced to a
-triple ET-membership witness:
-`∃ y, y ∈ ET ∧ τ·y ∈ ET ∧ σ·y ∈ ET` implies
-`∃ z, z ∈ D_(τ*σ) ∧ τ·z ∈ ET`. -/
-private theorem leftAdj_anchor_nonempty_of_ET_triple
-    (n : ℕ)
-    (σ : Equiv.Perm (Fin n))
-    (i : Fin n) (hi : i.val + 1 < n)
-    (htriple :
-      ({y : Fin n → Fin (d + 1) → ℂ |
-          y ∈ ExtendedTube d n ∧
-          permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n ∧
-          permAct (d := d) σ y ∈ ExtendedTube d n
-      }).Nonempty) :
-    ({z : Fin n → Fin (d + 1) → ℂ |
-        z ∈ permExtendedOverlapSet (d := d) n
-          (Equiv.swap i ⟨i.val + 1, hi⟩ * σ) ∧
-        permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube d n
-    }).Nonempty := by
-  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-  rcases htriple with ⟨y, hyET, hτyET, hσyET⟩
-  refine ⟨permAct (d := d) τ y, ?_⟩
-  refine ⟨?_, ?_⟩
-  · refine ⟨hτyET, ?_⟩
-    have hτσ :
-        permAct (d := d) (τ * σ) (permAct (d := d) τ y) =
-          permAct (d := d) σ (permAct (d := d) τ (permAct (d := d) τ y)) := by
-      simpa using permAct_mul (d := d) τ σ (permAct (d := d) τ y)
-    rw [hτσ]
-    have hττ : permAct (d := d) τ (permAct (d := d) τ y) = y := by
-      ext k μ
-      simp [permAct, τ]
-    simpa [hττ] using hσyET
-  · have hττ : permAct (d := d) τ (permAct (d := d) τ y) = y := by
-      ext k μ
-      simp [permAct, τ]
-    simpa [τ, hττ] using hyET
-
-/-- Converse to `leftAdj_anchor_nonempty_of_ET_triple`:
-left-step anchor nonemptiness implies a triple ET-membership witness. -/
-private theorem ET_triple_nonempty_of_leftAdj_anchor
-    (n : ℕ)
-    (σ : Equiv.Perm (Fin n))
-    (i : Fin n) (hi : i.val + 1 < n)
-    (hAnchor :
-      ({z : Fin n → Fin (d + 1) → ℂ |
-          z ∈ permExtendedOverlapSet (d := d) n
-            (Equiv.swap i ⟨i.val + 1, hi⟩ * σ) ∧
-          permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube d n
-      }).Nonempty) :
-    ({y : Fin n → Fin (d + 1) → ℂ |
-        y ∈ ExtendedTube d n ∧
-        permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube d n ∧
-        permAct (d := d) σ y ∈ ExtendedTube d n
-    }).Nonempty := by
-  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-  rcases hAnchor with ⟨z, hzD, hτzET⟩
-  refine ⟨permAct (d := d) τ z, ?_⟩
-  refine ⟨hτzET, ?_, ?_⟩
-  · have hττ : permAct (d := d) τ (permAct (d := d) τ z) = z := by
-      ext k μ
-      simp [permAct, τ]
-    simpa [τ, hττ] using hzD.1
-  · have hτσ :
-        permAct (d := d) (τ * σ) z =
-          permAct (d := d) σ (permAct (d := d) τ z) := by
-      simpa using permAct_mul (d := d) τ σ z
-    simpa [hτσ] using hzD.2
-
 /-- Base-step anchor nonemptiness (`σ = 1`) from adjacent sector overlap.
 
 This is the `σ=1` instance of left-adjacent anchor existence and is useful as a
@@ -2704,8 +2638,10 @@ private theorem leftAdj_anchor_nonempty_base
           permAct (d := d) τ y ∈ ExtendedTube d n ∧
           permAct (d := d) (1 : Equiv.Perm (Fin n)) y ∈ ExtendedTube d n
       }).Nonempty := ⟨y, hyET, hτyET, by simpa [permAct] using hyET⟩
-  simpa [τ] using
-    (leftAdj_anchor_nonempty_of_ET_triple (d := d) n (1 : Equiv.Perm (Fin n)) i hi htriple)
+  rcases leftAdj_anchor_nonempty_of_ET_triple
+      (d := d) n (1 : Equiv.Perm (Fin n)) i hi htriple with
+    ⟨z, hzET, hzτ1ET, hτzET⟩
+  exact ⟨z, ⟨hzET, hzτ1ET⟩, hτzET⟩
 
 /-- Convert a local eventual anchor at one base point into an explicit nonempty
 open anchor subset of the forward-overlap base. -/
@@ -3758,9 +3694,390 @@ private theorem not_mem_closure_midCondBadAtPermStep_of_anchor_forward_d1
   intro hw0cl
   exact (hclosure_sub hw0cl) hw0W
 
+/-- Deferred `d=1` local input at adjacent swap:
+existence of a nonempty open anchor inside the forward-overlap base where the
+base identity `extendF(τ·w)=F(w)` holds. -/
+private theorem deferred_d1_adjSwap_forward_open_anchor
+    (n : ℕ)
+    (F : (Fin n → Fin (1 + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 n))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : Fin n → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube 1 n) (fun k μ => (x k μ : ℂ)))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+        ∑ μ, minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)))
+    (i : Fin n)
+    (hi : i.val + 1 < n) :
+    ∃ W : Set (Fin n → Fin (1 + 1) → ℂ),
+      IsOpen W ∧
+      W.Nonempty ∧
+      W ⊆ permForwardOverlapSet (d := 1) n (Equiv.swap i ⟨i.val + 1, hi⟩) ∧
+      (∀ w ∈ W,
+        extendF F (permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) w) = F w) := by
+  sorry
+
+/-- `d=1` bridge: convert a forward-overlap open anchor for the adjacent swap
+into an open anchor on the full ET-overlap domain. -/
+private theorem deferred_d1_adjSwap_open_anchor
+    (n : ℕ)
+    (F : (Fin n → Fin (1 + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 n))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : Fin n → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube 1 n) (fun k μ => (x k μ : ℂ)))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+        ∑ μ, minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)))
+    (i : Fin n)
+    (hi : i.val + 1 < n) :
+    ∃ W : Set (Fin n → Fin (1 + 1) → ℂ),
+      IsOpen W ∧
+      W.Nonempty ∧
+      W ⊆ permExtendedOverlapSet (d := 1) n (Equiv.swap i ⟨i.val + 1, hi⟩) ∧
+      (∀ z ∈ W,
+        extendF F (permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z) = extendF F z) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  rcases deferred_d1_adjSwap_forward_open_anchor n F hF_holo hF_lorentz
+      hF_bv hF_local i hi with
+    ⟨W, hW_open, hW_ne, hW_subΩ, hW_eq_base⟩
+  refine ⟨W, hW_open, hW_ne, ?_, ?_⟩
+  · intro z hzW
+    exact ⟨forwardTube_subset_extendedTube ((hW_subΩ hzW).1), (hW_subΩ hzW).2⟩
+  · intro z hzW
+    have hzFT : z ∈ ForwardTube 1 n := (hW_subΩ hzW).1
+    have hzExt : extendF F z = F z :=
+      extendF_eq_of_explicit_witness (d := 1) n F hF_holo hF_lorentz
+        z z hzFT (1 : ComplexLorentzGroup 1) (complexLorentzAction_one z).symm
+    calc
+      extendF F (permAct (d := 1) τ z) = F z := hW_eq_base z hzW
+      _ = extendF F z := hzExt.symm
+
+private theorem deferred_d1_adjSwap_extendF_overlap
+    (n : ℕ)
+    (F : (Fin n → Fin (1 + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 n))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : Fin n → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube 1 n) (fun k μ => (x k μ : ℂ)))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin (1 + 1) → ℝ),
+        ∑ μ, minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ))) :
+    ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ z : Fin n → Fin (1 + 1) → ℂ,
+        z ∈ ExtendedTube 1 n →
+        permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube 1 n →
+        extendF F (permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z) = extendF F z := by
+  intro i hi z hzET hτzET
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  have hseedτ : IsConnected (permOrbitSeedSet (d := 1) n τ) :=
+    deferred_isConnected_permOrbitSeedSet_d1 (n := n) τ
+  have hFwd_conn : IsConnected (permForwardOverlapSet (d := 1) n τ) :=
+    (isConnected_permOrbitSeedSet_iff_permForwardOverlapSet (d := 1) n τ).1 hseedτ
+  rcases deferred_d1_adjSwap_open_anchor n F hF_holo hF_lorentz hF_bv hF_local i hi with
+    ⟨W, hW_open, hW_ne, hW_sub, hW_eq⟩
+  let D : Set (Fin n → Fin (1 + 1) → ℂ) := permExtendedOverlapSet (d := 1) n τ
+  have hD_open : IsOpen D := by
+    change IsOpen (ExtendedTube 1 n ∩ (permAct (d := 1) τ) ⁻¹' ExtendedTube 1 n)
+    exact isOpen_extendedTube.inter (isOpen_extendedTube.preimage
+      (continuous_pi (fun k => continuous_pi (fun μ =>
+        (continuous_apply μ).comp (continuous_apply (τ k))))))
+  have hD_conn : IsConnected D :=
+    isConnected_permExtendedOverlap_of_forwardOverlapConnected
+      (d := 1) (n := n) τ hFwd_conn
+  have hD_sub_ET : D ⊆ ExtendedTube 1 n := by
+    intro z hzD
+    exact hzD.1
+  have hD_sub_permET : D ⊆ {z | permAct (d := 1) τ z ∈ ExtendedTube 1 n} := by
+    intro z hzD
+    exact hzD.2
+  have hW_sub_D : W ⊆ D := by
+    simpa [D] using hW_sub
+  have hglobal :
+      ∀ (z : Fin n → Fin (1 + 1) → ℂ),
+        z ∈ ExtendedTube 1 n →
+        permAct (d := 1) τ z ∈ ExtendedTube 1 n →
+        extendF F (permAct (d := 1) τ z) = extendF F z := by
+    intro z hz hτz
+    have hEqOnD :
+        ∀ z ∈ D, extendF F (permAct (d := 1) τ z) = extendF F z :=
+      extendF_perm_eq_on_connected_overlap_of_open_anchor (d := 1) n F
+        hF_holo hF_lorentz τ
+        D hD_open hD_conn hD_sub_ET hD_sub_permET
+        W hW_open hW_ne hW_sub_D hW_eq
+    exact hEqOnD z ⟨hz, hτz⟩
+  exact hglobal z hzET (by simpa [τ] using hτzET)
+
+/-! ### d=1 `n≥4` linear-witness infrastructure (rank/arithmetic core)
+
+This block packages scratch-validated arithmetic lemmas for the constructive
+`A/B` branch reduction used by the remaining `n≥4` triple-witness blocker.
+-/
+
+/-- Deferred `d=1` geometric input B (forward-witness form):
+for the nontrivial branch, produce a forward-tube witness simultaneously lying
+in the two required ET-overlap pulls (`τ` and `σ`). -/
+private theorem deferred_d1_forward_triple_nonempty_nge4
+    (n : ℕ)
+    (σ : Equiv.Perm (Fin n))
+    (i : Fin n)
+    (hi : i.val + 1 < n)
+    (hσ : σ ≠ (1 : Equiv.Perm (Fin n)))
+    (hστ : σ ≠ Equiv.swap i ⟨i.val + 1, hi⟩)
+    (hn4 : 4 ≤ n) :
+    ({w : Fin n → Fin (1 + 1) → ℂ |
+        w ∈ ForwardTube 1 n ∧
+        permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) w ∈ ExtendedTube 1 n ∧
+        permAct (d := 1) σ w ∈ ExtendedTube 1 n
+    }).Nonempty := by
+  -- Remaining geometric burden: nontrivial branch for `n ≥ 4`.
+  --
+  -- Practical reduction target (documented in
+  -- `D1_NGE4_LINEAR_REDUCTION_NOTES.md`):
+  -- use ansatz `w_k = (i*T_k, R_k)` with real `T,R`, then for pure-imaginary
+  -- rapidities ET-membership of permuted witnesses reduces to finite strict
+  -- linear inequalities on step data:
+  --   `ΔT + λ ΔR > 0` (or rational `3-4-5` forms `4ΔT ± 3ΔR > 0`).
+  --
+  -- So this theorem can be attacked as an explicit real-inequality
+  -- construction problem for `(T,R)` rather than direct ET witness search.
+  --
+  -- Empirical LP pattern (non-formal, but robust in exhaustive `n=4,5` and
+  -- sampled larger `n`):
+  --   - fixed `λ_tau = 1` appears sufficient,
+  --   - choose `λ_sigma = 3/2` when `(σ⁻¹ i).val > (σ⁻¹ (i+1)).val`,
+  --     and `λ_sigma = -2` otherwise.
+  -- This suggests a two-branch inequality construction may be enough.
+  --
+  -- Arithmetic infrastructure is now in the helper module
+  -- `D1Nge4LinearWitness.lean` (`d1Nge4_*` rank/A/B/T/R lemmas).
+  -- Remaining geometric assembly (constructing a witness meeting all three
+  -- FT/ET conditions simultaneously) is deferred here.
+  sorry
+
+/-- Deferred `d=1` geometric input B (forward-witness form):
+for the nontrivial branch, produce a forward-tube witness simultaneously lying
+in the two required ET-overlap pulls (`τ` and `σ`).
+
+The `n = 3` branch is now constructive (via `D1N3Witnesses.lean`).
+The only deferred portion is the dedicated `n ≥ 4` geometric lemma
+`deferred_d1_forward_triple_nonempty_nge4`. -/
+private theorem deferred_d1_forward_triple_nonempty_nontrivial
+    (n : ℕ)
+    (σ : Equiv.Perm (Fin n))
+    (i : Fin n)
+    (hi : i.val + 1 < n)
+    (hσ : σ ≠ (1 : Equiv.Perm (Fin n)))
+    (hστ : σ ≠ Equiv.swap i ⟨i.val + 1, hi⟩)
+    (hn3 : 3 ≤ n) :
+    ({w : Fin n → Fin (1 + 1) → ℂ |
+        w ∈ ForwardTube 1 n ∧
+        permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) w ∈ ExtendedTube 1 n ∧
+        permAct (d := 1) σ w ∈ ExtendedTube 1 n
+    }).Nonempty := by
+  by_cases hn3eq : n = 3
+  · subst hn3eq
+    by_cases hi0 : i = (0 : Fin 3)
+    · subst hi0
+      have htau :
+          Equiv.swap (0 : Fin 3) ⟨(0 : Fin 3).val + 1, hi⟩ =
+            Equiv.swap (0 : Fin 3) 1 := by
+        ext k
+        simp
+      have hσcases :
+          σ = (1 : Equiv.Perm (Fin 3)) ∨
+          σ = Equiv.swap (0 : Fin 3) 1 ∨
+          σ = Equiv.swap (1 : Fin 3) 2 ∨
+          σ = (Equiv.swap (0 : Fin 3) 1) * (Equiv.swap (1 : Fin 3) 2) ∨
+          σ = Equiv.swap (0 : Fin 3) 2 ∨
+          σ = (Equiv.swap (0 : Fin 3) 2) * (Equiv.swap (1 : Fin 3) 2) := by
+        fin_cases σ <;> simp
+      rcases hσcases with hσ1 | hσ01 | hσ021 | hσ120 | hσ210 | hσ201
+      · exact (False.elim (hσ hσ1))
+      · have hστ01 :
+            σ = Equiv.swap (0 : Fin 3) ⟨(0 : Fin 3).val + 1, hi⟩ := by
+          simpa [htau] using hσ01
+        exact (False.elim (hστ hστ01))
+      · subst hσ021
+        rcases d1_n3_forward_triple_nonempty_i0_pairB with
+          ⟨w, hwFT, hτw, h021w, h201w⟩
+        refine ⟨w, hwFT, ?_, h021w⟩
+        simpa [htau] using hτw
+      · subst hσ120
+        rcases d1_n3_forward_triple_nonempty_i0_pairA with
+          ⟨w, hwFT, hτw, h120w, h210w⟩
+        refine ⟨w, hwFT, ?_, h120w⟩
+        simpa [htau] using hτw
+      · subst hσ210
+        rcases d1_n3_forward_triple_nonempty_i0_pairA with
+          ⟨w, hwFT, hτw, h120w, h210w⟩
+        refine ⟨w, hwFT, ?_, h210w⟩
+        simpa [htau] using hτw
+      · subst hσ201
+        rcases d1_n3_forward_triple_nonempty_i0_pairB with
+          ⟨w, hwFT, hτw, h021w, h201w⟩
+        refine ⟨w, hwFT, ?_, h201w⟩
+        simpa [htau] using hτw
+    · have hi1 : i = (1 : Fin 3) := by
+        apply Fin.ext
+        have hne0 : i.val ≠ 0 := by
+          intro hiv0
+          apply hi0
+          exact Fin.ext hiv0
+        omega
+      subst hi1
+      have htau :
+          Equiv.swap (1 : Fin 3) ⟨(1 : Fin 3).val + 1, hi⟩ =
+            Equiv.swap (1 : Fin 3) 2 := by
+        ext k
+        simp
+      have hσcases :
+          σ = (1 : Equiv.Perm (Fin 3)) ∨
+          σ = Equiv.swap (0 : Fin 3) 1 ∨
+          σ = Equiv.swap (1 : Fin 3) 2 ∨
+          σ = (Equiv.swap (0 : Fin 3) 1) * (Equiv.swap (1 : Fin 3) 2) ∨
+          σ = Equiv.swap (0 : Fin 3) 2 ∨
+          σ = (Equiv.swap (0 : Fin 3) 2) * (Equiv.swap (1 : Fin 3) 2) := by
+        fin_cases σ <;> simp
+      rcases hσcases with hσ1 | hσ01 | hσ12 | hσ120 | hσ210 | hσ201
+      · exact (False.elim (hσ hσ1))
+      · subst hσ01
+        rcases d1_n3_forward_triple_nonempty_i1_pairA with
+          ⟨w, hwFT, hτw, h01w, h120w⟩
+        refine ⟨w, hwFT, ?_, h01w⟩
+        simpa [htau] using hτw
+      · have hστ12 :
+            σ = Equiv.swap (1 : Fin 3) ⟨(1 : Fin 3).val + 1, hi⟩ := by
+          simpa [htau] using hσ12
+        exact (False.elim (hστ hστ12))
+      · subst hσ120
+        rcases d1_n3_forward_triple_nonempty_i1_pairA with
+          ⟨w, hwFT, hτw, h01w, h120w⟩
+        refine ⟨w, hwFT, ?_, h120w⟩
+        simpa [htau] using hτw
+      · subst hσ210
+        rcases d1_n3_forward_triple_nonempty_i1_pairB with
+          ⟨w, hwFT, hτw, h210w, h201w⟩
+        refine ⟨w, hwFT, ?_, h210w⟩
+        simpa [htau] using hτw
+      · subst hσ201
+        rcases d1_n3_forward_triple_nonempty_i1_pairB with
+          ⟨w, hwFT, hτw, h210w, h201w⟩
+        refine ⟨w, hwFT, ?_, h201w⟩
+        simpa [htau] using hτw
+  · have hn4 : 4 ≤ n := by omega
+    exact deferred_d1_forward_triple_nonempty_nge4 n σ i hi hσ hστ hn4
+
+/-- Deferred `d=1` geometric input B:
+nonempty left-step anchors for each induction step (ET-triple form). -/
+private theorem deferred_d1_ET_triple_nonempty_nontrivial
+    (n : ℕ)
+    (σ : Equiv.Perm (Fin n))
+    (i : Fin n)
+    (hi : i.val + 1 < n)
+    (hσ : σ ≠ (1 : Equiv.Perm (Fin n)))
+    (hστ : σ ≠ Equiv.swap i ⟨i.val + 1, hi⟩)
+    (hn3 : 3 ≤ n) :
+    ({y : Fin n → Fin (1 + 1) → ℂ |
+        y ∈ ExtendedTube 1 n ∧
+        permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) y ∈ ExtendedTube 1 n ∧
+        permAct (d := 1) σ y ∈ ExtendedTube 1 n
+    }).Nonempty := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  have hFwd :
+      ({w : Fin n → Fin (1 + 1) → ℂ |
+          w ∈ ForwardTube 1 n ∧
+          permAct (d := 1) τ w ∈ ExtendedTube 1 n ∧
+          permAct (d := 1) σ w ∈ ExtendedTube 1 n
+      }).Nonempty :=
+    deferred_d1_forward_triple_nonempty_nontrivial n σ i hi hσ hστ hn3
+  exact (ET_triple_nonempty_iff_forward_triple_nonempty
+    (n := n) (τ := τ) (σ := σ)).2 hFwd
+
+private theorem deferred_d1_leftAdj_anchor_nonempty
+    (n : ℕ) :
+    ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+      ({z : Fin n → Fin (1 + 1) → ℂ |
+          z ∈ permExtendedOverlapSet (d := 1) n
+            (Equiv.swap i ⟨i.val + 1, hi⟩ * σ) ∧
+          permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube 1 n
+      }).Nonempty := by
+  intro σ i hi
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  by_cases hσ : σ = 1
+  · subst hσ
+    simpa [one_mul] using
+      (leftAdj_anchor_nonempty_base (d := 1) (n := n) i hi)
+  · by_cases hστ : σ = τ
+    · subst hστ
+      have hsec :
+          (permSector (d := 1) n (1 : Equiv.Perm (Fin n)) ∩
+            permSector (d := 1) n ((1 : Equiv.Perm (Fin n)) * τ)).Nonempty :=
+        adjacent_permSector_overlap_nonempty (d := 1) n (1 : Equiv.Perm (Fin n)) i hi
+      rcases hsec with ⟨y, hy1, hy1τ⟩
+      have hyET : y ∈ ExtendedTube 1 n := by
+        simpa [permSector, permAct] using hy1
+      have hτyET : permAct (d := 1) τ y ∈ ExtendedTube 1 n := by
+        simpa [permSector] using hy1τ
+      have hswapτyET :
+          permAct (d := 1) ((Equiv.swap i ⟨i.val + 1, hi⟩) * τ) y ∈ ExtendedTube 1 n := by
+        simpa [permAct, τ] using hyET
+      refine ⟨y, ?_, hτyET⟩
+      exact ⟨hyET, hswapτyET⟩
+    · by_cases hn2 : n = 2
+      · subst hn2
+        have hi0 : i = (0 : Fin 2) := by
+          apply Fin.ext
+          omega
+        subst hi0
+        have hcases :
+            σ = (1 : Equiv.Perm (Fin 2)) ∨ σ = Equiv.swap (0 : Fin 2) 1 := by
+          fin_cases σ <;> simp
+        cases hcases with
+        | inl hσ1 =>
+            exact (False.elim (hσ hσ1))
+        | inr hσswap =>
+            have hτswap : τ = Equiv.swap (0 : Fin 2) 1 := by
+              ext k
+              simp [τ]
+            have hστ' : σ = τ := by
+              simpa [hτswap] using hσswap
+            exact (False.elim (hστ hστ'))
+      · have hn2le : 2 ≤ n := by
+          have h1le : 1 ≤ i.val + 1 := Nat.succ_le_succ (Nat.zero_le i.val)
+          have h1lt : 1 < n := lt_of_le_of_lt h1le hi
+          exact Nat.succ_le_of_lt h1lt
+        have hn3 : 3 ≤ n := by
+          omega
+        have htriple :
+            ({y : Fin n → Fin (1 + 1) → ℂ |
+                y ∈ ExtendedTube 1 n ∧
+                permAct (d := 1) τ y ∈ ExtendedTube 1 n ∧
+                permAct (d := 1) σ y ∈ ExtendedTube 1 n
+            }).Nonempty := by
+          exact deferred_d1_ET_triple_nonempty_nontrivial n σ i hi hσ
+            (by simpa [τ] using hστ) hn3
+        rcases leftAdj_anchor_nonempty_of_ET_triple (d := 1) n σ i hi htriple with
+          ⟨z, hzET, hzτσET, hτzET⟩
+        exact ⟨z, ⟨hzET, hzτσET⟩, hτzET⟩
+
 /-- Deferred `d=1` geometric inputs required to instantiate the left-adjacent
-ET-overlap induction scheme. This replaces the older local-gluing blocker chain
-with explicit global geometric obligations.
+ET-overlap induction scheme.
 
 Current decomposition:
 1. `hSwap`: adjacent-swap ET-overlap invariance for `extendF`,
@@ -3794,101 +4111,10 @@ private theorem deferred_d1_leftAdjSwap_scheme_inputs
             (Equiv.swap i ⟨i.val + 1, hi⟩ * σ) ∧
           permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube 1 n
       }).Nonempty) := by
-  by_cases hn : n ≤ 1
-  · constructor
-    · intro i hi
-      have h1lt : 1 < n := by
-        have h1le : 1 ≤ i.val + 1 := Nat.succ_le_succ (Nat.zero_le i.val)
-        exact lt_of_le_of_lt h1le hi
-      exact (False.elim ((Nat.not_lt.mpr hn) h1lt))
-    · intro σ i hi
-      have h1lt : 1 < n := by
-        have h1le : 1 ≤ i.val + 1 := Nat.succ_le_succ (Nat.zero_le i.val)
-        exact lt_of_le_of_lt h1le hi
-      exact (False.elim ((Nat.not_lt.mpr hn) h1lt))
-  · -- Geometric/global d=1 blocker package for the nontrivial regime `n ≥ 2`.
-    -- Expected closure path:
-    -- 1) adjacent-swap ET-overlap invariance from d=1 adjacent-overlap geometry;
-    -- 2) nonempty left-step anchors for each induction step.
-    -- Both are strictly geometric and independent of the old local-gluing chain.
-    have hSwap :
-        ∀ (i : Fin n) (hi : i.val + 1 < n),
-          ∀ z : Fin n → Fin (1 + 1) → ℂ,
-            z ∈ ExtendedTube 1 n →
-            permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube 1 n →
-            extendF F (permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z) = extendF F z := by
-      -- TODO(d=1): close adjacent-swap ET-overlap equality without a global
-      -- real-witness package; this is the `hSwap` geometric input.
-      sorry
-    have hAnchor :
-        ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
-          ({z : Fin n → Fin (1 + 1) → ℂ |
-              z ∈ permExtendedOverlapSet (d := 1) n
-                (Equiv.swap i ⟨i.val + 1, hi⟩ * σ) ∧
-              permAct (d := 1) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈ ExtendedTube 1 n
-          }).Nonempty := by
-      intro σ i hi
-      let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-      by_cases hσ : σ = 1
-      · subst hσ
-        simpa [one_mul] using
-          (leftAdj_anchor_nonempty_base (d := 1) (n := n) i hi)
-      · by_cases hστ : σ = τ
-        · subst hστ
-          have hsec :
-              (permSector (d := 1) n (1 : Equiv.Perm (Fin n)) ∩
-                permSector (d := 1) n ((1 : Equiv.Perm (Fin n)) * τ)).Nonempty :=
-            adjacent_permSector_overlap_nonempty (d := 1) n (1 : Equiv.Perm (Fin n)) i hi
-          rcases hsec with ⟨y, hy1, hy1τ⟩
-          have hyET : y ∈ ExtendedTube 1 n := by
-            simpa [permSector, permAct] using hy1
-          have hτyET : permAct (d := 1) τ y ∈ ExtendedTube 1 n := by
-            simpa [permSector] using hy1τ
-          have hswapτyET :
-              permAct (d := 1) ((Equiv.swap i ⟨i.val + 1, hi⟩) * τ) y ∈ ExtendedTube 1 n := by
-            simpa [permAct, τ] using hyET
-          refine ⟨y, ?_, hτyET⟩
-          refine ⟨hyET, ?_⟩
-          exact hswapτyET
-        · -- TODO(d=1): genuinely nontrivial permutation branch (`σ ≠ 1` and `σ ≠ τ`).
-          -- Equivalently produce a triple ET witness `y ∈ ET`, `τ·y ∈ ET`, `σ·y ∈ ET`.
-          by_cases hn2 : n = 2
-          · subst hn2
-            have hi0 : i = (0 : Fin 2) := by
-              apply Fin.ext
-              omega
-            subst hi0
-            have hcases :
-                σ = (1 : Equiv.Perm (Fin 2)) ∨ σ = Equiv.swap (0 : Fin 2) 1 := by
-              fin_cases σ <;> simp
-            cases hcases with
-            | inl hσ1 =>
-                exact (False.elim (hσ hσ1))
-            | inr hσswap =>
-                have hτswap : τ = Equiv.swap (0 : Fin 2) 1 := by
-                  ext k
-                  simp [τ]
-                have hστ' : σ = τ := by
-                  simpa [hτswap] using hσswap
-                exact (False.elim (hστ hστ'))
-          · have hn2le : 2 ≤ n := by
-              have h1le : 1 ≤ i.val + 1 := Nat.succ_le_succ (Nat.zero_le i.val)
-              have h1lt : 1 < n := lt_of_le_of_lt h1le hi
-              exact Nat.succ_le_of_lt h1lt
-            have hn3 : 3 ≤ n := by
-              omega
-            have htriple :
-                ({y : Fin n → Fin (1 + 1) → ℂ |
-                    y ∈ ExtendedTube 1 n ∧
-                    permAct (d := 1) τ y ∈ ExtendedTube 1 n ∧
-                    permAct (d := 1) σ y ∈ ExtendedTube 1 n
-                }).Nonempty := by
-              -- TODO(d=1, n≥3): construct a triple ET witness for nontrivial `σ`.
-              -- This is now the isolated geometric subgoal.
-              -- `hn3` is available for this branch.
-              sorry
-            exact leftAdj_anchor_nonempty_of_ET_triple (d := 1) n σ i hi htriple
-    exact ⟨hSwap, hAnchor⟩
+  exact ⟨
+    deferred_d1_adjSwap_extendF_overlap n F hF_holo hF_lorentz hF_bv hF_local,
+    deferred_d1_leftAdj_anchor_nonempty n
+  ⟩
 
 /-- Deferred `d = 1` bridge: ET-overlap invariance from seed connectedness,
 refactored through the left-adjacent ET-overlap induction scheme. -/
