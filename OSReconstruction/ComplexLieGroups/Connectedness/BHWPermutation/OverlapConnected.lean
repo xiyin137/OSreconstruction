@@ -582,38 +582,224 @@ theorem isConnected_iUnion_of_open_membership
     exact ⟨x, Set.mem_iUnion₂.mpr ⟨i, hi, hx⟩⟩
   · exact isPreconnected_iUnion_of_open_membership hI_conn.isPreconnected S hS_conn hS_ne h_open
 
+/-! ### Polar decomposition and bi-invariance -/
+
+/-- `ofReal R⁻¹ = (ofReal R)⁻¹` in `L₊(ℂ)`. -/
+private lemma ofReal_inv_eq (R : RestrictedLorentzGroup d) :
+    ComplexLorentzGroup.ofReal R⁻¹ = (ComplexLorentzGroup.ofReal R)⁻¹ := by
+  have h1 := ofReal_mul_eq R⁻¹ R
+  rw [inv_mul_cancel] at h1
+  rw [ofReal_one_eq] at h1
+  exact mul_left_cancel (a := ComplexLorentzGroup.ofReal R)
+    (by rw [← ofReal_mul_eq, mul_inv_cancel, ofReal_one_eq, mul_inv_cancel])
+
+/-- FT is preserved by `(ofReal R)⁻¹` action. -/
+private lemma ofReal_inv_preserves_forwardTube (R : RestrictedLorentzGroup d)
+    (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) :
+    complexLorentzAction (ComplexLorentzGroup.ofReal R)⁻¹ z ∈ ForwardTube d n := by
+  rw [← ofReal_inv_eq]
+  exact ofReal_preserves_forwardTube R⁻¹ z hz
+
+/-- Bi-invariance: the forward-overlap slice nonemptiness is preserved under
+    conjugation by real restricted Lorentz transforms. This follows from
+    `ofReal_preserves_forwardTube` and `permAct_complexLorentzAction_comm`. -/
+private lemma sliceIndexSet_bi_invariant
+    (n : ℕ) (σ : Equiv.Perm (Fin n))
+    (Λ : ComplexLorentzGroup d) (k₁ k₂ : RestrictedLorentzGroup d) :
+    (permForwardOverlapSlice (d := d) n σ Λ).Nonempty →
+    (permForwardOverlapSlice (d := d) n σ
+      (ComplexLorentzGroup.ofReal k₁ * Λ * ComplexLorentzGroup.ofReal k₂)).Nonempty := by
+  rintro ⟨w, hw_FT, hΛσw_FT⟩
+  -- Witness: w' = (ofReal k₂)⁻¹ · w
+  refine ⟨complexLorentzAction (ComplexLorentzGroup.ofReal k₂)⁻¹ w,
+    ofReal_inv_preserves_forwardTube k₂ w hw_FT, ?_⟩
+  -- Goal: (k₁ * Λ * k₂) · σ · (k₂⁻¹ · w) ∈ FT
+  -- = k₁ · Λ · k₂ · k₂⁻¹ · σ · w    (by σ-Λ commutativity, k₂ and σ commute)
+  -- = k₁ · Λ · σ · w                  (k₂ · k₂⁻¹ = 1)
+  -- = k₁ · (Λ · σ · w)                (by mul action)
+  -- ∈ FT                               (by ofReal_preserves_forwardTube for k₁)
+  have hcomm : permAct σ (complexLorentzAction (ComplexLorentzGroup.ofReal k₂)⁻¹ w) =
+      complexLorentzAction (ComplexLorentzGroup.ofReal k₂)⁻¹ (permAct σ w) :=
+    permAct_complexLorentzAction_comm n σ _ w
+  -- (k₁ * Λ * k₂) · σ · (k₂⁻¹ · w)
+  -- = (k₁ * Λ * k₂) · (k₂⁻¹ · (σ · w))    by hcomm
+  -- = ((k₁ * Λ * k₂) * k₂⁻¹) · (σ · w)     by complexLorentzAction_mul
+  -- = (k₁ * Λ) · (σ · w)                     by mul_assoc + mul_inv_cancel
+  -- = k₁ · (Λ · (σ · w))                     by complexLorentzAction_mul
+  rw [hcomm, ← complexLorentzAction_mul]
+  -- Goal: (k₁ * Λ * k₂) * (ofReal k₂)⁻¹ · (σ · w) ∈ FT
+  have hmul : ComplexLorentzGroup.ofReal k₁ * Λ * ComplexLorentzGroup.ofReal k₂ *
+      (ComplexLorentzGroup.ofReal k₂)⁻¹ = ComplexLorentzGroup.ofReal k₁ * Λ := by
+    rw [mul_assoc, mul_inv_cancel, mul_one]
+  rw [hmul, complexLorentzAction_mul]
+  exact ofReal_preserves_forwardTube k₁ _ hΛσw_FT
+
+/-- The converse direction of bi-invariance. -/
+private lemma sliceIndexSet_bi_invariant_rev
+    (n : ℕ) (σ : Equiv.Perm (Fin n))
+    (Λ : ComplexLorentzGroup d) (k₁ k₂ : RestrictedLorentzGroup d) :
+    (permForwardOverlapSlice (d := d) n σ
+      (ComplexLorentzGroup.ofReal k₁ * Λ * ComplexLorentzGroup.ofReal k₂)).Nonempty →
+    (permForwardOverlapSlice (d := d) n σ Λ).Nonempty := by
+  rintro ⟨w, hw_FT, hkΛkσw_FT⟩
+  -- Witness: w' = ofReal k₂ · w
+  refine ⟨complexLorentzAction (ComplexLorentzGroup.ofReal k₂) w,
+    ofReal_preserves_forwardTube k₂ w hw_FT, ?_⟩
+  -- Goal: Λ · σ · (k₂ · w) ∈ FT
+  -- (k₁ * Λ * k₂) · σ · w = k₁ · Λ · σ · (k₂ · w) ∈ FT  (same commutativity)
+  -- So Λ · σ · (k₂ · w) = k₁⁻¹ · ((k₁ * Λ * k₂) · σ · w)
+  have hcomm : permAct σ (complexLorentzAction (ComplexLorentzGroup.ofReal k₂) w) =
+      complexLorentzAction (ComplexLorentzGroup.ofReal k₂) (permAct σ w) :=
+    permAct_complexLorentzAction_comm n σ _ w
+  rw [hcomm, ← complexLorentzAction_mul]
+  -- Goal: (Λ * ofReal k₂) · (σ · w) ∈ FT
+  -- We know: (k₁ * Λ * k₂) · (σ · w) ∈ FT
+  -- = k₁ · ((Λ * k₂) · (σ · w))  by mul_assoc + complexLorentzAction_mul
+  -- So (Λ * k₂) · (σ · w) = k₁⁻¹ · ((k₁ * Λ * k₂) · (σ · w))
+  have hmul : Λ * ComplexLorentzGroup.ofReal k₂ =
+      (ComplexLorentzGroup.ofReal k₁)⁻¹ *
+        (ComplexLorentzGroup.ofReal k₁ * Λ * ComplexLorentzGroup.ofReal k₂) := by
+    rw [mul_assoc, ← mul_assoc (ComplexLorentzGroup.ofReal k₁)⁻¹,
+        inv_mul_cancel, one_mul]
+  rw [hmul, complexLorentzAction_mul]
+  exact ofReal_inv_preserves_forwardTube k₁ _ hkΛkσw_FT
+
 /-! ### Connectedness of the forward-overlap set -/
 
+/-- Boost generator in the Lorentz Lie algebra: the matrix with 1 at positions
+    (0,1) and (1,0), zeros elsewhere. For `d ≥ 1` this generates boosts in the
+    first spatial direction; for `d = 0` it is the zero matrix. -/
+private def boostGen (d : ℕ) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+  fun μ ν => if (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) then 1 else 0
+
+/-- The boost generator is in the Lorentz Lie algebra.
+    Proof: `boostGenᵀ * ηℂ + ηℂ * boostGen = 0` because the (0,1) and (1,0)
+    entries are exchanged by transpose, and the signs from `η₀₀ = -1`, `η₁₁ = 1`
+    make the two terms cancel. -/
+private lemma nested_ite_sum {n : ℕ} (a : Fin n) (P : Fin n → Prop) [DecidablePred P] (c : ℂ) :
+    (∑ x : Fin n, if P x then (if a = x then c else 0) else 0) = if P a then c else 0 := by
+  refine (Finset.sum_eq_single_of_mem a (Finset.mem_univ _) fun b _ hba => ?_).trans ?_
+  · have : a ≠ b := fun h => hba (h ▸ rfl); rw [if_neg this]; split_ifs <;> rfl
+  · simp
+
+private lemma minkSig_cast_zero :
+    ((minkowskiSignature d (0 : Fin (d + 1)) : ℝ) : ℂ) = -1 := by
+  unfold minkowskiSignature; rw [if_pos rfl]; push_cast; ring
+
+private lemma minkSig_cast_ne {i : Fin (d + 1)} (hi : i ≠ 0) :
+    ((minkowskiSignature d i : ℝ) : ℂ) = 1 := by
+  unfold minkowskiSignature; rw [if_neg hi]; push_cast; ring
+
+private lemma boostGen_isInLieAlgebra :
+    ComplexLorentzGroup.IsInLieAlgebra (boostGen d) := by
+  unfold ComplexLorentzGroup.IsInLieAlgebra ComplexLorentzGroup.ηℂ boostGen
+  ext μ ν
+  simp only [Matrix.add_apply, Matrix.mul_apply, Matrix.transpose_apply,
+    Matrix.diagonal_apply, Matrix.zero_apply, mul_ite, ite_mul, mul_one, mul_zero,
+    one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
+  rw [nested_ite_sum]
+  have hswap : ((↑ν : ℕ) = 0 ∧ (↑μ : ℕ) = 1 ∨ (↑ν : ℕ) = 1 ∧ (↑μ : ℕ) = 0) ↔
+      ((↑μ : ℕ) = 0 ∧ (↑ν : ℕ) = 1 ∨ (↑μ : ℕ) = 1 ∧ (↑ν : ℕ) = 0) := by tauto
+  by_cases hcond : (↑μ : ℕ) = 0 ∧ (↑ν : ℕ) = 1 ∨ (↑μ : ℕ) = 1 ∧ (↑ν : ℕ) = 0
+  · rw [if_pos (hswap.mpr hcond), if_pos hcond]
+    rcases hcond with ⟨hμ0, hν1⟩ | ⟨hμ1, hν0⟩
+    · rw [minkSig_cast_ne (show ν ≠ 0 by intro h; subst h; simp at hν1),
+          show μ = 0 from Fin.ext hμ0, minkSig_cast_zero]; ring
+    · rw [show ν = 0 from Fin.ext hν0, minkSig_cast_zero,
+          minkSig_cast_ne (show μ ≠ 0 by intro h; subst h; simp at hμ1)]; ring
+  · rw [if_neg (mt hswap.mp hcond), if_neg hcond]; ring
+
+/-- A 1-parameter family of complex Lorentz boosts in a fixed spatial direction.
+    Defined as `{exp(t · K) | t ∈ ℂ}` where `K` is the boost generator.
+    This is a complex 1-parameter subgroup, isomorphic to `(ℂ, +)`, hence connected. -/
+private def complexBoostStrip (d : ℕ) : Set (ComplexLorentzGroup d) :=
+  Set.range (fun t : ℂ => ComplexLorentzGroup.expLieAlg (t • boostGen d)
+    (ComplexLorentzGroup.isInLieAlgebra_smul t boostGen_isInLieAlgebra))
+
+/-- The complex boost strip is connected (it is the continuous image of ℂ). -/
+private theorem isConnected_complexBoostStrip (_hd2 : 2 ≤ d) :
+    IsConnected (complexBoostStrip d) := by
+  -- The strip is the range of the continuous map t ↦ exp(t · boostGen)
+  -- ℂ is connected, so the image is connected.
+  unfold complexBoostStrip
+  apply isConnected_range
+  have hind : IsInducing (ComplexLorentzGroup.val : ComplexLorentzGroup d → _) := ⟨rfl⟩
+  rw [hind.continuous_iff]
+  show Continuous (fun t : ℂ => exp (t • boostGen d))
+  exact NormedSpace.exp_continuous.comp (continuous_id.smul continuous_const)
+
+/-- Cartan (KAK) decomposition: every complex Lorentz transform decomposes as
+    `Λ = R₁ · B · R₂` where `R₁, R₂ ∈ L₊↑(ℝ)` and `B` lies in the
+    complex boost strip. -/
+private theorem cartan_decomposition (hd2 : 2 ≤ d) (Λ : ComplexLorentzGroup d) :
+    ∃ (k₁ k₂ : RestrictedLorentzGroup d) (a : ComplexLorentzGroup d),
+      a ∈ complexBoostStrip d ∧
+      Λ = ComplexLorentzGroup.ofReal k₁ * a * ComplexLorentzGroup.ofReal k₂ := sorry
+
+/-- Every element of the complex boost strip lies in the slice index set for `d ≥ 2`.
+    This is the geometric core: for a complex boost `B(t)` and any permutation `σ`,
+    there exists `w ∈ FT` with `B(t) · (σ · w) ∈ FT`. For `d ≥ 2`, the forward
+    cone has enough spatial dimensions that the boost can be arranged orthogonally
+    to the difference vectors. -/
+private theorem complexBoostStrip_subset_sliceIndexSet
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
+    complexBoostStrip d ⊆ {Λ : ComplexLorentzGroup d |
+      (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := sorry
+
 /-- The index set of Lorentz transforms with nonempty forward-overlap slice
-    is connected for `d ≥ 2`. This is the sole remaining geometric obligation
-    for the BHW theorem (d ≥ 2 branch).
+    is connected for `d ≥ 2`.
 
-    **What this says:** The set `I = {Λ ∈ L₊(ℂ) | ∃ w ∈ FT, Λ·(σ·w) ∈ FT}`
-    is connected. Note that `I ≠ Set.univ` in general (when all imaginary
-    difference vectors are collinear, no Lorentz transform can selectively
-    reorder them), but it IS connected.
-
-    **Established properties:**
-    - `I` is open (projection of the open set `{(Λ,w) | w ∈ FT, Λ·σ·w ∈ FT}`)
-    - `I` is nonempty (Jost witnesses for d ≥ 2)
-    - `I` is bi-invariant under `L₊↑(ℝ)` (FT is real-Lorentz invariant + σ-Λ commute)
-
-    **Proof strategy (Streater–Wightman §2-5):**
-    By bi-invariance, `I` is a union of double cosets `L₊↑(ℝ) · Λ · L₊↑(ℝ)`.
-    By polar decomposition (Cartan for the complexified group), the double-coset
-    space is parameterized by complex boost parameters. For `d ≥ 2`, these form
-    a connected set (a strip in ℂ), making the union connected.
-
-    **Infrastructure needed:**
-    1. Cartan/polar decomposition: `∀ Λ ∈ L₊(ℂ), ∃ R₁ R₂ ∈ L₊↑(ℝ), B complex boost, Λ = R₁ · B · R₂`
-    2. Complex boost family: `t ↦ B(t)` for `t ∈ ℂ` is continuous and connected
-    3. Index set contains all complex boosts (for d ≥ 2, different spatial
-       directions allow independent cone rotations) -/
+    **Proof:** By the Cartan (KAK) decomposition, every `Λ ∈ L₊(ℂ)` factors as
+    `Λ = R₁ · B · R₂` with `R₁, R₂ ∈ L₊↑(ℝ)` and `B` in the complex boost strip.
+    By bi-invariance (`sliceIndexSet_bi_invariant`), `Λ ∈ I ↔ B ∈ I`.
+    By `complexBoostStrip_subset_sliceIndexSet`, the strip lies in `I`.
+    The index set is therefore the continuous image of
+    `L₊↑(ℝ) × (I ∩ boost strip) × L₊↑(ℝ)` under the multiplication map,
+    which is connected (product of connected spaces mapped continuously). -/
 private theorem isConnected_sliceIndexSet
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
     IsConnected {Λ : ComplexLorentzGroup d |
       (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
-  sorry
+  let I := {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty}
+  -- K = image of real restricted Lorentz group in L₊(ℂ)
+  let K : Set (ComplexLorentzGroup d) :=
+    Set.range (ComplexLorentzGroup.ofReal : RestrictedLorentzGroup d → ComplexLorentzGroup d)
+  -- K is connected (continuous image of path-connected space)
+  have hK_conn : IsConnected K := by
+    have heq : K = ComplexLorentzGroup.ofReal '' Set.univ :=
+      (Set.image_univ).symm
+    rw [heq]
+    have hpc := IsPathConnected.isConnected
+      (RestrictedLorentzGroup.isPathConnected (d := d))
+    exact IsConnected.image hpc _ continuous_ofReal.continuousOn
+  -- A = complex boost strip (connected for d ≥ 2)
+  let A := complexBoostStrip d
+  -- I ∩ A = A (all boosts are in the index set)
+  have hIA_eq : I ∩ A = A := by
+    ext a; constructor
+    · exact And.right
+    · intro ha; exact ⟨complexBoostStrip_subset_sliceIndexSet n σ hd2 ha, ha⟩
+  have hIA_conn : IsConnected (I ∩ A) := by rw [hIA_eq]; exact isConnected_complexBoostStrip hd2
+  -- Multiplication map: (k₁, a, k₂) ↦ k₁ * a * k₂
+  let mulMap : ComplexLorentzGroup d × (ComplexLorentzGroup d × ComplexLorentzGroup d) →
+      ComplexLorentzGroup d := fun p => p.1 * p.2.1 * p.2.2
+  have h_cont : Continuous mulMap := by
+    apply Continuous.mul
+    · exact (continuous_fst).mul (continuous_fst.comp continuous_snd)
+    · exact continuous_snd.comp continuous_snd
+  -- I = mulMap '' (K ×ˢ ((I ∩ A) ×ˢ K))
+  have h_image : I = mulMap '' (K ×ˢ ((I ∩ A) ×ˢ K)) := by
+    ext Λ; constructor
+    · intro hΛ
+      rcases cartan_decomposition hd2 Λ with ⟨k₁, k₂, a, ha, rfl⟩
+      refine ⟨(ComplexLorentzGroup.ofReal k₁, a, ComplexLorentzGroup.ofReal k₂),
+        ⟨⟨k₁, rfl⟩, ⟨?_, ha⟩, ⟨k₂, rfl⟩⟩, rfl⟩
+      exact sliceIndexSet_bi_invariant_rev n σ a k₁ k₂ hΛ
+    · rintro ⟨⟨k₁_val, a_val, k₂_val⟩, ⟨⟨k₁, rfl⟩, ⟨haI, _⟩, ⟨k₂, rfl⟩⟩, rfl⟩
+      exact sliceIndexSet_bi_invariant n σ a_val k₁ k₂ haI
+  -- Connected product mapped continuously
+  have hprod_conn := (hK_conn.prod (hIA_conn.prod hK_conn)).image _ h_cont.continuousOn
+  convert hprod_conn using 1
 
 /-- The forward-overlap set `{w ∈ FT | σ·w ∈ ET}` is connected for `d ≥ 2`.
 
