@@ -29,6 +29,11 @@ Current reductions already proved in code:
 
 So the true deferred content is the nontrivial branch `n ≥ 2` and `τ ≠ 1`.
 
+In code this is now isolated as:
+
+- `blocker_eventually_slice_anchor_on_prepared_nhds_d1_nontrivial`
+  in `PermutationFlowBlockers.lean`.
+
 ## Why this is now the right granularity
 
 `PermutationFlow.lean` now proves wrappers reducing to this blocker module:
