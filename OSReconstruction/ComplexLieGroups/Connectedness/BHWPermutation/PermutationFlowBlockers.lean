@@ -12,13 +12,61 @@ variable {d : ℕ}
 theorem blocker_isConnected_permSeedSet_dge2
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
     IsConnected (permSeedSet (d := d) n σ) := by
-  sorry
+  by_cases hn : n ≤ 1
+  · have hsub : Subsingleton (Fin n) := by
+      refine ⟨?_⟩
+      intro a b
+      apply Fin.ext
+      have ha0 : a.val = 0 := by omega
+      have hb0 : b.val = 0 := by omega
+      omega
+    letI : Subsingleton (Fin n) := hsub
+    have hσ : σ = 1 := Subsingleton.elim σ 1
+    subst hσ
+    have hset : permSeedSet (d := d) n (1 : Equiv.Perm (Fin n)) = ForwardTube d n := by
+      ext z
+      constructor
+      · intro hz
+        simpa [permSeedSet, PermutedForwardTube, permAct] using hz.2
+      · intro hz
+        exact ⟨forwardTube_subset_extendedTube hz,
+          by simpa [PermutedForwardTube, permAct] using hz⟩
+    simpa [hset] using
+      (show IsConnected (ForwardTube d n) from
+        ⟨forwardTube_nonempty (d := d) (n := n), forwardTube_convex.isPreconnected⟩)
+  · -- Remaining nontrivial branch (`n ≥ 2`): geometric connectedness input.
+    -- Current closure route uses index-set connectedness via real double-coset generation.
+    -- This branch is intentionally deferred here.
+    sorry
 
 /-- Deferred geometric input (`d = 1`): connectedness of the permutation seed set. -/
 theorem blocker_isConnected_permSeedSet_d1
     (n : ℕ) (σ : Equiv.Perm (Fin n)) :
     IsConnected (permSeedSet (d := 1) n σ) := by
-  sorry
+  by_cases hn : n ≤ 1
+  · have hsub : Subsingleton (Fin n) := by
+      refine ⟨?_⟩
+      intro a b
+      apply Fin.ext
+      have ha0 : a.val = 0 := by omega
+      have hb0 : b.val = 0 := by omega
+      omega
+    letI : Subsingleton (Fin n) := hsub
+    have hσ : σ = 1 := Subsingleton.elim σ 1
+    subst hσ
+    have hset : permSeedSet (d := 1) n (1 : Equiv.Perm (Fin n)) = ForwardTube 1 n := by
+      ext z
+      constructor
+      · intro hz
+        simpa [permSeedSet, PermutedForwardTube, permAct] using hz.2
+      · intro hz
+        exact ⟨forwardTube_subset_extendedTube hz,
+          by simpa [PermutedForwardTube, permAct] using hz⟩
+    simpa [hset] using
+      (show IsConnected (ForwardTube 1 n) from
+        ⟨forwardTube_nonempty (d := 1) (n := n), forwardTube_convex.isPreconnected⟩)
+  · -- Remaining nontrivial branch (`n ≥ 2`) is deferred.
+    sorry
 
 /-- Deferred `d=1` local slice-anchor input at a prepared adjacent-swap anchor. -/
 theorem blocker_eventually_slice_anchor_on_prepared_nhds_d1
