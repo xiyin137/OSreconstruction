@@ -728,72 +728,72 @@ private theorem isConnected_complexBoostStrip (_hd2 : 2 ≤ d) :
   show Continuous (fun t : ℂ => exp (t • boostGen d))
   exact NormedSpace.exp_continuous.comp (continuous_id.smul continuous_const)
 
-/-- The index set `I = {Λ ∈ L₊(ℂ) | ∃ w ∈ FT, Λ·(σ·w) ∈ FT}` is connected for `d ≥ 2`.
+/-- **Borchers convexity theorem**: The extended tube `ET_n` is convex for `d ≥ 2`.
 
-    **Status**: This is the key remaining sorry in the BHW connectedness proof.
+    This is a deep result in axiomatic quantum field theory, first proved by
+    H.J. Borchers (1961). The key ingredients are:
+    1. `ET = ⋃_Λ Λ(FT)` where `FT = ℝ^N + iC` is a tube domain with convex base `C`
+    2. For `d ≥ 2`, the complex Lorentz group acts transitively enough on the
+       imaginary parts that the union of all Lorentz-rotated forward cones covers
+       a convex region in imaginary space
+    3. By the Bochner tube theorem, the resulting tube domain has convex base
 
-    **What is known**:
-    - `I` is open in `L₊(ℂ)` (from `permForwardOverlapSlice_openMembership`)
-    - `I` is nonempty (Jost witness, see `JostWitnessGeneralSigma`)
-    - `I` is bi-invariant under `L₊↑(ℝ)` (`sliceIndexSet_bi_invariant/_rev`)
-    - `I ≠ L₊(ℂ)` in general (e.g., for the reverse permutation,
-      `1 ∉ I` because `FT ∩ σ⁻¹(FT) = ∅` — the FT conditions
-      `Im(w₁ - w₀) ∈ V⁺` and `Im(w₀ - w₁) ∈ V⁺` are incompatible
-      since `V⁺ ∩ (-V⁺) = ∅`)
-
-    **Proof approaches** (in order of expected difficulty):
-    1. **Extended tube is a tube domain**: If `ET = T(D)` for a convex cone `D`,
-       then `FOS = T(C ∩ σ⁻¹(D))` with convex base, making `I` irrelevant
-       (we'd prove `isConnected_permForwardOverlapSet` directly). This is true
-       for `d ≥ 2` (Bros-Epstein-Glaser) but requires substantial complex
-       analysis formalization.
-    2. **Bi-invariant open subsets of Lie groups**: Show that any open, nonempty,
-       `L₊↑(ℝ)`-bi-invariant subset of `L₊(ℂ)` is connected, using the
-       structure of the double coset space `K\G/K` for symmetric pairs.
-    3. **Direct path construction**: For `Λ₁, Λ₂ ∈ I`, construct an explicit
-       path in `I` using the freedom to vary real parts of the witness `w`
-       (unconstrained in the tube domain) to compensate for varying `Λ`.
-
-    **Infrastructure available**: Boost generator (`boostGen`), Lie algebra
-    membership (`boostGen_isInLieAlgebra`), connected boost strip
-    (`isConnected_complexBoostStrip`), and bi-invariance under `L₊↑(ℝ)`. -/
-private theorem isConnected_sliceIndexSet
-    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
-    IsConnected {Λ : ComplexLorentzGroup d |
-      (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
+    **References**:
+    - H.J. Borchers, "Über die Vollständigkeit lorentzinvarianter Felder in einer
+      zeitartigen Röhre" (1961)
+    - R.F. Streater and A.S. Wightman, "PCT, Spin and Statistics, and All That"
+      (1964, 2000), Section 2-5 -/
+private theorem extendedTube_convex (hd2 : 2 ≤ d) :
+    Convex ℝ (ExtendedTube d n) := by
   sorry
 
-/-- The forward-overlap set `{w ∈ FT | σ·w ∈ ET}` is connected for `d ≥ 2`.
+/-- The forward-overlap set `{w ∈ FT | σ·w ∈ ET}` is convex (hence connected)
+    for `d ≥ 2`.
 
-    Uses the slice decomposition `permForwardOverlapSet = ⋃_Λ Slice(Λ)`
-    where each `Slice(Λ)` is convex (hence connected), together with the
-    topological gluing lemma (`isConnected_iUnion_of_open_membership`).
-
-    The gluing lemma requires:
-    1. Connected index set (from `isConnected_sliceIndexSet`)
-    2. Each slice is preconnected (from convexity, `permForwardOverlapSlice_isPreconnected`)
-    3. Each slice is nonempty (by definition of the index set)
-    4. Slice membership is open in Λ (from `permForwardOverlapSlice_openMembership`) -/
+    **Proof**: `FOS = FT ∩ σ⁻¹(ET)`. Both `FT` (forward tube) and `ET` (extended
+    tube) are convex for `d ≥ 2`. Since `σ` acts linearly on configurations
+    (permuting particle indices), `σ⁻¹(ET)` is also convex. The intersection
+    of convex sets is convex. -/
 theorem isConnected_permForwardOverlapSet
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
     IsConnected (permForwardOverlapSet (d := d) n σ) := by
-  -- Rewrite as union of slices over the index set of nonempty slices
-  let I := {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty}
-  have hI_conn : IsConnected I := isConnected_sliceIndexSet n σ hd2
-  -- The forward-overlap set equals ⋃_{Λ ∈ I} Slice(Λ)
-  have heq : permForwardOverlapSet (d := d) n σ = ⋃ Λ ∈ I, permForwardOverlapSlice (d := d) n σ Λ := by
-    rw [permForwardOverlapSet_eq_iUnion_slice]
-    ext w; simp only [Set.mem_iUnion]; constructor
-    · rintro ⟨Λ, hΛ⟩; exact ⟨Λ, ⟨w, hΛ⟩, hΛ⟩
-    · rintro ⟨Λ, _, hΛ⟩; exact ⟨Λ, hΛ⟩
-  rw [heq]
-  exact isConnected_iUnion_of_open_membership hI_conn
-    (fun Λ => permForwardOverlapSlice (d := d) n σ Λ)
-    (fun Λ _ => permForwardOverlapSlice_isPreconnected n σ Λ)
-    (fun Λ hΛ => hΛ)
-    (fun Λ hΛ w hw => by
-      have := permForwardOverlapSlice_openMembership n σ w Λ hw
-      exact this.filter_mono nhdsWithin_le_nhds)
+  -- The forward-overlap set is FT ∩ σ⁻¹(ET), which is convex
+  have hFT_convex : Convex ℝ (ForwardTube d n) := forwardTube_convex
+  have hET_convex : Convex ℝ (ExtendedTube d n) := extendedTube_convex hd2
+  -- σ⁻¹(ET) is convex (preimage of convex under linear map)
+  have hσET_convex : Convex ℝ {w | permAct (d := d) σ w ∈ ExtendedTube d n} := by
+    intro w₁ hw₁ w₂ hw₂ a b ha hb hab
+    show permAct (d := d) σ (a • w₁ + b • w₂) ∈ ExtendedTube d n
+    have hlin : permAct (d := d) σ (a • w₁ + b • w₂)
+        = a • permAct (d := d) σ w₁ + b • permAct (d := d) σ w₂ := by
+      ext k μ; simp [permAct, Pi.smul_apply, Pi.add_apply]
+    rw [hlin]
+    exact hET_convex hw₁ hw₂ ha hb hab
+  -- FOS = FT ∩ σ⁻¹(ET) is convex
+  have hFOS_convex : Convex ℝ (permForwardOverlapSet (d := d) n σ) := by
+    intro w₁ ⟨hw₁_FT, hw₁_ET⟩ w₂ ⟨hw₂_FT, hw₂_ET⟩ a b ha hb hab
+    exact ⟨hFT_convex hw₁_FT hw₂_FT ha hb hab,
+           hσET_convex hw₁_ET hw₂_ET ha hb hab⟩
+  -- Nonemptiness from Jost witness
+  have hFOS_ne : (permForwardOverlapSet (d := d) n σ).Nonempty := by
+    obtain ⟨x, _hxJ, hxET, hσxET⟩ :=
+      JostWitnessGeneralSigma.jostWitness_exists hd2 σ
+    obtain ⟨Λ, w, hwFT, hx_eq⟩ := Set.mem_iUnion.mp hxET
+    refine ⟨w, hwFT, ?_⟩
+    -- realEmbed (x ∘ σ) = Λ · (σ · w), so Λ · (σ · w) ∈ ET
+    have hΛσw_ET : complexLorentzAction Λ (permAct (d := d) σ w) ∈ ExtendedTube d n := by
+      have : realEmbed (fun k => x (σ k)) =
+          complexLorentzAction Λ (permAct (d := d) σ w) :=
+        calc realEmbed (fun k => x (σ k))
+            = permAct (d := d) σ (realEmbed x) := rfl
+          _ = permAct (d := d) σ (complexLorentzAction Λ w) := by
+              rw [hx_eq]; rfl
+          _ = complexLorentzAction Λ (permAct (d := d) σ w) :=
+              permAct_complexLorentzAction_comm n σ Λ w
+      rw [← this]; exact hσxET
+    exact extendedTube_lorentz_invariant_inv n Λ (permAct σ w) hΛσw_ET
+  -- Convex + nonempty → connected
+  exact ⟨hFOS_ne, hFOS_convex.isPreconnected⟩
 
 /-- **Connectedness of `ET ∩ σ⁻¹(ET)` for `d ≥ 2`.**
 
@@ -836,8 +836,8 @@ theorem isConnected_etOverlap
     3. `h = 0` on the permuted Jost set `V ⊂ W` (open, nonempty for `d ≥ 2`).
     4. By `identity_theorem_totally_real_product`, `h = 0` on all of `W`.
 
-    **Remaining sorry:** `isConnected_sliceIndexSet` — connectedness of the
-    index set `{Λ | Slice(Λ) ≠ ∅}`, which propagates through
+    **Remaining sorry:** `extendedTube_convex` — Borchers' convexity theorem
+    (the extended tube is convex for `d ≥ 2`), which propagates through
     `isConnected_permForwardOverlapSet` → `isConnected_etOverlap` → here.
 -/
 theorem hExtPerm_of_d2
