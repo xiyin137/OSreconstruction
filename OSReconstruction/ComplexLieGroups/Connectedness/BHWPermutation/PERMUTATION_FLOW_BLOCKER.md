@@ -35,9 +35,9 @@ Recent formal checks relevant to this blocker:
   `d=1, n=2` positive witness (`w ∈ FT` with `swap·w ∈ ET`).
   This helps with local nonemptiness sanity but does not close global `hAnchor`.
 
-- `test/proofideas_ih_composition.lean` currently has one intentional `sorry`
-  (`route_B_counterexample_statement`), while its IH-composition infrastructure
-  typechecks.
+- `test/proofideas_ih_composition.lean` now has no `sorry` and includes a
+  complete formal `route_B_counterexample_statement` (`swap⁻¹·FT ⊄ ET` in
+  `d=1`) alongside the IH-composition infrastructure.
 
 - midpoint implication routes are already formally refuted in test files
   (`midpoint_route_vacuous_test.lean`, `midpoint_condition_d1_counterexample_test.lean`),

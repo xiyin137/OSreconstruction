@@ -78,8 +78,10 @@ The following points are now concretely checked in `test/`:
   This confirms adjacent overlap nonemptiness in a concrete case, but it is
   **not** a counterexample to the global blocker.
 
-- `test/proofideas_ih_composition.lean` compiles with one remaining `sorry`:
-  `route_B_counterexample_statement`. Its Part 1/2/3 infrastructure typechecks
+- `test/proofideas_ih_composition.lean` compiles with no `sorry`.
+  In particular, `route_B_counterexample_statement` is now a complete formal
+  theorem showing `swap⁻¹·FT ⊄ ET` in `d=1` (pure-imaginary witness), while
+  Part 1/2/3 IH-composition infrastructure typechecks.
   (IH-to-`extendF`, composition, openness).
 
 - Old midpoint-route assumptions are formally contradicted in:
