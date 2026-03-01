@@ -585,12 +585,30 @@ theorem isConnected_iUnion_of_open_membership
 /-! ### Connectedness of the forward-overlap set -/
 
 /-- The index set of Lorentz transforms with nonempty forward-overlap slice
-    is connected for `d ≥ 2`. This is the main geometric obligation.
+    is connected for `d ≥ 2`. This is the sole remaining geometric obligation
+    for the BHW theorem (d ≥ 2 branch).
 
-    The proof uses the double-coset structure: FT is invariant under the real
-    Lorentz group `L₊↑(ℝ)`, making the index set bi-invariant. By polar
-    decomposition, this reduces to connectedness of a 1-parameter complex
-    boost strip. -/
+    **What this says:** The set `I = {Λ ∈ L₊(ℂ) | ∃ w ∈ FT, Λ·(σ·w) ∈ FT}`
+    is connected. Note that `I ≠ Set.univ` in general (when all imaginary
+    difference vectors are collinear, no Lorentz transform can selectively
+    reorder them), but it IS connected.
+
+    **Established properties:**
+    - `I` is open (projection of the open set `{(Λ,w) | w ∈ FT, Λ·σ·w ∈ FT}`)
+    - `I` is nonempty (Jost witnesses for d ≥ 2)
+    - `I` is bi-invariant under `L₊↑(ℝ)` (FT is real-Lorentz invariant + σ-Λ commute)
+
+    **Proof strategy (Streater–Wightman §2-5):**
+    By bi-invariance, `I` is a union of double cosets `L₊↑(ℝ) · Λ · L₊↑(ℝ)`.
+    By polar decomposition (Cartan for the complexified group), the double-coset
+    space is parameterized by complex boost parameters. For `d ≥ 2`, these form
+    a connected set (a strip in ℂ), making the union connected.
+
+    **Infrastructure needed:**
+    1. Cartan/polar decomposition: `∀ Λ ∈ L₊(ℂ), ∃ R₁ R₂ ∈ L₊↑(ℝ), B complex boost, Λ = R₁ · B · R₂`
+    2. Complex boost family: `t ↦ B(t)` for `t ∈ ℂ` is continuous and connected
+    3. Index set contains all complex boosts (for d ≥ 2, different spatial
+       directions allow independent cone rotations) -/
 private theorem isConnected_sliceIndexSet
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
     IsConnected {Λ : ComplexLorentzGroup d |
