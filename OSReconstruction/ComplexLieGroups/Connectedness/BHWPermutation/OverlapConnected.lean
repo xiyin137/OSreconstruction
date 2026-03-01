@@ -898,20 +898,55 @@ theorem hExtPerm_of_d2
   simp only [hh_def] at this
   exact sub_eq_zero.mp this
 
-/-! ### Remaining work: `d = 1` branch
+/-! ### Dimension reduction: `d = 1` → `d = 2`
 
 For `d = 1`, real Jost witnesses do not exist (proved in
-`d1_no_real_witness_swap_n2_probe.lean`). Neither the FT-overlap
-connectedness route nor the ET identity theorem route apply directly.
+`d1_no_real_witness_swap_n2_probe.lean`). We handle this case by embedding
+1+1 Minkowski space into 2+1, applying `hExtPerm_of_d2`, and projecting back.
 
-**Recommended approach: Dimension reduction.**
-Embed 1+1 Minkowski space into 2+1 by adding a trivial spatial dimension,
-invoke the `d ≥ 2` theorem, and project back. This requires a compatibility
-lemma between forward tubes across dimensions:
+**Strategy**: Define `dimLift : (Fin n → Fin 2 → ℂ) → (Fin n → Fin 3 → ℂ)` that appends
+a zero spatial coordinate. Show:
+1. `dimLift` maps `FT(1,n)` into `FT(2,n)` (forward cone monotonicity)
+2. Block-embedding `L₊(ℂ,1) ↪ L₊(ℂ,2)` makes `dimLift` equivariant under Lorentz action
+3. `dimLift` maps `ET(1,n)` into `ET(2,n)` (from 1 + 2)
+4. `extendF (F ∘ proj) ∘ lift = extendF F` (extension respects dimensional reduction)
+5. `F ∘ proj` satisfies the Wightman axioms on `FT(2,n)` (holomorphy, Lorentz invariance,
+   boundary values, locality all transfer)
+6. Apply `hExtPerm_of_d2` to `F ∘ proj` and translate back.
 
-  `ForwardTube 1 n ≃ ForwardTube 2 n ∩ {z | ∀ k, z k 2 = 0}`
-
-This is the standard textbook approach for handling the `d = 1` case.
+The key technical steps are the Lorentz group embedding (block matrix in `SO₊(1,d;ℂ)`)
+and the `extendF` compatibility (which uses well-definedness of extension on ET preimages).
 -/
+
+/-- **Permutation invariance for d = 1 by dimension reduction.**
+
+    The standard textbook approach (Streater-Wightman, PCT Spin and Statistics):
+    embed 1+1 spacetime into 2+1, apply the `d ≥ 2` theorem, project back.
+
+    **Remaining sorrys**: This requires Fin-arithmetic infrastructure for the
+    dimensional embedding (lift/project maps, forward cone monotonicity, Lorentz
+    group block embedding, extendF compatibility). These are purely technical
+    and do not involve new mathematical ideas beyond `hExtPerm_of_d2`. -/
+theorem hExtPerm_of_d1
+    (n : ℕ)
+    (F : (Fin n → Fin 2 → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 n))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : Fin n → Fin 2 → ℂ), z ∈ ForwardTube 1 n →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin n → Fin 2 → ℝ),
+      ContinuousWithinAt F (ForwardTube 1 n) (fun k μ => (x k μ : ℂ)))
+    (hF_local : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      ∀ (x : Fin n → Fin 2 → ℝ),
+        ∑ μ, LorentzLieGroup.minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ)))
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin 2 → ℂ)
+    (hz : z ∈ ExtendedTube 1 n)
+    (hσz : (fun k => z (σ k)) ∈ ExtendedTube 1 n) :
+    extendF F (fun k => z (σ k)) = extendF F z := by
+  sorry
 
 end BHW

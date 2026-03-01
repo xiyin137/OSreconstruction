@@ -2212,13 +2212,11 @@ private theorem iterated_eow_permutation_extension (n : ℕ)
               JostWitnessGeneralSigma.jostWitness_exists (d := d) (n := n) hd2 σ
           -- Split on d = 1 vs d ≥ 2
           by_cases hd_le : d ≤ 1
-          · -- d = 1 branch: requires separate analysis (1+1 spacetime)
+          · -- d = 1 branch: dimension reduction to d = 2
             have hd_eq : d = 1 := by omega
             subst hd_eq
-            -- d = 1 case: the Jost witness approach and Borchers convexity
-            -- are not available. This requires the d=1 orbit-set analysis
-            -- from IndexSetD1.lean and D1OrbitSet.lean.
-            sorry
+            intro z hz hσz
+            exact hExtPerm_of_d1 n F hF_holo hF_lorentz hF_bv hF_local σ z hz hσz
           · -- d ≥ 2 branch: use hExtPerm_of_d2 from OverlapConnected.lean
             have hd2 : 2 ≤ d := by omega
             intro z hz hσz
