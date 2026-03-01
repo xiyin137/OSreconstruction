@@ -268,21 +268,43 @@ private lemma F_adj_swap_invariant
   hF_local i hi x (jostSet_spacelike_for_locality x hxJ i ⟨i.val + 1, hi⟩
     (by intro h; exact absurd (congrArg Fin.val h) (by simp)))
 
-/-- Every transposition `swap a b` in `Fin n` can be written as a product of
-    adjacent transpositions. Stated as a property that propagates through
-    the product: if P holds for the identity and is preserved by left-multiplication
-    by any adjacent swap, then P holds for `swap a b`. -/
-lemma swap_adj_induction {n : ℕ} (a b : Fin n) (hab : a ≠ b)
+/-- Induction principle for adjacent transposition generation in `Perm (Fin n)`.
+
+    If `P` holds for the identity, for each adjacent swap, and is closed under
+    composition, then `P` holds for all permutations. This is a consequence of
+    mathlib's `Equiv.Perm.mclosure_swap_castSucc_succ`, which proves that adjacent
+    transpositions generate the full symmetric group as a monoid. -/
+lemma perm_adj_closure_induction {n : ℕ} (σ : Equiv.Perm (Fin n))
     {P : Equiv.Perm (Fin n) → Prop}
     (hid : P 1)
-    (hadj : ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
-      P σ → P (Equiv.swap i ⟨i.val + 1, hi⟩ * σ)) :
-    P (Equiv.swap a b) := by
-  sorry
+    (hadj : ∀ (i : Fin n) (hi : i.val + 1 < n),
+      P (Equiv.swap i ⟨i.val + 1, hi⟩))
+    (hmul : ∀ σ τ : Equiv.Perm (Fin n), P σ → P τ → P (σ * τ)) :
+    P σ := by
+  -- We need to connect our formulation (swap i ⟨i+1, hi⟩ for i : Fin n, hi : i+1 < n)
+  -- with mathlib's formulation (swap i.castSucc i.succ for i : Fin m, where n = m+1).
+  -- When n = 0, Perm (Fin 0) is trivial.
+  -- When n ≥ 1, write n = m + 1 and use mclosure_swap_castSucc_succ m.
+  rcases n with _ | m
+  · -- n = 0: Fin 0 is empty, so σ = 1
+    have : σ = 1 := Subsingleton.elim σ 1
+    rw [this]; exact hid
+  · -- n = m + 1: use mathlib's mclosure_swap_castSucc_succ m
+    have hmem : σ ∈ Submonoid.closure
+        (Set.range fun i : Fin m => Equiv.swap i.castSucc i.succ) := by
+      rw [Equiv.Perm.mclosure_swap_castSucc_succ]; exact Submonoid.mem_top σ
+    induction hmem using Submonoid.closure_induction with
+    | one => exact hid
+    | mem x hx =>
+      obtain ⟨i, rfl⟩ := hx
+      have : i.castSucc.val + 1 < m + 1 := by
+        simp [Fin.val_castSucc]
+      exact hadj i.castSucc this
+    | mul x y _ _ hpx hpy => exact hmul x y hpx hpy
 
 /-- F is invariant under any swap on JostSet.
 
-    Reduces arbitrary swaps to adjacent swaps via `swap_adj_induction`,
+    Reduces arbitrary swaps to adjacent swaps via `perm_adj_closure_induction`,
     then applies `F_adj_swap_invariant` at each step. JostSet membership
     is preserved at each intermediate step by `jostSet_permutation_invariant`. -/
 private lemma F_swap_invariant
@@ -293,29 +315,33 @@ private lemma F_swap_invariant
           (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
         F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
         F (fun k μ => (x k μ : ℂ)))
-    (a b : Fin n) (hab : a ≠ b)
+    (a b : Fin n) (_hab : a ≠ b)
     (x : Fin n → Fin (d + 1) → ℝ) (hxJ : x ∈ JostSet d n) :
     F (fun k μ => (x (Equiv.swap a b k) μ : ℂ)) =
     F (fun k μ => (x k μ : ℂ)) := by
-  -- Use swap_adj_induction with:
   -- P(σ) = ∀ y ∈ JostSet, F(y ∘ σ) = F(y)
+  -- We prove P(swap a b) by showing P holds for all permutations.
   suffices h : ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ JostSet d n →
       F (fun k μ => (y (Equiv.swap a b k) μ : ℂ)) = F (fun k μ => (y k μ : ℂ)) from
     h x hxJ
-  apply swap_adj_induction a b hab (P := fun σ =>
+  apply perm_adj_closure_induction (Equiv.swap a b) (P := fun σ =>
     ∀ y : Fin n → Fin (d + 1) → ℝ, y ∈ JostSet d n →
       F (fun k μ => (y (σ k) μ : ℂ)) = F (fun k μ => (y k μ : ℂ)))
-  · -- P(1): trivial
+  · -- P(1)
     intro y _; simp
-  · -- P(σ) → P(swap(i, i+1) * σ)
-    intro σ i hi ih y hyJ
-    have hwJ : (fun k => y (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈ JostSet d n :=
-      jostSet_permutation_invariant _ hyJ
-    have hrewrite : (fun k μ => (y ((Equiv.swap i ⟨i.val + 1, hi⟩ * σ) k) μ : ℂ)) =
-        (fun k μ => ((fun k' => y (Equiv.swap i ⟨i.val + 1, hi⟩ k')) (σ k) μ : ℂ)) := by
-      ext k μ; simp [Equiv.Perm.mul_apply]
-    rw [hrewrite, ih _ hwJ]
+  · -- P(adjacent swap)
+    intro i hi y hyJ
     exact F_adj_swap_invariant F hF_local y hyJ i hi
+  · -- P(σ) ∧ P(τ) → P(σ * τ)
+    intro σ τ hσ hτ y hyJ
+    have hyσJ : (fun k => y (σ k)) ∈ JostSet d n :=
+      jostSet_permutation_invariant σ hyJ
+    show F (fun k μ => (y ((σ * τ) k) μ : ℂ)) = F (fun k μ => (y k μ : ℂ))
+    have hrewrite : (fun k μ => (y ((σ * τ) k) μ : ℂ)) =
+        (fun k μ => ((fun k' => y (σ k')) (τ k) μ : ℂ)) := by
+      ext k μ; simp [Equiv.Perm.mul_apply]
+    rw [hrewrite, hτ _ hyσJ]
+    exact hσ y hyJ
 
 /-- F(σ · x) = F(x) for all permutations σ and all x ∈ JostSet.
 
