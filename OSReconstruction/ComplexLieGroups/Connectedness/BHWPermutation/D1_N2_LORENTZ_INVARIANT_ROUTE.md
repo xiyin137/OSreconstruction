@@ -46,6 +46,13 @@ The goal is to isolate the blocker proof into a clean model statement:
 4. Real spacelike expression as `Q₀+Q₁-2P`:
    - `d1_adj_spacelike_expr_eq_q0q1p`
    - `d1_n2_local_comm_of_invariant_ineq`
+   - chart-level form on explicit real coordinates:
+     `d1N2RealConfig`, `d1Q0R_realConfig`, `d1Q1R_realConfig`,
+     `d1P01R_realConfig`, `d1S01R_realConfig`,
+     `d1InvariantQuadR`, `d1InvariantQuadR_realConfig`,
+     `d1InvariantQuadR_realConfig_swap`,
+     `d1_adj_spacelike_expr_realConfig`,
+     `d1_n2_local_comm_realConfig_of_spacelike`
 5. Invariant-quadric relation:
    - `d1_invariant_quadric_relation` proving
      `S^2 = 4 (P^2 - Q0*Q1)`
@@ -63,6 +70,11 @@ The goal is to isolate the blocker proof into a clean model statement:
    - `d1UAt_scalarBoost`, `d1VAt_scalarBoost`
    - `d1_exists_lorentz_of_sameInvariantQuad_on_FT`
      (equal signed quadruples on `FT_{1,2}` imply same complex-Lorentz orbit)
+9. Probe/Jacobian scaffolding for the invariant-function analytic step:
+   - `d1N2RealProbePoint`
+   - `d1N2InvariantJacobianMinorAtProbe`
+   - `d1N2InvariantJacobianMinorAtProbe_det`
+   - `d1N2InvariantJacobianMinorAtProbe_det_ne_zero`
 
 ## Reduction theorem now available
 
@@ -79,56 +91,131 @@ These theorems prove:
   forwardizing witness `Γ` with `Γ·(swap·z) ∈ FT`,
 - then the full adjacent-swap forward equality follows for every complex Lorentz witness `Γ`.
 
-So the remaining burden in this route is not the algebraic Lorentz/swap layer; it is to construct:
+So the remaining burden in this route is not the algebraic Lorentz/swap layer.
+The sole remaining `d=1,n=2` analytic core is now:
 
-- `d1N2InvariantModel F`
+- `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariantOnly_core_deferred`
+  (for source kernels, prove invariant-coordinate involution symmetry on
+  realizable quadric pairs).
 
-from the existing analytic assumptions (`hF_holo`, `hF_lorentz`, `hF_bv`, `hF_local`)
-plus the invariant-function identity-theorem argument on the invariant variety.
+Current in-code reduction around this core:
 
-This is represented in blockers by:
+1. `blocker_d1N2LocalForwardEqNhd_core_deferred` is now proved from:
+   - factorization (`blocker_d1N2InvariantFactorization_core_deferred`),
+   - source-core forwardizable diff-zero (the theorem above),
+   - `d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric`.
+2. `blocker_d1N2LocalSliceAnchorNhd_core_deferred` is proved from
+   `blocker_d1N2LocalForwardEqNhd_core_deferred` via
+   `d1N2EventuallySliceAnchor_iff_eventuallyForwardEq_fixedWitness`.
+3. `blocker_d1N2PointwiseSliceAnchor_core_deferred` is a proved wrapper:
+   from one witness `(z, Γ)` it builds an open prepared neighborhood `U` and
+   extracts the anchor at `z` via `Eventually.self_of_nhds`.
+4. `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_core_deferred`
+   is now a proved wrapper to the same source-invariant core theorem.
 
-- `blocker_d1N2InvariantModel_core_deferred`
-- `blocker_d1N2ForwardSwapEq_on_FT_deferred`
-- `blocker_d1N2SameInvariantQuad_on_FT_implies_eq_deferred`
-- `blocker_d1N2InvariantFactorization_on_FT_deferred`
-- `blocker_d1N2InvariantKernelSwapRule_deferred`
-- (proved wrapper) `blocker_d1N2InvariantModel_of_wightman_d1_swap01_deferred`
+Important constraint now formalized in Lean:
 
-Current status of these blockers:
+- `d1N2InvariantKernelSource_not_sufficient_for_quadricDiffZero`
+  proves `source + hf_onFT` does **not** force full-quadric involution for an
+  arbitrary representative `f`; off-image values of `f` remain unconstrained.
 
-1. `blocker_d1N2OrbitDecomposition_of_sameInvariantQuad_on_FT_deferred` is now
-   proved (via `d1_exists_lorentz_of_sameInvariantQuad_on_FT`).
-2. `blocker_d1N2InvariantFactorization_on_FT_deferred` is now a proved wrapper
-   reducing factorization to `blocker_d1N2SameInvariantQuad_on_FT_implies_eq_deferred`.
-3. `blocker_d1N2InvariantModel_core_deferred` is the only remaining
-   deferred theorem in the `d=1,n=2` Lorentz route.
-4. `blocker_d1N2SameInvariantQuad_on_FT_implies_eq_deferred` is now proved
-   directly from:
-   - `d1_exists_lorentz_of_sameInvariantQuad_on_FT`, and
-   - `complex_lorentz_invariance`.
-   It no longer depends on the forward-swap deferred theorem.
-5. `blocker_d1N2ForwardSwapEq_on_FT_core_deferred` is now proved by reduction
-   from `blocker_d1N2InvariantModel_core_deferred` via
-   `d1_n2_forward_swap_eq_of_invariantModel`.
-6. `blocker_d1N2InvariantModel_of_wightman_d1_swap01_deferred` is now a proved
-   wrapper combining:
-   - factorization wrapper above, and
-   - `blocker_d1N2InvariantKernelSwapRule_deferred`.
-7. `blocker_d1N2ForwardSwapEq_on_FT_deferred` is now an alias wrapper to
-   `blocker_d1N2ForwardSwapEq_on_FT_core_deferred`.
-8. `blocker_d1N2InvariantModel_core_deferred` is now the explicit deferred
-   Lorentz-invariant model-construction statement (the intended single local
-   `sorry` in this `d=1,n=2` subroute).
-9. The chain has one explicit unresolved analytic core:
-   `blocker_d1N2InvariantModel_core_deferred`.
-10. Logical bridge now formalized in route infrastructure:
-   - `d1_n2_invariantKernelSwapRule_of_forwardSwapEq` packages the direction
-     `forward-swap equality => kernel swap rule` for any `FT` factorization
-     `hf_onFT`. This isolates exactly what remains to be supplied analytically.
-   - `d1_n2_forwardSwapEq_iff_invariantKernelSwapRule` records the full
-     equivalence (for fixed `hf_onFT`), making the remaining blocker content
-     mathematically explicit.
+Current status of core blockers in this route:
+
+1. `blocker_d1N2InvariantFactorization_core_deferred` is proved.
+2. `blocker_d1N2InvariantModel_core_deferred` is proved.
+3. `blocker_d1N2ForwardSwapEq_on_FT_core_deferred` is proved.
+4. `blocker_d1N2LocalForwardEqNhd_core_deferred` is proved.
+5. Remaining explicit deferred analytic core:
+   `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariantOnly_core_deferred`
+   (invariant-coordinate realizable-pair involution symmetry for source kernels).
+6. Wrapper status:
+   - `blocker_d1N2ForwardBaseEq_source_invariantOnly_core_deferred`
+     is now proved from item 5 by:
+     factorization + `d1N2ForwardSwapEq_onFT_of_invariantKernelPairSwapOnRealizable`
+     + `extendF` Lorentz invariance,
+   - `blocker_d1N2InvariantQuadricModel_core_deferred` is proved by:
+     factorization + symmetric extension from realizable tuples + item 5,
+   - `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariant_core_deferred`
+     is proved directly from item 5 and
+     `d1N2InvariantRealizable_pair_of_forwardizable`,
+   - `blocker_d1N2InvariantKernelSwapOnForwardizable_source_core_deferred`
+     is proved via `sub_eq_zero`,
+   - `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_core_deferred`
+     is a proved wrapper to the source-invariant theorem above.
+7. Logical bridges in place:
+   - `d1N2_isConnected_adjSwapForwardOverlapSet_of_seedConnectedBlocker`
+   - `d1N2ForwardSwapEq_onFT_of_connectedForwardOverlap_and_openAnchor`
+   - `d1N2ForwardBaseEq_of_connectedForwardOverlap_and_openAnchor`
+   - `d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric`
+   - `d1N2ForwardSwapEq_onFT_iff_invariantKernelPairSwapOnRealizable`
+   - `d1N2ForwardSwapEq_onFT_of_invariantKernelPairSwapOnRealizable`
+   - `d1N2InvariantKernelPairSwapOnRealizable_of_forwardSwapEq`
+   - `d1N2InvariantKernelDiffZeroOnForwardizableQuadric_iff_witnessForm`
+   - `d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero`
+   - `d1N2InvariantKernelSwapOnForwardizable_of_forwardSwapEq`
+   - `d1N2InvariantKernelPairSwapOnRealizable_of_sourceField_iff_swappedInvariantForwardEq`
+   - `d1N2InvariantKernelPairSwapOnRealizable_source_iff_swappedInvariantForwardEq`
+   - `d1N2InvariantKernelPairSwapOnRealizable_source_iff_openAnchor`
+   - `d1N2InvariantKernelPairSwapOnRealizable_source_iff_openAnchor_of_connectedForwardOverlap`
+   - `d1N2ForwardBaseOpenAnchor_source_of_pairSwap`
+   - `d1N2InvariantKernelPairSwapOnRealizable_source_of_connectedOpenAnchor`
+     (source + connected forward-overlap + complex open anchor ⇒ realizable-pair symmetry)
+   - strengthened EOW bridge:
+     `d1N2ForwardSwapEq_onFT_of_connectedForwardOverlap_and_realWitness`
+     (non-circular; requires explicit geometric inputs
+     `hFwd_conn + x0/hx0_sp/hx0_ET/hx0_swapET`).
+   - bundled package bridge:
+     `d1N2ForwardSwapEq_onFT_of_EOWGeometryPackage`
+     with `d1N2ForwardSwapEOWGeometryPackage`.
+   - direct base-equality package bridge:
+     `d1N2ForwardBaseEq_of_EOWGeometryPackage`.
+   - source-to-core bridge under package:
+     `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariant_of_EOWGeometryPackage`.
+   - route note: for `d=1,n=2`, the real-witness adjacent wrapper is not the
+     intended closure path; local notes in `PermutationFlow.lean` explicitly
+     route this branch through complex-open anchors.
+8. Current exact unresolved subgoal (inside item 5):
+   prove directly from source assumptions:
+   `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`.
+   The pair-swap statement
+   `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariantOnly_core_deferred`
+   is now a proved `sub_eq_zero` wrapper around this diff-zero core.
+   This is now explicitly equivalent to the sourced swapped-invariant forward
+   equality form via
+   `d1N2InvariantKernelPairSwapOnRealizable_source_iff_swappedInvariantForwardEq`.
+   This is the invariant-coordinate realizable-pair involution law, and it now
+   feeds the former forward-base blocker:
+   `blocker_d1N2ForwardBaseEq_source_invariantOnly_core_deferred`
+   (proved wrapper via factorization and
+   `d1N2ForwardSwapEq_onFT_of_invariantKernelPairSwapOnRealizable`).
+   The theorem
+   `blocker_d1N2ForwardBaseOpenAnchor_source_invariant_core_main_deferred`
+   is now proved as a wrapper from item 5 via
+   `d1N2ForwardBaseOpenAnchor_source_of_pairSwap`.
+   The theorem
+   `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariant_core_main_deferred`
+   is now a direct wrapper alias of item 5.
+   The theorem
+   `blocker_d1N2Source_swappedInvariantForwardEq_core_deferred`
+   is now proved from the active theorem via realizable-pair reduction and factorization (`hf_onFT`).
+   The theorem
+   `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariant_core_deferred`
+   is now a direct wrapper alias of item 5.
+   The former open-anchor theorem
+   `blocker_d1N2ForwardBaseOpenAnchor_source_core_deferred`
+   is now proved as a wrapper from:
+   1. factorization (`blocker_d1N2InvariantFactorization_core_deferred`),
+   2. realizable-pair symmetry theorem above, and
+   3. `d1N2ForwardSwapEq_onFT_of_invariantKernelPairSwapOnRealizable`.
+   Once this is available, the former theorem
+   `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_core_deferred`
+   is now a direct wrapper alias to the active invariant-core theorem.
+   Dependency audit update (2026-03-02):
+   among the pre-core `d1,n=2` bridges, only the connectedness branch is
+   `sorry`-dependent; the open-anchor-to-pair bridge
+   `d1N2InvariantKernelPairSwapOnRealizable_source_of_connectedOpenAnchor`
+   is already `sorry`-free. So the remaining frontier is exactly the
+   source-to-open-anchor (equivalently source-to-forward-swap) implication.
 
 ## Relation to current blocker status
 
@@ -137,3 +224,24 @@ It provides a clean decomposition of the `d=1,n=2` step:
 
 1. Algebraic Lorentz/swap layer (completed here and compiled).
 2. Analytic model-construction layer (remaining, deferred in a small set of explicit theorems).
+
+## External comparison (2026-03-02)
+
+Compared with Mike's status note:
+`https://github.com/mrdouglasny/OSreconstruction-1/blob/main/OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/STATUS.md`.
+
+Reported there:
+- top theorem has zero `sorry`s,
+- two project axioms remain: `kakSet_dense` and `hExtPerm_of_d1`,
+- `d>=2` connectedness uses dense-KAK (`kakSet_dense`) instead of global KAK surjectivity.
+
+Local branch at comparison time:
+- `#print axioms BHW.bargmann_hall_wightman_theorem` reports
+  `[propext, sorryAx, Classical.choice, Quot.sound]`,
+- the active `d=1,n=2` invariant-route blocker remains
+  `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`.
+
+So the two branches differ in proof posture:
+- Mike branch: explicit project axioms (`kakSet_dense`, `hExtPerm_of_d1`),
+- local locked route: continue discharging the `d=1,n=2` analytic core
+  without adding new axioms.

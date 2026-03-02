@@ -160,15 +160,61 @@ lemma d1V0_im_pos_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
 lemma d1U0_ne_zero_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
     d1U0 z ≠ 0 := by
   intro hu0
-  have him0 : (d1U0 z).im = 0 := by simpa [hu0]
+  have him0 : (d1U0 z).im = 0 := by simp [hu0]
   linarith [d1U0_im_pos_of_forward z hz]
 
 /-- For `z ∈ FT_{1,2}`, `v0 ≠ 0`. -/
 lemma d1V0_ne_zero_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
     d1V0 z ≠ 0 := by
   intro hv0
-  have him0 : (d1V0 z).im = 0 := by simpa [hv0]
+  have him0 : (d1V0 z).im = 0 := by simp [hv0]
   linarith [d1V0_im_pos_of_forward z hz]
+
+/-- For `z ∈ FT_{1,2}`, `Im(u1) > 0`. -/
+lemma d1U1_im_pos_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
+    0 < (d1U1 z).im := by
+  rcases (forwardTube_d1_n2_iff z).1 hz with ⟨hz0cone, hzdiffcone⟩
+  have hpm0 := (inOpenForwardCone_d1_iff_pm (fun μ => (z 0 μ).im)).1 hz0cone
+  have hpmd := (inOpenForwardCone_d1_iff_pm (fun μ => (z 1 μ - z 0 μ).im)).1 hzdiffcone
+  have hplus :
+      0 < ((z 0 0).im + (z 0 1).im) + (((z 1 0 - z 0 0).im) + ((z 1 1 - z 0 1).im)) := by
+    linarith [hpm0.1, hpmd.1]
+  have hsum :
+      (((z 0 0).im + (z 0 1).im) + (((z 1 0 - z 0 0).im) + ((z 1 1 - z 0 1).im))) =
+        (d1U1 z).im := by
+    simp [d1U1, Complex.add_im, Complex.sub_im]
+    ring
+  exact hsum ▸ hplus
+
+/-- For `z ∈ FT_{1,2}`, `Im(v1) > 0`. -/
+lemma d1V1_im_pos_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
+    0 < (d1V1 z).im := by
+  rcases (forwardTube_d1_n2_iff z).1 hz with ⟨hz0cone, hzdiffcone⟩
+  have hpm0 := (inOpenForwardCone_d1_iff_pm (fun μ => (z 0 μ).im)).1 hz0cone
+  have hpmd := (inOpenForwardCone_d1_iff_pm (fun μ => (z 1 μ - z 0 μ).im)).1 hzdiffcone
+  have hminus :
+      0 < ((z 0 0).im - (z 0 1).im) + (((z 1 0 - z 0 0).im) - ((z 1 1 - z 0 1).im)) := by
+    linarith [hpm0.2, hpmd.2]
+  have hsum :
+      (((z 0 0).im - (z 0 1).im) + (((z 1 0 - z 0 0).im) - ((z 1 1 - z 0 1).im))) =
+        (d1V1 z).im := by
+    simp [d1V1, Complex.sub_im]
+    ring
+  exact hsum ▸ hminus
+
+/-- For `z ∈ FT_{1,2}`, `u1 ≠ 0`. -/
+lemma d1U1_ne_zero_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
+    d1U1 z ≠ 0 := by
+  intro hu1
+  have him0 : (d1U1 z).im = 0 := by simp [hu1]
+  linarith [d1U1_im_pos_of_forward z hz]
+
+/-- For `z ∈ FT_{1,2}`, `v1 ≠ 0`. -/
+lemma d1V1_ne_zero_of_forward (z : D1N2Config) (hz : z ∈ ForwardTube 1 2) :
+    d1V1 z ≠ 0 := by
+  intro hv1
+  have him0 : (d1V1 z).im = 0 := by simp [hv1]
+  linarith [d1V1_im_pos_of_forward z hz]
 
 /-- Lorentz action on a single `d=1` complex vector. -/
 def d1LorentzVecAct (Λ : ComplexLorentzGroup 1) (u : D1Vec) : D1Vec :=
@@ -387,7 +433,7 @@ private lemma d1ScalarBoostMatrix_metric (lmb : ℂ) (hlmb : lmb ≠ 0) :
               simp [d1ScalarBoostMatrix, minkowskiSignature, Fin.sum_univ_two]
       _ = -((((lmb + lmb⁻¹) / 2) * ((lmb + lmb⁻¹) / 2) -
               ((lmb - lmb⁻¹) / 2) * ((lmb - lmb⁻¹) / 2))) := by ring
-      _ = (-1 : ℂ) := by simpa [hrel]
+      _ = (-1 : ℂ) := by simp [hrel]
       _ = if (0 : Fin 2) = (0 : Fin 2) then (minkowskiSignature 1 (0 : Fin 2) : ℂ) else 0 := by
             simp [minkowskiSignature]
   · calc
@@ -554,6 +600,93 @@ theorem d1_exists_lorentz_of_sameInvariantQuad_on_FT
             symm
             exact d1_coord1_eq_UV (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k
 
+/-- Equality of signed invariant quadruples implies same complex Lorentz orbit
+under the scalar-boost solver nonvanishing hypotheses. -/
+theorem d1_exists_lorentz_of_sameInvariantQuad_of_nonzeroU0V0
+    {z w : D1N2Config}
+    (hU0z_ne : d1U0 z ≠ 0)
+    (hU0w_ne : d1U0 w ≠ 0)
+    (hV0w_ne : d1V0 w ≠ 0)
+    (hquad : d1InvariantQuad z = d1InvariantQuad w) :
+    ∃ Λ : ComplexLorentzGroup 1, w = complexLorentzAction Λ z := by
+  have hQ0 : d1Q0 z = d1Q0 w := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.1) hquad
+  have hR : d1R01 z = d1R01 w := d1R01_eq_of_invariantQuad_eq hquad
+  have hT : d1T01 z = d1T01 w := d1T01_eq_of_invariantQuad_eq hquad
+  let lmb : ℂ := d1U0 w / d1U0 z
+  have hlmb_ne : lmb ≠ 0 := by
+    dsimp [lmb]
+    exact div_ne_zero hU0w_ne hU0z_ne
+  have hU0_scale : d1U0 w = lmb * d1U0 z := by
+    dsimp [lmb]
+    field_simp [hU0z_ne]
+  have hUw_mul_inv : d1U0 w * lmb⁻¹ = d1U0 z := by
+    dsimp [lmb]
+    field_simp [hU0z_ne, hU0w_ne]
+  have hQ0uv : d1U0 z * d1V0 z = d1U0 w * d1V0 w := by
+    rw [d1Q0_eq_neg_U0_mul_V0, d1Q0_eq_neg_U0_mul_V0] at hQ0
+    simpa using congrArg Neg.neg hQ0
+  have hRuv : d1U0 z * d1V1 z = d1U0 w * d1V1 w := by
+    simpa [d1R01] using hR
+  have hTuv : d1U1 z * d1V0 z = d1U1 w * d1V0 w := by
+    simpa [d1T01] using hT
+  have hV0_scale : d1V0 w = lmb⁻¹ * d1V0 z := by
+    apply (mul_left_cancel₀ hU0w_ne)
+    calc
+      d1U0 w * d1V0 w = d1U0 z * d1V0 z := hQ0uv.symm
+      _ = (d1U0 w * lmb⁻¹) * d1V0 z := by rw [hUw_mul_inv]
+      _ = d1U0 w * (lmb⁻¹ * d1V0 z) := by ring
+  have hV0_unscale : d1V0 z = lmb * d1V0 w := by
+    calc
+      d1V0 z = (lmb * lmb⁻¹) * d1V0 z := by simp [hlmb_ne]
+      _ = lmb * (lmb⁻¹ * d1V0 z) := by ring
+      _ = lmb * d1V0 w := by rw [hV0_scale]
+  have hV1_scale : d1V1 w = lmb⁻¹ * d1V1 z := by
+    apply (mul_left_cancel₀ hU0w_ne)
+    calc
+      d1U0 w * d1V1 w = d1U0 z * d1V1 z := hRuv.symm
+      _ = (d1U0 w * lmb⁻¹) * d1V1 z := by rw [hUw_mul_inv]
+      _ = d1U0 w * (lmb⁻¹ * d1V1 z) := by ring
+  have hU1_scale : d1U1 w = lmb * d1U1 z := by
+    apply (mul_right_cancel₀ hV0w_ne)
+    calc
+      d1U1 w * d1V0 w = d1U1 z * d1V0 z := hTuv.symm
+      _ = d1U1 z * (lmb * d1V0 w) := by rw [hV0_unscale]
+      _ = (lmb * d1U1 z) * d1V0 w := by ring
+  have hU_scale : ∀ k : Fin 2, d1UAt w k = lmb * d1UAt z k := by
+    intro k
+    fin_cases k
+    · simpa [d1UAt, d1U0] using hU0_scale
+    · simpa [d1UAt, d1U1] using hU1_scale
+  have hV_scale : ∀ k : Fin 2, d1VAt w k = lmb⁻¹ * d1VAt z k := by
+    intro k
+    fin_cases k
+    · simpa [d1VAt, d1V0] using hV0_scale
+    · simpa [d1VAt, d1V1] using hV1_scale
+  refine ⟨d1ScalarBoost lmb hlmb_ne, ?_⟩
+  ext k μ
+  fin_cases μ
+  · calc
+      w k 0 = (d1UAt w k + d1VAt w k) / 2 := d1_coord0_eq_UV w k
+      _ = (lmb * d1UAt z k + lmb⁻¹ * d1VAt z k) / 2 := by
+            rw [hU_scale k, hV_scale k]
+      _ = (d1UAt (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k +
+            d1VAt (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k) / 2 := by
+              rw [d1UAt_scalarBoost lmb hlmb_ne z k, d1VAt_scalarBoost lmb hlmb_ne z k]
+      _ = (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k 0 := by
+            symm
+            exact d1_coord0_eq_UV (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k
+  · calc
+      w k 1 = (d1UAt w k - d1VAt w k) / 2 := d1_coord1_eq_UV w k
+      _ = (lmb * d1UAt z k - lmb⁻¹ * d1VAt z k) / 2 := by
+            rw [hU_scale k, hV_scale k]
+      _ = (d1UAt (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k -
+            d1VAt (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k) / 2 := by
+              rw [d1UAt_scalarBoost lmb hlmb_ne z k, d1VAt_scalarBoost lmb hlmb_ne z k]
+      _ = (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k 1 := by
+            symm
+            exact d1_coord1_eq_UV (complexLorentzAction (d1ScalarBoost lmb hlmb_ne) z) k
+
 /-- Real `Q₀` invariant, in the same normalization as local commutativity. -/
 abbrev d1Q0R (x : Fin 2 → Fin (1 + 1) → ℝ) : ℝ :=
   d1MinkowskiBilin (x 0) (x 0)
@@ -598,6 +731,137 @@ lemma d1_adj_spacelike_expr_eq_q0q1p (x : Fin 2 → Fin (1 + 1) → ℝ) :
       d1Q0R x + d1Q1R x - 2 * d1P01R x := by
   simpa [d1Q0R, d1Q1R, d1P01R] using d1_n2_adj_spacelike_expr_eq_invariants x
 
+/-- Explicit real-coordinate chart for `d=1,n=2`:
+`x₀=(a,b)` and `x₁=(c,d)`. -/
+def d1N2RealConfig (a b c d : ℝ) : Fin 2 → Fin (1 + 1) → ℝ :=
+  fun k μ =>
+    if k = 0 then
+      if μ = 0 then a else b
+    else
+      if μ = 0 then c else d
+
+@[simp] lemma d1N2RealConfig_00 (a b c d : ℝ) :
+    d1N2RealConfig a b c d 0 0 = a := by
+  simp [d1N2RealConfig]
+
+@[simp] lemma d1N2RealConfig_01 (a b c d : ℝ) :
+    d1N2RealConfig a b c d 0 1 = b := by
+  simp [d1N2RealConfig]
+
+@[simp] lemma d1N2RealConfig_10 (a b c d : ℝ) :
+    d1N2RealConfig a b c d 1 0 = c := by
+  simp [d1N2RealConfig]
+
+@[simp] lemma d1N2RealConfig_11 (a b c d : ℝ) :
+    d1N2RealConfig a b c d 1 1 = d := by
+  simp [d1N2RealConfig]
+
+lemma d1Q0R_realConfig (a b c d : ℝ) :
+    d1Q0R (d1N2RealConfig a b c d) = -(a ^ 2) + b ^ 2 := by
+  simp [d1Q0R, d1MinkowskiBilin, d1N2RealConfig, Fin.sum_univ_two, minkowskiSignature]
+  ring
+
+lemma d1Q1R_realConfig (a b c d : ℝ) :
+    d1Q1R (d1N2RealConfig a b c d) = -(c ^ 2) + d ^ 2 := by
+  simp [d1Q1R, d1MinkowskiBilin, d1N2RealConfig, Fin.sum_univ_two, minkowskiSignature]
+  ring
+
+lemma d1P01R_realConfig (a b c d : ℝ) :
+    d1P01R (d1N2RealConfig a b c d) = -(a * c) + b * d := by
+  simp [d1P01R, d1MinkowskiBilin, d1N2RealConfig, Fin.sum_univ_two, minkowskiSignature]
+
+lemma d1S01R_realConfig (a b c d : ℝ) :
+    d1S01R (d1N2RealConfig a b c d) = (-2 : ℝ) * (a * d - b * c) := by
+  simp [d1S01R, d1N2RealConfig]
+
+/-- Real invariant quadruple `(Q₀,Q₁,P,S)` for a `d=1,n=2` real configuration. -/
+def d1InvariantQuadR (x : Fin 2 → Fin (1 + 1) → ℝ) : ℝ × ℝ × ℝ × ℝ :=
+  (d1Q0R x, d1Q1R x, d1P01R x, d1S01R x)
+
+lemma d1InvariantQuadR_realConfig (a b c d : ℝ) :
+    d1InvariantQuadR (d1N2RealConfig a b c d) =
+      (-(a ^ 2) + b ^ 2, -(c ^ 2) + d ^ 2, -(a * c) + b * d,
+        (-2 : ℝ) * (a * d - b * c)) := by
+  simp [d1InvariantQuadR, d1Q0R_realConfig, d1Q1R_realConfig,
+    d1P01R_realConfig]
+
+lemma d1InvariantQuadR_realConfig_swap (a b c d : ℝ) :
+    d1InvariantQuadR (d1N2RealConfig c d a b) =
+      (d1Q1R (d1N2RealConfig a b c d),
+        d1Q0R (d1N2RealConfig a b c d),
+        d1P01R (d1N2RealConfig a b c d),
+        -d1S01R (d1N2RealConfig a b c d)) := by
+  simp [d1InvariantQuadR, d1Q0R_realConfig, d1Q1R_realConfig,
+    d1P01R_realConfig]
+  constructor <;> ring
+
+/-- Explicit real probe point for `d=1,n=2` used in invariant-route Jacobian
+checks: `x₀=(1,0)`, `x₁=(1,2)`. -/
+def d1N2RealProbePoint : Fin 2 → Fin (1 + 1) → ℝ :=
+  d1N2RealConfig 1 0 1 2
+
+@[simp] lemma d1N2RealProbePoint_00 : d1N2RealProbePoint 0 0 = (1 : ℝ) := by
+  simp [d1N2RealProbePoint]
+
+@[simp] lemma d1N2RealProbePoint_01 : d1N2RealProbePoint 0 1 = (0 : ℝ) := by
+  simp [d1N2RealProbePoint]
+
+@[simp] lemma d1N2RealProbePoint_10 : d1N2RealProbePoint 1 0 = (1 : ℝ) := by
+  simp [d1N2RealProbePoint]
+
+@[simp] lemma d1N2RealProbePoint_11 : d1N2RealProbePoint 1 1 = (2 : ℝ) := by
+  simp [d1N2RealProbePoint]
+
+lemma d1Q0R_realProbePoint :
+    d1Q0R d1N2RealProbePoint = (-1 : ℝ) := by
+  simpa [d1N2RealProbePoint] using d1Q0R_realConfig 1 0 1 2
+
+lemma d1Q1R_realProbePoint :
+    d1Q1R d1N2RealProbePoint = (3 : ℝ) := by
+  norm_num [d1N2RealProbePoint, d1Q1R_realConfig]
+
+lemma d1P01R_realProbePoint :
+    d1P01R d1N2RealProbePoint = (-1 : ℝ) := by
+  simpa [d1N2RealProbePoint] using d1P01R_realConfig 1 0 1 2
+
+lemma d1S01R_realProbePoint :
+    d1S01R d1N2RealProbePoint = (-4 : ℝ) := by
+  norm_num [d1N2RealProbePoint, d1S01R_realConfig]
+
+lemma d1_realProbePoint_spacelike :
+    d1Q0R d1N2RealProbePoint + d1Q1R d1N2RealProbePoint -
+      2 * d1P01R d1N2RealProbePoint > 0 := by
+  norm_num [d1Q0R_realProbePoint, d1Q1R_realProbePoint, d1P01R_realProbePoint]
+
+/-- Closed-form spacelike expression for the real coordinate chart. -/
+lemma d1_adj_spacelike_expr_realConfig (a b c d : ℝ) :
+    d1Q0R (d1N2RealConfig a b c d) + d1Q1R (d1N2RealConfig a b c d) -
+      2 * d1P01R (d1N2RealConfig a b c d) =
+      (b - d) ^ 2 - (a - c) ^ 2 := by
+  simp [d1Q0R_realConfig, d1Q1R_realConfig, d1P01R_realConfig]
+  ring
+
+/-- Explicit `3×3` Jacobian minor value at `d1N2RealProbePoint` for the map
+`(Q₀,Q₁,P,S)` viewed in real coordinates `(a,b,c,d)`.
+This is the minor from rows `(Q₀,Q₁,S)` and columns `(a,c,d)`. -/
+def d1N2InvariantJacobianMinorAtProbe : Matrix (Fin 3) (Fin 3) ℝ :=
+  fun i j =>
+    match i.1, j.1 with
+    | 0, 0 => -2
+    | 1, 1 => -2
+    | 1, 2 => 4
+    | 2, 0 => -4
+    | 2, 2 => -2
+    | _, _ => 0
+
+lemma d1N2InvariantJacobianMinorAtProbe_det :
+    (d1N2InvariantJacobianMinorAtProbe.det : ℝ) = (-8 : ℝ) := by
+  norm_num [d1N2InvariantJacobianMinorAtProbe, Matrix.det_fin_three]
+
+lemma d1N2InvariantJacobianMinorAtProbe_det_ne_zero :
+    (d1N2InvariantJacobianMinorAtProbe.det : ℝ) ≠ 0 := by
+  norm_num [d1N2InvariantJacobianMinorAtProbe_det]
+
 /-- `d=1,n=2` local commutativity in invariant form:
 if `Q₀ + Q₁ - 2P > 0` on a real configuration, then swapping the two points
 does not change the boundary value. -/
@@ -616,6 +880,26 @@ theorem d1_n2_local_comm_of_invariant_ineq
   have hsp' : ∑ μ, minkowskiSignature 1 μ * (x 1 μ - x 0 μ) ^ 2 > 0 := by
     simpa [d1_adj_spacelike_expr_eq_q0q1p] using hsp
   exact hF_local (0 : Fin 2) (by decide) x hsp'
+
+/-- Local commutativity for explicit real coordinates, expressed through the
+chart-level spacelike inequality. -/
+theorem d1_n2_local_comm_realConfig_of_spacelike
+    (F : D1N2Config → ℂ)
+    (hF_local : ∀ (i : Fin 2) (hi : i.val + 1 < 2),
+      ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+        ∑ μ, minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+          F (fun k μ => (x k μ : ℂ)))
+    (a b c d : ℝ)
+    (hsp : (b - d) ^ 2 - (a - c) ^ 2 > 0) :
+    F (fun k μ => (d1N2RealConfig a b c d (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ)) =
+      F (fun k μ => (d1N2RealConfig a b c d k μ : ℂ)) := by
+  have hinv :
+      d1Q0R (d1N2RealConfig a b c d) + d1Q1R (d1N2RealConfig a b c d) -
+        2 * d1P01R (d1N2RealConfig a b c d) > 0 := by
+    simpa [d1_adj_spacelike_expr_realConfig] using hsp
+  exact d1_n2_local_comm_of_invariant_ineq F hF_local (d1N2RealConfig a b c d) hinv
 
 /-- The signed invariant quadruple lies on the quadric:
 `S^2 = 4 (P^2 - Q0*Q1)`. -/
@@ -762,8 +1046,7 @@ theorem d1_n2_forwardSwapEq_iff_invariantKernelSwapRule
   constructor
   · intro hforward
     exact d1_n2_invariantKernelSwapRule_of_forwardSwapEq F f hf_onFT hforward
-  · intro hkernel
-    intro z hz Γ hΓswap
+  · intro hkernel z hz Γ hΓswap
     let y : D1N2Config :=
       complexLorentzAction Γ (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)
     have hleft : F z = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) :=
