@@ -2175,14 +2175,22 @@ theorem isConnected_principalBoostOverlap {d : ℕ}
   simp only [principalBoostStrip, Set.mem_setOf_eq]
   exact ⟨hpi, hpi2⟩
 
-/-- **Raw KAK decomposition** for the complex Lorentz group.
+/-- The KAK image in `SO₊(1,d;ℂ)`: elements of the form `k₁ · exp(tK) · k₂`
+    with `k₁,k₂ ∈ SO↑(1,d;ℝ)`, `t ∈ ℂ`. -/
+private def kakSet (d : ℕ) : Set (ComplexLorentzGroup d) :=
+  Set.range (fun p : RestrictedLorentzGroup d × ℂ × RestrictedLorentzGroup d =>
+    ComplexLorentzGroup.ofReal p.1 * expBoost p.2.1 * ComplexLorentzGroup.ofReal p.2.2)
 
-    This is the pure Lie-theoretic input: every `Λ ∈ SO₊(1,d;ℂ)` factors as
-    `k₁ · exp(tK) · k₂` with real restricted Lorentz factors. -/
-private axiom raw_KAK_decomposition {d : ℕ}
-    (Λ : ComplexLorentzGroup d) :
-    ∃ (k₁ k₂ : RestrictedLorentzGroup d) (t : ℂ),
-      Λ = ComplexLorentzGroup.ofReal k₁ * expBoost t * ComplexLorentzGroup.ofReal k₂
+/-- **Dense KAK image** (Jost-style input): although KAK need not be globally
+    surjective, its image is dense in `SO₊(1,d;ℂ)` for `d ≥ 2`. -/
+private axiom kakSet_dense {d : ℕ} (hd2 : 2 ≤ d) : Dense (kakSet d)
+
+/-- The slice index set of nonempty overlap slices is open. -/
+private lemma isOpen_sliceIndexSet {d : ℕ} (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    IsOpen {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
+  rw [isOpen_iff_mem_nhds]
+  rintro Λ ⟨w, hw⟩
+  exact (permForwardOverlapSlice_openMembership n σ w Λ hw).mono (fun Λ' hΛ' => ⟨w, hΛ'⟩)
 
 /-- Nonempty overlap slices cannot occur on even meridians `Im(t) = 2πm`
     for nontrivial permutations: after periodicity reduction this would force
@@ -2499,112 +2507,71 @@ private theorem expBoost_principal_representative (d : ℕ) (hd2 : 2 ≤ d)
             ComplexLorentzGroup.ofReal (weylRot d hd2) := by
           simpa using (weylConj_expBoost (d := d) hd2 t').symm
 
-/-- **Principal-strip KAK decomposition**: every slice-index element factors as
-    `k₁ · exp(tK) · k₂` with `t` in the principal boost overlap.
-
-    This is obtained from:
-    1. the raw KAK factorization (`raw_KAK_decomposition`), and
-    2. principal-strip normalization of the boost parameter
-       (`expBoost_principal_representative`). -/
-theorem sliceIndexSet_KAK_principal {d : ℕ} (hd2 : 2 ≤ d)
-    (n : ℕ) (σ : Equiv.Perm (Fin n))
-    (hσ : σ ≠ 1)
-    (Λ : ComplexLorentzGroup d)
-    (hΛ : (permForwardOverlapSlice (d := d) n σ Λ).Nonempty) :
-    ∃ (k₁ k₂ : RestrictedLorentzGroup d) (t : ℂ),
-      t ∈ principalBoostOverlap d n σ ∧
-      Λ = ComplexLorentzGroup.ofReal k₁ * expBoost t * ComplexLorentzGroup.ofReal k₂ := by
-  obtain ⟨k₁, k₂, t, hKAK⟩ := raw_KAK_decomposition Λ
-  have ht_nonempty_raw :
-      (permForwardOverlapSlice (d := d) n σ (expBoost t)).Nonempty := by
-    have hcomposed :
-        (permForwardOverlapSlice (d := d) n σ
-          (ComplexLorentzGroup.ofReal k₁ * expBoost t * ComplexLorentzGroup.ofReal k₂)).Nonempty := by
-      simpa [hKAK] using hΛ
-    exact sliceIndexSet_bi_invariant_rev n σ (expBoost t) k₁ k₂ hcomposed
-  obtain ⟨kL, kR, t', ht'_strip, ht_repr⟩ :=
-    expBoost_principal_representative d hd2 n σ hσ t ht_nonempty_raw
-  have ht'_nonempty :
-      (permForwardOverlapSlice (d := d) n σ (expBoost t')).Nonempty := by
-    have hcomposed :
-        (permForwardOverlapSlice (d := d) n σ
-          (ComplexLorentzGroup.ofReal kL * expBoost t' * ComplexLorentzGroup.ofReal kR)).Nonempty := by
-      simpa [ht_repr] using ht_nonempty_raw
-    exact sliceIndexSet_bi_invariant_rev n σ (expBoost t') kL kR hcomposed
-  refine ⟨k₁ * kL, kR * k₂, t', ?_, ?_⟩
-  · refine ⟨ht'_strip, ?_⟩
-    exact ht'_nonempty
-  · calc
-      Λ = ComplexLorentzGroup.ofReal k₁ * expBoost t * ComplexLorentzGroup.ofReal k₂ := hKAK
-      _ = ComplexLorentzGroup.ofReal k₁ *
-            (ComplexLorentzGroup.ofReal kL * expBoost t' * ComplexLorentzGroup.ofReal kR) *
-            ComplexLorentzGroup.ofReal k₂ := by
-              rw [ht_repr]
-      _ = ComplexLorentzGroup.ofReal (k₁ * kL) * expBoost t' *
-            ComplexLorentzGroup.ofReal (kR * k₂) := by
-              simp [ofReal_mul_eq, mul_assoc]
-
 /-- The slice index set is connected for `d ≥ 2`.
 
-    **Proof**: By the principal-strip KAK decomposition, every element of the
-    index set `I` factors as `k₁ · exp(tK) · k₂` with `t` in the principal
-    boost overlap `P`. By bi-invariance, the boost part `exp(tK)` is also in `I`.
-    So `I` is the image of `K × P × K` under the continuous multiplication map.
-    Since `K = SO↑(1,d;ℝ)` is path-connected and `P` is connected (axiom),
-    the product is connected, and so is its continuous image.
-
-    **Key insight**: The previous axiom `isConnected_boostParameterOverlap`
-    (on the full cylinder) was **false** for `n ≥ 3` — the meridians `Im(t) = 0`
-    and `Im(t) = π` both give empty slices, disconnecting the cylinder into two
-    strips. The principal strip fix restricts to `{0 < Im(t) < π}` and uses
-    the Weyl reflection to cover both strips via KAK. -/
+    Let `C := kakSet d` and `I := {Λ | slice(Λ).Nonempty}`.
+    The normalized KAK map with principal-strip parameter has connected image
+    `J = C ∩ I` (continuous image of `K × P × K`).
+    Since `C` is dense and `I` is open, `J` is dense in `I`.
+    Therefore `I` is connected by the closure-sandwich argument. -/
 theorem isConnected_sliceIndexSet {d : ℕ}
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hσ : σ ≠ 1) (hd2 : 2 ≤ d) :
     IsConnected {Λ : ComplexLorentzGroup d |
       (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
-  -- Abbreviations
   let I := {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty}
   let P := principalBoostOverlap d n σ
-  -- Step 1: The principal boost overlap (image on the group) is connected
+  let C := kakSet d
+  -- Step 1: principal-strip parameter set is connected
   have hP_conn : IsConnected P := isConnected_principalBoostOverlap n σ hd2
-  -- Step 2: K is path-connected
+  -- Step 2: K and K × P × K are connected
   haveI : PathConnectedSpace (RestrictedLorentzGroup d) :=
     pathConnectedSpace_iff_univ.mpr (RestrictedLorentzGroup.isPathConnected d)
-  -- Step 3: The multiplication map
-  --   f : K × {t // t ∈ P} × K → ComplexLorentzGroup d
-  --   f(k₁, t, k₂) = ofReal(k₁) * expBoost(t) * ofReal(k₂)
-  -- is continuous
-  let f : RestrictedLorentzGroup d × {t : ℂ // t ∈ P} ×
+  haveI : ConnectedSpace {t : ℂ // t ∈ P} := isConnected_iff_connectedSpace.mp hP_conn
+  let g : RestrictedLorentzGroup d × {t : ℂ // t ∈ P} ×
       RestrictedLorentzGroup d → ComplexLorentzGroup d :=
     fun p => ComplexLorentzGroup.ofReal p.1 * expBoost p.2.1.val * ComplexLorentzGroup.ofReal p.2.2
-  have hf_cont : Continuous f := by
+  have hg_cont : Continuous g := by
     apply Continuous.mul
     · apply Continuous.mul
       · exact continuous_ofReal.comp continuous_fst
       · exact continuous_expBoost.comp (continuous_subtype_val.comp
           (continuous_fst.comp continuous_snd))
     · exact continuous_ofReal.comp (continuous_snd.comp continuous_snd)
-  -- Step 4: f maps into I (by sliceIndexSet_bi_invariant)
-  have hf_mem : ∀ p, f p ∈ I := by
-    intro ⟨k₁, ⟨t, htP⟩, k₂⟩
-    -- t ∈ P means expBoost t is in the slice index set
-    exact sliceIndexSet_bi_invariant n σ (expBoost t) k₁ k₂ htP.2
-  -- Step 5: f is surjective onto I (by principal KAK)
-  have hf_surj : ∀ Λ ∈ I, ∃ p, f p = Λ := by
-    intro Λ hΛ
-    obtain ⟨k₁, k₂, t, htP, rfl⟩ := sliceIndexSet_KAK_principal hd2 n σ hσ Λ hΛ
-    exact ⟨⟨k₁, ⟨t, htP⟩, k₂⟩, rfl⟩
-  -- Step 6: The domain K × P × K is connected
-  haveI : ConnectedSpace {t : ℂ // t ∈ P} :=
-    isConnected_iff_connectedSpace.mp hP_conn
-  -- Step 7: I = range f, which is connected (continuous image of connected)
-  have hI_eq : Set.range f =
-      {Λ : ComplexLorentzGroup d | (permForwardOverlapSlice (d := d) n σ Λ).Nonempty} := by
-    ext Λ; constructor
-    · rintro ⟨p, rfl⟩; exact hf_mem p
-    · intro hΛ; obtain ⟨p, hp⟩ := hf_surj Λ hΛ; exact ⟨p, hp⟩
-  rw [← hI_eq]
-  exact isConnected_range hf_cont
+  -- Step 3: identify `range g = C ∩ I`
+  have hg_eq : Set.range g = C ∩ I := by
+    ext Λ
+    simp only [C, I, kakSet, Set.mem_range, Set.mem_inter_iff, Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨⟨k₁, ⟨t, htP⟩, k₂⟩, rfl⟩
+      refine ⟨⟨⟨k₁, t, k₂⟩, rfl⟩, ?_⟩
+      exact sliceIndexSet_bi_invariant n σ (expBoost t) k₁ k₂ htP.2
+    · rintro ⟨⟨⟨k₁, t, k₂⟩, rfl⟩, hΛ⟩
+      have ht_in_I : (permForwardOverlapSlice (d := d) n σ (expBoost t)).Nonempty :=
+        sliceIndexSet_bi_invariant_rev n σ (expBoost t) k₁ k₂ hΛ
+      obtain ⟨kL, kR, t', ht'_strip, ht_repr⟩ :=
+        expBoost_principal_representative d hd2 n σ hσ t ht_in_I
+      have ht'P : t' ∈ P := by
+        refine ⟨ht'_strip, ?_⟩
+        have hcomp :
+            (permForwardOverlapSlice (d := d) n σ
+              (ComplexLorentzGroup.ofReal kL * expBoost t' * ComplexLorentzGroup.ofReal kR)).Nonempty := by
+          simpa [ht_repr] using ht_in_I
+        exact sliceIndexSet_bi_invariant_rev n σ (expBoost t') kL kR hcomp
+      refine ⟨⟨k₁ * kL, ⟨t', ht'P⟩, kR * k₂⟩, ?_⟩
+      simpa [g, ofReal_mul_eq, mul_assoc, ht_repr]
+  have hJ_conn : IsConnected (C ∩ I) := by
+    rw [← hg_eq]
+    exact isConnected_range hg_cont
+  -- Step 4: `C ∩ I` is dense in open `I` because `C` is dense
+  have hI_open : IsOpen I := isOpen_sliceIndexSet n σ
+  have hC_dense : Dense C := kakSet_dense (d := d) hd2
+  have hI_subset_closure : I ⊆ closure (C ∩ I) := by
+    simpa [Set.inter_comm] using (hC_dense.open_subset_closure_inter hI_open)
+  -- Step 5: closure-sandwich connectedness
+  have hCI_sub_I : C ∩ I ⊆ I := by
+    intro x hx
+    exact hx.2
+  exact IsConnected.subset_closure hJ_conn hCI_sub_I hI_subset_closure
 
 /-- The forward-overlap set `{w ∈ FT | σ·w ∈ ET}` is connected for `d ≥ 2`.
 
