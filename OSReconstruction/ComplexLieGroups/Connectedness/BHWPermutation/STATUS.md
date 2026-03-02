@@ -1,6 +1,6 @@
 # BHW Permutation Invariance — Status & Axiom Elimination Plan
 
-Last updated: 2026-03-02
+Last updated: 2026-03-01
 
 ## Current State
 
@@ -11,12 +11,12 @@ Last updated: 2026-03-02
 ```
 ```
 propext, Classical.choice, Quot.sound          -- standard Lean
-BHW.isConnected_principalBoostOverlap          -- principal strip overlap connected (d ≥ 2)
 BHW.sliceIndexSet_KAK_principal                -- KAK with Weyl reflection (d ≥ 2)
 BHW.hExtPerm_of_d1                             -- dimension reduction (d = 1)
 ```
 
-`isConnected_sliceIndexSet` is a **theorem** derived from the two d ≥ 2 axioms.
+`isConnected_principalBoostOverlap` is now a **theorem** (was axiom 1a).
+`isConnected_sliceIndexSet` is a **theorem** derived from the d ≥ 2 axiom.
 
 ### Files (zero sorrys across all 6)
 
@@ -26,39 +26,37 @@ BHW.hExtPerm_of_d1                             -- dimension reduction (d = 1)
 | `JostWitnessGeneralSigma.lean` | ~620 | Jost witness for general σ when d ≥ 2 |
 | `Adjacency.lean` | ~1250 | Adjacent-swap overlap witnesses, EOW chain infrastructure |
 | `IndexSetD1.lean` | ~200 | d=1 orbit set preconnectedness |
-| `OverlapConnected.lean` | ~960 | **Route B core**: identity theorem, slice gluing, 3 axioms |
+| `OverlapConnected.lean` | ~1825 | **Route B core**: identity theorem, slice gluing, boost exp, 2 axioms |
 | `PermutationFlow.lean` | ~2450 | Master proof: EOW iteration, case split d=0/d=1/d≥2 |
 
 ---
 
-## The Three Axioms
+## The Two Axioms
 
-### Axiom 1a: `isConnected_principalBoostOverlap` (principal strip connectedness)
+### Proved theorem (was axiom 1a): `isConnected_principalBoostOverlap`
 
-```lean
-axiom isConnected_principalBoostOverlap {d : ℕ}
-    (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
-    IsConnected (principalBoostOverlap d n σ)
-```
+**Now a theorem** — proved in `OverlapConnected.lean` via:
 
-where `principalBoostOverlap d n σ = {t ∈ ℂ | 0 < Im(t) < π} ∩ {t | slice at exp(tK) nonempty}`.
+1. **`exp_boostGen_eq`**: `exp(tK) = I + sinh(t)·K + (cosh(t)-1)·K²`, proved
+   via projection decomposition `K = Pp - Pm` with orthogonal idempotents and
+   `Matrix.exp_add_of_commute`.
 
-**Mathematical content**: The set of boost parameters in the principal strip
-`{0 < Im(t) < π}` yielding a nonempty forward-overlap slice is connected.
+2. **`expBoost_val_entry`**: Entry formula for `exp(tK)` — cosh/sinh in the
+   {0,1} block, identity elsewhere.
 
-**Why it's true**: The principal strip is a convex open subset of ℂ. For any
-`t` with `0 < Im(t) < π`, the boost `exp(tK)` has `cosh(t)` and `sinh(t)` with
-nonzero imaginary parts. By choosing witnesses with sufficiently large real spatial
-components, the forward-cone condition can always be satisfied. The overlap is
-therefore a dense open subset of the convex strip, hence connected.
+3. **`principalStrip_slice_nonempty`**: For `d ≥ 2` and `0 < Im(t) < π`, every
+   forward-overlap slice at `exp(tK)` is nonempty. Proof by the "large spatial
+   shift trick": construct witness `w` with imaginary time increments `ε` and
+   real spatial increments `M·sin(Im(t))⁻¹` along the σ-inverse ordering.
+   After boosting, the Minkowski condition reduces to `-(cosh²θ - sinh²θ)·A² = -A²`
+   with `A = cos(λ)·δ + sin(λ)·M > 0`.
 
-**Why the full cylinder doesn't work**: See "Historical Notes" below — the
-previous axiom `isConnected_boostParameterOverlap` on the full cylinder `ℂ/2πiℤ`
-was **false** for n ≥ 3.
+4. **`principalBoostOverlap_eq_strip`**: The overlap equals the entire principal
+   strip (since every slice is nonempty).
 
-**No QFT dependencies**: Pure geometry/analysis.
+5. **`convex_principalBoostStrip`** + convexity implies connectedness.
 
-### Axiom 1b: `sliceIndexSet_KAK_principal` (KAK with Weyl reflection)
+### Axiom 1: `sliceIndexSet_KAK_principal` (KAK with Weyl reflection)
 
 ```lean
 axiom sliceIndexSet_KAK_principal {d : ℕ} (hd2 : 2 ≤ d)
@@ -82,9 +80,10 @@ factorization `Λ = k₁ · exp(tK) · k₂`, if `Im(t) < 0` we replace it with
 
 **No QFT dependencies**: Pure Lie group geometry.
 
-### Derived theorem
+### Derived theorems
 
-- `isConnected_sliceIndexSet` — proved from axioms 1a and 1b by mapping
+- `isConnected_sliceIndexSet` — proved from `isConnected_principalBoostOverlap`
+  (now theorem) and `sliceIndexSet_KAK_principal` (axiom) by mapping
   K × P × K → I via group multiplication, using principal KAK for surjectivity
   and bi-invariance for membership.
 
@@ -150,8 +149,8 @@ attempted and abandoned).
 ```
 Phase 1: Pure Lie Geometry
     isConnected_sliceIndexSet ✓ (theorem)
-    ├── isConnected_principalBoostOverlap [AXIOM 1a]
-    ├── sliceIndexSet_KAK_principal [AXIOM 1b]
+    ├── isConnected_principalBoostOverlap ✓ (theorem, was axiom)
+    ├── sliceIndexSet_KAK_principal [AXIOM 1]
     ├── sliceIndexSet_bi_invariant ✓
     ├── sliceIndexSet_bi_invariant_rev ✓
     └── RestrictedLorentzGroup.isPathConnected ✓
@@ -193,8 +192,8 @@ bargmann_hall_wightman_theorem [NeZero d]
     │   │   ├── permForwardOverlapSlice_openMembership ✓
     │   │   ├── isConnected_iUnion_of_open_membership ✓
     │   │   └── isConnected_sliceIndexSet ✓ (theorem)
-    │   │       ├── isConnected_principalBoostOverlap [AXIOM 1a]
-    │   │       ├── sliceIndexSet_KAK_principal [AXIOM 1b]
+    │   │       ├── isConnected_principalBoostOverlap ✓ (theorem)
+    │   │       ├── sliceIndexSet_KAK_principal [AXIOM 1]
     │   │       ├── sliceIndexSet_bi_invariant ✓
     │   │       └── sliceIndexSet_bi_invariant_rev ✓
     │   └── ComplexLorentzGroup.isPathConnected ✓
@@ -215,9 +214,9 @@ Starting from xiyin's repo, our fork accomplished the following across 15 commit
 - **Upstream state**: 1 sorry in `PermutationFlow.lean:2262` (the core BHW
   permutation extension for `d ≥ 2`), 0 axioms in `OverlapConnected.lean`
   (file did not exist).
-- **Current state**: 0 sorrys, 3 axioms (all pure Lie group geometry / d=1 reduction).
+- **Current state**: 0 sorrys, 2 axioms (KAK decomposition + d=1 reduction).
 
-### New file: `OverlapConnected.lean` (~1037 lines)
+### New file: `OverlapConnected.lean` (~1825 lines)
 
 This file contains the mathematical core of the BHW permutation proof:
 
@@ -250,8 +249,15 @@ This file contains the mathematical core of the BHW permutation proof:
      vanishes on the Jost set
    - `hExtPerm_of_d2` — **the d ≥ 2 permutation extension theorem**
 
-6. **Three axioms** (replacing the single sorry):
-   - `isConnected_principalBoostOverlap` — principal strip overlap connected
+6. **Matrix exponential of boost generator** (new):
+   - `boostGen_sq`, `boostGen_cubed` — K² = projection, K³ = K
+   - `exp_smul_idempotent` — for E²=E: exp(αE) = 1 + (exp(α)-1)·E
+   - `exp_boostGen_eq` — exp(tK) = I + sinh(t)·K + (cosh(t)-1)·K²
+   - `expBoost_val_entry` — cosh/sinh entry formula
+   - `principalStrip_slice_nonempty` — large spatial shift witness
+   - `isConnected_principalBoostOverlap` — **theorem** (was axiom)
+
+7. **Two axioms** (replacing the single sorry):
    - `sliceIndexSet_KAK_principal` — KAK with Weyl reflection
    - `hExtPerm_of_d1` — d=1 dimension reduction
 
@@ -349,12 +355,8 @@ then Route B uses the connected overlap domain for the identity theorem.
 
 ## Recommended Execution Order
 
-1. **`isConnected_principalBoostOverlap`** — 1D analysis statement: the set
-   `{0 < Im(t) < π} ∩ {t | slice nonempty}` is connected. The principal strip
-   is a convex open subset of ℂ, and the overlap is a dense open subset.
-   Proof requires: (a) explicit witness for 0 < Im(t) < π, (b) V⁺ estimates
-   with hyperbolic/trigonometric functions, (c) open dense subset of convex set
-   is connected. Estimated ~200-400 lines.
+1. ~~**`isConnected_principalBoostOverlap`**~~ — **DONE** (proved as theorem,
+   ~400 lines including matrix exponential infrastructure).
 
 2. **`sliceIndexSet_KAK_principal`** — Combines standard Cartan KAK decomposition
    with Weyl reflection. Needs: (a) matrix logarithm / polar decomposition for

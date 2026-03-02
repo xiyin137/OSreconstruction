@@ -719,6 +719,341 @@ private lemma continuous_expBoost {d : ℕ} : Continuous (@expBoost d) := by
   rw [hind.continuous_iff]
   exact NormedSpace.exp_continuous.comp (continuous_id.smul continuous_const)
 
+/-! ### Matrix exponential of the boost generator -/
+
+/-- K² is the projection onto the {0,1} block: diagonal with 1 at positions 0,1
+    and 0 elsewhere. -/
+private lemma boostGen_apply (d : ℕ) (μ ν : Fin (d + 1)) :
+    boostGen d μ ν = if (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) then 1 else 0 := rfl
+
+/-- K² = diag(1,1,0,...,0): the projection onto the {0,1} block.
+    Proof: `(K*K)(μ,ν) = Σ_k K(μ,k)*K(k,ν)`. Since K only has nonzero entries at
+    (0,1) and (1,0), the sum reduces to: if μ=0 then K(0,1)*K(1,ν) = K(1,ν),
+    if μ=1 then K(1,0)*K(0,ν) = K(0,ν), else 0. -/
+private lemma boostGen_sq (d : ℕ) (hd : 1 ≤ d) :
+    boostGen d * boostGen d = fun μ ν : Fin (d + 1) =>
+      if μ = ν ∧ μ.val ≤ 1 then (1 : ℂ) else 0 := by
+  ext μ ν
+  simp only [Matrix.mul_apply, boostGen_apply]
+  -- sum_μν := ∑_k K(μ,k) * K(k,ν)
+  -- K(μ,k) ≠ 0 iff (μ=0∧k=1) or (μ=1∧k=0).
+  -- K(k,ν) ≠ 0 iff (k=0∧ν=1) or (k=1∧ν=0).
+  rcases Nat.lt_or_ge μ.val 2 with hμ2 | hμ2
+  · rcases Nat.lt_or_ge ν.val 2 with hν2 | hν2
+    · have hμval : μ.val = 0 ∨ μ.val = 1 := by omega
+      have hνval : ν.val = 0 ∨ ν.val = 1 := by omega
+      rcases hμval with hμ0 | hμ1 <;> rcases hνval with hν0 | hν1
+      · -- μ.val=0, ν.val=0: K²(μ,ν) = 1 via k=1, rhs=1.
+        -- After simp only [hμν], goal uses ν throughout (μ replaced by ν).
+        have hμν : μ = ν := Fin.ext (by omega)
+        simp only [hμν, and_self, show ν.val ≤ 1 from by omega, ite_true]
+        let k1 : Fin (d + 1) := ⟨1, by omega⟩
+        refine (Finset.sum_eq_single_of_mem k1 (Finset.mem_univ _) ?_).trans ?_
+        · intro k _ hkne
+          -- k ≠ k1 means k.val ≠ 1; K(ν,k) with ν.val=0 is nonzero iff k.val=1; so it's zero.
+          have hkne1 : k.val ≠ 1 := fun h => hkne (Fin.ext h)
+          have h1 : ¬((ν.val = 0 ∧ k.val = 1) ∨ (ν.val = 1 ∧ k.val = 0)) := by omega
+          rw [if_neg h1, zero_mul]
+        · have h1 : (ν.val = 0 ∧ k1.val = 1) ∨ (ν.val = 1 ∧ k1.val = 0) :=
+            Or.inl ⟨hν0, rfl⟩
+          have h2 : (k1.val = 0 ∧ ν.val = 1) ∨ (k1.val = 1 ∧ ν.val = 0) :=
+            Or.inr ⟨rfl, hν0⟩
+          rw [if_pos h1, if_pos h2, mul_one]
+      · -- μ.val=0, ν.val=1: K²(μ,ν) = 0, rhs=0.
+        -- K(μ,k) nonzero iff k=1; K(k,ν) nonzero iff k=0; no k satisfies both.
+        have hμν : μ ≠ ν := Fin.ne_of_val_ne (by omega)
+        simp only [hμν, false_and, if_false]
+        apply Finset.sum_eq_zero
+        intro k _
+        by_cases hk1 : k.val = 1
+        · have h1 : (μ.val = 0 ∧ k.val = 1) ∨ (μ.val = 1 ∧ k.val = 0) := Or.inl ⟨hμ0, hk1⟩
+          have h2 : ¬((k.val = 0 ∧ ν.val = 1) ∨ (k.val = 1 ∧ ν.val = 0)) := by omega
+          rw [if_pos h1, if_neg h2, mul_zero]
+        · have h1 : ¬((μ.val = 0 ∧ k.val = 1) ∨ (μ.val = 1 ∧ k.val = 0)) := by omega
+          rw [if_neg h1, zero_mul]
+      · -- μ.val=1, ν.val=0: K²(μ,ν) = 0, rhs=0.
+        -- K(μ,k) nonzero iff k=0; K(k,ν) nonzero iff k=1; no k satisfies both.
+        have hμν : μ ≠ ν := Fin.ne_of_val_ne (by omega)
+        simp only [hμν, false_and, if_false]
+        apply Finset.sum_eq_zero
+        intro k _
+        by_cases hk0 : k.val = 0
+        · have h1 : (μ.val = 0 ∧ k.val = 1) ∨ (μ.val = 1 ∧ k.val = 0) := Or.inr ⟨hμ1, hk0⟩
+          have h2 : ¬((k.val = 0 ∧ ν.val = 1) ∨ (k.val = 1 ∧ ν.val = 0)) := by omega
+          rw [if_pos h1, if_neg h2, mul_zero]
+        · have h1 : ¬((μ.val = 0 ∧ k.val = 1) ∨ (μ.val = 1 ∧ k.val = 0)) := by omega
+          rw [if_neg h1, zero_mul]
+      · -- μ.val=1, ν.val=1: K²(μ,ν) = 1 via k=0, rhs=1.
+        -- After simp only [hμν], goal uses ν throughout (μ replaced by ν).
+        have hμν : μ = ν := Fin.ext (by omega)
+        simp only [hμν, and_self, show ν.val ≤ 1 from by omega, ite_true]
+        let k0 : Fin (d + 1) := ⟨0, by omega⟩
+        refine (Finset.sum_eq_single_of_mem k0 (Finset.mem_univ _) ?_).trans ?_
+        · intro k _ hkne
+          -- k ≠ k0 means k.val ≠ 0; K(ν,k) with ν.val=1 is nonzero iff k.val=0; so it's zero.
+          have hkne0 : k.val ≠ 0 := fun h => hkne (Fin.ext h)
+          have h1 : ¬((ν.val = 0 ∧ k.val = 1) ∨ (ν.val = 1 ∧ k.val = 0)) := by omega
+          rw [if_neg h1, zero_mul]
+        · have h1 : (ν.val = 0 ∧ k0.val = 1) ∨ (ν.val = 1 ∧ k0.val = 0) := Or.inr ⟨hν1, rfl⟩
+          have h2 : (k0.val = 0 ∧ ν.val = 1) ∨ (k0.val = 1 ∧ ν.val = 0) := Or.inl ⟨rfl, hν1⟩
+          rw [if_pos h1, if_pos h2, mul_one]
+    · -- ν.val ≥ 2: K(k,ν) = 0 for all k, so sum = 0, rhs = 0.
+      simp only [show ¬(μ = ν ∧ μ.val ≤ 1) from fun ⟨heq, hμle⟩ => by subst heq; omega,
+                 if_false]
+      apply Finset.sum_eq_zero
+      intro k _
+      have h2 : ¬((k.val = 0 ∧ ν.val = 1) ∨ (k.val = 1 ∧ ν.val = 0)) := by omega
+      rw [if_neg h2, mul_zero]
+  · -- μ.val ≥ 2: K(μ,k) = 0 for all k, so sum = 0, rhs = 0.
+    simp only [show ¬(μ = ν ∧ μ.val ≤ 1) from fun ⟨_, hμle⟩ => by omega, if_false]
+    apply Finset.sum_eq_zero
+    intro k _
+    have h1 : ¬((μ.val = 0 ∧ k.val = 1) ∨ (μ.val = 1 ∧ k.val = 0)) := by omega
+    rw [if_neg h1, zero_mul]
+
+/-- K² is the block-diagonal projection: (K²)(μ,ν) = 1 if μ = ν and μ.val ≤ 1, else 0.
+    We express it as a diagonal-like matrix for easier manipulation. -/
+private lemma boostGen_sq_apply (d : ℕ) (hd : 1 ≤ d) (μ ν : Fin (d + 1)) :
+    (boostGen d * boostGen d) μ ν =
+      if μ = ν ∧ μ.val ≤ 1 then (1 : ℂ) else 0 := by
+  rw [boostGen_sq d hd]
+
+/-- K³ = K: the boost generator cubed equals itself. -/
+private lemma boostGen_cubed (d : ℕ) (hd : 1 ≤ d) :
+    boostGen d * boostGen d * boostGen d = boostGen d := by
+  ext μ ν
+  simp only [Matrix.mul_apply, boostGen_sq_apply d hd, boostGen_apply]
+  -- (K²·K)(μ,ν) = Σ_k K²(μ,k) · K(k,ν)
+  -- K²(μ,k) = 1 if μ=k and μ.val ≤ 1, else 0
+  -- So the sum picks up K(μ,ν) when μ.val ≤ 1, and 0 otherwise
+  by_cases hμle : μ.val ≤ 1
+  · -- μ.val ≤ 1: sum has one nonzero term at k = μ
+    rw [Finset.sum_eq_single_of_mem μ (Finset.mem_univ _)]
+    · simp [hμle]
+    · intro k _ hkne
+      rw [if_neg (fun h => hkne h.1.symm), zero_mul]
+  · -- μ.val ≥ 2: K²(μ,k) = 0 for all k, so sum = 0
+    -- Also K(μ,ν) = 0 since μ.val ≥ 2
+    have hK : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0)) := by omega
+    rw [if_neg hK]
+    apply Finset.sum_eq_zero
+    intro k _
+    rw [if_neg (fun h => by omega), zero_mul]
+
+/-- For an idempotent matrix E (E² = E) in a complete normed algebra,
+    exp(α · E) = 1 + (exp(α) - 1) · E. -/
+private lemma exp_smul_idempotent {n : ℕ}
+    (E : Matrix (Fin n) (Fin n) ℂ) (hE : E * E = E) (α : ℂ) :
+    exp (α • E) = 1 + (Complex.exp α - 1) • E := by
+  -- E^m = E for all m ≥ 1 (by induction using idempotency E² = E).
+  have hEpow : ∀ m : ℕ, 1 ≤ m → E ^ m = E := by
+    intro m hm
+    induction m with
+    | zero => omega
+    | succ k ih =>
+      rcases Nat.eq_or_lt_of_le hm with h | h
+      · simp [← h, pow_one]
+      · rw [pow_succ, ih (Nat.lt_succ_iff.mp h), hE]
+  -- HasSum for Complex.exp α via the power series.
+  have hSα : HasSum (fun m : ℕ => (m.factorial⁻¹ : ℂ) • α ^ m) (Complex.exp α) := by
+    have := exp_series_hasSum_exp' (𝕂 := ℂ) α
+    rwa [← Complex.exp_eq_exp_ℂ] at this
+  -- Shifted HasSum: ∑_{m≥0} (m+1)!⁻¹ · α^(m+1) = exp(α) - 1
+  -- (splitting off the m = 0 term from hSα).
+  have hSα_shifted : HasSum (fun m : ℕ => ((m + 1).factorial⁻¹ : ℂ) • α ^ (m + 1))
+      (Complex.exp α - 1) := by
+    rw [hasSum_nat_add_iff (f := fun m => (m.factorial⁻¹ : ℂ) • α ^ m) (k := 1)]
+    simp only [Finset.sum_range_one, Nat.factorial_zero, Nat.cast_one, inv_one, pow_zero, one_smul]
+    convert hSα using 1; ring
+  -- Matrix tail HasSum: ∑_{m≥0} (m+1)!⁻¹ · α^(m+1) · E = (exp(α) - 1) · E.
+  have hMatTail : HasSum (fun m : ℕ => ((m + 1).factorial⁻¹ : ℂ) • α ^ (m + 1) • E)
+      ((Complex.exp α - 1) • E) := by
+    have h := hSα_shifted.smul_const E
+    convert h using 2; ext m; rw [smul_assoc]
+  -- HasSum for the matrix exponential power series.
+  have hS : HasSum (fun m : ℕ => (m.factorial⁻¹ : ℂ) • (α ^ m • E ^ m)) (exp (α • E)) := by
+    have := exp_series_hasSum_exp' (𝕂 := ℂ) (α • E)
+    simp_rw [smul_pow] at this; exact this
+  -- Use uniqueness of HasSum: show both sides are limits of the same series.
+  apply hS.unique
+  -- Build HasSum for 1 + (exp α - 1) · E by reassembling: head term (m=0) is 1,
+  -- tail terms (m≥1) sum to (exp α - 1) · E via hMatTail and hEpow.
+  have hFsucc : HasSum (fun m : ℕ => ((m + 1).factorial⁻¹ : ℂ) • (α ^ (m + 1) • E ^ (m + 1)))
+      ((Complex.exp α - 1) • E) := by
+    simp_rw [hEpow _ (Nat.succ_le_succ (Nat.zero_le _))]; exact hMatTail
+  have h := (hasSum_nat_add_iff (f := fun m => (m.factorial⁻¹ : ℂ) • (α ^ m • E ^ m))
+      (k := 1)).mp hFsucc
+  convert h using 1; simp [pow_zero, add_comm]
+
+private lemma exp_boostGen_eq (d : ℕ) (hd : 1 ≤ d) (t : ℂ) :
+    exp (t • boostGen d) =
+      1 + Complex.sinh t • boostGen d + (Complex.cosh t - 1) • (boostGen d * boostGen d) := by
+  set K := boostGen d
+  set P := K * K  -- K² = projection onto {0,1} block
+  -- Define Pp = (P + K)/2, Pm = (P - K)/2
+  set Pp := (2 : ℂ)⁻¹ • (P + K)
+  set Pm := (2 : ℂ)⁻¹ • (P - K)
+  -- Key properties:
+  -- 1. K = Pp - Pm
+  have hK_decomp : K = Pp - Pm := by
+    simp [Pp, Pm]; ring_nf; simp [smul_sub, ← sub_smul]; ring_nf
+    ext; simp [smul_apply, smul_eq_mul]; ring
+  -- 2. Pp² = Pp (using K³ = K, i.e., P*K = K)
+  have hPK : P * K = K := boostGen_cubed d hd
+  have hKP : K * P = K := by
+    have : K * K * K = K := boostGen_cubed d hd
+    rw [mul_assoc] at this; exact this
+  have hP_sq : P * P = P := by
+    -- P² = (K*K)*(K*K). Using K*K*K = K: (K*K)*(K*K) = K*(K*(K*K)) = K*(K*K*K) = K*K = P.
+    change K * K * (K * K) = K * K
+    -- Reassociate: (K*K) * (K*K) = K * (K * K * K)
+    rw [← mul_assoc (K * K) K K, boostGen_cubed d hd]
+  -- K*K = P holds by the `set` definition
+  have hKK : K * K = P := rfl
+  have hPPp : Pp * Pp = Pp := by
+    simp only [Pp]
+    -- (P+K)² = P²+PK+KP+K² = P+K+K+P = 2(P+K), so (1/2·(P+K))² = 1/2·(P+K)
+    have key : (P + K) * (P + K) = (2 : ℂ) • (P + K) := by
+      rw [add_mul, mul_add, mul_add, hP_sq, hPK, hKP, hKK, two_smul]; abel
+    rw [smul_mul_assoc, Algebra.mul_smul_comm, key, smul_smul, smul_smul]
+    norm_num
+  have hPPm : Pm * Pm = Pm := by
+    simp only [Pm]
+    -- (P-K)² = P²-PK-KP+K² = P-K-K+P = 2(P-K), so (1/2·(P-K))² = 1/2·(P-K)
+    have key : (P - K) * (P - K) = (2 : ℂ) • (P - K) := by
+      rw [sub_mul, mul_sub, mul_sub, hP_sq, hPK, hKP, hKK, two_smul]; abel
+    rw [smul_mul_assoc, Algebra.mul_smul_comm, key, smul_smul, smul_smul]
+    norm_num
+  have hPpPm : Pp * Pm = 0 := by
+    simp only [Pp, Pm]
+    -- (P+K)·(P-K) = P²-PK+KP-K² = P-K+K-P = 0
+    have key : (P + K) * (P - K) = 0 := by
+      rw [add_mul, mul_sub, mul_sub, hP_sq, hPK, hKP, hKK]; abel
+    rw [smul_mul_assoc, Algebra.mul_smul_comm, key, smul_zero, smul_zero]
+  -- 3. t•K = t•Pp + (-t)•Pm
+  have hdecomp : t • K = t • Pp + (-t) • Pm := by
+    rw [hK_decomp]; ext; simp [smul_apply, sub_apply, smul_eq_mul]; ring
+  -- 4. Commute (t•Pp) (-t•Pm): both sides factor through Pp·Pm = 0 and Pm·Pp = 0
+  have hcomm : Commute (t • Pp) ((-t) • Pm) := by
+    rw [Commute, SemiconjBy]
+    simp only [Pp, Pm]
+    have hPpPm' : (P + K) * (P - K) = 0 := by
+      rw [add_mul, mul_sub, mul_sub, hP_sq, hPK, hKP, hKK]; abel
+    have hPmPp' : (P - K) * (P + K) = 0 := by
+      rw [sub_mul, mul_add, mul_add, hP_sq, hPK, hKP, hKK]; abel
+    rw [smul_mul_assoc, Algebra.mul_smul_comm, smul_mul_assoc, Algebra.mul_smul_comm,
+        smul_mul_assoc, Algebra.mul_smul_comm, smul_mul_assoc, Algebra.mul_smul_comm]
+    simp [hPpPm', hPmPp']
+  -- 5. Apply exp_add_of_commute
+  rw [hdecomp, Matrix.exp_add_of_commute _ _ hcomm]
+  -- 6. Apply exp_smul_idempotent to both factors
+  rw [exp_smul_idempotent Pp hPPp t, exp_smul_idempotent Pm hPPm (-t)]
+  -- 7. Expand product: cross term (eᵗ-1)·Pp·(e⁻ᵗ-1)·Pm = 0 since Pp·Pm = 0
+  rw [add_mul, mul_add, mul_add, one_mul, mul_one]
+  have cross : (Complex.exp t - 1) • Pp * ((Complex.exp (-t) - 1) • Pm) = 0 := by
+    rw [smul_mul_assoc, Algebra.mul_smul_comm, hPpPm, smul_zero, smul_zero]
+  rw [cross, add_zero]
+  -- Remaining goal: 1 + (e⁻ᵗ-1)·Pm + (eᵗ-1)·Pp = 1 + sinh(t)·K + (cosh(t)-1)·P
+  -- Unfold Pp = (P+K)/2, Pm = (P-K)/2 and use sinh/cosh definitions
+  simp only [Pp, Pm, smul_smul, smul_add, smul_sub]
+  rw [show Complex.sinh t = (Complex.exp t - Complex.exp (-t)) / 2 from rfl,
+      show Complex.cosh t = (Complex.exp t + Complex.exp (-t)) / 2 from rfl,
+      show (Complex.exp t + Complex.exp (-t)) / 2 - 1 =
+          (Complex.exp t - 1) * 2⁻¹ + (Complex.exp (-t) - 1) * 2⁻¹ by ring,
+      show (Complex.exp t - Complex.exp (-t)) / 2 =
+          (Complex.exp t - 1) * 2⁻¹ - (Complex.exp (-t) - 1) * 2⁻¹ by ring]
+  simp [add_smul, sub_smul]
+  ring_nf
+  abel
+
+/-- The entry formula for exp(t · K).
+
+    `exp(t • boostGen d)` has entries:
+    - (0,0) and (1,1): `cosh(t)`
+    - (0,1) and (1,0): `sinh(t)`
+    - (μ,ν) with μ = ν ≥ 2: `1`
+    - all others: `0`
+
+    Proof: K = Pp - Pm where Pp = (K² + K)/2, Pm = (K² - K)/2 are
+    orthogonal idempotents. By `exp_add_of_commute`,
+    `exp(tK) = exp(tPp) · exp(-tPm)`, and for idempotent E,
+    `exp(αE) = 1 + (exp(α) - 1) · E`. Expanding and simplifying
+    with `cosh(t) = (exp(t) + exp(-t))/2`, `sinh(t) = (exp(t) - exp(-t))/2`
+    gives the result. -/
+private lemma expBoost_val_entry (t : ℂ) (hd : 1 ≤ d) (μ ν : Fin (d + 1)) :
+    (expBoost t).val μ ν =
+      if μ.val = 0 ∧ ν.val = 0 then Complex.cosh t
+      else if (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) then Complex.sinh t
+      else if μ.val = 1 ∧ ν.val = 1 then Complex.cosh t
+      else if μ = ν then 1
+      else 0 := by
+  -- expBoost t = exp(t • K), and exp(t•K) = I + sinh(t)·K + (cosh(t)-1)·K²
+  show (exp (t • boostGen d)) μ ν = _
+  rw [exp_boostGen_eq d hd]
+  simp only [Matrix.add_apply, Matrix.smul_apply, smul_eq_mul, Matrix.one_apply,
+    boostGen_apply, boostGen_sq_apply d hd]
+  -- Goal: (if μ = ν then 1 else 0) + sinh(t) * (if (μ.val=0∧ν.val=1)∨(μ.val=1∧ν.val=0) then 1 else 0)
+  --       + (cosh(t)-1) * (if μ=ν ∧ μ.val≤1 then 1 else 0) = RHS
+  -- Case split on μ.val and ν.val
+  rcases Nat.lt_or_ge μ.val 2 with hμ2 | hμ2
+  · rcases Nat.lt_or_ge ν.val 2 with hν2 | hν2
+    · -- Both μ.val, ν.val ∈ {0, 1}
+      have hμval : μ.val = 0 ∨ μ.val = 1 := by omega
+      have hνval : ν.val = 0 ∨ ν.val = 1 := by omega
+      rcases hμval with hμ0 | hμ1 <;> rcases hνval with hν0 | hν1
+      · -- μ.val=0, ν.val=0: result is cosh t
+        have hμν : μ = ν := Fin.ext (by omega)
+        have hK : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0)) := by omega
+        have hKsq : μ = ν ∧ μ.val ≤ 1 := ⟨hμν, by omega⟩
+        rw [if_pos hμν, if_neg hK, if_pos hKsq, if_pos ⟨hμ0, hν0⟩]
+        ring
+      · -- μ.val=0, ν.val=1: result is sinh t
+        have hμν : μ ≠ ν := Fin.ne_of_val_ne (by omega)
+        have hK : (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) := Or.inl ⟨hμ0, hν1⟩
+        have hKsq : ¬(μ = ν ∧ μ.val ≤ 1) := fun h => hμν h.1
+        rw [if_neg hμν, if_pos hK, if_neg hKsq,
+            if_neg (by omega : ¬(μ.val = 0 ∧ ν.val = 0)), if_pos hK]
+        ring
+      · -- μ.val=1, ν.val=0: result is sinh t
+        have hμν : μ ≠ ν := Fin.ne_of_val_ne (by omega)
+        have hK : (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) := Or.inr ⟨hμ1, hν0⟩
+        have hKsq : ¬(μ = ν ∧ μ.val ≤ 1) := fun h => hμν h.1
+        -- After rw [if_neg hμν, if_pos hK, if_neg hKsq]:
+        -- LHS: 0 + sinh(t) * 1 + (cosh(t)-1) * 0
+        -- RHS: if μ.val=1 ∧ ν.val=1 then cosh t else ...  (the 0∧0 case already ruled out by hK)
+        rw [if_neg hμν, if_pos hK, if_neg hKsq,
+            if_neg (by omega : ¬(μ.val = 0 ∧ ν.val = 0)),
+            if_pos hK]
+        ring
+      · -- μ.val=1, ν.val=1: result is cosh t
+        have hμν : μ = ν := Fin.ext (by omega)
+        have hK : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0)) := by omega
+        have hKsq : μ = ν ∧ μ.val ≤ 1 := ⟨hμν, by omega⟩
+        rw [if_pos hμν, if_neg hK, if_pos hKsq,
+            if_neg (by omega : ¬(μ.val = 0 ∧ ν.val = 0)),
+            if_neg (by omega : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0))),
+            if_pos ⟨hμ1, hν1⟩]
+        ring
+    · -- μ.val < 2, ν.val ≥ 2
+      have hK : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0)) := by omega
+      have hμν : μ ≠ ν := Fin.ne_of_val_ne (by omega)
+      have hKsq : ¬(μ = ν ∧ μ.val ≤ 1) := fun h => hμν h.1
+      rw [if_neg hμν, if_neg hK, if_neg hKsq,
+          if_neg (by omega : ¬(μ.val = 0 ∧ ν.val = 0)),
+          if_neg hK,
+          if_neg (by omega : ¬(μ.val = 1 ∧ ν.val = 1))]
+      simp
+  · -- μ.val ≥ 2
+    have hK : ¬((μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0)) := by omega
+    have hKsq_cond : ¬(μ = ν ∧ μ.val ≤ 1) := fun ⟨_, hle⟩ => by omega
+    rw [if_neg hK, if_neg hKsq_cond,
+        if_neg (by omega : ¬(μ.val = 0 ∧ ν.val = 0)),
+        if_neg hK,
+        if_neg (by omega : ¬(μ.val = 1 ∧ ν.val = 1))]
+    rcases eq_or_ne μ ν with hμν | hμν
+    · rw [if_pos hμν]; ring
+    · rw [if_neg hμν]; ring
+
 /-- The **principal boost strip** `{t ∈ ℂ | 0 < Im(t) < π}`.
 
     The boost generator `K` has eigenvalues `±1`, so `exp(tK)` is periodic with
@@ -745,26 +1080,455 @@ private def principalBoostOverlap (d n : ℕ) (σ : Equiv.Perm (Fin n)) : Set �
   principalBoostStrip ∩
   { t : ℂ | (permForwardOverlapSlice (d := d) n σ (expBoost t)).Nonempty }
 
-/-- **Core geometric seed axiom**: The principal boost overlap is connected.
+/-! ### Principal strip witnesses -/
 
-    The principal strip `{0 < Im(t) < π}` is an open horizontal strip in `ℂ`,
-    which is convex and hence connected. The overlap condition removes at most
-    a closed nowhere-dense subset (the parameters where the slice degenerates),
-    and the remaining set is connected.
+/-- For any `t` in the principal strip `{0 < Im(t) < π}` and any permutation `σ`,
+    the forward-overlap slice at `expBoost t` is nonempty when `d ≥ 2`.
 
-    More precisely: for any `t` with `0 < Im(t) < π`, the boost `exp(tK)` has
-    `cosh(t)` and `sinh(t)` with nonzero imaginary parts. By choosing witnesses
-    with sufficiently large real spatial components, the forward-cone condition
-    `η₀ > 0, η₀² - |η|² > 0` can always be satisfied for both the original
-    and permuted differences. The overlap is therefore a dense open subset of
-    the convex principal strip, hence connected.
+    **Proof**: The "large spatial shift trick". Choose a witness `w` with
+    imaginary time increments `ε > 0` and real spatial increments arranged
+    along the σ-ordering with magnitude `M`. After boosting by `exp(tK)`,
+    the imaginary time component of each permuted difference becomes
+    `cosh(θ) · (ε·δ_k·cos(λ) + M·sin(λ))`, which is positive for large `M`
+    since `sin(λ) > 0` in the principal strip. The Minkowski condition follows
+    from `cosh²(θ) - sinh²(θ) = 1`. -/
+private theorem principalStrip_slice_nonempty {d : ℕ} (hd2 : 2 ≤ d)
+    (t : ℂ) (ht : 0 < t.im ∧ t.im < Real.pi)
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    (permForwardOverlapSlice (d := d) n σ (expBoost t)).Nonempty := by
+  have hd1 : 1 ≤ d := by omega
+  -- Choose M large enough so that cos(t.im)*δ + sin(t.im)*M > 0 for all |δ| ≤ n.
+  -- Any M > n / sin(t.im) works; we pick M = (n + 1) / sin(t.im).
+  have hsin_pos : Real.sin t.im > 0 := Real.sin_pos_of_pos_of_lt_pi ht.1 ht.2
+  -- Define the witness
+  let M : ℝ := (n + 1) / Real.sin t.im
+  have hM_pos : M > 0 := div_pos (by positivity) hsin_pos
+  -- w k μ = I*(k+1) for μ=0, ((σ⁻¹ k)+1)*M for μ=1, 0 otherwise
+  let w : Fin n → Fin (d + 1) → ℂ := fun k μ =>
+    if μ = (0 : Fin (d + 1)) then Complex.I * ((k.val : ℝ) + 1)
+    else if μ = ⟨1, by omega⟩ then (((σ⁻¹ k).val : ℝ) + 1) * (M : ℂ)
+    else 0
+  refine ⟨w, ?_, ?_⟩
+  · -- w ∈ ForwardTube d n
+    intro k
+    -- η μ = Im(w k μ - prev μ); for μ=0: η=1; for μ≥1: η=0
+    have hw_time : ∀ j : Fin n, (w j 0).im = (j.val : ℝ) + 1 := by
+      intro j; simp [w, Complex.mul_im]
+    have hw_spatial_im : ∀ j : Fin n, ∀ μ : Fin (d + 1), μ ≠ 0 → (w j μ).im = 0 := by
+      intro j μ hμ
+      simp only [w]
+      rw [if_neg hμ]
+      split_ifs
+      · simp [Complex.ofReal_im]
+      · simp
+    -- Compute the imaginary difference
+    constructor
+    · -- η 0 > 0
+      show (w k 0 - (if h : k.val = 0 then (0 : Fin (d+1) → ℂ)
+          else w ⟨k.val - 1, by omega⟩) 0).im > 0
+      by_cases hk : k.val = 0
+      · simp [hk, hw_time k]
+      · simp only [hk, dite_false, Complex.sub_im, hw_time k,
+            hw_time ⟨k.val - 1, by omega⟩]
+        have hle : 1 ≤ k.val := Nat.one_le_iff_ne_zero.mpr hk
+        rw [show ((k.val - 1 : ℕ) : ℝ) = (k.val : ℝ) - 1 from by rw [Nat.cast_sub hle]; push_cast; ring]
+        linarith
+    · -- Minkowski sum < 0
+      -- Define η as the imaginary difference
+      set η : Fin (d + 1) → ℝ := fun μ => (w k μ -
+        (if h : k.val = 0 then (0 : Fin (d + 1) → ℂ) else w ⟨k.val - 1, by omega⟩) μ).im
+        with hη_def
+      rw [minkowski_sum_decomp]
+      -- η 0 = 1
+      have hη0 : η 0 = 1 := by
+        simp only [hη_def, η]
+        by_cases hk : k.val = 0
+        · simp [hk, hw_time k]
+        · simp only [hk, dite_false, Complex.sub_im, hw_time k,
+              hw_time ⟨k.val - 1, by omega⟩]
+          have hle : 1 ≤ k.val := Nat.one_le_iff_ne_zero.mpr hk
+          rw [show ((k.val - 1 : ℕ) : ℝ) = (k.val : ℝ) - 1 from by rw [Nat.cast_sub hle]; push_cast; ring]
+          ring
+      -- η (succ i) = 0
+      have hηi : ∀ i : Fin d, η (Fin.succ i) = 0 := by
+        intro i; simp only [hη_def, η]
+        by_cases hk : k.val = 0
+        · simp [hk, hw_spatial_im k (Fin.succ i) (Fin.succ_ne_zero i)]
+        · simp only [hk, dite_false, Complex.sub_im,
+              hw_spatial_im k (Fin.succ i) (Fin.succ_ne_zero i),
+              hw_spatial_im ⟨k.val - 1, by omega⟩ (Fin.succ i) (Fin.succ_ne_zero i)]
+          ring
+      rw [hη0]; simp_rw [hηi]; norm_num
+  · -- complexLorentzAction (expBoost t) (permAct σ w) ∈ ForwardTube d n
+    -- Let z' be the boosted permuted configuration
+    let z' : Fin n → Fin (d + 1) → ℂ := complexLorentzAction (expBoost (d := d) t) (permAct (d := d) σ w)
+    -- For each k, compute the imaginary difference η' and show InOpenForwardCone
+    intro k
+    -- The key quantity: A_k = cos(t.im) * δ_time_k + sin(t.im) * M
+    -- where δ_time_k = σ(k).val + 1 (for k=0) or σ(k).val - σ(k-1).val (for k>0)
+    -- and M = the spatial increment (always M for our witness)
+    -- After boosting, Im(comp 0) = cosh(t.re) * A_k and Im(comp 1) = sinh(t.re) * A_k
+    -- and Im(comp μ≥2) = 0.
+    -- The Minkowski norm is -(cosh²-sinh²)*A_k² = -A_k² < 0.
+
+    -- Step 1: Compute the action of expBoost on the permuted witness
+    -- z' k μ = ∑ ν, (expBoost t).val μ ν * (permAct σ w) k ν
+    -- = ∑ ν, (expBoost t).val μ ν * w (σ k) ν
+    -- Using the entry formula, this simplifies significantly.
+
+    -- Define the time and spatial deltas for the permuted config
+    let δ_time : ℝ := if h : k.val = 0 then (σ k).val + 1
+        else (σ k).val - (σ ⟨k.val - 1, by omega⟩).val
+    -- The spatial delta is always M (after applying σ⁻¹∘σ = id)
+
+    -- Step 2: Show the imaginary difference of the boosted config
+    -- The k-th imaginary difference of z' at component μ is:
+    -- For μ = 0: Re(cosh t) * δ_time + Im(sinh t) * M = cosh(t.re)*cos(t.im)*δ_time + cosh(t.re)*sin(t.im)*M
+    -- For μ = 1: Re(sinh t) * δ_time + Im(cosh t) * M = sinh(t.re)*cos(t.im)*δ_time + sinh(t.re)*sin(t.im)*M
+    -- For μ ≥ 2: 0
+
+    -- Step 3: Factor out to get:
+    -- η'(0) = cosh(t.re) * A where A = cos(t.im) * δ_time + sin(t.im) * M
+    -- η'(1) = sinh(t.re) * A
+    -- Minkowski norm = -(cosh²-sinh²) * A² = -A²
+
+    -- For the InOpenForwardCone condition:
+    -- Need η'(0) > 0: cosh(t.re) > 0 and A > 0
+    -- Need Minkowski < 0: -A² < 0 ↔ A ≠ 0, which follows from A > 0
+
+    -- A > 0 because sin(t.im) > 0 and M > n/sin(t.im), so sin(t.im)*M > n ≥ |δ_time|*|cos(t.im)|
+
+    -- Set up A
+    let A : ℝ := Real.cos t.im * δ_time + Real.sin t.im * M
+    -- Prove A > 0
+    have hA_pos : A > 0 := by
+      show Real.cos t.im * δ_time + Real.sin t.im * M > 0
+      have hsinM : Real.sin t.im * M = (n + 1 : ℝ) := by
+        simp only [M]
+        rw [mul_div_cancel₀]
+        exact ne_of_gt hsin_pos
+      rw [hsinM]
+      have hδ_bound : |δ_time| ≤ n := by
+        show |if h : k.val = 0 then ((σ k).val : ℝ) + 1
+            else ((σ k).val : ℝ) - ((σ ⟨k.val - 1, by omega⟩).val : ℝ)| ≤ n
+        split_ifs with hk
+        · -- k = 0: |σ(0).val + 1| ≤ n (note: σ(0).val < n, so σ(0).val + 1 ≤ n)
+          rw [abs_of_nonneg (by positivity)]
+          have h1 : (σ k).val < n := (σ k).isLt
+          exact_mod_cast Nat.lt_succ_iff.mp (by omega)
+        · -- k > 0: |σ(k) - σ(k-1)| ≤ n
+          have h1 : ((σ k).val : ℝ) < n := by exact_mod_cast (σ k).isLt
+          have h2 : ((σ ⟨k.val - 1, by omega⟩).val : ℝ) < n := by
+            exact_mod_cast (σ ⟨k.val - 1, by omega⟩).isLt
+          have h3 : (0 : ℝ) ≤ ((σ k).val : ℝ) := Nat.cast_nonneg _
+          have h4 : (0 : ℝ) ≤ ((σ ⟨k.val - 1, by omega⟩).val : ℝ) := Nat.cast_nonneg _
+          rw [abs_le]; constructor <;> linarith
+      have hcos_bound : |Real.cos t.im * δ_time| ≤ |δ_time| := by
+        rw [abs_mul]
+        exact mul_le_of_le_one_left (abs_nonneg _) (Real.abs_cos_le_one _)
+      linarith [abs_le.mp (le_trans hcos_bound hδ_bound)]
+
+    -- Now we need to show the actual InOpenForwardCone condition
+    -- by computing the imaginary difference of the boosted config.
+
+    -- The imaginary difference η' for the boosted config
+    set η' : Fin (d + 1) → ℝ := fun μ => (z' k μ -
+      (if h : k.val = 0 then (0 : Fin (d + 1) → ℂ)
+       else z' ⟨k.val - 1, by omega⟩) μ).im with hη'_def
+
+    -- Key claim: η'(0) = cosh(t.re) * A, η'(1) = sinh(t.re) * A, η'(μ≥2) = 0
+    -- We prove these by direct computation using expBoost_val_entry.
+
+    -- First, compute the boosted action on the witness
+    -- z' k μ = ∑ ν, (expBoost t).val μ ν * w (σ k) ν
+    have hz'_eq : ∀ (j : Fin n) (μ : Fin (d + 1)),
+        z' j μ = ∑ ν, (expBoost t).val μ ν * w (σ j) ν := by
+      intro j μ; rfl
+
+    -- w (σ j) has: component 0 = I * (σ j + 1), component 1 = (σ⁻¹(σ j) + 1) * M = (j + 1) * M
+    have hw_σ_0 : ∀ j : Fin n, w (σ j) 0 = Complex.I * ((σ j).val + 1 : ℝ) := by
+      intro j; simp [w]
+    have hw_σ_1 : ∀ j : Fin n, w (σ j) ⟨1, by omega⟩ = ((j.val : ℝ) + 1) * (M : ℂ) := by
+      intro j
+      simp only [w]
+      rw [if_neg (by simp [Fin.ext_iff]), if_pos (by simp [Fin.ext_iff])]
+      congr 1
+      push_cast
+      congr 1
+      have : (σ⁻¹ (σ j)).val = j.val := by
+        simp [Equiv.Perm.inv_apply_self]
+      exact_mod_cast this
+    have hw_σ_ge2 : ∀ j : Fin n, ∀ ν : Fin (d + 1), ν.val ≥ 2 → w (σ j) ν = 0 := by
+      intro j ν hν
+      simp only [w]
+      have hne0 : ν ≠ (0 : Fin (d + 1)) := by intro h; subst h; simp at hν
+      have hne1 : ν ≠ (⟨1, by omega⟩ : Fin (d + 1)) := by
+        intro h; have := congr_arg Fin.val h; simp at this; omega
+      rw [if_neg hne0, if_neg hne1]
+
+    -- Helper: compute the boosted action using the entry formula
+    -- z' j μ = ∑ ν, (expBoost t).val μ ν * w (σ j) ν
+    -- Since w (σ j) ν = 0 for ν ≥ 2, only ν=0 and ν=1 contribute.
+    have hboost_sum : ∀ (j : Fin n) (μ : Fin (d + 1)),
+        z' j μ = (expBoost t).val μ 0 * w (σ j) 0 +
+                 (expBoost t).val μ ⟨1, by omega⟩ * w (σ j) ⟨1, by omega⟩ := by
+      intro j μ
+      rw [hz'_eq]
+      have hlt1 : 1 < d + 1 := Nat.lt_add_one_iff.mpr hd1
+      have hfin1 : (⟨1, hlt1⟩ : Fin (d + 1)) = ⟨1, by omega⟩ := rfl
+      have hvanish : ∀ ν : Fin (d + 1), ν ≠ 0 → ν.val ≠ 1 →
+          (expBoost t).val μ ν * w (σ j) ν = 0 := by
+        intro ν hν0 hν1
+        have hν_ge2 : ν.val ≥ 2 := by
+          rcases Nat.eq_zero_or_pos ν.val with h | h
+          · exact absurd (Fin.ext h) hν0
+          · omega
+        rw [hw_σ_ge2 j ν hν_ge2, mul_zero]
+      -- The sum equals f(0) + f(1) because all other terms are 0
+      have hsum : ∑ ν : Fin (d + 1), (expBoost t).val μ ν * w (σ j) ν =
+          ∑ ν ∈ ({0, ⟨1, hlt1⟩} : Finset (Fin (d + 1))),
+            (expBoost t).val μ ν * w (σ j) ν := by
+        symm; apply Finset.sum_subset (Finset.subset_univ _)
+        intro ν _ hν_notin
+        simp only [Finset.mem_insert, Finset.mem_singleton] at hν_notin
+        push_neg at hν_notin
+        have hv0 : ν ≠ 0 := hν_notin.1
+        have hv1 : ν.val ≠ 1 := fun h => hν_notin.2 (Fin.ext h)
+        exact hvanish ν hv0 hv1
+      rw [hsum, Finset.sum_pair (Fin.ne_of_val_ne (by norm_num))]
+
+    -- Now substitute the entry formulas
+    -- After rw [expBoost_val_entry], the goal is a nested if-then-else
+    -- with conditions on Fin.val. We use split_ifs to resolve.
+    have hentry : ∀ (μ ν : Fin (d + 1)), (expBoost (d := d) t).val μ ν =
+        if μ.val = 0 ∧ ν.val = 0 then Complex.cosh t
+        else if (μ.val = 0 ∧ ν.val = 1) ∨ (μ.val = 1 ∧ ν.val = 0) then Complex.sinh t
+        else if μ.val = 1 ∧ ν.val = 1 then Complex.cosh t
+        else if μ = ν then 1
+        else 0 := fun μ ν => expBoost_val_entry t hd1 μ ν
+
+    -- z' j 0 = cosh(t) * I * (σ(j)+1) + sinh(t) * (j+1) * M
+    have hz'_0 : ∀ j : Fin n, z' j 0 =
+        Complex.cosh t * (Complex.I * ((σ j).val + 1 : ℝ)) +
+        Complex.sinh t * (((j.val : ℝ) + 1) * (M : ℂ)) := by
+      intro j; rw [hboost_sum, hentry 0 0, hentry 0 ⟨1, by omega⟩, hw_σ_0, hw_σ_1]
+      simp (config := { decide := true })
+
+    -- z' j 1 = sinh(t) * I * (σ(j)+1) + cosh(t) * (j+1) * M
+    have hz'_1 : ∀ j : Fin n, z' j ⟨1, by omega⟩ =
+        Complex.sinh t * (Complex.I * ((σ j).val + 1 : ℝ)) +
+        Complex.cosh t * (((j.val : ℝ) + 1) * (M : ℂ)) := by
+      intro j; rw [hboost_sum, hentry ⟨1, by omega⟩ 0, hentry ⟨1, by omega⟩ ⟨1, by omega⟩,
+        hw_σ_0, hw_σ_1]
+      simp (config := { decide := true })
+
+    -- z' j μ = 0 for μ ≥ 2
+    have hz'_ge2 : ∀ j : Fin n, ∀ μ : Fin (d + 1), μ.val ≥ 2 → z' j μ = 0 := by
+      intro j μ hμ
+      rw [hboost_sum, hentry μ 0, hentry μ ⟨1, by omega⟩]
+      have h0 : ¬(μ.val = 0) := by omega
+      have h1 : ¬(μ.val = 1) := by omega
+      have hne0 : μ ≠ (0 : Fin (d+1)) := Fin.ne_of_val_ne (ne_of_gt (by omega : μ.val > 0))
+      have hne1 : μ ≠ (⟨1, by omega⟩ : Fin (d+1)) := by
+        intro h; rw [h] at hμ; simp at hμ
+      simp only [h0, h1, false_and, and_false, false_or, or_false, ite_false, hne0, hne1]
+      ring
+
+    -- Now compute the imaginary differences
+    -- η'(0) = cosh(t.re) * A, where A = cos(t.im)*δ_time + sin(t.im)*M
+    -- η'(1) = sinh(t.re) * A
+    -- η'(μ≥2) = 0
+
+    -- Compute Im of z' j 0
+    -- cosh(t) = cosh(t.re)*cos(t.im) + I*sinh(t.re)*sin(t.im)
+    -- sinh(t) = sinh(t.re)*cos(t.im) + I*cosh(t.re)*sin(t.im)
+    -- So Im(cosh(t) * I * r) = Re(cosh(t)) * r = cosh(t.re)*cos(t.im) * r (for real r)
+    -- Im(sinh(t) * s) = Im(sinh(t)) * s = cosh(t.re)*sin(t.im) * s (for real s)
+
+    -- Decompose cosh/sinh of complex argument into real/imaginary parts
+    have ht_rw : t = (t.re : ℂ) + Complex.I * (t.im : ℂ) := by
+      rw [mul_comm]; exact (Complex.re_add_im t).symm
+    have hI_comm : Complex.I * (t.im : ℂ) = (t.im : ℂ) * Complex.I := mul_comm _ _
+
+    have hcosh_re : (Complex.cosh t).re = Real.cosh t.re * Real.cos t.im := by
+      conv_lhs => rw [ht_rw, Complex.cosh_add, hI_comm, Complex.cosh_mul_I, Complex.sinh_mul_I]
+      simp [Complex.cos_ofReal_re, Complex.sin_ofReal_re, Complex.cosh_ofReal_re,
+            Complex.sinh_ofReal_re, Complex.cosh_ofReal_im, Complex.sinh_ofReal_im,
+            Complex.mul_re, Complex.add_re]
+    have hcosh_im : (Complex.cosh t).im = Real.sinh t.re * Real.sin t.im := by
+      conv_lhs => rw [ht_rw, Complex.cosh_add, hI_comm, Complex.cosh_mul_I, Complex.sinh_mul_I]
+      simp [Complex.cos_ofReal_re, Complex.sin_ofReal_re, Complex.cos_ofReal_im,
+            Complex.sin_ofReal_im, Complex.cosh_ofReal_re, Complex.sinh_ofReal_re,
+            Complex.cosh_ofReal_im, Complex.sinh_ofReal_im,
+            Complex.mul_im, Complex.add_im, Complex.mul_re, Complex.I_re, Complex.I_im]
+    have hsinh_re : (Complex.sinh t).re = Real.sinh t.re * Real.cos t.im := by
+      conv_lhs => rw [ht_rw, Complex.sinh_add, hI_comm, Complex.cosh_mul_I, Complex.sinh_mul_I]
+      simp [Complex.cos_ofReal_re, Complex.sin_ofReal_re, Complex.cosh_ofReal_re,
+            Complex.sinh_ofReal_re, Complex.cosh_ofReal_im, Complex.sinh_ofReal_im,
+            Complex.mul_re, Complex.add_re, Complex.mul_im, Complex.I_re, Complex.I_im]
+    have hsinh_im : (Complex.sinh t).im = Real.cosh t.re * Real.sin t.im := by
+      conv_lhs => rw [ht_rw, Complex.sinh_add, hI_comm, Complex.cosh_mul_I, Complex.sinh_mul_I]
+      simp [Complex.cos_ofReal_re, Complex.sin_ofReal_re, Complex.cos_ofReal_im,
+            Complex.sin_ofReal_im, Complex.cosh_ofReal_re, Complex.sinh_ofReal_re,
+            Complex.cosh_ofReal_im, Complex.sinh_ofReal_im,
+            Complex.mul_re, Complex.add_re, Complex.mul_im, Complex.I_re, Complex.I_im,
+            Complex.add_im]
+
+    -- The imaginary part of z' j 0
+    -- Helper: Im(a * I * r + b * s) = a.re * r + b.im * s for complex a, b and real r, s
+    have im_boost_formula (a b : ℂ) (r s : ℝ) :
+        (a * (Complex.I * (r : ℂ)) + b * ((s : ℝ) : ℂ)).im = a.re * r + b.im * s := by
+      simp [Complex.add_im, Complex.mul_im, Complex.mul_re, Complex.I_re, Complex.I_im,
+        Complex.ofReal_re, Complex.ofReal_im]
+    have hz'_0_im : ∀ j : Fin n, (z' j 0).im =
+        Real.cosh t.re * (Real.cos t.im * ((σ j).val + 1 : ℝ) +
+        Real.sin t.im * (((j.val : ℝ) + 1) * M)) := by
+      intro j; rw [hz'_0]
+      rw [show (((j.val : ℝ) + 1) * (M : ℂ)) = ((((j.val : ℝ) + 1) * M : ℝ) : ℂ) from by
+        push_cast; ring]
+      rw [im_boost_formula, hcosh_re, hsinh_im]
+      ring
+
+    -- The imaginary part of z' j 1
+    have hz'_1_im : ∀ j : Fin n, (z' j ⟨1, by omega⟩).im =
+        Real.sinh t.re * (Real.cos t.im * ((σ j).val + 1 : ℝ) +
+        Real.sin t.im * (((j.val : ℝ) + 1) * M)) := by
+      intro j; rw [hz'_1]
+      rw [show (((j.val : ℝ) + 1) * (M : ℂ)) = ((((j.val : ℝ) + 1) * M : ℝ) : ℂ) from by
+        push_cast; ring]
+      rw [im_boost_formula, hsinh_re, hcosh_im]
+      ring
+
+    -- Now compute the imaginary differences
+    -- η'(0) for position k
+    set η' : Fin (d + 1) → ℝ := fun μ => (z' k μ -
+      (if h : k.val = 0 then (0 : Fin (d + 1) → ℂ)
+       else z' ⟨k.val - 1, by omega⟩) μ).im with hη'_def
+
+    -- η'(0) = cosh(t.re) * A
+    have hη'_0 : η' 0 = Real.cosh t.re * A := by
+      simp only [hη'_def, η', A, δ_time]
+      by_cases hk : k.val = 0
+      · simp [hk, hz'_0_im]
+      · simp only [hk, dite_false, Complex.sub_im, hz'_0_im k,
+            hz'_0_im ⟨k.val - 1, by omega⟩]
+        have hle : 1 ≤ k.val := Nat.one_le_iff_ne_zero.mpr hk
+        rw [show ((k.val - 1 : ℕ) : ℝ) = (k.val : ℝ) - 1 from by rw [Nat.cast_sub hle]; push_cast; ring]
+        ring
+
+    -- η'(1) = sinh(t.re) * A
+    have hη'_1 : η' ⟨1, by omega⟩ = Real.sinh t.re * A := by
+      simp only [hη'_def, η', A, δ_time]
+      by_cases hk : k.val = 0
+      · simp [hk, hz'_1_im]
+      · simp only [hk, dite_false, Complex.sub_im, hz'_1_im k,
+            hz'_1_im ⟨k.val - 1, by omega⟩]
+        have hle : 1 ≤ k.val := Nat.one_le_iff_ne_zero.mpr hk
+        rw [show ((k.val - 1 : ℕ) : ℝ) = (k.val : ℝ) - 1 from by rw [Nat.cast_sub hle]; push_cast; ring]
+        ring
+
+    -- η'(μ) = 0 for μ ≥ 2
+    have hη'_ge2 : ∀ μ : Fin (d + 1), μ.val ≥ 2 → η' μ = 0 := by
+      intro μ hμ
+      simp only [hη'_def, η']
+      by_cases hk : k.val = 0
+      · simp [hk, hz'_ge2 k μ hμ]
+      · simp only [hk, dite_false, Complex.sub_im, hz'_ge2 k μ hμ,
+            hz'_ge2 ⟨k.val - 1, by omega⟩ μ hμ]; ring
+
+    -- Now prove InOpenForwardCone
+    -- The goal after `set η'` should involve η', but let's unfold to be safe
+    show η' 0 > 0 ∧ ∑ μ, minkowskiSignature d μ * η' μ ^ 2 < 0
+    constructor
+    · -- η'(0) > 0
+      rw [hη'_0]
+      exact mul_pos (Real.cosh_pos t.re) hA_pos
+    · -- Minkowski sum < 0
+      rw [minkowski_sum_decomp, hη'_0]
+      -- Convert η'(Fin.succ i) for i : Fin d
+      have hηi_sq : ∀ i : Fin d, η' (Fin.succ i) ^ 2 =
+          if i.val = 0 then (Real.sinh t.re * A) ^ 2 else 0 := by
+        intro i
+        rcases eq_or_ne i.val 0 with hi | hi
+        · rw [if_pos hi]
+          have : Fin.succ i = ⟨1, by omega⟩ := Fin.ext (by simp; omega)
+          rw [this, hη'_1]
+        · have hi2 : (Fin.succ i).val ≥ 2 := by simp [Fin.succ]; omega
+          rw [if_neg hi, hη'_ge2 (Fin.succ i) hi2, sq, zero_mul]
+      simp_rw [hηi_sq]
+      -- The sum becomes (sinh(t.re) * A)^2
+      have hsum : ∑ i : Fin d, (if i.val = 0 then (Real.sinh t.re * A) ^ 2 else (0 : ℝ)) =
+          (Real.sinh t.re * A) ^ 2 := by
+        have : ∀ i : Fin d, (if i.val = 0 then (Real.sinh t.re * A) ^ 2 else (0 : ℝ)) =
+            if i = ⟨0, by omega⟩ then (Real.sinh t.re * A) ^ 2 else 0 := by
+          intro i; simp [Fin.ext_iff]
+        simp_rw [this, Finset.sum_ite_eq', Finset.mem_univ, if_true]
+      rw [hsum]
+      -- -(cosh(t.re)*A)^2 + (sinh(t.re)*A)^2 = A^2 * (sinh^2 - cosh^2) = -A^2
+      have : -(Real.cosh t.re * A) ^ 2 + (Real.sinh t.re * A) ^ 2 = -(A ^ 2) := by
+        have h1 : Real.cosh t.re ^ 2 - Real.sinh t.re ^ 2 = 1 :=
+          Real.cosh_sq_sub_sinh_sq t.re
+        nlinarith
+      rw [this]
+      nlinarith [sq_nonneg A, hA_pos]
+
+/-- The principal boost overlap equals the entire principal strip for d ≥ 2. -/
+private theorem principalBoostOverlap_eq_strip {d : ℕ} (hd2 : 2 ≤ d)
+    (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+    principalBoostOverlap d n σ = principalBoostStrip := by
+  ext t
+  simp only [principalBoostOverlap, principalBoostStrip, Set.mem_inter_iff, Set.mem_setOf_eq]
+  constructor
+  · intro ⟨ht, _⟩; exact ht
+  · intro ht; exact ⟨ht, principalStrip_slice_nonempty hd2 t ht n σ⟩
+
+/-- The principal strip `{0 < Im(t) < π}` is convex. -/
+private lemma convex_principalBoostStrip : Convex ℝ principalBoostStrip := by
+  intro x hx y hy a b ha hb hab
+  simp only [principalBoostStrip, Set.mem_setOf_eq] at *
+  have him : (a • x + b • y).im = a * x.im + b * y.im := by
+    rw [Complex.add_im, Complex.smul_im, Complex.smul_im, smul_eq_mul, smul_eq_mul]
+  rw [him]
+  constructor
+  · have h1 : a * x.im ≥ 0 := mul_nonneg ha hx.1.le
+    have h2 : b * y.im ≥ 0 := mul_nonneg hb hy.1.le
+    by_contra h; push_neg at h
+    have : a * x.im + b * y.im = 0 := le_antisymm h (by linarith)
+    have ha0 : a * x.im = 0 := by linarith
+    have hb0 : b * y.im = 0 := by linarith
+    rcases mul_eq_zero.mp ha0 with ha' | ha'
+    · rcases mul_eq_zero.mp hb0 with hb' | hb'
+      · linarith
+      · linarith [hy.1]
+    · linarith [hx.1]
+  · have h1 : a * x.im ≤ a * Real.pi := by nlinarith [hx.2]
+    have h2 : b * y.im ≤ b * Real.pi := by nlinarith [hy.2]
+    have h3 : a * Real.pi + b * Real.pi = Real.pi := by nlinarith
+    -- strict inequality: can't have both a*x.im = a*pi and b*y.im = b*pi
+    -- since x.im < pi and y.im < pi (and a + b = 1, a,b ≥ 0)
+    by_cases ha0 : a = 0
+    · subst ha0; simp at hab; subst hab; simpa using hy.2
+    · have : a * x.im < a * Real.pi :=
+        mul_lt_mul_of_pos_left hx.2 (lt_of_le_of_ne ha (Ne.symm ha0))
+      linarith
+
+/-- The principal boost overlap is connected for `d ≥ 2`.
+
+    By `principalBoostOverlap_eq_strip`, the overlap equals the entire principal
+    strip, which is convex and hence connected.
 
     **References**:
     - R.F. Streater and A.S. Wightman, "PCT, Spin and Statistics, and All That"
       (1964, 2000), Section 2-5, Lemma 2 -/
-axiom isConnected_principalBoostOverlap {d : ℕ}
+theorem isConnected_principalBoostOverlap {d : ℕ}
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (hd2 : 2 ≤ d) :
-    IsConnected (principalBoostOverlap d n σ)
+    IsConnected (principalBoostOverlap d n σ) := by
+  rw [principalBoostOverlap_eq_strip hd2 n σ]
+  have hpi : (0 : ℝ) < Real.pi / 2 := by positivity
+  have hpi2 : Real.pi / 2 < Real.pi := by linarith [Real.pi_pos]
+  refine ⟨⟨⟨0, Real.pi / 2⟩, ?_⟩, convex_principalBoostStrip.isPreconnected⟩
+  simp only [principalBoostStrip, Set.mem_setOf_eq]
+  exact ⟨hpi, hpi2⟩
 
 /-- **Principal-strip KAK decomposition** (textbook axiom): Every element of
     the slice index set factors as `k₁ · exp(tK) · k₂` with `t` in the
