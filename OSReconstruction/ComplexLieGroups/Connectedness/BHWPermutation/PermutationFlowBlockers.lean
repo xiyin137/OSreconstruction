@@ -395,6 +395,16 @@ theorem d1N2InvariantRealizable_pair_nonempty :
         ⟨w, Γ⁻¹, hwFT, hΓswap, by simp [q0, q1, p, s, d1InvariantQuad]⟩
     exact hpair.2
 
+/-- The `d=1,n=2` forwardizable-swap invariant locus is nonempty. -/
+theorem d1N2InvariantForwardizableSwap_nonempty :
+    ∃ q0 q1 p s : ℂ,
+      s ^ 2 = 4 * (p ^ 2 - q0 * q1) ∧
+      d1N2InvariantForwardizableSwap q0 q1 p s := by
+  rcases d1N2InvariantRealizable_pair_nonempty with
+    ⟨q0, q1, p, s, hrel, hreal, hswapReal⟩
+  exact ⟨q0, q1, p, s, hrel,
+    d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal⟩
+
 /-- Realizable-pair involution equality and forwardizable diff-zero are
 equivalent formulations of the same `d=1,n=2` invariant kernel condition. -/
 theorem d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero
@@ -1817,9 +1827,47 @@ theorem blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly
       d1N2InvariantRealizable q0 q1 p s →
       d1N2InvariantRealizable q1 q0 p (-s) →
       f q0 q1 p s - f q1 q0 p (-s) = 0 := by
-  -- Remaining invariant-only analytic core (`d=1,n=2`): involution symmetry
-  -- on realizable invariant tuples.
-  sorry
+  intro q0 q1 p s _hquad hreal hswapReal
+  rcases hsource with ⟨F, hF_holo, hF_lorentz, hF_bv, hF_local, hf_onFT⟩
+  rcases hreal with ⟨z, hz, hquadZ⟩
+  rcases hswapReal with ⟨y, hy, hquadY⟩
+  let _ := hF_holo
+  let _ := hF_lorentz
+  let _ := hF_bv
+  let _ := hF_local
+  have hswapInv :
+      d1InvariantQuad y = (d1Q1 z, d1Q0 z, d1P01 z, -d1S01 z) := by
+    calc
+      d1InvariantQuad y = (q1, q0, p, -s) := hquadY
+      _ = (d1Q1 z, d1Q0 z, d1P01 z, -d1S01 z) := by
+            simpa [d1InvariantQuad] using congrArg
+              (fun t => (t.2.1, t.1, t.2.2.1, -t.2.2.2)) hquadZ |>.symm
+  have hFyFz : F y = F z := by
+    -- Remaining source-side analytic core (`d=1,n=2`):
+    -- `z,y ∈ FT` with swapped invariant quadruples imply equal source values.
+    let _ := hswapInv
+    sorry
+  have hleft : f q0 q1 p s = F z := by
+    have hq :
+        f q0 q1 p s = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) := by
+      simpa [d1InvariantQuad] using
+        (congrArg (fun t => f t.1 t.2.1 t.2.2.1 t.2.2.2) hquadZ).symm
+    calc
+      f q0 q1 p s = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) := hq
+      _ = F z := by simpa using (hf_onFT z hz).symm
+  have hright : f q1 q0 p (-s) = F y := by
+    have hq :
+        f q1 q0 p (-s) = f (d1Q0 y) (d1Q1 y) (d1P01 y) (d1S01 y) := by
+      simpa [d1InvariantQuad] using
+        (congrArg (fun t => f t.1 t.2.1 t.2.2.1 t.2.2.2) hquadY).symm
+    calc
+      f q1 q0 p (-s) = f (d1Q0 y) (d1Q1 y) (d1P01 y) (d1S01 y) := hq
+      _ = F y := by simpa using (hf_onFT y hy).symm
+  apply sub_eq_zero.mpr
+  calc
+    f q0 q1 p s = F z := hleft
+    _ = F y := hFyFz.symm
+    _ = f q1 q0 p (-s) := hright.symm
 
 /-- Deferred invariant-function source core (`d=1,n=2`, open-anchor form):
 the invariant-only realizable diff-zero core implies existence of a nonempty

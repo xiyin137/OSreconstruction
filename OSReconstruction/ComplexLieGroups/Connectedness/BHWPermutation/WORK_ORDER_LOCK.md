@@ -14,6 +14,8 @@ The agent must follow this order exactly and must not re-prioritize.
     Lorentz invariant-function route on `FT_{1,2}` via
     `(Q₀,Q₁,P,S)` factorization and swap action
     `(Q₀,Q₁,P,S) ↦ (Q₁,Q₀,P,-S)`.
+  - Primary reference note for this route:
+    `INVARIANT_FUNCTION_PROOF_D1_N2.md` (best local proof file).
   - Work through explicit `n=2` wrappers first when useful:
     - `blocker_eventually_forward_eq_on_prepared_nhds_d1_adjSwap_n2`
     - `blocker_eventually_extendF_base_eq_on_prepared_nhds_d1_swap01_n2`
@@ -70,10 +72,16 @@ No transition to step 3 is allowed before both step 1 and step 2 are marked
 
 - Step 1 (`d=1,n=2` local blocker): IN_PROGRESS
   - Current active theorem:
-    `blocker_d1N2ForwardBaseEq_source_invariantOnly_core_deferred`
+    `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`
   - Exact remaining subgoal inside that theorem:
-    for `z ∈ FT_{1,2}` with `swap·z ∈ ET_{1,2}`,
-    prove `extendF F (swap·z) = F z`.
+    prove the invariant-only realizable-pair swap-difference identity:
+    for `(q0,q1,p,s)` on `s^2 = 4*(p^2 - q0*q1)`, if both
+    `d1N2InvariantRealizable q0 q1 p s` and
+    `d1N2InvariantRealizable q1 q0 p (-s)` hold, then
+    `f q0 q1 p s - f q1 q0 p (-s) = 0`.
+    Non-vacuity is now explicit in code:
+    `d1N2InvariantRealizable_pair_nonempty` and
+    `d1N2InvariantForwardizableSwap_nonempty` are proved.
     The theorem
     `blocker_d1N2Source_swappedInvariantForwardEq_invariantOnly_core_deferred`
     is now a proved wrapper via
@@ -362,6 +370,93 @@ No transition to step 3 is allowed before both step 1 and step 2 are marked
     (`f q0 q1 p s - f q1 q0 p (-s) = 0` on realizable swap-pairs),
   - `blocker_d1N2InvariantKernelPairSwapOnRealizable_source_invariantOnly_core_deferred`
     is now a proved wrapper by `sub_eq_zero`.
+- 2026-03-02: Restored the deferred boundary so the active `sorry` is exactly
+  the invariant-only diff-zero statement:
+  `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`.
+  The sourced swapped-invariant FT statement is now a proved wrapper via
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_swappedInvariantForwardEq`.
+  Added proved orbit-constancy helpers:
+  `d1N2Field_eq_of_sameInvariantQuad_onFT`,
+  `d1N2InvariantKernelSource_eq_of_sameInvariantQuad_onFT`.
+- 2026-03-02: Added exact source-form equivalence
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_forwardSwapEq_onFT`,
+  so the active invariant-only diff-zero blocker is now explicitly equivalent to
+  forward-swap equality on `FT_{1,2}` for the sourced field
+  `Classical.choose hsource`.
+- 2026-03-02: Added exact source-form equivalence
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_pointwiseSliceAnchor`,
+  so the active invariant-only diff-zero blocker is also explicitly equivalent to
+  pointwise slice-anchor existence for the sourced field on `FT_{1,2}`.
+- 2026-03-02: Added proved source wrapper
+  `blocker_d1N2PointwiseSliceAnchor_fromSource_invariantOnly_core_deferred`,
+  extracting pointwise slice-anchor existence from the active diff-zero blocker
+  via the exact equivalence above.
+- 2026-03-02: Added exact source-form equivalence
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_openAnchor`,
+  identifying the same active blocker with existence of a nonempty complex-open
+  anchor subset where `extendF(swap·w)=F(w)`.
+- 2026-03-02: Re-expressed the active theorem body
+  `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`
+  in the open-anchor form (via the equivalence above), so the remaining `sorry`
+  subgoal now matches the locked complex-open-anchor route exactly.
+- 2026-03-02: Extended `D1N2LorentzInvariantRoute.lean` with additional
+  invariant-function analytic scaffolding used by
+  `INVARIANT_FUNCTION_PROOF_D1_N2.md`:
+  - explicit complex chart formulas
+    (`d1N2ComplexConfig`, `d1Q0_complexConfig`, `d1Q1_complexConfig`,
+    `d1P01_complexConfig`, `d1S01_complexConfig`,
+    `d1InvariantQuad_complexConfig`, `d1InvariantQuad_complexConfig_swap`),
+  - explicit chart-level quadric identity
+    `d1InvariantQuad_complexConfig_on_quadric`,
+  - complex Jacobian minor companion and determinant nonvanishing
+    (`d1N2InvariantJacobianMinorAtProbeC`,
+    `d1N2InvariantJacobianMinorAtProbeC_det`,
+    `d1N2InvariantJacobianMinorAtProbeC_det_ne_zero`),
+  - determinant-to-independence consequences for both real/complex minors
+    (`d1N2InvariantJacobianMinorAtProbe_linearIndependent_rows`,
+    `d1N2InvariantJacobianMinorAtProbeC_linearIndependent_rows`).
+  File-level Lean checks pass for
+  `D1N2LorentzInvariantRoute.lean` and `PermutationFlowBlockers.lean`
+  (remaining `sorry`s unchanged in blockers file).
+- 2026-03-02: Added second-round invariant-route algebra scaffolding in
+  `D1N2LorentzInvariantRoute.lean`:
+  - chart bridge `d1N2ComplexConfig_realCast`,
+  - symbolic Jacobian minor family
+    `d1N2InvariantJacobianMinorC a b c d` with closed determinant formula
+    `d1N2InvariantJacobianMinorC_det`,
+  - probe identification
+    `d1N2InvariantJacobianMinorC_atProbe` feeding the existing probe
+    determinant/nonvanishing lemmas.
+  Lean checks remain green for
+  `D1N2LorentzInvariantRoute.lean` and
+  `PermutationFlowBlockers.lean` (same `sorry` set as before).
+- 2026-03-02: Added generic nonvanishing criterion for the symbolic complex
+  Jacobian minor:
+  `d1N2InvariantJacobianMinorC_det_ne_zero_of`
+  (conditions `a ≠ 0` and `a*c - b*d ≠ 0`), to support the local full-rank
+  branch of the invariant-image openness argument around the probe.
+- 2026-03-02: Added symbolic real Jacobian minor companion and aligned probe
+  determinant proof through it:
+  - `d1N2InvariantJacobianMinorR`,
+    `d1N2InvariantJacobianMinorR_det`,
+    `d1N2InvariantJacobianMinorR_det_ne_zero_of`,
+    `d1N2InvariantJacobianMinorR_atProbe`,
+  - `d1N2InvariantJacobianMinorAtProbe_det` now factors through the symbolic
+    formula rather than only `norm_num` on a hard-coded matrix.
+- 2026-03-02: Added real/complex compatibility lemmas for the symbolic Jacobian
+  minor:
+  - matrix-level compatibility on real parameters:
+    `d1N2InvariantJacobianMinorC_ofReal`,
+  - determinant-level compatibility:
+    `d1N2InvariantJacobianMinorC_det_ofReal`.
+- 2026-03-02: Refactored the active analytic frontier in
+  `PermutationFlowBlockers.lean`:
+  - new dedicated deferred theorem
+    `blocker_d1N2OpenAnchor_source_invariantAnalytic_core_deferred`
+    carries the only `sorry` for the `d=1,n=2` analytic source-to-anchor step,
+  - `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`
+    is now a proved wrapper via
+    `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_openAnchor`.
 
 ## External comparison notes
 
@@ -382,3 +477,41 @@ No transition to step 3 is allowed before both step 1 and step 2 are marked
     with active target
     `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`
     (the pair-swap theorem is now a proved `sub_eq_zero` wrapper).
+
+- 2026-03-02 (plan adjustment): moved the single unresolved `sorry` back onto
+  the invariant-only core theorem
+  `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`.
+  The open-anchor theorem
+  `blocker_d1N2OpenAnchor_source_invariantAnalytic_core_deferred` is now a
+  proved wrapper via
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_openAnchor`.
+  This keeps the frontier aligned with the locked invariant-function route and
+  avoids treating open-anchor construction as the primary deferred statement.
+
+- 2026-03-02 (documentation correction): for this branch, adding a separate
+  translation-invariance hypothesis is **not** treated as a complexity reducer
+  for the active `d=1,n=2` blocker. The active theorem is already posed in
+  invariant coordinates with realizability hypotheses, and work remains locked
+  to the invariant-function route (no translation-invariance detour).
+- 2026-03-02 (state correction, superseding stale note at lines 438-445):
+  in current Lean code, the active deferred theorem is
+  `blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred`
+  (line ~1752 in `PermutationFlowBlockers.lean`), while
+  `blocker_d1N2OpenAnchor_source_invariantAnalytic_core_deferred` is proved as a
+  wrapper via
+  `d1N2InvariantKernelSwapDiffZeroOnRealizable_source_iff_openAnchor`.
+  The pair-swap theorem remains a proved `sub_eq_zero` wrapper around this
+  active diff-zero core.
+- 2026-03-02 (convention clarification):
+  in this local blocker file, `d1N2InvariantKernelSource` is a 2-slot
+  configuration source package (`Fin 2 → ...`) and does not include a separate
+  translation-invariance field. This does not contradict Wightman
+  n-point-to-(n-1)-difference conventions elsewhere; it just fixes the current
+  local theorem interface.
+- 2026-03-02 (route guardrail):
+  the `d=1,n=2` real-witness EOW package path is treated as obstructed in this
+  branch; see test-level sign-obstruction files
+  `test/d1_no_real_witness_swap_n2_probe.lean` and
+  `test/d1_real_witness_sign_obstruction_test.lean`.
+  Active closure target remains the invariant-function diff-zero core, not
+  construction of `d1N2ForwardSwapEOWGeometryPackage`.
