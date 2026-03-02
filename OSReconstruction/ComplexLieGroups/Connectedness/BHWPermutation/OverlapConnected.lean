@@ -1281,6 +1281,58 @@ private lemma expBoost_periodic_two_pi_I_int {d : ℕ} (hd : 1 ≤ d) (t : ℂ) 
   ext μ ν
   simp [expBoost_val_entry, hd, hsinh_shift, hcosh_shift]
 
+/-- Additivity of the boost exponential: `expBoost (u+v) = expBoost u * expBoost v`. -/
+private lemma expBoost_add {d : ℕ} (u v : ℂ) :
+    expBoost (d := d) (u + v) = expBoost (d := d) u * expBoost (d := d) v := by
+  apply ComplexLorentzGroup.ext
+  set K : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := boostGen d
+  change exp ((u + v) • K) = exp (u • K) * exp (v • K)
+  have hcomm : Commute (u • K) (v • K) := by
+    rw [Commute, SemiconjBy]
+    simp [smul_mul_assoc, Algebra.mul_smul_comm, smul_smul, mul_assoc, mul_comm, mul_left_comm]
+  simpa [add_smul] using Matrix.exp_add_of_commute (u • K) (v • K) hcomm
+
+/-- Time row of `expBoost (π i)` is `(-1,0,0,...)`. -/
+private lemma expBoost_pi_I_row0 {d : ℕ} (hd1 : 1 ≤ d) (ν : Fin (d + 1)) :
+    (expBoost (d := d) ((Real.pi : ℂ) * Complex.I)).val 0 ν = if ν = 0 then (-1 : ℂ) else 0 := by
+  have h := expBoost_val_entry (d := d) (((Real.pi : ℂ) * Complex.I)) hd1 0 ν
+  by_cases hν0 : ν = 0
+  · subst hν0
+    simpa [Complex.cosh_mul_I, Complex.sinh_mul_I, Complex.cos_pi, Complex.sin_pi]
+      using h
+  · have hν0' : ν.val ≠ 0 := by
+      intro hv
+      exact hν0 (Fin.ext hv)
+    by_cases hν1 : ν = (⟨1, by omega⟩ : Fin (d + 1))
+    · subst hν1
+      have hzero :
+          (expBoost (d := d) ((Real.pi : ℂ) * Complex.I)).val 0 (⟨1, by omega⟩ : Fin (d + 1)) = 0 := by
+        simpa [hν0, Complex.cosh_mul_I, Complex.sinh_mul_I, Complex.cos_pi, Complex.sin_pi]
+          using h
+      simpa using hzero
+    · have hν1' : ν.val ≠ 1 := by
+        intro hv
+        exact hν1 (Fin.ext hv)
+      have h0ν : (0 : Fin (d + 1)) ≠ ν := by
+        simpa [eq_comm] using hν0
+      have hzero :
+          (expBoost (d := d) ((Real.pi : ℂ) * Complex.I)).val 0 ν = 0 := by
+        simpa [hν0, h0ν, hν0', hν1', Complex.cosh_mul_I, Complex.sinh_mul_I, Complex.cos_pi, Complex.sin_pi]
+          using h
+      simpa [hν0] using hzero
+
+/-- The `μ=0` component of `expBoost(π i)` action is negation. -/
+private lemma expBoost_pi_I_action_time0 {d n : ℕ} (hd1 : 1 ≤ d)
+    (z : Fin n → Fin (d + 1) → ℂ) (k : Fin n) :
+    complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I)) z k 0 =
+      -(z k 0) := by
+  simp only [complexLorentzAction]
+  refine (Finset.sum_eq_single_of_mem (0 : Fin (d + 1)) (Finset.mem_univ _) ?_).trans ?_
+  · intro b _ hb
+    have hb0 : b ≠ (0 : Fin (d + 1)) := by simpa [eq_comm] using hb
+    simp [expBoost_pi_I_row0 (d := d) hd1, hb0]
+  · simp [expBoost_pi_I_row0 (d := d) hd1]
+
 /-- Spatial index `0` (first spatial coordinate) for `d ≥ 2`. -/
 private def weylIdx0 (d : ℕ) (hd2 : 2 ≤ d) : Fin d := ⟨0, by omega⟩
 
@@ -2197,14 +2249,112 @@ private lemma expBoost_nonempty_excludes_even_meridian (d : ℕ) (hd2 : 2 ≤ d)
   have : w ∈ (∅ : Set (Fin n → Fin (d + 1) → ℂ)) := by simpa [hempty] using hinter
   exact this.elim
 
-/-- Residual geometric input: nonempty overlap slices exclude odd meridians
-    `Im(t) = (2m+1)π`. (Even meridians are proved above.) -/
-private axiom expBoost_nonempty_excludes_odd_meridian (d : ℕ) (hd2 : 2 ≤ d)
+/-- Nonempty overlap slices cannot occur on odd meridians `Im(t) = (2m+1)π`.
+
+    After reducing `t` modulo `2πi`, write `expBoost t = expBoost(a) * expBoost(πi)`.
+    Peel off the real boost `expBoost(a)` via inverse invariance of `ForwardTube`.
+    The remaining factor `expBoost(πi)` flips the time component sign, contradicting
+    forward-cone positivity at `k = 0`. -/
+private theorem expBoost_nonempty_excludes_odd_meridian (d : ℕ) (hd2 : 2 ≤ d)
     (n : ℕ) (σ : Equiv.Perm (Fin n))
     (hσ : σ ≠ 1)
     (t : ℂ)
     (ht : (permForwardOverlapSlice (d := d) n σ (expBoost (d := d) t)).Nonempty) :
-    ∀ m : ℤ, t.im ≠ ((2 * m + 1 : ℤ) : ℝ) * Real.pi
+    ∀ m : ℤ, t.im ≠ ((2 * m + 1 : ℤ) : ℝ) * Real.pi := by
+  intro m hm
+  have hd1 : 1 ≤ d := by omega
+  rcases ht with ⟨w, hwFT, hwActFT⟩
+  have hnz : n ≠ 0 := by
+    intro hn0
+    subst hn0
+    exact hσ (Subsingleton.elim σ 1)
+  let k0 : Fin n := ⟨0, Nat.pos_of_ne_zero hnz⟩
+  let a : ℝ := t.re
+  have hm' : t.im = (m : ℝ) * (2 * Real.pi) + Real.pi := by
+    calc
+      t.im = ((2 * m + 1 : ℤ) : ℝ) * Real.pi := hm
+      _ = (m : ℝ) * (2 * Real.pi) + Real.pi := by
+            norm_num [Int.cast_mul, Int.cast_add, mul_assoc, mul_comm, mul_left_comm]
+            ring
+  have ht_decomp :
+      t = ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) +
+        (m : ℂ) * ((2 * Real.pi : ℂ) * Complex.I) := by
+    apply Complex.ext <;>
+      simp [a, hm', mul_assoc, mul_comm, mul_left_comm, add_assoc, add_left_comm, add_comm]
+  have hperiod :
+      expBoost (d := d)
+          (((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) + (m : ℂ) * ((2 * Real.pi : ℂ) * Complex.I)) =
+        expBoost (d := d) ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) :=
+    expBoost_periodic_two_pi_I_int (d := d) hd1 ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) m
+  have hexp_t :
+      expBoost (d := d) t = expBoost (d := d) ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) := by
+    simpa [ht_decomp] using hperiod
+  have hsplit :
+      expBoost (d := d) ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)) =
+        expBoost (d := d) (a : ℂ) * expBoost (d := d) ((Real.pi : ℂ) * Complex.I) :=
+    expBoost_add (d := d) (a : ℂ) ((Real.pi : ℂ) * Complex.I)
+  have hact0 :
+      complexLorentzAction
+        (expBoost (d := d) ((a : ℂ) + ((Real.pi : ℂ) * Complex.I)))
+        (permAct (d := d) σ w) ∈ ForwardTube d n := by
+    simpa [hexp_t] using hwActFT
+  have hact :
+      complexLorentzAction
+        (expBoost (d := d) (a : ℂ) * expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+        (permAct (d := d) σ w) ∈ ForwardTube d n := by
+    simpa [hsplit] using hact0
+  have hreal_eq :
+      expBoost (d := d) (a : ℂ) =
+        ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement d ⟨0, by omega⟩ a) :=
+    expBoost_ofReal_re (d := d) hd1 a
+  have hact_real :
+      complexLorentzAction
+        (ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement d ⟨0, by omega⟩ a))
+        (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+          (permAct (d := d) σ w)) ∈ ForwardTube d n := by
+    simpa [hreal_eq, complexLorentzAction_mul, mul_assoc] using hact
+  have hpiFT :
+      complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+        (permAct (d := d) σ w) ∈ ForwardTube d n := by
+    have htmp :
+        complexLorentzAction
+          (ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement d ⟨0, by omega⟩ a))⁻¹
+          (complexLorentzAction
+            (ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement d ⟨0, by omega⟩ a))
+            (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+              (permAct (d := d) σ w))) ∈ ForwardTube d n := by
+      exact ofReal_inv_preserves_forwardTube
+        (R := LorentzLieGroup.boostElement d ⟨0, by omega⟩ a)
+        (z := complexLorentzAction
+          (ComplexLorentzGroup.ofReal (LorentzLieGroup.boostElement d ⟨0, by omega⟩ a))
+          (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+            (permAct (d := d) σ w)))
+        hact_real
+    simpa [complexLorentzAction_inv] using htmp
+  have hpos :
+      InOpenForwardCone d (fun μ => ((permAct (d := d) σ w) k0 μ).im) := by
+    have hwσ : InOpenForwardCone d (fun μ => (w (σ k0) μ).im) :=
+      forwardTube_point_inOpenForwardCone (d := d) (n := n) hwFT (σ k0)
+    simpa [permAct] using hwσ
+  have hneg :
+      InOpenForwardCone d
+        (fun μ =>
+          (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+            (permAct (d := d) σ w) k0 μ).im) :=
+    forwardTube_point_inOpenForwardCone (d := d) (n := n) hpiFT k0
+  have hneg_time : ((permAct (d := d) σ w) k0 0).im < 0 := by
+    have htime_pos :
+        0 <
+          (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+            (permAct (d := d) σ w) k0 0).im := hneg.1
+    have htime :
+        (complexLorentzAction (expBoost (d := d) ((Real.pi : ℂ) * Complex.I))
+          (permAct (d := d) σ w) k0 0).im =
+          -((permAct (d := d) σ w) k0 0).im := by
+      rw [expBoost_pi_I_action_time0 (d := d) (n := n) hd1 (permAct (d := d) σ w) k0]
+      simp [Complex.neg_im]
+    linarith
+  linarith [hpos.1, hneg_time]
 
 private lemma im_add_int_two_pi_I (t : ℂ) (m : ℤ) :
     (t + (m : ℂ) * ((2 * Real.pi : ℂ) * Complex.I)).im =
