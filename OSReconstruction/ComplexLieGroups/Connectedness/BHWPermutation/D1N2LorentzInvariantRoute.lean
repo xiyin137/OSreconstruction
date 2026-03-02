@@ -893,6 +893,150 @@ lemma d1InvariantQuad_invariantSection
   simp [d1InvariantQuad, d1Q0_invariantSection, d1Q1_invariantSection,
     d1P01_invariantSection, d1S01_invariantSection, hq0, hv0]
 
+/-- Canonical section point with fixed light-cone gauge `v0 = I`. -/
+def d1N2InvariantSectionPoint (q0 p s : ℂ) : D1N2Config :=
+  d1N2InvariantSection q0 p s I
+
+/-- Explicit open-domain conditions (in invariant variables) ensuring the
+canonical section point lies in `FT_{1,2}`. -/
+def d1N2InvariantSectionDomain (q0 p s : ℂ) : Prop :=
+  q0 ≠ 0 ∧
+  0 < (-q0.re) ∧
+  0 < (q0 - p + s / 2).re ∧
+  0 < (((p + s / 2) / q0 - 1).re)
+
+lemma d1N2InvariantSectionPoint_mem_forwardTube_of_domain
+    {q0 p s : ℂ}
+    (hdom : d1N2InvariantSectionDomain q0 p s) :
+    d1N2InvariantSectionPoint q0 p s ∈ ForwardTube 1 2 := by
+  rcases hdom with ⟨hq0, hq0re, hplus, hminus⟩
+  let z : D1N2Config := d1N2InvariantSectionPoint q0 p s
+  have hz0_plus :
+      (fun μ => (z 0 μ).im) 0 + (fun μ => (z 0 μ).im) 1 > 0 := by
+    have hu0 :
+        (d1U0 z).im = -q0.re := by
+      dsimp [z, d1N2InvariantSectionPoint]
+      simp [d1U0_invariantSection, div_eq_mul_inv]
+    have hsum :
+        (fun μ => (z 0 μ).im) 0 + (fun μ => (z 0 μ).im) 1 = (d1U0 z).im := by
+      simp [d1U0]
+    rw [hsum, hu0]
+    simpa using hq0re
+  have hz0_minus :
+      (fun μ => (z 0 μ).im) 0 - (fun μ => (z 0 μ).im) 1 > 0 := by
+    have hv0 :
+        (d1V0 z).im = (1 : ℝ) := by
+      dsimp [z, d1N2InvariantSectionPoint]
+      simp [d1V0_invariantSection]
+    have hdiff :
+        (fun μ => (z 0 μ).im) 0 - (fun μ => (z 0 μ).im) 1 = (d1V0 z).im := by
+      simp [d1V0, sub_eq_add_neg]
+    rw [hdiff, hv0]
+    norm_num
+  have hz0cone : InOpenForwardCone 1 (fun μ => (z 0 μ).im) :=
+    (inOpenForwardCone_d1_iff_pm (fun μ => (z 0 μ).im)).2 ⟨hz0_plus, hz0_minus⟩
+  have hzdiff_plus :
+      (fun μ => (z 1 μ - z 0 μ).im) 0 + (fun μ => (z 1 μ - z 0 μ).im) 1 > 0 := by
+    have hu_diff :
+        ((d1U1 z - d1U0 z).im) = (q0 - p + s / 2).re := by
+      dsimp [z, d1N2InvariantSectionPoint]
+      simp [d1U1_invariantSection, d1U0_invariantSection, div_eq_mul_inv]
+      ring
+    have hsum :
+        (fun μ => (z 1 μ - z 0 μ).im) 0 + (fun μ => (z 1 μ - z 0 μ).im) 1 =
+          (d1U1 z - d1U0 z).im := by
+      simp [d1U0, d1U1, sub_eq_add_neg]
+      ring
+    rw [hsum, hu_diff]
+    simpa using hplus
+  have hzdiff_minus :
+      (fun μ => (z 1 μ - z 0 μ).im) 0 - (fun μ => (z 1 μ - z 0 μ).im) 1 > 0 := by
+    have hv_diff :
+        ((d1V1 z - d1V0 z).im) = (((p + s / 2) / q0 - 1).re) := by
+      dsimp [z, d1N2InvariantSectionPoint]
+      simp [d1V1_invariantSection, d1V0_invariantSection, div_eq_mul_inv]
+      ring
+    have hdiff :
+        (fun μ => (z 1 μ - z 0 μ).im) 0 - (fun μ => (z 1 μ - z 0 μ).im) 1 =
+          (d1V1 z - d1V0 z).im := by
+      simp [d1V0, d1V1, sub_eq_add_neg]
+      ring
+    rw [hdiff, hv_diff]
+    simpa using hminus
+  have hzdiffcone : InOpenForwardCone 1 (fun μ => (z 1 μ - z 0 μ).im) :=
+    (inOpenForwardCone_d1_iff_pm (fun μ => (z 1 μ - z 0 μ).im)).2
+      ⟨hzdiff_plus, hzdiff_minus⟩
+  exact (forwardTube_d1_n2_iff z).2 ⟨hz0cone, hzdiffcone⟩
+
+/-- Section-side parameter for the swap involution on invariant quadruples. -/
+def d1N2InvariantSectionSwapQ0 (q0 p s : ℂ) : ℂ :=
+  (p ^ 2 - (s ^ 2) / 4) / q0
+
+lemma d1InvariantQuad_invariantSectionPoint
+    (q0 p s : ℂ) (hq0 : q0 ≠ 0) :
+    d1InvariantQuad (d1N2InvariantSectionPoint q0 p s) =
+      (-q0, -(d1N2InvariantSectionSwapQ0 q0 p s), -p, s) := by
+  simpa [d1N2InvariantSectionPoint, d1N2InvariantSectionSwapQ0] using
+    d1InvariantQuad_invariantSection q0 p s I hq0 (by simp)
+
+lemma d1InvariantQuad_invariantSectionPoint_swapParams
+    (q0 p s : ℂ)
+    (hq0 : q0 ≠ 0)
+    (hΔ : d1N2InvariantSectionSwapQ0 q0 p s ≠ 0) :
+    d1InvariantQuad
+      (d1N2InvariantSectionPoint (d1N2InvariantSectionSwapQ0 q0 p s) p (-s)) =
+      (-(d1N2InvariantSectionSwapQ0 q0 p s), -q0, -p, -s) := by
+  have hquad :
+      d1InvariantQuad
+        (d1N2InvariantSectionPoint (d1N2InvariantSectionSwapQ0 q0 p s) p (-s)) =
+        (-(d1N2InvariantSectionSwapQ0 q0 p s),
+          -((p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s),
+          -p, -s) := by
+    simpa [d1N2InvariantSectionPoint, d1N2InvariantSectionSwapQ0] using
+      d1InvariantQuad_invariantSection
+        (d1N2InvariantSectionSwapQ0 q0 p s) p (-s) I hΔ (by simp)
+  have hsecond :
+      -((p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s) = -q0 := by
+    have hswap :
+        p ^ 2 - ((-s) ^ 2) / 4 = p ^ 2 - (s ^ 2) / 4 := by ring
+    set Δ : ℂ := p ^ 2 - (s ^ 2) / 4
+    have hΔne : Δ ≠ 0 := by
+      intro hΔ0
+      apply hΔ
+      simp [d1N2InvariantSectionSwapQ0, Δ, hΔ0]
+    have hnum :
+        (p ^ 2 - (s ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s = q0 := by
+      calc
+        (p ^ 2 - (s ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s
+            = Δ / (Δ / q0) := by
+                simp [d1N2InvariantSectionSwapQ0, Δ]
+        _ = q0 := by
+              field_simp [hΔne, hq0]
+    calc
+      -((p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s)
+          = -((p ^ 2 - (s ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s) := by
+              rw [hswap]
+      _ = -q0 := by simp [hnum]
+  have hsecond' :
+      (p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s = q0 := by
+    exact neg_injective hsecond
+  have hsecond'' :
+      (p ^ 2 - (s ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s = q0 := by
+    have hswap2 : p ^ 2 - ((-s) ^ 2) / 4 = p ^ 2 - (s ^ 2) / 4 := by ring
+    calc
+      (p ^ 2 - (s ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s
+          = (p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s := by
+              rw [hswap2]
+      _ = q0 := hsecond'
+  calc
+    d1InvariantQuad
+      (d1N2InvariantSectionPoint (d1N2InvariantSectionSwapQ0 q0 p s) p (-s))
+        = (-(d1N2InvariantSectionSwapQ0 q0 p s),
+            -((p ^ 2 - ((-s) ^ 2) / 4) / d1N2InvariantSectionSwapQ0 q0 p s),
+            -p, -s) := hquad
+    _ = (-(d1N2InvariantSectionSwapQ0 q0 p s), -q0, -p, -s) := by
+          simp [hsecond'']
+
 /-- Explicit real-coordinate chart for `d=1,n=2`:
 `x₀=(a,b)` and `x₁=(c,d)`. -/
 def d1N2RealConfig (a b c d : ℝ) : Fin 2 → Fin (1 + 1) → ℝ :=
