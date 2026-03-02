@@ -363,6 +363,38 @@ theorem d1N2InvariantForwardizableSwap_iff_realizable_pair
   · intro hpair
     exact d1N2InvariantForwardizable_of_realizable_pair hpair.1 hpair.2
 
+/-- The doubly-realizable invariant locus in the `d=1,n=2` swap setting is
+nonempty. -/
+theorem d1N2InvariantRealizable_pair_nonempty :
+    ∃ q0 q1 p s : ℂ,
+      s ^ 2 = 4 * (p ^ 2 - q0 * q1) ∧
+      d1N2InvariantRealizable q0 q1 p s ∧
+      d1N2InvariantRealizable q1 q0 p (-s) := by
+  rcases adjSwapForwardOverlap_nonempty (d := 1) 2 (0 : Fin 2) (by decide) with
+    ⟨w, hwFT, hswapET⟩
+  rcases Set.mem_iUnion.mp hswapET with ⟨Γ, u, huFT, hrepr⟩
+  have hrepr' :
+      permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) w = complexLorentzAction Γ u := by
+    simpa [permAct] using hrepr
+  have hΓswap :
+      complexLorentzAction Γ⁻¹
+        (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) w) ∈ ForwardTube 1 2 := by
+    simpa [hrepr', complexLorentzAction_inv] using huFT
+  let q0 : ℂ := d1Q0 w
+  let q1 : ℂ := d1Q1 w
+  let p : ℂ := d1P01 w
+  let s : ℂ := d1S01 w
+  refine ⟨q0, q1, p, s, ?_, ?_, ?_⟩
+  · simpa [q0, q1, p, s] using d1_invariant_quadric_relation w
+  · exact ⟨w, hwFT, by simp [q0, q1, p, s, d1InvariantQuad]⟩
+  · have hpair :
+        d1N2InvariantRealizable q0 q1 p s ∧
+          d1N2InvariantRealizable q1 q0 p (-s) :=
+      d1N2InvariantRealizable_pair_of_forwardizable
+        (q0 := q0) (q1 := q1) (p := p) (s := s)
+        ⟨w, Γ⁻¹, hwFT, hΓswap, by simp [q0, q1, p, s, d1InvariantQuad]⟩
+    exact hpair.2
+
 /-- Realizable-pair involution equality and forwardizable diff-zero are
 equivalent formulations of the same `d=1,n=2` invariant kernel condition. -/
 theorem d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero
