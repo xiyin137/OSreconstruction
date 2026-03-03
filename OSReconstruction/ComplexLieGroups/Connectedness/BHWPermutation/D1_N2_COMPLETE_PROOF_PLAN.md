@@ -55,6 +55,13 @@ Run a concurrent falsification campaign on the exact blocker hypotheses:
 2. Reject off-image/non-witnessed tuples immediately.
 3. Maintain executable search harness:
    - `ProofHarness/D1N2CounterexampleSearch.lean`.
+   - `ProofHarness/d1n2_counterexample_search.py` (numeric stress test).
+
+Latest sweep snapshot (2026-03-03):
+- degree-3 antisymmetric invariant-polynomial sweep: no sampled violation on
+  1200 sampled forwardizable tuples (`max |g| ~ 2.18e-11`).
+- degree-4 sweep: sampled local-comm linear system had nullspace dimension 0
+  (no nonzero sampled ansatz survived).
 
 ## Test Matrix
 The following dedicated tests are added to keep the plan executable:
