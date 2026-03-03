@@ -4,12 +4,32 @@
 This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 
 - Active blocker theorem:
-  - `blocker_d1N2ForwardWitnessEq_field_deferred`
+  - `blocker_d1N2InvariantKernelSwapEq_onSectionWitnessPair_invariantFunction_core_deferred`
   - File: `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlockers/Tail.lean`
 - Route lock:
   - Lorentz-invariant-function route only.
   - No translation-invariance detour.
   - No new axioms.
+
+## Invariant-Only Statement Lock (2026-03-03)
+- The deferred core blocker must be stated only for the invariant kernel
+  `f(q0,q1,p,s)` and invariant tuple predicates on `(q0,q1,p,s)`.
+- In the deferred core theorem statement, do **not** mention:
+  - `D1N2Config`
+  - `ForwardTube`
+  - `complexLorentzAction`
+  - explicit Lorentz witnesses (`Γ`, `Λ`)
+  - explicit coordinate witnesses (`z`, `y`, etc.)
+- Forward/FT witness geometry must be encoded via invariant predicates only
+  (for example `d1N2InvariantSectionWitnessPair`, realizability, forwardizable).
+- Analytic/local-commutativity assumptions in the deferred core statement must be
+  assumptions on the invariant kernel function `f` (function-level packaging),
+  not coordinate-level transition statements.
+- Coordinate-level bridges from source-field data to those function-level
+  assumptions are wrapper lemmas and are outside the deferred core blocker.
+- The deferred core theorem must include an explicit correction-condition
+  hypothesis on `f` (in invariant variables), not assert swap symmetry with no
+  analytic/correction premises.
 
 ## Current Lean State
 - The entire `OSReconstruction/ComplexLieGroups` folder compiles.

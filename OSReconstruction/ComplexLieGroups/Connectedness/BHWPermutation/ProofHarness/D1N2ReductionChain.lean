@@ -32,8 +32,11 @@ example
     (hreal : d1N2InvariantRealizable q0 q1 p s)
     (hswapReal : d1N2InvariantRealizable q1 q0 p (-s)) :
     f q0 q1 p s - f q1 q0 p (-s) = 0 :=
-  blocker_d1N2InvariantKernelSwapDiffZeroOnRealizable_source_invariantOnly_core_deferred
-    f hsource q0 q1 p s hquad hreal hswapReal
+by
+  have hfw : d1N2InvariantForwardizableSwap q0 q1 p s :=
+    d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal
+  exact
+    blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
+      f hsource q0 q1 p s hquad hfw
 
 end BHW
-
