@@ -4,7 +4,7 @@
 This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 
 - Active blocker theorem:
-  - `blocker_d1N2ForwardWitnessEq_fromSource_deferred`
+  - `blocker_d1N2ForwardWitnessEq_field_deferred`
   - File: `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlockers/Tail.lean`
 - Route lock:
   - Lorentz-invariant-function route only.
@@ -18,11 +18,13 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
   - `blocker_d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_invariantQuadric_core_deferred`
     is now a clean reduction theorem (no internal `sorry`).
   - `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` is now structural
-    (no internal `sorry`) and reduces to the forward witness equality lemma.
+    (no internal `sorry`) and reduces to forward witness equality.
   - the unique remaining analytic gap is isolated in
-    `blocker_d1N2ForwardWitnessEq_fromSource_deferred`, precisely:
+    `blocker_d1N2ForwardWitnessEq_field_deferred`, precisely:
     `F (Γ · (swap · z)) = F z` for `z ∈ FT_{1,2}` and
     `Γ · (swap · z) ∈ FT_{1,2}`.
+  - source-wrapper theorem
+    `blocker_d1N2ForwardWitnessEq_fromSource_deferred` now has no `sorry`.
 - Wrapper cleanup status:
   - removed unused paired-chart equivalence wrappers from
     `PermutationFlowBlockers/Core.lean` to keep the blocker route minimal.
@@ -125,6 +127,9 @@ Run this in parallel with constructive proof work to avoid proving a false targe
      - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
    - run E (degree 7, 4500 real constraints, 3200 forwardizable tuples):
      - antisym basis size: 290
+     - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
+   - run F (degree 8, 6200 real constraints, 4200 forwardizable tuples):
+     - antisym basis size: 440
      - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
    - no sampled counterexample found.
 

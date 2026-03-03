@@ -1,7 +1,7 @@
 # d=1, n=2 Blocker Audit
 
 ## Active Blocker
-- `blocker_d1N2ForwardWitnessEq_fromSource_deferred`
+- `blocker_d1N2ForwardWitnessEq_field_deferred`
 
 This asks for forward witness equality directly from source data:
 `F(Γ·(swap·z)) = F(z)` whenever `z, Γ·(swap·z) ∈ FT_{1,2}`.
@@ -13,6 +13,8 @@ This asks for forward witness equality directly from source data:
   then to light-cone witness diff-zero is present.
 - `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` is now structural and
   uses the active forward witness lemma.
+- `blocker_d1N2ForwardWitnessEq_fromSource_deferred` is now a sorry-free wrapper
+  around the field-level blocker.
 
 ## Failed Attempts (Documented)
 
@@ -66,12 +68,15 @@ Reason:
   - degree 7:
     - basis size 290, sampled local-comm constraints 4500,
     - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
+  - degree 8:
+    - basis size 440, sampled local-comm constraints 6200,
+    - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
 - This is still heuristic (not formal Lean proof), but no sampled counterexample
   has been found.
 
 ## Accepted Remaining Gap
 The unproved step is:
-- derive the forward witness identity from source data:
+- derive the forward witness identity at field level:
   - `F(Γ · (swap · z)) = F(z)` for `z, Γ·(swap·z) ∈ FT_{1,2}`.
 
 Once this is shown, the blocker closes by existing reduction lemmas.

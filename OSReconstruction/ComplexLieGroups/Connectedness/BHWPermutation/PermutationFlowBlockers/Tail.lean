@@ -11,6 +11,38 @@ variable {d : ℕ}
 /-- Deferred forward witness equality from the `d=1,n=2` source package:
 for any forward point `z` and complex Lorentz witness `Γ` with
 `Γ·(swap·z) ∈ FT_{1,2}`, the sourced field values agree. -/
+theorem blocker_d1N2ForwardWitnessEq_field_deferred
+    (F : (Fin 2 → Fin (1 + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 2))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : Fin 2 → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 2 →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hF_bv : ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+      ContinuousWithinAt F (ForwardTube 1 2) (fun k μ => (x k μ : ℂ)))
+    (hF_local : ∀ (i : Fin 2) (hi : i.val + 1 < 2),
+      ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+        ∑ μ, minkowskiSignature 1 μ *
+          (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+        F (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+        F (fun k μ => (x k μ : ℂ))) :
+    ∀ (z : Fin 2 → Fin (1 + 1) → ℂ) (Γ : ComplexLorentzGroup 1),
+      z ∈ ForwardTube 1 2 →
+      complexLorentzAction Γ
+        (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
+      F (complexLorentzAction Γ
+          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) = F z := by
+  intro z Γ hz hΓswapFT
+  let _ := hF_holo
+  let _ := hF_lorentz
+  let _ := hF_bv
+  let _ := hF_local
+  let _ := hz
+  let _ := hΓswapFT
+  sorry
+
+/-- Deferred forward witness equality from the `d=1,n=2` source package:
+for any forward point `z` and complex Lorentz witness `Γ` with
+`Γ·(swap·z) ∈ FT_{1,2}`, the sourced field values agree. -/
 theorem blocker_d1N2ForwardWitnessEq_fromSource_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f) :
@@ -23,9 +55,31 @@ theorem blocker_d1N2ForwardWitnessEq_fromSource_deferred
           (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) =
       (Classical.choose hsource) z := by
   intro z Γ hz hΓswapFT
-  -- Remaining invariant-function analytic gap (`d=1,n=2`):
-  -- derive global forward witness equality from the source package.
-  sorry
+  have hF_holo :
+      DifferentiableOn ℂ (Classical.choose hsource) (ForwardTube 1 2) :=
+    (Classical.choose_spec hsource).1
+  have hF_lorentz :
+      ∀ (Λ : RestrictedLorentzGroup 1)
+        (w : Fin 2 → Fin (1 + 1) → ℂ), w ∈ ForwardTube 1 2 →
+        (Classical.choose hsource) (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν) =
+          (Classical.choose hsource) w :=
+    (Classical.choose_spec hsource).2.1
+  have hF_bv :
+      ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+        ContinuousWithinAt (Classical.choose hsource)
+          (ForwardTube 1 2) (fun k μ => (x k μ : ℂ)) :=
+    (Classical.choose_spec hsource).2.2.1
+  have hF_local :
+      ∀ (i : Fin 2) (hi : i.val + 1 < 2),
+        ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+          ∑ μ, minkowskiSignature 1 μ *
+            (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+          (Classical.choose hsource)
+            (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+          (Classical.choose hsource) (fun k μ => (x k μ : ℂ)) :=
+    (Classical.choose_spec hsource).2.2.2.1
+  exact blocker_d1N2ForwardWitnessEq_field_deferred
+    (Classical.choose hsource) hF_holo hF_lorentz hF_bv hF_local z Γ hz hΓswapFT
 
 /-- Deferred source-to-anchor reduction (`d=1,n=2`):
 for each doubly witnessed invariant quadric tuple, produce one paired original/
@@ -274,26 +328,10 @@ theorem blocker_d1N2LocalForwardEqNhd_core_deferred
         (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) w)) = F w := by
   let _ := hU_open
   let _ := hw0U
-  rcases blocker_d1N2InvariantFactorization_core_deferred
-      F hF_holo hF_lorentz hF_bv hF_local with
-    ⟨f, hf_onFT⟩
-  have hsource : d1N2InvariantKernelSource f :=
-    ⟨F, hF_holo, hF_lorentz, hF_bv, hF_local, hf_onFT⟩
-  have hquadDiff :
-      d1N2InvariantKernelDiffZeroOnForwardizableQuadric f :=
-    blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
-      f hsource
-  have hforward :
-      ∀ z, z ∈ ForwardTube 1 2 →
-        ∀ Λ : ComplexLorentzGroup 1,
-          complexLorentzAction Λ
-            (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
-          F (complexLorentzAction Λ
-            (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) = F z :=
-    (d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric
-      F f hf_onFT).2 hquadDiff
   exact Filter.Eventually.of_forall (fun w hwU => by
-    exact hforward w (hU_good w hwU).1.1 Γ (hU_good w hwU).2)
+    exact blocker_d1N2ForwardWitnessEq_field_deferred
+      F hF_holo hF_lorentz hF_bv hF_local
+      w Γ (hU_good w hwU).1.1 (hU_good w hwU).2)
 
 /-- Deferred local prepared-neighborhood anchor extraction (`d=1,n=2`):
 on a prepared neighborhood with fixed witness `Γ`, produce eventual slice

@@ -3,17 +3,18 @@
 ## Target
 Close:
 
-- `blocker_d1N2ForwardWitnessEq_fromSource_deferred`
+- `blocker_d1N2ForwardWitnessEq_field_deferred`
 - file: `PermutationFlowBlockers/Tail.lean`
 
 ## Exact Remaining Gap
 - `blocker_d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_invariantQuadric_core_deferred`
   is now reduced and sorry-free internally.
 - The unique deferred step is:
-  - prove forward witness identity from the source package
-    (`blocker_d1N2ForwardWitnessEq_fromSource_deferred`).
+  - prove forward witness identity at field level
+    (`blocker_d1N2ForwardWitnessEq_field_deferred`).
 - This now feeds
-  `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` (already structural),
+  `blocker_d1N2ForwardWitnessEq_fromSource_deferred` (sorry-free wrapper),
+  then `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` (structural),
   then `d1N2PairedChartAnchorConnected_of_exists_anchorPair`.
 - Active deferred statement:
   - `F (complexLorentzAction Γ (permAct swap z)) = F z`
@@ -72,6 +73,8 @@ Latest sweep snapshot (2026-03-03):
 - degree-6 sweep (3200 real constraints, 2600 forwardizable tuples): nullspace
   dimension 0 (no nonzero sampled antisymmetric ansatz survived).
 - degree-7 sweep (4500 real constraints, 3200 forwardizable tuples): nullspace
+  dimension 0 (no nonzero sampled antisymmetric ansatz survived).
+- degree-8 sweep (6200 real constraints, 4200 forwardizable tuples): nullspace
   dimension 0 (no nonzero sampled antisymmetric ansatz survived).
 
 ## Test Matrix
