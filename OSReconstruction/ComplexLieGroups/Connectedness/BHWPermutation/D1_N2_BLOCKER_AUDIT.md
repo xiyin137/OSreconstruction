@@ -1,16 +1,18 @@
 # d=1, n=2 Blocker Audit
 
 ## Active Blocker
-- `blocker_d1N2PairedChartAnchorPair_fromSource_deferred`
+- `blocker_d1N2ForwardWitnessEq_fromSource_deferred`
 
-This asks for one anchored paired-chart equality per doubly light-cone-witnessed
-quadric tuple; the main light-cone witness diff-zero theorem now reduces to this.
+This asks for forward witness equality directly from source data:
+`F(Γ·(swap·z)) = F(z)` whenever `z, Γ·(swap·z) ∈ FT_{1,2}`.
 
 ## What Has Been Proven Around It
 - Invariant factorization machinery on `FT_{1,2}` is present.
 - Realizable/light-cone/forwardizable equivalences are present.
 - Reduction from this anchor-pair lemma to paired-chart anchor connectivity and
   then to light-cone witness diff-zero is present.
+- `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` is now structural and
+  uses the active forward witness lemma.
 
 ## Failed Attempts (Documented)
 
@@ -61,17 +63,16 @@ Reason:
   - degree 6:
     - basis size 180, sampled local-comm constraints 3200,
     - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
+  - degree 7:
+    - basis size 290, sampled local-comm constraints 4500,
+    - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
 - This is still heuristic (not formal Lean proof), but no sampled counterexample
   has been found.
 
 ## Accepted Remaining Gap
 The unproved step is:
-- derive the anchored pair equality from source data for each doubly witnessed tuple
-  (`blocker_d1N2PairedChartAnchorPair_fromSource_deferred`).
-- in current Lean, this is reduced further to one explicit forward witness
-  equality statement:
-  - `F(Γ · (swap · z)) = F(z)` for `z, Γ·(swap·z) ∈ FT_{1,2}`,
-  - where `Γ` is constructed from invariant matching.
+- derive the forward witness identity from source data:
+  - `F(Γ · (swap · z)) = F(z)` for `z, Γ·(swap·z) ∈ FT_{1,2}`.
 
 Once this is shown, the blocker closes by existing reduction lemmas.
 

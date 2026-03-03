@@ -3,21 +3,22 @@
 ## Target
 Close:
 
-- `blocker_d1N2PairedChartAnchorPair_fromSource_deferred`
+- `blocker_d1N2ForwardWitnessEq_fromSource_deferred`
 - file: `PermutationFlowBlockers/Tail.lean`
 
 ## Exact Remaining Gap
 - `blocker_d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_invariantQuadric_core_deferred`
   is now reduced and sorry-free internally.
 - The unique deferred step is:
-  - produce one anchored section pair with equal source values for each doubly
-    witnessed tuple (`blocker_d1N2PairedChartAnchorPair_fromSource_deferred`).
-- This feeds `d1N2PairedChartAnchorConnected_of_exists_anchorPair`.
-- The active deferred subgoal inside that lemma has been reduced to the precise
-  forward witness identity:
+  - prove forward witness identity from the source package
+    (`blocker_d1N2ForwardWitnessEq_fromSource_deferred`).
+- This now feeds
+  `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` (already structural),
+  then `d1N2PairedChartAnchorConnected_of_exists_anchorPair`.
+- Active deferred statement:
   - `F (complexLorentzAction Γ (permAct swap z)) = F z`
   - with `z ∈ FT`, `complexLorentzAction Γ (permAct swap z) ∈ FT`,
-    and `Γ` explicitly built from swapped invariant matching.
+    for arbitrary witness `Γ`.
 
 ## End-to-End Proof Skeleton
 1. Unpack `hsource` into `F`, `hF_holo`, `hF_lorentz`, `hF_bv`, `hF_local`, `hf_onFT`.
@@ -69,6 +70,8 @@ Latest sweep snapshot (2026-03-03):
 - degree-5 sweep (2200 real constraints, 2200 forwardizable tuples): nullspace
   dimension 0 (no nonzero sampled antisymmetric ansatz survived).
 - degree-6 sweep (3200 real constraints, 2600 forwardizable tuples): nullspace
+  dimension 0 (no nonzero sampled antisymmetric ansatz survived).
+- degree-7 sweep (4500 real constraints, 3200 forwardizable tuples): nullspace
   dimension 0 (no nonzero sampled antisymmetric ansatz survived).
 
 ## Test Matrix

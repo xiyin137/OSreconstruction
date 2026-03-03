@@ -8,6 +8,25 @@ namespace BHW
 
 variable {d : ℕ}
 
+/-- Deferred forward witness equality from the `d=1,n=2` source package:
+for any forward point `z` and complex Lorentz witness `Γ` with
+`Γ·(swap·z) ∈ FT_{1,2}`, the sourced field values agree. -/
+theorem blocker_d1N2ForwardWitnessEq_fromSource_deferred
+    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
+    (hsource : d1N2InvariantKernelSource f) :
+    ∀ (z : Fin 2 → Fin (1 + 1) → ℂ) (Γ : ComplexLorentzGroup 1),
+      z ∈ ForwardTube 1 2 →
+      complexLorentzAction Γ
+        (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
+      (Classical.choose hsource)
+        (complexLorentzAction Γ
+          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) =
+      (Classical.choose hsource) z := by
+  intro z Γ hz hΓswapFT
+  -- Remaining invariant-function analytic gap (`d=1,n=2`):
+  -- derive global forward witness equality from the source package.
+  sorry
+
 /-- Deferred source-to-anchor reduction (`d=1,n=2`):
 for each doubly witnessed invariant quadric tuple, produce one paired original/
 swapped section anchor in `FT_{1,2}` with equal source values. -/
@@ -68,12 +87,9 @@ theorem blocker_d1N2PairedChartAnchorPair_fromSource_deferred
         (Classical.choose hsource)
             (complexLorentzAction Γ
               (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) =
-          (Classical.choose hsource) z := by
-      -- Remaining invariant-function analytic gap (`d=1,n=2`):
-      -- forward witness equality from the source package:
-      -- `F(Γ·(swap·z)) = F(z)` for `z ∈ FT` and `Γ·(swap·z) ∈ FT`.
-      let _ := hquad
-      sorry
+          (Classical.choose hsource) z :=
+      blocker_d1N2ForwardWitnessEq_fromSource_deferred
+        f hsource z Γ hz hΓswapFT
     have hFyFz : (Classical.choose hsource) y = (Classical.choose hsource) z := by
       simpa [hΓ] using hforwardEq
     simpa [hySecEq, hzSecEq] using hFyFz
