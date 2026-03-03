@@ -22,6 +22,10 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
     for each doubly witnessed quadric tuple, prove one anchored pair equality
     `F (d1N2SectionSwap ... wA) = F (d1N2SectionOrig ... vA)`.
   - existence and FT-membership of the witness-built anchors are already proved.
+  - inside that lemma, the only deferred subgoal is now explicitly:
+    `F (Γ · (swap · z)) = F z` with `z ∈ FT_{1,2}` and
+    `Γ · (swap · z) ∈ FT_{1,2}`, where `Γ` is constructed from equal
+    swapped invariants via `d1_exists_lorentz_of_sameInvariantQuad_of_nonzeroU0V0`.
 - Wrapper cleanup status:
   - removed unused paired-chart equivalence wrappers from
     `PermutationFlowBlockers/Core.lean` to keep the blocker route minimal.

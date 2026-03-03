@@ -27,25 +27,56 @@ theorem blocker_d1N2PairedChartAnchorPair_fromSource_deferred
     ⟨z, hz, hq0, hq1, hp, hs⟩
   rcases (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants q1 q0 p (-s)).1 hswapLC with
     ⟨y, hy, hyq0, hyq1, hyp, hys⟩
-  refine ⟨d1V0 z, d1V0 y, ?_, ?_, ?_⟩
-  · have hzSecEq :
+  have hzSecEq :
       d1N2SectionOrig q0 q1 p s (d1V0 z) = z := by
-      have hzEq :
-          d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z) = z :=
-        d1N2SectionOrig_eq_of_forward z hz
-      simpa [hq0, hq1, hp, hs] using hzEq
-    simpa [hzSecEq] using hz
-  · have hquadY : d1InvariantQuad y = (q1, q0, p, -s) := by
-      simp [d1InvariantQuad, hyq0, hyq1, hyp, hys]
-    have hySecEq :
-        d1N2SectionSwap q0 q1 p s (d1V0 y) = y := by
-      exact d1N2SectionSwap_eq_of_forward_invariants
-        (q0 := q0) (q1 := q1) (p := p) (s := s) y hy hquadY
-    simpa [hySecEq] using hy
-  · let _ := hquad
-    -- Remaining invariant-function analytic gap (`d=1,n=2`):
-    -- establish equality on one witness-built anchored original/swapped pair.
-    sorry
+    have hzEq :
+        d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z) = z :=
+      d1N2SectionOrig_eq_of_forward z hz
+    simpa [hq0, hq1, hp, hs] using hzEq
+  have hquadY : d1InvariantQuad y = (q1, q0, p, -s) := by
+    simp [d1InvariantQuad, hyq0, hyq1, hyp, hys]
+  have hySecEq :
+      d1N2SectionSwap q0 q1 p s (d1V0 y) = y := by
+    exact d1N2SectionSwap_eq_of_forward_invariants
+      (q0 := q0) (q1 := q1) (p := p) (s := s) y hy hquadY
+  refine ⟨d1V0 z, d1V0 y, ?_, ?_, ?_⟩
+  · simpa [hzSecEq] using hz
+  · simpa [hySecEq] using hy
+  · have hzswapQuad :
+        d1InvariantQuad (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) =
+          (q1, q0, p, -s) := by
+      calc
+        d1InvariantQuad (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)
+            = (d1Q1 z, d1Q0 z, d1P01 z, -d1S01 z) := d1InvariantQuad_swap01 z
+        _ = (q1, q0, p, -s) := by simp [hq0, hq1, hp, hs]
+    have hquadEq :
+        d1InvariantQuad (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) =
+          d1InvariantQuad y := by
+      exact hzswapQuad.trans hquadY.symm
+    have hU0_zswap_ne :
+        d1U0 (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ≠ 0 := by
+      simpa [d1U0, permAct] using d1U1_ne_zero_of_forward z hz
+    have hU0_y_ne : d1U0 y ≠ 0 := d1U0_ne_zero_of_forward y hy
+    have hV0_y_ne : d1V0 y ≠ 0 := d1V0_ne_zero_of_forward y hy
+    rcases d1_exists_lorentz_of_sameInvariantQuad_of_nonzeroU0V0
+        hU0_zswap_ne hU0_y_ne hV0_y_ne hquadEq with ⟨Γ, hΓ⟩
+    have hΓswapFT :
+        complexLorentzAction Γ
+          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 := by
+      simpa [hΓ] using hy
+    have hforwardEq :
+        (Classical.choose hsource)
+            (complexLorentzAction Γ
+              (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) =
+          (Classical.choose hsource) z := by
+      -- Remaining invariant-function analytic gap (`d=1,n=2`):
+      -- forward witness equality from the source package:
+      -- `F(Γ·(swap·z)) = F(z)` for `z ∈ FT` and `Γ·(swap·z) ∈ FT`.
+      let _ := hquad
+      sorry
+    have hFyFz : (Classical.choose hsource) y = (Classical.choose hsource) z := by
+      simpa [hΓ] using hforwardEq
+    simpa [hySecEq, hzSecEq] using hFyFz
 
 /-- Deferred invariant-function source core (`d=1,n=2`, light-cone witness form):
 vanishing of the swap-difference kernel on invariant tuples whose two swap-sign

@@ -68,6 +68,10 @@ Reason:
 The unproved step is:
 - derive the anchored pair equality from source data for each doubly witnessed tuple
   (`blocker_d1N2PairedChartAnchorPair_fromSource_deferred`).
+- in current Lean, this is reduced further to one explicit forward witness
+  equality statement:
+  - `F(Γ · (swap · z)) = F(z)` for `z, Γ·(swap·z) ∈ FT_{1,2}`,
+  - where `Γ` is constructed from invariant matching.
 
 Once this is shown, the blocker closes by existing reduction lemmas.
 

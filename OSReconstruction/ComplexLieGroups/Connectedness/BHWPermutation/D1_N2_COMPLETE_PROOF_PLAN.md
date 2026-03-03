@@ -13,6 +13,11 @@ Close:
   - produce one anchored section pair with equal source values for each doubly
     witnessed tuple (`blocker_d1N2PairedChartAnchorPair_fromSource_deferred`).
 - This feeds `d1N2PairedChartAnchorConnected_of_exists_anchorPair`.
+- The active deferred subgoal inside that lemma has been reduced to the precise
+  forward witness identity:
+  - `F (complexLorentzAction Γ (permAct swap z)) = F z`
+  - with `z ∈ FT`, `complexLorentzAction Γ (permAct swap z) ∈ FT`,
+    and `Γ` explicitly built from swapped invariant matching.
 
 ## End-to-End Proof Skeleton
 1. Unpack `hsource` into `F`, `hF_holo`, `hF_lorentz`, `hF_bv`, `hF_local`, `hf_onFT`.
