@@ -536,28 +536,6 @@ theorem d1N2InvariantForwardizableSwap_nonempty :
   exact ⟨q0, q1, p, s, hrel,
     d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal⟩
 
-/-- The doubly-light-cone-witness invariant locus is nonempty. -/
-theorem d1N2InvariantLightConeWitness_pair_nonempty :
-    ∃ q0 q1 p s : ℂ,
-      s ^ 2 = 4 * (p ^ 2 - q0 * q1) ∧
-      d1N2InvariantLightConeWitness q0 q1 p s ∧
-      d1N2InvariantLightConeWitness q1 q0 p (-s) := by
-  rcases d1N2InvariantForwardizableSwap_nonempty with
-    ⟨q0, q1, p, s, hrel, hfw⟩
-  exact ⟨q0, q1, p, s, hrel,
-    (d1N2InvariantForwardizableSwap_iff_lightConeWitness_pair
-      (q0 := q0) (q1 := q1) (p := p) (s := s)).1 hfw⟩
-
-/-- Explicit paired-section witness locus is nonempty (`d=1,n=2`). -/
-theorem d1N2InvariantSectionWitnessPair_nonempty :
-    ∃ q0 q1 p s : ℂ,
-      s ^ 2 = 4 * (p ^ 2 - q0 * q1) ∧
-      d1N2InvariantSectionWitnessPair q0 q1 p s := by
-  rcases d1N2InvariantForwardizableSwap_nonempty with ⟨q0, q1, p, s, hquad, hfw⟩
-  exact ⟨q0, q1, p, s, hquad,
-    (d1N2InvariantForwardizableSwap_iff_sectionWitness_pair
-      (q0 := q0) (q1 := q1) (p := p) (s := s)).1 hfw⟩
-
 /-- Realizable-pair involution equality and forwardizable diff-zero are
 equivalent formulations of the same `d=1,n=2` invariant kernel condition. -/
 theorem d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero
@@ -754,6 +732,133 @@ theorem d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_of_pairedChartAnchorCo
     _ = (Classical.choose hsource) y := hF_yz.symm
     _ = f q1 q0 p (-s) := hFy
 
+/-- Source-form bridge (`d=1,n=2`):
+paired-chart anchor connectivity implies swapped-invariant forward equality on
+`FT_{1,2}` for the sourced field. -/
+theorem d1N2Source_swappedInvariantForwardEq_of_pairedChartAnchorConnected
+    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
+    (hsource : d1N2InvariantKernelSource f)
+    (hanchor : d1N2PairedChartAnchorConnected (Classical.choose hsource)) :
+    ∀ z y : Fin 2 → Fin (1 + 1) → ℂ,
+      z ∈ ForwardTube 1 2 →
+      y ∈ ForwardTube 1 2 →
+      d1InvariantQuad y = (d1Q1 z, d1Q0 z, d1P01 z, -d1S01 z) →
+      (Classical.choose hsource) y = (Classical.choose hsource) z := by
+  intro z y hz hy hquad
+  have hLC :
+      d1N2InvariantLightConeWitness (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) :=
+    (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants
+      (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z)).2
+      ⟨z, hz, rfl, rfl, rfl, rfl⟩
+  have hswapLC :
+      d1N2InvariantLightConeWitness (d1Q1 z) (d1Q0 z) (d1P01 z) (-d1S01 z) := by
+    refine (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants
+      (d1Q1 z) (d1Q0 z) (d1P01 z) (-d1S01 z)).2 ?_
+    refine ⟨y, hy, ?_, ?_, ?_, ?_⟩
+    · simpa [d1InvariantQuad] using congrArg Prod.fst hquad
+    · simpa [d1InvariantQuad] using congrArg (fun t => t.2.1) hquad
+    · simpa [d1InvariantQuad] using congrArg (fun t => t.2.2.1) hquad
+    · simpa [d1InvariantQuad] using congrArg (fun t => t.2.2.2) hquad
+  have hsecPair :
+      d1N2InvariantSectionWitnessPair (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) :=
+    ⟨hLC, hswapLC⟩
+  have hzSecEq :
+      d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z) = z :=
+    d1N2SectionOrig_eq_of_forward z hz
+  have hySecEq :
+      d1N2SectionSwap (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 y) = y := by
+    exact d1N2SectionSwap_eq_of_forward_invariants
+      (q0 := d1Q0 z) (q1 := d1Q1 z) (p := d1P01 z) (s := d1S01 z) y hy hquad
+  have hzSecFT :
+      d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z) ∈ ForwardTube 1 2 := by
+    simpa [hzSecEq] using hz
+  have hySecFT :
+      d1N2SectionSwap (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 y) ∈ ForwardTube 1 2 := by
+    simpa [hySecEq] using hy
+  have hF_sections :
+      (Classical.choose hsource)
+          (d1N2SectionSwap (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 y)) =
+        (Classical.choose hsource)
+          (d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z)) :=
+    hanchor (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z)
+      (d1_invariant_quadric_relation z) hsecPair (d1V0 z) (d1V0 y) hzSecFT hySecFT
+  calc
+    (Classical.choose hsource) y
+        = (Classical.choose hsource)
+            (d1N2SectionSwap (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 y)) := by
+              simp [hySecEq]
+    _ = (Classical.choose hsource)
+          (d1N2SectionOrig (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) (d1V0 z)) := hF_sections
+    _ = (Classical.choose hsource) z := by
+          simp [hzSecEq]
+
+/-- Source-form converse bridge (`d=1,n=2`):
+swapped-invariant forward equality on `FT_{1,2}` implies paired-chart anchor
+connectivity for the sourced field. -/
+theorem d1N2PairedChartAnchorConnected_of_swappedInvariantForwardEq
+    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
+    (hsource : d1N2InvariantKernelSource f)
+    (hswap :
+      ∀ z y : Fin 2 → Fin (1 + 1) → ℂ,
+        z ∈ ForwardTube 1 2 →
+        y ∈ ForwardTube 1 2 →
+        d1InvariantQuad y = (d1Q1 z, d1Q0 z, d1P01 z, -d1S01 z) →
+        (Classical.choose hsource) y = (Classical.choose hsource) z) :
+    d1N2PairedChartAnchorConnected (Classical.choose hsource) := by
+  intro q0 q1 p s hquad hsecPair v0 w0 hzOrigFT hzSwapFT
+  rcases hsecPair with ⟨hLC, hswapLC⟩
+  rcases (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants q0 q1 p s).1 hLC with
+    ⟨zLC, hzLC, hq0LC, hq1LC, hpLC, hsLC⟩
+  rcases (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants q1 q0 p (-s)).1 hswapLC with
+    ⟨yLC, hyLC, hyq0LC, hyq1LC, hypLC, hysLC⟩
+  have hq0_ne : q0 ≠ 0 := by
+    have hzQ0_ne : d1Q0 zLC ≠ 0 := d1Q0_ne_zero_of_mem_forwardTube_d1_n2 zLC hzLC
+    simpa [hq0LC] using hzQ0_ne
+  have hq1_ne : q1 ≠ 0 := by
+    have hyQ0_ne : d1Q0 yLC ≠ 0 := d1Q0_ne_zero_of_mem_forwardTube_d1_n2 yLC hyLC
+    simpa [hyq0LC] using hyQ0_ne
+  have hv0_ne : v0 ≠ 0 := by
+    have hv0cfg_ne : d1V0 (d1N2SectionOrig q0 q1 p s v0) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionOrig q0 q1 p s v0) hzOrigFT
+    simpa [d1N2SectionOrig, d1V0_invariantSection] using hv0cfg_ne
+  have hw0_ne : w0 ≠ 0 := by
+    have hw0cfg_ne : d1V0 (d1N2SectionSwap q0 q1 p s w0) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionSwap q0 q1 p s w0) hzSwapFT
+    simpa [d1N2SectionSwap, d1V0_invariantSection] using hw0cfg_ne
+  have hquadOrig :
+      d1InvariantQuad (d1N2SectionOrig q0 q1 p s v0) = (q0, q1, p, s) :=
+    d1InvariantQuad_sectionOrig (q0 := q0) (q1 := q1) (p := p) (s := s)
+      (v0 := v0) hquad hq0_ne hv0_ne
+  have hquadSwap :
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s w0) = (q1, q0, p, -s) :=
+    d1InvariantQuad_sectionSwap (q0 := q0) (q1 := q1) (p := p) (s := s)
+      (w0 := w0) hquad hq1_ne hw0_ne
+  have hOrigQ0 : d1Q0 (d1N2SectionOrig q0 q1 p s v0) = q0 := by
+    simpa [d1InvariantQuad] using congrArg Prod.fst hquadOrig
+  have hOrigQ1 : d1Q1 (d1N2SectionOrig q0 q1 p s v0) = q1 := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.2.1) hquadOrig
+  have hOrigP : d1P01 (d1N2SectionOrig q0 q1 p s v0) = p := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.2.2.1) hquadOrig
+  have hOrigS : d1S01 (d1N2SectionOrig q0 q1 p s v0) = s := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.2.2.2) hquadOrig
+  have hquadGoal :
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s w0) =
+        (d1Q1 (d1N2SectionOrig q0 q1 p s v0),
+          d1Q0 (d1N2SectionOrig q0 q1 p s v0),
+          d1P01 (d1N2SectionOrig q0 q1 p s v0),
+          -d1S01 (d1N2SectionOrig q0 q1 p s v0)) := by
+    calc
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s w0) = (q1, q0, p, -s) := hquadSwap
+      _ = (d1Q1 (d1N2SectionOrig q0 q1 p s v0),
+            d1Q0 (d1N2SectionOrig q0 q1 p s v0),
+            d1P01 (d1N2SectionOrig q0 q1 p s v0),
+            -d1S01 (d1N2SectionOrig q0 q1 p s v0)) := by
+              simp [hOrigQ0, hOrigQ1, hOrigP, hOrigS]
+  exact hswap
+    (d1N2SectionOrig q0 q1 p s v0)
+    (d1N2SectionSwap q0 q1 p s w0)
+    hzOrigFT hzSwapFT hquadGoal
+
 /-- Converse bridge (`d=1,n=2`):
 light-cone-witness swap-difference vanishing for the invariant kernel implies
 the variable-chart paired-anchor equality for the sourced field. -/
@@ -849,6 +954,27 @@ theorem d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_iff_pairedChartAnchorC
     exact d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_of_pairedChartAnchorConnected
       f hsource hanchor
 
+/-- Formal insufficiency interface (`d=1,n=2`):
+the source-level light-cone diff-zero closure problem is equivalent to the
+source-level paired-chart anchor connectivity problem. -/
+theorem d1N2Source_lightConeDiffZero_iff_source_pairedChartAnchorConnected :
+    (∀ (f : ℂ → ℂ → ℂ → ℂ → ℂ),
+      d1N2InvariantKernelSource f →
+      (∀ q0 q1 p s, s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        d1N2InvariantLightConeWitness q0 q1 p s →
+        d1N2InvariantLightConeWitness q1 q0 p (-s) →
+        f q0 q1 p s - f q1 q0 p (-s) = 0)) ↔
+    (∀ (f : ℂ → ℂ → ℂ → ℂ → ℂ),
+      (hsource : d1N2InvariantKernelSource f) →
+      d1N2PairedChartAnchorConnected (Classical.choose hsource)) := by
+  constructor
+  · intro hdiffAll f hsource
+    exact (d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_iff_pairedChartAnchorConnected
+      f hsource).1 (hdiffAll f hsource)
+  · intro hanchorAll f hsource
+    exact (d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_iff_pairedChartAnchorConnected
+      f hsource).2 (hanchorAll f hsource)
+
 /-- The source package alone does not force full-quadric involution
 `g ≡ 0` for an arbitrary representative `f`; off-image values of `f` are
 unconstrained by `hf_onFT`. -/
@@ -893,36 +1019,6 @@ theorem d1N2InvariantKernelSource_not_sufficient_for_quadricDiffZero :
       have h' := h
       simp [h1, hm1] at h'
     exact one_ne_zero this
-
-/-- Reduce the `FT` kernel-swap condition to a pure invariant-quadric swap law. -/
-theorem blocker_d1N2InvariantKernelSwap_core_of_quadricSwapLaw
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hquadSwap : d1N2InvariantKernelSwapOnQuadric f) :
-    ∀ z, z ∈ ForwardTube 1 2 →
-      ∀ Γ : ComplexLorentzGroup 1,
-        complexLorentzAction Γ
-          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
-        f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) =
-          f (d1Q1 z) (d1Q0 z) (d1P01 z) (-d1S01 z) := by
-  intro z _hz _Γ _hΓswap
-  exact hquadSwap (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z)
-    (d1_invariant_quadric_relation z)
-
-/-- Reduce the `FT` kernel-swap condition to vanishing of the invariant swap-
-difference on realizable quadric points. -/
-theorem blocker_d1N2InvariantKernelSwap_core_of_realizableQuadricDiffZero
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hquadDiff : d1N2InvariantKernelDiffZeroOnRealizableQuadric f) :
-    ∀ z, z ∈ ForwardTube 1 2 →
-      ∀ Γ : ComplexLorentzGroup 1,
-        complexLorentzAction Γ
-          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
-        f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) =
-          f (d1Q1 z) (d1Q0 z) (d1P01 z) (-d1S01 z) := by
-  intro z hz _Γ _hΓswap
-  apply sub_eq_zero.mp
-  exact hquadDiff (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z)
-    (d1_invariant_quadric_relation z) ⟨z, hz, rfl⟩
 
 /-- Reduce the `FT` kernel-swap condition to vanishing of the invariant swap-
 difference on forwardizable quadric points. -/
@@ -1435,53 +1531,6 @@ theorem d1N2ForwardBaseOpenAnchor_of_EOWGeometryPackage
       extendF F (permAct (d := 1) τ w) = F y := hExt
       _ = F w := hforward
 
-/-- Under the bundled EOW geometry package, every source kernel carries the
-required nonempty complex-open forward-base anchor package. -/
-theorem blocker_d1N2ForwardBaseOpenAnchor_source_of_EOWGeometryPackage
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f)
-    (hgeom : d1N2ForwardSwapEOWGeometryPackage) :
-    ∃ W : Set (Fin 2 → Fin (1 + 1) → ℂ),
-      IsOpen W ∧
-      W.Nonempty ∧
-      W ⊆ permForwardOverlapSet (d := 1) 2 (Equiv.swap (0 : Fin 2) 1) ∧
-      (∀ w ∈ W,
-        extendF (Classical.choose hsource)
-          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) w) =
-        (Classical.choose hsource) w) := by
-  have hF_holo :
-      DifferentiableOn ℂ (Classical.choose hsource) (ForwardTube 1 2) :=
-    (Classical.choose_spec hsource).1
-  have hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup 1)
-        (z : Fin 2 → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 2 →
-        (Classical.choose hsource)
-          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
-        (Classical.choose hsource) z :=
-    (Classical.choose_spec hsource).2.1
-  have hF_bv :
-      ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
-        ContinuousWithinAt (Classical.choose hsource) (ForwardTube 1 2)
-          (fun k μ => (x k μ : ℂ)) :=
-    (Classical.choose_spec hsource).2.2.1
-  have hF_local :
-      ∀ (i : Fin 2) (hi : i.val + 1 < 2),
-        ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
-          ∑ μ, minkowskiSignature 1 μ *
-            (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
-          (Classical.choose hsource)
-            (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
-          (Classical.choose hsource) (fun k μ => (x k μ : ℂ)) :=
-    (Classical.choose_spec hsource).2.2.2.1
-  have hf_onFT :
-      ∀ z, z ∈ ForwardTube 1 2 →
-        (Classical.choose hsource) z =
-          f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) :=
-    (Classical.choose_spec hsource).2.2.2.2
-  let _ := hf_onFT
-  exact d1N2ForwardBaseOpenAnchor_of_EOWGeometryPackage
-    (Classical.choose hsource) hF_holo hF_lorentz hF_bv hF_local hgeom
-
 /-- From source data plus the EOW geometry package, deduce forwardizable
 invariant-kernel diff-zero (`d=1,n=2`). -/
 theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariant_of_EOWGeometryPackage
@@ -1501,22 +1550,6 @@ theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invaria
       F hF_holo hF_lorentz hF_bv hF_local hgeom
   exact d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_forwardSwapEq
     F f hf_onFT hforward
-
-/-- Under the bundled EOW geometry package, source kernels satisfy realizable-
-pair involution symmetry (`d=1,n=2`). -/
-theorem blocker_d1N2InvariantKernelPairSwapOnRealizable_source_of_EOWGeometryPackage
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f)
-    (hgeom : d1N2ForwardSwapEOWGeometryPackage) :
-    ∀ q0 q1 p s, s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-      d1N2InvariantRealizable q0 q1 p s →
-      d1N2InvariantRealizable q1 q0 p (-s) →
-      f q0 q1 p s = f q1 q0 p (-s) := by
-  have hdiff :
-      d1N2InvariantKernelDiffZeroOnForwardizableQuadric f :=
-    blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariant_of_EOWGeometryPackage
-      f hsource hgeom
-  exact (d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero f).2 hdiff
 
 /-- From source data plus connected `d=1,n=2` forward overlap and a nonempty
 complex-open forward-base anchor where `extendF(swap·w)=F(w)`, deduce
@@ -1743,30 +1776,6 @@ theorem d1N2InvariantKernelPairSwapOnRealizable_source_iff_openAnchor
   exact
     d1N2InvariantKernelPairSwapOnRealizable_source_iff_openAnchor_of_connectedForwardOverlap
       f hsource hFwd_conn
-
-/-- Transfer principle (`d=1,n=2`):
-for fixed `F`, any two invariant kernels that represent `F` on `FT_{1,2}`
-induce the same forwardizable swap-difference vanishing law. -/
-theorem d1N2InvariantKernelDiffZeroOnForwardizableQuadric_transfer
-    (F : (Fin 2 → Fin (1 + 1) → ℂ) → ℂ)
-    (f g : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hf_onFT : ∀ z, z ∈ ForwardTube 1 2 →
-      F z = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z))
-    (hg_onFT : ∀ z, z ∈ ForwardTube 1 2 →
-      F z = g (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z))
-    (hgfw : d1N2InvariantKernelDiffZeroOnForwardizableQuadric g) :
-    d1N2InvariantKernelDiffZeroOnForwardizableQuadric f := by
-  have hforward :
-      ∀ z, z ∈ ForwardTube 1 2 →
-        ∀ Γ : ComplexLorentzGroup 1,
-          complexLorentzAction Γ
-            (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
-          F (complexLorentzAction Γ
-            (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) = F z :=
-    (d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric
-      F g hg_onFT).2 hgfw
-  exact (d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric
-    F f hf_onFT).1 hforward
 
 /-- For `d=1,n=2`, a swapped-invariant relation between two forward points
 provides an explicit Lorentz witness from `swap·z` to `y`. -/
