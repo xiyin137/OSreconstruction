@@ -11,7 +11,9 @@ The theorem is already reduced to proving:
 
 - `d1N2PairedChartAnchorConnected (Classical.choose hsource)`
 
-All other reductions are in place.
+Refined reduction now available:
+- it is enough to produce one anchored chart pair per tuple via
+  `d1N2PairedChartAnchorConnected_of_exists_anchorPair`.
 
 ## End-to-End Proof Skeleton
 1. Unpack `hsource` into `F`, `hF_holo`, `hF_lorentz`, `hF_bv`, `hF_local`, `hf_onFT`.
@@ -24,8 +26,8 @@ All other reductions are in place.
    from local commutativity boundary data (`hF_local`) and explicit real chart formulas.
 6. Apply identity propagation on the relevant connected component to conclude `g = 0`
    on all paired chart points needed by the blocker.
-7. Package this as:
-   `d1N2PairedChartAnchorConnected (Classical.choose hsource)`.
+7. Use `d1N2PairedChartAnchorConnected_of_exists_anchorPair` to upgrade
+   one-pair existence to full paired-chart anchor connectivity.
 8. Finish blocker by the already-proved reduction theorem
    `d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_of_pairedChartAnchorConnected`.
 

@@ -434,6 +434,90 @@ def d1N2PairedChartAnchorConnected
       d1N2SectionSwap q0 q1 p s w0 ∈ ForwardTube 1 2 →
       F (d1N2SectionSwap q0 q1 p s w0) = F (d1N2SectionOrig q0 q1 p s v0)
 
+/-- Reduce paired-chart anchor connectivity to existence of one anchored
+original/swapped chart pair per invariant tuple. Constancy of `F` on each chart
+fiber then propagates that one equality to all section parameters. -/
+theorem d1N2PairedChartAnchorConnected_of_exists_anchorPair
+    (F : D1N2Config → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 2))
+    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
+      (z : D1N2Config), z ∈ ForwardTube 1 2 →
+      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hbase :
+      ∀ q0 q1 p s, s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        d1N2InvariantSectionWitnessPair q0 q1 p s →
+        ∃ vA wA,
+          d1N2SectionOrig q0 q1 p s vA ∈ ForwardTube 1 2 ∧
+          d1N2SectionSwap q0 q1 p s wA ∈ ForwardTube 1 2 ∧
+          F (d1N2SectionSwap q0 q1 p s wA) =
+            F (d1N2SectionOrig q0 q1 p s vA)) :
+    d1N2PairedChartAnchorConnected F := by
+  intro q0 q1 p s hquad hsecPair v0 w0 hvFT hwFT
+  rcases hsecPair with ⟨hLC, hswapLC⟩
+  rcases (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants q0 q1 p s).1 hLC with
+    ⟨z, hz, hq0z, _hq1z, _hpz, _hsz⟩
+  rcases (d1N2InvariantLightConeWitness_iff_exists_forwardInvariants q1 q0 p (-s)).1 hswapLC with
+    ⟨y, hy, hq1y, _hq0y, _hpy, _hsy⟩
+  have hq0_ne : q0 ≠ 0 := by
+    simpa [hq0z] using (d1Q0_ne_zero_of_mem_forwardTube_d1_n2 z hz)
+  have hq1_ne : q1 ≠ 0 := by
+    simpa [hq1y] using (d1Q0_ne_zero_of_mem_forwardTube_d1_n2 y hy)
+  rcases hbase q0 q1 p s hquad ⟨hLC, hswapLC⟩ with
+    ⟨vA, wA, hvAFT, hwAFT, hEqA⟩
+  have hv0_ne : v0 ≠ 0 := by
+    have hV0_ne :
+        d1V0 (d1N2SectionOrig q0 q1 p s v0) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionOrig q0 q1 p s v0) hvFT
+    simpa [d1N2SectionOrig] using hV0_ne
+  have hw0_ne : w0 ≠ 0 := by
+    have hV0_ne :
+        d1V0 (d1N2SectionSwap q0 q1 p s w0) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionSwap q0 q1 p s w0) hwFT
+    simpa [d1N2SectionSwap] using hV0_ne
+  have hvA_ne : vA ≠ 0 := by
+    have hV0_ne :
+        d1V0 (d1N2SectionOrig q0 q1 p s vA) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionOrig q0 q1 p s vA) hvAFT
+    simpa [d1N2SectionOrig] using hV0_ne
+  have hwA_ne : wA ≠ 0 := by
+    have hV0_ne :
+        d1V0 (d1N2SectionSwap q0 q1 p s wA) ≠ 0 :=
+      d1V0_ne_zero_of_forward (d1N2SectionSwap q0 q1 p s wA) hwAFT
+    simpa [d1N2SectionSwap] using hV0_ne
+  have hOrig_v0 :
+      d1InvariantQuad (d1N2SectionOrig q0 q1 p s v0) = (q0, q1, p, s) :=
+    d1InvariantQuad_sectionOrig (q0 := q0) (q1 := q1) (p := p) (s := s) (v0 := v0)
+      hquad hq0_ne hv0_ne
+  have hOrig_vA :
+      d1InvariantQuad (d1N2SectionOrig q0 q1 p s vA) = (q0, q1, p, s) :=
+    d1InvariantQuad_sectionOrig (q0 := q0) (q1 := q1) (p := p) (s := s) (v0 := vA)
+      hquad hq0_ne hvA_ne
+  have hSwap_w0 :
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s w0) = (q1, q0, p, -s) :=
+    d1InvariantQuad_sectionSwap (q0 := q0) (q1 := q1) (p := p) (s := s) (w0 := w0)
+      hquad hq1_ne hw0_ne
+  have hSwap_wA :
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s wA) = (q1, q0, p, -s) :=
+    d1InvariantQuad_sectionSwap (q0 := q0) (q1 := q1) (p := p) (s := s) (w0 := wA)
+      hquad hq1_ne hwA_ne
+  have hOrig_eq :
+      F (d1N2SectionOrig q0 q1 p s v0) = F (d1N2SectionOrig q0 q1 p s vA) := by
+    apply d1N2Field_eq_of_sameInvariantQuad_onFT F hF_holo hF_lorentz hvFT hvAFT
+    calc
+      d1InvariantQuad (d1N2SectionOrig q0 q1 p s v0) = (q0, q1, p, s) := hOrig_v0
+      _ = d1InvariantQuad (d1N2SectionOrig q0 q1 p s vA) := hOrig_vA.symm
+  have hSwap_eq :
+      F (d1N2SectionSwap q0 q1 p s w0) = F (d1N2SectionSwap q0 q1 p s wA) := by
+    apply d1N2Field_eq_of_sameInvariantQuad_onFT F hF_holo hF_lorentz hwFT hwAFT
+    calc
+      d1InvariantQuad (d1N2SectionSwap q0 q1 p s w0) = (q1, q0, p, -s) := hSwap_w0
+      _ = d1InvariantQuad (d1N2SectionSwap q0 q1 p s wA) := hSwap_wA.symm
+  calc
+    F (d1N2SectionSwap q0 q1 p s w0)
+        = F (d1N2SectionSwap q0 q1 p s wA) := hSwap_eq
+    _ = F (d1N2SectionOrig q0 q1 p s vA) := hEqA
+    _ = F (d1N2SectionOrig q0 q1 p s v0) := hOrig_eq.symm
+
 /-- Conditional `d=1,n=2` closure from the variable-chart anchor hypothesis:
 source package + paired-chart anchor connectivity imply light-cone witness
 swap-difference vanishing for the invariant kernel. -/

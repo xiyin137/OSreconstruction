@@ -18,17 +18,27 @@ theorem blocker_d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_invariantQuadr
       d1N2InvariantLightConeWitness q0 q1 p s →
       d1N2InvariantLightConeWitness q1 q0 p (-s) →
       f q0 q1 p s - f q1 q0 p (-s) = 0 := by
-  -- Exact reduction: it is enough to derive paired-chart anchor connectivity
-  -- for the sourced field from `hsource`.
-  refine
+  have hF_holo :
+      DifferentiableOn ℂ (Classical.choose hsource) (ForwardTube 1 2) :=
+    (Classical.choose_spec hsource).1
+  have hF_lorentz :
+      ∀ (Λ : RestrictedLorentzGroup 1)
+        (z : Fin 2 → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 2 →
+        (Classical.choose hsource) (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+          (Classical.choose hsource) z :=
+    (Classical.choose_spec hsource).2.1
+  have hanchor :
+      d1N2PairedChartAnchorConnected (Classical.choose hsource) := by
+    refine d1N2PairedChartAnchorConnected_of_exists_anchorPair
+      (F := Classical.choose hsource) hF_holo hF_lorentz ?_
+    -- Remaining invariant-function analytic gap (`d=1,n=2`):
+    -- for each doubly witnessed invariant tuple on the quadric, produce one
+    -- anchored pair of variable-chart parameters `(vA,wA)` in `FT` with equal
+    -- sourced field values.
+    sorry
+  exact
     d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_of_pairedChartAnchorConnected
-      f hsource
-      ?_
-  -- Remaining invariant-function analytic gap (`d=1,n=2`):
-  -- from source hypotheses (`hF_holo`, `hF_lorentz`, `hF_bv`, `hF_local`),
-  -- prove variable-chart anchor connectivity
-  -- `d1N2PairedChartAnchorConnected (Classical.choose hsource)`.
-  sorry
+      f hsource hanchor
 
 /-- Deferred invariant-function source core (`d=1,n=2`, realizable-pair form):
 vanishing of the swap-difference kernel on invariant tuples whose two swap-sign

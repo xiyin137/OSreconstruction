@@ -38,8 +38,12 @@ From current theorems in `Core/Tail`:
 2. target blocker:
    - light-cone witness diff-zero on invariant quadric tuples
 3. exact reduction already formalized:
-   - enough to prove `d1N2PairedChartAnchorConnected (Classical.choose hsource)`
-4. once paired-chart anchor is proved, the blocker follows immediately through
+   - enough to prove existence of one anchored pair `(vA,wA)` per doubly
+     witnessed quadric tuple, via
+     `d1N2PairedChartAnchorConnected_of_exists_anchorPair`
+   - this yields
+     `d1N2PairedChartAnchorConnected (Classical.choose hsource)`
+4. once paired-chart anchor is obtained, the blocker follows immediately through
    `d1N2InvariantKernelSwapDiffZeroOnLightConeWitness_of_pairedChartAnchorConnected`.
 
 ## Mathematical Content of the Blocker
