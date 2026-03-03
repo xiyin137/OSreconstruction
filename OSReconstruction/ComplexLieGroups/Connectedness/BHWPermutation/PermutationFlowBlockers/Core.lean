@@ -115,23 +115,6 @@ theorem blocker_isConnected_permSeedSet_d1
     · -- Remaining nontrivial branch (`n ≥ 2`, `σ ≠ 1`) is deferred.
       exact blocker_isConnected_permSeedSet_d1_nontrivial n σ hn hσ
 
-/-- `d=1,n=2`: connectedness of the adjacent forward-overlap slice from the
-seed-set connectedness blocker bridge. -/
-theorem d1N2_isConnected_adjSwapForwardOverlapSet_of_seedConnectedBlocker :
-    IsConnected (adjSwapForwardOverlapSet (d := 1) 2 (0 : Fin 2) (by decide)) := by
-  let τ : Equiv.Perm (Fin 2) := Equiv.swap (0 : Fin 2) 1
-  have hseed : IsConnected (permSeedSet (d := 1) 2 τ) :=
-    blocker_isConnected_permSeedSet_d1_nontrivial 2 τ (by decide) (by decide)
-  have hfwd : IsConnected (permForwardOverlapSet (d := 1) 2 τ) :=
-    (isConnected_permSeedSet_iff_permForwardOverlapSet (d := 1) 2 τ).1 hseed
-  have hset :
-      adjSwapForwardOverlapSet (d := 1) 2 (0 : Fin 2) (by decide) =
-        permForwardOverlapSet (d := 1) 2 τ := by
-    ext w
-    constructor <;> intro hw <;>
-      simpa [adjSwapForwardOverlapSet, permForwardOverlapSet, τ, permAct] using hw
-  simpa [hset] using hfwd
-
 /-- Nontrivial permutations of `Fin 2` are exactly the adjacent swap. -/
 theorem fin2_perm_ne_one_eq_swap01 (τ : Equiv.Perm (Fin 2)) (hτ : τ ≠ 1) :
     τ = Equiv.swap (0 : Fin 2) 1 := by
@@ -224,14 +207,6 @@ def d1N2InvariantKernelDiffZeroOnQuadric (f : ℂ → ℂ → ℂ → ℂ → �
   ∀ q0 q1 p s : ℂ,
     s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
       f q0 q1 p s - f q1 q0 p (-s) = 0
-
-/-- From vanishing swap-difference on the quadric, recover the swap law. -/
-theorem d1N2InvariantKernelSwapOnQuadric_of_diffZero
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hzero : d1N2InvariantKernelDiffZeroOnQuadric f) :
-    d1N2InvariantKernelSwapOnQuadric f := by
-  intro q0 q1 p s hquad
-  exact sub_eq_zero.mp (hzero q0 q1 p s hquad)
 
 /-- Invariant quadruple `(q0,q1,p,s)` is realized by an `FT_{1,2}` point. -/
 def d1N2InvariantRealizable (q0 q1 p s : ℂ) : Prop :=
@@ -359,15 +334,6 @@ lemma d1N2InvariantRealizable_swap_of_sectionDomain
   · exact d1N2InvariantSectionPoint_mem_forwardTube_of_domain hdomSwap
   · simpa [y] using d1InvariantQuad_invariantSectionPoint_swapParams q0 p s hq0 hΔ
 
-/-- Swap-difference vanishes on quadric points that are realized by `FT_{1,2}`
-configurations. This is the maximal statement forced by `hf_onFT` data alone. -/
-def d1N2InvariantKernelDiffZeroOnRealizableQuadric
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ) : Prop :=
-  ∀ q0 q1 p s : ℂ,
-    s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-    d1N2InvariantRealizable q0 q1 p s →
-      f q0 q1 p s - f q1 q0 p (-s) = 0
-
 /-- Invariant quadruple `(q0,q1,p,s)` is represented by a forward configuration
 whose swapped image is forwardizable by some complex Lorentz witness. -/
 def d1N2InvariantForwardizableSwap (q0 q1 p s : ℂ) : Prop :=
@@ -484,16 +450,6 @@ def d1N2InvariantSectionWitnessPair (q0 q1 p s : ℂ) : Prop :=
   d1N2InvariantLightConeWitness q0 q1 p s ∧
     d1N2InvariantLightConeWitness q1 q0 p (-s)
 
-/-- Forwardizability is equivalent to paired light-cone witness existence on the
-original and swap-sign invariant tuples. -/
-theorem d1N2InvariantForwardizableSwap_iff_sectionWitness_pair
-    {q0 q1 p s : ℂ} :
-    d1N2InvariantForwardizableSwap q0 q1 p s ↔
-      d1N2InvariantSectionWitnessPair q0 q1 p s := by
-  simpa [d1N2InvariantSectionWitnessPair] using
-    (d1N2InvariantForwardizableSwap_iff_lightConeWitness_pair
-      (q0 := q0) (q1 := q1) (p := p) (s := s))
-
 /-- The doubly-realizable invariant locus in the `d=1,n=2` swap setting is
 nonempty. -/
 theorem d1N2InvariantRealizable_pair_nonempty :
@@ -526,34 +482,6 @@ theorem d1N2InvariantRealizable_pair_nonempty :
         ⟨w, Γ⁻¹, hwFT, hΓswap, by simp [q0, q1, p, s, d1InvariantQuad]⟩
     exact hpair.2
 
-/-- The `d=1,n=2` forwardizable-swap invariant locus is nonempty. -/
-theorem d1N2InvariantForwardizableSwap_nonempty :
-    ∃ q0 q1 p s : ℂ,
-      s ^ 2 = 4 * (p ^ 2 - q0 * q1) ∧
-      d1N2InvariantForwardizableSwap q0 q1 p s := by
-  rcases d1N2InvariantRealizable_pair_nonempty with
-    ⟨q0, q1, p, s, hrel, hreal, hswapReal⟩
-  exact ⟨q0, q1, p, s, hrel,
-    d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal⟩
-
-/-- Realizable-pair involution equality and forwardizable diff-zero are
-equivalent formulations of the same `d=1,n=2` invariant kernel condition. -/
-theorem d1N2InvariantKernelPairSwapOnRealizable_iff_forwardizableDiffZero
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ) :
-    (∀ q0 q1 p s, s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-      d1N2InvariantRealizable q0 q1 p s →
-      d1N2InvariantRealizable q1 q0 p (-s) →
-      f q0 q1 p s = f q1 q0 p (-s)) ↔
-    d1N2InvariantKernelDiffZeroOnForwardizableQuadric f := by
-  constructor
-  · intro hpair q0 q1 p s hrel hfw
-    rcases d1N2InvariantRealizable_pair_of_forwardizable hfw with ⟨hreal, hswapReal⟩
-    exact sub_eq_zero.mpr (hpair q0 q1 p s hrel hreal hswapReal)
-  · intro hdiff q0 q1 p s hrel hreal hswapReal
-    have hfw : d1N2InvariantForwardizableSwap q0 q1 p s :=
-      d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal
-    exact sub_eq_zero.mp (hdiff q0 q1 p s hrel hfw)
-
 /-- `Q₀` cannot vanish on `FT_{1,2}`. -/
 lemma d1Q0_ne_zero_of_mem_forwardTube_d1_n2
     (z : Fin 2 → Fin (1 + 1) → ℂ)
@@ -581,22 +509,6 @@ def d1N2InvariantKernelSource (f : ℂ → ℂ → ℂ → ℂ → ℂ) : Prop :
         F (fun k μ => (x k μ : ℂ))) ∧
     (∀ z, z ∈ ForwardTube 1 2 →
       F z = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z))
-
-/-- Source-form orbit constancy on `FT_{1,2}`: equal invariant quadruples imply
-equal source-field values. -/
-theorem d1N2InvariantKernelSource_eq_of_sameInvariantQuad_onFT
-    (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f)
-    {z w : Fin 2 → Fin (1 + 1) → ℂ}
-    (hz : z ∈ ForwardTube 1 2)
-    (hw : w ∈ ForwardTube 1 2)
-    (hquad : d1InvariantQuad z = d1InvariantQuad w) :
-    (Classical.choose hsource) z = (Classical.choose hsource) w := by
-  exact d1N2Field_eq_of_sameInvariantQuad_onFT
-    (Classical.choose hsource)
-    (Classical.choose_spec hsource).1
-    (Classical.choose_spec hsource).2.1
-    hz hw hquad
 
 /-- Variable-chart anchor hypothesis (`d=1,n=2`):
 for each doubly-witnessed invariant tuple on the quadric, all paired original/
@@ -833,71 +745,3 @@ theorem d1N2ForwardSwapEq_iff_invariantKernelDiffZeroOnForwardizableQuadric
       _ = f (d1Q1 z) (d1Q0 z) (d1P01 z) (-d1S01 z) := hFy
       _ = f (d1Q0 z) (d1Q1 z) (d1P01 z) (d1S01 z) := hker.symm
       _ = F z := hFz.symm
-
-/-- `d=1,n=2` complex-anchor forward-swap bridge:
-if the adjacent forward-overlap slice is connected and one has a nonempty
-complex-open anchor subset of the forward-overlap base where
-`extendF(swap·w)=F(w)`, then forward-swap equality on `FT_{1,2}` follows. -/
-theorem d1N2ForwardSwapEq_onFT_of_connectedForwardOverlap_and_openAnchor
-    (F : (Fin 2 → Fin (1 + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 2))
-    (hF_lorentz : ∀ (Λ : RestrictedLorentzGroup 1)
-      (z : Fin 2 → Fin (1 + 1) → ℂ), z ∈ ForwardTube 1 2 →
-      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hFwd_conn :
-      IsConnected (adjSwapForwardOverlapSet (d := 1) 2 (0 : Fin 2) (by decide)))
-    (W : Set (Fin 2 → Fin (1 + 1) → ℂ))
-    (hW_open : IsOpen W)
-    (hW_ne : W.Nonempty)
-    (hW_sub : W ⊆ permForwardOverlapSet (d := 1) 2 (Equiv.swap (0 : Fin 2) 1))
-    (hW_eq : ∀ w ∈ W,
-      extendF F (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) w) = F w) :
-    ∀ z, z ∈ ForwardTube 1 2 →
-      ∀ Γ : ComplexLorentzGroup 1,
-        complexLorentzAction Γ
-          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z) ∈ ForwardTube 1 2 →
-        F (complexLorentzAction Γ
-          (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z)) = F z := by
-  let τ : Equiv.Perm (Fin 2) := Equiv.swap (0 : Fin 2) 1
-  have hset :
-      adjSwapForwardOverlapSet (d := 1) 2 (0 : Fin 2) (by decide) =
-        permForwardOverlapSet (d := 1) 2 τ := by
-    ext w
-    constructor <;> intro hw <;>
-      simpa [adjSwapForwardOverlapSet, permForwardOverlapSet, τ, permAct] using hw
-  have hΩ_conn : IsConnected (permForwardOverlapSet (d := 1) 2 τ) := by
-    simpa [hset] using hFwd_conn
-  have hbase :
-      ∀ w, w ∈ permForwardOverlapSet (d := 1) 2 τ →
-        extendF F (permAct (d := 1) τ w) = F w :=
-    forward_base_eq_of_open_anchor (d := 1) (n := 2)
-      F hF_holo hF_lorentz τ hΩ_conn W hW_open hW_ne
-      (by simpa [τ] using hW_sub)
-      (by simpa [τ] using hW_eq)
-  intro z hz Γ hΓswap
-  let y : Fin 2 → Fin (1 + 1) → ℂ :=
-    complexLorentzAction Γ (permAct (d := 1) τ z)
-  have hswapET : permAct (d := 1) τ z ∈ ExtendedTube 1 2 := by
-    have hyET : y ∈ ExtendedTube 1 2 :=
-      forwardTube_subset_extendedTube hΓswap
-    have hback :
-        complexLorentzAction Γ⁻¹ y ∈ ExtendedTube 1 2 :=
-      complexLorentzAction_mem_extendedTube (d := 1) (n := 2) (Λ := Γ⁻¹) hyET
-    simpa [y, τ, complexLorentzAction_inv] using hback
-  have hzΩ : z ∈ permForwardOverlapSet (d := 1) 2 τ := ⟨hz, hswapET⟩
-  have hExt_swap : extendF F (permAct (d := 1) τ z) = F z := hbase z hzΩ
-  have hExt_swap_as_Fy :
-      extendF F (permAct (d := 1) τ z) = F y := by
-    calc
-      extendF F (permAct (d := 1) τ z)
-          = extendF F (complexLorentzAction Γ⁻¹ y) := by
-              simp [y, τ, complexLorentzAction_inv]
-      _ = extendF F y :=
-          extendF_complex_lorentz_invariant (d := 1) 2 F hF_holo hF_lorentz Γ⁻¹ y
-            (forwardTube_subset_extendedTube hΓswap)
-      _ = F y := extendF_eq_on_forwardTube 2 F hF_holo hF_lorentz y hΓswap
-  calc
-    F (complexLorentzAction Γ (permAct (d := 1) (Equiv.swap (0 : Fin 2) 1) z))
-        = F y := by rfl
-    _ = extendF F (permAct (d := 1) τ z) := hExt_swap_as_Fy.symm
-    _ = F z := hExt_swap

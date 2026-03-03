@@ -22,15 +22,14 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
   - removed additional dead forwardizable/pair-swap equivalence wrappers in
     `PermutationFlowBlockers/Core.lean` (light-cone/section/witness-form and
     source/open-anchor adapters) that had no downstream references.
-  - removed additional unused source/open-anchor equivalence adapters at the end of
-    `PermutationFlowBlockers/Core.lean` (no downstream references).
   - removed unused `d=1,n=2` EOW-package adapter cluster from
-    `PermutationFlowBlockers/Core.lean`; retained only the open-anchor bridge
-    used by the active source route.
+    `PermutationFlowBlockers/Core.lean`.
+  - removed the now-unused connected-open-anchor bridge theorem in
+    `PermutationFlowBlockers/Core.lean` after confirming zero downstream uses.
   - removed dead `Tail.lean` wrappers (`invariantModel`, pointwise-anchor, and
     source-open-anchor helpers) that had no call sites.
 - no change to blocker mathematics; only proof-graph pruning.
-- `PermutationFlowBlockers/Core.lean` is now reduced to 903 lines.
+- `PermutationFlowBlockers/Core.lean` is now reduced to 747 lines.
 
 ## Canonical Reduction Chain
 From current theorems in `Core/Tail`:
