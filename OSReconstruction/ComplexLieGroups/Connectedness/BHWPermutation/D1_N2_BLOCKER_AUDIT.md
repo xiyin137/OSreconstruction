@@ -58,6 +58,9 @@ Reason:
   - degree 5:
     - basis size 106, sampled local-comm constraints 2200,
     - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
+  - degree 6:
+    - basis size 180, sampled local-comm constraints 3200,
+    - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
 - This is still heuristic (not formal Lean proof), but no sampled counterexample
   has been found.
 

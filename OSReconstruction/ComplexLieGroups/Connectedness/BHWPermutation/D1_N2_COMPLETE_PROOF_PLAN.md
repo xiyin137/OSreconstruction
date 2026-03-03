@@ -63,6 +63,8 @@ Latest sweep snapshot (2026-03-03):
   (no nonzero sampled ansatz survived).
 - degree-5 sweep (2200 real constraints, 2200 forwardizable tuples): nullspace
   dimension 0 (no nonzero sampled antisymmetric ansatz survived).
+- degree-6 sweep (3200 real constraints, 2600 forwardizable tuples): nullspace
+  dimension 0 (no nonzero sampled antisymmetric ansatz survived).
 
 ## Test Matrix
 The following dedicated tests are added to keep the plan executable:

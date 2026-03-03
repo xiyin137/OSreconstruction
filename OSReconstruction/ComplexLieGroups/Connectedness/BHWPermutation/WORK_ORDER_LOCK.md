@@ -119,6 +119,9 @@ Run this in parallel with constructive proof work to avoid proving a false targe
    - run C (degree 5, 2200 real constraints, 2200 forwardizable tuples):
      - antisym basis size: 106
      - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
+   - run D (degree 6, 3200 real constraints, 2600 forwardizable tuples):
+     - antisym basis size: 180
+     - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
    - no sampled counterexample found.
 
 Counterexample harness file:
