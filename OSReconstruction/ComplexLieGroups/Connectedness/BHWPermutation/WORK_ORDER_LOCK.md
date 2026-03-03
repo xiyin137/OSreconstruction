@@ -19,6 +19,8 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 - Wrapper cleanup status:
   - removed unused paired-chart equivalence wrappers from
     `PermutationFlowBlockers/Core.lean` to keep the blocker route minimal.
+  - removed additional unused source/open-anchor equivalence adapters at the end of
+    `PermutationFlowBlockers/Core.lean` (no downstream references).
   - no change to blocker mathematics; only proof-graph pruning.
 
 ## Canonical Reduction Chain
