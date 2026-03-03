@@ -16,6 +16,10 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 - Remaining `sorry` frontiers in this branch are concentrated in `PermutationFlowBlockers/Tail.lean`.
 - The active blocker above is reduced to one analytic gap:
   - prove source-level paired-chart anchor connectivity from `d1N2InvariantKernelSource`.
+- Wrapper cleanup status:
+  - removed unused paired-chart equivalence wrappers from
+    `PermutationFlowBlockers/Core.lean` to keep the blocker route minimal.
+  - no change to blocker mathematics; only proof-graph pruning.
 
 ## Canonical Reduction Chain
 From current theorems in `Core/Tail`:
