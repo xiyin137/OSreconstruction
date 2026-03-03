@@ -104,8 +104,17 @@ Run this in parallel with constructive proof work to avoid proving a false targe
 4. If no counterexample is found:
    - continue constructive route and keep search harness tests compiling.
 5. Latest heuristic sweep status (2026-03-03):
-   - no counterexample found in sampled low-degree invariant-kernel ansätze
-     satisfying sampled local-comm constraints.
+   - reproducible script:
+     `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/ProofHarness/d1n2_counterexample_search.py`
+   - run A (degree 3, 500 real constraints, 1200 forwardizable tuples, 20 nullspace combos):
+     - antisym basis size: 27
+     - nullspace dim under sampled local-comm constraints: 13
+     - max observed `|g|` on sampled forwardizable tuples: `2.18e-11`
+     - violations above `1e-6`: 0
+   - run B (degree 4, 1200 real constraints, 1500 forwardizable tuples):
+     - antisym basis size: 56
+     - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
+   - no sampled counterexample found.
 
 Counterexample harness file:
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/ProofHarness/D1N2CounterexampleSearch.lean`

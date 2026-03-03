@@ -38,11 +38,23 @@ Reason:
 - Therefore the proof must stay on the doubly witnessed/relevant locus and propagate there.
 
 ## Numerical Falsification Sweep (Heuristic, 2026-03-03)
-- Performed local numerical sweeps (outside Lean) for low-degree invariant-kernel
-  ansätze constrained by sampled real spacelike local-commutativity equations.
-- Linear and quadratic ansätze fitted to those sampled constraints showed no
-  violations on sampled doubly realizable complex tuples.
-- This is not a formal proof, but it did not produce a blocker counterexample.
+- Reproducible harness:
+  `ProofHarness/d1n2_counterexample_search.py`
+- Search model:
+  - antisymmetric polynomial ansatz for
+    `g(q0,q1,p,s) = f(q0,q1,p,s) - f(q1,q0,p,-s)`,
+  - linear constraints from sampled real spacelike local-commutativity points,
+  - test on sampled doubly realizable (forwardizable) complex tuples.
+- Run summary:
+  - degree 3:
+    - basis size 27, sampled local-comm constraints 500, nullspace dim 13,
+    - tested forwardizable tuples 1200,
+    - max observed `|g| = 2.18e-11`, no violations above `1e-6`.
+  - degree 4:
+    - basis size 56, sampled local-comm constraints 1200,
+    - nullspace dim 0 (no surviving nonzero ansatz in sampled system).
+- This is still heuristic (not formal Lean proof), but no sampled counterexample
+  has been found.
 
 ## Accepted Remaining Gap
 The unproved step is:
