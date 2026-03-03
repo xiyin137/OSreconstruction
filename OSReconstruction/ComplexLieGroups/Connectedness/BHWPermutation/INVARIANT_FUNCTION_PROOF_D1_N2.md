@@ -36,3 +36,29 @@ Hence the proof target is intentionally the realizable/light-cone witnessed locu
 - construct and prove the remaining paired-chart anchor step,
 - without adding extra axioms,
 - and without detouring through unrelated d>=2 infrastructure.
+
+## Source-to-Invariant Bridge Split (Current Tail State)
+The source wrapper now factors through three explicit bridge lemmas in
+`PermutationFlowBlockers/Tail.lean`:
+
+1. `blocker_d1N2InvariantBridgeAnalyticity_fromSource_deferred`
+2. `blocker_d1N2InvariantBridgePreconnected_fromSource_deferred`
+3. `blocker_d1N2InvariantBridgeCorrection_fromSource_deferred`
+
+These are assembled into the bridge package used by
+`blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred`.
+
+## Meaning of "Bridge Analyticity"
+`bridgeAnalyticity` is a statement of `DifferentiableOn ℂ` for the invariant
+swap-difference function on the intrinsic witnessed quadric locus.
+
+It is not an analytic-continuation/extension claim to a larger ambient domain.
+
+## Numerical Validation Scope
+The numerical harness
+`ProofHarness/d1n2_invariant_witness_equivalence.py` validates the intrinsic
+witness inequalities used in the core theorem statement against the intended
+section-coordinate `ForwardTube` inequalities on sampled data.
+
+This numerical check supports the witness-inequality translation only; it does
+not prove the three bridge lemmas above.

@@ -31,6 +31,21 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
   hypothesis on `f` (in invariant variables), not assert swap symmetry with no
   analytic/correction premises.
 
+## Bridge-Lemma Lock (2026-03-03 update)
+- `hBridge` inside
+  `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred`
+  must be an assembly of explicit lemmas, not a hidden local `sorry`.
+- Current bridge split in `Tail.lean`:
+  1. `blocker_d1N2InvariantBridgeAnalyticity_fromSource_deferred`
+  2. `blocker_d1N2InvariantBridgePreconnected_fromSource_deferred`
+  3. `blocker_d1N2InvariantBridgeCorrection_fromSource_deferred`
+- Semantic lock for (1):
+  - it is a `DifferentiableOn ℂ` statement on the intrinsic witnessed locus;
+  - it is not an analytic-extension claim.
+- Numerical checks support only the intrinsic witness-inequality translation
+  (section-coordinate FT inequalities ↔ invariant inequalities), not the full
+  proofs of (1)-(3).
+
 ## Current Lean State
 - The entire `OSReconstruction/ComplexLieGroups` folder compiles.
 - Remaining `sorry` frontiers in this branch are concentrated in `PermutationFlowBlockers/Tail.lean`.
@@ -39,10 +54,12 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
     is now a clean reduction theorem (no internal `sorry`).
   - `blocker_d1N2PairedChartAnchorPair_fromSource_deferred` is now structural
     (no internal `sorry`) and reduces to forward witness equality.
-  - the unique remaining analytic gap is isolated in
-    `blocker_d1N2ForwardWitnessEq_field_deferred`, precisely:
-    `F (Γ · (swap · z)) = F z` for `z ∈ FT_{1,2}` and
-    `Γ · (swap · z) ∈ FT_{1,2}`.
+  - active deferred front is split between:
+    1. invariant-core theorem
+       `blocker_d1N2InvariantKernelSwapEq_onSectionWitnessPair_invariantFunction_core_deferred`,
+    2. source-to-invariant bridge lemmas (analyticity/preconnectedness/correction)
+       used by
+       `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred`.
   - source-wrapper theorem
     `blocker_d1N2ForwardWitnessEq_fromSource_deferred` now has no `sorry`.
 - Wrapper cleanup status:
