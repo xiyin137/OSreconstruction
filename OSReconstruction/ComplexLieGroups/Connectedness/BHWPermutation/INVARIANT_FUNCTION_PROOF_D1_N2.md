@@ -56,7 +56,7 @@ wrapper packaging.
    (analyticity + preconnectedness + correction),
 2. a single deferred source-wrapper bridge theorem
    `blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred`
-   whose remaining work is deriving those three assumptions from
+   whose remaining work is deriving the source-to-invariant bridge inputs from
    `d1N2InvariantKernelSource f`.
    A non-deferred pass-through theorem is now available once those three bridge
    inputs are provided explicitly:
@@ -68,8 +68,13 @@ Correction statement lock:
   `q0.im = q1.im = p.im = s.im = 0` and
   `q0.re + q1.re - 2*p.re > 0`, enforce
   `f q0 q1 p s = f q1 q0 p (-s)`.
-- Deriving this real-spacelike correction premise from
-  `d1N2InvariantKernelSource` remains part of the deferred bridge work.
+- `blocker_d1N2InvariantBridgeCorrection_fromSource_deferred` is now a proved
+  reduction, provided an explicit source-to-invariant boundary-identification
+  hypothesis `hBoundaryId`.
+- The false claim that this boundary-identification follows from
+  `d1N2InvariantKernelSource` alone has been removed from `Tail.lean`; the
+  boundary-identification step is now kept as an explicit input at the source
+  wrapper / forward-witness stage.
 - The existing formal counterexample harness records the key obstruction:
   source data alone does not constrain arbitrary off-image values of `f` on
   this real-spacelike set, so the bridge must include source-to-invariant
@@ -99,8 +104,10 @@ The stress harness
 - source constraints on real-spacelike tuples (intrinsic + z-constructed),
 - correction anchors on real-spacelike tuples (intrinsic + z-constructed),
 - complex witnessed-domain tuples from `z in FT` with explicit swap-then-Lorentz
-  witness.
-Current runs report no numeric falsifier for tests 1/2/3/4 in the finite
+  witness,
+- a direct source-to-forwardizable surrogate check for
+  `blocker_d1N2ForwardWitnessEq_field_deferred` (test 5).
+Current runs report no numeric falsifier for tests 1/2/3/4/5 in the finite
 ansatz model.
 
 This numerical check supports the witness-inequality translation only; it does
@@ -131,6 +138,10 @@ Latest stress run (2026-03-04) from
   - source-constraint samples: `9000`,
   - source-constrained antisymmetric nullspace dimension: `0`,
   - finite-difference checks: `300` points, max sampled `|∂̄g| = 0.0`.
+- Test 5 (forward witness equality surrogate):
+  - source-constraint samples: `4000`,
+  - complex forwardizable samples: `1800`,
+  - worst sampled `|g|` on forwardizable domain: `0.0`.
 
 Interpretation:
 - These are genuine finite-model falsification checks because sampled anchor

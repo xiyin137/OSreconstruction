@@ -124,5 +124,26 @@ theorem d1N2InvariantKernelSource_not_sufficient_for_realSpacelikeCorrection_non
     norm_num [d1N2CounterexampleF]
   exact hneq heq
 
-end BHW
+/-- The current bridge-correction shape (without an explicit source-to-invariant
+identification principle) is not derivable from `d1N2InvariantKernelSource`
+alone. -/
+theorem d1N2_source_not_sufficient_for_bridgeCorrection_shape :
+    ¬ (∀ f : ℂ → ℂ → ℂ → ℂ → ℂ,
+      d1N2InvariantKernelSource f →
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        f q0 q1 p s = f q1 q0 p (-s)) := by
+  intro hbridge
+  rcases d1N2InvariantKernelSource_not_sufficient_for_realSpacelikeCorrection_nonzero with
+    ⟨f, hsource, hnot⟩
+  have hnonzeroRule : d1N2RealSpacelikeCorrectionRuleNonzero f := by
+    intro q0 q1 p s hquad hq0ne hq1ne hq0im hq1im hpim hsim hsp
+    exact hbridge f hsource q0 q1 p s hquad hq0im hq1im hpim hsim hsp
+  exact hnot hnonzeroRule
 
+end BHW

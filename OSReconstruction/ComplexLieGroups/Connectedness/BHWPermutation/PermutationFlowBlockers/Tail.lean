@@ -496,7 +496,7 @@ theorem blocker_d1N2InvariantBridgePreconnected_fromSource_deferred
   let _ := hsource
   sorry
 
-/-- Deferred source-to-invariant bridge (correction input).
+/-- Source-to-invariant bridge reduction (correction input).
 
 This is the anchor identity for the same swap-difference
 `g(q0,q1,p,s) := f q0 q1 p s - f q1 q0 p (-s)`:
@@ -504,9 +504,11 @@ on points satisfying
 1. the quadric relation,
 2. real-slice conditions `q0.im = q1.im = p.im = s.im = 0`,
 3. real-spacelike inequality `q0.re + q1.re - 2*p.re > 0`,
-prove `g(q0,q1,p,s) = 0`.
+prove `g(q0,q1,p,s) = 0`, assuming the explicit boundary-identification input
+`hBoundaryId`.
 
-This is the real-slice correction datum that feeds the invariant-core theorem.
+This supplies the real-slice correction datum that feeds the invariant-core
+theorem.
 
 Numerical status (heuristic, 2026-03-04): no finite-ansatz falsifier found in
 `ProofHarness/d1n2_tail_four_critical_lemma_checks.py` on sampled real-slice
@@ -518,7 +520,21 @@ Latest stress run summary:
 - worst sampled `|g|` on correction anchors: `0.0` (threshold `1e-6`). -/
 theorem blocker_d1N2InvariantBridgeCorrection_fromSource_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f) :
+    (hsource : d1N2InvariantKernelSource f)
+    (hBoundaryId :
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        ∃ x : Fin 2 → Fin (1 + 1) → ℝ,
+          d1InvariantQuad (realEmbed x) = (q0, q1, p, s) ∧
+          f q0 q1 p s = (Classical.choose hsource) (realEmbed x) ∧
+          f q1 q0 p (-s) =
+            (Classical.choose hsource)
+              (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ))) :
     ∀ q0 q1 p s : ℂ,
       s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
       q0.im = 0 →
@@ -527,28 +543,48 @@ theorem blocker_d1N2InvariantBridgeCorrection_fromSource_deferred
       s.im = 0 →
       q0.re + q1.re - 2 * p.re > 0 →
       f q0 q1 p s = f q1 q0 p (-s) := by
-  let _ := hsource
   intro q0 q1 p s hquad hq0im hq1im hpim hsim hsp
-  let _ := hquad
-  let _ := hq0im
-  let _ := hq1im
-  let _ := hpim
-  let _ := hsim
-  let _ := hsp
-  -- Roadmap for this deferred bridge:
-  -- 1) Geometric/change-of-variables part (already formalized):
-  --    witness inequalities -> section points in `FT_{1,2}`, and via `hf_onFT`
-  --    rewrite the target as equality of source values
-  --    `F (d1N2SectionSwap ...) = F (d1N2SectionOrig ...)`.
-  -- 2) Remaining non-geometric step:
-  --    promote real-slice local-commutativity anchor equality to these complex
-  --    section points by analytic uniqueness propagation on the witnessed
-  --    invariant domain for
-  --    `g(q0,q1,p,s) = f q0 q1 p s - f q1 q0 p (-s)`.
-  -- EOW-type geometry gives the domain/anchor reachability; the blocker here
-  -- is the analytic uniqueness transfer from the source field formulation to
-  -- the invariant `g`-formulation.
-  sorry
+  have hF_local :
+      ∀ (i : Fin 2) (hi : i.val + 1 < 2),
+        ∀ (x : Fin 2 → Fin (1 + 1) → ℝ),
+          ∑ μ, minkowskiSignature 1 μ *
+            (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0 →
+          (Classical.choose hsource)
+            (fun k μ => (x (Equiv.swap i ⟨i.val + 1, hi⟩ k) μ : ℂ)) =
+          (Classical.choose hsource) (fun k μ => (x k μ : ℂ)) :=
+    (Classical.choose_spec hsource).2.2.2.1
+  rcases hBoundaryId q0 q1 p s hquad hq0im hq1im hpim hsim hsp with
+    ⟨x, hxquad, hfq, hfswap⟩
+  have hq0x : d1Q0 (realEmbed x) = q0 := by
+    simpa [d1InvariantQuad] using congrArg Prod.fst hxquad
+  have hq1x : d1Q1 (realEmbed x) = q1 := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.2.1) hxquad
+  have hpx : d1P01 (realEmbed x) = p := by
+    simpa [d1InvariantQuad] using congrArg (fun t => t.2.2.1) hxquad
+  have hq0R : (d1Q0R x : ℂ) = q0 := by
+    simpa [d1Q0_realEmbed] using hq0x
+  have hq1R : (d1Q1R x : ℂ) = q1 := by
+    simpa [d1Q1_realEmbed] using hq1x
+  have hpR : (d1P01R x : ℂ) = p := by
+    simpa [d1P01_realEmbed] using hpx
+  have hq0Rre : d1Q0R x = q0.re := by
+    exact congrArg Complex.re hq0R
+  have hq1Rre : d1Q1R x = q1.re := by
+    exact congrArg Complex.re hq1R
+  have hpRre : d1P01R x = p.re := by
+    exact congrArg Complex.re hpR
+  have hspInv : d1Q0R x + d1Q1R x - 2 * d1P01R x > 0 := by
+    linarith [hsp, hq0Rre, hq1Rre, hpRre]
+  have hswapEq :
+      (Classical.choose hsource)
+        (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ)) =
+      (Classical.choose hsource) (realEmbed x) :=
+    d1_n2_local_comm_of_invariant_ineq (Classical.choose hsource) hF_local x hspInv
+  calc
+    f q0 q1 p s = (Classical.choose hsource) (realEmbed x) := hfq
+    _ = (Classical.choose hsource)
+          (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ)) := hswapEq.symm
+    _ = f q1 q0 p (-s) := hfswap.symm
 
 /-- Pass-through reduction:
 if the three invariant bridge inputs are available, source-level forwardizable
@@ -601,13 +637,28 @@ theorem d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invarian
     f hAnalytic hConnected hCorrection
 
 /-- Source wrapper around the invariant-function reduction:
-the remaining blocker is to derive the three invariant-function hypotheses from
+the remaining blocker is to derive the invariant-function bridge hypotheses from
 `d1N2InvariantKernelSource f`:
 analyticity + witnessed-locus preconnectedness + real-slice witnessed
-spacelike correction. -/
+spacelike correction (via an explicit boundary-identification bridge provided
+as an input hypothesis). -/
 theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f) :
+    (hsource : d1N2InvariantKernelSource f)
+    (hBoundaryId :
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        ∃ x : Fin 2 → Fin (1 + 1) → ℝ,
+          d1InvariantQuad (realEmbed x) = (q0, q1, p, s) ∧
+          f q0 q1 p s = (Classical.choose hsource) (realEmbed x) ∧
+          f q1 q0 p (-s) =
+            (Classical.choose hsource)
+              (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ))) :
     d1N2InvariantKernelDiffZeroOnForwardizableQuadric f := by
   have hAnalytic :
       DifferentiableOn ℂ
@@ -649,13 +700,20 @@ theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invaria
         p.im = 0 →
         s.im = 0 →
         q0.re + q1.re - 2 * p.re > 0 →
-        f q0 q1 p s = f q1 q0 p (-s) :=
-    blocker_d1N2InvariantBridgeCorrection_fromSource_deferred f hsource
+        f q0 q1 p s = f q1 q0 p (-s) := by
+    exact blocker_d1N2InvariantBridgeCorrection_fromSource_deferred f hsource hBoundaryId
   exact d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invariantBridgeInputs
     f hsource hAnalytic hConnected hCorrection
 
 /-- Forward witness equality from the source package, reduced to the invariant
-forwardizable-kernel theorem. -/
+forwardizable-kernel theorem plus the explicit source-to-boundary
+identification input at `d=1,n=2` (deferred locally in this proof).
+
+Numerical status (heuristic, 2026-03-04): in
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py` test 5, no finite-ansatz
+falsifier was found for the source-to-forwardizable implication on sampled
+domains (latest run: source constraint samples `4000`, complex forwardizable
+samples `1800`, worst sampled `|g| = 0.0`, threshold `1e-6`). -/
 theorem blocker_d1N2ForwardWitnessEq_field_deferred
     (F : (Fin 2 → Fin (1 + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 2))
@@ -680,10 +738,29 @@ theorem blocker_d1N2ForwardWitnessEq_field_deferred
       F hF_holo hF_lorentz hF_bv hF_local with ⟨f, hf_onFT⟩
   have hsource : d1N2InvariantKernelSource f :=
     ⟨F, hF_holo, hF_lorentz, hF_bv, hF_local, hf_onFT⟩
+  have hBoundaryId :
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        ∃ x : Fin 2 → Fin (1 + 1) → ℝ,
+          d1InvariantQuad (realEmbed x) = (q0, q1, p, s) ∧
+          f q0 q1 p s = (Classical.choose hsource) (realEmbed x) ∧
+          f q1 q0 p (-s) =
+            (Classical.choose hsource)
+              (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ)) := by
+    -- Remaining source-to-boundary identification input at `d=1,n=2`.
+    -- This does not follow from `d1N2InvariantKernelSource` alone
+    -- (see `ProofHarness/D1N2SourceCorrectionCounterexample.lean` for the
+    -- formal obstruction on off-image values of `f`).
+    sorry
   have hquadDiff :
       d1N2InvariantKernelDiffZeroOnForwardizableQuadric f :=
     blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
-      f hsource
+      f hsource hBoundaryId
   have hforward :
       ∀ z, z ∈ ForwardTube 1 2 →
         ∀ Γ : ComplexLorentzGroup 1,

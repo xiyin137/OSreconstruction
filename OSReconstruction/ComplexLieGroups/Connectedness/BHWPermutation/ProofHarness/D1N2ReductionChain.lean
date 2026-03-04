@@ -19,14 +19,42 @@ example
 
 example
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
-    (hsource : d1N2InvariantKernelSource f) :
+    (hsource : d1N2InvariantKernelSource f)
+    (hBoundaryId :
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        ∃ x : Fin 2 → Fin (1 + 1) → ℝ,
+          d1InvariantQuad (realEmbed x) = (q0, q1, p, s) ∧
+          f q0 q1 p s = (Classical.choose hsource) (realEmbed x) ∧
+          f q1 q0 p (-s) =
+            (Classical.choose hsource)
+              (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ))) :
     d1N2InvariantKernelDiffZeroOnForwardizableQuadric f :=
   blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
-    f hsource
+    f hsource hBoundaryId
 
 example
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f)
+    (hBoundaryId :
+      ∀ q0 q1 p s : ℂ,
+        s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
+        q0.im = 0 →
+        q1.im = 0 →
+        p.im = 0 →
+        s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
+        ∃ x : Fin 2 → Fin (1 + 1) → ℝ,
+          d1InvariantQuad (realEmbed x) = (q0, q1, p, s) ∧
+          f q0 q1 p s = (Classical.choose hsource) (realEmbed x) ∧
+          f q1 q0 p (-s) =
+            (Classical.choose hsource)
+              (fun k μ => (x (Equiv.swap (0 : Fin 2) 1 k) μ : ℂ)))
     (q0 q1 p s : ℂ)
     (hquad : s ^ 2 = 4 * (p ^ 2 - q0 * q1))
     (hreal : d1N2InvariantRealizable q0 q1 p s)
@@ -37,6 +65,6 @@ by
     d1N2InvariantForwardizable_of_realizable_pair hreal hswapReal
   exact
     blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
-      f hsource q0 q1 p s hquad hfw
+      f hsource hBoundaryId q0 q1 p s hquad hfw
 
 end BHW

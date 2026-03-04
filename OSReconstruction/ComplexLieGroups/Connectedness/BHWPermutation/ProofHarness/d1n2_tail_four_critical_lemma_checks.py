@@ -603,6 +603,22 @@ def main() -> None:
     print(f"largest_component_fraction={frac:.6f}")
     print("component_sizes_top10=" + str(sizes[:10]))
 
+    # Test 5: ForwardWitnessEq_field_deferred (source-to-forwardizable surrogate).
+    # This uses only source-side sampled constraints, then probes complex
+    # forwardizable tuples.
+    worst_forward = worst_value_over_samples(coeffs_source, basis, complex_domain)
+    print("\n=== Test 5: ForwardWitnessEq_field_deferred (Heuristic) ===")
+    print(f"worst_|g|_on_complex_forwardizable_domain_from_source_constraints={worst_forward:.6e}")
+    print(f"report_threshold={args.report_threshold:.1e}")
+    print(
+        "status="
+        + (
+            "NO_NUMERIC_FALSIFIER_FOUND"
+            if worst_forward <= args.report_threshold
+            else "POTENTIAL_FALSIFIER_FOUND"
+        )
+    )
+
 
 if __name__ == "__main__":
     main()
