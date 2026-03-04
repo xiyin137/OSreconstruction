@@ -63,16 +63,17 @@ wrapper packaging.
    `d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invariantBridgeInputs`.
 
 Correction statement lock:
-- The correction premise is now real-slice witnessed and fully intrinsic:
-  on the quadric, with both intrinsic witness inequalities and
-  `q0.im = q1.im = p.im = s.im = 0`, enforce
+- The correction premise is now real-slice spacelike and fully intrinsic:
+  on the quadric, with
+  `q0.im = q1.im = p.im = s.im = 0` and
+  `q0.re + q1.re - 2*p.re > 0`, enforce
   `f q0 q1 p s = f q1 q0 p (-s)`.
-- This avoids the incompatible standalone spacelike-sign condition (`> 0`) on
-  real paired-witness points.
-- Deriving this witnessed correction premise from
+- Deriving this real-spacelike correction premise from
   `d1N2InvariantKernelSource` remains part of the deferred bridge work.
-- The existing formal counterexample harness still records why the old
-  spacelike-only correction variant is unusable:
+- The existing formal counterexample harness records the key obstruction:
+  source data alone does not constrain arbitrary off-image values of `f` on
+  this real-spacelike set, so the bridge must include source-to-invariant
+  analytic/boundary identification.
   - `ProofHarness/D1N2SourceCorrectionCounterexample.lean`
   - theorem:
     `d1N2InvariantKernelSource_not_sufficient_for_realSpacelikeCorrection_nonzero`.
@@ -93,5 +94,46 @@ The numerical harness
 witness inequalities used in the core theorem statement against the intended
 section-coordinate `ForwardTube` inequalities on sampled data.
 
+The stress harness
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py` now samples:
+- source constraints on real-spacelike tuples (intrinsic + z-constructed),
+- correction anchors on real-spacelike tuples (intrinsic + z-constructed),
+- complex witnessed-domain tuples from `z in FT` with explicit swap-then-Lorentz
+  witness.
+Current runs report no numeric falsifier for tests 1/2/3/4 in the finite
+ansatz model.
+
 This numerical check supports the witness-inequality translation only; it does
 not prove the three bridge lemmas above.
+
+## Why These Tests Are Informative
+These runs test populated sampled domains under the current theorem
+assumptions, so the reported “no falsifier found” outcomes are based on actual
+constraint-and-evaluation checks (not empty-set behavior).
+
+Latest stress run (2026-03-04) from
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py`:
+
+- Test 1 (invariant core implication):
+  - correction-anchor samples: `9000`,
+  - complex witnessed-domain samples: `4000`,
+  - correction-constrained nullspace dimension: `0`,
+  - worst sampled `|g|` on complex witnessed domain: `0.0` (threshold `1e-6`).
+- Test 4 (bridge correction surrogate):
+  - correction-anchor samples: `9000`,
+  - direct z-family correction-hit rate: `30000/30000`,
+  - worst sampled `|g|` on correction anchors: `0.0`.
+- Test 3 (bridge preconnectedness surrogate):
+  - complex witnessed-domain samples: `4000`,
+  - KNN graph components: `1`,
+  - largest component: `4000/4000` points (`k=10`).
+- Test 2 (bridge analyticity surrogate):
+  - source-constraint samples: `9000`,
+  - source-constrained antisymmetric nullspace dimension: `0`,
+  - finite-difference checks: `300` points, max sampled `|∂̄g| = 0.0`.
+
+Interpretation:
+- These are genuine finite-model falsification checks because sampled anchor
+  and target domains are populated (not empty), and `g` is evaluated on those
+  sets under the intended constraint families.
+- They remain heuristic (not formal proof): finite ansatz + finite sampling.

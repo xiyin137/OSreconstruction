@@ -178,81 +178,51 @@ def swap_witness_cond(q1: complex, p: complex, s: complex, w0: complex, eps: flo
     )
 
 
-def sample_real_witnessed_invariant(
-    rng: random.Random, eps: float, swap_trials: int = 450
-) -> Complex4 | None:
-    # Build a real tuple from a purely imaginary FT point (so quadric is automatic),
-    # then search a swapped witness w0 intrinsically.
-    u0, v0, u1, v1 = sample_real_ft_uv(rng)
-    inv = invariants_from_uv(u0, v0, u1, v1)
+def is_real_spacelike_correction_tuple(inv: Complex4, eps: float) -> bool:
     q0, q1, p, s = inv
-    if abs(q0) <= eps or abs(q1) <= eps:
-        return None
+    if abs(quadric_residual(inv)) > 1e-8:
+        return False
     if max(abs(q0.imag), abs(q1.imag), abs(p.imag), abs(s.imag)) > 1e-8:
+        return False
+    return (q0.real + q1.real - 2.0 * p.real) > eps
+
+
+def sample_real_spacelike_invariant_from_z_family(
+    rng: random.Random, eps: float
+) -> Complex4 | None:
+    # Real FT light-cone coordinates directly produce real invariant tuples.
+    z = sample_real_ft_uv(rng)
+    if not in_ft_uv(*z, eps):
         return None
-    if not orig_witness_cond(q0, p, s, v0, eps):
-        return None
-    for _ in range(swap_trials):
-        w0 = random_complex_with_pos_imag(rng)
-        if swap_witness_cond(q1, p, s, w0, eps):
-            return inv
+    inv = invariants_from_uv(*z)
+    if is_real_spacelike_correction_tuple(inv, eps):
+        return inv
     return None
 
 
-def sample_real_forwardizable_invariant_from_z_family(
-    rng: random.Random, eps: float, lam_trials: int
+def sample_real_spacelike_invariant_from_phase_locked_z_family(
+    rng: random.Random, eps: float
 ) -> Complex4 | None:
-    # Real-slice tuples built from explicit z-coordinates, then requiring explicit
-    # swapped FT witness via swap+complex-Lorentz action.
+    # A second explicit z-family with complex phases but exactly real invariants.
     z = sample_phase_locked_real_invariant_ft_uv(rng)
     if not in_ft_uv(*z, eps):
         return None
     inv = invariants_from_uv(*z)
-    q0, q1, p, s = inv
-    if abs(q0) <= eps or abs(q1) <= eps:
-        return None
-    if max(abs(q0.imag), abs(q1.imag), abs(p.imag), abs(s.imag)) > 1e-8:
-        return None
-    for lam in lam_candidates(rng, max(0, lam_trials)):
-        y = swap_then_lorentz_uv(*z, lam)
-        if not in_ft_uv(*y, eps):
-            continue
-        inv_y = invariants_from_uv(*y)
-        target = (q1, q0, p, -s)
-        if close_inv(inv_y, target):
-            return inv
+    if is_real_spacelike_correction_tuple(inv, eps):
+        return inv
     return None
 
 
-def direct_real_witness_hit_count_from_z_family(
-    rng: random.Random, eps: float, attempts: int, lam_trials: int
+def direct_real_correction_hit_count_from_z_family(
+    rng: random.Random, eps: float, attempts: int
 ) -> int:
     hits = 0
     for _ in range(attempts):
-        if sample_real_forwardizable_invariant_from_z_family(rng, eps, lam_trials) is not None:
-            hits += 1
-    return hits
-
-
-def direct_real_witness_hit_count(
-    rng: random.Random, eps: float, trials: int
-) -> int:
-    # Independent brute-force check of real-slice witnessed feasibility.
-    hits = 0
-    for _ in range(trials):
-        q0 = rng.uniform(0.1, 8.0)
-        q1 = rng.uniform(0.1, 8.0)
-        p = rng.uniform(-10.0, 10.0)
-        disc = p * p - q0 * q1
-        if disc < 0:
-            continue
-        s = 2.0 * math.sqrt(disc)
         if rng.random() < 0.5:
-            s = -s
-        v0 = random_complex_with_pos_imag(rng)
-        w0 = random_complex_with_pos_imag(rng)
-        if orig_witness_cond(complex(q0, 0.0), complex(p, 0.0), complex(s, 0.0), v0, eps) and \
-           swap_witness_cond(complex(q1, 0.0), complex(p, 0.0), complex(s, 0.0), w0, eps):
+            inv = sample_real_spacelike_invariant_from_z_family(rng, eps)
+        else:
+            inv = sample_real_spacelike_invariant_from_phase_locked_z_family(rng, eps)
+        if inv is not None:
             hits += 1
     return hits
 
@@ -468,16 +438,15 @@ def main() -> None:
     parser.add_argument("--svd-tol", type=float, default=1e-10)
     parser.add_argument("--eps", type=float, default=1e-10)
     parser.add_argument("--lam-trials", type=int, default=140)
-    parser.add_argument("--source-real-spacelike-samples", type=int, default=3000)
-    parser.add_argument("--real-witness-samples", type=int, default=1400)
+    parser.add_argument("--source-real-spacelike-samples", type=int, default=2500)
+    parser.add_argument("--source-real-spacelike-z-samples", type=int, default=1500)
+    parser.add_argument("--real-correction-samples", type=int, default=1400)
     parser.add_argument("--complex-domain-samples", type=int, default=1800)
     parser.add_argument("--random-null-combos", type=int, default=20)
     parser.add_argument("--knn-k", type=int, default=10)
     parser.add_argument("--fd-step", type=float, default=1e-6)
     parser.add_argument("--fd-samples", type=int, default=180)
-    parser.add_argument("--direct-real-witness-search-trials", type=int, default=120000)
-    parser.add_argument("--direct-real-witness-z-search-trials", type=int, default=30000)
-    parser.add_argument("--real-z-lam-trials", type=int, default=60)
+    parser.add_argument("--direct-real-correction-z-search-trials", type=int, default=30000)
     parser.add_argument("--report-threshold", type=float, default=1e-6)
     args = parser.parse_args()
 
@@ -491,33 +460,44 @@ def main() -> None:
     print(f"antisym_basis_size={len(basis)}")
 
     # Local-comm source constraints: sampled real spacelike tuples.
-    source_real_spacelike = [
+    source_real_spacelike_intrinsic = [
         sample_real_spacelike_invariants(rng) for _ in range(args.source_real_spacelike_samples)
     ]
+    source_real_spacelike_from_z = collect_samples(
+        lambda: sample_real_spacelike_invariant_from_phase_locked_z_family(rng, args.eps),
+        n=args.source_real_spacelike_z_samples,
+        max_attempts=30 * args.source_real_spacelike_z_samples,
+    )
+    source_real_spacelike = source_real_spacelike_intrinsic + source_real_spacelike_from_z
     amat_source = build_constraint_matrix(basis, source_real_spacelike)
     ns_source = nullspace_svd(amat_source, tol=args.svd_tol)
     coeffs_source = candidate_coeffs(ns_source, rng_np, args.random_null_combos)
 
     print("\n=== Source Constraint Ansatz Space ===")
-    print(f"source_real_spacelike_samples={len(source_real_spacelike)}")
+    print(f"source_real_spacelike_intrinsic_samples={len(source_real_spacelike_intrinsic)}")
+    print(f"source_real_spacelike_from_z_samples={len(source_real_spacelike_from_z)}")
+    print(f"source_real_spacelike_total_samples={len(source_real_spacelike)}")
     print(f"source_constraint_nullspace_dim={ns_source.shape[1]}")
 
-    # Real-slice witnessed tuples (D ∩ real slice), sampled by explicit z_i construction.
-    real_witness_from_z = collect_samples(
-        lambda: sample_real_forwardizable_invariant_from_z_family(
-            rng, args.eps, args.real_z_lam_trials
-        ),
-        n=args.real_witness_samples,
-        max_attempts=80 * args.real_witness_samples,
+    # Real correction-anchor tuples: quadric + real slice + spacelike inequality.
+    real_correction_from_real_ft_z = collect_samples(
+        lambda: sample_real_spacelike_invariant_from_z_family(rng, args.eps),
+        n=args.real_correction_samples,
+        max_attempts=20 * args.real_correction_samples,
     )
-
-    # Secondary intrinsic backup sampler for diagnostics.
-    real_witness_intrinsic = collect_samples(
-        lambda: sample_real_witnessed_invariant(rng, args.eps),
-        n=args.real_witness_samples,
-        max_attempts=40 * args.real_witness_samples,
+    real_correction_from_phase_locked_z = collect_samples(
+        lambda: sample_real_spacelike_invariant_from_phase_locked_z_family(rng, args.eps),
+        n=args.real_correction_samples,
+        max_attempts=30 * args.real_correction_samples,
     )
-    real_witness = real_witness_from_z + real_witness_intrinsic
+    real_correction_intrinsic = [
+        sample_real_spacelike_invariants(rng) for _ in range(args.real_correction_samples)
+    ]
+    real_correction = (
+        real_correction_from_real_ft_z
+        + real_correction_from_phase_locked_z
+        + real_correction_intrinsic
+    )
 
     # Complex witnessed tuples in D.
     complex_domain = collect_samples(
@@ -528,47 +508,39 @@ def main() -> None:
         max_attempts=60 * args.complex_domain_samples,
     )
 
-    print("\n=== Sampled Witnessed Domains ===")
-    print(f"real_witness_from_z_samples_collected={len(real_witness_from_z)}")
-    print(f"real_witness_intrinsic_samples_collected={len(real_witness_intrinsic)}")
-    print(f"real_witness_total_samples_collected={len(real_witness)}")
+    print("\n=== Sampled Domains ===")
+    print(f"real_correction_from_real_ft_z_samples={len(real_correction_from_real_ft_z)}")
+    print(f"real_correction_from_phase_locked_z_samples={len(real_correction_from_phase_locked_z)}")
+    print(f"real_correction_intrinsic_samples={len(real_correction_intrinsic)}")
+    print(f"real_correction_total_samples={len(real_correction)}")
     print(f"complex_domain_samples_collected={len(complex_domain)}")
     print(
         "complex_domain_construction="
         + "z_in_FT + explicit swap_then_lorentz(z,lam) witness in FT"
     )
-    direct_hits = direct_real_witness_hit_count(
-        rng, args.eps, args.direct_real_witness_search_trials
-    )
-    direct_hits_z = direct_real_witness_hit_count_from_z_family(
-        rng, args.eps, args.direct_real_witness_z_search_trials, args.real_z_lam_trials
-    )
     print(
-        "direct_real_witness_hits_intrinsic="
-        + f"{direct_hits}/{args.direct_real_witness_search_trials}"
+        "direct_real_correction_hits_from_z_family="
+        + f"{direct_real_correction_hit_count_from_z_family(rng, args.eps, args.direct_real_correction_z_search_trials)}"
+        + f"/{args.direct_real_correction_z_search_trials}"
     )
-    print(
-        "direct_real_witness_hits_from_z_family="
-        + f"{direct_hits_z}/{args.direct_real_witness_z_search_trials}"
-    )
-    if not real_witness:
+    if not real_correction:
         print(
-            "warning=NO_REAL_WITNESSED_SAMPLES_FOUND "
-            "(real-slice witnessed set may be empty/sparse for tested z_i constructions)"
+            "warning=NO_REAL_CORRECTION_SAMPLES_FOUND "
+            "(quadric+real-slice+spacelike samples not found; check sampler settings)"
         )
     if complex_domain:
         max_quadric = max(abs(quadric_residual(inv)) for inv in complex_domain)
         print(f"max_quadric_residual_complex_domain={max_quadric:.3e}")
 
     # Test 4: BridgeCorrection_fromSource (heuristic falsification).
-    # If source-constrained antisymmetric ansatz can be nonzero on real witnessed points,
+    # If source-constrained antisymmetric ansatz can be nonzero on correction-anchor points,
     # that's evidence against the bridge-correction claim in this ansatz.
-    worst_corr = worst_value_over_samples(coeffs_source, basis, real_witness)
+    worst_corr = worst_value_over_samples(coeffs_source, basis, real_correction)
     print("\n=== Test 4: BridgeCorrection_fromSource (Heuristic) ===")
-    print(f"worst_|g|_on_real_witnessed_domain={worst_corr:.6e}")
+    print(f"worst_|g|_on_real_correction_domain={worst_corr:.6e}")
     print(f"report_threshold={args.report_threshold:.1e}")
-    if not real_witness:
-        print("status=INCONCLUSIVE_NO_REAL_WITNESSED_SAMPLES")
+    if not real_correction:
+        print("status=INCONCLUSIVE_NO_REAL_CORRECTION_SAMPLES")
     else:
         print(
             "status="
@@ -580,8 +552,8 @@ def main() -> None:
         )
 
     # Test 1: Core theorem (analyticity+connectedness+correction -> g=0 on D),
-    # using correction-sampled constraints (real witnessed tuples).
-    amat_corr = build_constraint_matrix(basis, real_witness)
+    # using correction-sampled constraints (real quadric/slice/spacelike tuples).
+    amat_corr = build_constraint_matrix(basis, real_correction)
     ns_corr = nullspace_svd(amat_corr, tol=args.svd_tol)
     coeffs_corr = candidate_coeffs(ns_corr, rng_np, args.random_null_combos)
     worst_core = worst_value_over_samples(coeffs_corr, basis, complex_domain)
@@ -589,7 +561,7 @@ def main() -> None:
     print(f"correction_constraint_nullspace_dim={ns_corr.shape[1]}")
     print(f"worst_|g|_on_complex_witnessed_domain={worst_core:.6e}")
     print(f"report_threshold={args.report_threshold:.1e}")
-    if not real_witness:
+    if not real_correction:
         print("status=INCONCLUSIVE_EMPTY_CORRECTION_ANCHOR_SET")
         print("note=CORE_TEST_USED_EMPTY_CORRECTION_CONSTRAINT_SET")
     else:

@@ -11,7 +11,17 @@ variable {d : ℕ}
 /-- Deferred invariant-only core (`d=1,n=2`):
 for a function of Lorentz invariants, prove swap symmetry on the doubly
 witnessed quadric locus from intrinsic analyticity/connectedness plus a real
-witnessed correction condition, all in `(q0,q1,p,s)` variables. -/
+spacelike correction condition, all in `(q0,q1,p,s)` variables.
+
+Numerical status (heuristic, 2026-03-04): no finite-ansatz falsifier found in
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py` for this core implication
+under sampled correction anchors and sampled complex witnessed-domain points.
+Latest stress run summary:
+- correction anchors: `9000` samples
+  (`3000` real-FT z + `3000` phase-locked z + `3000` intrinsic),
+- complex witnessed domain: `4000` samples,
+- correction-constrained nullspace dimension: `0`,
+- worst sampled `|g|` on witnessed domain: `0.0` (threshold `1e-6`). -/
 theorem blocker_d1N2InvariantKernelSwapEq_onSectionWitnessPair_invariantFunction_core_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hAnalytic :
@@ -47,20 +57,11 @@ theorem blocker_d1N2InvariantKernelSwapEq_onSectionWitnessPair_invariantFunction
     (hCorrection :
       ∀ q0 q1 p s : ℂ,
         s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-        (∃ v0 : ℂ,
-          0 < v0.im ∧
-          0 < ((-q0) / v0).im ∧
-          0 < ((q0 - p - s / 2) / v0).im ∧
-          0 < (((p - s / 2 - q0) * v0 / q0).im)) →
-        (∃ w0 : ℂ,
-          0 < w0.im ∧
-          0 < ((-q1) / w0).im ∧
-          0 < ((q1 - p + s / 2) / w0).im ∧
-          0 < (((p + s / 2 - q1) * w0 / q1).im)) →
         q0.im = 0 →
         q1.im = 0 →
         p.im = 0 →
         s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
         f q0 q1 p s = f q1 q0 p (-s)) :
     ∀ q0 q1 p s : ℂ, s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
       (∃ v0 : ℂ,
@@ -334,7 +335,8 @@ lemma d1N2SectionSwap_mem_forwardTube_of_witnessIneq
   exact (forwardTube_d1_n2_iff z).2 ⟨hz0cone, hzdiffcone⟩
 
 /-- Invariant-function wrapper around the intrinsic `d=1,n=2` core theorem:
-if the analytic, preconnectedness, and real-slice correction inputs hold on the
+if the analytic, preconnectedness, and real-spacelike correction inputs hold on
+the
 invariant witnessed quadric locus, then the forwardizable-kernel difference
 vanishes. -/
 theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_invariantFunction_core_deferred
@@ -372,20 +374,11 @@ theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_invariantFunct
     (hCorrection :
       ∀ q0 q1 p s : ℂ,
         s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-        (∃ v0 : ℂ,
-          0 < v0.im ∧
-          0 < ((-q0) / v0).im ∧
-          0 < ((q0 - p - s / 2) / v0).im ∧
-          0 < (((p - s / 2 - q0) * v0 / q0).im)) →
-        (∃ w0 : ℂ,
-          0 < w0.im ∧
-          0 < ((-q1) / w0).im ∧
-          0 < ((q1 - p + s / 2) / w0).im ∧
-          0 < (((p + s / 2 - q1) * w0 / q1).im)) →
         q0.im = 0 →
         q1.im = 0 →
         p.im = 0 →
         s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
         f q0 q1 p s = f q1 q0 p (-s)) :
     d1N2InvariantKernelDiffZeroOnForwardizableQuadric f := by
   intro q0 q1 p s hquad hfw
@@ -437,7 +430,18 @@ domain cut out by:
 
 This theorem asks to derive `DifferentiableOn ℂ g D` from the source package
 `d1N2InvariantKernelSource f` (i.e. from a holomorphic source field on
-`FT_{1,2}` plus invariant factorization). -/
+`FT_{1,2}` plus invariant factorization).
+
+Numerical status (heuristic, 2026-03-04): in the finite ansatz harness
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py`, sampled source
+constraints leave no nonzero antisymmetric mode, and finite-difference
+Wirtinger residual checks report no violation.
+Latest stress run summary:
+- source constraint samples: `9000`
+  (`6000` intrinsic real-spacelike + `3000` z-constructed),
+- source-constrained nullspace dimension: `0`,
+- finite-difference points checked: `300`,
+- max sampled `|∂̄g|`: `0.0` (step `1e-6`). -/
 theorem blocker_d1N2InvariantBridgeAnalyticity_fromSource_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f) :
@@ -471,7 +475,8 @@ to all of `D`.
 Numerical status (heuristic support): sampled `z`-constructed witnessed-domain
 point clouds tested in
 `ProofHarness/d1n2_tail_four_critical_lemma_checks.py` are consistently
-KNN-connected (single dominant component). -/
+KNN-connected (single dominant component; latest run on 2026-03-04:
+`4000/4000` points in one component, `1` component total, `k=10`). -/
 theorem blocker_d1N2InvariantBridgePreconnected_fromSource_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f) :
@@ -497,40 +502,39 @@ This is the anchor identity for the same swap-difference
 `g(q0,q1,p,s) := f q0 q1 p s - f q1 q0 p (-s)`:
 on points satisfying
 1. the quadric relation,
-2. both intrinsic witness inequalities,
-3. real-slice conditions `q0.im = q1.im = p.im = s.im = 0`,
+2. real-slice conditions `q0.im = q1.im = p.im = s.im = 0`,
+3. real-spacelike inequality `q0.re + q1.re - 2*p.re > 0`,
 prove `g(q0,q1,p,s) = 0`.
 
-This is the real-slice correction datum that feeds the invariant-core theorem. -/
+This is the real-slice correction datum that feeds the invariant-core theorem.
+
+Numerical status (heuristic, 2026-03-04): no finite-ansatz falsifier found in
+`ProofHarness/d1n2_tail_four_critical_lemma_checks.py` on sampled real-slice
+spacelike correction tuples (both intrinsic and z-constructed samplers).
+Latest stress run summary:
+- correction-anchor samples: `9000`
+  (`3000` real-FT z + `3000` phase-locked z + `3000` intrinsic),
+- direct z-family correction-hit rate: `30000/30000`,
+- worst sampled `|g|` on correction anchors: `0.0` (threshold `1e-6`). -/
 theorem blocker_d1N2InvariantBridgeCorrection_fromSource_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f) :
     ∀ q0 q1 p s : ℂ,
       s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-      (∃ v0 : ℂ,
-        0 < v0.im ∧
-        0 < ((-q0) / v0).im ∧
-        0 < ((q0 - p - s / 2) / v0).im ∧
-        0 < (((p - s / 2 - q0) * v0 / q0).im)) →
-      (∃ w0 : ℂ,
-        0 < w0.im ∧
-        0 < ((-q1) / w0).im ∧
-        0 < ((q1 - p + s / 2) / w0).im ∧
-        0 < (((p + s / 2 - q1) * w0 / q1).im)) →
       q0.im = 0 →
       q1.im = 0 →
       p.im = 0 →
       s.im = 0 →
+      q0.re + q1.re - 2 * p.re > 0 →
       f q0 q1 p s = f q1 q0 p (-s) := by
   let _ := hsource
-  intro q0 q1 p s hquad hOrigFT hSwapFT hq0im hq1im hpim hsim
+  intro q0 q1 p s hquad hq0im hq1im hpim hsim hsp
   let _ := hquad
-  let _ := hOrigFT
-  let _ := hSwapFT
   let _ := hq0im
   let _ := hq1im
   let _ := hpim
   let _ := hsim
+  let _ := hsp
   -- Roadmap for this deferred bridge:
   -- 1) Geometric/change-of-variables part (already formalized):
   --    witness inequalities -> section points in `FT_{1,2}`, and via `hf_onFT`
@@ -585,20 +589,11 @@ theorem d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invarian
     (hCorrection :
       ∀ q0 q1 p s : ℂ,
         s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-        (∃ v0 : ℂ,
-          0 < v0.im ∧
-          0 < ((-q0) / v0).im ∧
-          0 < ((q0 - p - s / 2) / v0).im ∧
-          0 < (((p - s / 2 - q0) * v0 / q0).im)) →
-        (∃ w0 : ℂ,
-          0 < w0.im ∧
-          0 < ((-q1) / w0).im ∧
-          0 < ((q1 - p + s / 2) / w0).im ∧
-          0 < (((p + s / 2 - q1) * w0 / q1).im)) →
         q0.im = 0 →
         q1.im = 0 →
         p.im = 0 →
         s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
         f q0 q1 p s = f q1 q0 p (-s)) :
     d1N2InvariantKernelDiffZeroOnForwardizableQuadric f := by
   let _ := hsource
@@ -609,7 +604,7 @@ theorem d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invarian
 the remaining blocker is to derive the three invariant-function hypotheses from
 `d1N2InvariantKernelSource f`:
 analyticity + witnessed-locus preconnectedness + real-slice witnessed
-correction. -/
+spacelike correction. -/
 theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invariantOnly_core_deferred
     (f : ℂ → ℂ → ℂ → ℂ → ℂ)
     (hsource : d1N2InvariantKernelSource f) :
@@ -649,20 +644,11 @@ theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invaria
   have hCorrection :
       ∀ q0 q1 p s : ℂ,
         s ^ 2 = 4 * (p ^ 2 - q0 * q1) →
-        (∃ v0 : ℂ,
-          0 < v0.im ∧
-          0 < ((-q0) / v0).im ∧
-          0 < ((q0 - p - s / 2) / v0).im ∧
-          0 < (((p - s / 2 - q0) * v0 / q0).im)) →
-        (∃ w0 : ℂ,
-          0 < w0.im ∧
-          0 < ((-q1) / w0).im ∧
-          0 < ((q1 - p + s / 2) / w0).im ∧
-          0 < (((p + s / 2 - q1) * w0 / q1).im)) →
         q0.im = 0 →
         q1.im = 0 →
         p.im = 0 →
         s.im = 0 →
+        q0.re + q1.re - 2 * p.re > 0 →
         f q0 q1 p s = f q1 q0 p (-s) :=
     blocker_d1N2InvariantBridgeCorrection_fromSource_deferred f hsource
   exact d1N2InvariantKernelDiffZeroOnForwardizableQuadric_of_source_and_invariantBridgeInputs

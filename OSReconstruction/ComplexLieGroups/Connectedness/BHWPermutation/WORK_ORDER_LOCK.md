@@ -37,7 +37,7 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 - This theorem takes exactly the three intrinsic invariant-function inputs:
   1. witnessed-locus differentiability of the swap-difference,
   2. witnessed-locus preconnectedness,
-  3. real-slice witnessed correction rule for `f`.
+  3. real-slice spacelike correction rule for `f`.
 - The source-to-invariant bridge is locked to three explicit deferred lemmas:
   1. `blocker_d1N2InvariantBridgeAnalyticity_fromSource_deferred`,
   2. `blocker_d1N2InvariantBridgePreconnected_fromSource_deferred`,
@@ -51,20 +51,21 @@ This lock file tracks only the active analytic blocker for the `d=1, n=2` route.
 - Numerical checks support only the intrinsic witness-inequality translation
   (section-coordinate FT inequalities ↔ invariant inequalities), not the full
   proofs of (1)-(3).
-- Correction-hypothesis fix:
-  - the correction premise in the invariant core is now stated on real
-    invariant tuples together with the intrinsic paired witness inequalities.
-  - the standalone spacelike-sign variant
-    (`q0.re + q1.re - 2*p.re > 0`) was removed from the correction premise
-    because it is incompatible with real paired-witness inequalities.
-  - `blocker_d1N2InvariantBridgeCorrection_fromSource_deferred` must target this
-    corrected witnessed correction statement (not the removed spacelike-sign
-    variant).
+- Correction-hypothesis lock (current statement):
+  - the correction premise in the invariant core is:
+    quadric relation + real-slice conditions + spacelike inequality
+    `q0.re + q1.re - 2*p.re > 0`.
+  - no explicit `ForwardTube`/`D1N2Config`/Lorentz-action terms appear in this
+    correction premise.
+  - `blocker_d1N2InvariantBridgeCorrection_fromSource_deferred` targets this
+    intrinsic real-slice spacelike correction statement.
 - Source-implies-correction status:
-  - deriving the current real-slice witnessed correction premise from
+  - deriving the current real-slice spacelike correction premise from
     `d1N2InvariantKernelSource` remains deferred bridge work.
-  - a formal counterexample still records that the older spacelike-only
-    correction variant is not source-forced for arbitrary off-image values.
+  - a formal counterexample records that source data alone does not force
+    arbitrary off-image values of `f` on that real-spacelike set, so bridge
+    closure must include the source-to-invariant analytic/boundary
+    identification step.
   - harness theorem:
     `ProofHarness/D1N2SourceCorrectionCounterexample.lean`
     (`d1N2InvariantKernelSource_not_sufficient_for_realSpacelikeCorrection_nonzero`).
@@ -196,6 +197,20 @@ Run this in parallel with constructive proof work to avoid proving a false targe
      - antisym basis size: 440
      - nullspace dim: 0 (no nonzero sampled antisymmetric ansatz survives)
    - no sampled counterexample found.
+
+## Numerical Test Interpretability Note (2026-03-04)
+- Harness assumptions are aligned with current theorem statements
+  (quadric + real slice + spacelike).
+- Current stress-run counts from
+  `ProofHarness/d1n2_tail_four_critical_lemma_checks.py`:
+  - correction anchors: `9000`,
+  - complex witnessed-domain points: `4000`,
+  - source-constraint points: `9000`,
+  - direct z-family correction hits: `30000/30000`.
+- Therefore tests 1/3/4 are not vacuous empty-domain checks; they evaluate the
+  antisymmetric kernel on populated sampled domains.
+- Test 2 is also non-vacuous in sampling, but remains a finite-ansatz
+  differentiability surrogate (not a formal analytic proof).
 
 Counterexample harness file:
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/ProofHarness/D1N2CounterexampleSearch.lean`
