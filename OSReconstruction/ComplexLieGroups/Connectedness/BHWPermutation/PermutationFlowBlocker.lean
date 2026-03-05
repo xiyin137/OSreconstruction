@@ -20,6 +20,13 @@ for a fixed permutation `σ` with `σ ≠ 1` and `n ≥ 2`, prove that the seed 
 `permSeedSet (d := d) n σ` is connected. This is purely geometric/topological
 and independent of the analytic data of a field `F`.
 
+Here
+`permSeedSet (d := d) n σ = ExtendedTube d n ∩ PermutedForwardTube d n σ⁻¹`,
+so explicitly
+`permSeedSet = {z | z ∈ ExtendedTube d n ∧ permAct (d := d) σ⁻¹ z ∈ ForwardTube d n}`.
+Equivalently: points `z` already in ET whose inverse-`σ` reorder lies in the
+forward tube.
+
 Role in the BHW pipeline:
 this connectedness is converted (via
 `isConnected_permSeedSet_iff_permForwardOverlapSet`) to connectedness of the
@@ -27,7 +34,17 @@ forward-overlap set, which is then used by the identity-theorem step that
 propagates permutation equality of `extendF` on overlap domains.
 
 This single blocker is shared by both nontrivial dimension branches (`d ≥ 2`
-and `d = 1`) in `iterated_eow_permutation_extension`. -/
+and `d = 1`) in `iterated_eow_permutation_extension`.
+
+Numerical status (heuristic):
+- The active stress campaign for this assertion is run via
+  `/private/tmp/permseed_connectivity_campaign.py` (graph-connectivity surrogate
+  on sampled `permSeedSet` points).
+- Completed campaign (2026-03-05), `d=1,n=2` slice:
+  `SUPPORTED` in 5/6 seeds and `POTENTIAL_FALSIFIER_FOUND` in 1/6 seeds
+  (same outcome for `eps=1e-10` and `eps=1e-12`).
+- Implication for assertion validity on this tested slice (`d=1,n=2`):
+  numerical evidence is mixed, with a sampled potential falsifier in one seed. -/
 theorem blocker_isConnected_permSeedSet_nontrivial
     (n : ℕ)
     (σ : Equiv.Perm (Fin n))
@@ -49,7 +66,27 @@ if `z` and `σ · z` both lie in `ExtendedTube 1 n`, then
 Role in the BHW pipeline:
 this is exactly the missing `hExtPerm` input for the `d = 1` branch of
 `iterated_eow_permutation_extension`, after the `d = 0` case is excluded and
-the `d ≥ 2` branch is handled separately. -/
+the `d ≥ 2` branch is handled separately.
+
+Numerical status (heuristic, finite ansatz):
+- Relative-defect metric used:
+  `δ(inv) = |g(inv)| / (|f(inv)| + |f_swap(inv)|)`, where
+  `g(q0,q1,p,s) = f(q0,q1,p,s) - f(q1,q0,p,-s)`.
+- Run (2026-03-04, seeds `20261300..20261303`) from
+  `/private/tmp/d1n2_forwardwitness_relative_defect.py` with degree-3
+  antisymmetric ansatz, `source_samples=1200`, `wide_samples=8000`.
+- On sampled forwardizable domain (`wide`):
+  `δ_p99 ≈ [5.33e-15, 8.47e-15]`,
+  `δ_max ≈ [4.75e-14, 7.80e-14]`.
+- On sampled source domain:
+  `δ_p99 ≈ [1.33e-14, 1.81e-13]`,
+  `δ_max ≈ [1.06e-13, 3.42e-12]`.
+- `δ` was defined on all sampled points (`defined_fraction = 1.0` in all seeds).
+- Interpretation: in this tested ansatz class, the relative antisymmetry defect
+  is numerically very small on both source and wide samples.
+- Implication for assertion validity (under this tested ansatz + `δ` metric):
+  **no numerical falsifier detected**; the sampled data are supportive of the
+  lemma assertion. -/
 theorem blocker_iterated_eow_hExtPerm_d1_nontrivial
     (n : ℕ)
     (F : (Fin n → Fin (1 + 1) → ℂ) → ℂ)
