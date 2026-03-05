@@ -123,7 +123,10 @@ Checklist:
 
 - `README.md`, `OSReconstruction/Wightman/TODO.md`, `OSReconstruction/SCV/TODO.md`, and `OSReconstruction/ComplexLieGroups/TODO.md` must stay consistent with the census above.
 - If counts change, update docs in the same commit as proof changes.
-- Keep historical docs (`docs/PROOF_OUTLINE.md`, `docs/bargmann_hall_wightman_gap_analysis.md`, `docs/sorry_analysis.md`, `claude_for_codex.md`) clearly marked as non-canonical snapshots.
+- Keep historical docs (`docs/PROOF_OUTLINE.md`, `docs/sorry_analysis.md`, `claude_for_codex.md`) clearly marked as non-canonical snapshots.
+- Keep active BHW status centralized in `docs/BHW_STATUS.md` and local
+  implementation status in
+  `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/BLOCKER_STATUS.md`.
 
 ## 10. Verification Commands
 

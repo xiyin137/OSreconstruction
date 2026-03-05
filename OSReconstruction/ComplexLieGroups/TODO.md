@@ -5,7 +5,9 @@ Last updated: 2026-02-27
 Plan sync:
 - Source recommendations: `claude_to_codex.md`
 - Canonical execution plan: `docs/development_plan_systematic.md`
-- Active local strategy notes: `docs/bhw_connectedness_strategy.md`
+- Canonical BHW status: `docs/BHW_STATUS.md`
+- Local permutation blocker status:
+  `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/BLOCKER_STATUS.md`
 
 ## Sorry Status
 

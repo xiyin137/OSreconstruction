@@ -10,7 +10,8 @@ This TODO tracks only the proof blockers on the path to the OS reconstruction th
 
 For the active BHW closure subgoals, see:
 - `docs/development_plan_systematic.md`
-- `docs/bhw_connectedness_strategy.md`
+- `docs/BHW_STATUS.md`
+- `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/BLOCKER_STATUS.md`
 - `claude_to_codex.md` (source analysis and recommendations)
 
 Count convention in this file: direct tactic holes only, i.e.

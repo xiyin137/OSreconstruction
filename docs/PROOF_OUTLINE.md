@@ -45,7 +45,7 @@ The multi-D edge-of-the-wedge 1D slicing (`edge_of_the_wedge_slice`) is fully pr
 the full multi-D theorem is promoted to a named axiom due to the gap-point problem
 (see [gap analysis](edge_of_the_wedge_gap_analysis.md)). The Bargmann-Hall-Wightman theorem
 is promoted to a named axiom due to missing complex Lie group infrastructure
-(see [gap analysis](bargmann_hall_wightman_gap_analysis.md)).
+(see [BHW status](BHW_STATUS.md)).
 
 ---
 
@@ -321,7 +321,7 @@ integrals and Osgood's lemma, all formalized in the `SCV/` module.
 Promoted to a named axiom (no `sorryAx`). The proof requires connectedness of
 SO⁺(1,d;ℂ), the identity theorem on complex manifolds, and holomorphicity of the
 group action — none of which are available in Mathlib (~1200-1700 LOC to formalize).
-See [gap analysis](bargmann_hall_wightman_gap_analysis.md) for full details.
+See [BHW status](BHW_STATUS.md) for current details.
 
 ---
 
@@ -501,7 +501,7 @@ Layer 6: Main Theorems
 | Category | IDs | Count | Notes |
 |----------|-----|-------|-------|
 | **Deep complex analysis** | ~~#0a, #0b1, #1~~ | 0 | #0a, #0b1 proved; #1 now proved as theorem (was axiom, see [history](edge_of_the_wedge_gap_analysis.md)) |
-| **BHW theorem** | ~~#2~~ | 0 | Promoted to axiom ([details](bargmann_hall_wightman_gap_analysis.md)) |
+| **BHW theorem** | ~~#2~~ | 0 | Promoted to axiom ([details](BHW_STATUS.md)) |
 | **R→E axiom verification** | #3, #4, #5, #7 | 4 | Independent of each other |
 | **R→E needing BHW** | #6 | 1 | Needs #2 |
 | **E→R analytic continuation** | #8, #9, #10 | 3 | Sequential chain |

@@ -1,6 +1,7 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Adjacency
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.IndexSetD1
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.PermutationFlowBlocker
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SeedSlices
 import OSReconstruction.ComplexLieGroups.D1OrbitSet
 
@@ -2240,26 +2241,35 @@ private theorem iterated_eow_permutation_extension (n : ℕ)
               (by simpa [ExtendedTube, BHWCore.ExtendedTube] using hz)
               (by simpa [ExtendedTube, BHWCore.ExtendedTube] using hσz)
           exact (hσ hσ1).elim
-        · have hd1 : 1 ≤ d := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hd0)
-          have hJostWitness_hd2 :
-              2 ≤ d →
-              (∃ x : Fin n → Fin (d + 1) → ℝ,
+        · by_cases hd2 : 2 ≤ d
+          · have hJostWitness :
+              ∃ x : Fin n → Fin (d + 1) → ℝ,
                 x ∈ JostSet d n ∧
                 realEmbed x ∈ ExtendedTube d n ∧
-                realEmbed (fun k => x (σ k)) ∈ ExtendedTube d n) := by
-            intro hd2
-            simpa using
-              JostWitnessGeneralSigma.jostWitness_exists (d := d) (n := n) hd2 σ
-          -- Remaining geometric obligations in the nontrivial branch:
-          -- `hJostWitness_hd2` provides the local witness for `d ≥ 2`.
-          -- ET-overlap invariance is then reduced (directly) to:
-          --   (a) connectedness of `permOrbitSeedSet` for the `d ≥ 2` route,
-          --       converted via `isConnected_permOrbitSeedSet_iff_permForwardOverlapSet`,
-          --       then applied to
-          --       `extendF_perm_overlap_of_jostWitness_and_forwardOverlapConnected`,
-          -- plus the separate `d = 1` branch (which cannot use the same real
-          -- Jost-witness mechanism).
-          sorry
+                realEmbed (fun k => x (σ k)) ∈ ExtendedTube d n := by
+              simpa using
+                JostWitnessGeneralSigma.jostWitness_exists (d := d) (n := n) hd2 σ
+            have hseed_conn : IsConnected (permOrbitSeedSet (d := d) n σ) := by
+              simpa [permOrbitSeedSet] using
+                blocker_isConnected_permSeedSet_nontrivial
+                  (d := d) n σ hσ hn
+            have hFwd_conn : IsConnected (permForwardOverlapSet (d := d) n σ) :=
+              (isConnected_permOrbitSeedSet_iff_permForwardOverlapSet
+                (d := d) n σ).1 hseed_conn
+            intro z hz hσz
+            have hσz_perm : permAct (d := d) σ z ∈ ExtendedTube d n := by
+              simpa [permAct] using hσz
+            have hmain :=
+              extendF_perm_overlap_of_jostWitness_and_forwardOverlapConnected
+                (d := d) n F hF_holo hF_lorentz hF_bv hF_local
+                σ hJostWitness hFwd_conn z hz hσz_perm
+            simpa [permAct] using hmain
+          · have hd1 : 1 ≤ d := Nat.succ_le_of_lt (Nat.pos_of_ne_zero hd0)
+            have hle : d ≤ 1 := Nat.not_lt.mp hd2
+            have hd_eq1 : d = 1 := Nat.le_antisymm hle hd1
+            subst hd_eq1
+            exact blocker_iterated_eow_hExtPerm_d1_nontrivial
+              n F hF_holo hF_lorentz hF_bv hF_local σ hσ hn
       exact iterated_eow_permutation_extension_of_extendF_perm n F hF_holo hF_lorentz
         hF_bv hF_local σ hExtPerm
 
