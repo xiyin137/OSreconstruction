@@ -672,6 +672,185 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
   simp only [G₁, G₂, Function.comp, e.symm_apply_apply] at this
   exact this
 
+/-! ### Boundary Value Recovery on Forward Tube -/
+
+/-- Distributional boundary values on the forward tube are recovered by
+    integrating the real-boundary trace.
+
+    This is the forward-tube specialization of `SCV.boundary_value_recovery`
+    transported through the flattening equivalence. -/
+theorem boundary_value_recovery_forwardTube {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    {T : SchwartzNPoint d n → ℂ}
+    (hT_cont : Continuous T)
+    (h_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
+    (f : SchwartzNPoint d n) :
+    T f = ∫ x : NPointDomain d n, F (fun k μ => (x k μ : ℂ)) * (f x) := by
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
+    differentiableOn_flatten hF
+  let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+  let Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ := fun φ => T (pullback φ)
+  have hTflat_cont : Continuous Tflat := hT_cont.comp pullback.continuous
+  have hTflat_bv : ∀ (φ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+      (ηflat : Fin (n * (d + 1)) → ℝ), ηflat ∈ ForwardConeFlat d n →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          G (fun i => ↑(x i) + ↑ε * ↑(ηflat i) * Complex.I) * φ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (Tflat φ)) := by
+    intro φ ηflat hηflat
+    obtain ⟨η, hη, rfl⟩ := hηflat
+    have hconv := h_bv (pullback φ) η hη
+    have harg : ∀ (y : NPointDomain d n) (ε : ℝ),
+        (flattenCLEquiv n (d + 1)).symm (fun i =>
+          ↑((flattenCLEquivReal n (d + 1)) y i) +
+          ↑ε * ↑((flattenCLEquivReal n (d + 1)) η i) * Complex.I) =
+        fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I := by
+      intro y ε; funext k μ
+      simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+        Equiv.symm_apply_apply]
+    have heq : ∀ ε : ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          (G (fun i => ↑(x i) + ↑ε * ↑((flattenCLEquivReal n (d + 1)) η i) * Complex.I) * φ x) =
+        ∫ y : NPointDomain d n,
+          (F (fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I) * (pullback φ) y) := by
+      intro ε
+      rw [integral_flatten_change_of_variables]
+      congr 1; ext y
+      show F (e.symm _) * φ (eR y) =
+        F _ * (pullback φ) y
+      rw [harg]
+      rfl
+    exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
+  let pushforward : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR.symm
+  let fFlat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ := pushforward f
+  have hrecover := SCV.boundary_value_recovery
+    (forwardConeFlat_isOpen d n)
+    (forwardConeFlat_convex d n)
+    (forwardConeFlat_nonempty d n)
+    (forwardConeFlat_isCone d n)
+    hG_diff hTflat_cont hTflat_bv fFlat
+  have hpull_push : pullback fFlat = f := by
+    ext y
+    simp [pullback, fFlat, pushforward, eR]
+  have hleft : Tflat fFlat = T f := by
+    simp [Tflat, hpull_push]
+  have hright :
+      (∫ x : Fin (n * (d + 1)) → ℝ, G (SCV.realEmbed x) * fFlat x) =
+      (∫ y : NPointDomain d n, F (fun k μ => (y k μ : ℂ)) * (f y)) := by
+    rw [integral_flatten_change_of_variables]
+    congr 1; ext y
+    have hFarg : F (e.symm (SCV.realEmbed (eR y))) = F (fun k μ => (y k μ : ℂ)) := by
+      congr 1
+      funext k μ
+      simp [e, eR, SCV.realEmbed]
+    have hfarg : fFlat (eR y) = f y := by
+      simp [fFlat, pushforward, eR]
+    calc
+      G (SCV.realEmbed (eR y)) * fFlat (eR y)
+          = F (e.symm (SCV.realEmbed (eR y))) * f y := by
+              simp [G, hfarg]
+      _ = F (fun k μ => (y k μ : ℂ)) * f y := by rw [hFarg]
+  calc
+    T f = Tflat fFlat := hleft.symm
+    _ = ∫ x : Fin (n * (d + 1)) → ℝ, G (SCV.realEmbed x) * fFlat x := hrecover
+    _ = ∫ y : NPointDomain d n, F (fun k μ => (y k μ : ℂ)) * (f y) := hright
+
+/-- The real-boundary trace of a holomorphic forward-tube function with tempered
+    distributional boundary values is continuous.
+
+    This is the forward-tube specialization of Vladimirov's boundary continuity
+    theorem (`SCV.fourierLaplace_boundary_continuous`) transported through the
+    flattening equivalence. -/
+theorem boundary_function_continuous_forwardTube {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    {T : SchwartzNPoint d n → ℂ}
+    (hT_cont : Continuous T)
+    (h_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f))) :
+    Continuous (fun x : NPointDomain d n => F (fun k μ => (x k μ : ℂ))) := by
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
+    differentiableOn_flatten hF
+  let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+  let Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ := fun φ => T (pullback φ)
+  have hTflat_cont : Continuous Tflat := hT_cont.comp pullback.continuous
+  have hTflat_bv : ∀ (φ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+      (ηflat : Fin (n * (d + 1)) → ℝ), ηflat ∈ ForwardConeFlat d n →
+      Filter.Tendsto (fun ε : ℝ =>
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          G (fun i => ↑(x i) + ↑ε * ↑(ηflat i) * Complex.I) * φ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (Tflat φ)) := by
+    intro φ ηflat hηflat
+    obtain ⟨η, hη, rfl⟩ := hηflat
+    have hconv := h_bv (pullback φ) η hη
+    have harg : ∀ (y : NPointDomain d n) (ε : ℝ),
+        (flattenCLEquiv n (d + 1)).symm (fun i =>
+          ↑((flattenCLEquivReal n (d + 1)) y i) +
+          ↑ε * ↑((flattenCLEquivReal n (d + 1)) η i) * Complex.I) =
+        fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I := by
+      intro y ε; funext k μ
+      simp only [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply,
+        Equiv.symm_apply_apply]
+    have heq : ∀ ε : ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          (G (fun i => ↑(x i) + ↑ε * ↑((flattenCLEquivReal n (d + 1)) η i) * Complex.I) * φ x) =
+        ∫ y : NPointDomain d n,
+          (F (fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I) * (pullback φ) y) := by
+      intro ε
+      rw [integral_flatten_change_of_variables]
+      congr 1; ext y
+      show F (e.symm _) * φ (eR y) =
+        F _ * (pullback φ) y
+      rw [harg]
+      rfl
+    exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hconv
+  let hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n) G :=
+    SCV.exists_fourierLaplaceRepr
+      (forwardConeFlat_isOpen d n)
+      (forwardConeFlat_convex d n)
+      (forwardConeFlat_nonempty d n)
+      hG_diff hTflat_cont hTflat_bv
+  have hcont_flat : Continuous (fun x : Fin (n * (d + 1)) → ℝ => G (SCV.realEmbed x)) :=
+    SCV.fourierLaplace_boundary_continuous
+      (forwardConeFlat_isOpen d n)
+      (forwardConeFlat_convex d n)
+      (forwardConeFlat_nonempty d n)
+      hG_diff hRepr
+  have hcont_prod : Continuous (fun y : NPointDomain d n => G (SCV.realEmbed (eR y))) :=
+    hcont_flat.comp eR.continuous
+  refine hcont_prod.congr ?_
+  intro y
+  change F (e.symm (SCV.realEmbed (eR y))) = F (fun k μ => (y k μ : ℂ))
+  congr 1
+  funext k μ
+  simp [e, eR, SCV.realEmbed]
+
 /-! ### Norm Preservation under Flattening -/
 
 /-- The real flattening preserves norms.
@@ -784,7 +963,7 @@ theorem polynomial_growth_forwardTube {d n : ℕ} [NeZero d]
     Ref: Vladimirov §26.2 -/
 private theorem boundary_function_continuous {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    (_hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
     (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
@@ -814,7 +993,7 @@ private theorem boundary_function_continuous {m : ℕ}
     Ref: Vladimirov §25.3; Streater-Wightman, Theorem 2-6 -/
 private theorem polynomial_growth_from_schwartz_bv {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
+    (_hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
     (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
