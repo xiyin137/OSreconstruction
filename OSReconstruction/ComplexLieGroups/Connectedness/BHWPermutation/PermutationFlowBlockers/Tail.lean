@@ -16,7 +16,18 @@ Input is a function `g(q0,q1,p,s)` with:
 2. preconnectedness of that domain,
 3. vanishing on the real-slice spacelike correction locus.
 
-Output is vanishing at every doubly witnessed quadric point. -/
+Output is vanishing at every doubly witnessed quadric point.
+
+Assertion-level numerical surrogate status (2026-03-04, thorough):
+- `ProofHarness/d1n2_tail_four_critical_lemma_checks.py` (test 1),
+  seeds `20260700..20260711` (`12` runs);
+- per run: `corr_samples=4500`, `complex_domain_samples=9000`;
+- `NO_NUMERIC_FALSIFIER_FOUND` in `12/12`, with
+  `max worst_|g| = 3.804785e-11`.
+
+Numerical verdict (assertion-level surrogate): `SUPPORTED` on tested regime.
+
+Finite-sampling caveat: this is numerical support, not a formal proof. -/
 theorem blocker_d1N2InvariantAnalyticPropagation_core_deferred
     (g : (ℂ × ℂ × ℂ × ℂ) → ℂ)
     (hDiffD :
@@ -1269,10 +1280,19 @@ holomorphic identity for the swap-difference can extend from an anchored subset
 to all of `D`.
 
 Numerical status (heuristic support): sampled `z`-constructed witnessed-domain
-point clouds tested in
-`ProofHarness/d1n2_tail_four_critical_lemma_checks.py` are consistently
-KNN-connected (single dominant component; latest run on 2026-03-04:
-`4000/4000` points in one component, `1` component total, `k=10`). -/
+point clouds tested in `ProofHarness/d1n2_tail_four_critical_lemma_checks.py`
+remain consistently KNN-connected.
+
+Thorough run summary (2026-03-04):
+- seeds `20260700..20260711` (`12` runs), each with
+  `complex_domain_samples=9000`;
+- for each run and each `k ∈ {6,8,10,14,20,30}`:
+  `graph_components = 1`, `largest_component_fraction = 1.0`.
+
+Numerical verdict (graph surrogate): `SUPPORTED` on tested regime.
+
+Finite-sampling caveat: this is a graph-surrogate check, not a formal
+topological proof. -/
 theorem blocker_d1N2InvariantBridgePreconnected_fromSource_deferred
     :
     IsPreconnected
@@ -1773,20 +1793,40 @@ theorem blocker_d1N2InvariantKernelDiffZeroOnForwardizableQuadric_source_invaria
 /-- Forward witness equality from the source package, reduced to the invariant
 forwardizable-kernel theorem at `d=1,n=2`.
 
-Assertion-level numerical surrogate status (2026-03-04):
+Assertion-level numerical surrogate status (2026-03-04, thorough rerun):
 - `ProofHarness/d1n2_tail_four_critical_lemma_checks.py`, test 5
   (source-constrained forwardizable-domain equality probe);
-- seeds `20260440..20260445` (`6` runs), all nonvacuous
+- seeds `20260800..20260807` (`8` runs), all nonvacuous
   (`source_constraint_nullspace_dim = 13` each run);
-- per run: `complex_domain_samples=4000`, threshold `1e-9`;
-- status `NO_NUMERIC_FALSIFIER_FOUND` in `6/6` runs, with
-  `max worst_|g| = 2.876696e-11`.
+- per run source fit: `source_samples=1000` (`600` intrinsic + `400`
+  phase-locked), threshold `1e-9`;
+- standard holdout (`25000` forwardizable points/seed):
+  `NO_NUMERIC_FALSIFIER_FOUND` in `8/8`, with
+  `max worst_|g| = 6.427e-11`;
+- wide holdout (`15000` wider-range points/seed):
+  `POTENTIAL_FALSIFIER_FOUND` in `8/8`, with
+  `max worst_|g| = 2.482e-05`.
 
-This theorem remains deferred because the source-only boundary-identification
-generation (`hBoundaryId`) is still open here; both test 8 and the formal
-counterexample harness indicate that source data alone is insufficient for that
-boundary-identification shape. Finite-sampling caveat: numerical support for
-test 5 is not a formal proof. -/
+Precision-stability cross-check (2026-03-04):
+- `ProofHarness`-compatible replay on seeds `20260800..20260807`,
+  wide sample count `8000` per seed, using the same sampled tuples and
+  selected coefficient per seed, with full Decimal re-evaluation at
+  precisions `80/120/200` digits;
+- Decimal worst values were in `[2.297e-07, 5.818e-07]`, and the
+  `120`- vs `200`-digit maxima matched to displayed precision
+  (`max rel delta = 0.0` in this run);
+- threshold verdict at `1e-9` remained
+  `POTENTIAL_FALSIFIER_FOUND` in `8/8` for float and all Decimal precisions.
+
+Numerical verdict (assertion-level surrogate): `MIXED`
+(`SUPPORTED` on standard regime, `NOT SUPPORTED` on wide-stress regime).
+
+Interpretation: this finite test suite strongly supports the assertion on the
+standard sampled regime but finds repeatable tension on a wider stress regime,
+so the numeric evidence is mixed and non-conclusive. This theorem remains
+deferred because the source-only boundary-identification generation
+(`hBoundaryId`) is still open here; finite-sampling numerics are not a formal
+proof. -/
 theorem blocker_d1N2ForwardWitnessEq_field_deferred
     (F : (Fin 2 → Fin (1 + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube 1 2))
