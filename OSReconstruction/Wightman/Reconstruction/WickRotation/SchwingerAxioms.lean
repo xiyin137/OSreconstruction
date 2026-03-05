@@ -450,10 +450,15 @@ theorem constructedSchwinger_tempered (Wfn : WightmanFunctions d) (n : ℕ) :
     The multi-dimensional identity theorem is proved in `SCV/IdentityTheorem.lean`
     (modulo Hartogs analyticity).
 
+    This pointwise form requires both Euclidean configurations
+    `wick(x)` and `wick(x + a)` to lie in PET.
+
     Ref: Streater-Wightman, Theorem 2.8 (uniqueness of holomorphic extension to tubes) -/
 theorem F_ext_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
     (a : SpacetimeDim d) (x : NPointDomain d n)
-    (htube : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n) :
+    (htube : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
+    (htube_shift : (fun k => wickRotatePoint (fun μ => x k μ + a μ)) ∈
+      PermutedExtendedTube d n) :
     (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
     (W_analytic_BHW Wfn n).val
       (fun k => wickRotatePoint (fun μ => x k μ + a μ)) := by
@@ -465,7 +470,8 @@ theorem F_ext_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
     split_ifs <;> push_cast <;> ring
   rw [hwick_add]
   exact (bhw_translation_invariant Wfn (wickRotatePoint a)
-    (fun k => wickRotatePoint (x k)) htube).symm
+    (fun k => wickRotatePoint (x k)) htube (by
+      simpa [hwick_add] using htube_shift)).symm
 
 theorem constructedSchwinger_translation_invariant (Wfn : WightmanFunctions d)
     (n : ℕ) (a : SpacetimeDim d) (f g : SchwartzNPoint d n)
@@ -478,11 +484,20 @@ theorem constructedSchwinger_translation_invariant (Wfn : WightmanFunctions d)
   set a' : NPointDomain d n := fun _ => a
   set K : NPointDomain d n → ℂ :=
     fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+  let P : NPointDomain d n → Prop :=
+    fun x => (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n
+  have hP_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume, P x :=
+    ae_euclidean_points_in_permutedTube
+  have hP_shift_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume, P (x + a') := by
+    exact (MeasureTheory.eventually_add_right_iff
+      (μ := (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)))
+      (t := a') (p := P)).2 hP_ae
   -- K is translation-invariant a.e.: K(x) = K(x + a') for a.e. x with wick(x) ∈ PET
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (x + a') := by
-    filter_upwards [ae_euclidean_points_in_permutedTube] with x hx
-    exact F_ext_translation_invariant Wfn n a x hx
+    filter_upwards [hP_ae, hP_shift_ae] with x hx hx_shift
+    exact F_ext_translation_invariant Wfn n a x hx (by
+      simpa [P] using hx_shift)
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (x + a')
       = ∫ x : NPointDomain d n, K (x + a') * (f : NPointDomain d n → ℂ) (x + a') := by

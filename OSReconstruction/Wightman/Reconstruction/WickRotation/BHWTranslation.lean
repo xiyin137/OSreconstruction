@@ -33,43 +33,28 @@ The proof is decomposed into three helpers:
 
 Each helper captures a specific gap in the current formalization infrastructure. -/
 
-/-- The permuted extended tube is closed under constant translation.
+/-- Trivial translation-closure cases for the permuted extended tube.
 
-    For z ∈ PET, z + c ∈ PET for any constant c ∈ ℂ^{d+1}.
+    This records the only currently formalized regimes where closure under
+    `z ↦ z + c` is immediate in our absolute-coordinate PET:
+    - `c = 0` (identity shift),
+    - `n = 0` (empty configuration index).
 
-    In difference variables ξ_k = z_{k+1} - z_k, translation by c leaves all
-    differences unchanged, so the tube condition is trivially preserved. In our
-    absolute-coordinate formulation, the k = 0 condition (Im(z₀) ∈ V₊) changes
-    under translation, but the union over all complex Lorentz transforms in PET
-    compensates.
-
-    Ref: The forward tube in difference variables is trivially translation-invariant;
-    this lemma bridges the gap to our absolute-coordinate definition.
-
-    Status: the `c = 0` and `n = 0` cases are proved directly. The remaining
-    deferred regime is `n > 0` with nonzero shift. -/
+    The nontrivial geometric closure claim (`n > 0`, `c ≠ 0`) is deferred and
+    must be treated separately. -/
 theorem permutedExtendedTube_translation_closed {d n : ℕ} [NeZero d]
     (c : Fin (d + 1) → ℂ)
     (z : Fin n → Fin (d + 1) → ℂ)
-    (hz : z ∈ PermutedExtendedTube d n) :
+    (hz : z ∈ PermutedExtendedTube d n)
+    (hc : c = 0 ∨ n = 0) :
     (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n := by
-  by_cases hc : c = 0
+  rcases hc with hc | hn
   · simpa [hc] using hz
-  by_cases hn : n = 0
   · subst hn
     have hshift : (fun k μ => z k μ + c μ) = z := by
       ext k
       exact Fin.elim0 k
     simpa [hshift] using hz
-  -- In difference coordinates this is immediate (constant shifts cancel in
-  -- successive differences), but our absolute-coordinate `ForwardTube` includes
-  -- the k=0 anchor condition. The missing formal bridge is an explicit
-  -- reconstruction showing the translated point remains in the PET union over
-  -- complex Lorentz transforms and permutations.
-  --
-  -- This is exactly the geometric translation-invariance step in
-  -- Streater-Wightman §2.5.
-  sorry
 
 /-- Core translation-invariance statement for `W_analytic` on
     `ForwardTube d n ∩ (ForwardTube d n - c)`.
@@ -134,11 +119,17 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
         simpa [shiftW] using
         forwardTube_add_real_shift z a hz
       have hshift_diff : Differentiable ℂ shiftW := by
-        simpa [shiftW] using
-          (differentiable_id.add
-            (differentiable_const :
-              Differentiable ℂ (fun _ : Fin n → Fin (d + 1) → ℂ =>
-                (fun _ μ => (a μ : ℂ)))))
+        have hconst_shift :
+            Differentiable ℂ
+              (fun _x : Fin n → Fin (d + 1) → ℂ =>
+                (fun _k : Fin n => fun μ : Fin (d + 1) => (a μ : ℂ))) := by
+          exact
+            (differentiable_const
+              (c := (fun _k : Fin n => fun μ : Fin (d + 1) => (a μ : ℂ))))
+        change Differentiable ℂ
+          (fun z' : Fin n → Fin (d + 1) → ℂ =>
+            z' + (fun _k : Fin n => fun μ : Fin (d + 1) => (a μ : ℂ)))
+        exact differentiable_id.add hconst_shift
       exact (hW_holo _ hz_shift).comp z hshift_diff.differentiableAt.differentiableWithinAt
         (by
           intro y hy
@@ -166,7 +157,7 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
             (fun i => x i - a) := by
           ext i μ
           simp [poincareActNPointDomain, PoincareGroup.pureTranslation_act, sub_eq_add_neg]
-        simpa [g, poincareActNPoint_apply, hInv, harg]
+        simp [g, poincareActNPoint_apply, hInv, harg]
       have hg_add : ∀ x : NPointDomain d n, g (x + aN) = f x := by
         intro x
         rw [hg_shift]
@@ -232,7 +223,7 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
           (nhds (Wfn.W n g - Wfn.W n f)) :=
         Filter.Tendsto.sub hlim₁ hlim₂
       have hW_eq : Wfn.W n g = Wfn.W n f := hW_eq_fg.symm
-      have hW_sub : Wfn.W n g - Wfn.W n f = 0 := by simpa [hW_eq]
+      have hW_sub : Wfn.W n g - Wfn.W n f = 0 := by simp [hW_eq]
       have hdiff0 : Filter.Tendsto
           (fun ε : ℝ =>
             (∫ x : NPointDomain d n,
@@ -312,7 +303,7 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
       calc
         (a • (fun k μ => z k μ + s μ) + b • (fun k μ => z k μ + t μ)) k μ
             = (a : ℂ) * z k μ + (a : ℂ) * s μ + ((b : ℂ) * z k μ + (b : ℂ) * t μ) := by
-                simp [Pi.smul_apply, mul_add, add_assoc, add_comm]
+                simp [Pi.smul_apply, add_assoc]
         _ = ((a : ℂ) + (b : ℂ)) * z k μ + ((a : ℂ) * s μ + (b : ℂ) * t μ) := by
               ring
         _ = z k μ + ((a : ℂ) * s μ + (b : ℂ) * t μ) := by
@@ -332,12 +323,19 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
     have hrep_diff : Differentiable ℂ rep := by
       refine (differentiable_pi).2 ?_
       intro k
-      simpa [rep] using
-        (differentiable_id : Differentiable ℂ (fun s : Fin (d + 1) → ℂ => s))
+      unfold rep
+      exact (differentiable_id : Differentiable ℂ (fun s : Fin (d + 1) → ℂ => s))
     have hconstZ_diff : Differentiable ℂ constZ := by
-      simpa [constZ] using
-        (differentiable_const :
-          Differentiable ℂ (fun _ : Fin (d + 1) → ℂ => (fun k μ => z k μ)))
+      have hconstZ_base :
+          Differentiable ℂ
+            (fun _s : Fin (d + 1) → ℂ =>
+              (fun k : Fin n => fun μ : Fin (d + 1) => z k μ)) := by
+        exact
+          (differentiable_const
+            (c := (fun k : Fin n => fun μ : Fin (d + 1) => z k μ)))
+      change Differentiable ℂ
+        (fun _s : Fin (d + 1) → ℂ => (fun k : Fin n => fun μ : Fin (d + 1) => z k μ))
+      exact hconstZ_base
     have hshift_diff' : Differentiable ℂ (fun s : Fin (d + 1) → ℂ => constZ s + rep s) :=
       hconstZ_diff.add hrep_diff
     have hshift_eq :
@@ -483,10 +481,12 @@ theorem forwardTube_inter_translate_nonempty {d n : ℕ} [NeZero d]
     z_k - z_{k-1}, hence is invariant under simultaneous translation z_k ↦ z_k + c
     for any constant c ∈ ℂ^{d+1}. The BHW extension inherits this property.
 
+    Formal statement uses overlap membership:
+    `z ∈ PET` and `z + c ∈ PET`.
+
     **Proof outline.** By BHW uniqueness (property 5 of `bargmann_hall_wightman`):
     1. F_ext is holomorphic on PET (BHW property 1).
-    2. G(z) := F_ext(z + c) is holomorphic on PET (by `permutedExtendedTube_translation_closed`
-       ensuring z + c ∈ PET, composed with the holomorphic affine map z ↦ z + c).
+    2. G(z) := F_ext(z + c) is holomorphic on PET (deferred nontrivial geometry).
     3. G and F_ext agree on FT ∩ (FT - c): for z in this set, G(z) = F_ext(z+c) = W_analytic(z+c)
        = W_analytic(z) = F_ext(z) (using `W_analytic_translation_on_forwardTube` and BHW property 2).
     4. FT ∩ (FT - c) is nonempty and open in PET (`forwardTube_inter_translate_nonempty`).
@@ -498,7 +498,8 @@ theorem bhw_translation_invariant {d n : ℕ} [NeZero d]
     (Wfn : WightmanFunctions d)
     (c : Fin (d + 1) → ℂ)
     (z : Fin n → Fin (d + 1) → ℂ)
-    (hz : z ∈ PermutedExtendedTube d n) :
+    (hz : z ∈ PermutedExtendedTube d n)
+    (_hzc : (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n) :
     (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ) =
     (W_analytic_BHW Wfn n).val z := by
   by_cases hc : c = 0
@@ -523,24 +524,10 @@ theorem bhw_translation_invariant {d n : ℕ} [NeZero d]
   have hFT_open : IsOpen (ForwardTube d n) :=
     BHW_forwardTube_eq (d := d) (n := n) ▸ BHW.isOpen_forwardTube
   -- Step 1: G is holomorphic on PET
-  -- The translation map τ(z)(k)(μ) = z(k)(μ) + c(μ) sends PET into PET
-  -- and is holomorphic, so G = F_ext ∘ τ is holomorphic on PET.
+  -- This is the nontrivial geometric step: for n > 0 and c ≠ 0, one needs a
+  -- corrected translation-geometry statement for PET in absolute coordinates.
   have hG_holo : DifferentiableOn ℂ G (PermutedExtendedTube d n) := by
-    intro z₀ hz₀
-    -- z₀ + c ∈ PET
-    have hz₀c := permutedExtendedTube_translation_closed c z₀ hz₀
-    -- F_ext is differentiable at z₀ + c within PET
-    have hF_at := hF_holo (fun k μ => z₀ k μ + c μ) hz₀c
-    -- The translation map is differentiable
-    -- G = F_ext ∘ τ where τ is affine, and τ maps PET → PET
-    -- Use DifferentiableWithinAt of composition
-    show DifferentiableWithinAt ℂ G (PermutedExtendedTube d n) z₀
-    change DifferentiableWithinAt ℂ
-      (fun z => F_ext (fun k μ => z k μ + c μ)) (PermutedExtendedTube d n) z₀
-    apply DifferentiableWithinAt.comp z₀ hF_at
-    · exact differentiableWithinAt_id.add (differentiableWithinAt_const _)
-    · intro w hw
-      exact permutedExtendedTube_translation_closed c w hw
+    sorry
   -- Step 2: G and F_ext agree on FT ∩ (FT - c)
   -- For z ∈ FT with z + c ∈ FT:
   --   G(z) = F_ext(z + c) = W_analytic(z + c) = W_analytic(z) = F_ext(z)
