@@ -8,6 +8,7 @@ import Mathlib.Topology.Connected.PathConnected
 import Mathlib.Analysis.Convex.Basic
 import Mathlib.Analysis.Analytic.Uniqueness
 import OSReconstruction.SCV.Analyticity
+import OSReconstruction.SCV.Osgood
 
 /-!
 # Identity Theorem for Several Complex Variables
@@ -162,6 +163,54 @@ noncomputable def SCV.flattenCLE (n m : ℕ) :
     (LinearEquiv.piCongrLeft ℂ (fun _ => ℂ)
       (finProdFinEquiv.symm.trans (Equiv.sigmaEquivProd (Fin n) (Fin m)).symm)).symm
 
+/-! ### Coordinate lemmas for `flattenCLE` -/
+
+/-- The inverse of `flattenCLE` recovers coordinates via `finProdFinEquiv`. -/
+theorem SCV.flattenCLE_symm_apply {n m : ℕ}
+    (w : Fin (n * m) → ℂ) (i : Fin n) (j : Fin m) :
+    (SCV.flattenCLE n m).symm w i j = w (finProdFinEquiv (i, j)) := by
+  simp only [SCV.flattenCLE, LinearEquiv.coe_toContinuousLinearEquiv_symm',
+    LinearEquiv.trans_symm, LinearEquiv.symm_symm,
+    LinearEquiv.trans_apply, LinearEquiv.piCurry_apply]
+  unfold LinearEquiv.piCongrLeft Sigma.curry
+  simp
+
+/-- `flattenCLE` maps coordinates via `finProdFinEquiv`. -/
+theorem SCV.flattenCLE_apply {n m : ℕ}
+    (z : Fin n → Fin m → ℂ) (k : Fin (n * m)) :
+    (SCV.flattenCLE n m) z k = z (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := by
+  have h := SCV.flattenCLE_symm_apply ((SCV.flattenCLE n m) z)
+    (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2
+  rw [ContinuousLinearEquiv.symm_apply_apply] at h
+  simp only [Prod.mk.eta, Equiv.apply_symm_apply] at h
+  exact h.symm
+
+/-- Updating a flattened vector at index `k` and unflattening equals a nested update. -/
+theorem SCV.flattenCLE_symm_update {n m : ℕ}
+    (z : Fin n → Fin m → ℂ) (k : Fin (n * m)) (w : ℂ) :
+    (SCV.flattenCLE n m).symm (Function.update ((SCV.flattenCLE n m) z) k w) =
+      Function.update z (finProdFinEquiv.symm k).1
+        (Function.update (z (finProdFinEquiv.symm k).1) (finProdFinEquiv.symm k).2 w) := by
+  ext a b
+  rw [SCV.flattenCLE_symm_apply]
+  by_cases hEq : finProdFinEquiv (a, b) = k
+  · have hab : (a, b) = finProdFinEquiv.symm k :=
+      finProdFinEquiv.injective (hEq.trans (finProdFinEquiv.apply_symm_apply k).symm)
+    rcases Prod.ext_iff.mp hab with ⟨ha, hb⟩
+    subst ha; subst hb
+    rw [finProdFinEquiv.apply_symm_apply]; simp
+  · rw [Function.update_of_ne hEq, SCV.flattenCLE_apply]
+    by_cases ha : a = (finProdFinEquiv.symm k).1
+    · subst ha
+      have hb : b ≠ (finProdFinEquiv.symm k).2 := by
+        intro hb; apply hEq
+        simpa [hb] using (finProdFinEquiv.apply_symm_apply k)
+      simpa using (Function.update_of_ne hb (v := w) (f := z (finProdFinEquiv.symm k).1)).symm
+    · have hz : Function.update z (finProdFinEquiv.symm k).1
+            (Function.update (z (finProdFinEquiv.symm k).1) (finProdFinEquiv.symm k).2 w) a = z a :=
+          Function.update_of_ne ha _ _
+      simpa using (congrFun hz b).symm
+
 /-- **Hartogs analyticity for product-indexed domains**: a function
     `f : (Fin n → Fin m → ℂ) → ℂ` that is ℂ-differentiable on an open set is analytic.
 
@@ -203,5 +252,53 @@ theorem identity_theorem_product {n m : ℕ}
     (fun _ hz => analyticAt_of_differentiableOn_product hU hf hz)
     (fun _ hz => analyticAt_of_differentiableOn_product hU hg hz)
     hconn.isPreconnected hz₀ hagree)
+
+/-! ### Osgood's lemma for product-indexed domains -/
+
+/-- **Osgood's Lemma for product-indexed domains**: A continuous function
+    `f : (Fin n → Fin m → ℂ) → ℂ` on an open set `U` that is holomorphic in
+    each coordinate `(i, j)` separately (with all others fixed) is jointly holomorphic.
+
+    Proof: flatten the domain via `flattenCLE`, transport continuity and separate
+    holomorphicity using `flattenCLE_symm_update`, apply `SCV.osgood_lemma`, then unflatten. -/
+theorem SCV.osgood_lemma_product {n m : ℕ} {U : Set (Fin n → Fin m → ℂ)} (hU : IsOpen U)
+    (f : (Fin n → Fin m → ℂ) → ℂ)
+    (hf_cont : ContinuousOn f U)
+    (hf_sep : ∀ z ∈ U, ∀ i : Fin n, ∀ j : Fin m,
+      DifferentiableAt ℂ (fun w => f (Function.update z i (Function.update (z i) j w))) (z i j)) :
+    DifferentiableOn ℂ f U := by
+  let φ := SCV.flattenCLE n m
+  let f' : (Fin (n * m) → ℂ) → ℂ := fun z => f (φ.symm z)
+  have hU' : IsOpen (φ '' U) := (φ.toHomeomorph.isOpenMap U) hU
+  have hf'_cont : ContinuousOn f' (φ '' U) := by
+    refine hf_cont.comp φ.symm.continuous.continuousOn ?_
+    intro z hz
+    rcases hz with ⟨x, hx, rfl⟩
+    simpa using hx
+  have hf'_sep : ∀ z ∈ φ '' U, ∀ k : Fin (n * m),
+      DifferentiableAt ℂ (fun w => f' (Function.update z k w)) (z k) := by
+    intro z hz k
+    rcases hz with ⟨x, hx, rfl⟩
+    let i : Fin n := (finProdFinEquiv.symm k).1
+    let j : Fin m := (finProdFinEquiv.symm k).2
+    have hfun : (fun w => f' (Function.update (φ x) k w)) =
+        (fun w => f (Function.update x i (Function.update (x i) j w))) := by
+      ext w
+      change f (φ.symm (Function.update (φ x) k w)) =
+        f (Function.update x i (Function.update (x i) j w))
+      rw [show φ.symm (Function.update (φ x) k w) =
+          Function.update x i (Function.update (x i) j w) from by
+        simpa [φ, i, j] using SCV.flattenCLE_symm_update x k w]
+    have hpoint : (φ x) k = x i j := by
+      simp [φ, SCV.flattenCLE_apply, i, j]
+    rw [hfun, hpoint]
+    exact hf_sep x hx i j
+  have hflat : DifferentiableOn ℂ f' (φ '' U) :=
+    SCV.osgood_lemma hU' f' hf'_cont hf'_sep
+  -- Unflatten: f = f' ∘ φ, and φ maps U homeomorphically to φ '' U
+  have hcomp : DifferentiableOn ℂ (f' ∘ φ) U :=
+    hflat.comp φ.differentiableOn (fun z hz => Set.mem_image_of_mem φ hz)
+  have hEq : (f' ∘ φ) = f := by ext z; simp [f', Function.comp]
+  rwa [hEq] at hcomp
 
 end

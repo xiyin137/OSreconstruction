@@ -278,22 +278,7 @@ def realToComplexProduct {n p : ℕ} (x : Fin n → Fin p → ℝ) :
 
 /-! #### CLE coordinate lemmas -/
 
-private lemma flattenCLE_symm_apply {n p : ℕ}
-    (w : Fin (n * p) → ℂ) (i : Fin n) (j : Fin p) :
-    (SCV.flattenCLE n p).symm w i j = w (finProdFinEquiv (i, j)) := by
-  simp only [SCV.flattenCLE, LinearEquiv.coe_toContinuousLinearEquiv_symm',
-    LinearEquiv.trans_symm, LinearEquiv.symm_symm,
-    LinearEquiv.trans_apply, LinearEquiv.piCurry_apply]
-  unfold LinearEquiv.piCongrLeft Sigma.curry; simp
-
-private lemma flattenCLE_apply {n p : ℕ}
-    (z : Fin n → Fin p → ℂ) (k : Fin (n * p)) :
-    (SCV.flattenCLE n p) z k =
-      z (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := by
-  have h := flattenCLE_symm_apply ((SCV.flattenCLE n p) z)
-    (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2
-  rw [ContinuousLinearEquiv.symm_apply_apply] at h
-  simp only [Prod.mk.eta, Equiv.apply_symm_apply] at h; exact h.symm
+-- flattenCLE_symm_apply and flattenCLE_apply are now public in SCV.IdentityTheorem.
 
 /-- **Identity theorem for totally real submanifolds** (product type version).
     Transfer to flat `Fin (n*p) → ℂ` via `flattenCLE`, apply the flat version,
@@ -323,7 +308,7 @@ theorem identity_theorem_totally_real_product
   have hφz₀_real : φ z₀ = realToComplex (fun k => (φ z₀ k).re) := by
     ext k; simp only [realToComplex_apply]
     show (SCV.flattenCLE n p) z₀ k = _
-    rw [flattenCLE_apply]
+    rw [SCV.flattenCLE_apply]
     simp [z₀, realToComplexProduct, Complex.ofReal_re]
   -- Get ε for the real neighborhood
   obtain ⟨ε, hε, hball_V⟩ := Metric.isOpen_iff.mp hV_open x₀ hx₀
@@ -336,7 +321,7 @@ theorem identity_theorem_totally_real_product
         realToComplexProduct (fun i j => y (finProdFinEquiv (i, j))) := by
       ext i j
       show (SCV.flattenCLE n p).symm (realToComplex y) i j = _
-      rw [flattenCLE_symm_apply, realToComplex_apply]; rfl
+      rw [SCV.flattenCLE_symm_apply, realToComplex_apply]; rfl
     rw [h_unflatten]
     apply hf_zero
     apply hball_V
@@ -345,7 +330,7 @@ theorem identity_theorem_totally_real_product
     intro j; simp only [Pi.sub_apply, Real.norm_eq_abs]
     have h_re : (φ z₀ (finProdFinEquiv (i, j))).re = x₀ i j := by
       show ((SCV.flattenCLE n p) z₀ (finProdFinEquiv (i, j))).re = x₀ i j
-      rw [flattenCLE_apply]
+      rw [SCV.flattenCLE_apply]
       simp [z₀, realToComplexProduct, Equiv.symm_apply_apply, Complex.ofReal_re]
     rw [← h_re]; exact hy (finProdFinEquiv (i, j))
   -- Apply local vanishing
