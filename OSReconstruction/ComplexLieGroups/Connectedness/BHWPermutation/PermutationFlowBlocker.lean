@@ -37,14 +37,14 @@ This single blocker is shared by both nontrivial dimension branches (`d ≥ 2`
 and `d = 1`) in `iterated_eow_permutation_extension`.
 
 Numerical status (heuristic):
-- The active stress campaign for this assertion is run via
-  `/private/tmp/permseed_connectivity_campaign.py` (graph-connectivity surrogate
-  on sampled `permSeedSet` points).
-- Completed campaign (2026-03-05), `d=1,n=2` slice:
-  `SUPPORTED` in 5/6 seeds and `POTENTIAL_FALSIFIER_FOUND` in 1/6 seeds
-  (same outcome for `eps=1e-10` and `eps=1e-12`).
-- Implication for assertion validity on this tested slice (`d=1,n=2`):
-  numerical evidence is mixed, with a sampled potential falsifier in one seed. -/
+- Refined campaign (2026-03-05), `d=1,n=2` slice:
+  `/private/tmp/permseed_d1n2_refined.py` (8 seeds × 2 eps × k ∈ {5,10,20,40,80}).
+  `SUPPORTED` in ALL 80 trials (n_components=1, largest_frac=1.0).
+- Root cause of earlier mixed result: old sampler used Im(θ) ∈ [-1,1] which
+  MISSES the valid boost range Im(θ) ∈ (π/2, 3π/2) ≈ (1.57, 4.71) required
+  for the d=1,n=2 swap case. The "potential falsifier" was a sampling artifact
+  (sparse, biased coverage of permSeedSet), not genuine disconnectedness.
+- Implication: numerical evidence now strongly supports the assertion for d=1,n=2. -/
 theorem blocker_isConnected_permSeedSet_nontrivial
     (n : ℕ)
     (σ : Equiv.Perm (Fin n))
