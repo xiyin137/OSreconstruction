@@ -120,6 +120,14 @@ def AnalyticContinuationRegion (d k r : ℕ) [NeZero d] :
     distributions, the spectral representation of reflection-positive functionals,
     and the extraction of one-sided Fourier support from E0' + E2.
 
+    Current status: this theorem is still **schematic**. The actual missing
+    mathematics is not only the Osgood/joint-holomorphicity assembly, but also
+    the extraction of the slice-wise Paley-Wiener hypotheses (one-sided Fourier
+    support and polynomial growth for each fixed slice) from `OS` and `lgc`.
+    Those slice hypotheses are not yet formalized as separate inputs, so the
+    theorem remains an under-explained continuation step rather than a finished
+    theorem-level interface.
+
     Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 (Paley-Wiener);
     Vladimirov §26 (Fourier-Laplace representation) -/
 theorem inductive_analytic_continuation {d : ℕ} [NeZero d]
@@ -136,20 +144,23 @@ theorem inductive_analytic_continuation {d : ℕ} [NeZero d]
   -- 1. One-sided Fourier support from E0' + E2 (spectral condition from
   --    reflection positivity + linear growth)
   -- 2. Polynomial growth in each variable from E0'
-  -- Given these, the Paley-Wiener theorem (paley_wiener_one_step_simple in
-  -- PaleyWiener.lean) extends holomorphicity from the real line to the upper
-  -- half-plane in the (r+1)-th spacetime coordinate.
+  -- Given these, the one-dimensional Paley-Wiener theorem
+  -- (`paley_wiener_one_step_simple` in PaleyWiener.lean) extends each fixed
+  -- slice in the new coordinate to the upper half-plane.
   -- Joint holomorphicity then follows from Osgood's lemma.
   --
-  -- The assembly of paley_wiener_one_step + Osgood into the region extension
-  -- is a routine but technically involved plumbing exercise. We decompose:
+  -- The remaining work is not just Osgood/plumbing. One still has to formalize
+  -- the slice-wise Paley-Wiener inputs extracted from `OS` and `lgc`, then
+  -- assemble those slice extensions into the region-level continuation.
+  -- We decompose:
   -- Step 1: For each fixed z' in C_k^(r), the r-th coordinate slice satisfies PW
   -- Step 2: The PW extension gives holomorphicity in the new coordinate
   -- Step 3: Osgood's lemma gives joint holomorphicity on C_k^(r+1)
   -- Step 4: Agreement on C_k^(r) follows from equality of distributional boundary values
   --
-  -- Each step depends on infrastructure from PaleyWiener.lean (which has sorry
-  -- for paley_wiener_one_step_simple but is correctly typed).
+  -- Each step depends on infrastructure from PaleyWiener.lean. The 1D helper
+  -- `paley_wiener_one_step_simple` is now proved; the remaining blocker here is
+  -- the multi-variable slice assembly together with Osgood/local boundedness.
   sorry
 
 /-! ### Full analytic continuation from Euclidean to forward tube

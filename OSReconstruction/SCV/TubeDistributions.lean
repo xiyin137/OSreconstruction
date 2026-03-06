@@ -76,25 +76,18 @@ namespace SCV
 
 /-- **Continuous boundary values for tube-domain holomorphic functions.**
 
-    If F is holomorphic on a tube domain T(C) and has distributional boundary
-    values (the smeared integrals ∫ F(x+iεη)f(x)dx converge as ε→0⁺), then
-    F extends continuously to the real boundary: for each real point x,
-    `ContinuousWithinAt F (TubeDomain C) (realEmbed x)`.
+    Warning: this theorem currently overstates what follows from distributional
+    boundary values alone.
 
-    This is a fundamental result connecting the distributional and pointwise
-    theories of boundary values of holomorphic functions on tube domains.
+    A holomorphic function on a tube domain can have tempered distributional
+    boundary values without extending continuously to every real boundary point;
+    the one-variable example `F(z)=1/z` on the upper half-plane already shows
+    this. So the current theorem statement should eventually be replaced by a
+    version with stronger hypotheses, for example an explicitly continuous
+    boundary function.
 
-    The proof (not formalized here) proceeds by:
-    1. The Fourier-Laplace representation: F(z) = ∫ e^{iz·ξ} dμ(ξ) where μ is
-       a tempered distribution supported in the dual cone C*
-    2. The Laplace integral converges absolutely for Im(z) ∈ C and extends
-       continuously to Im(z) → 0 by dominated convergence
-    3. The boundary value of this representation is the distributional boundary
-       value of F
-
-    Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §26.2;
-    Epstein, J. Math. Phys. 1 (1960) 524-531;
-    Streater-Wightman, Theorem 2-9 -/
+    It is kept only because several downstream files still depend on this
+    placeholder interface. -/
 theorem continuous_boundary_tube {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))

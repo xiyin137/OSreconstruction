@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-05 (rev 3)
+Last updated: 2026-03-06 (rev 4)
 
 This file tracks blockers on the active OS reconstruction path with current priority order.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -12,12 +12,12 @@ Count convention: direct tactic holes only (`^\s*sorry\b`).
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
 | `OSReconstruction/Wightman` | 34 |
-| `OSReconstruction/SCV` | 12 |
+| `OSReconstruction/SCV` | 11 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
 | `OSReconstruction/vNA` | 40 |
-| **Whole project** | **88** |
+| **Whole project** | **87** |
 
-_Count cross-checked 2026-03-05 by `rg '^\s*sorry\b' --glob '*.lean'` (awk sum = 89)._
+_Count cross-checked 2026-03-06 on tracked `.lean` files via `git ls-files | xargs rg '^\s*sorry\b'`._
 _BHWTranslation.lean was incorrectly listed with 5 sorrys; actual count is 1._
 _BHWExtension.lean: W_analytic_swap_distributional_agree and analytic_boundary_local_commutativity are NOW PROVED (0 sorrys)._
 _GNSHilbertSpace.lean: covariance_preHilbert was proved; 1 sorry remains (vacuum_unique part 2, spectral theory)._
@@ -40,6 +40,37 @@ Correct fix requires migrating to `EuclideanSpace ℝ (Fin m)` — deferred.
 distributional boundary-value recovery of the function-induced tempered distribution,
 not false pointwise boundary equality `F_ext|_ℝ = f`.
 
+`paley_wiener_one_step`: Narrowed 2026-03-06 to the correct one-variable
+slice-extension region. The previous statement overclaimed holomorphic extension
+on the full set `{z | Im(z_r) > 0}` with no control on the other coordinates.
+
+`SCV/FourierLaplaceCore.lean`: now sorry-free. The Schwartz family `ψ_z` and
+the candidate Fourier-Laplace extension input have been formalized there, so the
+remaining `paley_wiener_half_line` blocker is the paired holomorphicity/growth
+argument plus boundary-value convergence, not the basic Schwartz construction.
+`SCV/PaleyWiener.schwartz_functional_bound` is also now proved, so the abstract
+continuity hypothesis for tempered distributions has already been converted into
+finite Schwartz-seminorm control.
+`SCV/FourierLaplaceCore.schwartzPsiZ_seminorm_horizontal_bound` is now proved,
+so the horizontal-line polynomial growth of the test family `ψ_{x+iη}` is also
+formalized before the final pairing step.
+`SCV/PaleyWiener.schwartz_functional_horizontal_growth` is now proved, so the
+growth part of the 1D Fourier-Laplace pairing has been reduced to the actual
+candidate used in `paley_wiener_half_line`.
+`SCV/FourierLaplaceCore.schwartzCLM_seminorm_horizontal_growth` is also now
+proved, so the generic horizontal-growth estimate survives passage through any
+continuous Schwartz-space endomorphism. This is the reusable estimate needed
+for the Fourier transform and the linear symbol `ξ ↦ I ξ` in the holomorphicity
+step.
+`SCV/PaleyWiener.fourierLaplaceExt_derivCandidate_horizontal_growth` is now
+proved as well, so the derivative-side horizontal growth for the candidate
+Fourier-Laplace pairing is no longer part of the `paley_wiener_half_line`
+blocker.
+The 1D Paley-Wiener statement has also been repaired to the correct input type:
+the active theorem now takes a bundled continuous complex-linear Schwartz
+functional, matching the analytic continuation target, rather than a merely
+real-linear map.
+
 See `Proofideas/paley_wiener_definition_analysis.lean` for full analysis.
 
 ### isConnected_permutedExtendedTube_inter_translate (BHWTranslation.lean)
@@ -55,6 +86,15 @@ Path B (identity theorem on connected component only) is an alternative if gener
 ALL active sorrys (LaplaceSchwartz, PaleyWiener, BochnerTubeTheorem, OSToWightman,
 SchwingerAxioms) ultimately require **Fourier-Laplace theory for tube domains** (Vladimirov §25-26),
 which is NOT in Mathlib. No partial proof is available without this infrastructure.
+
+### Boundary Continuity Warning (2026-03-06)
+
+The current `SCV.fourierLaplace_continuousWithinAt` / `SCV.continuous_boundary_tube`
+interface is too strong. Distributional boundary values alone do not force a
+continuous pointwise boundary extension; `F(z)=1/z` on the upper half-plane is
+the basic counterexample. This means several downstream uses that currently
+quote boundary continuity are resting on a false placeholder interface and
+will need redesign around weaker boundary-value statements.
 
 ## Root Blocker Layers
 
@@ -96,14 +136,17 @@ Cluster transfer:
 - `bhw_pointwise_cluster_euclidean`
 - `W_analytic_cluster_integral`
 
-### 3) Shared SCV Infrastructure (13 total, load-bearing)
+### 3) Shared SCV Infrastructure (11 total, load-bearing)
 
-`SCV/PaleyWiener.lean` (5):
+First correction needed:
+- replace the false boundary-continuity interface in
+  `LaplaceSchwartz.lean` / `TubeDistributions.lean`
+
+`SCV/PaleyWiener.lean` (4):
 - `paley_wiener_half_line`
 - `paley_wiener_cone`
 - `paley_wiener_converse`
 - `paley_wiener_one_step`
-- `paley_wiener_one_step_simple`
 
 `SCV/LaplaceSchwartz.lean` (5):
 - `fourierLaplace_continuousWithinAt`

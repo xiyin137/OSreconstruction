@@ -91,15 +91,18 @@ Vladimirov §25-26.
 
 /-- **Continuous boundary extension from Fourier-Laplace representation.**
 
-    If F is holomorphic on T(C) and has a Fourier-Laplace representation
-    (i.e., F(z) = T(e^{iz·}) for a tempered distribution T with support in C*),
-    then F extends continuously to the real boundary.
+    Warning: this statement is currently too strong and is retained only as the
+    placeholder that downstream files still depend on.
 
-    The proof (Vladimirov §26.2) uses dominated convergence: the Laplace integral
-    representation F(z) = ∫ e^{iz·ξ} dμ(ξ) converges absolutely for Im(z) ∈ C,
-    and the integrand is bounded by an integrable function uniformly as Im(z) → 0.
+    Mere tempered distributional boundary values do **not** imply a continuous
+    pointwise boundary extension in general. In one complex variable, `F(z)=1/z`
+    on the upper half-plane has a tempered distributional boundary value
+    (`pv(1/x) - iπδ₀`) but no continuous extension at `x = 0`.
 
-    This is a hard analytic result requiring Paley-Wiener-Schwartz theory. -/
+    So the intended replacement should require stronger hypotheses, most likely
+    an actual continuous boundary function (or a similarly strong regularity
+    assumption), rather than only the distributional boundary-value data
+    currently packaged by `HasFourierLaplaceRepr`. -/
 theorem fourierLaplace_continuousWithinAt {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
