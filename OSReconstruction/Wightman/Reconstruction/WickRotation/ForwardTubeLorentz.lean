@@ -26,7 +26,7 @@ These axioms specialize the general tube domain results from `SCV.TubeDistributi
 to the forward tube `T_n = { z ∈ ℂ^{n(d+1)} | Im(z_k - z_{k-1}) ∈ V₊ }`.
 
 The forward tube is a tube domain over the product cone `V₊^n` in difference coordinates.
-The rigorous transport results used here are the strong flattened-input theorems
+The rigorous transport results used here are the regular flattened-input theorems
 from `ForwardTubeDistributions`, obtained after the linear change of variables from
 absolute to difference coordinates and the identification
 `Fin n → Fin (d+1) → ℂ ≅ Fin (n*(d+1)) → ℂ`.
@@ -343,22 +343,12 @@ theorem polynomial_growth_on_slice {d n : ℕ} [NeZero d]
   -- chain, which has now been reopened as honest placeholder interface.
   sorry
 
-/-- Proved slice-growth theorem under strong flattened-tube Fourier-Laplace input. -/
-theorem polynomial_growth_on_slice_of_flatStrong {d n : ℕ} [NeZero d]
+/-- Proved slice-growth theorem under regular flattened-tube Fourier-Laplace input. -/
+theorem polynomial_growth_on_slice_of_flatRegular {d n : ℕ} [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
       (F ∘ (flattenCLEquiv n (d + 1)).symm))
-    (hPoly : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
     (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η)
     (ε : ℝ) (hε : ε > 0) :
     ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
@@ -374,8 +364,8 @@ theorem polynomial_growth_on_slice_of_flatStrong {d n : ℕ} [NeZero d]
     rcases Set.mem_singleton_iff.mp hy with rfl
     exact hy0_mem
   obtain ⟨C_bd, N, hC_pos, hbound⟩ :=
-    polynomial_growth_forwardTube_of_flatStrong
-      (d := d) (n := n) hF hRepr hPoly hUniform {y0} isCompact_singleton hK_sub
+    polynomial_growth_forwardTube_of_flatRegular
+      (d := d) (n := n) hF hRegular {y0} isCompact_singleton hK_sub
   refine ⟨C_bd, N, hC_pos, ?_⟩
   intro x
   simpa [y0, mul_assoc, mul_left_comm, mul_comm]

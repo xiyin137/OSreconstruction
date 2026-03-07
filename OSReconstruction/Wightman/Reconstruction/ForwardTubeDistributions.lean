@@ -25,11 +25,11 @@ Weak placeholder interfaces still carried for downstream compatibility:
 These remain open or depend on open SCV placeholder theory and should not be
 treated as settled mathematics.
 
-Rigorous proved transport results under strong flattened-tube input:
+Rigorous proved transport results under regular flattened-tube input:
 
-* `boundary_function_continuous_forwardTube_of_flatStrong`
-* `boundary_value_recovery_forwardTube_of_flatStrong`
-* `distributional_uniqueness_forwardTube_of_flatStrong`
+* `boundary_function_continuous_forwardTube_of_flatRegular`
+* `boundary_value_recovery_forwardTube_of_flatRegular`
+* `distributional_uniqueness_forwardTube_of_flatRegular`
 
 ## Strategy
 
@@ -629,42 +629,23 @@ theorem boundary_function_continuous_forwardTube {d n : ℕ} [NeZero d]
   -- through `exists_fourierLaplaceRepr`, which is the weak BV package only.
   sorry
 
-/-! ### Proved versions under strong flattened FL input -/
+/-! ### Proved versions under regular flattened FL input -/
 
-/-- Proved boundary continuity of the real trace under strong flattened-tube
+/-- Proved boundary continuity of the real trace under regular flattened-tube
     Fourier-Laplace input. -/
-theorem boundary_function_continuous_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
+theorem boundary_function_continuous_forwardTube_of_flatRegular {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
-      (F ∘ (flattenCLEquiv n (d + 1)).symm))
-    (hPoly : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm)) :
     Continuous (fun x : NPointDomain d n => F (fun k μ => (x k μ : ℂ))) := by
   let e := flattenCLEquiv n (d + 1)
   let eR := flattenCLEquivReal n (d + 1)
   let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
   have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
     differentiableOn_flatten hF
-  let hRegular := SCV.HasFourierLaplaceReprRegular.ofStrong
-    (forwardConeFlat_isOpen d n)
-    (forwardConeFlat_convex d n)
-    (forwardConeFlat_nonempty d n)
-    hG_diff hRepr hPoly hUniform
   have hcont_G : Continuous (fun x : Fin (n * (d + 1)) → ℝ => G (SCV.realEmbed x)) :=
-    SCV.fourierLaplace_boundary_continuous
-      (forwardConeFlat_isOpen d n)
-      (forwardConeFlat_convex d n)
-      (forwardConeFlat_nonempty d n)
-      hG_diff hRegular
+    hRegular.boundary_continuous
   have hcomp := hcont_G.comp eR.continuous
   have hEq :
       (fun x : NPointDomain d n => F (fun k μ => (x k μ : ℂ))) =
@@ -683,25 +664,15 @@ theorem boundary_function_continuous_forwardTube_of_flatStrong {d n : ℕ} [NeZe
   rw [hEq]
   exact hcomp
 
-/-- Proved forward-tube boundary-value recovery under strong flattened-tube
+/-- Proved forward-tube boundary-value recovery under regular flattened-tube
     Fourier-Laplace input. -/
-theorem boundary_value_recovery_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
+theorem boundary_value_recovery_forwardTube_of_flatRegular {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
       (F ∘ (flattenCLEquiv n (d + 1)).symm))
-    (hPoly : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
     (f : SchwartzNPoint d n) :
-    hRepr.dist
+    hRegular.dist
       ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
         (flattenCLEquivReal n (d + 1)).symm) f) =
       ∫ x : NPointDomain d n, F (fun k μ => (x k μ : ℂ)) * (f x) := by
@@ -714,12 +685,12 @@ theorem boundary_value_recovery_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
       SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
     SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR.symm
   let fFlat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ := pushforward f
-  have hrecover := SCV.boundary_value_recovery_of_strong
+  have hrecover := SCV.fourierLaplace_boundary_recovery
     (forwardConeFlat_isOpen d n)
     (forwardConeFlat_convex d n)
     (forwardConeFlat_nonempty d n)
     (forwardConeFlat_isCone d n)
-    hG_diff hRepr hPoly hUniform fFlat
+    hG_diff hRegular fFlat
   have hright :
       (∫ x : Fin (n * (d + 1)) → ℝ, G (SCV.realEmbed x) * fFlat x) =
       (∫ y : NPointDomain d n, F (fun k μ => (y k μ : ℂ)) * (f y)) := by
@@ -740,33 +711,17 @@ theorem boundary_value_recovery_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
             rw [hFarg]
   simpa [fFlat, pushforward] using hrecover.trans hright
 
-/-- Proved forward-tube distributional uniqueness under strong flattened-tube
+/-- Proved forward-tube distributional uniqueness under regular flattened-tube
     input for the difference `F₁ - F₂`. -/
-theorem distributional_uniqueness_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
+theorem distributional_uniqueness_forwardTube_of_flatRegular {d n : ℕ} [NeZero d]
     {F₁ F₂ : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF₁ : DifferentiableOn ℂ F₁ (ForwardTube d n))
     (hF₂ : DifferentiableOn ℂ F₂ (ForwardTube d n))
-    (hRepr_G : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+    (hRegular_G : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
       (fun z =>
         (F₁ ∘ (flattenCLEquiv n (d + 1)).symm) z -
         (F₂ ∘ (flattenCLEquiv n (d + 1)).symm) z))
-    (hPoly_G : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-          ‖((F₁ ∘ (flattenCLEquiv n (d + 1)).symm)
-              (fun i => ↑(x i) + ↑(y i) * Complex.I) -
-            (F₂ ∘ (flattenCLEquiv n (d + 1)).symm)
-              (fun i => ↑(x i) + ↑(y i) * Complex.I))‖ ≤
-            C_bd * (1 + ‖x‖) ^ N)
-    (hUniform_G : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖((F₁ ∘ (flattenCLEquiv n (d + 1)).symm)
-              (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) -
-            (F₂ ∘ (flattenCLEquiv n (d + 1)).symm)
-              (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I))‖ ≤
-            C_bd * (1 + ‖x‖) ^ N)
-    (h_dist_zero : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ), hRepr_G.dist f = 0) :
+    (h_dist_zero : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ), hRegular_G.dist f = 0) :
     ∀ z ∈ ForwardTube d n, F₁ z = F₂ z := by
   let e := flattenCLEquiv n (d + 1)
   let G₁ : (Fin (n * (d + 1)) → ℂ) → ℂ := F₁ ∘ e.symm
@@ -775,12 +730,12 @@ theorem distributional_uniqueness_forwardTube_of_flatStrong {d n : ℕ} [NeZero 
     differentiableOn_flatten hF₁
   have hG₂_diff : DifferentiableOn ℂ G₂ (SCV.TubeDomain (ForwardConeFlat d n)) :=
     differentiableOn_flatten hF₂
-  have huniq := SCV.distributional_uniqueness_tube_of_strong
+  have huniq := SCV.distributional_uniqueness_tube_of_regular
     (forwardConeFlat_isOpen d n)
     (forwardConeFlat_convex d n)
     (forwardConeFlat_nonempty d n)
     (forwardConeFlat_isCone d n)
-    hG₁_diff hG₂_diff hRepr_G hPoly_G hUniform_G h_dist_zero
+    hG₁_diff hG₂_diff hRegular_G h_dist_zero
   intro z hz
   have hmem : e z ∈ SCV.TubeDomain (ForwardConeFlat d n) := by
     rw [← forwardTube_flatten_eq_tubeDomain]
@@ -814,23 +769,13 @@ theorem flattenCLEquivReal_norm_eq (n d : ℕ) (x : Fin n → Fin d → ℝ) :
 
 /-! ### Polynomial Growth for the Forward Tube -/
 
-/-- Proved forward-tube polynomial growth under strong flattened-tube
+/-- Proved forward-tube polynomial growth under regular flattened-tube
     Fourier-Laplace input. -/
-theorem polynomial_growth_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
+theorem polynomial_growth_forwardTube_of_flatRegular {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
       (F ∘ (flattenCLEquiv n (d + 1)).symm))
-    (hPoly : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
-            (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
     (K : Set (Fin n → Fin (d + 1) → ℝ)) (hK : IsCompact K)
     (hK_sub : K ⊆ ForwardConeAbs d n) :
     ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
@@ -842,11 +787,6 @@ theorem polynomial_growth_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
   let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
   have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
     differentiableOn_flatten hF
-  let hRegular := SCV.HasFourierLaplaceReprRegular.ofStrong
-    (forwardConeFlat_isOpen d n)
-    (forwardConeFlat_convex d n)
-    (forwardConeFlat_nonempty d n)
-    hG_diff hRepr hPoly hUniform
   let K_flat : Set (Fin (n * (d + 1)) → ℝ) := eR '' K
   have hK_flat_compact : IsCompact K_flat := hK.image eR.continuous
   have hK_flat_sub : K_flat ⊆ ForwardConeFlat d n := Set.image_mono hK_sub
@@ -888,8 +828,8 @@ theorem polynomial_growth_forwardTube_of_flatStrong {d n : ℕ} [NeZero d]
     not be treated as settled mathematics until the flattened-tube growth theorem
     is rebuilt from honest strong Fourier-Laplace input.
 
-    For the rigorous variant already available from strong flattened input, use
-    `polynomial_growth_forwardTube_of_flatStrong`.
+    For the rigorous variant already available from regular flattened input, use
+    `polynomial_growth_forwardTube_of_flatRegular`.
 
     A holomorphic function on `ForwardTube d n` with tempered distributional boundary
     values satisfies polynomial growth estimates: for any compact K ⊆ ForwardConeAbs,

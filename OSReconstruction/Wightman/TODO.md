@@ -48,23 +48,21 @@ Current status:
 - no fake multidimensional Fourier-support interface remains
 - only the 1D and slice-wise theorems are active
 
-`SCV/LaplaceSchwartz.lean` (2):
-- `boundary_continuous` in `HasFourierLaplaceReprRegular.ofStrong`
-- `tube_continuousWithinAt` in `HasFourierLaplaceReprRegular.ofStrong`
+`SCV/LaplaceSchwartz.lean` (0):
 
 Status:
 - the interface split is now honest:
   - weak `HasFourierLaplaceRepr`
   - regular `HasFourierLaplaceReprRegular`
-- `HasFourierLaplaceReprRegular.ofStrong` now takes explicit strong input data
-  (weak BV package + polynomial growth + singularity-free boundary-ray bound)
-- the remaining work is the Vladimirov §26.2 continuity upgrade inside `ofStrong`
+- the fake weak-to-regular upgrade theorem has been removed
+- the real missing theorem is now explicit: construct `HasFourierLaplaceReprRegular`
+  from actual Fourier-Laplace input with the right dual-cone support
 
 `SCV/TubeDistributions.lean` (0):
 
 Status:
 - the weak bare-BV theorem fronts were removed instead of being carried as public placeholders
-- only the rigorous strong variants remain, built from explicit strong input data
+- only the rigorous regular variants remain, built from explicit regular input data
 
 `SCV/BochnerTubeTheorem.lean` (2):
 - `bochner_local_extension`
@@ -88,7 +86,7 @@ Status:
 - the previous proofs hid a weak-to-strong upgrade through SCV placeholder theorems
 - those hidden upgrades have been removed
 - the file now exposes the real forward-tube regularity gaps instead of pretending the weak route is settled
-- proved strong flattened-input transport theorems now exist for:
+- proved regular flattened-input transport theorems now exist for:
   - boundary continuity of the real trace
   - boundary-value recovery
   - distributional uniqueness for a difference with zero flat boundary functional
@@ -124,8 +122,8 @@ Not on the shortest OS reconstruction lane:
 
 ## Execution Order
 
-1. Finish `HasFourierLaplaceReprRegular.ofStrong` in `SCV/LaplaceSchwartz.lean`.
-2. Use that corrected strong-to-regular upgrade in the seven forward-tube boundary theorems in `ForwardTubeDistributions.lean`.
+1. Use the explicit regular flattened-input theorems in the seven forward-tube boundary theorems in `ForwardTubeDistributions.lean`.
+2. Formalize the real strong-to-regular upgrade theorem in `SCV/LaplaceSchwartz.lean`.
 3. Use the repaired forward-tube boundary infrastructure to attack `boundary_values_tempered` in `OSToWightman.lean`.
 4. Then finish the six downstream transfer theorems in `OSToWightman.lean`.
 5. Only after that, return to `SchwingerAxioms`, `ForwardTubeLorentz`, and the remaining Wick-rotation plumbing.

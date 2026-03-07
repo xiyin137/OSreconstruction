@@ -124,71 +124,14 @@ structure HasFourierLaplaceReprRegular {m : ℕ} (C : Set (Fin m → ℝ))
   tube_continuousWithinAt : ∀ (x : Fin m → ℝ),
     ContinuousWithinAt F (TubeDomain C) (realEmbed x)
 
-/-- A strong Fourier-Laplace input gives a regular Fourier-Laplace representation.
+/- The remaining missing theorem in this file should produce
+    `HasFourierLaplaceReprRegular C F` from genuinely strong Fourier-Laplace input:
+    an actual FL transform with the required dual-cone support, together with the
+    corresponding growth and boundary-ray estimates.
 
-    Inputs:
-    - weak BV package `hRepr`
-    - polynomial growth on compact subsets of `C`
-    - singularity-free boundary-ray bound `hUniform`
-
-    The regularity gap is exactly Vladimirov §26.2:
-    - `boundary_continuous` (§26.2): follows from uniform_bound (DCT dominator) +
-      tube_continuousWithinAt (pointwise convergence) via dominated convergence theorem
-    - `tube_continuousWithinAt` (§26.2): follows from uniform_bound (equicontinuity) via
-      Arzelà-Ascoli + the distributional BV (boundary_value) to identify the limit
-
-    The weak BV fields come from `hRepr`; `poly_growth` and `uniform_bound`
-    are filled from the explicit strong input data, leaving
-    only 2 sorrys: `boundary_continuous` and `tube_continuousWithinAt`.
-
-    **Proof strategy for `tube_continuousWithinAt`**:
-    1. `uniform_bound` → {F(·+iεη)} is equicontinuous in x for ε ∈ (0,δ)
-       (Cauchy estimate on z-disk: |∂_x F| ≤ C/r ≤ C'/ε)
-    2. Arzelà-Ascoli → every ε→0+ sequence has a uniformly convergent subsequence
-    3. `boundary_value` + DCT (with uniform_bound as dominator) → all limit points equal T(·)
-    4. `eq_zero_of_schwartz_integral_zero` → the limit is unique → F(·+iεη) converges
-    5. ContinuousWithinAt follows from the uniform limit of continuous functions
-
-    **Proof strategy for `boundary_continuous`**:
-    From `tube_continuousWithinAt`: F(x+iεη) → F(realEmbed x) as ε → 0+.
-    Uniform convergence on compact sets (from Arzelà-Ascoli step above) → continuity of limit. -/
-noncomputable def HasFourierLaplaceReprRegular.ofStrong {m : ℕ}
-    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
-    (hPoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin m → ℝ), y ∈ K →
-          ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
-    HasFourierLaplaceReprRegular C F where
-  dist := hRepr.dist
-  dist_continuous := hRepr.dist_continuous
-  boundary_value := hRepr.boundary_value
-  poly_growth := hPoly
-  uniform_bound := hUniform
-  boundary_continuous := by
-    -- `boundary_continuous` follows from `tube_continuousWithinAt` (proved below) plus
-    -- Arzelà-Ascoli uniform convergence on compact sets:
-    -- F(·+iεη) converges uniformly on compacts to F(realEmbed ·) (a uniform limit of
-    -- the continuous functions x ↦ F(x+iεη)), so the limit is continuous.
-    -- Requires: uniform_bound (equicontinuity) + boundary_value (limit identification).
-    -- Ref: Vladimirov §26.2
-    sorry
-  tube_continuousWithinAt := by
-    -- ContinuousWithinAt F (TubeDomain C) (realEmbed x₀) for each x₀ ∈ ℝᵐ.
-    -- Proof: sequences in TubeDomain C approaching realEmbed x₀ have F-images converging.
-    -- Key steps:
-    --   1. uniform_bound → equicontinuity of {F(·+iεη)} via Cauchy estimate
-    --   2. Arzelà-Ascoli → subsequential uniform convergence
-    --   3. boundary_value → identification of limit with T(·)
-    --   4. eq_zero_of_schwartz_integral_zero → uniqueness of limit
-    --   5. Full convergence → ContinuousWithinAt
-    -- Ref: Vladimirov §26.2
-    sorry
+    This upgrade is not yet formalized here. Downstream transport theorems therefore
+    take `HasFourierLaplaceReprRegular` explicitly instead of claiming a weak-to-regular
+    upgrade theorem that has not been proved. -/
 
 /-! ### Core Lemmas (Fourier-Laplace Theory)
 
@@ -196,19 +139,6 @@ These lemmas capture the deep content of the Paley-Wiener-Schwartz theorem
 for tube domains. Each is a well-identified mathematical fact from
 Vladimirov §25-26.
 -/
-
-/-- **Interior-to-boundary continuity from regular FL representation.**
-
-    Requires `HasFourierLaplaceReprRegular` (the stronger bundle including
-    `tube_continuousWithinAt`), since bare `HasFourierLaplaceRepr` is insufficient.
-    See `HasFourierLaplaceReprRegular` for the counterexample (F(z)=1/z). -/
-theorem fourierLaplace_continuousWithinAt {m : ℕ}
-    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRegular : HasFourierLaplaceReprRegular C F)
-    (x : Fin m → ℝ) :
-    ContinuousWithinAt F (TubeDomain C) (realEmbed x) :=
-  hRegular.tube_continuousWithinAt x
 
 /-- **Schwartz functions are integrable** (needed for dominated convergence applications).
     Schwartz functions decay rapidly, so they are in every Lp space. -/
@@ -461,20 +391,6 @@ def exists_fourierLaplaceRepr {m : ℕ}
 
 /-! ### Continuity of the Real Boundary Function -/
 
-/-- **Continuity of the real boundary function (from regular FL representation).**
-
-    Requires `HasFourierLaplaceReprRegular`. The missing multidimensional
-    theorem is to construct that structure from an actual Fourier-Laplace
-    representation with dual-cone support.
-
-    Ref: Vladimirov §26.2 -/
-theorem fourierLaplace_boundary_continuous {m : ℕ}
-    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRegular : HasFourierLaplaceReprRegular C F) :
-    Continuous (fun x : Fin m → ℝ => F (realEmbed x)) :=
-  hRegular.boundary_continuous
-
 /-! ### Fundamental Lemma of Distribution Theory
 
 A continuous function that integrates to zero against all Schwartz test functions
@@ -528,19 +444,6 @@ theorem eq_zero_of_schwartz_integral_zero {m : ℕ}
   have h_eq : g = fun _ => 0 :=
     MeasureTheory.Measure.eq_of_ae_eq hae hg continuous_const
   exact fun x => congr_fun h_eq x
-
-theorem fourierLaplace_boundary_integral_convergence {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRegular : HasFourierLaplaceReprRegular C F)
-    (η : Fin m → ℝ) (hη : η ∈ C)
-    (f : SchwartzMap (Fin m → ℝ) ℂ) :
-    Filter.Tendsto (fun ε : ℝ =>
-      ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
-    (nhdsWithin 0 (Set.Ioi 0))
-    (nhds (∫ x, F (realEmbed x) * f x)) :=
-  fourierLaplace_schwartz_integral_convergence hC hconv hne hcone hF hRegular f η hη
 
 end SCV
 

@@ -19,7 +19,7 @@ functions.
 
 ## Axioms
 
-* strong boundary-value and uniqueness transport theorems under explicit strong
+* boundary-value and uniqueness transport theorems under explicit regular
   Fourier-Laplace input data
 
 ## Mathematical Background
@@ -36,7 +36,7 @@ converge as ε → 0⁺ to a tempered distribution.
 **Theorem (Vladimirov):** If F is holomorphic on T(C) and comes from a genuine
 Fourier-Laplace representation with the appropriate cone-support input, then it
 admits continuous boundary behavior and uniqueness properties on the real edge.
-The proved strong variants in this file formalize exactly that stronger route.
+The proved regular variants in this file formalize exactly that stronger route.
 
 These results are proved in:
 - Vladimirov, V.S. "Methods of the Theory of Generalized Functions" (2002), §25-26
@@ -67,102 +67,39 @@ open Complex MeasureTheory Topology Metric Set
 
 namespace SCV
 
-/-! ### Proved versions under strong FL hypothesis
+/-! ### Proved versions under regular FL hypothesis
 
 The weak bare-BV theorem fronts have been removed. The declarations below are
-the rigorous transport results currently justified by explicit strong
-Fourier-Laplace input data:
-- a weak BV package `HasFourierLaplaceRepr`
-- polynomial growth on compact subsets
-- a singularity-free boundary-ray bound
-
-These feed `HasFourierLaplaceReprRegular.ofStrong`.
+the rigorous transport results currently justified by explicit regular
+Fourier-Laplace input data, packaged as `HasFourierLaplaceReprRegular`.
 -/
 
-/-- Boundary continuity on tube domains from strong FL input data. -/
-theorem continuous_boundary_tube_of_strong {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
-    (hPoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin m → ℝ), y ∈ K →
-          ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (x : Fin m → ℝ) :
-    ContinuousWithinAt F (TubeDomain C) (realEmbed x) := by
-  let hRegular := HasFourierLaplaceReprRegular.ofStrong hC hconv hne hF hRepr hPoly hUniform
-  exact hRegular.tube_continuousWithinAt x
-
-/-- Boundary-value recovery on tube domains from strong FL input data. -/
-theorem boundary_value_recovery_of_strong {m : ℕ}
+/-- Zero boundary value on tube domains from regular FL input data. -/
+theorem boundary_value_zero_of_regular {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
-    (hPoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin m → ℝ), y ∈ K →
-          ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (f : SchwartzMap (Fin m → ℝ) ℂ) :
-    hRepr.dist f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x :=
-  fourierLaplace_boundary_recovery hC hconv hne hcone hF
-    (HasFourierLaplaceReprRegular.ofStrong hC hconv hne hF hRepr hPoly hUniform) f
-
-/-- Zero boundary value on tube domains from strong FL input data. -/
-theorem boundary_value_zero_of_strong {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
-    (hPoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin m → ℝ), y ∈ K →
-          ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    (h_dist_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ), hRepr.dist f = 0)
+    (hRegular : HasFourierLaplaceReprRegular C F)
+    (h_dist_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ), hRegular.dist f = 0)
     (x : Fin m → ℝ) : F (realEmbed x) = 0 := by
-  let hRegular := HasFourierLaplaceReprRegular.ofStrong hC hconv hne hF hRepr hPoly hUniform
   have hg_cont := hRegular.boundary_continuous
   have hint : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
       ∫ y : Fin m → ℝ, F (realEmbed y) * f y = 0 := by
     intro f
     have hrecov := fourierLaplace_boundary_recovery hC hconv hne hcone hF hRegular f
-    -- hrecov : hRegular.dist f = ∫ y, F (realEmbed y) * f y
-    -- hRegular.dist f = hRepr.dist f = 0 (by `let`, the body is transparent)
     exact hrecov.symm.trans (h_dist_zero f)
   exact eq_zero_of_schwartz_integral_zero hg_cont hint x
 
-/-- Distributional uniqueness on tube domains from strong FL input data
+/-- Distributional uniqueness on tube domains from regular FL input data
     for the difference G = F₁ - F₂. -/
-theorem distributional_uniqueness_tube_of_strong {m : ℕ}
+theorem distributional_uniqueness_tube_of_regular {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F₁ F₂ : (Fin m → ℂ) → ℂ}
     (hF₁ : DifferentiableOn ℂ F₁ (TubeDomain C))
     (hF₂ : DifferentiableOn ℂ F₂ (TubeDomain C))
-    (hRepr_G : HasFourierLaplaceRepr C (fun z => F₁ z - F₂ z))
-    (hPoly_G : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
-      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (x y : Fin m → ℝ), y ∈ K →
-          ‖(F₁ (fun i => ↑(x i) + ↑(y i) * I) - F₂ (fun i => ↑(x i) + ↑(y i) * I))‖
-            ≤ C_bd * (1 + ‖x‖) ^ N)
-    (hUniform_G : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-          ‖(F₁ (fun i => ↑(x i) + ↑ε * ↑(η i) * I) - F₂ (fun i => ↑(x i) + ↑ε * ↑(η i) * I))‖
-            ≤ C_bd * (1 + ‖x‖) ^ N)
-    (h_dist_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ), hRepr_G.dist f = 0) :
+    (hRegular_G : HasFourierLaplaceReprRegular C (fun z => F₁ z - F₂ z))
+    (h_dist_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ), hRegular_G.dist f = 0) :
     ∀ z ∈ TubeDomain C, F₁ z = F₂ z := by
   -- Use `let` (not `set`) so `hRepr_G` and `h_dist_zero` are NOT renamed by the tactic
   let G : (Fin m → ℂ) → ℂ := fun z => F₁ z - F₂ z
@@ -170,13 +107,13 @@ theorem distributional_uniqueness_tube_of_strong {m : ℕ}
   -- Step 2: G(realEmbed x) = 0 for all x ∈ ℝᵐ
   have hG_boundary : ∀ x : Fin m → ℝ, G (realEmbed x) = 0 :=
     fun x =>
-      boundary_value_zero_of_strong hC hconv hne hcone hG_diff
-        hRepr_G hPoly_G hUniform_G h_dist_zero x
+      boundary_value_zero_of_regular hC hconv hne hcone hG_diff
+        hRegular_G h_dist_zero x
   -- Step 3: G(realEmbed x) = 0 + ContinuousWithinAt at boundary → G = 0 on T(C)
   -- by 1D edge-of-the-wedge slicing
   have hG_cont : ∀ x : Fin m → ℝ,
       ContinuousWithinAt G (TubeDomain C) (realEmbed x) :=
-    fun x => continuous_boundary_tube_of_strong hC hconv hne hG_diff hRepr_G hPoly_G hUniform_G x
+    fun x => hRegular_G.tube_continuousWithinAt x
   intro z hz
   have hG_zero : G z = 0 := by
     let y₀ : Fin m → ℝ := fun i => (z i).im

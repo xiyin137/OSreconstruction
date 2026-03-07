@@ -22,36 +22,29 @@ Breakdown:
 ## Session Summary
 
 - The fake multidimensional support scaffolding was removed from `PaleyWiener.lean`.
-- `LaplaceSchwartz.lean` now has the correct weak/regular split together with
-  an explicit strong-input upgrade theorem:
+- `LaplaceSchwartz.lean` now has the correct weak/regular split:
   - `HasFourierLaplaceRepr`
   - `HasFourierLaplaceReprRegular`
-- `TubeDistributions.lean` now keeps only the proved strong variants; the unused weak
+- `TubeDistributions.lean` now keeps only the proved regular variants; the unused weak
   placeholder fronts were removed.
-- `HasFourierLaplaceReprRegular.ofStrong` now takes explicit strong input data:
-  weak BV package + polynomial growth + singularity-free boundary-ray bound.
+- The unproved weak-to-regular upgrade theorem was removed.
   Rationale: the singularity-free bound `‖F(x+iεη)‖ ≤ C(1+‖x‖)^N` is not
   derivable from `poly_growth` alone (Phragmén-Lindelöf only gives
-  `C(1+‖x‖)^N/ε^k`); it must be supplied by the actual FL-transform input.
+  `C(1+‖x‖)^N/ε^k`), and the remaining Vladimirov §26.2 continuity upgrade
+  should not be hidden behind a fake interface.
 
 ## Load-Bearing Items
 
-### `SCV/LaplaceSchwartz.lean` (2)
-
-Remaining blockers:
-- `boundary_continuous` in `HasFourierLaplaceReprRegular.ofStrong`
-- `tube_continuousWithinAt` in `HasFourierLaplaceReprRegular.ofStrong`
+### `SCV/LaplaceSchwartz.lean` (0)
 
 Meaning:
-- `uniform_bound` is now an explicit input hypothesis of `ofStrong`
-- the remaining 2 sorrys are the Arzelà-Ascoli / DCT boundary convergence arguments
 - the weak/regular split is now honest
-- no fake constructor from weak BV data remains
+- no fake upgrade theorem from weak BV data remains
 
 ### `SCV/TubeDistributions.lean` (0)
 
 Meaning:
-- only the rigorous strong variants remain
+- only the rigorous regular variants remain
 - the unused weak placeholder fronts were removed instead of being carried as public `sorry`s
 
 ### `SCV/BochnerTubeTheorem.lean` (2)
@@ -73,8 +66,9 @@ Status:
 
 ## Execution Order
 
-1. Finish `HasFourierLaplaceReprRegular.ofStrong` in `LaplaceSchwartz.lean`.
-2. Use that strong regularity package directly in downstream flattened-tube transport.
+1. Use the explicit regular package directly in downstream flattened-tube transport.
+2. Return to the real missing theorem: construct `HasFourierLaplaceReprRegular`
+   from actual Fourier-Laplace input with the right dual-cone support.
 3. Return to `BochnerTubeTheorem.lean`.
 
 ## Stable Completed Core
