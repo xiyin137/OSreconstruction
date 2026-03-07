@@ -342,6 +342,21 @@ theorem fourierLaplace_boundary_recovery {m : ℕ}
   have h2 := fourierLaplace_schwartz_integral_convergence hC hconv ⟨η, hη⟩ hcone hF hRegular f η hη
   exact tendsto_nhds_unique h1 h2
 
+/-- The distributional boundary-value functional of a fixed holomorphic tube function is unique
+    once the tube base is nonempty. Any two boundary-value packages for the same `F` must agree,
+    because along a fixed approach direction they are both limits of the same net. -/
+theorem fourierLaplace_repr_dist_unique {m : ℕ}
+    {C : Set (Fin m → ℝ)} (hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ}
+    (hRepr₁ : HasFourierLaplaceRepr C F)
+    (hRepr₂ : HasFourierLaplaceRepr C F) :
+    hRepr₁.dist = hRepr₂.dist := by
+  funext f
+  obtain ⟨η, hη⟩ := hne
+  exact tendsto_nhds_unique
+    (hRepr₁.boundary_value f η hη)
+    (hRepr₂.boundary_value f η hη)
+
 /-- **Polynomial growth of Fourier-Laplace transforms.**
 
     If F has a Fourier-Laplace representation on T(C), then for any compact K ⊆ C,

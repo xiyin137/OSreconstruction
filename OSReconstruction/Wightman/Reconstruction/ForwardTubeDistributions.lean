@@ -20,7 +20,6 @@ Weak placeholder interfaces still carried for downstream compatibility:
 * `continuous_boundary_forwardTube`
 * `distributional_uniqueness_forwardTube`
 * `boundary_value_recovery_forwardTube`
-* `polynomial_growth_forwardTube`
 
 These remain open or depend on open SCV placeholder theory and should not be
 treated as settled mathematics.
@@ -817,80 +816,12 @@ theorem polynomial_growth_forwardTube_of_flatRegular {d n : ℕ} [NeZero d]
   rw [h_norm] at h_flat
   exact h_flat
 
-/-- **Polynomial growth of holomorphic functions on the forward tube.**
+/-- Convert Schwartz-based boundary values on the forward tube into a genuine weak
+    Fourier-Laplace representation on the flattened standard tube domain.
 
-    Current status:
-    this is still the forward-tube transport of a weak SCV growth interface.
-    The honest route needs the strong regular Fourier-Laplace package on the
-    flattened tube.
-
-    So this declaration remains part of the downstream interface, but it should
-    not be treated as settled mathematics until the flattened-tube growth theorem
-    is rebuilt from honest strong Fourier-Laplace input.
-
-    For the rigorous variant already available from regular flattened input, use
-    `polynomial_growth_forwardTube_of_flatRegular`.
-
-    A holomorphic function on `ForwardTube d n` with tempered distributional boundary
-    values satisfies polynomial growth estimates: for any compact K ⊆ ForwardConeAbs,
-    there exist C > 0 and N such that
-
-        ‖F(x + iy)‖ ≤ C · (1 + ‖x‖)^N
-
-    for all real x and imaginary part y ∈ K.
-
-    The boundary value condition is stated in the flat (Fin m → ℂ) coordinates
-    because that is the form required by the current SCV growth interface. The caller
-    (typically `bhw_polynomial_growth_on_euclidean`) must convert from the
-    product-coordinate BV condition to this flat form.
-
-    Ref: Streater-Wightman, Theorem 2-6; Vladimirov §25.3 -/
-theorem polynomial_growth_forwardTube {d n : ℕ} [NeZero d]
-    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
-    (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (h_bv : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (T : (Fin (n * (d + 1)) → ℝ) → ℂ), ContinuousOn T Set.univ ∧
-        ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ),
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin (n * (d + 1)) → ℝ,
-              (F ∘ (flattenCLEquiv n (d + 1)).symm)
-                (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (∫ x, T x * f x)))
-    (K : Set (Fin n → Fin (d + 1) → ℝ)) (hK : IsCompact K)
-    (hK_sub : K ⊆ ForwardConeAbs d n) :
-    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-      ∀ (x : Fin n → Fin (d + 1) → ℝ) (y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
-        ‖F (fun k μ => ↑(x k μ) + ↑(y k μ) * Complex.I)‖ ≤
-          C_bd * (1 + ‖x‖) ^ N := by
-  sorry
-
-private theorem boundary_integral_convergence {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (SCV.TubeDomain C))
-    (h_bv : ∃ (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ), Continuous T ∧
-      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
-        Filter.Tendsto (fun ε : ℝ =>
-          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (T f)))
-    (η : Fin m → ℝ) (hη : η ∈ C) :
-    ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
-      Filter.Tendsto (fun ε : ℝ =>
-        ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-      (nhdsWithin 0 (Set.Ioi 0))
-      (nhds (∫ x, F (SCV.realEmbed x) * f x)) := by
-  -- Blocked: this theorem also needs the strong regular Fourier-Laplace package
-  -- on the flattened tube. The previous proof incorrectly routed through the weak
-  -- constructor `exists_fourierLaplaceRepr`.
-  sorry
-
-/-- Helper: convert Schwartz-based boundary values on the forward tube to the
-    flat-coordinate integrable-function form needed by the current SCV growth interface.
-
-    Ref: Vladimirov §26.2-26.3 -/
-theorem schwartz_bv_to_flat_bv {d n : ℕ} [NeZero d]
+    This is a rigorous weak theorem: it transports only the distributional
+    boundary-value package, not any boundary continuity or growth regularity. -/
+noncomputable def schwartz_bv_to_flat_repr {d n : ℕ} [NeZero d]
     {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
     (h_bv : ∃ (T : SchwartzNPoint d n → ℂ), Continuous T ∧
@@ -901,19 +832,290 @@ theorem schwartz_bv_to_flat_bv {d n : ℕ} [NeZero d]
             F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (T f))) :
-    ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-      ∃ (T : (Fin (n * (d + 1)) → ℝ) → ℂ), ContinuousOn T Set.univ ∧
-        ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ),
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin (n * (d + 1)) → ℝ,
-              (F ∘ (flattenCLEquiv n (d + 1)).symm)
-                (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (∫ x, T x * f x)) := by
-  -- Blocked: converting Schwartz-distributional BV data on the forward tube into a
-  -- continuous flat-boundary witness requires boundary continuity and boundary-value
-  -- recovery on the flattened tube, i.e. the strong regular FL package. The previous
-  -- proof hid this by using weak BV data where strong input was required.
-  sorry
+    SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm) := by
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
+    differentiableOn_flatten hF
+  let T : SchwartzNPoint d n → ℂ := Classical.choose h_bv
+  have hT_cont : Continuous T := (Classical.choose_spec h_bv).1
+  have hBV :
+      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+        InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (T f)) := (Classical.choose_spec h_bv).2
+  let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+  let Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ := fun f => T (pullback f)
+  have hTflat_cont : Continuous Tflat := hT_cont.comp pullback.continuous
+  have hBVflat :
+      ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) (η : Fin (n * (d + 1)) → ℝ),
+        η ∈ ForwardConeFlat d n →
+          Filter.Tendsto
+            (fun ε : ℝ =>
+              ∫ x : Fin (n * (d + 1)) → ℝ,
+                G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (Tflat f)) := by
+    intro f η hη
+    rcases hη with ⟨η', hη', rfl⟩
+    let fProd : SchwartzNPoint d n := pullback f
+    have hEq :
+        (fun ε : ℝ =>
+          ∫ x : Fin (n * (d + 1)) → ℝ,
+            G (fun i => ↑(x i) + ↑ε * ↑((eR η') i) * Complex.I) * f x)
+        =
+        (fun ε : ℝ =>
+          ∫ y : NPointDomain d n,
+            F (fun k μ => ↑(y k μ) + ε * ↑(η' k μ) * Complex.I) * fProd y) := by
+      funext ε
+      rw [integral_flatten_change_of_variables n (d + 1)
+        (fun x : Fin (n * (d + 1)) → ℝ =>
+          G (fun i => ↑(x i) + ↑ε * ↑((eR η') i) * Complex.I) * f x)]
+      congr 1
+      ext y
+      have hFarg :
+          G (fun i => ↑(eR y i) + ↑ε * ↑(eR η' i) * Complex.I) =
+            F (fun k μ => ↑(y k μ) + ε * ↑(η' k μ) * Complex.I) := by
+        change F (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η' i) * Complex.I)) =
+          F (fun k μ => ↑(y k μ) + ε * ↑(η' k μ) * Complex.I)
+        congr 1
+        ext k μ
+        have hyk : eR y (finProdFinEquiv (k, μ)) = y k μ := by
+          simp [eR, flattenCLEquivReal_apply]
+        have hηk : eR η' (finProdFinEquiv (k, μ)) = η' k μ := by
+          simp [eR, flattenCLEquivReal_apply]
+        rw [show (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η' i) * Complex.I)) k μ =
+            (fun i => ↑(eR y i) + ↑ε * ↑(eR η' i) * Complex.I) (finProdFinEquiv (k, μ)) by
+              simp [e, flattenCLEquiv_symm_apply]]
+        simp [hyk, hηk]
+      have hfarg : f (eR y) = fProd y := by
+        simp [fProd, pullback, eR]
+      rw [hFarg, hfarg]
+    have hηcone : InForwardCone d n η' := (inForwardCone_iff_mem_forwardConeAbs η').2 hη'
+    have h := hBV fProd η' hηcone
+    rw [hEq]
+    simpa [Tflat, fProd, pullback] using h
+  exact SCV.exists_fourierLaplaceRepr
+    (forwardConeFlat_isOpen d n)
+    (forwardConeFlat_convex d n)
+    (forwardConeFlat_nonempty d n)
+    hG_diff hTflat_cont hBVflat
+
+/-- The distributional boundary-value functional of `schwartz_bv_to_flat_repr` is the explicit
+    pullback of the original product-coordinate witness. -/
+theorem schwartz_bv_to_flat_repr_dist_apply {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    {T : SchwartzNPoint d n → ℂ}
+    (hT_cont : Continuous T)
+    (h_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
+    (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) :
+    (schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩).dist f =
+      T ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (flattenCLEquivReal n (d + 1))) f) := by
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F ∘ e.symm
+  let pullback : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
+  obtain ⟨ηflat, hηflat⟩ := forwardConeFlat_nonempty d n
+  rcases hηflat with ⟨η, hη, rfl⟩
+  have hflat :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ x : Fin (n * (d + 1)) → ℝ,
+            G (fun i => ↑(x i) + ↑ε * ↑((eR η) i) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds ((schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩).dist f)) :=
+    (schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩).boundary_value f (eR η) ⟨η, hη, rfl⟩
+  have hprod :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ y : NPointDomain d n,
+            F (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) * (pullback f y))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T (pullback f))) :=
+    h_bv (pullback f) η hη
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : Fin (n * (d + 1)) → ℝ,
+          G (fun i => ↑(x i) + ↑ε * ↑((eR η) i) * Complex.I) * f x) =
+      (fun ε : ℝ =>
+        ∫ y : NPointDomain d n,
+          F (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) * (pullback f y)) := by
+    funext ε
+    rw [integral_flatten_change_of_variables n (d + 1)
+      (fun x : Fin (n * (d + 1)) → ℝ =>
+        G (fun i => ↑(x i) + ↑ε * ↑((eR η) i) * Complex.I) * f x)]
+    congr 1
+    ext y
+    have hFarg :
+        G (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I) =
+          F (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) := by
+      change F (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I)) =
+        F (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I)
+      congr 1
+      ext k μ
+      have hyk : eR y (finProdFinEquiv (k, μ)) = y k μ := by
+        simp [eR, flattenCLEquivReal_apply]
+      have hηk : eR η (finProdFinEquiv (k, μ)) = η k μ := by
+        simp [eR, flattenCLEquivReal_apply]
+      rw [show (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I)) k μ =
+          (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I) (finProdFinEquiv (k, μ)) by
+            simp [e, flattenCLEquiv_symm_apply]]
+      simp [hyk, hηk]
+    have hfarg : f (eR y) = pullback f y := by
+      simp [pullback, eR]
+    rw [hFarg, hfarg]
+  have hflat' :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ y : NPointDomain d n,
+            F (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) * (pullback f y))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds ((schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩).dist f)) := by
+    simpa [hEq] using hflat
+  exact tendsto_nhds_unique hflat' hprod
+
+/-- If a forward-tube function carries both a regular flattened tube package and an explicit
+    product-coordinate boundary-value witness, then the two resulting boundary-value functionals
+    agree after flattening. -/
+theorem flatRegular_dist_eq_schwartz_bv {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm))
+    {T : SchwartzNPoint d n → ℂ}
+    (hT_cont : Continuous T)
+    (h_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f))) :
+    hRegular.dist = (schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩).dist := by
+  exact SCV.fourierLaplace_repr_dist_unique
+    (forwardConeFlat_nonempty d n)
+    hRegular.toHasFourierLaplaceRepr
+    (schwartz_bv_to_flat_repr hF ⟨T, hT_cont, h_bv⟩)
+
+/-- Boundary-value recovery on the forward tube from explicit regular flattened input together
+    with product-coordinate BV data. This is the honest bridge used by downstream BHW arguments:
+    regularity is supplied explicitly, while the recovered boundary distribution is still the
+    original product-coordinate witness `T`. -/
+theorem boundary_value_recovery_forwardTube_of_flatRegular_from_bv {d n : ℕ} [NeZero d]
+    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (hRegular : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm))
+    {T : SchwartzNPoint d n → ℂ}
+    (hT_cont : Continuous T)
+    (h_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)))
+    (f : SchwartzNPoint d n) :
+    T f = ∫ x : NPointDomain d n, F (fun k μ => (x k μ : ℂ)) * (f x) := by
+  let h_bv_ex :
+      ∃ (T' : SchwartzNPoint d n → ℂ), Continuous T' ∧
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+          InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (T' f)) := ⟨T, hT_cont, h_bv⟩
+  let hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm) :=
+    schwartz_bv_to_flat_repr hF h_bv_ex
+  let pushforward : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivReal n (d + 1)).symm
+  have hdist :
+      hRegular.dist = hRepr.dist :=
+    SCV.fourierLaplace_repr_dist_unique
+      (forwardConeFlat_nonempty d n) hRegular.toHasFourierLaplaceRepr hRepr
+  have hrecover := boundary_value_recovery_forwardTube_of_flatRegular hF hRegular f
+  have hpush_id :
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivReal n (d + 1)))
+        (pushforward f) = f := by
+    ext x
+    simp [pushforward]
+  have hpush :
+      hRepr.dist (pushforward f) = T f := by
+    simpa [hRepr, h_bv_ex, hpush_id]
+      using schwartz_bv_to_flat_repr_dist_apply hF hT_cont h_bv (pushforward f)
+  calc
+    T f = hRepr.dist (pushforward f) := hpush.symm
+    _ = hRegular.dist (pushforward f) := by
+          simpa using congrArg (fun W => W (pushforward f)) hdist.symm
+    _ = ∫ x : NPointDomain d n, F (fun k μ => (x k μ : ℂ)) * (f x) := hrecover
+
+/-- Distributional uniqueness on the forward tube from explicit regular flattened input plus
+    zero product-coordinate boundary data for the difference. -/
+theorem distributional_uniqueness_forwardTube_of_flatRegular_from_bvZero {d n : ℕ} [NeZero d]
+    {F₁ F₂ : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF₁ : DifferentiableOn ℂ F₁ (ForwardTube d n))
+    (hF₂ : DifferentiableOn ℂ F₂ (ForwardTube d n))
+    (hRegular_G : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
+      (fun z =>
+        (F₁ ∘ (flattenCLEquiv n (d + 1)).symm) z -
+        (F₂ ∘ (flattenCLEquiv n (d + 1)).symm) z))
+    (h_agree : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          ((F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) -
+           (F₂ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds 0)) :
+    ∀ z ∈ ForwardTube d n, F₁ z = F₂ z := by
+  let G : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => F₁ z - F₂ z
+  have hG : DifferentiableOn ℂ G (ForwardTube d n) := hF₁.sub hF₂
+  let h_zero_bv :
+      ∃ (T' : SchwartzNPoint d n → ℂ), Continuous T' ∧
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+          InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              G (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (T' f)) := ⟨0, continuous_const, h_agree⟩
+  let hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+      (fun z =>
+        (F₁ ∘ (flattenCLEquiv n (d + 1)).symm) z -
+        (F₂ ∘ (flattenCLEquiv n (d + 1)).symm) z) :=
+    schwartz_bv_to_flat_repr hG h_zero_bv
+  have hdist :
+      hRegular_G.dist = hRepr.dist :=
+    SCV.fourierLaplace_repr_dist_unique
+      (forwardConeFlat_nonempty d n) hRegular_G.toHasFourierLaplaceRepr hRepr
+  have hdist_zero : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ), hRegular_G.dist f = 0 := by
+    intro f
+    calc
+      hRegular_G.dist f = hRepr.dist f := by
+        simpa using congrArg (fun W => W f) hdist
+      _ = 0 := by
+        simpa [hRepr, h_zero_bv]
+          using schwartz_bv_to_flat_repr_dist_apply hG continuous_const h_agree f
+  exact distributional_uniqueness_forwardTube_of_flatRegular hF₁ hF₂ hRegular_G hdist_zero
 
 end
