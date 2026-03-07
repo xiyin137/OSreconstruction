@@ -14,8 +14,8 @@ Count convention in this file: direct tactic holes only, i.e.
 | `OSReconstruction/SCV` | 11 |
 
 Breakdown:
-- `SCV/LaplaceSchwartz.lean`: 5
-- `SCV/PaleyWiener.lean`: 4
+- `SCV/LaplaceSchwartz.lean`: 7
+- `SCV/TubeDistributions.lean`: 2
 - `SCV/BochnerTubeTheorem.lean`: 2
 
 ## Load-Bearing Items (Priority)
@@ -24,10 +24,11 @@ Breakdown:
    Current `fourierLaplace_continuousWithinAt` / `continuous_boundary_tube`
    is too strong: `F(z)=1/z` on the upper half-plane has tempered
    distributional boundary values but no continuous extension at `0`.
-2. `paley_wiener_half_line` (`PaleyWiener.lean`)
-3. `bochner_local_extension` (`BochnerTubeTheorem.lean`)
+2. `bochner_local_extension` (`BochnerTubeTheorem.lean`)
+3. `holomorphic_extension_from_local_family` usage / local-family geometry
+4. keep `TubeDistributions.lean` aligned with the corrected `LaplaceSchwartz` interface
 
-The first item is a statement-correction task, not a proof task. The other two
+The first item is a statement-correction task, not a proof task. The remaining items
 are the main honest proof leverage points for unblocking downstream
 `Wightman/Reconstruction/WickRotation` sorry chains.
 
@@ -46,57 +47,41 @@ Status note:
   The replacement theorem should use stronger boundary regularity than bare
   tempered distributional boundary values.
 
-### `SCV/PaleyWiener.lean` (4)
+### `SCV/PaleyWiener.lean` (0)
 
-- `paley_wiener_half_line`
-- `paley_wiener_cone`
-- `paley_wiener_converse`
-- `paley_wiener_one_step`
+Status:
+- `PaleyWiener.lean` is now sorry-free.
+- `paley_wiener_half_line` is proved.
+- `paley_wiener_one_step_simple` is proved.
+- `paley_wiener_one_step` is now the honest slice-wise one-variable extension
+  theorem actually used by downstream OS reconstruction work.
+- `FourierLaplaceCore.lean` is sorry-free and remains the load-bearing kernel
+  infrastructure for the 1D Fourier-Laplace argument.
 
-Status note:
-- `FourierLaplaceCore.lean` is now sorry-free and formalizes the Schwartz family
-  `ψ_z` together with the candidate Fourier-Laplace pairing input.
-- `schwartz_functional_bound` is now proved: a continuous Schwartz functional is
-  dominated by finitely many Schwartz seminorms.
-- `schwartzPsiZ_seminorm_horizontal_bound` is now proved: the Schwartz seminorms
-  of `ψ_{x+iη}` grow polynomially along each fixed horizontal line.
-- `schwartz_functional_horizontal_growth` is now proved: combining the previous
-  two items yields polynomial growth of `x ↦ T(ψ_{x+iη})` for every continuous
-  Schwartz functional `T`.
-- `FourierLaplaceCore.schwartzCLM_seminorm_horizontal_growth` is now proved:
-  any continuous linear endomorphism of Schwartz space preserves polynomial
-  horizontal-line seminorm bounds on the family `ψ_{x+iη}`. This removes the
-  generic growth estimate needed for both the Fourier transform and the linear
-  symbol multiplication `ξ ↦ I ξ`.
-- `PaleyWiener.fourierLaplaceExt_derivCandidate_horizontal_growth` is now
-  proved: the candidate derivative pairing `x ↦ T(ℱ[(I ξ) ψ_{x+iη}])` also
-  has polynomial horizontal-line growth.
-- The 1D Paley-Wiener lane has been corrected to the right class of inputs:
-  `paley_wiener_half_line` and the associated Fourier-Laplace extension now use
-  bundled continuous complex-linear functionals on `𝓢(ℝ, ℂ)`, not merely
-  real-linear maps.
-- The remaining honest content in `paley_wiener_half_line` is no longer the
-  Schwartz decay construction or the abstract continuity-to-seminorm bound; it
-  is the holomorphicity of the paired extension and the boundary-value convergence.
-- `paley_wiener_one_step_simple` was proved on 2026-03-06.
-- `paley_wiener_one_step` was narrowed on 2026-03-06 to the correct one-variable
-  slice-extension region; it no longer overclaims extension on the full
-  `{ z | Im(z_r) > 0 }` slab.
+Implication:
+- `PaleyWiener` is no longer the SCV blocker.
+- The active SCV blockers are now `LaplaceSchwartz`, `TubeDistributions`, and
+  `BochnerTubeTheorem`.
 
 ### `SCV/BochnerTubeTheorem.lean` (2)
 
 - `bochner_local_extension`
-- `holomorphic_extension_from_local` (local consistency/gluing branch)
+- `bochner_tube_extension`
+
+Status note:
+- the old generic gluing theorem was too strong and has been replaced by the
+  honest compatible-family theorem `holomorphic_extension_from_local_family`
+- current work should build on that corrected theorem, not on the removed
+  stronger statement
 
 ## Execution Order
 
 1. Correct `LaplaceSchwartz.fourierLaplace_continuousWithinAt` and the dependent
    boundary-continuity wrappers in `TubeDistributions.lean`.
-2. Prove `PaleyWiener.paley_wiener_half_line`.
-3. Propagate the corrected Paley-Wiener/Laplace interfaces through the
+2. Propagate the corrected Paley-Wiener / Laplace interfaces through the
    downstream reconstruction chain.
-4. Prove `BochnerTubeTheorem.bochner_local_extension`.
-5. Close `BochnerTubeTheorem.holomorphic_extension_from_local`.
+3. Prove `BochnerTubeTheorem.bochner_local_extension`.
+4. Re-close `BochnerTubeTheorem.bochner_tube_extension` using the compatible-family theorem.
 
 ## Stable Completed Core (No Sorrys)
 
@@ -106,5 +91,7 @@ Status note:
 - `Analyticity.lean`
 - `TubeDomainExtension.lean`
 - `IdentityTheorem.lean`
+- `FourierLaplaceCore.lean`
+- `PaleyWiener.lean`
 
 `edge_of_the_wedge_theorem` is proved and axiom-free.

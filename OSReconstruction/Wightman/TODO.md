@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-06 (rev 6)
+Last updated: 2026-03-06 (rev 7)
 
 This file tracks blockers on the active OS reconstruction path with current priority order.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -12,10 +12,10 @@ Count convention: direct tactic holes only (`^\s*sorry\b`).
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
 | `OSReconstruction/Wightman` | 35 |
-| `OSReconstruction/SCV` | 11 |
+| `OSReconstruction/SCV` | 15 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
 | `OSReconstruction/vNA` | 40 |
-| **Whole project** | **88** |
+| **Whole project** | **92** |
 
 _Count cross-checked 2026-03-06 via `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`._
 _BHWTranslation.lean was incorrectly listed with 5 sorrys; actual count is 1._
@@ -25,6 +25,8 @@ _OSToWightman.lean: `inductive_continuation_step` RENAMED to `restrict_holomorph
 _OSToWightman.lean: `inductive_continuation_one_slice` REMOVED — was vacuous (Function.update mismatch) and had a contradictory docstring (claimed OneSliceContinuationDomain ⊄ ACR(r), but line 296 proves containment). Correct geometry: ACR(r+1) ⊆ OneSlice ⊆ ACR(r)._
 _OSToWightman.lean: `extract_slice_pw_data` REMOVED — was dead scaffolding (sorry'd, not in active proof chain, provenance gap acknowledged in its own docstring)._
 _OSToWightman.lean: added `OneSliceContinuationDomain` + 5 geometric lemmas (all proved, 0 sorrys)._
+_SCV count increased to 15 (from 11): 4 new sorrys added in LaplaceSchwartz.lean/TubeDistributions.lean to replace false/logically-unsound proofs that relied on the incorrect boundary-continuity interface._
+_BHWTranslation.lean: `bhw_translation_invariant_of_common_perm` PROVED (2026-03-06). Proof uses perm+CLG chain without needing D connected. Limited applicability: requires BOTH z∘π ∈ FT AND (z+c)∘π ∈ FT (common permutation witness). For generic Euclidean x, wick(x) ∈ PET but wick(x)∘π ∉ FT (negative times prevent FT membership). So cannot replace isConnected_permutedExtendedTube_inter_translate for the Euclidean application._
 
 ## Definition Audit (2026-03-05 rev 3)
 
@@ -83,7 +85,25 @@ Gemini consultation (2026-03-05) warns this may be FALSE for general complex c, 
 PET's "starburst" sector structure can fracture under large translations. The standard physics
 approach (Streater-Wightman pg. 65) works in difference variables to avoid this.
 Numerical tests for d=1, n=2 (9 test cases) confirm connectivity — but large n may differ.
-Path B (identity theorem on connected component only) is an alternative if general connectivity fails.
+
+ANALYSIS (2026-03-06 rev 7):
+- For PURELY REAL c (c ∈ ℝ^{d+1}): PET - c = PET (since Im(z+c) = Im(z) for real c and PET
+  conditions are purely on Im). So D = PET ∩ (PET-c) = PET, which is connected. PROVABLE.
+- For c = wick(a) with a_0 = 0 (purely spatial Euclidean translation): wick(a) is purely real,
+  so D = PET. PROVABLE.
+- For c = wick(a) with a_0 ≠ 0 (temporal Euclidean component): wick(a) = (I*a_0, ...) has
+  imaginary time component. D = PET ∩ (PET - wick(a)) ⊊ PET. Connectivity unknown; provably
+  needed (CLG acts linearly and cannot compensate imaginary time shifts).
+
+`bhw_translation_invariant_of_common_perm` (proved) bypasses D connectivity IF a common
+permutation π exists with z∘π ∈ FT AND (z+c)∘π ∈ FT. For Euclidean z = wick(x), this
+requires x(π(k)) 0 increasing with positive first element — fails for generic Euclidean x
+(negative times are common). So `ae_euclidean_common_perm` (∀ᵐ x, ∃ π common for FT) is
+FALSE (not merely hard). The permutation trick does NOT bypass the connectivity sorry for
+generic Euclidean integrals.
+
+Correct proof requires either: (A) connectivity proof for c = wick(a), or (B) reformulation
+of PET in difference variables (making translation invariance definitional).
 
 ### Root Blocker (Confirmed 2026-03-05)
 

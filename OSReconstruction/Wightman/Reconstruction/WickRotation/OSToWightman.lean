@@ -4,7 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
-import OSReconstruction.SCV.BochnerTubeTheorem
+import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesSCV
 
 /-!
 # OS to Wightman (E'→R')
@@ -75,13 +75,16 @@ structure EuclideanSemigroup (OS : OsterwalderSchraderAxioms d) where
     (strict positivity of imaginary parts ⟹ open). This ensures `DifferentiableOn ℂ`
     on C_k^(r) is genuine holomorphicity, not a vacuous condition.
 
-    **Note**: C_k^(d+1) is the full forward tube (Im-differences positive in all
-    directions). To reach the actual forward tube from C_k^(d+1), one needs:
-    1. Euclidean rotation invariance (E1) to extend to SO(d+1)-rotated copies
-    2. Bochner's tube theorem to extend to the convex hull = forward tube
+    **Note**: C_k^(d+1) is the tube over a positive orthant in difference
+    coordinates, not yet the Wightman forward tube. The active reconstruction
+    chain in this file no longer uses the old Bochner/orbit route, so we do not
+    build further geometry on that path here.
 
-    The regions are monotone: C_k^(r) ⊂ C_k^(r+1), and C_k^(0) is disjoint
-    from C_k^(r) for r ≥ 1 (C_k^(0) has Im = 0, C_k^(r) requires Im > 0). -/
+    The regions are monotone in the reverse direction for `r ≥ 1`:
+      C_k^(r+1) ⊆ C_k^(r),
+    since each step adds one more imaginary-positivity constraint. Also
+    `C_k^(0)` is disjoint from `C_k^(r)` for r ≥ 1 (`C_k^(0)` has Im = 0,
+    while `C_k^(r)` requires Im > 0 in at least one direction). -/
 def AnalyticContinuationRegion (d k r : ℕ) [NeZero d] :
     Set (Fin k → Fin (d + 1) → ℂ) :=
   match r with
@@ -133,23 +136,152 @@ theorem isOpen_analyticContinuationRegion_succ {d k r : ℕ} [NeZero d] :
   ext z
   simp [AnalyticContinuationRegion]
 
+private theorem differentiable_unflattenCfg_local (k d : ℕ) :
+    Differentiable ℂ (BHW.unflattenCfg k d :
+      (Fin (k * (d + 1)) → ℂ) → (Fin k → Fin (d + 1) → ℂ)) := by
+  rw [differentiable_pi]
+  intro i
+  rw [differentiable_pi]
+  intro μ
+  simpa [BHW.unflattenCfg] using (differentiable_apply (finProdFinEquiv (i, μ)))
+
+private theorem differentiable_fromDiffFlat_local (k d : ℕ) :
+    Differentiable ℂ (BHW.fromDiffFlat k d) := by
+  unfold BHW.fromDiffFlat
+  exact (BHW.diffCoordEquiv k d).symm.differentiable.comp
+    (differentiable_unflattenCfg_local k d)
+
+private theorem differentiable_flattenCfg_local (k d : ℕ) :
+    Differentiable ℂ (BHW.flattenCfg k d :
+      (Fin k → Fin (d + 1) → ℂ) → (Fin (k * (d + 1)) → ℂ)) := by
+  rw [differentiable_pi]
+  intro i
+  let p : Fin k × Fin (d + 1) := finProdFinEquiv.symm i
+  let projInner :
+      (Fin k → Fin (d + 1) → ℂ) → (Fin (d + 1) → ℂ) := fun z => z p.1
+  let evalInner :
+      (Fin k → Fin (d + 1) → ℂ) →L[ℂ] (Fin (d + 1) → ℂ) :=
+    ContinuousLinearMap.proj (R := ℂ) p.1
+  have hconst :
+      Differentiable ℂ
+        (fun _ : (Fin k → Fin (d + 1) → ℂ) =>
+          (ContinuousLinearMap.proj (R := ℂ) p.2 :
+            (Fin (d + 1) → ℂ) →L[ℂ] ℂ)) :=
+    differentiable_const _
+  simpa [BHW.flattenCfg, p] using
+    (hconst.clm_apply
+      (by simpa [projInner, evalInner] using
+        (differentiable_apply p.1 : Differentiable ℂ projInner)))
+
+private theorem differentiable_toDiffFlat_local (k d : ℕ) :
+    Differentiable ℂ (BHW.toDiffFlat k d) := by
+  unfold BHW.toDiffFlat
+  exact (differentiable_flattenCfg_local k d).comp
+    (BHW.diffCoordEquiv k d).differentiable
+
+/-! ### First-step region as a tube over positive time-differences -/
+
+/-- The flattened cone for `C_k^(1)`: only the time-difference coordinates are
+    constrained to have positive imaginary part. -/
+private def FlatPositiveTimeDiffReal (k d : ℕ) : Set (Fin (k * (d + 1)) → ℝ) :=
+  {u | ∀ i : Fin k, 0 < u (finProdFinEquiv (i, 0))}
+
+private theorem isOpen_flatPositiveTimeDiffReal (k d : ℕ) :
+    IsOpen (FlatPositiveTimeDiffReal k d) := by
+  simp only [FlatPositiveTimeDiffReal, Set.setOf_forall]
+  exact isOpen_iInter_of_finite (fun i : Fin k =>
+    isOpen_lt continuous_const (continuous_apply (finProdFinEquiv (i, 0))))
+
+/-- `C_k^(1)` is exactly the tube over the positive time-difference cone in
+    flattened difference coordinates. -/
+private theorem acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff {d k : ℕ} [NeZero d]
+    (z : Fin k → Fin (d + 1) → ℂ) :
+    z ∈ AnalyticContinuationRegion d k 1 ↔
+      BHW.toDiffFlat k d z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d) := by
+  constructor
+  · intro hz
+    change (fun i => ((BHW.toDiffFlat k d z) i).im) ∈ FlatPositiveTimeDiffReal k d
+    intro i
+    have htime : 0 < (BHW.diffCoordEquiv k d z i 0).im := by
+      by_cases hi : i.val = 0
+      · have h0 := hz i 0 (Nat.le_refl 0)
+        have h0' : 0 < (z i 0).im := by
+          simpa [hi] using h0
+        simpa [BHW.diffCoordEquiv_apply, hi] using h0'
+      · have h1 := hz i 0 (Nat.le_refl 0)
+        have h1' : 0 < (z i 0 - z ⟨i.val - 1, by omega⟩ 0).im := by
+          simpa [hi, Complex.sub_im, sub_pos] using h1
+        simpa [BHW.diffCoordEquiv_apply, hi] using h1'
+    simpa [FlatPositiveTimeDiffReal, BHW.toDiffFlat, BHW.flattenCfg] using htime
+  · intro hz
+    change (fun i => ((BHW.toDiffFlat k d z) i).im) ∈ FlatPositiveTimeDiffReal k d at hz
+    simp only [AnalyticContinuationRegion, Set.mem_setOf_eq]
+    intro i μ hμ
+    have hμ0 : μ = 0 := Fin.ext (Nat.eq_zero_of_le_zero hμ)
+    subst hμ0
+    have hflat : 0 < ((BHW.toDiffFlat k d z) (finProdFinEquiv (i, 0))).im :=
+      hz i
+    have hdiff : 0 < (BHW.diffCoordEquiv k d z i 0).im := by
+      simpa [BHW.toDiffFlat, BHW.flattenCfg] using hflat
+    by_cases hi : i.val = 0
+    · simpa [BHW.diffCoordEquiv_apply, hi] using hdiff
+    · have h1 : 0 < (z i 0 - z ⟨i.val - 1, by omega⟩ 0).im := by
+        simpa [BHW.diffCoordEquiv_apply, hi] using hdiff
+      simpa [hi, Complex.sub_im, sub_pos] using h1
+
+/-- Transport holomorphicity on `C_k^(1)` to the positive-time-difference tube in
+    flattened difference coordinates. -/
+private theorem differentiableOn_toDiffFlat_of_acrone_holo {d k : ℕ} [NeZero d]
+    (F : (Fin k → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (AnalyticContinuationRegion d k 1)) :
+    DifferentiableOn ℂ (fun u : Fin (k * (d + 1)) → ℂ => F (BHW.fromDiffFlat k d u))
+      (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) := by
+  intro u hu
+  have hz : BHW.fromDiffFlat k d u ∈ AnalyticContinuationRegion d k 1 := by
+    have hu' : BHW.toDiffFlat k d (BHW.fromDiffFlat k d u) ∈
+        SCV.TubeDomain (FlatPositiveTimeDiffReal k d) := by
+      simpa [BHW.toDiffFlat_fromDiffFlat (n := k) (d := d) u] using hu
+    exact (acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff
+      (d := d) (k := k) (BHW.fromDiffFlat k d u)).mpr hu'
+  have hF_at : DifferentiableAt ℂ F (BHW.fromDiffFlat k d u) :=
+    (hF_holo _ hz).differentiableAt
+      ((isOpen_analyticContinuationRegion_succ (d := d) (k := k) (r := 0)).mem_nhds hz)
+  exact (hF_at.comp u (by
+    simpa [BHW.fromDiffFlat] using differentiable_fromDiffFlat_local k d u)).differentiableWithinAt
+
+/-- Transport holomorphicity from the positive-time-difference tube in flattened
+    difference coordinates back to `C_k^(1)`. -/
+private theorem differentiableOn_of_toDiffFlat_acrone_holo {d k : ℕ} [NeZero d]
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
+    (hG_holo : DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d))) :
+    DifferentiableOn ℂ (fun z : Fin k → Fin (d + 1) → ℂ => G (BHW.toDiffFlat k d z))
+      (AnalyticContinuationRegion d k 1) := by
+  intro z hz
+  have hu : BHW.toDiffFlat k d z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d) :=
+    (acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff (d := d) (k := k) z).mp hz
+  have hG_at : DifferentiableAt ℂ G (BHW.toDiffFlat k d z) :=
+    (hG_holo _ hu).differentiableAt
+      ((SCV.tubeDomain_isOpen (isOpen_flatPositiveTimeDiffReal k d)).mem_nhds hu)
+  exact (hG_at.comp z (differentiable_toDiffFlat_local k d z)).differentiableWithinAt
+
 /-- **Base step of analytic continuation (r = 0 → r = 1).**
 
-    Extends the Schwinger function S_prev from C_k^(0) (the positive real Euclidean
-    domain) to C_k^(1) (first imaginary component positive). This is a separate case
-    from the general inductive step because C_k^(0) has a *real* positivity constraint
-    (Re(z_i 0) > 0) rather than an imaginary one.
+    Produces the first genuinely holomorphic witness on `C_k^(1)` directly from the
+    Schwinger functional `OS.S k`. This avoids introducing a separate "base-region
+    kernel" on `C_k^(0)`, which would be a stronger and less natural object than the
+    reconstruction chain actually needs.
 
-    **Provenance requirement**: The Kallen-Lehmann argument requires S_prev to be the
-    actual Schwinger function (satisfying the integration identity with OS.S), not an
-    arbitrary holomorphic function on C_k^(0). For a general holomorphic function on
-    C_k^(0), OS and lgc provide no spectral information and Kallen-Lehmann does not apply.
-    The hypothesis `hS_rep` pins this provenance precisely.
+    **Proof route**: The Schwinger function satisfies a Kallen-Lehmann/Laplace-type
+    representation coming from reflection positivity and the spectral condition. That
+    representation yields a holomorphic function on `C_k^(1)` whose Wick-rotated
+    pairing against Schwartz test functions reproduces `OS.S k`.
 
-    **Proof route**: The Schwinger function satisfies
-      S_prev(ξ₁,...,ξₖ) = ∫ exp(-Σᵢ ξᵢ · pᵢ) dμ(p₁,...,pₖ)
-    where dμ is a positive spectral measure supported in the forward cone (from E2).
-    The Laplace transform extends holomorphically to C_k^(1) (imaginary parts positive).
+    In the current file, `C_k^(1)` has already been identified as a tube domain over
+    the positive time-difference cone in flattened difference coordinates via
+    `acr_one_iff_toDiffFlat_mem_tubeDomain_positiveTimeDiff`. So the remaining
+    content is not the geometry of the target domain, but the spectral slice-data
+    extraction that feeds the 1D Paley-Wiener theorem and the separate-to-joint
+    assembly on that tube.
 
     Sorry blocked by: the spectral representation theorem for OS systems (the
     Kallen-Lehmann decomposition for Schwinger functions from E2), which requires
@@ -157,22 +289,45 @@ theorem isOpen_analyticContinuationRegion_succ {d k r : ℕ} [NeZero d] :
 
     Ref: OS II, Section IV (base case of induction); Reed-Simon II, Section X.7;
     Streater-Wightman, §3 (Kallen-Lehmann representation) -/
+private theorem schwinger_continuation_base_step_of_flatWitness {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (k : ℕ)
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
+    (hG_holo : DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)))
+    (hG_euclid : ∀ (f : SchwartzNPoint d k),
+      OS.S k f = ∫ x : NPointDomain d k,
+        G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f x)) :
+    ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k 1) ∧
+      (∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_ext (fun j => wickRotatePoint (x j)) * (f x)) := by
+  let S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ := fun z => G (BHW.toDiffFlat k d z)
+  refine ⟨S_ext, ?_, ?_⟩
+  · simpa [S_ext] using
+      differentiableOn_of_toDiffFlat_acrone_holo (d := d) (k := k) G hG_holo
+  · intro f
+    simpa [S_ext] using hG_euclid f
+
 theorem schwinger_continuation_base_step {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (k : ℕ) (h1 : 1 < d + 1)
-    (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k 0))
-    -- Provenance: S_prev must represent the actual Schwinger function.
-    -- An arbitrary holomorphic function on C_k^(0) does NOT satisfy this and
-    -- cannot be extended via Kallen-Lehmann.
-    (hS_rep : ∀ (f : SchwartzNPoint d k),
-        OS.S k f = ∫ x : NPointDomain d k,
-          S_prev (fun j => wickRotatePoint (x j)) * (f x)) :
+    (k : ℕ) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k 1) ∧
-      ∀ z ∈ AnalyticContinuationRegion d k 0, S_ext z = S_prev z := by
-  sorry
+      (∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_ext (fun j => wickRotatePoint (x j)) * (f x)) := by
+  -- At this point the only missing content is to construct a holomorphic witness
+  -- on the positive time-difference tube in flattened difference coordinates.
+  obtain ⟨G, hG_holo, hG_euclid⟩ :
+      ∃ (G : (Fin (k * (d + 1)) → ℂ) → ℂ),
+        DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) ∧
+        (∀ (f : SchwartzNPoint d k),
+          OS.S k f = ∫ x : NPointDomain d k,
+            G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f x)) := by
+    sorry
+  exact schwinger_continuation_base_step_of_flatWitness OS k G hG_holo hG_euclid
 
 /-- **ξ-shift: the correct one-variable perturbation in the cumulative-sum structure.**
 
@@ -404,151 +559,105 @@ theorem restrict_holomorphic_to_acr_succ {d : ℕ} [NeZero d]
   ⟨S_prev, hS_prev.mono (acr_succ_subset hr_pos), fun _ _ => rfl⟩
 
 
-/-- **Inductive analytic continuation (OS II, Theorem 4.1).**
+/-- **Inductive continuation for `r ≥ 1` (OS II, Theorem 4.1).**
 
-    Given S holomorphic on C_k^(r) WITH OS provenance, extends it analytically to C_k^(r+1).
-
-    **Case r = 0**: handled by `schwinger_continuation_base_step` (spectral/Laplace
-    representation of Schwinger functions as Laplace transforms from E2). The hypothesis
-    `hS_rep` is essential here: an arbitrary holomorphic function on ACR(0) does NOT
-    satisfy Kallen-Lehmann, so holomorphicity alone is insufficient.
-
-    **Case r ≥ 1**: Uses `restrict_holomorphic_to_acr_succ` (restriction via ACR(r+1) ⊆ ACR(r)).
-    The `hS_rep` hypothesis is unused here but carried for interface uniformity.
-
-    The genuinely non-trivial step is r = 0 → 1, where ACR(0) and ACR(1) are DISJOINT
-    (ACR(0) requires Im = 0, ACR(1) requires Im > 0).
+    Once the base-step has produced a holomorphic witness on `C_k^(1)`, every further
+    stage `C_k^(r+1) ⊆ C_k^(r)` is obtained by restriction. The genuinely non-trivial
+    analytic continuation is therefore concentrated in `schwinger_continuation_base_step`;
+    this theorem is only the monotonicity step for the nested domains.
 
     Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 -/
 theorem inductive_analytic_continuation {d : ℕ} [NeZero d]
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (k : ℕ) (r : ℕ) (hr : r < d + 1)
+    (k : ℕ) (r : ℕ) (hr : r < d + 1) (hr_pos : 0 < r)
     (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r))
-    -- Provenance: required at r = 0 for Kallen-Lehmann; carried throughout for interface
-    -- uniformity and to allow future threading of the spectral condition through the chain.
-    (hS_rep : ∀ (f : SchwartzNPoint d k),
-        OS.S k f = ∫ x : NPointDomain d k,
-          S_prev (fun j => wickRotatePoint (x j)) * (f x)) :
+    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r)) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (r + 1)) ∧
       ∀ z ∈ AnalyticContinuationRegion d k r, S_ext z = S_prev z := by
-  rcases Nat.eq_zero_or_pos r with hr0 | hr_pos
-  · -- r = 0: pass provenance to schwinger_continuation_base_step (Kallen-Lehmann).
-    subst hr0
-    exact schwinger_continuation_base_step OS lgc k (by have := NeZero.pos d; omega)
-      S_prev hS_prev hS_rep
-  · -- r ≥ 1: restriction suffices; hS_rep unused here.
-    exact restrict_holomorphic_to_acr_succ k r hr hr_pos S_prev hS_prev
+  exact restrict_holomorphic_to_acr_succ k r hr hr_pos S_prev hS_prev
 
 /-! ### Full analytic continuation from Euclidean to forward tube
 
-After d+1 applications of `inductive_analytic_continuation`, we reach C_k^(d+1),
-a tube over the positive orthant. To reach the full forward tube, we use:
-1. Euclidean rotation invariance (E1) to extend to rotated copies
-2. Bochner's tube theorem to extend to the convex hull = forward tube
+After the base step, the active reconstruction chain already produces a holomorphic
+witness on `C_k^(1)`, and `ForwardTube d k ⊆ C_k^(1)`. So the forward-tube existence
+statement used below no longer depends on the separate Bochner route from
+`C_k^(d+1)`.
 
-Ref: OS II, Sections IV-V; Bochner (1938); Vladimirov Section 20.2 -/
+The older Bochner approach from `C_k^(d+1)` remains mathematically interesting, but
+it is not part of the active OS→Wightman pipeline here. The naive
+"common SO(d+1)-orbit of the positive orthant, then convex hull" story is false, so
+that side development needs a different geometric input before it can be reinstated.
 
-/-- Iterate `inductive_analytic_continuation` d+1 times: from C_k^(0) to C_k^(d+1).
+Ref: OS II, Sections IV-V; Vladimirov Section 20.2 -/
 
-    The invariant P tracks holomorphicity, agreement with S_base on ACR(0), AND the
-    Schwinger provenance condition (needed to call `schwinger_continuation_base_step`
-    at the r = 0 → 1 step via Kallen-Lehmann).
+/-- The forward tube already lies inside the first-step continuation region `C_k^(1)`,
+    since each forward-cone difference has positive time component. -/
+private theorem forwardTube_subset_acr_one {d k : ℕ} [NeZero d] :
+    ForwardTube d k ⊆ AnalyticContinuationRegion d k 1 := by
+  intro z hz
+  rw [forwardTube_eq_imPreimage] at hz
+  simp only [ForwardConeAbs, AnalyticContinuationRegion, Set.mem_setOf_eq] at hz ⊢
+  intro i μ hμ
+  have hμ0 : μ = 0 := Fin.ext (Nat.eq_zero_of_le_zero hμ)
+  have htime :
+      0 <
+        ((z i 0).im -
+          ((if h : i.val = 0 then (0 : Fin (d + 1) → ℝ)
+            else fun ν => (z ⟨i.val - 1, by omega⟩ ν).im) 0)) := (hz i).1
+  subst hμ0
+  have htime' :
+      ((if h : i.val = 0 then (0 : Fin (d + 1) → ℂ) else z ⟨i.val - 1, by omega⟩) 0).im <
+        (z i 0).im := by
+    by_cases hi : i.val = 0
+    · simpa [hi, sub_pos] using htime
+    · simpa [hi, sub_pos] using htime
+  simpa [Complex.sub_im, sub_pos] using htime'
 
-    - r = 0 → 1: Uses `schwinger_continuation_base_step`. Provenance `hS_next_rep` is
-      sorry'd pending the BV theorem for Laplace transforms (the genuine mathematical blocker).
-    - r ≥ 1: Uses `acr_succ_subset` directly (ACR(r+1) ⊆ ACR(r)), returning S_r itself.
-      No sorry: provenance and base-agreement carry over tautologically.
+/-- Iterate analytic continuation from the base-step witness on `C_k^(1)` to `C_k^(d+1)`.
+
+    The real analytic continuation starts at `r = 1`, not `r = 0`: the base-step
+    theorem `schwinger_continuation_base_step` produces the first holomorphic witness
+    on `ACR(1)` directly from the Schwinger functional. For `r ≥ 1`, all further steps
+    are restrictions along the inclusions `ACR(r+1) ⊆ ACR(r)`.
+
+    This avoids treating `ACR(0)` as an open complex holomorphic domain and removes
+    the need for a separate pointwise "base-region kernel" theorem.
 
     Ref: OS II, Theorem 4.1 -/
 theorem iterated_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (k : ℕ)
-    (S_base : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_base : DifferentiableOn ℂ S_base (AnalyticContinuationRegion d k 0))
-    -- Provenance: S_base represents the Schwinger function. Threaded through the
-    -- induction to support the r = 0 → 1 step in inductive_analytic_continuation.
-    (hS_base_rep : ∀ (f : SchwartzNPoint d k),
-        OS.S k f = ∫ x : NPointDomain d k,
-          S_base (fun j => wickRotatePoint (x j)) * (f x)) :
+    (lgc : OSLinearGrowthCondition d OS) (k : ℕ) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (d + 1)) ∧
-      ∀ z ∈ AnalyticContinuationRegion d k 0, S_ext z = S_base z := by
-  -- Invariant: holomorphicity on ACR(r), agreement with S_base on ACR(0), provenance.
-  let P : ℕ → Prop := fun r =>
+      (∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_ext (fun j => wickRotatePoint (x j)) * (f x)) := by
+  obtain ⟨S₁, hS₁_hol, hS₁_rep⟩ := schwinger_continuation_base_step OS lgc k
+  -- Invariant for r ≥ 1: holomorphicity on ACR(r) and preservation of the
+  -- Euclidean pairing identity with OS.S.
+  let P : ℕ → Prop := fun s =>
     ∃ (S_r : (Fin k → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_r (AnalyticContinuationRegion d k r) ∧
-      (∀ z ∈ AnalyticContinuationRegion d k 0, S_r z = S_base z) ∧
+      DifferentiableOn ℂ S_r (AnalyticContinuationRegion d k (s + 1)) ∧
       (∀ (f : SchwartzNPoint d k),
         OS.S k f = ∫ x : NPointDomain d k,
           S_r (fun j => wickRotatePoint (x j)) * (f x))
-  have hP0 : P 0 := ⟨S_base, hS_base, fun _ _ => rfl, hS_base_rep⟩
-  have hstep : ∀ r, r < d + 1 → P r → P (r + 1) := by
-    intro r hr hPr
-    rcases hPr with ⟨S_r, hS_r_hol, hS_r_base, hS_r_rep⟩
-    rcases Nat.eq_zero_or_pos r with rfl | hr_pos
-    · -- r = 0 → 1: the ONLY genuine analytic continuation step (Kallen-Lehmann).
-      -- `schwinger_continuation_base_step` produces S_next on ACR(1) agreeing with S_r on ACR(0).
-      -- Base-agreement follows from hS_next_agree (on ACR(0)) + hS_r_base: no k-split needed.
-      obtain ⟨S_next, hS_next_hol, hS_next_agree⟩ :=
-        schwinger_continuation_base_step OS lgc k (by have := NeZero.pos d; omega)
-          S_r hS_r_hol hS_r_rep
-      -- Provenance: BV gap. S_next is the Laplace transform of the Kallen-Lehmann spectral
-      -- measure; its distributional boundary value as Im(z 0) → 0⁺ recovers OS.S k f.
-      -- Blocked by: BV theorem for Laplace transforms (not in Mathlib).
-      have hS_next_rep : ∀ (f : SchwartzNPoint d k),
-          OS.S k f = ∫ x : NPointDomain d k,
-            S_next (fun j => wickRotatePoint (x j)) * (f x) := by sorry
-      refine ⟨S_next, hS_next_hol, ?_, hS_next_rep⟩
-      -- Base-agreement: hS_next_agree gives S_next = S_r on ACR(0); hS_r_base gives S_r = S_base.
-      intro z hz0
-      calc S_next z = S_r z := hS_next_agree z hz0
-        _ = S_base z := hS_r_base z hz0
-    · -- r ≥ 1: RESTRICTION step. ACR(r+1) ⊆ ACR(r) (acr_succ_subset), so S_r restricts
-      -- directly: no new witness, no sorry. Provenance and base-agreement carry trivially.
-      exact ⟨S_r, hS_r_hol.mono (acr_succ_subset hr_pos), hS_r_base, hS_r_rep⟩
-  have hP_all : ∀ r, r ≤ d + 1 → P r := by
-    intro r hrle
-    induction r with
+  have hP0 : P 0 := ⟨S₁, hS₁_hol, hS₁_rep⟩
+  have hstep : ∀ s, s + 1 < d + 1 → P s → P (s + 1) := by
+    intro s hs hPs
+    have hs_pos : 0 < s + 1 := Nat.succ_pos s
+    rcases hPs with ⟨S_r, hS_r_hol, hS_r_rep⟩
+    exact ⟨S_r, hS_r_hol.mono (acr_succ_subset hs_pos), hS_r_rep⟩
+  have hP_all : ∀ s, s + 1 ≤ d + 1 → P s := by
+    intro s hsle
+    induction s with
     | zero =>
         exact hP0
-    | succ r ihr =>
-        have hrlt : r < d + 1 := Nat.lt_of_lt_of_le (Nat.lt_succ_self r) hrle
-        have hrle' : r ≤ d + 1 := Nat.le_trans (Nat.le_succ r) hrle
-        exact hstep r hrlt (ihr hrle')
-  -- Extract holomorphicity and agreement from P(d+1)
-  rcases hP_all (d + 1) le_rfl with ⟨S_ext, hS_ext_hol, hS_ext_base, _⟩
-  exact ⟨S_ext, hS_ext_hol, hS_ext_base⟩
-
-/-- Schwinger functions on C_k^(0), recovering S_k via integration.
-    Blocked by: pointwise extraction from S_k and smoothness in positive-time region.
-    Ref: OS II, Section IV (base case) -/
-theorem schwinger_holomorphic_on_base_region
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (k : ℕ) :
-    ∃ (S_base : (Fin k → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_base (AnalyticContinuationRegion d k 0) ∧
-      (∀ (f : SchwartzNPoint d k),
-        OS.S k f = ∫ x : NPointDomain d k,
-          S_base (fun j => wickRotatePoint (x j)) * (f x)) := by
-  sorry
-
-/-- Extend from C_k^(d+1) to the forward tube via E1 + Bochner.
-    Blocked by: tube domain identification and `bochner_tube_extension`.
-    Ref: OS II, Section V; Bochner (1938) -/
-theorem extend_to_forward_tube_via_bochner (k : ℕ)
-    (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_ext : DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (d + 1)))
-    (h_rot : ∀ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ),
-      R.transpose * R = 1 → R.det = 1 →
-      ∀ z ∈ AnalyticContinuationRegion d k (d + 1),
-        S_ext (fun i μ => ∑ ν, (R μ ν : ℂ) * z i ν) = S_ext z) :
-    ∃ (W : (Fin k → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ W (ForwardTube d k) ∧
-      ∀ z ∈ AnalyticContinuationRegion d k (d + 1), W z = S_ext z := by
-  sorry
+    | succ s ih =>
+        have hslt : s + 1 < d + 1 := by omega
+        have hsle' : s + 1 ≤ d + 1 := by omega
+        exact hstep (s := s) hslt (ih hsle')
+  rcases hP_all d (by simp) with ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
+  exact ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
 
 theorem full_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
@@ -559,32 +668,8 @@ theorem full_analytic_continuation
       (∀ (f : SchwartzNPoint d k),
         OS.S k f = ∫ x : NPointDomain d k,
           W_analytic (fun j => wickRotatePoint (x j)) * (f x)) := by
-  -- Step 1: Base case
-  obtain ⟨S_base, hS_base_hol, hS_base_euclid⟩ :=
-    schwinger_holomorphic_on_base_region OS lgc k
-  -- Step 2: Iterate d+1 times (provenance hS_base_euclid threads the r=0 base step)
-  obtain ⟨S_ext, hS_ext_hol, hS_ext_agree⟩ :=
-    iterated_analytic_continuation OS lgc k S_base hS_base_hol hS_base_euclid
-  -- Step 3: Rotation invariance from E1 + analytic continuation uniqueness
-  have h_rot : ∀ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ),
-      R.transpose * R = 1 → R.det = 1 →
-      ∀ z ∈ AnalyticContinuationRegion d k (d + 1),
-        S_ext (fun i μ => ∑ ν, (R μ ν : ℂ) * z i ν) = S_ext z := by
-    sorry
-  -- Step 4: E1 + Bochner to extend to forward tube
-  obtain ⟨W, hW_hol, hW_agree⟩ := extend_to_forward_tube_via_bochner k S_ext hS_ext_hol h_rot
-  refine ⟨W, hW_hol, fun f => ?_⟩
-  -- Step 5: Integral representation for W.
-  -- GEOMETRIC NOTE: wickRotatePoint(x j) = (I*τ_j, x⃗_j) lies in NO ACR(r) and in NO ACR(0):
-  --   • ACR(0) requires Im = 0 everywhere + Re(time) > 0 — violated since Im(time) = τ_j ≠ 0.
-  --   • ACR(r≥1) requires Im > 0 in directions μ=0,...,r-1 — violated for spatial μ≥1 since Im=0.
-  -- Therefore `W(wick(x)) = S_ext(wick(x))` via hW_agree does NOT follow from pointwise
-  -- restriction (wick(x) ∉ ACR(d+1)). The connection between W and OS.S k is via
-  -- distributional boundary values: W restricts (in the distributional sense) to OS.S k f
-  -- as Im → 0⁺ along the Wick-rotated boundary. This is the content of Phase 4
-  -- (`forward_tube_bv_tempered`), NOT a direct restriction chain.
-  -- Blocked by: distributional BV theory for forward tube (LaplaceSchwartz + BV existence).
-  sorry
+  obtain ⟨S₁, hS₁_hol, hS₁_euclid⟩ := schwinger_continuation_base_step OS lgc k
+  refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid⟩
 
 /-! ### Phase 4: Tempered boundary values
 
@@ -594,38 +679,6 @@ Without growth control, boundary values might fail to be tempered
 where C_n has at most factorial growth.
 
 Ref: OS II, Section VI -/
-
-/-- Distributional boundary values of the forward tube analytic continuation
-    exist and are tempered.
-
-    Given F holomorphic on ForwardTube d n with polynomial growth (from E0'),
-    the distributional BV ∫ F(x + iεη) f(x) dx converges as ε → 0+ for
-    all Schwartz f and approach directions η ∈ V₊^n.
-
-    Blocked by: Vladimirov's distributional boundary value theorem for tube
-    domains (Theorem 26.1 in Vladimirov's "Methods of Generalized Functions"),
-    which requires polynomial growth estimates from E0'.
-
-    Ref: Vladimirov Section 26; Streater-Wightman Theorem 2-9 -/
-theorem forward_tube_bv_tempered
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF : DifferentiableOn ℂ F (ForwardTube d n)) :
-    ∃ (W_n : SchwartzNPoint d n → ℂ),
-      Continuous W_n ∧ IsLinearMap ℂ W_n ∧
-      (∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
-        InForwardCone d n η →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointDomain d n,
-            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (W_n f))) ∧
-      ∃ (C : ℝ) (s : ℕ), C > 0 ∧
-        ∀ f : SchwartzNPoint d n,
-          ‖W_n f‖ ≤ C * lgc.alpha * lgc.beta ^ n * (n.factorial : ℝ) ^ lgc.gamma *
-            SchwartzMap.seminorm ℝ s s f := by
-  sorry
 
 theorem boundary_values_tempered
     (OS : OsterwalderSchraderAxioms d)
@@ -649,18 +702,28 @@ theorem boundary_values_tempered
       -- Euclidean restriction of F_analytic gives S_n
       (∀ (f : SchwartzNPoint d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          F_analytic (fun k => wickRotatePoint (x k)) * (f x)) ∧
-      -- Growth estimate (linear growth condition on Wightman side, R0')
-      ∃ (C : ℝ) (s : ℕ), C > 0 ∧
-        ∀ f : SchwartzNPoint d n,
-          ‖W_n f‖ ≤ C * lgc.alpha * lgc.beta ^ n * (n.factorial : ℝ) ^ lgc.gamma *
-            SchwartzMap.seminorm ℝ s s f := by
-  -- Step 1: Get the analytic continuation from full_analytic_continuation
+          F_analytic (fun k => wickRotatePoint (x k)) * (f x)) := by
   obtain ⟨F_analytic, hF_hol, hF_euclid⟩ := full_analytic_continuation OS lgc n
-  -- Step 2: Get tempered boundary values from forward_tube_bv_tempered
-  obtain ⟨W_n, hW_cont, hW_lin, hW_bv, hW_growth⟩ :=
-    forward_tube_bv_tempered OS lgc n F_analytic hF_hol
-  exact ⟨W_n, F_analytic, hW_cont, hW_lin, hF_hol, hW_bv, hF_euclid, hW_growth⟩
+  -- Remaining content: construct the continuous linear boundary-value witness for
+  -- this specific analytic continuation. Once that witness is available, the
+  -- downstream reconstruction only needs continuity, linearity, the BV identity,
+  -- and the Euclidean pairing already supplied here.
+  obtain ⟨W, hW_bv⟩ :
+      ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+          InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (W f)) := by
+    sorry
+  refine ⟨W, F_analytic, W.continuous, ?_, hF_hol, hW_bv, hF_euclid⟩
+  constructor
+  · intro f g
+    exact map_add W f g
+  · intro c f
+    exact map_smul W c f
 
 /-! ### Constructing WightmanFunctions from OS Data
 
@@ -673,13 +736,10 @@ continuation. The helper lemmas below capture each derivation. -/
     This definition extracts `W_n` via `.choose` (the first existential witness).
 
     `W_n` is the tempered distributional boundary value of the analytically continued
-    function `F_analytic` on the forward tube. It is continuous (tempered) and linear,
-    and satisfies factorial growth bounds from the OS linear growth condition.
+    function `F_analytic` on the forward tube. It is continuous (tempered) and linear.
 
-    Note: `boundary_values_tempered` is proved in this file, but it depends on
-    upstream deferred lemmas (`full_analytic_continuation` and
-    `forward_tube_bv_tempered`), so `bvt_W` and downstream properties remain
-    contingent on those obligations. -/
+    Note: `boundary_values_tempered` is deferred in this file, so `bvt_W` and
+    downstream properties remain contingent on that theorem. -/
 def bvt_W (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     SchwartzNPoint d n → ℂ :=
@@ -696,10 +756,8 @@ def bvt_W (OS : OsterwalderSchraderAxioms d)
     recover `bvt_W` (the Wightman distribution), and its Euclidean restriction
     (via Wick rotation) recovers the Schwinger functions `OS.S n`.
 
-    Note: `boundary_values_tempered` is proved in this file, but it depends on
-    upstream deferred lemmas (`full_analytic_continuation` and
-    `forward_tube_bv_tempered`), so `bvt_F` and downstream properties remain
-    contingent on those obligations. -/
+    Note: `boundary_values_tempered` is deferred in this file, so `bvt_F` and
+    downstream properties remain contingent on that theorem. -/
 def bvt_F (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     (Fin n → Fin (d + 1) → ℂ) → ℂ :=
@@ -731,7 +789,7 @@ theorem bvt_euclidean_restriction (OS : OsterwalderSchraderAxioms d)
     ∀ (f : SchwartzNPoint d n),
       OS.S n f = ∫ x : NPointDomain d n,
         bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * (f x) :=
-  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2.1
+  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2
 
 /-! #### Helper lemmas for property transfer: OS axiom → F_analytic → W_n
 
@@ -1139,7 +1197,7 @@ theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
   -- exactly the fields constructed inside `boundary_values_tempered`.
   have h := (boundary_values_tempered OS lgc n).choose_spec.choose_spec
   exact ⟨(boundary_values_tempered OS lgc n).choose_spec.choose,
-    h.2.2.1, h.2.2.2.1, h.2.2.2.2.1⟩
+    h.2.2.1, h.2.2.2.1, h.2.2.2.2⟩
 
 /-! ### Wired Corollaries
 

@@ -385,11 +385,12 @@ theorem polynomial_growth_tube {m : ℕ}
     This is a fundamental result in several complex variables: holomorphic functions
     on tube domains automatically extend to the convex hull of the base.
 
-    In the OS reconstruction, this is used after the inductive analytic continuation
-    (which produces holomorphicity on a tube over the positive orthant) to extend
-    to the full forward tube (a tube over V₊, the forward light cone). The key:
-    the union of SO(d+1)-rotations of the positive orthant covers V₊, and
-    V₊ = conv(⋃_R R · (0,∞)^{d+1}) since V₊ is convex.
+    In the OS reconstruction, this is used only after the relevant cone geometry
+    has been identified correctly. The current infrastructure proves Bochner's
+    theorem for a fixed tube base `C`; it does not supply the missing OS-specific
+    geometry. In particular, the naive "common SO-orbit of the positive orthant,
+    then convex hull" route is already too large in `d = 1`, `k = 1`, so some
+    different upstream geometric input is required.
 
     Ref: Bochner, "A theorem on analytic continuation of functions in several
     variables" (1938); Vladimirov §20.2; Hörmander, "An Introduction to Complex

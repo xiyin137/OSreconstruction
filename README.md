@@ -41,15 +41,15 @@ This will fetch Mathlib and all dependencies automatically. The first build may 
 The project builds cleanly with **zero `axiom` declarations**. Remaining work is tracked via direct
 `sorry` placeholders.
 
-Snapshot (2026-02-27, counted with `rg -n '^\s*sorry\b' OSReconstruction`):
+Snapshot (2026-03-07, counted with `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`):
 
 | Module | Direct `sorry` lines |
 |--------|-----------------------|
-| `Wightman/` | 43 |
-| `SCV/` | 14 |
+| `Wightman/` | 30 |
+| `SCV/` | 11 |
 | `ComplexLieGroups/` | 2 |
 | `vNA/` | 40 |
-| **Total** | **99** |
+| **Total** | **83** |
 
 ### OS-Critical Sorry Flow Toward Reconstruction
 
@@ -62,16 +62,16 @@ flowchart TD
   M --> ER["os_to_wightman"]
 
   RE --> SA["WickRotation/SchwingerAxioms (5 sorrys)"]
-  SA --> BT["WickRotation/BHWTranslation (5)"]
-  BT --> BE["WickRotation/BHWExtension (2)"]
-  BE --> FL["WickRotation/ForwardTubeLorentz (2)"]
+  SA --> BT["WickRotation/BHWTranslation (1)"]
+  BT --> BE["WickRotation/BHWExtension (0)"]
+  BE --> FL["WickRotation/ForwardTubeLorentz (1)"]
   FL --> AC["Reconstruction/AnalyticContinuation (0)"]
   AC --> CL["ComplexLieGroups/Connectedness/* (2)"]
   AC --> JP["ComplexLieGroups/JostPoints (0)"]
 
-  ER --> OW["WickRotation/OSToWightman (14 sorrys)"]
-  OW --> PW["SCV/PaleyWiener (6)"]
-  OW --> LS["SCV/LaplaceSchwartz (6)"]
+  ER --> OW["WickRotation/OSToWightman (8 sorrys)"]
+  OW --> PW["SCV/PaleyWiener (0)"]
+  OW --> LS["SCV/LaplaceSchwartz (7)"]
   OW --> BO["SCV/BochnerTubeTheorem (2)"]
 ```
 
@@ -80,15 +80,15 @@ flowchart TD
 | File | Direct `sorry`s | Notes |
 |------|------------------|-------|
 | `Wightman/Reconstruction/Main.lean` | 1 | `wightman_uniqueness` |
-| `Wightman/Reconstruction/GNSHilbertSpace.lean` | 1 | `covariance_preHilbert` |
+| `Wightman/Reconstruction/GNSHilbertSpace.lean` | 1 | `vacuum_unique` spectral-theory branch |
 | `Wightman/WightmanAxioms.lean` | 4 | nuclear extension + spectrum/BV infrastructure |
-| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 2 | growth + PET approach-direction plumbing |
-| `Wightman/Reconstruction/WickRotation/BHWExtension.lean` | 2 | swap/local-commutativity distributional agreement |
-| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 5 | translation/BV uniqueness chain |
+| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 1 | growth / BV covariance plumbing |
+| `Wightman/Reconstruction/WickRotation/BHWExtension.lean` | 0 | completed |
+| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 1 | overlap-connectivity / translation geometry |
 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 5 | E0/E2/E4 hard analytic steps |
-| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 14 | analytic continuation + BV transfer chain |
-| `SCV/PaleyWiener.lean` | 6 | one-step extension infrastructure |
-| `SCV/LaplaceSchwartz.lean` | 6 | boundary growth/continuity/convergence |
+| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 8 | base-step continuation + BV transfer chain |
+| `SCV/PaleyWiener.lean` | 0 | sorry-free as of 2026-03-07 |
+| `SCV/LaplaceSchwartz.lean` | 7 | boundary growth/continuity/convergence |
 | `SCV/BochnerTubeTheorem.lean` | 2 | local-to-global tube extension |
 | `ComplexLieGroups/Connectedness/ComplexInvariance/Core.lean` | 1 | orbit-set preconnectedness (`hjoin` branch) |
 | `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlow.lean` | 1 | permutation overlap extension (`hExtPerm` branch) |

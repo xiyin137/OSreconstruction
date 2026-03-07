@@ -7,8 +7,12 @@ import OSReconstruction.SCV.TubeDomainExtension
 import OSReconstruction.SCV.TubeDistributions
 import OSReconstruction.SCV.FourierLaplaceCore
 import Mathlib.Analysis.Asymptotics.Lemmas
+import Mathlib.Analysis.Calculus.ParametricIntegral
+import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+import Mathlib.Analysis.Normed.Module.HahnBanach
+import Mathlib.MeasureTheory.SpecificCodomains.Pi
 
 /-!
 # Paley-Wiener-Schwartz Theorem
@@ -21,16 +25,14 @@ holomorphic extension of distributions with one-sided Fourier support.
 * `paley_wiener_half_line` -- If T in S'(R) has supp(FT) in [0,infinity), then
   z -> T(e^{-iz.}) extends holomorphically to the upper half-plane.
 
-* `paley_wiener_cone` -- Multi-dimensional generalization: if T in S'(R^m) has
-  supp(FT) in C* (dual cone), then z -> T(e^{-iz.}) extends holomorphically
-  to the tube domain T(C).
+* `paley_wiener_one_step` -- Slice-wise one-variable extension family:
+  for each fixed parameter slice with one-sided Fourier support in one variable,
+  produce the upper-half-plane extension in that variable.
 
-* `paley_wiener_converse` -- Converse: if F is holomorphic on T(C) with polynomial
-  growth, then its distributional boundary value has Fourier transform supported in C*.
-
-* `paley_wiener_one_step` -- Technical lemma for inductive analytic continuation:
-  given a function on a tube whose distributional boundary value has one-sided
-  Fourier support in one variable, extend holomorphicity by one variable.
+Multidimensional cone/converse Paley-Wiener statements are intentionally deferred
+from this file. The current `Fin m → ℝ` setup uses the wrong ambient Fourier
+domain for an honest `fourierTransformCLM` formalization; the full cone theorem
+should be rebuilt later over `EuclideanSpace ℝ (Fin m)`.
 
 ## Mathematical Background
 
@@ -71,6 +73,7 @@ holomorphically to the upper half-plane in that variable.
 noncomputable section
 
 open Complex MeasureTheory Topology Metric Set Filter
+open scoped FourierTransform ComplexInnerProductSpace BoundedContinuousFunction
 
 namespace SCV
 
@@ -249,6 +252,635 @@ theorem schwartz_functional_bound
   refine ⟨s, C, hC, ?_⟩
   intro φ
   simpa [q, Seminorm.comp_apply, coe_normSeminorm] using hbound φ
+
+private def polyWeight (k : ℕ) (x : ℝ) : ℂ := ((1 + x^2) ^ k : ℝ)
+
+private theorem polyWeight_hasTemperateGrowth (k : ℕ) :
+    (polyWeight k).HasTemperateGrowth := by
+  unfold polyWeight
+  fun_prop
+
+private def iteratedDerivCLM : ℕ → SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap ℝ ℂ
+  | 0 => ContinuousLinearMap.id ℂ _
+  | n + 1 => (SchwartzMap.derivCLM ℂ ℂ).comp (iteratedDerivCLM n)
+
+private theorem iteratedDerivCLM_apply
+    (n : ℕ) (f : SchwartzMap ℝ ℂ) (x : ℝ) :
+    iteratedDerivCLM n f x = iteratedDeriv n f x := by
+  induction n generalizing f x with
+  | zero => simp [iteratedDerivCLM]
+  | succ n ih =>
+      have hg : ⇑(iteratedDerivCLM n f) = fun y : ℝ => iteratedDeriv n f y := by
+        ext y
+        exact ih f y
+      rw [iteratedDerivCLM, ContinuousLinearMap.comp_apply, SchwartzMap.derivCLM_apply]
+      rw [hg, ← iteratedDeriv_succ]
+
+private def weightedDerivToBCFCLM (k n : ℕ) : SchwartzMap ℝ ℂ →L[ℂ] ℝ →ᵇ ℂ :=
+  (SchwartzMap.toBoundedContinuousFunctionCLM ℂ ℝ ℂ).comp <|
+    (SchwartzMap.smulLeftCLM ℂ (polyWeight k)).comp <|
+      iteratedDerivCLM n
+
+private theorem weightedDerivToBCFCLM_apply
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) (x : ℝ) :
+    weightedDerivToBCFCLM k n f x = polyWeight k x * iteratedDeriv n f x := by
+  rw [weightedDerivToBCFCLM, ContinuousLinearMap.comp_apply,
+    ContinuousLinearMap.comp_apply, SchwartzMap.toBoundedContinuousFunctionCLM_apply,
+    SchwartzMap.smulLeftCLM_apply_apply (polyWeight_hasTemperateGrowth k),
+    iteratedDerivCLM_apply]
+  simp [polyWeight]
+
+private theorem abs_pow_le_polyWeight (k : ℕ) (x : ℝ) :
+    |x| ^ k ≤ ‖polyWeight k x‖ := by
+  rw [polyWeight, Complex.norm_real]
+  have h1 : |x| ≤ 1 + x^2 := by
+    have hx2_nonneg : 0 ≤ x^2 := sq_nonneg x
+    nlinarith [sq_abs x]
+  calc
+    |x| ^ k ≤ (1 + x^2) ^ k := by
+      exact pow_le_pow_left₀ (abs_nonneg x) h1 k
+    _ = ‖((1 + x ^ 2) ^ k : ℝ)‖ := by
+      rw [Real.norm_of_nonneg]
+      positivity
+
+private def probeCLM (s : Finset (ℕ × ℕ)) :
+    SchwartzMap ℝ ℂ →L[ℂ] ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) :=
+  ContinuousLinearMap.pi fun p : ↑s.attach => weightedDerivToBCFCLM p.1.1.1 p.1.1.2
+
+private theorem schwartzSeminorm_le_probe_component_norm
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap.seminorm ℝ k n f ≤ ‖weightedDerivToBCFCLM k n f‖ := by
+  refine SchwartzMap.seminorm_le_bound' (𝕜 := ℝ) k n f (norm_nonneg _) ?_
+  intro x
+  have h1 : |x| ^ k * ‖iteratedDeriv n f x‖ ≤ ‖polyWeight k x‖ * ‖iteratedDeriv n f x‖ := by
+    exact mul_le_mul_of_nonneg_right (abs_pow_le_polyWeight k x) (norm_nonneg _)
+  calc
+    |x| ^ k * ‖iteratedDeriv n f x‖
+      ≤ ‖polyWeight k x‖ * ‖iteratedDeriv n f x‖ := h1
+    _ = ‖polyWeight k x * iteratedDeriv n f x‖ := by rw [norm_mul]
+    _ = ‖weightedDerivToBCFCLM k n f x‖ := by rw [weightedDerivToBCFCLM_apply]
+    _ ≤ ‖weightedDerivToBCFCLM k n f‖ := by
+      simpa using (BoundedContinuousFunction.norm_coe_le_norm (weightedDerivToBCFCLM k n f) x)
+
+private theorem schwartzSeminorm_le_probe_norm
+    (s : Finset (ℕ × ℕ)) (p : ↑s.attach) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f ≤
+      ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+  calc
+    SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f ≤ ‖weightedDerivToBCFCLM p.1.1.1 p.1.1.2 f‖ :=
+      schwartzSeminorm_le_probe_component_norm p.1.1.1 p.1.1.2 f
+    _ ≤ ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+      simpa using (norm_le_pi_norm (probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ))) p)
+
+private theorem weightedDerivToBCFCLM_norm_le
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
+    ‖weightedDerivToBCFCLM k n f‖ ≤
+      (2 : ℝ) ^ k *
+        (SchwartzMap.seminorm ℝ 0 n f + SchwartzMap.seminorm ℝ (2 * k) n f) := by
+  rw [show ‖weightedDerivToBCFCLM k n f‖ = dist (weightedDerivToBCFCLM k n f) 0 by rfl]
+  refine (BoundedContinuousFunction.dist_le ?_).2 ?_
+  · positivity
+  · intro ξ
+    have hsemi0 := SchwartzMap.le_seminorm' (𝕜 := ℝ) (k := 0) (n := n) f ξ
+    have hsemi2 := SchwartzMap.le_seminorm' (𝕜 := ℝ) (k := 2 * k) (n := n) f ξ
+    simp only [BoundedContinuousFunction.coe_zero, Pi.zero_apply, dist_eq_norm, sub_zero,
+      weightedDerivToBCFCLM_apply]
+    by_cases hξ : |ξ| ≤ 1
+    · have hpoly : ‖polyWeight k ξ‖ ≤ (2 : ℝ) ^ k := by
+        rw [polyWeight, Complex.norm_real, Real.norm_of_nonneg]
+        · have hξsq : ξ ^ 2 ≤ 1 := by
+            have hsqabs : |ξ| ^ 2 ≤ (1 : ℝ) ^ 2 := by
+              gcongr
+            simpa [sq_abs] using hsqabs
+          calc
+            (1 + ξ ^ 2) ^ k ≤ (1 + 1) ^ k := by
+              gcongr
+            _ = (2 : ℝ) ^ k := by ring
+        · positivity
+      calc
+        ‖polyWeight k ξ * iteratedDeriv n f ξ‖
+            ≤ (2 : ℝ) ^ k * ‖iteratedDeriv n f ξ‖ := by
+              rw [norm_mul]
+              gcongr
+        _ ≤ (2 : ℝ) ^ k * SchwartzMap.seminorm ℝ 0 n f := by
+              exact mul_le_mul_of_nonneg_left (by simpa using hsemi0) (pow_nonneg (by positivity) _)
+        _ ≤ (2 : ℝ) ^ k *
+              (SchwartzMap.seminorm ℝ 0 n f + SchwartzMap.seminorm ℝ (2 * k) n f) := by
+              gcongr
+              exact le_add_of_nonneg_right (apply_nonneg _ _)
+    · have hξgt : 1 < |ξ| := lt_of_not_ge hξ
+      have habs_nonneg : 0 ≤ |ξ| := abs_nonneg ξ
+      have hone : 1 ≤ |ξ| ^ 2 := by
+        have : 1 ≤ |ξ| := le_of_lt hξgt
+        nlinarith
+      have hpoly : ‖polyWeight k ξ‖ ≤ (2 : ℝ) ^ k * |ξ| ^ (2 * k) := by
+        rw [polyWeight, Complex.norm_real, Real.norm_of_nonneg]
+        · have hξsq : ξ ^ 2 = |ξ| ^ 2 := by rw [sq_abs]
+          calc
+            (1 + ξ ^ 2) ^ k = (1 + |ξ| ^ 2) ^ k := by rw [hξsq]
+            _ ≤ (2 * |ξ| ^ 2) ^ k := by
+                  gcongr
+                  linarith
+            _ = (2 : ℝ) ^ k * |ξ| ^ (2 * k) := by
+                  rw [mul_pow]
+                  ring_nf
+        · positivity
+      calc
+        ‖polyWeight k ξ * iteratedDeriv n f ξ‖
+            ≤ ((2 : ℝ) ^ k * |ξ| ^ (2 * k)) * ‖iteratedDeriv n f ξ‖ := by
+              rw [norm_mul]
+              gcongr
+        _ = (2 : ℝ) ^ k * (|ξ| ^ (2 * k) * ‖iteratedDeriv n f ξ‖) := by ring
+        _ ≤ (2 : ℝ) ^ k * SchwartzMap.seminorm ℝ (2 * k) n f := by
+              exact mul_le_mul_of_nonneg_left (by simpa using hsemi2) (pow_nonneg (by positivity) _)
+        _ ≤ (2 : ℝ) ^ k *
+              (SchwartzMap.seminorm ℝ 0 n f + SchwartzMap.seminorm ℝ (2 * k) n f) := by
+              gcongr
+              exact le_add_of_nonneg_left (apply_nonneg _ _)
+
+private theorem schwartzPsiZ_horizontal_diff_eq
+    (x η h : ℝ) (hη : 0 < η)
+    (hh_im : ‖(h : ℂ)‖ ≤ η / 2) (hh1 : ‖(h : ℂ)‖ ≤ 1) :
+    schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+      schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη) -
+      (h : ℂ) •
+        (SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+          (schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη)) =
+    (h : ℂ) •
+      schwartzPsiZExpTaylorLinearRemainderQuot
+        ((x : ℂ) + η * I) (by simpa using hη) (h : ℂ) (by simpa using hh_im) hh1 := by
+  have hzadd : ((x : ℂ) + η * I) + (h : ℂ) = (((x + h : ℝ) : ℂ) + η * I) := by
+    norm_num
+    ring
+  have htemp : (fun ξ : ℝ => I * (ξ : ℂ)).HasTemperateGrowth := by
+    fun_prop
+  ext ξ
+  simpa [hzadd, schwartzPsiZ_apply, schwartzPsiZExpTaylorLinearRemainderQuot_apply,
+    SchwartzMap.smulLeftCLM_apply_apply htemp, smul_eq_mul] using
+    (psiZ_sub_sub_deriv_eq_smul_remainder ((x : ℂ) + η * I) (h : ℂ) ξ)
+
+private theorem tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero
+    (η x : ℝ) (hη : 0 < η) (k n : ℕ) :
+    Tendsto
+      (fun h : ℝ =>
+        ‖weightedDerivToBCFCLM k n
+          (schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+            schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη))‖)
+      (nhds 0) (nhds 0) := by
+  let z : ℂ := (x : ℂ) + η * I
+  have hz : 0 < z.im := by simpa [z] using hη
+  let D : ℝ := ‖weightedDerivToBCFCLM k n
+    ((SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+      (schwartzPsiZ z hz))‖
+  obtain ⟨C0, hC0_nonneg, hC0⟩ :=
+    schwartzPsiZExpTaylorLinearRemainderQuot_seminorm_le z hz 0 n
+  obtain ⟨C2, hC2_nonneg, hC2⟩ :=
+    schwartzPsiZExpTaylorLinearRemainderQuot_seminorm_le z hz (2 * k) n
+  let C : ℝ := (2 : ℝ) ^ k * (C0 + C2)
+  refine Metric.tendsto_nhds.mpr ?_
+  intro ε hε
+  have hD_nonneg : 0 ≤ D := norm_nonneg _
+  let δ : ℝ := min 1 (min (η / 2) (ε / (2 * (D + C + 1))))
+  have hδ_pos : 0 < δ := by
+    dsimp [δ]
+    refine lt_min (by norm_num) ?_
+    refine lt_min ?_ ?_
+    · positivity
+    · have hden_pos : 0 < 2 * (D + C + 1) := by positivity
+      exact div_pos hε hden_pos
+  filter_upwards [Metric.ball_mem_nhds 0 hδ_pos] with h hh
+  have hhδ : ‖(h : ℂ)‖ < δ := by
+    simpa [Real.norm_eq_abs, Real.dist_eq, sub_eq_add_neg, abs_sub_comm] using hh
+  have hh1 : ‖(h : ℂ)‖ ≤ 1 := by
+    exact le_trans (le_of_lt hhδ) (by dsimp [δ]; exact min_le_left _ _)
+  have hh_im : ‖(h : ℂ)‖ ≤ η / 2 := by
+    exact le_trans (le_of_lt hhδ) (by dsimp [δ]; exact le_trans (min_le_right _ _) (min_le_left _ _))
+  have hh_im' : ‖(h : ℂ)‖ ≤ z.im / 2 := by simpa [z] using hh_im
+  have hdecomp := schwartzPsiZ_horizontal_diff_eq x η h hη hh_im hh1
+  have hsplit :
+      weightedDerivToBCFCLM k n
+        (schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+          schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη)) =
+        h • weightedDerivToBCFCLM k n
+          (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1) +
+        h • weightedDerivToBCFCLM k n
+          ((SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+            (schwartzPsiZ z hz)) := by
+    have htmp :
+        weightedDerivToBCFCLM k n
+            (schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+              schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη)) -
+          h • weightedDerivToBCFCLM k n
+            ((SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+              (schwartzPsiZ z hz)) =
+          h • weightedDerivToBCFCLM k n
+            (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1) := by
+      simpa [hdecomp, map_sub, map_smul] using
+        congrArg (weightedDerivToBCFCLM k n) hdecomp
+    have htmp2 := eq_add_of_sub_eq htmp
+    simpa [add_comm, add_left_comm, add_assoc] using htmp2
+  have hrem :
+      ‖weightedDerivToBCFCLM k n
+          (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)‖ ≤
+        C * ‖(h : ℂ)‖ := by
+    calc
+      ‖weightedDerivToBCFCLM k n
+          (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)‖
+          ≤ (2 : ℝ) ^ k *
+              (SchwartzMap.seminorm ℝ 0 n
+                  (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1) +
+                SchwartzMap.seminorm ℝ (2 * k) n
+                  (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)) := by
+              exact weightedDerivToBCFCLM_norm_le k n _
+      _ ≤ (2 : ℝ) ^ k * (C0 * ‖(h : ℂ)‖ + C2 * ‖(h : ℂ)‖) := by
+            gcongr
+            · exact hC0 (h : ℂ) hh_im' hh1
+            · exact hC2 (h : ℂ) hh_im' hh1
+      _ = C * ‖(h : ℂ)‖ := by
+            dsimp [C]
+            ring
+  have hmain :
+      ‖weightedDerivToBCFCLM k n
+          (schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+            schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη))‖
+        ≤ ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D := by
+    calc
+      ‖weightedDerivToBCFCLM k n
+          (schwartzPsiZ (((x + h : ℝ) : ℂ) + η * I) (by simpa using hη) -
+            schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη))‖
+          = ‖h • weightedDerivToBCFCLM k n
+              (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1) +
+            h • weightedDerivToBCFCLM k n
+              ((SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+                (schwartzPsiZ z hz))‖ := by
+              rw [hsplit]
+      _ ≤ ‖h • weightedDerivToBCFCLM k n
+              (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)‖ +
+            ‖h • weightedDerivToBCFCLM k n
+              ((SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => I * (ξ : ℂ)))
+                (schwartzPsiZ z hz))‖ := norm_add_le _ _
+      _ = ‖(h : ℂ)‖ *
+            ‖weightedDerivToBCFCLM k n
+              (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)‖ +
+          ‖(h : ℂ)‖ * D := by
+            simp [D, norm_smul]
+      _ ≤ ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D := by
+            gcongr
+  have hδ_small : δ ≤ ε / (2 * (D + C + 1)) := by
+    dsimp [δ]
+    exact le_trans (min_le_right _ _) (min_le_right _ _)
+  have hsmall :
+      ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D < ε := by
+    have hδfrac : δ * (D + C + 1) < ε := by
+      have hden_pos : 0 < 2 * (D + C + 1) := by positivity
+      have htmp : δ * (2 * (D + C + 1)) ≤ ε := by
+        exact (le_div_iff₀ hden_pos).mp hδ_small
+      have hlt : δ * (D + C + 1) ≤ ε / 2 := by
+        nlinarith
+      linarith
+    have hnorm_le : ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D ≤ δ * (D + C + 1) := by
+      have hh_abs : ‖(h : ℂ)‖ ≤ δ := le_of_lt hhδ
+      have hsq : ‖(h : ℂ)‖ * ‖(h : ℂ)‖ ≤ δ := by
+        have : ‖(h : ℂ)‖ * ‖(h : ℂ)‖ ≤ δ * 1 := by
+          refine mul_le_mul hh_abs hh1 ?_ ?_
+          · exact norm_nonneg _
+          · positivity
+        simpa using this
+      calc
+        ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D
+            = C * (‖(h : ℂ)‖ * ‖(h : ℂ)‖) + D * ‖(h : ℂ)‖ := by ring
+        _ ≤ C * δ + D * δ := by
+              gcongr
+        _ ≤ δ * (D + C + 1) := by ring_nf; nlinarith [hδ_pos, hC0_nonneg, hC2_nonneg, hD_nonneg]
+    exact lt_of_le_of_lt hnorm_le hδfrac
+  simpa [Real.dist_eq, abs_of_nonneg (norm_nonneg _)] using lt_of_le_of_lt hmain hsmall
+
+private def horizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
+  schwartzPsiZ ((x : ℂ) + η * I) (by simpa using hη)
+
+private def scaledHorizontalSchwartzPsi (η : ℝ) (hη : 0 < η) (x : ℝ) : SchwartzMap ℝ ℂ :=
+  horizontalSchwartzPsi (2 * Real.pi * η) (by positivity) (2 * Real.pi * x)
+
+private theorem tendsto_weightedDerivToBCFCLM_horizontalSchwartzPsi_diff_zero
+    (η x : ℝ) (hη : 0 < η) (k n : ℕ) :
+    Tendsto
+      (fun h : ℝ =>
+        ‖weightedDerivToBCFCLM k n
+          (horizontalSchwartzPsi η hη (x + h) - horizontalSchwartzPsi η hη x)‖)
+      (nhds 0) (nhds 0) := by
+  simpa [horizontalSchwartzPsi] using
+    tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero η x hη k n
+
+set_option maxHeartbeats 800000 in
+private theorem continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal
+    (η : ℝ) (hη : 0 < η) (k n : ℕ) :
+    Continuous (fun x : ℝ =>
+      weightedDerivToBCFCLM k n (horizontalSchwartzPsi η hη x)) := by
+  rw [continuous_iff_continuousAt]
+  intro x
+  rw [Metric.continuousAt_iff]
+  intro ε hε
+  have htendsto :=
+    tendsto_weightedDerivToBCFCLM_horizontalSchwartzPsi_diff_zero η x hη k n
+  have ht : ∀ᶠ h in 𝓝 (0 : ℝ),
+      dist
+        ‖weightedDerivToBCFCLM k n
+          (horizontalSchwartzPsi η hη (x + h) - horizontalSchwartzPsi η hη x)‖
+        0 < ε :=
+    (Metric.tendsto_nhds.1 htendsto) ε hε
+  rcases Metric.mem_nhds_iff.1 ht with ⟨δ, hδ_pos, hδ⟩
+  refine ⟨δ, hδ_pos, ?_⟩
+  intro y hy
+  have hy' : y - x ∈ ball (0 : ℝ) δ := by
+    simpa [Real.dist_eq, sub_eq_add_neg] using hy
+  have hmain := hδ hy'
+  simpa [dist_eq_norm, sub_eq_add_neg, add_comm, add_left_comm, add_assoc] using hmain
+
+private theorem weightedDerivToBCFCLM_schwartzPsiZ_horizontal_growth
+    (η : ℝ) (hη : 0 < η) (k n : ℕ) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ x : ℝ,
+      ‖weightedDerivToBCFCLM k n
+          (horizontalSchwartzPsi η hη x)‖ ≤ D * (1 + |x|) ^ n := by
+  obtain ⟨D0, hD0_nonneg, hD0⟩ := schwartzPsiZ_seminorm_horizontal_bound η hη 0 n
+  obtain ⟨D2, hD2_nonneg, hD2⟩ := schwartzPsiZ_seminorm_horizontal_bound η hη (2 * k) n
+  refine ⟨(2 : ℝ) ^ k * (D0 + D2), by positivity, ?_⟩
+  intro x
+  calc
+    ‖weightedDerivToBCFCLM k n
+        (horizontalSchwartzPsi η hη x)‖
+        ≤ (2 : ℝ) ^ k *
+            (SchwartzMap.seminorm ℝ 0 n
+                (horizontalSchwartzPsi η hη x) +
+              SchwartzMap.seminorm ℝ (2 * k) n
+                (horizontalSchwartzPsi η hη x)) := by
+            exact weightedDerivToBCFCLM_norm_le k n _
+    _ ≤ (2 : ℝ) ^ k * (D0 * (1 + |x|) ^ n + D2 * (1 + |x|) ^ n) := by
+          gcongr
+          · exact hD0 x
+          · exact hD2 x
+    _ = ((2 : ℝ) ^ k * (D0 + D2)) * (1 + |x|) ^ n := by ring
+
+private theorem one_add_abs_two_pi_mul_rpow_le (n : ℕ) (x : ℝ) :
+    (1 + |2 * Real.pi * x|) ^ n ≤ (2 * Real.pi) ^ n * (1 + |x|) ^ n := by
+  have hbase : 1 + |2 * Real.pi * x| ≤ (2 * Real.pi) * (1 + |x|) := by
+    rw [abs_mul, abs_of_pos (show (0 : ℝ) < 2 * Real.pi by positivity)]
+    nlinarith [Real.pi_gt_three, abs_nonneg x]
+  calc
+    (1 + |2 * Real.pi * x|) ^ n ≤ ((2 * Real.pi) * (1 + |x|)) ^ n := by
+      exact pow_le_pow_left₀ (by positivity) hbase n
+    _ = (2 * Real.pi) ^ n * (1 + |x|) ^ n := by rw [mul_pow]
+
+private theorem continuous_weightedDerivToBCFCLM_scaledHorizontal
+    (η : ℝ) (hη : 0 < η) (k n : ℕ) :
+    Continuous (fun x : ℝ =>
+      weightedDerivToBCFCLM k n (scaledHorizontalSchwartzPsi η hη x)) := by
+  simpa [scaledHorizontalSchwartzPsi] using
+    (continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal
+      (2 * Real.pi * η) (by positivity) k n).comp
+      (continuous_const.mul continuous_id)
+
+private theorem weightedDerivToBCFCLM_scaledHorizontal_growth
+    (η : ℝ) (hη : 0 < η) (k n : ℕ) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ x : ℝ,
+      ‖weightedDerivToBCFCLM k n
+          (scaledHorizontalSchwartzPsi η hη x)‖ ≤ D * (1 + |x|) ^ n := by
+  obtain ⟨D0, hD0_nonneg, hD0⟩ :=
+    weightedDerivToBCFCLM_schwartzPsiZ_horizontal_growth (2 * Real.pi * η) (by positivity) k n
+  refine ⟨D0 * (2 * Real.pi) ^ n, by positivity, ?_⟩
+  intro x
+  calc
+    ‖weightedDerivToBCFCLM k n (scaledHorizontalSchwartzPsi η hη x)‖
+        = ‖weightedDerivToBCFCLM k n
+            (horizontalSchwartzPsi (2 * Real.pi * η) (by positivity) (2 * Real.pi * x))‖ := rfl
+    _ ≤ D0 * (1 + |2 * Real.pi * x|) ^ n := hD0 (2 * Real.pi * x)
+    _ ≤ D0 * ((2 * Real.pi) ^ n * (1 + |x|) ^ n) := by
+          gcongr
+          exact one_add_abs_two_pi_mul_rpow_le n x
+    _ = (D0 * (2 * Real.pi) ^ n) * (1 + |x|) ^ n := by ring
+
+private theorem integrable_one_add_abs_rpow_mul_norm
+    (φ : SchwartzMap ℝ ℂ) (n : ℕ) :
+    Integrable (fun x : ℝ => (1 + |x|) ^ n * ‖φ x‖) := by
+  have h_norm_int : Integrable (fun x : ℝ => ‖φ x‖) :=
+    (φ.integrable).norm
+  have h_pow_int : Integrable (fun x : ℝ => |x| ^ n * ‖φ x‖) :=
+    φ.integrable_pow_mul volume n
+  have h_sum : Integrable (fun x : ℝ => (2 : ℝ) ^ n * (‖φ x‖ + |x| ^ n * ‖φ x‖)) :=
+    (h_norm_int.add h_pow_int).const_mul _
+  have h_bound : ∀ x : ℝ,
+      ‖(1 + |x|) ^ n * ‖φ x‖‖ ≤ (2 : ℝ) ^ n * (‖φ x‖ + |x| ^ n * ‖φ x‖) := by
+    intro x
+    rw [Real.norm_of_nonneg (mul_nonneg (pow_nonneg (by positivity : 0 ≤ 1 + |x|) n) (norm_nonneg _))]
+    have hpow : (1 + |x|) ^ n ≤ (2 : ℝ) ^ n * (1 + |x| ^ n) := by
+      calc
+        (1 + |x|) ^ n ≤ (2 * max 1 |x|) ^ n := by
+          apply pow_le_pow_left₀ (by positivity : 0 ≤ 1 + |x|)
+          calc
+            1 + |x| ≤ max 1 |x| + max 1 |x| :=
+              add_le_add (le_max_left 1 |x|) (le_max_right 1 |x|)
+            _ = 2 * max 1 |x| := by ring
+        _ = (2 : ℝ) ^ n * (max 1 |x|) ^ n := by rw [mul_pow]
+        _ ≤ (2 : ℝ) ^ n * (1 + |x| ^ n) := by
+            apply mul_le_mul_of_nonneg_left _ (by positivity)
+            by_cases hx : (1 : ℝ) ≤ |x|
+            · simp [max_eq_right hx]
+            · push_neg at hx
+              simp [max_eq_left hx.le]
+    calc
+      (1 + |x|) ^ n * ‖φ x‖ ≤ (2 : ℝ) ^ n * (1 + |x| ^ n) * ‖φ x‖ := by
+        exact mul_le_mul_of_nonneg_right hpow (norm_nonneg _)
+      _ = (2 : ℝ) ^ n * (‖φ x‖ + |x| ^ n * ‖φ x‖) := by ring
+  exact h_sum.mono'
+    ((((continuous_const.add (continuous_abs.comp continuous_id)).pow n).mul
+      φ.continuous.norm).aestronglyMeasurable)
+    (Filter.Eventually.of_forall h_bound)
+
+private def stepAProbeFamily
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) :
+    ℝ → ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) :=
+  fun x => probeCLM s (φ x • scaledHorizontalSchwartzPsi η hη x)
+
+private theorem continuous_stepAProbeFamily_component
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ)
+    (p : ↑s.attach) :
+    Continuous (fun x : ℝ => stepAProbeFamily s η hη φ x p) := by
+  have hφ : Continuous fun x : ℝ => φ x := φ.continuous
+  have hψ : Continuous fun x : ℝ =>
+      weightedDerivToBCFCLM p.1.1.1 p.1.1.2
+        (scaledHorizontalSchwartzPsi η hη x) :=
+    continuous_weightedDerivToBCFCLM_scaledHorizontal η hη p.1.1.1 p.1.1.2
+  simpa [stepAProbeFamily, probeCLM, map_smul] using hφ.smul hψ
+
+private theorem integrable_stepAProbeFamily_component
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ)
+    (p : ↑s.attach) :
+    Integrable (fun x : ℝ => stepAProbeFamily s η hη φ x p) := by
+  obtain ⟨D, hD_nonneg, hD⟩ :=
+    weightedDerivToBCFCLM_scaledHorizontal_growth η hη p.1.1.1 p.1.1.2
+  refine Integrable.mono' (((integrable_one_add_abs_rpow_mul_norm φ p.1.1.2).const_mul D))
+    (continuous_stepAProbeFamily_component s η hη φ p).aestronglyMeasurable ?_
+  filter_upwards with x
+  calc
+    ‖stepAProbeFamily s η hη φ x p‖
+        = ‖φ x‖ *
+          ‖weightedDerivToBCFCLM p.1.1.1 p.1.1.2
+              (scaledHorizontalSchwartzPsi η hη x)‖ := by
+              simp [stepAProbeFamily, probeCLM, norm_smul]
+    _ ≤ ‖φ x‖ * (D * (1 + |x|) ^ p.1.1.2) := by
+          gcongr
+          exact hD x
+    _ = D * ((1 + |x|) ^ p.1.1.2 * ‖φ x‖) := by ring
+
+private theorem integrable_stepAProbeFamily
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) :
+    Integrable (stepAProbeFamily s η hη φ) := by
+  exact Integrable.of_eval fun p => integrable_stepAProbeFamily_component s η hη φ p
+
+private theorem schwartzFunctional_bound_by_probeNorm
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : NNReal, C ≠ 0 ∧
+      ∀ f : SchwartzMap ℝ ℂ,
+        ‖T f‖ ≤ (C : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+  classical
+  obtain ⟨s, C0, hC0, hbound⟩ := schwartz_functional_bound T
+  refine ⟨s, C0 * (s.card + 1), by
+    refine mul_ne_zero hC0 ?_
+    exact_mod_cast Nat.succ_ne_zero s.card, ?_⟩
+  intro f
+  have hsup_sum :
+      (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f ≤
+        (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f := by
+    exact Seminorm.le_def.mp (Seminorm.finset_sup_le_sum (schwartzSeminormFamily ℂ ℝ ℂ) s) f
+  have hsum_apply_all :
+      ∀ s' : Finset (ℕ × ℕ),
+        (∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p) f =
+          ∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p f := by
+    intro s'
+    induction s' using Finset.induction with
+    | empty =>
+        simp
+    | insert a s' ha ih =>
+        simp [Finset.sum_insert, ha, ih]
+  have hsum_apply :
+      (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f =
+        ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f := hsum_apply_all s
+  have hsum_probe :
+      ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f ≤
+        s.card * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+    calc
+      ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f
+          ≤ ∑ _p ∈ s, ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+              refine Finset.sum_le_sum ?_
+              intro a ha
+              let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
+              simpa [schwartzSeminormFamily, p] using schwartzSeminorm_le_probe_norm s p f
+      _ = s.card * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+            simp
+  calc
+    ‖T f‖ ≤ (C0 • s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f := hbound f
+    _ = (C0 : ℝ) * (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f := by rfl
+    _ ≤ (C0 : ℝ) * ((∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f) := by
+      exact mul_le_mul_of_nonneg_left hsup_sum C0.coe_nonneg
+    _ = (C0 : ℝ) * (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f) := by rw [hsum_apply]
+    _ ≤ (C0 : ℝ) * (s.card * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖) := by
+      exact mul_le_mul_of_nonneg_left hsum_probe C0.coe_nonneg
+    _ ≤ (C0 : ℝ) * ((s.card + 1 : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖) := by
+      have hcard : (s.card : ℝ) ≤ s.card + 1 := by exact_mod_cast Nat.le_succ s.card
+      have hnorm := norm_nonneg (probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))
+      have hcardnorm :
+          (s.card : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ ≤
+            (s.card + 1 : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+        exact mul_le_mul_of_nonneg_right hcard hnorm
+      exact mul_le_mul_of_nonneg_left hcardnorm C0.coe_nonneg
+    _ = ((C0 * (s.card + 1) : NNReal) : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+      rw [NNReal.coe_mul]
+      norm_num
+      ring
+
+private noncomputable def rangeLiftLinear
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap) :
+    LinearMap.range (probeCLM s).toLinearMap →ₗ[ℂ] ℂ :=
+  ((LinearMap.ker (probeCLM s).toLinearMap).liftQ T.toLinearMap hker).comp
+    ((probeCLM s).toLinearMap.quotKerEquivRange.symm.toLinearMap)
+
+private theorem rangeLiftLinear_apply
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap)
+    (f : SchwartzMap ℝ ℂ) :
+    rangeLiftLinear T s hker ⟨probeCLM s f, LinearMap.mem_range_self _ f⟩ = T f := by
+  change
+    ((LinearMap.ker (probeCLM s).toLinearMap).liftQ T.toLinearMap hker)
+        (((probeCLM s).toLinearMap.quotKerEquivRange.symm)
+          ⟨probeCLM s f, LinearMap.mem_range_self _ f⟩) = T f
+  have hsymm :
+      ((probeCLM s).toLinearMap.quotKerEquivRange.symm)
+          ⟨probeCLM s f, LinearMap.mem_range_self _ f⟩ =
+        (LinearMap.ker (probeCLM s).toLinearMap).mkQ f := by
+    simpa using
+      (LinearMap.quotKerEquivRange_symm_apply_image ((probeCLM s).toLinearMap) f
+        (LinearMap.mem_range_self _ f))
+  rw [hsymm]
+  simp
+
+private theorem rangeLiftLinear_bound
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (C : NNReal)
+    (hbound : ∀ f : SchwartzMap ℝ ℂ,
+      ‖T f‖ ≤ (C : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖)
+    (hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap) :
+    ∀ y, ‖rangeLiftLinear T s hker y‖ ≤ (C : ℝ) * ‖y‖ := by
+  intro y
+  rcases y with ⟨y, hy⟩
+  rcases hy with ⟨f, rfl⟩
+  simpa [rangeLiftLinear_apply] using hbound f
+
+/-- Any continuous Schwartz functional factors through finitely many weighted-derivative
+probes landing in a Banach space. This is the replacement for the unavailable
+Bochner integral on `SchwartzMap ℝ ℂ`: Step A of `paley_wiener_half_line` can instead
+be performed after passing through this finite probe space and using ordinary Banach-valued
+integration there. -/
+private theorem exists_probe_factorization
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ), ∃ G : ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) →L[ℂ] ℂ,
+      T = G.comp (probeCLM s) := by
+  classical
+  obtain ⟨s, C, hC, hbound⟩ := schwartzFunctional_bound_by_probeNorm T
+  have hker : LinearMap.ker (probeCLM s).toLinearMap ≤ LinearMap.ker T.toLinearMap := by
+    intro f hf
+    rw [LinearMap.mem_ker] at hf ⊢
+    apply norm_eq_zero.mp
+    apply le_antisymm
+    · calc
+        ‖T f‖ ≤ (C : ℝ) * ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := hbound f
+        _ = 0 := by
+          have hfnorm : ‖(probeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ = 0 := by
+            simpa using congrArg norm hf
+          rw [hfnorm, mul_zero]
+    · exact norm_nonneg _
+  let FrangeLin :
+      LinearMap.range (probeCLM s).toLinearMap →ₗ[ℂ] ℂ :=
+    rangeLiftLinear T s hker
+  let Frange :
+      StrongDual ℂ (LinearMap.range (probeCLM s).toLinearMap) :=
+    FrangeLin.mkContinuous (C : ℝ) (rangeLiftLinear_bound T s C hbound hker)
+  obtain ⟨G, hGext, _⟩ := exists_extension_norm_eq (LinearMap.range (probeCLM s).toLinearMap) Frange
+  refine ⟨s, G, ?_⟩
+  ext f
+  have hmem : probeCLM s f ∈ LinearMap.range (probeCLM s).toLinearMap :=
+    LinearMap.mem_range_self _ f
+  change T f = G (probeCLM s f)
+  calc
+    T f = FrangeLin ⟨probeCLM s f, hmem⟩ := by
+      exact (rangeLiftLinear_apply T s hker f).symm
+    _ = Frange ⟨probeCLM s f, hmem⟩ := by
+      rw [LinearMap.mkContinuous_apply]
+    _ = G (probeCLM s f) := by
+      symm
+      exact hGext ⟨probeCLM s f, hmem⟩
 
 /-- A continuous linear functional on Schwartz space grows at most polynomially on the
     horizontal-line test family `x ↦ ψ_{x+iη}`. -/
@@ -561,6 +1193,887 @@ theorem fourierLaplaceExt_differentiableOn
   intro z hz
   exact (fourierLaplaceExt_hasDerivAt T z hz).differentiableAt.differentiableWithinAt
 
+/-! ### Boundary-value damping estimates -/
+
+private def expDampingFactor (η : ℝ) : ℝ → ℂ :=
+  fun ξ => Complex.exp (-(η : ℂ) * ξ) - 1
+
+private theorem expDampingFactor_exp_contDiff (η : ℝ) :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (fun t : ℝ => Complex.exp (-(η : ℂ) * t)) := by
+  let c : ℂ := -(η : ℂ)
+  simpa [c, mul_comm] using
+    (Complex.contDiff_exp.comp (contDiff_const.mul Complex.ofRealCLM.contDiff :
+      ContDiff ℝ (↑(⊤ : ℕ∞)) (fun t : ℝ => c * t)))
+
+private theorem expDampingFactor_contDiff (η : ℝ) :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (expDampingFactor η) := by
+  unfold expDampingFactor
+  simpa using (expDampingFactor_exp_contDiff η).sub contDiff_const
+
+private theorem norm_expDampingFactor_le_two_mul_eta_on_Icc
+    {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ : ξ ∈ Set.Icc (-1 : ℝ) 0) :
+    ‖expDampingFactor η ξ‖ ≤ 2 * η := by
+  rcases hξ with ⟨hξ_lo, hξ_hi⟩
+  have hξη : |η * ξ| ≤ 1 := by
+    calc
+      |η * ξ| = |η| * |ξ| := by rw [abs_mul]
+      _ ≤ η * |ξ| := by rw [abs_of_pos hη_pos]
+      _ ≤ η * 1 := by
+            gcongr
+            have hξ_abs_le_one : |ξ| ≤ 1 := by
+              rw [abs_le]
+              constructor <;> linarith
+            exact hξ_abs_le_one
+      _ ≤ 1 := by simpa using hη_le
+  have hnorm :
+      ‖Complex.exp (-(η : ℂ) * ξ) - 1‖ ≤ 2 * ‖((-(η * ξ : ℝ)) : ℂ)‖ := by
+    have hx : ‖((-(η * ξ : ℝ)) : ℂ)‖ ≤ 1 := by
+      simpa [Real.norm_eq_abs] using hξη
+    simpa [mul_comm, mul_left_comm, mul_assoc] using
+      (Complex.norm_exp_sub_one_le (x := ((-(η * ξ : ℝ)) : ℂ)) hx)
+  calc
+    ‖expDampingFactor η ξ‖ ≤ 2 * ‖((-(η * ξ : ℝ)) : ℂ)‖ := hnorm
+    _ = 2 * |η * ξ| := by simp [Real.norm_eq_abs]
+    _ ≤ 2 * η := by
+          gcongr
+          calc
+            |η * ξ| = |η| * |ξ| := by rw [abs_mul]
+            _ ≤ η * 1 := by
+                  rw [abs_of_pos hη_pos]
+                  gcongr
+                  have hξ_abs_le_one : |ξ| ≤ 1 := by
+                    rw [abs_le]
+                    constructor <;> linarith
+                  exact hξ_abs_le_one
+            _ = η := by ring
+
+private theorem iteratedDeriv_expDampingFactor_succ_eq (m : ℕ) (η : ℝ) (ξ : ℝ) :
+    iteratedDeriv (m + 1) (expDampingFactor η) ξ =
+      (-(η : ℂ)) ^ (m + 1) * Complex.exp (-(η : ℂ) * ξ) := by
+  have hExpAt : ContDiffAt ℝ (m + 1) (fun t : ℝ => Complex.exp (-(η : ℂ) * t)) ξ := by
+    exact (expDampingFactor_exp_contDiff η).contDiffAt.of_le (by exact mod_cast le_top)
+  have hConstAt : ContDiffAt ℝ (m + 1) (fun _ : ℝ => (1 : ℂ)) ξ := by
+    simpa using
+      (contDiff_const.contDiffAt.of_le
+        (by exact mod_cast le_top : (((m + 1 : ℕ) : WithTop ℕ∞) ≤ _)))
+  have hsub := iteratedDeriv_sub (x := ξ) (n := m + 1) hExpAt hConstAt
+  change iteratedDeriv (m + 1)
+      ((fun t : ℝ => Complex.exp (-(η : ℂ) * t)) - fun _ : ℝ => (1 : ℂ)) ξ = _
+  calc
+    iteratedDeriv (m + 1)
+        ((fun t : ℝ => Complex.exp (-(η : ℂ) * t)) - fun _ : ℝ => (1 : ℂ)) ξ
+        = iteratedDeriv (m + 1) (fun t : ℝ => Complex.exp (-(η : ℂ) * t)) ξ -
+            iteratedDeriv (m + 1) (fun _ : ℝ => (1 : ℂ)) ξ := by
+              simpa using hsub
+    _ = (-(η : ℂ)) ^ (m + 1) * Complex.exp (-(η : ℂ) * ξ) - 0 := by
+          rw [iteratedDeriv_cexp_const_mul_real]
+          simp [iteratedDeriv_const]
+    _ = _ := by simp
+
+private theorem norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg
+    (m : ℕ) {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ_nonneg : 0 ≤ ξ) :
+    ‖iteratedDeriv (m + 1) (expDampingFactor η) ξ‖ ≤ η := by
+  rw [iteratedDeriv_expDampingFactor_succ_eq m η ξ, norm_mul, norm_pow]
+  have hpow : η ^ (m + 1) ≤ η := by
+    have hηpow : η ^ m ≤ 1 := pow_le_one₀ hη_pos.le hη_le
+    calc
+      η ^ (m + 1) = η ^ m * η := by rw [pow_succ', mul_comm]
+      _ ≤ 1 * η := by
+            gcongr
+      _ = η := by ring
+  have hexp : ‖Complex.exp (-(η : ℂ) * ξ)‖ ≤ 1 := by
+    have hcast : Complex.exp (-(η : ℂ) * ξ) = (Real.exp (-(η * ξ)) : ℂ) := by
+      simp [mul_comm]
+    rw [hcast, Complex.norm_real, Real.norm_of_nonneg (Real.exp_pos _).le]
+    have hneg : -(η * ξ) ≤ 0 := by nlinarith
+    simpa using Real.exp_le_one_iff.mpr hneg
+  have hnormη : ‖-(η : ℂ)‖ = η := by
+    simp [Real.norm_eq_abs, abs_of_nonneg hη_pos.le]
+  rw [hnormη]
+  calc
+    η ^ (m + 1) * ‖Complex.exp (-(η : ℂ) * ξ)‖ ≤ η ^ (m + 1) * 1 := by
+      gcongr
+    _ = η ^ (m + 1) := by ring
+    _ ≤ η := hpow
+
+private theorem norm_iteratedDeriv_expDampingFactor_le_eta_of_pos
+    {j : ℕ} (hj : 0 < j) {η ξ : ℝ} (hη_pos : 0 < η) (hη_le : η ≤ 1) (hξ_nonneg : 0 ≤ ξ) :
+    ‖iteratedDeriv j (expDampingFactor η) ξ‖ ≤ η := by
+  rcases Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hj) with ⟨m, rfl⟩
+  exact norm_iteratedDeriv_expDampingFactor_succ_le_eta_of_nonneg m hη_pos hη_le hξ_nonneg
+
+private theorem norm_iteratedDeriv_expDampingFactor_le_const_mul_eta_on_Icc
+    (j : ℕ) :
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ (η : ℝ), 0 < η → η ≤ 1 → ∀ ξ ∈ Set.Icc (-1 : ℝ) 0,
+      ‖iteratedDeriv j (expDampingFactor η) ξ‖ ≤ D * η := by
+  cases j with
+  | zero =>
+      refine ⟨2, by positivity, ?_⟩
+      intro η hη_pos hη_le ξ hξ
+      simpa [iteratedDeriv_zero] using norm_expDampingFactor_le_two_mul_eta_on_Icc hη_pos hη_le hξ
+  | succ m =>
+      refine ⟨Real.exp 1, (Real.exp_pos 1).le, ?_⟩
+      intro η hη_pos hη_le ξ hξ
+      rcases hξ with ⟨hξ_lo, hξ_hi⟩
+      rw [iteratedDeriv_expDampingFactor_succ_eq m η ξ, norm_mul, norm_pow]
+      have hpow : η ^ (m + 1) ≤ η := by
+        have hηpow : η ^ m ≤ 1 := pow_le_one₀ hη_pos.le hη_le
+        calc
+          η ^ (m + 1) = η ^ m * η := by rw [pow_succ', mul_comm]
+          _ ≤ 1 * η := by
+                gcongr
+          _ = η := by ring
+      have hexp : ‖Complex.exp (-(η : ℂ) * ξ)‖ ≤ Real.exp 1 := by
+        have hcast : Complex.exp (-(η : ℂ) * ξ) = (Real.exp (-(η * ξ)) : ℂ) := by
+          simp [mul_comm]
+        rw [hcast, Complex.norm_real, Real.norm_of_nonneg (Real.exp_pos _).le]
+        have hupper : -(η * ξ) ≤ 1 := by
+          nlinarith
+        exact Real.exp_le_exp.mpr hupper
+      have hnormη : ‖-(η : ℂ)‖ = η := by
+        simp [Real.norm_eq_abs, abs_of_nonneg hη_pos.le]
+      rw [hnormη]
+      calc
+        η ^ (m + 1) * ‖Complex.exp (-(η : ℂ) * ξ)‖ ≤ η ^ (m + 1) * Real.exp 1 := by
+          gcongr
+        _ ≤ η * Real.exp 1 := by
+          gcongr
+        _ = Real.exp 1 * η := by ring
+
+private theorem norm_expDampingFactor_le_eta_mul_abs_of_nonneg
+    {η ξ : ℝ} (hη_nonneg : 0 ≤ η) (hξ_nonneg : 0 ≤ ξ) :
+    ‖expDampingFactor η ξ‖ ≤ η * ξ := by
+  have hcast : Complex.exp (-(η : ℂ) * ξ) = (Real.exp (-(η * ξ)) : ℂ) := by
+    simp [mul_comm]
+  have hle_one : Real.exp (-(η * ξ)) ≤ 1 := by
+    have hneg : -(η * ξ) ≤ 0 := by nlinarith
+    simpa using Real.exp_le_one_iff.mpr hneg
+  have habs : |Real.exp (-(η * ξ)) - 1| = 1 - Real.exp (-(η * ξ)) := by
+    have hnonpos : Real.exp (-(η * ξ)) - 1 ≤ 0 := sub_nonpos.mpr hle_one
+    rw [abs_of_nonpos hnonpos]
+    ring
+  have haux : 1 - Real.exp (-(η * ξ)) ≤ η * ξ := by
+    have := Real.one_sub_le_exp_neg (η * ξ)
+    linarith
+  calc
+    ‖expDampingFactor η ξ‖ = |Real.exp (-(η * ξ)) - 1| := by
+      rw [expDampingFactor, hcast, ← Complex.ofReal_one, ← Complex.ofReal_sub]
+      simpa [Real.norm_eq_abs] using (Complex.norm_real (Real.exp (-(η * ξ)) - 1))
+    _ = 1 - Real.exp (-(η * ξ)) := habs
+    _ ≤ η * ξ := haux
+
+private theorem expDamping_mul_iterated_bound_on_Icc
+    (ψ : SchwartzMap ℝ ℂ) (n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ ∈ Set.Icc (-1 : ℝ) 0,
+      ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η := by
+  let K : Set ℝ := Set.Icc (-1 : ℝ) 0
+  have hK_compact : IsCompact K := isCompact_Icc
+  have hB :
+      ∀ j : ℕ, ∃ B : ℝ, 0 ≤ B ∧ ∀ ξ ∈ K, ‖iteratedDeriv j ψ ξ‖ ≤ B := by
+    intro j
+    obtain ⟨B, hB⟩ := hK_compact.exists_bound_of_continuousOn
+      (((ψ.smooth ⊤).continuous_iteratedDeriv j (by exact mod_cast le_top)).norm.continuousOn)
+    refine ⟨B, ?_, ?_⟩
+    · have hB0' := hB 0 (by
+          change (0 : ℝ) ∈ Set.Icc (-1 : ℝ) 0
+          constructor <;> norm_num)
+      have hB0 : ‖iteratedDeriv j ψ 0‖ ≤ B := by
+        simpa using hB0'
+      nlinarith [norm_nonneg (iteratedDeriv j ψ 0), hB0]
+    · intro ξ hξ
+      simpa using hB ξ hξ
+  choose B hB_nonneg hB_bound using hB
+  have hD :
+      ∀ j : ℕ, ∃ D : ℝ, 0 ≤ D ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ ∈ K,
+        ‖iteratedDeriv j (expDampingFactor η) ξ‖ ≤ D * η := by
+    intro j
+    simpa [K] using norm_iteratedDeriv_expDampingFactor_le_const_mul_eta_on_Icc j
+  choose D hD_nonneg hD_bound using hD
+  let C : ℝ := ∑ i ∈ Finset.range (n + 1), ((n.choose i : ℝ) * D i * B (n - i))
+  refine ⟨C, ?_, ?_⟩
+  · dsimp [C]
+    refine Finset.sum_nonneg ?_
+    intro i hi
+    exact mul_nonneg
+      (mul_nonneg (by exact_mod_cast Nat.zero_le (n.choose i)) (hD_nonneg i))
+      (hB_nonneg (n - i))
+  · intro η hη_pos hη_le ξ hξ
+    have hη_smooth : ContDiffAt ℝ n (expDampingFactor η) ξ :=
+      (expDampingFactor_contDiff η).contDiffAt.of_le (by exact mod_cast le_top)
+    have hψ_smooth : ContDiffAt ℝ n ψ ξ :=
+      (ψ.smooth ⊤).contDiffAt.of_le (by exact mod_cast le_top)
+    have hmul :
+        iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ =
+          ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+              iteratedDeriv (n - i) ψ ξ := by
+      simpa using iteratedDeriv_mul (x := ξ) hη_smooth hψ_smooth
+    calc
+      ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖
+          = ‖∑ i ∈ Finset.range (n + 1),
+              (n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+                iteratedDeriv (n - i) ψ ξ‖ := by
+                rw [hmul]
+      _ ≤ ∑ i ∈ Finset.range (n + 1),
+            ‖(n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+              iteratedDeriv (n - i) ψ ξ‖ := by
+              exact norm_sum_le _ _
+      _ ≤ ∑ i ∈ Finset.range (n + 1),
+            (((n.choose i : ℝ) * D i * B (n - i)) * η) := by
+              refine Finset.sum_le_sum ?_
+              intro i hi
+              have hDi : ‖iteratedDeriv i (expDampingFactor η) ξ‖ ≤ D i * η :=
+                hD_bound i η hη_pos hη_le ξ hξ
+              have hBi : ‖iteratedDeriv (n - i) ψ ξ‖ ≤ B (n - i) :=
+                hB_bound (n - i) ξ hξ
+              have hchoose_nonneg : 0 ≤ (n.choose i : ℝ) := by
+                exact_mod_cast Nat.zero_le (n.choose i)
+              calc
+                ‖(n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+                    iteratedDeriv (n - i) ψ ξ‖
+                    = (n.choose i : ℝ) * ‖iteratedDeriv i (expDampingFactor η) ξ‖ *
+                        ‖iteratedDeriv (n - i) ψ ξ‖ := by
+                          simp [mul_assoc]
+                _ ≤ (n.choose i : ℝ) * (D i * η) * ‖iteratedDeriv (n - i) ψ ξ‖ := by
+                      gcongr
+                _ ≤ (n.choose i : ℝ) * (D i * η) * B (n - i) := by
+                      have hDiη_nonneg : 0 ≤ D i * η := mul_nonneg (hD_nonneg i) hη_pos.le
+                      have hleft_nonneg : 0 ≤ (n.choose i : ℝ) * (D i * η) :=
+                        mul_nonneg hchoose_nonneg hDiη_nonneg
+                      exact mul_le_mul_of_nonneg_left hBi hleft_nonneg
+                _ = (((n.choose i : ℝ) * D i * B (n - i)) * η) := by ring
+      _ = C * η := by
+            dsimp [C]
+            rw [← Finset.sum_mul]
+
+private theorem expDamping_mul_iterated_weighted_bound_on_Ici
+    (ψ : SchwartzMap ℝ ℂ) (k n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ : ℝ, 0 ≤ ξ →
+      |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η := by
+  let A : ℕ → ℝ := fun i =>
+    if i = 0 then SchwartzMap.seminorm ℝ (k + 1) n ψ
+    else (n.choose i : ℝ) * SchwartzMap.seminorm ℝ k (n - i) ψ
+  let C : ℝ := ∑ i ∈ Finset.range (n + 1), A i
+  refine ⟨C, ?_, ?_⟩
+  · dsimp [C, A]
+    refine Finset.sum_nonneg ?_
+    intro i hi
+    by_cases hi0 : i = 0
+    · simp [hi0]
+    · have hchoose_nonneg : 0 ≤ (n.choose i : ℝ) := by
+          exact_mod_cast Nat.zero_le (n.choose i)
+      have hsemi_nonneg : 0 ≤ SchwartzMap.seminorm ℝ k (n - i) ψ := by
+          positivity
+      simpa [A, hi0] using mul_nonneg hchoose_nonneg hsemi_nonneg
+  · intro η hη_pos hη_le ξ hξ_nonneg
+    have hη_smooth : ContDiffAt ℝ n (expDampingFactor η) ξ :=
+      (expDampingFactor_contDiff η).contDiffAt.of_le (by exact mod_cast le_top)
+    have hψ_smooth : ContDiffAt ℝ n ψ ξ :=
+      (ψ.smooth ⊤).contDiffAt.of_le (by exact mod_cast le_top)
+    have hmul :
+        iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ =
+          ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+              iteratedDeriv (n - i) ψ ξ := by
+      simpa using iteratedDeriv_mul (x := ξ) hη_smooth hψ_smooth
+    have hξ_abs : |ξ| = ξ := abs_of_nonneg hξ_nonneg
+    calc
+      |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖
+          = ξ ^ k * ‖∑ i ∈ Finset.range (n + 1),
+              (n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+                iteratedDeriv (n - i) ψ ξ‖ := by
+                  rw [hmul, hξ_abs]
+      _ ≤ ξ ^ k * ∑ i ∈ Finset.range (n + 1),
+            ‖(n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+              iteratedDeriv (n - i) ψ ξ‖ := by
+              gcongr
+              exact norm_sum_le _ _
+      _ = ∑ i ∈ Finset.range (n + 1),
+            ξ ^ k * ‖(n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+              iteratedDeriv (n - i) ψ ξ‖ := by
+              rw [Finset.mul_sum]
+      _ ≤ ∑ i ∈ Finset.range (n + 1), (A i) * η := by
+            refine Finset.sum_le_sum ?_
+            intro i hi
+            by_cases hi0 : i = 0
+            · subst hi0
+              calc
+                ξ ^ k * ‖(n.choose 0 : ℂ) * iteratedDeriv 0 (expDampingFactor η) ξ *
+                    iteratedDeriv n ψ ξ‖
+                    = ξ ^ k * (‖expDampingFactor η ξ‖ * ‖iteratedDeriv n ψ ξ‖) := by
+                        simp
+                _ ≤ ξ ^ k * ((η * ξ) * ‖iteratedDeriv n ψ ξ‖) := by
+                      gcongr
+                      exact norm_expDampingFactor_le_eta_mul_abs_of_nonneg hη_pos.le hξ_nonneg
+                _ = η * (ξ ^ (k + 1) * ‖iteratedDeriv n ψ ξ‖) := by ring
+                _ ≤ η * SchwartzMap.seminorm ℝ (k + 1) n ψ := by
+                      gcongr
+                      simpa [hξ_abs] using
+                        (SchwartzMap.le_seminorm' (𝕜 := ℝ) (k := k + 1) (n := n) ψ ξ)
+                _ = A 0 * η := by simp [A, mul_comm]
+            · have hi_pos : 0 < i := Nat.pos_iff_ne_zero.mpr hi0
+              calc
+                ξ ^ k * ‖(n.choose i : ℂ) * iteratedDeriv i (expDampingFactor η) ξ *
+                    iteratedDeriv (n - i) ψ ξ‖
+                    = (n.choose i : ℝ) *
+                        ‖iteratedDeriv i (expDampingFactor η) ξ‖ *
+                        (ξ ^ k * ‖iteratedDeriv (n - i) ψ ξ‖) := by
+                          simp [mul_assoc, mul_left_comm]
+                _ ≤ (n.choose i : ℝ) * η * SchwartzMap.seminorm ℝ k (n - i) ψ := by
+                      gcongr
+                      · exact norm_iteratedDeriv_expDampingFactor_le_eta_of_pos hi_pos hη_pos hη_le hξ_nonneg
+                      · simpa [hξ_abs] using
+                          (SchwartzMap.le_seminorm' (𝕜 := ℝ) (k := k) (n := n - i) ψ ξ)
+                _ = A i * η := by
+                      simp [A, hi0, mul_assoc, mul_comm]
+      _ = C * η := by
+            dsimp [C]
+            rw [← Finset.sum_mul]
+
+/-- Global general-`n` pointwise `O(η)` estimate for the damped cutoff kernel. -/
+private theorem expDamping_mul_leftTailCutoff_iterated_pointwise_bound
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0)
+    (k n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, 0 < η → η ≤ 1 → ∀ ξ : ℝ,
+      |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ ≤ C * η := by
+  obtain ⟨Cmid, hCmid_nonneg, hmid⟩ := expDamping_mul_iterated_bound_on_Icc ψ n
+  obtain ⟨Cpos, hCpos_nonneg, hpos⟩ := expDamping_mul_iterated_weighted_bound_on_Ici ψ k n
+  let C : ℝ := Cmid + Cpos
+  refine ⟨C, add_nonneg hCmid_nonneg hCpos_nonneg, ?_⟩
+  intro η hη_pos hη_le ξ
+  by_cases hneg : ξ < -1
+  · let f : ℝ → ℂ := fun t => expDampingFactor η t * ψ t
+    have hEqNeg : Set.EqOn f (fun _ : ℝ => (0 : ℂ)) (Set.Iio (-1 : ℝ)) := by
+      intro t ht
+      simp [f, hψ_left t (le_of_lt ht)]
+    have hIterEqNeg := Set.EqOn.iteratedDeriv_of_isOpen hEqNeg isOpen_Iio n
+    have hzero : iteratedDeriv n f ξ = 0 := by
+      simpa using hIterEqNeg hneg
+    calc
+      |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ = 0 := by
+        simp [f, hzero]
+      _ ≤ C * η := by
+            have hC_nonneg : 0 ≤ C := add_nonneg hCmid_nonneg hCpos_nonneg
+            exact mul_nonneg hC_nonneg hη_pos.le
+  · by_cases hξ_nonneg : 0 ≤ ξ
+    · have hmain := hpos η hη_pos hη_le ξ hξ_nonneg
+      have hCpos_le : Cpos * η ≤ C * η := by
+        dsimp [C]
+        nlinarith [hCmid_nonneg, hη_pos]
+      exact le_trans hmain hCpos_le
+    · have hξ_mem : ξ ∈ Set.Icc (-1 : ℝ) 0 := by
+        constructor <;> linarith
+      have hξ_abs_le : |ξ| ^ k ≤ 1 := by
+        have hξ_abs_le_one : |ξ| ≤ 1 := by
+          rw [abs_le]
+          constructor <;> linarith
+        exact pow_le_one₀ (abs_nonneg ξ) hξ_abs_le_one
+      have hnorm_nonneg :
+          0 ≤ ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ := by
+        positivity
+      calc
+        |ξ| ^ k * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖
+            ≤ 1 * ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ := by
+              gcongr
+        _ = ‖iteratedDeriv n (fun t : ℝ => expDampingFactor η t * ψ t) ξ‖ := by ring
+        _ ≤ Cmid * η := hmid η hη_pos hη_le ξ hξ_mem
+        _ ≤ C * η := by
+              dsimp [C]
+              nlinarith [hCpos_nonneg, hη_pos]
+
+private def cutoffSchwartz (ψ : SchwartzMap ℝ ℂ) : SchwartzMap ℝ ℂ :=
+  SchwartzMap.smulLeftCLM ℂ (fun ξ : ℝ => (smoothCutoff ξ : ℂ)) ψ
+
+private theorem cutoffSchwartz_left
+    (ψ : SchwartzMap ℝ ℂ) :
+    ∀ ξ ≤ -1, cutoffSchwartz ψ ξ = 0 := by
+  intro ξ hξ
+  rw [cutoffSchwartz,
+    SchwartzMap.smulLeftCLM_apply_apply smoothCutoff_complex_hasTemperateGrowth]
+  change ((smoothCutoff ξ : ℂ) * ψ ξ) = 0
+  rw [smoothCutoff_zero_of_le_neg_one hξ]
+  simp
+
+private theorem cutoffSchwartz_eqOn_nonneg
+    (ψ : SchwartzMap ℝ ℂ) :
+    Set.EqOn (cutoffSchwartz ψ) ψ (Set.Ici 0) := by
+  intro ξ hξ
+  have hξ_nonneg : 0 ≤ ξ := by simpa using hξ
+  rw [cutoffSchwartz,
+    SchwartzMap.smulLeftCLM_apply_apply smoothCutoff_complex_hasTemperateGrowth]
+  change ((smoothCutoff ξ : ℂ) * ψ ξ) = ψ ξ
+  rw [smoothCutoff_one_of_nonneg hξ_nonneg]
+  simp
+
+private def expDampingMulLeftTailCutoffSchwartz
+    (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
+    (ψ : SchwartzMap ℝ ℂ) (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0) : SchwartzMap ℝ ℂ where
+  toFun := fun ξ => expDampingFactor η ξ * ψ ξ
+  smooth' := (expDampingFactor_contDiff η).mul (ψ.smooth _)
+  decay' k n := by
+    obtain ⟨C, hC_nonneg, hC⟩ :=
+      expDamping_mul_leftTailCutoff_iterated_pointwise_bound ψ hψ_left k n
+    refine ⟨C * η, fun ξ => ?_⟩
+    rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    exact hC η hη_pos hη_le ξ
+
+private theorem seminorm_expDampingMulLeftTailCutoffSchwartz_le
+    (ψ : SchwartzMap ℝ ℂ) (hψ_left : ∀ ξ ≤ -1, ψ ξ = 0)
+    (k n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      SchwartzMap.seminorm ℝ k n
+        (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le ψ hψ_left) ≤ C * η := by
+  obtain ⟨C, hC_nonneg, hC⟩ :=
+    expDamping_mul_leftTailCutoff_iterated_pointwise_bound ψ hψ_left k n
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro η hη_pos hη_le
+  refine SchwartzMap.seminorm_le_bound' (𝕜 := ℝ) k n
+    (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le ψ hψ_left)
+    (mul_nonneg hC_nonneg hη_pos.le) ?_
+  intro ξ
+  simpa [expDampingMulLeftTailCutoffSchwartz] using hC η hη_pos hη_le ξ
+
+private theorem seminorm_expDampingCutoffSchwartz_le
+    (ψ : SchwartzMap ℝ ℂ) (k n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      SchwartzMap.seminorm ℝ k n
+        (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+          (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)) ≤ C * η := by
+  simpa using
+    seminorm_expDampingMulLeftTailCutoffSchwartz_le
+      (ψ := cutoffSchwartz ψ) (hψ_left := cutoffSchwartz_left ψ) k n
+
+private theorem finset_sum_schwartzSeminorm_apply
+    (s : Finset (ℕ × ℕ)) (φ : SchwartzMap ℝ ℂ) :
+    (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) φ =
+      ∑ p ∈ s, (schwartzSeminormFamily ℂ ℝ ℂ p) φ := by
+  induction s using Finset.induction_on with
+  | empty =>
+      simp
+  | insert a s ha ih =>
+      simp [ha, Seminorm.add_apply, ih]
+
+private theorem clm_bound_of_seminorm_O_eta
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (f : ∀ η : ℝ, 0 < η → η ≤ 1 → SchwartzMap ℝ ℂ)
+    (hsemi : ∀ p : ℕ × ℕ, ∃ D : ℝ, 0 ≤ D ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      SchwartzMap.seminorm ℝ p.1 p.2 (f η hη_pos hη_le) ≤ D * η) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      ‖T (f η hη_pos hη_le)‖ ≤ C * η := by
+  classical
+  obtain ⟨s, C0, hC0_ne, hbound⟩ := schwartz_functional_bound T
+  choose D hD_nonneg hD_bound using hsemi
+  let C : ℝ := (C0 : ℝ) * ∑ p ∈ s, D p
+  refine ⟨C, ?_, ?_⟩
+  · dsimp [C]
+    refine mul_nonneg C0.coe_nonneg ?_
+    exact Finset.sum_nonneg (by
+      intro p hp
+      exact hD_nonneg p)
+  · intro η hη_pos hη_le
+    have hsup :
+        (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) (f η hη_pos hη_le) ≤
+          ∑ p ∈ s, D p * η := by
+      have hsupSeminorm :
+          s.sup (schwartzSeminormFamily ℂ ℝ ℂ) ≤
+            ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p :=
+        Seminorm.finset_sup_le_sum _ _
+      calc
+        (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) (f η hη_pos hη_le)
+            ≤ (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) (f η hη_pos hη_le) :=
+              Seminorm.le_def.mp hsupSeminorm _
+        _ = ∑ p ∈ s, (schwartzSeminormFamily ℂ ℝ ℂ p) (f η hη_pos hη_le) := by
+              simpa using finset_sum_schwartzSeminorm_apply s (f η hη_pos hη_le)
+        _ = ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (f η hη_pos hη_le) := by
+              unfold schwartzSeminormFamily
+              rfl
+        _ ≤ ∑ p ∈ s, D p * η := by
+              refine Finset.sum_le_sum ?_
+              intro p hp
+              exact hD_bound p η hη_pos hη_le
+    calc
+      ‖T (f η hη_pos hη_le)‖ ≤ (C0 • s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) (f η hη_pos hη_le) :=
+        hbound (f η hη_pos hη_le)
+      _ = (C0 : ℝ) * (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) (f η hη_pos hη_le) := by
+            rfl
+      _ ≤ (C0 : ℝ) * ∑ p ∈ s, D p * η := by
+            exact mul_le_mul_of_nonneg_left hsup C0.coe_nonneg
+      _ = (C0 : ℝ) * ((∑ p ∈ s, D p) * η) := by
+            rw [← Finset.sum_mul]
+      _ = C * η := by
+            dsimp [C]
+            ring
+
+private theorem clm_bound_of_expDampingCutoff_O_eta
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (ψ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      ‖T (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+        (cutoffSchwartz ψ) (cutoffSchwartz_left ψ))‖ ≤ C * η := by
+  refine clm_bound_of_seminorm_O_eta T
+    (f := fun η hη_pos hη_le =>
+      expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+        (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)) ?_
+  intro p
+  simpa using seminorm_expDampingCutoffSchwartz_le (ψ := ψ) p.1 p.2
+
+private theorem clm_bound_of_fourier_expDampingCutoff_O_eta
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (ψ : SchwartzMap ℝ ℂ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ η : ℝ, ∀ hη_pos : 0 < η, ∀ hη_le : η ≤ 1,
+      ‖T (SchwartzMap.fourierTransformCLM ℂ
+        (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+          (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)))‖ ≤ C * η := by
+  simpa [ContinuousLinearMap.comp_apply] using
+    clm_bound_of_expDampingCutoff_O_eta
+      (T := T.comp (SchwartzMap.fourierTransformCLM ℂ)) ψ
+
+private theorem tendsto_fourier_expDampingCutoff_zero
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (ψ : SchwartzMap ℝ ℂ) :
+    Tendsto
+      (fun η : ℝ =>
+        if hη_pos : 0 < η then
+          if hη_le : η ≤ 1 then
+            T (SchwartzMap.fourierTransformCLM ℂ
+              (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+                (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)))
+          else 0
+        else 0)
+      (nhdsWithin 0 (Ioi 0))
+      (nhds 0) := by
+  obtain ⟨C, hC_nonneg, hC_bound⟩ := clm_bound_of_fourier_expDampingCutoff_O_eta (T := T) ψ
+  have hη_le_mem : {η : ℝ | η ≤ 1} ∈ nhdsWithin 0 (Ioi 0) := by
+    rw [mem_nhdsWithin_iff_exists_mem_nhds_inter]
+    refine ⟨Iio (1 : ℝ), Iio_mem_nhds (by norm_num), ?_⟩
+    intro η hη
+    exact le_of_lt (show η < 1 from hη.1)
+  have hbound :
+      ∀ᶠ η : ℝ in nhdsWithin 0 (Ioi 0),
+        ‖if hη_pos : 0 < η then
+            if hη_le : η ≤ 1 then
+              T (SchwartzMap.fourierTransformCLM ℂ
+                (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+                  (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)))
+            else 0
+          else 0‖ ≤ C * η := by
+    filter_upwards [self_mem_nhdsWithin, hη_le_mem] with η hη_pos hη_le
+    have hη_pos' : 0 < η := hη_pos
+    rw [dif_pos hη_pos', dif_pos hη_le]
+    exact hC_bound η hη_pos' hη_le
+  have hCη :
+      Tendsto (fun η : ℝ => C * η) (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
+    simpa using
+      (tendsto_const_nhds.mul
+        (tendsto_id.mono_left nhdsWithin_le_nhds) :
+          Tendsto (fun η : ℝ => C * η) (nhdsWithin 0 (Ioi 0)) (nhds (C * 0)))
+  exact squeeze_zero_norm' hbound hCη
+
+private theorem fourier_pairing_cutoffSchwartz_eq
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (hT_supp : HasOneSidedFourierSupport T)
+    (ψ : SchwartzMap ℝ ℂ) :
+    T (SchwartzMap.fourierTransformCLM ℂ (cutoffSchwartz ψ)) =
+      T (SchwartzMap.fourierTransformCLM ℂ ψ) :=
+  fourier_pairing_eq_of_eqOn_nonneg T hT_supp (cutoffSchwartz_eqOn_nonneg ψ)
+
+private theorem fourierInv_eq_cexp_integral
+    (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
+    FourierTransform.fourierInv φ ξ =
+      ∫ x : ℝ, Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x := by
+  have hcoe :
+      FourierTransform.fourierInv φ ξ =
+        FourierTransform.fourierInv (φ : ℝ → ℂ) ξ := by
+    simpa using
+      congrArg (fun g => g ξ) (SchwartzMap.fourierInv_coe (f := φ))
+  rw [hcoe]
+  simpa [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm] using
+    (Real.fourierInv_eq' (f := (φ : ℝ → ℂ)) (w := ξ))
+
+private theorem psiZ_pairing_formula
+    (φ : SchwartzMap ℝ ℂ) (η ξ : ℝ) :
+    ∫ x : ℝ, psiZ ((2 * Real.pi : ℂ) * (x + η * Complex.I)) ξ * φ x =
+      smoothCutoff ξ * Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+        FourierTransform.fourierInv φ ξ := by
+  rw [fourierInv_eq_cexp_integral (φ := φ) (ξ := ξ)]
+  have hexp :
+      ∀ x : ℝ,
+        Complex.exp (Complex.I * ((2 * Real.pi : ℂ) * (x + η * Complex.I)) * ξ) =
+          Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+            Complex.exp (2 * Real.pi * Complex.I * ξ * x) := by
+    intro x
+    have harg :
+        Complex.I * ((2 * Real.pi : ℂ) * (x + η * Complex.I)) * ξ =
+          (-(2 * Real.pi * η : ℂ) * ξ) + (2 * Real.pi * Complex.I * ξ * x) := by
+      calc
+        Complex.I * ((2 * Real.pi : ℂ) * (x + η * Complex.I)) * ξ
+            = 2 * Real.pi * Complex.I * ξ * x +
+                2 * Real.pi * Complex.I * (Complex.I * ((η : ℂ) * ξ)) := by ring
+        _ = 2 * Real.pi * Complex.I * ξ * x +
+              2 * Real.pi * (Complex.I * Complex.I) * ((η : ℂ) * ξ) := by ring
+        _ = 2 * Real.pi * Complex.I * ξ * x - (2 * Real.pi * η : ℂ) * ξ := by
+              simp [Complex.I_mul_I, sub_eq_add_neg, mul_left_comm, mul_comm]
+              ring
+        _ = (-(2 * Real.pi * η : ℂ) * ξ) + (2 * Real.pi * Complex.I * ξ * x) := by ring
+    rw [harg, Complex.exp_add]
+  have hrewrite :
+      (∫ x : ℝ, psiZ ((2 * Real.pi : ℂ) * (x + η * Complex.I)) ξ * φ x) =
+        ∫ x : ℝ,
+          (smoothCutoff ξ : ℂ) *
+            (Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+              Complex.exp (2 * Real.pi * Complex.I * ξ * x)) * φ x := by
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    rw [psiZ_eq, hexp x]
+  rw [hrewrite]
+  have hfactor :
+      (∫ x : ℝ,
+          (smoothCutoff ξ : ℂ) *
+            (Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+              Complex.exp (2 * Real.pi * Complex.I * ξ * x)) * φ x) =
+        ∫ x : ℝ,
+          Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+            ((smoothCutoff ξ : ℂ) * (Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x)) := by
+    refine integral_congr_ae ?_
+    filter_upwards with x
+    ring
+  rw [hfactor]
+  rw [integral_const_mul, integral_const_mul]
+  ring
+
+private def stepAScalarDerivIntegrand
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ x : ℝ) : ℂ :=
+  iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ * φ x
+
+private theorem continuous_stepAScalarDerivIntegrand
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    Continuous (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n ξ x) := by
+  have hbcf : Continuous (fun x : ℝ =>
+      weightedDerivToBCFCLM 0 n (scaledHorizontalSchwartzPsi η hη x)) :=
+    continuous_weightedDerivToBCFCLM_scaledHorizontal η hη 0 n
+  have hpsi0 : Continuous (fun x : ℝ =>
+      (weightedDerivToBCFCLM 0 n (scaledHorizontalSchwartzPsi η hη x)) ξ) :=
+    (BoundedContinuousFunction.evalCLM ℂ ξ).continuous.comp hbcf
+  have hEq :
+      (fun x : ℝ => (weightedDerivToBCFCLM 0 n (scaledHorizontalSchwartzPsi η hη x)) ξ) =
+        fun x : ℝ => iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ := by
+    funext x
+    simp [weightedDerivToBCFCLM_apply, polyWeight]
+  have hpsi : Continuous (fun x : ℝ =>
+      iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ) := by
+    simpa [hEq] using hpsi0
+  simpa [stepAScalarDerivIntegrand] using hpsi.mul φ.continuous
+
+private theorem integrable_stepAScalarDerivIntegrand
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    Integrable (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n ξ x) := by
+  obtain ⟨D, hD_nonneg, hD⟩ :=
+    weightedDerivToBCFCLM_scaledHorizontal_growth η hη 0 n
+  have hbound :
+      ∀ x : ℝ,
+        ‖stepAScalarDerivIntegrand η hη φ n ξ x‖ ≤
+          D * ((1 + |x|) ^ n * ‖φ x‖) := by
+    intro x
+    have hpoint :
+        ‖iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ‖ ≤
+          ‖weightedDerivToBCFCLM 0 n (scaledHorizontalSchwartzPsi η hη x)‖ := by
+      simpa [weightedDerivToBCFCLM_apply, polyWeight] using
+        (weightedDerivToBCFCLM 0 n (scaledHorizontalSchwartzPsi η hη x)).norm_coe_le_norm ξ
+    calc
+      ‖stepAScalarDerivIntegrand η hη φ n ξ x‖
+          = ‖iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) ξ‖ * ‖φ x‖ := by
+              simp [stepAScalarDerivIntegrand]
+      _ ≤ (D * (1 + |x|) ^ n) * ‖φ x‖ := by
+            gcongr
+            exact hpoint.trans (hD x)
+      _ = D * ((1 + |x|) ^ n * ‖φ x‖) := by ring
+  exact Integrable.mono'
+    ((integrable_one_add_abs_rpow_mul_norm φ n).const_mul D)
+    ((continuous_stepAScalarDerivIntegrand η hη φ n ξ).aestronglyMeasurable)
+    (Filter.Eventually.of_forall hbound)
+
+  private theorem hasDerivAt_stepAScalarDerivIntegrand
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (x ξ : ℝ) :
+    HasDerivAt
+      (fun t : ℝ => stepAScalarDerivIntegrand η hη φ n t x)
+      (stepAScalarDerivIntegrand η hη φ (n + 1) ξ x) ξ := by
+  have hcont : ContDiff ℝ (n + 1) (scaledHorizontalSchwartzPsi η hη x) :=
+    (scaledHorizontalSchwartzPsi η hη x).smooth _
+  have hpsi :
+      HasDerivAt
+        (fun t : ℝ => iteratedDeriv n (scaledHorizontalSchwartzPsi η hη x) t)
+        (iteratedDeriv (n + 1) (scaledHorizontalSchwartzPsi η hη x) ξ) ξ := by
+    simpa [iteratedDeriv_succ] using
+      ((hcont.differentiable_iteratedDeriv' n ξ).hasDerivAt)
+  simpa [stepAScalarDerivIntegrand] using hpsi.mul_const (φ x)
+
+private def stepAScalarDerivIntegral
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) : ℂ :=
+  ∫ x : ℝ, stepAScalarDerivIntegrand η hη φ n ξ x
+
+private theorem hasDerivAt_stepAScalarDerivIntegral
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    HasDerivAt
+      (stepAScalarDerivIntegral η hη φ n)
+      (stepAScalarDerivIntegral η hη φ (n + 1) ξ) ξ := by
+  let s : Set ℝ := Metric.ball ξ 1
+  have hs : s ∈ 𝓝 ξ := Metric.ball_mem_nhds ξ zero_lt_one
+  have hF_meas :
+      ∀ᶠ y in 𝓝 ξ, AEStronglyMeasurable
+        (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n y x) volume := by
+    filter_upwards with y
+    exact (continuous_stepAScalarDerivIntegrand η hη φ n y).aestronglyMeasurable
+  have hF_int :
+      Integrable (fun x : ℝ => stepAScalarDerivIntegrand η hη φ n ξ x) :=
+    integrable_stepAScalarDerivIntegrand η hη φ n ξ
+  have hF'_meas :
+      AEStronglyMeasurable
+        (fun x : ℝ => stepAScalarDerivIntegrand η hη φ (n + 1) ξ x) volume :=
+    (continuous_stepAScalarDerivIntegrand η hη φ (n + 1) ξ).aestronglyMeasurable
+  obtain ⟨D, hD_nonneg, hD⟩ :=
+    weightedDerivToBCFCLM_scaledHorizontal_growth η hη 0 (n + 1)
+  let bound : ℝ → ℝ := fun x => D * ((1 + |x|) ^ (n + 1) * ‖φ x‖)
+  have h_bound :
+      ∀ᵐ x : ℝ ∂volume, ∀ y ∈ s,
+        ‖stepAScalarDerivIntegrand η hη φ (n + 1) y x‖ ≤ bound x := by
+    filter_upwards with x y hy
+    have hpoint :
+        ‖iteratedDeriv (n + 1) (scaledHorizontalSchwartzPsi η hη x) y‖ ≤
+          ‖weightedDerivToBCFCLM 0 (n + 1) (scaledHorizontalSchwartzPsi η hη x)‖ := by
+      simpa [weightedDerivToBCFCLM_apply, polyWeight] using
+        (weightedDerivToBCFCLM 0 (n + 1) (scaledHorizontalSchwartzPsi η hη x)).norm_coe_le_norm y
+    calc
+      ‖stepAScalarDerivIntegrand η hη φ (n + 1) y x‖
+          = ‖iteratedDeriv (n + 1) (scaledHorizontalSchwartzPsi η hη x) y‖ * ‖φ x‖ := by
+              simp [stepAScalarDerivIntegrand]
+      _ ≤ (D * (1 + |x|) ^ (n + 1)) * ‖φ x‖ := by
+            gcongr
+            exact hpoint.trans (hD x)
+      _ = bound x := by
+            simp [bound]
+            ring
+  have bound_integrable : Integrable bound := by
+    simpa [bound, mul_assoc, mul_left_comm, mul_comm] using
+      (integrable_one_add_abs_rpow_mul_norm φ (n + 1)).const_mul D
+  have h_diff :
+      ∀ᵐ x : ℝ ∂volume, ∀ y ∈ s,
+        HasDerivAt
+          (fun t : ℝ => stepAScalarDerivIntegrand η hη φ n t x)
+          (stepAScalarDerivIntegrand η hη φ (n + 1) y x) y := by
+    filter_upwards with x y hy
+    exact hasDerivAt_stepAScalarDerivIntegrand η hη φ n x y
+  exact (hasDerivAt_integral_of_dominated_loc_of_deriv_le hs hF_meas hF_int
+    hF'_meas h_bound bound_integrable h_diff).2
+
+private theorem hasDerivAt_iteratedDeriv_stepAScalarIntegral
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    HasDerivAt
+      (iteratedDeriv n (stepAScalarDerivIntegral η hη φ 0))
+      (stepAScalarDerivIntegral η hη φ (n + 1) ξ) ξ := by
+  induction n generalizing ξ with
+  | zero =>
+      simpa [stepAScalarDerivIntegral] using
+        hasDerivAt_stepAScalarDerivIntegral η hη φ 0 ξ
+  | succ n ih =>
+      rw [iteratedDeriv_succ]
+      have hEq :
+          deriv (iteratedDeriv n (stepAScalarDerivIntegral η hη φ 0)) =ᶠ[𝓝 ξ]
+            fun y => stepAScalarDerivIntegral η hη φ (n + 1) y := by
+        filter_upwards [Filter.Eventually.of_forall fun y => (ih y).deriv] with y hy using hy
+      rw [EventuallyEq.hasDerivAt_iff hEq]
+      simpa using hasDerivAt_stepAScalarDerivIntegral η hη φ (n + 1) ξ
+
+private theorem iteratedDeriv_stepAScalarIntegral_eq
+    (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    iteratedDeriv n (stepAScalarDerivIntegral η hη φ 0) ξ =
+      stepAScalarDerivIntegral η hη φ n ξ := by
+  induction n generalizing ξ with
+  | zero =>
+      rfl
+  | succ n ih =>
+      rw [iteratedDeriv_succ]
+      simpa using (hasDerivAt_iteratedDeriv_stepAScalarIntegral η hη φ n ξ).deriv
+
+private def stepAKernel
+    (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
+    (ψ : SchwartzMap ℝ ℂ) : SchwartzMap ℝ ℂ :=
+  cutoffSchwartz ψ +
+    expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+      (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)
+
+private theorem stepAKernel_eq
+    (η : ℝ) (hη_pos : 0 < η) (hη_le : η ≤ 1)
+    (ψ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
+    stepAKernel η hη_pos hη_le ψ ξ =
+      smoothCutoff ξ * Complex.exp (-(η : ℂ) * ξ) * ψ ξ := by
+  rw [stepAKernel]
+  change cutoffSchwartz ψ ξ + expDampingFactor η ξ * cutoffSchwartz ψ ξ =
+    smoothCutoff ξ * Complex.exp (-(η : ℂ) * ξ) * ψ ξ
+  rw [cutoffSchwartz,
+    SchwartzMap.smulLeftCLM_apply_apply smoothCutoff_complex_hasTemperateGrowth]
+  simp [expDampingFactor]
+  ring
+
+private theorem stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel
+    (η : ℝ) (hη_pos : 0 < η) (hη_le : 2 * Real.pi * η ≤ 1)
+    (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ : ℝ) :
+    stepAScalarDerivIntegral η hη_pos φ n ξ =
+      iteratedDeriv n
+        (stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ)) ξ := by
+  calc
+    stepAScalarDerivIntegral η hη_pos φ n ξ
+        = iteratedDeriv n (stepAScalarDerivIntegral η hη_pos φ 0) ξ := by
+            symm
+            exact iteratedDeriv_stepAScalarIntegral_eq η hη_pos φ n ξ
+    _ = iteratedDeriv n (fun t : ℝ =>
+          stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ) t) ξ := by
+            congr 1
+            funext t
+            rw [stepAScalarDerivIntegral]
+            simp [stepAScalarDerivIntegrand]
+            have hpair := psiZ_pairing_formula (φ := φ) (η := η) (ξ := t)
+            simpa [scaledHorizontalSchwartzPsi, horizontalSchwartzPsi, schwartzPsiZ_apply,
+              stepAKernel_eq, mul_add, mul_assoc, add_comm, add_left_comm, add_assoc] using hpair
+
+private theorem integral_stepAProbeFamily_eq_probe_stepAKernel
+    (s : Finset (ℕ × ℕ)) (η : ℝ) (hη_pos : 0 < η) (hη_le : 2 * Real.pi * η ≤ 1)
+    (φ : SchwartzMap ℝ ℂ) :
+    (∫ x : ℝ, stepAProbeFamily s η hη_pos φ x) =
+      probeCLM s
+        (stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ)) := by
+  ext p ξ
+  let k : ℕ := p.1.1.1
+  let n : ℕ := p.1.1.2
+  have h_eval_p :
+      (∫ x : ℝ, stepAProbeFamily s η hη_pos φ x) p =
+        ∫ x : ℝ, stepAProbeFamily s η hη_pos φ x p := by
+    simpa using
+      ((ContinuousLinearMap.proj (R := ℂ) (φ := fun _ : ↥s.attach => ℝ →ᵇ ℂ) p).integral_comp_comm
+        (integrable_stepAProbeFamily s η hη_pos φ)).symm
+  have h_eval_ξ :
+      (∫ x : ℝ, stepAProbeFamily s η hη_pos φ x p) ξ =
+        ∫ x : ℝ, stepAProbeFamily s η hη_pos φ x p ξ := by
+    simpa using
+      ((BoundedContinuousFunction.evalCLM ℂ ξ).integral_comp_comm
+        (integrable_stepAProbeFamily_component s η hη_pos φ p)).symm
+  rw [h_eval_p, h_eval_ξ]
+  calc
+    ∫ x : ℝ, stepAProbeFamily s η hη_pos φ x p ξ
+        = ∫ x : ℝ, polyWeight k ξ * stepAScalarDerivIntegrand η hη_pos φ n ξ x := by
+            congr with x
+            simp [stepAProbeFamily, probeCLM, k, n, stepAScalarDerivIntegrand,
+              weightedDerivToBCFCLM_apply, mul_comm, mul_left_comm]
+    _ = polyWeight k ξ * stepAScalarDerivIntegral η hη_pos φ n ξ := by
+          rw [stepAScalarDerivIntegral, integral_const_mul]
+    _ = polyWeight k ξ *
+          iteratedDeriv n
+            (stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ)) ξ := by
+            rw [stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel η hη_pos hη_le φ n ξ]
+    _ = probeCLM s
+          (stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ)) p ξ := by
+          simp [probeCLM, k, n, weightedDerivToBCFCLM_apply]
+
 /-! ### The Paley-Wiener-Schwartz theorem: 1D case -/
 
 /-- **Paley-Wiener theorem for the half-line (1D).**
@@ -583,15 +2096,23 @@ theorem fourierLaplaceExt_differentiableOn
        the distribution pairing)
 
     The Fourier-Laplace Schwartz family `ψ_z`, the candidate extension
-    `z ↦ T(ℱ[ψ_z])`, the horizontal-line seminorm growth of `ψ_{x+iη}`, the
-    finite-seminorm control of `T`, and the resulting polynomial horizontal-line
-    growth of both `z ↦ T(ℱ[ψ_z])` and its candidate derivative kernel
-    `z ↦ T(ℱ[(I ξ) ψ_z])` are now formalized in `SCV.FourierLaplaceCore`,
-    `schwartz_functional_bound`, `fourierLaplaceExt_horizontal_growth`, and
-    `fourierLaplaceExt_derivCandidate_horizontal_growth`.
-    The remaining blockers are:
-    1. holomorphicity of the distribution pairing in `z`,
-    2. distributional boundary-value convergence using the one-sided Fourier support.
+    `z ↦ T(ℱ[ψ_z])`, its differentiability on the upper half-plane, the
+    horizontal-line seminorm growth of `ψ_{x+iη}`, the finite-seminorm control
+    of `T`, the polynomial horizontal-line growth of both
+    `z ↦ T(ℱ[ψ_z])` and its candidate derivative kernel
+    `z ↦ T(ℱ[(I ξ) ψ_z])`, and the `O(η)` convergence of the cutoff-damped
+    Fourier-side boundary family are now formalized in `SCV.FourierLaplaceCore`,
+    `schwartz_functional_bound`, `fourierLaplaceExt_differentiableOn`,
+    `fourierLaplaceExt_horizontal_growth`,
+    `fourierLaplaceExt_derivCandidate_horizontal_growth`,
+    `fourierInv_scaled_eq_cexp_integral`,
+    `psiZ_pairing_formula`,
+    `tendsto_fourier_expDampingCutoff_zero`, and
+    `fourier_pairing_cutoffSchwartz_eq`.
+    The remaining blocker is to lift the scalar pairing identity
+    `psiZ_pairing_formula` through the tempered functional `T`, i.e. to prove
+    the `T`-paired boundary-value identity without a Banach-valued Bochner
+    integral on Schwartz space.
 
     Ref: Reed-Simon II, Theorem IX.16; Hormander, Theorem 7.4.3 -/
 theorem paley_wiener_half_line
@@ -607,180 +2128,186 @@ theorem paley_wiener_half_line
         Tendsto (fun η : ℝ => ∫ x : ℝ, F (↑x + ↑η * I) * φ x)
           (nhdsWithin 0 (Ioi 0))
           (nhds (T φ))) := by
-  -- The candidate extension: F(z) = T(ℱ[ψ_z]) for Im(z) > 0
-  refine ⟨fun w => if hw : 0 < w.im then fourierLaplaceExt T w hw else 0, ?_, ?_, ?_⟩
+  let a : ℝ := 2 * Real.pi
+  have ha_pos : 0 < a := by
+    dsimp [a]
+    positivity
+  let Fcore : ℂ → ℂ := fun w => if hw : 0 < w.im then fourierLaplaceExt T w hw else 0
+  let F : ℂ → ℂ := fun w => Fcore ((a : ℂ) * w)
+  refine ⟨F, ?_, ?_, ?_⟩
   · -- Part 1: holomorphicity on the upper half-plane
-    -- Follows directly from fourierLaplaceExt_differentiableOn
-    exact fourierLaplaceExt_differentiableOn T
+    have hmap : MapsTo (fun w : ℂ => (a : ℂ) * w) upperHalfPlane upperHalfPlane := by
+      intro z hz
+      dsimp [upperHalfPlane] at hz ⊢
+      simpa [Complex.mul_im, a, mul_assoc] using mul_pos ha_pos hz
+    have hmul :
+        DifferentiableOn ℂ (fun w : ℂ => (a : ℂ) * w) upperHalfPlane := by
+      intro z hz
+      simpa using
+        (((differentiableAt_id : DifferentiableAt ℂ (fun y : ℂ => y) z).const_mul
+          (a : ℂ)).differentiableWithinAt)
+    simpa [F] using
+      (fourierLaplaceExt_differentiableOn T).comp
+        hmul
+        hmap
   · -- Part 2: polynomial growth on each horizontal line Im(z) = η
-    -- For η > 0 fixed, F(x + iη) = fourierLaplaceExt T (x + iη) hη
-    -- and this has polynomial growth by fourierLaplaceExt_horizontal_growth.
     intro η hη
-    obtain ⟨C, N, hC, hbound⟩ := fourierLaplaceExt_horizontal_growth T η hη
-    refine ⟨C, N, hC, fun x => ?_⟩
-    -- (x : ℂ) + ↑η * I has positive imaginary part, so the dite reduces
-    have himx : 0 < ((x : ℂ) + ↑η * I).im := by simp [hη]
-    simp only [dif_pos himx]
-    -- fourierLaplaceExt is proof-irrelevant in its last argument, so matches hbound
-    exact hbound x
+    obtain ⟨C, N, hC, hbound⟩ := fourierLaplaceExt_horizontal_growth T (a * η) (mul_pos ha_pos hη)
+    refine ⟨C * a ^ N, N, by positivity, fun x => ?_⟩
+    have him : 0 < (((a : ℂ) * ((x : ℂ) + η * I)).im) := by
+      simpa [Complex.mul_im, a, mul_assoc] using mul_pos ha_pos hη
+    calc
+      ‖F ((x : ℂ) + η * I)‖
+          = ‖fourierLaplaceExt T ((a : ℂ) * ((x : ℂ) + η * I)) him‖ := by
+              change ‖(if h : 0 < (((a : ℂ) * ((x : ℂ) + η * I)).im) then
+                fourierLaplaceExt T ((a : ℂ) * ((x : ℂ) + η * I)) h else 0)‖ = _
+              rw [dif_pos him]
+      _ ≤ C * (1 + |a * x|) ^ N := by
+            simpa [a, mul_add, mul_assoc, add_comm, add_left_comm, add_assoc] using hbound (a * x)
+      _ ≤ C * (a ^ N * (1 + |x|) ^ N) := by
+            gcongr
+            simpa [a] using one_add_abs_two_pi_mul_rpow_le N x
+      _ = (C * a ^ N) * (1 + |x|) ^ N := by ring
   · -- Part 3: distributional BV convergence
-    -- ∫ F(x+iη)φ(x) dx → T(φ) as η → 0+
-    -- Proof sketch:
-    --   Step A (Fubini): ∫ F(x+iη)φ(x) dx = T(Φ_η)
-    --     where Φ_η(ξ) = χ(ξ) · exp(-ηξ) · (FT⁻¹[φ])(ξ)
-    --   Step B (Schwartz convergence): Φ_η → χ · FT⁻¹[φ] in S(ℝ) as η → 0+
-    --   Step C (HasOneSidedFourierSupport): T(FT[χ·ψ]) = T(FT[ψ]) for ψ ∈ S
-    --     (χ = 1 on [0,∞), so the cutoff is invisible to HasOneSidedFourierSupport)
-    --   Step D (Fourier inversion): T(FT[FT⁻¹[φ]]) = T(φ)
-    --
-    -- Root blocker: Step A requires commuting T (a CLM on the Fréchet space S(ℝ))
-    -- with a Bochner integral. Mathlib's ContinuousLinearMap.integral_comp_comm
-    -- requires Banach, not Fréchet spaces. Fréchet-Bochner theory is not in Mathlib 4.
-    --
-    -- Alternative direct approach (avoid Fubini): work entirely in Fourier space,
-    -- showing the η → 0+ limit via dominated convergence in ξ-space and
-    -- continuity of T in the Fréchet topology.
     intro φ
-    sorry
+    let ψ : SchwartzMap ℝ ℂ := FourierTransform.fourierInv φ
+    let S : SchwartzMap ℝ ℂ →L[ℂ] ℂ := T.comp (SchwartzMap.fourierTransformCLM ℂ)
+    obtain ⟨s, G, hS_factor⟩ := exists_probe_factorization S
+    have hS_apply (f : SchwartzMap ℝ ℂ) : S f = G (probeCLM s f) := by
+      exact congrArg (fun H => H f) hS_factor
+    have hStepB :
+        Tendsto
+          (fun η : ℝ =>
+            if hη_pos : 0 < η then
+              if hη_le : η ≤ 1 then
+                T (SchwartzMap.fourierTransformCLM ℂ
+                  (expDampingMulLeftTailCutoffSchwartz η hη_pos hη_le
+                    (cutoffSchwartz ψ) (cutoffSchwartz_left ψ)))
+              else 0
+            else 0)
+          (nhdsWithin 0 (Ioi 0))
+          (nhds 0) :=
+      tendsto_fourier_expDampingCutoff_zero (T := T) ψ
+    have hStepC :
+        T (SchwartzMap.fourierTransformCLM ℂ (cutoffSchwartz ψ)) =
+          T (SchwartzMap.fourierTransformCLM ℂ ψ) :=
+      fourier_pairing_cutoffSchwartz_eq (T := T) hT_supp ψ
+    have hStepD : T (SchwartzMap.fourierTransformCLM ℂ ψ) = T φ := by
+      dsimp [ψ]
+      exact congrArg T (FourierTransform.fourier_fourierInv_eq φ)
+    let C0 : ℂ := S (cutoffSchwartz ψ)
+    let R : ℝ → ℂ := fun η =>
+      if hη_pos : 0 < a * η then
+        if hη_le : a * η ≤ 1 then
+          S (expDampingMulLeftTailCutoffSchwartz (a * η) hη_pos hη_le
+            (cutoffSchwartz ψ) (cutoffSchwartz_left ψ))
+        else
+          0
+      else
+        0
+    have hscale_tendsto :
+        Tendsto (fun η : ℝ => a * η) (nhdsWithin 0 (Ioi 0)) (nhdsWithin 0 (Ioi 0)) := by
+      refine tendsto_nhdsWithin_iff.mpr ?_
+      constructor
+      · have hcontWithin : ContinuousWithinAt (fun η : ℝ => a * η) (Ioi 0) 0 := by
+          exact (continuous_const.mul continuous_id).continuousAt.continuousWithinAt
+        simpa using hcontWithin.tendsto
+      · filter_upwards [self_mem_nhdsWithin] with η hη
+        simpa [a] using mul_pos ha_pos hη
+    have hR : Tendsto R (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
+      simpa [R, S, a] using hStepB.comp hscale_tendsto
+    have hsmall_ev : ∀ᶠ η in nhdsWithin 0 (Ioi 0), a * η ≤ 1 := by
+      refine mem_nhdsWithin_of_mem_nhds ?_
+      refine Filter.mem_of_superset (Iio_mem_nhds (show (0 : ℝ) < 1 / a by positivity)) ?_
+      intro η hη
+      have hlt_mul : a * η < a * (1 / a) := mul_lt_mul_of_pos_left hη ha_pos
+      have ha_ne : a ≠ 0 := ne_of_gt ha_pos
+      have hlt : a * η < 1 := by
+        calc
+          a * η < a * (1 / a) := hlt_mul
+          _ = 1 := by field_simp [ha_ne]
+      exact le_of_lt hlt
+    have hIntegral_eq :
+        ∀ (η : ℝ) (hη : 0 < η) (hη_le : a * η ≤ 1),
+          ∫ x : ℝ, F (↑x + ↑η * I) * φ x =
+            S (stepAKernel (a * η) (mul_pos ha_pos hη) hη_le ψ) := by
+      intro η hη hη_le
+      have hpoint :
+          ∀ x : ℝ,
+            F (↑x + ↑η * I) * φ x = G (stepAProbeFamily s η hη φ x) := by
+        intro x
+        have him : 0 < (((a : ℂ) * ((x : ℂ) + η * I)).im) := by
+          simpa [Complex.mul_im, a, mul_assoc] using mul_pos ha_pos hη
+        have hSval :
+            S (scaledHorizontalSchwartzPsi η hη x) =
+              fourierLaplaceExt T ((a : ℂ) * ((x : ℂ) + η * I)) him := by
+          dsimp [S]
+          rw [fourierLaplaceExt_eq]
+          congr 1
+          ext t
+          simp [scaledHorizontalSchwartzPsi, horizontalSchwartzPsi, a, mul_add, mul_assoc]
+        calc
+          F (↑x + ↑η * I) * φ x
+              = fourierLaplaceExt T ((a : ℂ) * ((x : ℂ) + η * I)) him * φ x := by
+                  change
+                    ((if h : 0 < (((a : ℂ) * ((x : ℂ) + η * I)).im) then
+                      fourierLaplaceExt T ((a : ℂ) * ((x : ℂ) + η * I)) h else 0) * φ x) = _
+                  rw [dif_pos him]
+          _ = S (scaledHorizontalSchwartzPsi η hη x) * φ x := by rw [← hSval]
+          _ = φ x * S (scaledHorizontalSchwartzPsi η hη x) := by ring
+          _ = φ x * G (probeCLM s (scaledHorizontalSchwartzPsi η hη x)) := by
+                rw [← hS_apply (scaledHorizontalSchwartzPsi η hη x)]
+          _ = G (stepAProbeFamily s η hη φ x) := by
+                simp [stepAProbeFamily, map_smul, smul_eq_mul]
+      calc
+        ∫ x : ℝ, F (↑x + ↑η * I) * φ x
+            = ∫ x : ℝ, G (stepAProbeFamily s η hη φ x) := by
+                refine integral_congr_ae ?_
+                filter_upwards with x
+                exact hpoint x
+        _ = G (∫ x : ℝ, stepAProbeFamily s η hη φ x) := by
+              simpa using G.integral_comp_comm (integrable_stepAProbeFamily s η hη φ)
+        _ = G (probeCLM s (stepAKernel (a * η) (mul_pos ha_pos hη) hη_le ψ)) := by
+              rw [integral_stepAProbeFamily_eq_probe_stepAKernel s η hη hη_le φ]
+        _ = S (stepAKernel (a * η) (mul_pos ha_pos hη) hη_le ψ) := by
+              rw [hS_apply]
+    have hEventually_eq :
+        (fun η : ℝ => ∫ x : ℝ, F (↑x + ↑η * I) * φ x) =ᶠ[nhdsWithin 0 (Ioi 0)]
+          fun η => C0 + R η := by
+      filter_upwards [self_mem_nhdsWithin, hsmall_ev] with η hη hη_le
+      have hηpos : 0 < η := by
+        simpa using hη
+      have hmain := hIntegral_eq η hηpos hη_le
+      calc
+        ∫ x : ℝ, F (↑x + ↑η * I) * φ x
+            = S (stepAKernel (a * η) (mul_pos ha_pos hηpos) hη_le ψ) := hmain
+        _ = C0 + R η := by
+              simp [C0, R, S, stepAKernel, hη_le, mul_pos ha_pos hηpos]
+    have hlimit_C0 : Tendsto (fun η : ℝ => C0 + R η) (nhdsWithin 0 (Ioi 0)) (nhds C0) := by
+      simpa [add_comm, add_left_comm, add_assoc] using (tendsto_const_nhds.add hR)
+    have hC0_eq : C0 = T φ := by
+      dsimp [C0, S]
+      simpa using hStepC.trans hStepD
+    have hlimit :
+        Tendsto (fun η : ℝ => ∫ x : ℝ, F (↑x + ↑η * I) * φ x)
+          (nhdsWithin 0 (Ioi 0)) (nhds C0) :=
+      (tendsto_congr' hEventually_eq).2 hlimit_C0
+    simpa [hC0_eq] using hlimit
 
-/-! ### The Paley-Wiener-Schwartz theorem: multi-dimensional case -/
+/-! ### Multidimensional status -/
 
-/-- **Paley-Wiener theorem for cones (multi-dimensional).**
+/-
+The genuine multidimensional cone/converse Paley-Wiener theorems are
+intentionally deferred from this file.
 
-    If T in S'(R^m) has Fourier support in the dual cone C* of an open convex
-    cone C subset R^m, then the Fourier-Laplace transform extends holomorphically
-    to the tube domain T(C) = R^m + iC.
+The current multidimensional placeholder `HasFourierSupportIn` is formulated on
+`Fin m → ℝ`, while Mathlib's Fourier transform infrastructure is organized over
+the Euclidean inner-product model. Until the ambient domain is refactored to
+`EuclideanSpace ℝ (Fin m)`, the honest multivariate theorem should not be
+stated here as a Lean theorem.
+-/
 
-    This is the higher-dimensional generalization of `paley_wiener_half_line`.
-    The proof strategy is similar: the dual cone support condition provides
-    exponential decay in the Fourier representation when Im(z) in C, since
-    sum_i Im(z_i) * xi_i > 0 for xi in C* \ {0} and Im(z) in C.
-
-    Sorry blocked by: multi-dimensional Fourier-Laplace representation,
-    exponential decay estimates from dual cone membership, and
-    differentiation under the distribution pairing.
-
-    Ref: Vladimirov, "Methods of Generalized Functions", Theorem 25.1;
-    Hormander, "Analysis of PDE I", Theorem 7.4.3 -/
-theorem paley_wiener_cone {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
-    (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ)
-    (hT_lin : IsLinearMap ℝ T) (hT_cont : Continuous T)
-    (hT_supp : HasFourierSupportIn T (dualCone C)) :
-    ∃ (F : (Fin m → ℂ) → ℂ),
-      DifferentiableOn ℂ F (TubeDomain C) ∧
-      HasPolynomialGrowthOnTube C F ∧
-      -- Distributional boundary value recovers T
-      (∀ (φ : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
-        Tendsto (fun ε : ℝ =>
-          ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * φ x)
-        (nhdsWithin 0 (Ioi 0))
-        (nhds (T φ))) := by
-  sorry
-
-/-! ### Converse Paley-Wiener: polynomial growth implies dual cone support -/
-
-/-- **Converse Paley-Wiener theorem.**
-
-    If F is holomorphic on the tube domain T(C) with polynomial growth, then its
-    distributional boundary value T (which exists by `continuous_boundary_tube`)
-    has Fourier transform supported in the dual cone C*.
-
-    This is the converse direction of the Paley-Wiener correspondence:
-      { T in S'(R^m) : supp(FT) subset C* }
-        <--->
-      { F holomorphic on T(C) with polynomial growth }
-
-    The proof proceeds via the Fourier-Laplace representation: F is determined
-    by its boundary value T, and the holomorphicity on T(C) forces FT to be
-    supported where the Laplace integral converges, which is exactly C*.
-
-    Sorry blocked by: Fourier inversion for distributions, uniqueness of
-    Fourier-Laplace representation, and support characterization.
-
-    Ref: Vladimirov, "Methods of Generalized Functions", Theorem 25.2;
-    Hormander, "Analysis of PDE I", Theorem 7.4.2 -/
-theorem paley_wiener_converse {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
-    (F : (Fin m → ℂ) → ℂ)
-    (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hgrowth : HasPolynomialGrowthOnTube C F)
-    (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ)
-    (hT_lin : IsLinearMap ℝ T) (hT_cont : Continuous T)
-    -- T is the distributional boundary value of F
-    (h_bv : ∀ (φ : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ), η ∈ C →
-      Tendsto (fun ε : ℝ =>
-        ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * φ x)
-      (nhdsWithin 0 (Ioi 0))
-      (nhds (T φ))) :
-    HasFourierSupportIn T (dualCone C) := by
-  sorry
-
-/-! ### One-step extension: the key technical lemma for inductive continuation -/
-
-/-- **One-step holomorphic extension via Paley-Wiener.**
-
-    This is the key technical ingredient for `inductive_analytic_continuation`
-    (OS II, Theorem 4.1). Given:
-
-    1. A function F holomorphic on a tube T(C) in m complex variables.
-    2. For each fixed z' (the other m-1 variables in T(C)), the function
-       x_r -> F(z'_1, ..., x_r, ..., z'_m) has distributional boundary value
-       in x_r whose Fourier transform is supported in [0, infinity).
-    3. Polynomial growth in the r-th variable.
-
-    Then F extends holomorphically in the r-th variable on the correct
-    slice-extension region: either z is already in T(C), or the r-th
-    imaginary coordinate is positive and the other imaginary coordinates
-    match those of some y ∈ C.
-
-    The proof applies `paley_wiener_half_line` to the r-th variable (fixing the
-    other variables as parameters), obtaining a holomorphic extension in z_r.
-    Joint holomorphicity then follows from Osgood's lemma (separate holomorphicity
-    in each variable implies joint holomorphicity for locally bounded functions).
-
-    Physical interpretation: The one-sided Fourier support comes from the
-    positivity of the Hamiltonian (spectral condition). The polynomial growth
-    comes from the E0' linear growth condition. Together they allow extending
-    analyticity from Euclidean to Minkowski one variable at a time.
-
-    Sorry blocked by: `paley_wiener_half_line` (for each slice), Osgood's lemma
-    for joint holomorphicity, and local boundedness of the parameterized extensions.
-
-    Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 -/
-theorem paley_wiener_one_step {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    -- F is holomorphic on T(C) (m complex variables)
-    (F : (Fin m → ℂ) → ℂ)
-    (hF : DifferentiableOn ℂ F (TubeDomain C))
-    -- The r-th variable has one-sided Fourier support
-    (r : Fin m)
-    -- For each fixed z' (the other m-1 variables in T(C)), the function
-    -- x_r -> F(z'_1, ..., x_r, ..., z'_m) has distributional BV in x_r
-    -- whose Fourier transform is supported in [0, infinity): test functions
-    -- supported on (-inf, 0) integrate to 0 in the BV limit.
-    (h_spectral : ∀ (z' : Fin m → ℂ), (fun i => (z' i).im) ∈ C →
-      ∀ (φ : SchwartzMap ℝ ℂ),
-        (∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) →
-        Tendsto (fun ε : ℝ =>
-          ∫ t : ℝ, F (Function.update z' r (↑t + ↑ε * I)) * φ t)
-        (nhdsWithin 0 (Ioi 0))
-        (nhds 0))
-    -- Polynomial growth in the r-th variable
-    (h_growth : ∀ (z' : Fin m → ℂ), (fun i => (z' i).im) ∈ C →
-      HasPolynomialGrowthOnLine (fun t => F (Function.update z' r ↑t))) :
-    -- Then F extends holomorphically on the one-step slice-extension region
-    ∃ (F_ext : (Fin m → ℂ) → ℂ),
-      -- Holomorphic on the original tube together with the one-variable extension slices.
-      DifferentiableOn ℂ F_ext
-        (TubeDomain C ∪
-          { z | 0 < (z r).im ∧
-                ∃ y ∈ C, ∀ i, i ≠ r → (z i).im = y i }) ∧
-      -- Agrees with F on original tube
-      (∀ z ∈ TubeDomain C, F_ext z = F z) := by
-  sorry
+/-! ### One-step extension: the actual current slice theorem -/
 
 /-- **Simplified one-step extension for the inductive continuation (1D).**
 
@@ -914,6 +2441,54 @@ theorem paley_wiener_one_step_simple
   refine ⟨F_ext, hF_holo, hF_growth, ?_⟩
   intro φ
   simpa [T] using hF_bv φ
+
+/-- **Slice-wise one-step Paley-Wiener extension family.**
+
+For each fixed parameter slice `z'` whose imaginary part lies in `C`, if the
+real-line slice `t ↦ F(update z' r t)` is continuous, has polynomial growth,
+and its function-induced tempered distribution has one-sided Fourier support,
+then there is a corresponding upper-half-plane extension in the `r`-th variable.
+
+This is the actual theorem provided by the current infrastructure. Turning this
+slice-wise family into a jointly holomorphic extension in all variables still
+requires separate-to-joint holomorphicity plus parameter-regularity inputs, and
+belongs upstream of `OSToWightman`, not inside this file. -/
+theorem paley_wiener_one_step {m : ℕ}
+    (C : Set (Fin m → ℝ))
+    (F : (Fin m → ℂ) → ℂ)
+    (r : Fin m)
+    (h_slice_cont : ∀ (z' : Fin m → ℂ), (fun i => (z' i).im) ∈ C →
+      Continuous (fun t : ℝ => F (Function.update z' r ↑t)))
+    (h_spectral : ∀ (z' : Fin m → ℂ), (fun i => (z' i).im) ∈ C →
+      HasOneSidedFourierSupport
+        (fun φ : SchwartzMap ℝ ℂ => ∫ t : ℝ, F (Function.update z' r ↑t) * φ t))
+    (h_growth : ∀ (z' : Fin m → ℂ), (fun i => (z' i).im) ∈ C →
+      HasPolynomialGrowthOnLine (fun t => F (Function.update z' r ↑t))) :
+    ∃ E : {z' : Fin m → ℂ // (fun i => (z' i).im) ∈ C} → ℂ → ℂ,
+      ∀ zc,
+        DifferentiableOn ℂ (E zc) upperHalfPlane ∧
+        (∀ η : ℝ, 0 < η →
+          HasPolynomialGrowthOnLine (fun x => E zc (↑x + ↑η * I))) ∧
+        (∀ φ : SchwartzMap ℝ ℂ,
+          Tendsto (fun η : ℝ => ∫ x : ℝ, E zc (↑x + ↑η * I) * φ x)
+            (nhdsWithin 0 (Ioi 0))
+            (nhds (∫ t : ℝ, F (Function.update zc.1 r ↑t) * φ t))) := by
+  classical
+  let E : {z' : Fin m → ℂ // (fun i => (z' i).im) ∈ C} → ℂ → ℂ := fun zc =>
+    Classical.choose <|
+      paley_wiener_one_step_simple
+        (f := fun t : ℝ => F (Function.update zc.1 r ↑t))
+        (h_slice_cont zc.1 zc.2)
+        (h_growth zc.1 zc.2)
+        (h_spectral zc.1 zc.2)
+  refine ⟨E, ?_⟩
+  intro zc
+  exact Classical.choose_spec <|
+    paley_wiener_one_step_simple
+      (f := fun t : ℝ => F (Function.update zc.1 r ↑t))
+      (h_slice_cont zc.1 zc.2)
+      (h_growth zc.1 zc.2)
+      (h_spectral zc.1 zc.2)
 
 /-! ### Uniqueness of Paley-Wiener extension -/
 

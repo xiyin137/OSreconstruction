@@ -30,8 +30,9 @@ then F extends to a holomorphic function on T(conv C) = {z : Im(z) in conv(C)}.
 **Sorry results (2 sorries):**
 * `bochner_local_extension` -- local holomorphic extension at each point of T(conv C)
   (core analytical content: Cauchy integral on polydiscs)
-* `holomorphic_extension_from_local` -- DifferentiableOn part only; the agreement
-  part (f_ext = f on U) is sorry-free. Needs the identity theorem consistency argument.
+* `bochner_tube_extension` -- still blocked because `bochner_local_extension` only gives
+  existential local extensions; to glue globally one needs a compatible convex local family
+  (or a strengthened local-extension theorem returning neighborhoods of a standard form)
 
 ## References
 
@@ -86,6 +87,20 @@ theorem tubeDomain_convexHull_isConnected {m : ℕ} {C : Set (Fin m → ℝ)}
     exact subset_convexHull ℝ C hy
   · exact tubeDomain_isPreconnected (convex_convexHull ℝ C) (hne.mono (subset_convexHull ℝ C))
 
+/-- Tube domains over convex real sets are convex as subsets of `ℂ^m` viewed as a real
+    vector space. -/
+theorem tubeDomain_convex {m : ℕ} {C : Set (Fin m → ℝ)} (hC : Convex ℝ C) :
+    Convex ℝ (TubeDomain C) := by
+  intro z hz w hw a b ha hb hab
+  simp only [TubeDomain, Set.mem_setOf_eq] at hz hw ⊢
+  have himag :
+      (fun i => ((a • z + b • w) i).im) =
+        a • (fun i => (z i).im) + b • (fun i => (w i).im) := by
+    ext i
+    simp [Pi.smul_apply, Complex.add_im]
+  rw [himag]
+  exact hC hz hw ha hb hab
+
 /-! ### Local extension at each point -/
 
 /-- **Local Bochner extension**: For each z in T(conv C), there is an open
@@ -119,110 +134,74 @@ subset U of D, the identity theorem forces consistency, yielding a global extens
 In our case, D = T(conv C), U = T(C), f = F.
 -/
 
-/-- **Local-to-global holomorphic extension on connected domains.**
+/-- **Local-to-global holomorphic extension from a compatible convex local family.**
 
-If D is a connected open set in C^m, U is a nonempty open subset of D,
-f is holomorphic on U, and at every point z of D there is a local holomorphic
-extension of f (agreeing with f on U), then f extends to a holomorphic function
-on D.
+This is the honest gluing theorem needed in the Bochner lane. Arbitrary local existence
+data do not glue: if a chosen neighborhood is disjoint from `U`, the condition
+`G = f` on `U ∩ V` is vacuous. The additional content needed for gluing is:
 
-The construction defines F_ext(z) = G_z(z) where G_z is any local extension at z.
-Well-definedness follows from the identity theorem: any two local extensions
-G_z, G_w that agree with f on U must agree on U_z cap U_w (since U is nonempty
-open and connected to both U_z and U_w through D). -/
-theorem holomorphic_extension_from_local {m : ℕ}
-    {D : Set (Fin m → ℂ)} (hD_open : IsOpen D) (hD_conn : IsConnected D)
-    {U : Set (Fin m → ℂ)} (hU_open : IsOpen U) (hU_ne : U.Nonempty)
-    (hU_sub : U ⊆ D)
-    {f : (Fin m → ℂ) → ℂ} (hf : DifferentiableOn ℂ f U)
-    (hlocal : ∀ z ∈ D, ∃ (G : (Fin m → ℂ) → ℂ) (V : Set (Fin m → ℂ)),
-      IsOpen V ∧ z ∈ V ∧ V ⊆ D ∧ DifferentiableOn ℂ G V ∧ ∀ w ∈ U ∩ V, G w = f w) :
+1. each chosen local patch is convex, so overlaps are preconnected, and
+2. every nonempty overlap of two chosen patches meets `U`, so the identity theorem
+   forces the two local functions to agree on the entire overlap.
+
+With those hypotheses, the chosen local family defines a global holomorphic extension. -/
+theorem holomorphic_extension_from_local_family {m : ℕ}
+    {D : Set (Fin m → ℂ)} (_hD_open : IsOpen D)
+    {U : Set (Fin m → ℂ)} (hU_open : IsOpen U) (hU_sub : U ⊆ D)
+    {f : (Fin m → ℂ) → ℂ} (_hf : DifferentiableOn ℂ f U)
+    (V : ∀ z, z ∈ D → Set (Fin m → ℂ))
+    (G : ∀ z, z ∈ D → (Fin m → ℂ) → ℂ)
+    (hV_open : ∀ z hz, IsOpen (V z hz))
+    (hV_mem : ∀ z hz, z ∈ V z hz)
+    (hV_sub : ∀ z hz, V z hz ⊆ D)
+    (hV_conv : ∀ z hz, Convex ℝ (V z hz))
+    (hG_diff : ∀ z hz, DifferentiableOn ℂ (G z hz) (V z hz))
+    (hG_agree : ∀ z hz, ∀ w ∈ U ∩ V z hz, G z hz w = f w)
+    (hoverlap : ∀ z₁ hz₁ z₂ hz₂,
+      (V z₁ hz₁ ∩ V z₂ hz₂).Nonempty →
+      (U ∩ V z₁ hz₁ ∩ V z₂ hz₂).Nonempty) :
     ∃ (f_ext : (Fin m → ℂ) → ℂ),
       DifferentiableOn ℂ f_ext D ∧
       ∀ z ∈ U, f_ext z = f z := by
-  -- The proof uses the open-closed argument on the connected set D.
-  --
-  -- Define S = {z in D : there exists an open V containing z and a function g
-  -- holomorphic on V with g = f on U cap V}. Then S is open by definition.
-  -- D \ S is also open: if z is in D \ S, then the local extension G_z at z
-  -- is holomorphic on V_z and agrees with f on U cap V_z; this contradicts
-  -- z not in S unless the local extension at z is not the "global" one,
-  -- which can't happen because the local extension exists for every z in D.
-  --
-  -- Actually, S = D by hypothesis (every z in D has a local extension).
-  -- The subtlety is CONSISTENCY: the local extensions must glue coherently.
-  --
-  -- Standard approach: define f_ext via the identity theorem.
-  -- Since D is connected and U is a nonempty open subset, any holomorphic function
-  -- on D is uniquely determined by its values on U.
-  --
-  -- Construction:
-  -- 1. Choose local extensions G_z at each z in D
-  -- 2. Define f_ext(z) = G_z(z)
-  -- 3. Show f_ext is well-defined (consistency via identity theorem)
-  -- 4. Show f_ext is holomorphic (local agreement with holomorphic G_z)
-  -- 5. Show f_ext = f on U
-  --
-  -- Steps 3 and 4 require showing G_z(w) = G_w(w) for overlapping domains.
-  -- This uses the identity theorem: G_z and G_w agree on U (nonempty open),
-  -- so they agree on any connected component of V_z cap V_w meeting U.
-  -- Since D is connected, every point is reachable from U, so by induction
-  -- along chains of overlapping neighborhoods, consistency propagates.
-  --
-  -- This is the standard monodromy theorem / sheaf gluing for connected domains.
-  -- Step 1: Choose local extensions at every point using Classical.choice
-  have hchoice : ∀ z ∈ D, ∃ (G : (Fin m → ℂ) → ℂ) (V : Set (Fin m → ℂ)),
-      IsOpen V ∧ z ∈ V ∧ V ⊆ D ∧ DifferentiableOn ℂ G V ∧ ∀ w ∈ U ∩ V, G w = f w :=
-    hlocal
-  -- Pick a specific local extension at each point of D
-  choose G V hV_open hV_mem hV_sub hG_diff hG_agree using hchoice
-  -- Step 2: Define f_ext(z) = G_z(z) for z ∈ D, 0 otherwise
   classical
   let f_ext : (Fin m → ℂ) → ℂ := fun z =>
     if hz : z ∈ D then G z hz z else 0
-  -- Key consistency lemma: for z₁, z₂ ∈ D with w ∈ V z₁ ∩ V z₂,
-  -- G z₁ w = G z₂ w (by identity theorem: both agree with f on U)
-  --
-  -- Proof sketch (monodromy theorem): Since D is connected and open, any two
-  -- points z₁, z₂ ∈ D can be connected by a path in D. The path passes through
-  -- a chain of overlapping neighborhoods V_{p₁}, V_{p₂}, ..., V_{p_k} where
-  -- p₁ near z₁, p_k near z₂. At each overlap V_{pᵢ} ∩ V_{p_{i+1}}:
-  -- - G_{pᵢ} and G_{p_{i+1}} both agree with f on U ∩ V_{pᵢ} ∩ V_{p_{i+1}}
-  -- - If this triple intersection meets U, the identity theorem gives G_{pᵢ} = G_{p_{i+1}}
-  --   on the connected component of V_{pᵢ} ∩ V_{p_{i+1}} meeting U.
-  -- - The chain starting from U (where all G agree with f) propagates consistency
-  --   to every point of D.
-  --
-  -- The formal proof requires: path-connectedness of D (from connectedness + openness
-  -- in a locally path-connected space), compactness of the path image, finite subcover
-  -- by the V's, and iterated application of the identity theorem.
   have h_consistency : ∀ (z₁ : Fin m → ℂ) (hz₁ : z₁ ∈ D) (z₂ : Fin m → ℂ) (hz₂ : z₂ ∈ D)
       (w : Fin m → ℂ), w ∈ V z₁ hz₁ → w ∈ V z₂ hz₂ → G z₁ hz₁ w = G z₂ hz₂ w := by
-    -- The monodromy argument: chain consistency along paths in D.
-    -- Both G z₁ and G z₂ agree with f on U. Since D is connected and open,
-    -- path-connect z₁ to a point u ∈ U through D. Cover the path by finitely many V's.
-    -- At each step, two overlapping G's agree on U ∩ overlap (nonempty by path from U),
-    -- so the identity theorem forces agreement on each overlap.
-    sorry
+    intro z₁ hz₁ z₂ hz₂ w hw₁ hw₂
+    let O := V z₁ hz₁ ∩ V z₂ hz₂
+    have hO_open : IsOpen O := (hV_open z₁ hz₁).inter (hV_open z₂ hz₂)
+    have hO_preconn : IsPreconnected O := ((hV_conv z₁ hz₁).inter (hV_conv z₂ hz₂)).isPreconnected
+    have hO_ne : O.Nonempty := ⟨w, ⟨hw₁, hw₂⟩⟩
+    obtain ⟨z₀, hz₀UV₁, hz₀V₂⟩ := hoverlap z₁ hz₁ z₂ hz₂ hO_ne
+    rcases hz₀UV₁ with ⟨hz₀U, hz₀V₁⟩
+    have hG₁_ana : AnalyticOnNhd ℂ (G z₁ hz₁) O := by
+      intro z hz
+      exact differentiableOn_analyticAt hO_open
+        ((hG_diff z₁ hz₁).mono Set.inter_subset_left) hz
+    have hG₂_ana : AnalyticOnNhd ℂ (G z₂ hz₂) O := by
+      intro z hz
+      exact differentiableOn_analyticAt hO_open
+        ((hG_diff z₂ hz₂).mono Set.inter_subset_right) hz
+    have h_eq_near : G z₁ hz₁ =ᶠ[nhds z₀] G z₂ hz₂ := by
+      filter_upwards [hU_open.mem_nhds hz₀U, (hV_open z₁ hz₁).mem_nhds hz₀V₁,
+        (hV_open z₂ hz₂).mem_nhds hz₀V₂] with z hzU hzV₁ hzV₂
+      exact (hG_agree z₁ hz₁ z ⟨hzU, hzV₁⟩).trans (hG_agree z₂ hz₂ z ⟨hzU, hzV₂⟩).symm
+    exact hG₁_ana.eqOn_of_preconnected_of_eventuallyEq hG₂_ana hO_preconn
+      ⟨hz₀V₁, hz₀V₂⟩ h_eq_near ⟨hw₁, hw₂⟩
   refine ⟨f_ext, ?_, ?_⟩
-  · -- DifferentiableOn ℂ f_ext D
-    intro z hz
-    -- f_ext agrees with G z hz on V z hz (an open neighborhood of z)
+  · intro z hz
     have h_local_eq : ∀ w ∈ V z hz, f_ext w = G z hz w := by
       intro w hw
       simp only [f_ext, dif_pos (hV_sub z hz hw)]
       exact h_consistency w (hV_sub z hz hw) z hz w (hV_mem w (hV_sub z hz hw)) hw
-    -- G z hz is differentiable on V z hz, and f_ext = G z hz on V z hz
-    -- So f_ext is differentiable on V z hz
     have h_diff_V : DifferentiableWithinAt ℂ f_ext (V z hz) z :=
       (hG_diff z hz z (hV_mem z hz)).congr (fun w hw => h_local_eq w hw)
         (h_local_eq z (hV_mem z hz))
-    -- V z hz is open and z ∈ V z hz, so V z hz ∈ nhdsWithin z D
     have hV_mem_nhds : V z hz ∈ nhdsWithin z D :=
       nhdsWithin_le_nhds ((hV_open z hz).mem_nhds (hV_mem z hz))
     exact h_diff_V.mono_of_mem_nhdsWithin hV_mem_nhds
-  · -- f_ext = f on U
-    intro z hz
+  · intro z hz
     simp only [f_ext, dif_pos (hU_sub hz)]
     exact hG_agree z (hU_sub hz) z ⟨hz, hV_mem z (hU_sub hz)⟩
 
@@ -234,24 +213,11 @@ theorem bochner_tube_extension {m : ℕ}
     ∃ (F_ext : (Fin m → ℂ) → ℂ),
       DifferentiableOn ℂ F_ext (TubeDomain (convexHull ℝ C)) ∧
       ∀ z ∈ TubeDomain C, F_ext z = F z := by
-  -- Infrastructure
-  have hconv_open : IsOpen (convexHull ℝ C) := isOpen_convexHull_of_isOpen hC
-  have hT_open : IsOpen (TubeDomain (convexHull ℝ C)) := tubeDomain_isOpen hconv_open
-  have hT_conn : IsConnected (TubeDomain (convexHull ℝ C)) :=
-    tubeDomain_convexHull_isConnected hC hne
-  have hTC_sub : TubeDomain C ⊆ TubeDomain (convexHull ℝ C) := tubeDomain_subset_convexHull
-  have hTC_open : IsOpen (TubeDomain C) := tubeDomain_isOpen hC
-  have hTC_ne : (TubeDomain C).Nonempty := by
-    obtain ⟨y, hy⟩ := hne
-    refine ⟨fun i => ↑(0 : ℝ) + ↑(y i) * I, ?_⟩
-    show (fun i => ((↑(0 : ℝ) + ↑(y i) * I : ℂ)).im) ∈ C
-    have : (fun i => ((↑(0 : ℝ) + ↑(y i) * I : ℂ)).im) = y := by
-      ext i; simp [Complex.ofReal_im, Complex.mul_im, Complex.ofReal_re,
-        Complex.I_im, Complex.I_re]
-    rw [this]; exact hy
-  -- Apply the local-to-global extension principle
-  exact holomorphic_extension_from_local hT_open hT_conn hTC_open hTC_ne hTC_sub hF
-    (fun z hz => bochner_local_extension hC hne hF hz)
+  -- The remaining content is to strengthen `bochner_local_extension` from
+  -- pointwise existential local data to a compatible convex local family.
+  -- Once such a family is available, apply `holomorphic_extension_from_local_family`
+  -- on `D = TubeDomain (convexHull ℝ C)` and `U = TubeDomain C`.
+  sorry
 
 end SCV
 
