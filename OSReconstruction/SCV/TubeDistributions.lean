@@ -132,11 +132,12 @@ theorem boundary_value_recovery {m : ℕ}
       (nhds (T f)))
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     T f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x := by
-  -- Build the Fourier-Laplace representation from the BV data
-  let hRepr : HasFourierLaplaceRepr C F :=
-    exists_fourierLaplaceRepr hC hconv hne hF hT_cont h_bv
-  -- hRepr.dist = T by construction, so the result follows directly
-  exact fourierLaplace_boundary_recovery hC hconv hne hcone hF hRepr f
+  -- Blocked: `fourierLaplace_boundary_recovery` (which this delegates to) is sorry'd
+  -- because it requires a continuous pointwise boundary extension, which distributional
+  -- BV alone does not provide (counterexample: F(z)=1/z, BV = pv(1/x) - iπδ₀).
+  -- The correct statement would require an additional hypothesis that T is represented
+  -- by integration against a locally integrable function.
+  sorry
 
 /-- **Zero distributional boundary value implies zero boundary function.**
 
@@ -160,24 +161,16 @@ theorem boundary_value_zero {m : ℕ}
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds 0))
     (x : Fin m → ℝ) : F (realEmbed x) = 0 := by
-  -- Step 1: Package T = 0 as a distributional BV for boundary_value_recovery
-  -- h_bv says: for all f η, η ∈ C → tendsto (∫ F(x+iεη)f(x)dx) → 0
-  -- This is the same as the zero distribution T = 0 acting as T(f) = 0 for all f.
-  -- Step 2: Apply boundary_value_recovery with T = 0 to get
-  --   0 = ∫ F(realEmbed x) * f(x) dx for all Schwartz f
-  have hint : ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
-      ∫ x : Fin m → ℝ, F (realEmbed x) * f x = 0 := by
-    intro f
-    have h := boundary_value_recovery hC hconv hne hcone hF continuous_const h_bv f
-    simp at h
-    exact h.symm
-  -- Step 3: Build Fourier-Laplace representation to get continuity
-  let hRepr : HasFourierLaplaceRepr C F :=
-    exists_fourierLaplaceRepr hC hconv hne hF continuous_const h_bv
-  have hcont : Continuous (fun x : Fin m → ℝ => F (realEmbed x)) :=
-    fourierLaplace_boundary_continuous hC hconv hne hF hRepr
-  -- Step 4: Apply fundamental lemma: continuous + integrates to 0 against all Schwartz => 0
-  exact eq_zero_of_schwartz_integral_zero hcont hint x
+  -- Blocked: requires two sorry'd theorems:
+  --   1. `boundary_value_recovery` (sorry'd): T f = ∫ F(realEmbed x) f dx — needs continuous BV
+  --   2. `fourierLaplace_boundary_continuous` (sorry'd): x ↦ F(realEmbed x) is continuous — false
+  -- Proof sketch (correct in structure, blocked by interface):
+  --   Step 1: T = 0, so boundary_value_recovery gives ∫ F(realEmbed x) f dx = 0 for all f
+  --   Step 2: fourierLaplace_boundary_continuous gives x ↦ F(realEmbed x) is continuous
+  --   Step 3: eq_zero_of_schwartz_integral_zero: continuous + integrates to 0 ⟹ ≡ 0
+  -- Correct alternative: use distributional uniqueness (Paley-Wiener) directly,
+  -- which avoids the continuous boundary extension.
+  sorry
 
 /-- **Distributional uniqueness for tube-domain holomorphic functions.**
 
@@ -223,15 +216,15 @@ theorem distributional_uniqueness_tube {m : ℕ}
     simp only [Pi.zero_apply]
     -- The integrand G(x+iεη) * f(x) = (F₁ - F₂)(x+iεη) * f(x)
     exact h_agree f η hη
-  -- Step 2: ContinuousWithinAt G (TubeDomain C) (realEmbed x) for all x
+  -- Step 2 [BLOCKED]: ContinuousWithinAt G (TubeDomain C) (realEmbed x) for all x.
+  -- `continuous_boundary_tube` is sorry'd via `fourierLaplace_continuousWithinAt` (false
+  -- without continuous boundary extension; counterexample: F(z)=1/z on UHP).
   have hG_cont : ∀ x : Fin m → ℝ,
       ContinuousWithinAt G (TubeDomain C) (realEmbed x) :=
     fun x => continuous_boundary_tube hC hconv hne hG_diff hG_bv x
-  -- Step 3: G(realEmbed x) = 0 for all x ∈ ℝᵐ
-  -- The continuous boundary value must equal the distributional BV (which is 0).
-  -- This follows from: ContinuousWithinAt gives pointwise convergence G(x+iεη) → G(x),
-  -- dominated convergence gives ∫ G(x+iεη)f(x)dx → ∫ G(x)f(x)dx = 0 for all Schwartz f,
-  -- and a continuous function integrating to 0 against all Schwartz functions is 0.
+  -- Step 3 [BLOCKED]: G(realEmbed x) = 0 for all x ∈ ℝᵐ.
+  -- `boundary_value_zero` is sorry'd because it needs the continuous boundary extension.
+  -- Correct alternative: distributional uniqueness (Paley-Wiener) without continuous BV.
   have hG_boundary : ∀ x : Fin m → ℝ, G (realEmbed x) = 0 :=
     boundary_value_zero hC hconv hne hcone hG_diff (fun f η hη => h_agree f η hη)
   -- Step 4: G = 0 on T(C) by one-variable slicing + edge-of-the-wedge

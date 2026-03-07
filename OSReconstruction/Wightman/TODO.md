@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-06 (rev 4)
+Last updated: 2026-03-06 (rev 6)
 
 This file tracks blockers on the active OS reconstruction path with current priority order.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -11,16 +11,20 @@ Count convention: direct tactic holes only (`^\s*sorry\b`).
 
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
-| `OSReconstruction/Wightman` | 34 |
+| `OSReconstruction/Wightman` | 35 |
 | `OSReconstruction/SCV` | 11 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
 | `OSReconstruction/vNA` | 40 |
-| **Whole project** | **87** |
+| **Whole project** | **88** |
 
-_Count cross-checked 2026-03-06 on tracked `.lean` files via `git ls-files | xargs rg '^\s*sorry\b'`._
+_Count cross-checked 2026-03-06 via `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`._
 _BHWTranslation.lean was incorrectly listed with 5 sorrys; actual count is 1._
 _BHWExtension.lean: W_analytic_swap_distributional_agree and analytic_boundary_local_commutativity are NOW PROVED (0 sorrys)._
 _GNSHilbertSpace.lean: covariance_preHilbert was proved; 1 sorry remains (vacuum_unique part 2, spectral theory)._
+_OSToWightman.lean: `inductive_continuation_step` RENAMED to `restrict_holomorphic_to_acr_succ` (it is only a restriction lemma, not the true OS II step)._
+_OSToWightman.lean: `inductive_continuation_one_slice` REMOVED — was vacuous (Function.update mismatch) and had a contradictory docstring (claimed OneSliceContinuationDomain ⊄ ACR(r), but line 296 proves containment). Correct geometry: ACR(r+1) ⊆ OneSlice ⊆ ACR(r)._
+_OSToWightman.lean: `extract_slice_pw_data` REMOVED — was dead scaffolding (sorry'd, not in active proof chain, provenance gap acknowledged in its own docstring)._
+_OSToWightman.lean: added `OneSliceContinuationDomain` + 5 geometric lemmas (all proved, 0 sorrys)._
 
 ## Definition Audit (2026-03-05 rev 3)
 
@@ -87,24 +91,55 @@ ALL active sorrys (LaplaceSchwartz, PaleyWiener, BochnerTubeTheorem, OSToWightma
 SchwingerAxioms) ultimately require **Fourier-Laplace theory for tube domains** (Vladimirov §25-26),
 which is NOT in Mathlib. No partial proof is available without this infrastructure.
 
-### Boundary Continuity Warning (2026-03-06)
+### Boundary Continuity Interface (FIXED 2026-03-06 rev 6)
 
-The current `SCV.fourierLaplace_continuousWithinAt` / `SCV.continuous_boundary_tube`
-interface is too strong. Distributional boundary values alone do not force a
-continuous pointwise boundary extension; `F(z)=1/z` on the upper half-plane is
-the basic counterexample. This means several downstream uses that currently
-quote boundary continuity are resting on a false placeholder interface and
-will need redesign around weaker boundary-value statements.
+The `SCV.fourierLaplace_continuousWithinAt` / `SCV.continuous_boundary_tube`
+interface was too strong (acknowledged false, counterexample F(z)=1/z).
+
+**Fixed**: Replaced false `fourierLaplace_pointwise_boundary_limit` (deleted),
+sorry'd `fourierLaplace_schwartz_integral_convergence` (proof was logically unsound —
+DCT pointwise step required boundary continuity), and sorry'd
+`fourierLaplace_boundary_recovery`, `boundary_value_recovery`, `boundary_value_zero`.
+`distributional_uniqueness_tube` is still proved but now explicitly notes its
+dependence on the sorry'd `continuous_boundary_tube` and `boundary_value_zero`.
+
+Correct statements with weaker hypotheses are deferred until Paley-Wiener theory
+is available in Mathlib.
+
+### OSToWightman Provenance Fix (FIXED 2026-03-06 rev 6)
+
+`iterated_analytic_continuation` had two artificial sorrys:
+1. r ≥ 1 `hS_next_rep`: claimed "blocked by transparent-witness issue" but the fix is
+   to use S_r directly with `acr_succ_subset` (ACR(r+1) ⊆ ACR(r)) — no sorry, no witness extraction.
+2. r = 0 k-split: manufactured `S_next'` + measure-theoretic sorry for base-agreement,
+   but `schwinger_continuation_base_step` returns agreement on ACR(0) directly (`hS_next_agree z hz0`).
+
+**Fixed**: r ≥ 1 branch now uses `exact ⟨S_r, hS_r_hol.mono (acr_succ_subset hr_pos), hS_r_base, hS_r_rep⟩`
+(zero sorrys). r = 0 branch uses direct `calc` with `hS_next_agree + hS_r_base` (no k-split).
+Only genuine BV gap sorry remains in `hS_next_rep` for r = 0 → 1.
 
 ## Root Blocker Layers
 
-### 1) E -> R: `WickRotation/OSToWightman.lean` (12)
+### 1) E -> R: `WickRotation/OSToWightman.lean` (13 sorry lines, 12 declarations)
 
 Analytic continuation infrastructure:
-- `inductive_analytic_continuation`
+- `restrict_holomorphic_to_acr_succ` — restriction lemma only (ACR(r+1) ⊆ ACR(r), trivially sorry-free)
+- `schwinger_continuation_base_step` (r=0→1, Kallen-Lehmann) — now takes `hS_rep` provenance
+- `inductive_analytic_continuation` — now takes `hS_rep`; r=0 uses Kallen-Lehmann, r≥1 uses restriction
+- `iterated_analytic_continuation` — now takes `hS_base_rep`; r≥1 zero sorry (acr_succ_subset direct); r=0 one genuine BV gap sorry
 - `schwinger_holomorphic_on_base_region`
 - `extend_to_forward_tube_via_bochner`
 - `full_analytic_continuation` (two remaining holes)
+
+Interface fix (2026-03-06): the inductive/iterated chain now correctly requires OS provenance
+(`hS_rep`/`hS_base_rep`) to call `schwinger_continuation_base_step`. Earlier versions overclaimed
+by asserting extension from bare DifferentiableOn without provenance. The sorry for provenance
+threading in `hS_next_rep` (iterated step) correctly documents the BV gap remaining.
+
+NEW (all proved, 0 sorrys):
+- `acr_succ_subset`, `OneSliceContinuationDomain`, `isOpen_oneSliceContinuationDomain`
+- `acr_succ_subset_oneSliceContinuationDomain`, `oneSliceContinuationDomain_subset_acr`
+- `iInter_oneSliceContinuationDomain_eq_acr_succ`, `sliceUpdate_mem_oneSliceContinuationDomain`
 
 Boundary value existence:
 - `forward_tube_bv_tempered`

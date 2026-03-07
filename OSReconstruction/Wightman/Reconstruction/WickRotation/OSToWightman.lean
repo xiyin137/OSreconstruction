@@ -95,73 +95,352 @@ def AnalyticContinuationRegion (d k r : ℕ) [NeZero d] :
           let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
           (z i μ - prev μ).im > 0 }
 
+/-- Each individual coordinate positivity condition in the r+1 analytic continuation region
+    defines an open set. This is the building block for `isOpen_analyticContinuationRegion_succ`. -/
+private theorem isOpen_acr_coord {d k r : ℕ} (i : Fin k) (μ : Fin (d + 1)) :
+    IsOpen { z : Fin k → Fin (d + 1) → ℂ |
+      μ.val ≤ r →
+        let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
+        (z i μ - prev μ).im > 0 } := by
+  by_cases hμ : μ.val ≤ r
+  · by_cases hi : i.val = 0
+    · have hcont : Continuous fun z : Fin k → Fin (d + 1) → ℂ => (z i μ).im := by
+        simpa using (Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply i)))
+      simpa [hμ, hi] using isOpen_lt continuous_const hcont
+    · let j : Fin k := ⟨i.val - 1, by omega⟩
+      have hi' : Continuous fun z : Fin k → Fin (d + 1) → ℂ => (z i μ).im := by
+        simpa using (Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply i)))
+      have hj' : Continuous fun z : Fin k → Fin (d + 1) → ℂ => (z j μ).im := by
+        simpa [j] using (Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply j)))
+      simpa [hμ, hi, j, Complex.sub_im, sub_pos] using isOpen_lt hj' hi'
+  · simp [hμ]
+
+/-- For r ≥ 1, the analytic continuation region C_k^(r+1) is open. The strict imaginary-part
+    positivity conditions are open conditions, and the region is a finite intersection of them. -/
+theorem isOpen_analyticContinuationRegion_succ {d k r : ℕ} [NeZero d] :
+    IsOpen (AnalyticContinuationRegion d k (r + 1)) := by
+  suffices h :
+      AnalyticContinuationRegion d k (r + 1) =
+        ⋂ i : Fin k, ⋂ μ : Fin (d + 1),
+          { z : Fin k → Fin (d + 1) → ℂ |
+            μ.val ≤ r →
+              let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
+              (z i μ - prev μ).im > 0 } by
+    rw [h]
+    exact isOpen_iInter_of_finite (fun i : Fin k =>
+      isOpen_iInter_of_finite (fun μ : Fin (d + 1) =>
+        isOpen_acr_coord (d := d) (k := k) (r := r) i μ))
+  ext z
+  simp [AnalyticContinuationRegion]
+
+/-- **Base step of analytic continuation (r = 0 → r = 1).**
+
+    Extends the Schwinger function S_prev from C_k^(0) (the positive real Euclidean
+    domain) to C_k^(1) (first imaginary component positive). This is a separate case
+    from the general inductive step because C_k^(0) has a *real* positivity constraint
+    (Re(z_i 0) > 0) rather than an imaginary one.
+
+    **Provenance requirement**: The Kallen-Lehmann argument requires S_prev to be the
+    actual Schwinger function (satisfying the integration identity with OS.S), not an
+    arbitrary holomorphic function on C_k^(0). For a general holomorphic function on
+    C_k^(0), OS and lgc provide no spectral information and Kallen-Lehmann does not apply.
+    The hypothesis `hS_rep` pins this provenance precisely.
+
+    **Proof route**: The Schwinger function satisfies
+      S_prev(ξ₁,...,ξₖ) = ∫ exp(-Σᵢ ξᵢ · pᵢ) dμ(p₁,...,pₖ)
+    where dμ is a positive spectral measure supported in the forward cone (from E2).
+    The Laplace transform extends holomorphically to C_k^(1) (imaginary parts positive).
+
+    Sorry blocked by: the spectral representation theorem for OS systems (the
+    Kallen-Lehmann decomposition for Schwinger functions from E2), which requires
+    the full GNS construction and positivity argument.
+
+    Ref: OS II, Section IV (base case of induction); Reed-Simon II, Section X.7;
+    Streater-Wightman, §3 (Kallen-Lehmann representation) -/
+theorem schwinger_continuation_base_step {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (k : ℕ) (h1 : 1 < d + 1)
+    (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
+    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k 0))
+    -- Provenance: S_prev must represent the actual Schwinger function.
+    -- An arbitrary holomorphic function on C_k^(0) does NOT satisfy this and
+    -- cannot be extended via Kallen-Lehmann.
+    (hS_rep : ∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_prev (fun j => wickRotatePoint (x j)) * (f x)) :
+    ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k 1) ∧
+      ∀ z ∈ AnalyticContinuationRegion d k 0, S_ext z = S_prev z := by
+  sorry
+
+/-- **ξ-shift: the correct one-variable perturbation in the cumulative-sum structure.**
+
+    In the cumulative-sum parametrization, the j-th new variable at level r is
+      ξ[j] = z[j][r] - (if j = 0 then 0 else z[j-1][r])
+    These k variables ξ[0], ..., ξ[k-1] are INDEPENDENT:
+      C_k^(r+1) = C_k^(r) × UHP^k  (in the (z_base, ξ) parametrization).
+
+    Moving ξ[j] by t (holding ξ[i] fixed for i ≠ j) requires shifting ALL z[i][r]
+    for i ≥ j by +t simultaneously, since z[i][r] = ξ[0] + ... + ξ[i] (cumulative sum).
+
+    WARNING: Updating only z[j][r] while keeping z[j+1][r],...,z[k-1][r] fixed changes
+    BOTH ξ[j] (by +t) AND ξ[j+1] (by -t), which is NOT a single-variable extension.
+    The test case in `test/acr_next_steps_test.lean` (d=1, k=2, r=1) confirms that a
+    single-coordinate update can FAIL to land in ACR(r+1). -/
+def xiShift {k d : ℕ} (j : Fin k) (r : Fin (d + 1))
+    (z : Fin k → Fin (d + 1) → ℂ) (t : ℂ) : Fin k → Fin (d + 1) → ℂ :=
+  fun i μ => if j.val ≤ i.val ∧ μ = r then z i μ + t else z i μ
+
+/-- For r ≥ 1, the ξ-shift stays in C_k^(r). The shift only modifies column r,
+    and C_k^(r) only constrains columns with μ.val ≤ r-1. -/
+private theorem xiShift_stays_in_acr {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) (hr_pos : 0 < r)
+    (z₀ : Fin k → Fin (d + 1) → ℂ)
+    (hz₀ : z₀ ∈ AnalyticContinuationRegion d k r)
+    (j : Fin k) (t : ℝ) :
+    xiShift j ⟨r, hr⟩ z₀ (t : ℂ) ∈ AnalyticContinuationRegion d k r := by
+  obtain ⟨r', rfl⟩ : ∃ r', r = r' + 1 := ⟨r - 1, (Nat.succ_pred_eq_of_pos hr_pos).symm⟩
+  simp only [AnalyticContinuationRegion, Set.mem_setOf_eq] at hz₀ ⊢
+  intro i μ hμ
+  have hμ_ne : μ ≠ (⟨r' + 1, by omega⟩ : Fin (d + 1)) := by
+    intro heq; have := congr_arg Fin.val heq; simp at this; omega
+  -- xiShift is identity at μ ≠ ⟨r'+1, _⟩
+  have h_eq : ∀ i' : Fin k, xiShift j ⟨r' + 1, by omega⟩ z₀ ↑t i' μ = z₀ i' μ := by
+    intro i'
+    unfold xiShift
+    split_ifs with h
+    · exact absurd h.2 hμ_ne
+    · rfl
+  rw [h_eq i]
+  have h_prev : (if h : i.val = 0 then (0 : Fin (d + 1) → ℂ)
+                 else xiShift j ⟨r' + 1, by omega⟩ z₀ ↑t ⟨i.val - 1, by omega⟩) μ =
+                (if h : i.val = 0 then (0 : Fin (d + 1) → ℂ)
+                 else z₀ ⟨i.val - 1, by omega⟩) μ := by
+    by_cases hi0 : i.val = 0
+    · simp [hi0]
+    · simp only [hi0, ↓reduceDIte]; exact h_eq ⟨i.val - 1, by omega⟩
+  rw [h_prev]
+  exact hz₀ i μ hμ
+
+/-- For r ≥ 1, ACR(r+1) is a subset of ACR(r): adding more imaginary-positivity
+    constraints gives a smaller domain. -/
+private theorem acr_succ_subset {d k r : ℕ} [NeZero d] (hr : 0 < r) :
+    AnalyticContinuationRegion d k (r + 1) ⊆ AnalyticContinuationRegion d k r := by
+  rcases Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hr) with ⟨s, rfl⟩
+  intro z hz
+  simpa [AnalyticContinuationRegion] using
+    (fun i μ hμ => hz i μ (Nat.le_trans hμ (Nat.le_succ _)))
+
+/-- **Mixed one-slice continuation domain** for the r → r+1 inductive step.
+
+    `OneSliceContinuationDomain d k r hr i₀` is the "intermediate" domain where:
+    - all ACR(r) positivity constraints hold (Im-differences > 0 for μ < r), AND
+    - the new cumulative-difference coordinate for particle `i₀` at level r also
+      has positive imaginary part: Im(z[i₀][r] - prev[i₀][r]) > 0,
+    - but the other new r-th differences (for i ≠ i₀) remain unconstrained.
+
+    **Why this domain matters**: ACR(r+1) = ⋂_{i₀} OneSliceContinuationDomain i₀
+    (proved by `iInter_oneSliceContinuationDomain_eq_acr_succ`). The full Paley-Wiener
+    continuation argument extends S_prev to ONE slice at a time: for each i₀, extend
+    in the ξ[i₀][r] direction using 1D Paley-Wiener to get a holomorphic function on
+    `OneSliceContinuationDomain i₀`. Then assemble all k slice extensions via Osgood's
+    theorem to get holomorphicity on ACR(r+1).
+
+    Ref: OS II, Theorem 4.1; Vladimirov §26 -/
+def OneSliceContinuationDomain (d k r : ℕ) [NeZero d]
+    (hr : r < d + 1) (i₀ : Fin k) : Set (Fin k → Fin (d + 1) → ℂ) :=
+  { z |
+      (∀ i : Fin k, ∀ μ : Fin (d + 1), μ.val < r →
+        let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
+        (z i μ - prev μ).im > 0) ∧
+      let prev₀ := if h : i₀.val = 0 then 0 else z ⟨i₀.val - 1, by omega⟩
+      (z i₀ ⟨r, hr⟩ - prev₀ ⟨r, hr⟩).im > 0 }
+
+/-- Individual coordinate positivity condition is open (helper). -/
+private theorem diffImPos_isOpen' {d k : ℕ} [NeZero d]
+    (i : Fin k) (μ : Fin (d + 1)) :
+    IsOpen { z : Fin k → Fin (d + 1) → ℂ |
+      let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
+      (z i μ - prev μ).im > 0 } := by
+  by_cases hi : i.val = 0
+  · simpa [hi] using isOpen_lt continuous_const
+      (Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply i)))
+  · let j : Fin k := ⟨i.val - 1, by omega⟩
+    have hj' : Continuous fun z : Fin k → Fin (d + 1) → ℂ => (z j μ).im :=
+      Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply j))
+    have hi' : Continuous fun z : Fin k → Fin (d + 1) → ℂ => (z i μ).im :=
+      Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply i))
+    simpa [hi, j, Complex.sub_im, sub_pos] using isOpen_lt hj' hi'
+
+/-- `OneSliceContinuationDomain` is open. -/
+theorem isOpen_oneSliceContinuationDomain {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) (i₀ : Fin k) :
+    IsOpen (OneSliceContinuationDomain d k r hr i₀) := by
+  have : OneSliceContinuationDomain d k r hr i₀ =
+      (⋂ i : Fin k, ⋂ μ : Fin (d + 1),
+        { z : Fin k → Fin (d + 1) → ℂ |
+          μ.val < r →
+            let prev := if h : i.val = 0 then 0 else z ⟨i.val - 1, by omega⟩
+            (z i μ - prev μ).im > 0 }) ∩
+      { z : Fin k → Fin (d + 1) → ℂ |
+        let prev₀ := if h : i₀.val = 0 then 0 else z ⟨i₀.val - 1, by omega⟩
+        (z i₀ ⟨r, hr⟩ - prev₀ ⟨r, hr⟩).im > 0 } := by
+    ext z; simp [OneSliceContinuationDomain]
+  rw [this]
+  apply (isOpen_iInter_of_finite fun i : Fin k =>
+    isOpen_iInter_of_finite fun μ : Fin (d + 1) => ?_).inter (diffImPos_isOpen' i₀ ⟨r, hr⟩)
+  by_cases hμ : μ.val < r
+  · simpa [hμ] using diffImPos_isOpen' (d := d) (k := k) i μ
+  · simp [hμ]
+
+/-- ACR(r+1) ⊆ OneSliceContinuationDomain for each i₀. -/
+theorem acr_succ_subset_oneSliceContinuationDomain {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) (i₀ : Fin k) :
+    AnalyticContinuationRegion d k (r + 1) ⊆ OneSliceContinuationDomain d k r hr i₀ := by
+  intro z hz
+  simp only [AnalyticContinuationRegion, OneSliceContinuationDomain, Set.mem_setOf_eq] at hz ⊢
+  exact ⟨fun i μ hμ => hz i μ (Nat.le_of_lt hμ), hz i₀ ⟨r, hr⟩ (Nat.le_refl r)⟩
+
+/-- OneSliceContinuationDomain ⊆ ACR(r) for r ≥ 1. -/
+theorem oneSliceContinuationDomain_subset_acr {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) (hr_pos : 0 < r) (i₀ : Fin k) :
+    OneSliceContinuationDomain d k r hr i₀ ⊆ AnalyticContinuationRegion d k r := by
+  obtain ⟨r', rfl⟩ : ∃ r', r = r' + 1 := ⟨r - 1, (Nat.succ_pred_eq_of_pos hr_pos).symm⟩
+  intro z hz
+  simp only [OneSliceContinuationDomain, AnalyticContinuationRegion, Set.mem_setOf_eq] at hz ⊢
+  intro i μ hμ
+  exact hz.1 i μ (by omega)
+
+/-- ACR(r+1) = ⋂_{i₀} OneSliceContinuationDomain d k r hr i₀. -/
+theorem iInter_oneSliceContinuationDomain_eq_acr_succ {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) :
+    (⋂ i₀ : Fin k, OneSliceContinuationDomain d k r hr i₀) =
+      AnalyticContinuationRegion d k (r + 1) := by
+  ext z
+  simp only [Set.mem_iInter, OneSliceContinuationDomain, AnalyticContinuationRegion,
+    Set.mem_setOf_eq]
+  constructor
+  · intro h i μ hμ
+    rcases Nat.lt_or_eq_of_le hμ with hlt | rfl
+    · exact (h i).1 i μ hlt
+    · exact (h i).2
+  · intro hz i₀
+    exact ⟨fun i μ hμ => hz i μ (Nat.le_of_lt hμ), hz i₀ ⟨r, hr⟩ (Nat.le_refl r)⟩
+
+/-- Updating the i₀-th row's r-th entry to `prev₀ ⟨r,hr⟩ + w` (with Im(w) > 0)
+    lands in `OneSliceContinuationDomain d k r hr i₀`. -/
+theorem sliceUpdate_mem_oneSliceContinuationDomain {d k r : ℕ} [NeZero d]
+    (hr : r < d + 1) (hr_pos : 0 < r)
+    (z₀ : Fin k → Fin (d + 1) → ℂ)
+    (hz₀ : z₀ ∈ AnalyticContinuationRegion d k r)
+    (i₀ : Fin k) {w : ℂ} (hw : 0 < w.im) :
+    let prev₀ : Fin (d + 1) → ℂ :=
+      if _ : i₀.val = 0 then 0 else z₀ ⟨i₀.val - 1, by omega⟩
+    Function.update z₀ i₀
+        (Function.update (z₀ i₀) ⟨r, hr⟩ (prev₀ ⟨r, hr⟩ + w))
+      ∈ OneSliceContinuationDomain d k r hr i₀ := by
+  obtain ⟨r', rfl⟩ : ∃ r', r = r' + 1 := ⟨r - 1, (Nat.succ_pred_eq_of_pos hr_pos).symm⟩
+  simp only [OneSliceContinuationDomain, AnalyticContinuationRegion, Set.mem_setOf_eq] at hz₀ ⊢
+  have hμ_ne : (⟨r' + 1, by omega⟩ : Fin (d + 1)) ≠ (⟨r' + 1, by omega⟩ : Fin (d + 1)) →
+      False := fun h => h rfl
+  refine ⟨fun i μ hμ => ?_, ?_⟩
+  · have hμ_ne : μ ≠ (⟨r' + 1, by omega⟩ : Fin (d + 1)) :=
+        fun heq => by simp [heq] at hμ
+    have h_eq : ∀ j : Fin k, Function.update z₀ i₀
+        (Function.update (z₀ i₀) (⟨r' + 1, by omega⟩ : Fin (d + 1))
+          ((if h : i₀.val = 0 then (0 : Fin (d + 1) → ℂ)
+            else z₀ ⟨i₀.val - 1, by omega⟩) ⟨r' + 1, by omega⟩ + w)) j μ = z₀ j μ := by
+      intro j
+      by_cases hj : j = i₀
+      · subst hj; simp [hμ_ne]
+      · simp [hj]
+    rw [h_eq i]
+    have h_prev_eq :
+        (if h : i.val = 0 then (0 : Fin (d + 1) → ℂ)
+          else Function.update z₀ i₀
+            (Function.update (z₀ i₀) (⟨r' + 1, by omega⟩ : Fin (d + 1))
+              ((if h : i₀.val = 0 then (0 : Fin (d + 1) → ℂ)
+                else z₀ ⟨i₀.val - 1, by omega⟩) ⟨r' + 1, by omega⟩ + w))
+            ⟨i.val - 1, by omega⟩) μ =
+        (if h : i.val = 0 then (0 : Fin (d + 1) → ℂ) else z₀ ⟨i.val - 1, by omega⟩) μ := by
+      by_cases hi0 : i.val = 0
+      · simp [hi0]
+      · simp only [hi0, ↓reduceDIte]; exact h_eq ⟨i.val - 1, by omega⟩
+    rw [h_prev_eq]
+    exact hz₀ i μ (by omega)
+  · by_cases hi0 : i₀.val = 0
+    · simpa [sub_eq_add_neg, Function.update, hi0] using hw
+    · have hprev_ne : (⟨i₀.val - 1, by omega⟩ : Fin k) ≠ i₀ :=
+        fun heq => absurd (congrArg Fin.val heq)
+          (Nat.ne_of_lt (Nat.sub_lt (Nat.pos_of_ne_zero hi0) one_pos))
+      simpa [sub_eq_add_neg, Function.update, hi0, hprev_ne, add_assoc, add_left_comm, add_comm]
+        using hw
+
+
+/-- **Domain restriction lemma: ACR(r+1) ⊆ ACR(r) (r ≥ 1).**
+
+    This is a RESTRICTION lemma, not the OS II continuation step. Because
+    ACR(r+1) ⊆ ACR(r) for r ≥ 1, any function holomorphic on ACR(r) is also
+    holomorphic on ACR(r+1) by restriction (S_ext := S_prev).
+
+    **This is NOT the full OS II argument.** The true OS II inductive step for r ≥ 1
+    would extend holomorphicity to `OneSliceContinuationDomain`, which lies strictly
+    between ACR(r+1) and ACR(r): `ACR(r+1) ⊆ OneSlice ⊆ ACR(r)`. Since OneSlice ⊆ ACR(r),
+    a restriction argument suffices for holomorphicity on OneSlice, but not for the
+    Paley-Wiener boundary value behavior needed to assemble the full OS continuation.
+    The genuinely non-trivial OS II step is the base case r=0→1 (handled by
+    `schwinger_continuation_base_step`), where ACR(0) (Im=0) and ACR(1) (Im>0)
+    are disjoint and a Laplace/Paley-Wiener argument is indispensable.
+
+    Ref: OS II, Theorem 4.1 (the domain inclusions) -/
+theorem restrict_holomorphic_to_acr_succ {d : ℕ} [NeZero d]
+    (k : ℕ) (r : ℕ) (_ : r < d + 1) (hr_pos : 0 < r)
+    (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
+    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r)) :
+    ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (r + 1)) ∧
+      ∀ z ∈ AnalyticContinuationRegion d k r, S_ext z = S_prev z :=
+  ⟨S_prev, hS_prev.mono (acr_succ_subset hr_pos), fun _ _ => rfl⟩
+
+
 /-- **Inductive analytic continuation (OS II, Theorem 4.1).**
 
-    Given S holomorphic on C_k^(r) (where r spacetime coordinates are complex),
-    extend it analytically to C_k^(r+1) (one more coordinate becomes complex).
+    Given S holomorphic on C_k^(r) WITH OS provenance, extends it analytically to C_k^(r+1).
 
-    The proof at each step uses the **Paley-Wiener theorem** (one variable):
-    1. Fix all variables except the (r+1)-th spacetime component of each ξ_j.
-       The result is a function of k−1 real variables (the (r+1)-th components
-       of the difference vectors ξ_1, ..., ξ_{k−1}).
-    2. The E0' linear growth condition gives polynomial bounds on each variable.
-    3. The spectral condition (from reflection positivity / positivity of the
-       Hamiltonian) ensures the Fourier transform in each variable has one-sided
-       support in [0, ∞). Physically: the spectral measure is supported in the
-       forward cone V̄₊, so each spatial momentum component is bounded by the
-       energy (|p^μ| ≤ p^0).
-    4. The **Paley-Wiener theorem**: a function on ℝ with polynomial growth
-       whose Fourier transform has support in [0, ∞) extends holomorphically to
-       the upper half-plane {Im z > 0}, with polynomial growth.
-    5. Extend one variable at a time, then apply Osgood's lemma
-       (`osgood_lemma`, proved in SeparatelyAnalytic.lean) for joint holomorphicity.
+    **Case r = 0**: handled by `schwinger_continuation_base_step` (spectral/Laplace
+    representation of Schwinger functions as Laplace transforms from E2). The hypothesis
+    `hS_rep` is essential here: an arbitrary holomorphic function on ACR(0) does NOT
+    satisfy Kallen-Lehmann, so holomorphicity alone is insufficient.
 
-    None of this is currently in Mathlib: the Paley-Wiener theorem for tempered
-    distributions, the spectral representation of reflection-positive functionals,
-    and the extraction of one-sided Fourier support from E0' + E2.
+    **Case r ≥ 1**: Uses `restrict_holomorphic_to_acr_succ` (restriction via ACR(r+1) ⊆ ACR(r)).
+    The `hS_rep` hypothesis is unused here but carried for interface uniformity.
 
-    Current status: this theorem is still **schematic**. The actual missing
-    mathematics is not only the Osgood/joint-holomorphicity assembly, but also
-    the extraction of the slice-wise Paley-Wiener hypotheses (one-sided Fourier
-    support and polynomial growth for each fixed slice) from `OS` and `lgc`.
-    Those slice hypotheses are not yet formalized as separate inputs, so the
-    theorem remains an under-explained continuation step rather than a finished
-    theorem-level interface.
+    The genuinely non-trivial step is r = 0 → 1, where ACR(0) and ACR(1) are DISJOINT
+    (ACR(0) requires Im = 0, ACR(1) requires Im > 0).
 
-    Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 (Paley-Wiener);
-    Vladimirov §26 (Fourier-Laplace representation) -/
+    Ref: OS II, Theorem 4.1; Reed-Simon II, Theorem IX.16 -/
 theorem inductive_analytic_continuation {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (k : ℕ) (r : ℕ) (hr : r < d + 1)
     (S_prev : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r)) :
+    (hS_prev : DifferentiableOn ℂ S_prev (AnalyticContinuationRegion d k r))
+    -- Provenance: required at r = 0 for Kallen-Lehmann; carried throughout for interface
+    -- uniformity and to allow future threading of the spectral condition through the chain.
+    (hS_rep : ∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_prev (fun j => wickRotatePoint (x j)) * (f x)) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (r + 1)) ∧
       ∀ z ∈ AnalyticContinuationRegion d k r, S_ext z = S_prev z := by
-  -- The proof uses Paley-Wiener to extend one spacetime coordinate at a time.
-  -- Key mathematical inputs (extracted as atomic helpers):
-  -- 1. One-sided Fourier support from E0' + E2 (spectral condition from
-  --    reflection positivity + linear growth)
-  -- 2. Polynomial growth in each variable from E0'
-  -- Given these, the one-dimensional Paley-Wiener theorem
-  -- (`paley_wiener_one_step_simple` in PaleyWiener.lean) extends each fixed
-  -- slice in the new coordinate to the upper half-plane.
-  -- Joint holomorphicity then follows from Osgood's lemma.
-  --
-  -- The remaining work is not just Osgood/plumbing. One still has to formalize
-  -- the slice-wise Paley-Wiener inputs extracted from `OS` and `lgc`, then
-  -- assemble those slice extensions into the region-level continuation.
-  -- We decompose:
-  -- Step 1: For each fixed z' in C_k^(r), the r-th coordinate slice satisfies PW
-  -- Step 2: The PW extension gives holomorphicity in the new coordinate
-  -- Step 3: Osgood's lemma gives joint holomorphicity on C_k^(r+1)
-  -- Step 4: Agreement on C_k^(r) follows from equality of distributional boundary values
-  --
-  -- Each step depends on infrastructure from PaleyWiener.lean. The 1D helper
-  -- `paley_wiener_one_step_simple` is now proved; the remaining blocker here is
-  -- the multi-variable slice assembly together with Osgood/local boundedness.
-  sorry
+  rcases Nat.eq_zero_or_pos r with hr0 | hr_pos
+  · -- r = 0: pass provenance to schwinger_continuation_base_step (Kallen-Lehmann).
+    subst hr0
+    exact schwinger_continuation_base_step OS lgc k (by have := NeZero.pos d; omega)
+      S_prev hS_prev hS_rep
+  · -- r ≥ 1: restriction suffices; hS_rep unused here.
+    exact restrict_holomorphic_to_acr_succ k r hr hr_pos S_prev hS_prev
 
 /-! ### Full analytic continuation from Euclidean to forward tube
 
@@ -173,61 +452,63 @@ a tube over the positive orthant. To reach the full forward tube, we use:
 Ref: OS II, Sections IV-V; Bochner (1938); Vladimirov Section 20.2 -/
 
 /-- Iterate `inductive_analytic_continuation` d+1 times: from C_k^(0) to C_k^(d+1).
-    Blocked by: formal iteration + composing agreement conditions.
+
+    The invariant P tracks holomorphicity, agreement with S_base on ACR(0), AND the
+    Schwinger provenance condition (needed to call `schwinger_continuation_base_step`
+    at the r = 0 → 1 step via Kallen-Lehmann).
+
+    - r = 0 → 1: Uses `schwinger_continuation_base_step`. Provenance `hS_next_rep` is
+      sorry'd pending the BV theorem for Laplace transforms (the genuine mathematical blocker).
+    - r ≥ 1: Uses `acr_succ_subset` directly (ACR(r+1) ⊆ ACR(r)), returning S_r itself.
+      No sorry: provenance and base-agreement carry over tautologically.
+
     Ref: OS II, Theorem 4.1 -/
 theorem iterated_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (k : ℕ)
     (S_base : (Fin k → Fin (d + 1) → ℂ) → ℂ)
-    (hS_base : DifferentiableOn ℂ S_base (AnalyticContinuationRegion d k 0)) :
+    (hS_base : DifferentiableOn ℂ S_base (AnalyticContinuationRegion d k 0))
+    -- Provenance: S_base represents the Schwinger function. Threaded through the
+    -- induction to support the r = 0 → 1 step in inductive_analytic_continuation.
+    (hS_base_rep : ∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_base (fun j => wickRotatePoint (x j)) * (f x)) :
     ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k (d + 1)) ∧
       ∀ z ∈ AnalyticContinuationRegion d k 0, S_ext z = S_base z := by
+  -- Invariant: holomorphicity on ACR(r), agreement with S_base on ACR(0), provenance.
   let P : ℕ → Prop := fun r =>
     ∃ (S_r : (Fin k → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ S_r (AnalyticContinuationRegion d k r) ∧
-      ∀ z ∈ AnalyticContinuationRegion d k 0, S_r z = S_base z
-  have hP0 : P 0 := ⟨S_base, hS_base, fun _ _ => rfl⟩
+      (∀ z ∈ AnalyticContinuationRegion d k 0, S_r z = S_base z) ∧
+      (∀ (f : SchwartzNPoint d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_r (fun j => wickRotatePoint (x j)) * (f x))
+  have hP0 : P 0 := ⟨S_base, hS_base, fun _ _ => rfl, hS_base_rep⟩
   have hstep : ∀ r, r < d + 1 → P r → P (r + 1) := by
     intro r hr hPr
-    rcases hPr with ⟨S_r, hS_r_hol, hS_r_base⟩
-    obtain ⟨S_next, hS_next_hol, hS_next_agree⟩ :=
-      inductive_analytic_continuation OS lgc k r hr S_r hS_r_hol
-    rcases Nat.eq_zero_or_pos k with hk0 | hkpos
-    · subst hk0
-      refine ⟨S_next, hS_next_hol, ?_⟩
+    rcases hPr with ⟨S_r, hS_r_hol, hS_r_base, hS_r_rep⟩
+    rcases Nat.eq_zero_or_pos r with rfl | hr_pos
+    · -- r = 0 → 1: the ONLY genuine analytic continuation step (Kallen-Lehmann).
+      -- `schwinger_continuation_base_step` produces S_next on ACR(1) agreeing with S_r on ACR(0).
+      -- Base-agreement follows from hS_next_agree (on ACR(0)) + hS_r_base: no k-split needed.
+      obtain ⟨S_next, hS_next_hol, hS_next_agree⟩ :=
+        schwinger_continuation_base_step OS lgc k (by have := NeZero.pos d; omega)
+          S_r hS_r_hol hS_r_rep
+      -- Provenance: BV gap. S_next is the Laplace transform of the Kallen-Lehmann spectral
+      -- measure; its distributional boundary value as Im(z 0) → 0⁺ recovers OS.S k f.
+      -- Blocked by: BV theorem for Laplace transforms (not in Mathlib).
+      have hS_next_rep : ∀ (f : SchwartzNPoint d k),
+          OS.S k f = ∫ x : NPointDomain d k,
+            S_next (fun j => wickRotatePoint (x j)) * (f x) := by sorry
+      refine ⟨S_next, hS_next_hol, ?_, hS_next_rep⟩
+      -- Base-agreement: hS_next_agree gives S_next = S_r on ACR(0); hS_r_base gives S_r = S_base.
       intro z hz0
-      have hz_r : z ∈ AnalyticContinuationRegion d 0 r := by
-        cases r <;> simp [AnalyticContinuationRegion]
-      calc
-        S_next z = S_r z := hS_next_agree z hz_r
+      calc S_next z = S_r z := hS_next_agree z hz0
         _ = S_base z := hS_r_base z hz0
-    · let i0 : Fin k := ⟨0, hkpos⟩
-      have hdisj : Disjoint (AnalyticContinuationRegion d k 0)
-          (AnalyticContinuationRegion d k (r + 1)) := by
-        rw [Set.disjoint_left]
-        intro z hz0 hz1
-        rcases hz0 with ⟨hz0_im, _hz0_pos⟩
-        -- hz1 : ∀ i, ∀ μ, μ.val ≤ r → (let prev := ...; (z i μ - prev μ).im > 0)
-        -- Apply at i0 (= ⟨0,hkpos⟩) and μ = 0:
-        have hraw := hz1 i0 (0 : Fin (d + 1)) (Nat.zero_le r)
-        -- i0.val = 0, so prev = fun _ => 0, prev 0 = 0; hraw : (z i0 0 - 0).im > 0
-        have hpos0 : (z i0 (0 : Fin (d + 1))).im > 0 := by
-          simp only [show i0.val = 0 from rfl, ↓reduceDIte, Pi.zero_apply, sub_zero] at hraw
-          exact hraw
-        have him0 : (z i0 (0 : Fin (d + 1))).im = 0 := hz0_im i0 (0 : Fin (d + 1))
-        linarith
-      let S_next' : (Fin k → Fin (d + 1) → ℂ) → ℂ :=
-        fun z => if z ∈ AnalyticContinuationRegion d k 0 then S_base z else S_next z
-      have hEq : Set.EqOn S_next' S_next (AnalyticContinuationRegion d k (r + 1)) := by
-        intro z hz
-        have hz_not_base : z ∉ AnalyticContinuationRegion d k 0 := by
-          intro hz0
-          exact (Set.disjoint_left.mp hdisj hz0 hz)
-        simp [S_next', hz_not_base]
-      refine ⟨S_next', hS_next_hol.congr hEq, ?_⟩
-      intro z hz0
-      simp [S_next', hz0]
+    · -- r ≥ 1: RESTRICTION step. ACR(r+1) ⊆ ACR(r) (acr_succ_subset), so S_r restricts
+      -- directly: no new witness, no sorry. Provenance and base-agreement carry trivially.
+      exact ⟨S_r, hS_r_hol.mono (acr_succ_subset hr_pos), hS_r_base, hS_r_rep⟩
   have hP_all : ∀ r, r ≤ d + 1 → P r := by
     intro r hrle
     induction r with
@@ -237,7 +518,9 @@ theorem iterated_analytic_continuation
         have hrlt : r < d + 1 := Nat.lt_of_lt_of_le (Nat.lt_succ_self r) hrle
         have hrle' : r ≤ d + 1 := Nat.le_trans (Nat.le_succ r) hrle
         exact hstep r hrlt (ihr hrle')
-  exact hP_all (d + 1) (le_rfl)
+  -- Extract holomorphicity and agreement from P(d+1)
+  rcases hP_all (d + 1) le_rfl with ⟨S_ext, hS_ext_hol, hS_ext_base, _⟩
+  exact ⟨S_ext, hS_ext_hol, hS_ext_base⟩
 
 /-- Schwinger functions on C_k^(0), recovering S_k via integration.
     Blocked by: pointwise extraction from S_k and smoothness in positive-time region.
@@ -279,9 +562,9 @@ theorem full_analytic_continuation
   -- Step 1: Base case
   obtain ⟨S_base, hS_base_hol, hS_base_euclid⟩ :=
     schwinger_holomorphic_on_base_region OS lgc k
-  -- Step 2: Iterate d+1 times
+  -- Step 2: Iterate d+1 times (provenance hS_base_euclid threads the r=0 base step)
   obtain ⟨S_ext, hS_ext_hol, hS_ext_agree⟩ :=
-    iterated_analytic_continuation OS lgc k S_base hS_base_hol
+    iterated_analytic_continuation OS lgc k S_base hS_base_hol hS_base_euclid
   -- Step 3: Rotation invariance from E1 + analytic continuation uniqueness
   have h_rot : ∀ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ),
       R.transpose * R = 1 → R.det = 1 →
@@ -291,8 +574,16 @@ theorem full_analytic_continuation
   -- Step 4: E1 + Bochner to extend to forward tube
   obtain ⟨W, hW_hol, hW_agree⟩ := extend_to_forward_tube_via_bochner k S_ext hS_ext_hol h_rot
   refine ⟨W, hW_hol, fun f => ?_⟩
-  -- Step 5: Euclidean restriction chain
-  -- W(wick(x)) = S_ext(wick(x)) = S_base(wick(x)) for wick(x) in C_k^(0)
+  -- Step 5: Integral representation for W.
+  -- GEOMETRIC NOTE: wickRotatePoint(x j) = (I*τ_j, x⃗_j) lies in NO ACR(r) and in NO ACR(0):
+  --   • ACR(0) requires Im = 0 everywhere + Re(time) > 0 — violated since Im(time) = τ_j ≠ 0.
+  --   • ACR(r≥1) requires Im > 0 in directions μ=0,...,r-1 — violated for spatial μ≥1 since Im=0.
+  -- Therefore `W(wick(x)) = S_ext(wick(x))` via hW_agree does NOT follow from pointwise
+  -- restriction (wick(x) ∉ ACR(d+1)). The connection between W and OS.S k is via
+  -- distributional boundary values: W restricts (in the distributional sense) to OS.S k f
+  -- as Im → 0⁺ along the Wick-rotated boundary. This is the content of Phase 4
+  -- (`forward_tube_bv_tempered`), NOT a direct restriction chain.
+  -- Blocked by: distributional BV theory for forward tube (LaplaceSchwartz + BV existence).
   sorry
 
 /-! ### Phase 4: Tempered boundary values
