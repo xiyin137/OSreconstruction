@@ -60,14 +60,17 @@ namespace SCV
 
 /-! ### Fourier-Laplace Representation -/
 
-/-- A holomorphic function on a tube domain T(C) has a **Fourier-Laplace representation**
-    if it arises from a tempered distribution via the Fourier-Laplace transform.
+/-- Weak boundary-value package for a holomorphic function on a tube domain.
 
-    Mathematically: F(z) = T(ξ ↦ e^{iz·ξ}) where T is a tempered distribution
-    with Fourier support in the dual cone C*.
+    `HasFourierLaplaceRepr C F` does **not** yet formalize an actual Fourier-Laplace
+    representation with dual-cone support. It only stores:
+    - a continuous Schwartz functional `dist`
+    - the distributional boundary-value convergence of `F` to `dist`
 
-    This structure packages the existence of such a representation together with
-    the distributional boundary value data. -/
+    The genuine Paley-Wiener-Schwartz theorem for tube domains should later show
+    that an actual Fourier-Laplace transform with Fourier support in the dual cone
+    `C*` produces this boundary-value package, and in the strong case also the
+    regularity package below. -/
 structure HasFourierLaplaceRepr {m : ℕ} (C : Set (Fin m → ℝ))
     (F : (Fin m → ℂ) → ℂ) where
   /-- The tempered distribution giving the Fourier-Laplace representation. -/
@@ -82,6 +85,111 @@ structure HasFourierLaplaceRepr {m : ℕ} (C : Set (Fin m → ℝ))
     (nhdsWithin 0 (Ioi 0))
     (nhds (dist f))
 
+/-- A holomorphic function on a tube domain T(C) has a **regular Fourier-Laplace representation**
+    if, in addition to the bare distributional boundary-value data in `HasFourierLaplaceRepr`,
+    it satisfies the four quantitative regularity conditions proved in Vladimirov §25–26 for
+    *actual* Fourier-Laplace transforms of tempered distributions.
+
+    **Why a separate structure from `HasFourierLaplaceRepr`?**
+    The minimal `HasFourierLaplaceRepr` (dist, dist_continuous, boundary_value) does NOT imply
+    the four regularity conditions below. Counterexample: F(z) = 1/z on the upper half-plane
+    has tempered distributional BV `pv(1/x) - iπδ₀` (satisfying `HasFourierLaplaceRepr`), but
+    - has no continuous extension to x = 0 (violates `boundary_continuous` and `tube_continuousWithinAt`)
+    - does NOT satisfy polynomial growth near x = 0 (violates `poly_growth` and `uniform_bound`).
+
+    F(z) = 1/z is NOT the Fourier-Laplace transform of a distribution supported in C* = [0,∞).
+    Its distributional BV arises from a distribution (pv(1/x)) that is NOT supported in [0,∞).
+    So the regularity conditions hold precisely when T is supported in the dual cone C*,
+    which is the content of the Paley-Wiener-Schwartz theorem for tube domains (Vladimirov §25.1).
+
+    **The deep missing theorem** should say:
+    if F is holomorphic on T(C) and has a genuine Fourier-Laplace representation
+    (T supported in C*), then this structure can be constructed. This file does
+    not yet formalize that theorem. -/
+structure HasFourierLaplaceReprRegular {m : ℕ} (C : Set (Fin m → ℝ))
+    (F : (Fin m → ℂ) → ℂ) extends HasFourierLaplaceRepr C F where
+  /-- Polynomial growth on compact subsets of C (Vladimirov §25.3). -/
+  poly_growth : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
+    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (x y : Fin m → ℝ), y ∈ K →
+        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N
+  /-- Uniform polynomial bound near the real boundary (Vladimirov §26.1). -/
+  uniform_bound : ∀ (η : Fin m → ℝ), η ∈ C →
+    ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
+      ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
+        ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N
+  /-- Continuous extension to real boundary (Vladimirov §26.2). -/
+  boundary_continuous : Continuous (fun x : Fin m → ℝ => F (realEmbed x))
+  /-- Interior-to-boundary continuity within the tube (Vladimirov §26.2). -/
+  tube_continuousWithinAt : ∀ (x : Fin m → ℝ),
+    ContinuousWithinAt F (TubeDomain C) (realEmbed x)
+
+/-- A strong Fourier-Laplace input gives a regular Fourier-Laplace representation.
+
+    Inputs:
+    - weak BV package `hRepr`
+    - polynomial growth on compact subsets of `C`
+    - singularity-free boundary-ray bound `hUniform`
+
+    The regularity gap is exactly Vladimirov §26.2:
+    - `boundary_continuous` (§26.2): follows from uniform_bound (DCT dominator) +
+      tube_continuousWithinAt (pointwise convergence) via dominated convergence theorem
+    - `tube_continuousWithinAt` (§26.2): follows from uniform_bound (equicontinuity) via
+      Arzelà-Ascoli + the distributional BV (boundary_value) to identify the limit
+
+    The weak BV fields come from `hRepr`; `poly_growth` and `uniform_bound`
+    are filled from the explicit strong input data, leaving
+    only 2 sorrys: `boundary_continuous` and `tube_continuousWithinAt`.
+
+    **Proof strategy for `tube_continuousWithinAt`**:
+    1. `uniform_bound` → {F(·+iεη)} is equicontinuous in x for ε ∈ (0,δ)
+       (Cauchy estimate on z-disk: |∂_x F| ≤ C/r ≤ C'/ε)
+    2. Arzelà-Ascoli → every ε→0+ sequence has a uniformly convergent subsequence
+    3. `boundary_value` + DCT (with uniform_bound as dominator) → all limit points equal T(·)
+    4. `eq_zero_of_schwartz_integral_zero` → the limit is unique → F(·+iεη) converges
+    5. ContinuousWithinAt follows from the uniform limit of continuous functions
+
+    **Proof strategy for `boundary_continuous`**:
+    From `tube_continuousWithinAt`: F(x+iεη) → F(realEmbed x) as ε → 0+.
+    Uniform convergence on compact sets (from Arzelà-Ascoli step above) → continuity of limit. -/
+noncomputable def HasFourierLaplaceReprRegular.ofStrong {m : ℕ}
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
+    (hRepr : HasFourierLaplaceRepr C F)
+    (hPoly : ∀ (K : Set (Fin m → ℝ)), IsCompact K → K ⊆ C →
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ (x y : Fin m → ℝ), y ∈ K →
+          ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hUniform : ∀ (η : Fin m → ℝ), η ∈ C →
+      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
+        ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
+          ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
+    HasFourierLaplaceReprRegular C F where
+  dist := hRepr.dist
+  dist_continuous := hRepr.dist_continuous
+  boundary_value := hRepr.boundary_value
+  poly_growth := hPoly
+  uniform_bound := hUniform
+  boundary_continuous := by
+    -- `boundary_continuous` follows from `tube_continuousWithinAt` (proved below) plus
+    -- Arzelà-Ascoli uniform convergence on compact sets:
+    -- F(·+iεη) converges uniformly on compacts to F(realEmbed ·) (a uniform limit of
+    -- the continuous functions x ↦ F(x+iεη)), so the limit is continuous.
+    -- Requires: uniform_bound (equicontinuity) + boundary_value (limit identification).
+    -- Ref: Vladimirov §26.2
+    sorry
+  tube_continuousWithinAt := by
+    -- ContinuousWithinAt F (TubeDomain C) (realEmbed x₀) for each x₀ ∈ ℝᵐ.
+    -- Proof: sequences in TubeDomain C approaching realEmbed x₀ have F-images converging.
+    -- Key steps:
+    --   1. uniform_bound → equicontinuity of {F(·+iεη)} via Cauchy estimate
+    --   2. Arzelà-Ascoli → subsequential uniform convergence
+    --   3. boundary_value → identification of limit with T(·)
+    --   4. eq_zero_of_schwartz_integral_zero → uniqueness of limit
+    --   5. Full convergence → ContinuousWithinAt
+    -- Ref: Vladimirov §26.2
+    sorry
+
 /-! ### Core Lemmas (Fourier-Laplace Theory)
 
 These lemmas capture the deep content of the Paley-Wiener-Schwartz theorem
@@ -89,27 +197,18 @@ for tube domains. Each is a well-identified mathematical fact from
 Vladimirov §25-26.
 -/
 
-/-- **Continuous boundary extension from Fourier-Laplace representation.**
+/-- **Interior-to-boundary continuity from regular FL representation.**
 
-    Warning: this statement is currently too strong and is retained only as the
-    placeholder that downstream files still depend on.
-
-    Mere tempered distributional boundary values do **not** imply a continuous
-    pointwise boundary extension in general. In one complex variable, `F(z)=1/z`
-    on the upper half-plane has a tempered distributional boundary value
-    (`pv(1/x) - iπδ₀`) but no continuous extension at `x = 0`.
-
-    So the intended replacement should require stronger hypotheses, most likely
-    an actual continuous boundary function (or a similarly strong regularity
-    assumption), rather than only the distributional boundary-value data
-    currently packaged by `HasFourierLaplaceRepr`. -/
+    Requires `HasFourierLaplaceReprRegular` (the stronger bundle including
+    `tube_continuousWithinAt`), since bare `HasFourierLaplaceRepr` is insufficient.
+    See `HasFourierLaplaceReprRegular` for the counterexample (F(z)=1/z). -/
 theorem fourierLaplace_continuousWithinAt {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (x : Fin m → ℝ) :
-    ContinuousWithinAt F (TubeDomain C) (realEmbed x) := by
-  sorry
+    ContinuousWithinAt F (TubeDomain C) (realEmbed x) :=
+  hRegular.tube_continuousWithinAt x
 
 /-- **Schwartz functions are integrable** (needed for dominated convergence applications).
     Schwartz functions decay rapidly, so they are in every Lp space. -/
@@ -179,14 +278,14 @@ theorem schwartzMap_polynomial_norm_integrable {m : ℕ}
     ‖F(x + iεη)‖ ≤ C_bd * (1 + ‖x‖)^N for all small ε > 0 and x.
     This is the key domination estimate for applying dominated convergence. -/
 theorem fourierLaplace_uniform_bound_near_boundary {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (η : Fin m → ℝ) (hη : η ∈ C) :
     ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
       ∀ (x : Fin m → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-        ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
-  sorry
+        ‖F (fun i => ↑(x i) + ↑ε * ↑(η i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N :=
+  hRegular.uniform_bound η hη
 
 /-- **AE strong measurability of FL integrand.**
     The function x ↦ F(x + iεη) * f(x) is AE strongly measurable for each ε. -/
@@ -214,60 +313,104 @@ theorem fourierLaplace_integrand_aestronglyMeasurable {m : ℕ}
 
 /-- **Integral convergence of FL functions against Schwartz functions.**
 
-    Warning: the conclusion `∫ F(x+iεη)f dx → ∫ F(realEmbed x)f dx` is FALSE in general
-    without a continuous pointwise boundary extension. The counterexample is F(z) = 1/z on
-    the upper half-plane: the distributional BV exists (pv(1/x) - iπδ₀) but F has no
-    continuous extension to x = 0, so the integral ∫ F(realEmbed x) f dx is not defined.
+    Under `HasFourierLaplaceReprRegular` (which includes both `uniform_bound` for DCT
+    and `tube_continuousWithinAt` for pointwise convergence), the boundary integrals
+    ∫ F(x+iεη)f(x)dx converge to ∫ F(realEmbed x)f(x)dx as ε → 0+.
 
-    The CORRECT statement (which holds from `HasFourierLaplaceRepr.boundary_value`) is:
-        ∫ F(x+iεη)f dx → hRepr.dist f
-    This is already contained in the structure and requires no proof.
-
-    The current sorry placeholder preserves the old (false) statement because
-    downstream files depend on it and the redesign is deferred. -/
+    Requires the stronger `HasFourierLaplaceReprRegular` because `HasFourierLaplaceRepr`
+    alone does not imply either the uniform bound or the boundary continuity. -/
 theorem fourierLaplace_schwartz_integral_convergence {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
     (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (f : SchwartzMap (Fin m → ℝ) ℂ) (η : Fin m → ℝ) (hη : η ∈ C) :
     Filter.Tendsto (fun ε : ℝ =>
       ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
     (nhdsWithin 0 (Set.Ioi 0))
     (nhds (∫ x, F (realEmbed x) * f x)) := by
-  -- Blocked: requires continuous pointwise boundary extension F(x+iεη) → F(realEmbed x),
-  -- which is `fourierLaplace_continuousWithinAt` (acknowledged false without extra hypotheses).
-  -- The DCT skeleton (polynomial growth bound + Schwartz decay) is logically correct,
-  -- but the AE pointwise convergence step is the false part.
-  -- The correct result (∫ → hRepr.dist f) is already `hRepr.boundary_value f η hη`.
-  sorry
+  -- Get uniform polynomial bound near the boundary: ‖F(x+iεη)‖ ≤ C_bd*(1+‖x‖)^N for ε ∈ (0,δ)
+  obtain ⟨C_bd, N, δ, _hC_bd_pos, hδ_pos, h_bd⟩ := hRegular.uniform_bound η hη
+  -- Apply DCT for the filter nhdsWithin 0 (Ioi 0)
+  -- (countably generated since ℝ is first-countable; no NeBot instance needed)
+  apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+    (bound := fun y : Fin m → ℝ => C_bd * (1 + ‖y‖) ^ N * ‖(f : (Fin m → ℝ) → ℂ) y‖)
+  · -- AEStronglyMeasurable for all ε ∈ Ioi 0
+    apply Filter.eventually_of_mem self_mem_nhdsWithin
+    intro ε hε
+    exact fourierLaplace_integrand_aestronglyMeasurable hF η hη hcone (↑f)
+      (schwartzMap_integrable f) ε (Set.mem_Ioi.mp hε)
+  · -- Domination: for ε ∈ (0, δ), ‖F(y+iεη)*f(y)‖ ≤ C_bd*(1+‖y‖)^N*‖f(y)‖
+    -- Build the filter membership Ioo 0 δ ∈ nhdsWithin 0 (Ioi 0) by hand
+    have h_mem : Set.Ioo 0 δ ∈ nhdsWithin (0 : ℝ) (Set.Ioi 0) :=
+      mem_nhdsWithin.mpr ⟨Set.Iio δ, isOpen_Iio, Set.mem_Iio.mpr hδ_pos,
+        fun ε hε => Set.mem_Ioo.mpr ⟨Set.mem_Ioi.mp hε.2, Set.mem_Iio.mp hε.1⟩⟩
+    apply Filter.eventually_of_mem h_mem
+    intro ε hε
+    obtain ⟨hε_pos, hε_lt⟩ := Set.mem_Ioo.mp hε
+    apply Filter.Eventually.of_forall
+    intro y
+    rw [norm_mul]
+    exact mul_le_mul_of_nonneg_right (h_bd y ε hε_pos hε_lt) (norm_nonneg _)
+  · -- Bound is integrable: C_bd * (1+‖y‖)^N * ‖f(y)‖ ≤ C_bd * ((1+‖y‖)^N * ‖f y‖)
+    exact (schwartzMap_polynomial_norm_integrable f N).const_mul C_bd |>.congr
+      (ae_of_all _ fun y => by ring)
+  · -- Pointwise convergence: F(y+iεη)*f(y) → F(realEmbed y)*f(y) as ε → 0+
+    apply Filter.Eventually.of_forall
+    intro y
+    apply Filter.Tendsto.mul _ tendsto_const_nhds
+    -- The path ε ↦ (fun i => ↑(y i) + ↑ε * ↑(η i) * I) is continuous, maps Ioi 0 into
+    -- TubeDomain C, and equals realEmbed y at ε = 0.  Compose with tube_continuousWithinAt.
+    have h_path_cont : Continuous (fun ε : ℝ =>
+        (fun i : Fin m => (y i : ℂ) + ↑ε * ↑(η i) * I)) :=
+      continuous_pi fun i =>
+        continuous_const.add
+          (Complex.continuous_ofReal.mul continuous_const |>.mul continuous_const)
+    have h_path_zero : (fun i : Fin m => (y i : ℂ) + ↑(0 : ℝ) * ↑(η i) * I) = realEmbed y := by
+      ext i; simp [realEmbed]
+    have h_path_maps : Set.MapsTo (fun ε : ℝ => (fun i : Fin m => (y i : ℂ) + ↑ε * ↑(η i) * I))
+        (Set.Ioi (0 : ℝ)) (TubeDomain C) := by
+      intro ε hε
+      simp only [TubeDomain, Set.mem_setOf_eq]
+      have him : (fun i : Fin m => ((y i : ℂ) + ↑ε * ↑(η i) * I).im) = ε • η := by
+        ext i; simp [Complex.add_im, Complex.mul_im, Complex.I_im, Complex.I_re,
+          Complex.ofReal_im, Complex.ofReal_re]
+      rw [him]; exact hcone ε hε η hη
+    -- Build Tendsto into nhdsWithin (realEmbed y) (TubeDomain C)
+    have h_path_tends : Filter.Tendsto
+        (fun ε : ℝ => (fun i : Fin m => (y i : ℂ) + ↑ε * ↑(η i) * I))
+        (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+        (nhdsWithin (realEmbed y) (TubeDomain C)) := by
+      rw [tendsto_nhdsWithin_iff]
+      refine ⟨?_, Filter.eventually_of_mem self_mem_nhdsWithin h_path_maps⟩
+      have h : Filter.Tendsto (fun ε : ℝ => (fun i : Fin m => (y i : ℂ) + ↑ε * ↑(η i) * I))
+          (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+          (nhds (fun i : Fin m => (y i : ℂ) + ↑(0 : ℝ) * ↑(η i) * I)) :=
+        h_path_cont.continuousAt.tendsto.mono_left nhdsWithin_le_nhds
+      rwa [h_path_zero] at h
+    -- Compose: F is continuous within TubeDomain C at realEmbed y
+    exact Filter.Tendsto.comp (hRegular.tube_continuousWithinAt y) h_path_tends
 
-/-- **Boundary value recovery from Fourier-Laplace representation.**
+/-- **Boundary value recovery from regular FL representation.**
 
-    Warning: the conclusion `hRepr.dist f = ∫ F(realEmbed x) · f(x) dx` requires that
-    F extends continuously to the real boundary, which is NOT implied by having a
-    Fourier-Laplace representation alone. See `fourierLaplace_continuousWithinAt` for
-    the counterexample (F(z)=1/z).
+    Under `HasFourierLaplaceReprRegular`, the distributional BV `hRegular.dist f` equals
+    the pointwise integral `∫ F(realEmbed x) · f(x) dx`.
 
-    The correct statement is: hRepr.dist f is the limit of ∫ F(x+iεη)f(x)dx as ε→0+,
-    which is `hRepr.boundary_value f η hη`. The identification with ∫ F(realEmbed x)f(x)dx
-    requires a continuous boundary extension (stronger hypothesis).
-
-    Blocked by: false `fourierLaplace_continuousWithinAt` used in step 2 of the proof. -/
+    Proof: both are limits of the same integrals ∫ F(x+iεη)f dx as ε → 0+. The distributional
+    limit is `hRegular.boundary_value`; the integral limit is `fourierLaplace_schwartz_integral_convergence`
+    (which uses `hRegular.uniform_bound` for DCT and `hRegular.tube_continuousWithinAt` for
+    pointwise convergence). `tendsto_nhds_unique` gives equality. -/
 theorem fourierLaplace_boundary_recovery {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
-    hRepr.dist f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x := by
-  -- Blocked: step 2 below uses `fourierLaplace_schwartz_integral_convergence` which is
-  -- itself sorry'd due to dependence on the false `fourierLaplace_continuousWithinAt`.
-  -- The proof sketch (tendsto_nhds_unique) is correct in structure:
-  --   1. hRepr.boundary_value f η hη : ∫ F(x+iεη)f dx → hRepr.dist f ✓
-  --   2. fourierLaplace_schwartz_integral_convergence : ∫ F(x+iεη)f dx → ∫ F(realEmbed x)f dx ✗
-  -- Needs: continuous boundary extension of F.
-  sorry
+    hRegular.dist f = ∫ x : Fin m → ℝ, F (realEmbed x) * f x := by
+  obtain ⟨η, hη⟩ := hne
+  have h1 := hRegular.boundary_value f η hη
+  have h2 := fourierLaplace_schwartz_integral_convergence hC hconv ⟨η, hη⟩ hcone hF hRegular f η hη
+  exact tendsto_nhds_unique h1 h2
 
 /-- **Polynomial growth of Fourier-Laplace transforms.**
 
@@ -280,56 +423,25 @@ theorem fourierLaplace_boundary_recovery {m : ℕ}
     2. The temperedness of the distribution (polynomial bounds on seminorms)
     3. Compactness of K to get uniform bounds in the imaginary direction -/
 theorem fourierLaplace_polynomial_growth {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (K : Set (Fin m → ℝ)) (hK : IsCompact K) (hK_sub : K ⊆ C) :
     ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
       ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
-        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
-  sorry
+        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N :=
+  hRegular.poly_growth K hK hK_sub
 
-/-- **Polynomial growth from continuous boundary values.**
+/-- **Weak boundary-value constructor.**
 
-    Variant of `fourierLaplace_polynomial_growth` that takes continuous-function
-    distributional boundary values directly (the form used in `polynomial_growth_tube`).
+    This packages a continuous Schwartz functional `T` together with the
+    distributional boundary-value convergence of `F` into
+    `HasFourierLaplaceRepr C F`.
 
-    If F is holomorphic on T(C) and for each approach direction η ∈ C, there exists
-    a continuous function T_η such that the boundary integrals converge to ∫ T_η f,
-    then F has polynomial growth on compact subsets K ⊆ C.
-
-    This follows from the Fourier-Laplace theory: the continuous BV functions
-    determine the tempered distribution (by density of integrable functions in
-    the Schwartz topology), hence the Fourier-Laplace representation, hence
-    polynomial growth. -/
-theorem polynomial_growth_of_continuous_bv {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (h_bv : ∀ (η : Fin m → ℝ), η ∈ C →
-      ∃ (T : (Fin m → ℝ) → ℂ), ContinuousOn T Set.univ ∧
-        ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
-          (nhdsWithin 0 (Ioi 0))
-          (nhds (∫ x, T x * f x)))
-    (K : Set (Fin m → ℝ)) (hK : IsCompact K) (hK_sub : K ⊆ C) :
-    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-      ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
-        ‖F (fun i => ↑(x i) + ↑(y i) * I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
-  sorry
-
-/-- **Existence of Fourier-Laplace representation.**
-
-    Every holomorphic function on T(C) with tempered distributional boundary values
-    has a Fourier-Laplace representation. This is the content of the
-    Paley-Wiener-Schwartz theorem for tube domains (Vladimirov §25.1):
-    the Fourier transform of the distributional boundary value T is supported
-    in the dual cone C*, and F is the Fourier-Laplace transform of T.
-
-    This is the deepest result in this file, requiring:
-    - The Paley-Wiener-Schwartz theorem
-    - Characterization of distributions with support in a cone
-    - The Fourier-Laplace transform theory -/
+    It does **not** prove that `F` is an actual Fourier-Laplace transform with
+    Fourier support in the dual cone `C*`. That stronger Paley-Wiener-Schwartz
+    input is still missing and is exactly what should later upgrade the weak
+    boundary-value package to the strong/regular ones. -/
 def exists_fourierLaplaceRepr {m : ℕ}
     {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
     {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
@@ -349,25 +461,19 @@ def exists_fourierLaplaceRepr {m : ℕ}
 
 /-! ### Continuity of the Real Boundary Function -/
 
-/-- **Continuity of the real boundary function.**
+/-- **Continuity of the real boundary function (from regular FL representation).**
 
-    If F is holomorphic on T(C) with a Fourier-Laplace representation, then the
-    boundary function x ↦ F(realEmbed x) is continuous on ℝᵐ.
-
-    This is stronger than ContinuousWithinAt (which only gives continuity
-    approaching from the interior). The full continuity along the real subspace
-    follows from the Fourier-Laplace integral representation: the boundary
-    function is given by a tempered distribution applied as a Fourier transform,
-    which is smooth (in fact, the boundary function of a tube-domain function
-    with tempered BV is continuous).
+    Requires `HasFourierLaplaceReprRegular`. The missing multidimensional
+    theorem is to construct that structure from an actual Fourier-Laplace
+    representation with dual-cone support.
 
     Ref: Vladimirov §26.2 -/
 theorem fourierLaplace_boundary_continuous {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
-    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F) :
-    Continuous (fun x : Fin m → ℝ => F (realEmbed x)) := by
-  sorry
+    {C : Set (Fin m → ℝ)} (_hC : IsOpen C) (_hconv : Convex ℝ C) (_hne : C.Nonempty)
+    {F : (Fin m → ℂ) → ℂ} (_hF : DifferentiableOn ℂ F (TubeDomain C))
+    (hRegular : HasFourierLaplaceReprRegular C F) :
+    Continuous (fun x : Fin m → ℝ => F (realEmbed x)) :=
+  hRegular.boundary_continuous
 
 /-! ### Fundamental Lemma of Distribution Theory
 
@@ -427,14 +533,14 @@ theorem fourierLaplace_boundary_integral_convergence {m : ℕ}
     {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hconv : Convex ℝ C) (hne : C.Nonempty)
     (hcone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C))
-    (hRepr : HasFourierLaplaceRepr C F)
+    (hRegular : HasFourierLaplaceReprRegular C F)
     (η : Fin m → ℝ) (hη : η ∈ C)
     (f : SchwartzMap (Fin m → ℝ) ℂ) :
     Filter.Tendsto (fun ε : ℝ =>
       ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x)
     (nhdsWithin 0 (Set.Ioi 0))
     (nhds (∫ x, F (realEmbed x) * f x)) :=
-  fourierLaplace_schwartz_integral_convergence hC hconv hne hcone hF hRepr f η hη
+  fourierLaplace_schwartz_integral_convergence hC hconv hne hcone hF hRegular f η hη
 
 end SCV
 

@@ -1,240 +1,139 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-06 (rev 7)
+Last updated: 2026-03-07
 
-This file tracks blockers on the active OS reconstruction path with current priority order.
+This file tracks the active blocker picture on the OS reconstruction path.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
 
 ## Live Sorry Census
 
-Count convention: direct tactic holes only (`^\s*sorry\b`).
+Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`).
 
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
 | `OSReconstruction/Wightman` | 35 |
-| `OSReconstruction/SCV` | 15 |
+| `OSReconstruction/SCV` | 4 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
-| `OSReconstruction/vNA` | 40 |
-| **Whole project** | **92** |
+| `OSReconstruction/vNA` | 39 |
+| **Whole project** | **80** |
 
-_Count cross-checked 2026-03-06 via `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`._
-_BHWTranslation.lean was incorrectly listed with 5 sorrys; actual count is 1._
-_BHWExtension.lean: W_analytic_swap_distributional_agree and analytic_boundary_local_commutativity are NOW PROVED (0 sorrys)._
-_GNSHilbertSpace.lean: covariance_preHilbert was proved; 1 sorry remains (vacuum_unique part 2, spectral theory)._
-_OSToWightman.lean: `inductive_continuation_step` RENAMED to `restrict_holomorphic_to_acr_succ` (it is only a restriction lemma, not the true OS II step)._
-_OSToWightman.lean: `inductive_continuation_one_slice` REMOVED — was vacuous (Function.update mismatch) and had a contradictory docstring (claimed OneSliceContinuationDomain ⊄ ACR(r), but line 296 proves containment). Correct geometry: ACR(r+1) ⊆ OneSlice ⊆ ACR(r)._
-_OSToWightman.lean: `extract_slice_pw_data` REMOVED — was dead scaffolding (sorry'd, not in active proof chain, provenance gap acknowledged in its own docstring)._
-_OSToWightman.lean: added `OneSliceContinuationDomain` + 5 geometric lemmas (all proved, 0 sorrys)._
-_SCV count increased to 15 (from 11): 4 new sorrys added in LaplaceSchwartz.lean/TubeDistributions.lean to replace false/logically-unsound proofs that relied on the incorrect boundary-continuity interface._
-_BHWTranslation.lean: `bhw_translation_invariant_of_common_perm` PROVED (2026-03-06). Proof uses perm+CLG chain without needing D connected. Limited applicability: requires BOTH z∘π ∈ FT AND (z+c)∘π ∈ FT (common permutation witness). For generic Euclidean x, wick(x) ∈ PET but wick(x)∘π ∉ FT (negative times prevent FT membership). So cannot replace isConnected_permutedExtendedTube_inter_translate for the Euclidean application._
+Count cross-checked on 2026-03-07 with:
+```bash
+rg -c '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
+```
 
-## Definition Audit (2026-03-05 rev 3)
+## Current Root Blockers
 
-### PaleyWiener.lean: CRITICAL BUG PARTIALLY FIXED
+### 1. `WickRotation/OSToWightman.lean` (8)
 
-`HasOneSidedFourierSupport` was WRONG: defined distributional support (T(φ)=0 for supp φ ⊂ (-∞,0))
-instead of FOURIER support (T(F[φ])=0 for supp φ ⊂ (-∞,0) — i.e., supp(T̂) ⊆ [0,∞)).
-
-**Fixed 2026-03-05**: Definition now uses `SchwartzMap.fourierTransformCLM ℂ` correctly.
-Requires new import: `Mathlib.Analysis.Distribution.SchwartzSpace.Fourier`.
-
-`HasFourierSupportIn` (multi-d): Still uses distributional support due to type mismatch
-(`Fin m → ℝ` uses sup norm, incompatible with inner product needed for `fourierTransformCLM`).
-Correct fix requires migrating to `EuclideanSpace ℝ (Fin m)` — deferred.
-
-`paley_wiener_one_step_simple`: Fixed 2026-03-06. The theorem now concludes
-distributional boundary-value recovery of the function-induced tempered distribution,
-not false pointwise boundary equality `F_ext|_ℝ = f`.
-
-`paley_wiener_one_step`: Narrowed 2026-03-06 to the correct one-variable
-slice-extension region. The previous statement overclaimed holomorphic extension
-on the full set `{z | Im(z_r) > 0}` with no control on the other coordinates.
-
-`SCV/FourierLaplaceCore.lean`: now sorry-free. The Schwartz family `ψ_z` and
-the candidate Fourier-Laplace extension input have been formalized there, so the
-remaining `paley_wiener_half_line` blocker is the paired holomorphicity/growth
-argument plus boundary-value convergence, not the basic Schwartz construction.
-`SCV/PaleyWiener.schwartz_functional_bound` is also now proved, so the abstract
-continuity hypothesis for tempered distributions has already been converted into
-finite Schwartz-seminorm control.
-`SCV/FourierLaplaceCore.schwartzPsiZ_seminorm_horizontal_bound` is now proved,
-so the horizontal-line polynomial growth of the test family `ψ_{x+iη}` is also
-formalized before the final pairing step.
-`SCV/PaleyWiener.schwartz_functional_horizontal_growth` is now proved, so the
-growth part of the 1D Fourier-Laplace pairing has been reduced to the actual
-candidate used in `paley_wiener_half_line`.
-`SCV/FourierLaplaceCore.schwartzCLM_seminorm_horizontal_growth` is also now
-proved, so the generic horizontal-growth estimate survives passage through any
-continuous Schwartz-space endomorphism. This is the reusable estimate needed
-for the Fourier transform and the linear symbol `ξ ↦ I ξ` in the holomorphicity
-step.
-`SCV/PaleyWiener.fourierLaplaceExt_derivCandidate_horizontal_growth` is now
-proved as well, so the derivative-side horizontal growth for the candidate
-Fourier-Laplace pairing is no longer part of the `paley_wiener_half_line`
-blocker.
-The 1D Paley-Wiener statement has also been repaired to the correct input type:
-the active theorem now takes a bundled continuous complex-linear Schwartz
-functional, matching the analytic continuation target, rather than a merely
-real-linear map.
-
-See `Proofideas/paley_wiener_definition_analysis.lean` for full analysis.
-
-### isConnected_permutedExtendedTube_inter_translate (BHWTranslation.lean)
-
-Gemini consultation (2026-03-05) warns this may be FALSE for general complex c, because
-PET's "starburst" sector structure can fracture under large translations. The standard physics
-approach (Streater-Wightman pg. 65) works in difference variables to avoid this.
-Numerical tests for d=1, n=2 (9 test cases) confirm connectivity — but large n may differ.
-
-ANALYSIS (2026-03-06 rev 7):
-- For PURELY REAL c (c ∈ ℝ^{d+1}): PET - c = PET (since Im(z+c) = Im(z) for real c and PET
-  conditions are purely on Im). So D = PET ∩ (PET-c) = PET, which is connected. PROVABLE.
-- For c = wick(a) with a_0 = 0 (purely spatial Euclidean translation): wick(a) is purely real,
-  so D = PET. PROVABLE.
-- For c = wick(a) with a_0 ≠ 0 (temporal Euclidean component): wick(a) = (I*a_0, ...) has
-  imaginary time component. D = PET ∩ (PET - wick(a)) ⊊ PET. Connectivity unknown; provably
-  needed (CLG acts linearly and cannot compensate imaginary time shifts).
-
-`bhw_translation_invariant_of_common_perm` (proved) bypasses D connectivity IF a common
-permutation π exists with z∘π ∈ FT AND (z+c)∘π ∈ FT. For Euclidean z = wick(x), this
-requires x(π(k)) 0 increasing with positive first element — fails for generic Euclidean x
-(negative times are common). So `ae_euclidean_common_perm` (∀ᵐ x, ∃ π common for FT) is
-FALSE (not merely hard). The permutation trick does NOT bypass the connectivity sorry for
-generic Euclidean integrals.
-
-Correct proof requires either: (A) connectivity proof for c = wick(a), or (B) reformulation
-of PET in difference variables (making translation invariance definitional).
-
-### Root Blocker (Confirmed 2026-03-05)
-
-ALL active sorrys (LaplaceSchwartz, PaleyWiener, BochnerTubeTheorem, OSToWightman,
-SchwingerAxioms) ultimately require **Fourier-Laplace theory for tube domains** (Vladimirov §25-26),
-which is NOT in Mathlib. No partial proof is available without this infrastructure.
-
-### Boundary Continuity Interface (FIXED 2026-03-06 rev 6)
-
-The `SCV.fourierLaplace_continuousWithinAt` / `SCV.continuous_boundary_tube`
-interface was too strong (acknowledged false, counterexample F(z)=1/z).
-
-**Fixed**: Replaced false `fourierLaplace_pointwise_boundary_limit` (deleted),
-sorry'd `fourierLaplace_schwartz_integral_convergence` (proof was logically unsound —
-DCT pointwise step required boundary continuity), and sorry'd
-`fourierLaplace_boundary_recovery`, `boundary_value_recovery`, `boundary_value_zero`.
-`distributional_uniqueness_tube` is still proved but now explicitly notes its
-dependence on the sorry'd `continuous_boundary_tube` and `boundary_value_zero`.
-
-Correct statements with weaker hypotheses are deferred until Paley-Wiener theory
-is available in Mathlib.
-
-### OSToWightman Provenance Fix (FIXED 2026-03-06 rev 6)
-
-`iterated_analytic_continuation` had two artificial sorrys:
-1. r ≥ 1 `hS_next_rep`: claimed "blocked by transparent-witness issue" but the fix is
-   to use S_r directly with `acr_succ_subset` (ACR(r+1) ⊆ ACR(r)) — no sorry, no witness extraction.
-2. r = 0 k-split: manufactured `S_next'` + measure-theoretic sorry for base-agreement,
-   but `schwinger_continuation_base_step` returns agreement on ACR(0) directly (`hS_next_agree z hz0`).
-
-**Fixed**: r ≥ 1 branch now uses `exact ⟨S_r, hS_r_hol.mono (acr_succ_subset hr_pos), hS_r_base, hS_r_rep⟩`
-(zero sorrys). r = 0 branch uses direct `calc` with `hS_next_agree + hS_r_base` (no k-split).
-Only genuine BV gap sorry remains in `hS_next_rep` for r = 0 → 1.
-
-## Root Blocker Layers
-
-### 1) E -> R: `WickRotation/OSToWightman.lean` (13 sorry lines, 12 declarations)
-
-Analytic continuation infrastructure:
-- `restrict_holomorphic_to_acr_succ` — restriction lemma only (ACR(r+1) ⊆ ACR(r), trivially sorry-free)
-- `schwinger_continuation_base_step` (r=0→1, Kallen-Lehmann) — now takes `hS_rep` provenance
-- `inductive_analytic_continuation` — now takes `hS_rep`; r=0 uses Kallen-Lehmann, r≥1 uses restriction
-- `iterated_analytic_continuation` — now takes `hS_base_rep`; r≥1 zero sorry (acr_succ_subset direct); r=0 one genuine BV gap sorry
-- `schwinger_holomorphic_on_base_region`
-- `extend_to_forward_tube_via_bochner`
-- `full_analytic_continuation` (two remaining holes)
-
-Interface fix (2026-03-06): the inductive/iterated chain now correctly requires OS provenance
-(`hS_rep`/`hS_base_rep`) to call `schwinger_continuation_base_step`. Earlier versions overclaimed
-by asserting extension from bare DifferentiableOn without provenance. The sorry for provenance
-threading in `hS_next_rep` (iterated step) correctly documents the BV gap remaining.
-
-NEW (all proved, 0 sorrys):
-- `acr_succ_subset`, `OneSliceContinuationDomain`, `isOpen_oneSliceContinuationDomain`
-- `acr_succ_subset_oneSliceContinuationDomain`, `oneSliceContinuationDomain_subset_acr`
-- `iInter_oneSliceContinuationDomain_eq_acr_succ`, `sliceUpdate_mem_oneSliceContinuationDomain`
-
-Boundary value existence:
-- `forward_tube_bv_tempered`
-
-Axiom transfer chain:
+Active upstream blockers:
+- `schwinger_continuation_base_step`
+- `boundary_values_tempered`
 - `bv_translation_invariance_transfer`
 - `bv_lorentz_covariance_transfer`
 - `bv_local_commutativity_transfer`
 - `bv_positive_definiteness_transfer`
 - `bv_hermiticity_transfer`
-
-Cluster transfer:
 - `bvt_cluster`
 
-### 2) R -> E Wick Rotation Plumbing (7 total, down from 13)
+Current status:
+- the fake intermediate Bochner path is off the active chain
+- the active continuation chain now goes through the base-step witness and then the forward-tube analytic continuation already constructed
+- the real remaining work is base-step construction plus boundary-value existence, then the six transfer theorems
 
-`ForwardTubeLorentz.lean` (1):
-- `wickRotation_not_in_PET_null`
+### 2. `SCV` load-bearing infrastructure (4)
 
-`BHWExtension.lean` (0): **COMPLETE** — both sorrys proved as of 2026-03-05.
+`SCV/PaleyWiener.lean`:
+- sorry-free
+- no fake multidimensional Fourier-support interface remains
+- only the 1D and slice-wise theorems are active
 
-`BHWTranslation.lean` (1):
-- `isConnected_permutedExtendedTube_inter_translate`
+`SCV/LaplaceSchwartz.lean` (2):
+- `boundary_continuous` in `HasFourierLaplaceReprRegular.ofStrong`
+- `tube_continuousWithinAt` in `HasFourierLaplaceReprRegular.ofStrong`
 
-`SchwingerAxioms.lean` (5):
+Status:
+- the interface split is now honest:
+  - weak `HasFourierLaplaceRepr`
+  - regular `HasFourierLaplaceReprRegular`
+- `HasFourierLaplaceReprRegular.ofStrong` now takes explicit strong input data
+  (weak BV package + polynomial growth + singularity-free boundary-ray bound)
+- the remaining work is the Vladimirov §26.2 continuity upgrade inside `ofStrong`
+
+`SCV/TubeDistributions.lean` (0):
+
+Status:
+- the weak bare-BV theorem fronts were removed instead of being carried as public placeholders
+- only the rigorous strong variants remain, built from explicit strong input data
+
+`SCV/BochnerTubeTheorem.lean` (2):
+- `bochner_local_extension`
+- `bochner_tube_extension`
+
+Status:
+- the old generic gluing theorem was too strong and has been replaced by the honest compatible-family theorem
+
+### 3. `Reconstruction/ForwardTubeDistributions.lean` (7)
+
+Current direct blockers:
+- `continuous_boundary_forwardTube`
+- `distributional_uniqueness_forwardTube`
+- `boundary_value_recovery_forwardTube`
+- `boundary_function_continuous_forwardTube`
+- `polynomial_growth_forwardTube`
+- `boundary_integral_convergence`
+- `schwartz_bv_to_flat_bv`
+
+Status:
+- the previous proofs hid a weak-to-strong upgrade through SCV placeholder theorems
+- those hidden upgrades have been removed
+- the file now exposes the real forward-tube regularity gaps instead of pretending the weak route is settled
+- proved strong flattened-input transport theorems now exist for:
+  - boundary continuity of the real trace
+  - boundary-value recovery
+  - distributional uniqueness for a difference with zero flat boundary functional
+  - polynomial growth on compact forward-cone slices
+
+### 4. Wick rotation downstream
+
+`WickRotation/SchwingerAxioms.lean` (5):
 - `polynomial_growth_forwardTube_full`
 - `polynomial_growth_on_PET`
 - `schwinger_os_term_eq_wightman_term`
 - `bhw_pointwise_cluster_euclidean`
 - `W_analytic_cluster_integral`
 
-### 3) Shared SCV Infrastructure (11 total, load-bearing)
+`WickRotation/ForwardTubeLorentz.lean` (2):
+- `polynomial_growth_on_slice`
+- `wickRotation_not_in_PET_null`
 
-First correction needed:
-- replace the false boundary-continuity interface in
-  `LaplaceSchwartz.lean` / `TubeDistributions.lean`
+`WickRotation/BHWTranslation.lean` (1):
+- `isConnected_permutedExtendedTube_inter_translate`
 
-`SCV/PaleyWiener.lean` (4):
-- `paley_wiener_half_line`
-- `paley_wiener_cone`
-- `paley_wiener_converse`
-- `paley_wiener_one_step`
+`WickRotation/BHWExtension.lean`:
+- sorry-free
 
-`SCV/LaplaceSchwartz.lean` (5):
-- `fourierLaplace_continuousWithinAt`
-- `fourierLaplace_uniform_bound_near_boundary`
-- `fourierLaplace_polynomial_growth`
-- `polynomial_growth_of_continuous_bv`
-- `fourierLaplace_boundary_continuous`
+## Secondary Blockers
 
-`SCV/BochnerTubeTheorem.lean` (2):
-- `bochner_local_extension`
-- `holomorphic_extension_from_local`
-
-## Secondary Blockers (Not First Execution Lane)
-
-1. `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
-2. `Wightman/Reconstruction/GNSHilbertSpace.lean`: `vacuum_unique` part 2 (spectral theory; covariance_preHilbert PROVED)
-3. `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
-4. `Wightman/NuclearSpaces/*`: side development, not on shortest reconstruction path
-5. `ComplexLieGroups` remaining blocker status: see
-   `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/BLOCKER_STATUS.md`
+Not on the shortest OS reconstruction lane:
+- `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
+- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker
+- `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
+- `Wightman/NuclearSpaces/*`: side development, not first execution lane
+- `ComplexLieGroups` residual blockers: see the CLG status files
 
 ## Execution Order
 
-1. SCV core (`LaplaceSchwartz` + `PaleyWiener` + `Bochner`) to unblock continuation machinery.
-2. `OSToWightman` analytic continuation + BV existence.
-3. `OSToWightman` axiom transfer and cluster chain.
-4. Wick-rotation plumbing (`ForwardTubeLorentz` -> ~~`BHWExtension`~~ [complete] -> `BHWTranslation` -> `SchwingerAxioms`).
-5. Final uniqueness and residual wiring.
+1. Finish `HasFourierLaplaceReprRegular.ofStrong` in `SCV/LaplaceSchwartz.lean`.
+2. Use that corrected strong-to-regular upgrade in the seven forward-tube boundary theorems in `ForwardTubeDistributions.lean`.
+3. Use the repaired forward-tube boundary infrastructure to attack `boundary_values_tempered` in `OSToWightman.lean`.
+4. Then finish the six downstream transfer theorems in `OSToWightman.lean`.
+5. Only after that, return to `SchwingerAxioms`, `ForwardTubeLorentz`, and the remaining Wick-rotation plumbing.
 
 ## Commands
 
 ```bash
-rg -n '^\s*sorry\b' OSReconstruction --glob '*.lean'
+rg -n '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 lake build OSReconstruction.SCV
 lake build OSReconstruction.Wightman
 ```

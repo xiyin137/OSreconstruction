@@ -79,18 +79,14 @@ namespace SCV
 
 /-! ### Fourier support for tempered distributions
 
-We formalize the notion of Fourier support for tempered distributions (continuous
-linear functionals on Schwartz space). The Fourier transform of T in S'(R^m) is
-defined by duality: (FT)(phi) = T(F(phi)) for phi in S(R^m).
+In this file, only the one-dimensional Fourier-support notion is formalized.
 
-We say supp(FT) subset S if T(F(phi)) = 0 whenever supp(phi) is disjoint from S.
-
-Note: The Fourier transform on Schwartz space `SchwartzMap.fourierTransformCLM`
-is available in Mathlib for inner product spaces. For `Fin m -> R` with the
-standard Euclidean structure, this gives the m-dimensional Fourier transform.
-However, to avoid type-class issues with `Fin m -> R` vs `EuclideanSpace R (Fin m)`,
-we express Fourier support purely in terms of the distribution T and avoid
-explicit use of the Fourier transform operator in the definitions.
+For higher-dimensional Paley-Wiener theory, the correct ambient domain is
+`EuclideanSpace ℝ (Fin m)`, because Mathlib's Fourier transform on Schwartz
+space is organized over the inner-product-space model. The rest of this file,
+and the tube-domain infrastructure around it, still use `Fin m → ℝ`, so the
+honest multidimensional Fourier-support notion is deferred rather than being
+encoded by a surrogate definition.
 -/
 
 /-- A tempered distribution T (a continuous linear functional on Schwartz space)
@@ -143,75 +139,6 @@ theorem fourier_pairing_eq_of_eqOn_nonneg
     hT_supp (φ - ψ) hsupp
   exact sub_eq_zero.mp (by
     simpa [map_sub] using hzero)
-
-/-- A tempered distribution T on R^m has **Fourier support in a closed set S**
-    if T̂ (the Fourier transform of T) vanishes on Schwartz functions supported
-    outside S. That is, for every φ ∈ 𝓢(ℝ^m,ℂ) with supp(φ) ∩ S = ∅,
-    T̂(φ) = T(F[φ]) = 0.
-
-    For the Paley-Wiener theorem, S will be the dual cone C*.
-
-    ⚠️ TYPE NOTE: The correct formulation requires the domain to carry an inner
-    product space structure compatible with its norm (so that `fourierTransformCLM`
-    applies). The type `Fin m → ℝ` in Mathlib carries the sup-norm via
-    `Pi.normedAddCommGroup`, which does NOT agree with the ℓ²-inner product.
-    The correct domain is `EuclideanSpace ℝ (Fin m)`. This definition uses
-    `Fin m → ℝ` for compatibility with the rest of this file (where `dualCone`,
-    `TubeDomain`, etc. are all defined over `Fin m → ℝ`), but consequently
-    CANNOT directly use `SchwartzMap.fourierTransformCLM`. The correctness is
-    expressed via distributional duality: T(F[φ]) = 0 iff supp(T̂) ⊆ S.
-
-    TODO: Refactor all multi-dimensional PW theory to use `EuclideanSpace ℝ (Fin m)`
-    as the domain, which would allow using `fourierTransformCLM` directly. -/
-def HasFourierSupportIn {m : ℕ} (T : SchwartzMap (Fin m → ℝ) ℂ → ℂ)
-    (S : Set (Fin m → ℝ)) : Prop :=
-  ∀ (φ : SchwartzMap (Fin m → ℝ) ℂ),
-    (∀ x ∈ Function.support (φ : (Fin m → ℝ) → ℂ), x ∉ S) →
-    T φ = 0
-
-/-- The dual cone C* = { xi in R^m : <xi, y> >= 0 for all y in C }, where
-    <.,.> is the standard Euclidean inner product (dot product).
-
-    For an open convex cone C, the dual cone C* is a closed convex cone
-    containing 0. The Paley-Wiener theorem states that tempered distributions
-    with Fourier support in C* correspond to holomorphic functions on the
-    tube domain T(C) with polynomial growth. -/
-def dualCone {m : ℕ} (C : Set (Fin m → ℝ)) : Set (Fin m → ℝ) :=
-  { ξ | ∀ y ∈ C, ∑ i : Fin m, ξ i * y i ≥ 0 }
-
-/-- The dual cone is always closed. -/
-theorem dualCone_isClosed {m : ℕ} (C : Set (Fin m → ℝ)) :
-    IsClosed (dualCone C) := by
-  have : dualCone C = ⋂ y ∈ C, { ξ : Fin m → ℝ | ∑ i, ξ i * y i ≥ 0 } := by
-    ext ξ; simp [dualCone, mem_iInter]
-  rw [this]
-  apply isClosed_biInter
-  intro y _hy
-  exact isClosed_le continuous_const
-    (continuous_finset_sum _ fun i _ => (continuous_apply i).mul continuous_const)
-
-/-- The dual cone contains 0. -/
-theorem zero_mem_dualCone {m : ℕ} (C : Set (Fin m → ℝ)) :
-    (0 : Fin m → ℝ) ∈ dualCone C := by
-  intro y _
-  simp only [Pi.zero_apply, zero_mul, Finset.sum_const_zero, ge_iff_le, le_refl]
-
-/-! ### Polynomial growth -/
-
-/-- A holomorphic function on a tube domain has polynomial growth if for every
-    compact K subset C, there exist C_K, N such that
-    |F(x + iy)| <= C_K * (1 + |x|)^N for all x in R^m and y in K.
-
-    This is the growth condition characterizing Fourier-Laplace transforms
-    of tempered distributions (Vladimirov Section 25). -/
-def HasPolynomialGrowthOnTube {m : ℕ} (C : Set (Fin m → ℝ))
-    (F : (Fin m → ℂ) → ℂ) : Prop :=
-  ∀ (K : Set (Fin m → ℝ)), K ⊆ C → IsCompact K →
-    ∃ (C_K : ℝ) (N : ℕ),
-      0 < C_K ∧
-      ∀ (x : Fin m → ℝ) (y : Fin m → ℝ), y ∈ K →
-        ‖F (fun i => (x i : ℂ) + (y i : ℂ) * I)‖ ≤
-          C_K * (1 + ‖x‖) ^ N
 
 /-! ### Upper half-plane -/
 
@@ -2300,11 +2227,11 @@ theorem paley_wiener_half_line
 The genuine multidimensional cone/converse Paley-Wiener theorems are
 intentionally deferred from this file.
 
-The current multidimensional placeholder `HasFourierSupportIn` is formulated on
-`Fin m → ℝ`, while Mathlib's Fourier transform infrastructure is organized over
-the Euclidean inner-product model. Until the ambient domain is refactored to
-`EuclideanSpace ℝ (Fin m)`, the honest multivariate theorem should not be
-stated here as a Lean theorem.
+The next honest step is to refactor the ambient domain to
+`EuclideanSpace ℝ (Fin m)`, so that the multivariate Fourier-support notion is
+stated against the same inner-product-space model used by Mathlib's Schwartz
+Fourier transform. Until that happens, the multivariate cone/converse theorems
+should remain deferred rather than being stated on `Fin m → ℝ`.
 -/
 
 /-! ### One-step extension: the actual current slice theorem -/
@@ -2489,141 +2416,5 @@ theorem paley_wiener_one_step {m : ℕ}
       (h_slice_cont zc.1 zc.2)
       (h_growth zc.1 zc.2)
       (h_spectral zc.1 zc.2)
-
-/-! ### Uniqueness of Paley-Wiener extension -/
-
-/-- The Paley-Wiener extension is unique: if two holomorphic functions on the
-    upper half-plane have the same distributional boundary values on the real
-    line, they agree.
-
-    This follows from `distributional_uniqueness_tube` (in TubeDistributions.lean)
-    applied to the cone (0, infinity) in R^1. The upper half-plane is the tube
-    domain T((0,inf)) = { z : Im(z) > 0 }.
-
-    Sorry blocked by: embedding the 1D case into the general tube domain
-    framework and applying `distributional_uniqueness_tube`.
-
-    Ref: Vladimirov, Section 26.3 -/
-theorem paley_wiener_unique
-    (F G : ℂ → ℂ)
-    (hF : DifferentiableOn ℂ F upperHalfPlane)
-    (hG : DifferentiableOn ℂ G upperHalfPlane)
-    -- Same distributional boundary values
-    (h_agree : ∀ (φ : SchwartzMap ℝ ℂ),
-      Tendsto (fun η : ℝ => ∫ x : ℝ, (F (↑x + ↑η * I) - G (↑x + ↑η * I)) * φ x)
-        (nhdsWithin 0 (Ioi 0))
-        (nhds 0)) :
-    ∀ z ∈ upperHalfPlane, F z = G z := by
-  let C1 : Set (Fin 1 → ℝ) := {y | 0 < y 0}
-  let F1 : (Fin 1 → ℂ) → ℂ := fun z => F (z 0)
-  let G1 : (Fin 1 → ℂ) → ℂ := fun z => G (z 0)
-  have hC1_open : IsOpen C1 := by
-    simpa [C1] using isOpen_lt continuous_const (continuous_apply (0 : Fin 1))
-  have hC1_conv : Convex ℝ C1 := by
-    intro x hx y hy a b ha hb hab
-    show 0 < (a • x + b • y) 0
-    have hx0 : 0 < x 0 := hx
-    have hy0 : 0 < y 0 := hy
-    have ha_or_hb : 0 < a ∨ 0 < b := by
-      by_cases ha0 : a = 0
-      · right
-        have hb1 : b = 1 := by linarith
-        linarith
-      · left
-        exact lt_of_le_of_ne ha (Ne.symm ha0)
-    have hsum_pos : 0 < a * x 0 + b * y 0 := by
-      cases ha_or_hb with
-      | inl ha_pos =>
-          have hax_pos : 0 < a * x 0 := mul_pos ha_pos hx0
-          have hby_nonneg : 0 ≤ b * y 0 := by positivity
-          linarith
-      | inr hb_pos =>
-          have hby_pos : 0 < b * y 0 := mul_pos hb_pos hy0
-          have hax_nonneg : 0 ≤ a * x 0 := by positivity
-          linarith
-    have hcoord : (a • x + b • y) 0 = a * x 0 + b * y 0 := by
-      simp [Pi.smul_apply, Pi.add_apply]
-    rw [hcoord]
-    exact hsum_pos
-  have hC1_ne : C1.Nonempty := ⟨fun _ => (1 : ℝ), by simp [C1]⟩
-  have hC1_cone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C1, t • y ∈ C1 := by
-    intro t ht y hy
-    show 0 < (t • y) 0
-    simpa [C1, Pi.smul_apply] using mul_pos ht hy
-  have hF1 : DifferentiableOn ℂ F1 (TubeDomain C1) := by
-    intro z hz
-    have hz0 : (z 0).im > 0 := by simpa [TubeDomain, C1] using hz
-    have hFz : DifferentiableWithinAt ℂ F upperHalfPlane (z 0) := hF (z 0) hz0
-    have heval : DifferentiableWithinAt ℂ (fun w : Fin 1 → ℂ => w 0) (TubeDomain C1) z :=
-      (differentiableAt_apply (0 : Fin 1) z).differentiableWithinAt
-    simpa [F1] using hFz.comp z heval (by intro w hw; simpa [TubeDomain, C1] using hw)
-  have hG1 : DifferentiableOn ℂ G1 (TubeDomain C1) := by
-    intro z hz
-    have hz0 : (z 0).im > 0 := by simpa [TubeDomain, C1] using hz
-    have hGz : DifferentiableWithinAt ℂ G upperHalfPlane (z 0) := hG (z 0) hz0
-    have heval : DifferentiableWithinAt ℂ (fun w : Fin 1 → ℂ => w 0) (TubeDomain C1) z :=
-      (differentiableAt_apply (0 : Fin 1) z).differentiableWithinAt
-    simpa [G1] using hGz.comp z heval (by intro w hw; simpa [TubeDomain, C1] using hw)
-  have h_agree1 : ∀ (φ : SchwartzMap (Fin 1 → ℝ) ℂ) (η : Fin 1 → ℝ), η ∈ C1 →
-      Tendsto (fun ε : ℝ =>
-        ∫ x : Fin 1 → ℝ,
-          (F1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I) -
-           G1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I)) * φ x)
-      (nhdsWithin 0 (Ioi 0))
-      (nhds 0) := by
-    intro φ η hη
-    let eR : ℝ ≃L[ℝ] (Fin 1 → ℝ) :=
-      (ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ).symm
-    let pullback : SchwartzMap (Fin 1 → ℝ) ℂ →L[ℂ] SchwartzMap ℝ ℂ :=
-      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR
-    let φR : SchwartzMap ℝ ℂ := pullback φ
-    have hbase := h_agree φR
-    have hη0 : 0 < η 0 := by simpa [C1] using hη
-    have hscale_nhds0 : Tendsto (fun ε : ℝ => ε * η 0) (nhds 0) (nhds 0) := by
-      simpa using (continuous_id.mul continuous_const).tendsto (0 : ℝ)
-    have hscale_nhds : Tendsto (fun ε : ℝ => ε * η 0)
-        (nhdsWithin 0 (Ioi 0)) (nhds 0) := by
-      exact hscale_nhds0.mono_left inf_le_left
-    have hscale_pos : ∀ᶠ ε in nhdsWithin 0 (Ioi 0), ε * η 0 ∈ Ioi 0 := by
-      filter_upwards [self_mem_nhdsWithin] with ε hε
-      exact mul_pos hε hη0
-    have hscale : Tendsto (fun ε : ℝ => ε * η 0)
-        (nhdsWithin 0 (Ioi 0)) (nhdsWithin 0 (Ioi 0)) :=
-      tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
-        (fun ε : ℝ => ε * η 0) hscale_nhds hscale_pos
-    have hscaled := hbase.comp hscale
-    have hscaled' : Tendsto
-        (fun ε : ℝ =>
-          ∫ t : ℝ,
-            (F (↑t + ↑ε * ↑(η 0) * I) - G (↑t + ↑ε * ↑(η 0) * I)) * φR t)
-        (nhdsWithin 0 (Ioi 0))
-        (nhds 0) := by
-      refine Filter.Tendsto.congr ?_ hscaled
-      intro ε
-      simp [Function.comp, mul_comm]
-    have hcv : ∀ ε : ℝ,
-        (∫ x : Fin 1 → ℝ,
-          (F1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I) -
-           G1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I)) * φ x) =
-        ∫ t : ℝ, (F (↑t + ↑(ε * η 0) * I) - G (↑t + ↑(ε * η 0) * I)) * φR t := by
-      intro ε
-      have hpre :=
-        (((volume_preserving_funUnique (Fin 1) ℝ).symm _).setIntegral_preimage_emb
-          (MeasurableEquiv.measurableEmbedding _)
-          (fun x : Fin 1 → ℝ =>
-            (F1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I) -
-             G1 (fun i => ↑(x i) + ↑ε * ↑(η i) * I)) * φ x)
-          Set.univ).symm
-      simpa [F1, G1, φR, pullback, eR, SchwartzMap.compCLMOfContinuousLinearEquiv]
-        using hpre
-    refine Filter.Tendsto.congr (fun ε => (hcv ε).symm) ?_
-    simpa [Function.comp, φR] using hscaled'
-  have huniq := distributional_uniqueness_tube (m := 1) (C := C1)
-    hC1_open hC1_conv hC1_ne hC1_cone hF1 hG1 h_agree1
-  intro z hz
-  have hz1 : (fun _ : Fin 1 => z) ∈ TubeDomain C1 := by
-    simpa [TubeDomain, C1, upperHalfPlane] using hz
-  have h_eq1 := huniq (fun _ : Fin 1 => z) hz1
-  simpa [F1, G1] using h_eq1
 
 end SCV

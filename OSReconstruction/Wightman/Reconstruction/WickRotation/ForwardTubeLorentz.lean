@@ -26,10 +26,10 @@ These axioms specialize the general tube domain results from `SCV.TubeDistributi
 to the forward tube `T_n = { z ∈ ℂ^{n(d+1)} | Im(z_k - z_{k-1}) ∈ V₊ }`.
 
 The forward tube is a tube domain over the product cone `V₊^n` in difference coordinates.
-The general tube domain axioms (`continuous_boundary_tube`, `distributional_uniqueness_tube`)
-apply after the linear change of variables from absolute to difference coordinates
-and the identification `Fin n → Fin (d+1) → ℂ ≅ Fin (n*(d+1)) → ℂ`. We state the
-forward-tube versions directly to avoid coordinate-change boilerplate.
+The rigorous transport results used here are the strong flattened-input theorems
+from `ForwardTubeDistributions`, obtained after the linear change of variables from
+absolute to difference coordinates and the identification
+`Fin n → Fin (d+1) → ℂ ≅ Fin (n*(d+1)) → ℂ`.
 
 Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §25-26;
      Streater-Wightman, Theorems 2-6, 2-9 -/
@@ -316,6 +316,11 @@ instances used here.
     data to flat-coordinate BV (`schwartz_bv_to_flat_bv`) and then apply
     `polynomial_growth_forwardTube` on the compact singleton `{εη}`.
 
+    Current status:
+    this is still a weak placeholder theorem. Its previous proof relied on the
+    weak forward-tube boundary-value transport chain, which is now explicitly
+    reopened in `ForwardTubeDistributions`.
+
     Ref: Vladimirov, "Methods of the Theory of Generalized Functions", Theorem 25.5 -/
 theorem polynomial_growth_on_slice {d n : ℕ} [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
@@ -334,8 +339,32 @@ theorem polynomial_growth_on_slice {d n : ℕ} [NeZero d]
       ∀ (x : NPointDomain d n),
         ‖F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤
           C_bd * (1 + ‖x‖) ^ N := by
-  -- Convert Schwartz BV data into the flat BV form needed by polynomial growth.
-  have h_bv_flat := schwartz_bv_to_flat_bv (d := d) (n := n) hF h_bv
+  -- Blocked: the previous proof depended on the weak forward-tube BV transport
+  -- chain, which has now been reopened as honest placeholder interface.
+  sorry
+
+/-- Proved slice-growth theorem under strong flattened-tube Fourier-Laplace input. -/
+theorem polynomial_growth_on_slice_of_flatStrong {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (hRepr : SCV.HasFourierLaplaceRepr (ForwardConeFlat d n)
+      (F ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hPoly : ∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
+          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
+            (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hUniform : ∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
+      ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
+        ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
+          ‖(F ∘ (flattenCLEquiv n (d + 1)).symm)
+            (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η)
+    (ε : ℝ) (hε : ε > 0) :
+    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (x : NPointDomain d n),
+        ‖F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤
+          C_bd * (1 + ‖x‖) ^ N := by
   let y0 : Fin n → Fin (d + 1) → ℝ := fun k μ => ε * η k μ
   have hη_abs : η ∈ ForwardConeAbs d n :=
     (inForwardCone_iff_mem_forwardConeAbs (d := d) (n := n) η).1 hη
@@ -345,8 +374,8 @@ theorem polynomial_growth_on_slice {d n : ℕ} [NeZero d]
     rcases Set.mem_singleton_iff.mp hy with rfl
     exact hy0_mem
   obtain ⟨C_bd, N, hC_pos, hbound⟩ :=
-    polynomial_growth_forwardTube
-      (d := d) (n := n) hF h_bv_flat {y0} isCompact_singleton hK_sub
+    polynomial_growth_forwardTube_of_flatStrong
+      (d := d) (n := n) hF hRepr hPoly hUniform {y0} isCompact_singleton hK_sub
   refine ⟨C_bd, N, hC_pos, ?_⟩
   intro x
   simpa [y0, mul_assoc, mul_left_comm, mul_comm]

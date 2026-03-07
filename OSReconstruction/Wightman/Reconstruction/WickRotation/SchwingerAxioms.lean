@@ -156,8 +156,9 @@ theorem bhw_polynomial_growth_on_euclidean {d n : ℕ} [NeZero d]
         ‖F_ext(Wick(x))‖ ≤ C · (1 + ‖x‖)^N
 
     This combines two ingredients:
-    1. `polynomial_growth_tube`: On each tube in the permuted extended tube, F_ext
-       satisfies polynomial growth bounds (Streater-Wightman Thm 2-6).
+    1. the tube-domain polynomial-growth input: on each tube in the permuted
+       extended tube, F_ext satisfies polynomial growth bounds
+       (Streater-Wightman Thm 2-6).
     2. `ae_euclidean_points_in_permutedTube`: For a.e. Euclidean configuration x,
        the Wick-rotated point lies in PET.
 
@@ -406,7 +407,8 @@ theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
     functional on the Schwartz space. The proof combines:
 
     1. `bhw_euclidean_polynomial_bound`: The kernel F_ext(Wick(x)) has polynomial
-       growth for a.e. x (from polynomial_growth_tube + ae_euclidean_points_in_permutedTube).
+       growth for a.e. x (from the tube-domain growth input +
+       ae_euclidean_points_in_permutedTube).
     2. `bhw_euclidean_kernel_measurable`: The kernel is a.e. strongly measurable.
     3. `schwartz_continuous_of_polynomial_bound`: A polynomially bounded measurable kernel
        defines a continuous functional on Schwartz space via integration.
