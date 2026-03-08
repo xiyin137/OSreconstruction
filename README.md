@@ -46,15 +46,15 @@ Priority note:
 - `StoneTheorem` and the broader `vNA` operator-theoretic lane are not on that critical path. They are needed later for the GNS/operator reconstruction theorem `wightman_reconstruction`, specifically the `spectrum_condition` and `vacuum_unique` branches of `gnsQFT`.
 - So, for the key OS reconstruction theorems in `Main.lean`, the immediate priorities are `wightman_to_os` and `os_to_wightman`, not Stone/self-adjoint-generator machinery.
 
-Snapshot (2026-03-07, counted with `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`):
+Snapshot (2026-03-08, counted with `rg -c '^\s*sorry\b' OSReconstruction --glob '*.lean'`):
 
 | Module | Direct `sorry` lines |
 |--------|-----------------------|
-| `Wightman/` | 30 |
-| `SCV/` | 11 |
+| `Wightman/` | 33 |
+| `SCV/` | 2 |
 | `ComplexLieGroups/` | 2 |
-| `vNA/` | 40 |
-| **Total** | **83** |
+| `vNA/` | 39 |
+| **Total** | **76** |
 
 ### OS-Critical Sorry Flow Toward Reconstruction
 
@@ -66,17 +66,19 @@ flowchart TD
   M --> RE["wightman_to_os"]
   M --> ER["os_to_wightman"]
 
-  RE --> SA["WickRotation/SchwingerAxioms (5 sorrys)"]
+  RE --> SA["WickRotation/SchwingerAxioms (6 sorrys)"]
   SA --> BT["WickRotation/BHWTranslation (1)"]
   BT --> BE["WickRotation/BHWExtension (0)"]
-  BE --> FL["WickRotation/ForwardTubeLorentz (1)"]
+  BE --> FL["WickRotation/ForwardTubeLorentz (2)"]
+  FL --> FTD["ForwardTubeDistributions (4)"]
   FL --> AC["Reconstruction/AnalyticContinuation (0)"]
   AC --> CL["ComplexLieGroups/Connectedness/* (2)"]
   AC --> JP["ComplexLieGroups/JostPoints (0)"]
 
   ER --> OW["WickRotation/OSToWightman (8 sorrys)"]
+  OW --> FTD
   OW --> PW["SCV/PaleyWiener (0)"]
-  OW --> LS["SCV/LaplaceSchwartz (7)"]
+  OW --> LS["SCV/LaplaceSchwartz (0)"]
   OW --> BO["SCV/BochnerTubeTheorem (2)"]
 ```
 
@@ -85,18 +87,27 @@ flowchart TD
 | File | Direct `sorry`s | Notes |
 |------|------------------|-------|
 | `Wightman/Reconstruction/Main.lean` | 1 | `wightman_uniqueness` |
-| `Wightman/Reconstruction/GNSHilbertSpace.lean` | 1 | `vacuum_unique` spectral-theory branch |
 | `Wightman/WightmanAxioms.lean` | 4 | nuclear extension + spectrum/BV infrastructure |
-| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 1 | growth / BV covariance plumbing |
+| `Wightman/NuclearSpaces/BochnerMinlos.lean` | 5 | Bochner-Minlos measure construction |
+| `Wightman/NuclearSpaces/NuclearSpace.lean` | 2 | nuclear space infrastructure |
+| `Wightman/Reconstruction/ForwardTubeDistributions.lean` | 4 | weak-BV interface sorrys (proved `_of_flatRegular` variants exist) |
+| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean` | 2 | poly growth slice + PET measure zero |
 | `Wightman/Reconstruction/WickRotation/BHWExtension.lean` | 0 | completed |
-| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 1 | overlap-connectivity / translation geometry |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 5 | E0/E2/E4 hard analytic steps |
-| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 8 | base-step continuation + BV transfer chain |
-| `SCV/PaleyWiener.lean` | 0 | sorry-free as of 2026-03-07 |
-| `SCV/LaplaceSchwartz.lean` | 7 | boundary growth/continuity/convergence |
+| `Wightman/Reconstruction/WickRotation/BHWTranslation.lean` | 1 | PET intersection connectivity |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 6 | poly growth, reality, cluster, OS=W term |
+| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 8 | FL regularity + base step + BV transfer chain |
+| `SCV/PaleyWiener.lean` | 0 | sorry-free |
+| `SCV/LaplaceSchwartz.lean` | 0 | sorry-free |
+| `SCV/TubeDistributions.lean` | 0 | sorry-free |
 | `SCV/BochnerTubeTheorem.lean` | 2 | local-to-global tube extension |
-| `ComplexLieGroups/Connectedness/ComplexInvariance/Core.lean` | 1 | orbit-set preconnectedness (`hjoin` branch) |
-| `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlow.lean` | 1 | permutation overlap extension (`hExtPerm` branch) |
+| `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean` | 2 | permutation flow blockers |
+| `vNA/MeasureTheory/CaratheodoryExtension.lean` | 11 | measure-theoretic extension lane |
+| `vNA/KMS.lean` | 10 | KMS/modular theory lane |
+| `vNA/ModularAutomorphism.lean` | 6 | modular automorphism theory |
+| `vNA/ModularTheory.lean` | 6 | Tomita-Takesaki core |
+| `vNA/Unbounded/StoneTheorem.lean` | 2 | Stone/self-adjoint generator lane |
+| `vNA/Unbounded/Spectral.lean` | 2 | unbounded spectral theory |
+| `vNA/Predual.lean` | 2 | normal functionals, σ-weak topology |
 
 Operator-theoretic side note:
 - `Main.wightman_reconstruction` is a separate GNS/operator lane.

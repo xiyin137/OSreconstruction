@@ -488,5 +488,29 @@ noncomputable def W_analytic_BHW (Wfn : WightmanFunctions d) (n : ℕ) :
   exact ⟨h.choose, h.choose_spec.1, h.choose_spec.2.1, h.choose_spec.2.2.1,
     h.choose_spec.2.2.2.1⟩
 
+/-- Uniqueness of the BHW extension chosen in `W_analytic_BHW`.
+
+    This restates the uniqueness clause of `bargmann_hall_wightman` for the
+    specific extension packaged by `W_analytic_BHW`. It is the concrete
+    uniqueness fact needed when comparing `W_analytic_BHW` to other holomorphic
+    functions on the permuted extended tube with the same forward-tube boundary
+    data. -/
+theorem W_analytic_BHW_unique (Wfn : WightmanFunctions d) (n : ℕ)
+    (G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hG_holo : DifferentiableOn ℂ G (PermutedExtendedTube d n))
+    (hG_eq : ∀ z ∈ ForwardTube d n, G z = (Wfn.spectrum_condition n).choose z) :
+    ∀ z ∈ PermutedExtendedTube d n, G z = (W_analytic_BHW Wfn n).val z := by
+  let h := bargmann_hall_wightman n
+      (Wfn.spectrum_condition n).choose
+      (Wfn.spectrum_condition n).choose_spec.1
+      (W_analytic_lorentz_on_tube Wfn n)
+      (W_analytic_continuous_boundary Wfn n)
+      (W_analytic_local_commutativity Wfn n)
+  have hchosen : (W_analytic_BHW Wfn n).val = h.choose := by
+    rfl
+  intro z hz
+  rw [hchosen]
+  exact h.choose_spec.2.2.2.2 G hG_holo hG_eq z hz
+
 
 end
