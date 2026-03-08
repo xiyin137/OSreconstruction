@@ -19,8 +19,8 @@ with a cyclic-separating vector (or more generally, a faithful normal state).
 
 ## Main results
 
-* `ModularAutomorphismGroup.is_automorphism` - σ_t is a *-automorphism
-* `ModularAutomorphismGroup.group_law` - σ_s ∘ σ_t = σ_{s+t}
+* `ModularAutomorphismGroup.preserves_mul` - algebraic multiplicativity of the conjugation action
+* `ModularAutomorphismGroup.preserves_adjoint` - adjoint compatibility of the conjugation action
 * `ModularAutomorphismGroup.continuity` - t ↦ σ_t(a) is σ-weakly continuous
 * `connes_cocycle_relation` - the cocycle identity
 
@@ -85,13 +85,6 @@ def apply (σ : ModularAutomorphismGroup M Ω) (t : ℝ) (a : H →L[ℂ] H) (_ 
     H →L[ℂ] H :=
   σ.unitaryAt t ∘L a ∘L σ.unitaryAt (-t)
 
-/-- σ_t maps M to M. This is the Tomita-Takesaki fundamental theorem. -/
-theorem preserves_algebra (σ : ModularAutomorphismGroup M Ω) (t : ℝ)
-    (a : H →L[ℂ] H) (ha : a ∈ M) : σ.apply t a ha ∈ M := by
-  -- Follows from Tomita-Takesaki fundamental theorem:
-  -- Δ^{it} M Δ^{-it} = M for all t ∈ ℝ
-  sorry
-
 /-- σ_t preserves multiplication: σ_t(ab) = σ_t(a)σ_t(b).
     This follows from U(ab)U* = (UaU*)(UbU*) for unitary U. -/
 theorem preserves_mul (σ : ModularAutomorphismGroup M Ω) (t : ℝ)
@@ -130,52 +123,6 @@ theorem preserves_adjoint (σ : ModularAutomorphismGroup M Ω) (t : ℝ)
       unitaryGroup_inv σ.Δ σ.Δ_dense σ.Δ_selfadj t,
       unitaryGroup_inv σ.Δ σ.Δ_dense σ.Δ_selfadj (-t), neg_neg]
   ext x; simp [ContinuousLinearMap.comp_apply]
-
-/-- σ_t is an automorphism (bijective) with inverse σ_{-t} -/
-theorem is_automorphism (σ : ModularAutomorphismGroup M Ω) (t : ℝ)
-    (a : H →L[ℂ] H) (ha : a ∈ M) :
-    σ.apply (-t) (σ.apply t a ha) (σ.preserves_algebra t a ha) = a := by
-  -- σ_{-t}(σ_t(a)) = Δ^{-it}(Δ^{it}aΔ^{-it})Δ^{it} = a
-  simp only [apply, unitaryAt]
-  -- Use the inverse properties of the unitary group
-  have hmul1 : unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-t) ∘L
-               unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj t = 1 :=
-    unitaryGroup_neg_comp σ.Δ σ.Δ_dense σ.Δ_selfadj t
-  have hmul2 : unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj t ∘L
-               unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-t) = 1 :=
-    unitaryGroup_comp_neg σ.Δ σ.Δ_dense σ.Δ_selfadj t
-  ext x
-  simp only [ContinuousLinearMap.comp_apply, neg_neg]
-  -- U(-t) U(t) a U(-t) U(t) x = a x since U(-t) U(t) = 1
-  have step1 : (unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-t) ∘L
-                unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj t) x = x := by
-    rw [hmul1]; simp
-  have step2 : (unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-t) ∘L
-                unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj t) (a x) = a x := by
-    rw [hmul1]; simp
-  simp only [ContinuousLinearMap.comp_apply] at step1 step2
-  rw [step1, step2]
-
-/-- Group law: σ_s ∘ σ_t = σ_{s+t} -/
-theorem group_law (σ : ModularAutomorphismGroup M Ω) (s t : ℝ)
-    (a : H →L[ℂ] H) (ha : a ∈ M) :
-    σ.apply s (σ.apply t a ha) (σ.preserves_algebra t a ha) =
-    σ.apply (s + t) a ha := by
-  -- Δ^{is}(Δ^{it} a Δ^{-it})Δ^{-is} = Δ^{i(s+t)} a Δ^{-i(s+t)}
-  simp only [apply, unitaryAt]
-  have hgroup := unitaryGroup_mul σ.Δ σ.Δ_dense σ.Δ_selfadj
-  ext x
-  simp only [ContinuousLinearMap.comp_apply]
-  -- U(s) U(t) a U(-t) U(-s) x = U(s+t) a U(-(s+t)) x
-  have h1 : unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj s ∘L
-            unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj t =
-            unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (s + t) := hgroup s t
-  have h2 : unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-t) ∘L
-            unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-s) =
-            unitaryGroup σ.Δ σ.Δ_dense σ.Δ_selfadj (-(s + t)) := by
-    rw [hgroup (-t) (-s)]; ring_nf
-  rw [← ContinuousLinearMap.comp_apply (unitaryGroup _ _ _ s),
-      ← ContinuousLinearMap.comp_apply (unitaryGroup _ _ _ (-t)), h1, h2]
 
 /-- σ_0 = id -/
 theorem at_zero (σ : ModularAutomorphismGroup M Ω) (a : H →L[ℂ] H) (ha : a ∈ M) :
@@ -360,25 +307,6 @@ theorem cocycle_unitary (c : ConnesCocycle M Ω₁ Ω₂) (t : ℝ) :
       rw [h1_cancel']; simp
     simpa [ContinuousLinearMap.comp_apply] using this
 
-/-- The cocycle is in M. This follows from the Tomita-Takesaki theorem:
-    Δ^{it} M Δ^{-it} = M, so Δ_φ^{it} Δ_ψ^{-it} ∈ M. -/
-theorem cocycle_in_algebra (c : ConnesCocycle M Ω₁ Ω₂) (t : ℝ) :
-    c.cocycle t ∈ M := by
-  simp only [cocycle]
-  -- This requires the Tomita-Takesaki theorem
-  sorry
-
-/-- Cocycle identity: (Dφ : Dψ)_{s+t} = (Dφ : Dψ)_s · σ^ψ_s((Dφ : Dψ)_t)
-    This is the fundamental cocycle relation for Connes cocycles.
-    Note: This requires the full cocycle definition with modular operators. -/
-theorem cocycle_identity (c : ConnesCocycle M Ω₁ Ω₂)
-    (σ₂ : ModularAutomorphismGroup M Ω₂) (s t : ℝ) :
-    c.cocycle (s + t) =
-    c.cocycle s ∘L σ₂.apply s (c.cocycle t) (c.cocycle_in_algebra t) := by
-  -- (Dφ : Dψ)_{s+t} = (Dφ : Dψ)_s · σ^ψ_s((Dφ : Dψ)_t)
-  -- This requires the proper cocycle definition
-  sorry
-
 /-- Chain rule: (Dφ : Dψ)_t · (Dψ : Dρ)_t = (Dφ : Dρ)_t.
     This requires consistency of the modular operator data across cocycles.
     Proof: Δ_φ^{it} Δ_ψ^{-it} · Δ_ψ^{it} Δ_ρ^{-it} = Δ_φ^{it} (Δ_ψ^{-it} Δ_ψ^{it}) Δ_ρ^{-it}
@@ -423,18 +351,6 @@ theorem self_trivial (c : ConnesCocycle M Ω₁ Ω₁) (t : ℝ) (h : c.σ₁ = 
   -- Δ^{it} Δ^{-it} = 1
   rw [unitaryGroup_mul, add_neg_cancel, unitaryGroup_zero]
 
-/-- Relation between modular automorphisms:
-    σ^φ_t(a) = (Dφ : Dψ)_t · σ^ψ_t(a) · (Dφ : Dψ)_t*
-    This requires the full cocycle definition relating the two modular operators. -/
-theorem modular_relation (c : ConnesCocycle M Ω₁ Ω₂)
-    (σ₁ : ModularAutomorphismGroup M Ω₁) (σ₂ : ModularAutomorphismGroup M Ω₂)
-    (t : ℝ) (a : H →L[ℂ] H) (ha : a ∈ M) :
-    σ₁.apply t a ha =
-    c.cocycle t ∘L σ₂.apply t a ha ∘L ContinuousLinearMap.adjoint (c.cocycle t) := by
-  -- σ^φ_t(a) = (Dφ : Dψ)_t · σ^ψ_t(a) · (Dφ : Dψ)_t*
-  -- This requires the proper cocycle definition: u_t = Δ_φ^{it} Δ_ψ^{-it}
-  sorry
-
 end ConnesCocycle
 
 /-! ### Inner automorphisms -/
@@ -452,27 +368,5 @@ structure UnitaryElement where
   mem : val ∈ M
   unitary_left : ContinuousLinearMap.adjoint val ∘L val = 1
   unitary_right : val ∘L ContinuousLinearMap.adjoint val = 1
-
-/-- σ_t is inner iff there exists a unitary u_t ∈ M with σ_t(a) = u_t a u_t* -/
-theorem modular_inner_iff (σ : ModularAutomorphismGroup M Ω) (t : ℝ) :
-    IsInnerAutomorphism M (fun a => σ.apply t a (by
-      -- We need membership proof; this is a characterization theorem
-      sorry)) ↔
-    ∃ u : UnitaryElement M,
-      ∀ a ∈ M, σ.apply t a (by sorry) = u.val ∘L a ∘L ContinuousLinearMap.adjoint u.val := by
-  -- This characterizes when the modular automorphism is inner
-  sorry
-
-/-! ### Approximate innerness (Connes) -/
-
-/-- The modular automorphism group is approximately inner:
-    for any ε > 0 and finite set F ⊆ M, there exists unitary u ∈ M such that
-    ‖σ_t(a) - uau*‖ < ε for all a ∈ F (Connes' theorem) -/
-theorem approximately_inner (σ : ModularAutomorphismGroup M Ω) (t : ℝ)
-    (ε : ℝ) (_hε : 0 < ε) (F : Finset (H →L[ℂ] H)) (hF : ∀ a ∈ F, a ∈ M) :
-    ∃ u : UnitaryElement M, ∀ a : H →L[ℂ] H, ∀ ha : a ∈ F,
-      ‖σ.apply t a (hF a ha) - u.val ∘L a ∘L ContinuousLinearMap.adjoint u.val‖ < ε := by
-  -- Connes' approximate innerness theorem
-  sorry
 
 end VonNeumannAlgebra

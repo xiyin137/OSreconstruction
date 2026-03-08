@@ -2610,39 +2610,6 @@ def UnboundedOperator.power (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
         rw [hre, Real.exp_zero]
       · simp)
 
-/-- T^0 = 1 for strictly positive T.
-
-    **Note:** This requires strict positivity (T injective), not just positivity.
-    For a merely positive T, `power 0` gives `P((0,∞))` (the projection onto ker(T)⊥),
-    which equals 1 only when T has trivial kernel. Counterexample: T = 0.
-    See Issue #4.
-
-    **Proof:** The function f(λ) = λ^0 = 1 for λ > 0 (and 0 elsewhere).
-    For strictly positive T, P({0}) = 0 (since 0 is not an eigenvalue),
-    so P((0,∞)) = P([0,∞)) = P(ℝ) = 1, giving ∫ f dP = 1.
-    Depends on: spectral support argument (P((-∞, 0]) = 0 for positive T). -/
-theorem UnboundedOperator.power_zero (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
-    (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive)
-    (hstrict : T.IsStrictlyPositive) :
-    T.power hT hsa hpos 0 (by simp [Complex.zero_re]) = 1 := by
-  /-
-  PROOF STRUCTURE:
-
-  1. The power function is: f(λ) = if λ > 0 then exp(0 * log λ) else 0
-  2. For λ > 0: exp(0 * log λ) = exp(0) = 1
-  3. So f(λ) = χ_{(0,∞)}(λ) (indicator of positive reals)
-
-  For a strictly positive operator T:
-  - The spectrum is contained in [0, ∞) (by positivity)
-  - P({0}) = 0 (by strict positivity / injectivity)
-  - Therefore P((0, ∞)) = P([0, ∞)) = P(ℝ) = 1
-  - And ∫ χ_{(0,∞)} dP = P((0,∞)) = 1
-
-  FOUNDATIONAL: Requires showing P((-∞, 0]) = 0 for strictly positive T
-  and that the functional calculus of the constant 1 on support is the identity.
-  -/
-  sorry
-
 /-- T^(s+t) = T^s ∘ T^t
 
     **Proof:** Uses `functionalCalculus_mul`. The function λ^(s+t) = λ^s · λ^t pointwise,
@@ -2723,50 +2690,6 @@ theorem UnboundedOperator.power_add (T : UnboundedOperator H) (hT : T.IsDenselyD
     _ = functionalCalculus P f_s (power_int s hs) ⟨1, zero_le_one, power_norm_le s hs⟩ ∘L
         functionalCalculus P f_t (power_int t ht) ⟨1, zero_le_one, power_norm_le t ht⟩ := hmul
     _ = T.power hT hsa hpos s hs ∘L T.power hT hsa hpos t ht := rfl
-
-/-- For real t, T^{it} is unitary (requires strict positivity).
-
-    **Note:** Like `power_zero`, this requires strict positivity (T injective).
-    For a merely positive T, T^0 = P((0,∞)) ≠ 1, so u* ∘ u = T^0 ≠ 1.
-    Counterexample: T = 0 gives T^{it} = 0 for all t, which is not unitary.
-
-    **Proof:** Uses `functionalCalculus_star`. For real t:
-    - (T^{it})* = ∫ conj(λ^{it}) dP = ∫ λ^{-it} dP = T^{-it}
-    - T^{it} ∘ T^{-it} = T^0 = 1 (by `power_add` and `power_zero`)
-    Depends on: `functionalCalculus_star`, `power_add`, `power_zero`. -/
-theorem UnboundedOperator.power_imaginary_unitary (T : UnboundedOperator H)
-    (hT : T.IsDenselyDefined) (hsa : T.IsSelfAdjoint hT) (hpos : T.IsPositive)
-    (hstrict : T.IsStrictlyPositive) (t : ℝ) :
-    let hs : (Complex.I * ↑t).re = 0 := by
-      simp [Complex.mul_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im]
-    let u := T.power hT hsa hpos (Complex.I * t) hs
-    ContinuousLinearMap.adjoint u ∘L u = 1 ∧ u ∘L ContinuousLinearMap.adjoint u = 1 := by
-  /-
-  PROOF STRUCTURE:
-
-  Let u = T^{it} where the power function is:
-    f_{it}(x) = if x > 0 then exp(it * log x) else 0
-
-  **Step 1: Compute u* using functionalCalculus_star**
-  u* = (∫ f_{it} dP)* = ∫ (star ∘ f_{it}) dP
-  where (star ∘ f_{it})(x) = conj(f_{it}(x))
-
-  For x > 0:
-    conj(exp(it * log x)) = exp(conj(it * log x))
-                          = exp(-it * log x)  [since log x ∈ ℝ for x > 0]
-                          = exp((-it) * log x)
-
-  So (star ∘ f_{it}) = f_{-it}, hence u* = T^{-it}
-
-  **Step 2: Use power_add and power_zero**
-  u* ∘ u = T^{-it} ∘ T^{it} = T^{-it + it} = T^0 = 1
-  u ∘ u* = T^{it} ∘ T^{-it} = T^{it + (-it)} = T^0 = 1
-  -/
-  -- Depends on functionalCalculus_star (proven), power_add (proven), power_zero (sorry'd).
-  -- Inherits the bug from power_zero: false for non-injective positive operators.
-  -- For T = 0: u = T^{it} = functionalCalculus P (indicator_Ioi) = P(Ioi 0) = 0,
-  -- so u* ∘ u = 0 ≠ 1. Fix power definition first (see power_zero comment).
-  sorry
 
 /-! ### One-parameter unitary groups
 

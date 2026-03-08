@@ -10,8 +10,9 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
 
 This file now contains the honest theorem-facing bridge surfaces only.
 
-- `wightman_to_os_full` takes the extra forward-tube regularity, Euclidean Wick
-  growth, and a.e.-PET inputs explicitly.
+- `wightman_to_os_full` takes the extra forward-tube regularity, explicit BHW
+  permutation/connectedness inputs, Euclidean Wick growth, and a.e.-PET inputs
+  explicitly.
 - `os_to_wightman_full` takes the forward-tube boundary-value package
   together with the explicit raw transfer inputs it needs.
 
@@ -86,9 +87,9 @@ theorem bv_zero_point_is_evaluation (OS : OsterwalderSchraderAxioms d)
 
 -- `IsWickRotationPair` is defined in Reconstruction.lean (available via import).
 
-/-- **Theorem R→E**: Wightman functions with the required forward-tube regularity
-    and the explicit E0/E1a/E2/E4 transport inputs produce Schwinger functions satisfying
-    E0-E4.
+/-- **Theorem R→E**: Wightman functions with the required forward-tube regularity,
+    explicit BHW permutation/connectedness inputs, and the explicit E0/E1a/E2/E4
+    transport inputs produce Schwinger functions satisfying E0-E4.
 
     The Schwinger functions are related to the Wightman functions by Wick rotation
     (analytic continuation). The extra regularity package is the forward-tube
@@ -102,50 +103,64 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ n : ℕ,
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 : ∀ n : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z)
     (hEuclidPoly : ∀ n : ℕ,
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-          ‖(W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))‖ ≤
+          ‖(W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))‖ ≤
             C_bd * (1 + ‖x‖) ^ N)
     (hPET_ae : ∀ n : ℕ,
       ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
         (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hTranslation : ∀ (n : ℕ) (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
       (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => x i + a)) →
-      constructSchwingerFunctions Wfn hRegular n f =
-        constructSchwingerFunctions Wfn hRegular n g)
+      constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f =
+        constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n g)
     (hReflectionPositive : ∀ (F : BorchersSequence d),
       (∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
         x ∈ PositiveTimeRegion d n) →
-      (OSInnerProduct d (constructSchwingerFunctions Wfn hRegular) F F).re ≥ 0)
+      (OSInnerProduct d (constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1) F F).re ≥ 0)
     (hCluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
       (ε : ℝ), ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
           ∀ (g_a : SchwartzNPoint d m),
             (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
-            ‖constructSchwingerFunctions Wfn hRegular (n + m) (f.tensorProduct g_a) -
-              constructSchwingerFunctions Wfn hRegular n f *
-              constructSchwingerFunctions Wfn hRegular m g‖ < ε) :
+            ‖constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 (n + m) (f.tensorProduct g_a) -
+              constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f *
+              constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 m g‖ < ε) :
     ∃ (OS : OsterwalderSchraderAxioms d),
       -- The Schwinger functions are the Wick rotation of the Wightman functions
       IsWickRotationPair OS.S Wfn.W := by
   -- Construct OS axioms from Wightman functions
-  refine ⟨⟨constructSchwingerFunctions Wfn hRegular,
-    fun n => constructedSchwinger_tempered Wfn hRegular n (hPET_ae n) (hEuclidPoly n),
+  refine ⟨⟨constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1,
+    fun n => constructedSchwinger_tempered Wfn hRegular hSeedConn_hd2 hExtPerm_d1
+      n (hPET_ae n) (hEuclidPoly n),
     hTranslation,
     fun n R hR hdet f g hfg =>
-      constructedSchwinger_rotation_invariant Wfn hRegular n R (hPET_ae n) hR hdet f g hfg,
+      constructedSchwinger_rotation_invariant Wfn hRegular hSeedConn_hd2 hExtPerm_d1
+        n R (hPET_ae n) hR hdet f g hfg,
     hReflectionPositive,
     fun n σ f g hfg =>
-      constructedSchwinger_symmetric Wfn hRegular n σ f g (hPET_ae n) hfg,
+      constructedSchwinger_symmetric Wfn hRegular hSeedConn_hd2 hExtPerm_d1
+        n σ f g (hPET_ae n) hfg,
     hCluster⟩, ?_⟩
   -- Prove the Wick rotation pair property
   intro n
   -- Use the BHW extension F_ext as the IsWickRotationPair witness.
   -- F_ext = BHW extension, holomorphic on PET (hence on the forward tube).
   -- Its boundary values agree with W_n since F_ext = W_analytic on the forward tube.
-  refine ⟨(W_analytic_BHW Wfn n (hRegular n)).val,
-    (W_analytic_BHW Wfn n (hRegular n)).property.1.mono
+  refine ⟨(W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val,
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).property.1.mono
       (ForwardTube_subset_ComplexExtended d n |>.trans
         (ComplexExtended_subset_Permuted d n)),
     ?_, fun _ => rfl⟩
@@ -153,7 +168,8 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d)
     -- The previous approach tried to show x + iεη ∈ ForwardTube, which is false
     -- due to coordinate convention mismatch (absolute vs difference coordinates).
     intro f η hη
-    exact bhw_distributional_boundary_values Wfn (hRegular n) f η hη
+    exact bhw_distributional_boundary_values Wfn (hRegular n)
+      (hSeedConn_hd2 n) (hExtPerm_d1 n) f η hη
 
 /-- **Theorem E'→R'**: OS axioms with linear growth condition together with an
     explicit forward-tube boundary-value package and the corresponding raw

@@ -20,8 +20,8 @@ proofs from the GNS construction and Wick rotation modules.
   (Proof: GNS construction via `wightman_reconstruction'` in GNSHilbertSpace.lean)
 
 * `wightman_to_os` — Theorem R→E: Wightman functions together with the required
-  forward-tube regularity data, the Euclidean Wick polynomial bound, and the
-  a.e.-PET Wick-rotation input →
+  forward-tube regularity data, the explicit BHW permutation/connectedness inputs,
+  the Euclidean Wick polynomial bound, and the a.e.-PET Wick-rotation input →
   Schwinger functions (OS axioms)
   (Proof: `wightman_to_os_full` in WickRotation.lean)
 
@@ -70,9 +70,9 @@ theorem wightman_reconstruction (Wfn : WightmanFunctions d)
   wightman_reconstruction' Wfn hSpectrum hCyclic hVacuumUnique
 
 /-- **Theorem R→E** (Wightman → OS): A Wightman QFT together with the required
-    forward-tube regularity data together with the explicit E0/E1a/E2/E4 transport
-    inputs yields Schwinger functions satisfying OS axioms E0-E4, related by
-    Wick rotation.
+    forward-tube regularity data, the explicit BHW permutation/connectedness
+    inputs, and the explicit E0/E1a/E2/E4 transport inputs yields Schwinger
+    functions satisfying OS axioms E0-E4, related by Wick rotation.
 
     The Schwinger functions are Euclidean restrictions of the BHW analytic
     continuation, whose boundary values are the Wightman functions. -/
@@ -80,33 +80,44 @@ theorem wightman_to_os (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ n : ℕ,
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 : ∀ n : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z)
     (hEuclidPoly : ∀ n : ℕ,
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-          ‖(W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))‖ ≤
+          ‖(W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))‖ ≤
             C_bd * (1 + ‖x‖) ^ N)
     (hPET_ae : ∀ n : ℕ,
       ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
         (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hTranslation : ∀ (n : ℕ) (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
       (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => x i + a)) →
-      constructSchwingerFunctions Wfn hRegular n f =
-        constructSchwingerFunctions Wfn hRegular n g)
+      constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f =
+        constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n g)
     (hReflectionPositive : ∀ (F : BorchersSequence d),
       (∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
         x ∈ PositiveTimeRegion d n) →
-      (OSInnerProduct d (constructSchwingerFunctions Wfn hRegular) F F).re ≥ 0)
+      (OSInnerProduct d (constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1) F F).re ≥ 0)
     (hCluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
       (ε : ℝ), ε > 0 → ∃ R : ℝ, R > 0 ∧
         ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
           ∀ (g_a : SchwartzNPoint d m),
             (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
-            ‖constructSchwingerFunctions Wfn hRegular (n + m) (f.tensorProduct g_a) -
-              constructSchwingerFunctions Wfn hRegular n f *
-              constructSchwingerFunctions Wfn hRegular m g‖ < ε) :
+            ‖constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 (n + m) (f.tensorProduct g_a) -
+              constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f *
+              constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 m g‖ < ε) :
     ∃ (OS : OsterwalderSchraderAxioms d),
       IsWickRotationPair OS.S Wfn.W :=
-  wightman_to_os_full Wfn hRegular hEuclidPoly hPET_ae
+  wightman_to_os_full Wfn hRegular hSeedConn_hd2 hExtPerm_d1 hEuclidPoly hPET_ae
     hTranslation hReflectionPositive hCluster
 
 /-- **Theorem E'→R'** (OS II): Schwinger functions satisfying the linear growth

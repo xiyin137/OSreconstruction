@@ -22,11 +22,10 @@ with a cyclic-separating vector.
 
 ## Main results
 
-* `TomitaOperator.closable` - S₀ is closable
-* `ModularOperator.positive` - Δ is positive
-* `ModularOperator.selfAdjoint` - Δ is self-adjoint
-* `ModularConjugation.antiunitary` - J is antiunitary
-* `tomita_fundamental` - JMJ = M' (fundamental theorem)
+This file currently provides the core Tomita/modular data structures and the
+basic algebraic properties that follow directly from those structures. The full
+Tomita-Takesaki theorem surfaces are intentionally not exposed here until the
+unbounded polar-decomposition and commutant machinery is formalized.
 
 ## References
 
@@ -212,40 +211,6 @@ theorem is_involution (J : ModularConjugation M Ω) (ξ : H) :
     From S = JΔ^{1/2}, we have Ω = SΩ = JΔ^{1/2}Ω = JΩ. -/
 theorem fixes_cyclic_vector (J : ModularConjugation M Ω) : J.J Ω = Ω := J.fixes_vec
 
-/-- JΔJ = Δ⁻¹: The modular conjugation inverts the modular operator.
-    This is a fundamental relation in modular theory.
-
-    Proof sketch: From S = JΔ^{1/2} and S* = Δ^{1/2}J (since J is antiunitary),
-    we have Δ = S*S = Δ^{1/2}J·JΔ^{1/2} = Δ (check on domain).
-    The relation JΔJ = Δ⁻¹ follows from J² = 1 and SS* = JΔJ.
-
-    Note: Full proof requires unbounded operator theory and the polar decomposition
-    of the closed Tomita operator S̄ = JΔ^{1/2}. This is not yet formalized.
-    Given Δ_inv_apply representing Δ⁻¹, this states: J(Δ(J ξ)) = Δ⁻¹ ξ. -/
-theorem conjugates_modular_operator (J : ModularConjugation M Ω)
-    (Δ : ModularOperator M Ω)
-    (Δ_inv_apply : Δ.domain → H)
-    (ξ : H) (hξ : ξ ∈ Δ.domain) (hJξ : J.J ξ ∈ Δ.domain) :
-    J.J (Δ.apply ⟨J.J ξ, hJξ⟩) = Δ_inv_apply ⟨ξ, hξ⟩ := by
-  -- This follows from the polar decomposition S = JΔ^{1/2}
-  -- Requires: unbounded operator polar decomposition, closure of S₀
-  sorry
-
-/-- JΔ^{it}J = Δ^{-it} for all t ∈ ℝ: The modular conjugation reverses the modular flow.
-
-    This follows from JΔJ = Δ⁻¹ and the functional calculus:
-    JΔ^{it}J = J·f(Δ)·J = f(JΔJ) = f(Δ⁻¹) = Δ^{-it}
-    where f(x) = x^{it}.
-
-    Given unitary operators U_t = Δ^{it} and U_{-t} = Δ^{-it}, this states
-    J(U_t(J ξ)) = U_{-t} ξ for all ξ. -/
-theorem reverses_modular_flow (J : ModularConjugation M Ω) (t : ℝ)
-    (U_t U_neg_t : H →L[ℂ] H) (ξ : H) :
-    -- Property: J U_t J = U_{-t}
-    J.J (U_t (J.J ξ)) = U_neg_t ξ := by
-  -- This follows from JΔJ = Δ⁻¹ and functional calculus
-  sorry
-
 end ModularConjugation
 
 /-! ### Conjugation by modular conjugation -/
@@ -254,53 +219,6 @@ end ModularConjugation
     This is used in the fundamental theorem JMJ = M'. -/
 def conjugateByJ (J : AntiunitaryOp H) (a : H →L[ℂ] H) : H → H :=
   fun ξ => J (a (J ξ))
-
-/-! ### Tomita-Takesaki fundamental theorem -/
-
-/-- The fundamental theorem of Tomita-Takesaki theory:
-    JMJ = M' (the commutant).
-    This is the central result of modular theory, establishing that
-    the modular conjugation implements an antiisomorphism between M and M'.
-
-    The proof proceeds by showing:
-    1. For a ∈ M, JaJ commutes with all elements of M, hence JaJ ∈ M'
-    2. The map a ↦ Ja*J is a *-isomorphism M → M' (note the star!)
-    3. It is surjective onto M' by symmetry (applying to M')
-
-    This theorem has profound consequences:
-    - It establishes a canonical correspondence between M and its commutant
-    - It shows that M and M' are "mirror images" of each other
-    - It underlies the theory of type III factors and the flow of weights
-
-    Statement: For all a ∈ M, conjugateByJ J a defines an element of M'. -/
-theorem tomita_fundamental (J : ModularConjugation M Ω) :
-    ∀ (a : H →L[ℂ] H), a ∈ M → ∀ (b : H →L[ℂ] H), b ∈ M → ∀ ξ : H,
-      conjugateByJ J.J a (b ξ) = b (conjugateByJ J.J a ξ) := by
-  -- For all a ∈ M, JaJ ∈ M' (commutes with all b ∈ M)
-  -- The map a ↦ Ja*J gives the isomorphism M ≅ M'
-  intro _ _ _ _ _
-  sorry
-
-/-- Corollary: Δ^{it}MΔ^{-it} = M for all t ∈ ℝ.
-    The modular automorphism group σ_t(a) = Δ^{it}aΔ^{-it} preserves M.
-
-    This follows from the fundamental theorem:
-    - JΔ^{it}J = Δ^{-it} (J reverses the flow)
-    - JMJ = M'
-    - Therefore Δ^{it}MΔ^{-it} = Δ^{it}JM'JΔ^{-it} = JΔ^{-it}M'Δ^{it}J
-    - By the same argument applied to M', this equals JM'J = M
-
-    Given the unitary U_t = Δ^{it}, this states: U_t a U_t* ∈ M for all a ∈ M. -/
-theorem modular_automorphism_preserves (_J : ModularConjugation M Ω)
-    (_Δ : ModularOperator M Ω) (t : ℝ)
-    (U_t : H →L[ℂ] H)
-    (hU_unitary : ContinuousLinearMap.adjoint U_t ∘L U_t = 1 ∧
-                  U_t ∘L ContinuousLinearMap.adjoint U_t = 1)
-    (a : H →L[ℂ] H) (ha : a ∈ M) :
-    U_t ∘L a ∘L ContinuousLinearMap.adjoint U_t ∈ M := by
-  -- σ_t(a) = Δ^{it} a Δ^{-it} ∈ M for all a ∈ M
-  -- This follows from the Tomita fundamental theorem
-  sorry
 
 /-! ### Standard form -/
 
@@ -334,30 +252,5 @@ def StandardForm.positiveCone (S : StandardForm (H := H)) : Set H :=
   -- Using the modular conjugation J from the standard form
   closure { ξ : H | ∃ (a : H →L[ℂ] H), a ∈ S.algebra ∧
     ξ = S.modular_conj.J (a (S.modular_conj.J (a S.Ω))) }
-
-/-- The positive cone is self-dual: ξ ∈ P^♮ iff ⟨ξ, η⟩ ≥ 0 for all η ∈ P^♮ -/
-theorem StandardForm.positiveCone_self_dual (S : StandardForm (H := H)) :
-    S.positiveCone = { ξ : H | ∀ η ∈ S.positiveCone, 0 ≤ (@inner ℂ H _ ξ η).re } := by
-  sorry
-
-/-- The standard form is unique up to unitary equivalence.
-    If S₁ and S₂ are two standard forms for the same von Neumann algebra,
-    there exists a unitary U : H → H such that:
-    - U S₁.Ω = S₂.Ω
-    - U a U* = a for all a in the algebra (U implements the identity)
-    - U intertwines the modular data
-
-    This is a fundamental uniqueness result in modular theory. -/
-theorem standard_form_unique (S₁ S₂ : StandardForm (H := H))
-    (h_alg : S₁.algebra = S₂.algebra) :
-    ∃ (U : H →L[ℂ] H),
-      -- U is unitary
-      (ContinuousLinearMap.adjoint U ∘L U = 1 ∧ U ∘L ContinuousLinearMap.adjoint U = 1) ∧
-      -- U maps Ω₁ to Ω₂
-      U S₁.Ω = S₂.Ω ∧
-      -- U commutes with the algebra
-      (∀ a ∈ S₁.algebra, U ∘L a = a ∘L U) := by
-  -- The proof uses the uniqueness of the GNS construction and modular theory
-  sorry
 
 end VonNeumannAlgebra

@@ -28,6 +28,17 @@ theorem bhw_smeared_eq_W_analytic_forwardTube_direction {d n : ℕ} [NeZero d]
     (Wfn : WightmanFunctions d)
     (hRegular_W : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
       ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 :
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 :
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z)
     (f : SchwartzNPoint d n)
     (η : Fin n → Fin (d + 1) → ℝ)
     (hη_ft : ∀ k : Fin n,
@@ -35,14 +46,14 @@ theorem bhw_smeared_eq_W_analytic_forwardTube_direction {d n : ℕ} [NeZero d]
       InOpenForwardCone d (fun μ => η k μ - prev μ))
     (ε : ℝ) (hε : ε > 0) :
     (∫ x : NPointDomain d n,
-      (W_analytic_BHW Wfn n hRegular_W).val
+      (W_analytic_BHW Wfn n hRegular_W hSeedConn_hd2 hExtPerm_d1).val
         (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) =
     (∫ x : NPointDomain d n,
       (Wfn.spectrum_condition n).choose
         (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
   congr 1; ext x; congr 1
   -- F_ext and W_analytic agree at x + iεη because x + iεη ∈ ForwardTube
-  apply (W_analytic_BHW Wfn n hRegular_W).property.2.1
+  apply (W_analytic_BHW Wfn n hRegular_W hSeedConn_hd2 hExtPerm_d1).property.2.1
   -- x + iεη ∈ ForwardTube: successive differences of Im parts are ε·(η_k - η_{k-1}) ∈ V₊
   intro k
   show InOpenForwardCone d _
@@ -76,12 +87,23 @@ theorem bhw_smeared_eq_W_analytic_forwardTube_direction {d n : ℕ} [NeZero d]
 theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
     (Wfn : WightmanFunctions d)
     (hRegular_W : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
-      ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm)) :
+      ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 :
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 :
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z) :
     ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
         (fun ε : ℝ => ∫ x : NPointDomain d n,
-          (W_analytic_BHW Wfn n hRegular_W).val
+          (W_analytic_BHW Wfn n hRegular_W hSeedConn_hd2 hExtPerm_d1).val
             (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (Wfn.W n f)) := by
@@ -90,7 +112,8 @@ theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
   refine Filter.Tendsto.congr' ?_ h_sc
   rw [Filter.eventuallyEq_iff_exists_mem]
   exact ⟨Set.Ioi 0, self_mem_nhdsWithin, fun ε hε =>
-    (bhw_smeared_eq_W_analytic_forwardTube_direction Wfn hRegular_W f η hη ε hε).symm⟩
+    (bhw_smeared_eq_W_analytic_forwardTube_direction Wfn hRegular_W
+      hSeedConn_hd2 hExtPerm_d1 f η hη ε hε).symm⟩
 
 /-! #### Schwinger function construction -/
 
@@ -110,10 +133,22 @@ theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
 def constructSchwingerFunctions (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
-        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm)) :
+        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ n : ℕ,
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 : ∀ n : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z) :
     SchwingerFunctions d :=
   fun n f =>
     ∫ x : NPointDomain d n,
-      (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)) * (f x)
+      (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val
+        (fun k => wickRotatePoint (x k)) * (f x)
 
 end

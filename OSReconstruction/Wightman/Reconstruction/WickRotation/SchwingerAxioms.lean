@@ -249,23 +249,34 @@ theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
     (hPET_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n) :
     MeasureTheory.AEStronglyMeasurable
       (fun x : NPointDomain d n =>
-        (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)))
+        (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k)))
       MeasureTheory.volume := by
   -- Strategy: F_ext is continuous on PET (holomorphic ⇒ continuous). Wick is continuous.
   -- The composition is ContinuousOn on S = Wick⁻¹(PET), which is open and has full measure.
   -- ContinuousOn.aestronglyMeasurable gives AEStronglyMeasurable on μ.restrict S.
   -- Since μ(Sᶜ) = 0, piecewise with 0 on Sᶜ gives the result.
-  set F_ext := (W_analytic_BHW Wfn n (hRegular n)).val
+  set F_ext := (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val
   set wick : NPointDomain d n → (Fin n → Fin (d + 1) → ℂ) :=
     fun x k => wickRotatePoint (x k)
   set S := wick ⁻¹' (PermutedExtendedTube d n)
   -- F_ext is continuous on PET
   have hF_cont : ContinuousOn F_ext (PermutedExtendedTube d n) :=
-    (W_analytic_BHW Wfn n (hRegular n)).property.1.continuousOn
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).property.1.continuousOn
   -- wickRotatePoint is continuous as a function Fin (d+1) → ℝ → Fin (d+1) → ℂ
   have hwickpt_cont : Continuous (wickRotatePoint (d := d)) := by
     apply continuous_pi; intro μ
@@ -318,27 +329,39 @@ theorem wick_rotated_schwinger_tempered {d : ℕ} [NeZero d]
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
     (n : ℕ)
     (hPET_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hPoly :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-          ‖(W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))‖ ≤
+          ‖(W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))‖ ≤
             C_bd * (1 + ‖x‖) ^ N) :
-    Continuous (constructSchwingerFunctions Wfn hRegular n) := by
+    Continuous (constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n) := by
   -- The goal is: Continuous (fun f => ∫ x, F_ext(Wick(x)) * f(x) dx)
   -- Obtain the polynomial bound on the BHW kernel at Euclidean points
   obtain ⟨C_bd, N, hC, hbound⟩ := hPoly
   -- Obtain measurability of the kernel
-  have hmeas := bhw_euclidean_kernel_measurable (n := n) Wfn hRegular hPET_ae
-  -- The function constructSchwingerFunctions Wfn hRegular n is definitionally equal to
+  have hmeas :=
+    bhw_euclidean_kernel_measurable (n := n) Wfn hRegular hSeedConn_hd2 hExtPerm_d1 hPET_ae
+  -- The function constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n is definitionally equal to
   -- fun f => ∫ x, K(x) * f(x) where K(x) = F_ext(Wick(x))
   show Continuous (fun f : SchwartzNPoint d n =>
     ∫ x : NPointDomain d n,
-      (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)) * (f x))
+      (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k)) * (f x))
   exact schwartz_continuous_of_polynomial_bound
-    (fun x => (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)))
+    (fun x => (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k)))
     hmeas C_bd N hC hbound
 
 /-- The Schwinger functions constructed from Wightman functions satisfy temperedness (E0).
@@ -350,16 +373,27 @@ theorem constructedSchwinger_tempered (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
     (n : ℕ)
     (hPET_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hPoly :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-          ‖(W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))‖ ≤
+          ‖(W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))‖ ≤
             C_bd * (1 + ‖x‖) ^ N) :
-    Continuous (constructSchwingerFunctions Wfn hRegular n) := by
-  exact wick_rotated_schwinger_tempered Wfn hRegular n hPET_ae hPoly
+    Continuous (constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n) := by
+  exact wick_rotated_schwinger_tempered Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n hPET_ae hPoly
 
 /-- F_ext is invariant under proper Euclidean rotations (SO(d+1)) at all Euclidean points.
 
@@ -375,16 +409,28 @@ theorem constructedSchwinger_tempered (Wfn : WightmanFunctions d)
 theorem F_ext_rotation_invariant (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
-        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm)) (n : ℕ)
+        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
+    (n : ℕ)
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (hdet : R.det = 1) (x : NPointDomain d n)
     (htube : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n) :
-    (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)) =
-    (W_analytic_BHW Wfn n (hRegular n)).val
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k)) =
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val
       (fun k => wickRotatePoint (R.mulVec (x k))) := by
   have := schwinger_euclidean_invariant
-    (fun n => (W_analytic_BHW Wfn n (hRegular n)).val)
-    (fun n Λ z hz => (W_analytic_BHW Wfn n (hRegular n)).property.2.2.1 Λ z hz)
+    (fun n => (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val)
+    (fun n Λ z hz => (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).property.2.2.1 Λ z hz)
     n R hdet hR x htube
   simp only [SchwingerFromWightman] at this
   exact this.symm
@@ -448,25 +494,36 @@ theorem constructedSchwinger_rotation_invariant (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
     (n : ℕ) (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
     (hPET_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hR : R.transpose * R = 1) (hdet : R.det = 1)
     (f g : SchwartzNPoint d n)
     (hfg : ∀ x, g.toFun x = f.toFun (fun i => R.mulVec (x i))) :
-    constructSchwingerFunctions Wfn hRegular n f = constructSchwingerFunctions Wfn hRegular n g := by
+    constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f = constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n g := by
   simp only [constructSchwingerFunctions]
   have hfg' : ∀ x : NPointDomain d n,
       (g : NPointDomain d n → ℂ) x =
       (f : NPointDomain d n → ℂ) (fun i => R.mulVec (x i)) := hfg
   simp_rw [hfg']
   set K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))
+    fun x => (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))
   -- K is rotation-invariant a.e.: K(x) = K(Rx) for a.e. x with wick(x) ∈ PET
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (fun i => R.mulVec (x i)) := by
     filter_upwards [hPET_ae] with x hx
-    exact F_ext_rotation_invariant Wfn hRegular n R hR hdet x hx
+    exact F_ext_rotation_invariant Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n R hR hdet x hx
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (fun i => R.mulVec (x i))
       = ∫ x : NPointDomain d n,
@@ -505,13 +562,25 @@ theorem wickRotatePoint_timeReflection (x : Fin (d + 1) → ℝ) (μ : Fin (d + 
 theorem F_ext_permutation_invariant (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
-        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm)) (n : ℕ)
+        ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
+    (n : ℕ)
     (σ : Equiv.Perm (Fin n)) (x : NPointDomain d n)
     (htube : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n) :
-    (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k)) =
-    (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x (σ k))) := by
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k)) =
+    (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x (σ k))) := by
   -- BHW permutation invariance: F_ext(z ∘ σ) = F_ext(z) for z ∈ PET
-  exact ((W_analytic_BHW Wfn n (hRegular n)).property.2.2.2 σ
+  exact ((W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).property.2.2.2 σ
     (fun k => wickRotatePoint (x k)) htube).symm
 
 omit [NeZero d] in
@@ -532,23 +601,34 @@ theorem constructedSchwinger_symmetric (Wfn : WightmanFunctions d)
     (hRegular : ∀ n : ℕ,
       SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
         ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 : ∀ m : ℕ,
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) m σ))
+    (hExtPerm_d1 : ∀ m : ℕ,
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin m)), σ ≠ 1 → ¬ m ≤ 1 →
+        ∀ (z : Fin m → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d m →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d m →
+          BHW.extendF ((Wfn.spectrum_condition m).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition m).choose) z)
     (n : ℕ) (σ : Equiv.Perm (Fin n)) (f g : SchwartzNPoint d n)
     (hPET_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
     (hfg : ∀ x, g.toFun x = f.toFun (fun i => x (σ i))) :
-    constructSchwingerFunctions Wfn hRegular n f = constructSchwingerFunctions Wfn hRegular n g := by
+    constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n f = constructSchwingerFunctions Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n g := by
   simp only [constructSchwingerFunctions]
   have hfg' : ∀ x : NPointDomain d n,
       (g : NPointDomain d n → ℂ) x =
       (f : NPointDomain d n → ℂ) (fun i => x (σ i)) := hfg
   simp_rw [hfg']
   set K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n (hRegular n)).val (fun k => wickRotatePoint (x k))
+    fun x => (W_analytic_BHW Wfn n (hRegular n) (hSeedConn_hd2 n) (hExtPerm_d1 n)).val (fun k => wickRotatePoint (x k))
   -- K is permutation-invariant a.e.: K(x) = K(x ∘ σ) for a.e. x with wick(x) ∈ PET
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (fun i => x (σ i)) := by
     filter_upwards [hPET_ae] with x hx
-    exact F_ext_permutation_invariant Wfn hRegular n σ x hx
+    exact F_ext_permutation_invariant Wfn hRegular hSeedConn_hd2 hExtPerm_d1 n σ x hx
   symm
   calc ∫ x : NPointDomain d n, K x * (f : NPointDomain d n → ℂ) (fun i => x (σ i))
       = ∫ x : NPointDomain d n,

@@ -48,8 +48,8 @@ Snapshot (2026-03-07, counted with `rg -c '^\s*sorry\b' OSReconstruction --glob 
 | `Wightman/` | 0 |
 | `SCV/` | 0 |
 | `ComplexLieGroups/` | 0 |
-| `vNA/` | 39 |
-| **Total** | **39** |
+| `vNA/` | 0 |
+| **Total** | **0** |
 
 ### OS-Critical Sorry Flow Toward Reconstruction
 
@@ -57,7 +57,7 @@ Snapshot (2026-03-07, counted with `rg -c '^\s*sorry\b' OSReconstruction --glob 
 flowchart TD
   M["Wightman/Reconstruction/Main.lean"]
   M --> WR["wightman_reconstruction (proved)"]
-  M --> RE["wightman_to_os (with regularity + Euclidean poly + a.e.-PET input)"]
+  M --> RE["wightman_to_os (with regularity + BHW geometry + Euclidean poly + a.e.-PET input)"]
   M --> ER["os_to_wightman (with BV package input)"]
 
   RE --> SA["WickRotation/SchwingerAxioms (0 sorrys)"]

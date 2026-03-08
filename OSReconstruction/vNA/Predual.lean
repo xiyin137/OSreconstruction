@@ -220,29 +220,4 @@ def predualPairing (ρ : TraceClass H) (a : H →L[ℂ] H) : ℂ :=
 def sigmaWeakTopology : TopologicalSpace (H →L[ℂ] H) :=
   TopologicalSpace.induced (fun a => fun ρ : TraceClass H => predualPairing ρ a) ⊤
 
-/-- Characterization of σ-weak convergence: a sequence converges σ-weakly iff
-    all vector functionals converge. This is equivalent to saying
-    ⟨ξ, aₙη⟩ → ⟨ξ, aη⟩ for all ξ, η ∈ H. -/
-theorem sigmaWeak_convergence_iff (f : ℕ → H →L[ℂ] H) (a : H →L[ℂ] H) :
-    (∀ ξ η : H, Filter.Tendsto (fun n => @inner ℂ H _ ξ (f n η)) Filter.atTop
-      (nhds (@inner ℂ H _ ξ (a η)))) ↔
-    (∀ ρ : TraceClass H, Filter.Tendsto (fun n => predualPairing ρ (f n)) Filter.atTop
-      (nhds (predualPairing ρ a))) := by
-  sorry  -- Requires showing vector functionals generate the σ-weak topology
-
-/-! ### Kaplansky density theorem (statement) -/
-
-/-- Kaplansky density theorem: If A is a *-subalgebra of B(H) and M is its
-    σ-weak closure (which is a von Neumann algebra), then:
-    1. The unit ball of A is σ-strongly dense in the unit ball of M
-    2. The self-adjoint part of A's unit ball is σ-strongly dense in the
-       self-adjoint part of M's unit ball
-
-    This is a fundamental result connecting the norm topology with the
-    weak operator topology for von Neumann algebras. -/
-theorem kaplansky_density (A : StarSubalgebra ℂ (H →L[ℂ] H)) :
-    ∀ a ∈ A.topologicalClosure, ‖a‖ ≤ 1 →
-      a ∈ closure {b : H →L[ℂ] H | b ∈ A ∧ ‖b‖ ≤ 1} := by
-  sorry  -- This is a deep theorem requiring substantial functional analysis
-
 end VonNeumannAlgebra

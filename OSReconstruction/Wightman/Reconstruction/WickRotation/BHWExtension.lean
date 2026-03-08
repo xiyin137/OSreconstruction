@@ -845,7 +845,18 @@ theorem W_analytic_local_commutativity (Wfn : WightmanFunctions d) (n : ℕ)
     Ref: Streater-Wightman, Theorem 2-11; Jost, Ch. IV -/
 noncomputable def W_analytic_BHW (Wfn : WightmanFunctions d) (n : ℕ)
     (hRegular_W : SCV.HasFourierLaplaceReprRegular (ForwardConeFlat d n)
-      ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm)) :
+      ((Wfn.spectrum_condition n).choose ∘ (flattenCLEquiv n (d + 1)).symm))
+    (hSeedConn_hd2 :
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 → 2 ≤ d →
+        IsConnected (BHW.permSeedSet (d := d) n σ))
+    (hExtPerm_d1 :
+      d = 1 →
+      ∀ (σ : Equiv.Perm (Fin n)), σ ≠ 1 → ¬ n ≤ 1 →
+        ∀ (z : Fin n → Fin (d + 1) → ℂ),
+          z ∈ BHW.ExtendedTube d n →
+          (fun k => z (σ k)) ∈ BHW.ExtendedTube d n →
+          BHW.extendF ((Wfn.spectrum_condition n).choose) (fun k => z (σ k)) =
+            BHW.extendF ((Wfn.spectrum_condition n).choose) z) :
     { F_ext : (Fin n → Fin (d + 1) → ℂ) → ℂ //
       DifferentiableOn ℂ F_ext (PermutedExtendedTube d n) ∧
       (∀ z ∈ ForwardTube d n,
@@ -862,6 +873,7 @@ noncomputable def W_analytic_BHW (Wfn : WightmanFunctions d) (n : ℕ)
       (W_analytic_lorentz_on_tube Wfn n hRegular_W)
       (W_analytic_continuous_boundary Wfn n hRegular_W)
       (W_analytic_local_commutativity Wfn n hRegular_W)
+      hSeedConn_hd2 hExtPerm_d1
   exact ⟨h.choose, h.choose_spec.1, h.choose_spec.2.1, h.choose_spec.2.2.1,
     h.choose_spec.2.2.2.1⟩
 

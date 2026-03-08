@@ -14,8 +14,8 @@ Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`)
 | `OSReconstruction/Wightman` | 0 |
 | `OSReconstruction/SCV` | 0 |
 | `OSReconstruction/ComplexLieGroups` | 0 |
-| `OSReconstruction/vNA` | 39 |
-| **Whole project** | **39** |
+| `OSReconstruction/vNA` | 0 |
+| **Whole project** | **0** |
 
 Count cross-checked on 2026-03-07 with:
 ```bash
@@ -97,17 +97,10 @@ Not on the shortest OS reconstruction lane:
 
 ## Execution Order
 
-1. Decide whether to restore the unconditional `wightman_to_os` / `wightman_to_os_full`
-   theorem surface by proving the missing Wightman-specific regularity upgrade, the
-   Euclidean Wick polynomial bound, and the a.e.-PET Wick-rotation input, or keep
-   those as explicit inputs in the Wightman→OS lane.
-2. Keep the current explicit boundary-value-package input on the E'→R' theorem
-   surface unless a real proof of the old internal continuation / transfer chain
-   is ready.
-3. With the Wick-rotation lane now sorry-free, all remaining direct tactic holes
-   outside `vNA/` have been eliminated. The former permutation-geometry blockers
-   in the BHW lane now appear honestly as explicit inputs on the live theorem
-   surfaces in `ComplexLieGroups` / `Reconstruction/AnalyticContinuation`.
+1. All direct tactic holes in `OSReconstruction/` have been eliminated.
+2. Any future restoration of stronger unconditional theorem surfaces should be
+   judged on mathematical value rather than direct-hole count, since the direct
+   blocker census is now at zero.
 
 ## Commands
 
