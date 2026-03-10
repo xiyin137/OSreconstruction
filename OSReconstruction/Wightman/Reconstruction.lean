@@ -2087,6 +2087,18 @@ theorem VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv
   ext u
   simp
 
+omit [NeZero d] in
+private abbrev reindexSchwartz {k l : ℕ} (σ : Fin k ≃ Fin l) (f : SchwartzNPoint d k) :
+    SchwartzNPoint d l :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+    ((LinearEquiv.funCongrLeft ℝ (SpacetimeDim d) σ).toContinuousLinearEquiv) f
+
+omit [NeZero d] in
+@[simp] private theorem reindexSchwartz_apply {k l : ℕ} (σ : Fin k ≃ Fin l)
+    (f : SchwartzNPoint d k) (x : NPointDomain d l) :
+    reindexSchwartz (d := d) σ f x = f (fun i => x (σ i)) := by
+  rfl
+
 @[simp]
 theorem ZeroDiagonalSchwartz.ofClassical_zero {d n : ℕ} :
     ZeroDiagonalSchwartz.ofClassical (0 : SchwartzNPoint d n) = 0 := by
@@ -2997,12 +3009,95 @@ structure OsterwalderSchraderAxioms (d : ℕ) [NeZero d] where
     proof uses only the corrected OS reality condition together with
     permutation symmetry to swap the tensor blocks after applying the OS
     involution. -/
+private theorem cast_zeroDiagonalSchwartz_apply {d k₁ k₂ : ℕ}
+    (hk : k₁ = k₂) (f : ZeroDiagonalSchwartz d k₁) (x : NPointDomain d k₂) :
+    (cast (congrArg (ZeroDiagonalSchwartz d) hk) f).1 x =
+      f.1 (fun i => x (Fin.cast hk i)) := by
+  cases hk
+  rfl
+
+private theorem S_eq_of_cast {d : ℕ}
+    (S : (k : ℕ) → ZeroDiagonalSchwartz d k → ℂ)
+    (k₁ k₂ : ℕ) (hk : k₁ = k₂)
+    (f : ZeroDiagonalSchwartz d k₁) (g : ZeroDiagonalSchwartz d k₂)
+    (hfg : ∀ x, f.1 x = g.1 (fun i => x (Fin.cast hk.symm i))) :
+    S k₁ f = S k₂ g := by
+  subst hk
+  have hfg' : f = g := by
+    apply Subtype.ext
+    ext x
+    simpa using hfg x
+  simpa [hfg']
+
+private def blockSwapPerm (m n : ℕ) : Equiv.Perm (Fin (n + m)) where
+  toFun := fun i =>
+    (finAddFlip : Fin (m + n) ≃ Fin (n + m)) (Fin.cast (Nat.add_comm m n).symm i)
+  invFun := fun i =>
+    Fin.cast (Nat.add_comm m n)
+      ((finAddFlip : Fin (m + n) ≃ Fin (n + m)).symm i)
+  left_inv := by
+    intro i
+    simp
+  right_inv := by
+    intro i
+    simp
+
+@[simp] private theorem blockSwapPerm_cast_eq_finAddFlip {m n : ℕ}
+    (i : Fin (m + n)) :
+    blockSwapPerm m n (Fin.cast (Nat.add_comm m n) i) =
+      (finAddFlip : Fin (m + n) ≃ Fin (n + m)) i := by
+  simp [blockSwapPerm]
+
 theorem OSInnerProduct_hermitian {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d) (F G : BorchersSequence d)
     (hFG : OSTensorAdmissible d F G)
     (hGF : OSTensorAdmissible d G F) :
     OSInnerProduct d OS.S F G = starRingEnd ℂ (OSInnerProduct d OS.S G F) := by
-  sorry
+  simp only [OSInnerProduct, map_sum]
+  rw [Finset.sum_comm]
+  congr 1
+  ext n
+  congr 1
+  ext m
+  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := (F.funcs m).osConjTensorProduct (G.funcs n)) (hFG m n),
+    ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := (G.funcs n).osConjTensorProduct (F.funcs m)) (hGF n m)]
+  let A : ZeroDiagonalSchwartz d (n + m) :=
+    ⟨(G.funcs n).osConjTensorProduct (F.funcs m), hGF n m⟩
+  let C' : ZeroDiagonalSchwartz d (m + n) :=
+    ⟨(F.funcs m).osConjTensorProduct (G.funcs n), hFG m n⟩
+  let C : ZeroDiagonalSchwartz d (n + m) :=
+    cast (congrArg (ZeroDiagonalSchwartz d) (Nat.add_comm m n)) C'
+  let B : ZeroDiagonalSchwartz d (n + m) :=
+    ⟨reindexSchwartz (d := d) (σ := (finAddFlip : Fin (m + n) ≃ Fin (n + m))) C'.1,
+      VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv
+        (d := d) (f := C'.1) C'.2
+        (finAddFlip : Fin (m + n) ≃ Fin (n + m))⟩
+  have hreal : starRingEnd ℂ (OS.S (n + m) A) = OS.S (n + m) B := by
+    refine OS.E0_reality (n := n + m) (f := A) (g := B) ?_
+    intro x
+    simpa [A, B, C', reindexSchwartz_apply, SchwartzNPoint.osConj_apply] using
+      (osConjTP_eq_osConj_osConjTP (d := d) (n := n) (m := m)
+        (f := F.funcs m) (g := G.funcs n) x).symm
+  have hcast : OS.S (m + n) C' = OS.S (n + m) C := by
+    refine S_eq_of_cast OS.S (m + n) (n + m) (Nat.add_comm m n) C' C ?_
+    intro x
+    rw [show C = cast (congrArg (ZeroDiagonalSchwartz d) (Nat.add_comm m n)) C' by rfl]
+    rw [cast_zeroDiagonalSchwartz_apply (hk := Nat.add_comm m n) (f := C')
+      (x := fun i => x (Fin.cast (Nat.add_comm m n).symm i))]
+    simp
+  have hperm : OS.S (n + m) C = OS.S (n + m) B := by
+    refine OS.E3_symmetric (n := n + m) (σ := blockSwapPerm m n) (f := C) (g := B) ?_
+    intro x
+    rw [show C = cast (congrArg (ZeroDiagonalSchwartz d) (Nat.add_comm m n)) C' by rfl]
+    rw [cast_zeroDiagonalSchwartz_apply (hk := Nat.add_comm m n) (f := C')
+      (x := fun i => x (blockSwapPerm m n i))]
+    simp [B, C', reindexSchwartz_apply]
+  calc
+    OS.S (m + n) C' = OS.S (n + m) C := hcast
+    _ = OS.S (n + m) B := hperm
+    _ = starRingEnd ℂ (OS.S (n + m) A) := hreal.symm
 
 /-- The linear growth condition E0' from OS II (1975).
 
