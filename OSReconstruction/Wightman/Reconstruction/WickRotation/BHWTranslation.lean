@@ -111,6 +111,7 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
         w ∈ ForwardTube d n →
         W_analytic (fun k μ => w k μ + (a μ : ℂ)) = W_analytic w := by
     intro a w hw
+    let aN : NPointDomain d n := fun _ => a
     let shiftW : (Fin n → Fin (d + 1) → ℂ) → (Fin n → Fin (d + 1) → ℂ) :=
       fun z => z + (fun _ μ => (a μ : ℂ))
     let F₁ : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
@@ -145,7 +146,6 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds 0) := by
       intro f η hη
-      let aN : NPointDomain d n := fun _ => a
       let g : SchwartzNPoint d n :=
         poincareActNPoint (PoincareGroup.translation' a) f
       have hInv :
@@ -275,10 +275,26 @@ theorem W_analytic_translation_on_forwardTube {d n : ℕ} [NeZero d]
       (fun f η ε hε hη => by
         have hInt_F₁f : MeasureTheory.Integrable (fun x : NPointDomain d n =>
             F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
-          let g : SchwartzNPoint d n := fun x => f (x - aN)
-          have hg_add : ∀ x, g (x + aN) = f x := by
+          let g : SchwartzNPoint d n :=
+            poincareActNPoint (PoincareGroup.translation' a) f
+          have hInv :
+              (PoincareGroup.translation' a : PoincareGroup d)⁻¹ =
+              PoincareGroup.translation' (-a) := by
+            ext <;> simp [PoincareGroup.translation']
+          have hg_shift : ∀ x : NPointDomain d n, g x = f (fun i => x i - a) := by
             intro x
-            simp [g, aN, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+            have harg :
+                poincareActNPointDomain (PoincareGroup.translation' (-a)) x =
+                (fun i => x i - a) := by
+              ext i μ
+              simp [poincareActNPointDomain, PoincareGroup.pureTranslation_act, sub_eq_add_neg]
+            simp [g, poincareActNPoint_apply, hInv, harg]
+          have hg_add : ∀ x : NPointDomain d n, g (x + aN) = f x := by
+            intro x
+            rw [hg_shift]
+            congr 1
+            ext i μ
+            simp [aN]
           let hεg : NPointDomain d n → ℂ := fun x =>
             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
           have hInt_hεg : MeasureTheory.Integrable hεg := by

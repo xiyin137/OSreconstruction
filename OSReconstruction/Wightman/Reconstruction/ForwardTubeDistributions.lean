@@ -601,10 +601,39 @@ theorem distributional_uniqueness_forwardTube {d n : ℕ} [NeZero d]
     let f : SchwartzNPoint d n :=
       (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR) ψ
     have h_old := h_agree f η hηcone
-    refine h_old.congr' ?_
-    filter_upwards [Filter.Eventually.of_forall (fun ε => ?_)] with ε _
-    rw [integral_flatten_change_of_variables n (d + 1)]
-    simp [G, f, e, eR, flattenCLEquivReal_apply]
+    refine h_old.congr' (Filter.Eventually.of_forall (fun ε => ?_))
+    have hEq :
+        (∫ x : Fin (n * (d + 1)) → ℝ,
+          G (fun i => ↑(x i) + ↑ε * ↑((eR η) i) * Complex.I) * ψ x) =
+        ∫ y : NPointDomain d n,
+          (F₁ (fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I) -
+           F₂ (fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I)) * f y := by
+      rw [integral_flatten_change_of_variables n (d + 1)
+        (fun x : Fin (n * (d + 1)) → ℝ =>
+          G (fun i => ↑(x i) + ↑ε * ↑((eR η) i) * Complex.I) * ψ x)]
+      refine integral_congr_ae (Filter.Eventually.of_forall (fun y => ?_))
+      have harg :
+          e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I) =
+            fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I := by
+        ext k μ
+        have hyk : eR y (finProdFinEquiv (k, μ)) = y k μ := by
+          simp [eR, flattenCLEquivReal_apply]
+        have hηk : eR η (finProdFinEquiv (k, μ)) = η k μ := by
+          simp [eR, flattenCLEquivReal_apply]
+        rw [show
+          (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I)) k μ =
+            (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I) (finProdFinEquiv (k, μ)) by
+              simp [e, flattenCLEquiv_symm_apply]]
+        simp [hyk, hηk]
+      have hfarg : ψ (eR y) = f y := by
+        simp [f, eR]
+      change
+        (F₁ (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I)) -
+         F₂ (e.symm (fun i => ↑(eR y i) + ↑ε * ↑(eR η i) * Complex.I))) * ψ (eR y) =
+        ((F₁ fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I) -
+         F₂ fun k μ => ↑(y k μ) + ↑ε * ↑(η k μ) * Complex.I) * f y
+      rw [hfarg, harg]
+    exact hEq.symm
   have huniq := SCV.distributional_uniqueness_tube_of_zero_bv
     (forwardConeFlat_isOpen d n)
     (forwardConeFlat_convex d n)

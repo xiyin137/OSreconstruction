@@ -6,6 +6,8 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.ComplexLieGroups.BHWCore
 import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.SCV.TotallyRealIdentity
+import Mathlib.MeasureTheory.Integral.DominatedConvergence
+import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
 /-!
 # Jost Points and Totally Spacelike Configurations
@@ -813,6 +815,197 @@ theorem realEmbed_mem_closure_forwardTube (x : Fin n → Fin (d + 1) → ℝ) :
         _ = ε / 2 := by rw [hδ_def]; field_simp
         _ < ε := half_lt_self hε
     · simp only [hμ, ↓reduceIte, mul_zero, norm_zero]; exact hε
+
+/-- For a compactly supported Schwartz test function whose real support lies in the
+extended tube, the forward-tube boundary-value integrals converge to the pairing with
+`extendF` on the real support.
+
+This is the distributional replacement for pointwise boundary-value theorems such as
+`extendF_eq_boundary_value_ET`: the conclusion is only an integral identity against a
+test function, which is the natural boundary-value statement for tempered applications. -/
+theorem tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
+    (n : ℕ) (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_cinv : ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ ForwardTube d n → complexLorentzAction Λ z ∈ ForwardTube d n →
+      F (complexLorentzAction Λ z) = F z)
+    (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ)
+    (hφ_compact : HasCompactSupport (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ))
+    (η : Fin n → Fin (d + 1) → ℝ)
+    (hη_FT : ∀ (x : Fin n → Fin (d + 1) → ℝ) (ε : ℝ), 0 < ε →
+      (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) ∈ ForwardTube d n)
+    (hφ_ET : ∀ x ∈ tsupport (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ),
+      realEmbed x ∈ ExtendedTube d n) :
+    Filter.Tendsto
+      (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+        F (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) * φ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (∫ x : Fin n → Fin (d + 1) → ℝ, extendF F (realEmbed x) * φ x)) := by
+  let zε : (Fin n → Fin (d + 1) → ℝ) → ℝ → (Fin n → Fin (d + 1) → ℂ) :=
+    fun x ε k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I
+  have hextend_holo := extendF_holomorphicOn n F hF_holo hF_cinv
+  have hextend_cont : ContinuousOn (extendF F) (ExtendedTube d n) :=
+    hextend_holo.continuousOn
+  let K : Set ((Fin n → Fin (d + 1) → ℝ) × ℝ) :=
+    tsupport (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ) ×ˢ Set.Icc (0 : ℝ) 1
+  have hK_compact : IsCompact K := by
+    simpa [K] using hφ_compact.isCompact.prod (isCompact_Icc (a := (0 : ℝ)) (b := (1 : ℝ)))
+  let q : ((Fin n → Fin (d + 1) → ℝ) × ℝ) → ℂ := fun p => extendF F (zε p.1 p.2)
+  have hzε_cont : Continuous fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => zε p.1 p.2 := by
+    refine continuous_pi ?_
+    intro k
+    refine continuous_pi ?_
+    intro μ
+    have h1' : Continuous fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => p.1 k μ :=
+      (continuous_apply μ).comp ((continuous_apply k).comp continuous_fst)
+    have h1 : Continuous fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => ((p.1 k μ : ℝ) : ℂ) := by
+      exact Complex.continuous_ofReal.comp h1'
+    have h2 : Continuous fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ =>
+        ((p.2 : ℝ) : ℂ) * (η k μ : ℂ) * Complex.I := by
+      simpa using
+        (((Complex.continuous_ofReal.comp continuous_snd).mul continuous_const).mul continuous_const)
+    simpa [zε] using h1.add h2
+  have hK_sub : K ⊆ {p | zε p.1 p.2 ∈ ExtendedTube d n} := by
+    intro p hp
+    rcases hp with ⟨hx, hε⟩
+    rcases Set.mem_Icc.mp hε with ⟨hε0, hε1⟩
+    by_cases hzero : p.2 = 0
+    · have hxET : realEmbed p.1 ∈ ExtendedTube d n := hφ_ET p.1 hx
+      simpa [zε, realEmbed, hzero]
+        using hxET
+    · have hεpos : 0 < p.2 := lt_of_le_of_ne hε0 (Ne.symm hzero)
+      exact forwardTube_subset_extendedTube (hη_FT p.1 p.2 hεpos)
+  have hq_cont : ContinuousOn q K := by
+    intro p hp
+    have hpET : zε p.1 p.2 ∈ ExtendedTube d n := hK_sub hp
+    change ContinuousWithinAt ((extendF F) ∘ fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => zε p.1 p.2) K p
+    exact ContinuousWithinAt.comp
+      (f := fun p : (Fin n → Fin (d + 1) → ℝ) × ℝ => zε p.1 p.2)
+      (g := extendF F) (s := K) (t := ExtendedTube d n) (x := p)
+      (hextend_cont.continuousWithinAt hpET)
+      (hzε_cont.continuousAt.continuousWithinAt) hK_sub
+  obtain ⟨C, hC⟩ := hK_compact.exists_bound_of_continuousOn (f := fun p => ‖q p‖) (hq_cont.norm)
+  let bound : (Fin n → Fin (d + 1) → ℝ) → ℝ := fun x => C * ‖(φ : (Fin n → Fin (d + 1) → ℝ) → ℂ) x‖
+  have hbound_cont : Continuous bound := continuous_const.mul φ.continuous.norm
+  have hbound_support_subset :
+      Function.support bound ⊆ Function.support (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ) := by
+    intro x hx
+    by_contra hnot
+    have hφx : φ x = 0 := by simpa [Function.mem_support] using hnot
+    have : bound x = 0 := by simp [bound, hφx]
+    exact hx (by simp [Function.mem_support, this])
+  have hbound_compact : HasCompactSupport bound :=
+    HasCompactSupport.of_support_subset_isCompact hφ_compact.isCompact
+      (Set.Subset.trans hbound_support_subset subset_closure)
+  have hbound_int : MeasureTheory.Integrable bound :=
+    hbound_cont.integrable_of_hasCompactSupport hbound_compact
+  have h_meas :
+      ∀ᶠ ε in nhdsWithin (0 : ℝ) (Set.Ioi 0),
+        MeasureTheory.AEStronglyMeasurable
+          (fun x : Fin n → Fin (d + 1) → ℝ =>
+            F (zε x ε) * φ x) := by
+    apply Filter.eventually_of_mem self_mem_nhdsWithin
+    intro ε hε
+    have hzε_cont_fixed :
+        Continuous (fun x : Fin n → Fin (d + 1) → ℝ => zε x ε) := by
+      refine continuous_pi ?_
+      intro k
+      refine continuous_pi ?_
+      intro μ
+      exact (Complex.continuous_ofReal.comp
+          ((continuous_apply μ).comp ((continuous_apply k).comp continuous_id))).add
+        (((Complex.continuous_ofReal.comp continuous_const).mul continuous_const).mul
+          continuous_const)
+    have hcont : Continuous fun x : Fin n → Fin (d + 1) → ℝ => F (zε x ε) :=
+      hF_holo.continuousOn.comp_continuous hzε_cont_fixed
+        (fun x => hη_FT x ε (Set.mem_Ioi.mp hε))
+    exact (hcont.mul φ.continuous).aestronglyMeasurable
+  have h_bound :
+      ∀ᶠ ε in nhdsWithin (0 : ℝ) (Set.Ioi 0),
+        ∀ᵐ x, ‖F (zε x ε) * φ x‖ ≤ bound x := by
+    have h_mem : Set.Ioo (0 : ℝ) 1 ∈ nhdsWithin (0 : ℝ) (Set.Ioi 0) :=
+      mem_nhdsWithin.mpr ⟨Set.Iio 1, isOpen_Iio, by norm_num, fun ε hε =>
+        Set.mem_Ioo.mpr ⟨Set.mem_Ioi.mp hε.2, Set.mem_Iio.mp hε.1⟩⟩
+    apply Filter.eventually_of_mem h_mem
+    intro ε hε
+    apply Filter.Eventually.of_forall
+    intro x
+    by_cases hx : x ∈ Function.support (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ)
+    · have hxK : (x, ε) ∈ K := ⟨subset_closure hx, Set.mem_Icc.mpr ⟨le_of_lt (Set.mem_Ioo.mp hε).1,
+          le_of_lt (Set.mem_Ioo.mp hε).2⟩⟩
+      have hqC : ‖q (x, ε)‖ ≤ C := by
+        simpa [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _)] using hC _ hxK
+      have hEq : F (zε x ε) = q (x, ε) := by
+        change F (zε x ε) = extendF F (zε x ε)
+        symm
+        exact extendF_eq_on_forwardTube n F hF_cinv _ (hη_FT x ε (Set.mem_Ioo.mp hε).1)
+      calc
+        ‖F (zε x ε) * φ x‖ = ‖q (x, ε)‖ * ‖φ x‖ := by rw [hEq, norm_mul]
+        _ ≤ C * ‖φ x‖ := by exact mul_le_mul_of_nonneg_right hqC (norm_nonneg _)
+        _ = bound x := by simp [bound]
+    · have hφx : φ x = 0 := by simpa [Function.mem_support] using hx
+      simp [bound, hφx]
+  have h_pointwise :
+      ∀ x : Fin n → Fin (d + 1) → ℝ,
+        Filter.Tendsto
+          (fun ε : ℝ => F (zε x ε) * φ x)
+          (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+          (nhds (extendF F (realEmbed x) * φ x)) := by
+    intro x
+    by_cases hx : x ∈ Function.support (φ : (Fin n → Fin (d + 1) → ℝ) → ℂ)
+    · have hxET : realEmbed x ∈ ExtendedTube d n := hφ_ET x (subset_closure hx)
+      have hpath_cont : Continuous fun ε : ℝ => zε x ε := by
+        refine continuous_pi ?_
+        intro k
+        refine continuous_pi ?_
+        intro μ
+        exact continuous_const.add
+          (((Complex.continuous_ofReal.comp continuous_id).mul continuous_const).mul
+            continuous_const)
+      have hpath_zero : zε x 0 = realEmbed x := by
+        ext k μ
+        simp [zε, realEmbed]
+      have hpath_maps :
+          Set.MapsTo (fun ε : ℝ => zε x ε) (Set.Ioi (0 : ℝ)) (ExtendedTube d n) := by
+        intro ε hε
+        exact forwardTube_subset_extendedTube (hη_FT x ε hε)
+      have hpath_tends :
+          Filter.Tendsto (fun ε : ℝ => zε x ε)
+            (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+            (nhdsWithin (realEmbed x) (ExtendedTube d n)) := by
+        rw [tendsto_nhdsWithin_iff]
+        refine ⟨?_, Filter.eventually_of_mem self_mem_nhdsWithin hpath_maps⟩
+        have h :
+            Filter.Tendsto (fun ε : ℝ => zε x ε)
+              (nhdsWithin (0 : ℝ) (Set.Ioi 0)) (nhds (zε x 0)) :=
+          hpath_cont.continuousAt.tendsto.mono_left nhdsWithin_le_nhds
+        rwa [hpath_zero] at h
+      have hcont_ext :
+          Filter.Tendsto (fun ε : ℝ => extendF F (zε x ε))
+            (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+            (nhds (extendF F (realEmbed x))) :=
+        (hextend_cont.continuousWithinAt hxET).tendsto.comp hpath_tends
+      have h_eq_eventually :
+          (fun ε : ℝ => extendF F (zε x ε)) =ᶠ[nhdsWithin (0 : ℝ) (Set.Ioi 0)]
+            (fun ε : ℝ => F (zε x ε)) := by
+        apply Filter.eventually_of_mem self_mem_nhdsWithin
+        intro ε hε
+        exact extendF_eq_on_forwardTube n F hF_cinv _ (hη_FT x ε (Set.mem_Ioi.mp hε))
+      have hF_tends :
+          Filter.Tendsto (fun ε : ℝ => F (zε x ε))
+            (nhdsWithin (0 : ℝ) (Set.Ioi 0))
+            (nhds (extendF F (realEmbed x))) :=
+        Filter.Tendsto.congr' h_eq_eventually hcont_ext
+      exact hF_tends.mul tendsto_const_nhds
+    · have hφx : φ x = 0 := by simpa [Function.mem_support] using hx
+      simp [hφx]
+  apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence (bound := bound)
+  · exact h_meas
+  · exact h_bound
+  · exact hbound_int
+  · apply Filter.Eventually.of_forall
+    intro x
+    exact h_pointwise x
 
 /-- At forward Jost points, extendF agrees with the boundary value of F. -/
 theorem extendF_eq_boundary_value (n : ℕ) (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
