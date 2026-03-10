@@ -21,10 +21,12 @@ proofs from the GNS construction and Wick rotation modules.
 * `wightman_uniqueness` — Two Wightman QFTs with matching n-point functions are
   unitarily equivalent. (Sorry: standard GNS uniqueness argument)
 
-* `wightman_to_os` — Theorem R→E: Wightman functions → Schwinger functions (OS axioms)
+* `wightman_to_os` — Theorem R→E: Wightman functions → corrected OS axioms
+  on the Euclidean side
   (Proof: `wightman_to_os_full` in WickRotation.lean)
 
-* `os_to_wightman` — Theorem E'→R': Schwinger functions with linear growth → Wightman functions
+* `os_to_wightman` — Theorem E'→R': corrected OS axioms with linear growth →
+  Wightman functions
   (Proof: `os_to_wightman_full` in WickRotation.lean)
 
 ## Import Structure

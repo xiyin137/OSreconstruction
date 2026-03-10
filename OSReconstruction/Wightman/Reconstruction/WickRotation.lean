@@ -9,8 +9,10 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
 # Wick Rotation and the OS Bridge Theorems
 
 This module develops the infrastructure for the Osterwalder-Schrader bridge theorems:
-- **Theorem R→E** (`wightman_to_os_full`): Wightman functions → Schwinger functions (OS I, §5)
-- **Theorem E'→R'** (`os_to_wightman_full`): Schwinger functions → Wightman functions (OS II, §IV-V)
+- **Theorem R→E** (`wightman_to_os_full`): Wightman functions → corrected OS axioms
+  via Wick rotation on the Euclidean side
+- **Theorem E'→R'** (`os_to_wightman_full`): OS axioms + linear growth →
+  Wightman functions (the corrected OS II reconstruction surface)
 
 ## Module Structure
 
@@ -26,6 +28,8 @@ The implementation is split across several files in the `WickRotation/` subfolde
 ## References
 
 * Osterwalder-Schrader I (1973), "Axioms for Euclidean Green's Functions"
+  for the Wick-rotation geometry and Euclidean correlation side
 * Osterwalder-Schrader II (1975), "Axioms for Euclidean Green's Functions II"
+  for the corrected reconstruction theorem with linear growth
 * Glimm-Jaffe, "Quantum Physics", Chapter 19
 -/

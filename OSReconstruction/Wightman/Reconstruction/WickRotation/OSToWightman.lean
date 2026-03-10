@@ -120,20 +120,30 @@ omit [NeZero d] in
   rfl
 
 omit [NeZero d] in
-private theorem timeShift_preserves_positive_support (t : ℝ) (ht : 0 < t)
+private theorem timeShift_preserves_ordered_positive_support (t : ℝ) (ht : 0 < t)
     (F : BorchersSequence d)
-    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n) :
+    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
+      x ∈ OrderedPositiveTimeRegion d n) :
     ∀ n, ∀ x : NPointDomain d n,
-      ((timeShiftBorchers (d := d) t F).funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n := by
+      ((timeShiftBorchers (d := d) t F).funcs n).toFun x ≠ 0 →
+        x ∈ OrderedPositiveTimeRegion d n := by
   intro n x hx
   have hx' : (F.funcs n).toFun (fun i => x i - timeShiftVec d t) ≠ 0 := by
     simpa [timeShiftBorchers_funcs, timeShiftSchwartzNPoint_apply] using hx
-  have hpos := hF n (fun i => x i - timeShiftVec d t) hx'
+  have hord := hF n (fun i => x i - timeShiftVec d t) hx'
   intro i
-  have hi := hpos i
-  have htime : timeShiftVec d t 0 = t := by simp [timeShiftVec]
-  have : x i 0 - t > 0 := by simpa [PositiveTimeRegion, htime] using hi
-  linarith
+  constructor
+  · have hi := (hord i).1
+    have htime : timeShiftVec d t 0 = t := by simp [timeShiftVec]
+    have : x i 0 - t > 0 := by
+      simpa [OrderedPositiveTimeRegion, htime] using hi
+    linarith
+  · intro j hij
+    have hij' := (hord i).2 j hij
+    have htime : timeShiftVec d t 0 = t := by simp [timeShiftVec]
+    have : x i 0 - t < x j 0 - t := by
+      simpa [OrderedPositiveTimeRegion, htime] using hij'
+    linarith
 
 omit [NeZero d] in
 private theorem timeReflection_add_timeShiftVec (x : SpacetimeDim d) (t : ℝ) :
@@ -230,17 +240,18 @@ private theorem OSInnerProduct_linearCombo_left (OS : OsterwalderSchraderAxioms 
       OSInnerProduct_smul_left (d := d) _ OS.E0_linear, ih, smul_eq_mul]
 
 omit [NeZero d] in
-private theorem timeShift_linearCombo_preserves_positive_support {ι : Type*} [DecidableEq ι]
+private theorem timeShift_linearCombo_preserves_ordered_positive_support {ι : Type*} [DecidableEq ι]
     (s : Finset ι) (c : ι → ℂ) (t : ι → ℝ)
     (ht : ∀ i ∈ s, 0 < t i)
     (F : BorchersSequence d)
-    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n) :
+    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
+      x ∈ OrderedPositiveTimeRegion d n) :
     ∀ n, ∀ x : NPointDomain d n,
       ((BorchersSequence.linearCombo s c
           (fun i => timeShiftBorchers (d := d) (t i) F)).funcs n).toFun x ≠ 0 →
-        x ∈ PositiveTimeRegion d n := by
+        x ∈ OrderedPositiveTimeRegion d n := by
   intro n x hx
-  by_contra hx_not_pos
+  by_contra hx_not_ord
   apply hx
   show ((BorchersSequence.linearCombo s c
     (fun i => timeShiftBorchers (d := d) (t i) F)).funcs n).toFun x = 0
@@ -250,7 +261,8 @@ private theorem timeShift_linearCombo_preserves_positive_support {ι : Type*} [D
     intro i hi
     have h : ((timeShiftBorchers (d := d) (t i) F).funcs n).toFun x = 0 := by
       by_contra hx_shift
-      exact hx_not_pos (timeShift_preserves_positive_support (d := d) (t i) (ht i hi) F hF n x hx_shift)
+      exact hx_not_ord
+        (timeShift_preserves_ordered_positive_support (d := d) (t i) (ht i hi) F hF n x hx_shift)
     change c i • ((timeShiftBorchers (d := d) (t i) F).funcs n).toFun x = 0
     rw [h, smul_zero]
   rw [show (∑ i ∈ s, c i • (timeShiftBorchers (d := d) (t i) F).funcs n).toFun x =
@@ -268,7 +280,8 @@ theorem OSInnerProduct_timeShift_kernel_nonneg (OS : OsterwalderSchraderAxioms d
     {ι : Type*} [DecidableEq ι] (s : Finset ι) (c : ι → ℂ) (t : ι → ℝ)
     (ht : ∀ i ∈ s, 0 < t i)
     (F : BorchersSequence d)
-    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n) :
+    (hF : ∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
+      x ∈ OrderedPositiveTimeRegion d n) :
     0 ≤ (∑ i ∈ s, ∑ j ∈ s,
       starRingEnd ℂ (c i) * c j *
         OSInnerProduct d OS.S F (timeShiftBorchers (d := d) (t i + t j) F)).re := by
@@ -276,8 +289,9 @@ theorem OSInnerProduct_timeShift_kernel_nonneg (OS : OsterwalderSchraderAxioms d
   let H : BorchersSequence d := BorchersSequence.linearCombo s c
     (fun i => timeShiftBorchers (d := d) (t i) F)
   have hH :
-      ∀ n, ∀ x : NPointDomain d n, (H.funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n :=
-    timeShift_linearCombo_preserves_positive_support (d := d) s c t ht F hF
+      ∀ n, ∀ x : NPointDomain d n, (H.funcs n).toFun x ≠ 0 →
+        x ∈ OrderedPositiveTimeRegion d n :=
+    timeShift_linearCombo_preserves_ordered_positive_support (d := d) s c t ht F hF
   have hpos : 0 ≤ (OSInnerProduct d OS.S H H).re := OS.E2_reflection_positive H hH
   have hexpand :
       OSInnerProduct d OS.S H H =
@@ -1319,7 +1333,7 @@ theorem bv_positive_definiteness_transfer (OS : OsterwalderSchraderAxioms d)
     (hW_eq : ∀ n, W n = bvt_W OS lgc n)
     (hE2 : ∀ (F : BorchersSequence d),
       (∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
-        x ∈ PositiveTimeRegion d n) →
+        x ∈ OrderedPositiveTimeRegion d n) →
       (OSInnerProduct d OS.S F F).re ≥ 0) :
     ∀ F : BorchersSequence d, (WightmanInnerProduct d W F F).re ≥ 0 := by
   sorry
@@ -1499,17 +1513,22 @@ def osPreHilbertSpace (OS : OsterwalderSchraderAxioms d)
 
 -- `IsWickRotationPair` is defined in Reconstruction.lean (available via import).
 
-/-- **Theorem R→E**: Wightman functions produce Schwinger functions satisfying E0-E4.
+/-- **Theorem R→E**: Wightman functions produce Schwinger functions satisfying
+    the corrected `OsterwalderSchraderAxioms`.
 
-    The Schwinger functions are related to the Wightman functions by Wick rotation
-    (analytic continuation). -/
+    This uses the Euclidean/Wick-rotation construction on the Schwinger side, but
+    it is stated on the repaired axiom surface, not the original overstrong OS-I
+    theorem claim. In particular, the E0 conclusion here is only the current
+    zero-diagonal statement:
+    continuity on `ZeroDiagonalSchwartz`, not a full-Schwartz temperedness claim.
+    No `OSLinearGrowthCondition` is assumed in this direction. -/
 theorem wightman_to_os_full (Wfn : WightmanFunctions d) :
     ∃ (OS : OsterwalderSchraderAxioms d),
       -- The Schwinger functions are the Wick rotation of the Wightman functions
       IsWickRotationPair OS.S Wfn.W := by
   -- Construct OS axioms from Wightman functions
   refine ⟨⟨constructSchwingerFunctions Wfn,
-    constructedSchwinger_tempered Wfn,
+    constructedSchwinger_tempered_zeroDiagonal Wfn,
     constructedSchwinger_linear Wfn,
     constructedSchwinger_reality Wfn,
     constructedSchwinger_translation_invariant Wfn,
@@ -1533,10 +1552,12 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d) :
     intro f η hη
     exact bhw_distributional_boundary_values Wfn f η hη
 
-/-- **Theorem E'→R'**: OS axioms with linear growth condition produce Wightman functions.
+/-- **Theorem E'→R'** (OS II surface): OS axioms together with the linear growth
+    condition produce Wightman functions.
 
-    The Wightman functions are the boundary values of the analytic continuation
-    of the Schwinger functions to the forward tube. -/
+    This direction intentionally keeps the stronger OS-II hypothesis
+    `OSLinearGrowthCondition`; it is the ingredient that repairs the OS-I gap
+    in the reconstruction of tempered Wightman boundary values. -/
 theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     ∃ (Wfn : WightmanFunctions d),
@@ -1547,7 +1568,7 @@ theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
   -- exactly the fields constructed inside `boundary_values_tempered`.
   have h := (boundary_values_tempered OS lgc n).choose_spec.choose_spec
   exact ⟨(boundary_values_tempered OS lgc n).choose_spec.choose,
-    h.2.2.1, h.2.2.2.1, h.2.2.2.2⟩
+    h.2.2.1, h.2.2.2.1, fun f => h.2.2.2.2 f.1⟩
 
 /-! ### Wired Corollaries
 

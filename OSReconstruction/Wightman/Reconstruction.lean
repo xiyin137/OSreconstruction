@@ -1135,12 +1135,90 @@ References:
 - Glimm-Jaffe, "Quantum Physics: A Functional Integral Point of View", Chapter 19
 -/
 
-/-- Schwinger functions (Euclidean correlators) -/
+/-- Schwinger functions (Euclidean correlators).
+
+    At present this is the full Schwartz-space surface. OS I first formulates the
+    Euclidean theory on the zero-diagonal test space `°S`, with extension to the
+    full Schwartz space as a separate issue. -/
 def SchwingerFunctions (d : ℕ) := (n : ℕ) → SchwartzNPoint d n → ℂ
 
 /-- The positive Euclidean time region: n-point configurations with all τᵢ > 0. -/
 def PositiveTimeRegion (d n : ℕ) : Set (NPointDomain d n) :=
   { x | ∀ i : Fin n, x i 0 > 0 }
+
+/-- The OS-I ordered positive-time region: `0 < x₁⁰ < ... < xₙ⁰`.
+
+    This is the support surface used in the positivity axiom `E2`, matching the
+    test-function space `S^<_{+}` in OS I. -/
+def OrderedPositiveTimeRegion (d n : ℕ) : Set (NPointDomain d n) :=
+  { x | ∀ i : Fin n, 0 < x i 0 ∧ ∀ j : Fin n, i < j → x i 0 < x j 0 }
+
+theorem OrderedPositiveTimeRegion_subset_positiveTimeRegion (d n : ℕ) :
+    OrderedPositiveTimeRegion d n ⊆ PositiveTimeRegion d n := by
+  intro x hx i
+  exact (hx i).1
+
+/-- The coincidence locus where at least two Euclidean arguments coincide. -/
+def CoincidenceLocus (d n : ℕ) : Set (NPointDomain d n) :=
+  { x | ∃ i j : Fin n, i ≠ j ∧ x i = x j }
+
+theorem not_mem_CoincidenceLocus_of_mem_OrderedPositiveTimeRegion
+    {d n : ℕ} {x : NPointDomain d n}
+    (hx : x ∈ OrderedPositiveTimeRegion d n) :
+    x ∉ CoincidenceLocus d n := by
+  intro hcoin
+  rcases hcoin with ⟨i, j, hij, hijEq⟩
+  rcases lt_or_gt_of_ne hij with hij_lt | hij_gt
+  · have htime : x i 0 < x j 0 := (hx i).2 j hij_lt
+    have hEq0 : x i 0 = x j 0 := by
+      simpa using congrArg (fun y : SpacetimeDim d => y 0) hijEq
+    exact (lt_irrefl (x i 0)) (hEq0 ▸ htime)
+  · have htime : x j 0 < x i 0 := (hx j).2 i hij_gt
+    have hEq0 : x j 0 = x i 0 := by
+      simpa using congrArg (fun y : SpacetimeDim d => y 0) hijEq.symm
+    exact (lt_irrefl (x j 0)) (hEq0 ▸ htime)
+
+/-- A Schwartz test function vanishes to infinite order on the coincidence locus
+    if every iterated Fréchet derivative vanishes at every coincident configuration.
+
+    This is the current formal stand-in for the OS-I test space `°S`: in finite
+    dimensions, vanishing of all iterated Fréchet derivatives is the coordinate-free
+    formulation of “vanishes with all partial derivatives on every diagonal.” -/
+def VanishesToInfiniteOrderOnCoincidence {d n : ℕ} (f : SchwartzNPoint d n) : Prop :=
+  ∀ k : ℕ, ∀ x : NPointDomain d n, x ∈ CoincidenceLocus d n →
+    iteratedFDeriv ℝ k (f : NPointDomain d n → ℂ) x = 0
+
+/-- The OS-I zero-diagonal Schwartz test space. -/
+def ZeroDiagonalSchwartz (d n : ℕ) :=
+  { f : SchwartzNPoint d n // VanishesToInfiniteOrderOnCoincidence f }
+
+instance instTopologicalSpaceZeroDiagonalSchwartz (d n : ℕ) :
+    TopologicalSpace (ZeroDiagonalSchwartz d n) := by
+  delta ZeroDiagonalSchwartz
+  infer_instance
+
+/-- If a Schwartz test function is supported in the strict ordered positive-time
+    region, then it vanishes to infinite order on the coincidence locus.
+
+    This is the precise bridge from the OS-I positivity sector `S^<_{+}` to the
+    zero-diagonal space `°S`: coincidence points lie outside the ordered-time
+    region, and every iterated derivative is supported inside the support of the
+    original Schwartz function. -/
+theorem VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion
+    {d n : ℕ} (f : SchwartzNPoint d n)
+    (hsupp : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) :
+    VanishesToInfiniteOrderOnCoincidence f := by
+  intro k x hxcoin
+  have hx_not_ord : x ∉ OrderedPositiveTimeRegion d n := by
+    intro hxord
+    exact (not_mem_CoincidenceLocus_of_mem_OrderedPositiveTimeRegion hxord) hxcoin
+  have hx_not_support :
+      x ∉ Function.support (iteratedFDeriv ℝ k (f : NPointDomain d n → ℂ)) := by
+    intro hx
+    have hx' := support_iteratedFDeriv_subset (𝕜 := ℝ) (n := k) (f := ⇑f) hx
+    exact hx_not_ord (hsupp hx')
+  by_contra hx_nonzero
+  exact hx_not_support (by simpa [Function.mem_support, hx_nonzero])
 
 /-- Time reflection operator on Euclidean points: θ(τ, x⃗) = (-τ, x⃗) -/
 def timeReflection (x : SpacetimeDim d) : SpacetimeDim d :=
@@ -1566,8 +1644,12 @@ theorem OSInnerProduct_smul_left (S : (n : ℕ) → SchwartzNPoint d n → ℂ)
 structure OsterwalderSchraderAxioms (d : ℕ) [NeZero d] where
   /-- The Schwinger functions -/
   S : SchwingerFunctions d
-  /-- E0: Temperedness - each Sₙ is a tempered distribution (continuous on Schwartz space) -/
-  E0_tempered : ∀ n, Continuous (S n)
+  /-- E0: Temperedness on the OS-I zero-diagonal test space `°S`.
+
+      The literal OS-I Schwinger functions are distributions on the coincidence-free
+      test space, not a priori on the full Schwartz space. Any later extension to
+      all of `SchwartzNPoint` is extra structure beyond this axiom surface. -/
+  E0_tempered : ∀ n, Continuous fun f : ZeroDiagonalSchwartz d n => S n f.1
   /-- E0 also includes linearity: each Schwinger functional is a tempered distribution,
       i.e. a continuous complex-linear functional on Schwartz space. -/
   E0_linear : ∀ n, IsLinearMap ℂ (S n)
@@ -1597,14 +1679,16 @@ structure OsterwalderSchraderAxioms (d : ℕ) [NeZero d] where
     (∀ x, g.toFun x = f.toFun (fun i => R.mulVec (x i))) →
     S n f = S n g
   /-- E2: Reflection positivity - the crucial axiom for Hilbert space construction.
-      For test functions F supported in the positive time half-space (τ > 0),
-      Σₙ,ₘ S_{n+m}(θf̄ₙ ⊗ fₘ) ≥ 0
+      For test functions supported in the OS-I ordered positive-time region
+      `0 < x₁⁰ < ... < xₙ⁰`,
+      `Σₙ,ₘ S_{n+m}(θf̄ₙ ⊗ fₘ) ≥ 0`
       where θ is time reflection θ(τ,x⃗) = (-τ,x⃗) and f̄ is complex conjugation.
       This uses `OSInnerProduct` (time reflection + conjugation), the correct
       inner product for the Euclidean framework.
       This ensures the reconstructed inner product is positive definite. -/
   E2_reflection_positive : ∀ (F : BorchersSequence d),
-    (∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 → x ∈ PositiveTimeRegion d n) →
+    (∀ n, ∀ x : NPointDomain d n, (F.funcs n).toFun x ≠ 0 →
+      x ∈ OrderedPositiveTimeRegion d n) →
     (OSInnerProduct d S F F).re ≥ 0
   /-- E3: Permutation symmetry - Schwinger functions are symmetric under
       permutation of arguments: S_n(x_{σ(1)},...,x_{σ(n)}) = S_n(x₁,...,xₙ)
@@ -1724,7 +1808,8 @@ structure OSLinearGrowthCondition (d : ℕ) [NeZero d] (OS : OsterwalderSchrader
     (the "analytic continuation") that:
     1. Has distributional boundary values equal to the Wightman functions W_n
     2. When restricted to Euclidean points (via Wick rotation) and paired with
-       test functions, reproduces the Schwinger functions S_n
+       zero-diagonal test functions, reproduces the Schwinger functions S_n on
+       the corrected OS-I domain
 
     This is the mathematical content of the Wick rotation.
 
@@ -1743,10 +1828,10 @@ def IsWickRotationPair {d : ℕ} [NeZero d] (S : SchwingerFunctions d) (W : (n :
           F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W n f))) ∧
-    -- Euclidean restriction gives S_n: integrating F_analytic ∘ Wick against f gives S_n(f)
-    (∀ (f : SchwartzNPoint d n),
-      S n f = ∫ x : NPointDomain d n,
-        F_analytic (fun k => wickRotatePoint (x k)) * (f x))
+    -- Euclidean restriction gives S_n on the corrected zero-diagonal domain.
+    (∀ (f : ZeroDiagonalSchwartz d n),
+      S n f.1 = ∫ x : NPointDomain d n,
+        F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x))
 
 -- `wightman_to_os` and `os_to_wightman` moved to Reconstruction/Main.lean
 -- (proved via WickRotation.lean: wightman_to_os_full, os_to_wightman_full)

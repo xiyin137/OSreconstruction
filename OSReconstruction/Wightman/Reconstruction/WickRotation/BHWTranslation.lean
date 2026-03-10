@@ -870,6 +870,11 @@ theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
     on all Euclidean points (not just time-ordered ones), and carries the complex
     Lorentz invariance and permutation symmetry needed for E1b and E3.
 
+    Important: the corrected OS-I axiom surface does not claim that this raw total
+    pairing is tempered on all of `SchwartzNPoint`. In the current development,
+    the honest E0 statement is only continuity on `ZeroDiagonalSchwartz`; any
+    stronger full-Schwartz extension needs separate justification.
+
     Ref: OS I (1973), Section 5; Streater-Wightman, Chapter 3 -/
 def constructSchwingerFunctions (Wfn : WightmanFunctions d) :
     SchwingerFunctions d :=
