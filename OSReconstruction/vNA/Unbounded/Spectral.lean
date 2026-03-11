@@ -972,6 +972,47 @@ theorem diagonalMeasure_apply_norm_sq (z : H) (E : Set ℝ) (hE : MeasurableSet 
     (P.diagonalMeasure z E).toReal = ‖P.proj E z‖ ^ 2 := by
   rw [P.diagonalMeasure_apply z E hE, ← P.norm_sq_eq_inner E hE z]
 
+open MeasureTheory in
+/-- The diagonal measure of a projected vector is supported in the projecting set. -/
+theorem diagonalMeasure_proj_compl_eq_zero
+    (E : Set ℝ) (hE : MeasurableSet E) (x : H) :
+    P.diagonalMeasure (P.proj E x) Eᶜ = 0 := by
+  have hE_eq_univ :
+      P.diagonalMeasure (P.proj E x) E =
+        P.diagonalMeasure (P.proj E x) Set.univ := by
+    have hleft :
+        (P.diagonalMeasure (P.proj E x) E).toReal = ‖P.proj E x‖ ^ 2 := by
+      rw [P.diagonalMeasure_apply_norm_sq _ E hE]
+      have hidem := P.isIdempotent E hE
+      have happly : P.proj E (P.proj E x) = P.proj E x := by
+        have := congrArg (fun T => T x) hidem
+        simp only [ContinuousLinearMap.comp_apply] at this
+        simpa using this
+      simp [happly]
+    have hright :
+        (P.diagonalMeasure (P.proj E x) Set.univ).toReal = ‖P.proj E x‖ ^ 2 := by
+      rw [P.diagonalMeasure_apply_norm_sq _ Set.univ MeasurableSet.univ]
+      simpa [P.univ]
+    have hfinite_E : P.diagonalMeasure (P.proj E x) E ≠ ⊤ := by
+      exact measure_ne_top (P.diagonalMeasure (P.proj E x)) E
+    have hfinite_univ : P.diagonalMeasure (P.proj E x) Set.univ ≠ ⊤ := by
+      exact measure_ne_top (P.diagonalMeasure (P.proj E x)) Set.univ
+    exact (ENNReal.toReal_eq_toReal_iff' hfinite_E hfinite_univ).mp (by rw [hleft, hright])
+  have hadd := measure_add_measure_compl (μ := P.diagonalMeasure (P.proj E x)) hE
+  rw [hE_eq_univ] at hadd
+  have hfinite_univ : P.diagonalMeasure (P.proj E x) Set.univ ≠ ⊤ := by
+    exact measure_ne_top (P.diagonalMeasure (P.proj E x)) Set.univ
+  calc
+    P.diagonalMeasure (P.proj E x) Eᶜ
+      = P.diagonalMeasure (P.proj E x) Set.univ +
+          P.diagonalMeasure (P.proj E x) Eᶜ -
+            P.diagonalMeasure (P.proj E x) Set.univ := by
+              symm
+              exact ENNReal.add_sub_cancel_left hfinite_univ
+    _ = P.diagonalMeasure (P.proj E x) Set.univ -
+          P.diagonalMeasure (P.proj E x) Set.univ := by rw [hadd]
+    _ = 0 := tsub_self _
+
 end SpectralMeasure
 
 /-! ### Functional calculus -/

@@ -6,6 +6,7 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.vNA.Spectral.SpectralMeasurePolarizedViaRMK
 import OSReconstruction.vNA.Spectral.SpectralProjectionLemmas
 import Mathlib.Topology.MetricSpace.ThickenedIndicator
+import Mathlib.Topology.UrysohnsLemma
 import Mathlib.MeasureTheory.Measure.HasOuterApproxClosed
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Order
 
@@ -938,6 +939,93 @@ theorem spectralProjection_norm_sq_closed (U : H →L[ℂ] H) (hU : U ∈ unitar
     exact Tendsto.pow hnorm_conv 2
   -- By uniqueness of limits: ‖P z‖² = μ_z(F).toReal
   exact tendsto_nhds_unique hnorm_sq_conv hnorm_sq_tendsto
+
+/-- A closed subset of `Circle` disjoint from the unitary spectrum carries zero
+diagonal spectral mass. -/
+theorem spectralMeasureDiagonal_closed_eq_zero_of_disjoint_spectrum
+    (U : H →L[ℂ] H) (hU : U ∈ unitary (H →L[ℂ] H))
+    (F : Set Circle) (hF_closed : IsClosed F)
+    (hdisj : Disjoint (((↑) : Circle → ℂ) ⁻¹' spectrum ℂ U) F)
+    (x : H) :
+    spectralMeasureDiagonal U hU x F = 0 := by
+  let S : Set Circle := (((↑) : Circle → ℂ) ⁻¹' spectrum ℂ U)
+  have hS_closed : IsClosed S := by
+    simpa [S] using (spectrum.isClosed (𝕜 := ℂ) (a := U)).preimage continuous_subtype_val
+  obtain ⟨g, hgS, hgF, hgIcc⟩ :=
+    exists_continuous_zero_one_of_isClosed hS_closed hF_closed hdisj
+  have hcircle_zero : Set.EqOn (circleRealToComplex g) 0 (spectrum ℂ U) := by
+    intro z hz
+    have hz_circle : z ∈ Metric.sphere (0 : ℂ) 1 := spectrum.subset_circle_of_unitary hU hz
+    have hzS : (⟨z, hz_circle⟩ : Circle) ∈ S := by
+      simpa [S]
+    have hg_zero : g ⟨z, hz_circle⟩ = 0 := hgS hzS
+    simp [circleRealToComplex, hg_zero]
+  have hcfc_zero : cfcOfCircleReal U hU g = 0 := by
+    haveI : IsStarNormal U := unitary_isStarNormal U hU
+    unfold cfcOfCircleReal
+    rw [cfc_congr hcircle_zero, cfc_zero ℂ U]
+  let μ := spectralMeasureDiagonal U hU x
+  haveI : IsFiniteMeasure μ := spectralMeasureDiagonal_isFiniteMeasure U hU x
+  have hg_int : Integrable g μ := by
+    refine (integrable_const (1 : ℝ)).mono' ?_ ?_
+    · exact g.continuous.aestronglyMeasurable
+    · filter_upwards with y
+      have hy := hgIcc y
+      calc
+        ‖g y‖ = g y := Real.norm_of_nonneg hy.1
+        _ ≤ 1 := hy.2
+  have h_indicator_nonneg :
+      0 ≤ᵐ[μ] Set.indicator F (fun _ : Circle => (1 : ℝ)) := by
+    refine Filter.Eventually.of_forall ?_
+    intro y
+    by_cases hy : y ∈ F <;> simp [hy]
+  have h_indicator_le : Set.indicator F (fun _ : Circle => (1 : ℝ)) ≤ᵐ[μ] g := by
+    refine Filter.Eventually.of_forall ?_
+    intro y
+    by_cases hy : y ∈ F
+    · simp [hy, hgF hy]
+    · simp [hy, (hgIcc y).1]
+  have hint_zero : ∫ y, g y ∂μ = 0 := by
+    rw [show ∫ y, g y ∂μ = ∫ y, (toCc g) y ∂μ by rfl]
+    rw [spectralMeasureDiagonal_integral U hU x (toCc g)]
+    change spectralFunctionalAux U hU x g = 0
+    simp [spectralFunctionalAux, hcfc_zero]
+  have hμ_toReal_zero : (μ F).toReal = 0 := by
+    have hint_le_zero :
+        ∫ y, Set.indicator F (fun _ : Circle => (1 : ℝ)) y ∂μ ≤ 0 := by
+      calc
+        ∫ y, Set.indicator F (fun _ : Circle => (1 : ℝ)) y ∂μ ≤ ∫ y, g y ∂μ :=
+          integral_mono_of_nonneg h_indicator_nonneg hg_int h_indicator_le
+        _ = 0 := hint_zero
+    have h_indicator :
+        ∫ y, Set.indicator F (fun _ : Circle => (1 : ℝ)) y ∂μ = (μ F).toReal := by
+      simpa [μ] using integral_indicator_one (μ := μ) hF_closed.measurableSet
+    have hle_zero : (μ F).toReal ≤ 0 := by
+      simpa [h_indicator] using hint_le_zero
+    exact le_antisymm hle_zero ENNReal.toReal_nonneg
+  have hμ_ne_top : μ F ≠ ⊤ := measure_ne_top μ F
+  rw [ENNReal.toReal_eq_zero_iff, or_iff_left hμ_ne_top] at hμ_toReal_zero
+  exact hμ_toReal_zero
+
+/-- A closed subset of `Circle` disjoint from the unitary spectrum has zero
+spectral projection. -/
+theorem spectralProjectionOfUnitary_closed_eq_zero_of_disjoint_spectrum
+    (U : H →L[ℂ] H) (hU : U ∈ unitary (H →L[ℂ] H))
+    (F : Set Circle) (hF_closed : IsClosed F)
+    (hdisj : Disjoint (((↑) : Circle → ℂ) ⁻¹' spectrum ℂ U) F) :
+    spectralProjectionOfUnitary U hU F hF_closed.measurableSet = 0 := by
+  ext x
+  have hμ_zero :
+      spectralMeasureDiagonal U hU x F = 0 :=
+    spectralMeasureDiagonal_closed_eq_zero_of_disjoint_spectrum U hU F hF_closed hdisj x
+  have hnorm_sq :
+      ‖spectralProjectionOfUnitary U hU F hF_closed.measurableSet x‖ ^ 2 = 0 := by
+    rw [spectralProjection_norm_sq_closed U hU F hF_closed x, hμ_zero]
+    simp
+  have hnorm_zero : ‖spectralProjectionOfUnitary U hU F hF_closed.measurableSet x‖ = 0 := by
+    nlinarith [hnorm_sq,
+      norm_nonneg (spectralProjectionOfUnitary U hU F hF_closed.measurableSet x)]
+  exact norm_eq_zero.mp hnorm_zero
 
 /-- The product formula for spectral projections on CLOSED sets in polarized form:
     B(Px, Py, Circle) = B(x, y, F) where B = spectralMeasurePolarized and F is closed.

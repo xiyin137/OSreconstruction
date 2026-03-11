@@ -57,6 +57,30 @@ theorem functionalCalculus_congr (P : SpectralMeasure H) (f g : ℝ → ℂ)
   congr 1
   exact integral_congr_ae (Eventually.of_forall hfg)
 
+/-- Support-aware congruence: if every diagonal measure is supported in `E`, then
+two bounded measurable functions that agree on `E` have the same functional calculus. -/
+theorem functionalCalculus_congr_on_support (P : SpectralMeasure H)
+    (E : Set ℝ)
+    (hsupport : ∀ z : H, P.diagonalMeasure z Eᶜ = 0)
+    (f g : ℝ → ℂ)
+    (hf_int : ∀ z : H, Integrable f (P.diagonalMeasure z))
+    (hf_bdd : ∃ M, 0 ≤ M ∧ ∀ t, ‖f t‖ ≤ M)
+    (hg_int : ∀ z : H, Integrable g (P.diagonalMeasure z))
+    (hg_bdd : ∃ M, 0 ≤ M ∧ ∀ t, ‖g t‖ ≤ M)
+    (hfg : ∀ t ∈ E, f t = g t) :
+    functionalCalculus P f hf_int hf_bdd = functionalCalculus P g hg_int hg_bdd := by
+  apply ContinuousLinearMap.ext_inner_self
+  intro z
+  rw [functionalCalculus_inner_self_flip P f hf_int hf_bdd z,
+      functionalCalculus_inner_self_flip P g hg_int hg_bdd z]
+  congr 1
+  apply integral_congr_ae
+  have hmemE : ∀ᵐ t ∂(P.diagonalMeasure z), t ∈ E := by
+    rw [ae_iff]
+    simpa [Set.compl_setOf, Set.setOf_mem_eq] using hsupport z
+  filter_upwards [hmemE] with t ht
+  exact hfg t ht
+
 /-! ### Operator norm bound -/
 
 /-- Tight operator norm bound: `‖f(T)‖ ≤ M` where `∀ t, ‖f t‖ ≤ M`.
