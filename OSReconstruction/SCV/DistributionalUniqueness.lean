@@ -115,6 +115,65 @@ theorem translateSchwartzCLM_apply (t₀ : Fin m → ℝ) (f : SchwartzMap (Fin 
   ext x
   rfl
 
+/-- Real translations of a Schwartz function have polynomial seminorm growth in
+the translation parameter. This is the quantitative translation estimate needed
+when a tempered functional is evaluated on shifted test families. -/
+theorem seminorm_translateSchwartz_le
+    (k l : ℕ) (f : SchwartzMap (Fin m → ℝ) ℂ) :
+    ∃ (D : ℝ), 0 ≤ D ∧ ∀ (a : Fin m → ℝ),
+      (SchwartzMap.seminorm ℂ k l) (translateSchwartz a f) ≤ D * (1 + ‖a‖) ^ k := by
+  obtain ⟨Ck, hCk⟩ := f.decay' k l
+  obtain ⟨C0, hC0⟩ := f.decay' 0 l
+  have hC0' : ∀ y, ‖iteratedFDeriv ℝ l f.toFun y‖ ≤ C0 := by
+    intro y
+    have hy := hC0 y
+    simp [pow_zero] at hy
+    linarith
+  have hCk_nn : 0 ≤ Ck :=
+    le_trans (mul_nonneg (pow_nonneg (norm_nonneg _) k) (norm_nonneg _)) (hCk 0)
+  have hC0_nn : 0 ≤ C0 := le_trans (norm_nonneg _) (hC0' 0)
+  set D := 2 ^ (k - 1) * (Ck + C0)
+  have hD_nn : 0 ≤ D := by
+    dsimp [D]
+    exact mul_nonneg (pow_nonneg (by norm_num : (0 : ℝ) ≤ 2) _) (by linarith)
+  refine ⟨D, hD_nn, fun a => ?_⟩
+  apply SchwartzMap.seminorm_le_bound ℂ k l _ <| mul_nonneg hD_nn
+    (pow_nonneg (by linarith [norm_nonneg a]) k)
+  intro x
+  have hcoe : (⇑(translateSchwartz a f) : (Fin m → ℝ) → ℂ) = fun z => f (z + a) :=
+    funext fun _ => rfl
+  rw [hcoe, iteratedFDeriv_comp_add_right]
+  have hnorm_x : ‖x‖ ≤ ‖x + a‖ + ‖a‖ := by
+    calc
+      ‖x‖ = ‖(x + a) - a‖ := by ring_nf
+      _ ≤ ‖x + a‖ + ‖a‖ := norm_sub_le _ _
+  have h1a : 1 ≤ 1 + ‖a‖ := le_add_of_nonneg_right (norm_nonneg a)
+  have hkey : Ck + ‖a‖ ^ k * C0 ≤ (1 + ‖a‖) ^ k * (Ck + C0) := by
+    rw [mul_add]
+    apply add_le_add
+    · exact le_mul_of_one_le_left hCk_nn (one_le_pow₀ h1a)
+    · exact mul_le_mul_of_nonneg_right
+        (pow_le_pow_left₀ (norm_nonneg a) (le_add_of_nonneg_left zero_le_one) k) hC0_nn
+  calc
+    ‖x‖ ^ k * ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖
+        ≤ (‖x + a‖ + ‖a‖) ^ k * ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖ := by
+          gcongr
+    _ ≤ (2 ^ (k - 1) * (‖x + a‖ ^ k + ‖a‖ ^ k)) *
+          ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖ := by
+          gcongr
+          exact add_pow_le (norm_nonneg _) (norm_nonneg _) k
+    _ = 2 ^ (k - 1) * (‖x + a‖ ^ k * ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖ +
+          ‖a‖ ^ k * ‖iteratedFDeriv ℝ l (⇑f) (x + a)‖) := by ring
+    _ ≤ 2 ^ (k - 1) * (Ck + ‖a‖ ^ k * C0) := by
+          gcongr
+          · exact hCk (x + a)
+          · exact hC0' (x + a)
+    _ ≤ 2 ^ (k - 1) * ((1 + ‖a‖) ^ k * (Ck + C0)) := by
+          gcongr
+    _ = D * (1 + ‖a‖) ^ k := by
+          simp only [D]
+          ring
+
 /-- Reflection of a Schwartz function in the real variables. -/
 def reflectSchwartz (f : SchwartzMap (Fin m → ℝ) ℂ) :
     SchwartzMap (Fin m → ℝ) ℂ :=
