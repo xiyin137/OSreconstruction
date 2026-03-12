@@ -6,6 +6,7 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.SCV.IdentityTheorem
 import Mathlib.Analysis.Analytic.IsolatedZeros
 import Mathlib.Analysis.Analytic.Constructions
+import Mathlib.Analysis.Calculus.Deriv.Star
 
 /-!
 # Identity Theorem for Totally Real Submanifolds
@@ -270,6 +271,31 @@ theorem identity_theorem_totally_real
   intro z hz
   exact identity_theorem_SCV hD_open hD_conn hf (differentiableOn_const 0) hz₀ hlocal hz
 
+theorem holomorphic_eq_of_eq_on_real_of_connected
+    {U : Set (Fin m → ℂ)}
+    (hU_open : IsOpen U) (hU_conn : IsConnected U)
+    {F G : (Fin m → ℂ) → ℂ}
+    (hF : DifferentiableOn ℂ F U)
+    (hG : DifferentiableOn ℂ G U)
+    {x₀ : Fin m → ℝ} (hx₀ : realToComplex x₀ ∈ U)
+    (hFG_real : ∀ x : Fin m → ℝ, realToComplex x ∈ U →
+      F (realToComplex x) = G (realToComplex x)) :
+    ∀ z ∈ U, F z = G z := by
+  set V : Set (Fin m → ℝ) := {x | realToComplex x ∈ U}
+  have hV_open : IsOpen V := by
+    have hcont : Continuous (realToComplex (m := m)) := by
+      exact continuous_pi fun i => Complex.continuous_ofReal.comp (continuous_apply i)
+    exact hcont.isOpen_preimage _ hU_open
+  have hV_ne : V.Nonempty := ⟨x₀, hx₀⟩
+  have hV_sub : ∀ x ∈ V, realToComplex x ∈ U := fun x hx => hx
+  have hzero : ∀ x ∈ V, (F - G) (realToComplex x) = 0 := by
+    intro x hx
+    simp [hFG_real x hx]
+  have h :=
+    identity_theorem_totally_real hU_open hU_conn (hF.sub hG) hV_open hV_ne hV_sub hzero
+  intro z hz
+  exact sub_eq_zero.mp (h z hz)
+
 /-! ### Product type version -/
 
 /-- Embedding of product real space into product complex space. -/
@@ -344,6 +370,97 @@ theorem identity_theorem_totally_real_product
   -- Propagate via identity theorem for product types
   intro z hz
   exact identity_theorem_product hD_open hD_conn hf (differentiableOn_const 0) hz₀ hlocal hz
+
+/-! ### Conjugation and Schwarz reflection on totally real edges -/
+
+/-- Componentwise conjugation on `Fin m → ℂ`. -/
+def conjMap (m : ℕ) : (Fin m → ℂ) → (Fin m → ℂ) :=
+  fun z i => starRingEnd ℂ (z i)
+
+/-- Componentwise conjugation is continuous. -/
+theorem continuous_conjMap {m : ℕ} : Continuous (conjMap m) :=
+  continuous_pi fun i => (continuous_apply i).star
+
+/-- If `F` is holomorphic on `U`, then `z ↦ conj (F (conjMap z))` is holomorphic on
+    the conjugated domain `conjMap ⁻¹' U`. -/
+theorem differentiableOn_conj_comp_conj {m : ℕ}
+    {U : Set (Fin m → ℂ)} (hU_open : IsOpen U)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F U) :
+    DifferentiableOn ℂ (fun z => starRingEnd ℂ (F (conjMap m z)))
+      (conjMap m ⁻¹' U) := by
+  have hU'_open : IsOpen (conjMap m ⁻¹' U) :=
+    continuous_conjMap.isOpen_preimage _ hU_open
+  have hcont : ContinuousOn (fun z => starRingEnd ℂ (F (conjMap m z))) (conjMap m ⁻¹' U) := by
+    exact ContinuousOn.star <|
+      hF.continuousOn.comp continuous_conjMap.continuousOn (fun _ hz => hz)
+  have hsep : ∀ z ∈ conjMap m ⁻¹' U, ∀ i : Fin m,
+      DifferentiableAt ℂ
+        (fun w => starRingEnd ℂ (F (conjMap m (Function.update z i w)))) (z i) := by
+    intro z hz i
+    let w₀ := conjMap m z
+    have hmem : w₀ ∈ U := hz
+    have hg : DifferentiableAt ℂ (fun t => F (Function.update w₀ i t))
+        (starRingEnd ℂ (z i)) := by
+      have hmem' : Function.update w₀ i (starRingEnd ℂ (z i)) ∈ U := by
+        have : Function.update w₀ i (starRingEnd ℂ (z i)) = w₀ := by
+          ext j
+          by_cases hji : j = i
+          · subst hji
+            simp [w₀, conjMap]
+          · simp [Function.update, hji, w₀, conjMap]
+        rw [this]
+        exact hmem
+      have hlin : DifferentiableAt ℂ (fun t => Function.update w₀ i t)
+          (starRingEnd ℂ (z i)) := by
+        apply differentiableAt_pi.mpr
+        intro j
+        by_cases hji : j = i
+        · subst hji
+          simp
+        · simp [Function.update, hji, differentiableAt_const]
+      exact (hF.differentiableAt (hU_open.mem_nhds hmem')).comp _ hlin
+    have hcc : DifferentiableAt ℂ
+        ((starRingEnd ℂ) ∘ (fun t => F (Function.update w₀ i t)) ∘ (starRingEnd ℂ)) (z i) := by
+      simpa using (DifferentiableAt.conj_conj (𝕜 := ℂ)
+        (f := fun t => F (Function.update w₀ i t)) (x := starRingEnd ℂ (z i)) hg)
+    have heq : (fun w => starRingEnd ℂ (F (conjMap m (Function.update z i w)))) =
+        (fun w => ((starRingEnd ℂ) ∘ (fun t => F (Function.update w₀ i t)) ∘
+          (starRingEnd ℂ)) w) := by
+      funext w
+      have hupdate : conjMap m (Function.update z i w) =
+          Function.update w₀ i (starRingEnd ℂ w) := by
+        ext j
+        by_cases hji : j = i
+        · subst hji
+          simp [w₀, conjMap]
+        · simp [w₀, conjMap, hji]
+      simp [Function.comp, hupdate]
+    rw [heq]
+    exact hcc
+  exact SCV.osgood_lemma hU'_open _ hcont hsep
+
+/-- If `F` and its conjugated reflection agree on a nonempty open totally real slice of a
+    connected open set, then they agree on the whole domain. -/
+theorem schwarz_identity_on_tube {m : ℕ}
+    {U : Set (Fin m → ℂ)} (hU_open : IsOpen U) (hU_conn : IsConnected U)
+    {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F U)
+    {Ψ : (Fin m → ℂ) → (Fin m → ℂ)}
+    (hG : DifferentiableOn ℂ (fun z => starRingEnd ℂ (F (Ψ (conjMap m z)))) U)
+    {V : Set (Fin m → ℝ)} (hV_open : IsOpen V) (hV_ne : V.Nonempty)
+    (hV_sub : ∀ x ∈ V, realToComplex x ∈ U)
+    (hreal : ∀ x ∈ V,
+      F (realToComplex x) =
+        starRingEnd ℂ (F (Ψ (conjMap m (realToComplex x))))) :
+    ∀ z ∈ U, F z = starRingEnd ℂ (F (Ψ (conjMap m z))) := by
+  have hH : DifferentiableOn ℂ
+      (fun z => F z - starRingEnd ℂ (F (Ψ (conjMap m z)))) U := hF.sub hG
+  have hH_zero : ∀ x ∈ V,
+      (fun z => F z - starRingEnd ℂ (F (Ψ (conjMap m z)))) (realToComplex x) = 0 := by
+    intro x hx
+    simp [hreal x hx]
+  have hzero := identity_theorem_totally_real hU_open hU_conn hH hV_open hV_ne hV_sub hH_zero
+  intro z hz
+  exact sub_eq_zero.mp (hzero z hz)
 
 end SCV
 

@@ -8,6 +8,7 @@ import Mathlib.Analysis.Distribution.TemperedDistribution
 import Mathlib.Analysis.Calculus.MeanValue
 import Mathlib.Analysis.Calculus.Taylor
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
+import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.Topology.UniformSpace.Completion
 import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.SchwartzTensorProduct
@@ -2208,6 +2209,76 @@ def timeReflection (x : SpacetimeDim d) : SpacetimeDim d :=
 /-- Time reflection on n-point configurations -/
 def timeReflectionN (x : NPointDomain d n) : NPointDomain d n :=
   fun i => timeReflection d (x i)
+
+/-- Time reflection preserves Lebesgue measure on spacetime. -/
+theorem timeReflection_measurePreserving :
+    MeasureTheory.MeasurePreserving (timeReflection d) MeasureTheory.volume MeasureTheory.volume := by
+  classical
+  rw [show timeReflection (d := d) =
+      (fun (x : SpacetimeDim d) (i : Fin (d + 1)) =>
+        (if i = 0 then Neg.neg else id) (x i)) by
+      funext x i
+      by_cases hi : i = 0
+      · subst hi
+        simp [timeReflection]
+      · simp [timeReflection, hi]]
+  exact MeasureTheory.volume_preserving_pi (fun i : Fin (d + 1) => by
+    by_cases hi : i = 0
+    · simpa [hi] using
+        (MeasureTheory.Measure.measurePreserving_neg
+          (MeasureTheory.volume : MeasureTheory.Measure ℝ))
+    · simpa [hi] using
+        (MeasureTheory.MeasurePreserving.id (MeasureTheory.volume : MeasureTheory.Measure ℝ)))
+
+/-- Time reflection preserves Lebesgue measure on n-point configuration space. -/
+theorem timeReflectionN_measurePreserving {n : ℕ} :
+    MeasureTheory.MeasurePreserving
+      (timeReflectionN (d := d) (n := n)) MeasureTheory.volume MeasureTheory.volume := by
+  classical
+  rw [show timeReflectionN (d := d) (n := n) =
+      (fun (x : NPointDomain d n) (i : Fin n) => timeReflection (d := d) (x i)) by
+      funext x i
+      rfl]
+  exact MeasureTheory.volume_preserving_pi
+    (fun _ : Fin n => timeReflection_measurePreserving (d := d))
+
+/-- Reversing the order of points preserves Lebesgue measure on n-point configuration space. -/
+theorem reverseNPoint_measurePreserving {n : ℕ} :
+    MeasureTheory.MeasurePreserving
+      (fun x : NPointDomain d n => fun i : Fin n => x (Fin.rev i))
+      MeasureTheory.volume MeasureTheory.volume := by
+  classical
+  let e : Fin n ≃ Fin n :=
+    { toFun := Fin.rev
+      invFun := Fin.rev
+      left_inv := by intro i; simp
+      right_inv := by intro i; simp }
+  have heq : (MeasurableEquiv.piCongrLeft (fun _ : Fin n => SpacetimeDim d) e : _ → _)
+      = (fun x : NPointDomain d n => fun i : Fin n => x (Fin.rev i)) := by
+    funext x
+    let x' : (a : Fin n) → (fun _ : Fin n => SpacetimeDim d) (e a) := x
+    funext i
+    simpa [e] using
+      (Equiv.piCongrLeft_apply_apply (P := fun _ : Fin n => SpacetimeDim d) (e := e) x'
+        (Fin.rev i))
+  exact heq ▸
+    (MeasureTheory.volume_measurePreserving_piCongrLeft (fun _ : Fin n => SpacetimeDim d) e)
+
+/-- The real OS reflection map (reverse the point order and reflect Euclidean time) preserves
+    Lebesgue measure on configuration space. -/
+theorem osReflectionN_measurePreserving {n : ℕ} :
+    MeasureTheory.MeasurePreserving
+      (fun x : NPointDomain d n => fun i : Fin n => timeReflection d (x (Fin.rev i)))
+      MeasureTheory.volume MeasureTheory.volume := by
+  let revMap : NPointDomain d n → NPointDomain d n := fun x i => x (Fin.rev i)
+  let thetaMap : NPointDomain d n → NPointDomain d n := timeReflectionN (d := d) (n := n)
+  have hcomp :
+      (fun x : NPointDomain d n => fun i : Fin n => timeReflection d (x (Fin.rev i))) =
+        thetaMap ∘ revMap := by
+    rfl
+  rw [hcomp]
+  exact (timeReflectionN_measurePreserving (d := d) (n := n)).comp
+    (reverseNPoint_measurePreserving (d := d) (n := n))
 
 /-- Time reflection is an involution: θ(θx) = x. -/
 theorem timeReflection_timeReflection (x : SpacetimeDim d) :

@@ -621,6 +621,83 @@ theorem boundary_distribution_bound {m : ℕ}
             _ = C_bd * ((1 + ‖x‖) ^ N * ‖f x‖) := by ring
     _ = C_bd * ∫ x, (1 + ‖x‖) ^ N * ‖f x‖ := by rw [integral_const_mul]
 
+/-- Real-translation invariance of the holomorphic kernel transfers directly to each
+boundary-ray integral. This is the measure-theoretic core used later in translation
+transfer for boundary values. -/
+theorem bv_translation_invariant_of_F_invariant {m : ℕ}
+    {F : (Fin m → ℂ) → ℂ}
+    (a : Fin m → ℝ)
+    (hF_inv : ∀ (x : Fin m → ℝ) (y : Fin m → ℝ),
+      F (fun i => ↑(x i) + ↑(y i) * I) = F (fun i => ↑(x i - a i) + ↑(y i) * I))
+    (η : Fin m → ℝ) (ε : ℝ)
+    (f : (Fin m → ℝ) → ℂ) :
+    ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f (fun i => x i + a i) =
+    ∫ x : Fin m → ℝ, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x := by
+  let g : (Fin m → ℝ) → ℂ := fun x =>
+    F (fun i => ↑((x - a) i) + ↑ε * ↑(η i) * I) * f x
+  have hga : (fun x => g (x + a)) = fun x =>
+      F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f (fun i => x i + a i) := by
+    ext x
+    simp only [g, Pi.sub_apply, Pi.add_apply, add_sub_cancel_right]
+    rfl
+  rw [← hga, MeasureTheory.integral_add_right_eq_self g a]
+  simp only [g]
+  congr 1
+  ext x
+  have hkey := (hF_inv x (fun i => ε * η i)).symm
+  simpa [Pi.sub_apply] using congrArg (fun z : ℂ => z * f x) hkey
+
+/-- If a boundary-ray kernel satisfies the reflected-point identity
+`F(x + iεη) = conj(F(Ψ(x) + iεη))`, then pairing against the reflected-conjugated
+test function is the conjugate of pairing against the original test function. This is
+the measure-theoretic core used later in Hermiticity transfer. -/
+theorem bv_integral_hermiticity_v2 {m : ℕ}
+    (η : Fin m → ℝ) (ε : ℝ) (f : (Fin m → ℝ) → ℂ)
+    {F : (Fin m → ℂ) → ℂ}
+    (Ψ_real : (Fin m → ℝ) ≃ᵐ (Fin m → ℝ))
+    (hΨ_mp : MeasurePreserving Ψ_real volume volume)
+    (hF_reflect : ∀ (x : Fin m → ℝ),
+      F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) =
+      starRingEnd ℂ (F (fun i => ↑(Ψ_real x i) + ↑ε * ↑(η i) * I))) :
+    ∫ x, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) *
+        (starRingEnd ℂ (f (Ψ_real x))) =
+      starRingEnd ℂ (∫ x, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) * f x) := by
+  let g : (Fin m → ℝ) → ℂ := fun y =>
+    (starRingEnd ℂ) (F (fun i => ↑(y i) + ↑ε * ↑(η i) * I) * f y)
+  have step1 : ∀ x, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) *
+      (starRingEnd ℂ) (f (Ψ_real x)) = g (Ψ_real x) := by
+    intro x
+    simp only [g]
+    rw [hF_reflect x, ← map_mul (starRingEnd ℂ)]
+  rw [show (∫ x, F (fun i => ↑(x i) + ↑ε * ↑(η i) * I) *
+      (starRingEnd ℂ) (f (Ψ_real x))) =
+    ∫ x, g (Ψ_real x) from integral_congr_ae (ae_of_all _ step1)]
+  rw [hΨ_mp.integral_comp' (f := Ψ_real)]
+  exact integral_conj
+
+/-- If an a.e. reflected kernel identity `conj(F x) = F (Ψ x)` holds for a
+measure-preserving involution `Ψ`, then pairing against `f` is the conjugate of
+pairing against `conj (f ∘ Ψ)`. This is the reality-pattern analogue of
+`bv_integral_hermiticity_v2`. -/
+theorem bv_reality_pattern {α : Type*} [MeasurableSpace α] (μ : Measure α)
+    (F : α → ℂ) (f : α → ℂ)
+    (Ψ : α ≃ᵐ α)
+    (hΨ_mp : MeasurePreserving Ψ μ μ)
+    (hΨ_inv : ∀ x, Ψ (Ψ x) = x)
+    (hF_reflect : ∀ᵐ x ∂μ, starRingEnd ℂ (F x) = F (Ψ x)) :
+    starRingEnd ℂ (∫ x, F x * f x ∂μ) =
+      ∫ x, F x * starRingEnd ℂ (f (Ψ x)) ∂μ := by
+  rw [← integral_conj]
+  have step1 : (fun x => starRingEnd ℂ (F x * f x)) =ᵐ[μ]
+      fun x => F (Ψ x) * starRingEnd ℂ (f x) := by
+    filter_upwards [hF_reflect] with x hx
+    rw [map_mul, hx]
+  rw [integral_congr_ae step1]
+  symm
+  rw [← hΨ_mp.integral_comp' (f := Ψ)
+      (g := fun x => F x * starRingEnd ℂ (f (Ψ x)))]
+  simp [hΨ_inv]
+
 /-- Additivity of the boundary-value functional using only the distributional boundary-value
     formula together with a uniform ray bound. This avoids any false claim that the holomorphic
     function extends continuously to the real boundary pointwise. -/

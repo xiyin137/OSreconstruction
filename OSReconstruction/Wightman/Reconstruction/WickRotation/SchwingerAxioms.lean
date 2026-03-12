@@ -3732,7 +3732,57 @@ theorem wickRotatedBoundaryPairing_reality (Wfn : WightmanFunctions d) (n : ℕ)
     (f : SchwartzNPoint d n) :
     starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f) =
       wickRotatedBoundaryPairing Wfn n f.osConj := by
-  sorry
+  let Ψfun : NPointDomain d n → NPointDomain d n :=
+    fun x i => timeReflection d (x (Fin.rev i))
+  have hΨ_invol : Function.Involutive Ψfun := by
+    intro x
+    ext i μ
+    simp [Ψfun, timeReflection_timeReflection]
+  let Ψ : NPointDomain d n ≃ᵐ NPointDomain d n :=
+    { toEquiv :=
+        { toFun := Ψfun
+          invFun := Ψfun
+          left_inv := hΨ_invol
+          right_inv := hΨ_invol }
+      measurable_toFun := (osReflectionN_measurePreserving (d := d) (n := n)).measurable
+      measurable_invFun := (osReflectionN_measurePreserving (d := d) (n := n)).measurable }
+  let K : NPointDomain d n → ℂ :=
+    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+  let frev : SchwartzNPoint d n := f.reverse
+  have hpattern :
+      starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f) =
+        ∫ x : NPointDomain d n, K x * starRingEnd ℂ (f (Ψ x)) := by
+    simpa [wickRotatedBoundaryPairing, K, Ψ, Ψfun] using
+      (SCV.bv_reality_pattern (μ := MeasureTheory.volume) (F := K) (f := f) (Ψ := Ψ)
+        (by simpa [Ψ, Ψfun] using osReflectionN_measurePreserving (d := d) (n := n))
+        (fun x => by simpa [Ψ] using hΨ_invol x)
+        (by simpa [K, Ψ, Ψfun] using bhw_euclidean_reality_ae (Wfn := Wfn) (n := n)))
+  have hfrev_osConj :
+      ∀ x : NPointDomain d n, frev.osConj x = starRingEnd ℂ (f (Ψ x)) := by
+    intro x
+    simp [frev, Ψ, Ψfun, SchwartzMap.reverse_apply, SchwartzNPoint.osConj_apply,
+      timeReflectionN]
+  have hpair_rev :
+      (∫ x : NPointDomain d n, K x * starRingEnd ℂ (f (Ψ x))) =
+        wickRotatedBoundaryPairing Wfn n frev.osConj := by
+    simp [wickRotatedBoundaryPairing, K, hfrev_osConj]
+  have hrev_perm :
+      ∀ x : NPointDomain d n, frev.osConj x = f.osConj (fun i => x (Fin.rev i)) := by
+    intro x
+    rw [SchwartzNPoint.osConj_apply, SchwartzNPoint.osConj_apply]
+    rw [show frev = f.reverse by rfl, SchwartzMap.reverse_apply]
+    congr 1
+  have hsymm :
+      wickRotatedBoundaryPairing Wfn n frev.osConj =
+        wickRotatedBoundaryPairing Wfn n f.osConj := by
+    symm
+    exact wickRotatedBoundaryPairing_symmetric (Wfn := Wfn) (n := n) Fin.revPerm
+      (f := f.osConj) (g := frev.osConj) hrev_perm
+  calc
+    starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f) =
+        ∫ x : NPointDomain d n, K x * starRingEnd ℂ (f (Ψ x)) := hpattern
+    _ = wickRotatedBoundaryPairing Wfn n frev.osConj := hpair_rev
+    _ = wickRotatedBoundaryPairing Wfn n f.osConj := hsymm
 
 /-- Pointwise cluster property of BHW extension at Euclidean points.
 
