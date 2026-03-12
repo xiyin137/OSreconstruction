@@ -3,7 +3,7 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 
 /-!
 # Wick Rotation and the OS Bridge Theorems
@@ -37,7 +37,11 @@ The implementation is split across several files in the `WickRotation/` subfolde
   Schwinger function constructions
 - `SchwingerAxioms.lean`: zero-diagonal Euclidean-side proofs and remaining
   Schwinger-side analytic gaps
-- `OSToWightman.lean`: E'→R' direction, bridge theorems
+- `OSToWightmanSemigroup.lean`: E'→R' OS Hilbert-space semigroup and one-variable
+  holomorphic bridge
+- `OSToWightman.lean`: E'→R' analytic-continuation core and live base-step blocker
+- `OSToWightmanBoundaryValues.lean`: boundary-value package, axiom transfer,
+  and bridge theorems
 
 ## References
 
