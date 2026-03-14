@@ -896,6 +896,24 @@ def twoPointDifferenceLift {d : ℕ}
     twoPointDifferenceLift χ h x = χ (x 0) * h (x 1 - x 0) := by
   simp [twoPointDifferenceLift, SchwartzMap.prependField_apply]
 
+/-- For a center cutoff `χ(u)` and a right-factor test `g(x₁)`, this is the
+product-shell two-point Schwartz function `(x₀, x₁) ↦ χ(x₀) g(x₁)`.
+
+After the center/difference change of variables `(u, ξ) ↦ (u, u + ξ)`, this
+becomes the sheared shell `(u, ξ) ↦ χ(u) g(u + ξ)`. This is the natural shell
+that comes directly from the semigroup-side one-point pair construction. -/
+def twoPointProductLift {d : ℕ}
+    (χ g : SchwartzSpacetime d) : SchwartzNPoint d 2 :=
+  (onePointToFin1CLM d χ).tensorProduct (onePointToFin1CLM d g)
+
+@[simp] theorem twoPointProductLift_apply {d : ℕ}
+    (χ g : SchwartzSpacetime d) (x : NPointDomain d 2) :
+    twoPointProductLift χ g x = χ (x 0) * g (x 1) := by
+  change ((onePointToFin1CLM d χ).tensorProduct (onePointToFin1CLM d g)) x =
+    χ (x 0) * g (x 1)
+  rw [SchwartzMap.tensorProduct_apply]
+  simp [onePointToFin1CLM_apply, splitFirst, splitLast]
+
 /-- The two-point center/difference shear `(u, ξ) ↦ (u, u + ξ)` preserves
 Lebesgue measure. -/
 theorem twoPointCenterDiff_measurePreserving {d : ℕ} :
@@ -947,6 +965,32 @@ theorem integral_mul_twoPointDifferenceLift_eq_centerDiff {d : ℕ}
             refine MeasureTheory.integral_congr_ae ?_
             filter_upwards with z
             simp [e, twoPointDifferenceLift_apply, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv]
+
+/-- Rewriting the witness integral against a two-point product-shell test in
+center/difference coordinates. This exposes the semigroup-side shear
+`(u, ξ) ↦ χ(u) g(u + ξ)` explicitly. -/
+theorem integral_mul_twoPointProductLift_eq_centerShear {d : ℕ}
+    (Ψ : NPointDomain d 2 → ℂ)
+    (χ g : SchwartzSpacetime d) :
+    ∫ x : NPointDomain d 2, Ψ x * (twoPointProductLift χ g) x =
+      ∫ z : NPointDomain d 2,
+        Ψ ((twoPointCenterDiffCLE d) z) * (χ (z 0) * g (z 0 + z 1)) := by
+  let e : NPointDomain d 2 ≃ᵐ NPointDomain d 2 :=
+    (twoPointCenterDiffCLE d).toHomeomorph.toMeasurableEquiv
+  have hmp : MeasureTheory.MeasurePreserving e MeasureTheory.volume MeasureTheory.volume :=
+    twoPointCenterDiff_measurePreserving (d := d)
+  calc
+    ∫ x : NPointDomain d 2, Ψ x * (twoPointProductLift χ g) x
+      = ∫ z : NPointDomain d 2,
+          (fun x : NPointDomain d 2 => Ψ x * (twoPointProductLift χ g) x) (e z) := by
+            symm
+            exact hmp.integral_comp' (f := e)
+              (g := fun x : NPointDomain d 2 => Ψ x * (twoPointProductLift χ g) x)
+    _ = ∫ z : NPointDomain d 2,
+          Ψ ((twoPointCenterDiffCLE d) z) * (χ (z 0) * g (z 0 + z 1)) := by
+            refine MeasureTheory.integral_congr_ae ?_
+            filter_upwards with z
+            simp [e, twoPointProductLift_apply, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv]
 
 private theorem continuous_twoPointDiff (d : ℕ) :
     Continuous (fun x : NPointDomain d 2 => x 1 - x 0) := by
