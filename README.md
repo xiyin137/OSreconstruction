@@ -208,8 +208,10 @@ the tracked production tree, not as a complete file listing.
 │   │       ├── SchwingerOS.lean          # Schwinger-side / zero-diagonal OS layer
 │   │       ├── Poincare1D.lean           # 1D Schwartz Poincare lemma
 │   │       ├── SliceIntegral.lean        # Schwartz slice-integral infrastructure
+│   │       ├── BlockIntegral.lean        # finite-block flattening and iterated slice integration
 │   │       ├── ZeroMeanFourierTransport.lean # zero-mean transport infrastructure
 │   │       ├── TranslationInvariantSchwartz.lean # zero-mean decomposition + translation classification
+│   │       ├── TwoPointDescent.lean      # center/difference descent for two-point Schwartz tests
 │   │       ├── WightmanTwoPoint.lean     # two-point Wightman center/difference reduction
 │   │       ├── GNSConstruction.lean      # GNS construction
 │   │       ├── GNSHilbertSpace.lean      # reconstructed Hilbert space and field action
@@ -268,7 +270,10 @@ Two navigation notes:
 - `Wightman/Reconstruction.lean` is now the stable reconstruction barrel. The
   shared core definitions live in `Wightman/Reconstruction/Core.lean`, and the
   Schwinger/OS-side reduction layer lives in
-  `Wightman/Reconstruction/SchwingerOS.lean`.
+  `Wightman/Reconstruction/SchwingerOS.lean`. The new finite-block descent
+  helpers are split out into `BlockIntegral.lean` and `TwoPointDescent.lean`
+  so the Wick-rotation files do not keep absorbing low-level coordinate
+  bookkeeping.
 - `Wightman/Reconstruction/Main.lean` only wires the top-level theorems.
 - The old monolithic `OSToWightman` layer no longer exists as a single file.
   The live `E -> R` lane is intentionally split across
