@@ -6,6 +6,9 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
 import OSReconstruction.ComplexLieGroups.Connectedness.ReducedPermutedTube
+import Mathlib.LinearAlgebra.Charpoly.Basic
+import Mathlib.LinearAlgebra.Eigenspace.Zero
+import Mathlib.MeasureTheory.Measure.Lebesgue.EqHaar
 
 /-!
 # Reduced BHW Extension Shell
@@ -980,16 +983,140 @@ theorem route1AbsoluteBHWExtension_translate
   exact reduced_pullback_translation_invariant (d := d) (n := m + 1)
     (route1ReducedBHWExtension (d := d) Wfn χ hInput).toFun z c
 
+/-- Backward shift on `Fin n`-indexed tuples: sends index `k` to the value at
+    index `k - 1`, with index `0` mapping to `0`. -/
+private def backwardShiftLM (n d : ℕ) :
+    (Fin n → Fin (d + 1) → ℝ) →ₗ[ℝ] (Fin n → Fin (d + 1) → ℝ) where
+  toFun x k μ := if k.val = 0 then 0 else x ⟨k.val - 1, by omega⟩ μ
+  map_add' x y := by ext k μ; simp only [Pi.add_apply]; split_ifs <;> simp
+  map_smul' r x := by
+    ext k μ; simp only [Pi.smul_apply, RingHom.id_apply, smul_eq_mul]; split_ifs <;> simp
+
+private theorem realDiffCoord_eq_id_sub_backwardShift (n d : ℕ) :
+    (realDiffCoordLinearEquiv n d).toLinearMap = LinearMap.id - backwardShiftLM n d := by
+  apply LinearMap.ext; intro x; funext k μ
+  simp only [LinearEquiv.coe_toLinearMap, LinearMap.sub_apply, LinearMap.id_apply,
+    backwardShiftLM, LinearMap.coe_mk, AddHom.coe_mk]
+  show realDiffCoordFun n d x k μ = x k μ - (if k.val = 0 then 0 else x ⟨k.val - 1, _⟩ μ)
+  simp only [realDiffCoordFun]
+  by_cases hk : k.val = 0 <;> simp [hk]
+
+private theorem backwardShiftLM_pow_apply (n d : ℕ) :
+    ∀ (m : ℕ) (x : Fin n → Fin (d + 1) → ℝ) (k : Fin n) (μ : Fin (d + 1)),
+    (backwardShiftLM n d ^ m) x k μ =
+      if k.val < m then 0 else x ⟨k.val - m, by omega⟩ μ := by
+  intro m
+  induction m with
+  | zero => intro x k μ; simp
+  | succ m ih =>
+    intro x k μ
+    -- f^(m+1) = f^m * f definitionally, so (f^(m+1)) x = f^m (f x)
+    show (backwardShiftLM n d ^ m) (backwardShiftLM n d x) k μ = _
+    rw [ih]
+    simp only [backwardShiftLM, LinearMap.coe_mk, AddHom.coe_mk]
+    by_cases hkm : k.val < m
+    · simp [hkm, show k.val < m + 1 from by omega]
+    · push_neg at hkm
+      simp only [show ¬(k.val < m) from by omega, ↓reduceIte]
+      by_cases hkm1 : k.val - m = 0
+      · simp [hkm1, show k.val < m + 1 from by omega]
+      · simp only [hkm1, ↓reduceIte, show ¬(k.val < m + 1) from by omega,
+          show k.val - m - 1 = k.val - (m + 1) from by omega]
+
+private theorem backwardShiftLM_isNilpotent (n d : ℕ) :
+    IsNilpotent (backwardShiftLM n d) := by
+  refine ⟨n, ?_⟩
+  apply LinearMap.ext; intro x; funext k μ
+  simp only [LinearMap.zero_apply, Pi.zero_apply]
+  rw [backwardShiftLM_pow_apply, if_pos k.isLt]
+
+private theorem realDiffCoord_det_eq_one (n d : ℕ) :
+    LinearMap.det (realDiffCoordLinearEquiv n d).toLinearMap = 1 := by
+  rw [realDiffCoord_eq_id_sub_backwardShift]
+  have h_alg : LinearMap.id - backwardShiftLM n d =
+      algebraMap ℝ (Module.End ℝ _) 1 - backwardShiftLM n d := by
+    congr 1; ext; simp [Algebra.algebraMap_eq_smul_one]
+  rw [h_alg, ← LinearMap.eval_charpoly (backwardShiftLM n d) 1,
+    (backwardShiftLM_isNilpotent n d).charpoly_eq_X_pow_finrank]
+  simp
+
+/-- The partial-sum operator `(realDiffCoordCLE n d).symm` preserves Lebesgue
+volume. Its matrix (in any standard basis ordering) is lower-triangular with
+all-ones diagonal, so `|det| = 1` and the measure-theoretic Jacobian is `1`. -/
+theorem realDiffCoordCLE_symm_measurePreserving (n d : ℕ) :
+    MeasureTheory.MeasurePreserving
+      (⇑(realDiffCoordCLE n d).symm)
+      MeasureTheory.volume MeasureTheory.volume := by
+  constructor
+  · exact (realDiffCoordCLE n d).symm.continuous.measurable
+  · have h_det := realDiffCoord_det_eq_one n d
+    ext s hs
+    rw [MeasureTheory.Measure.map_apply
+      ((realDiffCoordCLE n d).symm.continuous.measurable) hs]
+    change MeasureTheory.volume ((realDiffCoordLinearEquiv n d).symm ⁻¹' s) =
+      MeasureTheory.volume s
+    rw [MeasureTheory.Measure.addHaar_preimage_linearEquiv MeasureTheory.volume
+      (realDiffCoordLinearEquiv n d).symm s, LinearEquiv.symm_symm]
+    simp [h_det]
+
+/-- `prependBasepointReal` agrees with Mathlib's `Fin.cons`. -/
+theorem prependBasepointReal_eq_finCons (d m : ℕ)
+    (x₀ : SpacetimeDim d) (ξ : Fin m → Fin (d + 1) → ℝ) :
+    prependBasepointReal d m x₀ ξ = Fin.cons x₀ ξ := by
+  ext ⟨k, hk⟩ μ
+  simp only [prependBasepointReal]
+  rcases k with _ | k
+  · simp [Fin.cons]
+  · simp [Fin.cons]
+
 /-- Integrating over absolute real coordinates is equivalent to changing
 variables to the real full-difference chart, whose Jacobian is `1`, and then
-splitting the integral into basepoint and reduced-difference variables. This is
-the remaining measure/Fubini input for Route 1. -/
-axiom integral_realDiffCoord_change_variables
+splitting the integral into basepoint and reduced-difference variables. -/
+theorem integral_realDiffCoord_change_variables
     [NeZero d] (m : ℕ) (G : NPointDomain d (m + 1) → ℂ)
     (hG : MeasureTheory.Integrable G) :
     ∫ x, G x =
       ∫ ξ : NPointDomain d m, ∫ x₀ : SpacetimeDim d,
-        G ((realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ))
+        G ((realDiffCoordCLE (m + 1) d).symm (prependBasepointReal d m x₀ ξ)) := by
+  -- Step 1: Change variables by CLE.symm (volume-preserving, det = 1)
+  let eCLE := (realDiffCoordCLE (m + 1) d).symm.toHomeomorph.toMeasurableEquiv
+  have h_mp_cle : MeasureTheory.MeasurePreserving eCLE
+      MeasureTheory.volume MeasureTheory.volume := by
+    have := realDiffCoordCLE_symm_measurePreserving (m + 1) d
+    convert this using 1
+  set H := fun y => G (eCLE y) with hH_def
+  have h1 : ∫ x, G x = ∫ y, H y :=
+    (h_mp_cle.integral_comp' (g := G)).symm
+  -- Step 2: Split Fin (m+1) → V into V × (Fin m → V) via piFinSuccAbove
+  let eSplit := MeasurableEquiv.piFinSuccAbove
+    (fun _ : Fin (m + 1) => Fin (d + 1) → ℝ) 0
+  have h_mp_split : MeasureTheory.MeasurePreserving eSplit
+      MeasureTheory.volume
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    simpa [eSplit] using MeasureTheory.volume_preserving_piFinSuccAbove
+      (fun _ : Fin (m + 1) => Fin (d + 1) → ℝ) 0
+  -- Step 3: Integrability on the product space
+  have hH_int : MeasureTheory.Integrable H := by
+    exact (h_mp_cle.integrable_comp_emb eCLE.measurableEmbedding (g := G)).mpr hG
+  have hH_pair_int : MeasureTheory.Integrable
+      (fun p : SpacetimeDim d × NPointDomain d m => H (Fin.cons p.1 p.2))
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    have hiff := h_mp_split.symm.integrable_comp_emb
+      eSplit.symm.measurableEmbedding (g := H)
+    simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using hiff.2 hH_int
+  -- Step 4: Fubini + algebraic identity
+  rw [h1]
+  calc ∫ y, H y
+      = ∫ p : SpacetimeDim d × NPointDomain d m, H (Fin.cons p.1 p.2) := by
+        symm
+        simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using
+          h_mp_split.symm.integral_comp' (g := H)
+    _ = ∫ ξ : NPointDomain d m, ∫ x₀ : SpacetimeDim d, H (Fin.cons x₀ ξ) :=
+        MeasureTheory.integral_prod_symm _ hH_pair_int
+    _ = ∫ ξ, ∫ x₀, G ((realDiffCoordCLE (m + 1) d).symm
+          (prependBasepointReal d m x₀ ξ)) := by
+        simp_rw [hH_def, prependBasepointReal_eq_finCons]
+        rfl
 
 /-- At fixed positive imaginary height, the reduced smeared boundary integral
 agrees with the absolute spectrum witness after changing variables to full
@@ -1014,7 +1141,15 @@ theorem route1ReducedBoundaryIntegral_eq_absoluteBoundaryIntegral
       (fun k μ => (x k μ : ℂ) + ε * (absoluteDirectionOfReduced d m η k μ : ℂ) * Complex.I) *
       reducedTestLift m d χ f x
   have hG_int : MeasureTheory.Integrable G := by
-    sorry
+    exact forward_tube_bv_integrable
+      (Wfn.spectrum_condition (m + 1)).choose
+      (Wfn.spectrum_condition (m + 1)).choose_spec.1
+      ⟨Wfn.W (m + 1), Wfn.tempered (m + 1),
+        (Wfn.spectrum_condition (m + 1)).choose_spec.2⟩
+      (reducedTestLift m d χ f)
+      (absoluteDirectionOfReduced d m η)
+      (absoluteDirectionOfReduced_mem_forwardCone (d := d) m η hη)
+      ε hε
   rw [integral_realDiffCoord_change_variables (d := d) m G hG_int]
   simp_rw [G]
   have hfactor :
