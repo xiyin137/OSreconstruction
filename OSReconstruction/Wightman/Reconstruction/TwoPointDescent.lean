@@ -79,6 +79,27 @@ private theorem reindex_flatten_twoPointProductShell_apply
   simpa [y, h0, h1] using
     twoPointCenterDiffSchwartzCLM_twoPointProductLift_apply (d := d) χ g y
 
+private theorem reindex_flatten_twoPointProductLift_eq_tensorProduct
+    (χ g : SchwartzSpacetime d) :
+    reindexSchwartzFin (by ring)
+        (flattenSchwartzNPoint (d := d) (twoPointProductLift χ g)) =
+      χ.tensorProduct g := by
+  ext x
+  let y : NPointDomain d 2 :=
+    fun i =>
+      Fin.cases (splitFirst (d + 1) (d + 1) x)
+        (fun _ => splitLast (d + 1) (d + 1) x) i
+  have h0 : y 0 = splitFirst (d + 1) (d + 1) x := by
+    simp [y]
+  have h1 : y 1 = splitLast (d + 1) (d + 1) x := by
+    change Fin.cases (splitFirst (d + 1) (d + 1) x)
+        (fun _ => splitLast (d + 1) (d + 1) x) (Fin.succ 0) =
+      splitLast (d + 1) (d + 1) x
+    rfl
+  rw [reindex_flattenSchwartzNPoint_two_apply, SchwartzMap.tensorProduct_apply]
+  rw [twoPointProductLift_apply]
+  simp [y, h0, h1]
+
 /-- The basic two-point center descent map: rewrite in center/difference
 coordinates, flatten to ordinary Euclidean Schwartz space, and integrate out
 the full center block of `d + 1` real coordinates. -/
@@ -289,5 +310,65 @@ theorem integral_twoPointCenterDescent
               simpa [Fflat'] using integral_reindexSchwartzFin (by ring) Fflat
     _ = ∫ x : NPointDomain d 2, Fcd x := integral_flattenSchwartzNPoint (d := d) Fcd
     _ = ∫ x : NPointDomain d 2, F x := integral_twoPointCenterDiffSchwartz (d := d) F
+
+/-- The raw two-point product shell has the expected total integral: it is the
+product of the center and right-factor integrals. This is the unsheared
+sanity check behind the descended center-shear averaging operator. -/
+theorem integral_twoPointProductLift_eq_mul
+    (χ g : SchwartzSpacetime d) :
+    ∫ x : NPointDomain d 2, twoPointProductLift χ g x =
+      (∫ u : SpacetimeDim d, χ u) * ∫ v : SpacetimeDim d, g v := by
+  calc
+    ∫ x : NPointDomain d 2, twoPointProductLift χ g x
+      =
+        (SchwartzMap.integralCLM ℂ
+          (MeasureTheory.volume :
+            MeasureTheory.Measure (Fin ((d + 1) + (d + 1)) → ℝ)))
+          (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d) (twoPointProductLift χ g))) := by
+          rw [integral_reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d) (twoPointProductLift χ g))]
+          exact (integral_flattenSchwartzNPoint (d := d) (twoPointProductLift χ g)).symm
+    _ =
+        (SchwartzMap.integralCLM ℂ
+          (MeasureTheory.volume :
+            MeasureTheory.Measure (Fin ((d + 1) + (d + 1)) → ℝ)))
+          (χ.tensorProduct g) := by
+            rw [reindex_flatten_twoPointProductLift_eq_tensorProduct]
+    _ =
+        (SchwartzMap.integralCLM ℂ
+          (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+          (integrateHeadBlock (m := d + 1) (n := d + 1) (χ.tensorProduct g)) := by
+            simpa [SchwartzMap.integralCLM_apply] using
+              (integral_integrateHeadBlock (m := d + 1) (n := d + 1)
+                (χ.tensorProduct g)).symm
+    _ =
+        (SchwartzMap.integralCLM ℂ
+          (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+          (((SchwartzMap.integralCLM ℂ
+              (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d))) χ) • g) := by
+            rw [integrateHeadBlock_tensorProduct (m := d + 1) (n := d + 1) χ g]
+    _ = (∫ u : SpacetimeDim d, χ u) * ∫ v : SpacetimeDim d, g v := by
+          simp [SchwartzMap.integralCLM_apply, smul_eq_mul]
+
+/-- The descended center-shear representative preserves the total integral of
+the raw product shell, hence its total mass is the product of the center and
+right-factor integrals. This is the first concrete sign that
+`twoPointCenterShearDescent` is behaving like a genuine averaging operator in
+the difference variable. -/
+theorem integral_twoPointCenterShearDescent_eq_mul
+    (χ g : SchwartzSpacetime d) :
+    ∫ ξ : SpacetimeDim d, twoPointCenterShearDescent (d := d) χ g ξ =
+      (∫ u : SpacetimeDim d, χ u) * ∫ v : SpacetimeDim d, g v := by
+  rw [twoPointCenterShearDescent_eq]
+  calc
+    (SchwartzMap.integralCLM ℂ
+      (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+        (twoPointCenterDescent (d := d) (twoPointProductLift χ g))
+      =
+        ∫ x : NPointDomain d 2, twoPointProductLift χ g x := by
+          exact integral_twoPointCenterDescent (d := d) (twoPointProductLift χ g)
+    _ = (∫ u : SpacetimeDim d, χ u) * ∫ v : SpacetimeDim d, g v := by
+          exact integral_twoPointProductLift_eq_mul (d := d) χ g
 
 end OSReconstruction

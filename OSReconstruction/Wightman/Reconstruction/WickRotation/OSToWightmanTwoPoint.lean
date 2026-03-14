@@ -1298,7 +1298,7 @@ the right half-plane.
 This is the blocker-facing spectral form of the remaining `k = 2` `E -> R`
 gap: the missing input is no longer a vague holomorphic construction, but one
 normalized admissible slice with a nonnegative Laplace representation. -/
-theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_laplace_centerValue
+private theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_laplace_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
     (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
@@ -1359,7 +1359,7 @@ theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_laplace_centerValue
 nonnegative Laplace representation for one normalized admissible two-point
 witness slice already yields the canonical right-half-plane continuation of the
 shifted two-point Schwinger family for every center cutoff `χ`. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_laplace_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_laplace_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
     (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
@@ -1425,7 +1425,7 @@ witness shell for every center cutoff `χ`.
 This matches the actual semigroup spectral input more closely than a single
 positive measure, since off-diagonal matrix elements arise by polarization of
 diagonal positive spectral measures. -/
-theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_polarizedLaplace_centerValue
+private theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_polarizedLaplace_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
     (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
@@ -1512,7 +1512,7 @@ polarization combination of four nonnegative Laplace transforms for one
 normalized admissible two-point witness slice already yields the canonical
 right-half-plane continuation of the shifted two-point Schwinger family for
 every center cutoff `χ`. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_polarizedLaplace_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_polarizedLaplace_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
     (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
@@ -1602,7 +1602,7 @@ shell for every center cutoff `χ`.
 This sharpens the remaining `k = 2` `E -> R` gap: the missing input can be
 stated as matching one normalized admissible slice to a concrete semigroup
 spectral object, rather than to an unspecified holomorphic function. -/
-theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_semigroupSpectral_centerValue
+private theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -1675,7 +1675,7 @@ Matching one normalized admissible two-point witness slice with an explicit
 off-diagonal spectral Laplace function already yields the canonical
 right-half-plane continuation of the shifted two-point Schwinger family for
 every center cutoff `χ`. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_semigroupSpectral_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -1745,7 +1745,7 @@ theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_semigroupSpe
 criterion. Once one normalized center cutoff `χ₀` matches an off-diagonal
 spectral Laplace function, every center cutoff `χ` is handled by multiplying
 that same spectral function by `∫ χ`. -/
-theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupSpectral_centerValue
+private theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -1829,7 +1829,7 @@ theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupSpectral_centerValue
 /-- Explicit Schwinger-shell holomorphic continuation from the semigroup
 spectral criterion. The shifted two-point Schwinger family is given by the same
 off-diagonal spectral Laplace function multiplied by `∫ χ`. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupSpectral_centerValue
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -1907,7 +1907,7 @@ If one normalized center cutoff `χ₀` matches the positive-real values of
 `OSInnerProductTimeShiftHolomorphicValue F G`, then for every center cutoff
 `χ` the canonical admissible-shell continuation is exactly `(∫ χ)` times that
 same semigroup holomorphic matrix element. -/
-theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupMatrix_centerValue
+private theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupMatrix_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2006,7 +2006,7 @@ theorem twoPoint_xiShiftWitness_holomorphicValue_semigroupMatrix_centerValue
 Matching one normalized admissible slice with the positive-real values of
 `OSInnerProductTimeShiftHolomorphicValue F G` yields the canonical shifted
 two-point Schwinger continuation for every center cutoff `χ`. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_centerValue
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2103,7 +2103,7 @@ theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_center
 two-point `ξ`-shift witness shell. Any holomorphic continuation with the
 correct positive-real witness values must agree with the explicit spectral
 off-diagonal function multiplied by `∫ χ`. -/
-theorem twoPoint_xiShiftWitness_holomorphicValue_eq_semigroupSpectral_centerValue
+private theorem twoPoint_xiShiftWitness_holomorphicValue_eq_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2159,7 +2159,7 @@ theorem twoPoint_xiShiftWitness_holomorphicValue_eq_semigroupSpectral_centerValu
 shifted two-point Schwinger shell. Any holomorphic continuation with the
 correct positive-real Schwinger values must agree with the explicit spectral
 off-diagonal function multiplied by `∫ χ`. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_eq_semigroupSpectral_centerValue
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_eq_semigroupSpectral_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2220,7 +2220,7 @@ admissible positive-time witness shell for every center cutoff `χ`.
 This packages the new semigroup spectral bridge on the exact simple-tensor
 shell already used by the OS holomorphic construction, so the remaining
 `k = 2` gap is one fully explicit real-axis matching problem. -/
-theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_semigroupProductShell_centerValue
+private theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_semigroupProductShell_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2294,7 +2294,7 @@ spectral criterion. Matching the spectral off-diagonal function for the simple
 pair `(χ₀, g)` with the normalized admissible center/difference slice for
 `(χ₀, h)` already yields the canonical right-half-plane continuation of the
 shifted two-point Schwinger family for every center cutoff `χ`. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_semigroupProductShell_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_semigroupProductShell_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2369,7 +2369,7 @@ single normalized center cutoff `χ₀`, then the full canonical holomorphic
 continuation exists on the admissible positive-time shell for every center
 cutoff `χ`. So the unresolved `k = 2` gap can be reduced to one explicit
 real-axis matching problem. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_centerShear_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_centerShear_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2493,7 +2493,7 @@ two-point continuation is exactly the corresponding semigroup matrix element of
 the one-point pair `(χ₀, g)`, multiplied by `∫ χ`. This packages the remaining
 `k = 2` gap as one explicit center-shear comparison theorem rather than an
 existence statement. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_centerShear_centerValue
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_centerShear_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2644,7 +2644,7 @@ using the canonical admissible representative
 `twoPointCenterShearDescent χ₀ g` rather than an arbitrary difference-shell
 test `h`. So the only missing input is now the real-axis matching of the
 product shell against this canonical representative. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_centerValue
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2713,82 +2713,6 @@ theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canoni
       (h := OSReconstruction.twoPointCenterShearDescent χ₀ g)
       hχ₀_pos hg_pos hg_compact hdesc_pos hχ₀ hmatch
 
-/-- Residual-annihilation version of the canonical center-shear semigroup
-matrix criterion. The remaining two-point `E -> R` gap is exactly that the
-`ξ`-shift pairing kills the canonical center-shear residual, i.e. the
-difference between the semigroup/product shell and its descended admissible
-representative. Once this scalar annihilation is known for one normalized
-cutoff `χ₀`, the continuation is the explicit semigroup matrix element. -/
-theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_of_residual_annihilation
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
-    (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
-      OS.S 2 f = ∫ x : NPointDomain d 2,
-        Ψ (fun i => wickRotatePoint (x i)) * (f.1 x))
-    (χ₀ χ g : SchwartzSpacetime d)
-    (hχ₀_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
-        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
-        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
-    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
-        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
-    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
-    (hdesc_pos : tsupport ((OSReconstruction.twoPointCenterShearDescent χ₀ g :
-        SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
-          {x : SpacetimeDim d | 0 < x 0})
-    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
-    (hresid : ∀ t : ℝ, 0 < t →
-      (∫ z : NPointDomain d 2,
-        Ψ (xiShift ⟨1, by omega⟩ 0
-          (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
-          ((t : ℂ) * Complex.I)) *
-          (χ₀ (z 0) * g (z 0 + z 1))) -
-      (∫ z : NPointDomain d 2,
-        Ψ (xiShift ⟨1, by omega⟩ 0
-          (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
-          ((t : ℂ) * Complex.I)) *
-          (χ₀ (z 0) * (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1))) = 0) :
-    DifferentiableOn ℂ
-      (fun z : ℂ =>
-        (∫ u : SpacetimeDim d, χ u) *
-          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
-            ((show PositiveTimeBorchersSequence d from
-              PositiveTimeBorchersSequence.single 1
-                (SchwartzNPoint.osConj (d := d) (n := 1)
-                  (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
-                hχ₀_pos))
-            ((show PositiveTimeBorchersSequence d from
-              PositiveTimeBorchersSequence.single 1
-                (onePointToFin1CLM d g : SchwartzNPoint d 1)
-                hg_pos))
-            z)
-      {z : ℂ | 0 < z.re} ∧
-    ∀ t : ℝ, 0 < t →
-      ((∫ u : SpacetimeDim d, χ u) *
-          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
-            ((show PositiveTimeBorchersSequence d from
-              PositiveTimeBorchersSequence.single 1
-                (SchwartzNPoint.osConj (d := d) (n := 1)
-                  (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
-                hχ₀_pos))
-            ((show PositiveTimeBorchersSequence d from
-              PositiveTimeBorchersSequence.single 1
-                (onePointToFin1CLM d g : SchwartzNPoint d 1)
-                hg_pos))
-            (t : ℂ)) =
-        OS.S 2
-          (ZeroDiagonalSchwartz.ofClassical
-            (twoPointDifferenceLift χ
-              (SCV.translateSchwartz (- timeShiftVec d t)
-                (OSReconstruction.twoPointCenterShearDescent χ₀ g)))) := by
-  refine
-    twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_centerValue
-      (d := d) (OS := OS) (lgc := lgc) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
-      (χ₀ := χ₀) (χ := χ) (g := g)
-      hχ₀_pos hg_pos hg_compact hdesc_pos hχ₀ ?_
-  intro t ht
-  exact sub_eq_zero.mp (hresid t ht)
-
 /-- Concrete sufficient criterion for the remaining two-point holomorphic
 existence problem. If one can find a positive-time compact-support product-shell
 test `g` whose semigroup-side holomorphic family has the same positive-real
@@ -2797,7 +2721,7 @@ single normalized center cutoff `χ₀`, then the full canonical holomorphic
 continuation exists on the admissible positive-time shell for every center
 cutoff `χ`. So the unresolved `k = 2` gap can be reduced to one explicit
 real-axis matching problem. -/
-theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_productShell_centerValue
+private theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_of_productShell_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
@@ -2900,7 +2824,7 @@ admissible `ξ`-shift witness on the real axis for a single normalized center
 cutoff `χ₀`, then the canonical holomorphic continuation exists on the
 admissible positive-time witness shell for every center cutoff `χ`, and is
 unique on the right half-plane. -/
-theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_productShell_centerValue
+private theorem exists_twoPoint_xiShiftWitness_holomorphicValue_of_productShell_centerValue
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
