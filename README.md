@@ -75,6 +75,10 @@ Current blocker map:
 - The current working route for that blocker is direct kernel construction plus
   separate-holomorphic/Osgood assembly, not abstract OS-side insertion operators
   or a wrapper around density.
+- The translation-invariant Schwartz classification lane is now in production in
+  `Wightman/Reconstruction/TranslationInvariantSchwartz.lean`, and the two-point
+  Schwinger/Wightman center-difference reductions are correspondingly
+  unconditional.
 - The next `E -> R` blocker after that is `boundary_values_tempered` and the
   transfer chain in `OSToWightmanBoundaryValues.lean`, where the genuine growth
   inputs must come from `OSLinearGrowthCondition`.
@@ -199,6 +203,7 @@ the tracked production tree, not as a complete file listing.
 │   │       ├── Poincare1D.lean           # 1D Schwartz Poincare lemma
 │   │       ├── SliceIntegral.lean        # Schwartz slice-integral infrastructure
 │   │       ├── ZeroMeanFourierTransport.lean # zero-mean transport infrastructure
+│   │       ├── TranslationInvariantSchwartz.lean # zero-mean decomposition + translation classification
 │   │       ├── WightmanTwoPoint.lean     # two-point Wightman center/difference reduction
 │   │       ├── GNSConstruction.lean      # GNS construction
 │   │       ├── GNSHilbertSpace.lean      # reconstructed Hilbert space and field action

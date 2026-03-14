@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.Core
+import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 
 /-!
 # Schwinger/OS Reconstruction Layer
@@ -1032,23 +1033,16 @@ theorem OsterwalderSchraderAxioms.schwinger_twoPointDifferenceLiftCLM_translatio
     (OsterwalderSchraderAxioms.schwinger_twoPointDifferenceLift_translation_invariant
       (d := d) (OS := OS) (a := a) (χ := χ) (h := h) h0).symm
 
-/-- Conditional two-point Schwinger reduction:
-once translation-invariant continuous functionals on spacetime Schwartz space
-are classified as multiples of the Lebesgue integral, the admissible factorized
-two-point family depends only on the difference-variable test. -/
-theorem OsterwalderSchraderAxioms.exists_const_twoPointDifferenceLift_eq_integral_of_classification
-    (hclass :
-      ∀ T : SchwartzSpacetime d →L[ℂ] ℂ,
-        (∀ a : SpacetimeDim d, T.comp (SCV.translateSchwartzCLM a) = T) →
-        ∃ c : ℂ, T = c • (SchwartzMap.integralCLM ℂ
-          (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d))))
+/-- Two-point Schwinger reduction: the admissible factorized two-point family
+depends only on the difference-variable test. -/
+theorem OsterwalderSchraderAxioms.exists_const_twoPointDifferenceLift_eq_integral
     (OS : OsterwalderSchraderAxioms d)
     (h : SchwartzSpacetime d)
     (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ)) :
     ∃ c : ℂ, ∀ χ : SchwartzSpacetime d,
       OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
         c * ∫ x : SpacetimeDim d, χ x := by
-  obtain ⟨c, hc⟩ := hclass
+  obtain ⟨c, hc⟩ := OSReconstruction.exists_eq_const_integralCLM_of_translationInvariant
     (((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2).comp
       (twoPointDifferenceLiftZeroDiagCLM h h0)))
     (OsterwalderSchraderAxioms.schwinger_twoPointDifferenceLiftCLM_translation_invariant
