@@ -4,6 +4,9 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
+import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
+import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SeedSlices
 import OSReconstruction.Wightman.Reconstruction.PoincareRep
 import OSReconstruction.SCV.PaleyWiener
 
@@ -32,12 +35,14 @@ The proof is decomposed into helpers:
 2. `W_analytic_translation_on_forwardTube` — W_analytic is translation-invariant on FT
 3. `bhw_translation_invariant_of_common_perm` — common-permutation witness case
 4. `bhw_translation_local` — local translation invariance via a BHW witness chain
-5. `isConnected_permutedExtendedTube_inter_translate` — D = PET ∩ (PET-c) is connected
+5. `bhw_translation_invariant_of_baseFiber_isPreconnected` — global translation
+   invariance once the fixed-tail base fiber is preconnected
+6. `isPreconnected_baseFiber` — the remaining global geometric blocker
 
-The main theorem `bhw_translation_invariant` uses the overlap-domain identity-theorem
-argument on `D = PET ∩ (PET - c)`. The auxiliary theorem `bhw_translation_local`
-records the local witness-chain translation mechanism, but is not used as the
-global proof route. -/
+The main theorem `bhw_translation_invariant` now uses the base-fiber route:
+fix the tail difference coordinates, show the BHW extension has zero derivative
+in the base variable by local translation invariance, and then propagate that
+local constancy across the preconnected base fiber. -/
 
 /-- Trivial translation-closure cases for the permuted extended tube.
 
@@ -730,98 +735,519 @@ theorem bhw_translation_local {d n : ℕ} [NeZero d]
       _ = F_ext w₀ := hF_w
       _ = F_ext z := hF_z_eq_w₀.symm
 
-/-- **Connectivity of the c-translated overlap domain of the permuted extended tube.**
+/-- Reconstruct a cumulative-sum configuration from a fixed tail of difference
+variables and a varying base difference variable `ζ₀`. This is the natural
+coordinate chart for translation invariance: simultaneous translation changes
+only `ζ₀`, leaving the tail differences fixed. -/
+def baseFiberConfig (m d : ℕ)
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    (Fin (d + 1) → ℂ) → (Fin (m + 1) → Fin (d + 1) → ℂ) :=
+  fun ζ₀ => BHW.partialSumFun (m + 1) d (Fin.cons ζ₀ ζtail)
 
-    For any `c : Fin (d+1) → ℂ`, the set
-    `D = PermutedExtendedTube d n ∩ {w | (fun k μ => w k μ + c μ) ∈ PermutedExtendedTube d n}`
-    is connected.
+/-- The base fiber over a fixed tail `ζ₁, ..., ζₘ`: those base variables `ζ₀`
+whose reconstructed cumulative configuration lies in the permuted extended
+tube. -/
+def baseFiber (m d : ℕ) [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ) : Set (Fin (d + 1) → ℂ) :=
+  {ζ₀ | baseFiberConfig m d ζtail ζ₀ ∈ PermutedExtendedTube d (m + 1)}
 
-    **Mathematical content.** D is the "c-translate overlap domain": those z ∈ PET
-    such that z + c also lies in PET. It contains `ForwardTube d n ∩ (ForwardTube d n - c)`
-    as a convex (hence connected) nonempty subset (by `forwardTube_inter_translate_nonempty`).
+@[simp] theorem baseFiberConfig_zero_apply {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (ζ₀ : Fin (d + 1) → ℂ) (μ : Fin (d + 1)) :
+    baseFiberConfig m d ζtail ζ₀ 0 μ = ζ₀ μ := by
+  simp [baseFiberConfig, BHW.partialSumFun]
 
-    Connectivity of D is needed by the identity theorem argument in
-    `bhw_translation_invariant`: both G(z) := F_ext(z+c) and F_ext are holomorphic
-    on D, and they agree on the convex open subset FT ∩ (FT - c) ⊆ D. If D is connected,
-    the identity theorem propagates this equality to all of D.
+@[simp] theorem baseFiberConfig_succ_apply {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (ζ₀ : Fin (d + 1) → ℂ) (k : Fin m) (μ : Fin (d + 1)) :
+    baseFiberConfig m d ζtail ζ₀ k.succ μ =
+      ζ₀ μ + ∑ j : Fin (k.val + 1), ζtail ⟨j.val, by omega⟩ μ := by
+  simp [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ, add_assoc]
+  let ξ : Fin (m + 1) → Fin (d + 1) → ℂ := Fin.cons ζ₀ ζtail
+  have hm : 0 < m := by
+    cases m with
+    | zero => exact Fin.elim0 k
+    | succ m' => simp
+  have h1idx : (1 : ℕ) < m + 1 := by omega
+  have h0idx : (0 : ℕ) < m := hm
+  have h1 : ξ ⟨1, h1idx⟩ μ = ζtail ⟨0, h0idx⟩ μ := rfl
+  have hsum :
+      (∑ x : Fin k.val, ξ ⟨x.val + 2, by omega⟩ μ) =
+        ∑ x : Fin k.val, ζtail ⟨x.val + 1, by omega⟩ μ := by
+    refine Finset.sum_congr rfl ?_
+    intro x hx
+    rfl
+  simp [ξ, h1, hsum]
 
-    **Why the forward tube does not suffice.** For the forward tube (convex domain),
-    the analogous set is simply D_shift = {s | z + s ∈ FT}, which is convex and hence
-    connected. For PET = ⋃_{σ,Λ} Λ·(σ·FT) (a union of Lorentz-permutation sectors),
-    the intersection PET ∩ (PET - c) is NOT convex; its connectivity depends on the
-    structure of the sector decomposition.
+/-- Shifting the base difference variable by `c` translates every cumulative
+coordinate by the same `c`. -/
+theorem baseFiberConfig_add {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (ζ₀ c : Fin (d + 1) → ℂ) :
+    baseFiberConfig m d ζtail (ζ₀ + c) =
+      fun k μ => baseFiberConfig m d ζtail ζ₀ k μ + c μ := by
+  ext k μ
+  refine Fin.cases ?_ ?_ k
+  · simp [baseFiberConfig_zero_apply]
+  · intro i
+    simp [baseFiberConfig_succ_apply, add_assoc, add_left_comm, add_comm]
 
-    **Proof sketch** (deferred): The key steps would be:
-    (a) Decompose D = ⋃_σ (lorentzPermSector σ ∩ (PET - c)).
-    (b) Show each sector-intersection is preconnected (using CLG-path arguments and
-        FT convexity within each sector).
-    (c) Show adjacent sector-intersections overlap (using the same Jost-witness
-        construction that gives `adjacent_sectors_overlap_right`, extended to ensure
-        the overlap point satisfies w + c ∈ PET).
-    (d) Apply `IsPreconnected.iUnion_of_reflTransGen` (same technique as
-        `permutedExtendedTube_isPreconnected` in PermutedTubeConnected.lean).
+/-- Reconstructing from the base variable and the tail of the difference
+coordinates recovers the original cumulative configuration. -/
+theorem baseFiberConfig_diffCoord_tail {m d : ℕ}
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ) :
+    baseFiberConfig m d (Fin.tail (BHW.diffCoordFun (m + 1) d z))
+      (BHW.diffCoordFun (m + 1) d z 0) = z := by
+  have hcons :
+      Fin.cons (BHW.diffCoordFun (m + 1) d z 0)
+        (Fin.tail (BHW.diffCoordFun (m + 1) d z))
+        = BHW.diffCoordFun (m + 1) d z := by
+    ext k μ
+    refine Fin.cases ?_ ?_ k
+    · rfl
+    · intro i
+      rfl
+  simp [baseFiberConfig, hcons, BHW.partialSum_diffCoord]
 
-    **Relation to other blockers.** This is analogous to `orbitSet_isPreconnected`
-    (the root blocker for complex Lorentz invariance) but for the translation-
-    invariance direction. The common-witness approach (`bhw_translation_invariant_of_common_witness`)
-    only handles the case where z and z+c have a shared Lorentz/permutation witness;
-    for the general case (witnesses differ), the connectivity of D is essential.
+/-- Translating a cumulative configuration by `c` changes only the base
+difference variable. -/
+theorem diffCoord_translate_head_tail {m d : ℕ}
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (c : Fin (d + 1) → ℂ) :
+    BHW.diffCoordFun (m + 1) d (fun k μ => z k μ + c μ) =
+      Fin.cons (BHW.diffCoordFun (m + 1) d z 0 + c)
+        (Fin.tail (BHW.diffCoordFun (m + 1) d z)) := by
+  ext k μ
+  refine Fin.cases ?_ ?_ k
+  · simp [BHW.diffCoordFun]
+  · intro i
+    simp [BHW.diffCoordFun, Fin.tail, sub_eq_add_neg]
+    ring
 
-    **Numerical status (fresh rerun, 2026-03-14).** A direct `d = 1`, `n = 2`
-    connectivity heuristic for
-    `D_c = PET ∩ {z | z + c ∈ PET}`
-    was rerun from the current repo definitions.
+/-- Difference coordinates commute with the coordinatewise complex Lorentz
+action. This is the algebraic bridge from absolute-coordinate sector witnesses
+to the fixed-tail difference-coordinate geometry. -/
+private theorem diffCoordFun_complexLorentzAction {m d : ℕ}
+    (Λ : ComplexLorentzGroup d)
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ) :
+    BHW.diffCoordFun (m + 1) d (BHW.complexLorentzAction Λ z) =
+      BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d z) := by
+  ext k μ
+  by_cases hk : k.val = 0
+  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
+  · simp [BHW.diffCoordFun, BHW.complexLorentzAction, hk]
+    simp_rw [mul_sub]
+    rw [Finset.sum_sub_distrib]
 
-    Protocol:
-    - sample PET points by construction (`z = Λ · w`, `w ∈ FT`)
-    - retain those with `z + c ∈ PET`
-    - build symmetric k-nearest-neighbor graphs on the sampled cloud in `ℝ⁸`
-    - count connected components for `k ∈ {8, 12, 20, 30}`
+/-- Partial sums commute with the coordinatewise complex Lorentz action. -/
+private theorem partialSumFun_complexLorentzAction {m d : ℕ}
+    (Λ : ComplexLorentzGroup d)
+    (ξ : Fin (m + 1) → Fin (d + 1) → ℂ) :
+    BHW.partialSumFun (m + 1) d (BHW.complexLorentzAction Λ ξ) =
+      BHW.complexLorentzAction Λ (BHW.partialSumFun (m + 1) d ξ) := by
+  ext k μ
+  simp [BHW.partialSumFun, BHW.complexLorentzAction, Finset.mul_sum]
+  rw [Finset.sum_comm]
 
-    Fresh campaign:
-    - 8 shift choices:
-      `c = (1, 0.5)`, `(0.3i, 0)`, `(0.8i, 0)`, `(0.5i, 0.4i)`,
-      `(0.5+0.3i, 0.2+0.1i)`, `(-0.4+0.6i, 0.1-0.2i)`,
-      `(0.2+0.8i, -0.3+0.2i)`, and the "bad fiber" shift
-      `(-0.60898907-0.62953011i, -0.26262669-0.39945642i)`
-    - 3 random seeds
-    - 500 accepted samples per shift/seed
+/-- Evaluate the BHW extension on a fixed-tail base fiber. -/
+def baseFiberValue {d : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) (m : ℕ)
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    (Fin (d + 1) → ℂ) → ℂ :=
+  fun ζ₀ => (W_analytic_BHW Wfn (m + 1)).val (baseFiberConfig m d ζtail ζ₀)
 
-    Result:
-    - every tested `D_c` sample cloud was connected for all 4 `k` values
-    - largest component fraction was `1.000` in all tested runs
-    - acceptance rates stayed high (`0.94` to `1.00`)
+private theorem differentiable_baseFiberConfig {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    Differentiable ℂ (baseFiberConfig m d ζtail) := by
+  intro ζ₀
+  rw [differentiableAt_pi]
+  intro k
+  rw [differentiableAt_pi]
+  intro μ
+  refine Fin.cases ?_ ?_ k
+  · simpa using
+      (differentiableAt_apply (𝕜 := ℂ) μ ζ₀ : DifferentiableAt ℂ
+        (fun ζ : Fin (d + 1) → ℂ => ζ μ) ζ₀)
+  · intro i
+    simpa [baseFiberConfig_succ_apply, add_comm, add_left_comm, add_assoc] using
+      ((differentiableAt_apply (𝕜 := ℂ) μ ζ₀ : DifferentiableAt ℂ
+          (fun ζ : Fin (d + 1) → ℂ => ζ μ) ζ₀).add
+        (differentiableAt_const
+          (c := ∑ j : Fin (i.val + 1), ζtail ⟨j.val, by omega⟩ μ)))
 
-    So unlike the false-looking 1D fiber statement
-    `Ω = {t | z + t c ∈ PET}`,
-    the overlap-domain statement for `D_c` remains **numerically supported**
-    in the tested `d = 1`, `n = 2` regime.
+private theorem continuous_baseFiberConfig {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    Continuous (baseFiberConfig m d ζtail) :=
+  (differentiable_baseFiberConfig ζtail).continuous
+
+theorem isOpen_baseFiber {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    IsOpen (baseFiber m d ζtail) := by
+  have hPET_open : IsOpen (PermutedExtendedTube d (m + 1)) :=
+    BHW_permutedExtendedTube_eq (d := d) (n := m + 1) ▸ BHW.isOpen_permutedExtendedTube
+  simpa [baseFiber] using hPET_open.preimage (continuous_baseFiberConfig ζtail)
+
+private theorem differentiableOn_baseFiberValue {d : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) (m : ℕ)
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    DifferentiableOn ℂ (baseFiberValue Wfn m ζtail) (baseFiber m d ζtail) := by
+  intro ζ₀ hζ₀
+  have hF_holo := (W_analytic_BHW Wfn (m + 1)).property.1
+  exact (hF_holo _ hζ₀).comp ζ₀
+    ((differentiable_baseFiberConfig ζtail) ζ₀).differentiableWithinAt
+    (fun y hy => hy)
+
+private theorem fderiv_baseFiberValue_eq_zero {d : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) (m : ℕ)
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    (baseFiber m d ζtail).EqOn (fderiv ℂ (baseFiberValue Wfn m ζtail)) 0 := by
+  intro ζ₀ hζ₀
+  have hPET_open : IsOpen (PermutedExtendedTube d (m + 1)) :=
+    BHW_permutedExtendedTube_eq (d := d) (n := m + 1) ▸ BHW.isOpen_permutedExtendedTube
+  have hF_holo := (W_analytic_BHW Wfn (m + 1)).property.1
+  have hval_diff :
+      DifferentiableAt ℂ (baseFiberValue Wfn m ζtail) ζ₀ := by
+    have hF_at :
+        DifferentiableAt ℂ (W_analytic_BHW Wfn (m + 1)).val
+          (baseFiberConfig m d ζtail ζ₀) :=
+      (hF_holo _ hζ₀).differentiableAt (hPET_open.mem_nhds hζ₀)
+    exact hF_at.comp ζ₀ ((differentiable_baseFiberConfig ζtail) ζ₀)
+  ext c
+  let φ : ℂ → ℂ := fun t => baseFiberValue Wfn m ζtail (ζ₀ + t • c)
+  have hφ_deriv :
+      HasDerivAt φ ((fderiv ℂ (baseFiberValue Wfn m ζtail) ζ₀) c) 0 := by
+    have hline : HasDerivAt (fun t : ℂ => ζ₀ + t • c) c 0 := by
+      simpa [one_smul] using (((hasDerivAt_id' (0 : ℂ)).smul_const c).const_add ζ₀)
+    simpa [one_smul, φ] using
+      hval_diff.hasFDerivAt.comp_hasDerivAt_of_eq 0 hline (by simp)
+  obtain ⟨ε, hε_pos, hlocal⟩ :=
+    bhw_translation_local Wfn c (baseFiberConfig m d ζtail ζ₀) hζ₀
+  have hφ_const :
+      φ =ᶠ[nhds 0] fun _ : ℂ => baseFiberValue Wfn m ζtail ζ₀ := by
+    filter_upwards [Metric.ball_mem_nhds (0 : ℂ) hε_pos] with t ht
+    have ht' : ‖t‖ < ε := by
+      simpa [Metric.mem_ball, dist_comm] using ht
+    rcases hlocal t ht' with ⟨_htPET, hEq⟩
+    simpa [φ, baseFiberValue, baseFiberConfig_add, smul_eq_mul,
+      add_comm, add_left_comm, add_assoc] using hEq
+  have hφ_zero : HasDerivAt φ 0 0 := by
+    exact (hasDerivAt_const (0 : ℂ) (baseFiberValue Wfn m ζtail ζ₀)).congr_of_eventuallyEq hφ_const
+  exact hφ_deriv.unique hφ_zero
+
+/-- On a preconnected base fiber, the BHW extension is constant as a function of
+the base difference variable `ζ₀`. This packages the local translation
+invariance from `bhw_translation_local` into the exact global fiber statement
+needed for translation invariance. -/
+theorem exists_isConst_baseFiberValue_of_isPreconnected {d : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) (m : ℕ)
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (hconn : IsPreconnected (baseFiber m d ζtail)) :
+    ∃ a : ℂ, ∀ ζ₀ ∈ baseFiber m d ζtail, baseFiberValue Wfn m ζtail ζ₀ = a := by
+  exact (isOpen_baseFiber (m := m) (d := d) ζtail).exists_is_const_of_fderiv_eq_zero
+    hconn
+    (differentiableOn_baseFiberValue Wfn m ζtail)
+    (fderiv_baseFiberValue_eq_zero Wfn m ζtail)
+
+/-- Conditional translation invariance from base-fiber preconnectedness.
+This is the cleaner replacement surface for the old overlap-domain blocker:
+once the fixed-tail base fiber is known to be preconnected, simultaneous
+translation invariance follows immediately. -/
+theorem bhw_translation_invariant_of_baseFiber_isPreconnected {d m : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ PermutedExtendedTube d (m + 1))
+    (hzc : (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d (m + 1))
+    (hconn : IsPreconnected
+      (baseFiber m d (Fin.tail (BHW.diffCoordFun (m + 1) d z)))) :
+    (W_analytic_BHW Wfn (m + 1)).val (fun k μ => z k μ + c μ) =
+    (W_analytic_BHW Wfn (m + 1)).val z := by
+  let ζtail : Fin m → Fin (d + 1) → ℂ := Fin.tail (BHW.diffCoordFun (m + 1) d z)
+  let ζ₀ : Fin (d + 1) → ℂ := BHW.diffCoordFun (m + 1) d z 0
+  have hz_cfg : baseFiberConfig m d ζtail ζ₀ = z := by
+    simpa [ζtail, ζ₀] using baseFiberConfig_diffCoord_tail (m := m) (d := d) z
+  have hzc_cfg :
+      baseFiberConfig m d ζtail (ζ₀ + c) = (fun k μ => z k μ + c μ) := by
+    calc
+      baseFiberConfig m d ζtail (ζ₀ + c)
+          = (fun k μ => baseFiberConfig m d ζtail ζ₀ k μ + c μ) :=
+              baseFiberConfig_add (m := m) (d := d) ζtail ζ₀ c
+      _ = (fun k μ => z k μ + c μ) := by
+            simp [hz_cfg]
+  have hζ₀ : ζ₀ ∈ baseFiber m d ζtail := by
+    simpa [baseFiber, hz_cfg]
+      using hz
+  have hζ₀c : ζ₀ + c ∈ baseFiber m d ζtail := by
+    simpa [baseFiber, hzc_cfg]
+      using hzc
+  obtain ⟨a, ha⟩ :=
+    exists_isConst_baseFiberValue_of_isPreconnected (Wfn := Wfn) (m := m)
+      (ζtail := ζtail) hconn
+  calc
+    (W_analytic_BHW Wfn (m + 1)).val (fun k μ => z k μ + c μ)
+        = baseFiberValue Wfn m ζtail (ζ₀ + c) := by
+            simp [baseFiberValue, hzc_cfg]
+    _ = a := ha _ hζ₀c
+    _ = baseFiberValue Wfn m ζtail ζ₀ := (ha _ hζ₀).symm
+    _ = (W_analytic_BHW Wfn (m + 1)).val z := by
+          simp [baseFiberValue, hz_cfg]
+
+/-- The permutation-sector slice of a fixed-tail base fiber. The full fiber is
+the union of these slices, so proving fiber preconnectedness reduces to proving
+sector-slice preconnectedness and adjacent overlaps. -/
+def baseFiberSector (m d : ℕ) [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1))) :
+    Set (Fin (d + 1) → ℂ) :=
+  {ζ₀ | ∃ (Λ : ComplexLorentzGroup d) (w : Fin (m + 1) → Fin (d + 1) → ℂ),
+      w ∈ PermutedForwardTube d (m + 1) π ∧
+      baseFiberConfig m d ζtail ζ₀ = BHW.complexLorentzAction Λ w}
+
+/-- The fixed-tail base fiber is the union of its permutation-sector slices. -/
+theorem baseFiber_eq_iUnion_baseFiberSector {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    baseFiber m d ζtail = ⋃ π : Equiv.Perm (Fin (m + 1)), baseFiberSector m d ζtail π := by
+  ext ζ₀
+  constructor
+  · intro hζ₀
+    simp only [baseFiber, Set.mem_setOf_eq, PermutedExtendedTube, Set.mem_iUnion] at hζ₀
+    rcases hζ₀ with ⟨π, Λ, w, hw, hz⟩
+    refine Set.mem_iUnion.mpr ⟨π, ?_⟩
+    exact ⟨Λ, w, hw, by simpa [BHW.complexLorentzAction] using hz⟩
+  · intro hζ₀
+    simp only [Set.mem_iUnion, baseFiberSector, Set.mem_setOf_eq] at hζ₀
+    rcases hζ₀ with ⟨π, Λ, w, hw, hz⟩
+    simp only [baseFiber, Set.mem_setOf_eq, PermutedExtendedTube, Set.mem_iUnion]
+    exact ⟨π, Λ, w, hw, by simpa [BHW.complexLorentzAction] using hz⟩
+
+/-- Sector membership on a fixed-tail base fiber can be rewritten directly in
+difference coordinates: the fixed-tail configuration `Fin.cons ζ₀ ζtail` is the
+Lorentz transform of the witness difference coordinates. -/
+theorem mem_baseFiberSector_iff_diffCoordWitness {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1)))
+    (ζ₀ : Fin (d + 1) → ℂ) :
+    ζ₀ ∈ baseFiberSector m d ζtail π ↔
+      ∃ (Λ : ComplexLorentzGroup d) (w : Fin (m + 1) → Fin (d + 1) → ℂ),
+        w ∈ PermutedForwardTube d (m + 1) π ∧
+        Fin.cons ζ₀ ζtail =
+          BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d w) := by
+  constructor
+  · rintro ⟨Λ, w, hw, hz⟩
+    refine ⟨Λ, w, hw, ?_⟩
+    have hcfg :
+        BHW.diffCoordFun (m + 1) d (baseFiberConfig m d ζtail ζ₀) =
+          Fin.cons ζ₀ ζtail := by
+      simpa [BHW.diffCoordEquiv_apply] using
+        BHW.diffCoord_partialSum (m + 1) d (Fin.cons ζ₀ ζtail)
+    calc
+      Fin.cons ζ₀ ζtail
+          = BHW.diffCoordFun (m + 1) d (baseFiberConfig m d ζtail ζ₀) := hcfg.symm
+      _ = BHW.diffCoordFun (m + 1) d (BHW.complexLorentzAction Λ w) := by
+            simp [hz]
+      _ = BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d w) :=
+            diffCoordFun_complexLorentzAction Λ w
+  · rintro ⟨Λ, w, hw, hξ⟩
+    refine ⟨Λ, w, hw, ?_⟩
+    calc
+      baseFiberConfig m d ζtail ζ₀
+          = BHW.partialSumFun (m + 1) d (Fin.cons ζ₀ ζtail) := rfl
+      _ = BHW.partialSumFun (m + 1) d
+            (BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d w)) := by
+              rw [hξ]
+      _ = BHW.complexLorentzAction Λ
+            (BHW.partialSumFun (m + 1) d (BHW.diffCoordFun (m + 1) d w)) := by
+              exact partialSumFun_complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d w)
+      _ = BHW.complexLorentzAction Λ w := by
+            simp [BHW.partialSum_diffCoord]
+
+/-- The permutation-sector geometry in difference coordinates. -/
+def diffPermSector (m d : ℕ) [NeZero d]
+    (π : Equiv.Perm (Fin (m + 1))) :
+    Set (Fin (m + 1) → Fin (d + 1) → ℂ) :=
+  {ξ | ∃ (Λ : ComplexLorentzGroup d) (w : Fin (m + 1) → Fin (d + 1) → ℂ),
+      w ∈ PermutedForwardTube d (m + 1) π ∧
+      ξ = BHW.complexLorentzAction Λ (BHW.diffCoordFun (m + 1) d w)}
+
+/-- A fixed-tail base-fiber sector is exactly the pullback of the corresponding
+difference-coordinate sector along `Fin.cons`. -/
+theorem baseFiberSector_eq_preimage_diffPermSector {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1))) :
+    baseFiberSector m d ζtail π =
+      (fun ζ₀ => Fin.cons ζ₀ ζtail) ⁻¹' diffPermSector m d π := by
+  ext ζ₀
+  constructor
+  · intro hζ₀
+    rw [Set.mem_preimage]
+    rcases (mem_baseFiberSector_iff_diffCoordWitness (m := m) (d := d) ζtail π ζ₀).mp hζ₀
+      with ⟨Λ, w, hw, hξ⟩
+    exact ⟨Λ, w, hw, hξ⟩
+  · intro hζ₀
+    rw [Set.mem_preimage] at hζ₀
+    rcases hζ₀ with ⟨Λ, w, hw, hξ⟩
+    exact (mem_baseFiberSector_iff_diffCoordWitness (m := m) (d := d) ζtail π ζ₀).mpr
+      ⟨Λ, w, hw, hξ⟩
+
+/-- Fixed-`Λ` slice of a base-fiber sector. -/
+def baseFiberSectorSlice (m d : ℕ) [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1)))
+    (Λ : ComplexLorentzGroup d) :
+    Set (Fin (d + 1) → ℂ) :=
+  {ζ₀ | ∃ w : Fin (m + 1) → Fin (d + 1) → ℂ,
+      w ∈ PermutedForwardTube d (m + 1) π ∧
+      baseFiberConfig m d ζtail ζ₀ = BHW.complexLorentzAction Λ w}
+
+/-- A base-fiber sector is the union of its fixed-`Λ` slices. -/
+theorem baseFiberSector_eq_iUnion_slice {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1))) :
+    baseFiberSector m d ζtail π = ⋃ Λ : ComplexLorentzGroup d, baseFiberSectorSlice m d ζtail π Λ := by
+  ext ζ₀
+  simp [baseFiberSector, baseFiberSectorSlice]
+
+/-- Convex-combination formula for `baseFiberConfig` at fixed tail. -/
+private theorem baseFiberConfig_convexCombo {m d : ℕ}
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (ζ₁ ζ₂ : Fin (d + 1) → ℂ)
+    (a b : ℝ) (hab : a + b = 1) :
+    a • baseFiberConfig m d ζtail ζ₁ + b • baseFiberConfig m d ζtail ζ₂ =
+      baseFiberConfig m d ζtail (a • ζ₁ + b • ζ₂) := by
+  ext k μ
+  refine Fin.cases ?_ ?_ k
+  · simp [baseFiberConfig_zero_apply, Pi.smul_apply]
+  · intro i
+    simp [baseFiberConfig_succ_apply, Pi.smul_apply, smul_add, add_assoc, add_left_comm]
+    rw [← add_mul]
+    have habC : (a : ℂ) + (b : ℂ) = 1 := by
+      exact_mod_cast hab
+    simp [habC]
+
+/-- Real convex combinations commute with the coordinatewise complex Lorentz action. -/
+private theorem complexLorentzAction_convexCombo {m d : ℕ}
+    (Λ : ComplexLorentzGroup d)
+    (w₁ w₂ : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (a b : ℝ) :
+    a • BHW.complexLorentzAction Λ w₁ + b • BHW.complexLorentzAction Λ w₂ =
+      BHW.complexLorentzAction Λ (a • w₁ + b • w₂) := by
+  ext k μ
+  simp [BHW.complexLorentzAction, Pi.smul_apply, Complex.real_smul, Finset.mul_sum]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro x hx
+  ring
+
+private theorem permutedForwardTube_convex_local {m d : ℕ} [NeZero d]
+    (π : Equiv.Perm (Fin (m + 1))) :
+    Convex ℝ (PermutedForwardTube d (m + 1) π) := by
+  simpa [BHW_permutedForwardTube_eq (d := d) (n := m + 1) π] using
+    (BHW.permutedForwardTube_convex (d := d) (n := m + 1) π)
+
+/-- Each fixed-`Λ` base-fiber sector slice is convex, hence preconnected. -/
+theorem baseFiberSectorSlice_convex {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1)))
+    (Λ : ComplexLorentzGroup d) :
+    Convex ℝ (baseFiberSectorSlice m d ζtail π Λ) := by
+  intro ζ₁ hζ₁ ζ₂ hζ₂ a b ha hb hab
+  rcases hζ₁ with ⟨w₁, hw₁, hz₁⟩
+  rcases hζ₂ with ⟨w₂, hw₂, hz₂⟩
+  refine ⟨a • w₁ + b • w₂, ?_, ?_⟩
+  · exact permutedForwardTube_convex_local π hw₁ hw₂ ha hb hab
+  · calc
+      baseFiberConfig m d ζtail (a • ζ₁ + b • ζ₂)
+          = a • baseFiberConfig m d ζtail ζ₁ + b • baseFiberConfig m d ζtail ζ₂ := by
+              symm
+              exact baseFiberConfig_convexCombo ζtail ζ₁ ζ₂ a b hab
+      _ = a • BHW.complexLorentzAction Λ w₁ + b • BHW.complexLorentzAction Λ w₂ := by
+            rw [hz₁, hz₂]
+      _ = BHW.complexLorentzAction Λ (a • w₁ + b • w₂) :=
+            complexLorentzAction_convexCombo Λ w₁ w₂ a b
+
+theorem baseFiberSectorSlice_isPreconnected {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (π : Equiv.Perm (Fin (m + 1)))
+    (Λ : ComplexLorentzGroup d) :
+    IsPreconnected (baseFiberSectorSlice m d ζtail π Λ) :=
+  (baseFiberSectorSlice_convex ζtail π Λ).isPreconnected
+
+/-- Sector-decomposition reduction for base-fiber preconnectedness. This is the
+exact analogue of `permutedExtendedTube_isPreconnected`, but on the fixed-tail
+base fiber. Once sector slices are known to be preconnected and adjacent slices
+overlap, the full base fiber is preconnected. -/
+theorem baseFiber_isPreconnected_of_sector_geometry {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ)
+    (hsector : ∀ π : Equiv.Perm (Fin (m + 1)),
+      IsPreconnected (baseFiberSector m d ζtail π))
+    (hoverlap : ∀ (π : Equiv.Perm (Fin (m + 1))) (i : Fin (m + 1))
+      (hi : i.val + 1 < m + 1),
+      (baseFiberSector m d ζtail π ∩
+        baseFiberSector m d ζtail (π * Equiv.swap i ⟨i.val + 1, hi⟩)).Nonempty) :
+    IsPreconnected (baseFiber m d ζtail) := by
+  rw [baseFiber_eq_iUnion_baseFiberSector]
+  apply IsPreconnected.iUnion_of_reflTransGen
+  · exact hsector
+  · intro π₁ π₂
+    set τ := π₁⁻¹ * π₂
+    suffices h :
+        ∀ σ : Equiv.Perm (Fin (m + 1)),
+          Relation.ReflTransGen
+            (fun i j =>
+              (baseFiberSector m d ζtail i ∩ baseFiberSector m d ζtail j).Nonempty)
+            π₁ (π₁ * σ) by
+      have : π₂ = π₁ * τ := by simp [τ]
+      rw [this]
+      exact h τ
+    intro σ
+    induction σ using BHW.Fin.Perm.adjSwap_induction_right with
+    | one =>
+        simpa using Relation.ReflTransGen.refl
+    | mul_adj σ₀ i₀ hi₀ ih =>
+        apply Relation.ReflTransGen.tail ih
+        simpa [baseFiberSector, mul_assoc] using hoverlap (π₁ * σ₀) i₀ hi₀
+
+/-- **Preconnectedness of the fixed-tail base fiber.**
+
+    For fixed tail difference coordinates `ζtail`, the set of base values `ζ₀`
+    for which `baseFiberConfig m d ζtail ζ₀` lies in the permuted extended tube
+    is preconnected.
+
+    This is the cleaner remaining geometric blocker for BHW translation
+    invariance. Once this theorem is available, the already-proved local
+    translation invariance in `bhw_translation_local` upgrades to global
+    constancy on the base fiber via
+    `bhw_translation_invariant_of_baseFiber_isPreconnected`.
+
+    Compared to the older overlap-domain theorem on
+    `PET ∩ {z | z + c ∈ PET}`, this fiber statement matches the actual
+    difference-variable geometry of translation invariance and avoids the
+    false-looking 1-dimensional line-fiber route that was removed.
+
+    **Numerical status (2026-03-14).** In the tested `d = 1`, `n = 2` regime,
+    sampled base fibers remained connected even for the same shifts that split
+    the one-complex-dimensional line fiber `Ω = {t | z + t c ∈ PET}`.
 
     Ref: Streater-Wightman §2.5; Jost, "General Theory of Quantized Fields" §III.1 -/
-theorem isConnected_permutedExtendedTube_inter_translate {d n : ℕ} [NeZero d]
-    (c : Fin (d + 1) → ℂ) :
-    IsConnected
-      (PermutedExtendedTube d n ∩
-        {w : Fin n → Fin (d + 1) → ℂ | (fun k μ => w k μ + c μ) ∈ PermutedExtendedTube d n}) := by
+theorem isPreconnected_baseFiber {m d : ℕ} [NeZero d]
+    (ζtail : Fin m → Fin (d + 1) → ℂ) :
+    IsPreconnected (baseFiber m d ζtail) := by
   sorry
 
 /-- **BHW extension is translation invariant on the permuted extended tube.**
 
-    The n-point Wightman function W_n(z₁, ..., zₙ) depends only on the differences
-    z_k - z_{k-1}, hence is invariant under simultaneous translation z_k ↦ z_k + c
-    for any constant c ∈ ℂ^{d+1}. The BHW extension inherits this property.
+    The n-point Wightman function depends only on the difference coordinates,
+    so the BHW extension should be invariant under simultaneous translation
+    `z_k ↦ z_k + c`.
 
-    Formal statement uses overlap membership:
-    `z ∈ PET` and `z + c ∈ PET`.
-
-    **Proof outline.** By BHW uniqueness (property 5 of `bargmann_hall_wightman`):
-    1. F_ext is holomorphic on PET (BHW property 1).
-    2. G(z) := F_ext(z + c) is holomorphic on D = PET ∩ (PET - c).
-    3. G and F_ext agree on FT ∩ (FT - c): for z in this set, G(z) = F_ext(z+c) = W_analytic(z+c)
-       = W_analytic(z) = F_ext(z) (using `W_analytic_translation_on_forwardTube` and BHW property 2).
-    4. FT ∩ (FT - c) is nonempty and open in D (`forwardTube_inter_translate_nonempty`).
-    5. D is connected (`isConnected_permutedExtendedTube_inter_translate`).
-    6. By the identity theorem on the connected domain D, G = F_ext everywhere on D.
+    The formal proof here uses the fixed-tail base-fiber route:
+    1. pass from absolute coordinates `z` to the cumulative difference variables
+       `(ζ₀, ζtail)`;
+    2. show the BHW extension has zero derivative in the base variable `ζ₀`
+       by the local witness-chain theorem `bhw_translation_local`;
+    3. use `isPreconnected_baseFiber` to promote local constancy to global
+       constancy on the fixed-tail fiber;
+    4. compare the two points `ζ₀` and `ζ₀ + c` on that fiber.
 
     Ref: Streater-Wightman §2.5 (translation invariance);
     Jost, "The General Theory of Quantized Fields" §III.1 -/
@@ -830,7 +1256,7 @@ theorem bhw_translation_invariant {d n : ℕ} [NeZero d]
     (c : Fin (d + 1) → ℂ)
     (z : Fin n → Fin (d + 1) → ℂ)
     (hz : z ∈ PermutedExtendedTube d n)
-    (_hzc : (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n) :
+    (hzc : (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n) :
     (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ) =
     (W_analytic_BHW Wfn n).val z := by
   by_cases hc : c = 0
@@ -841,70 +1267,13 @@ theorem bhw_translation_invariant {d n : ℕ} [NeZero d]
       ext k
       exact Fin.elim0 k
     simp [hshift]
-  set F_ext := (W_analytic_BHW Wfn n).val with hF_ext_def
-  set W_analytic := (Wfn.spectrum_condition n).choose
-  set G : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => F_ext (fun k μ => z k μ + c μ)
-  have hF_holo := (W_analytic_BHW Wfn n).property.1
-  have hF_eq := (W_analytic_BHW Wfn n).property.2.1
-  have hPET_open : IsOpen (PermutedExtendedTube d n) :=
-    BHW_permutedExtendedTube_eq (d := d) (n := n) ▸ BHW.isOpen_permutedExtendedTube
-  have hFT_open : IsOpen (ForwardTube d n) :=
-    BHW_forwardTube_eq (d := d) (n := n) ▸ BHW.isOpen_forwardTube
-  set D : Set (Fin n → Fin (d + 1) → ℂ) :=
-    PermutedExtendedTube d n ∩ {w | (fun k μ => w k μ + c μ) ∈ PermutedExtendedTube d n}
-  have hD_open : IsOpen D :=
-    hPET_open.inter (hPET_open.preimage (continuous_id.add continuous_const))
-  have hshift_diff : Differentiable ℂ
-      (fun w : Fin n → Fin (d + 1) → ℂ => fun k μ => w k μ + c μ) := by
-    have hconst : Differentiable ℂ
-        (fun _w : Fin n → Fin (d + 1) → ℂ =>
-          (fun _k : Fin n => fun μ : Fin (d + 1) => c μ)) :=
-      differentiable_const _
-    change Differentiable ℂ (fun w : Fin n → Fin (d + 1) → ℂ =>
-      w + (fun _k : Fin n => fun μ : Fin (d + 1) => c μ))
-    exact differentiable_id.add hconst
-  have hG_holo : DifferentiableOn ℂ G D := by
-    intro w hw
-    show DifferentiableWithinAt ℂ (fun w' => F_ext (fun k μ => w' k μ + c μ)) D w
-    exact (hF_holo _ hw.2).comp w
-      hshift_diff.differentiableAt.differentiableWithinAt
-      (fun y hy => hy.2)
-  have hF_holo_D : DifferentiableOn ℂ F_ext D := hF_holo.mono Set.inter_subset_left
-  have hD_conn : IsConnected D :=
-    isConnected_permutedExtendedTube_inter_translate c
-  have hagree_on_FT : ∀ z : Fin n → Fin (d + 1) → ℂ,
-      z ∈ ForwardTube d n → (fun k μ => z k μ + c μ) ∈ ForwardTube d n →
-      G z = F_ext z := by
-    intro w hw hwc
-    show F_ext (fun k μ => w k μ + c μ) = F_ext w
-    simp only [hF_ext_def]
-    rw [hF_eq _ hwc, hF_eq _ hw]
-    exact W_analytic_translation_on_forwardTube Wfn c w hw hwc
-  obtain ⟨z₀, hz₀_ft, hz₀c_ft⟩ := forwardTube_inter_translate_nonempty c
-  have hz₀_pet : z₀ ∈ PermutedExtendedTube d n :=
-    (BHW_permutedExtendedTube_eq (d := d) (n := n) ▸
-      BHW.forwardTube_subset_permutedExtendedTube)
-      (BHW_forwardTube_eq (d := d) (n := n) ▸ hz₀_ft)
-  have hz₀c_pet : (fun k μ => z₀ k μ + c μ) ∈ PermutedExtendedTube d n :=
-    (BHW_permutedExtendedTube_eq (d := d) (n := n) ▸
-      BHW.forwardTube_subset_permutedExtendedTube)
-      (BHW_forwardTube_eq (d := d) (n := n) ▸ hz₀c_ft)
-  have hz₀_D : z₀ ∈ D := ⟨hz₀_pet, hz₀c_pet⟩
-  have hz_D : z ∈ D := ⟨hz, _hzc⟩
-  have hagree_nhds : G =ᶠ[nhds z₀] F_ext := by
-    have hU_open : IsOpen (ForwardTube d n ∩
-        {w | (fun k μ => w k μ + c μ) ∈ ForwardTube d n}) := by
-      apply IsOpen.inter hFT_open
-      apply hFT_open.preimage
-      exact continuous_id.add continuous_const
-    have hz₀_mem : z₀ ∈ ForwardTube d n ∩
-        {w | (fun k μ => w k μ + c μ) ∈ ForwardTube d n} :=
-      ⟨hz₀_ft, hz₀c_ft⟩
-    apply Filter.eventuallyEq_of_mem (hU_open.mem_nhds hz₀_mem)
-    intro w ⟨hw_ft, hwc_ft⟩
-    exact hagree_on_FT w hw_ft hwc_ft
-  have h_eq := identity_theorem_product hD_open hD_conn hG_holo hF_holo_D hz₀_D hagree_nhds
-  exact h_eq hz_D
+  rcases Nat.exists_eq_succ_of_ne_zero hn with ⟨m, rfl⟩
+  exact
+    bhw_translation_invariant_of_baseFiber_isPreconnected (Wfn := Wfn)
+      (m := m) (z := z) (c := c) hz hzc
+      (isPreconnected_baseFiber
+        (m := m) (d := d)
+        (Fin.tail (BHW.diffCoordFun (m + 1) d z)))
 
 /-- The smeared BHW extension equals the smeared W_analytic for approach directions
     within the forward tube cone.
