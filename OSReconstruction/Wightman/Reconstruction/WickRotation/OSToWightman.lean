@@ -640,6 +640,61 @@ theorem schwinger_twoPoint_flatCenterDiffWitness_eq_centerValue
           rw [schwinger_twoPointDifferenceLift_eq_flatCenterDiffWitnessIntegral_sameCenter
             (d := d) OS G hG_euclid h h0 χ₀]
 
+/-- If the center cutoff has integral `0`, then the two-point flat
+center/difference witness integral vanishes. This is the exact witness-side
+form of center-slot collapse for zero-mean test functions. -/
+theorem schwinger_twoPoint_flatCenterDiffWitness_eq_zero_of_centerIntegral_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ))
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d)
+    (hχ : ∫ x : SpacetimeDim d, χ x = 0) :
+    ∫ z : NPointDomain d 2,
+      G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+        (χ (z 0) * h (z 1)) = 0 := by
+  rw [schwinger_twoPoint_flatCenterDiffWitness_eq_centerValue
+    (d := d) OS G hG_euclid h h0 χ₀ hχ₀ χ, hχ, mul_zero]
+
+/-- The two-point flat center/difference witness integral is translation
+invariant in the center cutoff. This is the witness-side center reduction
+statement with no normalization hypothesis on `χ`. -/
+theorem schwinger_twoPoint_flatCenterDiffWitness_translation_invariant
+    (OS : OsterwalderSchraderAxioms d)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ))
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d)
+    (a : SpacetimeDim d) :
+    ∫ z : NPointDomain d 2,
+      G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+        (SCV.translateSchwartz a χ (z 0) * h (z 1)) =
+      ∫ z : NPointDomain d 2,
+        G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+          (χ (z 0) * h (z 1)) := by
+  have htrans :
+      ∫ x : SpacetimeDim d, SCV.translateSchwartz a χ x =
+        ∫ x : SpacetimeDim d, χ x := by
+    simpa [SCV.translateSchwartz_apply] using
+      (MeasureTheory.integral_add_right_eq_self
+        (μ := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+        (fun x : SpacetimeDim d => χ x) a)
+  rw [schwinger_twoPoint_flatCenterDiffWitness_eq_centerValue
+        (d := d) OS G hG_euclid h h0 χ₀ hχ₀ (SCV.translateSchwartz a χ),
+      schwinger_twoPoint_flatCenterDiffWitness_eq_centerValue
+        (d := d) OS G hG_euclid h h0 χ₀ hχ₀ χ,
+      htrans]
+
 /-- Two-point payoff in the actual flattened-difference witness coordinates used
 by `schwinger_continuation_base_step`. If `G` is a flat witness for `OS.S 2`,
 then on center/difference test functions the witness depends on `(u, ξ)` only
