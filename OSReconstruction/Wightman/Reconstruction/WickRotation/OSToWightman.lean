@@ -540,6 +540,92 @@ theorem schwinger_twoPoint_centerDiffWitness_eq_of_centerIntegral_one
       (d := d) OS Ψ hΨ_euclid h h0 χ₁ hχ₁ χ₀
   simpa [hχ₀] using h₀.symm.trans h₁
 
+private theorem twoPointCenterDiff_toDiffFlat_wickRotate
+    (z : NPointDomain d 2) :
+    BHW.toDiffFlat 2 d (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i)) =
+      BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)) := by
+  ext p
+  obtain ⟨q, rfl⟩ := finProdFinEquiv.surjective p
+  rcases q with ⟨i, μ⟩
+  fin_cases i
+  · simp [BHW.toDiffFlat, BHW.flattenCfg, BHW.diffCoordEquiv_apply,
+      twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv, wickRotatePoint]
+  · by_cases hμ : μ = 0
+    · subst hμ
+      simp [BHW.toDiffFlat, BHW.flattenCfg, BHW.diffCoordEquiv_apply,
+        twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv, wickRotatePoint]
+      ring_nf
+    · simp [BHW.toDiffFlat, BHW.flattenCfg, BHW.diffCoordEquiv_apply,
+        twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv, wickRotatePoint, hμ]
+
+/-- Two-point payoff in the actual flattened-difference witness coordinates used
+by `schwinger_continuation_base_step`. If `G` is a flat witness for `OS.S 2`,
+then on center/difference test functions the witness depends on `(u, ξ)` only
+through the flattened wick-rotated pair `(wick(u), wick(ξ))`. -/
+theorem schwinger_twoPointDifferenceLift_eq_flatCenterDiffWitnessIntegral
+    (OS : OsterwalderSchraderAxioms d)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ))
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
+      (∫ z : NPointDomain d 2,
+          G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+            (χ₀ (z 0) * h (z 1))) *
+        ∫ y : SpacetimeDim d, χ y := by
+  calc
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h))
+        = (∫ z : NPointDomain d 2,
+            (fun x => G (BHW.toDiffFlat 2 d x))
+              (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i)) *
+              (χ₀ (z 0) * h (z 1))) *
+          ∫ y : SpacetimeDim d, χ y := by
+            exact schwinger_twoPointDifferenceLift_eq_centerDiffWitnessIntegral
+              (d := d) OS
+              (Ψ := fun x => G (BHW.toDiffFlat 2 d x))
+              (hΨ_euclid := hG_euclid) h h0 χ₀ hχ₀ χ
+    _ = (∫ z : NPointDomain d 2,
+          G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+            (χ₀ (z 0) * h (z 1))) *
+          ∫ y : SpacetimeDim d, χ y := by
+          congr 1
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with z
+          rw [twoPointCenterDiff_toDiffFlat_wickRotate]
+
+/-- Flat-witness cutoff independence for the two-point center/difference
+formula. This is the `k = 2` version of saying the normalized center slot has
+already descended to a genuine witness in the difference variable. -/
+theorem schwinger_twoPoint_flatCenterDiffWitness_eq_of_centerIntegral_one
+    (OS : OsterwalderSchraderAxioms d)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ))
+    (χ₀ χ₁ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (hχ₁ : ∫ x : SpacetimeDim d, χ₁ x = 1) :
+    (∫ z : NPointDomain d 2,
+        G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+          (χ₀ (z 0) * h (z 1))) =
+      ∫ z : NPointDomain d 2,
+        G (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) *
+          (χ₁ (z 0) * h (z 1)) := by
+  have h₀ :=
+    schwinger_twoPointDifferenceLift_eq_flatCenterDiffWitnessIntegral
+      (d := d) OS G hG_euclid h h0 χ₀ hχ₀ χ₀
+  have h₁ :=
+    schwinger_twoPointDifferenceLift_eq_flatCenterDiffWitnessIntegral
+      (d := d) OS G hG_euclid h h0 χ₁ hχ₁ χ₀
+  simpa [hχ₀] using h₀.symm.trans h₁
+
 /-- **ξ-shift: the correct one-variable perturbation in the cumulative-sum structure.**
 
     In the cumulative-sum parametrization, the j-th new variable at level r is
