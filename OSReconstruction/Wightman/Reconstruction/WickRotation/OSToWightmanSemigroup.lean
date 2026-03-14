@@ -3100,6 +3100,28 @@ private theorem OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilb
     (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
     z hz
 
+/-- The one-variable OS time-shift holomorphic matrix element is exactly the
+off-diagonal spectral Laplace transform of the self-adjoint contraction
+`osTimeShiftHilbert ... 1` on the OS Hilbert space. This is the semigroup-side
+spectral object behind the later two-point polarized Laplace criteria. -/
+theorem OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d) (z : ℂ) (hz : 0 < z.re) :
+    OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G z =
+      ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+        (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+        (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+        (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+        (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+        z := by
+  rw [OSInnerProductTimeShiftHolomorphicValue_eq_inner_osTimeShiftHilbertComplex
+    (d := d) OS lgc F G z hz]
+  exact osTimeShiftHilbertComplex_inner_eq
+    (d := d) OS lgc
+    (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+    (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+    z hz
+
 private theorem differentiableOn_OSInnerProductTimeShiftHolomorphicValue
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F G : PositiveTimeBorchersSequence d) :
