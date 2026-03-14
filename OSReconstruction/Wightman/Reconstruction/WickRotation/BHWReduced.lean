@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.Core
 import OSReconstruction.Wightman.Reconstruction.PoincareAction
+import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
 import OSReconstruction.SCV.DistributionalUniqueness
 import OSReconstruction.Wightman.NuclearSpaces.ComplexSchwartz
@@ -42,14 +43,12 @@ def HasSchwartzTranslationClassification (d : ℕ) [NeZero d] : Prop :=
     ∃ c : ℂ, T = c • (SchwartzMap.integralCLM ℂ
       (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
 
-/-- Temporary Route 1 blocker axiom: translation-invariant continuous
-functionals on spacetime Schwartz space are multiples of the Lebesgue integral.
-
-This is mathematically the right input for quotienting away the basepoint
-cutoff. Proving it in Lean should be treated as a separate Fourier-analysis
-project; Route 1 uses it axiomatically for now. -/
-axiom schwartzTranslationClassification (d : ℕ) [NeZero d] :
-    HasSchwartzTranslationClassification d
+/-- Translation-invariant continuous functionals on spacetime Schwartz space
+are multiples of the Lebesgue integral. Proved in
+`TranslationInvariantSchwartz.lean` via zero-mean decomposition. -/
+theorem schwartzTranslationClassification (d : ℕ) [NeZero d] :
+    HasSchwartzTranslationClassification d :=
+  fun T hT => OSReconstruction.exists_eq_const_integralCLM_of_translationInvariant T hT
 
 /-- A Schwartz cutoff in the absolute basepoint variable normalized to have
 integral `1`. Any two such cutoffs define the same reduced functional once the

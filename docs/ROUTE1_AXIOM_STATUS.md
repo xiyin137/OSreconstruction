@@ -18,7 +18,7 @@ and translation invariance transfers algebraically.
 | File | Item | Type | Status |
 |------|------|------|--------|
 | `BHWReducedExtension.lean` | `reduced_bargmann_hall_wightman_of_input` | axiom | **Open** |
-| `BHWReduced.lean` | `schwartzTranslationClassification` | axiom | **Open** |
+| `BHWReduced.lean` | `schwartzTranslationClassification` | ~~axiom~~ theorem | **Closed** (wired to `TranslationInvariantSchwartz.lean`) |
 | `BHWTranslation.lean:1123` | `isPreconnected_baseFiber` | sorry | **Open** (pre-existing, not Route 1) |
 
 ### What was eliminated in this session
@@ -28,6 +28,7 @@ and translation invariance transfers algebraically.
 | `integral_realDiffCoord_change_variables` | axiom | **theorem** (Fubini + CLE measure-preservation) |
 | `realDiffCoordCLE_symm_measurePreserving` | sorry | **theorem** (det = 1 via nilpotent charpoly) |
 | integrability in `route1ReducedBoundaryIntegral_eq_absoluteBoundaryIntegral` | sorry | **proved** (`forward_tube_bv_integrable`) |
+| `schwartzTranslationClassification` | axiom | **theorem** (wired to `TranslationInvariantSchwartz.lean` zero-mean decomposition) |
 
 ---
 
@@ -116,40 +117,27 @@ Jost geometry and wiring the boundary-value argument.
 
 ---
 
-## Axiom 2: `schwartzTranslationClassification`
+## ~~Axiom 2~~ (CLOSED): `schwartzTranslationClassification`
 
 **File**: `BHWReduced.lean:51`
+**Status**: **Eliminated** — now a theorem, wired to `TranslationInvariantSchwartz.lean`.
 
 **Statement**: Every translation-invariant continuous linear functional on
 spacetime Schwartz space `S(R^{d+1})` is a scalar multiple of the Lebesgue
 integral.
 
-**Mathematical content**: This is a classical result in distribution theory.
-Translation-invariant tempered distributions are exactly the constant multiples
-of Lebesgue measure. The proof goes through Fourier analysis: translation
-invariance forces the Fourier transform to be supported at the origin, hence
-it is a constant, hence the original distribution is a multiple of the integral.
+**How it was proved**: The proof in `TranslationInvariantSchwartz.lean` (~2350
+lines) uses a zero-mean decomposition approach rather than the Fourier route
+originally anticipated. The key insight is that any Schwartz function can be
+decomposed into a zero-mean part (in the range of a line-derivative operator)
+plus a multiple of a fixed reference function with integral 1. A
+translation-invariant functional vanishes on the zero-mean part, leaving only
+the scalar multiple of the integral.
 
-**Role in Route 1**: This axiom ensures the reduced Wightman functional is
-independent of the choice of normalized basepoint cutoff `chi`. The theorem
+**Role in Route 1**: Ensures the reduced Wightman functional is independent of
+the choice of normalized basepoint cutoff `chi`. The theorem
 `reducedWightman_eq_of_cutoff` uses it to show that any two cutoffs with
-integral 1 produce the same reduced functional. Without it, the Route 1
-construction depends on an arbitrary choice of `chi`.
-
-**What it would take to prove**: Formalize in Lean:
-1. The Fourier transform on `S(R^{d+1})` (Mathlib has partial support).
-2. Translation in Schwartz space commutes with the Fourier transform as
-   multiplication by `exp(i * a . xi)`.
-3. A continuous linear functional invariant under multiplication by all
-   `exp(i * a . xi)` must be supported at `xi = 0`.
-4. Distributions supported at a point are finite linear combinations of
-   derivatives of delta; among tempered distributions with polynomial growth,
-   only the constant survives.
-
-**Estimated difficulty**: A separate Fourier-analysis project. Not on the
-critical path for the translation invariance refactor itself — it affects
-only the canonicality of the cutoff choice, not the translation invariance
-proof.
+integral 1 produce the same reduced functional.
 
 ---
 
@@ -173,7 +161,7 @@ proof itself.
 The Route 1 refactor has achieved its structural goal: **translation invariance
 is now proved without any sorry**, using a clean algebraic argument via reduced
 difference coordinates and the identity theorem. The remaining technical debt
-is quarantined into exactly two axioms:
+is quarantined into exactly **one axiom**:
 
 1. **`reduced_bargmann_hall_wightman_of_input`**: The correct reduced-coordinate
    BHW theorem. This is the *only* path forward (the converse-lift alternative
@@ -181,16 +169,16 @@ is quarantined into exactly two axioms:
    coordinates, which is geometrically cleaner than the absolute version but
    still substantial SCV work.
 
-2. **`schwartzTranslationClassification`**: A classical Fourier-analysis result
-   affecting only cutoff canonicality. Independent of the SCV geometry.
+~~2. **`schwartzTranslationClassification`**: Eliminated — now proved via
+zero-mean decomposition in `TranslationInvariantSchwartz.lean`.~~
 
-Both axioms are mathematically true, textbook results. They have been
-successfully isolated from the downstream theory. The project is fully
-unblocked to proceed with Jost's Theorem, Spin-Statistics, and
-Osterwalder-Schrader Positivity.
+The sole remaining axiom is mathematically a textbook result (Bargmann-Hall-Wightman
+envelope of holomorphy). It has been successfully isolated from the downstream
+theory. The project is fully unblocked to proceed with Jost's Theorem,
+Spin-Statistics, and Osterwalder-Schrader Positivity.
 
 The Route 1 architecture correctly maps the boundary between what can be proved
 algebraically (translation invariance, via difference coordinates and the
 identity theorem) and what requires native SCV geometry (the reduced BHW
 envelope of holomorphy). All technical debt has been pushed into the right
-mathematical corners.
+mathematical corner.
