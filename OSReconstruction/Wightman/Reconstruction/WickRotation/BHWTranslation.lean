@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWExtension
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BEGTrigonometric
 import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
 import OSReconstruction.ComplexLieGroups.Connectedness.Permutation
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SeedSlices

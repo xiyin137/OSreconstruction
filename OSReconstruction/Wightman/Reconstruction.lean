@@ -2,6 +2,7 @@ import OSReconstruction.Wightman.Reconstruction.Core
 import OSReconstruction.Wightman.Reconstruction.Poincare1D
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
 import OSReconstruction.Wightman.Reconstruction.ZeroMeanFourierTransport
 import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 import OSReconstruction.Wightman.Reconstruction.SchwingerOS

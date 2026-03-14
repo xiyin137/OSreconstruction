@@ -36,6 +36,8 @@ The implementation is split across several files in the `WickRotation/` subfolde
 - `ForwardTubeLorentz.lean`: Forward tube preservation, Lorentz invariance,
   distributional boundary value covariance
 - `BHWExtension.lean`: Bargmann-Hall-Wightman extension definition and properties
+- `BEGTrigonometric.lean`: small trigonometric estimates used in the
+  Bros-Epstein-Glaser path geometry
 - `BHWTranslation.lean`: Translation invariance proof chain, raw and zero-diagonal
   Schwinger function constructions
 - `SchwingerAxioms.lean`: zero-diagonal Euclidean-side proofs and remaining
