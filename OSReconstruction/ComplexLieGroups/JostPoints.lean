@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.ComplexLieGroups.BHWCore
+import OSReconstruction.ComplexLieGroups.GeodesicConvexity
 import OSReconstruction.SCV.IdentityTheorem
 import OSReconstruction.SCV.TotallyRealIdentity
 import Mathlib.MeasureTheory.Integral.DominatedConvergence
@@ -56,6 +57,92 @@ open BHWCore
     -ζ₀² + ζ₁² + ... + ζ_d² > 0, i.e., spatial norm exceeds time component. -/
 def IsSpacelike (d : ℕ) (ζ : Fin (d + 1) → ℝ) : Prop :=
   ∑ μ, minkowskiSignature d μ * ζ μ ^ 2 > 0
+
+/-- A purely spatial unit vector is spacelike. -/
+theorem isSpacelike_spatial_unit (hd : 1 ≤ d) :
+    IsSpacelike d (fun μ : Fin (d + 1) => if μ = ⟨1, by omega⟩ then 1 else 0) := by
+  simp only [IsSpacelike]
+  rw [Finset.sum_eq_single ⟨1, by omega⟩]
+  · simp [LorentzLieGroup.minkowskiSignature]
+  · intro μ _ hμ
+    simp [hμ]
+  · exact absurd (Finset.mem_univ _)
+
+/-- Scaling a spacelike vector by a nonzero scalar preserves spacelikeness. -/
+theorem isSpacelike_smul {η : Fin (d + 1) → ℝ} (hη : IsSpacelike d η)
+    {c : ℝ} (hc : c ≠ 0) :
+    IsSpacelike d (c • η) := by
+  simp only [IsSpacelike, Pi.smul_apply, smul_eq_mul] at *
+  have hsum :
+      ∑ μ, LorentzLieGroup.minkowskiSignature d μ * (c * η μ) ^ 2 =
+        c ^ 2 * ∑ μ, LorentzLieGroup.minkowskiSignature d μ * η μ ^ 2 := by
+    trans ∑ μ, c ^ 2 * (LorentzLieGroup.minkowskiSignature d μ * η μ ^ 2)
+    · congr 1
+      ext μ
+      ring
+    · rw [← Finset.mul_sum]
+  rw [hsum]
+  exact mul_pos (sq_pos_of_ne_zero hc) hη
+
+/-- Adding a large enough spatial translate makes a fixed vector spacelike. -/
+theorem exists_spacelike_translate (c : Fin (d + 1) → ℝ) (hd : 1 ≤ d) :
+    ∃ ζ₀ : Fin (d + 1) → ℝ, IsSpacelike d (fun μ => ζ₀ μ + c μ) := by
+  let e₁ : Fin (d + 1) → ℝ := fun μ => if μ = ⟨1, by omega⟩ then 1 else 0
+  refine ⟨fun μ => (‖c‖ + 1) * e₁ μ - c μ, ?_⟩
+  convert isSpacelike_smul (d := d) (isSpacelike_spatial_unit (d := d) hd)
+    (show (‖c‖ + 1 : ℝ) ≠ 0 by positivity) using 1
+  ext μ
+  simp [e₁, Pi.smul_apply, smul_eq_mul, sub_add_cancel]
+
+/-- For any finite family of translates, a single spatial shift makes all of
+them spacelike. This gives the real Jost anchor used in the base-fiber lane. -/
+theorem exists_simultaneously_spacelike {n : ℕ}
+    (c : Fin n → Fin (d + 1) → ℝ) (hd : 1 ≤ d) :
+    ∃ ζ₀ : Fin (d + 1) → ℝ, ∀ k, IsSpacelike d (fun μ => ζ₀ μ + c k μ) := by
+  by_cases hn : n = 0
+  · subst hn
+    exact ⟨0, fun k => Fin.elim0 k⟩
+  let e₁ : Fin (d + 1) := ⟨1, by omega⟩
+  let M := Finset.univ.sup' ⟨⟨0, Nat.pos_of_ne_zero hn⟩, Finset.mem_univ _⟩
+    (fun k : Fin n => ‖c k‖)
+  refine ⟨fun μ => if μ = e₁ then 2 * M + 1 else 0, fun k => ?_⟩
+  simp only [IsSpacelike]
+  rw [BHW.minkowski_sum_decomp]
+  simp only [ite_add, zero_add]
+  have h0_ne : (0 : Fin (d + 1)) ≠ e₁ := by
+    simp [e₁, Fin.ext_iff]
+  have hd_pos : 0 < d := by omega
+  let i0 : Fin d := ⟨0, hd_pos⟩
+  have h0_succ : i0.succ = e₁ := Fin.ext (by simp [e₁, i0, Fin.succ])
+  simp only [h0_ne, ite_false]
+  have hterm :
+      (if i0.succ = e₁ then 2 * M + 1 + c k i0.succ
+        else c k i0.succ) ^ 2 =
+        (2 * M + 1 + c k e₁) ^ 2 := by
+    rw [h0_succ, if_pos rfl]
+  have hle :
+      (2 * M + 1 + c k e₁) ^ 2 ≤
+        ∑ x : Fin d, (if x.succ = e₁ then 2 * M + 1 + c k x.succ else c k x.succ) ^ 2 := by
+    calc
+      (2 * M + 1 + c k e₁) ^ 2
+          = (if i0.succ = e₁ then 2 * M + 1 + c k i0.succ else c k i0.succ) ^ 2 := hterm.symm
+      _ ≤ ∑ x : Fin d, (if x.succ = e₁ then 2 * M + 1 + c k x.succ else c k x.succ) ^ 2 :=
+        Finset.single_le_sum
+          (f := fun (x : Fin d) =>
+            (if x.succ = e₁ then 2 * M + 1 + c k x.succ else c k x.succ) ^ 2)
+          (fun _ _ => sq_nonneg _)
+          (Finset.mem_univ i0)
+  have hM : ‖c k‖ ≤ M := Finset.le_sup' (f := fun k => ‖c k‖) (Finset.mem_univ k)
+  have hc0 : |c k 0| ≤ M := (norm_le_pi_norm (c k) 0).trans hM
+  have hce : |c k e₁| ≤ M := (norm_le_pi_norm (c k) e₁).trans hM
+  have hM_nonneg : 0 ≤ M := le_trans (norm_nonneg _) hM
+  have hce_bound : -M ≤ c k e₁ := le_trans (by linarith : -M ≤ -|c k e₁|) (neg_abs_le _)
+  have hshift_pos : M + 1 ≤ 2 * M + 1 + c k e₁ := by
+    linarith
+  have hc0_sq : c k 0 ^ 2 ≤ M ^ 2 := by
+    rw [← sq_abs (c k 0)]
+    exact sq_le_sq' (by linarith [abs_nonneg (c k 0)]) hc0
+  nlinarith [hle, sq_nonneg (M + 1)]
 
 /-- The pairwise spacelike set: real configurations where every position vector is
     spacelike and every pairwise difference is spacelike. Used for locality arguments

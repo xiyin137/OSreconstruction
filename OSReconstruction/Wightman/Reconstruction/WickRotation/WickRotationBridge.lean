@@ -45,4 +45,21 @@ theorem differentiableOn_comp_neg_I_mul {H : ℂ → ℂ}
     exact ((-I) • ContinuousLinearMap.id ℂ ℂ).differentiableAt
   exact (hH_diff.comp u hmul_diff).differentiableWithinAt
 
+/-- More generally, composing any holomorphic function with the Wick rotation
+`u ↦ -Iu` preserves holomorphicity on the pullback of its domain. -/
+theorem differentiableOn_wick_rotate {H : ℂ → ℂ} {S : Set ℂ}
+    (hH : DifferentiableOn ℂ H S) (hS : IsOpen S) :
+    DifferentiableOn ℂ (fun u => H (-I * u)) {u | -I * u ∈ S} := by
+  intro u hu
+  simp only [Set.mem_setOf_eq] at hu
+  have hH_diff : DifferentiableAt ℂ H (-I * u) :=
+    hH.differentiableAt (IsOpen.mem_nhds hS hu)
+  have hmul_diff : DifferentiableAt ℂ (fun v : ℂ => -I * v) u := by
+    have hclm : (fun v : ℂ => -I * v) = ⇑((-I) • ContinuousLinearMap.id ℂ ℂ) := by
+      ext v
+      simp
+    rw [hclm]
+    exact ((-I) • ContinuousLinearMap.id ℂ ℂ).differentiableAt
+  exact (hH_diff.comp u hmul_diff).differentiableWithinAt
+
 end OSReconstruction
