@@ -79,7 +79,7 @@ private theorem reindex_flatten_twoPointProductShell_apply
   simpa [y, h0, h1] using
     twoPointCenterDiffSchwartzCLM_twoPointProductLift_apply (d := d) χ g y
 
-private theorem reindex_flatten_twoPointProductLift_eq_tensorProduct
+theorem reindex_flatten_twoPointProductLift_eq_tensorProduct
     (χ g : SchwartzSpacetime d) :
     reindexSchwartzFin (by ring)
         (flattenSchwartzNPoint (d := d) (twoPointProductLift χ g)) =

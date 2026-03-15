@@ -2996,7 +2996,6 @@ private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatri
         NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
     (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
         NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
-    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
     (hdesc_pos : tsupport ((OSReconstruction.twoPointCenterShearDescent χ₀ g :
         SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
           {x : SpacetimeDim d | 0 < x 0})
@@ -3004,7 +3003,10 @@ private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatri
     (hExt : ∀ t : ℝ, 0 < t →
       ∃ T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ,
         OSReconstruction.IsHeadBlockTranslationInvariantSchwartzCLM (m := d + 1) (n := d + 1) T ∧
-        T (χ₀.tensorProduct g) =
+        T (OSReconstruction.reindexSchwartzFin (by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointProductLift χ₀ g)))) =
           OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
             ((show PositiveTimeBorchersSequence d from
               PositiveTimeBorchersSequence.single 1
@@ -3088,27 +3090,6 @@ private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatri
             (χ₀ (z 0) * (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1)) := by
     intro t ht
     rcases hExt t ht with ⟨T, hT, hTprod, hTcanon⟩
-    have hprodrepr :
-        OSReconstruction.reindexSchwartzFin (by ring)
-            (OSReconstruction.flattenSchwartzNPoint (d := d)
-              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
-                (twoPointProductLift χ₀ g))) =
-          χ₀.tensorProduct g := by
-      ext x
-      let y : NPointDomain d 2 :=
-        fun i =>
-          Fin.cases (splitFirst (d + 1) (d + 1) x)
-            (fun _ => splitLast (d + 1) (d + 1) x) i
-      have h0 : y 0 = splitFirst (d + 1) (d + 1) x := by
-        simp [y]
-      have h1 : y 1 = splitLast (d + 1) (d + 1) x := by
-        change Fin.cases (splitFirst (d + 1) (d + 1) x)
-            (fun _ => splitLast (d + 1) (d + 1) x) (Fin.succ 0) =
-          splitLast (d + 1) (d + 1) x
-        rfl
-      rw [OSReconstruction.reindex_flattenSchwartzNPoint_two_apply, SchwartzMap.tensorProduct_apply]
-      rw [OSReconstruction.twoPointCenterDiffSchwartzCLM_apply, twoPointProductLift_apply]
-      simp [y, h0, h1]
     have hmap :=
       OSReconstruction.map_twoPointProductShell_eq_canonicalDifferenceLift_of_headBlockTranslationInvariant
         (d := d) T hT χ₀ hχ₀ g
@@ -3124,13 +3105,11 @@ private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatri
               (onePointToFin1CLM d g : SchwartzNPoint d 1)
               hg_pos))
           (t : ℂ)
-        = T (χ₀.tensorProduct g) := by
-            simpa using hTprod.symm
-      _ = T (OSReconstruction.reindexSchwartzFin (by ring)
+        = T (OSReconstruction.reindexSchwartzFin (by ring)
             (OSReconstruction.flattenSchwartzNPoint (d := d)
               (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
                 (twoPointProductLift χ₀ g)))) := by
-            rw [hprodrepr]
+            simpa using hTprod.symm
       _ = T (OSReconstruction.reindexSchwartzFin (by ring)
             (OSReconstruction.flattenSchwartzNPoint (d := d)
               (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
