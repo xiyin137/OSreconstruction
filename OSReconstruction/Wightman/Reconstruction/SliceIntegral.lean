@@ -712,6 +712,277 @@ theorem contDiff_sliceIntegralRaw {n : ℕ}
   intro m
   exact contDiff_nat_sliceIntegralRaw m F
 
+/-- The `(-∞, 0]` slice integral as a function of the tail variable. This is
+the lower-half-line analogue of `sliceIntegralRaw`, and is one half of the
+fiberwise antiderivative decomposition used in the two-point factorization
+route. -/
+def iicZeroSlice {n : ℕ} {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
+    [CompleteSpace V] (F : SchwartzMap (Fin (n + 1) → ℝ) V) (y : Fin n → ℝ) : V :=
+  ∫ t in Set.Iic (0 : ℝ), F (Fin.cons t y)
+
+/-- The `(-∞, 0]` slice integral is Fréchet differentiable in the tail
+variable, with derivative obtained by integrating the ambient derivative
+composed with `tailInsertCLM`. This is the restricted-measure version of
+`hasFDerivAt_sliceIntegralRaw`. -/
+theorem hasFDerivAt_iicZeroSlice {n : ℕ}
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    (F : SchwartzMap (Fin (n + 1) → ℝ) V) (y : Fin n → ℝ) :
+    HasFDerivAt
+      (iicZeroSlice F)
+      (∫ x in Set.Iic (0 : ℝ),
+        (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+          (tailInsertCLM n)))
+      y := by
+  let μ : Measure ℝ := MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))
+  let bound0 : ℝ → ℝ := fun x =>
+    ((4 : ℝ) * ((Finset.Iic (2, 0)).sup
+      (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹
+  let bound1 : ℝ → ℝ := fun x =>
+    ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+      (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹
+  have hs : (Set.univ : Set (Fin n → ℝ)) ∈ nhds y := Filter.univ_mem
+  have hF_meas :
+      ∀ᶠ y' in nhds y,
+        AEStronglyMeasurable (fun x : ℝ => F (Fin.cons x y')) μ := by
+    refine Filter.Eventually.of_forall ?_
+    intro y'
+    have hcont : Continuous fun x : ℝ => F (Fin.cons x y') := by
+      have hpath : Continuous fun x : ℝ => (Fin.cons x y' : Fin (n + 1) → ℝ) := by
+        classical
+        refine continuous_pi ?_
+        intro j
+        refine Fin.cases ?_ ?_ j
+        · simpa using (continuous_id : Continuous fun x : ℝ => x)
+        · intro i
+          simpa using (continuous_const : Continuous fun _ : ℝ => y' i)
+      exact F.continuous.comp hpath
+    exact hcont.aestronglyMeasurable.restrict
+  have hF_int :
+      Integrable (fun x : ℝ => F (Fin.cons x y)) μ := by
+    have hbound_int :
+        Integrable (fun x : ℝ => bound0 x) (MeasureTheory.volume : MeasureTheory.Measure ℝ) := by
+      simpa [bound0, mul_comm, mul_left_comm, mul_assoc] using
+        integrable_inv_one_add_sq.const_mul
+          ((4 : ℝ) * ((Finset.Iic (2, 0)).sup
+            (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F)
+    have hbound_int' : Integrable (fun x : ℝ => bound0 x) μ := hbound_int.restrict
+    refine hbound_int'.mono' ?_ ?_
+    · exact ((F.continuous.comp <| by
+            classical
+            refine continuous_pi ?_
+            intro j
+            refine Fin.cases ?_ ?_ j
+            · simpa using (continuous_id : Continuous fun x : ℝ => x)
+            · intro i
+              simpa using (continuous_const : Continuous fun _ : ℝ => y i)).aestronglyMeasurable).restrict
+    · exact Filter.Eventually.of_forall (norm_sliceSection_le_inv_one_add_sq F y)
+  have hF'_meas :
+      AEStronglyMeasurable
+        (fun x : ℝ =>
+          (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+            (tailInsertCLM n)))
+        μ := by
+    have hpath : Continuous fun x : ℝ => (Fin.cons x y : Fin (n + 1) → ℝ) := by
+      classical
+      refine continuous_pi ?_
+      intro j
+      refine Fin.cases ?_ ?_ j
+      · simpa using (continuous_id : Continuous fun x : ℝ => x)
+      · intro i
+        simpa using (continuous_const : Continuous fun _ : ℝ => y i)
+    have hcont :
+        Continuous
+          (fun x : ℝ =>
+            (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+              (tailInsertCLM n))) := by
+      exact (((F.smooth 1).continuous_fderiv one_ne_zero).comp hpath).clm_comp continuous_const
+    exact hcont.aestronglyMeasurable.restrict
+  have h_bound :
+      ∀ᵐ x ∂μ,
+        ∀ y' ∈ (Set.univ : Set (Fin n → ℝ)),
+          ‖(((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y'))).comp
+              (tailInsertCLM n))‖ ≤ bound1 x := by
+    exact Filter.Eventually.of_forall (fun x y' _ => by
+      simpa [bound1] using norm_fderiv_sliceSection_le_inv_one_add_sq F y' x)
+  have h_bound_int :
+      Integrable bound1 μ := by
+    have hbase :
+        Integrable bound1 (MeasureTheory.volume : MeasureTheory.Measure ℝ) := by
+      simpa [bound1, mul_comm, mul_left_comm, mul_assoc] using
+        integrable_inv_one_add_sq.const_mul
+          ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+            (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F)
+    exact hbase.restrict
+  have h_diff :
+      ∀ᵐ x ∂μ,
+        ∀ y' ∈ (Set.univ : Set (Fin n → ℝ)),
+          HasFDerivAt
+            (fun y'' : Fin n → ℝ => F (Fin.cons x y''))
+            ((((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y'))).comp
+              (tailInsertCLM n)))
+            y' := by
+    exact Filter.Eventually.of_forall
+      (fun x y' _ => hasFDerivAt_sliceSection F x y')
+  simpa [iicZeroSlice, μ] using
+    (hasFDerivAt_integral_of_dominated_of_fderiv_le
+      (μ := μ)
+      (s := (Set.univ : Set (Fin n → ℝ)))
+      (x₀ := y)
+      (F := fun y' x => F (Fin.cons x y'))
+      (F' := fun y' x =>
+        (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y'))).comp
+          (tailInsertCLM n)))
+      hs hF_meas hF_int hF'_meas h_bound h_bound_int h_diff)
+
+theorem fderiv_iicZeroSlice_eq {n : ℕ}
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    (F : SchwartzMap (Fin (n + 1) → ℝ) V) (y : Fin n → ℝ) :
+    fderiv ℝ (iicZeroSlice F) y =
+      (∫ x in Set.Iic (0 : ℝ),
+        fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)).comp
+          (tailInsertCLM n) := by
+  let μ : Measure ℝ := MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))
+  let φ : ℝ → (Fin (n + 1) → ℝ) →L[ℝ] V := fun x =>
+    fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)
+  have hφ_cont : Continuous φ := by
+    have hpath : Continuous fun x : ℝ => (Fin.cons x y : Fin (n + 1) → ℝ) := by
+      classical
+      refine continuous_pi ?_
+      intro j
+      refine Fin.cases ?_ ?_ j
+      · simpa using (continuous_id : Continuous fun x : ℝ => x)
+      · intro i
+        simpa using (continuous_const : Continuous fun _ : ℝ => y i)
+    simpa [φ] using (((F.smooth 1).continuous_fderiv one_ne_zero).comp hpath)
+  have hφ_int : Integrable φ μ := by
+    have hbound_int :
+        Integrable
+          (fun x : ℝ =>
+            ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+              (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹)
+          (MeasureTheory.volume : MeasureTheory.Measure ℝ) := by
+      simpa [mul_comm, mul_left_comm, mul_assoc] using
+        integrable_inv_one_add_sq.const_mul
+          ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+            (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F)
+    have hbound_int' :
+        Integrable
+          (fun x : ℝ =>
+            ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+              (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹)
+          μ := hbound_int.restrict
+    refine hbound_int'.mono' hφ_cont.aestronglyMeasurable.restrict ?_
+    exact Filter.Eventually.of_forall (norm_fderiv_fullSlice_le_inv_one_add_sq F y)
+  calc
+    fderiv ℝ (iicZeroSlice F) y
+        = ∫ x in Set.Iic (0 : ℝ),
+            (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+              (tailInsertCLM n)) := by
+              exact (hasFDerivAt_iicZeroSlice F y).fderiv
+    _ = (∫ x, φ x ∂μ).comp (tailInsertCLM n) := by
+          let L :
+              ((Fin (n + 1) → ℝ) →L[ℝ] V) →L[ℝ] ((Fin n → ℝ) →L[ℝ] V) :=
+            (ContinuousLinearMap.compL ℝ (Fin n → ℝ) (Fin (n + 1) → ℝ) V).flip
+              (tailInsertCLM n)
+          have hL :
+              ∀ A : ((Fin (n + 1) → ℝ) →L[ℝ] V), L A = A.comp (tailInsertCLM n) := by
+            intro A
+            simp [L, ContinuousLinearMap.compL_apply]
+          have hcomp :
+              (fun x : ℝ =>
+                (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+                  (tailInsertCLM n))) =
+              fun x : ℝ => L (φ x) := by
+            funext x
+            simp [φ, hL]
+          rw [show ∫ x in Set.Iic (0 : ℝ),
+                (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y))).comp
+                  (tailInsertCLM n)) = ∫ x, (fun x : ℝ => L (φ x)) x ∂μ by
+                simp [μ, hcomp]]
+          rw [ContinuousLinearMap.integral_comp_comm L hφ_int]
+          simp [hL, μ]
+    _ = (∫ x in Set.Iic (0 : ℝ),
+          fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)).comp
+            (tailInsertCLM n) := by
+          simp [μ, φ]
+
+theorem contDiff_nat_iicZeroSlice {n : ℕ}
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    (m : ℕ) (F : SchwartzMap (Fin (n + 1) → ℝ) V) :
+    ContDiff ℝ m (iicZeroSlice F) := by
+  induction m generalizing n V F with
+  | zero =>
+      exact contDiff_zero.2 <|
+        continuous_iff_continuousAt.2 fun y => (hasFDerivAt_iicZeroSlice F y).continuousAt
+  | succ m ihm =>
+      exact (contDiff_succ_iff_hasFDerivAt (𝕜 := ℝ) (n := m) (f := iicZeroSlice F)).2 <|
+      let L :
+          ((Fin (n + 1) → ℝ) →L[ℝ] V) →L[ℝ] ((Fin n → ℝ) →L[ℝ] V) :=
+        (ContinuousLinearMap.compL ℝ (Fin n → ℝ) (Fin (n + 1) → ℝ) V).flip
+          (tailInsertCLM n)
+      by
+        refine ⟨fun y => ∫ x in Set.Iic (0 : ℝ),
+            (fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)).comp (tailInsertCLM n), ?_, ?_⟩
+        · have hslice :
+              ContDiff ℝ m
+                (iicZeroSlice (SchwartzMap.fderivCLM ℝ (Fin (n + 1) → ℝ) V F)) :=
+            ihm (F := SchwartzMap.fderivCLM ℝ (Fin (n + 1) → ℝ) V F)
+          have hEq :
+              (fun y => ∫ x in Set.Iic (0 : ℝ),
+                  (fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)).comp
+                    (tailInsertCLM n)) =
+                fun y =>
+                  L (iicZeroSlice (SchwartzMap.fderivCLM ℝ (Fin (n + 1) → ℝ) V F) y) := by
+            funext y
+            let φ : ℝ → (Fin (n + 1) → ℝ) →L[ℝ] V := fun x =>
+              fderiv ℝ (F : (Fin (n + 1) → ℝ) → V) (Fin.cons x y)
+            have hφ_cont : Continuous φ := by
+              have hpath : Continuous fun x : ℝ => (Fin.cons x y : Fin (n + 1) → ℝ) := by
+                classical
+                refine continuous_pi ?_
+                intro j
+                refine Fin.cases ?_ ?_ j
+                · simpa using (continuous_id : Continuous fun x : ℝ => x)
+                · intro i
+                  simpa using (continuous_const : Continuous fun _ : ℝ => y i)
+              simpa [φ] using (((F.smooth 1).continuous_fderiv one_ne_zero).comp hpath)
+            have hφ_int :
+                Integrable φ (MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))) := by
+              have hbound_int :
+                  Integrable
+                    (fun x : ℝ =>
+                      ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+                        (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹)
+                    (MeasureTheory.volume : MeasureTheory.Measure ℝ) := by
+                simpa [mul_comm, mul_left_comm, mul_assoc] using
+                  integrable_inv_one_add_sq.const_mul
+                    ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+                      (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F)
+              have hbound_int' :
+                  Integrable
+                    (fun x : ℝ =>
+                      ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+                        (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) V)) F) * (1 + x ^ 2)⁻¹)
+                    (MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))) := hbound_int.restrict
+              refine hbound_int'.mono' hφ_cont.aestronglyMeasurable.restrict ?_
+              exact Filter.Eventually.of_forall (norm_fderiv_fullSlice_le_inv_one_add_sq F y)
+            change ∫ x, L (φ x) ∂(MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))) =
+              L (∫ x, φ x ∂(MeasureTheory.volume.restrict (Set.Iic (0 : ℝ))))
+            rw [ContinuousLinearMap.integral_comp_comm L hφ_int]
+          rw [hEq]
+          exact L.contDiff.comp hslice
+        · intro y
+          exact hasFDerivAt_iicZeroSlice F y
+
+/-- The `(-∞, 0]` slice is smooth in the tail variable. -/
+theorem contDiff_iicZeroSlice {n : ℕ}
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    (F : SchwartzMap (Fin (n + 1) → ℝ) V) :
+    ContDiff ℝ (⊤ : ℕ∞) (iicZeroSlice F) := by
+  rw [contDiff_infty]
+  intro m
+  exact contDiff_nat_iicZeroSlice m F
+
 /-- The raw slice map is itself Schwartz. This is the genuine induction
 ingredient used in the multi-dimensional zero-mean decomposition. -/
 theorem decay_sliceIntegralRaw {n : ℕ}
@@ -830,6 +1101,27 @@ theorem integrable_sliceSection {n : ℕ}
       (norm_sliceSection_le_inv_one_add_sq (F := F) (y := y))] with x hx
     exact hx
 
+theorem sliceIntegral_smul {n : ℕ}
+    (c : ℂ) (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) :
+    sliceIntegral (c • F) = c • sliceIntegral F := by
+  ext y
+  simp only [sliceIntegral_apply, sliceIntegralRaw]
+  change ∫ x : ℝ, c * F (Fin.cons x y) = c * ∫ x : ℝ, F (Fin.cons x y)
+  rw [MeasureTheory.integral_const_mul]
+
+@[simp] theorem sliceIntegral_prependField {n : ℕ}
+    (φ : SchwartzMap ℝ ℂ) (g : SchwartzMap (Fin n → ℝ) ℂ) :
+    sliceIntegral (φ.prependField g) =
+      (∫ x : ℝ, φ x) • g := by
+  ext y
+  simp [sliceIntegral_apply, sliceIntegralRaw_prependField, smul_eq_mul]
+
+@[simp] theorem sliceIntegral_prependField_eq_self {n : ℕ}
+    (φ : SchwartzMap ℝ ℂ) (g : SchwartzMap (Fin n → ℝ) ℂ)
+    (hφ : ∫ x : ℝ, φ x = 1) :
+    sliceIntegral (φ.prependField g) = g := by
+  rw [sliceIntegral_prependField, hφ, one_smul]
+
 /-- The improper integral over `(-∞, x]` has derivative equal to the integrand,
 for continuous integrable functions. This is the scalar FTC input needed for the
 head-direction derivative of the fiberwise antiderivative. -/
@@ -885,6 +1177,120 @@ theorem hasDerivAt_integral_Iic {f : ℝ → ℂ}
     simpa [c] using hinterval.add_const c
   simpa [c] using hsum
 
+/-- The variable-limit interval piece of the head antiderivative construction. -/
+def intervalPiece {n : ℕ} (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (v : Fin (n + 1) → ℝ) : ℂ :=
+  ∫ t in (0 : ℝ)..(v 0), F (Fin.cons t (Fin.tail v))
+
+/-- In the head direction, the interval piece differentiates to the original
+Schwartz function by the one-variable FTC. -/
+theorem hasDerivAt_intervalPiece_head {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (v : Fin (n + 1) → ℝ) :
+    HasDerivAt (fun x => ∫ t in (0 : ℝ)..x, F (Fin.cons t (Fin.tail v)))
+      (F v) (v 0) := by
+  set y : Fin n → ℝ := Fin.tail v
+  have hcont : Continuous (fun t : ℝ => F (Fin.cons t y)) := by
+    exact F.continuous.comp (continuous_pi fun j =>
+      Fin.cases continuous_id (fun _ => continuous_const) j)
+  have hFTC : HasDerivAt (fun x => ∫ t in (0 : ℝ)..x, F (Fin.cons t y))
+      (F (Fin.cons (v 0) y)) (v 0) :=
+    intervalIntegral.integral_hasDerivAt_right
+      (integrable_sliceSection F y).intervalIntegrable
+      (hcont.measurable.stronglyMeasurable.stronglyMeasurableAtFilter)
+      hcont.continuousAt
+  rwa [show F (Fin.cons (v 0) y) = F v from congr_arg F (Fin.cons_self_tail v)] at hFTC
+
+/-- For fixed upper limit `a`, the interval piece is Fréchet differentiable in
+the tail variables, with derivative obtained by integrating the ambient
+derivative composed with `tailInsertCLM`. -/
+theorem hasFDerivAt_intervalPiece_tailFixed {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (a : ℝ) (y : Fin n → ℝ) :
+    HasFDerivAt
+      (fun y' : Fin n → ℝ => ∫ t in (0 : ℝ)..a, F (Fin.cons t y'))
+      (∫ t in (0 : ℝ)..a,
+        (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y))).comp
+          (tailInsertCLM n)))
+      y := by
+  let bound1 : ℝ → ℝ := fun x =>
+    ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+      (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) ℂ)) F) * (1 + x ^ 2)⁻¹
+  have hs : (Set.univ : Set (Fin n → ℝ)) ∈ nhds y := Filter.univ_mem
+  have hF_meas :
+      ∀ᶠ y' in nhds y,
+        AEStronglyMeasurable (fun t : ℝ => F (Fin.cons t y'))
+          (MeasureTheory.volume.restrict (Set.uIoc (0 : ℝ) a)) := by
+    refine Filter.Eventually.of_forall ?_
+    intro y'
+    have hcont : Continuous (fun t : ℝ => F (Fin.cons t y')) := by
+      have hpath : Continuous fun t : ℝ => (Fin.cons t y' : Fin (n + 1) → ℝ) := by
+        classical
+        refine continuous_pi ?_
+        intro j
+        refine Fin.cases ?_ ?_ j
+        · simpa using (continuous_id : Continuous fun t : ℝ => t)
+        · intro i
+          simpa using (continuous_const : Continuous fun _ : ℝ => y' i)
+      exact F.continuous.comp hpath
+    exact hcont.aestronglyMeasurable.restrict
+  have hF_int :
+      IntervalIntegrable (fun t : ℝ => F (Fin.cons t y)) MeasureTheory.volume (0 : ℝ) a := by
+    exact (integrable_sliceSection F y).intervalIntegrable
+  have hF'_meas :
+      AEStronglyMeasurable
+        (fun t : ℝ =>
+          (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y))).comp
+            (tailInsertCLM n)))
+        (MeasureTheory.volume.restrict (Set.uIoc (0 : ℝ) a)) := by
+    have hpath : Continuous fun t : ℝ => (Fin.cons t y : Fin (n + 1) → ℝ) := by
+      classical
+      refine continuous_pi ?_
+      intro j
+      refine Fin.cases ?_ ?_ j
+      · simpa using (continuous_id : Continuous fun t : ℝ => t)
+      · intro i
+        simpa using (continuous_const : Continuous fun _ : ℝ => y i)
+    have hcont :
+        Continuous
+          (fun t : ℝ =>
+            (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y))).comp
+              (tailInsertCLM n))) := by
+      exact (((F.smooth 1).continuous_fderiv one_ne_zero).comp hpath).clm_comp continuous_const
+    exact hcont.aestronglyMeasurable.restrict
+  have h_bound :
+      ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.uIoc (0 : ℝ) a)),
+        ∀ y' ∈ (Set.univ : Set (Fin n → ℝ)),
+          ‖(((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y'))).comp
+              (tailInsertCLM n))‖ ≤ bound1 t := by
+    exact Filter.Eventually.of_forall (fun t y' _ => by
+      simpa [bound1] using norm_fderiv_sliceSection_le_inv_one_add_sq F y' t)
+  have h_bound_int :
+      IntervalIntegrable bound1 MeasureTheory.volume (0 : ℝ) a := by
+    exact (integrable_inv_one_add_sq.const_mul
+      ((4 : ℝ) * ((Finset.Iic (2, 1)).sup
+        (schwartzSeminormFamily ℝ (Fin (n + 1) → ℝ) ℂ)) F)).intervalIntegrable
+  have h_diff :
+      ∀ᵐ t ∂(MeasureTheory.volume.restrict (Set.uIoc (0 : ℝ) a)),
+        ∀ y' ∈ (Set.univ : Set (Fin n → ℝ)),
+          HasFDerivAt
+            (fun y'' : Fin n → ℝ => F (Fin.cons t y''))
+            ((((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y'))).comp
+              (tailInsertCLM n)))
+            y' := by
+    exact Filter.Eventually.of_forall
+      (fun t y' _ => hasFDerivAt_sliceSection F t y')
+  exact
+    (hasFDerivAt_integral_of_dominated_of_fderiv_le''
+      (μ := MeasureTheory.volume)
+      (s := (Set.univ : Set (Fin n → ℝ)))
+      (x₀ := y)
+      (F := fun y' t => F (Fin.cons t y'))
+      (F' := fun y' t =>
+        (((fderiv ℝ (F : (Fin (n + 1) → ℝ) → ℂ) (Fin.cons t y'))).comp
+          (tailInsertCLM n)))
+      (a := (0 : ℝ)) (b := a)
+      hs hF_meas hF_int hF'_meas h_bound h_bound_int h_diff)
+
 /-- Fiberwise antiderivative along the head coordinate. For fixed tail variables,
 integrate the head slice over `(-∞, x₀]`. This is the raw construction behind
 the multi-dimensional Schwartz Poincare lemma. -/
@@ -892,6 +1298,40 @@ def fiberwiseAntiderivRaw {n : ℕ}
     (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) :
     (Fin (n + 1) → ℝ) → ℂ :=
   fun v => ∫ t in Set.Iic (v 0), F (Fin.cons t (Fin.tail v))
+
+/-- The raw head antiderivative splits into the variable-limit interval piece
+plus the fixed `(-∞, 0]` slice. -/
+theorem fiberwiseAntiderivRaw_eq_interval_add_iic {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (v : Fin (n + 1) → ℝ) :
+    fiberwiseAntiderivRaw F v =
+      intervalPiece F v + iicZeroSlice F (Fin.tail v) := by
+  set y : Fin n → ℝ := Fin.tail v
+  rw [fiberwiseAntiderivRaw, intervalPiece, iicZeroSlice]
+  change ∫ t in Set.Iic (v 0), F (Fin.cons t y) =
+    (∫ t in (0 : ℝ)..(v 0), F (Fin.cons t y)) +
+      ∫ t in Set.Iic (0 : ℝ), F (Fin.cons t y)
+  have hf_int := integrable_sliceSection F y
+  have hIic_v0 :
+      Filter.Tendsto (fun r => ∫ t in r..(v 0), F (Fin.cons t y)) Filter.atBot
+        (nhds (∫ t in Set.Iic (v 0), F (Fin.cons t y))) :=
+    intervalIntegral_tendsto_integral_Iic (v 0) hf_int.integrableOn Filter.tendsto_id
+  have hIic_0 :
+      Filter.Tendsto (fun r => ∫ t in r..(0 : ℝ), F (Fin.cons t y)) Filter.atBot
+        (nhds (∫ t in Set.Iic (0 : ℝ), F (Fin.cons t y))) :=
+    intervalIntegral_tendsto_integral_Iic 0 hf_int.integrableOn Filter.tendsto_id
+  have hadd : ∀ r : ℝ,
+      ∫ t in r..(v 0), F (Fin.cons t y) =
+        (∫ t in r..(0 : ℝ), F (Fin.cons t y)) + ∫ t in (0 : ℝ)..(v 0), F (Fin.cons t y) :=
+    fun r => (intervalIntegral.integral_add_adjacent_intervals
+      hf_int.intervalIntegrable hf_int.intervalIntegrable).symm
+  have hlim := hIic_0.add_const (∫ t in (0 : ℝ)..(v 0), F (Fin.cons t y))
+  have heq_lim :
+      Filter.Tendsto (fun r => ∫ t in r..(v 0), F (Fin.cons t y)) Filter.atBot
+        (nhds ((∫ t in Set.Iic (0 : ℝ), F (Fin.cons t y)) +
+               ∫ t in (0 : ℝ)..(v 0), F (Fin.cons t y))) :=
+    Filter.Tendsto.congr' (Filter.Eventually.of_forall fun r => (hadd r).symm) hlim
+  rw [tendsto_nhds_unique hIic_v0 heq_lim, add_comm]
 
 /-- Differentiating the raw fiberwise antiderivative in the head direction
 recovers the original Schwartz function. -/
@@ -933,7 +1373,7 @@ theorem lineDeriv_fiberwiseAntiderivRaw {n : ℕ}
     have htail :
         Fin.tail (v + t • e0) = y := by
       ext i
-      simpa [Fin.tail, e0, hy, Pi.add_apply, Pi.smul_apply]
+      simp [Fin.tail, e0, hy, Pi.add_apply, Pi.smul_apply]
     rw [hhead, htail]
   have hline : HasLineDerivAt ℝ (fiberwiseAntiderivRaw F) (G (v 0)) v e0 := by
     show HasDerivAt (fun t => fiberwiseAntiderivRaw F (v + t • e0)) (G (v 0)) 0

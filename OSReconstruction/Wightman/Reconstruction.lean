@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.Core
+import OSReconstruction.Wightman.Reconstruction.PartialToTotal
 import OSReconstruction.Wightman.Reconstruction.Poincare1D
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import OSReconstruction.Wightman.Reconstruction.BlockIntegral
