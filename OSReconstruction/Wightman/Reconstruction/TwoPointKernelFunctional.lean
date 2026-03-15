@@ -489,4 +489,131 @@ theorem exists_twoPointFlatKernel_centerSpatialWitness
         (d := d) (K := K) hK_meas C_bd N hC hK_bound
         (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))
 
+/-- To identify an abstract full flattened two-point extension `T` with the
+concrete kernel CLM induced by `K`, it is enough to prove equality after both
+the center-spatial descent and the active head-time descent on a dense subset
+of the reduced quotient space. This is the blocker-facing quotient version of
+the kernel-functional route. -/
+theorem eq_twoPointFlatKernelCLM_of_eq_on_dense_reduced
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    {S : Set (SchwartzMap (Fin (d + 1) → ℝ) ℂ)}
+    (hS : Dense S)
+    (hEq : ∀ f ∈ S,
+      OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d T φ) ψ f =
+        OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d
+            (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ f) :
+    T = twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound := by
+  exact
+    OSReconstruction.eq_of_eq_on_dense_headTranslationDescentCLM_centerSpatial
+      d T
+      (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound)
+      hT hTK φ hφ ψ hψ hTred hKred hS hEq
+
+/-- Once an abstract full flattened extension `T` is identified with the
+concrete kernel CLM from reduced dense equality, its values on the two-point
+product shell and admissible difference shell are the corresponding explicit
+kernel integrals. This is the direct blocker-facing payoff from the reduced
+quotient comparison theorem. -/
+theorem map_productLift_and_differenceLift_of_eq_on_dense_reduced
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    {S : Set (SchwartzMap (Fin (d + 1) → ℝ) ℂ)}
+    (hS : Dense S)
+    (hEq : ∀ f ∈ S,
+      OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d T φ) ψ f =
+        OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d
+            (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ f)
+    (χ : SchwartzSpacetime d) (g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+  have hEqCLM :
+      T = twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound :=
+    eq_twoPointFlatKernelCLM_of_eq_on_dense_reduced
+      (d := d) T hT K hK_meas C_bd N hC hK_bound hTK φ hφ ψ hψ
+      hTred hKred hS hEq
+  constructor
+  · calc
+      T (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+          twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound
+            (reindexSchwartzFin (by ring)
+              (flattenSchwartzNPoint (d := d)
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) := by
+              simpa using congrArg
+                (fun L : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ =>
+                  L (reindexSchwartzFin (by ring)
+                    (flattenSchwartzNPoint (d := d)
+                      (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))))
+                hEqCLM
+      _ = ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) := by
+            simpa using
+              twoPointFlatKernelCLM_apply_reindex_flatten
+                (d := d) (K := K) hK_meas C_bd N hC hK_bound
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g))
+  · calc
+      T (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+          twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound
+            (reindexSchwartzFin (by ring)
+              (flattenSchwartzNPoint (d := d)
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) := by
+              simpa using congrArg
+                (fun L : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ =>
+                  L (reindexSchwartzFin (by ring)
+                    (flattenSchwartzNPoint (d := d)
+                      (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))))
+                hEqCLM
+      _ = ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+            simpa using
+              twoPointFlatKernelCLM_apply_reindex_flatten
+                (d := d) (K := K) hK_meas C_bd N hC hK_bound
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))
+
 end OSReconstruction

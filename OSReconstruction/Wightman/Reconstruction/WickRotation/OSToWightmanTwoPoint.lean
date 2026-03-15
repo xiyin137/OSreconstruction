@@ -3500,6 +3500,344 @@ private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatri
       (χ₀ := χ₀) (χ := χ) (g := g)
       hχ₀_pos hg_pos hg_compact hdesc_pos hχ₀ hred hExt'
 
+/-- Fixed-time data for the corrected reduced dense-comparison route. This is
+the production packaging of the remaining `k = 2` seam: a full flattened
+extension `T`, a concrete kernel CLM, reduced dense equality, and the two
+explicit kernel shell formulas at one positive real time. -/
+private structure TwoPointFixedTimeCenterSpatialDenseReducedData
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (χ₀ g : SchwartzSpacetime d)
+    (hχ₀_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (t : ℝ) where
+  T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ
+  hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T
+  K : NPointDomain d 2 → ℂ
+  hK_meas : MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume
+  C_bd : ℝ
+  N : ℕ
+  hC : 0 < C_bd
+  hK_bound : ∀ᵐ x : NPointDomain d 2 ∂MeasureTheory.volume,
+    ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N
+  hTK :
+    OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+      (OSReconstruction.twoPointFlatKernelCLM
+        (d := d) K hK_meas C_bd N hC hK_bound)
+  φ : SchwartzMap (Fin d → ℝ) ℂ
+  hφ : ∫ u : Fin d → ℝ, φ u = 1
+  hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+    (OSReconstruction.centerSpatialDescentCLM d T φ)
+  hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+    (OSReconstruction.centerSpatialDescentCLM d
+      (OSReconstruction.twoPointFlatKernelCLM
+        (d := d) K hK_meas C_bd N hC hK_bound) φ)
+  ψ : SchwartzMap ℝ ℂ
+  hψ : ∫ s : ℝ, ψ s = 1
+  S : Set (SchwartzMap (Fin (d + 1) → ℝ) ℂ)
+  hS : Dense S
+  hEq : ∀ f ∈ S,
+    OSReconstruction.headTranslationDescentCLM
+        (OSReconstruction.centerSpatialDescentCLM d T φ) ψ f =
+      OSReconstruction.headTranslationDescentCLM
+        (OSReconstruction.centerSpatialDescentCLM d
+          (OSReconstruction.twoPointFlatKernelCLM
+            (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ f
+  hKprod :
+    (∫ z : NPointDomain d 2, K z * (χ₀ (z 0) * g (z 0 + z 1))) =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        ((show PositiveTimeBorchersSequence d from
+          PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+            hχ₀_pos))
+        ((show PositiveTimeBorchersSequence d from
+          PositiveTimeBorchersSequence.single 1
+            (onePointToFin1CLM d g : SchwartzNPoint d 1)
+            hg_pos))
+        (t : ℂ)
+  hKcanon :
+    (∫ z : NPointDomain d 2,
+        K z * (χ₀ (z 0) *
+          (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1))) =
+      ∫ z : NPointDomain d 2,
+        G (Function.update
+            (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+            (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+            (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+              (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+              (t : ℂ) * Complex.I)) *
+          (χ₀ (z 0) *
+            (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1))
+
+/-- Fixed-time payoff from the reduced dense-comparison route. If a full
+flattened extension `T` agrees with a concrete kernel CLM after the
+center-spatial and head-time descents on a dense subset of the reduced quotient,
+then the values of `T` on the product shell and canonical admissible shell are
+the corresponding explicit kernel integrals. This is the corrected `k = 2`
+bridge we now need before returning to the actual semigroup construction. -/
+private theorem fixedTime_product_and_canonical_values_of_centerSpatialDenseReducedEq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (χ₀ g : SchwartzSpacetime d)
+    (hχ₀_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (t : ℝ) (ht : 0 < t)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂MeasureTheory.volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (OSReconstruction.twoPointFlatKernelCLM
+          (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (OSReconstruction.twoPointFlatKernelCLM
+          (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    {S : Set (SchwartzMap (Fin (d + 1) → ℝ) ℂ)}
+    (hS : Dense S)
+    (hEq : ∀ f ∈ S,
+      OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d T φ) ψ f =
+        OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d
+            (OSReconstruction.twoPointFlatKernelCLM
+              (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ f)
+    (hKprod :
+      (∫ z : NPointDomain d 2, K z * (χ₀ (z 0) * g (z 0 + z 1))) =
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+              hχ₀_pos))
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d g : SchwartzNPoint d 1)
+              hg_pos))
+          (t : ℂ))
+    (hKcanon :
+      (∫ z : NPointDomain d 2,
+          K z * (χ₀ (z 0) *
+            (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1))) =
+        ∫ z : NPointDomain d 2,
+          G (Function.update
+              (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+              (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+              (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+                (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+                (t : ℂ) * Complex.I)) *
+            (χ₀ (z 0) *
+              (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1))) :
+    T (OSReconstruction.reindexSchwartzFin (by ring)
+          (OSReconstruction.flattenSchwartzNPoint (d := d)
+            (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+              (twoPointProductLift χ₀ g)))) =
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+              hχ₀_pos))
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d g : SchwartzNPoint d 1)
+              hg_pos))
+          (t : ℂ) ∧
+    T (OSReconstruction.reindexSchwartzFin (by ring)
+          (OSReconstruction.flattenSchwartzNPoint (d := d)
+            (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+              (twoPointDifferenceLift χ₀
+                (OSReconstruction.twoPointCenterShearDescent χ₀ g))))) =
+        ∫ z : NPointDomain d 2,
+          G (Function.update
+              (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+              (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+              (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+                (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+                (t : ℂ) * Complex.I)) *
+            (χ₀ (z 0) *
+              (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1)) := by
+  have _ := ht
+  have hmaps :=
+    OSReconstruction.map_productLift_and_differenceLift_of_eq_on_dense_reduced
+      (d := d) T hT K hK_meas C_bd N hC hK_bound hTK φ hφ ψ hψ
+      hTred hKred hS hEq χ₀ (g := g)
+      (OSReconstruction.twoPointCenterShearDescent χ₀ g)
+  rcases hmaps with ⟨hTprod, hTcanon⟩
+  refine ⟨?_, ?_⟩
+  · calc
+      T (OSReconstruction.reindexSchwartzFin (by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointProductLift χ₀ g)))) =
+          ∫ z : NPointDomain d 2, K z * (χ₀ (z 0) * g (z 0 + z 1)) := hTprod
+      _ = OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                  (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+                hχ₀_pos))
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (onePointToFin1CLM d g : SchwartzNPoint d 1)
+                hg_pos))
+            (t : ℂ) := hKprod
+  · calc
+      T (OSReconstruction.reindexSchwartzFin (by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointDifferenceLift χ₀
+                  (OSReconstruction.twoPointCenterShearDescent χ₀ g))))) =
+          ∫ z : NPointDomain d 2,
+            K z * (χ₀ (z 0) *
+              (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1)) := hTcanon
+      _ = ∫ z : NPointDomain d 2,
+            G (Function.update
+                (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+                (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+                (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+                  (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+                  (t : ℂ) * Complex.I)) *
+              (χ₀ (z 0) *
+                (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1)) := hKcanon
+
+/-- Corrected `k = 2` structural reduction. If for each fixed positive real
+time we can produce the reduced dense-comparison data of
+`TwoPointFixedTimeCenterSpatialDenseReducedData`, then the semigroup matrix
+element agrees with the canonical admissible center-shear shell on the positive
+real axis. This is the current honest blocker-facing theorem surface. -/
+private theorem twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_of_centerSpatialDenseReducedExtension
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (χ₀ χ g : SchwartzSpacetime d)
+    (hχ₀_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
+    (hdesc_pos : tsupport ((OSReconstruction.twoPointCenterShearDescent χ₀ g :
+        SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
+          {x : SpacetimeDim d | 0 < x 0})
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (hred :
+      twoPointCenterTimeReduction (d := d) (twoPointProductLift χ₀ g) =
+        twoPointCenterTimeReduction (d := d)
+          (twoPointDifferenceLift χ₀
+            (OSReconstruction.twoPointCenterShearDescent χ₀ g)))
+    (hExt : ∀ t : ℝ, 0 < t →
+      TwoPointFixedTimeCenterSpatialDenseReducedData
+        (d := d) OS lgc G χ₀ g hχ₀_pos hg_pos t) :
+    DifferentiableOn ℂ
+      (fun z : ℂ =>
+        (∫ u : SpacetimeDim d, χ u) *
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                  (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+                hχ₀_pos))
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (onePointToFin1CLM d g : SchwartzNPoint d 1)
+                hg_pos))
+            z)
+      {z : ℂ | 0 < z.re} ∧
+    ∀ t : ℝ, 0 < t →
+      ((∫ u : SpacetimeDim d, χ u) *
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                  (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+                hχ₀_pos))
+            ((show PositiveTimeBorchersSequence d from
+              PositiveTimeBorchersSequence.single 1
+                (onePointToFin1CLM d g : SchwartzNPoint d 1)
+                hg_pos))
+            (t : ℂ)) =
+        OS.S 2
+          (ZeroDiagonalSchwartz.ofClassical
+            (twoPointDifferenceLift χ
+              (SCV.translateSchwartz (- timeShiftVec d t)
+                (OSReconstruction.twoPointCenterShearDescent χ₀ g)))) := by
+  have hExt' : ∀ t : ℝ, 0 < t →
+      ∃ T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ,
+        OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T ∧
+        ∃ φ : SchwartzMap (Fin d → ℝ) ℂ, (∫ u : Fin d → ℝ, φ u = 1) ∧
+          OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+            (OSReconstruction.centerSpatialDescentCLM d T φ) ∧
+          ∃ ψ : SchwartzMap ℝ ℂ, (∫ s : ℝ, ψ s = 1) ∧
+            T (OSReconstruction.reindexSchwartzFin (by ring)
+                (OSReconstruction.flattenSchwartzNPoint (d := d)
+                  (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                    (twoPointProductLift χ₀ g)))) =
+              OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+                ((show PositiveTimeBorchersSequence d from
+                  PositiveTimeBorchersSequence.single 1
+                    (SchwartzNPoint.osConj (d := d) (n := 1)
+                      (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+                    hχ₀_pos))
+                ((show PositiveTimeBorchersSequence d from
+                  PositiveTimeBorchersSequence.single 1
+                    (onePointToFin1CLM d g : SchwartzNPoint d 1)
+                    hg_pos))
+                (t : ℂ) ∧
+            T (OSReconstruction.reindexSchwartzFin (by ring)
+                (OSReconstruction.flattenSchwartzNPoint (d := d)
+                  (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                    (twoPointDifferenceLift χ₀
+                      (OSReconstruction.twoPointCenterShearDescent χ₀ g))))) =
+              ∫ z : NPointDomain d 2,
+                G (Function.update
+                    (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+                    (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+                    (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+                      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+                      (t : ℂ) * Complex.I)) *
+                  (χ₀ (z 0) *
+                    (OSReconstruction.twoPointCenterShearDescent χ₀ g) (z 1)) := by
+    intro t ht
+    let data := hExt t ht
+    have hvals :=
+      fixedTime_product_and_canonical_values_of_centerSpatialDenseReducedEq
+        (d := d) (OS := OS) (lgc := lgc) (G := G)
+        (χ₀ := χ₀) (g := g) hχ₀_pos hg_pos t ht
+        data.T data.hT data.K data.hK_meas data.C_bd data.N data.hC data.hK_bound
+        data.hTK data.φ data.hφ data.hTred data.hKred data.ψ data.hψ data.hS data.hEq
+        data.hKprod data.hKcanon
+    refine ⟨data.T, data.hT, data.φ, data.hφ, data.hTred, data.ψ, data.hψ, ?_, ?_⟩
+    · exact hvals.1
+    · exact hvals.2
+  exact
+    twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_of_centerSpatialExtension
+      (d := d) (OS := OS) (lgc := lgc) (G := G) (hG_euclid := hG_euclid)
+      (χ₀ := χ₀) (χ := χ) (g := g)
+      hχ₀_pos hg_pos hg_compact hdesc_pos hχ₀ hred hExt'
+
 /-- Structural version of the canonical center-shear criterion. If for each
 positive real time the fixed-time `flatUpdate` pairing extends to a
 head-block-translation-invariant scalar Schwartz functional on the flattened

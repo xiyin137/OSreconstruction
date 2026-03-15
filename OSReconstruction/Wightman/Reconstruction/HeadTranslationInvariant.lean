@@ -1,3 +1,4 @@
+import OSReconstruction.Wightman.Reconstruction.BlockIntegral
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 
@@ -111,6 +112,20 @@ theorem map_eq_of_sliceIntegral_eq_of_headTranslationInvariant
     map_eq_zero_of_sliceIntegral_eq_zero_of_headTranslationInvariant
       T hT (F - G) hFG'
   exact sub_eq_zero.mp <| by simpa [map_sub] using hsub
+
+/-- Any continuous linear functional that factors through `sliceIntegral` is
+automatically invariant under translations of the head coordinate. This is the
+cheap lift from the final reduced quotient back to the one-step `R`-surface
+used in the current two-point `E -> R` seam. -/
+theorem isHeadTranslationInvariant_of_factors_through_sliceIntegral
+    (T : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (L : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (hfac : ∀ F : SchwartzMap (Fin (n + 1) → ℝ) ℂ, T F = L (sliceIntegral F)) :
+    IsHeadTranslationInvariantSchwartzCLM T := by
+  intro a
+  ext F
+  rw [ContinuousLinearMap.comp_apply, hfac, hfac, SCV.translateSchwartzCLM_apply,
+    sliceIntegral_translateSchwartz_head]
 
 /-- Descend a head-translation-invariant functional to the tail Schwartz space
 by choosing a normalized head cutoff. The factorization theorem below shows

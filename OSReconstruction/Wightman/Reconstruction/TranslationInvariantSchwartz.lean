@@ -136,6 +136,65 @@ noncomputable def headCoordSingleCLM (n : ℕ) :
   · intro i
     simp [headCoordSingleCLM, Pi.single_apply]
 
+theorem norm_le_norm_headCoordSingleCLM {n : ℕ} (a : ℝ) :
+    ‖a‖ ≤ ‖headCoordSingleCLM n a‖ := by
+  have hcoord : (headCoordSingleCLM n a) 0 = a := by
+    simp [headCoordSingleCLM_apply]
+  calc
+    ‖a‖ = ‖(headCoordSingleCLM n a) 0‖ := by rw [hcoord]
+    _ ≤ ‖headCoordSingleCLM n a‖ := by
+      exact norm_le_pi_norm (headCoordSingleCLM n a) 0
+
+/-- Restrict a Schwartz function on `Fin (n+1) → ℝ` to the head axis
+`t ↦ Pi.single 0 t`. -/
+noncomputable def headAxisSectionCLM (n : ℕ) :
+    SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] SchwartzMap ℝ ℂ :=
+  SchwartzMap.compCLM ℂ (headCoordSingleCLM n).hasTemperateGrowth
+    ⟨1, 1, fun t => by
+      calc
+        ‖t‖ ≤ ‖headCoordSingleCLM n t‖ := norm_le_norm_headCoordSingleCLM t
+        _ ≤ 1 * (1 + ‖headCoordSingleCLM n t‖) ^ (1 : ℕ) := by
+          have h : ‖headCoordSingleCLM n t‖ ≤ 1 + ‖headCoordSingleCLM n t‖ := by linarith
+          simpa using h
+    ⟩
+
+@[simp] theorem headAxisSectionCLM_apply {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (t : ℝ) :
+    headAxisSectionCLM n F t = F (headCoordSingleCLM n t) := by
+  simp [headAxisSectionCLM]
+
+@[simp] theorem headAxisSectionCLM_apply_single {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (t : ℝ) :
+    headAxisSectionCLM n F t = F (Pi.single 0 t) := by
+  simp [headAxisSectionCLM_apply, headCoordSingleCLM_apply]
+
+theorem headCoordSingle_add_tailInsert {n : ℕ} (t : ℝ) (y : Fin n → ℝ) :
+    headCoordSingleCLM n t + tailInsertCLM n y = Fin.cons t y := by
+  ext j
+  refine Fin.cases ?_ ?_ j
+  · simp [headCoordSingleCLM_apply, tailInsertCLM_apply]
+  · intro i
+    simp [headCoordSingleCLM_apply, tailInsertCLM_apply]
+
+/-- Restrict a Schwartz function on `Fin (n+1) → ℝ` to the affine head line
+with fixed tail parameter `y`, i.e. `t ↦ F (Fin.cons t y)`. -/
+noncomputable def tailSectionCLM (n : ℕ) (y : Fin n → ℝ) :
+    SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] SchwartzMap ℝ ℂ :=
+  (headAxisSectionCLM n).comp (SCV.translateSchwartzCLM (tailInsertCLM n y))
+
+@[simp] theorem tailSectionCLM_apply {n : ℕ} (y : Fin n → ℝ)
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (t : ℝ) :
+    tailSectionCLM n y F t = F (Fin.cons t y) := by
+  have hsum : ((Pi.single 0 t : Fin (n + 1) → ℝ) + Fin.cons 0 y) = Fin.cons t y := by
+    ext j
+    refine Fin.cases ?_ ?_ j
+    · simp [Pi.add_apply]
+    · intro i
+      simp [Pi.add_apply]
+  rw [tailSectionCLM, ContinuousLinearMap.comp_apply, headAxisSectionCLM_apply_single,
+    SCV.translateSchwartzCLM_apply, SCV.translateSchwartz_apply]
+  simpa [hsum]
+
 /-- Project to the head-axis component. -/
 noncomputable def headCoordProjectorCLM (n : ℕ) :
     (Fin (n + 1) → ℝ) →L[ℝ] (Fin (n + 1) → ℝ) :=

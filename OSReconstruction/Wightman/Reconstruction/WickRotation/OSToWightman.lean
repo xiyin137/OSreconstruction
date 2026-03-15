@@ -420,9 +420,11 @@ private theorem differentiableOn_OSInnerProductTimeShiftHolomorphicValue_local
     (OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
       (d := d) OS lgc F G z hz).symm
 
-/-- The canonical `k = 2` flat witness candidate coming from the one-variable
-semigroup holomorphic family. It depends only on the Wick-rotated time
-difference coordinate. -/
+/-- An auxiliary `k = 2` one-variable flat witness coming from the semigroup
+holomorphic family. It depends only on the Wick-rotated time-difference
+coordinate, so it is useful for isolating the time-holomorphic part of the
+argument, but it is not intended to be the final full two-point witness for
+general `OS.S 2`. -/
 private def twoPointTimeDiffFlatWitness
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -432,9 +434,10 @@ private def twoPointTimeDiffFlatWitness
     OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
       (-Complex.I * u (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))))
 
-/-- The semigroup-based `k = 2` flat witness candidate is holomorphic on the
-positive-time-difference tube. This isolates the remaining gap in the base-step
-to Euclidean reproduction, not tube holomorphicity. -/
+/-- The auxiliary semigroup-based `k = 2` time-difference witness is holomorphic
+on the positive-time-difference tube. This closes the one-variable holomorphic
+part of the story, but not the full spatially-parameterized two-point witness
+problem. -/
 private theorem differentiableOn_twoPointTimeDiffFlatWitness
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -454,8 +457,8 @@ private theorem differentiableOn_twoPointTimeDiffFlatWitness
       (differentiableOn_OSInnerProductTimeShiftHolomorphicValue_local
         (d := d) OS lgc F G)
 
-/-- On the Euclidean center/difference section, the semigroup-based `k = 2`
-flat witness evaluates at the real time-difference argument. -/
+/-- On the Euclidean center/difference section, the auxiliary `k = 2`
+time-difference witness evaluates at the real time-difference argument. -/
 private theorem twoPointTimeDiffFlatWitness_apply_wickRotate
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -471,9 +474,9 @@ private theorem twoPointTimeDiffFlatWitness_apply_wickRotate
       (H := OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G)
       z
 
-/-- The explicit fixed-time `k = 2` semigroup kernel coming from
-`twoPointTimeDiffFlatWitness` is invariant under translating only the
-center-spatial variables in center/difference coordinates. -/
+/-- The fixed-time kernel induced by the auxiliary one-variable witness is
+invariant under center-spatial translations. This remains useful even though
+the time-only witness itself is not the final full `k = 2` witness. -/
 private theorem twoPointFixedTimeKernel_twoPointTimeDiffFlatWitness_centerSpatialInvariant
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -510,10 +513,11 @@ private theorem twoPointFixedTimeKernel_twoPointTimeDiffFlatWitness_centerSpatia
           (-(Complex.I * (s + t))))
       hwick
 
-/-- Once the explicit fixed-time witness kernel has a polynomial-growth package,
-its induced flattened Schwartz functional is center-spatial translation
-invariant. This is the CLM-level input needed for the reduced OS-II-style
-extension seam. -/
+/-- Once the fixed-time kernel induced by the auxiliary one-variable witness has
+a polynomial-growth package, its induced flattened Schwartz functional is
+center-spatial translation invariant. This is still a useful CLM-level input
+for the reduced OS-II-style extension seam, even though the underlying witness
+is not the final full `k = 2` one. -/
 private theorem twoPointFlatKernelCLM_twoPointTimeDiffFlatWitness_centerSpatialInvariant
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -626,9 +630,10 @@ theorem schwinger_continuation_base_step {d : ℕ} [NeZero d]
     sorry
   exact schwinger_continuation_base_step_of_flatWitness OS k G hG_holo hG_euclid
 
-/-- Honest `k = 2` reduction for the explicit semigroup time-difference
-candidate. Once the Euclidean reproduction identity is proved for
-`twoPointTimeDiffFlatWitness`, the two-point base-step follows immediately. -/
+/-- Honest but auxiliary `k = 2` reduction for the semigroup time-difference
+candidate. This theorem remains mathematically valid, but the current blocker
+analysis no longer treats `twoPointTimeDiffFlatWitness` as the intended final
+two-point witness. -/
 private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -650,11 +655,10 @@ private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
         (d := d) OS lgc F G)
       hG_euclid
 
-/-- Dense-set reduction for the explicit `k = 2` semigroup flat witness. If a
-continuous linear functional `L` is represented by the witness integral on all
-tests and agrees with `OS.S 2` on a dense subset, then the two-point base-step
-already follows. This isolates the remaining blocker to continuity of the
-witness integral plus a genuine density theorem. -/
+/-- Dense-set reduction for the auxiliary `k = 2` semigroup time-difference
+witness. This remains a valid CLM reduction theorem, but it should now be read
+as an auxiliary route rather than the intended final closure of the two-point
+base-step. -/
 private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitnessCLM
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -693,11 +697,10 @@ private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
     schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
       (d := d) OS lgc F G hG_euclid
 
-/-- Concrete `k = 2` dense-set reduction for the explicit semigroup witness:
-if the Euclidean kernel induced by `twoPointTimeDiffFlatWitness` has polynomial
-growth and its induced zero-diagonal CLM agrees with `OS.S 2` on a dense set,
-then the two-point base-step follows. This is the cleanest current production
-surface for the remaining blocker. -/
+/-- Concrete auxiliary `k = 2` dense-set reduction for the semigroup
+time-difference witness. This theorem is still correct, but it is no longer the
+preferred production surface for the real remaining blocker, since the final
+two-point witness must also capture spatial-difference dependence. -/
 private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitnessKernelCLM
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
