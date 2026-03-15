@@ -1805,7 +1805,7 @@ theorem OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_piecewise_xi
                 (timeShiftSchwartzNPoint (d := d) t ((G : BorchersSequence d).funcs 0))) y) := by
             simp [hvanish_shift]
 
-private theorem hasCompactSupport_onePointToFin1
+theorem hasCompactSupport_onePointToFin1
     (h : SchwartzSpacetime d)
     (hh_compact : HasCompactSupport (h : SpacetimeDim d → ℂ)) :
     HasCompactSupport (((onePointToFin1CLM d h : SchwartzNPoint d 1) :

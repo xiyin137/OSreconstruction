@@ -232,6 +232,15 @@ omit [NeZero d] in
       f (fun i => x i - timeShiftVec d t) := by
   simp [timeShiftSchwartzNPoint, translateSchwartzNPoint_apply]
 
+omit [NeZero d] in
+theorem translateSchwartzNPoint_timeShiftSchwartzNPoint
+    (a : SpacetimeDim d) (t : ℝ) {n : ℕ} (f : SchwartzNPoint d n) :
+    translateSchwartzNPoint (d := d) a (timeShiftSchwartzNPoint (d := d) t f) =
+      timeShiftSchwartzNPoint (d := d) t (translateSchwartzNPoint (d := d) a f) := by
+  ext x
+  simp [translateSchwartzNPoint_apply, timeShiftSchwartzNPoint_apply, sub_eq_add_neg,
+    Pi.add_apply, add_comm, add_left_comm, add_assoc]
+
 /-- Euclidean time translation has polynomial Schwartz-seminorm growth. -/
 private theorem seminorm_timeShiftSchwartzNPoint_le (k l : ℕ) (t : ℝ) {n : ℕ}
     (f : SchwartzNPoint d n) :
@@ -560,6 +569,108 @@ omit [NeZero d] in
     (timeShiftBorchers (d := d) t F).funcs n = timeShiftSchwartzNPoint (d := d) t (F.funcs n) :=
   rfl
 
+abbrev translateBorchers (a : SpacetimeDim d) : BorchersSequence d → BorchersSequence d :=
+  fun F =>
+    { funcs := fun n => translateSchwartzNPoint (d := d) a (F.funcs n)
+      bound := F.bound
+      bound_spec := by
+        intro n hn
+        simp [F.bound_spec n hn] }
+
+omit [NeZero d] in
+@[simp] theorem translateBorchers_funcs (a : SpacetimeDim d) (F : BorchersSequence d) (n : ℕ) :
+    (translateBorchers (d := d) a F).funcs n = translateSchwartzNPoint (d := d) a (F.funcs n) :=
+  rfl
+
+omit [NeZero d] in
+theorem timeShiftBorchers_translateBorchers
+    (t : ℝ) (a : SpacetimeDim d) (F : BorchersSequence d) :
+    timeShiftBorchers (d := d) t (translateBorchers (d := d) a F) =
+      translateBorchers (d := d) a (timeShiftBorchers (d := d) t F) := by
+  cases F
+  simp [timeShiftBorchers, translateBorchers,
+    translateSchwartzNPoint_timeShiftSchwartzNPoint]
+
+private theorem translate_osConjTensorProduct_eq_of_spatial {n m : ℕ}
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (x : NPointDomain d (n + m)) :
+    ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+      (translateSchwartzNPoint (d := d) a g)) x =
+      (f.osConjTensorProduct g) (fun i => x i - a) := by
+  simp only [SchwartzNPoint.osConjTensorProduct, SchwartzMap.tensorProduct_apply,
+    SchwartzNPoint.osConj_apply, translateSchwartzNPoint_apply]
+  congr
+  · ext i μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [timeReflectionN, splitFirst, timeReflection, ha0]
+    · simp [timeReflectionN, splitFirst, timeReflection, hμ]
+
+private theorem schwinger_translate_tensor_eq_of_spatial (OS : OsterwalderSchraderAxioms d)
+    {n m : ℕ} (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hleft : VanishesToInfiniteOrderOnCoincidence
+      ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+        (translateSchwartzNPoint (d := d) a g)))
+    (hright : VanishesToInfiniteOrderOnCoincidence
+      (f.osConjTensorProduct g)) :
+    OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+      ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+        (translateSchwartzNPoint (d := d) a g))) =
+    OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  symm
+  refine OS.E1_translation_invariant (n + m) (-a)
+    (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+    (ZeroDiagonalSchwartz.ofClassical
+      ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+        (translateSchwartzNPoint (d := d) a g))) ?_
+  intro x
+  rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+      (f := f.osConjTensorProduct g) hright,
+    ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+      (f := ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+        (translateSchwartzNPoint (d := d) a g))) hleft]
+  simpa [sub_eq_add_neg] using
+    (translate_osConjTensorProduct_eq_of_spatial (d := d) a ha0 f g x)
+
+private theorem OSInnerProduct_translate_eq_of_spatial (OS : OsterwalderSchraderAxioms d)
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    (F G : BorchersSequence d)
+    (hleft : OSTensorAdmissible d (translateBorchers (d := d) a F)
+      (translateBorchers (d := d) a G))
+    (hright : OSTensorAdmissible d F G) :
+    OSInnerProduct d OS.S (translateBorchers (d := d) a F)
+      (translateBorchers (d := d) a G) =
+    OSInnerProduct d OS.S F G := by
+  unfold OSInnerProduct
+  apply Finset.sum_congr rfl
+  intro n hn
+  apply Finset.sum_congr rfl
+  intro m hm
+  simpa [translateBorchers_funcs] using
+    schwinger_translate_tensor_eq_of_spatial (d := d) OS a ha0
+      (F.funcs n) (G.funcs m) (hleft n m) (hright n m)
+
+private theorem OSInnerProduct_translate_right_timeShift_eq_of_spatial
+    (OS : OsterwalderSchraderAxioms d)
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    (F G : BorchersSequence d) (t : ℝ)
+    (hleft : OSTensorAdmissible d (translateBorchers (d := d) a F)
+      (timeShiftBorchers (d := d) t (translateBorchers (d := d) a G)))
+    (hright : OSTensorAdmissible d F
+      (timeShiftBorchers (d := d) t G)) :
+    OSInnerProduct d OS.S (translateBorchers (d := d) a F)
+      (timeShiftBorchers (d := d) t (translateBorchers (d := d) a G)) =
+    OSInnerProduct d OS.S F (timeShiftBorchers (d := d) t G) := by
+  rw [timeShiftBorchers_translateBorchers]
+  have hleft' :
+      OSTensorAdmissible d (translateBorchers (d := d) a F)
+        (translateBorchers (d := d) a (timeShiftBorchers (d := d) t G)) := by
+    simpa [timeShiftBorchers_translateBorchers] using hleft
+  exact OSInnerProduct_translate_eq_of_spatial
+    (d := d) OS a ha0 F (timeShiftBorchers (d := d) t G) hleft' hright
+
 private theorem exists_norm_OSInnerProduct_right_timeShift_le_polynomial
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F G : PositiveTimeBorchersSequence d) :
@@ -855,6 +966,34 @@ theorem timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
       NPointDomain d n → ℂ)) ⊆ OrderedPositiveTimeRegion d n := by
   exact timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_nonneg
     (d := d) t (le_of_lt ht) f hf
+
+omit [NeZero d] in
+theorem translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+    {n : ℕ} (a : SpacetimeDim d) (ha0 : a 0 = 0) (f : SchwartzNPoint d n)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n) :
+    tsupport (((translateSchwartzNPoint (d := d) a f : SchwartzNPoint d n) :
+      NPointDomain d n → ℂ)) ⊆ OrderedPositiveTimeRegion d n := by
+  intro x hx
+  have hxpre :
+      (fun i => x i - a) ∈
+        tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
+    exact tsupport_precomp_subset
+      (f := ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ))
+      (h := translateNPointDomain (d := d) (n := n) a)
+      (continuous_translateNPointDomain (d := d) (n := n) a) hx
+  have hord := hf hxpre
+  intro i
+  constructor
+  · have hi := (hord i).1
+    have : 0 < x i 0 - a 0 := by
+      simpa [OrderedPositiveTimeRegion] using hi
+    simpa [ha0] using this
+  · intro j hij
+    have hij' := (hord i).2 j hij
+    have : x i 0 - a 0 < x j 0 - a 0 := by
+      simpa [OrderedPositiveTimeRegion] using hij'
+    simpa [ha0] using this
 
 /-- If a head test is supported in the time slab `0 < τ_head < t`, then prepending it
 to a tail shifted forward by `t` preserves the ordered positive-time support surface. -/
@@ -3443,6 +3582,155 @@ theorem OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single
       (t := t) ht]
   simpa [PositiveTimeBorchersSequence.single_toBorchersSequence] using
     (OSInnerProduct_single_right_timeShift (d := d) OS f g t)
+
+private theorem OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single_translate_spatial
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (t : ℝ) (ht : 0 < t) :
+    OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n (translateSchwartzNPoint (d := d) a f)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) a ha0 f hf_ord))
+        (PositiveTimeBorchersSequence.single m (translateSchwartzNPoint (d := d) a g)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) a ha0 g hg_ord))
+        (t : ℂ) =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        (t : ℂ) := by
+  let hf_ord' :=
+    translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) a ha0 f hf_ord
+  let hg_ord' :=
+    translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) a ha0 g hg_ord
+  let hg_shift_ord :=
+    timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
+      (d := d) t ht g hg_ord
+  let hg_shift_ord' :=
+    translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) a ha0 (timeShiftSchwartzNPoint (d := d) t g) hg_shift_ord
+  have hleft :
+      VanishesToInfiniteOrderOnCoincidence
+        ((translateSchwartzNPoint (d := d) a f).osConjTensorProduct
+          (translateSchwartzNPoint (d := d) a (timeShiftSchwartzNPoint (d := d) t g))) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (n := n) (m := m)
+      (f := translateSchwartzNPoint (d := d) a f)
+      (g := translateSchwartzNPoint (d := d) a (timeShiftSchwartzNPoint (d := d) t g))
+      hf_ord' hg_shift_ord'
+  have hright :
+      VanishesToInfiniteOrderOnCoincidence
+        (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (n := n) (m := m) (f := f)
+      (g := timeShiftSchwartzNPoint (d := d) t g) hf_ord hg_shift_ord
+  rw [OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single
+      (d := d) (OS := OS) (lgc := lgc)
+      (f := translateSchwartzNPoint (d := d) a f) (hf_ord := hf_ord')
+      (g := translateSchwartzNPoint (d := d) a g) (hg_ord := hg_ord')
+      (hg_compact := by
+        simpa [translateSchwartzNPoint_apply] using
+          hg_compact.comp_homeomorph
+            (translateNPointDomainHomeomorph (d := d) (n := m) a))
+      (t := t) ht,
+    OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single
+      (d := d) (OS := OS) (lgc := lgc)
+      (f := f) (hf_ord := hf_ord)
+      (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact) (t := t) ht,
+    ← translateSchwartzNPoint_timeShiftSchwartzNPoint
+      (d := d) (n := m) (a := a) (t := t) (f := g)]
+  exact schwinger_translate_tensor_eq_of_spatial
+    (d := d) OS a ha0 f (timeShiftSchwartzNPoint (d := d) t g) hleft hright
+
+theorem OSInnerProductTimeShiftHolomorphicValue_single_translate_spatial
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (z : ℂ) (hz : 0 < z.re) :
+    OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n (translateSchwartzNPoint (d := d) a f)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) a ha0 f hf_ord))
+        (PositiveTimeBorchersSequence.single m (translateSchwartzNPoint (d := d) a g)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) a ha0 g hg_ord))
+        z =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord)
+        z := by
+  let F₀ : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single n (translateSchwartzNPoint (d := d) a f)
+      (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+        (d := d) a ha0 f hf_ord)
+  let G₀ : PositiveTimeBorchersSequence d :=
+    PositiveTimeBorchersSequence.single m (translateSchwartzNPoint (d := d) a g)
+      (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+        (d := d) a ha0 g hg_ord)
+  let F₁ : PositiveTimeBorchersSequence d := PositiveTimeBorchersSequence.single n f hf_ord
+  let G₁ : PositiveTimeBorchersSequence d := PositiveTimeBorchersSequence.single m g hg_ord
+  let H₀ : ℂ → ℂ := OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F₀ G₀
+  let H₁ : ℂ → ℂ := OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F₁ G₁
+  let U : Set ℂ := {w : ℂ | 0 < w.re}
+  have hU_open : IsOpen U := isOpen_lt continuous_const Complex.continuous_re
+  have hU_conv : Convex ℝ U := convex_halfSpace_re_gt (0 : ℝ)
+  have hU_conn : IsConnected U := ⟨⟨1, by simp [U]⟩, hU_conv.isPreconnected⟩
+  have hH₀_holo : DifferentiableOn ℂ H₀ U := by
+    simpa [H₀, U, F₀, G₀] using
+      differentiableOn_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc F₀ G₀
+  have hH₁_holo : DifferentiableOn ℂ H₁ U := by
+    simpa [H₁, U, F₁, G₁] using
+      differentiableOn_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc F₁ G₁
+  have h_freq : ∃ᶠ w in nhdsWithin (1 : ℂ) {(1 : ℂ)}ᶜ, H₀ w = H₁ w := by
+    rw [Filter.Frequently, Filter.Eventually, mem_nhdsWithin]
+    rintro ⟨V, hV_open, h1_mem, hV_sub⟩
+    obtain ⟨r, hr_pos, hrV⟩ := Metric.isOpen_iff.mp hV_open 1 h1_mem
+    let ε : ℝ := min (r / 2) (1 / 2)
+    have hε_pos : 0 < ε := by
+      dsimp [ε]
+      positivity
+    have hε_lt_r : ε < r := by
+      have hr2 : r / 2 < r := by linarith
+      exact lt_of_le_of_lt (by dsimp [ε]; exact min_le_left _ _) hr2
+    have hz_in_V : (((1 + ε : ℝ) : ℂ)) ∈ V := by
+      apply hrV
+      rw [Metric.mem_ball, Complex.dist_eq]
+      have hsub : (((1 + ε : ℝ) : ℂ) - 1) = (ε : ℂ) := by
+        norm_num
+      rw [hsub, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (le_of_lt hε_pos)]
+      exact hε_lt_r
+    have hz_ne : (((1 + ε : ℝ) : ℂ)) ≠ 1 := by
+      intro hEq
+      have hsub : (((1 + ε : ℝ) : ℂ) - 1) = (ε : ℂ) := by
+        norm_num
+      have hε_zero : (ε : ℂ) = 0 := by
+        simpa [hsub] using sub_eq_zero.mpr hEq
+      exact hε_pos.ne' (Complex.ofReal_eq_zero.mp hε_zero)
+    have hreal_eq : H₀ ((1 + ε : ℝ) : ℂ) = H₁ ((1 + ε : ℝ) : ℂ) := by
+      have hpos : 0 < 1 + ε := by linarith
+      dsimp [H₀, H₁, F₀, G₀, F₁, G₁]
+      exact OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single_translate_spatial
+        (d := d) (OS := OS) (lgc := lgc) a ha0 f hf_ord g hg_ord hg_compact (1 + ε) hpos
+    exact hV_sub ⟨hz_in_V, hz_ne⟩ hreal_eq
+  have hEq : Set.EqOn H₀ H₁ U := by
+    exact identity_theorem_connected hU_open hU_conn H₀ H₁ hH₀_holo hH₁_holo
+      (1 : ℂ) (by simp [U]) h_freq
+  exact hEq hz
 
 /-- One-variable holomorphic OS time-shift with a concentrated right factor. On positive
 real points it recovers the explicit finite sum over the left Borchers components. -/

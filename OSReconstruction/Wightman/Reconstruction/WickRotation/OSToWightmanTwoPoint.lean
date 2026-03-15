@@ -818,6 +818,130 @@ private theorem OSInnerProductTimeShiftHolomorphicValue_onePoint_pair_eq_xiShift
     (d := d) (OS := OS) (lgc := lgc) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
     χ g hχ_pos hg_pos hg_compact t ht
 
+private theorem integral_xiShift_centerShear_translate_spatial
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
+    (hΨ_euclid : ∀ (h : ZeroDiagonalSchwartz d 2),
+      OS.S 2 h = ∫ x : NPointDomain d 2,
+        Ψ (fun i => wickRotatePoint (x i)) * (h.1 x))
+    (a : SpacetimeDim d) (ha0 : a 0 = 0)
+    (χ g : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
+    (t : ℝ) (ht : 0 < t) :
+    ∫ z : NPointDomain d 2,
+      Ψ (xiShift ⟨1, by omega⟩ 0
+        (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+        ((t : ℂ) * Complex.I)) *
+        ((SCV.translateSchwartz a χ) (z 0) *
+          (SCV.translateSchwartz a g) (z 0 + z 1)) =
+    ∫ z : NPointDomain d 2,
+      Ψ (xiShift ⟨1, by omega⟩ 0
+        (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+        ((t : ℂ) * Complex.I)) *
+        (χ (z 0) * g (z 0 + z 1)) := by
+  have ha0_neg : (-a) 0 = 0 := by simpa [ha0]
+  have hχ_eq :
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d (SCV.translateSchwartz a χ) : SchwartzNPoint d 1)) =
+      translateSchwartzNPoint (d := d) (-a)
+        (SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1)) := by
+    ext x
+    have hreflect :
+        timeReflection d (a + x 0) = a + timeReflection d (x 0) := by
+      ext μ
+      by_cases hμ : μ = 0
+      · subst hμ
+        simp [timeReflection, ha0]
+      · simp [timeReflection, hμ]
+    simp [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
+      SCV.translateSchwartz_apply, translateSchwartzNPoint_apply,
+      timeReflectionN, sub_eq_add_neg, hreflect, add_assoc, add_left_comm,
+      add_comm]
+  have hg_eq :
+      (onePointToFin1CLM d (SCV.translateSchwartz a g) : SchwartzNPoint d 1) =
+      translateSchwartzNPoint (d := d) (-a)
+        (onePointToFin1CLM d g : SchwartzNPoint d 1) := by
+    ext x
+    simp [onePointToFin1CLM_apply, SCV.translateSchwartz_apply,
+      translateSchwartzNPoint_apply, sub_eq_add_neg, add_assoc, add_left_comm,
+      add_comm]
+  let hχ_pos' :=
+    translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) (-a) ha0_neg
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+      hχ_pos
+  let hg_pos' :=
+    translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) (-a) ha0_neg
+      (onePointToFin1CLM d g : SchwartzNPoint d 1)
+      hg_pos
+  have hg_compact' : HasCompactSupport ((SCV.translateSchwartz a g : SchwartzSpacetime d) :
+      SpacetimeDim d → ℂ) := by
+    change HasCompactSupport (fun x : SpacetimeDim d => g (x + a))
+    simpa [Function.comp, SCV.translateSchwartz_apply, add_comm, add_left_comm, add_assoc] using
+      hg_compact.comp_homeomorph (Homeomorph.addRight a)
+  calc
+    ∫ z : NPointDomain d 2,
+        Ψ (xiShift ⟨1, by omega⟩ 0
+          (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+          ((t : ℂ) * Complex.I)) *
+          ((SCV.translateSchwartz a χ) (z 0) *
+            (SCV.translateSchwartz a g) (z 0 + z 1))
+      = OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d (SCV.translateSchwartz a χ) : SchwartzNPoint d 1))
+              (by simpa [hχ_eq] using hχ_pos')))
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d (SCV.translateSchwartz a g) : SchwartzNPoint d 1)
+              (by simpa [hg_eq] using hg_pos')))
+          (t : ℂ) := by
+            symm
+            exact OSInnerProductTimeShiftHolomorphicValue_onePoint_pair_eq_xiShift_centerShear
+              (d := d) (OS := OS) (lgc := lgc) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
+              (SCV.translateSchwartz a χ) (SCV.translateSchwartz a g)
+              (by simpa [hχ_eq] using hχ_pos')
+              (by simpa [hg_eq] using hg_pos')
+              hg_compact' t ht
+    _ = OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+              hχ_pos))
+          ((show PositiveTimeBorchersSequence d from
+            PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d g : SchwartzNPoint d 1)
+              hg_pos))
+          (t : ℂ) := by
+            simpa [hχ_eq, hg_eq] using
+              (OSInnerProductTimeShiftHolomorphicValue_single_translate_spatial
+                (d := d) (OS := OS) (lgc := lgc) (-a) ha0_neg
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+                hχ_pos
+                (onePointToFin1CLM d g : SchwartzNPoint d 1)
+                hg_pos
+                (hasCompactSupport_onePointToFin1 (d := d) g hg_compact)
+                (t : ℂ) (by simpa using ht))
+    _ = ∫ z : NPointDomain d 2,
+        Ψ (xiShift ⟨1, by omega⟩ 0
+          (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+          ((t : ℂ) * Complex.I)) *
+          (χ (z 0) * g (z 0 + z 1)) := by
+            exact OSInnerProductTimeShiftHolomorphicValue_onePoint_pair_eq_xiShift_centerShear
+              (d := d) (OS := OS) (lgc := lgc) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
+              χ g hχ_pos hg_pos hg_compact t ht
+
 theorem exists_twoPointDifferenceLift_timeShift_holomorphicValue_iff_xiShiftWitness_of_positiveSupport
     (OS : OsterwalderSchraderAxioms d)
     (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
