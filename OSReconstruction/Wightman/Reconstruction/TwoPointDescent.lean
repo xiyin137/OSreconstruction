@@ -373,6 +373,22 @@ theorem twoPointCenterShearDescent_translate_center
     twoPointCenterShearDescent_translate_right
       (d := d) χ g (-a)
 
+/-- Simultaneously translating the center cutoff and right factor by the same
+spatial vector leaves the descended center-shear representative unchanged. This
+is the descended counterpart of center-spatial translation invariance of the
+raw product shell. -/
+theorem twoPointCenterShearDescent_translate_both
+    (χ g : SchwartzSpacetime d) (a : SpacetimeDim d) :
+    twoPointCenterShearDescent (d := d)
+      (SCV.translateSchwartz a χ) (SCV.translateSchwartz a g) =
+      twoPointCenterShearDescent (d := d) χ g := by
+  rw [twoPointCenterShearDescent_translate_left]
+  have htrans :
+      SCV.translateSchwartz (-a) (SCV.translateSchwartz a g) = g := by
+    ext x
+    simp [SCV.translateSchwartz_apply]
+  simpa [htrans]
+
 private theorem integral_twoPointCenterDiffSchwartz
     (F : SchwartzNPoint d 2) :
     ∫ x : NPointDomain d 2, twoPointCenterDiffSchwartzCLM (d := d) F x =

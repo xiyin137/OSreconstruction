@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanKernel
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTwoPoint
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.WickRotation.HermitianBoundaryPairing
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BaseFiberInflation
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 
 /-!
@@ -39,6 +40,8 @@ The implementation is split across several files in the `WickRotation/` subfolde
 - `BHWExtension.lean`: Bargmann-Hall-Wightman extension definition and properties
 - `BEGTrigonometric.lean`: small trigonometric estimates used in the
   Bros-Epstein-Glaser path geometry
+- `BaseFiberInflation.lean`: forward-tube and Lorentz-action inflation helpers
+  for the base-fiber connectedness route
 - `BHWTranslation.lean`: Translation invariance proof chain, raw and zero-diagonal
   Schwinger function constructions
 - `SchwingerAxioms.lean`: zero-diagonal Euclidean-side proofs and remaining

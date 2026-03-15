@@ -54,6 +54,28 @@ def centerSpatialFirstPerm (d : ℕ) :
     Fin (d + (d + 2)) ≃ Fin ((d + 1) + (d + 1)) :=
   (finSumFinEquiv.symm.trans (centerSpatialFirstPermAux d)).trans finSumFinEquiv
 
+@[simp] theorem centerSpatialFirstPerm_symm_castAdd_zero (d : ℕ) :
+    (centerSpatialFirstPerm d).symm (Fin.castAdd (d + 1) (0 : Fin (d + 1))) =
+      Fin.natAdd d (0 : Fin (d + 2)) := by
+  apply Fin.ext
+  simp [centerSpatialFirstPerm, centerSpatialFirstPermAux]
+
+@[simp] theorem centerSpatialFirstPerm_symm_castAdd_succ (d : ℕ) (i : Fin d) :
+    (centerSpatialFirstPerm d).symm (Fin.castAdd (d + 1) i.succ) =
+      Fin.castAdd (d + 2) i := by
+  apply Fin.ext
+  simp [centerSpatialFirstPerm, centerSpatialFirstPermAux]
+
+@[simp] theorem centerSpatialFirstPerm_symm_natAdd (d : ℕ) (i : Fin (d + 1)) :
+    (centerSpatialFirstPerm d).symm (Fin.natAdd (d + 1) i) =
+      Fin.natAdd d i.succ := by
+  change finSumFinEquiv
+      ((centerSpatialFirstPermAux d).symm
+        (finSumFinEquiv.symm (Fin.natAdd (d + 1) i))) =
+    Fin.natAdd d i.succ
+  rw [finSumFinEquiv_symm_apply_natAdd]
+  simp [centerSpatialFirstPermAux]
+
 /-- Translation of only the center-spatial coordinates in flattened two-point
 center/difference variables. -/
 def centerSpatialShift (d : ℕ) (a : Fin d → ℝ) :
@@ -109,7 +131,7 @@ def IsCenterSpatialTranslationInvariantSchwartzCLM
   ∀ a : Fin d → ℝ,
     T.comp (SCV.translateSchwartzCLM (centerSpatialShift d a)) = T
 
-private theorem centerSpatialInvariant_to_headBlockInvariant
+theorem centerSpatialInvariant_to_headBlockInvariant
     (d : ℕ)
     (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
     (hT : IsCenterSpatialTranslationInvariantSchwartzCLM d T) :
@@ -137,6 +159,20 @@ def integrateCenterSpatial (d : ℕ)
     SchwartzMap (Fin (d + 2) → ℝ) ℂ :=
   integrateHeadBlock (m := d) (n := d + 2)
     (reindexSchwartzEquiv (centerSpatialFirstPerm d).symm F)
+
+/-- Integrating out the center-spatial block is invariant under translating
+exactly those center-spatial coordinates. -/
+theorem integrateCenterSpatial_translate_centerSpatial
+    (d : ℕ) (a : Fin d → ℝ)
+    (F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ) :
+    integrateCenterSpatial d (SCV.translateSchwartz (centerSpatialShift d a) F) =
+      integrateCenterSpatial d F := by
+  rw [integrateCenterSpatial, reindexSchwartzEquiv_translate]
+  rw [centerSpatialShift_pullback_symm]
+  simpa using
+    integrateHeadBlock_translateSchwartz_head
+      (m := d) (n := d + 2) a
+      (reindexSchwartzEquiv (centerSpatialFirstPerm d).symm F)
 
 /-- A center-spatial-translation-invariant functional depends only on the test
 after integrating out the center-spatial coordinates. -/
@@ -217,5 +253,82 @@ theorem map_eq_tensorProduct_integrateCenterSpatial_of_centerSpatialInvariant
             T ((reindexSchwartzEquiv (centerSpatialFirstPerm d))
               (φ.tensorProduct (integrateCenterSpatial d F)))
           simp [integrateCenterSpatial, F']
+
+/-- Reinsert a reduced center-time/difference test into the full flattened
+two-point center/difference space by tensoring with a fixed center-spatial
+cutoff and undoing the center-spatial permutation. -/
+noncomputable def centerSpatialSectionCLM
+    (d : ℕ) (φ : SchwartzMap (Fin d → ℝ) ℂ) :
+    SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ :=
+  let tensorRight :
+      SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin (d + (d + 2)) → ℝ) ℂ :=
+    { toLinearMap :=
+        { toFun := fun H => φ.tensorProduct H
+          map_add' := by
+            intro H K
+            ext x
+            simp [SchwartzMap.tensorProduct_apply, mul_add]
+          map_smul' := by
+            intro c H
+            ext x
+            simp [SchwartzMap.tensorProduct_apply, mul_comm, mul_left_comm, mul_assoc] }
+      cont := SchwartzMap.tensorProduct_continuous_right φ }
+  (reindexSchwartzEquiv (centerSpatialFirstPerm d)).comp tensorRight
+
+/-- Descend a center-spatial-translation-invariant functional to the reduced
+center-time/difference Schwartz space by fixing a normalized center-spatial
+cutoff. -/
+noncomputable def centerSpatialDescentCLM
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ) :
+    SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ] ℂ :=
+  T.comp (centerSpatialSectionCLM d φ)
+
+/-- If the center-spatial cutoff `φ` is normalized by `∫ φ = 1`, then a
+center-spatial-translation-invariant functional factors through
+`integrateCenterSpatial` via `centerSpatialDescentCLM T φ`. -/
+theorem map_eq_centerSpatialDescentCLM_integrateCenterSpatial_of_centerSpatialInvariant
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ) :
+    T F = centerSpatialDescentCLM d T φ (integrateCenterSpatial d F) := by
+  simpa [centerSpatialDescentCLM, centerSpatialSectionCLM] using
+    map_eq_tensorProduct_integrateCenterSpatial_of_centerSpatialInvariant
+      d T hT φ hφ F
+
+/-- If a full flattened two-point functional is center-spatial translation
+invariant and its descended `(u_time, ξ)` functional is head-translation
+invariant, then the original functional depends only on the iterated reduced
+descent `sliceIntegral ∘ integrateCenterSpatial`. This is the OS-II-shaped
+"integrate spatial parameters first, then the active time variable" reduction
+surface. -/
+theorem map_eq_headTranslationDescentCLM_sliceIntegral_integrateCenterSpatial
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ t : ℝ, ψ t = 1)
+    (hTred : IsHeadTranslationInvariantSchwartzCLM (centerSpatialDescentCLM d T φ))
+    (F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ) :
+    T F =
+      headTranslationDescentCLM (centerSpatialDescentCLM d T φ) ψ
+        (sliceIntegral (integrateCenterSpatial d F)) := by
+  calc
+    T F = centerSpatialDescentCLM d T φ (integrateCenterSpatial d F) := by
+      exact map_eq_centerSpatialDescentCLM_integrateCenterSpatial_of_centerSpatialInvariant
+        d T hT φ hφ F
+    _ = headTranslationDescentCLM (centerSpatialDescentCLM d T φ) ψ
+          (sliceIntegral (integrateCenterSpatial d F)) := by
+        simpa [headTranslationDescentCLM] using
+          map_eq_headTranslationDescentCLM_sliceIntegral_of_headTranslationInvariant
+            (centerSpatialDescentCLM d T φ) hTred ψ hψ (integrateCenterSpatial d F)
 
 end OSReconstruction

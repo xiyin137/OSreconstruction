@@ -76,9 +76,12 @@ Current blocker map:
 - `OSToWightmanTwoPoint.lean` now carries the specialized `k = 2`
   center/difference spectral and holomorphic reduction ladder, so the core
   `OSToWightman.lean` file stays focused on the base-step analytic machinery.
-- The current working route for that blocker is direct kernel construction plus
-  separate-holomorphic/Osgood assembly, not abstract OS-side insertion operators
-  or a wrapper around density.
+- The current working route for that blocker is now closer to the OS-II shape:
+  first reduce by center-spatial descent, then by the active center-time
+  variable. The key infrastructure for that reduction lives in
+  `Wightman/Reconstruction/CenterSpatialTranslationInvariant.lean`,
+  together with the older one-variable descent files
+  `TranslationInvariantSchwartz.lean` and `HeadTranslationInvariant.lean`.
 - The translation-invariant Schwartz classification lane is now in production in
   `Wightman/Reconstruction/TranslationInvariantSchwartz.lean`, and the two-point
   Schwinger/Wightman center-difference reductions are correspondingly
@@ -211,6 +214,9 @@ the tracked production tree, not as a complete file listing.
 │   │       ├── BlockIntegral.lean        # finite-block flattening and iterated slice integration
 │   │       ├── ZeroMeanFourierTransport.lean # zero-mean transport infrastructure
 │   │       ├── TranslationInvariantSchwartz.lean # zero-mean decomposition + translation classification
+│   │       ├── HeadTranslationInvariant.lean # one active-variable factorization through sliceIntegral
+│   │       ├── HeadBlockTranslationInvariant.lean # block factorization through integrateHeadBlock
+│   │       ├── CenterSpatialTranslationInvariant.lean # center-spatial descent to reduced (u_time, ξ)
 │   │       ├── TwoPointDescent.lean      # center/difference descent for two-point Schwartz tests
 │   │       ├── WightmanTwoPoint.lean     # two-point Wightman center/difference reduction
 │   │       ├── GNSConstruction.lean      # GNS construction
@@ -223,6 +229,7 @@ the tracked production tree, not as a complete file listing.
 │   │       ├── Helpers/                  # auxiliary separately-analytic / EOW helpers
 │   │       └── WickRotation/
 │   │           ├── ForwardTubeLorentz.lean      # Lorentz covariance on the tube
+│   │           ├── BaseFiberInflation.lean      # forward-tube/Lorentz inflation helpers
 │   │           ├── BHWExtension.lean            # BHW extension / adjacent-swap layer
 │   │           ├── BHWTranslation.lean          # translation-invariance transfer
 │   │           ├── HermitianBoundaryPairing.lean # rapidity-reduced partner BV pairing
@@ -230,6 +237,7 @@ the tracked production tree, not as a complete file listing.
 │   │           ├── OSToWightmanSemigroup.lean   # OS semigroup, spectral/Laplace, 1-variable holomorphy
 │   │           ├── OSToWightman.lean            # flat-witness continuation core
 │   │           ├── OSToWightmanTwoPoint.lean    # specialized two-point reduction ladder
+│   │           ├── WickRotationBridge.lean      # small Wick-rotation differentiability helpers
 │   │           └── OSToWightmanBoundaryValues.lean # tempered BV package and axiom transfer
 │   ├── SCV/
 │   │   ├── Polydisc.lean                 # polydisc geometry
@@ -271,9 +279,9 @@ Two navigation notes:
   shared core definitions live in `Wightman/Reconstruction/Core.lean`, and the
   Schwinger/OS-side reduction layer lives in
   `Wightman/Reconstruction/SchwingerOS.lean`. The new finite-block descent
-  helpers are split out into `BlockIntegral.lean` and `TwoPointDescent.lean`
-  so the Wick-rotation files do not keep absorbing low-level coordinate
-  bookkeeping.
+  helpers are split out into `BlockIntegral.lean`, `HeadBlockTranslationInvariant.lean`,
+  `CenterSpatialTranslationInvariant.lean`, and `TwoPointDescent.lean` so the
+  Wick-rotation files do not keep absorbing low-level coordinate bookkeeping.
 - `Wightman/Reconstruction/Main.lean` only wires the top-level theorems.
 - The old monolithic `OSToWightman` layer no longer exists as a single file.
   The live `E -> R` lane is intentionally split across
