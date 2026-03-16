@@ -22,6 +22,15 @@ now lives in `OSToWightmanSemigroup.lean`. The downstream boundary-value and
 transfer package lives in `OSToWightmanBoundaryValues.lean`. The specialized
 two-point continuation/spectral reduction ladder now lives in
 `OSToWightmanTwoPoint.lean`.
+
+Important status note: the current formal base-step surface still asks for full
+`DifferentiableOn` on `ACR(1)` / the flattened positive-time-difference tube.
+That overspecifies the OS II base-step, where the time
+variables are analytic and the spatial variables are treated as parameters. So
+the root `sorry` in this file is now a statement-design question as well as a
+missing proof: either justify that legacy full-holomorphic surface, or refactor
+the base step to the weaker time-parametric theorem shape before building more
+infrastructure on top of it.
 -/
 
 open scoped Classical NNReal
@@ -240,7 +249,12 @@ private theorem preimage_update_spatial_tubeDomain_flatPositiveTimeDiffReal {k d
 Time-difference coordinates see the upper half-plane, while spatial coordinates are
 unconstrained. So a continuous function on `TubeDomain (FlatPositiveTimeDiffReal k d)`
 is jointly holomorphic once those two classes of one-variable slices are known to be
-holomorphic on their natural one-dimensional domains. -/
+holomorphic on their natural one-dimensional domains.
+
+This is the full "all complex coordinates are analytic" surface. It is
+useful as a packaging theorem, but it should not be mistaken for the OS II
+base-step input itself: OS II first treats the time variables analytically and
+the spatial variables parametrically. -/
 private theorem differentiableOn_tubeDomain_flatPositiveTimeDiffReal_of_slices {k d : ℕ}
     (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
     (hcont : ContinuousOn G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)))
@@ -280,6 +294,17 @@ private theorem differentiableOn_tubeDomain_flatPositiveTimeDiffReal_of_slices {
             (z (finProdFinEquiv (i, μ))) := by
         exact (hspatial z hz i μ hμ _ (by simp)).differentiableAt (by simp)
       simpa [hp] using hdiff
+
+/-- OS-II-faithful first-step witness surface on the flattened positive-time-difference
+tube: continuous on the tube and holomorphic only in the time-difference coordinates,
+with the spatial coordinates treated as parameters. -/
+def IsTimeHolomorphicFlatPositiveTimeDiffWitness {k d : ℕ}
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ) : Prop :=
+  ContinuousOn G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) ∧
+    ∀ z ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal k d), ∀ i : Fin k,
+      DifferentiableOn ℂ
+        (fun w => G (Function.update z (finProdFinEquiv (i, (0 : Fin (d + 1)))) w))
+        {w : ℂ | 0 < w.im}
 
 /-- `C_k^(1)` is exactly the tube over the positive time-difference cone in
     flattened difference coordinates. -/
@@ -420,141 +445,11 @@ private theorem differentiableOn_OSInnerProductTimeShiftHolomorphicValue_local
     (OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
       (d := d) OS lgc F G z hz).symm
 
-/-- An auxiliary `k = 2` one-variable flat witness coming from the semigroup
-holomorphic family. It depends only on the Wick-rotated time-difference
-coordinate, so it is useful for isolating the time-holomorphic part of the
-argument, but it is not intended to be the final full two-point witness for
-general `OS.S 2`. -/
-private def twoPointTimeDiffFlatWitness
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d) :
-    (Fin (2 * (d + 1)) → ℂ) → ℂ :=
-  fun u =>
-    OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
-      (-Complex.I * u (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))))
-
-/-- The auxiliary semigroup-based `k = 2` time-difference witness is holomorphic
-on the positive-time-difference tube. This closes the one-variable holomorphic
-part of the story, but not the full spatially-parameterized two-point witness
-problem. -/
-private theorem differentiableOn_twoPointTimeDiffFlatWitness
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d) :
-    DifferentiableOn ℂ
-      (twoPointTimeDiffFlatWitness (d := d) OS lgc F G)
-      (SCV.TubeDomain (FlatPositiveTimeDiffReal 2 d)) := by
-  change DifferentiableOn ℂ
-    (fun u : Fin (2 * (d + 1)) → ℂ =>
-      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
-        (-Complex.I * u (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))))
-    (SCV.TubeDomain (FlatPositiveTimeDiffReal 2 d))
-  exact
-    differentiableOn_twoPoint_timeDiffFlatWitness
-      (d := d)
-      (H := OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G)
-      (differentiableOn_OSInnerProductTimeShiftHolomorphicValue_local
-        (d := d) OS lgc F G)
-
-/-- On the Euclidean center/difference section, the auxiliary `k = 2`
-time-difference witness evaluates at the real time-difference argument. -/
-private theorem twoPointTimeDiffFlatWitness_apply_wickRotate
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (z : NPointDomain d 2) :
-    twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-        (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))) =
-      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
-        (z ⟨1, by omega⟩ 0) := by
-  simpa [twoPointTimeDiffFlatWitness] using
-    twoPoint_timeDiffFlatWitness_apply_wickRotate
-      (d := d)
-      (H := OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G)
-      z
-
-/-- The fixed-time kernel induced by the auxiliary one-variable witness is
-invariant under center-spatial translations. This remains useful even though
-the time-only witness itself is not the final full `k = 2` witness. -/
-private theorem twoPointFixedTimeKernel_twoPointTimeDiffFlatWitness_centerSpatialInvariant
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (t : ℂ) (a : Fin d → ℝ) (z : NPointDomain d 2) :
-    OSReconstruction.twoPointFixedTimeKernel
-        (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t
-        (OSReconstruction.twoPointCenterSpatialTranslate (d := d) a z) =
-    OSReconstruction.twoPointFixedTimeKernel
-        (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t z := by
-  have htime :
-      (((twoPointCenterDiffCLE d)
-          (OSReconstruction.twoPointCenterSpatialTranslate (d := d) a z))
-          ⟨1, by omega⟩ 0 : ℂ) =
-        (((twoPointCenterDiffCLE d) z) ⟨1, by omega⟩ 0 : ℂ) := by
-    change
-      (((OSReconstruction.twoPointCenterSpatialTranslate (d := d) a z) 0 +
-          (OSReconstruction.twoPointCenterSpatialTranslate (d := d) a z) 1) 0 : ℂ) =
-        ((z 0 + z 1) 0 : ℂ)
-    rw [OSReconstruction.twoPointCenterSpatialTranslate_zero,
-      OSReconstruction.twoPointCenterSpatialTranslate_one]
-    simp [OSReconstruction.centerSpatialVec]
-  have hwick :
-      wickRotatePoint
-          (((twoPointCenterDiffCLE d)
-            (OSReconstruction.twoPointCenterSpatialTranslate (d := d) a z))
-            ⟨1, by omega⟩) 0 =
-        wickRotatePoint (((twoPointCenterDiffCLE d) z) ⟨1, by omega⟩) 0 := by
-    simpa [wickRotatePoint] using htime
-  simpa [OSReconstruction.twoPointFixedTimeKernel, twoPointTimeDiffFlatWitness, BHW.flattenCfg]
-    using congrArg
-      (fun s : ℂ =>
-        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
-          (-(Complex.I * (s + t))))
-      hwick
-
-/-- Once the fixed-time kernel induced by the auxiliary one-variable witness has
-a polynomial-growth package, its induced flattened Schwartz functional is
-center-spatial translation invariant. This is still a useful CLM-level input
-for the reduced OS-II-style extension seam, even though the underlying witness
-is not the final full `k = 2` one. -/
-private theorem twoPointFlatKernelCLM_twoPointTimeDiffFlatWitness_centerSpatialInvariant
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (t : ℂ)
-    (hK_meas :
-      MeasureTheory.AEStronglyMeasurable
-        (OSReconstruction.twoPointFixedTimeKernel
-          (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t)
-        MeasureTheory.volume)
-    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
-    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂MeasureTheory.volume,
-      ‖OSReconstruction.twoPointFixedTimeKernel
-          (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t x‖
-        ≤ C_bd * (1 + ‖x‖) ^ N) :
-    OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
-      (OSReconstruction.twoPointFlatKernelCLM
-        (d := d)
-        (OSReconstruction.twoPointFixedTimeKernel
-          (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t)
-        hK_meas C_bd N hC hK_bound) := by
-  refine
-    OSReconstruction.twoPointFlatKernelCLM_centerSpatialInvariant
-      (d := d)
-      (K := OSReconstruction.twoPointFixedTimeKernel
-        (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G) t)
-      hK_meas C_bd N hC hK_bound ?_
-  intro a z
-  simpa using
-    twoPointFixedTimeKernel_twoPointTimeDiffFlatWitness_centerSpatialInvariant
-      (d := d) OS lgc F G t a z
-
 /-- **Base step of analytic continuation (r = 0 → r = 1).**
 
     Produces the first genuinely holomorphic witness on `C_k^(1)` directly from the
     Schwinger functional `OS.S k`. This avoids introducing a separate "base-region
-    kernel" on `C_k^(0)`, which would be a stronger and less natural object than the
+    kernel" on `C_k^(0)`, which would be a less natural and more overspecified object than the
     reconstruction chain actually needs.
 
     In the current file, `C_k^(1)` has already been identified as a tube domain over
@@ -571,17 +466,19 @@ private theorem twoPointFlatKernelCLM_twoPointTimeDiffFlatWitness_centerSpatialI
 
     So the live gap is now genuinely multivariable/interleaved. To finish the
     base step, those one-variable matrix-element witnesses must still be assembled
-    into the flattened holomorphic witness `G` required here for the full
-    positive-time-difference tube. The unresolved theorem-level choice is:
+    into the witness `G` required here. At present this theorem still asks for the
+    legacy full-holomorphic surface on the flattened positive-time-difference
+    tube. The unresolved theorem-level choice is therefore:
 
-    1. assemble `G` from separate holomorphicity in each time-difference variable
-       plus continuity/Osgood bookkeeping for the interleaved operator product, or
-    2. build the deeper joint spectral / product-measure package for the interleaved
-       semigroup insertions directly.
+    1. justify that legacy surface by proving the needed spatial analyticity /
+       Osgood assembly honestly, or
+    2. refactor the base step to the weaker OS II theorem shape: time-holomorphic
+       with spatial variables treated as parameters, and only later upgrade to the
+       full-holomorphic surface used by the current downstream restriction chain.
 
     So the blocker is no longer existence of a one-variable positive-energy measure
     on the compact-support core, but the passage from those one-variable witnesses
-    to the full OS II flat continuation statement.
+    to the correct OS II base-step statement.
 
     Ref: OS II, Section IV (base case of induction); Reed-Simon II, Section X.7;
     Streater-Wightman, §3.2-§3.3. -/
@@ -605,7 +502,67 @@ private theorem schwinger_continuation_base_step_of_flatWitness {d : ℕ} [NeZer
   · intro f
     simpa [S_ext] using hG_euclid f
 
+/-- OS-II-faithful first-stage base-step theorem: construct a witness on the
+flattened positive-time-difference tube that is holomorphic in the time-difference
+variables and continuous in the remaining variables, together with the Euclidean
+reproduction identity.
+
+This matches the corrected reading of OS II more closely than the older single-step
+formulation asking immediately for full holomorphicity on all complex coordinates. -/
+theorem schwinger_continuation_base_step_timeParametric {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (k : ℕ) :
+    ∃ (G : (Fin (k * (d + 1)) → ℂ) → ℂ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness G ∧
+      (∀ (f : ZeroDiagonalSchwartz d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
+  sorry
+
+/-- Second subproblem for the base step: upgrade the OS-II time-parametric witness to
+the legacy fully holomorphic surface currently consumed by the downstream
+restriction chain.
+
+This theorem isolates the statement-design issue at the root blocker. If that
+full-holomorphic surface is not the right OS-II endpoint, then this is exactly the
+place where the continuation chain should be refactored instead of smuggled. -/
+private theorem schwinger_continuation_spatial_upgrade_of_timeWitness {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (k : ℕ)
+    (G : (Fin (k * (d + 1)) → ℂ) → ℂ)
+    (hG_time : IsTimeHolomorphicFlatPositiveTimeDiffWitness G)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d k),
+      OS.S k f = ∫ x : NPointDomain d k,
+        G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f.1 x)) :
+    ∃ (S_ext : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d k 1) ∧
+      (∀ (f : ZeroDiagonalSchwartz d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
+  sorry
+
+/-- Public OS-II-faithful base-step theorem: produce a witness on the flattened
+positive-time-difference tube that is holomorphic in the time-difference variables
+and continuous in the remaining variables, together with the Euclidean
+reproduction identity. -/
 theorem schwinger_continuation_base_step {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (k : ℕ) :
+    ∃ (G : (Fin (k * (d + 1)) → ℂ) → ℂ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness G ∧
+      (∀ (f : ZeroDiagonalSchwartz d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
+  exact schwinger_continuation_base_step_timeParametric (d := d) OS lgc k
+
+/-- Legacy full-holomorphic `ACR(1)` version of the base step.
+
+This is the theorem currently consumed by the downstream restriction chain.
+Mathematically, it should now be read as "time-parametric base step + a separate
+spatial-upgrade step", not as the primary OS-II base-step statement. -/
+private theorem schwinger_continuation_base_step_full {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (k : ℕ) :
@@ -614,141 +571,11 @@ theorem schwinger_continuation_base_step {d : ℕ} [NeZero d]
       (∀ (f : ZeroDiagonalSchwartz d k),
         OS.S k f = ∫ x : NPointDomain d k,
           S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  -- The SCV side now has both the 1D and product-half-plane Laplace theorems:
-  -- `SCV.laplaceTransform_differentiableOn_rightHalfPlane_of_nonnegSupport` and
-  -- `SCV.multivariateLaplaceTransform_differentiableOn_rightHalfPlane_of_nonnegSupport`.
-  -- So the genuine remaining gap is not half-plane holomorphicity or Osgood assembly.
-  -- The compact-support diagonal Laplace witness is now available. What remains is to
-  -- convert it into the flattened continuation witness `G` required here, either by a
-  -- direct compact-support/time-difference argument or by an honest polarized upgrade.
-  obtain ⟨G, hG_holo, hG_euclid⟩ :
-      ∃ (G : (Fin (k * (d + 1)) → ℂ) → ℂ),
-        DifferentiableOn ℂ G (SCV.TubeDomain (FlatPositiveTimeDiffReal k d)) ∧
-        (∀ (f : ZeroDiagonalSchwartz d k),
-          OS.S k f = ∫ x : NPointDomain d k,
-            G (BHW.toDiffFlat k d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
-    sorry
-  exact schwinger_continuation_base_step_of_flatWitness OS k G hG_holo hG_euclid
-
-/-- Honest but auxiliary `k = 2` reduction for the semigroup time-difference
-candidate. This theorem remains mathematically valid, but the current blocker
-analysis no longer treats `twoPointTimeDiffFlatWitness` as the intended final
-two-point witness. -/
-private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
-      OS.S 2 f = ∫ x : NPointDomain d 2,
-        twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-          (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) :
-    ∃ (S_ext : (Fin 2 → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d 2 1) ∧
-      (∀ (f : ZeroDiagonalSchwartz d 2),
-        OS.S 2 f = ∫ x : NPointDomain d 2,
-          S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
+  obtain ⟨G, hG_time, hG_euclid⟩ :=
+    schwinger_continuation_base_step_timeParametric (d := d) OS lgc k
   exact
-    schwinger_continuation_base_step_of_flatWitness
-      (d := d) (OS := OS) (k := 2)
-      (G := twoPointTimeDiffFlatWitness (d := d) OS lgc F G)
-      (differentiableOn_twoPointTimeDiffFlatWitness
-        (d := d) OS lgc F G)
-      hG_euclid
-
-/-- Dense-set reduction for the auxiliary `k = 2` semigroup time-difference
-witness. This remains a valid CLM reduction theorem, but it should now be read
-as an auxiliary route rather than the intended final closure of the two-point
-base-step. -/
-private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitnessCLM
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (L : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ)
-    {S : Set (ZeroDiagonalSchwartz d 2)}
-    (hS : Dense S)
-    (hEq_dense : ∀ f ∈ S, L f = OS.S 2 f)
-    (hL : ∀ f : ZeroDiagonalSchwartz d 2,
-      L f = ∫ x : NPointDomain d 2,
-        twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-          (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) :
-    ∃ (S_ext : (Fin 2 → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d 2 1) ∧
-      (∀ (f : ZeroDiagonalSchwartz d 2),
-        OS.S 2 f = ∫ x : NPointDomain d 2,
-          S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  have hL_eq_S :
-      L = OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2 := by
-    exact ContinuousLinearMap.eq_of_eq_on_dense
-      L (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2) (S := S) hS
-        (by intro f hf; exact hEq_dense f hf)
-  have hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
-      OS.S 2 f = ∫ x : NPointDomain d 2,
-        twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-          (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x) := by
-    intro f
-    have hf := congrArg (fun T : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ => T f) hL_eq_S
-    calc
-      OS.S 2 f = L f := by
-        simpa [OsterwalderSchraderAxioms.schwingerCLM] using hf.symm
-      _ = ∫ x : NPointDomain d 2,
-            twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-              (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x) := hL f
-  exact
-    schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitness
-      (d := d) OS lgc F G hG_euclid
-
-/-- Concrete auxiliary `k = 2` dense-set reduction for the semigroup
-time-difference witness. This theorem is still correct, but it is no longer the
-preferred production surface for the real remaining blocker, since the final
-two-point witness must also capture spatial-difference dependence. -/
-private theorem schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitnessKernelCLM
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F G : PositiveTimeBorchersSequence d)
-    (K : NPointDomain d 2 → ℂ)
-    (hK : ∀ x : NPointDomain d 2,
-      K x =
-        twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-          (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))))
-    (hK_meas : MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume)
-    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
-    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂MeasureTheory.volume,
-      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    {S : Set (ZeroDiagonalSchwartz d 2)}
-    (hS : Dense S)
-    (hEq_dense : ∀ f ∈ S,
-      OSReconstruction.twoPointZeroDiagonalKernelCLM K hK_meas C_bd N hC hK_bound f = OS.S 2 f) :
-    ∃ (S_ext : (Fin 2 → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ S_ext (AnalyticContinuationRegion d 2 1) ∧
-      (∀ (f : ZeroDiagonalSchwartz d 2),
-        OS.S 2 f = ∫ x : NPointDomain d 2,
-          S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  let L : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ :=
-    OSReconstruction.twoPointZeroDiagonalKernelCLM K hK_meas C_bd N hC hK_bound
-  have hL :
-      ∀ f : ZeroDiagonalSchwartz d 2,
-        L f = ∫ x : NPointDomain d 2,
-          twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-            (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x) := by
-    intro f
-    calc
-      L f = ∫ x : NPointDomain d 2, K x * (f.1 x) := by
-        simpa [L] using
-          OSReconstruction.twoPointZeroDiagonalKernelCLM_apply
-            (K := K) hK_meas C_bd N hC hK_bound f
-      _ = ∫ x : NPointDomain d 2,
-            twoPointTimeDiffFlatWitness (d := d) OS lgc F G
-              (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x) := by
-        refine MeasureTheory.integral_congr_ae ?_
-        filter_upwards with x
-        simp [hK x]
-  exact
-    schwinger_continuation_base_step_twoPoint_of_timeDiffFlatWitnessCLM
-      (d := d) OS lgc F G L hS
-      (by
-        intro f hf
-        exact hEq_dense f hf)
-      hL
+    schwinger_continuation_spatial_upgrade_of_timeWitness
+      (d := d) OS k G hG_time hG_euclid
 
 /-- Two-point payoff from any explicit Euclidean witness. Once a center cutoff
 `χ₀` with integral `1` is fixed, the admissible Schwinger two-point family
@@ -2733,7 +2560,7 @@ private theorem forwardTube_subset_acr_one {d k : ℕ} [NeZero d] :
 /-- Iterate analytic continuation from the base-step witness on `C_k^(1)` to `C_k^(d+1)`.
 
     The real analytic continuation starts at `r = 1`, not `r = 0`: the base-step
-    theorem `schwinger_continuation_base_step` produces the first holomorphic witness
+    theorem `schwinger_continuation_base_step_full` produces the first holomorphic witness
     on `ACR(1)` directly from the Schwinger functional. For `r ≥ 1`, all further steps
     are restrictions along the inclusions `ACR(r+1) ⊆ ACR(r)`.
 
@@ -2749,7 +2576,7 @@ theorem iterated_analytic_continuation
       (∀ (f : ZeroDiagonalSchwartz d k),
         OS.S k f = ∫ x : NPointDomain d k,
           S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  obtain ⟨S₁, hS₁_hol, hS₁_rep⟩ := schwinger_continuation_base_step OS lgc k
+  obtain ⟨S₁, hS₁_hol, hS₁_rep⟩ := schwinger_continuation_base_step_full OS lgc k
   -- Invariant for r ≥ 1: holomorphicity on ACR(r) and preservation of the
   -- Euclidean pairing identity with OS.S.
   let P : ℕ → Prop := fun s =>
@@ -2785,7 +2612,7 @@ theorem full_analytic_continuation
       (∀ (f : ZeroDiagonalSchwartz d k),
         OS.S k f = ∫ x : NPointDomain d k,
           W_analytic (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  obtain ⟨S₁, hS₁_hol, hS₁_euclid⟩ := schwinger_continuation_base_step OS lgc k
+  obtain ⟨S₁, hS₁_hol, hS₁_euclid⟩ := schwinger_continuation_base_step_full OS lgc k
   refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid⟩
 
 /-! ### Downstream Boundary Values

@@ -290,6 +290,23 @@ OS II states this very clearly in Chapter V:
 - the time variables are the analytic variables,
 - the spatial variables play the role of parameters.
 
+This matters directly for the current Lean blocker. The public theorem
+`schwinger_continuation_base_step` in
+[OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean)
+has now been corrected to the safe OS II base-step reading:
+
+- time-difference holomorphicity,
+- spatial variables treated as parameters,
+- Euclidean reproduction on the Schwinger test side.
+
+The old full-`ACR(1)` holomorphic surface still exists only as a private legacy
+upgrade theorem used by the current downstream restriction chain. So the root
+blocker is no longer "what should the public base-step statement be?" but
+rather:
+
+- close the honest time-parametric theorem, and
+- either justify or eventually eliminate the private legacy upgrade step.
+
 This is the part of the papers we should be pattern-matching in Lean.
 
 ### Theorems 4.1, 4.2, 4.3 in OS II
@@ -791,8 +808,28 @@ At the two-point descent level:
   and proves that its descent is zero.
 
 - `twoPointCenterShearDescent_translate_right`
-  shows the descended parameter behaves covariantly under right translation of
-  the product-shell test.
+  and
+  `twoPointCenterShearDescent_translate_left`
+  show that the descended parameter behaves correctly under translation of
+  either the right factor or the center cutoff on the product shell.
+
+There is an important update to the interpretation of this package.
+
+The admissible-shell center-collapse step is no longer the live blocker. It is
+already closed in production, both on the Schwinger side and on the witness
+side:
+
+- `OsterwalderSchraderAxioms.exists_const_twoPointDifferenceLift_eq_integral`
+  and
+  `OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue`
+  in [SchwingerOS.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/SchwingerOS.lean)
+  say that for admissible shells `χ(u) h(ξ)`, the two-point Schwinger value
+  depends on the center cutoff only through `∫ χ`.
+
+- `schwinger_twoPoint_flatCenterDiffWitness_exists_const`
+  and its corollaries in
+  [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean)
+  give the corresponding center-collapse statement for explicit flat witnesses.
 
 This is already quite close to what the OS papers need conceptually:
 
@@ -801,9 +838,21 @@ This is already quite close to what the OS papers need conceptually:
 - get a parameter object in the true difference variable,
 - and prove the analytic continuation depends only on that parameter object.
 
-So the current production descent package should be read as the Lean
-implementation of the OS parameter-packaging step, not as accidental
-two-point-specific auxiliary code.
+So the current production descent package should be read as:
+
+- a successful Lean implementation of the OS parameter-packaging step on the
+  admissible shell, and
+- a diagnostic package for the remaining semigroup-side mismatch.
+
+What still remains unresolved is **not** the statement that admissible shells
+factor through the center integral. What remains is the comparison between:
+
+- the natural semigroup/product shell `χ(u) g(u + ξ)`, and
+- the admissible shell `χ(u) h(ξ)` obtained after descent.
+
+This distinction matters because OS do not face it in the same form: they pass
+to difference variables from the start, so the dummy center variable has
+already disappeared before the semigroup continuation step is stated.
 
 ### 6.3. Direct `k = 2` semigroup specialization
 
@@ -831,15 +880,48 @@ The key current production statements are:
   which packages the two-point continuation directly in terms of the semigroup
   matrix element after the center-shear reduction.
 
+- the spatial-translation chain in
+  [OSToWightmanSemigroup.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanSemigroup.lean):
+  `translateSchwartzNPoint_timeShiftSchwartzNPoint`,
+  `timeShiftBorchers_translateBorchers`,
+  `OSInnerProduct_translate_eq_of_spatial`,
+  `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single_translate_spatial`,
+  and
+  `OSInnerProductTimeShiftHolomorphicValue_single_translate_spatial`.
+  Together, these now show that the one-point semigroup pairing is already
+  spatially translation invariant on the full right half-plane, not just on the
+  positive real axis.
+
 This is the precise OS-style reading of the current two-point file:
 
 - the live issue is not a missing spectral theorem,
 - and not a missing holomorphic-extension theorem in abstract form,
-- but the mismatch between two shells that should produce the same descended
-  parameter object.
+- but the mismatch between the semigroup-side center-shear shell
+  `χ(u) g(u + ξ)` and the admissible difference shell `χ(u) h(ξ)`.
 
-That is why the two-point gap is now naturally a factorization-through-descent
-problem.
+The descent package explains how these shells are related, but it does not by
+itself prove that every semigroup-side scalar pairing depends only on the
+descended parameter. So the current gap is better described as:
+
+- either a factorization theorem for the specific semigroup/witness scalar
+  functional,
+- or an honest difference-variable bridge that removes the center-shear shell
+  before the semigroup step is stated.
+
+At the current production state, the first option has become more precise.
+The spatial-translation part is no longer the blocker. What remains is the
+fixed-time extension theorem behind the private `headBlockExtension` surface in
+[OSToWightmanTwoPoint.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanTwoPoint.lean):
+
+- for each `t > 0`, construct a continuous head-block-translation-invariant
+  Schwartz functional on the flattened center/difference space;
+- make it recover the semigroup/product-shell value on
+  `twoPointProductLift χ₀ g`;
+- and make it also evaluate the canonical admissible shell built from
+  `twoPointCenterShearDescent χ₀ g`.
+
+So the remaining issue is now an extension/continuity theorem, not more
+translation algebra.
 
 ## 7. The current `E -> R` blocker in OS terms
 
@@ -849,35 +931,41 @@ The current blocker is not:
 
 It is:
 
-- construct the correct one-gap parameterized semigroup object on the
-  admissible shell,
-- or prove that the current semigroup/witness scalar functional factors through
-  the relevant descent operator.
+- construct the correct one-gap parameterized semigroup object directly in
+  difference variables,
+- or prove that the current semigroup/product-shell scalar functional agrees
+  with the admissible-shell scalar functional determined by the same descended
+  parameter.
 
-In the two-point file this currently appears as the need to replace a residual
-annihilation hypothesis by a genuine factorization theorem.
+Historically, the two-point file exposed this as a residual-annihilation /
+factorization problem. That was useful diagnostically, but it should no longer
+be treated as the final theorem surface. The public production surface is now
+cleaner: the residual-annihilation wrapper is gone, and the real gap is the
+product-shell vs admissible-shell identification itself.
 
 That is the correct OS-style next step.
 
 ### 7.1. What a truly OS-shaped missing theorem would look like
 
-The missing theorem should have this flavor:
+The missing theorem should have one of these two flavors:
 
-- input:
-  an admissible one-gap shell together with its descended parameter object;
-- claim:
-  the semigroup matrix element depends only on that descended parameter;
-- output:
+ - input:
+  the semigroup-side product shell together with its descended parameter
+  object;
+ - claim:
+  the semigroup matrix element agrees with the scalar functional defined from
+  the admissible shell carrying the same descended parameter;
+ - output:
   the resulting scalar function is the correct holomorphic continuation in the
   chosen time variable.
 
-In other words, the theorem should eliminate the shell mismatch by proving
-factorization through the parameter object, not by postulating an accidental
-equality of two unrelated shells.
+In other words, the theorem should eliminate the shell mismatch structurally,
+not by postulating an accidental equality of two unrelated shells.
 
 ### 7.2. The precise factorization route suggested by the current code
 
-The current code suggests a very concrete theorem chain for `k = 2`.
+The current code suggests a very concrete theorem chain for `k = 2`, but it
+should now be read a little more cautiously than before.
 
 Fix a normalized cutoff `χ₀` with `∫ χ₀ = 1`, and let
 
@@ -893,7 +981,7 @@ We already know:
 
 - `twoPointCenterDescent (twoPointCenterShearResidual χ₀ g) = 0`.
 
-The missing theorem should say something like:
+One possible missing theorem would say:
 
 - if `L` is the relevant semigroup/witness scalar functional on two-point
   center/difference Schwartz space,
@@ -919,25 +1007,57 @@ Then the remaining chain is immediate:
 3. therefore the same semigroup/spectral object computes the admissible shell,
 4. hence the admissible shell has the required holomorphic continuation.
 
-This is exactly the content currently isolated in
-`twoPointDifferenceLift_timeShift_holomorphicValue_semigroupMatrix_canonicalCenterShear_of_residual_annihilation`
-in [OSToWightmanTwoPoint.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanTwoPoint.lean):
-the theorem is already telling us that once the residual is annihilated, the
-rest of the two-point continuation mechanism is done.
+However, the current production stance is that this factorization theorem is
+only **one candidate route**. The more OS-faithful route may be to remove the
+product-shell mismatch earlier by working directly with the correct
+difference-variable parameter object, rather than proving a large abstract
+factorization theorem over the residual kernel.
 
-So the remaining mathematical gap is very small in statement size but deep in
+The current code suggests an intermediate stance between these two pictures:
+
+- use the now-proved semigroup-side spatial translation invariance to eliminate
+  all purely translational ambiguity;
+- then prove the extension theorem that lets this invariance act on the full
+  flattened center/difference Schwartz space.
+
+### 7.2.1. Why the extension theorem is genuinely nontrivial
+
+It is tempting to try to define the fixed-time extension functional simply by:
+
+- taking a Schwartz function on the flattened center/difference space,
+- undoing the flattening and center/difference change of variables,
+- and applying `OS.S 2`.
+
+At the current formalization surface, that does **not** solve the problem.
+
+The reason is structural:
+
+- `OS.S 2` is defined on `ZeroDiagonalSchwartz d 2`,
+- while the desired extension functional must act on **all**
+  Schwartz functions on the flattened center/difference space.
+
+So the missing content is not just a reindexing or change-of-variables lemma.
+One must still prove an actual extension statement from the zero-diagonal
+subspace to the ambient Schwartz space, together with the required
+head-block-translation invariance.
+
+This is exactly why the present blocker should be read as an
+extension/continuity theorem, not as leftover shell algebra.
+
+So the remaining mathematical gap is still small in statement size but deep in
 content:
 
 - not another shell identity,
-- but a continuity + center-translation-invariance
-  `=> factorization through center descent`
-  theorem for the semigroup/witness scalar functional.
+- not a disguised matching hypothesis,
+- but either a true factorization theorem for the semigroup-side scalar
+  functional, or a cleaner difference-variable reformulation that makes the
+  mismatch disappear.
 
 ### 7.3. Why this is the right OS-shaped next theorem
 
-This factorization route matches the papers better than trying to guess a
-direct equality between the product shell `χ(u) g(u + ξ)` and the admissible
-shell `χ(u) h(ξ)`.
+This factorization route is one defensible OS-shaped route, but only if it is
+used to remove the mismatch structurally. It should not be turned into a tower
+of conditional shell-matching lemmas.
 
 OS do not proceed by proving accidental shell identities. They:
 
@@ -945,12 +1065,17 @@ OS do not proceed by proving accidental shell identities. They:
 - show the analytic continuation depends on that parameter,
 - and then study the resulting one-variable function.
 
-Our descent/factorization route is the Lean equivalent of exactly that move.
+Our descent language is the Lean equivalent of that move on the admissible
+side. The present challenge is to make the semigroup/product-shell side meet
+that same parameter object without smuggling the missing identification as a
+hypothesis.
 
 So, from the perspective of the papers, the right next theorem is:
 
 - not “a better shell-comparison lemma,”
-- but “the semigroup scalar depends only on the descended parameter.”
+- and not “assume the product shell already matches the admissible shell,”
+- but “remove the center-shear mismatch for the semigroup scalar by an honest
+  parameter theorem.”
 
 ## 8. Path from `k = 2` to general `k`
 
@@ -993,12 +1118,14 @@ When deciding whether a new theorem is on the right path, the best test is:
 
 Good signs:
 
-- factorization through a descent operator,
+- factorization through a descent operator, when it removes a real mismatch
+  rather than rephrasing it,
 - explicit semigroup matrix-element formulas,
 - parameterized one-variable holomorphic continuation,
 - Fourier-Laplace packaging with support/growth control.
 - proofs that a semigroup/witness scalar functional factors through
   `integrateHeadBlock` / `twoPointCenterDescent`.
+- direct difference-variable formulations that bypass dummy center variables.
 
 Bad signs:
 
@@ -1008,6 +1135,8 @@ Bad signs:
   parameter mechanism is settled.
 - treating the residual-annihilation criterion as a final theorem rather than
   as a signal that a deeper factorization theorem is still missing.
+- treating the admissible-shell center-collapse theorem as if it solved the
+  semigroup/product-shell mismatch.
 
 ## 10. Concrete current reading of the project
 
@@ -1026,7 +1155,7 @@ The current risk is not mathematical unsoundness in the two-point ladder.
 It is theorem-surface drift:
 
 - if we keep adding shell-specific criteria, the file may grow while the real
-  missing factorization theorem stays untouched.
+  product-shell/admissible-shell identification stays untouched.
 
 Conversely, the current opportunity is good:
 
@@ -1035,8 +1164,9 @@ Conversely, the current opportunity is good:
   and
   [TwoPointDescent.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/TwoPointDescent.lean)
   has already exposed the kernel element and the correct covariance properties;
-- the remaining step is now a conceptually clean theorem about the scalar
-  functional itself.
+- the admissible-shell center-collapse theorem is already in production;
+- so the remaining step is now concentrated on the semigroup-side shell
+  comparison rather than on general center-factorization.
 
 Finally, some older local Bernstein-Widder / center-shear scratch notes are now
 partly superseded by the production descent infrastructure. They may still be
@@ -1047,7 +1177,236 @@ general parameter theorem that OS II actually wants.
 
 So the main remaining conceptual jump is:
 
-- replace the current specialized two-point residual-annihilation criterion by
-  an actual factorization theorem through center/difference descent,
-- then generalize that theorem from the two-point model to the general
+- make the semigroup-side one-gap object land on the same difference-variable
+  parameter object as the admissible shell,
+- then generalize that identification from the two-point model to the general
   one-gap parameterized continuation mechanism.
+
+One useful refinement from the latest semigroup-side attempts:
+
+- asking immediately for invariance under the **full** center block
+  `(center time + center space)` is probably too strong as the first
+  production theorem surface;
+- the spatial part is natural and now largely formalized from OS translation
+  invariance;
+- the time part interacts with the semigroup parameter itself and is better
+  treated as part of the one-variable continuation mechanism.
+
+So a more OS-II-shaped next target is:
+
+- integrate out the center **spatial** variables,
+- keep the center **time** variable as the active analytic parameter,
+- and compare that semigroup-side parameter object with the admissible
+  difference-variable shell before trying to package full center-block
+  invariance.
+
+This is now reflected more directly in production than before.
+The file
+[CenterSpatialTranslationInvariant.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/CenterSpatialTranslationInvariant.lean)
+contains the explicit descended CLM
+`centerSpatialDescentCLM`, and now also the iterated factorization theorem
+`map_eq_headTranslationDescentCLM_sliceIntegral_integrateCenterSpatial`.
+That theorem says:
+
+- first descend a center-spatial-translation-invariant functional by
+  `integrateCenterSpatial`,
+- then, if the reduced `(u_time, ξ)` functional is head-translation
+  invariant, descend again by `sliceIntegral`.
+
+So the production theorem surface now matches the OS-II narrative more closely:
+
+- spatial parameters are peeled off first,
+- the remaining center-time variable is treated by the one-variable
+  translation/factorization mechanism,
+- and the remaining gap is no longer generic center-factorization but the
+  reduced fixed-time semigroup functional and the reduced-shell identity.
+
+## 11. R -> E direction: BHW theorem and translation invariance
+
+The `R -> E` direction (Wightman to OS) involves the Bargmann-Hall-Wightman
+theorem and its consequences. The key references are Streater-Wightman
+Chapter 2 and Jost's *PCT, Spin & Statistics, and All That*.
+
+### 11.1. BHW theorem structure
+
+The BHW theorem extends the Wightman functions from the forward tube to the
+permuted extended tube (PET) by:
+
+1. The complex Lorentz group `SL(2,C)` acts on the forward tube.
+2. By analytic continuation (identity theorem), the Wightman function extends
+   to the orbit of the forward tube under `SL(2,C)`.
+3. Jost's theorem: this orbit equals the extended tube.
+4. By permutation symmetry (Bose/Fermi), the function extends to the PET.
+
+This is implemented in:
+- `AnalyticContinuation/BHWExtension.lean` — `fullExtendF`
+- `AnalyticContinuation/Extend.lean` — `complex_lorentz_invariance`
+
+### 11.2. Translation invariance of the BHW extension
+
+The live R→E blocker is `bhw_translation_invariant` in `BHWTranslation.lean`,
+which reduces to `isPreconnected_baseFiber`.
+
+The proof that the BHW extension `F_ext` is translation-invariant requires:
+- On the forward tube: `F_ext(z+c) = F_ext(z)` by the original Wightman
+  function's translation invariance.
+- On the PET: extend by the identity theorem on connected components.
+
+The blocker `isPreconnected_baseFiber` asks: for fixed tail variables, is the
+fiber of the PET in the base variable (z₀) path-connected?
+
+### 11.3. ForwardTube variable convention issue
+
+Our `ForwardTube d n` uses cumulative-sum variables z_k = Σ_{j≤k} ζ_j with:
+- k=0 condition: `Im(z₀) ∈ V⁺` (absolute, not a difference)
+- k≥1 conditions: `Im(z_k - z_{k-1}) ∈ V⁺` (differences)
+
+The standard convention (Streater-Wightman, Jost) uses pure difference
+variables ζ_j with only `Im(ζ_j) ∈ V⁺` for j=1,...,n-1. No k=0 base
+condition.
+
+This discrepancy is the ROOT CAUSE of both blockers:
+- R→E: translation z → z+c changes z₀ but not the differences, so PET in
+  difference variables is trivially translation-invariant. Our k=0 condition
+  breaks this.
+- E→R: the semigroup formula is natural in difference variables. In
+  cumulative-sum variables, the center variable is redundant and creates the
+  shell mismatch.
+
+### 11.4. Relaxed tube bridge
+
+`ForwardTubeRelaxed d n` (proved in `test/proofideas_diff_var_bridge.lean`)
+drops the k=0 condition. Key results:
+- `pet_subset_relaxed`: PET ⊆ PET_relaxed
+- `petRelaxed_translation_invariant`: PET_relaxed is trivially
+  translation-invariant (differences unchanged by uniform shift)
+- `pet_eq_petRelaxed` is FALSE (the base condition is genuinely restrictive)
+
+### 11.5. BEG path lemma (Cases 1 and 2)
+
+The Bros-Epstein-Glaser path lemma shows that any complex Lorentz group
+element can be connected to the identity by a path staying in the tube.
+Two canonical forms:
+
+**Case 1 (nilpotent/shear)**: The Lorentz boost is nilpotent. The path is a
+straight line (convex combination), which stays in the tube because the
+forward light cone is convex.
+- Proved: `nilpotent_path_in_tube` in `test/proofideas_BEG_path_lemma.lean`
+
+**Case 2 (semisimple/boost-rotation)**: The Lorentz transformation has
+eigenvalues e^{±α±iβ}. The lightcone components follow g±(t) = e^{±αt}(q cos βt + p sin βt).
+Positivity reduces to the sinusoidal factor.
+- Proved: `sinusoidal_pos_of_endpoints_pos` in `test/proofideas_BEG_case2.lean`
+  (extracted to `BEGTrigonometric.lean`)
+
+Both cases combine to give the BEG path lemma → sector preconnectedness →
+`isPreconnected_baseFiber` → `bhw_translation_invariant`.
+
+## 12. Fiberwise antiderivative and E→R factorization chain
+
+The fiberwise antiderivative provides the analytical backbone for the
+center-factorization argument that kills the E→R shell mismatch.
+
+### 12.1. The complete chain (all proved)
+
+```
+fiberwiseAntiderivRaw F v = ∫ t ∈ Iic(v₀), F(cons t (tail v))
+  → contDiff_fiberwiseAntiderivRaw         [PROVED, SliceIntegral.lean + test]
+  → decay_fiberwiseAntiderivRaw            [PROVED, test file, 0 sorrys]
+  → fiberwiseAntideriv : SchwartzMap       [PROVED, test file]
+  → lineDeriv_fiberwiseAntideriv: ∂₀g = F  [PROVED, test file]
+```
+
+This gives the Schwartz Poincaré lemma: if ∫ F(cons t y) dt = 0 for all y,
+then F = ∂₀ g for some Schwartz g.
+
+### 12.2. Connection to center factorization
+
+The multi-D Poincaré lemma is already proved independently in production:
+- `exists_eq_sum_lineDeriv_of_integral_eq_zero` in
+  `TranslationInvariantSchwartz.lean`
+
+Combined with translation invariance of the OS functional:
+- `exists_eq_const_integralCLM_of_translationInvariant`: any
+  translation-invariant CLM on Schwartz space equals c·∫
+
+This means the OS functional on 2-point functions factors through center
+descent (integrating out the center variable). The shell mismatch
+(product shell χ(u)g(u+ξ) vs admissible shell χ(u)h(ξ)) is resolved because
+the semigroup evaluation sees only the descended difference variable.
+
+### 12.3. Infrastructure summary
+
+| Component | File | Status |
+|-----------|------|--------|
+| `iicZeroSlice` chain | `SliceIntegral.lean` | 0 sorrys |
+| `intervalPiece` chain | `SliceIntegral.lean` | 0 sorrys |
+| `fiberwiseAntiderivRaw` decomposition | `SliceIntegral.lean` | 0 sorrys |
+| `contDiff_fiberwiseAntiderivRaw` | test file | 0 sorrys |
+| `decay_fiberwiseAntiderivRaw` | test file | 0 sorrys |
+| `fiberwiseAntideriv` packaging | test file | 0 sorrys |
+| Multi-D Poincaré lemma | `TranslationInvariantSchwartz.lean` | 0 sorrys |
+| Translation factorization | `TranslationInvariantSchwartz.lean` | 0 sorrys |
+
+## 13. Lean ↔ OS II formula dictionary for `schwinger_continuation_base_step`
+
+The single remaining E→R sorry is `schwinger_continuation_base_step` at
+`OSToWightman.lean:430`. Here is the precise mapping to OS II.
+
+### 13.1. The sorry statement
+
+```lean
+∃ G : (Fin (k * (d + 1)) → ℂ) → ℂ,
+  DifferentiableOn ℂ G (TubeDomain (FlatPositiveTimeDiffReal k d)) ∧
+  ∀ f : ZeroDiagonalSchwartz d k,
+    OS.S k f = ∫ x, G(toDiffFlat(wickRotate(x))) * f(x)
+```
+
+### 13.2. OS II correspondence
+
+- `G` = OS II's `S_k(ζ)` in difference variables, equation (5.4)
+- `TubeDomain(FlatPositiveTimeDiffReal k d)` = flattened product tube
+  `{ζ ∈ ℂ^{k(d+1)} : Im(ζⱼ⁰) > 0 for all j}` in the time components
+- The identity `OS.S k f = ∫ G(toDiffFlat(wickRotate(x))) * f(x)` =
+  OS II's distributional identity (5.2) after Wick rotation
+- `wickRotatePoint` implements `x → ix⁰ + x_spatial` (Wick rotation)
+- `toDiffFlat` converts cumulative-sum variables to flattened differences
+
+### 13.3. Construction for k=2
+
+For `k=2`, `G` has one difference variable ζ ∈ ℂ^{d+1}:
+```
+G(ζ) = ⟨Ψ₁(ξ_spatial), T(ζ⁰) Ψ₁(ξ_spatial)⟩_OS
+```
+where `Ψ₁` embeds one-point test functions into the OS Hilbert space and
+`T(z) = e^{-zH}` is the holomorphic semigroup for `Re z > 0`.
+
+This is already partially implemented:
+- `OSInnerProductTimeShiftHolomorphicValue` gives `⟨F, T(z) G⟩`
+- `exists_twoPoint_xiShift_holomorphicValue` proves holomorphicity for
+  compact-support test functions
+
+### 13.4. Construction for general k
+
+For general `k`, OS II's formula (5.3) gives:
+```
+G(ζ₁,...,ζ_{k-1}) = ⟨Ψ₁, T(ζ₁⁰) A₂ T(ζ₂⁰) ... T(ζ_{k-1}⁰) Ψ_{k-1}⟩
+```
+where `Aⱼ` are operator-valued distributions (smeared field operators) and
+`Ψⱼ` are Hilbert-space-valued distributions.
+
+This requires the GNS construction + operator domains, which is why the
+general k case is harder than k=2.
+
+### 13.5. What remains to close the sorry
+
+For k=2:
+1. Connect `OSInnerProductTimeShiftHolomorphicValue` to `G` via the
+   difference-variable bridge
+2. Show `G` is holomorphic on the product right half-plane (from semigroup)
+3. Verify the distributional identity on the Euclidean section
+
+For general k:
+1. Define the interleaved operator product `T A T A ... T`
+2. Show the resulting matrix element is holomorphic in each time variable
+3. Use the OS II induction (AN/PN alternation) for simultaneous continuation

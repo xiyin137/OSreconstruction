@@ -72,7 +72,16 @@ Current blocker map:
   and one-variable holomorphic layer.
 - The live root `E -> R` blocker is
   `schwinger_continuation_base_step` in `OSToWightman.lean`:
-  constructing the flat holomorphic witness from the interleaved OS slice data.
+  constructing the OS-II-faithful time-parametric witness from the interleaved
+  OS slice data.
+- The public theorem surface has been corrected: `schwinger_continuation_base_step`
+  now exposes the weaker OS-II base step directly, with time-difference
+  holomorphicity and spatial variables treated as parameters. The old full
+  `ACR(1)` holomorphic surface survives only as an internal legacy upgrade used
+  by the current downstream restriction chain.
+- The older time-only two-point witness lane has been removed from the active
+  `OSToWightman.lean` blocker surface. It was a dead auxiliary route and not the
+  mathematically relevant `k = 2` witness.
 - `OSToWightmanTwoPoint.lean` now carries the specialized `k = 2`
   center/difference spectral and holomorphic reduction ladder, so the core
   `OSToWightman.lean` file stays focused on the base-step analytic machinery.
@@ -82,18 +91,58 @@ Current blocker map:
   `Wightman/Reconstruction/CenterSpatialTranslationInvariant.lean`,
   together with the older one-variable descent files
   `TranslationInvariantSchwartz.lean` and `HeadTranslationInvariant.lean`.
+- On the `k = 2` front, the honest remaining gap is no longer generic
+  translation algebra. The live seam is:
+  construct the fixed-time reduced semigroup functional on
+  `SchwartzMap (Fin (d + 1) → ℝ) ℂ`, compare it on a dense set with the
+  corresponding concrete kernel CLM, and then lift that equality back through
+  the center-spatial and head-time descent theorems in
+  `CenterSpatialTranslationInvariant.lean` and
+  `HeadTranslationInvariant.lean`.
+- The older time-only two-point witness is now treated only as an auxiliary
+  one-variable object. It is not the intended final `k = 2` witness, because
+  the final witness must see the full difference variable, including spatial
+  difference coordinates.
 - The translation-invariant Schwartz classification lane is now in production in
   `Wightman/Reconstruction/TranslationInvariantSchwartz.lean`, and the two-point
   Schwinger/Wightman center-difference reductions are correspondingly
   unconditional.
+- Compact-support Schwartz density and the compact-product Stone-Weierstrass
+  core are now in production, so the remaining dense-agreement work is no
+  longer generic cutoff infrastructure. What is still missing is the final
+  blocker-facing assembly on the reduced quotient used by the corrected
+  two-point semigroup witness route.
 - The next `E -> R` blocker after that is `boundary_values_tempered` and the
   transfer chain in `OSToWightmanBoundaryValues.lean`, where the genuine growth
   inputs must come from `OSLinearGrowthCondition`.
-- On the `R -> E` side, the honest root gaps remain coincidence-singularity
-  control and Euclidean reality/reflection in `SchwingerAxioms.lean`.
+- On the `R -> E` side, the first geometric blocker is still
+  `isPreconnected_baseFiber` in `WickRotation/BHWTranslation.lean`. That is the
+  Bros-Epstein-Glaser/Jost connectedness step needed before the later analytic
+  gaps in `SchwingerAxioms.lean` become the front blockers.
+- After that geometric step, the remaining `R -> E` gaps are the later analytic
+  ones in `SchwingerAxioms.lean`, especially coincidence-singularity control,
+  Euclidean reality/reflection, and the remaining cluster/integrability bridge
+  steps.
 - `StoneTheorem` and the broader `vNA` operator lane matter for the separate
   GNS/operator reconstruction theorem `wightman_reconstruction`, but not for the
   current Wick-rotation critical path.
+
+### Current Operational Blockers
+
+- `E -> R`:
+  the near-term goal is to close the specialized `k = 2` case of
+  `schwinger_continuation_base_step` by building the corrected reduced
+  semigroup functional on the final difference-variable quotient and proving
+  dense agreement with the concrete kernel CLM there.
+- `E -> R` downstream:
+  even after that base-step closes, `OSToWightmanBoundaryValues.lean` still
+  carries the tempered boundary-value and transfer chain.
+- `R -> E`:
+  the front blocker is the base-fiber connectivity theorem in
+  `BHWTranslation.lean`; it is geometric, not just local algebra.
+- `R -> E` downstream:
+  `SchwingerAxioms.lean` still contains the remaining analytic Wick-rotation
+  obligations after the BHW geometry is available.
 
 Snapshot (2026-03-12, tracked production tree):
 
