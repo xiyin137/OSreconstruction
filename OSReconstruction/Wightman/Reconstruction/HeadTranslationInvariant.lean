@@ -152,5 +152,21 @@ theorem map_eq_headTranslationDescentCLM_sliceIntegral_of_headTranslationInvaria
   simpa [headTranslationDescentCLM] using
     (sliceIntegral_prependField_eq_self φ (sliceIntegral F) hφ).symm
 
+/-- If a functional factors through `sliceIntegral`, then its descended
+functional recovers exactly the final quotient functional. -/
+theorem headTranslationDescentCLM_eq_of_factors_through_sliceIntegral
+    (T : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (L : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ)
+    (φ : SchwartzMap ℝ ℂ)
+    (hφ : ∫ x : ℝ, φ x = 1)
+    (hfac : ∀ F : SchwartzMap (Fin (n + 1) → ℝ) ℂ, T F = L (sliceIntegral F)) :
+    headTranslationDescentCLM T φ = L := by
+  ext f
+  rw [headTranslationDescentCLM, ContinuousLinearMap.comp_apply,
+    SchwartzMap.prependFieldCLMRight_apply, hfac]
+  have hs : sliceIntegral (φ.prependField f) = f := by
+    simpa using sliceIntegral_prependField_eq_self φ f hφ
+  rw [hs]
+
 
 end OSReconstruction

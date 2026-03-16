@@ -288,6 +288,53 @@ noncomputable def centerSpatialDescentCLM
     SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ] ℂ :=
   T.comp (centerSpatialSectionCLM d φ)
 
+/-- Reinserted reduced tests survive center-spatial integration unchanged when
+the fixed center-spatial cutoff integrates to `1`. -/
+@[simp] theorem integrateCenterSpatial_centerSpatialSectionCLM
+    (d : ℕ) (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (H : SchwartzMap (Fin (d + 2) → ℝ) ℂ) :
+    integrateCenterSpatial d (centerSpatialSectionCLM d φ H) = H := by
+  have hreindex :
+      reindexSchwartzEquiv (centerSpatialFirstPerm d).symm
+        (reindexSchwartzEquiv (centerSpatialFirstPerm d) (φ.tensorProduct H)) =
+      φ.tensorProduct H := by
+    simpa using
+      reindexSchwartzEquiv_left_right_inv (centerSpatialFirstPerm d).symm
+        (φ.tensorProduct H)
+  rw [centerSpatialSectionCLM, ContinuousLinearMap.comp_apply, integrateCenterSpatial]
+  dsimp
+  rw [hreindex, integrateHeadBlock_tensorProduct, SchwartzMap.integralCLM_apply, hφ, one_smul]
+
+/-- Any functional that factors through `integrateCenterSpatial` is
+automatically invariant under center-spatial translations. -/
+theorem isCenterSpatialTranslationInvariant_of_factors_through_integrateCenterSpatial
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (R : SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ] ℂ)
+    (hfac : ∀ F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ,
+      T F = R (integrateCenterSpatial d F)) :
+    IsCenterSpatialTranslationInvariantSchwartzCLM d T := by
+  intro a
+  ext F
+  rw [ContinuousLinearMap.comp_apply, hfac, hfac, SCV.translateSchwartzCLM_apply,
+    integrateCenterSpatial_translate_centerSpatial]
+
+/-- If a functional factors through `integrateCenterSpatial`, then its
+center-spatial descent recovers exactly that reduced functional. -/
+theorem centerSpatialDescentCLM_eq_of_factors_through_integrateCenterSpatial
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (R : SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ] ℂ)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (hfac : ∀ F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ,
+      T F = R (integrateCenterSpatial d F)) :
+    centerSpatialDescentCLM d T φ = R := by
+  ext H
+  rw [centerSpatialDescentCLM, ContinuousLinearMap.comp_apply, hfac]
+  simp [integrateCenterSpatial_centerSpatialSectionCLM, hφ]
+
 /-- If the center-spatial cutoff `φ` is normalized by `∫ φ = 1`, then a
 center-spatial-translation-invariant functional factors through
 `integrateCenterSpatial` via `centerSpatialDescentCLM T φ`. -/
@@ -331,6 +378,31 @@ theorem map_eq_headTranslationDescentCLM_sliceIntegral_integrateCenterSpatial
         simpa [headTranslationDescentCLM] using
           map_eq_headTranslationDescentCLM_sliceIntegral_of_headTranslationInvariant
             (centerSpatialDescentCLM d T φ) hTred ψ hψ (integrateCenterSpatial d F)
+
+/-- If a full-space functional factors through `integrateCenterSpatial`, and
+the reduced functional then factors through `sliceIntegral`, the final descended
+functional is exactly the quotient functional on the `(u_time, ξ)` surface. -/
+theorem headTranslationDescentCLM_centerSpatialDescentCLM_eq_of_twoStageFactorization
+    (d : ℕ)
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (R : SchwartzMap (Fin (d + 2) → ℝ) ℂ →L[ℂ] ℂ)
+    (L : SchwartzMap (Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ t : ℝ, ψ t = 1)
+    (hTfac : ∀ F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ,
+      T F = R (integrateCenterSpatial d F))
+    (hRfac : ∀ H : SchwartzMap (Fin (d + 2) → ℝ) ℂ, R H = L (sliceIntegral H)) :
+    headTranslationDescentCLM (centerSpatialDescentCLM d T φ) ψ = L := by
+  have hdesc :
+      centerSpatialDescentCLM d T φ = R :=
+    centerSpatialDescentCLM_eq_of_factors_through_integrateCenterSpatial
+      d T R φ hφ hTfac
+  rw [hdesc]
+  exact
+    headTranslationDescentCLM_eq_of_factors_through_sliceIntegral
+      R L ψ hψ hRfac
 
 /-- To identify two full flattened two-point functionals, it is enough to
 identify their reduced `(u_time, ξ)` descended functionals on a dense subset.

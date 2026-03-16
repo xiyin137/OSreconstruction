@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.Core
+import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
 import OSReconstruction.Wightman.Reconstruction.Poincare1D
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import OSReconstruction.Wightman.Reconstruction.ZeroMeanFourierTransport
@@ -194,6 +195,71 @@ noncomputable def tailSectionCLM (n : ℕ) (y : Fin n → ℝ) :
   rw [tailSectionCLM, ContinuousLinearMap.comp_apply, headAxisSectionCLM_apply_single,
     SCV.translateSchwartzCLM_apply, SCV.translateSchwartz_apply]
   simpa [hsum]
+
+/-- For a compactly-supported Schwartz test, the affine tail slice
+`y ↦ (t ↦ F (Fin.cons t y))` varies continuously with `y` in the Schwartz
+topology on `𝓢(ℝ, ℂ)`. -/
+theorem tendsto_tailSectionCLM_nhds_of_isCompactSupport {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (hF_compact : HasCompactSupport F)
+    (y₀ : Fin n → ℝ) :
+    Filter.Tendsto (fun y : Fin n → ℝ => tailSectionCLM n y F) (𝓝 y₀)
+      (𝓝 (tailSectionCLM n y₀ F)) := by
+  have htranslate :
+      Filter.Tendsto
+        (fun y : Fin n → ℝ => SCV.translateSchwartz (tailInsertCLM n y) F)
+        (𝓝 y₀)
+        (𝓝 (SCV.translateSchwartz (tailInsertCLM n y₀) F)) := by
+    exact
+      (SCV.tendsto_translateSchwartz_nhds_of_isCompactSupport F hF_compact
+        (tailInsertCLM n y₀)).comp
+        ((tailInsertCLM n).continuous.tendsto y₀)
+  simpa [tailSectionCLM, ContinuousLinearMap.comp_apply, SCV.translateSchwartzCLM_apply]
+    using (headAxisSectionCLM n).continuous.tendsto
+      (SCV.translateSchwartz (tailInsertCLM n y₀) F) |>.comp htranslate
+
+/-- For a compactly-supported Schwartz test, the tail-slice family is a
+continuous map into one-dimensional Schwartz space. -/
+theorem continuous_tailSectionCLM_of_isCompactSupport {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) (hF_compact : HasCompactSupport F) :
+    Continuous (fun y : Fin n → ℝ => tailSectionCLM n y F) := by
+  rw [continuous_iff_continuousAt]
+  intro y₀
+  exact tendsto_tailSectionCLM_nhds_of_isCompactSupport F hF_compact y₀
+
+/-- After reindexing spacetime as `(time, spatial)`, partial evaluation in the
+spatial variable is exactly the affine tail slice `t ↦ f (t, y)`. -/
+theorem partialEval₂_spacetimeToTimeSpatial_eq_tailSectionCLM
+    (d : ℕ) (f : SchwartzSpacetime d) (y : Fin d → ℝ) :
+    SchwartzMap.partialEval₂ (OSReconstruction.spacetimeToTimeSpatialCLM d f) y =
+      tailSectionCLM d y f := by
+  ext t
+  simp [tailSectionCLM_apply, OSReconstruction.partialEval₂_spacetimeToTimeSpatialCLM_apply]
+
+/-- The tail-slice family of a Schwartz test varies continuously in the
+Schwartz topology, without any compact-support assumption. -/
+theorem continuous_tailSectionCLM {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) :
+    Continuous (fun y : Fin n → ℝ => tailSectionCLM n y F) := by
+  simpa [partialEval₂_spacetimeToTimeSpatial_eq_tailSectionCLM (d := n) (f := F)] using
+    (continuous_partialEval₂ (f := OSReconstruction.spacetimeToTimeSpatialCLM n F))
+
+/-- Reindexed spacetime partial evaluation is continuous in the Schwartz
+topology, without compact-support assumptions. -/
+theorem continuous_partialEval₂_spacetimeToTimeSpatial
+    (d : ℕ) (f : SchwartzSpacetime d) :
+    Continuous (fun y : Fin d → ℝ =>
+      SchwartzMap.partialEval₂ (OSReconstruction.spacetimeToTimeSpatialCLM d f) y) := by
+  simpa [partialEval₂_spacetimeToTimeSpatial_eq_tailSectionCLM (d := d) (f := f)] using
+    continuous_tailSectionCLM (n := d) f
+
+/-- For a compactly-supported spacetime Schwartz test, the partial evaluation
+family `y ↦ f(·, y)` is continuous in the Schwartz topology on `𝓢(ℝ, ℂ)`. -/
+theorem continuous_partialEval₂_spacetimeToTimeSpatial_of_isCompactSupport
+    (d : ℕ) (f : SchwartzSpacetime d) (hf_compact : HasCompactSupport f) :
+    Continuous (fun y : Fin d → ℝ =>
+      SchwartzMap.partialEval₂ (OSReconstruction.spacetimeToTimeSpatialCLM d f) y) := by
+  simpa [partialEval₂_spacetimeToTimeSpatial_eq_tailSectionCLM (d := d) (f := f)] using
+    continuous_tailSectionCLM_of_isCompactSupport (n := d) f hf_compact
 
 /-- Project to the head-axis component. -/
 noncomputable def headCoordProjectorCLM (n : ℕ) :
