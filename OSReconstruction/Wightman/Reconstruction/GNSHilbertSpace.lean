@@ -895,6 +895,13 @@ noncomputable def gnsQFT : WightmanQFT d where
         poincareActGNS_inner Wfn g,
         ← gnsFieldOp_coe Wfn (poincareActSchwartz g⁻¹ f) y]
     exact h
+  field_hermitian := fun f χ ψ hχ hψ => by
+    obtain ⟨x, rfl⟩ := hχ; obtain ⟨y, rfl⟩ := hψ
+    show ⟪gnsFieldOp Wfn f ↑x, ↑y⟫_ℂ = ⟪↑x, gnsFieldOp Wfn (SchwartzMap.conj f) ↑y⟫_ℂ
+    exact Quotient.inductionOn₂ x y (fun F G => by
+      rw [gnsFieldOp_coe, gnsFieldOp_coe,
+        UniformSpace.Completion.inner_coe, UniformSpace.Completion.inner_coe]
+      exact field_adjoint Wfn f F G)
   locality := fun f g hfg ψ hψ => by
     obtain ⟨x, rfl⟩ := hψ
     show gnsFieldOp Wfn f (gnsFieldOp Wfn g (↑x)) = gnsFieldOp Wfn g (gnsFieldOp Wfn f (↑x))

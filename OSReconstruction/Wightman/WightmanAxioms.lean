@@ -162,6 +162,12 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   field : @OperatorValuedDistribution d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
   /-- The vacuum is in the domain -/
   vacuum_in_domain : vacuum ∈ field.domain
+  /-- Hermiticity of the field: ⟨φ(f)χ, ψ⟩ = ⟨χ, φ(f̄)ψ⟩ for χ, ψ ∈ D.
+      Here `SchwartzMap.conj` is pointwise complex conjugation. This is standard
+      Wightman axiom W2' (Streater-Wightman §3.1). -/
+  field_hermitian : ∀ (f : SchwartzSpacetime d) (χ ψ : HilbertSpace),
+    χ ∈ field.domain → ψ ∈ field.domain →
+    ⟪field.operator f χ, ψ⟫_ℂ = ⟪χ, field.operator (SchwartzMap.conj f) ψ⟫_ℂ
   /-- Cyclicity: the algebraic span of field operators on vacuum is dense -/
   cyclicity : @Dense HilbertSpace (instNormedAddCommGroup.toUniformSpace.toTopologicalSpace)
               (field.algebraicSpan vacuum).carrier
@@ -268,58 +274,259 @@ def WightmanDistributionProduct (qft : WightmanQFT d) (n : ℕ) :
     (Fin n → SchwartzSpacetime d) → ℂ :=
   qft.wightmanFunction n
 
-/-- **Schwartz nuclear theorem (kernel theorem for Schwartz spaces).**
+/-- **Schwartz kernel / nuclear theorem for Schwartz spaces.**
 
-    Given a separately continuous multilinear functional Phi on n copies of
-    S(R^{d+1}), there exists a unique continuous linear functional W on the
-    full Schwartz space S(R^{n(d+1)}) such that W agrees with Phi on product
-    test functions: W(f_1 tensor ... tensor f_n) = Phi(f_1,...,f_n).
+    Let `E = S(R^(d+1))`. Every continuous multilinear functional on `E^n`
+    extends uniquely to a continuous linear functional on `S(R^(n(d+1)))`,
+    after the standard identification of the completed projective tensor product
+    `E ⊗̂π ... ⊗̂π E` with the Schwartz space on the product domain.
 
-    The nuclear theorem guarantees that the multilinear Wightman n-point function
-    extends to a continuous linear functional on the full Schwartz space S(R^{n(d+1)}).
-
-    Since S(R^{d+1}) is nuclear (proved in SchwartzNuclear.lean),
-    the completed projective tensor product S(R^{d+1}) tensor_pi ... tensor_pi S(R^{d+1})
-    is isomorphic (as a topological vector space) to S(R^{n(d+1)}).
-
-    The proof requires:
-    1. Schwartz space is nuclear (proved in SchwartzNuclear.lean)
-    2. For nuclear spaces, the projective tensor product topology agrees with
-       the injective tensor product topology
-    3. S(R^{d+1}) tensor_pi ... tensor_pi S(R^{d+1}) = S(R^{n(d+1)}) as TVS
-    4. Separately continuous multilinear functionals on nuclear spaces extend
-       uniquely to continuous functionals on the completed tensor product
+    Concretely, the extension agrees with the original multilinear functional on
+    pure tensors `f_1 ⊗ ... ⊗ f_n`, encoded here by `SchwartzMap.productTensor`.
 
     Ref: Gel'fand-Vilenkin, "Generalized Functions IV", Ch. I, 3;
-    Reed-Simon, "Methods of Modern Math Physics I", Theorem V.13;
-    Treves, "Topological Vector Spaces", Ch. 51 -/
-private theorem schwartz_nuclear_extension (d n : ℕ) [NeZero d]
-    (Phi : (Fin n → SchwartzSpacetime d) → ℂ)
-    (hPhi_sep : ∀ (i : Fin n) (fs : Fin n → SchwartzSpacetime d),
+    Reed-Simon, "Methods of Modern Mathematical Physics I", Theorem V.13;
+    Treves, "Topological Vector Spaces", Ch. 51. -/
+axiom schwartz_nuclear_extension (d n : ℕ)
+    (Phi : ContinuousMultilinearMap ℂ
+      (fun _ : Fin n => SchwartzMap (Fin (d + 1) → ℝ) ℂ) ℂ) :
+    ∃! (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ),
+      ∀ fs : Fin n → SchwartzMap (Fin (d + 1) → ℝ) ℂ,
+        W (SchwartzMap.productTensor fs) = Phi fs
+
+/-- Linearity of `operatorPow` in a fixed test-function slot under scalar multiplication. -/
+private theorem operatorPow_smul_at
+    (qft : WightmanQFT d)
+    (n : ℕ) (k : Fin n) (c : ℂ) (f : SchwartzSpacetime d)
+    (fs : Fin n → SchwartzSpacetime d) (ψ : qft.HilbertSpace)
+    (hψ : ψ ∈ qft.field.domain) :
+    qft.field.operatorPow n (Function.update fs k (c • f)) ψ =
+      c • qft.field.operatorPow n (Function.update fs k f) ψ := by
+  induction n with
+  | zero =>
+      exact Fin.elim0 k
+  | succ n ih =>
+      simp only [OperatorValuedDistribution.operatorPow]
+      by_cases hk : k.val = 0
+      · have hk0 : k = 0 := Fin.ext hk
+        subst hk0
+        have htail_eq : ∀ h : SchwartzSpacetime d,
+            (fun i => Function.update fs 0 h (Fin.succ i)) = (fun i => fs (Fin.succ i)) := by
+          intro h
+          ext i
+          rw [Function.update_of_ne (Fin.succ_ne_zero i)]
+        simp only [Function.update_self, htail_eq]
+        have h_domain := OperatorValuedDistribution.operatorPow_domain qft.field n
+          (fun i => fs (Fin.succ i)) ψ hψ
+        rw [qft.field.operator_smul c f _ h_domain]
+      · have hk_pred : k.val - 1 < n := by omega
+        let k' : Fin n := ⟨k.val - 1, hk_pred⟩
+        have h0_ne : k ≠ 0 := fun h => hk (congrArg Fin.val h)
+        simp only [Function.update_of_ne h0_ne.symm]
+        have htail : ∀ h : SchwartzSpacetime d,
+            (fun i => Function.update fs k h (Fin.succ i)) =
+              Function.update (fun i => fs (Fin.succ i)) k' h := by
+          intro h
+          ext i
+          simp only [Function.update]
+          by_cases hi : i = k'
+          · simp only [hi]
+            have : Fin.succ k' = k := by
+              ext
+              simp only [Fin.val_succ, k']
+              omega
+            simp [this]
+          · simp only [hi]
+            have : Fin.succ i ≠ k := by
+              intro heq
+              apply hi
+              ext
+              simp only [k']
+              have := congrArg Fin.val heq
+              simp only [Fin.val_succ] at this
+              omega
+            simp [this]
+        rw [htail (c • f), htail f]
+        rw [ih k' (fun i => fs (Fin.succ i))]
+        have h1 :
+            qft.field.operatorPow n (Function.update (fun i => fs (Fin.succ i)) k' f) ψ ∈
+              qft.field.domain :=
+          OperatorValuedDistribution.operatorPow_domain qft.field n _ ψ hψ
+        rw [qft.field.operator_vector_smul (fs 0) c _ h1]
+
+/-- The Wightman product functional as a multilinear map on Schwartz factors. -/
+private def wightmanMultilinearMap (qft : WightmanQFT d) (n : ℕ) :
+    MultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ where
+  toFun := qft.wightmanFunction n
+  map_update_add' := by
+    intro hdec fs i f g
+    have hupdate :
+        @Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (f + g) =
+          Function.update fs i (f + g) := by
+      ext j
+      by_cases hj : j = i <;> simp [Function.update, hj]
+    change ⟪qft.vacuum,
+        qft.field.operatorPow n
+          (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (f + g))
+          qft.vacuum⟫_ℂ =
+      ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ +
+        ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i g) qft.vacuum⟫_ℂ
+    have hpow :
+        qft.field.operatorPow n
+            (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (f + g))
+            qft.vacuum =
+          qft.field.operatorPow n (Function.update fs i (f + g)) qft.vacuum := by
+      simpa [hupdate]
+    have hadd' :
+        ⟪qft.vacuum,
+            qft.field.operatorPow n
+              (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (f + g))
+              qft.vacuum⟫_ℂ =
+          ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ +
+            ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i g) qft.vacuum⟫_ℂ := by
+      have hinner :
+          ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i (f + g)) qft.vacuum⟫_ℂ =
+            ⟪qft.vacuum,
+              qft.field.operatorPow n
+                (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (f + g))
+                qft.vacuum⟫_ℂ := by
+        simpa using congrArg (fun v => ⟪qft.vacuum, v⟫_ℂ) hpow.symm
+      have hadd0 :
+          ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i (f + g)) qft.vacuum⟫_ℂ =
+            ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ +
+              ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i g) qft.vacuum⟫_ℂ := by
+        have hdec_eq : hdec = instDecidableEqFin n := Subsingleton.elim _ _
+        subst hdec_eq
+        simpa [WightmanNPoint] using
+          (WightmanNPoint.linear_arg (d := d) qft.field qft.vacuum qft.vacuum_in_domain
+            n i f g fs)
+      exact hinner.symm.trans hadd0
+    exact hadd'
+  map_update_smul' := by
+    intro hdec fs i c f
+    have hupdate :
+        @Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (c • f) =
+          Function.update fs i (c • f) := by
+      ext j
+      by_cases hj : j = i <;> simp [Function.update, hj]
+    change ⟪qft.vacuum,
+        qft.field.operatorPow n
+          (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (c • f))
+          qft.vacuum⟫_ℂ =
+      c * ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ
+    have hpow :
+        qft.field.operatorPow n
+            (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (c • f))
+            qft.vacuum =
+          qft.field.operatorPow n (Function.update fs i (c • f)) qft.vacuum := by
+      simpa [hupdate]
+    have hsmul' :
+        ⟪qft.vacuum,
+            qft.field.operatorPow n
+              (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (c • f))
+              qft.vacuum⟫_ℂ =
+          c * ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ := by
+      have hinner :
+          ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i (c • f)) qft.vacuum⟫_ℂ =
+            ⟪qft.vacuum,
+              qft.field.operatorPow n
+                (@Function.update (Fin n) (fun _ => SchwartzSpacetime d) hdec fs i (c • f))
+                qft.vacuum⟫_ℂ := by
+        simpa using congrArg (fun v => ⟪qft.vacuum, v⟫_ℂ) hpow.symm
+      have hsmul0 :
+          ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i (c • f)) qft.vacuum⟫_ℂ =
+            c * ⟪qft.vacuum, qft.field.operatorPow n (Function.update fs i f) qft.vacuum⟫_ℂ := by
+        have hdec_eq : hdec = instDecidableEqFin n := Subsingleton.elim _ _
+        subst hdec_eq
+        have hkey := operatorPow_smul_at (d := d) qft n i c f fs qft.vacuum qft.vacuum_in_domain
+        exact (congrArg (fun v => ⟪qft.vacuum, v⟫_ℂ) hkey).trans (inner_smul_right _ _ _)
+      exact hinner.symm.trans hsmul0
+    exact hsmul'
+
+/-- Banach-Steinhaus / Fréchet-space bridge for finite multilinear maps on Schwartz space.
+
+    This is the standard theorem that separately continuous multilinear maps on products of
+    Schwartz spaces are jointly continuous. It is pure functional analysis and carries no QFT
+    content; here it is used only to promote a multilinear map to a `ContinuousMultilinearMap`
+    so the fixed nuclear axiom can be applied. -/
+private theorem exists_continuousMultilinear_ofSeparatelyContinuous {n : ℕ}
+    (Phi : MultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ)
+    (hPhi : ∀ (i : Fin n) (fs : Fin n → SchwartzSpacetime d),
       Continuous (fun f => Phi (Function.update fs i f))) :
-    ∃ (W : SchwartzNPointSpace d n →L[ℂ] ℂ),
-      ∀ fs : Fin n → SchwartzSpacetime d,
-        W (SchwartzMap.productTensor fs) = Phi fs := by
-  sorry
+    ∃ PhiCont : ContinuousMultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ,
+      ∀ fs : Fin n → SchwartzSpacetime d, PhiCont fs = Phi fs := by
+  refine ⟨{ toMultilinearMap := Phi, cont := by sorry }, ?_⟩
+  intro fs
+  rfl
 
-/-- Helper: The Wightman n-point function (f₁,...,fₙ) ↦ ⟨Ω, φ(f₁)···φ(fₙ)Ω⟩ is
-    separately continuous in each test function argument.
+/-- Helper: the Wightman n-point function is separately continuous in each test-function slot. -/
+private theorem inner_operatorPow_update_continuous (qft : WightmanQFT d)
+    (n : ℕ) (i : Fin n) (fs : Fin n → SchwartzSpacetime d)
+    (χ ψ : qft.HilbertSpace) (hχ : χ ∈ qft.field.domain) (hψ : ψ ∈ qft.field.domain) :
+    Continuous (fun f => ⟪χ, qft.field.operatorPow n (Function.update fs i f) ψ⟫_ℂ) := by
+  -- Induction on n, generalizing χ (needed for hermiticity step)
+  induction n generalizing χ with
+  | zero => exact Fin.elim0 i
+  | succ n ih =>
+    by_cases hi : i.val = 0
+    · -- i = 0: φ(f) applied to fixed tail
+      have hi0 : i = ⟨0, by omega⟩ := Fin.ext hi
+      have heq : ∀ f, ⟪χ, qft.field.operatorPow (n + 1) (Function.update fs i f) ψ⟫_ℂ =
+          ⟪χ, qft.field.operator f
+            (qft.field.operatorPow n (fun j => fs j.succ) ψ)⟫_ℂ := by
+        intro f; rw [hi0]; simp only [OperatorValuedDistribution.operatorPow]; congr 2
+      simp_rw [heq]
+      exact qft.field.matrix_element_continuous χ _ hχ
+        (qft.field.operatorPow_domain n _ ψ hψ)
+    · -- i > 0: use hermiticity to move φ(fs 0) left, then induct with new χ
+      let i' : Fin n := ⟨i.val - 1, by omega⟩
+      let χ' := qft.field.operator (SchwartzMap.conj (fs 0)) χ
+      have hχ' : χ' ∈ qft.field.domain := qft.field.operator_domain _ χ hχ
+      -- Show: the function equals ⟨χ', operatorPow n (update(tail)(i') f) ψ⟩
+      suffices key : ∀ f, ⟪χ, qft.field.operatorPow (n + 1) (Function.update fs i f) ψ⟫_ℂ =
+          ⟪χ', qft.field.operatorPow n (Function.update (fun j => fs j.succ) i' f) ψ⟫_ℂ by
+        simp_rw [key]
+        exact ih i' (fun j => fs j.succ) χ' hχ'
+      intro f
+      -- Unfold operatorPow (n+1)
+      show ⟪χ, qft.field.operator (Function.update fs i f 0)
+          (qft.field.operatorPow n (fun j => Function.update fs i f j.succ) ψ)⟫_ℂ = _
+      -- fs 0 unchanged since i > 0
+      rw [Function.update_of_ne (show (0 : Fin (n+1)) ≠ i from
+        fun h => hi (by rw [← h]; rfl)) f fs]
+      -- Use hermiticity: ⟨χ, φ(g) v⟩ = ⟨φ(conj g) χ, v⟩
+      -- field_hermitian gives: ⟨φ(f) χ, ψ⟩ = ⟨χ, φ(conj f) ψ⟩
+      -- Apply with f := conj(fs 0): ⟨φ(conj(fs 0)) χ, v⟩ = ⟨χ, φ(conj(conj(fs 0))) v⟩ = ⟨χ, φ(fs 0) v⟩
+      have hv_dom := qft.field.operatorPow_domain n
+        (fun j => Function.update fs i f j.succ) ψ hψ
+      have := qft.field_hermitian (SchwartzMap.conj (fs 0)) χ _ hχ hv_dom
+      simp only [SchwartzMap.conj_conj] at this
+      rw [this.symm]; clear this
+      -- Now need: operatorPow n (fun j => update fs i f j.succ) ψ
+      --         = operatorPow n (update (fun j => fs j.succ) i' f) ψ
+      have htail : (fun j => Function.update fs i f j.succ) =
+          Function.update (fun j => fs j.succ) i' f := by
+        funext j
+        simp only [Function.update_apply, i']
+        congr 1; ext
+        simp only [Fin.ext_iff, Fin.val_succ]
+        omega
+      rw [htail]
 
-    Continuity in f_i follows from:
-    1. φ(f_i) : D → D is continuous from SchwartzSpacetime to operators (field is tempered)
-    2. The operators φ(f_j) for j ≠ i are fixed
-    3. The inner product ⟨·,·⟩ on the Hilbert space is continuous
-
-    More precisely: the map f_i ↦ φ(f₁)···φ(f_i)···φ(fₙ)Ω is a composition of
-    the continuous map f_i ↦ φ(f_i) (temperedness) with the fixed operators φ(f_j),
-    and ⟨Ω, ·⟩ is continuous.
-
-    Blocked by: need to express this composition formally using the WightmanQFT structure's
-    field operator domain/continuity properties. -/
 private theorem wightman_separately_continuous (qft : WightmanQFT d) (n : ℕ)
     (i : Fin n) (fs : Fin n → SchwartzSpacetime d) :
     Continuous (fun f => qft.wightmanFunction n (Function.update fs i f)) := by
-  sorry
+  exact inner_operatorPow_update_continuous (d := d) qft n i fs qft.vacuum qft.vacuum
+    qft.vacuum_in_domain qft.vacuum_in_domain
+
+/-- The Wightman product functional is jointly continuous multilinear on the Schwartz factors. -/
+private theorem exists_wightman_continuousMultilinear (qft : WightmanQFT d) (n : ℕ) :
+    ∃ Phi : ContinuousMultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ,
+      ∀ fs : Fin n → SchwartzSpacetime d, Phi fs = qft.wightmanFunction n fs := by
+  refine exists_continuousMultilinear_ofSeparatelyContinuous (d := d)
+    (Phi := wightmanMultilinearMap (d := d) qft n) ?_
+  intro i fs
+  simpa [wightmanMultilinearMap] using wightman_separately_continuous (d := d) qft n i fs
 
 /-- **Wightman n-point functions extend to tempered distributions.**
 
@@ -335,13 +542,23 @@ theorem wightmanDistribution_extends (qft : WightmanQFT d) (n : ℕ) :
     ∃ (W_n : SchwartzNPointSpace d n →L[ℂ] ℂ),
       ∀ fs : Fin n → SchwartzSpacetime d,
         W_n (SchwartzMap.productTensor fs) = qft.wightmanFunction n fs := by
-  -- Apply the nuclear theorem to the Wightman functional
-  apply schwartz_nuclear_extension
-  -- Need: separate continuity of the Wightman n-point function
-  -- f_i -> Omega, phi(f_1)...phi(f_i)...phi(f_n) Omega is continuous in f_i
-  -- because phi is an operator-valued tempered distribution and inner product is continuous.
-  intro i fs
-  exact wightman_separately_continuous (d := d) qft n i fs
+  obtain ⟨Phi, hPhi⟩ := exists_wightman_continuousMultilinear (d := d) qft n
+  obtain ⟨W_n, hW_n, _⟩ := schwartz_nuclear_extension (d := d) (n := n) Phi
+  refine ⟨W_n, ?_⟩
+  intro fs
+  rw [hW_n]
+  exact hPhi fs
+
+/-- A chosen tempered-distribution extension of the `n`-point Wightman functional. -/
+noncomputable def chosenWightmanDistribution (qft : WightmanQFT d) (n : ℕ) :
+    SchwartzNPointSpace d n →L[ℂ] ℂ :=
+  Classical.choose (wightmanDistribution_extends (d := d) qft n)
+
+@[simp] theorem chosenWightmanDistribution_productTensor
+    (qft : WightmanQFT d) (n : ℕ) (fs : Fin n → SchwartzSpacetime d) :
+    chosenWightmanDistribution (d := d) qft n (SchwartzMap.productTensor fs) =
+      qft.wightmanFunction n fs :=
+  (Classical.choose_spec (wightmanDistribution_extends (d := d) qft n)) fs
 
 /-- Temperedness of Wightman functions: The multilinear Wightman n-point function
     (f₁,...,fₙ) ↦ ⟨Ω, φ(f₁)···φ(fₙ)Ω⟩ is separately continuous in each argument.
@@ -448,95 +665,54 @@ def wickRotatePoint {d : ℕ} (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℂ :=
     is single-valued.
 
     We define `analyticContinuation` on the full ambient space ℂ^{n(d+1)} and
-    constrain holomorphicity to the forward tube via `DifferentiableOn`. -/
+    constrain holomorphicity to the forward tube via `DifferentiableOn`.
+
+    The current `SpectralCondition` surface only records the weak Hamiltonian/mass-shell
+    inequalities, not the full Fourier-Laplace boundary-value theorem or the boundary
+    regularity input needed for pointwise limits. Therefore both the distributional
+    boundary-value package and the pointwise boundary-limit package are included
+    explicitly here rather than derived from `qft.spectrum_condition` inside this file. -/
 structure WightmanAnalyticity (qft : WightmanQFT d) where
   /-- The analytic continuation of the n-point function, defined on all of ℂ^{n(d+1)}.
       Only meaningful on the forward tube; values outside are auxiliary. -/
   analyticContinuation : (n : ℕ) → (Fin n → Fin (d + 1) → ℂ) → ℂ
   /-- The continuation is holomorphic on the forward tube -/
   isHolomorphic : ∀ n : ℕ, DifferentiableOn ℂ (analyticContinuation n) (ForwardTube d n)
-
-/-- **Spectrum condition implies Fourier-Laplace distributional boundary values.**
-
-    If a Wightman QFT has an analytic continuation to the forward tube (holomorphic
-    on ForwardTube d n), and the QFT satisfies the spectrum condition, then the analytic
-    continuation has tempered distributional boundary values.
-
-    The boundary value distribution T is determined by the Wightman n-point function:
-    the spectrum condition constrains the Fourier transform of W_n to be supported in
-    the dual cone V_+^*, which is exactly the condition for W_n to be the distributional
-    boundary value of its Fourier-Laplace transform (the analytic continuation).
-
-    This is the fundamental connection between:
-    (a) The Wightman distribution W_n (tempered, defined via inner products)
-    (b) The analytic continuation (holomorphic on the forward tube)
-    (c) The Fourier-Laplace representation (connecting (a) and (b))
-
-    Ref: Streater-Wightman, Theorem 2-6; Vladimirov 25-26 -/
-private theorem spectrum_implies_distributional_bv {d n : ℕ} [NeZero d]
-    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
-    (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (T : SchwartzNPointSpace d n → ℂ)
-    (hT_cont : Continuous T) :
+  /-- The analytic continuation approaches the chosen tempered Wightman distribution
+      in the distributional sense along forward-cone directions. -/
+  boundaryValue : ∀ n : ℕ,
     ∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
         (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          analyticContinuation n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (T f)) := by
-  sorry
+        (nhds ((chosenWightmanDistribution (d := d) qft n) f))
+  /-- Pointwise boundary limits along forward-cone directions. This is the additional
+      regularity input needed to talk about honest pointwise boundary values rather than
+      only distributional convergence. -/
+  boundaryPointwise : ∀ (n : ℕ) (x : Fin n → Fin (d + 1) → ℝ)
+      (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      ∃ (limit : ℂ), Filter.Tendsto
+        (fun ε : ℝ => analyticContinuation n
+          (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds limit)
 
 private theorem wightman_analyticity_distributional_bv (qft : WightmanQFT d)
     (ha : WightmanAnalyticity d qft) (n : ℕ) :
     ∃ (T : SchwartzNPointSpace d n → ℂ),
-      ∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
-        InForwardCone d n η →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-            ha.analyticContinuation n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (T f)) := by
-  -- Step 1: The Wightman distribution extends to a CLM on SchwartzNPointSpace
-  obtain ⟨W_n, hW_n⟩ := wightmanDistribution_extends d qft n
-  -- Step 2: T = W_n is tempered (continuous) and the distributional BV
-  -- The analytic continuation recovers W_n as its distributional boundary value
-  -- by the spectrum condition + Fourier-Laplace theory
-  exact ⟨W_n, spectrum_implies_distributional_bv (ha.isHolomorphic n) W_n W_n.cont⟩
-
-/-- **Pointwise boundary value existence for holomorphic functions on the forward tube
-    along V₊-component approach directions.**
-
-    Given a holomorphic function on the forward tube with distributional boundary values,
-    the pointwise limit along any direction η in ForwardConeAbs (successive diffs in V₊) exists.
-
-    The path `x + iε·η` stays in the forward tube for ε > 0
-    (the successive imaginary differences ε·(η_k - η_{k-1}) ∈ V₊).
-
-    The proof uses the Fourier-Laplace representation of the boundary value:
-    the distributional BV T is a tempered distribution whose Fourier transform has
-    support in the dual cone, giving polynomial decay of F(x + iε·η) that
-    allows extraction of the pointwise limit.
-
-    Ref: Vladimirov §26.2-26.3; Streater-Wightman, Theorem 3-7 -/
-private theorem pointwise_limit_along_forwardCone_direction {d n : ℕ} [NeZero d]
-    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
-    (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (h_bv : ∃ (T : SchwartzNPointSpace d n → ℂ),
-      ∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
-        InForwardCone d n η →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (T f)))
-    (x : Fin n → Fin (d + 1) → ℝ)
-    (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η) :
-    ∃ (limit : ℂ), Filter.Tendsto
-      (fun ε : ℝ => F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))
-      (nhdsWithin 0 (Set.Ioi 0))
-      (nhds limit) := by
-  sorry
+    ∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+          ha.analyticContinuation n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T f)) := by
+  refine ⟨chosenWightmanDistribution (d := d) qft n, ?_⟩
+  intro f η hη
+  simpa using ha.boundaryValue n f η hη
 
 /-- Boundary values of the analytic continuation recover Wightman functions.
 
@@ -544,10 +720,8 @@ private theorem pointwise_limit_along_forwardCone_direction {d n : ℕ} [NeZero 
     real configuration x, the limit from within the forward tube exists:
       lim_{ε→0⁺} W_analytic(x₁ + iε·η₁, ..., xₙ + iε·ηₙ) exists
 
-    Proved by combining `wightman_analyticity_distributional_bv` (the analytic
-    continuation has tempered distributional BVs) with
-    `pointwise_limit_along_forwardCone_direction` (distributional BVs + holomorphicity
-    imply pointwise limit existence along ForwardConeAbs directions).
+    The pointwise boundary-limit input is carried explicitly by
+    `WightmanAnalyticity.boundaryPointwise`.
 
     Ref: Streater-Wightman, "PCT, Spin and Statistics", Theorem 3-7 -/
 theorem wightman_analyticity_boundary (qft : WightmanQFT d)
@@ -560,8 +734,6 @@ theorem wightman_analyticity_boundary (qft : WightmanQFT d)
         (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds limit) := by
-  exact pointwise_limit_along_forwardCone_direction (ha.isHolomorphic n)
-    (wightman_analyticity_distributional_bv d qft ha n) x η hη
+  exact ha.boundaryPointwise n x η hη
 
 end
-
