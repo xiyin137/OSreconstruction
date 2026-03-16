@@ -622,8 +622,35 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖W (n + m) (f.tensorProduct g_a) - W n f * W m g‖ < ε
-
 /-! ### Inner Product Hermiticity and Cauchy-Schwarz -/
+
+/-- Forward-tube growth input needed for the corrected `R -> E` direction.
+
+    This is intentionally a separate proposition, not part of the core
+    `WightmanFunctions` structure: the existing Wightman record captures the
+    standard distributional axioms, while the Euclidean zero-diagonal pairing
+    additionally needs explicit control of coincidence singularities for the
+    Wick-rotated kernel.
+
+    The expected source is the usual Vladimirov-type tube estimate together
+    with Euclidean symmetry/translation arguments. Keeping it separate avoids
+    strengthening every `WightmanFunctions` constructor globally when only the
+    `R -> E` bridge needs it. -/
+def HasForwardTubeGrowth {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) : Prop :=
+  -- Weighted bound: for all n, the product of ‖W_analytic(wick(x))‖ with a power of
+  -- infDist(x, CoincidenceLocus) is at most polynomial. This is the Vladimirov-Tillmann
+  -- boundary-singularity control transferred to the Euclidean setting.
+  -- For n ≤ 1 (empty CoincidenceLocus) the infDist factor is 0, so the bound is
+  -- vacuously true; the n ≤ 1 integrability is handled separately.
+  ∀ (n : ℕ),
+    ∃ (C_bd : ℝ) (N q : ℕ), C_bd > 0 ∧
+      ∀ (x : Fin n → Fin (d + 1) → ℝ),
+        (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n →
+          ‖(Wfn.spectrum_condition n).choose (fun k => wickRotatePoint (x k))‖ *
+            Metric.infDist x
+              { y : Fin n → Fin (d + 1) → ℝ |
+                ∃ i j : Fin n, i ≠ j ∧ y i = y j } ^ (q + 1) ≤
+                  C_bd * (1 + ‖x‖) ^ N
 
 /-- Dependent type transport for Wightman functions: if k₁ = k₂ and two test functions
     have the same pointwise values (modulo the Fin.cast reindexing), then W gives the same value.

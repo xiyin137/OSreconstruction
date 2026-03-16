@@ -81,15 +81,18 @@ theorem wightman_uniqueness (qft₁ qft₂ : WightmanQFT d)
         U (qft₁.field.operator f ψ) = qft₂.field.operator f (U ψ)) := by
   sorry
 
-/-- **Theorem R→E** (Wightman -> zero-diagonal Euclidean side): a Wightman QFT
-    yields an honest zero-diagonal Schwinger family, related to the Wightman
-    functions by Wick rotation.
+/-- **Theorem R→E** (Wightman -> zero-diagonal Euclidean side): a Wightman QFT,
+    together with explicit forward-tube growth input for its holomorphic
+    continuation, yields an honest zero-diagonal Schwinger family related to
+    the Wightman functions by Wick rotation.
 
     The Schwinger functionals are only packaged on `ZeroDiagonalSchwartz` in this
     direction; no full-Schwartz OS-II extension is claimed here. This is
     intentional: the natural Euclidean kernels may have inverse-power
     coincidence singularities, and the honest general pairing surface is the
-    zero-diagonal test space. -/
+    zero-diagonal test space. The extra growth input is kept separate from
+    `WightmanFunctions` so the core distributional theorem surface is not
+    strengthened globally. -/
 theorem wightman_to_os (Wfn : WightmanFunctions d) :
     ∃ (S : SchwingerFunctions d),
       (∀ n, Continuous (S n)) ∧
