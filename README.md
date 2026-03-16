@@ -1,5 +1,31 @@
 # OSReconstruction
 
+## Route 1 Translation Invariance Status (2026-03-14)
+
+**Date**: 2026-03-14
+
+The Route 1 refactor proves `bhw_translation_invariant` (BHW extension is
+translation-invariant on the permuted extended tube) via reduced difference
+coordinates and the Identity Theorem, replacing the logically false D(c)
+overlap-connectivity approach.
+
+| Metric | Count |
+|--------|-------|
+| `bhw_translation_invariant` sorry | **0** (proved) |
+| Route 1 axioms remaining | **1** (`reduced_bargmann_hall_wightman_of_input`) |
+| Axioms eliminated this session | 3 (`integral_realDiffCoord_change_variables`, `realDiffCoordCLE_symm_measurePreserving`, `schwartzTranslationClassification`) |
+| Pre-existing sorrys (not Route 1) | 1 (`isPreconnected_baseFiber`) |
+
+The sole remaining axiom is the **reduced BHW theorem** — the Bargmann-Hall-Wightman
+envelope of holomorphy executed natively in (n-1) reduced difference coordinates.
+This requires porting the permutation flow (Edge of the Wedge + Lorentz sweeping)
+to the quotient geometry. See [`docs/ROUTE1_AXIOM_STATUS.md`](docs/ROUTE1_AXIOM_STATUS.md)
+for the Route 1 status note and
+[`docs/reduced_bhw_bridge_and_numerics.md`](docs/reduced_bhw_bridge_and_numerics.md)
+for the intended absolute-to-reduced bridge and numerical diagnostics.
+
+---
+
 A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** and supporting infrastructure in **von Neumann algebra theory**, built on [Mathlib](https://github.com/leanprover-community/mathlib4).
 
 ## Overview
@@ -57,8 +83,11 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree builds cleanly with **zero `axiom` declarations**.
-Remaining work is represented by explicit theorem-level `sorry` placeholders.
+The tracked production tree currently includes **one explicit `axiom`
+declaration** on the Route 1 translation-invariance lane:
+`reduced_bargmann_hall_wightman_of_input`.
+Remaining work outside that deferred bridge is represented by explicit
+theorem-level `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
 `Proofideas/` and other untracked experiments are intentionally excluded.
 

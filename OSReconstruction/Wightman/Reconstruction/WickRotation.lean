@@ -6,6 +6,9 @@ Authors: Michael Douglas, ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanKernel
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTwoPoint
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
 import OSReconstruction.Wightman.Reconstruction.WickRotation.HermitianBoundaryPairing
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BaseFiberInflation
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
@@ -38,12 +41,19 @@ The implementation is split across several files in the `WickRotation/` subfolde
 - `ForwardTubeLorentz.lean`: Forward tube preservation, Lorentz invariance,
   distributional boundary value covariance
 - `BHWExtension.lean`: Bargmann-Hall-Wightman extension definition and properties
+- `BHWTranslationCore.lean`: Core forward-tube translation invariance, PET
+  connectivity, and forward-tube translate nonemptiness
+- `BHWReduced.lean`: Reduced `(n-1)`-difference test-lift and cutoff-independence
+  shell for the Route 1 translation refactor
+- `BHWReducedExtension.lean`: Reduced BHW extension shell and algebraic pullback
+  interface for the Route 1 translation refactor
 - `BEGTrigonometric.lean`: small trigonometric estimates used in the
   Bros-Epstein-Glaser path geometry
 - `BaseFiberInflation.lean`: forward-tube and Lorentz-action inflation helpers
   for the base-fiber connectedness route
-- `BHWTranslation.lean`: Translation invariance proof chain, raw and zero-diagonal
-  Schwinger function constructions
+- `BHWTranslation.lean`: Translation invariance proof chain, including the
+  Route 1 reduced-coordinate argument, raw and zero-diagonal Schwinger function
+  constructions
 - `SchwingerTemperedness.lean`: the E0 / zero-diagonal pairing front, including
   the remaining temperedness and continuity gaps on the honest OS-I surface
 - `SchwingerAxioms.lean`: the later Euclidean-side axioms after the temperedness
