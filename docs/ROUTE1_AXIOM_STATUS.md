@@ -17,6 +17,12 @@ On the merged path, this means `isPreconnected_baseFiber` is no longer needed
 to prove `bhw_translation_invariant`. The remaining trust surface is the single
 reduced-BHW axiom recorded below.
 
+Global repository note: the tracked production tree now contains **3** axioms total.
+Only **1** of them belongs to Route 1. The other two live in
+`Wightman/WightmanAxioms.lean` and are pure functional-analysis axioms:
+`schwartz_nuclear_extension` and
+`exists_continuousMultilinear_ofSeparatelyContinuous`.
+
 ### Current inventory
 
 | File | Item | Type | Status |

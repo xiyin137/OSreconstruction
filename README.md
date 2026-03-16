@@ -23,6 +23,8 @@ to the quotient geometry. See [`docs/ROUTE1_AXIOM_STATUS.md`](docs/ROUTE1_AXIOM_
 for the Route 1 status note and
 [`docs/reduced_bhw_bridge_and_numerics.md`](docs/reduced_bhw_bridge_and_numerics.md)
 for the intended absolute-to-reduced bridge and numerical diagnostics.
+Globally, the tracked production tree now contains **3** axiom declarations;
+only **1** of them belongs to the Route 1 lane.
 
 The pre-existing `isPreconnected_baseFiber` sorry in `BHWTranslation.lean`
 remains in the tree as an old-route residual theorem, but it is no longer
@@ -87,10 +89,16 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **one explicit `axiom`
-declaration** on the Route 1 translation-invariance lane:
-`reduced_bargmann_hall_wightman_of_input`.
-Remaining work outside that deferred bridge is represented by explicit
+The tracked production tree currently includes **3 explicit `axiom`
+declarations**:
+- `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean`
+- `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean`
+- `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
+
+The first two are pure functional-analysis axioms on the Wightman/Schwartz side
+(Schwartz kernel theorem and Banach-Steinhaus for finite multilinear maps). The
+third is the deferred reduced-BHW bridge on the Route 1 translation-invariance
+lane. Remaining work outside these deferred surfaces is represented by explicit
 theorem-level `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
 `Proofideas/` and other untracked experiments are intentionally excluded.
@@ -203,8 +211,10 @@ Snapshot (2026-03-16, tracked production tree):
 | `vNA/` | 40 |
 | **Total** | **77** |
 
-Tracked production tree also contains `1` explicit axiom:
-`reduced_bargmann_hall_wightman_of_input`.
+Tracked production tree also contains `3` explicit axioms:
+- `schwartz_nuclear_extension`
+- `exists_continuousMultilinear_ofSeparatelyContinuous`
+- `reduced_bargmann_hall_wightman_of_input`
 
 ### OS-Critical Sorry Flow Toward Reconstruction
 

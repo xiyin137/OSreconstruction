@@ -449,15 +449,12 @@ private def wightmanMultilinearMap (qft : WightmanQFT d) (n : ℕ) :
     Schwartz spaces are jointly continuous. It is pure functional analysis and carries no QFT
     content; here it is used only to promote a multilinear map to a `ContinuousMultilinearMap`
     so the fixed nuclear axiom can be applied. -/
-private theorem exists_continuousMultilinear_ofSeparatelyContinuous {n : ℕ}
+axiom exists_continuousMultilinear_ofSeparatelyContinuous {n : ℕ}
     (Phi : MultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ)
     (hPhi : ∀ (i : Fin n) (fs : Fin n → SchwartzSpacetime d),
       Continuous (fun f => Phi (Function.update fs i f))) :
     ∃ PhiCont : ContinuousMultilinearMap ℂ (fun _ : Fin n => SchwartzSpacetime d) ℂ,
-      ∀ fs : Fin n → SchwartzSpacetime d, PhiCont fs = Phi fs := by
-  refine ⟨{ toMultilinearMap := Phi, cont := by sorry }, ?_⟩
-  intro fs
-  rfl
+      ∀ fs : Fin n → SchwartzSpacetime d, PhiCont fs = Phi fs
 
 /-- Helper: the Wightman n-point function is separately continuous in each test-function slot. -/
 private theorem inner_operatorPow_update_continuous (qft : WightmanQFT d)

@@ -29,8 +29,9 @@ Counts verified with:
 | **Total** | **77** |
 
 Tracked production axioms:
-- `1` explicit axiom on the Route 1 reduced-BHW lane:
-  `reduced_bargmann_hall_wightman_of_input` in
+- `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean`
+- `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean`
+- `reduced_bargmann_hall_wightman_of_input` in
   `WickRotation/BHWReducedExtension.lean`
 
 ## 3. Primary Priority Stack
@@ -109,9 +110,11 @@ from the OS data.
    - avoid one-point classification detours and avoid ambient full-Schwartz theorem surfaces
 2. Use the extracted SCV boundary-distribution lemmas to reduce
    `boundary_values_tempered` in `OSToWightmanBoundaryValues.lean` to the genuine OS-side growth inputs.
-3. If the continuation blocker truly requires the Schwartz kernel theorem, continue strengthening
-   `Wightman/SchwartzTensorProduct.lean` and then attack `Wightman/WightmanAxioms.lean`'s
-   `schwartz_nuclear_extension` honestly.
+3. If the continuation blocker truly requires the Schwartz-kernel assembly, use the
+   fixed functional-analysis axioms in `Wightman/WightmanAxioms.lean`
+   (`exists_continuousMultilinear_ofSeparatelyContinuous` and
+   `schwartz_nuclear_extension`) and continue the blocker-facing density/kernel
+   assembly in the reconstruction files.
 4. Close the transfer and cluster chain in `OSToWightmanBoundaryValues.lean`.
 5. In parallel or next, attack the live R -> E theorem-level front:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
