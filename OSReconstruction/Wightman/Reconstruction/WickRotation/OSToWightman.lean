@@ -260,10 +260,33 @@ theorem exists_positive_time_compact_schwartz {d : ℕ} [NeZero d] :
       HasCompactSupport (g : SpacetimeDim d → ℂ) ∧
       tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} ∧
       ∫ u : SpacetimeDim d, g u ≠ 0 := by
-  -- Use ContDiffBump centered at (1, 0, ..., 0) with radius 1/2.
-  -- Support ⊆ closedBall((1,0,...), 1/2) ⊆ {x₀ > 1/2} ⊆ {x₀ > 0}.
-  -- Integral nonzero because bump is nonneg with positive integral.
-  sorry
+  let c : SpacetimeDim d := Fin.cons 1 0
+  let b : ContDiffBump c := ⟨1/4, 1/2, by norm_num, by norm_num⟩
+  let f : SpacetimeDim d → ℂ := fun x => (b x : ℂ)
+  have hf_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) f :=
+    (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  let g := HasCompactSupport.toSchwartzMap hf_compact hf_smooth
+  refine ⟨g, hf_compact, ?_, ?_⟩
+  · intro x hx
+    simp only [Set.mem_setOf_eq]
+    have hx_supp : x ∈ Metric.closedBall c (1/2 : ℝ) := by
+      have h_tsup_f : tsupport f ⊆ Metric.closedBall c (1/2) := by
+        intro y hy; rw [← b.tsupport_eq]
+        exact tsupport_comp_subset Complex.ofReal_zero _ hy
+      exact h_tsup_f hx
+    rw [Metric.mem_closedBall] at hx_supp
+    have h0 : |x 0 - 1| ≤ 1/2 := by
+      calc |x 0 - 1| = |x 0 - c 0| := by simp [c, Fin.cons]
+        _ = ‖(x - c) 0‖ := by simp [Pi.sub_apply, Real.norm_eq_abs]
+        _ ≤ ‖x - c‖ := norm_le_pi_norm _ 0
+        _ = dist x c := by rw [dist_eq_norm]
+        _ ≤ 1/2 := hx_supp
+    linarith [abs_le.mp h0]
+  · change ∫ x, (↑(b x) : ℂ) ≠ 0
+    rw [integral_complex_ofReal]
+    exact Complex.ofReal_ne_zero.mpr (ne_of_gt b.integral_pos)
 
 /-- The spatially-parameterized `k = 2` semigroup witness. This isolates the
 dependence on the complex time parameter `z` and the real spatial-difference
