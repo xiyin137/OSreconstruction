@@ -1509,7 +1509,10 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       (continuousOn_twoPointCorrectedWitness (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact)
   · -- Integrability: |G(u)| ≤ C for all u (semigroup contraction)
     intro f
-    sorry -- From ‖T(z)‖ ≤ 2 giving |G| ≤ C, combined with f Schwartz → |G*f| ≤ C*|f| integrable
+    -- |G(u)| ≤ ‖F_χ₀‖ · 2 · ‖G_g‖ (from semigroup contraction ‖T(z)‖ ≤ 2
+    -- + norm_twoPointTranslatedOnePointVector_eq giving y-independent norm)
+    -- Then |G*f| ≤ C·|f| is integrable since f is Schwartz (hence L¹)
+    sorry
   · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
     intro f
     sorry -- From shell agreement (semigroup chain) + density (clm_zero_of_zero_on_productTensor)
