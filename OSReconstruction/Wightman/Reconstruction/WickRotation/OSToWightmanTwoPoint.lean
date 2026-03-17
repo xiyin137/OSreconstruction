@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.TwoPointDescent
+import OSReconstruction.Wightman.Reconstruction.TwoPointKernelFunctional
 import OSReconstruction.Wightman.Reconstruction.CenterSpatialTranslationInvariant
 import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
@@ -26,6 +27,7 @@ The analytic-continuation core and live base-step blocker remain in
 
 open scoped Classical NNReal
 open BigOperators Finset
+open MeasureTheory OSReconstruction
 
 noncomputable section
 
@@ -1189,9 +1191,80 @@ theorem schwinger_twoPointDifferenceLift_timeShift_eq_centerValue_of_positiveSup
           Ψ (xiShift ⟨1, by omega⟩ 0
             (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) y) i))
             ((t : ℂ) * Complex.I)) *
+          (χ₀ (y 0) * h (y 1))) *
+          ∫ u : SpacetimeDim d, χ u := by
+          exact schwinger_twoPoint_xiShiftWitness_eq_centerValue_of_positiveSupport
+            (d := d) (OS := OS) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
+            h hh_pos t ht χ₀ hχ₀ χ
+
+/-- The concrete `k = 2` fixed-time `xiShift` kernel appearing in the
+two-point continuation formulas. -/
+def twoPointXiShiftKernel
+    (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
+    (t : ℝ) : NPointDomain d 2 → ℂ :=
+  fun z =>
+    Ψ (xiShift ⟨1, by omega⟩ 0
+      (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+      ((t : ℂ) * Complex.I))
+
+/-- Blocker-facing CLM form of the real-axis `k = 2` shell identity: the
+concrete `xiShift` kernel CLM already agrees with the Schwinger functional on
+the admissible positive-time difference shell. This is the production stepping
+stone for shell agreement in the `E -> R` route. -/
+theorem twoPointXiShiftKernelCLM_eq_schwinger_on_differenceShell_of_positiveSupport
+    (OS : OsterwalderSchraderAxioms d)
+    (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
+    (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        Ψ (fun i => wickRotatePoint (x i)) * (f.1 x))
+    (h : SchwartzSpacetime d)
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (t : ℝ) (ht : 0 < t)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (χ : SchwartzSpacetime d)
+    (hK_meas : MeasureTheory.AEStronglyMeasurable
+      (twoPointXiShiftKernel (d := d) Ψ t) MeasureTheory.volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖twoPointXiShiftKernel (d := d) Ψ t x‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
+    OSReconstruction.twoPointFlatKernelCLM (twoPointXiShiftKernel (d := d) Ψ t)
+        hK_meas C_bd N hC hK_bound
+        (OSReconstruction.reindexSchwartzFin (by ring)
+          (OSReconstruction.flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+      OS.S 2
+        (ZeroDiagonalSchwartz.ofClassical
+          (twoPointDifferenceLift χ
+            (SCV.translateSchwartz (- timeShiftVec d t) h))) := by
+  calc
+    OSReconstruction.twoPointFlatKernelCLM (twoPointXiShiftKernel (d := d) Ψ t)
+        hK_meas C_bd N hC hK_bound
+        (OSReconstruction.reindexSchwartzFin (by ring)
+          (OSReconstruction.flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))))
+      = ∫ z : NPointDomain d 2,
+          twoPointXiShiftKernel (d := d) Ψ t z * (χ (z 0) * h (z 1)) := by
+            simpa [twoPointXiShiftKernel] using
+              twoPointFlatKernelCLM_apply_reindex_flatten
+                (d := d) (K := twoPointXiShiftKernel (d := d) Ψ t)
+                hK_meas C_bd N hC hK_bound
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))
+    _ = (∫ y : NPointDomain d 2,
+          Ψ (xiShift ⟨1, by omega⟩ 0
+            (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) y) i))
+            ((t : ℂ) * Complex.I)) *
             (χ₀ (y 0) * h (y 1))) *
           ∫ u : SpacetimeDim d, χ u := by
           exact schwinger_twoPoint_xiShiftWitness_eq_centerValue_of_positiveSupport
+            (d := d) (OS := OS) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
+            h hh_pos t ht χ₀ hχ₀ χ
+    _ = OS.S 2
+          (ZeroDiagonalSchwartz.ofClassical
+            (twoPointDifferenceLift χ
+              (SCV.translateSchwartz (- timeShiftVec d t) h))) := by
+          symm
+          exact schwinger_twoPointDifferenceLift_timeShift_eq_centerValue_of_positiveSupport
             (d := d) (OS := OS) (Ψ := Ψ) (hΨ_euclid := hΨ_euclid)
             h hh_pos t ht χ₀ hχ₀ χ
 

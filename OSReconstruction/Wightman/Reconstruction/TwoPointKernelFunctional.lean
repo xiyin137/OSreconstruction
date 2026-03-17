@@ -1,5 +1,6 @@
 import OSReconstruction.Wightman.Reconstruction.BlockIntegral
 import OSReconstruction.Wightman.Reconstruction.CenterSpatialTranslationInvariant
+import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 import OSReconstruction.Wightman.Reconstruction.TwoPointDescent
 import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerAxioms
 
@@ -615,5 +616,225 @@ theorem map_productLift_and_differenceLift_of_eq_on_dense_reduced
               twoPointFlatKernelCLM_apply_reindex_flatten
                 (d := d) (K := K) hK_meas C_bd N hC hK_bound
                 (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))
+
+/-- Compactly supported reduced Schwartz tests are dense in the reduced
+difference-variable Schwartz space. This is the concrete dense family used by
+the quotient-level `k = 2` wrapper below. -/
+theorem dense_compactSupport_reducedSchwartz :
+    Dense {h : SchwartzSpacetime d | HasCompactSupport (h : SpacetimeDim d → ℂ)} := by
+  simpa [SchwartzSpacetime, SpacetimeDim] using
+    (SchwartzMap.dense_hasCompactSupport (m := d + 1))
+
+/-- Reduced dense-set wrapper for the two-point kernel comparison: to identify
+an abstract full flattened extension `T` with the concrete kernel CLM induced
+by `K`, it is enough to prove equality of the descended reduced functionals on
+compactly supported reduced Schwartz tests. -/
+theorem map_productLift_and_differenceLift_of_eq_on_compactSupport_reduced
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    (hEq : ∀ h : SchwartzSpacetime d,
+      HasCompactSupport (h : SpacetimeDim d → ℂ) →
+      OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d T φ) ψ h =
+        OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d
+            (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ h)
+    (χ : SchwartzSpacetime d) (g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+  refine map_productLift_and_differenceLift_of_eq_on_dense_reduced
+      (d := d) T hT K hK_meas C_bd N hC hK_bound hTK φ hφ ψ hψ hTred hKred
+      (S := {h : SchwartzSpacetime d | HasCompactSupport (h : SpacetimeDim d → ℂ)})
+      dense_compactSupport_reducedSchwartz ?_ χ g h
+  intro f hf
+  exact hEq f hf
+
+/-- Positive-support compact reduced wrapper for the two-point kernel
+comparison: if the reduced center-time/difference descended functionals agree
+on compactly supported tests supported in the positive head half-space, then
+head-translation invariance upgrades that agreement to all compactly supported
+reduced tests, after which the standard compact-support reduced wrapper
+finishes the product-shell / difference-shell comparison. -/
+theorem map_productLift_and_differenceLift_of_eq_on_positive_compactSupport_reduced
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hψ_compact : HasCompactSupport ψ)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    (hEq_pos : ∀ H : SchwartzMap (Fin (d + 2) → ℝ) ℂ,
+      HasCompactSupport (H : (Fin (d + 2) → ℝ) → ℂ) →
+      tsupport (H : (Fin (d + 2) → ℝ) → ℂ) ⊆ {x : Fin (d + 2) → ℝ | 0 < x 0} →
+      OSReconstruction.centerSpatialDescentCLM d T φ H =
+        OSReconstruction.centerSpatialDescentCLM d
+          (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ H)
+    (χ : SchwartzSpacetime d) (g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+  have hEq :
+      ∀ h : SchwartzSpacetime d,
+        HasCompactSupport (h : SpacetimeDim d → ℂ) →
+        OSReconstruction.headTranslationDescentCLM
+            (OSReconstruction.centerSpatialDescentCLM d T φ) ψ h =
+          OSReconstruction.headTranslationDescentCLM
+            (OSReconstruction.centerSpatialDescentCLM d
+              (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ) ψ h := by
+    intro h hh
+    exact
+      OSReconstruction.headTranslationDescentCLM_eq_on_compactSupport_of_eq_on_positive_tsupport
+        (OSReconstruction.centerSpatialDescentCLM d T φ)
+        (OSReconstruction.centerSpatialDescentCLM d
+          (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ)
+        hTred hKred ψ hψ hψ_compact hEq_pos h hh
+  exact
+    map_productLift_and_differenceLift_of_eq_on_compactSupport_reduced
+      (d := d) T hT K hK_meas C_bd N hC hK_bound hTK φ hφ ψ hψ hTred hKred
+      hEq χ g h
+
+/-- Fixed-time specialization of the compact-support reduced wrapper. Once the
+reduced descended functional agrees with the fixed-time kernel on compactly
+supported reduced Schwartz tests, the full flattened extension already
+reproduces the expected product-shell and admissible difference-shell
+integrals. -/
+theorem map_productLift_and_differenceLift_of_eq_on_compactSupport_fixedTimeKernel
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (t : ℂ)
+    (hK_meas : AEStronglyMeasurable (twoPointFixedTimeKernel (d := d) G t) volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖twoPointFixedTimeKernel (d := d) G t x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d)
+          (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d)
+          (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound) φ))
+    (hEq : ∀ h : SchwartzSpacetime d,
+      HasCompactSupport (h : SpacetimeDim d → ℂ) →
+      OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d T φ) ψ h =
+        OSReconstruction.headTranslationDescentCLM
+          (OSReconstruction.centerSpatialDescentCLM d
+            (twoPointFlatKernelCLM (d := d)
+              (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound) φ) ψ h)
+    (χ : SchwartzSpacetime d) (g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2,
+          twoPointFixedTimeKernel (d := d) G t z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2,
+          twoPointFixedTimeKernel (d := d) G t z * (χ (z 0) * h (z 1)) := by
+  simpa using
+    map_productLift_and_differenceLift_of_eq_on_compactSupport_reduced
+      (d := d) T hT (twoPointFixedTimeKernel (d := d) G t) hK_meas
+      C_bd N hC hK_bound hTK φ hφ ψ hψ hTred hKred hEq χ g h
+
+/-- Fixed-time specialization of the previous positive-support compact reduced
+wrapper. This is the blocker-facing form used when the reduced fixed-time
+kernel equality is first proved only on compactly supported tests in the
+positive head half-space. -/
+theorem map_productLift_and_differenceLift_of_eq_on_positive_compactSupport_fixedTimeKernel
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (t : ℂ)
+    (hK_meas : AEStronglyMeasurable (twoPointFixedTimeKernel (d := d) G t) volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖twoPointFixedTimeKernel (d := d) G t x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK :
+      OSReconstruction.IsCenterSpatialTranslationInvariantSchwartzCLM d
+        (twoPointFlatKernelCLM (d := d)
+          (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hψ_compact : HasCompactSupport ψ)
+    (hTred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d T φ))
+    (hKred : OSReconstruction.IsHeadTranslationInvariantSchwartzCLM
+      (OSReconstruction.centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d)
+          (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound) φ))
+    (hEq_pos : ∀ H : SchwartzMap (Fin (d + 2) → ℝ) ℂ,
+      HasCompactSupport (H : (Fin (d + 2) → ℝ) → ℂ) →
+      tsupport (H : (Fin (d + 2) → ℝ) → ℂ) ⊆ {x : Fin (d + 2) → ℝ | 0 < x 0} →
+      OSReconstruction.centerSpatialDescentCLM d T φ H =
+        OSReconstruction.centerSpatialDescentCLM d
+          (twoPointFlatKernelCLM (d := d)
+            (twoPointFixedTimeKernel (d := d) G t) hK_meas C_bd N hC hK_bound) φ H)
+    (χ : SchwartzSpacetime d) (g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2,
+          twoPointFixedTimeKernel (d := d) G t z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2,
+          twoPointFixedTimeKernel (d := d) G t z * (χ (z 0) * h (z 1)) := by
+  simpa using
+    map_productLift_and_differenceLift_of_eq_on_positive_compactSupport_reduced
+      (d := d) T hT (twoPointFixedTimeKernel (d := d) G t) hK_meas
+      C_bd N hC hK_bound hTK φ hφ ψ hψ hψ_compact hTred hKred hEq_pos χ g h
 
 end OSReconstruction

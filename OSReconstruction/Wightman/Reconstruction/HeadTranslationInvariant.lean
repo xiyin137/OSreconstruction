@@ -168,5 +168,64 @@ theorem headTranslationDescentCLM_eq_of_factors_through_sliceIntegral
     simpa using sliceIntegral_prependField_eq_self φ f hφ
   rw [hs]
 
+/-- A compactly supported Schwartz test on `Fin (n + 1) → ℝ` can be translated
+far enough in the distinguished head coordinate so that its topological support
+lies in the positive head half-space. This is the support-geometry input behind
+extending head-translation-invariant identities from positive-support tests to
+arbitrary compactly supported ones. -/
+theorem exists_headTranslate_positive_tsupport_of_hasCompactSupport
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (hF : HasCompactSupport (F : (Fin (n + 1) → ℝ) → ℂ)) :
+    ∃ a : ℝ, 0 < a ∧
+      tsupport (((SCV.translateSchwartz (Fin.cons (-a) 0) F :
+        SchwartzMap (Fin (n + 1) → ℝ) ℂ) : (Fin (n + 1) → ℝ) → ℂ))
+        ⊆ {x : Fin (n + 1) → ℝ | 0 < x 0} := by
+  sorry
+
+/-- Head-translation-invariant Schwartz functionals are already determined on
+all compactly supported tests once they agree on the compactly supported tests
+whose topological support lies in the positive head half-space. -/
+theorem map_eq_on_compactSupport_of_eq_on_positive_tsupport_of_headTranslationInvariant
+    (T U : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsHeadTranslationInvariantSchwartzCLM T)
+    (hU : IsHeadTranslationInvariantSchwartzCLM U)
+    (hEq_pos : ∀ F : SchwartzMap (Fin (n + 1) → ℝ) ℂ,
+      HasCompactSupport (F : (Fin (n + 1) → ℝ) → ℂ) →
+      tsupport (F : (Fin (n + 1) → ℝ) → ℂ) ⊆ {x : Fin (n + 1) → ℝ | 0 < x 0} →
+      T F = U F)
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (hF : HasCompactSupport (F : (Fin (n + 1) → ℝ) → ℂ)) :
+    T F = U F := by
+  sorry
+
+/-- If two head-translation-invariant functionals agree on compactly supported
+tests whose support lies in the positive head half-space, then after choosing a
+compactly supported normalized head cutoff they also agree on the descended
+compactly supported tail tests. This is the abstract support-shift bridge used
+to pass from positive reduced-shell identities to compact reduced-shell
+identities in the current two-point `E -> R` packaging route. -/
+theorem headTranslationDescentCLM_eq_on_compactSupport_of_eq_on_positive_tsupport
+    (T U : SchwartzMap (Fin (n + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsHeadTranslationInvariantSchwartzCLM T)
+    (hU : IsHeadTranslationInvariantSchwartzCLM U)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hψ_compact : HasCompactSupport ψ)
+    (hEq_pos : ∀ F : SchwartzMap (Fin (n + 1) → ℝ) ℂ,
+      HasCompactSupport (F : (Fin (n + 1) → ℝ) → ℂ) →
+      tsupport (F : (Fin (n + 1) → ℝ) → ℂ) ⊆ {x : Fin (n + 1) → ℝ | 0 < x 0} →
+      T F = U F)
+    (f : SchwartzMap (Fin n → ℝ) ℂ)
+    (hf : HasCompactSupport (f : (Fin n → ℝ) → ℂ)) :
+    headTranslationDescentCLM T ψ f = headTranslationDescentCLM U ψ f := by
+  have hprepend : HasCompactSupport (ψ.prependField f) :=
+    hasCompactSupport_prependField ψ f hψ_compact hf
+  have hfull :
+      T (ψ.prependField f) = U (ψ.prependField f) :=
+    map_eq_on_compactSupport_of_eq_on_positive_tsupport_of_headTranslationInvariant
+      T U hT hU hEq_pos (ψ.prependField f) (by simpa using hprepend)
+  simpa [headTranslationDescentCLM, ContinuousLinearMap.comp_apply,
+    SchwartzMap.prependFieldCLMRight_apply] using hfull
+
 
 end OSReconstruction
