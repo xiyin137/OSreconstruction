@@ -5,7 +5,7 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 ## Current Axiom Inventory
 
 The tracked production tree currently contains **4 explicit axioms**:
-- `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean`
+- `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean`
 - `vladimirov_tillmann` in `SCV/VladimirovTillmann.lean`
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`

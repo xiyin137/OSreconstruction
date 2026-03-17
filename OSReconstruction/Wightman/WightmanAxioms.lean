@@ -284,6 +284,13 @@ def WightmanDistributionProduct (qft : WightmanQFT d) (n : ℕ) :
     Concretely, the extension agrees with the original multilinear functional on
     pure tensors `f_1 ⊗ ... ⊗ f_n`, encoded here by `SchwartzMap.productTensor`.
 
+    **Status**: The nuclearity of Schwartz space (`S(ℝⁿ)` is a nuclear space)
+    is now proved in the `gaussian-field` Lean 4 library
+    (https://github.com/or-n/gaussian-field). The remaining gap is the
+    formal bridge: importing the `NuclearSpace` instance for `SchwartzMap`
+    and deriving this kernel theorem from it. See `GAUSSIAN_FIELD_INTEGRATION.md`
+    for the planned integration route.
+
     Ref: Gel'fand-Vilenkin, "Generalized Functions IV", Ch. I, 3;
     Reed-Simon, "Methods of Modern Mathematical Physics I", Theorem V.13;
     Treves, "Topological Vector Spaces", Ch. 51. -/
