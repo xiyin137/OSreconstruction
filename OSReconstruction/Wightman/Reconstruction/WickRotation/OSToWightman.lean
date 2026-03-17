@@ -1630,11 +1630,22 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       -- This is the deep coordinate unfolding step
       simp only [G]
       split
-      · -- Positive branch: G_pos(u) = twoPointSpatialWitness(-I*u_{(1,0)}, spatial)
-        -- -I*u_{(1,0)} = x₂₀ - x₁₀ > 0 (from the if-condition)
+      · -- Positive branch: unfold G_pos and apply hC
+        rename_i h_pos
+        change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+          (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C
+        rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
+        -- Goal: ‖twoPointSpatialWitness(-I*u_{j₁₀}, spatial)‖ ≤ C
+        -- -I*u_{j₁₀} has Re > 0 from h_pos
+        -- Need to show it equals (some real t : ℂ) with t > 0, then apply hC
         sorry
-      · -- Negative branch: G_pos(reflected(u)) = twoPointSpatialWitness at reflected time
-        -- reflected time = -(x₂₀ - x₁₀) > 0 (from negation of negative ξ₀)
+      · -- Negative branch: unfold G_pos at reflected u and apply hC
+        rename_i h_neg
+        change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+          (fun j => if j = j₁₀ then
+            -BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀
+            else BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j)‖ ≤ C
+        rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
         sorry
     obtain ⟨C, hC⟩ := hG_bdd
     -- f.1 is Schwartz hence integrable
