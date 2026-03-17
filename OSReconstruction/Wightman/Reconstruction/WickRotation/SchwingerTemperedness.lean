@@ -2075,6 +2075,7 @@ theorem wick_rotated_kernel_mul_schwartz_integrable_of_hasCompactSupport_of_tsup
   exact hg_shift_int.congr <| hK_ae.mono fun x hx => by
     simpa [K] using congrArg (fun z : ℂ => z * f x) hx.symm
 
+set_option maxHeartbeats 400000 in
 /-- The constructed Schwinger functional is continuous on the OS-I
     zero-diagonal test space.
 
@@ -2083,4 +2084,388 @@ theorem wick_rotated_kernel_mul_schwartz_integrable_of_hasCompactSupport_of_tsup
     OS-I axiom surface after the zero-diagonal repair. -/
 theorem constructedSchwinger_tempered_zeroDiagonal (Wfn : WightmanFunctions d) (n : ℕ) :
     Continuous (constructSchwingerFunctions Wfn n) := by
-  sorry
+  -- K : NPointDomain d n → ℂ is the Wick-rotated BHW kernel
+  set K : NPointDomain d n → ℂ :=
+    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) with hK_def
+  -- Unfold the definition: constructSchwingerFunctions Wfn n f = ∫ K * f.1
+  show Continuous (fun f : ZeroDiagonalSchwartz d n =>
+    ∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x)
+  -- IsAddHaarMeasure instance for NPointDomain (needed throughout)
+  haveI hHaar : MeasureTheory.Measure.IsAddHaarMeasure
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+    MeasureTheory.Measure.instIsAddHaarMeasureForallVolumeOfMeasurableAddOfSigmaFinite
+  haveI : (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).HasTemperateGrowth :=
+    inferInstance
+  -- K is a.e. strongly measurable
+  have hK_meas : MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume :=
+    bhw_euclidean_kernel_measurable Wfn
+  by_cases hcoin : (CoincidenceLocus d n).Nonempty
+  · -- n ≥ 2: use WithSeminorms on ZeroDiagonalSchwartz + Seminorm.cont_withSeminorms_normedSpace
+    -- Step 1: Get growth bound from WightmanFunctions
+    obtain ⟨C_bd, N, q, hC_pos, hgrowth⟩ := (hasForwardTubeGrowth_of_wightman Wfn) n
+    -- Step 2: WithSeminorms on ZeroDiagonalSchwartz d n (via induced topology)
+    have hWS : WithSeminorms
+        ((schwartzSeminormFamily ℂ (NPointDomain d n) ℂ).comp
+          (zeroDiagonalSubmodule d n).subtype) :=
+      Topology.IsInducing.withSeminorms
+        (schwartz_withSeminorms (𝕜 := ℂ) (E := NPointDomain d n) (F := ℂ))
+        Topology.IsInducing.subtypeVal
+    -- Step 3: Build the linear map T f = ∫ K * f.1
+    have hlin : IsLinearMap ℂ
+        (fun f : ZeroDiagonalSchwartz d n =>
+          ∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x) := by
+      constructor
+      · intro f g
+        have hf_int := wick_rotated_kernel_mul_zeroDiagonal_integrable (Wfn := Wfn) f
+        have hg_int := wick_rotated_kernel_mul_zeroDiagonal_integrable (Wfn := Wfn) g
+        have heq : (fun x : NPointDomain d n =>
+              K x * ((f + g).1 : NPointDomain d n → ℂ) x) =
+            fun x => K x * (f.1 : NPointDomain d n → ℂ) x +
+              K x * (g.1 : NPointDomain d n → ℂ) x := by
+          ext x
+          have : ((f + g).1 : NPointDomain d n → ℂ) x = f.1 x + g.1 x := by
+            change (f.1 + g.1) x = _; rfl
+          rw [this]; ring
+        simp_rw [heq]
+        exact MeasureTheory.integral_add hf_int hg_int
+      · intro c f
+        have heq : (fun x : NPointDomain d n =>
+              K x * ((c • f).1 : NPointDomain d n → ℂ) x) =
+            fun x => c • (K x * (f.1 : NPointDomain d n → ℂ) x) := by
+          ext x
+          have : ((c • f).1 : NPointDomain d n → ℂ) x = c * f.1 x := by
+            change (c • f.1) x = _; simp [smul_eq_mul]
+          rw [this, smul_eq_mul]; ring
+        simp_rw [heq]
+        exact MeasureTheory.integral_smul c _
+    let T : ZeroDiagonalSchwartz d n →ₗ[ℂ] ℂ := hlin.mk'
+    -- Step 4: Prove T is continuous via seminorm bound
+    change Continuous T
+    -- deg_D = finrank ℝ (NPointDomain d n), deg_M = N + deg_D + q + 2
+    -- Note: deg_M is chosen so that deg_M = N + (deg_D + q + 2), ensuring cancellation
+    let deg_D : ℕ := Module.finrank ℝ (NPointDomain d n)
+    let deg_M : ℕ := N + deg_D + q + 2
+    let nR : ℝ := ((n + 2 : ℕ) : ℝ)
+    -- Integral of the tail: I_tail = ∫ (1+|x|)^{-(deg_D+1)}
+    have hD_lt : (deg_D : ℝ) < ↑(deg_D + 1) := by push_cast; linarith
+    have hI_int : MeasureTheory.Integrable
+        (fun x : NPointDomain d n => (1 + ‖x‖) ^ (-(↑(deg_D + 1) : ℝ)))
+        MeasureTheory.volume :=
+      integrable_one_add_norm hD_lt
+    let I_tail : ℝ := ∫ x : NPointDomain d n, (1 + ‖x‖) ^ (-(↑(deg_D + 1) : ℝ))
+    have hI_tail_nonneg : 0 ≤ I_tail :=
+      MeasureTheory.integral_nonneg fun x => Real.rpow_nonneg (by linarith [norm_nonneg x]) _
+    -- C_sem_val = C_bd * nR^N * (2^(deg_M+q+1) / q!) * I_tail
+    -- (Note: uses Finset.Iic (deg_M, q+1) seminorm since the vanishing bound uses (deg_M, q+1))
+    let C_sem_val : ℝ := C_bd * nR ^ N * (2 ^ (deg_M + q + 1) / (Nat.factorial q : ℝ)) * I_tail
+    have hC_sem_nonneg : 0 ≤ C_sem_val := by positivity
+    let C_sem : NNReal := ⟨C_sem_val, hC_sem_nonneg⟩
+    apply Seminorm.cont_withSeminorms_normedSpace ℂ hWS T
+    -- Use Finset.Iic (deg_M, q+1) since C_vanish uses (deg_M, q+1) seminorm
+    refine ⟨Finset.Iic (deg_M, q + 1), C_sem, ?_⟩
+    -- Prove: (normSeminorm ℂ ℂ).comp T ≤ C_sem • (Finset.Iic (deg_M, q+1)).sup
+    --   ((schwartzSeminormFamily ℂ .. ℂ).comp (zeroDiagonalSubmodule d n).subtype)
+    -- i.e. ∀ f, ‖T f‖ ≤ C_sem_val * sem_f where sem_f = (Finset.Iic (deg_M,q+1)).sup sem f.1
+    rw [Seminorm.le_def]
+    intro f
+    -- The Schwartz seminorm using (deg_M, q+1)
+    let sem_f := ((Finset.Iic (deg_M, q + 1)).sup
+      (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)) f.1
+    -- Step 4a: A.e. kernel weighted bound
+    have hK_ae_bound :
+        ∀ᵐ x : NPointDomain d n ∂MeasureTheory.volume,
+          ‖K x‖ * Metric.infDist x (CoincidenceLocus d n) ^ (q + 1) ≤
+            C_bd * nR ^ N * (1 + ‖x‖) ^ N := by
+      filter_upwards [ae_euclidean_points_in_permutedTube (d := d) (n := n),
+        ae_pairwise_distinct_timeCoords (d := d) (n := n)] with x hx_pet hx_distinct
+      let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
+      let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
+      let xs : NPointDomain d n := fun k μ => x k μ + a μ
+      have hpos : ∀ i : Fin n, xs i 0 > 0 := fun i => by
+        have hi_le : |x i 0| ≤ ∑ j : Fin n, |x j 0| :=
+          Finset.single_le_sum (fun j _ => abs_nonneg (x j 0)) (Finset.mem_univ i)
+        simp [xs, a, A]; linarith [neg_abs_le (x i 0)]
+      have hdistinct_xs : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0 :=
+        fun i j hij => by simpa [xs, a] using hx_distinct i j hij
+      let π := Tuple.sort (fun k => xs k 0)
+      have hmono := Tuple.monotone_sort (fun k => xs k 0)
+      have hinj : Function.Injective (fun k => xs k 0) :=
+        fun i j h => by by_contra hij; exact hdistinct_xs i j hij h
+      have hstrict : StrictMono ((fun k => xs k 0) ∘ π) :=
+        hmono.strictMono_of_injective (hinj.comp π.injective)
+      have hord : ∀ k j : Fin n, k < j → xs (π k) 0 < xs (π j) 0 :=
+        fun k j hkj => hstrict hkj
+      have hpos' : ∀ k : Fin n, xs (π k) 0 > 0 := fun k => hpos (π k)
+      have hfwd : (fun k => wickRotatePoint (xs (π k))) ∈ ForwardTube d n :=
+        euclidean_ordered_in_forwardTube (fun k => xs (π k)) hord hpos'
+      have hxs_pet : (fun k => wickRotatePoint (xs k)) ∈ PermutedExtendedTube d n :=
+        euclidean_distinct_in_permutedTube xs hdistinct_xs hpos
+      have hwick_add : (fun k => wickRotatePoint (xs k)) =
+          (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a μ) := by
+        ext k μ; simp only [wickRotatePoint, xs, a]; split_ifs <;> push_cast <;> ring
+      have htransl : K x = (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs k)) := by
+        simp only [K, hK_def]; rw [hwick_add]
+        exact (bhw_translation_invariant Wfn (wickRotatePoint a)
+          (fun k => wickRotatePoint (x k)) hx_pet
+          (by simpa [hwick_add] using hxs_pet)).symm
+      have hperm : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs k)) =
+          (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) :=
+        ((W_analytic_BHW Wfn n).property.2.2.2 π
+          (fun k => wickRotatePoint (xs k)) hxs_pet).symm
+      have hagree : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) =
+          (Wfn.spectrum_condition n).choose (fun k => wickRotatePoint (xs (π k))) :=
+        (W_analytic_BHW Wfn n).property.2.1 _ hfwd
+      have hbound := hgrowth (fun k => xs (π k)) hfwd
+      have hinfDist_eq : Metric.infDist (fun k => xs (π k)) (CoincidenceLocus d n) =
+          Metric.infDist x (CoincidenceLocus d n) := by
+        let c : NPointDomain d n := fun _ => a
+        have hxs_eq : xs = c + x := by ext k μ; simp [xs, c, add_comm]
+        have hΦ_isom : Isometry ((c + ·) : NPointDomain d n → NPointDomain d n) :=
+          Isometry.of_dist_eq fun y z => dist_vadd_cancel_left c y z
+        have hΦ_coinc : (c + ·) '' CoincidenceLocus d n = CoincidenceLocus d n := by
+          ext y; simp only [Set.mem_image, CoincidenceLocus, Set.mem_setOf_eq]; constructor
+          · rintro ⟨z, ⟨i, j, hij, hzij⟩, rfl⟩
+            exact ⟨i, j, hij, show c i + z i = c j + z j by rw [show c i = c j from rfl, hzij]⟩
+          · rintro ⟨i, j, hij, hyij⟩
+            refine ⟨-c + y, ⟨i, j, hij, show (-c + y) i = (-c + y) j from ?_⟩, by simp⟩
+            ext μ; simp only [Pi.add_apply, Pi.neg_apply]; have := congr_fun hyij μ; linarith
+        have h_shift : Metric.infDist xs (CoincidenceLocus d n) =
+            Metric.infDist x (CoincidenceLocus d n) := by
+          have h := Metric.infDist_image hΦ_isom (x := x) (t := CoincidenceLocus d n)
+          rw [hΦ_coinc] at h; rw [hxs_eq]; exact h
+        let Ψ : NPointDomain d n → NPointDomain d n := fun y k => y (π k)
+        have hΨ_isom : Isometry Ψ := fun y z => by
+          show edist (Ψ y) (Ψ z) = edist y z
+          rw [edist_pi_def, edist_pi_def]; simp only [Finset.sup_univ_eq_iSup]
+          exact Equiv.iSup_comp (g := fun k => edist (y k) (z k)) π
+        have hΨ_coinc : Ψ '' CoincidenceLocus d n = CoincidenceLocus d n := by
+          ext y; simp only [Set.mem_image, CoincidenceLocus, Set.mem_setOf_eq, Ψ]; constructor
+          · rintro ⟨z, ⟨i, j, hij, hzij⟩, rfl⟩
+            exact ⟨π.symm i, π.symm j, fun h => hij (π.symm.injective h), by simp [hzij]⟩
+          · rintro ⟨i, j, hij, hyij⟩
+            exact ⟨fun k => y (π.symm k),
+              ⟨π i, π j, fun h => hij (π.injective h), by simp [hyij]⟩, by ext k; simp⟩
+        have h_perm : Metric.infDist (Ψ xs) (CoincidenceLocus d n) =
+            Metric.infDist xs (CoincidenceLocus d n) := by
+          have h := Metric.infDist_image hΨ_isom (x := xs) (t := CoincidenceLocus d n)
+          rw [hΨ_coinc] at h; exact h
+        exact h_perm.trans h_shift
+      have hnorm_bound : (1 + ‖fun k => xs (π k)‖) ^ N ≤ (nR * (1 + ‖x‖)) ^ N := by
+        apply pow_le_pow_left₀ (by positivity)
+        have hA_nonneg : (0 : ℝ) ≤ A := by dsimp [A]; positivity
+        have hcomp_bound : ∀ (k : Fin n) (μ : Fin (d + 1)), |xs (π k) μ| ≤ ‖x‖ + A := by
+          intro k μ; simp only [xs, a]; split_ifs with h
+          · calc |x (π k) μ + A|
+                ≤ |x (π k) μ| + |A| := abs_add_le _ _
+              _ ≤ ‖x‖ + A := by
+                gcongr
+                · exact (norm_le_pi_norm (x (π k)) μ).trans (norm_le_pi_norm x (π k))
+                · exact le_of_eq (abs_of_nonneg hA_nonneg)
+          · calc |x (π k) μ + 0| = |x (π k) μ| := by rw [add_zero]
+              _ ≤ ‖x‖ := (norm_le_pi_norm (x (π k)) μ).trans (norm_le_pi_norm x (π k))
+              _ ≤ ‖x‖ + A := le_add_of_nonneg_right hA_nonneg
+        have hpi_bound : ‖fun k => xs (π k)‖ ≤ ‖x‖ + A := by
+          apply (pi_norm_le_iff_of_nonneg (by positivity)).mpr; intro k
+          apply (pi_norm_le_iff_of_nonneg (by positivity)).mpr; intro μ
+          rw [Real.norm_eq_abs]; exact hcomp_bound k μ
+        have hA_le : A ≤ 1 + n * ‖x‖ := by
+          dsimp [A]; gcongr
+          calc ∑ i : Fin n, |x i 0|
+              ≤ ∑ _ : Fin n, ‖x‖ := by
+                gcongr with i
+                exact (Real.norm_eq_abs (x i 0) ▸ norm_le_pi_norm (x i) 0).trans (norm_le_pi_norm x i)
+            _ = n * ‖x‖ := by simp [Finset.sum_const]
+        calc 1 + ‖fun k => xs (π k)‖
+            ≤ 1 + (‖x‖ + A) := by linarith [hpi_bound]
+          _ ≤ 1 + (‖x‖ + (1 + n * ‖x‖)) := by linarith [hA_le]
+          _ = 2 + (↑n + 1) * ‖x‖ := by push_cast; ring
+          _ ≤ (↑n + 2) * (1 + ‖x‖) := by nlinarith [norm_nonneg x]
+          _ = nR * (1 + ‖x‖) := by dsimp [nR]; push_cast; ring
+      calc ‖K x‖ * Metric.infDist x (CoincidenceLocus d n) ^ (q + 1)
+          = ‖(Wfn.spectrum_condition n).choose (fun k => wickRotatePoint (xs (π k)))‖ *
+              Metric.infDist (fun k => xs (π k)) (CoincidenceLocus d n) ^ (q + 1) := by
+            rw [htransl, hperm, hagree, hinfDist_eq]
+        _ ≤ C_bd * (1 + ‖fun k => xs (π k)‖) ^ N := hbound
+        _ ≤ C_bd * (nR * (1 + ‖x‖)) ^ N := by gcongr
+        _ = C_bd * nR ^ N * (1 + ‖x‖) ^ N := by rw [mul_pow]; ring
+    -- Step 4b: Vanishing bound using explicit constant (no opaque existential)
+    -- From weighted_infDist_bound_explicit with N=deg_M, m=q:
+    -- (1+‖x‖)^deg_M * ‖f x‖ ≤ (2^(deg_M+q+1)/q!) * sem_f * δ^(q+1)
+    let C_vanish_factor : ℝ := 2 ^ (deg_M + q + 1) / (Nat.factorial q : ℝ)
+    have hvanish : ∀ x : NPointDomain d n,
+        (1 + ‖x‖) ^ deg_M * ‖(f.1 : NPointDomain d n → ℂ) x‖ ≤
+          C_vanish_factor * sem_f * Metric.infDist x (CoincidenceLocus d n) ^ (q + 1) :=
+      VanishesToInfiniteOrderOnCoincidence.weighted_infDist_bound_explicit
+        (f := f.1) f.2 deg_M q hcoin
+    -- Step 4c: Pointwise product bound
+    -- Note: the bound will have C_bd * nR^N * C_vanish_factor * sem_f / (1+‖x‖)^(deg_D+1)
+    -- = (C_sem_val / I_tail) * sem_f / (1+‖x‖)^(deg_D+1)
+    -- After integration this gives (C_sem_val / I_tail) * sem_f * I_tail = C_sem_val * sem_f.
+    -- We set C_ptwise = C_bd * nR^N * C_vanish_factor for the pointwise constant.
+    let C_ptwise : ℝ := C_bd * nR ^ N * C_vanish_factor
+    have hC_ptwise_nonneg : 0 ≤ C_ptwise := by positivity
+    have hC_ptwise_itail : C_ptwise * I_tail = C_sem_val := by
+      simp only [C_ptwise, C_vanish_factor, C_sem_val]
+    have hpointwise : ∀ᵐ x : NPointDomain d n ∂MeasureTheory.volume,
+        ‖K x * (f.1 : NPointDomain d n → ℂ) x‖ ≤
+          C_ptwise * sem_f * (1 + ‖x‖) ^ (-(↑(deg_D + 1) : ℝ)) := by
+      filter_upwards [hK_ae_bound] with x hx
+      let δ : ℝ := Metric.infDist x (CoincidenceLocus d n)
+      have hδ_nonneg : 0 ≤ δ := Metric.infDist_nonneg
+      have hf_weighted : (1 + ‖x‖) ^ deg_M * ‖(f.1 : NPointDomain d n → ℂ) x‖ ≤
+          C_vanish_factor * sem_f * δ ^ (q + 1) := hvanish x
+      have h1x_pos : 0 < 1 + ‖x‖ := by linarith [norm_nonneg x]
+      rw [Real.rpow_neg (le_of_lt h1x_pos), Real.rpow_natCast, norm_mul]
+      by_cases hδ : δ = 0
+      · -- δ = 0 means x ∈ CoincidenceLocus, so f.1(x) = 0
+        have hfx : ‖(f.1 : NPointDomain d n → ℂ) x‖ = 0 := by
+          have hpow_pos : 0 < (1 + ‖x‖) ^ deg_M := pow_pos h1x_pos _
+          have : (1 + ‖x‖) ^ deg_M * ‖(f.1 : NPointDomain d n → ℂ) x‖ = 0 := by
+            have := hf_weighted; simp [hδ] at this
+            exact le_antisymm this (mul_nonneg hpow_pos.le (norm_nonneg _))
+          exact (mul_eq_zero.mp this).resolve_left (by positivity)
+        simp [hfx]; positivity
+      · -- δ > 0: combine bounds
+        have hδ_pos : 0 < δ := lt_of_le_of_ne hδ_nonneg (Ne.symm hδ)
+        have hδpow_pos : 0 < δ ^ (q + 1) := pow_pos hδ_pos _
+        have hpow_pos : 0 < (1 + ‖x‖) ^ deg_M := pow_pos h1x_pos _
+        have hK_div : ‖K x‖ ≤ C_bd * nR ^ N * (1 + ‖x‖) ^ N / δ ^ (q + 1) := by
+          rw [le_div_iff₀ hδpow_pos]; nlinarith [hx, mul_nonneg (norm_nonneg (K x)) hδpow_pos.le]
+        have hf_div : ‖(f.1 : NPointDomain d n → ℂ) x‖ ≤
+            C_vanish_factor * sem_f * δ ^ (q + 1) / (1 + ‖x‖) ^ deg_M := by
+          rw [le_div_iff₀ hpow_pos]
+          nlinarith [hf_weighted, mul_nonneg hpow_pos.le
+            (norm_nonneg ((f.1 : NPointDomain d n → ℂ) x))]
+        have hpow_split : deg_M = N + (deg_D + q + 2) := by omega
+        have hpow_D1_le : (1 + ‖x‖) ^ (deg_D + q + 2) ≥ (1 + ‖x‖) ^ (deg_D + 1) :=
+          pow_le_pow_right₀ (by linarith [norm_nonneg x]) (by omega)
+        calc ‖K x‖ * ‖(f.1 : NPointDomain d n → ℂ) x‖
+            ≤ (C_bd * nR ^ N * (1 + ‖x‖) ^ N / δ ^ (q + 1)) *
+              (C_vanish_factor * sem_f * δ ^ (q + 1) / (1 + ‖x‖) ^ deg_M) := by gcongr
+          _ = C_bd * nR ^ N * C_vanish_factor * sem_f / (1 + ‖x‖) ^ (deg_D + q + 2) := by
+              rw [show deg_M = N + (deg_D + q + 2) from hpow_split, pow_add]
+              field_simp [pow_pos h1x_pos, hδpow_pos.ne']; ring
+          _ ≤ C_bd * nR ^ N * C_vanish_factor * sem_f / (1 + ‖x‖) ^ (deg_D + 1) := by
+              exact div_le_div_of_nonneg_left (by positivity) (pow_pos h1x_pos _) hpow_D1_le
+          _ = C_ptwise * sem_f * ((1 + ‖x‖) ^ (deg_D + 1))⁻¹ := by
+              simp only [C_ptwise]; field_simp
+    -- Step 4d: Integrate the bound
+    have hdom_int : MeasureTheory.Integrable
+        (fun x : NPointDomain d n =>
+          C_ptwise * sem_f * (1 + ‖x‖) ^ (-(↑(deg_D + 1) : ℝ)))
+        MeasureTheory.volume :=
+      hI_int.const_mul (C_ptwise * sem_f)
+    -- The integral of the pointwise bound is C_ptwise * sem_f * I_tail = C_sem_val * sem_f
+    have hint_bound : ‖∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x‖ ≤
+        C_sem_val * sem_f := by
+      calc ‖∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x‖
+          ≤ ∫ x : NPointDomain d n, ‖K x * (f.1 : NPointDomain d n → ℂ) x‖ :=
+            MeasureTheory.norm_integral_le_integral_norm _
+        _ ≤ ∫ x : NPointDomain d n,
+              C_ptwise * sem_f * (1 + ‖x‖) ^ (-(↑(deg_D + 1) : ℝ)) :=
+            MeasureTheory.integral_mono_ae
+              (wick_rotated_kernel_mul_zeroDiagonal_integrable (Wfn := Wfn) f).norm
+              hdom_int hpointwise
+        _ = C_ptwise * sem_f * I_tail := by rw [MeasureTheory.integral_const_mul]
+        _ = C_sem_val * sem_f := by simp only [C_ptwise, C_sem_val]; ring
+    -- Step 4e: Match the goal from Seminorm.cont_withSeminorms_normedSpace
+    -- Goal: ((normSeminorm ℂ ℂ).comp T) f ≤
+    --   (↑C_sem • (Finset.Iic ...).sup ((schwartzSeminormFamily ..).comp subtype)) f
+    -- LHS = ‖T f‖, RHS = C_sem_val * ((s.sup (sem.comp subtype)) f)
+    -- We show (s.sup (sem.comp subtype)) f = (s.sup sem) f.val = sem_f
+    have hsem_comp : ((Finset.Iic (deg_M, q + 1)).sup
+        ((schwartzSeminormFamily ℂ (NPointDomain d n) ℂ).comp
+          (zeroDiagonalSubmodule d n).subtype)) f = sem_f := by
+      simp only [sem_f]
+      rw [Seminorm.finset_sup_apply, Seminorm.finset_sup_apply]
+      congr 1
+    simp only [Seminorm.coe_comp, Function.comp_apply, normSeminorm, Seminorm.smul_apply,
+      NNReal.smul_def, NNReal.coe_mk, IsLinearMap.mk'_apply]
+    rw [hsem_comp]
+    exact hint_bound
+  · -- n ≤ 1: K is a.e. polynomially bounded → use schwartz_polynomial_kernel_continuous
+    -- Derive n ≤ 1 from emptiness of CoincidenceLocus
+    have hn_le : n ≤ 1 := by
+      by_contra h
+      push_neg at h
+      apply hcoin
+      haveI : NeZero n := ⟨by omega⟩
+      refine ⟨fun _ => 0, 0, ⟨1, by omega⟩, ?_, rfl⟩
+      simp [Fin.ext_iff]
+    -- Show K is a.e. polynomially bounded
+    have hK_poly : ∃ (C_bd : ℝ) (N : ℕ), 0 < C_bd ∧
+        ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+          ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
+      interval_cases n
+      · -- n = 0: NPointDomain d 0 is Unique; K is just a constant
+        refine ⟨‖K default‖ + 1, 0, by linarith [norm_nonneg (K default)],
+          Filter.Eventually.of_forall fun x => ?_⟩
+        have hx : x = default := Subsingleton.elim x default
+        subst hx
+        simp only [pow_zero, mul_one]
+        linarith [norm_nonneg (K default)]
+      · -- n = 1: K is a.e. equal to v₀ (translation invariance of W_analytic)
+        let x₀ : NPointDomain d 1 := fun _ => Pi.single (0 : Fin (d + 1)) 1
+        let v₀ : ℂ := K x₀
+        have hfwd₀ : (fun k => wickRotatePoint (x₀ k)) ∈ ForwardTube d 1 :=
+          euclidean_ordered_in_forwardTube (fun k => x₀ k)
+            (fun k j hkj => by fin_cases k <;> fin_cases j <;> simp_all [Fin.lt_iff_val_lt_val])
+            (fun k => by fin_cases k; simp [x₀, Pi.single_apply])
+        have hkernel_ae : ∀ᵐ (x : NPointDomain d 1) ∂MeasureTheory.volume, K x = v₀ := by
+          filter_upwards [ae_euclidean_points_in_permutedTube (d := d) (n := 1)] with x hx_pet
+          simp only [K, v₀, hK_def]
+          let A₁ : ℝ := 1 + |x 0 0|
+          let a₁ : SpacetimeDim d := fun μ => if μ = 0 then A₁ else 0
+          let xs₁ : NPointDomain d 1 := fun k μ => x k μ + a₁ μ
+          have hpos₁ : xs₁ 0 0 > 0 := by
+            simp [xs₁, a₁, A₁]; linarith [neg_abs_le (x 0 0)]
+          have hfwd₁ : (fun k => wickRotatePoint (xs₁ k)) ∈ ForwardTube d 1 :=
+            euclidean_ordered_in_forwardTube (fun k => xs₁ k)
+              (fun k j hkj => by fin_cases k <;> fin_cases j <;> simp_all [Fin.lt_iff_val_lt_val])
+              (fun k => by fin_cases k; exact hpos₁)
+          have hxs₁_pet : (fun k => wickRotatePoint (xs₁ k)) ∈ PermutedExtendedTube d 1 :=
+            euclidean_distinct_in_permutedTube xs₁
+              (fun i j hij => by fin_cases i <;> fin_cases j <;> simp_all)
+              (fun i => by fin_cases i; exact hpos₁)
+          have hwick_add₁ : (fun k => wickRotatePoint (xs₁ k)) =
+              (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a₁ μ) := by
+            ext k μ; simp only [wickRotatePoint, xs₁, a₁]; split_ifs <;> push_cast <;> ring
+          have htransl₁ :
+              (W_analytic_BHW Wfn 1).val (fun k => wickRotatePoint (x k)) =
+              (W_analytic_BHW Wfn 1).val (fun k => wickRotatePoint (xs₁ k)) := by
+            rw [hwick_add₁]
+            exact (bhw_translation_invariant Wfn (wickRotatePoint a₁)
+              (fun k => wickRotatePoint (x k)) hx_pet
+              (by simpa [hwick_add₁] using hxs₁_pet)).symm
+          have hagree₁ := (W_analytic_BHW Wfn 1).property.2.1 _ hfwd₁
+          have hagree₀ := (W_analytic_BHW Wfn 1).property.2.1 _ hfwd₀
+          have htransl_const :
+              (Wfn.spectrum_condition 1).choose (fun k => wickRotatePoint (xs₁ k)) =
+              (Wfn.spectrum_condition 1).choose (fun k => wickRotatePoint (x₀ k)) := by
+            let c₁ : Fin (d + 1) → ℂ := fun μ =>
+              wickRotatePoint (xs₁ 0) μ - wickRotatePoint (x₀ 0) μ
+            have hzc_eq : (fun k μ => wickRotatePoint (x₀ k) μ + c₁ μ) =
+                (fun k => wickRotatePoint (xs₁ k)) := by
+              ext k μ; fin_cases k; simp [c₁]
+            have hzc_ft : (fun k μ => wickRotatePoint (x₀ k) μ + c₁ μ) ∈ ForwardTube d 1 :=
+              hzc_eq ▸ hfwd₁
+            have h := W_analytic_translation_on_forwardTube Wfn c₁
+              (fun k => wickRotatePoint (x₀ k)) hfwd₀ hzc_ft
+            rw [hzc_eq] at h; exact h
+          rw [htransl₁, hagree₁, htransl_const, ← hagree₀]
+        refine ⟨‖v₀‖ + 1, 0, by linarith [norm_nonneg v₀],
+          hkernel_ae.mono fun x hx => ?_⟩
+        simp only [pow_zero, mul_one]
+        rw [hx]
+        linarith [norm_nonneg v₀]
+    obtain ⟨C_bd, N, hC_pos, hK_ae⟩ := hK_poly
+    -- Continuity on ZeroDiagonalSchwartz = composition of full-Schwartz continuity with val
+    have hcont_full : Continuous
+        (fun f : SchwartzNPoint d n => ∫ x, K x * f x) :=
+      schwartz_polynomial_kernel_continuous K hK_meas C_bd N hC_pos hK_ae
+    have : (fun f : ZeroDiagonalSchwartz d n =>
+          ∫ x : NPointDomain d n, K x * (f.1 : NPointDomain d n → ℂ) x) =
+        (fun f : SchwartzNPoint d n => ∫ x, K x * f x) ∘ Subtype.val := by
+      funext f; simp
+    rw [this]
+    exact hcont_full.comp continuous_subtype_val

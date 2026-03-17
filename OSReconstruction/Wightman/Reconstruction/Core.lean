@@ -1945,6 +1945,199 @@ theorem VanishesToInfiniteOrderOnCoincidence.one_add_norm_pow_mul_norm_le_infDis
         rw [mul_pow]
         ring
 
+set_option maxHeartbeats 400000 in
+/-- Explicit-constant version of the pairDifference vanishing bound.
+
+    The constant `2^N * sem / m!` (where `sem` is the `(N, m+1)` Schwartz seminorm)
+    is made explicit rather than hidden behind `∃`. This is needed in the
+    continuity proof for `constructSchwingerFunctions` where we must exhibit a
+    seminorm-linear bound `‖T f‖ ≤ C * sem(f)` with `C` independent of `f`. -/
+theorem VanishesToInfiniteOrderOnCoincidence.weighted_pairDifference_bound_explicit
+    {d n : ℕ} {f : SchwartzNPoint d n}
+    (hf : VanishesToInfiniteOrderOnCoincidence f)
+    (N m : ℕ) (i j : Fin n) (hij : i ≠ j) :
+    ∀ x : NPointDomain d n,
+      (1 + ‖x‖) ^ N * ‖f x‖ ≤
+        (2 ^ N * ((Finset.Iic (N, m + 1)).sup (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)) f /
+          (Nat.factorial m : ℝ)) * ‖x i - x j‖ ^ (m + 1) := by
+  -- This extracts the explicit constant from the proof of
+  -- one_add_norm_pow_mul_norm_le_pairDifference_pow_succ.
+  -- We reproduce the same argument since the constant A/m! is exactly what we claim.
+  let sem := (Finset.Iic (N, m + 1)).sup (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)
+  let A : ℝ := 2 ^ N * sem f
+  -- The bound follows from the same argument as
+  -- one_add_norm_pow_mul_norm_le_pairDifference_pow_succ.
+  -- We set up the same proof structure.
+  intro x
+  let src : Fin n := if h : ‖x i‖ ≤ ‖x j‖ then j else i
+  let dst : Fin n := if h : ‖x i‖ ≤ ‖x j‖ then i else j
+  have hsrcdst : src ≠ dst := by
+    dsimp [src, dst]
+    split_ifs
+    · simpa using hij.symm
+    · simpa using hij
+  have hmax : ‖x dst‖ ≤ ‖x src‖ := by
+    dsimp [src, dst]
+    split_ifs with h
+    · simpa using h
+    · exact le_of_not_ge h
+  have hpair :
+      ‖x src - x dst‖ = ‖x i - x j‖ := by
+    dsimp [src, dst]
+    split_ifs <;> simp [norm_sub_rev]
+  let c : NPointDomain d n := coincidenceCopy (d := d) src dst x
+  let v : NPointDomain d n := x - c
+  let L : ℝ →L[ℝ] NPointDomain d n :=
+    ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) v
+  let g : ℝ → ℂ :=
+    (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) ∘ L
+  have hshift_contDiff :
+      ∀ r : ℕ, ContDiff ℝ r (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c)) :=
+    fun r => by
+      simpa using ((f : SchwartzNPoint d n).smooth r).comp (contDiff_id.add contDiff_const)
+  have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
+    simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
+  have hc_coin : c ∈ CoincidenceLocus d n := by
+    simpa [c] using coincidenceCopy_mem_CoincidenceLocus (d := d) x src dst hsrcdst
+  have hTaylor_zero :
+      taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1 = 0 := by
+    rw [taylor_within_apply]
+    apply Finset.sum_eq_zero
+    intro k hk
+    have hk_mem : k ∈ Finset.range (m + 1) := hk
+    have hk_zero :
+        iteratedDerivWithin k g (Set.Icc (0 : ℝ) 1) 0 = 0 := by
+      rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+        ((hg_contDiff k).contDiffAt) (by simp), iteratedDeriv_eq_iteratedFDeriv]
+      have hcomp :
+          iteratedFDeriv ℝ k g 0 =
+            (iteratedFDeriv ℝ k (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+              (L 0)).compContinuousLinearMap fun _ : Fin k => L := by
+        simpa [g] using
+          L.iteratedFDeriv_comp_right
+            (f := fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+            (hshift_contDiff k) (x := 0) (i := k) le_rfl
+      have hzeroF :
+          iteratedFDeriv ℝ k (f : NPointDomain d n → ℂ) (L 0 + c) = 0 := by
+        simpa [L, ContinuousLinearMap.smulRight_apply] using hf k c hc_coin
+      rw [hcomp, iteratedFDeriv_comp_add_right, hzeroF]
+      simp
+    simp [hk_zero]
+  have hderiv_bound :
+      ∀ t ∈ Set.Icc (0 : ℝ) 1,
+        ‖iteratedDerivWithin (m + 1) g (Set.Icc (0 : ℝ) 1) t‖ ≤
+          (A / (1 + ‖x‖) ^ N) * ‖v‖ ^ (m + 1) := by
+    intro t ht
+    have hsem_bound :
+        (1 + ‖L t + c‖) ^ N *
+            ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤ A := by
+      simpa [A, sem] using
+        (SchwartzMap.one_add_le_sup_seminorm_apply
+          (𝕜 := ℂ) (m := (N, m + 1)) (k := N) (n := m + 1)
+          le_rfl le_rfl f (L t + c))
+    have hnorm_seg : ‖L t + c‖ = ‖x‖ := by
+      simpa [L, v, c, ContinuousLinearMap.smulRight_apply, add_comm, add_left_comm, add_assoc]
+        using norm_segment_coincidenceCopy_eq_norm (d := d) x src dst hsrcdst hmax t ht
+    have hpow_pos : 0 < (1 + ‖x‖) ^ N := by positivity
+    have hA :
+        ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ ≤
+          A / (1 + ‖x‖) ^ N := by
+      rw [le_div_iff₀ hpow_pos]
+      simpa [hnorm_seg, mul_comm, mul_left_comm, mul_assoc] using hsem_bound
+    have hL :
+        ‖L‖ ≤ ‖v‖ := by
+      refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun s => ?_
+      simpa [L, ContinuousLinearMap.smulRight_apply, Real.norm_eq_abs, norm_smul, mul_comm] using
+        (norm_smul s v)
+    rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+      ((hg_contDiff (m + 1)).contDiffAt) ht, ← norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    have hcomp :
+        iteratedFDeriv ℝ (m + 1) g t =
+          (iteratedFDeriv ℝ (m + 1) (fun z : NPointDomain d n => (f : NPointDomain d n → ℂ)
+            (z + c)) (L t)).compContinuousLinearMap fun _ : Fin (m + 1) => L := by
+      simpa [g] using
+        L.iteratedFDeriv_comp_right
+          (f := fun z : NPointDomain d n => (f : NPointDomain d n → ℂ) (z + c))
+          (hshift_contDiff (m + 1)) (x := t) (i := m + 1) le_rfl
+    rw [hcomp, iteratedFDeriv_comp_add_right]
+    calc
+      ‖(iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)).compContinuousLinearMap
+          (fun _ : Fin (m + 1) => L)‖ ≤
+          ‖iteratedFDeriv ℝ (m + 1) (f : NPointDomain d n → ℂ) (L t + c)‖ *
+            ∏ _ : Fin (m + 1), ‖L‖ := by
+              exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+      _ ≤ (A / (1 + ‖x‖) ^ N) * ∏ _ : Fin (m + 1), ‖L‖ := by
+          gcongr
+      _ = (A / (1 + ‖x‖) ^ N) * ‖L‖ ^ (m + 1) := by simp
+      _ ≤ (A / (1 + ‖x‖) ^ N) * ‖v‖ ^ (m + 1) := by
+          gcongr
+  have hrem :=
+    taylor_mean_remainder_bound (f := g) (a := (0 : ℝ)) (b := 1)
+      (C := (A / (1 + ‖x‖) ^ N) * ‖v‖ ^ (m + 1)) (x := 1) (n := m) (by norm_num)
+      (hg_contDiff (m + 1)).contDiffOn (by simp) hderiv_bound
+  have hv :
+      ‖v‖ = ‖x i - x j‖ := by
+    simpa [v, c, hpair] using
+      norm_sub_coincidenceCopy_eq_pairDifference (d := d) x src dst
+  have hg_one : g 1 = f x := by
+    simp [g, L, v, c, ContinuousLinearMap.smulRight_apply, sub_eq_add_neg, add_comm, add_left_comm,
+      ]
+  have hpow_nonneg : 0 ≤ (1 + ‖x‖) ^ N := by positivity
+  calc
+    (1 + ‖x‖) ^ N * ‖f x‖ =
+        (1 + ‖x‖) ^ N * ‖g 1 - taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1‖ := by
+          rw [hg_one]
+          simp [hTaylor_zero]
+    _ ≤ (1 + ‖x‖) ^ N *
+          (((A / (1 + ‖x‖) ^ N) * ‖v‖ ^ (m + 1)) *
+            (1 - (0 : ℝ)) ^ (m + 1) / (((Nat.factorial m : ℕ) : ℝ))) := by
+          exact mul_le_mul_of_nonneg_left (by simpa [hTaylor_zero] using hrem) hpow_nonneg
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖v‖ ^ (m + 1) := by
+          have hpow_ne : (1 + ‖x‖) ^ N ≠ 0 := by positivity
+          field_simp [hpow_ne, Nat.cast_ne_zero]
+          ring
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖x i - x j‖ ^ (m + 1) := by
+          rw [hv]
+
+/-- Explicit-constant version of the infDist vanishing bound: the constant factor
+    (independent of `f`) is `2^(N+m+1) / m!`, multiplied by the `(N, m+1)` Schwartz
+    seminorm of `f`.
+
+    This refines `one_add_norm_pow_mul_norm_le_infDist_CoincidenceLocus_pow_succ` by
+    making the constant explicit. Needed for the `constructSchwingerFunctions` continuity
+    proof where we must exhibit a seminorm-linear bound `‖T f‖ ≤ C * sem(f)`. -/
+theorem VanishesToInfiniteOrderOnCoincidence.weighted_infDist_bound_explicit
+    {d n : ℕ} {f : SchwartzNPoint d n}
+    (hf : VanishesToInfiniteOrderOnCoincidence f)
+    (N m : ℕ) (hcoin : (CoincidenceLocus d n).Nonempty) :
+    ∀ x : NPointDomain d n,
+      (1 + ‖x‖) ^ N * ‖f x‖ ≤
+        (2 ^ (N + m + 1) / (Nat.factorial m : ℝ)) *
+          ((Finset.Iic (N, m + 1)).sup (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)) f *
+          Metric.infDist x (CoincidenceLocus d n) ^ (m + 1) := by
+  let sem := (Finset.Iic (N, m + 1)).sup (schwartzSeminormFamily ℂ (NPointDomain d n) ℂ)
+  let A : ℝ := 2 ^ N * sem f
+  let C_pair : ℝ := A / (Nat.factorial m : ℝ)
+  intro x
+  obtain ⟨i, j, hij, hijdist⟩ :=
+    exists_pairDifference_le_two_infDist_CoincidenceLocus (d := d) (n := n) x hcoin
+  have hpair_bound :=
+    VanishesToInfiniteOrderOnCoincidence.weighted_pairDifference_bound_explicit
+      hf N m i j hij x
+  calc (1 + ‖x‖) ^ N * ‖f x‖
+      ≤ C_pair * ‖x i - x j‖ ^ (m + 1) := hpair_bound
+    _ ≤ C_pair * (2 * Metric.infDist x (CoincidenceLocus d n)) ^ (m + 1) := by
+        gcongr
+    _ = C_pair * (2 ^ (m + 1) * Metric.infDist x (CoincidenceLocus d n) ^ (m + 1)) := by
+        rw [mul_pow]
+    _ = (C_pair * 2 ^ (m + 1)) * Metric.infDist x (CoincidenceLocus d n) ^ (m + 1) := by ring
+    _ = (2 ^ (N + m + 1) / (Nat.factorial m : ℝ)) * sem f *
+          Metric.infDist x (CoincidenceLocus d n) ^ (m + 1) := by
+        simp only [C_pair, A]
+        rw [pow_add, pow_add]
+        field_simp
+        ring
+
 /-- Higher-order compact flatness in terms of actual distance to the coincidence
     locus. This is the `N = m + 1` upgrade of the first-order `infDist` bound. -/
 theorem VanishesToInfiniteOrderOnCoincidence.norm_le_infDist_CoincidenceLocus_pow_succ_on_isCompact
