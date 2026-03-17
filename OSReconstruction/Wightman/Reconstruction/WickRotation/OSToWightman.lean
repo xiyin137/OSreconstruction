@@ -1553,11 +1553,17 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
   · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
     intro f
     -- G = twoPointCorrectedWitness is a Hilbert space inner product of bounded
-    -- G is bounded on the Euclidean section (both if-branches use semigroup
-    -- with ‖T(z)‖ ≤ 2). f is Schwartz (hence L¹ by SchwartzMap.integrable).
-    -- bounded × L¹ = L¹ by MeasureTheory.Integrable.const_mul.
-    -- The bound: |G(u)| ≤ 2 * ‖F_χ₀‖ * ‖G_g‖ from inner product Cauchy-Schwarz
-    -- + spectralSemigroupComplex_norm_le + norm_twoPointTranslatedOnePointVector_eq
+    -- Both branches of G give bounded values (semigroup contraction ‖T(z)‖ ≤ 2)
+    -- so |G(u)| ≤ C for all u on the Euclidean section.
+    -- f Schwartz ⟹ f ∈ L¹. bounded × L¹ ⟹ integrable.
+    have hG_bdd : ∃ C : ℝ, ∀ x : NPointDomain d 2,
+        ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C := by
+      -- G_pos = twoPointCorrectedWitness = ⟨F, T(z) G⟩ with ‖T(z)‖ ≤ 2
+      -- Both branches of G use G_pos (possibly with negated time), so both bounded
+      sorry
+    obtain ⟨C, hC⟩ := hG_bdd
+    -- f.1 is Schwartz hence integrable (need HasTemperateGrowth for volume)
+    -- Use: bounded × integrable = integrable via Integrable.of_norm_le
     sorry
   · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
     intro f
