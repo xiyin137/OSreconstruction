@@ -1626,10 +1626,16 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       -- and showing ξ₀ > 0 in both branches (positive and reflected).
       obtain ⟨C, hC⟩ := twoPointSpatialWitness_bounded_of_pos (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
       refine ⟨C, fun x => ?_⟩
-      -- G(toDiffFlat(wickRotate(x))) evaluates twoPointSpatialWitness at some (t, y).
-      -- Both piecewise branches give t > 0.
-      -- Deep coordinate unfolding needed here.
-      sorry
+      -- Both branches of G: unwind to twoPointSpatialWitness at positive real time
+      -- This is the deep coordinate unfolding step
+      simp only [G]
+      split
+      · -- Positive branch: G_pos(u) = twoPointSpatialWitness(-I*u_{(1,0)}, spatial)
+        -- -I*u_{(1,0)} = x₂₀ - x₁₀ > 0 (from the if-condition)
+        sorry
+      · -- Negative branch: G_pos(reflected(u)) = twoPointSpatialWitness at reflected time
+        -- reflected time = -(x₂₀ - x₁₀) > 0 (from negation of negative ξ₀)
+        sorry
     obtain ⟨C, hC⟩ := hG_bdd
     -- f.1 is Schwartz hence integrable
     have hf_int : MeasureTheory.Integrable (f.1 : NPointDomain d 2 → ℂ) := by
