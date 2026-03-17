@@ -1382,41 +1382,30 @@ theorem twoPointWitnessKernelCLM_eq_schwinger_of_shell_agreement
     (fun f ⟨χ, h, hh_pos, hh_compact, hf_eq⟩ => by
       rw [hf_eq]; exact hShell χ h hh_pos hh_compact)
 
-/-- **Two-point Schwinger kernel regularity.**
+/-- **Two-point Schwinger holomorphic kernel.**
 
-The two-point Schwinger function S₂ is a regular distribution on
-`ZeroDiagonalSchwartz d 2`: there exists a measurable kernel K such that
-`S₂(f) = ∫ K * f` for all zero-diagonal test functions f.
-
-K may have inverse-power singularity at coincidence (the diagonal x₁ = x₂).
-The zero-diagonal condition on f kills this singularity, making K * f
-integrable. The integrability is stated explicitly rather than via a
-global bound.
-
-Ref: Reed-Simon IV §XIII.12; Glimm-Jaffe "Quantum Physics" §19.1. -/
-theorem schwinger_twoPoint_kernel_regularity {d : ℕ} [NeZero d]
+The two-point Schwinger function has a holomorphic kernel representation
+on the flat positive-time-difference tube. This combines kernel regularity
+(the Schwinger distribution is given by integration against a kernel) with
+holomorphic extension (the kernel extends holomorphically in time via the
+semigroup). These two obligations are bundled because the holomorphic
+extension is needed to define the witness G on the tube. -/
+theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∃ (K : NPointDomain d 2 → ℂ),
-      -- K is measurable
-      MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume ∧
-      -- K * f is integrable for all zero-diagonal f
+    ∃ (G : (Fin (2 * (d + 1)) → ℂ) → ℂ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness G ∧
       (∀ (f : ZeroDiagonalSchwartz d 2),
-        MeasureTheory.Integrable (fun x => K x * (f.1 x)) MeasureTheory.volume) ∧
-      -- S₂(f) = ∫ K * f for all zero-diagonal f
+        MeasureTheory.Integrable
+          (fun x => G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x))
+          MeasureTheory.volume) ∧
       (∀ (f : ZeroDiagonalSchwartz d 2),
-        OS.S 2 f = ∫ x : NPointDomain d 2, K x * (f.1 x)) := by
+        OS.S 2 f = ∫ x : NPointDomain d 2,
+          G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
   sorry
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
-
-**Architecture (2026-03-17):** The proof has two separate obligations:
-
-1. `schwinger_twoPoint_kernel_regularity` provides a real measurable kernel K
-   with the Euclidean integral formula S₂(f) = ∫ K * f.
-2. The witness G on the complex tube requires extending K holomorphically in
-   time. This extension is a separate obligation (from the semigroup spectral
-   representation), NOT automatically provided by kernel regularity. -/
+Follows directly from `schwinger_twoPoint_holomorphic_kernel`. -/
 theorem schwinger_continuation_base_step_timeParametric_twoPoint {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -1425,14 +1414,9 @@ theorem schwinger_continuation_base_step_timeParametric_twoPoint {d : ℕ} [NeZe
       (∀ (f : ZeroDiagonalSchwartz d 2),
         OS.S 2 f = ∫ x : NPointDomain d 2,
           G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
-  -- Step 1: Get the Schwinger kernel K from regularity
-  obtain ⟨K, hK_meas, hK_int, hK_euclid⟩ :=
-    schwinger_twoPoint_kernel_regularity (d := d) OS lgc
-  -- Step 2: Define G on the flattened tube as K composed with inverse Wick rotation
-  -- G(u) = K(wickRotateInverse(fromDiffFlat(u))) — the kernel in flat tube coordinates
-  -- For now, use K directly on the Euclidean domain
-  -- The time holomorphicity and tube extension come from the semigroup
-  sorry
+  obtain ⟨G, hG_holo, _, hG_euclid⟩ :=
+    schwinger_twoPoint_holomorphic_kernel (d := d) OS lgc
+  exact ⟨G, hG_holo, hG_euclid⟩
 
 /-- OS-II-faithful first-stage base-step theorem: construct a witness on the
 flattened positive-time-difference tube that is holomorphic in the time-difference
