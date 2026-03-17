@@ -1500,15 +1500,21 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
   -- Step 4: Get osConj and onePoint support conditions
   have hχ₀_pos := osConj_onePointToFin1_tsupport_orderedPositiveTime χ₀ hχ₀_compact hχ₀_neg_time
   have hg_pos := onePointToFin1_tsupport_orderedPositiveTime g hg_pos_time
-  -- Step 5: Define G = twoPointCorrectedWitness (no symmetrization needed!)
-  -- G is bounded EVERYWHERE: on the tube by semigroup bound ‖T(z)‖ ≤ 2,
-  -- outside the tube by CFC default (cfc_apply_of_not_continuousOn gives 0)
-  let G := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+  -- Step 5: Define G = G_pos + G_pos_reflected
+  -- G_pos gives the semigroup kernel at positive time (0 outside tube via CFC)
+  -- G_pos_reflected gives the semigroup kernel at negative time (using K(ξ) = K(-ξ) from E3)
+  -- Sum: G covers both positive and negative Euclidean time
+  -- On the tube (Im > 0): reflected has Im < 0, CFC gives 0, so G = G_pos (holomorphic)
+  let G_pos := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+  let G : (Fin (2 * (d + 1)) → ℂ) → ℂ := fun u =>
+    G_pos u + G_pos (Function.update u
+      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+      (-u (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))))
   refine ⟨G, ?_, ?_, ?_⟩
-  · -- IsTimeHolomorphic: direct from existing theorem
-    exact isTimeHolomorphicFlatPositiveTimeDiffWitness_twoPointCorrectedWitness_of_continuousOn
-      (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
-      (continuousOn_twoPointCorrectedWitness (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact)
+  · -- IsTimeHolomorphic: On the tube, reflected term has Im < 0 at slot (1,0),
+    -- so CFC gives 0 (specSemiFRe discontinuous). Hence G = G_pos + 0 = G_pos on tube.
+    -- Transfer from G_pos holomorphicity.
+    sorry
   · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
     intro f
     -- At Euclidean points: -I * wickRotate(x)_time = real time difference ξ₀.
