@@ -1523,20 +1523,49 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
   -- Step 4: Get osConj and onePoint support conditions
   have hχ₀_pos := osConj_onePointToFin1_tsupport_orderedPositiveTime χ₀ hχ₀_compact hχ₀_neg_time
   have hg_pos := onePointToFin1_tsupport_orderedPositiveTime g hg_pos_time
-  -- Step 5: Define G = twoPointCorrectedWitness
-  -- G is the semigroup-based witness, well-defined and holomorphic on the tube.
-  -- At Euclidean points with ξ₀ > 0: G = Schwinger kernel K(ξ).
-  -- At Euclidean points with ξ₀ < 0: G gives some value from the Laplace integral
-  --   (possibly divergent/default). The reproduction ∫ G * f = OS.S 2 f requires
-  --   showing this value is K(-ξ₀, -ξ_spatial) = K(ξ₀, ξ_spatial) by E3.
-  --   This is a genuine mathematical obligation connecting E3 to the semigroup
-  --   definition at negative time.
-  let G := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+  -- Step 5: Define G with E3 piecewise extension
+  -- Positive time (Re(-I*u_time) > 0): semigroup value
+  -- Negative time: use E3 (K(ξ) = K(-ξ)) to reflect to positive time
+  -- On the tube: the if-branch is always true (Im > 0 ⟹ Re(-I*z) > 0)
+  let G_pos := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+  let j₁₀ : Fin (2 * (d + 1)) := finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))
+  let G : (Fin (2 * (d + 1)) → ℂ) → ℂ := fun u =>
+    if 0 < (-Complex.I * u j₁₀).re then G_pos u
+    else G_pos (fun j => if j = j₁₀ then -u j₁₀ else u j)
   refine ⟨G, ?_, ?_, ?_⟩
-  · -- IsTimeHolomorphic: directly from existing theorem (G = twoPointCorrectedWitness)
-    exact isTimeHolomorphicFlatPositiveTimeDiffWitness_twoPointCorrectedWitness_of_continuousOn
+  · -- IsTimeHolomorphic: On tube, Re(-I*u_{(1,0)}) = Im(u_{(1,0)}) > 0, so if-branch
+    -- is true and G = G_pos. Transfer from G_pos holomorphicity.
+    have hG_pos_holo := isTimeHolomorphicFlatPositiveTimeDiffWitness_twoPointCorrectedWitness_of_continuousOn
       (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
       (continuousOn_twoPointCorrectedWitness (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact)
+    -- G = G_pos on tube (if-branch true)
+    have hG_eq_on_tube : ∀ u ∈ SCV.TubeDomain (FlatPositiveTimeDiffReal 2 d), G u = G_pos u := by
+      intro u hu; simp only [G]; rw [if_pos]
+      have := (mem_tubeDomain_flatPositiveTimeDiffReal_iff (k := 2) (d := d) u).mp hu ⟨1, by omega⟩
+      rwa [show (-Complex.I * u j₁₀).re = (u j₁₀).im from by
+        simp [Complex.mul_re, Complex.I_re, Complex.I_im]]
+    constructor
+    · -- ContinuousOn: G = G_pos on tube
+      exact hG_pos_holo.1.congr (fun u hu => by show G u = G_pos u; exact hG_eq_on_tube u hu)
+    · -- DifferentiableOn: for each time slice, G = G_pos on {Im w > 0}
+      intro u hu i
+      have hslice_eq : ∀ w ∈ ({w : ℂ | 0 < w.im} : Set ℂ),
+          G (Function.update u (finProdFinEquiv (i, 0)) w) =
+          G_pos (Function.update u (finProdFinEquiv (i, 0)) w) := by
+        intro w hw
+        apply hG_eq_on_tube
+        rw [mem_tubeDomain_flatPositiveTimeDiffReal_iff]
+        intro k
+        rcases i with ⟨i, hi⟩
+        by_cases hki : k = ⟨i, hi⟩
+        · subst hki; simp [Function.update_self]; exact hw
+        · have hne : finProdFinEquiv (k, (0 : Fin (d+1))) ≠ finProdFinEquiv (⟨i, hi⟩, (0 : Fin (d+1))) := by
+            intro h; exact hki (by
+              have := congr_arg (fun x => (finProdFinEquiv.symm x).1) h
+              simp at this; exact this)
+          simp [Function.update_of_ne hne]
+          exact (mem_tubeDomain_flatPositiveTimeDiffReal_iff (k := 2) (d := d) u).mp hu k
+      exact (hG_pos_holo.2 u hu i).congr hslice_eq
   · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
     intro f
     -- G bounded on positive-time Euclidean section (semigroup ‖T(z)‖ ≤ 2).
