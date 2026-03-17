@@ -1500,27 +1500,23 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
   -- Step 4: Get osConj and onePoint support conditions
   have hχ₀_pos := osConj_onePointToFin1_tsupport_orderedPositiveTime χ₀ hχ₀_compact hχ₀_neg_time
   have hg_pos := onePointToFin1_tsupport_orderedPositiveTime g hg_pos_time
-  -- Step 5: Define G = G_pos + G_pos_reflected
-  -- G_pos gives the semigroup kernel at positive time (0 outside tube via CFC)
-  -- G_pos_reflected gives the semigroup kernel at negative time (using K(ξ) = K(-ξ) from E3)
-  -- Sum: G covers both positive and negative Euclidean time
-  -- On the tube (Im > 0): reflected has Im < 0, CFC gives 0, so G = G_pos (holomorphic)
-  let G_pos := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
-  let G : (Fin (2 * (d + 1)) → ℂ) → ℂ := fun u =>
-    G_pos u + G_pos (Function.update u
-      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
-      (-u (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))))
+  -- Step 5: Define G = twoPointCorrectedWitness
+  -- G is well-defined on the tube (Im > 0) where the Laplace integral converges.
+  -- The reproduction ∫ G * f = OS.S 2 f requires both positive and negative time;
+  -- the negative-time contribution comes from E3 (permutation symmetry of S₂).
+  let G := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
   refine ⟨G, ?_, ?_, ?_⟩
-  · -- IsTimeHolomorphic: On the tube, reflected term has Im < 0 at slot (1,0),
-    -- so CFC gives 0 (specSemiFRe discontinuous). Hence G = G_pos + 0 = G_pos on tube.
-    -- Transfer from G_pos holomorphicity.
-    sorry
+  · -- IsTimeHolomorphic: directly from existing theorem (G = twoPointCorrectedWitness)
+    exact isTimeHolomorphicFlatPositiveTimeDiffWitness_twoPointCorrectedWitness_of_continuousOn
+      (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+      (continuousOn_twoPointCorrectedWitness (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact)
   · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
     intro f
-    -- At Euclidean points: -I * wickRotate(x)_time = real time difference ξ₀.
-    -- For ξ₀ > 0: G = semigroup inner product, bounded by ‖T(ξ₀)‖ ≤ 2 (contraction)
-    -- For ξ₀ ≤ 0: G = CFC of discontinuous function = 0 (cfc_apply_of_not_continuousOn)
-    -- So |G| bounded on Euclidean section. f Schwartz ⟹ f ∈ L¹. bounded × L¹ ⟹ integrable.
+    -- G bounded on positive-time Euclidean section (semigroup ‖T(z)‖ ≤ 2).
+    -- For negative time: the Laplace integral defining G may diverge, but
+    -- the E3 symmetry of OS.S 2 means the negative-time contribution equals
+    -- the positive-time contribution (via x₁ ↔ x₂ swap).
+    -- Integrability follows from: G bounded on half-space × f Schwartz L¹.
     sorry
   · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
     intro f
