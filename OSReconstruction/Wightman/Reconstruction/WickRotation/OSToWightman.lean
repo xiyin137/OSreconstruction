@@ -1361,10 +1361,16 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       (∀ (f : ZeroDiagonalSchwartz d 2),
         OS.S 2 f = ∫ x : NPointDomain d 2,
           G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
-  -- Step 1: Pick admissible (χ₀, g) to define the witness
-  -- Need: χ₀ with positive-time osConj support, ∫ χ₀ = 1
-  -- Need: g with positive-time support, compact support
-  -- These exist by construction (bump functions with positive-time support)
+  -- Step 1: Pick admissible test functions
+  obtain ⟨g₀, hg₀_compact, hg₀_pos_time, hg₀_int_ne⟩ :=
+    exists_positive_time_compact_schwartz (d := d)
+  -- Normalize g₀ to get χ₀ with ∫ χ₀ = 1 (scale by 1/∫g₀)
+  -- For now, we need χ₀ and g with the right properties
+  -- The corrected witness G = twoPointCorrectedWitness uses these
+  -- Step 2: Define G
+  -- Step 3: IsTimeHolomorphic from existing infrastructure
+  -- Step 4: Integrability from semigroup bound |G| ≤ 2·‖F‖·‖G‖
+  -- Step 5: Euclidean reproduction from clm_zero_of_zero_on_productTensor + shell agreement
   sorry
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
