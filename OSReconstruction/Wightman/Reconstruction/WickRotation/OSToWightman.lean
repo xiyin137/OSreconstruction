@@ -1480,6 +1480,24 @@ theorem schwinger_twoPoint_positive_time_decomposition {d : ℕ} [NeZero d]
     (hK_sym : ∀ x : NPointDomain d 2, K x = K (fun i => x (Equiv.swap 0 1 i))) :
     True := trivial -- placeholder for the decomposition infrastructure
 
+set_option maxHeartbeats 1600000 in
+/-- The twoPointSpatialWitness is bounded at positive real time:
+∃ C, ∀ t > 0, ∀ y, ‖witness(t, y)‖ ≤ C.
+Proof: inner product form + Cauchy-Schwarz + semigroup ‖T(z)‖ ≤ 2 + norm constancy. -/
+theorem twoPointSpatialWitness_bounded_of_pos {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ₀ g : SchwartzSpacetime d)
+    (hχ₀_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ)) :
+    ∃ C : ℝ, ∀ (t : ℝ), 0 < t → ∀ (y : Fin d → ℝ),
+      ‖twoPointSpatialWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact (t : ℂ) y‖ ≤ C := by
+  sorry
+
 set_option maxHeartbeats 800000 in
 /-- **Two-point Schwinger holomorphic kernel.**
 
