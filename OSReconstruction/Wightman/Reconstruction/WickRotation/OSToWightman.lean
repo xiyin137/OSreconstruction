@@ -252,6 +252,43 @@ def extractDiffSpatialRe {d : ℕ}
     (u : Fin (2 * (d + 1)) → ℂ) : Fin d → ℝ :=
   fun i => (u (finProdFinEquiv (⟨1, by omega⟩, i.succ))).re
 
+/-- There exists a compactly-supported Schwartz function on spacetime with
+NEGATIVE-time support and nonzero integral. Needed for the LEFT semigroup
+vector (osConj reflects time: negative → positive). -/
+theorem exists_negative_time_compact_schwartz {d : ℕ} [NeZero d] :
+    ∃ (g : SchwartzSpacetime d),
+      HasCompactSupport (g : SpacetimeDim d → ℂ) ∧
+      tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0} ∧
+      ∫ u : SpacetimeDim d, g u ≠ 0 := by
+  -- Same construction as positive but centered at (-1, 0, ..., 0)
+  let c : SpacetimeDim d := Fin.cons (-1) 0
+  let b : ContDiffBump c := ⟨1/4, 1/2, by norm_num, by norm_num⟩
+  let f : SpacetimeDim d → ℂ := fun x => (b x : ℂ)
+  have hf_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) f :=
+    (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  let g := HasCompactSupport.toSchwartzMap hf_compact hf_smooth
+  refine ⟨g, hf_compact, ?_, ?_⟩
+  · intro x hx
+    simp only [Set.mem_setOf_eq]
+    have hx_supp : x ∈ Metric.closedBall c (1/2 : ℝ) := by
+      have h_tsup_f : tsupport f ⊆ Metric.closedBall c (1/2) := by
+        intro y hy; rw [← b.tsupport_eq]
+        exact tsupport_comp_subset Complex.ofReal_zero _ hy
+      exact h_tsup_f hx
+    rw [Metric.mem_closedBall] at hx_supp
+    have h0 : |x 0 - (-1)| ≤ 1/2 := by
+      calc |x 0 - (-1)| = |x 0 - c 0| := by simp [c, Fin.cons]
+        _ = ‖(x - c) 0‖ := by simp [Pi.sub_apply, Real.norm_eq_abs]
+        _ ≤ ‖x - c‖ := norm_le_pi_norm _ 0
+        _ = dist x c := by rw [dist_eq_norm]
+        _ ≤ 1/2 := hx_supp
+    linarith [abs_le.mp h0]
+  · change ∫ x, (↑(b x) : ℂ) ≠ 0
+    rw [integral_complex_ofReal]
+    exact Complex.ofReal_ne_zero.mpr (ne_of_gt b.integral_pos)
+
 /-- Bridge: positive-time support of g on spacetime implies ordered positive-time
 support of its one-point wrapping. -/
 theorem onePointToFin1_tsupport_orderedPositiveTime {d : ℕ} [NeZero d]
