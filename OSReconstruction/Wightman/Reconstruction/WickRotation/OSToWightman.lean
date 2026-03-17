@@ -1382,39 +1382,41 @@ theorem twoPointWitnessKernelCLM_eq_schwinger_of_shell_agreement
     (fun f ⟨χ, h, hh_pos, hh_compact, hf_eq⟩ => by
       rw [hf_eq]; exact hShell χ h hh_pos hh_compact)
 
-/-- **Schwinger kernel regularity.**
+/-- **Two-point Schwinger kernel regularity.**
 
-The n-point Schwinger function Sₙ is a regular distribution on
-`ZeroDiagonalSchwartz`: there exists a measurable kernel K such that
-`Sₙ(f) = ∫ K * f` for all zero-diagonal test functions f.
+The two-point Schwinger function S₂ is a regular distribution on
+`ZeroDiagonalSchwartz d 2`: there exists a measurable kernel K such that
+`S₂(f) = ∫ K * f` for all zero-diagonal test functions f.
 
-K is smooth at non-coincident points and may have inverse-power singularity
-at coincidence. The zero-diagonal condition on f kills this singularity,
-making K * f integrable. The integrability condition is stated explicitly
-rather than via a global polynomial bound (which would incorrectly forbid
-diagonal singularities).
+K may have inverse-power singularity at coincidence (the diagonal x₁ = x₂).
+The zero-diagonal condition on f kills this singularity, making K * f
+integrable. The integrability is stated explicitly rather than via a
+global bound.
 
 Ref: Reed-Simon IV §XIII.12; Glimm-Jaffe "Quantum Physics" §19.1. -/
-theorem schwinger_kernel_regularity {d : ℕ} [NeZero d]
+theorem schwinger_twoPoint_kernel_regularity {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (n : ℕ) :
-    ∃ (K : NPointDomain d n → ℂ),
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∃ (K : NPointDomain d 2 → ℂ),
       -- K is measurable
       MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume ∧
       -- K * f is integrable for all zero-diagonal f
-      (∀ (f : ZeroDiagonalSchwartz d n),
+      (∀ (f : ZeroDiagonalSchwartz d 2),
         MeasureTheory.Integrable (fun x => K x * (f.1 x)) MeasureTheory.volume) ∧
-      -- Sₙ(f) = ∫ K * f for all zero-diagonal f
-      (∀ (f : ZeroDiagonalSchwartz d n),
-        OS.S n f = ∫ x : NPointDomain d n, K x * (f.1 x)) := by
+      -- S₂(f) = ∫ K * f for all zero-diagonal f
+      (∀ (f : ZeroDiagonalSchwartz d 2),
+        OS.S 2 f = ∫ x : NPointDomain d 2, K x * (f.1 x)) := by
   sorry
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
 
-**Architecture (2026-03-16, corrected):** The witness G is the Schwinger kernel K
-(from `schwinger_kernel_regularity`) composed with Wick rotation + flattening.
-Time holomorphicity comes from the semigroup spectral representation. -/
+**Architecture (2026-03-17):** The proof has two separate obligations:
+
+1. `schwinger_twoPoint_kernel_regularity` provides a real measurable kernel K
+   with the Euclidean integral formula S₂(f) = ∫ K * f.
+2. The witness G on the complex tube requires extending K holomorphically in
+   time. This extension is a separate obligation (from the semigroup spectral
+   representation), NOT automatically provided by kernel regularity. -/
 theorem schwinger_continuation_base_step_timeParametric_twoPoint {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -1425,7 +1427,7 @@ theorem schwinger_continuation_base_step_timeParametric_twoPoint {d : ℕ} [NeZe
           G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
   -- Step 1: Get the Schwinger kernel K from regularity
   obtain ⟨K, hK_meas, hK_int, hK_euclid⟩ :=
-    schwinger_kernel_regularity (d := d) OS lgc 2
+    schwinger_twoPoint_kernel_regularity (d := d) OS lgc
   -- Step 2: Define G on the flattened tube as K composed with inverse Wick rotation
   -- G(u) = K(wickRotateInverse(fromDiffFlat(u))) — the kernel in flat tube coordinates
   -- For now, use K directly on the Euclidean domain
