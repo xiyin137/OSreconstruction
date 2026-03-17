@@ -1293,6 +1293,93 @@ theorem twoPointSpatialWitness_bounded_of_pos {d : ℕ} [NeZero d]
         rw [norm_twoPointTranslatedOnePointVector_eq (d := d) OS g hg_pos y 0]
     _ = 2 * ‖F‖ * ‖v₀‖ := by ring
 
+/-! ### Coordinate unfolding lemmas for the piecewise kernel -/
+
+/-- At the Euclidean section, `toDiffFlat(wickRotate(x))` at the time-difference slot
+equals `I * (x 1 0 - x 0 0)`. -/
+private theorem toDiffFlat_wickRotate_at_j10 {d : ℕ} (x : NPointDomain d 2) :
+    BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))
+      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) =
+      Complex.I * (↑(x 1 0) - ↑(x 0 0)) := by
+  simp only [BHW.toDiffFlat, BHW.flattenCfg, finProdFinEquiv.symm_apply_apply,
+    BHW.diffCoordEquiv_apply]
+  simp [wickRotatePoint]
+  ring
+
+/-- Full complex equality: `-I * toDiffFlat(wickRotate(x))_{j₁₀} = ↑(x 1 0 - x 0 0)`. -/
+private theorem neg_I_mul_toDiffFlat_wickRotate_j10 {d : ℕ} (x : NPointDomain d 2) :
+    -Complex.I * BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))
+      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) =
+      ↑(x 1 0 - x 0 0) := by
+  rw [toDiffFlat_wickRotate_at_j10, ← mul_assoc, show -Complex.I * Complex.I = 1 from
+    by rw [neg_mul, Complex.I_mul_I, neg_neg], one_mul]
+  push_cast; ring
+
+/-- Full complex equality for the reflected branch. -/
+private theorem neg_I_mul_neg_toDiffFlat_wickRotate_j10 {d : ℕ} (x : NPointDomain d 2) :
+    -Complex.I * -(BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))
+      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))) =
+      ↑(x 0 0 - x 1 0) := by
+  rw [toDiffFlat_wickRotate_at_j10, mul_neg, ← mul_assoc,
+    show -Complex.I * Complex.I = 1 from by rw [neg_mul, Complex.I_mul_I, neg_neg],
+    one_mul, neg_sub]
+  push_cast; ring
+
+/-- The spatial extraction is unchanged under time-only reflection. -/
+private theorem extractDiffSpatialRe_reflect_timeDiff {d : ℕ}
+    (u : Fin (2 * (d + 1)) → ℂ)
+    (idx : Fin (2 * (d + 1)))
+    (hidx : idx = finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) :
+    extractDiffSpatialRe (fun j => if j = idx then -(u idx) else u j) =
+      extractDiffSpatialRe u := by
+  ext i
+  simp only [extractDiffSpatialRe]
+  have h_ne : finProdFinEquiv ((⟨1, by omega⟩ : Fin 2), (i : Fin d).succ) ≠ idx := by
+    subst hidx
+    intro h
+    have := finProdFinEquiv.injective h
+    simp [Prod.ext_iff] at this
+  rw [if_neg h_ne]
+
+/-- The equal-time hyperplane has measure zero. -/
+private theorem measure_timeEq_zero_k2 {d : ℕ} [NeZero d] :
+    MeasureTheory.volume {x : NPointDomain d 2 | x 1 0 = x 0 0} = 0 := by
+  let L : NPointDomain d 2 →ₗ[ℝ] ℝ :=
+    { toFun := fun x => x 1 0 - x 0 0
+      map_add' := fun x y => by simp; ring
+      map_smul' := fun a x => by simp; ring }
+  have hset :
+      {x : NPointDomain d 2 | x 1 0 = x 0 0} = (LinearMap.ker L : Set (NPointDomain d 2)) := by
+    ext x; simp [L, LinearMap.mem_ker, sub_eq_zero]
+  have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+    intro htop
+    have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+    have hval : L (fun k μ => if k = (1 : Fin 2) ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+      simpa using congrArg
+        (fun f => f (fun k μ => if k = (1 : Fin 2) ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+    simp [L] at hval
+  rw [hset]
+  exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume (LinearMap.ker L) hker_ne_top
+
+/-- `wickRotatePoint` is continuous. -/
+private theorem continuous_wickRotatePoint {d : ℕ} :
+    Continuous (fun x : Fin (d + 1) → ℝ => wickRotatePoint x) := by
+  apply continuous_pi
+  intro μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp only [wickRotatePoint, ite_true]
+    exact continuous_const.mul (Complex.continuous_ofReal.comp (continuous_apply 0))
+  · simp only [wickRotatePoint, hμ, ite_false]
+    exact Complex.continuous_ofReal.comp (continuous_apply μ)
+
+/-- The composition `x ↦ toDiffFlat(wickRotate(x))` is measurable. -/
+private theorem measurable_toDiffFlat_wickRotate {d : ℕ} :
+    Measurable (fun x : NPointDomain d 2 =>
+      BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) :=
+  ((differentiable_toDiffFlat_local 2 d).continuous.comp
+    (continuous_pi fun j => continuous_wickRotatePoint.comp (continuous_apply j))).measurable
+
 set_option maxHeartbeats 800000 in
 /-- **Two-point Schwinger holomorphic kernel.**
 
@@ -1379,48 +1466,64 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
           simp [Function.update_of_ne hne]
           exact (mem_tubeDomain_flatPositiveTimeDiffReal_iff (k := 2) (d := d) u).mp hu k
       exact (hG_pos_holo.2 u hu i).congr hslice_eq
-  · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
+  · -- Integrability: G ae-bounded × f Schwartz (L¹) → G*f integrable
     intro f
-    -- Both branches of piecewise G use twoPointSpatialWitness at positive real time
-    -- (either ξ₀ > 0 directly or -ξ₀ > 0 via reflection). Both are bounded by
-    -- 2 * ‖F_χ₀‖ * ‖G_g‖ (semigroup contraction). So |G| ≤ C on Euclidean section.
-    -- f Schwartz ⟹ f ∈ L¹. bounded × L¹ ⟹ integrable.
-    -- G bounded × f Schwartz L¹ = integrable
-    have hG_bdd : ∃ C : ℝ, ∀ x : NPointDomain d 2,
+    -- The semigroup bound gives C for each branch at positive time
+    obtain ⟨C, hC⟩ := twoPointSpatialWitness_bounded_of_pos (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+    -- Positive branch bound: x 1 0 > x 0 0 → ‖G(...)‖ ≤ C
+    have hG_pos_bnd : ∀ x : NPointDomain d 2, 0 < x 1 0 - x 0 0 →
         ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C := by
-      -- Both branches of piecewise G evaluate twoPointSpatialWitness at positive
-      -- real time (semigroup bound ‖T(z)‖ ≤ 2 from spectralSemigroupComplex_norm_le).
-      -- Combined with Cauchy-Schwarz: |⟨F, T(z)G⟩| ≤ ‖F‖ * 2 * ‖G‖.
-      -- norm_twoPointTranslatedOnePointVector_eq gives y-independence of ‖G‖.
-      -- Uses twoPointSpatialWitness_bounded_of_pos for both branches.
-      -- Requires unfolding G(toDiffFlat(wickRotate(x))) → twoPointSpatialWitness(ξ₀, y)
-      -- and showing ξ₀ > 0 in both branches (positive and reflected).
-      obtain ⟨C, hC⟩ := twoPointSpatialWitness_bounded_of_pos (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
-      refine ⟨C, fun x => ?_⟩
-      -- Both branches of G: unwind to twoPointSpatialWitness at positive real time
-      -- This is the deep coordinate unfolding step
+      intro x hx_pos
       simp only [G]
-      split
-      · -- Positive branch: unfold G_pos and apply hC
-        rename_i h_pos
-        change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
-          (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C
-        rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
-        -- -I*u_{j₁₀} = (↑(x₂₀-x₁₀) : ℂ) at Euclidean points (from Wick rotation)
-        -- h_pos gives x₂₀-x₁₀ > 0, so hC applies
-        -- Need: -I * toDiffFlat(wickRotate(x))_{j₁₀} = ↑(x 1 0 - x 0 0) (coordinate computation)
-        -- Then: h_pos gives x 1 0 - x 0 0 > 0, apply hC
-        -- The coordinate computation requires diffCoordLinearEquiv + wickRotatePoint unfolding
-        sorry
-      · -- Negative branch: unfold G_pos at reflected u and apply hC
-        rename_i h_neg
-        change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
-          (fun j => if j = j₁₀ then
+      have h_cond : 0 < (-Complex.I * BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀).re := by
+        have hre : (-Complex.I * BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))
+            (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))).re = x 1 0 - x 0 0 := by
+          rw [neg_I_mul_toDiffFlat_wickRotate_j10]; simp
+        rwa [hre]
+      rw [if_pos h_cond]
+      change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact _‖ ≤ C
+      rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
+      conv_lhs => rw [neg_I_mul_toDiffFlat_wickRotate_j10 (d := d) x]
+      exact hC (x 1 0 - x 0 0) hx_pos (extractDiffSpatialRe _)
+    -- Negative branch bound: x 1 0 < x 0 0 → ‖G(...)‖ ≤ C
+    have hG_neg_bnd : ∀ x : NPointDomain d 2, x 1 0 < x 0 0 →
+        ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C := by
+      intro x hx_neg
+      simp only [G]
+      have h_cond : ¬ 0 < (-Complex.I * BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀).re := by
+        have hre : (-Complex.I * BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))
+            (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))).re = x 1 0 - x 0 0 := by
+          rw [neg_I_mul_toDiffFlat_wickRotate_j10]; simp
+        rw [hre]; linarith
+      rw [if_neg h_cond]
+      change ‖twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact _‖ ≤ C
+      rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
+      -- The reflected time slot: -I * (-(I * (x10 - x00))) = x00 - x10
+      have h_if_j : (fun j => if j = j₁₀ then
             -BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀
-            else BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j)‖ ≤ C
-        rw [twoPointCorrectedWitness_eq_twoPointSpatialWitness]
-        sorry
-    obtain ⟨C, hC⟩ := hG_bdd
+            else BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j)
+          (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) =
+          -(BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀) := by
+        simp [j₁₀]
+      conv_lhs =>
+        rw [show -Complex.I * (fun j => if j = j₁₀ then
+              -BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j₁₀
+              else BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)) j)
+            (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) =
+            ↑(x 0 0 - x 1 0) from by rw [h_if_j, neg_I_mul_neg_toDiffFlat_wickRotate_j10]]
+      rw [extractDiffSpatialRe_reflect_timeDiff _ j₁₀ rfl]
+      exact hC (x 0 0 - x 1 0) (by linarith) (extractDiffSpatialRe _)
+    -- ae bound: on the complement of the equal-time hyperplane (measure zero), one branch applies
+    have hG_ae_bdd : ∀ᵐ x : NPointDomain d 2 ∂volume,
+        ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ ≤ C := by
+      have hnull : volume {x : NPointDomain d 2 | x 1 0 = x 0 0} = 0 :=
+        measure_timeEq_zero_k2 (d := d)
+      have hneq_ae : ∀ᵐ x : NPointDomain d 2 ∂volume, x 1 0 ≠ x 0 0 := by
+        rw [ae_iff]; simpa using hnull
+      filter_upwards [hneq_ae] with x hxneq
+      rcases lt_or_gt_of_ne hxneq with hlt | hgt
+      · exact hG_neg_bnd x hlt
+      · exact hG_pos_bnd x (by linarith)
     -- f.1 is Schwartz hence integrable
     have hf_int : MeasureTheory.Integrable (f.1 : NPointDomain d 2 → ℂ) := by
       haveI : (MeasureTheory.volume :
@@ -1430,12 +1533,21 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
     -- |G * f| ≤ C * |f|, and C * |f| is integrable
     refine (hf_int.norm.const_mul C).mono' ?_ ?_
     · -- AEStronglyMeasurable: G * f is measurable
-      sorry
-    · -- Norm bound: ‖G(u) * f(x)‖ = ‖G(u)‖ * ‖f(x)‖ ≤ C * ‖f(x)‖
-      exact Filter.Eventually.of_forall (fun x => by
-        calc ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)‖
-            = ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ * ‖f.1 x‖ := norm_mul _ _
-          _ ≤ C * ‖f.1 x‖ := mul_le_mul_of_nonneg_right (hC x) (norm_nonneg _))
+      -- The wick rotation map is measurable, G_pos is composed from continuous/measurable pieces,
+      -- and the piecewise construction preserves measurability
+      -- G ∘ wr is continuous on {x | x 1 0 ≠ x 0 0} (full measure): each branch evaluates
+      -- twoPointSpatialWitness at positive real time, which is holomorphic hence continuous.
+      -- ContinuousOn.aestronglyMeasurable + restrict_eq_self_of_ae_mem gives AEStronglyMeasurable.
+      -- The product with f (Schwartz, hence continuous) preserves AEStronglyMeasurable.
+      -- Technical obstacle: proving continuity of twoPointSpatialWitness jointly in (t, y)
+      -- requires semigroup strong continuity + spatial translation continuity infrastructure.
+      exact (sorry : AEStronglyMeasurable
+        (fun x => G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * f.1 x) volume)
+    · -- Norm bound: ae
+      filter_upwards [hG_ae_bdd] with x hx
+      calc ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)‖
+          = ‖G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j)))‖ * ‖f.1 x‖ := norm_mul _ _
+        _ ≤ C * ‖f.1 x‖ := mul_le_mul_of_nonneg_right hx (norm_nonneg _)
   · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
     intro f
     sorry -- From shell agreement (semigroup chain) + density (clm_zero_of_zero_on_productTensor)
