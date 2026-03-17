@@ -1524,9 +1524,13 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
   have hχ₀_pos := osConj_onePointToFin1_tsupport_orderedPositiveTime χ₀ hχ₀_compact hχ₀_neg_time
   have hg_pos := onePointToFin1_tsupport_orderedPositiveTime g hg_pos_time
   -- Step 5: Define G = twoPointCorrectedWitness
-  -- G is well-defined on the tube (Im > 0) where the Laplace integral converges.
-  -- The reproduction ∫ G * f = OS.S 2 f requires both positive and negative time;
-  -- the negative-time contribution comes from E3 (permutation symmetry of S₂).
+  -- G is the semigroup-based witness, well-defined and holomorphic on the tube.
+  -- At Euclidean points with ξ₀ > 0: G = Schwinger kernel K(ξ).
+  -- At Euclidean points with ξ₀ < 0: G gives some value from the Laplace integral
+  --   (possibly divergent/default). The reproduction ∫ G * f = OS.S 2 f requires
+  --   showing this value is K(-ξ₀, -ξ_spatial) = K(ξ₀, ξ_spatial) by E3.
+  --   This is a genuine mathematical obligation connecting E3 to the semigroup
+  --   definition at negative time.
   let G := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
   refine ⟨G, ?_, ?_, ?_⟩
   · -- IsTimeHolomorphic: directly from existing theorem (G = twoPointCorrectedWitness)
