@@ -1457,6 +1457,7 @@ theorem twoPointWitnessKernelCLM_eq_schwinger_of_shell_agreement
     (fun f ⟨χ, h, hh_pos, hh_compact, hf_eq⟩ => by
       rw [hf_eq]; exact hShell χ h hh_pos hh_compact)
 
+set_option maxHeartbeats 800000 in
 /-- **Two-point Schwinger holomorphic kernel.**
 
 The two-point Schwinger function has a holomorphic kernel representation
@@ -1477,17 +1478,41 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       (∀ (f : ZeroDiagonalSchwartz d 2),
         OS.S 2 f = ∫ x : NPointDomain d 2,
           G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
-  -- Step 1: Pick admissible test functions
-  obtain ⟨g₀, hg₀_compact, hg₀_pos_time, hg₀_int_ne⟩ :=
+  -- Step 1: Get admissible test functions
+  obtain ⟨g, hg_compact, hg_pos_time, hg_int_ne⟩ :=
     exists_positive_time_compact_schwartz (d := d)
-  -- Normalize g₀ to get χ₀ with ∫ χ₀ = 1 (scale by 1/∫g₀)
-  -- For now, we need χ₀ and g with the right properties
-  -- The corrected witness G = twoPointCorrectedWitness uses these
-  -- Step 2: Define G
-  -- Step 3: IsTimeHolomorphic from existing infrastructure
-  -- Step 4: Integrability from semigroup bound |G| ≤ 2·‖F‖·‖G‖
-  -- Step 5: Euclidean reproduction from clm_zero_of_zero_on_productTensor + shell agreement
-  sorry
+  obtain ⟨χ_raw, hχ_compact, hχ_neg_time, hχ_int_ne⟩ :=
+    exists_negative_time_compact_schwartz (d := d)
+  -- Step 2: Normalize χ to ∫ χ₀ = 1
+  let χ₀ : SchwartzSpacetime d := (∫ u, χ_raw u)⁻¹ • χ_raw
+  have hχ₀_int : ∫ u : SpacetimeDim d, χ₀ u = 1 := by
+    simp only [χ₀, SchwartzMap.smul_apply]
+    sorry -- integral_smul + inv_mul_cancel₀
+  -- Step 3: χ₀ inherits negative-time support and compact support
+  have hχ₀_compact : HasCompactSupport (χ₀ : SpacetimeDim d → ℂ) := by
+    simp only [χ₀, SchwartzMap.smul_apply]
+    exact hχ_compact.smul_left
+  have hχ₀_neg_time : tsupport (χ₀ : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0} := by
+    intro x hx
+    apply hχ_neg_time
+    exact closure_mono (Function.support_const_smul_subset ((∫ u, χ_raw u)⁻¹) _) hx
+  -- Step 4: Get osConj and onePoint support conditions
+  have hχ₀_pos := osConj_onePointToFin1_tsupport_orderedPositiveTime χ₀ hχ₀_compact hχ₀_neg_time
+  have hg_pos := onePointToFin1_tsupport_orderedPositiveTime g hg_pos_time
+  -- Step 5: Define G = twoPointCorrectedWitness
+  let G := twoPointCorrectedWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+  refine ⟨G, ?_, ?_, ?_⟩
+  · -- IsTimeHolomorphic: from existing theorem
+    exact isTimeHolomorphicFlatPositiveTimeDiffWitness_twoPointCorrectedWitness_of_continuousOn
+      (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact
+      (continuousOn_twoPointCorrectedWitness (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact)
+  · -- Integrability: |G(u)| ≤ C for all u (semigroup contraction)
+    intro f
+    sorry -- From ‖T(z)‖ ≤ 2 giving |G| ≤ C, combined with f Schwartz → |G*f| ≤ C*|f| integrable
+  · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
+    intro f
+    sorry -- From shell agreement (semigroup chain) + density (clm_zero_of_zero_on_productTensor)
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
 Follows directly from `schwinger_twoPoint_holomorphic_kernel`. -/
