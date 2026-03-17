@@ -1751,6 +1751,16 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
     -- - OS E2 translation invariance
     --
     -- CLM packaging uses zeroDiagKernelCLM_of_const_bound from TwoPointKernelFunctional.
+    -- ROOT BLOCKER: The semigroup-based kernel G depends on the test function g
+    -- used in its construction. Removing the g-dependence requires the spectral
+    -- theory of the Hamiltonian (Källén-Lehmann representation), which gives
+    -- S₂(ξ) = ∫ dρ(m) Δ_E(ξ; m) where ρ is the spectral measure and Δ_E is the
+    -- free Euclidean propagator. This is independent of g.
+    -- The OS II paper (Section VI) uses density of tensor products + spectral
+    -- representation to achieve this. Infrastructure needed:
+    -- 1. Stone's theorem (spectral decomposition of H)
+    -- 2. Spectral measure → Schwinger kernel representation
+    -- 3. Identification of the semigroup-based kernel with the spectral kernel
     sorry
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
