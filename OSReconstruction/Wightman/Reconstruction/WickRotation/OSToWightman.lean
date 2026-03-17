@@ -1496,7 +1496,31 @@ theorem twoPointSpatialWitness_bounded_of_pos {d : ℕ} [NeZero d]
     (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ)) :
     ∃ C : ℝ, ∀ (t : ℝ), 0 < t → ∀ (y : Fin d → ℝ),
       ‖twoPointSpatialWitness OS lgc χ₀ g hχ₀_pos hg_pos hg_compact (t : ℂ) y‖ ≤ C := by
-  sorry
+  -- Step 1: Name the Hilbert space vectors
+  let F : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from
+    ⟦PositiveTimeBorchersSequence.single 1
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ₀ : SchwartzNPoint d 1))
+      hχ₀_pos⟧) : OSHilbertSpace OS))
+  let v₀ := twoPointTranslatedOnePointVector (d := d) OS g hg_pos 0
+  refine ⟨2 * ‖F‖ * ‖v₀‖, fun t ht y => ?_⟩
+  -- Step 2: Rewrite as inner product
+  rw [twoPointSpatialWitness_eq_inner_osTimeShiftHilbertComplex
+    (d := d) OS lgc χ₀ g hχ₀_pos hg_pos hg_compact (t : ℂ) (by simpa using ht) y]
+  -- Step 3: |⟨F, T(t)v_y⟩| ≤ ‖F‖ * ‖T(t)v_y‖ ≤ ‖F‖ * ‖T(t)‖ * ‖v_y‖
+  let v_y := twoPointTranslatedOnePointVector (d := d) OS g hg_pos y
+  calc ‖@inner ℂ _ _ F (osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ) v_y)‖
+      ≤ ‖F‖ * ‖osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ) v_y‖ := by
+        exact norm_inner_le_norm F _
+    _ ≤ ‖F‖ * (‖osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ)‖ * ‖v_y‖) := by
+        exact mul_le_mul_of_nonneg_left
+          (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
+    _ ≤ ‖F‖ * (2 * ‖v_y‖) := by
+        gcongr
+        exact osTimeShiftHilbertComplex_norm_le (d := d) OS lgc (t : ℂ) (by simpa using ht)
+    _ = ‖F‖ * (2 * ‖v₀‖) := by
+        rw [norm_twoPointTranslatedOnePointVector_eq (d := d) OS g hg_pos y 0]
+    _ = 2 * ‖F‖ * ‖v₀‖ := by ring
 
 set_option maxHeartbeats 800000 in
 /-- **Two-point Schwinger holomorphic kernel.**
