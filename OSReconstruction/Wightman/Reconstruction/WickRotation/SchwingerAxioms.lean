@@ -2601,6 +2601,330 @@ private theorem wightman_real_on_jost_support (Wfn : WightmanFunctions d)
     starRingEnd ℂ (Wfn.W n f) = Wfn.W n f.reverse := hherm.symm
     _ = Wfn.W n f := wightman_reverse_invariant_on_jost_support (d := d) Wfn n f hf
 
+/-- On the forward Jost set, `extendF` takes real values.
+
+    The distributional argument: for Schwartz φ compactly supported in the
+    forward Jost set, `W_n(φ)` is real when φ is real-valued (from
+    `wightman_real_on_jost_support`). Combined with Hermiticity and reversal
+    invariance, `conj(W_n(conj φ)) = W_n(φ)` for all φ, which forces
+    `conj(extendF(x)) = extendF(x)` by distributional uniqueness. -/
+private theorem extendF_real_on_forwardJostSet
+    (Wfn : WightmanFunctions d) (n : ℕ) (hd : 1 ≤ d) :
+    ∀ x ∈ BHW.ForwardJostSet d n hd,
+      starRingEnd ℂ (BHW.extendF (Wfn.spectrum_condition n).choose (BHW.realEmbed x)) =
+        BHW.extendF (Wfn.spectrum_condition n).choose (BHW.realEmbed x) := by
+  let F : (Fin n → Fin (d + 1) → ℂ) → ℂ := (Wfn.spectrum_condition n).choose
+  let FJ : Set (NPointDomain d n) := BHW.ForwardJostSet d n hd
+  let gFJ : NPointDomain d n → ℂ :=
+    fun x => starRingEnd ℂ (BHW.extendF F (BHW.realEmbed x))
+  let hFJ : NPointDomain d n → ℂ := fun x => BHW.extendF F (BHW.realEmbed x)
+  have hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      (Wfn.spectrum_condition n).choose_spec.1
+  have hF_real_inv :
+      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
+    intro Λ z hz
+    exact W_analytic_lorentz_on_tube Wfn n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+  have hF_cinv :
+      ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.ForwardTube d n →
+        BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n →
+        F (BHW.complexLorentzAction Λ z) = F z := by
+    intro Λ z hz hΛz
+    exact BHW.complex_lorentz_invariance n F hF_holo hF_real_inv Λ z hz hΛz
+  have hExtend_cont : ContinuousOn (BHW.extendF F) (BHW.ExtendedTube d n) :=
+    (BHW.extendF_holomorphicOn n F hF_holo hF_cinv).continuousOn
+  have hFJ_open : IsOpen FJ := BHW.isOpen_forwardJostSet hd
+  have hFJ_sub_ET : ∀ x ∈ FJ, BHW.realEmbed x ∈ BHW.ExtendedTube d n :=
+    fun x hx => BHW.forwardJostSet_subset_extendedTube hd x hx
+  have hhFJ_cont : ContinuousOn hFJ FJ := by
+    refine hExtend_cont.comp (continuous_realEmbed (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact hFJ_sub_ET x hx
+  have hgFJ_cont : ContinuousOn gFJ FJ := hhFJ_cont.star
+  obtain ⟨η, hη_abs⟩ := forwardConeAbs_nonempty d n
+  have hη : InForwardCone d n η := (inForwardCone_iff_mem_forwardConeAbs η).2 hη_abs
+  have hη_FT :
+      ∀ (x : Fin n → Fin (d + 1) → ℝ) (ε : ℝ), 0 < ε →
+        (fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) ∈ BHW.ForwardTube d n := by
+    intro x ε hε k
+    show BHW.InOpenForwardCone d _
+    have him :
+        (fun μ =>
+          ((fun k μ => (x k μ : ℂ) + ε * (η k μ : ℂ) * Complex.I) k μ -
+            (if h : k.val = 0 then 0 else
+              fun μ =>
+                (x ⟨k.val - 1, by omega⟩ μ : ℂ) +
+                  ε * (η ⟨k.val - 1, by omega⟩ μ : ℂ) * Complex.I) μ).im) =
+          ε • (fun μ => η k μ - (if h : k.val = 0 then 0 else η ⟨k.val - 1, by omega⟩) μ) := by
+      ext μ
+      by_cases hk : (k : ℕ) = 0
+      · simp [hk, Complex.add_im, Complex.mul_im, Complex.ofReal_im, Complex.ofReal_re,
+          Complex.I_im, Complex.I_re, Pi.smul_apply, smul_eq_mul]
+      · simp [hk, Complex.sub_im, Complex.add_im, Complex.mul_im, Complex.ofReal_im,
+          Complex.ofReal_re, Complex.I_im, Complex.I_re, Pi.smul_apply, smul_eq_mul]
+        ring
+    rw [him]
+    exact (bhw_inOpenForwardCone_iff_wightman _).2
+      (inOpenForwardCone_smul d ε hε _ (hη k))
+  haveI : (nhdsWithin (0 : ℝ) (Set.Ioi 0)).NeBot := by infer_instance
+  have hEqOn : Set.EqOn gFJ hFJ FJ := by
+    refine SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      hFJ_open hgFJ_cont hhFJ_cont ?_
+    intro φ hφ_compact hφ_tsupport
+    have hφ_ET :
+        ∀ x ∈ tsupport (φ : NPointDomain d n → ℂ),
+          BHW.realEmbed x ∈ BHW.ExtendedTube d n := by
+      intro x hx
+      exact hFJ_sub_ET x (hφ_tsupport hx)
+    have hφ_JS :
+        ∀ x : NPointDomain d n, φ x ≠ 0 → x ∈ BHW.JostSet d n := by
+      intro x hx
+      exact BHW.forwardJostSet_subset_jostSet hd (hφ_tsupport (subset_tsupport _ hx))
+    -- Pairing for hFJ:
+    have hpair_φ :
+        (∫ x : NPointDomain d n, hFJ x * φ x) = Wfn.W n φ := by
+      exact tendsto_nhds_unique
+        (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
+          n F hF_holo hF_cinv φ hφ_compact η hη_FT hφ_ET)
+        ((Wfn.spectrum_condition n).choose_spec.2 φ η hη)
+    -- Pairing for conj(φ):
+    let φ_conj : SchwartzNPoint d n := φ.conj
+    have hφ_conj_compact : HasCompactSupport (φ_conj : NPointDomain d n → ℂ) := by
+      simpa [φ_conj, SchwartzMap.conj]
+        using hφ_compact.comp_left (g := starRingEnd ℂ) (map_zero _)
+    have hφ_conj_ET :
+        ∀ x ∈ tsupport (φ_conj : NPointDomain d n → ℂ),
+          BHW.realEmbed x ∈ BHW.ExtendedTube d n := by
+      intro x hx
+      have hsupp_eq : Function.support (φ_conj : NPointDomain d n → ℂ) =
+          Function.support (φ : NPointDomain d n → ℂ) := by
+        ext y
+        simp [φ_conj, Function.mem_support, SchwartzMap.conj_apply]
+      have hts_eq : tsupport (φ_conj : NPointDomain d n → ℂ) =
+          tsupport (φ : NPointDomain d n → ℂ) := by simp [tsupport, hsupp_eq]
+      exact hφ_ET x (hts_eq ▸ hx)
+    have hpair_conj :
+        (∫ x : NPointDomain d n, hFJ x * φ_conj x) = Wfn.W n φ_conj := by
+      exact tendsto_nhds_unique
+        (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
+          n F hF_holo hF_cinv φ_conj hφ_conj_compact η hη_FT hφ_conj_ET)
+        ((Wfn.spectrum_condition n).choose_spec.2 φ_conj η hη)
+    -- Key identity: conj(W_n(conj φ)) = W_n(φ)
+    -- Proof: φ.conj.borchersConj = φ.reverse, then Hermiticity + reversal invariance
+    have hconj_bc_eq_rev : φ_conj.borchersConj = φ.reverse := by
+      ext x
+      simp only [SchwartzMap.borchersConj_apply, SchwartzMap.reverse_apply]
+      show starRingEnd ℂ (φ_conj (fun i => x (Fin.rev i))) = φ (fun i => x (Fin.rev i))
+      simp [φ_conj, SchwartzMap.conj_apply]
+    have hW_conj : starRingEnd ℂ (Wfn.W n φ_conj) = Wfn.W n φ := by
+      have hherm :
+          Wfn.W n φ_conj.borchersConj = starRingEnd ℂ (Wfn.W n φ_conj) := by
+        refine Wfn.hermitian n φ_conj φ_conj.borchersConj ?_
+        intro x
+        exact SchwartzMap.borchersConj_apply φ_conj x
+      have hφ_conj_JS :
+          ∀ x : NPointDomain d n, φ_conj x ≠ 0 → x ∈ BHW.JostSet d n := by
+        intro x hx
+        exact hφ_JS x (by simpa [φ_conj, SchwartzMap.conj_apply] using hx)
+      calc
+        starRingEnd ℂ (Wfn.W n φ_conj)
+            = Wfn.W n φ_conj.borchersConj := hherm.symm
+        _ = Wfn.W n φ.reverse := by rw [hconj_bc_eq_rev]
+        _ = Wfn.W n φ :=
+            wightman_reverse_invariant_on_jost_support (d := d) Wfn n φ hφ_JS
+    -- Now compute the integral
+    calc
+      ∫ x, gFJ x * φ x
+          = ∫ x, starRingEnd ℂ (hFJ x * φ_conj x) := by
+            refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+            intro x
+            simp [gFJ, hFJ, φ_conj, SchwartzMap.conj_apply, map_mul]
+      _ = starRingEnd ℂ (∫ x, hFJ x * φ_conj x) := by
+            rw [← _root_.integral_conj]
+      _ = starRingEnd ℂ (Wfn.W n φ_conj) := by rw [hpair_conj]
+      _ = Wfn.W n φ := hW_conj
+      _ = ∫ x, hFJ x * φ x := hpair_φ.symm
+  intro x hx
+  exact hEqOn hx
+
+/-- For d = 1, a forward Jost point has its real embedding in the Hermitian
+    reverse overlap domain `D`. The first PET membership comes from Jost's
+    lemma; the second uses the permuted extended tube's closure under
+    index permutation. -/
+private theorem forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1
+    {n : ℕ} {x : NPointDomain 1 n}
+    (hx : x ∈ BHW.ForwardJostSet 1 n (by omega)) :
+    BHW.realEmbed x ∈ hermitianReverseOverlap (d := 1) (n := n) := by
+  have hx_ET : BHW.realEmbed x ∈ BHW.ExtendedTube 1 n :=
+    BHW.forwardJostSet_subset_extendedTube (by omega) x hx
+  refine ⟨?_, ?_⟩
+  · simpa [hermitianReverseOverlap, BHW_permutedExtendedTube_eq (d := 1) (n := n)] using
+      BHW.extendedTube_subset_permutedExtendedTube hx_ET
+  · rw [hermitianReverse_realEmbed]
+    -- realEmbed(x ∘ rev) = (realEmbed x) ∘ rev, and (realEmbed x) ∈ ET,
+    -- so (realEmbed x) ∘ rev ∈ PET via the rev permutation.
+    rw [show BHW.realEmbed (fun k => x (Fin.rev k)) = fun k => BHW.realEmbed x (Fin.rev k) from
+      by ext k μ; simp [BHW.realEmbed]]
+    rw [← BHW_permutedExtendedTube_eq (d := 1) (n := n)]
+    obtain ⟨Λ₀, w₀, hw₀, hzw⟩ : ∃ Λ₀, ∃ w₀ ∈ BHW.ForwardTube 1 n,
+        BHW.realEmbed x = BHW.complexLorentzAction Λ₀ w₀ := by
+      have := Set.mem_iUnion.mp hx_ET
+      obtain ⟨Λ, w, hw, hrfl⟩ := this
+      exact ⟨Λ, w, hw, hrfl⟩
+    refine Set.mem_iUnion.mpr ⟨Fin.revPerm, Λ₀, fun k => w₀ (Fin.rev k), ?_, ?_⟩
+    · -- w₀ ∘ rev ∈ PFT(rev): (w₀ ∘ rev) ∘ rev = w₀ ∈ FT
+      change (fun k => (fun j => w₀ (Fin.rev j)) (Fin.rev k)) ∈ BHW.ForwardTube 1 n
+      simp_rw [Fin.rev_rev]
+      exact hw₀
+    · -- realEmbed(x)(rev k) = Λ₀ · (w₀(rev k))
+      ext k μ
+      simp only [BHW.complexLorentzAction]
+      have := congrFun (congrFun hzw (Fin.rev k)) μ
+      simpa [BHW.complexLorentzAction] using this
+
+/-- For d = 1, `H = 0` on a point `z` in the Hermitian reverse overlap domain,
+    using the forward Jost set as the totally-real anchor instead of the
+    (empty) `hermitianRealOverlap`. This is the d = 1 analogue of
+    `eq_zero_on_hermitianReverseOverlap_of_dual_permutedForwardTube_twist`. -/
+private theorem eq_zero_hermitianReverseOverlap_d1_forwardJost
+    (Wfn : WightmanFunctions 1) {n : ℕ} (hn : 1 ≤ n)
+    {H : (Fin n → Fin (1 + 1) → ℂ) → ℂ}
+    (hH_holo : DifferentiableOn ℂ H (hermitianReverseOverlap (d := 1) (n := n)))
+    (hH_is : ∀ z ∈ hermitianReverseOverlap (d := 1) (n := n),
+      H z = starRingEnd ℂ ((W_analytic_BHW Wfn n).val (hermitianReverse z)) -
+        (W_analytic_BHW Wfn n).val z)
+    {π σ : Equiv.Perm (Fin n)} {z : Fin n → Fin (1 + 1) → ℂ}
+    (hzπ : z ∈ BHW.PermutedForwardTube 1 n π)
+    (hzσ :
+      BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse z) ∈
+        BHW.PermutedForwardTube 1 n σ) :
+    H z = 0 := by
+  let D : Set (Fin n → Fin (1 + 1) → ℂ) := hermitianReverseOverlap (d := 1) (n := n)
+  let C : Set (Fin n → Fin (1 + 1) → ℂ) := connectedComponentIn D z
+  -- z ∈ D
+  have hzD : z ∈ D := by
+    refine ⟨?_, ?_⟩
+    · have hzPET : z ∈ BHW.PermutedExtendedTube 1 n :=
+        permutedForwardTube_subset_permutedExtendedTube_BHW π hzπ
+      simpa [D, BHW_permutedExtendedTube_eq (d := 1) (n := n)] using hzPET
+    · have hzPET_twist :
+          BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse z) ∈
+            BHW.PermutedExtendedTube 1 n :=
+        permutedForwardTube_subset_permutedExtendedTube_BHW σ hzσ
+      have hzPET :
+          hermitianReverse z ∈ BHW.PermutedExtendedTube 1 n := by
+        have :=
+          BHW.complexLorentzAction_mem_permutedExtendedTube hzPET_twist (hermitianTwistCLG 1)⁻¹
+        simpa [BHW.complexLorentzAction_inv] using this
+      simpa [D, BHW_permutedExtendedTube_eq (d := 1) (n := n)] using hzPET
+  have hC_open : IsOpen C :=
+    (isOpen_hermitianReverseOverlap (d := 1) (n := n)).connectedComponentIn
+  have hC_conn : IsConnected C :=
+    isConnected_connectedComponentIn_iff.mpr hzD
+  have hH_holo_C : DifferentiableOn ℂ H C :=
+    hH_holo.mono (connectedComponentIn_subset D z)
+  -- ForwardJostSet anchor
+  obtain ⟨x0, hx0⟩ := BHW.forwardJostSet_nonempty hn (by omega : 1 ≤ 1)
+  have hx0D : BHW.realEmbed x0 ∈ D :=
+    forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1 hx0
+  -- Path from realEmbed(x0) to z within D
+  -- (convex combination γ(t) = t·z + (1-t)·realEmbed(x0))
+  have hjoin : JoinedIn D (BHW.realEmbed x0) z := by
+    let γ : ℝ → (Fin n → Fin (1 + 1) → ℂ) :=
+      fun t => t • z + (1 - t) • BHW.realEmbed x0
+    refine JoinedIn.ofLine (f := γ) ?_ ?_ ?_ ?_
+    · have htz : Continuous fun t : ℝ => t • z :=
+        continuous_id.smul continuous_const
+      have htx : Continuous fun t : ℝ => (1 - t) • BHW.realEmbed x0 := by
+        exact (continuous_const.sub continuous_id).smul continuous_const
+      exact (htz.add htx).continuousOn
+    · simp [γ]
+    · simp [γ]
+    · intro w hw
+      rcases hw with ⟨t, htI, rfl⟩
+      by_cases ht0 : t = 0
+      · subst ht0
+        simpa [γ] using hx0D
+      · have htpos : 0 < t := lt_of_le_of_ne htI.1 (Ne.symm ht0)
+        refine ⟨?_, ?_⟩
+        · have hγπ :
+            γ t ∈ BHW.PermutedForwardTube 1 n π :=
+              smul_add_realEmbed_mem_permutedForwardTube_BHW hzπ x0 htpos
+          have hγPET : γ t ∈ BHW.PermutedExtendedTube 1 n :=
+            permutedForwardTube_subset_permutedExtendedTube_BHW π hγπ
+          simpa [γ, BHW_permutedExtendedTube_eq (d := 1) (n := n)] using hγPET
+        · have hγσ_twist :
+            BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse (γ t)) ∈
+              BHW.PermutedForwardTube 1 n σ := by
+              rw [hermitianTwistCLG_hermitianReverse_smul_add_realEmbed
+                (d := 1) (n := n) x0 z t]
+              exact smul_add_realEmbed_mem_permutedForwardTube_BHW hzσ
+                (hermitianTwistRealN (fun k => x0 (Fin.rev k))) htpos
+          have hγPET_twist :
+              BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse (γ t)) ∈
+                BHW.PermutedExtendedTube 1 n :=
+            permutedForwardTube_subset_permutedExtendedTube_BHW σ hγσ_twist
+          have hγPET :
+              hermitianReverse (γ t) ∈ BHW.PermutedExtendedTube 1 n := by
+            have :=
+              BHW.complexLorentzAction_mem_permutedExtendedTube hγPET_twist (hermitianTwistCLG 1)⁻¹
+            simpa [BHW.complexLorentzAction_inv] using this
+          simpa [γ, BHW_permutedExtendedTube_eq (d := 1) (n := n)] using hγPET
+  -- realEmbed(x0) is in the connected component C
+  have hrange_sub_C : Set.range hjoin.somePath ⊆ C := by
+    apply (isPreconnected_range hjoin.somePath.continuous).subset_connectedComponentIn
+    · refine ⟨1, ?_⟩
+      exact hjoin.somePath.target
+    · intro y hy
+      rcases hy with ⟨t, rfl⟩
+      exact hjoin.somePath_mem t
+  have hxC : BHW.realEmbed x0 ∈ C := by
+    apply hrange_sub_C
+    refine ⟨0, ?_⟩
+    exact hjoin.somePath.source
+  -- H = 0 on ForwardJostSet in C
+  let FJ' : Set (NPointDomain 1 n) :=
+    {y | y ∈ BHW.ForwardJostSet 1 n (by omega) ∧ BHW.realEmbed y ∈ C}
+  have hFJ'_open : IsOpen FJ' := by
+    refine (BHW.isOpen_forwardJostSet (by omega : 1 ≤ 1)).inter ?_
+    exact hC_open.preimage (continuous_realEmbed (d := 1) (n := n))
+  have hFJ'_ne : FJ'.Nonempty := ⟨x0, hx0, hxC⟩
+  have hFJ'_sub : ∀ y ∈ FJ', BHW.realEmbed y ∈ C := fun y hy => hy.2
+  have hH_forwardJost : ∀ y ∈ FJ', H (BHW.realEmbed y) = 0 := by
+    intro y hy
+    have hyD : BHW.realEmbed y ∈ D :=
+      forwardJostSet_realEmbed_in_hermitianReverseOverlap_d1 hy.1
+    rw [hH_is (BHW.realEmbed y) hyD]
+    -- H(realEmbed(y)) = conj(F(hermitianReverse(realEmbed(y)))) - F(realEmbed(y))
+    -- By permutation invariance + F real on ForwardJostSet → 0
+    have hy_ET : BHW.realEmbed y ∈ BHW.ExtendedTube 1 n :=
+      BHW.forwardJostSet_subset_extendedTube (by omega) y hy.1
+    have hy_PET : BHW.realEmbed y ∈ PermutedExtendedTube 1 n := by
+      simpa [BHW_permutedExtendedTube_eq (d := 1) (n := n)] using
+        BHW.extendedTube_subset_permutedExtendedTube hy_ET
+    have hhr_eq : hermitianReverse (BHW.realEmbed y) =
+        fun k => BHW.realEmbed y (Fin.rev k) := by
+      rw [hermitianReverse_realEmbed]
+      ext k μ; simp [BHW.realEmbed]
+    have hperm_rev :
+        (W_analytic_BHW Wfn n).val (fun k => BHW.realEmbed y (Fin.rev k)) =
+          (W_analytic_BHW Wfn n).val (BHW.realEmbed y) :=
+      (W_analytic_BHW Wfn n).property.2.2.2 Fin.revPerm (BHW.realEmbed y) hy_PET
+    rw [hhr_eq, hperm_rev]
+    -- Now: conj(F(realEmbed(y))) - F(realEmbed(y)) = 0 iff F(realEmbed(y)) is real
+    have hF_eq_extendF :=
+      W_analytic_BHW_eq_extendF_on_extendedTube (Wfn := Wfn) (n := n) _ hy_ET
+    rw [hF_eq_extendF]
+    exact sub_eq_zero.mpr
+      (extendF_real_on_forwardJostSet (d := 1) Wfn n (by omega) y hy.1)
+  exact BHW.identity_theorem_totally_real_product
+    hC_open hC_conn hH_holo_C hFJ'_open hFJ'_ne hFJ'_sub hH_forwardJost z
+      (mem_connectedComponentIn hzD)
+
 /-- Euclidean-point Hermiticity of the BHW extension.
 
     For Euclidean configurations, the BHW extension at `wick(x)` is related by
@@ -2753,27 +3077,99 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
         simpa [V] using hermitianRealOverlap_eq_empty_d1_of_two_le (n := n) hn2
       have hFT_sub_D : BHW.ForwardTube 1 n ⊆ D := by
         simpa [D] using forwardTube_subset_hermitianReverseOverlap_d1 (n := n)
-      -- Remaining low-dimensional gap: the old totally-real anchor strategy is
-      -- impossible for `d = 1`, `n ≥ 2`, because `hermitianRealOverlap` is empty.
-      -- The geometry itself is no longer the blocker: `ForwardTube 1 n ⊆ D`
-      -- now holds via `hermitianReverse(FT) ⊆ PET`.
-      --
-      -- But connectedness of `D` is only the SECOND half of the replacement
-      -- argument. The first missing input is an honest forward-tube reflection /
-      -- boundary-uniqueness theorem showing `H = 0` on `ForwardTube 1 n`
-      -- itself, using boundary data on a real Jost open set (or an equivalent
-      -- edge-of-the-wedge / Schwarz-reflection statement). Only after that
-      -- input is in place can one propagate from the forward-tube piece to the
-      -- relevant overlap component meeting the Euclidean Wick points.
-      let _ := hV_empty
-      let _ := hFT_sub_D
-      let _ := hH_holo
-      let _ := hD_open
-      let _ := hV_sub_D
-      let _ := hV_open
-      let _ := hH_real
-      let _ := hwick_mem
-      sorry
+      -- For d = 1, n ≥ 2: use the forward Jost set as anchor instead of V.
+      -- The key new input is `eq_zero_hermitianReverseOverlap_d1_forwardJost`
+      -- which shows H = 0 on permuted forward tube points via a distributional
+      -- Schwarz reflection argument on the forward Jost set.
+      filter_upwards [hwick_mem, ae_pairwise_distinct_timeCoords (d := 1) (n := n)]
+        with x hxD hdistinct
+      let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
+      let a : SpacetimeDim 1 := fun μ => if μ = 0 then A else 0
+      let xs : NPointDomain 1 n := fun k μ => x k μ + a μ
+      let z : Fin n → Fin (1 + 1) → ℂ := fun k => wickRotatePoint (x k)
+      let zShift : Fin n → Fin (1 + 1) → ℂ := fun k => wickRotatePoint (xs k)
+      let zRev : Fin n → Fin (1 + 1) → ℂ :=
+        fun k => wickRotatePoint (timeReflection 1 (x (Fin.rev k)))
+      let zShiftRev : Fin n → Fin (1 + 1) → ℂ :=
+        fun k => wickRotatePoint (timeReflection 1 (xs (Fin.rev k)))
+      have hpos_shift : ∀ i : Fin n, xs i 0 > 0 := by
+        intro i
+        have hi_le :
+            |x i 0| ≤ ∑ j : Fin n, |x j 0| := by
+          simpa using
+            Finset.single_le_sum (fun j _ => abs_nonneg (x j 0)) (Finset.mem_univ i)
+        have hx_lower : -|x i 0| ≤ x i 0 := neg_abs_le (x i 0)
+        have hpos : 0 < x i 0 + A := by
+          dsimp [A]
+          linarith
+        simpa [xs, a] using hpos
+      have hdistinct_shift : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0 := by
+        intro i j hij
+        simpa [xs, a] using hdistinct i j hij
+      obtain ⟨π, hzπ⟩ :=
+        euclidean_distinct_in_BHW_permutedForwardTube (d := 1) xs hdistinct_shift hpos_shift
+      obtain ⟨σ, hzσ⟩ :=
+        euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube
+          (d := 1) xs hdistinct_shift hpos_shift
+      have hzShift_mem : zShift ∈ PermutedExtendedTube 1 n := by
+        simpa [BHW_permutedExtendedTube_eq (d := 1) (n := n)] using
+          permutedForwardTube_subset_permutedExtendedTube_BHW π hzπ
+      have hzRev_mem : zRev ∈ PermutedExtendedTube 1 n := by
+        simpa [D, z, zRev, hermitianReverse_wickRotate] using hxD.2
+      have hzShiftRev_mem : zShiftRev ∈ PermutedExtendedTube 1 n := by
+        have hzσPET :
+            BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse zShift) ∈
+              BHW.PermutedExtendedTube 1 n :=
+          permutedForwardTube_subset_permutedExtendedTube_BHW σ hzσ
+        have hzhrPET : hermitianReverse zShift ∈ BHW.PermutedExtendedTube 1 n := by
+          have :=
+            BHW.complexLorentzAction_mem_permutedExtendedTube hzσPET (hermitianTwistCLG 1)⁻¹
+          simpa [BHW.complexLorentzAction_inv] using this
+        simpa [zShift, zShiftRev, hermitianReverse_wickRotate,
+          BHW_permutedExtendedTube_eq (d := 1) (n := n)] using hzhrPET
+      have hzero_shift : H zShift = 0 := by
+        have hH_is_eq : ∀ w ∈ hermitianReverseOverlap (d := 1) (n := n),
+            H w = starRingEnd ℂ ((W_analytic_BHW Wfn n).val (hermitianReverse w)) -
+              (W_analytic_BHW Wfn n).val w := by
+          intro w _
+          rfl
+        exact eq_zero_hermitianReverseOverlap_d1_forwardJost Wfn (by omega : 1 ≤ n)
+          hH_holo hH_is_eq hzπ hzσ
+      have hHerm_shift₀ : starRingEnd ℂ (F zShiftRev) = F zShift := by
+        simpa [H, G, F, zShift, zShiftRev, sub_eq_zero, hermitianReverse_wickRotate]
+          using hzero_shift
+      have hHerm_shift : starRingEnd ℂ (F zShift) = F zShiftRev := by
+        have hstar := congrArg (starRingEnd ℂ) hHerm_shift₀
+        simpa using hstar.symm
+      have hF_shift : F z = F zShift := by
+        exact F_ext_translation_invariant Wfn n a x hxD.1 hzShift_mem
+      have hF_shift_rev : F zRev = F zShiftRev := by
+        have hxRevShift_cfg_eq :
+            (fun k μ => timeReflection 1 (x (Fin.rev k)) μ + timeReflection 1 a μ) =
+              fun k μ => timeReflection 1 (xs (Fin.rev k)) μ := by
+          ext k μ
+          by_cases hμ : μ = 0
+          · subst hμ
+            simp [xs, a, timeReflection]
+            ring
+          · simp [xs, a, timeReflection, hμ]
+        let zRevShift : Fin n → Fin (1 + 1) → ℂ :=
+          fun k => wickRotatePoint (fun μ =>
+            timeReflection 1 (x (Fin.rev k)) μ + timeReflection 1 a μ)
+        have hzRevShift_eq : zRevShift = zShiftRev := by
+          simpa [zRevShift, zShiftRev] using
+            congrArg (fun cfg : NPointDomain 1 n => fun k => wickRotatePoint (cfg k))
+              hxRevShift_cfg_eq
+        have hzRevShift_mem : zRevShift ∈ PermutedExtendedTube 1 n := by
+          simpa [hzRevShift_eq] using hzShiftRev_mem
+        have hF_shift_rev' : F zRev = F zRevShift := by
+          exact F_ext_translation_invariant Wfn n (timeReflection 1 a)
+            (fun k => timeReflection 1 (x (Fin.rev k))) hzRev_mem hzRevShift_mem
+        simpa [hzRevShift_eq] using hF_shift_rev'
+      calc
+        starRingEnd ℂ (F z) = starRingEnd ℂ (F zShift) := by rw [hF_shift]
+        _ = F zShiftRev := hHerm_shift
+        _ = F zRev := by rw [← hF_shift_rev]
     · have hV_nonempty : V.Nonempty := by
         by_cases hn0 : n = 0
         · subst hn0
