@@ -1528,10 +1528,28 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
       exact hG_pos_holo.1.congr (fun u hu => by show G u = G_pos u; exact hG_eq u hu)
     · -- DifferentiableOn in each time slice
       intro u hu i
-      -- G = G_pos on tube, update preserves tube membership for Im(w) > 0
-      -- so G(update u (i,0) w) = G_pos(update u (i,0) w) on {Im w > 0}
-      -- Transfer DifferentiableOn from G_pos to G via pointwise equality
-      sorry
+      -- G(update u (i,0) w) = G_pos(update u (i,0) w) for Im(w) > 0
+      -- because update preserves tube membership, so if-branch is true
+      apply DifferentiableOn.congr (hG_pos_holo.2 u hu i)
+      · -- Pointwise equality on {Im w > 0}
+        intro w hw
+        show G (Function.update u (finProdFinEquiv (i, 0)) w) =
+          G_pos (Function.update u (finProdFinEquiv (i, 0)) w)
+        simp only [G]; rw [if_pos]
+        -- Re(-I * (update u (i,0) w)_{(1,0)}) > 0
+        -- Case i = 0: update at (0,0), the (1,0) slot is unchanged = u_{(1,0)} with Im > 0
+        -- Case i = 1: update at (1,0) with w, so slot = w with Im > 0
+        rw [hRe_eq]
+        rcases i with ⟨i, hi⟩
+        interval_cases i
+        · -- i = 0: updated slot is (0,0), the (1,0) slot is u_{(1,0)} unchanged
+          simp [finProdFinEquiv, Function.update, Fin.ext_iff]
+          -- u_{(1,0)} unchanged by update at (0,0), Im > 0 from tube
+          convert (mem_tubeDomain_flatPositiveTimeDiffReal_iff (k := 2) (d := d) u).mp hu ⟨1, by omega⟩
+          simp [finProdFinEquiv]
+        · -- i = 1: updated slot IS (1,0), so value is w with Im > 0
+          simp [finProdFinEquiv, Function.update, Fin.ext_iff]
+          exact hw
   · -- Integrability: G bounded × f Schwartz (L¹) → G*f integrable
     intro f
     -- G = twoPointCorrectedWitness is a Hilbert space inner product of bounded
