@@ -180,7 +180,44 @@ theorem exists_headTranslate_positive_tsupport_of_hasCompactSupport
       tsupport (((SCV.translateSchwartz (Fin.cons (-a) 0) F :
         SchwartzMap (Fin (n + 1) → ℝ) ℂ) : (Fin (n + 1) → ℝ) → ℂ))
         ⊆ {x : Fin (n + 1) → ℝ | 0 < x 0} := by
-  sorry
+  obtain ⟨R, hR_pos, hR⟩ := hF.exists_pos_le_norm
+  let v : Fin (n + 1) → ℝ := Fin.cons (-(R + 1)) (fun _ => 0)
+  refine ⟨R + 1, by linarith, ?_⟩
+  intro x hx
+  simp only [Set.mem_setOf_eq]
+  -- x ∈ tsupport(translate(v, F)) ⟹ x ∈ closure(support) ⟹ x ∈ tsupport(F ∘ (· + v))
+  -- ⟹ (x + v) ∈ tsupport F (since translate is a homeomorphism)
+  -- ⟹ ‖x + v‖ < R (contrapositive of hR: ‖y‖ ≥ R → F y = 0 → y ∉ support F)
+  -- ⟹ |x₀ + v₀| < R ⟹ |x₀ - (R+1)| < R ⟹ x₀ > 1
+  -- Actually: x ∈ tsupport of translate means there's no open nhd of x where translate = 0
+  -- Contrapositive: if x₀ ≤ 0, show x ∉ tsupport by showing translate = 0 near x
+  by_contra h_neg; push_neg at h_neg
+  -- For any y with y₀ ≤ 1: ‖y + v‖ ≥ |y₀ + v₀| = |y₀ - (R+1)| ≥ R, so F(y+v) = 0
+  have h_vanish : ∀ y : Fin (n + 1) → ℝ, y 0 ≤ 1 →
+      (F : (Fin (n + 1) → ℝ) → ℂ) (y + v) = 0 := by
+    intro y hy
+    apply hR
+    calc R ≤ R + 1 - y 0 := by linarith
+      _ = |y 0 + (-(R + 1))| := by rw [abs_of_nonpos (by linarith)]; ring
+      _ = ‖(y + v) 0‖ := by simp [v, Pi.add_apply, Fin.cons, Real.norm_eq_abs]
+      _ ≤ ‖y + v‖ := norm_le_pi_norm _ 0
+  -- The set {y | y₀ < 1} is open and contains x (since x₀ ≤ 0 < 1)
+  -- On this set, translate(v, F) = F(· + v) = 0
+  -- So x is in the interior of {translate = 0}, hence x ∉ tsupport
+  have h_not_tsupport : x ∉ tsupport
+      ((SCV.translateSchwartz v F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) :
+        (Fin (n + 1) → ℝ) → ℂ) := by
+    rw [notMem_tsupport_iff_eventuallyEq]
+    refine Filter.mem_of_superset
+      (Metric.ball_mem_nhds x (show (0 : ℝ) < 1 by norm_num)) ?_
+    intro y hy
+    show (F : (Fin (n + 1) → ℝ) → ℂ) (y + v) = 0
+    exact h_vanish y (by
+      have h_dist : ‖y - x‖ < 1 := by simpa [dist_eq_norm] using Metric.mem_ball.mp hy
+      have h0 : ‖(y - x) 0‖ ≤ ‖y - x‖ := norm_le_pi_norm _ 0
+      rw [Real.norm_eq_abs, Pi.sub_apply] at h0
+      linarith [abs_le.mp (le_of_lt (lt_of_le_of_lt h0 h_dist))])
+  exact h_not_tsupport hx
 
 /-- Head-translation-invariant Schwartz functionals are already determined on
 all compactly supported tests once they agree on the compactly supported tests
@@ -196,7 +233,30 @@ theorem map_eq_on_compactSupport_of_eq_on_positive_tsupport_of_headTranslationIn
     (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
     (hF : HasCompactSupport (F : (Fin (n + 1) → ℝ) → ℂ)) :
     T F = U F := by
-  sorry
+  -- Translate F so its support is in the positive head half-space
+  obtain ⟨a, ha_pos, ha_supp⟩ :=
+    exists_headTranslate_positive_tsupport_of_hasCompactSupport F hF
+  let F' := SCV.translateSchwartz (Fin.cons (-a) 0) F
+  -- F' has compact support and positive head-time support
+  have hF'_compact : HasCompactSupport (F' : (Fin (n + 1) → ℝ) → ℂ) := by
+    simpa [F', SCV.translateSchwartz] using
+      hF.comp_homeomorph (Homeomorph.addRight (Fin.cons (-a) 0))
+  -- T(F) = T(F') by head-TI (translate by +a undoes the -a shift)
+  -- Key: T(F) = T(translate(-a) F) by head-TI, and translate(-a) F = F'
+  have hshift : SCV.translateSchwartzCLM (Fin.cons a (0 : Fin n → ℝ)) F' = F := by
+    ext x
+    show F (x + Fin.cons a 0 + Fin.cons (-a) 0) = F x
+    congr 1; funext j
+    simp only [Pi.add_apply]
+    refine Fin.cases ?_ ?_ j <;> simp [Fin.cons]
+  have hT_eq : T F = T F' := by
+    rw [← hshift]
+    exact congr_fun (congr_arg DFunLike.coe (hT a)) F'
+  have hU_eq : U F = U F' := by
+    rw [← hshift]
+    exact congr_fun (congr_arg DFunLike.coe (hU a)) F'
+  rw [hT_eq, hU_eq]
+  exact hEq_pos F' hF'_compact ha_supp
 
 /-- If two head-translation-invariant functionals agree on compactly supported
 tests whose support lies in the positive head half-space, then after choosing a
