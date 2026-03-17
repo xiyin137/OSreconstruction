@@ -21,8 +21,10 @@ This file contains the specialized `k = 2` continuation/reduction ladder for the
 - semigroup spectral and matrix-element criteria
 - product-shell sufficient criteria
 
-The analytic-continuation core and live base-step blocker remain in
-`OSToWightman.lean`.
+The shared continuation infrastructure now lives in
+`OSToWightmanBase.lean`; the specialized `k = 2` holomorphic-kernel blocker
+surface lives in `OSToWightmanKernel.lean`; and the general continuation core
+and wrappers remain in `OSToWightman.lean`.
 -/
 
 open scoped Classical NNReal

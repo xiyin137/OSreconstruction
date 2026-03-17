@@ -3,7 +3,9 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanKernel
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTwoPoint
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
@@ -60,9 +62,11 @@ The implementation is split across several files in the `WickRotation/` subfolde
   lane has been split out
 - `OSToWightmanSemigroup.lean`: E'→R' OS Hilbert-space semigroup and one-variable
   holomorphic bridge
-- `OSToWightmanKernel.lean`: operator-valued complex semigroup and first interleaved
-  sandwich kernel lemmas
-- `OSToWightman.lean`: E'→R' analytic-continuation core and live base-step blocker
+- `OSToWightmanBase.lean`: shared E'→R' geometry, tube domains, flattened
+  witness surfaces, and coordinate helpers
+- `OSToWightmanKernel.lean`: specialized `k = 2` holomorphic-kernel route and
+  witness-shell package
+- `OSToWightman.lean`: general E'→R' continuation core and base-step wrappers
 - `OSToWightmanTwoPoint.lean`: specialized `k = 2` continuation and spectral
   reduction ladder
 - `OSToWightmanBoundaryValues.lean`: boundary-value package, axiom transfer,
