@@ -549,25 +549,19 @@ This is a purely functional-analytic fact about the dual of Fréchet spaces,
 with no reference to physics. The proof requires the Fourier transform on S',
 Sobolev embedding, and parametrices for (1-Δ)^k.
 
-The operator P is (1-Δ)^k for some k. The key consequence for zero-diagonal
-distributions: if f vanishes to infinite order at the origin, then P(f) also
-vanishes there (since P is a differential operator). -/
+Concretely: T = (1-Δ)^M g in distributional sense, so
+T(f) = ∫ g(x) · ((1-Δ)^M f)(x) dx for all f ∈ S(ℝⁿ). -/
 axiom schwartz_representation_theorem
     {n : ℕ} [NeZero n]
     (T : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] ℂ) :
-    ∃ (P : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] SchwartzMap (Fin n → ℝ) ℂ)
-      (g : (Fin n → ℝ) → ℂ) (C_g : ℝ) (M : ℕ),
+    ∃ (M : ℕ) (g : (Fin n → ℝ) → ℂ) (C_g : ℝ),
       Continuous g ∧
       (0 < C_g) ∧
       (∀ x : Fin n → ℝ, ‖g x‖ ≤ C_g * (1 + ‖x‖) ^ M) ∧
-      (∀ f : SchwartzMap (Fin n → ℝ) ℂ,
-        T f = ∫ x : Fin n → ℝ, g x * (P f : (Fin n → ℝ) → ℂ) x) ∧
-      -- P preserves vanishing at the origin: if all derivatives of f vanish
-      -- at 0, so do all derivatives of P(f). This is the key property that
-      -- makes the representation useful for zero-diagonal distributions.
-      (∀ (f : SchwartzMap (Fin n → ℝ) ℂ) (k : ℕ),
-        iteratedFDeriv ℝ k (f : (Fin n → ℝ) → ℂ) 0 = 0 →
-        iteratedFDeriv ℝ k (P f : (Fin n → ℝ) → ℂ) 0 = 0)
+      -- T(f) = ∫ g(x) · ((1-Δ)^M f)(x) dx, expressed via a CLM P = (1-Δ)^M : S → S
+      (∃ P : SchwartzMap (Fin n → ℝ) ℂ →L[ℂ] SchwartzMap (Fin n → ℝ) ℂ,
+        ∀ f : SchwartzMap (Fin n → ℝ) ℂ,
+          T f = ∫ x : Fin n → ℝ, g x * (P f : (Fin n → ℝ) → ℂ) x)
 
 /-! ### Kernel representation for the Schwinger difference distribution
 
