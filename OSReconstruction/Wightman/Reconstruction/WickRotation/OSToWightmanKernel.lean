@@ -1734,7 +1734,24 @@ theorem schwinger_twoPoint_holomorphic_kernel {d : ℕ} [NeZero d]
         _ ≤ C * ‖f.1 x‖ := mul_le_mul_of_nonneg_right hx (norm_nonneg _)
   · -- Euclidean reproduction: ∫ G * f = OS.S 2 f for all f ∈ ZeroDiag
     intro f
-    sorry -- From shell agreement (semigroup chain) + density (clm_zero_of_zero_on_productTensor)
+    -- The reproduction follows from: both sides are CLMs on ZeroDiagonalSchwartz d 2,
+    -- they agree on the dense family of positive-time difference shells
+    -- (twoPointDifferenceLift χ h), so they agree everywhere.
+    --
+    -- For product tests (twoPointDifferenceLift χ h) with positive-time h:
+    -- ∫ G(wr(x)) * (χ(x₀)h(x₁-x₀)) dx = ∫∫ G(t,y) χ(x₀) h(ξ) dx₀ dξ
+    -- = (∫ χ) * ∫ twoPointSpatialWitness(ξ₀, ξ_s) h(ξ) dξ
+    -- = (∫ χ) * ∫ ⟨F_χ₀, T(ξ₀) v_{g,ξ_s}⟩ h(ξ) dξ     (inner product form)
+    -- = (∫ χ) * OSInnerProduct(χ₀_conj, timeShift_integrated(g, h))  (semigroup chain)
+    -- = OS.S 2 (twoPointDifferenceLift χ h)    (by OS inner product + E2 translation)
+    --
+    -- The shell agreement uses:
+    -- - OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_of_isCompactSupport
+    -- - χ₀ normalization (∫ χ₀ = 1)
+    -- - OS E2 translation invariance
+    --
+    -- CLM packaging uses zeroDiagKernelCLM_of_const_bound from TwoPointKernelFunctional.
+    sorry
 
 /-- `k = 2` special case of the time-parametric base-step theorem.
 Follows directly from `schwinger_twoPoint_holomorphic_kernel`. -/
