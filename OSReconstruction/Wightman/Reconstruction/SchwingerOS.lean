@@ -1045,6 +1045,92 @@ theorem twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport {d : ℕ}
     exact h0 (hdiff0 ▸ hdiff_mem)
   · exact (hij rfl).elim
 
+/-- The reduced one-variable test space used by the honest two-point Schwinger
+difference pairing: Schwartz functions with compact support contained in the
+positive-time half-space. This is a genuine `ℂ`-submodule. -/
+def positiveTimeCompactSupportSubmodule (d : ℕ) :
+    Submodule ℂ (SchwartzSpacetime d) where
+  carrier := {h : SchwartzSpacetime d |
+    tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} ∧
+      HasCompactSupport (h : SpacetimeDim d → ℂ)}
+  zero_mem' := by
+    constructor
+    · simp
+    · simpa using (HasCompactSupport.zero :
+        HasCompactSupport ((0 : SchwartzSpacetime d) : SpacetimeDim d → ℂ))
+  add_mem' := by
+    intro h g hh hg
+    constructor
+    · intro x hx
+      have hx' := tsupport_add (h : SpacetimeDim d → ℂ) (g : SpacetimeDim d → ℂ) hx
+      exact hx'.elim (fun hx_h => hh.1 hx_h) (fun hx_g => hg.1 hx_g)
+    · simpa using hh.2.add hg.2
+  smul_mem' := by
+    intro c h hh
+    constructor
+    · exact (tsupport_smul_subset_right
+        (fun _ : SpacetimeDim d => c) (h : SpacetimeDim d → ℂ)).trans hh.1
+    · simpa [Pi.smul_apply] using
+        (HasCompactSupport.smul_left (f := fun _ : SpacetimeDim d => c)
+          (f' := (h : SpacetimeDim d → ℂ)) hh.2)
+
+/-- Any reduced positive-time compactly supported Schwartz test is supported
+away from the origin. -/
+theorem zero_not_mem_tsupport_of_mem_positiveTimeCompactSupportSubmodule {d : ℕ}
+    (h : positiveTimeCompactSupportSubmodule d) :
+    (0 : SpacetimeDim d) ∉ tsupport ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ) := by
+  intro hmem
+  have := h.property.1 hmem
+  simpa using this
+
+/-- Inclusion of the positive-time compact-support reduced test space into the
+ambient Schwartz space. -/
+def positiveTimeCompactSupportValCLM (d : ℕ) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] SchwartzSpacetime d where
+  toLinearMap := (positiveTimeCompactSupportSubmodule d).subtype
+  cont := continuous_subtype_val
+
+/-- The natural reduced one-variable Schwartz test space for the two-point
+Schwinger difference distribution: functions whose support avoids the origin.
+This is exactly the condition needed for `twoPointDifferenceLift χ h` to lie in
+`ZeroDiagonalSchwartz d 2`. -/
+def zeroOriginAvoidingSubmodule (d : ℕ) :
+    Submodule ℂ (SchwartzSpacetime d) where
+  carrier := {h : SchwartzSpacetime d |
+    (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ)}
+  zero_mem' := by
+    simp
+  add_mem' := by
+    intro h g hh hg
+    intro hmem
+    have hmem' := tsupport_add (h : SpacetimeDim d → ℂ) (g : SpacetimeDim d → ℂ) hmem
+    exact hmem'.elim hh hg
+  smul_mem' := by
+    intro c h hh
+    intro hmem
+    exact hh ((tsupport_smul_subset_right
+      (fun _ : SpacetimeDim d => c) (h : SpacetimeDim d → ℂ)) hmem)
+
+/-- Inclusion of the zero-origin-avoiding reduced test space into the ambient
+Schwartz space. -/
+def zeroOriginAvoidingValCLM (d : ℕ) :
+    zeroOriginAvoidingSubmodule d →L[ℂ] SchwartzSpacetime d where
+  toLinearMap := (zeroOriginAvoidingSubmodule d).subtype
+  cont := continuous_subtype_val
+
+/-- Positive-time compactly supported reduced tests automatically lie in the
+zero-origin-avoiding reduced test space. -/
+def positiveTimeCompactSupportToZeroOriginAvoidingCLM (d : ℕ) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] zeroOriginAvoidingSubmodule d :=
+  (positiveTimeCompactSupportValCLM d).codRestrict (zeroOriginAvoidingSubmodule d)
+    zero_not_mem_tsupport_of_mem_positiveTimeCompactSupportSubmodule
+
+@[simp] theorem positiveTimeCompactSupportToZeroOriginAvoidingCLM_apply {d : ℕ}
+    (h : positiveTimeCompactSupportSubmodule d) :
+    (positiveTimeCompactSupportToZeroOriginAvoidingCLM d h : SchwartzSpacetime d) =
+      (h : SchwartzSpacetime d) := by
+  rfl
+
 /-- Under the support-away-from-zero hypothesis on `h`, the center-variable lift
 lands honestly in the Schwinger test space `ZeroDiagonalSchwartz d 2`. -/
 def twoPointDifferenceLiftZeroDiagCLM {d : ℕ}
@@ -1073,6 +1159,127 @@ def twoPointDifferenceLiftZeroDiagCLM {d : ℕ}
   apply Subtype.ext
   rw [twoPointDifferenceLiftZeroDiagCLM_apply, ZeroDiagonalSchwartz.ofClassical_of_vanishes
     (f := twoPointDifferenceLift χ h) hv]
+
+/-- Continuous linear family of two-point center/difference lifts with the
+center test fixed and the reduced difference test varying in the natural
+zero-origin-avoiding domain. -/
+def twoPointDifferenceLiftFixedCenterZeroDiagCLM {d : ℕ}
+    (χ : SchwartzSpacetime d) :
+    zeroOriginAvoidingSubmodule d →L[ℂ] ZeroDiagonalSchwartz d 2 :=
+  (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (twoPointCenterDiffCLE d).symm).comp
+      ((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
+        ((onePointToFin1CLM d).comp (zeroOriginAvoidingValCLM d)))).codRestrict
+      (zeroDiagonalSubmodule d 2)
+      (fun h =>
+        twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ
+          ((zeroOriginAvoidingValCLM d) h) h.property))
+
+@[simp] theorem twoPointDifferenceLiftFixedCenterZeroDiagCLM_apply {d : ℕ}
+    (χ : SchwartzSpacetime d)
+    (h : zeroOriginAvoidingSubmodule d) :
+    (twoPointDifferenceLiftFixedCenterZeroDiagCLM χ h).1 =
+      twoPointDifferenceLift χ (h : SchwartzSpacetime d) := by
+  rfl
+
+@[simp] theorem twoPointDifferenceLiftFixedCenterZeroDiagCLM_eq_ofClassical {d : ℕ}
+    (χ : SchwartzSpacetime d)
+    (h : zeroOriginAvoidingSubmodule d) :
+    twoPointDifferenceLiftFixedCenterZeroDiagCLM χ h =
+      ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ (h : SchwartzSpacetime d)) := by
+  let hv :=
+    twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ (h : SchwartzSpacetime d) h.property
+  apply Subtype.ext
+  rw [twoPointDifferenceLiftFixedCenterZeroDiagCLM_apply,
+    ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := twoPointDifferenceLift χ (h : SchwartzSpacetime d)) hv]
+
+/-- The honest two-point Schwinger difference functional on the natural reduced
+zero-origin-avoiding one-variable Schwartz test space, for a fixed center cutoff
+`χ`. This is the canonical reduced Schwinger object behind the kernel
+representation problem. -/
+def OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d) :
+    zeroOriginAvoidingSubmodule d →L[ℂ] ℂ :=
+  (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2).comp
+    (twoPointDifferenceLiftFixedCenterZeroDiagCLM χ)
+
+@[simp] theorem OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (h : zeroOriginAvoidingSubmodule d) :
+    (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM (d := d) OS χ) h =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) := by
+  simp [OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM,
+    twoPointDifferenceLiftFixedCenterZeroDiagCLM_eq_ofClassical,
+    ContinuousLinearMap.comp_apply, OsterwalderSchraderAxioms.schwingerCLM]
+
+/-- Continuous linear family of two-point center/difference lifts with the
+center test fixed and the positive-time compact difference test varying in the
+second slot. The codomain is honestly `ZeroDiagonalSchwartz d 2`, because
+positive-time support keeps the difference variable away from the diagonal. -/
+def twoPointDifferenceLiftPositiveZeroDiagCLM {d : ℕ}
+    (χ : SchwartzSpacetime d) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ZeroDiagonalSchwartz d 2 :=
+  (((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (twoPointCenterDiffCLE d).symm).comp
+      ((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
+        ((onePointToFin1CLM d).comp (positiveTimeCompactSupportValCLM d)))).codRestrict
+      (zeroDiagonalSubmodule d 2)
+      (fun h =>
+        twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ
+          ((positiveTimeCompactSupportValCLM d) h)
+          (zero_not_mem_tsupport_of_mem_positiveTimeCompactSupportSubmodule h)))
+
+@[simp] theorem twoPointDifferenceLiftPositiveZeroDiagCLM_apply {d : ℕ}
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    (twoPointDifferenceLiftPositiveZeroDiagCLM χ h).1 =
+      twoPointDifferenceLift χ (h : SchwartzSpacetime d) := by
+  rfl
+
+@[simp] theorem twoPointDifferenceLiftPositiveZeroDiagCLM_eq_ofClassical {d : ℕ}
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    twoPointDifferenceLiftPositiveZeroDiagCLM χ h =
+      ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ (h : SchwartzSpacetime d)) := by
+  let hv :=
+    twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ (h : SchwartzSpacetime d)
+      (zero_not_mem_tsupport_of_mem_positiveTimeCompactSupportSubmodule h)
+  apply Subtype.ext
+  rw [twoPointDifferenceLiftPositiveZeroDiagCLM_apply,
+    ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := twoPointDifferenceLift χ (h : SchwartzSpacetime d)) hv]
+
+/-- The honest two-point Schwinger difference functional on the reduced
+positive-time compact-support test space, for a fixed center cutoff `χ`. -/
+def OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ℂ :=
+  (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2).comp
+    (twoPointDifferenceLiftPositiveZeroDiagCLM χ)
+
+@[simp] theorem OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM (d := d) OS χ) h =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) := by
+  simp [OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM,
+    twoPointDifferenceLiftPositiveZeroDiagCLM_eq_ofClassical,
+    ContinuousLinearMap.comp_apply, OsterwalderSchraderAxioms.schwingerCLM]
+
+@[simp] theorem OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_restrict_positive
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM (d := d) OS χ)
+        ((positiveTimeCompactSupportToZeroOriginAvoidingCLM d) h) =
+      (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM (d := d) OS χ) h := by
+  simp [OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_apply,
+    OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_apply]
 
 /-- Translating the center-variable test is exactly diagonal Euclidean
 translation of the lifted two-point test. -/
@@ -1181,6 +1388,43 @@ theorem OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue
       = c * ∫ x : SpacetimeDim d, χ x := hc χ
     _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) *
           ∫ x : SpacetimeDim d, χ x := by rw [hc']
+
+/-- On the natural reduced zero-origin-avoiding one-variable test space, the
+two-point Schwinger difference functional is independent of the chosen
+normalized center cutoff, up to the expected scalar factor `∫ χ`. -/
+theorem OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_eq_centerValue
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d)
+    (h : zeroOriginAvoidingSubmodule d) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) =
+      (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM (d := d) OS χ₀) h
+        * ∫ x : SpacetimeDim d, χ x := by
+  rw [OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_apply]
+  exact OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue
+    (d := d) OS (h : SchwartzSpacetime d) h.property χ₀ hχ₀ χ
+
+/-- On the reduced positive-time compact-support test space, the two-point
+Schwinger difference functional is independent of the chosen normalized center
+cutoff, up to the expected scalar factor `∫ χ`. -/
+theorem OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_eq_centerValue
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) =
+      (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM (d := d) OS χ₀) h
+        * ∫ x : SpacetimeDim d, χ x := by
+  have h0 :
+      (0 : SpacetimeDim d) ∉ tsupport ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ) :=
+    zero_not_mem_tsupport_of_mem_positiveTimeCompactSupportSubmodule h
+  rw [OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_apply]
+  exact OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue
+    (d := d) OS (h : SchwartzSpacetime d) h0 χ₀ hχ₀ χ
 
 /-- Varying one factor of a product tensor and then evaluating the Schwinger
 functional gives a continuous linear functional in that slot, provided the

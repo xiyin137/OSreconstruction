@@ -540,9 +540,9 @@ locally integrable kernel) requires the spectral theory of the Hamiltonian
 (Källén-Lehmann representation). This is the same infrastructure needed for
 `spectrum_condition` and `vacuum_unique` in GNSHilbertSpace. -/
 
-/-- The Schwinger difference-coordinate distribution: for fixed normalized center
-cutoff χ₀ (with ∫ χ₀ = 1), the map `h ↦ OS.S 2 (twoPointDifferenceLift χ₀ h)` is
-a continuous linear functional on zero-origin-avoiding Schwartz functions.
+/-- The Schwinger difference-coordinate pairing at a single test function `h`:
+for fixed normalized center cutoff χ₀ (with ∫ χ₀ = 1), this is the scalar
+`OS.S 2 (twoPointDifferenceLift χ₀ h)` for zero-origin-avoiding `h`.
 
 By `twoPointDifferenceLift_eq_centerValue`, this is independent of χ₀ (up to
 normalization) and captures the full Schwinger 2-point function in difference
@@ -550,9 +550,9 @@ coordinates. -/
 noncomputable def schwingerDifferenceFunctional
     (OS : OsterwalderSchraderAxioms d)
     (χ₀ : SchwartzSpacetime d)
-    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (_hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
     (h : SchwartzSpacetime d)
-    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ)) : ℂ :=
+    (_h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ)) : ℂ :=
   OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h))
 
 /-- The Schwinger difference functional reproduces OS.S 2 on product tests:
@@ -568,6 +568,254 @@ theorem schwingerDifferenceFunctional_reproduces
       schwingerDifferenceFunctional OS χ₀ hχ₀ h h0 * ∫ x : SpacetimeDim d, χ x := by
   exact OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue
     (d := d) OS h h0 χ₀ hχ₀ χ
+
+/-- A two-point Euclidean kernel depending only on the difference variable. -/
+def twoPointDifferenceKernel
+    (K : SpacetimeDim d → ℂ) : NPointDomain d 2 → ℂ :=
+  fun x => K (x 1 - x 0)
+
+/-- In center/difference coordinates, a kernel depending only on the difference
+variable factors out of the center integral. -/
+theorem integral_centerDiff_differenceOnly_kernel_factorizes
+    (K : SpacetimeDim d → ℂ)
+    (χ h : SchwartzSpacetime d) :
+    ∫ z : NPointDomain d 2, K (z 1) * (χ (z 0) * h (z 1)) =
+      (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+  let eprod : NPointDomain d 2 ≃ᵐ (SpacetimeDim d × SpacetimeDim d) :=
+    MeasurableEquiv.finTwoArrow
+  have heprod :
+      MeasureTheory.MeasurePreserving eprod
+        MeasureTheory.volume MeasureTheory.volume := by
+    simpa [eprod] using
+      (MeasureTheory.volume_preserving_finTwoArrow (SpacetimeDim d))
+  calc
+    ∫ z : NPointDomain d 2, K (z 1) * (χ (z 0) * h (z 1))
+      = ∫ p : SpacetimeDim d × SpacetimeDim d,
+          K p.2 * (χ p.1 * h p.2) := by
+            symm
+            simpa [eprod, MeasurableEquiv.finTwoArrow, mul_assoc] using
+              heprod.symm.integral_comp'
+                (g := fun z : NPointDomain d 2 => K (z 1) * (χ (z 0) * h (z 1)))
+    _ = ∫ p : SpacetimeDim d × SpacetimeDim d,
+          χ p.1 * (K p.2 * h p.2) := by
+            refine integral_congr_ae ?_
+            filter_upwards with p
+            ring
+    _ = (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+            simpa [mul_assoc] using
+              (MeasureTheory.integral_prod_mul
+                (μ := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                (ν := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                (f := fun u : SpacetimeDim d => χ u)
+                (g := fun ξ : SpacetimeDim d => K ξ * h ξ))
+
+/-- Pairing a difference-only kernel with an admissible two-point difference lift
+reduces to the corresponding one-variable pairing in the difference coordinate. -/
+theorem integral_twoPointDifferenceKernel_mul_differenceLift_factorizes
+    (K : SpacetimeDim d → ℂ)
+    (χ h : SchwartzSpacetime d) :
+    ∫ x : NPointDomain d 2,
+      twoPointDifferenceKernel (d := d) K x * (twoPointDifferenceLift χ h x) =
+        (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+  calc
+    ∫ x : NPointDomain d 2,
+        twoPointDifferenceKernel (d := d) K x * (twoPointDifferenceLift χ h x)
+      = ∫ z : NPointDomain d 2,
+          twoPointDifferenceKernel (d := d) K ((twoPointCenterDiffCLE d) z) *
+            (χ (z 0) * h (z 1)) := by
+          simpa [twoPointDifferenceKernel] using
+            integral_mul_twoPointDifferenceLift_eq_centerDiff
+              (d := d) (Ψ := twoPointDifferenceKernel (d := d) K) χ h
+    _ = ∫ z : NPointDomain d 2, K (z 1) * (χ (z 0) * h (z 1)) := by
+          refine integral_congr_ae ?_
+          filter_upwards with z
+          simp [twoPointDifferenceKernel, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv]
+    _ = (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+          exact integral_centerDiff_differenceOnly_kernel_factorizes (d := d) K χ h
+
+/-- If a reduced one-variable pairing already reproduces the normalized
+two-point Schwinger shell, then the corresponding difference-only two-point
+kernel reproduces the full admissible difference shell. -/
+theorem twoPointDifferenceKernel_eq_schwinger_on_differenceShell_of_reduced_pairing
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (K : SpacetimeDim d → ℂ)
+    (hK : ∀ h : SchwartzSpacetime d,
+      tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} →
+      HasCompactSupport (h : SpacetimeDim d → ℂ) →
+        ∫ ξ : SpacetimeDim d, K ξ * h ξ =
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)))
+    (χ h : SchwartzSpacetime d)
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hh_compact : HasCompactSupport (h : SpacetimeDim d → ℂ)) :
+    ∫ x : NPointDomain d 2,
+      twoPointDifferenceKernel (d := d) K x * (twoPointDifferenceLift χ h x) =
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
+  have hzero_not_mem : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) := by
+    intro hmem
+    have := hh_pos hmem
+    simpa using this
+  calc
+    ∫ x : NPointDomain d 2,
+        twoPointDifferenceKernel (d := d) K x * (twoPointDifferenceLift χ h x)
+      = (∫ u : SpacetimeDim d, χ u) *
+          ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+            exact integral_twoPointDifferenceKernel_mul_differenceLift_factorizes
+              (d := d) K χ h
+    _ = (∫ u : SpacetimeDim d, χ u) *
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) := by
+            rw [hK h hh_pos hh_compact]
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
+          symm
+          rw [OsterwalderSchraderAxioms.twoPointDifferenceLift_eq_centerValue
+            (d := d) (OS := OS) h hzero_not_mem χ₀ hχ₀ χ]
+          ring
+
+/-- Reduced-domain version of the previous shell theorem: once a difference
+kernel reproduces the honest reduced Schwinger functional on the positive-time
+compact-support test space, it reproduces the full admissible two-point
+difference shell. -/
+theorem twoPointDifferenceKernel_eq_schwinger_on_differenceShell_of_positiveCLM_pairing
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (K : SpacetimeDim d → ℂ)
+    (hK : ∀ h : positiveTimeCompactSupportSubmodule d,
+      ∫ ξ : SpacetimeDim d, K ξ * (h : SchwartzSpacetime d) ξ =
+        (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM (d := d) OS χ₀) h)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ∫ x : NPointDomain d 2,
+      twoPointDifferenceKernel (d := d) K x *
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d) x) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) := by
+  refine twoPointDifferenceKernel_eq_schwinger_on_differenceShell_of_reduced_pairing
+    (d := d) OS χ₀ hχ₀ K ?_ χ (h : SchwartzSpacetime d) h.property.1 h.property.2
+  intro h' hh'_pos hh'_compact
+  let hmem : positiveTimeCompactSupportSubmodule d :=
+    ⟨h', hh'_pos, hh'_compact⟩
+  simpa [hmem, OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_apply]
+    using hK hmem
+
+/-- Continuous-linear packaging of the reduced-pairing route: once a
+difference-only Euclidean kernel reproduces the normalized reduced pairing and
+is measurable with a uniform `ae` bound, the induced zero-diagonal kernel CLM
+is exactly the Schwinger two-point functional. -/
+theorem zeroDiagKernelCLM_of_differenceKernel_eq_schwinger_of_reduced_pairing
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (K : SpacetimeDim d → ℂ)
+    (hK_meas : AEStronglyMeasurable (twoPointDifferenceKernel (d := d) K) volume)
+    (C : ℝ)
+    (hK_bdd : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖twoPointDifferenceKernel (d := d) K x‖ ≤ C)
+    (hReduced : ∀ h : SchwartzSpacetime d,
+      tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} →
+      HasCompactSupport (h : SpacetimeDim d → ℂ) →
+        ∫ ξ : SpacetimeDim d, K ξ * h ξ =
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)))
+    (hDense : Dense {f : ZeroDiagonalSchwartz d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} ∧
+        HasCompactSupport (h : SpacetimeDim d → ℂ) ∧
+        f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}) :
+    zeroDiagKernelCLM_of_const_bound
+        (d := d) (twoPointDifferenceKernel (d := d) K) hK_meas C hK_bdd =
+      OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2 := by
+  refine zeroDiagKernelCLM_of_const_bound_eq_schwinger_of_shell_agreement
+    (d := d) OS (twoPointDifferenceKernel (d := d) K) hK_meas C hK_bdd ?_ hDense
+  intro χ h hh_pos hh_compact
+  exact twoPointDifferenceKernel_eq_schwinger_on_differenceShell_of_reduced_pairing
+    (d := d) OS χ₀ hχ₀ K hReduced χ h hh_pos hh_compact
+
+/-- Quotient-level two-point comparison principle. If a full flattened
+functional and a concrete kernel CLM agree after center-spatial descent on
+compactly supported reduced tests with positive head support, then the full
+functional already has the expected product-shell and admissible
+difference-shell formulas.
+
+This is the production bridge from positive reduced-shell identities to full
+two-point shell identities, using only compact-support density in the reduced
+Schwartz space. -/
+theorem map_productLift_and_differenceLift_of_eq_on_positive_compactSupport_centerTimeReduced
+    (T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (K : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hTK : IsCenterSpatialTranslationInvariantSchwartzCLM d
+      (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound))
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ u : Fin d → ℝ, φ u = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ s : ℝ, ψ s = 1)
+    (hψ_compact : HasCompactSupport ψ)
+    (hTred : IsHeadTranslationInvariantSchwartzCLM (centerSpatialDescentCLM d T φ))
+    (hKred : IsHeadTranslationInvariantSchwartzCLM
+      (centerSpatialDescentCLM d
+        (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ))
+    (hEq_pos : ∀ F : SchwartzMap (Fin (d + 2) → ℝ) ℂ,
+      HasCompactSupport (F : (Fin (d + 2) → ℝ) → ℂ) →
+      tsupport (F : (Fin (d + 2) → ℝ) → ℂ) ⊆ {x : Fin (d + 2) → ℝ | 0 < x 0} →
+      centerSpatialDescentCLM d T φ F =
+        centerSpatialDescentCLM d
+          (twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound) φ F)
+    (χ g h : SchwartzSpacetime d) :
+    T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) ∧
+      T (reindexSchwartzFin (by ring)
+          (flattenSchwartzNPoint (d := d)
+            (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+        ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+  let U : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+    twoPointFlatKernelCLM (d := d) K hK_meas C_bd N hC hK_bound
+  have hTU : T = U :=
+    eq_of_eq_on_positive_compactSupport_centerTimeReduced
+      d T U hT hTK φ hφ ψ hψ hψ_compact hTred hKred hEq_pos
+  constructor
+  · calc
+      T (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) =
+          U (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))) := by
+                simpa [U] using congrArg
+                  (fun L : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ =>
+                    L (reindexSchwartzFin (by ring)
+                      (flattenSchwartzNPoint (d := d)
+                        (twoPointCenterDiffSchwartzCLM (d := d)
+                          (twoPointProductLift χ g))))) hTU
+      _ = ∫ z : NPointDomain d 2, K z * (χ (z 0) * g (z 0 + z 1)) := by
+            simpa [U] using
+              twoPointFlatKernelCLM_apply_reindex_flatten
+                (d := d) (K := K) hK_meas C_bd N hC hK_bound
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g))
+  · calc
+      T (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) =
+          U (reindexSchwartzFin (by ring)
+            (flattenSchwartzNPoint (d := d)
+              (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h)))) := by
+                simpa [U] using congrArg
+                  (fun L : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ =>
+                    L (reindexSchwartzFin (by ring)
+                      (flattenSchwartzNPoint (d := d)
+                        (twoPointCenterDiffSchwartzCLM (d := d)
+                          (twoPointDifferenceLift χ h))))) hTU
+      _ = ∫ z : NPointDomain d 2, K z * (χ (z 0) * h (z 1)) := by
+            simpa [U] using
+              twoPointFlatKernelCLM_apply_reindex_flatten
+                (d := d) (K := K) hK_meas C_bd N hC hK_bound
+                (twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h))
 
 
 end OSReconstruction

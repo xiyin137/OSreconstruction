@@ -1,5 +1,6 @@
 import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
 import OSReconstruction.Wightman.Reconstruction.DenseCLM
+import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 
 open scoped SchwartzMap
 
@@ -454,5 +455,49 @@ theorem eq_of_eq_on_dense_headTranslationDescentCLM_centerSpatial
             exact
               map_eq_headTranslationDescentCLM_sliceIntegral_integrateCenterSpatial
                 d U hU φ hφ ψ hψ hUred F
+
+/-- If the center-time/difference descents of two center-spatial-translation-
+invariant full two-point functionals agree on compactly supported reduced tests
+with positive head support, then the original full functionals are equal.
+
+This is the honest reduced-space replacement for the older direct-density route
+on `ZeroDiagonalSchwartz`: positivity in the active time variable is promoted to
+all compactly supported reduced tests by head-translation invariance, and then
+compact-support density in Schwartz space closes the comparison. -/
+theorem eq_of_eq_on_positive_compactSupport_centerTimeReduced
+    (d : ℕ)
+    (T U : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hT : IsCenterSpatialTranslationInvariantSchwartzCLM d T)
+    (hU : IsCenterSpatialTranslationInvariantSchwartzCLM d U)
+    (φ : SchwartzMap (Fin d → ℝ) ℂ)
+    (hφ : ∫ x : Fin d → ℝ, φ x = 1)
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∫ t : ℝ, ψ t = 1)
+    (hψ_compact : HasCompactSupport ψ)
+    (hTred : IsHeadTranslationInvariantSchwartzCLM (centerSpatialDescentCLM d T φ))
+    (hUred : IsHeadTranslationInvariantSchwartzCLM (centerSpatialDescentCLM d U φ))
+    (hEq_pos : ∀ F : SchwartzMap (Fin (d + 2) → ℝ) ℂ,
+      HasCompactSupport (F : (Fin (d + 2) → ℝ) → ℂ) →
+      tsupport (F : (Fin (d + 2) → ℝ) → ℂ) ⊆ {x : Fin (d + 2) → ℝ | 0 < x 0} →
+      centerSpatialDescentCLM d T φ F = centerSpatialDescentCLM d U φ F) :
+    T = U := by
+  have hEq_compact : ∀ f : SchwartzMap (Fin (d + 1) → ℝ) ℂ,
+      HasCompactSupport (f : (Fin (d + 1) → ℝ) → ℂ) →
+      headTranslationDescentCLM (centerSpatialDescentCLM d T φ) ψ f =
+        headTranslationDescentCLM (centerSpatialDescentCLM d U φ) ψ f := by
+    intro f hf
+    exact headTranslationDescentCLM_eq_on_compactSupport_of_eq_on_positive_tsupport
+      (T := centerSpatialDescentCLM d T φ)
+      (U := centerSpatialDescentCLM d U φ)
+      hTred hUred ψ hψ hψ_compact hEq_pos f hf
+  refine eq_of_eq_on_dense_headTranslationDescentCLM_centerSpatial
+    d T U hT hU φ hφ ψ hψ hTred hUred
+    (S := {f : SchwartzMap (Fin (d + 1) → ℝ) ℂ |
+      HasCompactSupport (f : (Fin (d + 1) → ℝ) → ℂ)})
+    ?_ ?_
+  · simpa [SchwartzSpacetime, SpacetimeDim] using
+      (SchwartzMap.dense_hasCompactSupport (m := d + 1))
+  · intro f hf
+    exact hEq_compact f hf
 
 end OSReconstruction
