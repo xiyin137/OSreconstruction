@@ -771,7 +771,66 @@ theorem continuous_inner_osSpatialTranslate_axis_of_isCompactSupport
         ((osSpatialTranslateLinear (d := d) OS
             (t • (Pi.single i (1 : ℝ) : Fin d → ℝ)))
           (⟦G⟧ : OSPreHilbertSpace OS))) := by
-  sorry
+  let v : Fin d → ℝ := Pi.single i (1 : ℝ)
+  have hcont :
+      Continuous (fun t : ℝ =>
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (translateBorchers (d := d) (Fin.cons 0 (t • v)) (G : BorchersSequence d))) := by
+    unfold OSInnerProduct
+    simp only [translateBorchers]
+    apply continuous_finset_sum
+    intro n hn
+    apply continuous_finset_sum
+    intro m hm
+    let f_n : SchwartzNPoint d n := (F : BorchersSequence d).funcs n
+    let g_m : SchwartzNPoint d m := (G : BorchersSequence d).funcs m
+    let hterm : ℝ → ZeroDiagonalSchwartz d (n + m) := fun t =>
+      let g_trans := translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m
+      ⟨f_n.osConjTensorProduct g_trans,
+        VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+          (d := d) (n := n) (m := m) (f := f_n) (g := g_trans)
+          (F.ordered_tsupport n)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) (a := Fin.cons 0 (t • v)) (ha0 := by simp)
+            g_m (G.ordered_tsupport m))⟩
+    have hshift :
+        Continuous (fun t : ℝ =>
+          translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m) :=
+      continuous_spatialTranslateSchwartzNPoint_of_isCompactSupport
+        (d := d) g_m (hG_compact m) v
+    have hbase :
+        Continuous (fun t : ℝ =>
+          f_n.osConjTensorProduct
+            (translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m)) := by
+      simpa [SchwartzNPoint.osConjTensorProduct] using
+        (SchwartzMap.tensorProduct_continuous_right f_n.osConj).comp hshift
+    have hterm_cont : Continuous hterm := by
+      exact hbase.subtype_mk (fun t =>
+        VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+          (d := d) (n := n) (m := m) (f := f_n)
+          (g := translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m)
+          (F.ordered_tsupport n)
+          (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+            (d := d) (a := Fin.cons 0 (t • v)) (ha0 := by simp)
+            g_m (G.ordered_tsupport m)))
+    let hscalar : ℝ → ℂ := fun t => OS.S (n + m) (hterm t)
+    have hscalar_cont : Continuous hscalar := (OS.E0_tempered (n + m)).comp hterm_cont
+    convert hscalar_cont using 1
+    ext t
+    simp [hscalar, hterm]
+    rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := f_n.osConjTensorProduct
+        (translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m))
+      (VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+        (d := d) (n := n) (m := m) (f := f_n)
+        (g := translateSchwartzNPoint (d := d) (Fin.cons 0 (t • v)) g_m)
+        (F.ordered_tsupport n)
+        (translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+          (d := d) (a := Fin.cons 0 (t • v)) (ha0 := by simp)
+          g_m (G.ordered_tsupport m)))]
+  simpa [OSPreHilbertSpace.inner_eq, osSpatialTranslateLinear, osSpatialTranslate,
+    PositiveTimeBorchersSequence.osInner, spatialTranslatePositiveTimeBorchers,
+    translateBorchers, v] using hcont
 
 /-- Strong continuity at `0` of the axis slice on the dense compact-support domain. -/
 theorem tendsto_osSpatialTranslateLinear_axis_nhds_zero_of_isCompactSupport
@@ -787,7 +846,78 @@ theorem tendsto_osSpatialTranslateLinear_axis_nhds_zero_of_isCompactSupport
           (⟦F⟧ : OSPreHilbertSpace OS))
       (nhds 0)
       (nhds (⟦F⟧ : OSPreHilbertSpace OS)) := by
-  sorry
+  let x0 : OSPreHilbertSpace OS := (⟦F⟧ : OSPreHilbertSpace OS)
+  let T : ℝ → OSPreHilbertSpace OS →ₗ[ℂ] OSPreHilbertSpace OS := fun t =>
+    osSpatialTranslateLinear (d := d) OS
+      (t • (Pi.single i (1 : ℝ) : Fin d → ℝ))
+  have hinner_raw :
+      Filter.Tendsto
+        (fun t : ℝ => @inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0))
+        (nhds 0)
+        (nhds (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T 0 x0))) := by
+    simpa [x0, T] using
+      (((continuous_inner_osSpatialTranslate_axis_of_isCompactSupport
+        (d := d) OS i F F hF_compact).continuousAt (x := 0)).tendsto)
+  have hinner :
+      Filter.Tendsto
+        (fun t : ℝ => @inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0))
+        (nhds 0)
+        (nhds (@inner ℂ (OSPreHilbertSpace OS) _ x0 x0)) := by
+    simpa [T, osSpatialTranslateLinear_zero] using hinner_raw
+  have hkernel :
+      Filter.Tendsto
+        (fun t : ℝ => RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)))
+        (nhds 0)
+        (nhds (RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 x0))) := by
+    simpa [Function.comp] using
+      (Complex.continuous_re.continuousAt.tendsto.comp hinner)
+  have hxnorm :
+      RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 x0) = ‖x0‖ ^ 2 := by
+    simpa using (inner_self_eq_norm_sq (𝕜 := ℂ) x0)
+  refine Metric.tendsto_nhds.2 ?_
+  intro ε hε
+  have hδ : (0 : ℝ) < ε ^ 2 / 2 := by positivity
+  filter_upwards [Metric.tendsto_nhds.1 hkernel (ε ^ 2 / 2) hδ] with t hclose
+  have hgap :
+      ‖x0‖ ^ 2 - RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)) < ε ^ 2 / 2 := by
+    have hclose' :
+        |RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)) -
+            (↑(‖x0‖ ^ 2) : ℂ).re| < ε ^ 2 / 2 := by
+      simpa [Real.dist_eq] using hclose
+    rcases abs_lt.mp hclose' with ⟨hleft, _hright⟩
+    have hcast : ((↑(‖x0‖ ^ 2) : ℂ).re) = ‖x0‖ ^ 2 := by
+      rfl
+    nlinarith
+  have hnorm_eq : ‖T t x0‖ = ‖x0‖ := by
+    simpa [T, x0] using
+      (osSpatialTranslateLinear_norm_eq (d := d) OS
+        (t • (Pi.single i (1 : ℝ) : Fin d → ℝ)) x0)
+  have hnorm_sq : ‖T t x0‖ ^ 2 = ‖x0‖ ^ 2 := by
+    nlinarith [hnorm_eq, norm_nonneg (T t x0), norm_nonneg x0]
+  have hexpand :
+      ‖T t x0 - x0‖ ^ 2 =
+        ‖T t x0‖ ^ 2 - 2 * RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)) +
+          ‖x0‖ ^ 2 := by
+    rw [@norm_sub_sq ℂ (OSPreHilbertSpace OS) _ _ _]
+    have hsym :
+        RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ (T t x0) x0) =
+          RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)) := by
+      simpa using inner_re_symm (𝕜 := ℂ) (T t x0) x0
+    linarith
+  have hnsq : ‖T t x0 - x0‖ ^ 2 < ε ^ 2 := by
+    calc
+      ‖T t x0 - x0‖ ^ 2
+          = ‖T t x0‖ ^ 2 - 2 * RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0)) +
+              ‖x0‖ ^ 2 := hexpand
+      _ = 2 * (‖x0‖ ^ 2 - RCLike.re (@inner ℂ (OSPreHilbertSpace OS) _ x0 (T t x0))) := by
+          rw [hnorm_sq]
+          ring
+      _ < 2 * (ε ^ 2 / 2) := by nlinarith
+      _ = ε ^ 2 := by ring
+  rw [dist_eq_norm]
+  have hroot : ‖T t x0 - x0‖ < ε :=
+    lt_of_pow_lt_pow_left₀ 2 hε.le (by simpa using hnsq)
+  simpa [T, x0] using hroot
 
 /-- Strong continuity of the axis slice on the Hilbert completion. -/
 theorem continuous_osSpatialTranslateHilbert_axis
@@ -798,6 +928,25 @@ theorem continuous_osSpatialTranslateHilbert_axis
         (t • (Pi.single i (1 : ℝ) : Fin d → ℝ)) x) := by
   sorry
 
+/-- Spatial translation commutes with the positive Euclidean time shift on the
+honest OS quotient. -/
+private theorem osSpatialTranslateLinear_commutes_osTimeShiftLinear
+    (OS : OsterwalderSchraderAxioms d)
+    (a : Fin d → ℝ) (t : ℝ) (ht : 0 < t) :
+    (osSpatialTranslateLinear (d := d) OS a).comp
+      (osTimeShiftLinear OS t ht) =
+    (osTimeShiftLinear OS t ht).comp
+      (osSpatialTranslateLinear (d := d) OS a) := by
+  apply LinearMap.ext
+  intro x
+  induction x using Quotient.inductionOn with
+  | h F =>
+      exact OSPreHilbertSpace.mk_eq_of_funcs_eq OS _ _ (fun n => by
+        simpa [timeShiftBorchers, translateBorchers] using
+          (translateSchwartzNPoint_timeShiftSchwartzNPoint
+            (d := d) (a := Fin.cons 0 a) (t := t)
+            (((F : BorchersSequence d).funcs n) : SchwartzNPoint d n)))
+
 /-- Spatial translation commutes with the Euclidean time semigroup. -/
 theorem osSpatialTranslateHilbert_commutes_osTimeShiftHilbert
     (OS : OsterwalderSchraderAxioms d)
@@ -807,6 +956,25 @@ theorem osSpatialTranslateHilbert_commutes_osTimeShiftHilbert
       (osTimeShiftHilbert (d := d) OS lgc t ht) =
     (osTimeShiftHilbert (d := d) OS lgc t ht).comp
       (osSpatialTranslateHilbert (d := d) OS a) := by
-  sorry
+  apply ContinuousLinearMap.ext
+  intro x
+  refine UniformSpace.Completion.induction_on x ?_ ?_
+  · exact isClosed_eq
+      (((osSpatialTranslateHilbert (d := d) OS a).comp
+          (osTimeShiftHilbert (d := d) OS lgc t ht)).continuous)
+      (((osTimeShiftHilbert (d := d) OS lgc t ht).comp
+          (osSpatialTranslateHilbert (d := d) OS a)).continuous)
+  · intro x
+    rw [ContinuousLinearMap.comp_apply, ContinuousLinearMap.comp_apply]
+    rw [osTimeShiftHilbert_coe OS lgc t ht x]
+    rw [osSpatialTranslateHilbert_coe (d := d) OS a
+      ((osTimeShiftLinear OS t ht x) : OSPreHilbertSpace OS)]
+    rw [osSpatialTranslateHilbert_coe (d := d) OS a x]
+    rw [osTimeShiftHilbert_coe OS lgc t ht
+      ((osSpatialTranslateLinear (d := d) OS a x) : OSPreHilbertSpace OS)]
+    exact congrArg (fun y : OSPreHilbertSpace OS => (y : OSHilbertSpace OS))
+      (congrArg (fun f => f x)
+        (osSpatialTranslateLinear_commutes_osTimeShiftLinear
+          (d := d) OS a t ht))
 
 end

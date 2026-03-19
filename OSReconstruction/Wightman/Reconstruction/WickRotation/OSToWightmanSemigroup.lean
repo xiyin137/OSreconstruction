@@ -1150,7 +1150,7 @@ private theorem timeShift_preserves_ordered_positive_tsupport (t : ℝ) (ht : 0 
     (d := d) t (le_of_lt ht) F hF
 
 /-- Positive Euclidean time translation on the honest OS Borchers algebra. -/
-private def timeShiftPositiveTimeBorchers (t : ℝ) (ht : 0 < t)
+def timeShiftPositiveTimeBorchers (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d) : PositiveTimeBorchersSequence d where
   toBorchersSequence := timeShiftBorchers (d := d) t (F : BorchersSequence d)
   ordered_tsupport := by
@@ -1158,7 +1158,7 @@ private def timeShiftPositiveTimeBorchers (t : ℝ) (ht : 0 < t)
       (F : BorchersSequence d) F.ordered_tsupport
 
 omit [NeZero d] in
-@[simp] private theorem timeShiftPositiveTimeBorchers_funcs (t : ℝ) (ht : 0 < t)
+@[simp] theorem timeShiftPositiveTimeBorchers_funcs (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d) (n : ℕ) :
     ((timeShiftPositiveTimeBorchers (d := d) t ht F : PositiveTimeBorchersSequence d) :
       BorchersSequence d).funcs n =
@@ -1166,7 +1166,7 @@ omit [NeZero d] in
   rfl
 
 omit [NeZero d] in
-@[simp] private theorem timeShiftPositiveTimeBorchers_toBorchersSequence (t : ℝ) (ht : 0 < t)
+@[simp] theorem timeShiftPositiveTimeBorchers_toBorchersSequence (t : ℝ) (ht : 0 < t)
     (F : PositiveTimeBorchersSequence d) :
     ((timeShiftPositiveTimeBorchers (d := d) t ht F : PositiveTimeBorchersSequence d) :
       BorchersSequence d) =
@@ -1724,7 +1724,7 @@ private theorem timeShiftPositiveTimeBorchers_respects_equiv
   simp
 
 /-- The honest Euclidean time-shift operator on the OS quotient. -/
-private def osTimeShift (OS : OsterwalderSchraderAxioms d) (t : ℝ) (ht : 0 < t) :
+def osTimeShift (OS : OsterwalderSchraderAxioms d) (t : ℝ) (ht : 0 < t) :
     OSPreHilbertSpace OS → OSPreHilbertSpace OS :=
   Quotient.map (timeShiftPositiveTimeBorchers (d := d) t ht)
     (fun F G hFG => timeShiftPositiveTimeBorchers_respects_equiv
@@ -1742,7 +1742,7 @@ private theorem osTimeShift_semigroup (OS : OsterwalderSchraderAxioms d)
       (timeShiftPositiveTimeBorchers_comp_funcs (d := d) s t hs ht F)
 
 /-- The honest Euclidean time-shift as a linear operator on the OS quotient. -/
-private def osTimeShiftLinear (OS : OsterwalderSchraderAxioms d) (t : ℝ) (ht : 0 < t) :
+def osTimeShiftLinear (OS : OsterwalderSchraderAxioms d) (t : ℝ) (ht : 0 < t) :
     OSPreHilbertSpace OS →ₗ[ℂ] OSPreHilbertSpace OS where
   toFun := osTimeShift (d := d) OS t ht
   map_add' := by
@@ -2102,7 +2102,7 @@ noncomputable def osTimeShiftHilbert
   (UniformSpace.Completion.toComplL.comp (osTimeShiftContinuous (d := d) OS lgc t ht)).extend
     UniformSpace.Completion.toComplL
 
-private theorem osTimeShiftHilbert_coe
+theorem osTimeShiftHilbert_coe
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (t : ℝ) (ht : 0 < t) (x : OSPreHilbertSpace OS) :
     osTimeShiftHilbert (d := d) OS lgc t ht (x : OSHilbertSpace OS) =
