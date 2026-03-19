@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanKernel
 import OSReconstruction.SCV.SemigroupGroupBochner
 import Mathlib.Analysis.Calculus.ParametricIntegral
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
@@ -32,6 +33,121 @@ noncomputable section
 open MeasureTheory Complex Filter Topology
 
 variable {d : ℕ} [NeZero d]
+
+private def spacetimeTimeReflectionCLE : SpacetimeDim d ≃L[ℝ] SpacetimeDim d where
+  toLinearEquiv :=
+    { toFun := timeReflection d
+      invFun := timeReflection d
+      left_inv := timeReflection_timeReflection (d := d)
+      right_inv := timeReflection_timeReflection (d := d)
+      map_add' := by
+        intro x y
+        ext i
+        by_cases hi : i = 0
+        · subst hi
+          simp [timeReflection, add_comm]
+        · simp [timeReflection, hi]
+      map_smul' := by
+        intro c x
+        ext i
+        by_cases hi : i = 0
+        · subst hi
+          simp [timeReflection]
+        · simp [timeReflection, hi] }
+  continuous_toFun := by
+    refine continuous_pi ?_
+    intro i
+    by_cases hi : i = 0
+    · subst hi
+      simpa [timeReflection] using
+        (continuous_apply (0 : Fin (d + 1))).neg
+    · simpa [timeReflection, hi] using
+        (continuous_apply i : Continuous fun y : SpacetimeDim d => y i)
+  continuous_invFun := by
+    refine continuous_pi ?_
+    intro i
+    by_cases hi : i = 0
+    · subst hi
+      simpa [timeReflection] using
+        (continuous_apply (0 : Fin (d + 1))).neg
+    · simpa [timeReflection, hi] using
+        (continuous_apply i : Continuous fun y : SpacetimeDim d => y i)
+
+/-- The reflected positive-time companion of a negative-time Schwartz probe. -/
+private def reflectedSchwartzSpacetime (φ : SchwartzSpacetime d) : SchwartzSpacetime d :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ spacetimeTimeReflectionCLE φ
+
+@[simp] private theorem reflectedSchwartzSpacetime_apply
+    (φ : SchwartzSpacetime d) (x : SpacetimeDim d) :
+    reflectedSchwartzSpacetime φ x = φ (timeReflection d x) := by
+  simp [reflectedSchwartzSpacetime, spacetimeTimeReflectionCLE]
+
+private theorem reflectedSchwartzSpacetime_hasCompactSupport
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ)) :
+    HasCompactSupport (reflectedSchwartzSpacetime φ : SpacetimeDim d → ℂ) := by
+  simpa [reflectedSchwartzSpacetime, Function.comp] using
+    hφ_compact.comp_homeomorph (spacetimeTimeReflectionCLE.toHomeomorph)
+
+private theorem reflectedSchwartzSpacetime_tsupport_pos
+    (φ : SchwartzSpacetime d)
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    tsupport (reflectedSchwartzSpacetime φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} := by
+  intro x hx
+  have hx' : timeReflection d x ∈ tsupport (φ : SpacetimeDim d → ℂ) := by
+    exact tsupport_comp_subset_preimage (φ : SpacetimeDim d → ℂ)
+      (f := timeReflection d) spacetimeTimeReflectionCLE.continuous hx
+  have hneg := hφ_neg hx'
+  simpa [timeReflection] using hneg
+
+private theorem reflectedSchwartzSpacetime_integral_eq
+    (φ : SchwartzSpacetime d) :
+    ∫ x : SpacetimeDim d, reflectedSchwartzSpacetime φ x =
+      ∫ x : SpacetimeDim d, φ x := by
+  let e : SpacetimeDim d ≃ᵐ SpacetimeDim d :=
+    spacetimeTimeReflectionCLE.toHomeomorph.toMeasurableEquiv
+  have hmp : MeasureTheory.MeasurePreserving (⇑e)
+      MeasureTheory.volume MeasureTheory.volume := by
+    simpa [e, spacetimeTimeReflectionCLE] using
+      (timeReflection_measurePreserving (d := d))
+  simpa [reflectedSchwartzSpacetime_apply] using
+    hmp.integral_comp'
+      (φ : SpacetimeDim d → ℂ)
+
+private theorem onePointToFin1_tsupport_orderedPositiveTime_local
+    (g : SchwartzSpacetime d)
+    (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0}) :
+    tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+      NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+  intro x hx
+  have hx0 : x 0 ∈ tsupport (g : SpacetimeDim d → ℂ) := by
+    by_contra hx0
+    have hzero :
+        (x : NPointDomain d 1) ∉ tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+          NPointDomain d 1 → ℂ)) := by
+      rw [notMem_tsupport_iff_eventuallyEq] at hx0 ⊢
+      simpa [onePointToFin1CLM_apply] using
+        hx0.comp_tendsto ((continuous_apply 0).continuousAt.tendsto : Filter.Tendsto
+          (fun y : NPointDomain d 1 => y 0) (nhds x) (nhds (x 0)))
+    exact hzero hx
+  have hpos0 : 0 < (x 0) 0 := hg_pos hx0
+  simpa [OrderedPositiveTimeRegion] using hpos0
+
+private theorem osConj_onePointToFin1_eq_onePoint_reflected_of_real
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0) :
+    SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) =
+      (onePointToFin1CLM d (reflectedSchwartzSpacetime φ) : SchwartzNPoint d 1) := by
+  ext x
+  have him : (φ (timeReflection d (x 0))).im = 0 :=
+    hφ_real (timeReflection d (x 0))
+  have hstar :
+      starRingEnd ℂ (φ (timeReflection d (x 0))) =
+        φ (timeReflection d (x 0)) := by
+    apply Complex.ext <;> simp [him]
+  simpa [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
+    reflectedSchwartzSpacetime_apply, timeReflectionN] using hstar
 
 /-- A sequence of nonnegative normalized positive-time Schwartz bumps with
 compact support shrinking to the origin. -/
@@ -75,6 +191,542 @@ theorem exists_approx_identity_sequence :
   · intro n
     exact (hs n).2.2.2.2.2
 
+/-- A sequence of nonnegative normalized negative-time Schwartz bumps with
+compact support shrinking to the origin. This is the honest one-point probe
+needed on the OS Hilbert side before applying `osConj`, which reflects negative
+time to positive time. -/
+theorem exists_negative_approx_identity_sequence :
+    ∃ (φ : ℕ → SchwartzSpacetime d),
+      (∀ n x, 0 ≤ (φ n x).re) ∧
+      (∀ n x, (φ n x).im = 0) ∧
+      (∀ n, ∫ x : SpacetimeDim d, φ n x = 1) ∧
+      (∀ n, HasCompactSupport (φ n : SpacetimeDim d → ℂ)) ∧
+      (∀ n, tsupport (φ n : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0}) ∧
+      (∀ n, tsupport (φ n : SpacetimeDim d → ℂ) ⊆
+        Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ))) := by
+  have hexists :
+      ∀ n : ℕ,
+        ∃ (φ : SchwartzSpacetime d),
+          (∀ x : SpacetimeDim d, 0 ≤ (φ x).re) ∧
+          (∀ x : SpacetimeDim d, (φ x).im = 0) ∧
+          (∫ x : SpacetimeDim d, φ x = 1) ∧
+          HasCompactSupport (φ : SpacetimeDim d → ℂ) ∧
+          tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0} ∧
+          tsupport (φ : SpacetimeDim d → ℂ) ⊆
+            Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := by
+    intro n
+    let ε : ℝ := 1 / (n + 1 : ℝ)
+    have hε : 0 < ε := by
+      dsimp [ε]
+      positivity
+    let c : SpacetimeDim d := Fin.cons (-(ε / 2)) 0
+    let b : ContDiffBump c := ⟨ε / 8, ε / 4, by linarith, by linarith⟩
+    let f : SpacetimeDim d → ℂ := fun x => (b x : ℂ)
+    have hf_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) f :=
+      (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+    have hf_compact : HasCompactSupport f :=
+      b.hasCompactSupport.comp_left Complex.ofReal_zero
+    let g₀ := HasCompactSupport.toSchwartzMap hf_compact hf_smooth
+    have hg₀_int_ne : ∫ x : SpacetimeDim d, g₀ x ≠ 0 := by
+      change ∫ x, (↑(b x) : ℂ) ≠ 0
+      rw [integral_complex_ofReal]
+      exact Complex.ofReal_ne_zero.mpr (ne_of_gt b.integral_pos)
+    let φ : SchwartzSpacetime d := (∫ x : SpacetimeDim d, g₀ x)⁻¹ • g₀
+    have h_tsup_g₀ : tsupport (g₀ : SpacetimeDim d → ℂ) ⊆ Metric.closedBall c (ε / 4) := by
+      intro y hy
+      change y ∈ tsupport f at hy
+      rw [← b.tsupport_eq]
+      exact tsupport_comp_subset Complex.ofReal_zero _ hy
+    refine ⟨φ, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · intro x
+      simp only [φ, SchwartzMap.smul_apply, smul_eq_mul]
+      rw [Complex.mul_re]
+      have hg₀_im : (g₀ x).im = 0 := Complex.ofReal_im (b x)
+      have hg₀_re : 0 ≤ (g₀ x).re := Complex.ofReal_re (b x) ▸ b.nonneg
+      have hint_im : (∫ u : SpacetimeDim d, g₀ u).im = 0 := by
+        rw [show (fun u => g₀ u) = (fun u => (↑(b u) : ℂ)) from rfl]
+        rw [integral_complex_ofReal]
+        simp
+      have hinv_im : ((∫ u : SpacetimeDim d, g₀ u)⁻¹).im = 0 := by
+        rw [Complex.inv_im, hint_im]
+        ring_nf
+      rw [hg₀_im, hinv_im]
+      ring_nf
+      apply mul_nonneg _ hg₀_re
+      rw [Complex.inv_re]
+      apply div_nonneg
+      · change 0 ≤ (∫ u, (↑(b u) : ℂ)).re
+        rw [integral_complex_ofReal]
+        simp only [Complex.ofReal_re]
+        exact le_of_lt b.integral_pos
+      · exact Complex.normSq_nonneg _
+    · intro x
+      simp only [φ, SchwartzMap.smul_apply, smul_eq_mul]
+      rw [Complex.mul_im]
+      have hg₀_im : (g₀ x).im = 0 := Complex.ofReal_im (b x)
+      have hint_im : (∫ u : SpacetimeDim d, g₀ u).im = 0 := by
+        rw [show (fun u => g₀ u) = (fun u => (↑(b u) : ℂ)) from rfl]
+        rw [integral_complex_ofReal]
+        simp
+      have hinv_im : ((∫ u : SpacetimeDim d, g₀ u)⁻¹).im = 0 := by
+        rw [Complex.inv_im, hint_im]
+        ring_nf
+      rw [hg₀_im, hinv_im]
+      ring_nf
+    · change ∫ x : SpacetimeDim d, ((∫ x : SpacetimeDim d, g₀ x)⁻¹ • g₀ x) = 1
+      rw [MeasureTheory.integral_smul]
+      change (∫ x : SpacetimeDim d, g₀ x)⁻¹ * ∫ x : SpacetimeDim d, g₀ x = 1
+      field_simp [hg₀_int_ne]
+    · simpa [φ, Pi.smul_apply] using
+        (HasCompactSupport.smul_left (f := fun _ : SpacetimeDim d => (∫ x : SpacetimeDim d, g₀ x)⁻¹)
+          (f' := (g₀ : SpacetimeDim d → ℂ)) hf_compact)
+    · intro x hx
+      have hx_supp : x ∈ Metric.closedBall c (ε / 4 : ℝ) := by
+        have hx_g₀ : x ∈ tsupport (g₀ : SpacetimeDim d → ℂ) := by
+          exact (tsupport_smul_subset_right
+            (fun _ : SpacetimeDim d => (∫ x : SpacetimeDim d, g₀ x)⁻¹)
+            (g₀ : SpacetimeDim d → ℂ)) hx
+        exact h_tsup_g₀ hx_g₀
+      rw [Metric.mem_closedBall] at hx_supp
+      have h0 : |x 0 - (-(ε / 2))| ≤ ε / 4 := by
+        calc
+          |x 0 - (-(ε / 2))| = |x 0 - c 0| := by simp [c, Fin.cons]
+          _ = ‖(x - c) 0‖ := by simp [Pi.sub_apply, Real.norm_eq_abs]
+          _ ≤ ‖x - c‖ := norm_le_pi_norm _ 0
+          _ = dist x c := by rw [dist_eq_norm]
+          _ ≤ ε / 4 := hx_supp
+      change x 0 < 0
+      have hupper : x 0 + ε / 2 ≤ ε / 4 := by
+        linarith [(abs_le.mp h0).2]
+      linarith
+    · intro x hx
+      have hx_supp : x ∈ Metric.closedBall c (ε / 4 : ℝ) := by
+        have hx_g₀ : x ∈ tsupport (g₀ : SpacetimeDim d → ℂ) := by
+          exact (tsupport_smul_subset_right
+            (fun _ : SpacetimeDim d => (∫ x : SpacetimeDim d, g₀ x)⁻¹)
+            (g₀ : SpacetimeDim d → ℂ)) hx
+        exact h_tsup_g₀ hx_g₀
+      have hdist0 : dist x (0 : SpacetimeDim d) < ε := by
+        calc
+          dist x (0 : SpacetimeDim d) ≤ dist x c + dist c (0 : SpacetimeDim d) :=
+            dist_triangle _ _ _
+          _ ≤ ε / 4 + ε / 2 := by
+            gcongr
+            · simpa [Metric.mem_closedBall, dist_eq_norm] using hx_supp
+            · rw [dist_eq_norm]
+              have hc_coord : ∀ b : Fin (d + 1), ‖c b‖ ≤ ε / 2 := by
+                intro b'
+                refine Fin.cases ?_ ?_ b'
+                · have hεabs : |ε| = ε := abs_of_pos hε
+                  simp [c, Real.norm_eq_abs, hεabs]
+                · intro j
+                  have : (0 : ℝ) ≤ ε / 2 := by linarith
+                  simpa [c] using this
+              have : ‖c‖ ≤ ε / 2 := by
+                rw [Pi.norm_def]
+                have hs :
+                    Finset.univ.sup (fun b : Fin (d + 1) => ‖c b‖₊) ≤ Real.toNNReal (ε / 2) := by
+                  refine Finset.sup_le ?_
+                  intro b' hb'
+                  rw [← NNReal.coe_le_coe, Real.toNNReal_of_nonneg]
+                  · exact hc_coord b'
+                  · linarith
+                have hε2 : 0 ≤ ε / 2 := by linarith
+                have hs_real : (↑(Finset.univ.sup (fun b : Fin (d + 1) => ‖c b‖₊) : NNReal) : ℝ) ≤
+                    ↑(Real.toNNReal (ε / 2)) := by
+                  exact_mod_cast hs
+                simpa [Real.toNNReal_of_nonneg hε2] using hs_real
+              simpa using this
+          _ < ε := by linarith
+      simpa [Metric.mem_ball, dist_comm, ε] using hdist0
+  let φ : ℕ → SchwartzSpacetime d := fun n => Classical.choose (hexists n)
+  have hs :
+      ∀ n,
+        (∀ x : SpacetimeDim d, 0 ≤ ((φ n) x).re) ∧
+        (∀ x : SpacetimeDim d, ((φ n) x).im = 0) ∧
+        (∫ x : SpacetimeDim d, φ n x = 1) ∧
+        HasCompactSupport (φ n : SpacetimeDim d → ℂ) ∧
+        tsupport (φ n : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0} ∧
+        tsupport (φ n : SpacetimeDim d → ℂ) ⊆
+          Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := by
+    intro n
+    simpa [φ] using (Classical.choose_spec (hexists n))
+  refine ⟨φ, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro n x
+    exact (hs n).1 x
+  · intro n x
+    exact (hs n).2.1 x
+  · intro n
+    exact (hs n).2.2.1
+  · intro n
+    exact (hs n).2.2.2.1
+  · intro n
+    exact (hs n).2.2.2.2.1
+  · intro n
+    exact (hs n).2.2.2.2.2
+
+/-- Local support bridge: negative-time support of a one-point spacetime probe
+becomes ordered positive-time support after `osConj`, because time reflection
+flips the sign of the time coordinate. This is the exact support input needed
+for the OS Hilbert one-point vector in theorem 2, without importing the
+downstream kernel file. -/
+private theorem osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+    (χ : SchwartzSpacetime d)
+    (hχ_compact : HasCompactSupport (χ : SpacetimeDim d → ℂ))
+    (hχ_neg : tsupport (χ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+      (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+      NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+  intro v hv i
+  refine ⟨?_, fun j hij => absurd hij (by omega)⟩
+  rw [Fin.eq_zero i]
+  by_contra h_neg
+  push_neg at h_neg
+  have ⟨δ, hδ_pos, hδ⟩ : ∃ δ : ℝ, 0 < δ ∧
+      tsupport (χ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 ≤ -δ} := by
+    by_cases hempty : tsupport (χ : SpacetimeDim d → ℂ) = ∅
+    · exact ⟨1, one_pos, by simp [hempty]⟩
+    · have hne := Set.nonempty_iff_ne_empty.mpr hempty
+      have hK : IsCompact (tsupport (χ : SpacetimeDim d → ℂ)) :=
+        hχ_compact.isCompact
+      obtain ⟨x₀, hx₀_mem, hx₀_max⟩ := hK.exists_isMaxOn hne (continuous_apply 0).continuousOn
+      have hx₀_neg : x₀ 0 < 0 := hχ_neg hx₀_mem
+      refine ⟨-(x₀ 0) / 2, by linarith, fun y hy => ?_⟩
+      simp only [Set.mem_setOf_eq]
+      have h_le : y 0 ≤ x₀ 0 := hx₀_max hy
+      linarith
+  have h_vanish : ∀ w : NPointDomain d 1, w 0 0 < δ →
+      ((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ)) : NPointDomain d 1 → ℂ) w = 0 := by
+    intro w hw
+    simp only [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply]
+    have h_not_supp : timeReflectionN d w 0 ∉ tsupport (χ : SpacetimeDim d → ℂ) := by
+      intro hmem
+      have h1 := hδ hmem
+      simp only [Set.mem_setOf_eq, timeReflectionN, timeReflection, ite_true] at h1
+      linarith
+    have h_ev := (notMem_tsupport_iff_eventuallyEq.mp h_not_supp).self_of_nhds
+    simp [h_ev]
+  have h_not_tsupport : v ∉ tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+      (onePointToFin1CLM d χ)) : NPointDomain d 1 → ℂ)) := by
+    rw [notMem_tsupport_iff_eventuallyEq]
+    refine Filter.mem_of_superset (Metric.ball_mem_nhds v hδ_pos) ?_
+    intro w hw
+    apply h_vanish
+    have h_dist : ‖w - v‖ < δ := by rwa [← dist_eq_norm]
+    have h0 : w 0 0 - v 0 0 ≤ ‖w - v‖ := by
+      calc
+        w 0 0 - v 0 0 = (w - v) 0 0 := by simp
+        _ ≤ |(w - v) 0 0| := by exact le_abs_self ((w - v) 0 0)
+        _ = ‖((w - v) 0) 0‖ := by simp [Real.norm_eq_abs]
+        _ ≤ ‖(w - v) 0‖ := norm_le_pi_norm _ 0
+        _ ≤ ‖w - v‖ := norm_le_pi_norm _ 0
+    linarith
+  exact h_not_tsupport hv
+
+private theorem mk_single_osConj_onePoint_eq_mk_single_reflected_of_real
+    (OS : OsterwalderSchraderAxioms d)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local φ hφ_compact hφ_neg
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_pos :=
+      onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+    (⟦PositiveTimeBorchersSequence.single 1
+        (SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+        hφ_pos⟧ : OSPreHilbertSpace OS) =
+      (⟦PositiveTimeBorchersSequence.single 1
+          (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+          hψ_pos⟧ : OSPreHilbertSpace OS) := by
+  dsimp
+  apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+  intro n
+  by_cases hn : n = 1
+  · subst hn
+    simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+      BorchersSequence.single, osConj_onePointToFin1_eq_onePoint_reflected_of_real,
+      hφ_real]
+  · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+      BorchersSequence.single, hn]
+
+private theorem onePoint_osConjTensorProduct_apply_local
+    (χ h : SchwartzSpacetime d) (y : NPointDomain d 2) :
+    (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (onePointToFin1CLM d h)) y) =
+      χ (y 0) * h (y 1) := by
+  have hosconj :
+      SchwartzNPoint.osConj (d := d) (n := 1)
+          (SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d χ : SchwartzNPoint d 1)) =
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) := by
+    ext x
+    simp [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
+      timeReflectionN, timeReflection_timeReflection]
+  calc
+    (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (onePointToFin1CLM d h)) y)
+      = (((onePointToFin1CLM d χ : SchwartzNPoint d 1).tensorProduct
+          (onePointToFin1CLM d h)) y) := by
+            simp [SchwartzNPoint.osConjTensorProduct, hosconj]
+    _ = χ (y 0) * h (y 1) := by
+          rw [SchwartzMap.tensorProduct_apply]
+          simp [onePointToFin1CLM_apply, splitFirst, splitLast]
+
+private theorem twoPointProductLift_vanishes_of_orderedPositiveTime_local
+    (χ h : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0}) :
+    VanishesToInfiniteOrderOnCoincidence (twoPointProductLift χ h) := by
+  have hh_ord :=
+    onePointToFin1_tsupport_orderedPositiveTime_local h hh_pos
+  have hvanish :
+      VanishesToInfiniteOrderOnCoincidence
+        ((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ)).osConjTensorProduct
+          (onePointToFin1CLM d h)) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d)
+      (f := SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+      (g := onePointToFin1CLM d h)
+      hχ_pos hh_ord
+  have hprod_eq :
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ)).osConjTensorProduct
+        (onePointToFin1CLM d h) =
+        twoPointProductLift χ h := by
+    ext x
+    exact onePoint_osConjTensorProduct_apply_local χ h x
+  simpa [hprod_eq] using hvanish
+
+private def twoPointProductLiftPositiveZeroDiagCLM_local
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ZeroDiagonalSchwartz d 2 :=
+  (((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
+      ((onePointToFin1CLM d).comp (positiveTimeCompactSupportValCLM d))).codRestrict
+      (zeroDiagonalSubmodule d 2)
+      (fun h =>
+        twoPointProductLift_vanishes_of_orderedPositiveTime_local
+          χ (h : SchwartzSpacetime d) hχ_pos h.property.1))
+
+@[simp] private theorem twoPointProductLiftPositiveZeroDiagCLM_local_eq_ofClassical
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    twoPointProductLiftPositiveZeroDiagCLM_local χ hχ_pos h =
+      ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (h : SchwartzSpacetime d)) := by
+  let hvanish :=
+    twoPointProductLift_vanishes_of_orderedPositiveTime_local
+      χ (h : SchwartzSpacetime d) hχ_pos h.property.1
+  apply Subtype.ext
+  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+    (f := twoPointProductLift χ (h : SchwartzSpacetime d)) hvanish]
+  rfl
+
+private def schwingerProductPositiveCLM_local
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ℂ :=
+  (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2).comp
+    (twoPointProductLiftPositiveZeroDiagCLM_local χ hχ_pos)
+
+@[simp] private theorem schwingerProductPositiveCLM_local_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    schwingerProductPositiveCLM_local OS χ hχ_pos h =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (h : SchwartzSpacetime d))) := by
+  simp [schwingerProductPositiveCLM_local, ContinuousLinearMap.comp_apply,
+    twoPointProductLiftPositiveZeroDiagCLM_local_eq_ofClassical,
+    OsterwalderSchraderAxioms.schwingerCLM]
+
+/-- The translated positive-time compactly supported one-point test remains in
+the positive-time compact-support domain. This is the honest right-slot domain
+for the reflected probe used in theorem B. -/
+private def translatedPositiveTimeCompactSupport_local
+    (g : SchwartzSpacetime d)
+    (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    positiveTimeCompactSupportSubmodule d := by
+  let gξ : SchwartzSpacetime d := SCV.translateSchwartz (-ξ) g
+  have hgξ_compact : HasCompactSupport (gξ : SpacetimeDim d → ℂ) := by
+    simpa [gξ, Function.comp, SCV.translateSchwartz_apply] using
+      hg_compact.comp_homeomorph (Homeomorph.addRight (-ξ))
+  have hgξ_pos : tsupport (gξ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} := by
+    intro x hx
+    have hx' : x + (-ξ) ∈ tsupport (g : SpacetimeDim d → ℂ) := by
+      exact tsupport_comp_subset_preimage (g : SpacetimeDim d → ℂ)
+        (f := fun y : SpacetimeDim d => y + (-ξ))
+        (Homeomorph.addRight (-ξ)).continuous hx
+    have hgx := hg_pos hx'
+    simpa using add_pos_of_pos_of_nonneg hξ (show 0 ≤ (x + -ξ) 0 from le_of_lt hgx)
+  exact ⟨gξ, ⟨hgξ_pos, hgξ_compact⟩⟩
+
+@[simp] private theorem schwingerProductPositiveCLM_local_apply_translated
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (g : SchwartzSpacetime d)
+    (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    schwingerProductPositiveCLM_local OS χ hχ_pos
+        (translatedPositiveTimeCompactSupport_local g hg_pos hg_compact ξ hξ) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (SCV.translateSchwartz (-ξ) g))) := by
+  simpa [translatedPositiveTimeCompactSupport_local] using
+    schwingerProductPositiveCLM_local_apply OS χ hχ_pos
+      (translatedPositiveTimeCompactSupport_local g hg_pos hg_compact ξ hξ)
+
+/-- The shifted simple tensor attached to a reflected positive-time probe is
+exactly the translated two-point product shell. -/
+private theorem shifted_single_test_eq_twoPointProductLift_translate_local
+    (χ g : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hg_pos : tsupport (((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    ZeroDiagonalSchwartz.ofClassical
+      ((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) (ξ 0)
+          (onePointToFin1CLM d
+            (SCV.translateSchwartz (-spatialEmbed (fun i => ξ i.succ)) g) :
+              SchwartzNPoint d 1))) =
+      ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (SCV.translateSchwartz (-ξ) g)) := by
+  let g_translated : SchwartzSpacetime d :=
+    SCV.translateSchwartz (-spatialEmbed (fun i => ξ i.succ)) g
+  have hg_translated_pos : tsupport (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+      NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+    have ha0 : (spatialEmbed (fun i => ξ i.succ)) 0 = 0 := spatialEmbed_zero _
+    have hsup : (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) =
+      (((translateSchwartzNPoint (d := d) (spatialEmbed (fun i => ξ i.succ))
+        (onePointToFin1CLM d g : SchwartzNPoint d 1)) : NPointDomain d 1 → ℂ)) := by
+      ext x
+      simp [onePointToFin1CLM_apply, SCV.translateSchwartz_apply,
+        translateSchwartzNPoint_apply, g_translated, sub_eq_add_neg]
+    rw [show tsupport (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) =
+      tsupport (((translateSchwartzNPoint (d := d) (spatialEmbed (fun i => ξ i.succ))
+        (onePointToFin1CLM d g : SchwartzNPoint d 1)) : NPointDomain d 1 → ℂ)) from
+      congr_arg tsupport hsup]
+    exact translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) (spatialEmbed (fun i => ξ i.succ)) ha0
+      (onePointToFin1CLM d g : SchwartzNPoint d 1) hg_pos
+  have hvanish_left :
+      VanishesToInfiniteOrderOnCoincidence
+        ((SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (ξ 0)
+            (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))) := by
+    exact
+      VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+        (f := SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+        (g := timeShiftSchwartzNPoint (d := d) (ξ 0)
+          (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))
+        hχ_pos
+        (timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport
+          (d := d) (ξ 0) hξ (onePointToFin1CLM d g_translated : SchwartzNPoint d 1)
+          hg_translated_pos)
+  have hfun :
+      (((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) (ξ 0)
+          (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))) :
+        NPointDomain d 2 → ℂ) =
+      ((twoPointProductLift χ (SCV.translateSchwartz (-ξ) g)) :
+        NPointDomain d 2 → ℂ) := by
+    funext y
+    have hosconj :
+        SchwartzNPoint.osConj (d := d) (n := 1)
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d χ : SchwartzNPoint d 1)) =
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1) := by
+      ext x
+      simp [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
+        timeReflectionN, timeReflection, timeReflection_timeReflection]
+    calc
+      (((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (ξ 0)
+            (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))) y)
+        = (((onePointToFin1CLM d χ : SchwartzNPoint d 1).tensorProduct
+            (timeShiftSchwartzNPoint (d := d) (ξ 0)
+              (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))) y) := by
+              simp [SchwartzNPoint.osConjTensorProduct, hosconj]
+      _ = χ (y 0) * g_translated (y 1 - timeShiftVec d (ξ 0)) := by
+            rw [SchwartzMap.tensorProduct_apply]
+            simp [onePointToFin1CLM_apply, splitFirst, splitLast,
+              timeShiftSchwartzNPoint_apply]
+      _ = χ (y 0) * g (y 1 + -ξ) := by
+            have hvec :
+                (-spatialEmbed (fun i => ξ i.succ) : SpacetimeDim d) +
+                    (-timeShiftVec d (ξ 0) : SpacetimeDim d) = -ξ := by
+              ext μ
+              cases μ using Fin.cases with
+              | zero =>
+                  simp [spatialEmbed, timeShiftVec]
+              | succ i =>
+                  simp [spatialEmbed, timeShiftVec]
+            simp [g_translated, SCV.translateSchwartz_apply, sub_eq_add_neg, hvec,
+              add_assoc, add_left_comm, add_comm]
+  have hEq :
+      twoPointProductLift χ (SCV.translateSchwartz (-ξ) g) =
+        ((SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (ξ 0)
+            (onePointToFin1CLM d g_translated : SchwartzNPoint d 1))) := by
+    ext y
+    exact congrFun hfun.symm y
+  have hvanish_right :
+      VanishesToInfiniteOrderOnCoincidence
+        (twoPointProductLift χ (SCV.translateSchwartz (-ξ) g)) := by
+    rw [hEq]
+    exact hvanish_left
+  apply Subtype.ext
+  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := ((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) (ξ 0)
+            (onePointToFin1CLM d g_translated : SchwartzNPoint d 1)))) hvanish_left,
+    ZeroDiagonalSchwartz.ofClassical_of_vanishes
+      (f := twoPointProductLift χ (SCV.translateSchwartz (-ξ) g)) hvanish_right]
+  ext y
+  exact congrFun hfun y
+
 /-- Apply semigroup-group Bochner to the OS matrix element attached to a
 single normalized positive-time one-point vector. -/
 theorem exists_bochner_measure_for_approx_identity
@@ -82,9 +734,10 @@ theorem exists_bochner_measure_for_approx_identity
     (lgc : OSLinearGrowthCondition d OS)
     (φ : SchwartzSpacetime d)
     (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
-    (hφ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
-        (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
-        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1) :
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg
     ∃ (μ : Measure (ℝ × (Fin d → ℝ))),
       IsFiniteMeasure μ ∧
       μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
@@ -98,6 +751,12 @@ theorem exists_bochner_measure_for_approx_identity
           ∫ p : ℝ × (Fin d → ℝ),
             Complex.exp (-(↑(t * p.1) : ℂ)) *
               Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ := by
+  have hφ_pos :
+      tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+    exact osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
   let f1 : SchwartzNPoint d 1 :=
     SchwartzNPoint.osConj (d := d) (n := 1)
       (onePointToFin1CLM d φ : SchwartzNPoint d 1)
@@ -471,19 +1130,188 @@ private theorem bochner_kernel_integral_eq_semigroup_integral
 
 /-- Spectral bridge, step B: the semigroup-group matrix-element integral
 attached to the one-point vector generated by `φ` is exactly the two-point
-Schwinger value of the corresponding product-shell test. -/
+Schwinger value of the corresponding convolution-form product-shell test. -/
+private theorem osSemigroupGroupMatrixElement_eq_translatedProductShell_of_pos
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (hφ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+    let hψ_compact := reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+    osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            hφ_pos⟧) : OSHilbertSpace OS))
+        (ξ 0) (fun i => ξ (Fin.succ i)) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ))) := by
+  dsimp
+  let ψ : SchwartzSpacetime d := reflectedSchwartzSpacetime φ
+  let hψ_pos_time : tsupport (ψ : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0} :=
+    reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+  let hψ_pos :
+      tsupport (((onePointToFin1CLM d ψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 :=
+    onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+  let hψ_compact : HasCompactSupport (ψ : SpacetimeDim d → ℂ) :=
+    reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+  let xφ : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from
+    ⟦PositiveTimeBorchersSequence.single 1
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+      hφ_pos⟧) : OSHilbertSpace OS))
+  let xψ : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from
+    ⟦PositiveTimeBorchersSequence.single 1
+      (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+      hψ_pos⟧) : OSHilbertSpace OS))
+  let ξs : Fin d → ℝ := fun i => ξ (Fin.succ i)
+  let a0 : SpacetimeDim d := Fin.cons 0 ξs
+  let ψ_translated : SchwartzSpacetime d := SCV.translateSchwartz (-a0) ψ
+  let fψ : SchwartzNPoint d 1 := onePointToFin1CLM d ψ
+  let gψ : SchwartzNPoint d 1 := onePointToFin1CLM d ψ_translated
+  have hψ_translated_pos :
+      tsupport ((gψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ) ⊆ OrderedPositiveTimeRegion d 1 := by
+    have ha0_zero : a0 0 = 0 := by simp [a0]
+    have hsup : ((gψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ) =
+      (((translateSchwartzNPoint (d := d) a0 fψ) :
+          NPointDomain d 1 → ℂ)) := by
+        ext x
+        simp [onePointToFin1CLM_apply, SCV.translateSchwartz_apply,
+          translateSchwartzNPoint_apply, ψ_translated, a0, gψ, fψ, sub_eq_add_neg]
+    rw [show tsupport ((gψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ) =
+      tsupport (((translateSchwartzNPoint (d := d) a0 fψ) :
+          NPointDomain d 1 → ℂ)) from congr_arg tsupport hsup]
+    exact translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+      (d := d) a0 ha0_zero fψ hψ_pos
+  have hψ_translated_compact :
+      HasCompactSupport ((gψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ) := by
+    have hspace : HasCompactSupport (ψ_translated : SpacetimeDim d → ℂ) := by
+      simpa [ψ_translated, Function.comp, SCV.translateSchwartz_apply, a0] using
+        hψ_compact.comp_homeomorph (Homeomorph.addRight (-a0))
+    simpa [onePointToFin1CLM] using
+      (hspace.comp_homeomorph
+        ((ContinuousLinearEquiv.funUnique (Fin 1) ℝ (SpacetimeDim d)).toHomeomorph))
+  have hx_eq_pre :
+      (⟦PositiveTimeBorchersSequence.single 1
+          (SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+          hφ_pos⟧ : OSPreHilbertSpace OS) =
+        (⟦PositiveTimeBorchersSequence.single 1
+            (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+            hψ_pos⟧ : OSPreHilbertSpace OS) :=
+    mk_single_osConj_onePoint_eq_mk_single_reflected_of_real
+      (d := d) OS φ hφ_real hφ_compact hφ_neg
+  have hx_eq : xφ = xψ := by
+    exact congrArg (fun z : OSPreHilbertSpace OS => (z : OSHilbertSpace OS)) hx_eq_pre
+  have htrans_eq :
+      (osSpatialTranslateHilbert (d := d) OS ξs) xψ =
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            gψ
+            hψ_translated_pos⟧) : OSHilbertSpace OS)) := by
+    simpa [ψ, hψ_pos_time, hψ_pos, a0, ψ_translated, gψ, fψ] using
+      (osSpatialTranslateHilbert_single_onePoint_eq
+        (d := d) OS ψ hψ_pos_time ξs)
+  calc
+    osSemigroupGroupMatrixElement (d := d) OS lgc xφ (ξ 0) ξs
+        = osSemigroupGroupMatrixElement (d := d) OS lgc xψ (ξ 0) ξs := by
+            rw [hx_eq]
+    _ = ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+          (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+          (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+          xψ
+          (((show OSPreHilbertSpace OS from
+              ⟦PositiveTimeBorchersSequence.single 1
+                gψ
+                hψ_translated_pos⟧) : OSHilbertSpace OS))
+          ((ξ 0 : ℝ) : ℂ) := by
+            simpa [osSpatialTranslateHilbert_zero, htrans_eq] using
+              (osSemigroupGroupMatrixElement_eq_translated_pair
+                (d := d) OS lgc xψ (0 : Fin d → ℝ) ξs (ξ 0) hξ)
+    _ = OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single 1
+            (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+            hψ_pos)
+          (PositiveTimeBorchersSequence.single 1
+            (onePointToFin1CLM d ψ_translated : SchwartzNPoint d 1)
+            hψ_translated_pos)
+          ((ξ 0 : ℝ) : ℂ) := by
+            symm
+            exact OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+              (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single 1
+                fψ hψ_pos)
+              (PositiveTimeBorchersSequence.single 1
+                gψ hψ_translated_pos)
+              ((ξ 0 : ℝ) : ℂ) (by simpa using hξ)
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (fψ.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d) (ξ 0)
+              gψ))) := by
+            exact OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single
+              (d := d) (OS := OS) (lgc := lgc)
+              (f := fψ)
+              (hf_ord := hψ_pos)
+              (g := gψ)
+              (hg_ord := hψ_translated_pos)
+              (hg_compact := hψ_translated_compact)
+              (t := ξ 0) hξ
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (((SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1)) : SchwartzNPoint d 1).osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d) (ξ 0)
+              gψ))) := by
+            exact congrArg
+              (fun Z : SchwartzNPoint d 2 =>
+                OS.S 2 (ZeroDiagonalSchwartz.ofClassical Z))
+              (by
+                simpa [fψ, ψ] using
+                  congrArg
+                    (fun f : SchwartzNPoint d 1 =>
+                      f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) (ξ 0) gψ))
+                    (osConj_onePointToFin1_eq_onePoint_reflected_of_real
+                      (d := d) φ hφ_real).symm)
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ))) := by
+            exact congrArg (fun Z => OS.S 2 Z) <|
+              by
+                simpa [ξs, a0, ψ_translated] using
+                  shifted_single_test_eq_twoPointProductLift_translate_local
+                    (d := d) φ ψ hφ_pos hψ_pos ξ hξ
+
 private theorem semigroup_integral_eq_schwinger_productShell
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (φ : SchwartzSpacetime d)
-    (hφ_int : ∫ u : SpacetimeDim d, φ u = 1)
+    (hφ_real : ∀ x, (φ x).im = 0)
     (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
     (hφ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
         (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
         NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
     (h : SchwartzSpacetime d)
     (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0})
     (hh_compact : HasCompactSupport (h : SpacetimeDim d → ℂ)) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_compact := reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+    let ψpt : positiveTimeCompactSupportSubmodule d := ⟨ψ, ⟨hψ_pos_time, hψ_compact⟩⟩
+    let hpt : positiveTimeCompactSupportSubmodule d := ⟨h, ⟨hh_pos, hh_compact⟩⟩
     ∫ ξ : SpacetimeDim d,
         osSemigroupGroupMatrixElement (d := d) OS lgc
           (((show OSPreHilbertSpace OS from
@@ -492,22 +1320,97 @@ private theorem semigroup_integral_eq_schwinger_productShell
                 (onePointToFin1CLM d φ : SchwartzNPoint d 1))
               hφ_pos⟧) : OSHilbertSpace OS))
           (ξ 0) (fun i => ξ (Fin.succ i)) * h ξ =
-      OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h)) := by
-  sorry
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ
+          (((positiveTimeCompactSupportConvolution hpt ψpt :
+              positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) := by
+  dsimp
+  let ψ : SchwartzSpacetime d := reflectedSchwartzSpacetime φ
+  let hψ_pos_time : tsupport (ψ : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0} :=
+    reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+  let hψ_pos :
+      tsupport (((onePointToFin1CLM d ψ : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 :=
+    onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+  let hψ_compact : HasCompactSupport (ψ : SpacetimeDim d → ℂ) :=
+    reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+  let ψpt : positiveTimeCompactSupportSubmodule d := ⟨ψ, ⟨hψ_pos_time, hψ_compact⟩⟩
+  let hpt : positiveTimeCompactSupportSubmodule d := ⟨h, ⟨hh_pos, hh_compact⟩⟩
+  calc
+    ∫ ξ : SpacetimeDim d,
+        osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              hφ_pos⟧) : OSHilbertSpace OS))
+          (ξ 0) (fun i => ξ (Fin.succ i)) * h ξ =
+      ∫ ξ : SpacetimeDim d,
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ))) * h ξ := by
+            refine MeasureTheory.integral_congr_ae ?_
+            filter_upwards with ξ
+            by_cases hξ : 0 < ξ 0
+            · rw [show
+                    osSemigroupGroupMatrixElement (d := d) OS lgc
+                        (((show OSPreHilbertSpace OS from
+                          ⟦PositiveTimeBorchersSequence.single 1
+                            (SchwartzNPoint.osConj (d := d) (n := 1)
+                              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+                            hφ_pos⟧) : OSHilbertSpace OS))
+                        (ξ 0) (fun i => ξ (Fin.succ i)) =
+                      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                        (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ))) by
+                    simpa [ψ, hψ_pos_time, hψ_pos, hψ_compact] using
+                      (osSemigroupGroupMatrixElement_eq_translatedProductShell_of_pos
+                        (d := d) OS lgc φ hφ_real hφ_compact hφ_neg hφ_pos ξ hξ)]
+            · have hξ_not_mem : ξ ∉ tsupport (h : SpacetimeDim d → ℂ) := by
+                intro hmem
+                exact hξ (hh_pos hmem)
+              have hξ_zero : h ξ = 0 :=
+                image_eq_zero_of_notMem_tsupport hξ_not_mem
+              simp [hξ_zero]
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ
+            (((positiveTimeCompactSupportConvolution hpt ψpt :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) := by
+          sorry
 
 /-- Spectral bridge, step C: once the center factor has unit integral, the
-product-shell pairing differs from the canonical difference lift by a single
-explicit error term. -/
+convolution-form product-shell pairing differs from the canonical difference
+lift by a single explicit error term. -/
 private theorem productShell_eq_differenceLift_plus_error
     (OS : OsterwalderSchraderAxioms d)
     (φ χ₀ h : SchwartzSpacetime d)
     (hφ_int : ∫ u : SpacetimeDim d, φ u = 1)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
     (hχ₀_int : ∫ u : SpacetimeDim d, χ₀ u = 1)
-    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0}) :
-    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h)) =
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0})
+    (hh_compact : HasCompactSupport (h : SpacetimeDim d → ℂ)) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_compact := reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+    let ψpt : positiveTimeCompactSupportSubmodule d := ⟨ψ, ⟨hψ_pos_time, hψ_compact⟩⟩
+    let hpt : positiveTimeCompactSupportSubmodule d := ⟨h, ⟨hh_pos, hh_compact⟩⟩
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+      (twoPointProductLift φ
+        (((positiveTimeCompactSupportConvolution hpt ψpt :
+            positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) =
       OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) +
-        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h)) -
+        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+            (twoPointProductLift φ
+              (((positiveTimeCompactSupportConvolution hpt ψpt :
+                  positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) -
           OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift φ h))) := by
+  let ψ := reflectedSchwartzSpacetime φ
+  let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+  let hψ_compact := reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+  let ψpt : positiveTimeCompactSupportSubmodule d := ⟨ψ, ⟨hψ_pos_time, hψ_compact⟩⟩
+  let hpt : positiveTimeCompactSupportSubmodule d := ⟨h, ⟨hh_pos, hh_compact⟩⟩
+  let convh : SchwartzSpacetime d :=
+    ((positiveTimeCompactSupportConvolution hpt ψpt : positiveTimeCompactSupportSubmodule d) :
+      SchwartzSpacetime d)
   have h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) := by
     intro hz
     have hz' := hh_pos hz
@@ -519,15 +1422,16 @@ private theorem productShell_eq_differenceLift_plus_error
       (d := d) OS h h0 χ₀ hχ₀_int φ]
     simp [hφ_int]
   calc
-    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h))
-        =
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ convh)) =
       OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift φ h)) +
-        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h)) -
+        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+            (twoPointProductLift φ convh)) -
           OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift φ h))) := by
             ring
     _ =
       OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) +
-        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ h)) -
+        (OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointProductLift φ convh)) -
           OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift φ h))) := by
             rw [hcenter]
 
@@ -545,7 +1449,7 @@ private theorem schwinger_error_tendsto_zero
     (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
     (hφ_support : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
         Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
-    (hφ_pos : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0})
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
     (hφ_onePoint_pos : ∀ n,
       tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
           (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
@@ -593,6 +1497,34 @@ theorem limit_bochner_kernel_reproduces_schwinger
       AEStronglyMeasurable (laplaceFourierKernel (d := d) μ) volume ∧
       ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * h ξ =
         OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) := by
+  rcases exists_negative_approx_identity_sequence (d := d) with
+    ⟨φ_seq, hφ_nonneg, hφ_real, hφ_int, hφ_compact, hφ_neg, hφ_support⟩
+  have hφ_onePoint_pos : ∀ n,
+      tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+          NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+    intro n
+    exact osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n)
+  have hbochner :
+      ∀ n, ∃ (μ : Measure (ℝ × (Fin d → ℝ))),
+        IsFiniteMeasure μ ∧
+        μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+        ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+          osSemigroupGroupMatrixElement (d := d) OS lgc
+            (((show OSPreHilbertSpace OS from
+              ⟦PositiveTimeBorchersSequence.single 1
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                  (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+                (hφ_onePoint_pos n)⟧) : OSHilbertSpace OS)) t a =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ := by
+    intro n
+    simpa [hφ_onePoint_pos] using
+      (exists_bochner_measure_for_approx_identity (d := d) OS lgc
+        (φ_seq n) (hφ_compact n) (hφ_neg n))
+  choose μ_seq hμ_fin hμ_supp hμ_repr using hbochner
   sorry
 
 /-- The limit Laplace-Fourier kernel extends holomorphically in the time

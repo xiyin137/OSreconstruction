@@ -575,6 +575,67 @@ theorem osSpatialTranslateHilbert_coe
     (UniformSpace.Completion.denseRange_coe)
     (UniformSpace.Completion.isUniformInducing_coe _) x
 
+/-- Spatial translation of a one-point positive-time vector is represented by
+the corresponding spatially translated one-point test. -/
+theorem osSpatialTranslateHilbert_single_onePoint_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (g : SchwartzSpacetime d)
+    (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (a : Fin d → ℝ) :
+    let hg_ord :=
+      onePointToFin1_tsupport_orderedPositiveTime (d := d) g hg_pos
+    let a0 : SpacetimeDim d := Fin.cons 0 a
+    let g_translated := SCV.translateSchwartz (-a0) g
+    let hg_translated_ord :
+        tsupport (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+          NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 :=
+      by
+        have ha0 : a0 0 = 0 := by simp [a0]
+        have hsup : (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+            NPointDomain d 1 → ℂ)) =
+          (((translateSchwartzNPoint (d := d) a0
+            (onePointToFin1CLM d g : SchwartzNPoint d 1)) :
+              NPointDomain d 1 → ℂ)) := by
+            ext x
+            simp [onePointToFin1CLM_apply, SCV.translateSchwartz_apply,
+              translateSchwartzNPoint_apply, g_translated, sub_eq_add_neg]
+        rw [show tsupport (((onePointToFin1CLM d g_translated : SchwartzNPoint d 1) :
+            NPointDomain d 1 → ℂ)) =
+          tsupport (((translateSchwartzNPoint (d := d) a0
+            (onePointToFin1CLM d g : SchwartzNPoint d 1)) :
+              NPointDomain d 1 → ℂ)) from congr_arg tsupport hsup]
+        exact translateSchwartzNPoint_preserves_ordered_positive_tsupport_spatial
+          (d := d) a0 ha0
+          (onePointToFin1CLM d g : SchwartzNPoint d 1) hg_ord
+    (osSpatialTranslateHilbert (d := d) OS a)
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d g : SchwartzNPoint d 1)
+              hg_ord⟧) : OSHilbertSpace OS)) =
+      (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d g_translated : SchwartzNPoint d 1)
+              hg_translated_ord⟧) : OSHilbertSpace OS)) := by
+  dsimp
+  rw [osSpatialTranslateHilbert_coe (d := d) OS a]
+  apply congrArg (fun z : OSPreHilbertSpace OS => (z : OSHilbertSpace OS))
+  apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+  intro n
+  by_cases hn : n = 1
+  · subst hn
+    have htrans :
+        translateSchwartzNPoint (d := d) (Fin.cons 0 a)
+          (onePointToFin1CLM d g : SchwartzNPoint d 1) =
+        (onePointToFin1CLM d (SCV.translateSchwartz (-Fin.cons 0 a) g) :
+          SchwartzNPoint d 1) := by
+      ext x
+      simp [onePointToFin1CLM_apply, SCV.translateSchwartz_apply,
+        translateSchwartzNPoint_apply, sub_eq_add_neg]
+    simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+      BorchersSequence.single, spatialTranslatePositiveTimeBorchers_funcs, htrans]
+  · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+      BorchersSequence.single, spatialTranslatePositiveTimeBorchers_funcs, hn]
+
 /-- The Hilbert-space spatial translations form an additive representation. -/
 theorem osSpatialTranslateHilbert_comp
     (OS : OsterwalderSchraderAxioms d)
