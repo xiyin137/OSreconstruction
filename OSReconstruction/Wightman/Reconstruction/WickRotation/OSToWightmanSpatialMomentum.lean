@@ -1,4 +1,5 @@
 import OSReconstruction.SCV.SemigroupGroupBochner
+import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
 
 /-!
@@ -919,6 +920,591 @@ theorem tendsto_osSpatialTranslateLinear_axis_nhds_zero_of_isCompactSupport
     lt_of_pow_lt_pow_left₀ 2 hε.le (by simpa using hnsq)
   simpa [T, x0] using hroot
 
+/-! ## Compact-support truncations for the dense positive-time core -/
+
+private noncomputable def unitBallBumpSchwartzNPointRadius
+    (n d : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivReal n (d + 1))
+    (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
+
+private noncomputable def bumpTruncationRadiusNPoint {n : ℕ}
+    (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
+  SchwartzMap.smulLeftCLM ℂ
+    (unitBallBumpSchwartzNPointRadius n d
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
+
+private theorem unflatten_flattenSchwartzNPoint_local {n : ℕ}
+    (f : SchwartzNPoint d n) :
+    unflattenSchwartzNPoint (d := d) (flattenSchwartzNPoint (d := d) f) = f := by
+  ext x
+  simp [flattenSchwartzNPoint_apply]
+
+private theorem bumpTruncationRadiusNPoint_eq_unflatten {n : ℕ}
+    (f : SchwartzNPoint d n) (N : ℕ) :
+    bumpTruncationRadiusNPoint (d := d) f N =
+      unflattenSchwartzNPoint (d := d)
+        (OSReconstruction.bumpTruncationRadius (flattenSchwartzNPoint (d := d) f) N) := by
+  ext x
+  rw [unflattenSchwartzNPoint_apply]
+  rw [bumpTruncationRadiusNPoint]
+  rw [OSReconstruction.bumpTruncationRadius]
+  rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
+  rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
+  simp [unitBallBumpSchwartzNPointRadius, flattenSchwartzNPoint_apply]
+
+private def compactApproxPositiveTimeBorchers
+    (F : PositiveTimeBorchersSequence d) (N : ℕ) :
+    PositiveTimeBorchersSequence d where
+  toBorchersSequence :=
+    { funcs := fun n => bumpTruncationRadiusNPoint (((F : BorchersSequence d).funcs n)) N
+      bound := ((F : BorchersSequence d).bound)
+      bound_spec := by
+        intro n hn
+        simp [bumpTruncationRadiusNPoint, (F : BorchersSequence d).bound_spec n hn] }
+  ordered_tsupport := by
+    intro n x hx
+    change x ∈ tsupport
+      ((((SchwartzMap.smulLeftCLM ℂ
+          (unitBallBumpSchwartzNPointRadius n d
+            (OSReconstruction.bumpTruncationRadiusValue N)
+            (OSReconstruction.bumpTruncationRadiusValue_pos N)))
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) :
+        SchwartzNPoint d n) : NPointDomain d n → ℂ) at hx
+    have hsubset := SchwartzMap.tsupport_smulLeftCLM_subset
+      (F := ℂ)
+      (g := unitBallBumpSchwartzNPointRadius n d
+        (OSReconstruction.bumpTruncationRadiusValue N)
+        (OSReconstruction.bumpTruncationRadiusValue_pos N))
+      (f := ((F : BorchersSequence d).funcs n : SchwartzNPoint d n))
+    exact F.ordered_tsupport n (hsubset hx).1
+
+@[simp] private theorem compactApproxPositiveTimeBorchers_funcs
+    (F : PositiveTimeBorchersSequence d) (N n : ℕ) :
+    (((compactApproxPositiveTimeBorchers (d := d) F N : PositiveTimeBorchersSequence d) :
+        BorchersSequence d).funcs n : SchwartzNPoint d n) =
+      bumpTruncationRadiusNPoint (d := d)
+        (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := rfl
+
+private theorem compactApproxPositiveTimeBorchers_component_compact
+    (F : PositiveTimeBorchersSequence d) (N n : ℕ) :
+    HasCompactSupport
+      ((((compactApproxPositiveTimeBorchers F N : PositiveTimeBorchersSequence d) :
+        BorchersSequence d).funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
+  have hflat :
+      HasCompactSupport
+        (((OSReconstruction.bumpTruncationRadius
+          (flattenSchwartzNPoint (d := d)
+            (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N :
+            SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) :
+          (Fin (n * (d + 1)) → ℝ) → ℂ)) := by
+    simpa [OSReconstruction.bumpTruncationRadius] using
+      (OSReconstruction.hasCompactSupport_cutoff_mul_radius
+        (OSReconstruction.bumpTruncationRadiusValue N)
+        (OSReconstruction.bumpTruncationRadiusValue_pos N)
+        (flattenSchwartzNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))))
+  rw [compactApproxPositiveTimeBorchers_funcs (d := d)]
+  rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+  simpa using hflat.comp_homeomorph (flattenCLEquivReal n (d + 1)).toHomeomorph
+
+private theorem tendsto_compactApproxPositiveTimeBorchers_component
+    (F : PositiveTimeBorchersSequence d) (n : ℕ) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        (((compactApproxPositiveTimeBorchers F N : PositiveTimeBorchersSequence d) :
+          BorchersSequence d).funcs n : SchwartzNPoint d n))
+      Filter.atTop
+      (nhds (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) := by
+  have hflat :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          OSReconstruction.bumpTruncationRadius
+            (flattenSchwartzNPoint (d := d)
+              (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N)
+        Filter.atTop
+        (nhds (flattenSchwartzNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))) := by
+    simpa using
+      (SchwartzMap.tendsto_bump_truncation_nhds
+        (flattenSchwartzNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))))
+  have hrew :
+      (fun N : ℕ =>
+        (((compactApproxPositiveTimeBorchers (d := d) F N :
+            PositiveTimeBorchersSequence d) :
+          BorchersSequence d).funcs n : SchwartzNPoint d n)) =
+      fun N : ℕ =>
+        bumpTruncationRadiusNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := by
+    funext N
+    simp [compactApproxPositiveTimeBorchers_funcs]
+  rw [hrew]
+  have hrew' :
+      (fun N : ℕ =>
+        bumpTruncationRadiusNPoint (d := d)
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N) =
+      fun N : ℕ =>
+        unflattenSchwartzNPoint (d := d)
+          (OSReconstruction.bumpTruncationRadius
+            (flattenSchwartzNPoint (d := d)
+              (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) N) := by
+    funext N
+    rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+  rw [hrew']
+  have hunflat :=
+    ((unflattenSchwartzNPoint (d := d)).continuous.tendsto
+      (flattenSchwartzNPoint (d := d)
+        (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))).comp hflat
+  simpa [Function.comp, unflatten_flattenSchwartzNPoint_local] using hunflat
+
+private theorem tendsto_compactApproxPositiveTimeBorchers_diff_component
+    (F : PositiveTimeBorchersSequence d) (n : ℕ) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        ((((compactApproxPositiveTimeBorchers (d := d) F N - F :
+            PositiveTimeBorchersSequence d) :
+          BorchersSequence d).funcs n : SchwartzNPoint d n)))
+      Filter.atTop
+      (nhds (0 : SchwartzNPoint d n)) := by
+  have hconst :
+      Filter.Tendsto
+        (fun _ : ℕ =>
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)))
+        Filter.atTop
+        (nhds (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))) :=
+    tendsto_const_nhds
+  simpa [sub_eq_add_neg] using
+    (tendsto_compactApproxPositiveTimeBorchers_component (d := d) F n).sub hconst
+
+private theorem tendsto_compactApproxPositiveTimeBorchers_diff_pair
+    (F : PositiveTimeBorchersSequence d) (n m : ℕ) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        ((((compactApproxPositiveTimeBorchers (d := d) F N - F :
+            PositiveTimeBorchersSequence d) :
+          BorchersSequence d).funcs n : SchwartzNPoint d n)).osConjTensorProduct
+          ((((compactApproxPositiveTimeBorchers (d := d) F N - F :
+            PositiveTimeBorchersSequence d) :
+          BorchersSequence d).funcs m : SchwartzNPoint d m)))
+      Filter.atTop
+      (nhds (0 : SchwartzNPoint d (n + m))) := by
+  have hprod :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          ( ((((compactApproxPositiveTimeBorchers (d := d) F N - F :
+                PositiveTimeBorchersSequence d) :
+              BorchersSequence d).funcs n : SchwartzNPoint d n)),
+            ((((compactApproxPositiveTimeBorchers (d := d) F N - F :
+                PositiveTimeBorchersSequence d) :
+              BorchersSequence d).funcs m : SchwartzNPoint d m)) ))
+        Filter.atTop
+        (nhds ((0 : SchwartzNPoint d n), (0 : SchwartzNPoint d m))) := by
+    exact (tendsto_compactApproxPositiveTimeBorchers_diff_component (d := d) F n).prodMk_nhds
+      (tendsto_compactApproxPositiveTimeBorchers_diff_component (d := d) F m)
+  simpa using
+    ((SchwartzNPoint.osConjTensorProduct_continuous (d := d) (n := n) (m := m)).continuousAt.tendsto.comp
+      hprod)
+
+private noncomputable def compactApproxPositiveTimeBorchers_diff_pairZeroDiag
+    (F : PositiveTimeBorchersSequence d) (n m N : ℕ) :
+    ZeroDiagonalSchwartz d (n + m) := by
+  let Δ : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers (d := d) F N - F
+  refine ⟨((((Δ : PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n :
+      SchwartzNPoint d n)).osConjTensorProduct
+        ((((Δ : PositiveTimeBorchersSequence d) : BorchersSequence d).funcs m :
+          SchwartzNPoint d m)), ?_⟩
+  exact VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+    (d := d)
+    (f := (((Δ : PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n : SchwartzNPoint d n))
+    (g := (((Δ : PositiveTimeBorchersSequence d) : BorchersSequence d).funcs m : SchwartzNPoint d m))
+    (Δ.ordered_tsupport n) (Δ.ordered_tsupport m)
+
+private theorem tendsto_compactApproxPositiveTimeBorchers_diff_pair_schwinger
+    (OS : OsterwalderSchraderAxioms d) (F : PositiveTimeBorchersSequence d) (n m : ℕ) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        OS.S (n + m)
+          (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N))
+      Filter.atTop
+      (nhds 0) := by
+  have hsub :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N)
+        Filter.atTop
+        (nhds (0 : ZeroDiagonalSchwartz d (n + m))) := by
+    rw [tendsto_subtype_rng]
+    simpa [compactApproxPositiveTimeBorchers_diff_pairZeroDiag] using
+      tendsto_compactApproxPositiveTimeBorchers_diff_pair (d := d) F n m
+  have hmain :
+      Filter.Tendsto
+        (((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS (n + m)) :
+            ZeroDiagonalSchwartz d (n + m) → ℂ) ∘
+          fun N : ℕ => compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N)
+        Filter.atTop
+        (nhds
+          (((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS (n + m)) :
+            ZeroDiagonalSchwartz d (n + m) → ℂ) 0)) :=
+    ((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS (n + m)).continuous.tendsto 0).comp hsub
+  have hzero :
+      (((OsterwalderSchraderAxioms.schwingerCLM (d := d) OS (n + m)) :
+          ZeroDiagonalSchwartz d (n + m) → ℂ) 0) = 0 := by
+    simpa [OsterwalderSchraderAxioms.schwingerCLM] using
+      (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS (n + m)).map_zero
+  have hzero' : OS.S (n + m) (0 : ZeroDiagonalSchwartz d (n + m)) = 0 := by
+    simpa [OsterwalderSchraderAxioms.schwingerCLM] using hzero
+  have hmain' :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          OS.S (n + m)
+            (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N))
+        Filter.atTop
+        (nhds (OS.S (n + m) 0)) := by
+    simpa [compactApproxPositiveTimeBorchers_diff_pairZeroDiag, ContinuousLinearMap.comp_apply,
+      OsterwalderSchraderAxioms.schwingerCLM, Function.comp] using hmain
+  simpa [hzero'] using hmain'
+
+private theorem tendsto_compactApproxPositiveTimeBorchers_diff_osInner
+    (OS : OsterwalderSchraderAxioms d) (F : PositiveTimeBorchersSequence d) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        PositiveTimeBorchersSequence.osInner OS
+          (compactApproxPositiveTimeBorchers (d := d) F N - F)
+          (compactApproxPositiveTimeBorchers (d := d) F N - F))
+      Filter.atTop
+      (nhds 0) := by
+  have hsum_inner :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+            ∑ m ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+              OS.S (n + m)
+                (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N))
+        Filter.atTop
+        (nhds (0 : ℂ)) := by
+    have hinner : ∀ n : ℕ, ∀ s : Finset ℕ,
+        Filter.Tendsto
+          (fun N : ℕ =>
+            ∑ m ∈ s,
+              OS.S (n + m)
+                (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N))
+          Filter.atTop
+          (nhds (0 : ℂ)) := by
+      intro n s
+      classical
+      refine Finset.induction_on (s := s) ?_ ?_
+      · simp
+      · intro m s hm ih
+        simpa [Finset.sum_insert, hm] using
+          (tendsto_compactApproxPositiveTimeBorchers_diff_pair_schwinger
+            (d := d) OS F n m).add ih
+    have houter : ∀ s : Finset ℕ,
+        Filter.Tendsto
+          (fun N : ℕ =>
+            ∑ n ∈ s,
+              ∑ m ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+                OS.S (n + m)
+                  (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N))
+          Filter.atTop
+          (nhds (0 : ℂ)) := by
+      intro s
+      classical
+      refine Finset.induction_on (s := s) ?_ ?_
+      · simp
+      · intro n s hn ih
+        simpa [Finset.sum_insert, hn] using
+          (hinner n (Finset.range (((F : BorchersSequence d).bound) + 1))).add ih
+    classical
+    exact houter (Finset.range (((F : BorchersSequence d).bound) + 1))
+  have hEq :
+      ∀ N : ℕ,
+        ∑ n ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+          ∑ m ∈ Finset.range (((F : BorchersSequence d).bound) + 1),
+            OS.S (n + m)
+              (compactApproxPositiveTimeBorchers_diff_pairZeroDiag (d := d) F n m N) =
+        PositiveTimeBorchersSequence.osInner OS
+          (compactApproxPositiveTimeBorchers (d := d) F N - F)
+          (compactApproxPositiveTimeBorchers (d := d) F N - F) := by
+    intro N
+    unfold PositiveTimeBorchersSequence.osInner OSInnerProduct
+    simp [compactApproxPositiveTimeBorchers, BorchersSequence.sub_bound, max_self]
+    apply Finset.sum_congr rfl
+    intro n hn
+    apply Finset.sum_congr rfl
+    intro m hm
+    let fN : SchwartzNPoint d n :=
+      bumpTruncationRadiusNPoint (d := d) (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N -
+        ((F : BorchersSequence d).funcs n : SchwartzNPoint d n)
+    let gN : SchwartzNPoint d m :=
+      bumpTruncationRadiusNPoint (d := d) (((F : BorchersSequence d).funcs m : SchwartzNPoint d m)) N -
+        ((F : BorchersSequence d).funcs m : SchwartzNPoint d m)
+    have hvanish :
+        VanishesToInfiniteOrderOnCoincidence (fN.osConjTensorProduct gN) := by
+      exact VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+        (d := d) (f := fN) (g := gN)
+        ((compactApproxPositiveTimeBorchers (d := d) F N - F).ordered_tsupport n)
+        ((compactApproxPositiveTimeBorchers (d := d) F N - F).ordered_tsupport m)
+    have hclass :
+        OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (fN.osConjTensorProduct gN)) =
+          OS.S (n + m) ⟨fN.osConjTensorProduct gN, hvanish⟩ := by
+      exact congrArg (fun z : ZeroDiagonalSchwartz d (n + m) => OS.S (n + m) z)
+        (ZeroDiagonalSchwartz.ofClassical_of_vanishes
+          (f := fN.osConjTensorProduct gN) hvanish)
+    simpa [fN, gN, compactApproxPositiveTimeBorchers, compactApproxPositiveTimeBorchers_funcs]
+      using hclass.symm
+  refine Filter.Tendsto.congr' ?_ hsum_inner
+  exact Filter.Eventually.of_forall hEq
+
+private theorem osSpatialTranslateHilbert_norm_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (a : Fin d → ℝ)
+    (x : OSHilbertSpace OS) :
+    ‖(osSpatialTranslateHilbert (d := d) OS a) x‖ = ‖x‖ := by
+  have hsq :
+      ‖(osSpatialTranslateHilbert (d := d) OS a) x‖ ^ 2 = ‖x‖ ^ 2 := by
+    rw [← inner_self_eq_norm_sq (𝕜 := ℂ) ((osSpatialTranslateHilbert (d := d) OS a) x),
+      osSpatialTranslateHilbert_inner_eq, inner_self_eq_norm_sq]
+  nlinarith [norm_nonneg ((osSpatialTranslateHilbert (d := d) OS a) x), norm_nonneg x]
+
+private theorem tendsto_osSpatialTranslateHilbert_axis_nhds_zero
+    (OS : OsterwalderSchraderAxioms d) (i : Fin d)
+    (x : OSHilbertSpace OS) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        osSpatialTranslateHilbert (d := d) OS
+          (t • (Pi.single i (1 : ℝ) : Fin d → ℝ)) x)
+      (nhds 0)
+      (nhds x) := by
+  let v : Fin d → ℝ := Pi.single i (1 : ℝ)
+  refine Metric.tendsto_nhds.2 ?_
+  intro ε hε
+  have hε5 : 0 < ε / 5 := by positivity
+  have hdense :
+      Dense (Set.range (↑· : OSPreHilbertSpace OS → OSHilbertSpace OS)) := by
+    exact UniformSpace.Completion.denseRange_coe
+  have hx_mem :
+      x ∈ closure (Set.range (↑· : OSPreHilbertSpace OS → OSHilbertSpace OS)) := by
+    simpa [hdense.closure_eq] using (show x ∈ (Set.univ : Set (OSHilbertSpace OS)) from by simp)
+  rw [Metric.mem_closure_iff] at hx_mem
+  rcases hx_mem (ε / 5) hε5 with ⟨y, hy_range, hy_close⟩
+  rcases hy_range with ⟨y0, rfl⟩
+  induction y0 using Quotient.inductionOn with
+  | h F =>
+      have happrox_inner :=
+        tendsto_compactApproxPositiveTimeBorchers_diff_osInner (d := d) OS F
+      let yN : ℕ → OSPreHilbertSpace OS := fun N =>
+        (⟦compactApproxPositiveTimeBorchers (d := d) F N - F⟧ : OSPreHilbertSpace OS)
+      have happrox_norm :
+          Filter.Tendsto
+            (fun N : ℕ => ‖yN N‖)
+            Filter.atTop
+            (nhds (0 : ℝ)) := by
+        have hkernel :
+            Filter.Tendsto
+              (fun N : ℕ => ‖yN N‖ ^ 2)
+              Filter.atTop
+              (nhds (0 : ℝ)) := by
+          have hre :
+              Filter.Tendsto
+                (fun N : ℕ =>
+                  RCLike.re
+                    (PositiveTimeBorchersSequence.osInner OS
+                      (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                      (compactApproxPositiveTimeBorchers (d := d) F N - F)))
+                Filter.atTop
+                (nhds (0 : ℝ)) := by
+            simpa [Function.comp] using
+              (Complex.continuous_re.continuousAt.tendsto.comp happrox_inner)
+          have hEq_kernel :
+              (fun N : ℕ => ‖yN N‖ ^ 2) =
+              (fun N : ℕ =>
+                RCLike.re
+                  (PositiveTimeBorchersSequence.osInner OS
+                    (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                    (compactApproxPositiveTimeBorchers (d := d) F N - F))) := by
+            funext N
+            have hnorm :=
+              congrArg RCLike.re (inner_self_eq_norm_sq (𝕜 := ℂ) (yN N))
+            have hinner :
+                @inner ℂ (OSPreHilbertSpace OS)
+                    (OSPreHilbertSpace.instInner OS) (yN N) (yN N) =
+                  PositiveTimeBorchersSequence.osInner OS
+                    (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                    (compactApproxPositiveTimeBorchers (d := d) F N - F) := by
+              simpa [yN] using
+                (OSPreHilbertSpace.inner_eq (OS := OS)
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F))
+            calc
+              ‖yN N‖ ^ 2 =
+                  RCLike.re
+                    (@inner ℂ (OSPreHilbertSpace OS)
+                      (OSPreHilbertSpace.instInner OS) (yN N) (yN N)) := by
+                simpa using hnorm.symm
+              _ = RCLike.re
+                    (PositiveTimeBorchersSequence.osInner OS
+                      (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                      (compactApproxPositiveTimeBorchers (d := d) F N - F)) := by
+                exact congrArg RCLike.re hinner
+          exact hEq_kernel.symm ▸ hre
+        refine Metric.tendsto_nhds.2 ?_
+        intro η hη
+        have hη2 : (0 : ℝ) < η ^ 2 := sq_pos_of_pos hη
+        filter_upwards [Metric.tendsto_nhds.1 hkernel (η ^ 2) hη2] with N hclose
+        have hnsq : ‖yN N‖ ^ 2 < η ^ 2 := by
+          simpa [Real.dist_eq] using hclose
+        have hroot : ‖yN N‖ < η :=
+          lt_of_pow_lt_pow_left₀ 2 hη.le (by simpa using hnsq)
+        simpa [yN] using hroot
+      have happrox_event :
+          ∀ᶠ N : ℕ in Filter.atTop,
+            ‖yN N‖ < ε / 5 := by
+        simpa [Real.dist_eq] using (Metric.tendsto_nhds.1 happrox_norm (ε / 5) hε5)
+      rcases Filter.mem_atTop_sets.mp happrox_event with ⟨N0, hN0⟩
+      let F0 := compactApproxPositiveTimeBorchers (d := d) F N0
+      let zF0 : OSPreHilbertSpace OS := (⟦F0 - F⟧ : OSPreHilbertSpace OS)
+      let xF_pre : OSPreHilbertSpace OS := (⟦F⟧ : OSPreHilbertSpace OS)
+      let xF0_pre : OSPreHilbertSpace OS := (⟦F0⟧ : OSPreHilbertSpace OS)
+      let xF : OSHilbertSpace OS := ((xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+      let xF0 : OSHilbertSpace OS := ((xF0_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+      have hF0 :
+          ‖((zF0 : OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ < ε / 5 := by
+        simpa [zF0, yN, F0] using hN0 N0 le_rfl
+      have hcore :=
+        tendsto_osSpatialTranslateLinear_axis_nhds_zero_of_isCompactSupport
+          (d := d) OS i F0 (compactApproxPositiveTimeBorchers_component_compact (d := d) F N0)
+      have hcore_event :
+          ∀ᶠ t : ℝ in nhds 0,
+            ‖(osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre‖ < ε / 5 := by
+        simpa [xF0_pre, Real.dist_eq] using (Metric.tendsto_nhds.1 hcore (ε / 5) hε5)
+      filter_upwards [hcore_event] with t ht
+      rw [dist_eq_norm] at hy_close ⊢
+      have hfirst :
+          ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) x -
+              (osSpatialTranslateHilbert (d := d) OS (t • v))
+                xF‖ < ε / 5 := by
+        have hUdiffx :
+            ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) x -
+                (osSpatialTranslateHilbert (d := d) OS (t • v))
+                  xF‖ =
+              ‖x - xF‖ := by
+          calc
+            ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) x -
+                (osSpatialTranslateHilbert (d := d) OS (t • v)) xF‖
+                = ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) (x - xF)‖ := by
+                    rw [ContinuousLinearMap.map_sub]
+            _ = ‖x - xF‖ := by
+                  exact osSpatialTranslateHilbert_norm_eq (d := d) OS (t • v) (x - xF)
+        simpa [xF, hUdiffx] using hy_close
+      have hfourthNormEq :
+          ‖xF0 - xF‖ = ‖((zF0 : OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ := by
+        have hcoediff :
+            (((xF0_pre - xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) = xF0 - xF := by
+          simpa [xF, xF0] using (UniformSpace.Completion.coe_sub xF0_pre xF_pre)
+        have hzF0 : xF0_pre - xF_pre = zF0 := by
+          dsimp [xF0_pre, xF_pre, zF0, F0]
+          rfl
+        calc
+          ‖xF0 - xF‖ = ‖(((xF0_pre - xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))‖ := by
+            rw [← hcoediff]
+          _ = ‖((zF0 : OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ := by
+            rw [hzF0]
+      have hsecond :
+          ‖(osSpatialTranslateHilbert (d := d) OS (t • v))
+                xF -
+              (osSpatialTranslateHilbert (d := d) OS (t • v))
+                xF0‖ < ε / 5 := by
+        have hUdiff :
+            ‖(osSpatialTranslateHilbert (d := d) OS (t • v))
+                  xF -
+                (osSpatialTranslateHilbert (d := d) OS (t • v))
+                  xF0‖ =
+              ‖xF - xF0‖ := by
+          calc
+            ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) xF -
+                (osSpatialTranslateHilbert (d := d) OS (t • v)) xF0‖
+                = ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) (xF - xF0)‖ := by
+                    rw [ContinuousLinearMap.map_sub]
+            _ = ‖xF - xF0‖ := by
+                  exact osSpatialTranslateHilbert_norm_eq (d := d) OS (t • v) (xF - xF0)
+        have hxF0 : ‖xF - xF0‖ < ε / 5 := by
+          rw [norm_sub_rev, hfourthNormEq]
+          exact hF0
+        simpa [hUdiff] using hxF0
+      have hthird :
+          ‖(osSpatialTranslateHilbert (d := d) OS (t • v))
+                xF0 -
+              xF0‖ < ε / 5 := by
+        have ht' :
+            ‖(((osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre :
+                OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ < ε / 5 := by
+          simpa using ht
+        have hthird_norm :
+            ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) xF0 - xF0‖ =
+              ‖(((osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre :
+                  OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ := by
+          have hcoediff :
+              ((((osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre :
+                    OSPreHilbertSpace OS) : OSHilbertSpace OS)) =
+                (osSpatialTranslateHilbert (d := d) OS (t • v)) xF0 - xF0 := by
+            simpa [xF0, osSpatialTranslateHilbert_coe (d := d) OS (t • v) xF0_pre] using
+              (UniformSpace.Completion.coe_sub
+                ((osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre))
+                xF0_pre)
+          rw [← hcoediff]
+        rw [hthird_norm]
+        exact ht'
+      have hfourth :
+          ‖xF0 - xF‖ < ε / 5 := by
+        exact lt_of_eq_of_lt hfourthNormEq hF0
+      have hfifth :
+          ‖xF - x‖ < ε / 5 := by
+        simpa [xF, norm_sub_rev] using hy_close
+      let a1 : OSHilbertSpace OS :=
+        (osSpatialTranslateHilbert (d := d) OS (t • v)) x -
+          (osSpatialTranslateHilbert (d := d) OS (t • v)) xF
+      let a2 : OSHilbertSpace OS :=
+        (osSpatialTranslateHilbert (d := d) OS (t • v)) xF -
+          (osSpatialTranslateHilbert (d := d) OS (t • v)) xF0
+      let a3 : OSHilbertSpace OS :=
+        (osSpatialTranslateHilbert (d := d) OS (t • v)) xF0 - xF0
+      let a4 : OSHilbertSpace OS := xF0 - xF
+      let a5 : OSHilbertSpace OS := xF - x
+      have ha1 : ‖a1‖ < ε / 5 := by
+        simpa [a1] using hfirst
+      have ha2 : ‖a2‖ < ε / 5 := by
+        simpa [a2] using hsecond
+      have ha3 : ‖a3‖ < ε / 5 := by
+        simpa [a3] using hthird
+      have ha4 : ‖a4‖ < ε / 5 := by
+        simpa [a4] using hfourth
+      have ha5 : ‖a5‖ < ε / 5 := by
+        simpa [a5] using hfifth
+      have hdecomp :
+          (osSpatialTranslateHilbert (d := d) OS (t • v)) x - x =
+            a1 + (a2 + (a3 + (a4 + a5))) := by
+        dsimp [a1, a2, a3, a4, a5]
+        abel_nf
+      calc
+        ‖(osSpatialTranslateHilbert (d := d) OS (t • v)) x - x‖
+            = ‖a1 + (a2 + (a3 + (a4 + a5)))‖ := by
+              rw [hdecomp]
+        _ ≤ ‖a1‖ + ‖a2 + (a3 + (a4 + a5))‖ := by
+              exact norm_add_le _ _
+        _ ≤ ‖a1‖ + (‖a2‖ + ‖a3 + (a4 + a5)‖) := by
+              gcongr
+              exact norm_add_le _ _
+        _ ≤ ‖a1‖ + (‖a2‖ + (‖a3‖ + ‖a4 + a5‖)) := by
+              gcongr
+              exact norm_add_le _ _
+        _ ≤ ‖a1‖ + (‖a2‖ + (‖a3‖ + (‖a4‖ + ‖a5‖))) := by
+              gcongr
+              exact norm_add_le _ _
+        _ < ε / 5 + (ε / 5 + (ε / 5 + (ε / 5 + ε / 5))) := by
+              exact add_lt_add ha1 (add_lt_add ha2 (add_lt_add ha3 (add_lt_add ha4 ha5)))
+        _ = ε := by ring
+
 /-- Strong continuity of the axis slice on the Hilbert completion. -/
 theorem continuous_osSpatialTranslateHilbert_axis
     (OS : OsterwalderSchraderAxioms d) (i : Fin d)
@@ -926,7 +1512,44 @@ theorem continuous_osSpatialTranslateHilbert_axis
     Continuous (fun t : ℝ =>
       osSpatialTranslateHilbert (d := d) OS
         (t • (Pi.single i (1 : ℝ) : Fin d → ℝ)) x) := by
-  sorry
+  let v : Fin d → ℝ := Pi.single i (1 : ℝ)
+  refine continuous_iff_continuousAt.2 ?_
+  intro t
+  have hzero :=
+    tendsto_osSpatialTranslateHilbert_axis_nhds_zero (d := d) OS i
+      ((osSpatialTranslateHilbert (d := d) OS (t • v)) x)
+  have hshift : Filter.Tendsto (fun s : ℝ => s - t) (nhds t) (nhds 0) := by
+    have hcont : Continuous (fun s : ℝ => s - t) := by
+      fun_prop
+    simpa using (hcont.continuousAt : ContinuousAt (fun s : ℝ => s - t) t).tendsto
+  have hEq :
+      ∀ s : ℝ,
+        osSpatialTranslateHilbert (d := d) OS (s • v) x =
+          osSpatialTranslateHilbert (d := d) OS ((s - t) • v)
+            ((osSpatialTranslateHilbert (d := d) OS (t • v)) x) := by
+    intro s
+    have hadd : (s - t) • v + t • v = s • v := by
+      ext j
+      simp [v, sub_eq_add_neg]
+      ring
+    calc
+      osSpatialTranslateHilbert (d := d) OS (s • v) x
+          = osSpatialTranslateHilbert (d := d) OS (((s - t) • v) + (t • v)) x := by
+              rw [hadd]
+      _ = ((osSpatialTranslateHilbert (d := d) OS ((s - t) • v)).comp
+            (osSpatialTranslateHilbert (d := d) OS (t • v))) x := by
+              rw [← osSpatialTranslateHilbert_comp (d := d) OS ((s - t) • v) (t • v)]
+      _ = osSpatialTranslateHilbert (d := d) OS ((s - t) • v)
+            ((osSpatialTranslateHilbert (d := d) OS (t • v)) x) := rfl
+  have hmain :
+      Filter.Tendsto
+        (fun s : ℝ =>
+          osSpatialTranslateHilbert (d := d) OS ((s - t) • v)
+            ((osSpatialTranslateHilbert (d := d) OS (t • v)) x))
+        (nhds t)
+        (nhds ((osSpatialTranslateHilbert (d := d) OS (t • v)) x)) := by
+    simpa [v] using hzero.comp hshift
+  exact hmain.congr' (Filter.Eventually.of_forall fun s => (hEq s).symm)
 
 /-- Spatial translation commutes with the positive Euclidean time shift on the
 honest OS quotient. -/
