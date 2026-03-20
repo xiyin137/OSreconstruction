@@ -366,6 +366,109 @@ theorem exists_negative_approx_identity_sequence :
   · intro n
     exact (hs n).2.2.2.2.2
 
+/-- A normalized real nonnegative approximate identity with shrinking support
+recovers the value of any function continuous at `0`. -/
+private theorem approxIdentity_integral_tendsto_of_continuousAt_zero
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_support : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+        Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    {ψ : SpacetimeDim d → ℂ}
+    (hψ_cont : Continuous ψ) :
+    Filter.Tendsto (fun n => ∫ x : SpacetimeDim d, φ_seq n x * ψ x)
+      Filter.atTop (nhds (ψ 0)) := by
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  have hε2 : 0 < ε / 2 := by linarith
+  have hψ_cont0 : ContinuousAt ψ 0 := hψ_cont.continuousAt
+  rw [Metric.continuousAt_iff] at hψ_cont0
+  obtain ⟨δ, hδpos, hδ⟩ := hψ_cont0 (ε / 2) hε2
+  have hsmall : ∀ᶠ n : ℕ in Filter.atTop, 1 / (n + 1 : ℝ) < δ := by
+    rcases exists_nat_one_div_lt hδpos with ⟨N, hN⟩
+    filter_upwards [Filter.eventually_ge_atTop N] with n hn
+    have hmono : 1 / (n + 1 : ℝ) ≤ 1 / (N + 1 : ℝ) := by
+      have hNle : (N + 1 : ℝ) ≤ n + 1 := by
+        exact_mod_cast Nat.succ_le_succ hn
+      exact one_div_le_one_div_of_le (by positivity) hNle
+    exact lt_of_le_of_lt hmono hN
+  filter_upwards [hsmall] with n hn
+  have hnorm_int : ∫ x : SpacetimeDim d, ‖φ_seq n x‖ = 1 := by
+    have hnorm_re : ∀ x : SpacetimeDim d, ‖φ_seq n x‖ = (φ_seq n x).re := by
+      intro x
+      rw [← Complex.re_eq_norm.mpr ⟨hφ_nonneg n x, (hφ_real n x).symm⟩]
+    simp_rw [hnorm_re]
+    rw [show (fun x => (φ_seq n x).re) = (fun x => RCLike.re (φ_seq n x)) from rfl]
+    rw [integral_re (SchwartzMap.integrable (φ_seq n))]
+    exact congrArg Complex.re (hφ_int n)
+  have hbound : ∀ x : SpacetimeDim d,
+      ‖φ_seq n x * (ψ x - ψ 0)‖ ≤ (ε / 2) * ‖φ_seq n x‖ := by
+    intro x
+    by_cases hx : x ∈ tsupport (φ_seq n : SpacetimeDim d → ℂ)
+    · have hxball : x ∈ Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := hφ_support n hx
+      have hxdist : dist x 0 < δ := by
+        have : dist x 0 < 1 / (n + 1 : ℝ) := by
+          simpa [Metric.mem_ball] using hxball
+        exact lt_of_lt_of_le this hn.le
+      have hψx : ‖ψ x - ψ 0‖ < ε / 2 := by
+        simpa [dist_eq_norm] using hδ hxdist
+      calc
+        ‖φ_seq n x * (ψ x - ψ 0)‖ = ‖φ_seq n x‖ * ‖ψ x - ψ 0‖ := by
+          rw [norm_mul]
+        _ ≤ ‖φ_seq n x‖ * (ε / 2) := by
+          gcongr
+        _ = (ε / 2) * ‖φ_seq n x‖ := by ring
+    · have hx0 : φ_seq n x = 0 := by
+        by_contra hx0
+        exact hx (subset_tsupport _ (Function.mem_support.mpr hx0))
+      simp [hx0]
+  have hmeas : AEStronglyMeasurable (fun x => φ_seq n x * (ψ x - ψ 0)) := by
+    exact ((SchwartzMap.continuous (φ_seq n)).mul
+      (hψ_cont.sub continuous_const)).aestronglyMeasurable
+  have hIntDiff : Integrable (fun x : SpacetimeDim d => φ_seq n x * (ψ x - ψ 0)) := by
+    refine Integrable.mono' (((SchwartzMap.integrable (φ_seq n)).norm).const_mul (ε / 2)) hmeas ?_
+    exact Filter.Eventually.of_forall hbound
+  have hIntProd : Integrable (fun x : SpacetimeDim d => φ_seq n x * ψ x) := by
+    have hEq : (fun x : SpacetimeDim d => φ_seq n x * ψ x) =
+        fun x => φ_seq n x * (ψ x - ψ 0) + (ψ 0) * φ_seq n x := by
+      funext x
+      ring
+    rw [hEq]
+    exact hIntDiff.add ((SchwartzMap.integrable (φ_seq n)).const_mul (ψ 0))
+  have hEqInt :
+      (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ψ 0 =
+        ∫ x : SpacetimeDim d, φ_seq n x * (ψ x - ψ 0) := by
+    calc
+      (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ψ 0
+          = (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ∫ x : SpacetimeDim d, (ψ 0) * φ_seq n x := by
+              rw [MeasureTheory.integral_const_mul, hφ_int n]
+              ring
+      _ = ∫ x : SpacetimeDim d, ((φ_seq n x * ψ x) - (ψ 0) * φ_seq n x) := by
+            rw [← MeasureTheory.integral_sub hIntProd ((SchwartzMap.integrable (φ_seq n)).const_mul (ψ 0))]
+      _ = ∫ x : SpacetimeDim d, φ_seq n x * (ψ x - ψ 0) := by
+            congr with x
+            ring
+  calc
+    dist (∫ x : SpacetimeDim d, φ_seq n x * ψ x) (ψ 0)
+        = ‖(∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ψ 0‖ := by
+            rw [dist_eq_norm]
+    _ = ‖∫ x : SpacetimeDim d, φ_seq n x * (ψ x - ψ 0)‖ := by
+          rw [hEqInt]
+    _ ≤ ∫ x : SpacetimeDim d, ‖φ_seq n x * (ψ x - ψ 0)‖ := by
+          exact norm_integral_le_integral_norm _
+    _ ≤ ∫ x : SpacetimeDim d, (ε / 2) * ‖φ_seq n x‖ := by
+          apply MeasureTheory.integral_mono_of_nonneg
+          · exact Filter.Eventually.of_forall (fun _ => norm_nonneg _)
+          · exact (((SchwartzMap.integrable (φ_seq n)).norm).const_mul (ε / 2))
+          · exact Filter.Eventually.of_forall hbound
+    _ = (ε / 2) * ∫ x : SpacetimeDim d, ‖φ_seq n x‖ := by
+          rw [MeasureTheory.integral_const_mul]
+    _ = ε / 2 := by
+          simp [hnorm_int]
+    _ < ε := by
+          linarith
+
 /-- Local support bridge: negative-time support of a one-point spacetime probe
 becomes ordered positive-time support after `osConj`, because time reflection
 flips the sign of the time coordinate. This is the exact support input needed
@@ -1288,6 +1391,49 @@ private theorem schwinger_twoPointProductLift_eq_kernelIntegral_local
           congr 1
           ext p
           simp [twoPointProductLift_apply, mul_assoc]
+
+private theorem schwinger_twoPointDifferenceLift_eq_kernelIntegral_local
+    (OS : OsterwalderSchraderAxioms d)
+    (K : SpacetimeDim d → SpacetimeDim d → ℂ)
+    (hK_repr : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f =
+        ∫ p : SpacetimeDim d × SpacetimeDim d,
+          K p.1 p.2 *
+            f.1 (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume))
+    (χ h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ)) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 * χ p.1 * h (p.2 - p.1) ∂ (volume.prod volume) := by
+  have hvanish :
+      VanishesToInfiniteOrderOnCoincidence (twoPointDifferenceLift χ h) :=
+    twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ h h0
+  have hcoe :
+      (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)).1 =
+        twoPointDifferenceLift χ h :=
+    ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+      (f := twoPointDifferenceLift χ h) hvanish
+  calc
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 *
+          (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)).1
+            (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume) := by
+            exact hK_repr _
+    _ =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 *
+          (twoPointDifferenceLift χ h)
+            (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume) := by
+            congr 1
+            ext p
+            rw [hcoe]
+    _ =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 * χ p.1 * h (p.2 - p.1) ∂ (volume.prod volume) := by
+          congr 1
+          ext p
+          simp [twoPointDifferenceLift_apply, mul_assoc]
 
 /-- Spectral bridge, step B: the semigroup-group matrix-element integral
 attached to the one-point vector generated by `φ` is exactly the two-point
