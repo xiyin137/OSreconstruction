@@ -74,6 +74,18 @@ private def spacetimeTimeReflectionCLE : SpacetimeDim d ≃L[ℝ] SpacetimeDim d
     · simpa [timeReflection, hi] using
         (continuous_apply i : Continuous fun y : SpacetimeDim d => y i)
 
+private theorem timeReflection_norm_eq_local (x : SpacetimeDim d) :
+    ‖timeReflection d x‖ = ‖x‖ := by
+  have hnn : ‖timeReflection d x‖₊ = ‖x‖₊ := by
+    simp only [Pi.nnnorm_def, timeReflection]
+    apply Finset.sup_congr rfl
+    intro i hi
+    by_cases h0 : i = 0
+    · subst h0
+      simp [nnnorm_neg]
+    · simp [h0]
+  exact congrArg (fun z : NNReal => (z : ℝ)) hnn
+
 /-- The reflected positive-time companion of a negative-time Schwartz probe. -/
 private def reflectedSchwartzSpacetime (φ : SchwartzSpacetime d) : SchwartzSpacetime d :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ spacetimeTimeReflectionCLE φ
@@ -100,6 +112,20 @@ private theorem reflectedSchwartzSpacetime_tsupport_pos
       (f := timeReflection d) spacetimeTimeReflectionCLE.continuous hx
   have hneg := hφ_neg hx'
   simpa [timeReflection] using hneg
+
+private theorem reflectedSchwartzSpacetime_tsupport_ball
+    (φ : SchwartzSpacetime d) {r : ℝ}
+    (hφ_support : tsupport (φ : SpacetimeDim d → ℂ) ⊆ Metric.ball (0 : SpacetimeDim d) r) :
+    tsupport (reflectedSchwartzSpacetime φ : SpacetimeDim d → ℂ) ⊆
+      Metric.ball (0 : SpacetimeDim d) r := by
+  intro x hx
+  have hx' : timeReflection d x ∈ tsupport (φ : SpacetimeDim d → ℂ) := by
+    exact tsupport_comp_subset_preimage (φ : SpacetimeDim d → ℂ)
+      (f := timeReflection d) spacetimeTimeReflectionCLE.continuous hx
+  have hball := hφ_support hx'
+  rw [Metric.mem_ball] at hball ⊢
+  simpa [timeReflection_norm_eq_local, sub_eq_add_neg]
+    using hball
 
 private theorem reflectedSchwartzSpacetime_integral_eq
     (φ : SchwartzSpacetime d) :
@@ -485,6 +511,30 @@ private theorem approxIdentity_L1_norm_eq_one_local
   rw [integral_re (SchwartzMap.integrable φ)]
   have := congrArg Complex.re hφ_int
   simpa using this
+
+/-- Schwartz spacetime test functions are globally Lipschitz, with a constant
+controlled by the first Schwartz seminorm. -/
+private theorem schwartz_lipschitz_bound_local
+    (h : SchwartzSpacetime d) :
+    ∃ C : ℝ, 0 < C ∧ ∀ (x y : SpacetimeDim d),
+      ‖(h : SpacetimeDim d → ℂ) x - h y‖ ≤ C * ‖x - y‖ := by
+  set C₀ := SchwartzMap.seminorm ℝ 0 1 h
+  have hfderiv_bound : ∀ x : SpacetimeDim d, ‖fderiv ℝ (h : SpacetimeDim d → ℂ) x‖ ≤ C₀ := by
+    intro x
+    have h1 := SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ h 1 x
+    rwa [norm_iteratedFDeriv_one (𝕜 := ℝ) (f := (h : SpacetimeDim d → ℂ))] at h1
+  refine ⟨max C₀ 1, by positivity, fun x y => ?_⟩
+  have hdiff : Differentiable ℝ (h : SpacetimeDim d → ℂ) := h.differentiable
+  calc
+    ‖(h : SpacetimeDim d → ℂ) x - h y‖ = ‖(h : SpacetimeDim d → ℂ) y - h x‖ := by
+      rw [norm_sub_rev]
+    _ ≤ C₀ * ‖y - x‖ := by
+      exact Convex.norm_image_sub_le_of_norm_fderiv_le
+        (fun z _ => hdiff.differentiableAt) (fun z _ => hfderiv_bound z)
+        convex_univ (Set.mem_univ y) (Set.mem_univ x)
+    _ ≤ max C₀ 1 * ‖y - x‖ := by
+      apply mul_le_mul_of_nonneg_right (le_max_left _ _) (norm_nonneg _)
+    _ = max C₀ 1 * ‖x - y‖ := by rw [norm_sub_rev]
 
 /-- A continuous off-diagonal kernel is bounded on every compact off-diagonal
 subset. -/
@@ -1426,6 +1476,79 @@ private theorem schwinger_twoPointProductLift_eq_kernelIntegral_local
           ext p
           simp [twoPointProductLift_apply, mul_assoc]
 
+private theorem schwinger_twoPointProductLift_sub_eq_kernelIntegral_local
+    (OS : OsterwalderSchraderAxioms d)
+    (K : SpacetimeDim d → SpacetimeDim d → ℂ)
+    (hK_repr : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f =
+        ∫ p : SpacetimeDim d × SpacetimeDim d,
+          K p.1 p.2 *
+            f.1 (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume))
+    (φ : SchwartzSpacetime d)
+    (hφ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+      (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+      NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (gpt₁ gpt₂ : positiveTimeCompactSupportSubmodule d) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+      (twoPointProductLift φ (gpt₁ : SchwartzSpacetime d))) -
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (gpt₂ : SchwartzSpacetime d))) =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 * φ p.1 *
+          (((gpt₁ - gpt₂ : positiveTimeCompactSupportSubmodule d) :
+              SchwartzSpacetime d) p.2) ∂ (volume.prod volume) := by
+  let gdiff : positiveTimeCompactSupportSubmodule d := gpt₁ - gpt₂
+  let f₁ := twoPointProductLift φ (gpt₁ : SchwartzSpacetime d)
+  let f₂ := twoPointProductLift φ (gpt₂ : SchwartzSpacetime d)
+  let fdiff := twoPointProductLift φ (gdiff : SchwartzSpacetime d)
+  have hvanish₁ :
+      VanishesToInfiniteOrderOnCoincidence f₁ :=
+    twoPointProductLift_vanishes_of_orderedPositiveTime_local
+      φ (gpt₁ : SchwartzSpacetime d) hφ_pos gpt₁.property.1
+  have hvanish₂ :
+      VanishesToInfiniteOrderOnCoincidence f₂ :=
+    twoPointProductLift_vanishes_of_orderedPositiveTime_local
+      φ (gpt₂ : SchwartzSpacetime d) hφ_pos gpt₂.property.1
+  have hsum :
+      ZeroDiagonalSchwartz.ofClassical fdiff =
+        ZeroDiagonalSchwartz.ofClassical f₁ +
+          (-1 : ℂ) • ZeroDiagonalSchwartz.ofClassical f₂ := by
+    have hfdiff :
+        fdiff = f₁ + (-1 : ℂ) • f₂ := by
+      ext x
+      simp [fdiff, f₁, f₂, gdiff, twoPointProductLift_apply, sub_eq_add_neg,
+        add_mul, mul_add, mul_assoc]
+    rw [hfdiff, ZeroDiagonalSchwartz.ofClassical_add_of_vanishes
+      (f := f₁) (g := (-1 : ℂ) • f₂) hvanish₁ (hvanish₂.smul (-1 : ℂ)),
+      ZeroDiagonalSchwartz.ofClassical_smul]
+  let A := ZeroDiagonalSchwartz.ofClassical f₁
+  let B := ZeroDiagonalSchwartz.ofClassical f₂
+  have hlin := OS.E0_linear 2
+  calc
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (gpt₁ : SchwartzSpacetime d))) -
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (gpt₂ : SchwartzSpacetime d))) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical f₁) +
+        OS.S 2 ((-1 : ℂ) • ZeroDiagonalSchwartz.ofClassical f₂) := by
+          simp [f₁, f₂, sub_eq_add_neg, hlin.map_smul]
+    _ = OS.S 2 (A + (-1 : ℂ) • B) := by
+          rw [← hlin.map_add]
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (gdiff : SchwartzSpacetime d))) := by
+          simpa [A, B, fdiff] using congrArg (OS.S 2) hsum.symm
+    _ =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 * φ p.1 * (gdiff : SchwartzSpacetime d) p.2 ∂ (volume.prod volume) := by
+          exact schwinger_twoPointProductLift_eq_kernelIntegral_local
+            (d := d) OS K hK_repr φ hφ_pos gdiff
+    _ =
+      ∫ p : SpacetimeDim d × SpacetimeDim d,
+        K p.1 p.2 * φ p.1 *
+          (((gpt₁ - gpt₂ : positiveTimeCompactSupportSubmodule d) :
+              SchwartzSpacetime d) p.2) ∂ (volume.prod volume) := by
+          simp [gdiff]
+
 private theorem schwinger_twoPointDifferenceLift_eq_kernelIntegral_local
     (OS : OsterwalderSchraderAxioms d)
     (K : SpacetimeDim d → SpacetimeDim d → ℂ)
@@ -2082,7 +2205,403 @@ private theorem schwinger_convolution_product_error_tendsto_zero
         OS.S 2 (ZeroDiagonalSchwartz.ofClassical
           (twoPointProductLift (φ_seq n) h)))
       atTop (nhds 0) := by
-  sorry
+  rcases schwinger_twoPoint_kernel_repr_offDiagonal (d := d) OS with
+    ⟨K, hK_cont, hK_repr⟩
+  obtain ⟨Lip, hLip_pos, hLip⟩ := schwartz_lipschitz_bound_local (d := d) h
+  let hpt : positiveTimeCompactSupportSubmodule d := ⟨h, ⟨hh_pos, hh_compact⟩⟩
+  let ψn : ℕ → SchwartzSpacetime d := fun n => reflectedSchwartzSpacetime (φ_seq n)
+  have hψ_pos_time : ∀ n,
+      tsupport (ψn n : SpacetimeDim d → ℂ) ⊆ {x | 0 < x 0} := by
+    intro n
+    simpa [ψn] using reflectedSchwartzSpacetime_tsupport_pos (φ_seq n) (hφ_neg n)
+  have hψ_compact : ∀ n, HasCompactSupport (ψn n : SpacetimeDim d → ℂ) := by
+    intro n
+    simpa [ψn] using reflectedSchwartzSpacetime_hasCompactSupport (φ_seq n) (hφ_compact n)
+  let ψpt : ℕ → positiveTimeCompactSupportSubmodule d :=
+    fun n => ⟨ψn n, ⟨hψ_pos_time n, hψ_compact n⟩⟩
+  have hφ_pos : ∀ n,
+      tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 := by
+    intro n
+    exact osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n)
+  let H : Set (SpacetimeDim d) := tsupport (h : SpacetimeDim d → ℂ)
+  let B : Set (SpacetimeDim d) :=
+    Metric.closedBall (0 : SpacetimeDim d) 1 ∩ {x : SpacetimeDim d | x 0 ≤ 0}
+  let P : Set (SpacetimeDim d) :=
+    Metric.closedBall (0 : SpacetimeDim d) 1 ∩ {x : SpacetimeDim d | 0 ≤ x 0}
+  let Y : Set (SpacetimeDim d) := H + P
+  let S : Set (SpacetimeDim d × SpacetimeDim d) := B ×ˢ Y
+  have hH_compact : IsCompact H := hh_compact.isCompact
+  have hB_compact : IsCompact B := by
+    have hball : IsCompact (Metric.closedBall (0 : SpacetimeDim d) 1) := by
+      simpa using isCompact_closedBall (x := (0 : SpacetimeDim d)) (r := (1 : ℝ))
+    refine hball.inter_right ?_
+    exact isClosed_le (continuous_apply (0 : Fin (d + 1))) continuous_const
+  have hP_compact : IsCompact P := by
+    have hball : IsCompact (Metric.closedBall (0 : SpacetimeDim d) 1) := by
+      simpa using isCompact_closedBall (x := (0 : SpacetimeDim d)) (r := (1 : ℝ))
+    refine hball.inter_right ?_
+    exact isClosed_le continuous_const (continuous_apply (0 : Fin (d + 1)))
+  have hY_compact : IsCompact Y := hH_compact.add hP_compact
+  have hS_compact : IsCompact S := hB_compact.prod hY_compact
+  have hS_offdiag : S ⊆ {p : SpacetimeDim d × SpacetimeDim d | p.1 ≠ p.2} := by
+    intro p hp
+    rcases hp with ⟨hpB, hpY⟩
+    intro hEq
+    rcases hpY with ⟨u, hu, v, hv, hsum⟩
+    have hu_pos : 0 < u 0 := hh_pos hu
+    have hv_nonneg : 0 ≤ v 0 := hv.2
+    have hp_nonpos : p.1 0 ≤ 0 := hpB.2
+    have hp_pos : 0 < p.2 0 := by
+      rw [← hsum]
+      simpa using add_pos_of_pos_of_nonneg hu_pos hv_nonneg
+    have hcoord : p.1 0 = p.2 0 := by simpa [hEq]
+    linarith
+  obtain ⟨M₀, hM₀⟩ := kernel_bounded_on_compact_offDiagonal_local
+    (d := d) K hK_cont S hS_compact hS_offdiag
+  let M : ℝ := max M₀ 0
+  have hM : ∀ p ∈ S, ‖K p.1 p.2‖ ≤ M := by
+    intro p hp
+    exact (hM₀ p hp).trans (le_max_left _ _)
+  have hψ_support_P : ∀ n, tsupport (ψn n : SpacetimeDim d → ℂ) ⊆ P := by
+    intro n x hx
+    constructor
+    · rw [Metric.mem_closedBall]
+      have hxball :
+          x ∈ Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := by
+        exact reflectedSchwartzSpacetime_tsupport_ball (φ_seq n) (hφ_support n) hx
+      have : dist x 0 < 1 / (n + 1 : ℝ) := by
+        simpa [Metric.mem_ball] using hxball
+      have hrad_le : 1 / (n + 1 : ℝ) ≤ 1 := by
+        have hden : (1 : ℝ) ≤ n + 1 := by
+          exact_mod_cast Nat.succ_le_succ (Nat.zero_le n)
+        simpa using one_div_le_one_div_of_le (by positivity) hden
+      exact le_of_lt (lt_of_lt_of_le this hrad_le)
+    · exact le_of_lt (show 0 < x 0 from hψ_pos_time n hx)
+  have hH_subset_Y : H ⊆ Y := by
+    intro y hy
+    refine ⟨y, hy, 0, ?_, by simp [Y]⟩
+    constructor
+    · rw [Metric.mem_closedBall]
+      simp
+    · simp
+  have hconv_support :
+      ∀ n,
+        Function.support
+            ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) :
+                SpacetimeDim d → ℂ)) ⊆ Y := by
+    intro n y hy
+    have hsupp :
+        Function.support
+            ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) :
+                SpacetimeDim d → ℂ)) ⊆
+          Function.support ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ) +
+            Function.support (ψn n : SpacetimeDim d → ℂ) := by
+      simpa [positiveTimeCompactSupportConvolution_apply] using
+        (MeasureTheory.support_convolution_subset
+          (L := ContinuousLinearMap.lsmul ℝ ℂ)
+          (f := ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ))
+          (g := (ψn n : SpacetimeDim d → ℂ)))
+    exact (Set.add_subset_add
+      (fun x hx => subset_tsupport _ hx)
+      (fun x hx => hψ_support_P n (subset_tsupport _ hx))) (hsupp hy)
+  have hconv_err :
+      ∀ n y,
+        ‖((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+              positiveTimeCompactSupportSubmodule d) - hpt :
+              positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y)‖
+          ≤ Lip * (1 / (n + 1 : ℝ)) := by
+    intro n y
+    let ψ : SchwartzSpacetime d := ψn n
+    let ρ : SpacetimeDim d → ℝ := fun x => (ψ x).re
+    have hψ_nonneg : ∀ x, 0 ≤ (ψ x).re := by
+      intro x
+      simpa [ψ, ψn, reflectedSchwartzSpacetime_apply] using
+        hφ_nonneg n (timeReflection d x)
+    have hψ_real : ∀ x, (ψ x).im = 0 := by
+      intro x
+      simpa [ψ, ψn, reflectedSchwartzSpacetime_apply] using
+        hφ_real n (timeReflection d x)
+    have hρ_support :
+        Function.support ρ ⊆ Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := by
+      intro x hx
+      have hxψ : ψ x ≠ 0 := by
+        intro hxψ0
+        apply hx
+        simp [ρ, hxψ0]
+      exact reflectedSchwartzSpacetime_tsupport_ball (φ_seq n) (hφ_support n)
+        (subset_tsupport _ (by simpa [Function.mem_support] using hxψ))
+    have hψ_int : ∫ x : SpacetimeDim d, ψ x = 1 := by
+      calc
+        ∫ x : SpacetimeDim d, ψ x = ∫ x : SpacetimeDim d, φ_seq n x := by
+          simpa [ψ, ψn] using reflectedSchwartzSpacetime_integral_eq (φ_seq n)
+        _ = 1 := hφ_int n
+    have hρ_int : ∫ x : SpacetimeDim d, ρ x = 1 := by
+      have hre : (∫ x : SpacetimeDim d, ψ x).re =
+          ∫ x : SpacetimeDim d, (ψ x).re := by
+        symm
+        exact integral_re (SchwartzMap.integrable ψ)
+      have hint_re : (∫ x : SpacetimeDim d, ψ x).re = 1 := by
+        simpa using congrArg Complex.re hψ_int
+      rw [hre] at hint_re
+      simpa [ρ] using hint_re
+    let convρh : SpacetimeDim d → ℂ :=
+      MeasureTheory.convolution
+        (L := ContinuousLinearMap.lsmul ℝ ℝ)
+        (μ := MeasureTheory.volume)
+        ρ (((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ))
+    have hdist :
+        dist (convρh y) (h y) ≤ Lip * (1 / (n + 1 : ℝ)) := by
+      apply MeasureTheory.dist_convolution_le
+      · positivity
+      · exact hρ_support
+      · intro x
+        exact hψ_nonneg x
+      · exact hρ_int
+      · exact (SchwartzMap.continuous h).aestronglyMeasurable
+      · intro x hx
+        rw [dist_eq_norm]
+        calc
+          ‖(h : SpacetimeDim d → ℂ) x - h y‖ ≤ Lip * ‖x - y‖ := hLip x y
+          _ ≤ Lip * (1 / (n + 1 : ℝ)) := by
+            apply mul_le_mul_of_nonneg_left _ (le_of_lt hLip_pos)
+            have hx' : dist x y < 1 / (n + 1 : ℝ) := by
+              simpa [Metric.mem_ball, dist_eq_norm, norm_sub_rev] using hx
+            exact le_of_lt (by simpa [dist_eq_norm] using hx')
+    have hconv_eq :
+        (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+            positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y) =
+          convρh y := by
+      rw [positiveTimeCompactSupportConvolution_apply_eq_integral_translate hpt (ψpt n) y]
+      change ∫ ξ : SpacetimeDim d, h ξ * ψ (y - ξ) ∂ MeasureTheory.volume =
+        (MeasureTheory.convolution (L := ContinuousLinearMap.lsmul ℝ ℝ)
+          (μ := MeasureTheory.volume) ρ
+          ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) y
+      rw [MeasureTheory.convolution_lsmul_swap]
+      apply MeasureTheory.integral_congr_ae
+      filter_upwards with ξ
+      have hval :
+          ψ (y - ξ) = (((ψ (y - ξ)).re : ℝ) : ℂ) := by
+        apply Complex.ext <;> simp [hψ_real]
+      rw [show ρ (y - ξ) = (ψ (y - ξ)).re by rfl]
+      rw [hval]
+      change h ξ * (((ψ (y - ξ)).re : ℝ) : ℂ) = ((ψ (y - ξ)).re : ℝ) • h ξ
+      simpa [Algebra.smul_def, mul_comm]
+    have hsub :
+        ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+            positiveTimeCompactSupportSubmodule d) - hpt :
+            positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y) =
+          (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+            positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y) - h y := by
+      rfl
+    calc
+      ‖((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+          positiveTimeCompactSupportSubmodule d) - hpt :
+          positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y)‖ =
+        ‖(((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+          positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) y) - h y‖ := by
+            rw [hsub]
+      _ = ‖convρh y - h y‖ := by rw [hconv_eq]
+      _ = dist (convρh y) (h y) := by rw [dist_eq_norm]
+      _ ≤ Lip * (1 / (n + 1 : ℝ)) := hdist
+  have hkernel_form :
+      ∀ n,
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n)
+            (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) -
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n) h)) =
+          ∫ z : SpacetimeDim d × SpacetimeDim d,
+            K z.1 z.2 * (φ_seq n) z.1 *
+              ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                  positiveTimeCompactSupportSubmodule d) - hpt :
+                  positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) z.2)
+                ∂ (volume.prod volume) := by
+    intro n
+    simpa [hpt, ψpt] using
+      (schwinger_twoPointProductLift_sub_eq_kernelIntegral_local
+        (d := d) OS K hK_repr (φ_seq n) (hφ_pos n)
+        (positiveTimeCompactSupportConvolution hpt (ψpt n)) hpt)
+  let C : ℝ :=
+    M * Lip * ∫ y : SpacetimeDim d, Set.indicator Y (fun _ => (1 : ℝ)) y
+  have hbound :
+      ∀ᶠ n : ℕ in atTop,
+        ‖OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n)
+            (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) -
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n) h))‖ ≤
+            C * (1 / (n + 1 : ℝ)) := by
+    refine Filter.Eventually.of_forall ?_
+    intro n
+    have hIY_meas : MeasurableSet Y := hY_compact.isClosed.measurableSet
+    have hIY_int :
+        Integrable (Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ))) (MeasureTheory.volume) := by
+      exact (MeasureTheory.integrableOn_const (μ := MeasureTheory.volume)
+        (s := Y) (C := (1 : ℝ)) hY_compact.measure_lt_top.ne).integrable_indicator hIY_meas
+    have hbound_int :
+        Integrable
+          (fun z : SpacetimeDim d × SpacetimeDim d =>
+            (M * ‖(φ_seq n) z.1‖) *
+              ((Lip * (1 / (n + 1 : ℝ))) *
+                Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) z.2))
+          (volume.prod volume) := by
+      exact (((((SchwartzMap.integrable (φ_seq n)).norm).const_mul M)).mul_prod
+        (hIY_int.const_mul (Lip * (1 / (n + 1 : ℝ)))))
+    calc
+      ‖OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n)
+            (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)))) -
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n) h))‖
+          =
+        ‖∫ z : SpacetimeDim d × SpacetimeDim d,
+            K z.1 z.2 * (φ_seq n) z.1 *
+              ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                  positiveTimeCompactSupportSubmodule d) - hpt :
+                  positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) z.2)
+            ∂ (volume.prod volume)‖ := by
+              rw [hkernel_form n]
+      _ ≤ ∫ z : SpacetimeDim d × SpacetimeDim d,
+            ‖K z.1 z.2 * (φ_seq n) z.1 *
+              ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                  positiveTimeCompactSupportSubmodule d) - hpt :
+                  positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) z.2)‖
+            ∂ (volume.prod volume) := by
+              exact norm_integral_le_integral_norm _
+      _ ≤ ∫ z : SpacetimeDim d × SpacetimeDim d,
+            (M * ‖(φ_seq n) z.1‖) *
+              ((Lip * (1 / (n + 1 : ℝ))) *
+                Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) z.2)
+            ∂ (volume.prod volume) := by
+              refine MeasureTheory.integral_mono_of_nonneg ?_ hbound_int ?_
+              · exact Filter.Eventually.of_forall fun _ => norm_nonneg _
+              · exact Filter.Eventually.of_forall fun z => by
+                  rcases z with ⟨x, y⟩
+                  by_cases hx : x ∈ tsupport (φ_seq n : SpacetimeDim d → ℂ)
+                  · by_cases hy : y ∈ Y
+                    · have hxB : x ∈ B := by
+                        constructor
+                        · rw [Metric.mem_closedBall]
+                          have hxball := hφ_support n hx
+                          have : dist x 0 < 1 / (n + 1 : ℝ) := by
+                            simpa [Metric.mem_ball] using hxball
+                          have hrad_le : 1 / (n + 1 : ℝ) ≤ 1 := by
+                            have hden : (1 : ℝ) ≤ n + 1 := by
+                              exact_mod_cast Nat.succ_le_succ (Nat.zero_le n)
+                            simpa using one_div_le_one_div_of_le (by positivity) hden
+                          exact le_of_lt (lt_of_lt_of_le this hrad_le)
+                        · exact le_of_lt (by simpa using hφ_neg n hx)
+                      have hxy : (x, y) ∈ S := ⟨hxB, hy⟩
+                      have hk : ‖K x y‖ ≤ M := hM (x, y) hxy
+                      have herr : ‖((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                            positiveTimeCompactSupportSubmodule d) - hpt :
+                            positiveTimeCompactSupportSubmodule d) :
+                            SchwartzSpacetime d) y)‖ ≤
+                          Lip * (1 / (n + 1 : ℝ)) := hconv_err n y
+                      calc
+                        ‖K x y * (φ_seq n) x *
+                            ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                                positiveTimeCompactSupportSubmodule d) - hpt :
+                                positiveTimeCompactSupportSubmodule d) :
+                                SchwartzSpacetime d) y)‖
+                            = ‖K x y‖ * ‖(φ_seq n) x‖ *
+                                ‖((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                                    positiveTimeCompactSupportSubmodule d) - hpt :
+                                    positiveTimeCompactSupportSubmodule d) :
+                                    SchwartzSpacetime d) y)‖ := by
+                                      rw [norm_mul, norm_mul]
+                        _ ≤ (M * ‖(φ_seq n) x‖) * (Lip * (1 / (n + 1 : ℝ))) := by
+                              gcongr
+                        _ = (M * ‖(φ_seq n) x‖) *
+                              ((Lip * (1 / (n + 1 : ℝ))) *
+                                Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y) := by
+                              simp [hy]
+                    · have hy_not_H : y ∉ H := by
+                        intro hyH
+                        exact hy (hH_subset_Y hyH)
+                      have hy_h : h y = 0 := image_eq_zero_of_notMem_tsupport hy_not_H
+                      have hy_conv_support :
+                          y ∉ Function.support
+                            ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                                positiveTimeCompactSupportSubmodule d) :
+                                SchwartzSpacetime d) : SpacetimeDim d → ℂ)) := by
+                        intro hyconv
+                        exact hy (hconv_support n hyconv)
+                      have hy_conv :
+                          (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                              positiveTimeCompactSupportSubmodule d) :
+                              SchwartzSpacetime d) y) = 0 := by
+                        rw [← Function.notMem_support]
+                        exact hy_conv_support
+                      have hy_err :
+                          ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                              positiveTimeCompactSupportSubmodule d) - hpt :
+                              positiveTimeCompactSupportSubmodule d) :
+                              SchwartzSpacetime d) y) = 0 := by
+                        change (((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                            positiveTimeCompactSupportSubmodule d) :
+                            SchwartzSpacetime d) y) - h y = 0
+                        rw [hy_conv, hy_h]
+                        ring
+                      have hthird :
+                          ‖((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                              positiveTimeCompactSupportSubmodule d) - hpt :
+                              positiveTimeCompactSupportSubmodule d) :
+                              SchwartzSpacetime d) y)‖ = 0 := by
+                        simpa [hy_err]
+                      change ‖K x y * (φ_seq n) x *
+                          ((((positiveTimeCompactSupportConvolution hpt (ψpt n) :
+                              positiveTimeCompactSupportSubmodule d) - hpt :
+                              positiveTimeCompactSupportSubmodule d) :
+                              SchwartzSpacetime d) y)‖ ≤
+                        (M * ‖(φ_seq n) x‖) *
+                          ((Lip * (1 / (n + 1 : ℝ))) *
+                            Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y)
+                      rw [norm_mul, norm_mul, hthird]
+                      simp [hy]
+                  · have hx0 : (φ_seq n) x = 0 := image_eq_zero_of_notMem_tsupport hx
+                    simp [hx0]
+      _ =
+        (∫ x : SpacetimeDim d, M * ‖(φ_seq n) x‖) *
+          ∫ y : SpacetimeDim d,
+            (Lip * (1 / (n + 1 : ℝ))) *
+              Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y := by
+                simpa using
+                  (MeasureTheory.integral_prod_mul
+                    (fun x : SpacetimeDim d => M * ‖(φ_seq n) x‖)
+                    (fun y : SpacetimeDim d =>
+                      (Lip * (1 / (n + 1 : ℝ))) *
+                        Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y))
+      _ = (M * ∫ x : SpacetimeDim d, ‖(φ_seq n) x‖) *
+          ∫ y : SpacetimeDim d,
+            (Lip * (1 / (n + 1 : ℝ))) *
+              Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y := by
+            rw [MeasureTheory.integral_const_mul]
+      _ = M *
+          ∫ y : SpacetimeDim d,
+            (Lip * (1 / (n + 1 : ℝ))) *
+              Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y := by
+            rw [approxIdentity_L1_norm_eq_one_local
+              (d := d) (φ_seq n) (hφ_nonneg n) (hφ_real n) (hφ_int n)]
+            ring
+      _ = M * (Lip * (1 / (n + 1 : ℝ)) *
+          ∫ y : SpacetimeDim d, Set.indicator Y (fun _ : SpacetimeDim d => (1 : ℝ)) y) := by
+            rw [MeasureTheory.integral_const_mul]
+      _ = C * (1 / (n + 1 : ℝ)) := by
+            dsimp [C]
+            ring
+  have hzero :
+      Tendsto (fun n : ℕ => C * (1 / (n + 1 : ℝ))) atTop (nhds 0) := by
+    simpa using Tendsto.const_mul C tendsto_one_div_add_atTop_nhds_zero_nat
+  exact squeeze_zero_norm' hbound hzero
 
 /-- Spectral bridge, step D: once the center cutoff `φ_n` has unit mass and
 shrinking negative-time support, the residual difference between the raw
