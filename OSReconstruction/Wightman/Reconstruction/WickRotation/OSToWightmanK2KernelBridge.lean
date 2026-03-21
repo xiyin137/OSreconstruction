@@ -74,6 +74,57 @@ private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
     · exact hnonneg
   exact norm_eq_zero.mp hzero_norm
 
+/-- Multiplying a zero-diagonal Schwartz test by any smooth temperate scalar
+factor on the ambient two-point space preserves vanishing to infinite order on
+the coincidence locus. -/
+private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_of_smooth
+    {n : ℕ} {ψ : NPointDomain d n → ℂ}
+    (hψ_smooth : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ψ)
+    (hψ_temp : ψ.HasTemperateGrowth)
+    {f : SchwartzNPoint d n}
+    (hf : VanishesToInfiniteOrderOnCoincidence f) :
+    VanishesToInfiniteOrderOnCoincidence (SchwartzMap.smulLeftCLM ℂ ψ f) := by
+  intro k x hx
+  have hfun :
+      (((SchwartzMap.smulLeftCLM ℂ ψ f : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) =
+        fun y : NPointDomain d n => ψ y * f y := by
+    funext y
+    simpa [smul_eq_mul] using
+      (SchwartzMap.smulLeftCLM_apply_apply (g := ψ) hψ_temp f y)
+  let ffun : NPointDomain d n → ℂ := (f : NPointDomain d n → ℂ)
+  have hffun : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ffun := by
+    simpa [ffun] using f.smooth'
+  have hle :=
+    norm_iteratedFDeriv_smul_le (𝕜 := ℝ) hψ_smooth
+      hffun x
+      (n := k) (by exact_mod_cast le_top)
+  have hsum_zero :
+      ∑ i ∈ Finset.range (k + 1),
+        (k.choose i : ℝ) * ‖iteratedFDeriv ℝ i ψ x‖ *
+          ‖iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x‖ = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    have hfi :
+        iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x = 0 := hf (k - i) x hx
+    simp [hfi]
+  have hzero_norm :
+      ‖iteratedFDeriv ℝ k
+        (((SchwartzMap.smulLeftCLM ℂ ψ f : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) x‖ = 0 := by
+    apply le_antisymm
+    · rw [hfun]
+      calc
+        ‖iteratedFDeriv ℝ k (fun y : NPointDomain d n => ψ y * f y) x‖
+            ≤
+          ∑ i ∈ Finset.range (k + 1),
+            (k.choose i : ℝ) * ‖iteratedFDeriv ℝ i ψ x‖ *
+              ‖iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x‖ := by
+                simpa [ffun] using hle
+        _ = 0 := hsum_zero
+    · exact norm_nonneg _
+  exact norm_eq_zero.mp hzero_norm
+
 /-- First local step in the cutoff half of the density seam: if a difference
 lift lies in `ZeroDiagonalSchwartz`, then the difference factor vanishes at the
 origin. -/
@@ -1872,6 +1923,66 @@ coordinates. -/
 private abbrev diffProjCLM : NPointDomain d 2 →L[ℝ] SpacetimeDim d :=
   ContinuousLinearMap.proj (R := ℝ) (ι := Fin 2) (φ := fun _ => SpacetimeDim d) 1
 
+/-- The difference-variable projection has operator norm at most `1`. -/
+private theorem diffProjCLM_opNorm_le_one :
+    ‖diffProjCLM (d := d)‖ ≤ (1 : ℝ) := by
+  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one ?_
+  intro x
+  simpa [diffProjCLM] using (norm_le_pi_norm x (1 : Fin 2))
+
+/-- Uniform derivative bound for the rescaled difference-variable bump pulled
+back to center/difference coordinates. -/
+private theorem exists_iteratedFDeriv_diffBlockCutoff_bound (n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (δ : ℝ) (hδ : 0 < δ) (x : NPointDomain d 2),
+        ‖iteratedFDeriv ℝ n
+            (fun y : NPointDomain d 2 =>
+              (spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d)
+                (diffProjCLM (d := d) y)) x‖ ≤
+          C * (δ⁻¹) ^ n := by
+  obtain ⟨C, hC_nonneg, hCbound⟩ :=
+    exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound (d := d) n
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro δ hδ x
+  have hcomp :
+      iteratedFDeriv ℝ n
+          (fun y : NPointDomain d 2 =>
+            (spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d)
+              (diffProjCLM (d := d) y)) x =
+        (iteratedFDeriv ℝ n
+          ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ) (diffProjCLM (d := d) x)).compContinuousLinearMap
+            (fun _ : Fin n => diffProjCLM (d := d)) := by
+    simpa using
+      (diffProjCLM (d := d)).iteratedFDeriv_comp_right
+        (f := ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ))
+        ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d).smooth n)
+        (x := x) (i := n) le_rfl
+  calc
+    ‖iteratedFDeriv ℝ n
+        (fun y : NPointDomain d 2 =>
+          (spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d)
+            (diffProjCLM (d := d) y)) x‖
+        =
+      ‖(iteratedFDeriv ℝ n
+          ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ) (diffProjCLM (d := d) x)).compContinuousLinearMap
+            (fun _ : Fin n => diffProjCLM (d := d))‖ := by
+              rw [hcomp]
+    _ ≤ ‖iteratedFDeriv ℝ n
+          ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ) (diffProjCLM (d := d) x)‖ *
+          ∏ _ : Fin n, ‖diffProjCLM (d := d)‖ := by
+            exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+    _ ≤ (C * (δ⁻¹) ^ n) * ∏ _ : Fin n, ‖diffProjCLM (d := d)‖ := by
+          gcongr
+          exact hCbound δ hδ (diffProjCLM (d := d) x)
+    _ ≤ (C * (δ⁻¹) ^ n) * ∏ _ : Fin n, (1 : ℝ) := by
+          gcongr
+          exact diffProjCLM_opNorm_le_one (d := d)
+    _ = C * (δ⁻¹) ^ n := by simp
+
 /-- Multiply a two-point Schwartz test in center/difference coordinates by a
 Schwartz cutoff in the difference variable. -/
 private def diffBlockCutoffCLM (ψ : SchwartzSpacetime d) :
@@ -2120,6 +2231,45 @@ private theorem twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishe
     simpa using
       (hEqWithin.iteratedFDerivWithin_eq (by simpa using hEq.eq_of_nhds) k)
   simpa [iteratedFDerivWithin_univ] using hderivEqWithin
+
+/-- If the original two-point test is already zero-diagonal, then multiplying
+it by an arbitrary difference-variable cutoff keeps it zero-diagonal after
+pulling back from center/difference coordinates. -/
+private theorem twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishes_of_zeroDiagonal
+    (ψ : SchwartzSpacetime d)
+    (F : ZeroDiagonalSchwartz d 2) :
+    VanishesToInfiniteOrderOnCoincidence
+      (twoPointCenterDiffInvSchwartzCLM (d := d)
+        (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1))) := by
+  let diffMap : NPointDomain d 2 →L[ℝ] SpacetimeDim d :=
+    (ContinuousLinearMap.proj (R := ℝ) (ι := Fin 2) (φ := fun _ => SpacetimeDim d) 1) -
+      (ContinuousLinearMap.proj (R := ℝ) (ι := Fin 2) (φ := fun _ => SpacetimeDim d) 0)
+  let ψdiff : NPointDomain d 2 → ℂ := fun x => ψ (diffMap x)
+  have hψdiff_smooth : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ψdiff := by
+    change ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞)
+      (((ψ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) ∘ diffMap)
+    exact ψ.smooth'.comp diffMap.contDiff
+  have hψdiff_temp : ψdiff.HasTemperateGrowth := by
+    simpa [ψdiff] using ψ.hasTemperateGrowth.comp diffMap.hasTemperateGrowth
+  have hEq :
+      twoPointCenterDiffInvSchwartzCLM (d := d)
+        (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1)) =
+      SchwartzMap.smulLeftCLM ℂ ψdiff F.1 := by
+    ext x
+    have hdiff_apply : diffMap x = x 1 - x 0 := by
+      simp [diffMap]
+    calc
+      twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1)) x
+          = ψ (x 1 - x 0) * F.1 x := by
+              rw [twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply (d := d) ψ F.1 x]
+      _ = ψ (diffMap x) * F.1 x := by rw [hdiff_apply]
+      _ = (SchwartzMap.smulLeftCLM ℂ ψdiff F.1 : SchwartzNPoint d 2) x := by
+            rw [SchwartzMap.smulLeftCLM_apply_apply (g := ψdiff) hψdiff_temp F.1 x]
+            simp [ψdiff, smul_eq_mul]
+  rw [hEq]
+  exact VanishesToInfiniteOrderOnCoincidence.smulLeft_of_smooth
+    (d := d) hψdiff_smooth hψdiff_temp F.2
 
 /-- Pulling an origin-avoiding difference-block cutoff back to the original
 variables lands in the closure of the flat-at-origin difference-shell span on
@@ -2441,12 +2591,97 @@ private theorem flatOrigin_differenceShell_span_dense_zeroDiagonal :
           (d := d) (ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ)
           (zero_not_mem_tsupport_annulusCutoff (d := d) δ R hδ hδR)
           G
+    have hsmall_vanish :
+        ∀ {δ : ℝ} (hδ : 0 < δ),
+          VanishesToInfiniteOrderOnCoincidence
+            (twoPointCenterDiffInvSchwartzCLM (d := d)
+              (diffBlockCutoffCLM (d := d)
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd)) := by
+      intro δ hδ
+      simpa [Gcd] using
+        twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishes_of_zeroDiagonal
+          (d := d) (spacetimeUnitBallBumpRadius (d := d) δ hδ) G
+    have hψR_apply :
+        ∀ x : NPointDomain d 2, ψR (x 1 - x 0) * G.1 x = G.1 x := by
+      intro x
+      have hEq := congrArg
+        (fun H : SchwartzNPoint d 2 =>
+          twoPointCenterDiffInvSchwartzCLM (d := d) H x) hR_eq
+      simpa [Gcd, ψR, twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply,
+        twoPointCenterDiffSchwartzCLM_apply, smul_eq_mul] using hEq
+    have hsplit :
+        ∀ {δ : ℝ} (hδ : 0 < δ) (hδR : δ < R),
+          ZeroDiagonalSchwartz.ofClassical
+            (twoPointCenterDiffInvSchwartzCLM (d := d)
+              (diffBlockCutoffCLM (d := d)
+                (ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd)) +
+          ZeroDiagonalSchwartz.ofClassical
+            (twoPointCenterDiffInvSchwartzCLM (d := d)
+              (diffBlockCutoffCLM (d := d)
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd)) = G := by
+      intro δ hδ hδR
+      let annulus :=
+        twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d)
+            (ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd)
+      let small :=
+        twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d)
+            (spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd)
+      have hannulus_vanish :
+          VanishesToInfiniteOrderOnCoincidence annulus := by
+        simpa [annulus] using
+          twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishes
+            (d := d) (ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ)
+            (zero_not_mem_tsupport_annulusCutoff (d := d) δ R hδ hδR) G.1
+      have hsmall_vanish' :
+          VanishesToInfiniteOrderOnCoincidence small := by
+        simpa [small] using hsmall_vanish (δ := δ) hδ
+      have hsum_apply : ∀ x : NPointDomain d 2, annulus x + small x = G.1 x := by
+        intro x
+        calc
+          annulus x + small x
+              =
+            ((ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ) (x 1 - x 0) * G.1 x) +
+              (spacetimeUnitBallBumpRadius (d := d) δ hδ (x 1 - x 0) * G.1 x) := by
+                change
+                  twoPointCenterDiffInvSchwartzCLM (d := d)
+                      (diffBlockCutoffCLM (d := d)
+                        (ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd) x +
+                    twoPointCenterDiffInvSchwartzCLM (d := d)
+                      (diffBlockCutoffCLM (d := d)
+                        (spacetimeUnitBallBumpRadius (d := d) δ hδ) Gcd) x =
+                  ((ψR - spacetimeUnitBallBumpRadius (d := d) δ hδ) (x 1 - x 0) * G.1 x) +
+                    (spacetimeUnitBallBumpRadius (d := d) δ hδ (x 1 - x 0) * G.1 x)
+                rw [twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply,
+                  twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply]
+          _ =
+              ((ψR (x 1 - x 0) -
+                    spacetimeUnitBallBumpRadius (d := d) δ hδ (x 1 - x 0)) * G.1 x) +
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ (x 1 - x 0) * G.1 x) := by
+                  rfl
+          _ = ψR (x 1 - x 0) * G.1 x := by
+                rw [sub_mul, sub_add_cancel]
+          _ = G.1 x := hψR_apply x
+      calc
+        ZeroDiagonalSchwartz.ofClassical annulus +
+            ZeroDiagonalSchwartz.ofClassical small
+            =
+          ZeroDiagonalSchwartz.ofClassical (annulus + small) := by
+            symm
+            exact ZeroDiagonalSchwartz.ofClassical_add_of_vanishes
+              annulus small hannulus_vanish hsmall_vanish'
+        _ = ZeroDiagonalSchwartz.ofClassical G.1 := by
+            congr 1
+            ext x
+            exact hsum_apply x
+        _ = G := by
+            simpa using (ZeroDiagonalSchwartz.ofClassical_of_vanishes (f := G.1) G.2)
     -- Remaining compact-support gap:
-    -- For every `δ < R`, the annular diff cutoff already lies in the target
-    -- closure by `hannulus_mem`. The only remaining work is to show those
-    -- annular approximants converge back to `G`, using `hR_eq` and the
-    -- flatness of `Gcd` along `ξ = 0` to make the small-origin term
-    -- `diffBlockCutoffCLM (spacetimeUnitBallBumpRadius δ) Gcd` tend to `0`.
+    -- For every `δ < R`, the annular term already lies in the target closure by
+    -- `hannulus_mem`, and `G = annulus + small` by `hsplit`. The only
+    -- remaining compact-support content is therefore to show that the
+    -- zero-diagonal small-origin term tends to `0` as `δ → 0`.
     sorry
   have hC_closure_subset :
       closure C ⊆ (A.topologicalClosure : Set (ZeroDiagonalSchwartz d 2)) := by
