@@ -683,7 +683,204 @@ private theorem schwartz_small_origin_cutoff_seminorm_small
           ((SchwartzMap.smulLeftCLM ℂ
               (spacetimeUnitBallBumpRadius (d := d) δ hδ) h :
                 SchwartzSpacetime d)) < ε := by
-  sorry
+  intro N M ε hε
+  let B : ℕ → ℝ := fun i =>
+    Classical.choose (exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound (d := d) i)
+  let H : ℕ → ℝ := fun i =>
+    Classical.choose (exists_iteratedFDeriv_flat_bound (d := d) (h := h) h_vanish (M - i) M)
+  let A : ℝ :=
+    ∑ i ∈ Finset.range (M + 1),
+      (M.choose i : ℝ) * B i * H i * (2 : ℝ) ^ (N + M + 1)
+  have hB_nonneg : ∀ i : ℕ, 0 ≤ B i := by
+    intro i
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound (d := d) i)).1
+  have hB_bound :
+      ∀ i : ℕ, ∀ (δ : ℝ) (hδ : 0 < δ) (x : SpacetimeDim d),
+        ‖iteratedFDeriv ℝ i
+            ((spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d) :
+              SpacetimeDim d → ℂ) x‖ ≤
+          B i * (δ⁻¹) ^ i := by
+    intro i δ hδ x
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound (d := d) i)).2 δ hδ x
+  have hH_nonneg : ∀ i : ℕ, 0 ≤ H i := by
+    intro i
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_flat_bound (d := d) (h := h) h_vanish (M - i) M)).1
+  have hH_bound :
+      ∀ i : ℕ, ∀ x : SpacetimeDim d,
+        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖ ≤
+          H i * ‖x‖ ^ (M + 1) := by
+    intro i x
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_flat_bound (d := d) (h := h) h_vanish (M - i) M)).2 x
+  have hA_nonneg : 0 ≤ A := by
+    refine Finset.sum_nonneg ?_
+    intro i hi
+    have hBi : 0 ≤ B i := hB_nonneg i
+    have hHi : 0 ≤ H i := hH_nonneg i
+    positivity
+  let δ : ℝ := min 1 (ε / (2 * (A + 1) ^ 2))
+  have hδ : 0 < δ := by
+    dsimp [δ]
+    refine lt_min zero_lt_one ?_
+    positivity
+  have hδ_le_one : δ ≤ 1 := by
+    dsimp [δ]
+    exact min_le_left _ _
+  let ψδ : SchwartzSpacetime d := spacetimeUnitBallBumpRadius (d := d) δ hδ
+  let fδ : SchwartzSpacetime d := SchwartzMap.smulLeftCLM ℂ ψδ h
+  have hsupp_psi :
+      Function.support ((ψδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
+        Metric.closedBall (0 : SpacetimeDim d) (2 * δ) := by
+    intro x hx
+    by_contra hxball
+    rw [Metric.mem_closedBall, dist_eq_norm] at hxball
+    have hnorm : 2 * δ ≤ ‖x‖ := by
+      have hdist : 2 * δ ≤ dist x 0 := le_of_not_ge hxball
+      simpa [dist_eq_norm] using hdist
+    have hzero : ψδ x = 0 := by
+      exact spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm (d := d) hδ hnorm
+    exact hx (by simpa [Function.mem_support] using hzero)
+  have htsupport_psi :
+      tsupport (((ψδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) ⊆
+        Metric.closedBall (0 : SpacetimeDim d) (2 * δ) := by
+    exact closure_minimal hsupp_psi Metric.isClosed_closedBall
+  have htsupport_fδ :
+      tsupport ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
+        Metric.closedBall (0 : SpacetimeDim d) (2 * δ) := by
+    intro x hx
+    exact htsupport_psi
+      ((SchwartzMap.tsupport_smulLeftCLM_subset (g := ((ψδ : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ)) (f := h) hx).2)
+  have hsupport_deriv :
+      Function.support (iteratedFDeriv ℝ M ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) ⊆
+        Metric.closedBall (0 : SpacetimeDim d) (2 * δ) := by
+    intro x hx
+    exact htsupport_fδ
+      (support_iteratedFDeriv_subset (𝕜 := ℝ) (n := M)
+        (f := ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) hx)
+  have hbound :
+      ∀ x : SpacetimeDim d,
+        ‖x‖ ^ N * ‖iteratedFDeriv ℝ M ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) x‖ ≤
+          A * δ := by
+    intro x
+    by_cases hx : x ∈ Metric.closedBall (0 : SpacetimeDim d) (2 * δ)
+    · have hsmul :=
+          norm_iteratedFDeriv_smul_le (𝕜 := ℝ) (ψδ.smooth ⊤) (h.smooth ⊤) x
+            (n := M) (by exact_mod_cast le_top)
+      have hfun :
+          (((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) =
+            fun y => ψδ y * h y := by
+        funext y
+        simpa [fδ, smul_eq_mul] using
+          (SchwartzMap.smulLeftCLM_apply_apply (g := ((ψδ : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ)) ψδ.hasTemperateGrowth h y)
+      calc
+        ‖x‖ ^ N * ‖iteratedFDeriv ℝ M ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) x‖
+            = ‖x‖ ^ N * ‖iteratedFDeriv ℝ M (fun y => ψδ y * h y) x‖ := by
+                rw [hfun]
+        _ ≤ ‖x‖ ^ N *
+              ∑ i ∈ Finset.range (M + 1),
+                (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                  ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖ := by
+                exact mul_le_mul_of_nonneg_left hsmul (by positivity)
+        _ = ∑ i ∈ Finset.range (M + 1),
+              ‖x‖ ^ N *
+                ((M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                  ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖) := by
+                rw [Finset.mul_sum]
+        _ ≤ ∑ i ∈ Finset.range (M + 1),
+              ((M.choose i : ℝ) * B i * H i * (2 : ℝ) ^ (N + M + 1)) * δ := by
+                refine Finset.sum_le_sum ?_
+                intro i hi
+                have hxnorm : ‖x‖ ≤ 2 * δ := by
+                  simpa [Metric.mem_closedBall, dist_eq_norm] using hx
+                have hBi := hB_bound i δ hδ x
+                have hHi := hH_bound i x
+                have hBi_nonneg : 0 ≤ B i := hB_nonneg i
+                have hBi_rhs_nonneg : 0 ≤ B i * (δ⁻¹) ^ i := by positivity
+                have hchoose_nonneg : 0 ≤ (M.choose i : ℝ) := by positivity
+                have hprod :
+                    ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖ ≤
+                      (B i * (δ⁻¹) ^ i) * (H i * ‖x‖ ^ (M + 1)) := by
+                  exact mul_le_mul hBi hHi (norm_nonneg _) hBi_rhs_nonneg
+                have hterm_coeff :
+                    (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖ ≤
+                      (M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) * (H i * ‖x‖ ^ (M + 1))) := by
+                  calc
+                    (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖
+                        =
+                      (M.choose i : ℝ) * (‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖) := by
+                          ring
+                    _ ≤ (M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) * (H i * ‖x‖ ^ (M + 1))) := by
+                          exact mul_le_mul_of_nonneg_left hprod hchoose_nonneg
+                have hterm :
+                    ‖x‖ ^ N *
+                        ((M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                          ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖) ≤
+                      ‖x‖ ^ N *
+                        ((M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) * (H i * ‖x‖ ^ (M + 1)))) := by
+                  exact mul_le_mul_of_nonneg_left hterm_coeff (by positivity)
+                calc
+                  ‖x‖ ^ N *
+                      ((M.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψδ : SpacetimeDim d → ℂ) x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (h : SpacetimeDim d → ℂ) x‖)
+                      ≤
+                    ‖x‖ ^ N *
+                      ((M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) *
+                        (H i * ‖x‖ ^ (M + 1)))) := by
+                          exact hterm
+                  _ = ((M.choose i : ℝ) * B i * H i) *
+                        (‖x‖ ^ N * (δ⁻¹) ^ i * ‖x‖ ^ (M + 1)) := by
+                          ring
+                  _ ≤ ((M.choose i : ℝ) * B i * H i) *
+                        ((2 : ℝ) ^ (N + M + 1) * δ) := by
+                          have hcoeff_nonneg : 0 ≤ (M.choose i : ℝ) * B i * H i := by
+                            exact mul_nonneg (mul_nonneg hchoose_nonneg hBi_nonneg) (hH_nonneg i)
+                          exact mul_le_mul_of_nonneg_left
+                            (small_origin_power_factor_le (d := d) hδ hδ_le_one hxnorm hi)
+                            hcoeff_nonneg
+                  _ = ((M.choose i : ℝ) * B i * H i * (2 : ℝ) ^ (N + M + 1)) * δ := by
+                          ring
+        _ = A * δ := by
+              simp [A, Finset.sum_mul]
+    · have hzero :
+          iteratedFDeriv ℝ M ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ) x = 0 := by
+        by_contra hne
+        have hx_support :
+            x ∈ Function.support
+              (iteratedFDeriv ℝ M ((fδ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) := by
+          simpa [Function.mem_support] using hne
+        exact hx (hsupport_deriv hx_support)
+      have hnonneg : 0 ≤ A * δ := by positivity
+      simpa [hzero] using hnonneg
+  have hsemi :
+      SchwartzMap.seminorm ℝ N M fδ ≤ A * δ := by
+    refine SchwartzMap.seminorm_le_bound ℝ N M fδ ?_ ?_
+    · positivity
+    · exact hbound
+  have hAδ_lt : A * δ < ε := by
+    have hδ_upper : δ ≤ ε / (2 * (A + 1) ^ 2) := by
+      dsimp [δ]
+      exact min_le_right _ _
+    have hA1_pos : 0 < A + 1 := by positivity
+    have hA_le_sq : A ≤ (A + 1) ^ 2 := by
+      nlinarith [hA_nonneg]
+    calc
+      A * δ ≤ A * (ε / (2 * (A + 1) ^ 2)) := by
+            gcongr
+      _ ≤ (A + 1) ^ 2 * (ε / (2 * (A + 1) ^ 2)) := by
+            gcongr
+      _ = ε / 2 := by
+            field_simp [show (A + 1) ≠ 0 by positivity]
+      _ < ε := by linarith
+  exact ⟨δ, hδ, lt_of_le_of_lt hsemi hAδ_lt⟩
 
 /-- Schwartz functions can be cut off at large radius with arbitrarily small
 Schwartz seminorm error. -/
@@ -750,7 +947,94 @@ private theorem schwartz_origin_avoidance_approximation
         (0 : SpacetimeDim d) ∉ tsupport (h' : SpacetimeDim d → ℂ) ∧
         HasCompactSupport (h' : SpacetimeDim d → ℂ) ∧
         SchwartzMap.seminorm ℝ N M (h - h') < ε := by
-  sorry
+  intro N M ε hε
+  have hε2 : 0 < ε / 2 := by positivity
+  obtain ⟨δ, hδ, hsmall⟩ :=
+    schwartz_small_origin_cutoff_seminorm_small (d := d) (h := h) h_vanish N M (ε / 2) hε2
+  obtain ⟨R, hR, hlarge⟩ :=
+    schwartz_large_radius_cutoff_seminorm_small (d := d) (h := h) N M (ε / 2) δ hε2 hδ
+  let h' : SchwartzSpacetime d :=
+    SchwartzMap.smulLeftCLM ℂ
+      (fun x : SpacetimeDim d =>
+        spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR) x -
+          spacetimeUnitBallBumpRadius (d := d) δ hδ x) h
+  refine ⟨h', ?_, ?_, ?_⟩
+  · intro hz
+    exact zero_not_mem_tsupport_annulusCutoff (d := d) δ R hδ hR
+      ((SchwartzMap.tsupport_smulLeftCLM_subset
+        (g := (fun x : SpacetimeDim d =>
+          spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR) x -
+            spacetimeUnitBallBumpRadius (d := d) δ hδ x))
+        (f := h) hz).2)
+  · exact hasCompactSupport_annulusCutoff_mul (d := d) h δ R hδ hR
+  · have hdecomp :
+        h - h' =
+          (h -
+            (SchwartzMap.smulLeftCLM ℂ
+              (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                SchwartzSpacetime d)) +
+          (SchwartzMap.smulLeftCLM ℂ
+            (spacetimeUnitBallBumpRadius (d := d) δ hδ) h : SchwartzSpacetime d) := by
+        ext x
+        have hRtemp :=
+          (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)).hasTemperateGrowth
+        have hδtemp := (spacetimeUnitBallBumpRadius (d := d) δ hδ).hasTemperateGrowth
+        have hdiffTemp :
+            (fun x : SpacetimeDim d =>
+              spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR) x -
+                spacetimeUnitBallBumpRadius (d := d) δ hδ x).HasTemperateGrowth := by
+          simpa using hRtemp.sub hδtemp
+        rw [show (h - h') x = h x - h' x by rfl]
+        rw [show
+            ((h -
+              (SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                  SchwartzSpacetime d)) +
+              (SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ) h : SchwartzSpacetime d)) x
+              =
+            (h x -
+              ((SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                  SchwartzSpacetime d) : SpacetimeDim d → ℂ) x) +
+              ((SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ) h :
+                  SchwartzSpacetime d) : SpacetimeDim d → ℂ) x by
+            rfl]
+        rw [SchwartzMap.smulLeftCLM_apply_apply hdiffTemp,
+          SchwartzMap.smulLeftCLM_apply_apply hRtemp,
+          SchwartzMap.smulLeftCLM_apply_apply hδtemp]
+        simp [h', smul_eq_mul]
+        ring
+    calc
+      SchwartzMap.seminorm ℝ N M (h - h') =
+          SchwartzMap.seminorm ℝ N M
+            ((h -
+              (SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                  SchwartzSpacetime d)) +
+              (SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) δ hδ) h : SchwartzSpacetime d)) := by
+                rw [hdecomp]
+      _ ≤
+          SchwartzMap.seminorm ℝ N M
+            (h -
+              (SchwartzMap.smulLeftCLM ℂ
+                (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                  SchwartzSpacetime d)) +
+          SchwartzMap.seminorm ℝ N M
+            (SchwartzMap.smulLeftCLM ℂ
+              (spacetimeUnitBallBumpRadius (d := d) δ hδ) h : SchwartzSpacetime d) := by
+                exact map_add_le_add (SchwartzMap.seminorm ℝ N M)
+                  (h -
+                    (SchwartzMap.smulLeftCLM ℂ
+                      (spacetimeUnitBallBumpRadius (d := d) R (lt_trans hδ hR)) h :
+                        SchwartzSpacetime d))
+                  (SchwartzMap.smulLeftCLM ℂ
+                    (spacetimeUnitBallBumpRadius (d := d) δ hδ) h :
+                      SchwartzSpacetime d)
+      _ < ε / 2 + ε / 2 := add_lt_add hlarge hsmall
+      _ = ε := by ring
 
 /-- Cutoff half of the density seam in its honest form: if a two-point
 difference shell already lies in `ZeroDiagonalSchwartz`, then it belongs to the
