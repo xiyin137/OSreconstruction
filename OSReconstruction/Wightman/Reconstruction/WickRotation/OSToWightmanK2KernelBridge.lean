@@ -176,6 +176,37 @@ private theorem differenceLift_in_ZDS_implies_h_vanishes_at_zero
 private abbrev spacetimeUnitBallBumpRadius (R : ℝ) (hR : 0 < R) : SchwartzSpacetime d :=
   unitBallBumpSchwartzPiRadius (d + 1) R hR
 
+/-- The model unit-ball Schwartz bump vanishes outside the radius-`2` ball. -/
+private theorem unitBallBumpSchwartzPi_zero_of_two_le_norm {m : ℕ}
+    {x : Fin m → ℝ} (hx : 2 ≤ ‖x‖) :
+    unitBallBumpSchwartzPi m x = 0 := by
+  let b : ContDiffBump (0 : Fin m → ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
+  let f : (Fin m → ℝ) → ℂ := fun y => (b y : ℂ)
+  have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
+    exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  have happly :
+      unitBallBumpSchwartzPi m x = f x := by
+    simpa [unitBallBumpSchwartzPi, b, f] using
+      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+  rw [happly]
+  rw [show f x = ((b x : ℝ) : ℂ) by rfl]
+  refine congrArg (fun r : ℝ => (r : ℂ)) ?_
+  have hdist : 2 ≤ dist x 0 := by simpa [dist_eq_norm] using hx
+  exact b.zero_of_le_dist hdist
+
+/-- The rescaled spacetime bump vanishes outside the radius-`2R` ball. -/
+private theorem spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm
+    {R : ℝ} (hR : 0 < R) {x : SpacetimeDim d}
+    (hx : 2 * R ≤ ‖x‖) :
+    spacetimeUnitBallBumpRadius (d := d) R hR x = 0 := by
+  rw [spacetimeUnitBallBumpRadius, unitBallBumpSchwartzPiRadius_apply]
+  apply unitBallBumpSchwartzPi_zero_of_two_le_norm
+  rw [norm_smul, Real.norm_of_nonneg (inv_nonneg.mpr hR.le)]
+  rw [le_inv_mul_iff₀ hR]
+  simpa [two_mul, mul_comm, mul_left_comm, mul_assoc] using hx
+
 /-- The annular cutoff `ρ_R - ρ_ε` vanishes on a neighborhood of the origin. -/
 private theorem zero_not_mem_tsupport_annulusCutoff
     (ε R : ℝ) (hε : 0 < ε) (hR : ε < R) :
@@ -375,6 +406,271 @@ private theorem exists_iteratedFDeriv_spacetimeUnitBallBumpRadius_bound
             simp
     _ ≤ C * (δ⁻¹) ^ n := by
             gcongr
+
+/-- A single directional derivative costs one derivative-order Schwartz seminorm
+and one factor of the direction norm. -/
+private theorem seminorm_zero_lineDeriv_le
+    (h : SchwartzSpacetime d) (v : SpacetimeDim d) (n : ℕ) :
+    SchwartzMap.seminorm ℝ 0 n (LineDeriv.lineDerivOp v h : SchwartzSpacetime d) ≤
+      ‖v‖ * SchwartzMap.seminorm ℝ 0 (n + 1) h := by
+  refine SchwartzMap.seminorm_le_bound ℝ 0 n
+    (LineDeriv.lineDerivOp v h : SchwartzSpacetime d) (by positivity) ?_
+  intro x
+  calc
+    ‖x‖ ^ 0 *
+        ‖iteratedFDeriv ℝ n
+            (((LineDeriv.lineDerivOp v h : SchwartzSpacetime d) : SchwartzSpacetime d) :
+              SpacetimeDim d → ℂ) x‖
+        =
+      ‖iteratedFDeriv ℝ n
+          (((LineDeriv.lineDerivOp v h : SchwartzSpacetime d) : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ) x‖ := by
+            simp
+    _ = ‖fderiv ℝ (iteratedFDeriv ℝ n (h : SpacetimeDim d → ℂ)) x v‖ := by
+          rw [fderiv_iteratedFDeriv_eq_iteratedFDeriv_lineDeriv]
+    _ ≤ ‖fderiv ℝ (iteratedFDeriv ℝ n (h : SpacetimeDim d → ℂ)) x‖ * ‖v‖ := by
+          exact ContinuousLinearMap.le_opNorm _ _
+    _ = ‖iteratedFDeriv ℝ (n + 1) (h : SpacetimeDim d → ℂ) x‖ * ‖v‖ := by
+          rw [norm_fderiv_iteratedFDeriv]
+    _ ≤ (SchwartzMap.seminorm ℝ 0 (n + 1) h) * ‖v‖ := by
+          gcongr
+          exact SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ h (n + 1) x
+    _ = ‖v‖ * SchwartzMap.seminorm ℝ 0 (n + 1) h := by
+          ring
+
+/-- Iterated directional derivatives are uniformly controlled by the matching
+zero-weight higher Schwartz seminorm, with one factor of `‖u i‖` per
+direction. -/
+private theorem iteratedLineDeriv_seminorm_zero_le
+    (h : SchwartzSpacetime d) (j n : ℕ) :
+    ∀ u : Fin j → SpacetimeDim d,
+      SchwartzMap.seminorm ℝ 0 n (LineDeriv.iteratedLineDerivOp u h : SchwartzSpacetime d) ≤
+        (∏ i, ‖u i‖) * SchwartzMap.seminorm ℝ 0 (n + j) h := by
+  induction j generalizing h n with
+  | zero =>
+      intro u
+      simp [LineDeriv.iteratedLineDerivOp_fin_zero]
+  | succ j ih =>
+      intro u
+      rw [LineDeriv.iteratedLineDerivOp_succ_left]
+      calc
+        SchwartzMap.seminorm ℝ 0 n (∂_{u 0} (∂^{Fin.tail u} h) : SchwartzSpacetime d)
+            ≤ ‖u 0‖ * SchwartzMap.seminorm ℝ 0 (n + 1) (∂^{Fin.tail u} h : SchwartzSpacetime d) := by
+              exact seminorm_zero_lineDeriv_le (h := ∂^{Fin.tail u} h) (v := u 0) (n := n)
+        _ ≤ ‖u 0‖ *
+              ((∏ i, ‖Fin.tail u i‖) * SchwartzMap.seminorm ℝ 0 (n + 1 + j) h) := by
+              gcongr
+              exact ih (h := h) (n := n + 1) (u := Fin.tail u)
+        _ = (∏ i, ‖u i‖) * SchwartzMap.seminorm ℝ 0 (n + (j + 1)) h := by
+              rw [Fin.prod_univ_succ, add_assoc]
+              have htail : (∏ i : Fin j, ‖Fin.tail u i‖) = ∏ i : Fin j, ‖u i.succ‖ := rfl
+              rw [htail]
+              ring
+
+/-- Pointwise version of `iteratedLineDeriv_seminorm_zero_le`. -/
+private theorem norm_iteratedFDeriv_iteratedLineDeriv_le
+    (h : SchwartzSpacetime d) (j n : ℕ) :
+    ∀ (u : Fin j → SpacetimeDim d) (x : SpacetimeDim d),
+      ‖iteratedFDeriv ℝ n ((LineDeriv.iteratedLineDerivOp u h : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ) x‖ ≤
+        (∏ i, ‖u i‖) * SchwartzMap.seminorm ℝ 0 (n + j) h := by
+  intro u x
+  exact le_trans (SchwartzMap.norm_iteratedFDeriv_le_seminorm ℝ (∂^{u} h) n x)
+    (iteratedLineDeriv_seminorm_zero_le (h := h) (j := j) (n := n) u)
+
+/-- If all iterated derivatives of `h` vanish at the origin, then the same is
+true for every iterated directional derivative of `h`. -/
+private theorem iteratedLineDeriv_vanish_at_zero
+    (h : SchwartzSpacetime d)
+    (h_vanish : ∀ n : ℕ, iteratedFDeriv ℝ n (h : SpacetimeDim d → ℂ) 0 = 0)
+    {j : ℕ} (u : Fin j → SpacetimeDim d) (n : ℕ) :
+    iteratedFDeriv ℝ n ((∂^{u} h : SchwartzSpacetime d) : SpacetimeDim d → ℂ) 0 = 0 := by
+  induction j generalizing h n with
+  | zero =>
+      simpa [LineDeriv.iteratedLineDerivOp_fin_zero] using h_vanish n
+  | succ j ih =>
+      have hu : u = Fin.snoc (Fin.init u) (u (Fin.last j)) := by
+        simpa using Fin.snoc_init_self u
+      rw [hu, LineDeriv.iteratedLineDerivOp_succ_right]
+      simp only [Fin.init_snoc, Fin.snoc_last]
+      let f : SchwartzSpacetime d := ∂_{u (Fin.last j)} h
+      have hf_vanish : ∀ m : ℕ, iteratedFDeriv ℝ m (f : SpacetimeDim d → ℂ) 0 = 0 := by
+        intro m
+        ext w
+        let w' : Fin (m + 1) → SpacetimeDim d := Fin.snoc w (u (Fin.last j))
+        have hzero := h_vanish (m + 1)
+        have hzero_apply : iteratedFDeriv ℝ (m + 1) (h : SpacetimeDim d → ℂ) 0 w' = 0 := by
+          simpa [w'] using congrArg (fun T => T w') hzero
+        simpa [f, w', iteratedFDeriv_lineDeriv_eq_snoc] using hzero_apply
+      simpa [f] using ih (h := f) (h_vanish := hf_vanish) (u := Fin.init u) (n := n)
+
+/-- Quantitative flatness for iterated directional derivatives on the unit ball. -/
+private theorem exists_iteratedLineDeriv_flat_bound
+    (h : SchwartzSpacetime d)
+    (h_vanish : ∀ n : ℕ, iteratedFDeriv ℝ n (h : SpacetimeDim d → ℂ) 0 = 0)
+    (j m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (u : Fin j → SpacetimeDim d) (x : SpacetimeDim d),
+        ‖(LineDeriv.iteratedLineDerivOp u h : SchwartzSpacetime d) x‖ ≤
+          C * ‖x‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
+  let A : ℝ := SchwartzMap.seminorm ℝ 0 (j + (m + 1)) h
+  refine ⟨A / (((Nat.factorial m : ℕ) : ℝ)), by positivity, ?_⟩
+  intro u x
+  let F : SchwartzSpacetime d := ∂^{u} h
+  let L : ℝ →L[ℝ] SpacetimeDim d :=
+    ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) x
+  let g : ℝ → ℂ := (fun z : SpacetimeDim d => (F : SpacetimeDim d → ℂ) z) ∘ L
+  have hF_contDiff :
+      ∀ r : ℕ, ContDiff ℝ r (F : SpacetimeDim d → ℂ) := fun r => by
+    simpa [F] using (F.smooth r)
+  have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
+    simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hF_contDiff r))
+  have hTaylor_zero :
+      taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1 = 0 := by
+    rw [taylor_within_apply]
+    apply Finset.sum_eq_zero
+    intro k hk
+    have hk_mem : k ∈ Finset.range (m + 1) := hk
+    have hk_zero :
+        iteratedDerivWithin k g (Set.Icc (0 : ℝ) 1) 0 = 0 := by
+      rw [iteratedDerivWithin_eq_iteratedDeriv
+          (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+          ((hg_contDiff k).contDiffAt) (by simp), iteratedDeriv_eq_iteratedFDeriv]
+      have hcomp :
+          iteratedFDeriv ℝ k g 0 =
+            (iteratedFDeriv ℝ k (F : SpacetimeDim d → ℂ) (L 0)).compContinuousLinearMap
+              (fun _ : Fin k => L) := by
+        simpa [g] using
+          L.iteratedFDeriv_comp_right
+            (f := (F : SpacetimeDim d → ℂ))
+            (hF_contDiff k) (x := 0) (i := k) le_rfl
+      have hzeroF :
+          iteratedFDeriv ℝ k (F : SpacetimeDim d → ℂ) (L 0) = 0 := by
+        simpa [F, L, ContinuousLinearMap.smulRight_apply] using
+          iteratedLineDeriv_vanish_at_zero (h := h) h_vanish u k
+      rw [hcomp, hzeroF]
+      simp
+    simp [hk_zero]
+  have hderiv_bound :
+      ∀ t ∈ Set.Icc (0 : ℝ) 1,
+        ‖iteratedDerivWithin (m + 1) g (Set.Icc (0 : ℝ) 1) t‖ ≤
+          (A * ∏ i, ‖u i‖) * ‖x‖ ^ (m + 1) := by
+    intro t ht
+    have hL :
+        ‖L‖ ≤ ‖x‖ := by
+      refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun s => ?_
+      simpa [L, ContinuousLinearMap.smulRight_apply, Real.norm_eq_abs, norm_smul, mul_comm] using
+        (norm_smul s x)
+    rw [iteratedDerivWithin_eq_iteratedDeriv
+        (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+        ((hg_contDiff (m + 1)).contDiffAt) ht, ← norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    have hcomp :
+        iteratedFDeriv ℝ (m + 1) g t =
+          (iteratedFDeriv ℝ (m + 1) (F : SpacetimeDim d → ℂ) (L t)).compContinuousLinearMap
+            (fun _ : Fin (m + 1) => L) := by
+      simpa [g] using
+        L.iteratedFDeriv_comp_right
+          (f := (F : SpacetimeDim d → ℂ))
+          (hF_contDiff (m + 1)) (x := t) (i := m + 1) le_rfl
+    rw [hcomp]
+    have hFbound :
+        ‖iteratedFDeriv ℝ (m + 1) (F : SpacetimeDim d → ℂ) (L t)‖ ≤
+          A * ∏ i, ‖u i‖ := by
+      simpa [A, add_assoc, add_comm, add_left_comm, mul_assoc, mul_comm, mul_left_comm] using
+        norm_iteratedFDeriv_iteratedLineDeriv_le
+          (h := h) (j := j) (n := m + 1) u (L t)
+    have hprod_nonneg : 0 ≤ ∏ _ : Fin (m + 1), ‖L‖ := by
+      positivity
+    calc
+      ‖(iteratedFDeriv ℝ (m + 1) (F : SpacetimeDim d → ℂ) (L t)).compContinuousLinearMap
+          (fun _ : Fin (m + 1) => L)‖
+          ≤ ‖iteratedFDeriv ℝ (m + 1) (F : SpacetimeDim d → ℂ) (L t)‖ *
+              ∏ _ : Fin (m + 1), ‖L‖ := by
+                exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+      _ ≤ (A * ∏ i, ‖u i‖) * ∏ _ : Fin (m + 1), ‖L‖ := by
+            exact mul_le_mul_of_nonneg_right hFbound hprod_nonneg
+      _ = (A * ∏ i, ‖u i‖) * ‖L‖ ^ (m + 1) := by
+            simp
+      _ ≤ (A * ∏ i, ‖u i‖) * ‖x‖ ^ (m + 1) := by
+            gcongr
+  have hrem :=
+    taylor_mean_remainder_bound (f := g) (a := (0 : ℝ)) (b := 1)
+      (C := (A * ∏ i, ‖u i‖) * ‖x‖ ^ (m + 1)) (x := 1) (n := m) (by norm_num)
+      (hg_contDiff (m + 1)).contDiffOn (by simp) hderiv_bound
+  have hg_one : g 1 = F x := by
+    simp [g, L, ContinuousLinearMap.smulRight_apply]
+  calc
+    ‖(F : SpacetimeDim d → ℂ) x‖ = ‖g 1 - taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1‖ := by
+          rw [hg_one]
+          simp [hTaylor_zero]
+    _ ≤ ((A * ∏ i, ‖u i‖) * ‖x‖ ^ (m + 1)) *
+          (1 - (0 : ℝ)) ^ (m + 1) / (((Nat.factorial m : ℕ) : ℝ)) := by
+          simpa [hTaylor_zero] using hrem
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖x‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
+          field_simp [Nat.cast_ne_zero]
+          ring
+
+/-- Operator-valued flatness near the origin for iterated Fréchet derivatives of
+`h`. -/
+private theorem exists_iteratedFDeriv_flat_bound
+    (h : SchwartzSpacetime d)
+    (h_vanish : ∀ n : ℕ, iteratedFDeriv ℝ n (h : SpacetimeDim d → ℂ) 0 = 0)
+    (j m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ x : SpacetimeDim d,
+        ‖iteratedFDeriv ℝ j (h : SpacetimeDim d → ℂ) x‖ ≤ C * ‖x‖ ^ (m + 1) := by
+  obtain ⟨C, hC_nonneg, hC⟩ :=
+    exists_iteratedLineDeriv_flat_bound (h := h) h_vanish j m
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro x
+  have hCx : 0 ≤ C * ‖x‖ ^ (m + 1) := by positivity
+  rw [ContinuousMultilinearMap.opNorm_le_iff hCx]
+  intro u
+  simpa [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv, mul_assoc, mul_left_comm, mul_comm]
+    using hC u x
+
+/-- Core power estimate used in the small-origin cutoff proof. -/
+private theorem small_origin_power_factor_le
+    {N M i : ℕ} {δ : ℝ} (hδ : 0 < δ) (hδ_le : δ ≤ 1)
+    {x : SpacetimeDim d} (hx : ‖x‖ ≤ 2 * δ) (hi : i ∈ Finset.range (M + 1)) :
+    ‖x‖ ^ N * (δ⁻¹) ^ i * ‖x‖ ^ (M + 1) ≤ (2 : ℝ) ^ (N + M + 1) * δ := by
+  have hδ_nonneg : 0 ≤ δ := le_of_lt hδ
+  have hi_le : i ≤ M := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+  have hpowN : ‖x‖ ^ N ≤ (2 * δ) ^ N := by
+    gcongr
+  have hpowM : ‖x‖ ^ (M + 1) ≤ (2 * δ) ^ (M + 1) := by
+    gcongr
+  have hdelta_inv_mono :
+      (δ⁻¹) ^ i ≤ (δ⁻¹) ^ M := by
+    have hδ_inv_ge_one : 1 ≤ δ⁻¹ := by
+      rw [one_le_inv₀ hδ]
+      exact hδ_le
+    exact pow_le_pow_right₀ hδ_inv_ge_one hi_le
+  have hcancel : (δ⁻¹) ^ M * δ ^ (M + 1) = δ := by
+    calc
+      (δ⁻¹) ^ M * δ ^ (M + 1) = ((δ⁻¹) ^ M * δ ^ M) * δ := by
+            rw [pow_succ']
+            ring
+      _ = (((δ ^ M)⁻¹ * δ ^ M) * δ) := by rw [inv_pow]
+      _ = δ := by simp [pow_ne_zero M hδ.ne']
+  have hδN_le : δ ^ N ≤ 1 := pow_le_one₀ hδ_nonneg hδ_le
+  calc
+    ‖x‖ ^ N * (δ⁻¹) ^ i * ‖x‖ ^ (M + 1)
+        ≤ (2 * δ) ^ N * (δ⁻¹) ^ i * (2 * δ) ^ (M + 1) := by
+            gcongr
+    _ ≤ (2 * δ) ^ N * (δ⁻¹) ^ M * (2 * δ) ^ (M + 1) := by
+          gcongr
+    _ = (2 : ℝ) ^ N * (2 : ℝ) ^ (M + 1) * (δ ^ N * ((δ⁻¹) ^ M * δ ^ (M + 1))) := by
+          rw [mul_pow, mul_pow]
+          ring_nf
+    _ = (2 : ℝ) ^ (N + M + 1) * (δ ^ N * ((δ⁻¹) ^ M * δ ^ (M + 1))) := by
+          rw [← pow_add]
+          ring
+    _ = (2 : ℝ) ^ (N + M + 1) * (δ ^ N * δ) := by rw [hcancel]
+    _ ≤ (2 : ℝ) ^ (N + M + 1) * δ := by
+          have hmult : δ ^ N * δ ≤ (1 : ℝ) * δ := by
+            gcongr
+          simpa using hmult
 
 /-- Schwartz functions vanishing to infinite order at the origin can be
 be cut off near the origin with arbitrarily small Schwartz seminorm error. -/
