@@ -2269,6 +2269,21 @@ instance instTopologicalSpaceZeroDiagonalSchwartz (d n : ℕ) :
   delta ZeroDiagonalSchwartz
   infer_instance
 
+instance instContinuousAddZeroDiagonalSchwartz (d n : ℕ) :
+    ContinuousAdd (ZeroDiagonalSchwartz d n) := by
+  delta ZeroDiagonalSchwartz
+  infer_instance
+
+instance instContinuousSMulZeroDiagonalSchwartz (d n : ℕ) :
+    ContinuousSMul ℂ (ZeroDiagonalSchwartz d n) := by
+  delta ZeroDiagonalSchwartz
+  infer_instance
+
+instance instContinuousConstSMulZeroDiagonalSchwartz (d n : ℕ) :
+    ContinuousConstSMul ℂ (ZeroDiagonalSchwartz d n) := by
+  delta ZeroDiagonalSchwartz
+  infer_instance
+
 /-- A classical promotion from a Schwartz test function to the zero-diagonal
     subspace, with a junk zero fallback when the function is not in `°S`.
 

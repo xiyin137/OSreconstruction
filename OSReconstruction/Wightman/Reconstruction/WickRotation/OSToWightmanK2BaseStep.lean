@@ -11,11 +11,15 @@ import OSReconstruction.SCV.SemigroupGroupBochner
 import Mathlib.Analysis.Calculus.ParametricIntegral
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2KernelBridge
+
+
 /-!
 # `k = 2` Base-Step Decomposition
 
-This file isolates the genuine mathematical subproblems behind the root blocker
-`schwinger_continuation_base_step_timeParametric`.
+This file now contains the heavier Bochner/convergence/assembly tail behind the
+root blocker `schwinger_continuation_base_step_timeParametric`. The front
+density/kernel seam lives in `OSToWightmanK2KernelBridge.lean`.
 
 The active decomposition is:
 
@@ -1406,173 +1410,9 @@ private theorem bochner_kernel_integral_eq_semigroup_integral
     rw [hμ_repr (ξ 0) (fun i => ξ (Fin.succ i)) hξ_pos]
     simp [laplaceFourierKernel]
 
-/-- Density seam for the two-point kernel bridge: the `ℂ`-span of admissible
-difference shells supported away from the origin is dense in the zero-diagonal
-two-point Schwartz space. -/
-private theorem zeroOrigin_differenceShell_span_dense_zeroDiagonal :
-    Dense (((Submodule.span ℂ
-      {f : ZeroDiagonalSchwartz d 2 |
-        ∃ (χ h : SchwartzSpacetime d),
-          (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) ∧
-          HasCompactSupport (h : SpacetimeDim d → ℂ) ∧
-          f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}) :
-        Submodule ℂ (ZeroDiagonalSchwartz d 2)) : Set (ZeroDiagonalSchwartz d 2)) := by
-  sorry
-
-/-- Scalar difference-kernel form of the two-point regularity input. This is the
-honest theorem underlying the pair-kernel statement below: a single
-polynomial-growth difference kernel, continuous away from the origin, already
-reproduces the canonical zero-origin reduced Schwinger pairing. -/
-private theorem exists_twoPointDifferenceKernel_zeroOrigin_pairing_offOrigin
-    (OS : OsterwalderSchraderAxioms d) :
-    ∃ (χ₀ : SchwartzSpacetime d),
-      (∫ u : SpacetimeDim d, χ₀ u = 1) ∧
-      ∃ (K : SpacetimeDim d → ℂ),
-        ContinuousOn K {ξ : SpacetimeDim d | ξ ≠ 0} ∧
-        AEStronglyMeasurable (OSReconstruction.twoPointDifferenceKernel (d := d) K) volume ∧
-        (∃ (N : ℕ) (C_bd : ℝ), 0 < C_bd ∧
-          ∀ᵐ x : NPointDomain d 2 ∂volume,
-            ‖OSReconstruction.twoPointDifferenceKernel (d := d) K x‖ ≤
-              C_bd * (1 + ‖x‖) ^ N) ∧
-        (∀ h : zeroOriginAvoidingSubmodule d,
-          HasCompactSupport
-            ((((h : zeroOriginAvoidingSubmodule d) : SchwartzSpacetime d) :
-              SpacetimeDim d → ℂ)) →
-            ∫ ξ : SpacetimeDim d, K ξ *
-                ((((h : zeroOriginAvoidingSubmodule d) : SchwartzSpacetime d)) ξ) =
-              (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM
-                (d := d) OS χ₀) h) := by
-  sorry
-
-private theorem schwinger_twoPoint_kernel_repr_offDiagonal
-    (OS : OsterwalderSchraderAxioms d) :
-    ∃ (K : SpacetimeDim d → SpacetimeDim d → ℂ),
-      ContinuousOn (fun p : SpacetimeDim d × SpacetimeDim d => K p.1 p.2)
-        {p | p.1 ≠ p.2} ∧
-      (∀ (f : ZeroDiagonalSchwartz d 2),
-        OS.S 2 f =
-          ∫ p : SpacetimeDim d × SpacetimeDim d,
-            K p.1 p.2 *
-              f.1 (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume)) := by
-  let S : Set (ZeroDiagonalSchwartz d 2) :=
-    {f : ZeroDiagonalSchwartz d 2 |
-      ∃ (χ h : SchwartzSpacetime d),
-        (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) ∧
-        HasCompactSupport (h : SpacetimeDim d → ℂ) ∧
-        f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}
-  rcases exists_twoPointDifferenceKernel_zeroOrigin_pairing_offOrigin OS with
-    ⟨χ₀, hχ₀, Kd, hKd_cont, hKd_meas, hKd_bound', hZero⟩
-  rcases hKd_bound' with ⟨N, C_bd, hC_bd, hKd_bound⟩
-  have hCLM :
-      OSReconstruction.twoPointZeroDiagonalKernelCLM
-          (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-          hKd_meas C_bd N hC_bd hKd_bound =
-        OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2 := by
-    have hOnSpan :
-        ∀ f ∈ ((Submodule.span ℂ S : Submodule ℂ (ZeroDiagonalSchwartz d 2)) :
-          Set (ZeroDiagonalSchwartz d 2)),
-          OSReconstruction.twoPointZeroDiagonalKernelCLM
-              (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-              hKd_meas C_bd N hC_bd hKd_bound f =
-            OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2 f := by
-      intro f hf
-      refine Submodule.span_induction ?_ ?_ ?_ ?_ hf
-      · intro g hg
-        rcases hg with ⟨χ, h, h0, hh_compact, rfl⟩
-        have hvanish :
-            VanishesToInfiniteOrderOnCoincidence (twoPointDifferenceLift χ h) :=
-          twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ h h0
-        let hmem : zeroOriginAvoidingSubmodule d := ⟨h, h0⟩
-        rw [OSReconstruction.twoPointZeroDiagonalKernelCLM_apply
-            (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-            hKd_meas C_bd N hC_bd hKd_bound
-            (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h))]
-        rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
-            (f := twoPointDifferenceLift χ h) hvanish]
-        calc
-          ∫ x : NPointDomain d 2,
-              OSReconstruction.twoPointDifferenceKernel (d := d) Kd x *
-                (twoPointDifferenceLift χ h x)
-            = (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, Kd ξ * h ξ := by
-                exact
-                  OSReconstruction.integral_twoPointDifferenceKernel_mul_differenceLift_factorizes
-                    (d := d) Kd χ h
-          _ = (∫ u : SpacetimeDim d, χ u) *
-                (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM
-                  (d := d) OS χ₀) hmem := by
-                rw [hZero hmem hh_compact]
-          _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
-                symm
-                rw [OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM_eq_centerValue
-                  (d := d) (OS := OS) χ₀ hχ₀ χ hmem]
-                ring
-      · simp
-      · intro f g _ _ hf hg
-        rw [ContinuousLinearMap.map_add, ContinuousLinearMap.map_add, hf, hg]
-      · intro a f _ hf
-        rw [ContinuousLinearMap.map_smul, ContinuousLinearMap.map_smul, hf]
-    apply ContinuousLinearMap.eq_of_eq_on_dense
-      (OSReconstruction.twoPointZeroDiagonalKernelCLM
-        (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-        hKd_meas C_bd N hC_bd hKd_bound)
-      (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2)
-      zeroOrigin_differenceShell_span_dense_zeroDiagonal
-    intro f hf
-    exact hOnSpan f hf
-  let K : SpacetimeDim d → SpacetimeDim d → ℂ := fun x₀ x₁ => Kd (x₁ - x₀)
-  refine ⟨K, ?_, ?_⟩
-  · have hmaps :
-        Set.MapsTo (fun p : SpacetimeDim d × SpacetimeDim d => p.2 - p.1)
-          {p : SpacetimeDim d × SpacetimeDim d | p.1 ≠ p.2}
-          {ξ : SpacetimeDim d | ξ ≠ 0} := by
-        intro p hp
-        simpa [sub_eq_zero] using hp.symm
-    simpa [K] using
-      (hKd_cont.comp (((continuous_snd : Continuous fun p : SpacetimeDim d × SpacetimeDim d => p.2).sub
-        (continuous_fst : Continuous fun p : SpacetimeDim d × SpacetimeDim d => p.1))).continuousOn
-        hmaps)
-  · intro f
-    have happly :=
-      congrArg (fun L : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ => L f) hCLM
-    change
-      OSReconstruction.twoPointZeroDiagonalKernelCLM
-          (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-          hKd_meas C_bd N hC_bd hKd_bound f =
-        OS.S 2 f at happly
-    rw [OSReconstruction.twoPointZeroDiagonalKernelCLM_apply
-        (d := d) (OSReconstruction.twoPointDifferenceKernel (d := d) Kd)
-        hKd_meas C_bd N hC_bd hKd_bound] at happly
-    rw [← happly]
-    let eprod : NPointDomain d 2 ≃ᵐ (SpacetimeDim d × SpacetimeDim d) :=
-      MeasurableEquiv.finTwoArrow
-    have heprod :
-        MeasureTheory.MeasurePreserving eprod
-          MeasureTheory.volume MeasureTheory.volume := by
-      simpa [eprod] using
-        (MeasureTheory.volume_preserving_finTwoArrow (SpacetimeDim d))
-    calc
-      ∫ x : NPointDomain d 2, OSReconstruction.twoPointDifferenceKernel (d := d) Kd x * f.1 x =
-        ∫ p : SpacetimeDim d × SpacetimeDim d,
-          (OSReconstruction.twoPointDifferenceKernel (d := d) Kd) (eprod.symm p) * f.1 (eprod.symm p)
-            ∂ (volume.prod volume) := by
-            symm
-            simpa [eprod] using
-              heprod.symm.integral_comp'
-                (g := fun x : NPointDomain d 2 =>
-                  OSReconstruction.twoPointDifferenceKernel (d := d) Kd x * f.1 x)
-      _ =
-        ∫ p : SpacetimeDim d × SpacetimeDim d,
-          K p.1 p.2 *
-            f.1 (Fin.cons p.1 (Fin.cons p.2 Fin.elim0)) ∂ (volume.prod volume) := by
-            refine MeasureTheory.integral_congr_ae ?_
-            filter_upwards with p
-            rcases p with ⟨x₀, x₁⟩
-            have heq :
-                eprod.symm (x₀, x₁) = Fin.cons x₀ (Fin.cons x₁ Fin.elim0) := by
-              ext i μ
-              fin_cases i <;> rfl
-            simp [heq, K, OSReconstruction.twoPointDifferenceKernel, sub_eq_add_neg]
-
+/-- Kernel-evaluation helper: once an off-diagonal two-point kernel represents
+`OS.S 2`, product-shell pairings are obtained by direct evaluation against the
+product lift. -/
 private theorem schwinger_twoPointProductLift_eq_kernelIntegral_local
     (OS : OsterwalderSchraderAxioms d)
     (K : SpacetimeDim d → SpacetimeDim d → ℂ)
@@ -3334,6 +3174,50 @@ private theorem schwinger_error_tendsto_zero
         OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ₀ h)) := by
     ring
   simpa [hEqFinal, hEqLim] using hshift
+
+/-- If bounded real weights converge pointwise to `1`, then the corresponding
+weighted integrals of bounded continuous test functions converge to the
+unweighted integral against the same finite measure. This is the exact DCT step
+behind the approximate-identity/Bochner smearing removal. -/
+private theorem weighted_measure_tendsto_of_approx_identity
+    (ρ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure ρ]
+    (w_seq : ℕ → (ℝ × (Fin d → ℝ)) → ℝ)
+    (hw_le : ∀ n p, w_seq n p ≤ 1)
+    (hw_nonneg : ∀ n p, 0 ≤ w_seq n p)
+    (hw_meas : ∀ n, Measurable (w_seq n))
+    (hw_tendsto : ∀ p, Tendsto (fun n => w_seq n p) atTop (nhds 1)) :
+    ∀ f : BoundedContinuousFunction (ℝ × (Fin d → ℝ)) ℂ,
+      Tendsto (fun n => ∫ p, f p * ↑(w_seq n p) ∂ρ)
+        atTop (nhds (∫ p, f p ∂ρ)) := by
+  intro f
+  rw [show (fun p => f p) = (fun p => f p * (1 : ℂ)) from by
+    funext p
+    simp]
+  apply MeasureTheory.tendsto_integral_filter_of_norm_le_const
+  · exact Filter.Eventually.of_forall fun n =>
+      f.continuous.aestronglyMeasurable.mul
+        ((measurable_ofReal.comp (hw_meas n)).aestronglyMeasurable)
+  · refine ⟨‖f‖, Filter.Eventually.of_forall (fun n => Filter.Eventually.of_forall (fun p => ?_))⟩
+    simp only [norm_mul, Complex.norm_real]
+    calc
+      ‖f p‖ * ‖w_seq n p‖ ≤ ‖f‖ * ‖w_seq n p‖ := by
+        gcongr
+        exact f.norm_coe_le_norm p
+      _ ≤ ‖f‖ * 1 := by
+        gcongr
+        rw [Real.norm_eq_abs, abs_le]
+        exact ⟨by linarith [hw_nonneg n p], hw_le n p⟩
+      _ = ‖f‖ := by ring
+  · exact Filter.Eventually.of_forall fun p => by
+      have hw_c :
+          Tendsto (fun n => (↑(w_seq n p) : ℂ)) atTop (nhds (↑(1 : ℝ))) :=
+        Complex.continuous_ofReal.continuousAt.tendsto.comp (hw_tendsto p)
+      have hmul :
+          Tendsto (fun n => f p * (↑(w_seq n p) : ℂ)) atTop
+            (nhds (f p * ↑(1 : ℝ))) :=
+        Filter.Tendsto.const_mul (f p) hw_c
+      simpa using hmul
 
 /-- Smearing removal for the approximate-identity/Bochner route: for a fixed
 normalized center cutoff `χ₀`, there is a single limit Laplace-Fourier kernel
