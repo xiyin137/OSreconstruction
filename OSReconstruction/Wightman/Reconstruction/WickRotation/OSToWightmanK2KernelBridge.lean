@@ -8,6 +8,7 @@ import OSReconstruction.Wightman.Reconstruction.TwoPointKernelFunctional
 import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 import OSReconstruction.Wightman.Reconstruction.TwoPointDescent
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
+import OSReconstruction.Wightman.Reconstruction.DenseCLM
 
 /-!
 # `k = 2` Front Kernel Bridge
@@ -149,10 +150,16 @@ private theorem differenceLift_in_ZDS_implies_h_vanishes_at_zero
         have happly :=
           congrArg (fun L : NPointDomain d 2 →L[ℝ] ℂ => L (insDiff (u 0)))
             (hχfd.mul hhfd).fderiv
-        simpa [SchwartzMap.lineDerivOp_apply_eq_fderiv,
-          SchwartzMap.prependField_apply, onePointToFin1CLM_apply,
-          LineDeriv.iteratedLineDerivOp_succ_left, insDiff,
-          ContinuousLinearMap.comp_apply, mul_add, add_mul] using happly
+        change
+          (fderiv ℝ
+              (fun y : NPointDomain d 2 =>
+                χ (y 0) * (LineDeriv.iteratedLineDerivOp (Fin.tail u) h) (y 1)) x)
+              (insDiff (u 0)) =
+            χ (x 0) *
+              (fderiv ℝ
+                (fun z : SpacetimeDim d =>
+                  (LineDeriv.iteratedLineDerivOp (Fin.tail u) h) z) (x 1)) (u 0)
+        simpa [insDiff, ContinuousLinearMap.comp_apply, mul_add, add_mul] using happly
   have hline_id :
       LineDeriv.iteratedLineDerivOp du Fcd =
         χ.prependField (onePointToFin1CLM d (LineDeriv.iteratedLineDerivOp u h)) := by
@@ -1622,6 +1629,12 @@ private theorem twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero
     ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (twoPointCenterDiffCLE d).symm).comp
       ((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
         (onePointToFin1CLM d)))
+  have hT_eq : ∀ g : SchwartzSpacetime d, T g = twoPointDifferenceLift χ g := by
+    intro g
+    ext x
+    simp [T, twoPointDifferenceLift_apply, twoPointCenterDiffCLE,
+      twoPointCenterDiffLinearEquiv, SchwartzMap.prependField_apply,
+      onePointToFin1CLM_apply]
   obtain ⟨u, hu0, _, hu_tendsto⟩ :=
     exists_tendsto_originAvoidingCompact_of_vanishes (d := d) (h := h) hzero
   have hTu : Filter.Tendsto (fun n : ℕ => T (u n)) Filter.atTop (nhds (T h)) := by
@@ -1634,7 +1647,7 @@ private theorem twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero
     have huv :
         VanishesToInfiniteOrderOnCoincidence (twoPointDifferenceLift χ (u n)) :=
       twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ (u n) (hu0 n)
-    simpa [T] using huv k x hx
+    simpa [hT_eq (u n)] using huv k x hx
   have hsmall :
       ∀ ε : ℝ, 0 < ε →
         ‖iteratedFDeriv ℝ k ((T h : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) x‖ < ε := by
@@ -1691,7 +1704,382 @@ private theorem twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero
       exact norm_pos_iff.mpr hne
     exact (lt_irrefl _)
       (hsmall ‖iteratedFDeriv ℝ k ((T h : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) x‖ hpos)
-  simpa [T] using hzero_target
+  simpa [hT_eq h] using hzero_target
+
+/-- Projection onto the difference-variable block in center/difference
+coordinates. -/
+private abbrev diffProjCLM : NPointDomain d 2 →L[ℝ] SpacetimeDim d :=
+  ContinuousLinearMap.proj (R := ℝ) (ι := Fin 2) (φ := fun _ => SpacetimeDim d) 1
+
+/-- Multiply a two-point Schwartz test in center/difference coordinates by a
+Schwartz cutoff in the difference variable. -/
+private def diffBlockCutoffCLM (ψ : SchwartzSpacetime d) :
+    SchwartzNPoint d 2 →L[ℂ] SchwartzNPoint d 2 :=
+  SchwartzMap.smulLeftCLM ℂ (fun x : NPointDomain d 2 => ψ (diffProjCLM (d := d) x))
+
+/-- On pure product tensors, the difference-block cutoff acts only on the
+second factor. -/
+private theorem diffBlockCutoff_productTensor
+    (ψ χ h : SchwartzSpacetime d) :
+    diffBlockCutoffCLM (d := d) ψ (SchwartzMap.productTensor ![χ, h]) =
+      SchwartzMap.productTensor ![χ,
+        (SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d)] := by
+  have htemp :
+      (fun x : NPointDomain d 2 => ψ (diffProjCLM (d := d) x)).HasTemperateGrowth := by
+    fun_prop
+  ext x
+  rw [diffBlockCutoffCLM, SchwartzMap.smulLeftCLM_apply_apply htemp]
+  simp [diffProjCLM, SchwartzMap.productTensor_apply, smul_eq_mul, Fin.prod_univ_two]
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (g := ((ψ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) ψ.hasTemperateGrowth h (x 1)]
+  simp [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
+
+/-- Any Schwartz cutoff vanishing on a neighborhood of the origin forces all
+derivatives of the product `ψ · h` to vanish at the origin. -/
+private theorem vanish_derivs_of_notMem_tsupport
+    (ψ h : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (ψ : SpacetimeDim d → ℂ)) :
+    ∀ k : ℕ,
+      iteratedFDeriv ℝ k
+        ((SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ) 0 = 0 := by
+  intro k
+  have hEq :
+      (((SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d) :
+          SpacetimeDim d → ℂ)) =ᶠ[𝓝 (0 : SpacetimeDim d)] 0 := by
+    have hψ : (ψ : SpacetimeDim d → ℂ) =ᶠ[𝓝 (0 : SpacetimeDim d)] 0 := by
+      simpa [notMem_tsupport_iff_eventuallyEq] using h0
+    filter_upwards [hψ] with x hx
+    have happly := SchwartzMap.smulLeftCLM_apply_apply
+      (g := ((ψ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) ψ.hasTemperateGrowth h x
+    simp [smul_eq_mul, hx] at happly ⊢
+    exact happly
+  have hderivEqWithin :
+      iteratedFDerivWithin ℝ k
+          (((SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ)) Set.univ 0 =
+        iteratedFDerivWithin ℝ k (fun _ : SpacetimeDim d => (0 : ℂ)) Set.univ 0 := by
+    have hEqWithin :
+        (((SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ)) =ᶠ[𝓝[Set.univ] (0 : SpacetimeDim d)]
+          (fun _ : SpacetimeDim d => (0 : ℂ)) := by
+      simpa [nhdsWithin_univ] using hEq
+    simpa using
+      (hEqWithin.iteratedFDerivWithin_eq (by simpa using hEq.eq_of_nhds) k)
+  have hderivEq :
+      iteratedFDeriv ℝ k
+          (((SchwartzMap.smulLeftCLM ℂ ψ h : SchwartzSpacetime d) :
+            SpacetimeDim d → ℂ)) 0 =
+        iteratedFDeriv ℝ k (fun _ : SpacetimeDim d => (0 : ℂ)) 0 := by
+    simpa [iteratedFDerivWithin_univ] using hderivEqWithin
+  rw [hderivEq]
+  ext u
+  simp
+
+/-- Multiplying in the difference variable by an origin-avoiding cutoff sends
+arbitrary two-point Schwartz tests into the closure of the span generated by
+product tensors whose second factor is flat at the origin. This is the
+operator-level bridge behind the remaining flat-origin density theorem. -/
+private theorem diffBlockCutoff_mem_topologicalClosure_flatProductSpan
+    (ψ : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (ψ : SpacetimeDim d → ℂ))
+    (F : SchwartzNPoint d 2) :
+    diffBlockCutoffCLM (d := d) ψ F ∈
+      (((Submodule.span ℂ
+        {G : SchwartzNPoint d 2 |
+          ∃ (χ h : SchwartzSpacetime d),
+            (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+            G = SchwartzMap.productTensor ![χ, h]}) :
+          Submodule ℂ (SchwartzNPoint d 2)).topologicalClosure :
+        Set (SchwartzNPoint d 2)) := by
+  let S_all : Set (SchwartzNPoint d 2) :=
+    {G : SchwartzNPoint d 2 |
+      ∃ fs : Fin 2 → SchwartzSpacetime d, G = SchwartzMap.productTensor fs}
+  let S_flat : Set (SchwartzNPoint d 2) :=
+    {G : SchwartzNPoint d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+        G = SchwartzMap.productTensor ![χ, h]}
+  let M_all : Submodule ℂ (SchwartzNPoint d 2) := Submodule.span ℂ S_all
+  let M_flat : Submodule ℂ (SchwartzNPoint d 2) := Submodule.span ℂ S_flat
+  let T : SchwartzNPoint d 2 →L[ℂ] SchwartzNPoint d 2 := diffBlockCutoffCLM (d := d) ψ
+  have hM_all_dense : Dense (M_all : Set (SchwartzNPoint d 2)) := by
+    simpa [M_all, S_all] using productTensor_span_dense d 2
+  have hImage : M_all ≤ M_flat.topologicalClosure.comap T.toLinearMap := by
+    refine Submodule.span_le.mpr ?_
+    intro G hG
+    rcases hG with ⟨fs, rfl⟩
+    change T (SchwartzMap.productTensor fs) ∈ M_flat.topologicalClosure
+    apply subset_closure
+    refine Submodule.subset_span ?_
+    refine ⟨fs 0, (SchwartzMap.smulLeftCLM ℂ ψ (fs 1) : SchwartzSpacetime d), ?_, ?_⟩
+    · exact vanish_derivs_of_notMem_tsupport (d := d) ψ (fs 1) h0
+    · simpa [T] using diffBlockCutoff_productTensor (d := d) ψ (fs 0) (fs 1)
+  have hclosed :
+      IsClosed
+        ((M_flat.topologicalClosure.comap T.toLinearMap :
+          Submodule ℂ (SchwartzNPoint d 2)) : Set (SchwartzNPoint d 2)) := by
+    change IsClosed ((T : SchwartzNPoint d 2 → SchwartzNPoint d 2) ⁻¹'
+      (M_flat.topologicalClosure : Set (SchwartzNPoint d 2)))
+    exact M_flat.isClosed_topologicalClosure.preimage T.continuous
+  have hclosure_le :
+      M_all.topologicalClosure ≤ M_flat.topologicalClosure.comap T.toLinearMap :=
+    Submodule.topologicalClosure_minimal M_all hImage hclosed
+  have htop : (⊤ : Submodule ℂ (SchwartzNPoint d 2)) ≤
+      M_flat.topologicalClosure.comap T.toLinearMap := by
+    rw [← (Submodule.dense_iff_topologicalClosure_eq_top).mp hM_all_dense]
+    exact hclosure_le
+  have hmem : F ∈ M_flat.topologicalClosure.comap T.toLinearMap := htop (by simp)
+  simpa [T, M_flat, S_flat] using hmem
+
+/-- Inverse center/difference rewrite on two-point Schwartz space. -/
+private abbrev twoPointCenterDiffInvSchwartzCLM :
+    SchwartzNPoint d 2 →L[ℂ] SchwartzNPoint d 2 :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (twoPointCenterDiffCLE d).symm
+
+/-- Pulling a product tensor back through the inverse center/difference map
+recovers the corresponding difference shell. -/
+private theorem twoPointCenterDiffInvSchwartzCLM_productTensor
+    (χ h : SchwartzSpacetime d) :
+    twoPointCenterDiffInvSchwartzCLM (d := d) (SchwartzMap.productTensor ![χ, h]) =
+      twoPointDifferenceLift χ h := by
+  ext x
+  simp [twoPointCenterDiffInvSchwartzCLM, twoPointDifferenceLift_apply,
+    twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+    SchwartzMap.productTensor_apply]
+
+/-- Pulling the difference-block cutoff back to the original variables amounts
+to multiplying by `ψ (x₁ - x₀)`. -/
+private theorem twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply
+    (ψ : SchwartzSpacetime d) (F : SchwartzNPoint d 2) (x : NPointDomain d 2) :
+    twoPointCenterDiffInvSchwartzCLM (d := d)
+      (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F)) x =
+        ψ (x 1 - x 0) * F x := by
+  have htemp :
+      (fun x : NPointDomain d 2 => ψ (diffProjCLM (d := d) x)).HasTemperateGrowth := by
+    fun_prop
+  change
+    diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F)
+        ((twoPointCenterDiffCLE d).symm x) =
+      ψ (x 1 - x 0) * F x
+  rw [diffBlockCutoffCLM, SchwartzMap.smulLeftCLM_apply_apply htemp,
+    twoPointCenterDiffSchwartzCLM_apply]
+  have hcoords : (fun i : Fin 2 => if i = 0 then x 0 else x 1) = x := by
+    ext i
+    fin_cases i <;> simp
+  simp [diffProjCLM, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv, smul_eq_mul, hcoords]
+
+/-- If the difference-block cutoff vanishes near `0`, its pullback to the
+original variables vanishes to infinite order on the coincidence locus. -/
+private theorem twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishes
+    (ψ : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (ψ : SpacetimeDim d → ℂ))
+    (F : SchwartzNPoint d 2) :
+    VanishesToInfiniteOrderOnCoincidence
+      (twoPointCenterDiffInvSchwartzCLM (d := d)
+        (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F))) := by
+  intro k x hx
+  have hψ : (ψ : SpacetimeDim d → ℂ) =ᶠ[𝓝 (0 : SpacetimeDim d)] 0 := by
+    simpa [notMem_tsupport_iff_eventuallyEq] using h0
+  have hdiff : (fun y : NPointDomain d 2 => y 1 - y 0) x = 0 := by
+    rcases hx with ⟨i, j, hij, hijEq⟩
+    fin_cases i <;> fin_cases j
+    · exact (hij rfl).elim
+    · exact sub_eq_zero.mpr hijEq.symm
+    · exact sub_eq_zero.mpr hijEq
+    · exact (hij rfl).elim
+  have hEq :
+      (((twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d) ψ
+            (twoPointCenterDiffSchwartzCLM (d := d) F))) : SchwartzNPoint d 2) :
+        NPointDomain d 2 → ℂ) =ᶠ[𝓝 x] 0 := by
+    have hcomp : (fun y : NPointDomain d 2 => ψ (y 1 - y 0)) =ᶠ[𝓝 x] 0 := by
+      exact hψ.comp_tendsto (by
+        simpa [hdiff] using ((continuous_apply 1).sub (continuous_apply 0)).tendsto x)
+    filter_upwards [hcomp] with y hy
+    simp [twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_apply, hy]
+  have hderivEqWithin :
+      iteratedFDerivWithin ℝ k
+          ((((twoPointCenterDiffInvSchwartzCLM (d := d)
+              (diffBlockCutoffCLM (d := d) ψ
+                (twoPointCenterDiffSchwartzCLM (d := d) F))) : SchwartzNPoint d 2) :
+            NPointDomain d 2 → ℂ)) Set.univ x =
+        iteratedFDerivWithin ℝ k (fun _ : NPointDomain d 2 => (0 : ℂ)) Set.univ x := by
+    have hEqWithin :
+        ((((twoPointCenterDiffInvSchwartzCLM (d := d)
+            (diffBlockCutoffCLM (d := d) ψ
+              (twoPointCenterDiffSchwartzCLM (d := d) F))) : SchwartzNPoint d 2) :
+          NPointDomain d 2 → ℂ)) =ᶠ[𝓝[Set.univ] x]
+          (fun _ : NPointDomain d 2 => (0 : ℂ)) := by
+      simpa [nhdsWithin_univ] using hEq
+    simpa using
+      (hEqWithin.iteratedFDerivWithin_eq (by simpa using hEq.eq_of_nhds) k)
+  simpa [iteratedFDerivWithin_univ] using hderivEqWithin
+
+/-- Pulling an origin-avoiding difference-block cutoff back to the original
+variables lands in the closure of the flat-at-origin difference-shell span on
+the ambient two-point Schwartz space. -/
+private theorem twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_flatDifferenceShellSpan
+    (ψ : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (ψ : SpacetimeDim d → ℂ))
+    (F : SchwartzNPoint d 2) :
+    twoPointCenterDiffInvSchwartzCLM (d := d)
+      (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F)) ∈
+      (((Submodule.span ℂ
+        {G : SchwartzNPoint d 2 |
+          ∃ (χ h : SchwartzSpacetime d),
+            (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+            G = twoPointDifferenceLift χ h}) :
+          Submodule ℂ (SchwartzNPoint d 2)).topologicalClosure :
+        Set (SchwartzNPoint d 2)) := by
+  let S_flat_prod : Set (SchwartzNPoint d 2) :=
+    {G : SchwartzNPoint d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+        G = SchwartzMap.productTensor ![χ, h]}
+  let S_flat_shell : Set (SchwartzNPoint d 2) :=
+    {G : SchwartzNPoint d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+        G = twoPointDifferenceLift χ h}
+  let M_flat_prod : Submodule ℂ (SchwartzNPoint d 2) := Submodule.span ℂ S_flat_prod
+  let M_flat_shell : Submodule ℂ (SchwartzNPoint d 2) := Submodule.span ℂ S_flat_shell
+  have hImage :
+      M_flat_prod ≤
+        M_flat_shell.topologicalClosure.comap
+          (twoPointCenterDiffInvSchwartzCLM (d := d)).toLinearMap := by
+    refine Submodule.span_le.mpr ?_
+    intro G hG
+    rcases hG with ⟨χ, h, hzero, rfl⟩
+    change twoPointCenterDiffInvSchwartzCLM (d := d)
+      (SchwartzMap.productTensor ![χ, h]) ∈ M_flat_shell.topologicalClosure
+    apply subset_closure
+    refine Submodule.subset_span ?_
+    exact ⟨χ, h, hzero, twoPointCenterDiffInvSchwartzCLM_productTensor (d := d) χ h⟩
+  have hclosed :
+      IsClosed
+        (((M_flat_shell.topologicalClosure).comap
+            (twoPointCenterDiffInvSchwartzCLM (d := d)).toLinearMap :
+            Submodule ℂ (SchwartzNPoint d 2)) : Set (SchwartzNPoint d 2)) := by
+    change IsClosed
+      (((twoPointCenterDiffInvSchwartzCLM (d := d) : SchwartzNPoint d 2 → SchwartzNPoint d 2)) ⁻¹'
+        (M_flat_shell.topologicalClosure : Set (SchwartzNPoint d 2)))
+    exact M_flat_shell.isClosed_topologicalClosure.preimage
+      (twoPointCenterDiffInvSchwartzCLM (d := d)).continuous
+  have hclosure_le :
+      M_flat_prod.topologicalClosure ≤
+        M_flat_shell.topologicalClosure.comap
+          (twoPointCenterDiffInvSchwartzCLM (d := d)).toLinearMap :=
+    Submodule.topologicalClosure_minimal M_flat_prod hImage hclosed
+  have hcutoff :
+      diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F) ∈
+        (M_flat_prod.topologicalClosure : Set (SchwartzNPoint d 2)) := by
+    simpa [M_flat_prod, S_flat_prod] using
+      diffBlockCutoff_mem_topologicalClosure_flatProductSpan (d := d) ψ h0
+        (twoPointCenterDiffSchwartzCLM (d := d) F)
+  have hmem :
+      diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F) ∈
+        M_flat_shell.topologicalClosure.comap
+          (twoPointCenterDiffInvSchwartzCLM (d := d)).toLinearMap :=
+    hclosure_le hcutoff
+  simpa [M_flat_shell, S_flat_shell] using hmem
+
+/-- The same cutoff bridge, now packaged directly on `ZeroDiagonalSchwartz`. -/
+private theorem twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_flatDifferenceShellSpan_zeroDiag
+    (ψ : SchwartzSpacetime d)
+    (h0 : (0 : SpacetimeDim d) ∉ tsupport (ψ : SpacetimeDim d → ℂ))
+    (F : ZeroDiagonalSchwartz d 2) :
+    ZeroDiagonalSchwartz.ofClassical
+      (twoPointCenterDiffInvSchwartzCLM (d := d)
+        (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1))) ∈
+      (((Submodule.span ℂ
+        {f : ZeroDiagonalSchwartz d 2 |
+          ∃ (χ h : SchwartzSpacetime d),
+            (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+            f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}) :
+          Submodule ℂ (ZeroDiagonalSchwartz d 2)).topologicalClosure :
+        Set (ZeroDiagonalSchwartz d 2)) := by
+  let x : ZeroDiagonalSchwartz d 2 :=
+    ZeroDiagonalSchwartz.ofClassical
+      (twoPointCenterDiffInvSchwartzCLM (d := d)
+        (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1)))
+  let coeZ : ZeroDiagonalSchwartz d 2 → SchwartzNPoint d 2 := fun z => z.1
+  let coeL : ZeroDiagonalSchwartz d 2 →ₗ[ℂ] SchwartzNPoint d 2 :=
+    { toFun := coeZ
+      map_add' := by intro a b; rfl
+      map_smul' := by intro c a; rfl }
+  let S_sub : Set (ZeroDiagonalSchwartz d 2) :=
+    {f : ZeroDiagonalSchwartz d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+        f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}
+  let S_ambient : Set (SchwartzNPoint d 2) :=
+    {G : SchwartzNPoint d 2 |
+      ∃ (χ h : SchwartzSpacetime d),
+        (∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) ∧
+        G = twoPointDifferenceLift χ h}
+  let B : Submodule ℂ (ZeroDiagonalSchwartz d 2) := Submodule.span ℂ S_sub
+  have hxv :
+      VanishesToInfiniteOrderOnCoincidence
+        (twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1))) := by
+    exact twoPointCenterDiffInv_diffBlockCutoff_twoPointCenterDiff_vanishes
+      (d := d) ψ h0 F.1
+  have hS :
+      coeZ '' S_sub = S_ambient := by
+    ext G
+    constructor
+    · rintro ⟨f, ⟨χ, h, hzero, rfl⟩, rfl⟩
+      refine ⟨χ, h, hzero, ?_⟩
+      simp [coeZ, ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes,
+        twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero, hzero]
+    · rintro ⟨χ, h, hzero, rfl⟩
+      refine ⟨ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h), ?_, ?_⟩
+      · exact ⟨χ, h, hzero, rfl⟩
+      · simp [coeZ, ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes,
+          twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero, hzero]
+  have hspan :
+      (Submodule.span ℂ S_ambient : Submodule ℂ (SchwartzNPoint d 2)) = B.map coeL := by
+    calc
+      (Submodule.span ℂ S_ambient : Submodule ℂ (SchwartzNPoint d 2))
+          = Submodule.span ℂ (coeL '' S_sub) := by
+              simpa [hS, coeL, coeZ]
+      _ = B.map coeL := by
+            simpa [B] using (Submodule.span_image (R := ℂ) (R₂ := ℂ) (s := S_sub) coeL)
+  have hfull :
+      x.1 ∈
+        closure
+          (coeZ ''
+            ((B : Submodule ℂ (ZeroDiagonalSchwartz d 2)) : Set (ZeroDiagonalSchwartz d 2))) := by
+    have hxcoe :
+        x.1 =
+          twoPointCenterDiffInvSchwartzCLM (d := d)
+            (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1)) := by
+      change
+        (ZeroDiagonalSchwartz.ofClassical
+          (twoPointCenterDiffInvSchwartzCLM (d := d)
+            (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1)))).1 =
+          twoPointCenterDiffInvSchwartzCLM (d := d)
+            (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1))
+      rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+        (f := twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d) ψ (twoPointCenterDiffSchwartzCLM (d := d) F.1))) hxv]
+    rw [hxcoe]
+    have hmap :
+        (((B.map coeL : Submodule ℂ (SchwartzNPoint d 2)) : Set (SchwartzNPoint d 2))) =
+          coeZ '' ((B : Submodule ℂ (ZeroDiagonalSchwartz d 2)) : Set (ZeroDiagonalSchwartz d 2)) := by
+      simpa [coeL, coeZ] using (Submodule.map_coe coeL B)
+    rw [← hmap, ← hspan]
+    simpa [S_ambient] using
+      twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_flatDifferenceShellSpan
+        (d := d) ψ h0 F.1
+  have hxclosure :
+      x ∈
+        closure
+          ((B : Submodule ℂ (ZeroDiagonalSchwartz d 2)) : Set (ZeroDiagonalSchwartz d 2)) := by
+    rw [closure_subtype]
+    simpa [coeZ] using hfull
+  simpa [x] using hxclosure
 
 private theorem flatOrigin_differenceShell_span_dense_zeroDiagonal :
     Dense (((Submodule.span ℂ
