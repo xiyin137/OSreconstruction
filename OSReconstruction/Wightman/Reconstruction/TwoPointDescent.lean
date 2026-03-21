@@ -38,6 +38,20 @@ abbrev twoPointCenterDiffSchwartzCLM :
   ext x
   simp [twoPointDifferenceLift, SchwartzMap.prependField_apply]
 
+@[simp] theorem prependField_onePointToFin1CLM_eq_productTensor
+    (χ h : SchwartzSpacetime d) :
+    χ.prependField (onePointToFin1CLM d h) = SchwartzMap.productTensor ![χ, h] := by
+  ext x
+  simp [SchwartzMap.prependField_apply, onePointToFin1CLM_apply,
+    SchwartzMap.productTensor_apply]
+
+@[simp] theorem twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift_eq_productTensor
+    (χ h : SchwartzSpacetime d) :
+    twoPointCenterDiffSchwartzCLM (d := d) (twoPointDifferenceLift χ h) =
+      SchwartzMap.productTensor ![χ, h] := by
+  rw [twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift,
+    prependField_onePointToFin1CLM_eq_productTensor]
+
 @[simp] theorem twoPointCenterDiffSchwartzCLM_twoPointProductLift_apply
     (χ g : SchwartzSpacetime d) (x : NPointDomain d 2) :
     twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g) x =
@@ -127,8 +141,10 @@ theorem twoPointCenterDescent_twoPointDifferenceLift
     (χ h : SchwartzSpacetime d) :
     twoPointCenterDescent (d := d) (twoPointDifferenceLift χ h) =
       integrateHeadBlock (m := d + 1) (n := d + 1) (χ.tensorProduct h) := by
-  simp [twoPointCenterDescent, twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift,
-    reindex_flatten_twoPointCenterShell]
+  rw [twoPointCenterDescent, twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift]
+  simpa using
+    congrArg (integrateHeadBlock (m := d + 1) (n := d + 1))
+      (reindex_flatten_twoPointCenterShell (d := d) χ h)
 
 /-- On the admissible two-point center/difference shell, integrating out the
 full center block leaves exactly the difference-variable Schwartz test scaled
