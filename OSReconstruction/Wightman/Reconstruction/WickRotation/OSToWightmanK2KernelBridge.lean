@@ -2394,6 +2394,232 @@ private def diffBlockCutoffCLM (ψ : SchwartzSpacetime d) :
     SchwartzNPoint d 2 →L[ℂ] SchwartzNPoint d 2 :=
   SchwartzMap.smulLeftCLM ℂ (fun x : NPointDomain d 2 => ψ (diffProjCLM (d := d) x))
 
+/-- Compactly supported two-point Schwartz tests which are flat along the
+`ξ = 0` subspace have uniformly small local diff-cutoff pieces in every
+Schwartz seminorm, with linear decay in the cutoff radius. -/
+private theorem diffBlockCutoff_small_origin_seminorm_le_linear
+    (f : SchwartzNPoint d 2)
+    (hf_compact : HasCompactSupport ((f : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ))
+    (hf_flat : ∀ k : ℕ, ∀ z : NPointDomain d 2, z 1 = 0 →
+      iteratedFDeriv ℝ k (f : NPointDomain d 2 → ℂ) z = 0) :
+    ∀ (N M : ℕ),
+      ∃ A : ℝ, 0 ≤ A ∧
+        ∀ (δ : ℝ) (hδ : 0 < δ), δ ≤ 1 →
+          SchwartzMap.seminorm ℝ N M
+            (diffBlockCutoffCLM (d := d) (spacetimeUnitBallBumpRadius (d := d) δ hδ) f) ≤
+              A * δ := by
+  intro N M
+  let B : ℕ → ℝ := fun i =>
+    Classical.choose (exists_iteratedFDeriv_diffBlockCutoff_bound (d := d) i)
+  let H : ℕ → ℝ := fun i =>
+    Classical.choose
+      (exists_iteratedFDeriv_diff_zero_flat_bound
+        (d := d) (f := f) (hf := hf_flat) (j := M - i) (m := M))
+  obtain ⟨R0, hR0⟩ :=
+    (Metric.isBounded_iff_subset_closedBall (0 : NPointDomain d 2)).1 hf_compact.isBounded
+  let R : ℝ := max R0 1
+  have hR_nonneg : 0 ≤ R := by
+    dsimp [R]
+    positivity
+  have htsupport_f :
+      tsupport ((f : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) ⊆
+        Metric.closedBall (0 : NPointDomain d 2) R := by
+    intro x hx
+    exact Metric.closedBall_subset_closedBall (le_max_left _ _) (hR0 hx)
+  have hB_nonneg : ∀ i : ℕ, 0 ≤ B i := by
+    intro i
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_diffBlockCutoff_bound (d := d) i)).1
+  have hB_bound :
+      ∀ i : ℕ, ∀ (δ : ℝ) (hδ : 0 < δ) (x : NPointDomain d 2),
+        ‖iteratedFDeriv ℝ i
+            (fun y : NPointDomain d 2 =>
+              (spacetimeUnitBallBumpRadius (d := d) δ hδ : SchwartzSpacetime d)
+                (diffProjCLM (d := d) y)) x‖ ≤
+          B i * (δ⁻¹) ^ i := by
+    intro i δ hδ x
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_diffBlockCutoff_bound (d := d) i)).2 δ hδ x
+  have hH_nonneg : ∀ i : ℕ, 0 ≤ H i := by
+    intro i
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_diff_zero_flat_bound
+        (d := d) (f := f) (hf := hf_flat) (j := M - i) (m := M))).1
+  have hH_bound :
+      ∀ i : ℕ, ∀ x : NPointDomain d 2,
+        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖ ≤
+          H i * ‖x 1‖ ^ (M + 1) := by
+    intro i x
+    exact (Classical.choose_spec
+      (exists_iteratedFDeriv_diff_zero_flat_bound
+        (d := d) (f := f) (hf := hf_flat) (j := M - i) (m := M))).2 x
+  let A : ℝ :=
+    ∑ i ∈ Finset.range (M + 1),
+      (M.choose i : ℝ) * B i * H i * R ^ N * (2 : ℝ) ^ (M + 1)
+  have hA_nonneg : 0 ≤ A := by
+    refine Finset.sum_nonneg ?_
+    intro i hi
+    have hBi : 0 ≤ B i := hB_nonneg i
+    have hHi : 0 ≤ H i := hH_nonneg i
+    have hRN : 0 ≤ R ^ N := pow_nonneg hR_nonneg N
+    positivity
+  refine ⟨A, hA_nonneg, ?_⟩
+  intro δ hδ hδ_le_one
+  let ψδ : SchwartzSpacetime d := spacetimeUnitBallBumpRadius (d := d) δ hδ
+  let fδ : SchwartzNPoint d 2 := diffBlockCutoffCLM (d := d) ψδ f
+  let ηδ : NPointDomain d 2 → ℂ := fun x => ψδ (diffProjCLM (d := d) x)
+  let ηfun : NPointDomain d 2 → ℂ := ηδ
+  have hη_smooth : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ηfun := by
+    fun_prop
+  let ffun : NPointDomain d 2 → ℂ := (f : NPointDomain d 2 → ℂ)
+  have hffun : ContDiff ℝ (↑(⊤ : ℕ∞) : WithTop ℕ∞) ffun := by
+    simpa [ffun] using f.smooth'
+  have hη_temp : ηδ.HasTemperateGrowth := by
+    fun_prop
+  have hfun :
+      ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) = fun x => ηδ x * f x := by
+    funext x
+    simpa [fδ, diffBlockCutoffCLM, ηδ, smul_eq_mul] using
+      (SchwartzMap.smulLeftCLM_apply_apply (g := ηδ) hη_temp f x)
+  have hsupp_eta :
+      Function.support ηδ ⊆ {x : NPointDomain d 2 | ‖x 1‖ ≤ 2 * δ} := by
+    intro x hx
+    by_contra hxball
+    have hnorm : 2 * δ ≤ ‖x 1‖ := le_of_not_ge hxball
+    have hzero : ηδ x = 0 := by
+      simpa [ηδ, diffProjCLM] using
+        spacetimeUnitBallBumpRadius_zero_of_two_mul_le_norm (d := d) hδ hnorm
+    exact hx (by simpa [Function.mem_support] using hzero)
+  have hclosed_diff : IsClosed {x : NPointDomain d 2 | ‖x 1‖ ≤ 2 * δ} := by
+    exact isClosed_le ((continuous_apply (1 : Fin 2)).norm) continuous_const
+  have htsupport_eta :
+      tsupport ηδ ⊆ {x : NPointDomain d 2 | ‖x 1‖ ≤ 2 * δ} := by
+    exact closure_minimal hsupp_eta hclosed_diff
+  have htsupport_fδ_diff :
+      tsupport ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) ⊆
+        {x : NPointDomain d 2 | ‖x 1‖ ≤ 2 * δ} := by
+    intro x hx
+    exact htsupport_eta
+      ((SchwartzMap.tsupport_smulLeftCLM_subset (g := ηδ) (f := f) hx).2)
+  have htsupport_fδ_compact :
+      tsupport ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) ⊆
+        Metric.closedBall (0 : NPointDomain d 2) R := by
+    intro x hx
+    exact htsupport_f
+      ((SchwartzMap.tsupport_smulLeftCLM_subset (g := ηδ) (f := f) hx).1)
+  have hsupport_deriv_diff :
+      Function.support (iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) :
+          NPointDomain d 2 → ℂ)) ⊆
+        {x : NPointDomain d 2 | ‖x 1‖ ≤ 2 * δ} := by
+    intro x hx
+    exact htsupport_fδ_diff
+      (support_iteratedFDeriv_subset (𝕜 := ℝ) (n := M)
+        (f := ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ)) hx)
+  have hsupport_deriv_compact :
+      Function.support (iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) :
+          NPointDomain d 2 → ℂ)) ⊆
+        Metric.closedBall (0 : NPointDomain d 2) R := by
+    intro x hx
+    exact htsupport_fδ_compact
+      (support_iteratedFDeriv_subset (𝕜 := ℝ) (n := M)
+        (f := ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ)) hx)
+  have hbound :
+      ∀ x : NPointDomain d 2,
+        ‖x‖ ^ N * ‖iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) x‖ ≤
+          A * δ := by
+    intro x
+    by_cases hx :
+        x ∈ Function.support
+          (iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ))
+    · have hxdiff : ‖x 1‖ ≤ 2 * δ := hsupport_deriv_diff hx
+      have hxR : x ∈ Metric.closedBall (0 : NPointDomain d 2) R :=
+        hsupport_deriv_compact hx
+      have hRN : ‖x‖ ^ N ≤ R ^ N := by
+        gcongr
+        simpa [Metric.mem_closedBall, dist_eq_norm] using hxR
+      have hsmul :=
+        norm_iteratedFDeriv_smul_le (𝕜 := ℝ) (N := (↑(⊤ : ℕ∞) : WithTop ℕ∞))
+          hη_smooth
+          hffun x
+          (n := M) (by exact_mod_cast le_top)
+      calc
+        ‖x‖ ^ N * ‖iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) x‖
+            = ‖x‖ ^ N * ‖iteratedFDeriv ℝ M (fun y => ηδ y * f y) x‖ := by
+                rw [hfun]
+        _ ≤ ‖x‖ ^ N *
+              ∑ i ∈ Finset.range (M + 1),
+                (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i ηδ x‖ *
+                  ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖ := by
+                exact mul_le_mul_of_nonneg_left hsmul (by positivity)
+        _ = ∑ i ∈ Finset.range (M + 1),
+              ‖x‖ ^ N *
+                ((M.choose i : ℝ) * ‖iteratedFDeriv ℝ i ηδ x‖ *
+                  ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖) := by
+                rw [Finset.mul_sum]
+        _ ≤ ∑ i ∈ Finset.range (M + 1),
+              ((M.choose i : ℝ) * B i * H i * R ^ N * (2 : ℝ) ^ (M + 1)) * δ := by
+                refine Finset.sum_le_sum ?_
+                intro i hi
+                have hBi := hB_bound i δ hδ x
+                have hHi := hH_bound i x
+                have hBi_nonneg : 0 ≤ B i := hB_nonneg i
+                have hHi_nonneg : 0 ≤ H i := hH_nonneg i
+                have hBi_rhs_nonneg : 0 ≤ B i * (δ⁻¹) ^ i := by positivity
+                have hchoose_nonneg : 0 ≤ (M.choose i : ℝ) := by positivity
+                have hprod :
+                    ‖iteratedFDeriv ℝ i ηδ x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖ ≤
+                      (B i * (δ⁻¹) ^ i) * (H i * ‖x 1‖ ^ (M + 1)) := by
+                  exact mul_le_mul hBi hHi (norm_nonneg _) hBi_rhs_nonneg
+                have hterm_coeff :
+                    (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i ηδ x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖ ≤
+                      (M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) * (H i * ‖x 1‖ ^ (M + 1))) := by
+                  calc
+                    (M.choose i : ℝ) * ‖iteratedFDeriv ℝ i ηδ x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖
+                        =
+                      (M.choose i : ℝ) * (‖iteratedFDeriv ℝ i ηδ x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖) := by
+                          ring
+                    _ ≤ (M.choose i : ℝ) *
+                          ((B i * (δ⁻¹) ^ i) * (H i * ‖x 1‖ ^ (M + 1))) := by
+                          exact mul_le_mul_of_nonneg_left hprod hchoose_nonneg
+                have hcoeff_nonneg : 0 ≤ (M.choose i : ℝ) * B i * H i := by
+                  exact mul_nonneg (mul_nonneg hchoose_nonneg hBi_nonneg) hHi_nonneg
+                have hpower :
+                    ‖x‖ ^ N * ((δ⁻¹) ^ i * ‖x 1‖ ^ (M + 1)) ≤
+                      R ^ N * ((2 : ℝ) ^ (M + 1) * δ) := by
+                  exact mul_le_mul hRN
+                    (diff_zero_power_factor_le (hδ := hδ) (hδ_le := hδ_le_one) hxdiff hi)
+                    (by positivity) (pow_nonneg hR_nonneg _)
+                calc
+                  ‖x‖ ^ N *
+                      ((M.choose i : ℝ) * ‖iteratedFDeriv ℝ i ηδ x‖ *
+                        ‖iteratedFDeriv ℝ (M - i) (f : NPointDomain d 2 → ℂ) x‖)
+                      ≤
+                    ‖x‖ ^ N *
+                      ((M.choose i : ℝ) * ((B i * (δ⁻¹) ^ i) *
+                        (H i * ‖x 1‖ ^ (M + 1)))) := by
+                          exact mul_le_mul_of_nonneg_left hterm_coeff (by positivity)
+                  _ = ((M.choose i : ℝ) * B i * H i) *
+                        (‖x‖ ^ N * ((δ⁻¹) ^ i * ‖x 1‖ ^ (M + 1))) := by
+                          ring
+                  _ ≤ ((M.choose i : ℝ) * B i * H i) *
+                        (R ^ N * ((2 : ℝ) ^ (M + 1) * δ)) := by
+                          exact mul_le_mul_of_nonneg_left hpower hcoeff_nonneg
+                  _ = ((M.choose i : ℝ) * B i * H i * R ^ N * (2 : ℝ) ^ (M + 1)) * δ := by
+                          ring
+        _ = A * δ := by
+              simp [A, Finset.sum_mul]
+    · have hzero :
+          iteratedFDeriv ℝ M ((fδ : SchwartzNPoint d 2) : NPointDomain d 2 → ℂ) x = 0 := by
+        by_contra hne
+        exact hx (by simpa [Function.mem_support] using hne)
+      have hnonneg : 0 ≤ A * δ := by positivity
+      simpa [hzero] using hnonneg
+  exact SchwartzMap.seminorm_le_bound ℝ N M fδ (by positivity) hbound
+
 /-- On pure product tensors, the difference-block cutoff acts only on the
 second factor. -/
 private theorem diffBlockCutoff_productTensor
@@ -3082,12 +3308,152 @@ private theorem flatOrigin_differenceShell_span_dense_zeroDiagonal :
               exact hsum_apply x
           _ = G := by
               simpa using (ZeroDiagonalSchwartz.ofClassical_of_vanishes (f := G.1) G.2)
-    -- Remaining compact-support gap:
-    -- For every `δ < R`, the annular term already lies in the target closure by
-    -- `hannulus_mem`, and `G = annulus + small` by `hsplit`. The only
-    -- remaining compact-support content is therefore to show that the
-    -- zero-diagonal small-origin term tends to `0` as `δ → 0`.
-    sorry
+    let ρ : ℝ := min 1 (R / 2)
+    have hρ_pos : 0 < ρ := by
+      dsimp [ρ]
+      refine lt_min zero_lt_one ?_
+      positivity
+    have hρ_nonneg : 0 ≤ ρ := le_of_lt hρ_pos
+    have hρ_le_one : ρ ≤ 1 := min_le_left _ _
+    have hρ_le_halfR : ρ ≤ R / 2 := min_le_right _ _
+    have hhalfR_lt_R : R / 2 < R := by
+      nlinarith [hR]
+    have hρ_lt_R : ρ < R := lt_of_le_of_lt hρ_le_halfR hhalfR_lt_R
+    let δSeq : ℕ → ℝ := fun n => ρ / (n + 1 : ℝ)
+    have hδSeq_pos : ∀ n : ℕ, 0 < δSeq n := by
+      intro n
+      dsimp [δSeq]
+      positivity
+    have hδSeq_le_ρ : ∀ n : ℕ, δSeq n ≤ ρ := by
+      intro n
+      have hfrac : (1 : ℝ) / (n + 1 : ℝ) ≤ 1 := by
+        have hden : (1 : ℝ) ≤ n + 1 := by
+          exact_mod_cast Nat.succ_le_succ (Nat.zero_le n)
+        have hone_pos : 0 < (1 : ℝ) := by positivity
+        simpa using (one_div_le_one_div_of_le hone_pos hden)
+      calc
+        δSeq n = ρ * ((n + 1 : ℝ)⁻¹) := by simp [δSeq, div_eq_mul_inv]
+        _ ≤ ρ * 1 := by
+              simpa using (mul_le_mul_of_nonneg_left hfrac hρ_nonneg)
+        _ = ρ := by ring
+    have hδSeq_le_one : ∀ n : ℕ, δSeq n ≤ 1 := by
+      intro n
+      exact le_trans (hδSeq_le_ρ n) hρ_le_one
+    have hδSeq_lt_R : ∀ n : ℕ, δSeq n < R := by
+      intro n
+      exact lt_of_le_of_lt (hδSeq_le_ρ n) hρ_lt_R
+    let smallPre : ℕ → SchwartzNPoint d 2 := fun n =>
+      diffBlockCutoffCLM (d := d)
+        (spacetimeUnitBallBumpRadius (d := d) (δSeq n) (hδSeq_pos n)) Gcd
+    have hsmallPre_tendsto :
+        Filter.Tendsto smallPre Filter.atTop (nhds (0 : SchwartzNPoint d 2)) := by
+      rw [(schwartz_withSeminorms ℝ (NPointDomain d 2) ℂ).tendsto_nhds_atTop _ _]
+      intro p ε hε
+      obtain ⟨Csemi, hCsemi_nonneg, hCsemi_bound⟩ :=
+        diffBlockCutoff_small_origin_seminorm_le_linear
+          (d := d) (f := Gcd) hGcd_compact hGcd_vanish p.1 p.2
+      let Bnd : ℝ := Csemi * ρ + 1
+      have hBnd_pos : 0 < Bnd := by
+        dsimp [Bnd]
+        positivity
+      have hBnd_nonneg : 0 ≤ Bnd := le_of_lt hBnd_pos
+      rcases exists_nat_one_div_lt (show 0 < ε / Bnd by positivity) with ⟨N, hN⟩
+      refine ⟨N, ?_⟩
+      intro n hn
+      have hsemi_le :
+          schwartzSeminormFamily ℝ (NPointDomain d 2) ℂ p (smallPre n - 0) ≤
+            Csemi * δSeq n := by
+        change SchwartzMap.seminorm ℝ p.1 p.2 (smallPre n - 0) ≤ Csemi * δSeq n
+        simpa [smallPre] using hCsemi_bound (δSeq n) (hδSeq_pos n) (hδSeq_le_one n)
+      have hCρ_le_Bnd : Csemi * ρ ≤ Bnd := by
+        dsimp [Bnd]
+        linarith
+      have hscale :
+          Csemi * δSeq n ≤ Bnd / (n + 1 : ℝ) := by
+        have hden_pos : 0 < (n + 1 : ℝ) := by positivity
+        have hdiv :
+            (Csemi * ρ) / (n + 1 : ℝ) ≤ Bnd / (n + 1 : ℝ) := by
+          exact div_le_div_of_nonneg_right hCρ_le_Bnd (le_of_lt hden_pos)
+        simpa [δSeq, mul_div_assoc] using hdiv
+      have hfrac_mono :
+          Bnd / (n + 1 : ℝ) ≤ Bnd / (N + 1 : ℝ) := by
+        have hone_div :
+            (1 : ℝ) / (n + 1 : ℝ) ≤ 1 / (N + 1 : ℝ) := by
+          have hden : (N + 1 : ℝ) ≤ n + 1 := by
+            exact_mod_cast Nat.succ_le_succ hn
+          have hN_pos : 0 < (N + 1 : ℝ) := by positivity
+          simpa using (one_div_le_one_div_of_le hN_pos hden)
+        simpa [div_eq_mul_inv, mul_assoc, mul_comm, mul_left_comm] using
+          (mul_le_mul_of_nonneg_left hone_div hBnd_nonneg)
+      have hsmall :
+          Bnd / (N + 1 : ℝ) < ε := by
+        have := mul_lt_mul_of_pos_left hN hBnd_pos
+        calc
+          Bnd / (N + 1 : ℝ) = Bnd * (1 / (N + 1 : ℝ)) := by
+            ring
+          _ < Bnd * (ε / Bnd) := this
+          _ = ε := by
+            field_simp [show Bnd ≠ 0 by positivity]
+      exact lt_of_le_of_lt (le_trans hsemi_le (le_trans hscale hfrac_mono)) hsmall
+    let rawSmall : ℕ → SchwartzNPoint d 2 := fun n =>
+      twoPointCenterDiffInvSchwartzCLM (d := d) (smallPre n)
+    have hrawSmall_tendsto :
+        Filter.Tendsto rawSmall Filter.atTop (nhds (0 : SchwartzNPoint d 2)) := by
+      exact ((twoPointCenterDiffInvSchwartzCLM (d := d)).continuous.tendsto 0).comp
+        hsmallPre_tendsto
+    let small : ℕ → ZeroDiagonalSchwartz d 2 := fun n =>
+      ZeroDiagonalSchwartz.ofClassical (rawSmall n)
+    have hsmall_vanish_seq :
+        ∀ n : ℕ, VanishesToInfiniteOrderOnCoincidence (rawSmall n) := by
+      intro n
+      simpa [rawSmall, smallPre] using hsmall_vanish (δ := δSeq n) (hδ := hδSeq_pos n)
+    have hsmall_tendsto :
+        Filter.Tendsto small Filter.atTop (nhds (0 : ZeroDiagonalSchwartz d 2)) := by
+      rw [tendsto_subtype_rng]
+      have hsmall_eq : (fun n => (small n).1) = rawSmall := by
+        funext n
+        rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+          (f := rawSmall n) (hsmall_vanish_seq n)]
+      rw [hsmall_eq]
+      simpa using hrawSmall_tendsto
+    let annulus : ℕ → ZeroDiagonalSchwartz d 2 := fun n =>
+      ZeroDiagonalSchwartz.ofClassical
+        (twoPointCenterDiffInvSchwartzCLM (d := d)
+          (diffBlockCutoffCLM (d := d)
+            (ψR - spacetimeUnitBallBumpRadius (d := d) (δSeq n) (hδSeq_pos n)) Gcd))
+    have hannulus_mem_seq :
+        ∀ n : ℕ, annulus n ∈ (A.topologicalClosure : Set (ZeroDiagonalSchwartz d 2)) := by
+      intro n
+      simpa [annulus] using hannulus_mem (δ := δSeq n) (hδ := hδSeq_pos n) (hδR := hδSeq_lt_R n)
+    have hsplit_seq : ∀ n : ℕ, annulus n + small n = G := by
+      intro n
+      simpa [annulus, small, rawSmall, smallPre] using
+        hsplit (δ := δSeq n) (hδ := hδSeq_pos n) (hδR := hδSeq_lt_R n)
+    have hannulus_tendsto :
+        Filter.Tendsto annulus Filter.atTop (nhds G) := by
+      have hsmall_val_tendsto :
+          Filter.Tendsto (fun n : ℕ => (small n).1) Filter.atTop
+            (nhds (0 : SchwartzNPoint d 2)) := by
+        rw [tendsto_subtype_rng] at hsmall_tendsto
+        simpa using hsmall_tendsto
+      have hval_tendsto :
+          Filter.Tendsto (fun n : ℕ => (annulus n).1) Filter.atTop (nhds G.1) := by
+        have hseq_eq :
+            (fun n : ℕ => (annulus n).1) =
+              (fun n : ℕ => G.1 - (small n).1) := by
+          funext n
+          have hsum_val : (annulus n).1 + (small n).1 = G.1 := by
+            have hcoe : ((annulus n + small n : ZeroDiagonalSchwartz d 2)).1 = G.1 := by
+              exact congrArg (fun z : ZeroDiagonalSchwartz d 2 => z.1) (hsplit_seq n)
+            change (annulus n).1 + (small n).1 = G.1 at hcoe
+            exact hcoe
+          exact eq_sub_iff_add_eq.mpr hsum_val
+        rw [hseq_eq]
+        simpa [sub_eq_add_neg] using (tendsto_const_nhds.sub hsmall_val_tendsto)
+      rw [tendsto_subtype_rng]
+      simpa using hval_tendsto
+    exact A.isClosed_topologicalClosure.mem_of_tendsto hannulus_tendsto
+      (Filter.Eventually.of_forall fun n => hannulus_mem_seq n)
   have hC_closure_subset :
       closure C ⊆ (A.topologicalClosure : Set (ZeroDiagonalSchwartz d 2)) := by
     exact closure_minimal hC_subset A.isClosed_topologicalClosure
