@@ -2052,6 +2052,224 @@ private theorem norm_iteratedFDeriv_iteratedLineDeriv_le_npoint
   exact le_trans (SchwartzMap.norm_iteratedFDeriv_le_seminorm ℂ (∂^{u} f) n x)
     (iteratedLineDeriv_seminorm_zero_le_npoint (f := f) (j := j) (n := n) u)
 
+/- Flatness along the `ξ = 0` subspace propagates to a quantitative power
+bound for iterated line derivatives, with constants controlled by Schwartz
+seminorms of the original two-point test. -/
+set_option maxHeartbeats 400000 in
+private theorem exists_iteratedLineDeriv_diff_zero_flat_bound
+    (f : SchwartzNPoint d 2)
+    (hf : ∀ k : ℕ, ∀ z : NPointDomain d 2, z 1 = 0 →
+      iteratedFDeriv ℝ k (f : NPointDomain d 2 → ℂ) z = 0)
+    (j m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (u : Fin j → NPointDomain d 2) (x : NPointDomain d 2),
+        ‖(LineDeriv.iteratedLineDerivOp u f : SchwartzNPoint d 2) x‖ ≤
+          C * ‖x 1‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
+  let A : ℝ := SchwartzMap.seminorm ℝ 0 (j + (m + 1)) f
+  have hA_nonneg : 0 ≤ A := by
+    positivity
+  refine ⟨A / (((Nat.factorial m : ℕ) : ℝ)), by positivity, ?_⟩
+  intro u x
+  let F : SchwartzNPoint d 2 := ∂^{u} f
+  let c : NPointDomain d 2 := fun i => if i = 0 then x 0 else 0
+  let v : NPointDomain d 2 := x - c
+  let L : ℝ →L[ℝ] NPointDomain d 2 :=
+    ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) v
+  let g : ℝ → ℂ := (fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ) (z + c)) ∘ L
+  have hF_contDiff :
+      ∀ r : ℕ, ContDiff ℝ r (F : NPointDomain d 2 → ℂ) := fun r => by
+    simpa [F] using (F.smooth r)
+  have hshift_contDiff :
+      ∀ r : ℕ, ContDiff ℝ r (fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ) (z + c)) :=
+    fun r => by
+      simpa using (hF_contDiff r).comp (contDiff_id.add contDiff_const)
+  have hg_contDiff : ∀ r : ℕ, ContDiff ℝ r g := fun r => by
+    simpa [g] using (ContDiff.comp_continuousLinearMap (g := L) (hf := hshift_contDiff r))
+  have hTaylor_zero :
+      taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1 = 0 := by
+    rw [taylor_within_apply]
+    apply Finset.sum_eq_zero
+    intro k hk
+    have hk_zero :
+        iteratedDerivWithin k g (Set.Icc (0 : ℝ) 1) 0 = 0 := by
+      rw [iteratedDerivWithin_eq_iteratedDeriv
+          (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+          ((hg_contDiff k).contDiffAt) (by simp), iteratedDeriv_eq_iteratedFDeriv]
+      have hcomp :
+          iteratedFDeriv ℝ k g 0 =
+            (iteratedFDeriv ℝ k (fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ) (z + c))
+              (L 0)).compContinuousLinearMap (fun _ : Fin k => L) := by
+        simpa [g] using
+          L.iteratedFDeriv_comp_right
+            (f := fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ) (z + c))
+            (hshift_contDiff k) (x := 0) (i := k) le_rfl
+      have hc_zero : c 1 = 0 := by simp [c]
+      have hL0c_zero : (L 0 + c) 1 = 0 := by
+        simp [L, c, ContinuousLinearMap.smulRight_apply, hc_zero]
+      have hzeroF :
+          iteratedFDeriv ℝ k (F : NPointDomain d 2 → ℂ) (L 0 + c) = 0 := by
+        simpa [F, L, c, ContinuousLinearMap.smulRight_apply] using
+          (iteratedLineDeriv_preserves_diff_zero_flatness
+            (f := f) (hf := hf) (u := u)) k (L 0 + c) hL0c_zero
+      rw [hcomp, iteratedFDeriv_comp_add_right, hzeroF]
+      simp
+    simp [hk_zero]
+  have hderiv_bound :
+      ∀ t ∈ Set.Icc (0 : ℝ) 1,
+        ‖iteratedDerivWithin (m + 1) g (Set.Icc (0 : ℝ) 1) t‖ ≤
+          (A * ∏ i, ‖u i‖) * ‖v‖ ^ (m + 1) := by
+    intro t ht
+    have hL :
+        ‖L‖ ≤ ‖v‖ := by
+      refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun s => ?_
+      calc
+        ‖L s‖ = ‖s • v‖ := by rfl
+        _ = ‖s‖ * ‖v‖ := norm_smul s v
+        _ = ‖v‖ * ‖s‖ := by ring
+        _ ≤ ‖v‖ * ‖s‖ := le_rfl
+    rw [iteratedDerivWithin_eq_iteratedDeriv
+        (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
+        ((hg_contDiff (m + 1)).contDiffAt) ht, ← norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    have hcomp :
+        iteratedFDeriv ℝ (m + 1) g t =
+          (iteratedFDeriv ℝ (m + 1) (fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ)
+            (z + c)) (L t)).compContinuousLinearMap (fun _ : Fin (m + 1) => L) := by
+      simpa [g] using
+        L.iteratedFDeriv_comp_right
+          (f := fun z : NPointDomain d 2 => (F : NPointDomain d 2 → ℂ) (z + c))
+          (hshift_contDiff (m + 1)) (x := t) (i := m + 1) le_rfl
+    rw [hcomp, iteratedFDeriv_comp_add_right]
+    have hFbound :
+        ‖iteratedFDeriv ℝ (m + 1) (F : NPointDomain d 2 → ℂ) (L t + c)‖ ≤
+          A * ∏ i, ‖u i‖ := by
+      have hsemi :
+          SchwartzMap.seminorm ℝ 0 (m + 1) F ≤ (∏ i, ‖u i‖) * A := by
+        simpa [A, F, add_assoc, add_comm, add_left_comm, mul_assoc, mul_comm, mul_left_comm] using
+          iteratedLineDeriv_seminorm_zero_le_npoint (f := f) (j := j) (n := m + 1) u
+      calc
+        ‖iteratedFDeriv ℝ (m + 1) (F : NPointDomain d 2 → ℂ) (L t + c)‖
+            ≤ SchwartzMap.seminorm ℝ 0 (m + 1) F := by
+                exact SchwartzMap.norm_iteratedFDeriv_le_seminorm ℂ F (m + 1) (L t + c)
+        _ ≤ (∏ i, ‖u i‖) * A := hsemi
+        _ = A * ∏ i, ‖u i‖ := by ring
+    have hprod_nonneg : 0 ≤ ∏ _ : Fin (m + 1), ‖L‖ := by positivity
+    have huprod_nonneg : 0 ≤ ∏ i, ‖u i‖ := by
+      simpa using Finset.prod_nonneg (fun i _ => norm_nonneg (u i))
+    have hcoeff_nonneg : 0 ≤ A * ∏ i, ‖u i‖ := by
+      exact mul_nonneg hA_nonneg huprod_nonneg
+    have hLpow_all : ∀ n : ℕ, ‖L‖ ^ n ≤ ‖v‖ ^ n := by
+      intro n
+      induction n with
+      | zero =>
+          simp
+      | succ n ih =>
+          calc
+            ‖L‖ ^ (n + 1) = ‖L‖ ^ n * ‖L‖ := by
+              ring_nf
+            _ ≤ ‖v‖ ^ n * ‖v‖ := by
+                  exact mul_le_mul ih hL (norm_nonneg _) (pow_nonneg (norm_nonneg _) _)
+            _ = ‖v‖ ^ (n + 1) := by
+              ring_nf
+    have hLpow : ‖L‖ ^ (m + 1) ≤ ‖v‖ ^ (m + 1) := hLpow_all (m + 1)
+    let D :=
+      iteratedFDeriv ℝ (m + 1) (F : NPointDomain d 2 → ℂ) (L t + c)
+    have hDcomp :
+        ‖D.compContinuousLinearMap (fun _ : Fin (m + 1) => L)‖ ≤
+          ‖D‖ * ∏ _ : Fin (m + 1), ‖L‖ := by
+      exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+    have hDbound :
+        ‖D‖ * ∏ _ : Fin (m + 1), ‖L‖ ≤
+          (A * ∏ i, ‖u i‖) * ∏ _ : Fin (m + 1), ‖L‖ := by
+      exact mul_le_mul_of_nonneg_right hFbound hprod_nonneg
+    calc
+      ‖D.compContinuousLinearMap (fun _ : Fin (m + 1) => L)‖
+          ≤ ‖D‖ * ∏ _ : Fin (m + 1), ‖L‖ := hDcomp
+      _ ≤ (A * ∏ i, ‖u i‖) * ∏ _ : Fin (m + 1), ‖L‖ := hDbound
+      _ = (A * ∏ i, ‖u i‖) * ‖L‖ ^ (m + 1) := by simp
+      _ ≤ (A * ∏ i, ‖u i‖) * ‖v‖ ^ (m + 1) := by
+            exact mul_le_mul_of_nonneg_left hLpow hcoeff_nonneg
+  have hrem :=
+    taylor_mean_remainder_bound (f := g) (a := (0 : ℝ)) (b := 1)
+      (C := (A * ∏ i, ‖u i‖) * ‖v‖ ^ (m + 1)) (x := 1) (n := m) (by norm_num)
+      (hg_contDiff (m + 1)).contDiffOn (by simp) hderiv_bound
+  have hv : ‖v‖ = ‖x 1‖ := by
+    apply le_antisymm
+    · exact (pi_norm_le_iff_of_nonneg (norm_nonneg (x 1))).2 (by
+        intro i
+        fin_cases i <;> simp [v, c])
+    · simpa [v, c] using (norm_le_pi_norm v (1 : Fin 2))
+  have hg_one : g 1 = F x := by
+    have hx_eq : L 1 + c = x := by
+      ext i
+      fin_cases i <;> simp [L, v, c, ContinuousLinearMap.smulRight_apply]
+    simp [g, hx_eq]
+  calc
+    ‖(LineDeriv.iteratedLineDerivOp u f : SchwartzNPoint d 2) x‖
+        = ‖g 1 - taylorWithinEval g m (Set.Icc (0 : ℝ) 1) 0 1‖ := by
+            rw [hg_one]
+            simp [F, hTaylor_zero]
+    _ ≤ ((A * ∏ i, ‖u i‖) * ‖v‖ ^ (m + 1)) *
+          (1 - (0 : ℝ)) ^ (m + 1) / (((Nat.factorial m : ℕ) : ℝ)) := by
+            simpa [hTaylor_zero] using hrem
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖v‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
+            field_simp [Nat.cast_ne_zero]
+            ring
+    _ = (A / (((Nat.factorial m : ℕ) : ℝ))) * ‖x 1‖ ^ (m + 1) * ∏ i, ‖u i‖ := by
+            rw [hv]
+
+/-- Operator-valued diff-zero flatness for iterated Fréchet derivatives on the
+ambient two-point Schwartz space. -/
+private theorem exists_iteratedFDeriv_diff_zero_flat_bound
+    (f : SchwartzNPoint d 2)
+    (hf : ∀ k : ℕ, ∀ z : NPointDomain d 2, z 1 = 0 →
+      iteratedFDeriv ℝ k (f : NPointDomain d 2 → ℂ) z = 0)
+    (j m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ x : NPointDomain d 2,
+        ‖iteratedFDeriv ℝ j (f : NPointDomain d 2 → ℂ) x‖ ≤ C * ‖x 1‖ ^ (m + 1) := by
+  obtain ⟨C, hC_nonneg, hC⟩ :=
+    exists_iteratedLineDeriv_diff_zero_flat_bound (f := f) (hf := hf) j m
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro x
+  have hCx : 0 ≤ C * ‖x 1‖ ^ (m + 1) := by positivity
+  rw [ContinuousMultilinearMap.opNorm_le_iff hCx]
+  intro u
+  simpa [SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv, mul_assoc, mul_left_comm, mul_comm]
+    using hC u x
+
+private theorem diff_zero_power_factor_le
+    {M i : ℕ} {δ : ℝ}
+    (hδ : 0 < δ) (hδ_le : δ ≤ 1)
+    {x : NPointDomain d 2} (hx : ‖x 1‖ ≤ 2 * δ)
+    (hi : i ∈ Finset.range (M + 1)) :
+    (δ⁻¹) ^ i * ‖x 1‖ ^ (M + 1) ≤ (2 : ℝ) ^ (M + 1) * δ := by
+  have hi_le : i ≤ M := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+  have hpow : ‖x 1‖ ^ (M + 1) ≤ (2 * δ) ^ (M + 1) := by
+    gcongr
+  have hδ_nonneg : 0 ≤ δ := le_of_lt hδ
+  have hδ_inv_ge_one : 1 ≤ δ⁻¹ := by
+    rw [one_le_inv₀ hδ]
+    exact hδ_le
+  have hdelta_inv_mono : (δ⁻¹) ^ i ≤ (δ⁻¹) ^ M := by
+    exact pow_le_pow_right₀ hδ_inv_ge_one hi_le
+  have hcancel : (δ⁻¹) ^ M * δ ^ (M + 1) = δ := by
+    calc
+      (δ⁻¹) ^ M * δ ^ (M + 1) = ((δ⁻¹) ^ M * δ ^ M) * δ := by
+            rw [pow_succ']
+            ring
+      _ = (((δ ^ M)⁻¹ * δ ^ M) * δ) := by rw [inv_pow]
+      _ = δ := by simp [pow_ne_zero M hδ.ne']
+  calc
+    (δ⁻¹) ^ i * ‖x 1‖ ^ (M + 1)
+        ≤ (δ⁻¹) ^ i * (2 * δ) ^ (M + 1) := by
+            gcongr
+    _ ≤ (δ⁻¹) ^ M * (2 * δ) ^ (M + 1) := by
+          gcongr
+    _ = (2 : ℝ) ^ (M + 1) * ((δ⁻¹) ^ M * δ ^ (M + 1)) := by
+          rw [mul_pow]
+          ring
+    _ = (2 : ℝ) ^ (M + 1) * δ := by rw [hcancel]
+
 /-- On compact sets, a two-point Schwartz test whose iterated derivatives all
 vanish on the `ξ = 0` subspace vanishes to arbitrarily high finite order in
 the difference variable. -/
