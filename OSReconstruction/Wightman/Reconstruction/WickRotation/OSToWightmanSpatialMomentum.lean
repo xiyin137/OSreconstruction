@@ -25,6 +25,11 @@ noncomputable section
 
 open MeasureTheory Complex
 
+set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 variable {d : ℕ} [NeZero d]
 
 private theorem timeReflection_involutive_local (x : SpacetimeDim d) :
@@ -1346,7 +1351,7 @@ private theorem tendsto_osSpatialTranslateHilbert_axis_nhds_zero
     exact UniformSpace.Completion.denseRange_coe
   have hx_mem :
       x ∈ closure (Set.range (↑· : OSPreHilbertSpace OS → OSHilbertSpace OS)) := by
-    simpa [hdense.closure_eq] using (show x ∈ (Set.univ : Set (OSHilbertSpace OS)) from by simp)
+    simpa [hdense.closure_eq]
   rw [Metric.mem_closure_iff] at hx_mem
   rcases hx_mem (ε / 5) hε5 with ⟨y, hy_range, hy_close⟩
   rcases hy_range with ⟨y0, rfl⟩

@@ -21,6 +21,11 @@ open Complex Topology MeasureTheory
 open scoped Classical NNReal
 open BigOperators Finset
 
+set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 variable {d : ℕ} [NeZero d]
 
 /-- First general-`k` ACR(1) subproblem: construct a scalar holomorphic witness on

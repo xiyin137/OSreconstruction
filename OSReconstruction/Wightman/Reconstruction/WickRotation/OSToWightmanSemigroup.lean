@@ -43,6 +43,11 @@ open BigOperators Finset
 
 noncomputable section
 
+set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 variable {d : ℕ} [NeZero d]
 /-! ### OS to Wightman (Theorem E'→R') -/
 

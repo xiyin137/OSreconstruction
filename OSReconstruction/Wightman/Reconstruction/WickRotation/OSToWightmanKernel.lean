@@ -22,6 +22,11 @@ noncomputable section
 
 open Complex Topology MeasureTheory
 
+set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 /-- There exists a compactly-supported Schwartz function on spacetime with
 NEGATIVE-time support and nonzero integral. Needed for the LEFT semigroup
 vector (osConj reflects time: negative → positive). -/

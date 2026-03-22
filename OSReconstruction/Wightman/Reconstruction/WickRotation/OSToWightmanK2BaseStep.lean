@@ -38,6 +38,11 @@ noncomputable section
 open MeasureTheory Complex Filter Topology
 open scoped Pointwise
 
+set_option linter.unusedSectionVars false
+set_option linter.unusedSimpArgs false
+set_option linter.unnecessarySimpa false
+set_option linter.unusedVariables false
+
 variable {d : ℕ} [NeZero d]
 
 private def spacetimeTimeReflectionCLE : SpacetimeDim d ≃L[ℝ] SpacetimeDim d where

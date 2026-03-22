@@ -31,6 +31,8 @@ open scoped Pointwise SchwartzMap LineDeriv
 
 variable {d : ℕ} [NeZero d]
 
+set_option linter.unusedSectionVars false
+
 /-- Multiplying a zero-diagonal Schwartz test by an arbitrary Schwartz cutoff on
 the ambient two-point space preserves vanishing to infinite order on the
 coincidence locus. -/
@@ -314,8 +316,8 @@ private theorem unitBallBumpSchwartzPi_zero_of_two_le_norm {m : ℕ}
     b.hasCompactSupport.comp_left Complex.ofReal_zero
   have happly :
       unitBallBumpSchwartzPi m x = f x := by
-    simpa [unitBallBumpSchwartzPi, b, f] using
-      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+    change (HasCompactSupport.toSchwartzMap hf_compact hf_smooth : SchwartzMap (Fin m → ℝ) ℂ) x = f x
+    exact HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x
   rw [happly]
   rw [show f x = ((b x : ℝ) : ℂ) by rfl]
   refine congrArg (fun r : ℝ => (r : ℂ)) ?_
@@ -616,7 +618,7 @@ private theorem iteratedLineDeriv_vanish_at_zero
       simpa [LineDeriv.iteratedLineDerivOp_fin_zero] using h_vanish n
   | succ j ih =>
       have hu : u = Fin.snoc (Fin.init u) (u (Fin.last j)) := by
-        simpa using Fin.snoc_init_self u
+        exact (Fin.snoc_init_self u).symm
       rw [hu, LineDeriv.iteratedLineDerivOp_succ_right]
       simp only [Fin.init_snoc, Fin.snoc_last]
       let f : SchwartzSpacetime d := ∂_{u (Fin.last j)} h
@@ -685,8 +687,11 @@ private theorem exists_iteratedLineDeriv_flat_bound
     have hL :
         ‖L‖ ≤ ‖x‖ := by
       refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg _) fun s => ?_
-      simpa [L, ContinuousLinearMap.smulRight_apply, Real.norm_eq_abs, norm_smul, mul_comm] using
-        (norm_smul s x)
+      calc
+        ‖L s‖ = ‖s • x‖ := by rfl
+        _ = ‖s‖ * ‖x‖ := norm_smul s x
+        _ = ‖x‖ * ‖s‖ := by ring
+        _ ≤ ‖x‖ * ‖s‖ := le_rfl
     rw [iteratedDerivWithin_eq_iteratedDeriv
         (uniqueDiffOn_Icc (show (0 : ℝ) < 1 by norm_num))
         ((hg_contDiff (m + 1)).contDiffAt) ht, ← norm_iteratedFDeriv_eq_norm_iteratedDeriv]
@@ -991,7 +996,7 @@ radius `δ₀`, every smaller cutoff has Schwartz seminorm error `< ε`. -/
 private theorem schwartz_small_origin_cutoff_seminorm_eventually_small
     (h : SchwartzSpacetime d)
     (h_vanish : ∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) :
-    ∀ (N M : ℕ) (ε : ℝ) (hε : 0 < ε),
+    ∀ (N M : ℕ) (ε : ℝ) (_hε : 0 < ε),
       ∃ (δ₀ : ℝ), 0 < δ₀ ∧
         ∀ (δ : ℝ) (hδ : 0 < δ), δ ≤ δ₀ →
           SchwartzMap.seminorm ℝ N M
@@ -1036,7 +1041,7 @@ be cut off near the origin with arbitrarily small Schwartz seminorm error. -/
 private theorem schwartz_small_origin_cutoff_seminorm_small
     (h : SchwartzSpacetime d)
     (h_vanish : ∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) :
-    ∀ (N M : ℕ) (ε : ℝ) (hε : 0 < ε),
+    ∀ (N M : ℕ) (ε : ℝ) (_hε : 0 < ε),
       ∃ (δ : ℝ) (hδ : 0 < δ),
         SchwartzMap.seminorm ℝ N M
           ((SchwartzMap.smulLeftCLM ℂ
@@ -1245,7 +1250,7 @@ private theorem schwartz_small_origin_cutoff_seminorm_small
 Schwartz seminorm error. -/
 private theorem schwartz_large_radius_cutoff_seminorm_small
     (h : SchwartzSpacetime d) :
-    ∀ (N M : ℕ) (ε Rmin : ℝ) (hε : 0 < ε) (hRmin : 0 < Rmin),
+    ∀ (N M : ℕ) (ε Rmin : ℝ) (_hε : 0 < ε) (hRmin : 0 < Rmin),
       ∃ (R : ℝ) (hR : Rmin < R),
         SchwartzMap.seminorm ℝ N M
           (h -
@@ -1363,7 +1368,7 @@ private theorem schwartz_origin_avoidance_approximation
         rw [SchwartzMap.smulLeftCLM_apply_apply hdiffTemp,
           SchwartzMap.smulLeftCLM_apply_apply hRtemp,
           SchwartzMap.smulLeftCLM_apply_apply hδtemp]
-        simp [h', smul_eq_mul]
+        simp [smul_eq_mul]
         ring
     calc
       SchwartzMap.seminorm ℝ N M (h - h') =
@@ -1539,7 +1544,7 @@ private theorem schwartz_origin_avoidance_approximation_finite
           rw [SchwartzMap.smulLeftCLM_apply_apply hdiffTemp,
             SchwartzMap.smulLeftCLM_apply_apply hRtemp,
             SchwartzMap.smulLeftCLM_apply_apply hδtemp]
-          simp [h', smul_eq_mul]
+          simp [smul_eq_mul]
           ring
       calc
         SchwartzMap.seminorm ℝ p.1 p.2 (h - h') =
@@ -1571,8 +1576,7 @@ private theorem schwartz_origin_avoidance_approximation_finite
         _ < ε / 2 + ε / 2 := add_lt_add (hlarge p hp) (hsmall p hp)
         _ = ε := by ring
   · refine ⟨0, ?_, ?_, ?_⟩
-    · simpa using (show (0 : SpacetimeDim d) ∉
-        tsupport (((0 : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) by simp)
+    · simp
     · simpa using (HasCompactSupport.zero :
         HasCompactSupport (((0 : SchwartzSpacetime d) : SpacetimeDim d → ℂ)))
     · intro p hp
@@ -1605,8 +1609,7 @@ private theorem exists_tendsto_originAvoidingCompact_of_vanishes
   have hp2_le : p.2 ≤ n := by
     exact le_trans (le_max_right _ _) (le_trans (le_max_left _ _) hn)
   have hp_mem : p ∈ s n := by
-    simp [s, Finset.mem_product, Finset.mem_range,
-      Nat.lt_succ_iff, hp1_le, hp2_le]
+    simp [s, Finset.mem_product, Finset.mem_range, hp1_le, hp2_le]
   have happ := huapprox n p hp_mem
   have hmono : 1 / (n + 1 : ℝ) ≤ 1 / (N + 1 : ℝ) := by
     have hNle : (N + 1 : ℝ) ≤ n + 1 := by
@@ -1676,9 +1679,9 @@ private theorem differenceShell_mem_topologicalClosure_zeroOrigin_span_of_vanish
       intro n
       refine Submodule.subset_span ?_
       refine ⟨χ, u n, hu0 n, hucomp n, ?_⟩
-      simpa [z] using
-        (twoPointDifferenceLiftFixedCenterZeroDiagCLM_eq_ofClassical
-          (d := d) χ ⟨u n, hu0 n⟩)
+      dsimp [z]
+      exact twoPointDifferenceLiftFixedCenterZeroDiagCLM_eq_ofClassical
+        (d := d) χ ⟨u n, hu0 n⟩
     let T : SchwartzSpacetime d →L[ℂ] SchwartzNPoint d 2 :=
       ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (twoPointCenterDiffCLE d).symm).comp
           ((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
@@ -1699,7 +1702,8 @@ private theorem differenceShell_mem_topologicalClosure_zeroOrigin_span_of_vanish
           twoPointDifferenceLift_vanishes_of_zero_not_mem_tsupport χ (u n) (hu0 n)
         calc
           (z n).1 = (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ (u n))).1 := by
-            simpa [z] using congrArg Subtype.val
+            dsimp [z]
+            exact congrArg Subtype.val
               (twoPointDifferenceLiftFixedCenterZeroDiagCLM_eq_ofClassical
                 (d := d) χ ⟨u n, hu0 n⟩)
           _ = twoPointDifferenceLift χ (u n) := by
@@ -1760,8 +1764,7 @@ private theorem twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero
     intro g
     ext x
     simp [T, twoPointDifferenceLift_apply, twoPointCenterDiffCLE,
-      twoPointCenterDiffLinearEquiv, SchwartzMap.prependField_apply,
-      onePointToFin1CLM_apply]
+      twoPointCenterDiffLinearEquiv]
   obtain ⟨u, hu0, _, hu_tendsto⟩ :=
     exists_tendsto_originAvoidingCompact_of_vanishes (d := d) (h := h) hzero
   have hTu : Filter.Tendsto (fun n : ℕ => T (u n)) Filter.atTop (nhds (T h)) := by
@@ -1963,7 +1966,7 @@ private theorem iteratedLineDeriv_preserves_diff_zero_flatness
   | succ j ih =>
       intro k z hz
       have hu : u = Fin.snoc (Fin.init u) (u (Fin.last j)) := by
-        simpa using Fin.snoc_init_self u
+        exact (Fin.snoc_init_self u).symm
       rw [hu, LineDeriv.iteratedLineDerivOp_succ_right]
       simp only [Fin.init_snoc, Fin.snoc_last]
       let g : SchwartzNPoint d 2 := ∂_{u (Fin.last j)} f
@@ -2185,10 +2188,11 @@ private theorem diffBlockCutoff_productTensor
     fun_prop
   ext x
   rw [diffBlockCutoffCLM, SchwartzMap.smulLeftCLM_apply_apply htemp]
-  simp [diffProjCLM, SchwartzMap.productTensor_apply, smul_eq_mul, Fin.prod_univ_two]
+  simp [diffProjCLM, SchwartzMap.productTensor_apply, smul_eq_mul]
   rw [SchwartzMap.smulLeftCLM_apply_apply
     (g := ((ψ : SchwartzSpacetime d) : SpacetimeDim d → ℂ)) ψ.hasTemperateGrowth h (x 1)]
-  simp [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
+  simp [smul_eq_mul]
+  ring
 
 /-- A sufficiently large difference-block bump is exactly `1` on the support of
 a compactly supported two-point Schwartz test, hence acts by the identity. -/
@@ -2570,21 +2574,22 @@ private theorem twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_fla
     constructor
     · rintro ⟨f, ⟨χ, h, hzero, rfl⟩, rfl⟩
       refine ⟨χ, h, hzero, ?_⟩
-      simp [coeZ, ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes,
+      simp [coeZ,
         twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero, hzero]
     · rintro ⟨χ, h, hzero, rfl⟩
       refine ⟨ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h), ?_, ?_⟩
       · exact ⟨χ, h, hzero, rfl⟩
-      · simp [coeZ, ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes,
+      · simp [coeZ,
           twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero, hzero]
   have hspan :
       (Submodule.span ℂ S_ambient : Submodule ℂ (SchwartzNPoint d 2)) = B.map coeL := by
     calc
       (Submodule.span ℂ S_ambient : Submodule ℂ (SchwartzNPoint d 2))
           = Submodule.span ℂ (coeL '' S_sub) := by
-              simpa [hS, coeL, coeZ]
+              simp [hS, coeL, coeZ]
       _ = B.map coeL := by
-            simpa [B] using (Submodule.span_image (R := ℂ) (R₂ := ℂ) (s := S_sub) coeL)
+            change Submodule.span ℂ (coeL '' S_sub) = (Submodule.span ℂ S_sub).map coeL
+            exact Submodule.span_image (R := ℂ) (R₂ := ℂ) (s := S_sub) coeL
   have hfull :
       x.1 ∈
         closure
@@ -2607,7 +2612,7 @@ private theorem twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_fla
     have hmap :
         (((B.map coeL : Submodule ℂ (SchwartzNPoint d 2)) : Set (SchwartzNPoint d 2))) =
           coeZ '' ((B : Submodule ℂ (ZeroDiagonalSchwartz d 2)) : Set (ZeroDiagonalSchwartz d 2)) := by
-      simpa [coeL, coeZ] using (Submodule.map_coe coeL B)
+      exact Submodule.map_coe coeL B
     rw [← hmap, ← hspan]
     simpa [S_ambient] using
       twoPointCenterDiffInv_diffBlockCutoff_mem_topologicalClosure_flatDifferenceShellSpan
@@ -2661,9 +2666,7 @@ private theorem bumpTruncationRadiusNPoint_eq_unflatten {n : ℕ}
   rw [OSReconstruction.unflattenSchwartzNPoint_apply]
   rw [OSReconstruction.bumpTruncationRadius]
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
-  simp [OSReconstruction.unflattenSchwartzNPoint_apply,
-    OSReconstruction.flattenSchwartzNPoint_apply, smul_eq_mul, mul_comm,
-    mul_left_comm, mul_assoc]
+  simp [OSReconstruction.flattenSchwartzNPoint_apply, smul_eq_mul]
 
 private theorem dense_hasCompactSupport_zeroDiagonal :
     Dense {F : ZeroDiagonalSchwartz d 2 |
@@ -2923,8 +2926,11 @@ private theorem zeroOrigin_pairing_implies_positiveTime_reduced_pairing
   let hmem : zeroOriginAvoidingSubmodule d :=
     ⟨h, by
       intro h0
-      have hpos0 := hh_pos h0
-      simpa using hpos0⟩
+      have : False := by
+        have hpos0 := hh_pos h0
+        have hcoord : (((0 : SpacetimeDim d) 0 : ℝ)) = 0 := by simp
+        exact (lt_irrefl (0 : ℝ)) (hcoord ▸ hpos0)
+      exact this⟩
   calc
     ∫ ξ : SpacetimeDim d, K ξ * h ξ =
         (OsterwalderSchraderAxioms.schwingerDifferenceZeroOriginCLM
