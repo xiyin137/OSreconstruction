@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2Density
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2BaseStep
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
@@ -67,8 +68,10 @@ The implementation is split across several files in the `WickRotation/` subfolde
   witness surfaces, and coordinate helpers
 - `OSToWightmanK2Density.lean`: route-independent density/cutoff lemmas on
   `ZeroDiagonalSchwartz` reused by the honest OS `k = 2` lane
-- `OSToWightmanK2BaseStep.lean`: heavier `k = 2` Bochner / convergence /
-  assembly tail on the OS semigroup route
+- `OSToWightmanK2BaseStep.lean`: proved `k = 2` semigroup / Bochner support
+  layer on the OS route
+- `OSToWightmanK2VI1.lean`: isolated OS II VI.1 regularization /
+  boundary-identification frontier for the remaining `k = 2` base step
 - `OSToWightman.lean`: general E'→R' continuation core and base-step wrappers
 - `OSToWightmanBoundaryValues.lean`: boundary-value package, axiom transfer,
   and bridge theorems
