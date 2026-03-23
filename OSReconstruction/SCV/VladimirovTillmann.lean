@@ -32,7 +32,8 @@ in the SCV library (~800 lines).
 * Streater-Wightman, "PCT, Spin and Statistics, and All That", Chapter 2
 -/
 
-open scoped Classical ComplexConjugate
+open scoped Classical ComplexConjugate BigOperators
+open MeasureTheory
 noncomputable section
 
 /-! ### Definitions -/
@@ -91,16 +92,120 @@ axiom vladimirov_tillmann {n d : ℕ}
       ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
         Filter.Tendsto
           (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
-            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * φ x)
+            F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
-    -- Conclusion 1: Polynomial growth on compact subcones
+    -- Conclusion 1: Polynomial growth on compact subsets of C
     (∀ (K : Set (Fin n → Fin (d + 1) → ℝ)), IsCompact K → K ⊆ C →
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ (x y : Fin n → Fin (d + 1) → ℝ), y ∈ K →
-          ‖F (fun k μ => ↑(x k μ) + ↑(y k μ) * Complex.I)‖ ≤
+          ‖F (fun k μ => (x k μ : ℂ) + (y k μ : ℂ) * Complex.I)‖ ≤
             C_bd * (1 + ‖x‖) ^ N) ∧
     -- Conclusion 2: Full Vladimirov bound with boundary distance
     (∃ (C_bd : ℝ) (N q : ℕ), C_bd > 0 ∧
       ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
         ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun k μ => (z k μ).im) Cᶜ)⁻¹) ^ q)
+
+/-! ### Cluster property: distributional → tube interior -/
+
+/-- **Distributional cluster property lifts to tube interior.**
+
+    Let C be a proper open convex cone in ℝᵐ and F : T(C) → ℂ a holomorphic
+    function on the tube T(C) = { z | Im(z) ∈ C }.  Let F₁, F₂ be holomorphic
+    on corresponding lower-dimensional tubes.
+
+    If the distributional boundary values of F satisfy a cluster decomposition
+    under purely spatial translation of the second block of arguments — i.e.,
+    the smeared (n₁+n₂)-point function factorizes as the product of the
+    smeared n₁ and n₂-point functions when the spatial separation grows — then
+    the same factorization holds pointwise on the tube interior.
+
+    This is a consequence of the Poisson integral representation for tube
+    domains (Vladimirov, Thm 25.1): the interior evaluation F(z) equals the
+    distributional BV applied to a Schwartz-class Poisson kernel K_z.  For
+    product tube configurations K factors, and a real shift translates the
+    second factor.  Riemann-Lebesgue (`tendsto_integral_exp_smul_cocompact`)
+    gives decay of the connected spectral component.
+
+    Ref: Vladimirov, "Methods of the Theory of Generalized Functions", §25;
+    Reed-Simon II, Thm IX.16; Streater-Wightman, §2.4 + Thm 3-5 -/
+axiom distributional_cluster_lifts_to_tube {n₁ n₂ d : ℕ}
+    -- Tube domain
+    (C : Set (Fin (n₁ + n₂) → Fin (d + 1) → ℝ))
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    -- Joint holomorphic function F with distributional BV W
+    (F : (Fin (n₁ + n₂) → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
+    (W : SchwartzMap (Fin (n₁ + n₂) → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hF_bv : ∀ (η : Fin (n₁ + n₂) → Fin (d + 1) → ℝ), η ∈ C →
+      ∀ (φ : SchwartzMap (Fin (n₁ + n₂) → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin (n₁ + n₂) → Fin (d + 1) → ℝ,
+            F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ)))
+    -- Factor functions F₁, F₂ with BVs W₁, W₂ on sub-tubes
+    (C₁ : Set (Fin n₁ → Fin (d + 1) → ℝ))
+    (C₂ : Set (Fin n₂ → Fin (d + 1) → ℝ))
+    (F₁ : (Fin n₁ → Fin (d + 1) → ℂ) → ℂ)
+    (hF₁_holo : DifferentiableOn ℂ F₁ (TubeDomainSetPi C₁))
+    (W₁ : SchwartzMap (Fin n₁ → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hF₁_bv : ∀ (η₁ : Fin n₁ → Fin (d + 1) → ℝ), η₁ ∈ C₁ →
+      ∀ (φ₁ : SchwartzMap (Fin n₁ → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x₁ : Fin n₁ → Fin (d + 1) → ℝ,
+            F₁ (fun k μ => (x₁ k μ : ℂ) + (ε : ℂ) * (η₁ k μ : ℂ) * Complex.I) * φ₁ x₁)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W₁ φ₁)))
+    (F₂ : (Fin n₂ → Fin (d + 1) → ℂ) → ℂ)
+    (hF₂_holo : DifferentiableOn ℂ F₂ (TubeDomainSetPi C₂))
+    (W₂ : SchwartzMap (Fin n₂ → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hF₂_bv : ∀ (η₂ : Fin n₂ → Fin (d + 1) → ℝ), η₂ ∈ C₂ →
+      ∀ (φ₂ : SchwartzMap (Fin n₂ → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x₂ : Fin n₂ → Fin (d + 1) → ℝ,
+            F₂ (fun k μ => (x₂ k μ : ℂ) + (ε : ℂ) * (η₂ k μ : ℂ) * Complex.I) * φ₂ x₂)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W₂ φ₂)))
+    -- **Distributional cluster condition (R4):**
+    -- The boundary distribution W cluster-decomposes towards W₁ ⊗ W₂
+    -- under purely spatial translation of the n₂-block.
+    --
+    -- Stated at the interior-slice level to avoid SchwartzMap tensor-product
+    -- typing:  for each η ∈ C and δ > 0, the smeared integral of F
+    -- on the slice x + iδη with the n₂-block translated by a converges to
+    -- the product of the smeared integrals of F₁ and F₂.
+    --
+    -- As δ → 0, this recovers the distributional cluster W(φ₁ ⊗ τ_a φ₂) →
+    -- W₁(φ₁) · W₂(φ₂), so this form is equivalent to R4.
+    (h_slice_cluster :
+      ∀ (η : Fin (n₁ + n₂) → Fin (d + 1) → ℝ), η ∈ C →
+      ∀ (δ : ℝ), δ > 0 →
+      ∀ (φ₁ : SchwartzMap (Fin n₁ → Fin (d + 1) → ℝ) ℂ)
+        (φ₂ : SchwartzMap (Fin n₂ → Fin (d + 1) → ℝ) ℂ)
+        (ε : ℝ), ε > 0 →
+        ∃ R : ℝ, R > 0 ∧ ∀ (a : Fin (d + 1) → ℝ), a 0 = 0 →
+          (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+          ‖(∫ x : Fin (n₁ + n₂) → Fin (d + 1) → ℝ,
+              F (fun k μ => (x k μ : ℂ) + (δ : ℂ) * (η k μ : ℂ) * Complex.I) *
+              (φ₁ (fun k μ => x (Fin.castAdd n₂ k) μ) *
+               φ₂ (fun k μ => x (Fin.natAdd n₁ k) μ - a μ))) -
+            (∫ x₁ : Fin n₁ → Fin (d + 1) → ℝ,
+              F₁ (fun k μ => (x₁ k μ : ℂ) + (δ : ℂ) * (η (Fin.castAdd n₂ k) μ : ℂ) * Complex.I) *
+              φ₁ x₁) *
+            (∫ x₂ : Fin n₂ → Fin (d + 1) → ℝ,
+              F₂ (fun k μ => (x₂ k μ : ℂ) + (δ : ℂ) * (η (Fin.natAdd n₁ k) μ : ℂ) * Complex.I) *
+              φ₂ x₂)‖ < ε)
+    -- Interior points
+    (z₁ : Fin n₁ → Fin (d + 1) → ℂ)
+    (z₂ : Fin n₂ → Fin (d + 1) → ℂ)
+    (hz : Fin.append z₁ z₂ ∈ TubeDomainSetPi C)
+    (hz₁ : z₁ ∈ TubeDomainSetPi C₁)
+    (hz₂ : z₂ ∈ TubeDomainSetPi C₂)
+    (ε : ℝ) (hε : ε > 0) :
+    -- Conclusion: pointwise cluster on the tube interior.
+    -- Note: the shifted point Fin.append z₁ (z₂ + ↑a) is automatically in T(C)
+    -- because a is real, so Im(z₂ + ↑a) = Im(z₂) and the tube condition is unchanged.
+    ∃ R : ℝ, R > 0 ∧
+      ∀ (a : Fin (d + 1) → ℝ), a 0 = 0 →
+        (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ‖F (Fin.append z₁ (fun k μ => z₂ k μ + (a μ : ℂ))) -
+          F₁ z₁ * F₂ z₂‖ < ε
