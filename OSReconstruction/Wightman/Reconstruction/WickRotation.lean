@@ -5,11 +5,9 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2KernelBridge
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2Density
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2BaseStep
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanKernel
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTwoPoint
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReduced
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
@@ -67,16 +65,11 @@ The implementation is split across several files in the `WickRotation/` subfolde
   holomorphic bridge
 - `OSToWightmanBase.lean`: shared E'→R' geometry, tube domains, flattened
   witness surfaces, and coordinate helpers
-- `OSToWightmanK2KernelBridge.lean`: front `k = 2` density / zero-origin
-  pairing / off-diagonal kernel bridge, split out for faster iteration on the
-  live two-point blocker
-- `OSToWightmanKernel.lean`: specialized `k = 2` holomorphic-kernel route and
-  witness-shell package
+- `OSToWightmanK2Density.lean`: route-independent density/cutoff lemmas on
+  `ZeroDiagonalSchwartz` reused by the honest OS `k = 2` lane
 - `OSToWightmanK2BaseStep.lean`: heavier `k = 2` Bochner / convergence /
-  assembly tail above the front kernel bridge
+  assembly tail on the OS semigroup route
 - `OSToWightman.lean`: general E'→R' continuation core and base-step wrappers
-- `OSToWightmanTwoPoint.lean`: specialized `k = 2` continuation and spectral
-  reduction ladder
 - `OSToWightmanBoundaryValues.lean`: boundary-value package, axiom transfer,
   and bridge theorems
 - `WickRotationBridge.lean`: one-variable Wick-rotation identities transporting
