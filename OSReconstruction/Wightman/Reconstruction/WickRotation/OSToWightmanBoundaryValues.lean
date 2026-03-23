@@ -16,8 +16,8 @@ This file continues the `E'→R'` reconstruction chain after
 - the bridge theorems `wightman_to_os_full` and `os_to_wightman_full`
 
 The semigroup and analytic-continuation stack now lives across
-`OSToWightmanSemigroup.lean`, `OSToWightmanBase.lean`,
-`OSToWightmanKernel.lean`, and `OSToWightman.lean`.
+`OSToWightmanSemigroup.lean`, `OSToWightmanBase.lean`, and
+`OSToWightman.lean`.
 -/
 
 open scoped Classical NNReal

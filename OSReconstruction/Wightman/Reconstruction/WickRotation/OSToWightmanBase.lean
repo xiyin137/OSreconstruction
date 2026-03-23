@@ -22,11 +22,8 @@ Phase 3 of the `E'→R'` reconstruction chain:
 - the inductive restriction from `ACR(1)` to the forward tube
 
 The semigroup, Hilbert-space, and one-variable holomorphic bridge infrastructure
-now lives in `OSToWightmanSemigroup.lean`. The specialized two-point
-holomorphic-kernel route now lives in `OSToWightmanKernel.lean`. The downstream
-boundary-value and transfer package lives in `OSToWightmanBoundaryValues.lean`,
-and the specialized two-point continuation/spectral reduction ladder lives in
-`OSToWightmanTwoPoint.lean`.
+now lives in `OSToWightmanSemigroup.lean`. The downstream boundary-value and
+transfer package lives in `OSToWightmanBoundaryValues.lean`.
 
 Important status note: after the split, this file contains only the reusable
 geometric and coordinate infrastructure. The public time-parametric base-step

@@ -32,8 +32,6 @@ quietly assuming a full-Schwartz Schwinger theory from the start.
 
 The downstream analytic-continuation stack is now split across:
 - `OSToWightmanBase.lean` for shared geometry and coordinate infrastructure,
-- `OSToWightmanKernel.lean` for the specialized `k = 2` holomorphic-kernel
-  route,
 - `OSToWightman.lean` for the general continuation core and wrappers, and
 - `OSToWightmanBoundaryValues.lean` for the boundary-value/transfer package.
 -/
