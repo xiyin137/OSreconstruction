@@ -71,7 +71,7 @@ private theorem reindex_flatten_twoPointCenterShell
     reindex_flattenSchwartzNPoint_two_apply
       (d := d) (f := χ.prependField (onePointToFin1CLM d h)) x
 
-private theorem reindex_flatten_twoPointProductShell_apply
+theorem reindex_flatten_twoPointProductShell_apply
     (χ g : SchwartzSpacetime d) (x : Fin ((d + 1) + (d + 1)) → ℝ) :
     reindexSchwartzFin (by ring)
         (flattenSchwartzNPoint (d := d)

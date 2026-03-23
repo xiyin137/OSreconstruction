@@ -6,6 +6,7 @@ Authors: ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatialMomentum
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2Density
+import OSReconstruction.Wightman.Reconstruction.TwoPointDescent
 import OSReconstruction.Wightman.Reconstruction.TwoPointKernelFunctional
 import OSReconstruction.SCV.SemigroupGroupBochner
 import Mathlib.Analysis.Calculus.ParametricIntegral
@@ -523,6 +524,90 @@ private theorem approxIdentity_integral_tendsto_of_continuousAt_zero
     _ < ε := by
           linarith
 
+/-- The reflected companions of a shrinking negative approximate identity act
+as an honest positive approximate identity on translated test functions,
+pointwise at every spacetime point. -/
+private theorem reflected_negativeApproxIdentity_translate_tendsto_self_local
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_support : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+        Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    (g : SchwartzSpacetime d)
+    (x : SpacetimeDim d) :
+    Filter.Tendsto
+      (fun n =>
+        ∫ ξ : SpacetimeDim d,
+          reflectedSchwartzSpacetime (φ_seq n) ξ *
+            (SCV.translateSchwartz (-ξ) g) x)
+      Filter.atTop (nhds (g x)) := by
+  have hψ_nonneg : ∀ n y, 0 ≤ (reflectedSchwartzSpacetime (φ_seq n) y).re := by
+    intro n y
+    simpa [reflectedSchwartzSpacetime_apply] using hφ_nonneg n (timeReflection d y)
+  have hψ_real : ∀ n y, (reflectedSchwartzSpacetime (φ_seq n) y).im = 0 := by
+    intro n y
+    simpa [reflectedSchwartzSpacetime_apply] using hφ_real n (timeReflection d y)
+  have hψ_int : ∀ n, ∫ y : SpacetimeDim d, reflectedSchwartzSpacetime (φ_seq n) y = 1 := by
+    intro n
+    rw [reflectedSchwartzSpacetime_integral_eq]
+    exact hφ_int n
+  have hψ_support :
+      ∀ n, tsupport (reflectedSchwartzSpacetime (φ_seq n) : SpacetimeDim d → ℂ) ⊆
+        Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)) := by
+    intro n
+    exact reflectedSchwartzSpacetime_tsupport_ball (d := d) (φ_seq n) (hφ_support n)
+  let ψ : SpacetimeDim d → ℂ := fun ξ => (SCV.translateSchwartz (-ξ) g) x
+  have hψ_cont : Continuous ψ := by
+    change Continuous (fun ξ : SpacetimeDim d => g (x + -ξ))
+    exact g.continuous.comp ((continuous_const.sub continuous_id'))
+  have hmain :=
+    approxIdentity_integral_tendsto_of_continuousAt_zero
+      (d := d) (fun n => reflectedSchwartzSpacetime (φ_seq n))
+      hψ_nonneg hψ_real hψ_int hψ_support hψ_cont
+  simpa [ψ, SCV.translateSchwartz_apply] using hmain
+
+/-- Pointwise form of the previous regularization lemma on the honest positive-
+time compact-support test space. The reflected probes act by convolution and
+recover the original test pointwise. -/
+private theorem positiveTimeCompactSupportConvolution_reflected_negativeApproxIdentity_apply_tendsto_self_local
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0})
+    (hφ_support : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+        Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    (g : positiveTimeCompactSupportSubmodule d)
+    (x : SpacetimeDim d) :
+    Filter.Tendsto
+      (fun n =>
+        let ψn : positiveTimeCompactSupportSubmodule d :=
+          ⟨reflectedSchwartzSpacetime (φ_seq n),
+            ⟨reflectedSchwartzSpacetime_tsupport_pos (d := d) (φ_seq n) (hφ_neg n),
+              reflectedSchwartzSpacetime_hasCompactSupport (d := d) (φ_seq n) (hφ_compact n)⟩⟩
+        (((positiveTimeCompactSupportConvolution ψn
+            g : positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) x))
+      Filter.atTop (nhds ((g : SchwartzSpacetime d) x)) := by
+  have hmain :=
+    reflected_negativeApproxIdentity_translate_tendsto_self_local
+      (d := d) φ_seq hφ_nonneg hφ_real hφ_int hφ_support (g : SchwartzSpacetime d) x
+  refine Filter.Tendsto.congr' ?_ hmain
+  filter_upwards with n
+  let ψn : positiveTimeCompactSupportSubmodule d :=
+    ⟨reflectedSchwartzSpacetime (φ_seq n),
+      ⟨reflectedSchwartzSpacetime_tsupport_pos (d := d) (φ_seq n) (hφ_neg n),
+        reflectedSchwartzSpacetime_hasCompactSupport (d := d) (φ_seq n) (hφ_compact n)⟩⟩
+  have hψn_coe :
+      ((ψn : positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) =
+        reflectedSchwartzSpacetime (φ_seq n) := by
+    rfl
+  simpa [ψn, hψn_coe] using
+    (positiveTimeCompactSupportConvolution_apply_eq_integral_translate
+      (h := ψn) (g := g) x)
+
 /-- Nonnegative real-valued normalized approximate-identity probes have
 unit `L¹` norm. -/
 private theorem approxIdentity_L1_norm_eq_one_local
@@ -797,6 +882,29 @@ private def schwingerProductPositiveCLM_local
 /-- The translated positive-time compactly supported one-point test remains in
 the positive-time compact-support domain. This is the honest right-slot domain
 for the reflected probe used in theorem B. -/
+private def reflectedPositiveTimeCompactSupport_local
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    positiveTimeCompactSupportSubmodule d :=
+  ⟨reflectedSchwartzSpacetime φ,
+    ⟨reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg,
+      reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact⟩⟩
+
+/-- The reflected companion of a negative-time compactly supported probe is an
+honest positive-time compact-support test. -/
+@[simp] private theorem reflectedPositiveTimeCompactSupport_local_coe
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    ((reflectedPositiveTimeCompactSupport_local (d := d) φ hφ_compact hφ_neg :
+        positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) =
+      reflectedSchwartzSpacetime φ := by
+  rfl
+
+/-- The translated positive-time compactly supported one-point test remains in
+the positive-time compact-support domain. This is the honest right-slot domain
+for the reflected probe used in theorem B. -/
 private def translatedPositiveTimeCompactSupport_local
     (g : SchwartzSpacetime d)
     (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
@@ -895,6 +1003,44 @@ private def positiveTimeOnePointVector_local
           (onePointToFin1CLM d (h : SchwartzSpacetime d) : SchwartzNPoint d 1)
           (onePointToFin1_tsupport_orderedPositiveTime_local (d := d)
             (h : SchwartzSpacetime d) h.property.1)⟧)) : OSHilbertSpace OS))
+
+/-- The positive-time one-point vector is already linear at the pre-Hilbert
+quotient level. This is the OS-side linearity needed before any later
+Bochner/interchange step. -/
+private def positiveTimeOnePointVectorLM_local
+    (OS : OsterwalderSchraderAxioms d) :
+    positiveTimeCompactSupportSubmodule d →ₗ[ℂ] OSPreHilbertSpace OS where
+  toFun h :=
+    ⟦PositiveTimeBorchersSequence.single 1
+      (onePointToFin1CLM d (h : SchwartzSpacetime d) : SchwartzNPoint d 1)
+      (onePointToFin1_tsupport_orderedPositiveTime_local (d := d)
+        (h : SchwartzSpacetime d) h.property.1)⟧
+  map_add' h₁ h₂ := by
+    apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+    intro n
+    by_cases hn : n = 1
+    · subst hn
+      simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.single]
+    · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.single, hn]
+  map_smul' c h := by
+    apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+    intro n
+    by_cases hn : n = 1
+    · subst hn
+      simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.single]
+    · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.single, hn]
+
+@[simp] private theorem positiveTimeOnePointVectorLM_local_coe
+    (OS : OsterwalderSchraderAxioms d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ((positiveTimeOnePointVectorLM_local (d := d) OS h : OSPreHilbertSpace OS) :
+        OSHilbertSpace OS) =
+      positiveTimeOnePointVector_local (d := d) OS h := by
+  rfl
 
 /-- The product-shell Schwinger CLM is exactly the OS Hilbert inner product
 against the positive-time one-point vector. -/
@@ -2679,6 +2825,96 @@ private theorem bochner_kernel_integral_eq_translatedProductShell_integral_local
                 image_eq_zero_of_notMem_tsupport hξ_not_mem
               simp [hξ, hξ_zero]
 
+/-- The positive-time boundary integrand appearing in the packaged Bochner
+formula is exactly the scalar orbit of `schwingerProductPositiveCLM_local`
+along the translated reflected probe. This is the route-faithful bridge from
+the explicit translated product shell to the one-point positive-time CLM orbit
+used in the OS semigroup continuity package. -/
+private theorem translatedProductShell_boundary_eq_schwingerProductPositiveOrbit_local
+    (OS : OsterwalderSchraderAxioms d)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (ξ : SpacetimeDim d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    (if hξ : 0 < ξ 0 then
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ)))
+    else 0) =
+      (if hξ : 0 < ξ 0 then
+        schwingerProductPositiveCLM_local OS φ
+          (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+            (d := d) φ hφ_compact hφ_neg)
+          (translatedPositiveTimeCompactSupport_local (d := d)
+            (reflectedSchwartzSpacetime φ)
+            (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+            (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+            ξ hξ)
+      else 0) := by
+  dsimp
+  have hφ_pos :
+      tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 :=
+    osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
+  by_cases hξ : 0 < ξ 0
+  · simpa [hξ] using (schwingerProductPositiveCLM_local_apply_translated
+      (d := d) OS φ hφ_pos
+      (reflectedSchwartzSpacetime φ)
+      (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+      (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+      ξ hξ).symm
+  · simpa [hξ]
+
+/-- Scalar-orbit form of the packaged Bochner kernel identity. This is the
+exact same positive-time boundary functional as
+`bochner_kernel_integral_eq_translatedProductShell_integral_local`, but
+rewritten through the continuous one-point orbit
+`schwingerProductPositiveCLM_local`. -/
+private theorem bochner_kernel_integral_eq_schwingerProductPositiveOrbit_integral_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure μ]
+    (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hμ_repr : ∀ t a, 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS)) t a =
+        ∫ p : ℝ × (Fin d → ℝ),
+          Complex.exp (-(↑(t * p.1) : ℂ)) *
+            Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ =
+      ∫ ξ : SpacetimeDim d,
+        (if hξ : 0 < ξ 0 then
+          schwingerProductPositiveCLM_local OS φ
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)
+            (translatedPositiveTimeCompactSupport_local (d := d)
+              ψ
+              (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+              (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+              ξ hξ)
+        else 0) * ((h : SchwartzSpacetime d) ξ) := by
+  dsimp
+  rw [bochner_kernel_integral_eq_translatedProductShell_integral_local
+    (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμ_repr h]
+  refine integral_congr_ae ?_
+  filter_upwards with ξ
+  rw [translatedProductShell_boundary_eq_schwingerProductPositiveOrbit_local
+    (d := d) OS φ hφ_compact hφ_neg ξ]
+
 /-- The Euclidean kernel induced by a flattened `k = 2` time-parametric witness. -/
 private def k2TimeParametricKernel
     (G : (Fin (2 * (d + 1)) → ℂ) → ℂ) : NPointDomain d 2 → ℂ :=
@@ -2803,6 +3039,25 @@ private def k2ProbeWitness_local
     onePointToFin1_tsupport_orderedPositiveTime_local (d := d) g hg_pos_time
   twoPointCorrectedWitness_local (d := d) OS lgc φ g hφ_pos hg_pos
 
+/-- The one-variable Euclidean difference kernel attached to the canonical
+normalized `k = 2` probe. -/
+private def k2ProbeDifferenceKernel_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    SpacetimeDim d → ℂ :=
+  fun ξ =>
+    let ψ := reflectedSchwartzSpacetime φ
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+    twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+      (ξ 0) (fun i => ξ i.succ)
+
 /-- On real Euclidean configurations, the canonical probe witness is exactly the
 semigroup-side spatial witness evaluated at the honest time/spatial difference
 coordinates. -/
@@ -2826,6 +3081,25 @@ private theorem k2TimeParametricKernel_k2ProbeWitness_eq_twoPointSpatialWitness_
         (fun i => x 1 i.succ - x 0 i.succ) := by
   simp only [k2TimeParametricKernel, k2ProbeWitness_local, twoPointCorrectedWitness_local]
   rw [neg_I_mul_toDiffFlat_wickRotate_j10_local, extractDiffSpatialRe_toDiffFlat_wickRotate_local]
+
+/-- The Euclidean section of the canonical `k = 2` probe witness is already a
+pure difference kernel: it depends only on `x₁ - x₀`, with the expected
+time/spatial split. -/
+private theorem k2TimeParametricKernel_k2ProbeWitness_eq_twoPointDifferenceKernel_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    k2TimeParametricKernel (d := d)
+        (k2ProbeWitness_local OS lgc φ hφ_compact hφ_neg) =
+      OSReconstruction.twoPointDifferenceKernel (d := d)
+        (k2ProbeDifferenceKernel_local (d := d) OS lgc φ hφ_compact hφ_neg) := by
+  funext x
+  rw [OSReconstruction.twoPointDifferenceKernel]
+  simpa [k2ProbeDifferenceKernel_local] using
+    (k2TimeParametricKernel_k2ProbeWitness_eq_twoPointSpatialWitness_realSection_local
+      (d := d) OS lgc φ hφ_compact hφ_neg x)
 
 private theorem isTimeHolomorphicFlatPositiveTimeDiffWitness_k2ProbeWitness_local
     (OS : OsterwalderSchraderAxioms d)
@@ -2903,6 +3177,302 @@ private theorem exists_k2_normalized_probe_measure_local
   intro t a ht
   exact hμrepr t a ht
 
+/-- On positive Euclidean time, the spatially parameterized semigroup witness
+for a normalized negative-time probe is exactly the corresponding semigroup-group
+matrix element. -/
+private theorem twoPointSpatialWitness_eq_osSemigroupGroupMatrixElement_of_pos_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+    twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+        (ξ 0) (fun i => ξ (Fin.succ i)) =
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            hφ_pos⟧) : OSHilbertSpace OS))
+        (ξ 0) (fun i => ξ (Fin.succ i)) := by
+  let ψ := reflectedSchwartzSpacetime φ
+  let hφ_pos :=
+    osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
+  let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+  let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+  dsimp [ψ, hφ_pos, hψ_pos_time, hψ_pos]
+  let xφ : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from
+        ⟦PositiveTimeBorchersSequence.single 1
+          (SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+          hφ_pos⟧) : OSHilbertSpace OS))
+  let xψ : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from
+        ⟦PositiveTimeBorchersSequence.single 1
+          (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+          hψ_pos⟧) : OSHilbertSpace OS))
+  have hx_eq_pre :
+      (⟦PositiveTimeBorchersSequence.single 1
+          (SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+          hφ_pos⟧ : OSPreHilbertSpace OS) =
+        (⟦PositiveTimeBorchersSequence.single 1
+            (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+            hψ_pos⟧ : OSPreHilbertSpace OS) :=
+    mk_single_osConj_onePoint_eq_mk_single_reflected_of_real
+      (d := d) OS φ hφ_real hφ_compact hφ_neg
+  have hx_eq : xφ = xψ := by
+    exact congrArg (fun z : OSPreHilbertSpace OS => (z : OSHilbertSpace OS)) hx_eq_pre
+  have htrans_eq :
+      twoPointTranslatedOnePointVector_spatial_local (d := d) OS ψ hψ_pos
+          (fun i => ξ (Fin.succ i)) =
+        (osSpatialTranslateHilbert (d := d) OS (fun i => ξ (Fin.succ i))) xψ := by
+    have hEq :
+        twoPointTranslatedOnePointVector_spatial_local (d := d) OS ψ hψ_pos =
+          fun y => (osSpatialTranslateHilbert (d := d) OS y) xψ := by
+      funext y
+      simpa [twoPointTranslatedOnePointVector_spatial_local, xψ] using
+        (osSpatialTranslateHilbert_single_onePoint_eq (d := d) OS ψ hψ_pos_time y).symm
+    simpa [hEq]
+  calc
+    twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+        (ξ 0) (fun i => ξ (Fin.succ i))
+      = @inner ℂ (OSHilbertSpace OS) _
+          xφ
+          ((osTimeShiftHilbertComplex (d := d) OS lgc ((ξ 0 : ℝ) : ℂ))
+            ((osSpatialTranslateHilbert (d := d) OS (fun i => ξ (Fin.succ i))) xψ)) := by
+              rw [twoPointSpatialWitness_local, htrans_eq]
+    _ = @inner ℂ (OSHilbertSpace OS) _
+          xφ
+          ((osTimeShiftHilbertComplex (d := d) OS lgc ((ξ 0 : ℝ) : ℂ))
+            ((osSpatialTranslateHilbert (d := d) OS (fun i => ξ (Fin.succ i))) xφ)) := by
+              rw [hx_eq]
+    _ = osSemigroupGroupMatrixElement (d := d) OS lgc xφ
+          (ξ 0) (fun i => ξ (Fin.succ i)) := by
+            symm
+            simpa [osSpatialTranslateHilbert_zero, xφ] using
+              (osSemigroupGroupMatrixElement_eq_inner_timeShift_right
+                (d := d) OS lgc xφ (0 : Fin d → ℝ) (fun i => ξ (Fin.succ i))
+                (ξ 0) hξ)
+
+/-- On positive Euclidean time, the spatially parameterized semigroup witness
+attached to the normalized probe agrees pointwise with the Laplace-Fourier
+kernel of its Bochner measure. -/
+private theorem twoPointSpatialWitness_eq_laplaceFourierKernel_of_pos_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+    twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+        (ξ 0) (fun i => ξ (Fin.succ i)) =
+      laplaceFourierKernel (d := d) μ ξ := by
+  let ψ := reflectedSchwartzSpacetime φ
+  let hφ_pos :=
+    osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
+  let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+  let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+  dsimp [ψ, hφ_pos, hψ_pos_time, hψ_pos]
+  calc
+    twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+        (ξ 0) (fun i => ξ (Fin.succ i))
+      = osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              hφ_pos⟧) : OSHilbertSpace OS))
+          (ξ 0) (fun i => ξ (Fin.succ i)) := by
+            exact twoPointSpatialWitness_eq_osSemigroupGroupMatrixElement_of_pos_local
+              (d := d) OS lgc φ hφ_real hφ_compact hφ_neg ξ hξ
+    _ = ∫ p : ℝ × (Fin d → ℝ),
+          Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
+            Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) ∂μ := by
+            exact hμ_repr (ξ 0) (fun i => ξ (Fin.succ i)) hξ
+    _ = laplaceFourierKernel (d := d) μ ξ := by
+            simp [laplaceFourierKernel]
+
+/-- On positive Euclidean-time differences, the one-variable difference kernel
+attached to the canonical probe is exactly the Laplace-Fourier kernel of the
+packaged Bochner measure. -/
+private theorem k2ProbeDifferenceKernel_eq_laplaceFourier_of_pos_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    k2ProbeDifferenceKernel_local (d := d) OS lgc φ hφ_compact hφ_neg ξ =
+      laplaceFourierKernel (d := d) μ ξ := by
+  simpa [k2ProbeDifferenceKernel_local] using
+    (twoPointSpatialWitness_eq_laplaceFourierKernel_of_pos_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμ_repr ξ hξ)
+
+/-- Reduced positive-support pairing for the packaged probe witness. This is the
+common positive-time surface on which the semigroup witness and the Bochner
+measure coincide. -/
+private theorem integral_twoPointSpatialWitness_mul_eq_translatedProductShell_integral_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure μ]
+    (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+    ∫ ξ : SpacetimeDim d,
+      twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+        (ξ 0) (fun i => ξ (Fin.succ i)) * (h : SchwartzSpacetime d) ξ =
+      ∫ ξ : SpacetimeDim d,
+        (if hξ : 0 < ξ 0 then
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+            (twoPointProductLift φ
+              (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+        else 0) * ((h : SchwartzSpacetime d) ξ) := by
+  let ψ := reflectedSchwartzSpacetime φ
+  let hφ_pos :=
+    osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
+  let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg
+  let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local (d := d) ψ hψ_pos_time
+  dsimp [ψ, hφ_pos, hψ_pos_time, hψ_pos]
+  calc
+    ∫ ξ : SpacetimeDim d,
+        twoPointSpatialWitness_local (d := d) OS lgc φ ψ hφ_pos hψ_pos
+          (ξ 0) (fun i => ξ (Fin.succ i)) * (h : SchwartzSpacetime d) ξ
+      = ∫ ξ : SpacetimeDim d,
+          laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ := by
+            refine integral_congr_ae ?_
+            filter_upwards with ξ
+            by_cases hξ : 0 < ξ 0
+            · rw [twoPointSpatialWitness_eq_laplaceFourierKernel_of_pos_local
+                (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμ_repr ξ hξ]
+            · have hξ_not_mem :
+                  ξ ∉ tsupport (((h : positiveTimeCompactSupportSubmodule d) :
+                    SchwartzSpacetime d) : SpacetimeDim d → ℂ) := by
+                intro hmem
+                exact hξ (h.property.1 hmem)
+              have hξ_zero :
+                  ((h : positiveTimeCompactSupportSubmodule d) :
+                    SchwartzSpacetime d) ξ = 0 :=
+                image_eq_zero_of_notMem_tsupport hξ_not_mem
+              simp [hξ, hξ_zero]
+    _ = ∫ ξ : SpacetimeDim d,
+          (if hξ : 0 < ξ 0 then
+            OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+              (twoPointProductLift φ
+                (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+        else 0) * ((h : SchwartzSpacetime d) ξ) := by
+            exact bochner_kernel_integral_eq_translatedProductShell_integral_local
+              (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμ_repr h
+
+/-- Reduced one-variable pairing form of the canonical probe kernel on the
+honest positive-time Schwartz test domain. -/
+private theorem integral_k2ProbeDifferenceKernel_mul_eq_translatedProductShell_integral_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure μ]
+    (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ∫ ξ : SpacetimeDim d,
+      k2ProbeDifferenceKernel_local (d := d) OS lgc φ hφ_compact hφ_neg ξ *
+        (h : SchwartzSpacetime d) ξ =
+      ∫ ξ : SpacetimeDim d,
+        (if hξ : 0 < ξ 0 then
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+            (twoPointProductLift φ
+              (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+        else 0) * ((h : SchwartzSpacetime d) ξ) := by
+  simpa [k2ProbeDifferenceKernel_local] using
+    (integral_twoPointSpatialWitness_mul_eq_translatedProductShell_integral_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμ_repr h)
+
 /-- Honest OS Step B package for the active `k = 2` route: the normalized
 probe and its semigroup-group Bochner measure already reproduce the translated
 product-shell Schwinger pairing on positive-time compact-support tests. -/
@@ -2933,23 +3503,600 @@ private theorem exists_k2_normalized_probe_translatedProductShell_pairing_local
   exact bochner_kernel_integral_eq_translatedProductShell_integral_local
     (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμrepr h
 
+/-- Combined OS-route `k = 2` local package: a single normalized negative-time
+probe `φ` supplies both the analytic semigroup witness and the finite Bochner
+measure whose Laplace-Fourier kernel reproduces the translated product-shell
+pairing on positive-time compact-support tests. This isolates the last blocker
+to the reduced comparison step, rather than repeated existence unpacking. -/
+private theorem exists_k2_probe_witness_and_pairing_package_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∃ (φ : SchwartzSpacetime d)
+      (hφ_real : ∀ x, (φ x).im = 0)
+      (hφ_int : ∫ x : SpacetimeDim d, φ x = 1)
+      (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+      (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+      (μ : Measure (ℝ × (Fin d → ℝ)))
+      (_hμfin : IsFiniteMeasure μ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+          (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) ∧
+      μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+      (∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+        osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+          t a =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ) ∧
+      (∀ h : positiveTimeCompactSupportSubmodule d,
+        ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ =
+          ∫ ξ : SpacetimeDim d,
+            (if hξ : 0 < ξ 0 then
+              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                (twoPointProductLift φ
+                  (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+            else 0) * ((h : SchwartzSpacetime d) ξ)) := by
+  obtain ⟨φ, _hφ_nonneg, hφ_real, hφ_int, hφ_compact, hφ_neg, μ, hμfin, hsupp, hμrepr⟩ :=
+    exists_k2_normalized_probe_measure_local (d := d) OS lgc
+  have hhol :
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+        (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) :=
+    isTimeHolomorphicFlatPositiveTimeDiffWitness_k2ProbeWitness_local
+      (d := d) OS lgc φ hφ_compact hφ_neg
+  refine ⟨φ, hφ_real, hφ_int, hφ_compact, hφ_neg, μ, hμfin, hhol, hsupp, hμrepr, ?_⟩
+  intro h
+  letI : IsFiniteMeasure μ := hμfin
+  exact bochner_kernel_integral_eq_translatedProductShell_integral_local
+    (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμrepr h
+
+/-- On positive Euclidean-time differences, the real Euclidean section of the
+canonical `k = 2` probe witness is exactly the Laplace-Fourier kernel of the
+packaged Bochner measure. This is the direct boundary-value bridge from the
+semigroup witness to the reduced one-variable kernel on the honest positive-time
+difference cone. -/
+private theorem k2TimeParametricKernel_k2ProbeWitness_eq_laplaceFourier_of_pos_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (x : NPointDomain d 2)
+    (hx : x 0 0 < x 1 0) :
+    k2TimeParametricKernel (d := d)
+        (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x =
+      laplaceFourierKernel (d := d) μ (fun i => x 1 i - x 0 i) := by
+  let ξ : SpacetimeDim d := fun i => x 1 i - x 0 i
+  have hξ : 0 < ξ 0 := by
+    dsimp [ξ]
+    linarith
+  calc
+    k2TimeParametricKernel (d := d)
+        (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x
+      = twoPointSpatialWitness_local (d := d) OS lgc
+          φ (reflectedSchwartzSpacetime φ)
+          (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+            (d := d) φ hφ_compact hφ_neg)
+          (onePointToFin1_tsupport_orderedPositiveTime_local
+            (d := d) (reflectedSchwartzSpacetime φ)
+            (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg))
+          (ξ 0) (fun i => ξ i.succ) := by
+            simpa [ξ] using
+              (k2TimeParametricKernel_k2ProbeWitness_eq_twoPointSpatialWitness_realSection_local
+                (d := d) OS lgc φ hφ_compact hφ_neg x)
+    _ = laplaceFourierKernel (d := d) μ ξ := by
+          exact twoPointSpatialWitness_eq_laplaceFourierKernel_of_pos_local
+            (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμ_repr ξ hξ
+    _ = laplaceFourierKernel (d := d) μ (fun i => x 1 i - x 0 i) := by
+          rfl
+
+/-- The canonical probe witness reduces the full two-point difference-shell
+pairing to the reduced one-variable Laplace-Fourier pairing on the positive-time
+difference cone. This is the exact bridge needed before the final OS-II
+boundary-value identification step. -/
+private theorem integral_k2ProbeWitness_mul_differenceLift_eq_reduced_pairing_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ∫ x : NPointDomain d 2,
+      k2TimeParametricKernel (d := d)
+          (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x *
+        twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ := by
+  calc
+    ∫ x : NPointDomain d 2,
+        k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x *
+          twoPointDifferenceLift χ (h : SchwartzSpacetime d) x
+      =
+        ∫ x : NPointDomain d 2,
+          OSReconstruction.twoPointDifferenceKernel (d := d)
+            (laplaceFourierKernel (d := d) μ) x *
+            twoPointDifferenceLift χ (h : SchwartzSpacetime d) x := by
+              refine integral_congr_ae ?_
+              filter_upwards with x
+              by_cases hx0 : (h : SchwartzSpacetime d) (x 1 - x 0) = 0
+              · simp [twoPointDifferenceLift_apply, hx0]
+              · have hx_mem :
+                    x 1 - x 0 ∈ tsupport ((h : SchwartzSpacetime d) : SpacetimeDim d → ℂ) := by
+                      exact subset_tsupport _
+                        (Function.mem_support.mpr hx0)
+                have hx_pos : 0 < (x 1 - x 0) 0 := h.property.1 hx_mem
+                have hx_pos' : 0 < x 1 0 - x 0 0 := by
+                  simpa using hx_pos
+                have hx_time : x 0 0 < x 1 0 := by
+                  exact sub_pos.mp hx_pos'
+                have hdiff : (fun i => x 1 i - x 0 i) = x 1 - x 0 := by
+                  ext i
+                  simp
+                rw [k2TimeParametricKernel_k2ProbeWitness_eq_laplaceFourier_of_pos_local
+                  (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμ_repr x hx_time]
+                rw [OSReconstruction.twoPointDifferenceKernel, hdiff]
+    _ =
+        (∫ u : SpacetimeDim d, χ u) *
+          ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ := by
+            exact OSReconstruction.integral_twoPointDifferenceKernel_mul_differenceLift_factorizes
+              (d := d) (laplaceFourierKernel (d := d) μ) χ (h : SchwartzSpacetime d)
+
+/-- Combining the reduced pairing bridge with the packaged Bochner identity: the
+canonical probe witness already reproduces the weighted translated product-shell
+boundary functional on every positive-time compact-support difference shell. -/
+private theorem integral_k2ProbeWitness_mul_differenceLift_eq_translatedProductShell_pairing_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure μ]
+    (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (χ : SchwartzSpacetime d)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ∫ x : NPointDomain d 2,
+      k2TimeParametricKernel (d := d)
+          (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x *
+        twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d,
+          (if hξ : 0 < ξ 0 then
+            OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+              (twoPointProductLift φ
+                (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+          else 0) * ((h : SchwartzSpacetime d) ξ) := by
+  calc
+    ∫ x : NPointDomain d 2,
+        k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x *
+          twoPointDifferenceLift χ (h : SchwartzSpacetime d) x
+      =
+        (∫ u : SpacetimeDim d, χ u) *
+          ∫ ξ : SpacetimeDim d, laplaceFourierKernel (d := d) μ ξ * (h : SchwartzSpacetime d) ξ := by
+            exact integral_k2ProbeWitness_mul_differenceLift_eq_reduced_pairing_local
+              (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμ_repr χ h
+    _ =
+        (∫ u : SpacetimeDim d, χ u) *
+          ∫ ξ : SpacetimeDim d,
+            (if hξ : 0 < ξ 0 then
+              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                (twoPointProductLift φ
+                  (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+            else 0) * ((h : SchwartzSpacetime d) ξ) := by
+              rw [bochner_kernel_integral_eq_translatedProductShell_integral_local
+                (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμ_repr h]
+
+/-- Fixed-probe positive-time shell package.
+
+For any normalized negative-time probe `φ`, the canonical `k = 2` witness,
+its Bochner semigroup-group measure, the positive-time Laplace-Fourier
+identification, and the descended difference-shell pairing formula are all
+available before the VI.1 regularization step. This is the per-probe version of
+the later existential package, and is the right input for a shrinking
+approximate-identity sequence. -/
+private theorem exists_k2_positiveTime_shell_package_of_negative_probe_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_int : ∫ x : SpacetimeDim d, φ x = 1)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    ∃ (μ : Measure (ℝ × (Fin d → ℝ)))
+      (_hμfin : IsFiniteMeasure μ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+          (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) ∧
+      μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+      (∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+        osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+          t a =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ) ∧
+      (∀ (x : NPointDomain d 2), x 0 0 < x 1 0 →
+        k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x =
+          laplaceFourierKernel (d := d) μ (fun i => x 1 i - x 0 i)) ∧
+      (∀ (χ : SchwartzSpacetime d) (h : positiveTimeCompactSupportSubmodule d),
+        ∫ x : NPointDomain d 2,
+          k2TimeParametricKernel (d := d)
+              (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x *
+            twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+          (∫ u : SpacetimeDim d, χ u) *
+            ∫ ξ : SpacetimeDim d,
+              (if hξ : 0 < ξ 0 then
+                OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                  (twoPointProductLift φ
+                    (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+              else 0) * ((h : SchwartzSpacetime d) ξ)) := by
+  obtain ⟨μ, hμfin, hsupp, hμrepr⟩ :=
+    exists_bochner_measure_for_approx_identity
+      (d := d) OS lgc φ hφ_compact hφ_neg
+  have hhol :
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+        (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) :=
+    isTimeHolomorphicFlatPositiveTimeDiffWitness_k2ProbeWitness_local
+      (d := d) OS lgc φ hφ_compact hφ_neg
+  refine ⟨μ, hμfin, hhol, hsupp, hμrepr, ?_, ?_⟩
+  · intro x hx
+    exact k2TimeParametricKernel_k2ProbeWitness_eq_laplaceFourier_of_pos_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμrepr x hx
+  · intro χ h
+    letI : IsFiniteMeasure μ := hμfin
+    exact integral_k2ProbeWitness_mul_differenceLift_eq_translatedProductShell_pairing_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμrepr χ h
+
+/-- Sequence-level version of the previous package.
+
+For a shrinking normalized negative approximate identity `φ_seq`, each probe
+`φ_seq n` carries its own Bochner measure and positive-time shell package. This
+is the direct OS-side input to the remaining VI.1 regularization step. -/
+private theorem exists_k2_positiveTime_shell_package_of_negativeApproxIdentity_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0}) :
+    ∃ (μ_seq : ℕ → Measure (ℝ × (Fin d → ℝ))),
+      (∀ n, IsFiniteMeasure (μ_seq n)) ∧
+      (∀ n,
+        IsTimeHolomorphicFlatPositiveTimeDiffWitness
+          (k2ProbeWitness_local (d := d) OS lgc
+            (φ_seq n) (hφ_compact n) (hφ_neg n))) ∧
+      (∀ n, μ_seq n (Set.prod (Set.Iio 0) Set.univ) = 0) ∧
+      (∀ n (t : ℝ) (a : Fin d → ℝ), 0 < t →
+        osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+              (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n))⟧) : OSHilbertSpace OS))
+          t a =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂(μ_seq n)) ∧
+      (∀ n (x : NPointDomain d 2), x 0 0 < x 1 0 →
+        k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc
+              (φ_seq n) (hφ_compact n) (hφ_neg n)) x =
+          laplaceFourierKernel (d := d) (μ_seq n) (fun i => x 1 i - x 0 i)) ∧
+      (∀ n (χ : SchwartzSpacetime d) (h : positiveTimeCompactSupportSubmodule d),
+        ∫ x : NPointDomain d 2,
+          k2TimeParametricKernel (d := d)
+              (k2ProbeWitness_local (d := d) OS lgc
+                (φ_seq n) (hφ_compact n) (hφ_neg n)) x *
+            twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+          (∫ u : SpacetimeDim d, χ u) *
+            ∫ ξ : SpacetimeDim d,
+              (if hξ : 0 < ξ 0 then
+                OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                  (twoPointProductLift (φ_seq n)
+                    (SCV.translateSchwartz (-ξ)
+                      (reflectedSchwartzSpacetime (φ_seq n)))))
+              else 0) * ((h : SchwartzSpacetime d) ξ)) := by
+  have hpack :
+      ∀ n,
+        ∃ (μ : Measure (ℝ × (Fin d → ℝ)))
+          (_hμfin : IsFiniteMeasure μ),
+          IsTimeHolomorphicFlatPositiveTimeDiffWitness
+              (k2ProbeWitness_local (d := d) OS lgc
+                (φ_seq n) (hφ_compact n) (hφ_neg n)) ∧
+          μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+          (∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+            osSemigroupGroupMatrixElement (d := d) OS lgc
+              (((show OSPreHilbertSpace OS from
+                ⟦PositiveTimeBorchersSequence.single 1
+                  (SchwartzNPoint.osConj (d := d) (n := 1)
+                    (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+                  (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                    (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n))⟧) : OSHilbertSpace OS))
+              t a =
+                ∫ p : ℝ × (Fin d → ℝ),
+                  Complex.exp (-(↑(t * p.1) : ℂ)) *
+                    Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ) ∧
+          (∀ (x : NPointDomain d 2), x 0 0 < x 1 0 →
+            k2TimeParametricKernel (d := d)
+                (k2ProbeWitness_local (d := d) OS lgc
+                  (φ_seq n) (hφ_compact n) (hφ_neg n)) x =
+              laplaceFourierKernel (d := d) μ (fun i => x 1 i - x 0 i)) ∧
+          (∀ (χ : SchwartzSpacetime d) (h : positiveTimeCompactSupportSubmodule d),
+            ∫ x : NPointDomain d 2,
+              k2TimeParametricKernel (d := d)
+                  (k2ProbeWitness_local (d := d) OS lgc
+                    (φ_seq n) (hφ_compact n) (hφ_neg n)) x *
+                twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+              (∫ u : SpacetimeDim d, χ u) *
+                ∫ ξ : SpacetimeDim d,
+                  (if hξ : 0 < ξ 0 then
+                    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                      (twoPointProductLift (φ_seq n)
+                        (SCV.translateSchwartz (-ξ)
+                          (reflectedSchwartzSpacetime (φ_seq n)))))
+                  else 0) * ((h : SchwartzSpacetime d) ξ)) := by
+    intro n
+    exact exists_k2_positiveTime_shell_package_of_negative_probe_local
+      (d := d) OS lgc (φ_seq n) (hφ_real n) (hφ_int n) (hφ_compact n) (hφ_neg n)
+  choose μ_seq hμfin hhol hsupp hμrepr hkernel hpair using hpack
+  refine ⟨μ_seq, hμfin, hhol, hsupp, hμrepr, hkernel, hpair⟩
+
+/-- Consolidated positive-time shell package for the active `k = 2` witness.
+
+This theorem packages all already-proved OS-side data that live strictly before
+the VI.1 regularization step:
+- the analytic flattened witness `G`,
+- its Bochner semigroup-group representation,
+- its identification with the Laplace-Fourier kernel on positive-time
+  Euclidean differences,
+- and the resulting difference-shell pairing formula against
+  positive-time compact-support tests.
+
+The remaining `k = 2` frontier should use this package as input, rather than
+rebuilding these semigroup facts again. -/
+private theorem exists_k2_positiveTime_shell_package_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∃ (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+      (φ : SchwartzSpacetime d)
+      (hφ_real : ∀ x, (φ x).im = 0)
+      (hφ_int : ∫ x : SpacetimeDim d, φ x = 1)
+      (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+      (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+      (μ : Measure (ℝ × (Fin d → ℝ)))
+      (_hμfin : IsFiniteMeasure μ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness G ∧
+      μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+      (∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+        osSemigroupGroupMatrixElement (d := d) OS lgc
+          (((show OSPreHilbertSpace OS from
+            ⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+          t a =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ) ∧
+      (∀ (x : NPointDomain d 2), x 0 0 < x 1 0 →
+        k2TimeParametricKernel (d := d) G x =
+          laplaceFourierKernel (d := d) μ (fun i => x 1 i - x 0 i)) ∧
+      (∀ (χ : SchwartzSpacetime d) (h : positiveTimeCompactSupportSubmodule d),
+        ∫ x : NPointDomain d 2,
+          k2TimeParametricKernel (d := d) G x *
+            twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
+          (∫ u : SpacetimeDim d, χ u) *
+            ∫ ξ : SpacetimeDim d,
+              (if hξ : 0 < ξ 0 then
+                OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                  (twoPointProductLift φ
+                    (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+              else 0) * ((h : SchwartzSpacetime d) ξ)) := by
+  obtain ⟨φ, hφ_real, hφ_int, hφ_compact, hφ_neg, μ, hμfin, hhol, hsupp, hμrepr, hpair⟩ :=
+    exists_k2_probe_witness_and_pairing_package_local (d := d) OS lgc
+  refine ⟨k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg,
+    φ, hφ_real, hφ_int, hφ_compact, hφ_neg, μ, hμfin, hhol, hsupp, hμrepr, ?_, ?_⟩
+  · intro x hx
+    exact k2TimeParametricKernel_k2ProbeWitness_eq_laplaceFourier_of_pos_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hμrepr x hx
+  · intro χ h
+    letI : IsFiniteMeasure μ := hμfin
+    exact integral_k2ProbeWitness_mul_differenceLift_eq_translatedProductShell_pairing_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg μ hsupp hμrepr χ h
+
+/-- For a normalized center cutoff, the reduced positive-time Schwinger
+functional may be evaluated using any other normalized center test. -/
+private theorem schwingerDifferencePositiveCLM_eq_of_normalized_center_local
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (χ : SchwartzSpacetime d)
+    (hχ : ∫ x : SpacetimeDim d, χ x = 1)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointDifferenceLift χ (h : SchwartzSpacetime d))) =
+      (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
+        (d := d) OS χ₀) h := by
+  simpa [hχ, one_mul] using
+    (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM_eq_centerValue
+      (d := d) (OS := OS) χ₀ hχ₀ χ h)
 /-- Honest remaining OS-route `k = 2` frontier.
 
-The fixed-probe analytic witness and the normalized-probe Bochner measure are
-already available. The remaining content is the distributional assembly:
+The normalized-probe semigroup package is already available, but the final
+reproduction theorem cannot be proved by forcing a single fixed probe to
+reproduce every difference-shell test. The remaining content is the honest
+OS-II Section VI.1 regularization / boundary-value identification:
 
-1. use the semigroup witness and Bochner measure to construct the reduced
-   center-time descended functional on compact positive-support tests;
-2. identify that reduced functional with the corresponding descended
-   Schwinger functional on the same positive-support class;
-3. promote the reduced equality to the full flattened two-point functional via
-   `eq_of_eq_on_positive_compactSupport_centerTimeReduced` and
-   `map_productLift_and_differenceLift_of_eq_on_positive_compactSupport_centerTimeReduced`;
-4. conclude the Euclidean reproduction identity on the honest zero-diagonal
-   test space.
+1. regularize the reduced semigroup-side boundary object exactly as in
+   OS II VI.1, equations `(6.1)`-`(6.7)`, so that pointwise values are
+   controlled by averages of the analytic continuation;
+2. use the Hilbert-space / semigroup positivity package for the regularized
+   object to obtain the polynomial growth needed for the reduced boundary
+   functional on positive-time compact-support tests;
+3. identify that reduced boundary functional with the Schwinger two-point
+   reduced pairing on the positive-time edge;
+4. descend through the existing center/difference comparison machinery and
+   finally extend to all `ZeroDiagonalSchwartz d 2` by the already-proved
+   density theorem in `OSToWightmanK2Density`.
 
-The earlier generic fixed-probe kernel-bound and shell-agreement statements
-were too strong for the production route and have been removed. -/
+The earlier generic fixed-probe shell-agreement route was too strong for the
+production path and has been removed. Likewise, a direct nuclear-theorem
+detour would only repackage the same kernel-existence difficulty. The
+remaining theorem should therefore be attacked by the OS II VI.1 mean-value
+regularization route, not by reviving fixed-probe shell agreement and not by
+introducing a new functional-analytic shortcut. -/
+private theorem exists_k2_timeParametric_zeroDiagKernel_package_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    ∃ (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd),
+      AEStronglyMeasurable
+        (k2TimeParametricKernel (d := d)
+          (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg)) volume ∧
+      (∀ᵐ x : NPointDomain d 2 ∂volume,
+        ‖k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg) x‖ ≤
+          C_bd * (1 + ‖x‖) ^ N) := by
+  /-
+  Honest remaining VI.1 growth/measurability package:
+
+  * start from the canonical probe witness built from the normalized
+    negative-time test `φ`;
+  * use the OS II VI.1 mean-value / maximum-principle argument to obtain
+    polynomial bounds for its real Euclidean section
+    `k2TimeParametricKernel (k2ProbeWitness_local ...)`;
+  * extract the `AEStronglyMeasurable` / polynomial-growth data needed to form
+    the concrete zero-diagonal kernel CLM.
+  -/
+  sorry
+
+/-- Once the VI.1 kernel package is available for a fixed witness `G`, the only
+remaining comparison needed on the route-independent side is agreement on the
+flat-origin difference-shell generators. The final extension to all
+`ZeroDiagonalSchwartz d 2` is then delegated to the already-proved density
+theorem `zeroDiagKernelCLM_eq_schwinger_of_flatOrigin_differenceShell_agreement`.
+-/
+private theorem k2_timeParametric_flatOrigin_differenceShell_agreement_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_int : ∫ x : SpacetimeDim d, φ x = 1)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0})
+    (μ : Measure (ℝ × (Fin d → ℝ)))
+    [IsFiniteMeasure μ]
+    (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hμ_repr : ∀ (t : ℝ) (a : Fin d → ℝ), 0 < t →
+      osSemigroupGroupMatrixElement (d := d) OS
+        lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)⟧) : OSHilbertSpace OS))
+        t a =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hG_meas : AEStronglyMeasurable
+      (k2TimeParametricKernel (d := d)
+        (k2ProbeWitness_local (d := d)
+          OS lgc
+          φ hφ_compact hφ_neg)) volume)
+    (hG_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖k2TimeParametricKernel (d := d)
+          (k2ProbeWitness_local (d := d)
+            OS lgc
+            φ hφ_compact hφ_neg) x‖ ≤
+        C_bd * (1 + ‖x‖) ^ N) :
+    ∀ (χ h : SchwartzSpacetime d)
+      (hzero : ∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0),
+      OSReconstruction.twoPointZeroDiagonalKernelCLM
+          (d := d)
+          (k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d)
+              OS lgc
+              φ hφ_compact hφ_neg))
+          hG_meas C_bd N hC hG_bound
+          (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
+  /-
+  Honest remaining boundary-identification step:
+
+  * use the VI.1 regularized reduced-edge convergence theorem at the normalized
+    center cutoff `φ`;
+  * identify its reduced positive-time boundary functional with the Schwinger
+    reduced pairing;
+  * combine that with the reduced pairing identity for the canonical probe
+    difference kernel and its Bochner measure `μ`;
+  * then descend back to the flat-origin difference-shell generators.
+  -/
+  sorry
+
 private theorem exists_k2_timeParametric_distributional_assembly
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -2958,24 +4105,35 @@ private theorem exists_k2_timeParametric_distributional_assembly
       (∀ (f : ZeroDiagonalSchwartz d 2),
         OS.S 2 f = ∫ x : NPointDomain d 2,
           G (BHW.toDiffFlat 2 d (fun j => wickRotatePoint (x j))) * (f.1 x)) := by
-  /-
-  Honest remaining frontier:
-
-  * `exists_k2_timeParametric_semigroup_witness` provides the Step-V analytic
-    semigroup witness.
-  * `exists_k2_normalized_probe_translatedProductShell_pairing_local`
-    provides the normalized approximate-identity probe together with the exact
-    reduced translated-product-shell pairing identity coming from the finite
-    semigroup-group Bochner measure on `[0, ∞) × ℝ^d`.
-  * The remaining theorem is the reduced/distributional comparison:
-      - build the reduced descended functional from the semigroup-side data;
-      - identify it with the descended Schwinger functional on compact
-        positive-support tests;
-      - promote that equality back to the full two-point functional using
-        center-spatial and head-translation invariance;
-      - conclude the final Euclidean reproduction identity.
-  -/
-  sorry
+  obtain ⟨G, φ, hφ_real, hφ_int, hφ_compact, hφ_neg, μ, hμfin, hG_hol, hsupp, hμrepr,
+    hG_pos, hG_shell⟩ :=
+    exists_k2_positiveTime_shell_package_local (d := d) OS lgc
+  obtain ⟨C_bd, N, hC, hG_meas, hG_bound⟩ :=
+    exists_k2_timeParametric_zeroDiagKernel_package_local
+      (d := d) OS lgc φ hφ_real hφ_compact hφ_neg
+  have hCLM :
+      OSReconstruction.twoPointZeroDiagonalKernelCLM
+          (d := d)
+          (k2TimeParametricKernel (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg))
+          hG_meas C_bd N hC hG_bound =
+        OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2 := by
+    refine zeroDiagKernelCLM_eq_schwinger_of_flatOrigin_differenceShell_agreement
+      (d := d) OS
+      (k2TimeParametricKernel (d := d)
+        (k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg))
+      hG_meas C_bd N hC hG_bound ?_
+    exact k2_timeParametric_flatOrigin_differenceShell_agreement_local
+      (d := d) OS lgc φ hφ_real hφ_int hφ_compact hφ_neg μ hsupp hμrepr
+      C_bd N hC hG_meas hG_bound
+  refine ⟨k2ProbeWitness_local (d := d) OS lgc φ hφ_compact hφ_neg, ?_, ?_⟩
+  · exact isTimeHolomorphicFlatPositiveTimeDiffWitness_k2ProbeWitness_local
+      (d := d) OS lgc φ hφ_compact hφ_neg
+  intro f
+  have hEval := congrArg
+    (fun L : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ => L f) hCLM
+  simpa [OSReconstruction.twoPointZeroDiagonalKernelCLM_apply,
+    k2TimeParametricKernel] using hEval.symm
 
 /-- The `k = 2` time-parametric base step on the honest OS route.
 
