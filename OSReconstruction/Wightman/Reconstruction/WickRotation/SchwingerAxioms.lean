@@ -3411,41 +3411,74 @@ theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
   -- The remaining plumbing (namespace bridge ForwardTube ↔ ForwardConeAbs,
   -- BHW extension = spectrum_condition on forward tube, etc.) is sorry'd
   -- here but is purely definitional — no new mathematical content.
+  -- Key bridge: ForwardTube = TubeDomainSetPi (ForwardConeAbs)
+  have hFT_eq : ∀ p, ForwardTube d p =
+      TubeDomainSetPi (ForwardConeAbs d p) := fun p => by
+    rw [forwardTube_eq_imPreimage]; rfl
+  -- Package Wfn.W as CLMs (linear + continuous → CLM)
+  let mkCLM : ∀ p, SchwartzMap (NPointDomain d p) ℂ →L[ℂ] ℂ := fun p =>
+    { toLinearMap := {
+        toFun := Wfn.W p
+        map_add' := (Wfn.linear p).1
+        map_smul' := (Wfn.linear p).2 }
+      cont := Wfn.tempered p }
+  -- DifferentiableOn bridges
+  have hF_holo : DifferentiableOn ℂ (Wfn.spectrum_condition (n + m)).choose
+      (TubeDomainSetPi (ForwardConeAbs d (n + m))) :=
+    (hFT_eq (n + m)) ▸ (Wfn.spectrum_condition (n + m)).choose_spec.1
+  have hF₁_holo : DifferentiableOn ℂ (Wfn.spectrum_condition n).choose
+      (TubeDomainSetPi (ForwardConeAbs d n)) :=
+    (hFT_eq n) ▸ (Wfn.spectrum_condition n).choose_spec.1
+  have hF₂_holo : DifferentiableOn ℂ (Wfn.spectrum_condition m).choose
+      (TubeDomainSetPi (ForwardConeAbs d m)) :=
+    (hFT_eq m) ▸ (Wfn.spectrum_condition m).choose_spec.1
+  -- Tube membership bridges
+  -- Tube membership: the Euclidean config needs to be in ForwardTube (= TubeDomainSetPi).
+  -- hmem gives PermutedForwardTube membership (the π-permuted config is in ForwardTube).
+  -- For time-ordered Euclidean configs (which is the a.e. case), π = id and this is direct.
+  have hz_mem : Fin.append z_n z_m ∈
+      TubeDomainSetPi (ForwardConeAbs d (n + m)) := by
+    rw [← hFT_eq]; sorry
+  -- Apply the axiom
   have h := distributional_cluster_lifts_to_tube
     (ForwardConeAbs d (n + m))
     (forwardConeAbs_isOpen d (n + m))
     (forwardConeAbs_convex d (n + m))
     (fun y hy t ht => forwardConeAbs_smul d (n + m) t ht y hy)
     (forwardConeAbs_salient d (n + m))
-    -- F = W_analytic for (n+m) points
     (Wfn.spectrum_condition (n + m)).choose
-    (sorry : DifferentiableOn ℂ _ (TubeDomainSetPi _))
-    -- W = distributional BV of F
-    (sorry : SchwartzMap _ ℂ →L[ℂ] ℂ)
-    (sorry : ∀ η ∈ ForwardConeAbs d (n + m), _)
-    -- Sub-cones for F₁, F₂
-    (ForwardConeAbs d n)
-    (ForwardConeAbs d m)
-    -- F₁ = W_analytic for n points, F₂ for m points
-    (Wfn.spectrum_condition n).choose
-    (sorry : DifferentiableOn ℂ _ (TubeDomainSetPi _))
-    (sorry : SchwartzMap _ ℂ →L[ℂ] ℂ)
-    (sorry : ∀ η₁ ∈ ForwardConeAbs d n, _)
-    (Wfn.spectrum_condition m).choose
-    (sorry : DifferentiableOn ℂ _ (TubeDomainSetPi _))
-    (sorry : SchwartzMap _ ℂ →L[ℂ] ℂ)
-    (sorry : ∀ η₂ ∈ ForwardConeAbs d m, _)
-    -- Distributional cluster from R4 (Wfn.cluster)
-    -- The bridge: Wfn.cluster gives W(f ⊗ τ_a g) → W₁(f)·W₂(g),
-    -- which matches h_bv_cluster after constructing the appropriate SchwartzMaps.
+    hF_holo
+    -- W = Wfn.W (n+m) as CLM, with BV convergence from spectrum_condition
+    (mkCLM (n + m))
+    (by -- BV convergence: spectrum condition in ForwardConeAbs form
+      intro η hη φ
+      have hη' := (inForwardCone_iff_mem_forwardConeAbs η).2 hη
+      have := (Wfn.spectrum_condition (n + m)).choose_spec.2 φ η hη'
+      exact this)
+    (ForwardConeAbs d n) (ForwardConeAbs d m)
+    -- F₁ with W₁ = Wfn.W n
+    (Wfn.spectrum_condition n).choose hF₁_holo
+    (mkCLM n)
+    (by intro η₁ hη₁ φ₁
+        have := (Wfn.spectrum_condition n).choose_spec.2 φ₁ η₁
+          ((inForwardCone_iff_mem_forwardConeAbs η₁).2 hη₁)
+        exact this)
+    -- F₂ with W₂ = Wfn.W m
+    (Wfn.spectrum_condition m).choose hF₂_holo
+    (mkCLM m)
+    (by intro η₂ hη₂ φ₂
+        have := (Wfn.spectrum_condition m).choose_spec.2 φ₂ η₂
+          ((inForwardCone_iff_mem_forwardConeAbs η₂).2 hη₂)
+        exact this)
+    -- h_bv_cluster: bridge from Wfn.cluster
     (sorry : ∀ (φ : SchwartzMap _ ℂ) (ε : ℝ), ε > 0 → _)
-    z_n z_m
-    (sorry : Fin.append z_n z_m ∈ TubeDomainSetPi _)
+    z_n z_m hz_mem
     (sorry : z_n ∈ TubeDomainSetPi _)
     (sorry : z_m ∈ TubeDomainSetPi _)
     ε hε
-  -- Bridge the conclusion: the axiom gives cluster for the spectrum_condition
-  -- witness, but we need it for W_analytic_BHW.  On the forward tube, these agree.
+  -- Bridge the conclusion: axiom gives cluster for spectrum_condition.choose,
+  -- but we need it for W_analytic_BHW.  On the forward tube these agree
+  -- (by W_analytic_BHW property 2: ∀ z ∈ ForwardTube, F_ext z = W_analytic z).
   obtain ⟨R, hR, hcluster⟩ := h
   exact ⟨R, hR, fun a ha0 ha_large => by
     have hh := hcluster a ha0 ha_large
