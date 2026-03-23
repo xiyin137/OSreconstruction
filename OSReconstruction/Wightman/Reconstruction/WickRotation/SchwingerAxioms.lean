@@ -3391,8 +3391,9 @@ theorem append_realSpatialShift_mem_PET_of_permutedForwardTube {n m : ℕ}
 theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
     (z_n : Fin n → Fin (d + 1) → ℂ) (z_m : Fin m → Fin (d + 1) → ℂ)
     (hz_n : IsEuclidean z_n) (hz_m : IsEuclidean z_m)
-    (π : Equiv.Perm (Fin (n + m)))
-    (hmem : Fin.append z_n z_m ∈ PermutedForwardTube d (n + m) π)
+    (hmem : Fin.append z_n z_m ∈ ForwardTube d (n + m))
+    (hmem_n : z_n ∈ ForwardTube d n)
+    (hmem_m : z_m ∈ ForwardTube d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
       ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
@@ -3433,12 +3434,14 @@ theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
       (TubeDomainSetPi (ForwardConeAbs d m)) :=
     (hFT_eq m) ▸ (Wfn.spectrum_condition m).choose_spec.1
   -- Tube membership bridges
-  -- Tube membership: the Euclidean config needs to be in ForwardTube (= TubeDomainSetPi).
-  -- hmem gives PermutedForwardTube membership (the π-permuted config is in ForwardTube).
-  -- For time-ordered Euclidean configs (which is the a.e. case), π = id and this is direct.
+  -- Tube membership: direct from hmem + namespace bridge
   have hz_mem : Fin.append z_n z_m ∈
       TubeDomainSetPi (ForwardConeAbs d (n + m)) := by
-    rw [← hFT_eq]; sorry
+    rw [← hFT_eq]; exact hmem
+  have hz_n_mem : z_n ∈ TubeDomainSetPi (ForwardConeAbs d n) := by
+    rw [← hFT_eq]; exact hmem_n
+  have hz_m_mem : z_m ∈ TubeDomainSetPi (ForwardConeAbs d m) := by
+    rw [← hFT_eq]; exact hmem_m
   -- Apply the axiom
   have h := distributional_cluster_lifts_to_tube
     (ForwardConeAbs d (n + m))
@@ -3477,23 +3480,38 @@ theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
     -- The SchwartzMap.tensorProduct from SchwartzTensorProduct.lean provides
     -- the tensor product construction.
     (sorry : ∀ (φ : SchwartzMap _ ℂ) (ε : ℝ), ε > 0 → _)
-    z_n z_m hz_mem
-    -- z_n ∈ sub-tube: the n-block imaginary parts satisfy the forward cone.
-    -- Follows from hz_mem (joint membership) by projecting to the n-block.
-    (by show (fun k μ => (z_n k μ).im) ∈ ForwardConeAbs d n
-        have hj := hz_mem; rw [← hFT_eq] at hj; sorry)
-    -- z_m ∈ sub-tube: similarly for the m-block.
-    (by show (fun k μ => (z_m k μ).im) ∈ ForwardConeAbs d m
-        have hj := hz_mem; rw [← hFT_eq] at hj; sorry)
+    z_n z_m hz_mem hz_n_mem hz_m_mem
     ε hε
   -- Bridge the conclusion: axiom gives cluster for spectrum_condition.choose,
   -- but we need it for W_analytic_BHW.  On the forward tube these agree
   -- (by W_analytic_BHW property 2: ∀ z ∈ ForwardTube, F_ext z = W_analytic z).
   obtain ⟨R, hR, hcluster⟩ := h
-  exact ⟨R, hR, fun a ha0 ha_large => by
-    have hh := hcluster a ha0 ha_large
-    -- Bridge: W_analytic_BHW = spectrum_condition.choose on PET ⊇ ForwardTube
-    sorry⟩
+  refine ⟨R, hR, fun a ha0 ha_large => ?_⟩
+  have hh := hcluster a ha0 ha_large
+  -- Bridge: W_analytic_BHW = spectrum_condition.choose on ForwardTube ⊆ PET
+  -- Use W_analytic_BHW property 2: ∀ z ∈ ForwardTube, F_ext z = W_analytic z
+  -- All three evaluation points are in ForwardTube (hence in PET).
+  have hBHW_eq := (W_analytic_BHW Wfn (n + m)).property.2.1
+  have hBHW_n_eq := (W_analytic_BHW Wfn n).property.2.1
+  have hBHW_m_eq := (W_analytic_BHW Wfn m).property.2.1
+  -- The shifted joint config is in ForwardTube (real shift preserves Im)
+  have hmem_shift : Fin.append z_n (fun k μ => z_m k μ + ↑(a μ)) ∈
+      ForwardTube d (n + m) := by
+    -- Block shift by real a preserves ForwardTube (Im unchanged).
+    -- Express as pointwise real shift + show Fin.append equality.
+    have hpw := forwardTube_add_real_pointwise (Fin.append z_n z_m)
+      (fun k μ => if n ≤ k.val then a μ else 0) hmem
+    convert hpw using 1
+    ext k μ
+    simp only [Fin.append, Fin.addCases]
+    split_ifs with h1 h2
+    · omega
+    · simp [Complex.ofReal_zero]
+    · simp
+    · omega
+  -- Rewrite BHW values to spectrum_condition values (property 2: on ForwardTube)
+  rw [hBHW_eq _ hmem_shift, hBHW_n_eq _ hmem_n, hBHW_m_eq _ hmem_m]
+  exact hh
 
 /-- Cluster property of W_analytic at the integral level: when the (n+m)-point
     analytic Wightman function is integrated against a tensor product f ⊗ g_a
