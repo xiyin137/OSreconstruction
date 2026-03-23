@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.LaplaceSchwartz
+import OSReconstruction.Wightman.SchwartzTensorProduct
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
 /-!
@@ -169,25 +170,19 @@ axiom distributional_cluster_lifts_to_tube {n₁ n₂ d : ℕ}
     -- The boundary distribution W cluster-decomposes towards W₁ ⊗ W₂
     -- under purely spatial translation of the n₂-block.
     --
-    -- Stated at the boundary-value level using the CLMs W, W₁, W₂:
-    -- for all Schwartz φ on the joint space, translating the n₂-block
-    -- variables by a large purely spatial vector a makes
-    -- W(τ_a φ) converge to the factored form W₁(·) · W₂(·).
-    --
-    -- The SchwartzMap for the translated joint test function is passed
-    -- as a hypothesis (the caller constructs it from the tensor product).
+    -- Stated for tensor-product test functions f₁ ⊗ (τ_a f₂), matching
+    -- the Wightman cluster axiom R4 exactly.  Density of tensor products
+    -- in the joint Schwartz space ensures this is equivalent to the
+    -- general-φ version needed for the Poisson integral argument.
     (h_bv_cluster :
-      ∀ (φ : SchwartzMap (Fin (n₁ + n₂) → Fin (d + 1) → ℝ) ℂ)
+      ∀ (f₁ : SchwartzMap (Fin n₁ → Fin (d + 1) → ℝ) ℂ)
+        (f₂ : SchwartzMap (Fin n₂ → Fin (d + 1) → ℝ) ℂ)
         (ε : ℝ), ε > 0 →
         ∃ R : ℝ, R > 0 ∧ ∀ (a : Fin (d + 1) → ℝ), a 0 = 0 →
           (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
-          -- W applied to φ with the n₂-block translated by -a
-          ‖W ⟨fun x => φ (fun k μ => if (k : ℕ) < n₁ then x k μ
-                else x k μ + a μ), sorry, sorry⟩ -
-            -- factored form: W₁ applied to the n₁-marginal, times
-            -- W₂ applied to the n₂-marginal
-            W₁ ⟨fun x₁ => φ (Fin.append x₁ 0), sorry, sorry⟩ *
-            W₂ ⟨fun x₂ => φ (Fin.append 0 x₂), sorry, sorry⟩‖ < ε)
+          ∀ (f₂_a : SchwartzMap (Fin n₂ → Fin (d + 1) → ℝ) ℂ),
+            (∀ x, f₂_a x = f₂ (fun k μ => x k μ - a μ)) →
+            ‖W (f₁.tensorProduct f₂_a) - W₁ f₁ * W₂ f₂‖ < ε)
     -- Interior points
     (z₁ : Fin n₁ → Fin (d + 1) → ℂ)
     (z₂ : Fin n₂ → Fin (d + 1) → ℂ)

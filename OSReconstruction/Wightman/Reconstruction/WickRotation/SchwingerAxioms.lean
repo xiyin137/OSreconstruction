@@ -3473,13 +3473,14 @@ theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
         have := (Wfn.spectrum_condition m).choose_spec.2 φ₂ η₂
           ((inForwardCone_iff_mem_forwardConeAbs η₂).2 hη₂)
         exact this)
-    -- h_bv_cluster: bridge from Wfn.cluster.
-    -- R4 gives cluster for tensor-product test functions f₁ ⊗ τ_a f₂.
-    -- The axiom asks for cluster for ALL joint-space φ, which follows by
-    -- density of tensor products in the joint Schwartz space + continuity of W.
-    -- The SchwartzMap.tensorProduct from SchwartzTensorProduct.lean provides
-    -- the tensor product construction.
-    (sorry : ∀ (φ : SchwartzMap _ ℂ) (ε : ℝ), ε > 0 → _)
+    -- h_bv_cluster: directly from Wfn.cluster (R4).
+    -- The axiom's hypothesis now matches R4 exactly (tensor-product test functions).
+    (fun f₁ f₂ ε' hε' => by
+      obtain ⟨R', hR', hclust⟩ := Wfn.cluster n m f₁ f₂ ε' hε'
+      exact ⟨R', hR', fun a ha0 ha_large f₂_a hf₂_a => by
+        have := hclust a ha0 ha_large f₂_a hf₂_a
+        -- Bridge: mkCLM evaluates to Wfn.W
+        simp only [mkCLM] at this ⊢; exact this⟩)
     z_n z_m hz_mem hz_n_mem hz_m_mem
     ε hε
   -- Bridge the conclusion: axiom gives cluster for spectrum_condition.choose,
