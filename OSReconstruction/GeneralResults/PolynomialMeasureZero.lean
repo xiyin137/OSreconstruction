@@ -62,8 +62,7 @@ Both are zero sets of nonzero polynomials, hence have measure zero.
 - Bochnak-Coste-Roy, "Real Algebraic Geometry", Proposition 2.8.2
 -/
 
-import Mathlib.Algebra.MvPolynomial.Basic
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import OSReconstruction.GeneralResults.PolynomialMeasureZeroProof
 
 noncomputable section
 
@@ -90,9 +89,10 @@ Mathlib (as of 2026-03) and would be a natural contribution.
 **Downstream use:** `wickRotation_not_in_PET_null` in
 `ForwardTubeLorentz.lean` — a.e. Wick-rotated Euclidean configuration
 lies in the permuted extended tube. -/
-axiom MvPolynomial.volume_zeroSet_eq_zero
+theorem MvPolynomial.volume_zeroSet_eq_zero
     (n : ℕ) (p : MvPolynomial (Fin n) ℝ) (hp : p ≠ 0) :
-    volume {x : Fin n → ℝ | eval x p = 0} = 0
+    volume {x : Fin n → ℝ | eval x p = 0} = 0 :=
+  MvPolynomial.volume_zeroSet_eq_zero_proved n p hp
 
 /-! ## Corollaries -/
 
