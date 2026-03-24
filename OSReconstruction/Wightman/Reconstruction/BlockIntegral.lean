@@ -1,6 +1,7 @@
 import OSReconstruction.Wightman.Reconstruction.Core
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import Mathlib.MeasureTheory.Constructions.Pi
+import Mathlib.MeasureTheory.Integral.Pi
 
 /-!
 # Block Integration on Schwartz Space
@@ -105,6 +106,31 @@ private theorem integral_flatten_change_of_variablesBlock (n d : ℕ)
         ext k
         simp [flattenMeasurableEquivBlock_apply, flattenCLEquivRealBlock_apply]]
   exact ((flattenMeasurableEquivBlock_measurePreserving n d).integral_comp' g).symm
+
+/-- One-step Fubini / change-of-variables bridge for finite real blocks.
+
+This packages the standard identification
+`Fin (m + 1) → ℝ ≃ ℝ × (Fin m → ℝ)` at the level of Lebesgue integrals, in
+the concrete form needed when recursively evaluating `integrateHeadBlock`.
+
+The explicit product measure on the left is intentional: it keeps the theorem
+usable in recursive block-integration proofs without relying on reducibility of
+the ambient `volume` instance for product types. -/
+theorem integral_finSucc_cons_eq
+    {m : ℕ} (f : (Fin (m + 1) → ℝ) → ℂ) :
+    (∫ z : ℝ × (Fin m → ℝ), f (Fin.cons z.1 z.2)
+        ∂((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+          (MeasureTheory.Measure.pi fun _ : Fin m =>
+            (MeasureTheory.volume : MeasureTheory.Measure ℝ)))) =
+      (∫ x : Fin (m + 1) → ℝ, f x
+        ∂(MeasureTheory.Measure.pi fun _ : Fin (m + 1) =>
+          (MeasureTheory.volume : MeasureTheory.Measure ℝ))) := by
+  have h :=
+    ((MeasureTheory.measurePreserving_piFinSuccAbove
+        (fun _ => (MeasureTheory.volume : MeasureTheory.Measure ℝ)) 0).symm).integral_comp'
+      (g := f)
+  simpa [MeasurableEquiv.piFinSuccAbove_symm_apply, Fin.insertNthEquiv,
+    Fin.insertNth_zero, Fin.zero_succAbove, cast_eq, Fin.cons_zero] using h
 
 /-- Reindex a finite Euclidean block `Fin a -> R` along an equality `a = b`. -/
 abbrev castFinCLE (h : a = b) : (Fin a → ℝ) ≃L[ℝ] (Fin b → ℝ) :=
@@ -262,6 +288,138 @@ theorem integrateHeadBlock_sub :
       simp [integrateHeadBlock]
   | m + 1, n, F, G => by
       simp [integrateHeadBlock, integrateHeadBlock_sub, sliceIntegral_sub]
+
+/-- Slice integration preserves pointwise real-valuedness. -/
+theorem sliceIntegral_im_eq_zero_of_im_eq_zero {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (hF_real : ∀ x, (F x).im = 0) :
+    ∀ y, (sliceIntegral F y).im = 0 := by
+  intro y
+  calc
+    (sliceIntegral F y).im = ∫ t : ℝ, (F (Fin.cons t y)).im := by
+      simpa [sliceIntegral_apply, sliceIntegralRaw] using
+        (integral_im (integrable_sliceSection F y)).symm
+    _ = 0 := by
+      simp [hF_real]
+
+/-- Slice integration preserves pointwise nonnegativity of the real part. -/
+theorem sliceIntegral_re_nonneg_of_re_nonneg {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ)
+    (hF_nonneg : ∀ x, 0 ≤ (F x).re) :
+    ∀ y, 0 ≤ (sliceIntegral F y).re := by
+  intro y
+  calc
+    0 ≤ ∫ t : ℝ, (F (Fin.cons t y)).re := by
+      exact MeasureTheory.integral_nonneg fun t => hF_nonneg (Fin.cons t y)
+    _ = (sliceIntegral F y).re := by
+      simpa [sliceIntegral_apply, sliceIntegralRaw] using
+        integral_re (integrable_sliceSection F y)
+
+/-- Integrating out the head block preserves pointwise real-valuedness. -/
+theorem integrateHeadBlock_im_eq_zero_of_im_eq_zero :
+    {m n : ℕ} -> (F : SchwartzMap (Fin (m + n) → ℝ) ℂ) ->
+      (∀ x, (F x).im = 0) ->
+      ∀ y, (integrateHeadBlock (m := m) (n := n) F y).im = 0
+  | 0, n, F, hF_real, y => by
+      simp [integrateHeadBlock, reindexSchwartzFin_apply, hF_real]
+  | m + 1, n, F, hF_real, y => by
+      let F' : SchwartzMap (Fin ((m + n) + 1) → ℝ) ℂ :=
+        reindexSchwartzFin (Nat.succ_add m n) F
+      have hF'_real : ∀ x, (F' x).im = 0 := by
+        intro x
+        simp [F', reindexSchwartzFin_apply, hF_real]
+      simpa [integrateHeadBlock, F'] using
+        integrateHeadBlock_im_eq_zero_of_im_eq_zero
+          (m := m) (n := n) (F := sliceIntegral F')
+          (sliceIntegral_im_eq_zero_of_im_eq_zero F' hF'_real) y
+
+/-- Integrating out the head block preserves pointwise nonnegativity of the
+real part. -/
+theorem integrateHeadBlock_re_nonneg_of_re_nonneg :
+    {m n : ℕ} -> (F : SchwartzMap (Fin (m + n) → ℝ) ℂ) ->
+      (∀ x, 0 ≤ (F x).re) ->
+      ∀ y, 0 ≤ (integrateHeadBlock (m := m) (n := n) F y).re
+  | 0, n, F, hF_nonneg, y => by
+      simpa [integrateHeadBlock, reindexSchwartzFin_apply] using
+        hF_nonneg ((castFinCLE (Nat.zero_add n)).symm y)
+  | m + 1, n, F, hF_nonneg, y => by
+      let F' : SchwartzMap (Fin ((m + n) + 1) → ℝ) ℂ :=
+        reindexSchwartzFin (Nat.succ_add m n) F
+      have hF'_nonneg : ∀ x, 0 ≤ (F' x).re := by
+        intro x
+        simp [F', reindexSchwartzFin_apply, hF_nonneg]
+      simpa [integrateHeadBlock, F'] using
+        integrateHeadBlock_re_nonneg_of_re_nonneg
+          (m := m) (n := n) (F := sliceIntegral F')
+          (sliceIntegral_re_nonneg_of_re_nonneg F' hF'_nonneg) y
+
+/-- Reindexing a finite Euclidean block along an equality of index sets does
+not enlarge a closed-ball support bound. -/
+theorem reindexSchwartzFin_tsupport_subset_closedBall
+    (h : a = b)
+    (F : SchwartzMap (Fin a → ℝ) ℂ) {R : ℝ}
+    (hF : tsupport (F : (Fin a → ℝ) → ℂ) ⊆ Metric.closedBall (0 : Fin a → ℝ) R) :
+    tsupport ((reindexSchwartzFin h F : SchwartzMap (Fin b → ℝ) ℂ) :
+        (Fin b → ℝ) → ℂ) ⊆
+      Metric.closedBall (0 : Fin b → ℝ) R := by
+  subst h
+  simpa [reindexSchwartzFin] using hF
+
+/-- A slice integral vanishes outside any closed ball containing the support of
+the original Schwartz function. -/
+theorem sliceIntegral_eq_zero_of_outside_closedBall {n : ℕ}
+    (F : SchwartzMap (Fin (n + 1) → ℝ) ℂ) {R : ℝ}
+    (hF : tsupport (F : (Fin (n + 1) → ℝ) → ℂ) ⊆
+      Metric.closedBall (0 : Fin (n + 1) → ℝ) R)
+    {y : Fin n → ℝ}
+    (hy : y ∉ Metric.closedBall (0 : Fin n → ℝ) R) :
+    sliceIntegral F y = 0 := by
+  simpa [sliceIntegral_apply] using
+    sliceIntegralRaw_eq_zero_of_outside_closedBall (F := F) (hF := hF) hy
+
+/-- Integrating out the head block preserves any closed-ball support bound in
+the remaining tail variables. This is the support control needed when a
+two-point center/difference shell is descended to a one-variable test. -/
+theorem integrateHeadBlock_tsupport_subset_closedBall :
+    {m n : ℕ} -> (F : SchwartzMap (Fin (m + n) → ℝ) ℂ) -> {R : ℝ} ->
+      (tsupport (F : (Fin (m + n) → ℝ) → ℂ) ⊆
+        Metric.closedBall (0 : Fin (m + n) → ℝ) R) ->
+      tsupport ((integrateHeadBlock (m := m) (n := n) F :
+          SchwartzMap (Fin n → ℝ) ℂ) : (Fin n → ℝ) → ℂ) ⊆
+        Metric.closedBall (0 : Fin n → ℝ) R
+  | 0, n, F, R, hF => by
+      simpa [integrateHeadBlock] using
+        reindexSchwartzFin_tsupport_subset_closedBall (h := Nat.zero_add n) F hF
+  | m + 1, n, F, R, hF => by
+      let F' : SchwartzMap (Fin ((m + n) + 1) → ℝ) ℂ :=
+        reindexSchwartzFin (Nat.succ_add m n) F
+      have hF' :
+          tsupport (F' : (Fin ((m + n) + 1) → ℝ) → ℂ) ⊆
+            Metric.closedBall (0 : Fin ((m + n) + 1) → ℝ) R := by
+        simpa [F'] using
+          reindexSchwartzFin_tsupport_subset_closedBall
+            (h := Nat.succ_add m n) F hF
+      have hSlice :
+          tsupport ((sliceIntegral F' : SchwartzMap (Fin (m + n) → ℝ) ℂ) :
+              (Fin (m + n) → ℝ) → ℂ) ⊆
+            Metric.closedBall (0 : Fin (m + n) → ℝ) R := by
+        intro y hy
+        by_contra hyR
+        have hnot :
+            y ∉ tsupport ((sliceIntegral F' : SchwartzMap (Fin (m + n) → ℝ) ℂ) :
+              (Fin (m + n) → ℝ) → ℂ) := by
+          rw [notMem_tsupport_iff_eventuallyEq]
+          have hOpen :
+              IsOpen ((Metric.closedBall (0 : Fin (m + n) → ℝ) R)ᶜ) :=
+            Metric.isClosed_closedBall.isOpen_compl
+          refine Filter.mem_of_superset (hOpen.mem_nhds hyR) ?_
+          intro z hz
+          exact sliceIntegral_eq_zero_of_outside_closedBall
+            (F := F') (hF := hF') hz
+        exact hnot hy
+      simpa [integrateHeadBlock, F'] using
+        integrateHeadBlock_tsupport_subset_closedBall
+          (m := m) (n := n) (F := sliceIntegral F') hSlice
 
 /-- Iterated block integration preserves total Lebesgue integration. -/
 theorem integral_integrateHeadBlock :

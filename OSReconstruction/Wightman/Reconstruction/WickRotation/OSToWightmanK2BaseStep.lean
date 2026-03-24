@@ -114,7 +114,7 @@ theorem reflectedSchwartzSpacetime_tsupport_pos
   have hneg := hφ_neg hx'
   simpa [timeReflection] using hneg
 
-private theorem reflectedSchwartzSpacetime_tsupport_ball
+theorem reflectedSchwartzSpacetime_tsupport_ball
     (φ : SchwartzSpacetime d) {r : ℝ}
     (hφ_support : tsupport (φ : SpacetimeDim d → ℂ) ⊆ Metric.ball (0 : SpacetimeDim d) r) :
     tsupport (reflectedSchwartzSpacetime φ : SpacetimeDim d → ℂ) ⊆
@@ -141,6 +141,15 @@ private theorem reflectedSchwartzSpacetime_integral_eq
   simpa [reflectedSchwartzSpacetime_apply] using
     hmp.integral_comp'
       (φ : SpacetimeDim d → ℂ)
+
+/-- Public support-layer form of time-reflection invariance of the total
+integral of a Schwartz spacetime probe. The VI.1 file uses this when packaging
+the descended normalized center regularizer. -/
+theorem reflectedSchwartzSpacetime_integral_eq_local
+    (φ : SchwartzSpacetime d) :
+    ∫ x : SpacetimeDim d, reflectedSchwartzSpacetime φ x =
+      ∫ x : SpacetimeDim d, φ x := by
+  exact reflectedSchwartzSpacetime_integral_eq (d := d) φ
 
 private theorem onePointToFin1_tsupport_orderedPositiveTime_local
     (g : SchwartzSpacetime d)

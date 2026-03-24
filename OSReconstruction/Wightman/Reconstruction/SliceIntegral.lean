@@ -634,6 +634,37 @@ theorem contDiff_one_sliceIntegralRaw {n : ℕ}
     exact (hasFDerivAt_sliceIntegralRaw F y).differentiableAt
   · exact continuous_fderiv_sliceIntegralRaw F
 
+theorem sliceIntegralRaw_eq_zero_of_outside_closedBall {n : ℕ}
+    {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
+    (F : SchwartzMap (Fin (n + 1) → ℝ) V) {R : ℝ}
+    (hF : tsupport F ⊆ Metric.closedBall (0 : Fin (n + 1) → ℝ) R)
+    {y : Fin n → ℝ}
+    (hy : y ∉ Metric.closedBall (0 : Fin n → ℝ) R) :
+    sliceIntegralRaw F y = 0 := by
+  have hy_gt : R < ‖y‖ := by
+    simpa [Metric.mem_closedBall, dist_eq_norm, not_le] using hy
+  rw [sliceIntegralRaw]
+  refine integral_eq_zero_of_ae ?_
+  refine Filter.Eventually.of_forall ?_
+  intro x
+  have hnorm_le : ‖y‖ ≤ ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
+    calc
+      ‖y‖ = ‖tailCLM n (E := ℝ) (Fin.cons x y)‖ := by
+        simp [tailCLM_apply]
+      _ ≤ ‖tailCLM n (E := ℝ)‖ * ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
+        exact ContinuousLinearMap.le_opNorm _ _
+      _ ≤ 1 * ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
+        gcongr
+        exact tailCLM_opNorm_le (E := ℝ) n
+      _ = ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by ring
+  have hz_not_mem : (Fin.cons x y : Fin (n + 1) → ℝ) ∉ tsupport F := by
+    intro hz
+    have hball := hF hz
+    have hnorm_ball : ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ ≤ R := by
+      simpa [Metric.mem_closedBall, dist_eq_norm] using hball
+    exact not_lt_of_ge (le_trans hnorm_le hnorm_ball) hy_gt
+  simpa using image_eq_zero_of_notMem_tsupport hz_not_mem
+
 theorem hasCompactSupport_sliceIntegralRaw {n : ℕ}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
     (F : SchwartzMap (Fin (n + 1) → ℝ) V) (hF : HasCompactSupport F) :
@@ -642,31 +673,9 @@ theorem hasCompactSupport_sliceIntegralRaw {n : ℕ}
   refine HasCompactSupport.of_support_subset_isCompact (isCompact_closedBall (0 : Fin n → ℝ) R) ?_
   intro y hy
   by_contra hyR
-  have hy_gt : R < ‖y‖ := by
-    simpa [Metric.mem_closedBall, dist_eq_norm, not_le] using hyR
-  have hzero : sliceIntegralRaw F y = 0 := by
-    rw [sliceIntegralRaw]
-    refine integral_eq_zero_of_ae ?_
-    refine Filter.Eventually.of_forall ?_
-    intro x
-    have hnorm_le : ‖y‖ ≤ ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
-      calc
-        ‖y‖ = ‖tailCLM n (E := ℝ) (Fin.cons x y)‖ := by
-          simp [tailCLM_apply]
-        _ ≤ ‖tailCLM n (E := ℝ)‖ * ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
-          exact ContinuousLinearMap.le_opNorm _ _
-        _ ≤ 1 * ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by
-          gcongr
-          exact tailCLM_opNorm_le (E := ℝ) n
-        _ = ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ := by ring
-    have hz_not_mem : (Fin.cons x y : Fin (n + 1) → ℝ) ∉ tsupport F := by
-      intro hz
-      have hball := hR hz
-      have hnorm_ball : ‖(Fin.cons x y : Fin (n + 1) → ℝ)‖ ≤ R := by
-        simpa [Metric.mem_closedBall, dist_eq_norm] using hball
-      exact not_lt_of_ge (le_trans hnorm_le hnorm_ball) hy_gt
-    simpa using image_eq_zero_of_notMem_tsupport hz_not_mem
-  exact hy hzero
+  exact hy <|
+    sliceIntegralRaw_eq_zero_of_outside_closedBall
+      (F := F) (hF := hR) hyR
 
 theorem contDiff_nat_sliceIntegralRaw {n : ℕ}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]

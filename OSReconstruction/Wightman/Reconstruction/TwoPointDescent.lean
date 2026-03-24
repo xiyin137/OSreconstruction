@@ -405,6 +405,86 @@ theorem twoPointCenterShearDescent_translate_both
     simp [SCV.translateSchwartz_apply]
   simpa [htrans]
 
+/-- If the center cutoff `χ` and right factor `g` are supported in Euclidean
+balls of radii `r` and `s`, then the descended center-shear representative is
+supported in the closed ball of radius `r + s` in the difference variable. -/
+theorem twoPointCenterShearDescent_tsupport_subset_closedBall
+    (χ g : SchwartzSpacetime d) {r s : ℝ}
+    (hr : 0 ≤ r) (hs : 0 ≤ s)
+    (hχ : tsupport (χ : SpacetimeDim d → ℂ) ⊆ Metric.ball (0 : SpacetimeDim d) r)
+    (hg : tsupport (g : SpacetimeDim d → ℂ) ⊆ Metric.ball (0 : SpacetimeDim d) s) :
+    tsupport ((twoPointCenterShearDescent (d := d) χ g : SchwartzSpacetime d) :
+        SpacetimeDim d → ℂ) ⊆
+      Metric.closedBall (0 : SpacetimeDim d) (r + s) := by
+  let F : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ :=
+    reindexSchwartzFin (by ring)
+      (flattenSchwartzNPoint (d := d)
+        (twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)))
+  have hF :
+      tsupport (F : (Fin ((d + 1) + (d + 1)) → ℝ) → ℂ) ⊆
+        Metric.closedBall (0 : Fin ((d + 1) + (d + 1)) → ℝ) (r + s) := by
+    intro x hx
+    by_contra hxR
+    have hx_not :
+        x ∉ tsupport (F : (Fin ((d + 1) + (d + 1)) → ℝ) → ℂ) := by
+      rw [notMem_tsupport_iff_eventuallyEq]
+      have hOpen :
+          IsOpen
+            ((Metric.closedBall (0 : Fin ((d + 1) + (d + 1)) → ℝ) (r + s))ᶜ) :=
+        Metric.isClosed_closedBall.isOpen_compl
+      refine Filter.mem_of_superset (hOpen.mem_nhds hxR) ?_
+      intro y hy
+      by_contra hy0
+      let u : SpacetimeDim d := splitFirst (d + 1) (d + 1) y
+      let v : SpacetimeDim d := splitLast (d + 1) (d + 1) y
+      have hFy : F y ≠ 0 := hy0
+      have hF_apply : F y = χ u * g (u + v) := by
+        simpa [F, u, v] using
+          (reindex_flatten_twoPointProductShell_apply (d := d) χ g y)
+      have hprod :
+          χ u * g (u + v) ≠ 0 := by
+        rw [← hF_apply]
+        exact hFy
+      have hu0 : χ u ≠ 0 := (mul_ne_zero_iff.mp hprod).1
+      have huv0 : g (u + v) ≠ 0 := (mul_ne_zero_iff.mp hprod).2
+      have hu_mem : u ∈ tsupport (χ : SpacetimeDim d → ℂ) :=
+        subset_tsupport _ (Function.mem_support.mpr hu0)
+      have huv_mem : u + v ∈ tsupport (g : SpacetimeDim d → ℂ) :=
+        subset_tsupport _ (Function.mem_support.mpr huv0)
+      have hu_lt : ‖u‖ < r := by
+        simpa [Metric.mem_ball, dist_eq_norm] using hχ hu_mem
+      have huv_lt : ‖u + v‖ < s := by
+        simpa [Metric.mem_ball, dist_eq_norm] using hg huv_mem
+      have hv_le : ‖v‖ ≤ ‖u + v‖ + ‖u‖ := by
+        simpa [u, v, sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+          (norm_sub_le (u + v) u)
+      have hv_lt : ‖v‖ < r + s := by
+        have hsum : ‖u + v‖ + ‖u‖ < s + r := add_lt_add huv_lt hu_lt
+        have : ‖v‖ < s + r := lt_of_le_of_lt hv_le hsum
+        simpa [add_comm] using this
+      have hu_le : ‖u‖ ≤ r + s := by
+        linarith
+      have hcoord : ∀ i : Fin ((d + 1) + (d + 1)), ‖y i‖ ≤ r + s := by
+        intro i
+        refine Fin.addCases ?_ ?_ i
+        · intro j
+          have hj : ‖u j‖ ≤ r + s := (norm_le_pi_norm u j).trans hu_le
+          simpa [u, splitFirst] using hj
+        · intro j
+          have hj : ‖v j‖ ≤ r + s := (norm_le_pi_norm v j).trans hv_lt.le
+          simpa [v, splitLast] using hj
+      have hR_nonneg : 0 ≤ r + s := add_nonneg hr hs
+      have hy_norm : ‖y‖ ≤ r + s := by
+        exact (pi_norm_le_iff_of_nonneg hR_nonneg).2 hcoord
+      have hy_ball : y ∈ Metric.closedBall (0 : Fin ((d + 1) + (d + 1)) → ℝ) (r + s) := by
+        rw [Metric.mem_closedBall, dist_eq_norm]
+        simpa using hy_norm
+      exact hy hy_ball
+    exact hx_not hx
+  simpa [twoPointCenterShearDescent_eq, twoPointCenterDescent, F] using
+    integrateHeadBlock_tsupport_subset_closedBall
+      (m := d + 1) (n := d + 1) (F := F) hF
+
 private theorem integral_twoPointCenterDiffSchwartz
     (F : SchwartzNPoint d 2) :
     ∫ x : NPointDomain d 2, twoPointCenterDiffSchwartzCLM (d := d) F x =
@@ -512,5 +592,55 @@ theorem integral_twoPointCenterShearDescent_eq_mul
           exact integral_twoPointCenterDescent (d := d) (twoPointProductLift χ g)
     _ = (∫ u : SpacetimeDim d, χ u) * ∫ v : SpacetimeDim d, g v := by
           exact integral_twoPointProductLift_eq_mul (d := d) χ g
+
+/-- If both factors are pointwise real-valued, then their descended
+center-shear representative is pointwise real-valued as well. -/
+theorem twoPointCenterShearDescent_im_eq_zero_of_im_eq_zero
+    (χ g : SchwartzSpacetime d)
+    (hχ_real : ∀ x, (χ x).im = 0)
+    (hg_real : ∀ x, (g x).im = 0) :
+    ∀ ξ, (twoPointCenterShearDescent (d := d) χ g ξ).im = 0 := by
+  let Fcd : SchwartzNPoint d 2 :=
+    twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)
+  let Fflat : SchwartzMap (Fin (2 * (d + 1)) → ℝ) ℂ :=
+    flattenSchwartzNPoint (d := d) Fcd
+  let Fflat' : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ :=
+    reindexSchwartzFin (by ring) Fflat
+  have hFflat'_real : ∀ x, (Fflat' x).im = 0 := by
+    intro x
+    rw [reindex_flatten_twoPointProductShell_apply]
+    simp [Complex.mul_im, hχ_real, hg_real]
+  simpa [twoPointCenterShearDescent_eq, twoPointCenterDescent, Fcd, Fflat, Fflat'] using
+    integrateHeadBlock_im_eq_zero_of_im_eq_zero
+      (m := d + 1) (n := d + 1) (F := Fflat') hFflat'_real
+
+/-- If both factors are pointwise real-valued and have nonnegative real part,
+then their descended center-shear representative is pointwise nonnegative. -/
+theorem twoPointCenterShearDescent_re_nonneg_of_re_nonneg
+    (χ g : SchwartzSpacetime d)
+    (hχ_real : ∀ x, (χ x).im = 0)
+    (hg_real : ∀ x, (g x).im = 0)
+    (hχ_nonneg : ∀ x, 0 ≤ (χ x).re)
+    (hg_nonneg : ∀ x, 0 ≤ (g x).re) :
+    ∀ ξ, 0 ≤ (twoPointCenterShearDescent (d := d) χ g ξ).re := by
+  let Fcd : SchwartzNPoint d 2 :=
+    twoPointCenterDiffSchwartzCLM (d := d) (twoPointProductLift χ g)
+  let Fflat : SchwartzMap (Fin (2 * (d + 1)) → ℝ) ℂ :=
+    flattenSchwartzNPoint (d := d) Fcd
+  let Fflat' : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ :=
+    reindexSchwartzFin (by ring) Fflat
+  have hFflat'_nonneg : ∀ x, 0 ≤ (Fflat' x).re := by
+    intro x
+    rw [reindex_flatten_twoPointProductShell_apply]
+    have hχx_real := hχ_real (splitFirst (d + 1) (d + 1) x)
+    have hgx_real := hg_real (splitFirst (d + 1) (d + 1) x + splitLast (d + 1) (d + 1) x)
+    have hχx_nonneg := hχ_nonneg (splitFirst (d + 1) (d + 1) x)
+    have hgx_nonneg := hg_nonneg (splitFirst (d + 1) (d + 1) x + splitLast (d + 1) (d + 1) x)
+    rw [Complex.mul_re]
+    simp [hχx_real, hgx_real]
+    positivity
+  simpa [twoPointCenterShearDescent_eq, twoPointCenterDescent, Fcd, Fflat, Fflat'] using
+    integrateHeadBlock_re_nonneg_of_re_nonneg
+      (m := d + 1) (n := d + 1) (F := Fflat') hFflat'_nonneg
 
 end OSReconstruction
