@@ -81,9 +81,8 @@ This is proved by induction on `n`:
 - `n = 1`: nonzero polynomial has finitely many roots
 - `n + 1`: Fubini + IH on the leading coefficient's zero set
 
-The result extends to finite unions: a finite union of proper algebraic
-varieties in ℝⁿ has Lebesgue measure zero (by `measure_iUnion_null_iff`
-or `measure_biUnion_null`).
+The result extends to countable unions: a countable union of proper algebraic
+varieties in ℝⁿ has Lebesgue measure zero (by `measure_iUnion_null`).
 
 This is a standard result in real algebraic geometry. It is not yet in
 Mathlib (as of 2026-03) and would be a natural contribution.
@@ -97,25 +96,16 @@ axiom MvPolynomial.volume_zeroSet_eq_zero
 
 /-! ## Corollaries -/
 
-/-- **Finite union of polynomial zero sets has measure zero.**
-
-A finite collection of nonzero polynomials defines a set
-`⋃ᵢ {x | pᵢ(x) = 0}` of Lebesgue measure zero. -/
-theorem MvPolynomial.volume_finiteUnion_zeroSet_eq_zero
-    (n : ℕ) {ι : Type*} [Fintype ι]
+/-- **Countable union of polynomial zero sets has measure zero.** -/
+theorem MvPolynomial.volume_countableUnion_zeroSet_eq_zero
+    (n : ℕ) {ι : Type*} [Countable ι]
     (p : ι → MvPolynomial (Fin n) ℝ) (hp : ∀ i, p i ≠ 0) :
-    volume (⋃ i, {x : Fin n → ℝ | eval x (p i) = 0}) = 0 := by
-  apply measure_iUnion_null
-  intro i
-  exact volume_zeroSet_eq_zero n (p i) (hp i)
+    volume (⋃ i, {x : Fin n → ℝ | eval x (p i) = 0}) = 0 :=
+  measure_iUnion_null fun i ↦ volume_zeroSet_eq_zero n (p i) (hp i)
 
-/-- **The complement of a polynomial zero set has full measure.**
-
-If `p ≠ 0`, then `{x | p(x) ≠ 0}` has full measure, i.e., `p(x) = 0`
-holds only on a null set. Equivalently: for a.e. x, p(x) ≠ 0. -/
+/-- **The complement of a polynomial zero set has full measure.** -/
 theorem MvPolynomial.ae_ne_zero
     (n : ℕ) (p : MvPolynomial (Fin n) ℝ) (hp : p ≠ 0) :
     ∀ᵐ x : Fin n → ℝ ∂volume, eval x p ≠ 0 := by
-  rw [Filter.eventually_iff]
-  exact measure_mono_null (fun x hx => by simp at hx ⊢; exact hx)
-    (volume_zeroSet_eq_zero n p hp)
+  rw [ae_iff]
+  simpa using volume_zeroSet_eq_zero n p hp
