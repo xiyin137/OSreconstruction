@@ -1812,6 +1812,7 @@ private theorem continuous_translatedPositiveTimeCompactSupport_positiveTime_loc
   exact hbase.subtype_mk (fun ξp =>
     (translatedPositiveTimeCompactSupport_local (d := d) g hg_pos hg_compact ξp.1 ξp.2).property)
 
+
 /-- Consequently, the corresponding zero-diagonal product-shell orbit is
 continuous on the positive-time Euclidean domain. -/
 private theorem continuous_twoPointProductLiftPositiveZeroDiagOrbit_positiveTime_local

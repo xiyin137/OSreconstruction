@@ -8,9 +8,9 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Su
 /-!
 # OS to Wightman `k = 2` VI.1 Frontier
 
-This file now contains only the surviving OS II Section VI.1 `k = 2` frontier: the
-direct descended-center boundary-limit seam, the limit wrappers above it, and
-the final distributional assembly theorem.
+This file now contains only the surviving OS II Section VI.1 `k = 2` frontier:
+the common-measure/common-density spectral seam behind the probe limit, the
+limit wrappers above it, and the final distributional assembly theorem.
 
 All proved support infrastructure has been moved to `OSToWightmanK2VI1Support.lean` so that the hard `sorry`s stay on a small, readable theorem surface.
 -/
@@ -28,18 +28,19 @@ set_option linter.unusedVariables false
 
 variable {d : ℕ} [NeZero d]
 
-/-- Honest remaining OS II VI.1 boundary-limit theorem on the descended-center
-surface.
+/-- Honest remaining OS II VI.1 spectral factorization seam.
 
-This is the direct OS-route frontier: once the descended normalized centers are
-packaged, the only missing content is to compare the probe pairing against the
-common Schwinger target without routing through the common-measure/common-density
-detour. -/
-private theorem k2Probe_pairing_tendsto_schwingerDifferencePositive_of_descended_center_package_local
+For each fixed positive-time test `h`, the per-probe pairings are already known
+to admit per-`n` supported-symbol representations. The real remaining content
+is to factor those per-probe families through one common supported positive-
+energy control measure `ρ`, one bounded measurable density `s`, and the explicit
+reflected approximate-identity weights. Once that common factorization exists,
+the actual convergence is immediate from the proved weighted DCT layer in the
+support file. -/
+private theorem exists_supported_symbol_weighted_measure_representation_of_perProbe_family_local
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (χ₀ : SchwartzSpacetime d)
-    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
     (φ_seq : ℕ → SchwartzSpacetime d)
     (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
     (hφ_real : ∀ n x, (φ_seq n x).im = 0)
@@ -63,60 +64,36 @@ private theorem k2Probe_pairing_tendsto_schwingerDifferencePositive_of_descended
         t a =
           ∫ p : ℝ × (Fin d → ℝ),
             Complex.exp (-(↑(t * p.1) : ℂ)) *
-              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂(μ_seq n))
-    (hpair : ∀ n (χ : SchwartzSpacetime d) (h : positiveTimeCompactSupportSubmodule d),
-      ∫ x : NPointDomain d 2,
-        k2TimeParametricKernel (d := d)
-            (k2ProbeWitness_local (d := d) OS lgc
-              (φ_seq n) (hφ_compact n) (hφ_neg n)) x *
-          twoPointDifferenceLift χ (h : SchwartzSpacetime d) x =
-        (∫ u : SpacetimeDim d, χ u) *
-          ∫ ξ : SpacetimeDim d,
-            (if hξ : 0 < ξ 0 then
-              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
-                (twoPointProductLift (φ_seq n)
-                  (SCV.translateSchwartz (-ξ)
-                    (reflectedSchwartzSpacetime (φ_seq n)))))
-            else 0) * ((h : SchwartzSpacetime d) ξ)) :
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂(μ_seq n)) :
     ∀ h : positiveTimeCompactSupportSubmodule d,
-      (χ_seq : ℕ → SchwartzSpacetime d) →
-      (∀ n,
-        ∫ ξ : SpacetimeDim d,
-          k2DifferenceKernel_real_local (μ_seq n) ξ *
-            (h : SchwartzSpacetime d) ξ =
-        ∫ x : NPointDomain d 2,
-          k2TimeParametricKernel (d := d)
-              (k2ProbeWitness_local (d := d) OS lgc
-                (φ_seq n) (hφ_compact n) (hφ_neg n)) x *
-            twoPointDifferenceLift (χ_seq n) (h : SchwartzSpacetime d) x) →
-      (∀ n,
-        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
-            (twoPointDifferenceLift (χ_seq n) (h : SchwartzSpacetime d))) =
-          (OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
-            (d := d) OS χ₀) h) →
-        Filter.Tendsto
-        (fun n =>
-          ∫ x : NPointDomain d 2,
-            k2TimeParametricKernel (d := d)
-                (k2ProbeWitness_local (d := d) OS lgc
-                  (φ_seq n) (hφ_compact n) (hφ_neg n)) x *
-              twoPointDifferenceLift (χ_seq n) (h : SchwartzSpacetime d) x)
-        Filter.atTop
-        (𝓝 ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
-          (d := d) OS χ₀) h)) := by
+      ∃ (ρ : Measure (ℝ × (Fin d → ℝ))) (_hρfin : IsFiniteMeasure ρ)
+        (s : (ℝ × (Fin d → ℝ)) → ℂ) (C : ℝ)
+        (w_seq : ℕ → (ℝ × (Fin d → ℝ)) → ℝ),
+        ρ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+        AEStronglyMeasurable s ρ ∧
+        0 ≤ C ∧
+        (∀ᵐ p ∂ρ, ‖s p‖ ≤ C) ∧
+        (∀ n p, 0 ≤ w_seq n p) ∧
+        (∀ n p, w_seq n p ≤ 1) ∧
+        (∀ n, Measurable (w_seq n)) ∧
+        (∀ p, Filter.Tendsto (fun n => w_seq n p) Filter.atTop (𝓝 1)) ∧
+        (∀ n,
+          ∫ ξ : SpacetimeDim d,
+            k2DifferenceKernel_real_local (μ_seq n) ξ *
+              (h : SchwartzSpacetime d) ξ =
+            ∫ p, supported_positiveTimeCompactSupportLaplaceSymbol_local (d := d) h p *
+              s p * ↑(w_seq n p) ∂ρ) ∧
+        ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
+          (d := d) OS χ₀) h =
+            ∫ p, supported_positiveTimeCompactSupportLaplaceSymbol_local (d := d) h p *
+              s p ∂ρ) := by
   /-
-  Direct OS-route remaining VI.1 content:
+  Honest remaining spectral VI.1 content:
 
-  * `hpair_probe` identifies the reduced kernel pairing with the descended probe
-    pairing;
-  * `htarget_descended` identifies the same descended shell with the fixed
-    Schwinger target; and
-  * the support file already contains the descended-center quantitative
-    approximate-identity estimates.
-
-  What remains is the honest direct boundary-limit comparison on that
-  descended-center shell, without passing through a common spectral
-  factorization theorem.
+  the support file proves that each probe-dependent measure `μ_n` already has
+  its own supported-symbol family representation. What is still open is the
+  across-`n` factorization through one common `ρ` and one common density `s`
+  against the explicit reflected-probe weights.
   -/
   sorry
 
@@ -173,17 +150,23 @@ private theorem k2DifferenceKernel_real_pairing_tendsto_schwingerDifferencePosit
         (𝓝 ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
           (d := d) OS χ₀) h)) := by
   intro h
-  obtain ⟨χ_seq, hpair_probe, htarget_descended⟩ :=
-    exists_k2_VI1_descended_reduced_pairing_package_local
-      OS lgc χ₀ hχ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg
-      hφ_ball μ_seq _hμfin hsupp hμrepr hpair h
-  have hprobe :=
-    k2Probe_pairing_tendsto_schwingerDifferencePositive_of_descended_center_package_local
-      OS lgc χ₀ hχ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg
-      hφ_ball μ_seq _hμfin hsupp hμrepr hpair h χ_seq hpair_probe htarget_descended
-  refine Filter.Tendsto.congr' ?_ hprobe
-  filter_upwards with n
-  exact hpair_probe n |>.symm
+  obtain ⟨ρ, hρfin, s, C, w_seq, hsuppρ, hs_meas, hC, hs_bound,
+      hw_nonneg, hw_le, hw_meas, hw_tendsto, hrepr, htarget⟩ :=
+    exists_supported_symbol_weighted_measure_representation_of_perProbe_family_local
+      OS lgc χ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg hφ_ball
+      μ_seq _hμfin hsupp hμrepr h
+  letI : IsFiniteMeasure ρ := hρfin
+  exact
+    tendsto_to_schwingerDifferencePositive_of_supported_symbol_density_representation_local
+      (d := d) OS χ₀ h ρ
+      w_seq
+      hw_le hw_nonneg hw_meas hw_tendsto
+      s hs_meas C hC hs_bound
+      (fun n =>
+        ∫ ξ : SpacetimeDim d,
+          k2DifferenceKernel_real_local (μ_seq n) ξ *
+            (h : SchwartzSpacetime d) ξ)
+      hrepr htarget
 
 private theorem translatedProductShell_boundary_tendsto_schwingerDifferencePositive_of_negativeApproxIdentity_local
     (OS : OsterwalderSchraderAxioms d)

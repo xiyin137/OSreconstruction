@@ -404,7 +404,7 @@ theorem reflected_negativeApproxIdentity_fourierLaplace_weight_package_local
 /-- Explicit VI.1 spectral weight attached to the reflected negative
 approximate-identity probe `φ_seq n`. This is the concrete weight expected to
 appear in the missing fixed-measure representation theorem. -/
-private def reflected_negativeApproxIdentity_weight_local
+def reflected_negativeApproxIdentity_weight_local
     (φ_seq : ℕ → SchwartzSpacetime d)
     (n : ℕ) (p : ℝ × (Fin d → ℝ)) : ℝ :=
   ‖∫ x : SpacetimeDim d,
@@ -527,7 +527,7 @@ theorem measurable_reflected_negativeApproxIdentity_weight_nonnegSubtype_local
 negative-energy region we set the weight to `1`; this does not change any future
 integrals against supported spectral measures but gives a global `[0,1]`-valued
 approximate-identity sequence. -/
-private def reflected_negativeApproxIdentity_weight_global_local
+def reflected_negativeApproxIdentity_weight_global_local
     (φ_seq : ℕ → SchwartzSpacetime d)
     (n : ℕ) (p : ℝ × (Fin d → ℝ)) : ℝ :=
   if hp : 0 ≤ p.1 then
