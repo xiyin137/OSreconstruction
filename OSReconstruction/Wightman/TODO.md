@@ -138,7 +138,7 @@ Infrastructure (sorry-free):
 `WickRotation/SchwingerAxioms.lean` (4):
 - `schwinger_os_term_eq_wightman_term`
 - `bhw_euclidean_reality_ae`
-- `bhw_pointwise_cluster_euclidean`
+- `bhw_pointwise_cluster_forwardTube`
 - `W_analytic_cluster_integral`
 
 Current blocker sharpening (2026-03-10):

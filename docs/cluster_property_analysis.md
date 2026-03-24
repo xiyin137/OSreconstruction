@@ -10,7 +10,7 @@ property (E4) of the R→E direction: given Wightman functions satisfying R4
 
 ### Bug fix
 
-The statement of `bhw_pointwise_cluster_euclidean` in `SchwingerAxioms.lean`
+The statement of `bhw_pointwise_cluster_forwardTube` in `SchwingerAxioms.lean`
 had `↑(a μ) * Complex.I` (imaginary spatial shift) where `↑(a μ)` (real
 spatial shift) was needed.  The imaginary version:
 - Breaks PET membership for large |a| (imaginary spatial parts violate the
@@ -57,7 +57,7 @@ provides decay of the connected spectral component under spatial oscillation.
 - Comment accuracy ("compact subcones" → "compact subsets")
 - Elaborator robustness (explicit ℝ→ℂ casts)
 
-### Sorry-free proof of `bhw_pointwise_cluster_euclidean`
+### Sorry-free proof of `bhw_pointwise_cluster_forwardTube`
 
 The pointwise cluster theorem is now fully proved (modulo the axiom above).
 The proof wires together:
@@ -97,10 +97,10 @@ The proof wires together:
 `W_analytic_cluster_integral` says: the Schwinger integral
 ∫ W_BHW(n+m)(wick(x)) · (f ⊗ g_a)(x) dx clusters as |a| → ∞.
 
-The natural proof uses `bhw_pointwise_cluster_euclidean` + dominated
+The natural proof uses `bhw_pointwise_cluster_forwardTube` + dominated
 convergence.  However, there is a **time-ordering subtlety**:
 
-- `bhw_pointwise_cluster_euclidean` requires the combined config
+- `bhw_pointwise_cluster_forwardTube` requires the combined config
   `Fin.append(wick(x_n), wick(x_m))` to be in `ForwardTube d (n+m)`.
 - ForwardTube requires the times to be ordered: all n-block times before all
   m-block times.
@@ -125,7 +125,7 @@ No upstream proof depends on these cluster theorems.
 **Option 1: Strengthen the axiom to PET.**  State
 `distributional_cluster_lifts_to_tube` for the full PermutedExtendedTube
 rather than a single tube domain T(C).  The Poisson integral argument works
-on each permuted tube sector.  This would let `bhw_pointwise_cluster_euclidean`
+on each permuted tube sector.  This would let `bhw_pointwise_cluster_forwardTube`
 take PET membership as hypothesis, covering all time orderings.
 
 **Option 2: Sector decomposition.**  Split the integral by time-ordering
@@ -146,5 +146,5 @@ connecting `wickRotatedBoundaryPairing` to `Wfn.W`.
 | File | Changes |
 |------|---------|
 | `SCV/VladimirovTillmann.lean` | +2 axioms (`vladimirov_tillmann` pre-existing, `distributional_cluster_lifts_to_tube` new) |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | Bug fix + 4 new lemmas + sorry-free `bhw_pointwise_cluster_euclidean` |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | Bug fix + 4 new lemmas + sorry-free `bhw_pointwise_cluster_forwardTube` |
 | `README.md` | Documentation of fork changes |

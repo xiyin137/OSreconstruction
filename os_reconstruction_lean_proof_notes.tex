@@ -1796,7 +1796,7 @@ theorem schwingerExtension_os_term_eq_wightman_term
       Wfn.W (n + m) (f_n.conjTensorProduct f_m)
 
 -- Pointwise Euclidean cluster estimate for the BHW extension.
-theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : N)
+theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : N)
     (z_n : Fin n -> Fin (d + 1) -> C) (z_m : Fin m -> Fin (d + 1) -> C)
     (hz_n : IsEuclidean z_n) (hz_m : IsEuclidean z_m)
     (ε : R) (hε : ε > 0) :

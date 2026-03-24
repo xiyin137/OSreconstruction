@@ -180,7 +180,7 @@ All 5 sorrys require FL/PW theory or deep distribution theory:
 1. `polynomial_growth_forwardTube_full` — Vladimirov, requires FL repr
 2. `polynomial_growth_on_PET` — depends on (1)
 3. `schwinger_os_term_eq_wightman_term` — distributional BV identity; requires PW
-4. `bhw_pointwise_cluster_euclidean` — analytic continuation of cluster property
+4. `bhw_pointwise_cluster_forwardTube` — analytic continuation of cluster property
 5. `W_analytic_cluster_integral` — depends on (4), DCT application
 
 ---

@@ -1,6 +1,6 @@
 /-
   Proof Ideas: E4 Cluster Decomposition
-  (W_analytic_cluster_integral, bhw_pointwise_cluster_euclidean)
+  (W_analytic_cluster_integral, bhw_pointwise_cluster_forwardTube)
 
   Goal: Show that the constructed Schwinger functions satisfy the cluster property E4:
     lim_{|a|→∞} S_{n+m}(f ⊗ τ_a g) = S_n(f) · S_m(g)
@@ -12,7 +12,7 @@
   STRUCTURE OF THE PROOF:
 
   The proof has two layers:
-  1. `bhw_pointwise_cluster_euclidean`: pointwise factorization at Euclidean points
+  1. `bhw_pointwise_cluster_forwardTube`: pointwise factorization at Euclidean points
   2. `W_analytic_cluster_integral`: integration against Schwartz functions (uses DCT)
 
   LAYER 1: POINTWISE CLUSTER AT EUCLIDEAN POINTS
@@ -138,12 +138,12 @@
   and then to the BHW extension at Euclidean points.
 
   REVISED PLAN:
-  1. Prove `bhw_pointwise_cluster_euclidean` using:
+  1. Prove `bhw_pointwise_cluster_forwardTube` using:
      - Translation invariance of W_BHW (proved)
      - Polynomial growth bounds (from Fourier-Laplace)
      - Riemann-Lebesgue or direct spectral argument
   2. Prove `W_analytic_cluster_integral` using:
-     - `bhw_pointwise_cluster_euclidean` for pointwise limit
+     - `bhw_pointwise_cluster_forwardTube` for pointwise limit
      - Polynomial growth + Schwartz decay for domination
      - Dominated convergence theorem
 

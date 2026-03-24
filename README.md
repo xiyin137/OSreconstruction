@@ -8,13 +8,13 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 > **Detailed analysis:** [docs/cluster_property_analysis.md](docs/cluster_property_analysis.md)
 
-**Bug fix in `SchwingerAxioms.lean`:** The statement of `bhw_pointwise_cluster_euclidean`
+**Bug fix in `SchwingerAxioms.lean`:** The statement of `bhw_pointwise_cluster_forwardTube`
 had an imaginary spatial shift (`↑(a μ) * Complex.I`) where a real shift (`↑(a μ)`)
 was needed. The imaginary version breaks PET membership for large |a| and doesn't match
 the downstream consumer `W_analytic_cluster_integral`. Fixed to real shift, with
 `ForwardTube` hypotheses for the joint and sub-block configurations.
 
-**`bhw_pointwise_cluster_euclidean` is now sorry-free** (modulo the new axiom below).
+**`bhw_pointwise_cluster_forwardTube` is now sorry-free** (modulo the new axiom below).
 The proof:
 1. Packages `Wfn.W` as CLMs via linearity + continuity
 2. Bridges `ForwardTube` ↔ `TubeDomainSetPi (ForwardConeAbs)` via `forwardTube_eq_imPreimage`
@@ -52,7 +52,7 @@ R→E bridge theorem `wightman_to_os` only requires continuity, linearity, and
 `IsWickRotationPair`; it does not require E4.
 
 The remaining sorry has a genuine mathematical subtlety beyond plumbing:
-`bhw_pointwise_cluster_euclidean` gives pointwise cluster for configs in
+`bhw_pointwise_cluster_forwardTube` gives pointwise cluster for configs in
 `ForwardTube` (a specific time-ordering where the n-block comes before the
 m-block).  But the Schwinger integral `∫ W_BHW(wick(x)) * f(x) dx` runs
 over ALL x, including configs where m-block times precede n-block times.
