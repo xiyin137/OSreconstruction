@@ -3323,10 +3323,11 @@ private theorem permutedForwardTube_add_real_pointwise {p : ℕ}
     part.  The forward-cone condition on successive imaginary-part differences
     is therefore identical to that of the unshifted configuration.
 
-    **Note:** For PET members that arise through a nontrivial complex Lorentz
-    transformation Λ, the argument requires showing that real block shifts
-    can be absorbed into the Λ-orbit.  For Euclidean configurations (which
-    enter PET via Λ = 1), this is immediate. -/
+    **Scope limitation:** This theorem requires the stronger `PermutedForwardTube`
+    hypothesis (not general PET membership). For PET members that arise through
+    a nontrivial complex Lorentz transformation Λ, the argument would require
+    showing that real block shifts can be absorbed into the Λ-orbit, which is
+    not handled here. -/
 theorem append_realSpatialShift_mem_PET_of_permutedForwardTube {n m : ℕ}
     (z_n : Fin n → Fin (d + 1) → ℂ) (z_m : Fin m → Fin (d + 1) → ℂ)
     (a : SpacetimeDim d)
@@ -3364,31 +3365,28 @@ theorem append_realSpatialShift_mem_PET_of_permutedForwardTube {n m : ℕ}
   rw [← BHW_permutedForwardTube_eq] at hpft
   exact permutedForwardTube_subset_permutedExtendedTube_BHW π hpft
 
-/-- Pointwise cluster property of BHW extension at Euclidean points.
+/-- **Pointwise cluster property of BHW extension on the forward tube.**
 
-    For Euclidean points z_n, z_m whose concatenation lies in PET,
-    the BHW extension satisfies cluster decomposition: as the real spatial
-    separation between the two groups grows, the (n+m)-point function factorizes
-    into a product of the n-point and m-point values.
+    For points z_n, z_m in the forward tube whose concatenation is also in
+    the forward tube, the BHW extension satisfies cluster decomposition:
+    as the real spatial separation between the two groups grows, the (n+m)-point
+    function factorizes into a product of the n-point and m-point values.
 
     The shift is a **real** spatial translation: z_m k μ + ↑(a μ) with a 0 = 0.
     This keeps the configuration in the forward tube (imaginary parts unchanged).
 
-    **Proof:** By `schwartz_kernel_eval_tube` (axiom), the interior evaluation
-    of W_analytic on the forward tube equals the distributional boundary value W
-    applied to a Schwartz kernel: W_analytic(z) = W(K_z).  The kernel K_z
-    depends only on Im(z) (the tube-interior depth) and shifts in Re(z)
-    translate it: K_{z+a} = τ_a K_z for real a.
+    **Note:** The Euclidean hypotheses `_hz_n`, `_hz_m` are currently unused;
+    the theorem is proved purely from the ForwardTube hypotheses. They are
+    retained for downstream compatibility (the intended application is at
+    Euclidean configurations).
 
-    Therefore:
-      W_BHW(z_n, z_m + ↑a) = W(n+m)(K_{z_n} ⊗ τ_a K_{z_m})
-    and by R4 (Wfn.cluster):
-      W(n+m)(K_{z_n} ⊗ τ_a K_{z_m}) → W(n)(K_{z_n}) · W(m)(K_{z_m})
-                                       = W_BHW(z_n) · W_BHW(z_m)
+    **Proof:** Uses `distributional_cluster_lifts_to_tube` (axiom): the
+    distributional boundary-value cluster (R4) lifts to pointwise cluster
+    on the tube interior via the Poisson integral representation.
 
     Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §25;
     Streater-Wightman, §2.4 and Theorem 3-5 -/
-theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
+theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ)
     (z_n : Fin n → Fin (d + 1) → ℂ) (z_m : Fin m → Fin (d + 1) → ℂ)
     (_hz_n : IsEuclidean z_n) (_hz_m : IsEuclidean z_m)
     (hmem : Fin.append z_n z_m ∈ ForwardTube d (n + m))
@@ -3526,7 +3524,7 @@ theorem bhw_pointwise_cluster_euclidean (Wfn : WightmanFunctions d) (n m : ℕ)
     **Proof strategy:**  Change variables in the m-block integral to absorb the
     translation into the BHW argument.  The integrand then involves the
     truncated function H(x, a) = W_BHW(n+m)(z_n(x_n), z_m(x_m) + a) − product,
-    which goes to 0 pointwise by `bhw_pointwise_cluster_euclidean` (for a.e. x
+    which goes to 0 pointwise by `bhw_pointwise_cluster_forwardTube` (for a.e. x
     with distinct times).  Dominated convergence applies because W_BHW has
     polynomial growth uniform in the spatial shift, and f, g are Schwartz.
 
@@ -3558,21 +3556,25 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
             (∫ x : NPointDomain d m,
               (W_analytic_BHW Wfn m).val
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε := by
-  -- The proof uses bhw_pointwise_cluster_euclidean + dominated convergence.
-  -- Apply R4 directly via bhw_pointwise_cluster_euclidean at the integral level.
+  -- Strategy: bhw_pointwise_cluster_forwardTube + dominated convergence.
   --
-  -- Key steps (all standard measure theory, no new mathematical content):
-  -- (a) For a.e. x with time-ordered distinct times, the Wick-rotated config
-  --     is in ForwardTube, so bhw_pointwise_cluster_euclidean applies pointwise.
-  -- (b) The integrand |W_BHW(wick(x))| * |f(x_n)| * |g(x_m)| is dominated by
-  --     C(1+‖x‖)^N / infDist^q · |f| · |g| (from HasForwardTubeGrowth),
-  --     which is integrable (Schwartz decay absorbs polynomial growth +
-  --     coincidence singularity). The bound is independent of a.
+  -- Key steps:
+  -- (a) For a.e. x, the Wick-rotated config is in ForwardTube
+  --     (needs `wickRotation_not_in_PET_null`, sorry'd in ForwardTubeLorentz.lean).
+  --     Note: bhw_pointwise_cluster_forwardTube requires ForwardTube hypotheses,
+  --     not just PET membership — so the a.e. set must be refined to time-ordered
+  --     configurations where the specific (identity) permutation works.
+  -- (b) The integrand is dominated by C(1+‖x‖)^N / infDist^q · |f| · |g|
+  --     (from HasForwardTubeGrowth), independent of a.
   -- (c) Apply tendsto_integral_of_dominated_convergence.
+  -- (d) Factor the integral over Fin(n+m) into n-block × m-block products.
   --
-  -- Blocked by: wickRotation_not_in_PET_null (a.e. ForwardTube membership,
-  -- itself sorry'd in ForwardTubeLorentz.lean) and the Fubini decomposition
-  -- of Fin(n+m)-indexed integrals into n-block × m-block products.
+  -- Blocked by:
+  -- (1) wickRotation_not_in_PET_null (a.e. ForwardTube membership;
+  --     sorry in ForwardTubeLorentz.lean — algebraic measure-zero step is
+  --     NOW PROVED in GeneralResults/PolynomialMeasureZeroProof.lean,
+  --     remaining gap is the Jost characterization)
+  -- (2) Fubini decomposition of Fin(n+m)-indexed integrals
   sorry
 
 /-- The Schwinger functions satisfy clustering (E4).
