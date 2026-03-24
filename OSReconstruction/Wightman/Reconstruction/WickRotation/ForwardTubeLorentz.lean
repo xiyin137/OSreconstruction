@@ -929,8 +929,9 @@ theorem lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
     or collinear point configurations). Each such subvariety has codimension >= 1
     in ℝ^{n(d+1)}, hence Lebesgue measure zero (by induction on dimension + Fubini).
 
-    Blocked by: (1) Jost characterization of PET membership (`swap_jost_set_exists`),
-    and (2) Mathlib's algebraic-subvariety-measure-zero pipeline (not yet available).
+    Blocked by: (1) Jost characterization of PET membership (`swap_jost_set_exists`).
+    (2) The algebraic-subvariety-measure-zero step is NOW PROVED:
+    `MvPolynomial.volume_zeroSet_eq_zero` in `GeneralResults/PolynomialMeasureZeroProof.lean`.
 
     Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
     Streater-Wightman, Theorem 2-12 -/
