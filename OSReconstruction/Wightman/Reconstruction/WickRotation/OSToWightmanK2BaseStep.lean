@@ -214,6 +214,18 @@ private theorem osConj_onePointToFin1_eq_onePoint_reflected_of_real
   simpa [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
     reflectedSchwartzSpacetime_apply, timeReflectionN] using hstar
 
+/-- Public wrapper for the real-reflection one-point identity. For a real-valued
+one-point spacetime test, `osConj` agrees with time reflection on the one-point
+Schwartz tensor. -/
+theorem osConj_onePointToFin1_eq_onePoint_reflected_of_real_local
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0) :
+    SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) =
+      (onePointToFin1CLM d (reflectedSchwartzSpacetime φ) : SchwartzNPoint d 1) :=
+  osConj_onePointToFin1_eq_onePoint_reflected_of_real
+    (d := d) φ hφ_real
+
 /-- A sequence of nonnegative normalized positive-time Schwartz bumps with
 compact support shrinking to the origin. -/
 theorem exists_approx_identity_sequence :
@@ -578,8 +590,12 @@ private theorem reflected_negativeApproxIdentity_translate_tendsto_self_local
 
 /-- Pointwise form of the previous regularization lemma on the honest positive-
 time compact-support test space. The reflected probes act by convolution and
-recover the original test pointwise. -/
-private theorem positiveTimeCompactSupportConvolution_reflected_negativeApproxIdentity_apply_tendsto_self_local
+recover the original test pointwise.
+
+This is intentionally public within the Wick-rotation route because later VI.1
+arguments may need the direct smoothing statement without reopening the raw
+Schwartz approximate-identity proof. -/
+theorem positiveTimeCompactSupportConvolution_reflected_negativeApproxIdentity_apply_tendsto_self_local
     (φ_seq : ℕ → SchwartzSpacetime d)
     (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
     (hφ_real : ∀ n x, (φ_seq n x).im = 0)
@@ -746,6 +762,30 @@ private theorem mk_single_osConj_onePoint_eq_mk_single_reflected_of_real
       hφ_real]
   · simp [PositiveTimeBorchersSequence.single_toBorchersSequence,
       BorchersSequence.single, hn]
+
+/-- Public wrapper for the quotient-level identification of a real negative-time
+probe with its reflected positive-time one-point vector. -/
+theorem mk_single_osConj_onePoint_eq_mk_single_reflected_of_real_local
+    (OS : OsterwalderSchraderAxioms d)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | x 0 < 0}) :
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local φ hφ_compact hφ_neg
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_pos :=
+      onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+    (⟦PositiveTimeBorchersSequence.single 1
+        (SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+        hφ_pos⟧ : OSPreHilbertSpace OS) =
+      (⟦PositiveTimeBorchersSequence.single 1
+          (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+          hψ_pos⟧ : OSPreHilbertSpace OS) :=
+  mk_single_osConj_onePoint_eq_mk_single_reflected_of_real
+    (d := d) OS φ hφ_real hφ_compact hφ_neg
 
 private theorem onePoint_osConjTensorProduct_apply_local
     (χ h : SchwartzSpacetime d) (y : NPointDomain d 2) :
@@ -2060,6 +2100,56 @@ private theorem integral_translatedProductShellSchwinger_weight_eq_inner_bochner
                   (positiveTimeOnePointVector_local (d := d) OS ⟨g, ⟨hg_pos, hg_compact⟩⟩)))) := by
             exact hboch.symm
 
+/-- Public OS-Hilbert orbit formula for the reflected-probe translated
+product-shell boundary pairing.
+
+This exposes the direct VI.1 route before any spectral factorization: the same
+boundary functional can be read as an inner product against a Bochner-integrated
+two-step OS orbit built from the reflected probe. -/
+theorem integral_translatedProductShell_boundary_eq_inner_bochnerIntegral_reflected_orbit_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (h : positiveTimeCompactSupportSubmodule d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    let xφ : OSHilbertSpace OS :=
+      (((show OSPreHilbertSpace OS from
+          (⟦PositiveTimeBorchersSequence.single 1
+              (SchwartzNPoint.osConj (d := d) (n := 1)
+                (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+              (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) φ hφ_compact hφ_neg)⟧)) : OSHilbertSpace OS))
+    let xψ : OSHilbertSpace OS :=
+      (((show OSPreHilbertSpace OS from
+          (⟦PositiveTimeBorchersSequence.single 1
+              (onePointToFin1CLM d ψ : SchwartzNPoint d 1)
+              (onePointToFin1_tsupport_orderedPositiveTime_local
+                (d := d) ψ
+                (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg))⟧)) :
+          OSHilbertSpace OS))
+    let orbit := fun ξ : SpacetimeDim d =>
+      (osSpatialTranslateHilbert (d := d) OS (fun i => ξ (Fin.succ i)))
+        ((osTimeShiftHilbertComplex (d := d) OS lgc ((ξ 0 : ℝ) : ℂ))
+          xψ)
+    ∫ ξ : SpacetimeDim d,
+      (if hξ : 0 < ξ 0 then
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ)))
+      else 0) * ((h : SchwartzSpacetime d) ξ) =
+      @inner ℂ (OSHilbertSpace OS) _ xφ
+        (∫ ξ : SpacetimeDim d, ((h : SchwartzSpacetime d) ξ) • orbit ξ) := by
+  dsimp
+  simpa using
+    (integral_translatedProductShellSchwinger_weight_eq_inner_bochnerIntegral_orbit_local
+      (d := d) OS lgc φ (reflectedSchwartzSpacetime φ)
+      (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+        (d := d) φ hφ_compact hφ_neg)
+      (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+      (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+      h)
+
 /-- The shifted simple tensor attached to a reflected positive-time probe is
 exactly the translated two-point product shell. -/
 private theorem shifted_single_test_eq_twoPointProductLift_translate_local
@@ -2749,6 +2839,39 @@ private theorem osSemigroupGroupMatrixElement_eq_translatedProductShell_of_pos
                 simpa [ξs, a0, ψ_translated] using
                   shifted_single_test_eq_twoPointProductLift_translate_local
                     (d := d) φ ψ hφ_pos hψ_pos ξ hξ
+
+/-- Public wrapper for the real negative-probe matrix-element identity. The OS
+semigroup-group matrix element of the one-point probe generated by `φ` agrees
+pointwise with the translated two-point product shell. -/
+theorem osSemigroupGroupMatrixElement_eq_translatedProductShell_of_real_negative_probe_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    let hφ_pos :=
+      osConj_onePointToFin1_tsupport_orderedPositiveTime_local φ hφ_compact hφ_neg
+    let ψ := reflectedSchwartzSpacetime φ
+    let hψ_pos_time := reflectedSchwartzSpacetime_tsupport_pos φ hφ_neg
+    let hψ_pos := onePointToFin1_tsupport_orderedPositiveTime_local ψ hψ_pos_time
+    let hψ_compact := reflectedSchwartzSpacetime_hasCompactSupport φ hφ_compact
+    osSemigroupGroupMatrixElement (d := d) OS lgc
+        (((show OSPreHilbertSpace OS from
+          ⟦PositiveTimeBorchersSequence.single 1
+            (SchwartzNPoint.osConj (d := d) (n := 1)
+              (onePointToFin1CLM d φ : SchwartzNPoint d 1))
+            hφ_pos⟧) : OSHilbertSpace OS))
+        (ξ 0) (fun i => ξ (Fin.succ i)) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ))) :=
+  osSemigroupGroupMatrixElement_eq_translatedProductShell_of_pos
+    (d := d) OS lgc φ hφ_real hφ_compact hφ_neg
+    (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg)
+    ξ hξ
 
 /-- Combining spectral bridge step A with OS-route step B: pairing the
 Laplace-Fourier kernel of the Bochner measure against a positive-time compact

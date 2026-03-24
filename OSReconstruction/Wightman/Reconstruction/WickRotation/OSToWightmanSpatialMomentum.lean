@@ -2880,6 +2880,378 @@ theorem isSemigroupGroupPD_osSemigroupGroupMatrixElement_extension
 
 end semigroupGroupPDExtension
 
+/-- Bochner measure for the compact-support extension of the OS semigroup-group
+matrix kernel attached to a positive-time Borchers vector.
+
+This packages the exact input produced by the OS/Stone route before one fixes a
+particular probe: continuity at `t = 0`, semigroup-group positive-definiteness,
+and a uniform matrix-element bound are all discharged once for a compact-support
+positive-time vector. Later arguments can then specialize this theorem to the
+four diagonal polarization vectors needed by VI.1. -/
+theorem exists_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact : ∀ n,
+      HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))) :
+    let x : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+    ∃ (μ : Measure (ℝ × (Fin d → ℝ))),
+      IsFiniteMeasure μ ∧
+      μ (Set.prod (Set.Iio 0) Set.univ) = 0 ∧
+      ∀ (t : ℝ) (a : Fin d → ℝ), 0 ≤ t →
+        (if ht : 0 < t then
+          osSemigroupGroupMatrixElement (d := d) OS lgc x t a
+        else
+          @inner ℂ (OSHilbertSpace OS) _ x
+            ((osSpatialTranslateHilbert (d := d) OS a) x)) =
+          ∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i))
+            ∂μ := by
+  let x : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+  let Fext : ℝ → (Fin d → ℝ) → ℂ := fun t a =>
+    if ht : 0 < t then
+      osSemigroupGroupMatrixElement (d := d) OS lgc x t a
+    else
+      @inner ℂ (OSHilbertSpace OS) _ x
+        ((osSpatialTranslateHilbert (d := d) OS a) x)
+  have hcont : Continuous (fun p : ℝ × (Fin d → ℝ) => Fext p.1 p.2) := by
+    simpa [Fext, x] using
+      continuous_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+        (d := d) OS lgc F hF_compact
+  have hbdd : ∃ C : ℝ, ∀ t a, ‖Fext t a‖ ≤ C := by
+    refine ⟨2 * ‖x‖ ^ 2, ?_⟩
+    intro t a
+    have hU :
+        osSpatialTranslateHilbert (d := d) OS a ∈
+          unitary (OSHilbertSpace OS →L[ℂ] OSHilbertSpace OS) := by
+      constructor
+      · exact osSpatialTranslateHilbert_unitary_left (d := d) OS a
+      · exact osSpatialTranslateHilbert_unitary_right (d := d) OS a
+    have hU_norm :
+        ‖(osSpatialTranslateHilbert (d := d) OS a) x‖ = ‖x‖ := by
+      simpa using
+        (ContinuousLinearMap.norm_map_of_mem_unitary
+          (u := osSpatialTranslateHilbert (d := d) OS a) hU x)
+    by_cases ht : 0 < t
+    · calc
+        ‖Fext t a‖
+            = ‖osSemigroupGroupMatrixElement (d := d) OS lgc x t a‖ := by
+                simp [Fext, ht]
+        _ = ‖@inner ℂ (OSHilbertSpace OS) _ x
+              ((osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+                ((osSpatialTranslateHilbert (d := d) OS a) x))‖ := by
+              have hinner :
+                  osSemigroupGroupMatrixElement (d := d) OS lgc x t a =
+                    @inner ℂ (OSHilbertSpace OS) _ x
+                      ((osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+                        ((osSpatialTranslateHilbert (d := d) OS a) x)) := by
+                simpa [osSpatialTranslateHilbert_zero (d := d) OS] using
+                  (osSemigroupGroupMatrixElement_eq_inner_timeShift_right
+                    (d := d) OS lgc x (0 : Fin d → ℝ) a t ht)
+              rw [hinner]
+        _ ≤ ‖x‖ *
+              ‖(osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+                  ((osSpatialTranslateHilbert (d := d) OS a) x)‖ := by
+              exact norm_inner_le_norm _ _
+        _ ≤ ‖x‖ *
+              (‖osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ)‖ *
+                ‖(osSpatialTranslateHilbert (d := d) OS a) x‖) := by
+              gcongr
+              exact ContinuousLinearMap.le_opNorm
+                (osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+                ((osSpatialTranslateHilbert (d := d) OS a) x)
+        _ ≤ ‖x‖ * (2 * ‖(osSpatialTranslateHilbert (d := d) OS a) x‖) := by
+              gcongr
+              exact osTimeShiftHilbertComplex_norm_le (d := d) OS lgc (t : ℂ) (by simpa using ht)
+        _ = ‖x‖ * (2 * ‖x‖) := by rw [hU_norm]
+        _ = 2 * ‖x‖ ^ 2 := by ring
+    · calc
+        ‖Fext t a‖
+            = ‖@inner ℂ (OSHilbertSpace OS) _ x
+                ((osSpatialTranslateHilbert (d := d) OS a) x)‖ := by
+                  simp [Fext, ht]
+        _ ≤ ‖x‖ * ‖(osSpatialTranslateHilbert (d := d) OS a) x‖ := by
+              exact norm_inner_le_norm _ _
+        _ = ‖x‖ * ‖x‖ := by rw [hU_norm]
+        _ ≤ 2 * ‖x‖ ^ 2 := by
+              nlinarith [sq_nonneg ‖x‖]
+  have hpd : SCV.IsSemigroupGroupPD d Fext := by
+    simpa [Fext, x] using
+      isSemigroupGroupPD_osSemigroupGroupMatrixElement_extension
+        (d := d) OS lgc F
+  simpa [Fext, x] using
+    (SCV.semigroupGroup_bochner d Fext hcont hbdd hpd)
+
+/-- Polarized semigroup-group Bochner package for two compact-support
+positive-time vectors.
+
+This packages the four diagonal measures attached to `F + G`, `F - G`,
+`F + iG`, and `F - iG`. It is the reusable off-diagonal bridge needed when a
+later argument wants one fixed pair of compact-support OS vectors rather than a
+single diagonal probe. -/
+theorem exists_polarized_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (hF_compact : ∀ n,
+      HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)))
+    (hG_compact : ∀ n,
+      HasCompactSupport ((((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))) :
+    let xF : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+    let xG : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+    ∃ (ν₁ : Measure (ℝ × (Fin d → ℝ))) (_hν₁fin : IsFiniteMeasure ν₁)
+      (ν₂ : Measure (ℝ × (Fin d → ℝ))) (_hν₂fin : IsFiniteMeasure ν₂)
+      (ν₃ : Measure (ℝ × (Fin d → ℝ))) (_hν₃fin : IsFiniteMeasure ν₃)
+      (ν₄ : Measure (ℝ × (Fin d → ℝ))) (_hν₄fin : IsFiniteMeasure ν₄)
+      (_hsupp₁ : ν₁ (Set.prod (Set.Iio 0) Set.univ) = 0)
+      (_hsupp₂ : ν₂ (Set.prod (Set.Iio 0) Set.univ) = 0)
+      (_hsupp₃ : ν₃ (Set.prod (Set.Iio 0) Set.univ) = 0)
+      (_hsupp₄ : ν₄ (Set.prod (Set.Iio 0) Set.univ) = 0),
+      ∀ (t : ℝ) (a : Fin d → ℝ), 0 ≤ t →
+        (if ht : 0 < t then
+          @inner ℂ (OSHilbertSpace OS) _ xF
+            ((osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+              ((osSpatialTranslateHilbert (d := d) OS a) xG))
+        else
+          @inner ℂ (OSHilbertSpace OS) _ xF
+            ((osSpatialTranslateHilbert (d := d) OS a) xG)) =
+          (1 / 4 : ℂ) *
+            ((∫ p : ℝ × (Fin d → ℝ),
+                Complex.exp (-(↑(t * p.1) : ℂ)) *
+                  Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₁) -
+              (∫ p : ℝ × (Fin d → ℝ),
+                Complex.exp (-(↑(t * p.1) : ℂ)) *
+                  Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₂) -
+              Complex.I *
+                (∫ p : ℝ × (Fin d → ℝ),
+                  Complex.exp (-(↑(t * p.1) : ℂ)) *
+                    Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₃) +
+              Complex.I *
+                (∫ p : ℝ × (Fin d → ℝ),
+                  Complex.exp (-(↑(t * p.1) : ℂ)) *
+                    Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₄)) := by
+  let xF_pre : OSPreHilbertSpace OS := (show OSPreHilbertSpace OS from (⟦F⟧))
+  let xG_pre : OSPreHilbertSpace OS := (show OSPreHilbertSpace OS from (⟦G⟧))
+  let xF : OSHilbertSpace OS := ((xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+  let xG : OSHilbertSpace OS := ((xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+  let Fpp : PositiveTimeBorchersSequence d := F + G
+  let Fmm : PositiveTimeBorchersSequence d := F - G
+  let Fpi : PositiveTimeBorchersSequence d := F + Complex.I • G
+  let Fmi : PositiveTimeBorchersSequence d := F - Complex.I • G
+  have hFpp_compact :
+      ∀ n,
+        HasCompactSupport ((((Fpp : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) := by
+    intro n
+    simpa [Fpp, PositiveTimeBorchersSequence.add_toBorchersSequence, BorchersSequence.add_funcs]
+      using (hF_compact n).add (hG_compact n)
+  have hFmm_compact :
+      ∀ n,
+        HasCompactSupport ((((Fmm : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) := by
+    intro n
+    simpa [Fmm, PositiveTimeBorchersSequence.sub_toBorchersSequence, BorchersSequence.sub_funcs,
+      sub_eq_add_neg] using (hF_compact n).add (hG_compact n).neg
+  have hFpi_compact :
+      ∀ n,
+        HasCompactSupport ((((Fpi : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) := by
+    intro n
+    simpa [Fpi, PositiveTimeBorchersSequence.add_toBorchersSequence,
+      PositiveTimeBorchersSequence.smul_toBorchersSequence, BorchersSequence.add_funcs,
+      BorchersSequence.smul_funcs] using
+      (hF_compact n).add
+        (HasCompactSupport.smul_left
+          (f := fun _ : NPointDomain d n => (Complex.I : ℂ)) (hG_compact n))
+  have hFmi_compact :
+      ∀ n,
+        HasCompactSupport ((((Fmi : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) := by
+    intro n
+    simpa [Fmi, PositiveTimeBorchersSequence.sub_toBorchersSequence,
+      PositiveTimeBorchersSequence.smul_toBorchersSequence, BorchersSequence.sub_funcs,
+      BorchersSequence.smul_funcs, sub_eq_add_neg] using
+      (hF_compact n).add
+        ((HasCompactSupport.smul_left
+          (f := fun _ : NPointDomain d n => (Complex.I : ℂ)) (hG_compact n)).neg)
+  obtain ⟨ν₁, hν₁fin, hsupp₁, hrepr₁⟩ :=
+    exists_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+      (d := d) OS lgc Fpp hFpp_compact
+  obtain ⟨ν₂, hν₂fin, hsupp₂, hrepr₂⟩ :=
+    exists_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+      (d := d) OS lgc Fmm hFmm_compact
+  obtain ⟨ν₃, hν₃fin, hsupp₃, hrepr₃⟩ :=
+    exists_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+      (d := d) OS lgc Fpi hFpi_compact
+  obtain ⟨ν₄, hν₄fin, hsupp₄, hrepr₄⟩ :=
+    exists_measure_osSemigroupGroupMatrixElement_extension_of_isCompactSupport
+      (d := d) OS lgc Fmi hFmi_compact
+  refine ⟨ν₁, hν₁fin, ν₂, hν₂fin, ν₃, hν₃fin, ν₄, hν₄fin,
+    hsupp₁, hsupp₂, hsupp₃, hsupp₄, ?_⟩
+  let xpp : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦Fpp⟧)) : OSHilbertSpace OS))
+  let xmm : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦Fmm⟧)) : OSHilbertSpace OS))
+  let xpi : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦Fpi⟧)) : OSHilbertSpace OS))
+  let xmi : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦Fmi⟧)) : OSHilbertSpace OS))
+  have hxpp : xpp = xF + xG := by
+    have hcoe :
+        (((xF_pre + xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) = xF + xG := by
+      simpa [xF, xG, xF_pre, xG_pre] using
+        (UniformSpace.Completion.coe_add xF_pre xG_pre)
+    simpa [xpp, xF_pre, xG_pre, Fpp,
+      PositiveTimeBorchersSequence.add_toBorchersSequence] using hcoe
+  have hxmm : xmm = xF - xG := by
+    have hcoe :
+        (((xF_pre - xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) = xF - xG := by
+      simpa [xF, xG, xF_pre, xG_pre] using
+        (UniformSpace.Completion.coe_sub xF_pre xG_pre)
+    simpa [xmm, xF_pre, xG_pre, Fmm,
+      PositiveTimeBorchersSequence.sub_toBorchersSequence] using hcoe
+  have hxpi : xpi = xF + Complex.I • xG := by
+    have hsmul :
+        ((((Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))) =
+          Complex.I • xG := by
+      simpa [xG, xG_pre] using (UniformSpace.Completion.coe_smul Complex.I xG_pre)
+    have hcoe :
+        (((xF_pre + Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) =
+          xF + Complex.I • xG := by
+      calc
+        (((xF_pre + Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))
+            = xF + (((Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) := by
+                simpa [xF, xF_pre] using
+                  (UniformSpace.Completion.coe_add xF_pre (Complex.I • xG_pre))
+        _ = xF + Complex.I • xG := by rw [hsmul]
+    simpa [xpi, xF_pre, xG_pre, Fpi,
+      PositiveTimeBorchersSequence.add_toBorchersSequence,
+      PositiveTimeBorchersSequence.smul_toBorchersSequence] using hcoe
+  have hxmi : xmi = xF - Complex.I • xG := by
+    have hsmul :
+        ((((Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))) =
+          Complex.I • xG := by
+      simpa [xG, xG_pre] using (UniformSpace.Completion.coe_smul Complex.I xG_pre)
+    have hcoe :
+        (((xF_pre - Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) =
+          xF - Complex.I • xG := by
+      calc
+        (((xF_pre - Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))
+            = xF - (((Complex.I • xG_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) := by
+                simpa [xF, xF_pre] using
+                  (UniformSpace.Completion.coe_sub xF_pre (Complex.I • xG_pre))
+        _ = xF - Complex.I • xG := by rw [hsmul]
+    simpa [xmi, xF_pre, xG_pre, Fmi,
+      PositiveTimeBorchersSequence.sub_toBorchersSequence,
+      PositiveTimeBorchersSequence.smul_toBorchersSequence] using hcoe
+  let Aext : ℝ → (Fin d → ℝ) → OSHilbertSpace OS →L[ℂ] OSHilbertSpace OS :=
+    fun t a =>
+      if ht : 0 < t then
+        (osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ)).comp
+          (osSpatialTranslateHilbert (d := d) OS a)
+      else
+        osSpatialTranslateHilbert (d := d) OS a
+  have hdiag_of_repr :
+      ∀ {x : OSHilbertSpace OS} {μ : Measure (ℝ × (Fin d → ℝ))},
+        (∀ (t : ℝ) (a : Fin d → ℝ), 0 ≤ t →
+          (if ht : 0 < t then
+            osSemigroupGroupMatrixElement (d := d) OS lgc x t a
+          else
+            @inner ℂ (OSHilbertSpace OS) _ x
+              ((osSpatialTranslateHilbert (d := d) OS a) x)) =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ) →
+        ∀ (t : ℝ) (a : Fin d → ℝ), 0 ≤ t →
+          @inner ℂ (OSHilbertSpace OS) _ x ((Aext t a) x) =
+            ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ := by
+    intro x μ hrepr t a ht_nonneg
+    specialize hrepr t a ht_nonneg
+    by_cases ht : 0 < t
+    · calc
+        @inner ℂ (OSHilbertSpace OS) _ x ((Aext t a) x)
+            = @inner ℂ (OSHilbertSpace OS) _ x
+                ((osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+                  ((osSpatialTranslateHilbert (d := d) OS a) x)) := by
+                    simp [Aext, ht]
+        _ = osSemigroupGroupMatrixElement (d := d) OS lgc x t a := by
+              symm
+              simpa [osSpatialTranslateHilbert_zero (d := d) OS] using
+                (osSemigroupGroupMatrixElement_eq_inner_timeShift_right
+                  (d := d) OS lgc x (0 : Fin d → ℝ) a t ht)
+        _ = ∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ := by
+              simpa [ht] using hrepr
+    · simpa [Aext, ht] using hrepr
+  intro t a ht_nonneg
+  have hdiag₁ := hdiag_of_repr (x := xpp) (μ := ν₁) hrepr₁ t a ht_nonneg
+  have hdiag₂ := hdiag_of_repr (x := xmm) (μ := ν₂) hrepr₂ t a ht_nonneg
+  have hdiag₃ := hdiag_of_repr (x := xpi) (μ := ν₃) hrepr₃ t a ht_nonneg
+  have hdiag₄ := hdiag_of_repr (x := xmi) (μ := ν₄) hrepr₄ t a ht_nonneg
+  have hpol :
+      @inner ℂ (OSHilbertSpace OS) _ xF ((Aext t a) xG) =
+        (1 / 4 : ℂ) *
+          (@inner ℂ (OSHilbertSpace OS) _ (xF + xG) ((Aext t a) (xF + xG)) -
+            @inner ℂ (OSHilbertSpace OS) _ (xF - xG) ((Aext t a) (xF - xG)) -
+            Complex.I *
+              @inner ℂ (OSHilbertSpace OS) _ (xF + Complex.I • xG)
+                ((Aext t a) (xF + Complex.I • xG)) +
+            Complex.I *
+              @inner ℂ (OSHilbertSpace OS) _ (xF - Complex.I • xG)
+                ((Aext t a) (xF - Complex.I • xG))) := by
+    exact (inner_polarization_clm (Aext t a) xF xG).symm
+  calc
+    (if ht : 0 < t then
+      @inner ℂ (OSHilbertSpace OS) _ xF
+        ((osTimeShiftHilbertComplex (d := d) OS lgc (t : ℂ))
+          ((osSpatialTranslateHilbert (d := d) OS a) xG))
+    else
+      @inner ℂ (OSHilbertSpace OS) _ xF
+        ((osSpatialTranslateHilbert (d := d) OS a) xG))
+        = @inner ℂ (OSHilbertSpace OS) _ xF ((Aext t a) xG) := by
+            by_cases ht : 0 < t <;> simp [Aext, ht]
+    _ =
+      (1 / 4 : ℂ) *
+        (@inner ℂ (OSHilbertSpace OS) _ (xF + xG) ((Aext t a) (xF + xG)) -
+          @inner ℂ (OSHilbertSpace OS) _ (xF - xG) ((Aext t a) (xF - xG)) -
+          Complex.I *
+            @inner ℂ (OSHilbertSpace OS) _ (xF + Complex.I • xG)
+              ((Aext t a) (xF + Complex.I • xG)) +
+          Complex.I *
+            @inner ℂ (OSHilbertSpace OS) _ (xF - Complex.I • xG)
+              ((Aext t a) (xF - Complex.I • xG))) := hpol
+    _ =
+      (1 / 4 : ℂ) *
+        (@inner ℂ (OSHilbertSpace OS) _ xpp ((Aext t a) xpp) -
+          @inner ℂ (OSHilbertSpace OS) _ xmm ((Aext t a) xmm) -
+          Complex.I * @inner ℂ (OSHilbertSpace OS) _ xpi ((Aext t a) xpi) +
+          Complex.I * @inner ℂ (OSHilbertSpace OS) _ xmi ((Aext t a) xmi)) := by
+            rw [← hxpp, ← hxmm, ← hxpi, ← hxmi]
+    _ =
+      (1 / 4 : ℂ) *
+        ((∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₁) -
+          (∫ p : ℝ × (Fin d → ℝ),
+            Complex.exp (-(↑(t * p.1) : ℂ)) *
+              Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₂) -
+          Complex.I *
+            (∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₃) +
+          Complex.I *
+            (∫ p : ℝ × (Fin d → ℝ),
+              Complex.exp (-(↑(t * p.1) : ℂ)) *
+                Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂ν₄)) := by
+            rw [hdiag₁, hdiag₂, hdiag₃, hdiag₄]
+
 theorem exists_approx_identity_schwartz
     (ε : ℝ) (hε : 0 < ε) :
     ∃ (φ : SchwartzSpacetime d),
