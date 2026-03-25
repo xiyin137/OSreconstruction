@@ -1572,7 +1572,32 @@ theorem unique_from_generator
     --   strong continuity of U, and norm preservation.
     have hf_deriv : ∀ s : ℝ, HasDerivAt f 0 s := by
       intro s
-      sorry
+      -- f(s) = U(-s)(V(s)x). Use HasDerivAt.inner to show ⟨f(s), y⟩ is constant.
+      -- Alternative: direct HasDerivAt via the bilinear product rule.
+      -- f = (s ↦ U(-s)) applied to (s ↦ V(s)x).
+      -- Derivative of V(s)x: I • V(s)(Ax) [unitaryGroup_hasDerivAt_dom axiom]
+      have hV_deriv : HasDerivAt (fun s => V s x) (Complex.I • V s (A x_A)) s :=
+        unitaryGroup_hasDerivAt_dom A hA hsa x_A s
+      -- Derivative of U(-s)(z) for fixed z ∈ dom(A):
+      -- d/ds U(-s)z = -I • U(-s)(Az) [generator_hasDerivAt with chain rule]
+      -- V(s)x ∈ dom(A) by unitaryGroup_preserves_domain
+      have hVx_indom := hVx_gen s
+      have hU_deriv_at_Vx : HasDerivAt (fun s => 𝒰.U (-s) (V s x))
+          ((-Complex.I • 𝒰.U (-s) (𝒰.generatorApply (V s x) (hVx_gen s))) +
+           𝒰.U (-s) (Complex.I • V s (A x_A))) s := by
+        -- Bilinear product rule: d/ds [U(-s)(V(s)x)] = U'(-s)(V(s)x) + U(-s)(V'(s)x)
+        -- Use HasDerivAt.clm_apply with ℝ-restricted scalars.
+        -- This requires HasDerivAt for s ↦ U(-s) as a CLM-valued function and
+        -- HasDerivAt for s ↦ V(s)x as a vector-valued function.
+        -- The vector part is hV_deriv. The CLM part needs the generator derivative
+        -- lifted to the operator level (not just pointwise).
+        sorry
+      -- The two terms cancel: generatorApply(V(s)x) = V(s)(Ax) by hgenApply_Vx
+      have hcancel : (-Complex.I • 𝒰.U (-s) (𝒰.generatorApply (V s x) (hVx_gen s))) +
+          𝒰.U (-s) (Complex.I • V s (A x_A)) = 0 := by
+        rw [hgenApply_Vx s, (𝒰.U (-s)).map_smul]
+        simp [neg_add_cancel]
+      rwa [hcancel] at hU_deriv_at_Vx
     -- f differentiable with zero derivative, hence constant
     have hf_const : ∀ s₁ s₂ : ℝ, f s₁ = f s₂ := by
       have hdiff : Differentiable ℝ f := fun s => (hf_deriv s).differentiableAt
