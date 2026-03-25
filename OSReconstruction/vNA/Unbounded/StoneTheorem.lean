@@ -1637,57 +1637,62 @@ end OneParameterUnitaryGroup
 
 /-! ### Application to quantum mechanics -/
 
-/-- For a self-adjoint Hamiltonian H, the time evolution operator U(t) = exp(-itH)
+/-- For a self-adjoint operator A, the one-parameter unitary group U(t) = exp(itA)
     forms a strongly continuous one-parameter unitary group.
 
     This is the converse direction to Stone's theorem: starting from a self-adjoint
-    operator, we get a one-parameter group via the spectral theorem. -/
+    operator, we get a one-parameter group via the spectral theorem.
+
+    **Convention:** U(t) = exp(+itA), matching the generator convention
+    Ax = lim_{t→0} I⁻¹ · t⁻¹ · (U(t)x − x). With this choice, the generator
+    of `timeEvolution A` is A itself (see `timeEvolution_generator`).
+
+    For quantum mechanics with H = Hamiltonian: the Schrödinger time evolution
+    exp(-itH) corresponds to `timeEvolution (-H)`, not `timeEvolution H`. -/
 def timeEvolution (Ham : UnboundedOperator H) (hHam : Ham.IsDenselyDefined)
     (hsa : Ham.IsSelfAdjoint hHam) : OneParameterUnitaryGroup H where
-  U := fun t => unitaryGroup Ham hHam hsa (-t)
+  U := fun t => unitaryGroup Ham hHam hsa t
   unitary_left := fun t => by
-    rw [unitaryGroup_inv]; simp [unitaryGroup_comp_neg]
+    rw [unitaryGroup_inv]; exact unitaryGroup_neg_comp Ham hHam hsa t
   unitary_right := fun t => by
-    rw [unitaryGroup_inv]; simp [unitaryGroup_neg_comp]
-  zero := by simp [unitaryGroup_zero]
+    rw [unitaryGroup_inv]; exact unitaryGroup_comp_neg Ham hHam hsa t
+  zero := unitaryGroup_zero Ham hHam hsa
   add := fun s t => by
-    show unitaryGroup Ham hHam hsa (-(s + t)) =
-      unitaryGroup Ham hHam hsa (-s) ∘L unitaryGroup Ham hHam hsa (-t)
-    rw [neg_add, unitaryGroup_mul]
-  continuous := fun x => by
-    exact (unitaryGroup_continuous Ham hHam hsa x).comp continuous_neg
+    show unitaryGroup Ham hHam hsa (s + t) =
+      unitaryGroup Ham hHam hsa s ∘L unitaryGroup Ham hHam hsa t
+    rw [unitaryGroup_mul]
+  continuous := fun x => unitaryGroup_continuous Ham hHam hsa x
 
-/-- The generator of time evolution is the *negation* of the Hamiltonian.
+/-- The generator of `timeEvolution A` is A itself.
 
-    The sign arises from the interplay of two conventions:
-    - `timeEvolution Ham` defines U(t) = exp(−itH), i.e., `unitaryGroup Ham (−t)`.
-    - The generator is defined as A x = lim_{t→0} I⁻¹ · t⁻¹ · (U(t)x − x).
+    Since `timeEvolution A` defines U(t) = exp(itA) = unitaryGroup A t,
+    and the generator is Ax = lim_{t→0} I⁻¹ · t⁻¹ · (U(t)x − x),
+    we compute for x ∈ dom(A):
+      U(ε)x ≈ x + iεAx, so I⁻¹ · ε⁻¹ · (U(ε)x − x) ≈ I⁻¹ · iAx = Ax. ✓
 
-    Computing:  U(ε)x ≈ x − iεHx  (first order in ε)
-    so  I⁻¹ · ε⁻¹ · (U(ε)x − x) ≈ (−i)(−iH)x = −Hx.
-
-    Therefore the generator of exp(−itH) with this convention is −H, not H.
-
-    **Note:** The original statement claimed the generator equals `Ham`.
-    That is a sign error.  The mathematically correct conclusion is
-    `(timeEvolution Ham hHam hsa).generator = -Ham` (negation of the unbounded
-    operator).  This declaration is kept (with sorry) to avoid breaking
-    downstream imports until the sign convention is resolved project-wide.
-
-    **Resolution options:**
-    1. Change `timeEvolution` to use `unitaryGroup Ham hHam hsa t` (not `(-t)`),
-       making U(t) = exp(+itH).  Then the generator IS Ham.
-    2. Define `UnboundedOperator.neg` and change the conclusion to
-       `(timeEvolution Ham hHam hsa).generator = Ham.neg`.
-    3. Change the generator convention to `Ax = lim_{t→0} (-I⁻¹) • t⁻¹ • (U(t)x-x)`,
-       absorbing the sign into the definition. -/
+    The proof uses `unitaryGroup_hasDerivAt_dom` (spectral differentiation axiom)
+    at t = 0 to get d/dt U(t)x|_{t=0} = iAx, then divides by i. -/
 theorem timeEvolution_generator (Ham : UnboundedOperator H) (hHam : Ham.IsDenselyDefined)
     (hsa : Ham.IsSelfAdjoint hHam) :
     (timeEvolution Ham hHam hsa).generator = Ham := by
-  -- SIGN ERROR: The mathematically correct conclusion is .generator = -Ham.
-  -- The generator of exp(-itH) with the convention Ax = lim I⁻¹t⁻¹(U(t)x-x) is -H.
-  -- Proof: d/dt exp(-itH)x|_{t=0} = -iHx, so I⁻¹·(-iHx) = (-i)(-i)Hx = -Hx.
-  -- This sorry cannot be filled as stated. See the docstring for resolution options.
-  sorry
+  -- Show both operators have the same domain and agree on it.
+  apply UnboundedOperator.eq_of_graph_eq
+  ext ⟨v, w⟩
+  constructor
+  · -- graph(generator) ⊆ graph(Ham): if v ∈ generatorDomain with Av = w,
+    -- show v ∈ dom(Ham) with Ham v = w.
+    -- Needs the CONVERSE of the spectral axiom: if the generator limit exists
+    -- then v ∈ dom(Ham). This requires ∫ λ² d⟨P(λ)v, v⟩ < ∞, which is
+    -- a consequence of the limit existence + spectral representation.
+    intro hp; sorry
+  · -- graph(Ham) ⊆ graph(generator): for v ∈ dom(Ham) with Ham v = w,
+    -- show v ∈ generatorDomain with generator v = w.
+    -- By unitaryGroup_hasDerivAt_dom at t=0:
+    --   HasDerivAt (fun s => U(s)v) (I • Ham_v) 0
+    -- This means lim_{h→0} h⁻¹(U(h)v - v) = I • w.
+    -- So lim I⁻¹ • h⁻¹ • (U(h)v - v) = I⁻¹ • I • w = w. ✓
+    -- The conversion HasDerivAt → generator Tendsto requires matching
+    -- the filter (nhds vs nhdsWithin) and scalar convention (h⁻¹ vs I⁻¹•h⁻¹).
+    intro hp; sorry
 
 end
