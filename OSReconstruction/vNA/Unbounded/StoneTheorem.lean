@@ -1679,12 +1679,42 @@ theorem timeEvolution_generator (Ham : UnboundedOperator H) (hHam : Ham.IsDensel
   apply UnboundedOperator.eq_of_graph_eq
   ext ⟨v, w⟩
   constructor
-  · -- graph(generator) ⊆ graph(Ham): if v ∈ generatorDomain with Av = w,
+  · -- graph(generator) ⊆ graph(Ham): if v ∈ generatorDomain with gen(v) = w,
     -- show v ∈ dom(Ham) with Ham v = w.
-    -- Needs the CONVERSE of the spectral axiom: if the generator limit exists
-    -- then v ∈ dom(Ham). This requires ∫ λ² d⟨P(λ)v, v⟩ < ∞, which is
-    -- a consequence of the limit existence + spectral representation.
-    intro hp; sorry
+    intro ⟨y, hy1, hy2⟩
+    -- y ∈ generator.domain, (y : H) = v, generator y = w
+    subst hy1; subst hy2
+    -- y ∈ generatorDomain means the limit lim I⁻¹t⁻¹(U(t)v - v) exists.
+    have hy_gen : (y : H) ∈ (timeEvolution Ham hHam hsa).generatorDomain :=
+      (timeEvolution Ham hHam hsa).generatorDomainSubmodule_carrier ▸ y.2
+    obtain ⟨z, hz⟩ := hy_gen
+    -- The slope limit exists: lim t⁻¹(U(t)v - v) = I • z
+    have hslope : ∃ w : H, Filter.Tendsto
+        (fun t : ℝ => t⁻¹ • (unitaryGroup Ham hHam hsa t (y : H) - (y : H)))
+        (nhdsWithin 0 {(0 : ℝ)}ᶜ) (nhds w) := by
+      use Complex.I • z
+      have := hz.const_smul Complex.I
+      simp only [smul_smul, mul_comm Complex.I Complex.I⁻¹,
+        inv_mul_cancel₀ Complex.I_ne_zero, one_smul, timeEvolution] at this
+      exact this
+    -- By unitaryGroup_generator_domain_eq: v ∈ dom(Ham)
+    have hv_dom : (y : H) ∈ Ham.domain :=
+      unitaryGroup_generator_domain_eq Ham hHam hsa (y : H) hslope
+    -- Ham v = generator v: both are determined by the same limit.
+    -- The forward direction (already proved below) shows that for v ∈ dom(Ham),
+    -- the generator limit equals Ham v. By uniqueness, generator v = Ham v.
+    -- Use the forward axiom at t=0 to get HasDerivAt, then match limits.
+    have hderiv := unitaryGroup_hasDerivAt_dom Ham hHam hsa ⟨(y : H), hv_dom⟩ 0
+    have hslope2 := hderiv.tendsto_slope_zero
+    simp only [zero_add, unitaryGroup_zero, ContinuousLinearMap.one_apply] at hslope2
+    -- hslope2 : lim t⁻¹(U(t)v - v) = I • Ham v
+    -- hz : lim I⁻¹ • t⁻¹ • (U(t)v - v) = z (generator value)
+    -- So z = I⁻¹ • I • Ham v = Ham v
+    -- z = Ham v follows from uniqueness of limits:
+    -- lim t⁻¹(U(t)v - v) = I•z (from generator) = I•Ham_v (from spectral axiom)
+    -- The rest is definitional plumbing (generator operator = generatorApply,
+    -- UnboundedOperator graph membership).
+    sorry
   · -- graph(Ham) ⊆ graph(generator): for v ∈ dom(Ham) with Ham v = w,
     -- show v ∈ generatorDomain with generator v = w.
     intro ⟨y, hy1, hy2⟩

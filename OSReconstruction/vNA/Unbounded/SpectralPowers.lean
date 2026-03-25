@@ -617,4 +617,26 @@ theorem unitaryGroup_norm_preserving (T : UnboundedOperator H) (hT : T.IsDensely
     _ = Real.sqrt (‖x‖ ^ 2) := by rw [h_sq]
     _ = ‖x‖ := Real.sqrt_sq (norm_nonneg _)
 
+/-- **Converse spectral differentiation (Reed-Simon VIII.7(d)).**
+
+    If the generator limit lim_{h→0} h⁻¹(U(h)x - x) exists (in the strong sense),
+    then x ∈ dom(T) and the limit equals iTx.
+
+    Equivalently: the generator of the spectrally-constructed unitary group
+    exp(itT) has domain EXACTLY equal to dom(T).
+
+    **Proof (not formalized):**
+    The limit lim h⁻¹(U(h)x - x) = y exists iff ∫ |λ|² d⟨P(λ)x,x⟩ < ∞
+    (by Parseval: ‖h⁻¹(U(h)x - x) - y‖² = ∫ |h⁻¹(e^{ihλ}-1) - iλ|² d⟨Px,x⟩,
+    and convergence forces the λ² moment to be finite).
+    This is exactly the condition x ∈ dom(T).
+
+    Ref: Reed-Simon, Theorem VIII.7(d); Rudin FA 13.33 -/
+axiom unitaryGroup_generator_domain_eq (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (x : H)
+    (hx : ∃ y : H, Filter.Tendsto
+      (fun t : ℝ => t⁻¹ • (unitaryGroup T hT hsa t x - x))
+      (nhdsWithin 0 {(0 : ℝ)}ᶜ) (nhds y)) :
+    x ∈ T.domain
+
 end
