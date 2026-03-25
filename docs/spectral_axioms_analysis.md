@@ -2,15 +2,20 @@
 
 ## Overview
 
-The core of Stone's theorem in `vNA/Unbounded/StoneTheorem.lean` is now
-proved (5 → 1 sorry-using declarations), modulo 4 axioms in
+The core forward route of Stone's theorem in
+`vNA/Unbounded/StoneTheorem.lean` is now proved, modulo 4 axioms in
 `vNA/Unbounded/SpectralPowers.lean` about the spectral functional calculus
 for self-adjoint operators on Hilbert spaces.
 
-The remaining sorry is `timeEvolution_generator`, which connects the
-abstract Stone theorem to the quantum-mechanical time evolution operator.
-This will be addressed in a follow-up PR that also clarifies the sign
-convention for `timeEvolution`.
+Within `StoneTheorem.lean` itself, the main remaining `sorry` is
+`timeEvolution_generator`, which connects the abstract Stone theorem to the
+time-evolution operator. This will be addressed in a follow-up PR that also
+clarifies the sign convention for `timeEvolution`.
+
+Separately, `vNA/Unbounded/SpectralPowers.lean` still contains two older
+`sorry`s (`power_zero` and `power_imaginary_unitary`) in the positive-operator
+power lane. These are not on the dependency chain of the forward `Stone`
+theorem proved here.
 
 These axioms isolate the gap between the project's current spectral
 infrastructure (bounded functional calculus via `functionalCalculus`)
@@ -104,9 +109,10 @@ which is exactly x ∈ dom(T).
    and a single mathematical technique (differentiation under the spectral
    integral). They don't leak into the rest of the project.
 
-3. **Stone's theorem is unblocked.** The sorry-free StoneTheorem.lean enables
-   downstream work (E→R reconstruction via the Euclidean semigroup →
-   Hamiltonian) without waiting for the spectral infrastructure.
+3. **The forward Stone route is unblocked.** The proved `Stone` theorem in
+   `StoneTheorem.lean` enables downstream work (E→R reconstruction via the
+   Euclidean semigroup → Hamiltonian) without waiting for the remaining
+   spectral infrastructure.
 
 4. **The axioms are standard textbook results** (Reed-Simon VIII.7,
    Rudin FA 13.33) with clear proof plans. There is no mathematical risk.
