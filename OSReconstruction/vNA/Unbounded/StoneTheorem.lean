@@ -1687,12 +1687,42 @@ theorem timeEvolution_generator (Ham : UnboundedOperator H) (hHam : Ham.IsDensel
     intro hp; sorry
   · -- graph(Ham) ⊆ graph(generator): for v ∈ dom(Ham) with Ham v = w,
     -- show v ∈ generatorDomain with generator v = w.
-    -- By unitaryGroup_hasDerivAt_dom at t=0:
-    --   HasDerivAt (fun s => U(s)v) (I • Ham_v) 0
-    -- This means lim_{h→0} h⁻¹(U(h)v - v) = I • w.
-    -- So lim I⁻¹ • h⁻¹ • (U(h)v - v) = I⁻¹ • I • w = w. ✓
-    -- The conversion HasDerivAt → generator Tendsto requires matching
-    -- the filter (nhds vs nhdsWithin) and scalar convention (h⁻¹ vs I⁻¹•h⁻¹).
-    intro hp; sorry
+    intro ⟨y, hy1, hy2⟩
+    -- y ∈ dom(Ham), (y : H) = v, Ham y = w
+    -- unitaryGroup_hasDerivAt_dom at t=0: HasDerivAt (fun s => U(s)v) (I • Ham y) 0
+    have hderiv := unitaryGroup_hasDerivAt_dom Ham hHam hsa y 0
+    -- Convert: HasDerivAt → slope tendsto at 0
+    have hslope := hderiv.tendsto_slope_zero
+    -- hslope : Tendsto (fun t => t⁻¹ • (U(0+t)v - U(0)v)) (𝓝[≠] 0) (𝓝 (I • Ham y))
+    -- Simplify U(0) = 1 and 0 + t = t
+    simp only [zero_add, unitaryGroup_zero, ContinuousLinearMap.one_apply] at hslope
+    -- hslope : Tendsto (fun t => t⁻¹ • (U(t)v - v)) (𝓝[≠] 0) (𝓝 (I • Ham y))
+    -- Multiply by I⁻¹ to get the generator limit
+    -- Substitute v = (y : H) and w = Ham y
+    subst hy1; subst hy2
+    -- hslope now in terms of y directly
+    have hgen_limit : Filter.Tendsto
+        (fun t : ℝ => Complex.I⁻¹ • (t⁻¹ •
+          (unitaryGroup Ham hHam hsa t (y : H) - (y : H))))
+        (nhdsWithin 0 {(0 : ℝ)}ᶜ) (nhds (Ham y)) := by
+      have := hslope.const_smul (Complex.I⁻¹)
+      simp only [smul_smul, inv_mul_cancel₀ Complex.I_ne_zero, one_smul] at this
+      exact this
+    -- Convert to the generator's Tendsto format (timeEvolution uses unitaryGroup directly)
+    have hgen_tendsto : Filter.Tendsto
+        (fun t : ℝ => Complex.I⁻¹ • (t⁻¹ •
+          ((timeEvolution Ham hHam hsa).U t (y : H) - (y : H))))
+        (nhdsWithin 0 {(0 : ℝ)}ᶜ) (nhds (Ham y)) := by
+      simp only [timeEvolution]; exact hgen_limit
+    have hv_dom : (y : H) ∈ (timeEvolution Ham hHam hsa).generatorDomain :=
+      ⟨Ham y, hgen_tendsto⟩
+    have hv_dom' : (y : H) ∈ (timeEvolution Ham hHam hsa).generator.domain := by
+      change (y : H) ∈ ((timeEvolution Ham hHam hsa).generatorDomainSubmodule : Set H)
+      rw [(timeEvolution Ham hHam hsa).generatorDomainSubmodule_carrier]
+      exact hv_dom
+    exact ⟨⟨(y : H), hv_dom'⟩, rfl,
+      tendsto_nhds_unique
+        ((timeEvolution Ham hHam hsa).generatorApply_spec (y : H) hv_dom)
+        hgen_tendsto⟩
 
 end
