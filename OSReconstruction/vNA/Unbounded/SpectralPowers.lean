@@ -531,4 +531,110 @@ theorem unitaryGroup_continuous (T : UnboundedOperator H) (hT : T.IsDenselyDefin
   rw [dist_eq_norm]
   exact lt_of_pow_lt_pow_left₀ 2 (le_of_lt hε) h_bound
 
+/-! ### Spectral differentiation of the unitary group
+
+The spectrally-defined unitary group U(t) = ∫ exp(itλ) dP(λ) satisfies the ODE
+d/dt U(t)x = i U(t)(Tx) for x in dom(T).  This is proved by differentiating under
+the spectral integral using dominated convergence.  The dominating function comes
+from the mean-value-theorem bound |(exp(ihλ) - 1)/h| ≤ |λ|, and the integrability
+of λ against the spectral measures of vectors in dom(T).
+
+**Gap:** The codebase currently lacks:
+1. The spectral representation Tx = ∫ λ dP(λ) x for x ∈ dom(T) (connecting
+   the abstract operator defined via the Cayley transform to the spectral integral).
+2. Differentiation under the polarized spectral integral.
+
+Once those pieces are in place, the following lemma becomes a straightforward
+application of dominated convergence. -/
+
+/-- **Spectral differentiation axiom (Reed-Simon VIII.7(c), Rudin FA 13.33).**
+
+    For a self-adjoint operator T with spectral measure P and x ∈ dom(T),
+    the spectrally-defined unitary group U(t) = ∫ exp(itλ) dP(λ) satisfies:
+
+      d/dt U(t)x = i · U(t)(Tx)
+
+    **Proof (not formalized):**
+    1. Group law reduces to derivative at 0: (U(h)x - x)/h → iTx.
+    2. For each y, ⟨y, (U(h)x - x)/h⟩ = ∫ (exp(ihλ)-1)/h dμ_{y,x}(λ).
+    3. Pointwise: (exp(ihλ)-1)/h → iλ.
+    4. Domination: |(exp(ihλ)-1)/h| ≤ |λ| (mean value theorem).
+    5. For x ∈ dom(T), λ ↦ |λ| is square-integrable against dP_x
+       (spectral representation: ‖Tx‖² = ∫ λ² d⟨P(λ)x, x⟩).
+    6. DCT: ∫ (exp(ihλ)-1)/h dμ → ∫ iλ dμ = ⟨y, iTx⟩.
+    7. Weak convergence + U(h) isometric → strong convergence.
+
+    **Required infrastructure (not yet in codebase):**
+    - Spectral representation: Tx = ∫ λ dP(λ)x for x ∈ dom(T)
+    - Differentiation under the polarized spectral integral (DCT) -/
+axiom unitaryGroup_hasDerivAt_dom (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (x : T.domain) (t : ℝ) :
+    HasDerivAt (fun s => unitaryGroup T hT hsa s (x : H))
+      (Complex.I • unitaryGroup T hT hsa t (T x)) t
+
+/-- The spectral unitary group preserves the domain of T.
+
+    **Proof sketch (not formalized):**
+    U(t) = ∫ exp(itλ) dP(λ) and dom(T) = {x : ∫ λ² d⟨P(λ)x, x⟩ < ∞}.
+    Since |exp(itλ)| = 1, U(t) commutes with P(E) for every Borel E,
+    so ∫ λ² d⟨P(λ)U(t)x, U(t)x⟩ = ∫ λ² d⟨P(λ)x, x⟩ < ∞.
+    Hence U(t)x ∈ dom(T). -/
+axiom unitaryGroup_preserves_domain (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (x : T.domain) (t : ℝ) :
+    unitaryGroup T hT hsa t (x : H) ∈ T.domain
+
+/-- The spectral unitary group commutes with T on dom(T):
+    T(U(t)x) = U(t)(Tx) for x ∈ dom(T).
+
+    **Proof sketch (not formalized):**
+    Both T and U(t) are functions of the spectral measure P:
+    T = ∫ λ dP(λ), U(t) = ∫ exp(itλ) dP(λ).
+    Functional calculus gives f(T)g(T) = (fg)(T),
+    so U(t)T = T U(t) on dom(T). -/
+axiom unitaryGroup_commutes_with_generator (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (x : T.domain) (t : ℝ) :
+    T ⟨unitaryGroup T hT hsa t (x : H), unitaryGroup_preserves_domain T hT hsa x t⟩ =
+    unitaryGroup T hT hsa t (T x)
+
+/-- Norm preservation for the spectral unitary group:
+    ‖unitaryGroup T hT hsa t x‖ = ‖x‖ -/
+theorem unitaryGroup_norm_preserving (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (t : ℝ) (x : H) :
+    ‖unitaryGroup T hT hsa t x‖ = ‖x‖ := by
+  have h_adj_comp : ContinuousLinearMap.adjoint (unitaryGroup T hT hsa t) ∘L
+      unitaryGroup T hT hsa t = 1 := by
+    rw [unitaryGroup_inv, unitaryGroup_neg_comp]
+  have h_inner_eq : @inner ℂ H _ (unitaryGroup T hT hsa t x)
+      (unitaryGroup T hT hsa t x) = @inner ℂ H _ x x := by
+    rw [← ContinuousLinearMap.adjoint_inner_right (unitaryGroup T hT hsa t) x
+      (unitaryGroup T hT hsa t x), ← ContinuousLinearMap.comp_apply,
+      h_adj_comp, ContinuousLinearMap.one_apply]
+  rw [inner_self_eq_norm_sq_to_K, inner_self_eq_norm_sq_to_K] at h_inner_eq
+  have h_sq : ‖unitaryGroup T hT hsa t x‖ ^ 2 = ‖x‖ ^ 2 := by exact_mod_cast h_inner_eq
+  calc ‖unitaryGroup T hT hsa t x‖
+      = Real.sqrt (‖unitaryGroup T hT hsa t x‖ ^ 2) :=
+        (Real.sqrt_sq (norm_nonneg _)).symm
+    _ = Real.sqrt (‖x‖ ^ 2) := by rw [h_sq]
+    _ = ‖x‖ := Real.sqrt_sq (norm_nonneg _)
+
+/-- **Converse spectral differentiation (Reed-Simon VIII.7(d)).**
+
+    If the generator limit lim_{h→0} h⁻¹(U(h)x - x) exists (in the strong sense),
+    then x ∈ dom(T) and the limit equals iTx.
+
+    Equivalently: the generator of the spectrally-constructed unitary group
+    exp(itT) has domain EXACTLY equal to dom(T).
+
+    **Proof (not formalized):**
+    The limit lim h⁻¹(U(h)x - x) = y exists iff ∫ |λ|² d⟨P(λ)x,x⟩ < ∞
+    (by Parseval: ‖h⁻¹(U(h)x - x) - y‖² = ∫ |h⁻¹(e^{ihλ}-1) - iλ|² d⟨Px,x⟩,
+    and convergence forces the λ² moment to be finite).
+    This is exactly the condition x ∈ dom(T).
+
+    Ref: Reed-Simon, Theorem VIII.7(d); Rudin FA 13.33 -/
+axiom unitaryGroup_generator_domain_eq (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
+    (hsa : T.IsSelfAdjoint hT) (x : H)
+    (hx : ∃ y : H, HasDerivAt (fun t => unitaryGroup T hT hsa t x) y 0) :
+    x ∈ T.domain
+
 end
