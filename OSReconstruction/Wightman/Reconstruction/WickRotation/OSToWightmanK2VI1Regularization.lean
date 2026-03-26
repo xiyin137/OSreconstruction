@@ -170,6 +170,31 @@ theorem reflected_negativeApproxIdentity_weighted_L1_moment_le_two_pow_local
           rw [hL1]
           ring
 
+/-- A directional derivative of a positive-time compact-support test remains in
+the same reduced domain. This is the minimal closure property needed to lift the
+zeroth-seminorm regularization bound to higher derivative order without
+reopening the large frozen support file. -/
+private def positiveTimeCompactSupportLineDeriv_local
+    (h : positiveTimeCompactSupportSubmodule d)
+    (v : SpacetimeDim d) :
+    positiveTimeCompactSupportSubmodule d := by
+  refine ⟨LineDeriv.lineDerivOp v (h : SchwartzSpacetime d), ?_⟩
+  constructor
+  · intro x hx
+    exact h.property.1
+      ((SchwartzMap.tsupport_lineDerivOp_subset (m := v) (f := (h : SchwartzSpacetime d))) hx)
+  · exact h.property.2.of_isClosed_subset (isClosed_tsupport _)
+      (SchwartzMap.tsupport_lineDerivOp_subset (m := v) (f := (h : SchwartzSpacetime d)))
+
+@[simp] private theorem positiveTimeCompactSupportLineDeriv_local_coe
+    (h : positiveTimeCompactSupportSubmodule d)
+    (v : SpacetimeDim d) :
+    ((positiveTimeCompactSupportLineDeriv_local (d := d) h v :
+        positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) =
+      LineDeriv.lineDerivOp v (h : SchwartzSpacetime d) := by
+  rfl
+
+
 /-- The reflected positive-time convolution sequence is uniformly bounded in
 sup norm by the zeroth Schwartz seminorm of the fixed target test. This is the
 `L¹ * L∞` part of the VI.1 regularization estimate on the actual OS-side

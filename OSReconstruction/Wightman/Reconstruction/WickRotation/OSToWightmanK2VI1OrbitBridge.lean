@@ -2,7 +2,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2BaseS
 
 noncomputable section
 
-open Complex
+open Complex MeasureTheory
 
 namespace OSReconstruction
 
@@ -46,6 +46,216 @@ private def translatedPositiveTimeCompactSupport_vi1Bridge_local
     have hgx := hg_pos hx'
     simpa using add_pos_of_pos_of_nonneg hξ (show 0 ≤ (x + -ξ) 0 from le_of_lt hgx)
   exact ⟨gξ, ⟨hgξ_pos, hgξ_compact⟩⟩
+
+private theorem onePoint_osConjTensorProduct_apply_vi1Bridge_local
+    (χ h : SchwartzSpacetime d) (y : NPointDomain d 2) :
+    (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (onePointToFin1CLM d h)) y) =
+      χ (y 0) * h (y 1) := by
+  have hosconj :
+      SchwartzNPoint.osConj (d := d) (n := 1)
+          (SchwartzNPoint.osConj (d := d) (n := 1)
+            (onePointToFin1CLM d χ : SchwartzNPoint d 1)) =
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) := by
+    ext x
+    simp [SchwartzNPoint.osConj_apply, onePointToFin1CLM_apply,
+      timeReflectionN, timeReflection_timeReflection]
+  calc
+    (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1)).osConjTensorProduct
+        (onePointToFin1CLM d h)) y)
+      = (((onePointToFin1CLM d χ : SchwartzNPoint d 1).tensorProduct
+          (onePointToFin1CLM d h)) y) := by
+            simp [SchwartzNPoint.osConjTensorProduct, hosconj]
+    _ = χ (y 0) * h (y 1) := by
+          rw [SchwartzMap.tensorProduct_apply]
+          simp [onePointToFin1CLM_apply, splitFirst, splitLast]
+
+private theorem twoPointProductLift_vanishes_of_orderedPositiveTime_vi1Bridge_local
+    (χ h : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0}) :
+    VanishesToInfiniteOrderOnCoincidence (twoPointProductLift χ h) := by
+  have hh_ord :=
+    onePointToFin1_tsupport_orderedPositiveTime_vi1Bridge_local (d := d) h hh_pos
+  have hvanish :
+      VanishesToInfiniteOrderOnCoincidence
+        ((SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ)).osConjTensorProduct
+          (onePointToFin1CLM d h)) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d)
+      (f := SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1))
+      (g := onePointToFin1CLM d h)
+      hχ_pos hh_ord
+  have hprod_eq :
+      (SchwartzNPoint.osConj (d := d) (n := 1)
+          (onePointToFin1CLM d χ)).osConjTensorProduct
+        (onePointToFin1CLM d h) =
+        twoPointProductLift χ h := by
+    ext x
+    exact onePoint_osConjTensorProduct_apply_vi1Bridge_local χ h x
+  simpa [hprod_eq] using hvanish
+
+private def twoPointProductLiftPositiveZeroDiagCLM_vi1Bridge_local
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ZeroDiagonalSchwartz d 2 :=
+  (((SchwartzMap.prependFieldCLMRight (E := SpacetimeDim d) χ).comp
+      ((onePointToFin1CLM d).comp (positiveTimeCompactSupportValCLM d))).codRestrict
+      (zeroDiagonalSubmodule d 2)
+      (fun h =>
+        twoPointProductLift_vanishes_of_orderedPositiveTime_vi1Bridge_local
+          (d := d) χ (h : SchwartzSpacetime d) hχ_pos h.property.1))
+
+@[simp] private theorem twoPointProductLiftPositiveZeroDiagCLM_vi1Bridge_local_eq_ofClassical
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    twoPointProductLiftPositiveZeroDiagCLM_vi1Bridge_local (d := d) χ hχ_pos h =
+      ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (h : SchwartzSpacetime d)) := by
+  let hvanish :=
+    twoPointProductLift_vanishes_of_orderedPositiveTime_vi1Bridge_local
+      (d := d) χ (h : SchwartzSpacetime d) hχ_pos h.property.1
+  apply Subtype.ext
+  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+    (f := twoPointProductLift χ (h : SchwartzSpacetime d)) hvanish]
+  rfl
+
+/-- Public one-point Schwinger CLM for the direct `k = 2` VI.1 orbit route. It
+evaluates the two-point Schwinger functional against `χ` on the left and a
+positive-time compact-support test on the right. -/
+def schwingerProductPositiveCLM_vi1Bridge_local
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1) :
+    positiveTimeCompactSupportSubmodule d →L[ℂ] ℂ :=
+  (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS 2).comp
+    (twoPointProductLiftPositiveZeroDiagCLM_vi1Bridge_local (d := d) χ hχ_pos)
+
+@[simp] theorem schwingerProductPositiveCLM_vi1Bridge_local_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (h : positiveTimeCompactSupportSubmodule d) :
+    schwingerProductPositiveCLM_vi1Bridge_local (d := d) OS χ hχ_pos h =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (h : SchwartzSpacetime d))) := by
+  let hvanish :=
+    twoPointProductLift_vanishes_of_orderedPositiveTime_vi1Bridge_local
+      (d := d) χ (h : SchwartzSpacetime d) hχ_pos h.property.1
+  simp [schwingerProductPositiveCLM_vi1Bridge_local, ContinuousLinearMap.comp_apply,
+    twoPointProductLiftPositiveZeroDiagCLM_vi1Bridge_local_eq_ofClassical,
+    OsterwalderSchraderAxioms.schwingerCLM]
+
+@[simp] theorem schwingerProductPositiveCLM_vi1Bridge_local_apply_translated
+    (OS : OsterwalderSchraderAxioms d)
+    (χ : SchwartzSpacetime d)
+    (hχ_pos : tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d χ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1)
+    (g : SchwartzSpacetime d)
+    (hg_pos : tsupport (g : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hg_compact : HasCompactSupport (g : SpacetimeDim d → ℂ))
+    (ξ : SpacetimeDim d)
+    (hξ : 0 < ξ 0) :
+    schwingerProductPositiveCLM_vi1Bridge_local (d := d) OS χ hχ_pos
+        (translatedPositiveTimeCompactSupport_vi1Bridge_local (d := d) g hg_pos hg_compact ξ hξ) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift χ (SCV.translateSchwartz (-ξ) g))) := by
+  simpa [translatedPositiveTimeCompactSupport_vi1Bridge_local] using
+    schwingerProductPositiveCLM_vi1Bridge_local_apply
+      (d := d) OS χ hχ_pos
+      (translatedPositiveTimeCompactSupport_vi1Bridge_local (d := d) g hg_pos hg_compact ξ hξ)
+
+/-- The explicit translated product-shell boundary integrand is exactly the
+scalar one-point Schwinger orbit through the translated reflected positive-time
+test. This is the direct scalar bridge behind the later VI.1 integral
+identifications. -/
+theorem translatedProductShell_boundary_eq_schwingerProductPositiveOrbit_vi1Bridge_local
+    (OS : OsterwalderSchraderAxioms d)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (ξ : SpacetimeDim d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    (if hξ : 0 < ξ 0 then
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ)))
+    else 0) =
+      (if hξ : 0 < ξ 0 then
+        schwingerProductPositiveCLM_vi1Bridge_local (d := d) OS φ
+          (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+            (d := d) φ hφ_compact hφ_neg)
+          (translatedPositiveTimeCompactSupport_vi1Bridge_local (d := d)
+            (reflectedSchwartzSpacetime φ)
+            (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+            (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+            ξ hξ)
+      else 0) := by
+  dsimp
+  have hφ_pos :
+      tsupport (((SchwartzNPoint.osConj (d := d) (n := 1)
+        (onePointToFin1CLM d φ : SchwartzNPoint d 1) : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ)) ⊆ OrderedPositiveTimeRegion d 1 :=
+    osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+      (d := d) φ hφ_compact hφ_neg
+  by_cases hξ : 0 < ξ 0
+  · simpa [hξ] using
+      (schwingerProductPositiveCLM_vi1Bridge_local_apply_translated
+        (d := d) OS φ hφ_pos
+        (reflectedSchwartzSpacetime φ)
+        (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+        (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+        ξ hξ).symm
+  · simpa [hξ]
+
+/-- Integral form of the scalar boundary/orbit bridge. This is the public VI.1
+copy of the scalar-orbit rewriting used later to compare the boundary shell to
+regularized positive-time one-point data. -/
+theorem integral_translatedProductShell_boundary_eq_schwingerProductPositiveOrbit_integral_vi1Bridge_local
+    (OS : OsterwalderSchraderAxioms d)
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (h : positiveTimeCompactSupportSubmodule d) :
+    let ψ := reflectedSchwartzSpacetime φ
+    ∫ ξ : SpacetimeDim d,
+      (if hξ : 0 < ξ 0 then
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift φ (SCV.translateSchwartz (-ξ) ψ)))
+      else 0) * ((h : SchwartzSpacetime d) ξ) =
+      ∫ ξ : SpacetimeDim d,
+        (if hξ : 0 < ξ 0 then
+          schwingerProductPositiveCLM_vi1Bridge_local (d := d) OS φ
+            (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+              (d := d) φ hφ_compact hφ_neg)
+            (translatedPositiveTimeCompactSupport_vi1Bridge_local (d := d)
+              (reflectedSchwartzSpacetime φ)
+              (reflectedSchwartzSpacetime_tsupport_pos (d := d) φ hφ_neg)
+              (reflectedSchwartzSpacetime_hasCompactSupport (d := d) φ hφ_compact)
+              ξ hξ)
+        else 0) * ((h : SchwartzSpacetime d) ξ) := by
+  dsimp
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards with ξ
+  simpa using congrArg
+    (fun z : ℂ => z * ((h : SchwartzSpacetime d) ξ))
+    (translatedProductShell_boundary_eq_schwingerProductPositiveOrbit_vi1Bridge_local
+      (d := d) OS φ hφ_compact hφ_neg ξ)
 
 /-- Public reduced one-point OS Hilbert vector attached to a positive-time
 compact-support test, for use in the direct VI.1 bridge. -/
@@ -434,5 +644,57 @@ theorem continuousOn_translatedProductShell_boundary_positiveTime_vi1Bridge_loca
           {p : ℝ × (Fin d → ℝ) // p ∈ Set.Ioi (0 : ℝ) ×ˢ Set.univ})) := by
     exact hcoord_cont.subtype_mk (fun ξp => ⟨ξp.2, by simp⟩)
   simpa [coord] using hbase.comp hcoord_sub
+
+/-- The weighted translated product-shell boundary integrand is integrable
+against any compactly supported positive-time test. -/
+theorem integrable_translatedProductShell_boundary_weight_vi1Bridge_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzSpacetime d)
+    (hφ_real : ∀ x, (φ x).im = 0)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆ {x | x 0 < 0})
+    (h : positiveTimeCompactSupportSubmodule d) :
+    Integrable
+      (fun ξ : SpacetimeDim d =>
+        (if hξ : 0 < ξ 0 then
+          OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+            (twoPointProductLift φ
+              (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+        else 0) * ((h : SchwartzSpacetime d) ξ)) volume := by
+  let F : SpacetimeDim d → ℂ := fun ξ =>
+    (if hξ : 0 < ξ 0 then
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (twoPointProductLift φ
+          (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+    else 0) * ((h : SchwartzSpacetime d) ξ)
+  let H : Set (SpacetimeDim d) := tsupport (((h : positiveTimeCompactSupportSubmodule d) :
+    SchwartzSpacetime d) : SpacetimeDim d → ℂ)
+  have hH_compact : IsCompact H := h.property.2.isCompact
+  have hF_support : Function.support F ⊆ H := by
+    intro ξ hξ
+    by_contra hξH
+    have hzero : ((h : SchwartzSpacetime d) ξ) = 0 := image_eq_zero_of_notMem_tsupport hξH
+    apply hξ
+    simp [F, hzero]
+  have hF_cont : ContinuousOn F H := by
+    have horbit :
+        ContinuousOn
+          (fun ξ : SpacetimeDim d =>
+            if hξ : 0 < ξ 0 then
+              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                (twoPointProductLift φ
+                  (SCV.translateSchwartz (-ξ) (reflectedSchwartzSpacetime φ))))
+            else 0)
+          H := by
+      refine (continuousOn_translatedProductShell_boundary_positiveTime_vi1Bridge_local
+        (d := d) OS lgc φ hφ_real hφ_compact hφ_neg).mono ?_
+      intro ξ hξH
+      exact h.property.1 hξH
+    have hh_cont : ContinuousOn (fun ξ : SpacetimeDim d => ((h : SchwartzSpacetime d) ξ)) H :=
+      (SchwartzMap.continuous ((h : positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d)).continuousOn
+    exact horbit.mul hh_cont
+  apply (integrableOn_iff_integrable_of_support_subset hF_support).mp
+  exact hF_cont.integrableOn_compact hH_compact
 
 end OSReconstruction
