@@ -1,6 +1,6 @@
 # SCV TODO: OS-Critical Analytic Continuation Chain
 
-Last updated: 2026-03-10
+Last updated: 2026-03-25
 
 This TODO tracks the remaining `SCV` blockers on the OS reconstruction path.
 
@@ -14,84 +14,119 @@ Count convention in this file: direct tactic holes only,
 | `OSReconstruction/SCV` | 2 |
 
 Breakdown:
-- `SCV/LaplaceSchwartz.lean`: 0
-- `SCV/TubeDistributions.lean`: 0
-- `SCV/DistributionalUniqueness.lean`: 0
-- `SCV/SchwartzComplete.lean`: 0
 - `SCV/BochnerTubeTheorem.lean`: 2
-- `SCV/PaleyWiener.lean`: 0
+- All other SCV files: 0
 
-## Session Summary
+## Axiom Census
 
-- The fake multidimensional support scaffolding was removed from `PaleyWiener.lean`.
-- `LaplaceSchwartz.lean` now has the correct weak/regular split:
-  - `HasFourierLaplaceRepr`
-  - `HasFourierLaplaceReprRegular`
-- `TubeDistributions.lean` now keeps only the proved regular variants; the unused weak
-  placeholder fronts were removed.
-- The unproved weak-to-regular upgrade theorem was removed.
-  Rationale: the singularity-free bound `‖F(x+iεη)‖ ≤ C(1+‖x‖)^N` is not
-  derivable from `poly_growth` alone (Phragmén-Lindelöf only gives
-  `C(1+‖x‖)^N/ε^k`), and the remaining Vladimirov §26.2 continuity upgrade
-  should not be hidden behind a fake interface.
+| File | Axioms | Names |
+|------|--------|-------|
+| `SCV/SemigroupGroupBochner.lean` | 2 | `semigroupGroup_bochner`, `laplaceFourier_measure_unique` |
+| `SCV/VladimirovTillmann.lean` | 2 | `vladimirov_tillmann`, `distributional_cluster_lifts_to_tube` |
+| **Total** | **4** | |
+
+### Axiom Details
+
+**`semigroupGroup_bochner`** (BCR Theorem 4.1.13): Bounded continuous positive-definite
+functions on [0,∞) × ℝᵈ are Fourier-Laplace transforms of finite positive measures.
+Used by `OSToWightmanSemigroup.lean` in the E→R semigroup direction.
+
+**`laplaceFourier_measure_unique`**: Finite positive measures supported on nonneg energy
+are determined by their joint Laplace-Fourier transform on t > 0. Uniqueness clause
+backing the semigroup-group Bochner theorem.
+
+**`vladimirov_tillmann`**: Boundary-value theorem for holomorphic functions on tube domains
+with polynomial growth. Gives Vladimirov bound with inverse-boundary-distance factor.
+Used by `OSToWightmanBoundaryValues.lean`.
+
+**`distributional_cluster_lifts_to_tube`**: Cluster property from distributional boundary
+values lifts to pointwise factorization in the tube interior. Used for the cluster
+decomposition axiom transfer.
+
+## Usage in the Main Proof Chain
+
+The SCV module provides analytic continuation infrastructure consumed by:
+1. **Edge-of-the-wedge theorem** (`TubeDomainExtension.lean`) — proved, axiom-free,
+   used by BHW permutation extension chain
+2. **Bochner tube theorem** (`BochnerTubeTheorem.lean`) — 2 sorries, used for
+   tube-domain holomorphic extension
+3. **Paley-Wiener** (`PaleyWiener.lean`) — sorry-free, one-step Fourier support
+4. **Distributional uniqueness** (`DistributionalUniqueness.lean`) — sorry-free,
+   boundary-value uniqueness for BHW chain
+5. **Schwartz completeness** (`SchwartzComplete.lean`) — sorry-free, Banach-Steinhaus
+6. **Semigroup-Bochner axioms** (`SemigroupGroupBochner.lean`) — 2 axioms,
+   used by E→R contraction semigroup
+7. **Vladimirov-Tillmann axioms** (`VladimirovTillmann.lean`) — 2 axioms,
+   used by boundary-value transfer theorems
+
+## File Status
+
+### Sorry-Free Files
+
+| File | Status | Notes |
+|------|--------|-------|
+| `Analyticity.lean` | Complete | |
+| `DistributionalUniqueness.lean` | Complete | Boundary-value uniqueness |
+| `EdgeOfWedge.lean` | Complete | |
+| `EOWMultiDim.lean` | Complete | |
+| `FourierLaplaceCore.lean` | Complete | |
+| `IdentityTheorem.lean` | Complete | |
+| `IteratedCauchyIntegral.lean` | Complete | |
+| `LaplaceHolomorphic.lean` | Complete | |
+| `LaplaceSchwartz.lean` | Complete | Weak/regular split |
+| `LocalBoundaryRecovery.lean` | Complete | |
+| `MoebiusMap.lean` | Complete | |
+| `MultipleReflection.lean` | Complete | |
+| `Osgood.lean` | Complete | |
+| `PaleyWiener.lean` | Complete | |
+| `Polydisc.lean` | Complete | |
+| `SchwartzComplete.lean` | Complete | CompleteSpace, BarrelledSpace, Banach-Steinhaus |
+| `SemigroupBochner.lean` | Complete | |
+| `SeparatelyAnalytic.lean` | Complete | |
+| `TotallyRealIdentity.lean` | Complete | |
+| `TubeDomainExtension.lean` | Complete | Edge-of-the-wedge theorem |
+| `TubeDistributions.lean` | Complete | |
+
+### Files with Sorries
+
+| File | Sorrys | Names |
+|------|--------|-------|
+| `BochnerTubeTheorem.lean` | 2 | `bochner_local_extension`, `bochner_tube_extension` |
+
+### Files with Axioms (no sorries)
+
+| File | Axioms | Names |
+|------|--------|-------|
+| `SemigroupGroupBochner.lean` | 2 | `semigroupGroup_bochner`, `laplaceFourier_measure_unique` |
+| `VladimirovTillmann.lean` | 2 | `vladimirov_tillmann`, `distributional_cluster_lifts_to_tube` |
 
 ## Load-Bearing Items
 
-### `SCV/LaplaceSchwartz.lean` (0)
-
-Meaning:
-- the weak/regular split is now honest
-- no fake upgrade theorem from weak BV data remains
-
-### `SCV/TubeDistributions.lean` (0)
-
-Meaning:
-- only the rigorous regular variants remain
-- the unused weak placeholder fronts were removed instead of being carried as public `sorry`s
-
-### `SCV/BochnerTubeTheorem.lean` (2)
+### `SCV/BochnerTubeTheorem.lean` (2 sorries)
 
 Remaining blockers:
 - `bochner_local_extension`
 - `bochner_tube_extension`
 
-Meaning:
-- the old generic gluing theorem was too strong and has been removed
-- current work should build on the compatible-family gluing theorem instead
+The old generic gluing theorem was too strong and has been removed.
+Current work should build on the compatible-family gluing theorem instead.
 
-### `SCV/PaleyWiener.lean` (0)
+### `SCV/LaplaceSchwartz.lean` (0 sorries)
 
-Status:
-- sorry-free
-- `paley_wiener_half_line` and the slice-wise `paley_wiener_one_step` are proved
-- no fake multidimensional Fourier-support notion remains in the public API
+The weak/regular split is now honest:
+- `HasFourierLaplaceRepr`
+- `HasFourierLaplaceReprRegular`
+No fake upgrade theorem from weak BV data remains.
 
-## Execution Order
+### `SCV/TubeDistributions.lean` (0 sorries)
 
-1. Use the explicit regular package directly in downstream flattened-tube transport.
-2. Return to the real missing theorem: construct `HasFourierLaplaceReprRegular`
-   from actual Fourier-Laplace input with the right dual-cone support.
-3. Return to `BochnerTubeTheorem.lean`.
+Only the rigorous regular variants remain. The unused weak placeholder fronts
+were removed instead of being carried as public `sorry`s.
 
-### `SCV/SchwartzComplete.lean` (0) — NEW, CODEX-OWNED
+### `SCV/PaleyWiener.lean` (0 sorries)
 
-**Owner: Codex agent.** Sorry-free. Provides:
-- `SchwartzMap.instCompleteSpace` — completeness of `𝓢(E, F)`
-- `SchwartzMap.instBarrelledSpace` — barrelledness
-- `SchwartzMap.tempered_equicontinuous` — Banach-Steinhaus for tempered distributions
-- `SchwartzMap.tempered_uniform_schwartz_bound` — concrete finite seminorm bound
-- `SchwartzMap.tempered_equicontinuous_of_tendsto` — convergent sequences are equicontinuous
-
-### `SCV/DistributionalUniqueness.lean` (0) — NEW, CODEX-OWNED
-
-**Owner: Codex agent.** New file with 0 sorrys providing:
-- `translateSchwartz`: translate a Schwartz function by a fixed vector (PROVED)
-- `uniqueness_of_boundary_zero`: if G is holomorphic on T(C), vanishes pointwise
-  on the real boundary, and has ContinuousWithinAt at all boundary points,
-  then G = 0 on T(C). This is the 1D EOW slicing argument factored out from
-  `distributional_uniqueness_tube_of_regular`. (PROVED)
-- Support transport lemmas for `translateSchwartz` (PROVED)
-- `uniqueness_of_boundary_zero_on_interval` — local 1D uniqueness on (a,b) (PROVED)
+`paley_wiener_half_line` and the slice-wise `paley_wiener_one_step` are proved.
+No fake multidimensional Fourier-support notion remains in the public API.
 
 ## Distributional EOW — COMPLETE (2026-03-10)
 
@@ -113,6 +148,13 @@ Full chain:
    - `analytic_boundary_local_commutativity_of_boundary_continuous` — PROVED
 6. `PermutationFlow.lean` fully rewired to distributional hypotheses (0 sorrys)
 
+## Execution Order
+
+1. Use the explicit regular package directly in downstream flattened-tube transport.
+2. Return to the real missing theorem: construct `HasFourierLaplaceReprRegular`
+   from actual Fourier-Laplace input with the right dual-cone support.
+3. Return to `BochnerTubeTheorem.lean`.
+
 ## Stable Completed Core
 
 - `Polydisc.lean`
@@ -123,6 +165,7 @@ Full chain:
 - `IdentityTheorem.lean`
 - `FourierLaplaceCore.lean`
 - `PaleyWiener.lean`
-- `DistributionalUniqueness.lean` — NEW
+- `DistributionalUniqueness.lean`
+- `SchwartzComplete.lean`
 
 `edge_of_the_wedge_theorem` is proved and axiom-free.

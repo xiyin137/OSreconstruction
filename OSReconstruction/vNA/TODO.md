@@ -8,6 +8,24 @@ This module develops von Neumann algebra foundations for rigorous QFT, including
 - Stone's theorem for one-parameter unitary groups
 - Modular theory (Tomita-Takesaki)
 
+## Usage in the Main Proof Chain
+
+The vNA module is consumed at two points in the OS reconstruction:
+
+1. **`Wightman/OperatorDistribution.lean`** imports `vNA.Unbounded.StoneTheorem`
+   - Stone's theorem defines momentum operators as generators of translation unitary groups
+   - Used for the spectrum condition in `GNSHilbertSpace.lean`
+
+2. **`Wightman/Reconstruction/WickRotation/OSToWightmanSemigroup.lean`** imports:
+   - `vNA.Bochner.SemigroupRoots` — fractional semigroup root infrastructure
+   - `vNA.Spectral.ComplexSemigroup` — complex spectral semigroup T(z) = e^{-zA}
+   - `vNA.Spectral.SelfAdjointFunctionalViaRMK` — self-adjoint functional calculus
+   - `vNA.Unbounded.BoundedBridge` — bounded↔unbounded operator bridge
+   - Builds the contraction semigroup from OS data for the E→R direction
+
+The modular theory chain (ModularTheory → ModularAutomorphism → KMS) is **not yet consumed**
+by any reconstruction file — it is future infrastructure for Tomita-Takesaki applications.
+
 ## Current Status
 
 ### Spectral Theory via RMK (Primary Approach) — Sorry-Free Chain
@@ -18,8 +36,8 @@ This module develops von Neumann algebra foundations for rigorous QFT, including
 | `Spectral/SpectralMeasurePolarizedViaRMK.lean` | Complete | 0 |
 | `Spectral/SpectralTheoremViaRMK.lean` | Complete | 0 |
 | `Spectral/CayleyTransform.lean` | Complete | 0 |
-| `Spectral/SpectralViaCayleyRMK.lean` | **Complete** | 0 |
-| `Spectral/SigmaAdditivity.lean` | **Complete** | 0 |
+| `Spectral/SpectralViaCayleyRMK.lean` | Complete | 0 |
+| `Spectral/SigmaAdditivity.lean` | Complete | 0 |
 | `Spectral/SpectralProjectionLemmas.lean` | Complete | 0 |
 | `Spectral/JensenLinearity.lean` | Complete | 0 |
 
@@ -30,47 +48,111 @@ This module develops von Neumann algebra foundations for rigorous QFT, including
 | `Unbounded/Basic.lean` | Complete | 0 |
 | `Unbounded/Graph.lean` | Complete | 0 |
 
-### Measure Theory Infrastructure — Mostly Proven
+### Measure Theory Infrastructure
 
 | File | Status | Sorrys |
 |------|--------|--------|
 | `MeasureTheory/SpectralIntegral.lean` | Complete | 0 |
-| `MeasureTheory/CaratheodoryExtension.lean` | Complete | 0 |
-| `MeasureTheory/SpectralStieltjes.lean` | Nearly Complete | 1 (`complexMeasure_eq_inner`) |
+| `MeasureTheory/SpectralStieltjes.lean` | **Complete** | 0 |
+| `MeasureTheory/CaratheodoryExtension.lean` | In Progress | ~16 (measure extension infrastructure) |
 
-### Spectral Theorem & Functional Calculus
+### Spectral Theorem & Functional Calculus — Sorry-Free
 
 | File | Status | Sorrys |
 |------|--------|--------|
-| `Unbounded/Spectral.lean` | **Nearly Complete** | 2 (spectral_theorem + FC + unitary group fully sorry-free!) |
+| `Unbounded/Spectral.lean` | **Complete** | 0 |
 
 **Sorry-free results:**
-- `spectral_theorem_pvm`: PVM existence — **sorry-free**
-- `spectral_theorem`: `⟨x, f(T)y⟩ = P.spectralIntegral f x y` — **sorry-free**
-- `functionalCalculus_star`: `(f(T))* = f̄(T)` — **sorry-free**
-- `functionalCalculus_mul`: `f(T)g(T) = (fg)(T)` — **sorry-free**
-- `functionalCalculus_inner`: `⟨x, f(T)y⟩ = Bform P f x y` — **sorry-free**
-- `power_add`: `T^(s+t) = T^s ∘ T^t` — **sorry-free** (via `functionalCalculus_mul`)
-- `unitaryGroup`: `U(t) = e^{itA} = ∫ exp(itλ) dP(λ)` — **redefined using exp(itλ) directly**
-- `unitaryGroup_zero`: `U(0) = 1` — **sorry-free** (no positivity needed!)
-- `unitaryGroup_mul`: `U(s) ∘ U(t) = U(s+t)` — **sorry-free**
-- `unitaryGroup_inv`: `U(t)* = U(-t)` — **sorry-free**
-- `unitaryGroup_neg_comp`/`unitaryGroup_comp_neg` — **sorry-free**
-- `unitaryGroup_continuous`: `t ↦ U(t)x` is continuous — **sorry-free** (DCT + weak→strong via isometry)
-- `power` integrability/boundedness — **sorry-free** (uses `Re(s) = 0` hypothesis)
+- `spectral_theorem_pvm`: PVM existence
+- `spectral_theorem`: `⟨x, f(T)y⟩ = P.spectralIntegral f x y`
+- `functionalCalculus_star`: `(f(T))* = f̄(T)`
+- `functionalCalculus_mul`: `f(T)g(T) = (fg)(T)`
+- `functionalCalculus_inner`: `⟨x, f(T)y⟩ = Bform P f x y`
+- `unitaryGroup`: `U(t) = e^{itA} = ∫ exp(itλ) dP(λ)` — redefined using exp(itλ) directly
+- `unitaryGroup_zero`: `U(0) = 1`
+- `unitaryGroup_mul`: `U(s) ∘ U(t) = U(s+t)`
+- `unitaryGroup_inv`: `U(t)* = U(-t)`
+- `unitaryGroup_neg_comp`/`unitaryGroup_comp_neg`
+- `unitaryGroup_continuous`: `t ↦ U(t)x` is continuous (DCT + weak→strong via isometry)
+- `power` integrability/boundedness (uses `Re(s) = 0` hypothesis)
 
 **Key change:** `unitaryGroup` no longer uses `power` (λ^{it}). It uses `exp(itλ)` directly,
 which removes the positivity requirement and makes U(0)=1 trivially true.
 
-**Remaining sorrys in Spectral.lean (2):**
-- `power_zero` — requires spectral support argument: P((-∞,0]) = 0 for positive T (isolated, not on critical path)
-- `power_imaginary_unitary` — depends on `power_zero` (isolated, not on critical path)
-
-### Stone's Theorem
+### Spectral Powers — Isolated, Not on Critical Path
 
 | File | Status | Sorrys |
 |------|--------|--------|
-| `Unbounded/StoneTheorem.lean` | In Progress | ~9 |
+| `Unbounded/SpectralPowers.lean` | Isolated | 2 |
+
+- `power_zero` — requires spectral support argument: P((-∞,0]) = 0 for positive T
+- `power_imaginary_unitary` — depends on `power_zero`
+
+These are **not referenced** by any file outside `SpectralPowers.lean`. They were superseded
+when `unitaryGroup` was redefined to use `exp(itλ)` directly.
+
+### Stone's Theorem — Nearly Complete
+
+| File | Status | Sorrys |
+|------|--------|--------|
+| `Unbounded/StoneTheorem.lean` | **Nearly Complete** | 1 |
+
+**Sorry-free results (all major components):**
+- `OneParameterUnitaryGroup` structure — definition with all axioms
+- `generatorDomain`, `generatorApply` — infinitesimal generator on its natural domain
+- `generator_densely_defined` — dom(A) is dense (mollification argument)
+- `generator_symmetric` — ⟨Ax, y⟩ = ⟨x, Ay⟩ on dom(A)
+- `generator_seq_closed` — the generator graph is sequentially closed
+- `generator_U_mem` — U(t) preserves the generator domain
+- `generator_U_commute` — U(t) commutes with the generator on its domain
+- `generator_hasDerivAt` — d/dt U(t)x = iA·U(t)x for x ∈ dom(A)
+- `generator_selfadjoint` — **fully proved** (~700 lines, deficiency-index argument)
+- `generatorDomain_mem_of_commutes` — commuting operator preserves generator domain
+- `generatorApply_commute_of_commutes` — commuting operator commutes with generator
+- `unique_from_generator` — if 𝒰.generator = A then U(t) = exp(itA) (energy method)
+- `Stone` — the main theorem: every strongly continuous one-parameter unitary group
+  has a unique self-adjoint generator
+- `timeEvolution` — forward direction (self-adjoint → unitary group)
+
+**Remaining sorry (1):**
+- `timeEvolution_generator` — generator of exp(-itH) is H. Convenience theorem,
+  **not used** in the main proof chain.
+
+### Complex Spectral Semigroup
+
+| File | Status | Sorrys |
+|------|--------|--------|
+| `Spectral/ComplexSemigroup.lean` | In Progress | 2 |
+
+- `spectralSemigroupComplex` semigroup law: T(s+t) = T(s)∘T(t)
+- `Commute.spectralSemigroupComplex`: operators commuting with A commute with semigroup
+
+Both are used by `OSToWightmanSemigroup.lean` in the E→R direction.
+
+### von Neumann Algebra Basics
+
+| File | Status | Sorrys |
+|------|--------|--------|
+| `Basic.lean` | **Complete** | 0 |
+| `Predual.lean` | In Progress | 2 (`sigmaWeak_convergence_iff`, `kaplansky_density`) |
+
+### Modular Theory — Future Infrastructure (Not Yet Used in Main Chain)
+
+| File | Status | Sorrys |
+|------|--------|--------|
+| `ModularTheory.lean` | In Progress | 6 (Ω_in_domain, fixed point, JΔJ=Δ⁻¹, J reverses flow, σ_t preserves M, uniqueness) |
+| `ModularAutomorphism.lean` | In Progress | 8 (preserves_algebra, multiplicativity, star, continuity, state_invariant, cocycle, Radon-Nikodym) |
+| `KMS.lean` | In Progress | 10 (strip_boundary, modular_state_is_KMS, uniqueness, invariance, factor uniqueness, temperature limits, passivity) |
+
+### Bochner Integration — Sorry-Free Helper Infrastructure
+
+| File | Status | Sorrys |
+|------|--------|--------|
+| `Bochner/CfcInfrastructure.lean` | Complete | 0 |
+| `Bochner/OperatorBochner.lean` | Complete | 0 |
+| `Bochner/Convergence.lean` | Complete | 0 |
+| `Bochner/FunctionalCalculusLinearity.lean` | Complete | 0 |
+| `Bochner/Applications.lean` | Complete | 0 |
 
 ### Deprecated Files (moved to `/backup_deprecated_vNA/`)
 
@@ -93,57 +175,25 @@ at 1 for most f (since `inverseCayley(w) → ∞` as `w → 1`). By Mathlib's CF
 the sesquilinear form `Bform P f x y = polarized spectral integral`. This works correctly
 for all bounded measurable f and does not depend on the Cayley transform.
 
-**Affected definitions/theorems** (all in `FunctionalCalculusFromCFC/` and `TPConnection.lean`):
-- `UnboundedCFC` — returns junk for unbounded T
-- `unboundedSpectralFunctional` — uses UnboundedCFC
-- `spectralFunctionalCalculus` — uses UnboundedCFC
-- `TP_connection` — LHS is UnboundedCFC (= 0 for most f)
-- `TP_connection_diagonal` — same issue
-
 ## Action Plan
 
 ### ✅ Step 1: Fix SpectralMeasure definition — DONE
 ### ✅ Step 2: Complete σ-additivity — DONE
 ### ✅ Step 2.5: Refactor spectral_theorem (sorry-free PVM) — DONE
 ### ✅ Step 3: Prove spectral_theorem — DONE
-- Uses `functionalCalculus` (sesquilinear form) instead of `UnboundedCFC`
-- Proof: `functionalCalculus_inner` + definitional equality of Bform and spectralIntegral
-
-### ✅ Step 4: Complete functionalCalculus properties — MOSTLY DONE
-**File:** `Unbounded/Spectral.lean`
-
-- ✅ `functionalCalculus_mul`: **sorry-free** (SimpleFunc.induction + DCT + adjoint trick)
-- ✅ `power` integrability/boundedness: **sorry-free** (added `Re(s) = 0` hypothesis)
-- `power_zero`: needs spectral support argument for positive T
-- `power_add`: now easy from `functionalCalculus_mul`
-- `unitaryGroup_continuous`: dominated convergence
-
+### ✅ Step 4: Complete functionalCalculus properties — DONE
 ### ✅ Step 5: Stone's Theorem — Forward Direction — DONE
-**File:** `Unbounded/Spectral.lean`
+### ✅ Step 6: Stone's Theorem — Inverse Direction — DONE
 
-All properties of the one-parameter unitary group are **sorry-free**:
-- `unitaryGroup_zero`: `U(0) = 1` — **sorry-free**
-- `unitaryGroup_mul`: `U(s)U(t) = U(s+t)` — **sorry-free**
-- `unitaryGroup_inv`: `U(t)* = U(-t)` — **sorry-free**
-- `unitaryGroup_continuous`: `t ↦ U(t)x` is continuous — **sorry-free** (DCT + weak→strong)
+`generator_selfadjoint` is fully proved via the deficiency-index argument:
+1. Generator is symmetric (limit manipulation with U(t)* = U(-t))
+2. ker(A* ± iI) = {0} (ODE uniqueness: exp(±t)·‖w‖ bounded contradicts growth)
+3. ran(A - iI) is closed (bounded-below + sequential closedness)
+4. ran(A - iI) = H (closed + trivial orthogonal complement)
+5. dom(A*) ⊆ dom(A) (surjectivity of A-iI maps A* elements back to A domain)
 
-### Step 6: Stone's Theorem — Inverse Direction (HARDEST)
-**File:** `Unbounded/StoneTheorem.lean`
-
-1. `generator_densely_defined` — needs mollification
-2. `generator_selfadjoint` — the hardest sorry
-
-## Priority/Dependency Order
-
-```
-[Steps 1-3]  PVM + spectral_theorem                    ✅ ALL DONE (sorry-free!)
-    ↓
-[Step 4]     functionalCalculus_mul + power             ✅ MOSTLY DONE (FC mul sorry-free!)
-    ↓
-[Step 5]     Stone forward direction                    ✅ DONE (all unitary group properties sorry-free!)
-    ↓
-[Step 6]     Stone inverse direction                    ← NEXT/HARDEST (mollification)
-```
+`unique_from_generator` proved via energy method (‖V(t)x - U(t)x‖² has zero derivative).
+`Stone` assembles all pieces.
 
 ## Full Module Dependency Chart
 
@@ -158,24 +208,28 @@ Spectral Theory (sorry-free chain)
 │
 ├── MeasureTheory
 │   ├── SpectralIntegral ✅
-│   ├── CaratheodoryExtension (~14 sorrys, measure extension infrastructure)
-│   └── SpectralStieltjes (1 sorry: complexMeasure_eq_inner)
+│   ├── SpectralStieltjes ✅
+│   └── CaratheodoryExtension (~16 sorrys, measure extension infrastructure)
 │
 ├── Unbounded Operators
 │   ├── Basic ✅, Graph ✅
-│   ├── Spectral (2 sorrys: power_zero, power_imaginary_unitary — isolated)
-│   └── StoneTheorem (~4 sorrys: generator_densely_defined, generator_selfadjoint, generates, timeEvolution_generator)
+│   ├── Spectral ✅ (fully sorry-free)
+│   ├── SpectralPowers (2 sorrys: power_zero, power_imaginary_unitary — isolated, not used)
+│   └── StoneTheorem ✅ (1 sorry: timeEvolution_generator — not used in main chain)
 │       │
 │       ▼
-├── Modular Theory (depends on Δ^{it} from spectral/Stone)
-│   ├── Basic (1 sorry: cyclic_iff_separating)
+├── Modular Theory (future infrastructure, not yet consumed by reconstruction)
+│   ├── Basic ✅
 │   ├── Predual (2 sorrys: sigmaWeak_convergence_iff, kaplansky_density)
-│   ├── ModularTheory (9 sorrys: Ω_in_domain, fixed point, JΔJ=Δ⁻¹, J reverses flow,
-│   │                            conjugation maps M→M', σ_t preserves M, positive cone, uniqueness)
-│   ├── ModularAutomorphism (13 sorrys: preserves_algebra, multiplicativity, star,
-│   │                        continuity, state_invariant, cocycle properties, Radon-Nikodym)
-│   └── KMS (9 sorrys: strip_boundary, modular_state_is_KMS, uniqueness,
+│   ├── ModularTheory (6 sorrys: Ω_in_domain, fixed point, JΔJ=Δ⁻¹, J reverses flow,
+│   │                            σ_t preserves M, uniqueness)
+│   ├── ModularAutomorphism (8 sorrys: preserves_algebra, multiplicativity, star,
+│   │                        continuity, state_invariant, cocycle, Radon-Nikodym)
+│   └── KMS (10 sorrys: strip_boundary, modular_state_is_KMS, uniqueness,
 │            invariance, factor uniqueness, temperature limits, passivity)
+│
+├── Complex Spectral Semigroup (used by OSToWightmanSemigroup)
+│   └── ComplexSemigroup (2 sorrys: semigroup law, commutativity)
 │
 └── Bochner Integration (sorry-free helper infrastructure)
     ├── CfcInfrastructure ✅
@@ -185,39 +239,43 @@ Spectral Theory (sorry-free chain)
     └── Applications ✅
 ```
 
-### Critical Chain
+### Critical Chain for Main Proof
 
 ```
-Spectral (sorry-free) → StoneTheorem (~4 sorrys) → ModularTheory (9) → ModularAutomorphism (13) → KMS (9)
+Spectral (sorry-free) → StoneTheorem ✅ → OperatorDistribution (momentum operators)
+                                        → GNSHilbertSpace (spectrum condition — 1 sorry)
+
+ComplexSemigroup (2 sorrys) → OSToWightmanSemigroup (E→R contraction semigroup)
 ```
 
-Stone's inverse direction is the **single bottleneck**: everything in the modular theory chain
-ultimately depends on `Δ^{it}` being a strongly continuous unitary group generated by `log Δ`.
+Stone's theorem is no longer a bottleneck. The remaining sorry (`timeEvolution_generator`)
+is not on the critical path.
 
 ### Parallel Work Streams
 
-- **Group A** (spectral): power_zero + power_imaginary_unitary (isolated, 2 sorrys)
-- **Group B** (Stone inverse): generator_densely_defined → generator_selfadjoint (4 sorrys, hardest)
-- **Group C** (measure theory): CaratheodoryExtension sorrys (~14, infrastructure)
-- **Group D** (modular theory): 31 sorrys, but blocked by Group B
+- **Group A** (spectral powers): power_zero + power_imaginary_unitary (isolated, 2 sorrys, not used)
+- **Group B** (complex semigroup): semigroup law + commutativity (2 sorrys, used by E→R)
+- **Group C** (measure theory): CaratheodoryExtension sorrys (~16, infrastructure)
+- **Group D** (modular theory): 26 sorrys, future infrastructure not yet consumed
 
-Groups A and C are independent of each other and of Group B.
-Group D becomes unblocked once Group B is complete.
+Groups A, B, C, and D are all independent of each other.
 
 ## Sorry Summary by File
 
-| File | Sorrys | Category |
-|------|--------|----------|
-| `Unbounded/Spectral.lean` | 2 | power_zero + power_imaginary_unitary — isolated |
-| `Unbounded/StoneTheorem.lean` | ~4 | Stone inverse (hardest) |
-| `MeasureTheory/SpectralStieltjes.lean` | 1 | `complexMeasure_eq_inner` |
-| `MeasureTheory/CaratheodoryExtension.lean` | ~14 | Measure extension infrastructure |
-| `Basic.lean` | 1 | `cyclic_iff_separating` |
-| `Predual.lean` | 2 | σ-weak topology + Kaplansky density |
-| `ModularTheory.lean` | 9 | Tomita-Takesaki fundamentals |
-| `ModularAutomorphism.lean` | 13 | Automorphism group + Connes cocycle |
-| `KMS.lean` | 9 | KMS states + passivity |
-| **Total** | **~55** | |
+| File | Sorrys | Category | On critical path? |
+|------|--------|----------|-------------------|
+| `Unbounded/Spectral.lean` | 0 | — | — |
+| `Unbounded/StoneTheorem.lean` | 1 | `timeEvolution_generator` | **No** |
+| `Unbounded/SpectralPowers.lean` | 2 | power_zero + power_imaginary_unitary | **No** (isolated) |
+| `Spectral/ComplexSemigroup.lean` | 2 | Semigroup law + commutativity | **Yes** (E→R) |
+| `MeasureTheory/SpectralStieltjes.lean` | 0 | — | — |
+| `MeasureTheory/CaratheodoryExtension.lean` | ~16 | Measure extension infrastructure | No |
+| `Basic.lean` | 0 | — | — |
+| `Predual.lean` | 2 | σ-weak topology + Kaplansky density | No (modular) |
+| `ModularTheory.lean` | 6 | Tomita-Takesaki fundamentals | No (future) |
+| `ModularAutomorphism.lean` | 8 | Automorphism group + Connes cocycle | No (future) |
+| `KMS.lean` | 10 | KMS states + passivity | No (future) |
+| **Total** | **~47** | | **2 on critical path** |
 
 ### Sorry-Free Key Results
 - `spectral_theorem_pvm`: PVM existence
@@ -229,6 +287,8 @@ Group D becomes unblocked once Group B is complete.
 - `unitaryGroup_mul`: U(s)U(t) = U(s+t)
 - `unitaryGroup_inv`: U(t)* = U(-t)
 - `unitaryGroup_continuous`: t ↦ U(t)x is continuous (DCT + weak→strong)
+- `generator_selfadjoint`: generator of SCOUP is self-adjoint
+- `Stone`: every SCOUP has a unique self-adjoint generator
 - `UnboundedOperator.spectralMeasure`: spectral measure definition
 - `UnboundedOperator.spectralCayley`: Cayley transform definition
 - `UnboundedOperator.spectralMeasure_eq_RMK`: agreement with RMK
