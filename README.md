@@ -373,6 +373,14 @@ the tracked production tree, not as a complete file listing.
 │   │           ├── OSToWightmanSemigroup.lean   # OS semigroup, spectral/Laplace, 1-variable holomorphy
 │   │           ├── OSToWightman.lean            # flat-witness continuation core
 │   │           ├── OSToWightmanK2BaseStep.lean  # specialized k=2 base-step infrastructure
+│   │           ├── OSToWightmanK2VI1Bounds.lean # direct OS-side norm / matrix-element bounds for VI.1
+│   │           ├── OSToWightmanK2VI1Regularization.lean # zeroth-order reflected regularization estimates
+│   │           ├── OSToWightmanK2VI1RegularizationDeriv.lean # first-derivative reflected regularization estimates
+│   │           ├── OSToWightmanK2VI1RegularizationIterated.lean # higher-order reflected regularization iteration
+│   │           ├── OSToWightmanK2VI1RegularizationSeminorm.lean # weighted Schwartz seminorm control for regularized tests
+│   │           ├── OSToWightmanK2VI1RegularizedOrbitBound.lean # one-point lift of regularized seminorm bounds
+│   │           ├── OSToWightmanK2VI1RegularizationOrbit.lean # uniform OS orbit bounds for reflected regularized probes
+│   │           ├── OSToWightmanK2VI1OrbitBridge.lean # scalar boundary/orbit bridge on the direct VI.1 route
 │   │           ├── OSToWightmanSpatialMomentum.lean # one-point semigroup-group spectral bridge
 │   │           ├── OSToWightmanK2VI1Support.lean # proved support stack for the k=2 VI.1 frontier
 │   │           ├── OSToWightmanK2VI1.lean       # small live k=2 VI.1 frontier file
