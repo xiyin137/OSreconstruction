@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Support
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1DCT
 
 /-!
 # OS to Wightman `k = 2` VI.1 Frontier
@@ -27,6 +28,85 @@ set_option linter.unnecessarySimpa false
 set_option linter.unusedVariables false
 
 variable {d : ℕ} [NeZero d]
+
+private theorem exists_fixed_strip_diagonal_limit_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0})
+    (hφ_ball : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    (s : ℝ)
+    (hs : 0 < s) :
+    ∃ z : ℂ,
+      Filter.Tendsto
+        (fun n =>
+          let xφ : OSHilbertSpace OS :=
+            (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single 1
+                    (SchwartzNPoint.osConj (d := d) (n := 1)
+                      (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+                    (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n))⟧)) :
+                OSHilbertSpace OS))
+          osSemigroupGroupMatrixElement (d := d) OS lgc xφ (s + s) (0 : Fin d → ℝ))
+        Filter.atTop
+        (nhds z) := by
+  /-
+  Genuine remaining Input A:
+
+  prove convergence of the fixed-strip diagonal matrix elements
+  `I_n(2s, 0)`. The intended direct OS route is to rewrite these as descended
+  center approximate-identity averages of a continuous separated-point orbit
+  function and then apply
+  `descended_center_approxIdentity_integral_tendsto_of_continuousAt_zero_local`.
+  -/
+  sorry
+
+private theorem exists_shell_pointwise_limit_function_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0})
+    (hφ_ball : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    (h : positiveTimeCompactSupportSubmodule d) :
+    ∃ g : SpacetimeDim d → ℂ,
+      (∀ᵐ ξ : SpacetimeDim d ∂volume,
+        Filter.Tendsto
+          (fun n =>
+            (if hξ : 0 < ξ 0 then
+              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                (twoPointProductLift (φ_seq n)
+                  (SCV.translateSchwartz (-ξ)
+                    (reflectedSchwartzSpacetime (φ_seq n)))))
+            else 0) * ((h : SchwartzSpacetime d) ξ))
+          Filter.atTop
+          (nhds (g ξ * ((h : SchwartzSpacetime d) ξ)))) ∧
+      ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
+          (d := d) OS χ₀) h =
+        ∫ ξ : SpacetimeDim d, g ξ * ((h : SchwartzSpacetime d) ξ)) := by
+  /-
+  Genuine remaining Input B:
+
+  identify the pointwise almost-everywhere shell limit and the corresponding
+  target integral. The intended direct OS route is again a descended-center
+  approximate-identity argument on the positive-time shell, using the orbit
+  continuity layer from `OSToWightmanK2VI1OrbitBridge.lean`.
+  -/
+  sorry
 
 private theorem k2Probe_pairing_fixed_normalized_center_tendsto_schwingerDifferencePositive_local
     (OS : OsterwalderSchraderAxioms d)
@@ -68,14 +148,43 @@ private theorem k2Probe_pairing_fixed_normalized_center_tendsto_schwingerDiffere
         (𝓝 ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
           (d := d) OS χ₀) h)) := by
   intro h
-  /-
-  Honest remaining direct OS II VI.1 content:
-
-  For the fixed normalized center shell `twoPointDifferenceLift χ₀ h`, prove that
-  the probe pairing converges to the reduced Schwinger positive functional.
-  All shell bookkeeping has already been paid down in the frozen support file.
-  -/
-  sorry
+  obtain ⟨ε, hε_pos, hmargin0⟩ :=
+    exists_positive_time_margin_of_mem_positiveTimeCompactSupport_local (d := d) h
+  have hs : 0 < ε / 4 := by linarith
+  have hmargin :
+      tsupport (((h : positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) :
+        SpacetimeDim d → ℂ) ⊆ {ξ : SpacetimeDim d | ε / 4 + ε / 4 < ξ 0} := by
+    refine Set.Subset.trans hmargin0 ?_
+    intro ξ hξ
+    simp only [Set.mem_setOf] at hξ ⊢
+    linarith
+  obtain ⟨z, hdiag⟩ :=
+    exists_fixed_strip_diagonal_limit_local
+      (d := d) OS lgc φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg hφ_ball
+      (ε / 4) hs
+  obtain ⟨g, hpointwise, htarget⟩ :=
+    exists_shell_pointwise_limit_function_local
+      (d := d) OS lgc χ₀ hχ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg
+      hφ_ball h
+  have hshell :
+      Filter.Tendsto
+        (fun n =>
+          ∫ ξ : SpacetimeDim d,
+            (if hξ : 0 < ξ 0 then
+              OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+                (twoPointProductLift (φ_seq n)
+                  (SCV.translateSchwartz (-ξ)
+                    (reflectedSchwartzSpacetime (φ_seq n)))))
+            else 0) * ((h : SchwartzSpacetime d) ξ))
+        Filter.atTop
+        (𝓝 ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
+          (d := d) OS χ₀) h)) :=
+    OSReconstruction.translatedProductShell_boundary_tendsto_of_tendsto_damped_diagonal_and_ae_pointwise_vi1DCT_local
+      (d := d) OS lgc χ₀ φ_seq hφ_real hφ_compact hφ_neg h (ε / 4) hs
+      hmargin g hdiag hpointwise htarget
+  refine Filter.Tendsto.congr' ?_ hshell
+  filter_upwards with n
+  simpa [hχ₀, one_mul] using (hpair n χ₀ h).symm
 
 private theorem k2DifferenceKernel_real_pairing_tendsto_schwingerDifferencePositive_of_negativeApproxIdentity_local
     (OS : OsterwalderSchraderAxioms d)
