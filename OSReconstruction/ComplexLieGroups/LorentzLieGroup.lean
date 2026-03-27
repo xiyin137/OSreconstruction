@@ -35,7 +35,7 @@ they do not depend on the Wightman physics module.
 * `LorentzGroup.instGroup` — group structure
 * `LorentzGroup.instTopologicalSpace` — subspace topology
 * `LorentzGroup.instIsTopologicalGroup` — topological group
-* `RestrictedLorentzGroup.isPathConnected` — SO⁺(1,d) is path-connected (sorry)
+* `RestrictedLorentzGroup.isPathConnected` — SO⁺(1,d) is path-connected
 
 ## References
 

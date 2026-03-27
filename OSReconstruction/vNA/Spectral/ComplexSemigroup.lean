@@ -389,7 +389,18 @@ theorem spectralSemigroupComplex_ofReal_add
     spectralSemigroupComplex A hA hA_nonneg hspec ((s + t : ℝ) : ℂ) =
       (spectralSemigroupComplex A hA hA_nonneg hspec (s : ℂ)).comp
         (spectralSemigroupComplex A hA hA_nonneg hspec (t : ℂ)) := by
-  sorry
+  rw [spectralSemigroupComplex_ofReal_eq_nnrpow A hA hA_nonneg hspec (s + t) (add_pos hs ht)]
+  rw [spectralSemigroupComplex_ofReal_eq_nnrpow A hA hA_nonneg hspec s hs]
+  rw [spectralSemigroupComplex_ofReal_eq_nnrpow A hA hA_nonneg hspec t ht]
+  have hs' := Real.toNNReal_pos.mpr hs
+  have ht' := Real.toNNReal_pos.mpr ht
+  simpa [show (HMul.hMul :
+      (H →L[ℂ] H) → _ → _) =
+      ContinuousLinearMap.comp from rfl,
+    Real.toNNReal_of_nonneg hs.le,
+    Real.toNNReal_of_nonneg ht.le,
+    Real.toNNReal_of_nonneg (add_nonneg hs.le ht.le)] using
+      CFC.nnrpow_add (a := A) hs' ht'
 
 /-- Any bounded operator commuting with `A` also commutes with the complex spectral semigroup
 whenever `Re(z) > 0`. -/
@@ -401,7 +412,9 @@ theorem Commute.spectralSemigroupComplex
     (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
     (z : ℂ) (hz : 0 < z.re) :
     Commute B (spectralSemigroupComplex A hA hA_nonneg hspec z) := by
-  sorry
+  show Commute B (cfc (specSemiFRe z) A + Complex.I • cfc (specSemiFIm z) A)
+  exact ((hBA.symm.cfc_real (specSemiFRe z)).symm).add_right
+    (((hBA.symm.cfc_real (specSemiFIm z)).symm).smul_right _)
 
 /-! ### Holomorphicity of matrix elements -/
 
