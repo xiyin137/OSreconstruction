@@ -5,8 +5,10 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Support
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputA
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputAInvariance
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputAKernelReduction
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputAProductShell
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputAFixedTime
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1InputAWitness
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1DCT
 
 /-!
@@ -32,35 +34,104 @@ set_option linter.unusedVariables false
 
 variable {d : ℕ} [NeZero d]
 
-private theorem exists_fixed_strip_xiShift_headBlockInvariant_local
+private theorem exists_fixed_strip_fixedTimeKernel_constBound_package_local
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (s : ℝ)
     (hs : 0 < s)
-    (Ψ : (Fin 2 → Fin (d + 1) → ℂ) → ℂ)
-    (hΨ_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
       OS.S 2 f = ∫ x : NPointDomain d 2,
-        Ψ (fun i => wickRotatePoint (x i)) * (f.1 x)) :
-    Continuous (OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s)) ∧
-      ∃ (C_bd : ℝ) (N : ℕ),
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x)) :
+    let K := OSReconstruction.twoPointFixedTimeKernel G (((s + s) : ℂ) * Complex.I)
+    Continuous K ∧
+      ∃ (C_bd : ℝ),
         ∃ hC : 0 < C_bd,
-          ∃ hK_meas :
-              AEStronglyMeasurable
-                (OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s)) volume,
-            ∃ hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
-                ‖OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s) x‖ ≤
-                  C_bd * (1 + ‖x‖) ^ N,
-              OSReconstruction.IsHeadBlockTranslationInvariantSchwartzCLM
-                (m := d + 1) (n := d + 1)
-                (OSReconstruction.twoPointFlatKernelCLM
-                  (OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s))
-                  hK_meas C_bd N hC hK_bound) := by
+          ∃ hK_meas : AEStronglyMeasurable K volume,
+            ∀ᵐ x : NPointDomain d 2 ∂volume,
+              ‖K x‖ ≤ C_bd := by
   /-
   Genuine remaining Input A seam after the fixed-strip product-shell theorem:
 
-  establish the analytic control of the concrete fixed-time `xiShift` kernel:
-  continuity, polynomial-growth kernel packaging, and the head-block
-  translation invariance of the resulting flattened CLM.
+  establish the analytic control of the standard fixed-time kernel on the real
+  positive-time section, with the common Euclidean witness `G` still exposed on
+  the surface.
+
+  Once this smaller real-section package is available, the verified transport
+  theorem in `OSToWightmanK2VI1InputAFixedTime.lean` upgrades it formally to the
+  center/difference polynomial package required by the kernel-reduction layer.
+  -/
+  sorry
+
+private theorem exists_fixed_strip_fixedTimeCenterDiff_productShell_to_difference_local
+    (χc : SchwartzSpacetime d)
+    (hχc : ∫ u : SpacetimeDim d, χc u = 1)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_int : ∀ n, ∫ u : SpacetimeDim d, φ_seq n u = 1)
+    (K₂ : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K₂ volume)
+    (C_bd : ℝ)
+    (N : ℕ)
+    (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K₂ x‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
+    ∀ n,
+      let T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+        OSReconstruction.twoPointFlatKernelCLM K₂ hK_meas C_bd N hC hK_bound
+      T (OSReconstruction.reindexSchwartzFin
+            (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointProductLift (φ_seq n)
+                  (reflectedSchwartzSpacetime (φ_seq n)))))) =
+        T (OSReconstruction.reindexSchwartzFin
+            (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointDifferenceLift (φ_seq n)
+                  (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                    (reflectedSchwartzSpacetime (φ_seq n))))))) := by
+  /-
+  Honest remaining Input A family-level descent seam after the weaker kernel
+  reduction: for the concrete fixed-strip `xiShift` kernel package, prove the
+  product shell -> canonical difference shell equality.
+  -/
+  sorry
+
+private theorem exists_fixed_strip_fixedTimeCenterDiff_center_replacement_local
+    (χc : SchwartzSpacetime d)
+    (hχc : ∫ u : SpacetimeDim d, χc u = 1)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_int : ∀ n, ∫ u : SpacetimeDim d, φ_seq n u = 1)
+    (K₂ : NPointDomain d 2 → ℂ)
+    (hK_meas : AEStronglyMeasurable K₂ volume)
+    (C_bd : ℝ)
+    (N : ℕ)
+    (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖K₂ x‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
+    ∀ n,
+      let T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+        OSReconstruction.twoPointFlatKernelCLM K₂ hK_meas C_bd N hC hK_bound
+      T (OSReconstruction.reindexSchwartzFin
+            (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointDifferenceLift (φ_seq n)
+                  (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                    (reflectedSchwartzSpacetime (φ_seq n))))))) =
+        T (OSReconstruction.reindexSchwartzFin
+            (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+            (OSReconstruction.flattenSchwartzNPoint (d := d)
+              (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                (twoPointDifferenceLift χc
+                  (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                    (reflectedSchwartzSpacetime (φ_seq n))))))) := by
+  /-
+  Honest remaining Input A family-level descent seam after the weaker kernel
+  reduction: for the concrete fixed-time center/difference kernel package, prove the
+  auxiliary normalized center-cutoff replacement equality.
   -/
   sorry
 
@@ -94,15 +165,67 @@ private theorem exists_fixed_strip_common_difference_kernel_local
               (twoPointDifferenceLift χ₀
                 (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
                   (reflectedSchwartzSpacetime (φ_seq n))) x)) := by
-  obtain ⟨Ψ, hΨ_euclid, hprod⟩ :=
-    OSReconstruction.exists_common_fixed_strip_xiShift_productShell_pairing_local
+  obtain ⟨G, hG_holo, hG_euclid, hprod⟩ :=
+    OSReconstruction.exists_common_fixed_strip_fixedTimeCenterDiff_productShell_pairing_with_witness_local
       (d := d) OS lgc φ_seq hφ_real hφ_compact hφ_neg (s + s) (add_pos hs hs)
-  obtain ⟨hK_cont, C_bd, N, hC, hK_meas, hK_bound, hTinv⟩ :=
-    exists_fixed_strip_xiShift_headBlockInvariant_local
-      (d := d) OS lgc s hs Ψ hΨ_euclid
+  obtain ⟨hK_fixed_cont, C0, hC0, hK_fixed_meas, hK_fixed_bdd⟩ :=
+    exists_fixed_strip_fixedTimeKernel_constBound_package_local
+      (d := d) OS lgc s hs G hG_holo hG_euclid
+  obtain ⟨hK_cont, C_bd, N, hC, hK_meas, hK_bound⟩ :=
+    OSReconstruction.exists_polyBound_package_twoPointFixedTimeCenterDiffKernel_of_constBound_local
+      (d := d) G (((s + s) : ℂ) * Complex.I) hK_fixed_cont hK_fixed_meas C0 hC0 hK_fixed_bdd
   obtain ⟨χc_seq, _hχc_nonneg, _hχc_real, hχc_int, hχc_compact, _hχc_neg, _hχc_ball⟩ :=
     exists_negative_approx_identity_sequence (d := d)
   let χc : SchwartzSpacetime d := χc_seq 0
+  have hdesc :
+      ∀ n,
+        let T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+          OSReconstruction.twoPointFlatKernelCLM
+            (OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+              (d := d) G ((((s + s) : ℂ) * Complex.I)))
+            hK_meas C_bd N hC hK_bound
+        T (OSReconstruction.reindexSchwartzFin
+              (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+              (OSReconstruction.flattenSchwartzNPoint (d := d)
+                (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                  (twoPointProductLift (φ_seq n)
+                    (reflectedSchwartzSpacetime (φ_seq n)))))) =
+            T (OSReconstruction.reindexSchwartzFin
+              (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+              (OSReconstruction.flattenSchwartzNPoint (d := d)
+                (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                  (twoPointDifferenceLift (φ_seq n)
+                    (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                      (reflectedSchwartzSpacetime (φ_seq n))))))) :=
+    exists_fixed_strip_fixedTimeCenterDiff_productShell_to_difference_local
+      (d := d) χc (hχc_int 0) φ_seq hφ_int
+      (OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+        (d := d) G ((((s + s) : ℂ) * Complex.I))) hK_meas C_bd N hC hK_bound
+  have hcenter :
+      ∀ n,
+        let T : SchwartzMap (Fin ((d + 1) + (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+          OSReconstruction.twoPointFlatKernelCLM
+            (OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+              (d := d) G ((((s + s) : ℂ) * Complex.I)))
+            hK_meas C_bd N hC hK_bound
+        T (OSReconstruction.reindexSchwartzFin
+              (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+              (OSReconstruction.flattenSchwartzNPoint (d := d)
+                (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                  (twoPointDifferenceLift (φ_seq n)
+                    (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                      (reflectedSchwartzSpacetime (φ_seq n))))))) =
+            T (OSReconstruction.reindexSchwartzFin
+              (show 2 * (d + 1) = (d + 1) + (d + 1) by ring)
+              (OSReconstruction.flattenSchwartzNPoint (d := d)
+                (OSReconstruction.twoPointCenterDiffSchwartzCLM (d := d)
+                  (twoPointDifferenceLift χc
+                    (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+                      (reflectedSchwartzSpacetime (φ_seq n))))))) :=
+    exists_fixed_strip_fixedTimeCenterDiff_center_replacement_local
+      (d := d) χc (hχc_int 0) φ_seq hφ_int
+      (OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+        (d := d) G ((((s + s) : ℂ) * Complex.I))) hK_meas C_bd N hC hK_bound
   let I : ℕ → ℂ := fun n =>
     let xφ : OSHilbertSpace OS :=
       (((show OSPreHilbertSpace OS from
@@ -162,16 +285,19 @@ private theorem exists_fixed_strip_common_difference_kernel_local
   have hpair : ∀ n,
       I n =
         ∫ z : NPointDomain d 2,
-          OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s) z *
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d) G ((((s + s) : ℂ) * Complex.I)) z *
             ((φ_seq n) (z 0) *
               reflectedSchwartzSpacetime (φ_seq n) (z 0 + z 1)) := by
     intro n
-    simpa [I, OSReconstruction.twoPointXiShiftKernel_local] using hprod n
-  exact OSReconstruction.exists_common_difference_kernel_of_common_productShell_pairing_headBlockInvariant_local
+    simpa [I] using hprod n
+  exact OSReconstruction.exists_common_difference_kernel_of_common_productShell_pairing_local
     (d := d) χc (hχc_int 0) (hχc_compact 0) χ₀ hχ₀
-    (OSReconstruction.twoPointXiShiftKernel_local (d := d) Ψ (s + s))
-    hK_cont hK_meas C_bd N hC hK_bound hTinv
-    φ_seq (fun n => reflectedSchwartzSpacetime (φ_seq n)) hφ_int hdesc_compact I hpair
+    (OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+      (d := d) G ((((s + s) : ℂ) * Complex.I)))
+    hK_cont hK_meas C_bd N hC hK_bound
+    φ_seq (fun n => reflectedSchwartzSpacetime (φ_seq n)) hφ_int hdesc_compact
+    hdesc hcenter I hpair
 
 private theorem exists_fixed_strip_diagonal_limit_local
     (OS : OsterwalderSchraderAxioms d)
