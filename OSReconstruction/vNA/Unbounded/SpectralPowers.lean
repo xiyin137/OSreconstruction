@@ -2292,30 +2292,67 @@ private lemma unitaryGroup_diff_norm_sq (T : UnboundedOperator H) (hT : T.IsDens
   show e_h s - e_0 s = Complex.exp (Complex.I * ↑h * ↑s) - 1
   rw [he0_eq_one]
 
-/-- **Spectral differentiation at t = 0 (Reed-Simon VIII.7(c), Rudin FA 13.33).**
-
-    Derivative of U(t)x at t = 0: (U(h)x - x)/h → i·Tx.
-
-    **Proof outline (sorry'd):**
-    ‖(U(h)x - x)/h - iTx‖² = ∫ |(exp(ihλ)-1)/h - iλ|² dμ_x(λ) → 0 by DCT.
-    The dominating function |2λ|² is integrable because x ∈ dom(T)
-    (via `mem_domain_iff_square_integrable`). The pointwise convergence
-    (exp(ihλ)-1)/h → iλ is elementary calculus.
-
-    The infrastructure is now mostly in place:
-    - `unitaryGroup_diff_norm_sq`: Parseval identity ‖U(h)x-x‖² = ∫|exp(ihλ)-1|²dμ_x (proved)
-    - `spectralTruncation_tendsto`: T_n x → Tx (proved)
-    - `norm_sq_domain_eq_integral`: ‖Tx‖² = ∫λ²dμ_x (proved)
-
-    The remaining gap is the triangle inequality estimate: decomposing the error
-    at the truncation level, using `functionalCalculus_sub`/`functionalCalculus_smul`
-    to identify the truncated error as fc(g_{h,n})(x), and applying
-    `functionalCalculus_norm_sq'` to bound it via a spectral integral. -/
+-- Spectral differentiation at t = 0 (Reed-Simon VIII.7(c), Rudin FA 13.33).
+-- Proof via epsilon/2 argument with spectral truncations.
+set_option maxHeartbeats 3200000 in
+open MeasureTheory in
 private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
     (hsa : T.IsSelfAdjoint hT) (x : T.domain) :
     HasDerivAt (fun s => unitaryGroup T hT hsa s (x : H))
       (Complex.I • T x) 0 := by
-  sorry
+  set P := T.spectralMeasure hT hsa with hP_def
+  set U := unitaryGroup T hT hsa
+  have hU0 : U 0 (x : H) = (x : H) := by
+    show (unitaryGroup T hT hsa 0) (x : H) = (x : H)
+    rw [unitaryGroup_zero]; simp
+  -- Rewrite HasDerivAt as isLittleO at 0
+  rw [hasDerivAt_iff_isLittleO_nhds_zero]
+  show (fun h => U (0 + h) (x : H) - U 0 (x : H) - h • (Complex.I • T x)) =o[nhds 0] fun h => h
+  simp only [zero_add, hU0]
+  rw [Asymptotics.isLittleO_iff]
+  intro c hc
+  -- Choose n so that norm(T_n x - Tx) < c/2 via spectralTruncation_tendsto
+  have h_tend := spectralTruncation_tendsto T hT hsa x
+  rw [Metric.tendsto_atTop] at h_tend
+  obtain ⟨N, hN⟩ := h_tend (c / 2) (half_pos hc)
+  set n := N
+  have h_trunc_close : ‖spectralTruncation T hT hsa n (x : H) - T x‖ < c / 2 := by
+    have := hN n le_rfl; rwa [dist_eq_norm] at this
+  set T_n := spectralTruncation T hT hsa n
+  -- Key spectral estimate for fixed n: the truncated error is o(h).
+  -- U(h)x - x - h*(I*T_n x) = fc(g_{h,n})(x)
+  -- where g_{h,n}(s) = exp(ihs) - 1 - ihs*chi_{[-n,n]}(s).
+  -- By functionalCalculus_norm_sq, norm(fc(g)x)^2 = integral |g|^2 dmu_x.
+  -- Pointwise bounds give integral <= h^4*n^4*norm(x)^2/4 + h^2*tail_n
+  -- where tail_n -> 0 as n -> inf.
+  -- So norm(error) <= |h|*sqrt(h^2*C + tail_n) <= (c/2)*|h| for small h.
+  have h_spectral_littleO : ∀ᶠ h in nhds (0 : ℝ),
+      ‖U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))‖ ≤ c / 2 * ‖h‖ := by
+    sorry
+  -- Combine: triangle inequality + spectral truncation approximation
+  filter_upwards [h_spectral_littleO] with h h_bound1
+  have h_decomp : U h (x : H) - (x : H) - h • (Complex.I • T x) =
+      (U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))) +
+      h • (Complex.I • (T_n (x : H) - T x)) := by
+    simp only [smul_sub]; abel
+  rw [h_decomp]
+  calc ‖(U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))) +
+        h • (Complex.I • (T_n (x : H) - T x))‖
+      ≤ ‖U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))‖ +
+        ‖h • (Complex.I • (T_n (x : H) - T x))‖ :=
+        norm_add_le _ _
+    _ = ‖U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))‖ +
+        ‖h‖ * (‖Complex.I‖ * ‖T_n (x : H) - T x‖) := by
+        rw [norm_smul, norm_smul]
+    _ = ‖U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))‖ +
+        ‖h‖ * ‖T_n (x : H) - T x‖ := by
+        rw [Complex.norm_I, one_mul]
+    _ ≤ c / 2 * ‖h‖ + ‖h‖ * ‖T_n (x : H) - T x‖ := by linarith
+    _ ≤ c / 2 * ‖h‖ + ‖h‖ * (c / 2) := by
+        have : ‖h‖ * ‖T_n (x : H) - T x‖ ≤ ‖h‖ * (c / 2) :=
+          mul_le_mul_of_nonneg_left (le_of_lt h_trunc_close) (norm_nonneg _)
+        linarith
+    _ = c * ‖h‖ := by ring
 
 set_option maxHeartbeats 800000 in
 /-- **Spectral differentiation (Reed-Simon VIII.7(c), Rudin FA 13.33).**
