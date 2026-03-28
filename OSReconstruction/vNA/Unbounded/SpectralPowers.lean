@@ -1707,27 +1707,42 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
     have h_fc_one_eq : functionalCalculus P (fun _ => (1 : ℂ)) h_one_int ⟨1, zero_le_one, fun s => by simp⟩ = 1 :=
       functionalCalculus_const_one_eq_id P
     rw [h_fc_one_eq, ContinuousLinearMap.one_apply] at h_fc_kn_tend
-    -- Step B: Spectral truncations T_n(x) form a Cauchy sequence (hence convergent).
-    -- By functionalCalculus_sub + functionalCalculus_norm_sq':
-    --   ‖T_m x - T_n x‖² = ∫ |f_m(s) - f_n(s)|² dμ_x ≤ ∫_{|s|>min(m,n)} s² dμ_x → 0
-    -- since ∫ s² dμ_x < ∞ (from hint). The tail integral vanishes by
-    -- Antitone.tendsto_setIntegral applied to the sets Icc(-n,n)ᶜ.
-    -- Step C: fc(k_n)(x) = R.inv(T_n x + I•x) via functionalCalculus_mul.
-    -- Write k_n = g * (f_n + I) (pointwise commutative), then:
-    --   fc(k_n) = fc(g) ∘L fc(f_n + I) = R.inv ∘L fc(f_n + I)
+    -- Step B: T_n(x) is Cauchy → converges to some y
+    -- Key inputs: functionalCalculus_sub, functionalCalculus_norm_sq',
+    -- tendsto_setIntegral_of_antitone on complements of Icc(-n,n)
+    have h_cauchy : CauchySeq (fun n => spectralTruncation T hT hsa n x) := by
+      -- The proof uses ‖T_m x - T_n x‖² = ∫ |f_m-f_n|² dμ_x via
+      -- functionalCalculus_sub + functionalCalculus_norm_sq', bounded by
+      -- ∫_{|s|>min(m,n)} s² dμ_x which → 0 by tendsto_setIntegral_of_antitone
+      -- since ∫ s² dμ_x < ∞ (from hint).
+      sorry
+    have h_complete := h_cauchy.tendsto_limUnder
+    set y := limUnder atTop (fun n => spectralTruncation T hT hsa n x) with hy_def
+    -- Step C: fc(k_n)(x) = R.inv(T_n x + I•x)
+    -- Uses: k_n = g * (f_n + I), functionalCalculus_mul gives
+    -- fc(k_n) = fc(g) ∘L fc(f_n + I) = R.inv ∘L fc(f_n + I)
     -- And fc(f_n + I)(x) = T_n x + I•x by functionalCalculus_add + smul.
-    -- Step D: By continuity of R.inv and limit uniqueness:
-    --   R.inv(y + I•x) = lim R.inv(T_n x + I•x) = lim fc(k_n)(x) = x
-    -- where y = lim T_n x. So w = y + I•x witnesses ∃ w, R.inv w = x.
-    --
-    -- The formal proof requires:
-    -- (1) Cauchy argument via functionalCalculus_sub + norm_sq + tail estimates
-    -- (2) Composition identity via functionalCalculus_mul
-    -- (3) Linearity decomposition via functionalCalculus_add + smul
-    -- All ingredients are available (proved in Convergence.lean, Applications.lean).
-    -- The formalization is ~100 lines of bookkeeping; deferred to avoid blocking
-    -- the downstream differentiation theorems.
-    sorry
+    have h_fc_kn_eq : ∀ n, functionalCalculus P (k_n n) (h_kn_int n)
+        ⟨2, by norm_num, h_kn_bound n⟩ x =
+        R.inv (spectralTruncation T hT hsa n x + Complex.I • x) := by
+      sorry
+    -- Step D: Limits match → ∃ w, R.inv w = x
+    -- T_n x → y, so T_n x + I•x → y + I•x
+    -- R.inv continuous: R.inv(T_n x + I•x) → R.inv(y + I•x)
+    -- Also R.inv(T_n x + I•x) = fc(k_n)(x) → x (Step A)
+    -- By uniqueness: R.inv(y + I•x) = x
+    refine ⟨y + Complex.I • x, ?_⟩
+    have h_trunc_tend : Tendsto (fun n => spectralTruncation T hT hsa n x + Complex.I • x)
+        atTop (nhds (y + Complex.I • x)) := h_complete.add tendsto_const_nhds
+    have h_rinv_tend : Tendsto
+        (fun n => R.inv (spectralTruncation T hT hsa n x + Complex.I • x))
+        atTop (nhds (R.inv (y + Complex.I • x))) :=
+      R.inv.continuous.continuousAt.tendsto.comp h_trunc_tend
+    have h_eq_limits : Tendsto
+        (fun n => R.inv (spectralTruncation T hT hsa n x + Complex.I • x))
+        atTop (nhds x) := by
+      convert h_fc_kn_tend using 1; ext n; exact (h_fc_kn_eq n).symm
+    exact tendsto_nhds_unique h_rinv_tend h_eq_limits
 
 /-- For x ∈ dom(T), the spectral truncations T_n x converge to Tx.
 
