@@ -1707,44 +1707,26 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
     have h_fc_one_eq : functionalCalculus P (fun _ => (1 : ℂ)) h_one_int ⟨1, zero_le_one, fun s => by simp⟩ = 1 :=
       functionalCalculus_const_one_eq_id P
     rw [h_fc_one_eq, ContinuousLinearMap.one_apply] at h_fc_kn_tend
-    -- Step B: fc(k_n)(x) = R.inv(spectralTruncation n x + I•x)
-    -- k_n = (f_n + I) * g, and fc(f_n + I)(x) = fc(f_n)(x) + I•x = T_n x + I•x
-    -- fc(k_n) = fc((f_n + I) * g) = fc(f_n + I) ∘L fc(g) ... but this is getting complicated
-    -- Actually: fc(k_n)(x) = fc((f_n + i)·g)(x), and (f_n+i)·g = f_n·g + i·g
-    -- fc(f_n·g) = fc(f_n) ∘L fc(g) = T_n ∘L R.inv
-    -- fc(i·g) = i · fc(g) = i · R.inv
-    -- So fc(k_n)(x) = (T_n + i)(R.inv(x))... wait, this goes the wrong way.
-    -- Actually, k_n(s) = (f_n(s) + i) / (s+i).
-    -- We need fc(k_n)(x) to relate to R.inv applied to something involving T_n x.
-    -- Better approach: just use the limit directly.
-    -- We know fc(k_n)(x) → x. We also know that fc(k_n)(x) is in range(R.inv)
-    -- because we can write k_n = (f_n + i_const) * g and then
-    -- fc(k_n) = fc(f_n + i_const) ∘L fc(g) by functionalCalculus_mul,
-    -- and fc(g) = R.inv, so fc(k_n)(x) = fc(f_n + i_const)(R.inv(x)... hmm
-    -- This doesn't help because R.inv(x) isn't what we want.
+    -- Step B: Spectral truncations T_n(x) form a Cauchy sequence (hence convergent).
+    -- By functionalCalculus_sub + functionalCalculus_norm_sq':
+    --   ‖T_m x - T_n x‖² = ∫ |f_m(s) - f_n(s)|² dμ_x ≤ ∫_{|s|>min(m,n)} s² dμ_x → 0
+    -- since ∫ s² dμ_x < ∞ (from hint). The tail integral vanishes by
+    -- Antitone.tendsto_setIntegral applied to the sets Icc(-n,n)ᶜ.
+    -- Step C: fc(k_n)(x) = R.inv(T_n x + I•x) via functionalCalculus_mul.
+    -- Write k_n = g * (f_n + I) (pointwise commutative), then:
+    --   fc(k_n) = fc(g) ∘L fc(f_n + I) = R.inv ∘L fc(f_n + I)
+    -- And fc(f_n + I)(x) = T_n x + I•x by functionalCalculus_add + smul.
+    -- Step D: By continuity of R.inv and limit uniqueness:
+    --   R.inv(y + I•x) = lim R.inv(T_n x + I•x) = lim fc(k_n)(x) = x
+    -- where y = lim T_n x. So w = y + I•x witnesses ∃ w, R.inv w = x.
     --
-    -- Alternatively: since h_fc_kn_tend shows fc(k_n)(x) → x, and each
-    -- fc(k_n)(x) = R.inv(w_n) for some w_n (namely w_n = fc(f_n+i_const)(x)),
-    -- if w_n → w for some w, then R.inv(w_n) → R.inv(w) by continuity,
-    -- and by uniqueness x = R.inv(w).
-    --
-    -- w_n = T_n x + I•x. If T_n x converges (call the limit y), then w_n → y + I•x.
-    -- The convergence of T_n x follows from the Cauchy argument via hint.
-    --
-    -- But this requires establishing fc(k_n)(x) = R.inv(T_n x + I•x), which
-    -- itself requires the functional calculus composition argument.
-    -- This is a long proof. Let's use the direct limit approach instead.
-    --
-    -- Actually the simplest route: fc(k_n)(x) → x. Since R.inv is continuous
-    -- and surjective-to-domain, and fc(k_n)(x) = R.inv(something_n), where
-    -- something_n = fc(f_n + I)(x) = T_n(x) + I•x,
-    -- if we can show T_n(x) is Cauchy (hence convergent), say to y,
-    -- then R.inv(y + I•x) = lim R.inv(T_n x + I•x) = lim fc(k_n)(x) = x.
-    -- So w = y + I•x.
-    -- The Cauchy argument for T_n x is the key remaining piece.
-    -- By spectralTruncation_norm_sq: ‖T_m x - T_n x‖² relates to a spectral integral
-    -- of a tail function, which vanishes by integrability.
-    -- This is a standard but technically involved argument.
+    -- The formal proof requires:
+    -- (1) Cauchy argument via functionalCalculus_sub + norm_sq + tail estimates
+    -- (2) Composition identity via functionalCalculus_mul
+    -- (3) Linearity decomposition via functionalCalculus_add + smul
+    -- All ingredients are available (proved in Convergence.lean, Applications.lean).
+    -- The formalization is ~100 lines of bookkeeping; deferred to avoid blocking
+    -- the downstream differentiation theorems.
     sorry
 
 /-- For x ∈ dom(T), the spectral truncations T_n x converge to Tx.
@@ -2685,7 +2667,9 @@ theorem unitaryGroup_generator_domain_eq (T : UnboundedOperator H) (hT : T.IsDen
       simp only [slope, c, Function.comp, mul_zero, Complex.exp_zero, vsub_eq_sub, sub_zero]
       -- Slope rewriting: slope(f,0)(h) = (f(h)-f(0))/(h-0) vs (exp(I*h*s)-1)/h
       -- These differ only in commutativity I*s*h vs I*h*s and format of division
-      sorry
+      have harg : Complex.I * ↑s * ↑(h_seq n) = Complex.I * ↑(h_seq n) * ↑s := by ring
+      rw [smul_eq_mul, harg]
+      field_simp
     -- Step 2: ‖(exp(I*h_n*s)-1)/h_n‖² → ‖I*s‖² = s²
     have h_norm_sq_tend : Tendsto (fun n => ‖(Complex.exp (Complex.I * ↑(h_seq n) * ↑s) - 1) / ↑(h_seq n)‖ ^ 2)
         atTop (nhds (‖Complex.I * ↑s‖ ^ 2)) :=
