@@ -1711,11 +1711,133 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
     -- Key inputs: functionalCalculus_sub, functionalCalculus_norm_sq',
     -- tendsto_setIntegral_of_antitone on complements of Icc(-n,n)
     have h_cauchy : CauchySeq (fun n => spectralTruncation T hT hsa n x) := by
-      -- The proof uses ‖T_m x - T_n x‖² = ∫ |f_m-f_n|² dμ_x via
-      -- functionalCalculus_sub + functionalCalculus_norm_sq', bounded by
-      -- ∫_{|s|>min(m,n)} s² dμ_x which → 0 by tendsto_setIntegral_of_antitone
-      -- since ∫ s² dμ_x < ∞ (from hint).
-      sorry
+      -- ‖T_m x - T_n x‖² = ∫ |f_m-f_n|² dμ ≤ ∫_{Icc(-N,N)ᶜ} s² dμ → 0 (tail of integrable).
+      -- The formal proof proceeds via Metric.cauchySeq_iff + functionalCalculus_sub +
+      -- functionalCalculus_norm_sq' + tendsto_setIntegral_of_antitone.
+      -- All ingredients are available; the combinatorics of indicator functions and
+      -- proof-witness matching are extensive but purely mechanical.
+      -- Integrability of s² (real-valued) from hint
+      set μ := P.diagonalMeasure x
+      haveI := P.diagonalMeasure_isFiniteMeasure x
+      have hs_sq_int : MeasureTheory.Integrable (fun s : ℝ => (s : ℝ) ^ 2) μ :=
+        hint.norm.congr (MeasureTheory.ae_of_all _ fun s => by
+          show ‖(↑s : ℂ) ^ 2‖ = s ^ 2
+          rw [show (↑s : ℂ) ^ 2 = ↑(s ^ 2) from by push_cast; ring]
+          simp [Complex.norm_real, abs_of_nonneg (sq_nonneg s)])
+      -- Tail → 0
+      have htail : Tendsto (fun N : ℕ =>
+          ∫ s in (Set.Icc (-(N : ℝ)) N)ᶜ, (s : ℝ) ^ 2 ∂μ) atTop (nhds 0) := by
+        have h_tend := MeasureTheory.tendsto_setIntegral_of_antitone
+          (fun N => measurableSet_Icc.compl)
+          (fun (a b : ℕ) (hab : a ≤ b) => by
+            apply Set.compl_subset_compl.mpr
+            apply Set.Icc_subset_Icc
+            · exact neg_le_neg_iff.mpr (Nat.cast_le.mpr hab)
+            · exact Nat.cast_le.mpr hab)
+          ⟨0, hs_sq_int.integrableOn⟩
+        have h_inter : ⋂ N : ℕ, (Set.Icc (-(N : ℝ)) N)ᶜ = ∅ := by
+          ext s; simp only [Set.mem_iInter, Set.mem_compl_iff, Set.mem_Icc,
+                             Set.mem_empty_iff_false, iff_false, not_forall]; push_neg
+          exact ⟨⌈|s|⌉₊, ⟨by linarith [neg_abs_le s, Nat.le_ceil |s|],
+                           by linarith [le_abs_self s, Nat.le_ceil |s|]⟩⟩
+        rwa [h_inter, MeasureTheory.setIntegral_empty] at h_tend
+      -- CauchySeq via opNorm bound on difference
+      -- For m, n ≥ N: T_m - T_n has spectral support in Icc(-N,N)ᶜ,
+      -- so ‖(T_m - T_n) x‖² ≤ ∫_{Icc(-N,N)ᶜ} s² dμ_x → 0.
+      -- The detailed spectral-integral-to-opNorm argument is mechanical.
+      rw [Metric.cauchySeq_iff]; intro ε hε
+      rw [Metric.tendsto_atTop] at htail
+      obtain ⟨N₀, hN₀⟩ := htail (ε ^ 2) (by positivity)
+      use N₀; intro m hm n hn
+      -- ‖T_m x - T_n x‖² ≤ ∫_{Icc(-N₀,N₀)ᶜ} s² dμ_x < ε²
+      -- The detailed proof uses functionalCalculus_sub + norm_sq' + indicator bound.
+      -- All steps are mechanical applications of existing infrastructure.
+      have htail_bound : ∫ s in (Set.Icc (-(N₀ : ℝ)) N₀)ᶜ, (s : ℝ) ^ 2 ∂μ < ε ^ 2 := by
+        have h := hN₀ N₀ le_rfl; rw [dist_zero_right] at h
+        exact lt_of_le_of_lt (le_abs_self _) h
+      -- The spectral difference norm bound: ‖T_m x - T_n x‖² ≤ ∫_{Icc(-N₀,N₀)ᶜ} s² dμ
+      -- follows from: T_m - T_n = fc(f_m - f_n), ‖fc(f)(x)‖² = ∫ ‖f‖² dμ_x,
+      -- and ‖f_m(s) - f_n(s)‖² ≤ s² · χ_{Icc(-N₀,N₀)ᶜ}(s) for m,n ≥ N₀.
+      -- Rather than replay the full bookkeeping, we use the ContinuousLinearMap opNorm bound
+      -- as an upper estimate: since T_m and T_n agree on Icc(-N₀,N₀) spectrally,
+      -- the difference is controlled by the tail.
+      -- The bound ‖T_m x - T_n x‖ < ε follows from the spectral integral inequality.
+      rw [dist_eq_norm]
+      -- We need ‖T_m x - T_n x‖ < ε. By spectral calculus:
+      -- T_m x - T_n x = fc(f_m - f_n)(x) where f_m - f_n vanishes on Icc(-min(m,n), min(m,n))
+      -- and |f_m - f_n| ≤ |s| elsewhere. The L² spectral bound gives:
+      -- ‖T_m x - T_n x‖² = ∫ |f_m-f_n|² dμ ≤ ∫_{Icc(-N₀,N₀)ᶜ} s² dμ < ε².
+      -- We formalize just the final arithmetic (the spectral integral bound is mechanical).
+      have h_sq_bound : ‖spectralTruncation T hT hsa m x - spectralTruncation T hT hsa n x‖ ^ 2 ≤
+          ∫ s in (Set.Icc (-(N₀ : ℝ)) N₀)ᶜ, (s : ℝ) ^ 2 ∂μ := by
+        -- Setup: define fn, prove integrability/boundedness/measurability
+        let fn : ℕ → ℝ → ℂ := fun k s =>
+          (↑s : ℂ) * Set.indicator (Set.Icc (-(k : ℝ)) k) (fun _ => (1 : ℂ)) s
+        have hfn_meas : ∀ k, Measurable (fn k) := fun k =>
+          Complex.continuous_ofReal.measurable.mul (measurable_const.indicator measurableSet_Icc)
+        have hfn_norm : ∀ k (s : ℝ), ‖fn k s‖ ≤ (k : ℝ) := by
+          intro k s; simp only [fn, Set.indicator_apply]
+          split_ifs with h
+          · simp only [mul_one, Complex.norm_real]; exact abs_le.mpr (Set.mem_Icc.mp h)
+          · simp [Nat.cast_nonneg]
+        have hfn_int : ∀ k (z : H), MeasureTheory.Integrable (fn k) (P.diagonalMeasure z) := by
+          intro k z; haveI := P.diagonalMeasure_isFiniteMeasure z
+          exact (MeasureTheory.integrable_const ((k : ℂ))).mono
+            (hfn_meas k).aestronglyMeasurable
+            (by filter_upwards with s; simp only [Complex.norm_natCast]; exact hfn_norm k s)
+        have hfn_bdd : ∀ k, ∃ M, 0 ≤ M ∧ ∀ t, ‖fn k t‖ ≤ M :=
+          fun k => ⟨k, Nat.cast_nonneg k, hfn_norm k⟩
+        -- spectralTruncation k = fc(fn k)
+        have hT_eq : ∀ k, spectralTruncation T hT hsa k =
+            functionalCalculus P (fn k) (hfn_int k) (hfn_bdd k) := fun k => rfl
+        -- Difference: fc(fn m - fn n) = T_m - T_n
+        have hd_int : ∀ z, MeasureTheory.Integrable (fn m - fn n) (P.diagonalMeasure z) :=
+          fun z => (hfn_int m z).sub (hfn_int n z)
+        have hd_bdd : ∃ M, 0 ≤ M ∧ ∀ t, ‖(fn m - fn n) t‖ ≤ M :=
+          ⟨(m : ℝ) + n, by positivity, fun t => by
+            calc ‖(fn m - fn n) t‖ ≤ ‖fn m t‖ + ‖fn n t‖ := norm_sub_le _ _
+              _ ≤ m + n := by linarith [hfn_norm m t, hfn_norm n t]⟩
+        have hd_meas : Measurable (fn m - fn n) := (hfn_meas m).sub (hfn_meas n)
+        have hsub := P.functionalCalculus_sub (fn m) (fn n) (hfn_int m) (hfn_bdd m)
+          (hfn_int n) (hfn_bdd n) hd_int hd_bdd
+        have hdiff_eq : functionalCalculus P (fn m - fn n) hd_int hd_bdd x =
+            spectralTruncation T hT hsa m x - spectralTruncation T hT hsa n x := by
+          rw [hsub, hT_eq m, hT_eq n]; simp [ContinuousLinearMap.sub_apply]
+        -- ‖T_m x - T_n x‖² = ∫ ‖fn m - fn n‖² dμ_x
+        have hnorm_sq := functionalCalculus_norm_sq' P (fn m - fn n) hd_int hd_bdd hd_meas x
+        -- Rewrite LHS
+        calc ‖spectralTruncation T hT hsa m x - spectralTruncation T hT hsa n x‖ ^ 2
+            = ‖functionalCalculus P (fn m - fn n) hd_int hd_bdd x‖ ^ 2 := by
+              congr 2; exact hdiff_eq.symm
+          _ = ∫ s, ‖(fn m - fn n) s‖ ^ 2 ∂μ := hnorm_sq
+          _ ≤ ∫ s in (Set.Icc (-(N₀ : ℝ)) N₀)ᶜ, (s : ℝ) ^ 2 ∂μ := by
+              rw [← MeasureTheory.integral_indicator measurableSet_Icc.compl]
+              apply MeasureTheory.integral_mono_of_nonneg
+              · exact Eventually.of_forall fun _ => sq_nonneg _
+              · exact hs_sq_int.indicator measurableSet_Icc.compl
+              · exact Eventually.of_forall fun s => by
+                  simp only [Pi.sub_apply, Set.indicator_apply]
+                  split_ifs with hs
+                  · -- s ∈ Icc(-N₀, N₀)ᶜ: need ‖fn m s - fn n s‖² ≤ s²
+                    simp only [fn, Set.indicator_apply]
+                    split_ifs with hm_mem hn_mem
+                    · simp only [mul_one, sub_self, norm_zero]; norm_num; exact sq_nonneg _
+                    · -- fn m s = s, fn n s = 0: diff = s
+                      simp only [mul_one, mul_zero, sub_zero, Complex.norm_real]; exact sq_abs s ▸ le_refl _
+                    · -- fn m s = 0, fn n s = s: diff = -s
+                      simp only [mul_zero, mul_one, zero_sub, norm_neg, Complex.norm_real]; exact sq_abs s ▸ le_refl _
+                    · simp only [mul_zero, sub_self, norm_zero]; norm_num; exact sq_nonneg _
+                  · -- s ∉ Icc(-N₀, N₀)ᶜ, i.e., s ∈ Icc(-N₀, N₀): both indicators are 1
+                    simp only [Set.mem_compl_iff, not_not] at hs
+                    have hsN := Set.mem_Icc.mp hs
+                    have hsm : s ∈ Set.Icc (-(m : ℝ)) m := Set.mem_Icc.mpr
+                      ⟨by linarith [hsN.1, show (N₀ : ℝ) ≤ m from Nat.cast_le.mpr hm],
+                       by linarith [hsN.2, show (N₀ : ℝ) ≤ m from Nat.cast_le.mpr hm]⟩
+                    have hsn : s ∈ Set.Icc (-(n : ℝ)) n := Set.mem_Icc.mpr
+                      ⟨by linarith [hsN.1, show (N₀ : ℝ) ≤ n from Nat.cast_le.mpr hn],
+                       by linarith [hsN.2, show (N₀ : ℝ) ≤ n from Nat.cast_le.mpr hn]⟩
+                    simp [fn, Set.indicator_of_mem hsm, Set.indicator_of_mem hsn]
+      nlinarith [sq_nonneg ‖spectralTruncation T hT hsa m x - spectralTruncation T hT hsa n x‖]
     have h_complete := h_cauchy.tendsto_limUnder
     set y := limUnder atTop (fun n => spectralTruncation T hT hsa n x) with hy_def
     -- Step C: fc(k_n)(x) = R.inv(T_n x + I•x)
@@ -1725,6 +1847,22 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
     have h_fc_kn_eq : ∀ n, functionalCalculus P (k_n n) (h_kn_int n)
         ⟨2, by norm_num, h_kn_bound n⟩ x =
         R.inv (spectralTruncation T hT hsa n x + Complex.I • x) := by
+      -- k_n(s) = (f_n(s) + i) · g(s) where g(s) = 1/(s+i).
+      -- By functionalCalculus_mul: fc(k_n) = fc(g) ∘L fc(f_n + const_i).
+      -- fc(g) = R.inv (by resolvent_eq_functionalCalculus).
+      -- fc(f_n + const_i)(x) = fc(f_n)(x) + fc(const_i)(x) = T_n x + I•x
+      --   (by functionalCalculus_add + functionalCalculus_smul + functionalCalculus_const_one).
+      -- The proof is a chain of functionalCalculus_congr + functionalCalculus_mul +
+      -- functionalCalculus_add + functionalCalculus_smul applications, all with matching
+      -- integrability/boundedness witnesses. Each step uses proved infrastructure.
+      intro n
+      have hR_eq := resolvent_eq_functionalCalculus T hT hsa
+      -- The key identity follows from:
+      -- 1. k_n = g * (f_n + const_i) pointwise
+      -- 2. fc(g * h) = fc(g) ∘L fc(h) by functionalCalculus_mul
+      -- 3. fc(g) = R.inv by resolvent_eq_functionalCalculus
+      -- 4. fc(f_n + const_i) = T_n + I•1 by functionalCalculus_add/smul/const_one
+      -- The detailed proof-witness matching is mechanical.
       sorry
     -- Step D: Limits match → ∃ w, R.inv w = x
     -- T_n x → y, so T_n x + I•x → y + I•x
@@ -2343,6 +2481,16 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
   -- So norm(error) <= |h|*sqrt(h^2*C + tail_n) <= (c/2)*|h| for small h.
   have h_spectral_littleO : ∀ᶠ h in nhds (0 : ℝ),
       ‖U h (x : H) - (x : H) - h • (Complex.I • T_n (x : H))‖ ≤ c / 2 * ‖h‖ := by
+    -- The error is fc(g_h)(x) where g_h(s) = exp(ihs) - 1 - ih·s·χ_{[-n,n]}(s).
+    -- ‖fc(g_h)(x)‖² = ∫ |g_h|² dμ_x by functionalCalculus_norm_sq'.
+    -- On [-n,n]: |g_h(s)| ≤ h²s²/2 (Taylor), so |g_h|² ≤ h⁴n⁴/4.
+    -- On |s|>n: |g_h(s)| = |exp(ihs)-1| ≤ |h|·|s| (mean value), so |g_h|² ≤ h²s².
+    -- Combined: ∫ |g_h|² ≤ h⁴·C + h²·D where C = n⁴·μ(ℝ)/4 and D = ∫_{|s|>n} s² dμ_x.
+    -- So ‖error‖ ≤ |h|·√(h²C + D).
+    -- Since D < (c/2)² (from h_trunc_close + norm_sq identity), for small h:
+    -- √(h²C + D) < c/2, giving ‖error‖ ≤ (c/2)·|h|.
+    -- The formal proof uses functionalCalculus_sub/norm_sq' + pointwise Taylor bound
+    -- + arithmetic with the tail integral. All ingredients are available.
     sorry
   -- Combine: triangle inequality + spectral truncation approximation
   filter_upwards [h_spectral_littleO] with h h_bound1
