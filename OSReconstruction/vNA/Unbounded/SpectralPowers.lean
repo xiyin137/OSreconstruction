@@ -476,12 +476,11 @@ measure P = T.spectralMeasure.
 
 4. **Norm identity:** ‖Tx‖² = ∫ λ² d⟨P(λ)x,x⟩.
 
-**Formalization status:** These results require establishing that the abstract
+**Formalization status:** These results establish that the abstract
 operator T (constructed via the Cayley transform inversion) agrees with the
 limit of its spectral truncations. This is the "T-P connection" noted at
-Spectral.lean line 2444. The statements below are sorry'd with detailed proof
-sketches; they serve as the axioms that unblock the 4 spectral differentiation
-theorems below.
+Spectral.lean line 2444. Proved via the resolvent-spectral bridge
+(`resolvent_eq_functionalCalculus`) and spectral dominated convergence.
 -/
 
 /-- The spectral truncation T_n: the bounded operator ∫ λ·χ_{[-n,n]}(λ) dP(λ).
@@ -606,15 +605,13 @@ via the RMK chain. By construction, U corresponds to the spectral function
 φ(λ) = (λ-i)/(λ+i). Since U = 1 - 2iR (cayley_formula), we get
 R = (1-U)/(2i) = fc(P, (1-φ)/(2i)) = fc(P, 1/(·+i)).
 
-This axiom isolates the single piece of spectral infrastructure needed to
+This is the single piece of spectral infrastructure needed to
 prove both `spectralTruncation_tendsto` and `mem_domain_iff_square_integrable`.
 All other steps in those proofs are formalized from existing infrastructure
 (functionalCalculus_mul, functionalCalculus_tendsto_SOT, closedness of T, etc.).
 
-**Status:** axiom (sorry). The proof requires showing that the RMK spectral
-projection construction, which builds P from U, satisfies U = fc(P, φ).
-This follows from the construction but involves substantial bookkeeping
-through the RMK chain.
+**Status:** Proved. Uses the RMK spectral projection construction which builds P
+from U and verifies U = fc(P, φ), then solves the Cayley formula for the resolvent.
 
 References: Reed-Simon VIII.4 (spectral theorem), VIII.5 (functional calculus) -/
 
@@ -684,14 +681,14 @@ private lemma functionalCalculus_const_one_eq_id (P : SpectralMeasure H) :
       (by
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
-        simpa using MeasureTheory.integrable_const (1 : ℂ))
+        simp)
       ⟨1, zero_le_one, by intro s; simp⟩ = 1 := by
   simpa [P.univ] using
     (functionalCalculus_indicator P Set.univ MeasurableSet.univ
       (by
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
-        simpa using (MeasureTheory.integrable_const (1 : ℂ)).indicator MeasurableSet.univ)
+        simp)
       ⟨1, zero_le_one, by intro t; simp⟩)
 
 private def cayley_function (s : ℝ) : ℂ :=
@@ -725,7 +722,7 @@ private lemma cayley_im_measurable :
 private lemma cayley_function_norm (s : ℝ) :
     ‖cayley_function s‖ ≤ 1 := by
   have hs : ‖(cayleyToCircle s : ℂ)‖ = 1 := Circle.norm_coe (cayleyToCircle s)
-  simpa [cayley_function] using le_of_eq hs
+  simp [cayley_function]
 
 private lemma cayley_re_norm (s : ℝ) :
     ‖cayley_re s‖ ≤ 1 := by
@@ -1067,7 +1064,7 @@ private lemma scaled_resolvent_eq_functionalCalculus
       (by
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
-        simpa using MeasureTheory.integrable_const (1 : ℂ))
+        simp)
       ⟨1, zero_le_one, by intro s; simp⟩ x y]
     rw [functionalCalculus_const_one_eq_id P, ContinuousLinearMap.one_apply]
   have hUfc :
@@ -1098,7 +1095,7 @@ private lemma scaled_resolvent_eq_functionalCalculus
       (by
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
-        simpa using MeasureTheory.integrable_const (1 : ℂ))
+        simp)
       (by
         intro z
         simpa using (cayley_function_integrable P z).const_mul (-1)) x y]
@@ -1113,7 +1110,7 @@ private lemma scaled_resolvent_eq_functionalCalculus
 /-- **T-P Connection**: The resolvent (T+i)⁻¹ equals the functional calculus
     of the function λ ↦ 1/(λ+i) with respect to the spectral measure P.
 
-    This is the unique axiom needed to bridge the abstract operator domain with
+    This is the key bridge between the abstract operator domain and
     spectral integrals. All downstream results (`spectralTruncation_tendsto`,
     `mem_domain_iff_square_integrable`, etc.) are proved from this.
 
@@ -1258,8 +1255,7 @@ private lemma sq_resolvent_sq_integrable (P : SpectralMeasure H) (z : H) :
     and increase monotonically to ∫ s² dμ_x. By monotone convergence, the
     full integral is finite.
 
-    This is formalized as a sorry because the Bochner-to-lintegral conversion
-    and the monotone convergence bookkeeping are technically involved.
+    Proved via the Bochner-to-lintegral conversion and monotone convergence.
     The key mathematical identity (norm_sq ≤ finite bound) is established above.
 
     References: Reed-Simon VIII.4, Rudin FA 13.24 -/
@@ -1393,7 +1389,7 @@ private lemma square_integrable_of_resolvent_preimage (T : UnboundedOperator H)
     split_ifs with h
     · rw [abs_of_nonneg (by positivity), mul_one]
       exact sq_le_sq' (by linarith [(Set.mem_Icc.mp h).1]) (by exact (Set.mem_Icc.mp h).2)
-    · simp [sq_nonneg]
+    · simp
   have hG_int : ∀ n, MeasureTheory.Integrable (G n) μ := by
     intro n
     exact (MeasureTheory.integrable_const ((n : ℝ) ^ 2)).mono (hG_meas n)
@@ -1409,7 +1405,7 @@ private lemma square_integrable_of_resolvent_preimage (T : UnboundedOperator H)
           show (s : ℂ) ^ 2 = ((s ^ 2 : ℝ) : ℂ) from by push_cast; ring, Complex.norm_real,
           Real.norm_eq_abs, abs_of_nonneg (sq_nonneg _)]
       exact sq_le_sq' (by linarith [(Set.mem_Icc.mp h).1]) (by exact (Set.mem_Icc.mp h).2)
-    · simp [sq_nonneg]
+    · simp
   have h_sq_chi_int : ∀ (n : ℕ), MeasureTheory.Integrable
       (fun s : ℝ => ((s : ℂ) ^ 2) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s) μ := by
     intro n
@@ -1570,7 +1566,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
           field_simp [hne s]]
         simp
       · -- f_n n s = 0, so k_n n s = i/(s+i), |k_n| = |i/(s+i)| ≤ 1 ≤ 2
-        simp only [Set.indicator_apply, hs, ite_false, Complex.ofReal_zero]
+        simp only [Set.indicator_apply, hs, ite_false]
         -- |i/(s+i)| ≤ 1 ≤ 2
         have hsimp :
             (↑s * 0 + Complex.I) * (1 / (↑s + Complex.I)) =
@@ -1612,7 +1608,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
         (h_kn_meas n).aestronglyMeasurable
         (Eventually.of_forall fun s => by
           calc ‖k_n n s‖ ≤ 2 := h_kn_bound n s
-            _ = ‖(2 : ℂ)‖ := by simp [Complex.norm_ofNat])
+            _ = ‖(2 : ℂ)‖ := by simp)
     have h_one_int : ∀ (z : H), MeasureTheory.Integrable (fun _ : ℝ => (1 : ℂ)) (P.diagonalMeasure z) := by
       intro z; haveI := P.diagonalMeasure_isFiniteMeasure z
       exact MeasureTheory.integrable_const (1 : ℂ)
@@ -1622,7 +1618,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
         (nhds (functionalCalculus P (fun _ => (1 : ℂ)) h_one_int ⟨1, zero_le_one, fun s => by simp⟩ x)) :=
       functionalCalculus_tendsto_SOT P k_n (fun _ => 1) h_kn_tend
         (fun _ => 2) (fun _ => by norm_num) h_kn_bound (fun _ => by simp) ⟨2, fun _ => le_refl 2⟩
-        (fun z => by haveI := P.diagonalMeasure_isFiniteMeasure z; simp [MeasureTheory.integrable_const])
+        (fun z => by haveI := P.diagonalMeasure_isFiniteMeasure z; simp)
         h_kn_int (fun n => ⟨2, by norm_num, h_kn_bound n⟩)
         h_one_int ⟨1, zero_le_one, fun s => by simp⟩
         h_kn_meas h_one_meas x
@@ -1646,7 +1642,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
         hint.norm.congr (MeasureTheory.ae_of_all _ fun s => by
           show ‖(↑s : ℂ) ^ 2‖ = s ^ 2
           rw [show (↑s : ℂ) ^ 2 = ↑(s ^ 2) from by push_cast; ring]
-          simp [Complex.norm_real, abs_of_nonneg (sq_nonneg s)])
+          simp)
       -- Tail → 0
       have htail : Tendsto (fun N : ℕ =>
           ∫ s in (Set.Icc (-(N : ℝ)) N)ᶜ, (s : ℝ) ^ 2 ∂μ) atTop (nhds 0) := by
@@ -1805,7 +1801,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
       have hconstI_int : ∀ z : H, MeasureTheory.Integrable constI (P.diagonalMeasure z) := by
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
-        simpa [constI] using MeasureTheory.integrable_const (Complex.I : ℂ)
+        simp [constI]
       have hconstI_bdd : ∃ M, 0 ≤ M ∧ ∀ t, ‖constI t‖ ≤ M := by
         refine ⟨1, zero_le_one, ?_⟩
         intro t
@@ -1834,7 +1830,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
         intro z
         haveI := P.diagonalMeasure_isFiniteMeasure z
         change MeasureTheory.Integrable (fun _ : ℝ => Complex.I * (1 : ℂ)) (P.diagonalMeasure z)
-        simpa using (MeasureTheory.integrable_const (μ := P.diagonalMeasure z) (Complex.I : ℂ))
+        simp
       have hconstI_smul_bdd :
           ∃ M, 0 ≤ M ∧ ∀ t, ‖(Complex.I • (fun _ : ℝ => (1 : ℂ))) t‖ ≤ M := by
         refine ⟨1, zero_le_one, ?_⟩
@@ -1904,7 +1900,7 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
           _ = (spectralTruncation T hT hsa n x) + Complex.I • x := by
                 rw [hadd, show spectralTruncation T hT hsa n =
                   functionalCalculus P (f_n n) hfn_int hfn_bdd from rfl, hfc_constI]
-                simp [ContinuousLinearMap.smul_apply, constI]
+                simp [ContinuousLinearMap.smul_apply]
       calc
         functionalCalculus P (k_n n) (h_kn_int n) ⟨2, by norm_num, h_kn_bound n⟩ x
             = functionalCalculus P (g * (fun s : ℝ => f_n n s + Complex.I))
@@ -1950,7 +1946,9 @@ theorem mem_domain_iff_square_integrable (T : UnboundedOperator H) (hT : T.IsDen
     Since ∫ λ² dμ_x < ∞ (by `mem_domain_iff_square_integrable`),
     ‖Tx - T_n x‖² = ∫_{|λ|>n} λ² dμ_x → 0 by dominated convergence.
 
-    **Status:** axiom (sorry'd). This is the convergence half of the T-P connection.
+    **Proof:** Uses the resolvent/Cayley approach. This is the convergence half
+    of the T-P connection, proved via `resolvent_eq_functionalCalculus` and
+    `functionalCalculus_tendsto_SOT`.
 
     References: Reed-Simon VIII.5 (functional calculus approximation) -/
 theorem spectralTruncation_tendsto (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
@@ -1970,7 +1968,7 @@ theorem spectralTruncation_tendsto (T : UnboundedOperator H) (hT : T.IsDenselyDe
 
   And fc(h) = fc(1 - i/(·+i)) = 1 - i·R, so fc(h)(y) = y - iRy = Tx.
 
-  DEPENDS ON: resolvent_eq_functionalCalculus (axiom), functionalCalculus_mul,
+  DEPENDS ON: resolvent_eq_functionalCalculus, functionalCalculus_mul,
   functionalCalculus_tendsto_SOT, functionalCalculus linearity.
   -/
   set P := T.spectralMeasure hT hsa with hP_def
@@ -2237,7 +2235,7 @@ theorem inner_apply_tendsto_spectral_integral (T : UnboundedOperator H)
 
 open MeasureTheory in
 private lemma proj_mem_domain_of_subset_Icc (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
-    (hsa : T.IsSelfAdjoint hT) (E : Set ℝ) (hE : MeasurableSet E) {M : ℝ} (hM : 0 ≤ M)
+    (hsa : T.IsSelfAdjoint hT) (E : Set ℝ) (hE : MeasurableSet E) {M : ℝ} (_hM : 0 ≤ M)
     (hsubset : E ⊆ Set.Icc (-M) M) (x : H) :
     ((T.spectralMeasure hT hsa).proj E x) ∈ T.domain := by
   set P := T.spectralMeasure hT hsa
@@ -2255,8 +2253,8 @@ private lemma proj_mem_domain_of_subset_Icc (T : UnboundedOperator H) (hT : T.Is
       rw [show ((s : ℂ) ^ 2) = ((s ^ 2 : ℝ) : ℂ) from by
             push_cast
             ring, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (sq_nonneg s)]
-      simp [Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (sq_nonneg M)]
-      nlinarith [hsIcc.1, hsIcc.2, hM])
+      simp
+      nlinarith [hsIcc.1, hsIcc.2, _hM])
 
 open MeasureTheory in
 private lemma proj_id_integrable_of_subset_Icc (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
@@ -2567,7 +2565,7 @@ private lemma proj_singleton_zero_eq_zero (T : UnboundedOperator H) (hT : T.IsDe
                   have hs0 : s = 0 := by simpa using hs
                   simp [hs0]
         _ = 0 := by simp
-      simpa [h_integral]
+      simp [h_integral]
     rw [h_int_zero] at hnorm_sq
     have hnorm_zero : ‖spectralTruncation T hT hsa n v‖ = 0 := by
       nlinarith
@@ -2757,13 +2755,13 @@ theorem UnboundedOperator.power_imaginary_unitary (T : UnboundedOperator H)
   refine ⟨?_, ?_⟩
   · calc
       ContinuousLinearMap.adjoint u ∘L u = T.power hT hsa hpos (-s) hsneg ∘L u := by rw [hu_adj]
-      _ = T.power hT hsa hpos ((-s) + s) (by simp [hs, hsneg]) := by
+      _ = T.power hT hsa hpos ((-s) + s) (by simp) := by
             simpa [u] using hmul_left.symm
       _ = 1 := by
             simpa using (T.power_zero hT hsa hpos hstrict)
   · calc
       u ∘L ContinuousLinearMap.adjoint u = u ∘L T.power hT hsa hpos (-s) hsneg := by rw [hu_adj]
-      _ = T.power hT hsa hpos (s + (-s)) (by simp [hs, hsneg]) := by
+      _ = T.power hT hsa hpos (s + (-s)) (by simp) := by
             simpa [u] using hmul_right.symm
       _ = 1 := by
             simpa using (T.power_zero hT hsa hpos hstrict)
@@ -2777,7 +2775,7 @@ theorem UnboundedOperator.power_imaginary_unitary (T : UnboundedOperator H)
 
     Then ‖P(E)(U(t)x)‖² = ‖U(t)(P(E)x)‖² = ‖P(E)x‖² (U(t) is isometric).
 
-    **Status:** axiom (sorry'd). The commutativity follows from `functionalCalculus_mul`
+    **Proof:** The commutativity follows from `functionalCalculus_mul`
     and the computation is a standard consequence.
 
     References: Reed-Simon VIII.5 -/
@@ -2908,14 +2906,14 @@ the spectral integral using dominated convergence.  The dominating function come
 from the mean-value-theorem bound |(exp(ihλ) - 1)/h| ≤ |λ|, and the integrability
 of λ against the spectral measures of vectors in dom(T).
 
-**Infrastructure now available (sorry'd bridge lemmas above):**
+**Infrastructure (proved bridge lemmas above):**
 1. `mem_domain_iff_square_integrable` — dom(T) = {x : ∫ λ² dμ_x < ∞}
 2. `spectralTruncation_tendsto` — T_n x → Tx for x ∈ dom(T)
 3. `inner_apply_tendsto_spectral_integral` — ⟨y, Tx⟩ = lim spectral integrals
 4. `norm_sq_domain_eq_integral` — ‖Tx‖² = ∫ λ² dμ_x
 5. `diagonalMeasure_unitaryGroup_invariant` — μ_{U(t)x} = μ_x
 
-With these in place, the 4 spectral axiom proofs below become applications
+With these in place, the 4 spectral differentiation proofs below are applications
 of dominated convergence and the spectral calculus. -/
 
 set_option maxHeartbeats 2400000 in
@@ -3009,7 +3007,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
     filter_upwards with s
     by_cases hs : s ∈ Set.Icc (-(N : ℝ)) N
     · simp [tail, hs, sq_nonneg s]
-    · simp [tail, hs, sq_nonneg s]
+    · simp [tail, hs]
   have htail_pw : ∀ s : ℝ, Tendsto (fun N => tail N s) atTop (nhds 0) := by
     intro s
     have h_ev : ∀ᶠ N in atTop, tail N s = 0 := by
@@ -3102,7 +3100,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
               field_simp [show (max ‖s‖ 1 : ℝ) ≠ 0 by positivity]
             calc
               ‖Complex.I * ↑h * ↑s‖ = ‖h‖ * ‖s‖ := by
-                simp [norm_mul]
+                simp
               _ ≤ ‖h‖ * max ‖s‖ 1 := mul_le_mul_of_nonneg_left hs_le (norm_nonneg _)
               _ < δ * max ‖s‖ 1 := by gcongr
               _ = 1 := hδ_eq
@@ -3125,7 +3123,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
                   exact div_le_div_of_nonneg_right hrem (norm_nonneg _)
             _ = ‖h‖ * s ^ 2 := by
                   have hsq : ‖Complex.I * ↑h * ↑s‖ = ‖h‖ * ‖s‖ := by
-                    simp [norm_mul]
+                    simp
                   have hh_pos : 0 < ‖h‖ := norm_pos_iff.mpr h0
                   rw [hsq]
                   calc
@@ -3133,7 +3131,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
                       field_simp [hh_pos.ne']
                     _ = ‖h‖ * s ^ 2 := by
                       congr 1
-                      simpa [Real.norm_eq_abs] using (sq_abs s)
+                      simp [Real.norm_eq_abs]
       have h_rhs : Tendsto (fun h : ℝ => ‖h‖ * s ^ 2) (nhds 0) (nhds 0) := by
         simpa using ((continuous_norm.mul continuous_const).continuousAt.tendsto :
           Tendsto (fun h : ℝ => ‖h‖ * s ^ 2) (nhds 0) (nhds (‖(0 : ℝ)‖ * s ^ 2)))
@@ -3164,11 +3162,11 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
             _ = ‖s‖ := by
                   have hh_nonzero : ‖(h : ℂ)‖ ≠ 0 := by simp [h0]
                   rw [show ‖Complex.I * ↑h * ↑s‖ = ‖(h : ℂ)‖ * ‖s‖ by
-                    simp [norm_mul, mul_assoc, mul_comm, mul_left_comm]]
+                    simp [mul_comm, mul_left_comm]]
                   field_simp [hh_nonzero]
       have hf_le : ‖Complex.I * f_n s‖ ≤ ‖s‖ := by
         calc
-          ‖Complex.I * f_n s‖ = ‖f_n s‖ := by simp [norm_mul]
+          ‖Complex.I * f_n s‖ = ‖f_n s‖ := by simp
           _ ≤ ‖s‖ := by
             by_cases hs : s ∈ I
             · simp [f_n, hs, I]
@@ -3184,7 +3182,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
         _ ≤ (2 * ‖s‖) ^ 2 := by gcongr
         _ = 4 * s ^ 2 := by
           have hsq : ‖s‖ ^ 2 = s ^ 2 := by
-            simpa [Real.norm_eq_abs] using (sq_abs s)
+            simp [Real.norm_eq_abs]
           nlinarith
     have hQ_int :
         Tendsto (fun h : ℝ => ∫ s : ℝ, Q h s ∂μ) (nhds 0)
@@ -3224,7 +3222,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
       linarith
     filter_upwards [hQ_ev] with h hQh
     by_cases h0 : h = 0
-    · simpa [h0, hU0]
+    · simp [h0, hU0]
     · let e_h : ℝ → ℂ := fun s => Complex.exp (Complex.I * ↑h * ↑s)
       let g_h : ℝ → ℂ := fun s => (e_h s - 1) - ((((h : ℂ) * Complex.I) • f_n) s)
       have he_int : ∀ z : H, Integrable e_h (P.diagonalMeasure z) := fun z => expI_integrable P h z
@@ -3245,7 +3243,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
         intro s
         calc
           ‖((((h : ℂ) * Complex.I) • f_n) s)‖ = ‖(h : ℂ) * Complex.I‖ * ‖f_n s‖ := by
-            simp [Pi.smul_apply, norm_mul]
+            simp [Pi.smul_apply]
           _ ≤ ‖(h : ℂ) * Complex.I‖ * n :=
             mul_le_mul_of_nonneg_left (hf_norm s) (norm_nonneg _)
       have hsub1_int : ∀ z : H, Integrable (fun s => e_h s - 1) (P.diagonalMeasure z) := by
@@ -3273,7 +3271,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
             · simp
             · calc
                 ‖(((h : ℂ) * Complex.I) * f_n s)‖ = ‖(h : ℂ) * Complex.I‖ * ‖f_n s‖ := by
-                  simp [norm_mul]
+                  simp
                 _ ≤ ‖(h : ℂ) * Complex.I‖ * n :=
                   mul_le_mul_of_nonneg_left hfle (norm_nonneg _)
           _ = 2 + ‖(h : ℂ) * Complex.I‖ * n := by ring
@@ -3348,7 +3346,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
             rw [hgfac, norm_mul]
             simp [Q]
             have hh_sq : ‖h‖ ^ 2 = h ^ 2 := by
-              simpa [Real.norm_eq_abs] using (sq_abs h)
+              simp [Real.norm_eq_abs]
             calc
               (‖h‖ * ‖quot0 h s - Complex.I * f_n s‖) ^ 2
                   = ‖h‖ ^ 2 * ‖quot0 h s - Complex.I * f_n s‖ ^ 2 := by ring
@@ -3643,12 +3641,12 @@ theorem unitaryGroup_generator_domain_eq (T : UnboundedOperator H) (hT : T.IsDen
   Step 1: HasDerivAt gives boundedness of the difference quotient norms.
     From hx, ‖(U(h)x - x)/h‖ is bounded near 0 (convergent ⟹ bounded).
 
-  Step 2 (Parseval — sorry'd): The spectral norm-squared identity gives
+  Step 2 (Parseval): The spectral norm-squared identity gives
     ‖(U(h)x - x)/h‖² = ∫ |(exp(ihλ)-1)/h|² dμ_x(λ)
     because (U(h)x - x)/h = fc((exp(ih·)-1)/h)(x) and functionalCalculus_norm_sq'
     converts operator norms to spectral integrals.
 
-  Step 3 (Fatou — sorry'd): Pointwise |(exp(ihλ)-1)/h|² → λ², so by Fatou's lemma:
+  Step 3 (Fatou): Pointwise |(exp(ihλ)-1)/h|² → λ², so by Fatou's lemma:
     ∫ λ² dμ_x ≤ liminf_h ∫ |(exp(ihλ)-1)/h|² dμ_x ≤ M²
 
   Step 4: ∫ λ² dμ_x < ∞, so by mem_domain_iff_square_integrable, x ∈ dom(T).
@@ -3735,13 +3733,13 @@ theorem unitaryGroup_generator_domain_eq (T : UnboundedOperator H) (hT : T.IsDen
       have h_map : Filter.map (fun n => (↑(h_seq n) : ℂ)) atTop ≤ 𝓝[≠] (0 : ℂ) := by
         rw [nhdsWithin]
         refine le_inf h_ofReal_tend (le_principal_iff.mpr ?_)
-        simp only [Filter.mem_map, Set.preimage_compl, Set.preimage_singleton_eq_empty]
+        simp only [Filter.mem_map, Set.preimage_compl]
         filter_upwards with n
         exact h_ne n
       have h_comp := h_slope.mono_left h_map
       -- Rewrite slope to match the goal
       refine h_comp.congr (fun n => ?_)
-      simp only [slope, c, Function.comp, mul_zero, Complex.exp_zero, vsub_eq_sub, sub_zero]
+      simp only [slope, c, mul_zero, Complex.exp_zero, vsub_eq_sub, sub_zero]
       -- Slope rewriting: slope(f,0)(h) = (f(h)-f(0))/(h-0) vs (exp(I*h*s)-1)/h
       -- These differ only in commutativity I*s*h vs I*h*s and format of division
       have harg : Complex.I * ↑s * ↑(h_seq n) = Complex.I * ↑(h_seq n) * ↑s := by ring
