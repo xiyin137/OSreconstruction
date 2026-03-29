@@ -1062,9 +1062,403 @@ noncomputable def gnsOVD : OperatorValuedDistribution d (GNSHilbertSpace Wfn) wh
        is dense in the full Hilbert space.
 
     The nuclear theorem is not in Mathlib as of 2025. -/
+-- Helper: operatorPow of gnsOVD equals the embedding of the iterated field operator.
+private theorem operatorPow_gnsOVD_eq (n : ℕ) (fs : Fin n → SchwartzSpacetime d) :
+    (gnsOVD Wfn).operatorPow n fs (gnsVacuum Wfn) =
+    ((List.foldr (fun f acc => fieldOperator Wfn f acc)
+      (vacuumState Wfn) (List.ofFn fs) : PreHilbertSpace Wfn) : GNSHilbertSpace Wfn) := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    simp only [OperatorValuedDistribution.operatorPow]
+    rw [ih (fun i => fs (Fin.succ i))]
+    show gnsFieldOp Wfn (fs 0)
+      ↑(List.foldr (fun f acc => fieldOperator Wfn f acc)
+        (vacuumState Wfn) (List.ofFn fun i => fs i.succ)) =
+      ↑(List.foldr (fun f acc => fieldOperator Wfn f acc)
+        (vacuumState Wfn) (List.ofFn fs))
+    rw [gnsFieldOp_coe Wfn (fs 0)]
+    simp only [List.ofFn_succ, List.foldr_cons]
+
+-- Abbreviation: the quotient class of a single-component Borchers sequence.
+private noncomputable def singlePH (n : ℕ) (g : SchwartzNPointSpace d n) :
+    PreHilbertSpace Wfn :=
+  Quotient.mk (borchersSetoid Wfn) (BorchersSequence.single n g)
+
+-- Helper: operatorPow equals the embedding of singlePH n (productTensor fs).
+private theorem operatorPow_eq_single (n : ℕ) (fs : Fin n → SchwartzSpacetime d) :
+    (gnsOVD Wfn).operatorPow n fs (gnsVacuum Wfn) =
+    ((singlePH Wfn n (SchwartzMap.productTensor fs) : PreHilbertSpace Wfn) :
+      GNSHilbertSpace Wfn) := by
+  rw [operatorPow_gnsOVD_eq, foldr_fieldOperator_eq_mk]
+  congr 1
+  show Quotient.mk (borchersSetoid Wfn)
+    (List.foldr fieldOperatorAction (vacuumSequence (d := d)) (List.ofFn fs)) =
+    singlePH Wfn n (SchwartzMap.productTensor fs)
+  exact mk_eq_of_funcs_eq Wfn _ _ (fun k => by
+    by_cases hk : k = n
+    · subst hk; rw [iteratedAction_funcs_n, BorchersSequence.single_funcs_eq]
+    · rw [iteratedAction_funcs_ne fs k hk, BorchersSequence.single_funcs_ne hk])
+
+-- Helper: singlePH is linear in the Schwartz function.
+private theorem singlePH_add (n : ℕ) (f g : SchwartzNPoint d n) :
+    singlePH Wfn n (f + g) = singlePH Wfn n f + singlePH Wfn n g :=
+  mk_eq_of_funcs_eq Wfn _ _ (fun k => by
+    show (BorchersSequence.single n (f + g)).funcs k =
+      ((BorchersSequence.single n f) + (BorchersSequence.single n g)).funcs k
+    simp only [BorchersSequence.add_funcs]
+    by_cases hk : k = n
+    · subst hk; simp [BorchersSequence.single_funcs_eq]
+    · simp [BorchersSequence.single_funcs_ne hk])
+
+private theorem singlePH_smul (n : ℕ) (c : ℂ) (f : SchwartzNPoint d n) :
+    singlePH Wfn n (c • f) = c • singlePH Wfn n f :=
+  mk_eq_of_funcs_eq Wfn _ _ (fun k => by
+    show (BorchersSequence.single n (c • f)).funcs k =
+      (c • (BorchersSequence.single n f)).funcs k
+    simp only [BorchersSequence.smul_funcs]
+    by_cases hk : k = n
+    · subst hk; simp [BorchersSequence.single_funcs_eq]
+    · simp [BorchersSequence.single_funcs_ne hk])
+
+private theorem singlePH_zero (n : ℕ) :
+    singlePH Wfn n (0 : SchwartzNPoint d n) = 0 := by
+  show Quotient.mk (borchersSetoid Wfn) (BorchersSequence.single n 0) =
+    Quotient.mk (borchersSetoid Wfn) 0
+  exact mk_eq_of_funcs_eq Wfn _ _ (fun k => by
+    by_cases hk : k = n
+    · subst hk; simp [BorchersSequence.single_funcs_eq]
+    · simp [BorchersSequence.single_funcs_ne hk])
+
+-- Helper: g ↦ ↑⟦single n g⟧ is continuous SchwartzNPointSpace → GNSHilbertSpace.
+--
+-- Mathematical justification: The map is linear, and its norm squared
+-- ‖⟦single n g⟧‖² = Re(W_{n+n}(g.conjTP g)) is continuous from the Schwartz space
+-- to ℝ (by temperedness of W and joint continuity of tensorProduct). A linear map
+-- from a Fréchet space to a normed space with continuous norm at 0 is continuous.
+-- Alternatively, all matrix elements ⟨↑⟦G⟧, ↑⟦single n g⟧⟩ are continuous in g
+-- (inner_coe_single_continuous), so the map is weakly continuous; by the
+-- Banach-Steinhaus theorem for barrelled spaces (SchwartzSpace is Fréchet hence
+-- barrelled), weak-to-strong continuity follows.
+--
+-- The proof uses joint continuity of tensorProduct, continuity of borchersConj
+-- (reverse ∘ conj), and temperedness. These are all available but connecting them
+-- to the norm on PreHilbertSpace (defined via the Core) requires navigating the
+-- InnerProductSpace.Core infrastructure.
+/-- The map g ↦ ↑(singlePH n g) is continuous from SchwartzNPointSpace to GNSHilbertSpace.
+
+    Mathematical proof: The map is linear, and ‖singlePH n h‖² = Re(W_{n+n}(h.conjTP h))
+    which is continuous from SchwartzNPointSpace to ℝ (by temperedness of W and joint
+    continuity of tensorProduct). A linear map from a Fréchet space with continuous norm
+    at 0 is continuous. -/
+-- Helper: borchersConj is continuous on Schwartz n-point space.
+-- borchersConj = conj ∘ reverse. We construct it as a continuous ℝ-linear map
+-- using compCLMOfContinuousLinearEquiv for reverse and the seminorm bound for conj.
+private theorem borchersConj_continuous {n : ℕ} :
+    Continuous (fun f : SchwartzNPoint d n => f.borchersConj) := by
+  -- reverse = compCLMOfContinuousLinearEquiv with the Fin.rev equivalence
+  let revCLE : NPointDomain d n ≃L[ℝ] NPointDomain d n :=
+    { toFun := fun y i => y (Fin.rev i)
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl
+      invFun := fun y i => y (Fin.rev i)
+      left_inv := fun y => funext fun i => by simp [Fin.rev_rev]
+      right_inv := fun y => funext fun i => by simp [Fin.rev_rev]
+      continuous_toFun := by
+        apply continuous_pi; intro i; exact continuous_apply (Fin.rev i)
+      continuous_invFun := by
+        apply continuous_pi; intro i; exact continuous_apply (Fin.rev i) }
+  let revCLM : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ revCLE
+  have hrev : ∀ f : SchwartzNPoint d n, revCLM f = f.reverse := by
+    intro f; ext x; simp [revCLM, SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+      SchwartzMap.reverse_apply, revCLE]
+  -- conj is continuous (antilinear but ℝ-linear, preserves seminorms)
+  -- We show the composition conj ∘ reverse is continuous
+  have hconj_cont : Continuous (fun f : SchwartzNPoint d n => f.conj) := by
+    -- conj is ℝ-linear and preserves seminorms
+    let conjL : SchwartzNPoint d n →ₗ[ℝ] SchwartzNPoint d n :=
+      { toFun := SchwartzMap.conj
+        map_add' := fun f g => by ext x; simp [SchwartzMap.conj_apply]
+        map_smul' := fun c f => by ext x; simp [SchwartzMap.conj_apply] }
+    exact Seminorm.continuous_from_bounded
+      (schwartz_withSeminorms ℝ (NPointDomain d n) ℂ)
+      (schwartz_withSeminorms ℝ (NPointDomain d n) ℂ)
+      conjL (fun q => by
+        rcases q with ⟨k, l⟩
+        refine ⟨{(k, l)}, 1, ?_⟩
+        intro f
+        simpa [Finset.sup_singleton] using SchwartzMap.seminorm_conj_le k l f)
+  -- borchersConj = conj ∘ reverse is the composition of two continuous maps
+  show Continuous (fun f => (revCLM f).conj)
+  exact hconj_cont.comp revCLM.continuous |>.congr (fun f => by
+    show (revCLM f).conj = f.borchersConj
+    rw [hrev]; rfl)
+
+private theorem single_embed_continuous (n : ℕ) :
+    Continuous (fun g : SchwartzNPointSpace d n =>
+      (singlePH Wfn n g : GNSHilbertSpace Wfn)) := by
+  -- Use sequential continuity (Schwartz spaces are first countable)
+  rw [continuous_iff_seqContinuous]
+  intro u a hu
+  -- Need: (singlePH n (u k) : GNSHilbertSpace) → (singlePH n a : GNSHilbertSpace)
+  -- Equivalently: ‖coe(singlePH n (u k)) - coe(singlePH n a)‖ → 0
+  rw [Metric.tendsto_nhds]
+  intro ε hε
+  -- Step 1: g ↦ g.conjTensorProduct g is continuous from SchwartzNPointSpace to itself
+  have hconj_tp_cont : Continuous (fun g : SchwartzNPoint d n => g.conjTensorProduct g) :=
+    SchwartzMap.tensorProduct_continuous.comp
+      ((borchersConj_continuous (d := d)).prodMk continuous_id)
+  -- Step 2: g ↦ W(n+n)(g.conjTP g) is continuous SchwartzNPoint → ℂ
+  have hW_cont : Continuous (fun g : SchwartzNPoint d n =>
+      Wfn.W (n + n) (g.conjTensorProduct g)) :=
+    (Wfn.tempered (n + n)).comp hconj_tp_cont
+  -- Step 3: (u k - a) → 0 in Schwartz
+  have hv : Filter.Tendsto (fun k => u k - a) Filter.atTop (nhds 0) := by
+    have : Filter.Tendsto (fun k => u k - a) Filter.atTop (nhds (a - a)) :=
+      hu.sub tendsto_const_nhds
+    rwa [sub_self] at this
+  -- Step 4: W(n+n)((u k - a).conjTP (u k - a)) → W(n+n)(0.conjTP 0) = 0
+  have hW_zero : Wfn.W (n + n) ((0 : SchwartzNPoint d n).conjTensorProduct 0) = 0 := by
+    simp [(Wfn.linear _).map_zero]
+  have hW_tends : Filter.Tendsto
+      (fun k => Wfn.W (n + n) ((u k - a).conjTensorProduct (u k - a)))
+      Filter.atTop (nhds 0) := by
+    rw [← hW_zero]; exact hW_cont.continuousAt.tendsto.comp hv
+  -- Step 5: ‖singlePH n h‖ = √(Re(W(n+n)(h.conjTP h)))
+  have hnorm_eq : ∀ h : SchwartzNPoint d n,
+      ‖singlePH Wfn n h‖ = Real.sqrt (Wfn.W (n + n) (h.conjTensorProduct h)).re := by
+    intro h
+    show Real.sqrt (@InnerProductSpace.Core.normSq ℂ _ _ _ _
+      (instCore Wfn).toCore (singlePH Wfn n h)) = _
+    congr 1
+    show RCLike.re (PreHilbertSpace.innerProduct Wfn
+      (singlePH Wfn n h) (singlePH Wfn n h)) = _
+    -- inner product = WIP(single n h, single n h) = W(n+n)(h.conjTP h)
+    show (WightmanInnerProduct d Wfn.W (BorchersSequence.single n h)
+      (BorchersSequence.single n h)).re = _
+    simp only [WightmanInnerProduct, BorchersSequence.single_bound]
+    rw [Finset.sum_eq_single_of_mem n (Finset.mem_range.mpr (by omega)) (fun i _ hi => by
+      simp [BorchersSequence.single_funcs_ne hi, SchwartzMap.conjTensorProduct_zero_left,
+        (Wfn.linear _).map_zero]),
+      Finset.sum_eq_single_of_mem n (Finset.mem_range.mpr (by omega)) (fun j _ hj => by
+      simp [BorchersSequence.single_funcs_ne hj, SchwartzMap.conjTensorProduct_zero_right,
+        (Wfn.linear _).map_zero])]
+    simp [BorchersSequence.single_funcs_eq]
+  -- Step 6: By linearity, coe(singlePH n (u k)) - coe(singlePH n a) has norm
+  -- = ‖singlePH n (u k - a)‖  (using singlePH_add, singlePH_smul, coe_add, coe_smul)
+  have hdiff_norm : ∀ k, ‖(singlePH Wfn n (u k) : GNSHilbertSpace Wfn) -
+      (singlePH Wfn n a : GNSHilbertSpace Wfn)‖ =
+      ‖singlePH Wfn n (u k - a)‖ := by
+    intro k
+    have hsub : singlePH Wfn n (u k) - singlePH Wfn n a =
+        singlePH Wfn n (u k - a) := by
+      have h1 := singlePH_add Wfn n (u k) (-a)
+      have h2 := singlePH_smul Wfn n (-1 : ℂ) a
+      simp only [neg_smul, one_smul] at h2
+      rw [sub_eq_add_neg, sub_eq_add_neg, h1, h2]
+    rw [show (singlePH Wfn n (u k) : GNSHilbertSpace Wfn) -
+      (singlePH Wfn n a : GNSHilbertSpace Wfn) =
+      ((singlePH Wfn n (u k) - singlePH Wfn n a : PreHilbertSpace Wfn) :
+        GNSHilbertSpace Wfn) from by
+      rw [UniformSpace.Completion.coe_sub],
+      UniformSpace.Completion.norm_coe, hsub]
+  -- Step 7: Re(W(...)) → 0
+  have hRe_tends : Filter.Tendsto
+      (fun k => (Wfn.W (n + n) ((u k - a).conjTensorProduct (u k - a))).re)
+      Filter.atTop (nhds (0 : ℝ)) := by
+    have h := (Complex.continuous_re.tendsto (0 : ℂ)).comp hW_tends
+    simp only [Complex.zero_re, Function.comp_def] at h; exact h
+  -- Step 8: √(Re(W(...))) → 0
+  have hSqrt_tends : Filter.Tendsto
+      (fun k => Real.sqrt (Wfn.W (n + n) ((u k - a).conjTensorProduct (u k - a))).re)
+      Filter.atTop (nhds 0) := by
+    rw [← Real.sqrt_zero]
+    exact (Real.continuous_sqrt.tendsto 0).comp hRe_tends
+  -- Step 9: ‖singlePH n (u k - a)‖ → 0
+  have hNorm_tends : Filter.Tendsto
+      (fun k => ‖singlePH Wfn n (u k - a)‖) Filter.atTop (nhds 0) := by
+    exact hSqrt_tends.congr (fun k => (hnorm_eq (u k - a)).symm)
+  -- Step 10: dist(singlePH n (u k), singlePH n a) < ε eventually
+  have hDist_tends : Filter.Tendsto
+      (fun k => dist (singlePH Wfn n (u k) : GNSHilbertSpace Wfn)
+        (singlePH Wfn n a : GNSHilbertSpace Wfn))
+      Filter.atTop (nhds 0) := by
+    refine hNorm_tends.congr (fun k => ?_)
+    rw [dist_eq_norm, hdiff_norm]
+  -- Convert dist(x, 0) < ε to the actual distance condition
+  have := (Metric.tendsto_nhds.mp hDist_tends) ε hε
+  exact this.mono (fun k hk => by
+    simp only [Function.comp_apply]
+    rwa [Real.dist_0_eq_abs, abs_of_nonneg dist_nonneg] at hk)
+
+-- Helper: each pre-Hilbert element decomposes as a finite sum of single components.
+-- The proof avoids raw Quotient.mk and works entirely with singlePH and mk_eq_of_funcs_eq.
+private theorem quotient_eq_sum_singles (F : BorchersSequence d) :
+    (Quotient.mk (borchersSetoid Wfn) F : PreHilbertSpace Wfn) =
+    ∑ k ∈ Finset.range (F.bound + 1), singlePH Wfn k (F.funcs k) := by
+  -- Auxiliary: for any Finset s containing the support, F decomposes as a sum of singles.
+  suffices h : ∀ (s : Finset ℕ) (G : BorchersSequence d),
+      (∀ k, k ∉ s → G.funcs k = 0) →
+      (Quotient.mk (borchersSetoid Wfn) G : PreHilbertSpace Wfn) =
+      ∑ k ∈ s, singlePH Wfn k (G.funcs k) from
+    h (Finset.range (F.bound + 1)) F (fun k hk => F.bound_spec k (by
+      simp only [Finset.mem_range, not_lt] at hk; omega))
+  intro s
+  induction s using Finset.cons_induction with
+  | empty =>
+    intro G hG
+    -- All funcs are 0, so ⟦G⟧ = ⟦0⟧ = 0
+    show (Quotient.mk (borchersSetoid Wfn) G : PreHilbertSpace Wfn) = _
+    rw [Finset.sum_empty, show (0 : PreHilbertSpace Wfn) =
+      Quotient.mk (borchersSetoid Wfn) (0 : BorchersSequence d) from rfl]
+    exact mk_eq_of_funcs_eq Wfn G 0 (fun k => by simp [hG k (by simp)])
+  | cons a s ha ih =>
+    intro G hG
+    rw [Finset.sum_cons]
+    -- Split G into the a-th component and the rest
+    let G' : BorchersSequence d := {
+      funcs := fun k => if k = a then 0 else G.funcs k
+      bound := max G.bound a
+      bound_spec := fun k hk => by
+        show (if k = a then (0 : SchwartzNPoint d k) else G.funcs k) = 0
+        split
+        · rfl
+        · next hka => exact G.bound_spec k (by omega)
+    }
+    -- G' has support in s (not a)
+    have hG'supp : ∀ k, k ∉ s → G'.funcs k = 0 := by
+      intro k hk
+      simp only [G']
+      by_cases hka : k = a
+      · simp [hka]
+      · simp [hka]; exact hG k (fun hmem => (Finset.mem_cons.mp hmem).elim hka hk)
+    -- ⟦G⟧ = ⟦G' + single a (G.funcs a)⟧ = ⟦G'⟧ + singlePH a (G.funcs a)
+    -- We show: G and G' + single a (G.funcs a) have the same funcs
+    have h_split : (Quotient.mk (borchersSetoid Wfn) G : PreHilbertSpace Wfn) =
+        (Quotient.mk (borchersSetoid Wfn)
+          (G' + BorchersSequence.single a (G.funcs a)) : PreHilbertSpace Wfn) :=
+      mk_eq_of_funcs_eq Wfn G (G' + BorchersSequence.single a (G.funcs a)) (fun k => by
+        simp only [BorchersSequence.add_funcs, G']
+        by_cases hka : k = a
+        · subst hka; simp [BorchersSequence.single_funcs_eq]
+        · simp [hka])
+    -- ⟦G' + single a ...⟧ = ⟦G'⟧ + ⟦single a ...⟧ by definition of instAdd
+    -- (instAdd is Quotient.map₂, so Quotient.mk _ (A + B) = Quotient.mk _ A + Quotient.mk _ B)
+    -- This is definitionally true since instAdd.add is Quotient.map₂
+    rw [h_split]
+    -- Goal: ⟦G' + single a (G.funcs a)⟧ = singlePH a (G.funcs a) + ∑ k ∈ s, singlePH k (G.funcs k)
+    -- Apply IH to G'
+    have hG'eq : (Quotient.mk (borchersSetoid Wfn) G' : PreHilbertSpace Wfn) =
+        ∑ k ∈ s, singlePH Wfn k (G.funcs k) := by
+      rw [show ∑ k ∈ s, singlePH Wfn k (G.funcs k) =
+        ∑ k ∈ s, singlePH Wfn k (G'.funcs k) from
+        Finset.sum_congr rfl (fun k hk => by
+          show singlePH Wfn k (G.funcs k) = singlePH Wfn k (G'.funcs k)
+          congr 1; show G.funcs k = if k = a then 0 else G.funcs k
+          split
+          · next h => subst h; exact absurd hk ha
+          · rfl)]
+      exact ih G' hG'supp
+    -- Now combine: ⟦G' + single a ...⟧ = ⟦G'⟧ + singlePH a ... = (∑ s ...) + singlePH a ...
+    show (Quotient.mk (borchersSetoid Wfn)
+      (G' + BorchersSequence.single a (G.funcs a)) : PreHilbertSpace Wfn) =
+      singlePH Wfn a (G.funcs a) + ∑ k ∈ s, singlePH Wfn k (G.funcs k)
+    rw [← hG'eq]
+    -- Goal: ⟦G' + single a (G.funcs a)⟧ = singlePH a (G.funcs a) + ⟦G'⟧
+    -- This should hold by commutativity of + on PreHilbertSpace + the definitional equality
+    -- ⟦A + B⟧ = ⟦A⟧ + ⟦B⟧
+    rw [show (Quotient.mk (borchersSetoid Wfn)
+      (G' + BorchersSequence.single a (G.funcs a)) : PreHilbertSpace Wfn) =
+      (Quotient.mk (borchersSetoid Wfn)
+        (BorchersSequence.single a (G.funcs a) + G') : PreHilbertSpace Wfn) from
+      mk_eq_of_funcs_eq Wfn _ _ (fun k => by simp [BorchersSequence.add_funcs, add_comm])]
+    rfl
+
 theorem gns_cyclicity :
     Dense ((gnsOVD Wfn).algebraicSpan (gnsVacuum Wfn)).carrier := by
-  sorry
+  -- Strategy: show (algebraicSpan)ᗮ = ⊥ via the orthogonal complement, then
+  -- conclude density using Submodule.orthogonal_closure + orthogonal_eq_bot_iff.
+  --
+  -- Steps:
+  -- 1. operatorPow n fs Ω = ↑(singlePH n (productTensor fs)) [operatorPow_eq_single]
+  -- 2. z ⊥ (productTensor span) ⟹ z ⊥ all singles [nuclear density + continuity]
+  -- 3. Every pre-Hilbert element decomposes as ∑ singles [quotient_eq_sum_singles]
+  -- 4. z ⊥ range(coe) ⟹ z = 0 [Dense.eq_zero_of_inner_left]
+  --
+  -- single_embed_continuous (now proved) shows g ↦ ⟦single n g⟧ is continuous
+  -- from the Schwartz space to PreHilbertSpace, using
+  -- ‖⟦single n h⟧‖² = Re(W_{n+n}(h.conjTP h)) and temperedness of W.
+  let S := (gnsOVD Wfn).algebraicSpan (gnsVacuum Wfn)
+  change Dense (S : Set (GNSHilbertSpace Wfn))
+  rw [Submodule.dense_iff_topologicalClosure_eq_top,
+    ← Submodule.orthogonal_eq_bot_iff (K := S.topologicalClosure),
+    Submodule.orthogonal_closure, Submodule.eq_bot_iff]
+  intro z hz
+  rw [Submodule.mem_orthogonal'] at hz
+  -- Step 1: z ⊥ ↑(singlePH n (productTensor fs))
+  have horth_prod : ∀ (n : ℕ) (fs : Fin n → SchwartzSpacetime d),
+      @inner ℂ _ _ z (singlePH Wfn n (SchwartzMap.productTensor fs) :
+        GNSHilbertSpace Wfn) = 0 := by
+    intro n fs
+    rw [← operatorPow_eq_single Wfn n fs]
+    exact hz _ (Submodule.subset_span ⟨n, fs, rfl⟩)
+  -- Step 2: z ⊥ ↑(singlePH n g) for ALL g (extend from product tensors by density)
+  have horth_all_single : ∀ (n : ℕ) (g : SchwartzNPoint d n),
+      @inner ℂ _ _ z (singlePH Wfn n g : GNSHilbertSpace Wfn) = 0 := by
+    intro n
+    -- The functional vanishes on the ℂ-span of product tensors
+    have hL_span : ∀ h ∈ (Submodule.span ℂ
+        {F : SchwartzNPointSpace d n |
+          ∃ fs : Fin n → SchwartzSpacetime d, F = SchwartzMap.productTensor fs} :
+        Set (SchwartzNPointSpace d n)),
+        @inner ℂ _ _ z (singlePH Wfn n h : GNSHilbertSpace Wfn) = 0 := by
+      intro h hh
+      induction hh using Submodule.span_induction with
+      | mem x hx => obtain ⟨fs, rfl⟩ := hx; exact horth_prod n fs
+      | zero =>
+        rw [show singlePH Wfn n 0 = (0 : PreHilbertSpace Wfn) from
+          singlePH_zero (Wfn := Wfn) n,
+          UniformSpace.Completion.coe_zero, inner_zero_right]
+      | add x y _ _ ihx ihy =>
+        rw [show singlePH Wfn n (x + y) = singlePH Wfn n x + singlePH Wfn n y from
+          singlePH_add (Wfn := Wfn) n x y,
+          UniformSpace.Completion.coe_add, inner_add_right, ihx, ihy, add_zero]
+      | smul c x _ ih =>
+        rw [show singlePH Wfn n (c • x) = c • singlePH Wfn n x from
+          singlePH_smul (Wfn := Wfn) n c x,
+          UniformSpace.Completion.coe_smul, inner_smul_right, ih, mul_zero]
+    -- ⟨z, ↑(singlePH n ·)⟩ is continuous (inner product ∘ continuous embedding)
+    have hL_cont : Continuous (fun g : SchwartzNPointSpace d n =>
+        @inner ℂ _ _ z (singlePH Wfn n g : GNSHilbertSpace Wfn)) := by
+      have h1 := single_embed_continuous (Wfn := Wfn) n
+      have h2 : Continuous (fun w : GNSHilbertSpace Wfn => @inner ℂ _ _ z w) :=
+        continuous_const.inner continuous_id
+      exact h2.comp h1
+    intro g
+    exact congr_fun (Continuous.ext_on (productTensor_span_dense d n) hL_cont
+      continuous_const (fun h hh => hL_span h hh)) g
+  -- Step 3: z ⊥ ↑x for every pre-Hilbert element x
+  have horth_all : ∀ x : PreHilbertSpace Wfn,
+      @inner ℂ _ _ z (x : GNSHilbertSpace Wfn) = 0 := by
+    intro x
+    induction x using Quotient.inductionOn with | h F =>
+    rw [quotient_eq_sum_singles Wfn F]
+    -- Distribute coe over finite sum using coe_add induction, then use inner_sum.
+    -- coe(∑ f_k) = ∑ coe(f_k) by induction on Finset using coe_add.
+    have hcoe_sum : (↑(∑ k ∈ Finset.range (F.bound + 1), singlePH Wfn k (F.funcs k)) :
+        GNSHilbertSpace Wfn) =
+      ∑ k ∈ Finset.range (F.bound + 1),
+        (singlePH Wfn k (F.funcs k) : GNSHilbertSpace Wfn) := by
+      induction Finset.range (F.bound + 1) using Finset.cons_induction with
+      | empty => simp [UniformSpace.Completion.coe_zero]
+      | cons a s ha ih =>
+        rw [Finset.sum_cons, UniformSpace.Completion.coe_add, Finset.sum_cons, ih]
+    rw [hcoe_sum, inner_sum]
+    exact Finset.sum_eq_zero (fun k _ => horth_all_single k (F.funcs k))
+  -- Step 4: z = 0 by density of the pre-Hilbert space image in the completion.
+  exact Dense.eq_zero_of_inner_left (gnsDomain_dense Wfn) (fun ⟨v, hv⟩ => by
+    obtain ⟨x, rfl⟩ := hv; exact horth_all x)
 
 /-! ### Vacuum Uniqueness via Cluster Decomposition (Streater-Wightman, Theorem 3-5)
 
