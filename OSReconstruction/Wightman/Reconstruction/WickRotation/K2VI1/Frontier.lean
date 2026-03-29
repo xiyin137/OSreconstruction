@@ -935,39 +935,6 @@ private theorem exists_fixed_strip_common_difference_kernel_local
           exact OSReconstruction.integral_twoPointDifferenceKernel_mul_differenceLift_factorizes
             (d := d) K_s χ₀ hdesc_n -/
 
-private theorem exists_common_lifted_difference_slice_strip_bound_and_boundary_eq_local
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (φ_seq : ℕ → SchwartzSpacetime d)
-    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
-    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
-    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
-      {x : SpacetimeDim d | x 0 < 0})
-    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
-    (hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G)
-    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
-      OS.S 2 f = ∫ x : NPointDomain d 2,
-        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
-    (s : ℝ)
-    (hs : 0 < s) :
-    ∃ (C_bd : ℝ) (N : ℕ),
-      0 < C_bd ∧
-      (∀ z : NPointDomain d 2, -(s + s) < z 1 0 →
-        ‖OSReconstruction.commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1)‖ ≤
-          C_bd * (1 + ‖z‖) ^ N) ∧
-      (∀ z : NPointDomain d 2, 0 < z 1 0 →
-        OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
-          (d := d) G ((((s + s) : ℂ) * Complex.I)) z =
-        OSReconstruction.commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1)) := by
-  /-
-  This is the genuine remaining analytic gap in the corrected Input A route.
-  The witness `G` and the fixed-time product-shell representation are already
-  available; what remains is to identify the common fixed-time kernel with the
-  lifted difference-only slice on the positive strip and prove the strip bound
-  needed for the CLM package.
-  -/
-  sorry
-
 private theorem exists_common_lifted_difference_slice_strip_bound_and_productShell_pairing_local
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -998,14 +965,13 @@ private theorem exists_common_lifted_difference_slice_strip_bound_and_productShe
           OSReconstruction.commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1) *
             ((φ_seq n) (z 0) *
               reflectedSchwartzSpacetime (d := d) (φ_seq n) (z 0 + z 1))) := by
-  obtain ⟨C_bd, N, hC, hK_bound, hboundary⟩ :=
-    exists_common_lifted_difference_slice_strip_bound_and_boundary_eq_local
-      (d := d) OS lgc φ_seq hφ_real hφ_compact hφ_neg G hG_holo hG_euclid s hs
-  refine ⟨C_bd, N, hC, hK_bound, ?_⟩
-  intro n
-  exact
-    OSReconstruction.commonLiftedDifferenceSlice_productShell_pairing_of_boundary_eq_local
-      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n) G s hboundary
+  /-
+  This is the genuine remaining analytic gap in the corrected Input A route.
+  The witness `G` and the fixed-time product-shell representation are already
+  available; what remains is to transfer the common witness to the lifted
+  difference-only slice with the strip bound needed for the CLM package.
+  -/
+  sorry
 
 /-- Honest remaining common-`G` Input A seam after removing the false
 probe-Euclid route.
