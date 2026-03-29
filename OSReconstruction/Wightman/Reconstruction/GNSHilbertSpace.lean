@@ -1168,7 +1168,11 @@ private theorem gnsCyclicity (S : Submodule ℂ (GNSHilbertSpace Wfn))
 /-- The Wightman QFT reconstructed from Wightman functions.
     The key result is that the Wightman functions are correctly reproduced.
     The domain is the image of the pre-Hilbert space (dense in the completion).
-    Remaining sorry: spectrum condition. -/
+
+    Remaining sorrys (2):
+    - `spectrum_condition`: forward tube analyticity → Fourier support in V̄₊
+    - `vacuum_unique` (part 2): uniqueness of time-translation-invariant vector,
+      requires spectrum condition + Stone's theorem + ker(H) = ℂ·Ω -/
 noncomputable def gnsQFT : WightmanQFT d where
   HilbertSpace := GNSHilbertSpace Wfn
   poincare_rep := gnsPoincareRep Wfn
