@@ -16,11 +16,21 @@ private def commonCenterTimeSlot_local : Fin (2 * (d + 1)) :=
 private def commonDiffTimeSlot_local : Fin (2 * (d + 1)) :=
   finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))
 
+private def commonDiffSlot_local (μ : Fin (d + 1)) : Fin (2 * (d + 1)) :=
+  finProdFinEquiv (⟨1, by omega⟩, μ)
+
 private theorem commonCenterTimeSlot_ne_commonDiffTimeSlot_local :
     commonCenterTimeSlot_local (d := d) ≠ commonDiffTimeSlot_local (d := d) := by
   intro h
   have := congrArg Fin.val h
   simp [commonCenterTimeSlot_local, commonDiffTimeSlot_local] at this
+
+private theorem commonCenterTimeSlot_ne_commonDiffSlot_local
+    (μ : Fin (d + 1)) :
+    commonCenterTimeSlot_local (d := d) ≠ commonDiffSlot_local (d := d) μ := by
+  intro h
+  have := congrArg Prod.fst (finProdFinEquiv.injective h)
+  simp [commonCenterTimeSlot_local, commonDiffSlot_local] at this
 
 private def commonLiftedDifferenceSliceArg_local
     (s : ℝ) (ξ : SpacetimeDim d) : Fin (2 * (d + 1)) → ℂ :=
@@ -273,6 +283,76 @@ theorem commonLiftedDifferenceSlice_productShell_pairing_of_boundary_eq_local
         exact Function.mem_support.mpr hz
     have hz_pos : 0 < z 1 0 := hsupp_pos hz_mem
     rw [hboundary z hz_pos]
+
+/-- If the common witness `G` depends only on the full diff block in
+center/difference coordinates, then the common fixed-time kernel is already the
+lifted common slice pointwise. This isolates the precise structural invariance
+needed behind the recent center-independence discussion. -/
+theorem twoPointFixedTimeCenterDiffKernel_eq_commonLiftedDifferenceSlice_of_diffBlockDependence_local
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (commonDiffSlot_local (d := d) μ) = v (commonDiffSlot_local (d := d) μ)) →
+        G u = G v)
+    (s : ℝ)
+    (z : NPointDomain d 2) :
+    twoPointFixedTimeCenterDiffKernel_local
+      (d := d) G ((((s + s) : ℂ) * Complex.I)) z =
+    commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1) := by
+  change
+    G (Function.update
+      (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i)))
+      (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+      (BHW.flattenCfg 2 d (fun i => wickRotatePoint (z i))
+        (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) +
+        (((s + s) : ℂ) * Complex.I))) =
+    G (Function.update
+      (Function.update
+        (BHW.flattenCfg 2 d (fun i => wickRotatePoint (![(0 : SpacetimeDim d), z 1] i)))
+        (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1))))
+        ((BHW.flattenCfg 2 d (fun i => wickRotatePoint (![(0 : SpacetimeDim d), z 1] i)))
+          (finProdFinEquiv (⟨1, by omega⟩, (0 : Fin (d + 1)))) + (((s + s) : ℂ) * Complex.I)))
+      (finProdFinEquiv (⟨0, by omega⟩, (0 : Fin (d + 1))))
+      Complex.I)
+  apply hG_diff
+  intro μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [commonDiffSlot_local, commonCenterTimeSlot_local, BHW.flattenCfg, wickRotatePoint,
+      Function.update, commonCenterTimeSlot_ne_commonDiffSlot_local]
+  · simp [twoPointFixedTimeCenterDiffKernel_local, commonLiftedDifferenceSliceKernel_local,
+      commonDiffSlot_local, commonCenterTimeSlot_local, BHW.flattenCfg, wickRotatePoint,
+      Function.update, hμ]
+
+/-- Under full diff-block dependence of `G`, the reflected product-shell
+pairing of the common fixed-time kernel already agrees with the pairing against
+the lifted common slice. -/
+theorem commonLiftedDifferenceSlice_productShell_pairing_of_diffBlockDependence_local
+    (φ : SchwartzSpacetime d)
+    (hφ_compact : HasCompactSupport (φ : SpacetimeDim d → ℂ))
+    (hφ_neg : tsupport (φ : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0})
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (commonDiffSlot_local (d := d) μ) = v (commonDiffSlot_local (d := d) μ)) →
+        G u = G v)
+    (s : ℝ) :
+    ∫ z : NPointDomain d 2,
+      twoPointFixedTimeCenterDiffKernel_local
+        (d := d) G ((((s + s) : ℂ) * Complex.I)) z *
+        (φ (z 0) * reflectedSchwartzSpacetime (d := d) φ (z 0 + z 1)) =
+    ∫ z : NPointDomain d 2,
+      commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1) *
+        (φ (z 0) * reflectedSchwartzSpacetime (d := d) φ (z 0 + z 1)) := by
+  apply commonLiftedDifferenceSlice_productShell_pairing_of_boundary_eq_local
+    (d := d) φ hφ_compact hφ_neg G s
+  intro z _hz
+  exact
+    twoPointFixedTimeCenterDiffKernel_eq_commonLiftedDifferenceSlice_of_diffBlockDependence_local
+      (d := d) G hG_diff s z
 
 /-- Product-shell-only common-boundary route for the VI.1 diagonal-limit proof. -/
 theorem exists_fixed_strip_diagonal_limit_of_common_boundary_difference_package_of_productShell_pairing_eq_local
@@ -616,5 +696,61 @@ theorem exists_fixed_strip_diagonal_limit_of_common_lifted_difference_slice_prod
     exists_fixed_strip_diagonal_limit_of_common_lifted_difference_slice_piecewise_of_productShell_pairing_eq_local
       (d := d) OS lgc χ₀ hχ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_ball hφ_compact
       hφ_neg G hG_holo hG_euclid s hs C_bd N hC hK_bound hprod_pair
+
+/-- Exact production route under the structural hypothesis that the common
+witness depends only on the full diff block. This packages the common-`G`
+repair as a clean fallback route for the VI.1 diagonal-limit theorem. -/
+theorem exists_fixed_strip_diagonal_limit_of_common_lifted_difference_slice_piecewise_of_diffBlockDependence_package_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1)
+    (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_nonneg : ∀ n x, 0 ≤ (φ_seq n x).re)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
+    (hφ_ball : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      Metric.ball (0 : SpacetimeDim d) (1 / (n + 1 : ℝ)))
+    (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
+    (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
+      {x : SpacetimeDim d | x 0 < 0})
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G)
+    (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f = ∫ x : NPointDomain d 2,
+        G (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x))
+    (hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (commonDiffSlot_local (d := d) μ) = v (commonDiffSlot_local (d := d) μ)) →
+        G u = G v)
+    (s : ℝ)
+    (hs : 0 < s)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ z : NPointDomain d 2, -(s + s) < z 1 0 →
+      ‖commonLiftedDifferenceSliceKernel_local (d := d) G s (z 1)‖ ≤
+        C_bd * (1 + ‖z‖) ^ N) :
+    ∃ z : ℂ,
+      Filter.Tendsto
+        (fun n =>
+          let xφ : OSHilbertSpace OS :=
+            (((show OSPreHilbertSpace OS from
+                (⟦PositiveTimeBorchersSequence.single 1
+                    (SchwartzNPoint.osConj (d := d) (n := 1)
+                      (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+                    (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n))⟧)) :
+                OSHilbertSpace OS))
+          osSemigroupGroupMatrixElement (d := d) OS lgc xφ (s + s) (0 : Fin d → ℝ))
+        Filter.atTop
+        (nhds z) := by
+  refine
+    exists_fixed_strip_diagonal_limit_of_common_lifted_difference_slice_piecewise_of_productShell_pairing_eq_local
+      (d := d) OS lgc χ₀ hχ₀ φ_seq hφ_nonneg hφ_real hφ_int hφ_ball hφ_compact
+      hφ_neg G hG_holo hG_euclid s hs C_bd N hC hK_bound ?_
+  intro n
+  exact
+    commonLiftedDifferenceSlice_productShell_pairing_of_diffBlockDependence_local
+      (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n) G hG_diff s
 
 end OSReconstruction
