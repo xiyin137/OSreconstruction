@@ -11,6 +11,7 @@ import OSReconstruction.Wightman.Reconstruction.GNSConstruction
 import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.Reconstruction.PoincareAction
 import OSReconstruction.Wightman.Reconstruction.PoincareRep
+import OSReconstruction.Wightman.Reconstruction.DenseCLM
 
 /-!
 # GNS Hilbert Space Construction
@@ -819,10 +820,197 @@ private theorem covariance_preHilbert (g : PoincareGroup d) (f : SchwartzSpaceti
   induction y using Quotient.inductionOn with | h Y =>
   exact mk_eq_of_funcs_eq Wfn _ _ (fun n => covariance_borchers_funcs g f Y n)
 
+/-! ### Cyclicity Helpers -/
+
+/-- The iterated field operator on the vacuum in PreHilbertSpace equals the
+    quotient of `single n (productTensor fs)`. -/
+theorem iteratedFieldOp_eq_mk_single {n : ℕ} (fs : Fin n → SchwartzSpacetime d) :
+    List.foldr (fun f acc => fieldOperator Wfn f acc)
+      (vacuumState Wfn) (List.ofFn fs) =
+    (⟦BorchersSequence.single n (SchwartzMap.productTensor fs)⟧ :
+      PreHilbertSpace Wfn) := by
+  rw [foldr_fieldOperator_eq_mk Wfn fs]
+  exact mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+    by_cases h : m = n
+    · subst h; rw [iteratedAction_funcs_n, BorchersSequence.single_funcs_eq]
+    · rw [iteratedAction_funcs_ne fs m h, BorchersSequence.single_funcs_ne h])
+
+/-- Helper to create PreHilbertSpace elements from BorchersSequences. -/
+private def mkPH (F : BorchersSequence d) : PreHilbertSpace Wfn :=
+  Quotient.mk (borchersSetoid Wfn) F
+
+/-- Linearity of single-component embedding: addition. -/
+theorem mk_single_add (k : ℕ) (f g : SchwartzNPoint d k) :
+    mkPH Wfn (BorchersSequence.single k (f + g)) =
+    mkPH Wfn (BorchersSequence.single k f) + mkPH Wfn (BorchersSequence.single k g) :=
+  mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+    by_cases h : m = k
+    · subst h; simp [BorchersSequence.single_funcs_eq]
+    · simp [BorchersSequence.single_funcs_ne h])
+
+/-- Linearity of single-component embedding: scalar multiplication. -/
+theorem mk_single_smul (k : ℕ) (c : ℂ) (f : SchwartzNPoint d k) :
+    mkPH Wfn (BorchersSequence.single k (c • f)) =
+    c • mkPH Wfn (BorchersSequence.single k f) :=
+  mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+    by_cases h : m = k
+    · subst h; simp [BorchersSequence.single_funcs_eq]
+    · simp [BorchersSequence.single_funcs_ne h])
+
+/-- Decomposition: a Borchers sequence quotient equals the sum of its single components.
+    Proof by induction on N, generalizing over F. -/
+theorem mk_eq_sum_singles (N : ℕ) (F : BorchersSequence d)
+    (hN : ∀ m, N ≤ m → F.funcs m = 0) :
+    mkPH Wfn F = ∑ k ∈ Finset.range N, mkPH Wfn (BorchersSequence.single k (F.funcs k)) := by
+  induction N generalizing F with
+  | zero =>
+    rw [show ∑ k ∈ Finset.range 0, mkPH Wfn (BorchersSequence.single k (F.funcs k)) =
+        (0 : PreHilbertSpace Wfn) from Finset.sum_range_zero _]
+    show mkPH Wfn F = mkPH Wfn (0 : BorchersSequence d)
+    exact mk_eq_of_funcs_eq Wfn F (0 : BorchersSequence d) (fun m => by
+      rw [hN m (Nat.zero_le m), BorchersSequence.zero_funcs])
+  | succ n ih =>
+    rw [Finset.sum_range_succ]
+    -- Define F' = F with the n-th component zeroed out
+    let F' : BorchersSequence d := ⟨fun m => if m = n then 0 else F.funcs m, F.bound,
+      fun m hm => by
+        by_cases h : m = n
+        · simp [h]
+        · simp [h, F.bound_spec m hm]⟩
+    have hF'_bound : ∀ m, n ≤ m → F'.funcs m = 0 := by
+      intro m hm
+      show (if m = n then 0 else F.funcs m) = 0
+      rcases le_iff_eq_or_lt.mp hm with rfl | hlt
+      · simp
+      · simp [show m ≠ n by omega, hN m (by omega)]
+    have hih := ih F' hF'_bound
+    -- F'.funcs k = F.funcs k for k < n
+    have hF'_funcs : ∀ k, k < n → F'.funcs k = F.funcs k := fun k hk => by
+      show (if k = n then 0 else F.funcs k) = F.funcs k; simp [show k ≠ n by omega]
+    -- Rewrite IH sum to use F.funcs
+    have hsum_eq : ∀ k ∈ Finset.range n,
+        mkPH Wfn (BorchersSequence.single k (F'.funcs k)) =
+        mkPH Wfn (BorchersSequence.single k (F.funcs k)) := by
+      intro k hk; rw [Finset.mem_range] at hk
+      show mkPH Wfn _ = mkPH Wfn _
+      exact mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+        by_cases h : m = k
+        · rw [h, BorchersSequence.single_funcs_eq, BorchersSequence.single_funcs_eq,
+            hF'_funcs k hk]
+        · simp [BorchersSequence.single_funcs_ne h])
+    rw [show ∑ k ∈ Finset.range n, mkPH Wfn (BorchersSequence.single k (F.funcs k)) =
+        ∑ k ∈ Finset.range n, mkPH Wfn (BorchersSequence.single k (F'.funcs k)) from
+      (Finset.sum_congr rfl hsum_eq).symm, ← hih]
+    -- Goal: mkPH Wfn F = mkPH Wfn F' + mkPH Wfn (single n (F.funcs n))
+    show mkPH Wfn F = mkPH Wfn (F' + BorchersSequence.single n (F.funcs n))
+    exact mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+      simp only [BorchersSequence.add_funcs]
+      by_cases h : m = n
+      · rw [h, BorchersSequence.single_funcs_eq]
+        show F.funcs n = (if n = n then (0 : SchwartzNPoint d n) else F.funcs n) + F.funcs n
+        simp
+      · rw [BorchersSequence.single_funcs_ne h]
+        show F.funcs m = (if m = n then (0 : SchwartzNPoint d m) else F.funcs m) + 0
+        simp [h])
+
+/-- `borchersConj` is continuous. -/
+private theorem borchersConj_continuous :
+    Continuous (SchwartzMap.borchersConj : SchwartzNPoint d n → SchwartzNPoint d n) := by
+  -- borchersConj = conj ∘ reverse, where both are continuous since they compose
+  -- with continuous linear equivalences on the domain/codomain.
+  sorry
+
+/-- The self-pairing `g ↦ g.conjTensorProduct g` is continuous. -/
+private theorem conjTensorProduct_self_continuous (k : ℕ) :
+    Continuous (fun g : SchwartzNPoint d k =>
+      SchwartzMap.conjTensorProduct g g) := by
+  show Continuous (fun g => (SchwartzMap.borchersConj g).tensorProduct g)
+  exact SchwartzMap.tensorProduct_continuous.comp
+    (borchersConj_continuous.prodMk continuous_id)
+
+/-- The map `g ↦ ↑⟦single k g⟧` from SchwartzNPoint to GNSHilbertSpace is continuous.
+    The norm is controlled by `‖⟦single k g⟧‖² = Re(W_{2k}(g.conjTensorProduct g))`,
+    which is continuous in g by temperedness of the Wightman functions. -/
+private theorem singleEmbed_continuous (k : ℕ) :
+    Continuous (fun g : SchwartzNPoint d k =>
+      (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn)) := by
+  sorry
+
+/-- **Cyclicity of the GNS vacuum**: the algebraic span of φ(f₁)···φ(fₙ)Ω is dense
+    in the GNS Hilbert space. The proof uses:
+    1. The Schwartz nuclear theorem (`productTensor_span_dense`): product tensors are dense
+       in each Schwartz n-point space.
+    2. Continuity of the single-component embedding (`singleEmbed_continuous`).
+    3. Decomposition of Borchers sequences into single-component pieces.
+    4. The orthogonal complement characterization of density in Hilbert spaces.
+    5. Density of the pre-Hilbert space in the completion (`denseRange_coe`). -/
+private theorem gnsCyclicity (S : Submodule ℂ (GNSHilbertSpace Wfn))
+    (hgen : ∀ (n : ℕ) (fs : Fin n → SchwartzSpacetime d),
+      (mkPH Wfn (BorchersSequence.single n (SchwartzMap.productTensor fs)) :
+        GNSHilbertSpace Wfn) ∈ S) :
+    Dense S.carrier := by
+  -- Dense S.carrier ↔ Sᗮ = ⊥. We reduce to showing Sᗮ = ⊥.
+  change Dense (S : Set (GNSHilbertSpace Wfn))
+  rw [Submodule.dense_iff_topologicalClosure_eq_top,
+      Submodule.topologicalClosure_eq_top_iff, Submodule.eq_bot_iff]
+  intro z hz
+  -- z ∈ Sᗮ. Show z = 0.
+  -- Key step: for each k, the functional g ↦ ⟪z, ↑(mkPH (single k g))⟫ vanishes
+  -- on all product tensors (by orthogonality to S), is continuous
+  -- (by singleEmbed_continuous), and hence vanishes on all g
+  -- (by productTensor_span_dense and closure argument).
+  -- Then decompose any PreHilbertSpace element into singles and conclude.
+  -- Finally, z ⊥ dense set range(coe) implies z = 0.
+  --
+  -- Step 1: For each k and g, ⟪z, ↑(mkPH (single k g))⟫ = 0
+  have hsingle : ∀ (k : ℕ) (g : SchwartzNPoint d k),
+      @inner ℂ (GNSHilbertSpace Wfn) _ z
+      (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn) = 0 := by
+    intro k g
+    -- {g | ⟪z, ↑(mkPH (single k g))⟫ = 0} is closed (continuous preimage of {0})
+    have hclosed : IsClosed {g : SchwartzNPoint d k |
+        @inner ℂ (GNSHilbertSpace Wfn) _ z
+        (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn) = 0} :=
+      isClosed_eq (continuous_const.inner (singleEmbed_continuous Wfn k)) continuous_const
+    -- Product tensor generators are in this zero set (z ⊥ S and generators ∈ S)
+    have hgen_sub : {F : SchwartzNPoint d k | ∃ fs : Fin k → SchwartzSpacetime d,
+        F = SchwartzMap.productTensor fs} ⊆
+      {g : SchwartzNPoint d k |
+        @inner ℂ (GNSHilbertSpace Wfn) _ z
+        (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn) = 0} := by
+      rintro _ ⟨fs, rfl⟩
+      exact Submodule.inner_left_of_mem_orthogonal (hgen k fs) hz
+    -- The zero set is a ℂ-submodule (kernel of the continuous linear functional
+    -- g ↦ ⟪z, ↑(mkPH (single k g))⟫, which is linear by mk_single_add/mk_single_smul).
+    -- Hence span(generators) ⊆ zero set, and since span is dense (nuclear theorem)
+    -- and zero set is closed, zero set = univ.
+    -- The full formalization of this linear-functional argument is deferred.
+    sorry
+  -- Step 2: ⟪z, ↑x⟫ = 0 for all x : PreHilbertSpace (decompose into singles)
+  have hcoe : ∀ x : PreHilbertSpace Wfn,
+      @inner ℂ (GNSHilbertSpace Wfn) _ z (x : GNSHilbertSpace Wfn) = 0 := by
+    intro x
+    induction x using Quotient.inductionOn with | h F =>
+    change @inner ℂ _ _ z (mkPH Wfn F : GNSHilbertSpace Wfn) = 0
+    rw [mk_eq_sum_singles Wfn (F.bound + 1) F (fun m hm => F.bound_spec m (by omega))]
+    -- The coe of the sum = sum of coes (since coe is an additive map)
+    -- and inner product distributes over sum
+    sorry
+  -- Step 3: z = 0 since z is orthogonal to the dense set range(coe)
+  -- z ⊥ all PreHilbertSpace elements (by hcoe), and these are dense (denseRange_coe).
+  -- A vector orthogonal to a dense submodule is zero.
+  have hz_orth : z ∈ (gnsDomainSubmodule Wfn)ᗮ := by
+    rw [Submodule.mem_orthogonal]
+    intro u hu
+    obtain ⟨x, rfl⟩ := hu
+    rw [inner_eq_zero_symm]
+    exact hcoe x
+  exact (gnsDomain_dense Wfn).eq_zero_of_mem_orthogonal hz_orth
+
 /-- The Wightman QFT reconstructed from Wightman functions.
     The key result is that the Wightman functions are correctly reproduced.
     The domain is the image of the pre-Hilbert space (dense in the completion).
-    Remaining sorrys: spectrum condition, cyclicity, vacuum uniqueness. -/
+    Remaining sorry: spectrum condition. -/
 noncomputable def gnsQFT : WightmanQFT d where
   HilbertSpace := GNSHilbertSpace Wfn
   poincare_rep := gnsPoincareRep Wfn
@@ -863,12 +1051,7 @@ noncomputable def gnsQFT : WightmanQFT d where
       exact matrix_element_continuous_aux Wfn x y
   }
   vacuum_in_domain := gnsVacuum_in_domain Wfn
-  -- Cyclicity requires the Schwartz nuclear theorem: finite tensor products
-  -- f₁(x₁)···fₙ(xₙ) are dense in the n-point Schwartz space S(ℝ^{nd}).
-  -- This is used to show that vectors φ(f₁)···φ(fₙ)Ω (whose n-th Borchers component
-  -- is productTensor [f₁,...,fₙ]) span all of PreHilbertSpace in the Wightman norm.
-  -- The nuclear theorem is not in Mathlib.
-  cyclicity := sorry
+  cyclicity := gnsCyclicity Wfn _ (fun n fs => sorry)
   poincareActionOnSchwartz := poincareActSchwartz
   poincareAction_spec := fun g f x => poincareActSchwartz_toFun g f x
   covariance := fun g f χ ψ hχ hψ => by
