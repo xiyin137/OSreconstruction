@@ -95,44 +95,35 @@ private theorem hasCompactSupport_twoPointCenterShearDescent_reflected_local
     (isCompact_closedBall (0 : SpacetimeDim d) (Rφ'' + Rψ''))
     (fun x hx => hclosed (subset_tsupport _ hx))
 
-private theorem exists_fixed_strip_compactSupport_positiveStrip_pairing_eq_local
+private theorem exists_probeSeq_euclid_local
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
     (φ_seq : ℕ → SchwartzSpacetime d)
+    (hφ_real : ∀ n x, (φ_seq n x).im = 0)
+    (hφ_int : ∀ n, ∫ x : SpacetimeDim d, φ_seq n x = 1)
     (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
     (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
-      {x : SpacetimeDim d | x 0 < 0})
-    (t : ℝ) :
-    ∀ n (f : SchwartzMap (NPointDomain d 2) ℂ),
-      HasCompactSupport (f : NPointDomain d 2 → ℂ) →
-      Function.support (f : NPointDomain d 2 → ℂ) ⊆ {z : NPointDomain d 2 | 0 < z 1 0} →
-      ∫ z : NPointDomain d 2,
-        OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
-          (d := d) G ((t : ℂ) * Complex.I) z * f z =
-      ∫ z : NPointDomain d 2,
-        OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
-          (d := d)
+      {x : SpacetimeDim d | x 0 < 0}) :
+    ∀ n (f : ZeroDiagonalSchwartz d 2),
+      OS.S 2 f =
+        ∫ x : NPointDomain d 2,
           (k2ProbeWitness_local (d := d) OS lgc
             (φ_seq n) (hφ_compact n) (hφ_neg n))
-          ((t : ℂ) * Complex.I) z * f z := by
+            (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x) := by
   /-
-  Honest root Input A seam:
+  Honest root Input A seam on the probe side:
 
-  common-vs-probe equality on compact-support tests supported in the positive
-  strip `{z | 0 < z 1 0}`.
-
-  The remaining shell bridges are already formal from this smaller theorem via
-  the production reductions in `InputAShiftedRepresentative.lean`.
+  prove Euclidean reproduction for each probe witness on all zero-diagonal
+  tests. Once this is available, the product-shell identity, fixed-center shell
+  identity, and fixed-strip common-functional route are all formal from the
+  current production support.
   -/
   sorry
 
-private theorem exists_fixed_strip_compactSupport_positiveStrip_pairing_local
+private theorem exists_fixed_strip_shell_pairings_local
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (χc : SchwartzSpacetime d)
-    (hχc : ∫ u : SpacetimeDim d, χc u = 1)
-    (hχc_compact : HasCompactSupport (χc : SpacetimeDim d → ℂ))
     (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
     (hG_euclid : ∀ (f : ZeroDiagonalSchwartz d 2),
       OS.S 2 f = ∫ x : NPointDomain d 2,
@@ -159,34 +150,89 @@ private theorem exists_fixed_strip_compactSupport_positiveStrip_pairing_local
           ((t : ℂ) * Complex.I) z *
           ((φ_seq n) (z 0) *
             reflectedSchwartzSpacetime (d := d) (φ_seq n) (z 0 + z 1))) ∧
-    (∀ n,
-      let hdesc_n : SchwartzSpacetime d :=
-        OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
-          (reflectedSchwartzSpacetime (d := d) (φ_seq n))
+    (∀ n (h : SchwartzSpacetime d),
+      tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} →
       ∫ z : NPointDomain d 2,
         OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
           (d := d) G ((t : ℂ) * Complex.I) z *
-          (χc (z 0) * hdesc_n (z 1)) =
+          (χc (z 0) * h (z 1)) =
       ∫ z : NPointDomain d 2,
         OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
           (d := d)
           (k2ProbeWitness_local (d := d) OS lgc
             (φ_seq n) (hφ_compact n) (hφ_neg n))
           ((t : ℂ) * Complex.I) z *
-          (χc (z 0) * hdesc_n (z 1))) := by
-  have hdesc_compact :
-      ∀ n,
-        HasCompactSupport
-          (((OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
-            (reflectedSchwartzSpacetime (d := d) (φ_seq n))) : SchwartzSpacetime d) :
-            SpacetimeDim d → ℂ) :=
-    hasCompactSupport_twoPointCenterShearDescent_reflected_local
-      φ_seq hφ_compact
-  simpa using
-    OSReconstruction.exists_common_probe_shell_bridges_of_compactSupport_positiveStrip_pairing_eq_local
-      (d := d) OS lgc χc hχc_compact G φ_seq hφ_compact hφ_neg hdesc_compact t
-      (exists_fixed_strip_compactSupport_positiveStrip_pairing_eq_local
-        (d := d) OS lgc G φ_seq hφ_compact hφ_neg t)
+          (χc (z 0) * h (z 1))) := by
+  have hprobe_euclid :=
+    exists_probeSeq_euclid_local
+      (d := d) OS lgc φ_seq hφ_real hφ_int hφ_compact hφ_neg
+  refine ⟨?_, ?_⟩
+  · intro n
+    calc
+      ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d) G ((t : ℂ) * Complex.I) z *
+            ((φ_seq n) (z 0) *
+              reflectedSchwartzSpacetime (d := d) (φ_seq n) (z 0 + z 1))
+        =
+      let xφ : OSHilbertSpace OS :=
+        (((show OSPreHilbertSpace OS from
+            (⟦PositiveTimeBorchersSequence.single 1
+                (SchwartzNPoint.osConj (d := d) (n := 1)
+                  (onePointToFin1CLM d (φ_seq n) : SchwartzNPoint d 1))
+                (osConj_onePointToFin1_tsupport_orderedPositiveTime_local
+                  (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n))⟧)) :
+            OSHilbertSpace OS))
+      osSemigroupGroupMatrixElement (d := d) OS lgc xφ t (0 : Fin d → ℝ) := by
+          symm
+          simpa using
+            OSReconstruction.fixedTimeCenterDiff_productShell_pairing_eq_matrixElement_of_euclid_local
+              (d := d) OS lgc G hG_euclid (φ_seq n) (hφ_real n) (hφ_compact n)
+              (hφ_neg n) t ht
+      _ =
+      ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc
+              (φ_seq n) (hφ_compact n) (hφ_neg n))
+            ((t : ℂ) * Complex.I) z *
+            ((φ_seq n) (z 0) *
+              reflectedSchwartzSpacetime (d := d) (φ_seq n) (z 0 + z 1)) := by
+          simpa using
+            OSReconstruction.fixedTimeCenterDiff_productShell_pairing_eq_matrixElement_of_euclid_local
+              (d := d) OS lgc
+              (k2ProbeWitness_local (d := d) OS lgc
+                (φ_seq n) (hφ_compact n) (hφ_neg n))
+              (hprobe_euclid n) (φ_seq n) (hφ_real n) (hφ_compact n) (hφ_neg n)
+              t ht
+  · intro n h hh_pos
+    calc
+      ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d) G ((t : ℂ) * Complex.I) z *
+            (χc (z 0) * h (z 1))
+        =
+      OS.S 2
+        (ZeroDiagonalSchwartz.ofClassical
+          (twoPointDifferenceLift χc (SCV.translateSchwartz (- timeShiftVec d t) h))) := by
+          exact
+            OSReconstruction.fixedTimeCenterDiffKernel_fixed_center_pairing_eq_schwinger_timeShift_local
+              (d := d) OS G hG_euclid χc h hh_pos t ht
+      _ =
+      ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc
+              (φ_seq n) (hφ_compact n) (hφ_neg n))
+            ((t : ℂ) * Complex.I) z *
+            (χc (z 0) * h (z 1)) := by
+          symm
+          exact
+            OSReconstruction.fixedTimeCenterDiffKernel_fixed_center_pairing_eq_schwinger_timeShift_local
+              (d := d) OS
+              (k2ProbeWitness_local (d := d) OS lgc
+                (φ_seq n) (hφ_compact n) (hφ_neg n))
+              (hprobe_euclid n) χc h hh_pos t ht
 
 private theorem exists_shifted_realDifference_productShell_to_same_center_local
     (φ_seq : ℕ → SchwartzSpacetime d)
@@ -244,11 +290,6 @@ private theorem exists_fixed_strip_aux_center_pairing_local
     (hφ_compact : ∀ n, HasCompactSupport (φ_seq n : SpacetimeDim d → ℂ))
     (hφ_neg : ∀ n, tsupport (φ_seq n : SpacetimeDim d → ℂ) ⊆
       {x : SpacetimeDim d | x 0 < 0})
-    (hdesc_compact : ∀ n,
-      HasCompactSupport
-        (((OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
-          (reflectedSchwartzSpacetime (φ_seq n))) : SchwartzSpacetime d) :
-          SpacetimeDim d → ℂ))
     (s : ℝ)
     (hs : 0 < s)
     (hprod : ∀ n,
@@ -283,11 +324,12 @@ private theorem exists_fixed_strip_aux_center_pairing_local
           OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
             (d := d) G ((((s + s) : ℂ) * Complex.I)) z *
             (χc (z 0) * hdesc_n (z 1)) := by
-  have hcommon_probe_pairing :=
-    exists_fixed_strip_compactSupport_positiveStrip_pairing_local
-      (d := d) OS lgc χc hχc hχc_compact G hG_euclid φ_seq hφ_real hφ_int
-      hφ_compact hφ_neg (s + s) (add_pos hs hs)
-  have hcommon_probe_prod := hcommon_probe_pairing.1
+  have hcommon_probe_shells :=
+    exists_fixed_strip_shell_pairings_local
+      (d := d) OS lgc χc G hG_euclid φ_seq hφ_real hφ_int hφ_compact hφ_neg
+      (s + s) (add_pos hs hs)
+  have hcommon_probe_prod := hcommon_probe_shells.1
+  have hcommon_probe_fixed_center := hcommon_probe_shells.2
   obtain ⟨μ_seq, _hμfin, hrepr, hshifted_pkg_all⟩ :=
     OSReconstruction.exists_probeSeq_fixedTimeCenterDiffKernel_eq_and_shifted_realDifference_package_local
       (d := d) OS lgc φ_seq hφ_nonneg hφ_real hφ_int hφ_compact hφ_neg
@@ -334,7 +376,7 @@ private theorem exists_fixed_strip_aux_center_pairing_local
             dsimp [hdesc_n]
             exact OSReconstruction.twoPointCenterShearDescent_reflected_tsupport_pos_local
               (d := d) (φ_seq n) (hφ_compact n) (hφ_neg n)
-          simpa [hdesc_n, Complex.ofReal_add] using hcommon_probe_pairing.2 n)
+          simpa [hdesc_n, Complex.ofReal_add] using hcommon_probe_fixed_center n hdesc_n hdesc_pos)
   have hshifted_pkg :
       ∀ n,
         ∃ (C_bd : ℝ) (N : ℕ), 0 < C_bd ∧
@@ -516,10 +558,10 @@ private theorem exists_fixed_strip_common_difference_kernel_local
     exact HasCompactSupport.of_support_subset_isCompact
       (isCompact_closedBall (0 : SpacetimeDim d) (Rφ'' + Rψ''))
       (fun x hx => hclosed (subset_tsupport _ hx))
-  have hcommon_probe_pairing :=
-    exists_fixed_strip_compactSupport_positiveStrip_pairing_local
-      (d := d) OS lgc χc (hχc_int 0) (hχc_compact 0) G hG_euclid φ_seq hφ_real hφ_int
-      hφ_compact hφ_neg (s + s) (add_pos hs hs)
+  have hcommon_probe_shells :=
+    exists_fixed_strip_shell_pairings_local
+      (d := d) OS lgc χc G hG_euclid φ_seq hφ_real hφ_int hφ_compact hφ_neg
+      (s + s) (add_pos hs hs)
   have hcommon_probe_prod :
       ∀ n,
         ∫ z : NPointDomain d 2,
@@ -536,7 +578,23 @@ private theorem exists_fixed_strip_common_difference_kernel_local
             ((φ_seq n) (z 0) *
               reflectedSchwartzSpacetime (d := d) (φ_seq n) (z 0 + z 1)) := by
     intro n
-    simpa [htime] using hcommon_probe_pairing.1 n
+    simpa [htime] using hcommon_probe_shells.1 n
+  have hcommon_probe_fixed_center :
+      ∀ n (h : SchwartzSpacetime d),
+        tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0} →
+        ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d) G ((((s + s) : ℂ) * Complex.I)) z *
+            (χc (z 0) * h (z 1)) =
+        ∫ z : NPointDomain d 2,
+          OSReconstruction.twoPointFixedTimeCenterDiffKernel_local
+            (d := d)
+            (k2ProbeWitness_local (d := d) OS lgc
+              (φ_seq n) (hφ_compact n) (hφ_neg n))
+            ((((s + s) : ℂ) * Complex.I)) z *
+            (χc (z 0) * h (z 1)) := by
+    intro n h hh_pos
+    simpa [htime] using hcommon_probe_shells.2 n h hh_pos
   have hpair_prod_common : ∀ n,
       I n =
         ∫ z : NPointDomain d 2,
@@ -596,10 +654,9 @@ private theorem exists_fixed_strip_common_difference_kernel_local
               (k2ProbeWitness_local (d := d) OS lgc
                 (φ_seq n) (hφ_compact n) (hφ_neg n))
               ((((s + s) : ℂ) * Complex.I)) z * f z := by
-                simpa [htime] using
-                  exists_fixed_strip_compactSupport_positiveStrip_pairing_eq_local
-                    (d := d) OS lgc G φ_seq hφ_compact hφ_neg (s + s)
-                    n f hf_compact hf_support
+                simpa [f, OSReconstruction.twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift,
+                  htime] using
+                  hcommon_probe_fixed_center n h hh_pos
         _ =
         ∫ z : NPointDomain d 2,
             k2DifferenceKernel_real_local (d := d) (μ_seq_pkg n) (z 1 + timeShiftVec d (s + s)) *
@@ -656,10 +713,9 @@ private theorem exists_fixed_strip_common_difference_kernel_local
               (k2ProbeWitness_local (d := d) OS lgc
                 (φ_seq 0) (hφ_compact 0) (hφ_neg 0))
               ((((s + s) : ℂ) * Complex.I)) z * f z := by
-                simpa [htime] using
-                  exists_fixed_strip_compactSupport_positiveStrip_pairing_eq_local
-                    (d := d) OS lgc G φ_seq hφ_compact hφ_neg (s + s)
-                    0 f hf_compact hf_support
+                simpa [f, OSReconstruction.twoPointCenterDiffSchwartzCLM_twoPointDifferenceLift,
+                  htime] using
+                  hcommon_probe_fixed_center 0 h hh_pos
         _ =
         ∫ z : NPointDomain d 2,
             k2DifferenceKernel_real_local (d := d) (μ_seq_cont 0) (z 1 + timeShiftVec d (s + s)) *
