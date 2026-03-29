@@ -91,6 +91,46 @@ structure SpectralCondition (d : ℕ) [NeZero d]
   mass_shell : ∀ ψ : H, (⟪ψ, π.hamiltonian (π.hamiltonian ψ)⟫_ℂ).re ≥
     ∑ i : Fin d, (⟪ψ, π.spatialMomentum i (π.spatialMomentum i ψ)⟫_ℂ).re
 
+/-- Complexified spacetime for translation matrix coefficients. -/
+abbrev ComplexSpacetime (d : ℕ) := Fin (d + 1) → ℂ
+
+/-- The one-point forward tube:
+    `{ z ∈ ℂ^(d+1) | Im z ∈ V₊^open }`. -/
+def TranslationForwardTube (d : ℕ) [NeZero d] : Set (ComplexSpacetime d) :=
+  { z | (fun μ => (z μ).im) ∈ MinkowskiSpace.OpenForwardLightCone d }
+
+/-- Matrix-element form of the spectrum condition.
+
+    This is a Stone-compatible intermediate surface: it speaks directly about
+    holomorphic continuation of translation matrix coefficients and packages
+    strong continuity of the translation subgroups, but it does not yet require
+    the full joint-spectrum theorem for the unbounded generators. -/
+structure MatrixElementSpectralCondition (d : ℕ) [NeZero d]
+    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
+    (π : PoincareRepresentation d H) : Prop where
+  /-- Strong continuity of each one-parameter translation subgroup. -/
+  strongly_continuous : PoincareRepresentation.translationStronglyContinuous π
+  /-- Each translation matrix coefficient extends holomorphically to the
+      one-point forward tube, with boundary values recovering the original
+      real-translation matrix coefficient along open forward-cone directions. -/
+  matrix_coefficient_holomorphic :
+    ∀ χ ψ : H, ∃ F : ComplexSpacetime d → ℂ,
+      DifferentiableOn ℂ F (TranslationForwardTube d) ∧
+      ∀ (a η : MinkowskiSpace d), η ∈ MinkowskiSpace.OpenForwardLightCone d →
+        Filter.Tendsto
+          (fun ε : ℝ => F (fun μ => ↑(a μ) + ε * ↑(η μ) * Complex.I))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (⟪χ, π.U (PoincareGroup.translation' a) ψ⟫_ℂ))
+
+/-- Extract strong continuity in a fixed spacetime direction from the
+    matrix-element spectral condition. -/
+theorem MatrixElementSpectralCondition.continuousInDirection
+    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
+    {π : PoincareRepresentation d H}
+    (hπ : @MatrixElementSpectralCondition d _ H _ _ _ π) (μ : Fin (d + 1)) :
+    PoincareRepresentation.translationContinuousInDirection π μ :=
+  MatrixElementSpectralCondition.strongly_continuous hπ μ
+
 /-! ### Locality -/
 
 /-- Two Schwartz functions have spacelike-separated supports -/
@@ -148,8 +188,13 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   -- W1: Poincaré Covariance and Spectrum Condition
   /-- The unitary representation of the Poincaré group -/
   poincare_rep : @PoincareRepresentation d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
-  /-- Spectrum condition: energy-momentum spectrum in forward cone -/
-  spectrum_condition : @SpectralCondition d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
+  /-- Spectrum condition in matrix-element form: translation matrix coefficients
+      admit forward-tube holomorphic continuation with the correct boundary
+      values. This is the Stone-compatible surface intended to precede the full
+      joint-spectrum theorem for the unbounded generators. -/
+  spectrum_condition :
+    @MatrixElementSpectralCondition d _ HilbertSpace
+      instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
   /-- The vacuum vector -/
   vacuum : HilbertSpace
   /-- The vacuum is normalized -/

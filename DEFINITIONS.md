@@ -82,18 +82,26 @@ A comprehensive index of all definitions in the OSReconstruction Lean 4 project,
 | `algebraicSpan` | [163](OSReconstruction/Wightman/OperatorDistribution.lean#L163) | States reachable from vacuum by field operator applications |
 | `WightmanNPoint` | [172](OSReconstruction/Wightman/OperatorDistribution.lean#L172) | Wightman n-point function `W_n(f₁,…,fₙ) = ⟨Ω, φ(f₁)⋯φ(fₙ) Ω⟩` |
 | `PoincareRepresentation` | [286](OSReconstruction/Wightman/OperatorDistribution.lean#L286) | Unitary representation of the Poincare group on a Hilbert space |
+| `translationContinuousInDirection` | [311](OSReconstruction/Wightman/OperatorDistribution.lean#L311) | Strong continuity predicate for the one-parameter translation subgroup in a fixed spacetime direction |
+| `translationStronglyContinuous` | [315](OSReconstruction/Wightman/OperatorDistribution.lean#L315) | Strong continuity of all one-parameter translation subgroups |
 | `momentum` | [332](OSReconstruction/Wightman/OperatorDistribution.lean#L332) | Energy-momentum operator `P_μ`, generator of translations |
 | `hamiltonian` | [343](OSReconstruction/Wightman/OperatorDistribution.lean#L343) | Hamiltonian `H = P₀`, generator of time translations |
 | `spatialMomentum` | [347](OSReconstruction/Wightman/OperatorDistribution.lean#L347) | Spatial momentum operators `Pᵢ`, generators of spatial translations |
+| `momentumOp` | [473](OSReconstruction/Wightman/OperatorDistribution.lean#L473) | Stone-theorem momentum operator as an `UnboundedOperator`, defined from the generator of the strongly continuous translation subgroup |
+| `hamiltonianOp` | [478](OSReconstruction/Wightman/OperatorDistribution.lean#L478) | Stone-theorem Hamiltonian `P₀` as an `UnboundedOperator` |
+| `spatialMomentumOp` | [484](OSReconstruction/Wightman/OperatorDistribution.lean#L484) | Stone-theorem spatial momentum operator `Pᵢ` as an `UnboundedOperator` |
 
 ### Wightman Axioms (`Wightman/WightmanAxioms.lean`)
 
 | Definition | Line | Description |
 |---|---|---|
 | `ForwardMomentumCone` | [66](OSReconstruction/Wightman/WightmanAxioms.lean#L66) | Closed forward light cone in momentum space: `p⁰ ≥ 0` and `p² ≤ 0` |
-| `SpectralCondition` | [83](OSReconstruction/Wightman/WightmanAxioms.lean#L83) | Spectrum condition: energy-momentum lies in the closed forward light cone |
+| `SpectralCondition` | [83](OSReconstruction/Wightman/WightmanAxioms.lean#L83) | Legacy weak spectrum-condition surface expressed using everywhere-defined Hamiltonian and spatial-momentum maps |
+| `ComplexSpacetime` | [95](OSReconstruction/Wightman/WightmanAxioms.lean#L95) | Complexified spacetime `Fin(d+1) → ℂ` used for translation matrix coefficients |
+| `TranslationForwardTube` | [99](OSReconstruction/Wightman/WightmanAxioms.lean#L99) | One-point forward tube `{ z ∈ ℂ^(d+1) | Im z ∈ V₊^open }` |
+| `MatrixElementSpectralCondition` | [108](OSReconstruction/Wightman/WightmanAxioms.lean#L108) | Stone-compatible matrix-element spectral condition: strong continuity plus forward-tube holomorphic continuation of translation matrix coefficients |
 | `IsLocal` | [107](OSReconstruction/Wightman/WightmanAxioms.lean#L107) | Locality (microcausality): spacelike-separated fields commute |
-| `WightmanQFT` | [138](OSReconstruction/Wightman/WightmanAxioms.lean#L138) | Complete Wightman QFT structure bundling Hilbert space, Poincare rep, vacuum, fields, and all axioms |
+| `WightmanQFT` | [178](OSReconstruction/Wightman/WightmanAxioms.lean#L178) | Complete Wightman QFT structure bundling Hilbert space, Poincare rep, vacuum, fields, and axioms; its `spectrum_condition` field now uses `MatrixElementSpectralCondition` |
 | `InOpenForwardCone` | [579](OSReconstruction/Wightman/WightmanAxioms.lean#L579) | Predicate for membership in the open forward light cone: `η⁰ > 0` and `η² < 0` |
 | `ForwardTube` | [604](OSReconstruction/Wightman/WightmanAxioms.lean#L604) | The forward tube `T_n`: complex configurations with successive imaginary differences in `V⁺` |
 | `ExtendedForwardTube` | [650](OSReconstruction/Wightman/WightmanAxioms.lean#L650) | Extended forward tube `T'_n = ⋃_{Λ ∈ SO⁺} Λ(T_n)` |

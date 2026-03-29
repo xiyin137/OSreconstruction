@@ -307,6 +307,14 @@ def basisVector (d : ℕ) [NeZero d] (μ : Fin (d + 1)) : MinkowskiSpace d :=
 def translationInDirection (d : ℕ) [NeZero d] (μ : Fin (d + 1)) (t : ℝ) : PoincareGroup d :=
   PoincareGroup.translation' (t • basisVector d μ)
 
+/-- Strong continuity of the translation subgroup in the `μ`-th direction. -/
+def translationContinuousInDirection (π : PoincareRepresentation d H) (μ : Fin (d + 1)) : Prop :=
+  ∀ x : H, Continuous fun t => π.U (translationInDirection d μ t) x
+
+/-- Strong continuity of all one-parameter translation subgroups. -/
+def translationStronglyContinuous (π : PoincareRepresentation d H) : Prop :=
+  ∀ μ : Fin (d + 1), translationContinuousInDirection π μ
+
 /-- The generator of translations in direction μ, applied to ψ.
 
     The momentum operator P_μ is defined as the infinitesimal generator of the
@@ -363,7 +371,7 @@ def spatialMomentum (π : PoincareRepresentation d H) (i : Fin d) : H → H :=
     Note: Strong continuity must be verified separately - it follows from
     the physical requirement that translations act continuously on states. -/
 def translationGroup (π : PoincareRepresentation d H)
-    (μ : Fin (d + 1)) (stronglyContinuous : ∀ x : H, Continuous fun t => π.U (translationInDirection d μ t) x) :
+    (μ : Fin (d + 1)) (stronglyContinuous : translationContinuousInDirection π μ) :
     OneParameterUnitaryGroup H where
   U := fun t => π.U (translationInDirection d μ t)
   unitary_left := fun t => by
@@ -448,7 +456,7 @@ def translationGroup (π : PoincareRepresentation d H)
     By uniqueness of limits in Hausdorff spaces (Hilbert spaces are T2),
     these must agree when the limit exists. -/
 theorem momentum_eq_generator (π : PoincareRepresentation d H) (μ : Fin (d + 1))
-    (hcont : ∀ x : H, Continuous fun t => π.U (translationInDirection d μ t) x)
+    (hcont : translationContinuousInDirection π μ)
     (ψ : H) (hψ : ψ ∈ (π.translationGroup μ hcont).generatorDomain) :
     π.momentumApplied μ ψ = (π.translationGroup μ hcont).generatorApply ψ hψ := by
   -- Both are limits of the same function on 𝓝[≠] 0; by uniqueness of limits (T2), they agree.
@@ -457,6 +465,73 @@ theorem momentum_eq_generator (π : PoincareRepresentation d H) (μ : Fin (d + 1
   change limUnder (𝓝[≠] (0 : ℝ)) (fun t =>
     (Complex.I : ℂ)⁻¹ • (t⁻¹ • ((π.translationGroup μ hcont).U t ψ - ψ))) = _
   exact hspec.limUnder_eq
+
+/-! ### Stone-theorem momentum operators -/
+
+/-- The momentum operator in direction `μ`, defined as the Stone generator of
+    the strongly continuous translation subgroup `t ↦ U(t e_μ)`. -/
+noncomputable def momentumOp (π : PoincareRepresentation d H) (μ : Fin (d + 1))
+    (hcont : translationContinuousInDirection π μ) : UnboundedOperator H :=
+  (π.translationGroup μ hcont).generator
+
+/-- The Hamiltonian `P₀`, defined as the Stone generator of time translations. -/
+noncomputable def hamiltonianOp (π : PoincareRepresentation d H)
+    (hcont : translationContinuousInDirection π 0) : UnboundedOperator H :=
+  π.momentumOp 0 hcont
+
+/-- The spatial momentum operator `Pᵢ`, defined as the Stone generator of
+    translations in the `i`-th spatial direction. -/
+noncomputable def spatialMomentumOp (π : PoincareRepresentation d H) (i : Fin d)
+    (hcont : translationContinuousInDirection π (Fin.succ i)) : UnboundedOperator H :=
+  π.momentumOp (Fin.succ i) hcont
+
+/-- The Stone-defined momentum operator is densely defined. -/
+theorem momentumOp_denselyDefined (π : PoincareRepresentation d H) (μ : Fin (d + 1))
+    (hcont : translationContinuousInDirection π μ) :
+    (π.momentumOp μ hcont).IsDenselyDefined :=
+  (π.translationGroup μ hcont).generator_densely_defined
+
+/-- The Stone-defined momentum operator is self-adjoint. -/
+theorem momentumOp_selfAdjoint (π : PoincareRepresentation d H) (μ : Fin (d + 1))
+    (hcont : translationContinuousInDirection π μ) :
+    (π.momentumOp μ hcont).IsSelfAdjoint (π.momentumOp_denselyDefined μ hcont) :=
+  (π.translationGroup μ hcont).generator_selfadjoint
+
+/-- The Stone-defined Hamiltonian is densely defined. -/
+theorem hamiltonianOp_denselyDefined (π : PoincareRepresentation d H)
+    (hcont : translationContinuousInDirection π 0) :
+    (π.hamiltonianOp hcont).IsDenselyDefined :=
+  π.momentumOp_denselyDefined 0 hcont
+
+/-- The Stone-defined Hamiltonian is self-adjoint. -/
+theorem hamiltonianOp_selfAdjoint (π : PoincareRepresentation d H)
+    (hcont : translationContinuousInDirection π 0) :
+    (π.hamiltonianOp hcont).IsSelfAdjoint (π.hamiltonianOp_denselyDefined hcont) :=
+  π.momentumOp_selfAdjoint 0 hcont
+
+/-- The Stone-defined spatial momentum operator is densely defined. -/
+theorem spatialMomentumOp_denselyDefined (π : PoincareRepresentation d H) (i : Fin d)
+    (hcont : translationContinuousInDirection π (Fin.succ i)) :
+    (π.spatialMomentumOp i hcont).IsDenselyDefined :=
+  π.momentumOp_denselyDefined (Fin.succ i) hcont
+
+/-- The Stone-defined spatial momentum operator is self-adjoint. -/
+theorem spatialMomentumOp_selfAdjoint (π : PoincareRepresentation d H) (i : Fin d)
+    (hcont : translationContinuousInDirection π (Fin.succ i)) :
+    (π.spatialMomentumOp i hcont).IsSelfAdjoint
+      (π.spatialMomentumOp_denselyDefined i hcont) :=
+  π.momentumOp_selfAdjoint (Fin.succ i) hcont
+
+/-- On vectors lying in the Stone generator domain, the legacy `momentumApplied`
+    coincides with the Stone-defined momentum operator. -/
+theorem momentumApplied_eq_momentumOp (π : PoincareRepresentation d H) (μ : Fin (d + 1))
+    (hcont : translationContinuousInDirection π μ)
+    (ψ : H) (hψ : ψ ∈ (π.translationGroup μ hcont).generatorDomain) :
+    π.momentumApplied μ ψ = π.momentumOp μ hcont ⟨ψ, by
+      change ψ ∈ ((π.translationGroup μ hcont).generatorDomainSubmodule : Set H)
+      rw [(π.translationGroup μ hcont).generatorDomainSubmodule_carrier]
+      exact hψ⟩ := by
+  simpa [momentumOp] using π.momentum_eq_generator μ hcont ψ hψ
 
 end PoincareRepresentation
 
@@ -488,4 +563,3 @@ def IsCovariantWeak (φ : OperatorValuedDistribution d H)
     ⟪χ, φ.operator (poincareActionOnSchwartz g f) ψ⟫_ℂ
 
 end
-
