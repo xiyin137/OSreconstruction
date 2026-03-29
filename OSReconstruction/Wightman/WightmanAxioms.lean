@@ -42,7 +42,7 @@ The Wightman axioms (W1-W4) as formalized here:
 - If supp(f) and supp(g) are spacelike separated, then [φ(f), φ(g)] = 0 on D
 
 **W4 (Vacuum Uniqueness)**:
-- The vacuum Ω is the unique vector (up to phase) invariant under time translations
+- The vacuum Ω is the unique vector (up to phase) invariant under all Poincaré transformations
 
 ## References
 
