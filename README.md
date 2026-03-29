@@ -129,47 +129,26 @@ Current blocker map:
   file sorry-free on the moved tail.
 - `OSToWightmanSemigroup.lean` is the established OS semigroup/spectral/Laplace
   and one-variable holomorphic layer.
-- The live root `E -> R` blocker is
-  `schwinger_continuation_base_step` in `OSToWightman.lean`:
-  constructing the OS-II-faithful time-parametric witness from the interleaved
-  OS slice data.
-- The public theorem surface has been corrected: `schwinger_continuation_base_step`
-  now exposes the weaker OS-II base step directly, with time-difference
-  holomorphicity and spatial variables treated as parameters. The old full
-  `ACR(1)` holomorphic surface survives only as an internal legacy upgrade used
-  by the current downstream restriction chain.
-- The older time-only two-point witness lane has been removed from the active
-  `OSToWightman.lean` blocker surface. It was a dead auxiliary route and not the
-  mathematically relevant `k = 2` witness.
-- The older specialized `k = 2` kernel/two-point reduction lane has been
-  removed from the active `E -> R` critical path and moved out of production.
-- The current working route for that blocker is now closer to the OS-II shape:
-  first reduce by center-spatial descent, then by the active center-time
-  variable. The key infrastructure for that reduction lives in
-  `Wightman/Reconstruction/CenterSpatialTranslationInvariant.lean`,
-  together with the older one-variable descent files
-  `TranslationInvariantSchwartz.lean` and `HeadTranslationInvariant.lean`.
-- On the `k = 2` front, the honest remaining gap is no longer generic
-  translation algebra. The live seam is:
-  construct the fixed-time reduced semigroup functional on
-  `SchwartzMap (Fin (d + 1) → ℝ) ℂ`, compare it on a dense set with the
-  corresponding concrete kernel CLM, and then lift that equality back through
-  the center-spatial and head-time descent theorems in
-  `CenterSpatialTranslationInvariant.lean` and
-  `HeadTranslationInvariant.lean`.
-- The older time-only two-point witness is now treated only as an auxiliary
-  one-variable object. It is not the intended final `k = 2` witness, because
-  the final witness must see the full difference variable, including spatial
-  difference coordinates.
-- The translation-invariant Schwartz classification lane is now in production in
-  `Wightman/Reconstruction/TranslationInvariantSchwartz.lean`, and the two-point
-  Schwinger/Wightman center-difference reductions are correspondingly
-  unconditional.
-- Compact-support Schwartz density and the compact-product Stone-Weierstrass
-  core are now in production, so the remaining dense-agreement work is no
-  longer generic cutoff infrastructure. What is still missing is the final
-  blocker-facing assembly on the reduced quotient used by the corrected
-  two-point semigroup witness route.
+- The live root `E -> R` blocker has moved into the split `k = 2` VI.1
+  frontier in `WickRotation/K2VI1/Frontier.lean`, rather than the older
+  monolithic `OSToWightman.lean` file.
+- `OSToWightman.lean` still carries older continuation support and two legacy
+  `sorry`s, but it is no longer the smallest active frontier file.
+- The active `K2VI1` frontier now has three honest seams:
+  the root Input-A common-vs-probe shell bridges, the Input-B/C shell
+  pointwise/target identification, and the final `E -> R` assembly.
+- The `k = 2` support stack has been split across small files under
+  `WickRotation/K2VI1/`, especially:
+  `InputA*.lean`, `Bounds.lean`, `Damping.lean`, `DampedNorm.lean`,
+  `Regularization*.lean`, `OrbitBridge.lean`, and `DCT.lean`.
+- On the `k = 2` front, the honest remaining Input-A content is now the
+  fixed-strip common-witness shell comparison on the two concrete shell
+  families actually consumed downstream:
+  the reflected product shell and the fixed-center shell `χc(z₀) * h(z₁)`.
+- The shifted real-difference representative route is now production material in
+  `K2VI1/InputAShiftedRepresentative.lean`, and the fixed-strip one-variable
+  uniqueness route is now production material in
+  `K2VI1/InputAOneVariableUniqueness.lean`.
 - The next `E -> R` blocker after that is `boundary_values_tempered` and the
   transfer chain in `OSToWightmanBoundaryValues.lean`, where the genuine growth
   inputs must come from `OSLinearGrowthCondition`.
@@ -192,10 +171,10 @@ Current blocker map:
 ### Current Operational Blockers
 
 - `E -> R`:
-  the near-term goal is to close the specialized `k = 2` case of
-  `schwinger_continuation_base_step` by building the corrected reduced
-  semigroup functional on the final difference-variable quotient and proving
-  dense agreement with the concrete kernel CLM there.
+  the near-term goal is to close the split `k = 2` VI.1 frontier in
+  `WickRotation/K2VI1/Frontier.lean`, beginning with the root Input-A
+  common-vs-probe shell bridges and then the downstream shell-limit /
+  assembly seams.
 - `E -> R` downstream:
   even after that base-step closes, `OSToWightmanBoundaryValues.lean` still
   carries the tempered boundary-value and transfer chain.
@@ -249,11 +228,12 @@ flowchart TD
   AC --> JP["ComplexLieGroups/JostPoints (0)"]
 
   ER --> OWS["WickRotation/OSToWightmanSemigroup (0)"]
-  OWS --> OWC["WickRotation/OSToWightman (2)"]
-  OWC --> OWB["WickRotation/OSToWightmanBoundaryValues (7)"]
-  OWC --> LS["SCV/LaplaceSchwartz (0)"]
-  OWC --> BO["SCV/BochnerTubeTheorem (2)"]
-  OWC --> PW["SCV/PaleyWiener (0)"]
+  OWS --> OWC["WickRotation/OSToWightman (2 legacy support)"]
+  OWS --> K2["WickRotation/K2VI1/Frontier (3 active blocker)"]
+  K2 --> OWB["WickRotation/OSToWightmanBoundaryValues (7)"]
+  K2 --> LS["SCV/LaplaceSchwartz (0)"]
+  K2 --> BO["SCV/BochnerTubeTheorem (2)"]
+  K2 --> PW["SCV/PaleyWiener (0)"]
 ```
 
 ### Critical-Path Blockers (File Level)
@@ -273,7 +253,8 @@ flowchart TD
 | `Wightman/Reconstruction/WickRotation/SchwingerTemperedness.lean` | 1 | zero-diagonal continuity front; integrability now uses the VT axiom |
 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | 4 | OS=W term, reality/reflection, cluster |
 | `Wightman/Reconstruction/WickRotation/OSToWightmanSemigroup.lean` | 0 | OS semigroup, spectral/Laplace bridge, one-variable holomorphic infrastructure |
-| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 2 | time-parametric base step + legacy spatial upgrade |
+| `Wightman/Reconstruction/WickRotation/OSToWightman.lean` | 2 | older continuation support; no longer the smallest root blocker |
+| `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean` | 3 | active `k = 2` VI.1 frontier: Input A shell bridges, Input B/C shell limit, final assembly |
 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean` | 7 | tempered boundary values, transfer chain, cluster |
 | `SCV/LaplaceSchwartz.lean` | 0 | generic tempered boundary-value lemmas extracted |
 | `SCV/TubeDistributions.lean` | 0 | sorry-free |
@@ -371,19 +352,18 @@ the tracked production tree, not as a complete file listing.
 │   │           ├── HermitianBoundaryPairing.lean # rapidity-reduced partner BV pairing
 │   │           ├── SchwingerAxioms.lean         # R -> E Wick-rotation axioms
 │   │           ├── OSToWightmanSemigroup.lean   # OS semigroup, spectral/Laplace, 1-variable holomorphy
-│   │           ├── OSToWightman.lean            # flat-witness continuation core
+│   │           ├── OSToWightman.lean            # older continuation core / legacy support lane
 │   │           ├── OSToWightmanK2BaseStep.lean  # specialized k=2 base-step infrastructure
-│   │           ├── K2VI1/Bounds.lean # direct OS-side norm / matrix-element bounds for VI.1
-│   │           ├── K2VI1/Regularization.lean # zeroth-order reflected regularization estimates
-│   │           ├── K2VI1/RegularizationDeriv.lean # first-derivative reflected regularization estimates
-│   │           ├── K2VI1/RegularizationIterated.lean # higher-order reflected regularization iteration
-│   │           ├── K2VI1/RegularizationSeminorm.lean # weighted Schwartz seminorm control for regularized tests
-│   │           ├── K2VI1/RegularizedOrbitBound.lean # one-point lift of regularized seminorm bounds
-│   │           ├── K2VI1/RegularizationOrbit.lean # uniform OS orbit bounds for reflected regularized probes
-│   │           ├── K2VI1/OrbitBridge.lean # scalar boundary/orbit bridge on the direct VI.1 route
+│   │           ├── K2VI1/Support.lean           # proved support stack for the split k=2 VI.1 frontier
+│   │           ├── K2VI1/InputA*.lean           # fixed-time / shell / representative / uniqueness reductions
+│   │           ├── K2VI1/Bounds.lean            # direct OS-side norm / matrix-element bounds for VI.1
+│   │           ├── K2VI1/Damping.lean           # damped probe bounds on the original shell
+│   │           ├── K2VI1/DampedNorm.lean        # uniform damped diagonal / DCT domination layer
+│   │           ├── K2VI1/Regularization*.lean   # reflected regularization / seminorm / orbit-control stack
+│   │           ├── K2VI1/OrbitBridge.lean       # scalar boundary/orbit bridge on the direct VI.1 route
+│   │           ├── K2VI1/DCT.lean               # dominated-convergence packaging for the frontier
+│   │           ├── K2VI1/Frontier.lean          # small live k=2 VI.1 frontier file
 │   │           ├── OSToWightmanSpatialMomentum.lean # one-point semigroup-group spectral bridge
-│   │           ├── K2VI1/Support.lean # proved support stack for the k=2 VI.1 frontier
-│   │           ├── K2VI1/Frontier.lean       # small live k=2 VI.1 frontier file
 │   │           ├── SchwingerTemperedness.lean   # zero-diagonal temperedness front; VT-backed growth/integrability
 │   │           ├── WickRotationBridge.lean      # small Wick-rotation differentiability helpers
 │   │           └── OSToWightmanBoundaryValues.lean # tempered BV package and axiom transfer
