@@ -11,7 +11,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSpatial
 
 This file contains the proved support infrastructure for the honest OS II Section VI.1 `k = 2` route: negative approximate identities, weight packages, supported-symbol representation lemmas, descended-center approximate-identity estimates, and the proved wrappers that reduce the live frontier to the remaining open theorems.
 
-The small frontier file `OSToWightmanK2VI1.lean` should remain the only place where the surviving VI.1 `sorry`s live.
+The small frontier file `K2VI1/Frontier.lean` should remain the only place where the surviving VI.1 `sorry`s live.
 -/
 
 noncomputable section

@@ -1,5 +1,5 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Bounds
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1RegularizationSeminorm
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Bounds
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.RegularizationSeminorm
 
 noncomputable section
 

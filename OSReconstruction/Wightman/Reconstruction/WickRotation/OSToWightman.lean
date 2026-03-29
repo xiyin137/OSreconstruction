@@ -4,7 +4,6 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1
 
 /-!
 # OS to Wightman Analytic Continuation Core

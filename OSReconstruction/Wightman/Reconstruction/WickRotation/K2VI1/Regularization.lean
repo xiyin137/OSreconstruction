@@ -1,4 +1,4 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Bounds
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Bounds
 
 noncomputable section
 

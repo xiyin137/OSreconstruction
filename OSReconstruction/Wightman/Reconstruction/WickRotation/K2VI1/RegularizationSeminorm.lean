@@ -1,4 +1,4 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1RegularizationIterated
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.RegularizationIterated
 import Mathlib.Analysis.Normed.Module.Multilinear.Basic
 
 noncomputable section

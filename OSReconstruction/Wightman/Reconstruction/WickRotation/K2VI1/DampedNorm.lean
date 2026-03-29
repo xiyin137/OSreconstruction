@@ -1,4 +1,4 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Damping
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Damping
 
 noncomputable section
 

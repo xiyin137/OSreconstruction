@@ -1,4 +1,4 @@
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanK2VI1Regularization
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Regularization
 import Mathlib.Analysis.Calculus.ContDiff.Convolution
 
 noncomputable section
