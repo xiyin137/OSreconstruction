@@ -916,9 +916,33 @@ theorem mk_eq_sum_singles (N : ℕ) (F : BorchersSequence d)
 /-- `borchersConj` is continuous. -/
 private theorem borchersConj_continuous :
     Continuous (SchwartzMap.borchersConj : SchwartzNPoint d n → SchwartzNPoint d n) := by
-  -- borchersConj = conj ∘ reverse, where both are continuous since they compose
-  -- with continuous linear equivalences on the domain/codomain.
-  sorry
+  -- borchersConj = conj ∘ reverse. We show each factor is continuous.
+  -- Step 1: reverse is continuous (it is a CLM via compCLMOfContinuousLinearEquiv).
+  have hrev : Continuous (SchwartzMap.reverse : SchwartzNPoint d n → SchwartzNPoint d n) := by
+    let revCLE := ContinuousLinearEquiv.piCongrLeft ℝ
+      (fun _ : Fin n => Fin (d + 1) → ℝ) Fin.revPerm
+    have : SchwartzMap.reverse = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ revCLE :
+        SchwartzNPoint d n → SchwartzNPoint d n) := by
+      ext f x; simp [SchwartzMap.reverse_apply, SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+        revCLE, ContinuousLinearEquiv.piCongrLeft, Homeomorph.piCongrLeft,
+        Equiv.piCongrLeft, Equiv.piCongrLeft']
+    rw [this]; exact (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ revCLE).continuous
+  -- Step 2: conj is continuous (seminorms are preserved by complex conjugation).
+  have hconj : Continuous (SchwartzMap.conj : SchwartzNPoint d n → SchwartzNPoint d n) := by
+    rw [continuous_iff_seqContinuous]
+    intro u a hu
+    rw [(schwartz_withSeminorms ℂ (NPointDomain d n) ℂ).tendsto_nhds_atTop] at hu ⊢
+    intro ⟨p, l⟩ ε hε
+    obtain ⟨N, hN⟩ := hu ⟨p, l⟩ ε hε
+    exact ⟨N, fun m hm => lt_of_le_of_lt
+      (by show _ ≤ (schwartzSeminormFamily ℂ _ ℂ (p, l)) (u m - a)
+          have : (SchwartzMap.conj ∘ u) m - a.conj = (u m - a).conj := by
+            ext x; simp [SchwartzMap.conj_apply, map_sub]
+          rw [this]; exact SchwartzMap.seminorm_conj_le p l _)
+      (hN m hm)⟩
+  -- Step 3: compose.
+  show Continuous (SchwartzMap.conj ∘ SchwartzMap.reverse)
+  exact hconj.comp hrev
 
 /-- The self-pairing `g ↦ g.conjTensorProduct g` is continuous. -/
 private theorem conjTensorProduct_self_continuous (k : ℕ) :
@@ -934,7 +958,108 @@ private theorem conjTensorProduct_self_continuous (k : ℕ) :
 private theorem singleEmbed_continuous (k : ℕ) :
     Continuous (fun g : SchwartzNPoint d k =>
       (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn)) := by
-  sorry
+  -- The map is ℂ-linear, so we use sequential continuity + linearity.
+  rw [continuous_iff_seqContinuous]
+  intro u a hu
+  -- Reduce to showing ‖embed(uₙ) - embed(a)‖ → 0
+  rw [NormedAddCommGroup.tendsto_atTop] at *
+  intro ε hε
+  -- By linearity: embed(uₙ) - embed(a) = embed(uₙ - a) (via coe of pre-Hilbert difference)
+  -- So ‖embed(uₙ) - embed(a)‖ = ‖embed(uₙ - a)‖
+  -- The norm squared is Re(W_{k+k}((uₙ-a).conjTensorProduct (uₙ-a)))
+  -- Since (uₙ-a) → 0 and g ↦ W_{k+k}(g.conjTensorProduct g) is continuous, this → 0.
+  -- First, show the self-pairing g ↦ W_{k+k}(g.conjTensorProduct g) is continuous at 0.
+  have hcont_pair : Continuous (fun g : SchwartzNPoint d k =>
+      Wfn.W (k + k) (g.conjTensorProduct g)) :=
+    (Wfn.tempered (k + k)).comp (conjTensorProduct_self_continuous k)
+  -- The inner product of single k g with itself:
+  -- WightmanInnerProduct (single k g) (single k g) = W_{k+k}(g.conjTP g)
+  have hinner_single : ∀ g : SchwartzNPoint d k,
+      WightmanInnerProduct d Wfn.W (BorchersSequence.single k g)
+        (BorchersSequence.single k g) =
+      Wfn.W (k + k) (g.conjTensorProduct g) := by
+    intro g
+    simp only [WightmanInnerProduct, BorchersSequence.single_bound]
+    rw [Finset.sum_eq_single k, Finset.sum_eq_single k]
+    · simp [BorchersSequence.single_funcs_eq]
+    · intro m _ hm; simp [BorchersSequence.single_funcs_ne hm,
+        (Wfn.linear (k + m)).map_zero]
+    · intro hk; exact absurd (Finset.mem_range.mpr (Nat.lt_succ_of_le le_rfl)) hk
+    · intro n _ hn; rw [Finset.sum_eq_zero]; intro m _
+      simp [BorchersSequence.single_funcs_ne hn,
+        SchwartzMap.conjTensorProduct_zero_left, (Wfn.linear (n + m)).map_zero]
+    · intro hk; exact absurd (Finset.mem_range.mpr (Nat.lt_succ_of_le le_rfl)) hk
+  -- norm squared: ‖mkPH (single k g)‖² = Re(inner(single k g, single k g))
+  -- = Re(W_{k+k}(g.conjTensorProduct g))
+  have hnorm_sq : ∀ g : SchwartzNPoint d k,
+      ‖mkPH Wfn (BorchersSequence.single k g)‖ ^ 2 =
+      (Wfn.W (k + k) (g.conjTensorProduct g)).re := by
+    intro g
+    rw [← @inner_self_eq_norm_sq ℂ (PreHilbertSpace Wfn)]
+    -- re ⟪mkPH (single k g), mkPH (single k g)⟫ = Re(W_{k+k}(g.conjTP g))
+    -- inner on the quotient = WightmanInnerProduct on representatives
+    show (WightmanInnerProduct d Wfn.W (BorchersSequence.single k g)
+        (BorchersSequence.single k g)).re = _
+    rw [hinner_single]
+  -- Now use: uₙ → a, so uₙ - a → 0, so W_{k+k}((uₙ-a).conjTP(uₙ-a)) → 0,
+  -- so ‖embed(uₙ - a)‖² → 0, so ‖embed(uₙ - a)‖ → 0.
+  -- The difference in GNSHilbertSpace:
+  have hdiff : ∀ n, (mkPH Wfn (BorchersSequence.single k (u n)) : GNSHilbertSpace Wfn) -
+      (mkPH Wfn (BorchersSequence.single k a) : GNSHilbertSpace Wfn) =
+      (mkPH Wfn (BorchersSequence.single k (u n - a)) : GNSHilbertSpace Wfn) := by
+    intro n
+    rw [← UniformSpace.Completion.coe_sub]
+    congr 1
+    -- mkPH (single k (u n)) - mkPH (single k a) = mkPH (single k (u n - a))
+    have hadd := mk_single_add Wfn k (u n - a) a
+    simp only [sub_add_cancel] at hadd
+    -- hadd : mkPH (single k (u n)) = mkPH (single k (u n - a)) + mkPH (single k a)
+    rw [hadd, add_sub_cancel_right]
+  -- Get: W_{k+k}((uₙ-a).conjTP(uₙ-a)) → 0 (since uₙ-a → 0 and the pairing is continuous)
+  have hpair_tendsto : Filter.Tendsto (fun n =>
+      Wfn.W (k + k) ((u n - a).conjTensorProduct (u n - a)))
+      Filter.atTop (nhds 0) := by
+    have hsub : Filter.Tendsto (fun n => u n - a) Filter.atTop (nhds 0) := by
+      rw [show (0 : SchwartzNPoint d k) = a - a from (sub_self a).symm]
+      exact Filter.Tendsto.sub hu tendsto_const_nhds
+    have : Filter.Tendsto (fun n =>
+        Wfn.W (k + k) ((u n - a).conjTensorProduct (u n - a)))
+        Filter.atTop (nhds (Wfn.W (k + k) ((0 : SchwartzNPoint d k).conjTensorProduct 0))) :=
+      hcont_pair.continuousAt.tendsto.comp hsub
+    rwa [show SchwartzMap.conjTensorProduct (0 : SchwartzNPoint d k) 0 = 0 from by
+          simp [SchwartzMap.conjTensorProduct],
+        (Wfn.linear (k + k)).map_zero] at this
+  have hre_tendsto : Filter.Tendsto (fun n =>
+      (Wfn.W (k + k) ((u n - a).conjTensorProduct (u n - a))).re)
+      Filter.atTop (nhds 0) := by
+    have := Filter.Tendsto.comp (Complex.continuous_re.tendsto (0 : ℂ)) hpair_tendsto
+    simp at this; exact this
+  -- ‖embed(uₙ - a)‖² → 0 since it equals the Re part
+  have hnorm_tendsto : Filter.Tendsto (fun n =>
+      ‖(mkPH Wfn (BorchersSequence.single k (u n - a)) : GNSHilbertSpace Wfn)‖)
+      Filter.atTop (nhds 0) := by
+    -- Relate completion norm to pre-Hilbert norm
+    have hcoe_norm : ∀ h : SchwartzNPoint d k,
+        ‖(mkPH Wfn (BorchersSequence.single k h) : GNSHilbertSpace Wfn)‖ =
+        ‖mkPH Wfn (BorchersSequence.single k h)‖ :=
+      fun h => UniformSpace.Completion.norm_coe _
+    simp_rw [hcoe_norm]
+    -- ‖mkPH (single k h)‖ = √(Re(W_{k+k}(h.conjTP h)))
+    have hnn : ∀ h : SchwartzNPoint d k,
+        ‖mkPH Wfn (BorchersSequence.single k h)‖ =
+        Real.sqrt ((Wfn.W (k + k) (h.conjTensorProduct h)).re) := by
+      intro h; rw [← hnorm_sq, Real.sqrt_sq (norm_nonneg _)]
+    simp_rw [hnn]
+    rw [show (0 : ℝ) = Real.sqrt 0 from by simp]
+    exact (Real.continuous_sqrt.tendsto 0).comp hre_tendsto
+  -- Finally: ‖embed(uₙ) - embed(a)‖ = ‖embed(uₙ - a)‖ → 0
+  obtain ⟨N, hN⟩ := (NormedAddCommGroup.tendsto_atTop.mp hnorm_tendsto) ε hε
+  refine ⟨N, fun n hn => ?_⟩
+  simp only [Function.comp_apply]
+  rw [hdiff n]
+  have := hN n hn
+  simp only [Real.norm_eq_abs, abs_of_nonneg (norm_nonneg _), sub_zero] at this
+  exact this
 
 /-- **Cyclicity of the GNS vacuum**: the algebraic span of φ(f₁)···φ(fₙ)Ω is dense
     in the GNS Hilbert space. The proof uses:
@@ -980,12 +1105,40 @@ private theorem gnsCyclicity (S : Submodule ℂ (GNSHilbertSpace Wfn))
         (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn) = 0} := by
       rintro _ ⟨fs, rfl⟩
       exact Submodule.inner_left_of_mem_orthogonal (hgen k fs) hz
-    -- The zero set is a ℂ-submodule (kernel of the continuous linear functional
-    -- g ↦ ⟪z, ↑(mkPH (single k g))⟫, which is linear by mk_single_add/mk_single_smul).
-    -- Hence span(generators) ⊆ zero set, and since span is dense (nuclear theorem)
-    -- and zero set is closed, zero set = univ.
-    -- The full formalization of this linear-functional argument is deferred.
-    sorry
+    -- The zero set is a ℂ-submodule (kernel of a linear functional).
+    -- Build it as a Submodule to use span and density arguments.
+    let zeroSet : Submodule ℂ (SchwartzNPoint d k) :=
+      { carrier := {g | @inner ℂ (GNSHilbertSpace Wfn) _ z
+            (mkPH Wfn (BorchersSequence.single k g) : GNSHilbertSpace Wfn) = 0}
+        add_mem' := fun {a b} ha hb => by
+          simp only [Set.mem_setOf_eq] at ha hb ⊢
+          rw [mk_single_add Wfn k a b, UniformSpace.Completion.coe_add, inner_add_right, ha, hb,
+            add_zero]
+        zero_mem' := by
+          simp only [Set.mem_setOf_eq]
+          have : mkPH Wfn (BorchersSequence.single k (0 : SchwartzNPoint d k)) =
+              (0 : PreHilbertSpace Wfn) :=
+            mk_eq_of_funcs_eq Wfn _ _ (fun m => by
+              by_cases h : m = k
+              · subst h; simp [BorchersSequence.single_funcs_eq]
+              · simp [BorchersSequence.single_funcs_ne h])
+          rw [this, UniformSpace.Completion.coe_zero, inner_zero_right]
+        smul_mem' := fun c g hg => by
+          simp only [Set.mem_setOf_eq] at hg ⊢
+          rw [mk_single_smul, UniformSpace.Completion.coe_smul, inner_smul_right, hg, mul_zero] }
+    -- The zero set contains all product tensors via the span
+    have hspan_le : Submodule.span ℂ {F | ∃ fs : Fin k → SchwartzSpacetime d,
+        F = SchwartzMap.productTensor fs} ≤ zeroSet :=
+      Submodule.span_le.mpr hgen_sub
+    -- The zero set's topological closure is itself (since it's closed)
+    have hzs_closed : IsClosed (zeroSet : Set (SchwartzNPoint d k)) := hclosed
+    -- The span of product tensors is dense
+    have hdense := productTensor_span_dense d k
+    -- Since the closed set contains the dense span, it's everything.
+    suffices (zeroSet : Set (SchwartzNPoint d k)) = Set.univ from
+      Set.eq_univ_iff_forall.mp this g
+    apply Set.eq_univ_of_subset _ hdense.closure_eq
+    exact hzs_closed.closure_subset_iff.mpr (fun x hx => hspan_le hx)
   -- Step 2: ⟪z, ↑x⟫ = 0 for all x : PreHilbertSpace (decompose into singles)
   have hcoe : ∀ x : PreHilbertSpace Wfn,
       @inner ℂ (GNSHilbertSpace Wfn) _ z (x : GNSHilbertSpace Wfn) = 0 := by
@@ -993,9 +1146,14 @@ private theorem gnsCyclicity (S : Submodule ℂ (GNSHilbertSpace Wfn))
     induction x using Quotient.inductionOn with | h F =>
     change @inner ℂ _ _ z (mkPH Wfn F : GNSHilbertSpace Wfn) = 0
     rw [mk_eq_sum_singles Wfn (F.bound + 1) F (fun m hm => F.bound_spec m (by omega))]
-    -- The coe of the sum = sum of coes (since coe is an additive map)
-    -- and inner product distributes over sum
-    sorry
+    -- Distribute coercion through the sum using toCompl (additive map)
+    have hcoe_sum : (↑(∑ k ∈ Finset.range (F.bound + 1),
+        mkPH Wfn (BorchersSequence.single k (F.funcs k))) : GNSHilbertSpace Wfn) =
+      ∑ k ∈ Finset.range (F.bound + 1),
+        (↑(mkPH Wfn (BorchersSequence.single k (F.funcs k))) : GNSHilbertSpace Wfn) :=
+      map_sum UniformSpace.Completion.toCompl _ _
+    rw [hcoe_sum, inner_sum]
+    exact Finset.sum_eq_zero (fun k _ => hsingle k (F.funcs k))
   -- Step 3: z = 0 since z is orthogonal to the dense set range(coe)
   -- z ⊥ all PreHilbertSpace elements (by hcoe), and these are dense (denseRange_coe).
   -- A vector orthogonal to a dense submodule is zero.
@@ -1051,7 +1209,31 @@ noncomputable def gnsQFT : WightmanQFT d where
       exact matrix_element_continuous_aux Wfn x y
   }
   vacuum_in_domain := gnsVacuum_in_domain Wfn
-  cyclicity := gnsCyclicity Wfn _ (fun n fs => sorry)
+  cyclicity := gnsCyclicity Wfn _ (fun n fs => by
+    -- Show ↑(mkPH Wfn (single n (productTensor fs))) ∈ algebraicSpan
+    -- Strategy: show operatorPow n fs (gnsVacuum Wfn) = this element, then it's a generator.
+    -- First establish the key equality by induction on n.
+    suffices h : ∀ (m : ℕ) (gs : Fin m → SchwartzSpacetime d),
+        { domain := gnsDomain Wfn, operator := gnsFieldOp Wfn, operator_add := _,
+          operator_smul := _, operator_vector_add := _, operator_vector_smul := _,
+          operator_domain := _, matrix_element_continuous := _ :
+          OperatorValuedDistribution d (GNSHilbertSpace Wfn)}.operatorPow m gs (gnsVacuum Wfn) =
+        ((List.foldr (fun f acc => fieldOperator Wfn f acc)
+          (vacuumState Wfn) (List.ofFn gs) : PreHilbertSpace Wfn) : GNSHilbertSpace Wfn) from by
+      rw [show (mkPH Wfn (BorchersSequence.single n (SchwartzMap.productTensor fs)) :
+            GNSHilbertSpace Wfn) =
+          ((List.foldr (fun f acc => fieldOperator Wfn f acc)
+            (vacuumState Wfn) (List.ofFn fs) : PreHilbertSpace Wfn) : GNSHilbertSpace Wfn) from by
+        congr 1; exact (iteratedFieldOp_eq_mk_single Wfn fs).symm]
+      rw [← h n fs]
+      exact Submodule.subset_span ⟨n, fs, rfl⟩
+    intro m gs
+    induction m with
+    | zero => rfl
+    | succ m ih =>
+      simp only [OperatorValuedDistribution.operatorPow]
+      rw [ih (fun i => gs (Fin.succ i))]
+      rw [gnsFieldOp_coe]; simp only [List.ofFn_succ, List.foldr_cons])
   poincareActionOnSchwartz := poincareActSchwartz
   poincareAction_spec := fun g f x => poincareActSchwartz_toFun g f x
   covariance := fun g f χ ψ hχ hψ => by
