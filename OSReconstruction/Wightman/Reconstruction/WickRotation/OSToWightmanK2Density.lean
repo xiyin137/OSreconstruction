@@ -1748,6 +1748,24 @@ private theorem differenceShell_mem_topologicalClosure_zeroOrigin_span
           HasCompactSupport (h : SpacetimeDim d → ℂ) ∧
           f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}).topologicalClosure.zero_mem
 
+/-- Public export of the cutoff half of the `k = 2` density seam: every
+flat-origin difference shell already lies in the closure of the span generated
+by origin-avoiding compactly supported difference shells. This is the exact
+closure input needed to upgrade compact support shell agreement to arbitrary
+flat-origin shell agreement without reopening the older density proof. -/
+theorem differenceShell_mem_topologicalClosure_zeroOriginAvoidingCompact_span
+    (χ h : SchwartzSpacetime d) :
+    ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h) ∈
+      (((Submodule.span ℂ
+        {f : ZeroDiagonalSchwartz d 2 |
+          ∃ (χ h : SchwartzSpacetime d),
+            (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) ∧
+            HasCompactSupport (h : SpacetimeDim d → ℂ) ∧
+            f = ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)}) :
+          Submodule ℂ (ZeroDiagonalSchwartz d 2)).topologicalClosure :
+        Set (ZeroDiagonalSchwartz d 2)) := by
+  exact differenceShell_mem_topologicalClosure_zeroOrigin_span (d := d) χ h
+
 private theorem twoPointDifferenceLift_vanishes_of_h_vanishes_at_zero
     (χ h : SchwartzSpacetime d)
     (hzero : ∀ k : ℕ, iteratedFDeriv ℝ k (h : SpacetimeDim d → ℂ) 0 = 0) :

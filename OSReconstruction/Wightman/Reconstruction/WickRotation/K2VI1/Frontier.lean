@@ -17,6 +17,9 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAWitness
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputACommonBoundary
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputADiffBlock
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputBPointwise
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputCReduced
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputCKernelPackage
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputCCollarSplit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.DCT
 
 /-!
@@ -1516,6 +1519,134 @@ private theorem k2_distributional_reproduction_of_flatOrigin_shell_agreement_loc
     congrArg (fun L : ZeroDiagonalSchwartz d 2 →L[ℂ] ℂ => L f) hCLM
   simpa [OSReconstruction.twoPointZeroDiagonalKernelCLM_apply] using happly.symm
 
+/-- Final assembly shrinks one step further for the common sectorwise kernel.
+
+Once the measurable/polynomial package is available for
+`commonK2TimeParametricKernel_real_local G`, the remaining reproduction problem
+does not need shell agreement on all flat-origin generators. By
+`InputCReduced`, it is enough to know the compact origin-avoiding shell
+identity at one fixed normalized center cutoff `χ₀`; the flat-origin closure
+bridge and the route-independent CLM packaging then finish the distributional
+reproduction formally. -/
+private theorem k2_distributional_reproduction_of_zeroOriginCompactFixedCenter_local
+    (OS : OsterwalderSchraderAxioms d)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_meas : AEStronglyMeasurable
+      (OSReconstruction.commonK2TimeParametricKernel_real_local G) volume)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖OSReconstruction.commonK2TimeParametricKernel_real_local G x‖ ≤
+        C_bd * (1 + ‖x‖) ^ N)
+    (hShell₀ :
+      ∀ h : zeroOriginAvoidingSubmodule d,
+        HasCompactSupport (((h : zeroOriginAvoidingSubmodule d) :
+          SchwartzSpacetime d) : SpacetimeDim d → ℂ) →
+              OSReconstruction.twoPointZeroDiagonalKernelCLM
+                  (d := d)
+                  (OSReconstruction.commonK2TimeParametricKernel_real_local G)
+                  hK_meas C_bd N hC hK_bound
+              (ZeroDiagonalSchwartz.ofClassical
+                (twoPointDifferenceLift χ₀ (h : SchwartzSpacetime d))) =
+            OS.S 2
+              (ZeroDiagonalSchwartz.ofClassical
+                (twoPointDifferenceLift χ₀ (h : SchwartzSpacetime d))))
+    (f : ZeroDiagonalSchwartz d 2) :
+    OS.S 2 f =
+      ∫ x : NPointDomain d 2,
+        OSReconstruction.commonK2TimeParametricKernel_real_local G x * (f.1 x) := by
+  refine
+    k2_distributional_reproduction_of_flatOrigin_shell_agreement_local
+      OS
+      (OSReconstruction.commonK2TimeParametricKernel_real_local G)
+      C_bd N hC hK_meas hK_bound ?_ f
+  intro χ h hzero
+  exact
+    OSReconstruction.commonK2TimeParametricKernel_real_eq_schwinger_on_flatOrigin_differenceShell_of_zeroOriginCompactFixedCenter_local
+      OS χ₀ hχ₀ G hK_meas C_bd N hC hK_bound hShell₀ χ h
+
+/-- Formal final-assembly wrapper after the last reduction step.
+
+To construct the final witness/kernel pair it is now enough to package the
+canonical common sectorwise kernel:
+- sector formulas come from the common diff-block witness,
+- reproduction comes from one fixed-center compact-shell theorem via
+  `k2_distributional_reproduction_of_zeroOriginCompactFixedCenter_local`.
+
+So the last honest assembly seam is no longer arbitrary flat-origin shell
+agreement; it is the common-kernel measurable/polynomial package together with
+compact origin-avoiding shell equality at the single normalized cutoff `χ₀`. -/
+private theorem exists_k2_timeParametric_distributional_assembly_of_commonZeroOriginCompactFixedCenter_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (χ₀ : SchwartzSpacetime d)
+    (hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_meas : AEStronglyMeasurable
+      (OSReconstruction.commonK2TimeParametricKernel_real_local
+        (commonDiffWitness_local (d := d) OS lgc)) volume)
+    (hK_bound : ∀ᵐ x : NPointDomain d 2 ∂volume,
+      ‖OSReconstruction.commonK2TimeParametricKernel_real_local
+          (commonDiffWitness_local (d := d) OS lgc) x‖ ≤
+        C_bd * (1 + ‖x‖) ^ N)
+    (hShell₀ :
+      ∀ h : zeroOriginAvoidingSubmodule d,
+        HasCompactSupport (((h : zeroOriginAvoidingSubmodule d) :
+          SchwartzSpacetime d) : SpacetimeDim d → ℂ) →
+              OSReconstruction.twoPointZeroDiagonalKernelCLM
+                  (d := d)
+                  (OSReconstruction.commonK2TimeParametricKernel_real_local
+                    (commonDiffWitness_local (d := d) OS lgc))
+                  hK_meas C_bd N hC hK_bound
+              (ZeroDiagonalSchwartz.ofClassical
+                (twoPointDifferenceLift χ₀ (h : SchwartzSpacetime d))) =
+            OS.S 2
+              (ZeroDiagonalSchwartz.ofClassical
+                (twoPointDifferenceLift χ₀ (h : SchwartzSpacetime d)))) :
+    ∃ (G : (Fin (2 * (d + 1)) → ℂ) → ℂ) (K : NPointDomain d 2 → ℂ),
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness G ∧
+      (∀ x : NPointDomain d 2, x 0 0 < x 1 0 →
+        K x = k2TimeParametricKernel (d := d) G x) ∧
+      (∀ x : NPointDomain d 2, x 1 0 < x 0 0 →
+        K x = k2TimeParametricKernel (d := d) G
+          (fun i => x ((Equiv.swap (0 : Fin 2) (1 : Fin 2)) i))) ∧
+      (∀ (f : ZeroDiagonalSchwartz d 2),
+        OS.S 2 f = ∫ x : NPointDomain d 2, K x * (f.1 x)) := by
+  have hspec := Classical.choose_spec
+      (OSReconstruction.schwinger_continuation_base_step_timeParametric_of_translationInvariant_acrOne_and_posSectionBound_local
+        (d := d) OS lgc)
+  rcases hspec with ⟨hG_holo_raw, _hG_euclid_raw, hG_diff_raw, _hG_bound_raw⟩
+  have hG_holo :
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+        (commonDiffWitness_local (d := d) OS lgc) := by
+    simpa [commonDiffWitness_local] using hG_holo_raw
+  have hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (finProdFinEquiv (⟨1, by omega⟩, μ)) =
+            v (finProdFinEquiv (⟨1, by omega⟩, μ))) →
+        commonDiffWitness_local (d := d) OS lgc u =
+          commonDiffWitness_local (d := d) OS lgc v := by
+    simpa [commonDiffWitness_local] using hG_diff_raw
+  refine
+    ⟨commonDiffWitness_local (d := d) OS lgc,
+      OSReconstruction.commonK2TimeParametricKernel_real_local
+        (commonDiffWitness_local (d := d) OS lgc),
+      hG_holo, ?_, ?_, ?_⟩
+  · intro x hx
+    exact OSReconstruction.commonK2TimeParametricKernel_real_eq_of_pos_local
+      (d := d) (commonDiffWitness_local (d := d) OS lgc) hG_diff x hx
+  · intro x hx
+    exact OSReconstruction.commonK2TimeParametricKernel_real_eq_of_neg_local
+      (d := d) (commonDiffWitness_local (d := d) OS lgc) hG_diff x hx
+  · intro f
+    exact
+      k2_distributional_reproduction_of_zeroOriginCompactFixedCenter_local
+        OS χ₀ hχ₀
+        (commonDiffWitness_local (d := d) OS lgc)
+        C_bd N hC hK_meas hK_bound hShell₀ f
+
 private theorem exists_k2_timeParametric_distributional_assembly
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -1528,19 +1659,74 @@ private theorem exists_k2_timeParametric_distributional_assembly
           (fun i => x ((Equiv.swap (0 : Fin 2) (1 : Fin 2)) i))) ∧
       (∀ (f : ZeroDiagonalSchwartz d 2),
         OS.S 2 f = ∫ x : NPointDomain d 2, K x * (f.1 x)) := by
+  obtain ⟨φ_seq, hφ_nonneg, hφ_real, hφ_int, _hφ_compact, _hφ_neg, hφ_ball,
+      _μ_seq, _hμfin, _hhol, _hsupp, _hμrepr, _hkernel, _hpair⟩ :=
+    exists_k2_VI1_regularization_input_local (d := d) OS lgc
+  obtain ⟨χ_seq, _hχ_eq, _hχ_nonneg, _hχ_real, hχ_int, _hχ_trans, _hχ_support⟩ :=
+    exists_k2_VI1_descended_center_package_local
+      (d := d) φ_seq hφ_nonneg hφ_real hφ_int hφ_ball
+  let χ₀ : SchwartzSpacetime d := χ_seq 0
+  have hχ₀ : ∫ x : SpacetimeDim d, χ₀ x = 1 := by
+    simpa [χ₀] using hχ_int 0
+  have hspec := Classical.choose_spec
+      (OSReconstruction.schwinger_continuation_base_step_timeParametric_of_translationInvariant_acrOne_and_posSectionBound_local
+        (d := d) OS lgc)
+  rcases hspec with ⟨hG_holo_raw, hG_euclid_raw, hG_diff_raw, hG_bound_raw⟩
+  have hG_holo :
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+        (commonDiffWitness_local (d := d) OS lgc) := by
+    simpa [commonDiffWitness_local] using hG_holo_raw
+  have hG_euclid :
+      ∀ (f : ZeroDiagonalSchwartz d 2),
+        OS.S 2 f = ∫ x : NPointDomain d 2,
+          commonDiffWitness_local (d := d) OS lgc
+            (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x) := by
+    simpa [commonDiffWitness_local] using hG_euclid_raw
+  have hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (finProdFinEquiv (⟨1, by omega⟩, μ)) =
+            v (finProdFinEquiv (⟨1, by omega⟩, μ))) →
+        commonDiffWitness_local (d := d) OS lgc u =
+          commonDiffWitness_local (d := d) OS lgc v := by
+    simpa [commonDiffWitness_local] using hG_diff_raw
+  rcases hG_bound_raw with ⟨C_bd, N, hC, hG_bound⟩
+  obtain ⟨C_real, hC_real, hK_meas, hK_bound⟩ :=
+    OSReconstruction.exists_commonK2TimeParametricKernel_real_package_local
+      (d := d)
+      (commonDiffWitness_local (d := d) OS lgc)
+      hG_holo hG_diff C_bd N hC hG_bound
+  refine
+    exists_k2_timeParametric_distributional_assembly_of_commonZeroOriginCompactFixedCenter_local
+      (d := d) OS lgc χ₀ hχ₀ C_real N hC_real hK_meas hK_bound ?_
   /-
-  Honest remaining assembly step after the VI.1 refactor:
+  Honest remaining assembly step after the collar split:
 
-  * obtain the shrinking negative approximate-identity sequence and its
-    per-probe shell package from `exists_k2_VI1_regularization_input_local`;
-  * use
-    `translatedProductShell_boundary_tendsto_schwingerDifferencePositive_of_negativeApproxIdentity_local`
-    to identify the reduced boundary functional on the positive-time edge;
-  * choose the resulting honest Euclidean kernel/witness pair `(G, K)` coming
-    from the OS II VI.1 limit construction, not from a single fixed probe;
-  * discharge the final reproduction clause through
-    `k2_distributional_reproduction_of_flatOrigin_shell_agreement_local`.
+  prove the fixed-center compact origin-avoiding shell theorem only on the
+  equal-time collar `|ξ₀| ≤ 1` for the canonical common sectorwise kernel at
+  the chosen normalized cutoff `χ₀`:
+
+    ∀ h : zeroOriginAvoidingSubmodule d,
+      HasCompactSupport (((h : zeroOriginAvoidingSubmodule d) :
+        SchwartzSpacetime d) : SpacetimeDim d → ℂ) →
+      tsupport (((h : zeroOriginAvoidingSubmodule d) :
+        SchwartzSpacetime d) : SpacetimeDim d → ℂ) ⊆
+        {ξ : SpacetimeDim d | |ξ 0| ≤ 1} →
+        twoPointZeroDiagonalKernelCLM(commonK2TimeParametricKernel_real_local
+          (commonDiffWitness_local OS lgc))(differenceLift χ₀ h)
+        = OS.S 2(differenceLift χ₀ h).
+
+  `InputCCollarSplit` now pays the positive-time and negative-time pieces
+  formally, so the final seam is genuinely localized to the equal-time collar.
   -/
+  intro h hh_compact
+  refine
+    OSReconstruction.commonK2TimeParametricKernel_real_eq_schwinger_on_differenceShell_of_zeroOriginCompactFixedCenter_of_timeCollar_local
+      (d := d) OS χ₀ hχ₀
+      (commonDiffWitness_local (d := d) OS lgc)
+      hG_euclid hG_diff hK_meas C_real N hC_real hK_bound
+      1 (by norm_num) ?_ h hh_compact
+  intro h hh_compact hh_collar
   sorry
 
 /-- The `k = 2` time-parametric base step on the honest OS route.
