@@ -16,6 +16,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAShifted
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAWitness
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputACommonBoundary
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputADiffBlock
+import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputBPointwise
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.DCT
 
 /-!
@@ -1195,15 +1196,78 @@ private theorem exists_shell_pointwise_limit_function_local
       ((OsterwalderSchraderAxioms.schwingerDifferencePositiveCLM
           (d := d) OS χ₀) h =
         ∫ ξ : SpacetimeDim d, g ξ * ((h : SchwartzSpacetime d) ξ)) := by
-  /-
-  Genuine remaining Input B:
-
-  identify the pointwise almost-everywhere shell limit and the corresponding
-  target integral. The intended direct OS route is again a descended-center
-  approximate-identity argument on the positive-time shell, using the orbit
-  continuity layer from `K2VI1/OrbitBridge.lean`.
-  -/
-  sorry
+  obtain ⟨ε, hε_pos, hmargin0⟩ :=
+    exists_positive_time_margin_of_mem_positiveTimeCompactSupport_local (d := d) h
+  have hs : 0 < ε / 4 := by
+    linarith
+  have hmargin :
+      tsupport (((h : positiveTimeCompactSupportSubmodule d) : SchwartzSpacetime d) :
+        SpacetimeDim d → ℂ) ⊆ {ξ : SpacetimeDim d | ε / 4 + ε / 4 < ξ 0} := by
+    refine Set.Subset.trans hmargin0 ?_
+    intro ξ hξ
+    simp only [Set.mem_setOf] at hξ ⊢
+    linarith
+  have hspec :=
+    Classical.choose_spec
+      (OSReconstruction.schwinger_continuation_base_step_timeParametric_of_translationInvariant_acrOne_and_posSectionBound_local
+        (d := d) OS lgc)
+  rcases hspec with ⟨hG_holo_raw, hG_euclid_raw, hG_diff_raw, hG_bound_pkg_raw⟩
+  have hG_holo :
+      IsTimeHolomorphicFlatPositiveTimeDiffWitness
+        (commonDiffWitness_local (d := d) OS lgc) := by
+    simpa [commonDiffWitness_local] using hG_holo_raw
+  have hG_euclid :
+      ∀ (f : ZeroDiagonalSchwartz d 2),
+        OS.S 2 f = ∫ x : NPointDomain d 2,
+          commonDiffWitness_local (d := d) OS lgc
+            (BHW.toDiffFlat 2 d (fun i => wickRotatePoint (x i))) * (f.1 x) := by
+    simpa [commonDiffWitness_local] using hG_euclid_raw
+  have hG_diff :
+      ∀ u v : Fin (2 * (d + 1)) → ℂ,
+        (∀ μ : Fin (d + 1),
+          u (finProdFinEquiv (⟨1, by omega⟩, μ)) =
+            v (finProdFinEquiv (⟨1, by omega⟩, μ))) →
+        commonDiffWitness_local (d := d) OS lgc u =
+          commonDiffWitness_local (d := d) OS lgc v := by
+    simpa [commonDiffWitness_local] using hG_diff_raw
+  have hG_bound_pkg :
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ ξ : SpacetimeDim d, 0 < ξ 0 →
+          ‖k2TimeParametricKernel (d := d)
+              (commonDiffWitness_local (d := d) OS lgc)
+              (![(0 : SpacetimeDim d), ξ] : NPointDomain d 2)‖ ≤
+            C_bd * (1 + ‖ξ‖) ^ N := by
+    simpa [commonDiffWitness_local] using hG_bound_pkg_raw
+  rcases hG_bound_pkg with ⟨C_bd, N, hC, hG_bound⟩
+  have hshell_repr :
+      ∀ n : ℕ, ∀ ξ : SpacetimeDim d, ε / 4 + ε / 4 < ξ 0 →
+        OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (twoPointProductLift (φ_seq n)
+            (SCV.translateSchwartz (-ξ)
+              (reflectedSchwartzSpacetime (d := d) (φ_seq n))))) =
+          ∫ u : SpacetimeDim d,
+            (OSReconstruction.twoPointCenterShearDescent (d := d) (φ_seq n)
+              (reflectedSchwartzSpacetime (d := d) (φ_seq n))) u *
+              k2TimeParametricKernel (d := d)
+                (commonDiffWitness_local (d := d) OS lgc)
+                (![(0 : SpacetimeDim d), u + ξ] : NPointDomain d 2) := by
+    intro n ξ hξ
+    have hξ_pos : 0 < ξ 0 := by
+      linarith
+    simpa [commonDiffWitness_local] using
+      (OSReconstruction.shell_scalar_eq_descended_convolution_commonZeroAnchor_local
+        (d := d) OS
+        (commonDiffWitness_local (d := d) OS lgc)
+        hG_holo hG_euclid hG_diff C_bd N hC hG_bound
+        (φ_seq n) (hφ_int n) (hφ_compact n) (hφ_neg n) ξ hξ_pos)
+  exact
+    OSReconstruction.exists_shell_pointwise_limit_function_of_commonZeroAnchor_local
+      (d := d) OS χ₀ hχ₀
+      (commonDiffWitness_local (d := d) OS lgc)
+      hG_holo hG_euclid hG_diff
+      φ_seq hφ_nonneg hφ_real hφ_int hφ_ball
+      (ε / 4) hs h hmargin hshell_repr
 
 private theorem k2Probe_pairing_fixed_normalized_center_tendsto_schwingerDifferencePositive_local
     (OS : OsterwalderSchraderAxioms d)
