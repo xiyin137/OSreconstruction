@@ -11,10 +11,11 @@ Count convention in this file: direct tactic holes only,
 
 | Scope | Direct `sorry` lines |
 |---|---:|
-| `OSReconstruction/SCV` | 2 |
+| `OSReconstruction/SCV` | 3 |
 
 Breakdown:
 - `SCV/BochnerTubeTheorem.lean`: 2
+- `SCV/TubeBoundaryValues.lean`: 1
 - All other SCV files: 0
 
 ## Axiom Census
@@ -92,6 +93,7 @@ The SCV module provides analytic continuation infrastructure consumed by:
 | File | Sorrys | Names |
 |------|--------|-------|
 | `BochnerTubeTheorem.lean` | 2 | `bochner_local_extension`, `bochner_tube_extension` |
+| `TubeBoundaryValues.lean` | 1 | `tube_boundaryValueData_of_polyGrowth` |
 
 ### Files with Axioms (no sorries)
 
@@ -110,6 +112,21 @@ Remaining blockers:
 
 The old generic gluing theorem was too strong and has been removed.
 Current work should build on the compatible-family gluing theorem instead.
+
+### `SCV/TubeBoundaryValues.lean` (1 sorry)
+
+Remaining blocker:
+- `tube_boundaryValueData_of_polyGrowth`
+
+This is the honest pure SCV theorem now used by the active OS boundary-values
+route:
+- holomorphic on a tube domain over an open convex salient cone
+- global polynomial growth on that tube
+- conclude existence of a continuous Schwartz boundary-value functional with
+  raywise convergence
+
+The old OS-local boundary-value blocker has been reduced to a wrapper around
+this theorem, so issue #48 is now localized to the correct SCV layer.
 
 ### `SCV/LaplaceSchwartz.lean` (0 sorries)
 

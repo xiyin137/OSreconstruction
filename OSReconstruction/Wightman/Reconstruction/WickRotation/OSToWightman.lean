@@ -2353,6 +2353,38 @@ theorem iterated_analytic_continuation
   rcases hP_all d (by simp) with ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
   exact ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
 
+/-- The chosen continuation witness together with the symmetry and growth
+package inherited from the upstream `ACR(1)` assembly theorem.
+
+This is the honest full theorem surface for the selected continuation witness:
+besides holomorphy and Euclidean reproduction, the same witness also carries
+permutation symmetry, common complex translation invariance, and global
+polynomial growth on the forward tube. -/
+theorem full_analytic_continuation_with_symmetry_growth
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (k : ℕ) :
+    ∃ (W_analytic : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ W_analytic (ForwardTube d k) ∧
+      (∀ (f : ZeroDiagonalSchwartz d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          W_analytic (fun j => wickRotatePoint (x j)) * (f.1 x)) ∧
+      (∀ (σ : Equiv.Perm (Fin k)) (z : Fin k → Fin (d + 1) → ℂ),
+        W_analytic (fun j => z (σ j)) = W_analytic z) ∧
+      (∀ (z : Fin k → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        W_analytic (fun j => z j + a) = W_analytic z) ∧
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ z ∈ ForwardTube d k,
+          ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+  obtain ⟨S₁, hS₁_hol, hS₁_euclid, hS₁_perm, hS₁_trans, C_bd, N, hC, hgrowth⟩ :=
+    schwinger_continuation_base_step_acrOne_assembly_with_translationInvariant
+      (d := d) OS lgc k
+  refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid,
+    hS₁_perm, hS₁_trans, C_bd, N, hC, ?_⟩
+  intro z hz
+  exact hgrowth z ((forwardTube_subset_acr_one (d := d) (k := k)) hz)
+
 /-- The same witness chosen by `full_analytic_continuation`, together with the
 polynomial-growth package inherited from the upstream `ACR(1)` assembly theorem.
 
@@ -2373,12 +2405,8 @@ theorem full_analytic_continuation_with_growth
         ∀ z ∈ ForwardTube d k,
           ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
   obtain ⟨S₁, hS₁_hol, hS₁_euclid, _hS₁_perm, _hS₁_trans, C_bd, N, hC, hgrowth⟩ :=
-    schwinger_continuation_base_step_acrOne_assembly_with_translationInvariant
-      (d := d) OS lgc k
-  refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid,
-    C_bd, N, hC, ?_⟩
-  intro z hz
-  exact hgrowth z ((forwardTube_subset_acr_one (d := d) (k := k)) hz)
+    full_analytic_continuation_with_symmetry_growth OS lgc k
+  refine ⟨S₁, hS₁_hol, hS₁_euclid, C_bd, N, hC, hgrowth⟩
 
 theorem full_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)

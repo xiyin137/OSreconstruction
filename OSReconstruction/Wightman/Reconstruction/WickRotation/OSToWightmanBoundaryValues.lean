@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
+import OSReconstruction.SCV.TubeBoundaryValues
 
 /-!
 # OS to Wightman Boundary Values and Transfers
@@ -133,7 +134,21 @@ private theorem forwardTube_boundaryValueData_of_polyGrowth
             F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W f)) := by
-  sorry
+  simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using
+    SCV.tube_boundaryValueData_of_polyGrowth
+      (C := ForwardConeAbs d n)
+      (hC_open := forwardConeAbs_isOpen d n)
+      (hC_conv := forwardConeAbs_convex d n)
+      (hC_cone := by
+        intro y hy t ht
+        exact forwardConeAbs_smul d n t ht y hy)
+      (hC_salient := forwardConeAbs_salient d n)
+      (hF_hol := by
+        simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hF_hol)
+      C_bd N hC
+      (hF_growth := by
+        intro z hz
+        exact hF_growth z ((by simpa [TubeDomainSetPi, forwardTube_eq_imPreimage] using hz)))
 
 /-- The remaining analytic work behind `boundary_values_tempered` is to produce
 an honest boundary-value functional for the specific continuation extracted from
@@ -148,7 +163,7 @@ private theorem full_analytic_continuation_boundaryValueData
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) :
     let F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-      (full_analytic_continuation_with_growth OS lgc n).choose
+      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
     ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
       ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
         InForwardCone d n η →
@@ -158,12 +173,12 @@ private theorem full_analytic_continuation_boundaryValueData
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W f)) := by
   obtain ⟨C_bd, N, hC, hgrowth⟩ :=
-    (full_analytic_continuation_with_growth OS lgc n).choose_spec.2.2
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2
   simpa using
     forwardTube_boundaryValueData_of_polyGrowth
       (d := d) (n := n)
-      (F_analytic := (full_analytic_continuation_with_growth OS lgc n).choose)
-      (full_analytic_continuation_with_growth OS lgc n).choose_spec.1
+      (F_analytic := (full_analytic_continuation_with_symmetry_growth OS lgc n).choose)
+      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.1
       C_bd N hC hgrowth
 
 /--
@@ -189,31 +204,47 @@ theorem boundary_values_tempered
       (nhds (W_n f))) ∧
       (∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x)) := by
+          F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x)) ∧
+      (∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        F_analytic (fun j => z (σ j)) = F_analytic z) ∧
+      (∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        F_analytic (fun j => z j + a) = F_analytic z) := by
   obtain ⟨W, hW_bv⟩ :
       ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
         ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
           InForwardCone d n η →
           Filter.Tendsto
             (fun ε : ℝ => ∫ x : NPointDomain d n,
-              (full_analytic_continuation_with_growth OS lgc n).choose
+              (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
                 (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
             (nhdsWithin 0 (Set.Ioi 0))
             (nhds (W f)) :=
     full_analytic_continuation_boundaryValueData (d := d) OS lgc n
   have hF_hol :
       DifferentiableOn ℂ
-        ((full_analytic_continuation_with_growth OS lgc n).choose)
+        ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose)
         (ForwardTube d n) :=
-    (full_analytic_continuation_with_growth OS lgc n).choose_spec.1
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.1
   have hF_euclid :
       ∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          (full_analytic_continuation_with_growth OS lgc n).choose
+          (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
             (fun k => wickRotatePoint (x k)) * (f.1 x) :=
-    (full_analytic_continuation_with_growth OS lgc n).choose_spec.2.1
-  refine ⟨W, (full_analytic_continuation_with_growth OS lgc n).choose, W.continuous,
-    ?_, hF_hol, hW_bv, fun f => hF_euclid f⟩
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.1
+  have hF_perm :
+      ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+          (fun j => z (σ j)) =
+        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose z :=
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.1
+  have hF_trans :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+          (fun j => z j + a) =
+        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose z :=
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.1
+  refine ⟨W, (full_analytic_continuation_with_symmetry_growth OS lgc n).choose, W.continuous,
+    ?_, hF_hol, hW_bv, (fun f => hF_euclid f), hF_perm, hF_trans⟩
   · constructor
     · intro f g
       exact map_add W f g
@@ -264,7 +295,19 @@ theorem bvt_euclidean_restriction (OS : OsterwalderSchraderAxioms d)
     ∀ (f : ZeroDiagonalSchwartz d n),
       OS.S n f = ∫ x : NPointDomain d n,
         bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * (f.1 x) :=
-  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2
+  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2.1
+
+theorem bvt_F_perm (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
+    ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+      bvt_F OS lgc n (fun j => z (σ j)) = bvt_F OS lgc n z :=
+  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2.2.1
+
+theorem bvt_F_translationInvariant (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
+    ∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+      bvt_F OS lgc n (fun j => z j + a) = bvt_F OS lgc n z :=
+  (boundary_values_tempered OS lgc n).choose_spec.choose_spec.2.2.2.2.2.2
 
 /-! #### Helper lemmas for property transfer: OS axiom → F_analytic → W_n -/
 
@@ -765,15 +808,31 @@ theorem bvt_translation_invariant (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsTranslationInvariantWeak d (bvt_W OS lgc) := by
   intro n a f g hfg
-  exact bv_translation_invariance_transfer OS lgc n
+  have hF_inv :
+      ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
+        (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ),
+        bvt_F OS lgc n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) := by
+    intro a x η ε
+    let aNeg : Fin (d + 1) → ℂ := fun μ => -(a μ : ℂ)
+    have hz :
+        (fun j => (fun μ => ↑(x j μ) + ε * ↑(η j μ) * Complex.I) + aNeg) =
+          (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) := by
+      funext j μ
+      simp [aNeg, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+    calc
+      bvt_F OS lgc n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+          bvt_F OS lgc n (fun j => (fun μ => ↑(x j μ) + ε * ↑(η j μ) * Complex.I) + aNeg) := by
+            rw [hz.symm]
+      _ = bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) := by
+            simpa [aNeg] using
+              bvt_F_translationInvariant (d := d) OS lgc n
+                (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) aNeg
+  exact bv_translation_invariance_transfer_of_F_invariant (d := d) n
     (bvt_W OS lgc n)
-    (bvt_W_continuous OS lgc n)
     (bvt_F OS lgc n)
-    (bvt_F_holomorphic OS lgc n)
     (bvt_boundary_values OS lgc n)
-    (bvt_euclidean_restriction OS lgc n)
-    (OS.E1_translation_invariant n)
-    a f g hfg
+    hF_inv a f g hfg
 
 theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -888,9 +947,11 @@ theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
     ∃ (Wfn : WightmanFunctions d),
       IsWickRotationPair OS.schwinger Wfn.W := by
   refine ⟨constructWightmanFunctions OS lgc, fun n => ?_⟩
-  have h := (boundary_values_tempered OS lgc n).choose_spec.choose_spec
-  exact ⟨(boundary_values_tempered OS lgc n).choose_spec.choose,
-    h.2.2.1, h.2.2.2.1, fun f => by
-      simpa [OsterwalderSchraderAxioms.schwinger] using h.2.2.2.2 f⟩
+  exact ⟨bvt_F OS lgc n,
+    bvt_F_holomorphic OS lgc n,
+    bvt_boundary_values OS lgc n,
+    fun f => by
+      simpa [OsterwalderSchraderAxioms.schwinger] using
+        bvt_euclidean_restriction OS lgc n f⟩
 
 end
