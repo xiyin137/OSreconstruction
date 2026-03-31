@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBase
+import OSReconstruction.Wightman.Reconstruction.DenseCLM
 
 /-!
 # OS to Wightman Analytic Continuation Core
@@ -54,12 +55,341 @@ private theorem exists_acrOne_productTensor_witness {d : ℕ} [NeZero d]
           ‖S_prod z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
   sorry
 
+/- The formal dense-extension step above factors through two separate analytic
+inputs:
+1. continuity of the Euclidean kernel functional on `SchwartzNPoint d k`,
+2. density of the admissible product-tensor subset inside `ZeroDiagonalSchwartz`.
+
+This helper packages the purely topological last mile once those two pieces are
+available. -/
+private theorem zeroDiagonal_eq_schwinger_of_eq_on_dense
+    {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (k : ℕ)
+    (K : NPointDomain d k → ℂ)
+    (L : ZeroDiagonalSchwartz d k →L[ℂ] ℂ)
+    (hL_apply : ∀ f : ZeroDiagonalSchwartz d k,
+      L f = ∫ x : NPointDomain d k, K x * (f.1 x))
+    {S : Set (ZeroDiagonalSchwartz d k)}
+    (hDense : Dense S)
+    (hEq : ∀ f ∈ S, OS.S k f = ∫ x : NPointDomain d k, K x * (f.1 x)) :
+    ∀ f : ZeroDiagonalSchwartz d k,
+      OS.S k f = ∫ x : NPointDomain d k, K x * (f.1 x) := by
+  have hL_eq :
+      L = OsterwalderSchraderAxioms.schwingerCLM (d := d) OS k := by
+    apply ContinuousLinearMap.eq_of_eq_on_dense L
+      (OsterwalderSchraderAxioms.schwingerCLM (d := d) OS k) hDense
+    intro f hf
+    rw [hL_apply]
+    exact (hEq f hf).symm
+  intro f
+  have := congrArg (fun T : ZeroDiagonalSchwartz d k →L[ℂ] ℂ => T f) hL_eq
+  simpa [hL_apply f] using this.symm
+
+/-- The admissible product-tensor subset of `ZeroDiagonalSchwartz`: those
+product tensors for which the zero-diagonal witness is genuine rather than the
+`ofClassical` junk branch. This is the exact dense set needed by the upstream
+ACR(1) closure problem. -/
+private def admissibleProductTensorSet {d : ℕ} (k : ℕ) :
+    Set (ZeroDiagonalSchwartz d k) :=
+  {f : ZeroDiagonalSchwartz d k |
+    ∃ (fs : Fin k → SchwartzSpacetime d)
+      (hvanish : VanishesToInfiniteOrderOnCoincidence (SchwartzMap.productTensor fs)),
+      f = ⟨SchwartzMap.productTensor fs, hvanish⟩}
+
+/-- Once the Euclidean section of `S_prod` is already packaged as a polynomially
+bounded measurable kernel and the admissible product tensors are dense in
+`ZeroDiagonalSchwartz`, the Schwinger reproduction identity extends formally
+from the admissible product tensors to all zero-diagonal tests. -/
+private theorem acrOne_productTensor_witness_extends_zeroDiagonal_of_kernelPackage_and_dense
+    {d : ℕ} [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (k : ℕ)
+    (S_prod : (Fin k → Fin (d + 1) → ℂ) → ℂ)
+    (hS_prod_prod :
+      ∀ (fs : Fin k → SchwartzSpacetime d)
+        (hvanish : VanishesToInfiniteOrderOnCoincidence (SchwartzMap.productTensor fs)),
+        OS.S k ⟨SchwartzMap.productTensor fs, hvanish⟩ =
+          ∫ x : NPointDomain d k,
+            S_prod (fun j => wickRotatePoint (x j)) *
+              (SchwartzMap.productTensor fs) x)
+    (hK_meas :
+      MeasureTheory.AEStronglyMeasurable
+        (fun x : NPointDomain d k => S_prod (fun j => wickRotatePoint (x j)))
+        MeasureTheory.volume)
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hK_bound : ∀ᵐ x : NPointDomain d k ∂MeasureTheory.volume,
+      ‖S_prod (fun j => wickRotatePoint (x j))‖ ≤ C_bd * (1 + ‖x‖) ^ N)
+    (hDense : Dense (admissibleProductTensorSet (d := d) k)) :
+    ∀ (f : ZeroDiagonalSchwartz d k),
+      OS.S k f = ∫ x : NPointDomain d k,
+        S_prod (fun j => wickRotatePoint (x j)) * (f.1 x) := by
+  let K : NPointDomain d k → ℂ := fun x => S_prod (fun j => wickRotatePoint (x j))
+  have hK_cont :
+      Continuous (fun f : SchwartzNPoint d k => ∫ x, K x * f x) :=
+    schwartz_continuous_of_polynomial_bound K hK_meas C_bd N hC hK_bound
+  let Llin : ZeroDiagonalSchwartz d k →ₗ[ℂ] ℂ :=
+    { toFun := fun f => ∫ x : NPointDomain d k, K x * (f.1 x)
+      map_add' := by
+        intro f g
+        have hIntf :
+            MeasureTheory.Integrable (fun x : NPointDomain d k => K x * (f.1 x))
+              MeasureTheory.volume :=
+          schwartz_polynomial_kernel_integrable K hK_meas C_bd N hC hK_bound f.1
+        have hIntg :
+            MeasureTheory.Integrable (fun x : NPointDomain d k => K x * (g.1 x))
+              MeasureTheory.volume :=
+          schwartz_polynomial_kernel_integrable K hK_meas C_bd N hC hK_bound g.1
+        have hadd :
+            (fun x : NPointDomain d k => K x * ((f + g : ZeroDiagonalSchwartz d k).1 x)) =
+              (fun x : NPointDomain d k => K x * (f.1 x)) +
+                (fun x : NPointDomain d k => K x * (g.1 x)) := by
+          funext x
+          rw [Submodule.coe_add]
+          simpa [Pi.add_apply] using mul_add (K x) (f.1 x) (g.1 x)
+        rw [hadd]
+        exact MeasureTheory.integral_add hIntf hIntg
+      map_smul' := by
+        intro c f
+        change
+          ∫ x : NPointDomain d k, K x * ((c • f : ZeroDiagonalSchwartz d k).1 x) =
+            c * ∫ x : NPointDomain d k, K x * (f.1 x)
+        have hmul :
+            (fun x : NPointDomain d k => K x * ((c • f : ZeroDiagonalSchwartz d k).1 x)) =
+              fun x : NPointDomain d k => c * (K x * (f.1 x)) := by
+          funext x
+          rw [Submodule.coe_smul_of_tower]
+          simp [Pi.smul_apply, smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
+        rw [hmul]
+        exact MeasureTheory.integral_const_mul c _ }
+  let L : ZeroDiagonalSchwartz d k →L[ℂ] ℂ :=
+    ContinuousLinearMap.mk Llin (hK_cont.comp continuous_subtype_val)
+  apply zeroDiagonal_eq_schwinger_of_eq_on_dense (d := d) OS k K L
+    (fun f => rfl) hDense
+  intro f hf
+  rcases hf with ⟨fs, hvanish, rfl⟩
+  simpa [K] using hS_prod_prod fs hvanish
+
+/-- First honest subproblem inside theorem 2: package the Euclidean section of
+the `ACR(1)` witness as a measurable polynomially bounded kernel on real
+configurations. -/
+private theorem acrOne_productTensor_witness_euclidKernelPackage
+    {d : ℕ} [NeZero d]
+    (k : ℕ)
+    (S_prod : (Fin k → Fin (d + 1) → ℂ) → ℂ)
+    (hS_prod_holo : DifferentiableOn ℂ S_prod (AnalyticContinuationRegion d k 1))
+    (hS_prod_perm :
+      ∀ (σ : Equiv.Perm (Fin k)) (z : Fin k → Fin (d + 1) → ℂ),
+        S_prod (fun j => z (σ j)) = S_prod z)
+    (hS_prod_trans :
+      ∀ (z : Fin k → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        S_prod (fun j => z j + a) = S_prod z)
+    (hS_prod_growth :
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ z ∈ AnalyticContinuationRegion d k 1,
+          ‖S_prod z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
+    ∃ (C_bd : ℝ) (N : ℕ),
+      0 < C_bd ∧
+      MeasureTheory.AEStronglyMeasurable
+        (fun x : NPointDomain d k => S_prod (fun j => wickRotatePoint (x j)))
+        MeasureTheory.volume ∧
+      (∀ᵐ x : NPointDomain d k ∂MeasureTheory.volume,
+        ‖S_prod (fun j => wickRotatePoint (x j))‖ ≤ C_bd * (1 + ‖x‖) ^ N) := by
+  sorry
+
+/-- Second honest subproblem inside theorem 2: the admissible product tensors
+are dense in `ZeroDiagonalSchwartz`. -/
+private theorem VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
+    {d : ℕ} [NeZero d] {n : ℕ} {ψ f : SchwartzNPoint d n}
+    (hf : VanishesToInfiniteOrderOnCoincidence f) :
+    VanishesToInfiniteOrderOnCoincidence (SchwartzMap.smulLeftCLM ℂ ψ f) := by
+  intro k x hx
+  have hfun :
+      (((SchwartzMap.smulLeftCLM ℂ ψ f : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) =
+        fun y : NPointDomain d n => ψ y * f y := by
+    funext y
+    simpa [smul_eq_mul] using
+      (SchwartzMap.smulLeftCLM_apply_apply
+        (g := ((ψ : SchwartzNPoint d n) : NPointDomain d n → ℂ))
+        ψ.hasTemperateGrowth f y)
+  have hle :=
+    norm_iteratedFDeriv_smul_le (𝕜 := ℝ) (ψ.smooth ⊤) (f.smooth ⊤) x
+      (n := k) (by exact_mod_cast le_top)
+  have hsum_zero :
+      ∑ i ∈ Finset.range (k + 1),
+        (k.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψ : NPointDomain d n → ℂ) x‖ *
+          ‖iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x‖ = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    have hfi :
+        iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x = 0 := hf (k - i) x hx
+    simp [hfi]
+  have hnonneg :
+      0 ≤ ‖iteratedFDeriv ℝ k
+        (((SchwartzMap.smulLeftCLM ℂ ψ f : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) x‖ := norm_nonneg _
+  have hzero_norm :
+      ‖iteratedFDeriv ℝ k
+        (((SchwartzMap.smulLeftCLM ℂ ψ f : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)) x‖ = 0 := by
+    apply le_antisymm
+    · rw [hfun]
+      calc
+        ‖iteratedFDeriv ℝ k (fun y : NPointDomain d n => ψ y * f y) x‖
+            ≤
+          ∑ i ∈ Finset.range (k + 1),
+            (k.choose i : ℝ) * ‖iteratedFDeriv ℝ i (ψ : NPointDomain d n → ℂ) x‖ *
+              ‖iteratedFDeriv ℝ (k - i) (f : NPointDomain d n → ℂ) x‖ := hle
+        _ = 0 := hsum_zero
+    · exact hnonneg
+  exact norm_eq_zero.mp hzero_norm
+
+private noncomputable def unitBallBumpSchwartzNPointRadius
+    {d : ℕ} [NeZero d] (n : ℕ) (R : ℝ) (hR : 0 < R) : SchwartzNPoint d n :=
+  OSReconstruction.unflattenSchwartzNPoint (d := d)
+    (OSReconstruction.unitBallBumpSchwartzPiRadius (n * (d + 1)) R hR)
+
+private theorem unflatten_flattenSchwartzNPoint_local
+    {d : ℕ} [NeZero d] {n : ℕ} (f : SchwartzNPoint d n) :
+    OSReconstruction.unflattenSchwartzNPoint (d := d)
+      (OSReconstruction.flattenSchwartzNPoint (d := d) f) = f := by
+  ext x
+  simp [OSReconstruction.flattenSchwartzNPoint_apply,
+    OSReconstruction.unflattenSchwartzNPoint_apply]
+
+private noncomputable def bumpTruncationRadiusNPoint
+    {d : ℕ} [NeZero d] {n : ℕ}
+    (f : SchwartzNPoint d n) (N : ℕ) : SchwartzNPoint d n :=
+  SchwartzMap.smulLeftCLM ℂ
+    (unitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N)) f
+
+private theorem bumpTruncationRadiusNPoint_eq_unflatten
+    {d : ℕ} [NeZero d] {n : ℕ}
+    (f : SchwartzNPoint d n) (N : ℕ) :
+    bumpTruncationRadiusNPoint (d := d) f N =
+      OSReconstruction.unflattenSchwartzNPoint (d := d)
+        (OSReconstruction.bumpTruncationRadius
+          (OSReconstruction.flattenSchwartzNPoint (d := d) f) N) := by
+  ext x
+  rw [bumpTruncationRadiusNPoint]
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (g := ((unitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N) : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+    (unitBallBumpSchwartzNPointRadius (d := d) n
+      (OSReconstruction.bumpTruncationRadiusValue N)
+      (OSReconstruction.bumpTruncationRadiusValue_pos N)).hasTemperateGrowth
+    f x]
+  rw [unitBallBumpSchwartzNPointRadius, OSReconstruction.unflattenSchwartzNPoint_apply]
+  rw [OSReconstruction.unflattenSchwartzNPoint_apply]
+  rw [OSReconstruction.bumpTruncationRadius]
+  rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
+  simp [OSReconstruction.flattenSchwartzNPoint_apply, smul_eq_mul]
+
+private theorem dense_hasCompactSupport_zeroDiagonal
+    {d : ℕ} [NeZero d] (k : ℕ) :
+    Dense {F : ZeroDiagonalSchwartz d k |
+      HasCompactSupport ((F : ZeroDiagonalSchwartz d k).1 : NPointDomain d k → ℂ)} := by
+  intro F
+  let v : ℕ → SchwartzNPoint d k := fun n =>
+    bumpTruncationRadiusNPoint (d := d) F.1 n
+  have hv_vanish :
+      ∀ n, VanishesToInfiniteOrderOnCoincidence (v n) := by
+    intro n
+    simpa [v, bumpTruncationRadiusNPoint] using
+      (VanishesToInfiniteOrderOnCoincidence.smulLeft_schwartzNPoint
+        (d := d) F.2
+          (ψ := unitBallBumpSchwartzNPointRadius (d := d) k
+            (OSReconstruction.bumpTruncationRadiusValue n)
+            (OSReconstruction.bumpTruncationRadiusValue_pos n)))
+  let u : ℕ → ZeroDiagonalSchwartz d k := fun n => ⟨v n, hv_vanish n⟩
+  have hu_mem :
+      ∀ n, u n ∈ {F : ZeroDiagonalSchwartz d k |
+        HasCompactSupport ((F : ZeroDiagonalSchwartz d k).1 : NPointDomain d k → ℂ)} := by
+    intro n
+    have hflat_compact :
+        HasCompactSupport
+          (((OSReconstruction.bumpTruncationRadius
+            (OSReconstruction.flattenSchwartzNPoint (d := d) F.1) n :
+              SchwartzMap (Fin (k * (d + 1)) → ℝ) ℂ)) :
+            (Fin (k * (d + 1)) → ℝ) → ℂ) := by
+      simpa [OSReconstruction.bumpTruncationRadius, OSReconstruction.bumpTruncationRadiusValue] using
+        OSReconstruction.hasCompactSupport_cutoff_mul_radius
+          (m := k * (d + 1)) (R := OSReconstruction.bumpTruncationRadiusValue n)
+          (OSReconstruction.bumpTruncationRadiusValue_pos n)
+          (OSReconstruction.flattenSchwartzNPoint (d := d) F.1)
+    have hv_compact :
+        HasCompactSupport ((v n : SchwartzNPoint d k) : NPointDomain d k → ℂ) := by
+      simpa [v] using
+        (show HasCompactSupport ((bumpTruncationRadiusNPoint (d := d) F.1 n :
+            SchwartzNPoint d k) : NPointDomain d k → ℂ) from by
+          rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
+          simpa [OSReconstruction.unflattenSchwartzNPoint_apply] using
+            hflat_compact.comp_homeomorph (flattenCLEquivReal k (d + 1)).toHomeomorph)
+    simpa [u] using hv_compact
+  have hu_tendsto :
+      Filter.Tendsto u Filter.atTop (nhds F) := by
+    rw [tendsto_subtype_rng]
+    have hv_tendsto :
+        Filter.Tendsto v Filter.atTop (nhds F.1) := by
+      have hunflat :=
+        ((OSReconstruction.unflattenSchwartzNPoint (d := d)).continuous.tendsto
+          (OSReconstruction.flattenSchwartzNPoint (d := d) F.1)).comp
+            (SchwartzMap.tendsto_bump_truncation_nhds
+              (OSReconstruction.flattenSchwartzNPoint (d := d) F.1))
+      have hrew :
+          v =
+            fun n : ℕ =>
+              OSReconstruction.unflattenSchwartzNPoint (d := d)
+                (OSReconstruction.bumpTruncationRadius
+                  (OSReconstruction.flattenSchwartzNPoint (d := d) F.1) n) := by
+        funext n
+        simpa [v] using bumpTruncationRadiusNPoint_eq_unflatten (d := d) F.1 n
+      rw [hrew]
+      simpa [Function.comp, unflatten_flattenSchwartzNPoint_local (d := d) F.1] using
+        hunflat
+    simpa [u] using hv_tendsto
+  exact isClosed_closure.mem_of_tendsto hu_tendsto
+    (Filter.Eventually.of_forall fun n => subset_closure (hu_mem n))
+
+private theorem compactlySupported_zeroDiagonal_subset_closure_admissibleProductTensorSet
+    {d : ℕ} [NeZero d]
+    (k : ℕ) :
+    {F : ZeroDiagonalSchwartz d k |
+      HasCompactSupport ((F : ZeroDiagonalSchwartz d k).1 : NPointDomain d k → ℂ)} ⊆
+      closure (admissibleProductTensorSet (d := d) k) := by
+  sorry
+
+private theorem admissibleProductTensorSet_dense_zeroDiagonal
+    {d : ℕ} [NeZero d]
+    (k : ℕ) :
+    Dense (admissibleProductTensorSet (d := d) k) := by
+  let C : Set (ZeroDiagonalSchwartz d k) :=
+    {F : ZeroDiagonalSchwartz d k |
+      HasCompactSupport ((F : ZeroDiagonalSchwartz d k).1 : NPointDomain d k → ℂ)}
+  have hC_dense : Dense C := dense_hasCompactSupport_zeroDiagonal (d := d) k
+  have hC_subset :
+      C ⊆ closure (admissibleProductTensorSet (d := d) k) :=
+    compactlySupported_zeroDiagonal_subset_closure_admissibleProductTensorSet (d := d) k
+  have hclosure_subset :
+      closure C ⊆ closure (admissibleProductTensorSet (d := d) k) := by
+    exact closure_minimal hC_subset isClosed_closure
+  intro F
+  exact hclosure_subset (hC_dense F)
+
 /-- Second general-`k` ACR(1) subproblem: upgrade the product-tensor witness to
 the full zero-diagonal Schwartz space.
 
 This is the density / nuclear-extension step: once a scalar witness reproduces
-the Schwinger functional on admissible factorized tests, show the same witness
-reproduces `OS.S k` on every zero-diagonal Schwartz test. -/
+the Schwinger functional on admissible factorized tests, the remaining honest
+inputs are:
+- a Euclidean kernel package for the real section of `S_prod`,
+- density of the admissible product-tensor subset of `ZeroDiagonalSchwartz`. -/
 private theorem acrOne_productTensor_witness_extends_zeroDiagonal {d : ℕ} [NeZero d]
     (OS : OsterwalderSchraderAxioms d)
     (k : ℕ)
@@ -71,11 +401,30 @@ private theorem acrOne_productTensor_witness_extends_zeroDiagonal {d : ℕ} [NeZ
         OS.S k ⟨SchwartzMap.productTensor fs, hvanish⟩ =
           ∫ x : NPointDomain d k,
             S_prod (fun j => wickRotatePoint (x j)) *
-              (SchwartzMap.productTensor fs) x) :
+              (SchwartzMap.productTensor fs) x)
+    (hS_prod_perm :
+      ∀ (σ : Equiv.Perm (Fin k)) (z : Fin k → Fin (d + 1) → ℂ),
+        S_prod (fun j => z (σ j)) = S_prod z)
+    (hS_prod_trans :
+      ∀ (z : Fin k → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        S_prod (fun j => z j + a) = S_prod z)
+    (hS_prod_growth :
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ z ∈ AnalyticContinuationRegion d k 1,
+          ‖S_prod z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
     ∀ (f : ZeroDiagonalSchwartz d k),
       OS.S k f = ∫ x : NPointDomain d k,
         S_prod (fun j => wickRotatePoint (x j)) * (f.1 x) := by
-  sorry
+  obtain ⟨C_bd, N, hC, hK_meas, hK_bound⟩ :=
+    acrOne_productTensor_witness_euclidKernelPackage
+      (d := d) k S_prod hS_prod_holo hS_prod_perm hS_prod_trans hS_prod_growth
+  have hDense :
+      Dense (admissibleProductTensorSet (d := d) k) :=
+    admissibleProductTensorSet_dense_zeroDiagonal (d := d) k
+  exact
+    acrOne_productTensor_witness_extends_zeroDiagonal_of_kernelPackage_and_dense
+      (d := d) OS k S_prod hS_prod_prod hK_meas C_bd N hC hK_bound hDense
 
 /-- General-`k` OS-II first-step assembly on `ACR(1)`.
 
@@ -93,12 +442,12 @@ private theorem schwinger_continuation_base_step_acrOne_assembly {d : ℕ} [NeZe
       (∀ (f : ZeroDiagonalSchwartz d k),
         OS.S k f = ∫ x : NPointDomain d k,
           S_ext (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  obtain ⟨S_prod, hS_prod_holo, hS_prod_prod, _hS_prod_perm, _hS_prod_trans, _hS_prod_growth⟩ :=
+  obtain ⟨S_prod, hS_prod_holo, hS_prod_prod, hS_prod_perm, hS_prod_trans, hS_prod_growth⟩ :=
     exists_acrOne_productTensor_witness (d := d) OS lgc k
   refine ⟨S_prod, hS_prod_holo, ?_⟩
   exact
     acrOne_productTensor_witness_extends_zeroDiagonal
-      (d := d) OS k S_prod hS_prod_holo hS_prod_prod
+      (d := d) OS k S_prod hS_prod_holo hS_prod_prod hS_prod_perm hS_prod_trans hS_prod_growth
 
 /-- `ACR(1)` assembly together with the common complex translation invariance
 of the chosen witness.
@@ -160,7 +509,7 @@ theorem schwinger_continuation_base_step_acrOne_assembly_with_translationInvaria
   refine ⟨S_prod, hS_prod_holo, ?_, hS_prod_perm, hS_prod_trans, hS_prod_growth⟩
   exact
     acrOne_productTensor_witness_extends_zeroDiagonal
-      (d := d) OS k S_prod hS_prod_holo hS_prod_prod
+      (d := d) OS k S_prod hS_prod_holo hS_prod_prod hS_prod_perm hS_prod_trans hS_prod_growth
 
 /-- OS-II-faithful first-stage base-step theorem: construct a witness on the flattened
 positive-time-difference tube that is holomorphic in the time-difference variables
