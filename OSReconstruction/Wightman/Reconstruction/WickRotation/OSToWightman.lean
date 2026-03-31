@@ -2353,6 +2353,33 @@ theorem iterated_analytic_continuation
   rcases hP_all d (by simp) with ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
   exact ⟨S_ext, hS_ext_hol, hS_ext_rep⟩
 
+/-- The same witness chosen by `full_analytic_continuation`, together with the
+polynomial-growth package inherited from the upstream `ACR(1)` assembly theorem.
+
+This keeps the OS-specific continuation side theorem-based: downstream boundary-
+value arguments can use a growth theorem for the chosen witness without
+introducing any extra OS-specific axiom. -/
+theorem full_analytic_continuation_with_growth
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (k : ℕ) :
+    ∃ (W_analytic : (Fin k → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ W_analytic (ForwardTube d k) ∧
+      (∀ (f : ZeroDiagonalSchwartz d k),
+        OS.S k f = ∫ x : NPointDomain d k,
+          W_analytic (fun j => wickRotatePoint (x j)) * (f.1 x)) ∧
+      ∃ (C_bd : ℝ) (N : ℕ),
+        0 < C_bd ∧
+        ∀ z ∈ ForwardTube d k,
+          ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+  obtain ⟨S₁, hS₁_hol, hS₁_euclid, _hS₁_perm, _hS₁_trans, C_bd, N, hC, hgrowth⟩ :=
+    schwinger_continuation_base_step_acrOne_assembly_with_translationInvariant
+      (d := d) OS lgc k
+  refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid,
+    C_bd, N, hC, ?_⟩
+  intro z hz
+  exact hgrowth z ((forwardTube_subset_acr_one (d := d) (k := k)) hz)
+
 theorem full_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -2362,8 +2389,9 @@ theorem full_analytic_continuation
       (∀ (f : ZeroDiagonalSchwartz d k),
         OS.S k f = ∫ x : NPointDomain d k,
           W_analytic (fun j => wickRotatePoint (x j)) * (f.1 x)) := by
-  obtain ⟨S₁, hS₁_hol, hS₁_euclid⟩ := schwinger_continuation_base_step_full OS lgc k
-  refine ⟨S₁, hS₁_hol.mono (forwardTube_subset_acr_one (d := d) (k := k)), hS₁_euclid⟩
+  obtain ⟨S₁, hS₁_hol, hS₁_euclid, _C_bd, _N, _hC, _hgrowth⟩ :=
+    full_analytic_continuation_with_growth OS lgc k
+  refine ⟨S₁, hS₁_hol, hS₁_euclid⟩
 
 /-! ### Downstream Boundary Values
 

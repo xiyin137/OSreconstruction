@@ -111,45 +111,66 @@ where C_n has at most factorial growth.
 
 Ref: OS II, Section VI -/
 
-/-- The remaining analytic work behind `boundary_values_tempered` is to package
-the flattened continuation `G` into an honest tempered Fourier-Laplace
-boundary-value datum on `ForwardConeFlat`.
+/-- Pure boundary-value existence on the forward tube from holomorphy plus a
+global polynomial-growth bound.
 
-This isolates the missing flat-tempered package from the already-formalized
-transport back to `SchwartzNPoint d n` in
-`boundary_values_tempered_of_flatTempered`.
+This is the honest remaining SCV-shaped ingredient on the active OS route: once
+the chosen continuation is known to be holomorphic on `ForwardTube d n` and to
+satisfy a global real-direction growth estimate there, the rest of the
+boundary-value packaging is formal. -/
+private theorem forwardTube_boundaryValueData_of_polyGrowth
+    (n : ℕ)
+    {F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    (hF_hol : DifferentiableOn ℂ F_analytic (ForwardTube d n))
+    (C_bd : ℝ) (N : ℕ) (hC : 0 < C_bd)
+    (hF_growth : ∀ z ∈ ForwardTube d n,
+      ‖F_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
+    ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
+      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+        InForwardCone d n η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W f)) := by
+  sorry
 
-Unlike the generic transport theorem below, this phase-4 surface is only about
-the specific analytic continuation produced by `full_analytic_continuation OS lgc n`.
-Tempered boundary values are not claimed for an arbitrary holomorphic forward-tube
-function. -/
-private theorem full_analytic_continuation_flat_boundaryValueData
+/-- The remaining analytic work behind `boundary_values_tempered` is to produce
+an honest boundary-value functional for the specific continuation extracted from
+`full_analytic_continuation_with_growth OS lgc n`.
+
+This is the exact OS-side phase-4 datum the active reconstruction path uses:
+a continuous linear functional on `SchwartzNPoint d n` together with the raywise
+boundary-value convergence statement. No flattened witness or generic tempered
+Fourier-Laplace package is needed at this stage. -/
+private theorem full_analytic_continuation_boundaryValueData
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) :
     let F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-      (full_analytic_continuation OS lgc n).choose
-    let G : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-      F_analytic ∘ (flattenCLEquiv n (d + 1)).symm
-    ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
-      ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
-          (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-          Filter.Tendsto (fun ε : ℝ =>
-            ∫ x : Fin (n * (d + 1)) → ℝ,
-              G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-            (nhdsWithin 0 (Set.Ioi 0))
-            (nhds (Tflat f)) := by
-  sorry
+      (full_analytic_continuation_with_growth OS lgc n).choose
+    ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
+      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+        InForwardCone d n η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            F_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W f)) := by
+  obtain ⟨C_bd, N, hC, hgrowth⟩ :=
+    (full_analytic_continuation_with_growth OS lgc n).choose_spec.2.2
+  simpa using
+    forwardTube_boundaryValueData_of_polyGrowth
+      (d := d) (n := n)
+      (F_analytic := (full_analytic_continuation_with_growth OS lgc n).choose)
+      (full_analytic_continuation_with_growth OS lgc n).choose_spec.1
+      C_bd N hC hgrowth
 
 /--
-The continuous-linear boundary-value witness is the only remaining Phase-4 input
-needed by the OS-specific reconstruction theorem. Once the flattened continuation
-carries an honest boundary-value functional on Schwartz tests, it transports back
-to `NPointDomain` and constructs the required continuous linear functional.
-
-So the remaining content here is exactly the theorem producing that honest
-flattened boundary-value datum for the specific `F_analytic` supplied by
-`full_analytic_continuation`.
+The continuous boundary-value witness is the only remaining Phase-4 input needed
+by the OS-specific reconstruction theorem. Once the chosen continuation carries
+an honest boundary-value functional on `SchwartzNPoint d n`, the rest of the
+Wightman packaging is formal.
 -/
 theorem boundary_values_tempered
     (OS : OsterwalderSchraderAxioms d)
@@ -169,33 +190,35 @@ theorem boundary_values_tempered
       (∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
           F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x)) := by
-  let hcont := full_analytic_continuation OS lgc n
-  let F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ := hcont.choose
-  have hF_hol : DifferentiableOn ℂ F_analytic (ForwardTube d n) := hcont.choose_spec.1
+  obtain ⟨W, hW_bv⟩ :
+      ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+          InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              (full_analytic_continuation_with_growth OS lgc n).choose
+                (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds (W f)) :=
+    full_analytic_continuation_boundaryValueData (d := d) OS lgc n
+  have hF_hol :
+      DifferentiableOn ℂ
+        ((full_analytic_continuation_with_growth OS lgc n).choose)
+        (ForwardTube d n) :=
+    (full_analytic_continuation_with_growth OS lgc n).choose_spec.1
   have hF_euclid :
       ∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x) := hcont.choose_spec.2
-  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F_analytic ∘ (flattenCLEquiv n (d + 1)).symm
-  obtain ⟨Tflat, hBVflat⟩ :
-      ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
-        ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
-            (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-            Filter.Tendsto (fun ε : ℝ =>
-              ∫ x : Fin (n * (d + 1)) → ℝ,
-                G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
-              (nhdsWithin 0 (Set.Ioi 0))
-              (nhds (Tflat f)) := by
-    simpa [G] using
-      full_analytic_continuation_flat_boundaryValueData (d := d) OS lgc n
-  obtain ⟨W, hW_bv⟩ :=
-    boundary_values_from_flatBoundaryData (d := d) n Tflat hBVflat
-  refine ⟨W, F_analytic, W.continuous, ?_, hF_hol, hW_bv, fun f => hF_euclid f⟩
-  constructor
-  · intro f g
-    exact map_add W f g
-  · intro c f
-    exact map_smul W c f
+          (full_analytic_continuation_with_growth OS lgc n).choose
+            (fun k => wickRotatePoint (x k)) * (f.1 x) :=
+    (full_analytic_continuation_with_growth OS lgc n).choose_spec.2.1
+  refine ⟨W, (full_analytic_continuation_with_growth OS lgc n).choose, W.continuous,
+    ?_, hF_hol, hW_bv, fun f => hF_euclid f⟩
+  · constructor
+    · intro f g
+      exact map_add W f g
+    · intro c f
+      exact map_smul W c f
 
 /-! ### Constructing WightmanFunctions from OS Data
 
