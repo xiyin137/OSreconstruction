@@ -27,23 +27,19 @@ noncomputable section
 
 variable {d : ℕ} [NeZero d]
 
-private theorem differentiableOn_flatten_forwardTube {d n : ℕ} [NeZero d]
-    {F : (Fin n → Fin (d + 1) → ℂ) → ℂ}
-    (hF : DifferentiableOn ℂ F (ForwardTube d n)) :
-    DifferentiableOn ℂ (F ∘ (flattenCLEquiv n (d + 1)).symm)
-      (SCV.TubeDomain (ForwardConeFlat d n)) := by
-  rw [← forwardTube_flatten_eq_tubeDomain]
-  refine hF.comp (flattenCLEquiv n (d + 1)).symm.differentiableOn (fun w hw => ?_)
-  obtain ⟨z, hz, rfl⟩ := hw
-  convert hz using 1
-  exact (flattenCLEquiv n (d + 1)).symm_apply_apply z
-
-private theorem boundary_values_tempered_of_flatTempered {d : ℕ} [NeZero d]
+private theorem boundary_values_from_flatBoundaryData {d : ℕ} [NeZero d]
     (n : ℕ)
     {F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ}
-    (hF_hol : DifferentiableOn ℂ F_analytic (ForwardTube d n))
-    (hTempered : SCV.HasFourierLaplaceReprTempered (ForwardConeFlat d n)
-      (F_analytic ∘ (flattenCLEquiv n (d + 1)).symm)) :
+    (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hBVflat : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+        (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ∫ x : Fin (n * (d + 1)) → ℝ,
+              (F_analytic ∘ (flattenCLEquiv n (d + 1)).symm)
+                (fun i => ↑(x i) + ε * ↑(η i) * Complex.I) * f x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (Tflat f))) :
     ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
       ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
         InForwardCone d n η →
@@ -58,26 +54,7 @@ private theorem boundary_values_tempered_of_flatTempered {d : ℕ} [NeZero d]
   let pushforward : SchwartzNPoint d n →L[ℂ]
       SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
     SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR.symm
-  have hG_hol : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
-    differentiableOn_flatten_forwardTube hF_hol
-  have hdist_lin :
-      IsLinearMap ℂ hTempered.dist :=
-    SCV.fourierLaplace_dist_isLinearMap_tempered
-      (forwardConeFlat_isOpen d n)
-      (forwardConeFlat_convex d n)
-      (forwardConeFlat_nonempty d n)
-      (forwardConeFlat_isCone d n)
-      hG_hol hTempered
-  let W : SchwartzNPoint d n →L[ℂ] ℂ :=
-    { toLinearMap :=
-        { toFun := fun f => hTempered.dist (pushforward f)
-          map_add' := fun f g => by
-            rw [map_add]
-            exact hdist_lin.map_add _ _
-          map_smul' := fun c f => by
-            rw [map_smul]
-            exact hdist_lin.map_smul _ _ }
-      cont := hTempered.dist_continuous.comp pushforward.continuous }
+  let W : SchwartzNPoint d n →L[ℂ] ℂ := Tflat.comp pushforward
   refine ⟨W, ?_⟩
   intro f η hη
   have hηflat : eR η ∈ ForwardConeFlat d n :=
@@ -85,11 +62,11 @@ private theorem boundary_values_tempered_of_flatTempered {d : ℕ} [NeZero d]
   have hflat :
       Filter.Tendsto
         (fun ε : ℝ =>
-          ∫ x : Fin (n * (d + 1)) → ℝ,
+        ∫ x : Fin (n * (d + 1)) → ℝ,
             G (fun i => ↑(x i) + ε * ↑(eR η i) * Complex.I) * (pushforward f x))
         (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (hTempered.dist (pushforward f))) :=
-    hTempered.boundary_value (pushforward f) (eR η) hηflat
+        (nhds (Tflat (pushforward f))) :=
+    by simpa [G] using hBVflat (pushforward f) (eR η) hηflat
   have hEq :
       (fun ε : ℝ =>
         ∫ x : Fin (n * (d + 1)) → ℝ,
@@ -146,7 +123,7 @@ Unlike the generic transport theorem below, this phase-4 surface is only about
 the specific analytic continuation produced by `full_analytic_continuation OS lgc n`.
 Tempered boundary values are not claimed for an arbitrary holomorphic forward-tube
 function. -/
-private theorem full_analytic_continuation_flat_tempered_package
+private theorem full_analytic_continuation_flat_boundaryValueData
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) :
@@ -154,34 +131,24 @@ private theorem full_analytic_continuation_flat_tempered_package
       (full_analytic_continuation OS lgc n).choose
     let G : (Fin (n * (d + 1)) → ℂ) → ℂ :=
       F_analytic ∘ (flattenCLEquiv n (d + 1)).symm
-    ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ),
-      Continuous Tflat ∧
-      (∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+    ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
           (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
           Filter.Tendsto (fun ε : ℝ =>
             ∫ x : Fin (n * (d + 1)) → ℝ,
               G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
             (nhdsWithin 0 (Set.Ioi 0))
-            (nhds (Tflat f))) ∧
-      (∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-            ‖G (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) ∧
-      (∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-        ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-          ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-            ‖G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤
-              C_bd * (1 + ‖x‖) ^ N) := by
+            (nhds (Tflat f)) := by
   sorry
 
 /--
-The continuous-linear boundary-value witness is no longer the missing part of
-Phase 4. Once the flattened continuation carries an honest tempered Fourier-Laplace
-boundary-value package, `boundary_values_tempered_of_flatTempered` transports it
-back to `NPointDomain` and constructs the required continuous linear functional.
+The continuous-linear boundary-value witness is the only remaining Phase-4 input
+needed by the OS-specific reconstruction theorem. Once the flattened continuation
+carries an honest boundary-value functional on Schwartz tests, it transports back
+to `NPointDomain` and constructs the required continuous linear functional.
 
-So the remaining content here is exactly the theorem producing that honest tempered
-flattened package for the specific `F_analytic` supplied by
+So the remaining content here is exactly the theorem producing that honest
+flattened boundary-value datum for the specific `F_analytic` supplied by
 `full_analytic_continuation`.
 -/
 theorem boundary_values_tempered
@@ -209,39 +176,20 @@ theorem boundary_values_tempered
       ∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
           F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x) := hcont.choose_spec.2
-  let G : (Fin (n * (d + 1)) → ℂ) → ℂ :=
-    F_analytic ∘ (flattenCLEquiv n (d + 1)).symm
-  have hG_hol : DifferentiableOn ℂ G (SCV.TubeDomain (ForwardConeFlat d n)) :=
-    differentiableOn_flatten_forwardTube hF_hol
-  obtain ⟨Tflat, hTflat_cont, hBVflat, hpoly, hunif⟩ :
-      ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ → ℂ),
-        Continuous Tflat ∧
-        (∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+  let G : (Fin (n * (d + 1)) → ℂ) → ℂ := F_analytic ∘ (flattenCLEquiv n (d + 1)).symm
+  obtain ⟨Tflat, hBVflat⟩ :
+      ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+        ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
             (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
             Filter.Tendsto (fun ε : ℝ =>
               ∫ x : Fin (n * (d + 1)) → ℝ,
                 G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I) * f x)
               (nhdsWithin 0 (Set.Ioi 0))
-              (nhds (Tflat f))) ∧
-        (∀ (K : Set (Fin (n * (d + 1)) → ℝ)), IsCompact K → K ⊆ ForwardConeFlat d n →
-          ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-            ∀ (x y : Fin (n * (d + 1)) → ℝ), y ∈ K →
-              ‖G (fun i => ↑(x i) + ↑(y i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) ∧
-        (∀ (η : Fin (n * (d + 1)) → ℝ), η ∈ ForwardConeFlat d n →
-          ∃ (C_bd : ℝ) (N : ℕ) (δ : ℝ), C_bd > 0 ∧ δ > 0 ∧
-            ∀ (x : Fin (n * (d + 1)) → ℝ) (ε : ℝ), 0 < ε → ε < δ →
-              ‖G (fun i => ↑(x i) + ↑ε * ↑(η i) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N) := by
+              (nhds (Tflat f)) := by
     simpa [G] using
-      full_analytic_continuation_flat_tempered_package (d := d) OS lgc n
-  let hTempered :
-      SCV.HasFourierLaplaceReprTempered (ForwardConeFlat d n) G :=
-    SCV.exists_fourierLaplaceReprTempered
-      (forwardConeFlat_isOpen d n)
-      (forwardConeFlat_convex d n)
-      (forwardConeFlat_nonempty d n)
-      hG_hol hTflat_cont hBVflat hpoly hunif
+      full_analytic_continuation_flat_boundaryValueData (d := d) OS lgc n
   obtain ⟨W, hW_bv⟩ :=
-    boundary_values_tempered_of_flatTempered (d := d) n hF_hol (by simpa [G] using hTempered)
+    boundary_values_from_flatBoundaryData (d := d) n Tflat hBVflat
   refine ⟨W, F_analytic, W.continuous, ?_, hF_hol, hW_bv, fun f => hF_euclid f⟩
   constructor
   · intro f g
@@ -349,6 +297,110 @@ theorem bv_zero_point_is_evaluation (OS : OsterwalderSchraderAxioms d)
     _ = OS.S 0 f0 := by simpa [I0, f0] using (hEuclid f0).symm
     _ = f 0 := lgc.normalized_zero f0
 
+private theorem boundary_ray_translation_invariant_of_F_invariant
+    (n : ℕ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_inv : ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
+        (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ),
+      F_n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+        F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))
+    (a : SpacetimeDim d) (f : SchwartzNPoint d n)
+    (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ) :
+    ∫ x : NPointDomain d n,
+      F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+        f (fun i => x i + a) =
+    ∫ x : NPointDomain d n,
+      F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x := by
+  let aN : NPointDomain d n := fun _ => a
+  let gfun : NPointDomain d n → ℂ := fun x =>
+    F_n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) * f x
+  have hga :
+      (fun x : NPointDomain d n => gfun (x + aN)) =
+        fun x : NPointDomain d n =>
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f (fun i => x i + a) := by
+    ext x
+    calc
+      gfun (x + aN)
+          = F_n (fun k μ => ↑((x + aN) k μ - a μ) + ε * ↑(η k μ) * Complex.I) * f (x + aN) := by
+              rfl
+      _ = F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f (x + aN) := by
+            congr
+            ext k μ
+            simp [aN, Pi.add_apply, add_sub_cancel_right]
+      _ = F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f (fun i => x i + a) := by
+            rfl
+  rw [← hga, MeasureTheory.integral_add_right_eq_self gfun aN]
+  simp only [gfun]
+  congr 1
+  ext x
+  exact congrArg (fun z : ℂ => z * f x) (hF_inv a x η ε)
+
+private theorem bv_translation_invariance_transfer_of_F_invariant
+    (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (hF_inv : ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
+        (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ),
+      F_n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+        F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) :
+    ∀ (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
+      (∀ x, g.toFun x = f.toFun (fun i => x i + a)) →
+      W_n f = W_n g := by
+  intro a f g hfg
+  obtain ⟨η, hη_abs⟩ := forwardConeAbs_nonempty d n
+  have hη : InForwardCone d n η :=
+    (inForwardCone_iff_mem_forwardConeAbs η).mpr hη_abs
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+    refine Filter.Eventually.of_forall ?_
+    intro ε
+    have hrewrite :
+        (∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) =
+          ∫ x : NPointDomain d n,
+            F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              f (fun i => x i + a) := by
+      congr 1
+      ext x
+      have hxg : g x = f (fun i => x i + a) := by
+        simpa using hfg x
+      rw [hxg]
+    calc
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)) ε
+          =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+            f (fun i => x i + a) := hrewrite
+      _ =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) :=
+        boundary_ray_translation_invariant_of_F_invariant (d := d) n F_n hF_inv a f η ε
+  have hg_as_f : Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (W_n g)) :=
+    Filter.Tendsto.congr' hEq hg
+  exact tendsto_nhds_unique hf hg_as_f
+
 theorem bv_translation_invariance_transfer (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ)
     (W_n : SchwartzNPoint d n → ℂ)
@@ -371,7 +423,13 @@ theorem bv_translation_invariance_transfer (OS : OsterwalderSchraderAxioms d)
     ∀ (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
       (∀ x, g.toFun x = f.toFun (fun i => x i + a)) →
       W_n f = W_n g := by
-  sorry
+  have hF_inv :
+      ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
+        (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ),
+        F_n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) := by
+    sorry
+  exact bv_translation_invariance_transfer_of_F_invariant (d := d) n W_n F_n hBV hF_inv
 
 theorem bv_lorentz_covariance_transfer (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ)
