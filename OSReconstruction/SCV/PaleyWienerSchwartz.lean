@@ -103,6 +103,20 @@ axiom multiDimPsiZ_seminorm_bound {m : ℕ}
           B * (1 + ‖fun i => (z i).re‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M
 
+/-- z ↦ ψ_z is continuous into Schwartz space: for each seminorm (k,n),
+    `z ↦ seminorm k n (ψ_{z'} - ψ_z) → 0` as `z' → z` in the tube.
+
+    This is used to prove continuity of F(z) = T(ψ_z) on the tube. -/
+axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (k n : ℕ)
+    (z₀ : Fin m → ℂ) (hz₀ : z₀ ∈ SCV.TubeDomain C) :
+    ∀ ε > 0, ∃ δ > 0, ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
+      ‖z - z₀‖ < δ →
+        SchwartzMap.seminorm ℝ k n
+          (multiDimPsiZ C hC_open hC_conv hC_cone z hz -
+           multiDimPsiZ C hC_open hC_conv hC_cone z₀ hz₀) < ε
+
 /-- The difference quotient of ψ_z converges in Schwartz seminorms.
     For fixed z in the tube and direction e_j:
 
@@ -184,6 +198,14 @@ theorem fourierLaplaceExtMultiDim_continuousOn
     ContinuousOn
       (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T)
       (SCV.TubeDomain C) := by
+  -- F(z) = T(ψ_z) is continuous because:
+  -- 1. T is bounded by a finite sup of seminorms (schwartz_clm_bound_by_finset_sup)
+  -- 2. z ↦ ψ_z is continuous in each Schwartz seminorm (multiDimPsiZ_seminorm_continuous)
+  -- 3. So z ↦ T(ψ_z) is continuous (ε/δ argument composing 1+2)
+  --
+  -- The ε/δ: given ε > 0, pick C_T and finset s from step 1.
+  -- For each (k,n) ∈ s, pick δ_{k,n} from step 2 with threshold ε/(C_T * |s|).
+  -- Take δ = min of δ_{k,n}. Then ‖T(ψ_z) - T(ψ_{z₀})‖ ≤ C_T * Σ seminorm(ψ_z-ψ_{z₀}) < ε.
   sorry
 
 /-- **Main holomorphicity theorem**: F(z) = T(ψ_z) is holomorphic on the tube T(C).
@@ -268,10 +290,21 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
         apply mul_le_mul_of_nonneg_left (hψ_bound z hz) (le_of_lt hC_T_pos)
     _ ≤ C_T * B * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-        -- Follows from ‖fun i => (z i).re‖ ≤ ‖z‖ (Pi sup norm of real parts
-        -- ≤ Pi sup norm of complex values, since |re(z_i)| ≤ |z_i|),
-        -- which gives (1 + ‖Re z‖)^N ≤ (1 + ‖z‖)^N, then multiply through.
-        sorry
+        have hre_le : ‖fun i => (z i).re‖ ≤ ‖z‖ := by
+          apply pi_norm_le_iff_of_nonneg (norm_nonneg z) |>.mpr
+          intro i
+          calc ‖(z i).re‖ = |(z i).re| := Real.norm_eq_abs _
+            _ ≤ ‖z i‖ := Complex.abs_re_le_norm (z i)
+            _ ≤ ‖z‖ := norm_le_pi_norm z i
+        have hre_nn : (0 : ℝ) ≤ 1 + ‖fun i => (z i).re‖ := by positivity
+        have h1 : (1 + ‖fun i => (z i).re‖) ^ N ≤ (1 + ‖z‖) ^ N :=
+          pow_le_pow_left₀ hre_nn (by linarith) N
+        have hCB : 0 ≤ C_T * B := mul_nonneg (le_of_lt hC_T_pos) (le_of_lt hB_pos)
+        have hinfDist_nn : (0 : ℝ) ≤ Metric.infDist (fun i => (z i).im) Cᶜ :=
+          Metric.infDist_nonneg
+        have hD : (0 : ℝ) ≤ (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M :=
+          pow_nonneg (by linarith [inv_nonneg.mpr hinfDist_nn]) _
+        nlinarith [mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left h1 hCB) hD]
 
 /-! ### Boundary values -/
 

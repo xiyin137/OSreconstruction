@@ -124,12 +124,13 @@ theorem dualConeEucl_separates_of_not_mem_closure
     {y : RealEuclidean m}
     (hy : y ∉ closure S) :
     ∃ ξ ∈ DualConeEucl S, @inner ℝ (RealEuclidean m) _ y ξ < 0 := by
-  -- Proof outline:
-  -- 1. geometric_hahn_banach_point_closed → f : StrongDual with f(y) < u < f(a) for a ∈ closure S
-  -- 2. 0 ∈ closure S (cone scaling to 0) → u < f(0) = 0 → f(y) < 0
-  -- 3. Cone scaling: if f(a) < 0 for a ∈ S, then f(n·a) = n·f(a) → -∞, contradicting f(n·a) > u
-  --    So f(a) ≥ 0 for all a ∈ S
-  -- 4. Riesz representation: f = ⟪·, ξ⟫ → ξ ∈ DualConeEucl S and ⟪y, ξ⟫ < 0
+  -- Step 1: Hahn-Banach (geometric_hahn_banach_point_closed)
+  --   → f : StrongDual ℝ E, u : ℝ with f(y) < u, ∀ a ∈ closure S, u < f(a)
+  -- Step 2: 0 ∈ closure S (since (1/n)•a → 0 for a ∈ S, using IsCone)
+  --   → u < f(0) = 0 → f(y) < 0
+  -- Step 3: f(a) ≥ 0 for a ∈ S (if f(a) < 0, then f(n•a) = n•f(a) → -∞, contradicting f(n•a) > u)
+  -- Step 4: Riesz representation on EuclideanSpace: f = ⟪·, ξ⟫ for some ξ
+  --   → ξ ∈ DualConeEucl S (from step 3) and ⟪y, ξ⟫ < 0 (from step 2)
   sorry
 
 end
