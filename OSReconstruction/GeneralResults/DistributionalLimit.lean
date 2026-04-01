@@ -77,8 +77,41 @@ theorem distributional_limit_of_equicontinuous
     ∃ (W : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ),
       ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
         Tendsto (fun ε => T ε φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ)) := by
-  -- Step 1: Pointwise limit exists (Cauchy in ℂ → convergent)
-  -- Step 2: Package as CLM (linearity from limits, continuity from equicontinuity)
-  sorry
+  -- Step 1: For each φ, the net T(ε)(φ) converges as ε → 0+ (Cauchy in ℂ)
+  have hpointwise : ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      ∃ w : ℂ, Filter.Tendsto (fun ε => T ε φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds w) := by
+    intro φ
+    -- The Cauchy condition + completeness of ℂ gives convergence
+    sorry
+  -- Step 2: Define W_val as the pointwise limit
+  choose W_val hW_val using hpointwise
+  -- Step 3: W_val is linear (limits preserve linearity)
+  have hW_add : ∀ φ ψ, W_val (φ + ψ) = W_val φ + W_val ψ := by
+    intro φ ψ
+    have h1 := hW_val (φ + ψ)
+    have h2 := (hW_val φ).add (hW_val ψ)
+    have h3 : Filter.Tendsto (fun ε => T ε (φ + ψ)) (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_val φ + W_val ψ)) := by
+      convert h2 using 1; ext ε; exact map_add (T ε) φ ψ
+    exact tendsto_nhds_unique h1 h3
+  have hW_smul : ∀ (c : ℂ) φ, W_val (c • φ) = c * W_val φ := by
+    intro c φ
+    have h1 := hW_val (c • φ)
+    have h3 : Filter.Tendsto (fun ε => T ε (c • φ)) (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (c * W_val φ)) := by
+      convert (hW_val φ).const_mul c using 1
+      ext ε; exact map_smul (T ε) c φ
+    exact tendsto_nhds_unique h1 h3
+  -- Step 4: W_val is bounded by the equicontinuity bound
+  have hW_bound : ∀ φ, ‖W_val φ‖ ≤ C_eq * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+    intro φ
+    -- ‖W_val φ‖ = lim ‖T ε φ‖ ≤ C_eq * seminorm(φ) (bound preserved under limits)
+    sorry
+  -- Step 5: Package as CLM
+  refine ⟨SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ) W_val hW_add
+    (fun c φ => by simp [smul_eq_mul, hW_smul])
+    ⟨s, C_eq, le_of_lt hC_eq, fun φ => hW_bound φ⟩, ?_⟩
+  intro φ
+  exact hW_val φ
 
 end
