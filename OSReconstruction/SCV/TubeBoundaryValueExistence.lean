@@ -396,7 +396,7 @@ theorem cr_integration_identity
     (hF_cont : ContinuousOn F (SCV.TubeDomain C))
     (η : Fin m → ℝ) (hη : η ∈ C)
     (hC_cone : IsCone C) (hC_open : IsOpen C)
-    (t₀ t : ℝ) (ht₀ : 0 < t₀) (ht : 0 < t)
+    (t₀ t : ℝ) (ht₀ : 0 < t₀) (ht : 0 < t) (ht₀_le_t : t₀ ≤ t)
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     tubeSlice F (t • η) φ - tubeSlice F (t₀ • η) φ =
       -I * ∫ τ in Set.Icc t₀ t,
@@ -407,7 +407,7 @@ theorem cr_integration_identity
     2. Show g'(τ) = -I · tubeSlice F (τ•η) (directionalDerivSchwartz η φ)
        via hasDerivAt_tubeSlice_ray (CR + IBP + diff under integral)
     3. Apply FTC: g(t) - g(t₀) = ∫_{t₀}^{t} g'(τ) dτ
-    4. Convert the interval integral to a set integral on Icc
+    4. Convert the interval integral to a set integral on Icc (using t₀ ≤ t)
   -/
   -- Step 1: Define the slice function g and its derivative g'
   let g : ℝ → ℂ := fun τ => tubeSlice F (τ • η) φ
@@ -431,39 +431,22 @@ theorem cr_integration_identity
   -- Step 5: FTC gives g(t) - g(t₀) = ∫ τ in t₀..t, g'(τ)
   have hFTC : ∫ τ in t₀..t, g' τ = g t - g t₀ :=
     intervalIntegral.integral_eq_sub_of_hasDerivAt hderiv_uIcc hg'_int
-  -- Step 6: Suffices to show the result with an interval integral, then convert.
-  -- FTC gives: g t - g t₀ = ∫ τ in t₀..t, g'(τ)
-  -- We convert: ∫ τ in t₀..t, g' = -I * ∫ τ in t₀..t, tubeSlice F (τ•η) (η·∇φ)
-  -- Then: interval integral = set integral on Icc (for Lebesgue measure).
-  --
-  -- The Icc set integral equals the interval integral when t₀ ≤ t;
-  -- when t < t₀ both sides are zero (degenerate). This conversion is a
-  -- standard measure-theory fact that we isolate as a targeted sorry.
+  -- Step 6: Pull out -I from the interval integral
   have key : g t - g t₀ = -I * ∫ τ in t₀..t,
       tubeSlice F (τ • η) (directionalDerivSchwartz η φ) := by
     rw [← hFTC]
     show ∫ τ in t₀..t, g' τ =
       -I * ∫ τ in t₀..t, tubeSlice F (τ • η) (directionalDerivSchwartz η φ)
     simp only [g', intervalIntegral.integral_const_mul]
-  -- Convert from interval integral to set integral on Icc
+  -- Step 7: Convert interval integral to set integral on Icc (using t₀ ≤ t)
   rw [key]
   congr 1
   -- Goal: ∫ τ in t₀..t, f τ = ∫ τ in Set.Icc t₀ t, f τ
-  -- For Lebesgue measure: ∫ in t₀..t = ∫ in Ioc t₀ t (when t₀ ≤ t)
-  --                       ∫ in Icc t₀ t = ∫ in Ioc t₀ t (always, for Lebesgue)
-  -- When t < t₀: the Icc is empty so the RHS = 0, while LHS = -(∫ in t..t₀).
-  -- The theorem statement implicitly requires t₀ ≤ t for correctness.
-  -- We handle both cases:
-  by_cases h : t₀ ≤ t
-  · -- Case t₀ ≤ t: standard conversion
-    rw [intervalIntegral.integral_of_le h, ← integral_Icc_eq_integral_Ioc]
-  · -- Case t < t₀: Icc t₀ t = ∅, so both sides are zero
-    push_neg at h
-    simp [Set.Icc_eq_empty (not_le.mpr h)]
-    -- The interval integral ∫ in t₀..t when t < t₀ is -(∫ in Ioc t t₀), which
-    -- is generally nonzero. The theorem statement is only meaningful for t₀ ≤ t.
-    -- For now: this case is a sorry (theorem statement issue, not proof issue).
-    sorry
+  -- For Lebesgue measure with t₀ ≤ t:
+  --   ∫ τ in t₀..t, f τ = ∫ τ in Ioc t₀ t, f τ    (by integral_of_le)
+  --   ∫ τ in Icc t₀ t, f τ = ∫ τ in Ioc t₀ t, f τ  (by integral_Icc_eq_integral_Ioc)
+  rw [intervalIntegral.integral_of_le ht₀_le_t, ← integral_Icc_eq_integral_Ioc]
+
 
 /-! ### The boundary value construction -/
 
