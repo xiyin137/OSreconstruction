@@ -3,7 +3,7 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.SCV.PaleyWienerSchwartz
+import OSReconstruction.SCV.FourierSupportCone
 import OSReconstruction.SCV.FourierLaplaceCore
 import Mathlib.Analysis.Calculus.ContDiff.RestrictScalars
 
