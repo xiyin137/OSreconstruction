@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.VladimirovTillmann
+import OSReconstruction.GeneralResults.SmoothCutoff
 import Mathlib.Analysis.Convex.Cone.InnerDual
 import Mathlib.Analysis.InnerProductSpace.PiL2
 
@@ -207,7 +208,10 @@ structure FixedConeCutoff (S : Set (Fin m → ℝ)) where
 /-- Existence of a cone-adapted cutoff for any closed set.
     Proved by convolution of the indicator of the 1/2-neighborhood with a smooth bump.
     Uses `MeasureTheory.convolution` from Mathlib. -/
-axiom fixedConeCutoff_exists (S : Set (Fin m → ℝ)) (hS : IsClosed S) :
-    Nonempty (FixedConeCutoff S)
+theorem fixedConeCutoff_exists (S : Set (Fin m → ℝ)) (hS : IsClosed S) :
+    Nonempty (FixedConeCutoff S) := by
+  obtain ⟨χ, hsmooth, hone, hsupp, hderiv, hnn, hle⟩ :=
+    exists_smooth_cutoff_of_closed S hS
+  exact ⟨⟨χ, hsmooth, hone, hsupp, hderiv, hnn, hle⟩⟩
 
 end

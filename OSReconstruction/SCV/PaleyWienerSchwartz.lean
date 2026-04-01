@@ -181,14 +181,15 @@ theorem update_mem_tubeDomain_of_small {m : ℕ}
 /-! ### Seminorm bounds for the multi-D family -/
 
 /-- The dynamically scaled family has Vladimirov-type seminorm growth. -/
-axiom multiDimPsiZDynamic_seminorm_bound {m : ℕ}
+theorem multiDimPsiZDynamic_seminorm_bound {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (k n : ℕ) :
     ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
       ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
         SchwartzMap.seminorm ℝ k n (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤
           B * (1 + ‖z‖) ^ N *
-            (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M
+            (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
+  sorry
 
 /-- Finset-sup version of `multiDimPsiZDynamic_seminorm_bound`. -/
 theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
@@ -264,7 +265,7 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
     `z ↦ seminorm k n (ψ_{z'} - ψ_z) → 0` as `z' → z` in the tube.
 
     This is used to prove continuity of F(z) = T(ψ_z) on the tube. -/
-axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
+theorem multiDimPsiZ_seminorm_continuous {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (k n : ℕ)
     (z₀ : Fin m → ℂ) (hz₀ : z₀ ∈ SCV.TubeDomain C) :
@@ -272,7 +273,8 @@ axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
       ‖z - z₀‖ < δ →
         SchwartzMap.seminorm ℝ k n
           (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
-           multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) < ε
+           multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) < ε := by
+  sorry
 
 /-- The difference quotient of ψ_z converges in Schwartz seminorms.
     For fixed z in the tube and direction e_j:
@@ -281,7 +283,7 @@ axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
 
     Proved via pointwise scalarization + integral MVT (not Bochner integrals
     of Fréchet curves). -/
-axiom multiDimPsiZ_differenceQuotient_converges {m : ℕ}
+theorem multiDimPsiZ_differenceQuotient_converges {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C)
@@ -294,7 +296,8 @@ axiom multiDimPsiZ_differenceQuotient_converges {m : ℕ}
                 (Function.update z j (z j + h))
               - multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz))
               - ψ'_j))
-          (nhdsWithin 0 {0}ᶜ) (nhds 0)
+          (nhdsWithin 0 {0}ᶜ) (nhds 0) := by
+  sorry
 
 /-- For Fourier-supported functionals, the value of `T(ψ_{z,R})` is independent
     of the cutoff radius. This is the key bridge between fixed-radius
@@ -638,7 +641,7 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
     **Note**: The previous version claimed the limit is `T(f)`, which is
     mathematically incorrect (type error: T acts on momentum, f is spatial).
     Fixed per Gemini review. -/
-axiom fourierLaplaceExtMultiDim_boundaryValue
+theorem fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
@@ -657,6 +660,7 @@ axiom fourierLaplaceExtMultiDim_boundaryValue
           -- This type mismatch needs resolution via EuclideanSpace or PiLp.
           -- For now we use T(f) as a placeholder — the axiom is FALSE as stated
           -- but documents the correct interface.
-          (nhds (T f))
+          (nhds (T f)) := by
+  sorry
 
 end

@@ -160,7 +160,7 @@ theorem sliceFunctional_tendsto_bv
     value, and then reading off the Fourier support from that representation.
     We therefore keep this as an interface axiom until that infrastructure is
     imported here. -/
-axiom fourierSupportInDualCone_of_tube_boundaryValue
+theorem fourierSupportInDualCone_of_tube_boundaryValue
     {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
@@ -173,6 +173,9 @@ axiom fourierSupportInDualCone_of_tube_boundaryValue
           (fun ε : ℝ => ∫ x : Fin m → ℝ,
             F (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
-    HasFourierSupportInDualCone C W
+    HasFourierSupportInDualCone C W := by
+  -- Proof needs the full PW-Schwartz bridge:
+  -- BV W → write F(z) = W(ψ_z) → W has Fourier support in C* by construction
+  sorry
 
 end

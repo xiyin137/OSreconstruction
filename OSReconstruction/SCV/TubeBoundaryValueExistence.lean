@@ -321,7 +321,7 @@ theorem tubeSlice_temperedDistribution
 
     Proof needs: `hasDerivAt_integral_of_dominated_loc_of_deriv_le` to push
     d/dτ inside the integral, CR equations, integration by parts. -/
-axiom cr_integration_identity
+theorem cr_integration_identity
     {C : Set (Fin m → ℝ)}
     {F : (Fin m → ℂ) → ℂ}
     (hF_hol : DifferentiableOn ℂ F (SCV.TubeDomain C))
@@ -332,7 +332,13 @@ axiom cr_integration_identity
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     tubeSlice F (t • η) φ - tubeSlice F (t₀ • η) φ =
       -I * ∫ τ in Set.Icc t₀ t,
-        tubeSlice F (τ • η) (directionalDerivSchwartz η φ)
+        tubeSlice F (τ • η) (directionalDerivSchwartz η φ) := by
+  -- Proof route (see docs/vladimirov_axiom_blueprints.md):
+  -- 1. Define g(τ) = tubeSlice F (τ•η) φ = ∫ F(x+iτη)φ(x) dx
+  -- 2. By hasDerivAt_schwartz_integral + CR equations + integration by parts:
+  --    g'(τ) = -i · tubeSlice F (τ•η) (η·∇φ)
+  -- 3. By intervalIntegral FTC: g(t) - g(t₀) = ∫_{t₀}^{t} g'(τ) dτ
+  sorry
 
 /-! ### The boundary value construction -/
 
@@ -342,7 +348,7 @@ axiom cr_integration_identity
     The honest proof needs the Phase 4 ray-integration construction and the
     higher-order Cauchy-Riemann correction terms, which are not yet formalized
     in this file. We therefore keep the result as an interface axiom. -/
-axiom tube_boundaryValue_of_vladimirov_growth
+theorem tube_boundaryValue_of_vladimirov_growth
     {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_ne : C.Nonempty)
@@ -358,7 +364,16 @@ axiom tube_boundaryValue_of_vladimirov_growth
         Tendsto
           (fun ε : ℝ => tubeSlice F (ε • η) φ)
           (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (W φ))
+          (nhds (W φ)) := by
+  -- Proof route (Cauchy repeated integration, see docs/vladimirov_axiom_blueprints.md):
+  -- 1. Fix η ∈ C, t₀ > 0, k = M + 2
+  -- 2. Define H(x) = i^k/(k-1)! ∫₀^{t₀} (t₀-τ)^{k-1} F(x+iτη) dτ
+  --    (Cauchy formula: τ^{-M} singularity × τ^{k-1} = τ¹ → integrable)
+  -- 3. H is continuous with polynomial growth → polyGrowth_temperedDistribution → T_H ∈ S'
+  -- 4. W = iteratedDistribDirectionalDeriv T_H η k + smooth correction
+  -- 5. BV convergence by cr_integration_identity applied k times + DCT on remainder
+  -- 6. Independence of η by distributional_limit_of_equicontinuous
+  sorry
 
 /-- **Boundary value existence for M=0 polynomial growth (Hörmander Thm 3.1.15).**
 
