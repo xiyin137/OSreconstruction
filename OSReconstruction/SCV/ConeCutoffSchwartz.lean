@@ -212,7 +212,34 @@ theorem dualConeFlat_pairing_pos_of_open
   -- But (y - t•ξ)·ξ = y·ξ - t*‖ξ‖² = 0 - t*‖ξ‖² < 0
   have hw_neg : ∑ i, (y - t • ξ) i * ξ i < 0 := by
     -- (y - tξ)·ξ = y·ξ - t(ξ·ξ) = 0 - t‖ξ‖² < 0
-    sorry
+    have hsum_sq_pos : 0 < ∑ i, ξ i * ξ i := by
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp hξ_ne
+      have hterm_pos : 0 < ξ i * ξ i := by
+        nlinarith [sq_pos_of_ne_zero hi]
+      have hterm_le : ξ i * ξ i ≤ ∑ j, ξ j * ξ j := by
+        simpa using
+          (Finset.single_le_sum (fun j _ => mul_self_nonneg (ξ j)) (by simp : i ∈ Finset.univ))
+      exact lt_of_lt_of_le hterm_pos hterm_le
+    calc
+      ∑ i, (y - t • ξ) i * ξ i
+          = ∑ i, (y i * ξ i - (t • ξ) i * ξ i) := by
+              congr with i
+              simp [Pi.sub_apply, sub_mul]
+      _ = ∑ i, y i * ξ i - ∑ i, (t • ξ) i * ξ i := by
+              rw [Finset.sum_sub_distrib]
+      _ = ∑ i, y i * ξ i - t * ∑ i, ξ i * ξ i := by
+            congr 1
+            calc
+              ∑ i, (t • ξ) i * ξ i = ∑ i, t * (ξ i * ξ i) := by
+                congr with i
+                simp [Pi.smul_apply]
+                ring
+              _ = t * ∑ i, ξ i * ξ i := by
+                rw [Finset.mul_sum]
+      _ = -(t * ∑ i, ξ i * ξ i) := by rw [h_zero, zero_sub]
+      _ < 0 := by
+            have hprod_pos : 0 < t * ∑ i, ξ i * ξ i := mul_pos ht_pos hsum_sq_pos
+            linarith
   -- This contradicts ξ ∈ DualConeFlat C
   exact absurd (hξ (y - t • ξ) hw_mem) (not_le.mpr hw_neg)
 
@@ -228,7 +255,85 @@ theorem dualConeFlat_coercivity
     (hC_star_ne : (DualConeFlat C).Nonempty)
     (hC_star_closed : IsClosed (DualConeFlat C)) :
     ∃ c > 0, ∀ ξ ∈ DualConeFlat C, ∑ i, y i * ξ i ≥ c * ‖ξ‖ := by
-  sorry
+  let K : Set (Fin m → ℝ) := Metric.sphere (0 : Fin m → ℝ) 1 ∩ DualConeFlat C
+  let f : (Fin m → ℝ) → ℝ := fun ξ => ∑ i, y i * ξ i
+  have hDual_cone : ∀ (ξ : Fin m → ℝ), ξ ∈ DualConeFlat C →
+      ∀ (t : ℝ), 0 < t → t • ξ ∈ DualConeFlat C := by
+    intro ξ hξ t ht
+    rw [mem_dualConeFlat] at hξ ⊢
+    intro w hw
+    have hpair := hξ w hw
+    calc
+      ∑ i, w i * (t • ξ) i = t * ∑ i, w i * ξ i := by
+        rw [Finset.mul_sum]
+        congr 1
+        ext i
+        simp [Pi.smul_apply]
+        ring
+      _ ≥ 0 := mul_nonneg ht.le hpair
+  by_cases hK : K.Nonempty
+  · have hK_compact : IsCompact K := by
+      dsimp [K]
+      exact (isCompact_sphere (0 : Fin m → ℝ) 1).inter_right hC_star_closed
+    have hf_cont : Continuous f := by
+      dsimp [f]
+      continuity
+    obtain ⟨ξ₀, hξ₀K, hmin⟩ := hK_compact.exists_isMinOn hK hf_cont.continuousOn
+    have hξ₀_ne : ξ₀ ≠ 0 := by
+      intro hzero
+      have hnorm : ‖ξ₀‖ = 1 := by
+        simpa [K, Metric.mem_sphere, dist_eq_norm] using hξ₀K.1
+      simpa [hzero] using hnorm
+    refine ⟨f ξ₀, dualConeFlat_pairing_pos_of_open hC_open hy hξ₀K.2 hξ₀_ne, ?_⟩
+    intro ξ hξ
+    by_cases hξ_zero : ξ = 0
+    · simp [hξ_zero]
+    · have hξ_norm : 0 < ‖ξ‖ := norm_pos_iff.mpr hξ_zero
+      let u : Fin m → ℝ := ‖ξ‖⁻¹ • ξ
+      have hu_dual : u ∈ DualConeFlat C := by
+        dsimp [u]
+        exact hDual_cone ξ hξ ‖ξ‖⁻¹ (inv_pos.mpr hξ_norm)
+      have hu_sphere : u ∈ Metric.sphere (0 : Fin m → ℝ) 1 := by
+        rw [Metric.mem_sphere, dist_eq_norm]
+        dsimp [u]
+        simpa using (show ‖‖ξ‖⁻¹ • ξ‖ = 1 by
+          rw [norm_smul, Real.norm_of_nonneg (inv_nonneg.mpr hξ_norm.le), inv_mul_cancel₀]
+          exact norm_ne_zero_iff.mpr hξ_zero)
+      have huK : u ∈ K := ⟨hu_sphere, hu_dual⟩
+      have hpair_u : f u = ‖ξ‖⁻¹ * f ξ := by
+        dsimp [f, u]
+        calc
+          ∑ i, y i * ((‖ξ‖⁻¹ • ξ) i) = ∑ i, ‖ξ‖⁻¹ * (y i * ξ i) := by
+            congr with i
+            simp [Pi.smul_apply]
+            ring
+          _ = ‖ξ‖⁻¹ * ∑ i, y i * ξ i := by
+            rw [Finset.mul_sum]
+      have hpair_eq : f ξ = ‖ξ‖ * f u := by
+        rw [hpair_u]
+        field_simp [norm_ne_zero_iff.mpr hξ_zero]
+      have hmul : ‖ξ‖ * f ξ₀ ≤ ‖ξ‖ * f u :=
+        mul_le_mul_of_nonneg_left (hmin huK) hξ_norm.le
+      calc
+        f ξ = ‖ξ‖ * f u := hpair_eq
+        _ ≥ ‖ξ‖ * f ξ₀ := hmul
+        _ = f ξ₀ * ‖ξ‖ := by ring
+  · refine ⟨1, zero_lt_one, ?_⟩
+    intro ξ hξ
+    by_cases hξ_zero : ξ = 0
+    · simp [hξ_zero]
+    · have hξ_norm : 0 < ‖ξ‖ := norm_pos_iff.mpr hξ_zero
+      let u : Fin m → ℝ := ‖ξ‖⁻¹ • ξ
+      have hu_dual : u ∈ DualConeFlat C := by
+        dsimp [u]
+        exact hDual_cone ξ hξ ‖ξ‖⁻¹ (inv_pos.mpr hξ_norm)
+      have hu_sphere : u ∈ Metric.sphere (0 : Fin m → ℝ) 1 := by
+        rw [Metric.mem_sphere, dist_eq_norm]
+        dsimp [u]
+        simpa using (show ‖‖ξ‖⁻¹ • ξ‖ = 1 by
+          rw [norm_smul, Real.norm_of_nonneg (inv_nonneg.mpr hξ_norm.le), inv_mul_cancel₀]
+          exact norm_ne_zero_iff.mpr hξ_zero)
+      exact False.elim (hK ⟨u, ⟨hu_sphere, hu_dual⟩⟩)
 
 /-! ### Schwartz decay (the hard part) -/
 
