@@ -43,7 +43,7 @@ quotient, the only vector with zero inner product is the zero class.
 noncomputable section
 
 open Reconstruction
-open scoped InnerProductSpace
+open scoped InnerProductSpace LineDeriv
 
 variable {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d)
 
@@ -829,6 +829,173 @@ subgroups. The proof proceeds in layers:
 4. Extension to the GNS completion (density + isometry argument)
 -/
 
+/-- Scalar real-translation orbits are continuous in the Schwartz topology. -/
+private theorem continuous_translateSchwartz_smul {m : ℕ}
+    (η : Fin m → ℝ) (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    Continuous (fun t : ℝ => SCV.translateSchwartz (t • η) ψ) := by
+  rw [continuous_iff_continuousAt]
+  intro t₀
+  let ψ₀ : SchwartzMap (Fin m → ℝ) ℂ := SCV.translateSchwartz (t₀ • η) ψ
+  have hzero : ContinuousAt (fun t : ℝ => SCV.translateSchwartz (t • η) ψ₀) 0 := by
+    simp only [ContinuousAt]
+    rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ _]
+    intro p ε hε
+    let D : SchwartzMap (Fin m → ℝ) ℂ := ∂_{η} ψ₀
+    let pSem : Seminorm ℝ (SchwartzMap (Fin m → ℝ) ℂ) :=
+      schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ p
+    have hquot := OSReconstruction.tendsto_diffQuotient_translateSchwartz_zero ψ₀ η
+    rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ _] at hquot
+    specialize hquot p 1 zero_lt_one
+    rw [Filter.Eventually, mem_nhdsWithin_iff_exists_mem_nhds_inter] at hquot
+    obtain ⟨s, hs_nhds, hs_prop⟩ := hquot
+    let M : ℝ := pSem D
+    have hM_nonneg : 0 ≤ M := apply_nonneg pSem D
+    have hM_pos : 0 < M + 1 := by linarith
+    let δ : ℝ := ε / (M + 1)
+    have hδ_pos : 0 < δ := by
+      dsimp [δ]
+      positivity
+    refine Filter.mem_of_superset (Filter.inter_mem hs_nhds (Metric.ball_mem_nhds 0 hδ_pos)) ?_
+    intro t ht
+    rcases ht with ⟨hts, htball⟩
+    simp only [Set.mem_setOf_eq]
+    have htrans0 : SCV.translateSchwartz (0 : Fin m → ℝ) ψ₀ = ψ₀ := by
+      ext x; simp [SCV.translateSchwartz_apply]
+    rw [show (0 : ℝ) • η = (0 : Fin m → ℝ) from zero_smul ℝ η, htrans0]
+    have ht_abs : |t| < δ := by
+      simpa [Real.dist_eq, δ] using htball
+    by_cases ht0 : t = 0
+    · subst ht0
+      simpa [zero_smul, htrans0] using hε
+    · have htnz : t ∈ ({0}ᶜ : Set ℝ) := by
+        simpa [Set.mem_compl_iff, Set.mem_singleton_iff] using ht0
+      have hq :
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) < 1 :=
+        hs_prop ⟨hts, htnz⟩
+      have hsplit :
+          t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) =
+            (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + D := by
+        abel
+      have hq' :
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) < 1 + M := by
+        calc
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀))
+              = pSem ((t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + D) := by
+                  congr 1
+          _ ≤ pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + pSem D :=
+                map_add_le_add _ _ _
+          _ < 1 + M := by
+                dsimp [M] at *
+                linarith
+      have hdecomp :
+          SCV.translateSchwartz (t • η) ψ₀ - ψ₀ =
+            t • (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) := by
+        rw [smul_smul, mul_inv_cancel₀ ht0, one_smul]
+      calc
+        pSem (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)
+            = pSem (t • (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀))) :=
+              congr_arg pSem hdecomp
+        _ = |t| * pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) :=
+              map_smul_eq_mul _ _ _
+        _ < δ * (1 + M) := by
+              gcongr
+        _ = ε := by
+              dsimp [δ]; field_simp [hM_pos.ne']; ring
+  have hshift : ContinuousAt (fun t : ℝ => t - t₀) t₀ := by
+    simpa using (continuous_id.sub continuous_const).continuousAt
+  have hcomp :
+      ContinuousAt (fun t : ℝ => SCV.translateSchwartz ((t - t₀) • η) ψ₀) t₀ := by
+    simpa [Function.comp] using
+      (ContinuousAt.comp_of_eq hzero hshift (by simp))
+  have hEqfun :
+      (fun t : ℝ => SCV.translateSchwartz (t • η) ψ) =
+        (fun t : ℝ => SCV.translateSchwartz ((t - t₀) • η) ψ₀) := by
+    funext t
+    ext x
+    simp only [ψ₀, SCV.translateSchwartz_apply, sub_eq_add_neg]
+    congr 1; ext i; simp [Pi.smul_apply, Pi.add_apply]; ring
+  rw [hEqfun]
+  exact hcomp
+
+-- Local flattening infrastructure (mirrors ForwardTubeDistributions, kept private to avoid import)
+private def uncurryLinearEquivLocal (n' dd : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+    (Fin n' → Fin dd → 𝕜) ≃ₗ[𝕜] (Fin n' × Fin dd → 𝕜) :=
+  { (Equiv.curry (Fin n') (Fin dd) 𝕜).symm with
+    map_add' := fun _ _ => rfl
+    map_smul' := fun _ _ => rfl }
+
+private def flattenLinearEquivLocal (n' dd : ℕ) (𝕜 : Type*) [CommSemiring 𝕜] :
+    (Fin n' → Fin dd → 𝕜) ≃ₗ[𝕜] (Fin (n' * dd) → 𝕜) :=
+  (uncurryLinearEquivLocal n' dd 𝕜).trans (LinearEquiv.funCongrLeft 𝕜 𝕜 finProdFinEquiv.symm)
+
+private def flattenCLEquivRealLocal (n' dd : ℕ) :
+    (Fin n' → Fin dd → ℝ) ≃L[ℝ] (Fin (n' * dd) → ℝ) :=
+  (flattenLinearEquivLocal n' dd ℝ).toContinuousLinearEquiv
+
+@[simp] private theorem flattenCLEquivRealLocal_apply (n' dd : ℕ)
+    (f : Fin n' → Fin dd → ℝ) (k : Fin (n' * dd)) :
+    flattenCLEquivRealLocal n' dd f k =
+      f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := rfl
+
+@[simp] private theorem flattenCLEquivRealLocal_symm_apply (n' dd : ℕ)
+    (w : Fin (n' * dd) → ℝ) (i : Fin n') (j : Fin dd) :
+    (flattenCLEquivRealLocal n' dd).symm w i j = w (finProdFinEquiv (i, j)) := rfl
+
+/-- Local flattening of Schwartz n-point functions to ordinary real Schwartz space. -/
+private abbrev flattenSchwartzNPointLocal {n : ℕ} :
+    SchwartzNPoint d n →L[ℂ] SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivRealLocal n (d + 1)).symm
+
+/-- Inverse local flattening of Schwartz n-point functions. -/
+private abbrev unflattenSchwartzNPointLocal {n : ℕ} :
+    SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] SchwartzNPoint d n :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenCLEquivRealLocal n (d + 1))
+
+@[simp] private theorem flattenSchwartzNPointLocal_apply {n : ℕ}
+    (f : SchwartzNPoint d n) (u : Fin (n * (d + 1)) → ℝ) :
+    flattenSchwartzNPointLocal (d := d) f u = f ((flattenCLEquivRealLocal n (d + 1)).symm u) := rfl
+
+@[simp] private theorem unflattenSchwartzNPointLocal_apply {n : ℕ}
+    (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) (x : NPointDomain d n) :
+    unflattenSchwartzNPointLocal (d := d) f x = f (flattenCLEquivRealLocal n (d + 1) x) := rfl
+
+/-- Flattened translation direction corresponding to simultaneous translation of
+all n spacetime arguments in the μ-th coordinate. -/
+private abbrev flatTranslationDirection (μ : Fin (d + 1)) {n : ℕ} :
+    Fin (n * (d + 1)) → ℝ :=
+  fun k => if (finProdFinEquiv.symm k).2 = μ then (-1 : ℝ) else 0
+
+/-- Unflattening after adding the flattened translation direction recovers the
+expected simultaneous shift of all n spacetime arguments. -/
+private theorem unflatten_add_flatTranslationDirection
+    (μ : Fin (d + 1)) {n : ℕ} (u : Fin (n * (d + 1)) → ℝ) (t : ℝ) :
+    (flattenCLEquivRealLocal n (d + 1)).symm (u + t • flatTranslationDirection (d := d) μ) =
+      fun i => ((flattenCLEquivRealLocal n (d + 1)).symm u i) -
+        t • PoincareRepresentation.basisVector d μ := by
+  ext i ν
+  by_cases hν : ν = μ
+  · subst hν
+    simp [flatTranslationDirection, PoincareRepresentation.basisVector, sub_eq_add_neg]
+  · simp [flatTranslationDirection, PoincareRepresentation.basisVector, hν, sub_eq_add_neg]
+
+/-- Translation in the μ-th spacetime direction becomes ordinary real translation
+after flattening the n-point Schwartz function. -/
+private theorem poincareActNPoint_translationInDirection_eq_unflatten_translate
+    (μ : Fin (d + 1)) {n : ℕ} (t : ℝ) (f : SchwartzNPoint d n) :
+    poincareActNPoint (PoincareRepresentation.translationInDirection d μ t) f =
+      unflattenSchwartzNPointLocal (d := d)
+        (SCV.translateSchwartz (t • flatTranslationDirection (d := d) (n := n) μ)
+          (flattenSchwartzNPointLocal (d := d) f)) := by
+  ext x
+  simp only [PoincareRepresentation.translationInDirection, poincareActNPoint_apply,
+    SCV.translateSchwartz_apply, unflatten_add_flatTranslationDirection,
+    unflattenSchwartzNPointLocal_apply, flattenSchwartzNPointLocal_apply, sub_eq_add_neg]
+  congr 1; funext i; ext ν
+  simp [poincareActNPointDomain, PoincareGroup.act_def, PoincareGroup.inv_translation,
+    PoincareGroup.inv_lorentz, PoincareGroup.translation'_translation,
+    PoincareGroup.translation'_lorentz, inv_one, PoincareGroup.one_lorentz_val,
+    Matrix.one_mulVec]
+
 /-- Translation in direction μ is continuous in the Schwartz topology on n-point functions.
     This is a standard result: translation is a strongly continuous action on Schwartz space.
     Proof requires adapting the seminorm estimation from
@@ -837,7 +1004,14 @@ private theorem continuous_translate_npoint_schwartz
     (μ : Fin (d + 1)) {n : ℕ} (f : SchwartzNPoint d n) :
     Continuous (fun t : ℝ =>
       poincareActNPoint (PoincareRepresentation.translationInDirection d μ t) f) := by
-  sorry
+  let ψ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ := flattenSchwartzNPointLocal (d := d) f
+  have hflat :
+      Continuous (fun t : ℝ =>
+        SCV.translateSchwartz (t • flatTranslationDirection (d := d) (n := n) μ) ψ) :=
+    continuous_translateSchwartz_smul
+      (η := flatTranslationDirection (d := d) (n := n) μ) ψ
+  simpa [ψ, poincareActNPoint_translationInDirection_eq_unflatten_translate] using
+    (unflattenSchwartzNPointLocal (d := d) : _ →L[ℂ] SchwartzNPoint d n).continuous.comp hflat
 
 /-- The Wightman inner product ⟨F, T(t·eμ)G⟩ is continuous in t.
     Each summand is a composition of Schwartz translation continuity,
@@ -891,14 +1065,103 @@ private theorem gns_stronglyContinuous_preHilbert
         (x : GNSHilbertSpace Wfn)) := by
   induction x using Quotient.inductionOn with | h F =>
   set pF : PreHilbertSpace Wfn := ⟦F⟧
+  let trans : ℝ → PoincareGroup d := PoincareRepresentation.translationInDirection d μ
+  have hzero : trans 0 = 1 := by
+    ext <;> simp [trans, PoincareRepresentation.translationInDirection, PoincareGroup.translation']
+  have hadd : ∀ s t : ℝ, trans (s + t) = trans s * trans t := by
+    intro s t
+    apply PoincareGroup.ext
+    · ext ν
+      simp [trans, PoincareRepresentation.translationInDirection, PoincareGroup.translation',
+        PoincareGroup.mul_translation, PoincareGroup.one_lorentz_val, Matrix.one_mulVec, add_smul]
+    · simp [trans, PoincareRepresentation.translationInDirection, PoincareGroup.translation',
+        PoincareGroup.mul_lorentz]
+  let hfun : ℝ → ℝ := fun s =>
+    RCLike.re (@inner ℂ _ _
+      (pF : GNSHilbertSpace Wfn)
+      (poincareActGNS Wfn (trans s) (pF : GNSHilbertSpace Wfn)))
+  have hinner_eq :
+      (fun s : ℝ =>
+        @inner ℂ _ _
+          (pF : GNSHilbertSpace Wfn)
+          (poincareActGNS Wfn (trans s) (pF : GNSHilbertSpace Wfn))) =
+      (fun s : ℝ =>
+        WightmanInnerProduct d Wfn.W F (poincareActBorchers (trans s) F)) := by
+    funext s
+    rw [inner_translate_eq_wip Wfn μ pF pF s]
+    rfl
+  have hfun_eq :
+      hfun =
+      (fun s : ℝ =>
+        RCLike.re (WightmanInnerProduct d Wfn.W F (poincareActBorchers (trans s) F))) := by
+    funext s
+    exact congr_arg RCLike.re (congr_fun hinner_eq s)
+  have hfun_cont : Continuous hfun := by
+    rw [hfun_eq]
+    exact Complex.continuous_re.comp (continuous_wip_translate Wfn μ F F)
+  have hfun0 : hfun 0 = ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 := by
+    show RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn)
+      (poincareActGNS Wfn (trans 0) (pF : GNSHilbertSpace Wfn))) = _
+    rw [hzero, show poincareActGNS Wfn 1 = ContinuousLinearMap.id ℂ _ from
+      poincareActGNS_one Wfn, ContinuousLinearMap.id_apply]
+    exact inner_self_eq_norm_sq _
   rw [continuous_iff_continuousAt]
   intro t₀
+  have hshift_cont : ContinuousAt (fun t : ℝ => hfun (t - t₀)) t₀ := by
+    exact hfun_cont.continuousAt.comp (continuous_id.sub continuous_const).continuousAt
   rw [Metric.continuousAt_iff]
   intro ε hε
-  -- Key: ‖U(t)x - U(t₀)x‖² = 2 Re⟨x,x⟩ - 2 Re⟨x, U(t₀-t)x⟩
-  -- which → 0 as t → t₀ since Re⟨F, T(s)F⟩ → Re⟨F, F⟩ as s → 0.
-  -- Use continuous_wip_translate for the continuity.
-  sorry
+  obtain ⟨δ, hδ_pos, hδ⟩ := Metric.continuousAt_iff.mp hshift_cont (ε ^ 2 / 2) (by positivity)
+  refine ⟨δ, hδ_pos, fun t ht => ?_⟩
+  set g_t := trans t
+  set g_t₀ := trans t₀
+  set g_dt := trans (t - t₀)
+  set y : GNSHilbertSpace Wfn := poincareActGNS Wfn g_dt (pF : GNSHilbertSpace Wfn)
+  have hclose : |hfun (t - t₀) - ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2| < ε ^ 2 / 2 := by
+    have hclose' : dist (hfun (t - t₀)) (hfun 0) < ε ^ 2 / 2 := by
+      simpa [Real.dist_eq, sub_eq_add_neg] using hδ ht
+    simpa [hfun0, Real.dist_eq] using hclose'
+  have hgap :
+      ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 -
+        RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn) y) < ε ^ 2 / 2 := by
+    show ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 - hfun (t - t₀) < ε ^ 2 / 2
+    linarith [abs_lt.mp hclose]
+  have hexpand :
+      ‖y - (pF : GNSHilbertSpace Wfn)‖ ^ 2 =
+        ‖y‖ ^ 2 - 2 * RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn) y) +
+          ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 := by
+    rw [@norm_sub_sq ℂ (GNSHilbertSpace Wfn) _ _ _]
+    have hsym :
+        RCLike.re (@inner ℂ _ _ y (pF : GNSHilbertSpace Wfn)) =
+          RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn) y) := by
+      simpa using inner_re_symm (𝕜 := ℂ) y (pF : GNSHilbertSpace Wfn)
+    linarith
+  have hnsq : ‖y - (pF : GNSHilbertSpace Wfn)‖ ^ 2 < ε ^ 2 := by
+    calc
+      ‖y - (pF : GNSHilbertSpace Wfn)‖ ^ 2
+          = ‖y‖ ^ 2 - 2 * RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn) y) +
+              ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 := hexpand
+      _ ≤ 2 * (‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 -
+          RCLike.re (@inner ℂ _ _ (pF : GNSHilbertSpace Wfn) y)) := by
+          have hy_norm : ‖y‖ = ‖(pF : GNSHilbertSpace Wfn)‖ := by
+            show ‖poincareActGNS Wfn g_dt (pF : GNSHilbertSpace Wfn)‖ = _
+            exact poincareActGNS_norm Wfn g_dt _
+          have hy_sq : ‖y‖ ^ 2 = ‖(pF : GNSHilbertSpace Wfn)‖ ^ 2 := by rw [hy_norm]
+          linarith
+      _ < 2 * (ε ^ 2 / 2) := by nlinarith
+      _ = ε ^ 2 := by ring
+  have hdist_eq :
+      dist (poincareActGNS Wfn g_t (pF : GNSHilbertSpace Wfn))
+        (poincareActGNS Wfn g_t₀ (pF : GNSHilbertSpace Wfn)) =
+      ‖y - (pF : GNSHilbertSpace Wfn)‖ := by
+    have hg_mul : g_t = g_t₀ * g_dt := by
+      dsimp [g_t, g_t₀, g_dt]
+      simpa [sub_eq_add_neg] using (hadd t₀ (t - t₀))
+    rw [dist_eq_norm, hg_mul, poincareActGNS_mul Wfn g_t₀ g_dt, ContinuousLinearMap.comp_apply]
+    rw [← (poincareActGNS Wfn g_t₀).map_sub, poincareActGNS_norm]
+  have hroot : ‖y - (pF : GNSHilbertSpace Wfn)‖ < ε :=
+    lt_of_pow_lt_pow_left₀ 2 hε.le (by simpa using hnsq)
+  exact lt_of_eq_of_lt hdist_eq hroot
 
 /-- Extension to GNS completion: strong continuity for all GNS vectors.
     Standard density + isometry argument following the pattern of
