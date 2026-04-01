@@ -116,7 +116,36 @@ theorem multiDimPsiZ_finset_sup_bound {m : ℕ}
           (multiDimPsiZ C hC_open hC_conv hC_cone z hz) ≤
           B * (1 + ‖fun i => (z i).re‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-  sorry
+  induction s using Finset.induction with
+  | empty =>
+    exact ⟨1, 0, 0, one_pos, fun z hz => by simp [Finset.sup_empty]⟩
+  | @insert a s ha ih =>
+    obtain ⟨B₁, N₁, M₁, hB₁, h₁⟩ := ih
+    obtain ⟨B₂, N₂, M₂, hB₂, h₂⟩ :=
+      multiDimPsiZ_seminorm_bound C hC_open hC_conv hC_cone a.1 a.2
+    refine ⟨max B₁ B₂, max N₁ N₂, max M₁ M₂, lt_max_of_lt_left hB₁, fun z hz => ?_⟩
+    rw [Finset.sup_insert]
+    apply sup_le
+    · -- The new element a: seminorm a.1 a.2 ≤ B₂ * growth ≤ max B * growth'
+      calc (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ a)
+              (multiDimPsiZ C hC_open hC_conv hC_cone z hz)
+          = SchwartzMap.seminorm ℂ a.1 a.2
+              (multiDimPsiZ C hC_open hC_conv hC_cone z hz) := by
+            simp [schwartzSeminormFamily]
+        _ ≤ B₂ * (1 + ‖fun i => (z i).re‖) ^ N₂ *
+              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ := by
+            sorry -- need seminorm ℂ = seminorm ℝ, then apply h₂
+        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
+              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
+            sorry -- B₂ ≤ max B, pow monotone in exponent for base ≥ 1
+    · -- The old finset s: sup ≤ B₁ * growth ≤ max B * growth'
+      calc (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
+              (multiDimPsiZ C hC_open hC_conv hC_cone z hz)
+          ≤ B₁ * (1 + ‖fun i => (z i).re‖) ^ N₁ *
+              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ := h₁ z hz
+        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
+              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
+            sorry -- B₁ ≤ max B, pow monotone in exponent for base ≥ 1
 
 /-- z ↦ ψ_z is continuous into Schwartz space: for each seminorm (k,n),
     `z ↦ seminorm k n (ψ_{z'} - ψ_z) → 0` as `z' → z` in the tube.
