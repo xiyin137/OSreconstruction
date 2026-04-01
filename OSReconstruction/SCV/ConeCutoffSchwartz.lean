@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.PaleyWienerSchwartz
+import OSReconstruction.SCV.FourierLaplaceCore
 
 /-!
 # Concrete Construction of the Cone-Adapted Schwartz Family
@@ -335,6 +336,22 @@ theorem dualConeFlat_coercivity
           exact norm_ne_zero_iff.mpr hξ_zero)
       exact False.elim (hK ⟨u, ⟨hu_sphere, hu_dual⟩⟩)
 
+theorem zero_mem_dualConeFlat (C : Set (Fin m → ℝ)) :
+    (0 : Fin m → ℝ) ∈ DualConeFlat C := by
+  rw [mem_dualConeFlat]
+  intro y hy
+  simp
+
+theorem dualConeFlat_closed (C : Set (Fin m → ℝ)) :
+    IsClosed (DualConeFlat C) := by
+  have hrepr : DualConeFlat C = ⋂ y ∈ C, {ξ : Fin m → ℝ | (0 : ℝ) ≤ ∑ i, y i * ξ i} := by
+    ext ξ
+    simp [DualConeFlat]
+  rw [hrepr]
+  refine isClosed_biInter ?_
+  intro y hy
+  exact isClosed_le continuous_const (by continuity)
+
 /-! ### Schwartz decay (the hard part) -/
 
 /-- The raw function has Schwartz decay when the cone is salient.
@@ -344,6 +361,7 @@ theorem dualConeFlat_coercivity
     gives overall rapid decay. -/
 theorem psiZRaw_schwartz_decay
     {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_cone : IsCone C)
     (hC_salient : IsSalientCone C)
     (χ : FixedConeCutoff (DualConeFlat C))
     {R : ℝ} (hR : 0 < R)
@@ -351,14 +369,149 @@ theorem psiZRaw_schwartz_decay
     (k : ℕ) :
     ∃ (D : ℝ), ∀ (ξ : Fin m → ℝ),
       ‖ξ‖ ^ k * ‖psiZRaw χ R z ξ‖ ≤ D := by
-  sorry
+  let yIm : Fin m → ℝ := fun i => (z i).im
+  have hyIm : yIm ∈ C := hz
+  have hC_star_ne : (DualConeFlat C).Nonempty := ⟨0, zero_mem_dualConeFlat C⟩
+  have hC_star_closed : IsClosed (DualConeFlat C) := dualConeFlat_closed C
+  obtain ⟨c, hc_pos, hc⟩ :=
+    dualConeFlat_coercivity hC_open hC_cone hyIm hC_star_ne hC_star_closed
+  let B : ℝ := ((Fintype.card (Fin m) : ℝ) ^ 2) * ‖yIm‖
+  let A : ℝ := c + B
+  obtain ⟨M, hM_pos, hM⟩ := SCV.pow_mul_exp_neg_le_const hc_pos k
+  refine ⟨Real.exp (A * R) * M, fun ξ => ?_⟩
+  by_cases hfar : Metric.infDist ξ (DualConeFlat C) > R
+  · have hzero : psiZRaw χ R z ξ = 0 := psiZRaw_support χ hR z ξ hfar
+    rw [hzero]
+    have hDpos : 0 < Real.exp (A * R) * M := mul_pos (Real.exp_pos _) hM_pos
+    simpa using (le_of_lt hDpos)
+  · have hdist : Metric.infDist ξ (DualConeFlat C) ≤ R := le_of_not_gt hfar
+    obtain ⟨η, hηcl, hηdist⟩ :=
+      Metric.exists_mem_closure_infDist_eq_dist hC_star_ne ξ
+    have hη : η ∈ DualConeFlat C := by
+      simpa [hC_star_closed.closure_eq] using hηcl
+    let d : Fin m → ℝ := ξ - η
+    have hd_norm : ‖d‖ ≤ R := by
+      dsimp [d]
+      simpa [dist_eq_norm] using (show dist ξ η ≤ R by rwa [← hηdist])
+    have hpair_err_norm :
+        ‖∑ i, yIm i * d i‖ ≤ B * ‖d‖ := by
+      have hy_sum :
+          ∑ i, ‖yIm i‖ ≤ (Fintype.card (Fin m) : ℝ) * ‖yIm‖ := by
+        simpa [nsmul_eq_mul] using (Pi.sum_norm_apply_le_norm yIm)
+      have hd_sum :
+          ∑ i, ‖d i‖ ≤ (Fintype.card (Fin m) : ℝ) * ‖d‖ := by
+        simpa [nsmul_eq_mul] using (Pi.sum_norm_apply_le_norm d)
+      calc
+        ‖∑ i, yIm i * d i‖ ≤ ∑ i, ‖yIm i * d i‖ := norm_sum_le _ _
+        _ = ∑ i, ‖yIm i‖ * ‖d i‖ := by simp [norm_mul]
+        _ ≤ ∑ i, ∑ j, ‖yIm i‖ * ‖d j‖ := by
+              refine Finset.sum_le_sum ?_
+              intro i hi
+              exact
+                (Finset.single_le_sum
+                  (s := Finset.univ)
+                  (f := fun j : Fin m => ‖yIm i‖ * ‖d j‖)
+                  (fun j hj => mul_nonneg (norm_nonneg _) (norm_nonneg _))
+                  (Finset.mem_univ i))
+        _ = (∑ i, ‖yIm i‖) * ∑ j, ‖d j‖ := by
+              rw [Finset.sum_mul_sum]
+        _ ≤ ((Fintype.card (Fin m) : ℝ) * ‖yIm‖) * ((Fintype.card (Fin m) : ℝ) * ‖d‖) := by
+              gcongr
+        _ = B * ‖d‖ := by
+              dsimp [B]
+              ring
+    have hpair_err_lower :
+        -(B * ‖d‖) ≤ ∑ i, yIm i * d i := by
+      have habs : |∑ i, yIm i * d i| ≤ B * ‖d‖ := by
+        simpa [Real.norm_eq_abs] using hpair_err_norm
+      nlinarith [abs_le.mp habs]
+    have hdecomp : ξ = η + d := by
+      ext i
+      simp [d]
+    have hnorm_xi_le : ‖ξ‖ ≤ ‖η‖ + ‖d‖ := by
+      calc
+        ‖ξ‖ = ‖η + d‖ := by rw [hdecomp]
+        _ ≤ ‖η‖ + ‖d‖ := norm_add_le _ _
+    have hpair_decomp :
+        ∑ i, yIm i * ξ i = ∑ i, yIm i * η i + ∑ i, yIm i * d i := by
+      calc
+        ∑ i, yIm i * ξ i = ∑ i, yIm i * (η i + d i) := by simp [hdecomp]
+        _ = ∑ i, (yIm i * η i + yIm i * d i) := by
+              congr with i
+              ring
+        _ = ∑ i, yIm i * η i + ∑ i, yIm i * d i := by
+              rw [Finset.sum_add_distrib]
+    have hpair_lower :
+        c * ‖ξ‖ - A * R ≤ ∑ i, yIm i * ξ i := by
+      have hηlower : c * ‖η‖ ≤ ∑ i, yIm i * η i := hc η hη
+      have hη_from_ξ : c * ‖ξ‖ - c * ‖d‖ ≤ c * ‖η‖ := by
+        nlinarith [hnorm_xi_le, hc_pos]
+      have hmain :
+          c * ‖ξ‖ - c * ‖d‖ - B * ‖d‖
+            ≤ ∑ i, yIm i * η i + ∑ i, yIm i * d i := by
+        nlinarith [hηlower, hpair_err_lower, hη_from_ξ]
+      have hRstep :
+          c * ‖ξ‖ - A * R
+            ≤ c * ‖ξ‖ - c * ‖d‖ - B * ‖d‖ := by
+        have hAnonneg : 0 ≤ A := by
+          dsimp [A, B]
+          positivity
+        have hmul : A * ‖d‖ ≤ A * R := mul_le_mul_of_nonneg_left hd_norm hAnonneg
+        dsimp [A] at hmul ⊢
+        nlinarith
+      rw [hpair_decomp]
+      exact le_trans hRstep hmain
+    have hExpRe :
+        Complex.re (Complex.I * ∑ i, z i * (ξ i : ℂ)) = - ∑ i, yIm i * ξ i := by
+      simp [yIm, Complex.mul_re, Complex.mul_im, mul_comm, mul_left_comm, mul_assoc]
+    have hExpBound :
+        ‖Complex.exp (Complex.I * ∑ i, z i * (ξ i : ℂ))‖ ≤
+          Real.exp (A * R) * Real.exp (-(c * ‖ξ‖)) := by
+      rw [Complex.norm_exp, hExpRe]
+      have hre : -(∑ i, yIm i * ξ i) ≤ A * R - c * ‖ξ‖ := by
+        linarith
+      calc
+        Real.exp (-∑ i, yIm i * ξ i) ≤ Real.exp (A * R - c * ‖ξ‖) := by
+          exact Real.exp_le_exp.mpr hre
+        _ = Real.exp (A * R) * Real.exp (-(c * ‖ξ‖)) := by
+          rw [sub_eq_add_neg, Real.exp_add]
+    have hχnorm :
+        ‖((χ.val (fun i => R⁻¹ * ξ i) : ℝ) : ℂ)‖ ≤ 1 := by
+      rw [Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (χ.val_nonneg _)]
+      exact χ.val_le_one _
+    calc
+      ‖ξ‖ ^ k * ‖psiZRaw χ R z ξ‖
+          = ‖ξ‖ ^ k * (‖((χ.val (fun i => R⁻¹ * ξ i) : ℝ) : ℂ)‖ *
+              ‖Complex.exp (Complex.I * ∑ i, z i * (ξ i : ℂ))‖) := by
+                simp [psiZRaw, norm_mul]
+      _ ≤ ‖ξ‖ ^ k * (1 * (Real.exp (A * R) * Real.exp (-(c * ‖ξ‖)))) := by
+            gcongr
+      _ = Real.exp (A * R) * (‖ξ‖ ^ k * Real.exp (-(c * ‖ξ‖))) := by ring
+      _ ≤ Real.exp (A * R) * M := by
+            gcongr
+            exact hM ‖ξ‖ (norm_nonneg _)
 
 /-! ### Packaging as SchwartzMap -/
+
+/-- Higher-derivative decay for the concrete cone-adapted exponential-cutoff function.
+    This is the multivariate Leibniz/scaling estimate used to package `psiZRaw`
+    as a `SchwartzMap`. -/
+axiom psiZRaw_iteratedFDeriv_decay
+    {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_cone : IsCone C)
+    (hC_salient : IsSalientCone C)
+    (χ : FixedConeCutoff (DualConeFlat C))
+    {R : ℝ} (hR : 0 < R)
+    (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C)
+    (k n : ℕ) :
+    ∃ (D : ℝ), ∀ (ξ : Fin m → ℝ),
+      ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (psiZRaw χ R z) ξ‖ ≤ D
 
 /-- The cone-adapted Schwartz function, packaged as a `SchwartzMap`.
     Requires the cone to be salient for Schwartz decay. -/
 def psiZRSchwartz
     {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_cone : IsCone C)
     (hC_salient : IsSalientCone C)
     (χ : FixedConeCutoff (DualConeFlat C))
     (R : ℝ) (hR : 0 < R)
@@ -369,12 +522,6 @@ def psiZRSchwartz
     exact (psiZRaw_contDiff χ R z).of_le (by simp)
   decay' := by
     intro k n
-    -- Need: ∃ C, ∀ ξ, ‖ξ‖^k * ‖iteratedFDeriv ℝ n (psiZRaw χ R z) ξ‖ ≤ C
-    -- The iterated derivative of χ(ξ/R) * exp(iz·ξ) involves:
-    -- - Derivatives of χ(ξ/R): bounded by R^{-n} * ‖D^n χ‖_∞ (from deriv_bound)
-    -- - Derivatives of exp(iz·ξ): multiply by (iz)^α, still exponentially decaying
-    -- - Product rule: sum of terms, each bounded
-    -- Combined with psiZRaw_schwartz_decay for the ‖ξ‖^k factor
-    sorry
+    exact psiZRaw_iteratedFDeriv_decay hC_open hC_cone hC_salient χ hR z hz k n
 
 end
