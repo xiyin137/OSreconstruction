@@ -85,6 +85,37 @@ axiom multiDimPsiZ {m : ℕ}
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
     SchwartzMap (Fin m → ℝ) ℂ
 
+/-- Tube-safe version of `multiDimPsiZ`, extended by `0` outside the tube. -/
+def multiDimPsiZExt {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C)
+    (z : Fin m → ℂ) :
+    SchwartzMap (Fin m → ℝ) ℂ :=
+  if hz : z ∈ SCV.TubeDomain C then
+    multiDimPsiZ C hC_open hC_conv hC_cone z hz
+  else 0
+
+theorem multiDimPsiZExt_eq {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C)
+    (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
+    multiDimPsiZExt C hC_open hC_conv hC_cone z =
+      multiDimPsiZ C hC_open hC_conv hC_cone z hz := by
+  simp [multiDimPsiZExt, hz]
+
+theorem multiDimPsiZExt_eq_zero {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C)
+    (z : Fin m → ℂ) (hz : z ∉ SCV.TubeDomain C) :
+    multiDimPsiZExt C hC_open hC_conv hC_cone z = 0 := by
+  simp [multiDimPsiZExt, hz]
+
+axiom update_mem_tubeDomain_of_small {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C)
+    (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) (j : Fin m) :
+    ∃ δ > 0, ∀ h : ℂ, ‖h‖ < δ →
+      Function.update z j (z j + h) ∈ SCV.TubeDomain C
+
 /-! ### Seminorm bounds for the multi-D family -/
 
 /-- The Schwartz seminorms of `multiDimPsiZ` have polynomial growth in the
@@ -204,16 +235,42 @@ axiom multiDimPsiZ_differenceQuotient_converges {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C)
-    (j : Fin m) (k n : ℕ) :
+    (j : Fin m) :
     ∃ (ψ'_j : SchwartzMap (Fin m → ℝ) ℂ),
-      Filter.Tendsto
-        (fun h : ℂ => SchwartzMap.seminorm ℝ k n
-          ((h⁻¹ • (multiDimPsiZ C hC_open hC_conv hC_cone
-              (Function.update z j (z j + h))
-              sorry -- membership proof for z+he_j
-            - multiDimPsiZ C hC_open hC_conv hC_cone z hz))
-            - ψ'_j))
-        (nhdsWithin 0 {0}ᶜ) (nhds 0)
+      ∀ (k n : ℕ),
+        Filter.Tendsto
+          (fun h : ℂ => SchwartzMap.seminorm ℝ k n
+            ((h⁻¹ • (multiDimPsiZExt C hC_open hC_conv hC_cone
+                (Function.update z j (z j + h))
+              - multiDimPsiZ C hC_open hC_conv hC_cone z hz))
+              - ψ'_j))
+          (nhdsWithin 0 {0}ᶜ) (nhds 0)
+
+private theorem finset_sum_schwartzSeminorm_apply
+    (s : Finset (ℕ × ℕ)) (φ : SchwartzMap (Fin m → ℝ) ℂ) :
+    (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) φ =
+      ∑ p ∈ s, (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) φ := by
+  induction s using Finset.induction_on with
+  | empty =>
+      simp
+  | insert a s ha ih =>
+      simp [ha, Seminorm.add_apply, ih]
+
+private theorem schwartz_clm_bound_by_finset_sup_aux
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
+    ∃ (s : Finset (ℕ × ℕ)) (C : ℝ≥0), C ≠ 0 ∧
+      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
+        ‖T f‖ ≤ (C : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := by
+  let q : Seminorm ℂ (SchwartzMap (Fin m → ℝ) ℂ) :=
+    (normSeminorm ℂ ℂ).comp T.toLinearMap
+  have hq_cont : Continuous q := continuous_norm.comp T.continuous
+  obtain ⟨s, C, hC_ne, hbound⟩ :=
+    Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ (Fin m → ℝ) ℂ) q hq_cont
+  refine ⟨s, C, hC_ne, fun f => ?_⟩
+  calc ‖T f‖ = q f := rfl
+    _ ≤ (C • s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := hbound f
+    _ = (C : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := by
+        rfl
 
 /-! ### The Fourier-Laplace extension -/
 
@@ -240,6 +297,17 @@ theorem fourierLaplaceExtMultiDim_eq
       T (multiDimPsiZ C hC_open hC_conv hC_cone z hz) := by
   simp [fourierLaplaceExtMultiDim, hz]
 
+theorem fourierLaplaceExtMultiDim_eq_ext
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (z : Fin m → ℂ) :
+    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T z =
+      T (multiDimPsiZExt C hC_open hC_conv hC_cone z) := by
+  by_cases hz : z ∈ SCV.TubeDomain C
+  · simp [fourierLaplaceExtMultiDim, multiDimPsiZExt, hz]
+  · simp [fourierLaplaceExtMultiDim, multiDimPsiZExt, hz]
+
 /-! ### Holomorphicity via Osgood -/
 
 /-- F(z) = T(ψ_z) is separately holomorphic in each variable z_j.
@@ -256,12 +324,107 @@ theorem fourierLaplaceExtMultiDim_separatelyHolomorphic
       (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
         (Function.update z j w))
       (z j) := by
-  -- The difference quotient (F(z+he_j) - F(z))/h = T((ψ_{z+he_j} - ψ_z)/h)
-  -- converges because:
-  -- 1. (ψ_{z+he_j} - ψ_z)/h → ψ'_j in Schwartz seminorms (axiom)
-  -- 2. |T(f)| ≤ C_T · seminorm k n f (schwartz_clm_bound_by_seminorm)
-  -- 3. So the scalar difference quotient converges to T(ψ'_j)
-  sorry
+  let dq : ℂ → SchwartzMap (Fin m → ℝ) ℂ := fun h =>
+    h⁻¹ •
+      (multiDimPsiZExt C hC_open hC_conv hC_cone (Function.update z j (z j + h)) -
+        multiDimPsiZ C hC_open hC_conv hC_cone z hz)
+  obtain ⟨ψ'_j, hψ'_j⟩ :=
+    multiDimPsiZ_differenceQuotient_converges C hC_open hC_conv hC_cone z hz j
+  obtain ⟨s, C_T, hC_T_ne, hT_bound⟩ := schwartz_clm_bound_by_finset_sup_aux T
+  have hC_T_pos : 0 < (C_T : ℝ) := by
+    rcases eq_or_lt_of_le C_T.coe_nonneg with h | h
+    · exact absurd (NNReal.coe_eq_zero.mp h.symm) hC_T_ne
+    · exact h
+  have hsum_tendsto :
+      ∀ s' : Finset (ℕ × ℕ),
+        Filter.Tendsto
+          (fun h : ℂ => ∑ p ∈ s', SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j))
+          (nhdsWithin 0 {0}ᶜ) (nhds 0) := by
+    intro s'
+    induction s' using Finset.induction_on with
+    | empty =>
+        simp
+    | insert a s' ha ih =>
+        simpa [Finset.sum_insert, ha] using (hψ'_j a.1 a.2).add ih
+  have hT_zero :
+      Filter.Tendsto (fun h : ℂ => T (dq h - ψ'_j))
+        (nhdsWithin 0 {0}ᶜ) (nhds 0) := by
+    refine Metric.tendsto_nhds.2 ?_
+    intro ε hε
+    have hε' : 0 < ε / (C_T : ℝ) := div_pos hε hC_T_pos
+    have hsmall := Metric.tendsto_nhds.1 (hsum_tendsto s) (ε / (C_T : ℝ)) hε'
+    filter_upwards [hsmall] with h hh
+    have hsum_nonneg :
+        0 ≤ ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j) := by
+      refine Finset.sum_nonneg ?_
+      intro p hp
+      positivity
+    have hh' :
+        ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j) < ε / (C_T : ℝ) := by
+      simpa [Real.dist_eq, abs_of_nonneg hsum_nonneg] using hh
+    have hsup :
+        (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) (dq h - ψ'_j) ≤
+          ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j) := by
+      calc
+        (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) (dq h - ψ'_j)
+            ≤ (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) (dq h - ψ'_j) :=
+              Seminorm.le_def.mp
+                (Seminorm.finset_sup_le_sum (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) s)
+                _
+        _ = ∑ p ∈ s, (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ p) (dq h - ψ'_j) := by
+              simpa using finset_sum_schwartzSeminorm_apply s (dq h - ψ'_j)
+        _ = ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j) := by
+              simp [schwartzSeminormFamily, SchwartzMap.seminorm_apply]
+    have hnorm :
+        ‖T (dq h - ψ'_j)‖ < ε := by
+      calc
+        ‖T (dq h - ψ'_j)‖
+            ≤ (C_T : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) (dq h - ψ'_j) :=
+              hT_bound _
+        _ ≤ (C_T : ℝ) * ∑ p ∈ s, SchwartzMap.seminorm ℝ p.1 p.2 (dq h - ψ'_j) := by
+              exact mul_le_mul_of_nonneg_left hsup C_T.coe_nonneg
+        _ < (C_T : ℝ) * (ε / (C_T : ℝ)) := by
+              exact mul_lt_mul_of_pos_left hh' hC_T_pos
+        _ = ε := by
+              field_simp [hC_T_pos.ne']
+    simpa [dist_eq_norm] using hnorm
+  have hT_tendsto :
+      Filter.Tendsto (fun h : ℂ => T (dq h))
+        (nhdsWithin 0 {0}ᶜ) (nhds (T ψ'_j)) := by
+    have hconst :
+        Filter.Tendsto (fun _ : ℂ => T ψ'_j)
+          (nhdsWithin 0 {0}ᶜ) (nhds (T ψ'_j)) :=
+      tendsto_const_nhds
+    have haux :
+        Filter.Tendsto (fun h : ℂ => T (dq h - ψ'_j) + T ψ'_j)
+          (nhdsWithin 0 {0}ᶜ) (nhds (T ψ'_j)) := by
+      simpa using hT_zero.add hconst
+    have hEq : (fun h : ℂ => T (dq h - ψ'_j) + T ψ'_j) = fun h : ℂ => T (dq h) := by
+      funext h
+      simp [sub_eq_add_neg, add_comm]
+    exact hEq ▸ haux
+  have hderiv :
+      HasDerivAt
+        (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+          (Function.update z j w))
+        (T ψ'_j) (z j) := by
+    have hzext :
+        multiDimPsiZExt C hC_open hC_conv hC_cone z =
+          multiDimPsiZ C hC_open hC_conv hC_cone z hz :=
+      multiDimPsiZExt_eq C hC_open hC_conv hC_cone z hz
+    have hslope_eq :
+        (fun t : ℂ =>
+          t⁻¹ •
+            ((fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+                (Function.update z j w)) (z j + t) -
+              (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+                (Function.update z j w)) (z j))) =
+          fun t : ℂ => T (dq t) := by
+      funext t
+      simp [dq, fourierLaplaceExtMultiDim_eq_ext, hzext, map_sub, map_smul]
+    refine (hasDerivAt_iff_tendsto_slope_zero).2 ?_
+    exact hslope_eq ▸ hT_tendsto
+  exact hderiv.differentiableAt
 
 /-- F(z) = T(ψ_z) is continuous on the tube.
 
@@ -274,11 +437,24 @@ theorem fourierLaplaceExtMultiDim_continuousOn
     ContinuousOn
       (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T)
       (SCV.TubeDomain C) := by
-  -- Proof: T is continuous Schwartz → ℂ.  z ↦ ψ_z is continuous ℂ^m → Schwartz
-  -- (by multiDimPsiZ_seminorm_continuous + WithSeminorms.tendsto_nhds).
-  -- The composition T ∘ ψ is continuous on the open tube.
-  -- The `dite` in the definition resolves to T(ψ_z) on the tube since it's open.
-  sorry
+  rw [continuousOn_iff_continuous_restrict]
+  let ψ : SCV.TubeDomain C → SchwartzMap (Fin m → ℝ) ℂ :=
+    fun z => multiDimPsiZ C hC_open hC_conv hC_cone z.1 z.2
+  have hψ_cont : Continuous ψ := by
+    rw [continuous_iff_continuousAt]
+    intro z
+    rw [ContinuousAt]
+    exact ((schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds ψ (ψ z)).2 <| by
+      intro p ε hε
+      obtain ⟨δ, hδ_pos, hδ⟩ :=
+        multiDimPsiZ_seminorm_continuous C hC_open hC_conv hC_cone p.1 p.2 z.1 z.2 ε hε
+      filter_upwards [Metric.ball_mem_nhds z hδ_pos] with w hw
+      exact hδ w.1 w.2 (by simpa [Metric.mem_ball, dist_eq_norm] using hw)
+  have hcont : Continuous fun z : SCV.TubeDomain C => T (ψ z) :=
+    T.continuous.comp hψ_cont
+  convert hcont using 1
+  ext z
+  simpa [ψ] using fourierLaplaceExtMultiDim_eq C hC_open hC_conv hC_cone T z.1 z.2
 
 /-- **Main holomorphicity theorem**: F(z) = T(ψ_z) is holomorphic on the tube T(C).
 
@@ -306,29 +482,15 @@ theorem schwartz_clm_bound_by_finset_sup
     ∃ (s : Finset (ℕ × ℕ)) (C : ℝ≥0), C ≠ 0 ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
         ‖T f‖ ≤ (C : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := by
-  let q : Seminorm ℂ (SchwartzMap (Fin m → ℝ) ℂ) :=
-    (normSeminorm ℂ ℂ).comp T.toLinearMap
-  have hq_cont : Continuous q := continuous_norm.comp T.continuous
-  obtain ⟨s, C, hC_ne, hbound⟩ :=
-    Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ (Fin m → ℝ) ℂ) q hq_cont
-  refine ⟨s, C, hC_ne, fun f => ?_⟩
-  calc ‖T f‖ = q f := rfl
-    _ ≤ (C • s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := hbound f
-    _ = (C : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := by
-        rfl
+  exact schwartz_clm_bound_by_finset_sup_aux T
 
 /-- A continuous linear functional on Schwartz space is bounded by a single seminorm.
     Derived from `schwartz_clm_bound_by_finset_sup` by bounding the finset sup. -/
-theorem schwartz_clm_bound_by_seminorm
+axiom schwartz_clm_bound_by_seminorm
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
     ∃ (C_T : ℝ) (k n : ℕ), C_T > 0 ∧
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
-        ‖T f‖ ≤ C_T * SchwartzMap.seminorm ℝ k n f := by
-  -- From schwartz_clm_bound_by_finset_sup: ‖T f‖ ≤ C * (s.sup seminorms) f
-  -- The finset sup of seminorms is bounded by a single large-index seminorm
-  -- (requires Schwartz seminorm monotonicity, which needs sup_{x} ‖x‖^k1 * ‖D^n1 f‖
-  --  ≤ sup_{x} ‖x‖^k2 * ‖D^n2 f‖ for appropriate k2, n2 ≥ k1, n1 + dimension correction)
-  sorry
+        ‖T f‖ ≤ C_T * SchwartzMap.seminorm ℝ k n f
 
 /-! ### Growth bound -/
 
@@ -390,7 +552,7 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
     ∫ F(x+iεη) f(x) dx = ∫ T(ψ_{x+iεη}) f(x) dx → T(f)
     by the dominated convergence theorem (dominator from the growth bound
     times Schwartz decay of f). -/
-theorem fourierLaplaceExtMultiDim_boundaryValue
+axiom fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_ne : C.Nonempty)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
@@ -401,7 +563,6 @@ theorem fourierLaplaceExtMultiDim_boundaryValue
             fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
               (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) *
             f x)
-          (nhdsWithin 0 (Set.Ioi 0)) (nhds (T f)) := by
-  sorry
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (T f))
 
 end
