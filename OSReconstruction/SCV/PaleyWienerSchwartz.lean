@@ -97,20 +97,22 @@ reduce to the 1D bounds from `schwartzPsiZ_seminorm_horizontal_bound`. -/
     **Warning**: A FIXED cutoff (R=1) produces exp(‖y‖) blowup in the
     transition region, destroying the polynomial growth bound. The dynamic
     scaling is essential. -/
-axiom multiDimPsiZR {m : ℕ}
+def multiDimPsiZR {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (R : ℝ) (hR : 0 < R)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
-    SchwartzMap (Fin m → ℝ) ℂ
+    SchwartzMap (Fin m → ℝ) ℂ :=
+  let χ := (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+  psiZRSchwartz hC_open hC_cone hC_salient χ R hR z hz
 
 /-- The fixed-radius (`R = 1`) Schwartz family used for holomorphicity proofs. -/
 abbrev multiDimPsiZ {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
     SchwartzMap (Fin m → ℝ) ℂ :=
-  multiDimPsiZR C hC_open hC_conv hC_cone 1 zero_lt_one z hz
+  multiDimPsiZR C hC_open hC_conv hC_cone hC_salient 1 zero_lt_one z hz
 
 /-- The dynamic radius used in the Vladimirov growth estimate. -/
 def multiDimPsiZRadius {m : ℕ} (z : Fin m → ℂ) : ℝ :=
@@ -124,35 +126,35 @@ theorem multiDimPsiZRadius_pos {m : ℕ} (z : Fin m → ℂ) :
 /-- The dynamically scaled Schwartz family used for the global growth bound. -/
 def multiDimPsiZDynamic {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
     SchwartzMap (Fin m → ℝ) ℂ :=
-  multiDimPsiZR C hC_open hC_conv hC_cone
+  multiDimPsiZR C hC_open hC_conv hC_cone hC_salient
     (multiDimPsiZRadius z) (multiDimPsiZRadius_pos z) z hz
 
 /-- Tube-safe version of `multiDimPsiZ`, extended by `0` outside the tube. -/
 def multiDimPsiZExt {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) :
     SchwartzMap (Fin m → ℝ) ℂ :=
   if hz : z ∈ SCV.TubeDomain C then
-    multiDimPsiZ C hC_open hC_conv hC_cone z hz
+    multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz
   else 0
 
 theorem multiDimPsiZExt_eq {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
-    multiDimPsiZExt C hC_open hC_conv hC_cone z =
-      multiDimPsiZ C hC_open hC_conv hC_cone z hz := by
+    multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z =
+      multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz := by
   simp [multiDimPsiZExt, hz]
 
 theorem multiDimPsiZExt_eq_zero {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∉ SCV.TubeDomain C) :
-    multiDimPsiZExt C hC_open hC_conv hC_cone z = 0 := by
+    multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z = 0 := by
   simp [multiDimPsiZExt, hz]
 
 theorem update_mem_tubeDomain_of_small {m : ℕ}
@@ -181,21 +183,21 @@ theorem update_mem_tubeDomain_of_small {m : ℕ}
 /-- The dynamically scaled family has Vladimirov-type seminorm growth. -/
 axiom multiDimPsiZDynamic_seminorm_bound {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (k n : ℕ) :
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (k n : ℕ) :
     ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
       ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
-        SchwartzMap.seminorm ℝ k n (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) ≤
+        SchwartzMap.seminorm ℝ k n (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤
           B * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M
 
 /-- Finset-sup version of `multiDimPsiZDynamic_seminorm_bound`. -/
 theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (s : Finset (ℕ × ℕ)) :
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (s : Finset (ℕ × ℕ)) :
     ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
       ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
         (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
-          (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) ≤
+          (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤
           B * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
   induction s using Finset.induction with
@@ -204,14 +206,14 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
   | @insert a s ha ih =>
     obtain ⟨B₁, N₁, M₁, hB₁, h₁⟩ := ih
     obtain ⟨B₂, N₂, M₂, hB₂, h₂⟩ :=
-      multiDimPsiZDynamic_seminorm_bound C hC_open hC_conv hC_cone a.1 a.2
+      multiDimPsiZDynamic_seminorm_bound C hC_open hC_conv hC_cone hC_salient a.1 a.2
     refine ⟨max B₁ B₂, max N₁ N₂, max M₁ M₂, lt_max_of_lt_left hB₁, fun z hz => ?_⟩
     rw [Finset.sup_insert]
     apply sup_le
     · calc (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ a)
-              (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz)
+              (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz)
           = SchwartzMap.seminorm ℂ a.1 a.2
-              (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) := by
+              (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) := by
             simp [schwartzSeminormFamily]
         _ ≤ B₂ * (1 + ‖z‖) ^ N₂ *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ := by
@@ -236,7 +238,7 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
               (mul_nonneg (le_trans (le_of_lt hB₂) hB)
                 (pow_nonneg (le_trans zero_le_one hx1) _))
     · calc (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
-              (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz)
+              (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz)
           ≤ B₁ * (1 + ‖z‖) ^ N₁ *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ := h₁ z hz
         _ ≤ max B₁ B₂ * (1 + ‖z‖) ^ (max N₁ N₂) *
@@ -264,13 +266,13 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
     This is used to prove continuity of F(z) = T(ψ_z) on the tube. -/
 axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (k n : ℕ)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (k n : ℕ)
     (z₀ : Fin m → ℂ) (hz₀ : z₀ ∈ SCV.TubeDomain C) :
     ∀ ε > 0, ∃ δ > 0, ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
       ‖z - z₀‖ < δ →
         SchwartzMap.seminorm ℝ k n
-          (multiDimPsiZ C hC_open hC_conv hC_cone z hz -
-           multiDimPsiZ C hC_open hC_conv hC_cone z₀ hz₀) < ε
+          (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+           multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) < ε
 
 /-- The difference quotient of ψ_z converges in Schwartz seminorms.
     For fixed z in the tube and direction e_j:
@@ -281,16 +283,16 @@ axiom multiDimPsiZ_seminorm_continuous {m : ℕ}
     of Fréchet curves). -/
 axiom multiDimPsiZ_differenceQuotient_converges {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C)
     (j : Fin m) :
     ∃ (ψ'_j : SchwartzMap (Fin m → ℝ) ℂ),
       ∀ (k n : ℕ),
         Filter.Tendsto
           (fun h : ℂ => SchwartzMap.seminorm ℝ k n
-            ((h⁻¹ • (multiDimPsiZExt C hC_open hC_conv hC_cone
+            ((h⁻¹ • (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient
                 (Function.update z j (z j + h))
-              - multiDimPsiZ C hC_open hC_conv hC_cone z hz))
+              - multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz))
               - ψ'_j))
           (nhdsWithin 0 {0}ᶜ) (nhds 0)
 
@@ -299,13 +301,13 @@ axiom multiDimPsiZ_differenceQuotient_converges {m : ℕ}
     holomorphicity and dynamic-radius growth estimates. -/
 axiom multiDimPsiZR_eval_eq_of_support {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (hT_support : HasFourierSupportInDualCone C T)
     (R₁ R₂ : ℝ) (hR₁ : 0 < R₁) (hR₂ : 0 < R₂)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
-    T (multiDimPsiZR C hC_open hC_conv hC_cone R₁ hR₁ z hz) =
-      T (multiDimPsiZR C hC_open hC_conv hC_cone R₂ hR₂ z hz)
+    T (multiDimPsiZR C hC_open hC_conv hC_cone hC_salient R₁ hR₁ z hz) =
+      T (multiDimPsiZR C hC_open hC_conv hC_cone hC_salient R₂ hR₂ z hz)
 
 private theorem finset_sum_schwartzSeminorm_apply
     (s : Finset (ℕ × ℕ)) (φ : SchwartzMap (Fin m → ℝ) ℂ) :
@@ -342,29 +344,29 @@ private theorem schwartz_clm_bound_by_finset_sup_aux
     This is the multi-dimensional generalization of `fourierLaplaceExt`. -/
 def fourierLaplaceExtMultiDim
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (z : Fin m → ℂ) : ℂ :=
   if hz : z ∈ SCV.TubeDomain C then
-    T (multiDimPsiZ C hC_open hC_conv hC_cone z hz)
+    T (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)
   else 0
 
 theorem fourierLaplaceExtMultiDim_eq
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
-    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T z =
-      T (multiDimPsiZ C hC_open hC_conv hC_cone z hz) := by
+    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T z =
+      T (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) := by
   simp [fourierLaplaceExtMultiDim, hz]
 
 theorem fourierLaplaceExtMultiDim_eq_ext
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (z : Fin m → ℂ) :
-    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T z =
-      T (multiDimPsiZExt C hC_open hC_conv hC_cone z) := by
+    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T z =
+      T (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z) := by
   by_cases hz : z ∈ SCV.TubeDomain C
   · simp [fourierLaplaceExtMultiDim, multiDimPsiZExt, hz]
   · simp [fourierLaplaceExtMultiDim, multiDimPsiZExt, hz]
@@ -378,20 +380,20 @@ theorem fourierLaplaceExtMultiDim_eq_ext
     from `multiDimPsiZ_differenceQuotient_converges`. -/
 theorem fourierLaplaceExtMultiDim_separatelyHolomorphic
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (_hT_support : HasFourierSupportInDualCone C T)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) (j : Fin m) :
     DifferentiableAt ℂ
-      (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+      (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
         (Function.update z j w))
       (z j) := by
   let dq : ℂ → SchwartzMap (Fin m → ℝ) ℂ := fun h =>
     h⁻¹ •
-      (multiDimPsiZExt C hC_open hC_conv hC_cone (Function.update z j (z j + h)) -
-        multiDimPsiZ C hC_open hC_conv hC_cone z hz)
+      (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient (Function.update z j (z j + h)) -
+        multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)
   obtain ⟨ψ'_j, hψ'_j⟩ :=
-    multiDimPsiZ_differenceQuotient_converges C hC_open hC_conv hC_cone z hz j
+    multiDimPsiZ_differenceQuotient_converges C hC_open hC_conv hC_cone hC_salient z hz j
   obtain ⟨s, C_T, hC_T_ne, hT_bound⟩ := schwartz_clm_bound_by_finset_sup_aux T
   have hC_T_pos : 0 < (C_T : ℝ) := by
     rcases eq_or_lt_of_le C_T.coe_nonneg with h | h
@@ -467,19 +469,19 @@ theorem fourierLaplaceExtMultiDim_separatelyHolomorphic
     exact hEq ▸ haux
   have hderiv :
       HasDerivAt
-        (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+        (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
           (Function.update z j w))
         (T ψ'_j) (z j) := by
     have hzext :
-        multiDimPsiZExt C hC_open hC_conv hC_cone z =
-          multiDimPsiZ C hC_open hC_conv hC_cone z hz :=
-      multiDimPsiZExt_eq C hC_open hC_conv hC_cone z hz
+        multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z =
+          multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz :=
+      multiDimPsiZExt_eq C hC_open hC_conv hC_cone hC_salient z hz
     have hslope_eq :
         (fun t : ℂ =>
           t⁻¹ •
-            ((fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+            ((fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
                 (Function.update z j w)) (z j + t) -
-              (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+              (fun w => fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
                 (Function.update z j w)) (z j))) =
           fun t : ℂ => T (dq t) := by
       funext t
@@ -494,15 +496,15 @@ theorem fourierLaplaceExtMultiDim_separatelyHolomorphic
     into Schwartz space (by the seminorm bounds). -/
 theorem fourierLaplaceExtMultiDim_continuousOn
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (_hT_support : HasFourierSupportInDualCone C T) :
     ContinuousOn
-      (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T)
+      (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T)
       (SCV.TubeDomain C) := by
   rw [continuousOn_iff_continuous_restrict]
   let ψ : SCV.TubeDomain C → SchwartzMap (Fin m → ℝ) ℂ :=
-    fun z => multiDimPsiZ C hC_open hC_conv hC_cone z.1 z.2
+    fun z => multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z.1 z.2
   have hψ_cont : Continuous ψ := by
     rw [continuous_iff_continuousAt]
     intro z
@@ -510,45 +512,45 @@ theorem fourierLaplaceExtMultiDim_continuousOn
     exact ((schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds ψ (ψ z)).2 <| by
       intro p ε hε
       obtain ⟨δ, hδ_pos, hδ⟩ :=
-        multiDimPsiZ_seminorm_continuous C hC_open hC_conv hC_cone p.1 p.2 z.1 z.2 ε hε
+        multiDimPsiZ_seminorm_continuous C hC_open hC_conv hC_cone hC_salient p.1 p.2 z.1 z.2 ε hε
       filter_upwards [Metric.ball_mem_nhds z hδ_pos] with w hw
       exact hδ w.1 w.2 (by simpa [Metric.mem_ball, dist_eq_norm] using hw)
   have hcont : Continuous fun z : SCV.TubeDomain C => T (ψ z) :=
     T.continuous.comp hψ_cont
   convert hcont using 1
   ext z
-  simpa [ψ] using fourierLaplaceExtMultiDim_eq C hC_open hC_conv hC_cone T z.1 z.2
+  simpa [ψ] using fourierLaplaceExtMultiDim_eq C hC_open hC_conv hC_cone hC_salient T z.1 z.2
 
 /-- **Main holomorphicity theorem**: F(z) = T(ψ_z) is holomorphic on the tube T(C).
 
     Proof: Combine separate holomorphicity + continuity via `osgood_lemma`. -/
 theorem fourierLaplaceExtMultiDim_holomorphic
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (hT_support : HasFourierSupportInDualCone C T) :
     DifferentiableOn ℂ
-      (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T)
+      (fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T)
       (SCV.TubeDomain C) := by
   apply osgood_lemma (SCV.tubeDomain_isOpen hC_open)
-  · exact fourierLaplaceExtMultiDim_continuousOn C hC_open hC_conv hC_cone T hT_support
+  · exact fourierLaplaceExtMultiDim_continuousOn C hC_open hC_conv hC_cone hC_salient T hT_support
   · intro z hz j
     exact fourierLaplaceExtMultiDim_separatelyHolomorphic
-      C hC_open hC_conv hC_cone T hT_support z hz j
+      C hC_open hC_conv hC_cone hC_salient T hT_support z hz j
 
 /-- Under the Fourier-support hypothesis, the radius-1 evaluation agrees with
     the dynamically scaled evaluation. -/
 theorem fourierLaplaceExtMultiDim_eq_dynamic
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (hT_support : HasFourierSupportInDualCone C T)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) :
-    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T z =
-      T (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) := by
-  rw [fourierLaplaceExtMultiDim_eq C hC_open hC_conv hC_cone T z hz]
+    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T z =
+      T (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) := by
+  rw [fourierLaplaceExtMultiDim_eq C hC_open hC_conv hC_cone hC_salient T z hz]
   simpa [multiDimPsiZ, multiDimPsiZDynamic] using
-    multiDimPsiZR_eval_eq_of_support C hC_open hC_conv hC_cone T hT_support
+    multiDimPsiZR_eval_eq_of_support C hC_open hC_conv hC_cone hC_salient T hT_support
       1 (multiDimPsiZRadius z) zero_lt_one (multiDimPsiZRadius_pos z) z hz
 
 /-! ### Continuous functionals are seminorm-bounded -/
@@ -572,12 +574,12 @@ theorem schwartz_clm_bound_by_finset_sup
     ‖ψ_z‖_{k,n} ≤ B · (1+‖z‖)^N · (1 + dist(Im z, ∂C)⁻¹)^M -/
 theorem fourierLaplaceExtMultiDim_vladimirov_growth
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (hT_support : HasFourierSupportInDualCone C T) :
     ∃ (C_bd : ℝ) (N M : ℕ), C_bd > 0 ∧
       ∀ (z : Fin m → ℂ), z ∈ SCV.TubeDomain C →
-        ‖fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T z‖ ≤
+        ‖fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T z‖ ≤
           C_bd * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
   -- Step 1: T is bounded by a finset sup of seminorms (PROVED, no sorry)
@@ -588,13 +590,13 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
     · exact h
   -- Step 2: The finset sup of seminorms of ψ_z has Vladimirov-type growth
   obtain ⟨B, N, M, hB_pos, hψ_bound⟩ :=
-    multiDimPsiZDynamic_finset_sup_bound C hC_open hC_conv hC_cone s
+    multiDimPsiZDynamic_finset_sup_bound C hC_open hC_conv hC_cone hC_salient s
   -- Step 3: Combine
   refine ⟨C_T * B, N, M, mul_pos hC_T_pos hB_pos, fun z hz => ?_⟩
-  rw [fourierLaplaceExtMultiDim_eq_dynamic C hC_open hC_conv hC_cone T hT_support z hz]
-  calc ‖T (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz)‖
+  rw [fourierLaplaceExtMultiDim_eq_dynamic C hC_open hC_conv hC_cone hC_salient T hT_support z hz]
+  calc ‖T (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz)‖
     _ ≤ C_T * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
-          (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) := hT_bound _
+          (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) := hT_bound _
     _ ≤ C_T * (B * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M) := by
         apply mul_le_mul_of_nonneg_left (hψ_bound z hz) (by exact_mod_cast C_T.coe_nonneg)
@@ -612,14 +614,14 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
     times Schwartz decay of f). -/
 axiom fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (hC_ne : C.Nonempty)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     (hT_support : HasFourierSupportInDualCone C T) :
     ∀ (η : Fin m → ℝ), η ∈ C →
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
         Filter.Tendsto
           (fun ε : ℝ => ∫ x : Fin m → ℝ,
-            fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone T
+            fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
               (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) *
             f x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (T f))
