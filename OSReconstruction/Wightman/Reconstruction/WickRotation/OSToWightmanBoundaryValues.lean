@@ -188,6 +188,66 @@ theorem bvt_translation_invariant (OS : OsterwalderSchraderAxioms d)
     (bvt_boundary_values OS lgc n)
     hF_inv a f g hfg
 
+private theorem bvt_F_reflectCanonical
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (x : NPointDomain d n) (ε : ℝ), 0 < ε →
+      starRingEnd ℂ
+        (bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I))
+      =
+      bvt_F OS lgc n (fun k μ =>
+        ↑(x (Fin.rev k) μ) +
+          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
+  intro n x ε hε
+  let η := canonicalForwardConeDirection (d := d) n
+  let a : Fin (d + 1) → ℂ := fun μ =>
+    if μ = 0 then (((n : ℝ) + 1) * ε : ℂ) * Complex.I else 0
+  let zrev : Fin n → Fin (d + 1) → ℂ := fun k μ =>
+    ↑(x k μ) + ε * ↑(η (Fin.rev k) μ) * Complex.I
+  have hshift :
+      bvt_F OS lgc n (fun k μ => ↑(x k μ) - ε * ↑(η k μ) * Complex.I) =
+        bvt_F OS lgc n zrev := by
+    have hzrev :
+        (fun j => (fun k μ =>
+          ↑(x k μ) - ε * ↑(η k μ) * Complex.I) j + a) = zrev := by
+      funext k
+      funext μ
+      by_cases hμ : μ = 0
+      · subst hμ
+        simp [a, zrev, η, canonicalForwardConeDirection, Fin.val_rev]
+        ring_nf
+      · simp [a, zrev, η, canonicalForwardConeDirection, hμ]
+    calc
+      bvt_F OS lgc n (fun k μ => ↑(x k μ) - ε * ↑(η k μ) * Complex.I)
+          =
+        bvt_F OS lgc n
+          (fun j => (fun k μ =>
+            ↑(x k μ) - ε * ↑(η k μ) * Complex.I) j + a) := by
+              symm
+              exact bvt_F_translationInvariant OS lgc n _ a
+      _ = bvt_F OS lgc n zrev := by rw [hzrev]
+  have hperm :
+      bvt_F OS lgc n zrev =
+        bvt_F OS lgc n (fun k μ =>
+          ↑(x (Fin.rev k) μ) +
+            ε * ↑(η k μ) * Complex.I) := by
+    simpa [zrev] using (bvt_F_perm OS lgc n Fin.revPerm zrev).symm
+  calc
+    starRingEnd ℂ
+        (bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(η k μ) * Complex.I))
+        =
+      bvt_F OS lgc n (fun k μ =>
+        ↑(x k μ) -
+          ε * ↑(η k μ) * Complex.I) := bvt_F_negCanonical OS lgc n x ε hε
+    _ = bvt_F OS lgc n zrev := hshift
+    _ = bvt_F OS lgc n (fun k μ =>
+          ↑(x (Fin.rev k) μ) +
+            ε * ↑(η k μ) * Complex.I) := hperm
+
 private theorem bvt_F_lorentz_ortho_wick
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
