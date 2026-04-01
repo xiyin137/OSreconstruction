@@ -110,11 +110,26 @@ theorem multiDimPsiZExt_eq_zero {m : ℕ}
     multiDimPsiZExt C hC_open hC_conv hC_cone z = 0 := by
   simp [multiDimPsiZExt, hz]
 
-axiom update_mem_tubeDomain_of_small {m : ℕ}
+theorem update_mem_tubeDomain_of_small {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C)
     (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) (j : Fin m) :
     ∃ δ > 0, ∀ h : ℂ, ‖h‖ < δ →
-      Function.update z j (z j + h) ∈ SCV.TubeDomain C
+      Function.update z j (z j + h) ∈ SCV.TubeDomain C := by
+  -- The tube domain is open, so z has an open ball around it in the tube
+  have hopen := SCV.tubeDomain_isOpen hC_open
+  rw [Metric.isOpen_iff] at hopen
+  obtain ⟨ε, hε, hball⟩ := hopen z hz
+  refine ⟨ε, hε, fun h hh => hball ?_⟩
+  rw [Metric.mem_ball]
+  calc dist (Function.update z j (z j + h)) z
+      = ‖Function.update z j (z j + h) - z‖ := dist_eq_norm _ _
+    _ ≤ ‖h‖ := by
+        apply pi_norm_le_iff_of_nonneg (norm_nonneg h) |>.mpr
+        intro i
+        by_cases hij : i = j
+        · subst hij; simp [Function.update_self]
+        · simp [Function.update_of_ne hij, sub_self]
+    _ < ε := hh
 
 /-! ### Seminorm bounds for the multi-D family -/
 
@@ -483,14 +498,6 @@ theorem schwartz_clm_bound_by_finset_sup
       ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
         ‖T f‖ ≤ (C : ℝ) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) f := by
   exact schwartz_clm_bound_by_finset_sup_aux T
-
-/-- A continuous linear functional on Schwartz space is bounded by a single seminorm.
-    Derived from `schwartz_clm_bound_by_finset_sup` by bounding the finset sup. -/
-axiom schwartz_clm_bound_by_seminorm
-    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ) :
-    ∃ (C_T : ℝ) (k n : ℕ), C_T > 0 ∧
-      ∀ (f : SchwartzMap (Fin m → ℝ) ℂ),
-        ‖T f‖ ≤ C_T * SchwartzMap.seminorm ℝ k n f
 
 /-! ### Growth bound -/
 
