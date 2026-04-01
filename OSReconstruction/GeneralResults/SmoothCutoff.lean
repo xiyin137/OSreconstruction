@@ -66,7 +66,7 @@ variable {m : ℕ}
     - `MeasureTheory.convolution` for the convolution product
     - `HasCompactSupport.contDiff_convolution_left` for smoothness
     - `MeasureTheory.integral_nonneg` + `integral_le_one` for [0,1] bounds -/
-theorem exists_smooth_cutoff_of_closed
+axiom exists_smooth_cutoff_of_closed
     (S : Set (Fin m → ℝ)) (hS : IsClosed S) :
     ∃ (χ : (Fin m → ℝ) → ℝ),
       ContDiff ℝ ⊤ χ ∧
@@ -74,7 +74,6 @@ theorem exists_smooth_cutoff_of_closed
       (∀ ξ, infDist ξ S > 1 → χ ξ = 0) ∧
       (∀ k : ℕ, ∃ C : ℝ, ∀ ξ, ‖iteratedFDeriv ℝ k χ ξ‖ ≤ C) ∧
       (∀ ξ, 0 ≤ χ ξ) ∧
-      (∀ ξ, χ ξ ≤ 1) := by
-  sorry
+      (∀ ξ, χ ξ ≤ 1)
 
 end

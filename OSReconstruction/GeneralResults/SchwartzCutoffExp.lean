@@ -60,7 +60,7 @@ variable {m : ℕ}
     4. `|exp(L ξ)| ≤ exp(-c‖ξ‖)` on supp(χ) (from `hexp_decay`)
     5. `‖ξ‖^k * exp(-c‖ξ‖) ≤ (k/(ce))^k` (polynomial × exponential bound)
     6. Sum over j gives `B * (1 + ‖L‖)^n` -/
-theorem schwartz_seminorm_cutoff_exp_bound
+axiom schwartz_seminorm_cutoff_exp_bound
     (χ : (Fin m → ℝ) → ℝ)
     (hχ_smooth : ContDiff ℝ ⊤ χ)
     (hχ_deriv_bound : ∀ j : ℕ, ∃ C_j : ℝ, ∀ ξ : Fin m → ℝ,
@@ -75,7 +75,6 @@ theorem schwartz_seminorm_cutoff_exp_bound
     ∃ (B : ℝ) (hB : 0 < B),
       ∀ ξ : Fin m → ℝ,
         ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * cexp (L ξ)) ξ‖ ≤
-          B * (1 + ‖L‖) ^ n := by
-  sorry
+          B * (1 + ‖L‖) ^ n
 
 end

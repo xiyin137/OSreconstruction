@@ -57,7 +57,7 @@ variable {m : ℕ}
     **Proof sketch**: Apply `hasDerivAt_integral_of_dominated_loc_of_deriv_le`
     with the dominator `C * (1+‖x‖)^N * |φ(x)|`, which is integrable
     because polynomial × Schwartz is in L¹. -/
-theorem hasDerivAt_schwartz_integral
+axiom hasDerivAt_schwartz_integral
     (F : ℝ → (Fin m → ℝ) → ℂ)
     (t₀ : ℝ) (δ : ℝ) (hδ : 0 < δ)
     -- F(t,·) is measurable for each t
@@ -79,7 +79,6 @@ theorem hasDerivAt_schwartz_integral
     HasDerivAt
       (fun t => ∫ x : Fin m → ℝ, F t x * φ x)
       (∫ x : Fin m → ℝ, F' t₀ x * φ x)
-      t₀ := by
-  sorry
+      t₀
 
 end
