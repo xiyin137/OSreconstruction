@@ -2463,7 +2463,7 @@ theorem bv_translation_invariance_transfer (n : ℕ)
       W_n f = W_n g := by
   exact bv_translation_invariance_transfer_of_F_invariant (d := d) n W_n F_n hBV hF_inv
 
-private theorem integral_lorentz_eq_self_full {n : ℕ}
+theorem integral_lorentz_eq_self_full {n : ℕ}
     (Λ : LorentzGroup d)
     (h : NPointDomain d n → ℂ) :
     ∫ x : NPointDomain d n, h (fun i => Matrix.mulVec Λ.val (x i)) =
