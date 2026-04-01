@@ -71,9 +71,13 @@ theorem psiZRaw_support {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualCon
     {R : ℝ} (hR : 0 < R) (z : Fin m → ℂ) (ξ : Fin m → ℝ)
     (hξ : Metric.infDist ξ (DualConeFlat C) > R) :
     psiZRaw χ R z ξ = 0 := by
-  -- dist(R⁻¹ξ, DualConeFlat C) = R⁻¹ * dist(ξ, DualConeFlat C) > 1
-  -- (using DualConeFlat is a cone, so scaling preserves it)
-  sorry
+  simp only [psiZRaw]
+  have hχ_zero : χ.val (fun i => R⁻¹ * ξ i) = 0 := by
+    apply χ.support_bound
+    -- Need: infDist (R⁻¹ • ξ) (DualConeFlat C) > 1
+    -- Since DualConeFlat C is a cone: infDist(R⁻¹ξ, S) = R⁻¹ * infDist(ξ, S)
+    sorry
+  simp [hχ_zero]
 
 /-- Two cutoff radii give the same function on the dual cone itself. -/
 theorem psiZRaw_eq_on_dualCone {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualConeFlat C))
