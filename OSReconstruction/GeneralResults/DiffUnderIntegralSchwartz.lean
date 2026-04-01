@@ -66,17 +66,19 @@ axiom hasDerivAt_schwartz_integral
     (C_bd : ℝ) (N : ℕ) (hC_bd : 0 < C_bd)
     (hF_growth : ∀ t, |t - t₀| < δ → ∀ x : Fin m → ℝ,
       ‖F t x‖ ≤ C_bd * (1 + ‖x‖) ^ N)
-    -- F is differentiable in t at each x
-    (F' : (Fin m → ℝ) → ℂ)
-    (hF_deriv : ∀ x : Fin m → ℝ, HasDerivAt (fun t => F t x) (F' x) t₀)
-    -- The derivative has polynomial growth
+    -- F is differentiable in t on the neighborhood, with polynomial-growth derivative
+    (F' : ℝ → (Fin m → ℝ) → ℂ)
+    (hF_deriv : ∀ t, |t - t₀| < δ → ∀ x : Fin m → ℝ,
+      HasDerivAt (fun s => F s x) (F' t x) t)
+    -- The derivative has polynomial growth UNIFORMLY on the neighborhood
     (C_bd' : ℝ) (N' : ℕ) (hC_bd' : 0 < C_bd')
-    (hF'_growth : ∀ x : Fin m → ℝ, ‖F' x‖ ≤ C_bd' * (1 + ‖x‖) ^ N')
+    (hF'_growth : ∀ t, |t - t₀| < δ → ∀ x : Fin m → ℝ,
+      ‖F' t x‖ ≤ C_bd' * (1 + ‖x‖) ^ N')
     -- The test function
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     HasDerivAt
       (fun t => ∫ x : Fin m → ℝ, F t x * φ x)
-      (∫ x : Fin m → ℝ, F' x * φ x)
+      (∫ x : Fin m → ℝ, F' t₀ x * φ x)
       t₀
 
 end

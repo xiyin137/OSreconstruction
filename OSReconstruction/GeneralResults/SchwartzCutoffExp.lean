@@ -65,7 +65,9 @@ axiom schwartz_seminorm_cutoff_exp_bound
     (hχ_smooth : ContDiff ℝ ⊤ χ)
     (hχ_deriv_bound : ∀ j : ℕ, ∃ C_j : ℝ, ∀ ξ : Fin m → ℝ,
       ‖iteratedFDeriv ℝ j χ ξ‖ ≤ C_j)
-    (hχ_compact_support : ∃ R > 0, ∀ ξ : Fin m → ℝ, ‖ξ‖ > R → χ ξ = 0)
+    -- NOTE: No compact support assumption needed! The exponential decay
+    -- exp(-c‖ξ‖) from hexp_decay crushes polynomial growth at infinity.
+    -- This is critical: the cone cutoff χ₁(ξ/R) is NOT compactly supported.
     (L : (Fin m → ℝ) →L[ℝ] ℂ)
     (c : ℝ) (hc : 0 < c)
     (hexp_decay : ∀ ξ : Fin m → ℝ, χ ξ ≠ 0 → (L ξ).re ≤ -c * ‖ξ‖)
