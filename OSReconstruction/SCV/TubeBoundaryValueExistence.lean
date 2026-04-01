@@ -61,13 +61,93 @@ variable {m : ℕ}
     bound gives |∫ Fφ| ≤ C · ‖φ‖_{N+dim+1, 0}).
 
     Ref: Hörmander, "The Analysis of Linear PDOs I", Theorem 7.1.5 -/
-axiom polyGrowth_temperedDistribution {m : ℕ}
+theorem polyGrowth_temperedDistribution {m : ℕ}
     (F : (Fin m → ℝ) → ℂ) (hF_cont : Continuous F)
     (C_bd : ℝ) (N : ℕ) (hC_bd : 0 < C_bd)
     (hF_growth : ∀ x : Fin m → ℝ, ‖F x‖ ≤ C_bd * (1 + ‖x‖) ^ N) :
     ∃ (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ),
       ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
-        T φ = ∫ x : Fin m → ℝ, F x * φ x
+        T φ = ∫ x : Fin m → ℝ, F x * φ x := by
+  let n : ℕ := (volume : Measure (Fin m → ℝ)).integrablePower
+  let s : Finset (ℕ × ℕ) := Finset.Iic (N + n, 0)
+  let A : SchwartzMap (Fin m → ℝ) ℂ → ℂ := fun φ => ∫ x : Fin m → ℝ, F x * φ x
+  have hpointwise_decay :
+      ∀ (φ : SchwartzMap (Fin m → ℝ) ℂ) (x : Fin m → ℝ),
+        ‖F x * φ x‖ ≤
+          (1 + ‖x‖) ^ (- (n : ℝ)) *
+            (C_bd * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)) := by
+    intro φ x
+    have hsch :
+        (1 + ‖x‖) ^ (N + n) * ‖φ x‖ ≤
+          2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+      simpa [s] using
+        (SchwartzMap.one_add_le_sup_seminorm_apply
+          (𝕜 := ℂ) (m := (N + n, 0)) (k := N + n) (n := 0)
+          le_rfl le_rfl φ x)
+    have hdecay :
+        (1 + ‖x‖) ^ N * ‖φ x‖ ≤
+          (1 + ‖x‖) ^ (- (n : ℝ)) *
+            (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ) := by
+      rw [Real.rpow_neg (by positivity), ← div_eq_inv_mul, le_div_iff₀' (by positivity),
+        Real.rpow_natCast]
+      simpa [pow_add, mul_assoc, mul_left_comm, mul_comm] using hsch
+    rw [Complex.norm_mul]
+    calc
+      ‖F x‖ * ‖φ x‖ ≤ (C_bd * (1 + ‖x‖) ^ N) * ‖φ x‖ := by
+        gcongr
+        exact hF_growth x
+      _ = C_bd * ((1 + ‖x‖) ^ N * ‖φ x‖) := by ring
+      _ ≤ C_bd * ((1 + ‖x‖) ^ (- (n : ℝ)) *
+            (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)) := by
+        gcongr
+      _ = (1 + ‖x‖) ^ (- (n : ℝ)) *
+            (C_bd * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)) := by
+        ring
+  have hdom_integrable :
+      Integrable (fun x : Fin m → ℝ => (1 + ‖x‖) ^ (- (n : ℝ))) := by
+    simpa [n] using
+      (MeasureTheory.Measure.integrable_pow_neg_integrablePower
+        (μ := (volume : Measure (Fin m → ℝ))))
+  have hA_integrable :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ, Integrable (fun x : Fin m → ℝ => F x * φ x) := by
+    intro φ
+    have hdom_mul_integrable :
+        Integrable (fun x : Fin m → ℝ =>
+          (1 + ‖x‖) ^ (- (n : ℝ)) *
+            (C_bd * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ))) := by
+      exact hdom_integrable.mul_const _
+    refine Integrable.mono' hdom_mul_integrable
+      (hF_cont.aestronglyMeasurable.mul φ.continuous.aestronglyMeasurable)
+      (Eventually.of_forall (hpointwise_decay φ))
+  have hbound :
+      ∃ (s' : Finset (ℕ × ℕ)) (C : ℝ), 0 ≤ C ∧
+        ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖A φ‖ ≤ C * (s'.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+    refine ⟨s, C_bd * (2 ^ (N + n) * ∫ x : Fin m → ℝ, (1 + ‖x‖) ^ (- (n : ℝ))), ?_, ?_⟩
+    · positivity
+    · intro φ
+      calc
+        ‖A φ‖ = ‖∫ x : Fin m → ℝ, F x * φ x‖ := rfl
+        _ ≤ ∫ x : Fin m → ℝ,
+            (1 + ‖x‖) ^ (- (n : ℝ)) *
+              (C_bd * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)) := by
+            exact MeasureTheory.norm_integral_le_of_norm_le
+              ((hdom_integrable.mul_const
+                (C_bd * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ))))
+              (Eventually.of_forall (hpointwise_decay φ))
+        _ = C_bd * (2 ^ (N + n) * ∫ x : Fin m → ℝ, (1 + ‖x‖) ^ (- (n : ℝ))) *
+              (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+            rw [integral_mul_const]
+            ring
+  refine ⟨SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ) (D := Fin m → ℝ) (E := ℂ) (G := ℂ)
+    A
+    (fun φ ψ => by
+      simp [A, mul_add, integral_add, hA_integrable φ, hA_integrable ψ])
+    (fun a φ => by
+      simp [A, smul_eq_mul, mul_left_comm, integral_const_mul])
+    hbound, ?_⟩
+  intro φ
+  rfl
 
 /-! ### The directional derivative operator -/
 
