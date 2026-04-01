@@ -134,7 +134,11 @@ theorem dualConeEucl_separates_of_not_mem_closure
     rw [mem_closure_iff_seq_limit]
     refine ⟨fun n => ((n : ℝ) + 1)⁻¹ • a,
       fun n => hcone a ha _ (inv_pos.mpr (by positivity : (0 : ℝ) < (n : ℝ) + 1)), ?_⟩
-    sorry -- ((n+1)⁻¹) • a → 0 as n → ∞
+    have : Filter.Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹) Filter.atTop (nhds 0) := by
+      apply Filter.Tendsto.inv_tendsto_atTop
+      exact (tendsto_natCast_atTop_atTop (R := ℝ)).atTop_add tendsto_const_nhds
+    convert this.smul_const a using 1
+    simp
   have hu_neg : u < 0 := by linarith [hfa 0 h0_mem, (f.map_zero)]
   have hfy_neg : f y < 0 := lt_trans hfy hu_neg
   -- Step 3: f(a) ≥ 0 for all a ∈ S
@@ -142,7 +146,25 @@ theorem dualConeEucl_separates_of_not_mem_closure
     intro a ha
     by_contra h_neg
     push_neg at h_neg
-    sorry -- Archimedean: n*f(a) → -∞ contradicts f(n•a) > u for n•a ∈ closure S
+    -- Pick n large enough that (n+1)*f(a) < u (possible since f(a) < 0)
+    have hfa_neg : f a < 0 := h_neg
+    -- We need n+1 > u / f(a). Since f(a) < 0, u/f(a) could be any real.
+    obtain ⟨n, hn⟩ := exists_nat_gt (|u| / |f a| + 1)
+    have hna_mem : ((n : ℝ) + 1) • a ∈ S := hcone a ha _ (by positivity)
+    have hfa_bound : u < ((n : ℝ) + 1) * f a := by
+      calc u < f (((n : ℝ) + 1) • a) := hfa _ (subset_closure hna_mem)
+        _ = ((n : ℝ) + 1) * f a := by rw [map_smul, smul_eq_mul]
+    -- (n+1) * f(a) < -|u| ≤ u, contradicting u < (n+1)*f(a)
+    have hfa_abs : |f a| = -f a := abs_of_neg hfa_neg
+    have hfa_abs_pos : (0 : ℝ) < |f a| := abs_pos.mpr (ne_of_lt hfa_neg)
+    -- n > |u|/|f a| + 1, so (n+1) > |u|/|f a| + 2 > |u|/|f a|
+    -- hence (n+1)*|f a| > |u|, i.e., -(n+1)*f(a) > |u|, i.e., (n+1)*f(a) < -|u|
+    have h1 : ((n : ℝ) + 1) * |f a| > |u| := by
+      have := (div_lt_iff₀ hfa_abs_pos).mp (by linarith : |u| / |f a| < (n : ℝ))
+      linarith
+    -- So (n+1)*f(a) = -(n+1)*|f a| < -|u| ≤ u
+    have h2 : ((n : ℝ) + 1) * f a < -|u| := by nlinarith [hfa_abs]
+    linarith [neg_abs_le u]
   -- Step 4: Riesz representation
   let ξ := (InnerProductSpace.toDual ℝ (RealEuclidean m)).symm f
   refine ⟨ξ, ?_, ?_⟩
