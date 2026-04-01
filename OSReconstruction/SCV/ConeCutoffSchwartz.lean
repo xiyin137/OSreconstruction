@@ -173,7 +173,12 @@ theorem psiZRaw_eq_on_dualCone {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (
         = R₂⁻¹ * ∑ i, y i * ξ i := by
           rw [Finset.mul_sum]; congr 1; ext i; ring
       _ ≥ 0 := mul_nonneg (inv_nonneg.mpr (le_of_lt hR₂)) this
-  rw [χ.one_on_set _ hξ₁, χ.one_on_set _ hξ₂]
+  obtain ⟨ε, hε, hone⟩ := χ.one_on_neighborhood
+  have h1 : χ.val (fun i => R₁⁻¹ * ξ i) = 1 :=
+    hone _ (by rw [Metric.infDist_zero_of_mem hξ₁]; exact hε)
+  have h2 : χ.val (fun i => R₂⁻¹ * ξ i) = 1 :=
+    hone _ (by rw [Metric.infDist_zero_of_mem hξ₂]; exact hε)
+  rw [h1, h2]
 
 /-! ### Cone-coercivity lemma -/
 

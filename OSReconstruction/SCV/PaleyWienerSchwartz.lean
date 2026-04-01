@@ -68,8 +68,8 @@ structure FixedConeCutoff (S : Set (Fin m → ℝ)) where
   val : (Fin m → ℝ) → ℝ
   /-- The cutoff is smooth (C^∞). -/
   smooth : ContDiff ℝ ⊤ val
-  /-- The cutoff equals 1 on all of S (and on an ε-neighborhood of S). -/
-  one_on_set : ∀ ξ ∈ S, val ξ = 1
+  /-- The cutoff equals 1 on an open neighborhood of S. -/
+  one_on_neighborhood : ∃ ε > 0, ∀ ξ, Metric.infDist ξ S < ε → val ξ = 1
   /-- The cutoff vanishes far from S. -/
   support_bound : ∀ ξ, Metric.infDist ξ S > 1 → val ξ = 0
   /-- All iterated derivatives are globally bounded. -/
@@ -206,98 +206,6 @@ theorem update_mem_tubeDomain_of_small {m : ℕ}
 
 /-! ### Seminorm bounds for the multi-D family -/
 
-/-- The Schwartz seminorms of `multiDimPsiZ` have polynomial growth in the
-    real part and inverse-boundary-distance growth in the imaginary part.
-    This is the multi-D generalization of `schwartzPsiZ_seminorm_horizontal_bound`.
-
-    For z = x + iy with y ∈ C:
-    ‖ψ_z‖_{k,n} ≤ B_{k,n} · (1 + ‖x‖)^{N_{k,n}} · (1 + dist(y,∂C)⁻¹)^{M_{k,n}}
--/
-axiom multiDimPsiZ_seminorm_bound {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (k n : ℕ) :
-    ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
-      ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
-        SchwartzMap.seminorm ℝ k n (multiDimPsiZ C hC_open hC_conv hC_cone z hz) ≤
-          B * (1 + ‖fun i => (z i).re‖) ^ N *
-            (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M
-
-/-- Finset-sup version of `multiDimPsiZ_seminorm_bound`: for a finite set of
-    seminorm indices, the sup has Vladimirov-type growth. This follows from
-    `multiDimPsiZ_seminorm_bound` applied to each index and taking the max
-    of the constants. -/
-theorem multiDimPsiZ_finset_sup_bound {m : ℕ}
-    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (s : Finset (ℕ × ℕ)) :
-    ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
-      ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
-        (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
-          (multiDimPsiZ C hC_open hC_conv hC_cone z hz) ≤
-          B * (1 + ‖fun i => (z i).re‖) ^ N *
-            (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-  induction s using Finset.induction with
-  | empty =>
-    exact ⟨1, 0, 0, one_pos, fun z hz => by simp [Finset.sup_empty]⟩
-  | @insert a s ha ih =>
-    obtain ⟨B₁, N₁, M₁, hB₁, h₁⟩ := ih
-    obtain ⟨B₂, N₂, M₂, hB₂, h₂⟩ :=
-      multiDimPsiZ_seminorm_bound C hC_open hC_conv hC_cone a.1 a.2
-    refine ⟨max B₁ B₂, max N₁ N₂, max M₁ M₂, lt_max_of_lt_left hB₁, fun z hz => ?_⟩
-    rw [Finset.sup_insert]
-    apply sup_le
-    · -- The new element a: seminorm a.1 a.2 ≤ B₂ * growth ≤ max B * growth'
-      calc (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ a)
-              (multiDimPsiZ C hC_open hC_conv hC_cone z hz)
-          = SchwartzMap.seminorm ℂ a.1 a.2
-              (multiDimPsiZ C hC_open hC_conv hC_cone z hz) := by
-            simp [schwartzSeminormFamily]
-        _ ≤ B₂ * (1 + ‖fun i => (z i).re‖) ^ N₂ *
-              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ := by
-            -- seminorm ℂ k n f = seminorm ℝ k n f (the value doesn't depend on 𝕜)
-            simp only [SchwartzMap.seminorm_apply] at h₂ ⊢
-            exact h₂ z hz
-        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
-              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
-            have hx1 : 1 ≤ 1 + ‖fun i => (z i).re‖ := le_add_of_nonneg_right (norm_nonneg _)
-            have hy1 : 1 ≤ 1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹ :=
-              le_add_of_nonneg_right (inv_nonneg.mpr Metric.infDist_nonneg)
-            have hxN : (1 + ‖fun i => (z i).re‖) ^ N₂ ≤
-                (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) :=
-              pow_le_pow_right₀ hx1 (le_max_right _ _)
-            have hyM : (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ ≤
-                (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) :=
-              pow_le_pow_right₀ hy1 (le_max_right _ _)
-            have hB : B₂ ≤ max B₁ B₂ := le_max_right _ _
-            exact mul_le_mul
-              (mul_le_mul hB hxN (pow_nonneg (le_trans zero_le_one hx1) _)
-                (le_trans (le_of_lt hB₂) hB))
-              hyM (pow_nonneg (le_trans zero_le_one hy1) _)
-              (mul_nonneg (le_trans (le_of_lt hB₂) hB)
-                (pow_nonneg (le_trans zero_le_one hx1) _))
-    · -- The old finset s: sup ≤ B₁ * growth ≤ max B * growth'
-      calc (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
-              (multiDimPsiZ C hC_open hC_conv hC_cone z hz)
-          ≤ B₁ * (1 + ‖fun i => (z i).re‖) ^ N₁ *
-              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ := h₁ z hz
-        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
-              (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
-            have hx1 : 1 ≤ 1 + ‖fun i => (z i).re‖ := le_add_of_nonneg_right (norm_nonneg _)
-            have hy1 : 1 ≤ 1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹ :=
-              le_add_of_nonneg_right (inv_nonneg.mpr Metric.infDist_nonneg)
-            have hxN : (1 + ‖fun i => (z i).re‖) ^ N₁ ≤
-                (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) :=
-              pow_le_pow_right₀ hx1 (le_max_left _ _)
-            have hyM : (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ ≤
-                (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) :=
-              pow_le_pow_right₀ hy1 (le_max_left _ _)
-            have hB : B₁ ≤ max B₁ B₂ := le_max_left _ _
-            exact mul_le_mul
-              (mul_le_mul hB hxN (pow_nonneg (le_trans zero_le_one hx1) _)
-                (le_trans (le_of_lt hB₁) hB))
-              hyM (pow_nonneg (le_trans zero_le_one hy1) _)
-              (mul_nonneg (le_trans (le_of_lt hB₁) hB)
-                (pow_nonneg (le_trans zero_le_one hx1) _))
-
 /-- The dynamically scaled family has Vladimirov-type seminorm growth. -/
 axiom multiDimPsiZDynamic_seminorm_bound {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
@@ -305,7 +213,7 @@ axiom multiDimPsiZDynamic_seminorm_bound {m : ℕ}
     ∃ (B : ℝ) (N M : ℕ), B > 0 ∧
       ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
         SchwartzMap.seminorm ℝ k n (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) ≤
-          B * (1 + ‖fun i => (z i).re‖) ^ N *
+          B * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M
 
 /-- Finset-sup version of `multiDimPsiZDynamic_seminorm_bound`. -/
@@ -316,7 +224,7 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
       ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
         (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
           (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) ≤
-          B * (1 + ‖fun i => (z i).re‖) ^ N *
+          B * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
   induction s using Finset.induction with
   | empty =>
@@ -333,17 +241,17 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
           = SchwartzMap.seminorm ℂ a.1 a.2
               (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) := by
             simp [schwartzSeminormFamily]
-        _ ≤ B₂ * (1 + ‖fun i => (z i).re‖) ^ N₂ *
+        _ ≤ B₂ * (1 + ‖z‖) ^ N₂ *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ := by
             simp only [SchwartzMap.seminorm_apply] at h₂ ⊢
             exact h₂ z hz
-        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
+        _ ≤ max B₁ B₂ * (1 + ‖z‖) ^ (max N₁ N₂) *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
-            have hx1 : 1 ≤ 1 + ‖fun i => (z i).re‖ := le_add_of_nonneg_right (norm_nonneg _)
+            have hx1 : 1 ≤ 1 + ‖z‖ := le_add_of_nonneg_right (norm_nonneg _)
             have hy1 : 1 ≤ 1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹ :=
               le_add_of_nonneg_right (inv_nonneg.mpr Metric.infDist_nonneg)
-            have hxN : (1 + ‖fun i => (z i).re‖) ^ N₂ ≤
-                (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) :=
+            have hxN : (1 + ‖z‖) ^ N₂ ≤
+                (1 + ‖z‖) ^ (max N₁ N₂) :=
               pow_le_pow_right₀ hx1 (le_max_right _ _)
             have hyM : (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₂ ≤
                 (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) :=
@@ -357,15 +265,15 @@ theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
                 (pow_nonneg (le_trans zero_le_one hx1) _))
     · calc (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
               (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz)
-          ≤ B₁ * (1 + ‖fun i => (z i).re‖) ^ N₁ *
+          ≤ B₁ * (1 + ‖z‖) ^ N₁ *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ := h₁ z hz
-        _ ≤ max B₁ B₂ * (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) *
+        _ ≤ max B₁ B₂ * (1 + ‖z‖) ^ (max N₁ N₂) *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) := by
-            have hx1 : 1 ≤ 1 + ‖fun i => (z i).re‖ := le_add_of_nonneg_right (norm_nonneg _)
+            have hx1 : 1 ≤ 1 + ‖z‖ := le_add_of_nonneg_right (norm_nonneg _)
             have hy1 : 1 ≤ 1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹ :=
               le_add_of_nonneg_right (inv_nonneg.mpr Metric.infDist_nonneg)
-            have hxN : (1 + ‖fun i => (z i).re‖) ^ N₁ ≤
-                (1 + ‖fun i => (z i).re‖) ^ (max N₁ N₂) :=
+            have hxN : (1 + ‖z‖) ^ N₁ ≤
+                (1 + ‖z‖) ^ (max N₁ N₂) :=
               pow_le_pow_right₀ hx1 (le_max_left _ _)
             have hyM : (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M₁ ≤
                 (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ (max M₁ M₂) :=
@@ -688,8 +596,8 @@ theorem schwartz_clm_bound_by_finset_sup
 /-- F(z) = T(ψ_z) satisfies the global Vladimirov growth bound.
 
     Proof: |F(z)| = |T(ψ_z)| ≤ ‖T‖ · ‖ψ_z‖_{k,n} for some seminorm.
-    By `multiDimPsiZ_seminorm_bound`:
-    ‖ψ_z‖_{k,n} ≤ B · (1+‖Re z‖)^N · (1 + dist(Im z, ∂C)⁻¹)^M -/
+    By the dynamic-radius seminorm bound:
+    ‖ψ_z‖_{k,n} ≤ B · (1+‖z‖)^N · (1 + dist(Im z, ∂C)⁻¹)^M -/
 theorem fourierLaplaceExtMultiDim_vladimirov_growth
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C)
@@ -715,26 +623,12 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
   calc ‖T (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz)‖
     _ ≤ C_T * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ))
           (multiDimPsiZDynamic C hC_open hC_conv hC_cone z hz) := hT_bound _
-    _ ≤ C_T * (B * (1 + ‖fun i => (z i).re‖) ^ N *
+    _ ≤ C_T * (B * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M) := by
         apply mul_le_mul_of_nonneg_left (hψ_bound z hz) (by exact_mod_cast C_T.coe_nonneg)
-    _ ≤ C_T * B * (1 + ‖z‖) ^ N *
+    _ = C_T * B * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-        have hre_le : ‖fun i => (z i).re‖ ≤ ‖z‖ := by
-          apply pi_norm_le_iff_of_nonneg (norm_nonneg z) |>.mpr
-          intro i
-          calc ‖(z i).re‖ = |(z i).re| := Real.norm_eq_abs _
-            _ ≤ ‖z i‖ := Complex.abs_re_le_norm (z i)
-            _ ≤ ‖z‖ := norm_le_pi_norm z i
-        have hre_nn : (0 : ℝ) ≤ 1 + ‖fun i => (z i).re‖ := by positivity
-        have h1 : (1 + ‖fun i => (z i).re‖) ^ N ≤ (1 + ‖z‖) ^ N :=
-          pow_le_pow_left₀ hre_nn (by linarith) N
-        have hCB : 0 ≤ C_T * B := mul_nonneg (le_of_lt hC_T_pos) (le_of_lt hB_pos)
-        have hinfDist_nn : (0 : ℝ) ≤ Metric.infDist (fun i => (z i).im) Cᶜ :=
-          Metric.infDist_nonneg
-        have hD : (0 : ℝ) ≤ (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M :=
-          pow_nonneg (by linarith [inv_nonneg.mpr hinfDist_nn]) _
-        nlinarith [mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left h1 hCB) hD]
+        ring
 
 /-! ### Boundary values -/
 
