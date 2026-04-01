@@ -131,19 +131,18 @@ theorem dualConeEucl_separates_of_not_mem_closure
   -- Step 2: 0 ∈ closure S → u < 0 → f(y) < 0
   have h0_mem : (0 : RealEuclidean m) ∈ closure S := by
     obtain ⟨a, ha⟩ := hne
-    sorry -- 0 ∈ closure S: (1/(n+1)) • a ∈ S for all n, converges to 0
+    rw [mem_closure_iff_seq_limit]
+    refine ⟨fun n => ((n : ℝ) + 1)⁻¹ • a,
+      fun n => hcone a ha _ (inv_pos.mpr (by positivity : (0 : ℝ) < (n : ℝ) + 1)), ?_⟩
+    sorry -- ((n+1)⁻¹) • a → 0 as n → ∞
   have hu_neg : u < 0 := by linarith [hfa 0 h0_mem, (f.map_zero)]
   have hfy_neg : f y < 0 := lt_trans hfy hu_neg
   -- Step 3: f(a) ≥ 0 for all a ∈ S
   have hf_nonneg : ∀ a ∈ S, 0 ≤ f a := by
     intro a ha
-    by_contra h
-    push_neg at h
-    -- f(n•a) = n * f(a) → -∞, but f(n•a) > u for all n (since n•a ∈ closure S)
-    have : ∀ n : ℕ, u < (n : ℝ) * f a := by
-      intro n
-      sorry -- n • a ∈ closure S and f(n•a) = n * f(a)
-    sorry -- contradiction: n*f(a) → -∞ but bounded below by u
+    by_contra h_neg
+    push_neg at h_neg
+    sorry -- Archimedean: n*f(a) → -∞ contradicts f(n•a) > u for n•a ∈ closure S
   -- Step 4: Riesz representation
   let ξ := (InnerProductSpace.toDual ℝ (RealEuclidean m)).symm f
   refine ⟨ξ, ?_, ?_⟩
