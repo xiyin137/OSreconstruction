@@ -115,7 +115,7 @@
 \title{Lean 4 Formalization of the Osterwalder--Schrader Reconstruction Theorem:\\
 Comprehensive Proof Notes with OS Paper Comparison}
 \author{OSReconstruction Project}
-\date{March 23, 2026}
+\date{March 31, 2026}
 
 \begin{document}
 \sloppy
@@ -133,10 +133,22 @@ mathematical explanation.
 
 \medskip\noindent
 \textbf{Status note.} The critical-path sections of this note have been updated
-to the current production route as of 2026-03-23. In particular, the active
-$E \to R$ frontier now follows the corrected OS~II semigroup/VI.1 route through
-\leanfile{OSToWightmanK2VI1.lean}; older fixed-probe two-point kernel detours
-are no longer on the production critical path.
+to the current production route as of 2026-03-31. The active $E \to R$ story is
+now:
+\begin{center}
+\leanfile{OSToWightmanSemigroup.lean}
+$\to$
+\leanfile{OSToWightman.lean}
+$\to$
+\leanfile{SCV/TubeBoundaryValues.lean}
+$\to$
+\leanfile{OSToWightmanBoundaryValues.lean}
+\end{center}
+The earlier issue-\#48 blocker through the false
+\leanname{HasFourierLaplaceReprTempered.uniform\_bound} abstraction is no longer
+on the active OS path. The $k=2$ VI.1 files remain important support and local
+frontier infrastructure, but they are no longer the first top-level blocker for
+\leanname{os\_to\_wightman\_full}.
 
 \medskip\noindent
 \textbf{Status convention used in this note.}
@@ -209,23 +221,28 @@ The correspondence consists of two directions:
   at Euclidean points via Wick rotation.
 \end{description}
 
-\subsection{Current Status Note (2026-03-23)}
+\subsection{Current Status Note (2026-03-31)}
 
-The repository has recently undergone a substantial course correction on the
+The repository has now undergone two substantial corrections on the
 $E \to R$ side.
 
 \begin{itemize}
 \item The production route now follows the OS papers strictly: semigroup/Hilbert
-  space first, then the OS~II Section~VI.1 regularization and boundary-value
-  identification, and only afterwards the general several-complex-variables
-  continuation and boundary-value transfer chain.
+  space first, then the several-complex-variables continuation witness, then
+  the pure tube-domain boundary-value theorem, and only afterwards the
+  Wightman-axiom transfer chain.
 \item The older specialized two-point kernel / \texttt{differenceLift} detours
-  have been removed from the active production path and moved out of the live
-  route. They should be regarded as deprecated historical explorations, not as
-  current blockers.
+  are no longer on the public critical path. The $k=2$ route survives as
+  important support infrastructure and as a local frontier file, but it is not
+  the first blocker for the top-level theorem anymore.
 \item The honest Euclidean surface in this project is the zero-diagonal Schwartz
   space. No current production theorem on the $E \to R$ route is allowed to
   replace that by a full-Schwartz Euclidean surrogate merely for convenience.
+\item Issue~\#48 has been resolved on the active OS route by moving the true
+  boundary-value trust boundary into the SCV layer. The pure remaining
+  non-QFT-specific trust boundary is now the axiom
+  \leanname{tube\_boundaryValueData\_of\_polyGrowth} in
+  \leanfile{SCV/TubeBoundaryValues.lean}.
 \item On the $R \to E$ side, the repo still contains historical route issues,
   especially around reduced-coordinate BHW infrastructure. Those are currently
   flagged but not the implementation focus.
@@ -235,34 +252,50 @@ $E \to R$ side.
 
 The current blocker map is best understood at the file/theorem level.
 
-\paragraph{E-to-R active route.}
+\paragraph{E-to-R active public route.}
 \begin{enumerate}
-\item \leanfile{OSToWightmanSemigroup.lean} is the proved one-variable OS
-  semigroup/Laplace layer.
-\item \leanfile{OSToWightmanK2BaseStep.lean} is the proved support layer for the
-  honest $k=2$ route: canonical probe witness, Bochner measure, positive-time
-  shell identities, Laplace--Fourier reduction, and auxiliary support/control
-  lemmas.
-\item \leanfile{OSToWightmanK2VI1.lean} is the live OS~II Section~VI.1 frontier.
-  The two active open theorems there are:
+\item The semigroup/Hilbert-space support layer is established and spread across
+  \leanfile{OSToWightmanSemigroup.lean},
+  \leanfile{OSToWightmanK2BaseStep.lean},
+  \leanfile{OSToWightmanK2Density.lean},
+  \leanfile{OSToWightmanTubeIdentity.lean}, and the proved support file
+  \leanfile{K2VI1/Support.lean}. These files are route infrastructure, not the
+  first public blockers.
+\item \leanfile{OSToWightman.lean} contains the current upstream continuation
+  blockers. The three live private subproblems there are:
   \begin{itemize}
-  \item \leanname{translatedProductShell_boundary_tendsto_schwingerDifferencePositive_of_negativeApproxIdentity_local}
-  \item \leanname{exists_k2_timeParametric_distributional_assembly}
+  \item \leanname{exists\_acrOne\_productTensor\_witness}
+  \item \leanname{acrOne\_productTensor\_witness\_euclidKernelPackage}
+  \item \leanname{compactlySupported\_zeroDiagonal\_subset\_closure\_admissibleProductTensorSet}
   \end{itemize}
-  The first is the sequence-level VI.1 boundary-limit theorem; the second is the
-  final $k=2$ existential assembly theorem above that limit.
-\item \leanfile{OSToWightman.lean} contains the next two live general-$k$
-  blockers:
+  Together they are the honest general-$k$ ACR(1) continuation gap above the
+  solved semigroup/$k=2$ support layer, where ACR(1) means the first
+  positive-time-difference continuation region \(C_k^{(1)}\).
+\item \leanfile{SCV/TubeBoundaryValues.lean} contains the explicit pure
+  SCV/functional-analytic trust boundary:
   \begin{itemize}
-  \item \leanname{exists_acrOne_productTensor_witness}
-  \item \leanname{acrOne_productTensor_witness_extends_zeroDiagonal}
+  \item \leanname{tube\_boundaryValueData\_of\_polyGrowth}
   \end{itemize}
-  These are the OS-II several-complex-variables / Osgood / product-tensor
-  continuation steps above the solved $k=2$ base.
-\item \leanfile{OSToWightmanBoundaryValues.lean} is the downstream boundary-value
-  transfer lane. Its live front is \leanname{boundary_values_tempered}, followed
-  by the remaining transfer theorems in that file.
+  This is now the honest non-QFT-specific issue-\#48 trust boundary.
+\item \leanfile{OSToWightmanBoundaryValues.lean} is the downstream
+  boundary-value transfer lane. The active blockers there are:
+  \begin{itemize}
+  \item \leanname{bvt\_lorentz\_covariant}
+  \item \leanname{bvt\_locally\_commutative}
+  \item \leanname{bvt\_positive\_definite}
+  \item \leanname{bvt\_hermitian}
+  \item \leanname{bvt\_cluster}
+  \end{itemize}
+  These theorems are now reduced to honest local pairing / positivity /
+  cluster seams rather than the older monolithic boundary-value packaging.
 \end{enumerate}
+
+\paragraph{E-to-R local frontier.}
+The repository still keeps a compact $k=2$ frontier file,
+\leanfile{K2VI1/Frontier.lean}, as a local experimental and packaging surface
+for OS~II Section~VI.1. It is useful for route diagnostics and two-point
+specializations, but it is no longer the first public blocker for
+\leanname{os\_to\_wightman\_full}.
 
 \paragraph{R-to-E flagged route.}
 Implementation work is not currently focused here, but the live front remains in
@@ -299,7 +332,10 @@ current proof obligations.
 \subsection{E-to-R Critical Path}
 
 The active production $E \to R$ path is now the strict OS-route chain shown
-below.
+below. The key update relative to the March-23 note is that the first public
+frontier is no longer the $k=2$ VI.1 file. The mainline now bottlenecks first
+at the general-$k$ continuation file, then at the pure SCV boundary-value axiom,
+and then at the boundary-value transfer theorems.
 
 \begin{center}
 \begin{adjustbox}{max width=\textwidth,center}
@@ -314,18 +350,18 @@ below.
 ]
 \node[proved] (s) at (0,0)
   {Semigroup layer\\{\footnotesize\texttt{OSToWightman}\\\texttt{Semigroup.lean}}};
-\node[proved] (k2b) at (4.5,0)
-  {k=2 support layer\\{\footnotesize\texttt{OSToWightmanK2}\\\texttt{BaseStep.lean}}};
-\node[frontier] (vi1) at (9.2,0)
-  {OS II VI.1 frontier\\{\footnotesize\texttt{OSToWightmanK2}\\\texttt{VI1.lean}}\\2 live sorrys};
-\node[pending] (gen) at (13.9,0)
-  {General-k assembly\\{\footnotesize\texttt{OSToWightman.lean}}\\2 live sorrys};
-\node[pending] (bv) at (18.5,0)
-  {Boundary-value transfer\\{\footnotesize\texttt{OSToWightman}\\\texttt{BoundaryValues.lean}}\\7 live sorrys};
+\node[proved] (k2b) at (4.6,0)
+  {k=2 support / density / identity layer\\{\footnotesize\texttt{K2BaseStep + K2Density +}\\\footnotesize\texttt{K2VI1/Support + TubeIdentity}}};
+\node[frontier] (gen) at (9.5,0)
+  {General-k continuation\\{\footnotesize\texttt{OSToWightman.lean}}\\3 private live theorems};
+\node[pending] (tbv) at (14.4,0)
+  {Pure SCV trust boundary\\{\footnotesize\texttt{SCV/TubeBoundaryValues.lean}}\\1 explicit axiom};
+\node[pending] (bv) at (19.3,0)
+  {Boundary-value transfer\\{\footnotesize\texttt{OSToWightman}\\\texttt{BoundaryValues.lean}}\\5 live theorems};
 \draw[arr] (s) -- (k2b);
-\draw[arr] (k2b) -- (vi1);
-\draw[arr] (vi1) -- (gen);
-\draw[arr] (gen) -- (bv);
+\draw[arr] (k2b) -- (gen);
+\draw[arr] (gen) -- (tbv);
+\draw[arr] (tbv) -- (bv);
 \end{tikzpicture}
 \end{adjustbox}
 
@@ -342,29 +378,32 @@ below.
 \leanfile{OSToWightmanSemigroup.lean} & mixed proved layer &
 OS semigroup, spatial-translation, spectral/Laplace, and one-variable
 holomorphic infrastructure. \\
-\leanfile{OSToWightmanK2BaseStep.lean} & compile-closed support layer &
-All proved support machinery for the honest $k=2$ route:
-canonical probe witness, Bochner package, positive-time shell identities,
-Laplace--Fourier bridges, and support control. \\
-\leanfile{OSToWightmanK2VI1.lean} & 2 open theorems &
-Current live frontier. This file isolates the remaining OS~II VI.1
-regularization/boundary-identification step and the final $k=2$ existential
-assembly theorem. \\
-\leanfile{OSToWightman.lean} & 2 private open theorems &
-General-$k$ Osgood / product-tensor witness layer above the solved $k=2$ base. \\
-\parbox[t]{0.23\textwidth}{\ttfamily OStoWightman\\BoundaryValues.lean} & 7 open theorems &
-Tempered boundary-value packaging and the downstream transfer theorems needed to
-finish the final $E \to R$ assembly. \\
+\leanfile{OSToWightmanK2BaseStep.lean}, \leanfile{OSToWightmanK2Density.lean},
+\leanfile{K2VI1/Support.lean}, \leanfile{OSToWightmanTubeIdentity.lean}
+& compile-closed support layer &
+Bochner package, difference-shell density, tube-identity lemmas, and the
+proved support needed by the current continuation and transfer lanes. \\
+\leanfile{OSToWightman.lean} & 3 private open theorems &
+General-$k$ Osgood / product-tensor witness layer above the solved
+semigroup/$k=2$ support core. \\
+\leanfile{SCV/TubeBoundaryValues.lean} & 1 explicit axiom &
+Pure tube-domain boundary-value existence from holomorphy plus global
+polynomial growth. This is the current issue-\#48 trust boundary. \\
+\parbox[t]{0.23\textwidth}{\ttfamily OStoWightman\\BoundaryValues.lean} & 5 open theorems &
+Downstream Wightman-axiom transfer. The file already proves normalization and
+translation invariance; the remaining seams are Lorentz covariance, locality,
+positivity, hermiticity, and cluster. \\
 \bottomrule
 \end{longtable}
 }
 
 \paragraph{Important correction.}
-Any diagram or discussion that routes the active $E \to R$ proof through a
-specialized fixed-probe two-point kernel theorem is now obsolete. The current
-route uses the sequence-level OS~II VI.1 regularization theorem in
-\leanfile{OSToWightmanK2VI1.lean}; the fixed-probe surface was removed because
-it was stronger than the paper route and risked targeting the wrong theorem.
+Any diagram or discussion that routes the active $E \to R$ proof through either
+the old fixed-probe two-point kernel theorem or the old
+\leanname{boundary\_values\_tempered} blocker is now obsolete. The first route
+was too strong and targeted the wrong theorem surface; the second was part of
+issue~\#48 and has now been replaced by the pure SCV theorem surface in
+\leanfile{SCV/TubeBoundaryValues.lean}.
 
 \medskip\noindent
 These file-level labels summarize route position, not theorem trust boundaries.
@@ -486,24 +525,21 @@ explicit open theorems, and axioms.
 ]
 \node[package] (osh) at (0,0) {OS Hilbert package\\\leanfile{SchwingerOS.lean}};
 \node[sfree] (semi) at (4.2,0) {\leanname{osTimeShiftHilbert}\\sorry-free};
-\node[sdep] (holo) at (8.4,0) {\leanname{full\_analytic\_continuation}\\proved, sorry-dependent};
-\node[package] (k2b) at (12.6,0) {$k=2$ support package\\{\footnotesize\texttt{OSToWightmanK2}\\\texttt{BaseStep.lean}}};
-\node[open] (vi1a) at (16.8,1.25) {VI.1 sequence limit\\negative approx.-identity};
-\node[open] (vi1b) at (16.8,-1.25) {Final $k=2$ assembly\\distributional package};
-\node[sdep] (k2main) at (21.0,0) {\leanname{schwinger\_continuation\_base\_step\_timeParametric\_k2}\\proved, sorry-dependent};
-\node[open] (genk) at (25.2,0) {\leanfile{OSToWightman.lean}\\2 private open theorems};
-\node[sdep] (bv) at (29.4,0) {\leanname{boundary\_values\_tempered}\\proved, sorry-dependent};
+\node[sdep] (holo) at (8.4,0) {\leanname{full\_analytic\_continuation\_with\_symmetry\_growth}\\proved, sorry-dependent};
+\node[package] (k2b) at (12.6,0) {$k=2$ support package\\{\footnotesize\texttt{K2BaseStep + K2Density +}\\\footnotesize\texttt{K2VI1/Support}}};
+\node[open] (genk) at (16.8,0) {\leanfile{OSToWightman.lean}\\3 private open theorems};
+\node[axiomnode] (tbv) at (21.0,0) {\leanname{tube\_boundaryValueData\_of\_polyGrowth}\\pure SCV axiom};
+\node[sdep] (bv) at (25.2,0) {\leanname{boundary\_values\_tempered}\\proved, sorry-dependent};
+\node[open] (bvt) at (29.4,0) {\leanfile{OSToWightmanBoundaryValues.lean}\\5 open transfer theorems};
 \node[sdep] (mainer) at (33.6,0) {\leanname{os\_to\_wightman}\\proved, sorry-dependent};
 \draw[arr] (osh) -- (semi);
 \draw[arr] (semi) -- (holo);
 \draw[arr] (holo) -- (k2b);
-\draw[arr] (k2b) -- (vi1a);
-\draw[arr] (k2b) -- (vi1b);
-\draw[arr] (vi1a) -- (k2main);
-\draw[arr] (vi1b) -- (k2main);
-\draw[arr] (k2main) -- (genk);
-\draw[arr] (genk) -- (bv);
-\draw[arr] (bv) -- (mainer);
+\draw[arr] (k2b) -- (genk);
+\draw[arr] (genk) -- (tbv);
+\draw[arr] (tbv) -- (bv);
+\draw[arr] (bv) -- (bvt);
+\draw[arr] (bvt) -- (mainer);
 \end{tikzpicture}
 \end{adjustbox}
 
@@ -512,9 +548,11 @@ explicit open theorems, and axioms.
 \end{center}
 
 \noindent
-In the $E \to R$ chart, the two red VI.1 nodes abbreviate the full theorem names
-\leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local}
-and \leanname{exists\_k2\_timeParametric\_distributional\_assembly}.
+In the $E \to R$ chart, the orange node marks the explicit pure SCV trust
+boundary \leanname{tube\_boundaryValueData\_of\_polyGrowth}. The red nodes now
+correspond to the genuinely live theorem seams: the three private continuation
+subproblems in \leanfile{OSToWightman.lean} and the five transfer theorems in
+\leanfile{OSToWightmanBoundaryValues.lean}.
 
 \begin{center}
 \begin{adjustbox}{max width=\textwidth,center}
@@ -1024,9 +1062,9 @@ theorem osSpatialTranslateHilbert_comp (OS) (a b) :
 \medskip\noindent
 \textbf{Dependency-aware status.}
 Direct audit shows that \leanname{osSpatialTranslateHilbert\_comp} is
-sorry-free. This matters because the current VI.1 route repeatedly packages
-mixed time-translation and spatial-translation orbits, so it is useful to know
-that the spatial group law itself is not part of the unresolved frontier.
+sorry-free. This matters because the current OS route repeatedly packages mixed
+time-translation and spatial-translation orbits, so it is useful to know that
+the spatial group law itself is not part of the unresolved frontier.
 
 
 \section{Analytic Continuation (OS~I, Section~4.1; OS~II, Section~V)}
@@ -1036,8 +1074,29 @@ functions in the time variables. OS~II uses an inductive procedure:
 at step $r$, analytically continue $S_k$ from the real domain $\mathbb{R}^{4k}_+$
 to the complex region $C_k^{(r)}$.
 
+\medskip\noindent
+\textbf{What \(C_k^{(1)}\) means.}
+The first continuation region \(C_k^{(1)}\), written in Lean as
+\leanname{AnalyticContinuationRegion~d~k~1}, is the one-slice forward tube in
+which only the \emph{time-difference} imaginary parts are constrained:
+\[
+C_k^{(1)}
+=
+\left\{
+z \in \mathbb{C}^{k \times (d+1)}
+\;\middle|\;
+\Im(z_0^0) > 0,\;
+\Im(z_j^0 - z_{j-1}^0) > 0 \text{ for } j=1,\dots,k-1
+\right\}.
+\]
+In the formalization this region is also identified with the tube over the
+positive time-difference cone after passing to flattened center/difference
+coordinates. So when this note refers to the general-\(k\) ``ACR(1)'' problem,
+the content is: construct a single holomorphic witness on this first
+positive-time-difference tube, then continue and extend it coherently.
+
 \begin{lstlisting}
--- OSToWightman.lean:1938 (PROVED)
+-- OSToWightman.lean:2411 (PROVED)
 -- The full analytic continuation: for each n, there exists
 -- a holomorphic function F on the forward tube that equals
 -- the Schwinger function on Euclidean real points.
@@ -1053,7 +1112,7 @@ theorem full_analytic_continuation
 \end{lstlisting}
 
 \begin{lstlisting}
--- OSToWightman.lean:1903 (PROVED)
+-- OSToWightman.lean:2321 (PROVED)
 -- The inductive step: extend from C_k^(r) to C_k^(r+1).
 theorem iterated_analytic_continuation
     (OS : OsterwalderSchraderAxioms d)
@@ -1069,34 +1128,60 @@ theorem iterated_analytic_continuation
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
-The main continuation theorems \leanname{full\_analytic\_continuation} and
-\leanname{iterated\_analytic\_continuation} are both present in Lean, but direct
-audit shows that they are currently \emph{sorry-dependent}. Mathematically, they
-already express the right OS~I / OS~II theorem surfaces; formally, they still
-inherit unresolved work from the later $k=2$, general-$k$, and boundary-value
-layers.
+The main continuation theorems \leanname{full\_analytic\_continuation},
+\leanname{full\_analytic\_continuation\_with\_growth}, and
+\leanname{full\_analytic\_continuation\_with\_symmetry\_growth} are all present
+in Lean. Their current trust boundary is no longer the old $k=2$ VI.1 frontier,
+but the three private continuation subproblems in \leanfile{OSToWightman.lean}:
+\leanname{exists\_acrOne\_productTensor\_witness},
+\leanname{acrOne\_productTensor\_witness\_euclidKernelPackage}, and
+\leanname{compactlySupported\_zeroDiagonal\_subset\_closure\_admissibleProductTensorSet}.
+So this layer is best described as \emph{proved theorem surface sitting above a
+small but honest general-$k$ continuation frontier}.
 
 
 \section{The k=2 Base Step (OS~II, Theorem~4.1)}
 
-This is the initial nontrivial OS~II step on the corrected production route.
-The repository now splits it into two files:
+This is still the initial nontrivial OS~II step, but it is no longer the first
+top-level blocker for the public $E \to R$ route. The repository now splits the
+$k=2$ lane into support, density, and a small local frontier:
 \begin{itemize}
-\item \leanfile{OSToWightmanK2BaseStep.lean} --- the proved support layer:
-  canonical probe witness, Bochner measure, positive-time shell identities,
-  Laplace--Fourier reduction, and support/control lemmas.
-\item \leanfile{OSToWightmanK2VI1.lean} --- the live OS~II Section~VI.1
-  frontier: sequence-level regularization, boundary identification, and final
-  existential $k=2$ assembly.
+\item \leanfile{OSToWightmanK2BaseStep.lean} --- the Bochner/probe/support layer.
+\item \leanfile{OSToWightmanK2Density.lean} --- flat-origin difference-shell
+  density.
+\item \leanfile{K2VI1/Support.lean} --- proved VI.1 support wrappers.
+\item \leanfile{K2VI1/Frontier.lean} --- a compact local frontier / theorem
+  surface for the $k=2$ time-parametric theorem.
 \end{itemize}
 
-The public theorem surface is still the same $k=2$ base-step theorem, but the
-remaining content is no longer described correctly as a fixed-probe kernel bound
-plus shell-agreement theorem. The honest remaining gap is the sequence-level
-VI.1 regularization limit.
+The important update is that the $k=2$ story should now be read as a
+\emph{stabilized support lane}. It remains mathematically important, and the
+public two-point theorem surface is still documented here, but the first live
+public blocker for \leanname{os\_to\_wightman\_full} has moved upward to the
+general-$k$ continuation and boundary-value layers.
 
-\begin{lstlisting}[style=leansorry]
--- OSToWightmanK2VI1.lean:536
+\medskip\noindent
+\textbf{Mathematical content of the \(k=2\) base step.}
+The \(k=2\) theorem is the first place where the abstract continuation witness
+becomes a concrete Euclidean kernel. In the current route, its proof packages
+four ingredients:
+\begin{enumerate}
+\item semigroup/continuation input producing a common holomorphic witness on the
+  first continuation region;
+\item translation invariance, which collapses the witness to difference-block
+  dependence rather than absolute-position dependence;
+\item swap symmetry, which lets one assemble a single real kernel \(K\) from
+  the positive and negative time-ordering sectors;
+\item density and tube-identity arguments, which extend reproduction from the
+  natural dense shell classes to all zero-diagonal two-point Schwartz tests.
+\end{enumerate}
+So the present role of the \(k=2\) lane is not to replace the general
+continuation story, but to certify that the two-point Euclidean section already
+has the expected kernel-theoretic form and can be used downstream as stable
+support infrastructure.
+
+\begin{lstlisting}
+-- K2VI1/Frontier.lean:1731
 -- The public k=2 time-parametric base step.
 theorem schwinger_continuation_base_step_timeParametric_k2
     (OS : OsterwalderSchraderAxioms d)
@@ -1126,17 +1211,17 @@ theorem schwinger_continuation_base_step_timeParametric_k2
   for every zero-diagonal two-point Schwartz test.
 \end{enumerate}
 
-The theorem is still \textbf{open}, but its remaining content has been narrowed
-to the honest VI.1 sequence-limit theorem and the final existential assembly
-theorem above that limit.
-
 \medskip\noindent
 \textbf{Status summary.}
-The public theorem
-\leanname{schwinger\_continuation\_base\_step\_timeParametric\_k2} is still
-\emph{open}. By contrast, \leanfile{OSToWightmanK2BaseStep.lean} is now a
-compile-closed support file, while \leanfile{OSToWightmanK2VI1.lean} isolates
-the two genuinely remaining VI.1 obligations.
+The right way to read the $k=2$ material now is:
+\begin{itemize}
+\item the heavy support machinery is already packaged and exact-checks;
+\item the small \leanfile{K2VI1/Frontier.lean} file remains valuable for local
+  route experiments and explicit theorem surfaces;
+\item however, the public top-level $E \to R$ critical path has moved on to the
+  general-$k$ continuation file \leanfile{OSToWightman.lean} and the
+  boundary-value transfer file \leanfile{OSToWightmanBoundaryValues.lean}.
+\end{itemize}
 
 \subsection{The Density Theorem}
 
@@ -1176,50 +1261,80 @@ depend on the project axiom \leanname{schwartz\_nuclear\_extension}. So this is
 established support machinery, but not an axiom-free theorem in the strictest
 possible sense.
 
-\subsection{Current k=2 Frontier}
+\subsection{Current k=2 Status}
 \label{sec:k2sorry}
 
-\begin{description}[leftmargin=2.2em,style=nextline]
-\item[\textnormal{VI.1 sequence limit}]
+The March-23 version of this note treated the $k=2$ VI.1 lane as the first
+global public blocker. That is no longer the right picture.
+
+\medskip\noindent
+\textbf{What remains true.}
+The $k=2$ route is still mathematically central. It explains where the probe
+witnesses, Bochner measures, difference-shell densities, and tube-identity
+lemmas come from. Those results continue to feed the later continuation and
+boundary-value layers.
+
+\medskip\noindent
+\textbf{What changed.}
+The current public blocker map is no longer organized around the old pair
 \leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local}
-\hfill\textnormal{(\leanfile{OSToWightmanK2VI1.lean}:426, \sorry)}
+and \leanname{exists\_k2\_timeParametric\_distributional\_assembly}. Those
+results were useful for isolating the honest VI.1 content, but the active
+project frontier has since moved to:
+\begin{enumerate}
+\item the three private continuation subproblems in
+  \leanfile{OSToWightman.lean},
+\item the pure SCV axiom \leanname{tube\_boundaryValueData\_of\_polyGrowth} in
+  \leanfile{SCV/TubeBoundaryValues.lean},
+\item the five remaining transfer theorems in
+  \leanfile{OSToWightmanBoundaryValues.lean}.
+\end{enumerate}
 
-Sequence-level OS~II VI.1 boundary-limit theorem: for a shrinking negative
-approximate-identity sequence $\phi_n$ and every positive-time compact-support
-test $h$, the regularized translated-product-shell boundary pairing tends to the
-reduced Schwinger positive CLM evaluated at $h$.
-
-\item[\textnormal{Final $k=2$ assembly}]
-\leanname{exists\_k2\_timeParametric\_distributional\_assembly}
-\hfill\textnormal{(\leanfile{OSToWightmanK2VI1.lean}:504, \sorry)}
-
-Final existential $k=2$ assembly theorem: constructs the holomorphic witness
-$G$ together with the real Euclidean kernel $K$ produced by the VI.1
-regularization package.
-\end{description}
-
-\noindent\textbf{Interpretation.}
-The first theorem is the real OS~II Section~VI.1 content:
-regularize the boundary object with a shrinking negative approximate identity
-and show convergence to the reduced Schwinger positive CLM. The second theorem
-then packages the resulting limiting witness/kernel pair into the public
-$k=2$ base-step theorem.
+\medskip\noindent
+So this subsection is now best read as \emph{historical/current support context}
+for the general OS route, not as the current top-level blocker map.
 
 
 \section{Boundary Values and Wightman Axiom Transfer}
 
-Once the analytic continuation is established, the Wightman distributions
-are defined as boundary values:
+Once the analytic continuation is established, the Wightman distributions are
+defined as boundary values:
 \[
 \mathfrak{W}_n(f) = \lim_{\varepsilon \to 0^+}
 \int F_n(x + i\varepsilon\eta) f(x) \, d^{4n}x
 \]
 for $\eta$ in the forward cone.
 
-\begin{lstlisting}[style=leansorry]
--- OSToWightmanBoundaryValues.lean:187 (SORRY)
--- Existence of tempered boundary values for the analytic
--- continuation on the flattened forward tube.
+\medskip\noindent
+\textbf{Direction independence.}
+The point of the boundary-value package is not merely that the limit exists for
+some interior direction \(\eta\), but that the \emph{same} functional
+\(\mathfrak{W}_n\) is recovered for every choice of \(\eta \in V_+\). In the
+current repo this direction-independence is exactly what the pure SCV trust
+boundary \leanname{tube\_boundaryValueData\_of\_polyGrowth} supplies.
+
+\medskip\noindent
+\textbf{Current route correction (issue \#48).}
+Earlier versions of this note described
+\leanname{boundary\_values\_tempered} as the live blocker and routed it through
+the SCV \leanname{uniform\_bound} abstraction. That is now obsolete. The active
+OS path has been corrected as follows:
+\begin{enumerate}
+\item the chosen continuation now comes from
+  \leanname{full\_analytic\_continuation\_with\_symmetry\_growth};
+\item the pure boundary-value existence step has been moved into the SCV layer
+  as the axiom \leanname{tube\_boundaryValueData\_of\_polyGrowth};
+\item \leanname{boundary\_values\_tempered} is now a theorem, not the live
+  frontier;
+\item the remaining blockers in
+  \leanfile{OSToWightmanBoundaryValues.lean} are the downstream transfer
+  statements for Lorentz covariance, locality, positivity, hermiticity, and
+  cluster.
+\end{enumerate}
+
+\begin{lstlisting}
+-- OSToWightmanBoundaryValues.lean:190
+-- The continuous boundary-value witness for the chosen continuation.
 theorem boundary_values_tempered
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
@@ -1238,154 +1353,55 @@ theorem boundary_values_tempered
           (nhds (W_n f))) /\
       (forall (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x))
+          F_analytic (fun k => wickRotatePoint (x k)) * (f.1 x)) /\
+      (forall (σ : Equiv.Perm (Fin n)) (z : Fin n -> Fin (d + 1) -> C),
+        F_analytic (fun j => z (σ j)) = F_analytic z) /\
+      (forall (z : Fin n -> Fin (d + 1) -> C) (a : Fin (d + 1) -> C),
+        F_analytic (fun j => z j + a) = F_analytic z)
 \end{lstlisting}
 
-The transfer theorems derive each Wightman axiom from the corresponding
-Euclidean axiom:
+\noindent\textbf{What is already done.}
+Inside \leanfile{OSToWightmanBoundaryValues.lean}, the project already proves:
+\begin{itemize}
+\item the boundary-value packaging theorem \leanname{boundary\_values\_tempered};
+\item normalization \leanname{bvt\_normalized};
+\item translation invariance \leanname{bvt\_translation\_invariant};
+\item the generic transfer wrappers that reduce the remaining axioms to honest
+  local analytic packages.
+\end{itemize}
 
-\begin{lstlisting}[style=leansorry]
--- OSToWightmanBoundaryValues.lean (current live transfer front)
-theorem bv_translation_invariance_transfer (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (n : N)
-    (W_n : SchwartzNPoint d n -> C)
-    (hW_cont : Continuous W_n)
-    (F_n : (Fin n -> Fin (d + 1) -> C) -> C)
-    (hF_hol : DifferentiableOn C F_n (ForwardTube d n))
-    (hBV : forall (f : SchwartzNPoint d n) (eta : Fin n -> Fin (d + 1) -> R),
-      InForwardCone d n eta ->
-      Filter.Tendsto
-        (fun eps : R => ∫ x : NPointDomain d n,
-          F_n (fun k μ => ↑(x k μ) + eps * ↑(eta k μ) * Complex.I) * (f x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (W_n f)))
-    (hEuclid : forall (f : ZeroDiagonalSchwartz d n),
-      OS.S n f = ∫ x : NPointDomain d n,
-        F_n (fun k => wickRotatePoint (x k)) * (f.1 x))
-    (hE1 : forall (a : SpacetimeDim d) (f g : ZeroDiagonalSchwartz d n),
-      (forall x, g.1 x = f.1 (fun i => x i + a)) -> OS.S n f = OS.S n g) :
-    forall (a : SpacetimeDim d) (f g : SchwartzNPoint d n),
-      (forall x, g.toFun x = f.toFun (fun i => x i + a)) -> W_n f = W_n g
-
-theorem bv_lorentz_covariance_transfer (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (n : N)
-    (W_n : SchwartzNPoint d n -> C)
-    (F_n : (Fin n -> Fin (d + 1) -> C) -> C)
-    (hF_hol : DifferentiableOn C F_n (ForwardTube d n))
-    (hBV : forall (f : SchwartzNPoint d n) (eta : Fin n -> Fin (d + 1) -> R),
-      InForwardCone d n eta ->
-      Filter.Tendsto
-        (fun eps : R => ∫ x : NPointDomain d n,
-          F_n (fun k μ => ↑(x k μ) + eps * ↑(eta k μ) * Complex.I) * (f x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (W_n f)))
-    (hEuclid : forall (f : ZeroDiagonalSchwartz d n),
-      OS.S n f = ∫ x : NPointDomain d n,
-        F_n (fun k => wickRotatePoint (x k)) * (f.1 x))
-    (hE1_rot : forall (R : Matrix (Fin (d + 1)) (Fin (d + 1)) R),
-      R.transpose * R = 1 -> R.det = 1 ->
-      forall (f g : ZeroDiagonalSchwartz d n),
-        (forall x, g.1 x = f.1 (fun i => R.mulVec (x i))) ->
-        OS.S n f = OS.S n g) :
-    forall (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
-      (forall x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) ->
-      W_n f = W_n g
-
-theorem bv_local_commutativity_transfer (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (n : N)
-    (W_n : SchwartzNPoint d n -> C)
-    (F_n : (Fin n -> Fin (d + 1) -> C) -> C)
-    (hF_hol : DifferentiableOn C F_n (ForwardTube d n))
-    (hBV : forall (f : SchwartzNPoint d n) (eta : Fin n -> Fin (d + 1) -> R),
-      InForwardCone d n eta ->
-      Filter.Tendsto
-        (fun eps : R => ∫ x : NPointDomain d n,
-          F_n (fun k μ => ↑(x k μ) + eps * ↑(eta k μ) * Complex.I) * (f x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (W_n f)))
-    (hEuclid : forall (f : ZeroDiagonalSchwartz d n),
-      OS.S n f = ∫ x : NPointDomain d n,
-        F_n (fun k => wickRotatePoint (x k)) * (f.1 x))
-    (hE3 : forall (σ : Equiv.Perm (Fin n)) (f g : ZeroDiagonalSchwartz d n),
-      (forall x, g.1 x = f.1 (fun i => x (σ i))) -> OS.S n f = OS.S n g) :
-    forall (i j : Fin n) (f g : SchwartzNPoint d n),
-      (forall x, f.toFun x != 0 ->
-        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) ->
-      (forall x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) ->
-      W_n f = W_n g
-
-theorem bv_positive_definiteness_transfer (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (W : (n : N) -> SchwartzNPoint d n -> C)
-    (hW_eq : forall n, W n = bvt_W OS lgc n)
-    (hE2 : forall (F : BorchersSequence d),
-      (forall n, tsupport ((F.funcs n : SchwartzNPoint d n) :
-        NPointDomain d n -> C) ⊆ OrderedPositiveTimeRegion d n) ->
-      (OSInnerProduct d OS.S F F).re >= 0) :
-    forall F : BorchersSequence d, (WightmanInnerProduct d W F F).re >= 0
-
-theorem bv_hermiticity_transfer (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) (n : N)
-    (W_n : SchwartzNPoint d n -> C)
-    (F_n : (Fin n -> Fin (d + 1) -> C) -> C)
-    (hF_hol : DifferentiableOn C F_n (ForwardTube d n))
-    (hBV : forall (f : SchwartzNPoint d n) (eta : Fin n -> Fin (d + 1) -> R),
-      InForwardCone d n eta ->
-      Filter.Tendsto
-        (fun eps : R => ∫ x : NPointDomain d n,
-          F_n (fun k μ => ↑(x k μ) + eps * ↑(eta k μ) * Complex.I) * (f x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (W_n f)))
-    (hEuclid : forall (f : ZeroDiagonalSchwartz d n),
-      OS.S n f = ∫ x : NPointDomain d n,
-        F_n (fun k => wickRotatePoint (x k)) * (f.1 x))
-    (hE0_real : forall (f g : ZeroDiagonalSchwartz d n),
-      (forall x, g.1 x = starRingEnd C (f.1 (timeReflectionN d x))) ->
-      starRingEnd C (OS.S n f) = OS.S n g) :
-    forall (f g : SchwartzNPoint d n),
-      (forall x : NPointDomain d n,
-        g.toFun x = starRingEnd C (f.toFun (fun i => x (Fin.rev i)))) ->
-      W_n g = starRingEnd C (W_n f)
-
-theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    forall (n m : N) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
-      forall eps : R, eps > 0 -> exists R0 : R, R0 > 0 /\
-        forall a : SpacetimeDim d, a 0 = 0 ->
-          (∑ i : Fin d, (a (Fin.succ i))^2) > R0^2 ->
-          forall (g_a : SchwartzNPoint d m),
-            (forall x : NPointDomain d m, g_a x = g (fun i => x i - a)) ->
-            norm (bvt_W OS lgc (n + m) (f.tensorProduct g_a) -
-              bvt_W OS lgc n f * bvt_W OS lgc m g) < eps
-\end{lstlisting}
-
-\noindent These all follow the same pattern: use the Euclidean symmetry
-of $\mathfrak{S}_n$ plus the boundary value limit to conclude the
-corresponding Wightman axiom for $\mathfrak{W}_n$.
+\noindent\textbf{What remains.}
+The live top-level theorems in the file are now:
+\begin{itemize}
+\item \leanname{bvt\_lorentz\_covariant} --- reduced to a pointwise positive-ray
+  covariance package \leanname{hF\_lorentz};
+\item \leanname{bvt\_locally\_commutative} --- reduced to a canonical-ray swap
+  pairing package \leanname{hF\_swap\_pairing};
+\item \leanname{bvt\_positive\_definite} --- reduced to the direct positivity
+  package \leanname{hW\_pos};
+\item \leanname{bvt\_hermitian} --- reduced to a pointwise negative-ray package
+  \leanname{hF\_neg};
+\item \leanname{bvt\_cluster} --- still open as the broadest remaining transfer
+  theorem.
+\end{itemize}
 
 \medskip\noindent
 \textbf{Current file status.}
-\leanfile{OSToWightmanBoundaryValues.lean} is now a downstream transfer file:
-the $k=2$ OS~II VI.1 work lives earlier in
-\leanfile{OSToWightmanK2BaseStep.lean} and \leanfile{OSToWightmanK2VI1.lean},
-while the live work here is the tempered boundary-value packaging and the six
-axiom-transfer theorems listed above. The first theorem,
-\leanname{boundary\_values\_tempered}, produces both a boundary-value
-distribution $W_n$ and a forward-tube holomorphic witness $F_{\mathrm{analytic}}$;
-the later transfer theorems then use $F_{\mathrm{analytic}}$ to transport E0--E4
-to the corresponding Wightman statements.
+\leanfile{OSToWightmanBoundaryValues.lean} is now a downstream transfer file in
+the strongest sense. The package \leanname{boundary\_values\_tempered} already
+produces the boundary-value distribution and the chosen forward-tube witness.
+The only remaining work is the honest transfer of the remaining Wightman axioms.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
-Direct audit shows that \leanname{boundary\_values\_tempered} is currently
-\emph{proved but sorry-dependent}. So this file already contains real route
-declarations, but they sit above unresolved work; they are not merely placeholders
-waiting to be written from scratch.
+This file is now best read as a stack of \emph{proved wrappers above five honest
+local seams}. In particular, the note should no longer describe
+\leanname{boundary\_values\_tempered} as the live blocker.
 
 \subsection{The Main Bridge Theorems}
 
 \begin{lstlisting}
--- OSToWightmanBoundaryValues.lean:594
+-- OSToWightmanBoundaryValues.lean:1403
 -- (declaration present in Lean; currently sorry-dependent)
 -- Given OS axioms + linear growth, construct Wightman functions.
 theorem os_to_wightman_full
@@ -1892,7 +1908,7 @@ theorem blocker_iterated_eow_hExtPerm_d1_nontrivial
 \subsection{The Bridge Theorem}
 
 \begin{lstlisting}
--- OSToWightmanBoundaryValues.lean:573
+-- OSToWightmanBoundaryValues.lean:1382
 -- (declaration present in Lean; currently sorry-dependent)
 -- R -> E direction: given Wightman functions, construct
 -- Schwinger functions satisfying E0-E4.
@@ -2130,9 +2146,9 @@ equivalence.
 \part{Axioms and Infrastructure}
 %% ===================================================================
 
-\section{Production Axioms (5 explicit axioms)}
+\section{Production Axioms (8 explicit axioms)}
 
-As of 2026-03-23, the tracked production tree contains exactly five explicit
+As of 2026-03-31, the tracked production tree contains exactly eight explicit
 \texttt{axiom} declarations. These are accepted external mathematical facts
 used as theorem surfaces in the current formalization.
 
@@ -2141,6 +2157,23 @@ Because these axioms are part of the trusted base, later theorems can be
 genuinely sorry-free while still not being axiom-free. In the status language of
 this note, those theorems are described as \emph{axiom-dependent but
 sorry-free}.
+
+\medskip\noindent
+\textbf{Current grouping.}
+The eight explicit axioms now split naturally into three groups:
+\begin{itemize}
+\item \textbf{nuclear / multilinear support:}
+  \leanname{schwartz\_nuclear\_extension},
+  \leanname{exists\_continuousMultilinear\_ofSeparatelyContinuous};
+\item \textbf{SCV / Fourier--Laplace support:}
+  \leanname{semigroupGroup\_bochner},
+  \leanname{laplaceFourier\_measure\_unique},
+  \leanname{vladimirov\_tillmann},
+  \leanname{distributional\_cluster\_lifts\_to\_tube},
+  \leanname{tube\_boundaryValueData\_of\_polyGrowth};
+\item \textbf{flagged $R \to E$ BHW bridge:}
+  \leanname{reduced\_bargmann\_hall\_wightman\_of\_input}.
+\end{itemize}
 
 \subsection{Schwartz Nuclear Extension}
 
@@ -2218,7 +2251,34 @@ semigroup-group $\mathbb{R}_{\ge 0} \times \mathbb{R}^d$. It is the spectral
 input that turns OS semigroup matrix elements into honest positive finite
 measures on energy-momentum space. On the corrected $E \to R$ route, this axiom
 belongs to the proved-support layer feeding the semigroup and $k=2$ base-step
-files, not to the live VI.1 frontier itself.
+files, not to the current public frontier itself.
+
+\subsection{Laplace--Fourier Uniqueness}
+
+\begin{lstlisting}[style=leanaxiom]
+-- SemigroupGroupBochner.lean:59 (AXIOM)
+axiom laplaceFourier_measure_unique {d : N}
+    {mu nu : Measure (R * (Fin d -> R))}
+    [IsFiniteMeasure mu] [IsFiniteMeasure nu]
+    (hmu_nonneg : mu (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hnu_nonneg : nu (Set.prod (Set.Iio 0) Set.univ) = 0)
+    (hEq : forall (t : R) (a : Fin d -> R), 0 <= t ->
+      integral (fun p =>
+        Complex.exp (-(t * p.1 : C)) *
+        Complex.exp (Complex.I *
+          (Finset.sum Finset.univ (fun i => p.2 i * a i) : C))) mu
+      =
+      integral (fun p =>
+        Complex.exp (-(t * p.1 : C)) *
+        Complex.exp (Complex.I *
+          (Finset.sum Finset.univ (fun i => p.2 i * a i) : C))) nu) :
+    mu = nu
+\end{lstlisting}
+
+\noindent\textbf{Mathematical meaning:}
+This is the uniqueness half of the same Laplace--Fourier representation story.
+It is not itself a current front-line blocker, but it is part of the trusted
+spectral support layer feeding the semigroup and $k=2$ witness packages.
 
 \subsection{Vladimirov--Tillmann Theorem}
 
@@ -2261,7 +2321,56 @@ This theorem upgrades boundary-value information for holomorphic functions on
 tube domains into polynomial growth estimates. In the current repo it is a
 downstream boundary-value/temperedness tool, most relevant on the
 \leanfile{OSToWightmanBoundaryValues.lean} and \leanfile{SchwingerTemperedness.lean}
-side rather than on the immediate $k=2$ VI.1 front.
+side rather than on the current issue-\#48 front.
+
+\subsection{Distributional Cluster Lift}
+
+\begin{lstlisting}[style=leanaxiom]
+-- VladimirovTillmann.lean:133 (AXIOM)
+axiom distributional_cluster_lifts_to_tube {n1 n2 d : N}
+    (C_cone : Set (Fin (n1 + n2) -> Fin (d+1) -> R))
+    ...
+\end{lstlisting}
+
+\noindent\textbf{Mathematical meaning:}
+This is a separate SCV/cluster bridge axiom used downstream in the cluster lane.
+It is distinct from the newer issue-\#48 boundary-value existence axiom below.
+
+\subsection{Tube Boundary Values from Polynomial Growth}
+
+\begin{lstlisting}[style=leanaxiom]
+-- TubeBoundaryValues.lean:745 (AXIOM)
+axiom tube_boundaryValueData_of_polyGrowth
+    {n d : N}
+    (C : Set (Fin n -> Fin (d + 1) -> R))
+    (hC_open : IsOpen C) (hC_conv : Convex R C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    {F : (Fin n -> Fin (d + 1) -> C) -> C}
+    (hF_hol : DifferentiableOn C F (TubeDomainSetPi C))
+    (C_bd : R) (N : N) (hC : 0 < C_bd)
+    (hF_growth : forall z in TubeDomainSetPi C,
+      ‖F z‖ <= C_bd * (1 + ‖z‖) ^ N) :
+    exists (W : SchwartzMap (Fin n -> Fin (d + 1) -> R) C ->L[C] C),
+      forall (φ : SchwartzMap (Fin n -> Fin (d + 1) -> R) C)
+        (η : Fin n -> Fin (d + 1) -> R),
+        η ∈ C ->
+        Filter.Tendsto
+          (fun ε : R => ∫ x : Fin n -> Fin (d + 1) -> R,
+            F (fun k μ => ↑(x k μ) + (ε : C) * ↑(η k μ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W φ))
+\end{lstlisting}
+
+\noindent\textbf{Mathematical meaning:}
+This is the new pure SCV / functional-analytic trust boundary introduced by the
+issue-\#48 correction. It replaces the false dependence of the active OS route
+on the older \leanname{uniform\_bound} abstraction. It is intentionally stated
+as a non-QFT-specific theorem about holomorphic functions on tube domains with
+global polynomial growth. It is the forward boundary-value existence statement
+in the style of Vladimirov's tube-domain theory~\cite{Vlad}. Our hypothesis is
+stronger than the classical one used in that literature: we assume a global
+polynomial bound on the whole tube, rather than permitting additional
+inverse-power blow-up near \(\partial C\).
 
 \subsection{Reduced BHW Extension}
 
@@ -2489,8 +2598,10 @@ sorry-free finals:
 \item \leanname{wightman\_to\_os} is proved but sorry-dependent, because it inherits
   the flagged BHW/translation/temperedness route together with project axioms.
 \item \leanname{os\_to\_wightman} is proved but sorry-dependent, because it sits
-  downstream of the still-open VI.1, general-$k$, and boundary-value transfer
-  fronts.
+  downstream of the three private continuation blockers in
+  \leanfile{OSToWightman.lean}, the pure SCV axiom
+  \leanname{tube\_boundaryValueData\_of\_polyGrowth}, and the five remaining
+  transfer theorems in \leanfile{OSToWightmanBoundaryValues.lean}.
 \end{itemize}
 
 \begin{lstlisting}
@@ -2568,12 +2679,14 @@ Thm $R \to E$ & \leanname{wightman\_to\_os} & Proved, sorry-dependent \\
 \S4.1 Semigroup (4.6) & \leanname{osTimeShiftHilbert} & sorry-free \\
 \S4.1 Holo.\ semigroup & \leanname{osTimeShiftHilbertComplex} & Proved support theorem/package \\
 \S4.1 Spatial transl.\ (4.5) & \leanname{osSpatialTranslateHilbert} & Proved support theorem/package \\
-\S4.1 Analytic cont.\ & \leanname{full\_analytic\_continuation} & proved, sorry-dependent \\
-\S4.2 Lorentz covariance & \leanname{bv\_lorentz\_covariance\_transfer} & \sorry \\
+\S4.1 Analytic cont.\ & \leanname{full\_analytic\_continuation\_with\_symmetry\_growth} & proved, sorry-dependent \\
+\S4.2 Boundary values & \leanname{boundary\_values\_tempered} & proved, sorry-dependent \\
+\S4.2 Lorentz covariance & \leanname{bvt\_lorentz\_covariant} & open (local \leanname{hF\_lorentz}) \\
 \S4.2 Spectrum & \leanname{spectrum\_condition} & Open downstream \\
-\S4.3 Positivity & \leanname{bv\_positive\_definiteness\_transfer} & \sorry \\
+\S4.3 Positivity & \leanname{bvt\_positive\_definite} & open (local \leanname{hW\_pos}) \\
 \S4.4 Cluster & \leanname{bvt\_cluster} & \sorry \\
-\S4.5 Locality & \leanname{bv\_local\_commutativity\_transfer} & \sorry \\
+\S4.5 Locality & \leanname{bvt\_locally\_commutative} & open (local \leanname{hF\_swap\_pairing}) \\
+\S4.5 Hermiticity & \leanname{bvt\_hermitian} & open (local \leanname{hF\_neg}) \\
 \S5 $R \to E$ & \leanname{wightman\_to\_os\_full} & proved, sorry-dependent \\
 Vacuum $\Omega$ & \leanname{gnsVacuum} & Definition; \leanname{gnsVacuum\_norm} sorry-free \\
 \bottomrule
@@ -2592,16 +2705,16 @@ Vacuum $\Omega$ & \leanname{gnsVacuum} & Definition; \leanname{gnsVacuum\_norm} 
 Thm $E' \to R'$ & \leanname{os\_to\_wightman\_full} & Proved, sorry-dependent \\
 Thm 4.1 initial $k=2$ step &
 \leanname{schwinger\_continuation\_base\_step\_timeParametric\_k2} &
-Proved, sorry-dependent\\(via 2 open theorems in \leanfile{OSToWightmanK2VI1.lean}) \\
+Present theorem surface; no longer the\\first public blocker \\
 General-$k$ first-step assembly &
-\leanname{schwinger\_continuation\_base\_step\_acrOne\_assembly} &
-Open (2 private sorrys in\\\leanfile{OSToWightman.lean}) \\
+\leanname{schwinger\_continuation\_base\_step\_acrOne\_productTensor\_assembly\_with\_translationInvariant} &
+proved theorem surface; sorry-dependent\\(3 private blockers in\\\leanfile{OSToWightman.lean}) \\
 Thm 4.2 $(A_r)$ / inductive continuation & \leanname{iterated\_analytic\_continuation} & Proved, sorry-dependent \\
 \S IV.1: lgc $E0'$ & \leanname{OSLinearGrowthCond} & Definition \\
 \S V.1: Real analyticity & Semigroup witness package & Proved support layer (package) \\
 \S V.2: Inductive $(A_N)$ & \leanname{iterated\_analytic\_continuation} & Proved, sorry-dependent \\
-\S VI.1: sequence regularization limit & \leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local} & Open \\
-\S VI.1: final $k=2$ assembly & \leanname{exists\_k2\_timeParametric\_distributional\_assembly} & Open \\
+\S VI.1: sequence regularization / assembly lane & \leanfile{K2VI1/Support.lean}, \leanfile{K2VI1/Frontier.lean} & Local $k=2$ route support / frontier \\
+\S VI.2: boundary values from tube growth & \leanname{tube\_boundaryValueData\_of\_polyGrowth} & Axiom (pure SCV trust boundary) \\
 \S VI.2: Continuing est. & Not formalized & --- \\
 Appendix: $E0'' \Rightarrow E0'$ & Not formalized & --- \\
 \bottomrule
@@ -2639,11 +2752,13 @@ construction.
 
 \medskip\noindent
 \textbf{Why it matters on the critical path.}
-Every later OS semigroup, spatial-translation, and VI.1 argument is phrased in
+Every later OS semigroup, spatial-translation, continuation, and boundary-value
+argument is phrased in
 terms of vectors in this Hilbert space. So even though
 \leanfile{SchwingerOS.lean} is no longer the visible blocker file, it remains the
 foundational layer underneath \leanfile{OSToWightmanSemigroup.lean},
-\leanfile{OSToWightmanK2BaseStep.lean}, and \leanfile{OSToWightmanK2VI1.lean}.
+\leanfile{OSToWightmanK2BaseStep.lean}, \leanfile{K2VI1/Support.lean}, and
+\leanfile{OSToWightman.lean}.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
@@ -2673,8 +2788,9 @@ contractive semigroup whose matrix elements later define the analytic witness.
 \textbf{Critical-path role.}
 All later $k=2$ witness packages are ultimately reorganized statements about
 matrix elements of this semigroup after spatial smearing and descent to
-difference variables. This is why the current VI.1 frontier is still genuinely an
-OS semigroup problem rather than a separate Euclidean-kernel problem.
+difference variables. This is why the current continuation and boundary-value
+frontier is still genuinely an OS semigroup problem rather than a separate
+Euclidean-kernel problem.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
@@ -2701,9 +2817,9 @@ remaining time coordinates.
 
 \medskip\noindent
 \textbf{Critical-path role.}
-This layer is already proved; the open work in \leanfile{OSToWightmanK2VI1.lean}
-is not about existence of the holomorphic object but about identifying its real
-boundary values with the Euclidean Schwinger pairing after regularization.
+This layer is already proved. The remaining open work is not about existence of
+the holomorphic object but about assembling the many-variable continuation and
+transporting its boundary values to the final Wightman-axiom package.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
@@ -2739,7 +2855,7 @@ one-variable reduced orbit whose boundary is analyzed in VI.1.
 \medskip\noindent
 \textbf{Dependency-aware status.}
 Direct audit shows that \leanname{osSpatialTranslateHilbert\_comp} is sorry-free.
-So this layer is stable support infrastructure for the current VI.1 route.
+So this layer is stable support infrastructure for the current OS route.
 
 \textbf{Files:} \leanname{OSToWightmanSpatialMomentum.lean} (3000+ lines).
 
@@ -2753,27 +2869,33 @@ the semigroup to extend in one additional time variable.
 
 \medskip\noindent
 \textbf{Repo realization.}
-In the current production route, the already-solved $k=2$ base will feed the
-general-$k$ file \leanfile{OSToWightman.lean}. That file packages the
-one-slice holomorphic witnesses, proves separate analyticity in the relevant
-time parameters, and then uses Osgood/product-tensor arguments to obtain the full
-multivariable witness needed for the boundary-value transfer stage.
+In the current production route this lane now lives squarely in
+\leanfile{OSToWightman.lean}. The file packages the chosen one-slice witness,
+its permutation/translation symmetries, and its global polynomial-growth
+package, then uses density and Osgood-style closure arguments to promote the
+Euclidean reproduction formula from admissible product tensors to all
+zero-diagonal tests.
 
 \medskip\noindent
 \textbf{Current frontier above the solved base.}
-The live blockers in \leanfile{OSToWightman.lean} are exactly
-\leanname{exists\_acrOne\_productTensor\_witness} and
-\leanname{acrOne\_productTensor\_witness\_extends\_zeroDiagonal}. So the file is
-already the right OS~II continuation lane; what remains there is the
-generalization step above the still-open VI.1 $k=2$ regularization theorem.
+The live private blockers in \leanfile{OSToWightman.lean} are now exactly:
+\begin{enumerate}
+\item \leanname{exists\_acrOne\_productTensor\_witness},
+\item \leanname{acrOne\_productTensor\_witness\_euclidKernelPackage},
+\item \leanname{compactlySupported\_zeroDiagonal\_subset\_closure\_admissibleProductTensorSet}.
+\end{enumerate}
+This is a cleaner frontier than the March-23 version of the note: the old
+monolithic theorem-2 blocker has been split into one witness-construction
+problem, one Euclidean-kernel packaging problem, and one dense-subset closure
+problem.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
 The big public continuation declarations in this lane, such as
-\leanname{full\_analytic\_continuation} and
-\leanname{iterated\_analytic\_continuation}, are present but sorry-dependent in
-direct audit. The two private open theorems listed above are the visible local
-reason that this dependence persists.
+\leanname{full\_analytic\_continuation},
+\leanname{full\_analytic\_continuation\_with\_growth}, and
+\leanname{full\_analytic\_continuation\_with\_symmetry\_growth}, are present
+but remain sorry-dependent through exactly those three private subproblems.
 
 \textbf{Files:} \leanname{OSToWightman.lean} (1900+ lines).
 
@@ -2786,27 +2908,32 @@ piecewise real Euclidean kernel package used before the final VI.1 limit step.
 
 \medskip\noindent
 \textbf{Internal split.}
-\leanfile{OSToWightmanK2BaseStep.lean} now contains the proved support and orbit
-machinery: the normalized negative-time probe, the Bochner measure package, the
-positive-time translated product-shell identities, and the Laplace--Fourier
-bridge. The new file \leanfile{OSToWightmanK2VI1.lean} isolates the genuinely
-open VI.1 regularization and distributional assembly theorems.
+The current repository splits this lane into:
+\begin{itemize}
+\item \leanfile{OSToWightmanK2BaseStep.lean} for Bochner/probe support,
+\item \leanfile{OSToWightmanK2Density.lean} for flat-origin shell density,
+\item \leanfile{K2VI1/Support.lean} for the proved VI.1 support wrappers,
+\item \leanfile{K2VI1/Frontier.lean} for the compact local $k=2$ theorem
+  surface.
+\end{itemize}
 
 \medskip\noindent
-\textbf{Current live frontier.}
-As of 2026-03-23, the remaining open theorems on this lane are
-\leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local}
-and \leanname{exists\_k2\_timeParametric\_distributional\_assembly}. This is the
-cleanest current description of the $E \to R$ bottleneck in the repo.
+\textbf{Current route role.}
+This lane should no longer be described as the first public frontier. Instead,
+it is now a stabilized support layer that continues to feed the many-variable
+continuation and boundary-value proofs. The project still keeps a small local
+$k=2$ frontier file because the two-point theorem surface remains mathematically
+useful and helpful for route diagnostics, but the global blocker map has moved on.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
-\leanfile{OSToWightmanK2BaseStep.lean} should now be read as a compile-closed
-support file. The open work has been isolated into \leanfile{OSToWightmanK2VI1.lean},
-whose two named theorems above are the actual live frontier.
+The right summary is: the $k=2$ route remains important and active as
+infrastructure, but it is no longer the top-level public bottleneck for
+\leanname{os\_to\_wightman\_full}.
 
-\textbf{Files:} \leanname{OSToWightmanK2BaseStep.lean} and
-\leanname{OSToWightmanK2VI1.lean}.
+\textbf{Files:} \leanname{OSToWightmanK2BaseStep.lean},
+\leanname{OSToWightmanK2Density.lean},
+\leanname{K2VI1/Support.lean}, and \leanname{K2VI1/Frontier.lean}.
 
 \subsection{Product Tensor Span Density}
 
@@ -2864,7 +2991,8 @@ same file.
 This density theorem is what lets the eventual $k=2$ distributional assembly
 upgrade agreement on positive-time difference shells to agreement on all
 zero-diagonal two-point Schwartz tests. So it is solved support machinery, but it
-still sits immediately above the live VI.1 limit theorem.
+still sits immediately below the local $k=2$ theorem surface and the later
+general-$k$ continuation layer.
 
 \medskip\noindent
 \textbf{Dependency-aware status.}
@@ -3029,11 +3157,15 @@ holomorphic continuation data; in $R \to E$ it turns holomorphic continuation
 back into Euclidean boundary distributions.
 
 \medskip\noindent
-\textbf{Why it is listed here.}
-These files are easy to overlook because they sit outside the visible
-wick-rotation tree, but the current proof notes would be misleading without them:
-they are the reason later files can speak about boundary values, Laplace kernels,
-and compact-support measures without reopening those analytic foundations.
+\textbf{Issue-\#48 correction.}
+This subsection now needs one important warning that earlier versions of the
+note missed: the active OS path no longer routes tempered boundary values
+through the older SCV \leanname{uniform\_bound} abstraction in
+\leanfile{SCV/LaplaceSchwartz.lean}. The honest trust boundary for the current
+OS route has been moved into \leanfile{SCV/TubeBoundaryValues.lean} as the axiom
+\leanname{tube\_boundaryValueData\_of\_polyGrowth}. So the Fourier--Laplace files
+remain important background infrastructure, but they are not the active
+issue-\#48 frontier anymore.
 
 \textbf{Files:} \leanname{SCV/FourierLaplaceCore.lean},
 \leanname{SCV/PaleyWiener.lean}, \leanname{SCV/LaplaceSchwartz.lean}.
@@ -3057,8 +3189,8 @@ uniqueness and extension arguments around BHW.
 \textbf{Critical-path role.}
 The Osgood and totally-real identity layers are not the present blocker because
 their core statements are already in place. But they become immediately relevant
-again once the current VI.1 $k=2$ bottleneck is cleared and the project returns to
-the two remaining general-$k$ theorems in \leanfile{OSToWightman.lean}.
+again whenever the project returns to the three private general-$k$ theorems in
+\leanfile{OSToWightman.lean}.
 
 \medskip\noindent
 \textbf{Mathematical proof sketch.}
@@ -3091,88 +3223,82 @@ The active $E \to R$ route is now:
 \begin{center}
 \leanfile{OSToWightmanSemigroup.lean}
 $\to$
-\leanfile{OSToWightmanK2BaseStep.lean}
-$\to$
-\leanfile{OSToWightmanK2VI1.lean}
+\leanfile{OSToWightmanK2BaseStep.lean} / \leanfile{K2VI1/Support.lean}
 $\to$
 \leanfile{OSToWightman.lean}
 $\to$
+\leanfile{SCV/TubeBoundaryValues.lean}
+$\to$
 \leanfile{OSToWightmanBoundaryValues.lean}.
 \end{center}
-The first two files are support layers, not current blocker files. The live
-front begins in \leanfile{OSToWightmanK2VI1.lean}.
+The semigroup and $k=2$ files are now support layers, not the first public
+blocker files. The live route above them is:
 
 \medskip\noindent
-\textbf{Blocker 1: OS~II Section~VI.1 sequence-limit theorem.}
-The first active open theorem is
-\leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local}
-in \leanfile{OSToWightmanK2VI1.lean}. This is the honest sequence-level
-boundary-limit theorem replacing the earlier fixed-probe detours. Mathematically
-it is the step that identifies the regularized boundary functional obtained from
-shrinking reflected negative approximate identities with the positive-time
-reduced Schwinger functional.
+\textbf{Blocker 1: general-$k$ ACR(1) witness production.}
+The first private open theorem is
+\leanname{exists\_acrOne\_productTensor\_witness} in
+\leanfile{OSToWightman.lean}. This is the honest OS~II one-slice/Osgood problem:
+construct a scalar holomorphic witness on \(C_k^{(1)}\) that already reproduces
+the Schwinger functional on admissible factorized zero-diagonal tests. Here
+\(C_k^{(1)}\) is the first continuation region from the previous section: the
+open tube in which the imaginary time differences are strictly positive.
 
 \medskip\noindent
-\textbf{Blocker 2: final $k=2$ existential assembly.}
-Above that sits
-\leanname{exists\_k2\_timeParametric\_distributional\_assembly}, also in
-\leanfile{OSToWightmanK2VI1.lean}. Once the VI.1 limit theorem is established,
-this theorem should become the packaging step that produces the final pair
-$(G,K)$: a holomorphic witness on the tube and a real Euclidean kernel on the
-ordered real sectors. Its present status is \emph{open}; once proved, it will
-still be only as trustworthy as the support layer beneath it, which is currently
-substantially proved but still overall \emph{sorry-dependent} because later
-global theorems in the route remain open.
+\textbf{Blocker 2: Euclidean kernel packaging.}
+The second private open theorem is
+\leanname{acrOne\_productTensor\_witness\_euclidKernelPackage}. This is the
+clean route-corrected issue: package the Euclidean section of the chosen witness
+as a measurable polynomially bounded kernel on real configurations.
 
 \medskip\noindent
-\textbf{Blocker 3: general-$k$ witness production.}
-After the $k=2$ base is closed, the next two private open theorems are
-\leanname{exists\_acrOne\_productTensor\_witness} and
-\leanname{acrOne\_productTensor\_witness\_extends\_zeroDiagonal} in
-\leanfile{OSToWightman.lean}. These are the first genuinely many-variable
-continuation steps: they combine the one-variable semigroup data and the solved
-$k=2$ base case with Osgood/separate-holomorphicity arguments to construct the
-general product-tensor continuation and then extend it to all zero-diagonal test
-functions.
+\textbf{Blocker 3: admissible dense subset closure.}
+The third private open theorem is
+\leanname{compactlySupported\_zeroDiagonal\_subset\_closure\_admissibleProductTensorSet}.
+This is the honest density problem left after the theorem-2 wrapper was split
+properly.
 
 \medskip\noindent
-\textbf{Blocker 4: boundary-value packaging and transfer.}
-Finally, \leanfile{OSToWightmanBoundaryValues.lean} still contains the open
-boundary-value theorem \leanname{boundary\_values\_tempered} and the transfer
-chain above it. These are not the first blockers anymore, but they remain the
-last visible assembly layer before the top-level theorem
-\leanname{os\_to\_wightman}.
+\textbf{Blocker 4: pure SCV boundary-value existence.}
+The next trust boundary is the explicit axiom
+\leanname{tube\_boundaryValueData\_of\_polyGrowth} in
+\leanfile{SCV/TubeBoundaryValues.lean}. This is the current non-QFT-specific
+issue-\#48 trust boundary.
+
+\medskip\noindent
+\textbf{Blocker 5: boundary-value transfer.}
+Finally, \leanfile{OSToWightmanBoundaryValues.lean} contains the five remaining
+transfer theorems:
+\leanname{bvt\_lorentz\_covariant},
+\leanname{bvt\_locally\_commutative},
+\leanname{bvt\_positive\_definite},
+\leanname{bvt\_hermitian}, and
+\leanname{bvt\_cluster}.
 
 \subsection{Current Plan for E-to-R Development}
 
 The present development plan is intentionally narrow and OS-faithful.
 
 \begin{enumerate}
-\item \textbf{Finish the VI.1 sequence-limit theorem first.}
-  The next proof work should remain inside \leanfile{OSToWightmanK2VI1.lean}.
-  The existing support package already contains the canonical probe witness,
-  the Bochner measure package, the positive-time orbit identities, the
-  Laplace--Fourier bridge, and the descended-center regularization package. The
-  remaining work is to combine those ingredients into the actual sequence-limit
-  argument OS~II Section~VI.1 requires.
+\item \textbf{Keep the continuation trust boundary honest.}
+  The next upstream work should stay in \leanfile{OSToWightman.lean} until the
+  three private blockers above are either proved or further split honestly.
 
-\item \textbf{Then collapse the $k=2$ existential assembly immediately.}
-  Once the VI.1 limit theorem is proved, the theorem
-  \leanname{exists\_k2\_timeParametric\_distributional\_assembly} should be
-  reduced to packaging and descent, not treated as a fresh analytic frontier.
+\item \textbf{Treat the SCV boundary-value theorem explicitly as a trust boundary.}
+  The project should not drift back to the rejected
+  \leanname{uniform\_bound} route. The current trust boundary is the pure axiom
+  \leanname{tube\_boundaryValueData\_of\_polyGrowth}, and the note should keep
+  that fact explicit.
 
-\item \textbf{Only then return to the many-variable continuation layer.}
-  The file \leanfile{OSToWightman.lean} should be attacked only after the
-  $k=2$ lane is complete. This preserves the OS paper order: one first solves
-  the base case and only afterwards builds the inductive/separately-holomorphic
-  general witness package.
+\item \textbf{Continue shrinking the BV transfer seams one at a time.}
+  The current recommended order is hermiticity, locality, Lorentz covariance,
+  positivity, and then cluster. This matches the actual theorem surfaces in
+  \leanfile{OSToWightmanBoundaryValues.lean}.
 
-\item \textbf{Boundary-value transfer remains downstream.}
-  No new work should be diverted into
-  \leanfile{OSToWightmanBoundaryValues.lean} until the upstream $k=2$ and
-  general-$k$ continuation lanes are closed. Otherwise the project risks
-  pushing distributional boundary-value bureaucracy ahead of the actual
-  continuation content.
+\item \textbf{Keep the $k=2$ lane as support, not as the main blocker story.}
+  The $k=2$ files remain essential, but development planning should no longer
+  describe them as the first public frontier unless the theorem graph changes
+  again.
 \end{enumerate}
 
 \subsection{Flagged R-to-E Blockers (Not Current Implementation Focus)}
@@ -3210,9 +3336,9 @@ support machinery rather than as fresh blockers:
 \begin{itemize}
 \item the OS Hilbert-space and semigroup package;
 \item spatial-translation and one-variable holomorphic semigroup control;
-\item the $k=2$ support layer in \leanfile{OSToWightmanK2BaseStep.lean};
-\item the flat-origin difference-shell density theorem in
-  \leanfile{OSToWightmanK2Density.lean};
+\item the $k=2$ support layer in \leanfile{OSToWightmanK2BaseStep.lean},
+  \leanfile{OSToWightmanK2Density.lean}, and \leanfile{K2VI1/Support.lean};
+\item the tube-identity bridges in \leanfile{OSToWightmanTubeIdentity.lean};
 \item the SCV identity-theorem / Osgood / Fourier--Laplace support files.
 \end{itemize}
 Some of these are sorry-free; some are axiom-dependent but sorry-free; some are
@@ -3221,13 +3347,16 @@ point is that they are \emph{not} where the next theorem development should go.
 
 \paragraph{Foundational trust-boundary infrastructure not yet clean.}
 Even if all currently open critical-path theorems were closed, the project would
-still not be fully dependency-clean, because the production tree contains five
-explicit axioms:
+still not be fully dependency-clean, because the production tree currently
+contains eight explicit axioms:
 \begin{itemize}
 \item \leanname{schwartz\_nuclear\_extension}
 \item \leanname{exists\_continuousMultilinear\_ofSeparatelyContinuous}
 \item \leanname{semigroupGroup\_bochner}
+\item \leanname{laplaceFourier\_measure\_unique}
 \item \leanname{vladimirov\_tillmann}
+\item \leanname{distributional\_cluster\_lifts\_to\_tube}
+\item \leanname{tube\_boundaryValueData\_of\_polyGrowth}
 \item \leanname{reduced\_bargmann\_hall\_wightman\_of\_input}
 \end{itemize}
 So there are really two completion notions:
@@ -3245,10 +3374,11 @@ The recent route correction clarified several tempting but wrong directions:
 \begin{itemize}
 \item no new full-Schwartz Euclidean detours on the $E \to R$ side;
 \item no revival of the removed fixed-probe two-point-kernel route;
+\item no return to the false \leanname{uniform\_bound} boundary-value route;
 \item no Banach-valued Bochner infrastructure for Schwartz spaces merely to make
   a non-OS shortcut typecheck;
-\item no new production axiom introduced just to jump across the current VI.1
-  or BHW gaps.
+\item no new production axiom introduced merely to rename a live continuation,
+  boundary-value, or BHW blocker.
 \end{itemize}
 These are important negative planning constraints: they keep the repo from
 appearing to progress while in fact drifting farther from the paper route.
@@ -3257,17 +3387,19 @@ appearing to progress while in fact drifting farther from the paper route.
 
 The immediate development checklist is:
 \begin{enumerate}
-\item prove
-  \leanname{translatedProductShell\_boundary\_tendsto\_schwingerDifferencePositive\_of\_negativeApproxIdentity\_local}
-  in \leanfile{OSToWightmanK2VI1.lean};
-\item use that to prove
-  \leanname{exists\_k2\_timeParametric\_distributional\_assembly};
-\item return to \leanfile{OSToWightman.lean} and close the two general-$k$
-  witness theorems;
-\item only then work down the boundary-value transfer chain in
-  \leanfile{OSToWightmanBoundaryValues.lean};
+\item close \leanname{bvt\_hermitian} by proving the local package
+  \leanname{hF\_neg};
+\item close \leanname{bvt\_locally\_commutative} by proving the local package
+  \leanname{hF\_swap\_pairing};
+\item close \leanname{bvt\_lorentz\_covariant} by proving the local package
+  \leanname{hF\_lorentz};
+\item attack \leanname{bvt\_positive\_definite} and then
+  \leanname{bvt\_cluster};
+\item in parallel or after that, return to \leanfile{OSToWightman.lean} and
+  continue shrinking the three private continuation blockers;
 \item after route completion, begin a separate axiom-elimination / trust-boundary
-  cleanup phase.
+  cleanup phase, starting with the pure SCV axiom
+  \leanname{tube\_boundaryValueData\_of\_polyGrowth}.
 \end{enumerate}
 
 \medskip\noindent
@@ -3275,43 +3407,48 @@ This is the development order that best matches both the current repository
 shape and the OS papers themselves.
 
 
-\section{Current Sorry / Axiom Snapshot (2026-03-23)}
+\section{Current Sorry / Axiom Snapshot (2026-03-31)}
 
-\textbf{Explicit axioms in tracked production tree: 5.}
+\textbf{Explicit axioms in tracked production tree: 8.}
 \begin{itemize}
 \item \leanname{schwartz\_nuclear\_extension}
 \item \leanname{exists\_continuousMultilinear\_ofSeparatelyContinuous}
 \item \leanname{semigroupGroup\_bochner}
+\item \leanname{laplaceFourier\_measure\_unique}
 \item \leanname{vladimirov\_tillmann}
+\item \leanname{distributional\_cluster\_lifts\_to\_tube}
+\item \leanname{tube\_boundaryValueData\_of\_polyGrowth}
 \item \leanname{reduced\_bargmann\_hall\_wightman\_of\_input}
 \end{itemize}
 
-\textbf{Rough theorem-level \sorry{} count: 75.}
-This count was obtained mechanically from lines beginning with \texttt{sorry} in
-the tracked \texttt{OSReconstruction/} tree on 2026-03-23. It should be read as
-a dated snapshot, not as a stable invariant.
+\textbf{Rough raw \sorry{} token count in the tracked tree: 62.}
+This count was obtained mechanically from lines matching
+\texttt{\string^\string\s*sorry\$} in the tracked \texttt{OSReconstruction/}
+tree on 2026-03-31. It is a lexical snapshot, not a theorem-level audit; in
+particular, it may count commented local-frontier lines and therefore should not
+be confused with the active public blocker count.
 
 \begin{itemize}
-\item \textbf{Wightman/} --- 27
+\item \textbf{Wightman/} --- 24
 \item \textbf{SCV/} --- 2
 \item \textbf{ComplexLieGroups/} --- 2
-\item \textbf{vNA/} --- 44
+\item \textbf{vNA/} --- 34
 \end{itemize}
 
-\textbf{Active Wick-rotation/Main front (theorem-level \sorry{} lines): 17.}
-Within that active front, the current route-relevant distribution is:
+\textbf{Current public reconstruction front.}
+The active public route-relevant distribution is now:
 \begin{itemize}
 \item \textbf{$E \to R$}
   \begin{itemize}
-  \item \leanfile{OSToWightmanK2VI1.lean} --- 2
-  \item \leanfile{OSToWightman.lean} --- 2
-  \item \leanfile{OSToWightmanBoundaryValues.lean} --- 7
+  \item \leanfile{OSToWightman.lean} --- 3 private open theorems
+  \item \leanfile{SCV/TubeBoundaryValues.lean} --- 1 explicit axiom
+  \item \leanfile{OSToWightmanBoundaryValues.lean} --- 5 open theorems
   \end{itemize}
 \item \textbf{$R \to E$}
   \begin{itemize}
   \item \leanfile{BHWTranslation.lean} --- 1
   \item \leanfile{ForwardTubeLorentz.lean} --- 1
-  \item \leanfile{SchwingerAxioms.lean} --- 3
+  \item \leanfile{SchwingerAxioms.lean} --- 2
   \end{itemize}
 \item \textbf{Main wiring}
   \begin{itemize}
@@ -3321,10 +3458,11 @@ Within that active front, the current route-relevant distribution is:
 
 \noindent
 The key point is not the exact number but the shape of the live frontier:
-the $E \to R$ route now bottlenecks first at the sequence-level VI.1 theorem in
-\leanfile{OSToWightmanK2VI1.lean}, then at the general-$k$ assembly in
-\leanfile{OSToWightman.lean}, and only after that at the boundary-value package
-in \leanfile{OSToWightmanBoundaryValues.lean}.
+the $E \to R$ route now bottlenecks first at the general-$k$ continuation
+subproblems in \leanfile{OSToWightman.lean}, then at the pure SCV trust
+boundary in \leanfile{SCV/TubeBoundaryValues.lean}, and only after that at the
+five remaining transfer theorems in
+\leanfile{OSToWightmanBoundaryValues.lean}.
 
 \medskip\noindent
 On the flagged $R \to E$ side, the immediate visible blockers inside the active
@@ -3332,7 +3470,13 @@ wick-rotation tree are the cluster and translation strands listed above, with
 additional permutation-flow connectedness blockers living upstream in
 \leanfile{ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean}.
 
-The vNA module (44 sorrys) contains Stone's theorem, Tomita--Takesaki
+\medskip\noindent
+The $k=2$ files deserve one explicit clarification here. They remain important
+route infrastructure and still contain local theorem surfaces, but they should
+no longer be read off this snapshot as the first public blocker for the
+top-level OS reconstruction theorem.
+
+The vNA module (34 sorrys) contains Stone's theorem, Tomita--Takesaki
 modular theory, KMS states, and spectral powers---mostly independent
 infrastructure not on the critical reconstruction path.
 
@@ -3357,6 +3501,12 @@ Springer-Verlag, 1987.
 R.~F.~Streater and A.~S.~Wightman,
 \emph{PCT, Spin and Statistics, and All That},
 Princeton University Press, 2000.
+
+\bibitem{Vlad}
+V.~S.~Vladimirov,
+\emph{Methods of the Theory of Functions of Many Complex Variables},
+MIT Press, 1966.
+(Russian original: Nauka, Moscow, 1964.)
 \end{thebibliography}
 
 \end{document}
