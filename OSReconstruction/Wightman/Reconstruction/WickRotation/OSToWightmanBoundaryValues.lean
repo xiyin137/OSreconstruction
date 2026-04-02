@@ -266,92 +266,6 @@ private theorem bvt_F_lorentz_ortho_wick
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
   sorry
 
-private theorem lorentzTimeReversal_mulVec_eq_timeReflection_local
-    (x : SpacetimeDim d) :
-    Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val x = timeReflection d x := by
-  ext μ
-  by_cases hμ : μ = 0
-  · subst hμ
-    simp [Matrix.mulVec, dotProduct, LorentzGroup.timeReversal, FullLorentzGroup.timeReversal,
-      timeReflection]
-    rw [Finset.sum_eq_single 0]
-    · simp
-    · intro ν _ hν0
-      have h0ν : (0 : Fin (d + 1)) ≠ ν := by simpa using hν0.symm
-      simp [Matrix.diagonal, h0ν]
-    · simp
-  · simp [Matrix.mulVec, dotProduct, LorentzGroup.timeReversal, FullLorentzGroup.timeReversal,
-      timeReflection, hμ]
-    rw [Finset.sum_eq_single μ]
-    · simp [hμ]
-    · intro ν _ hνμ
-      have hμν : μ ≠ ν := by simpa using hνμ.symm
-      simp [Matrix.diagonal, hμν]
-    · simp [hμ]
-
-private theorem lorentzTimeReversalN_eq_timeReflectionN_local
-    {n : ℕ} (x : NPointDomain d n) :
-    (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i)) =
-      timeReflectionN d x := by
-  ext i μ
-  simpa [timeReflectionN] using
-    congrArg (fun y : SpacetimeDim d => y μ)
-      (lorentzTimeReversal_mulVec_eq_timeReflection_local (d := d) (x := x i))
-
-private theorem bvt_F_timeReversalCanonical
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (x : NPointDomain d n) (ε : ℝ), 0 < ε →
-      bvt_F OS lgc n (fun k μ =>
-        ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
-          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)
-      =
-      bvt_F OS lgc n (fun k μ =>
-        ↑(x k μ) +
-          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
-  sorry
-
-private theorem bvt_F_timeReflectCanonical_pairing
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (f : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
-          f (timeReflectionN d x)
-      =
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
-  intro n f ε hε
-  simpa [lorentzTimeReversalN_eq_timeReflectionN_local (d := d)] using
-    boundary_ray_timeReversal_pairing_of_F_timeReversalCanonical (d := d) n
-      (bvt_F OS lgc n)
-      (bvt_F_timeReversalCanonical (d := d) OS lgc n)
-      f ε hε
-
-private theorem bvt_W_timeReversal
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (f g : SchwartzNPoint d n),
-      (∀ x, g.toFun x =
-        f.toFun (fun i =>
-            Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i))) →
-      bvt_W OS lgc n f = bvt_W OS lgc n g := by
-  intro n f g hfg
-  have hfg_reflect :
-      ∀ x : NPointDomain d n, g.toFun x = f.toFun (timeReflectionN d x) := by
-    intro x
-    simpa [lorentzTimeReversalN_eq_timeReflectionN_local (d := d) (x := x)] using hfg x
-  exact bv_timeReversal_transfer (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (bvt_F_timeReflectCanonical_pairing (d := d) OS lgc n)
-    f g hfg_reflect
-
 private theorem bvt_F_swapCanonical_pairing
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -708,12 +622,7 @@ noncomputable def bvt_absoluteForwardTubeInput
 theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLorentzCovariantWeak d (bvt_W OS lgc) := by
-  intro n Λ f g hfg
-  exact lorentz_covariance_of_orthochronous_and_timeReversal (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_lorentz_covariant_orthochronous (d := d) OS lgc n)
-    (bvt_W_timeReversal (d := d) OS lgc n)
-    Λ f g hfg
+  exact bvt_lorentz_covariant_restricted (d := d) OS lgc
 
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
