@@ -83,8 +83,19 @@ theorem distributional_limit_of_equicontinuous
     intro φ
     -- Convert Cauchy condition to Metric.cauchy for the filter map
     rw [← cauchy_map_iff_exists_tendsto]
-    -- hT_cauchy + completeness of ℂ → Cauchy filter → convergent
-    sorry
+    rw [Metric.cauchy_iff]
+    constructor
+    · -- NeBot: nhdsWithin 0 (Ioi 0) is nontrivial, so its map is too
+      exact (inferInstance : NeBot (nhdsWithin (0:ℝ) (Set.Ioi 0))).map _
+    intro δ hδ
+    obtain ⟨ε₀, hε₀, hcauchy⟩ := hT_cauchy φ δ hδ
+    refine ⟨(fun ε => T ε φ) '' (Set.Ioo 0 ε₀), ?_, ?_⟩
+    · exact Filter.image_mem_map (mem_nhdsWithin.mpr
+        ⟨Set.Iio ε₀, isOpen_Iio, Set.mem_Iio.mpr hε₀,
+         fun ε hε => ⟨hε.2, Set.mem_Iio.mp hε.1⟩⟩)
+    · rintro _ ⟨ε₁, hε₁, rfl⟩ _ ⟨ε₂, hε₂, rfl⟩
+      calc dist ((T ε₁) φ) ((T ε₂) φ) = ‖(T ε₁) φ - (T ε₂) φ‖ := dist_eq_norm _ _
+        _ < δ := hcauchy ε₁ ε₂ hε₁.1 hε₁.2 hε₂.1 hε₂.2
   -- Step 2: Extract pointwise limit
   choose W_val hW_val using hpointwise
   -- Step 3: W_val is linear
