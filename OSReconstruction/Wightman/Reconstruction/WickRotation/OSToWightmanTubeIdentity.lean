@@ -463,14 +463,14 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
           ∫ x : NPointDomain d n,
             G (fun k => wickRotatePoint (x k)) *
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x))
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (x : NPointDomain d n)
     (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η)
     (ε : ℝ) (hε : 0 < ε) :
-    F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
-      G (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) := by
-  let Λx : NPointDomain d n := fun k => Matrix.mulVec Λ.val.val (x k)
-  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val.val μ ν * η k ν
+    F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
+      G (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) := by
+  let Λx : NPointDomain d n := fun k => Matrix.mulVec Λ.val (x k)
+  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val μ ν * η k ν
   have hΛη : InForwardCone d n Λη := by
     intro k
     let diffη : Fin (d + 1) → ℝ := fun μ => η k μ -
@@ -487,8 +487,8 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
       ext ν
       ring
   have hlin :
-      (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
-        (fun k μ => ↑(Λx k μ) + ε * ↑(Λη k μ) * Complex.I) := by
+      (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
+      (fun k μ => ↑(Λx k μ) + ε * ↑(Λη k μ) * Complex.I) := by
     funext k μ
     simp only [Λx, Λη, Matrix.mulVec]
     push_cast
@@ -500,8 +500,8 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
     · conv_lhs =>
         arg 2
         ext ν
-        rw [show (↑(Λ.val.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
-            ↑ε * (↑(Λ.val.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
+        rw [show (↑(Λ.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
+            ↑ε * (↑(Λ.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
       rw [← Finset.sum_mul, ← Finset.mul_sum]
   rw [hlin]
   exact forwardTube_point_eq_of_zeroDiagonal_distributional_wickSection_eq

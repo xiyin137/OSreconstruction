@@ -2975,17 +2975,17 @@ private theorem bv_lorentz_covariance_transfer_restricted_of_tube_covariance
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W_n f)))
     (hF_lorentz :
-      ∀ (Λ : LorentzGroup.Restricted (d := d))
+      ∀ (Λ : LorentzGroup d)
         (x : NPointDomain d n) (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ), 0 < ε →
-        F_n (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+        F_n (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
           (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
         F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) :
-    ∀ (Λ : LorentzGroup.Restricted (d := d)) (f g : SchwartzNPoint d n),
-      (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+    ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
+      (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
       W_n f = W_n g := by
   intro Λ f g hfg
   let η := canonicalForwardConeDirection (d := d) n
-  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val.val μ ν * η k ν
+  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val μ ν * η k ν
   have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
   have hΛη : InForwardCone d n Λη := by
     intro k
@@ -3018,7 +3018,7 @@ private theorem bv_lorentz_covariance_transfer_restricted_of_tube_covariance
           F_n (fun k μ => ↑(x k μ) + ε * ↑(Λη k μ) * Complex.I) * (g x)) =
         ∫ x : NPointDomain d n,
           F_n (fun k μ => ↑(x k μ) + ε * ↑(Λη k μ) * Complex.I) *
-            f (fun i => Matrix.mulVec Λ.val⁻¹.val (x i)) := by
+            f (fun i => Matrix.mulVec Λ⁻¹.val (x i)) := by
       congr 1
       ext x
       exact congrArg
@@ -3027,10 +3027,10 @@ private theorem bv_lorentz_covariance_transfer_restricted_of_tube_covariance
         (hfg x)
     have hlin :
         ∀ x : NPointDomain d n,
-          (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+          (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
             (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
           (fun k μ =>
-            ↑((fun i => Matrix.mulVec Λ.val.val (x i)) k μ) +
+            ↑((fun i => Matrix.mulVec Λ.val (x i)) k μ) +
               ε * ↑(Λη k μ) * Complex.I) := by
       intro x
       funext k μ
@@ -3044,26 +3044,26 @@ private theorem bv_lorentz_covariance_transfer_restricted_of_tube_covariance
       · conv_lhs =>
           arg 2
           ext ν
-          rw [show (↑(Λ.val.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
-              ↑ε * (↑(Λ.val.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
+          rw [show (↑(Λ.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
+              ↑ε * (↑(Λ.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
         rw [← Finset.sum_mul, ← Finset.mul_sum]
     have hcov :
         ∫ x : NPointDomain d n,
           F_n (fun k μ => ↑(x k μ) + ε * ↑(Λη k μ) * Complex.I) *
-            f (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))
+            f (fun i => Matrix.mulVec Λ⁻¹.val (x i))
         =
         ∫ x : NPointDomain d n,
-          F_n (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+          F_n (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
             (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x) := by
       symm
       simpa [hlin, Matrix.mulVec_mulVec, lorentz_inv_mul_eq_one (d := d) Λ] using
         (integral_lorentz_eq_self (d := d) (n := n) Λ
           (fun y : NPointDomain d n =>
             F_n (fun k μ => ↑(y k μ) + ε * ↑(Λη k μ) * Complex.I) *
-              f (fun i => Matrix.mulVec Λ.val⁻¹.val (y i))))
+              f (fun i => Matrix.mulVec Λ⁻¹.val (y i))))
     have htube :
         ∫ x : NPointDomain d n,
-          F_n (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+          F_n (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
             (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x)
         =
         ∫ x : NPointDomain d n,

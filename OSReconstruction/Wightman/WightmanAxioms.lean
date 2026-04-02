@@ -698,8 +698,8 @@ lemma tubeCumSum_sub {d : ℕ} {n : ℕ} (η : Fin n → Fin (d + 1) → ℝ)
     where L₊↑ is the proper orthochronous Lorentz group.
     The edge-of-the-wedge theorem shows W_n extends to T_n^{ext}. -/
 def ExtendedForwardTube (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
-  ⋃ Λ : LorentzGroup.Restricted (d := d),
-    { z | ∃ w ∈ ForwardTube d n, z = fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν }
+  ⋃ Λ : LorentzGroup d,
+    { z | ∃ w ∈ ForwardTube d n, z = fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * w k ν }
 
 /-- Convert a Euclidean spacetime point to a complex point via Wick rotation:
     (τ, x⃗) ↦ (iτ, x⃗).

@@ -37,7 +37,7 @@ Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §25-26;
 
 /-! #### Helper lemmas for Lorentz invariance on the forward tube -/
 
-/-- A restricted Lorentz transformation preserves the open forward light cone.
+/-- A connected Lorentz transformation preserves the open forward light cone.
 
     If Λ ∈ SO⁺(1,d) and η ∈ V₊ (η₀ > 0, η² < 0), then Λη ∈ V₊.
 
@@ -47,9 +47,9 @@ Ref: Vladimirov, "Methods of the Theory of Generalized Functions" §25-26;
 
     Ref: Streater-Wightman, §2.4 -/
 theorem restricted_preserves_forward_cone
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (η : Fin (d + 1) → ℝ) (hη : InOpenForwardCone d η) :
-    InOpenForwardCone d (fun μ => ∑ ν, Λ.val.val μ ν * η ν) := by
+    InOpenForwardCone d (fun μ => ∑ ν, Λ.val μ ν * η ν) := by
   obtain ⟨hη0_pos, hη_neg⟩ := hη
   constructor
   · -- Part (b): (Λη)₀ > 0
@@ -59,30 +59,30 @@ theorem restricted_preserves_forward_cone
     -- Since η ∈ V₊: η₀² > Σ ηⱼ² (from minkowskiNormSq < 0)
     -- And Λ₀₀ ≥ 1 (orthochronous)
     -- So (Λη)₀ ≥ η₀(Λ₀₀ - √(Λ₀₀² - 1)) > 0
-    have hΛ_lorentz := Λ.val.property.1
-    have hΛ_ortho : LorentzGroup.IsOrthochronous Λ.val := LorentzGroup.zero_zero_ge_one Λ.val
-    have hΛ00 : Λ.val.val 0 0 ≥ 1 := hΛ_ortho
-    have hrow := IsLorentzMatrix.first_row_timelike Λ.val.val hΛ_lorentz
+    have hΛ_lorentz := Λ.property.1
+    have hΛ_ortho : LorentzGroup.IsOrthochronous Λ := LorentzGroup.zero_zero_ge_one Λ
+    have hΛ00 : Λ.val 0 0 ≥ 1 := hΛ_ortho
+    have hrow := IsLorentzMatrix.first_row_timelike Λ.val hΛ_lorentz
     -- η is timelike: η₀² > spatial norm
     have hη_timelike : MinkowskiSpace.minkowskiNormSq d η < 0 := hη_neg
     have hη_time_dom : (η 0) ^ 2 > MinkowskiSpace.spatialNormSq d η :=
       MinkowskiSpace.timelike_time_dominates_space d η hη_timelike
     -- Split the sum into j=0 and j≠0
-    have hsplit : (∑ ν : Fin (d + 1), Λ.val.val 0 ν * η ν) =
-        Λ.val.val 0 0 * η 0 + ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j := by
+    have hsplit : (∑ ν : Fin (d + 1), Λ.val 0 ν * η ν) =
+        Λ.val 0 0 * η 0 + ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j := by
       rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (· = (0 : Fin (d + 1)))]
       simp [Finset.filter_eq', Finset.mem_univ]
-    show (∑ ν : Fin (d + 1), Λ.val.val 0 ν * η ν) > 0
+    show (∑ ν : Fin (d + 1), Λ.val 0 ν * η ν) > 0
     rw [hsplit]
     -- Define spatial sums
-    set SΛ := ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j ^ 2
+    set SΛ := ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j ^ 2
     set Sη := MinkowskiSpace.spatialNormSq d η
     -- SΛ = Λ₀₀² - 1
-    have hSΛ_eq : SΛ = Λ.val.val 0 0 ^ 2 - 1 := by linarith [hrow]
+    have hSΛ_eq : SΛ = Λ.val 0 0 ^ 2 - 1 := by linarith [hrow]
     have hSΛ_nonneg : SΛ ≥ 0 := Finset.sum_nonneg (fun j _ => sq_nonneg _)
     have hSη_nonneg : Sη ≥ 0 := MinkowskiSpace.spatialNormSq_nonneg d η
     -- Cauchy-Schwarz on spatial part
-    have hCS_sq : (∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j) ^ 2 ≤ SΛ * Sη := by
+    have hCS_sq : (∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j) ^ 2 ≤ SΛ * Sη := by
       -- The spatial sum of ηⱼ² equals spatialNormSq reindexed
       -- Relate Sη = spatialNormSq to a sum over filter (· ≠ 0)
       have hSη_eq : Sη = ∑ j ∈ Finset.univ.filter (· ≠ (0 : Fin (d + 1))), η j ^ 2 := by
@@ -98,13 +98,13 @@ theorem restricted_preserves_forward_cone
       rw [hSη_eq]
       exact Finset.sum_mul_sq_le_sq_mul_sq _ _ _
     -- Bound: spatial sum ≥ -√(SΛ · Sη)
-    have hCS : |∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j| ≤
+    have hCS : |∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j| ≤
         Real.sqrt SΛ * Real.sqrt Sη := by
       rw [← Real.sqrt_mul hSΛ_nonneg Sη, ← Real.sqrt_sq_eq_abs]
       exact Real.sqrt_le_sqrt hCS_sq
     have hbound : -(Real.sqrt SΛ * Real.sqrt Sη) ≤
-        ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j := by
-      linarith [neg_abs_le (∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j), hCS]
+        ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j := by
+      linarith [neg_abs_le (∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j), hCS]
     -- Now: (Λη)₀ ≥ Λ₀₀ · η₀ - √SΛ · √Sη
     --     = Λ₀₀ · η₀ - √(Λ₀₀² - 1) · √Sη
     --     > Λ₀₀ · η₀ - √(Λ₀₀² - 1) · η₀  (since √Sη < η₀)
@@ -117,43 +117,43 @@ theorem restricted_preserves_forward_cone
     -- Use hyperbolic bound: Λ₀₀ · η₀ - √(Λ₀₀² - 1) · √(η₀² - ε) > 0 when Λ₀₀ ≥ 1, η₀ > 0
     -- Simpler: Λ₀₀ · η₀ - √(Λ₀₀² - 1) · η₀ ≥ η₀ · (1 - 0) = η₀ > 0 when Λ₀₀ = 1
     -- In general, Λ₀₀ - √(Λ₀₀² - 1) > 0 for Λ₀₀ ≥ 1
-    have hΛ_hyp : Λ.val.val 0 0 - Real.sqrt (Λ.val.val 0 0 ^ 2 - 1) > 0 := by
-      have h1 : Λ.val.val 0 0 ^ 2 - 1 ≥ 0 := by nlinarith
-      have h2 : Λ.val.val 0 0 > 0 := by linarith
-      have h3 : Real.sqrt (Λ.val.val 0 0 ^ 2 - 1) < Λ.val.val 0 0 := by
-        calc Real.sqrt (Λ.val.val 0 0 ^ 2 - 1)
-            < Real.sqrt (Λ.val.val 0 0 ^ 2) := Real.sqrt_lt_sqrt h1 (by linarith)
-          _ = Λ.val.val 0 0 := Real.sqrt_sq (le_of_lt h2)
+    have hΛ_hyp : Λ.val 0 0 - Real.sqrt (Λ.val 0 0 ^ 2 - 1) > 0 := by
+      have h1 : Λ.val 0 0 ^ 2 - 1 ≥ 0 := by nlinarith
+      have h2 : Λ.val 0 0 > 0 := by linarith
+      have h3 : Real.sqrt (Λ.val 0 0 ^ 2 - 1) < Λ.val 0 0 := by
+        calc Real.sqrt (Λ.val 0 0 ^ 2 - 1)
+            < Real.sqrt (Λ.val 0 0 ^ 2) := Real.sqrt_lt_sqrt h1 (by linarith)
+          _ = Λ.val 0 0 := Real.sqrt_sq (le_of_lt h2)
       linarith
     -- Lower bound: (Λη)₀ = Λ₀₀η₀ + spatial ≥ Λ₀₀η₀ - √SΛ·√Sη
     --   > Λ₀₀η₀ - √SΛ·η₀ = η₀(Λ₀₀ - √(Λ₀₀²-1)) > 0
     -- We need √SΛ·√Sη ≤ √SΛ·η₀ (since √Sη < η₀)
     -- and Λ₀₀ - √SΛ = Λ₀₀ - √(Λ₀₀²-1) > 0
-    have key : Λ.val.val 0 0 * η 0 +
-        ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j > 0 := by
-      have h_sqrt_SΛ_eq : Real.sqrt SΛ = Real.sqrt (Λ.val.val 0 0 ^ 2 - 1) := by
+    have key : Λ.val 0 0 * η 0 +
+        ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j > 0 := by
+      have h_sqrt_SΛ_eq : Real.sqrt SΛ = Real.sqrt (Λ.val 0 0 ^ 2 - 1) := by
         congr 1
       -- The spatial sum is bounded below by -√SΛ·√Sη ≥ -√SΛ·η₀
-      have h1 : ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j ≥
+      have h1 : ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j ≥
           -(Real.sqrt SΛ * η 0) := by
-        calc ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val.val 0 j * η j
+        calc ∑ j ∈ Finset.univ.filter (· ≠ 0), Λ.val 0 j * η j
             ≥ -(Real.sqrt SΛ * Real.sqrt Sη) := hbound
           _ ≥ -(Real.sqrt SΛ * η 0) := by
               apply neg_le_neg
               exact mul_le_mul_of_nonneg_left (le_of_lt hSη_lt_η0sq) (Real.sqrt_nonneg _)
       -- So (Λη)₀ ≥ Λ₀₀η₀ - √SΛ·η₀ = η₀(Λ₀₀ - √(Λ₀₀²-1))
-      have h2 : Λ.val.val 0 0 * η 0 - Real.sqrt SΛ * η 0 > 0 := by
+      have h2 : Λ.val 0 0 * η 0 - Real.sqrt SΛ * η 0 > 0 := by
         rw [← sub_mul, h_sqrt_SΛ_eq]
         exact mul_pos hΛ_hyp hη0_pos'
       linarith
     exact key
   · -- Part (a): Metric preservation -- minkowskiNormSq(Lη) = minkowskiNormSq(η) < 0
     -- Uses the defining Lorentz property to show the Minkowski norm is preserved.
-    have hΛ := Λ.val.property.1
-    have hmetric : Λ.val.val.transpose * minkowskiMatrix d * Λ.val.val = minkowskiMatrix d := hΛ
-    show MinkowskiSpace.minkowskiNormSq d (fun μ => ∑ ν, Λ.val.val μ ν * η ν) < 0
+    have hΛ := Λ.property.1
+    have hmetric : Λ.val.transpose * minkowskiMatrix d * Λ.val = minkowskiMatrix d := hΛ
+    show MinkowskiSpace.minkowskiNormSq d (fun μ => ∑ ν, Λ.val μ ν * η ν) < 0
     -- The norm of Λη equals that of η by the Lorentz condition
-    suffices hnorm_eq : MinkowskiSpace.minkowskiNormSq d (fun μ => ∑ ν, Λ.val.val μ ν * η ν) =
+    suffices hnorm_eq : MinkowskiSpace.minkowskiNormSq d (fun μ => ∑ ν, Λ.val μ ν * η ν) =
         MinkowskiSpace.minkowskiNormSq d η by
       rw [hnorm_eq]; exact hη_neg
     -- Expand both sides as quadratic forms and use the Lorentz matrix identity
@@ -161,10 +161,10 @@ theorem restricted_preserves_forward_cone
     simp only [MinkowskiSpace.metricSignature]
     -- Extract the Lorentz condition entry-wise: (ΛᵀηΛ)_νρ = η_νρ
     have hentry : ∀ ν ρ : Fin (d + 1),
-        ∑ μ : Fin (d + 1), (if μ = 0 then (-1 : ℝ) else 1) * Λ.val.val μ ν * Λ.val.val μ ρ =
+        ∑ μ : Fin (d + 1), (if μ = 0 then (-1 : ℝ) else 1) * Λ.val μ ν * Λ.val μ ρ =
         if ν = ρ then (if ν = 0 then (-1 : ℝ) else 1) else 0 := by
       intro ν ρ
-      have h1 : (Λ.val.val.transpose * minkowskiMatrix d * Λ.val.val) ν ρ =
+      have h1 : (Λ.val.transpose * minkowskiMatrix d * Λ.val) ν ρ =
           (minkowskiMatrix d) ν ρ := by rw [hmetric]
       simp only [Matrix.mul_apply, minkowskiMatrix, Matrix.diagonal_apply,
         Matrix.transpose_apply, MinkowskiSpace.metricSignature] at h1
@@ -177,9 +177,9 @@ theorem restricted_preserves_forward_cone
     -- Distribute each summand: s_μ * (Σ_ν Λ_μν η_ν) * (Σ_ρ Λ_μρ η_ρ)
     --   = Σ_ν Σ_ρ s_μ * Λ_μν * Λ_μρ * η_ν * η_ρ
     have hlhs : ∀ μ : Fin (d + 1),
-        ((if μ = 0 then (-1:ℝ) else 1) * ∑ ν, Λ.val.val μ ν * η ν) *
-        (∑ ρ, Λ.val.val μ ρ * η ρ) =
-        ∑ ν, ∑ ρ, (if μ = 0 then (-1:ℝ) else 1) * Λ.val.val μ ν * Λ.val.val μ ρ *
+        ((if μ = 0 then (-1:ℝ) else 1) * ∑ ν, Λ.val μ ν * η ν) *
+        (∑ ρ, Λ.val μ ρ * η ρ) =
+        ∑ ν, ∑ ρ, (if μ = 0 then (-1:ℝ) else 1) * Λ.val μ ν * Λ.val μ ρ *
           η ν * η ρ := by
       intro μ
       simp_rw [Finset.mul_sum, Finset.sum_mul]
@@ -193,12 +193,12 @@ theorem restricted_preserves_forward_cone
     rw [Finset.sum_comm]
     -- Factor out η_ν η_ρ and apply hentry
     have hstep : ∀ ρ : Fin (d + 1),
-        ∑ μ, (if μ = 0 then (-1:ℝ) else 1) * Λ.val.val μ ν * Λ.val.val μ ρ * η ν * η ρ =
+        ∑ μ, (if μ = 0 then (-1:ℝ) else 1) * Λ.val μ ν * Λ.val μ ρ * η ν * η ρ =
         ((if ν = ρ then (if ν = 0 then (-1:ℝ) else 1) else 0) * η ν * η ρ) := by
       intro ρ
       have hfactor : ∀ μ : Fin (d + 1),
-          (if μ = 0 then (-1:ℝ) else 1) * Λ.val.val μ ν * Λ.val.val μ ρ * η ν * η ρ =
-          ((if μ = 0 then (-1:ℝ) else 1) * Λ.val.val μ ν * Λ.val.val μ ρ) * (η ν * η ρ) := by
+          (if μ = 0 then (-1:ℝ) else 1) * Λ.val μ ν * Λ.val μ ρ * η ν * η ρ =
+          ((if μ = 0 then (-1:ℝ) else 1) * Λ.val μ ν * Λ.val μ ρ) * (η ν * η ρ) := by
         intro μ; ring
       simp_rw [hfactor, ← Finset.sum_mul, hentry ν ρ]; ring
     simp_rw [hstep]
@@ -336,15 +336,15 @@ theorem orthochronous_preserves_forward_cone
     simp_rw [hstep]
     simp only [ite_mul, zero_mul, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 
-/-- A restricted Lorentz transformation preserves the forward tube.
+/-- A connected Lorentz transformation preserves the forward tube.
 
     If Λ ∈ SO⁺(1,d) and z ∈ ForwardTube, then Λz ∈ ForwardTube.
     Key: Λ is real, so Im(Λz_k) = Λ · Im(z_k). The successive differences
     Im((Λz)_k - (Λz)_{k-1}) = Λ · Im(z_k - z_{k-1}) ∈ V₊. -/
 theorem restricted_preserves_forward_tube
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d n) :
-    (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) ∈ ForwardTube d n := by
+    (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν) ∈ ForwardTube d n := by
   intro k
   -- The imaginary part of (Λz)_k,μ = Σ_ν Λ_μν · z_k_ν
   -- Since Λ is real: Im(Σ_ν Λ_μν z_k_ν) = Σ_ν Λ_μν · Im(z_k_ν)
@@ -361,7 +361,7 @@ theorem restricted_preserves_forward_tube
   -- This follows from restricted_preserves_forward_cone
   -- The goal from `ForwardTube` unfolds via `let` bindings that match η_k
   -- We show the imaginary part of the difference equals Λ · η_k
-  suffices h : InOpenForwardCone d (fun μ => ∑ ν, Λ.val.val μ ν * η_k ν) by
+  suffices h : InOpenForwardCone d (fun μ => ∑ ν, Λ.val μ ν * η_k ν) by
     -- Show the goal (from ForwardTube unfolding) matches our suffices
     -- The key: for real Λ, Im(Σ_ν Λ_μν * z_ν) = Σ_ν Λ_μν * Im(z_ν)
     -- So Im of difference = Λ applied to Im of difference = Λ · η_k
@@ -369,7 +369,7 @@ theorem restricted_preserves_forward_tube
     -- because Λ is real: Im(Σ_ν Λ_μν * z_ν) = Σ_ν Λ_μν * Im(z_ν)
     -- Key fact: Im distributes over sums and Im(r * z) = r * Im(z) for r ∈ ℝ
     have him_linear : ∀ (w : Fin (d + 1) → ℂ) (μ : Fin (d + 1)),
-        (∑ ν, (Λ.val.val μ ν : ℂ) * w ν).im = ∑ ν, Λ.val.val μ ν * (w ν).im := by
+        (∑ ν, (Λ.val μ ν : ℂ) * w ν).im = ∑ ν, Λ.val μ ν * (w ν).im := by
       intro w μ
       rw [Complex.im_sum]
       apply Finset.sum_congr rfl; intro ν _
@@ -441,10 +441,10 @@ theorem orthochronous_preserves_forward_tube
     when Λ ∈ SO⁺(1,d), since z ↦ Λz is ℂ-linear and preserves the forward tube. -/
 theorem W_analytic_lorentz_holomorphic
     (Wfn : WightmanFunctions d) (n : ℕ)
-    (Λ : LorentzGroup.Restricted (d := d)) :
+    (Λ : LorentzGroup d) :
     DifferentiableOn ℂ
       (fun z => (Wfn.spectrum_condition n).choose
-        (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν))
+        (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
       (ForwardTube d n) := by
   -- W_analytic is holomorphic on ForwardTube, and z ↦ Λz maps ForwardTube to ForwardTube
   -- and is differentiable (ℂ-linear), so the composition is holomorphic.
@@ -461,7 +461,7 @@ theorem W_analytic_lorentz_holomorphic
       fun k' ν' => differentiableAt_pi.mp (differentiableAt_pi.mp differentiableAt_id k') ν'
     suffices h : ∀ (s : Finset (Fin (d + 1))),
         DifferentiableAt ℂ (fun x : Fin n → Fin (d + 1) → ℂ =>
-          ∑ ν ∈ s, (↑(Λ.val.val μ ν) : ℂ) * x k ν) z by
+          ∑ ν ∈ s, (↑(Λ.val μ ν) : ℂ) * x k ν) z by
       exact h Finset.univ
     intro s
     induction s using Finset.induction with
@@ -855,20 +855,20 @@ theorem forward_tube_bv_integrable {d n : ℕ} [NeZero d]
     (fun x : NPointDomain d n => F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I))
     hg_meas C_bd N hC hgrowth f
 
-/-- Extract the matrix product identities for a restricted Lorentz transformation. -/
+/-- Extract the matrix product identities for a connected Lorentz transformation. -/
 theorem lorentz_mul_inv_eq_one {d : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d)) :
-    Λ.val.val * Λ.val⁻¹.val = 1 := by
-  have h1 := LorentzGroup.ext_iff.mp (mul_inv_cancel Λ.val)
-  rw [show (Λ.val * Λ.val⁻¹).val = Λ.val.val * Λ.val⁻¹.val from rfl] at h1
+    (Λ : LorentzGroup d) :
+    Λ.val * Λ⁻¹.val = 1 := by
+  have h1 : (Λ * Λ⁻¹).val = (1 : LorentzGroup d).val :=
+    congrArg (fun g : LorentzGroup d => g.val) (mul_inv_cancel Λ)
   rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
   exact h1
 
 theorem lorentz_inv_mul_eq_one {d : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d)) :
-    Λ.val⁻¹.val * Λ.val.val = 1 := by
-  have h1 := LorentzGroup.ext_iff.mp (inv_mul_cancel Λ.val)
-  rw [show (Λ.val⁻¹ * Λ.val).val = Λ.val⁻¹.val * Λ.val.val from rfl] at h1
+    (Λ : LorentzGroup d) :
+    Λ⁻¹.val * Λ.val = 1 := by
+  have h1 : (Λ⁻¹ * Λ).val = (1 : LorentzGroup d).val :=
+    congrArg (fun g : LorentzGroup d => g.val) (inv_mul_cancel Λ)
   rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
   exact h1
 
@@ -877,26 +877,26 @@ theorem lorentz_inv_mul_eq_one {d : ℕ} [NeZero d]
     Follows the same pattern as `integral_orthogonal_eq_self` but uses
     `|det Λ| = 1` from properness instead of orthogonality. -/
 theorem integral_lorentz_eq_self {d n : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (h : NPointDomain d n → ℂ) :
-    ∫ x : NPointDomain d n, h (fun i => Matrix.mulVec Λ.val.val (x i)) =
+    ∫ x : NPointDomain d n, h (fun i => Matrix.mulVec Λ.val (x i)) =
     ∫ x : NPointDomain d n, h x := by
-  have hdet_ne : Λ.val.val.det ≠ 0 := by
-    rw [LorentzGroup.det_eq_one Λ.val]
+  have hdet_ne : Λ.val.det ≠ 0 := by
+    rw [LorentzGroup.det_eq_one Λ]
     exact one_ne_zero
-  have habs : |Λ.val.val.det| = 1 := by
-    rw [LorentzGroup.det_eq_one Λ.val]
+  have habs : |Λ.val.det| = 1 := by
+    rw [LorentzGroup.det_eq_one Λ]
     simp
   have hΛ_mul_inv := lorentz_mul_inv_eq_one Λ
   have hΛinv_mul := lorentz_inv_mul_eq_one Λ
-  have hmv : (fun v => Λ.val.val.mulVec v) = Matrix.toLin' Λ.val.val := by
+  have hmv : (fun v => Λ.val.mulVec v) = Matrix.toLin' Λ.val := by
     ext v; simp [Matrix.toLin'_apply]
-  have hcont_Λ : Continuous (Matrix.toLin' Λ.val.val) :=
+  have hcont_Λ : Continuous (Matrix.toLin' Λ.val) :=
     LinearMap.continuous_of_finiteDimensional _
-  have hcont_Λinv : Continuous (Matrix.toLin' Λ.val⁻¹.val) :=
+  have hcont_Λinv : Continuous (Matrix.toLin' Λ⁻¹.val) :=
     LinearMap.continuous_of_finiteDimensional _
   have hmp_factor : MeasureTheory.MeasurePreserving
-      (fun v : Fin (d+1) → ℝ => Λ.val.val.mulVec v)
+      (fun v : Fin (d+1) → ℝ => Λ.val.mulVec v)
       MeasureTheory.volume MeasureTheory.volume := by
     rw [hmv]; constructor
     · exact hcont_Λ.measurable
@@ -904,8 +904,8 @@ theorem integral_lorentz_eq_self {d n : ℕ} [NeZero d]
       simp [abs_inv, habs]
   let e : (Fin n → Fin (d+1) → ℝ) ≃ᵐ (Fin n → Fin (d+1) → ℝ) :=
     { toEquiv := {
-        toFun := fun a i => Λ.val.val.mulVec (a i)
-        invFun := fun a i => Λ.val⁻¹.val.mulVec (a i)
+        toFun := fun a i => Λ.val.mulVec (a i)
+        invFun := fun a i => Λ⁻¹.val.mulVec (a i)
         left_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hΛinv_mul]
         right_inv := fun a => by ext i j; simp [Matrix.mulVec_mulVec, hΛ_mul_inv] }
       measurable_toFun :=
@@ -919,20 +919,20 @@ theorem integral_lorentz_eq_self {d n : ℕ} [NeZero d]
 
 /-- The ContinuousLinearEquiv for the inverse Lorentz action on a single spacetime factor. -/
 noncomputable def lorentzInvCLEquiv {d : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d)) :
+    (Λ : LorentzGroup d) :
     (Fin (d + 1) → ℝ) ≃L[ℝ] (Fin (d + 1) → ℝ) := by
   have hΛinv_mul := lorentz_inv_mul_eq_one Λ
   have hΛ_mul_inv := lorentz_mul_inv_eq_one Λ
   exact {
     toLinearEquiv := {
-      toLinearMap := (Matrix.toLin' Λ.val⁻¹.val)
-      invFun := Matrix.toLin' Λ.val.val
+      toLinearMap := (Matrix.toLin' Λ⁻¹.val)
+      invFun := Matrix.toLin' Λ.val
       left_inv := fun v => by
-        show (Matrix.toLin' Λ.val.val) ((Matrix.toLin' Λ.val⁻¹.val) v) = v
+        show (Matrix.toLin' Λ.val) ((Matrix.toLin' Λ⁻¹.val) v) = v
         rw [← LinearMap.comp_apply, ← Matrix.toLin'_mul, hΛ_mul_inv, Matrix.toLin'_one]
         simp
       right_inv := fun v => by
-        show (Matrix.toLin' Λ.val⁻¹.val) ((Matrix.toLin' Λ.val.val) v) = v
+        show (Matrix.toLin' Λ⁻¹.val) ((Matrix.toLin' Λ.val) v) = v
         rw [← LinearMap.comp_apply, ← Matrix.toLin'_mul, hΛinv_mul, Matrix.toLin'_one]
         simp
     }
@@ -943,26 +943,26 @@ noncomputable def lorentzInvCLEquiv {d : ℕ} [NeZero d]
 /-- Composing a Schwartz function on NPointDomain with the inverse Lorentz action
     yields another Schwartz function. -/
 noncomputable def lorentzCompSchwartz {d n : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (f : SchwartzNPoint d n) : SchwartzNPoint d n :=
   SchwartzMap.compCLMOfContinuousLinearEquiv ℝ
     (ContinuousLinearEquiv.piCongrRight (fun (_ : Fin n) => lorentzInvCLEquiv Λ)) f
 
 /-- The pointwise evaluation of lorentzCompSchwartz: g(x) = f(Λ⁻¹ · x). -/
 theorem lorentzCompSchwartz_apply {d n : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (f : SchwartzNPoint d n) (x : NPointDomain d n) :
     (lorentzCompSchwartz Λ f).toFun x =
-    f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i)) := by
+    f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i)) := by
   simp only [lorentzCompSchwartz, SchwartzMap.compCLMOfContinuousLinearEquiv,
     ContinuousLinearEquiv.piCongrRight, lorentzInvCLEquiv]
   rfl
 
 /-- After applying Lorentz COV, the composition g(Λx) = f(Λ⁻¹(Λx)) = f(x). -/
 theorem lorentzCompSchwartz_comp_lorentz {d n : ℕ} [NeZero d]
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (f : SchwartzNPoint d n) (x : NPointDomain d n) :
-    (lorentzCompSchwartz Λ f).toFun (fun i => Matrix.mulVec Λ.val.val (x i)) =
+    (lorentzCompSchwartz Λ f).toFun (fun i => Matrix.mulVec Λ.val (x i)) =
     f.toFun x := by
   rw [lorentzCompSchwartz_apply]
   congr 1; ext i j
@@ -991,9 +991,9 @@ theorem lorentz_covariant_distributional_bv_of_restrictedCovariance
     (_hW_linear : IsLinearMap ℂ W_n)
     (_hW_cont : Continuous W_n)
     (hW_lorentz :
-      ∀ (Λ : LorentzGroup.Restricted (d := d)) (f g : SchwartzNPoint d n),
+      ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
         (∀ x : NPointDomain d n,
-          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (_hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
@@ -1004,16 +1004,16 @@ theorem lorentz_covariant_distributional_bv_of_restrictedCovariance
           F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W_n f)))
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (f : SchwartzNPoint d n)
     (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η) :
     Filter.Tendsto
       (fun ε : ℝ => ∫ x : NPointDomain d n,
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+        F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
           (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x))
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (W_n f)) := by
-  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val.val μ ν * η k ν
+  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val μ ν * η k ν
   let g : SchwartzNPoint d n := lorentzCompSchwartz Λ f
   have hΛη : InForwardCone d n Λη := by
     intro k
@@ -1037,7 +1037,7 @@ theorem lorentz_covariant_distributional_bv_of_restrictedCovariance
     exact fun x => lorentzCompSchwartz_apply Λ f x
   suffices heq : ∀ ε : ℝ,
       ∫ x : NPointDomain d n,
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+        F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
           (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x) =
       ∫ y : NPointDomain d n,
         F (fun k μ => ↑(y k μ) + ε * ↑(Λη k μ) * Complex.I) * (g y) by
@@ -1045,9 +1045,9 @@ theorem lorentz_covariant_distributional_bv_of_restrictedCovariance
     exact Filter.Tendsto.congr (fun ε => (heq ε).symm) hbv_g
   intro ε
   have hlin : ∀ x : NPointDomain d n,
-      (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+      (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
         (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
-      (fun k μ => ↑((fun i => Λ.val.val.mulVec (x i)) k μ) +
+      (fun k μ => ↑((fun i => Λ.val.mulVec (x i)) k μ) +
         ε * ↑(Λη k μ) * Complex.I) := by
     intro x
     funext k μ
@@ -1061,15 +1061,15 @@ theorem lorentz_covariant_distributional_bv_of_restrictedCovariance
     · conv_lhs =>
         arg 2
         ext ν
-        rw [show (↑(Λ.val.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
-            ↑ε * (↑(Λ.val.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
+        rw [show (↑(Λ.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
+            ↑ε * (↑(Λ.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
       rw [← Finset.sum_mul, ← Finset.mul_sum]
   have hlhs : (∫ x : NPointDomain d n,
-      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+      F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
         (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x)) =
     ∫ x : NPointDomain d n,
-      (fun y => F (fun k μ => ↑(y k μ) + ε * ↑(Λη k μ) * Complex.I) * (g y))
-        (fun i => Λ.val.val.mulVec (x i)) := by
+        (fun y => F (fun k μ => ↑(y k μ) + ε * ↑(Λη k μ) * Complex.I) * (g y))
+        (fun i => Λ.val.mulVec (x i)) := by
     congr 1
     ext x
     rw [hlin x]
@@ -1090,19 +1090,19 @@ theorem lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
           F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (Wfn.W n f)))
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (f : SchwartzNPoint d n)
     (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η) :
     Filter.Tendsto
       (fun ε : ℝ => ∫ x : NPointDomain d n,
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+        F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
           (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x))
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (Wfn.W n f)) :=
   lorentz_covariant_distributional_bv_of_restrictedCovariance
     (d := d) (n := n)
     (Wfn.W n) (Wfn.linear n) (Wfn.tempered n)
-    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ.val f g hfg)
+    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     F _hF_hol hF_bv Λ f η hη
 
 /-- The set of Euclidean configurations whose Wick rotation does NOT lie in the
@@ -1151,9 +1151,9 @@ theorem ae_euclidean_points_in_permutedTube {d n : ℕ} [NeZero d] :
   rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
   convert wickRotation_not_in_PET_null (d := d) (n := n) using 1
 
-/-- Restricted Lorentz covariance of the boundary distribution implies that the
+/-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is
-the generic restricted-subgroup version of the usual Wightman boundary-value
+the connected-group version of the usual Wightman boundary-value
 comparison. -/
 theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
     {d n : ℕ} [NeZero d]
@@ -1161,9 +1161,9 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
     (hW_linear : IsLinearMap ℂ W_n)
     (hW_cont : Continuous W_n)
     (hW_lorentz :
-      ∀ (Λ : LorentzGroup.Restricted (d := d)) (f g : SchwartzNPoint d n),
+      ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
         (∀ x : NPointDomain d n,
-          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
@@ -1174,12 +1174,12 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
           F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W_n f)))
-    (Λ : LorentzGroup.Restricted (d := d)) :
+    (Λ : LorentzGroup d) :
     ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
         (fun ε : ℝ => ∫ x : NPointDomain d n,
-          (F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+          (F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
               (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) -
            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
@@ -1192,7 +1192,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
       (nhds (W_n f)) := hF_bv f η hη
   have h_term1 : Filter.Tendsto
       (fun ε : ℝ => ∫ x : NPointDomain d n,
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+        F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
           (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * (f x))
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (W_n f)) :=
@@ -1205,7 +1205,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
   filter_upwards [self_mem_nhdsWithin] with ε (hε : ε ∈ Set.Ioi 0)
   have hF_lor_hol :
       DifferentiableOn ℂ
-        (fun z => F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν))
+        (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
         (ForwardTube d n) := by
     apply DifferentiableOn.comp hF_hol
     · intro z _hz
@@ -1222,7 +1222,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
           ∀ (s : Finset (Fin (d + 1))),
             DifferentiableAt ℂ
               (fun x : Fin n → Fin (d + 1) → ℂ =>
-                ∑ ν ∈ s, (↑(Λ.val.val μ ν) : ℂ) * x k ν) z by
+                ∑ ν ∈ s, (↑(Λ.val μ ν) : ℂ) * x k ν) z by
         exact h Finset.univ
       intro s
       induction s using Finset.induction with
@@ -1238,7 +1238,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
     ext x
     ring
   · exact forward_tube_bv_integrable
-      (fun z => F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν))
+      (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
       hF_lor_hol
       ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩, cont := hW_cont },
         fun f' η' hη' =>
@@ -1255,13 +1255,13 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
     agree, by Lorentz covariance of the Wightman distribution. -/
 theorem W_analytic_lorentz_bv_agree
     (Wfn : WightmanFunctions d) (n : ℕ)
-    (Λ : LorentzGroup.Restricted (d := d)) :
+    (Λ : LorentzGroup d) :
     ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
         (fun ε : ℝ => ∫ x : NPointDomain d n,
           ((Wfn.spectrum_condition n).choose
-            (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) -
+            (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) -
            (Wfn.spectrum_condition n).choose
             (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
@@ -1269,7 +1269,7 @@ theorem W_analytic_lorentz_bv_agree
   W_analytic_lorentz_bv_agree_of_restrictedCovariance
     (d := d) (n := n)
     (Wfn.W n) (Wfn.linear n) (Wfn.tempered n)
-    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ.val f g hfg)
+    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     (Wfn.spectrum_condition n).choose
     (Wfn.spectrum_condition n).choose_spec.1
     (Wfn.spectrum_condition n).choose_spec.2

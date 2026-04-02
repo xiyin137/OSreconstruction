@@ -363,16 +363,6 @@ def lorentz' (Λ : LorentzGroup d) : PoincareGroup d :=
   unfold act lorentz'
   simp only [add_zero]
 
-/-- Compatibility alias during the connected-component migration: the old
-`PoincareGroup.IsRestricted` surface now refers to the whole default connected
-Poincaré group. -/
-def IsRestricted (_g : PoincareGroup d) : Prop := True
-
-/-- Compatibility alias during the connected-component migration: the old
-`PoincareGroup.Restricted` surface now refers to the whole default connected
-Poincaré group. -/
-def Restricted : Subgroup (PoincareGroup d) := ⊤
-
 end PoincareGroup
 
 /-! ### Notation -/

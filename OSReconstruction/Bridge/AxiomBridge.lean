@@ -26,8 +26,6 @@ infrastructure modules.
   and `FullLorentzGroup`
 * `lorentzGroupToWightman` — preferred conversion for the default connected
   Lorentz group on the `LorentzLieGroup` side
-* `restrictedLorentzGroupToWightman` — compatibility wrapper around the same
-  connected-group conversion
 * `inOpenForwardCone_iff` — forward cone conditions agree
 * `complexLorentzGroup_metric_compat` — ComplexLorentzGroup satisfies the Wightman metric condition
 
@@ -38,7 +36,7 @@ This file imports from:
 - `SCV/` (via TubeDomainExtension.lean) — tube domain definitions
 - `Wightman/Spacetime/Metric.lean` — lightweight, defines `metricSignature`, `minkowskiNormSq`
 - `Wightman/Groups/Lorentz.lean` — lightweight, defines `FullLorentzGroup`,
-  the default connected `LorentzGroup`, and compatibility aliases
+  and the default connected `LorentzGroup`
 
 It does NOT import `AnalyticContinuation.lean` (which contains the axioms and
 heavy dependencies on distributions/Schwartz space), avoiding circular imports.
@@ -132,31 +130,11 @@ def wightmanToLorentzGroup
       rw [Equiv.apply_symm_apply]
       exact LorentzGroup.zero_zero_ge_one Λ)⟩
 
-/-- Compatibility wrapper exposing the old restricted-name conversion on the
-Wightman side. Since `LorentzGroup.Restricted = ⊤`, this is just the connected
-group conversion packaged into the legacy subgroup surface. -/
-abbrev restrictedLorentzGroupToWightman
-    (Λ : LorentzLieGroup.LorentzGroup d) :
-    LorentzGroup.Restricted (d := d) :=
-  ⟨lorentzGroupToWightman Λ, by simp [LorentzGroup.Restricted]⟩
-
-/-- Compatibility wrapper exposing the old restricted-name conversion on the
-`LorentzLieGroup` side. -/
-abbrev wightmanToRestrictedLorentzGroup
-    (Λ : LorentzGroup.Restricted (d := d)) :
-    LorentzLieGroup.LorentzGroup d :=
-  wightmanToLorentzGroup Λ.val
-
 /-- The underlying matrix is preserved by the conversion. -/
 @[simp]
 theorem lorentzGroupToWightman_val_val
     (Λ : LorentzLieGroup.LorentzGroup d) :
     (lorentzGroupToWightman Λ).val = Λ.val.val := rfl
-
-/-- Compatibility alias for the old restricted-name matrix preservation lemma. -/
-@[simp] theorem restrictedLorentzGroupToWightman_val_val
-    (Λ : LorentzLieGroup.LorentzGroup d) :
-    (restrictedLorentzGroupToWightman Λ).val.val = Λ.val.val := rfl
 
 /-! ### InOpenForwardCone equivalence -/
 
@@ -266,9 +244,6 @@ In `AnalyticContinuation.lean`:
    ```
 4. Convert between the default connected Lorentz groups on the two sides:
    Use `wightmanToLorentzGroup` / `lorentzGroupToWightman`.
-   The older names
-   `wightmanToRestrictedLorentzGroup` / `restrictedLorentzGroupToWightman`
-   remain as compatibility wrappers around these connected-group conversions.
    The underlying matrices are preserved (`lorentzGroupToWightman_val_val`).
 5. Convert between the two `ComplexLorentzGroup` types:
    Use `complexLorentzGroup_metric_compat` to build elements of the Wightman

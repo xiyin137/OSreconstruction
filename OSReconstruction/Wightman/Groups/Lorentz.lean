@@ -769,11 +769,6 @@ theorem inv {Λ : LorentzGroup d} (h : IsOrthochronous Λ) : IsOrthochronous Λ�
 
 end IsOrthochronous
 
-/-- Compatibility alias during the connected-component migration: the old
-`LorentzGroup.Restricted` surface now refers to the whole default connected
-Lorentz group. -/
-def Restricted : Subgroup (LorentzGroup d) := ⊤
-
 /-- Compatibility alias for the full parity element. -/
 abbrev parity (d : ℕ) [NeZero d] : FullLorentzGroup d := FullLorentzGroup.parity (d := d)
 

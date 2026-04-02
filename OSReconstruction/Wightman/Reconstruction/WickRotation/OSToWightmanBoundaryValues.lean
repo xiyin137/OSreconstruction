@@ -596,25 +596,25 @@ theorem bvt_lorentz_covariant_orthochronous
 theorem bvt_lorentz_covariant_restricted
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup.Restricted (d := d))
+    ∀ (n : ℕ) (Λ : LorentzGroup d)
       (f g : SchwartzNPoint d n),
-        (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+        (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         bvt_W OS lgc n f = bvt_W OS lgc n g := by
   intro n Λ f g hfg
-  exact bvt_lorentz_covariant_orthochronous (d := d) OS lgc n Λ.val
-    (LorentzGroup.zero_zero_ge_one Λ.val) f g hfg
+  exact bvt_lorentz_covariant_orthochronous (d := d) OS lgc n Λ
+    (LorentzGroup.zero_zero_ge_one Λ) f g hfg
 
 private theorem bvt_F_lorentz_restricted_wick
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup.Restricted (d := d))
+    ∀ (n : ℕ) (Λ : LorentzGroup d)
       (φ : SchwartzNPoint d n),
         HasCompactSupport (φ : NPointDomain d n → ℂ) →
         tsupport (φ : NPointDomain d n → ℂ) ⊆
           {x : NPointDomain d n | (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n} →
         ∫ x : NPointDomain d n,
             bvt_F OS lgc n (fun k μ =>
-              ∑ ν, (↑((Λ⁻¹).val.val μ ν) : ℂ) * wickRotatePoint (x k) ν) * (φ x)
+              ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν) * (φ x)
           =
         ∫ x : NPointDomain d n,
             bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * (φ x) := by
@@ -634,10 +634,10 @@ private theorem bvt_F_lorentz_restricted_wick
 private theorem bvt_F_lorentz_restrictedCanonical
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup.Restricted (d := d))
+    ∀ (n : ℕ) (Λ : LorentzGroup d)
       (x : NPointDomain d n) (ε : ℝ), 0 < ε →
         bvt_F OS lgc n (fun k μ =>
-          ∑ ν, (Λ.val.val μ ν : ℂ) *
+          ∑ ν, (Λ.val μ ν : ℂ) *
             (↑(x k ν) +
               ε * ↑(canonicalForwardConeDirection (d := d) n k ν) * Complex.I)) =
         bvt_F OS lgc n (fun k μ =>
@@ -675,7 +675,7 @@ private theorem bvt_F_lorentz_restrictedCanonical
 
 /-- The reconstructed boundary-value witness already satisfies the abstract
 absolute forward-tube input interface used by the reduced BHW route. This keeps
-the restricted/proper-orthochronous covariance lane theorem-based, rather than
+the connected Lorentz covariance lane theorem-based, rather than
 special-casing the old spectrum-condition package. -/
 noncomputable def bvt_absoluteForwardTubeInput
     (OS : OsterwalderSchraderAxioms d)
@@ -687,7 +687,6 @@ noncomputable def bvt_absoluteForwardTubeInput
       (bvt_F_holomorphic OS lgc (m + 1))
   real_lorentz_invariant := by
     intro Λ z hz
-    let Λr : LorentzGroup.Restricted (d := d) := ⟨Λ, trivial⟩
     exact W_analytic_lorentz_on_tube_of_restrictedCovariance
       (d := d) (n := m + 1)
       (bvt_W OS lgc (m + 1))
@@ -698,7 +697,7 @@ noncomputable def bvt_absoluteForwardTubeInput
       (bvt_F OS lgc (m + 1))
       (bvt_F_holomorphic OS lgc (m + 1))
       (bvt_boundary_values OS lgc (m + 1))
-      Λr z ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hz)
+      Λ z ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hz)
   translation_invariant := by
     intro z c hz hzc
     exact bvt_F_translationInvariant OS lgc (m + 1) z c

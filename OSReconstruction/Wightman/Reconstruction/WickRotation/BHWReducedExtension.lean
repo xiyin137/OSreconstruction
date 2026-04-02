@@ -384,8 +384,7 @@ noncomputable def spectrumConditionAbsoluteInput
     have hft_eq : ForwardTube d (m + 1) = _root_.ForwardTube d (m + 1) :=
       bhwForwardTube_eq_rootForwardTube (d := d) (n := m + 1)
     intro Λ z hz
-    let Λr : LorentzGroup.Restricted (d := d) := ⟨Λ, trivial⟩
-    exact W_analytic_lorentz_on_tube (d := d) Wfn (m + 1) Λr z (hft_eq ▸ hz)
+    exact W_analytic_lorentz_on_tube (d := d) Wfn (m + 1) Λ z (hft_eq ▸ hz)
   translation_invariant := by
     have hft_eq : ForwardTube d (m + 1) = _root_.ForwardTube d (m + 1) :=
       bhwForwardTube_eq_rootForwardTube (d := d) (n := m + 1)

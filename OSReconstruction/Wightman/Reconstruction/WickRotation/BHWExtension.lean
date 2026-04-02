@@ -33,9 +33,9 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
     (hW_linear : IsLinearMap ℂ W_n)
     (hW_cont : Continuous W_n)
     (hW_lorentz :
-      ∀ (Λ : LorentzGroup.Restricted (d := d)) (f g : SchwartzNPoint d n),
+      ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
         (∀ x : NPointDomain d n,
-          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
@@ -46,13 +46,13 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
           F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W_n f))) :
-    ∀ (Λ : LorentzGroup.Restricted (d := d))
+    ∀ (Λ : LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
-      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
+      F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν) = F z := by
   intro Λ z hz
   have hF_lor_hol :
       DifferentiableOn ℂ
-        (fun z => F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν))
+        (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
         (ForwardTube d n) := by
     apply DifferentiableOn.comp hF_hol
     · intro z _hz
@@ -68,7 +68,7 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
           ∀ (s : Finset (Fin (d + 1))),
             DifferentiableAt ℂ
               (fun x : Fin n → Fin (d + 1) → ℂ =>
-                ∑ ν ∈ s, (↑(Λ.val.val μ ν) : ℂ) * x k ν) z by
+                ∑ ν ∈ s, (↑(Λ.val μ ν) : ℂ) * x k ν) z by
         exact h Finset.univ
       intro s
       induction s using Finset.induction with
@@ -85,10 +85,10 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
     (fun f η ε hε hη => by
       have hInt₁ : MeasureTheory.Integrable
           (fun x : NPointDomain d n =>
-            F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) *
+            F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) *
               (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) * f x) := by
         exact forward_tube_bv_integrable
-          (fun z => F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν))
+          (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
           hF_lor_hol
           ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩,
              cont := hW_cont }, fun f' η' hη' =>
@@ -121,20 +121,20 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
 
     Ref: Streater-Wightman, §2.4 -/
 theorem W_analytic_lorentz_on_tube (Wfn : WightmanFunctions d) (n : ℕ) :
-    ∀ (Λ : LorentzGroup.Restricted (d := d))
+    ∀ (Λ : LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
       (Wfn.spectrum_condition n).choose
-        (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+        (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν) =
       (Wfn.spectrum_condition n).choose z := by
   exact W_analytic_lorentz_on_tube_of_restrictedCovariance
     (d := d) (n := n)
     (Wfn.W n) (Wfn.linear n) (Wfn.tempered n)
-    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ.val f g hfg)
+    (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     (Wfn.spectrum_condition n).choose
     (Wfn.spectrum_condition n).choose_spec.1
     (Wfn.spectrum_condition n).choose_spec.2
 
-/-- Restricted Lorentz covariance of the boundary distribution already pays the
+/-- Connected Lorentz covariance of the boundary distribution already pays the
 compact-support Wick-section pairing identity for the transformed forward-tube
 witness. This is the Wick-section pairing form of
 `W_analytic_lorentz_on_tube_of_restrictedCovariance`, and it is the exact shape
@@ -144,9 +144,9 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
     (hW_linear : IsLinearMap ℂ W_n)
     (hW_cont : Continuous W_n)
     (hW_lorentz :
-      ∀ (Λ : LorentzGroup.Restricted (d := d)) (f g : SchwartzNPoint d n),
+      ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
         (∀ x : NPointDomain d n,
-          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ.val⁻¹.val (x i))) →
+          g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
@@ -157,14 +157,14 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
           F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (W_n f)))
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (φ : SchwartzNPoint d n)
     (_hφ_compact : HasCompactSupport (φ : NPointDomain d n → ℂ))
     (hφ_tsupport : tsupport (φ : NPointDomain d n → ℂ) ⊆
       {x : NPointDomain d n | (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n}) :
-    ∫ x : NPointDomain d n,
+        ∫ x : NPointDomain d n,
         F (fun k μ =>
-          ∑ ν, (↑((Λ⁻¹).val.val μ ν) : ℂ) * wickRotatePoint (x k) ν) * (φ x)
+          ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν) * (φ x)
       =
     ∫ x : NPointDomain d n,
         F (fun k => wickRotatePoint (x k)) * (φ x) := by
@@ -180,7 +180,7 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
         hφ_tsupport hx_tsupport
       have hcov :
           F (fun k μ =>
-            ∑ ν, (↑((Λ⁻¹).val.val μ ν) : ℂ) * wickRotatePoint (x k) ν)
+            ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν)
           =
           F (fun k => wickRotatePoint (x k)) := by
         exact W_analytic_lorentz_on_tube_of_restrictedCovariance
@@ -190,7 +190,7 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
           Λ⁻¹ (fun k => wickRotatePoint (x k)) hx_ft
       change
         F (fun k μ =>
-            ∑ ν, (↑((Λ⁻¹).val.val μ ν) : ℂ) * wickRotatePoint (x k) ν) * φ x
+            ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν) * φ x
           =
         F (fun k => wickRotatePoint (x k)) * φ x
       rw [hcov]
@@ -206,7 +206,7 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
 theorem W_analytic_swap_boundary_pairing_eq {d n : ℕ} [NeZero d]
     (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hW_hol : DifferentiableOn ℂ W_analytic (ForwardTube d n))
-    (hW_real_inv : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+    (hW_real_inv : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z)
     (W : (n' : ℕ) → SchwartzNPoint d n' → ℂ)
@@ -237,7 +237,7 @@ theorem W_analytic_swap_boundary_pairing_eq {d n : ℕ} [NeZero d]
     exact forall_congr' fun k => inOpenForwardCone_iff _
   have hW_hol' : DifferentiableOn ℂ W_analytic (BHW.ForwardTube d n) := by
     simpa [hft_eq] using hW_hol
-  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z := by
     intro Λ z hz
@@ -259,7 +259,7 @@ theorem W_analytic_swap_boundary_pairing_eq {d n : ℕ} [NeZero d]
 theorem analytic_extended_local_commutativity {d n : ℕ} [NeZero d]
     (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hW_hol : DifferentiableOn ℂ W_analytic (ForwardTube d n))
-    (hW_real_inv : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+    (hW_real_inv : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z)
     (W : (n' : ℕ) → SchwartzNPoint d n' → ℂ)
@@ -286,7 +286,7 @@ theorem analytic_extended_local_commutativity {d n : ℕ} [NeZero d]
     exact forall_congr' fun k => inOpenForwardCone_iff _
   have hW_hol' : DifferentiableOn ℂ W_analytic (BHW.ForwardTube d n) := by
     simpa [hft_eq] using hW_hol
-  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z := by
     intro Λ z hz
@@ -312,7 +312,7 @@ theorem analytic_extended_local_commutativity {d n : ℕ} [NeZero d]
 theorem analytic_boundary_local_commutativity_of_boundary_continuous {d n : ℕ} [NeZero d]
     (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hW_hol : DifferentiableOn ℂ W_analytic (ForwardTube d n))
-    (hW_real_inv : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+    (hW_real_inv : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z)
     (W : (n' : ℕ) → SchwartzNPoint d n' → ℂ)
@@ -343,7 +343,7 @@ theorem analytic_boundary_local_commutativity_of_boundary_continuous {d n : ℕ}
     exact forall_congr' fun k => inOpenForwardCone_iff _
   have hW_hol' : DifferentiableOn ℂ W_analytic (BHW.ForwardTube d n) := by
     simpa [hft_eq] using hW_hol
-  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+  have hW_real_inv' : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
       W_analytic (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = W_analytic z := by
     intro Λ z hz
