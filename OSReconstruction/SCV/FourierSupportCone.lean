@@ -174,8 +174,11 @@ axiom fourierSupportInDualCone_of_tube_boundaryValue
             F (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
     HasFourierSupportInDualCone C W
-  -- Proof needs the full PW-Schwartz bridge:
-  -- BV W → write F(z) = W(ψ_z) → W has Fourier support in C* by construction
-  -- Blocked on: fourierLaplaceExtMultiDim_boundaryValue Fourier type mismatch
+  -- Proof route (now unblocked by inverseFourierFlatCLM):
+  -- 1. The BV hypothesis gives W as the distributional limit of ∫ F(x+iεη)φ(x)dx.
+  -- 2. By fourierLaplaceExtMultiDim_boundaryValue, this limit equals
+  --    T(inverseFourierFlatCLM φ) for an appropriate T with Fourier support in C*.
+  -- 3. The Fourier support of W follows from the support of T and the
+  --    invertibility of inverseFourierFlatCLM.
 
 end
