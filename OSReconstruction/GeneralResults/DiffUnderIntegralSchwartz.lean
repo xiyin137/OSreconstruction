@@ -57,7 +57,7 @@ variable {m : ℕ}
     **Proof sketch**: Apply `hasDerivAt_integral_of_dominated_loc_of_deriv_le`
     with the dominator `C * (1+‖x‖)^N * |φ(x)|`, which is integrable
     because polynomial × Schwartz is in L¹. -/
-axiom hasDerivAt_schwartz_integral
+theorem hasDerivAt_schwartz_integral
     (F : ℝ → (Fin m → ℝ) → ℂ)
     (t₀ : ℝ) (δ : ℝ) (hδ : 0 < δ)
     -- F(t,·) is measurable for each t
@@ -79,6 +79,20 @@ axiom hasDerivAt_schwartz_integral
     HasDerivAt
       (fun t => ∫ x : Fin m → ℝ, F t x * φ x)
       (∫ x : Fin m → ℝ, F' t₀ x * φ x)
-      t₀
+      t₀ := by
+  -- Proof route: apply hasDerivAt_integral_of_dominated_loc_of_deriv_le
+  -- (Mathlib.Analysis.Calculus.ParametricIntegral) with:
+  --   s := Metric.ball t₀ δ
+  --   G(t,x) := F(t,x) * φ(x)
+  --   G'(t,x) := F'(t,x) * φ(x)
+  --   bound(x) := C_bd' * (1+‖x‖)^N' * ‖φ(x)‖
+  --
+  -- The hypotheses map as:
+  --   hF_meas → G measurable (F meas * φ continuous)
+  --   hF_growth → G integrable (polynomial * Schwartz ∈ L¹)
+  --   hF_deriv → G differentiable (product rule: F'*φ)
+  --   hF'_growth → bound on G' (polynomial * Schwartz ∈ L¹)
+  --   bound integrable from Schwartz decay dominating polynomial growth
+  sorry
 
 end
