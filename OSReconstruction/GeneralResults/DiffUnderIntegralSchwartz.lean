@@ -69,7 +69,17 @@ theorem integrable_polyGrowth_mul_schwartz {m : ℕ}
         exact mul_le_mul_of_nonneg_right (hg_growth x) (norm_nonneg _)
     _ ≤ (1 + ‖x‖) ^ (-(n : ℝ)) *
           (C * (2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)) := by
-      sorry -- Rearrangement: rpow_neg + pow_add + one_add_le_sup_seminorm_apply
+      have hsch :
+          (1 + ‖x‖) ^ (N + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
+            2 ^ (N + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+        simpa [s, norm_iteratedFDeriv_zero] using
+          (SchwartzMap.one_add_le_sup_seminorm_apply
+            (𝕜 := ℂ) (m := (N + n, 0)) (k := N + n) (n := 0)
+            le_rfl le_rfl φ x)
+      rw [Real.rpow_neg (by positivity), ← div_eq_inv_mul, le_div_iff₀' (by positivity),
+        Real.rpow_natCast]
+      simpa [pow_add, mul_assoc, mul_left_comm, mul_comm] using
+        mul_le_mul_of_nonneg_left hsch (le_of_lt hC)
 
 /-- **Differentiation under the integral sign for Schwartz test functions.**
 
@@ -99,6 +109,7 @@ theorem hasDerivAt_schwartz_integral
     (F' : ℝ → (Fin m → ℝ) → ℂ)
     (hF_deriv : ∀ t, |t - t₀| < δ → ∀ x : Fin m → ℝ,
       HasDerivAt (fun s => F s x) (F' t x) t)
+    (hF'_meas : AEStronglyMeasurable (F' t₀) volume)
     -- The derivative has polynomial growth UNIFORMLY on the neighborhood
     (C_bd' : ℝ) (N' : ℕ) (hC_bd' : 0 < C_bd')
     (hF'_growth : ∀ t, |t - t₀| < δ → ∀ x : Fin m → ℝ,
@@ -115,31 +126,57 @@ theorem hasDerivAt_schwartz_integral
   let bnd : (Fin m → ℝ) → ℝ := fun x => C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖
   -- The integral ∫ F(t,x)*φ(x) dx = ∫ G(t,x) dx, so it suffices to differentiate G
   suffices h : HasDerivAt (fun t => ∫ x, G t x) (∫ x, G' t₀ x) t₀ from h
+  have hdiff_ae :
+      ∀ᵐ a : Fin m → ℝ ∂volume, ∀ t ∈ Metric.ball t₀ δ,
+        HasDerivAt (fun s => G s a) (G' t a) t := by
+    exact Filter.Eventually.of_forall fun x =>
+      fun t ht => (hF_deriv t (Metric.mem_ball.mp ht) x).mul_const (φ x)
   -- Apply Mathlib's theorem
-  exact (hasDerivAt_integral_of_dominated_loc_of_deriv_le
-    (s := Metric.ball t₀ δ) (Metric.ball_mem_nhds t₀ hδ)
-    -- G measurable near t₀
-    (Filter.Eventually.of_forall fun t =>
-      (hF_meas t).mul φ.continuous.aestronglyMeasurable)
-    -- G integrable at t₀
-    (integrable_polyGrowth_mul_schwartz (F t₀) (hF_meas t₀) C_bd N hC_bd
-      (hF_growth t₀ (by simp [abs_of_pos hδ, hδ])) φ)
-    -- G' measurable at t₀
-    ((sorry : AEStronglyMeasurable (F' t₀) volume).mul
-      φ.continuous.aestronglyMeasurable) -- F'(t₀,·) measurable * φ continuous
-    -- Bound on G'
-    (Filter.Eventually.of_forall fun x =>
-      fun t ht => by
-        show ‖G' t x‖ ≤ bnd x
-        simp only [G', bnd, norm_mul]
-        exact mul_le_mul_of_nonneg_right
-          (hF'_growth t (Metric.mem_ball.mp ht) x) (norm_nonneg _))
-    -- Bound integrable
-    (by -- bnd(x) = C'*(1+‖x‖)^N'*‖φ(x)‖ integrable
-      show Integrable (fun x => C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖)
-      sorry)
-    -- G differentiable
-    (Filter.Eventually.of_forall fun x =>
-      fun t ht => (hF_deriv t (Metric.mem_ball.mp ht) x).mul_const (φ x))).2
+  have hmain :
+      Integrable (G' t₀) volume ∧
+        HasDerivAt (fun n => ∫ a, G n a ∂volume) (∫ a, G' t₀ a ∂volume) t₀ := by
+    exact hasDerivAt_integral_of_dominated_loc_of_deriv_le
+      (s := Metric.ball t₀ δ) (Metric.ball_mem_nhds t₀ hδ)
+      (Filter.Eventually.of_forall fun t =>
+        (hF_meas t).mul φ.continuous.aestronglyMeasurable)
+      (integrable_polyGrowth_mul_schwartz (F t₀) (hF_meas t₀) C_bd N hC_bd
+        (hF_growth t₀ (by simp [hδ])) φ)
+      (hF'_meas.mul φ.continuous.aestronglyMeasurable)
+      (Filter.Eventually.of_forall fun x =>
+        fun t ht => by
+          show ‖G' t x‖ ≤ bnd x
+          simp only [G', bnd, norm_mul]
+          exact mul_le_mul_of_nonneg_right
+            (hF'_growth t (Metric.mem_ball.mp ht) x) (norm_nonneg _))
+      (by
+        show Integrable (fun x => C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖)
+        let n := (volume : Measure (Fin m → ℝ)).integrablePower
+        let s : Finset (ℕ × ℕ) := Finset.Iic (N' + n, 0)
+        have hdom : Integrable (fun x : Fin m → ℝ => (1 + ‖x‖) ^ (-(n : ℝ))) :=
+          MeasureTheory.Measure.integrable_pow_neg_integrablePower (μ := volume)
+        have hbnd_meas :
+            AEStronglyMeasurable (fun x : Fin m → ℝ => C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖) volume := by
+          exact (by fun_prop : Continuous (fun x : Fin m → ℝ =>
+            C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖)).aestronglyMeasurable
+        refine Integrable.mono' (hdom.mul_const (C_bd' * (2 ^ (N' + n) *
+            (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ)))
+          hbnd_meas
+          (Filter.Eventually.of_forall fun x => ?_)
+        have hsch :
+            (1 + ‖x‖) ^ (N' + n) * ‖(φ : (Fin m → ℝ) → ℂ) x‖ ≤
+              2 ^ (N' + n) * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+          simpa [s, norm_iteratedFDeriv_zero] using
+            (SchwartzMap.one_add_le_sup_seminorm_apply
+              (𝕜 := ℂ) (m := (N' + n, 0)) (k := N' + n) (n := 0)
+              le_rfl le_rfl φ x)
+        rw [Real.rpow_neg (by positivity), ← div_eq_inv_mul, le_div_iff₀' (by positivity),
+          Real.rpow_natCast]
+        have hmul := mul_le_mul_of_nonneg_left hsch (le_of_lt hC_bd')
+        have hone : 0 ≤ 1 + ‖x‖ := by positivity
+        have habsC : |C_bd'| = C_bd' := abs_of_nonneg (le_of_lt hC_bd')
+        have habs1 : |1 + ‖x‖| = 1 + ‖x‖ := abs_of_nonneg hone
+        simpa [pow_add, mul_assoc, mul_left_comm, mul_comm, habsC, habs1] using hmul)
+      hdiff_ae
+  exact hmain.2
 
 end
