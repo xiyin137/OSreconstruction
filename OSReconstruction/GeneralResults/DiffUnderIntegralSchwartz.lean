@@ -80,19 +80,33 @@ theorem hasDerivAt_schwartz_integral
       (fun t => ∫ x : Fin m → ℝ, F t x * φ x)
       (∫ x : Fin m → ℝ, F' t₀ x * φ x)
       t₀ := by
-  -- Proof route: apply hasDerivAt_integral_of_dominated_loc_of_deriv_le
-  -- (Mathlib.Analysis.Calculus.ParametricIntegral) with:
-  --   s := Metric.ball t₀ δ
-  --   G(t,x) := F(t,x) * φ(x)
-  --   G'(t,x) := F'(t,x) * φ(x)
-  --   bound(x) := C_bd' * (1+‖x‖)^N' * ‖φ(x)‖
-  --
-  -- The hypotheses map as:
-  --   hF_meas → G measurable (F meas * φ continuous)
-  --   hF_growth → G integrable (polynomial * Schwartz ∈ L¹)
-  --   hF_deriv → G differentiable (product rule: F'*φ)
-  --   hF'_growth → bound on G' (polynomial * Schwartz ∈ L¹)
-  --   bound integrable from Schwartz decay dominating polynomial growth
-  sorry
+  -- Define G(t,x) = F(t,x)*φ(x) and G'(t,x) = F'(t,x)*φ(x)
+  let G : ℝ → (Fin m → ℝ) → ℂ := fun t x => F t x * φ x
+  let G' : ℝ → (Fin m → ℝ) → ℂ := fun t x => F' t x * φ x
+  let bnd : (Fin m → ℝ) → ℝ := fun x => C_bd' * (1 + ‖x‖) ^ N' * ‖(φ : (Fin m → ℝ) → ℂ) x‖
+  -- The integral ∫ F(t,x)*φ(x) dx = ∫ G(t,x) dx, so it suffices to differentiate G
+  suffices h : HasDerivAt (fun t => ∫ x, G t x) (∫ x, G' t₀ x) t₀ from h
+  -- Apply Mathlib's theorem
+  exact (hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    (s := Metric.ball t₀ δ) (Metric.ball_mem_nhds t₀ hδ)
+    -- G measurable near t₀
+    (Filter.Eventually.of_forall fun t =>
+      (hF_meas t).mul φ.continuous.aestronglyMeasurable)
+    -- G integrable at t₀
+    (sorry) -- F(t₀,·)*φ(·) integrable: polynomial growth × Schwartz
+    -- G' measurable at t₀
+    (sorry) -- F'(t₀,·)*φ(·) measurable
+    -- Bound on G'
+    (Filter.Eventually.of_forall fun x =>
+      fun t ht => by
+        show ‖G' t x‖ ≤ bnd x
+        simp only [G', bnd, norm_mul]
+        exact mul_le_mul_of_nonneg_right
+          (hF'_growth t (Metric.mem_ball.mp ht) x) (norm_nonneg _))
+    -- Bound integrable
+    (sorry) -- C'*(1+‖x‖)^N'*‖φ(x)‖ integrable: polynomial × Schwartz
+    -- G differentiable
+    (Filter.Eventually.of_forall fun x =>
+      fun t ht => (hF_deriv t (Metric.mem_ball.mp ht) x).mul_const (φ x))).2
 
 end
