@@ -251,7 +251,7 @@ private theorem bvt_F_reflectCanonical
 private theorem bvt_F_lorentz_ortho_wick
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup d), LorentzGroup.IsOrthochronous Λ →
+    ∀ (n : ℕ) (Λ : LorentzGroup d),
       ∀ φ : SchwartzNPoint d n,
         HasCompactSupport (φ : NPointDomain d n → ℂ) →
         tsupport (φ : NPointDomain d n → ℂ) ⊆
@@ -391,7 +391,7 @@ private theorem bvt_W_cluster
 private theorem bvt_F_lorentz_orthoCanonical
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup d), LorentzGroup.IsOrthochronous Λ →
+    ∀ (n : ℕ) (Λ : LorentzGroup d),
       ∀ (x : NPointDomain d n) (ε : ℝ), 0 < ε →
         bvt_F OS lgc n (fun k μ =>
           ∑ ν, (Λ.val μ ν : ℂ) *
@@ -400,7 +400,8 @@ private theorem bvt_F_lorentz_orthoCanonical
         bvt_F OS lgc n (fun k μ =>
           ↑(x k μ) +
             ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
-  intro n Λ hΛ x ε hε
+  intro n Λ x ε hε
+  have hΛ : LorentzGroup.IsOrthochronous Λ := LorentzGroup.zero_zero_ge_one Λ
   let η := canonicalForwardConeDirection (d := d) n
   let ΛinvC : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := fun μ ν => ↑((Λ⁻¹).val μ ν)
   let ΛC : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := fun μ ν => ↑(Λ.val μ ν)
@@ -448,7 +449,7 @@ private theorem bvt_F_lorentz_orthoCanonical
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
     intro φ hφ_compact hφ_tsupport
     simpa [FInv, ΛinvC, Matrix.mulVec, dotProduct] using
-      bvt_F_lorentz_ortho_wick (d := d) OS lgc n Λ hΛ φ hφ_compact hφ_tsupport
+      bvt_F_lorentz_ortho_wick (d := d) OS lgc n Λ φ hφ_compact hφ_tsupport
   have hpoint :=
     forwardTube_orthochronousLorentz_point_eq_of_zeroDiagonal_distributional_wickSection_eq
       (d := d) (n := n) FInv (bvt_F OS lgc n)
@@ -492,21 +493,6 @@ private theorem bvt_F_lorentz_orthoCanonical
     simpa [ΛC, Matrix.mulVec, dotProduct] using congrFun hk μ
   exact hpoint.symm.trans hleft
 
-theorem bvt_lorentz_covariant_orthochronous
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (Λ : LorentzGroup d), LorentzGroup.IsOrthochronous Λ →
-      ∀ (f g : SchwartzNPoint d n),
-        (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
-        bvt_W OS lgc n f = bvt_W OS lgc n g := by
-  intro n Λ hΛ f g hfg
-  exact bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (bvt_F_lorentz_orthoCanonical (d := d) OS lgc n)
-    Λ hΛ f g hfg
-
 theorem bvt_lorentz_covariant_restricted
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -515,8 +501,12 @@ theorem bvt_lorentz_covariant_restricted
         (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
         bvt_W OS lgc n f = bvt_W OS lgc n g := by
   intro n Λ f g hfg
-  exact bvt_lorentz_covariant_orthochronous (d := d) OS lgc n Λ
-    (LorentzGroup.zero_zero_ge_one Λ) f g hfg
+  exact bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance (d := d) n
+    (bvt_W OS lgc n)
+    (bvt_F OS lgc n)
+    (bvt_boundary_values OS lgc n)
+    (fun Γ _hΓ => bvt_F_lorentz_orthoCanonical (d := d) OS lgc n Γ)
+    Λ (LorentzGroup.zero_zero_ge_one Λ) f g hfg
 
 private theorem bvt_F_lorentz_restricted_wick
     (OS : OsterwalderSchraderAxioms d)
