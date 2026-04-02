@@ -118,6 +118,59 @@ private theorem continuous_wickRotateRealConfig :
     ring
   · simp [wickRotatePoint, hμ]
 
+@[simp] theorem wickRotatePoint_timeReflection_eq_lorentzTimeReversal
+    (x : Fin (d + 1) → ℝ) :
+    wickRotatePoint (timeReflection d x) =
+      fun μ => ∑ ν, (↑((LorentzGroup.timeReversal (d := d)).val μ ν) : ℂ) * wickRotatePoint x ν := by
+  ext μ
+  have hsum :
+      (∑ ν, (↑((LorentzGroup.timeReversal (d := d)).val μ ν) : ℂ) * wickRotatePoint x ν) =
+        if μ = 0 then -wickRotatePoint x 0 else wickRotatePoint x μ := by
+    by_cases hμ : μ = 0
+    · subst hμ
+      rw [Finset.sum_eq_single 0]
+      · simp [LorentzGroup.timeReversal]
+      · intro ν hν
+        intro hν0
+        have hentry :
+            ((LorentzGroup.timeReversal (d := d)).val 0 ν) = 0 := by
+          change Matrix.diagonal (fun i : Fin (d + 1) => if i = 0 then (-1 : ℝ) else 1) 0 ν = 0
+          by_cases h0ν : 0 = ν
+          · exact False.elim (hν0 h0ν.symm)
+          · simp [Matrix.diagonal, h0ν]
+        simp [hentry]
+      · simp [LorentzGroup.timeReversal]
+    · rw [Finset.sum_eq_single μ]
+      · simp [LorentzGroup.timeReversal, hμ]
+      · intro ν hν
+        intro hνμ
+        have hentry :
+            ((LorentzGroup.timeReversal (d := d)).val μ ν) = 0 := by
+          change Matrix.diagonal (fun i : Fin (d + 1) => if i = 0 then (-1 : ℝ) else 1) μ ν = 0
+          by_cases hμν' : μ = ν
+          · exact False.elim (hνμ hμν'.symm)
+          · simp [Matrix.diagonal, hμν']
+        simp [hentry]
+      · simp [LorentzGroup.timeReversal, hμ]
+  calc
+    wickRotatePoint (timeReflection d x) μ
+        = starRingEnd ℂ (wickRotatePoint x μ) :=
+          wickRotatePoint_timeReflection (d := d) (x := x) μ
+    _ = if μ = 0 then -wickRotatePoint x 0 else wickRotatePoint x μ := by
+          by_cases hμ : μ = 0 <;> simp [wickRotatePoint, hμ]
+    _ = ∑ ν, (↑((LorentzGroup.timeReversal (d := d)).val μ ν) : ℂ) * wickRotatePoint x ν := by
+          simpa using hsum.symm
+
+@[simp] theorem wickRotateConfig_timeReflectionN_eq_lorentzTimeReversal
+    (x : NPointDomain d n) :
+    (fun k => wickRotatePoint (timeReflection d (x k))) =
+      (fun k μ => ∑ ν, (↑((LorentzGroup.timeReversal (d := d)).val μ ν) : ℂ) *
+        wickRotatePoint (x k) ν) := by
+  ext k μ
+  simpa using
+    congrArg (fun z : Fin (d + 1) → ℂ => z μ)
+      (wickRotatePoint_timeReflection_eq_lorentzTimeReversal (d := d) (x := x k))
+
 private theorem wickRotateComplexConfig_real_smul
     (a b : ℝ) (z w : Fin n → Fin (d + 1) → ℂ) :
     wickRotateComplexConfig (a • z + b • w) =

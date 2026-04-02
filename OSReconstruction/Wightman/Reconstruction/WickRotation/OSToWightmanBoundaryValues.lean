@@ -266,6 +266,24 @@ private theorem bvt_F_lorentz_ortho_wick
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
   sorry
 
+private theorem lorentzTimeReversal_mulVec_eq_timeReflection_local
+    (x : SpacetimeDim d) :
+    Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val x = timeReflection d x := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [LorentzGroup.timeReversal, timeReflection, Matrix.mulVec_diagonal]
+  · simp [LorentzGroup.timeReversal, timeReflection, Matrix.mulVec_diagonal, hμ]
+
+private theorem lorentzTimeReversalN_eq_timeReflectionN_local
+    {n : ℕ} (x : NPointDomain d n) :
+    (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i)) =
+      timeReflectionN d x := by
+  ext i μ
+  simpa [timeReflectionN] using
+    congrArg (fun y : SpacetimeDim d => y μ)
+      (lorentzTimeReversal_mulVec_eq_timeReflection_local (d := d) (x := x i))
+
 private theorem bvt_F_timeReversalCanonical
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -279,6 +297,27 @@ private theorem bvt_F_timeReversalCanonical
           ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
   sorry
 
+private theorem bvt_F_timeReflectCanonical_pairing
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (f : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+          f (timeReflectionN d x)
+      =
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+  intro n f ε hε
+  simpa [lorentzTimeReversalN_eq_timeReflectionN_local (d := d)] using
+    boundary_ray_timeReversal_pairing_of_F_timeReversalCanonical (d := d) n
+      (bvt_F OS lgc n)
+      (bvt_F_timeReversalCanonical (d := d) OS lgc n)
+      f ε hε
+
 private theorem bvt_W_timeReversal
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -288,94 +327,33 @@ private theorem bvt_W_timeReversal
             Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i))) →
       bvt_W OS lgc n f = bvt_W OS lgc n g := by
   intro n f g hfg
-  let η := canonicalForwardConeDirection (d := d) n
-  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
-  have hf := bvt_boundary_values OS lgc n f η hη
-  have hg := bvt_boundary_values OS lgc n g η hη
-  have hEq :
-      (fun ε : ℝ =>
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x))
-      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
-      (fun ε : ℝ =>
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
-    filter_upwards [self_mem_nhdsWithin] with ε hε
-    have hrewrite :
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
-        =
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
-            f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i)) := by
-      congr 1
-      ext x
-      exact congrArg
-        (fun z : ℂ =>
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * z)
-        (hfg x)
-    have hTT_mul :
-        (LorentzGroup.timeReversal (d := d)).val *
-            (LorentzGroup.timeReversal (d := d)).val
-          = 1 := by
-      have h1 := LorentzGroup.ext_iff.mp
-        (LorentzGroup.timeReversal_mul_timeReversal (d := d))
-      rw [show ((LorentzGroup.timeReversal (d := d)) *
-          LorentzGroup.timeReversal (d := d)).val =
-            (LorentzGroup.timeReversal (d := d)).val *
-              (LorentzGroup.timeReversal (d := d)).val from rfl] at h1
-      rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
-      exact h1
-    have hcov :
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ =>
-            ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
-              ε * ↑(η k μ) * Complex.I) * (f x)
-        =
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
-            f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i)) := by
-      simpa [η, Matrix.mulVec_mulVec, hTT_mul] using
-        (integral_lorentz_eq_self_full (d := d) (n := n)
-          (LorentzGroup.timeReversal (d := d))
-          (fun y : NPointDomain d n =>
-            bvt_F OS lgc n (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) *
-              f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (y i))))
-    have hcanonical :
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ =>
-            ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
-              ε * ↑(η k μ) * Complex.I) * (f x)
-        =
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) := by
-      refine MeasureTheory.integral_congr_ae ?_
-      filter_upwards
-        [Filter.Eventually.of_forall fun x =>
-          bvt_F_timeReversalCanonical (d := d) OS lgc n x ε hε] with x hx
-      rw [hx]
-    exact hrewrite.trans (hcov.symm.trans hcanonical)
-  have hf_as_g : Filter.Tendsto
-      (fun ε : ℝ =>
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-      (nhdsWithin 0 (Set.Ioi 0))
-      (nhds (bvt_W OS lgc n g)) :=
-    Filter.Tendsto.congr' hEq hg
-  exact tendsto_nhds_unique hf hf_as_g
+  have hfg_reflect :
+      ∀ x : NPointDomain d n, g.toFun x = f.toFun (timeReflectionN d x) := by
+    intro x
+    simpa [lorentzTimeReversalN_eq_timeReflectionN_local (d := d) (x := x)] using hfg x
+  exact bv_timeReversal_transfer (d := d) n
+    (bvt_W OS lgc n)
+    (bvt_F OS lgc n)
+    (bvt_boundary_values OS lgc n)
+    (bvt_F_timeReflectCanonical_pairing (d := d) OS lgc n)
+    f g hfg_reflect
 
-private theorem bvt_F_swapCanonical
+private theorem bvt_F_swapCanonical_pairing
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (i j : Fin n) (x : NPointDomain d n) (ε : ℝ), 0 < ε →
-      MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j) →
-      bvt_F OS lgc n (fun k μ =>
-        ↑(x (Equiv.swap i j k) μ) +
-          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)
-        =
-      bvt_F OS lgc n (fun k μ =>
-        ↑(x k μ) +
-          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
+    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
+      =
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
   sorry
 
 private theorem bvt_W_positive
@@ -766,11 +744,11 @@ theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i j f g hsupp hswap
-  exact bv_local_commutativity_transfer (d := d) n
+  exact bv_local_commutativity_transfer_of_swap_pairing (d := d) n
     (bvt_W OS lgc n)
     (bvt_F OS lgc n)
     (bvt_boundary_values OS lgc n)
-    (bvt_F_swapCanonical (d := d) OS lgc n)
+    (bvt_F_swapCanonical_pairing (d := d) OS lgc n)
     i j f g hsupp hswap
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)

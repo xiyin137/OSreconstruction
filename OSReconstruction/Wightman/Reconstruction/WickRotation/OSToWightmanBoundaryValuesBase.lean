@@ -2739,6 +2739,109 @@ theorem bv_lorentz_covariance_transfer (n : ℕ)
     Filter.Tendsto.congr' hEq hg
   exact tendsto_nhds_unique hf hg_as_f
 
+theorem bv_lorentz_covariance_transfer_of_fixed_tube_covariance
+    (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (Λ : LorentzGroup d)
+    (hF_lorentz_fixed :
+      ∀ (x : NPointDomain d n) (ε : ℝ), 0 < ε →
+        F_n (fun k μ =>
+          ↑((Matrix.mulVec Λ.val (x k)) μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) =
+        F_n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)) :
+    ∀ (f g : SchwartzNPoint d n),
+      (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
+      W_n f = W_n g := by
+  intro f g hfg
+  let η := canonicalForwardConeDirection (d := d) n
+  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    have hrewrite :
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
+        =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+            f (fun i => Matrix.mulVec Λ⁻¹.val (x i)) := by
+      congr 1
+      ext x
+      exact congrArg
+        (fun z : ℂ =>
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * z)
+        (hfg x)
+    calc
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
+          =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+            f (fun i => Matrix.mulVec Λ⁻¹.val (x i)) := hrewrite
+      _ =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) := by
+          have hΛinv_mul : Λ⁻¹.val * Λ.val = 1 := by
+            have h1 := LorentzGroup.ext_iff.mp (inv_mul_cancel Λ)
+            rw [show (Λ⁻¹ * Λ).val = Λ⁻¹.val * Λ.val from rfl] at h1
+            rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
+            exact h1
+          have hcov :
+              ∫ x : NPointDomain d n,
+                F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                  f (fun i => Matrix.mulVec Λ⁻¹.val (x i))
+              =
+              ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑((Matrix.mulVec Λ.val (x k)) μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+                  (f x) := by
+            symm
+            simpa [η, Matrix.mulVec_mulVec, hΛinv_mul] using
+              (integral_lorentz_eq_self_full (d := d) (n := n) Λ
+                (fun y : NPointDomain d n =>
+                  F_n (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) *
+                    f (fun i => Matrix.mulVec Λ⁻¹.val (y i))))
+          have htube :
+              ∫ x : NPointDomain d n,
+                F_n (fun k μ =>
+                  ↑((Matrix.mulVec Λ.val (x k)) μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+                  (f x)
+              =
+              ∫ x : NPointDomain d n,
+                F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) := by
+            refine MeasureTheory.integral_congr_ae ?_
+            filter_upwards [Filter.Eventually.of_forall fun x => hF_lorentz_fixed x ε hε] with x hx
+            simp [η, hx]
+          exact hcov.trans htube
+  have hg_as_f : Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (W_n g)) :=
+    Filter.Tendsto.congr' hEq hg
+  exact tendsto_nhds_unique hf hg_as_f
+
 private theorem bv_lorentz_covariance_transfer_orthochronous
     (n : ℕ)
     (W_n : SchwartzNPoint d n → ℂ)
@@ -3382,6 +3485,59 @@ theorem bv_local_commutativity_transfer (n : ℕ)
     Filter.Tendsto.congr' hEq hg
   exact tendsto_nhds_unique hf hg_as_f
 
+theorem bv_local_commutativity_transfer_of_swap_pairing (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (hF_swapCanonical_pairing :
+      ∀ (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+        (∀ x, f.toFun x ≠ 0 →
+          MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+        (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
+        =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x)) :
+    ∀ (i j : Fin n) (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      W_n f = W_n g := by
+  intro i j f g hsupp hswap
+  let η := canonicalForwardConeDirection (d := d) n
+  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    simpa [η] using hF_swapCanonical_pairing i j f g ε hε hsupp hswap
+  have hg_as_f : Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (W_n g)) :=
+    Filter.Tendsto.congr' hEq hg
+  exact tendsto_nhds_unique hf hg_as_f
+
 theorem boundary_ray_hermitian_pairing_of_F_negCanonical
     (n : ℕ)
     (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
@@ -3618,6 +3774,156 @@ private theorem bv_hermiticity_transfer_of_F_reflect
         (nhds (W_n g)) :=
     Filter.Tendsto.congr' hEq hg
   simpa using (tendsto_nhds_unique hstar hg_as_star).symm
+
+theorem bv_timeReversal_transfer
+    (n : ℕ)
+    (W_n : SchwartzNPoint d n → ℂ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hBV : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_n f)))
+    (hF_timeReflect_pairing :
+      ∀ (f : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+            f (timeReflectionN d x)
+          =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x)) :
+    ∀ (f g : SchwartzNPoint d n),
+      (∀ x : NPointDomain d n, g.toFun x = f.toFun (timeReflectionN d x)) →
+      W_n f = W_n g := by
+  let η := canonicalForwardConeDirection (d := d) n
+  have hη : InForwardCone d n η := canonicalForwardConeDirection_mem (d := d) n
+  intro f g hfg
+  have hf := hBV f η hη
+  have hg := hBV g η hη
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    have hrewrite :
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
+        =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+            f (timeReflectionN d x) := by
+      congr 1
+      ext x
+      exact congrArg
+        (fun z : ℂ =>
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * z)
+        (hfg x)
+    calc
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
+          =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+            f (timeReflectionN d x) := hrewrite
+      _ =
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) := by
+          simpa [η] using hF_timeReflect_pairing f ε hε
+  have hg_as_f : Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d n,
+          F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (W_n g)) :=
+    Filter.Tendsto.congr' hEq hg
+  exact tendsto_nhds_unique hf hg_as_f
+
+theorem boundary_ray_timeReversal_pairing_of_F_timeReversalCanonical
+    (n : ℕ)
+    (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_timeReversal :
+      ∀ (x : NPointDomain d n) (ε : ℝ), 0 < ε →
+        F_n (fun k μ =>
+          ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) =
+        F_n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)) :
+    ∀ (f : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+          f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i))
+      =
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+  intro f ε hε
+  have hTT_mul :
+      (LorentzGroup.timeReversal (d := d)).val *
+          (LorentzGroup.timeReversal (d := d)).val
+        = 1 := by
+    have h1 := LorentzGroup.ext_iff.mp
+      (LorentzGroup.timeReversal_mul_timeReversal (d := d))
+    rw [show ((LorentzGroup.timeReversal (d := d)) *
+        LorentzGroup.timeReversal (d := d)).val =
+          (LorentzGroup.timeReversal (d := d)).val *
+            (LorentzGroup.timeReversal (d := d)).val from rfl] at h1
+    rw [show (1 : LorentzGroup d).val = (1 : Matrix _ _ ℝ) from rfl] at h1
+    exact h1
+  have hcov :
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ =>
+          ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x)
+      =
+      ∫ x : NPointDomain d n,
+        F_n (fun k μ =>
+          ↑(x k μ) +
+            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+          f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i)) := by
+    simpa [Matrix.mulVec_mulVec, hTT_mul] using
+      (integral_lorentz_eq_self_full (d := d) (n := n)
+        (LorentzGroup.timeReversal (d := d))
+        (fun y : NPointDomain d n =>
+          F_n (fun k μ =>
+            ↑(y k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+            f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (y i))))
+  calc
+    ∫ x : NPointDomain d n,
+      F_n (fun k μ =>
+        ↑(x k μ) +
+          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+        f (fun i => Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i))
+      =
+    ∫ x : NPointDomain d n,
+      F_n (fun k μ =>
+        ↑((Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x k)) μ) +
+          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+          exact hcov.symm
+    _ =
+    ∫ x : NPointDomain d n,
+      F_n (fun k μ =>
+        ↑(x k μ) +
+          ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards
+            [Filter.Eventually.of_forall fun x =>
+              hF_timeReversal x ε hε] with x hx
+          rw [hx]
 
 theorem bv_hermiticity_transfer (n : ℕ)
     (W_n : SchwartzNPoint d n → ℂ)
