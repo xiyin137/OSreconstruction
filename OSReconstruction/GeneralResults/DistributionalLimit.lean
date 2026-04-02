@@ -62,7 +62,7 @@ variable {m : ℕ}
     - Linearity: W(aφ + bψ) = lim T(ε)(aφ + bψ) = a·W(φ) + b·W(ψ)
     - Continuity: |W(φ)| = lim |T(ε)(φ)| ≤ C · (s.sup seminorms)(φ) (equicontinuity)
     - Package as CLM via `SchwartzMap.mkCLMtoNormedSpace` -/
-axiom distributional_limit_of_equicontinuous
+theorem distributional_limit_of_equicontinuous
     (T : ℝ → SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
     -- Equicontinuity: uniform seminorm bound
     (s : Finset (ℕ × ℕ)) (C_eq : ℝ) (hC_eq : 0 < C_eq)
@@ -76,5 +76,44 @@ axiom distributional_limit_of_equicontinuous
         ‖T ε₁ φ - T ε₂ φ‖ < δ) :
     ∃ (W : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ),
       ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
-        Tendsto (fun ε => T ε φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))
+        Tendsto (fun ε => T ε φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ)) := by
+  -- Step 1: Pointwise limit exists (Cauchy in ℂ → convergent)
+  have hpointwise : ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      ∃ w : ℂ, Filter.Tendsto (fun ε => T ε φ) (nhdsWithin 0 (Set.Ioi 0)) (nhds w) := by
+    intro φ
+    -- Convert Cauchy condition to Metric.cauchy for the filter map
+    rw [← cauchy_map_iff_exists_tendsto]
+    -- hT_cauchy + completeness of ℂ → Cauchy filter → convergent
+    sorry
+  -- Step 2: Extract pointwise limit
+  choose W_val hW_val using hpointwise
+  -- Step 3: W_val is linear
+  have hW_add : ∀ φ ψ, W_val (φ + ψ) = W_val φ + W_val ψ := by
+    intro φ ψ
+    have h3 : Filter.Tendsto (fun ε => T ε (φ + ψ)) (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W_val φ + W_val ψ)) := by
+      convert (hW_val φ).add (hW_val ψ) using 1; ext ε; exact map_add (T ε) φ ψ
+    exact tendsto_nhds_unique (hW_val (φ + ψ)) h3
+  have hW_smul : ∀ (c : ℂ) φ, W_val (c • φ) = c * W_val φ := by
+    intro c φ
+    have h3 : Filter.Tendsto (fun ε => T ε (c • φ)) (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (c * W_val φ)) := by
+      convert (hW_val φ).const_mul c using 1
+      ext ε; exact map_smul (T ε) c φ
+    exact tendsto_nhds_unique (hW_val (c • φ)) h3
+  -- Step 4: W_val is bounded by the equicontinuity bound
+  have hW_bound : ∀ φ, ‖W_val φ‖ ≤ C_eq * (s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) φ := by
+    intro φ
+    apply le_of_tendsto (continuous_norm.continuousAt.tendsto.comp (hW_val φ))
+    rw [Filter.eventually_iff_exists_mem]
+    exact ⟨Set.Ioo 0 1,
+      mem_nhdsWithin.mpr ⟨Set.Iio 1, isOpen_Iio, Set.mem_Iio.mpr one_pos,
+        fun ε hε => Set.mem_Ioo.mpr ⟨Set.mem_Ioi.mp hε.2, Set.mem_Iio.mp hε.1⟩⟩,
+      fun ε hε => hT_equicont ε (Set.mem_Ioo.mp hε).1 (le_of_lt (Set.mem_Ioo.mp hε).2) φ⟩
+  -- Step 5: Package as CLM
+  refine ⟨SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ) W_val hW_add
+    (fun c φ => by simp [smul_eq_mul, hW_smul])
+    ⟨s, C_eq, le_of_lt hC_eq, fun φ => hW_bound φ⟩, ?_⟩
+  intro φ
+  exact hW_val φ
 end

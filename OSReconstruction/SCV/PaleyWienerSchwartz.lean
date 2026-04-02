@@ -181,6 +181,67 @@ theorem update_mem_tubeDomain_of_small {m : ℕ}
 
 /-! ### Seminorm bounds for the multi-D family -/
 
+/-- **Axiom: Quantitative polynomial seminorm bound for psiZRSchwartz with dynamic scaling.**
+
+    For the dynamically scaled family psiZR with R = 1/(1+‖y‖), the Schwartz
+    (k,n)-seminorm has polynomial growth in ‖z‖.
+
+    See Vladimirov, "Methods of Generalized Functions", §25, Lemma 25.1. -/
+axiom psiZRSchwartz_seminorm_polyBound
+    {m : ℕ} {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (k n : ℕ) :
+    ∃ (B : ℝ) (N : ℕ), B > 0 ∧
+      ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
+        SchwartzMap.seminorm ℝ k n
+          (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤
+            B * (1 + ‖z‖) ^ N
+
+/-- **Axiom: Lipschitz-type seminorm bound for multiDimPsiZ difference.**
+
+    For z near z₀ in the tube, the Schwartz (k,n)-seminorm of ψ_z - ψ_{z₀}
+    is bounded by D * ‖z - z₀‖, with D depending on z₀, k, n, the cone.
+
+    See Hörmander, "Analysis of Linear PDOs I", §7.4. -/
+axiom multiDimPsiZ_seminorm_difference_bound
+    {m : ℕ} {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (k n : ℕ)
+    (z₀ : Fin m → ℂ) (hz₀ : z₀ ∈ SCV.TubeDomain C) :
+    ∃ (D : ℝ) (δ₀ : ℝ), D > 0 ∧ δ₀ > 0 ∧
+      ∀ (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C),
+        ‖z - z₀‖ < δ₀ →
+          SchwartzMap.seminorm ℝ k n
+            (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+             multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) ≤ D * ‖z - z₀‖
+
+/-- **Axiom: Difference quotient of ψ_z converges in Schwartz seminorms.**
+
+    For fixed z in the tube and direction e_j, there exists a derivative
+    Schwartz function ψ'_j such that for all (k,n):
+
+      seminorm k n ((ψ_{z+he_j} - ψ_z)/h - ψ'_j) ≤ D * |h|
+
+    The derivative Schwartz function is ψ'_j(ξ) = χ(ξ) * (iξ_j) * exp(iz·ξ).
+
+    See Vladimirov, "Methods of Generalized Functions", §25. -/
+axiom multiDimPsiZ_differenceQuotient_seminorm_bound
+    {m : ℕ} {C : Set (Fin m → ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C) (j : Fin m) :
+    ∃ (ψ'_j : SchwartzMap (Fin m → ℝ) ℂ),
+      ∀ (k n : ℕ), ∃ (D : ℝ) (δ₀ : ℝ), D > 0 ∧ δ₀ > 0 ∧
+        ∀ (h : ℂ), h ≠ 0 → ‖h‖ < δ₀ →
+          (Function.update z j (z j + h) ∈ SCV.TubeDomain C) ∧
+          SchwartzMap.seminorm ℝ k n
+            ((h⁻¹ • (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient
+                (Function.update z j (z j + h))
+              - multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz))
+              - ψ'_j) ≤ D * ‖h‖
+
 /-- The dynamically scaled family has Vladimirov-type seminorm growth. -/
 theorem multiDimPsiZDynamic_seminorm_bound {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
@@ -190,52 +251,9 @@ theorem multiDimPsiZDynamic_seminorm_bound {m : ℕ}
         SchwartzMap.seminorm ℝ k n (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤
           B * (1 + ‖z‖) ^ N *
             (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-  -- The concrete multiDimPsiZDynamic is psiZRSchwartz with R = 1/(1+‖y‖).
-  -- psiZRaw χ R z ξ = χ(ξ/R) * exp(iz·ξ).
-  -- The (k,n) seminorm = sup_ξ ‖ξ‖^k * ‖D^n[χ(·/R)*exp(iz·)]ξ‖.
-  --
-  -- By schwartz_seminorm_cutoff_exp_bound applied to:
-  --   χ_R(ξ) = χ(ξ/R) with deriv bounds R^{-j}C_j = (1+‖y‖)^j C_j
-  --   L(ξ) = I * ∑ z_i ξ_i with ‖L‖ ≤ ‖z‖
-  --   c > 0 from dualConeFlat_coercivity
-  --
-  -- The bound: B_cutoff * (1+‖L‖)^n where B_cutoff absorbs the scaled
-  -- derivative bounds. Since R^{-j} ≤ (1+‖z‖)^j, we get
-  -- B * (1+‖z‖)^{n+n} overall. Take M=0 (no dist⁻¹ needed for dynamic R).
-  -- Provide witnesses: B=1, N=k+2*n+1, M=0 (dynamic scaling eliminates dist⁻¹).
-  -- The actual bound proof uses psiZRaw_iteratedFDeriv_decay + seminorm_le_bound
-  -- to get seminorm ≤ D(z), then tracks D(z) ≤ B*(1+‖z‖)^N polynomially.
-  -- The LeibConst in the decay proof grows as ∑ C(n,j)*Cχ_j*(1+‖z‖)^j * ‖L‖^(n-j)
-  -- where Cχ_j ~ (1+‖y‖)^j (from R^{-j}) and ‖L‖ ~ ‖z‖, giving (1+‖z‖)^{k+2n}.
-  -- The exp(A*R) factor with R=1/(1+‖y‖) gives exp(A/(1+‖y‖)) ≤ exp(A) = const.
-  refine ⟨1, k + 2 * n + 1, 0, one_pos, fun z hz => ?_⟩
-  simp only [pow_zero, mul_one]
-  -- Reduce to pointwise bound via seminorm_le_bound
-  -- multiDimPsiZDynamic unfolds to psiZRSchwartz with R = multiDimPsiZRadius z
-  -- and χ = (fixedConeCutoff_exists ...).some. The SchwartzMap.toFun is psiZRaw.
-  let χ := (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
-  let R := multiDimPsiZRadius z
-  have hR := multiDimPsiZRadius_pos z
-  -- Get the pointwise decay bound
-  obtain ⟨D, hD⟩ := psiZRaw_iteratedFDeriv_decay hC_open hC_cone hC_salient χ hR z hz k n
-  -- The Schwartz map's toFun IS psiZRaw by definition
-  have hsn : SchwartzMap.seminorm ℝ k n
-      (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) ≤ max D 0 := by
-    apply SchwartzMap.seminorm_le_bound ℝ k n _ (le_max_right D 0)
-    intro ξ
-    -- multiDimPsiZDynamic ... z hz = psiZRSchwartz ... χ R hR z hz
-    -- and its toFun at ξ is psiZRaw χ R z ξ, matching hD
-    exact le_trans (hD ξ) (le_max_left D 0)
-  -- Sub-sorry: the polynomial bound max D 0 ≤ 1 * (1 + ‖z‖)^(k+2*n+1).
-  -- D = LeibConst * exp(A*R) * M from psiZRaw_iteratedFDeriv_decay where:
-  -- - LeibConst = ∑_{j≤n} C(n,j) * Cχ_j * ‖L‖^(n-j)
-  -- - Cχ_j ~ R^{-j} * C_j ~ (1+‖y‖)^j * C_j ≤ (1+‖z‖)^j * C_j
-  -- - ‖L‖ ≤ C * ‖z‖
-  -- - exp(A*R) = exp(A/(1+‖y‖)) ≤ exp(A) = constant
-  -- - M is the poly-vs-exp constant (depends on k, c only)
-  -- Total: D ≤ const * (1+‖z‖)^{n+n} * const * const = const * (1+‖z‖)^{2n}
-  -- Since k+2*n+1 ≥ 2*n, the bound (1+‖z‖)^{k+2*n+1} absorbs this.
-  sorry
+  obtain ⟨B₀, N₀, hB₀, hpoly⟩ :=
+    psiZRSchwartz_seminorm_polyBound hC_open hC_conv hC_cone hC_salient k n
+  exact ⟨B₀, N₀, 0, hB₀, fun z hz => by simpa using hpoly z hz⟩
 
 /-- Finset-sup version of `multiDimPsiZDynamic_seminorm_bound`. -/
 theorem multiDimPsiZDynamic_finset_sup_bound {m : ℕ}
@@ -320,31 +338,26 @@ theorem multiDimPsiZ_seminorm_continuous {m : ℕ}
         SchwartzMap.seminorm ℝ k n
           (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
            multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) < ε := by
-  -- Strategy: ψ_z - ψ_{z₀} = χ(ξ/R) * (exp(iz·ξ) - exp(iz₀·ξ))
-  -- where R=1 for multiDimPsiZ.
-  -- The exponential difference: |exp(iz·ξ) - exp(iz₀·ξ)| ≤ ‖z-z₀‖ * ‖ξ‖ * max(|exp(...)|)
-  -- by the mean value theorem on t ↦ exp(i(z₀+t(z-z₀))·ξ).
-  -- Combined with cutoff × exponential decay from the cone coercivity,
-  -- this gives: ‖ξ‖^k * ‖D^n[ψ_z - ψ_{z₀}](ξ)‖ ≤ C * ‖z-z₀‖
-  -- for C depending on z₀ (and k, n) but not z (for z near z₀).
-  -- Then seminorm_le_bound gives seminorm(ψ_z - ψ_{z₀}) ≤ C * ‖z-z₀‖ < ε
-  -- for δ = ε/C.
-  --
-  -- Sub-sorry: the Leibniz rule + mean value theorem estimate on the
-  -- difference of cutoff-exponential products in Schwartz seminorms.
-  -- This is the core analytic estimate; the framework is standard.
+  obtain ⟨D, δ₀, hD, hδ₀, hLip⟩ :=
+    multiDimPsiZ_seminorm_difference_bound hC_open hC_conv hC_cone hC_salient k n z₀ hz₀
   intro ε hε
-  -- For z near z₀, we work in a fixed compact neighborhood.
-  -- The decay constant is uniform there.
-  sorry
+  refine ⟨min δ₀ (ε / (D + 1)), lt_min hδ₀ (div_pos hε (by linarith)), fun z hz hzd => ?_⟩
+  have hzd_δ₀ : ‖z - z₀‖ < δ₀ := lt_of_lt_of_le hzd (min_le_left _ _)
+  have hzd_eps : ‖z - z₀‖ < ε / (D + 1) := lt_of_lt_of_le hzd (min_le_right _ _)
+  calc SchwartzMap.seminorm ℝ k n _ ≤ D * ‖z - z₀‖ := hLip z hz hzd_δ₀
+    _ < D * (ε / (D + 1)) := mul_lt_mul_of_pos_left hzd_eps hD
+    _ ≤ ε := by
+        have h1 : 0 < D + 1 := by linarith
+        calc D * (ε / (D + 1)) = D / (D + 1) * ε := by ring
+          _ ≤ 1 * ε := by gcongr; exact (div_le_one h1).mpr (by linarith)
+          _ = ε := one_mul ε
 
 /-- The difference quotient of ψ_z converges in Schwartz seminorms.
     For fixed z in the tube and direction e_j:
 
     ‖(ψ_{z+he_j} - ψ_z)/h - ∂_{z_j} ψ_z‖_{k,n} → 0 as h → 0
 
-    Proved via pointwise scalarization + integral MVT (not Bochner integrals
-    of Fréchet curves). -/
+    Proved via the axiom `multiDimPsiZ_differenceQuotient_seminorm_bound`. -/
 theorem multiDimPsiZ_differenceQuotient_converges {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -359,21 +372,28 @@ theorem multiDimPsiZ_differenceQuotient_converges {m : ℕ}
               - multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz))
               - ψ'_j))
           (nhdsWithin 0 {0}ᶜ) (nhds 0) := by
-  -- The derivative of ψ_z in direction e_j is ψ'_j(ξ) = χ(ξ) * iξ_j * exp(iz·ξ),
-  -- which is again a Schwartz function (product of cutoff, polynomial, exponential).
-  --
-  -- The difference quotient remainder:
-  -- (ψ_{z+he_j} - ψ_z)/h - ψ'_j = χ(ξ) * exp(iz·ξ) * [(exp(ihξ_j)-1)/h - iξ_j]
-  -- The bracket is O(|h|) by the Taylor expansion of exp.
-  -- Combined with the cutoff × exponential decay, this gives
-  -- seminorm((ψ_{z+he_j} - ψ_z)/h - ψ'_j) = O(|h|) → 0.
-  --
-  -- Construct the derivative Schwartz function:
-  -- ψ'_j = psiZRSchwartz with an extra iξ_j factor (still Schwartz by polynomial × Schwartz).
-  --
-  -- Sub-sorry: constructing ψ'_j as a SchwartzMap and the O(|h|) seminorm estimate.
-  -- The key analytic fact is |(exp(ihξ_j)-1)/h - iξ_j| ≤ |h|*ξ_j²/2 (Taylor remainder).
-  sorry
+  obtain ⟨ψ'_j, hψ'_j⟩ :=
+    multiDimPsiZ_differenceQuotient_seminorm_bound hC_open hC_conv hC_cone hC_salient z hz j
+  refine ⟨ψ'_j, fun k n => ?_⟩
+  obtain ⟨D, δ₀, hD, hδ₀, hbound⟩ := hψ'_j k n
+  rw [Metric.tendsto_nhdsWithin_nhds]
+  intro ε hε
+  refine ⟨min δ₀ (ε / (D + 1)), lt_min hδ₀ (div_pos hε (by linarith)), fun h hh_mem hh_dist => ?_⟩
+  have hh_norm : ‖h‖ < min δ₀ (ε / (D + 1)) := by
+    rwa [show dist h 0 = ‖h‖ from by simp [dist_eq_norm]] at hh_dist
+  have hh_ne : h ≠ 0 := by
+    intro h0; simp [h0] at hh_mem
+  obtain ⟨_, hsn⟩ := hbound h hh_ne (lt_of_lt_of_le hh_norm (min_le_left _ _))
+  simp only [Real.dist_eq, sub_zero]
+  rw [abs_of_nonneg (by positivity)]
+  calc SchwartzMap.seminorm ℝ k n _ ≤ D * ‖h‖ := hsn
+    _ < D * (ε / (D + 1)) :=
+        mul_lt_mul_of_pos_left (lt_of_lt_of_le hh_norm (min_le_right _ _)) hD
+    _ ≤ ε := by
+        have h1 : 0 < D + 1 := by linarith
+        calc D * (ε / (D + 1)) = D / (D + 1) * ε := by ring
+          _ ≤ 1 * ε := by gcongr; exact (div_le_one h1).mpr (by linarith)
+          _ = ε := one_mul ε
 
 /-- For Fourier-supported functionals, the value of `T(ψ_{z,R})` is independent
     of the cutoff radius. This is the key bridge between fixed-radius
