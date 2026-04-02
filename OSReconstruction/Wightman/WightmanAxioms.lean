@@ -91,45 +91,66 @@ structure SpectralCondition (d : ℕ) [NeZero d]
   mass_shell : ∀ ψ : H, (⟪ψ, π.hamiltonian (π.hamiltonian ψ)⟫_ℂ).re ≥
     ∑ i : Fin d, (⟪ψ, π.spatialMomentum i (π.spatialMomentum i ψ)⟫_ℂ).re
 
-/-- Complexified spacetime for translation matrix coefficients. -/
-abbrev ComplexSpacetime (d : ℕ) := Fin (d + 1) → ℂ
+/-- **Streater-Wightman Spectral Condition** (Axiom II of Streater-Wightman §3-1).
 
-/-- The one-point forward tube:
-    `{ z ∈ ℂ^(d+1) | Im z ∈ V₊^open }`. -/
-def TranslationForwardTube (d : ℕ) [NeZero d] : Set (ComplexSpacetime d) :=
-  { z | (fun μ => (z μ).im) ∈ MinkowskiSpace.OpenForwardLightCone d }
+    The joint spectrum of the energy-momentum operators P₀, P₁, …, P_d
+    (self-adjoint generators of the translation subgroup, via Stone's theorem)
+    lies in the closed forward light cone:
 
-/-- Matrix-element form of the spectrum condition.
+      spec(P) ⊆ V̄₊ = { p : p₀ ≥ 0, −p₀² + |p⃗|² ≤ 0 }
 
-    This is a Stone-compatible intermediate surface: it speaks directly about
-    holomorphic continuation of translation matrix coefficients and packages
-    strong continuity of the translation subgroups, but it does not yet require
-    the full joint-spectrum theorem for the unbounded generators. -/
-structure MatrixElementSpectralCondition (d : ℕ) [NeZero d]
+    This is expressed as two operator inequalities on the Stone-generator domains:
+
+    1. **P₀ ≥ 0** (energy non-negativity): ⟨ψ, P₀ψ⟩ ≥ 0 for ψ ∈ dom(P₀).
+    2. **P₀² ≥ Σᵢ Pᵢ²** (mass-shell): the Minkowski norm-squared PμP^μ ≥ 0,
+       i.e. ⟨ψ, P₀²ψ⟩ ≥ Σᵢ ⟨ψ, Pᵢ²ψ⟩ for ψ in the common domain of P₀² and Pᵢ².
+
+    **Prerequisite:** Strong continuity of the translation representation, so
+    that Stone's theorem provides self-adjoint generators P_μ.
+
+    Ref: Streater-Wightman, "PCT, Spin and Statistics, and All That", §3-1. -/
+structure SWSpectralCondition (d : ℕ) [NeZero d]
     {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (π : PoincareRepresentation d H) : Prop where
-  /-- Strong continuity of each one-parameter translation subgroup. -/
+  /-- Strong continuity of each one-parameter translation subgroup.
+      This is needed so that Stone's theorem provides the self-adjoint
+      generators P_μ. -/
   strongly_continuous : PoincareRepresentation.translationStronglyContinuous π
-  /-- Each translation matrix coefficient extends holomorphically to the
-      one-point forward tube, with boundary values recovering the original
-      real-translation matrix coefficient along open forward-cone directions. -/
-  matrix_coefficient_holomorphic :
-    ∀ χ ψ : H, ∃ F : ComplexSpacetime d → ℂ,
-      DifferentiableOn ℂ F (TranslationForwardTube d) ∧
-      ∀ (a η : MinkowskiSpace d), η ∈ MinkowskiSpace.OpenForwardLightCone d →
-        Filter.Tendsto
-          (fun ε : ℝ => F (fun μ => ↑(a μ) + ε * ↑(η μ) * Complex.I))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (⟪χ, π.U (PoincareGroup.translation' a) ψ⟫_ℂ))
+  /-- P₀ ≥ 0: For every ψ in the domain of the Hamiltonian P₀,
+      the energy expectation value ⟨ψ, P₀ψ⟩ is non-negative.
+      Equivalently, the spectral measure of P₀ is supported on [0, ∞). -/
+  energy_nonneg :
+    ∀ (ψ : H) (hψ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain),
+    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ⟩⟫_ℂ).re ≥ 0
+  /-- P₀² ≥ Σᵢ Pᵢ² (mass-shell / forward-cone condition):
+      For ψ in the common domain of P₀² and all Pᵢ²,
+        ⟨ψ, P₀²ψ⟩ ≥ Σᵢ ⟨ψ, Pᵢ²ψ⟩
+      Together with energy non-negativity, this places the joint spectrum
+      inside the closed forward light cone V̄₊. -/
+  mass_shell :
+    ∀ (ψ : H)
+      (hψ₀ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain)
+      (hP₀ψ : (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩ ∈
+        (π.momentumOp 0 (strongly_continuous 0)).domain)
+      (hψᵢ : ∀ i : Fin d, ψ ∈
+        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain)
+      (hPᵢψ : ∀ i : Fin d,
+        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))) ⟨ψ, hψᵢ i⟩ ∈
+          (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain),
+    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0))
+      ⟨(π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩, hP₀ψ⟩⟫_ℂ).re ≥
+    ∑ i : Fin d,
+      (⟪ψ, (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
+        ⟨(π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
+          ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re
 
-/-- Extract strong continuity in a fixed spacetime direction from the
-    matrix-element spectral condition. -/
-theorem MatrixElementSpectralCondition.continuousInDirection
+/-- Extract strong continuity from the S-W spectral condition. -/
+theorem SWSpectralCondition.continuousInDirection
     {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     {π : PoincareRepresentation d H}
-    (hπ : @MatrixElementSpectralCondition d _ H _ _ _ π) (μ : Fin (d + 1)) :
+    (hπ : @SWSpectralCondition d _ H _ _ _ π) (μ : Fin (d + 1)) :
     PoincareRepresentation.translationContinuousInDirection π μ :=
-  MatrixElementSpectralCondition.strongly_continuous hπ μ
+  hπ.strongly_continuous μ
 
 /-! ### Locality -/
 
@@ -188,12 +209,12 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   -- W1: Poincaré Covariance and Spectrum Condition
   /-- The unitary representation of the Poincaré group -/
   poincare_rep : @PoincareRepresentation d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
-  /-- Spectrum condition in matrix-element form: translation matrix coefficients
-      admit forward-tube holomorphic continuation with the correct boundary
-      values. This is the Stone-compatible surface intended to precede the full
-      joint-spectrum theorem for the unbounded generators. -/
+  /-- **Spectrum condition** (Streater-Wightman Axiom II): The joint spectrum of
+      the energy-momentum operators P₀, …, P_d lies in the closed forward light
+      cone V̄₊. Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator
+      domains. See `SWSpectralCondition` for the full docstring. -/
   spectrum_condition :
-    @MatrixElementSpectralCondition d _ HilbertSpace
+    @SWSpectralCondition d _ HilbertSpace
       instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
   /-- The vacuum vector -/
   vacuum : HilbertSpace

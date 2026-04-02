@@ -1224,62 +1224,31 @@ theorem gns_translationStronglyContinuous :
     PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn) :=
   fun μ x => gns_stronglyContinuous_completion Wfn μ x
 
-/-! ### Matrix coefficient holomorphicity
+/-! ### Spectrum condition
 
-The matrix-element spectral condition requires holomorphic continuation of
-translation matrix coefficients to the one-point forward tube. This is a
-consequence of the Wightman function spectrum condition, but the proof requires
-Fourier-Laplace theory and partial distributional boundary value machinery
-not yet formalized in Lean/Mathlib. We defer this as an axiom.
+The GNS Poincaré representation satisfies the Streater-Wightman spectral condition
+(energy non-negativity P₀ ≥ 0 and mass-shell P₀² ≥ Σᵢ Pᵢ²). The proof requires
+the SNAG theorem (spectral theorem for abelian group representations) and
+Fourier-Laplace theory not yet formalized in Lean/Mathlib.
 
-See `communication/gns_spectrum_condition_strategy.md` for the proof roadmap. -/
-
-/-- **Bridge axiom**: the Wightman function spectrum condition implies holomorphic
-    continuation of translation matrix coefficients for GNS vectors.
-
-    This encapsulates the "partial boundary value" theorem: smearing an n-point
-    Wightman function (with holomorphic continuation on `ForwardTube d n`) against
-    test functions in all but one translation variable produces a holomorphic
-    function of the remaining complex translation parameter.
-
-    A full proof requires Fourier-Laplace theory and distributional boundary
-    value machinery not yet formalized in Lean/Mathlib. -/
-theorem gns_matrix_coefficient_holomorphic_axiom
-    (χ ψ : GNSHilbertSpace Wfn) :
-    ∃ F : ComplexSpacetime d → ℂ,
-      DifferentiableOn ℂ F (TranslationForwardTube d) ∧
-      ∀ (a η : MinkowskiSpace d), η ∈ MinkowskiSpace.OpenForwardLightCone d →
-        Filter.Tendsto
-          (fun ε : ℝ => F (fun μ => ↑(a μ) + ε * ↑(η μ) * Complex.I))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (⟪χ, (gnsPoincareRep Wfn).U (PoincareGroup.translation' a) ψ⟫_ℂ)):= by
-  sorry
+See branch `archive/matrix-element-spectral-condition` for archived work on
+an alternative matrix-element formulation. -/
 
 /-! ### Helper lemmas for remaining sorry's in gnsQFT
 
-The following lemmas isolate the sorry's that remain in the GNS-reconstructed
-Wightman QFT:
-
-* `gns_spectrum_condition` — proved modulo `gns_matrix_coefficient_holomorphic_axiom`
-  and a sorry for Schwartz translation continuity
+* `gns_spectrum_condition` — spectrum condition (deferred)
 * `gns_cyclicity` — Schwartz nuclear theorem (density of product test functions)
 * `gns_vacuum_unique_of_poincare_invariant` — PROVED via cluster decomposition
 -/
 
 /-- **Spectrum condition for the GNS Hilbert space.**
 
-    The GNS Poincaré representation satisfies the matrix-element form of the
-    spectrum condition.
-    * `strongly_continuous` is proved via continuity of the Wightman inner
-      product under translation (modulo a sorry for Schwartz-topology
-      translation continuity).
-    * `matrix_coefficient_holomorphic` uses the bridge axiom
-      `gns_matrix_coefficient_holomorphic_axiom`, which defers the hard
-      Fourier-Laplace / partial boundary value theory. -/
+    The GNS Poincaré representation satisfies the Streater-Wightman spectral
+    condition: P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains.
+    Deferred: requires the SNAG theorem and spectral measure theory. -/
 theorem gns_spectrum_condition :
-    MatrixElementSpectralCondition d (gnsPoincareRep Wfn) where
-  strongly_continuous := gns_translationStronglyContinuous Wfn
-  matrix_coefficient_holomorphic := gns_matrix_coefficient_holomorphic_axiom Wfn
+    SWSpectralCondition d (gnsPoincareRep Wfn) := by
+  sorry
 
 /-- The operator-valued distribution on the GNS Hilbert space, extracted as a
     standalone definition so that the cyclicity lemma can reference it. -/
@@ -2106,7 +2075,7 @@ theorem gns_vacuum_unique_of_poincare_invariant (ψ : GNSHilbertSpace Wfn)
     The domain is the image of the pre-Hilbert space (dense in the completion).
 
     The three remaining gaps are isolated in helper lemmas:
-    * `gns_spectrum_condition` — spectrum condition (needs Stone's theorem)
+    * `gns_spectrum_condition` — spectrum condition (deferred)
     * `gns_cyclicity` — cyclicity (needs Schwartz nuclear theorem)
     * `gns_vacuum_unique_of_poincare_invariant` — vacuum uniqueness (via cluster decomposition) -/
 noncomputable def gnsQFT : WightmanQFT d where
