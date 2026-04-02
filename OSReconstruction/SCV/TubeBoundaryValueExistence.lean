@@ -399,6 +399,9 @@ theorem hasDerivAt_tubeSlice_ray
 
   -- Sub-sorry 1: F_param is measurable (needs t > 0 for tη ∈ C, which holds for |t-τ₀| < δ)
   have hF_meas : ∀ t, AEStronglyMeasurable (F_param t) volume := by
+    intro t
+    -- F_param t = F ∘ (x ↦ x + itη), which is continuous on ℝ^m
+    -- (F is continuous on the tube, and x ↦ x+itη is continuous)
     sorry
 
   -- Sub-sorry 2: Uniform polynomial growth of F_param near τ₀
