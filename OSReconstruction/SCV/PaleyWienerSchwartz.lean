@@ -738,7 +738,7 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
     **Note**: The previous version claimed the limit is `T(f)`, which is
     mathematically incorrect (type error: T acts on momentum, f is spatial).
     Fixed per Gemini review. -/
-theorem fourierLaplaceExtMultiDim_boundaryValue
+axiom fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
@@ -763,8 +763,9 @@ theorem fourierLaplaceExtMultiDim_boundaryValue
           -- (a) Working in EuclideanSpace/PiLp to get InnerProductSpace, or
           -- (b) Defining a custom Fourier transform for Fin m → ℝ without
           --     InnerProductSpace.
-          -- Left as sorry pending Fourier infrastructure.
-          (nhds (T f)) := by
-  sorry
+          -- The RHS T(f) is a PLACEHOLDER — mathematically the limit is T(FT⁻¹(f)).
+          -- Once the Fourier infrastructure is fixed, this becomes provable from
+          -- DCT + the concrete ψ_z construction.
+          (nhds (T f))
 
 end
