@@ -3210,26 +3210,6 @@ theorem bv_lorentz_covariance_transfer_orthochronous_of_tube_covariance
     Filter.Tendsto.congr' hEq hg
   exact tendsto_nhds_unique hf hf_as_g
 
-theorem lorentz_covariance_of_orthochronous_and_timeReversal
-    (n : ℕ)
-    (W_n : SchwartzNPoint d n → ℂ)
-    (hW_ortho :
-      ∀ (Λ : LorentzGroup d), LorentzGroup.IsOrthochronous Λ →
-        ∀ (f g : SchwartzNPoint d n),
-          (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
-          W_n f = W_n g)
-    (_hW_timeReversal :
-      ∀ (f g : SchwartzNPoint d n),
-        (∀ x, g.toFun x =
-          f.toFun (fun i =>
-            Matrix.mulVec (LorentzGroup.timeReversal (d := d)).val (x i))) →
-        W_n f = W_n g) :
-    ∀ (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
-      (∀ x, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
-      W_n f = W_n g := by
-  intro Λ f g hfg
-  exact hW_ortho Λ (LorentzGroup.zero_zero_ge_one Λ) f g hfg
-
 private theorem boundary_ray_permutation_invariant_of_F_invariant
     (n : ℕ)
     (F_n : (Fin n → Fin (d + 1) → ℂ) → ℂ)

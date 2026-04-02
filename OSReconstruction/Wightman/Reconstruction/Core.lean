@@ -103,7 +103,8 @@ def IsTranslationInvariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : 
     (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => x i + a)) →
     W n f = W n g
 
-/-- Lorentz covariance: W_n(Λx₁, ..., Λxₙ) = W_n(x₁, ..., xₙ) for all Λ ∈ O(1,d).
+/-- Lorentz covariance: W_n(Λx₁, ..., Λxₙ) = W_n(x₁, ..., xₙ) for all
+    Λ in the connected Lorentz group SO⁺(1,d).
 
     For scalar fields, the Wightman functions are Lorentz invariant.
     For fields with spin s, there would be a transformation matrix D^{(s)}(Λ).
@@ -114,7 +115,8 @@ def IsTranslationInvariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : 
     configurations. -/
 def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
   -- For scalar fields: W_n is Lorentz invariant.
-  -- For any Λ ∈ O(1,d) and Schwartz functions f, g such that g(x) = f(Λ⁻¹x₁,...,Λ⁻¹xₙ),
+  -- For any connected Lorentz transformation Λ and Schwartz functions f, g
+  -- such that g(x) = f(Λ⁻¹x₁,...,Λ⁻¹xₙ),
   -- we have W_n(f) = W_n(g). Avoids constructing the Lorentz-transformed Schwartz function.
   ∀ (n : ℕ) (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →

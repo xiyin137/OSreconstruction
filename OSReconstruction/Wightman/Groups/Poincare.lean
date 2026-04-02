@@ -8,7 +8,8 @@ import OSReconstruction.Wightman.Groups.Lorentz
 /-!
 # The Full and Connected Poincaré Groups
 
-This file defines the Poincaré group ISO(1,d) as the semidirect product of translations
+This file defines both the full Poincaré group `ISO(1,d)` and its connected
+proper-orthochronous subgroup `ISO⁺(1,d)` as semidirect products of translations
 and Lorentz transformations.
 
 ## Main Definitions
@@ -207,27 +208,6 @@ theorem pureLorentz_act (Λ : LorentzGroup d) (x : MinkowskiSpace d) :
     (lorentz' Λ).act x = mulVec Λ.val x := by
   unfold act lorentz'
   simp only [add_zero]
-
-/-! ### The Restricted Poincaré Group -/
-
-/-- A Poincaré element is in the restricted group if its Lorentz part is
-    proper orthochronous (det = 1, Λ₀₀ ≥ 1). -/
-def IsRestricted (g : PoincareGroup d) : Prop :=
-  FullLorentzGroup.IsProper g.lorentz ∧ FullLorentzGroup.IsOrthochronous g.lorentz
-
-/-- The restricted Poincaré group ISO⁺(1,d): translations combined with
-    restricted Lorentz transformations (proper orthochronous). -/
-def Restricted : Subgroup (PoincareGroup d) where
-  carrier := { g | IsRestricted g }
-  mul_mem' {a b} ha hb := by
-    exact ⟨FullLorentzGroup.IsProper.mul (d := d) ha.1 hb.1,
-      FullLorentzGroup.IsOrthochronous.mul (d := d) ha.2 hb.2⟩
-  one_mem' := by
-    exact ⟨FullLorentzGroup.IsProper.one (d := d),
-      FullLorentzGroup.IsOrthochronous.one (d := d)⟩
-  inv_mem' {a} ha := by
-    exact ⟨FullLorentzGroup.IsProper.inv (d := d) ha.1,
-      FullLorentzGroup.IsOrthochronous.inv (d := d) ha.2⟩
 
 end FullPoincareGroup
 

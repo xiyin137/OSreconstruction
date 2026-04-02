@@ -76,7 +76,7 @@ Component decomposition and Cauchy-Schwarz for spatial parts.
 | `timelike_time_dominates_space` | IsTimelike x → x₀² > Σ x_i² |
 | `spatial_cauchy_schwarz` | Cauchy-Schwarz for spatial components |
 
-### Groups/Lorentz.lean — Lorentz group O(1,d)
+### Groups/Lorentz.lean — connected Lorentz group SO⁺(1,d) and full O(1,d)
 
 | Definition/Theorem | Description |
 |---|---|
@@ -85,7 +85,7 @@ Component decomposition and Cauchy-Schwarz for spatial parts.
 | `IsLorentzMatrix.isUnit` | det(Λ) = ±1 |
 | `IsLorentzMatrix.inv_eq` | Λ⁻¹ = η Λᵀ η |
 
-### Groups/Poincare.lean — Poincare group ISO(1,d)
+### Groups/Poincare.lean — connected Poincare group ISO⁺(1,d) and full ISO(1,d)
 
 | Definition/Theorem | Description |
 |---|---|
@@ -555,8 +555,8 @@ OSReconstruction/Wightman/
 │   ├── Metric.lean                         ← Minkowski metric (0 sorrys)
 │   └── MinkowskiGeometry.lean              ← Geometric lemmas (0 sorrys)
 ├── Groups/
-│   ├── Lorentz.lean                        ← O(1,d) (0 sorrys)
-│   └── Poincare.lean                       ← ISO(1,d) (0 sorrys)
+│   ├── Lorentz.lean                        ← SO⁺(1,d) default, full O(1,d) explicit (0 sorrys)
+│   └── Poincare.lean                       ← ISO⁺(1,d) default, full ISO(1,d) explicit (0 sorrys)
 ├── Reconstruction/
 │   ├── GNSConstruction.lean                ← GNS construction (0 sorrys)
 │   ├── AnalyticContinuation.lean           ← Tube domains, EOW+BHW axioms (0 sorrys)

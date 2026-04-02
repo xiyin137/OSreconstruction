@@ -11,7 +11,8 @@ import OSReconstruction.Wightman.Spacetime.Metric
 /-!
 # The Full and Connected Lorentz Groups
 
-This file defines the Lorentz group O(1,d) as the group of linear transformations
+This file defines both the full Lorentz group `O(1,d)` and its connected
+proper-orthochronous subgroup `SO⁺(1,d)` as groups of linear transformations
 preserving the Minkowski metric.
 
 ## Main Definitions
@@ -534,13 +535,6 @@ theorem inv {Λ : LorentzGroup d} (h : IsOrthochronous Λ) : IsOrthochronous Λ�
   exact h
 
 end IsOrthochronous
-
-/-- The proper orthochronous subgroup SO⁺(1,d) inside the full Lorentz group. -/
-def Restricted : Subgroup (LorentzGroup d) where
-  carrier := { Λ | IsProper Λ ∧ IsOrthochronous Λ }
-  mul_mem' ha hb := ⟨IsProper.mul ha.1 hb.1, IsOrthochronous.mul ha.2 hb.2⟩
-  one_mem' := ⟨IsProper.one, IsOrthochronous.one⟩
-  inv_mem' ha := ⟨IsProper.inv ha.1, IsOrthochronous.inv ha.2⟩
 
 /-! ### Special Elements -/
 
