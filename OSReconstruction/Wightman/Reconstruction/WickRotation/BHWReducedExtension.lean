@@ -40,6 +40,8 @@ For now this file provides:
 * the one-line absolute translation invariance lemma for any reduced pullback.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 namespace BHW
@@ -1238,7 +1240,7 @@ theorem route1ReducedBoundaryIntegral_eq_absoluteBoundaryIntegral
   simp_rw [mul_assoc]
   simp_rw [show ∀ (a b c : ℂ), a * (b * c) = (a * c) * b by
     intro a b c; ring]
-  simp_rw [MeasureTheory.integral_const_mul]
+  simp_rw [← smul_eq_mul (a := _ * _), MeasureTheory.integral_smul, smul_eq_mul]
   simp [χ.integral_eq_one]
 
 /-- The reduced boundary-value theorem is now derived from a fixed-`ε`
