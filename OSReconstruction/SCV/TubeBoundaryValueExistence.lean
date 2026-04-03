@@ -7,6 +7,7 @@ import OSReconstruction.SCV.VladimirovTillmann
 import OSReconstruction.GeneralResults.DistributionalLimit
 import OSReconstruction.GeneralResults.DiffUnderIntegralSchwartz
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+import Mathlib.Analysis.Complex.Schwarz
 import Mathlib.MeasureTheory.Integral.IntegrableOn
 
 /-!
@@ -311,32 +312,512 @@ theorem tubeSlice_temperedDistribution
   intro φ
   simpa [Fε, tubeSlice] using hT_ε φ
 
+set_option maxHeartbeats 250000 in
 /-- **Derivative of the tube slice along a positive ray.**
 
-    This is the analytic heart of the ray-integration argument. A complete proof
-    needs three ingredients that are not yet fully packaged in this file:
+    The slice map is differentiated by applying
+    `hasDerivAt_schwartz_integral` to the parameter family
+    `τ ↦ (x ↦ F(x + iτη))`.
 
-    1. A positive-time extension of `τ ↦ F(x + iτη)` compatible with
-       `hasDerivAt_schwartz_integral`, whose hypotheses are global in `τ` while
-       the tube slice is only naturally controlled for `τ > 0`.
-    2. The Cauchy-Riemann chain-rule computation
-       `d/dτ F(x + iτη) = i Σ_j η_j ∂_{x_j} F(x + iτη)`.
-    3. The integration-by-parts identity against Schwartz test functions.
+    The remaining gaps are exactly the analytic pieces that are not yet packaged
+    elsewhere in the repo:
 
-    We keep the resulting derivative formula as an interface theorem. -/
-axiom hasDerivAt_tubeSlice_ray
+    1. the Cauchy-Riemann chain rule for the `τ`-derivative of the slice;
+    2. a local polynomial growth bound for that derivative (from Cauchy
+       estimates);
+    3. the integration-by-parts identity moving the `x`-derivative onto the
+       Schwartz test function. -/
+theorem hasDerivAt_tubeSlice_ray
     {C : Set (Fin m → ℝ)}
     {F : (Fin m → ℂ) → ℂ}
     (hF_hol : DifferentiableOn ℂ F (SCV.TubeDomain C))
     (hF_cont : ContinuousOn F (SCV.TubeDomain C))
     (η : Fin m → ℝ) (hη : η ∈ C)
     (hC_cone : IsCone C) (hC_open : IsOpen C)
+    {C_bd : ℝ} {N : ℕ} (hC_bd : 0 < C_bd)
+    (hF_growth : ∀ z ∈ SCV.TubeDomain C, ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (τ₀ : ℝ) (hτ₀ : 0 < τ₀)
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     HasDerivAt
       (fun τ => tubeSlice F (τ • η) φ)
       (-I * tubeSlice F (τ₀ • η) (directionalDerivSchwartz η φ))
-      τ₀
+      τ₀ := by
+  let δ : ℝ := τ₀ / 2
+  have hδ : 0 < δ := by
+    dsimp [δ]
+    positivity
+  let slice : ℝ → (Fin m → ℝ) → (Fin m → ℂ) :=
+    fun τ x i => (x i : ℂ) + ((τ • η) i : ℝ) * I
+  let vη : Fin m → ℂ := fun i => (η i : ℂ) * I
+  let Fparam : ℝ → (Fin m → ℝ) → ℂ := fun τ x =>
+    if hτ : |τ - τ₀| < δ then F (slice τ x) else 0
+  let Fparam' : ℝ → (Fin m → ℝ) → ℂ :=
+    fun τ x => if hτ : |τ - τ₀| < δ then (fderiv ℂ F (slice τ x)) (vη) else 0
+  have hslice_mem :
+      ∀ {τ : ℝ}, |τ - τ₀| < δ → ∀ x : Fin m → ℝ, slice τ x ∈ SCV.TubeDomain C := by
+    intro τ hτ x
+    rcases abs_lt.mp hτ with ⟨hτ_lo, hτ_hi⟩
+    have hτ_pos : 0 < τ := by
+      dsimp [δ] at hτ_lo
+      linarith
+    have hτη : τ • η ∈ C := hC_cone η hη τ hτ_pos
+    show (fun i => (slice τ x i).im) ∈ C
+    convert hτη using 1
+    ext i
+    simp [slice, Complex.add_im, Complex.ofReal_im, Complex.mul_im, Complex.I_re,
+      Complex.I_im, Pi.smul_apply, smul_eq_mul]
+  have hFparam_meas : ∀ τ, AEStronglyMeasurable (Fparam τ) volume := by
+    intro τ
+    by_cases hτ : |τ - τ₀| < δ
+    · have hslice_cont : Continuous (slice τ) := by
+        fun_prop
+      have hcont : Continuous (Fparam τ) := by
+        simpa [Fparam, slice, hτ] using hF_cont.comp_continuous hslice_cont (hslice_mem hτ)
+      exact hcont.aestronglyMeasurable
+    · simpa [Fparam, hτ] using (continuous_const : Continuous fun _ : Fin m → ℝ => (0 : ℂ)).aestronglyMeasurable
+  let Kτ : ℝ := (3 * τ₀ / 2) * ‖η‖
+  have hτ_bound : ∀ {τ : ℝ}, |τ - τ₀| < δ → ‖τ • η‖ ≤ Kτ := by
+    intro τ hτ
+    rcases abs_lt.mp hτ with ⟨hτ_lo, hτ_hi⟩
+    have hτ_nonneg : 0 ≤ τ := by
+      dsimp [δ] at hτ_lo
+      linarith
+    have hτ_le : τ ≤ 3 * τ₀ / 2 := by
+      dsimp [δ] at hτ_hi
+      linarith
+    calc
+      ‖τ • η‖ = ‖τ‖ * ‖η‖ := by rw [norm_smul]
+      _ = τ * ‖η‖ := by simp [abs_of_nonneg hτ_nonneg]
+      _ ≤ ((3 * τ₀ / 2) : ℝ) * ‖η‖ := by gcongr
+  have hFparam_growth :
+      ∀ τ, |τ - τ₀| < δ → ∀ x : Fin m → ℝ,
+        ‖Fparam τ x‖ ≤ (C_bd * (1 + Kτ) ^ N) * (1 + ‖x‖) ^ N := by
+    intro τ hτ x
+    have hgrowth := hF_growth (slice τ x) (hslice_mem hτ x)
+    have hreal_le : ‖fun i => (x i : ℂ)‖ ≤ ‖x‖ := by
+      rw [pi_norm_le_iff_of_nonneg (norm_nonneg x)]
+      intro i
+      simpa using (norm_le_pi_norm x i)
+    have himag_le : ‖fun i => (((τ • η) i : ℝ) * I : ℂ)‖ ≤ ‖τ • η‖ := by
+      rw [pi_norm_le_iff_of_nonneg (norm_nonneg (τ • η))]
+      intro i
+      simpa [Complex.norm_mul, Complex.norm_I] using (norm_le_pi_norm (τ • η) i)
+    have hnorm_le : ‖slice τ x‖ ≤ ‖x‖ + ‖τ • η‖ := by
+      calc
+        ‖slice τ x‖
+            ≤ ‖fun i => (x i : ℂ)‖ + ‖fun i => (((τ • η) i : ℝ) * I : ℂ)‖ := norm_add_le _ _
+        _ ≤ ‖x‖ + ‖τ • η‖ := add_le_add hreal_le himag_le
+    have hbase_le : 1 + ‖slice τ x‖ ≤ (1 + Kτ) * (1 + ‖x‖) := by
+      have hKτ_nonneg : 0 ≤ Kτ := by
+        dsimp [Kτ]
+        positivity
+      have htauK : ‖τ • η‖ ≤ Kτ := hτ_bound hτ
+      nlinarith [hnorm_le, htauK, norm_nonneg x, hKτ_nonneg]
+    have hpow_le :
+        (1 + ‖slice τ x‖) ^ N ≤ ((1 + Kτ) * (1 + ‖x‖)) ^ N := by
+      exact pow_le_pow_left₀ (by positivity) hbase_le N
+    calc
+      ‖Fparam τ x‖ ≤ C_bd * (1 + ‖slice τ x‖) ^ N := by
+        simpa [Fparam, hτ] using hgrowth
+      _ ≤ C_bd * (((1 + Kτ) * (1 + ‖x‖)) ^ N) := by
+        gcongr
+      _ = (C_bd * (1 + Kτ) ^ N) * (1 + ‖x‖) ^ N := by
+        rw [mul_pow]
+        ring
+  have hFparam_deriv :
+      ∀ τ, |τ - τ₀| < δ → ∀ x : Fin m → ℝ,
+        HasDerivAt (fun s => Fparam s x) (Fparam' τ x) τ := by
+    intro τ hτ x
+    have hEq :
+        (fun s => Fparam s x) =ᶠ[nhds τ] (fun s => F (slice s x)) := by
+      have hopen : IsOpen {s : ℝ | |s - τ₀| < δ} := by
+        simpa using isOpen_lt (by fun_prop) continuous_const
+      filter_upwards [hopen.mem_nhds hτ] with s hs
+      simp [Fparam, hs]
+    have hslice_deriv : HasDerivAt (fun s => slice s x) vη τ := by
+      refine hasDerivAt_pi.2 ?_
+      intro i
+      have hmul : HasDerivAt (fun s : ℝ => s * η i) (η i) τ := by
+        simpa [one_mul] using (hasDerivAt_id τ).mul_const (η i)
+      have hofReal : HasDerivAt (fun s : ℝ => ((s * η i : ℝ) : ℂ)) (η i) τ :=
+        hmul.ofReal_comp
+      have hI : HasDerivAt (fun s : ℝ => (((s * η i : ℝ) : ℂ) * I)) ((η i : ℂ) * I) τ :=
+        hofReal.mul_const I
+      simpa [slice, vη, Pi.smul_apply, smul_eq_mul] using hI.const_add (x i : ℂ)
+    have hF_at : DifferentiableAt ℂ F (slice τ x) := by
+      exact (hF_hol _ (hslice_mem hτ x)).differentiableAt
+        ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ x))
+    have hcomp :
+        HasDerivAt (fun s => F (slice s x)) (((fderiv ℂ F (slice τ x)).restrictScalars ℝ) vη) τ := by
+      simpa using
+        (hF_at.hasFDerivAt.restrictScalars ℝ).comp_hasDerivAt τ hslice_deriv
+    have hderiv :
+        HasDerivAt (fun s => Fparam s x) (((fderiv ℂ F (slice τ x)).restrictScalars ℝ) vη) τ :=
+      hcomp.congr_of_eventuallyEq hEq
+    simpa [Fparam', hτ] using hderiv
+  have hFparam'_meas : AEStronglyMeasurable (Fparam' τ₀) volume := by
+    have hslice0_meas : Measurable (slice τ₀) := by
+      exact (by fun_prop : Continuous (slice τ₀)).measurable
+    have hmeas :
+        Measurable fun x : Fin m → ℝ => (fderiv ℂ F (slice τ₀ x)) vη :=
+      (ContinuousLinearMap.measurable_apply vη).comp ((measurable_fderiv ℂ F).comp hslice0_meas)
+    simpa [Fparam', hδ] using hmeas.aestronglyMeasurable
+  obtain ⟨C_bd', N', hC_bd', hFparam'_growth⟩ :
+      ∃ (C_bd' : ℝ) (N' : ℕ), 0 < C_bd' ∧
+        ∀ τ, |τ - τ₀| < δ → ∀ x : Fin m → ℝ,
+          ‖Fparam' τ x‖ ≤ C_bd' * (1 + ‖x‖) ^ N' := by
+    let r : ℝ := τ₀ / 4
+    have hr : 0 < r := by
+      dsimp [r]
+      positivity
+    let Kc : ℝ := (2 * τ₀) * ‖η‖
+    let A0 : ℝ := (2 / r) * (C_bd * (1 + Kc) ^ N)
+    refine ⟨A0, N, ?_, ?_⟩
+    · dsimp [A0, r, Kc]
+      positivity
+    · intro τ hτ x
+      rcases abs_lt.mp hτ with ⟨hτ_lo, hτ_hi⟩
+      have hτ_pos : 0 < τ := by
+        dsimp [δ] at hτ_lo
+        linarith
+      have hτ_nonneg : 0 ≤ τ := hτ_pos.le
+      have hτ_le : τ ≤ 3 * τ₀ / 2 := by
+        dsimp [δ] at hτ_hi
+        linarith
+      let sliceC : ℂ → (Fin m → ℂ) := fun w i => (x i : ℂ) + w * (η i : ℂ) * I
+      let g : ℂ → ℂ := fun w => F (sliceC w)
+      have hsliceC_tau : sliceC (τ : ℂ) = slice τ x := by
+        ext i
+        simp [sliceC, slice, Pi.smul_apply, smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
+      have hsliceC_hasDerivAt : ∀ w : ℂ, HasDerivAt sliceC vη w := by
+        intro w
+        refine hasDerivAt_pi.2 ?_
+        intro i
+        simpa [sliceC, vη, mul_assoc, mul_left_comm, mul_comm] using
+          ((((hasDerivAt_id w).mul_const ((η i : ℂ))).mul_const I).const_add (x i : ℂ))
+      have hsliceC_mem_ball :
+          ∀ {w : ℂ}, w ∈ Metric.ball (τ : ℂ) r → sliceC w ∈ SCV.TubeDomain C := by
+        intro w hw
+        have hdist : ‖w - (τ : ℂ)‖ < r := by
+          simpa [Metric.mem_ball, dist_eq_norm] using hw
+        have hre_abs : |w.re - τ| ≤ ‖w - (τ : ℂ)‖ := by
+          simpa [Complex.sub_re] using (Complex.abs_re_le_norm (w - (τ : ℂ)))
+        have hre : |w.re - τ| < r := lt_of_le_of_lt hre_abs hdist
+        have hrew_pos : 0 < w.re := by
+          have hrew_lo : τ - r < w.re := by
+            linarith [(abs_lt.mp hre).1]
+          have hτ_gt_half : τ₀ / 2 < τ := by
+            dsimp [δ] at hτ_lo
+            linarith
+          have hτr_pos : 0 < τ - r := by
+            dsimp [r] at *
+            linarith
+          linarith
+        have hwη : w.re • η ∈ C := hC_cone η hη w.re hrew_pos
+        show (fun i => (sliceC w i).im) ∈ C
+        · convert hwη using 1
+          ext i
+          simp [sliceC, Complex.add_im, Complex.ofReal_im, Complex.mul_im, Complex.mul_re,
+            Complex.I_re, Complex.I_im, mul_assoc, mul_left_comm, mul_comm]
+      have hsliceC_mem_tau : sliceC (τ : ℂ) ∈ SCV.TubeDomain C := by
+        simpa [hsliceC_tau] using hslice_mem hτ x
+      have hg_diff : DifferentiableOn ℂ g (Metric.ball (τ : ℂ) r) := by
+        intro w hw
+        have hF_at : DifferentiableAt ℂ F (sliceC w) := by
+          exact (hF_hol _ (hsliceC_mem_ball hw)).differentiableAt
+            ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hsliceC_mem_ball hw))
+        exact (hF_at.comp w (hsliceC_hasDerivAt w).differentiableAt).differentiableWithinAt
+      have hsliceC_norm_bound :
+          ∀ {w : ℂ}, w ∈ Metric.ball (τ : ℂ) r → ‖sliceC w‖ ≤ ‖x‖ + Kc := by
+        intro w hw
+        have hdist : ‖w - (τ : ℂ)‖ < r := by
+          simpa [Metric.mem_ball, dist_eq_norm] using hw
+        have hw_norm : ‖w‖ ≤ 2 * τ₀ := by
+          have hdist_le : ‖w - (τ : ℂ)‖ ≤ r := le_of_lt hdist
+          have hτ_norm : ‖(τ : ℂ)‖ = τ := by
+            simp [Complex.norm_real, abs_of_nonneg hτ_nonneg]
+          calc
+            ‖w‖ = ‖(w - (τ : ℂ)) + (τ : ℂ)‖ := by ring_nf
+            _ ≤ ‖w - (τ : ℂ)‖ + ‖(τ : ℂ)‖ := norm_add_le _ _
+            _ ≤ r + τ := by
+              rw [hτ_norm]
+              gcongr
+            _ ≤ 2 * τ₀ := by
+              dsimp [r]
+              linarith
+        have hreal_le : ‖fun i => (x i : ℂ)‖ ≤ ‖x‖ := by
+          rw [pi_norm_le_iff_of_nonneg (norm_nonneg x)]
+          intro i
+          simpa using (norm_le_pi_norm x i)
+        have himag_le : ‖fun i => (w * (η i : ℂ) * I : ℂ)‖ ≤ ‖w‖ * ‖η‖ := by
+          rw [pi_norm_le_iff_of_nonneg (mul_nonneg (norm_nonneg w) (norm_nonneg η))]
+          intro i
+          calc
+            ‖(w * (η i : ℂ) * I : ℂ)‖ = ‖w‖ * ‖η i‖ := by
+              simp [Complex.norm_mul, mul_assoc]
+            _ ≤ ‖w‖ * ‖η‖ := by
+              gcongr
+              simpa using (norm_le_pi_norm η i)
+        have hnorm_le : ‖sliceC w‖ ≤ ‖x‖ + ‖w‖ * ‖η‖ := by
+          simpa [sliceC] using
+            (norm_add_le (fun i => (x i : ℂ)) (fun i => (w * (η i : ℂ) * I : ℂ)))
+              |>.trans (add_le_add hreal_le himag_le)
+        calc
+          ‖sliceC w‖ ≤ ‖x‖ + ‖w‖ * ‖η‖ := hnorm_le
+          _ ≤ ‖x‖ + Kc := by
+            dsimp [Kc]
+            gcongr
+      have hsliceC_tau_norm : ‖sliceC (τ : ℂ)‖ ≤ ‖x‖ + Kc := by
+        have hreal_le : ‖fun i => (x i : ℂ)‖ ≤ ‖x‖ := by
+          rw [pi_norm_le_iff_of_nonneg (norm_nonneg x)]
+          intro i
+          simpa using (norm_le_pi_norm x i)
+        have himag_le : ‖fun i => ((τ : ℂ) * (η i : ℂ) * I : ℂ)‖ ≤ ‖(τ : ℂ)‖ * ‖η‖ := by
+          rw [pi_norm_le_iff_of_nonneg (mul_nonneg (norm_nonneg (τ : ℂ)) (norm_nonneg η))]
+          intro i
+          calc
+            ‖((τ : ℂ) * (η i : ℂ) * I : ℂ)‖ = ‖(τ : ℂ)‖ * ‖η i‖ := by
+              simp [Complex.norm_mul, mul_assoc]
+            _ ≤ ‖(τ : ℂ)‖ * ‖η‖ := by
+              gcongr
+              simpa using (norm_le_pi_norm η i)
+        have hnorm_le : ‖sliceC (τ : ℂ)‖ ≤ ‖x‖ + ‖(τ : ℂ)‖ * ‖η‖ := by
+          simpa [sliceC] using
+            (norm_add_le (fun i => (x i : ℂ)) (fun i => (((τ : ℂ) * (η i : ℂ) * I : ℂ))))
+              |>.trans (add_le_add hreal_le himag_le)
+        calc
+          ‖sliceC (τ : ℂ)‖ ≤ ‖x‖ + ‖(τ : ℂ)‖ * ‖η‖ := hnorm_le
+          _ ≤ ‖x‖ + Kc := by
+            dsimp [Kc]
+            have hτ_norm : ‖(τ : ℂ)‖ = τ := by
+              simp [Complex.norm_real, abs_of_nonneg hτ_nonneg]
+            rw [hτ_norm]
+            gcongr
+            linarith
+      have hbound_ball :
+          ∀ {w : ℂ}, w ∈ Metric.ball (τ : ℂ) r →
+            ‖g w‖ ≤ (C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N := by
+        intro w hw
+        have hgrowth := hF_growth (sliceC w) (hsliceC_mem_ball hw)
+        have hbase_le : 1 + ‖sliceC w‖ ≤ (1 + Kc) * (1 + ‖x‖) := by
+          have hKc_nonneg : 0 ≤ Kc := by
+            dsimp [Kc]
+            positivity
+          nlinarith [hsliceC_norm_bound hw, norm_nonneg x, hKc_nonneg]
+        have hpow_le :
+            (1 + ‖sliceC w‖) ^ N ≤ ((1 + Kc) * (1 + ‖x‖)) ^ N := by
+          exact pow_le_pow_left₀ (by positivity) hbase_le N
+        calc
+          ‖g w‖ ≤ C_bd * (1 + ‖sliceC w‖) ^ N := by simpa [g] using hgrowth
+          _ ≤ C_bd * (((1 + Kc) * (1 + ‖x‖)) ^ N) := by gcongr
+          _ = (C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N := by
+            rw [mul_pow]
+            ring
+      have hbound_tau : ‖g (τ : ℂ)‖ ≤ (C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N := by
+        have hgrowth := hF_growth (sliceC (τ : ℂ)) hsliceC_mem_tau
+        have hbase_le : 1 + ‖sliceC (τ : ℂ)‖ ≤ (1 + Kc) * (1 + ‖x‖) := by
+          have hKc_nonneg : 0 ≤ Kc := by
+            dsimp [Kc]
+            positivity
+          nlinarith [hsliceC_tau_norm, norm_nonneg x, hKc_nonneg]
+        have hpow_le :
+            (1 + ‖sliceC (τ : ℂ)‖) ^ N ≤ ((1 + Kc) * (1 + ‖x‖)) ^ N := by
+          exact pow_le_pow_left₀ (by positivity) hbase_le N
+        calc
+          ‖g (τ : ℂ)‖ ≤ C_bd * (1 + ‖sliceC (τ : ℂ)‖) ^ N := by simpa [g] using hgrowth
+          _ ≤ C_bd * (((1 + Kc) * (1 + ‖x‖)) ^ N) := by gcongr
+          _ = (C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N := by
+            rw [mul_pow]
+            ring
+      have hmaps :
+          Set.MapsTo g (Metric.ball (τ : ℂ) r)
+            (Metric.closedBall (g (τ : ℂ))
+              (2 * ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N))) := by
+        intro w hw
+        rw [Metric.mem_closedBall, dist_eq_norm]
+        calc
+          ‖g w - g (τ : ℂ)‖ ≤ ‖g w‖ + ‖g (τ : ℂ)‖ := norm_sub_le _ _
+          _ ≤ ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N) +
+                ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N) := by
+                  exact add_le_add (hbound_ball hw) hbound_tau
+          _ = 2 * ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N) := by ring
+      have hderivCauchy :
+          ‖deriv g (τ : ℂ)‖ ≤
+            (2 * ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N)) / r := by
+        exact norm_deriv_le_div_of_mapsTo_ball hg_diff hmaps hr
+      have hg_deriv :
+          HasDerivAt g (Fparam' τ x) (τ : ℂ) := by
+        have hF_at : DifferentiableAt ℂ F (sliceC (τ : ℂ)) := by
+          simpa [hsliceC_tau] using
+            (hF_hol _ (hslice_mem hτ x)).differentiableAt
+              ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ x))
+        simpa [g, sliceC, Fparam', hτ, hsliceC_tau] using
+          hF_at.hasFDerivAt.comp_hasDerivAt (τ : ℂ) (hsliceC_hasDerivAt (τ : ℂ))
+      have hderiv_eq : deriv g (τ : ℂ) = Fparam' τ x := hg_deriv.deriv
+      calc
+        ‖Fparam' τ x‖ = ‖deriv g (τ : ℂ)‖ := by rw [hderiv_eq]
+        _ ≤ (2 * ((C_bd * (1 + Kc) ^ N) * (1 + ‖x‖) ^ N)) / r := hderivCauchy
+        _ = ((2 / r) * (C_bd * (1 + Kc) ^ N)) * (1 + ‖x‖) ^ N := by
+          field_simp [hr.ne']
+        _ = A0 * (1 + ‖x‖) ^ N := by
+          simp [A0, mul_assoc, mul_left_comm, mul_comm]
+  have hmain :
+      HasDerivAt
+        (fun τ => ∫ x : Fin m → ℝ, Fparam τ x * φ x)
+        (∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x)
+        τ₀ := by
+    exact hasDerivAt_schwartz_integral
+      Fparam τ₀ δ hδ
+      hFparam_meas
+      (C_bd * (1 + Kτ) ^ N) N
+      (by
+        have hKτ_pos : 0 < 1 + Kτ := by
+          dsimp [Kτ]
+          positivity
+        exact mul_pos hC_bd (pow_pos hKτ_pos _))
+      hFparam_growth
+      Fparam'
+      hFparam_deriv
+      hFparam'_meas
+      C_bd' N' hC_bd'
+      hFparam'_growth
+      φ
+  have htarget :
+      ∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x =
+        -I * tubeSlice F (τ₀ • η) (directionalDerivSchwartz η φ) := by
+    have hτ0 : |τ₀ - τ₀| < δ := by
+      simpa [δ] using hδ
+    let uη : Fin m → ℂ := fun i => (η i : ℂ)
+    let G : (Fin m → ℝ) → ℂ := fun x => F (slice τ₀ x)
+    let G' : (Fin m → ℝ) → ℂ := fun x => (fderiv ℂ F (slice τ₀ x)) (uη)
+    let A : (Fin m → ℝ) →L[ℝ] (Fin m → ℂ) :=
+      ContinuousLinearMap.pi fun i =>
+        Complex.ofRealCLM.comp (ContinuousLinearMap.proj i)
+    have hA_apply : A η = uη := by
+      ext i
+      simp [A, uη]
+    have hG_line : ∀ x : Fin m → ℝ, HasLineDerivAt ℝ G (G' x) x η := by
+      intro x
+      have hsliceX :
+          HasFDerivAt (fun y : Fin m → ℝ => slice τ₀ y) A x := by
+        refine hasFDerivAt_pi.2 ?_
+        intro i
+        simpa [slice, A] using
+          (Complex.ofRealCLM.hasFDerivAt.comp x (ContinuousLinearMap.proj i).hasFDerivAt).const_add
+            (((τ₀ • η) i : ℝ) * I)
+      have hF_at : DifferentiableAt ℂ F (slice τ₀ x) := by
+        exact (hF_hol _ (hslice_mem hτ0 x)).differentiableAt
+          ((SCV.tubeDomain_isOpen hC_open).mem_nhds (hslice_mem hτ0 x))
+      have hG_fderiv :
+          HasFDerivAt G (((fderiv ℂ F (slice τ₀ x)).restrictScalars ℝ).comp A) x := by
+        simpa [G] using (hF_at.hasFDerivAt.restrictScalars ℝ).comp x hsliceX
+      have hderiv_vec :
+          (((fderiv ℂ F (slice τ₀ x)).restrictScalars ℝ).comp A) η = G' x := by
+        simp [G', hA_apply]
+      exact (hG_fderiv.hasLineDerivAt η).congr_deriv hderiv_vec
+    have hφ_line : ∀ x : Fin m → ℝ,
+        HasLineDerivAt ℝ (fun y : Fin m → ℝ => φ y)
+          (directionalDerivSchwartz η φ x) x η := by
+      intro x
+      have hφdiff : DifferentiableAt ℝ φ x := φ.differentiableAt
+      rcases hφdiff with ⟨f', hf'⟩
+      have hderiv_eq : f' = fderiv ℝ (fun y : Fin m → ℝ => φ y) x := hf'.fderiv.symm
+      simpa [directionalDerivSchwartz, SchwartzMap.lineDerivOp_apply_eq_fderiv] using
+        (hf'.hasLineDerivAt η).congr_deriv (by simpa using congrArg (fun L => L η) hderiv_eq)
+    have hG_meas : AEStronglyMeasurable G volume := by
+      simpa [G, Fparam, hδ] using hFparam_meas τ₀
+    have hG_growth : ∀ x : Fin m → ℝ, ‖G x‖ ≤ (C_bd * (1 + Kτ) ^ N) * (1 + ‖x‖) ^ N := by
+      intro x
+      simpa [G, Fparam, hδ] using hFparam_growth τ₀ hτ0 x
+    have hG'_meas : AEStronglyMeasurable G' volume := by
+      have hslice0_meas : Measurable (slice τ₀) := by
+        exact (by fun_prop : Continuous (slice τ₀)).measurable
+      have hmeas : Measurable G' :=
+        (ContinuousLinearMap.measurable_apply uη).comp ((measurable_fderiv ℂ F).comp hslice0_meas)
+      exact hmeas.aestronglyMeasurable
+    have hG'_growth : ∀ x : Fin m → ℝ, ‖G' x‖ ≤ C_bd' * (1 + ‖x‖) ^ N' := by
+      intro x
+      have hx := hFparam'_growth τ₀ hτ0 x
+      have hvη : vη = I • uη := by
+        ext i
+        simp [vη, uη, Pi.smul_apply, smul_eq_mul, mul_comm, mul_left_comm, mul_assoc]
+      have hcr : Fparam' τ₀ x = I * G' x := by
+        calc
+          Fparam' τ₀ x = (fderiv ℂ F (slice τ₀ x)) (vη) := by
+            simp [Fparam', hδ]
+          _ = (fderiv ℂ F (slice τ₀ x)) (I • uη) := by simpa [hvη]
+          _ = I * G' x := by
+            simp [G', map_smul, smul_eq_mul]
+      rw [hcr, norm_mul, Complex.norm_I, one_mul] at hx
+      simpa using hx
+    have h_int_Gφ : Integrable (fun x : Fin m → ℝ => G x * φ x) := by
+      exact integrable_polyGrowth_mul_schwartz G hG_meas
+        ((C_bd * (1 + Kτ) ^ N)) N
+        (by
+          have hKτ_pos : 0 < 1 + Kτ := by
+            dsimp [Kτ]
+            positivity
+          exact mul_pos hC_bd (pow_pos hKτ_pos _))
+        hG_growth φ
+    have h_int_Gdφ : Integrable (fun x : Fin m → ℝ => G x * directionalDerivSchwartz η φ x) := by
+      exact integrable_polyGrowth_mul_schwartz G hG_meas
+        ((C_bd * (1 + Kτ) ^ N)) N
+        (by
+          have hKτ_pos : 0 < 1 + Kτ := by
+            dsimp [Kτ]
+            positivity
+          exact mul_pos hC_bd (pow_pos hKτ_pos _))
+        hG_growth (directionalDerivSchwartz η φ)
+    have h_int_G'φ : Integrable (fun x : Fin m → ℝ => G' x * φ x) := by
+      exact integrable_polyGrowth_mul_schwartz G' hG'_meas C_bd' N' hC_bd' hG'_growth φ
+    have hibp :
+        ∫ x : Fin m → ℝ, G x * directionalDerivSchwartz η φ x =
+          - ∫ x : Fin m → ℝ, G' x * φ x := by
+      exact integral_bilinear_hasLineDerivAt_right_eq_neg_left_of_integrable
+        (μ := (volume : Measure (Fin m → ℝ))) (B := ContinuousLinearMap.mul ℝ ℂ)
+        h_int_G'φ h_int_Gdφ h_int_Gφ hG_line hφ_line
+    have hibp' :
+        ∫ x : Fin m → ℝ, G' x * φ x =
+          - ∫ x : Fin m → ℝ, G x * directionalDerivSchwartz η φ x := by
+      have := congrArg Neg.neg hibp
+      simpa using this.symm
+    have hcr_int :
+        ∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x = I * ∫ x : Fin m → ℝ, G' x * φ x := by
+      calc
+        ∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x
+            = ∫ x : Fin m → ℝ, (I * G' x) * φ x := by
+                apply integral_congr_ae
+                filter_upwards with x
+                have hvη : vη = I • uη := by
+                  ext i
+                  simp [vη, uη, Pi.smul_apply, smul_eq_mul, mul_comm, mul_left_comm, mul_assoc]
+                have hcr : Fparam' τ₀ x = I * G' x := by
+                  calc
+                    Fparam' τ₀ x = (fderiv ℂ F (slice τ₀ x)) (vη) := by
+                      simp [Fparam', hδ]
+                    _ = (fderiv ℂ F (slice τ₀ x)) (I • uη) := by simpa [hvη]
+                    _ = I * G' x := by
+                      simp [G', map_smul, smul_eq_mul]
+                simp [hcr]
+        _ = I * ∫ x : Fin m → ℝ, G' x * φ x := by
+            rw [show (fun x : Fin m → ℝ => (I * G' x) * φ x) =
+                fun x : Fin m → ℝ => I * (G' x * φ x) by
+                  funext x; ring, integral_const_mul]
+    calc
+      ∫ x : Fin m → ℝ, Fparam' τ₀ x * φ x
+          = I * ∫ x : Fin m → ℝ, G' x * φ x := hcr_int
+      _ = -I * ∫ x : Fin m → ℝ, G x * directionalDerivSchwartz η φ x := by
+          rw [hibp']
+          ring
+      _ = -I * tubeSlice F (τ₀ • η) (directionalDerivSchwartz η φ) := by
+          simp [tubeSlice, G, slice, Pi.smul_apply, smul_eq_mul]
+  have hEq :
+      (fun τ => ∫ x : Fin m → ℝ, Fparam τ x * φ x) =ᶠ[nhds τ₀]
+        (fun τ => tubeSlice F (τ • η) φ) := by
+    filter_upwards [Metric.ball_mem_nhds τ₀ hδ] with τ hτ
+    have hτ' : |τ - τ₀| < δ := Metric.mem_ball.mp hτ
+    simp [Fparam, tubeSlice, hτ', slice]
+  exact (hmain.congr_of_eventuallyEq hEq.symm).congr_deriv htarget
 
 /-- Continuity of the tube-slice derivative along a ray, restricted to τ > 0.
 
@@ -399,7 +880,7 @@ theorem cr_integration_identity
   -- Step 2: g has derivative g' at every τ > 0
   have hderiv : ∀ τ₀ : ℝ, 0 < τ₀ → HasDerivAt g (g' τ₀) τ₀ := by
     intro τ₀ hτ₀
-    exact hasDerivAt_tubeSlice_ray hF_hol hF_cont η hη hC_cone hC_open τ₀ hτ₀ φ
+    exact hasDerivAt_tubeSlice_ray hF_hol hF_cont η hη hC_cone hC_open hC_bd hF_growth τ₀ hτ₀ φ
   -- Step 3: g' is continuous (hence interval integrable)
   have hg'_cont : ContinuousOn g' (Set.Ioi 0) :=
     continuous_tubeSlice_ray_deriv hF_cont η hη hC_cone hC_open hC_bd hF_growth φ
