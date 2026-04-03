@@ -4,8 +4,10 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 import Mathlib.Analysis.Distribution.TemperedDistribution
 import Mathlib.Analysis.SpecialFunctions.Complex.Analytic
+import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import OSReconstruction.Wightman.Basic
 import OSReconstruction.Wightman.OperatorDistribution
 import OSReconstruction.Wightman.SchwartzTensorProduct
@@ -109,7 +111,7 @@ structure SpectralCondition (d : ℕ) [NeZero d]
     that Stone's theorem provides self-adjoint generators P_μ.
 
     Ref: Streater-Wightman, "PCT, Spin and Statistics, and All That", §3-1. -/
-structure SWSpectralCondition (d : ℕ) [NeZero d]
+structure SpectralConditionQFT (d : ℕ) [NeZero d]
     {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (π : PoincareRepresentation d H) : Prop where
   /-- Strong continuity of each one-parameter translation subgroup.
@@ -145,10 +147,10 @@ structure SWSpectralCondition (d : ℕ) [NeZero d]
           ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re
 
 /-- Extract strong continuity from the S-W spectral condition. -/
-theorem SWSpectralCondition.continuousInDirection
+theorem SpectralConditionQFT.continuousInDirection
     {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     {π : PoincareRepresentation d H}
-    (hπ : @SWSpectralCondition d _ H _ _ _ π) (μ : Fin (d + 1)) :
+    (hπ : @SpectralConditionQFT d _ H _ _ _ π) (μ : Fin (d + 1)) :
     PoincareRepresentation.translationContinuousInDirection π μ :=
   hπ.strongly_continuous μ
 
@@ -212,9 +214,9 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   /-- **Spectrum condition** (Streater-Wightman Axiom II): The joint spectrum of
       the energy-momentum operators P₀, …, P_d lies in the closed forward light
       cone V̄₊. Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator
-      domains. See `SWSpectralCondition` for the full docstring. -/
+      domains. See `SpectralConditionQFT` for the full docstring. -/
   spectrum_condition :
-    @SWSpectralCondition d _ HilbertSpace
+    @SpectralConditionQFT d _ HilbertSpace
       instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
   /-- The vacuum vector -/
   vacuum : HilbertSpace
@@ -807,3 +809,220 @@ theorem wightman_analyticity_boundary (qft : WightmanQFT d)
   exact ha.boundaryPointwise n x η hη
 
 end
+
+/-! ### Momentum-Space Spectral Condition
+
+The Streater-Wightman formulation of the spectral condition states that the Fourier
+transform of the Wightman function, expressed in difference variables ξⱼ = xⱼ - xⱼ₊₁,
+has support in the product of closed forward light cones V̄₊ × ··· × V̄₊.
+
+This is equivalent to the forward tube analyticity condition (holomorphic extension to
+the forward tube with distributional boundary values) via the multidimensional
+Paley-Wiener-Schwartz theorem. We define both formulations as standalone `Prop`s and
+state their equivalence.
+
+Ref: Streater-Wightman, "PCT, Spin and Statistics, and All That", §3-1, Theorem 3-5. -/
+
+section SpectralConditionDistribution
+
+variable (d : ℕ) [NeZero d]
+
+/-- The product of closed forward light cones V̄₊ⁿ in momentum space.
+    A momentum configuration (q₁, ..., qₙ) lies in this set iff each qₖ ∈ V̄₊. -/
+def ProductForwardMomentumCone (n : ℕ) : Set (Fin n → Fin (d + 1) → ℝ) :=
+  { q | ∀ k : Fin n, q k ∈ ForwardMomentumCone d }
+
+/-- The Euclidean dot product on n-point spacetime:
+    `⟨p, x⟩ = ∑_k ∑_μ p(k)(μ) · x(k)(μ)`.
+
+    This is the standard (Euclidean, not Minkowski) inner product used to define
+    the Fourier transform. The Minkowski metric enters only through the definition
+    of the forward light cone, not through the Fourier kernel. -/
+def nPointDot {n : ℕ} (p x : NPointSpacetime d n) : ℝ :=
+  ∑ k : Fin n, ∑ μ : Fin (d + 1), p k μ * x k μ
+
+/-- The pointwise Fourier transform of a function on n-point spacetime:
+    `(fourierTransformNPointFun f)(p) = ∫ f(x) · exp(-2πi ⟨p, x⟩) dx`
+
+    This is the underlying function for the Schwartz-space CLM
+    `fourierTransformNPoint`. -/
+noncomputable def fourierTransformNPointFun {n : ℕ}
+    (f : NPointSpacetime d n → ℂ) (p : NPointSpacetime d n) : ℂ :=
+  ∫ x : NPointSpacetime d n,
+    f x * Complex.exp (-2 * ↑Real.pi * Complex.I * ↑(nPointDot d p x))
+
+/-- Uncurrying `(Fin n → Fin m → ℝ)` to `(Fin n × Fin m → ℝ)` as a linear equivalence. -/
+private def uncurryLinearEquiv (d n : ℕ) :
+    (Fin n → Fin (d + 1) → ℝ) ≃ₗ[ℝ] (Fin n × Fin (d + 1) → ℝ) where
+  toFun f p := f p.1 p.2
+  invFun g i j := g (i, j)
+  left_inv _ := rfl
+  right_inv _ := funext fun ⟨_, _⟩ => rfl
+  map_add' _ _ := rfl
+  map_smul' _ _ := rfl
+
+/-- Continuous linear equivalence from `NPointSpacetime d n` to
+    `EuclideanSpace ℝ (Fin n × Fin (d + 1))`, used to transfer the Fourier
+    transform from Mathlib's inner-product-space formulation. -/
+private noncomputable def nPointToEuclidean (n : ℕ) :
+    NPointSpacetime d n ≃L[ℝ] EuclideanSpace ℝ (Fin n × Fin (d + 1)) :=
+  (uncurryLinearEquiv d n).toContinuousLinearEquiv |>.trans
+    (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin n × Fin (d + 1) => ℝ)).symm
+
+/-- The Fourier transform of a Schwartz function on n-point spacetime,
+    bundled as a `SchwartzMap`.
+
+    Defined by transferring to `EuclideanSpace ℝ (Fin n × Fin (d + 1))` (which
+    has `InnerProductSpace ℝ`), applying Mathlib's `fourierTransformCLM`, and
+    transferring back. The underlying function agrees with `fourierTransformNPointFun`
+    (the Fourier integral with kernel `exp(-2πi ⟨p, x⟩)`), since the inner product
+    on `EuclideanSpace` pulls back to `nPointDot` through the uncurrying equivalence. -/
+noncomputable def SchwartzNPointSpace.fourierTransform {n : ℕ}
+    (f : SchwartzNPointSpace d n) : SchwartzNPointSpace d n :=
+  let e := nPointToEuclidean d n
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+    (SchwartzMap.fourierTransformCLM ℂ
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm f))
+
+/-- Zero-basepoint section: embeds n difference variables into (n+1) absolute
+    spacetime coordinates by setting the basepoint to zero and taking partial sums.
+
+    `diffVarSection(ξ)(0)(μ) = 0`
+    `diffVarSection(ξ)(k)(μ) = ξ(0)(μ) + ξ(1)(μ) + ··· + ξ(k-1)(μ)`  for `k ≥ 1`
+
+    This is a right inverse to the reduced difference map
+    `(x₀, x₁, ..., xₙ) ↦ (x₁ - x₀, x₂ - x₁, ..., xₙ - xₙ₋₁)`. -/
+private noncomputable def diffVarSection (n : ℕ) :
+    NPointSpacetime d n →L[ℝ] NPointSpacetime d (n + 1) :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun ξ k μ => ∑ j : Fin k.val, ξ ⟨j.val, by omega⟩ μ
+      map_add' := by
+        intro ξ η; ext k μ; simp [Finset.sum_add_distrib]
+      map_smul' := by
+        intro c ξ; ext k μ; simp [Finset.mul_sum] }
+
+omit [NeZero d] in
+@[simp] private theorem diffVarSection_zero (n : ℕ)
+    (ξ : NPointSpacetime d n) (μ : Fin (d + 1)) :
+    diffVarSection d n ξ 0 μ = 0 := by
+  simp [diffVarSection]
+
+omit [NeZero d] in
+@[simp] private theorem diffVarSection_succ (n : ℕ)
+    (ξ : NPointSpacetime d n) (k : Fin n) (μ : Fin (d + 1)) :
+    diffVarSection d n ξ k.succ μ =
+      diffVarSection d n ξ k.castSucc μ + ξ k μ := by
+  dsimp [diffVarSection]
+  rw [Fin.sum_univ_castSucc]
+  simp [Fin.val_castSucc, Fin.val_last]
+
+omit [NeZero d] in
+private theorem diffVarSection_injective (n : ℕ) :
+    Function.Injective (diffVarSection d n) := by
+  intro ξ₁ ξ₂ h
+  ext k μ
+  -- S(ξ)(k+1) - S(ξ)(k) = ξ(k), so equal sections ⟹ equal differences
+  have h_succ := congr_fun₂ h k.succ μ
+  have h_cast := congr_fun₂ h k.castSucc μ
+  simp only [diffVarSection_succ] at h_succ
+  linarith
+
+/-- Reduction to difference variables: precomposes a Schwartz function on (n+1)
+    spacetime points with the zero-basepoint section map, producing a Schwartz
+    function of n difference variables `ξⱼ = xⱼ₊₁ - xⱼ`.
+
+    `(diffVarReduction f)(ξ₁, ..., ξₙ) = f(0, ξ₁, ξ₁ + ξ₂, ...)`
+
+    By translation invariance of Wightman functions, evaluating at basepoint 0
+    is equivalent to integrating over the basepoint (up to normalization);
+    the key point is that the distribution depends only on the differences. -/
+noncomputable def diffVarReduction (n : ℕ) :
+    SchwartzNPointSpace d (n + 1) →L[ℂ] SchwartzNPointSpace d n :=
+  let hanti := (diffVarSection d n).toLinearMap.injective_iff_antilipschitz.mp
+    (diffVarSection_injective d n)
+  SchwartzMap.compCLMOfAntilipschitz ℂ
+    (diffVarSection d n).hasTemperateGrowth hanti.choose_spec.2
+
+/-- **Spectral condition (distribution-level / Streater-Wightman form).**
+
+    For each n, there exists a tempered distribution `w` on n copies of spacetime
+    (the reduced Wightman function in difference variables ξⱼ = xⱼ - xⱼ₊₁) such that:
+
+    1. `w` determines `W_{n+1}` via the difference-variable reduction:
+       `W_{n+1}(f) = w(diffVarReduction f)` for all test functions f.
+
+    2. The Fourier transform of `w` has support in V̄₊ⁿ: for any test function φ
+       whose support does not intersect V̄₊ × ··· × V̄₊, we have `ŵ(φ) = w(FT(φ)) = 0`.
+
+    This is the standard Streater-Wightman momentum-space spectral condition,
+    expressing that the energy-momentum spectrum lies in the forward light cone.
+
+    Ref: Streater-Wightman, "PCT, Spin and Statistics, and All That", §3-1. -/
+def SpectralConditionDistribution
+    (W : (n : ℕ) → SchwartzNPointSpace d n → ℂ) : Prop :=
+  ∀ (n : ℕ),
+    ∃ (w : SchwartzNPointSpace d n → ℂ),
+      -- w is a tempered distribution (continuous and linear)
+      Continuous w ∧ IsLinearMap ℂ w ∧
+      -- w determines W_{n+1} through the difference-variable reduction
+      (∀ f : SchwartzNPointSpace d (n + 1),
+        W (n + 1) f = w (diffVarReduction d n f)) ∧
+      -- Fourier support in V̄₊ⁿ: for any test function supported outside V̄₊ⁿ,
+      -- the Fourier-transformed distribution vanishes
+      (∀ φ : SchwartzNPointSpace d n,
+        (∀ q : NPointSpacetime d n, φ q ≠ 0 →
+          ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
+        w (φ.fourierTransform) = 0)
+
+/-- **Forward tube analyticity condition.**
+
+    For each n, the Wightman distribution `W_n` extends to a holomorphic function
+    on the forward tube `T_n`, with distributional boundary values recovering `W_n`.
+
+    This is the analytic-continuation form of the spectral condition, used in
+    the `WightmanFunctions` structure (`spectrum_condition` field in Core.lean).
+    We extract it here as a standalone `Prop` for the equivalence statement. -/
+def ForwardTubeAnalyticity
+    (W : (n : ℕ) → SchwartzNPointSpace d n → ℂ) : Prop :=
+  ∀ (n : ℕ),
+    ∃ (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      -- Holomorphicity on the forward tube
+      DifferentiableOn ℂ W_analytic (ForwardTube d n) ∧
+      -- Boundary values: W_analytic recovers W_n as imaginary parts approach zero
+      (∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+        InForwardCone d n η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W n f)))
+
+/-- **Equivalence of the two spectral condition formulations.**
+
+    The momentum-space Fourier support condition (supp(FT(w)) ⊆ V̄₊ⁿ) is equivalent
+    to forward tube analyticity (holomorphic extension to the forward tube with
+    distributional boundary values), given translation invariance.
+
+    The forward direction (Fourier support → analyticity) follows from the
+    Fourier-Laplace representation: if supp(FT(w)) ⊆ V̄₊ⁿ, then w admits a
+    Laplace transform representation that extends holomorphically to the tube
+    domain over the dual cone, which is exactly the forward tube.
+
+    The reverse direction (analyticity → Fourier support) follows from the
+    converse of the Paley-Wiener-Schwartz theorem: a tempered holomorphic function
+    on a tube domain has boundary values whose Fourier transform is supported in
+    the dual cone.
+
+    Ref: Streater-Wightman, Theorem 3-5; Reed-Simon Vol. II, §IX.3. -/
+theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
+    {W : (n : ℕ) → SchwartzNPointSpace d n → ℂ}
+    (hW_tempered : ∀ n, Continuous (W n))
+    (hW_linear : ∀ n, IsLinearMap ℂ (W n))
+    (hW_transl : ∀ (n : ℕ) (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d n),
+      (∀ x : NPointSpacetime d n, g.toFun x = f.toFun (fun i => x i + a)) →
+      W n f = W n g) :
+    SpectralConditionDistribution d W ↔ ForwardTubeAnalyticity d W := by
+  sorry
+
+end SpectralConditionDistribution

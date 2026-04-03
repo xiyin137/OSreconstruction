@@ -1247,7 +1247,7 @@ an alternative matrix-element formulation. -/
     condition: P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains.
     Deferred: requires the SNAG theorem and spectral measure theory. -/
 theorem gns_spectrum_condition :
-    SWSpectralCondition d (gnsPoincareRep Wfn) := by
+    SpectralConditionQFT d (gnsPoincareRep Wfn) := by
   sorry
 
 /-- The operator-valued distribution on the GNS Hilbert space, extracted as a
