@@ -659,16 +659,21 @@ def InForwardCone (d n : ℕ) [NeZero d] (η : Fin n → Fin (d + 1) → ℝ) : 
     let prev : Fin (d + 1) → ℝ := if h : k.val = 0 then 0 else η ⟨k.val - 1, by omega⟩
     InOpenForwardCone d (fun μ => η k μ - prev μ)
 
-/-- The forward tube T_n in n copies of complexified spacetime.
+/-- The repo's current forward tube for the public literal `n`-point family.
 
-    T_n = {(z₁,...,zₙ) ∈ ℂ^{n(d+1)} : Im(z₁) ∈ V₊, Im(z₂-z₁) ∈ V₊, ..., Im(zₙ-zₙ₋₁) ∈ V₊}
+    `ForwardTube d n` consists of complex configurations `z₀, ..., z_{n-1}` such
+    that
+    - `Im(z₀) ∈ V₊`, and
+    - `Im(z_k - z_{k-1}) ∈ V₊` for `k = 1, ..., n - 1`.
 
-    where V₊ is the open forward light cone {η : η₀ > 0, η² < 0}.
+    Thus the formalized domain is an absolute-coordinate tube with one extra
+    basepoint condition `Im(z₀) ∈ V₊` in addition to the successive-difference
+    conditions. This is slightly stronger than the minimal literal `n`-point
+    forward tube often used in the literature, but it is the public analytic
+    domain used throughout the current repo formalization.
 
-    This is the domain to which Wightman functions analytically continue.
-
-    We define the successive difference of imaginary parts η_k and require each
-    to lie in V₊. -/
+    The internal Route 1 reduced layer later descends from this absolute tube
+    to reduced `(m + 1) -> m` difference-variable data. -/
 def ForwardTube (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
   { z | ∀ k : Fin n,
     let prev : Fin (d + 1) → ℂ := if h : k.val = 0 then 0 else z ⟨k.val - 1, by omega⟩
@@ -716,8 +721,8 @@ lemma tubeCumSum_sub {d : ℕ} {n : ℕ} (η : Fin n → Fin (d + 1) → ℝ)
     where L₊↑ is the proper orthochronous Lorentz group.
     The edge-of-the-wedge theorem shows W_n extends to T_n^{ext}. -/
 def ExtendedForwardTube (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
-  ⋃ Λ : LorentzGroup.Restricted (d := d),
-    { z | ∃ w ∈ ForwardTube d n, z = fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * w k ν }
+  ⋃ Λ : LorentzGroup d,
+    { z | ∃ w ∈ ForwardTube d n, z = fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * w k ν }
 
 /-- Convert a Euclidean spacetime point to a complex point via Wick rotation:
     (τ, x⃗) ↦ (iτ, x⃗).
@@ -726,24 +731,25 @@ def ExtendedForwardTube (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → 
 def wickRotatePoint {d : ℕ} (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℂ :=
   fun μ => if μ = 0 then Complex.I * (x 0 : ℂ) else (x μ : ℂ)
 
-/-- The Wightman functions have analytic continuation to the forward tube.
+/-- Analytic continuation of the public literal `n`-point Wightman family.
 
-    The n-point Wightman function W_n(x₁,...,xₙ), initially defined as a
-    distribution on real spacetime points, extends to a holomorphic function
-    on the forward tube T_n.
+    The continuation is formalized on the repo's current `ForwardTube d n`,
+    i.e. the absolute-coordinate forward tube with the extra basepoint condition
+    `Im(z₀) ∈ V₊` as well as the successive-difference conditions.
 
-    By Lorentz covariance, it further extends to the extended forward tube T_n^{ext}.
-    The edge-of-the-wedge theorem (Bargmann-Hall-Wightman) shows this extension
-    is single-valued.
+    By Lorentz covariance, it further extends to the extended forward tube
+    `T_n^{ext}`. The edge-of-the-wedge theorem (Bargmann-Hall-Wightman) is the
+    guiding mathematical picture behind this extension.
 
-    We define `analyticContinuation` on the full ambient space ℂ^{n(d+1)} and
-    constrain holomorphicity to the forward tube via `DifferentiableOn`.
+    We define `analyticContinuation` on the full ambient space `ℂ^{n(d+1)}` and
+    constrain holomorphicity to `ForwardTube d n` via `DifferentiableOn`.
 
-    The current `SpectralCondition` surface only records the weak Hamiltonian/mass-shell
-    inequalities, not the full Fourier-Laplace boundary-value theorem or the boundary
-    regularity input needed for pointwise limits. Therefore both the distributional
-    boundary-value package and the pointwise boundary-limit package are included
-    explicitly here rather than derived from `qft.spectrum_condition` inside this file. -/
+    The current `SpectralCondition` surface only records the weak
+    Hamiltonian/mass-shell inequalities, not the full Fourier-Laplace
+    boundary-value theorem or the boundary regularity input needed for
+    pointwise limits. Therefore both the distributional boundary-value package
+    and the pointwise boundary-limit package are included explicitly here
+    rather than derived from `qft.spectrum_condition` inside this file. -/
 structure WightmanAnalyticity (qft : WightmanQFT d) where
   /-- The analytic continuation of the n-point function, defined on all of ℂ^{n(d+1)}.
       Only meaningful on the forward tube; values outside are auxiliary. -/

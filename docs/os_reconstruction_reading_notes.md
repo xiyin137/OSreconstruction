@@ -1257,21 +1257,27 @@ fiber of the PET in the base variable (z₀) path-connected?
 
 ### 11.3. ForwardTube variable convention issue
 
-Our `ForwardTube d n` uses cumulative-sum variables z_k = Σ_{j≤k} ζ_j with:
-- k=0 condition: `Im(z₀) ∈ V⁺` (absolute, not a difference)
-- k≥1 conditions: `Im(z_k - z_{k-1}) ∈ V⁺` (differences)
+This section records an earlier debugging concern and should be read as
+historical / exploratory rather than as the current public contract.
 
-The standard convention (Streater-Wightman, Jost) uses pure difference
-variables ζ_j with only `Im(ζ_j) ∈ V⁺` for j=1,...,n-1. No k=0 base
-condition.
+Current settled reading of the repo:
+- the public surfaces `WightmanQFT.wightmanFunction n` and
+  `WightmanFunctions.W n` are literal `n`-point objects;
+- the current public `ForwardTube d n` is an absolute-coordinate tube with
+  the basepoint condition `Im(z₀) ∈ V⁺` and the successive-difference
+  conditions `Im(z_k - z_{k-1}) ∈ V⁺` for `k ≥ 1`;
+- this is slightly stronger than the minimal literal `n`-point tube often
+  used in the standard literature;
+- the reduced `(m + 1) -> m` difference-variable convention belongs to the
+  internal Route 1 bridge, not to the public meaning of `W n`.
 
-This discrepancy is the ROOT CAUSE of both blockers:
-- R→E: translation z → z+c changes z₀ but not the differences, so PET in
-  difference variables is trivially translation-invariant. Our k=0 condition
-  breaks this.
-- E→R: the semigroup formula is natural in difference variables. In
-  cumulative-sum variables, the center variable is redundant and creates the
-  shell mismatch.
+So the important present-day point is not that the public `ForwardTube d n`
+was "wrong", but that the repo mixes:
+- a public literal `n`-point API, and
+- an internal reduced Route 1 descent from absolute arity `m + 1` to reduced
+  arity `m`.
+
+That distinction must be kept explicit when reading older debugging notes.
 
 ### 11.4. Relaxed tube bridge
 

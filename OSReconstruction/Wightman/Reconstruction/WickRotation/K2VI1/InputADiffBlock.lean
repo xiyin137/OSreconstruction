@@ -774,8 +774,18 @@ theorem schwinger_continuation_base_step_timeParametric_of_translationInvariant_
       ∀ (z : Fin 2 → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
         S₁ (fun j => z j + a) = S₁ z :=
     (Classical.choose_spec hS_pack).2.2.2.1
+  have _hS₁_negCanonical :
+      ∀ (x : NPointDomain d 2) (ε : ℝ), 0 < ε →
+        starRingEnd ℂ
+          (S₁ (fun j μ =>
+            ↑(x j μ) +
+              ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I)) =
+        S₁ (fun j μ =>
+          ↑(x j μ) -
+            ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I) :=
+    (Classical.choose_spec hS_pack).2.2.2.2.1
   obtain ⟨C₁, N, hC₁, hS₁_growth⟩ :=
-    (Classical.choose_spec hS_pack).2.2.2.2
+    (Classical.choose_spec hS_pack).2.2.2.2.2
   let G : (Fin (2 * (d + 1)) → ℂ) → ℂ := fun u => S₁ (BHW.fromDiffFlat 2 d u)
   have hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G := by
     refine ⟨?_, ?_⟩
@@ -922,8 +932,18 @@ theorem schwinger_continuation_base_step_timeParametric_of_translationInvariant_
       ∀ (z : Fin 2 → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
         S₁ (fun j => z j + a) = S₁ z :=
     (Classical.choose_spec hS_pack).2.2.2.1
+  have _hS₁_negCanonical :
+      ∀ (x : NPointDomain d 2) (ε : ℝ), 0 < ε →
+        starRingEnd ℂ
+          (S₁ (fun j μ =>
+            ↑(x j μ) +
+              ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I)) =
+        S₁ (fun j μ =>
+          ↑(x j μ) -
+            ε * ↑(if μ = 0 then (↑(j : ℕ) + 1 : ℝ) else 0) * Complex.I) :=
+    (Classical.choose_spec hS_pack).2.2.2.2.1
   obtain ⟨C₁, N, hC₁, hS₁_growth⟩ :=
-    (Classical.choose_spec hS_pack).2.2.2.2
+    (Classical.choose_spec hS_pack).2.2.2.2.2
   let G : (Fin (2 * (d + 1)) → ℂ) → ℂ := fun u => S₁ (BHW.fromDiffFlat 2 d u)
   have hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G := by
     refine ⟨?_, ?_⟩

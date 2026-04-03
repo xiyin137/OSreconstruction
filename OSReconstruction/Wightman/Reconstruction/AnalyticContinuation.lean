@@ -92,9 +92,9 @@ from `OSReconstruction.ComplexLieGroups.Complexification` (via `Connectedness`).
 uses `LorentzLieGroup.minkowskiSignature`, which equals `MinkowskiSpace.metricSignature` by `rfl`
 (see `minkowskiSignature_eq_metricSignature` in `AxiomBridge.lean`).
 
-The imported `ComplexLorentzGroup.ofReal` takes `RestrictedLorentzGroup d` (from LorentzLieGroup).
-To construct from `LorentzGroup.Restricted`, use `wightmanToRestrictedLorentzGroup` from
-`AxiomBridge.lean`.
+The imported `ComplexLorentzGroup.ofReal` takes the connected real Lorentz group
+from `LorentzLieGroup`. The preferred bridge from the Wightman-side connected
+group is `wightmanToLorentzGroup` from `AxiomBridge.lean`.
 -/
 
 /-! ### Extended Tube via Complex Lorentz Group -/
@@ -104,7 +104,7 @@ To construct from `LorentzGroup.Restricted`, use `wightmanToRestrictedLorentzGro
     T'_n = ⋃_{Λ ∈ L₊(ℂ)} Λ(T_n)
 
     Note: WightmanAxioms.lean defined `ExtendedForwardTube` using only the real
-    restricted Lorentz group. Here we use the full complex Lorentz group, which
+    connected proper-orthochronous Lorentz group. Here we use the full complex Lorentz group, which
     gives a strictly larger domain. The two are related by:
       ExtendedForwardTube ⊂ ComplexExtendedForwardTube ⊂ PermutedExtendedTube -/
 def ComplexExtendedForwardTube (d n : ℕ) [NeZero d] :
@@ -687,9 +687,9 @@ theorem BHW_permutedExtendedTube_eq :
 theorem bargmann_hall_wightman (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz : ∀ (Λ : LorentzGroup.Restricted (d := d))
+    (hF_lorentz : ∀ (Λ : LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
-      F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+      F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν) = F z)
     (W : (m : ℕ) → SchwartzNPoint d m → ℂ)
     (hF_bv_dist : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
@@ -717,12 +717,12 @@ theorem bargmann_hall_wightman (n : ℕ)
   have hpet_eq := BHW_permutedExtendedTube_eq (d := d) (n := n)
   have hF_holo' : DifferentiableOn ℂ F (BHW.ForwardTube d n) :=
     hft_eq ▸ hF_holo
-  have hF_lorentz' : ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+  have hF_lorentz' : ∀ (Λ : LorentzLieGroup.LorentzGroup d)
       (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
       F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
     intro Λ z hz
     have hz' : z ∈ ForwardTube d n := hft_eq ▸ hz
-    exact hF_lorentz (restrictedLorentzGroupToWightman Λ) z hz'
+    exact hF_lorentz (lorentzGroupToWightman Λ) z hz'
   -- Apply BHW theorem from Connectedness.lean
   obtain ⟨F_ext, h1, h2, h3, h4, h5⟩ :=
     BHW.bargmann_hall_wightman_theorem n F hF_holo' hF_lorentz' W hF_bv_dist hF_local_dist

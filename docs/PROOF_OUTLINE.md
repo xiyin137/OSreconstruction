@@ -76,7 +76,7 @@ Component decomposition and Cauchy-Schwarz for spatial parts.
 | `timelike_time_dominates_space` | IsTimelike x → x₀² > Σ x_i² |
 | `spatial_cauchy_schwarz` | Cauchy-Schwarz for spatial components |
 
-### Groups/Lorentz.lean — Lorentz group O(1,d)
+### Groups/Lorentz.lean — connected Lorentz group SO⁺(1,d) and full O(1,d)
 
 | Definition/Theorem | Description |
 |---|---|
@@ -85,7 +85,7 @@ Component decomposition and Cauchy-Schwarz for spatial parts.
 | `IsLorentzMatrix.isUnit` | det(Λ) = ±1 |
 | `IsLorentzMatrix.inv_eq` | Λ⁻¹ = η Λᵀ η |
 
-### Groups/Poincare.lean — Poincare group ISO(1,d)
+### Groups/Poincare.lean — connected Poincare group ISO⁺(1,d) and full ISO(1,d)
 
 | Definition/Theorem | Description |
 |---|---|
@@ -129,7 +129,10 @@ Complete axiomatization of relativistic QFT in the Wightman framework.
 
 **Key definitions:**
 - `wightmanFunction n` — n-point function W_n(f₁,…,f_n) = ⟨Ω, φ(f₁)···φ(f_n)Ω⟩
-- `ForwardTube n` — tube domain T_n = {z ∈ ℂ^{nd} : Im(ξ_j) ∈ V₊}
+- `ForwardTube n` — current repo forward tube for the public literal `n`-point
+  family: an absolute-coordinate tube with `Im(z₀) ∈ V₊` and
+  `Im(z_k - z_{k-1}) ∈ V₊` for `k ≥ 1`; this is slightly stronger than the
+  minimal standard literal `n`-point tube
 - `ExtendedForwardTube n` — T'_n = ∪_Λ Λ·T_n (complex Lorentz orbit)
 
 **Sorrys (not on critical path):**
@@ -552,8 +555,8 @@ OSReconstruction/Wightman/
 │   ├── Metric.lean                         ← Minkowski metric (0 sorrys)
 │   └── MinkowskiGeometry.lean              ← Geometric lemmas (0 sorrys)
 ├── Groups/
-│   ├── Lorentz.lean                        ← O(1,d) (0 sorrys)
-│   └── Poincare.lean                       ← ISO(1,d) (0 sorrys)
+│   ├── Lorentz.lean                        ← SO⁺(1,d) default, full O(1,d) explicit (0 sorrys)
+│   └── Poincare.lean                       ← ISO⁺(1,d) default, full ISO(1,d) explicit (0 sorrys)
 ├── Reconstruction/
 │   ├── GNSConstruction.lean                ← GNS construction (0 sorrys)
 │   ├── AnalyticContinuation.lean           ← Tube domains, EOW+BHW axioms (0 sorrys)

@@ -2100,11 +2100,11 @@ private theorem W_analytic_BHW_eq_extendF_on_extendedTube
     simpa [BHW_forwardTube_eq (d := d) (n := n)] using
       (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
-      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+      ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
         F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
     intro Λ z hz
-    exact W_analytic_lorentz_on_tube Wfn n Λ z
+    exact W_analytic_lorentz_on_tube Wfn n (lorentzGroupToWightman Λ) z
       ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
   have hF_cinv :
       ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
@@ -2152,11 +2152,11 @@ private theorem bhw_real_hermitian_on_edge
     simpa [BHW_forwardTube_eq (d := d) (n := n)] using
       (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
-      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+      ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
         F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
     intro Λ z hz
-    exact W_analytic_lorentz_on_tube Wfn n Λ z
+    exact W_analytic_lorentz_on_tube Wfn n (lorentzGroupToWightman Λ) z
       ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
   have hF_cinv :
       ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
@@ -2582,11 +2582,11 @@ private theorem extendF_real_on_forwardJostSet
     simpa [BHW_forwardTube_eq (d := d) (n := n)] using
       (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
-      ∀ (Λ : LorentzLieGroup.RestrictedLorentzGroup d)
+      ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
         F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z := by
     intro Λ z hz
-    exact W_analytic_lorentz_on_tube Wfn n Λ z
+    exact W_analytic_lorentz_on_tube Wfn n (lorentzGroupToWightman Λ) z
       ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
   have hF_cinv :
       ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),

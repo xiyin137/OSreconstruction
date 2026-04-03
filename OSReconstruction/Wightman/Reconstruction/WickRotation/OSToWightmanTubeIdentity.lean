@@ -58,6 +58,105 @@ def wickUnrotateComplexConfig
       _ = z k 0 := by simp
   · simp [wickRotateComplexConfig, wickRotateComplexPoint, wickUnrotateComplexConfig, hμ]
 
+/-- The one-parameter Wick homotopy used on the ordered positive-time section.
+
+For angle `θ`, the time component is rotated to
+`cos θ · t + i sin θ · t`, while spatial components stay real.
+At `θ = π / 2` this is the usual Wick rotation, and for `θ > 0`
+the imaginary-time part is positive on ordered positive-time points. -/
+def angledWickRotatePoint (θ : ℝ)
+    (x : Fin (d + 1) → ℝ) : Fin (d + 1) → ℂ :=
+  fun μ => if μ = 0 then
+      (Real.cos θ * x 0 : ℂ) + Complex.I * (Real.sin θ * x 0 : ℂ)
+    else (x μ : ℂ)
+
+/-- Configuration-wise version of `angledWickRotatePoint`. -/
+def angledWickRotateConfig (θ : ℝ)
+    (x : Fin n → Fin (d + 1) → ℝ) : Fin n → Fin (d + 1) → ℂ :=
+  fun k => angledWickRotatePoint (d := d) θ (x k)
+
+@[simp] theorem angledWickRotatePoint_pi_div_two
+    (x : Fin (d + 1) → ℝ) :
+    angledWickRotatePoint (d := d) (Real.pi / 2) x = wickRotatePoint x := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [angledWickRotatePoint, wickRotatePoint, Real.cos_pi_div_two, Real.sin_pi_div_two]
+  · simp [angledWickRotatePoint, wickRotatePoint, hμ]
+
+@[simp] theorem angledWickRotateConfig_pi_div_two
+    (x : Fin n → Fin (d + 1) → ℝ) :
+    angledWickRotateConfig (d := d) (n := n) (Real.pi / 2) x =
+      (fun k => wickRotatePoint (x k)) := by
+  funext k
+  exact angledWickRotatePoint_pi_div_two (d := d) (x := x k)
+
+@[simp] theorem angledWickRotatePoint_zero
+    (x : Fin (d + 1) → ℝ) :
+    angledWickRotatePoint (d := d) 0 x = fun μ => (x μ : ℂ) := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [angledWickRotatePoint]
+  · simp [angledWickRotatePoint, hμ]
+
+/-- The angled Wick homotopy stays inside the forward tube on the ordered
+positive-time region as soon as the imaginary-angle coefficient is positive.
+
+This is the geometric starting point for the direct Wick-homotopy comparison:
+ordered positive Euclidean times remain in the tube all along the path
+`θ ↦ angledWickRotateConfig θ x` for `sin θ > 0`. -/
+theorem angledWickRotateConfig_mem_forwardTube_of_mem_orderedPositiveTimeRegion
+    {x : NPointDomain d n}
+    (hx : x ∈ OrderedPositiveTimeRegion d n)
+    {θ : ℝ} (hθ : 0 < Real.sin θ) :
+    angledWickRotateConfig (d := d) (n := n) θ x ∈ ForwardTube d n := by
+  let y : NPointDomain d n := fun k μ =>
+    if μ = 0 then Real.sin θ * x k 0 else x k μ
+  have hy_ord : ∀ k j : Fin n, k < j → y k 0 < y j 0 := by
+    intro k j hkj
+    simp [y]
+    exact mul_lt_mul_of_pos_left ((hx k).2 j hkj) hθ
+  have hy_pos : ∀ k : Fin n, y k 0 > 0 := by
+    intro k
+    simp [y]
+    exact mul_pos hθ ((hx k).1)
+  have hy_ft : (fun k => wickRotatePoint (y k)) ∈ ForwardTube d n :=
+    euclidean_ordered_in_forwardTube (d := d) (n := n) y hy_ord hy_pos
+  intro k
+  let prevAng : Fin (d + 1) → ℂ :=
+    if h : k.val = 0 then 0 else angledWickRotateConfig (d := d) (n := n) θ x ⟨k.val - 1, by omega⟩
+  let prevY : Fin (d + 1) → ℂ :=
+    if h : k.val = 0 then 0 else wickRotatePoint (y ⟨k.val - 1, by omega⟩)
+  have heta :
+      (fun μ => (angledWickRotateConfig (d := d) (n := n) θ x k μ - prevAng μ).im) =
+      (fun μ => (wickRotatePoint (y k) μ - prevY μ).im) := by
+    ext μ
+    by_cases hk0 : k.val = 0
+    · by_cases hμ : μ = 0
+      · subst hμ
+        simp [prevAng, prevY, angledWickRotateConfig, angledWickRotatePoint, y, hk0,
+          wickRotatePoint, Complex.add_im, Complex.sub_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im,
+          zero_mul, one_mul, zero_add]
+      · simp [prevAng, prevY, angledWickRotateConfig, angledWickRotatePoint, y, hk0,
+          wickRotatePoint, hμ, Complex.sub_im, Complex.ofReal_im]
+    · by_cases hμ : μ = 0
+      · subst hμ
+        simp [prevAng, prevY, angledWickRotateConfig, angledWickRotatePoint, y, hk0,
+          wickRotatePoint, Complex.add_im, Complex.sub_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.ofReal_im, Complex.I_re, Complex.I_im,
+          zero_mul, one_mul, zero_add]
+      · simp [prevAng, prevY, angledWickRotateConfig, angledWickRotatePoint, y, hk0,
+          wickRotatePoint, hμ, Complex.sub_im, Complex.ofReal_im]
+  have hk := hy_ft k
+  change InOpenForwardCone d (fun μ =>
+    (angledWickRotateConfig (d := d) (n := n) θ x k μ - prevAng μ).im)
+  change InOpenForwardCone d (fun μ =>
+    (wickRotatePoint (y k) μ - prevY μ).im) at hk
+  rw [heta]
+  exact hk
+
 private theorem continuous_wickRotateComplexPoint :
     Continuous (wickRotateComplexPoint (d := d)) := by
   apply continuous_pi
@@ -129,7 +228,7 @@ private theorem continuous_wickRotateRealConfig :
     by_cases hμ : μ = 0
     · subst hμ
       rw [Finset.sum_eq_single 0]
-      · simp [LorentzGroup.timeReversal]
+      · simp [LorentzGroup.timeReversal, FullLorentzGroup.timeReversal]
       · intro ν hν
         intro hν0
         have hentry :
@@ -139,9 +238,9 @@ private theorem continuous_wickRotateRealConfig :
           · exact False.elim (hν0 h0ν.symm)
           · simp [Matrix.diagonal, h0ν]
         simp [hentry]
-      · simp [LorentzGroup.timeReversal]
+      · simp [LorentzGroup.timeReversal, FullLorentzGroup.timeReversal]
     · rw [Finset.sum_eq_single μ]
-      · simp [LorentzGroup.timeReversal, hμ]
+      · simp [LorentzGroup.timeReversal, FullLorentzGroup.timeReversal, hμ]
       · intro ν hν
         intro hνμ
         have hentry :
@@ -463,14 +562,14 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
           ∫ x : NPointDomain d n,
             G (fun k => wickRotatePoint (x k)) *
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x))
-    (Λ : LorentzGroup.Restricted (d := d))
+    (Λ : LorentzGroup d)
     (x : NPointDomain d n)
     (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η)
     (ε : ℝ) (hε : 0 < ε) :
-    F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
-      G (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) := by
-  let Λx : NPointDomain d n := fun k => Matrix.mulVec Λ.val.val (x k)
-  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val.val μ ν * η k ν
+    F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
+      G (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) := by
+  let Λx : NPointDomain d n := fun k => Matrix.mulVec Λ.val (x k)
+  let Λη : Fin n → Fin (d + 1) → ℝ := fun k μ => ∑ ν, Λ.val μ ν * η k ν
   have hΛη : InForwardCone d n Λη := by
     intro k
     let diffη : Fin (d + 1) → ℝ := fun μ => η k μ -
@@ -487,8 +586,8 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
       ext ν
       ring
   have hlin :
-      (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
-        (fun k μ => ↑(Λx k μ) + ε * ↑(Λη k μ) * Complex.I) := by
+      (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * (↑(x k ν) + ε * ↑(η k ν) * Complex.I)) =
+      (fun k μ => ↑(Λx k μ) + ε * ↑(Λη k μ) * Complex.I) := by
     funext k μ
     simp only [Λx, Λη, Matrix.mulVec]
     push_cast
@@ -500,8 +599,8 @@ theorem forwardTube_restrictedLorentz_point_eq_of_zeroDiagonal_distributional_wi
     · conv_lhs =>
         arg 2
         ext ν
-        rw [show (↑(Λ.val.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
-            ↑ε * (↑(Λ.val.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
+        rw [show (↑(Λ.val μ ν) : ℂ) * (↑ε * ↑(η k ν) * Complex.I) =
+            ↑ε * (↑(Λ.val μ ν) * ↑(η k ν)) * Complex.I from by ring]
       rw [← Finset.sum_mul, ← Finset.mul_sum]
   rw [hlin]
   exact forwardTube_point_eq_of_zeroDiagonal_distributional_wickSection_eq

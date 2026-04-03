@@ -146,9 +146,14 @@ noncomputable def reducedTestLift (m d : ℕ)
             simpa using congrArg φ htail
           rw [hphi]
 
-/-- The reduced real-side Wightman functional defined using a chosen basepoint
-    Schwartz cutoff. This is the distributional input for the reduced-variable
-    analytic continuation. -/
+/-- Internal Route 1 reduced real-side Wightman functional defined using a
+    chosen basepoint Schwartz cutoff.
+
+    For reduced arity `m`, this starts from the public literal `(m + 1)`-point
+    object `Wfn.W (m + 1)` and tests it against the lifted Schwartz function
+    `reducedTestLift m d χ φ`. It is therefore an internal `(m + 1) -> m`
+    reduced-coordinate bridge, not a redefinition of the public meaning of
+    `Wfn.W n`. -/
 def reducedWightmanWithCutoff (Wfn : WightmanFunctions d) (m : ℕ)
     (χ : SchwartzMap (SpacetimeDim d) ℂ) :
     SchwartzNPoint d m → ℂ :=

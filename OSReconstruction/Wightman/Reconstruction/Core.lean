@@ -103,7 +103,8 @@ def IsTranslationInvariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : 
     (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => x i + a)) →
     W n f = W n g
 
-/-- Lorentz covariance: W_n(Λx₁, ..., Λxₙ) = W_n(x₁, ..., xₙ) for all Λ ∈ O(1,d).
+/-- Lorentz covariance: W_n(Λx₁, ..., Λxₙ) = W_n(x₁, ..., xₙ) for all
+    Λ in the connected Lorentz group SO⁺(1,d).
 
     For scalar fields, the Wightman functions are Lorentz invariant.
     For fields with spin s, there would be a transformation matrix D^{(s)}(Λ).
@@ -114,7 +115,8 @@ def IsTranslationInvariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : 
     configurations. -/
 def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
   -- For scalar fields: W_n is Lorentz invariant.
-  -- For any Λ ∈ O(1,d) and Schwartz functions f, g such that g(x) = f(Λ⁻¹x₁,...,Λ⁻¹xₙ),
+  -- For any connected Lorentz transformation Λ and Schwartz functions f, g
+  -- such that g(x) = f(Λ⁻¹x₁,...,Λ⁻¹xₙ),
   -- we have W_n(f) = W_n(g). Avoids constructing the Lorentz-transformed Schwartz function.
   ∀ (n : ℕ) (Λ : LorentzGroup d) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun i => Matrix.mulVec Λ⁻¹.val (x i))) →
@@ -349,6 +351,80 @@ theorem WightmanInnerProduct_eq_extended (W : (n : ℕ) → SchwartzNPoint d n �
     ← WightmanInnerProductN_extend_right d W hlin F G (F.bound + 1) N₂ hN₂,
     ← WightmanInnerProductN_extend_left d W hlin F G N₁ N₂ hN₁]
 
+/-- Against concentrated Borchers vectors, the Wightman inner product reduces
+to the single tensor term in the corresponding degree. -/
+theorem WightmanInnerProduct_single_single (W : (n : ℕ) → SchwartzNPoint d n → ℂ)
+    (hlin : ∀ n, IsLinearMap ℂ (W n))
+    (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) :
+    WightmanInnerProduct d W (BorchersSequence.single n f) (BorchersSequence.single m g) =
+      W (n + m) (f.conjTensorProduct g) := by
+  unfold WightmanInnerProduct
+  rw [BorchersSequence.single_bound, BorchersSequence.single_bound, Finset.sum_range_succ]
+  have hleft :
+      ∑ i ∈ Finset.range n,
+        ∑ j ∈ Finset.range (m + 1),
+          W (i + j)
+            (((BorchersSequence.single n f).funcs i).conjTensorProduct
+              ((BorchersSequence.single m g).funcs j)) = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    have hi_ne : i ≠ n := Nat.ne_of_lt (Finset.mem_range.mp hi)
+    apply Finset.sum_eq_zero
+    intro j hj
+    rw [BorchersSequence.single_funcs_ne hi_ne,
+      SchwartzMap.conjTensorProduct_zero_left, (hlin _).map_zero]
+  rw [hleft, zero_add, BorchersSequence.single_funcs_eq, Finset.sum_range_succ]
+  have hright :
+      ∑ j ∈ Finset.range m,
+        W (n + j)
+          (f.conjTensorProduct ((BorchersSequence.single m g).funcs j)) = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro j hj
+    have hj_ne : j ≠ m := Nat.ne_of_lt (Finset.mem_range.mp hj)
+    rw [BorchersSequence.single_funcs_ne hj_ne,
+      SchwartzMap.conjTensorProduct_zero_right, (hlin _).map_zero]
+  rw [hright, zero_add, BorchersSequence.single_funcs_eq]
+
+/-- For an arbitrary left Borchers vector, the Wightman inner product against a
+concentrated right factor reduces to the single tensor term in each left
+component. -/
+theorem WightmanInnerProduct_right_single (W : (n : ℕ) → SchwartzNPoint d n → ℂ)
+    (hlin : ∀ n, IsLinearMap ℂ (W n))
+    (F : BorchersSequence d)
+    {m : ℕ} (g : SchwartzNPoint d m) :
+    WightmanInnerProduct d W F (BorchersSequence.single m g) =
+      ∑ n ∈ Finset.range (F.bound + 1),
+        W (n + m) ((F.funcs n).conjTensorProduct g) := by
+  unfold WightmanInnerProduct
+  apply Finset.sum_congr rfl
+  intro n hn
+  rw [BorchersSequence.single_bound, Finset.sum_range_succ]
+  have hright :
+      ∑ j ∈ Finset.range m,
+        W (n + j)
+          ((F.funcs n).conjTensorProduct ((BorchersSequence.single m g).funcs j)) = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro j hj
+    have hj_ne : j ≠ m := Nat.ne_of_lt (Finset.mem_range.mp hj)
+    rw [BorchersSequence.single_funcs_ne hj_ne,
+      SchwartzMap.conjTensorProduct_zero_right, (hlin _).map_zero]
+  rw [hright, zero_add, BorchersSequence.single_funcs_eq]
+
+/-- The Wightman inner product against an arbitrary right Borchers vector is the
+finite sum of its concentrated right components. -/
+theorem WightmanInnerProduct_eq_sum_right_singles (W : (n : ℕ) → SchwartzNPoint d n → ℂ)
+    (hlin : ∀ n, IsLinearMap ℂ (W n))
+    (F G : BorchersSequence d) :
+    WightmanInnerProduct d W F G =
+      ∑ m ∈ Finset.range (G.bound + 1),
+        WightmanInnerProduct d W F (BorchersSequence.single m (G.funcs m)) := by
+  unfold WightmanInnerProduct
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro m hm
+  simpa [WightmanInnerProduct] using
+    (WightmanInnerProduct_right_single (d := d) W hlin F (g := G.funcs m)).symm
+
 /-! ### Inner Product Sesquilinearity -/
 
 /-- The inner product is additive in the second argument. -/
@@ -543,8 +619,14 @@ def IsNormalized (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
 
 /-! ### Wightman Functions Structure -/
 
-/-- A collection of Wightman functions satisfying all required properties.
-    This is the input data for the reconstruction theorem. -/
+/-- A collection of public literal `n`-point Wightman functions satisfying the
+    reconstruction-side axioms.
+
+    The field `W n` is the public literal `n`-point family on Schwartz test
+    functions. Internal reduced-coordinate constructions later descend from
+    these public `n`-point objects to reduced `(m + 1) -> m` data when needed,
+    but that internal Route 1 bridge does not change the public meaning of
+    `W n`. -/
 structure WightmanFunctions (d : ℕ) [NeZero d] where
   /-- The n-point functions as tempered distributions -/
   W : (n : ℕ) → SchwartzNPoint d n → ℂ
@@ -558,23 +640,28 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
   translation_invariant : IsTranslationInvariantWeak d W
   /-- Lorentz covariance (weak form) -/
   lorentz_covariant : IsLorentzCovariantWeak d W
-  /-- Spectral condition: the Fourier transform of W_n has support in the product
-      of forward light cones.
+  /-- Spectral-condition package used by the current reconstruction formalization.
 
-      More precisely, W̃_n(p₁,...,pₙ) (the Fourier transform) vanishes unless
-      p₁ + ... + pₖ ∈ V̄₊ for all k = 1,...,n, where V̄₊ is the closed forward cone.
+      For the public literal `n`-point family `W n`, we currently package the
+      analytic side as holomorphic continuation to the repo's `ForwardTube d n`
+      together with distributional boundary-value recovery of `W n`.
 
-      This is equivalent to the energy-momentum spectrum lying in the forward cone.
+      The important convention point is that `ForwardTube d n` is the current
+      repo forward tube, which includes the extra basepoint condition
+      `Im(z₀) ∈ V₊` in addition to the successive-difference conditions.
+      Therefore this is slightly stronger than the minimal literal `n`-point
+      tube often used in the standard literature.
 
-      The condition is expressed via analytic continuation: W_n extends to a
-      holomorphic function on the forward tube T_n. By the Bargmann-Hall-Wightman
-      theorem, this is equivalent to the spectral support condition.
+      This field is the public absolute-coordinate input used by the
+      reconstruction files. The internal Route 1 reduced layer later descends
+      from the arity `m + 1` witness here to reduced arity `m` difference
+      variables when building the reduced BHW bridge.
 
-      We require:
-      1. Existence of an analytic continuation W_analytic to the forward tube
-      2. Holomorphicity (differentiability in each complex variable)
-      3. Boundary values recover W_n: as Im(z) → 0⁺ from within the tube,
-         W_analytic approaches the distribution W_n in the sense of distributions -/
+      Concretely we require:
+      1. existence of an analytic continuation `W_analytic` on `ForwardTube d n`;
+      2. holomorphicity on that current repo tube;
+      3. distributional boundary values recovering the public literal
+         `n`-point functional `W n`. -/
   spectrum_condition : ∀ (n : ℕ),
     ∃ (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       -- Holomorphicity on the forward tube (DifferentiableOn avoids subtype issues)
@@ -688,6 +775,30 @@ private theorem conjTP_eq_borchersConj_conjTP {d n m : ℕ}
 
 /-- The Wightman inner product satisfies Hermiticity: ⟨F, G⟩ = conj(⟨G, F⟩).
 
+    This structure-free form only assumes the distribution-level Hermiticity
+    axiom for the underlying `n`-point family. It is useful before a full
+    `WightmanFunctions` structure is available. -/
+theorem WightmanInnerProduct_hermitian_of {d : ℕ} [NeZero d]
+    (W : (n : ℕ) → SchwartzNPoint d n → ℂ)
+    (hherm :
+      ∀ (n : ℕ) (f g : SchwartzNPoint d n),
+        (∀ x : NPointDomain d n,
+          g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
+        W n g = starRingEnd ℂ (W n f))
+    (F G : BorchersSequence d) :
+    WightmanInnerProduct d W F G = starRingEnd ℂ (WightmanInnerProduct d W G F) := by
+  simp only [WightmanInnerProduct, map_sum]
+  rw [Finset.sum_comm]
+  congr 1; ext n; congr 1; ext m
+  rw [← hherm (n + m) ((G.funcs n).conjTensorProduct (F.funcs m))
+    (((G.funcs n).conjTensorProduct (F.funcs m)).borchersConj) (fun _ => rfl)]
+  exact W_eq_of_cast W (m + n) (n + m) (Nat.add_comm m n)
+    ((F.funcs m).conjTensorProduct (G.funcs n))
+    (((G.funcs n).conjTensorProduct (F.funcs m)).borchersConj)
+    (fun x => conjTP_eq_borchersConj_conjTP (F.funcs m) (G.funcs n) x)
+
+/-- The Wightman inner product satisfies Hermiticity: ⟨F, G⟩ = conj(⟨G, F⟩).
+
     This follows from the Hermiticity axiom on Wightman functions:
     W_n(f̃) = conj(W_n(f)) where f̃(x) = conj(f(rev(x))).
 
@@ -700,21 +811,7 @@ private theorem conjTP_eq_borchersConj_conjTP {d n m : ℕ}
 theorem WightmanInnerProduct_hermitian {d : ℕ} [NeZero d]
     (Wfn : WightmanFunctions d) (F G : BorchersSequence d) :
     WightmanInnerProduct d Wfn.W F G = starRingEnd ℂ (WightmanInnerProduct d Wfn.W G F) := by
-  simp only [WightmanInnerProduct, map_sum]
-  -- Swap the summation order in the LHS via sum_comm
-  rw [Finset.sum_comm]
-  -- After sum_comm + congr/ext, the goal for each (m, n) pair is:
-  -- W (m+n) (F_m.conjTP G_n) = conj(W (n+m) (G_n.conjTP F_m))
-  congr 1; ext n; congr 1; ext m
-  -- Step 1: Use Hermiticity axiom to rewrite conj(W(n+m)(h)) = W(n+m)(h.borchersConj)
-  rw [← Wfn.hermitian (n + m) ((G.funcs n).conjTensorProduct (F.funcs m))
-    (((G.funcs n).conjTensorProduct (F.funcs m)).borchersConj) (fun _ => rfl)]
-  -- Goal: W (m+n) (F_m.conjTP G_n) = W (n+m) ((G_n.conjTP F_m).borchersConj)
-  -- Step 2: Transport via m+n = n+m and the reversal identity
-  exact W_eq_of_cast Wfn.W (m + n) (n + m) (Nat.add_comm m n)
-    ((F.funcs m).conjTensorProduct (G.funcs n))
-    (((G.funcs n).conjTensorProduct (F.funcs m)).borchersConj)
-    (fun x => conjTP_eq_borchersConj_conjTP (F.funcs m) (G.funcs n) x)
+  exact WightmanInnerProduct_hermitian_of Wfn.W Wfn.hermitian F G
 
 /-- If at² + bt ≥ 0 for all real t, with a ≥ 0, then b = 0.
     This is the key algebraic lemma for the Cauchy-Schwarz argument. -/

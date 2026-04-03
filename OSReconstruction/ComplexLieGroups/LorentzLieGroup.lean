@@ -27,14 +27,15 @@ they do not depend on the Wightman physics module.
 * `LorentzLieGroup.minkowskiSignature` — the metric signature (-1, +1, ..., +1)
 * `LorentzLieGroup.minkowskiMatrix` — the Minkowski metric η = diag(-1, +1, ..., +1)
 * `LorentzLieGroup.IsLorentzMatrix` — predicate: Λᵀ η Λ = η
-* `LorentzLieGroup.LorentzGroup` — O(1,d) as a subtype of matrices
-* `LorentzLieGroup.RestrictedLorentzGroup` — SO⁺(1,d) (proper orthochronous)
+* `LorentzLieGroup.FullLorentzGroup` — O(1,d) as a subtype of matrices
+* `LorentzLieGroup.LorentzGroup` — SO⁺(1,d) (proper orthochronous)
+* `LorentzLieGroup.RestrictedLorentzGroup` — compatibility alias for `LorentzGroup`
 
 ## Main results
 
-* `LorentzGroup.instGroup` — group structure
-* `LorentzGroup.instTopologicalSpace` — subspace topology
-* `LorentzGroup.instIsTopologicalGroup` — topological group
+* `FullLorentzGroup.instGroup` — group structure on O(1,d)
+* `FullLorentzGroup.instTopologicalSpace` — subspace topology on O(1,d)
+* `FullLorentzGroup.instIsTopologicalGroup` — topological group on O(1,d)
 * `RestrictedLorentzGroup.isPathConnected` — SO⁺(1,d) is path-connected
 
 ## References
@@ -96,10 +97,10 @@ theorem IsLorentzMatrix.mul {Λ₁ Λ₂ : Matrix (Fin (d + 1)) (Fin (d + 1)) �
     simp only [Matrix.mul_assoc]
   rw [this, h₁, h₂]
 
-/-- The Lorentz group O(1,d) as a subtype of matrices. -/
-def LorentzGroup := { Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ // IsLorentzMatrix d Λ }
+/-- The full Lorentz group O(1,d) as a subtype of matrices. -/
+def FullLorentzGroup := { Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ // IsLorentzMatrix d Λ }
 
-instance : Coe (LorentzGroup d) (Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) := ⟨Subtype.val⟩
+instance : Coe (FullLorentzGroup d) (Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) := ⟨Subtype.val⟩
 
 /-- Lorentz matrices have det = ±1. -/
 theorem IsLorentzMatrix.det_sq_eq_one {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
@@ -190,7 +191,7 @@ theorem lorentzInv_isLorentz {Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ}
     _ = 1 * minkowskiMatrix d := by rw [hη]
     _ = minkowskiMatrix d := Matrix.one_mul _
 
-instance : Group (LorentzGroup d) where
+instance FullLorentzGroup.instGroup : Group (FullLorentzGroup d) where
   mul Λ₁ Λ₂ := ⟨Λ₁.val * Λ₂.val, IsLorentzMatrix.mul d Λ₁.prop Λ₂.prop⟩
   one := ⟨1, IsLorentzMatrix.one d⟩
   inv Λ := ⟨lorentzInv d Λ.val, lorentzInv_isLorentz d Λ.prop⟩
@@ -205,58 +206,80 @@ instance : Group (LorentzGroup d) where
 /-! ### Proper and orthochronous conditions -/
 
 /-- A Lorentz matrix is proper if det(Λ) = 1. -/
-def IsProperLorentz (Λ : LorentzGroup d) : Prop :=
+def IsProperLorentz (Λ : FullLorentzGroup d) : Prop :=
   (Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ).det = 1
 
 /-- A Lorentz matrix is orthochronous if Λ₀₀ ≥ 1. -/
-def IsOrthochronous (Λ : LorentzGroup d) : Prop :=
+def IsOrthochronous (Λ : FullLorentzGroup d) : Prop :=
   (Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0 ≥ 1
 
-/-- The restricted Lorentz group SO⁺(1,d) = proper orthochronous. -/
-def RestrictedLorentzGroup :=
-  { Λ : LorentzGroup d // IsProperLorentz d Λ ∧ IsOrthochronous d Λ }
+/-- The connected proper orthochronous Lorentz group SO⁺(1,d). -/
+def LorentzGroup :=
+  { Λ : FullLorentzGroup d // IsProperLorentz d Λ ∧ IsOrthochronous d Λ }
+
+/-- Compatibility alias for the older name used throughout the connectedness files. -/
+abbrev RestrictedLorentzGroup := LorentzGroup
+
+namespace LorentzGroup
+
+/-- Forgetful map from SO⁺(1,d) to the ambient full Lorentz group O(1,d). -/
+def toFull (Λ : LorentzGroup d) : FullLorentzGroup d := Λ.val
+
+instance : Coe (LorentzGroup d) (FullLorentzGroup d) := ⟨toFull (d := d)⟩
+
+/-- Properness is built into the connected Lorentz group. -/
+theorem det_eq_one (Λ : LorentzGroup d) :
+    (Λ.val : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ).det = 1 :=
+  Λ.prop.1
+
+/-- Orthochrony is built into the connected Lorentz group. -/
+theorem entry00_ge_one (Λ : LorentzGroup d) :
+    (Λ.val : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0 ≥ 1 :=
+  Λ.prop.2
+
+end LorentzGroup
 
 /-! ### Topology -/
 
-instance instTopologicalSpace : TopologicalSpace (LorentzGroup d) :=
+instance FullLorentzGroup.instTopologicalSpace : TopologicalSpace (FullLorentzGroup d) :=
   instTopologicalSpaceSubtype
 
 /-- The embedding into matrices is continuous. -/
-theorem continuous_val :
-    Continuous (Subtype.val : LorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) :=
+theorem FullLorentzGroup.continuous_val :
+    Continuous (Subtype.val : FullLorentzGroup d → Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) :=
   continuous_subtype_val
 
 /-- Multiplication is continuous. -/
-theorem continuous_mul :
-    Continuous (fun p : LorentzGroup d × LorentzGroup d => p.1 * p.2) := by
+theorem FullLorentzGroup.continuous_mul :
+    Continuous (fun p : FullLorentzGroup d × FullLorentzGroup d => p.1 * p.2) := by
   apply continuous_induced_rng.mpr
-  show Continuous (fun p : LorentzGroup d × LorentzGroup d => (p.1 * p.2).val)
-  have : (fun p : LorentzGroup d × LorentzGroup d => (p.1 * p.2).val) =
-      (fun p : LorentzGroup d × LorentzGroup d => p.1.val * p.2.val) := by
+  show Continuous (fun p : FullLorentzGroup d × FullLorentzGroup d => (p.1 * p.2).val)
+  have : (fun p : FullLorentzGroup d × FullLorentzGroup d => (p.1 * p.2).val) =
+      (fun p : FullLorentzGroup d × FullLorentzGroup d => p.1.val * p.2.val) := by
     ext p; rfl
   rw [this]
   exact (continuous_subtype_val.comp continuous_fst).mul
     (continuous_subtype_val.comp continuous_snd)
 
 /-- Inversion is continuous. -/
-theorem continuous_inv :
-    Continuous (fun Λ : LorentzGroup d => Λ⁻¹) := by
+theorem FullLorentzGroup.continuous_inv :
+    Continuous (fun Λ : FullLorentzGroup d => Λ⁻¹) := by
   apply continuous_induced_rng.mpr
-  show Continuous (fun Λ : LorentzGroup d => (Λ⁻¹).val)
+  show Continuous (fun Λ : FullLorentzGroup d => (Λ⁻¹).val)
   -- Λ⁻¹ = η Λᵀ η, which is continuous (transpose and const multiplication are continuous)
-  have : (fun Λ : LorentzGroup d => (Λ⁻¹).val) =
-      (fun Λ : LorentzGroup d => minkowskiMatrix d * Λ.val.transpose * minkowskiMatrix d) := by
+  have : (fun Λ : FullLorentzGroup d => (Λ⁻¹).val) =
+      (fun Λ : FullLorentzGroup d => minkowskiMatrix d * Λ.val.transpose * minkowskiMatrix d) := by
     ext Λ; rfl
   rw [this]
   exact (continuous_const.matrix_mul
     (continuous_subtype_val.matrix_transpose)).matrix_mul continuous_const
 
-instance instIsTopologicalGroup : IsTopologicalGroup (LorentzGroup d) where
-  continuous_mul := continuous_mul d
-  continuous_inv := continuous_inv d
+instance FullLorentzGroup.instIsTopologicalGroup : IsTopologicalGroup (FullLorentzGroup d) where
+  continuous_mul := FullLorentzGroup.continuous_mul d
+  continuous_inv := FullLorentzGroup.continuous_inv d
 
-instance RestrictedLorentzGroup.instTopologicalSpace :
-    TopologicalSpace (RestrictedLorentzGroup d) :=
+instance LorentzGroup.instTopologicalSpace :
+    TopologicalSpace (LorentzGroup d) :=
   instTopologicalSpaceSubtype
 
 /-! ### Connectedness -/
@@ -576,19 +599,19 @@ This is the connected-component version of orthochrony: along any continuous pat
 the Lorentz group, the inequality `Λ₀₀^2 ≥ 1` prevents crossing from `Λ₀₀ ≥ 1` to
 `Λ₀₀ ≤ -1` without passing through `(-1,1)`, which is impossible. -/
 theorem joined_entry00_ge_one
-    (Λ : LorentzGroup d) (hJ : Joined (1 : LorentzGroup d) Λ) :
+    (Λ : FullLorentzGroup d) (hJ : Joined (1 : FullLorentzGroup d) Λ) :
     ((Λ : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0) ≥ 1 := by
   rcases hJ with ⟨γ⟩
   let f : unitInterval → ℝ := fun t =>
-    ((γ t : LorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0
+    ((γ t : FullLorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0
   have hcont : Continuous f :=
     (continuous_subtype_val.comp γ.continuous).matrix_elem 0 0
   have hsq : ∀ t : unitInterval, (f t) ^ 2 ≥ 1 := by
     intro t
     exact IsLorentzMatrix.entry00_sq_ge_one (d := d)
-      (Λ := ((γ t : LorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ))
+      (Λ := ((γ t : FullLorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ))
       (show IsLorentzMatrix d
-        (((γ t : LorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)) from
+        (((γ t : FullLorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)) from
           (γ t).2)
   set S : Set unitInterval := {t | f t ≥ 1}
   set T : Set unitInterval := {t | f t ≤ -1}
@@ -616,10 +639,10 @@ theorem joined_entry00_ge_one
   have hS_open : IsOpen S := by
     rw [hS_eq_Tc]
     exact hT_closed.isOpen_compl
-  have hγ0 : (γ ⟨0, unitInterval.zero_mem⟩ : LorentzGroup d) = 1 := by
+  have hγ0 : (γ ⟨0, unitInterval.zero_mem⟩ : FullLorentzGroup d) = 1 := by
     exact γ.source
   have h0_ge : f ⟨0, unitInterval.zero_mem⟩ ≥ 1 := by
-    have hle : (((1 : LorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0) ≥ 1 := by
+    have hle : (((1 : FullLorentzGroup d) : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) 0 0) ≥ 1 := by
       rfl
     simpa [f, hγ0] using hle
   have hS_zero : (⟨0, unitInterval.zero_mem⟩ : unitInterval) ∈ S := by
@@ -630,7 +653,7 @@ theorem joined_entry00_ge_one
     exact Set.mem_univ _
   have h_end_f : f ⟨1, unitInterval.one_mem⟩ ≥ 1 := by
     simpa [S, Set.mem_setOf_eq] using h_end_mem
-  have hγ1 : (γ ⟨1, unitInterval.one_mem⟩ : LorentzGroup d) = Λ := by
+  have hγ1 : (γ ⟨1, unitInterval.one_mem⟩ : FullLorentzGroup d) = Λ := by
     exact γ.target
   simpa [f, hγ1] using h_end_f
 
@@ -1854,8 +1877,8 @@ theorem RestrictedLorentzGroup.isPathConnected :
 
 /-! ### Embedding into GL -/
 
-/-- Every Lorentz matrix is invertible, so we get an embedding into GL(d+1, ℝ). -/
-def toGL (Λ : LorentzGroup d) : GL (Fin (d + 1)) ℝ where
+/-- Every full Lorentz matrix is invertible, so we get an embedding into `GL(d+1, ℝ)`. -/
+def toGL (Λ : FullLorentzGroup d) : GL (Fin (d + 1)) ℝ where
   val := Λ.val
   inv := lorentzInv d Λ.val
   val_inv := mul_lorentzInv d Λ.prop
