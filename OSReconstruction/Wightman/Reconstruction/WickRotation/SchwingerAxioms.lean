@@ -2329,27 +2329,44 @@ private theorem hermitianRealOverlap_nonempty_of_two_le
     ⟨x, _, hxET, hrevET⟩
   exact ⟨x, hxET, by simpa [BHW.realEmbed] using hrevET⟩
 
+/-- The partial OS reflection map on `NPointDomain d (n + m)`: reverse the first `n`
+    indices and apply time-reflection `θ` to them, leaving the last `m` indices fixed.
+
+    Pointwise: for `i < n`, `partialOSReflection x i = θ(x_{n-1-i})`;
+    for `i ≥ n`, `partialOSReflection x i = x_i`. -/
+private def partialOSReflection (n m : ℕ) (x : NPointDomain d (n + m)) :
+    NPointDomain d (n + m) :=
+  fun i => if h : i.val < n
+    then timeReflection d (x ⟨n - 1 - i.val, by omega⟩)
+    else x i
+
+/-- The boundary value identity for F_ext evaluated at partially OS-reflected
+    Wick-rotated points. This is the deep analytic content of the OS ↔ Wightman
+    inner product comparison: it asserts that integrating the BHW extension at
+    mixed backward/forward Wick-rotated points against a test function recovers
+    the Wightman distributional pairing.
+
+    Blocked by: distributional contour deformation infrastructure
+    (Fourier-Laplace representation + Paley-Wiener).
+
+    Ref: OS I, Section 5; Streater-Wightman §3.4 -/
+private theorem wickRotatedBoundaryPairing_partialOSReflection_eq_wightman
+    (Wfn : WightmanFunctions d) (n m : ℕ) (f : SchwartzNPoint d (n + m)) :
+    ∫ y : NPointDomain d (n + m),
+      (W_analytic_BHW Wfn (n + m)).val
+        (fun k => wickRotatePoint ((partialOSReflection (d := d) n m y) k)) *
+      (f y) =
+    Wfn.W (n + m) f := by
+  sorry
+
 /-- Each (n,m)-term of the OS inner product with the constructed Schwinger functions
     equals the corresponding term of the Wightman inner product.
 
-    The proof uses three key ingredients:
-    1. **Change of variables** (time reflection θ in first n coordinates):
-       converts osConj(f_n) = conj(f_n(θ·)) to conj(f_n(·)), and changes
-       F_ext evaluation from forward-tube to backward-tube for first n args.
-
-    2. **F_ext permutation invariance** (BHW property 4): allows reordering
-       the first n arguments, converting conj(f_n(y₁,...,yₙ)) to
-       conj(f_n(yₙ,...,y₁)) = borchersConj(f_n)(y₁,...,yₙ).
-
-    3. **Boundary value identity**: the integral of F_ext at mixed
-       backward/forward Euclidean points against a test function equals
-       the Wightman distributional pairing W(n+m)(·).
-
-    Steps 1-2 are provable from existing infrastructure. Step 3 is the
-    deep analytic content requiring the distributional boundary value theory
-    (Fourier-Laplace representation + Paley-Wiener).
-
-    Blocked by: `boundary_values_tempered` and distributional BV infrastructure.
+    The proof combines steps 1-2 (change of variables) into a single
+    measure-preserving substitution via `partialOSReflection`, which transforms
+    `osConjTensorProduct` into `conjTensorProduct`. The remaining step 3
+    (boundary value identity) is delegated to
+    `wickRotatedBoundaryPairing_partialOSReflection_eq_wightman`.
 
     Ref: OS I, Section 5; Streater-Wightman §3.4 -/
 theorem schwingerExtension_os_term_eq_wightman_term (Wfn : WightmanFunctions d)
@@ -2360,7 +2377,131 @@ theorem schwingerExtension_os_term_eq_wightman_term (Wfn : WightmanFunctions d)
       OrderedPositiveTimeRegion d m) :
     wickRotatedBoundaryPairing Wfn (n + m) (f_n.osConjTensorProduct f_m) =
     Wfn.W (n + m) (f_n.conjTensorProduct f_m) := by
-  sorry
+  -- Unfold the LHS to an integral of F_ext at Wick-rotated points
+  simp only [wickRotatedBoundaryPairing]
+  -- Step 1+2: Change of variables by partialOSReflection.
+  -- This is an involution that reverses + time-reflects the first n indices.
+  -- It transforms osConjTensorProduct into conjTensorProduct.
+  let φ : NPointDomain d (n + m) → NPointDomain d (n + m) :=
+    partialOSReflection (d := d) n m
+  -- φ is measurable (it permutes and negates coordinates)
+  have hφ_meas : Measurable φ := by
+    apply measurable_pi_lambda; intro i
+    simp only [φ, partialOSReflection]
+    by_cases hi : i.val < n
+    · simp [hi]
+      exact (timeReflection_measurePreserving (d := d)).measurable.comp
+        ((measurable_pi_apply (⟨n - 1 - i.val, by omega⟩ : Fin (n + m))))
+    · simp [hi]
+      exact measurable_pi_apply i
+  -- φ is an involution
+  have hφ_inv : ∀ x, φ (φ x) = x := by
+    intro x; funext i
+    simp only [φ, partialOSReflection]
+    by_cases hi : i.val < n
+    · have hi' : n - 1 - i.val < n := by omega
+      simp only [hi, hi', dite_true]
+      -- The intermediate Fin ⟨n-1-(n-1-i.val), _⟩ equals i
+      have hfin : (⟨n - 1 - (n - 1 - i.val), (by omega : n - 1 - (n - 1 - i.val) < n + m)⟩ : Fin (n + m)) = i := by
+        ext; simp only [Fin.val_mk]; omega
+      rw [hfin, timeReflection_timeReflection]
+    · simp [hi]
+  -- Build the MeasurableEquiv from the involution
+  let eφ : NPointDomain d (n + m) ≃ᵐ NPointDomain d (n + m) :=
+    { toEquiv := {
+        toFun := φ
+        invFun := φ
+        left_inv := hφ_inv
+        right_inv := hφ_inv }
+      measurable_toFun := hφ_meas
+      measurable_invFun := hφ_meas }
+  -- φ is measure-preserving: decompose as (partial time-reflection) ∘ (partial reversal)
+  have hφ_mp : MeasureTheory.MeasurePreserving (⇑eφ)
+      MeasureTheory.volume MeasureTheory.volume := by
+    -- Step A: define the permutation that reverses first n indices, fixes last m
+    let σ : Equiv.Perm (Fin (n + m)) :=
+      { toFun := fun i => if h : i.val < n then ⟨n - 1 - i.val, by omega⟩ else i
+        invFun := fun i => if h : i.val < n then ⟨n - 1 - i.val, by omega⟩ else i
+        left_inv := by
+          intro i; ext; simp only
+          by_cases hi : i.val < n
+          · simp [hi, show n - 1 - i.val < n by omega]; omega
+          · simp [hi]
+        right_inv := by
+          intro i; ext; simp only
+          by_cases hi : i.val < n
+          · simp [hi, show n - 1 - i.val < n by omega]; omega
+          · simp [hi] }
+    -- Step B: define partial time-reflection (θ on first n, id on last m)
+    let θ_partial : NPointDomain d (n + m) → NPointDomain d (n + m) :=
+      fun x i => if i.val < n then timeReflection d (x i) else x i
+    -- φ = θ_partial ∘ (· ∘ σ)
+    have hφ_comp : (⇑eφ : NPointDomain d (n + m) → NPointDomain d (n + m)) =
+        θ_partial ∘ (fun x i => x (σ i)) := by
+      funext x i
+      simp only [Function.comp, θ_partial]
+      show partialOSReflection (d := d) n m x i =
+        if i.val < n then timeReflection d (x (σ i)) else x (σ i)
+      simp only [partialOSReflection, σ]
+      by_cases hi : i.val < n
+      · simp [hi, show n - 1 - i.val < n by omega]
+      · simp [hi]
+    rw [hφ_comp]
+    -- Step C: (· ∘ σ) is measure-preserving (permutation of factors)
+    have hσ_mp : MeasureTheory.MeasurePreserving
+        (fun x : NPointDomain d (n + m) => fun i => x (σ i))
+        MeasureTheory.volume MeasureTheory.volume :=
+      (MeasureTheory.volume_measurePreserving_piCongrLeft
+        (fun _ : Fin (n + m) => Fin (d + 1) → ℝ) σ).symm
+    -- Step D: θ_partial is measure-preserving (per-factor θ or id)
+    have hθ_mp : MeasureTheory.MeasurePreserving θ_partial
+        MeasureTheory.volume MeasureTheory.volume := by
+      have : θ_partial = fun x : NPointDomain d (n + m) => fun i =>
+          (if i.val < n then timeReflection d else id) (x i) := by
+        funext x i; simp only [θ_partial]; split <;> simp [id]
+      rw [this]
+      exact MeasureTheory.volume_preserving_pi
+        (fun i : Fin (n + m) => by
+          by_cases hi : i.val < n
+          · simpa [hi] using timeReflection_measurePreserving (d := d)
+          · simpa [hi] using MeasureTheory.MeasurePreserving.id MeasureTheory.volume)
+    exact hθ_mp.comp hσ_mp
+  -- The test function identity:
+  -- osConjTensorProduct f_n f_m (φ y) = conjTensorProduct f_n f_m y
+  have htest : ∀ y : NPointDomain d (n + m),
+      (f_n.osConjTensorProduct f_m) (φ y) = (f_n.conjTensorProduct f_m) y := by
+    intro y
+    simp only [SchwartzNPoint.osConjTensorProduct, SchwartzNPoint.osConj_apply,
+      SchwartzMap.tensorProduct_apply, SchwartzMap.conjTensorProduct_apply]
+    congr 1
+    · -- First factor: conj(f_n(θ(splitFirst(φ y)))) = conj(f_n(rev(splitFirst y)))
+      congr 1; congr 1; funext i
+      simp only [φ, partialOSReflection, splitFirst, timeReflectionN]
+      have hi : (Fin.castAdd m i).val < n := by simp [Fin.val_castAdd]
+      simp only [hi, dite_true]
+      rw [timeReflection_timeReflection]
+      congr 1; ext
+      simp only [Fin.val_castAdd, Fin.val_rev]
+      omega
+    · -- Second factor: f_m(splitLast(φ y)) = f_m(splitLast y)
+      congr 1; funext j
+      simp only [φ, partialOSReflection, splitLast]
+      have hj : ¬ (Fin.natAdd n j).val < n := by
+        simp only [Fin.val_natAdd]; omega
+      simp [hj]
+  -- Perform the change of variables
+  have hrw : ∫ x, (W_analytic_BHW Wfn (n + m)).val (fun k => wickRotatePoint (x k)) *
+        (f_n.osConjTensorProduct f_m) x =
+      ∫ y, (W_analytic_BHW Wfn (n + m)).val (fun k => wickRotatePoint ((φ y) k)) *
+        (f_n.conjTensorProduct f_m) y := by
+    have heφ : ∀ y, eφ y = φ y := fun _ => rfl
+    rw [← hφ_mp.integral_comp' (f := eφ)]
+    congr 1; funext y
+    simp only [heφ, htest y]
+  rw [hrw]
+  -- Step 3: boundary value identity (delegated)
+  exact wickRotatedBoundaryPairing_partialOSReflection_eq_wightman Wfn n m
+    (f_n.conjTensorProduct f_m)
 
 /-- The OS inner product for Wick-rotated Schwinger functions equals the
     Wightman inner product for test functions supported at positive times.
