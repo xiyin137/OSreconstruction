@@ -2,6 +2,8 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputACommonB
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightman
 import Mathlib.MeasureTheory.Measure.OpenPos
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Complex MeasureTheory

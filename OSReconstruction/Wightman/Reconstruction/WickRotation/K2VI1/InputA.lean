@@ -2,6 +2,8 @@ import OSReconstruction.Wightman.Reconstruction.TwoPointKernelFunctional
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAOneVariableUniqueness
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Support
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Complex Filter MeasureTheory
@@ -231,12 +233,18 @@ theorem descended_center_approxIdentity_integral_tendsto_of_continuousOn_fixedSt
   have hEqInt :
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0 =
         ∫ x : SpacetimeDim d, χ_seq n x * (ψ x - ψ 0) := by
+    have hconst_int :
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x = ψ 0 := by
+      calc
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x
+            = (ψ 0) * ∫ x : SpacetimeDim d, χ_seq n x := by
+                exact MeasureTheory.integral_const_mul (ψ 0) (fun x : SpacetimeDim d => χ_seq n x)
+        _ = ψ 0 := by simpa [hχ_seq_int n]
     calc
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0
           = (∫ x : SpacetimeDim d, χ_seq n x * ψ x) -
               ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x := by
-                rw [MeasureTheory.integral_const_mul, hχ_seq_int n]
-                ring
+                rw [hconst_int]
       _ = ∫ x : SpacetimeDim d, ((χ_seq n x * ψ x) - (ψ 0) * χ_seq n x) := by
             rw [← MeasureTheory.integral_sub hψ_prod
               ((SchwartzMap.integrable (χ_seq n)).const_mul (ψ 0))]

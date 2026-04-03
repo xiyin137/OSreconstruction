@@ -21,6 +21,8 @@ mathematical gaps on the OS/Stone route:
 - strong continuity on the Hilbert completion.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open MeasureTheory Complex
@@ -1477,7 +1479,7 @@ private theorem tendsto_osSpatialTranslateHilbert_axis_nhds_zero
       have hcore_event :
           ∀ᶠ t : ℝ in nhds 0,
             ‖(osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre‖ < ε / 5 := by
-        simpa [xF0_pre, Real.dist_eq] using (Metric.tendsto_nhds.1 hcore (ε / 5) hε5)
+        simpa [xF0_pre, dist_eq_norm] using (Metric.tendsto_nhds.1 hcore (ε / 5) hε5)
       filter_upwards [hcore_event] with t ht
       rw [dist_eq_norm] at hy_close ⊢
       have hfirst :

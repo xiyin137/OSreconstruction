@@ -39,6 +39,8 @@ The downstream analytic-continuation stack is now split across:
 open scoped Classical NNReal
 open BigOperators Finset
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 set_option linter.unusedSectionVars false
@@ -202,7 +204,6 @@ private theorem translateNPointDomain_antilipschitz (a : SpacetimeDim d) {n : �
         translateNPointDomain (d := d) (n := n) a y := by
     ext i μ
     simp [translateNPointDomain, sub_eq_add_neg]
-    abel_nf
   simpa [one_mul, dist_eq_norm] using le_of_eq (congrArg norm hsub)
 
 omit [NeZero d] in
@@ -1106,13 +1107,14 @@ private theorem continuousOn_os_pairing_term_timeShift_nonneg_of_isCompactSuppor
   convert hscalar_cont using 1
   ext t
   simp [Set.restrict, hscalar, hterm]
-  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
+  simpa using congrArg (OS.S (n + m))
+    (ZeroDiagonalSchwartz.ofClassical_of_vanishes
       (f := f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t.1 g))
       (VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
         (d := d) (n := n) (m := m) (f := f)
         (g := timeShiftSchwartzNPoint (d := d) t.1 g) hf_pos
         (timeShiftSchwartzNPoint_preserves_ordered_positive_tsupport_nonneg
-          (d := d) t.1 t.2 g hg_pos))]
+          (d := d) t.1 t.2 g hg_pos)))
 
 private theorem continuousOn_os_pairing_term_timeShift_of_isCompactSupport
     (OS : OsterwalderSchraderAxioms d) {n m : ℕ}
@@ -2292,29 +2294,33 @@ theorem spectrum_osTimeShiftHilbert_subset_Icc
     (t : ℝ) (ht : 0 < t) :
     spectrum ℝ (osTimeShiftHilbert (d := d) OS lgc t ht) ⊆ Set.Icc 0 1 := by
   intro x hx
-  constructor
-  · exact spectrum_nonneg_of_nonneg
-      (osTimeShiftHilbert_nonneg (d := d) OS lgc t ht) hx
-  · have hnorm_le :
-        ‖osTimeShiftHilbert (d := d) OS lgc t ht‖ ≤ 1 :=
-      osTimeShiftHilbert_norm_le_one (d := d) OS lgc t ht
-    have hle_one :
-        osTimeShiftHilbert (d := d) OS lgc t ht ≤ 1 :=
-      (CStarAlgebra.norm_le_one_iff_of_nonneg
-        (osTimeShiftHilbert (d := d) OS lgc t ht)
-        (osTimeShiftHilbert_nonneg (d := d) OS lgc t ht)).1 hnorm_le
-    have hspectrum_le :
-        ∀ y ∈ spectrum ℝ (osTimeShiftHilbert (d := d) OS lgc t ht), y ≤ 1 :=
-      (le_algebraMap_iff_spectrum_le
-        (R := ℝ)
-        (a := osTimeShiftHilbert (d := d) OS lgc t ht)
-        (r := 1)
-        (ha := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc t ht)).1
-        (by
-          show osTimeShiftHilbert (d := d) OS lgc t ht ≤
-            algebraMap ℝ (OSHilbertSpace OS →L[ℂ] OSHilbertSpace OS) 1
-          simpa using hle_one)
-    exact hspectrum_le x hx
+  obtain hH | hH := subsingleton_or_nontrivial (OSHilbertSpace OS)
+  · exfalso
+    rw [spectrum.of_subsingleton (R := ℝ) (a := osTimeShiftHilbert (d := d) OS lgc t ht)] at hx
+    exact hx
+  · haveI : Nontrivial (OSHilbertSpace OS) := hH
+    letI : NontrivialTopology (OSHilbertSpace OS) := inferInstance
+    constructor
+    · exact spectrum_nonneg_of_nonneg
+        (osTimeShiftHilbert_nonneg (d := d) OS lgc t ht) hx
+    · have hnorm_le :
+          ‖osTimeShiftHilbert (d := d) OS lgc t ht‖ ≤ 1 :=
+        osTimeShiftHilbert_norm_le_one (d := d) OS lgc t ht
+      have hspectrum_le :
+          ∀ y ∈ spectrum ℝ (osTimeShiftHilbert (d := d) OS lgc t ht), y ≤ 1 :=
+        by
+          intro y hy
+          have hy_nonneg : 0 ≤ y :=
+            spectrum_nonneg_of_nonneg
+              (osTimeShiftHilbert_nonneg (d := d) OS lgc t ht) hy
+          haveI : NormOneClass (OSHilbertSpace OS →L[ℂ] OSHilbertSpace OS) := inferInstance
+          have hy_norm_le : ‖y‖ ≤ ‖osTimeShiftHilbert (d := d) OS lgc t ht‖ :=
+            spectrum.norm_le_norm_of_mem hy
+          have hy_le_norm : y ≤ ‖osTimeShiftHilbert (d := d) OS lgc t ht‖ := by
+            rw [Real.norm_of_nonneg hy_nonneg] at hy_norm_le
+            exact hy_norm_le
+          exact hy_le_norm.trans hnorm_le
+      exact hspectrum_le x hx
 
 private theorem osTimeShiftHilbert_reciprocal_eq_nnrpow
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)

@@ -19,6 +19,8 @@ comparison material does not continue to accumulate in the giant support file.
 open scoped Classical NNReal
 open BigOperators Finset
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 variable {d : ℕ} [NeZero d]
@@ -1263,7 +1265,8 @@ private theorem bvt_W_one_eq_const_integral_local
             (z := fun k μ =>
               ↑(x k μ) + ε * ↑(canonicalForwardConeDirection (d := d) 1 k μ) * Complex.I)]
       _ = c * ∫ x : NPointDomain d 1, f x := by
-          rw [MeasureTheory.integral_const_mul]
+          simpa using
+            (MeasureTheory.integral_const_mul c (fun x : NPointDomain d 1 => f x))
   have hconst :
       Filter.Tendsto
         (fun _ : ℝ => c * ∫ x : NPointDomain d 1, f x)
@@ -1308,7 +1311,8 @@ private theorem schwinger_one_eq_const_integral_local
           rw [bvt_F_one_eq_zero_local (d := d) (OS := OS) (lgc := lgc)
             (z := fun k => wickRotatePoint (x k))]
     _ = c * ∫ x : NPointDomain d 1, f x := by
-          rw [MeasureTheory.integral_const_mul]
+          simpa using
+            (MeasureTheory.integral_const_mul c (fun x : NPointDomain d 1 => f x))
 
 /-- In one variable, translation invariance forces the reconstructed boundary
 value functional to agree with the Euclidean Schwinger functional on all
@@ -2882,7 +2886,10 @@ theorem boundary_ray_hermitian_pairing_of_F_negCanonical
       starRingEnd ℂ
         (∫ x : NPointDomain d n,
           F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
-            rw [← _root_.integral_conj]
+            simpa using
+              (_root_.integral_conj
+                (f := fun x : NPointDomain d n =>
+                  (F_n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) * f x))
 
 private theorem bv_hermiticity_transfer_of_F_reflect
     (n : ℕ)
