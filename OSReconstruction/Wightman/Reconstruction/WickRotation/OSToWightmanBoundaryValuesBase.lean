@@ -427,6 +427,199 @@ theorem bvt_exists_twoPoint_xiShift_holomorphicValue
       (χ := χ) (h := h)
       (hχ_pos := hχ_pos) (hh_pos := hh_pos) (hh_compact := hh_compact)
 
+omit [NeZero d] in
+private theorem timeShiftSchwartzNPoint_twoPointDifferenceLift_eq_local
+    (χ h : SchwartzSpacetime d) (t : ℝ) :
+    timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h) =
+      twoPointDifferenceLift (SCV.translateSchwartz (- timeShiftVec d t) χ) h := by
+  ext x
+  have hdiff :
+      (x 1 - timeShiftVec d t) - (x 0 - timeShiftVec d t) = x 1 - x 0 := by
+    ext μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [timeShiftVec]
+    · simp [timeShiftVec, hμ]
+  rw [timeShiftSchwartzNPoint_apply, twoPointDifferenceLift_apply,
+    twoPointDifferenceLift_apply, SCV.translateSchwartz_apply]
+  congr 1
+  rw [hdiff]
+
+omit [NeZero d] in
+private theorem tsupport_precomp_subset_proj0_local
+    (χ : SchwartzSpacetime d) :
+    tsupport (fun x : NPointDomain d 2 => χ (x 0)) ⊆
+      (fun x : NPointDomain d 2 => x 0) ⁻¹' tsupport (χ : SpacetimeDim d → ℂ) := by
+  refine closure_minimal ?_ ((isClosed_tsupport _).preimage (continuous_apply 0))
+  intro x hx
+  exact subset_closure (by simpa [Function.mem_support] using hx)
+
+omit [NeZero d] in
+private theorem tsupport_twoPointDifferenceLift_subset_proj0_preimage_local
+    (χ h : SchwartzSpacetime d) :
+    tsupport ((twoPointDifferenceLift χ h : SchwartzNPoint d 2) :
+        NPointDomain d 2 → ℂ) ⊆
+      (fun x : NPointDomain d 2 => x 0) ⁻¹' tsupport (χ : SpacetimeDim d → ℂ) := by
+  refine (tsupport_mul_subset_left
+    (f := fun x : NPointDomain d 2 => χ (x 0))
+    (g := fun x : NPointDomain d 2 => h (x 1 - x 0))).trans ?_
+  exact tsupport_precomp_subset_proj0_local (d := d) χ
+
+omit [NeZero d] in
+private theorem tsupport_twoPointDifferenceLift_subset_orderedPositiveTimeRegion_local
+    (χ h : SchwartzSpacetime d)
+    (hχ_pos : tsupport (χ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0}) :
+    tsupport ((twoPointDifferenceLift χ h : SchwartzNPoint d 2) :
+        NPointDomain d 2 → ℂ) ⊆ OrderedPositiveTimeRegion d 2 := by
+  intro x hx
+  have hx0 : x 0 ∈ tsupport (χ : SpacetimeDim d → ℂ) := by
+    exact (tsupport_twoPointDifferenceLift_subset_proj0_preimage_local (d := d) χ h hx)
+  have hdiff : x 1 - x 0 ∈ tsupport (h : SpacetimeDim d → ℂ) := by
+    exact (tsupport_twoPointDifferenceLift_subset_diff_preimage χ h hx)
+  have hx0_pos : 0 < (x 0) 0 := hχ_pos hx0
+  have hdiff_pos : 0 < (x 1 - x 0) 0 := hh_pos hdiff
+  intro i
+  fin_cases i
+  · refine ⟨hx0_pos, ?_⟩
+    intro j hij
+    fin_cases j
+    · exact (lt_irrefl _ hij).elim
+    · simpa [sub_eq_add_neg] using hdiff_pos
+  · refine ⟨?_, ?_⟩
+    · have hcoord : (x 1 - x 0) 0 = x 1 0 - x 0 0 := by
+        simp
+      have hx1_eq : x 1 0 = x 0 0 + (x 1 - x 0) 0 := by
+        linarith
+      have hx1_pos : 0 < x 1 0 := by
+        nlinarith [hx1_eq, hx0_pos, hdiff_pos]
+      simpa using hx1_pos
+    · intro j hij
+      fin_cases j
+      · exact (Fin.not_lt_zero _ hij).elim
+      · exact (lt_irrefl _ hij).elim
+
+/-- On the admissible two-point center/difference shell with positive-time
+center and positive-time difference support, the base-time `xiShift 0 0`
+variable is already trivial: every positive real slice equals the same
+Schwinger value. This isolates the remaining two-point comparison content to
+the genuine difference-time direction rather than the common center-time
+direction. -/
+theorem bvt_twoPointDifferenceLift_baseTime_eq_constant_of_positiveSupport_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (χ h : SchwartzSpacetime d)
+    (hχ_pos : tsupport (χ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (t : ℝ) (ht : 0 < t) :
+    ∫ y : NPointDomain d 2,
+      bvt_F OS lgc 2
+        (xiShift 0 0 (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+        (twoPointDifferenceLift χ h) y =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
+  let f0fun : NPointDomain d 0 → ℂ := fun _ => 1
+  have hf0_compact : HasCompactSupport f0fun := by
+    refine HasCompactSupport.of_support_subset_isCompact
+      (K := (Set.univ : Set (NPointDomain d 0))) ?_ ?_
+    · exact Set.Subsingleton.isCompact Set.subsingleton_univ
+    · intro x hx
+      simp
+  have hf0_smooth : ContDiff ℝ (((⊤ : ℕ∞) : WithTop ℕ∞)) f0fun := by
+    simpa [f0fun] using
+      (contDiff_const :
+        ContDiff ℝ (((⊤ : ℕ∞) : WithTop ℕ∞))
+          (fun _ : NPointDomain d 0 => (1 : ℂ)))
+  let f0 : SchwartzNPoint d 0 := hf0_compact.toSchwartzMap hf0_smooth
+  have hf0_apply : ∀ x : NPointDomain d 0, f0 x = 1 := by
+    intro x
+    rfl
+  have hf0_ord :
+      tsupport (f0 : NPointDomain d 0 → ℂ) ⊆ OrderedPositiveTimeRegion d 0 := by
+    intro x hx
+    simp [OrderedPositiveTimeRegion]
+  have hg_ord :
+      tsupport (((twoPointDifferenceLift χ h : SchwartzNPoint d 2) :
+          NPointDomain d 2 → ℂ)) ⊆ OrderedPositiveTimeRegion d 2 :=
+    tsupport_twoPointDifferenceLift_subset_orderedPositiveTimeRegion_local
+      (d := d) χ h hχ_pos hh_pos
+  have h0 :
+      (0 : SpacetimeDim d) ∉ tsupport (h : SpacetimeDim d → ℂ) := by
+    intro h0mem
+    have hnot : ¬ 0 < ((0 : SpacetimeDim d) 0) := by simp
+    exact hnot (hh_pos h0mem)
+  have hshift :
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+        (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h))) =
+      OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := by
+    rw [timeShiftSchwartzNPoint_twoPointDifferenceLift_eq_local (d := d) χ h t]
+    exact (OsterwalderSchraderAxioms.schwinger_twoPointDifferenceLift_translation_invariant
+      (d := d) (OS := OS) (a := -timeShiftVec d t) (χ := χ) (h := h) h0).symm
+  calc
+    ∫ y : NPointDomain d 2,
+        bvt_F OS lgc 2
+          (xiShift 0 0 (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+          (twoPointDifferenceLift χ h) y
+      = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (f0.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h)))) := by
+          symm
+          have hosconj0 : SchwartzNPoint.osConj (d := d) (n := 0) f0 = f0 := by
+            ext x
+            simp [SchwartzNPoint.osConj_apply, hf0_apply]
+          have htensor :
+              f0.osConjTensorProduct (twoPointDifferenceLift χ h) =
+                twoPointDifferenceLift χ h := by
+            ext y
+            have hsplit : splitLast 0 2 y = y := by
+              ext i
+              simp [splitLast]
+            calc
+              (f0.osConjTensorProduct (twoPointDifferenceLift χ h)) y
+                  = ((f0.tensorProduct (twoPointDifferenceLift χ h)) y) := by
+                      simp [SchwartzNPoint.osConjTensorProduct, hosconj0]
+              _ = f0 (splitFirst 0 2 y) * (twoPointDifferenceLift χ h) (splitLast 0 2 y) := by
+                    rw [SchwartzMap.tensorProduct_apply]
+              _ = 1 * (twoPointDifferenceLift χ h) y := by
+                    simp [hf0_apply, hsplit]
+              _ = (twoPointDifferenceLift χ h) y := by simp
+          simpa [htensor] using
+            (schwinger_simpleTensor_timeShift_eq_xiShift
+              (d := d) (OS := OS) (n := 0) (m := 2) (hm := by omega)
+              (Ψ := bvt_F OS lgc 2)
+              (hΨ_euclid := bvt_euclidean_restriction (d := d) OS lgc 2)
+              (f := f0) (hf_ord := hf0_ord)
+              (g := twoPointDifferenceLift χ h) (hg_ord := hg_ord)
+              (t := t) ht)
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical
+          (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h))) := by
+          have htensor_shift :
+              f0.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t
+                (twoPointDifferenceLift χ h)) =
+                timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h) := by
+            ext y
+            have hosconj0 : SchwartzNPoint.osConj (d := d) (n := 0) f0 = f0 := by
+              ext x
+              simp [SchwartzNPoint.osConj_apply, hf0_apply]
+            have hsplit : splitLast 0 2 y = y := by
+              ext i
+              simp [splitLast]
+            calc
+              (f0.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t
+                  (twoPointDifferenceLift χ h))) y
+                  = ((f0.tensorProduct (timeShiftSchwartzNPoint (d := d) t
+                      (twoPointDifferenceLift χ h))) y) := by
+                        simp [SchwartzNPoint.osConjTensorProduct, hosconj0]
+              _ = f0 (splitFirst 0 2 y) *
+                    (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h))
+                      (splitLast 0 2 y) := by
+                    rw [SchwartzMap.tensorProduct_apply]
+              _ = 1 *
+                    (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h)) y := by
+                    simp [hf0_apply, hsplit]
+              _ = (timeShiftSchwartzNPoint (d := d) t (twoPointDifferenceLift χ h)) y := by
+                    simp
+          simp [htensor_shift]
+    _ = OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) := hshift
+
 /-- Fixed-time two-point `xiShift` pairings for the actual BV witness already
 depend on the center test only through its integral. This is the concrete
 `k = 2` fixed-time shell-collapse statement on the production witness `bvt_F`,
@@ -2598,6 +2791,177 @@ theorem bvt_F_translationInvariant (OS : OsterwalderSchraderAxioms d)
       bvt_F OS lgc n (fun j => z j + a) = bvt_F OS lgc n z :=
   (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.1
 
+/-- The one-variable difference kernel seen on the Euclidean two-point
+base-time shell after quotienting out the common translated point. -/
+def bvt_twoPointImaginaryAxisDifferenceKernel_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
+    SpacetimeDim d → ℂ :=
+  fun ξ =>
+    bvt_F OS lgc 2 (fun k μ =>
+      if _h0 : k = 0 then 0 else wickRotatePoint ξ μ)
+
+/-- On the two-point Euclidean base-time shell, the center variable already
+factors out by translation invariance of `bvt_F`. The remaining shell is the
+pure imaginary-axis one-variable kernel `ξ ↦ bvt_F(0, wickRotatePoint ξ)`. -/
+theorem bvt_twoPointDifferenceLift_baseTime_pairing_eq_imaginaryAxisKernel_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (χ h : SchwartzSpacetime d) (t : ℝ) :
+    ∫ y : NPointDomain d 2,
+      bvt_F OS lgc 2
+        (xiShift 0 0 (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+        (twoPointDifferenceLift χ h) y =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointImaginaryAxisDifferenceKernel_local OS lgc ξ * h ξ := by
+  let K : SpacetimeDim d → ℂ := bvt_twoPointImaginaryAxisDifferenceKernel_local OS lgc
+  calc
+    ∫ y : NPointDomain d 2,
+        bvt_F OS lgc 2
+          (xiShift 0 0 (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+          (twoPointDifferenceLift χ h) y
+      =
+        ∫ z : NPointDomain d 2,
+          bvt_F OS lgc 2
+            (xiShift 0 0
+              (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+              ((t : ℂ) * Complex.I)) *
+            (χ (z 0) * h (z 1)) := by
+          simpa using
+            (integral_mul_twoPointDifferenceLift_eq_centerDiff
+              (d := d)
+              (Ψ := fun y : NPointDomain d 2 =>
+                bvt_F OS lgc 2
+                  (xiShift 0 0 (fun i => wickRotatePoint (y i))
+                    ((t : ℂ) * Complex.I)))
+              χ h)
+    _ =
+        ∫ z : NPointDomain d 2,
+          K (z 1) * (χ (z 0) * h (z 1)) := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with z
+          have hdecomp :
+              xiShift 0 0
+                  (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+                  ((t : ℂ) * Complex.I) =
+                (fun j =>
+                  (fun μ =>
+                    if _h0 : j = 0 then 0 else wickRotatePoint (z 1) μ) +
+                  (fun μ =>
+                    wickRotatePoint (z 0) μ +
+                      if μ = 0 then (t : ℂ) * Complex.I else 0)) := by
+            funext j
+            funext μ
+            fin_cases j
+            · by_cases hμ : μ = 0
+              · subst hμ
+                simp [xiShift, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  wickRotatePoint]
+              · simp [xiShift, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  wickRotatePoint, hμ]
+            · by_cases hμ : μ = 0
+              · subst hμ
+                simp [xiShift, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  wickRotatePoint, add_comm, add_left_comm, add_assoc]
+                ring
+              · simp [xiShift, twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  wickRotatePoint, hμ, add_comm, add_left_comm, add_assoc]
+          calc
+            bvt_F OS lgc 2
+                (xiShift 0 0
+                  (fun i => wickRotatePoint (((twoPointCenterDiffCLE d) z) i))
+                  ((t : ℂ) * Complex.I)) *
+                (χ (z 0) * h (z 1))
+              =
+                bvt_F OS lgc 2
+                  (fun j =>
+                    (fun μ =>
+                      if _h0 : j = 0 then 0 else wickRotatePoint (z 1) μ) +
+                    (fun μ =>
+                      wickRotatePoint (z 0) μ +
+                        if μ = 0 then (t : ℂ) * Complex.I else 0)) *
+                  (χ (z 0) * h (z 1)) := by
+                    rw [hdecomp]
+            _ = K (z 1) * (χ (z 0) * h (z 1)) := by
+                  have htrans :
+                      bvt_F OS lgc 2
+                        (fun j =>
+                          (fun μ =>
+                            if _h0 : j = 0 then 0 else wickRotatePoint (z 1) μ) +
+                          (fun μ =>
+                            wickRotatePoint (z 0) μ +
+                              if μ = 0 then (t : ℂ) * Complex.I else 0)) =
+                      bvt_F OS lgc 2
+                        (fun j μ =>
+                          if _h0 : j = 0 then 0 else wickRotatePoint (z 1) μ) := by
+                    simpa using
+                      bvt_F_translationInvariant (d := d) OS lgc 2
+                        (fun j μ =>
+                          if _h0 : j = 0 then 0 else wickRotatePoint (z 1) μ)
+                        (fun μ =>
+                          wickRotatePoint (z 0) μ +
+                            if μ = 0 then (t : ℂ) * Complex.I else 0)
+                  rw [htrans]
+                  simp [K, bvt_twoPointImaginaryAxisDifferenceKernel_local]
+    _ =
+        (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+          let eprod : NPointDomain d 2 ≃ᵐ (SpacetimeDim d × SpacetimeDim d) :=
+            MeasurableEquiv.finTwoArrow
+          have heprod :
+              MeasureTheory.MeasurePreserving eprod
+                MeasureTheory.volume MeasureTheory.volume := by
+            simpa [eprod] using
+              (MeasureTheory.volume_preserving_finTwoArrow (SpacetimeDim d))
+          calc
+            ∫ z : NPointDomain d 2, K (z 1) * (χ (z 0) * h (z 1))
+              = ∫ p : SpacetimeDim d × SpacetimeDim d,
+                  K p.2 * (χ p.1 * h p.2) := by
+                    symm
+                    simpa [eprod, MeasurableEquiv.finTwoArrow, mul_assoc] using
+                      heprod.symm.integral_comp'
+                        (g := fun z : NPointDomain d 2 => K (z 1) * (χ (z 0) * h (z 1)))
+            _ = ∫ p : SpacetimeDim d × SpacetimeDim d,
+                  χ p.1 * (K p.2 * h p.2) := by
+                    refine MeasureTheory.integral_congr_ae ?_
+                    filter_upwards with p
+                    ring
+            _ = (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+                    simpa [mul_assoc] using
+                      (MeasureTheory.integral_prod_mul
+                        (μ := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                        (ν := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                        (f := fun u : SpacetimeDim d => χ u)
+                        (g := fun ξ : SpacetimeDim d => K ξ * h ξ))
+
+/-- The positive-time Schwinger two-point difference shell already pairs
+against the pure imaginary-axis one-variable kernel `ξ ↦ bvt_F(0,
+wickRotatePoint ξ)`. This is the exact one-variable form of the Schwinger side
+in the remaining two-point comparison problem. -/
+theorem bvt_twoPointDifferenceLift_eq_imaginaryAxisKernel_of_positiveSupport_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (χ h : SchwartzSpacetime d)
+    (hχ_pos : tsupport (χ : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0})
+    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ {x : SpacetimeDim d | 0 < x 0}) :
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h)) =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointImaginaryAxisDifferenceKernel_local OS lgc ξ * h ξ := by
+  calc
+    OS.S 2 (ZeroDiagonalSchwartz.ofClassical (twoPointDifferenceLift χ h))
+      =
+        ∫ y : NPointDomain d 2,
+          bvt_F OS lgc 2
+            (xiShift 0 0 (fun i => wickRotatePoint (y i)) ((1 : ℂ) * Complex.I)) *
+            (twoPointDifferenceLift χ h) y := by
+              symm
+              exact bvt_twoPointDifferenceLift_baseTime_eq_constant_of_positiveSupport_local
+                (d := d) (OS := OS) (lgc := lgc) χ h hχ_pos hh_pos 1 zero_lt_one
+    _ =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointImaginaryAxisDifferenceKernel_local OS lgc ξ * h ξ := by
+            exact bvt_twoPointDifferenceLift_baseTime_pairing_eq_imaginaryAxisKernel_local
+              (d := d) (OS := OS) (lgc := lgc) χ h 1
+
 def canonicalForwardConeDirection (n : ℕ) : Fin n → Fin (d + 1) → ℝ :=
   fun k μ => if μ = 0 then (↑(k : ℕ) + 1 : ℝ) else 0
 
@@ -2631,6 +2995,179 @@ theorem canonicalForwardConeDirection_mem (n : ℕ) :
       rw [this]
       ring
     · simp [canonicalForwardConeDirection, η₀, hμ]
+
+/-- The reduced one-variable kernel seen by the canonical two-point BV ray
+after quotienting out the common translation direction. -/
+def bvt_twoPointCanonicalDifferenceKernel_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (ε : ℝ) : SpacetimeDim d → ℂ :=
+  fun ξ =>
+    bvt_F OS lgc 2 (fun k μ =>
+      if h0 : k = 0 then 0
+      else if μ = 0 then ↑(ξ μ) + (ε : ℂ) * Complex.I else ↑(ξ μ))
+
+/-- On the canonical two-point boundary ray, the center variable already factors
+out by complex translation invariance of `bvt_F`. The resulting fixed-`ε`
+pairing is therefore a one-variable difference-kernel pairing scaled by
+`∫ χ`. -/
+theorem bvt_twoPointDifferenceLift_canonical_pairing_eq_reducedKernel_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (χ h : SchwartzSpacetime d) (ε : ℝ) :
+    ∫ x : NPointDomain d 2,
+      bvt_F OS lgc 2 (fun k μ =>
+        ↑(x k μ) + ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) *
+        (twoPointDifferenceLift χ h x) =
+      (∫ u : SpacetimeDim d, χ u) *
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointCanonicalDifferenceKernel_local OS lgc ε ξ * h ξ := by
+  let K : SpacetimeDim d → ℂ := bvt_twoPointCanonicalDifferenceKernel_local OS lgc ε
+  calc
+    ∫ x : NPointDomain d 2,
+        bvt_F OS lgc 2 (fun k μ =>
+          ↑(x k μ) + ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) *
+          (twoPointDifferenceLift χ h x)
+      =
+        ∫ z : NPointDomain d 2,
+          bvt_F OS lgc 2 (fun k μ =>
+            ↑(((twoPointCenterDiffCLE d) z) k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) *
+            (χ (z 0) * h (z 1)) := by
+          simpa using
+            (integral_mul_twoPointDifferenceLift_eq_centerDiff
+              (d := d)
+              (Ψ := fun x : NPointDomain d 2 =>
+                bvt_F OS lgc 2 (fun k μ =>
+                  ↑(x k μ) + ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) *
+                    Complex.I))
+              χ h)
+    _ =
+        ∫ z : NPointDomain d 2,
+          K (z 1) * (χ (z 0) * h (z 1)) := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with z
+          have hdecomp :
+              (fun k μ =>
+                ↑(((twoPointCenterDiffCLE d) z) k μ) +
+                  ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) =
+              (fun j =>
+                (fun μ =>
+                  if h0 : j = 0 then 0
+                  else if μ = 0 then ↑(z 1 μ) + (ε : ℂ) * Complex.I else ↑(z 1 μ)) +
+                (fun μ => ↑(z 0 μ) + ε *
+                  ↑(canonicalForwardConeDirection (d := d) 2 0 μ) * Complex.I)) := by
+            funext k
+            funext μ
+            fin_cases k
+            · simp [twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                canonicalForwardConeDirection]
+            · by_cases hμ : μ = 0
+              · subst hμ
+                simp [twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  canonicalForwardConeDirection]
+                ring
+              · simp [twoPointCenterDiffCLE, twoPointCenterDiffLinearEquiv,
+                  canonicalForwardConeDirection, hμ, add_comm, add_left_comm, add_assoc]
+          calc
+            bvt_F OS lgc 2 (fun k μ =>
+              ↑(((twoPointCenterDiffCLE d) z) k μ) +
+                ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) *
+                (χ (z 0) * h (z 1))
+              =
+                bvt_F OS lgc 2
+                  (fun j =>
+                    (fun μ =>
+                      if h0 : j = 0 then 0
+                      else if μ = 0 then ↑(z 1 μ) + (ε : ℂ) * Complex.I else ↑(z 1 μ)) +
+                    (fun μ => ↑(z 0 μ) + ε *
+                      ↑(canonicalForwardConeDirection (d := d) 2 0 μ) * Complex.I)) *
+                  (χ (z 0) * h (z 1)) := by
+                    rw [hdecomp]
+            _ = K (z 1) * (χ (z 0) * h (z 1)) := by
+                  have htrans :
+                      bvt_F OS lgc 2
+                        (fun j =>
+                          (fun μ =>
+                            if h0 : j = 0 then 0
+                            else if μ = 0 then ↑(z 1 μ) + (ε : ℂ) * Complex.I else ↑(z 1 μ)) +
+                          (fun μ => ↑(z 0 μ) + ε *
+                            ↑(canonicalForwardConeDirection (d := d) 2 0 μ) * Complex.I)) =
+                      bvt_F OS lgc 2
+                        (fun j μ =>
+                          if h0 : j = 0 then 0
+                          else if μ = 0 then ↑(z 1 μ) + (ε : ℂ) * Complex.I else ↑(z 1 μ)) := by
+                    simpa using
+                      bvt_F_translationInvariant (d := d) OS lgc 2
+                        (fun j μ =>
+                          if h0 : j = 0 then 0
+                          else if μ = 0 then ↑(z 1 μ) + (ε : ℂ) * Complex.I else ↑(z 1 μ))
+                        (fun μ => ↑(z 0 μ) + ε *
+                          ↑(canonicalForwardConeDirection (d := d) 2 0 μ) * Complex.I)
+                  rw [htrans]
+                  simp [K, bvt_twoPointCanonicalDifferenceKernel_local]
+    _ =
+        (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+          let eprod : NPointDomain d 2 ≃ᵐ (SpacetimeDim d × SpacetimeDim d) :=
+            MeasurableEquiv.finTwoArrow
+          have heprod :
+              MeasureTheory.MeasurePreserving eprod
+                MeasureTheory.volume MeasureTheory.volume := by
+            simpa [eprod] using
+              (MeasureTheory.volume_preserving_finTwoArrow (SpacetimeDim d))
+          calc
+            ∫ z : NPointDomain d 2, K (z 1) * (χ (z 0) * h (z 1))
+              = ∫ p : SpacetimeDim d × SpacetimeDim d,
+                  K p.2 * (χ p.1 * h p.2) := by
+                    symm
+                    simpa [eprod, MeasurableEquiv.finTwoArrow, mul_assoc] using
+                      heprod.symm.integral_comp'
+                        (g := fun z : NPointDomain d 2 => K (z 1) * (χ (z 0) * h (z 1)))
+            _ = ∫ p : SpacetimeDim d × SpacetimeDim d,
+                  χ p.1 * (K p.2 * h p.2) := by
+                    refine MeasureTheory.integral_congr_ae ?_
+                    filter_upwards with p
+                    ring
+            _ = (∫ u : SpacetimeDim d, χ u) * ∫ ξ : SpacetimeDim d, K ξ * h ξ := by
+                    simpa [mul_assoc] using
+                      (MeasureTheory.integral_prod_mul
+                        (μ := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                        (ν := (MeasureTheory.volume : MeasureTheory.Measure (SpacetimeDim d)))
+                        (f := fun u : SpacetimeDim d => χ u)
+                        (g := fun ξ : SpacetimeDim d => K ξ * h ξ))
+
+/-- Fixing a normalized center cutoff `χ₀` turns the canonical two-point BV
+pairing into a genuine one-variable boundary-limit problem in the difference
+variable. This isolates the remaining normalized-center comparison scalar in
+the exact reduced form needed by the current K2 route. -/
+theorem bvt_tendsto_twoPointCanonicalDifferenceKernel_of_normalizedCenter_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (χ₀ h : SchwartzSpacetime d)
+    (hχ₀ : ∫ u : SpacetimeDim d, χ₀ u = 1) :
+    Filter.Tendsto
+      (fun ε : ℝ =>
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointCanonicalDifferenceKernel_local OS lgc ε ξ * h ξ)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (bvt_W OS lgc 2 (twoPointDifferenceLift χ₀ h))) := by
+  have hBV :=
+    bvt_boundary_values (d := d) OS lgc 2 (twoPointDifferenceLift χ₀ h)
+      (canonicalForwardConeDirection (d := d) 2)
+      (canonicalForwardConeDirection_mem (d := d) 2)
+  have hEq :
+      (fun ε : ℝ =>
+        ∫ x : NPointDomain d 2,
+          bvt_F OS lgc 2 (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) 2 k μ) * Complex.I) *
+            (twoPointDifferenceLift χ₀ h x))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun ε : ℝ =>
+        ∫ ξ : SpacetimeDim d,
+          bvt_twoPointCanonicalDifferenceKernel_local OS lgc ε ξ * h ξ) := by
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    rw [bvt_twoPointDifferenceLift_canonical_pairing_eq_reducedKernel_local
+      (OS := OS) (lgc := lgc) (χ := χ₀) (h := h) (ε := ε)]
+    simp [hχ₀]
+  exact Filter.Tendsto.congr' hEq hBV
 
 theorem bvt_F_negCanonical (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
