@@ -338,20 +338,26 @@ axiom hasDerivAt_tubeSlice_ray
       (-I * tubeSlice F (τ₀ • η) (directionalDerivSchwartz η φ))
       τ₀
 
-/-- **Continuity of the differentiated tube slice along a ray.**
+/-- Continuity of the tube-slice derivative along a ray, restricted to τ > 0.
 
-    This is the dominated-convergence continuation of
-    `hasDerivAt_tubeSlice_ray`. A full proof needs the same positive-ray
-    polynomial bounds used in the derivative theorem, now uniform on compact
-    τ-intervals. We keep the continuity statement as an interface theorem. -/
+    Needs polynomial growth of F to ensure the integral is well-defined and
+    dominated convergence applies for parameter continuity.
+
+    **Previous version was underassumed**: ContinuousOn alone doesn't guarantee
+    integrability of F(x+iτη)ψ(x) — e.g., F(z) = exp(z²) is entire but
+    |F(x+iτη)| = exp(x²-τ²) grows too fast for Schwartz test functions. -/
 axiom continuous_tubeSlice_ray_deriv
     {C : Set (Fin m → ℝ)}
     {F : (Fin m → ℂ) → ℂ}
     (hF_cont : ContinuousOn F (SCV.TubeDomain C))
     (η : Fin m → ℝ) (hη : η ∈ C)
     (hC_cone : IsCone C) (hC_open : IsOpen C)
+    -- Polynomial growth needed for integrability + dominated convergence
+    {C_bd : ℝ} {N : ℕ} (hC_bd : 0 < C_bd)
+    (hF_growth : ∀ z ∈ SCV.TubeDomain C, ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
-    Continuous (fun (τ : ℝ) => -I * tubeSlice F (τ • η) (directionalDerivSchwartz η φ))
+    ContinuousOn (fun (τ : ℝ) => -I * tubeSlice F (τ • η) (directionalDerivSchwartz η φ))
+      (Set.Ioi 0)
 
 /-- The Cauchy-Riemann ray-integration identity (1D FTC along a ray in the cone).
 
@@ -372,6 +378,8 @@ theorem cr_integration_identity
     (hF_cont : ContinuousOn F (SCV.TubeDomain C))
     (η : Fin m → ℝ) (hη : η ∈ C)
     (hC_cone : IsCone C) (hC_open : IsOpen C)
+    {C_bd : ℝ} {N : ℕ} (hC_bd : 0 < C_bd)
+    (hF_growth : ∀ z ∈ SCV.TubeDomain C, ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (t₀ t : ℝ) (ht₀ : 0 < t₀) (ht : 0 < t) (ht₀_le_t : t₀ ≤ t)
     (φ : SchwartzMap (Fin m → ℝ) ℂ) :
     tubeSlice F (t • η) φ - tubeSlice F (t₀ • η) φ =
@@ -393,10 +401,13 @@ theorem cr_integration_identity
     intro τ₀ hτ₀
     exact hasDerivAt_tubeSlice_ray hF_hol hF_cont η hη hC_cone hC_open τ₀ hτ₀ φ
   -- Step 3: g' is continuous (hence interval integrable)
-  have hg'_cont : Continuous g' :=
-    continuous_tubeSlice_ray_deriv hF_cont η hη hC_cone hC_open φ
+  have hg'_cont : ContinuousOn g' (Set.Ioi 0) :=
+    continuous_tubeSlice_ray_deriv hF_cont η hη hC_cone hC_open hC_bd hF_growth φ
   have hg'_int : IntervalIntegrable g' volume t₀ t :=
-    hg'_cont.intervalIntegrable t₀ t
+    (hg'_cont.mono (by
+      intro τ hτ
+      exact Set.mem_Ioi.mpr (by rcases Set.mem_uIcc.mp hτ with ⟨h1, _⟩ | ⟨h1, _⟩ <;> linarith)
+    )).intervalIntegrable
   -- Step 4: HasDerivAt on the full uIcc (both t₀ ≤ τ ≤ t and t ≤ τ ≤ t₀ cases)
   have hderiv_uIcc : ∀ τ ∈ Set.uIcc t₀ t, HasDerivAt g (g' τ) τ := by
     intro τ hτ
