@@ -339,6 +339,8 @@ theorem adjoint_exists' (hT : T.IsDenselyDefined) (y : H) (hy : y ∈ T.adjointD
   obtain ⟨φ', hφ'⟩ := hφ_cont
 
   -- Extend φ' to all of H
+  set_option backward.isDefEq.respectTransparency false in
+  haveI : IsUniformAddGroup T.domain := inferInstance
   let φ_ext := φ'.extend (T.domain.subtypeL)
 
   -- By Riesz representation, there exists w such that φ_ext = ⟨w, ·⟩
@@ -360,11 +362,13 @@ theorem adjoint_exists' (hT : T.IsDenselyDefined) (y : H) (hy : y ∈ T.adjointD
     intro x
     -- φ_ext = φ'.extend (T.domain.subtypeL)
     -- For x in T.domain, the extension agrees with the original
+    set_option backward.isDefEq.respectTransparency false in
+    haveI : IsUniformAddGroup T.domain := inferInstance
     have hunif : IsUniformInducing (T.domain.subtypeL : T.domain → H) :=
       isUniformEmbedding_subtype_val.isUniformInducing
     have h := ContinuousLinearMap.extend_eq φ' hdense.denseRange_val hunif x
     simp only [Submodule.subtypeL_apply] at h
-    rw [h, hφ']
+    rw [show φ_ext (x : H) = (φ'.extend T.domain.subtypeL) (x : H) from rfl, h, hφ']
     rfl
 
   -- Now: ⟨w, x⟩ = ⟨y, Tx⟩, so ⟨Tx, y⟩ = conj⟨y, Tx⟩ = conj⟨w, x⟩ = ⟨x, w⟩

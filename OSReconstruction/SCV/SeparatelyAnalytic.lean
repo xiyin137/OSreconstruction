@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib.Analysis.Complex.CauchyIntegral
+import Mathlib.LinearAlgebra.Complex.FiniteDimensional
 import Mathlib.Analysis.Complex.Liouville
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.RemovableSingularity

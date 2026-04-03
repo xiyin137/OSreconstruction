@@ -85,6 +85,7 @@ theorem continuousOn_nnrpow_pos
       (ContinuousOn.tendstoUniformly
         (f := fun t : ℝ≥0 => fun x : K => (x : ℝ≥0) ^ (t : ℝ))
         hxU hpow_cont)
+  set_option backward.isDefEq.respectTransparency false in
   have hcont :
       ContinuousAt
         (fun t : ℝ≥0 => cfcₙ (fun x : ℝ≥0 => x ^ (t : ℝ)) A)

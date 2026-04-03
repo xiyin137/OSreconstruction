@@ -293,6 +293,7 @@ theorem spectralMeasureDiagonal_parallelogram (U : H →L[ℂ] H) (hU : U ∈ un
           simp only [ENNReal.toReal_mul, ENNReal.toReal_ofNat]
 
 set_option maxHeartbeats 400000 in
+set_option backward.isDefEq.respectTransparency false in
 /-- Quadratic expansion: μ_{w+tv}(E) = μ_w(E) + 2t·B(w,v) + t²·μ_v(E)
     where B(w,v) = (μ_{w+v}(E) - μ_{w-v}(E))/4 is the polarized form.
     Key: When μ_v = 0, μ_{w+tv} is linear in t, forcing B(w,v) = 0. -/
@@ -789,6 +790,7 @@ theorem spectralMeasurePolarized_zsmul (U : H →L[ℂ] H) (hU : U ∈ unitary (
     rw [spectralMeasurePolarized_nsmul U hU E hE x (m + 1) y]
     ring
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Real scalar multiplication for the polarized spectral measure.
     B(x, r•y) = r * B(x, y) for real r ∈ ℝ.
 
@@ -1681,6 +1683,7 @@ theorem spectralMeasurePolarized_conj_linear_left (U : H →L[ℂ] H) (hU : U �
   rw [hconj]
   ring
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The polarized spectral measure is bounded: |μ_{x,y}(E)| ≤ C‖x‖‖y‖.
     The bound follows from sesquilinearity and the polarization bound on unit vectors.
 

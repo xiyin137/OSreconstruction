@@ -1433,8 +1433,8 @@ private lemma square_integrable_of_resolvent_preimage (T : UnboundedOperator H)
         exact Complex.ofReal_re _
       · simp
     -- (∫ f dμ).re = ∫ (Re ∘ f) dμ = ∫ G n dμ  (by integral_re)
-    rw [show (∫ s, ((s : ℂ) ^ 2) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s ∂μ).re = RCLike.re (∫ s, ((s : ℂ) ^ 2) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s ∂μ) from rfl,
-        ← integral_re (h_sq_chi_int n), h_eq_fns]
+    rw [show (∫ s, ((s : ℂ) ^ 2) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s ∂μ).re = RCLike.re (∫ s, ((s : ℂ) ^ 2) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s ∂μ) from rfl]
+    erw [← integral_re (h_sq_chi_int n), h_eq_fns]
   -- ∫ G n dμ ≤ ‖y‖²
   have h_real_bound : ∀ (n : ℕ), ∫ s, G n s ∂μ ≤ ‖y‖ ^ 2 := by
     intro n; rw [← h_re_eq_real]; exact h_int_bound n
@@ -2969,11 +2969,13 @@ private lemma unitaryGroup_diff_norm_sq (T : UnboundedOperator H) (hT : T.IsDens
 -- Spectral differentiation at t = 0 (Reed-Simon VIII.7(c), Rudin FA 13.33).
 -- Proof via epsilon/2 argument with spectral truncations.
 set_option maxHeartbeats 3200000 in
+set_option backward.isDefEq.respectTransparency false in
 open MeasureTheory in
 private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsDenselyDefined)
     (hsa : T.IsSelfAdjoint hT) (x : T.domain) :
     HasDerivAt (fun s => unitaryGroup T hT hsa s (x : H))
       (Complex.I • T x) 0 := by
+  haveI : IsScalarTower ℝ ℂ H := inferInstance
   set P := T.spectralMeasure hT hsa with hP_def
   set U := unitaryGroup T hT hsa
   have hU0 : U 0 (x : H) = (x : H) := by
@@ -3393,6 +3395,7 @@ private lemma unitaryGroup_hasDerivAt_zero (T : UnboundedOperator H) (hT : T.IsD
     _ = c * ‖h‖ := by ring
 
 set_option maxHeartbeats 800000 in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Spectral differentiation (Reed-Simon VIII.7(c), Rudin FA 13.33).**
     For x ∈ dom(T), d/dt U(t)x = i · U(t)(Tx).
     Proved by reducing to `unitaryGroup_hasDerivAt_zero` via the group law and isometry. -/
@@ -3436,6 +3439,7 @@ theorem unitaryGroup_hasDerivAt_dom (T : UnboundedOperator H) (hT : T.IsDenselyD
         U t (U h (x : H) - (x : H)) := by
       rw [hcomp, ContinuousLinearMap.comp_apply, map_sub]
     -- ℝ-smul to ℂ-smul conversion for linearity
+    haveI : IsScalarTower ℝ ℂ H := inferInstance
     have hreal_smul : ∀ (r : ℝ) (v : H), r • v = (r : ℂ) • v :=
       fun r v => (algebraMap_smul ℂ r v).symm
     -- h•(I•U(t)(Tx)) = U(t)(h•(I•Tx)) by ℂ-linearity

@@ -1178,7 +1178,7 @@ private theorem Qform_parallelogram (u v : H)
   have h_v2 : Integrable f ((2 : ℝ≥0) • P.diagonalMeasure v) :=
     h_int_v.smul_measure ENNReal.coe_ne_top
   rw [integral_add_measure h_u2 h_v2, integral_smul_nnreal_measure, integral_smul_nnreal_measure]
-  simp only [Algebra.smul_def, map_ofNat]
+  norm_cast
 
 /-- Integrability transfers through the parallelogram identity:
     if f is integrable against μ_u and μ_v, it's integrable against μ_{u+v}. -/
@@ -1946,7 +1946,8 @@ theorem SpectralMeasure.Qform_indicator_eq_inner (P : SpectralMeasure H)
   have h_eq : ∫ t, Set.indicator F (fun _ => (1 : ℂ)) t ∂(P.diagonalMeasure z) =
       ↑(P.diagonalMeasure z F).toReal := by
     rw [integral_indicator_const _ hF, Measure.real]
-    simp [Algebra.smul_def]
+    set_option backward.isDefEq.respectTransparency false in
+    rw [Algebra.smul_def, mul_one]; norm_cast
   rw [h_eq]
   -- Step 2: μ_z(F).toReal = ⟨z, P(F)z⟩.re
   rw [P.diagonalMeasure_apply z F hF]

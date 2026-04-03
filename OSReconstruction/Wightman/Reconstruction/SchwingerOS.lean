@@ -1,3 +1,4 @@
+import OSReconstruction.Mathlib429Compat
 import OSReconstruction.Wightman.Reconstruction.Core
 import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 import Mathlib.Analysis.Convolution
@@ -11,6 +12,8 @@ OS reconstruction route: the OS inner product, positive-time Borchers
 sequences, the OS pre-Hilbert quotient, and the current two-point Schwinger
 reduction shell.
 -/
+
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 
@@ -2094,7 +2097,6 @@ def osBorchersSetoid {d : ℕ} [NeZero d] (OS : OsterwalderSchraderAxioms d) :
               (((A + B : PositiveTimeBorchersSequence d) : BorchersSequence d).funcs n) := by
         intro n
         simp [A, B, sub_eq_add_neg]
-        abel
       have hFH :
           PositiveTimeBorchersSequence.osInner OS (F - H) (F - H) =
             PositiveTimeBorchersSequence.osInner OS (A + B) (A + B) := by

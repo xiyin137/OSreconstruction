@@ -1,8 +1,11 @@
+import OSReconstruction.Mathlib429Compat
 import OSReconstruction.Wightman.Reconstruction.BlockIntegral
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 
 open scoped SchwartzMap
+
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 

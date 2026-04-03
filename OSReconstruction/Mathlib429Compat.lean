@@ -32,3 +32,6 @@ noncomputable instance : SMulCommClass ℂ ℝ ℂ := inferInstance
 
 set_option backward.isDefEq.respectTransparency false in
 noncomputable instance : SMulCommClass ℝ ℂ ℂ := inferInstance
+
+set_option backward.isDefEq.respectTransparency false in
+noncomputable instance : SMulCommClass ℝ ℝ ℂ := inferInstance

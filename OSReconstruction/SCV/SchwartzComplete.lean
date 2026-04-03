@@ -67,6 +67,8 @@ private theorem cauchySeq_seminorm {u : ℕ → SchwartzMap E F} (hu : CauchySeq
   -- So CauchySeq u ↔ Tendsto (fun p => u p.1 - u p.2) (atTop ×ˢ atTop) (nhds 0)
   rw [cauchySeq_iff_tendsto, uniformity_eq_comap_nhds_zero, Filter.tendsto_comap_iff] at hu
   -- Now hu : Tendsto (fun p => u p.1 - u p.2) atTop (nhds 0)
+  -- Normalize the topology to match WithSeminorms
+  set_option backward.isDefEq.respectTransparency false in
   rw [hws.tendsto_nhds _ 0] at hu
   -- Now hu : ∀ i ε > 0, ∀ᶠ p in atTop, seminorm i (u p.1 - u p.2 - 0) < ε
   have h := hu (k, n) ε hε
@@ -210,6 +212,7 @@ private theorem tail_tsum_iteratedFDeriv_bound [CompleteSpace F]
 
 /-- The Schwartz space is complete in the seminorm topology. -/
 instance instCompleteSpace [CompleteSpace F] : CompleteSpace (SchwartzMap E F) := by
+  set_option backward.isDefEq.respectTransparency false in
   have : (uniformity (SchwartzMap E F)).IsCountablyGenerated :=
     IsUniformAddGroup.uniformity_countably_generated
   apply UniformSpace.complete_of_cauchySeq_tendsto
@@ -393,6 +396,7 @@ instance instBarrelledSpace [CompleteSpace F] :
     BarrelledSpace ℝ (SchwartzMap E F) := by
   -- Chain: CompleteSpace + countably generated uniformity → BaireSpace → BarrelledSpace
   -- SchwartzMap has IsUniformAddGroup and Countable (ℕ × ℕ) index for seminorms
+  set_option backward.isDefEq.respectTransparency false in
   have hcg : (uniformity (SchwartzMap E F)).IsCountablyGenerated :=
     IsUniformAddGroup.uniformity_countably_generated
   -- CompleteSpace + countably generated uniformity → IsCompletelyPseudoMetrizableSpace
@@ -418,6 +422,7 @@ theorem tempered_equicontinuous
     (hT : ∀ f, ∃ C, ∀ i, ‖T i f‖ ≤ C) :
     UniformEquicontinuous (fun i f => T i f) := by
   have hq := norm_withSeminorms ℝ G
+  set_option backward.isDefEq.respectTransparency false in
   apply hq.banach_steinhaus
   intro k x
   rw [BddAbove]
@@ -437,6 +442,7 @@ theorem tempered_uniform_schwartz_bound
       ∀ i : ι, ∀ f : SchwartzMap E F,
         ‖T i f‖ ≤ (C • s.sup (schwartzSeminormFamily ℝ E F)) f := by
   have hEqui : UniformEquicontinuous (fun i f => T i f) := tempered_equicontinuous hT
+  set_option backward.isDefEq.respectTransparency false in
   have hq :=
     ((norm_withSeminorms ℝ G).uniformEquicontinuous_iff_exists_continuous_seminorm
       (f := fun i => (T i).toLinearMap)).mp hEqui

@@ -327,7 +327,7 @@ def translationStronglyContinuous (π : PoincareRepresentation d H) : Prop :=
 
     We use Filter.Tendsto to express the limit rigorously. -/
 def momentumApplied (π : PoincareRepresentation d H) (μ : Fin (d + 1)) (ψ : H) : H :=
-  limUnder (𝓝[≠] (0 : ℝ)) (fun t : ℝ =>
+  Filter.limUnder (𝓝[≠] (0 : ℝ)) (fun t : ℝ =>
     (Complex.I : ℂ)⁻¹ • (t⁻¹ • (π.U (translationInDirection d μ t) ψ - ψ)))
 
 /-- The energy-momentum operators (generators of translations).
@@ -450,7 +450,7 @@ def translationGroup (π : PoincareRepresentation d H)
     defined by the limit formula.
 
     The key insight is that both definitions use the same limit:
-    - momentumApplied uses `limUnder (nhds 0) (fun t => I⁻¹ • t⁻¹ • (U(t)ψ - ψ))`
+    - momentumApplied uses `Filter.limUnder (nhds 0) (fun t => I⁻¹ • t⁻¹ • (U(t)ψ - ψ))`
     - generatorApply uses `Classical.choose` of the same limit existence
 
     By uniqueness of limits in Hausdorff spaces (Hilbert spaces are T2),
@@ -462,7 +462,7 @@ theorem momentum_eq_generator (π : PoincareRepresentation d H) (μ : Fin (d + 1
   -- Both are limits of the same function on 𝓝[≠] 0; by uniqueness of limits (T2), they agree.
   have hspec := (π.translationGroup μ hcont).generatorApply_spec ψ hψ
   -- Rewrite goal to use translationGroup.U instead of π.U (translationInDirection ...)
-  change limUnder (𝓝[≠] (0 : ℝ)) (fun t =>
+  change Filter.limUnder (𝓝[≠] (0 : ℝ)) (fun t =>
     (Complex.I : ℂ)⁻¹ • (t⁻¹ • ((π.translationGroup μ hcont).U t ψ - ψ))) = _
   exact hspec.limUnder_eq
 

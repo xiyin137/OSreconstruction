@@ -49,6 +49,8 @@ functions as its n-point functions.
 * Glimm-Jaffe, "Quantum Physics: A Functional Integral Point of View", Chapter 19
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open scoped SchwartzMap
@@ -1858,6 +1860,7 @@ theorem VanishesToInfiniteOrderOnCoincidence.norm_le_pairDifference_pow_succ_on_
     _ ≤ (A' / (((Nat.factorial m : ℕ) : ℝ))) * ‖x i - x j‖ ^ (m + 1) := by
       gcongr
 
+set_option maxHeartbeats 800000 in
 /-- Global weighted flatness in a fixed pairwise separation: infinite-order vanishing
     on the coincidence locus combined with Schwartz decay at spatial infinity. -/
 theorem VanishesToInfiniteOrderOnCoincidence.one_add_norm_pow_mul_norm_le_pairDifference_pow_succ

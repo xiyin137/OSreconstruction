@@ -3,6 +3,8 @@ import OSReconstruction.Wightman.Reconstruction
 open scoped Topology
 open MeasureTheory Complex
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 namespace OSReconstruction

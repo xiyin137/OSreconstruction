@@ -1597,7 +1597,7 @@ private lemma spatialRotMatrix12_det (d : ℕ) (hd : 2 ≤ d) (a b : ℝ)
   let e : Fin 2 ≃ {i : Fin d // p i} :=
     { toFun := fun i =>
         ⟨⟨i.val, lt_of_lt_of_le i.isLt hd2⟩, by
-          simp [p]⟩
+          simp [p]; omega⟩
       invFun := fun i => ⟨i.1.val, by
         simpa [p] using i.2⟩
       left_inv := by

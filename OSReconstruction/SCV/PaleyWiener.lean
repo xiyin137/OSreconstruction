@@ -450,7 +450,8 @@ private theorem tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero
             ‖weightedDerivToBCFCLM k n
               (schwartzPsiZExpTaylorLinearRemainderQuot z hz (h : ℂ) hh_im' hh1)‖ +
           ‖(h : ℂ)‖ * D := by
-            simp [D, norm_smul]
+            set_option backward.isDefEq.respectTransparency false in
+            simp only [D, norm_smul, Complex.norm_real]
       _ ≤ ‖(h : ℂ)‖ * (C * ‖(h : ℂ)‖) + ‖(h : ℂ)‖ * D := by
             gcongr
   have hδ_small : δ ≤ ε / (2 * (D + C + 1)) := by
@@ -804,7 +805,7 @@ private theorem exists_probe_factorization
     T f = FrangeLin ⟨probeCLM s f, hmem⟩ := by
       exact (rangeLiftLinear_apply T s hker f).symm
     _ = Frange ⟨probeCLM s f, hmem⟩ := by
-      rw [LinearMap.mkContinuous_apply]
+      rfl
     _ = G (probeCLM s f) := by
       symm
       exact hGext ⟨probeCLM s f, hmem⟩
@@ -1705,6 +1706,7 @@ private theorem fourier_pairing_cutoffSchwartz_eq
       T (SchwartzMap.fourierTransformCLM ℂ ψ) :=
   fourier_pairing_eq_of_eqOn_nonneg T hT_supp (cutoffSchwartz_eqOn_nonneg ψ)
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem fourierInv_eq_cexp_integral
     (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
     FourierTransform.fourierInv φ ξ =
@@ -1714,10 +1716,14 @@ private theorem fourierInv_eq_cexp_integral
         FourierTransform.fourierInv (φ : ℝ → ℂ) ξ := by
     simpa using
       congrArg (fun g => g ξ) (SchwartzMap.fourierInv_coe (f := φ))
-  rw [hcoe]
-  simpa [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm] using
-    (Real.fourierInv_eq' (f := (φ : ℝ → ℂ)) (w := ξ))
+  rw [hcoe, Real.fourierInv_eq' (f := (φ : ℝ → ℂ)) (w := ξ)]
+  congr 1; ext v
+  have hinner : ∀ a b : ℝ, @inner ℝ ℝ _ a b = b * a := by
+    intro a b; simp [inner, mul_comm]
+  simp only [smul_eq_mul, hinner, Complex.ofReal_mul, Complex.ofReal_ofNat]
+  ring
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem psiZ_pairing_formula
     (φ : SchwartzMap ℝ ℂ) (η ξ : ℝ) :
     ∫ x : ℝ, psiZ ((2 * Real.pi : ℂ) * (x + η * Complex.I)) ξ * φ x =
@@ -1766,7 +1772,14 @@ private theorem psiZ_pairing_formula
     filter_upwards with x
     ring
   rw [hfactor]
-  rw [integral_const_mul, integral_const_mul]
+  conv_lhs =>
+    rw [@integral_const_mul ℝ _ MeasureTheory.volume ℂ _
+      (Complex.exp (-(2 * Real.pi * η : ℂ) * ξ))
+      (fun (x : ℝ) => (smoothCutoff ξ : ℂ) * (Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x))]
+  conv_lhs =>
+    rw [@integral_const_mul ℝ _ MeasureTheory.volume ℂ _
+      (smoothCutoff ξ : ℂ)
+      (fun (x : ℝ) => Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x)]
   ring
 
 private def stepAScalarDerivIntegrand
@@ -1963,6 +1976,7 @@ private theorem stepAScalarDerivIntegral_eq_iteratedDeriv_stepAKernel
             simpa [scaledHorizontalSchwartzPsi, horizontalSchwartzPsi, schwartzPsiZ_apply,
               stepAKernel_eq, mul_add, mul_assoc, add_comm, add_left_comm, add_assoc] using hpair
 
+set_option backward.isDefEq.respectTransparency false in
 private theorem integral_stepAProbeFamily_eq_probe_stepAKernel
     (s : Finset (ℕ × ℕ)) (η : ℝ) (hη_pos : 0 < η) (hη_le : 2 * Real.pi * η ≤ 1)
     (φ : SchwartzMap ℝ ℂ) :
@@ -1992,7 +2006,9 @@ private theorem integral_stepAProbeFamily_eq_probe_stepAKernel
             simp [stepAProbeFamily, probeCLM, k, n, stepAScalarDerivIntegrand,
               weightedDerivToBCFCLM_apply, mul_comm, mul_left_comm]
     _ = polyWeight k ξ * stepAScalarDerivIntegral η hη_pos φ n ξ := by
-          rw [stepAScalarDerivIntegral, integral_const_mul]
+          rw [stepAScalarDerivIntegral]
+          conv_lhs => rw [@integral_const_mul ℝ _ MeasureTheory.volume ℂ _ (polyWeight k ξ)
+            (fun x => stepAScalarDerivIntegrand η hη_pos φ n ξ x)]
     _ = polyWeight k ξ *
           iteratedDeriv n
             (stepAKernel (2 * Real.pi * η) (by positivity) hη_le (FourierTransform.fourierInv φ)) ξ := by

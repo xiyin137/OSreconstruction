@@ -283,6 +283,7 @@ theorem spectralFunctionalAux_linear (U : H →L[ℂ] H) (hU : U ∈ unitary (H 
         · simp only [Complex.ofReal_mul]
         · simp
       rw [heq]
+      set_option backward.isDefEq.respectTransparency false in
       exact cfc_smul (a := U) (↑c) (circleRealToComplex f) hcont
     rw [hsmul, ContinuousLinearMap.smul_apply, inner_smul_right]
     -- (c : ℂ) * inner x y has Re part = c * Re(inner x y)

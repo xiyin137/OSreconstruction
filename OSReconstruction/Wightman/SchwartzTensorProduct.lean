@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
+import OSReconstruction.Mathlib429Compat
 
 /-!
 # Tensor Products of Schwartz Functions

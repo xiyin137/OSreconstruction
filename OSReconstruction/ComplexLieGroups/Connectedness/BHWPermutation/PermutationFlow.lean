@@ -6,6 +6,8 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.Permutatio
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SeedSlices
 import OSReconstruction.ComplexLieGroups.D1OrbitSet
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace

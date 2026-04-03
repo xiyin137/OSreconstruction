@@ -3,6 +3,7 @@ Copyright (c) 2025 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
+import OSReconstruction.Mathlib429Compat
 import Mathlib.Analysis.Complex.CauchyIntegral
 import Mathlib.Analysis.Complex.MeanValue
 import Mathlib.Topology.Connected.PathConnected
@@ -1469,6 +1470,7 @@ private lemma rudin_orthant_extension {m : ℕ} (hm : 0 < m) (_hm2 : 2 ≤ m)
           G (Function.update z j ζ) θ) (z j)
       suffices h_int : DifferentiableAt ℂ
           (fun ζ => ∫ θ in (-Real.pi)..Real.pi, G (Function.update z j ζ) θ) (z j) by
+        set_option backward.isDefEq.respectTransparency false in
         exact h_int.const_smul ((2 * Real.pi)⁻¹ : ℝ)
       -- Neighborhood setup
       have hz_norm : ‖z‖ < δ / 2 := by rwa [Metric.mem_ball, dist_zero_right] at hz

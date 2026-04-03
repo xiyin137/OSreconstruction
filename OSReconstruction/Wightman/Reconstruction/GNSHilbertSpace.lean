@@ -40,6 +40,8 @@ quotient, the only vector with zero inner product is the zero class.
 * Reed-Simon, "Methods of Modern Mathematical Physics I", Chapter II (GNS)
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Reconstruction
