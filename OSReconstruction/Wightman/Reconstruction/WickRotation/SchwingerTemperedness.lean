@@ -1732,7 +1732,6 @@ private theorem translateNPointDomain_antilipschitz (a : SpacetimeDim d) {n : â„
         translateNPointDomain (d := d) (n := n) a y := by
     ext i Î¼
     simp [translateNPointDomain, sub_eq_add_neg]
-    abel_nf
   simpa [one_mul, dist_eq_norm] using le_of_eq (congrArg norm hsub)
 
 omit [NeZero d] in

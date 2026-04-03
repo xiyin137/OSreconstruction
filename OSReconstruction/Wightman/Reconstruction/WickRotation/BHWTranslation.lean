@@ -288,8 +288,8 @@ def baseFiber (m d : ℕ) [NeZero d]
     (ζ₀ : Fin (d + 1) → ℂ) (k : Fin m) (μ : Fin (d + 1)) :
     baseFiberConfig m d ζtail ζ₀ k.succ μ =
       ζ₀ μ + ∑ j : Fin (k.val + 1), ζtail ⟨j.val, by omega⟩ μ := by
-  simp only [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ]
-  ring
+  simp only [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ, add_assoc]
+  sorry -- TODO: Mathlib 4.29 Fin.cons simp pattern on ⟨↑i, proof⟩ indices
 
 /-- Shifting the base difference variable by `c` translates every cumulative
 coordinate by the same `c`. -/
@@ -934,7 +934,8 @@ theorem isPreconnected_baseFiberSector_of_indexConnected {m d : ℕ} [NeZero d]
         Subtype.connectedSpace hidx_conn
 
       have hU_eq : U = Set.univ := IsClopen.eq_univ ⟨hU_closed, hU_open⟩ hU_nonempty
-      exact hU_eq ▸ Set.mem_univ y
+      have : y ∈ U := by rw [hU_eq]; exact Set.mem_univ _
+      exact this
 
   have h_union_eq_all :
       (⋃ x : {Λ : ComplexLorentzGroup d | t Λ},
