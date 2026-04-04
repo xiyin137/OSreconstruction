@@ -37,13 +37,33 @@ route itself as closely as possible:
 - zero-diagonal Euclidean test spaces are the honest Euclidean surface;
 - the preferred `E -> R` path is the OS semigroup / Hilbert-space /
   analytic-continuation route;
+- for `E -> R`, theorem shape should follow OS II Sections IV-VI: start from
+  OS semigroup / Hilbert-space matrix elements, continue holomorphically, and
+  recover Wightman data as Lorentzian boundary values of that common
+  holomorphic object;
 - stronger standalone Euclidean kernel-representation statements may be studied
   in `test/` or `Proofideas/`, but they are not to replace the OS route in
   production unless explicitly approved;
 - convenience shortcuts that change category are also out of bounds in
   production: if OS stays in Hilbert-space, scalar matrix-element, or
   distributional language, we stay there too unless explicitly approved
-  otherwise.
+  otherwise;
+- same-test-function cross-domain equalities are banned by default in
+  production. In particular, no theorem of the form `W_n(f) = S_n(f)` may be
+  introduced unless there is already an explicit proved transport theorem
+  identifying the Lorentzian test object, the Euclidean test object, and the
+  exact map between them;
+- shared Lean packaging such as `SchwartzNPoint`, common shell constructors,
+  or coordinate-level reuse does not count as semantic justification for
+  comparing Euclidean and Minkowski quantities on the "same" test function;
+- if a production comparison theorem mixes OS and Wightman objects, the bridge
+  must be named explicitly: either an OS-paper theorem, an exact local bridge
+  theorem, or a named holomorphic continuation / boundary-value object already
+  present in production;
+- before touching a live OS-route `sorry`, the exact OS paper target must be
+  stated explicitly: theorem/lemma/corollary number if one exists, plus page
+  number. If the step is only chapter-level and no numbered result has yet been
+  pinned down, that uncertainty must be reported before proof work continues.
 
 ### Modules
 

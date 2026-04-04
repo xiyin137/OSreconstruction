@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
 /-!
@@ -250,6 +251,14 @@ private theorem bvt_F_reflectCanonical
           ↑(x (Fin.rev k) μ) +
             ε * ↑(η k μ) * Complex.I) := hperm
 
+/-- Theorem 1 frontier: Lorentz covariance of the Wick-section pairing.
+
+OS paper target:
+- OS II Theorem 4.1, p. 288 (real analyticity from `E0`, `E1`, `E2`)
+- OS II Chapter V.1, pp. 290-293, especially `(5.5)`-`(5.7)` on p. 291
+
+This sorry is the Wick-section Lorentz-covariance step on the active OS route.
+It is not a same-shell comparison between Euclidean and Minkowski functionals. -/
 private theorem bvt_F_lorentz_ortho_wick
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -268,6 +277,14 @@ private theorem bvt_F_lorentz_ortho_wick
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
   sorry
 
+/-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
+
+OS paper target:
+- OS I Section 4.5 "Locality", pp. 104-105
+- OS II IV.2, p. 288, which says the remaining Wightman axioms are established
+  as in Sections 4.2-4.5 of OS I
+
+This sorry is the locality transfer step on the boundary-value route. -/
 private theorem bvt_F_swapCanonical_pairing
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -286,6 +303,18 @@ private theorem bvt_F_swapCanonical_pairing
             ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
   sorry
 
+/-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
+
+OS paper target:
+- OS I Section 4.3 "Positivity", pp. 102-103
+- OS II IV.2, p. 288, reducing the remaining Wightman axioms to the OS I
+  arguments after continuation
+
+Current active substep on the repo's OS route:
+- OS II Theorem 4.3, p. 289, together with Chapter VI.1, pp. 297-298
+
+This sorry is the OS-isometry / boundary-value identification step, not any
+same-test-function equality `W_n(f) = S_n(f)`. -/
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -293,6 +322,16 @@ private theorem bvt_W_positive
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
   sorry
 
+/-- Theorem 4 frontier: cluster transfer for the canonical BV pairing.
+
+OS paper target:
+- OS I Section 4.4 "Cluster Property", p. 103
+- OS II IV.2, p. 288, which delegates the remaining Wightman axioms to
+  Sections 4.2-4.5 of OS I after the continuation step
+
+This sorry is downstream of the continuation/boundary-value route and should be
+proved by the OS cluster/isometry logic, not by any deleted same-shell
+comparison route. -/
 private theorem bvt_F_clusterCanonicalEventually_translate
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -696,6 +735,49 @@ theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShif
     bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
       (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact
       hWlimit
+
+/-- Theorem 3 restated on the chosen scalar holomorphic `singleSplit_xiShift`
+trace.
+
+OS paper target:
+- OS I Section 4.3 "Positivity", pp. 102-103
+- OS II Theorem 4.3, p. 289
+- OS II Chapter VI.1, pp. 297-298 for the current regularization / boundary-value
+  substep
+
+The OS/Schwinger side of this limit is already packaged in
+`OSToWightmanBoundaryValueLimits`; the remaining content is the Wightman-side
+boundary-value identification of that same scalar holomorphic function. -/
+theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact :
+      ∀ n,
+        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)))
+    (hHlimit :
+      ∀ n m (hm : 0 < m),
+        Filter.Tendsto
+          (fun t : ℝ =>
+            bvt_singleSplit_xiShiftHolomorphicValue
+              (d := d) OS lgc hm
+              (((F : BorchersSequence d).funcs n))
+              (F.ordered_tsupport n)
+              (hF_compact n)
+              (((F : BorchersSequence d).funcs m))
+              (F.ordered_tsupport m)
+              (hF_compact m) (t : ℂ))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (bvt_W OS lgc (n + m)
+              ((((F : BorchersSequence d).funcs n).conjTensorProduct
+                ((F : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
+      (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact hHlimit
 
 theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :

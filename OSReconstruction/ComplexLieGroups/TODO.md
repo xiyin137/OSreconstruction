@@ -3,7 +3,7 @@
 Last updated: 2026-03-25
 
 Plan sync:
-- Source recommendations: `claude_to_codex.md`
+- Source recommendations: `agents_chat.md`
 - Canonical execution plan: `docs/development_plan_systematic.md`
 - Canonical BHW status: `docs/BHW_STATUS.md`
 - Local permutation blocker status:
