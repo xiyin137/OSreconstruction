@@ -48,6 +48,7 @@ When asked to explain a theorem or definition in the codebase, **always read the
   - If the PR includes **major definition changes** (new structures, redefined types, changed axiom surfaces), explain *why* the old definition was inadequate and what the new one does better, citing the communication docs.
   - If the PR only **fills in sorries or proves axioms** without changing definitions, keep the description concise — do not over-explain.
 - PR descriptions should contain only the summary section — do not include a test plan.
+- **When creating a PR to the original repo**, do not include `CLAUDE.md` or the `communication/` folder in the PR. These are local project-management files and should not be pushed upstream.
 
 ## File Organization
 
