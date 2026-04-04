@@ -628,7 +628,7 @@ theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    IsPositiveDefinite d (bvt_W OS lgc) := by
+    Wightman.IsPositiveDefinite d (bvt_W OS lgc) := by
   exact bvt_W_positive (d := d) OS lgc
 
 theorem bvt_hermitian (OS : OsterwalderSchraderAxioms d)
