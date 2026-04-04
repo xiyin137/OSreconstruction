@@ -666,6 +666,36 @@ theorem bvt_hermitian (OS : OsterwalderSchraderAxioms d)
     (hF_reflect_pairing n)
     f g hfg
 
+theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact :
+      ∀ n,
+        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)))
+    (hWlimit :
+      ∀ n m (hm : 0 < m),
+        Filter.Tendsto
+          (fun t : ℝ =>
+            ∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                  (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                    (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+                ((((F : BorchersSequence d).funcs n).osConjTensorProduct
+                  ((F : BorchersSequence d).funcs m)) y))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (bvt_W OS lgc (n + m)
+              ((((F : BorchersSequence d).funcs n).conjTensorProduct
+                ((F : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
+      (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact
+      hWlimit
+
 theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),

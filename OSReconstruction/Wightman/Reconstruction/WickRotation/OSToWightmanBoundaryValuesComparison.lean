@@ -1216,6 +1216,43 @@ theorem bvt_wightmanInner_self_eq_osInner_of_componentwise_tendsto_singleSplit_x
     bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero
       (d := d) (OS := OS) (lgc := lgc) F F hF_compact hF_compact hzero hWlimit
 
+/-- The Hermitian repair immediately yields nonnegativity of the reconstructed
+self-pair on the compact positive-time shell controlled by the componentwise
+single-split `xiShift` limits. This is the exact positivity payoff of the
+comparison lane before any approximation from general Borchers vectors. -/
+theorem bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (hherm :
+      ∀ (n : ℕ) (f g : SchwartzNPoint d n),
+        (∀ x : NPointDomain d n,
+          g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
+        bvt_W OS lgc n g = starRingEnd ℂ (bvt_W OS lgc n f))
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact :
+      ∀ n,
+        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)))
+    (hWlimit :
+      ∀ n m (hm : 0 < m),
+        Filter.Tendsto
+          (fun t : ℝ =>
+            ∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                  (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                    (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+                ((((F : BorchersSequence d).funcs n).osConjTensorProduct
+                  ((F : BorchersSequence d).funcs m)) y))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (bvt_W OS lgc (n + m)
+              ((((F : BorchersSequence d).funcs n).conjTensorProduct
+                ((F : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  rw [bvt_wightmanInner_self_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
+    (d := d) (OS := OS) (lgc := lgc) hherm F hF_compact hWlimit]
+  exact PositiveTimeBorchersSequence.osInner_nonneg_self OS F
+
 private theorem bvt_F_one_eq_zero_local
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (z : Fin 1 → Fin (d + 1) → ℂ) :
