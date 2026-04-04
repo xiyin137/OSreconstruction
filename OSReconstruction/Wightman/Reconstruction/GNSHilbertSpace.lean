@@ -1243,8 +1243,8 @@ an alternative matrix-element formulation. -/
 
 /-- **Spectrum condition for the GNS Hilbert space.**
 
-    The GNS Poincaré representation satisfies the Streater-Wightman spectral
-    condition: P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains.
+    The GNS Poincaré representation satisfies the Streater-Wightman spectral condition:
+    P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains.
     Deferred: requires the SNAG theorem and spectral measure theory. -/
 theorem gns_spectrum_condition :
     SpectralConditionQFT d (gnsPoincareRep Wfn) := by
