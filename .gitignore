@@ -4,6 +4,8 @@
 .DS_Store
 **/.DS_Store
 /references/
+/communication/
+CLAUDE.md
 /test/
 **/test/
 **/tests/
