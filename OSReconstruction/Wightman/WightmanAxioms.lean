@@ -1003,6 +1003,363 @@ def ForwardTubeAnalyticity
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W n f)))
 
+/-! ### Product Forward Tube and Paley-Wiener-Schwartz Axioms -/
+
+/-- The product forward tube in difference coordinates: each component's imaginary
+    part independently lies in the open forward light cone V₊.
+
+    `ProductForwardTube d n = { ζ ∈ ℂⁿ⁽ᵈ⁺¹⁾ | ∀ k, Im(ζ_k) ∈ V₊ }`
+
+    This is the tube domain T(V₊ⁿ) = ℝⁿ⁽ᵈ⁺¹⁾ + i·(V₊)ⁿ, which is the natural
+    domain for the Fourier-Laplace transform of distributions with Fourier support
+    in V̄₊ⁿ, since V̄₊ is the (Euclidean) dual cone of V₊.
+
+    In absolute coordinates, the forward tube `ForwardTube d (n+1)` imposes
+    successive-difference conditions on the imaginary parts. After passing to
+    difference coordinates ζⱼ = zⱼ₊₁ - zⱼ, the successive-difference conditions
+    become independent per-component conditions, giving this product tube. -/
+def ProductForwardTube (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
+  { ζ | ∀ k : Fin n, InOpenForwardCone d (fun μ => (ζ k μ).im) }
+
+/-- **Fourier-Laplace extension for cone-supported distributions**
+    (Vladimirov, "Methods of the Theory of Generalized Functions", §25 Thm 25.1;
+     Streater-Wightman, "PCT, Spin and Statistics, and All That", Thm 2-6).
+
+    Let C ⊂ ℝᵐ be an open convex cone and C* = { p : ⟨p, y⟩ ≥ 0 ∀ y ∈ C } its
+    dual cone. If w ∈ S'(ℝᵐ) is a tempered distribution whose Fourier transform
+    has support in C*, then the Fourier-Laplace transform
+
+        F(z) = w(ξ ↦ e^{2πi⟨z,ξ⟩})
+
+    is holomorphic on the tube domain T(C) = ℝᵐ + iC, and w is recovered as
+    the distributional boundary value of F:
+
+        ∀ φ ∈ S(ℝᵐ), ∫ F(x + iεη) φ(x) dx → w(φ) as ε → 0⁺
+
+    for any approach direction η ∈ C.
+
+    Here specialized to C = V₊ⁿ (product of n copies of the open forward light
+    cone) and C* = V̄₊ⁿ (product of closed forward light cones), with the Fourier
+    support condition expressed in the same form as `SpectralConditionDistribution`. -/
+axiom cone_fourierLaplace_extension (d n : ℕ) [NeZero d]
+    (w : SchwartzNPointSpace d n → ℂ)
+    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
+    (hw_supp : ∀ φ : SchwartzNPointSpace d n,
+      (∀ q : NPointSpacetime d n, φ q ≠ 0 →
+        ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
+      w (φ.fourierTransform) = 0) :
+    ∃ (F : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ F (ProductForwardTube d n) ∧
+      (∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+        (∀ k : Fin n, InOpenForwardCone d (η k)) →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (w φ)))
+
+/-- **Converse Paley-Wiener-Schwartz theorem for tube domains**
+    (Vladimirov, "Methods of the Theory of Generalized Functions", §26 Thm 26.1;
+     Reed-Simon, "Methods of Modern Mathematical Physics II", §IX.3 Thm IX.16).
+
+    Let C ⊂ ℝᵐ be an open convex cone and T(C) the associated tube domain.
+    If F : T(C) → ℂ is holomorphic on T(C) and has a tempered distributional
+    boundary value w ∈ S'(ℝᵐ) — in the sense that
+
+        ∫ F(x + iεη) φ(x) dx → w(φ) as ε → 0⁺ for all φ ∈ S, η ∈ C —
+
+    then the Fourier transform of w has support in the dual cone C*:
+
+        supp(ŵ) ⊆ C* = { p : ⟨p, y⟩ ≥ 0 ∀ y ∈ C }.
+
+    Here specialized to C = V₊ⁿ, C* = V̄₊ⁿ, matching the Fourier support
+    condition in `SpectralConditionDistribution`. -/
+axiom converse_paleyWiener_tube (d n : ℕ) [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n))
+    (w : SchwartzNPointSpace d n → ℂ)
+    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
+    (hF_bv : ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+      (∀ k : Fin n, InOpenForwardCone d (η k)) →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (w φ))) :
+    ∀ φ : SchwartzNPointSpace d n,
+      (∀ q : NPointSpacetime d n, φ q ≠ 0 →
+        ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
+      w (φ.fourierTransform) = 0
+
+/-! ### Complex Difference Coordinates -/
+
+/-- Complex difference-coordinate map: sends absolute complex coordinates
+    `(z₀, z₁, ..., zₙ)` to difference coordinates `(z₁ - z₀, z₂ - z₁, ..., zₙ - zₙ₋₁)`.
+
+    This is the complexification of the map that reduces (n+1)-point functions
+    to n difference variables. -/
+noncomputable def complexDiffCoord (n : ℕ) :
+    (Fin (n + 1) → Fin (d + 1) → ℂ) →ₗ[ℂ] (Fin n → Fin (d + 1) → ℂ) where
+  toFun z k μ := z k.succ μ - z k.castSucc μ
+  map_add' u v := by ext k μ; simp [Pi.add_apply, add_sub_add_comm]
+  map_smul' c u := by ext k μ; simp [Pi.smul_apply, smul_sub]
+
+/-- Complex partial-sum section: sends complex difference coordinates
+    `(ζ₀, ζ₁, ..., ζₙ₋₁)` to absolute coordinates `(0, ζ₀, ζ₀ + ζ₁, ...)`.
+
+    This is the complexification of `diffVarSection`. It is a right inverse of
+    `complexDiffCoord`: `complexDiffCoord ∘ complexDiffVarSection = id`. -/
+noncomputable def complexDiffVarSection (n : ℕ) :
+    (Fin n → Fin (d + 1) → ℂ) →ₗ[ℂ] (Fin (n + 1) → Fin (d + 1) → ℂ) where
+  toFun ζ k μ := ∑ j : Fin k.val, ζ ⟨j.val, by omega⟩ μ
+  map_add' u v := by ext k μ; simp [Finset.sum_add_distrib]
+  map_smul' c u := by ext k μ; simp [Finset.mul_sum]
+
+@[simp] lemma complexDiffVarSection_zero (n : ℕ) (ζ : Fin n → Fin (d + 1) → ℂ)
+    (μ : Fin (d + 1)) : complexDiffVarSection d n ζ 0 μ = 0 := by
+  simp [complexDiffVarSection]
+
+lemma complexDiffVarSection_succ (n : ℕ) (ζ : Fin n → Fin (d + 1) → ℂ)
+    (k : Fin n) (μ : Fin (d + 1)) :
+    complexDiffVarSection d n ζ k.succ μ =
+      complexDiffVarSection d n ζ k.castSucc μ + ζ k μ := by
+  simp only [complexDiffVarSection, LinearMap.coe_mk, AddHom.coe_mk]
+  rw [Fin.sum_univ_castSucc]
+  simp [Fin.val_castSucc, Fin.val_last]
+
+/-- `complexDiffCoord` is a left inverse of `complexDiffVarSection`:
+    taking partial sums and then differences recovers the original. -/
+lemma complexDiffCoord_comp_section (n : ℕ) (ζ : Fin n → Fin (d + 1) → ℂ) :
+    complexDiffCoord d n (complexDiffVarSection d n ζ) = ζ := by
+  ext k μ
+  simp only [complexDiffCoord, LinearMap.coe_mk, AddHom.coe_mk]
+  rw [complexDiffVarSection_succ]
+  ring
+
+/-! ### Geometric Glue: Forward Tube ↔ Product Forward Tube -/
+
+/-- The difference-coordinate map sends `ForwardTube d (n+1)` into
+    `ProductForwardTube d n`: if the successive imaginary-part differences of z
+    are in V₊, then each component of the difference coordinates has
+    imaginary part in V₊. -/
+lemma diffCoord_maps_forwardTube_to_productTube (n : ℕ)
+    (z : Fin (n + 1) → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d (n + 1)) :
+    complexDiffCoord d n z ∈ ProductForwardTube d n := by
+  intro k
+  -- The k-th difference coordinate is z_{k+1} - z_k
+  -- Its imaginary part is Im(z_{k+1}) - Im(z_k)
+  -- ForwardTube checks Im(z_{k+1} - z_k) ∈ V₊ for all k, which is exactly this
+  have hk := hz k.succ
+  simp only [ForwardTube, Set.mem_setOf_eq] at hk
+  -- The condition at k.succ in ForwardTube checks
+  -- Im(z_{k+1} - z_k) ∈ V₊ (since prev for k+1 is z_k)
+  convert hk using 1
+  ext μ
+  simp only [complexDiffCoord, LinearMap.coe_mk, AddHom.coe_mk, Complex.sub_im]
+  congr 1
+  -- Need to show the prev at k.succ equals z k.castSucc
+  simp only [Fin.val_succ]
+  split_ifs with h
+  · omega
+  · congr 1; ext; omega
+
+/-- The partial-sum section, shifted by a basepoint `z₀` with `Im(z₀) ∈ V₊`, maps
+    `ProductForwardTube d n` into `ForwardTube d (n+1)`.
+
+    Note: The plain section (with basepoint 0) does NOT land in ForwardTube since
+    `ForwardTube d (n+1)` requires `Im(z₀) ∈ V₊` and `Im(0) = 0 ∉ V₊`.
+    Adding a basepoint with `Im(z₀) ∈ V₊` resolves this.
+
+    This is used in the backward direction: given W_analytic on ForwardTube, we
+    evaluate it at `(z₀, z₀ + ζ₀, z₀ + ζ₀ + ζ₁, ...)` for a fixed `z₀` in
+    the forward tube, and the result is independent of `z₀` by translation
+    invariance. -/
+lemma shifted_section_maps_productTube_to_forwardTube (n : ℕ)
+    (z₀ : Fin (d + 1) → ℂ) (hz₀ : InOpenForwardCone d (fun μ => (z₀ μ).im))
+    (ζ : Fin n → Fin (d + 1) → ℂ) (hζ : ζ ∈ ProductForwardTube d n) :
+    (fun k μ => z₀ μ + complexDiffVarSection d n ζ k μ) ∈ ForwardTube d (n + 1) := by
+  intro k
+  simp only [ForwardTube, Set.mem_setOf_eq]
+  -- The successive imaginary difference at k is:
+  --   Im(z₀ + S(ζ)(k)) - Im(z₀ + S(ζ)(k-1))
+  --   = Im(S(ζ)(k)) - Im(S(ζ)(k-1))
+  --   = Im(ζ_{k-1})  (for k ≥ 1)
+  -- For k = 0: Im(z₀ + S(ζ)(0)) - Im(0) = Im(z₀) ∈ V₊ (by hypothesis)
+  sorry
+
+/-- `InForwardCone d (n+1) η` (successive differences of η in V₊) implies that
+    each successive difference `η_{k+1} - η_k` (with η_{-1} = 0) lies in V₊.
+    In particular, the differences `η_{k+1} - η_k` for k ≥ 0 give the component-wise
+    V₊ condition needed for `ProductForwardTube`. -/
+lemma inForwardCone_succ_implies_diffs_inOpenForwardCone (n : ℕ)
+    (η : Fin (n + 1) → Fin (d + 1) → ℝ) (hη : InForwardCone d (n + 1) η) :
+    ∀ k : Fin n, InOpenForwardCone d (fun μ => η k.succ μ - η k.castSucc μ) := by
+  intro k
+  have := hη k.succ
+  simp only [InForwardCone] at this
+  convert this using 1
+  ext μ
+  simp only [Fin.val_succ]
+  split_ifs with h
+  · omega
+  · congr 1; ext; omega
+
+/-! ### Proof of the Main Equivalence -/
+
+/-- The reduced distribution in difference variables exists from translation invariance.
+    Given a translation-invariant tempered distribution W on (n+1)-point spacetime,
+    the functional `w := W ∘ (lift from diff vars)` via `diffVarReduction` gives a
+    tempered distribution on n difference variables satisfying the reduction property. -/
+lemma exists_diffVar_distribution
+    {W : (n : ℕ) → SchwartzNPointSpace d n → ℂ}
+    (hW_tempered : ∀ n, Continuous (W n))
+    (hW_linear : ∀ n, IsLinearMap ℂ (W n))
+    (hW_transl : ∀ (n : ℕ) (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d n),
+      (∀ x : NPointSpacetime d n, g.toFun x = f.toFun (fun i => x i + a)) →
+      W n f = W n g)
+    (n : ℕ) :
+    ∃ (w : SchwartzNPointSpace d n → ℂ),
+      Continuous w ∧ IsLinearMap ℂ w ∧
+      (∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f)) := by
+  -- Define w as the composition W_{n+1} ∘ (right inverse of diffVarReduction)
+  -- By translation invariance, W_{n+1} depends only on differences,
+  -- so it factors through diffVarReduction.
+  -- The canonical choice is: w(φ) = W_{n+1}(φ ∘ diffMap) for appropriate diffMap.
+  -- Since diffVarReduction is defined as precomposition with diffVarSection,
+  -- and W_{n+1} is translation invariant, w = W_{n+1} ∘ (section embedding) works.
+  -- The factorization W_{n+1}(f) = w(diffVarReduction f) follows from
+  -- translation invariance: f and (diffVarReduction f ∘ diffMap) differ by a translation.
+  sorry
+
+/-- **Forward direction helper**: Given F holomorphic on ProductForwardTube with BV = w
+    (in difference coordinates), construct W_analytic on ForwardTube with BV = W(n+1).
+
+    The key idea: define W_analytic(z) := F(z₁-z₀, z₂-z₁, ..., zₙ-zₙ₋₁).
+    Holomorphicity follows from composition with the ℂ-linear difference map.
+    The BV property uses translation invariance of W to convert between the
+    absolute-coordinate and difference-coordinate boundary-value integrals. -/
+lemma forwardTube_extension_of_productTube {n : ℕ}
+    {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
+    (hW_tempered : ∀ m, Continuous (W m))
+    (hW_linear : ∀ m, IsLinearMap ℂ (W m))
+    (hW_transl : ∀ (m : ℕ) (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d m),
+      (∀ x : NPointSpacetime d m, g.toFun x = f.toFun (fun i => x i + a)) →
+      W m f = W m g)
+    (w : SchwartzNPointSpace d n → ℂ)
+    (hw_det : ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f))
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n))
+    (hF_bv : ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+      (∀ k : Fin n, InOpenForwardCone d (η k)) →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (w φ))) :
+    ∃ (W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ W_analytic (ForwardTube d (n + 1)) ∧
+      (∀ (f : SchwartzNPointSpace d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
+        InForwardCone d (n + 1) η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d (n + 1),
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W (n + 1) f))) := by
+  -- Define W_analytic via composition with difference coordinates
+  let W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ :=
+    F ∘ (complexDiffCoord d n)
+  refine ⟨W_analytic, ?_, ?_⟩
+  · -- Holomorphicity: F ∘ complexDiffCoord is holomorphic on ForwardTube because
+    -- complexDiffCoord is ℂ-linear (hence differentiable everywhere) and maps
+    -- ForwardTube into ProductForwardTube (by diffCoord_maps_forwardTube_to_productTube).
+    intro z hz
+    have hmaps : complexDiffCoord d n z ∈ ProductForwardTube d n :=
+      diffCoord_maps_forwardTube_to_productTube d n z hz
+    -- F is differentiable at complexDiffCoord(z) ∈ ProductForwardTube
+    have hF_at := hF_holo.differentiableAt (IsOpen.mem_nhds sorry hmaps)
+    -- complexDiffCoord is differentiable (ℂ-linear on finite-dim Pi types)
+    have hL_diff : DifferentiableAt ℂ (complexDiffCoord d n) z := sorry
+    exact (hF_at.comp z hL_diff).differentiableWithinAt
+  · -- Boundary values: ∫ (F ∘ diffCoord)(x + iεη) f(x) dx → W(n+1)(f)
+    -- The difference coordinates of x + iεη are (x_{k+1}-x_k) + iε(η_{k+1}-η_k).
+    -- By translation invariance, the integral over absolute coordinates factorizes:
+    -- the basepoint integral decouples, and the remaining integral over difference
+    -- variables converges to w(diffVarReduction f) = W(n+1)(f) by hF_bv.
+    sorry
+
+/-- **Backward direction helper**: Given W_analytic on ForwardTube with BV = W(n+1),
+    construct F on ProductForwardTube with BV = w (in difference coordinates).
+
+    Uses the partial-sum section to embed difference coordinates into the forward tube,
+    then defines F(ζ) := W_analytic(0, ζ₀, ζ₀+ζ₁, ...). -/
+lemma productTube_function_of_forwardTube {n : ℕ}
+    {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
+    (hW_tempered : ∀ m, Continuous (W m))
+    (hW_linear : ∀ m, IsLinearMap ℂ (W m))
+    (hW_transl : ∀ (m : ℕ) (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d m),
+      (∀ x : NPointSpacetime d m, g.toFun x = f.toFun (fun i => x i + a)) →
+      W m f = W m g)
+    (w : SchwartzNPointSpace d n → ℂ)
+    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
+    (hw_det : ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f))
+    (W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ)
+    (hWa_holo : DifferentiableOn ℂ W_analytic (ForwardTube d (n + 1)))
+    (hWa_bv : ∀ (f : SchwartzNPointSpace d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
+      InForwardCone d (n + 1) η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointSpacetime d (n + 1),
+          W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W (n + 1) f))) :
+    ∃ (F : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ F (ProductForwardTube d n) ∧
+      (∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+        (∀ k : Fin n, InOpenForwardCone d (η k)) →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (w φ))) := by
+  -- By translation invariance, W_analytic depends only on differences.
+  -- Define F(ζ) as W_analytic evaluated at the partial-sum section.
+  -- However, complexDiffVarSection maps into z with z_0 = 0, which has Im(z_0) = 0 ∉ V₊.
+  -- Instead, we need to shift the basepoint into the forward tube.
+  -- For any fixed η₀ ∈ V₊ and small ε > 0, define:
+  --   F(ζ) := lim_{ε→0⁺} W_analytic(iε·η₀, ζ₀ + iε·η₀, ζ₀ + ζ₁ + iε·η₀, ...)
+  -- By translation invariance of the boundary values, this limit is independent of η₀
+  -- and defines a holomorphic function on ProductForwardTube.
+  -- The actual construction uses the identity theorem: W_analytic restricted to
+  -- difference-variable slices through any basepoint in V₊ is independent of the
+  -- basepoint (by translation invariance), so we can take the limit.
+  sorry
+
+/-- The zero-point case of ForwardTubeAnalyticity is trivial:
+    `ForwardTube d 0` is a set in `(Fin 0 → Fin (d+1) → ℂ)`, which has a unique
+    element, and `W_analytic` is just a constant. -/
+lemma forwardTubeAnalyticity_zero
+    {W : (n : ℕ) → SchwartzNPointSpace d n → ℂ}
+    (hW_tempered : ∀ n, Continuous (W n))
+    (hW_linear : ∀ n, IsLinearMap ℂ (W n)) :
+    ∃ (W_analytic : (Fin 0 → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ W_analytic (ForwardTube d 0) ∧
+      (∀ (f : SchwartzNPointSpace d 0) (η : Fin 0 → Fin (d + 1) → ℝ),
+        InForwardCone d 0 η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d 0,
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W 0 f))) := by
+  -- The type (Fin 0 → Fin (d+1) → ℂ) is subsingleton (empty product),
+  -- so ForwardTube d 0 = Set.univ, InForwardCone d 0 is vacuously true for all η,
+  -- and any constant function is trivially holomorphic on it.
+  -- The BV condition reduces to showing a constant integral converges to W 0 f.
+  sorry
+
+/-! ### Main Theorem -/
+
 /-- **Equivalence of the two spectral condition formulations.**
 
     The momentum-space Fourier support condition (supp(FT(w)) ⊆ V̄₊ⁿ) is equivalent
@@ -1029,6 +1386,37 @@ theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
       (∀ x : NPointSpacetime d n, g.toFun x = f.toFun (fun i => x i + a)) →
       W n f = W n g) :
     SpectralConditionDistribution d W ↔ ForwardTubeAnalyticity d W := by
-  sorry
+  constructor
+  · -- Forward: SpectralConditionDistribution → ForwardTubeAnalyticity
+    intro hSpec n
+    match n with
+    | 0 => exact forwardTubeAnalyticity_zero d hW_tempered hW_linear
+    | n + 1 =>
+      -- Get reduced distribution w from the spectral condition at index n
+      obtain ⟨w, hw_cont, hw_lin, hw_det, hw_supp⟩ := hSpec n
+      -- Apply the Fourier-Laplace extension axiom:
+      -- w has Fourier support in V̄₊ⁿ → ∃ F holomorphic on ProductForwardTube
+      obtain ⟨F, hF_holo, hF_bv⟩ :=
+        cone_fourierLaplace_extension d n w hw_cont hw_lin hw_supp
+      -- Lift F from ProductForwardTube to ForwardTube via difference coordinates
+      exact forwardTube_extension_of_productTube d
+        hW_tempered hW_linear hW_transl w hw_det F hF_holo hF_bv
+  · -- Backward: ForwardTubeAnalyticity → SpectralConditionDistribution
+    intro hAnal n
+    -- Get the holomorphic extension W_analytic on ForwardTube d (n+1)
+    obtain ⟨W_analytic, hWa_holo, hWa_bv⟩ := hAnal (n + 1)
+    -- Get the reduced distribution w from translation invariance
+    obtain ⟨w, hw_cont, hw_lin, hw_det⟩ :=
+      exists_diffVar_distribution d hW_tempered hW_linear hW_transl n
+    refine ⟨w, hw_cont, hw_lin, hw_det, ?_⟩
+    -- Need: Fourier support of w in V̄₊ⁿ
+    -- Strategy: construct F on ProductForwardTube from W_analytic,
+    -- then apply the converse Paley-Wiener-Schwartz axiom
+    obtain ⟨F, hF_holo, hF_bv⟩ :=
+      productTube_function_of_forwardTube d
+        hW_tempered hW_linear hW_transl w hw_cont hw_lin hw_det
+        W_analytic hWa_holo hWa_bv
+    -- Apply the converse Paley-Wiener-Schwartz theorem
+    exact converse_paleyWiener_tube d n F hF_holo w hw_cont hw_lin hF_bv
 
 end SpectralConditionDistribution
