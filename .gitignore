@@ -4,14 +4,12 @@
 .DS_Store
 **/.DS_Store
 /references/
-/communication/
 /test/
 **/test/
 **/tests/
 /deprecated/
 .claude/
 .vscode/
-CLAUDE.md
 agent.md
 mcp_gemini/
 .mcp.json
