@@ -219,8 +219,6 @@ axiom converse_paleyWiener_tube (d n : ℕ) [NeZero d]
 
 /-! ### Complex Difference Coordinates -/
 
-variable {d : ℕ} [NeZero d]
-
 /-- Complex difference-coordinate map. -/
 noncomputable def complexDiffCoord (d : ℕ) (n : ℕ) :
     (Fin (n + 1) → Fin (d + 1) → ℂ) →ₗ[ℂ] (Fin n → Fin (d + 1) → ℂ) where
@@ -243,7 +241,7 @@ lemma complexDiffVarSection_succ (n : ℕ) (ζ : Fin n → Fin (d + 1) → ℂ)
     (k : Fin n) (μ : Fin (d + 1)) :
     complexDiffVarSection d n ζ k.succ μ =
       complexDiffVarSection d n ζ k.castSucc μ + ζ k μ := by
-  simp only [complexDiffVarSection, LinearMap.coe_mk, AddHom.coe_mk]
+  dsimp [complexDiffVarSection]
   rw [Fin.sum_univ_castSucc]
   simp [Fin.val_castSucc, Fin.val_last]
 
@@ -262,16 +260,7 @@ lemma diffCoord_maps_forwardTube_to_productTube (n : ℕ)
     (z : Fin (n + 1) → Fin (d + 1) → ℂ) (hz : z ∈ ForwardTube d (n + 1)) :
     complexDiffCoord d n z ∈ ProductForwardTube d n := by
   intro k
-  have hk := hz k.succ
-  simp only [ForwardTube, Set.mem_setOf_eq] at hk
-  convert hk using 1
-  ext μ
-  simp only [complexDiffCoord, LinearMap.coe_mk, AddHom.coe_mk, Complex.sub_im]
-  congr 1
-  simp only [Fin.val_succ]
-  split_ifs with h
-  · omega
-  · congr 1; ext; omega
+  exact hz k.succ
 
 /-- Shifted partial-sum section maps ProductForwardTube into ForwardTube. -/
 lemma shifted_section_maps_productTube_to_forwardTube (n : ℕ)
@@ -285,14 +274,7 @@ lemma inForwardCone_succ_implies_diffs_inOpenForwardCone (n : ℕ)
     (η : Fin (n + 1) → Fin (d + 1) → ℝ) (hη : InForwardCone d (n + 1) η) :
     ∀ k : Fin n, InOpenForwardCone d (fun μ => η k.succ μ - η k.castSucc μ) := by
   intro k
-  have := hη k.succ
-  simp only [InForwardCone] at this
-  convert this using 1
-  ext μ
-  simp only [Fin.val_succ]
-  split_ifs with h
-  · omega
-  · congr 1; ext; omega
+  exact hη k.succ
 
 /-! ### Proof of the Main Equivalence -/
 
@@ -438,4 +420,4 @@ theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
       productTube_function_of_forwardTube d
         hW_tempered hW_linear hW_transl w hw_cont hw_lin hw_det
         W_analytic hWa_holo hWa_bv
-    exact converse_paleyWiener_tube d n F hF_holo w hw_cont hw_lin hF_bv
+    exact @converse_paleyWiener_tube d ‹_› d n ‹_› F hF_holo w hw_cont hw_lin hF_bv
