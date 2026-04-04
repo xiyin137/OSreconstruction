@@ -288,8 +288,11 @@ def baseFiber (m d : ℕ) [NeZero d]
     (ζ₀ : Fin (d + 1) → ℂ) (k : Fin m) (μ : Fin (d + 1)) :
     baseFiberConfig m d ζtail ζ₀ k.succ μ =
       ζ₀ μ + ∑ j : Fin (k.val + 1), ζtail ⟨j.val, by omega⟩ μ := by
-  simp only [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ, add_assoc]
-  sorry -- TODO: Mathlib 4.29 Fin.cons simp pattern on ⟨↑i, proof⟩ indices
+  rw [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ]
+  refine congrArg (fun z : ℂ => ζ₀ μ + z) ?_
+  refine Finset.sum_congr rfl ?_
+  intro x hx
+  rfl
 
 /-- Shifting the base difference variable by `c` translates every cumulative
 coordinate by the same `c`. -/
