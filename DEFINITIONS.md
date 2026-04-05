@@ -185,8 +185,7 @@ A comprehensive index of all definitions in the OSReconstruction Lean 4 project,
 | Definition | Line | Description |
 |---|---|---|
 | `ProductForwardMomentumCone` | [40](OSReconstruction/Wightman/SpectralEquivalence.lean#L40) | Product of closed forward light cones V̄₊ⁿ in momentum space |
-| `nPointDot` | [45](OSReconstruction/Wightman/SpectralEquivalence.lean#L45) | Euclidean dot product on n-point spacetime `⟨p, x⟩ = ∑_k ∑_μ p(k)(μ) · x(k)(μ)` |
-| `SchwartzNPointSpace.fourierTransform` | [79](OSReconstruction/Wightman/SpectralEquivalence.lean#L79) | Fourier transform on n-point Schwartz space via transfer to EuclideanSpace |
+| `SchwartzNPointSpace.fourierTransform` | [68](OSReconstruction/Wightman/SpectralEquivalence.lean#L68) | Fourier transform on n-point Schwartz space via transfer to EuclideanSpace |
 | `diffVarReduction` | [125](OSReconstruction/Wightman/SpectralEquivalence.lean#L125) | Reduction to difference variables: precomposes with zero-basepoint section, `ξⱼ = xⱼ₊₁ - xⱼ` |
 | `SpectralConditionDistribution` | [140](OSReconstruction/Wightman/SpectralEquivalence.lean#L140) | Momentum-space spectral condition: reduced Wightman distributions have Fourier support in V̄₊ⁿ |
 | `ForwardTubeAnalyticity` | [156](OSReconstruction/Wightman/SpectralEquivalence.lean#L156) | Coordinate-space spectral condition: n-point functions extend holomorphically to the forward tube with distributional boundary values |
