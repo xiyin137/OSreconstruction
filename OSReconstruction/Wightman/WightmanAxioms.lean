@@ -131,45 +131,6 @@ theorem MatrixElementSpectralCondition.continuousInDirection
     PoincareRepresentation.translationContinuousInDirection π μ :=
   MatrixElementSpectralCondition.strongly_continuous hπ μ
 
-/-- **Streater-Wightman Spectral Condition** (Axiom II of Streater-Wightman §3-1).
-
-    The joint spectrum of the energy-momentum operators P₀, P₁, …, P_d
-    lies in the closed forward light cone:
-      spec(P) ⊆ V̄₊ = { p : p₀ ≥ 0, −p₀² + |p⃗|² ≤ 0 }
-
-    Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains. -/
-structure SpectralConditionQFT (d : ℕ) [NeZero d]
-    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
-    (π : PoincareRepresentation d H) : Prop where
-  strongly_continuous : PoincareRepresentation.translationStronglyContinuous π
-  energy_nonneg :
-    ∀ (ψ : H) (hψ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain),
-    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ⟩⟫_ℂ).re ≥ 0
-  mass_shell :
-    ∀ (ψ : H)
-      (hψ₀ : ψ ∈ (π.momentumOp 0 (strongly_continuous 0)).domain)
-      (hP₀ψ : (π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩ ∈
-        (π.momentumOp 0 (strongly_continuous 0)).domain)
-      (hψᵢ : ∀ i : Fin d, ψ ∈
-        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain)
-      (hPᵢψ : ∀ i : Fin d,
-        (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))) ⟨ψ, hψᵢ i⟩ ∈
-          (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i))).domain),
-    (⟪ψ, (π.momentumOp 0 (strongly_continuous 0))
-      ⟨(π.momentumOp 0 (strongly_continuous 0)) ⟨ψ, hψ₀⟩, hP₀ψ⟩⟫_ℂ).re ≥
-    ∑ i : Fin d,
-      (⟪ψ, (π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
-        ⟨(π.momentumOp (Fin.succ i) (strongly_continuous (Fin.succ i)))
-          ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re
-
-/-- Extract strong continuity from the S-W spectral condition. -/
-theorem SpectralConditionQFT.continuousInDirection
-    {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
-    {π : PoincareRepresentation d H}
-    (hπ : @SpectralConditionQFT d _ H _ _ _ π) (μ : Fin (d + 1)) :
-    PoincareRepresentation.translationContinuousInDirection π μ :=
-  hπ.strongly_continuous μ
-
 /-! ### Locality -/
 
 /-- Two Schwartz functions have spacelike-separated supports -/
@@ -227,12 +188,12 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   -- W1: Poincaré Covariance and Spectrum Condition
   /-- The unitary representation of the Poincaré group -/
   poincare_rep : @PoincareRepresentation d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
-  /-- **Spectrum condition** (Streater-Wightman Axiom II): The joint spectrum of
-      the energy-momentum operators P₀, …, P_d lies in the closed forward light
-      cone V̄₊. Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator
-      domains. See `SpectralConditionQFT` for the full docstring. -/
+  /-- Spectrum condition in matrix-element form: translation matrix coefficients
+      admit forward-tube holomorphic continuation with the correct boundary
+      values. This is the Stone-compatible surface intended to precede the full
+      joint-spectrum theorem for the unbounded generators. -/
   spectrum_condition :
-    @SpectralConditionQFT d _ HilbertSpace
+    @MatrixElementSpectralCondition d _ HilbertSpace
       instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
   /-- The vacuum vector -/
   vacuum : HilbertSpace
