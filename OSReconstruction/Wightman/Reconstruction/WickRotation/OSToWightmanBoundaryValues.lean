@@ -871,6 +871,26 @@ theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_tendsto_sing
     bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
       (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hHlimit
 
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_timeShift_eq_osInner
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hkernel :
+      ∀ N (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          WightmanInnerProduct d (bvt_W OS lgc)
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))
+          =
+          OSInnerProduct d OS.S
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_timeShift_eq_osInner
+      (d := d) OS lgc F hkernel
+
 theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

@@ -182,6 +182,218 @@ private theorem tendsto_compactApproxPositiveTimeBorchers_wightmanInner_self
     WightmanInnerProduct, approxF, compactApproxPositiveTimeBorchers] using
     houter
 
+private theorem tendsto_wightmanInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F G : BorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport (((G.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ))) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        WightmanInnerProduct d (bvt_W OS lgc) F
+          (timeShiftBorchers (d := d) t G))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (WightmanInnerProduct d (bvt_W OS lgc) F G)) := by
+  unfold WightmanInnerProduct
+  refine tendsto_finset_sum _ ?_
+  intro n hn
+  refine tendsto_finset_sum _ ?_
+  intro m hm
+  simpa [timeShiftBorchers_funcs] using
+    tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
+      (d := d) (OS := OS) (lgc := lgc)
+      (f := F.funcs n) (g := G.funcs m) (hg_compact := hG_compact m)
+
+private theorem tendsto_osInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (hG_compact : ∀ n,
+      HasCompactSupport ((((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (timeShiftBorchers (d := d) t (G : BorchersSequence d)))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (OSInnerProduct d OS.S (F : BorchersSequence d) (G : BorchersSequence d))) := by
+  let xF : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+  let xG : OSHilbertSpace OS :=
+    (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+  let ζ : ℝ → OSHilbertSpace OS := fun t =>
+    if ht : 0 < t then
+      osTimeShiftHilbert (d := d) OS lgc t ht xG
+    else
+      xG
+  have hshift :
+      Filter.Tendsto
+        ζ
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds xG) := by
+    simpa [ζ, xG] using
+      tendsto_osTimeShiftHilbert_nhdsWithin_zero_of_isCompactSupport
+        (d := d) (OS := OS) (lgc := lgc) G hG_compact
+  let κ : ℝ → ℂ := fun t => @inner ℂ (OSHilbertSpace OS) _ xF (ζ t)
+  have hinner :
+      Filter.Tendsto
+        κ
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (@inner ℂ (OSHilbertSpace OS) _ xF xG)) := by
+    have hinner_cont :
+        Continuous (fun y : OSHilbertSpace OS =>
+          @inner ℂ (OSHilbertSpace OS) _ xF y) :=
+      continuous_const.inner continuous_id
+    have hinner0 :
+        Filter.Tendsto
+          ((fun y : OSHilbertSpace OS =>
+            @inner ℂ (OSHilbertSpace OS) _ xF y) ∘ ζ)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (@inner ℂ (OSHilbertSpace OS) _ xF xG)) :=
+      (hinner_cont.tendsto xG).comp hshift
+    simpa [κ] using hinner0
+  have hEq :
+      κ
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun t : ℝ =>
+        OSInnerProduct d OS.S (F : BorchersSequence d)
+          (timeShiftBorchers (d := d) t (G : BorchersSequence d))) := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    have ht' : 0 < t := ht
+    calc
+      κ t
+        = @inner ℂ (OSHilbertSpace OS) _ xF
+            (osTimeShiftHilbert (d := d) OS lgc t ht' xG) := by
+              simp [κ, ζ, ht']
+      _ = OSInnerProduct d OS.S (F : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (G : BorchersSequence d)) := by
+            rw [osTimeShiftHilbert_coe (d := d) (OS := OS) (lgc := lgc) (t := t) (ht := ht')
+              (x := (⟦G⟧ : OSPreHilbertSpace OS))]
+            rw [UniformSpace.Completion.inner_coe]
+            simp [osTimeShiftLinear, osTimeShift, PositiveTimeBorchersSequence.osInner,
+              timeShiftPositiveTimeBorchers]
+  exact Filter.Tendsto.congr' hEq <| by
+    simpa [xF, xG, PositiveTimeBorchersSequence.osInner, OSPreHilbertSpace.inner_eq,
+      UniformSpace.Completion.inner_coe] using hinner
+
+/-- Compact-support truncations reduce theorem 3 to scalar time-shift kernel
+comparisons on the compact approximants.
+
+If the reconstructed Wightman kernel against the right Euclidean time-shifted
+compact approximants agrees for every positive real time with the honest OS
+semigroup matrix element, then positivity follows by taking `t → 0+` on each
+compact approximant and finally `N → ∞`. -/
+theorem bvt_wightmanInner_self_nonneg_of_compactApprox_timeShift_eq_osInner
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hkernel :
+      ∀ N (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          WightmanInnerProduct d (bvt_W OS lgc)
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))
+          =
+          OSInnerProduct d OS.S
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  let approxF : ℕ → PositiveTimeBorchersSequence d := fun N => compactApproxPositiveTimeBorchers F N
+  have hnonneg :
+      ∀ N : ℕ,
+        0 ≤
+          (WightmanInnerProduct d (bvt_W OS lgc)
+            (approxF N : BorchersSequence d)
+            (approxF N : BorchersSequence d)).re := by
+    intro N
+    let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N
+    have hcompact :
+        ∀ n,
+          HasCompactSupport ((((F_N : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+            NPointDomain d n → ℂ)) := by
+      intro n
+      simpa [F_N] using
+        compactApproxPositiveTimeBorchers_component_compact F N n
+    have hW :
+        Filter.Tendsto
+          (fun t : ℝ =>
+            WightmanInnerProduct d (bvt_W OS lgc)
+              (F_N : BorchersSequence d)
+              (timeShiftBorchers (d := d) t (F_N : BorchersSequence d)))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (WightmanInnerProduct d (bvt_W OS lgc)
+              (F_N : BorchersSequence d)
+              (F_N : BorchersSequence d))) :=
+      tendsto_wightmanInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+        (d := d) OS lgc (F := (F_N : BorchersSequence d)) (G := (F_N : BorchersSequence d))
+        hcompact
+    have hOS :
+        Filter.Tendsto
+          (fun t : ℝ =>
+            OSInnerProduct d OS.S
+              (F_N : BorchersSequence d)
+              (timeShiftBorchers (d := d) t (F_N : BorchersSequence d)))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (OSInnerProduct d OS.S
+              (F_N : BorchersSequence d) (F_N : BorchersSequence d))) :=
+      tendsto_osInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+        (d := d) OS lgc F_N F_N hcompact
+    have hEq :
+        (fun t : ℝ =>
+          WightmanInnerProduct d (bvt_W OS lgc)
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d)))
+        =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+        (fun t : ℝ =>
+          OSInnerProduct d OS.S
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))) := by
+      filter_upwards [self_mem_nhdsWithin] with t ht
+      simpa [F_N] using hkernel N t ht
+    have hOS' :
+        Filter.Tendsto
+          (fun t : ℝ =>
+            WightmanInnerProduct d (bvt_W OS lgc)
+              (F_N : BorchersSequence d)
+              (timeShiftBorchers (d := d) t (F_N : BorchersSequence d)))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (OSInnerProduct d OS.S
+              (F_N : BorchersSequence d) (F_N : BorchersSequence d))) :=
+      Filter.Tendsto.congr' hEq.symm hOS
+    have hcmp :
+        WightmanInnerProduct d (bvt_W OS lgc)
+            (F_N : BorchersSequence d)
+            (F_N : BorchersSequence d)
+          =
+        OSInnerProduct d OS.S
+          (F_N : BorchersSequence d) (F_N : BorchersSequence d) :=
+      tendsto_nhds_unique hW hOS'
+    rw [hcmp]
+    simpa [PositiveTimeBorchersSequence.osInner] using
+      PositiveTimeBorchersSequence.osInner_nonneg_self OS F_N
+  have hconv :=
+    tendsto_compactApproxPositiveTimeBorchers_wightmanInner_self
+      (d := d) OS lgc F
+  have hre :
+      Filter.Tendsto
+        (fun N : ℕ =>
+          (WightmanInnerProduct d (bvt_W OS lgc)
+            (approxF N : BorchersSequence d)
+            (approxF N : BorchersSequence d)).re)
+        Filter.atTop
+        (nhds
+          ((WightmanInnerProduct d (bvt_W OS lgc)
+            (F : BorchersSequence d)
+            (F : BorchersSequence d)).re)) := by
+    simpa [Function.comp, approxF] using
+      (Complex.continuous_re.continuousAt.tendsto.comp hconv)
+  exact isClosed_Ici.mem_of_tendsto hre (Filter.Eventually.of_forall hnonneg)
+
 /-- Compact-support truncations reduce theorem 3 for a general positive-time
 Borchers vector to the honest compact-shell `hHlimit` seam.
 
