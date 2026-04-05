@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-16
+Last updated: 2026-04-04
 
 This file tracks the active blocker picture on the OS reconstruction path.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -11,13 +11,13 @@ Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`)
 
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
-| `OSReconstruction/Wightman` | 33 |
+| `OSReconstruction/Wightman` | 32 |
 | `OSReconstruction/SCV` | 2 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
-| `OSReconstruction/vNA` | 40 |
-| **Whole project** | **77** |
+| `OSReconstruction/vNA` | 37 |
+| **Whole project** | **73** |
 
-Count cross-checked on 2026-03-16 with:
+Count cross-checked on 2026-04-04 with:
 ```bash
 rg -c '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 ```
@@ -135,21 +135,26 @@ Infrastructure (sorry-free):
 - `wick_rotated_kernel_mul_zeroDiagonal_integrable`
 - `constructedSchwinger_tempered_zeroDiagonal`
 
-`WickRotation/SchwingerAxioms.lean` (4):
-- `schwinger_os_term_eq_wightman_term`
-- `bhw_euclidean_reality_ae`
-- `bhw_pointwise_cluster_forwardTube`
+`WickRotation/SchwingerAxioms.lean` (2):
+- `schwingerExtension_os_positivity` (corrected positivity route; old
+  `schwinger_os_term_eq_wightman_term` chain was mathematically incorrect —
+  the OS inner product is a Laplace-type pairing, not equal to the Wightman
+  Fourier-type pairing)
 - `W_analytic_cluster_integral`
 
-Current blocker sharpening (2026-03-10):
-- `bhw_euclidean_reality_ae` is now reduced to the honest overlap problem on
-  `D = {z ∈ PET | hermitianReverse z ∈ PET}`.
-- Infrastructure now present in `SchwingerAxioms.lean`:
-  `hermitianReverseOverlap`, `differentiableOn_hermitianReverse_partner`,
-  `ae_euclidean_points_in_hermitianReverseOverlap`.
-- What still needs to be proved is the Schwarz-reflection identity `F = conj(F ∘ hermitianReverse)`
-  on that overlap, extracted from the real Jost-support boundary theorem
-  `wightman_real_on_jost_support`.
+`WickRotation/OSToWightmanPositivity.lean` (3) — NEW:
+- `bvt_W_nonneg_single_single`
+- `wightmanInnerProduct_tendsto_of_borchersSeq_tendsto`
+- `orderedPositiveTime_compact_dense`
+
+Current blocker sharpening (2026-04-04):
+- `bhw_euclidean_reality_ae` — PROVED via Schwarz reflection on the
+  hermitianReverse overlap domain.
+- `schwinger_os_term_eq_wightman_term` chain — REMOVED (mathematically
+  incorrect: OS Laplace-type pairing ≠ Wightman Fourier-type pairing).
+  Replaced by `schwingerExtension_os_positivity` following the correct
+  OS 1973 §4.3 strategy; proof infrastructure in new
+  `OSToWightmanPositivity.lean`.
 
 `WickRotation/ForwardTubeLorentz.lean` (2):
 - `polynomial_growth_on_slice`
@@ -185,17 +190,22 @@ New proved theorems (2026-03-10):
 - `analytic_boundary_local_commutativity_of_boundary_continuous` — raw W_analytic with honest ContinuousWithinAt hypotheses
 
 Current assessment:
-- `R→E` has two independent hard roots:
-  - coincidence-singularity / zero-diagonal integrability
-  - Euclidean reality / reflection
-- the `boundary_values_tempered` extraction work on the E→R side does not by itself close either of those; it mainly prepares the tempered Wightman boundary package after E→R continuation exists
+- `R→E` root blockers:
+  - coincidence-singularity / zero-diagonal integrability (unchanged)
+  - Euclidean reality / reflection — `bhw_euclidean_reality_ae` NOW PROVED
+  - OS positivity — `schwingerExtension_os_positivity` replaces the
+    mathematically incorrect old route; proof infrastructure in
+    `OSToWightmanPositivity.lean`
+- the `boundary_values_tempered` extraction work on the E→R side does not by itself close the remaining gaps; it mainly prepares the tempered Wightman boundary package after E→R continuation exists
 
 ## Secondary Blockers
 
 Not on the shortest OS reconstruction lane:
 - `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
-- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker
-- `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
+- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker (`gns_spectrum_condition`)
+- `Wightman/SpectralEquivalence.lean` (6): additive infrastructure proving
+  `SpectralConditionDistribution ↔ ForwardTubeAnalyticity`; depends on two
+  hard-analysis axioms (`cone_fourierLaplace_extension`, `converse_paleyWiener_tube`)
 - `Wightman/NuclearSpaces/*`: side development, not first execution lane
 - `ComplexLieGroups` residual blockers: see the CLG status files
 
@@ -212,7 +222,8 @@ Not on the shortest OS reconstruction lane:
 4. After `boundary_values_tempered`, finish the six transfer theorems and `bvt_cluster` in `OSToWightmanBoundaryValues.lean`.
 5. In parallel or next, attack the live R→E front after the Route 1 merge:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
-   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster
+   - `SchwingerAxioms.lean`: OS positivity (`schwingerExtension_os_positivity`), cluster (`W_analytic_cluster_integral`)
+   - `OSToWightmanPositivity.lean`: dense image / Hilbert norm identification / density for positivity proof
    - `BHWTranslation.isPreconnected_baseFiber` is now optional old-route cleanup, not required for the merged proof path
 6. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
 
