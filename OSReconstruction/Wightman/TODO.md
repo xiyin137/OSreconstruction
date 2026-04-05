@@ -203,6 +203,9 @@ Current assessment:
 Not on the shortest OS reconstruction lane:
 - `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
 - `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker (`gns_spectrum_condition`)
+- `Wightman/SpectralEquivalence.lean` (6): additive infrastructure proving
+  `SpectralConditionDistribution ↔ ForwardTubeAnalyticity`; depends on two
+  hard-analysis axioms (`cone_fourierLaplace_extension`, `converse_paleyWiener_tube`)
 - `Wightman/NuclearSpaces/*`: side development, not first execution lane
 - `ComplexLieGroups` residual blockers: see the CLG status files
 
