@@ -99,9 +99,10 @@ A comprehensive index of all definitions in the OSReconstruction Lean 4 project,
 | `SpectralCondition` | [83](OSReconstruction/Wightman/WightmanAxioms.lean#L83) | Legacy weak spectrum-condition surface expressed using everywhere-defined Hamiltonian and spatial-momentum maps |
 | `ComplexSpacetime` | [95](OSReconstruction/Wightman/WightmanAxioms.lean#L95) | Complexified spacetime `Fin(d+1) → ℂ` used for translation matrix coefficients |
 | `TranslationForwardTube` | [99](OSReconstruction/Wightman/WightmanAxioms.lean#L99) | One-point forward tube `{ z ∈ ℂ^(d+1) | Im z ∈ V₊^open }` |
-| `MatrixElementSpectralCondition` | [108](OSReconstruction/Wightman/WightmanAxioms.lean#L108) | Stone-compatible matrix-element spectral condition: strong continuity plus forward-tube holomorphic continuation of translation matrix coefficients |
-| `IsLocal` | [107](OSReconstruction/Wightman/WightmanAxioms.lean#L107) | Locality (microcausality): spacelike-separated fields commute |
-| `WightmanQFT` | [178](OSReconstruction/Wightman/WightmanAxioms.lean#L178) | Complete Wightman QFT structure bundling Hilbert space, Poincare rep, vacuum, fields, and axioms; its `spectrum_condition` field now uses `MatrixElementSpectralCondition` |
+| `MatrixElementSpectralCondition` | [108](OSReconstruction/Wightman/WightmanAxioms.lean#L108) | Stone-compatible matrix-element spectral condition: strong continuity plus forward-tube holomorphic continuation of translation matrix coefficients (kept as legacy; see `SpectralConditionQFT`) |
+| `SpectralConditionQFT` | [141](OSReconstruction/Wightman/WightmanAxioms.lean#L141) | Streater-Wightman Axiom II: P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on Stone-generator domains, with strong continuity of translations. Used as the `WightmanQFT.spectrum_condition` field |
+| `IsLocal` | [186](OSReconstruction/Wightman/WightmanAxioms.lean#L186) | Locality (microcausality): spacelike-separated fields commute |
+| `WightmanQFT` | [217](OSReconstruction/Wightman/WightmanAxioms.lean#L217) | Complete Wightman QFT structure bundling Hilbert space, Poincare rep, vacuum, fields, and axioms; its `spectrum_condition` field uses `SpectralConditionQFT` |
 | `InOpenForwardCone` | [579](OSReconstruction/Wightman/WightmanAxioms.lean#L579) | Predicate for membership in the open forward light cone: `η⁰ > 0` and `η² < 0` |
 | `ForwardTube` | [604](OSReconstruction/Wightman/WightmanAxioms.lean#L604) | The forward tube `T_n`: complex configurations with successive imaginary differences in `V⁺` |
 | `ExtendedForwardTube` | [650](OSReconstruction/Wightman/WightmanAxioms.lean#L650) | Extended forward tube `T'_n = ⋃_{Λ ∈ SO⁺} Λ(T_n)` |
