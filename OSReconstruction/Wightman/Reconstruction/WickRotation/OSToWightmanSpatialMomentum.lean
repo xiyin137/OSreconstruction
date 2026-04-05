@@ -1055,7 +1055,7 @@ private theorem bumpTruncationRadiusNPoint_eq_unflatten {n : ℕ}
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
   simp [unitBallBumpSchwartzNPointRadius, flattenSchwartzNPoint_apply]
 
-private def compactApproxPositiveTimeBorchers
+def compactApproxPositiveTimeBorchers
     (F : PositiveTimeBorchersSequence d) (N : ℕ) :
     PositiveTimeBorchersSequence d where
   toBorchersSequence :=
@@ -1088,7 +1088,7 @@ private def compactApproxPositiveTimeBorchers
       bumpTruncationRadiusNPoint (d := d)
         (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := rfl
 
-private theorem compactApproxPositiveTimeBorchers_component_compact
+theorem compactApproxPositiveTimeBorchers_component_compact
     (F : PositiveTimeBorchersSequence d) (N n : ℕ) :
     HasCompactSupport
       ((((compactApproxPositiveTimeBorchers F N : PositiveTimeBorchersSequence d) :
@@ -1110,7 +1110,7 @@ private theorem compactApproxPositiveTimeBorchers_component_compact
   rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
   simpa using hflat.comp_homeomorph (flattenCLEquivReal n (d + 1)).toHomeomorph
 
-private theorem tendsto_compactApproxPositiveTimeBorchers_component
+theorem tendsto_compactApproxPositiveTimeBorchers_component
     (F : PositiveTimeBorchersSequence d) (n : ℕ) :
     Filter.Tendsto
       (fun N : ℕ =>

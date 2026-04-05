@@ -23,6 +23,129 @@ noncomputable section
 
 variable {d : ℕ} [NeZero d]
 
+omit [NeZero d] in
+private theorem unflatten_add_flatTimeShiftDirection_local {n : ℕ}
+    (u : Fin (n * (d + 1)) → ℝ) (t : ℝ) :
+    (flattenCLEquivReal n (d + 1)).symm (u + t • flatTimeShiftDirection d n) =
+      fun i => ((flattenCLEquivReal n (d + 1)).symm u i) - timeShiftVec d t := by
+  ext i μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [sub_eq_add_neg]
+  · simp [flatTimeShiftDirection, timeShiftVec, hμ]
+
+omit [NeZero d] in
+private theorem timeShiftSchwartzNPoint_eq_unflatten_translate_local {n : ℕ}
+    (t : ℝ) (f : SchwartzNPoint d n) :
+    timeShiftSchwartzNPoint (d := d) t f =
+      unflattenSchwartzNPoint (d := d)
+        (SCV.translateSchwartz (t • flatTimeShiftDirection d n)
+          (flattenSchwartzNPoint (d := d) f)) := by
+  ext x
+  simp [SCV.translateSchwartz_apply, unflatten_add_flatTimeShiftDirection_local]
+
+omit [NeZero d] in
+private theorem hasCompactSupport_flattenSchwartzNPoint_local {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : HasCompactSupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)) :
+    HasCompactSupport
+      ((flattenSchwartzNPoint (d := d) f :
+        SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) : (Fin (n * (d + 1)) → ℝ) → ℂ) := by
+  simpa [flattenSchwartzNPoint] using
+    hf.comp_homeomorph ((flattenCLEquivReal n (d + 1)).symm.toHomeomorph)
+
+omit [NeZero d] in
+private theorem tendsto_timeShiftSchwartzNPoint_nhds_of_isCompactSupport_local {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (hf : HasCompactSupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ))
+    (t₀ : ℝ) :
+    Filter.Tendsto (fun t : ℝ => timeShiftSchwartzNPoint (d := d) t f) (nhds t₀)
+      (nhds (timeShiftSchwartzNPoint (d := d) t₀ f)) := by
+  let ψ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    flattenSchwartzNPoint (d := d) f
+  have hψ : HasCompactSupport ((ψ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ) :
+      (Fin (n * (d + 1)) → ℝ) → ℂ) :=
+    hasCompactSupport_flattenSchwartzNPoint_local (d := d) f hf
+  have hη : Continuous (fun t : ℝ => t • flatTimeShiftDirection d n) :=
+    continuous_id.smul continuous_const
+  have hflat_full :
+      Filter.Tendsto
+        (fun s : Fin (n * (d + 1)) → ℝ => SCV.translateSchwartz s ψ)
+        (nhds (t₀ • flatTimeShiftDirection d n))
+        (nhds (SCV.translateSchwartz (t₀ • flatTimeShiftDirection d n) ψ)) :=
+    SCV.tendsto_translateSchwartz_nhds_of_isCompactSupport ψ hψ
+      (t₀ • flatTimeShiftDirection d n)
+  have hflat :
+      Filter.Tendsto
+        (fun t : ℝ => SCV.translateSchwartz (t • flatTimeShiftDirection d n) ψ)
+        (nhds t₀)
+        (nhds (SCV.translateSchwartz (t₀ • flatTimeShiftDirection d n) ψ)) :=
+    hflat_full.comp (hη.tendsto t₀)
+  have hunflat :
+      Filter.Tendsto
+        (fun t : ℝ =>
+          unflattenSchwartzNPoint (d := d)
+            (SCV.translateSchwartz (t • flatTimeShiftDirection d n) ψ))
+        (nhds t₀)
+        (nhds
+          (unflattenSchwartzNPoint (d := d)
+            (SCV.translateSchwartz (t₀ • flatTimeShiftDirection d n) ψ))) :=
+    (((unflattenSchwartzNPoint (d := d) :
+        SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] SchwartzNPoint d n).continuous).tendsto
+      _).comp hflat
+  simpa [ψ, timeShiftSchwartzNPoint_eq_unflatten_translate_local] using hunflat
+
+/-- Compact-support continuity of the reconstructed Wightman pairing along real
+time shifts of the right factor.
+
+This is the exact continuity input needed to turn a positive-real identification
+of the chosen `singleSplit_xiShift` holomorphic trace into the current theorem-3
+limit hypothesis `hHlimit`. -/
+theorem tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (bvt_W OS lgc (n + m) (f.conjTensorProduct g))) := by
+  have hshift :
+      Filter.Tendsto
+        (fun t : ℝ => timeShiftSchwartzNPoint (d := d) t g)
+        (nhds 0)
+        (nhds g) := by
+    have hzeroVec : timeShiftVec d 0 = 0 := by
+      ext μ
+      refine Fin.cases ?_ ?_ μ
+      · simp [timeShiftVec]
+      · intro i
+        simp [timeShiftVec]
+    have hzero : timeShiftSchwartzNPoint (d := d) 0 g = g := by
+      ext x
+      simp [hzeroVec]
+    simpa [hzero] using
+      tendsto_timeShiftSchwartzNPoint_nhds_of_isCompactSupport_local (d := d) g hg_compact 0
+  have hconj :
+      Filter.Tendsto
+        (fun t : ℝ => f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))
+        (nhds 0)
+        (nhds (f.conjTensorProduct g)) := by
+    exact ((SchwartzMap.conjTensorProduct_continuous_right f).tendsto g).comp hshift
+  have hW :
+      Filter.Tendsto
+        (fun t : ℝ =>
+          bvt_W OS lgc (n + m)
+            (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+        (nhds 0)
+        (nhds (bvt_W OS lgc (n + m) (f.conjTensorProduct g))) := by
+    exact ((bvt_W_continuous (d := d) OS lgc (n + m)).tendsto
+      (f.conjTensorProduct g)).comp hconj
+  exact hW.mono_left nhdsWithin_le_nhds
+
 /-- Zero-translation specialization of the proved Schwinger-side `t → 0+` limit
 for the compact ordered positive-time `singleSplit_xiShift` shell.
 
@@ -186,6 +309,44 @@ theorem bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq
     bvt_exists_singleSplit_xiShift_holomorphicValue_with_limit
       (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact).2.1 t ht
 
+/-- On positive real times, the chosen scalar holomorphic `singleSplit_xiShift`
+trace is exactly the Schwinger value of the right time-shifted simple tensor. -/
+theorem bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (t : ℝ) (ht : 0 < t) :
+    bvt_singleSplit_xiShiftHolomorphicValue
+        (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+      =
+        OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+          (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+  calc
+    bvt_singleSplit_xiShiftHolomorphicValue
+        (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+      =
+        ∫ y : NPointDomain d (n + m),
+          bvt_F OS lgc (n + m)
+              (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+            (f.osConjTensorProduct g) y :=
+      bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq
+        (d := d) (OS := OS) (lgc := lgc) hm
+        f hf_ord hf_compact g hg_ord hg_compact t ht
+    _ =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+      symm
+      exact schwinger_simpleTensor_timeShift_eq_xiShift
+        (d := d) (OS := OS) (hm := hm) (Ψ := bvt_F OS lgc (n + m))
+        (hΨ_euclid := bvt_euclidean_restriction (d := d) OS lgc (n + m))
+        (f := f) (hf_ord := hf_ord) (g := g) (hg_ord := hg_ord) (t := t) ht
+
 theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinger
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     {n m : ℕ} (hm : 0 < m)
@@ -206,6 +367,106 @@ theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinge
   (Classical.choose_spec <|
     bvt_exists_singleSplit_xiShift_holomorphicValue_with_limit
       (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact).2.2
+
+/-- If the positive-real Schwinger values of the chosen `singleSplit_xiShift`
+trace are already identified with the reconstructed Wightman pairing against the
+right-time-shifted test function, then the current theorem-3 limit hypothesis
+follows immediately. -/
+theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_schwinger_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hschw :
+      ∀ t : ℝ, 0 < t →
+        OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+          (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+          =
+            bvt_W OS lgc (n + m)
+              (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (bvt_W OS lgc (n + m)
+          (f.conjTensorProduct g))) := by
+  have htrace :
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun t : ℝ =>
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    calc
+      bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+        =
+          OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+            (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) :=
+        bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift
+          (d := d) (OS := OS) (lgc := lgc) hm
+          f hf_ord hf_compact g hg_ord hg_compact t ht
+      _ =
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) :=
+        hschw t ht
+  exact Filter.Tendsto.congr' htrace.symm <|
+    tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
+      (OS := OS) (lgc := lgc) f g hg_compact
+
+/-- If the chosen scalar holomorphic `singleSplit_xiShift` trace agrees on the
+positive real axis with the reconstructed Wightman pairing against the
+right-time-shifted test function, then its `t → 0+` limit is exactly the
+theorem-3 boundary-value target.
+
+This turns the current abstract compact-shell hypothesis `hHlimit` into the
+more concrete OS-route task of identifying positive real Euclidean time shifts
+with the corresponding Wightman pairing. -/
+theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_ofReal_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (bvt_W OS lgc (n + m)
+          (f.conjTensorProduct g))) := by
+  have htrace :
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun t : ℝ =>
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    exact hreal t ht
+  exact Filter.Tendsto.congr' htrace.symm <|
+    tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
+      (OS := OS) (lgc := lgc) f g hg_compact
 
 /-- On the right half-plane, a holomorphic scalar trace is determined by its
 positive-real values.

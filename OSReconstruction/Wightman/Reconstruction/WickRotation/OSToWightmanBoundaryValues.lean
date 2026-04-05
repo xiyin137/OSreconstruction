@@ -5,6 +5,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesCompactApprox
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesEuclidean
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
@@ -840,6 +841,83 @@ theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShif
   exact
     bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
       (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact hHlimit
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hHlimit :
+      ∀ N : ℕ,
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N
+        ∀ n m (hm : 0 < m),
+          Filter.Tendsto
+            (fun t : ℝ =>
+              bvt_singleSplit_xiShiftHolomorphicValue
+                (d := d) OS lgc hm
+                (((F_N : BorchersSequence d).funcs n))
+                (F_N.ordered_tsupport n)
+                (compactApproxPositiveTimeBorchers_component_compact F N n)
+                (((F_N : BorchersSequence d).funcs m))
+                (F_N.ordered_tsupport m)
+                (compactApproxPositiveTimeBorchers_component_compact F N m) (t : ℂ))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds
+              (bvt_W OS lgc (n + m)
+                ((((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                  ((F_N : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hHlimit
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hreal :
+      ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm
+            (((F_N : BorchersSequence d).funcs n))
+            (F_N.ordered_tsupport n)
+            (compactApproxPositiveTimeBorchers_component_compact F N n)
+            (((F_N : BorchersSequence d).funcs m))
+            (F_N.ordered_tsupport m)
+            (compactApproxPositiveTimeBorchers_component_compact F N m) (t : ℂ)
+          =
+            (bvt_W OS lgc (n + m)
+              (((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t
+                  ((F_N : BorchersSequence d).funcs m))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hreal
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hschw :
+      ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+            ((((F_N : BorchersSequence d).funcs n).osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) t
+                ((F_N : BorchersSequence d).funcs m)))))
+          =
+            (bvt_W OS lgc (n + m)
+              (((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t
+                  ((F_N : BorchersSequence d).funcs m))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hschw
 
 theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
