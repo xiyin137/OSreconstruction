@@ -5,6 +5,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesEuclidean
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
 /-!
@@ -275,7 +276,68 @@ private theorem bvt_F_lorentz_ortho_wick
         ∫ x : NPointDomain d n,
             bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
-  sorry
+  intro n Λ φ _hφ_compact hφ_tsupport
+  have hφ_coeff :
+      (ZeroDiagonalSchwartz.ofClassical φ).1 = φ :=
+    ZeroDiagonalSchwartz.coe_ofClassical_of_tsupport_subset_wickForwardTubeSection
+      (d := d) (n := n) φ hφ_tsupport
+  let Γ := wightmanToLorentzGroup (Λ⁻¹)
+  have hpoint :
+      ∀ x : NPointDomain d n,
+        x ∈ tsupport (φ : NPointDomain d n → ℂ) →
+          bvt_F OS lgc n (fun k μ =>
+            ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+    intro x hx
+    have hx_ft : (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n := hφ_tsupport hx
+    have hF_holo_BHW :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using bvt_F_holomorphic OS lgc n
+    have hF_dist_BHW :
+        ∀ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
+          (hdet : R.det = 1) (horth : R.transpose * R = 1)
+          (ψ : SchwartzNPoint d n),
+            HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+            tsupport (ψ : NPointDomain d n → ℂ) ⊆
+              {x : NPointDomain d n |
+                (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n ∧
+                  BHW.complexLorentzAction
+                    (ComplexLorentzGroup.ofEuclidean R hdet horth)
+                    (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n} →
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n
+                  (BHW.complexLorentzAction
+                    (ComplexLorentzGroup.ofEuclidean R hdet horth)
+                    (fun k => wickRotatePoint (x k))) * ψ x
+              =
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * ψ x := by
+      intro R hdet horth ψ hψ_compact hψ_tsupport
+      refine bvt_F_ofEuclidean_wick_pairing (d := d) OS lgc n R hdet horth ψ hψ_compact ?_
+      intro x hx
+      rcases hψ_tsupport hx with ⟨hx0, hx1⟩
+      constructor
+      · simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx0
+      · simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx1
+    have hx_ft_BHW : (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx_ft
+    have hΓ :=
+      BHW.Task5Bridge.real_lorentz_invariance_from_euclidean_distributional
+        (d := d) n
+        (bvt_F OS lgc n)
+        hF_holo_BHW
+        hF_dist_BHW
+        Γ (fun k => wickRotatePoint (x k)) hx_ft_BHW
+    simpa [Γ, wightmanToLorentzGroup, lorentzGroupEquiv_symm_val] using hΓ
+  refine MeasureTheory.integral_congr_ae ?_
+  exact Filter.Eventually.of_forall fun x => by
+    by_cases hx : x ∈ tsupport (φ : NPointDomain d n → ℂ)
+    · simp [hpoint x hx]
+    · have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx
+      have hφ0 :
+          (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) = 0 := by
+        simpa [hφ_coeff] using hφx
+      simp [hφ0]
 
 /-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
 
