@@ -220,8 +220,8 @@ Concrete next packages:
    slogan "ordered-positive-time support is dense in full `SchwartzNPoint d n`"
    is false on the full Schwartz space,
 5. implement Package I only in its corrected Section 4.3 form:
-   transformed positive-time Euclidean data -> dense positive-energy Schwartz image ->
-   OS Hilbert-space vector,
+   transformed positive-time Euclidean data -> dense transformed image in the
+   Section-4.3 half-space/quotient Schwartz codomain -> OS Hilbert-space vector,
 6. do **not** implement the naive raw theorem slogan
    `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` on the same raw
    `BorchersSequence d` input,

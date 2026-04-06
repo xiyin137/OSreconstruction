@@ -264,22 +264,21 @@ Decision:
 
 Important current-status clarification:
 
-1. this representation issue is **not** the active theorem-3 blocker any more;
-2. the active theorem-3 blocker is the repo-local Package-C positive-real
-   pairing theorem recorded in
-   [theorem3_os_route_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem3_os_route_blueprint.md);
-3. the main missing content there is the OS I Section 4.3 Fourier-Laplace /
-   spectral-integral proof strategy for the current `hschw` theorem surface;
-4. the later `z -> 0+` transport is already formal once that Package-C theorem
-   is available;
-5. the old public density layer F/G/H is now withdrawn rather than repaired,
+1. the old Package-C / `hschw` route is quarantined rather than active;
+2. the active theorem-3 blocker is now the corrected Package-I Section 4.3
+   transport package, especially the exact codomain and dense-range theorem
+   surface for `os1TransportComponent`;
+3. the main missing content there is the OS I Section 4.3 one-variable
+   Fourier-Laplace / Paley-Wiener / extension proof, not a new topology on raw
+   `BorchersSequence d`;
+4. the old public density layer F/G/H is now withdrawn rather than repaired,
    because ordered-positive-time support is not dense in the full Schwartz
    space;
-6. the final public closure route is Package I in its corrected Section 4.3
-   form: transformed positive-time Euclidean data -> positive-energy Schwartz
-   transformed-image core -> quadratic identity there -> public
+5. the final public closure route is Package I in its corrected Section 4.3
+   form: transformed positive-time Euclidean data -> transformed-image core in
+   the Section-4.3 half-space/quotient Schwartz codomain -> quadratic identity there -> public
    density/continuity closure;
-7. so theorem-3 work should not drift back to either
+6. so theorem-3 work should not drift back to either
    a raw density theorem or “add a `Submodule`/topology layer first” as if
    either were the main obstruction.
 

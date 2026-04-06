@@ -161,8 +161,10 @@ This doc is complete only when:
 2. Package C has one proof strategy only: OS I Section 4.3 Fourier-Laplace /
    spectral-integral;
 3. Package I is stated on the corrected Section 4.3 transformed-image theorem
-   surface, with the transport codomain on the positive-energy Schwartz side
-   rather than the full unrestricted Schwartz space;
+   surface, with the transport codomain on the Section-4.3 half-space/quotient
+   Schwartz side rather than either
+   a support restriction `tsupport ⊆ PositiveEnergyRegion` or a false
+   `DenseRange` claim in full `SchwartzNPoint d n`;
 4. Package I has concrete theorem slots for the transformed image, its density,
    the transport map on that image, the quadratic identity there, the
    componentwise finite-bound approximation theorem, and the final public

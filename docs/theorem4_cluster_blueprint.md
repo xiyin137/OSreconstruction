@@ -128,10 +128,19 @@ hright : bvt_W OS lgc m g = OS.S m (ZeroDiagonalSchwartz.ofClassical g)
 with the usual ordered-positive-time and compact-support assumptions on `f` and
 `g`.
 
+These hypotheses are now known to be the wrong theorem surface. They are the
+same false same-shell comparison pattern already quarantined in theorem 3:
+
+1. the Wightman side is built from the Borchers/Fourier involution;
+2. the OS side is built from the Euclidean/Laplace involution
+   `osConjTensorProduct`;
+3. these are not equal on the same literal test-function input in general.
+
 So theorem 4 splits into two mathematically separate layers.
 
 Layer A: the positive-time single-split cluster core.
-- This is already reduced to supplying `hleft` and `hright`.
+- This is reduced to supplying a **corrected** one-factor transport statement,
+  not the false same-shell identities `hleft` and `hright`.
 
 Layer B: the public canonical boundary-value theorem
 `bvt_F_clusterCanonicalEventually_translate`.
@@ -147,44 +156,44 @@ as a genuine missing theorem, not hidden inside a long proof.
 Theorem 4 should not invent new positivity infrastructure. It should consume
 the already-documented theorem-3 comparison package.
 
-The exact theorem-slot inventory needed by theorem 4 is:
+The old same-shell factor identities are withdrawn. The corrected theorem-slot
+inventory needed by theorem 4 is:
 
 ```lean
-lemma cluster_left_factor_eq_schwinger
+lemma cluster_left_factor_transport
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) (f : SchwartzNPoint d n)
     (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
     (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
-    bvt_W OS lgc n f =
-      OS.S n (ZeroDiagonalSchwartz.ofClassical (f.osConj)) := by
-  -- theorem-3 / theorem-1 comparison corollary on the left factor
+    -- theorem-3 / Section-4.3 transport statement identifying the
+    -- left one-factor Wightman pairing with the corresponding transported
+    -- OS Hilbert-space matrix element
+    ... := by
 
-lemma cluster_right_factor_eq_schwinger
+lemma cluster_right_factor_transport
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (m : ℕ) (g : SchwartzNPoint d m)
     (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
     (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
-    bvt_W OS lgc m g =
-      OS.S m (ZeroDiagonalSchwartz.ofClassical g) := by
-  -- same comparison on the untranslated right factor
+    -- same transport statement on the untranslated right factor
+    ... := by
 ```
 
-Those are the exact hypotheses of
-`bvt_F_clusterCanonicalEventually_translate_of_singleSplitFactorComparison`.
+Those should be the exact hypotheses of the **corrected** theorem-4 bridge.
 
-If later implementation discovers that the repo already has those identities
-under different names, the blueprint should be updated to use those names and
-the wrapper lemmas above should not be introduced. But the theorem surface
-itself is fixed by the current factor-comparison theorem and should not be
-altered.
+If the current theorem
+`bvt_F_clusterCanonicalEventually_translate_of_singleSplitFactorComparison`
+continues to demand the false same-shell identities, then that theorem itself
+must be treated as deprecated legacy infrastructure and replaced by a corrected
+transport-input variant before theorem 4 can be considered settled.
 
 ### 5.1. Exact derivation route for the one-factor identities
 
-The two identities `hleft` and `hright` should **not** be described as if they
-fell out of theorem 3 by simply "setting one factor equal to the vacuum." The
-current production theorem-3 route proves positive-degree tensor-product shell
-identities. The one-factor identities arise only after the degree-zero
-bookkeeping is made explicit.
+The needed one-factor transport statements should **not** be described as if
+they fell out of theorem 3 by simply "setting one factor equal to the vacuum."
+The corrected theorem-3 route no longer supplies same-shell identities at all.
+The one-factor cluster inputs arise only after the degree-zero bookkeeping and
+the Section-4.3 transport package are both made explicit.
 
 The relevant already-proved production surfaces are:
 
@@ -259,14 +268,10 @@ lemma zero_degree_component_comparison_for_normalized_right_vector
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F : PositiveTimeBorchersSequence d) :
     ∀ n,
-      bvt_W OS lgc n
-        ((((F : BorchersSequence d).funcs n).conjTensorProduct
-          ((normalizedZeroDegreeRightVector d : BorchersSequence d).funcs 0))) =
-        OS.S n (ZeroDiagonalSchwartz.ofClassical
-          ((((F : BorchersSequence d).funcs n).osConjTensorProduct
-            ((normalizedZeroDegreeRightVector d : BorchersSequence d).funcs 0)))) := by
-  -- this is the exact `hzero` datum needed by
-  -- `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+      -- corrected theorem surface still to be settled:
+      -- identify the zero-right component after theorem-3 transport, not by a
+      -- same-shell `bvt_W = OS.S` equality
+      ... := by
 ```
 
 The crucial documentation point is that
@@ -275,31 +280,30 @@ generator, not an abstract existential placeholder. The four structural lemmas
 above should be proved immediately after the definition so the later theorem-4
 file can avoid repeated unfolding.
 
-Once those three lemmas are in place, the one-factor identities become formal:
+Once those structural lemmas are in place, the remaining theorem-4 input is no
+longer a same-shell factor identity. It is a transport statement:
 
 ```lean
-lemma cluster_left_factor_eq_schwinger
+lemma cluster_left_factor_transport
     ... :
-    bvt_W OS lgc n f =
-      OS.S n (ZeroDiagonalSchwartz.ofClassical (f.osConj)) := by
-  -- apply the full positive-time inner-product comparison to
-  -- `PositiveTimeBorchersSequence.single n f hf_ord` and
-  -- `normalizedZeroDegreeRightVector d`,
-  -- then rewrite both sides by the two extraction lemmas above
+    -- corrected theorem surface still to be settled from theorem 3 Package I:
+    -- identify the left one-factor Wightman pairing with the corresponding
+    -- transported OS Hilbert-space matrix element
+    ... := by
 ```
 
-The right-factor identity is the same argument with the nontrivial factor moved
+The right-factor theorem is the same argument with the nontrivial factor moved
 to the right.
 
 So the honest theorem-4 dependency is:
 
-1. theorem 3 gives the positive-degree shell comparison package,
+1. theorem 3 gives the corrected Section-4.3 transport package,
 2. the degree-zero bookkeeping theorem supplies the missing `hzero` input,
-3. the one-factor identities are extracted by the right-single inner-product
-   lemmas,
+3. the one-factor transport statements are extracted by the right-single
+   inner-product lemmas,
 4. only then can
-   `bvt_F_clusterCanonicalEventually_translate_of_singleSplitFactorComparison`
-   be invoked.
+   the theorem-4 single-split core be stated on the correct transport-input
+   surface.
 
 This is exactly the point where the theorem-4 route touches the "Hermitian
 zero-right repair" style bookkeeping already visible in the theorem-3
@@ -311,82 +315,36 @@ The later Lean implementation should not leave the zero-degree bookkeeping
 inside a single opaque proof term. The route should be documented as an actual
 case split.
 
-For the left-factor identity:
+For the corrected left-factor transport theorem:
 
 1. fix `F_left := PositiveTimeBorchersSequence.single n f hf_ord`,
 2. fix `G0 := normalizedZeroDegreeRightVector d`,
-3. apply the positive-time theorem-3 closure theorem
-   `bvt_positiveTime_self_nonneg_from_hschw` only indirectly, through the
-   stronger inner-product comparison theorem already packaged in
-   `OSToWightmanBoundaryValuesCompactApprox.lean`,
+3. use theorem 3 only through the corrected transport package, not through any
+   same-shell positive-time comparison theorem,
 4. observe that every positive-degree right shell comparison is vacuous because
    `(G0 : BorchersSequence d).funcs m = 0` for `m > 0`,
-5. provide the unique surviving `m = 0` comparison by the existing
-   zero-right theorem
-   `bvt_eq_schwinger_of_tendsto_singleSplit_xiShift_nhdsWithin_zero_zeroRight_of_hermitian`,
-6. rewrite the resulting Wightman and OS inner products by
-   `WightmanInnerProduct_right_single` and `OSInnerProduct_right_single`,
-7. finally rewrite the normalization constants away via
-   `zeroDegree_right_single_wightman_extracts_factor` and
-   `zeroDegree_right_single_os_extracts_factor`.
+5. provide the unique surviving `m = 0` transport-side bookkeeping theorem;
+6. rewrite the resulting Wightman and OS Hilbert-space matrix elements by the
+   right-single extraction lemmas;
+7. finally rewrite the normalization constants away via the degree-zero unit
+   bookkeeping lemmas.
 
 The right-factor identity is the same argument with the nontrivial component on
 the right and the normalized degree-zero vector on the left. No new analytic
 continuation theorem appears here; the entire step is algebraic/bookkeeping
 above theorem 3.
 
-Lean-style pseudocode for the left factor:
+The old same-shell pseudocode is withdrawn. The corrected theorem surface is:
 
-```lean
-lemma cluster_left_factor_eq_schwinger
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (n : ℕ) (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
-    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
-    bvt_W OS lgc n f =
-      OS.S n (ZeroDiagonalSchwartz.ofClassical (f.osConj)) := by
-  let Fleft : PositiveTimeBorchersSequence d :=
-    PositiveTimeBorchersSequence.single n f hf_ord
-  let G0 : PositiveTimeBorchersSequence d := normalizedZeroDegreeRightVector d
-  have hcmp :
-      WightmanInnerProduct d (bvt_W OS lgc)
-          (Fleft : BorchersSequence d) (G0 : BorchersSequence d)
-        =
-      OSInnerProduct d OS.S
-          (Fleft : BorchersSequence d) (G0 : BorchersSequence d) := by
-    apply
-      bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero
-        (d := d) (OS := OS) (lgc := lgc)
-    · intro n' m hm
-      exact False.elim (show False from by simpa [G0] using hm)
-    · intro n'
-      exact
-        bvt_eq_schwinger_of_tendsto_singleSplit_xiShift_nhdsWithin_zero_zeroRight_of_hermitian
-          (d := d) (OS := OS) (lgc := lgc)
-          (bvt_hermitian (d := d) OS lgc) _ _  -- exact zero-right shell datum
-  calc
-    bvt_W OS lgc n f
-        = WightmanInnerProduct d (bvt_W OS lgc)
-            (Fleft : BorchersSequence d) (G0 : BorchersSequence d) := by
-              simpa [Fleft, G0] using
-                zeroDegree_right_single_wightman_extracts_factor
-                  (d := d) (OS := OS) (lgc := lgc) n f
-    _ = OSInnerProduct d OS.S
-            (Fleft : BorchersSequence d) (G0 : BorchersSequence d) := hcmp
-    _ = OS.S n (ZeroDiagonalSchwartz.ofClassical (f.osConj)) := by
-          simpa [Fleft, G0] using
-            zeroDegree_right_single_os_extracts_factor
-              (d := d) (OS := OS) n f
-```
-
-This is the theorem-slot level at which theorem 4 becomes implementation-ready:
-theorem 3 supplies the shell comparison package, the zero-right theorem
-supplies the degree-zero datum, and the right-single inner-product lemmas turn
-that comparison into the one-factor identities demanded by the cluster core.
+1. theorem 3 supplies the transport package from Section 4.3;
+2. theorem 4 adds the degree-zero bookkeeping;
+3. right-single extraction turns that transport identity into the one-factor
+   transport statements needed by the cluster core.
 
 ## 6. Positive-time single-split core
 
-Once the two factor-comparison identities are available, the positive-time
+Once the two corrected one-factor transport statements are available, the
+positive-time
 single-split cluster theorem is already formal.
 
 The exact theorem slot is:
@@ -411,13 +369,14 @@ theorem bvt_cluster_positiveTime_singleSplit_core
                 ((f.osConjTensorProduct
                   (translateSchwartzNPoint (d := d) (Fin.cons 0 a) g)) y)) -
             bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε := by
-  apply bvt_F_clusterCanonicalEventually_translate_of_singleSplitFactorComparison
-  · exact cluster_left_factor_eq_schwinger (d := d) OS lgc n f hf_ord hf_compact
-  · exact cluster_right_factor_eq_schwinger (d := d) OS lgc m g hg_ord hg_compact
+  -- use the corrected theorem-4 bridge consuming the transport statements,
+  -- not the legacy same-shell factor-comparison theorem
+  ...
 ```
 
 This is the theorem that should be proved first once theorem 3 is available.
-No new analytic continuation is needed here.
+No new analytic continuation is needed here, but the theorem surface must be
+repaired away from the false same-shell inputs before production resumes.
 
 ## 7. Public theorem-shape still missing
 
@@ -523,11 +482,11 @@ private theorem bvt_F_clusterCanonicalEventually_translate
 The point of this pseudocode is not that the final theorem is one line. The
 point is that every real mathematical ingredient has already been named above.
 
-## 12. Signature cross-checks and estimated Lean cost
+## 12. Signature cross-checks and implementation contract
 
 The theorem-4 blueprint should now be explicit about which signatures have
-already been checked against production and which objects are still blueprint
-placeholders.
+already been checked against production and which new local objects must be
+introduced exactly as documented below.
 
 ### 12.1. Confirmed existing theorem signatures
 
@@ -558,7 +517,7 @@ theorem OSInnerProduct_right_single
 So the later theorem-4 port should not invent any custom right-single lemma.
 The existing production theorems already have the correct shape.
 
-### 12.2. Concrete specification of `normalizedZeroDegreeRightVector`
+### 12.2. Fixed specification of `normalizedZeroDegreeRightVector`
 
 The doc-level object
 
@@ -576,15 +535,16 @@ should be implemented only with the following exact semantic properties:
 4. the ordered-positive-time support condition is automatic because degree `0`
    has no time coordinates.
 
-The later Lean definition can therefore be as simple as "the positive-time
-single concentrated at degree `0` with value `1`," but the implementation
-should prove those four properties immediately and then use only those lemmas.
-The later proof should not rely on the definition unfolding everywhere.
+The Lean definition should therefore be "the positive-time single concentrated
+at degree `0` with value `1`," and the implementation should prove those four
+properties immediately and then use only those lemmas. The theorem-4 port
+should not rely on unfolding the definition away from those structural lemmas.
 
 ### 12.3. Exact theorem package for the one-factor extraction
 
-The later Lean port should build theorem 4 through the following concrete
-sequence:
+The later Lean port should build theorem 4 through the following exact theorem
+package names unless an exact compile failure forces a local renaming. If that
+happens, the docs must be updated at the same time.
 
 ```lean
 def normalizedZeroDegreeRightVector (d : ℕ) : PositiveTimeBorchersSequence d

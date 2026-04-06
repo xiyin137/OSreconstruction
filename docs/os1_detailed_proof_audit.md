@@ -428,6 +428,84 @@ into the following theorem slots:
 4. an injectivity theorem whose proof uses only one-variable positive-support
    uniqueness in each time variable.
 
+### 7.2.2. Exact implementation transcript for Lemma 4.1
+
+The later Lean implementation should treat Lemma 4.1 as a three-layer proof,
+not as one theorem proved by a single magical Paley-Wiener invocation.
+
+Layer A. One-variable transform.
+
+1. Define the one-variable Section-4.3 operator on positive-time Schwartz test
+   functions.
+   - this operator is the actual Euclidean-time Laplace/Fourier transform from
+     `(4.19)`-`(4.20)`;
+   - it lands in the positive-energy half-line codomain `q⁰ ≥ 0`.
+
+2. Prove its two key properties:
+   - injective / kernel-zero;
+   - dense range in the positive-energy one-variable Schwartz codomain.
+
+3. The exact analytic suppliers for this one-variable package are:
+   - `SCV.fourierLaplaceExt`,
+   - `SCV.paley_wiener_half_line`,
+   - the automorphism property of the Fourier transform on Schwartz space.
+
+Layer B. Multi-variable assembly.
+
+1. Freeze all variables except one Euclidean time variable.
+2. Apply the one-variable transform in that distinguished variable.
+3. Iterate over the `n` time variables.
+4. Apply the ordinary spatial Fourier transform.
+5. Conclude that the full degree-`n` image lies in the positive-energy
+   Schwartz codomain.
+
+This is the exact sense in which the full map is "an easy consequence of
+Lemma 8.2 and Fourier automorphism": the paper is not appealing to a genuine
+many-variable Paley-Wiener theorem here.
+
+Layer C. Topological consequences.
+
+1. continuity of the degree-`n` map follows from continuity of each elementary
+   one-variable transform and the spatial Fourier automorphism;
+2. injectivity follows from the one-variable kernel-zero theorem, applied one
+   time variable at a time;
+3. dense range follows by iterating the one-variable dense-range theorem.
+
+So the honest implementation theorem package is:
+
+```lean
+lemma section43_oneVar_transform
+    : EuclideanPositiveTimeTest1D →L[ℂ] SchwartzMap ℝ ℂ := by
+  ...
+
+lemma section43_oneVar_transform_injective :
+    Function.Injective section43_oneVar_transform := by
+  ...
+
+lemma section43_oneVar_transform_denseRange :
+    DenseRange section43_oneVar_transform := by
+  ...
+
+lemma section43_component_transform
+    (n : ℕ) :
+    EuclideanPositiveTimeComponent d n →L[ℂ] SchwartzNPoint d n := by
+  ...
+
+lemma section43_component_transform_injective
+    (n : ℕ) :
+    Function.Injective (section43_component_transform (d := d) n) := by
+  ...
+
+lemma section43_component_transform_denseRange
+    (n : ℕ) :
+    DenseRange (section43_component_transform (d := d) n) := by
+  ...
+```
+
+This transcript matters because it tells the later implementation exactly where
+the real analytic work belongs: in the one-variable transform, not in a fake
+many-variable theorem.
+
 ### 7.3. Lemma 4.2 unpacked
 
 Lemma 4.2 proves continuity of `w`, which is exactly what lets the positivity
@@ -471,8 +549,8 @@ In implementation-oriented form, the theorem slot should look like:
 integration against the Wightman difference-variable distribution. -/
 theorem time_variable_laplace_fourier_interchange
     (P : TemperedDistribution timeDifferenceSpace)
-    (f_left : PositiveEnergySchwartzTest n)
-    (f_right : PositiveEnergySchwartzTest m) :
+    (f_left : Section43SchwartzImageTest n)
+    (f_right : Section43SchwartzImageTest m) :
     timeLaplaceIntegrate
         (fun ζ0 =>
           timeFourierIntegrate
@@ -524,6 +602,46 @@ That is why theorem surfaces of the form
 are category-confused: the paper compares the Wightman form with the Hilbert
 norm of the transported vector, not with the raw Euclidean sesquilinear form on
 the same literal test object.
+
+For Lean implementation, `(4.28)` should be decomposed into the following exact
+substeps:
+
+1. define the transformed-image core `L_n` degreewise as the range of the
+   Section-4.3 component transform;
+2. define the finite-support transformed-image sequence space `L`;
+3. choose Euclidean preimages of elements of `L`;
+4. map those Euclidean preimages through the already-constructed OS quotient
+   vector from Section 4.1;
+5. prove preimage-independence using the injective half of Lemma 4.1;
+6. expand the Wightman quadratic form degreewise;
+7. rewrite each degreewise term by the Section-4.2 spectral measure together
+   with the Lemma-4.2 Fourier/Laplace interchange;
+8. recognize the resulting sum as the Hilbert norm square of the transported
+   vector.
+
+The corresponding implementation theorem slots should therefore be:
+
+```lean
+lemma section43_transport_on_image
+    (F : TransportImageSequence d) :
+    OSHilbertSpace OS := by
+  ...
+
+lemma section43_transport_wellDefined
+    (F : TransportImageSequence d) :
+    ... := by
+  ...
+
+lemma section43_quadratic_identity_on_image
+    (F : TransportImageSequence d) :
+    WightmanInnerProduct reconstructedWightman F.1 F.1 =
+      inner (section43_transport_on_image F)
+        (section43_transport_on_image F) := by
+  ...
+```
+
+Only after this diagonal identity is proved should the full public positivity
+statement be recovered by density and continuity.
 
 ## 8. Section 4.4: Cluster
 

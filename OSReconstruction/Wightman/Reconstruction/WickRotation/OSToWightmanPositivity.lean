@@ -214,189 +214,17 @@ def euclideanPositiveTimeSubmodule (d n : ℕ) [NeZero d] :
     f ∈ euclideanPositiveTimeSubmodule (d := d) n ↔
       tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n := Iff.rfl
 
-/-- The momentum-space positive-energy region appearing in OS I `(4.20)`.
-
-At the current theorem-surface level we model `S(R_+^{4n})` as Schwartz
-functions on `NPointDomain d n` whose support lies in the half-space
-`q_k^0 ≥ 0` for every momentum variable. This matches the literal indicator
-`1_{q_k^0 ≥ 0}` in the paper formula and is the first honest current-code
-representation of the positive-energy codomain. -/
-def PositiveEnergyRegion (d n : ℕ) [NeZero d] : Set (NPointDomain d n) :=
-  {q | ∀ k : Fin n, 0 ≤ q k 0}
-
-/-- The positive-energy Schwartz codomain from OS I Lemma 4.1, represented as a
-support-restricted Schwartz subtype on momentum variables. -/
-def PositiveEnergySchwartzComponent (d n : ℕ) [NeZero d] :=
-  {f : SchwartzNPoint d n //
-    tsupport (f : NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n}
-
-/-- Equivalent submodule presentation of the positive-energy Schwartz codomain. -/
-def positiveEnergySchwartzSubmodule (d n : ℕ) [NeZero d] :
-    Submodule ℂ (SchwartzNPoint d n) where
-  carrier := {f |
-    tsupport (f : NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n}
-  zero_mem' := by
-    change tsupport (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) ⊆
-      PositiveEnergyRegion d n
-    rw [show (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) = 0 by rfl]
-    simpa using (empty_subset (PositiveEnergyRegion d n) :
-      (∅ : Set (NPointDomain d n)) ⊆ PositiveEnergyRegion d n)
-  add_mem' := by
-    intro f g hf hg x hx
-    have hx' := tsupport_add
-      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)
-      ((g : SchwartzNPoint d n) : NPointDomain d n → ℂ) hx
-    exact hx'.elim (hf ·) (hg ·)
-  smul_mem' := by
-    intro c f hf
-    exact (tsupport_smul_subset_right
-      (fun _ : NPointDomain d n => c)
-      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)).trans hf
-
-@[simp] theorem mem_positiveEnergySchwartzSubmodule
-    {n : ℕ} (f : SchwartzNPoint d n) :
-    f ∈ positiveEnergySchwartzSubmodule (d := d) n ↔
-      tsupport (f : NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n := Iff.rfl
-
-/-- The sequence-level positive-energy Minkowski test space assembled from the
-degreewise codomain of OS I Section 4.3. This is the honest current-code ambient
-carrier for transformed-image sequences before we impose image membership. -/
-structure PositiveEnergyBorchersSequence (d : ℕ) [NeZero d] where
-  toBorchersSequence : BorchersSequence d
-  positiveEnergy_tsupport : ∀ n,
-    tsupport ((toBorchersSequence.funcs n : SchwartzNPoint d n) :
-      NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n
-
-namespace PositiveEnergyBorchersSequence
-
-/-- The positive-energy Borchers sequence concentrated in degree `n` with
-component `f`. -/
-def single (n : ℕ) (f : SchwartzNPoint d n)
-    (hf : tsupport (f : NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n) :
-    PositiveEnergyBorchersSequence d where
-  toBorchersSequence := BorchersSequence.single n f
-  positiveEnergy_tsupport m := by
-    by_cases h : m = n
-    · subst h
-      simpa using hf
-    · have hzero :
-        (((BorchersSequence.single n f).funcs m : SchwartzNPoint d m) :
-          NPointDomain d m → ℂ) = 0 := by
-        simp [BorchersSequence.single, h]
-      rw [hzero]
-      simpa using (empty_subset (PositiveEnergyRegion d m) :
-        (∅ : Set (NPointDomain d m)) ⊆ PositiveEnergyRegion d m)
-
-instance : Coe (PositiveEnergyBorchersSequence d) (BorchersSequence d) :=
-  ⟨PositiveEnergyBorchersSequence.toBorchersSequence⟩
-
-instance : Zero (PositiveEnergyBorchersSequence d) where
-  zero :=
-    ⟨0, fun n => by
-      simpa using (empty_subset (PositiveEnergyRegion d n) :
-        (∅ : Set (NPointDomain d n)) ⊆ PositiveEnergyRegion d n)⟩
-
-instance : Add (PositiveEnergyBorchersSequence d) where
-  add F G :=
-    ⟨(F : BorchersSequence d) + (G : BorchersSequence d), fun n x hx => by
-      have hx' :
-          x ∈ tsupport
-            ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-              NPointDomain d n → ℂ) +
-              (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-                NPointDomain d n → ℂ)) := by
-        simpa [BorchersSequence.add_funcs] using hx
-      have hx'' := (tsupport_add
-        ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))
-        ((((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))) hx'
-      exact hx''.elim (fun hxF => F.positiveEnergy_tsupport n hxF)
-        (fun hxG => G.positiveEnergy_tsupport n hxG)⟩
-
-instance : Neg (PositiveEnergyBorchersSequence d) where
-  neg F := ⟨-(F : BorchersSequence d), fun n => by
-    rw [show (((-(F : BorchersSequence d)).funcs n : SchwartzNPoint d n) :
-        NPointDomain d n → ℂ) = -(((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ) by rfl]
-    rw [tsupport_neg]
-    exact F.positiveEnergy_tsupport n⟩
-
-instance : SMul ℂ (PositiveEnergyBorchersSequence d) where
-  smul c F :=
-    ⟨c • (F : BorchersSequence d), fun n =>
-      (tsupport_smul_subset_right
-        (fun _ : NPointDomain d n => c)
-        ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))).trans (F.positiveEnergy_tsupport n)⟩
-
-instance : Sub (PositiveEnergyBorchersSequence d) where
-  sub F G :=
-    ⟨(F : BorchersSequence d) - (G : BorchersSequence d), fun n x hx => by
-      have hx' :
-          x ∈ tsupport
-            ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-              NPointDomain d n → ℂ) -
-              (((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-                NPointDomain d n → ℂ)) := by
-        simpa [BorchersSequence.sub_funcs] using hx
-      have hx'' := (tsupport_sub
-        ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))
-        ((((G : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))) hx'
-      exact hx''.elim (fun hxF => F.positiveEnergy_tsupport n hxF)
-        (fun hxG => G.positiveEnergy_tsupport n hxG)⟩
-
-@[simp] theorem zero_toBorchersSequence :
-    ((0 : PositiveEnergyBorchersSequence d) : BorchersSequence d) = 0 := rfl
-
-@[simp] theorem add_toBorchersSequence (F G : PositiveEnergyBorchersSequence d) :
-    ((F + G : PositiveEnergyBorchersSequence d) : BorchersSequence d) =
-      (F : BorchersSequence d) + (G : BorchersSequence d) := rfl
-
-@[simp] theorem neg_toBorchersSequence (F : PositiveEnergyBorchersSequence d) :
-    ((-F : PositiveEnergyBorchersSequence d) : BorchersSequence d) =
-      - (F : BorchersSequence d) := rfl
-
-@[simp] theorem smul_toBorchersSequence (c : ℂ) (F : PositiveEnergyBorchersSequence d) :
-    ((c • F : PositiveEnergyBorchersSequence d) : BorchersSequence d) =
-      c • (F : BorchersSequence d) := rfl
-
-@[simp] theorem sub_toBorchersSequence (F G : PositiveEnergyBorchersSequence d) :
-    ((F - G : PositiveEnergyBorchersSequence d) : BorchersSequence d) =
-      (F : BorchersSequence d) - (G : BorchersSequence d) := rfl
-
-@[simp] theorem single_toBorchersSequence (n : ℕ) (f : SchwartzNPoint d n)
-    (hf : tsupport (f : NPointDomain d n → ℂ) ⊆ PositiveEnergyRegion d n) :
-    ((single n f hf : PositiveEnergyBorchersSequence d) : BorchersSequence d) =
-      BorchersSequence.single n f := rfl
-
-end PositiveEnergyBorchersSequence
-
-namespace PositiveEnergySchwartzComponent
-
-variable {n : ℕ}
-
-/-- A positive-energy component viewed as the corresponding single positive-energy
-Borchers sequence. This is the Minkowski-side ambient object that will later be
-restricted to the Section 4.3 transformed image. -/
-def toPositiveEnergySingle
-    (f : PositiveEnergySchwartzComponent d n) :
-    PositiveEnergyBorchersSequence d :=
-  PositiveEnergyBorchersSequence.single n f.1 f.2
-
-@[simp] theorem toPositiveEnergySingle_toBorchersSequence
-    (f : PositiveEnergySchwartzComponent d n) :
-    ((toPositiveEnergySingle (d := d) f : PositiveEnergyBorchersSequence d) :
-      BorchersSequence d) = BorchersSequence.single n f.1 := by
-  simp [toPositiveEnergySingle]
-
-end PositiveEnergySchwartzComponent
-
 namespace EuclideanPositiveTimeComponent
 
 variable {n : ℕ}
+
+/-- Package a positive-time submodule element as the corresponding subtype
+object. This is the bridge from the current-code submodule model back to the
+existing Euclidean-side OS Hilbert-space vectors. -/
+def ofSubmodule
+    (f : euclideanPositiveTimeSubmodule (d := d) n) :
+    EuclideanPositiveTimeComponent d n :=
+  ⟨f.1, f.2⟩
 
 /-- A positive-time component viewed as the corresponding single positive-time
 Borchers sequence. This is the Euclidean-side input object whose image under
@@ -406,12 +234,6 @@ def toPositiveTimeSingle
     (f : EuclideanPositiveTimeComponent d n) :
     PositiveTimeBorchersSequence d :=
   PositiveTimeBorchersSequence.single n f.1 f.2
-
-@[simp] theorem toPositiveTimeSingle_toBorchersSequence
-    (f : EuclideanPositiveTimeComponent d n) :
-    ((toPositiveTimeSingle (d := d) f : PositiveTimeBorchersSequence d) :
-      BorchersSequence d) = BorchersSequence.single n f.1 := by
-  simp [toPositiveTimeSingle]
 
 end EuclideanPositiveTimeComponent
 
@@ -459,17 +281,6 @@ theorem positiveTimeBorchersVector_self_nonneg
   rw [positiveTimeBorchersVector_norm_sq_eq]
   exact PositiveTimeBorchersSequence.osInner_nonneg_self OS F
 
-theorem positiveTimeBorchersVector_eq_of_funcs_eq
-    (OS : OsterwalderSchraderAxioms d)
-    {F G : PositiveTimeBorchersSequence d}
-    (h : ∀ n, ((F : BorchersSequence d).funcs n) = ((G : BorchersSequence d).funcs n)) :
-    positiveTimeBorchersVector (d := d) OS F =
-      positiveTimeBorchersVector (d := d) OS G := by
-  change (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS)) =
-      (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
-  exact congrArg (fun z : OSPreHilbertSpace OS => (z : OSHilbertSpace OS))
-    (OSPreHilbertSpace.mk_eq_of_funcs_eq OS F G h)
-
 noncomputable def euclideanPositiveTimeSingleVector
     (OS : OsterwalderSchraderAxioms d)
     {n : ℕ} (f : EuclideanPositiveTimeComponent d n) :
@@ -489,71 +300,29 @@ noncomputable def euclideanPositiveTimeSingleVector
 /-- The current-code realization of the degree-`n` Section 4.3 Fourier-Laplace
 transport map.
 
-The blueprint theorem surface is the map from `S_+(ℝ^{4n})` to the positive-energy
-Schwartz codomain. In the current Lean encoding we realize both spaces using
-their equivalent submodule presentations so the transport object can be stated
-honestly as a continuous linear map. -/
+The corrected theorem surface lands in the full Schwartz space on the
+Minkowski side: the Section 4.3 transform is first defined on the
+positive-energy half-space and then interpreted via a Schwartz extension, not
+via a support restriction `tsupport ⊆ {q^0 ≥ 0}`. -/
 noncomputable def os1TransportComponent
     (d n : ℕ) [NeZero d] :
-    euclideanPositiveTimeSubmodule (d := d) n →L[ℂ]
-      positiveEnergySchwartzSubmodule (d := d) n := by
+    euclideanPositiveTimeSubmodule (d := d) n →L[ℂ] SchwartzNPoint d n := by
   sorry
-
-/-- The degree-`n` Section 4.3 transformed image in the current-code submodule
-realization of the positive-energy Schwartz codomain. -/
-def bvtTransportImage (d n : ℕ) [NeZero d] :
-    Set (positiveEnergySchwartzSubmodule (d := d) n) :=
-  Set.range (os1TransportComponent (d := d) n)
-
-/-- Additive closure of the Section 4.3 transformed image. -/
-theorem bvtTransportImage_add
-    {n : ℕ}
-    {f g : positiveEnergySchwartzSubmodule (d := d) n} :
-    f ∈ bvtTransportImage (d := d) n →
-    g ∈ bvtTransportImage (d := d) n →
-    f + g ∈ bvtTransportImage (d := d) n := by
-  rintro ⟨f0, rfl⟩ ⟨g0, rfl⟩
-  refine ⟨f0 + g0, ?_⟩
-  simp
-
-/-- Scalar closure of the Section 4.3 transformed image. -/
-theorem bvtTransportImage_smul
-    {n : ℕ} {c : ℂ}
-    {f : positiveEnergySchwartzSubmodule (d := d) n} :
-    f ∈ bvtTransportImage (d := d) n →
-    c • f ∈ bvtTransportImage (d := d) n := by
-  rintro ⟨f0, rfl⟩
-  refine ⟨c • f0, ?_⟩
-  simp
-
-/-- OS I Lemma 4.1 in the honest current-code submodule presentation:
-the Section 4.3 transport map has dense range in the positive-energy Schwartz
-codomain. -/
-theorem os1TransportComponent_denseRange
-    (n : ℕ) :
-    DenseRange (os1TransportComponent (d := d) n) := by
-  sorry
-
-/-- The Section 4.3 transformed image is dense in the positive-energy Schwartz
-codomain. -/
-theorem bvtTransportImage_dense
-    (n : ℕ) :
-    Dense (bvtTransportImage (d := d) n) := by
-  change DenseRange (os1TransportComponent (d := d) n)
-  exact os1TransportComponent_denseRange (d := d) n
 
 /-- Sorry 3: Wightman positive-definiteness for all BorchersSequence.
 
 The correct proof route (OS I Section 4.3, equations 4.22-4.28):
-1. define the positive-energy Schwartz image and the Section 4.3 transport map
-   (using the honest current-code submodule model),
-2. define the OS Hilbert-space vector attached to a transformed-image preimage,
-3. prove the quadratic identity on that transformed-image core,
-4. close positivity by density/continuity.
+1. define the Section 4.3 transport map on positive-time Euclidean inputs,
+2. show `bvt_W` agrees with the corresponding VEV / Hilbert-space pairing on
+   that positive-time transport core,
+3. use density of positive-time vectors in `OSHilbertSpace OS` from the
+   completion/GNS construction,
+4. extend by continuity to arbitrary `BorchersSequence d`.
 
 This requires Fourier-Laplace infrastructure connecting `bvt_F` to the
-semigroup spectral measure and the corrected Section 4.3 image theorem.
-See agents_chat Entries #306-#308. -/
+semigroup spectral measure and the corrected Section 4.3 transport / VEV
+identification. The old Schwartz-density theorem surface was withdrawn after
+review; see `agents_chat.md` Entries #329-#331. -/
 theorem bvt_W_positive_direct
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
