@@ -731,7 +731,8 @@ theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    Wightman.IsPositiveDefinite d (bvt_W OS lgc) := by
+    ∀ F : BorchersSequence d,
+      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
   exact bvt_W_positive (d := d) OS lgc
 
 theorem bvt_hermitian (OS : OsterwalderSchraderAxioms d)
@@ -917,6 +918,19 @@ theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bv
     bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
       (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hreal
 
+/-
+Deprecated route note:
+
+The hypothesis `hschw` below is mathematically false on the intended theorem
+surface. The left-hand side is the Euclidean/OS time-shifted Schwinger pairing,
+whose free-field momentum-space form carries the Laplace factor `e^{-ω_p t}`;
+the right-hand side is the reconstructed Wightman boundary-value pairing
+against a real Minkowski time translation, whose free-field momentum-space form
+carries the oscillatory factor `e^{-i ω_p t}`.
+
+So this theorem is a logically valid implication from a false premise. It
+remains harmless compiled legacy infrastructure, but it is no longer part of
+the endorsed theorem-3 route. -/
 theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

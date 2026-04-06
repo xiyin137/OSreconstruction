@@ -372,6 +372,19 @@ theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinge
 trace are already identified with the reconstructed Wightman pairing against the
 right-time-shifted test function, then the current theorem-3 limit hypothesis
 follows immediately. -/
+/-
+Deprecated route note:
+
+The hypothesis `hschw` below is mathematically false on the intended theorem
+surface. The left-hand side is the Euclidean/OS time-shifted Schwinger pairing,
+whose free-field momentum-space form carries a Laplace factor `e^{-ω_p t}` and
+Laplace-transformed test functions. The right-hand side is the reconstructed
+Wightman boundary-value pairing against a real Minkowski time translation,
+whose free-field momentum-space form carries the oscillatory factor
+`e^{-i ω_p t}` and the Fourier-transformed test functions.
+
+So this theorem remains a logically valid implication from a false premise, but
+it is dead-end infrastructure and not part of the endorsed theorem-3 route. -/
 theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_schwinger_eq_bvt_W_conjTensorProduct_timeShift
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     {n m : ℕ} (hm : 0 < m)

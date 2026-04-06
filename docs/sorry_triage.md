@@ -207,19 +207,36 @@ File:
 
 Concrete next packages:
 
-1. the theorem-3 analytic/core package in
-   `docs/theorem3_os_route_blueprint.md`,
-2. the final Section 4.3 public transport/density layer,
-3. the dense-core closure theorem for the real quadratic form.
+1. keep theorem-3 Packages A-B from `OSToWightmanPositivity.lean` as valid
+   one-variable support infrastructure,
+2. treat Package C / `hschw` as false legacy infrastructure, not as a live
+   theorem target:
+   for the exact theorem surface, the free-field left-hand side carries the
+   Laplace factor `e^{-ω_p t}` while the right-hand side carries the
+   oscillatory factor `e^{-i ω_p t}`,
+3. the already-existing positive-time / compact-approximation `hschw`
+   consumers may remain compiled but are no longer part of the endorsed route,
+4. do **not** revive the old raw Package-F/G/H density route, because the naive
+   slogan "ordered-positive-time support is dense in full `SchwartzNPoint d n`"
+   is false on the full Schwartz space,
+5. implement Package I instead: the OS I Section 4.3 transport map
+   `bvt_transport_to_osHilbert` from arbitrary `BorchersSequence d` to
+   `OSHilbertSpace OS`,
+6. prove the norm-square identity
+   `bvt_wightmanInner_eq_transport_norm_sq`,
+7. close theorem 3 by `bvt_W_positive_of_transport` for arbitrary
+   `BorchersSequence d`.
 
 What should not happen:
 
 1. no more wrapper reductions,
 2. no new operator/GNS reformulation,
-3. no same-test-function contour slogan.
+3. no attempt to rehabilitate `hschw`,
+4. no same-test-function contour slogan.
 
 Estimated remaining Lean size:
-- `250-530` lines, with the larger share in the final public transport layer.
+- `260-560` lines, now concentrated in the Section 4.3 transport-map /
+  norm-square infrastructure rather than any density layer.
 
 ### 9.2. `bvt_F_clusterCanonicalEventually_translate`
 

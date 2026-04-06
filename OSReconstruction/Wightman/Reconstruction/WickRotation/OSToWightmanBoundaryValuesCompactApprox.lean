@@ -549,6 +549,18 @@ theorem bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_b
 /-- Compact-support truncations reduce theorem 3 all the way to the explicit
 positive-real Schwinger-vs-Wightman identification for the right-time-shifted
 compact shells. -/
+/-
+Deprecated route note:
+
+The hypothesis `hschw` below packages the old same-shell Schwinger/Wightman
+comparison route. That hypothesis is mathematically false on the intended
+theorem surface: the Euclidean/OS side is Laplace/semigroup data
+(`e^{-ω_p t}`), while the reconstructed Wightman boundary-value side is a real
+Minkowski time-translation/Fourier object (`e^{-i ω_p t}`).
+
+This theorem is still a valid implication from its hypothesis and therefore
+harmless to keep, but it should now be treated as dead-end legacy
+infrastructure rather than an active theorem-3 route. -/
 theorem bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

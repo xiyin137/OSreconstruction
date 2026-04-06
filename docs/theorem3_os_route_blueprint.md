@@ -1,2086 +1,911 @@
 # Theorem 3 OS-Route Blueprint
 
-Purpose: this note is a theorem-specific implementation blueprint for the live
-`E -> R` frontier theorem
+Purpose: this note is the implementation blueprint for the live `E -> R`
+frontier theorem
 
 - `OSToWightmanBoundaryValues.lean`, private theorem `bvt_W_positive`.
 
-It is not a general paper summary. It is a bridge document between:
-- the OS I / OS II proofs,
-- the current production reduction chain,
-- the currently trusted scratch facts,
-- and the eventual Lean implementation.
+This document is not a historical summary. It is the route specification to be
+followed during Lean work. If the code seems to suggest a different route, the
+docs must be repaired first and Lean work must pause.
 
-This note assumes familiarity with:
+This note should be read together with:
+
 - `docs/os1_detailed_proof_audit.md`
 - `docs/os2_detailed_proof_audit.md`
-- `docs/os_reconstruction_reading_notes.md`
-- `docs/theorem4_cluster_blueprint.md` for the downstream cluster consumer of
-  the theorem-3 comparison package
-- `docs/theorem2_locality_blueprint.md` for the separate PET/BHW locality lane
+- `docs/mathlib_gap_analysis.md`
+- `docs/sorry_triage.md`
 
-For the rest of this note, the two domain names that matter are:
+## 1. The live theorem and the current production situation
 
-- `positiveTimeRegion := {ξ : SpacetimeDim d | 0 < ξ 0}`,
-- `fixedStrip s := {ξ : SpacetimeDim d | -(s + s) < ξ 0}`.
-
-The first is the support surface used by the trusted current pairing theorems.
-The second is the larger open strip on which the current common-kernel
-continuity theorems are naturally stated.
-
-## 1. The live production theorem and its reduction chain
-
-The live frontier statement is:
-
-- `bvt_W_positive` in `OSToWightmanBoundaryValues.lean`.
-
-At the current production state, theorem 3 has already been reduced through the
-following chain:
-
-1. `bvt_W_positive`
-2. `bvt_wightmanInner_self_nonneg_of_boundary_ray_eq_xiShift_of_hermitian`
-3. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_boundary_ray_eq_xiShift_of_hermitian`
-4. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-5. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian`
-
-The important interpretation is:
-- all of these are reductions of the same positivity theorem,
-- none of them is itself the OS II positivity theorem,
-- the real remaining content is the explicit shell comparison sitting behind the
-  compact-approximation reduction.
-
-At the level of named production theorems there are currently six conditional
-wrapper surfaces if one counts both `hHlimit` entry points separately:
-
-1. the direct compact ordered-shell `hHlimit` theorem in
-   `OSToWightmanBoundaryValueLimits.lean`,
-2. the compact-approximation `hHlimit` theorem in
-   `OSToWightmanBoundaryValuesCompactApprox.lean`,
-3. the `hkernel` theorem,
-4. the `hreal` theorem,
-5. the `hschw` theorem,
-6. the final boundary-ray / `xiShift` theorem.
-
-Mathematically, however, those still collapse to five genuine layers, because
-the two `hHlimit` theorems are the same limit seam viewed before and after the
-compact-approximation package. The docs therefore count five mathematical
-layers even though the exact file graph currently exposes six named wrappers.
-
-So the implementation task is not "invent another reduction theorem." It is:
-- fill the current shell-comparison bridge honestly.
-
-### 1.1. Exact existing theorem hooks by file
-
-To keep later implementation from rediscovering the file graph, the most
-relevant currently existing theorem surfaces are listed here explicitly.
-
-In `OSToWightmanBoundaryValueLimits.lean`:
-- `schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_boundary_ray_eq_xiShift`
-  is the current shell-comparison bridge from a boundary-ray identity to the
-  positive-real Schwinger-vs-Wightman equality needed downstream.
-
-In `OSToWightmanBoundaryValuesCompactApprox.lean`:
-- `bvt_wightmanInner_compactApprox_timeShift_eq_osInner_of_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-  converts the shell equality into compact-approximation OS/Wightman isometry;
-- `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-  packages that isometry into the compact-approximation positivity step.
-
-In `K2VI1/InputAStripUniqueness.lean`:
-- `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`
-  is the existing continuity theorem for the common zero-center section;
-- `zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-  and
-  `compactSupport_pairing_eq_comparison_of_fixedCenter_pairing_eq_of_diffBlockDependence_local`
-  are the existing uniqueness-upgrade surfaces on a fixed strip;
-- `exists_commonZeroCenterShiftSection_bound_of_compactSupport_pairing_eq_comparison_local`
-  and related strip-bound theorems package boundedness once compact-support
-  pairing equality is known.
-
-In `K2VI1/InputAHeadBlockTransport.lean`:
-- `ae_eq_on_positiveStrip_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-  is the existing almost-everywhere uniqueness theorem on the positive strip;
-- `integral_centerDiffShell_eq_of_compactSupport_schwartz_pairing_eq_continuousOn_positiveStrip_local`
-  upgrades compact-support pairing equality to the shell identities used later;
-- `integral_centerDiffShell_eq_via_shifted_realDifference_representative_local`
-  and
-  `integral_reflected_productShell_eq_fixed_center_difference_via_shifted_realDifference_representative_local`
-  are the pre-existing transport theorems that make the shifted real-difference
-  representative route viable.
-
-In `K2VI1/InputAKernelReduction.lean`:
-- `exists_common_difference_kernel_of_common_productShell_pairing_local`
-  is the common-kernel existence surface from product-shell pairings;
-- `exists_common_difference_kernel_of_common_productShell_pairing_headBlockInvariant_local`
-  is the head-block-invariant refinement.
-
-These are the main production hooks the theorem-3 documentation should keep in
-view. If a future proof step does not clearly sit on top of one of them, then
-either it is inventing a new route or this document is still missing a theorem
-slot that must be written down before coding starts.
-
-## 2. What OS I / OS II say the missing theorem should look like
-
-From OS I:
-- positivity comes from identifying the reconstructed Wightman pairing with a
-  common Hilbert-space / semigroup object.
-
-From OS II:
-- one-variable continuation comes first,
-- parameters are packaged,
-- bounds or boundary values come only after the correct one-variable object is
-  in place.
-
-Therefore the missing theorem shape for theorem 3 must be:
-
-1. identify the correct one-variable scalar continuation object;
-2. show that the OS-side kernel and the explicit boundary-value-side kernel
-   represent the same scalar functional on the correct positive-time domain;
-3. only then feed that equality into the existing compact-approximation
-   positivity reduction.
-
-What the papers do *not* support:
-- direct same-formula equality of Euclidean and Minkowski pairings,
-- same-test-function contour shifts,
-- operator shortcuts such as pretending `e^{-tH}` and the Wightman boundary
-  value are literally the same object before the analytic bridge is proved.
-
-### 2.1. Paper-to-repo symbol dictionary for the theorem-3 lane
-
-To make later implementation more mechanical, the main objects on this route
-should be read with the following dictionary in mind.
-
-OS paper side:
-- the Euclidean Schwinger function with one distinguished time gap,
-- the packaged one-variable continuation object,
-- the positive-real fixed-time evaluation,
-- the boundary-value / Wightman identification of that same common object.
-
-Current repo side:
-- `OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
-    (((F.funcs n).osConjTensorProduct
-      (timeShiftSchwartzNPoint (d := d) t (F.funcs m)))))`
-  is the Schwinger-side scalar pairing on the shifted shell;
-- `bvt_W OS lgc (n + m)
-    (((F.funcs n).conjTensorProduct
-      (timeShiftSchwartzNPoint (d := d) t (F.funcs m))))`
-  is the reconstructed Wightman-side pairing on the same split shell;
-- `bvt_F OS lgc (n+m)` is the common boundary-value-side holomorphic object
-  evaluated at interior or boundary-shifted points;
-- `singleSplit_xiShiftHolomorphicValue` and its compact-approximation wrappers
-  are the current one-variable positivity packaging on the production side;
-- `twoPointFixedTimeCenterDiffKernel_local`, `commonLiftedDifferenceSliceKernel_local`,
-  and `commonZeroCenterShiftSection_local` are the current `K2VI1` common-kernel
-  incarnations of the one-variable packaged object.
-
-The practical rule is:
-- whenever the papers say "same one-variable continuation object viewed in two
-  ways", the repo currently expresses that through one of the `common*` kernels
-  on the K2 side and one of the descended `bvt_F` / `singleSplit_xiShift*`
-  objects on the boundary-value side.
-
-That is the semantic comparison to preserve in Lean. Do not flatten it into a
-same-formula equality of Euclidean and Minkowski test shells.
-
-## 3. Current trusted scratch state
-
-At the time of writing, the trusted scratch file is:
-
-- `test/proofideas_bvt_route1_semigroup_strip.lean`.
-
-What is actually proved there:
-
-1. `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`
-   identifies the explicit descended `bvt_F` reduced input with the theorem-3
-   semigroup shell on the positive strip.
-
-2. `integral_descendedAbsoluteInput_twoPoint_eq_semigroupShell_of_positiveSupport`
-   lifts that identification to integral pairings against positive-support
-   tests.
-
-3. `commonFixedTimeCenterDiffKernel_eq_descendedAbsoluteInput_pairing_of_positiveSupport`
-   aligns the strengthened common fixed-time kernel with the explicit descended
-   kernel on positive-support pairings.
-
-4. `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-   descends that alignment to the actual one-variable common zero-center
-   section used by the theorem-3 route.
-
-What is *not* currently trusted:
-- a pointwise equality theorem on the whole positive-time strip.
-
-That stronger claim appeared briefly in coordination discussion but is not part
-of the current trusted scratch file, because the attempted proof overreached the
-natural domain of the descended absolute forward-tube input.
-
-So the trusted state is:
-- functional-level agreement on positive-support test pairings,
-- not yet full pointwise equality.
-
-### 3.1. Exact current K2 theorems already available
-
-The later implementation should not rediscover the following existing K2
-surfaces.
-
-From `InputAStripUniqueness.lean`:
-- `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`
-- `zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-- `compactSupport_pairing_eq_comparison_of_fixedCenter_pairing_eq_of_diffBlockDependence_local`
-- `exists_commonZeroCenterShiftSection_bound_of_compactSupport_pairing_eq_comparison_local`
-
-From `InputAHeadBlockTransport.lean`:
-- `ae_eq_on_positiveStrip_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-- `integral_centerDiffShell_eq_of_compactSupport_schwartz_pairing_eq_continuousOn_positiveStrip_local`
-- `integral_centerDiffShell_eq_via_shifted_realDifference_representative_local`
-- `integral_reflected_productShell_eq_fixed_center_difference_via_shifted_realDifference_representative_local`
-
-From `InputAKernelReduction.lean`:
-- `exists_common_difference_kernel_of_common_productShell_pairing_local`
-- `exists_common_difference_kernel_of_common_productShell_pairing_headBlockInvariant_local`
-
-These should be treated as the default adapter layer before inventing any new
-support theorems.
-
-## 4. The exact remaining mathematical gap
-
-The most precise current reading is:
-
-Input A:
-- a common one-variable kernel
-  `ξ ↦ commonZeroCenterShiftSection_local G s ξ`.
-
-Input B:
-- an explicit one-variable boundary-value-side kernel
-  `ξ ↦
-    (descendAbsoluteForwardTubeInput (d := d)
-      (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-      (fun _ => wickRotatePoint (ξ + timeShiftVec d (s+s)))`.
-
-Known:
-- for every positive-support Schwartz test `h`, their pairings against `h`
-  agree.
-
-Still needed:
-- either a theorem upgrading this pairing agreement to equality on the exact
-  local positive-time domain,
-- or an alternative direct route that feeds the pairing equality into the
-  production reduction chain without first asserting full pointwise equality.
-
-This is the correct place to work. Anything that avoids confronting this gap is
-drifting off the OS route.
-
-### 4.1. The semantic content of the two kernels
-
-To avoid future category confusion, the two kernels should be read as follows.
-
-`commonZeroCenterShiftSection_local G s ξ`
-means:
-- take the strengthened `InputA` common continuation object `G`,
-- collapse to the one-variable zero-center section,
-- evaluate it at positive-time parameter `s`,
-- then test it at the spacetime difference variable `ξ`.
-
-`(descendAbsoluteForwardTubeInput (d := d)
-    (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-    (fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s)))`
-means:
-- start from the explicit boundary-value-side holomorphic object `bvt_F`,
-- descend it to the reduced one-gap variable,
-- then evaluate it at the Wick-rotated shifted real spacetime point
-  `ξ + 2s e_0`.
-
-So the intended equality is not "OS = Wightman" in some raw sense. It is:
-- the common one-variable continuation object from the K2/Input-A side
-  equals
-- the explicit one-variable reduced boundary-value representative from the
-  route-1 / `bvt_F` side
-on the common positive-time domain.
-
-That is the precise theorem-3 bridge.
-
-### 4.2. Why pairing equality is not yet enough
-
-The currently trusted scratch theorem gives:
-
-`∀ h with positive support, ∫ commonKernel * h = ∫ explicitKernel * h`.
-
-This is already substantial, but it is still weaker than what production needs.
-
-The missing upgrade is not formal for two reasons:
-
-1. One needs both kernels to be defined on the same open set.
-2. One needs the uniqueness theorem to apply on exactly that open set with the
-   right continuity hypotheses.
-
-The failed earlier scratch step overreached in a more specific way than "the
-domain was wrong".
-
-What is genuinely known from the current trusted scratch state:
-
-1. the comparison pairing theorem
-   `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-   quantifies over tests `h` with support in `positiveTimeRegion`;
-2. the current common-kernel continuity theorem is naturally stated on the
-   larger strip `fixedStrip s`;
-3. the fixed-strip uniqueness theorem
-   `zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-   requires pairing equality for *all* compactly supported tests supported in
-   `fixedStrip s`, not merely those supported in `positiveTimeRegion`.
-
-So the earlier jump to pointwise equality on the whole strip was unjustified
-because a theorem requiring strip-supported test equality was fed only
-positive-time-supported test equality. That is a theorem-hypothesis mismatch.
-
-The documentation must therefore distinguish two separate questions:
-
-1. is the explicit descended kernel mathematically defined and continuous on
-   `fixedStrip s`?
-2. even if yes, do we currently have the stronger strip-wide pairing theorem
-   needed to invoke fixed-strip uniqueness?
-
-At present the answer to (2) is "no". The honest current route is therefore to
-work first on `positiveTimeRegion`, where the pairing theorem already lives,
-and only later widen to `fixedStrip s` if a stronger pairing theorem is
-actually proved.
-
-## 5. Preferred proof shapes
-
-There are only three honest proof shapes still on the table.
-
-### 5.1. Positive-time uniqueness on the correct domain
-
-The positive-time uniqueness route has the following exact input shape:
-
-- both kernels are
-- honestly defined on `positiveTimeRegion`,
-- continuous there,
-- and equal on all compactly supported positive-time Schwartz test pairings,
-
-so one may apply the repo's existing distributional uniqueness theorem.
-
-This route is currently the cleanest one because the trusted pairing theorem is
-already stated on `positiveTimeRegion`.
-
-Detailed subclaims needed before uniqueness:
-
-1. `explicitKernel` is defined on `fixedStrip s`, hence also on
-   `positiveTimeRegion`;
-2. `commonKernel` is defined on `fixedStrip s`, hence also on
-   `positiveTimeRegion`;
-3. both kernels are continuous on `positiveTimeRegion` by restriction from the
-   fixed strip;
-4. the existing positive-support pairing theorem really quantifies over all
-   compactly supported Schwartz tests supported in `positiveTimeRegion`;
-5. the theorem
-   `eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-   can therefore be applied directly.
-
-Only after all five are written down explicitly should a uniqueness theorem be
-applied.
-
-Subclaim 4 hides a standard but real separation statement that should also be
-spelled out:
-
-1. `positiveTimeRegion = {ξ | 0 < ξ 0}` is an open subset of Euclidean space;
-2. compactly supported Schwartz tests with support inside that open set
-   separate continuous kernels on the set;
-3. the uniqueness theorem is exactly the packaged repo form of that separation
-   principle.
-
-So the later Lean proof should not treat "pairings against Schwartz tests are
-enough" as a slogan. It should remember that openness plus Schwartz separation
-is the mathematical reason the uniqueness step works.
-
-### 5.2. Partial-boundary-value transport through existing `K2VI1` machinery
-
-The more paper-shaped route is to instantiate the existing `InputA*` /
-head-block transport infrastructure so that the common kernel and the explicit
-descended kernel are seen to arise as two faces of the same one-variable
-continuation object.
-
-This route is closest to OS II:
-- it treats the common kernel as the packaged one-variable continuation object;
-- it treats the explicit descended `bvt_F` side as the corresponding
-  boundary-value-side representative.
-
-This route decomposes further into:
-
-1. use `InputAKernelReduction` to locate the common kernel at the fixed-time
-   shell level;
-2. use `InputAHeadBlockTransport` to move between product-shell and
-   difference-shell representations;
-3. use the trusted route-1 scratch theorems to identify the explicit
-   difference-shell representative with the descended `bvt_F` object;
-4. only then compare the one-variable zero-center sections.
-
-So the K2 route is not an alternative to the current scratch mathematics; it is
-the production infrastructure through which that mathematics must eventually be
-ported.
-
-### 5.3. A direct fixed-time boundary-value theorem
-
-A third route is to prove a dedicated theorem:
-- fixed-time interior evaluation of the common/descended kernel equals the
-  positive-time boundary-value pairing for the explicit descended `bvt_F`
-  object.
-
-This route is admissible only under the following exact constraints:
-
-1. the theorem remains strictly one-variable,
-2. all other parameters stay fixed throughout,
-3. the domain is the actual theorem-3 positive-time / fixed-strip domain,
-4. the conclusion is used only as a local `k = 2` bridge and is not recast as
-   a general several-variable continuation theorem.
-
-Such a theorem would have to identify, step by step:
-
-1. the interior fixed-time common kernel,
-2. the shifted real-difference representative,
-3. the descended `bvt_F` representative,
-4. the boundary-value-side shell pairing.
-
-If any one of those identifications is skipped, the theorem is too vague to be
-trusted.
-
-## 6. Mathematical decomposition into implementation tasks
-
-The later Lean work should be decomposed into the following explicit tasks.
-
-### 6.0. Full rewrite chain before any proof attempt
-
-Before proving anything new, the later implementation should write down the
-following semantic chain explicitly for the fixed-time parameter `s`:
-
-1. `commonZeroCenterShiftSection_local G s`
-2. `commonLiftedDifferenceSliceKernel_local G s`
-3. `twoPointFixedTimeCenterDiffKernel_local G ((2s : ℂ) * I)`
-4. shifted real-difference representative
-5. explicit descended absolute forward-tube input
-6. semigroup shell built from `bvt_F`
-7. positive-real Schwinger shell
-8. positive-real Wightman shell
-
-The point of this list is that each arrow should later be implemented by a
-named theorem, not by intuition or a long `simpa`.
-
-If any arrow does not already have an obvious existing theorem candidate, that
-absence should be recorded in the docs before coding starts.
-
-Important route clarification:
-
-- the intended proof path is the Task 3 uniqueness route on
-  `positiveTimeRegion`;
-- Section 6.0 is not a competing proof path;
-- it is the semantic rewrite inventory needed before and after uniqueness so
-  the later production proof can move from kernel equality to the shell
-  equality actually consumed by theorem 3.
-
-So Section 6.0 answers "what must eventually be rewritten by named theorems?",
-while Task 3 answers "what is the central analytic proof step?".
-
-### Task 1. Nail the domain of the explicit descended kernel
-
-Goal:
-- state precisely on which subset of spacetime the explicit descended kernel is
-  already known to be defined and continuous.
-
-At the documentation level, this task must distinguish:
-
-1. the larger strip `fixedStrip s = {ξ | -(s+s) < ξ 0}`,
-2. the smaller positive-time region `positiveTimeRegion = {ξ | 0 < ξ 0}`.
-
-The honest later implementation will need two theorems:
-
-1. a strip-domain theorem on `fixedStrip s`,
-2. a restriction corollary on `positiveTimeRegion`.
-
-Desired theorem shape:
-
-```lean
-/-- The fixed strip used by the theorem-3 one-variable comparison. -/
-def fixedStrip (s : ℝ) : Set (SpacetimeDim d) := {ξ : SpacetimeDim d | -(s + s) < ξ 0}
-
-/-- Domain statement for the explicit descended theorem-3 kernel. -/
-theorem explicit_descended_kernel_continuous_on_fixedStrip
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    ContinuousOn
-      (fun ξ : SpacetimeDim d =>
-        (descendAbsoluteForwardTubeInput (d := d)
-            (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-          (fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s))))
-      (fixedStrip s) := by
-  -- prove the translated Wick-rotated point lands in the reduced forward-tube
-  -- domain for every `ξ` with `-(s+s) < ξ 0`
-```
-
-The main thing this theorem must *not* do is silently enlarge the domain beyond
-what the reduced forward-tube factorization actually gives.
-
-Micro-lemma checklist:
-1. identify the exact reduced forward-tube image of
-   `ξ ↦ wickRotatePoint (ξ + timeShiftVec d (s+s))`;
-2. prove the image lies in the domain of
-   `descendAbsoluteForwardTubeInput`;
-3. record the continuity theorem available on that domain;
-4. prove `positiveTimeRegion ⊆ fixedStrip s` when `0 < s`;
-5. obtain the restriction corollary on `positiveTimeRegion`.
-
-Lean pseudocode with the expected shape:
-
-```lean
-lemma explicit_descended_kernel_mem_reduced_forward_tube
-    (hs : 0 < s) (hξ : ξ ∈ fixedStrip s) :
-    (fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s)))
-      ∈ reducedForwardTubeDomain := by
-  -- this is the theorem-specific content behind the route-1 safe-basepoint
-  -- factorization argument
-
-lemma explicit_descended_kernel_continuousOn_reduced_domain
-    :
-    ContinuousOn explicitKernel reducedForwardTubeDomain := by
-  -- use the continuity packaged with `descendAbsoluteForwardTubeInput`
-
-lemma positiveTimeRegion_subset_fixedStrip
-    (hs : 0 < s) :
-    positiveTimeRegion ⊆ fixedStrip s := by
-  intro ξ hξ
-  linarith
-
-theorem explicit_descended_kernel_continuous_on_positiveTime
-    (hs : 0 < s) :
-    ContinuousOn explicitKernel positiveTimeRegion := by
-  intro ξ hξ
-  exact explicit_descended_kernel_continuous_on_fixedStrip (OS := OS) (lgc := lgc) s hs
-    (positiveTimeRegion_subset_fixedStrip (d := d) hs hξ)
-```
-
-The later implementation should not leave those as generic placeholders. The
-natural theorem-slot inventory is:
-
-```lean
-lemma continuous_eta_s
-    (s : ℝ) :
-    Continuous (fun ξ : SpacetimeDim d =>
-      (fun _ : Fin 1 => wickRotatePoint (ξ + timeShiftVec d (s + s)))) := by
-  -- `continuous_const.add continuous_id`,
-  -- then the existing `wickRotatePoint` continuity proof pattern,
-  -- then `continuous_pi`
-
-lemma eta_s_mem_reducedForwardTubeN_of_mem_fixedStrip
-    (hs : 0 < s) {ξ : SpacetimeDim d}
-    (hξ : ξ ∈ fixedStrip s) :
-    (fun _ : Fin 1 => wickRotatePoint (ξ + timeShiftVec d (s + s)))
-      ∈ ReducedForwardTubeN d 1 := by
-  -- unfold `ReducedForwardTubeN d 1`,
-  -- reduce to the single forward-cone condition on the imaginary part,
-  -- compute that imaginary part explicitly,
-  -- use `inOpenForwardCone_add_time`
-
-lemma explicit_descended_kernel_continuous_on_fixedStrip
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    ContinuousOn explicitKernel (fixedStrip s) := by
-  let hdesc :=
-    (descendAbsoluteForwardTubeInput (d := d)
-      (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).holomorphic
-  have houter : ContinuousOn
-      (descendAbsoluteForwardTubeInput (d := d)
-        (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-      (ReducedForwardTubeN d 1) :=
-    hdesc.continuousOn
-  exact houter.comp (continuous_eta_s (d := d) s).continuousOn
-    (eta_s_mem_reducedForwardTubeN_of_mem_fixedStrip (d := d) hs)
-```
-
-Those three theorem slots are the exact local implementation targets for Task 1.
-
-### Task 1a. Exact proof transcript for the fixed-strip continuity theorem
-
-The fixed-strip continuity theorem is now specific enough to be written as a
-line-by-line proof plan.
-
-Let
-
-`explicitKernel_s ξ :=
-  (descendAbsoluteForwardTubeInput (d := d)
-    (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-    (fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s)))`.
-
-The proof of
-
-`ContinuousOn explicitKernel_s (fixedStrip s)`
-
-should proceed exactly as follows.
-
-1. The object
-   `descendAbsoluteForwardTubeInput (bvt_absoluteForwardTubeInput ...)`
-   is a `ReducedForwardTubePreInput d 1`.
-2. By the structure field `holomorphic`, its `.toFun` is
-   `DifferentiableOn ℂ` on `ReducedForwardTubeN d 1`.
-3. Therefore its `.toFun` is `ContinuousOn` on `ReducedForwardTubeN d 1`.
-4. Define the one-variable map
-   `η_s : SpacetimeDim d -> ReducedNPointConfig d 1` by
-   `η_s ξ := fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s))`.
-5. Prove `Continuous η_s` by continuity of `ξ ↦ ξ + timeShiftVec d (s+s)` and
-   of `wickRotatePoint`.
-6. Prove `MapsTo η_s (fixedStrip s) (ReducedForwardTubeN d 1)`.
-7. The only nontrivial part of step 6 is the forward-cone condition:
-   for `ξ ∈ fixedStrip s`, the imaginary part of
-   `wickRotatePoint (ξ + timeShiftVec d (s+s))` is the vector
-   `(ξ 0 + (s+s), 0, ..., 0)`,
-   which lies in the open forward cone because `-(s+s) < ξ 0`.
-8. Apply `ContinuousOn.comp` to the continuous-on-reduced-forward-tube outer
-   map and the continuous inner map `η_s`.
-
-Exact local theorem hooks already present in the repo:
-
-1. outer differentiability:
-   the field
-   `ReducedForwardTubePreInput.holomorphic` in
-   `BHWReducedExtension.lean`;
-2. `wickRotatePoint` continuity pattern:
-   the local proof
-   `continuous_wickRotatePoint_local` in
-   `K2VI1/InputCSwapSymmetry.lean`
-   and the identical proof pattern `hwickpt_cont` in
-   `SchwingerTemperedness.lean`;
-3. forward-cone inflation:
-   `inOpenForwardCone_add_time` in
-   `BaseFiberInflation.lean`.
-
-So Task 1 is not blocked by an unknown analytic theorem. It is a concrete
-composition proof whose remaining work is:
-
-1. write the `MapsTo` lemma into the exact reduced-forward-tube coordinates
-   used by `ReducedForwardTubeN d 1`,
-2. package the `η_s` continuity proof as a local theorem instead of repeating
-   the `continuous_pi` proof pattern inline,
-3. invoke the already existing `holomorphic` field of the reduced preinput.
-
-### Task 1b. Exact reduced-forward-tube membership computation
-
-The `MapsTo` lemma in Task 1 is simple enough that its proof should already be
-written in mathematical detail here.
-
-Take `ξ ∈ fixedStrip s`, so `-(s+s) < ξ 0`. Define
-
-`η_s ξ : ReducedNPointConfig d 1 := fun _ => wickRotatePoint (ξ + timeShiftVec d (s+s))`.
-
-To show `η_s ξ ∈ ReducedForwardTubeN d 1`, unfold:
-
-1. `ReducedForwardTubeN d 1 = ReducedForwardTube d 2`;
-2. a point of `ReducedForwardTube d 2` is exactly one reduced difference whose
-   imaginary part lies in `V_+`;
-3. `timeShiftVec d (s+s)` is the real vector `(2s, 0, ..., 0)`;
-4. `wickRotatePoint` turns a real spacetime point `x` into the complex point
-   whose imaginary part is `(x 0, 0, ..., 0)`.
-
-So
-
-`Im (η_s ξ 0) = (ξ 0 + (s+s), 0, ..., 0)`.
-
-Now:
-
-1. the base vector `(0, ..., 0)` is the zero vector in `R^(d+1)`;
-2. `safeBasepointVec d = (1, 0, ..., 0)` lies in `V_+`;
-3. scaling by the positive number `ξ 0 + (s+s)` gives the vector above;
-4. equivalently, one may start from `safeBasepointVec d` and use
-   `inOpenForwardCone_add_time` to add the extra positive amount.
-
-Thus the forward-cone condition reduces to the single scalar inequality
-
-`0 < ξ 0 + (s+s)`,
-
-which is exactly `hξ`.
-
-This is the full mathematical content of the domain proof. There is no contour
-argument or hidden SCV lemma here.
-
-### Task 1c. Exact `Fin 1` / reduced-domain unfolding chain
-
-Because the theorem-3 route specializes to a single reduced variable, the
-domain proof should record the exact type-unfolding chain rather than relying
-on informal "there is only one point" language.
-
-Start from the target statement
-
-`η_s ξ ∈ ReducedForwardTubeN d 1`.
-
-Unfolding proceeds as follows.
-
-1. `ReducedForwardTubeN d 1 = ReducedForwardTube d (1 + 1)`, by definition of
-   `ReducedForwardTubeN`.
-2. `ReducedForwardTube d 2` is the reduced one-difference tube for two points.
-3. A point of `ReducedForwardTube d 2` is equivalently a function
-   `η : Fin 1 → Fin (d + 1) → ℂ` satisfying the reduced forward-cone condition
-   on its unique reduced coordinate.
-4. Since `Fin 1` has only the index `0`, the universal reduced-cone condition
-   collapses to the single statement that the imaginary part of `η 0` lies in
-   the open forward cone.
-
-So the later Lean proof should not expect a nontrivial block-difference
-recurrence here. After unfolding all abbreviations, the proof target is simply
-
-`InOpenForwardCone (fun μ => Complex.im ((η_s ξ) 0 μ))`.
-
-The exact proof transcript is then:
-
-1. extensionality in the unique `Fin 1` coordinate reduces the membership check
-   to `0`;
-2. compute the imaginary part coordinatewise using the definition of
-   `wickRotatePoint`;
-3. identify that imaginary part with the positive time vector
-   `(ξ 0 + (s+s), 0, ..., 0)`;
-4. conclude by the scalar inequality `0 < ξ 0 + (s+s)`.
-
-This is intentionally over-explicit because otherwise the eventual Lean port is
-likely to waste time fighting `Fin 1` definitional equalities that are already
-mathematically trivial.
-
-### Task 2. Nail the domain and continuity of the common kernel
-
-Goal:
-- show the common zero-center section is continuous on the same domain.
-
-Unlike Task 1, most of this is already present in the repo: the strip
-continuity theorem exists, so the main later implementation step is a careful
-restriction to `positiveTimeRegion`.
-
-Desired theorem shape:
-
-```lean
-theorem common_zero_center_section_continuous_on_fixedStrip
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    let G :=
-      Classical.choose
-        (schwinger_continuation_base_step_timeParametric_of_translationInvariant_acrOne_and_posSectionBound_local
-          (d := d) OS lgc)
-    ContinuousOn
-      (commonZeroCenterShiftSection_local G s)
-      (fixedStrip s) := by
-  -- this is exactly
-  -- `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`
-  -- instantiated with the holomorphicity and diff-block-dependence data coming
-  -- from the chosen Input-A witness
-```
-
-This is where the `InputA*` / fixed-time extension machinery enters. The proof
-plan is:
-
-1. instantiate the existing fixed-strip continuity theorem on the chosen
-   `InputA` witness `G`;
-2. restrict from `fixedStrip s` to `positiveTimeRegion`;
-3. record the restricted theorem under the local name that Task 3 will call.
-
-Existing hooks to inspect first:
-- `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`
-- `continuousOn_translatedProbeSection_on_fixedStrip_local`
-- the boundedness package in `InputAStripUniqueness.lean`
-
-So the first documentation question is not "can we prove continuity somehow?"
-It is "which existing fixed-strip continuity theorem already matches the exact
-common-kernel surface we need?"
-
-Lean pseudocode with the expected shape:
-
-```lean
-theorem common_zero_center_section_continuous_on_positiveTime
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s)
-    (G : (Fin (2 * (d + 1)) → ℂ) → ℂ)
-    (hG_holo : IsTimeHolomorphicFlatPositiveTimeDiffWitness G)
-    (hG_diff : ∀ u v : Fin (2 * (d + 1)) → ℂ,
-      (∀ μ : Fin (d + 1),
-        u (finProdFinEquiv (⟨1, by omega⟩, μ)) =
-          v (finProdFinEquiv (⟨1, by omega⟩, μ))) →
-      G u = G v) :
-    ContinuousOn (commonZeroCenterShiftSection_local G s) positiveTimeRegion := by
-  intro ξ hξ
-  exact
-    (continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local
-      (d := d) G hG_holo hG_diff s)
-      (positiveTimeRegion_subset_fixedStrip (d := d) hs hξ)
-```
-
-Detailed implementation checklist:
-
-1. identify the exact strip domain used by
-   `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`;
-2. prove `positiveTimeRegion ⊆ fixedStrip s`;
-3. use the existing `ContinuousOn` theorem on the strip;
-4. transport it by restriction to `positiveTimeRegion`;
-5. record the resulting theorem name that the later uniqueness proof will use.
-
-### Task 3. Upgrade pairing equality to equality on the common domain
-
-Once Tasks 1 and 2 are done, the mathematically clean route is:
-
-```lean
-theorem common_eq_explicit_descended_on_positive_domain
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    let G :=
-      Classical.choose
-        (schwinger_continuation_base_step_timeParametric_of_translationInvariant_acrOne_and_posSectionBound_local
-          (d := d) OS lgc)
-    EqOn
-      (commonZeroCenterShiftSection_local G s)
-      (fun ξ =>
-        (descendAbsoluteForwardTubeInput (d := d)
-            (bvt_absoluteForwardTubeInput (d := d) OS lgc 1)).toFun
-          (fun _ => wickRotatePoint (ξ + timeShiftVec d (s + s))))
-      positiveTimeRegion := by
-  -- 1. continuity of both sides on the common domain
-  -- 2. pairing equality on compactly supported positive-support tests
-  -- 3. invoke the repo's uniqueness theorem
-```
-
-This theorem is exactly where a later port should either succeed honestly or
-fail honestly. It is the natural pressure test for the current theorem-3 route.
-
-Existing hooks to inspect first:
-- `zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-- `eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-- `ae_eq_on_positiveStrip_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-- `integral_centerDiffShell_eq_of_compactSupport_schwartz_pairing_eq_continuousOn_positiveStrip_local`
-
-There are two admissible implementation branches:
-
-1. the positive-time uniqueness theorem
-   `eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-   applies directly after the domain/continuity audit, in which case no new
-   theorem is needed at this stage;
-2. one hypothesis still mismatches, in which case the only allowed new theorem
-   is a local adapter whose statement consists solely of translating that
-   mismatched hypothesis into the exact input format of the existing uniqueness
-   theorem.
-
-Any theorem stronger than that local adapter would be route drift.
-
-Lean pseudocode with exact current theorem names:
-
-```lean
-theorem common_eq_explicit_descended_on_positive_domain
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s)
-    (χc : SchwartzSpacetime d)
-    (hχc : ∫ u : SpacetimeDim d, χc u = 1)
-    : EqOn commonKernel explicitKernel positiveTimeRegion := by
-  apply eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local
-  · exact common_zero_center_section_continuous_on_positiveTime
-      (d := d) (OS := OS) (lgc := lgc) s hs G hG_holo hG_diff
-  · exact explicit_descended_kernel_continuous_on_positiveTime
-      (d := d) (OS := OS) (lgc := lgc) s hs
-  · intro h hh_compact hh_support
-    -- reduce to the already proved positive-support pairing theorem
-    simpa [commonKernel, explicitKernel] using
-      commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport
-        (d := d) OS lgc χc h hχc hh_support s hs
-```
-
-The extra cutoff parameter `χc` should not be treated as an afterthought. The
-current pairing theorem is not literally quantified over arbitrary auxiliary
-cutoffs. It is proved for a chosen normalized center cutoff satisfying
-
-`∫ u, χc u = 1`.
-
-So Task 3 must keep the following bookkeeping explicit:
-
-1. fix one canonical normalized cutoff `χc` once and for all,
-   for example the repo's standard normalized bump/cutoff object;
-2. prove the pairing theorem with that fixed `χc`;
-3. feed that theorem into uniqueness;
-4. only if later proof work needs a cutoff-independent theorem should a new
-   lemma be stated and proved.
-
-At the current theorem-3 stage, cutoff-independence is not required. A fixed
-choice of `χc` is enough because the uniqueness theorem quantifies over the test
-function `h`, not over the center cutoff. So the later Lean proof should bind
-`χc` near the top of the argument and never silently drop it.
-
-Only after a stronger strip-wide pairing theorem has been proved should the
-fixed-strip uniqueness theorem
-`zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-be brought back into the route. Using it earlier would repeat the same
-overreach that already failed once.
-
-If the positive-time route first produces only
-`ae_eq_on_positiveStrip_of_compactSupport_schwartz_integral_eq_continuousOn_local`,
-that is still acceptable provided the documentation records the final upgrade:
-
-1. both kernels are continuous on the open set `positiveTimeRegion`,
-2. they agree almost everywhere there,
-3. the set where two continuous functions differ is open,
-4. an open set of measure zero must be empty,
-5. therefore the equality is pointwise on `positiveTimeRegion`.
-
-So "a.e. versus pointwise" is not a mystery once continuity has been proved; it
-is a short explicit topological lemma that must simply be named in the final
-implementation notes.
-
-The theorem-slot form of that upgrade should be:
-
-```lean
-lemma eqOn_of_aeEq_of_continuousOn_open
-    {U : Set (SpacetimeDim d)} (hU : IsOpen U)
-    {K K' : SpacetimeDim d → ℂ}
-    (hK : ContinuousOn K U)
-    (hK' : ContinuousOn K' U)
-    (hae : ∀ᵐ x ∂volume, x ∈ U → K x = K' x) :
-    Set.EqOn K K' U := by
-  intro x hx
-  by_contra hneq
-  have hopen_diff :
-      IsOpen {y : SpacetimeDim d | y ∈ U ∧ K y ≠ K' y} := by
-    -- continuity of `K - K'` and openness of `{z : ℂ | z ≠ 0}`
-  have hx_diff : x ∈ {y : SpacetimeDim d | y ∈ U ∧ K y ≠ K' y} := by
-    exact ⟨hx, hneq⟩
-  have hpos_meas :
-      0 < volume {y : SpacetimeDim d | y ∈ U ∧ K y ≠ K' y} := by
-    -- nonempty open subset of Euclidean space has positive Lebesgue measure
-  have hzero_meas :
-      volume {y : SpacetimeDim d | y ∈ U ∧ K y ≠ K' y} = 0 := by
-    -- from `hae`
-  exact (lt_irrefl (0 : ℝ)) (hzero_meas ▸ hpos_meas)
-```
-
-If later implementation uses the a.e. uniqueness theorem first, this lemma is
-the exact missing bridge from a.e. equality to pointwise equality.
-
-### Task 3a. Minimal proof transcript for the uniqueness route
-
-If the uniqueness route succeeds, the proof should look like this and not be
-left implicit:
-
-1. define `K_cmp` to be the explicit descended kernel on the target domain;
-2. set `U := positiveTimeRegion`;
-3. prove `ContinuousOn K_cmp U`;
-4. prove `ContinuousOn (commonZeroCenterShiftSection_local G s) U`;
-5. let `h` be a compactly supported Schwartz test supported in `U`;
-6. note that this support condition is *exactly* the hypothesis required by
-   `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`;
-7. rewrite the pairing equality using that theorem;
-8. invoke
-   `eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local`;
-9. only then rewrite the conclusion into the shell form needed downstream.
-
-If a later production proof instead tries to use the fixed-strip theorem at
-this stage, it must first add a new documented theorem upgrading the pairing
-equality from `positiveTimeRegion` to `fixedStrip s`.
-
-### Task 3c. Exact support logic in the uniqueness step
-
-The support bookkeeping in Task 3 is simple but should be explicit:
-
-1. the uniqueness theorem on `positiveTimeRegion` asks for
-   `HasCompactSupport h` and
-   `tsupport h ⊆ positiveTimeRegion`;
-2. the trusted pairing theorem
-   `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-   asks only for the positive-support hypothesis
-   `tsupport h ⊆ positiveTimeRegion`;
-3. therefore no extra support-reduction lemma is needed at this stage;
-4. the compact-support hypothesis is consumed only by the uniqueness theorem,
-   not by the pairing theorem.
-
-So the later Lean proof should not waste effort proving a support-conversion
-lemma here. The two theorems already line up exactly on the support side.
-
-The only additional bookkeeping item is the fixed normalized cutoff `χc`
-mentioned above:
-
-1. `χc` is a global auxiliary parameter chosen once for the pairing theorem;
-2. the uniqueness theorem itself does not mention `χc`;
-3. therefore the later port should first instantiate the pairing theorem with
-   the chosen `χc`, then pass the resulting equality of pairings to uniqueness.
-
-### Task 3b. Why the fixed-strip theorem is not yet available
-
-The theorem
-`zeroCenterShift_eq_comparison_of_compactSupport_pairing_eq_local`
-would give a stronger conclusion on `fixedStrip s`, but it expects:
-
-```lean
-∀ h,
-  HasCompactSupport h ->
-  tsupport h ⊆ fixedStrip s ->
-  ∫ commonKernel * h = ∫ explicitKernel * h
-```
-
-The trusted current scratch theorem gives only:
-
-```lean
-∀ h,
-  tsupport h ⊆ positiveTimeRegion ->
-  ∫ commonKernel * h = ∫ explicitKernel * h
-```
-
-Since `positiveTimeRegion ⊊ fixedStrip s` for `s > 0`, the second theorem does
-not imply the first. This is the exact logical reason the earlier strip-wide
-pointwise equality claim was not yet justified.
-
-### Task 4. Convert the common/exact equality into the `hschw` hypothesis
-
-After Task 3, production wiring should become straightforward:
-
-```lean
-theorem compact_approx_componentwise_schwinger_eq_bvtW_timeShift
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : PositiveTimeBorchersSequence d) :
-    ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
-      let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N
-      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
-        ((((F_N : BorchersSequence d).funcs n).osConjTensorProduct
-          (timeShiftSchwartzNPoint (d := d) t
-            ((F_N : BorchersSequence d).funcs m))))) =
-        bvt_W OS lgc (n + m)
-          ((((F_N : BorchersSequence d).funcs n).conjTensorProduct
-            (timeShiftSchwartzNPoint (d := d) t
-              ((F_N : BorchersSequence d).funcs m)))) := by
-  -- instantiate `common_eq_explicit_descended_on_positive_domain` at the
-  -- one-variable time-shift parameter,
-  -- rewrite the common-kernel side back to the K2 fixed-time shell,
-  -- rewrite the explicit side to the `bvt_F` semigroup shell,
-  -- and stop exactly at the positive-real shell equality. This theorem is the
-  -- `hschw` input expected by the existing compact-approximation package.
-```
-
-This is the first place where production reduction theorems should be revisited.
-Before this point, the work should remain theorem-specific and domain-specific.
-
-Micro-lemma checklist:
-1. instantiate the common-kernel equality on the fixed shell parameter;
-2. rewrite the common-kernel side to the Schwinger-side shell using the current
-   `InputA*` witness package;
-3. rewrite the explicit descended side to the `bvt_F` / `bvt_W` shell using the
-   proven route-1 scratch identifications;
-4. only then package the exact `hschw` hypothesis expected by
-   `OSToWightmanBoundaryValuesCompactApprox.lean`.
-
-Concrete rewrite inventory:
-
-- common-kernel side:
-  - `twoPointFixedTimeCenterDiffKernel_local`
-  - `commonLiftedDifferenceSliceKernel_local`
-  - `commonZeroCenterShiftSection_local`
-- explicit side:
-  - `integral_centerDiffShell_eq_via_shifted_realDifference_representative_local`
-  - `integral_reflected_productShell_eq_fixed_center_difference_via_shifted_realDifference_representative_local`
-  - `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`
-  - `integral_descendedAbsoluteInput_twoPoint_eq_semigroupShell_of_positiveSupport`
-  - `commonFixedTimeCenterDiffKernel_eq_descendedAbsoluteInput_pairing_of_positiveSupport`
-  - `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-- production packaging target:
-  - `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-  - `bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
-
-The documentation-level test for this task is:
-- after all rewrites, no unnamed semantic jump should remain between the
-  common-kernel side and the production `hschw` hypothesis.
-
-Type discipline note:
-
-- Task 4 is already inside the positive-time compact-approximation lane.
-- Therefore the theorem surface above must quantify over
-  `F : PositiveTimeBorchersSequence d`, not an arbitrary `BorchersSequence d`.
-- The later public theorem `bvt_W_positive` is where the general
-  `BorchersSequence d` quantifier reappears.
-- Any documentation or pseudocode that places a general Borchers sequence in
-  Task 4 is conflating the positive-time analytic core with the final public
-  reduction and should be corrected before coding starts.
-
-Clarification on the previously unnamed step
-"shifted real-difference representative -> explicit descended absolute
-forward-tube input":
-
-- this is not expected to be a pointwise theorem at the one-variable kernel
-  level;
-- the natural theorem candidates already in the repo are the shell-level
-  transport theorems
-  `integral_centerDiffShell_eq_via_shifted_realDifference_representative_local`
-  and
-  `integral_reflected_productShell_eq_fixed_center_difference_via_shifted_realDifference_representative_local`;
-- if those two shell-level transport theorems already match the descended-input
-  shell expression exactly, use them directly;
-- if one hypothesis or shell normal form still mismatches, the only admissible
-  extra theorem is a local shell-normalization adapter whose conclusion is
-  literally the input form of
-  `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`;
-- no stronger comparison theorem belongs here.
-
-### Task 4b. Explicit theorem-by-theorem rewrite candidates
-
-The current best candidate rewrite path is:
-
-1. `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-   gives equality at the one-variable pairing level.
-2. use
-   `eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-   as the default uniqueness theorem on the common positive-time domain;
-   only if the implementation first obtains almost-everywhere equality should
-   `ae_eq_on_positiveStrip_of_compactSupport_schwartz_integral_eq_continuousOn_local`
-   plus `eqOn_of_aeEq_of_continuousOn_open` replace this step.
-3. `commonLiftedDifferenceSliceKernel_eq_k2TimeParametricKernel_on_zeroCenterShift_of_diffBlockDependence_local`
-   and
-   `twoPointFixedTimeCenterDiffKernel_eq_commonLiftedDifferenceSlice_of_diffBlockDependence_local`
-   should move from the zero-center section back to the fixed-time center/diff
-   kernel.
-4. `commonFixedTimeCenterDiffKernel_eq_descendedAbsoluteInput_pairing_of_positiveSupport`
-   identifies the fixed-time common kernel with the explicit descended one at
-   the shell-pairing level.
-5. `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`
-   and
-   `integral_descendedAbsoluteInput_twoPoint_eq_semigroupShell_of_positiveSupport`
-   rewrite the explicit descended side to the semigroup shell.
-6. The theorem proved in Task 4 is itself the exact `hschw` hypothesis expected
-   by
-   `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`.
-
-This list is intentionally redundant. Later implementation should collapse it
-only after every semantic step has been checked.
-
-The rewrite directions should also be fixed in advance. The intended default
-orientation is:
-
-1. `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-   :
-   `commonZeroCenterShiftSection_local ...` `→`
-   descended-absolute-input pairing.
-2. `commonFixedTimeCenterDiffKernel_eq_descendedAbsoluteInput_pairing_of_positiveSupport`
-   :
-   common fixed-time kernel pairing `→`
-   descended-absolute-input pairing.
-3. `commonLiftedDifferenceSliceKernel_eq_k2TimeParametricKernel_on_zeroCenterShift_of_diffBlockDependence_local`
-   and
-   `twoPointFixedTimeCenterDiffKernel_eq_commonLiftedDifferenceSlice_of_diffBlockDependence_local`
-   :
-   outer common-kernel incarnations `→`
-   the simpler zero-center / lifted-slice incarnations.
-4. `integral_centerDiffShell_eq_via_shifted_realDifference_representative_local`
-   :
-   center-difference shell integral `→`
-   shifted-real-difference representative.
-5. `integral_reflected_productShell_eq_fixed_center_difference_via_shifted_realDifference_representative_local`
-   :
-   reflected product shell `→`
-   fixed-center-difference shell.
-6. `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`
-   :
-   descended absolute input `→`
-   the explicit semigroup shell.
-7. `integral_descendedAbsoluteInput_twoPoint_eq_semigroupShell_of_positiveSupport`
-   :
-   descended-absolute-input pairing `→`
-   semigroup-shell pairing.
-8. `compact_approx_componentwise_schwinger_eq_bvtW_timeShift`
-   :
-   kernel equality `→`
-   the positive-real Schwinger/Wightman shell equality expected by production.
-
-If one of those theorem statements in the actual Lean files is oriented the
-opposite way, the implementation script should record that immediately using
-`rw [← theoremName]` rather than silently relying on trial and error.
-
-### Task 4c. Where the boundary-value limit is handled
-
-The theorem-3 blueprint should say explicitly that the `ε -> 0` boundary-value
-limit is *not* a new theorem to be proved after Task 4. It is already consumed
-by the existing production reduction chain in
-`OSToWightmanBoundaryValueLimits.lean`.
-
-The intended order is:
-
-1. Task 4 proves the positive-real shell equality
-   `OS.S(...) = bvt_W(... timeShift ...)`;
-2. that theorem is already the exact `hschw` input of the compact-approximation
-   positivity package;
-3. the existing theorem
-   `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
-   discharges the `nhdsWithin 0` limit obligation;
-4. the compact-approximation positivity theorems in
-   `OSToWightmanBoundaryValuesCompactApprox.lean` and
-   `OSToWightmanBoundaryValues.lean` consume that limit theorem and close
-   theorem 3.
-
-So no extra "take ε -> 0" step should be inserted after Task 4. The only new
-mathematical work before the limit package is the shell equality itself.
-
-### Task 4a. Exact production target after rewriting
-
-The final output of Task 4 should be a theorem with the following semantic
-content:
-
-- for each compact approximant `F_N`,
-- for each split `n + m` with `m > 0`,
-- for each positive time `t`,
-- the Schwinger pairing on the OS side of the shifted shell equals the
-  reconstructed Wightman pairing on the Lorentzian side of the shifted shell.
-
-In other words, by the time Task 4 is finished, no mention of the common
-kernel, descended kernel, or K2 transport machinery should remain in the final
-statement. All of that should already have been discharged as internal bridge
-work.
-
-### Task 5. Close theorem 3 with no new reductions
-
-Once Task 4 is in place:
+The live theorem is:
 
 ```lean
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : BorchersSequence d,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  intro F
-  -- use the existing compact approximation + hermitian reduction chain
-  -- feed in Task 4
-```
-
-At this stage, any temptation to add a new `h*` reduction theorem should be
-treated as a route error unless it closes something immediately.
-
-There is, however, one remaining theorem-shape issue that should now be stated
-explicitly: the live frontier `bvt_W_positive` quantifies over
-`F : BorchersSequence d`, whereas the whole compact-approximation route in
-Tasks 1-4 works with `PositiveTimeBorchersSequence d`.
-
-So Task 5 actually splits into two closure obligations:
-
-1. close the positive-time positivity theorem using Tasks 1-4;
-2. identify the precise production bridge from a general Borchers sequence to
-   the positive-time class, or document that this bridge is still part of the
-   frontier if no such theorem already exists.
-
-At the current repo state, the positive-time compact-approximation theorems are
-already present and proved, but the final general-to-positive-time reduction is
-still hidden inside the frontier theorem itself. Therefore the documentation
-must *not* pretend that Tasks 1-4 alone mechanically finish `bvt_W_positive`.
-They finish only the positive-time analytic core.
-
-The nearest already-existing positive-time closure hooks are:
-
-1. in `OSToWightmanBoundaryValuesBase.lean`,
-   `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`,
-   which upgrades componentwise shell comparison to full OS/Wightman equality
-   for positive-time sequences once the degree-zero bookkeeping is handled;
-2. in the same file,
-   `bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_zero`,
-   which already closes the self-pair positivity theorem for positive-time
-   sequences whose degree-zero component vanishes;
-3. in `OSToWightmanBoundaryValues.lean`,
-   the public wrappers
-   `bvt_positiveTime_self_nonneg_of_componentwise_*`
-   and
-   `bvt_positiveTime_self_nonneg_of_compactApprox_*`,
-   which are the exact positive-time consumers of the theorem-3 analytic work.
-
-More explicitly, the positive-time closure chain already present in
-`OSToWightmanBoundaryValuesBase.lean` is:
-
-1. `bvt_wightmanInner_right_single_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
-   :
-   componentwise shell comparison against one positive-degree right singleton
-   implies equality of the full right-single pairing.
-2. `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
-   :
-   summing the right-single theorem over all right degrees reduces the full
-   positive-time comparison to the single remaining `m = 0` term.
-3. `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_zero_right`
-   :
-   if the right degree-zero component vanishes, that remaining `m = 0` term is
-   discharged automatically.
-4. `bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_zero`
-   :
-   in the self-pair case, the previous equality theorem immediately yields
-   positivity.
-
-So the production theorem-3 route should be read as:
-
-1. prove the shell comparison at the component level;
-2. feed it into the right-single theorem;
-3. sum over right degrees;
-4. discharge or package the degree-zero term;
-5. only then invoke the compact-approximation wrappers in
-   `OSToWightmanBoundaryValuesCompactApprox.lean` /
-   `OSToWightmanBoundaryValues.lean`.
-
-The exact compact-approximation closure package already present in
-`OSToWightmanBoundaryValuesCompactApprox.lean` is:
-
-1. `tendsto_wightmanInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport`
-   :
-   for compactly supported right data, the reconstructed Wightman inner product
-   against `timeShiftBorchers t` tends to the unshifted Wightman inner product
-   as `t → 0+`.
-2. `tendsto_osInner_right_timeShift_nhdsWithin_zero_of_isCompactSupport`
-   :
-   the honest OS Hilbert-space inner product satisfies the same `t → 0+`
-   continuity for compactly supported positive-time data.
-3. `bvt_wightmanInner_self_nonneg_of_compactApprox_timeShift_eq_osInner`
-   :
-   if the time-shifted Wightman and OS matrix elements agree for every compact
-   approximant `F_N` and every positive real `t`, positivity follows after
-   taking `t → 0+` and then `N → ∞`.
-4. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-   :
-   replaces the abstract matrix-element equality by the scalar holomorphic
-   boundary-value equality on each component.
-5. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
-   :
-   replaces that scalar equality by the positive-real Schwinger-vs-Wightman
-   shell equality.
-6. `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_boundary_ray_eq_xiShift_of_hermitian`
-   :
-   replaces the positive-real shell equality by the current live `hpath`
-   boundary-ray equality.
-
-So the production code still exposes one further boundary-ray wrapper, but the
-preferred implementation target should stop one step earlier at item 5. In
-other words, once the direct positive-real shell equality is proved for a
-positive-time sequence, positivity is already formal inside the
-compact-approximation package. The remaining work is not "find yet another
-reduction theorem," but:
-
-1. prove the direct `hschw` componentwise shell equality,
-2. instantiate the already existing compact-approximation closure theorem,
-3. then deal honestly with the final general-sequence reduction if the public
-   frontier still quantifies over arbitrary `BorchersSequence d`.
-
-So the documentation should treat the final theorem-3 closure as:
-
-1. finish the positive-time analytic core,
-2. land it in the existing positive-time closure theorems,
-3. only then address the remaining general Borchers-sequence reduction.
-
-The later Lean port should therefore begin Task 5 by checking which of the
-following is actually available in production:
-
-1. a reduction theorem from arbitrary `BorchersSequence d` to
-   `PositiveTimeBorchersSequence d`,
-2. a density/approximation theorem that reduces positivity to positive-time
-   test sequences,
-3. or no such theorem yet, in which case this reduction must be written as an
-   explicit final subtask rather than buried inside the closing proof.
-
-In other words, the docs now distinguish three separate closure layers:
-
-1. analytic shell comparison,
-2. positive-time algebraic/Borchers summation closure,
-3. general-sequence reduction.
-
-The third layer is now documented at theorem-slot granularity below, but it is
-still not tied to concrete production theorem names or implementations.
-
-### Task 5a. Exact theorem-slot inventory for the final general-sequence layer
-
-The paper-faithful final layer should **not** be described as "approximate an
-arbitrary Minkowski Borchers sequence by positive-time-supported Minkowski
-cutoffs" unless that approximation theorem is itself proved and identified with
-OS I Section 4.3. The paper route is more specific:
-
-1. construct the OS/Hilbert vector attached to a general Minkowski test
-   sequence;
-2. prove the Wightman quadratic form equals the Hilbert norm square on the
-   initial core where the boundary-value/continuation theorem is available;
-3. extend that identity by continuity and density;
-4. conclude positivity from Hilbert-space positivity.
-
-So if the public frontier remains
-
-`∀ F : BorchersSequence d, 0 ≤ Re WightmanInnerProduct(F,F)`,
-
-then the final theorem-slot inventory should be recorded as:
-
-```lean
-lemma bvt_minkowski_to_os_vector
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    BorchersSequence d → OSHilbertSpace OS := by
-  -- the Section 4.3 transport map `u`, specialized to the reconstructed BV data
-
-lemma bvt_minkowski_to_os_vector_continuous
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Continuous (bvt_minkowski_to_os_vector (d := d) OS lgc) := by
-  -- OS I Lemma 4.2 type continuity package
-
-lemma bvt_minkowski_to_os_vector_dense
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    DenseRange (bvt_minkowski_to_os_vector (d := d) OS lgc) := by
-  -- OS I Lemma 4.1 / Section 4.3 density package
-
-lemma bvt_wightman_quadratic_form_eq_vector_norm_sq_on_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F ∈ bvtInitialCore,
-      WightmanInnerProduct d (bvt_W OS lgc) F F =
-        inner
-          (bvt_minkowski_to_os_vector (d := d) OS lgc F)
-          (bvt_minkowski_to_os_vector (d := d) OS lgc F) := by
-  -- this is where the already-proved positive-time theorem is consumed
-
-lemma bvt_wightman_quadratic_form_eq_vector_norm_sq
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : BorchersSequence d,
-      WightmanInnerProduct d (bvt_W OS lgc) F F =
-        inner
-          (bvt_minkowski_to_os_vector (d := d) OS lgc F)
-          (bvt_minkowski_to_os_vector (d := d) OS lgc F) := by
-  -- extend the core theorem by continuity/density
-
-lemma bvt_wightman_sesquilinear_form_eq_osHilbert_inner
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F G : BorchersSequence d,
-      WightmanInnerProduct d (bvt_W OS lgc) F G =
-        inner
-          (bvt_minkowski_to_os_vector (d := d) OS lgc F)
-          (bvt_minkowski_to_os_vector (d := d) OS lgc G) := by
-  -- optional but paper-faithful: polarization plus continuity/density
-
-lemma bvt_W_positive_from_transport
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : BorchersSequence d,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  intro F
-  rw [bvt_wightman_quadratic_form_eq_vector_norm_sq (d := d) OS lgc F]
-  exact positivity_of_vector_norm_sq _
-```
-
-### Task 5b. What the "initial core" must mean
-
-The placeholder `bvtInitialCore` above should not be left semantically vague.
-For the OS I Section 4.3 route, it must mean:
-
-1. an algebraic subspace of `BorchersSequence d` on which the transport map to
-   OS/Hilbert vectors is already concretely defined from the continuation data;
-2. a subspace dense enough that continuity extends the quadratic-form identity
-   from that core to all Borchers sequences;
-3. a subspace on which the positive-time theorem from Tasks 1-4 can actually be
-   applied after the required rewrites.
-
-So the documentation-standard theorem slots should also record:
-
-```lean
-def bvtInitialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Submodule ℂ (BorchersSequence d) := by
-  -- the algebraic image of the Section 4.3 transport construction,
-  -- before completion and before continuity extension
-
-lemma bvtInitialCore_dense
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Dense (bvtInitialCore (d := d) OS lgc : Set (BorchersSequence d)) := by
-  -- this is the concrete dense-core theorem that replaces vague "density of u"
-
-lemma bvt_positiveTime_theorem_applies_on_initialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F ∈ bvtInitialCore (d := d) OS lgc,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  -- unwind membership in the core until the positive-time theorem from Tasks 1-4
-  -- applies literally
-```
-
-This is the right level of precision for the final theorem-3 layer. If a later
-implementation cannot define such a core cleanly, that should be treated as a
-signal that the route has drifted away from the OS I positivity proof.
-
-This is the exact point where the theorem-3 blueprint meets the OS I Section
-4.3 audit in `docs/os1_detailed_proof_audit.md`. If the repo later chooses a
-different final theorem surface, it should be justified by an explicit theorem
-showing that the new surface is equivalent to this transport/density route.
-
-Equally important: the compact-approximation convergence theorem
-
-`tendsto_compactApproxPositiveTimeBorchers_diff_osInner`
-
-from `OSToWightmanSpatialMomentum.lean` belongs to closure layer 2, not layer 3.
-It says compactly supported approximants are dense **inside the positive-time
-OS Hilbert sector**. It does *not* by itself reduce an arbitrary
-`BorchersSequence d` to the positive-time route. The docs should keep that
-distinction explicit.
-
-The same applies to hermiticity bookkeeping: the theorem
-`bvt_hermitian` is already proved in `OSToWightmanBoundaryValues.lean` and is
-consumed automatically by the positive-time reduction theorems. So theorem 3
-no longer carries an open hermiticity hypothesis. The blueprint should always
-refer to hermiticity as a solved prerequisite, not as an additional frontier.
-
-## 7. "Do not do this" list
-
-The current theorem-3 notes should explicitly ban the following moves:
-
-1. Do not claim pointwise equality from the current scratch file without
-   re-proving the domain and continuity hypotheses.
-2. Do not add another wrapper reduction theorem for `bvt_W_positive`.
-3. Do not use a same-test-function contour-shift slogan.
-4. Do not recast the problem as an operator identity in GNS/Hilbert-space
-   language unless the relevant analytic bridge has already been established.
-5. Do not port stale `agents_chat` optimism into production without rechecking
-   the actual current file contents.
-
-## 7.1. Exact theorem-name dictionary for the current scratch facts
-
-To avoid confusion when later porting from scratch to production, the trusted
-scratch theorems should be referred to by their exact names:
-
-1. `bvt_descendedAbsoluteInput_twoPoint_eq_semigroupShell_on_positiveStrip`
-2. `integral_descendedAbsoluteInput_twoPoint_eq_semigroupShell_of_positiveSupport`
-3. `commonFixedTimeCenterDiffKernel_eq_descendedAbsoluteInput_pairing_of_positiveSupport`
-4. `commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport`
-
-Anything stronger than those four should currently be treated as untrusted until
-re-proved in the actual current file.
-
-## 7.2. Trusted-vs-untrusted checklist for future porting
-
-Before porting anything from scratch to production, check it against this list.
-
-Trusted right now:
-- positive-strip identity of the explicit descended kernel with the semigroup
-  shell,
-- positive-support integral equality for that explicit kernel,
-- positive-support pairing equality between the common fixed-time kernel and the
-  explicit descended kernel,
-- positive-support pairing equality between the common zero-center section and
-  the explicit descended kernel.
-
-Not trusted right now:
-- pointwise equality on the whole positive-time strip,
-- any continuity theorem for the explicit descended kernel on a domain larger
-  than what the reduced forward-tube factorization directly justifies,
-- any claim that theorem 3 is now only a "mechanical extraction" problem.
-
-This checklist should be re-read immediately before the later production port.
-
-## 7.3. Exact "nothing left implicit" checklist for future Lean work
-
-When theorem 3 proof work resumes, each of the following should have an
-explicit theorem or lemma name written next to it in the local docs before any
-large production edit proceeds:
-
-1. common-kernel domain theorem
-2. explicit-kernel domain theorem
-3. common-kernel continuity theorem
-4. explicit-kernel continuity theorem
-5. support-to-positive-support reduction lemma for the uniqueness test
-6. pairing equality theorem on compactly supported tests
-7. uniqueness theorem application
-8. rewrite from kernel equality to shell equality
-9. rewrite from shell equality to `hschw`
-10. rewrite from `hschw` to positive-time theorem-3 closure through the
-    existing compact approximation chain
-11. general-to-positive-time reduction closing the actual public frontier
-
-If any one of these eleven slots is still blank, the documentation should say so
-explicitly and the proof should not be described as "essentially done".
-
-As of the current documentation state:
-
-1. slots 1-10 are tied either to exact existing production theorem names or to
-   one-line local adapter statements whose input and output theorem surfaces are
-   already fixed;
-2. slot 11 is tied to a paper-faithful Section 4.3 transport/density theorem
-   inventory rather than to pre-existing production theorem names;
-3. the remaining work is therefore no longer to discover the theorem shape, but
-   to decide which concrete future Lean declarations will realize the Section
-   4.3 transport layer.
-
-The theorem-3 docs should therefore be treated as implementation-ready for the
-analytic/core route, while still honestly recording that the final public
-general-sequence layer has not yet been written in production.
-
-## 7.4. What counts as a complete theorem-3 documentation state
-
-The theorem-3 docs should only be considered complete enough for Lean work when
-all of the following are written down explicitly:
-
-1. exact domains for both kernels,
-2. exact continuity theorem names for both kernels,
-3. exact support-reduction lemma from compact support to positive support,
-4. exact uniqueness theorem name and its hypotheses,
-5. exact rewrite theorem names for each semantic arrow in Section 6.0,
-6. exact production theorem that consumes the final shell equality,
-7. an explicit statement saying whether the route proves pointwise equality or
-   only almost-everywhere equality and why that is sufficient,
-8. an explicit note identifying whether the final frontier step is still the
-   general-to-positive-time reduction or whether that bridge has already been
-   isolated elsewhere in production.
-
-The current note now meets that checklist for the analytic/core route. The only
-remaining incompleteness is the absence of already-existing production theorem
-names for the final Section 4.3 transport layer, not any ambiguity about the
-mathematical content of that layer.
-
-## 7.5. Concrete proof strategy for `general_borchers_to_positiveTime_reduction`
-
-The placeholder
-
-```lean
-general_borchers_to_positiveTime_reduction
-```
-
-should now be treated as a theorem package with one preferred proof route and
-one fallback bookkeeping route.
-
-### Preferred route: OS I Section 4.3 transport plus density
-
-This is the paper-faithful route and should be considered the default target.
-
-1. Define the Section 4.3 transport map from Minkowski Borchers data to the OS
-   Hilbert space on an explicit dense initial core.
-2. Prove that on that core, the reconstructed Wightman quadratic form equals
-   the OS Hilbert norm square.
-3. Prove continuity of the quadratic form and of the transport map.
-4. Extend the equality from the core to all Borchers sequences by density.
-5. Read off positivity from Hilbert-space positivity.
-
-The theorem-slot inventory should therefore be understood as:
-
-```lean
-def bvtInitialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Submodule ℂ (BorchersSequence d)
-
-lemma positiveTime_single_mem_bvtInitialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (n : ℕ) (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n) :
-    PositiveTimeBorchersSequence.single n f hf_ord ∈ bvtInitialCore (d := d) OS lgc
-
-lemma bvtInitialCore_isSubspace_of_positiveTime_span
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    bvtInitialCore (d := d) OS lgc ≤
-      Submodule.span ℂ
-        (Set.range
-          (fun p : Σ n : ℕ, {f : SchwartzNPoint d n //
-              tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n} =>
-            (PositiveTimeBorchersSequence.single p.1 p.2.1 p.2.2 : BorchersSequence d)))
-
-lemma bvtInitialCore_dense
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Dense (bvtInitialCore (d := d) OS lgc : Set (BorchersSequence d))
-
-def bvt_minkowski_to_os_vector_on_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    bvtInitialCore (d := d) OS lgc →ₗ[ℂ] OSHilbertSpace OS
-
-lemma bvt_minkowski_to_os_vector_on_core_continuous
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Continuous (bvt_minkowski_to_os_vector_on_core (d := d) OS lgc)
-
-lemma bvt_wightman_quadratic_form_eq_vector_norm_sq_on_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : bvtInitialCore (d := d) OS lgc,
-      WightmanInnerProduct d (bvt_W OS lgc) F.1 F.1 =
-        inner
-          (bvt_minkowski_to_os_vector_on_core (d := d) OS lgc F)
-          (bvt_minkowski_to_os_vector_on_core (d := d) OS lgc F)
-
-lemma continuous_re_bvt_wightman_self
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Continuous (fun F : BorchersSequence d =>
-      (WightmanInnerProduct d (bvt_W OS lgc) F F).re)
-
-lemma bvt_nonneg_on_dense_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : bvtInitialCore (d := d) OS lgc,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F.1 F.1).re
-
-theorem general_borchers_to_positiveTime_reduction
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : BorchersSequence d)
-    (hpos :
-      ∀ G : PositiveTimeBorchersSequence d,
-        0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
-          (G : BorchersSequence d) (G : BorchersSequence d)).re) :
-    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
-```
-
-### Preferred literal definition of `bvtInitialCore`
-
-To avoid any later drift back to an abstract placeholder, the recommended
-actual definition of `bvtInitialCore` should be written down now:
-
-```lean
-def bvtInitialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Submodule ℂ (BorchersSequence d) :=
-  Submodule.span ℂ
-    (Set.range
-      (fun p : Σ n : ℕ, {f : SchwartzNPoint d n //
-          tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n} =>
-        (PositiveTimeBorchersSequence.single p.1 p.2.1 p.2.2 : BorchersSequence d)))
-```
-
-This is the paper-faithful choice:
-
-1. it keeps the core algebraic rather than completed,
-2. it says exactly which generators Section 4.3 uses before density,
-3. it avoids hiding the core behind a future transport map definition.
-
-With this choice, the later transport map
-`bvt_minkowski_to_os_vector_on_core` should be built by
-`Submodule.span_induction`, sending each positive-time single generator to the
-corresponding OS Hilbert vector already supplied by the Tasks 1-4 route.
-
-So the later remaining work is:
-
-1. continuity of the quadratic form,
-2. density of the positive-time span,
-3. extension from the explicit algebraic core,
-
-not the discovery of what `bvtInitialCore` is supposed to mean.
-
-The crucial documentation point is that `hpos` above is only the **consumer**
-interface. The actual proof of `general_borchers_to_positiveTime_reduction`
-should not pattern-match directly on an arbitrary `BorchersSequence d` and try
-to rewrite it by ad hoc positive-time cutoffs. It should:
-
-1. prove nonnegativity on `bvtInitialCore`,
-2. show the core is dense,
-3. extend the nonnegativity of the continuous real quadratic form.
-
-### Fallback route: finite Borchers decomposition plus positive-time generators
-
-This is allowed only if the Section 4.3 transport theorem has already been
-implemented under exact names. The fallback is **not** a separate mathematical
-route. It is just the last algebraic packaging step.
-
-The admissible fallback theorem slots are:
-
-```lean
-lemma borchers_eq_sum_single_components
-    (F : BorchersSequence d) :
-    F =
-      ∑ n ∈ Finset.range (F.bound + 1),
-        BorchersSequence.single n (F.funcs n)
-
-lemma positiveTime_span_dense_in_bvtInitialCore
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Dense
-      (Submodule.span ℂ
-        (Set.range
-          (fun p : Σ n : ℕ, {f : SchwartzNPoint d n //
-              tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n} =>
-            (PositiveTimeBorchersSequence.single p.1 p.2.1 p.2.2 : BorchersSequence d)))
-          : Set (BorchersSequence d))
-
-lemma nonneg_on_positiveTime_generators
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ p : Σ n : ℕ, {f : SchwartzNPoint d n //
-        tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n},
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
-        ((PositiveTimeBorchersSequence.single p.1 p.2.1 p.2.2 : PositiveTimeBorchersSequence d)
-          : BorchersSequence d)
-        ((PositiveTimeBorchersSequence.single p.1 p.2.1 p.2.2 : PositiveTimeBorchersSequence d)
-          : BorchersSequence d)).re
-```
-
-This fallback only becomes honest once the transport layer has already proved
-that those positive-time generators sit inside the initial core and therefore
-inherit the Hilbert-space norm-square identity.
-
-### Exact closure script for the final public theorem
-
-The later implementation should be able to follow the script below almost
-verbatim.
-
-```lean
-theorem general_borchers_to_positiveTime_reduction
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : BorchersSequence d)
-    (hpos :
-      ∀ G : PositiveTimeBorchersSequence d,
-        0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
-          (G : BorchersSequence d) (G : BorchersSequence d)).re) :
-    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  have hcore_dense := bvtInitialCore_dense (d := d) OS lgc
-  have hcont := continuous_re_bvt_wightman_self (d := d) OS lgc
-  have hcore_nonneg :
-      ∀ G : bvtInitialCore (d := d) OS lgc,
-        0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) G.1 G.1).re := by
-    intro G
-    exact bvt_nonneg_on_dense_core (d := d) OS lgc G
-  exact
-    nonneg_of_continuousOn_dense_core
-      (f := fun G : BorchersSequence d =>
-        (WightmanInnerProduct d (bvt_W OS lgc) G G).re)
-      hcont hcore_dense hcore_nonneg F
-```
-
-### Estimated Lean line counts for the final theorem-3 public layer
-
-The final public layer is no longer mathematically ambiguous, so the remaining
-implementation cost can be estimated fairly concretely:
-
-1. `bvtInitialCore` definition and basic lemmas:
-   roughly `40-80` lines.
-2. `positiveTime_single_mem_bvtInitialCore` and span lemmas:
-   roughly `60-120` lines.
-3. continuity of the real quadratic form:
-   roughly `25-50` lines, assuming the sesquilinear continuity package is
-   already available.
-4. dense-core nonnegativity theorem:
-   roughly `40-90` lines once the transport map is explicit.
-5. final closure theorem
-   `general_borchers_to_positiveTime_reduction`:
-   roughly `20-40` lines.
-
-So the remaining theorem-3 public layer should be thought of as roughly
-`185-380` honest Lean lines, almost all of them in the Section 4.3
-transport/density package rather than in the analytic `hschw` core.
-
-## 7.6. Exact continuity-and-density extension package
-
-The final theorem-3 public layer depends on one small but crucial analysis
-package: extending a nonnegativity theorem from a dense core to the whole
-Borchers space. The docs should now spell that package out instead of treating
-it as implicit folklore.
-
-### 7.6.1. Exact theorem slots
-
-```lean
-lemma WightmanInnerProduct_continuous_left
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (G : BorchersSequence d) :
-    Continuous (fun F : BorchersSequence d =>
-      WightmanInnerProduct d (bvt_W OS lgc) F G)
-
-lemma WightmanInnerProduct_continuous_right
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : BorchersSequence d) :
-    Continuous (fun G : BorchersSequence d =>
-      WightmanInnerProduct d (bvt_W OS lgc) F G)
-
-lemma WightmanInnerProduct_self_continuous
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Continuous (fun F : BorchersSequence d =>
-      WightmanInnerProduct d (bvt_W OS lgc) F F)
-
-lemma re_WightmanInnerProduct_self_continuous
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    Continuous (fun F : BorchersSequence d =>
-      (WightmanInnerProduct d (bvt_W OS lgc) F F).re)
-
-lemma nonneg_closed_under_continuous_limit
-    {α : Type*} [TopologicalSpace α]
-    (f : α → ℝ) (hf : Continuous f) :
-    IsClosed {x | 0 ≤ f x}
-
-lemma nonneg_of_dense_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (S : Set (BorchersSequence d))
-    (hS_dense : Dense S)
-    (hS_nonneg : ∀ F ∈ S, 0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re) :
     ∀ F : BorchersSequence d,
       0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
 ```
 
-### 7.6.2. Why this package is mathematically necessary
+The current production files still expose an older reduction chain through
+boundary-ray / Schwinger / compact-approximation consumer interfaces. Those
+surfaces are part of the current code graph, but they are **not** the theorem-3
+blueprint any more. They are legacy consumers.
 
-Without these lemmas, the final theorem-3 layer risks collapsing back into the
-same vague sentence:
+The theorem-3 blueprint now has exactly one endorsed route:
 
-> "extend by continuity and density."
+1. keep Packages A-B as valid one-variable support infrastructure;
+2. do **not** use Package C / `hschw`, because that theorem surface is false;
+3. build the OS I Section 4.3 transport map from arbitrary
+   `BorchersSequence d` to `OSHilbertSpace OS`;
+4. prove the norm-square identity
+   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2`;
+5. conclude full positivity for arbitrary `BorchersSequence d`.
 
-The whole point of the current documentation pass is to eliminate that kind of
-hidden step. The later Lean port should therefore implement the topological
-closure argument under explicit theorem names before the final positivity
-wrapper is attempted.
+That is the route Claude directed in `agents_chat.md`, and it is now the only
+route this document endorses.
 
-### 7.6.3. Lean-style proof sketch
+Implementation discipline:
+
+1. the legacy `hschw` consumer interface may remain in production as deprecated
+   dead-end infrastructure, but it is not an endorsed target theorem surface;
+2. Package I is now the only endorsed theorem-3 closure route;
+3. if future work wants a different production endpoint than Package I, this
+   blueprint must be rewritten first.
+
+### 1.1. Exact current local status on that route
+
+The theorem-3 docs must distinguish three things:
+
+1. what the route is in principle,
+2. what is already implemented locally in production,
+3. what exact theorem is still missing.
+
+As of the current local branch state:
+
+1. Package A is already implemented in
+   `OSToWightmanPositivity.lean` as
+   `identity_theorem_right_halfplane`;
+2. Package B is already implemented there as
+   `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`;
+3. Package C / `hschw` has now been settled as false at the exact theorem
+   surface; see `agents_chat.md` Entries `#283`, `#285`, `#286`;
+4. the later positive-time / compact-approximation consumers still exist in
+   `OSToWightmanBoundaryValuesBase.lean`,
+   `OSToWightmanBoundaryValuesCompactApprox.lean`, and
+   `OSToWightmanBoundaryValues.lean`, but they are legacy consumers rather than
+   endorsed theorem-3 route definitions;
+5. the live theorem-3 frontier is now Package I.
+
+So the current frontier is not “find a theorem-3 route.” The route is fixed.
+The current frontier is:
+
+1. keep Packages A-B as valid support infrastructure,
+2. stop treating Package C as a live theorem to prove,
+3. implement Package I: the OS I Section 4.3 transport-map /
+   Hilbert-norm closure for arbitrary `BorchersSequence d`.
+
+## 2. Exact existing theorem hooks already available
+
+The current code already provides the main ingredients for the endorsed route.
+The later Lean port should consume these exact theorem surfaces instead of
+inventing new theorem shapes.
+
+### 2.1. Holomorphic / boundary-value package
+
+In `OSToWightmanBoundaryValueLimits.lean`:
+
+- `bvt_singleSplit_xiShiftHolomorphicValue`
+- `differentiableOn_bvt_singleSplit_xiShiftHolomorphicValue`
+- `bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq`
+- `bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift`
+- `bvt_singleSplit_xiShiftHolomorphicValue_eqOn_ofReal_eq`
+- `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinger`
+- `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
+- `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_ofReal_eq_bvt_W_conjTensorProduct_timeShift`
+
+These theorems already package the one-variable holomorphic object attached to a
+single/split pair and the relevant `z -> 0+` limit statements.
+
+In `OSToWightmanPositivity.lean`:
+
+- `identity_theorem_right_halfplane`
+- `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`
+
+These are the current local production implementations of Packages A and B.
+Note that the implemented Package-B theorem currently uses the simpler surface
+`OSInnerProductTimeShiftHolomorphicValue` specialized to positive-time singles,
+not the broader `...ExpandBoth` wrapper. That is fine and should be treated as
+the canonical current production start point.
+
+### 2.2. OS inner-product package
+
+In `SchwingerOS.lean`:
+
+- `PositiveTimeBorchersSequence`
+- `PositiveTimeBorchersSequence.single`
+- `PositiveTimeBorchersSequence.osInner`
+- `PositiveTimeBorchersSequence.osInner_nonneg_self`
+- `PositiveTimeBorchersSequence.osInner_eq_sum_right_singles`
+- `OSInnerProduct_single_single`
+- `OSInnerProduct_right_single`
+- `OSInnerProduct_eq_sum_right_singles`
+- `OSInnerProduct_zero_right`
+- `OSInnerProduct_hermitian`
+
+This is the OS-side algebraic package the theorem-3 proof should use.
+
+### 2.3. Semigroup / time-shift package
+
+In `OSToWightmanSemigroup.lean` and `OSToWightman.lean`:
+
+- `OSInnerProductTimeShiftHolomorphicValue`
+- `OSInnerProductTimeShiftHolomorphicValue_differentiableOn`
+- `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single`
+- `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_right_single`
+- `OSInnerProductTimeShiftHolomorphicValueExpandBoth`
+- `differentiableOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth`
+- `continuousOn_OSInnerProductTimeShiftHolomorphicValueExpandBoth`
+- `OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_of_isCompactSupport`
+- `OSInnerProductTimeShiftHolomorphicValueExpandBoth_single_eq_xiShift`
+- `OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_piecewise_xiShift`
+
+This is the OS-side holomorphic family to compare against
+`bvt_singleSplit_xiShiftHolomorphicValue`.
+
+### 2.4. Compact-approximation package
+
+In `OSToWightmanBoundaryValuesCompactApprox.lean`:
+
+- `compactApproxPositiveTimeBorchers`
+- `compactApproxPositiveTimeBorchers_component_compact`
+- `tendsto_compactApproxPositiveTimeBorchers_term`
+- `tendsto_compactApproxPositiveTimeBorchers_wightmanInner_self`
+- `bvt_wightmanInner_self_nonneg_of_compactApprox_timeShift_eq_osInner`
+- `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
+- `bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian`
+
+These theorems can still be used as **consumer interfaces** once the direct
+positive-time semigroup bridge has been proved. They are not the route
+definition.
+
+### 2.5. Continuity package
+
+In `OSToWightmanBoundaryValuesBase.lean` and nearby files:
+
+- `bvt_W_continuous`
+- `wightmanInner_eq_osInner_of_orderedPositive_termwise`
+- `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+- `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_zero_right`
+- `bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_zero`
+- finite-sum expansions of `WightmanInnerProduct`
+- right-single and zero-right reduction lemmas
+
+This is the continuity package already used by the legacy positive-time
+consumer chain. It is no longer the endorsed final theorem-3 closure route.
+
+## 3. What the OS papers require here
+
+OS I and OS II both point to the same theorem shape:
+
+1. identify the correct one-variable scalar holomorphic object;
+2. prove equality of the Minkowski-side and OS-side scalar functions on the
+   right half-plane from equality on positive reals;
+3. take the `z -> 0+` limit to recover the boundary pairing identity;
+4. sum the single/split identities to obtain equality of quadratic forms on the
+   positive-time class;
+5. extend positivity to the full Borchers space by the Section 4.3 transport
+   map and Hilbert-norm identity.
+
+So the actual theorem-3 content is **not**:
+
+- a contour-deformation theorem,
+- a `K2VI1` comparison theorem,
+- a new shell wrapper,
+- or a raw algebraic-core theorem on `Submodule ℂ (BorchersSequence d)`.
+
+The actual theorem-3 content is:
+
+- positive-time semigroup identity,
+- positive-time positivity,
+- Section 4.3 transport map to `OSHilbertSpace OS`,
+- Hilbert-norm realization of the Wightman quadratic form.
+
+## 4. Route that is explicitly forbidden
+
+The later Lean implementation must not drift back to any of the following:
+
+1. `hpath` / contour-deformation / boundary-ray route.
+2. `hschw` as the **target theorem shape**.
+3. k=2-specific common-kernel transport as theorem-3 infrastructure.
+4. defining `bvtInitialCore : Submodule ℂ (BorchersSequence d)`.
+5. adding ad hoc `AddCommGroup`, `Module ℂ`, or topology instances to raw
+   `BorchersSequence d` just to mimic paper notation.
+6. inventing any new reduction theorem whose only purpose is to repackage the
+   same positivity seam.
+
+Historical note:
+
+- the current production consumer theorem
+  `bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
+  may still be used after the positive-time semigroup bridge is proved;
+- but the proof should **arrive** at that theorem from the positive-time
+  semigroup route, not target `hschw` as the mathematical endpoint.
+
+## 5. Corrected theorem package
+
+The theorem-3 proof package should now be implemented in the following order.
+This order is mathematical, not merely organizational.
+
+### 5.1. Package A: one-variable identity theorem
+
+The first theorem slot is:
 
 ```lean
-lemma nonneg_of_dense_core
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (S : Set (BorchersSequence d))
-    (hS_dense : Dense S)
-    (hS_nonneg : ∀ F ∈ S, 0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re) :
-    ∀ F : BorchersSequence d,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  intro F
-  let A : Set (BorchersSequence d) :=
-    {G | 0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) G G).re}
-  have hA_closed : IsClosed A := by
-    simpa [A] using
-      nonneg_closed_under_continuous_limit
-        (fun G : BorchersSequence d =>
-          (WightmanInnerProduct d (bvt_W OS lgc) G G).re)
-        (re_WightmanInnerProduct_self_continuous (d := d) OS lgc)
-  have hS_subset : S ⊆ A := by
-    intro G hG
-    exact hS_nonneg G hG
-  have hclosure : closure S ⊆ A := hA_closed.closure_subset_iff.mpr hS_subset
-  have hF : F ∈ closure S := by simpa [hS_dense.closure_eq]
-  exact hclosure hF
+theorem identity_theorem_right_halfplane
+    (f g : ℂ → ℂ)
+    (hf : DifferentiableOn ℂ f {z : ℂ | 0 < z.re})
+    (hg : DifferentiableOn ℂ g {z : ℂ | 0 < z.re})
+    (hagree : ∀ t : ℝ, 0 < t → f (t : ℂ) = g (t : ℂ)) :
+    ∀ z : ℂ, 0 < z.re → f z = g z
 ```
 
-### 7.6.4. Estimated Lean size
+This theorem is local complex analysis only. It should be proved once and then
+reused.
 
-This topological package should be modest:
+Primary use in theorem 3:
 
-1. separate continuity lemmas for `WightmanInnerProduct`:
-   `30-70` lines.
-2. self-map continuity and real-part continuity:
-   `15-35` lines.
-3. dense-core closure theorem:
-   `20-45` lines.
+- `f z = bvt_singleSplit_xiShiftHolomorphicValue ... z`
+- `g z = OSInnerProductTimeShiftHolomorphicValue ... z`
 
-So the later port should expect roughly `65-150` lines of purely topological
-closure work inside the final theorem-3 public layer.
+### 5.2. Package B: compact positive-time single/split bridge
 
-## 8. Minimal Lean pseudocode for the whole closure
-
-If the documentation is doing its job, the later implementation should have the
-following semantic shape.
+For compactly supported positive-time components, prove the direct one-variable
+identity:
 
 ```lean
-/- Step A: common and explicit kernels live on the same positive-time domain. -/
-theorem explicit_descended_kernel_continuous_on_positiveTime
+theorem bvt_singleSplit_eq_osTimeShift_on_rightHalfPlane
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    ContinuousOn explicitKernel positiveTimeRegion := by
-  -- restrict the fixed-strip continuity theorem to `{ξ | 0 < ξ 0}`
+    {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hm : 0 < m) :
+    ∀ z : ℂ, 0 < z.re →
+      bvt_singleSplit_xiShiftHolomorphicValue (d := d) OS lgc hm
+        f hf_ord hf_compact g hg_ord hg_compact z
+        =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord) z
+```
 
-theorem common_zero_center_section_continuous_on_positiveTime
+Proof transcript:
+
+1. use
+   `differentiableOn_bvt_singleSplit_xiShiftHolomorphicValue`
+   and
+   `OSInnerProductTimeShiftHolomorphicValue_differentiableOn`;
+2. use
+   `bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift`
+   for the Wightman-side real-axis formula;
+3. use
+   `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_right_single`
+   specialized to a positive-time single left factor, or equivalently
+   the already implemented production theorem
+   `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`;
+4. check that both real-axis formulas equal the same positive-real Schwinger
+   time-shift expression;
+5. apply `identity_theorem_right_halfplane`.
+
+This is the core analytic theorem. Everything after this is algebra and
+continuity.
+
+Exact current implementation note:
+
+1. the current local production theorem for Package B is already
+   `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single` in
+   `OSToWightmanPositivity.lean`;
+2. later work should build on that theorem, not reprove Package B under a
+   slightly different wrapper unless there is a compelling API reason.
+
+### 5.3. Package C: false legacy theorem surface
+
+Package C is **not** a live frontier any more. It is the old positive-real
+same-shell theorem surface externalized as `hschw`, and it is mathematically
+false.
+
+The legacy theorem surface was:
+
+```lean
+theorem schwinger_timeShift_eq_bvt_W_conjTensorProduct_timeShift_of_compact_positiveTime
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    ContinuousOn commonKernel positiveTimeRegion := by
-  -- restrict `continuousOn_commonZeroCenterShiftSection_on_fixedStrip_local`
-  -- to the positive-time region
+    {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hm : 0 < m) :
+    ∀ t : ℝ, 0 < t →
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+        =
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))
+```
 
-/- Step B: their pairings agree on all positive-support test functions. -/
-theorem common_pairing_eq_explicit_pairing
+This is the exact theorem externalized today as the hypothesis `hschw` in
+`OSToWightmanBoundaryValueLimits.lean` and
+`OSToWightmanBoundaryValuesCompactApprox.lean`.
+
+Exact reason it is false:
+
+1. for the free scalar field, the left-hand side evaluates to a Euclidean/OS
+   Laplace-type quantity with factor `e^{-ω_p t}`;
+2. the right-hand side evaluates to the reconstructed Wightman boundary-value
+   pairing against a real Minkowski time translation, with oscillatory factor
+   `e^{-i ω_p t}`;
+3. the test functions also appear through different transforms on the two
+   sides: Laplace on the OS side, Fourier on the Wightman side;
+4. so the two sides do not agree on the exact intended theorem surface.
+
+See `agents_chat.md` Entry `#283` for the exact free-field counterexample and
+Entries `#285`-`#286` for the exact-surface verification against the repo
+definitions.
+
+Operational consequence:
+
+1. the legacy `hschw` theorems may remain in production as logically valid
+   implications from a false premise;
+2. they should be marked deprecated/dead-end and not used to guide theorem-3
+   proof work;
+3. Package I is now the only endorsed theorem-3 route.
+
+### 5.3.1. Existing theorem inventory still relevant after the correction
+
+Existing production infrastructure already supporting this route:
+
+1. `identity_theorem_right_halfplane` in `OSToWightmanPositivity.lean`;
+2. `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single` in
+   `OSToWightmanPositivity.lean`;
+3. `bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift` in
+   `OSToWightmanBoundaryValueLimits.lean`;
+4. `OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag`
+   in `OSToWightmanSemigroup.lean`;
+5. `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinger`
+   and
+   `tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
+   in `OSToWightmanBoundaryValueLimits.lean`.
+
+Core Wightman-side boundary-value infrastructure already present:
+
+1. `full_analytic_continuation_boundaryValueData`;
+2. `boundary_values_tempered`;
+3. `bvt_W`;
+4. `bvt_F`;
+5. `bvt_W_continuous`;
+6. `bvt_W_linear`;
+7. `bvt_F_holomorphic`;
+8. `bvt_boundary_values`.
+
+These are important because the Package-C spectral/Laplace strategy does not
+only need the OS-side semigroup object; it also needs the exact theorem surfaces
+that realize the reconstructed Wightman pairing as the boundary value of the
+forward-tube witness `bvt_F`.
+
+Particularly relevant BV-side spectral/Laplace bridge theorems already in
+`OSToWightmanBoundaryValuesBase.lean`:
+
+1. `bvt_selfAdjointSpectralLaplaceOffdiag_onePoint_pair_eq_xiShift`;
+2. `bvt_selfAdjointSpectralLaplaceOffdiag_onePoint_pair_eq_xiShift_translate_spatial_right`;
+3. `bvt_OSInnerProductTimeShiftHolomorphicValue_onePoint_pair_eq_xiShift_centerShear_local`;
+4. `bvt_OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single_translate_spatial_right`.
+
+These remain useful as support infrastructure for the corrected Section 4.3
+transport-map route, but they should no longer be read as evidence that the old
+same-shell Package-C theorem is true.
+
+Useful transcript guides from older support files:
+
+1. `schwinger_simpleTensor_timeShift_eq_xiShift`;
+2. `OSInnerProductTimeShiftHolomorphicValueExpandBoth_single_eq_xiShift`;
+3. `OSInnerProductTimeShiftHolomorphicValueExpandBoth_ofReal_eq_piecewise_xiShift`.
+
+These older theorems are valuable because they already write out the OS-side
+positive-real / Euclidean-`xiShift` conversion in detail. They should be used
+as proof transcripts, not as reasons to revert to an off-blueprint theorem
+surface.
+
+Zero-right and helper transport facts:
+
+1. `bvt_eq_schwinger_of_tendsto_singleSplit_xiShift_nhdsWithin_zero_zeroRight_of_hermitian`
+   still handles the `m = 0` repair only;
+2. `boundary_ray_hermitian_pairing_of_F_negCanonical`,
+   `bv_hermiticity_transfer_of_F_reflect`,
+   `bv_timeReversal_transfer`,
+   `boundary_ray_timeReversal_pairing_of_F_timeReversalCanonical`,
+   and `tendsto_boundary_negReverse_pairing`
+   remain helper transport theorems only.
+
+They may assist a future proof, but they are not themselves the OS I Section 4.3
+Fourier-Laplace mechanism.
+
+### 5.3.2. What this correction means for the codebase
+
+1. do not spend any further theorem-3 effort trying to prove the old
+   `schwinger_timeShift_eq_bvt_W_conjTensorProduct_timeShift` surface;
+2. do not revive a same-shell bridge
+   `bvt_W (f.conjTensorProduct g) = OS.S (f.osConjTensorProduct g)`;
+3. keep Packages A-B as valid support lemmas;
+4. treat the current `hschw` consumer theorems as deprecated legacy
+   infrastructure only;
+5. move directly to Package I.
+
+Exact current handoff theorems after the correction:
+
+1. the `hschw`-consuming compact-approximation theorems remain compiled legacy
+   infrastructure but are no longer part of the endorsed route;
+2. the live theorem-3 implementation target is now the Section 4.3 transport
+   map and norm-square identity from Package I;
+2. `bvt_wightmanInner_single_single_eq_osInner_of_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+   then upgrades that identity to equality of the singleton Wightman and OS
+   inner products;
+3. `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+   and its zero-right / self variants are the existing summation consumers.
+
+### 5.4. Package D: positive-time sesquilinear equality
+
+Now sum the single/split equalities over the right factor and then over the left
+factor:
+
+```lean
+theorem bvt_wightmanInner_eq_osInner_of_positiveTime
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
-    (χc h : SchwartzSpacetime d)
-    (hχc : ∫ u : SpacetimeDim d, χc u = 1)
-    (hh_pos : tsupport (h : SpacetimeDim d → ℂ) ⊆ positiveTimeRegion)
-    (s : ℝ) (hs : 0 < s) :
-    ∫ ξ, commonKernel ξ * h ξ = ∫ ξ, explicitKernel ξ * h ξ := by
-  simpa using
-    commonZeroCenterShiftSection_pairing_eq_descendedAbsoluteInput_of_positiveSupport
-      (d := d) OS lgc χc h hχc hh_pos s hs
+    (F G : PositiveTimeBorchersSequence d) :
+    WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (G : BorchersSequence d)
+      =
+    OSInnerProduct d OS.S
+      (F : BorchersSequence d) (G : BorchersSequence d)
+```
 
-/- Step C: uniqueness on the common domain. -/
-theorem common_eq_explicit_descended_on_positive_domain
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (s : ℝ) (hs : 0 < s) :
-    EqOn commonKernel explicitKernel positiveTimeRegion := by
-  apply eqOn_positiveTime_of_compactSupport_schwartz_integral_eq_continuousOn_local
-  · exact common_zero_center_section_continuous_on_positiveTime (d := d) OS lgc s hs
-  · exact explicit_descended_kernel_continuous_on_positiveTime (d := d) OS lgc s hs
-  · intro h hh_compact hh_support
-    exact common_pairing_eq_explicit_pairing (d := d) OS lgc χc h hχc hh_support s hs
+Exact current implementation note:
 
-/- Step D: convert to the shell equality needed by theorem 3. -/
-theorem compact_approx_componentwise_schwinger_eq_bvtW_timeShift
+1. the abstract summation theorem already exists in
+   `OSToWightmanBoundaryValuesBase.lean` as
+   `wightmanInner_eq_osInner_of_orderedPositive_termwise`;
+2. the older compact ordered-positive-time consumer chain also already exists as
+   `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+   and its zero-right/self variants;
+3. therefore Package D does **not** need a fresh mathematical route once
+   Package C is proved; it needs a clean adapter from the new Package-C theorem
+   to these existing consumers.
+
+Proof transcript if done directly:
+
+1. use `OSInnerProduct_eq_sum_right_singles` and the analogous Wightman-side
+   finite-sum expansion;
+2. reduce each summand to the single/split theorem from Package C;
+3. handle the `m = 0` right-factor summands by the existing zero-right theorems;
+4. use hermitian symmetry to move any residual zero-left issues to the already
+   documented zero-right theorems rather than introducing a separate left-zero
+   package;
+5. sum the equalities.
+
+This theorem is the actual OS I style bridge theorem for the positive-time
+class.
+
+### 5.5. Package E: positive-time positivity
+
+Once Package D exists, positivity on the positive-time class should be
+immediate. Again, the current code already has consumer versions of this
+statement through the compact-approximation chain, so the real frontier is still
+Package C.
+
+```lean
+theorem bvt_positiveTime_self_nonneg
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (F : PositiveTimeBorchersSequence d) :
-    ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
-      let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N
-      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
-        ((((F_N : BorchersSequence d).funcs n).osConjTensorProduct
-          (timeShiftSchwartzNPoint (d := d) t
-            ((F_N : BorchersSequence d).funcs m))))) =
-        bvt_W OS lgc (n + m)
-          ((((F_N : BorchersSequence d).funcs n).conjTensorProduct
-            (timeShiftSchwartzNPoint (d := d) t
-              ((F_N : BorchersSequence d).funcs m)))) := by
-  -- rewrite the common zero-center section to the fixed-time common kernel,
-  -- rewrite the explicit kernel to the semigroup shell,
-  -- invoke the existing production bridge theorem
-
-/- Step E1: close the positive-time theorem through the `hschw` wrapper. -/
-theorem bvt_positiveTime_self_nonneg_from_hschw
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : PositiveTimeBorchersSequence d)
-    (hschw :
-      ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
-        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
-        OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
-          ((((F_N : BorchersSequence d).funcs n).osConjTensorProduct
-            (timeShiftSchwartzNPoint (d := d) t
-              ((F_N : BorchersSequence d).funcs m))))) =
-          bvt_W OS lgc (n + m)
-            ((((F_N : BorchersSequence d).funcs n).conjTensorProduct
-              (timeShiftSchwartzNPoint (d := d) t
-                ((F_N : BorchersSequence d).funcs m))))) :
     0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
-      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
-  exact
-    bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift
-      (d := d) (OS := OS) (lgc := lgc) F hschw
-
-/- Step E2: only after Step E1 should the public frontier be closed. -/
-private theorem bvt_W_positive
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ F : BorchersSequence d,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
-  intro F
-  -- This step is *not* supplied by the compact-approximation package itself.
-  -- It must be the exact final theorem reducing arbitrary Borchers sequences
-  -- to the positive-time route, or else the frontier theorem should be
-  -- restated honestly on `PositiveTimeBorchersSequence d`.
-  exact
-    general_borchers_to_positiveTime_reduction
-      (d := d) (OS := OS) (lgc := lgc) F
-      bvt_positiveTime_self_nonneg_from_hschw
+      (F : BorchersSequence d) (F : BorchersSequence d)).re
 ```
 
-That pseudocode should be treated as a goal, not as a statement that the
-continuity hypotheses or the final
-`BorchersSequence -> PositiveTimeBorchersSequence` reduction are already
-available under those exact names.
+Proof transcript:
 
-## 9. Bottom line
+1. rewrite by Package D with `G = F`;
+2. identify the result with `PositiveTimeBorchersSequence.osInner OS F F`;
+3. apply `PositiveTimeBorchersSequence.osInner_nonneg_self`.
 
-The current theorem-3 frontier is much narrower than it used to be.
+This theorem is the end of the analytic core.
 
-The honest remaining issue is not "positivity in general." It is:
-- match the common one-variable kernel and the explicit descended boundary-value
-  kernel on the correct positive-time domain,
-- then hand that equality to the reduction chain already in production.
+### 5.6. Package F: ordered-positive-time density in each degree
 
-That is the only theorem-3 route this note endorses.
+Important route correction:
+
+The naive raw-density slogan
+
+```lean
+Dense {f : SchwartzNPoint d n |
+  tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
+```
+
+is not mathematically correct on the full Schwartz space. If
+`x ∉ OrderedPositiveTimeRegion d n`, then point evaluation `f ↦ f x` is a
+continuous linear functional and it vanishes on every function whose support is
+contained in `OrderedPositiveTimeRegion d n`. So that set cannot be dense in
+all of `SchwartzNPoint d n`.
+
+Therefore the raw theorem surface originally written in this section is
+quarantined and must not be implemented as stated.
+
+This means the older density route is withdrawn, not merely awaiting repair.
+The later Lean implementation should not start from a global topology on raw
+`BorchersSequence d`, and it should not attempt to resurrect Package F as a
+real theorem on full Schwartz space.
+
+Quarantined theorem slots (recorded here only so later work does not
+accidentally reintroduce them as if they were valid):
+
+```lean
+theorem orderedPositiveTime_dense_schwartzNPoint
+    (n : ℕ) :
+    Dense
+      {f : SchwartzNPoint d n |
+        tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
+
+theorem exists_orderedPositiveTime_seq_tendsto
+    (n : ℕ) (f : SchwartzNPoint d n) :
+    ∃ g : ℕ → SchwartzNPoint d n,
+      (∀ k, tsupport (g k : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+        ∧ Tendsto g atTop (𝓝 f)
+```
+
+Exact current implementation status:
+
+1. there is **no** current production theorem implementing Package F yet;
+2. the existing family `compactApproxPositiveTimeBorchers` in
+   `OSToWightmanSpatialMomentum.lean` is **not** Package F:
+   it approximates an already positive-time Borchers sequence by compactly
+   supported positive-time Borchers sequences, but it does not approximate an
+   arbitrary Schwartz component by ordered-positive-time data;
+3. this section is retained only as a warning / historical quarantine, not as
+   endorsed implementation guidance.
+
+### 5.7. Package G: componentwise positive-time approximation of Borchers sequences
+
+The original Package-G statement depended on the quarantined raw Package-F
+statement above. So this section is also historical only, not a currently
+endorsed theorem surface.
+
+Recommended theorem slot:
+
+```lean
+theorem exists_positiveTime_componentwise_approximation
+    (F : BorchersSequence d) :
+    ∃ G : ℕ → PositiveTimeBorchersSequence d,
+      (∀ n, Tendsto (fun k => ((G k : BorchersSequence d).funcs n)) atTop (𝓝 (F.funcs n)))
+        ∧ (∀ k, (G k : BorchersSequence d).bound = F.bound)
+```
+
+What remains fixed is only the negative guidance:
+
+1. do not force a raw topological structure on `BorchersSequence d`;
+2. do not reintroduce raw support-density claims on full Schwartz space;
+3. use Package I instead of trying to revive this approximation route.
+
+Exact current implementation status:
+
+1. there is **no** current production theorem implementing Package G, and none
+   is currently endorsed;
+2. `compactApproxPositiveTimeBorchers` should be treated only as an internal
+   compact-support approximation inside the positive-time class;
+3. it is not the final arbitrary-`BorchersSequence` approximation theorem and
+   should not be documented or used as if it were.
+
+### 5.8. Package H: withdrawn continuity-after-density route
+
+This section records the old continuity-after-density plan only so it is not
+accidentally revived as current blueprint guidance.
+
+Recommended theorem slots:
+
+```lean
+theorem WightmanInnerProduct_tendsto_of_componentwise_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d)
+    (G : ℕ → BorchersSequence d)
+    (hbound : ∀ k, (G k).bound = F.bound)
+    (hcomp : ∀ n, Tendsto (fun k => (G k).funcs n) atTop (𝓝 (F.funcs n))) :
+    Tendsto
+      (fun k => WightmanInnerProduct d (bvt_W OS lgc) (G k) (G k))
+      atTop
+      (𝓝 (WightmanInnerProduct d (bvt_W OS lgc) F F))
+
+theorem re_WightmanInnerProduct_tendsto_of_componentwise_tendsto
+    ...
+```
+
+Proof transcript:
+
+1. expand `WightmanInnerProduct` as a finite double sum up to `F.bound`;
+2. for each fixed pair `(n,m)`, use `bvt_W_continuous` and the product
+   convergence of the component approximants;
+3. move the limit through the finite sum.
+
+This is where the route uses the finite-support nature of `BorchersSequence d`
+instead of forcing a global topological structure.
+
+Acceptable implementation helper:
+
+1. if the eventual Lean code wants a helper theorem phrased as continuity of
+   the real quadratic form on a **fixed-bound product space**
+   `(n : Fin (B + 1)) → SchwartzNPoint d n`, that is acceptable;
+2. such a theorem is still only a repackaging of the finite-sum argument above,
+   because the bound `B` is fixed and the quadratic form expands to a finite
+   double sum of already-continuous pairings;
+3. what should still be avoided is restarting theorem 3 from a new global
+   topological structure on raw `BorchersSequence d` itself.
+
+Exact current implementation status:
+
+1. the repo already contains a concrete model of this continuity argument for
+   one specific approximation family:
+   `tendsto_compactApproxPositiveTimeBorchers_term` and
+   `tendsto_compactApproxPositiveTimeBorchers_wightmanInner_self` in
+   `OSToWightmanBoundaryValuesCompactApprox.lean`;
+2. these theorems show that the finite-sum continuity route is formally viable
+   on the current encoding of `BorchersSequence d`;
+3. however, they are still only special-case continuity theorems for the
+   compact-support truncation family, not the final general Package-H theorem.
+
+### 5.9. Package I: final public closure via the OS I Section 4.3 transport map
+
+After the density-route correction, the final theorem-3 closure package is no
+longer an approximation theorem. It is the OS I Section 4.3 transport-map
+package for arbitrary Borchers data.
+
+Concrete theorem slots:
+
+```lean
+/-- The OS I Section 4.3 transport map. -/
+noncomputable def bvt_transport_to_osHilbert
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
+    BorchersSequence d → OSHilbertSpace OS
+
+/-- Additivity of the transport map. -/
+theorem bvt_transport_to_osHilbert_add
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : BorchersSequence d) :
+    bvt_transport_to_osHilbert (d := d) OS lgc (F + G) =
+      bvt_transport_to_osHilbert (d := d) OS lgc F +
+      bvt_transport_to_osHilbert (d := d) OS lgc G
+
+/-- Complex-linearity of the transport map. -/
+theorem bvt_transport_to_osHilbert_smul
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (c : ℂ) (F : BorchersSequence d) :
+    bvt_transport_to_osHilbert (d := d) OS lgc (c • F) =
+      c • bvt_transport_to_osHilbert (d := d) OS lgc F
+
+/-- The transport map lands in the positive-time Hilbert-space domain via a
+positive-time representative after the Section 4.3 Laplace transform. -/
+theorem bvt_transport_to_osHilbert_wellDefined
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d) :
+    ∃ G : PositiveTimeBorchersSequence d,
+      bvt_transport_to_osHilbert (d := d) OS lgc F =
+        ((⟦G⟧ : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+
+/-- OS I eq. (4.28): the Wightman quadratic form is the Hilbert norm square of
+the transport map. -/
+theorem bvt_wightmanInner_eq_transport_norm_sq
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d) :
+    (WightmanInnerProduct d (bvt_W OS lgc) F F).re =
+      ‖bvt_transport_to_osHilbert (d := d) OS lgc F‖ ^ 2
+
+/-- Polarized sesquilinear transport identity derived from the quadratic
+norm-square theorem and linearity of the transport map. -/
+theorem bvt_wightmanInner_eq_transport_inner
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : BorchersSequence d) :
+    WightmanInnerProduct d (bvt_W OS lgc) F G =
+      ⟪bvt_transport_to_osHilbert (d := d) OS lgc F,
+        bvt_transport_to_osHilbert (d := d) OS lgc G⟫
+
+/-- Final theorem-3 closure. -/
+theorem bvt_W_positive_of_transport
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
+    ∀ F : BorchersSequence d,
+      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
+```
+
+Proof transcript:
+
+1. define `bvt_transport_to_osHilbert` by the OS I eq. (4.26) Laplace
+   transform on each Borchers component followed by passage to the OS Hilbert
+   space;
+2. prove well-definedness by showing the transformed data have the required
+   positive-energy / positive-time support to represent an element of
+   `OSPreHilbertSpace OS`, hence of `OSHilbertSpace OS`;
+3. prove `bvt_wightmanInner_eq_transport_norm_sq` by the Section 4.3
+   Fourier-Laplace / spectral-integral computation;
+4. deduce `bvt_W_positive_of_transport` immediately from nonnegativity of
+   Hilbert norms;
+5. if needed, derive the polarized sesquilinear identity
+   `bvt_wightmanInner_eq_transport_inner` from the quadratic norm-square
+   theorem plus additivity and scalar-linearity of the transport map.
+
+Relation to Package C:
+
+1. Package C remains the current production theorem surface and may still be
+   proved directly first to feed the existing positive-time consumer chain;
+2. however, once Package I is established far enough to obtain the polarized
+   transport identity, Package C becomes a formal corollary of that stronger
+   sesquilinear transport theorem.
+
+This package is the actual theorem-3 closure target.
+
+Exact current implementation status:
+
+1. there is no current production theorem implementing Package I yet;
+2. the current production file `OSToWightmanPositivity.lean` now honestly
+   isolates Package I as one of the two remaining `sorry`s;
+3. the theorem-3 blueprint now endorses this transport-map / norm-square route
+   as the only final closure route.
+
+## 6. Exact relation to the current production consumers
+
+The current production consumers can still be used, but only as consumers.
+
+Safe usage:
+
+1. feed Package C through the current compact-approximation theorem surfaces;
+2. once the direct positive-time semigroup bridge is proved, the current theorem
+   `bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
+   may be invoked as a short route to Package E;
+3. this does not change the blueprint, because the blueprint target remains
+   Package D / Package E, not a new shell wrapper theorem.
+
+Unsafe usage:
+
+1. introducing a new theorem whose primary conclusion is another `h*` consumer
+   interface;
+2. reentering the K2 common-kernel route;
+3. turning theorem 3 back into a shell-comparison project instead of a
+   positive-time semigroup project.
+
+## 7. Minimal Lean pseudocode for the endorsed route
+
+The later Lean implementation should use the following theorem-package names
+unless an exact compile failure forces a local renaming. In that case the docs
+must be updated at the same time; the names below are now part of the intended
+implementation contract, not casual pseudocode.
+
+```lean
+/- Step A: one-variable identity theorem. -/
+theorem identity_theorem_right_halfplane ... := by
+  ...
+
+/- Step B: compact positive-time single/split equality on {Re z > 0}. -/
+theorem bvt_xiShift_eq_osInnerProduct_holomorphicValue_single ... := by
+  apply identity_theorem_right_halfplane
+  ...
+
+/- Step C: z -> 0+ boundary pairing equality for compact single/split data. -/
+theorem schwinger_timeShift_eq_bvt_W_conjTensorProduct_timeShift ... := by
+  ...
+
+/- Step D: sum over components to get positive-time sesquilinear equality. -/
+theorem bvt_wightmanInner_eq_osInner_of_positiveTime ... := by
+  ...
+
+/- Step E: positivity on the positive-time class. -/
+theorem bvt_positiveTime_self_nonneg_from_packageC ... := by
+  ...
+
+/- Step F: withdrawn raw density route (historical, do not implement). -/
+theorem orderedPositiveTime_dense_schwartzNPoint ... := by
+  ...
+
+theorem exists_orderedPositiveTime_seq_tendsto ... := by
+  ...
+
+/- Step G: withdrawn approximation bundling route (historical, do not implement). -/
+theorem exists_positiveTime_componentwise_approximation ... := by
+  ...
+
+/- Step H: withdrawn continuity-after-density route (historical, do not implement). -/
+theorem WightmanInnerProduct_tendsto_of_componentwise_tendsto ... := by
+  ...
+
+theorem re_WightmanInnerProduct_tendsto_of_componentwise_tendsto ... := by
+  ...
+
+/- Step I: final theorem-3 closure via Section 4.3 transport. -/
+noncomputable def bvt_transport_to_osHilbert ... := by
+  ...
+
+theorem bvt_transport_to_osHilbert_add ... := by
+  ...
+
+theorem bvt_transport_to_osHilbert_smul ... := by
+  ...
+
+theorem bvt_transport_to_osHilbert_wellDefined ... := by
+  ...
+
+theorem bvt_wightmanInner_eq_transport_norm_sq ... := by
+  ...
+
+theorem bvt_wightmanInner_eq_transport_inner ... := by
+  ...
+
+private theorem bvt_W_positive_of_transport ... := by
+  intro F
+  rw [bvt_wightmanInner_eq_transport_norm_sq]
+  positivity
+```
+
+The current production file
+`OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean`
+already uses the exact names
+`identity_theorem_right_halfplane`,
+`bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`,
+`schwinger_timeShift_eq_bvt_W_conjTensorProduct_timeShift`,
+and `bvt_positiveTime_self_nonneg_from_packageC`.
+The later theorem names above should therefore be treated as fixed guidance for
+the remaining transport-map / norm-square packages as well.
+
+## 8. Representation-gap note
+
+The theorem-3 route above is the current-code realization of the OS proof.
+
+The docs therefore record the following explicitly:
+
+1. raw `BorchersSequence d` is a bounded finite-record representation;
+2. this representation is enough for theorem 3 because
+   `WightmanInnerProduct` is a finite sum;
+3. therefore theorem 3 should be closed by the Section 4.3 transport-map
+   realization, not by first imposing a `Submodule` / topology package on the
+   raw type.
+
+This is a local repo encoding fact, not a mathematical change to the OS route.
+
+## 9. Support-work checklist
+
+Before any later production proof resumes, the support work should verify:
+
+1. no theorem-3 doc section still treats `hschw` as the target theorem shape;
+2. no theorem-3 doc section still recommends `bvtInitialCore` on raw
+   `BorchersSequence d`;
+3. `mathlib_gap_analysis.md` classifies the raw `BorchersSequence` issue as a
+   local representation gap, not an upstream gap;
+4. any new test-file support work stays inside Package A through Package I
+   above, and does not revive the withdrawn F/G/H density route as if it were
+   endorsed.
+5. the docs identify the exact current local frontier as the Package-C
+   positive-real pairing identity, not as a generic “boundary-value limit”.
+6. the docs explicitly record that Packages A-B are already implemented in
+   `OSToWightmanPositivity.lean`.
+
+## 10. Bottom line
+
+Theorem 3 is no longer a shell-comparison project.
+
+Theorem 3 is now exactly this:
+
+1. prove the positive-time semigroup bridge;
+2. prove positivity on `PositiveTimeBorchersSequence d`;
+3. build the Section 4.3 transport map for arbitrary Borchers data;
+4. identify the Wightman quadratic form with a Hilbert norm square;
+5. deduce full positivity from Hilbert-space nonnegativity.
+
+That is the only theorem-3 route this note now endorses.
