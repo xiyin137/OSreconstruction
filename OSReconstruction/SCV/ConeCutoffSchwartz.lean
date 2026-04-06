@@ -45,7 +45,7 @@ where `z·ξ = ∑_j z_j * ξ_j`.
 - See docs/vladimirov_tillmann_gemini_reviews.md for the dynamic scaling trick
 -/
 
-open scoped Classical ComplexConjugate BigOperators NNReal
+open scoped Classical ComplexConjugate BigOperators NNReal ContDiff
 open MeasureTheory Complex
 noncomputable section
 
@@ -98,19 +98,19 @@ def psiZRaw {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualConeFlat C))
 /-- The raw function is smooth in ξ (for fixed z and R > 0). -/
 theorem psiZRaw_contDiff {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualConeFlat C))
     (R : ℝ) (z : Fin m → ℂ) :
-    ContDiff ℝ ⊤ (psiZRaw χ R z) := by
+    ContDiff ℝ ∞ (psiZRaw χ R z) := by
   unfold psiZRaw
-  have hscale : ContDiff ℝ ⊤ (fun ξ : Fin m → ℝ => fun i => R⁻¹ * ξ i) := by
+  have hscale : ContDiff ℝ ∞ (fun ξ : Fin m → ℝ => fun i => R⁻¹ * ξ i) := by
     refine contDiff_pi.2 fun i => ?_
     simpa [Pi.smul_apply, smul_eq_mul] using
       (((R⁻¹ : ℝ) •
         (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)).contDiff :
-        ContDiff ℝ ⊤ ((R⁻¹ : ℝ) •
+        ContDiff ℝ ∞ ((R⁻¹ : ℝ) •
           (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)))
-  have hcutoff : ContDiff ℝ ⊤
+  have hcutoff : ContDiff ℝ ∞
       (fun ξ : Fin m → ℝ => (χ.val (fun i => R⁻¹ * ξ i) : ℂ)) := by
     exact Complex.ofRealCLM.contDiff.comp (χ.smooth.comp hscale)
-  have hexpArg : ContDiff ℝ ⊤
+  have hexpArg : ContDiff ℝ ∞
       (fun ξ : Fin m → ℝ => I * ∑ i, z i * (ξ i : ℂ)) := by
     refine contDiff_const.mul <| ContDiff.sum fun i _ => ?_
     exact contDiff_const.mul <|
@@ -652,12 +652,12 @@ theorem psiZRaw_iteratedFDeriv_decay
   let fχ : (Fin m → ℝ) → ℂ := fun ξ => (χ.val (fun i => R⁻¹ * ξ i) : ℂ)
   let gExp : (Fin m → ℝ) → ℂ := fun ξ => cexp (I * ∑ i, z i * (ξ i : ℂ))
   -- Smoothness of the two factors (from psiZRaw_contDiff proof)
-  have hfχ_smooth : ContDiff ℝ ⊤ fχ := by
+  have hfχ_smooth : ContDiff ℝ ∞ fχ := by
     exact Complex.ofRealCLM.contDiff.comp (χ.smooth.comp
       (contDiff_pi.2 fun i =>
         (((R⁻¹ : ℝ) •
           (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i)).contDiff)))
-  have hgExp_smooth : ContDiff ℝ ⊤ gExp := by
+  have hgExp_smooth : ContDiff ℝ ∞ gExp := by
     refine Complex.contDiff_exp.comp ?_
     refine contDiff_const.mul <| ContDiff.sum fun i _ => ?_
     exact contDiff_const.mul <|
@@ -669,7 +669,7 @@ theorem psiZRaw_iteratedFDeriv_decay
     intro i
     let S : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := R⁻¹ • ContinuousLinearMap.id ℝ (Fin m → ℝ)
     obtain ⟨Cχ, hCχ⟩ := χ.deriv_bound i
-    have hχS_smooth : ContDiff ℝ ⊤ (χ.val ∘ S) := χ.smooth.comp S.contDiff
+    have hχS_smooth : ContDiff ℝ ∞ (χ.val ∘ S) := χ.smooth.comp S.contDiff
     refine ⟨(max Cχ 0 + 1) * (‖S‖ ^ i + 1), by positivity, fun ξ => ?_⟩
     have hS_eq : ∀ ξ : Fin m → ℝ, S ξ = fun j => R⁻¹ * ξ j := by
       intro ξ

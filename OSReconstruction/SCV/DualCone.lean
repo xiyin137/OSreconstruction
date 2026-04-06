@@ -30,7 +30,7 @@ Hahn-Banach separation) with the cones arising in the Vladimirov-Tillmann theore
 - Vladimirov, "Methods of the Theory of Generalized Functions", §25
 -/
 
-open scoped Classical
+open scoped Classical ContDiff
 noncomputable section
 
 variable {m : ℕ}
@@ -194,7 +194,7 @@ structure FixedConeCutoff (S : Set (Fin m → ℝ)) where
   /-- The smooth cutoff function. -/
   val : (Fin m → ℝ) → ℝ
   /-- The cutoff is smooth (C^∞). -/
-  smooth : ContDiff ℝ ⊤ val
+  smooth : ContDiff ℝ ∞ val
   /-- The cutoff equals 1 on an open neighborhood of S. -/
   one_on_neighborhood : ∃ ε > 0, ∀ ξ, Metric.infDist ξ S < ε → val ξ = 1
   /-- The cutoff vanishes far from S. -/
