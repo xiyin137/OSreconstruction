@@ -1,131 +1,133 @@
 # Vladimirov-Tillmann Proof Branch Status
 
 Branch: `vladimirov-tillmann-phase1-2` on `myfork` (mrdouglasny/OSreconstruction)
+Updated: 2026-04-06
 
 ## Overview
 
-10 new files, ~3200 lines. Goal: eliminate the `vladimirov_tillmann` axiom and prove the VT converse (growth → BV) needed for OS reconstruction.
+10 new files, ~3800 lines. Goal: eliminate the `vladimirov_tillmann` axiom and prove
+the VT converse (polynomial growth → tempered boundary values) needed for OS reconstruction.
 
-**3 complete files** (0 axioms, 0 sorrys):
-- `SCV/DualCone.lean` (220 lines) — dual cone properties, Hahn-Banach separation
-- `SCV/ConeCutoffSchwartz.lean` (864 lines) — concrete ψ_{z,R} construction, all decay estimates
-- `SCV/VladimirovProof.lean` (~80 lines) — consistency of axiom package
+## File Status
 
-## Axioms (6)
+| File | Lines | Axioms | Sorrys | Status |
+|------|-------|--------|--------|--------|
+| `SCV/DualCone.lean` | 217 | 0 | 0 | **COMPLETE** |
+| `SCV/ConeCutoffSchwartz.lean` | 864 | 0 | 0 | **COMPLETE** |
+| `SCV/VladimirovProof.lean` | 79 | 0 | 0 | **COMPLETE** |
+| `GeneralResults/DiffUnderIntegralSchwartz.lean` | 182 | 0 | 0 | **COMPLETE** |
+| `GeneralResults/DistributionalLimit.lean` | 130 | 0 | 0 | **COMPLETE** |
+| `SCV/FourierSupportCone.lean` | 184 | 1 | 0 | 1 axiom |
+| `SCV/PaleyWienerSchwartz.lean` | 770 | 4 | 0 | 4 axioms |
+| `SCV/TubeBoundaryValueExistence.lean` | 1227 | 1 | 0 | 1 axiom |
+| `GeneralResults/SchwartzCutoffExp.lean` | 80 | 1 | 0 | 1 axiom |
+| `GeneralResults/SmoothCutoff.lean` | 79 | 1 | 0 | 1 axiom |
+
+**5 complete files** (0 axioms, 0 sorrys). **8 axioms** remain across 5 files.
+
+## Remaining Axioms (8)
 
 All reviewed by Gemini Deep Think and confirmed TRUE.
 
-### In `SCV/PaleyWienerSchwartz.lean` (3):
+### Tier 1: General infrastructure (2)
 
-**1. `psiZRSchwartz_seminorm_vladimirovBound`**
+**`exists_smooth_cutoff_of_closed`** (SmoothCutoff.lean)
+- Smooth cutoff χ = 1 near closed set, χ = 0 far away, bounded derivatives
+- Construction: convolution 1_A * φ with mollifier φ
+- Difficulty: Medium. HilleYosida has a 1D mollifier; need multivariate version.
 
-For the dynamically-scaled Schwartz family ψ_{z,R(z)} where R(z) = 1/(1+‖Im z‖):
+**`schwartz_seminorm_cutoff_exp_bound`** (SchwartzCutoffExp.lean)
+- ‖ξ‖^k · ‖D^n[χ · exp(L)](ξ)‖ ≤ B · (1 + ‖L‖)^n
+- Leibniz rule + polynomial × exponential decay estimate
+- Difficulty: Medium. Pure calculus, well-understood blueprint.
 
-$$\|\psi_{z,R(z)}\|_{k,n} \leq B \cdot (1 + \|z\|)^N \cdot \left(1 + \frac{1}{\mathrm{dist}(\mathrm{Im}\,z, \partial C)}\right)^M$$
+### Tier 2: Schwartz seminorm estimates for ψ_z family (3)
 
-The (k,n)-Schwartz seminorm grows polynomially in ‖z‖ with an inverse-boundary-distance singularity. The polynomial growth comes from chain-rule factors R^{-n} = (1+‖y‖)^n when differentiating the scaled cutoff χ(ξ/R). The dist⁻¹ factor captures the blow-up of sup_{ξ ∈ C*} ‖ξ‖^k exp(-y·ξ) as y approaches ∂C (the peak of r^k exp(-Δr) is at r = k/Δ, giving Δ^{-k}).
+**`psiZRSchwartz_seminorm_vladimirovBound`** (PaleyWienerSchwartz.lean)
+- Vladimirov growth bound on dynamically-scaled ψ_{z,R(z)} seminorms
+- ‖ψ_{z,R}‖_{k,n} ≤ B(1+‖z‖)^N (1+dist(Im z, ∂C)⁻¹)^M
+- Depends on: `schwartz_seminorm_cutoff_exp_bound`
+- Difficulty: Hard. Chain rule with scaling + boundary distance singularity.
 
-**2. `multiDimPsiZ_seminorm_difference_bound`**
+**`multiDimPsiZ_seminorm_difference_bound`** (PaleyWienerSchwartz.lean)
+- Lipschitz: ‖ψ_z - ψ_{z₀}‖_{k,n} ≤ D · ‖z - z₀‖ for ‖z-z₀‖ < δ
+- Difficulty: Medium. Lipschitz of exp(iz·ξ) on compact tube cross-sections.
 
-For z near z₀ in the tube (fixed R=1):
+**`multiDimPsiZ_differenceQuotient_seminorm_bound`** (PaleyWienerSchwartz.lean)
+- Convergence of difference quotients: ‖(ψ_{z+he_j} - ψ_z)/h - ψ'_j‖_{k,n} ≤ D|h|
+- Taylor remainder |exp(ihξ_j) - 1 - ihξ_j| ≤ h²ξ_j²/2 + cutoff decay
+- Difficulty: Medium.
 
-$$\|\psi_z - \psi_{z_0}\|_{k,n} \leq D \cdot \|z - z_0\| \qquad \text{for } \|z - z_0\| < \delta_0$$
+### Tier 3: Boundary value convergence (2)
 
-Lipschitz continuity of z ↦ ψ_z in Schwartz seminorms. The constant D depends on z₀ (absorbing the finite dist(Im z₀, ∂C)⁻¹ factor). TRUE because the exponential exp(iz·ξ) is Lipschitz in z on compact subsets of the tube, and the cutoff provides uniform support control.
+**`fourierLaplaceExtMultiDim_boundaryValue`** (PaleyWienerSchwartz.lean)
+- BV of F(z) = T(ψ_z): ∫ F(x+iεη) f(x) dx → T(FT⁻¹(f)) as ε→0+
+- Known issue: original RHS was T(f), should be T(FT⁻¹(f))
+- Depends on: seminorm estimates (Tier 2)
+- Difficulty: Hard. Equicontinuity + distributional limit.
 
-**3. `multiDimPsiZ_differenceQuotient_seminorm_bound`**
+**`tube_boundaryValue_of_vladimirov_growth`** (TubeBoundaryValueExistence.lean)
+- THE main VT converse for M>0: Vladimirov growth → tempered BV exist
+- Cauchy repeated integration k = M+2 times to regularize singularity
+- Depends on: M=0 case (proved), CR identity (proved), all Tier 1-2
+- Difficulty: Hard. The hardest remaining axiom.
 
-The difference quotient converges in Schwartz seminorms:
+### Tier 4: Fourier support (1)
 
-$$\left\|\frac{\psi_{z+he_j} - \psi_z}{h} - \psi'_j\right\|_{k,n} \leq D \cdot |h| \qquad \text{for } |h| < \delta_0$$
+**`fourierSupportInDualCone_of_tube_boundaryValue`** (FourierSupportCone.lean)
+- Tube-holomorphic F with BV W ⟹ W has Fourier support in dual cone C*
+- Depends on: full PW-Schwartz bridge (Tiers 1-3)
+- Difficulty: Medium once Tier 3 is done.
 
-where ψ'_j(ξ) = χ(ξ) · iξ_j · exp(iz·ξ) is the z_j-derivative. TRUE by the Taylor remainder |exp(ihξ_j) - 1 - ihξ_j| ≤ |h|²ξ_j²/2 combined with cutoff × exponential decay.
+## What's fully proved (no sorrys in chain)
 
-### In `GeneralResults/` (3):
-
-**4. `schwartz_seminorm_cutoff_exp_bound`** (SchwartzCutoffExp.lean)
-
-For χ smooth with bounded derivatives and L : ℝ^m → ℂ linear with Re(Lξ) ≤ -c‖ξ‖ on supp(χ):
-
-$$\|ξ\|^k \cdot \|D^n[\chi \cdot e^L](ξ)\| \leq B \cdot (1 + \|L\|)^n$$
-
-The Leibniz rule gives D^n[χ·exp(L)] = Σ C(n,j) D^j[χ] · D^{n-j}[exp(L)]. Each term has ‖D^j χ‖ ≤ C_j (bounded), ‖D^{n-j} exp(L)‖ ≤ ‖L‖^{n-j} exp(-c‖ξ‖) (exponential decay), and ‖ξ‖^k exp(-c‖ξ‖) ≤ (k/ce)^k (polynomial × exponential). Summing gives B(1+‖L‖)^n.
-
-**5. `hasDerivAt_schwartz_integral`** (DiffUnderIntegralSchwartz.lean)
-
-Differentiation under the integral sign for Schwartz test functions:
-
-$$\frac{d}{dt}\int F(t,x)\,\varphi(x)\,dx = \int \frac{\partial F}{\partial t}(t_0,x)\,\varphi(x)\,dx$$
-
-when F(t,·) has uniform polynomial growth and ∂F/∂t has polynomial growth on a neighborhood of t₀. The dominator C(1+‖x‖)^N |φ(x)| is integrable (polynomial × Schwartz). Proved via Mathlib's `hasDerivAt_integral_of_dominated_loc_of_deriv_le`.
-
-**6. `exists_smooth_cutoff_of_closed`** (SmoothCutoff.lean)
-
-For any closed set S ⊆ ℝ^m, there exists χ : ℝ^m → [0,1] smooth with:
-- χ = 1 on an ε-neighborhood of S
-- χ = 0 outside the 1-neighborhood of S
-- All iterated derivatives globally bounded
-
-Construction: convolution χ = 1_A * φ where A = {dist(·,S) ≤ 1/2} and φ ∈ C_c^∞(B_{1/2}) with ∫φ = 1. The `HilleYosida.BCR_d0.Mollifier` structure in the hille-yosida project has a 1D version.
-
-## Sorrys (7)
-
-### `SCV/FourierSupportCone.lean` (1):
-
-**`fourierSupportInDualCone_of_tube_boundaryValue`** — Tube-holomorphic F with BV W implies W has Fourier support in C*. Needs the full PW-Schwartz bridge (write F = W(ψ_z), then support follows by construction).
-
-### `SCV/PaleyWienerSchwartz.lean` (1):
-
-**`fourierLaplaceExtMultiDim_boundaryValue`** — BV convergence of F(z) = T(ψ_z). Known type error: RHS should be T(FT⁻¹(f)) not T(f). Needs `EuclideanSpace ℝ (Fin m)` cast for Fourier transform.
-
-### `SCV/TubeBoundaryValueExistence.lean` (4):
-
-**`hasDerivAt_tubeSlice_ray`** — d/dτ ∫ F(x+iτη)φ(x)dx = -i ∫ F(x+iτη)(η·∇φ)(x)dx. Needs CR equations + integration by parts + `hasDerivAt_schwartz_integral`.
-
-**`continuous_tubeSlice_ray_deriv`** — τ ↦ tubeSlice F (τ•η) (η·∇φ) is continuous. Needs dominated convergence for parameter-dependent integrals.
-
-**`tube_boundaryValue_of_vladimirov_growth`** — THE main VT converse (growth → BV). Needs Cauchy repeated integration + `distributional_limit_of_equicontinuous`.
-
-**`tube_boundaryValueData_of_polyGrowth'`** — M=0 specialization for OS reconstruction. Needs the CR identity for the Cauchy condition + distributional limit.
-
-### `GeneralResults/DistributionalLimit.lean` (1):
-
-**Cauchy filter → convergent** — Converting the pointwise Cauchy condition to filter convergence in ℂ. Standard completeness argument, needs filter plumbing.
+- Dual cone: all properties, Hahn-Banach separation
+- Concrete ψ_{z,R}: construction, decay, support, R-independence, iteratedFDeriv decay
+- Fourier-Laplace extension: holomorphicity (via Osgood), Vladimirov growth bound
+- Distributional limit: equicontinuous families → convergent
+- Diff under integral: hasDerivAt for Schwartz-paired integrals
+- Tube slice temperedness: each ε-slice defines a tempered distribution
+- R-independence under Fourier support hypothesis
+- M=0 boundary value (tube_boundaryValueData_of_polyGrowth') — OS critical
+- CR + IBP keystone (hasDerivAt_tubeSlice_ray) — 493 lines
+- DCT parameter continuity (continuous_tubeSlice_ray_deriv)
 
 ## Dependency DAG
 
 ```
-exists_smooth_cutoff_of_closed
-    → fixedConeCutoff_exists (PROVED)
-        → multiDimPsiZR (PROVED, concrete def)
+Tier 1 (general):
+  exists_smooth_cutoff_of_closed ──→ fixedConeCutoff_exists (PROVED)
+  schwartz_seminorm_cutoff_exp_bound ──→ psiZRSchwartz_seminorm_vladimirovBound
 
-schwartz_seminorm_cutoff_exp_bound
-    → psiZRSchwartz_seminorm_vladimirovBound (axiom)
-        → multiDimPsiZDynamic_seminorm_bound (PROVED)
-            → fourierLaplaceExtMultiDim_vladimirov_growth (PROVED)
+Tier 2 (seminorm estimates):
+  psiZRSchwartz_seminorm_vladimirovBound ──→ fourierLaplaceExtMultiDim_vladimirov_growth (PROVED)
+  multiDimPsiZ_seminorm_difference_bound ──→ fourierLaplaceExtMultiDim_boundaryValue
+  multiDimPsiZ_differenceQuotient_seminorm_bound ──→ fourierLaplaceExtMultiDim_boundaryValue
 
-hasDerivAt_schwartz_integral
-    → hasDerivAt_tubeSlice_ray (sorry)
-        → cr_integration_identity (PROVED from helper)
-            → tube_boundaryValueData_of_polyGrowth' (sorry, OS critical)
+Tier 3 (boundary values):
+  fourierLaplaceExtMultiDim_boundaryValue ──→ tube_boundaryValue_of_vladimirov_growth
+  tube_boundaryValue_of_vladimirov_growth ──→ vladimirov_tillmann (TARGET)
 
-distributional_limit_of_equicontinuous (1 sorry)
-    → tube_boundaryValueData_of_polyGrowth' (sorry)
-    → tube_boundaryValue_of_vladimirov_growth (sorry)
+Tier 4 (Fourier support):
+  fourierSupportInDualCone_of_tube_boundaryValue ──→ vladimirov_tillmann (TARGET)
 ```
 
-## What's fully proved (no sorrys in chain)
+## Suggested Execution Order
 
-- Dual cone: all properties, separation theorem
-- Concrete ψ_{z,R}: construction, decay, support, R-independence, iteratedFDeriv decay
-- Fourier-Laplace extension: holomorphicity (via Osgood), Vladimirov growth bound
-- Distributional derivative infrastructure
-- Tube slice temperedness (each ε-slice defines a tempered distribution)
-- R-independence under Fourier support hypothesis
+1. `exists_smooth_cutoff_of_closed` — convolution mollifier (Tier 1)
+2. `schwartz_seminorm_cutoff_exp_bound` — Leibniz + exp decay (Tier 1)
+3. `psiZRSchwartz_seminorm_vladimirovBound` — dynamic scaling bound (Tier 2)
+4. `multiDimPsiZ_seminorm_difference_bound` — Lipschitz (Tier 2)
+5. `multiDimPsiZ_differenceQuotient_seminorm_bound` — Taylor remainder (Tier 2)
+6. `fourierLaplaceExtMultiDim_boundaryValue` — BV convergence (Tier 3, fix RHS bug first)
+7. `tube_boundaryValue_of_vladimirov_growth` — M>0 repeated Cauchy (Tier 3)
+8. `fourierSupportInDualCone_of_tube_boundaryValue` — PW bridge (Tier 4)
 
 ## References
 
 - Vladimirov, "Methods of the Theory of Generalized Functions" (2002), §25
 - Hörmander, "The Analysis of Linear PDOs I" (1990), §7.4
 - Streater & Wightman, "PCT, Spin and Statistics, and All That", Ch. 2
-- See also: `docs/vladimirov_tillmann_proof_plan.md`, `docs/vladimirov_axiom_blueprints.md`, `docs/vladimirov_tillmann_gemini_reviews.md`
+- `docs/vladimirov_tillmann_proof_plan.md` — 4-phase proof plan
+- `docs/vladimirov_axiom_blueprints.md` — detailed proof sketches per axiom
+- `docs/vladimirov_tillmann_gemini_reviews.md` — 4 Gemini reviews
