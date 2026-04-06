@@ -315,9 +315,27 @@ private noncomputable def productConeCutoff (n : ℕ) :
     Real.smoothTransition (q k 0 + 1) *
     Real.smoothTransition (-(MinkowskiSpace.minkowskiNormSq d (q k)) + 1)
 
+omit [NeZero d] in
 private lemma productConeCutoff_smooth (n : ℕ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (productConeCutoff n : (Fin n → Fin (d + 1) → ℝ) → ℝ) := by
-  sorry
+  unfold productConeCutoff
+  apply contDiff_prod
+  intro k _
+  -- Each factor is smoothTransition(q k 0 + 1) * smoothTransition(-(minkowskiNormSq d (q k)) + 1)
+  apply ContDiff.mul
+  · -- smoothTransition(q k 0 + 1) is smooth
+    exact Real.smoothTransition.contDiff.comp
+      ((contDiff_apply_apply ℝ _ k 0).add contDiff_const)
+  · -- smoothTransition(-(minkowskiNormSq d (q k)) + 1) is smooth
+    apply Real.smoothTransition.contDiff.comp
+    apply ContDiff.add _ contDiff_const
+    apply ContDiff.neg
+    -- minkowskiNormSq d (q k) = ∑ i, metricSignature d i * (q k i) * (q k i)
+    unfold MinkowskiSpace.minkowskiNormSq MinkowskiSpace.minkowskiInner
+    apply ContDiff.sum
+    intro i _
+    exact ((contDiff_const.mul (contDiff_apply_apply ℝ _ k i)).mul
+      (contDiff_apply_apply ℝ _ k i))
 
 omit [NeZero d] in
 private lemma productConeCutoff_eq_one_on_cone {n : ℕ}
