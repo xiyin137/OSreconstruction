@@ -1,4 +1,6 @@
 import OSReconstruction.SCV.SemigroupBochner
+import HilleYosida.SemigroupGroupExtension
+import HilleYosida.BCR_General
 
 /-!
 # Semigroup-Group Bochner Theorem
@@ -35,7 +37,7 @@ def IsSemigroupGroupPD (d : ℕ)
 
 Bounded continuous positive-definite functions on `[0,∞) × ℝ^d` are
 Fourier-Laplace transforms of finite positive measures on `[0,∞) × ℝ^d`. -/
-axiom semigroupGroup_bochner (d : ℕ)
+theorem semigroupGroup_bochner (d : ℕ)
     (F : ℝ → (Fin d → ℝ) → ℂ)
     (hcont : Continuous (fun p : ℝ × (Fin d → ℝ) => F p.1 p.2))
     (hbdd : ∃ C : ℝ, ∀ t a, ‖F t a‖ ≤ C)
@@ -47,7 +49,11 @@ axiom semigroupGroup_bochner (d : ℕ)
         F t a = ∫ p : ℝ × (Fin d → ℝ),
           Complex.exp (-(↑(t * p.1) : ℂ)) *
             Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i))
-          ∂μ
+          ∂μ :=
+  semigroupGroupBochner d F
+    hcont.continuousOn
+    (hbdd.imp fun C hC t a _ => hC t a)
+    hpd
 
 /-- **Laplace-Fourier uniqueness** on `[0,∞) × ℝ^d`.
 
@@ -56,7 +62,7 @@ their joint Laplace-Fourier transform on `t > 0`. This is the uniqueness clause
 behind the semigroup-group Bochner theorem and is the exact FA input needed
 when an explicit weighted candidate measure must be identified with an
 existence-produced Bochner measure. -/
-axiom laplaceFourier_measure_unique {d : ℕ}
+theorem laplaceFourier_measure_unique {d : ℕ}
     (μ₁ μ₂ : Measure (ℝ × (Fin d → ℝ)))
     [IsFiniteMeasure μ₁] [IsFiniteMeasure μ₂]
     (h₁ : μ₁ (Set.prod (Set.Iio 0) Set.univ) = 0)
@@ -68,7 +74,8 @@ axiom laplaceFourier_measure_unique {d : ℕ}
       ∫ p : ℝ × (Fin d → ℝ),
         Complex.exp (-(↑(t * p.1) : ℂ)) *
           Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * a i)) ∂μ₂) :
-    μ₁ = μ₂
+    μ₁ = μ₂ :=
+  _root_.laplaceFourier_unique μ₁ μ₂ h₁ h₂ heq
 
 /-- Uniqueness corollary for `semigroupGroup_bochner`.
 

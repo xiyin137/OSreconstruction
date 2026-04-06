@@ -11,7 +11,7 @@ subDir = "."
 [[require]]
 name = "HilleYosida"
 git = "https://github.com/mrdouglasny/hille-yosida.git"
-rev = "7651cad"
+rev = "ed9134d"
 
 [[require]]
 name = "mathlib"
