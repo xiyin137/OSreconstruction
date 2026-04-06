@@ -235,6 +235,54 @@ Exact implementation consequence:
 3. neither theorem 2 nor GNS should invent its own custom boundary-value
    constructor route.
 
+## 5b. Theorem-3 raw `BorchersSequence` surface is a repo representation gap, not a Mathlib gap
+
+Current repo surface:
+
+1. [`BorchersSequence`](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/Core.lean)
+   is a bounded-record encoding of finitely supported Borchers data;
+2. the file provides raw pointwise operations (`Zero`, `Add`, `Neg`, `SMul`, `Sub`);
+3. it does **not** currently provide the full `AddCommMonoid` / `Module ℂ` /
+   topological structure that a literal
+   `Submodule ℂ (BorchersSequence d)` implementation would need.
+
+This is not a missing theorem from Mathlib. It is a local representation issue
+in how the repo currently packages Borchers data.
+
+Decision:
+
+1. treat this as a theorem-3 implementation/documentation issue inside the repo,
+2. do not open an upstream Mathlib issue for it,
+3. prefer the Section 4.3 transport-map / norm-square implementation route
+   recorded in
+   [theorem3_os_route_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem3_os_route_blueprint.md)
+   before attempting to force a raw `Submodule` / topology layer onto
+   `BorchersSequence d`.
+4. if a local continuity helper is wanted for legacy consumer theorems, keep it
+   explicitly subordinate to those fixed-bound finite-sum consumers, not as a
+   new global topological structure on raw `BorchersSequence d`.
+
+Important current-status clarification:
+
+1. this representation issue is **not** the active theorem-3 blocker any more;
+2. the active theorem-3 blocker is the repo-local Package-C positive-real
+   pairing theorem recorded in
+   [theorem3_os_route_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem3_os_route_blueprint.md);
+3. the main missing content there is the OS I Section 4.3 Fourier-Laplace /
+   spectral-integral proof strategy for the current `hschw` theorem surface;
+4. the later `z -> 0+` transport is already formal once that Package-C theorem
+   is available;
+5. the old public density layer F/G/H is now withdrawn rather than repaired,
+   because ordered-positive-time support is not dense in the full Schwartz
+   space;
+6. the final public closure route is Package I in its corrected Section 4.3
+   form: transformed positive-time Euclidean data -> positive-energy Schwartz
+   transformed-image core -> quadratic identity there -> public
+   density/continuity closure;
+7. so theorem-3 work should not drift back to either
+   a raw density theorem or “add a `Submodule`/topology layer first” as if
+   either were the main obstruction.
+
 ## 6. Operator-theory gaps
 
 ### 6.1. Unbounded spectral theorem / Stone package
@@ -280,7 +328,8 @@ Decision:
 The following are local project gaps, not reasons to wait for Mathlib:
 
 1. theorem-2 regular-input constructor from boundary data and growth,
-2. theorem-3 Section 4.3 public transport/density layer,
+2. theorem-3 corrected Section 4.3 transformed-image / quadratic-identity /
+   density-closure layer,
 3. theorem-4 one-factor extraction bookkeeping,
 4. SCV tube boundary-value constructor from polynomial growth,
 5. general-`k` Malgrange-Zerner / envelope packages,

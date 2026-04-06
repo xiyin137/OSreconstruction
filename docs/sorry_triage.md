@@ -219,13 +219,16 @@ Concrete next packages:
 4. do **not** revive the old raw Package-F/G/H density route, because the naive
    slogan "ordered-positive-time support is dense in full `SchwartzNPoint d n`"
    is false on the full Schwartz space,
-5. implement Package I instead: the OS I Section 4.3 transport map
-   `bvt_transport_to_osHilbert` from arbitrary `BorchersSequence d` to
-   `OSHilbertSpace OS`,
-6. prove the norm-square identity
-   `bvt_wightmanInner_eq_transport_norm_sq`,
-7. close theorem 3 by `bvt_W_positive_of_transport` for arbitrary
-   `BorchersSequence d`.
+5. implement Package I only in its corrected Section 4.3 form:
+   transformed positive-time Euclidean data -> dense positive-energy Schwartz image ->
+   OS Hilbert-space vector,
+6. do **not** implement the naive raw theorem slogan
+   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` on the same raw
+   `BorchersSequence d` input,
+7. prove the quadratic identity first on the transformed-image core (OS I
+   Lemma 4.1 and Eq. (4.28)),
+8. then close theorem 3 for arbitrary `BorchersSequence d` by the resulting
+   density/continuity extension theorem.
 
 What should not happen:
 
@@ -235,8 +238,8 @@ What should not happen:
 4. no same-test-function contour slogan.
 
 Estimated remaining Lean size:
-- `260-560` lines, now concentrated in the Section 4.3 transport-map /
-  norm-square infrastructure rather than any density layer.
+- `260-620` lines, now concentrated in the corrected Section 4.3
+  transformed-image / quadratic-identity / density-closure infrastructure.
 
 ### 9.2. `bvt_F_clusterCanonicalEventually_translate`
 

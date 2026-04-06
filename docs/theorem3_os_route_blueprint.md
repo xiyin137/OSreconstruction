@@ -37,11 +37,12 @@ The theorem-3 blueprint now has exactly one endorsed route:
 
 1. keep Packages A-B as valid one-variable support infrastructure;
 2. do **not** use Package C / `hschw`, because that theorem surface is false;
-3. build the OS I Section 4.3 transport map from arbitrary
-   `BorchersSequence d` to `OSHilbertSpace OS`;
-4. prove the norm-square identity
-   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2`;
-5. conclude full positivity for arbitrary `BorchersSequence d`.
+3. build the OS I Section 4.3 transformed-image package:
+   positive-time Euclidean data -> dense Minkowski image -> OS Hilbert vector;
+4. prove the quadratic identity on that transformed-image core, not on the same
+   raw `BorchersSequence d` viewed on both sides;
+5. extend positivity to arbitrary `BorchersSequence d` only afterwards, by the
+   density/continuity closure supplied by the Section 4.3 image theorem.
 
 That is the route Claude directed in `agents_chat.md`, and it is now the only
 route this document endorses.
@@ -51,7 +52,8 @@ Implementation discipline:
 1. the legacy `hschw` consumer interface may remain in production as deprecated
    dead-end infrastructure, but it is not an endorsed target theorem surface;
 2. Package I is now the only endorsed theorem-3 closure route;
-3. if future work wants a different production endpoint than Package I, this
+3. the old raw same-input theorem slogan for Package I is withdrawn;
+4. if future work wants a different production endpoint than Package I, this
    blueprint must be rewritten first.
 
 ### 1.1. Exact current local status on that route
@@ -76,15 +78,20 @@ As of the current local branch state:
    `OSToWightmanBoundaryValuesCompactApprox.lean`, and
    `OSToWightmanBoundaryValues.lean`, but they are legacy consumers rather than
    endorsed theorem-3 route definitions;
-5. the live theorem-3 frontier is now Package I.
+5. the live theorem-3 frontier is now the corrected Package-I theorem surface;
+6. the older raw theorem slogan
+   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` for the same raw
+   `BorchersSequence d` on both sides is not endorsed and is under
+   correction.
 
 So the current frontier is not “find a theorem-3 route.” The route is fixed.
 The current frontier is:
 
 1. keep Packages A-B as valid support infrastructure,
 2. stop treating Package C as a live theorem to prove,
-3. implement Package I: the OS I Section 4.3 transport-map /
-   Hilbert-norm closure for arbitrary `BorchersSequence d`.
+3. repair Package I to the actual Section 4.3 transformed-image theorem
+   surface,
+4. only then implement the resulting transport / density / closure package.
 
 ## 2. Exact existing theorem hooks already available
 
@@ -209,8 +216,9 @@ The actual theorem-3 content is:
 
 - positive-time semigroup identity,
 - positive-time positivity,
-- Section 4.3 transport map to `OSHilbertSpace OS`,
-- Hilbert-norm realization of the Wightman quadratic form.
+- Section 4.3 transformed-image map to `OSHilbertSpace OS`,
+- Hilbert-norm realization of the Wightman quadratic form on that transformed
+  image, followed by density/continuity closure.
 
 ## 4. Route that is explicitly forbidden
 
@@ -450,12 +458,12 @@ Exact current handoff theorems after the correction:
 1. the `hschw`-consuming compact-approximation theorems remain compiled legacy
    infrastructure but are no longer part of the endorsed route;
 2. the live theorem-3 implementation target is now the Section 4.3 transport
-   map and norm-square identity from Package I;
-2. `bvt_wightmanInner_single_single_eq_osInner_of_tendsto_singleSplit_xiShift_nhdsWithin_zero`
-   then upgrades that identity to equality of the singleton Wightman and OS
-   inner products;
-3. `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
-   and its zero-right / self variants are the existing summation consumers.
+   image / quadratic-identity / closure package from Package I;
+3. the older theorems
+   `bvt_wightmanInner_single_single_eq_osInner_of_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+   and
+   `bvt_wightmanInner_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero`
+   remain legacy consumers only and should not drive new theorem-3 production.
 
 ### 5.4. Package D: positive-time sesquilinear equality
 
@@ -665,63 +673,135 @@ Exact current implementation status:
 3. however, they are still only special-case continuity theorems for the
    compact-support truncation family, not the final general Package-H theorem.
 
-### 5.9. Package I: final public closure via the OS I Section 4.3 transport map
+### 5.9. Package I: final public closure via the OS I Section 4.3 transformed-image package
 
 After the density-route correction, the final theorem-3 closure package is no
-longer an approximation theorem. It is the OS I Section 4.3 transport-map
-package for arbitrary Borchers data.
+longer the withdrawn raw positive-time approximation theorem. But it is also
+not the naive raw theorem
 
-Concrete theorem slots:
+`(WightmanInnerProduct d (bvt_W OS lgc) F F).re = ‖u(F)‖ ^ 2`
+
+for the same raw `BorchersSequence d` on both sides.
+
+OS I Section 4.3 itself first constructs a dense positive-energy Schwartz image
+`L` of transformed positive-time Euclidean test functions (Lemma 4.1), then
+defines `u` on that image (Eq. (4.27)), and then proves the quadratic identity
+there (Eq. (4.28)). Only afterwards does one recover the full public
+positivity statement by density/continuity.
+
+Just as importantly, the naive same-test-function identity is false even at
+`t = 0`: one must transport Euclidean test functions on the Laplace side to the
+positive-energy Minkowski test-function side before the Wightman quadratic form
+matches the OS Hilbert norm.
+
+So the old raw theorem slots are withdrawn. The corrected theorem slots are:
 
 ```lean
-/-- The OS I Section 4.3 transport map. -/
-noncomputable def bvt_transport_to_osHilbert
+/-- The degree-`n` positive-time Euclidean domain used in OS I Section 4.3.
+
+This is the paper's `S_+(ℝ^{4n})`: Schwartz `n`-point test functions whose
+topological support lies in the ordered positive-time region. If the eventual
+Lean implementation prefers an equivalent `Submodule ℂ (SchwartzNPoint d n)`
+presentation rather than a subtype, that is acceptable, but it must represent
+the same paper domain. -/
+def EuclideanPositiveTimeComponent (d n : ℕ) [NeZero d] :=
+  {f : SchwartzNPoint d n //
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
+
+/-- The degree-`n` positive-energy Schwartz codomain from OS I Lemma 4.1.
+
+This is not the full unrestricted Minkowski Schwartz space. It is the
+positive-energy Schwartz-side space that the Section 4.3 Fourier-Laplace map
+lands in after the Lemma-8.2 reduction. A Lean implementation may realize this
+as a subtype, quotient, or equivalent closed subspace of `SchwartzNPoint d n`,
+but it must represent the paper's positive-energy codomain rather than all of
+`S(ℝ^{4n})`. -/
+def PositiveEnergySchwartzComponent (d n : ℕ) [NeZero d] := ...
+
+/-- The degree-`n` Section 4.3 Fourier-Laplace transport
+(OS I (4.19)-(4.20), with the corrected codomain reading from Lemma 4.1). -/
+noncomputable def os1TransportComponent
+    (d n : ℕ) [NeZero d] :
+    EuclideanPositiveTimeComponent d n →L[ℂ] PositiveEnergySchwartzComponent d n
+
+/-- The degree-`n` Section 4.3 transformed positive-energy image. -/
+def bvtTransportImage (d n : ℕ) [NeZero d] :
+    Set (PositiveEnergySchwartzComponent d n) :=
+  Set.range (os1TransportComponent d n)
+
+/-- Additive closure of the Section 4.3 image. -/
+theorem bvtTransportImage_add
+    {n : ℕ} {f g : PositiveEnergySchwartzComponent d n} :
+    f ∈ bvtTransportImage (d := d) n →
+    g ∈ bvtTransportImage (d := d) n →
+    f + g ∈ bvtTransportImage (d := d) n
+
+/-- Scalar closure of the Section 4.3 image. -/
+theorem bvtTransportImage_smul
+    {n : ℕ} {c : ℂ} {f : PositiveEnergySchwartzComponent d n} :
+    f ∈ bvtTransportImage (d := d) n →
+    c • f ∈ bvtTransportImage (d := d) n
+
+/-- OS I Lemma 4.1: dense range of the degree-`n` transport component. -/
+theorem os1TransportComponent_denseRange
+    (n : ℕ) :
+    DenseRange (os1TransportComponent d n)
+
+/-- The Section 4.3 image is dense in the positive-energy Schwartz codomain. -/
+theorem bvtTransportImage_dense
+    (n : ℕ) :
+    Dense (bvtTransportImage (d := d) n)
+
+/-- Finite Borchers data whose every component lies in the Section 4.3 image. -/
+def BvtTransportImageSequence (d : ℕ) [NeZero d] := ...
+
+/-- Degreewise approximation of a bounded public Borchers sequence by
+transformed-image sequences with the same finite support bound. -/
+theorem exists_componentwise_transportImage_approx
+    (F : BorchersSequence d) :
+    ∃ Gseq : ℕ → BvtTransportImageSequence d,
+      (∀ N, (Gseq N).1.bound ≤ F.bound) ∧
+      ∀ n, Tendsto
+          (fun N => (((Gseq N).1.funcs n : PositiveEnergySchwartzComponent d n) :
+            SchwartzNPoint d n)) atTop
+          (nhds (F.funcs n))
+
+/-- The OS I Section 4.3 transport map on the transformed-image core. -/
+noncomputable def bvt_transport_to_osHilbert_onImage
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
-    BorchersSequence d → OSHilbertSpace OS
+    BvtTransportImageSequence d → OSHilbertSpace OS
 
-/-- Additivity of the transport map. -/
-theorem bvt_transport_to_osHilbert_add
+/-- The transport map is independent of the Section 4.3 preimage choice. -/
+theorem bvt_transport_to_osHilbert_onImage_wellDefined
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (F G : BorchersSequence d) :
-    bvt_transport_to_osHilbert (d := d) OS lgc (F + G) =
-      bvt_transport_to_osHilbert (d := d) OS lgc F +
-      bvt_transport_to_osHilbert (d := d) OS lgc G
+    (F : BvtTransportImageSequence d) :
+    ...
 
-/-- Complex-linearity of the transport map. -/
-theorem bvt_transport_to_osHilbert_smul
+/-- Additivity on the transformed-image core. -/
+theorem bvt_transport_to_osHilbert_onImage_add
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (c : ℂ) (F : BorchersSequence d) :
-    bvt_transport_to_osHilbert (d := d) OS lgc (c • F) =
-      c • bvt_transport_to_osHilbert (d := d) OS lgc F
+    (F G : BvtTransportImageSequence d) :
+    bvt_transport_to_osHilbert_onImage (d := d) OS lgc (F + G) =
+      bvt_transport_to_osHilbert_onImage (d := d) OS lgc F +
+      bvt_transport_to_osHilbert_onImage (d := d) OS lgc G
 
-/-- The transport map lands in the positive-time Hilbert-space domain via a
-positive-time representative after the Section 4.3 Laplace transform. -/
-theorem bvt_transport_to_osHilbert_wellDefined
+/-- Complex-linearity on the transformed-image core. -/
+theorem bvt_transport_to_osHilbert_onImage_smul
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (F : BorchersSequence d) :
-    ∃ G : PositiveTimeBorchersSequence d,
-      bvt_transport_to_osHilbert (d := d) OS lgc F =
-        ((⟦G⟧ : OSPreHilbertSpace OS) : OSHilbertSpace OS)
+    (c : ℂ) (F : BvtTransportImageSequence d) :
+    bvt_transport_to_osHilbert_onImage (d := d) OS lgc (c • F) =
+      c • bvt_transport_to_osHilbert_onImage (d := d) OS lgc F
 
-/-- OS I eq. (4.28): the Wightman quadratic form is the Hilbert norm square of
-the transport map. -/
-theorem bvt_wightmanInner_eq_transport_norm_sq
+/-- OS I Eq. (4.28) on the transformed-image core. -/
+theorem bvt_wightmanInner_eq_transport_norm_sq_onImage
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (F : BorchersSequence d) :
-    (WightmanInnerProduct d (bvt_W OS lgc) F F).re =
-      ‖bvt_transport_to_osHilbert (d := d) OS lgc F‖ ^ 2
+    (F : BvtTransportImageSequence d) :
+    (WightmanInnerProduct d (bvt_W OS lgc) F.1 F.1).re =
+      ‖bvt_transport_to_osHilbert_onImage (d := d) OS lgc F‖ ^ 2
 
-/-- Polarized sesquilinear transport identity derived from the quadratic
-norm-square theorem and linearity of the transport map. -/
-theorem bvt_wightmanInner_eq_transport_inner
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    (F G : BorchersSequence d) :
-    WightmanInnerProduct d (bvt_W OS lgc) F G =
-      ⟪bvt_transport_to_osHilbert (d := d) OS lgc F,
-        bvt_transport_to_osHilbert (d := d) OS lgc G⟫
-
-/-- Final theorem-3 closure. -/
-theorem bvt_W_positive_of_transport
+/-- Final public theorem-3 closure by density/continuity from the transformed
+image core. -/
+theorem bvt_W_positive_of_transportImage_density
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
       0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
@@ -729,27 +809,33 @@ theorem bvt_W_positive_of_transport
 
 Proof transcript:
 
-1. define `bvt_transport_to_osHilbert` by the OS I eq. (4.26) Laplace
-   transform on each Borchers component followed by passage to the OS Hilbert
-   space;
-2. prove well-definedness by showing the transformed data have the required
-   positive-energy / positive-time support to represent an element of
-   `OSPreHilbertSpace OS`, hence of `OSHilbertSpace OS`;
-3. prove `bvt_wightmanInner_eq_transport_norm_sq` by the Section 4.3
-   Fourier-Laplace / spectral-integral computation;
-4. deduce `bvt_W_positive_of_transport` immediately from nonnegativity of
-   Hilbert norms;
-5. if needed, derive the polarized sesquilinear identity
-   `bvt_wightmanInner_eq_transport_inner` from the quadratic norm-square
-   theorem plus additivity and scalar-linearity of the transport map.
-
-Relation to Package C:
-
-1. Package C remains the current production theorem surface and may still be
-   proved directly first to feed the existing positive-time consumer chain;
-2. however, once Package I is established far enough to obtain the polarized
-   transport identity, Package C becomes a formal corollary of that stronger
-   sesquilinear transport theorem.
+1. define the degreewise transformed image `bvtTransportImage` exactly as in OS
+   I Lemma 4.1, i.e. literally as the range of
+   `os1TransportComponent d n`;
+2. prove dense range of `os1TransportComponent d n` in the positive-energy
+   Schwartz codomain (the actual density content of OS I Lemma 4.1);
+3. do **not** implement `os1TransportComponent` as the naive unrestricted
+   real-axis Laplace integral by itself; the paper route factors through the
+   intermediate `(4.19)` space and Lemma 8.2, and that is exactly what keeps
+   the codomain on the positive-energy Schwartz side rather than drifting to a
+   tempered-only theorem surface or the full unrestricted Schwartz space;
+4. derive additive/scalar closure of the image from linearity of
+   `os1TransportComponent`;
+5. package finite-support sequences in that image as
+   `BvtTransportImageSequence d`;
+6. define `bvt_transport_to_osHilbert_onImage` by the Section 4.3 preimage map
+   followed by the existing OS Hilbert-space construction;
+7. prove preimage-independence / well-definedness using the zero-kernel part of
+   OS I Lemma 4.1;
+8. prove `bvt_wightmanInner_eq_transport_norm_sq_onImage` by the Section 4.3
+   Fourier-Laplace / spectral-integral computation on the transformed-image
+   core;
+9. turn that degreewise dense-range statement into
+   `exists_componentwise_transportImage_approx` for arbitrary bounded public
+   `BorchersSequence d`, using the inclusion of the positive-energy Schwartz
+   codomain into the ambient `SchwartzNPoint d n`;
+10. extend positivity from transformed-image sequences to arbitrary public
+   `BorchersSequence d` by finite-sum continuity of `WightmanInnerProduct`.
 
 This package is the actual theorem-3 closure target.
 
@@ -758,29 +844,32 @@ Exact current implementation status:
 1. there is no current production theorem implementing Package I yet;
 2. the current production file `OSToWightmanPositivity.lean` now honestly
    isolates Package I as one of the two remaining `sorry`s;
-3. the theorem-3 blueprint now endorses this transport-map / norm-square route
-   as the only final closure route.
+3. the old raw same-input theorem slogan is withdrawn and must not be
+   implemented literally;
+4. the theorem-3 blueprint now endorses only the transformed-image /
+   density-closure reading of Section 4.3.
 
 ## 6. Exact relation to the current production consumers
 
-The current production consumers can still be used, but only as consumers.
+The current legacy consumers can remain compiled, but they are not part of the
+endorsed closure route.
 
 Safe usage:
 
-1. feed Package C through the current compact-approximation theorem surfaces;
-2. once the direct positive-time semigroup bridge is proved, the current theorem
-   `bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift`
-   may be invoked as a short route to Package E;
-3. this does not change the blueprint, because the blueprint target remains
-   Package D / Package E, not a new shell wrapper theorem.
+1. mine the current codebase only for reusable continuity / completion /
+   positive-time Hilbert-space facts;
+2. keep the deprecated `hschw` consumer chain compiled but untouched;
+3. if a legacy theorem becomes useful later, re-justify it from the corrected
+   transformed-image Package-I route rather than treating it as an input.
 
 Unsafe usage:
 
 1. introducing a new theorem whose primary conclusion is another `h*` consumer
    interface;
 2. reentering the K2 common-kernel route;
-3. turning theorem 3 back into a shell-comparison project instead of a
-   positive-time semigroup project.
+3. implementing the old raw Package-I theorem surface on the same
+   `BorchersSequence d` input without first fixing the transformed-image
+   statement.
 
 ## 7. Minimal Lean pseudocode for the endorsed route
 
@@ -829,29 +918,24 @@ theorem WightmanInnerProduct_tendsto_of_componentwise_tendsto ... := by
 theorem re_WightmanInnerProduct_tendsto_of_componentwise_tendsto ... := by
   ...
 
-/- Step I: final theorem-3 closure via Section 4.3 transport. -/
-noncomputable def bvt_transport_to_osHilbert ... := by
+/- Step I: final theorem-3 closure via Section 4.3 transformed image. -/
+def bvtTransportImage ... := by
   ...
 
-theorem bvt_transport_to_osHilbert_add ... := by
+theorem bvtTransportImage_dense ... := by
   ...
 
-theorem bvt_transport_to_osHilbert_smul ... := by
+def BvtTransportImageSequence ... := by
   ...
 
-theorem bvt_transport_to_osHilbert_wellDefined ... := by
+noncomputable def bvt_transport_to_osHilbert_onImage ... := by
   ...
 
-theorem bvt_wightmanInner_eq_transport_norm_sq ... := by
+theorem bvt_wightmanInner_eq_transport_norm_sq_onImage ... := by
   ...
 
-theorem bvt_wightmanInner_eq_transport_inner ... := by
+theorem bvt_W_positive_of_transportImage_density ... := by
   ...
-
-private theorem bvt_W_positive_of_transport ... := by
-  intro F
-  rw [bvt_wightmanInner_eq_transport_norm_sq]
-  positivity
 ```
 
 The current production file
@@ -861,8 +945,9 @@ already uses the exact names
 `bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`,
 `schwinger_timeShift_eq_bvt_W_conjTensorProduct_timeShift`,
 and `bvt_positiveTime_self_nonneg_from_packageC`.
-The later theorem names above should therefore be treated as fixed guidance for
-the remaining transport-map / norm-square packages as well.
+The transformed-image theorem names above should therefore be treated as the new
+fixed guidance for the corrected Section 4.3 closure package. The older raw
+same-input Package-I names are withdrawn.
 
 ## 8. Representation-gap note
 
@@ -891,10 +976,15 @@ Before any later production proof resumes, the support work should verify:
 4. any new test-file support work stays inside Package A through Package I
    above, and does not revive the withdrawn F/G/H density route as if it were
    endorsed.
-5. the docs identify the exact current local frontier as the Package-C
-   positive-real pairing identity, not as a generic “boundary-value limit”.
+5. the docs identify the exact current local frontier as the corrected
+   transformed-image Package-I theorem surface, not as a generic
+   “boundary-value limit”.
 6. the docs explicitly record that Packages A-B are already implemented in
-   `OSToWightmanPositivity.lean`.
+   `OSToWightmanPositivity.lean`;
+7. no theorem-3 doc section still states the naive raw theorem
+   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` on the same raw public
+   `BorchersSequence d` input as if it were already the correct Section 4.3
+   theorem surface.
 
 ## 10. Bottom line
 
@@ -904,8 +994,11 @@ Theorem 3 is now exactly this:
 
 1. prove the positive-time semigroup bridge;
 2. prove positivity on `PositiveTimeBorchersSequence d`;
-3. build the Section 4.3 transport map for arbitrary Borchers data;
-4. identify the Wightman quadratic form with a Hilbert norm square;
-5. deduce full positivity from Hilbert-space nonnegativity.
+3. define the Section 4.3 transformed Minkowski image and its OS Hilbert-space
+   transport map;
+4. identify the Wightman quadratic form with a Hilbert norm square on that
+   transformed-image core;
+5. extend positivity from the transformed-image core to arbitrary
+   `BorchersSequence d` by density/continuity.
 
 That is the only theorem-3 route this note now endorses.
