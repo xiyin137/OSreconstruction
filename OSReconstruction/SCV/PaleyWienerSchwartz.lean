@@ -771,8 +771,16 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
     -- ∑ C(n,i) * (Cf * R⁻ⁱ) * (j! * ‖exp(Lξ)‖ * ‖L‖^j) where j = n-i
     -- = ‖exp(Lξ)‖ * Cf * ∑ C(n,i) * R⁻ⁱ * (n-i)! * ‖L‖^{n-i}
     -- ≤ ‖exp(Lξ)‖ * Cf * (∑ C(n,i) * (n-i)!) * max(R⁻¹, ‖L‖)^n
-    -- ... this gets messy, let me just sorry the final arithmetic
-    sorry
+    -- Use transitivity: bound ‖D^n[f·g]‖ first, then multiply by ‖ξ‖^k
+    calc ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun η => f η * g η) ξ‖
+        ≤ ‖ξ‖ ^ k * ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℝ) * ‖iteratedFDeriv ℝ i f ξ‖ *
+              ‖iteratedFDeriv ℝ (n - i) g ξ‖ := by
+          gcongr; exact hLeib
+      _ ≤ B * (1 + ‖z‖) ^ (2 * n) *
+            (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ k := by
+          sorry -- arithmetic: substitute hCf, hg_bound, bound exp via coercivity,
+                -- extract polynomial, combine constants
 
 /-! ### Seminorm bounds for the multi-D family -/
 
