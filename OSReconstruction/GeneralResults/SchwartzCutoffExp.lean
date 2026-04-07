@@ -692,4 +692,129 @@ theorem schwartz_seminorm_cutoff_exp_bound_affine_uniform_explicit
     simp [h0]
     positivity
 
+/-- Uniform-in-`L` and uniform-in-`c` affine version with explicit `c^{-k}` dependence.
+
+The witness `B` depends only on the cutoff data and `A,k,n`. This is the version
+needed when the decay rate varies with an external parameter. -/
+theorem schwartz_seminorm_cutoff_exp_bound_affine_uniform_explicit_uniform
+    (χ : (Fin m → ℝ) → ℝ)
+    (hχ_smooth : ContDiff ℝ ∞ χ)
+    (hχ_deriv_bound : ∀ j : ℕ, ∃ C_j : ℝ, ∀ ξ : Fin m → ℝ,
+      ‖iteratedFDeriv ℝ j χ ξ‖ ≤ C_j)
+    (A : ℝ) (k n : ℕ) :
+    ∃ (B : ℝ) (hB : 0 < B),
+      ∀ (c : ℝ) (hc : 0 < c)
+        (L : (Fin m → ℝ) →L[ℝ] ℂ)
+        (hexp_decay : ∀ ξ : Fin m → ℝ, χ ξ ≠ 0 → (L ξ).re ≤ A - c * ‖ξ‖)
+        (ξ : Fin m → ℝ),
+        ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * cexp (L ξ)) ξ‖ ≤
+          B * c⁻¹ ^ k * (1 + ‖L‖) ^ n := by
+  obtain ⟨C, hC_pos, hC⟩ := extract_max_deriv_bound hχ_deriv_bound n
+  obtain ⟨M, hM_pos, hM⟩ := pow_mul_exp_neg_bounded_explicit k
+  let B := Real.exp A * M * C * (n.factorial : ℝ) * (↑n + 1)
+  refine ⟨B, by positivity, ?_⟩
+  intro c hc L hexp_decay ξ
+  let f : (Fin m → ℝ) → ℂ := fun ξ => (χ ξ : ℂ)
+  let g : (Fin m → ℝ) → ℂ := fun ξ => cexp (L ξ)
+  have hf_smooth : ContDiff ℝ ∞ f := Complex.ofRealCLM.contDiff.comp hχ_smooth
+  have hg_smooth : ContDiff ℝ ∞ g := Complex.contDiff_exp.comp L.contDiff
+  have hfC : ∀ i ≤ n, ∀ ξ : Fin m → ℝ, ‖iteratedFDeriv ℝ i f ξ‖ ≤ C := by
+    intro i hi ξ
+    have : ‖iteratedFDeriv ℝ i f ξ‖ = ‖iteratedFDeriv ℝ i χ ξ‖ := by
+      show ‖iteratedFDeriv ℝ i (fun x => (ofRealCLM (χ x) : ℂ)) ξ‖ = _
+      rw [show (fun x => (ofRealCLM (χ x) : ℂ)) = (ofRealLI : ℝ →ₗᵢ[ℝ] ℂ) ∘ χ from rfl]
+      exact ofRealLI.norm_iteratedFDeriv_comp_left (contDiff_infty.mp hχ_smooth i).contDiffAt le_rfl
+    rw [this]
+    exact hC i hi ξ
+  by_cases hξ : ξ ∈ closure (Function.support χ)
+  · have hdecay := affineDecay_on_closure_support χ L A c hexp_decay ξ hξ
+    have hexp_bd : ‖cexp (L ξ)‖ ≤ Real.exp A * Real.exp (-c * ‖ξ‖) := by
+      rw [Complex.norm_exp]
+      calc
+        Real.exp ((L ξ).re) ≤ Real.exp (A - c * ‖ξ‖) := Real.exp_le_exp.mpr hdecay
+        _ = Real.exp A * Real.exp (-c * ‖ξ‖) := by
+            rw [sub_eq_add_neg, Real.exp_add]
+            simp
+    have hLeib := norm_iteratedFDeriv_mul_le hf_smooth hg_smooth ξ
+      (show (n : WithTop ℕ∞) ≤ ∞ from WithTop.coe_le_coe.mpr le_top)
+    have hterms : ∀ i ∈ Finset.range (n + 1),
+        (n.choose i : ℝ) * ‖iteratedFDeriv ℝ i f ξ‖ * ‖iteratedFDeriv ℝ (n - i) g ξ‖ ≤
+        (n.choose i : ℝ) * C * ((n - i).factorial * ‖cexp (L ξ)‖ * ‖L‖ ^ (n - i)) := by
+      intro i hi
+      have hi_le : i ≤ n := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+      calc
+        _ ≤ (n.choose i : ℝ) * C * ‖iteratedFDeriv ℝ (n - i) g ξ‖ := by
+          gcongr
+          exact hfC i hi_le ξ
+        _ ≤ _ := by
+          gcongr
+          exact norm_iteratedFDeriv_cexp_comp_clm L ξ (n - i)
+    have hS : ‖iteratedFDeriv ℝ n (fun ξ => f ξ * g ξ) ξ‖ ≤
+        C * ‖cexp (L ξ)‖ *
+          ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℝ) * (n - i).factorial * ‖L‖ ^ (n - i) := by
+      calc
+        _ ≤ ∑ i ∈ Finset.range (n + 1), _ := hLeib
+        _ ≤ ∑ i ∈ Finset.range (n + 1),
+              (n.choose i : ℝ) * C * ((n - i).factorial * ‖cexp (L ξ)‖ * ‖L‖ ^ (n - i)) := by
+            exact Finset.sum_le_sum hterms
+        _ = C * ‖cexp (L ξ)‖ * ∑ i ∈ Finset.range (n + 1),
+              (n.choose i : ℝ) * (n - i).factorial * ‖L‖ ^ (n - i) := by
+            rw [Finset.mul_sum]
+            congr 1
+            ext i
+            ring
+    have hComb : ∑ i ∈ Finset.range (n + 1),
+        (n.choose i : ℝ) * (n - i).factorial * ‖L‖ ^ (n - i) ≤
+        n.factorial * (↑n + 1) * (1 + ‖L‖) ^ n := by
+      calc
+        ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℝ) * (n - i).factorial * ‖L‖ ^ (n - i)
+          ≤ ∑ _ ∈ Finset.range (n + 1), ((n.factorial : ℝ) * (1 + ‖L‖) ^ n) := by
+            apply Finset.sum_le_sum
+            intro i hi
+            have hi_le := Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)
+            have h1 : (n.choose i : ℝ) * (n - i).factorial ≤ n.factorial := by
+              exact_mod_cast (show n.choose i * (n - i).factorial ≤ n.factorial by
+                nlinarith [Nat.choose_mul_factorial_mul_factorial hi_le,
+                  Nat.one_le_iff_ne_zero.mpr (Nat.factorial_ne_zero i)])
+            have h2 : ‖L‖ ^ (n - i) ≤ (1 + ‖L‖) ^ n :=
+              (pow_le_pow_left₀ (norm_nonneg _) (le_add_of_nonneg_left one_pos.le) _).trans
+                (pow_le_pow_right₀ (by linarith [norm_nonneg L]) (Nat.sub_le n i))
+            exact mul_le_mul h1 h2 (pow_nonneg (norm_nonneg _) _) (Nat.cast_nonneg _)
+        _ = (↑n + 1) * ((n.factorial : ℝ) * (1 + ‖L‖) ^ n) := by
+            simp [Finset.sum_const, Finset.card_range]
+        _ = _ := by ring
+    calc
+      ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * cexp (L ξ)) ξ‖
+          = ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun ξ => f ξ * g ξ) ξ‖ := rfl
+      _ ≤ ‖ξ‖ ^ k * (C * ‖cexp (L ξ)‖ * ∑ i ∈ Finset.range (n + 1),
+            (n.choose i : ℝ) * (n - i).factorial * ‖L‖ ^ (n - i)) := by
+          apply mul_le_mul_of_nonneg_left hS (pow_nonneg (norm_nonneg _) _)
+      _ ≤ ‖ξ‖ ^ k * (C * (Real.exp A * Real.exp (-c * ‖ξ‖)) *
+            (n.factorial * (↑n + 1) * (1 + ‖L‖) ^ n)) := by
+          apply mul_le_mul_of_nonneg_left _ (pow_nonneg (norm_nonneg _) _)
+          apply mul_le_mul
+            (mul_le_mul_of_nonneg_left hexp_bd (le_of_lt hC_pos))
+            hComb
+            (Finset.sum_nonneg (fun i _ => by positivity))
+            (by positivity)
+      _ = (Real.exp A * (‖ξ‖ ^ k * Real.exp (-c * ‖ξ‖))) *
+            ((C * ↑n.factorial * (↑n + 1)) * (1 + ‖L‖) ^ n) := by
+          ring
+      _ ≤ (Real.exp A * (M * c⁻¹ ^ k)) *
+            ((C * ↑n.factorial * (↑n + 1)) * (1 + ‖L‖) ^ n) := by
+          apply mul_le_mul_of_nonneg_right
+          · exact mul_le_mul_of_nonneg_left
+              (hM c hc ‖ξ‖ (norm_nonneg _)) (Real.exp_pos A).le
+          · positivity
+      _ = B * c⁻¹ ^ k * (1 + ‖L‖) ^ n := by
+          dsimp [B]
+          ring
+  · have h0 : iteratedFDeriv ℝ n (fun ξ => (χ ξ : ℂ) * cexp (L ξ)) ξ = 0 :=
+      iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+        (product_zero_outside_closure χ (fun x => cexp (L x)) ξ hξ) n
+    simp [h0]
+    positivity
+
 end
