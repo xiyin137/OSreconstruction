@@ -629,7 +629,70 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
             (⇑(multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz)) ξ‖ ≤
             B * (1 + ‖z‖) ^ N *
               (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
-  sorry
+  -- ── Degenerate case: if Cᶜ = ∅ then Fin m → ℝ is subsingleton ──
+  by_cases hCcompl : Cᶜ = (∅ : Set (Fin m → ℝ))
+  · -- When C = univ, the cone is salient so m = 0 (subsingleton)
+    have hsub := subsingleton_of_compl_empty hC_salient hCcompl
+    refine ⟨1, 0, 0, one_pos, fun z hz ξ => ?_⟩
+    sorry -- degenerate case: Cᶜ = ∅ implies Subsingleton (Fin m → ℝ), bound is trivial
+  · -- ── Main case: Cᶜ ≠ ∅ ──
+    -- Fix the canonical cone cutoff
+    let χ := (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+    -- Get uniform coercivity in terms of boundary distance
+    obtain ⟨c₀, hc₀_pos, hc₀⟩ := dualConeFlat_coercivity_infDist hC_open hC_cone
+    let K : ℝ := (Fintype.card (Fin m) : ℝ) ^ 2
+    -- A₀ bounds exp(A*R) universally: with R = (1+‖y‖)⁻¹,
+    -- (c₀*d + K*‖y‖)*R ≤ c₀ + K since d*R ≤ 1 and ‖y‖*R ≤ 1
+    let A₀ : ℝ := c₀ + K + 1
+    -- Get the Schwartz seminorm bound with explicit c-dependence (quantified over c)
+    obtain ⟨Bexp, hBexp_pos, hBexp⟩ :=
+      schwartz_seminorm_cutoff_exp_bound_affine_uniform_explicit_uniform
+        χ.val χ.smooth χ.deriv_bound A₀ k n
+    -- ── Witnesses for the existentials ──
+    -- The bound structure is: Bexp * (c₀*d)⁻ᵏ * (1+‖z‖)^{n+k} * (card+1)^n
+    -- Rearranging: (c₀*d)⁻ᵏ ≤ c₀⁻ᵏ * d⁻ᵏ ≤ c₀⁻ᵏ * (1 + d⁻¹)^k
+    -- So B = Bexp * c₀⁻ᵏ * (card+1)^n, N = n+k, M = k
+    let B : ℝ := Bexp * c₀⁻¹ ^ k * ((Fintype.card (Fin m) : ℝ) + 1) ^ n + 1
+    refine ⟨B, n + k, k, by positivity, fun z hz ξ => ?_⟩
+    -- ── Setup for this particular z ──
+    let y : Fin m → ℝ := fun i => (z i).im
+    have hy : y ∈ C := hz
+    let d : ℝ := Metric.infDist y Cᶜ
+    have hd_pos : 0 < d := by
+      have hCcompl_ne : (Cᶜ : Set (Fin m → ℝ)).Nonempty := by
+        rwa [Set.nonempty_iff_ne_empty]
+      have hCcompl_closed : IsClosed (Cᶜ : Set (Fin m → ℝ)) :=
+        hC_open.isClosed_compl
+      exact (hCcompl_closed.notMem_iff_infDist_pos hCcompl_ne).mp (fun h => h hy)
+    have hR := multiDimPsiZRadius_pos z
+    -- Coercivity for this y: c₀ * d * ‖ξ‖ ≤ ⟨y, ξ⟩ for ξ ∈ DualConeFlat C
+    have hc_y : ∀ ξ' ∈ DualConeFlat C, ∑ i, y i * ξ' i ≥ (c₀ * d) * ‖ξ'‖ := by
+      intro ξ' hξ'; linarith [hc₀ y hy ξ' hξ']
+    have hcd_pos : 0 < c₀ * d := mul_pos hc₀_pos hd_pos
+    -- ── Core estimate ──
+    -- The proof tracks the constant D(z) from psiZRaw_iteratedFDeriv_decay.
+    --
+    -- Step 1: In η-coordinates (η = R⁻¹·ξ), the function is χ(η)·exp(L'·η)
+    --   where L' = R • (multiDimPsiExpCLM z). Apply the explicit_uniform bound
+    --   with coercivity c = R*c₀*d to get:
+    --     ‖η‖^k * ‖D^n[χ·exp(L'·)](η)‖ ≤ Bexp * (R*c₀*d)⁻ᵏ * (1+‖L'‖)^n
+    --
+    -- Step 2: Pull back via iteratedFDeriv_comp_right with S = R⁻¹·id:
+    --     ‖ξ‖^k * ‖D^n[psiZRaw](ξ)‖ ≤ R^k * R⁻ⁿ * Bexp * (R*c₀*d)⁻ᵏ * (1+R*‖L‖)^n
+    --       = Bexp * (c₀*d)⁻ᵏ * R⁻ⁿ * (1+R*‖L‖)^n
+    --
+    -- Step 3: Bound R⁻ⁿ ≤ (1+‖z‖)^n since R⁻¹ = 1+‖Im z‖ ≤ 1+‖z‖,
+    --   and (1+R*‖L‖)^n ≤ (1+‖L‖)^n ≤ ((card+1)*(1+‖z‖))^n.
+    --
+    -- Step 4: (c₀*d)⁻ᵏ = c₀⁻ᵏ * d⁻ᵏ ≤ c₀⁻ᵏ * (1+d⁻¹)^k.
+    --
+    -- Combining: ≤ Bexp * c₀⁻ᵏ * (card+1)^n * (1+‖z‖)^{n+k} * (1+d⁻¹)^k ≤ B * ...
+    --
+    -- The rescaling identity and iteratedFDeriv_comp_right matching are
+    -- the remaining proof engineering obstacles.
+    sorry -- BLOCKED: Steps 1-2 (rescaling psiZRaw χ R z = (χ · exp(L')) ∘ (R⁻¹ • id)
+          --   and iteratedFDeriv_comp_right for this specific composition)
+          -- Steps 3-4 are straightforward arithmetic once 1-2 are done.
 
 /-! ### Seminorm bounds for the multi-D family -/
 
