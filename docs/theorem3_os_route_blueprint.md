@@ -38,7 +38,8 @@ The theorem-3 blueprint now has exactly one endorsed route:
 1. keep Packages A-B as valid one-variable support infrastructure;
 2. do **not** use Package C / `hschw`, because that theorem surface is false;
 3. build the OS I Section 4.3 transformed-image package:
-   positive-time Euclidean data -> dense Minkowski image -> OS Hilbert vector;
+   positive-time Euclidean data -> dense half-space transformed image ->
+   OS Hilbert vector;
 4. prove the quadratic identity on that transformed-image core, not on the same
    raw `BorchersSequence d` viewed on both sides;
 5. extend positivity to arbitrary `BorchersSequence d` only afterwards, by the
@@ -92,6 +93,26 @@ The current frontier is:
 3. repair Package I to the actual Section 4.3 transformed-image theorem
    surface,
 4. only then implement the resulting transport / density / closure package.
+
+### 1.2. Iteration B retraction (2026-04-07)
+
+Between April 6 and April 7, 2026, branch `3b` briefly adopted "Option alpha"
+(full Schwartz codomain via an internal Seeley extension) as the working
+codomain choice for `os1TransportComponent`. A direct re-reading of the OS I
+PDF on April 7, 2026, showed this is off-paper: OS I p. 95 Lemma 4.1 writes
+the codomain as `L(R_+^{4n})`, i.e. the half-space Schwartz target, not the
+full ambient Schwartz space.
+
+Iteration B's Option alpha is therefore retracted, and the chosen codomain
+reverts to **Option beta (half-space sub-object)**.
+
+This retraction implies:
+
+1. the production docstring on `os1TransportComponent` should no longer claim
+   the full-Schwartz / Seeley-extension route;
+2. branch `3b` sub-CLM work should not spend time on a Seeley-extension stage;
+3. the real branch-`3b` challenge remains the concrete partial-spatial-Fourier
+   infrastructure, but now with the correct half-space codomain.
 
 ## 2. Exact existing theorem hooks already available
 
@@ -673,10 +694,11 @@ not the naive raw theorem
 for the same raw `BorchersSequence d` on both sides.
 
 OS I Section 4.3 itself first constructs a dense transformed image `L` of
-positive-time Euclidean test functions inside the full Schwartz space on the
-Minkowski side (Lemma 4.1), then defines `u` on that image (Eq. (4.27)), and
-then proves the quadratic identity there (Eq. (4.28)). Only afterwards does
-one recover the full public positivity statement by density/continuity.
+positive-time Euclidean test functions inside the half-space Schwartz target
+`L(R_+^{4n})` on the Minkowski side (Lemma 4.1), then defines `u` on that
+image (Eq. (4.27)), and then proves the quadratic identity there
+(Eq. (4.28)). Only afterwards does one recover the full public positivity
+statement by density/continuity.
 
 Just as importantly, the naive same-test-function identity is false even at
 `t = 0`: one must transport Euclidean test functions on the Laplace side to the
@@ -705,15 +727,17 @@ It is also **not** the full ambient `SchwartzNPoint d n` equipped with a
 false `DenseRange` claim.
 
 The correct theorem surface is the paper's half-space Schwartz target
-`S(R_+^{4n})`, implemented either as:
-- a custom half-space Schwartz space, or
-- an equivalent quotient of `SchwartzNPoint d n` by agreement on the
-  positive-energy half-space.
+`L(R_+^{4n})`, implemented as a dedicated half-space Schwartz sub-object. The
+current blueprint no longer endorses either:
+- the false support-restricted subtype
+  `{f : SchwartzNPoint d n // tsupport f ⊆ PositiveEnergyRegion}`, or
+- a fixed global Seeley-extension choice landing in full ambient
+  `SchwartzNPoint d n`.
 -/
 def Section43PositiveEnergyComponent (d n : ℕ) [NeZero d] := ...
 
 /-- The degree-`n` Section 4.3 Fourier-Laplace transport
-(OS I (4.19)-(4.20)) landing in the corrected half-space/quotient codomain. -/
+(OS I (4.19)-(4.20)) landing in the corrected half-space codomain. -/
 noncomputable def os1TransportComponent
     (d n : ℕ) [NeZero d] :
     EuclideanPositiveTimeComponent d n →L[ℂ] Section43PositiveEnergyComponent d n
@@ -788,6 +812,20 @@ theorem bvt_W_positive_of_transportImage_density
       0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
 ```
 
+### 5.9.0. Codomain decision: Option beta
+
+For theorem 3, the codomain choice is now fixed:
+
+1. the paper's Lemma 4.1 codomain is `L(R_+^{4n})`, the half-space Schwartz
+   space;
+2. the blueprint therefore fixes **Option beta**:
+   `Section43PositiveEnergyComponent d n` is a half-space Schwartz sub-object;
+3. the full-Schwartz / internal-Seeley-extension route from Iteration B is
+   retracted and should not be implemented;
+4. any later equivalent coding of this codomain must remain definitionally
+   about functions on the half-space, not about a fixed extension to all of
+   `ℝ^{4n}`.
+
 Proof transcript:
 
 1. define the degreewise transformed image `bvtTransportImage` exactly as in OS
@@ -798,7 +836,7 @@ Proof transcript:
 3. do **not** implement `os1TransportComponent` as the naive unrestricted
    real-axis Laplace integral by itself; the paper route factors through the
    intermediate `(4.19)` space and Lemma 8.2, and that is exactly what keeps
-   the codomain on a genuine Schwartz-extension theorem surface rather than
+   the codomain on the genuine half-space Schwartz theorem surface rather than
    drifting either to a tempered-only theorem surface or to the false
    support-restricted codomain `tsupport ⊆ PositiveEnergyRegion`;
 4. derive additive/scalar closure of the image from linearity of
@@ -810,8 +848,7 @@ Proof transcript:
 7. prove preimage-independence / well-definedness using the zero-kernel part of
    OS I Lemma 4.1;
 8. prove `bvt_wightmanInner_eq_transport_norm_sq_onImage` by the Section 4.3
-   Fourier-Laplace / spectral-integral computation on the transformed-image
-   core;
+   Fourier-Laplace / Lemma-4.2 computation on the transformed-image core;
 9. use the already-built density of positive-time vectors in `OSHilbertSpace OS`
    coming from the completion/GNS construction, not a separate density theorem
    in Schwartz space;
@@ -820,6 +857,17 @@ Proof transcript:
    of `bvt_W`.
 
 This package is the actual theorem-3 closure target.
+
+OS I / OS II dependency note:
+
+1. in the original paper, Eqs. (4.24)-(4.28) consume the distribution
+   `\tilde W` from Eq. (4.12), so Section 4.3 is not literally independent of
+   Lemma 8.8;
+2. the production route must not rely on the broken OS I Lemma 8.8 itself;
+3. instead, the Wightman-side kernel is supplied by the already-repaired OS II
+   `bvt_F` / `bvt_W` construction built from `OSLinearGrowthCondition`;
+4. the explicit Fourier-Laplace integral `(4.19)-(4.20)` still governs the
+   **test-function transport** on the Section-4.3 side.
 
 ### 5.9.1. Detailed proof of `os1TransportComponent`
 
@@ -878,14 +926,28 @@ The proof must be decomposed into the following local steps.
      support for the relevant time-distribution slices;
    - `SCV.paley_wiener_half_line` gives the corresponding upper-half-plane
      Fourier-Laplace representation;
-   - the extension theorem on the half-line identifies the resulting object
-     with a point in the corrected Section-4.3 codomain;
+   - the half-line Paley-Wiener theorem identifies the resulting object with a
+     point in the corrected Section-4.3 codomain;
    - the boundary-value uniqueness part of that theorem gives the kernel-zero
      statement after restricting back to the half-line;
-   - Fourier automorphism of Schwartz keeps the target on the Schwartz side
-     rather than only a tempered-distribution target.
+   - Fourier automorphism of Schwartz keeps the target on the half-space
+     Schwartz side rather than only a tempered-distribution target.
 
-5. Assemble the degree-`n` map by repeated one-variable transforms.
+5. The concrete current-code branch `3b` should be built through a companion
+   support file, not monolithically inside the frontier theorem file.
+   The intended support chain is:
+   - `OSReconstruction/SCV/PartialFourierSpatial.lean`,
+   - `nPointTimeSpatialCLE`,
+   - `partialFourierSpatial_fun`,
+   - differentiation-under-the-integral and seminorm bounds there,
+   - then the resulting CLM imported back into `OSToWightmanPositivity.lean`.
+
+6. Step 1 of that branch-`3b` implementation must keep the paper's transform
+   explicit: `(4.19)`-`(4.20)` define `\check f` by a concrete
+   Fourier-Laplace integral on test functions. It is **not** a spectral-measure
+   definition.
+
+7. Assemble the degree-`n` map by repeated one-variable transforms.
    - the production proof should introduce a theorem saying the full `n`-point
      transform is the iterated composition of the one-variable operator in each
      time coordinate together with the spatial Fourier transform;
@@ -893,7 +955,7 @@ The proof must be decomposed into the following local steps.
      belongs;
    - no many-variable Paley-Wiener theorem is used here.
 
-6. Package continuity and codomain characterization only after the iterated
+8. Package continuity and codomain characterization only after the iterated
    formula is proved.
    - continuity is obtained because each elementary one-variable transform is a
      continuous linear map on the chosen Schwartz model;
@@ -931,7 +993,7 @@ What is settled:
 2. A fixed Seeley extension has closed range, so no proof should aim at dense
    range in the full ambient Schwartz space.
 3. If Lemma 4.1 is later formalized faithfully, it must be stated on the
-   actual half-space/quotient codomain from Section 4.3.
+   actual half-space codomain `L(R_+^{4n})` from Section 4.3.
 4. The positivity proof for theorem 3 does not need that Schwartz-density
    theorem as a live prerequisite. What it needs is:
    - the transport-map comparison on positive-time inputs,
@@ -998,9 +1060,9 @@ The proof transcript is:
    - time-variable interchange is exactly the hidden Section-8 one-variable
      theorem recorded in `docs/os1_detailed_proof_audit.md` as
      `lemma42_matrix_element_time_interchange`;
-   - the positive-energy spectral measure extracted from the OS semigroup is
-     the common object that identifies the Wightman pairing with the Euclidean
-     Hilbert norm.
+   - the common kernel is the corrected OS-II-backed analytic-continuation
+     object underlying `bvt_F` / `bvt_W`, not a fresh spectral-measure
+     construction in Section 4.3 itself.
 5. recognize the resulting degreewise finite sum as the Hilbert norm square of
    `bvt_transport_to_osHilbert_onImage`.
 

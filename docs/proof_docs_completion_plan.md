@@ -158,21 +158,24 @@ Completion criterion for Phase D:
 This doc is complete only when:
 
 1. Package A through Package I each have fixed theorem names;
-2. Package C has one proof strategy only: OS I Section 4.3 Fourier-Laplace /
-   spectral-integral;
+2. Package C is explicitly marked as false legacy infrastructure, not as a live
+   theorem with an active proof strategy;
 3. Package I is stated on the corrected Section 4.3 transformed-image theorem
-   surface, with the transport codomain on the Section-4.3 half-space/quotient
+   surface, with the transport codomain on the Section-4.3 half-space
    Schwartz side rather than either
    a support restriction `tsupport ⊆ PositiveEnergyRegion` or a false
    `DenseRange` claim in full `SchwartzNPoint d n`;
-4. Package I has concrete theorem slots for the transformed image, its density,
-   the transport map on that image, the quadratic identity there, the
-   componentwise finite-bound approximation theorem, and the final public
-   closure theorem;
+4. Package I has concrete theorem slots for the explicit `(4.19)`-`(4.20)`
+   test-function transform, the transformed image, its half-space dense-range
+   paper theorem, the transport map on that image, the quadratic identity
+   there, and the final public closure theorem;
 5. any surviving mention of Packages F/G/H is clearly marked as withdrawn /
    historical, not endorsed implementation guidance;
 6. the exact legacy-consumer status after Package C is named;
-7. the support-work checklist is satisfied literally.
+7. the branch-`3b` support route is fixed at the concrete
+   `PartialFourierSpatial.lean` companion-file level rather than the withdrawn
+   abstract Schwartz-helper route;
+8. the support-work checklist is satisfied literally.
 
 ## 4.2. `theorem2_locality_blueprint.md`
 

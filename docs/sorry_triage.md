@@ -221,7 +221,7 @@ Concrete next packages:
    is false on the full Schwartz space,
 5. implement Package I only in its corrected Section 4.3 form:
    transformed positive-time Euclidean data -> dense transformed image in the
-   Section-4.3 half-space/quotient Schwartz codomain -> OS Hilbert-space vector,
+   Section-4.3 half-space Schwartz codomain -> OS Hilbert-space vector,
 6. do **not** implement the naive raw theorem slogan
    `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` on the same raw
    `BorchersSequence d` input,
@@ -229,6 +229,16 @@ Concrete next packages:
    Lemma 4.1 and Eq. (4.28)),
 8. then close theorem 3 for arbitrary `BorchersSequence d` by the resulting
    density/continuity extension theorem.
+
+Important theorem-3 clarification:
+
+1. the Section-4.3 test-function transport `(4.19)`-`(4.20)` is an explicit
+   Fourier-Laplace integral, not a spectral-measure definition;
+2. the Wightman-side kernel later used in `(4.24)`-`(4.28)` comes from the OS II
+   repaired `bvt_F` / `bvt_W` route (`OSLinearGrowthCondition`), not from the
+   broken OS I Lemma 8.8 derivation;
+3. the half-space dense-range theorem from Lemma 4.1 is a paper-faithfulness
+   side theorem, not the current minimal blocker for `bvt_W_positive`.
 
 What should not happen:
 
