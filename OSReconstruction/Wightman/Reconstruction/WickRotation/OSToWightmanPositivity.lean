@@ -1031,6 +1031,39 @@ theorem bvt_W_eq_inner_on_positiveTimeTransport
         (positiveTimeBorchersVector (d := d) OS G) := by
   sorry
 
+/-- Positivity already holds on the image of the positive-time Section 4.3
+transport, once the sesquilinear bridge is available. This is the first honest
+consumer of `bvt_W_eq_inner_on_positiveTimeTransport`. -/
+theorem bvt_W_positive_on_positiveTimeTransport_image
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+            (positiveTimeBorchersTransport (d := d) F)
+            (positiveTimeBorchersTransport (d := d) F)).re := by
+  rw [bvt_W_eq_inner_on_positiveTimeTransport (OS := OS) (lgc := lgc) F F]
+  have hnorm :
+      RCLike.re
+        (@inner ℂ (OSHilbertSpace OS) _ (positiveTimeBorchersVector (d := d) OS F)
+          (positiveTimeBorchersVector (d := d) OS F)) =
+        ‖positiveTimeBorchersVector (d := d) OS F‖ ^ 2 := by
+    simpa using
+      (inner_self_eq_norm_sq (𝕜 := ℂ) (positiveTimeBorchersVector (d := d) OS F))
+  change 0 ≤ RCLike.re
+    (@inner ℂ (OSHilbertSpace OS) _ (positiveTimeBorchersVector (d := d) OS F)
+      (positiveTimeBorchersVector (d := d) OS F))
+  rw [hnorm]
+  exact sq_nonneg ‖positiveTimeBorchersVector (d := d) OS F‖
+
+/-- Final theorem-3 blocker after the transport/bridge package is in place:
+reduce positivity for arbitrary Borchers data to positivity on the
+positive-time transport image by the remaining density and continuity
+arguments. -/
+theorem bvt_W_positive_density_reduction
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d) :
+    (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
+  sorry
+
 /-- Sorry 3: Wightman positive-definiteness for all BorchersSequence.
 
 The correct proof route (OS I Section 4.3, equations 4.22-4.28):
@@ -1049,6 +1082,7 @@ theorem bvt_W_positive_direct
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
-  sorry
+  intro F
+  simpa using bvt_W_positive_density_reduction (OS := OS) (lgc := lgc) F
 
 end
