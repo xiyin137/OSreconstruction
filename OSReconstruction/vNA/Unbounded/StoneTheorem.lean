@@ -63,6 +63,8 @@ These results require careful analysis and limit arguments.
 * Hall, "Quantum Theory for Mathematicians", Chapter 10
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open scoped InnerProduct ComplexConjugate

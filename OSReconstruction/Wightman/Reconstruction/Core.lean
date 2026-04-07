@@ -49,6 +49,8 @@ functions as its n-point functions.
 * Glimm-Jaffe, "Quantum Physics: A Functional Integral Point of View", Chapter 19
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open scoped SchwartzMap
@@ -610,8 +612,11 @@ theorem WightmanInnerProduct_expand_diff (W : (n : ℕ) → SchwartzNPoint d n �
   ring
 
 /-- Positive definiteness of Wightman functions -/
-def IsPositiveDefinite (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
+def Wightman.IsPositiveDefinite (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
   ∀ F : BorchersSequence d, (WightmanInnerProduct d W F F).re ≥ 0
+
+-- Note: renamed from `IsPositiveDefinite` to avoid collision with
+-- `Bochner.PositiveDefinite.IsPositiveDefinite` from the HilleYosida dependency.
 
 /-- Normalization: W_0 = 1 -/
 def IsNormalized (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
@@ -681,7 +686,7 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
   /-- Local commutativity (weak form) -/
   locally_commutative : IsLocallyCommutativeWeak d W
   /-- Positive definiteness -/
-  positive_definite : IsPositiveDefinite d W
+  positive_definite : Wightman.IsPositiveDefinite d W
   /-- Hermiticity: W_n(f̃) = conj(W_n(f)) where f̃(x₁,...,xₙ) = conj(f(xₙ,...,x₁)).
 
       This is the standard Hermiticity axiom for Wightman functions at the distribution level:
@@ -1858,6 +1863,7 @@ theorem VanishesToInfiniteOrderOnCoincidence.norm_le_pairDifference_pow_succ_on_
     _ ≤ (A' / (((Nat.factorial m : ℕ) : ℝ))) * ‖x i - x j‖ ^ (m + 1) := by
       gcongr
 
+set_option maxHeartbeats 800000 in
 /-- Global weighted flatness in a fixed pairwise separation: infinite-order vanishing
     on the coincidence locus combined with Schwartz decay at spatial infinity. -/
 theorem VanishesToInfiniteOrderOnCoincidence.one_add_norm_pow_mul_norm_le_pairDifference_pow_succ

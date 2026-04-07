@@ -406,7 +406,7 @@ theorem laplaceTransform_isSemigroupPDKernel (μ : Measure ℝ) [IsFiniteMeasure
           ∑ i : ι, ∑ j : ι,
             ∫ u, starRingEnd ℂ (c i) * c j *
               exp (-(↑((τ i : ℝ) + (τ j : ℝ)) : ℂ) * (↑u : ℂ)) ∂μ := by
-        simp_rw [MeasureTheory.integral_const_mul]
+        congr 1 with i; congr 1 with j; exact (MeasureTheory.integral_const_mul _ _).symm
       _ = ∑ i : ι, ∫ u : ℝ, ∑ j : ι,
             starRingEnd ℂ (c i) * c j *
               exp (-(↑((τ i : ℝ) + (τ j : ℝ)) : ℂ) * (↑u : ℂ)) ∂μ := by

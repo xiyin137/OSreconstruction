@@ -151,7 +151,7 @@ theorem hasFDerivAt_iteratedFDeriv_partialEval₂
     (f : SchwartzMap (E₁ × E₂) F) (l : ℕ) (x : E₁) (y : E₂) :
     HasFDerivAt
       (fun y' => iteratedFDeriv ℝ l (fun x' => f (x', y')) x)
-      ((ContinuousMultilinearMap.compContinuousLinearMapL (G := F)
+      ((ContinuousMultilinearMap.compContinuousLinearMapL (F := _)
           (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂)).comp
         ((fderiv ℝ (iteratedFDeriv ℝ l (⇑f)) (x, y)).comp
           (ContinuousLinearMap.inr ℝ E₁ E₂)))
@@ -159,7 +159,7 @@ theorem hasFDerivAt_iteratedFDeriv_partialEval₂
   let A :
       ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F →L[ℝ]
         ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁) F :=
-    ContinuousMultilinearMap.compContinuousLinearMapL (G := F)
+    ContinuousMultilinearMap.compContinuousLinearMapL (F := _)
       (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂)
   let H :
       E₂ → ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F :=
@@ -192,7 +192,7 @@ theorem norm_fderiv_iteratedFDeriv_partialEval₂_le
   let A :
       ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F →L[ℝ]
         ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁) F :=
-    ContinuousMultilinearMap.compContinuousLinearMapL (G := F)
+    ContinuousMultilinearMap.compContinuousLinearMapL (F := _)
       (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂)
   calc
     ‖fderiv ℝ (fun y' => iteratedFDeriv ℝ l (fun x' => f (x', y')) x) y‖
@@ -219,7 +219,7 @@ theorem norm_fderiv_iteratedFDeriv_partialEval₂_le
                 (𝕜 := ℝ) (ι := Fin l)
                 (E := fun _ : Fin l => E₁)
                 (E₁ := fun _ : Fin l => E₁ × E₂)
-                (G := F)
+                (G := _)
                 (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂))
           have hone_prod : ∏ _ : Fin l, ‖ContinuousLinearMap.inl ℝ E₁ E₂‖ ≤ (1 : ℝ) := by
             apply Finset.prod_le_one

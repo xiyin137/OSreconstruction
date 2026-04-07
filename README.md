@@ -4,23 +4,23 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **8 explicit axioms**:
+The tracked production tree currently contains **6 explicit axioms**:
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
-- `semigroupGroup_bochner` in `SCV/SemigroupGroupBochner.lean` — joint semigroup-group Bochner representation on `[0,\infty) x R^d`
-- `laplaceFourier_measure_unique` in `SCV/SemigroupGroupBochner.lean` — uniqueness of supported finite measures from their joint Laplace-Fourier transform
 - `vladimirov_tillmann` in `SCV/VladimirovTillmann.lean`
 - `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean` — distributional cluster on tube boundary lifts to pointwise cluster on tube interior (Poisson integral + Riemann-Lebesgue)
 - `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean` — Vladimirov-style boundary-value existence on tube domains from global polynomial growth
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
 
 The first two are pure functional-analysis axioms on the Wightman/Schwartz side.
-The next two are pure harmonic-analysis / complex-analysis axioms on the SCV side:
-joint semigroup-group Bochner existence and its supported Laplace-Fourier uniqueness clause.
-The fifth through seventh are pure SCV / complex-analytic axioms on the tube-domain
+The next three are pure SCV / complex-analytic axioms on the tube-domain
 side: Vladimirov-Tillmann growth, cluster lifting, and boundary-value existence from
-global polynomial growth. The eighth is the reduced-coordinate Bargmann-Hall-Wightman
+global polynomial growth. The sixth is the reduced-coordinate Bargmann-Hall-Wightman
 bridge on the Route 1 translation-invariance lane.
+
+Two former axioms — `semigroupGroup_bochner` and `laplaceFourier_measure_unique`
+(BCR Theorem 4.1.13) — have been **eliminated** by importing proved theorems from
+[`mrdouglasny/hille-yosida`](https://github.com/mrdouglasny/hille-yosida) (0 sorrys, 0 custom axioms).
 
 ## Overview
 
@@ -37,13 +37,33 @@ route itself as closely as possible:
 - zero-diagonal Euclidean test spaces are the honest Euclidean surface;
 - the preferred `E -> R` path is the OS semigroup / Hilbert-space /
   analytic-continuation route;
+- for `E -> R`, theorem shape should follow OS II Sections IV-VI: start from
+  OS semigroup / Hilbert-space matrix elements, continue holomorphically, and
+  recover Wightman data as Lorentzian boundary values of that common
+  holomorphic object;
 - stronger standalone Euclidean kernel-representation statements may be studied
   in `test/` or `Proofideas/`, but they are not to replace the OS route in
   production unless explicitly approved;
 - convenience shortcuts that change category are also out of bounds in
   production: if OS stays in Hilbert-space, scalar matrix-element, or
   distributional language, we stay there too unless explicitly approved
-  otherwise.
+  otherwise;
+- same-test-function cross-domain equalities are banned by default in
+  production. In particular, no theorem of the form `W_n(f) = S_n(f)` may be
+  introduced unless there is already an explicit proved transport theorem
+  identifying the Lorentzian test object, the Euclidean test object, and the
+  exact map between them;
+- shared Lean packaging such as `SchwartzNPoint`, common shell constructors,
+  or coordinate-level reuse does not count as semantic justification for
+  comparing Euclidean and Minkowski quantities on the "same" test function;
+- if a production comparison theorem mixes OS and Wightman objects, the bridge
+  must be named explicitly: either an OS-paper theorem, an exact local bridge
+  theorem, or a named holomorphic continuation / boundary-value object already
+  present in production;
+- before touching a live OS-route `sorry`, the exact OS paper target must be
+  stated explicitly: theorem/lemma/corollary number if one exists, plus page
+  number. If the step is only chapter-level and no numbered result has yet been
+  pinned down, that uncertainty must be reported before proof work continues.
 
 ### Modules
 
@@ -92,12 +112,10 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **8 explicit `axiom`
+The tracked production tree currently includes **6 explicit `axiom`
 declarations**:
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean`
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
-- `semigroupGroup_bochner` in `SCV/SemigroupGroupBochner.lean`
-- `laplaceFourier_measure_unique` in `SCV/SemigroupGroupBochner.lean`
 - `vladimirov_tillmann` in `SCV/VladimirovTillmann.lean`
 - `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean`
 - `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean`
@@ -105,9 +123,8 @@ declarations**:
 
 The first two are pure functional-analysis axioms on the Wightman/Schwartz side
 (Schwartz kernel theorem and Banach-Steinhaus for finite multilinear maps). The
-next two are pure semigroup/Fourier-Laplace functional-analysis axioms on the
-SCV side. The fifth through seventh are pure SCV tube-domain axioms: growth,
-cluster lifting, and boundary-value existence. The eighth is the deferred reduced-BHW
+next three are pure SCV tube-domain axioms: growth,
+cluster lifting, and boundary-value existence. The sixth is the deferred reduced-BHW
 bridge on the Route 1 translation-invariance lane. Remaining work outside these
 deferred surfaces is represented by explicit theorem-level `sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
@@ -198,11 +215,9 @@ Snapshot (2026-03-25, tracked production tree):
 | `vNA/` | 40 |
 | **Total** | **72** |
 
-Tracked production tree also contains `8` explicit axioms:
+Tracked production tree also contains `6` explicit axioms:
 - `schwartz_nuclear_extension`
 - `exists_continuousMultilinear_ofSeparatelyContinuous`
-- `semigroupGroup_bochner`
-- `laplaceFourier_measure_unique`
 - `vladimirov_tillmann`
 - `distributional_cluster_lifts_to_tube`
 - `tube_boundaryValueData_of_polyGrowth`

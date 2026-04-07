@@ -1,3 +1,4 @@
+import OSReconstruction.Mathlib429Compat
 import OSReconstruction.Wightman.Reconstruction.SchwartzCutoff
 import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 
@@ -6,6 +7,8 @@ import OSReconstruction.Wightman.Reconstruction.TranslationInvariantSchwartz
 
 Compact-support approximation in Schwartz space via radial bump truncations.
 -/
+
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 

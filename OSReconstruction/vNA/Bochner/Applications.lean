@@ -160,7 +160,9 @@ theorem functionalCalculus_inner_self_nonneg (P : SpectralMeasure H) (f : ℝ �
     0 ≤ RCLike.re (@inner ℂ H _ x (functionalCalculus P f hf_int hf_bdd x)) := by
   rw [functionalCalculus_inner_self P f hf_int hf_bdd x]
   -- Goal: 0 ≤ re(∫ f dμ_x)
-  rw [← integral_re (hf_int x)]
+  have hre : RCLike.re (∫ t, f t ∂P.diagonalMeasure x) =
+    ∫ t, RCLike.re (f t) ∂P.diagonalMeasure x := (integral_re (hf_int x)).symm
+  rw [hre]
   apply integral_nonneg fun t => ?_
   simp only [Pi.zero_apply]
   rw [hr_eq t]; simp [hr_nonneg t]

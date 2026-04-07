@@ -822,7 +822,7 @@ theorem reflTransGen_slice_overlap_of_indexConnected
     Subtype.connectedSpace hidx_conn
 
   have hU_eq : U = Set.univ := IsClopen.eq_univ ⟨hU_closed, hU_open⟩ hU_nonempty
-  have hbU : b ∈ U := by simp [hU_eq]
+  have hbU : b ∈ U := hU_eq ▸ Set.mem_univ b
   exact hbU
 
 /-- If the nonempty-slice index set is connected, then the full adjacent forward-overlap

@@ -586,9 +586,15 @@ theorem conjLG_realAlgPath (Y : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
   rw [conjMap_exp]
   -- conjMap X = -X since conj(t*I*Y) = t*(-I)*Y = -t*I*Y = -X
   rw [show conjMap X = -X from by
-    rw [hX_def]; ext i j
-    simp [Matrix.map_apply, smul_eq_mul, Matrix.neg_apply,
-      Complex.conj_ofReal, Complex.conj_I]]
+    rw [hX_def]
+    show ((↑t : ℂ) • (Complex.I • Y.map Complex.ofReal)).map star =
+      -((↑t : ℂ) • (Complex.I • Y.map Complex.ofReal))
+    ext i j
+    show (starRingEnd ℂ) ((t : ℂ) • Complex.I • Y.map Complex.ofReal i j) =
+      -((t : ℂ) • Complex.I • Y.map Complex.ofReal i j)
+    simp only [Matrix.smul_apply, Matrix.mul_apply, smul_eq_mul, map_mul, Complex.conj_ofReal,
+      Complex.conj_I, Matrix.map_apply]
+    ring]
   -- exp(-X) * exp(X) = 1
   rw [Matrix.exp_neg]
   exact Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det _).mp (Matrix.isUnit_exp X))

@@ -122,9 +122,18 @@ theorem euclidean_fourier_lineDerivOp_eq_coord {m : ℕ}
       (2 * Real.pi * Complex.I) •
         SchwartzMap.smulLeftCLM ℂ
           (fun ξ : EuclideanSpace ℝ (Fin m) => ξ i) (𝓕 f) := by
-  simpa [EuclideanSpace.inner_single_right] using
-    (SchwartzMap.fourier_lineDerivOp_eq
-      (f := f) (m := EuclideanSpace.single i (1 : ℝ)))
+  have h := SchwartzMap.fourier_lineDerivOp_eq (f := f) (m := EuclideanSpace.single i (1 : ℝ))
+  -- The inner product ⟨ξ, eᵢ⟩ equals ξ i (= ξ.ofLp i)
+  have hinner : (fun ξ : EuclideanSpace ℝ (Fin m) => @inner ℝ _ _ ξ
+    (EuclideanSpace.single i 1)) = (fun ξ => ξ i) := by
+    ext ξ
+    -- inner ℝ ξ (single i 1) = ξ.ofLp i
+    show @inner ℝ (EuclideanSpace ℝ (Fin m)) _ ξ (EuclideanSpace.single i 1) = ξ.ofLp i
+    have := EuclideanSpace.inner_single_right (𝕜 := ℝ) i (1 : ℝ) ξ
+    simp at this
+    exact this
+  rw [hinner] at h
+  exact h
 
 theorem euclidean_coord_decomp_implies_pi_zeroMean_decomp {m : ℕ}
     (hcoord :
@@ -183,8 +192,15 @@ theorem euclidean_coord_decomp_implies_pi_zeroMean_decomp {m : ℕ}
               have hproj :
                   (fun ξ : EuclideanSpace ℝ (Fin m) => ξ i).HasTemperateGrowth :=
                 (EuclideanSpace.proj i).hasTemperateGrowth
-              simp [SchwartzMap.smulLeftCLM_apply_apply hproj, smul_eq_mul,
-                mul_assoc, mul_left_comm, mul_comm, hc]
+              simp only [SchwartzMap.smulLeftCLM_apply_apply hproj, SchwartzMap.smul_apply]
+              -- Goal: c • ξ.ofLp i • c⁻¹ • (H i) ξ = ξ.ofLp i • (H i) ξ
+              -- c⁻¹ • (H i) ξ : ℂ smul on ℂ = mul
+              -- ξ.ofLp i • ... : ℝ smul on ℂ
+              -- c • ... : ℂ smul on ℂ = mul
+              have : c • ((ξ.ofLp i : ℝ) • (c⁻¹ • (H i) ξ)) =
+                  (ξ.ofLp i : ℝ) • ((H i) ξ) := by
+                rw [smul_comm c (ξ.ofLp i : ℝ), smul_smul c c⁻¹, mul_inv_cancel₀ hc, one_smul]
+              exact this
       _ = FE := hH.symm
   have hE : ∑ i : Fin m, ∂_{EuclideanSpace.single i (1 : ℝ)} (gE i) = fE := by
     have hinv := congrArg (fun u : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ => 𝓕⁻ u) hfourier

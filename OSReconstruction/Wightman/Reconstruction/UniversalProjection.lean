@@ -425,7 +425,7 @@ theorem exists_orthogonal_matrix_with_first_row
         simp [M, Matrix.mul_apply]
       _ = inner ℝ (b i) (b j) := by
         rw [PiLp.inner_apply]
-        simp [RCLike.inner_apply, mul_comm]
+        congr 1; ext x; simp [inner, mul_comm]
       _ = if i = j then 1 else 0 := (orthonormal_iff_ite.mp b.orthonormal) i j
       _ = (1 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) i j := by simp [Matrix.one_apply]
   have hMtM : M.transpose * M = 1 := (mul_eq_one_comm.mp hMMt)

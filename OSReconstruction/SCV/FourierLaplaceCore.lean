@@ -290,15 +290,13 @@ theorem psiZ_schwartz_decay (z : ℂ) (hz : 0 < z.im) :
     | succ m ih =>
         rw [iteratedDeriv_succ, ih]
         ext ξ
-        rw [deriv_const_mul_field]
-        rw [show
-            deriv (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z))) ξ =
-              (I * z) * Complex.exp ((ξ : ℂ) * (I * z)) by
-          refine (?_ : HasDerivAt (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z))) _ ξ).deriv
+        have hexp_deriv : HasDerivAt (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z)))
+            ((I * z) * Complex.exp ((ξ : ℂ) * (I * z))) ξ := by
           refine (?_ : HasDerivAt (fun y : ℂ => Complex.exp (y * (I * z))) _ (ξ : ℂ)).comp_ofReal
           simpa [mul_comm] using
             (Complex.hasDerivAt_exp ((ξ : ℂ) * (I * z))).comp (ξ : ℂ)
-              (hasDerivAt_mul_const (I * z))]
+              (hasDerivAt_mul_const (I * z))
+        rw [(hexp_deriv.const_mul _).deriv]
         simp [pow_succ', mul_assoc, mul_left_comm, mul_comm]
   have hEqNeg : Set.EqOn (psiZ z) (fun _ : ℝ => (0 : ℂ)) (Set.Iio (-1 : ℝ)) := by
     intro ξ hξ
@@ -361,15 +359,13 @@ theorem iteratedDeriv_cexp_real_mul (n : ℕ) (z : ℂ) :
   | succ n ih =>
       rw [iteratedDeriv_succ, ih]
       ext ξ
-      rw [deriv_const_mul_field]
-      rw [show
-          deriv (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z))) ξ =
-            (I * z) * Complex.exp ((ξ : ℂ) * (I * z)) by
-        refine (?_ : HasDerivAt (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z))) _ ξ).deriv
+      have hexp_deriv : HasDerivAt (fun ξ : ℝ => Complex.exp ((ξ : ℂ) * (I * z)))
+          ((I * z) * Complex.exp ((ξ : ℂ) * (I * z))) ξ := by
         refine (?_ : HasDerivAt (fun y : ℂ => Complex.exp (y * (I * z))) _ (ξ : ℂ)).comp_ofReal
         simpa [mul_comm] using
           (Complex.hasDerivAt_exp ((ξ : ℂ) * (I * z))).comp (ξ : ℂ)
-            (hasDerivAt_mul_const (I * z))]
+            (hasDerivAt_mul_const (I * z))
+      rw [(hexp_deriv.const_mul _).deriv]
       simp [pow_succ', mul_assoc, mul_left_comm, mul_comm]
 
 /-- Iterated derivatives of the real-parameter exponential family
@@ -384,14 +380,12 @@ theorem iteratedDeriv_cexp_const_mul_real (n : ℕ) (c : ℂ) :
   | succ n ih =>
       rw [iteratedDeriv_succ, ih]
       ext ξ
-      rw [deriv_const_mul_field]
-      rw [show
-          deriv (fun ξ : ℝ => Complex.exp (c * ξ)) ξ =
-            c * Complex.exp (c * ξ) by
-        refine (?_ : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ)) _ ξ).deriv
+      have hexp_deriv : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ))
+          (c * Complex.exp (c * ξ)) ξ := by
         refine (?_ : HasDerivAt (fun y : ℂ => Complex.exp (c * y)) _ (ξ : ℂ)).comp_ofReal
         simpa [mul_comm] using
-          (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp (ξ : ℂ) (hasDerivAt_const_mul c)]
+          (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp (ξ : ℂ) (hasDerivAt_const_mul c)
+      rw [(hexp_deriv.const_mul _).deriv]
       simp [pow_succ', mul_assoc, mul_left_comm, mul_comm]
 
 /-- The divided first-order Taylor remainder
@@ -414,9 +408,7 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
   rw [iteratedDeriv_succ]
   simp [iteratedDeriv_zero]
   unfold expTaylorLinearRemainderQuot
-  rw [deriv_div_const]
-  change deriv (fun ξ : ℝ => (Complex.exp (c * ξ) - 1) - c * ξ) ξ / h =
-    I * (Complex.exp (c * ξ) - 1)
+  -- Compute the derivative via HasDerivAt
   have hlin : HasDerivAt (fun ξ : ℝ => c * ξ) c ξ := by
     refine (?_ : HasDerivAt (fun y : ℂ => c * y) c (ξ : ℂ)).comp_ofReal
     simpa using (hasDerivAt_const_mul c : HasDerivAt (fun y : ℂ => c * y) c (ξ : ℂ))
@@ -424,14 +416,10 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_one
       (c * Complex.exp (c * ξ)) ξ := by
     simpa [c, mul_assoc, mul_left_comm, mul_comm] using
       (Complex.hasDerivAt_exp (c * (ξ : ℂ))).comp ξ hlin
-  have hexp_diff : DifferentiableAt ℝ (fun ξ : ℝ => Complex.exp (c * ξ) - 1) ξ := by
-    simpa using (hExp.sub_const (1 : ℂ)).differentiableAt
-  have hlin_diff : DifferentiableAt ℝ (fun ξ : ℝ => c * ξ) ξ := by
-    exact hlin.differentiableAt
-  rw [deriv_fun_sub hexp_diff hlin_diff]
-  rw [show deriv (fun ξ : ℝ => Complex.exp (c * ξ) - 1) ξ = c * Complex.exp (c * ξ) by
-    simpa using (hExp.sub_const (1 : ℂ)).deriv]
-  rw [show deriv (fun ξ : ℝ => c * ξ) ξ = c by exact hlin.deriv]
+  have hfull : HasDerivAt (fun ξ : ℝ => (Complex.exp (c * ξ) - 1 - c * ξ) / h)
+      ((c * Complex.exp (c * ξ) - c) / h) ξ := by
+    exact ((hExp.sub_const 1).sub hlin).div_const h
+  rw [hfull.deriv]
   by_cases hh : h = 0
   · subst hh
     simp [c]
@@ -464,14 +452,23 @@ private theorem iteratedDeriv_expTaylorLinearRemainderQuot_succ_succ
       deriv (fun ξ : ℝ => I * (Complex.exp (c * ξ) - 1)) =
         fun ξ : ℝ => (I * c) * Complex.exp (c * ξ) := by
     funext x
-    rw [deriv_const_mul_field]
-    simp [hExpDeriv x, mul_assoc]
+    have : HasDerivAt (fun ξ : ℝ => Complex.exp (c * ξ) - 1)
+        (c * Complex.exp (c * x)) x := by
+      have hlin : HasDerivAt (fun ξ : ℝ => c * ξ) c x := by
+        refine (?_ : HasDerivAt (fun y : ℂ => c * y) c (x : ℂ)).comp_ofReal
+        simpa using (hasDerivAt_const_mul c : HasDerivAt (fun y : ℂ => c * y) c (x : ℂ))
+      simpa [mul_assoc, mul_left_comm, mul_comm] using
+        ((Complex.hasDerivAt_exp (c * (x : ℂ))).comp x hlin).sub_const 1
+    rw [(this.const_mul I).deriv]
+    simp [mul_assoc]
   rw [iteratedDeriv_succ', iteratedDeriv_succ']
   rw [hderiv1, hderiv2]
   calc
     iteratedDeriv m (fun ξ : ℝ => (I * c) * Complex.exp (c * ξ)) ξ
         = (I * c) * iteratedDeriv m (fun ξ : ℝ => Complex.exp (c * ξ)) ξ := by
-            rw [iteratedDeriv_const_mul_field]
+            have := iteratedDeriv_const_mul_field (𝕜 := ℝ) (n := m) (I * c)
+              (fun ξ : ℝ => Complex.exp (c * ξ)) (x := ξ)
+            exact this
     _ = (I * c) * (c ^ m * Complex.exp (c * ξ)) := by
           rw [iteratedDeriv_cexp_const_mul_real]
     _ = ((I * h) ^ (m + 2) / h) * Complex.exp (I * h * ξ) := by

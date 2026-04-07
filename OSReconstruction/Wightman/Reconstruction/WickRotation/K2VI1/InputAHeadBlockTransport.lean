@@ -3,6 +3,8 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAKernelR
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.InputAFixedTime
 import OSReconstruction.Wightman.Reconstruction.WickRotation.K2VI1.Support
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open scoped Topology

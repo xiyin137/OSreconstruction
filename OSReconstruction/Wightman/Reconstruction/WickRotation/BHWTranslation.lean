@@ -288,22 +288,11 @@ def baseFiber (m d : ℕ) [NeZero d]
     (ζ₀ : Fin (d + 1) → ℂ) (k : Fin m) (μ : Fin (d + 1)) :
     baseFiberConfig m d ζtail ζ₀ k.succ μ =
       ζ₀ μ + ∑ j : Fin (k.val + 1), ζtail ⟨j.val, by omega⟩ μ := by
-  simp [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ, add_assoc]
-  let ξ : Fin (m + 1) → Fin (d + 1) → ℂ := Fin.cons ζ₀ ζtail
-  have hm : 0 < m := by
-    cases m with
-    | zero => exact Fin.elim0 k
-    | succ m' => simp
-  have h1idx : (1 : ℕ) < m + 1 := by omega
-  have h0idx : (0 : ℕ) < m := hm
-  have h1 : ξ ⟨1, h1idx⟩ μ = ζtail ⟨0, h0idx⟩ μ := rfl
-  have hsum :
-      (∑ x : Fin k.val, ξ ⟨x.val + 2, by omega⟩ μ) =
-        ∑ x : Fin k.val, ζtail ⟨x.val + 1, by omega⟩ μ := by
-    refine Finset.sum_congr rfl ?_
-    intro x hx
-    rfl
-  simp [ξ, h1, hsum]
+  rw [baseFiberConfig, BHW.partialSumFun, Fin.sum_univ_succ]
+  refine congrArg (fun z : ℂ => ζ₀ μ + z) ?_
+  refine Finset.sum_congr rfl ?_
+  intro x hx
+  rfl
 
 /-- Shifting the base difference variable by `c` translates every cumulative
 coordinate by the same `c`. -/
@@ -348,7 +337,6 @@ theorem diffCoord_translate_head_tail {m d : ℕ}
   · simp [BHW.diffCoordFun]
   · intro i
     simp [BHW.diffCoordFun, Fin.tail, sub_eq_add_neg]
-    ring
 
 /-- Difference coordinates commute with the coordinatewise complex Lorentz
 action. This is the algebraic bridge from absolute-coordinate sector witnesses
@@ -949,8 +937,8 @@ theorem isPreconnected_baseFiberSector_of_indexConnected {m d : ℕ} [NeZero d]
         Subtype.connectedSpace hidx_conn
 
       have hU_eq : U = Set.univ := IsClopen.eq_univ ⟨hU_closed, hU_open⟩ hU_nonempty
-      have hyU : y ∈ U := by simp [hU_eq]
-      exact hyU
+      have : y ∈ U := by rw [hU_eq]; exact Set.mem_univ _
+      exact this
 
   have h_union_eq_all :
       (⋃ x : {Λ : ComplexLorentzGroup d | t Λ},

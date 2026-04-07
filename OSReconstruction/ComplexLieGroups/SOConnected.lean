@@ -1441,9 +1441,11 @@ theorem isConnected_firstColEqE0_set {m : ℕ} :
         ?_⟩
       intro t k
       refine Fin.cases ?_ ?_ k
-      · simp [embed]
+      · show (embed (γ t)).val 0 0 = _
+        simp [embed, embedVal]
       · intro i
-        simp [embed, Fin.succ_ne_zero]
+        show (embed (γ t)).val (Fin.succ i) 0 = _
+        simp [embed, embedVal, Fin.succ_ne_zero]
 
 /-- Connectedness of the first-column fiber over any unit-quadric point. -/
 theorem isConnected_firstColEqVec_set {m : ℕ}

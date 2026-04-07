@@ -30,6 +30,16 @@ namespace ContinuousLinearMap
 
 variable {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
 
+-- Mathlib 4.29 compatibility: provide instances that typeclass synthesis can't find
+-- with the stricter backward.isDefEq.respectTransparency
+set_option backward.isDefEq.respectTransparency false in
+private instance : SMulCommClass ℂ ℝ H := inferInstance
+
+set_option backward.isDefEq.respectTransparency false in
+private instance : NonnegSpectrumClass ℝ (H →L[ℂ] H) :=
+  CStarAlgebra.instNonnegSpectrumClass
+
+
 omit [CompleteSpace H] in
 /-- The polarization identity for a continuous linear map on a complex Hilbert space. -/
 private theorem inner_polarization_clm_local (A : H →L[ℂ] H) (x y : H) :
@@ -89,7 +99,12 @@ def selfAdjointSpectralFunctionalLinear
     have hsmul :
         @inner ℂ H _ x (c • (((cfcHom hA) f) x)) =
           c • @inner ℂ H _ x (((cfcHom hA) f) x) := by
-      simpa using inner_smul_right_eq_smul x (((cfcHom hA) f) x) c
+      set_option backward.isDefEq.respectTransparency false in
+      haveI : IsScalarTower ℝ ℂ H := inferInstance
+      rw [show (c : ℝ) • (((cfcHom hA) f) x) = ((c : ℂ) : ℂ) • (((cfcHom hA) f) x) from
+        (algebraMap_smul ℂ c _).symm]
+      rw [inner_smul_right]
+      simp [starRingEnd_apply, Complex.real_smul]
     rw [hsmul, Complex.smul_re]
     rfl
 
@@ -126,7 +141,13 @@ def selfAdjointSpectralFunctionalCc
           have hsmul :
               @inner ℂ H _ x (c • (((cfcHom hA) f.toContinuousMap) x)) =
                 c • @inner ℂ H _ x (((cfcHom hA) f.toContinuousMap) x) := by
-            simpa using inner_smul_right_eq_smul x (((cfcHom hA) f.toContinuousMap) x) c
+            set_option backward.isDefEq.respectTransparency false in
+            haveI : IsScalarTower ℝ ℂ H := inferInstance
+            rw [show (c : ℝ) • (((cfcHom hA) f.toContinuousMap) x) =
+              ((c : ℂ) : ℂ) • (((cfcHom hA) f.toContinuousMap) x) from
+              (algebraMap_smul ℂ c _).symm]
+            rw [inner_smul_right]
+            simp [starRingEnd_apply, Complex.real_smul]
           rw [hsmul, Complex.smul_re]
           rfl }
   · intro f hf
@@ -199,6 +220,7 @@ theorem re_inner_cfc_eq_integral_selfAdjointSpectralMeasureDiagonal
           exact selfAdjointSpectralMeasureDiagonal_integral A hA x gCc
     _ = ∫ y, g y ∂(selfAdjointSpectralMeasureDiagonal A hA x) := by rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- For a bounded nonnegative self-adjoint operator, the diagonal matrix element of a positive
 functional-calculus power is represented by the RMK measure on the real spectrum. -/
 theorem re_inner_nnrpow_eq_integral_selfAdjointSpectralMeasureDiagonal

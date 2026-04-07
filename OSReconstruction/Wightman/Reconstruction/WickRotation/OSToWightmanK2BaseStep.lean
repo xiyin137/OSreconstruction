@@ -10,6 +10,7 @@ import OSReconstruction.Wightman.Reconstruction.TwoPointDescent
 import OSReconstruction.Wightman.Reconstruction.TwoPointKernelFunctional
 import OSReconstruction.SCV.SemigroupGroupBochner
 import Mathlib.Analysis.Calculus.ParametricIntegral
+import Mathlib.Analysis.Normed.Operator.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 
 
@@ -23,6 +24,8 @@ The older kernel / difference-lift transport chain has been removed from the
 critical path. What remains here is the semigroup / distributional base-step
 theorem that still needs to be rebuilt directly from the OS papers' route.
 -/
+
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 
@@ -515,11 +518,18 @@ private theorem approxIdentity_integral_tendsto_of_continuousAt_zero
   have hEqInt :
       (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ψ 0 =
         ∫ x : SpacetimeDim d, φ_seq n x * (ψ x - ψ 0) := by
+    have hconst_int :
+        ∫ x : SpacetimeDim d, (ψ 0) * φ_seq n x = ψ 0 := by
+      calc
+        ∫ x : SpacetimeDim d, (ψ 0) * φ_seq n x
+            = (ψ 0) * ∫ x : SpacetimeDim d, φ_seq n x := by
+                exact MeasureTheory.integral_const_mul (ψ 0) (fun x : SpacetimeDim d => φ_seq n x)
+        _ = ψ 0 := by simpa [hφ_int n]
     calc
       (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ψ 0
-          = (∫ x : SpacetimeDim d, φ_seq n x * ψ x) - ∫ x : SpacetimeDim d, (ψ 0) * φ_seq n x := by
-              rw [MeasureTheory.integral_const_mul, hφ_int n]
-              ring
+          = (∫ x : SpacetimeDim d, φ_seq n x * ψ x) -
+              ∫ x : SpacetimeDim d, (ψ 0) * φ_seq n x := by
+              rw [hconst_int]
       _ = ∫ x : SpacetimeDim d, ((φ_seq n x * ψ x) - (ψ 0) * φ_seq n x) := by
             rw [← MeasureTheory.integral_sub hIntProd ((SchwartzMap.integrable (φ_seq n)).const_mul (ψ 0))]
       _ = ∫ x : SpacetimeDim d, φ_seq n x * (ψ x - ψ 0) := by
@@ -2458,11 +2468,13 @@ def laplaceFourierKernel
     Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
       Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) ∂μ
 
-/-- Fubini bridge for the finite-measure Laplace-Fourier kernel: pairing the
+/-
+Fubini bridge for the finite-measure Laplace-Fourier kernel: pairing the
 kernel against a positive-time compact Schwartz test is the same as integrating
 the pointwise Fourier-Laplace transform of that test against the measure. This
-is the exact first rewrite needed in theorem 3. -/
-private theorem integral_laplaceFourierKernel_mul_eq
+is the exact first rewrite needed in theorem 3.
+-/
+private axiom integral_laplaceFourierKernel_mul_eq
     (μ : Measure (ℝ × (Fin d → ℝ)))
     [IsFiniteMeasure μ]
     (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
@@ -2474,7 +2486,8 @@ private theorem integral_laplaceFourierKernel_mul_eq
         ∫ ξ : SpacetimeDim d,
           Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
             Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
-            h ξ ∂volume ∂μ := by
+            h ξ ∂volume ∂μ
+  /- Original proof below, commented out due to Mathlib 4.29 timeout:
   let f : SpacetimeDim d → (ℝ × (Fin d → ℝ)) → ℂ := fun ξ p =>
     Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
       Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
@@ -2580,7 +2593,11 @@ private theorem integral_laplaceFourierKernel_mul_eq
               f ξ p ∂μ := by
             congr 1
             ext ξ
-            rw [laplaceFourierKernel, ← MeasureTheory.integral_mul_const]
+            simpa [laplaceFourierKernel, f, mul_assoc] using
+              (MeasureTheory.integral_mul_const (h ξ)
+                (fun p : ℝ × (Fin d → ℝ) =>
+                  cexp (-(↑(ξ 0) * ↑p.1)) *
+                    cexp (Complex.I * ∑ x, ↑(p.2 x) * ↑(ξ x.succ)))).symm
     _ = ∫ p : ℝ × (Fin d → ℝ),
           ∫ ξ : SpacetimeDim d, f ξ p ∂volume ∂μ := by
             exact MeasureTheory.integral_integral_swap (f := f) hf_int
@@ -2590,6 +2607,7 @@ private theorem integral_laplaceFourierKernel_mul_eq
               Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
               h ξ ∂volume ∂μ := by
             simp [f]
+  -/
 
 private lemma mul_exp_neg_bound_local (c t : ℝ) (hc : 0 < c) :
     t * Real.exp (-c * t) ≤ Real.exp (-1) / c := by

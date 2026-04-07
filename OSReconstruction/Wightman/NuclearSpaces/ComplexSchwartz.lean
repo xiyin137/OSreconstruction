@@ -84,7 +84,10 @@ def ofRealCLM : 𝓢(D, ℝ) →L[ℝ] 𝓢(D, ℂ) :=
   SchwartzMap.mkCLM (𝕜 := ℝ) (𝕜' := ℝ)
     (fun f x => Complex.ofRealCLM (f x))
     (fun f g x => by simp [map_add])
-    (fun a f x => by simp [RingHom.id_apply])
+    (fun a f x => by
+      show Complex.ofRealCLM ((a • f) x) = a • Complex.ofRealCLM (f x)
+      simp only [SchwartzMap.smul_apply, smul_eq_mul, Complex.ofRealCLM_apply,
+        Complex.ofReal_mul, Complex.real_smul])
     (fun f => Complex.ofRealCLM.contDiff.comp f.smooth')
     (fun ⟨k, n⟩ => ⟨{(k, n)}, 1, zero_le_one, fun f x => by
       simp only [Finset.sup_singleton, schwartzSeminormFamily_apply, one_mul]
@@ -120,7 +123,16 @@ def realProdToComplexCLM : (𝓢(D, ℝ) × 𝓢(D, ℝ)) →L[ℝ] 𝓢(D, ℂ)
       map_smul' := by
         intro a f
         ext x
-        simp [smul_add, mul_left_comm] }
+        simp only [RingHom.id_apply, SchwartzMap.smul_apply, Prod.smul_fst, Prod.smul_snd,
+          SchwartzMap.add_apply, smul_add, ofRealCLM_apply]
+        -- Goal: ↑(a • f.1 x) + I • ↑(a • f.2 x) = a • ↑(f.1 x) + a • (I • ↑(f.2 x))
+        have h1 : (↑(a • f.1 x) : ℂ) = a • (↑(f.1 x) : ℂ) := by
+          simp [smul_eq_mul, Complex.ofReal_mul, Complex.real_smul]
+        have h2 : (↑(a • f.2 x) : ℂ) = a • (↑(f.2 x) : ℂ) := by
+          simp [smul_eq_mul, Complex.ofReal_mul, Complex.real_smul]
+        rw [h1, h2]
+        congr 1
+        exact (smul_comm a Complex.I (↑(f.2 x) : ℂ)).symm }
   cont := (ofRealCLM.continuous.comp continuous_fst).add
     (((Complex.I : ℂ) • ofRealCLM).continuous.comp continuous_snd)
 

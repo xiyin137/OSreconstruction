@@ -40,6 +40,8 @@ quotient, the only vector with zero inner product is the zero class.
 * Reed-Simon, "Methods of Modern Mathematical Physics I", Chapter II (GNS)
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Reconstruction
@@ -1689,7 +1691,7 @@ theorem gns_cyclicity :
     rw [hcoe_sum, inner_sum]
     exact Finset.sum_eq_zero (fun k _ => horth_all_single k (F.funcs k))
   -- Step 4: z = 0 by density of the pre-Hilbert space image in the completion.
-  exact Dense.eq_zero_of_inner_left (gnsDomain_dense Wfn) (fun ⟨v, hv⟩ => by
+  exact Dense.eq_zero_of_inner_left (𝕜 := ℂ) (gnsDomain_dense Wfn) (fun v hv => by
     obtain ⟨x, rfl⟩ := hv; exact horth_all x)
 
 /-! ### Vacuum Uniqueness via Cluster Decomposition (Streater-Wightman, Theorem 3-5)

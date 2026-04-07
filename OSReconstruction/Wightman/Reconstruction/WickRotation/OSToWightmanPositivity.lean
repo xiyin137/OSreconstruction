@@ -3,308 +3,330 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
-import OSReconstruction.Wightman.Reconstruction.DenseCLM
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
 
 /-!
-# Positivity of the Reconstructed Wightman Inner Product (OS 1973 §4.3)
+# Theorem 3 Positivity Infrastructure
 
-This file proves `bvt_W_positive_proof`: for the reconstructed Wightman distributions
-`bvt_W OS lgc`, the Wightman inner product is positive semi-definite on all
-Borchers sequences.
+This file contains the live production infrastructure for theorem 3
+`bvt_W_positive`.
 
-## Proof strategy
+The endorsed route is now:
+1. right-half-plane identity theorem,
+2. single-component semigroup bridge on `{Re(z) > 0}`,
+3. OS I Section 4.3 transport infrastructure,
+4. quadratic identity on the transformed image,
+5. final closure to arbitrary `BorchersSequence`.
 
-1. **Compact ordered positive-time layer**: For compact ordered positive-time
-   Borchers vectors `F`, the BV comparison chain identifies
-   `WightmanInnerProduct = osInner ≥ 0`.
-
-2. **Continuity layer**: The Wightman quadratic form is continuous under
-   componentwise Schwartz convergence for fixed-bound sequences.
-
-3. **Dense-image passage**: Ordered positive-time compact n-point functions are
-   dense in `SchwartzNPoint d n`. By continuity, positivity extends to all
-   Borchers vectors.
-
-## Main result
-
-- `bvt_W_positive_proof`: `∀ F, (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0`
+The old same-test-function comparison route is false, even at `t = 0`, so this
+file should not try to identify `WightmanInnerProduct (bvt_W ...)` with
+`OSInnerProduct OS.S` on the same raw test data. The transport map is
+essential.
 -/
 
-set_option maxHeartbeats 400000
-
 open scoped Classical NNReal
-open BigOperators Finset
+open BigOperators Finset Complex
 
 noncomputable section
 
 variable {d : ℕ} [NeZero d]
 
-/-! ### Layer 1: Compact ordered positive-time positivity -/
+/-! ## Part 1: Identity theorem on the right half-plane -/
 
-/-- For compact ordered positive-time Borchers vectors, the xiShift boundary-value
-convergence needed by the comparison theorems holds. This requires converting
-the general `bvt_boundary_values` convergence (which uses a full forward-cone
-direction η) into the specific single-split xiShift form, using the holomorphic
-bridge between the two parametrizations. -/
-private theorem bvt_hWlimit_of_compact_ordered_positiveTime
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : PositiveTimeBorchersSequence d)
-    (hF_compact :
-      ∀ n,
-        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ)))
-    (n m : ℕ) (hm : 0 < m) :
-    Filter.Tendsto
-      (fun t : ℝ =>
-        ∫ y : NPointDomain d (n + m),
-          bvt_F OS lgc (n + m)
-              (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
-                (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
-            ((((F : BorchersSequence d).funcs n).osConjTensorProduct
-              ((F : BorchersSequence d).funcs m)) y))
-      (nhdsWithin 0 (Set.Ioi 0))
-      (nhds
-        (bvt_W OS lgc (n + m)
-          ((((F : BorchersSequence d).funcs n).conjTensorProduct
-            ((F : BorchersSequence d).funcs m))))) := by
-  sorry
+/-- Two holomorphic functions on {Re(z) > 0} that agree on (0,∞) agree everywhere.
+This is the standard identity theorem for connected domains. -/
+theorem identity_theorem_right_halfplane
+    (f g : ℂ → ℂ)
+    (hf : DifferentiableOn ℂ f {z : ℂ | 0 < z.re})
+    (hg : DifferentiableOn ℂ g {z : ℂ | 0 < z.re})
+    (hagree : ∀ t : ℝ, 0 < t → f (t : ℂ) = g (t : ℂ)) :
+    ∀ z : ℂ, 0 < z.re → f z = g z := by
+  have hU_open : IsOpen {z : ℂ | 0 < z.re} := isOpen_lt continuous_const Complex.continuous_re
+  have hU_preconn : IsPreconnected {z : ℂ | 0 < z.re} := by
+    apply Convex.isPreconnected
+    intro z hz w hw a b ha hb hab
+    simp only [Set.mem_setOf_eq] at hz hw ⊢
+    calc (a • z + b • w).re = a * z.re + b * w.re := by
+            simp [Complex.add_re]
+      _ > 0 := by
+        rcases ha.lt_or_eq with ha' | ha'
+        · have : b * w.re ≥ 0 := mul_nonneg hb hw.le
+          have : a * z.re > 0 := mul_pos ha' hz
+          linarith
+        · have hab' : b = 1 := by linarith
+          simp [← ha', hab', hw]
+  have hf_an : AnalyticOnNhd ℂ f {z : ℂ | 0 < z.re} := hf.analyticOnNhd hU_open
+  have hg_an : AnalyticOnNhd ℂ g {z : ℂ | 0 < z.re} := hg.analyticOnNhd hU_open
+  have h1_mem : (1 : ℂ) ∈ {z : ℂ | 0 < z.re} := by simp
+  have hfg_an : AnalyticAt ℂ (f - g) 1 := (hf_an 1 h1_mem).sub (hg_an 1 h1_mem)
+  have hfreq : ∃ᶠ z in nhdsWithin (1 : ℂ) {(1 : ℂ)}ᶜ, (f - g) z = 0 := by
+    rw [Filter.Frequently]
+    intro hev
+    rw [Filter.Eventually] at hev
+    rw [(nhdsWithin_basis_open 1 {(1 : ℂ)}ᶜ).mem_iff] at hev
+    obtain ⟨u, ⟨h1u, hu_open⟩, hus⟩ := hev
+    obtain ⟨ε, hε, hball⟩ := Metric.isOpen_iff.mp hu_open 1 h1u
+    have hmem : ((1 + ε / 2 : ℝ) : ℂ) ∈ u := by
+      apply hball
+      rw [Metric.mem_ball, Complex.dist_eq]
+      have hsub : ((1 + ε / 2 : ℝ) : ℂ) - 1 = ((ε / 2 : ℝ) : ℂ) := by push_cast; ring
+      rw [hsub]
+      simp only [Complex.norm_real, Real.norm_eq_abs, abs_of_pos (half_pos hε)]
+      linarith
+    have hne : ((1 + ε / 2 : ℝ) : ℂ) ≠ (1 : ℂ) := by
+      intro heq
+      have := congr_arg Complex.re heq
+      simp at this; linarith [half_pos hε]
+    have hzero : (f - g) ((1 + ε / 2 : ℝ) : ℂ) = 0 := by
+      simp only [Pi.sub_apply, sub_eq_zero]; exact hagree (1 + ε / 2) (by linarith)
+    exact hus ⟨hmem, hne⟩ hzero
+  have hev : ∀ᶠ z in nhds (1 : ℂ), (f - g) z = 0 :=
+    hfg_an.frequently_zero_iff_eventually_zero.mp hfreq
+  have hfg_an_on : AnalyticOnNhd ℂ (f - g) {z : ℂ | 0 < z.re} := hf_an.sub hg_an
+  have heqOn : Set.EqOn (f - g) 0 {z : ℂ | 0 < z.re} :=
+    hfg_an_on.eqOn_zero_of_preconnected_of_eventuallyEq_zero hU_preconn h1_mem hev
+  intro z hz
+  have := heqOn hz
+  simp only [Pi.sub_apply, Pi.zero_apply, sub_eq_zero] at this
+  exact this
 
-/-- The Hermitian property of `bvt_W`, proved from the boundary-ray infrastructure.
-This is the same argument as `bvt_hermitian` in `OSToWightmanBoundaryValues.lean`,
-factored out here to avoid circular imports. -/
-private theorem bvt_hermitian_local
-    (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (f g : SchwartzNPoint d n),
-      (∀ x : NPointDomain d n,
-        g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
-      bvt_W OS lgc n g = starRingEnd ℂ (bvt_W OS lgc n f) := by
-  have hF_reflect_pairing :
-      ∀ (n : ℕ) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
-        (∀ x : NPointDomain d n,
-          g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
-        ∫ x : NPointDomain d n,
-          bvt_F OS lgc n (fun k μ =>
-            ↑(x k μ) +
-              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
-          =
-        starRingEnd ℂ
-          (∫ x : NPointDomain d n,
-            bvt_F OS lgc n (fun k μ =>
-              ↑(x k μ) +
-                ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x)) := by
-    intro n f g ε hε hfg
-    exact boundary_ray_hermitian_pairing_of_F_negCanonical (d := d) n
-      (bvt_F OS lgc n)
-      (bvt_F_perm OS lgc n)
-      (bvt_F_translationInvariant OS lgc n)
-      (bvt_F_negCanonical OS lgc n)
-      f g ε hε hfg
-  intro n f g hfg
-  exact bv_hermiticity_transfer (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (hF_reflect_pairing n)
-    f g hfg
+/-! ## Part 2: Semigroup bridge for single-component pairs -/
 
-/-- For compact ordered positive-time Borchers vectors, the Wightman inner product
-equals the OS inner product and is therefore nonneg. -/
-private theorem bvt_wightmanInner_self_nonneg_of_compact_ordered_positiveTime
+/-- For single-component positive-time Borchers sequences, the two holomorphic
+extensions `bvt_singleSplit_xiShiftHolomorphicValue` and
+`OSInnerProductTimeShiftHolomorphicValue` agree on the entire right half-plane.
+
+Both are holomorphic on {Re(z) > 0} and both equal OS.S at real t > 0. -/
+theorem bvt_xiShift_eq_osInnerProduct_holomorphicValue_single
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (z : ℂ) (hz : 0 < z.re) :
+    bvt_singleSplit_xiShiftHolomorphicValue
+        (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact z =
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+        (PositiveTimeBorchersSequence.single n f hf_ord)
+        (PositiveTimeBorchersSequence.single m g hg_ord) z := by
+  apply identity_theorem_right_halfplane
+  · exact differentiableOn_bvt_singleSplit_xiShiftHolomorphicValue
+      (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact
+  · exact OSInnerProductTimeShiftHolomorphicValue_differentiableOn
+      (d := d) OS lgc
+      (PositiveTimeBorchersSequence.single n f hf_ord)
+      (PositiveTimeBorchersSequence.single m g hg_ord)
+  · intro t ht
+    -- LHS at real t > 0: equals OS.S(n+m)(osConj f ⊗ timeShift_t g)
+    rw [bvt_singleSplit_xiShiftHolomorphicValue_ofReal_eq_schwinger_timeShift
+      (d := d) (OS := OS) (lgc := lgc) hm f hf_ord hf_compact g hg_ord hg_compact t ht]
+    -- RHS at real t > 0: equals sum over k of OS.S(k+m)(...)
+    rw [OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_right_single
+      (d := d) (OS := OS) (lgc := lgc)
+      (F := PositiveTimeBorchersSequence.single n f hf_ord)
+      (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact) (t := t) ht]
+    -- The sum collapses: single n f has bound = n, so only k = n contributes
+    simp only [PositiveTimeBorchersSequence.single_toBorchersSequence,
+      BorchersSequence.single_bound]
+    rw [Finset.sum_range_succ]
+    simp only [BorchersSequence.single_funcs_eq]
+    have hvanish :
+        ∑ k ∈ Finset.range n,
+          OS.S (k + m) (ZeroDiagonalSchwartz.ofClassical
+            (((BorchersSequence.single n f).funcs k).osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) t g))) = 0 := by
+      apply Finset.sum_eq_zero
+      intro k hk
+      have hk_ne : k ≠ n := by
+        have := Finset.mem_range.mp hk; omega
+      rw [BorchersSequence.single_funcs_ne hk_ne]
+      have : (0 : SchwartzNPoint d k).osConjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) t g) = 0 := by
+        simp [SchwartzNPoint.osConjTensorProduct, SchwartzNPoint.osConj_zero,
+          SchwartzMap.tensorProduct_zero_left]
+      rw [this]
+      rw [ZeroDiagonalSchwartz.ofClassical_zero]
+      exact (OS.E0_linear (k + m)).map_zero
+    rw [hvanish, zero_add]
+  · exact hz
+
+/-! ## Part 3: Sorry 3 — Wightman positive-definiteness
+
+CRITICAL ROUTE CORRECTION (Entry #277):
+
+The former Package C (`hschw`) — equating `OS.S(osConj f ⊗ timeShift_t g)` with
+`bvt_W(conj f ⊗ timeShift_t g)` — is MATHEMATICALLY FALSE.
+
+Reason: `timeShiftSchwartzNPoint t` is a real time translation. On the OS/Euclidean
+side it corresponds to the contraction semigroup `e^{-tH}` (decaying). On the
+Wightman/Minkowski side it corresponds to the unitary group `e^{itH}` (oscillating).
+The equation `e^{-tH} = e^{itH}` is false for nontrivial H.
+
+The entire production reduction chain through `hschw` consumes a false hypothesis.
+
+The correct route is OS I Section 4.3: construct the transport map
+`u : BorchersSequence d → OSHilbertSpace OS` via Fourier-Laplace transform,
+and prove `W(f* × f) = ‖u(f)‖²_H ≥ 0` directly. This does NOT go through
+any time-shifted Schwinger-vs-Wightman comparison. -/
+
+/-- The Euclidean positive-time degree-`n` test space from OS I Section 4.3.
+
+This is the paper's `S_+(ℝ^{4n})`: Schwartz `n`-point test functions whose
+topological support lies in the ordered positive-time region. -/
+def EuclideanPositiveTimeComponent (d n : ℕ) [NeZero d] :=
+  {f : SchwartzNPoint d n //
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
+
+/-- An equivalent submodule presentation of the Euclidean positive-time domain.
+
+The blueprint allows either the subtype or submodule form, as long as it
+represents the same Section-4.3 Euclidean input space. This submodule surface
+will be convenient when the transport map is eventually stated as a continuous
+linear map. -/
+def euclideanPositiveTimeSubmodule (d n : ℕ) [NeZero d] :
+    Submodule ℂ (SchwartzNPoint d n) where
+  carrier := {f |
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
+  zero_mem' := by
+    change tsupport (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) ⊆
+      OrderedPositiveTimeRegion d n
+    rw [show (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) = 0 by rfl]
+    simpa using (empty_subset (OrderedPositiveTimeRegion d n) :
+      (∅ : Set (NPointDomain d n)) ⊆ OrderedPositiveTimeRegion d n)
+  add_mem' := by
+    intro f g hf hg x hx
+    have hx' := tsupport_add
+      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)
+      ((g : SchwartzNPoint d n) : NPointDomain d n → ℂ) hx
+    exact hx'.elim (hf ·) (hg ·)
+  smul_mem' := by
+    intro c f hf
+    exact (tsupport_smul_subset_right
+      (fun _ : NPointDomain d n => c)
+      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)).trans hf
+
+@[simp] theorem mem_euclideanPositiveTimeSubmodule
+    {n : ℕ} (f : SchwartzNPoint d n) :
+    f ∈ euclideanPositiveTimeSubmodule (d := d) n ↔
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n := Iff.rfl
+
+namespace EuclideanPositiveTimeComponent
+
+variable {n : ℕ}
+
+/-- Package a positive-time submodule element as the corresponding subtype
+object. This is the bridge from the current-code submodule model back to the
+existing Euclidean-side OS Hilbert-space vectors. -/
+def ofSubmodule
+    (f : euclideanPositiveTimeSubmodule (d := d) n) :
+    EuclideanPositiveTimeComponent d n :=
+  ⟨f.1, f.2⟩
+
+/-- A positive-time component viewed as the corresponding single positive-time
+Borchers sequence. This is the Euclidean-side input object whose image under
+the eventual Section 4.3 transport map will be compared against the Wightman
+quadratic form. -/
+def toPositiveTimeSingle
+    (f : EuclideanPositiveTimeComponent d n) :
+    PositiveTimeBorchersSequence d :=
+  PositiveTimeBorchersSequence.single n f.1 f.2
+
+end EuclideanPositiveTimeComponent
+
+/-- The honest OS Hilbert-space vector determined by a positive-time Euclidean
+Borchers sequence. Package I will later define the Minkowski-side transport map
+by choosing a Euclidean preimage and landing in this existing vector. -/
+noncomputable def positiveTimeBorchersVector
     (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS)
-    (F : PositiveTimeBorchersSequence d)
-    (hF_compact :
-      ∀ n,
-        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
-          NPointDomain d n → ℂ))) :
-    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
-      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
-  rw [bvt_wightmanInner_self_eq_osInner_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
-    (d := d) OS lgc (bvt_hermitian_local OS lgc) F hF_compact
-    (fun n m hm => bvt_hWlimit_of_compact_ordered_positiveTime OS lgc F hF_compact n m hm)]
+    (F : PositiveTimeBorchersSequence d) :
+    OSHilbertSpace OS :=
+  (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+
+@[simp] theorem positiveTimeBorchersVector_inner_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (F G : PositiveTimeBorchersSequence d) :
+    @inner ℂ (OSHilbertSpace OS) _ (positiveTimeBorchersVector (d := d) OS F)
+      (positiveTimeBorchersVector (d := d) OS G) =
+      PositiveTimeBorchersSequence.osInner OS F G := by
+  change @inner ℂ (OSHilbertSpace OS) _
+      (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+      (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS)) =
+      PositiveTimeBorchersSequence.osInner OS F G
+  rw [UniformSpace.Completion.inner_coe]
+  simp [OSPreHilbertSpace.inner_eq]
+
+@[simp] theorem positiveTimeBorchersVector_norm_sq_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    ‖positiveTimeBorchersVector (d := d) OS F‖ ^ 2 =
+      (PositiveTimeBorchersSequence.osInner OS F F).re := by
+  have hnorm :
+      RCLike.re
+        (@inner ℂ (OSHilbertSpace OS) _ (positiveTimeBorchersVector (d := d) OS F)
+          (positiveTimeBorchersVector (d := d) OS F)) =
+        ‖positiveTimeBorchersVector (d := d) OS F‖ ^ 2 := by
+    simpa using
+      (inner_self_eq_norm_sq (𝕜 := ℂ) (positiveTimeBorchersVector (d := d) OS F))
+  rw [← hnorm, positiveTimeBorchersVector_inner_eq]
+  simp
+
+theorem positiveTimeBorchersVector_self_nonneg
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    0 ≤ ‖positiveTimeBorchersVector (d := d) OS F‖ ^ 2 := by
+  rw [positiveTimeBorchersVector_norm_sq_eq]
   exact PositiveTimeBorchersSequence.osInner_nonneg_self OS F
 
-/-! ### Layer 2: Continuity of the Wightman quadratic form -/
-
-omit [NeZero d] in
-/-- `conjTensorProduct` is jointly continuous in both arguments.
-Since `conjTensorProduct f g = f.borchersConj.tensorProduct g`, this follows
-from the continuity of `borchersConj` (which is `conj ∘ reverse`, both
-continuous on Schwartz space) and `SchwartzMap.tensorProduct_continuous`. -/
-private theorem conjTensorProduct_continuous_joint (n m : ℕ) :
-    Continuous (fun p : SchwartzNPoint d n × SchwartzNPoint d m =>
-      p.1.conjTensorProduct p.2) := by
-  -- borchersConj is continuous (conj ∘ reverse, same proof as GNSHilbertSpace)
-  have hbc : Continuous (fun f : SchwartzNPoint d n => f.borchersConj) := by
-    let revCLE : NPointDomain d n ≃L[ℝ] NPointDomain d n :=
-      { toFun := fun y i => y (Fin.rev i)
-        map_add' := fun _ _ => rfl
-        map_smul' := fun _ _ => rfl
-        invFun := fun y i => y (Fin.rev i)
-        left_inv := fun y => funext fun i => by simp [Fin.rev_rev]
-        right_inv := fun y => funext fun i => by simp [Fin.rev_rev]
-        continuous_toFun := continuous_pi fun i => continuous_apply (Fin.rev i)
-        continuous_invFun := continuous_pi fun i => continuous_apply (Fin.rev i) }
-    let revCLM : SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
-      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ revCLE
-    have hrev : ∀ f : SchwartzNPoint d n, revCLM f = f.reverse := by
-      intro f; ext x; simp [revCLM, SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
-        SchwartzMap.reverse_apply, revCLE]
-    have hconj_cont : Continuous (fun f : SchwartzNPoint d n => f.conj) := by
-      let conjL : SchwartzNPoint d n →ₗ[ℝ] SchwartzNPoint d n :=
-        { toFun := SchwartzMap.conj
-          map_add' := fun f g => by ext x; simp [SchwartzMap.conj_apply]
-          map_smul' := fun c f => by ext x; simp [SchwartzMap.conj_apply] }
-      exact Seminorm.continuous_from_bounded
-        (schwartz_withSeminorms ℝ (NPointDomain d n) ℂ)
-        (schwartz_withSeminorms ℝ (NPointDomain d n) ℂ)
-        conjL (fun q => by
-          rcases q with ⟨k, l⟩
-          refine ⟨{(k, l)}, 1, ?_⟩
-          intro f
-          simpa [Finset.sup_singleton] using SchwartzMap.seminorm_conj_le k l f)
-    show Continuous (fun f => (revCLM f).conj)
-    exact (hconj_cont.comp revCLM.continuous).congr (fun f => by
-      show (revCLM f).conj = f.borchersConj
-      rw [hrev]; rfl)
-  -- conjTensorProduct = tensorProduct ∘ (borchersConj × id)
-  simp only [SchwartzMap.conjTensorProduct]
-  exact SchwartzMap.tensorProduct_continuous.comp
-    ((hbc.comp continuous_fst).prodMk continuous_snd)
-
-/-- Sequential continuity of the Wightman self-inner-product under componentwise
-Schwartz convergence: if `F_k → F` componentwise, then
-`WightmanInnerProduct(F_k, F_k) → WightmanInnerProduct(F, F)`.
-
-Proof outline: `WightmanInnerProduct` is a finite sum of terms
-`bvt_W(n+m)(f_n.conjTensorProduct f_m)`, each continuous in `(f_n, f_m)`.
-A finite sum of convergent sequences converges. -/
-private theorem WightmanInnerProduct_tendsto_of_componentwise
-    (W : (n : ℕ) → SchwartzNPoint d n → ℂ)
-    (hW_cont : ∀ n, Continuous (W n))
-    (F_k : ℕ → BorchersSequence d) (F : BorchersSequence d)
-    (hconv : ∀ n, Filter.Tendsto (fun k => (F_k k).funcs n) Filter.atTop
-      (nhds (F.funcs n)))
-    (hbound : ∀ k, (F_k k).bound = F.bound) :
-    Filter.Tendsto
-      (fun k => WightmanInnerProduct d W (F_k k) (F_k k))
-      Filter.atTop
-      (nhds (WightmanInnerProduct d W F F)) := by
-  sorry
-
-/-! ### Layer 3: Dense-image passage -/
-
-/-- **Density of ordered positive-time compact n-point functions.**
-
-The set of Schwartz n-point functions with compact support contained in the
-ordered positive-time region is dense in `SchwartzNPoint d n`.
-
-This is the key topological ingredient from OS 1973 §4.3. The proof uses:
-1. `productTensor_span_dense` (product tensors span a dense subspace)
-2. `SchwartzMap.dense_hasCompactSupport` (compact-support density in each factor)
-3. An analytic-continuation / identity-principle argument for the entire function
-   `(c₁,...,cₙ) ↦ T(τ_{c₁}f₁ ⊗ ⋯ ⊗ τ_{cₙ}fₙ)` to show that a continuous linear
-   functional vanishing on all ordered-time-translated compact product tensors
-   must vanish identically. -/
-private theorem orderedPositiveTime_compact_dense (n : ℕ) :
-    Dense {F : SchwartzNPoint d n |
-      tsupport (F : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n ∧
-      HasCompactSupport (F : NPointDomain d n → ℂ)} := by
-  sorry
-
-/-! ### Layer 4: Assembly -/
-
-/-- **Main positivity theorem** (OS 1973 §4.3).
-
-For the reconstructed Wightman distributions `bvt_W OS lgc`, the Wightman inner
-product is positive semi-definite on all Borchers sequences. The proof:
-1. approximates each component of `F` by ordered positive-time compact functions,
-2. shows positivity of the Wightman inner product on each approximant via the
-   BV comparison → OS inner product chain,
-3. passes to the limit using continuity of the quadratic form. -/
-theorem bvt_W_positive_proof
+noncomputable def euclideanPositiveTimeSingleVector
     (OS : OsterwalderSchraderAxioms d)
-    (lgc : OSLinearGrowthCondition d OS) :
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n) :
+    OSHilbertSpace OS :=
+  positiveTimeBorchersVector (d := d) OS
+    (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d) f)
+
+@[simp] theorem euclideanPositiveTimeSingleVector_norm_sq_eq
+    (OS : OsterwalderSchraderAxioms d)
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n) :
+    ‖euclideanPositiveTimeSingleVector (d := d) OS f‖ ^ 2 =
+      (PositiveTimeBorchersSequence.osInner OS
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d) f)
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d) f)).re := by
+  simp [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector_norm_sq_eq]
+
+/-- The current-code realization of the degree-`n` Section 4.3 Fourier-Laplace
+transport map.
+
+The corrected theorem surface lands in the full Schwartz space on the
+Minkowski side: the Section 4.3 transform is first defined on the
+positive-energy half-space and then interpreted via a Schwartz extension, not
+via a support restriction `tsupport ⊆ {q^0 ≥ 0}`. -/
+noncomputable def os1TransportComponent
+    (d n : ℕ) [NeZero d] :
+    euclideanPositiveTimeSubmodule (d := d) n →L[ℂ] SchwartzNPoint d n := by
+  sorry
+
+/-- Sorry 3: Wightman positive-definiteness for all BorchersSequence.
+
+The correct proof route (OS I Section 4.3, equations 4.22-4.28):
+1. define the Section 4.3 transport map on positive-time Euclidean inputs,
+2. show `bvt_W` agrees with the corresponding VEV / Hilbert-space pairing on
+   that positive-time transport core,
+3. use density of positive-time vectors in `OSHilbertSpace OS` from the
+   completion/GNS construction,
+4. extend by continuity to arbitrary `BorchersSequence d`.
+
+This requires Fourier-Laplace infrastructure connecting `bvt_F` to the
+semigroup spectral measure and the corrected Section 4.3 transport / VEV
+identification. The old Schwartz-density theorem surface was withdrawn after
+review; see `agents_chat.md` Entries #329-#331. -/
+theorem bvt_W_positive_direct
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
-  intro F
-  set B := F.bound
-  -- Step 1: By density, approximate each component by ordered positive-time compact
-  -- functions. For n > B, the component is already 0 so no approximation needed.
-  have hdense_approx : ∀ n, ∃ (s : ℕ → SchwartzNPoint d n),
-      (∀ k, tsupport ((s k : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-          OrderedPositiveTimeRegion d n ∧
-        HasCompactSupport ((s k : SchwartzNPoint d n) : NPointDomain d n → ℂ)) ∧
-      Filter.Tendsto s Filter.atTop (nhds (F.funcs n)) := by
-    intro n
-    have hd := orderedPositiveTime_compact_dense (d := d) n
-    have hmem : F.funcs n ∈ closure {F : SchwartzNPoint d n |
-        tsupport (F : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n ∧
-        HasCompactSupport (F : NPointDomain d n → ℂ)} := hd.closure_eq ▸ Set.mem_univ _
-    rw [mem_closure_iff_seq_limit] at hmem
-    exact hmem
-  choose seq hseq using hdense_approx
-  -- Step 2: Build approximating Borchers sequences with the same bound B.
-  -- For n > B, use 0 (matching F.funcs n = 0).
-  let u : ℕ → (n : ℕ) → SchwartzNPoint d n := fun k n =>
-    if n ≤ B then seq n k else 0
-  have hu_bound : ∀ k n, B < n → u k n = 0 := by
-    intro k n hn; simp only [u, show ¬(n ≤ B) from Nat.not_le.mpr hn, ite_false]
-  have hv_bound : ∀ n, B < n → F.funcs n = 0 :=
-    fun n hn => F.bound_spec n hn
-  have hconv : ∀ n, Filter.Tendsto (fun k => u k n) Filter.atTop (nhds (F.funcs n)) := by
-    intro n
-    by_cases hn : n ≤ B
-    · have : (fun k => u k n) = (fun k => seq n k) := by
-        ext k; simp only [u, hn, ite_true]
-      rw [this]; exact (hseq n).2
-    · have hFn : F.funcs n = 0 := F.bound_spec n (by omega)
-      have : (fun k => u k n) = fun _ => (0 : SchwartzNPoint d n) := by
-        ext k; simp only [u, hn, ite_false]
-      rw [this, hFn]; exact tendsto_const_nhds
-  -- Step 3: Each approximant has ordered positive-time support and compact support.
-  have hord_k : ∀ k n, tsupport ((u k n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n := by
-    intro k n
-    by_cases hn : n ≤ B
-    · simp only [u, hn, ite_true]; exact ((hseq n).1 k).1
-    · simp only [u, hn, ite_false]
-      rw [show ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) = 0 from rfl,
-        tsupport_zero]
-      exact Set.empty_subset _
-  have hcomp_k : ∀ k n, HasCompactSupport ((u k n : SchwartzNPoint d n) :
-      NPointDomain d n → ℂ) := by
-    intro k n
-    by_cases hn : n ≤ B
-    · simp only [u, hn, ite_true]; exact ((hseq n).1 k).2
-    · simp only [u, hn, ite_false, HasCompactSupport]
-      rw [show ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) = 0 from rfl,
-        tsupport_zero]
-      exact isCompact_empty
-  -- Step 4: Build the approximating Borchers sequences.
-  let F_k : ℕ → BorchersSequence d := fun k =>
-    { funcs := u k, bound := B, bound_spec := hu_bound k }
-  -- Step 5: Each approximant is positive-time, hence has nonneg Wightman inner product.
-  have hpos_approx : ∀ k,
-      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) (F_k k) (F_k k)).re := by
-    intro k
-    let G : PositiveTimeBorchersSequence d :=
-      { toBorchersSequence := F_k k
-        ordered_tsupport := hord_k k }
-    exact bvt_wightmanInner_self_nonneg_of_compact_ordered_positiveTime OS lgc G
-      (fun n => hcomp_k k n)
-  -- Step 6: Pass to the limit using continuity of WightmanInnerProduct.
-  have hconv_F : ∀ n, Filter.Tendsto (fun k => (F_k k).funcs n) Filter.atTop
-      (nhds (F.funcs n)) := hconv
-  have hbound_eq : ∀ k, (F_k k).bound = F.bound := fun _ => rfl
-  have hlim := WightmanInnerProduct_tendsto_of_componentwise (bvt_W OS lgc)
-    (fun n => bvt_W_continuous OS lgc n) F_k F hconv_F hbound_eq
-  -- The limit of nonneg reals is nonneg.
-  exact ge_iff_le.mpr (le_of_tendsto_of_tendsto tendsto_const_nhds
-    (Filter.Tendsto.comp Complex.continuous_re.continuousAt.tendsto hlim)
-    (Filter.Eventually.of_forall (fun k => hpos_approx k)))
+  sorry
 
 end

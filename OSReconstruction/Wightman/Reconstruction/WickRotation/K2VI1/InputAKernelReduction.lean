@@ -155,7 +155,7 @@ theorem integral_centerIntegratedTwoPointKernel_factorizes_local
                     filter_upwards with u
                     ring
             _ = (∫ u : SpacetimeDim d, K (Fin.cons u (fun _ => ξ)) * χ u) * h ξ := by
-                    rw [MeasureTheory.integral_mul_const]
+                    exact MeasureTheory.integral_mul_const _ _
 
 theorem exists_common_difference_kernel_of_common_center_kernel_pairing_local
     (χ₀ : SchwartzSpacetime d)

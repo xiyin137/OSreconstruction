@@ -191,6 +191,23 @@ private theorem differentiable_wickRotateComplexConfig :
   intro k
   exact differentiable_wickRotateComplexPoint.comp (differentiable_apply k)
 
+private theorem continuous_wickUnrotateComplexConfig :
+    Continuous (wickUnrotateComplexConfig (n := n) (d := d)) := by
+  apply continuous_pi
+  intro k
+  apply continuous_pi
+  intro μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    have hcoord : Continuous (fun z : Fin n → Fin (d + 1) → ℂ => z k 0) :=
+      (continuous_apply 0).comp (continuous_apply k)
+    have hmul : Continuous (fun z : Fin n → Fin (d + 1) → ℂ =>
+        (-Complex.I) * z k 0) :=
+      continuous_const.mul hcoord
+    simpa [wickUnrotateComplexConfig, neg_mul] using hmul
+  · simpa [wickUnrotateComplexConfig, hμ] using
+      ((continuous_apply μ).comp (continuous_apply k))
+
 private theorem continuous_wickRotateRealConfig :
     Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
   apply continuous_pi
@@ -433,6 +450,91 @@ theorem forwardTube_eq_of_eq_on_wickRealSection
     simpa [H, wickRotateComplexConfig_wickUnrotateComplexConfig] using hHzero
   exact sub_eq_zero.mp this
 
+/-- If two holomorphic functions agree on the Wick-rotated real section inside
+an open connected domain, then they agree on the whole domain.
+
+This is the subdomain form of `forwardTube_eq_of_eq_on_wickRealSection`, used
+on the intersection domain where both `z` and a transformed point stay inside
+the forward tube. -/
+theorem eqOn_openConnected_of_eqOn_wickRealSection
+    (U : Set (Fin n → Fin (d + 1) → ℂ))
+    (hU_open : IsOpen U)
+    (hU_conn : IsConnected U)
+    (hU_wick_nonempty :
+      ∃ x : NPointDomain d n, (fun k => wickRotatePoint (x k)) ∈ U)
+    (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF : DifferentiableOn ℂ F U)
+    (hG : DifferentiableOn ℂ G U)
+    (hFG_euclid :
+      ∀ x : NPointDomain d n,
+        (fun k => wickRotatePoint (x k)) ∈ U →
+          F (fun k => wickRotatePoint (x k)) = G (fun k => wickRotatePoint (x k))) :
+    Set.EqOn F G U := by
+  let U' : Set (Fin n → Fin (d + 1) → ℂ) :=
+    {z | wickRotateComplexConfig z ∈ U}
+  have hU'_open : IsOpen U' := by
+    simpa [U'] using hU_open.preimage continuous_wickRotateComplexConfig
+  have himage :
+      wickUnrotateComplexConfig '' U = U' := by
+    ext z
+    constructor
+    · rintro ⟨w, hwU, rfl⟩
+      simpa [U', wickRotateComplexConfig_wickUnrotateComplexConfig] using hwU
+    · intro hz
+      refine ⟨wickRotateComplexConfig z, ?_, ?_⟩
+      · simpa [U'] using hz
+      · simpa [wickUnrotateComplexConfig_wickRotateComplexConfig]
+  have hU'_conn : IsConnected U' := by
+    rw [← himage]
+    exact hU_conn.image
+      (wickUnrotateComplexConfig (n := n) (d := d))
+      continuous_wickUnrotateComplexConfig.continuousOn
+  let H : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z =>
+    F (wickRotateComplexConfig z) - G (wickRotateComplexConfig z)
+  have hH_holo : DifferentiableOn ℂ H U' := by
+    intro z hz
+    have hwick_diff :
+        DifferentiableWithinAt ℂ
+          (wickRotateComplexConfig (n := n) (d := d)) U' z := by
+      have htmp : DifferentiableAt ℂ (wickRotateComplexConfig (n := n) (d := d)) z :=
+        (differentiable_wickRotateComplexConfig (d := d) (n := n)).differentiableAt
+      exact htmp.differentiableWithinAt
+    have hwick_maps :
+        Set.MapsTo (wickRotateComplexConfig (n := n) (d := d)) U' U := by
+      intro y hy
+      simpa [U'] using hy
+    have hcompF :
+        DifferentiableWithinAt ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ => F (wickRotateComplexConfig z)) U' z :=
+      (hF _ (by simpa [U'] using hz)).comp z hwick_diff hwick_maps
+    have hcompG :
+        DifferentiableWithinAt ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ => G (wickRotateComplexConfig z)) U' z :=
+      (hG _ (by simpa [U'] using hz)).comp z hwick_diff hwick_maps
+    exact hcompF.sub hcompG
+  let V : Set (NPointDomain d n) := {x | (fun k => wickRotatePoint (x k)) ∈ U}
+  have hV_open : IsOpen V := by
+    simpa [V] using hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+  obtain ⟨x0, hx0⟩ := hU_wick_nonempty
+  have hV_ne : V.Nonempty := ⟨x0, hx0⟩
+  have hV_sub : ∀ x ∈ V, SCV.realToComplexProduct x ∈ U' := by
+    intro x hx
+    simpa [U', V, wickRotateComplexConfig_realToComplexProduct] using hx
+  have hH_zero : ∀ x ∈ V, H (SCV.realToComplexProduct x) = 0 := by
+    intro x hx
+    simp [H, wickRotateComplexConfig_realToComplexProduct, hFG_euclid x hx]
+  have hzero_on_U' :=
+    SCV.identity_theorem_totally_real_product
+      (hD_open := hU'_open) (hD_conn := hU'_conn) (f := H) hH_holo
+      (V := V) hV_open hV_ne hV_sub hH_zero
+  intro z hz
+  have hw : wickUnrotateComplexConfig z ∈ U' := by
+    simpa [U', wickRotateComplexConfig_wickUnrotateComplexConfig] using hz
+  have hHzero : H (wickUnrotateComplexConfig z) = 0 := hzero_on_U' _ hw
+  have : F z - G z = 0 := by
+    simpa [H, wickRotateComplexConfig_wickUnrotateComplexConfig] using hHzero
+  exact sub_eq_zero.mp this
+
 /-- Distributional equality on compactly supported Wick-rotated Euclidean tests upgrades
 to equality of the holomorphic witnesses on the full forward tube. -/
 theorem forwardTube_eq_of_distributional_wickSection_eq
@@ -478,6 +580,103 @@ theorem forwardTube_eq_of_distributional_wickSection_eq
     exact hint φ hφ_compact hφ_tsupport
   exact forwardTube_eq_of_eq_on_wickRealSection (d := d) (n := n) F G hF hG
     (fun x hx => hEqOn hx)
+
+/-- Distributional Wick-section equality on an open connected Wick subdomain
+upgrades to pointwise equality on that whole subdomain. -/
+theorem eqOn_openConnected_of_distributional_wickSection_eq
+    (U : Set (Fin n → Fin (d + 1) → ℂ))
+    (hU_open : IsOpen U)
+    (hU_conn : IsConnected U)
+    (hU_wick_nonempty :
+      ∃ x : NPointDomain d n, (fun k => wickRotatePoint (x k)) ∈ U)
+    (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF : DifferentiableOn ℂ F U)
+    (hG : DifferentiableOn ℂ G U)
+    (hint :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆
+          {x : NPointDomain d n | (fun k => wickRotatePoint (x k)) ∈ U} →
+        ∫ x : NPointDomain d n, F (fun k => wickRotatePoint (x k)) * φ x =
+          ∫ x : NPointDomain d n, G (fun k => wickRotatePoint (x k)) * φ x) :
+    Set.EqOn F G U := by
+  let V : Set (NPointDomain d n) := {x | (fun k => wickRotatePoint (x k)) ∈ U}
+  have hV_open : IsOpen V := by
+    simpa [V] using hU_open.preimage (continuous_wickRotateRealConfig (d := d) (n := n))
+  have hF_cont : ContinuousOn F U := by
+    intro z hz
+    exact (hF z hz).continuousWithinAt
+  have hG_cont : ContinuousOn G U := by
+    intro z hz
+    exact (hG z hz).continuousWithinAt
+  have hF_wick_cont :
+      ContinuousOn (fun x : NPointDomain d n => F (fun k => wickRotatePoint (x k))) V := by
+    refine hF_cont.comp (continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact hx
+  have hG_wick_cont :
+      ContinuousOn (fun x : NPointDomain d n => G (fun k => wickRotatePoint (x k))) V := by
+    refine hG_cont.comp (continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact hx
+  have hEqOn_wick :
+      Set.EqOn
+        (fun x : NPointDomain d n => F (fun k => wickRotatePoint (x k)))
+        (fun x : NPointDomain d n => G (fun k => wickRotatePoint (x k)))
+        V := by
+    refine SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      hV_open hF_wick_cont hG_wick_cont ?_
+    intro φ hφ_compact hφ_tsupport
+    exact hint φ hφ_compact hφ_tsupport
+  exact eqOn_openConnected_of_eqOn_wickRealSection
+    (d := d) (n := n) U hU_open hU_conn hU_wick_nonempty F G hF hG
+    (fun x hx => hEqOn_wick hx)
+
+/-- Intersection-domain specialization of the subdomain Wick-section identity
+theorem. This is the domain shape needed for the theorem-1 Lorentz lane: the
+common region where both `z` and `Λ · z` stay in the forward tube. -/
+theorem eqOn_d_lambda_of_distributional_wickSection_eq
+    (Λ : ComplexLorentzGroup d)
+    (hD_wick_nonempty :
+      ∃ x : NPointDomain d n,
+        (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n ∧
+          BHW.complexLorentzAction Λ (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n)
+    (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF :
+      DifferentiableOn ℂ F
+        {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n})
+    (hG :
+      DifferentiableOn ℂ G
+        {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n})
+    (hint :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆
+          {x : NPointDomain d n |
+            (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n ∧
+              BHW.complexLorentzAction Λ (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n} →
+        ∫ x : NPointDomain d n, F (fun k => wickRotatePoint (x k)) * φ x =
+          ∫ x : NPointDomain d n, G (fun k => wickRotatePoint (x k)) * φ x) :
+    Set.EqOn F G
+      {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n} := by
+  have hD_conn :
+      IsConnected {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n} := by
+    rcases hD_wick_nonempty with ⟨x, hxFT, hxΛFT⟩
+    refine ⟨⟨(fun k => wickRotatePoint (x k)), ⟨hxFT, hxΛFT⟩⟩, ?_⟩
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      (BHW.d_lambda_isPreconnected (d := d) (n := n) Λ)
+  have hD_open :
+      IsOpen {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n} := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      (BHW.isOpen_d_lambda (d := d) (n := n) Λ)
+  exact eqOn_openConnected_of_distributional_wickSection_eq
+    (d := d) (n := n)
+    {z | z ∈ ForwardTube d n ∧ BHW.complexLorentzAction Λ z ∈ ForwardTube d n}
+    hD_open hD_conn
+    (by
+      rcases hD_wick_nonempty with ⟨x, hxFT, hxΛFT⟩
+      exact ⟨x, ⟨hxFT, hxΛFT⟩⟩)
+    F G hF hG hint
 
 /-- Distributional equality on compactly supported Wick-section tests may be
 checked on the `ZeroDiagonalSchwartz` branch when the support stays inside the

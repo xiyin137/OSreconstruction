@@ -718,6 +718,7 @@ theorem exists_closedBall_integral_clm
   · intro ψ
     rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- If `g` is continuous and defines an absolutely convergent pairing with every
 Schwartz test function, then the map `ψ ↦ ∫ g(x) ψ(x) dx` is a continuous linear
 functional on Schwartz space.
@@ -759,6 +760,7 @@ theorem exists_integral_clm_of_continuous
         hmono hint
     · exact hTR _ ψ
     · simp [Metric.iUnion_closedBall_nat]
+  set_option backward.isDefEq.respectTransparency false in
   let T : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ :=
     continuousLinearMapOfTendsto (fun R => (TR R : _ →L[ℝ] ℂ)) hconv
   refine ⟨T, ?_⟩
@@ -1337,8 +1339,12 @@ theorem tendsto_realMollify_normedBump_tubeDomain
       intro t
       ext j
       simp [realEmbed]
-    simp [MeasureTheory.convolution, g, ContinuousLinearMap.lsmul_apply, sub_eq_add_neg,
-      add_comm, mul_comm, hreal_neg]
+    simp only [MeasureTheory.convolution, g, ContinuousLinearMap.lsmul_apply, sub_eq_add_neg,
+      hreal_neg, zero_add]
+    congr 1; ext t
+    change ↑((φ i).normed volume t) * G (z + realEmbed t) =
+      G (z + realEmbed t) * ↑((φ i).normed volume t)
+    ring
   simpa [hEq] using hconv'
 
 /-- Local distribution-theory lemma: if a continuous function pairs to zero against every
@@ -1393,7 +1399,7 @@ theorem eq_zero_on_open_of_compactSupport_schwartz_integral_zero
     have hφχ_support : Function.support (φχ : E → ℂ) ⊆ U := by
       intro y hy
       have hy_support_prod : y ∈ Function.support (fun z => (χ z : ℂ) * φ z) := by
-        simpa [φχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp] using hy
+        simpa [φχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp] using hy
       have hy_supportC : y ∈ Function.support (fun y => (χ y : ℂ)) :=
         Function.support_mul_subset_left (fun y => (χ y : ℂ)) (fun y => φ y) hy_support_prod
       have hy_support : y ∈ Function.support χ := by
@@ -1401,7 +1407,7 @@ theorem eq_zero_on_open_of_compactSupport_schwartz_integral_zero
       have hy_tsupport : y ∈ tsupport χ := subset_closure hy_support
       exact hχ_tsupport hy_tsupport
     have hzero := hint φχ hφχ_compact hφχ_support
-    simpa [φχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp, mul_assoc, mul_left_comm, mul_comm]
+    simpa [φχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp, mul_assoc, mul_left_comm, mul_comm]
       using hzero
   have hχg_cont : Continuous (fun y : E => (χ y : ℂ) * g y) :=
     (Complex.ofRealCLM.continuous.comp hχ_smooth.continuous).mul hg
@@ -1423,8 +1429,12 @@ theorem eq_zero_on_open_of_compactSupport_schwartz_integral_zero
       have hρS_compact : HasCompactSupport (ρS : E → ℂ) :=
         by simpa [ρS] using hρC_compact
       have hzero := hprod_zero ρS hρS_compact
-      simpa [ρS, smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
-        using hzero
+      have hρS_apply : ∀ y, ρS y = (ρ y : ℂ) :=
+        HasCompactSupport.toSchwartzMap_toFun hρC_compact hρC_smooth
+      convert hzero using 1
+      congr 1; ext y
+      show ↑(ρ y) * (↑(χ y) * g y) = (↑(χ y) * g y) * ρS y
+      rw [hρS_apply]; ring
     filter_upwards [hχg_ae_zero'] with y hy
     exact hy (by simp)
   have hχg_support_null : volume (Function.support fun y : E => (χ y : ℂ) * g y) = 0 := by
@@ -1603,25 +1613,25 @@ theorem eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
       refine integral_congr_ae (Filter.Eventually.of_forall ?_)
       intro y
       by_cases hyU : y ∈ U
-      · simp [gχ, fχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp, hyU, mul_assoc,
+      · simp [gχ, fχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp, hyU, mul_assoc,
           mul_comm]
       · have hy_not_tsupport : y ∉ tsupport χ := by
           intro hy_tsupport
           exact hyU (hχ_tsupport hy_tsupport)
         have hχ_zero : χ y = 0 := image_eq_zero_of_notMem_tsupport hy_not_tsupport
-        simp [gχ, fχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp, hyU, hχ_zero]
+        simp [gχ, fχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp, hyU, hχ_zero]
     have hEqh :
         ∫ y : E, hχf y * f y = ∫ y : E, h y * fχ y := by
       refine integral_congr_ae (Filter.Eventually.of_forall ?_)
       intro y
       by_cases hyU : y ∈ U
-      · simp [hχf, fχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp, hyU, mul_assoc,
+      · simp [hχf, fχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp, hyU, mul_assoc,
           mul_comm]
       · have hy_not_tsupport : y ∉ tsupport χ := by
           intro hy_tsupport
           exact hyU (hχ_tsupport hy_tsupport)
         have hχ_zero : χ y = 0 := image_eq_zero_of_notMem_tsupport hy_not_tsupport
-        simp [hχf, fχ, SchwartzMap.smulLeftCLM_apply_apply, hχ_temp, hyU, hχ_zero]
+        simp [hχf, fχ, SchwartzMap.smulLeftCLM_apply_apply hχ_temp, hyU, hχ_zero]
     calc
       ∫ y : E, gχ y * f y = ∫ y : E, g y * fχ y := hEqg
       _ = ∫ y : E, h y * fχ y := hint fχ hfχ_compact hfχ_tsupport

@@ -523,8 +523,8 @@ private theorem differentiableOn_iteratedCircleIntegral_param {m : ℕ}
       · -- F(·, snoc z' s) is differentiable on S for each s on the circle
         intro s hs
         exact hF_diff (Fin.snoc z' s) fun j =>
-          Fin.lastCases (by simp [Fin.snoc_last]; exact hs)
-            (fun k => by simp [Fin.snoc_castSucc]; exact hz' k) j
+          Fin.lastCases (by simpa [Fin.snoc_last] using hs)
+            (fun k => by simpa [Fin.snoc_castSucc] using hz' k) j
       · -- Joint continuity of (t, s) ↦ F(t, snoc z' s) on S × sphere
         show ContinuousOn
           (Function.uncurry F ∘ fun p : ℂ × ℂ => (p.1, Fin.snoc z' p.2))
@@ -536,8 +536,8 @@ private theorem differentiableOn_iteratedCircleIntegral_param {m : ℕ}
               (fun k => by simp only [Fin.snoc_castSucc]; exact continuous_const) j)).continuousOn
         · intro ⟨t, s⟩ ⟨ht, hs⟩
           exact ⟨ht, fun j => Fin.lastCases
-            (by simp only [Fin.snoc_last]; exact hs)
-            (fun k => by simp only [Fin.snoc_castSucc]; exact hz' k) j⟩
+            (by simpa only [Fin.snoc_last] using hs)
+            (fun k => by simpa only [Fin.snoc_castSucc] using hz' k) j⟩
     · -- Joint continuity: (t, z') ↦ ∮ s, F t (snoc z' s) is continuous on S × db'
       -- Strategy: restrict to subtype, use parametric interval integral continuity
       set cn := c (Fin.last n)

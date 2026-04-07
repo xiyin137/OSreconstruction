@@ -19,6 +19,8 @@ This file isolates the route-independent density / cutoff seam used in the
 - density of admissible difference shells in `ZeroDiagonalSchwartz d 2`.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open MeasureTheory Complex Topology
@@ -141,7 +143,9 @@ private theorem differenceLift_in_ZDS_implies_h_zero_at_zero
         iteratedFDeriv ℝ 0
           (((twoPointDifferenceLift χ h : SchwartzNPoint d 2) :
             NPointDomain d 2 → ℂ)) xdiag = 0 := hf 0 xdiag hxdiag
-    simpa [iteratedFDeriv_zero_eq_comp, Function.comp_apply] using hdiag
+    rw [iteratedFDeriv_zero_eq_comp, Function.comp_apply] at hdiag
+    exact
+      ((continuousMultilinearCurryFin0 ℝ (NPointDomain d 2) ℂ).symm.map_eq_zero_iff).mp hdiag
   have hmul : χ x₀ * h 0 = 0 := by
     simpa [xdiag, twoPointDifferenceLift_apply] using hdiag0
   exact (mul_eq_zero.mp hmul).resolve_left hx₀

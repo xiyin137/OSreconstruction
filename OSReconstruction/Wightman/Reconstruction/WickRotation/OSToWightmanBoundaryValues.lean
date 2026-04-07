@@ -4,13 +4,17 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesCompactApprox
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesEuclidean
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
 /-!
 # OS to Wightman Boundary Values and Transfers
 
-Public frontier for the boundary-value transfer layer after the large support
-infrastructure now lives across `OSToWightmanBoundaryValuesBase.lean` and `OSToWightmanBoundaryValuesComparison.lean`.
+Public frontier for the boundary-value transfer layer. The valid support
+infrastructure now lives across `OSToWightmanBoundaryValuesBase.lean` and the
+slimmed `OSToWightmanBoundaryValuesComparison.lean`.
 -/
 
 open scoped Classical NNReal
@@ -249,6 +253,14 @@ private theorem bvt_F_reflectCanonical
           ↑(x (Fin.rev k) μ) +
             ε * ↑(η k μ) * Complex.I) := hperm
 
+/-- Theorem 1 frontier: Lorentz covariance of the Wick-section pairing.
+
+OS paper target:
+- OS II Theorem 4.1, p. 288 (real analyticity from `E0`, `E1`, `E2`)
+- OS II Chapter V.1, pp. 290-293, especially `(5.5)`-`(5.7)` on p. 291
+
+This sorry is the Wick-section Lorentz-covariance step on the active OS route.
+It is not a same-shell comparison between Euclidean and Minkowski functionals. -/
 private theorem bvt_F_lorentz_ortho_wick
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -265,8 +277,77 @@ private theorem bvt_F_lorentz_ortho_wick
         ∫ x : NPointDomain d n,
             bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
               (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) := by
-  sorry
+  intro n Λ φ _hφ_compact hφ_tsupport
+  have hφ_coeff :
+      (ZeroDiagonalSchwartz.ofClassical φ).1 = φ :=
+    ZeroDiagonalSchwartz.coe_ofClassical_of_tsupport_subset_wickForwardTubeSection
+      (d := d) (n := n) φ hφ_tsupport
+  let Γ := wightmanToLorentzGroup (Λ⁻¹)
+  have hpoint :
+      ∀ x : NPointDomain d n,
+        x ∈ tsupport (φ : NPointDomain d n → ℂ) →
+          bvt_F OS lgc n (fun k μ =>
+            ∑ ν, (↑((Λ⁻¹).val μ ν) : ℂ) * wickRotatePoint (x k) ν) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+    intro x hx
+    have hx_ft : (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n := hφ_tsupport hx
+    have hF_holo_BHW :
+        DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using bvt_F_holomorphic OS lgc n
+    have hF_dist_BHW :
+        ∀ (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
+          (hdet : R.det = 1) (horth : R.transpose * R = 1)
+          (ψ : SchwartzNPoint d n),
+            HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+            tsupport (ψ : NPointDomain d n → ℂ) ⊆
+              {x : NPointDomain d n |
+                (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n ∧
+                  BHW.complexLorentzAction
+                    (ComplexLorentzGroup.ofEuclidean R hdet horth)
+                    (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n} →
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n
+                  (BHW.complexLorentzAction
+                    (ComplexLorentzGroup.ofEuclidean R hdet horth)
+                    (fun k => wickRotatePoint (x k))) * ψ x
+              =
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * ψ x := by
+      intro R hdet horth ψ hψ_compact hψ_tsupport
+      refine bvt_F_ofEuclidean_wick_pairing (d := d) OS lgc n R hdet horth ψ hψ_compact ?_
+      intro x hx
+      rcases hψ_tsupport hx with ⟨hx0, hx1⟩
+      constructor
+      · simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx0
+      · simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx1
+    have hx_ft_BHW : (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n := by
+      simpa [BHW_forwardTube_eq (d := d) (n := n)] using hx_ft
+    have hΓ :=
+      BHW.Task5Bridge.real_lorentz_invariance_from_euclidean_distributional
+        (d := d) n
+        (bvt_F OS lgc n)
+        hF_holo_BHW
+        hF_dist_BHW
+        Γ (fun k => wickRotatePoint (x k)) hx_ft_BHW
+    simpa [Γ, wightmanToLorentzGroup, lorentzGroupEquiv_symm_val] using hΓ
+  refine MeasureTheory.integral_congr_ae ?_
+  exact Filter.Eventually.of_forall fun x => by
+    by_cases hx : x ∈ tsupport (φ : NPointDomain d n → ℂ)
+    · simp [hpoint x hx]
+    · have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx
+      have hφ0 :
+          (((ZeroDiagonalSchwartz.ofClassical φ).1 : NPointDomain d n → ℂ) x) = 0 := by
+        simpa [hφ_coeff] using hφx
+      simp [hφ0]
 
+/-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
+
+OS paper target:
+- OS I Section 4.5 "Locality", pp. 104-105
+- OS II IV.2, p. 288, which says the remaining Wightman axioms are established
+  as in Sections 4.2-4.5 of OS I
+
+This sorry is the locality transfer step on the boundary-value route. -/
 private theorem bvt_F_swapCanonical_pairing
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -285,6 +366,18 @@ private theorem bvt_F_swapCanonical_pairing
             ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
   sorry
 
+/-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
+
+OS paper target:
+- OS I Section 4.3 "Positivity", pp. 102-103
+- OS II IV.2, p. 288, reducing the remaining Wightman axioms to the OS I
+  arguments after continuation
+
+Current active substep on the repo's OS route:
+- OS II Theorem 4.3, p. 289, together with Chapter VI.1, pp. 297-298
+
+This sorry is the OS-isometry / boundary-value identification step, not any
+same-test-function equality `W_n(f) = S_n(f)`. -/
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -292,6 +385,16 @@ private theorem bvt_W_positive
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
   sorry
 
+/-- Theorem 4 frontier: cluster transfer for the canonical BV pairing.
+
+OS paper target:
+- OS I Section 4.4 "Cluster Property", p. 103
+- OS II IV.2, p. 288, which delegates the remaining Wightman axioms to
+  Sections 4.2-4.5 of OS I after the continuation step
+
+This sorry is downstream of the continuation/boundary-value route and should be
+proved by the OS cluster/isometry logic, not by any deleted same-shell
+comparison route. -/
 private theorem bvt_F_clusterCanonicalEventually_translate
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -628,7 +731,8 @@ theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    IsPositiveDefinite d (bvt_W OS lgc) := by
+    ∀ F : BorchersSequence d,
+      0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re := by
   exact bvt_W_positive (d := d) OS lgc
 
 theorem bvt_hermitian (OS : OsterwalderSchraderAxioms d)
@@ -665,6 +769,189 @@ theorem bvt_hermitian (OS : OsterwalderSchraderAxioms d)
     (bvt_boundary_values OS lgc n)
     (hF_reflect_pairing n)
     f g hfg
+
+theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact :
+      ∀ n,
+        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)))
+    (hWlimit :
+      ∀ n m (hm : 0 < m),
+        Filter.Tendsto
+          (fun t : ℝ =>
+            ∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                  (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                    (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+                ((((F : BorchersSequence d).funcs n).osConjTensorProduct
+                  ((F : BorchersSequence d).funcs m)) y))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (bvt_W OS lgc (n + m)
+              ((((F : BorchersSequence d).funcs n).conjTensorProduct
+                ((F : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShift_nhdsWithin_zero_of_hermitian
+      (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact
+      hWlimit
+
+/-- Theorem 3 restated on the chosen scalar holomorphic `singleSplit_xiShift`
+trace.
+
+OS paper target:
+- OS I Section 4.3 "Positivity", pp. 102-103
+- OS II Theorem 4.3, p. 289
+- OS II Chapter VI.1, pp. 297-298 for the current regularization / boundary-value
+  substep
+
+The OS/Schwinger side of this limit is already packaged in
+`OSToWightmanBoundaryValueLimits`; the remaining content is the Wightman-side
+boundary-value identification of that same scalar holomorphic function. -/
+theorem bvt_positiveTime_self_nonneg_of_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact :
+      ∀ n,
+        HasCompactSupport ((((F : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)))
+    (hHlimit :
+      ∀ n m (hm : 0 < m),
+        Filter.Tendsto
+          (fun t : ℝ =>
+            bvt_singleSplit_xiShiftHolomorphicValue
+              (d := d) OS lgc hm
+              (((F : BorchersSequence d).funcs n))
+              (F.ordered_tsupport n)
+              (hF_compact n)
+              (((F : BorchersSequence d).funcs m))
+              (F.ordered_tsupport m)
+              (hF_compact m) (t : ℂ))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (bvt_W OS lgc (n + m)
+              ((((F : BorchersSequence d).funcs n).conjTensorProduct
+                ((F : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
+      (d := d) (OS := OS) (lgc := lgc) (bvt_hermitian (d := d) OS lgc) F hF_compact hHlimit
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hHlimit :
+      ∀ N : ℕ,
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N
+        ∀ n m (hm : 0 < m),
+          Filter.Tendsto
+            (fun t : ℝ =>
+              bvt_singleSplit_xiShiftHolomorphicValue
+                (d := d) OS lgc hm
+                (((F_N : BorchersSequence d).funcs n))
+                (F_N.ordered_tsupport n)
+                (compactApproxPositiveTimeBorchers_component_compact F N n)
+                (((F_N : BorchersSequence d).funcs m))
+                (F_N.ordered_tsupport m)
+                (compactApproxPositiveTimeBorchers_component_compact F N m) (t : ℂ))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds
+              (bvt_W OS lgc (n + m)
+                ((((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                  ((F_N : BorchersSequence d).funcs m)))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_tendsto_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hHlimit
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_timeShift_eq_osInner
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hkernel :
+      ∀ N (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          WightmanInnerProduct d (bvt_W OS lgc)
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))
+          =
+          OSInnerProduct d OS.S
+            (F_N : BorchersSequence d)
+            (timeShiftBorchers (d := d) t (F_N : BorchersSequence d))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_timeShift_eq_osInner
+      (d := d) OS lgc F hkernel
+
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hreal :
+      ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm
+            (((F_N : BorchersSequence d).funcs n))
+            (F_N.ordered_tsupport n)
+            (compactApproxPositiveTimeBorchers_component_compact F N n)
+            (((F_N : BorchersSequence d).funcs m))
+            (F_N.ordered_tsupport m)
+            (compactApproxPositiveTimeBorchers_component_compact F N m) (t : ℂ)
+          =
+            (bvt_W OS lgc (n + m)
+              (((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t
+                  ((F_N : BorchersSequence d).funcs m))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_ofReal_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hreal
+
+/-
+Deprecated route note:
+
+The hypothesis `hschw` below is mathematically false on the intended theorem
+surface. The left-hand side is the Euclidean/OS time-shifted Schwinger pairing,
+whose free-field momentum-space form carries the Laplace factor `e^{-ω_p t}`;
+the right-hand side is the reconstructed Wightman boundary-value pairing
+against a real Minkowski time translation, whose free-field momentum-space form
+carries the oscillatory factor `e^{-i ω_p t}`.
+
+So this theorem is a logically valid implication from a false premise. It
+remains harmless compiled legacy infrastructure, but it is no longer part of
+the endorsed theorem-3 route. -/
+theorem bvt_positiveTime_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : PositiveTimeBorchersSequence d)
+    (hschw :
+      ∀ N n m (hm : 0 < m) (t : ℝ), 0 < t →
+        let F_N : PositiveTimeBorchersSequence d := compactApproxPositiveTimeBorchers F N;
+          OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+            ((((F_N : BorchersSequence d).funcs n).osConjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) t
+                ((F_N : BorchersSequence d).funcs m)))))
+          =
+            (bvt_W OS lgc (n + m)
+              (((F_N : BorchersSequence d).funcs n).conjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t
+                  ((F_N : BorchersSequence d).funcs m))))) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc)
+      (F : BorchersSequence d) (F : BorchersSequence d)).re := by
+  exact
+    bvt_wightmanInner_self_nonneg_of_compactApprox_componentwise_schwinger_eq_bvt_W_conjTensorProduct_timeShift_of_hermitian
+      (d := d) OS lgc (bvt_hermitian (d := d) OS lgc) F hschw
 
 theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :

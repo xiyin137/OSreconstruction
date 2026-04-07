@@ -11,6 +11,8 @@ import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 import Mathlib.Analysis.Distribution.TemperedDistribution
 import Mathlib.Analysis.SpecialFunctions.SmoothTransition
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open scoped Classical LineDeriv Topology ContDiff

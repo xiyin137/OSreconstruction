@@ -135,7 +135,8 @@ theorem functionalCalculus_norm_sq (P : SpectralMeasure H) (f : ℝ → ℂ)
   -- Pull re inside the integral, then re(↑r) = r
   have hint : Integrable (fun t => (↑(‖f t‖ ^ 2) : ℂ)) (P.diagonalMeasure x) :=
     (hff_int x).congr (Eventually.of_forall h6)
-  rw [← integral_re hint]
+  conv_lhs => rw [show RCLike.re (∫ t, (↑(‖f t‖ ^ 2) : ℂ) ∂P.diagonalMeasure x) =
+    ∫ t, RCLike.re (↑(‖f t‖ ^ 2) : ℂ) ∂P.diagonalMeasure x from (integral_re hint).symm]
   congr 1
 
 /-! ### Simplified norm-squared identity -/

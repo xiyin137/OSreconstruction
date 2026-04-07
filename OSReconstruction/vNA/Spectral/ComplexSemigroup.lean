@@ -346,7 +346,9 @@ private theorem spectralSemigroupComplex_inner_diag_eq
   have hfIm_int : Integrable (fun y : spectrum ℝ A => Complex.I * (↑(specSemiFIm z ↑y) : ℂ)) μ :=
     (continuous_const.mul (Complex.continuous_ofReal.comp hfIm_cont.restrict)).integrable_of_hasCompactSupport
       (HasCompactSupport.of_compactSpace _)
-  rw [← MeasureTheory.integral_const_mul, ← integral_add hfRe_int hfIm_int]
+  rw [show Complex.I * ∫ (y : spectrum ℝ A), (↑(specSemiFIm z ↑y) : ℂ) ∂μ =
+    ∫ (y : spectrum ℝ A), Complex.I * (↑(specSemiFIm z ↑y) : ℂ) ∂μ from
+    (MeasureTheory.integral_const_mul _ _).symm, ← integral_add hfRe_int hfIm_int]
   -- Now: ∫ (↑fRe + I * ↑fIm) dμ_spec = selfAdjointSpectralLaplaceDiagonal
   exact combined_integral_eq_laplace A hA hspec v z hz
 

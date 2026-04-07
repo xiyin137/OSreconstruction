@@ -3,6 +3,7 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
+import OSReconstruction.Mathlib429Compat
 import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
 import OSReconstruction.ComplexLieGroups.D1OrbitSet
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
@@ -20,6 +21,8 @@ permutation symmetry, reality, and clustering.
 -/
 
 open scoped Classical
+
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 

@@ -73,7 +73,8 @@ def sliceIntegralRaw {n : ℕ} {V : Type*} [NormedAddCommGroup V] [NormedSpace �
     (φ : SchwartzMap ℝ ℂ) (g : SchwartzMap (Fin n → ℝ) ℂ) (y : Fin n → ℝ) :
     sliceIntegralRaw (φ.prependField g) y =
       (∫ x : ℝ, φ x) * g y := by
-  simp [sliceIntegralRaw, SchwartzMap.prependField_apply, MeasureTheory.integral_mul_const]
+  simp only [sliceIntegralRaw, SchwartzMap.prependField_apply]
+  exact MeasureTheory.integral_mul_const (g y) (fun x => φ x)
 
 /-- Fubini for the raw slice integral. Integrating first in the head variable
 and then in the tail variables recovers the full integral on `Fin (n+1) → ℝ`.
@@ -1119,7 +1120,7 @@ theorem sliceIntegral_smul {n : ℕ}
   ext y
   simp only [sliceIntegral_apply, sliceIntegralRaw]
   change ∫ x : ℝ, c * F (Fin.cons x y) = c * ∫ x : ℝ, F (Fin.cons x y)
-  rw [MeasureTheory.integral_const_mul]
+  exact MeasureTheory.integral_const_mul c _
 
 @[simp] theorem sliceIntegral_prependField {n : ℕ}
     (φ : SchwartzMap ℝ ℂ) (g : SchwartzMap (Fin n → ℝ) ℂ) :
@@ -1691,12 +1692,10 @@ theorem contDiff_intervalPiece {n : ℕ}
                   ((ContinuousLinearMap.proj (R := ℝ) (ι := Fin (n + 1)) (φ := fun _ => ℝ) 0).smulRight (F x) +
                       ((∫ t in (0 : ℝ)..(x 0), φ t).comp (tailCLM n (E := ℝ)))) y
                       = (y 0 : ℝ) • F x + (∫ t in (0 : ℝ)..(x 0), φ t) (Fin.tail y) := by
-                          simp [ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.comp_apply,
+                          simp only [ContinuousLinearMap.smulRight_apply, ContinuousLinearMap.comp_apply,
+                            ContinuousLinearMap.add_apply, ContinuousLinearMap.proj_apply,
                             tailCLM_apply]
-                          have htailfun : (fun i => y i.succ) = Fin.tail y := by
-                            ext i
-                            rfl
-                          rw [htailfun]
+                          congr 1
                   _ = (y 0 : ℝ) • F x + ∫ t in (0 : ℝ)..(x 0), (φ t) (Fin.tail y) := by
                           rw [ContinuousLinearMap.intervalIntegral_apply hφ_int (Fin.tail y)]
                   _ = (y 0 : ℝ) • F x + intervalPiece dF x := by
@@ -2520,6 +2519,7 @@ theorem fderiv_fiberwiseAntiderivRaw_eq_sum {n : ℕ}
     (fun i : Fin n => (h i.succ) • fiberwiseAntiderivRaw (∂_{(tailInsertCLM n
       (Pi.single i (1 : ℝ)) : Fin (n + 1) → ℝ)} F) x)
     from Finset.sum_congr rfl (fun i _ => fiberwiseAntiderivRaw_smul _ _ _)]
+  rfl
 
 /-- Full Schwartz decay for the raw fiberwise antiderivative under the
 zero-slice condition. -/

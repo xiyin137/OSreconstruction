@@ -546,27 +546,20 @@ def parity : LorentzGroup d := ⟨
   by
     -- Pᵀ η P = P η P (since P diagonal) = η because Pᵢᵢ² ηᵢᵢ = ηᵢᵢ
     -- Key: P = -η, so Pᵀ η P = (-η) η (-η) = η η η = η
-    unfold IsLorentzMatrix minkowskiMatrix MinkowskiSpace.metricSignature
-    -- P = -η in the mostly positive convention
-    have hP : diagonal (fun i => if i = 0 then (1 : ℝ) else -1) =
-        -diagonal (MinkowskiSpace.metricSignature d) := by
-      ext i j
-      simp only [diagonal_apply, MinkowskiSpace.metricSignature, neg_apply]
-      by_cases hi : i = j
-      · subst hi; by_cases h0 : i = 0 <;> simp [h0]
-      · simp [hi]
-    rw [hP]
-    simp only [transpose_neg, diagonal_transpose, neg_mul, mul_neg, neg_neg]
-    -- Now: η η η = η
-    calc diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d)
-        = (diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d)) *
-           diagonal (MinkowskiSpace.metricSignature d) := by noncomm_ring
-      _ = 1 * diagonal (MinkowskiSpace.metricSignature d) := by
-          rw [← MinkowskiMatrix.mul_self d]; rfl
-      _ = diagonal (MinkowskiSpace.metricSignature d) := one_mul _⟩
+    show (diagonal (fun i => if i = 0 then (1 : ℝ) else -1))ᵀ *
+        minkowskiMatrix d * diagonal (fun i => if i = 0 then 1 else -1) = minkowskiMatrix d
+    ext i j
+    simp only [minkowskiMatrix, diagonal_transpose, diagonal_mul_diagonal, Matrix.mul_apply,
+      diagonal_apply, MinkowskiSpace.metricSignature]
+    by_cases hij : i = j
+    · subst hij
+      simp only [↓reduceIte, Finset.sum_ite_eq', Finset.mem_univ]
+      by_cases h0 : i = 0 <;> simp [h0]
+    · simp only [hij, ↓reduceIte]
+      apply Finset.sum_eq_zero; intro k _
+      by_cases hik : i = k
+      · subst hik; simp [hij]
+      · simp [hik]⟩
 
 /-- Time reversal: T = diag(-1, +1, +1, ..., +1)
     Action: (t, x) ↦ (-t, x). Flips time, keeps spatial coordinates.
@@ -575,23 +568,20 @@ def timeReversal : LorentzGroup d := ⟨
   diagonal (fun i => if i = 0 then -1 else 1),
   by
     -- T = η, so Tᵀ η T = η η η = η (since η² = 1)
-    unfold IsLorentzMatrix minkowskiMatrix MinkowskiSpace.metricSignature
-    have heq : diagonal (fun i => if i = 0 then -1 else (1 : ℝ)) =
-        diagonal (MinkowskiSpace.metricSignature d) := by
-      ext i j
-      simp only [diagonal_apply, MinkowskiSpace.metricSignature]
-    rw [heq]
-    -- Now need ηᵀ η η = η, i.e., η η η = η (since ηᵀ = η)
-    simp only [diagonal_transpose]
-    calc diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d)
-        = (diagonal (MinkowskiSpace.metricSignature d) *
-           diagonal (MinkowskiSpace.metricSignature d)) *
-           diagonal (MinkowskiSpace.metricSignature d) := by noncomm_ring
-      _ = 1 * diagonal (MinkowskiSpace.metricSignature d) := by
-          rw [← MinkowskiMatrix.mul_self d]; rfl
-      _ = diagonal (MinkowskiSpace.metricSignature d) := one_mul _⟩
+    show (diagonal (fun i => if i = 0 then (-1 : ℝ) else 1))ᵀ *
+        minkowskiMatrix d * diagonal (fun i => if i = 0 then -1 else 1) = minkowskiMatrix d
+    ext i j
+    simp only [minkowskiMatrix, diagonal_transpose, diagonal_mul_diagonal, Matrix.mul_apply,
+      diagonal_apply, MinkowskiSpace.metricSignature]
+    by_cases hij : i = j
+    · subst hij
+      simp only [↓reduceIte, Finset.sum_ite_eq', Finset.mem_univ]
+      by_cases h0 : i = 0 <;> simp [h0]
+    · simp only [hij, ↓reduceIte]
+      apply Finset.sum_eq_zero; intro k _
+      by_cases hik : i = k
+      · subst hik; simp [hij]
+      · simp [hik]⟩
 
 @[simp] theorem timeReversal_mul_timeReversal :
     timeReversal (d := d) * timeReversal (d := d) = 1 := by
@@ -655,8 +645,9 @@ theorem orthochronous_or_timeReversal_mul_orthochronous (Λ : LorentzGroup d) :
     Action: (t, x) ↦ (-t, -x). -/
 theorem parity_mul_timeReversal : parity (d := d) * timeReversal = ⟨-1, by
     -- (-I)ᵀ η (-I) = I η I = η
-    unfold IsLorentzMatrix
-    simp only [transpose_neg, transpose_one, neg_mul, one_mul, mul_neg, mul_one, neg_neg]⟩ := by
+    show (-1)ᵀ * minkowskiMatrix d * (-1) = minkowskiMatrix d
+    simp only [transpose_neg, transpose_one, neg_mul, one_mul, mul_neg, mul_one]
+    exact neg_neg (minkowskiMatrix d)⟩ := by
   ext i j
   -- Unfold and compute the matrix product
   unfold parity timeReversal

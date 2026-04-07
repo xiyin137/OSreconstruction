@@ -687,7 +687,8 @@ theorem bv_reality_pattern {α : Type*} [MeasurableSpace α] (μ : Measure α)
     (hF_reflect : ∀ᵐ x ∂μ, starRingEnd ℂ (F x) = F (Ψ x)) :
     starRingEnd ℂ (∫ x, F x * f x ∂μ) =
       ∫ x, F x * starRingEnd ℂ (f (Ψ x)) ∂μ := by
-  rw [← integral_conj]
+  conv_lhs => rw [show starRingEnd ℂ (∫ x, F x * f x ∂μ) =
+    ∫ x, starRingEnd ℂ (F x * f x) ∂μ from integral_conj.symm]
   have step1 : (fun x => starRingEnd ℂ (F x * f x)) =ᵐ[μ]
       fun x => F (Ψ x) * starRingEnd ℂ (f x) := by
     filter_upwards [hF_reflect] with x hx
@@ -975,10 +976,12 @@ theorem eq_zero_of_schwartz_integral_zero {m : ℕ}
       have heval : ∀ x, φ_schwartz x = (φ x : ℂ) :=
         HasCompactSupport.toSchwartzMap_toFun hφC_compact hφC_smooth
       have h := hint φ_schwartz
-      rw [show (∫ x, φ x • g x) = ∫ x, g x * φ_schwartz x from ?_]
-      · exact h
-      · congr 1; ext x
-        rw [heval, Complex.real_smul, mul_comm]
+      convert h using 1
+      congr 1 with x
+      rw [heval x]
+      show φ x • g x = g x * ↑(φ x)
+      rw [show (φ x : ℝ) • (g x : ℂ) = (↑(φ x) : ℂ) * g x from Complex.real_smul]
+      exact mul_comm _ _
   -- Step 3: Upgrade ae to pointwise via continuity
   have h_eq : g = fun _ => 0 :=
     MeasureTheory.Measure.eq_of_ae_eq hae hg continuous_const

@@ -14,6 +14,8 @@ This file contains the proved support infrastructure for the honest OS II Sectio
 The small frontier file `K2VI1/Frontier.lean` should remain the only place where the surviving VI.1 `sorry`s live.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Complex Topology MeasureTheory
@@ -730,7 +732,7 @@ theorem integral_eq_integral_withDensity_ofReal_weight_local
   · apply integral_congr_ae
     filter_upwards with p
     rw [ENNReal.toReal_ofReal (hw_nonneg p)]
-    simp [smul_eq_mul, mul_comm]
+    simpa [smul_eq_mul, mul_comm]
   · exact ENNReal.measurable_ofReal.comp hw_meas
   · exact Filter.Eventually.of_forall fun p => by simp
 
@@ -4356,6 +4358,16 @@ theorem exists_descended_center_translate_uniform_error_bound_local
           χ_seq n u *
             ((SCV.translateSchwartz (-u) (h : SchwartzSpacetime d)) ξ -
               (h : SchwartzSpacetime d) ξ) := by
+    have hconst_int :
+        ∫ u : SpacetimeDim d, ((h : SchwartzSpacetime d) ξ) * χ_seq n u =
+          (h : SchwartzSpacetime d) ξ := by
+      calc
+        ∫ u : SpacetimeDim d, ((h : SchwartzSpacetime d) ξ) * χ_seq n u
+            = ((h : SchwartzSpacetime d) ξ) * ∫ u : SpacetimeDim d, χ_seq n u := by
+                exact
+                  MeasureTheory.integral_const_mul ((h : SchwartzSpacetime d) ξ)
+                    (fun u : SpacetimeDim d => χ_seq n u)
+        _ = (h : SchwartzSpacetime d) ξ := by simpa [hχ_seq_int n]
     calc
       (∫ u : SpacetimeDim d,
           χ_seq n u * (SCV.translateSchwartz (-u) (h : SchwartzSpacetime d)) ξ) -
@@ -4364,8 +4376,7 @@ theorem exists_descended_center_translate_uniform_error_bound_local
         (∫ u : SpacetimeDim d,
             χ_seq n u * (SCV.translateSchwartz (-u) (h : SchwartzSpacetime d)) ξ) -
           ∫ u : SpacetimeDim d, ((h : SchwartzSpacetime d) ξ) * χ_seq n u := by
-              rw [MeasureTheory.integral_const_mul, hχ_seq_int n]
-              ring
+              rw [hconst_int]
       _ =
         ∫ u : SpacetimeDim d,
           (χ_seq n u * (SCV.translateSchwartz (-u) (h : SchwartzSpacetime d)) ξ -
@@ -4495,11 +4506,18 @@ theorem descended_center_package_integral_tendsto_of_continuousAt_zero_local
   have hEqInt :
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0 =
         ∫ x : SpacetimeDim d, χ_seq n x * (ψ x - ψ 0) := by
+    have hconst_int :
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x = ψ 0 := by
+      calc
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x
+            = (ψ 0) * ∫ x : SpacetimeDim d, χ_seq n x := by
+                exact MeasureTheory.integral_const_mul (ψ 0) (fun x : SpacetimeDim d => χ_seq n x)
+        _ = ψ 0 := by simpa [hχ_int n]
     calc
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0
-          = (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x := by
-              rw [MeasureTheory.integral_const_mul, hχ_int n]
-              ring
+          = (∫ x : SpacetimeDim d, χ_seq n x * ψ x) -
+              ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x := by
+                rw [hconst_int]
       _ = ∫ x : SpacetimeDim d, ((χ_seq n x * ψ x) - (ψ 0) * χ_seq n x) := by
             rw [← MeasureTheory.integral_sub hIntProd ((SchwartzMap.integrable (χ_seq n)).const_mul (ψ 0))]
       _ = ∫ x : SpacetimeDim d, χ_seq n x * (ψ x - ψ 0) := by
@@ -4716,12 +4734,18 @@ theorem descended_center_approxIdentity_integral_tendsto_of_continuousAt_zero_lo
   have hEqInt :
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0 =
         ∫ x : SpacetimeDim d, χ_seq n x * (ψ x - ψ 0) := by
+    have hconst_int :
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x = ψ 0 := by
+      calc
+        ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x
+            = (ψ 0) * ∫ x : SpacetimeDim d, χ_seq n x := by
+                exact MeasureTheory.integral_const_mul (ψ 0) (fun x : SpacetimeDim d => χ_seq n x)
+        _ = ψ 0 := by simpa [hχ_seq_int n]
     calc
       (∫ x : SpacetimeDim d, χ_seq n x * ψ x) - ψ 0
           = (∫ x : SpacetimeDim d, χ_seq n x * ψ x) -
               ∫ x : SpacetimeDim d, (ψ 0) * χ_seq n x := by
-                rw [MeasureTheory.integral_const_mul, hχ_seq_int n]
-                ring
+                rw [hconst_int]
       _ = ∫ x : SpacetimeDim d, ((χ_seq n x * ψ x) - (ψ 0) * χ_seq n x) := by
             rw [← MeasureTheory.integral_sub hIntProd
               ((SchwartzMap.integrable (χ_seq n)).const_mul (ψ 0))]

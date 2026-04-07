@@ -14,6 +14,8 @@ Base definitions (tube domains, coordinate helpers) are in
 `OSToWightmanBase.lean`.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Complex Topology MeasureTheory

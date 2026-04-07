@@ -2,6 +2,7 @@ import OSReconstruction.Wightman.Reconstruction.Core
 import OSReconstruction.Wightman.Reconstruction.SliceIntegral
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.MeasureTheory.Integral.Pi
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
 
 /-!
 # Block Integration on Schwartz Space
@@ -541,7 +542,8 @@ theorem sliceIntegral_reindex_smulTail {m n : ℕ}
     rw [reindexSchwartzFin_apply, SchwartzMap.smulLeftCLM_apply_apply htempSucc,
       splitLast_castFinCLE_succ_add_symm_cons (m := m) (n := n) t x]
     simp [reindexSchwartzFin_apply]
-  rw [hfun, smul_eq_mul, MeasureTheory.integral_const_mul]
+  rw [hfun, smul_eq_mul]
+  exact MeasureTheory.integral_const_mul _ _
 
 /-- Block integration commutes with multiplying by a tail-only Schwartz factor.
 This upgrades the one-step slice statement to the full iterated head-block
@@ -606,7 +608,7 @@ theorem sliceIntegral_reindex_tensorProduct {m n : ℕ}
     rw [reindexSchwartzFin_apply, SchwartzMap.tensorProduct_apply]
     rw [splitFirst_castFinCLE_succ_add_symm_cons (m := m) (n := n) t x,
       splitLast_castFinCLE_succ_add_symm_cons (m := m) (n := n) t x]
-  rw [hleft, MeasureTheory.integral_mul_const]
+  rw [hleft]; exact MeasureTheory.integral_mul_const _ _
 
 /-- Integrating out the full left block of a tensor product leaves the right
 tensor factor, scaled by the total integral of the left factor. -/

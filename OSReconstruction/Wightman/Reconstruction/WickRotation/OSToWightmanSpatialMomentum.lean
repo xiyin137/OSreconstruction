@@ -21,6 +21,8 @@ mathematical gaps on the OS/Stone route:
 - strong continuity on the Hilbert completion.
 -/
 
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open MeasureTheory Complex
@@ -1053,7 +1055,7 @@ private theorem bumpTruncationRadiusNPoint_eq_unflatten {n : ℕ}
   rw [SchwartzMap.smulLeftCLM_apply_apply (by fun_prop)]
   simp [unitBallBumpSchwartzNPointRadius, flattenSchwartzNPoint_apply]
 
-private def compactApproxPositiveTimeBorchers
+def compactApproxPositiveTimeBorchers
     (F : PositiveTimeBorchersSequence d) (N : ℕ) :
     PositiveTimeBorchersSequence d where
   toBorchersSequence :=
@@ -1086,7 +1088,7 @@ private def compactApproxPositiveTimeBorchers
       bumpTruncationRadiusNPoint (d := d)
         (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) N := rfl
 
-private theorem compactApproxPositiveTimeBorchers_component_compact
+theorem compactApproxPositiveTimeBorchers_component_compact
     (F : PositiveTimeBorchersSequence d) (N n : ℕ) :
     HasCompactSupport
       ((((compactApproxPositiveTimeBorchers F N : PositiveTimeBorchersSequence d) :
@@ -1108,7 +1110,7 @@ private theorem compactApproxPositiveTimeBorchers_component_compact
   rw [bumpTruncationRadiusNPoint_eq_unflatten (d := d)]
   simpa using hflat.comp_homeomorph (flattenCLEquivReal n (d + 1)).toHomeomorph
 
-private theorem tendsto_compactApproxPositiveTimeBorchers_component
+theorem tendsto_compactApproxPositiveTimeBorchers_component
     (F : PositiveTimeBorchersSequence d) (n : ℕ) :
     Filter.Tendsto
       (fun N : ℕ =>
@@ -1477,7 +1479,7 @@ private theorem tendsto_osSpatialTranslateHilbert_axis_nhds_zero
       have hcore_event :
           ∀ᶠ t : ℝ in nhds 0,
             ‖(osSpatialTranslateLinear (d := d) OS (t • v) xF0_pre) - xF0_pre‖ < ε / 5 := by
-        simpa [xF0_pre, Real.dist_eq] using (Metric.tendsto_nhds.1 hcore (ε / 5) hε5)
+        simpa [xF0_pre, dist_eq_norm] using (Metric.tendsto_nhds.1 hcore (ε / 5) hε5)
       filter_upwards [hcore_event] with t ht
       rw [dist_eq_norm] at hy_close ⊢
       have hfirst :

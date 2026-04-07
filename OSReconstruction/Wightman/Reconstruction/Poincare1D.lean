@@ -3,6 +3,7 @@ import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
+import OSReconstruction.Mathlib429Compat
 
 /-!
 # 1D Poincare Lemma for Schwartz Space
@@ -125,7 +126,8 @@ lemma schwartz_decay_iteratedDeriv (f : SchwartzMap ℝ ℂ) (k n : ℕ) :
 
 theorem schwartz_poly_integrable_Ioi (f : SchwartzMap ℝ ℂ) (k : ℕ) (x : ℝ) :
     IntegrableOn (fun t => (‖t‖ ^ k : ℝ) • (f : ℝ → ℂ) t) (Ioi x) volume := by
-  rw [IntegrableOn, ← integrable_norm_iff (by fun_prop)]
+  rw [IntegrableOn, ← integrable_norm_iff
+    ((continuous_norm.pow k |>.smul f.continuous).aestronglyMeasurable)]
   simpa [norm_smul, Real.norm_eq_abs, abs_of_nonneg (pow_nonneg (norm_nonneg _) _),
     mul_comm, mul_left_comm, mul_assoc] using
     (f.integrable_pow_mul volume k).integrableOn
