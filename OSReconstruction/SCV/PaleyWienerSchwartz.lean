@@ -636,25 +636,15 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
     refine ⟨1, 0, 0, one_pos, fun z hz ξ => ?_⟩
     sorry -- degenerate case: Cᶜ = ∅ implies Subsingleton (Fin m → ℝ), bound is trivial
   · -- ── Main case: Cᶜ ≠ ∅ ──
-    -- Fix the canonical cone cutoff
     let χ := (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
-    -- Get uniform coercivity in terms of boundary distance
     obtain ⟨c₀, hc₀_pos, hc₀⟩ := dualConeFlat_coercivity_infDist hC_open hC_cone
     let K : ℝ := (Fintype.card (Fin m) : ℝ) ^ 2
-    -- A₀ bounds exp(A*R) universally: with R = (1+‖y‖)⁻¹,
-    -- (c₀*d + K*‖y‖)*R ≤ c₀ + K since d*R ≤ 1 and ‖y‖*R ≤ 1
     let A₀ : ℝ := c₀ + K + 1
-    -- Get the Schwartz seminorm bound with explicit c-dependence (quantified over c)
     obtain ⟨Bexp, hBexp_pos, hBexp⟩ :=
       schwartz_seminorm_cutoff_exp_bound_affine_uniform_explicit_uniform
         χ.val χ.smooth χ.deriv_bound A₀ k n
-    -- ── Witnesses for the existentials ──
-    -- The bound structure is: Bexp * (c₀*d)⁻ᵏ * (1+‖z‖)^{n+k} * (card+1)^n
-    -- Rearranging: (c₀*d)⁻ᵏ ≤ c₀⁻ᵏ * d⁻ᵏ ≤ c₀⁻ᵏ * (1 + d⁻¹)^k
-    -- So B = Bexp * c₀⁻ᵏ * (card+1)^n, N = n+k, M = k
     let B : ℝ := Bexp * c₀⁻¹ ^ k * ((Fintype.card (Fin m) : ℝ) + 1) ^ n + 1
-    refine ⟨B, n + k, k, by positivity, fun z hz ξ => ?_⟩
-    -- ── Setup for this particular z ──
+    refine ⟨B, n, k, by positivity, fun z hz ξ => ?_⟩
     let y : Fin m → ℝ := fun i => (z i).im
     have hy : y ∈ C := hz
     let d : ℝ := Metric.infDist y Cᶜ
@@ -669,63 +659,15 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
     have hc_y : ∀ ξ' ∈ DualConeFlat C, ∑ i, y i * ξ' i ≥ (c₀ * d) * ‖ξ'‖ := by
       intro ξ' hξ'; linarith [hc₀ y hy ξ' hξ']
     have hcd_pos : 0 < c₀ * d := mul_pos hc₀_pos hd_pos
-    -- ── Core estimate ──
-    -- The proof tracks the constant D(z) from psiZRaw_iteratedFDeriv_decay.
-    --
-    -- Step 1: In η-coordinates (η = R⁻¹·ξ), the function is χ(η)·exp(L'·η)
-    --   where L' = R • (multiDimPsiExpCLM z). Apply the explicit_uniform bound
-    --   with coercivity c = R*c₀*d to get:
-    --     ‖η‖^k * ‖D^n[χ·exp(L'·)](η)‖ ≤ Bexp * (R*c₀*d)⁻ᵏ * (1+‖L'‖)^n
-    --
-    -- Step 2: Pull back via iteratedFDeriv_comp_right with S = R⁻¹·id:
-    --     ‖ξ‖^k * ‖D^n[psiZRaw](ξ)‖ ≤ R^k * R⁻ⁿ * Bexp * (R*c₀*d)⁻ᵏ * (1+R*‖L‖)^n
-    --       = Bexp * (c₀*d)⁻ᵏ * R⁻ⁿ * (1+R*‖L‖)^n
-    --
-    -- Step 3: Bound R⁻ⁿ ≤ (1+‖z‖)^n since R⁻¹ = 1+‖Im z‖ ≤ 1+‖z‖,
-    --   and (1+R*‖L‖)^n ≤ (1+‖L‖)^n ≤ ((card+1)*(1+‖z‖))^n.
-    --
-    -- Step 4: (c₀*d)⁻ᵏ = c₀⁻ᵏ * d⁻ᵏ ≤ c₀⁻ᵏ * (1+d⁻¹)^k.
-    --
-    -- Combining: ≤ Bexp * c₀⁻ᵏ * (card+1)^n * (1+‖z‖)^{n+k} * (1+d⁻¹)^k ≤ B * ...
-    --
-    -- The rescaling identity and iteratedFDeriv_comp_right matching are
-    -- the remaining proof engineering obstacles.
-    -- Direct Leibniz approach: apply norm_iteratedFDeriv_mul_le to χ(ξ/R) · exp(iz·ξ)
-    -- then bound each factor separately.
-    let R := multiDimPsiZRadius z
-    let S : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := R⁻¹ • ContinuousLinearMap.id ℝ (Fin m → ℝ)
-    let f : (Fin m → ℝ) → ℂ := fun η => (χ.val (S η) : ℂ)
-    let L : (Fin m → ℝ) →L[ℝ] ℂ :=
-      ∑ i : Fin m, ((I * z i) : ℂ) •
-        (Complex.ofRealCLM.comp
-          (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i))
-    let g : (Fin m → ℝ) → ℂ := fun η => cexp (L η)
-    -- Show multiDimPsiZDynamic unfolds to f * g pointwise
-    have hfg : ∀ η, (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) η =
-        f η * g η := by
-      intro η
-      show psiZRaw χ (multiDimPsiZRadius z) z η = f η * g η
-      simp only [psiZRaw, f, g, L, S, Pi.smul_apply, smul_eq_mul,
-        ContinuousLinearMap.coe_sum', Finset.sum_apply,
-        ContinuousLinearMap.smul_apply, ContinuousLinearMap.coe_comp',
-        ContinuousLinearMap.proj_apply, Complex.ofRealCLM_apply,
-        ContinuousLinearMap.coe_smul', ContinuousLinearMap.coe_id', id]
-      dsimp only [f, g, L, S, R]
-      simp only [ContinuousLinearMap.coe_smul', ContinuousLinearMap.coe_id',
-        Pi.smul_apply, smul_eq_mul, id,
-        ContinuousLinearMap.coe_sum', Finset.sum_apply,
-        ContinuousLinearMap.smul_apply, ContinuousLinearMap.coe_comp',
-        Function.comp, ContinuousLinearMap.proj_apply, Complex.ofRealCLM_apply]
-      have h1 : (fun i => (multiDimPsiZRadius z)⁻¹ * η i) = (multiDimPsiZRadius z)⁻¹ • η :=
-        funext fun i => by rw [Pi.smul_apply, smul_eq_mul]
-      rw [h1, Finset.mul_sum]; ring_nf
-    -- Now bound using Leibniz on f * g
-    -- f is smooth (composition of smooth cutoff with linear map)
-    have hf_smooth : ContDiff ℝ ∞ f :=
-      Complex.ofRealCLM.contDiff.comp (χ.smooth.comp S.contDiff)
-    -- g is smooth (exp of linear)
-    have hg_smooth : ContDiff ℝ ∞ g :=
-      Complex.contDiff_exp.comp L.contDiff
+    -- Plan for the remaining estimate:
+    -- 1. Apply `norm_iteratedFDeriv_mul_le` to `f * g`.
+    -- 2. Bound derivatives of `f` by the cutoff derivative bounds and powers of `‖S‖ = R⁻¹`.
+    -- 3. Bound derivatives of `g` by `‖L‖^j * ‖g‖`, then use coercivity on `Im z`
+    --    together with `cexp_bound_on_support` to get exponential decay
+    --    `‖g ξ‖ ≤ exp(A₀) * exp(-(c₀ * d) * ‖ξ‖)`.
+    -- 4. Extract the polynomial weight via the explicit `c⁻k` bound from
+    --    `schwartz_seminorm_cutoff_exp_bound_affine_uniform_explicit_uniform`,
+    --    and then absorb `R⁻¹` and `‖L‖` into `(1 + ‖z‖)^n`.
     sorry -- Leibniz + exponential decay + polynomial extraction (Steps 1-4)
 
 /-! ### Seminorm bounds for the multi-D family -/
