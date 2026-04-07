@@ -5,6 +5,7 @@ Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.ConeCutoffSchwartz
 import OSReconstruction.SCV.Osgood
+import OSReconstruction.GeneralResults.ScalarFTC
 import OSReconstruction.GeneralResults.SchwartzCutoffExp
 import Mathlib.Algebra.Order.Chebyshev
 
@@ -1420,6 +1421,69 @@ private lemma norm_multiDimPsiZ_differenceQuotient_remainder_le
             gcongr
             exact norm_cexp_sub_one_sub_linear_div_le h (ξ j)
 
+private lemma norm_iteratedFDeriv_cexp_sub_one_bound
+    {m : ℕ} (L : (Fin m → ℝ) →L[ℝ] ℂ) {c : ℝ}
+    (hc : 0 ≤ c) (hL_one : ‖L‖ ≤ 1) (hL_c : ‖L‖ ≤ c)
+    (i : ℕ) (ξ : Fin m → ℝ) :
+    ‖iteratedFDeriv ℝ i (fun x => cexp (L x) - 1) ξ‖ ≤
+      ‖L‖ * (i.factorial : ℝ) * (1 + ‖ξ‖) ^ 2 * Real.exp (c * ‖ξ‖) := by
+  rcases i with _ | i
+  · have hmain := Complex.norm_exp_sub_sum_le_norm_mul_exp (L ξ) 1
+    calc
+      ‖iteratedFDeriv ℝ 0 (fun x => cexp (L x) - 1) ξ‖
+          = ‖cexp (L ξ) - 1‖ := by simp
+      _ ≤ ‖L ξ‖ * Real.exp ‖L ξ‖ := by simpa using hmain
+      _ ≤ (‖L‖ * ‖ξ‖) * Real.exp (c * ‖ξ‖) := by
+            gcongr
+            · exact ContinuousLinearMap.le_opNorm L ξ
+            · exact le_trans (ContinuousLinearMap.le_opNorm L ξ) (by gcongr)
+      _ ≤ ‖L‖ * (1 + ‖ξ‖) ^ 2 * Real.exp (c * ‖ξ‖) := by
+            have hpow : ‖ξ‖ ≤ (1 + ‖ξ‖) ^ 2 := by
+              nlinarith [norm_nonneg ξ]
+            gcongr
+      _ = ‖L‖ * ((Nat.factorial 0 : ℕ) : ℝ) * (1 + ‖ξ‖) ^ 2 * Real.exp (c * ‖ξ‖) := by
+            simp
+  · have hsub :
+        iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x) - 1) ξ =
+          iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x)) ξ := by
+      have hsub' := iteratedFDeriv_sub_apply
+        (f := fun x => cexp (L x))
+        (g := fun _ => (1 : ℂ))
+        ((Complex.contDiff_exp.comp L.contDiff).contDiffAt)
+        (contDiff_const.contDiffAt)
+        (x := ξ) (i := i + 1)
+      calc
+        iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x) - 1) ξ
+            = iteratedFDeriv ℝ (i + 1) ((fun x => cexp (L x)) - fun _ => (1 : ℂ)) ξ := by
+                rfl
+        _ = iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x)) ξ -
+              iteratedFDeriv ℝ (i + 1) (fun _ => (1 : ℂ)) ξ := hsub'
+        _ = iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x)) ξ := by
+              simp [iteratedFDeriv_const_of_ne (𝕜 := ℝ) (by omega : i + 1 ≠ 0) (1 : ℂ)]
+    rw [hsub]
+    calc
+      ‖iteratedFDeriv ℝ (i + 1) (fun x => cexp (L x)) ξ‖
+          ≤ ((i + 1).factorial : ℝ) * ‖cexp (L ξ)‖ * ‖L‖ ^ (i + 1) :=
+            norm_iteratedFDeriv_cexp_comp_clm_le L ξ (i + 1)
+      _ = ((i + 1).factorial : ℝ) * Real.exp ((L ξ).re) * ‖L‖ ^ (i + 1) := by
+            rw [Complex.norm_exp]
+      _ ≤ ((i + 1).factorial : ℝ) * Real.exp (c * ‖ξ‖) * ‖L‖ ^ (i + 1) := by
+            gcongr
+            exact le_trans (Complex.re_le_norm _) (le_trans (ContinuousLinearMap.le_opNorm L ξ) (by gcongr))
+      _ = ((i + 1).factorial : ℝ) * Real.exp (c * ‖ξ‖) * (‖L‖ ^ i * ‖L‖) := by
+            rw [pow_succ]
+      _ ≤ ((i + 1).factorial : ℝ) * Real.exp (c * ‖ξ‖) * (1 * ‖L‖) := by
+            have hpow : ‖L‖ ^ i ≤ 1 := pow_le_one₀ (norm_nonneg _) hL_one
+            gcongr
+      _ = ‖L‖ * ((i + 1).factorial : ℝ) * Real.exp (c * ‖ξ‖) := by ring
+      _ ≤ ‖L‖ * ((i + 1).factorial : ℝ) * (1 + ‖ξ‖) ^ 2 * Real.exp (c * ‖ξ‖) := by
+            have hpow : (1 : ℝ) ≤ (1 + ‖ξ‖) ^ 2 := by
+              nlinarith [norm_nonneg ξ]
+            have hnonneg :
+                0 ≤ ‖L‖ * ((i + 1).factorial : ℝ) * Real.exp (c * ‖ξ‖) := by
+              positivity
+            nlinarith
+
 /-- **Lipschitz-type seminorm bound for multiDimPsiZ difference.**
 
     For z near z₀ in the tube, the Schwartz (k,n)-seminorm of ψ_z - ψ_{z₀}
@@ -1454,20 +1518,158 @@ theorem multiDimPsiZ_seminorm_difference_bound
           SchwartzMap.seminorm ℝ k n
             (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
              multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) ≤ D * ‖z - z₀‖ := by
-  -- Step 1: The tube is open, so get δ₁ > 0 with B(z₀, δ₁) ⊂ T(C).
-  have htube_open := SCV.tubeDomain_isOpen hC_open
-  rw [Metric.isOpen_iff] at htube_open
-  obtain ⟨δ₁, hδ₁, hball⟩ := htube_open z₀ hz₀
-  -- Step 2: Pointwise Lipschitz bound for the difference, uniform in ξ.
-  -- For z with ‖z - z₀‖ < δ₁/2, Im(z) stays in a compact subset of C,
-  -- giving uniform coercivity c₀ > 0.
-  -- MVT: |exp(iz·ξ) - exp(iz₀·ξ)| ≤ ‖z-z₀‖·‖ξ‖·sup|exp(i(z₀+t(z-z₀))·ξ)|
-  -- Leibniz + exponential decay: ‖ξ‖^k·‖D^n[ψ_z-ψ_{z₀}](ξ)‖ ≤ D'·‖z-z₀‖
-  -- seminorm_le_bound packages as seminorm bound.
-  --
-  -- Sorry: the quantitative pointwise MVT + Leibniz bound.
-  -- The tube openness (Step 1) is proved; the analytical estimate is the sorry.
-  sorry
+  let χ : FixedConeCutoff (DualConeFlat C) :=
+    (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+  let y₀ : Fin m → ℝ := fun i => (z₀ i).im
+  have hy₀ : y₀ ∈ C := hz₀
+  have hC_star_ne : (DualConeFlat C).Nonempty := ⟨0, zero_mem_dualConeFlat C⟩
+  have hC_star_closed : IsClosed (DualConeFlat C) := dualConeFlat_closed C
+  obtain ⟨c₀, hc₀_pos, hc₀⟩ :=
+    dualConeFlat_coercivity hC_open hC_cone hy₀ hC_star_ne hC_star_closed
+  let K : ℝ := (Fintype.card (Fin m) : ℝ)
+  let K2 : ℝ := ((Fintype.card (Fin m) : ℝ) ^ 2)
+  let δ₀ : ℝ := min (1 / (K + 1)) (c₀ / (2 * (K + 1)))
+  have hδ₀_pos : 0 < δ₀ := by
+    dsimp [δ₀]
+    refine lt_min ?_ ?_ <;> positivity
+  let A₀ : ℝ := c₀ + K2 * ‖y₀‖
+  let L₀ : (Fin m → ℝ) →L[ℝ] ℂ := multiDimPsiExpCLM z₀
+  obtain ⟨Bexp, hBexp_pos, hBexp⟩ :=
+    schwartz_seminorm_cutoff_exp_mul_G_bound_affine_uniform
+      χ.val χ.smooth χ.deriv_bound A₀ c₀ hc₀_pos k n
+  let L₀bd : ℝ := K * ‖z₀‖
+  let D : ℝ := Bexp * (K + 1) * (1 + L₀bd) ^ n
+  have hD_pos : 0 < D := by
+    dsimp [D]
+    positivity
+  refine ⟨D, δ₀, hD_pos, hδ₀_pos, ?_⟩
+  intro z hz hzdist
+  let Ldiff : (Fin m → ℝ) →L[ℝ] ℂ := multiDimPsiExpCLM (z - z₀)
+  have hK_nonneg : 0 ≤ K := by
+    dsimp [K]
+    positivity
+  have hLdiff_one : ‖Ldiff‖ ≤ 1 := by
+    calc
+      ‖Ldiff‖ ≤ K * ‖z - z₀‖ := multiDimPsiExpCLM_norm_le (z - z₀)
+      _ ≤ K * δ₀ := by
+            gcongr
+      _ ≤ K * (1 / (K + 1)) := by
+            gcongr
+            exact min_le_left _ _
+      _ = K / (K + 1) := by
+            field_simp
+      _ ≤ 1 := by
+            have hpos : 0 < K + 1 := by positivity
+            exact (div_le_one hpos).2 (by linarith)
+  have hLdiff_c : ‖Ldiff‖ ≤ c₀ / 2 := by
+    calc
+      ‖Ldiff‖ ≤ K * ‖z - z₀‖ := multiDimPsiExpCLM_norm_le (z - z₀)
+      _ ≤ K * δ₀ := by
+            gcongr
+      _ ≤ K * (c₀ / (2 * (K + 1))) := by
+            gcongr
+            exact min_le_right _ _
+      _ = (K * c₀) / (2 * (K + 1)) := by
+            ring
+      _ ≤ (c₀ * (K + 1)) / (2 * (K + 1)) := by
+            apply div_le_div_of_nonneg_right
+            · nlinarith [hK_nonneg, hc₀_pos]
+            · positivity
+      _ = c₀ / 2 := by
+            field_simp [show (K + 1) ≠ 0 by linarith]
+  have hexp_decay :
+      ∀ ξ : Fin m → ℝ, χ.val ξ ≠ 0 → (L₀ ξ).re ≤ A₀ - c₀ * ‖ξ‖ := by
+    intro ξ hχξ
+    have hdistχ : Metric.infDist ξ (DualConeFlat C) ≤ 1 := by
+      by_contra h
+      exact hχξ (χ.support_bound ξ (by linarith))
+    have hExpBound :
+        ‖cexp (L₀ ξ)‖ ≤ Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+      calc
+        ‖cexp (L₀ ξ)‖ = ‖cexp (I * ∑ i, z₀ i * (ξ i : ℂ))‖ := by
+          rw [multiDimPsiExpCLM_apply]
+        _ ≤ Real.exp (((c₀ + K2 * ‖y₀‖) * 1)) * Real.exp (-(c₀ * ‖ξ‖)) := by
+          simpa [K2, y₀] using
+            cexp_bound_on_support hC_open hC_cone hz₀ hc₀_pos hc₀ zero_lt_one ξ hdistχ
+        _ = Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+          simp [A₀]
+    have hnormexp : ‖cexp (L₀ ξ)‖ = Real.exp ((L₀ ξ).re) := by
+      rw [Complex.norm_exp]
+    have hExp' : Real.exp ((L₀ ξ).re) ≤ Real.exp (A₀ - c₀ * ‖ξ‖) := by
+      rw [← hnormexp]
+      simpa [sub_eq_add_neg, Real.exp_add] using hExpBound
+    exact Real.exp_le_exp.mp hExp'
+  have hG_bound :
+      ∀ i ≤ n, ∀ ξ : Fin m → ℝ,
+        ‖iteratedFDeriv ℝ i (fun x => cexp (Ldiff x) - 1) ξ‖ ≤
+          ‖Ldiff‖ * (i.factorial : ℝ) * (1 + ‖ξ‖) ^ 2 * Real.exp ((c₀ / 2) * ‖ξ‖) := by
+    intro i hi ξ
+    exact norm_iteratedFDeriv_cexp_sub_one_bound Ldiff (by positivity) hLdiff_one hLdiff_c i ξ
+  have hL₀ : ‖L₀‖ ≤ L₀bd := by
+    simpa [L₀, L₀bd, K] using multiDimPsiExpCLM_norm_le z₀
+  have hpoint :
+      ∀ ξ : Fin m → ℝ,
+        ‖ξ‖ ^ k *
+          ‖iteratedFDeriv ℝ n
+              (⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+                  multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀)) ξ‖ ≤
+            D * ‖z - z₀‖ := by
+    intro ξ
+    have hraw :=
+      hBexp L₀ hexp_decay
+        (fun x => cexp (Ldiff x) - 1)
+        ((Complex.contDiff_exp.comp Ldiff.contDiff).sub contDiff_const)
+        ‖Ldiff‖ (norm_nonneg _) hG_bound ξ
+    have hfun :
+        ⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+            multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀) =
+          (fun ξ : Fin m → ℝ =>
+            (χ.val ξ : ℂ) * (cexp (L₀ ξ) * (cexp (Ldiff ξ) - 1))) := by
+      funext ξ
+      change psiZRaw χ 1 z ξ - psiZRaw χ 1 z₀ ξ =
+        (χ.val ξ : ℂ) * (cexp (L₀ ξ) * (cexp (Ldiff ξ) - 1))
+      simp [psiZRaw, L₀, Ldiff]
+      rw [multiDimPsiExpCLM_apply z₀ ξ, multiDimPsiExpCLM_apply (z - z₀) ξ]
+      have hsum :
+          ∑ i, z i * (ξ i : ℂ) =
+            ∑ i, z₀ i * (ξ i : ℂ) + ∑ i, (z - z₀) i * (ξ i : ℂ) := by
+        rw [← Finset.sum_add_distrib]
+        congr with i
+        simp [Pi.sub_apply]
+        ring_nf
+      have hadd :
+          I * ∑ i, z i * (ξ i : ℂ) =
+            I * ∑ i, z₀ i * (ξ i : ℂ) + I * ∑ i, (z - z₀) i * (ξ i : ℂ) := by
+        rw [hsum]
+        ring
+      rw [hadd, Complex.exp_add]
+      ring
+    calc
+      ‖ξ‖ ^ k *
+          ‖iteratedFDeriv ℝ n
+              (⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+                  multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀)) ξ‖
+          = ‖ξ‖ ^ k *
+              ‖iteratedFDeriv ℝ n
+                  (fun ξ : Fin m → ℝ =>
+                    (χ.val ξ : ℂ) * (cexp (L₀ ξ) * (cexp (Ldiff ξ) - 1))) ξ‖ := by
+                rw [hfun]
+      _ ≤ ‖Ldiff‖ * Bexp * (1 + ‖L₀‖) ^ n := by
+            simpa [mul_comm, mul_left_comm, mul_assoc] using hraw
+      _ ≤ ‖Ldiff‖ * Bexp * (1 + L₀bd) ^ n := by
+            have hbase : 1 + ‖L₀‖ ≤ 1 + L₀bd := by linarith
+            gcongr
+      _ ≤ (K * ‖z - z₀‖) * Bexp * (1 + L₀bd) ^ n := by
+            gcongr
+            exact multiDimPsiExpCLM_norm_le (z - z₀)
+      _ ≤ D * ‖z - z₀‖ := by
+            dsimp [D]
+            have hz_nonneg : 0 ≤ ‖z - z₀‖ := norm_nonneg _
+            nlinarith [hK_nonneg]
+  exact SchwartzMap.seminorm_le_bound ℝ k n
+    (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz -
+      multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z₀ hz₀)
+    (by positivity) hpoint
 
 /-- **Difference quotient of ψ_z converges in Schwartz seminorms.**
 
