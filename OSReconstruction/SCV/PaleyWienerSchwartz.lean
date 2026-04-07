@@ -690,9 +690,24 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
     --
     -- The rescaling identity and iteratedFDeriv_comp_right matching are
     -- the remaining proof engineering obstacles.
-    sorry -- BLOCKED: Steps 1-2 (rescaling psiZRaw χ R z = (χ · exp(L')) ∘ (R⁻¹ • id)
-          --   and iteratedFDeriv_comp_right for this specific composition)
-          -- Steps 3-4 are straightforward arithmetic once 1-2 are done.
+    -- Direct Leibniz approach: apply norm_iteratedFDeriv_mul_le to χ(ξ/R) · exp(iz·ξ)
+    -- then bound each factor separately.
+    let R := multiDimPsiZRadius z
+    let S : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := R⁻¹ • ContinuousLinearMap.id ℝ (Fin m → ℝ)
+    let f : (Fin m → ℝ) → ℂ := fun η => (χ.val (S η) : ℂ)
+    let L : (Fin m → ℝ) →L[ℝ] ℂ :=
+      ∑ i : Fin m, ((I * z i) : ℂ) •
+        (Complex.ofRealCLM.comp
+          (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i))
+    let g : (Fin m → ℝ) → ℂ := fun η => cexp (L η)
+    -- Direct Leibniz on χ(ξ/R) * exp(iz·ξ):
+    -- ‖D^i[χ∘S]‖ ≤ Cχ * ‖S‖^i ≤ Cχ * (1+‖z‖)^i (chain rule for linear S)
+    -- ‖D^{n-i}[exp∘L]‖ ≤ (n-i)! * ‖exp(Lξ)‖ * ‖L‖^{n-i} (Faa di Bruno)
+    -- Leibniz sum ≤ C_Leib * (1+‖z‖)^n * ‖exp(Lξ)‖
+    -- Then ‖exp(Lξ)‖ ≤ exp(A₀) * exp(-c₀*d*‖ξ‖) from coercivity
+    -- And ‖ξ‖^k * exp(-c₀*d*‖ξ‖) ≤ M_k * (c₀*d)⁻ᵏ
+    -- Final: ≤ B * (1+‖z‖)^{n+k} * (1+d⁻¹)^k
+    sorry
 
 /-! ### Seminorm bounds for the multi-D family -/
 
