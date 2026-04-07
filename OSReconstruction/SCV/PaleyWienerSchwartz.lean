@@ -700,14 +700,33 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
         (Complex.ofRealCLM.comp
           (ContinuousLinearMap.proj (R := ℝ) (ι := Fin m) (φ := fun _ => ℝ) i))
     let g : (Fin m → ℝ) → ℂ := fun η => cexp (L η)
-    -- Direct Leibniz on χ(ξ/R) * exp(iz·ξ):
-    -- ‖D^i[χ∘S]‖ ≤ Cχ * ‖S‖^i ≤ Cχ * (1+‖z‖)^i (chain rule for linear S)
-    -- ‖D^{n-i}[exp∘L]‖ ≤ (n-i)! * ‖exp(Lξ)‖ * ‖L‖^{n-i} (Faa di Bruno)
-    -- Leibniz sum ≤ C_Leib * (1+‖z‖)^n * ‖exp(Lξ)‖
-    -- Then ‖exp(Lξ)‖ ≤ exp(A₀) * exp(-c₀*d*‖ξ‖) from coercivity
-    -- And ‖ξ‖^k * exp(-c₀*d*‖ξ‖) ≤ M_k * (c₀*d)⁻ᵏ
-    -- Final: ≤ B * (1+‖z‖)^{n+k} * (1+d⁻¹)^k
-    sorry
+    -- Show multiDimPsiZDynamic unfolds to f * g pointwise
+    have hfg : ∀ η, (multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient z hz) η =
+        f η * g η := by
+      intro η
+      show psiZRaw χ (multiDimPsiZRadius z) z η = f η * g η
+      simp only [psiZRaw, f, g, L, S, Pi.smul_apply, smul_eq_mul,
+        ContinuousLinearMap.coe_sum', Finset.sum_apply,
+        ContinuousLinearMap.smul_apply, ContinuousLinearMap.coe_comp',
+        ContinuousLinearMap.proj_apply, Complex.ofRealCLM_apply,
+        ContinuousLinearMap.coe_smul', ContinuousLinearMap.coe_id', id]
+      dsimp only [f, g, L, S, R]
+      simp only [ContinuousLinearMap.coe_smul', ContinuousLinearMap.coe_id',
+        Pi.smul_apply, smul_eq_mul, id,
+        ContinuousLinearMap.coe_sum', Finset.sum_apply,
+        ContinuousLinearMap.smul_apply, ContinuousLinearMap.coe_comp',
+        Function.comp, ContinuousLinearMap.proj_apply, Complex.ofRealCLM_apply]
+      have h1 : (fun i => (multiDimPsiZRadius z)⁻¹ * η i) = (multiDimPsiZRadius z)⁻¹ • η :=
+        funext fun i => by rw [Pi.smul_apply, smul_eq_mul]
+      rw [h1, Finset.mul_sum]; ring_nf
+    -- Now bound using Leibniz on f * g
+    -- f is smooth (composition of smooth cutoff with linear map)
+    have hf_smooth : ContDiff ℝ ∞ f :=
+      Complex.ofRealCLM.contDiff.comp (χ.smooth.comp S.contDiff)
+    -- g is smooth (exp of linear)
+    have hg_smooth : ContDiff ℝ ∞ g :=
+      Complex.contDiff_exp.comp L.contDiff
+    sorry -- Leibniz + exponential decay + polynomial extraction (Steps 1-4)
 
 /-! ### Seminorm bounds for the multi-D family -/
 
