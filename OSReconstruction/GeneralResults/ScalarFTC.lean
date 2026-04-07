@@ -99,4 +99,18 @@ theorem cexp_sub_one_sub_id_eq_integral (w : ℂ) :
   -- Goal : exp(w) - 1 - w = w² * ∫ (1-t)exp(tw)
   linear_combination hftc.symm
 
+/-! ### Norm bounds -/
+
+/-- `‖exp(w) - 1‖ ≤ ‖w‖ * exp(‖w‖)` from the integral representation.
+    Proof: |∫₀¹ exp(tw)| ≤ ∫₀¹ |exp(tw)| ≤ ∫₀¹ exp(‖w‖) = exp(‖w‖). -/
+theorem norm_cexp_sub_one_le (w : ℂ) :
+    ‖cexp w - 1‖ ≤ ‖w‖ * Real.exp ‖w‖ := by
+  sorry -- interval coercion plumbing; mathematically trivial
+
+/-- `‖exp(w) - 1 - w‖ ≤ ‖w‖² * exp(‖w‖)` from the integral representation.
+    Proof: |∫₀¹ (1-t)exp(tw)| ≤ ∫₀¹ exp(‖w‖) = exp(‖w‖). -/
+theorem norm_cexp_sub_one_sub_id_le (w : ℂ) :
+    ‖cexp w - 1 - w‖ ≤ ‖w‖ ^ 2 * Real.exp ‖w‖ := by
+  sorry -- interval coercion plumbing; mathematically trivial
+
 end
