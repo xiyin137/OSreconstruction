@@ -617,6 +617,53 @@ What remained formally blocked in Lean:
 So the theorem still looks true and the proof route is stable; the remaining
 issue is proof engineering around the rescaling identities, not a missing
 mathematical ingredient. -/
+
+-- Scaled cutoff derivative bound: ‖D^i[χ ∘ S](ξ)‖ ≤ Cχ · R⁻ⁱ
+private lemma norm_iteratedFDeriv_scaled_cutoff_le
+    {m : ℕ} {C : Set (Fin m → ℝ)} (χ : FixedConeCutoff (DualConeFlat C))
+    (R : ℝ) (hR : 0 < R) (i : ℕ) :
+    ∃ (Ci : ℝ), 0 < Ci ∧ ∀ (ξ : Fin m → ℝ),
+      ‖iteratedFDeriv ℝ i (fun η => (χ.val (R⁻¹ • η) : ℂ)) ξ‖ ≤ Ci * R⁻¹ ^ i := by
+  -- The function factors as ofRealCLM ∘ χ.val ∘ S where S = R⁻¹ • id
+  let S : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := R⁻¹ • ContinuousLinearMap.id ℝ (Fin m → ℝ)
+  have hS_norm : ‖S‖ ≤ R⁻¹ := by
+    calc ‖S‖ ≤ ‖(R⁻¹ : ℝ)‖ * ‖ContinuousLinearMap.id ℝ (Fin m → ℝ)‖ :=
+          ContinuousLinearMap.opNorm_smul_le _ _
+      _ ≤ R⁻¹ * 1 := by
+          gcongr
+          · exact le_of_eq (Real.norm_of_nonneg (inv_nonneg.mpr hR.le))
+          · exact ContinuousLinearMap.norm_id_le
+      _ = R⁻¹ := mul_one _
+  -- Get uniform bound on χ.val derivatives
+  obtain ⟨Cmax, hCmax⟩ := χ.deriv_bound i
+  let Ci := |Cmax| + 1
+  refine ⟨Ci, by positivity, fun ξ => ?_⟩
+  -- D^i[ofRealCLM ∘ χ.val ∘ S](ξ) via chain rule
+  have hχS_smooth : ContDiff ℝ ∞ (χ.val ∘ ⇑S) := χ.smooth.comp S.contDiff
+  -- Step 1: ofRealCLM is a linear isometry, so doesn't change the norm of iteratedFDeriv
+  have hfact : (fun η => (χ.val (R⁻¹ • η) : ℂ)) =
+      (Complex.ofRealLI : ℝ →ₗᵢ[ℝ] ℂ) ∘ (χ.val ∘ ⇑S) := by
+    ext η; simp [S]
+  rw [hfact]
+  have h_li := Complex.ofRealLI.norm_iteratedFDeriv_comp_left
+    (contDiff_infty.mp hχS_smooth i).contDiffAt le_rfl (x := ξ)
+  rw [h_li]
+  -- Step 2: Chain rule for χ.val ∘ S
+  have hcomp := S.iteratedFDeriv_comp_right χ.smooth ξ
+    (show (i : WithTop ℕ∞) ≤ ∞ from WithTop.coe_le_coe.mpr le_top)
+  rw [hcomp]
+  calc ‖(iteratedFDeriv ℝ i (χ.val) (S ξ)).compContinuousLinearMap fun _ => S‖
+      ≤ ‖iteratedFDeriv ℝ i (χ.val) (S ξ)‖ * ∏ _ : Fin i, ‖S‖ :=
+        ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+    _ ≤ Ci * R⁻¹ ^ i := by
+        calc ‖iteratedFDeriv ℝ i (χ.val) (S ξ)‖ * ∏ _ : Fin i, ‖S‖
+            ≤ Ci * ∏ _ : Fin i, R⁻¹ := by
+              gcongr with j _
+              calc ‖iteratedFDeriv ℝ i (χ.val) (S ξ)‖ ≤ Cmax := hCmax (S ξ)
+                _ ≤ |Cmax| := le_abs_self _
+                _ ≤ Ci := by linarith
+          _ = Ci * R⁻¹ ^ i := by rw [Finset.prod_const, Finset.card_fin]
+
 private theorem multiDimPsiZDynamic_pointwise_vladimirov
     {m : ℕ} {C : Set (Fin m → ℝ)}
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
