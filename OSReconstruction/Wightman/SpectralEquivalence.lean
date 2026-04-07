@@ -361,7 +361,18 @@ private noncomputable def psiZMulti {n : ℕ}
     Follows from `productConeCutoff_smooth` and smoothness of `exp ∘ linear`. -/
 private lemma psiZMulti_contDiff {n : ℕ} (z : Fin n → Fin (d + 1) → ℂ) :
     ContDiff ℝ (↑(⊤ : ℕ∞)) (psiZMulti z : (Fin n → Fin (d + 1) → ℝ) → ℂ) := by
-  sorry
+  unfold psiZMulti
+  apply ContDiff.mul
+  · -- ↑(productConeCutoff n q) is smooth: ofRealCLM ∘ productConeCutoff
+    exact Complex.ofRealCLM.contDiff.comp (productConeCutoff_smooth n)
+  · -- exp(I * complexNPointDot z q) is smooth: exp ∘ linear
+    apply ContDiff.comp Complex.contDiff_exp
+    apply contDiff_const.mul
+    -- complexNPointDot z q = ∑ k, ∑ μ, z k μ * ↑(q k μ) is smooth in q
+    unfold complexNPointDot
+    apply ContDiff.sum; intro k _
+    apply ContDiff.sum; intro μ _
+    exact contDiff_const.mul (Complex.ofRealCLM.contDiff.comp (contDiff_apply_apply ℝ _ k μ))
 
 /-- Rapid decay of `ψ_z` when `Im(z) ∈ V₊°ⁿ`.
     The exponential factor `exp(-∑_k ⟨Im(z_k), q_k⟩_Eucl)` decays as `exp(-c·‖q‖)`
