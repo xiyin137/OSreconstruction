@@ -3234,44 +3234,22 @@ theorem fourierLaplaceExtMultiDim_boundaryValue
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (T (physicsFourierFlatCLM f))) := by
   intro η hη f
-  let g : ℝ → (Fin m → ℝ) → ℂ := fun ε x =>
-    fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
-      (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I)
-  have hboundary_pkg :
-      ∃ (L : (Fin m → ℝ) → ℂ),
-        (∀ (x : Fin m → ℝ),
-          Filter.Tendsto (fun ε => g ε x) (nhdsWithin 0 (Set.Ioi 0)) (nhds (L x))) ∧
-        (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ (ε : ℝ), 0 < ε → ε ≤ 1 → ∀ (x : Fin m → ℝ),
-            ‖g ε x‖ ≤ C_bd * (1 + ‖x‖) ^ N) ∧
-        (∫ x : Fin m → ℝ, L x * f x = T (physicsFourierFlatCLM f)) := by
-    -- Part 1: Pointwise convergence F(x+iεη) → L(x) as ε→0+
-    -- F(z) = T(ψ_z), and ψ_{x+iεη} → ψ_{x+i0η} in Schwartz seminorms
-    -- (from multiDimPsiZ_seminorm_difference_bound). T.continuous gives convergence.
-    -- L(x) := lim_{ε→0+} F(x+iεη) exists for each x.
-    have hpart1 : ∀ x, ∃ Lx, Filter.Tendsto (fun ε => g ε x)
-        (nhdsWithin 0 (Set.Ioi 0)) (nhds Lx) := by
-      sorry -- provable: Cauchy from seminorm_difference_bound + T.continuous
-    choose L hL using hpart1
-    -- Part 2: Polynomial dominator on 0 < ε ≤ 1
-    -- From fourierLaplaceExtMultiDim_vladimirov_growth: |F(x+iεη)| ≤ C(1+‖x‖)^N
-    -- with C depending on η but not on x or ε (for ε in [δ, 1]).
-    -- The cone-scaling dist(εη, ∂C) ≥ ε·dist(η, ∂C) keeps the bound uniform.
-    have hpart2 : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ (ε : ℝ), 0 < ε → ε ≤ 1 → ∀ (x : Fin m → ℝ),
-          ‖g ε x‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
-      sorry -- provable: Vladimirov growth + cone scaling of infDist
-    -- Part 3: Identification ∫ L(x) f(x) dx = T(physicsFourierFlatCLM f)
-    -- This is the Fourier-Laplace representation identity:
-    -- ∫ (lim T(ψ_{x+iεη})) f(x) dx = T(FT_phys(f))
-    -- Uses: T has Fourier support in C*, χ=1 on C*, so
-    -- T(ψ_x) = T(exp(ix·ξ)) and x-integration gives the physics FT.
-    -- Ref: Vladimirov, Thm 25.5.
-    have hpart3 : ∫ x, L x * f x = T (physicsFourierFlatCLM f) := by
-      sorry -- Fourier-Laplace representation identity (Vladimirov Thm 25.5)
-    exact ⟨L, hL, hpart2, hpart3⟩
-  rcases hboundary_pkg with ⟨L, hconv, hdom, hId⟩
-  rw [← hId]
-  exact scalar_dct_schwartz_pairing g L hconv hdom f
+  -- The boundary value is distributional, not pointwise.
+  -- F(x+iεη) may blow up as ε→0+ (the ε⁻ᴹ factor from Vladimirov growth).
+  -- The convergence ∫ F(x+iεη) f(x) dx → W(f) holds for each test function f
+  -- but NOT pointwise in x.
+  --
+  -- The correct approach uses the Cauchy regularization
+  -- (tube_boundaryValue_of_vladimirov_growth) to first establish that BV exist,
+  -- then identifies W = T ∘ physicsFourierFlatCLM.
+  --
+  -- This theorem is the representation identity: F = T ∘ ψ implies
+  -- the BV of F equals T ∘ FT_phys. It requires:
+  -- 1. The BV existence (from tube_boundaryValue_of_vladimirov_growth or
+  --    the M=0 specialization tube_boundaryValueData_of_polyGrowth')
+  -- 2. The Fourier-Laplace representation to identify the limit
+  --
+  -- Both are substantial results. This theorem packages them together.
+  sorry
 
 end
