@@ -1,3 +1,4 @@
+import OSReconstruction.SCV.HasFDerivAtProd
 import OSReconstruction.Wightman.Reconstruction.SchwartzPartialEval
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 
@@ -219,6 +220,29 @@ private theorem partialEval₂_smulLeftCLM_fst
   rw [SchwartzMap.smulLeftCLM_apply_apply hprod, SchwartzMap.smulLeftCLM_apply_apply hψ]
   rfl
 
+/-- Partial evaluation in the second variable commutes with multiplying a
+product Schwartz function by a temperate factor depending only on that second
+variable. This is the exact algebra seam needed for time-coordinate weights in
+branch `3b`. -/
+private theorem partialEval₂_smulLeftCLM_snd
+    {Eη Et : Type*}
+    [NormedAddCommGroup Eη] [NormedSpace ℝ Eη]
+    [NormedAddCommGroup Et] [NormedSpace ℝ Et]
+    (ψ : Et → ℂ) (hψ : ψ.HasTemperateGrowth)
+    (F : SchwartzMap (Eη × Et) ℂ) (t : Et) :
+    SchwartzMap.partialEval₂
+        (SchwartzMap.smulLeftCLM ℂ (fun p : Eη × Et => ψ p.2) F) t
+      =
+    ψ t • SchwartzMap.partialEval₂ F t := by
+  have hsnd : (fun p : Eη × Et => p.2).HasTemperateGrowth :=
+    (ContinuousLinearMap.snd ℝ Eη Et).hasTemperateGrowth
+  have hprod : (fun p : Eη × Et => ψ p.2).HasTemperateGrowth := hψ.comp hsnd
+  ext η
+  change ((SchwartzMap.smulLeftCLM ℂ (fun p : Eη × Et => ψ p.2) F) (η, t)) =
+      (ψ t • SchwartzMap.partialEval₂ F t) η
+  rw [SchwartzMap.smulLeftCLM_apply_apply hprod]
+  rfl
+
 /-- The concrete pointwise partial spatial Fourier transform used in theorem-3
 branch `3b`: fix the time block and Fourier-transform only the spatial block. -/
 noncomputable def partialFourierSpatial_fun
@@ -260,6 +284,97 @@ theorem partialFourierSpatial_fun_eq_integral
           EuclideanSpace ℝ (Fin n × Fin d) → ℂ))
       p.2)
 
+/-- The branch-`3b` partial spatial Fourier transform is uniformly bounded on
+the full real `(time, spatial-frequency)` domain. This is the growth input
+later used to obtain `HasPolynomialGrowthOnLine` for one-variable time slices. -/
+theorem exists_norm_bound_partialFourierSpatial_fun
+    (f : SchwartzNPoint d n) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        ‖partialFourierSpatial_fun (d := d) (n := n) f p‖ ≤ C := by
+  let Eη := EuclideanSpace ℝ (Fin n × Fin d)
+  let base : SchwartzMap ((Fin n → ℝ) × Eη) ℂ :=
+    nPointTimeSpatialSchwartzCLE (d := d) (n := n) f
+  let M : ℕ := Module.finrank ℝ Eη + 1
+  let sem : ℝ :=
+    ((Finset.Iic (M, 0)).sup
+      (schwartzSeminormFamily ℂ ((Fin n → ℝ) × Eη) ℂ)) base
+  let I : ℝ := ∫ η : Eη, (1 + ‖η‖) ^ (-(M : ℝ))
+  let C : ℝ := (2 : ℝ) ^ M * sem * I
+  have hsem_nonneg : 0 ≤ sem := by
+    positivity
+  refine ⟨C, ?_, ?_⟩
+  · have hI_nonneg : 0 ≤ I := by
+      unfold I
+      refine MeasureTheory.integral_nonneg ?_
+      intro η
+      positivity
+    positivity
+  · intro p
+    have hweight_int :
+        MeasureTheory.Integrable (fun η : Eη => (1 + ‖η‖) ^ (-(M : ℝ)))
+          (MeasureTheory.volume : MeasureTheory.Measure Eη) := by
+      have hM : (Module.finrank ℝ Eη : ℝ) < (M : ℝ) := by
+        simp [M]
+      simpa using integrable_one_add_norm hM
+    have hseminorm :
+        ∀ η : Eη,
+          (1 + ‖(p.1, η)‖) ^ M * ‖base (p.1, η)‖ ≤ (2 : ℝ) ^ M * sem := by
+      intro η
+      simpa [base, sem, M] using
+        (SchwartzMap.one_add_le_sup_seminorm_apply
+          (𝕜 := ℂ) (m := (M, 0)) (k := M) (n := 0)
+          le_rfl le_rfl base (p.1, η))
+    have hpointwise :
+        ∀ η : Eη,
+          ‖𝐞 (-(inner ℝ η p.2)) • base (p.1, η)‖ ≤
+            ((2 : ℝ) ^ M * sem) * (1 + ‖η‖) ^ (-(M : ℝ)) := by
+      intro η
+      have hpow_mono :
+          (1 + ‖η‖) ^ M ≤ (1 + ‖(p.1, η)‖) ^ M := by
+        gcongr
+        exact le_max_right _ _
+      have hpow_pos : 0 < (1 + ‖η‖) ^ M := by positivity
+      have hpow_pos' : 0 < (1 + ‖(p.1, η)‖) ^ M := by positivity
+      have hbase_bound :
+          ‖base (p.1, η)‖ ≤ ((2 : ℝ) ^ M * sem) * (1 + ‖η‖) ^ (-(M : ℝ)) := by
+        have h1 :
+            ‖base (p.1, η)‖ ≤ ((2 : ℝ) ^ M * sem) / (1 + ‖(p.1, η)‖) ^ M := by
+          exact (le_div_iff₀ hpow_pos').2 <| by
+            simpa [mul_comm, mul_left_comm, mul_assoc] using hseminorm η
+        have h2 :
+            ((2 : ℝ) ^ M * sem) / (1 + ‖(p.1, η)‖) ^ M ≤
+              ((2 : ℝ) ^ M * sem) / (1 + ‖η‖) ^ M := by
+          have hinv :
+              ((1 + ‖(p.1, η)‖) ^ M)⁻¹ ≤ ((1 + ‖η‖) ^ M)⁻¹ := by
+            rw [inv_le_inv₀ hpow_pos' hpow_pos]
+            exact hpow_mono
+          simpa [div_eq_mul_inv, Real.rpow_natCast, mul_assoc] using
+            (mul_le_mul_of_nonneg_left hinv (by positivity : 0 ≤ (2 : ℝ) ^ M * sem))
+        exact h1.trans <| by
+          simpa [div_eq_mul_inv, Real.rpow_natCast] using h2
+      calc
+        ‖𝐞 (-(inner ℝ η p.2)) • base (p.1, η)‖ = ‖base (p.1, η)‖ := by
+          simp [Circle.smul_def]
+        _ ≤ ((2 : ℝ) ^ M * sem) * (1 + ‖η‖) ^ (-(M : ℝ)) := hbase_bound
+    have hmajorant_int :
+        MeasureTheory.Integrable
+          (fun η : Eη => ((2 : ℝ) ^ M * sem) * (1 + ‖η‖) ^ (-(M : ℝ)))
+          (MeasureTheory.volume : MeasureTheory.Measure Eη) := by
+      simpa using hweight_int.const_mul ((2 : ℝ) ^ M * sem)
+    rw [partialFourierSpatial_fun_eq_integral]
+    calc
+      ‖∫ η : Eη, 𝐞 (-(inner ℝ η p.2)) • base (p.1, η)‖
+          ≤ ∫ η : Eη, ‖𝐞 (-(inner ℝ η p.2)) • base (p.1, η)‖ :=
+            MeasureTheory.norm_integral_le_integral_norm _
+      _ ≤ ∫ η : Eη, ((2 : ℝ) ^ M * sem) * (1 + ‖η‖) ^ (-(M : ℝ)) := by
+            refine MeasureTheory.integral_mono_ae
+              (partialFourierSpatial_integrable (d := d) (n := n) f p).norm
+              hmajorant_int
+              (Filter.Eventually.of_forall hpointwise)
+      _ = C := by
+            rw [MeasureTheory.integral_const_mul]
+
 omit [NeZero d] in
 @[simp] theorem partialFourierSpatial_fun_add
     (f g : SchwartzNPoint d n)
@@ -289,6 +404,59 @@ omit [NeZero d] in
       a * ((SchwartzMap.fourierTransformCLM ℂ) sf) p.2
   rw [(SchwartzMap.fourierTransformCLM ℂ).map_smul]
   simp [smul_eq_mul]
+
+omit [NeZero d] in
+theorem partialFourierSpatial_fun_timeCoordPow_eq_transport
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (k : ℕ)
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    ((((p.1 r : ℝ) : ℂ)) ^ k) * partialFourierSpatial_fun (d := d) (n := n) f p =
+      partialFourierSpatial_fun (d := d) (n := n)
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (SchwartzMap.smulLeftCLM ℂ
+            (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+              (((q.2 r : ℝ) : ℂ)) ^ k)
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f))) p := by
+  let ψ : (Fin n → ℝ) → ℂ := fun t => (((t r : ℝ) : ℂ)) ^ k
+  have hψ : ψ.HasTemperateGrowth := by
+    have hcoord : (fun t : Fin n → ℝ => t r).HasTemperateGrowth :=
+      (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) r).hasTemperateGrowth
+    have hcoordC : (fun t : Fin n → ℝ => ((t r : ℝ) : ℂ)).HasTemperateGrowth :=
+      Complex.ofRealCLM.toContinuousLinearMap.hasTemperateGrowth.comp hcoord
+    simpa [ψ] using hcoordC.pow k
+  let sf : SchwartzMap (EuclideanSpace ℝ (Fin n × Fin d)) ℂ :=
+    SchwartzMap.partialEval₂ (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f) p.1
+  let sg : SchwartzMap (EuclideanSpace ℝ (Fin n × Fin d)) ℂ :=
+    SchwartzMap.partialEval₂
+      (SchwartzMap.smulLeftCLM ℂ
+        (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) => ψ q.2)
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f))
+      p.1
+  have hsg : sg = ψ p.1 • sf := by
+    simp [sg, sf, partialEval₂_smulLeftCLM_snd, hψ, ψ]
+  change ψ p.1 * ((SchwartzMap.fourierTransformCLM ℂ) sf) p.2 =
+      ((SchwartzMap.fourierTransformCLM ℂ) sg) p.2
+  rw [hsg, (SchwartzMap.fourierTransformCLM ℂ).map_smul]
+  simp [ψ, smul_eq_mul]
+
+theorem exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        ‖((((p.1 r : ℝ) : ℂ)) ^ k) * partialFourierSpatial_fun (d := d) (n := n) f p‖ ≤ C := by
+  let g : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (SchwartzMap.smulLeftCLM ℂ
+        (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+          (((q.2 r : ℝ) : ℂ)) ^ k)
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  rcases exists_norm_bound_partialFourierSpatial_fun (d := d) (n := n) g with
+    ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  intro p
+  rw [partialFourierSpatial_fun_timeCoordPow_eq_transport (d := d) (n := n) f r k p]
+  exact hbound p
 
 omit [NeZero d] in
 theorem continuous_partialFourierSpatial_fun
@@ -1115,7 +1283,6 @@ theorem lineDeriv_partialFourierSpatial_fun_time_realProd_eq_transport
                           rfl]
                     rw [hinr_apply]
                     rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
-                    rfl
           have hcongr :
               ∫ η : EuclideanSpace ℝ (Fin n × Fin d),
                   partialFourierSpatial_timeDerivativeRealProd d n f ξ η t m
@@ -1266,5 +1433,280 @@ theorem contDiff_partialFourierSpatial_fun_time
   rw [contDiff_infty]
   intro k
   exact contDiff_nat_partialFourierSpatial_fun_time (d := d) (n := n) f ξ k
+
+theorem continuous_partialFourierSpatial_fun_timeDerivative_apply
+    (f : SchwartzNPoint d n)
+    (m : Fin n → ℝ) :
+    Continuous
+      (fun p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d) =>
+        fderiv ℝ
+          (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, p.2))
+          p.1 m) := by
+  let gt : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (LineDeriv.lineDerivOp
+        ((0 : EuclideanSpace ℝ (Fin n × Fin d)), m)
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  convert continuous_partialFourierSpatial_fun (d := d) (n := n) gt using 1
+  ext p
+  simpa [gt] using
+    fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+      (d := d) (n := n) f p.2 p.1 m
+
+theorem continuous_partialFourierSpatial_fun_spatialDerivative_apply
+    (f : SchwartzNPoint d n)
+    (m : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Continuous
+      (fun p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d) =>
+        fderiv ℝ
+          (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+            partialFourierSpatial_fun (d := d) (n := n) f (p.1, ξ))
+          p.2 m) := by
+  let gξ : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (-(2 * Real.pi * Complex.I) •
+        SchwartzMap.smulLeftCLM ℂ
+          (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+            ((inner ℝ q.1 m : ℝ) : ℂ))
+          (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  convert continuous_partialFourierSpatial_fun (d := d) (n := n) gξ using 1
+  ext p
+  simpa [gξ] using
+    fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz
+      (d := d) (n := n) f p.1 p.2 m
+
+private noncomputable def partialFourierSpatial_jointDerivativeCandidate
+    (f : SchwartzNPoint d n)
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →L[ℝ] ℂ :=
+  ((fderiv ℝ
+      (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, p.2))
+      p.1).comp
+    (ContinuousLinearMap.fst ℝ (Fin n → ℝ) (EuclideanSpace ℝ (Fin n × Fin d)))) +
+  ((fderiv ℝ
+      (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+        partialFourierSpatial_fun (d := d) (n := n) f (p.1, ξ))
+      p.2).comp
+    (ContinuousLinearMap.snd ℝ (Fin n → ℝ) (EuclideanSpace ℝ (Fin n × Fin d))))
+
+theorem differentiableAt_partialFourierSpatial_fun_joint
+    (f : SchwartzNPoint d n)
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    DifferentiableAt ℝ (partialFourierSpatial_fun (d := d) (n := n) f) p := by
+  let φE : ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →
+      (Fin n → ℝ) →L[ℝ] ℂ := fun q =>
+    fderiv ℝ
+      (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, q.2))
+      q.1
+  let φF : ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →
+      EuclideanSpace ℝ (Fin n × Fin d) →L[ℝ] ℂ := fun q =>
+    fderiv ℝ
+      (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+        partialFourierSpatial_fun (d := d) (n := n) f (q.1, ξ))
+      q.2
+  have hE :
+      ∀ q : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        HasFDerivAt
+          (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, q.2))
+          (φE q) q.1 := by
+    intro q
+    simpa [φE] using
+      (differentiableAt_partialFourierSpatial_fun_time (d := d) (n := n) f q.2 q.1).hasFDerivAt
+  have hF :
+      HasFDerivAt
+        (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+          partialFourierSpatial_fun (d := d) (n := n) f (p.1, ξ))
+        (φF p) p.2 := by
+    simpa [φF] using
+      (differentiableAt_partialFourierSpatial_fun_spatial (d := d) (n := n) f p.1 p.2).hasFDerivAt
+  have hEcont : ContinuousAt φE p := by
+    apply continuousAt_clm_of_continuousAt_apply_basisFin
+    intro i
+    let gi : SchwartzNPoint d n :=
+      ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+        (LineDeriv.lineDerivOp
+          ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+            Pi.single (M := fun _ : Fin n => ℝ) i (1 : ℝ))
+          (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+    convert (continuous_partialFourierSpatial_fun (d := d) (n := n) gi).continuousAt using 1
+    ext q
+    simpa [φE, gi] using
+      fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+        (d := d) (n := n) f q.2 q.1
+        (Pi.single (M := fun _ : Fin n => ℝ) i (1 : ℝ))
+  exact
+    (hasFDerivAt_of_partialFDerivsAt (p := p) hE hF hEcont).differentiableAt
+
+theorem fderiv_partialFourierSpatial_fun_joint_apply_eq_transportSum
+    (f : SchwartzNPoint d n)
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d))
+    (m : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    (fderiv ℝ (partialFourierSpatial_fun (d := d) (n := n) f) p) m =
+      let gt : SchwartzNPoint d n :=
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (LineDeriv.lineDerivOp
+            ((0 : EuclideanSpace ℝ (Fin n × Fin d)), m.1)
+            (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+      let gξ : SchwartzNPoint d n :=
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (-(2 * Real.pi * Complex.I) •
+            SchwartzMap.smulLeftCLM ℂ
+              (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+                ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+              (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+      partialFourierSpatial_fun (d := d) (n := n) gt p +
+        partialFourierSpatial_fun (d := d) (n := n) gξ p := by
+  let φE : ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →
+      (Fin n → ℝ) →L[ℝ] ℂ := fun q =>
+    fderiv ℝ
+      (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, q.2))
+      q.1
+  let φF : ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) →
+      EuclideanSpace ℝ (Fin n × Fin d) →L[ℝ] ℂ := fun q =>
+    fderiv ℝ
+      (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+        partialFourierSpatial_fun (d := d) (n := n) f (q.1, ξ))
+      q.2
+  have hE :
+      ∀ q : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        HasFDerivAt
+          (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, q.2))
+          (φE q) q.1 := by
+    intro q
+    simpa [φE] using
+      (differentiableAt_partialFourierSpatial_fun_time (d := d) (n := n) f q.2 q.1).hasFDerivAt
+  have hF :
+      HasFDerivAt
+        (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+          partialFourierSpatial_fun (d := d) (n := n) f (p.1, ξ))
+        (φF p) p.2 := by
+    simpa [φF] using
+      (differentiableAt_partialFourierSpatial_fun_spatial (d := d) (n := n) f p.1 p.2).hasFDerivAt
+  have hEcont : ContinuousAt φE p := by
+    apply continuousAt_clm_of_continuousAt_apply_basisFin
+    intro i
+    let gi : SchwartzNPoint d n :=
+      ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+        (LineDeriv.lineDerivOp
+          ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+            Pi.single (M := fun _ : Fin n => ℝ) i (1 : ℝ))
+          (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+    convert (continuous_partialFourierSpatial_fun (d := d) (n := n) gi).continuousAt using 1
+    ext q
+    simpa [φE, gi] using
+      fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+        (d := d) (n := n) f q.2 q.1
+        (Pi.single (M := fun _ : Fin n => ℝ) i (1 : ℝ))
+  have hderiv :
+      fderiv ℝ (partialFourierSpatial_fun (d := d) (n := n) f) p =
+        partialFourierSpatial_jointDerivativeCandidate (d := d) (n := n) f p := by
+    rw [partialFourierSpatial_jointDerivativeCandidate]
+    exact (hasFDerivAt_of_partialFDerivsAt (p := p) hE hF hEcont).fderiv
+  let gt : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (LineDeriv.lineDerivOp
+        ((0 : EuclideanSpace ℝ (Fin n × Fin d)), m.1)
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  let gξ : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (-(2 * Real.pi * Complex.I) •
+        SchwartzMap.smulLeftCLM ℂ
+          (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+            ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+          (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  have hgξ :
+      gξ =
+        (-(2 * Real.pi * Complex.I)) •
+          ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+            (SchwartzMap.smulLeftCLM ℂ
+              (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+                ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+              (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f))) := by
+    simp [gξ]
+  have htime :
+      (fderiv ℝ
+        (fun t : Fin n → ℝ => partialFourierSpatial_fun (d := d) (n := n) f (t, p.2))
+        p.1) m.1 =
+      partialFourierSpatial_fun (d := d) (n := n) gt p := by
+    simpa [gt] using
+      fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+        (d := d) (n := n) f p.2 p.1 m.1
+  have hspace :
+      (fderiv ℝ
+        (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) =>
+          partialFourierSpatial_fun (d := d) (n := n) f (p.1, ξ))
+        p.2) m.2 =
+      partialFourierSpatial_fun (d := d) (n := n)
+        ((-(2 * Real.pi * Complex.I)) •
+          ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+            (SchwartzMap.smulLeftCLM ℂ
+              (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+                ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+              (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))) p := by
+    simpa using
+      fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz
+        (d := d) (n := n) f p.1 p.2 m.2
+  calc
+    (fderiv ℝ (partialFourierSpatial_fun (d := d) (n := n) f) p) m
+        = partialFourierSpatial_jointDerivativeCandidate (d := d) (n := n) f p m := by
+            rw [hderiv]
+    _ = φE p m.1 + φF p m.2 := by
+          simp [partialFourierSpatial_jointDerivativeCandidate, φE, φF,
+            ContinuousLinearMap.comp_apply]
+    _ = partialFourierSpatial_fun (d := d) (n := n) gt p +
+          partialFourierSpatial_fun (d := d) (n := n)
+            ((-(2 * Real.pi * Complex.I)) •
+              ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+                (SchwartzMap.smulLeftCLM ℂ
+                  (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+                    ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+                  (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))) p := by
+            simp [φE, φF, htime, hspace]
+    _ = partialFourierSpatial_fun (d := d) (n := n) gt p +
+          partialFourierSpatial_fun (d := d) (n := n) gξ p := by
+            rw [hgξ]
+
+theorem contDiff_nat_partialFourierSpatial_fun_joint
+    (f : SchwartzNPoint d n) (k : ℕ) :
+    ContDiff ℝ k (partialFourierSpatial_fun (d := d) (n := n) f) := by
+  induction k generalizing f with
+  | zero =>
+      exact contDiff_zero.2 (continuous_partialFourierSpatial_fun (d := d) (n := n) f)
+  | succ k ih =>
+      simpa using
+        (contDiff_succ_iff_fderiv_apply
+          (𝕜 := ℝ)
+          (D := (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d))
+          (n := (k : ℕ∞))
+          (f := partialFourierSpatial_fun (d := d) (n := n) f)).2 <|
+          ⟨fun p =>
+              differentiableAt_partialFourierSpatial_fun_joint
+                (d := d) (n := n) f p,
+            by simp,
+            fun m => by
+              let gt : SchwartzNPoint d n :=
+                ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+                  (LineDeriv.lineDerivOp
+                    ((0 : EuclideanSpace ℝ (Fin n × Fin d)), m.1)
+                    (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+              let gξ : SchwartzNPoint d n :=
+                ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+                  (-(2 * Real.pi * Complex.I) •
+                    SchwartzMap.smulLeftCLM ℂ
+                      (fun q : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+                        ((inner ℝ q.1 m.2 : ℝ) : ℂ))
+                      (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+              convert (ih gt).add (ih gξ) using 1
+              ext p
+              simpa [gt, gξ] using
+                fderiv_partialFourierSpatial_fun_joint_apply_eq_transportSum
+                  (d := d) (n := n) f p m⟩
+
+theorem contDiff_partialFourierSpatial_fun_joint
+    (f : SchwartzNPoint d n) :
+    ContDiff ℝ (⊤ : ℕ∞) (partialFourierSpatial_fun (d := d) (n := n) f) := by
+  rw [contDiff_infty]
+  intro k
+  exact contDiff_nat_partialFourierSpatial_fun_joint (d := d) (n := n) f k
 
 end OSReconstruction

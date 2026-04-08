@@ -278,6 +278,439 @@ private theorem tsupport_spatialSlice_subset_Ici_of_timePositive
     exact image_eq_zero_of_notMem_tsupport hs_not_mem
   exact ht_not ht
 
+/-! ### n-point ordered-positive slice support for branch `3b` -/
+
+/-- If one chosen time coordinate is negative, the time/spatial reindexing of
+an ordered-positive-time Euclidean test vanishes at that point. -/
+private theorem nPointTimeSpatialSchwartzCLE_eq_zero_of_neg_time
+    {n : ℕ}
+    (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (η : EuclideanSpace ℝ (Fin n × Fin d))
+    {s : ℝ} (hs : s < 0) :
+    OSReconstruction.nPointTimeSpatialSchwartzCLE (d := d) (n := n) f.1
+      (Function.update t r s, η) = 0 := by
+  have hnot_ord :
+      (OSReconstruction.nPointTimeSpatialCLE (d := d) n).symm (Function.update t r s, η) ∉
+        OrderedPositiveTimeRegion d n := by
+    intro hmem
+    have htime : 0 <
+        (((OSReconstruction.nPointTimeSpatialCLE (d := d) n).symm
+          (Function.update t r s, η)) r 0) := (hmem r).1
+    have hEq :
+        (((OSReconstruction.nPointTimeSpatialCLE (d := d) n).symm
+          (Function.update t r s, η)) r 0) = s := by
+      simp [OSReconstruction.nPointTimeSpatialCLE]
+    linarith
+  have hnot_supp :
+      (OSReconstruction.nPointTimeSpatialCLE (d := d) n).symm (Function.update t r s, η) ∉
+        tsupport (f.1 : NPointDomain d n → ℂ) := by
+    intro hx
+    exact hnot_ord (f.2 hx)
+  change f.1 ((OSReconstruction.nPointTimeSpatialCLE (d := d) n).symm
+    (Function.update t r s, η)) = 0
+  simpa using image_eq_zero_of_notMem_tsupport hnot_supp
+
+/-- Negative time in one chosen coordinate forces the branch-`3b` partial
+spatial Fourier transform to vanish at that point. -/
+private theorem partialFourierSpatial_fun_eq_zero_of_neg_time
+    {n : ℕ}
+    (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    {s : ℝ} (hs : s < 0) :
+    OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+      (Function.update t r s, ξ) = 0 := by
+  rw [OSReconstruction.partialFourierSpatial_fun_eq_integral]
+  refine MeasureTheory.integral_eq_zero_of_ae ?_
+  filter_upwards with η
+  simp [nPointTimeSpatialSchwartzCLE_eq_zero_of_neg_time (f := f) (r := r)
+    (t := t) (η := η) hs]
+
+/-- Fixing the spatial momentum block and all but one time coordinate, the
+branch-`3b` partial spatial Fourier transform of an ordered-positive-time
+Euclidean test is supported in `t ≥ 0` in the remaining time variable. This is
+the exact support input needed for the one-variable Section 4.3 supplier. -/
+private theorem tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+    {n : ℕ}
+    (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    tsupport (fun s : ℝ =>
+      OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+        (Function.update t r s, ξ)) ⊆ Set.Ici 0 := by
+  intro s hs
+  by_contra hs_neg
+  have hs_lt : s < 0 := by
+    simpa [Set.mem_Ici, not_le] using hs_neg
+  have hs_not :
+      s ∉ tsupport (fun s' : ℝ =>
+        OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+          (Function.update t r s', ξ)) := by
+    rw [notMem_tsupport_iff_eventuallyEq]
+    have hball : Metric.ball s (-s / 2) ∈ 𝓝 s := by
+      apply Metric.ball_mem_nhds
+      linarith
+    filter_upwards [hball] with s' hs'
+    have hsabs : |s' - s| < -s / 2 := by
+      simpa [Metric.mem_ball, Real.dist_eq] using hs'
+    have hs'_lt : s' < 0 := by
+      linarith [(abs_lt.mp hsabs).2, hs_lt]
+    exact partialFourierSpatial_fun_eq_zero_of_neg_time
+      (f := f) r t ξ hs'_lt
+  exact hs_not hs
+
+/-- A branch-`3b` one-variable time slice is continuous. -/
+private theorem continuous_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Continuous (fun s : ℝ =>
+      OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+        (Function.update t r s, ξ)) := by
+  have hupdate : Continuous (fun s : ℝ => (Function.update t r s, ξ)) := by
+    refine Continuous.prodMk ?_ continuous_const
+    refine continuous_pi ?_
+    intro i
+    by_cases hi : i = r
+    · subst hi
+      simpa using continuous_id
+    · simpa [Function.update, hi] using (continuous_const : Continuous fun _ : ℝ => t i)
+  exact (OSReconstruction.continuous_partialFourierSpatial_fun (d := d) (n := n) f.1).comp hupdate
+
+/-- A branch-`3b` one-variable time slice has polynomial growth on the real
+line. In fact it is uniformly bounded, by the companion-file partial Fourier
+estimate. -/
+private theorem hasPolynomialGrowthOnLine_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    SCV.HasPolynomialGrowthOnLine (fun s : ℝ =>
+      OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+        (Function.update t r s, ξ)) := by
+  rcases OSReconstruction.exists_norm_bound_partialFourierSpatial_fun (d := d) (n := n) f.1 with
+    ⟨C, hC, hbound⟩
+  refine ⟨C + 1, 0, by positivity, ?_⟩
+  intro s
+  calc
+    ‖OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f.1
+        (Function.update t r s, ξ)‖ ≤ C := hbound (Function.update t r s, ξ)
+    _ ≤ (C + 1) * (1 + |s|) ^ (0 : ℕ) := by
+      simp
+
+/-- Every fixed time-coordinate polynomial weight is uniformly bounded on a
+branch-`3b` one-variable time slice. This is the first weighted bound toward
+proving that the slice itself is a Schwartz function of the chosen time
+variable. -/
+private theorem exists_timePow_norm_bound_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ s : ℝ,
+        ‖((s : ℂ) ^ k) *
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r s, ξ)‖ ≤ C := by
+  rcases OSReconstruction.exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
+      (d := d) (n := n) f r k with ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  intro s
+  simpa using hbound (Function.update t r s, ξ)
+
+/-- The ordinary one-variable derivative of a branch-`3b` time slice is the
+same transported Schwartz input that appears in the ambient time-direction
+`fderiv` theorem, specialized to the update curve in the chosen coordinate. -/
+private theorem deriv_partialFourierSpatial_timeSlice_eq_transport
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (s : ℝ) :
+    deriv
+      (fun u : ℝ =>
+        OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+          (Function.update t r u, ξ))
+      s =
+    OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+      ((OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+        (LineDeriv.lineDerivOp
+          ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+            Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))
+          (OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+      (Function.update t r s, ξ) := by
+  have hcomp :
+      HasDerivAt
+        (fun u : ℝ =>
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r u, ξ))
+        ((fderiv ℝ
+            (fun u : Fin n → ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f (u, ξ))
+            (Function.update t r s))
+          (Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ)))
+        s := by
+    simpa using
+      (((OSReconstruction.differentiableAt_partialFourierSpatial_fun_time
+          (d := d) (n := n) f ξ (Function.update t r s)).hasFDerivAt).comp s
+        (hasDerivAt_update t r s).hasFDerivAt).hasDerivAt
+  calc
+    deriv
+        (fun u : ℝ =>
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r u, ξ))
+        s
+      =
+        ((fderiv ℝ
+            (fun u : Fin n → ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f (u, ξ))
+            (Function.update t r s))
+          (Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))) := hcomp.deriv
+    _ = OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+          ((OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+            (LineDeriv.lineDerivOp
+              ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+                Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))
+              (OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+          (Function.update t r s, ξ) := by
+            simpa using
+              OSReconstruction.fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+                (d := d) (n := n) f ξ (Function.update t r s)
+                (Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))
+
+/-- The first derivative of a branch-`3b` time slice also satisfies every
+fixed time-coordinate polynomial bound. This is the first honest `n = 1` step
+toward proving the slice is Schwartz in the chosen time variable. -/
+private theorem exists_timePow_norm_bound_deriv_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ s : ℝ,
+        ‖((s : ℂ) ^ k) *
+          deriv
+            (fun u : ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+                (Function.update t r u, ξ))
+            s‖ ≤ C := by
+  let g : SchwartzNPoint d n :=
+    ((OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (LineDeriv.lineDerivOp
+        ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+          Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))
+        (OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  rcases OSReconstruction.exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
+      (d := d) (n := n) g r k with ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  intro s
+  rw [deriv_partialFourierSpatial_timeSlice_eq_transport (f := f) r t ξ s]
+  simpa [g] using hbound (Function.update t r s, ξ)
+
+/-- The Schwartz-input transport corresponding to one ordinary derivative of
+the branch-`3b` time slice in the chosen coordinate. -/
+private noncomputable def timeDerivTransportInput
+    {n : ℕ} (r : Fin n) (f : SchwartzNPoint d n) : SchwartzNPoint d n :=
+  ((OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+    (LineDeriv.lineDerivOp
+      ((0 : EuclideanSpace ℝ (Fin n × Fin d)),
+        Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))
+      (OSReconstruction.nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+
+/-- Repeated time differentiation of the branch-`3b` slice corresponds to
+repeated application of `timeDerivTransportInput` on the Schwartz input. -/
+private noncomputable def iteratedTimeDerivTransport
+    {n : ℕ} (r : Fin n) (m : ℕ) (f : SchwartzNPoint d n) : SchwartzNPoint d n :=
+  (timeDerivTransportInput (d := d) (n := n) r)^[m] f
+
+/-- The `m`-th iterated ordinary derivative of the branch-`3b` time slice is
+again the same slice, but with the input replaced by the recursively
+transported Schwartz datum. -/
+private theorem iteratedDeriv_partialFourierSpatial_timeSlice_eq_transport
+    {n : ℕ}
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    ∀ (m : ℕ) (f : SchwartzNPoint d n) (s : ℝ),
+      iteratedDeriv m
+        (fun u : ℝ =>
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r u, ξ))
+        s =
+      OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+        (iteratedTimeDerivTransport (d := d) (n := n) r m f)
+        (Function.update t r s, ξ) := by
+  intro m
+  induction m with
+  | zero =>
+      intro f s
+      simp [iteratedTimeDerivTransport]
+  | succ m ih =>
+      intro f s
+      rw [iteratedDeriv_succ']
+      have hArg :
+          iteratedDeriv m
+            (deriv
+              (fun u : ℝ =>
+                OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+                  (Function.update t r u, ξ)))
+            s =
+          iteratedDeriv m
+            (fun u : ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+                (timeDerivTransportInput (d := d) (n := n) r f)
+                (Function.update t r u, ξ))
+            s := by
+        congr 1
+        ext u
+        simpa [timeDerivTransportInput] using
+          deriv_partialFourierSpatial_timeSlice_eq_transport
+            (d := d) (n := n) (f := f) r t ξ u
+      calc
+        iteratedDeriv m
+            (deriv
+              (fun u : ℝ =>
+                OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+                  (Function.update t r u, ξ)))
+            s
+          =
+            iteratedDeriv m
+              (fun u : ℝ =>
+                OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+                  (timeDerivTransportInput (d := d) (n := n) r f)
+                  (Function.update t r u, ξ))
+              s := hArg
+        _ = OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+              (iteratedTimeDerivTransport (d := d) (n := n) r (m + 1) f)
+              (Function.update t r s, ξ) := by
+              simpa [iteratedTimeDerivTransport, timeDerivTransportInput,
+                Function.iterate_succ_apply] using
+                ih (timeDerivTransportInput (d := d) (n := n) r f) s
+
+/-- Every iterated ordinary derivative of the branch-`3b` time slice satisfies
+every fixed polynomial time-weight bound. -/
+private theorem exists_timePow_norm_bound_iteratedDeriv_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (k m : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ s : ℝ,
+        ‖((s : ℂ) ^ k) *
+          iteratedDeriv m
+            (fun u : ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+                (Function.update t r u, ξ))
+            s‖ ≤ C := by
+  rcases exists_timePow_norm_bound_partialFourierSpatial_timeSlice
+      (d := d) (n := n)
+      (f := iteratedTimeDerivTransport (d := d) (n := n) r m f)
+      r t ξ k with ⟨C, hC, hbound⟩
+  refine ⟨C, hC, ?_⟩
+  intro s
+  rw [iteratedDeriv_partialFourierSpatial_timeSlice_eq_transport
+      (d := d) (n := n) r t ξ m f s]
+  simpa using hbound s
+
+/-- Every branch-`3b` time slice is differentiable, with derivative given by
+the transported Schwartz input from `timeDerivTransportInput`. -/
+private theorem differentiable_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Differentiable ℝ
+      (fun s : ℝ =>
+        OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+          (Function.update t r s, ξ)) := by
+  intro s
+  have hcomp :
+      HasDerivAt
+        (fun u : ℝ =>
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r u, ξ))
+        (OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+          (timeDerivTransportInput (d := d) (n := n) r f)
+          (Function.update t r s, ξ))
+        s := by
+    have hbase :
+        HasDerivAt
+          (fun u : ℝ =>
+            OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+              (Function.update t r u, ξ))
+          ((fderiv ℝ
+              (fun u : Fin n → ℝ =>
+              OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f (u, ξ))
+              (Function.update t r s))
+            (Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ)))
+        s := by
+      simpa using
+        (((OSReconstruction.differentiableAt_partialFourierSpatial_fun_time
+            (d := d) (n := n) f ξ (Function.update t r s)).hasFDerivAt).comp s
+          (hasDerivAt_update t r s).hasFDerivAt).hasDerivAt
+    convert hbase using 1
+    simpa [timeDerivTransportInput] using
+      (OSReconstruction.fderiv_partialFourierSpatial_fun_time_apply_eq_transport
+        (d := d) (n := n) f ξ (Function.update t r s)
+        (Pi.single (M := fun _ : Fin n => ℝ) r (1 : ℝ))).symm
+  exact hcomp.differentiableAt
+
+/-- The branch-`3b` time slice is a Schwartz function of the chosen time
+variable. -/
+private theorem contDiff_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    ContDiff ℝ (⊤ : ℕ∞)
+      (fun s : ℝ =>
+        OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+          (Function.update t r s, ξ)) := by
+  apply contDiff_of_differentiable_iteratedDeriv
+  intro m hm
+  have hEq :
+      iteratedDeriv m
+        (fun s : ℝ =>
+          OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+            (Function.update t r s, ξ)) =
+      fun s : ℝ =>
+        OSReconstruction.partialFourierSpatial_fun (d := d) (n := n)
+          (iteratedTimeDerivTransport (d := d) (n := n) r m f)
+          (Function.update t r s, ξ) := by
+    ext s
+    simpa using
+      iteratedDeriv_partialFourierSpatial_timeSlice_eq_transport
+        (d := d) (n := n) r t ξ m f s
+  rw [hEq]
+  exact differentiable_partialFourierSpatial_timeSlice
+    (d := d) (n := n)
+    (f := iteratedTimeDerivTransport (d := d) (n := n) r m f) r t ξ
+
+/-- The branch-`3b` time slice, packaged honestly as a Schwartz function in the
+chosen time variable. -/
+private noncomputable def partialFourierSpatial_timeSliceSchwartz
+    {n : ℕ}
+    (f : SchwartzNPoint d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    SchwartzMap ℝ ℂ where
+  toFun := fun s : ℝ =>
+    OSReconstruction.partialFourierSpatial_fun (d := d) (n := n) f
+      (Function.update t r s, ξ)
+  smooth' := contDiff_partialFourierSpatial_timeSlice (d := d) (n := n) f r t ξ
+  decay' := by
+    intro k m
+    rcases exists_timePow_norm_bound_iteratedDeriv_partialFourierSpatial_timeSlice
+        (d := d) (n := n) f r t ξ k m with ⟨C, _, hC⟩
+    refine ⟨C, ?_⟩
+    intro s
+    simpa [norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      norm_iteratedFDeriv_eq_norm_iteratedDeriv] using hC s
+
 /-! ### One-variable Section 4.3 Fourier-Laplace supplier -/
 
 /-- The one-variable complex Laplace transform used by the Section 4.3
@@ -930,6 +1363,30 @@ private theorem fourierLaplaceExt_fourierInvPairing_eq_complexLaplaceTransform
       ring_nf
       simp
     simpa [mul_assoc, mul_left_comm, mul_comm] using congrArg (fun z => f ξ * z) hexp
+
+/-- The one-variable Paley-Wiener supplier applied to the actual branch-`3b`
+positive-time time slice: on the positive imaginary axis, the canonical
+Fourier-Laplace extension of the induced inverse-Fourier pairing reproduces the
+raw one-sided Laplace transform of the slice itself. -/
+private theorem fourierLaplaceExt_partialFourierSpatial_timeSlice_eq_complexLaplaceTransform
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    {η : ℝ} (hη : 0 < η) :
+    SCV.fourierLaplaceExt
+        (fourierInvPairingCLM
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ))
+        (((2 * Real.pi * η : ℂ) * Complex.I))
+        (by simpa [Complex.mul_im, hη.ne'] using mul_pos Real.two_pi_pos hη)
+      =
+    complexLaplaceTransform
+      (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+      ((2 * Real.pi * η : ℂ)) := by
+  exact fourierLaplaceExt_fourierInvPairing_eq_complexLaplaceTransform
+    (f := partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+    (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+      (d := d) (n := n) f r t ξ)
+    hη
 
 /-- The honest OS Hilbert-space vector determined by a positive-time Euclidean
 Borchers sequence. Package I will later define the Minkowski-side transport map
