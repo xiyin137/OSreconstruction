@@ -3204,13 +3204,12 @@ private lemma realPlusIEpsEta_mem_tubeDomain
 -- MeasureTheory.tendsto_integral_of_dominated_convergence once
 -- the measurability/integrability bookkeeping is done.
 -- Ref: Vladimirov §25; Reed-Simon I §IX.3.
-axiom scalar_dct_schwartz_pairing {m : ℕ}
+-- Scalar DCT for Schwartz pairings via tendsto_integral_filter_of_dominated_convergence.
+theorem scalar_dct_schwartz_pairing {m : ℕ}
     (g : ℝ → (Fin m → ℝ) → ℂ)
     (L : (Fin m → ℝ) → ℂ)
-    -- Pointwise convergence
     (hconv : ∀ (x : Fin m → ℝ),
       Filter.Tendsto (fun ε => g ε x) (nhdsWithin 0 (Set.Ioi 0)) (nhds (L x)))
-    -- Uniform polynomial dominator
     (hdom : ∃ (C : ℝ) (N : ℕ), C > 0 ∧
       ∀ (ε : ℝ), 0 < ε → ε ≤ 1 → ∀ (x : Fin m → ℝ),
         ‖g ε x‖ ≤ C * (1 + ‖x‖) ^ N)
@@ -3218,7 +3217,26 @@ axiom scalar_dct_schwartz_pairing {m : ℕ}
     Filter.Tendsto
       (fun ε => ∫ x : Fin m → ℝ, g ε x * f x)
       (nhdsWithin 0 (Set.Ioi 0))
-      (nhds (∫ x : Fin m → ℝ, L x * f x))
+      (nhds (∫ x : Fin m → ℝ, L x * f x)) := by
+  obtain ⟨C_bd, N, hC_pos, hbound⟩ := hdom
+  -- Apply Mathlib's filter DCT
+  apply MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+    (bound := fun x => C_bd * (1 + ‖x‖) ^ N * ‖f x‖)
+  · -- AEStronglyMeasurable for the family
+    sorry -- measurability of g ε · f
+  · -- Domination: ‖g ε x * f x‖ ≤ bound x for ε near 0
+    filter_upwards [nhdsWithin_le_nhds (Iio_mem_nhds one_pos),
+      self_mem_nhdsWithin] with ε hε1 hε_pos
+    filter_upwards with x
+    rw [norm_mul]
+    exact mul_le_mul_of_nonneg_right
+      (hbound ε (Set.mem_Ioi.mp hε_pos) (le_of_lt (Set.mem_Iio.mp hε1)) x)
+      (norm_nonneg _)
+  · -- Integrability of bound
+    sorry -- C * (1+‖x‖)^N * ‖f x‖ is integrable (poly × Schwartz)
+  · -- Pointwise convergence
+    filter_upwards with x
+    exact (hconv x).mul_const (f x)
 -- **Axiom: Fourier-Laplace boundary value recovery.**
 --
 -- The distributional boundary value of the Fourier-Laplace extension F(z) = T(ψ_z)
