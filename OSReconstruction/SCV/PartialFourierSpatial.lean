@@ -459,6 +459,152 @@ theorem exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
   exact hbound p
 
 omit [NeZero d] in
+theorem partialFourierSpatial_fun_spatialInner_eq_transport
+    (f : SchwartzNPoint d n)
+    (m : EuclideanSpace ℝ (Fin n × Fin d))
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    ((2 * Real.pi * Complex.I) * (((inner ℝ p.2 m : ℝ) : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n) f p =
+      partialFourierSpatial_fun (d := d) (n := n)
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (LineDeriv.lineDerivOp ((m, (0 : Fin n → ℝ)))
+            (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f))) p := by
+  let base := nPointSpatialTimeSchwartzCLE (d := d) (n := n) f
+  let slice : SchwartzMap (EuclideanSpace ℝ (Fin n × Fin d)) ℂ :=
+    SchwartzMap.partialEval₂ base p.1
+  have hinner : (fun ξ : EuclideanSpace ℝ (Fin n × Fin d) => inner ℝ ξ m).HasTemperateGrowth := by
+    fun_prop
+  have hs :
+      SchwartzMap.partialEval₂
+          (LineDeriv.lineDerivOp ((m, (0 : Fin n → ℝ))) base) p.1 =
+        LineDeriv.lineDerivOp m slice := by
+    simpa [slice, base] using
+      (OSReconstruction.lineDerivOp_partialEval₂_comm (f := base) (y := p.1) (m := m)).symm
+  change
+    ((2 * Real.pi * Complex.I) * (((inner ℝ p.2 m : ℝ) : ℂ))) *
+        ((SchwartzMap.fourierTransformCLM ℂ) slice) p.2 =
+      ((SchwartzMap.fourierTransformCLM ℂ)
+        (SchwartzMap.partialEval₂
+          (LineDeriv.lineDerivOp ((m, (0 : Fin n → ℝ))) base) p.1)) p.2
+  rw [hs]
+  have happly :=
+    congrArg
+      (fun h : SchwartzMap (EuclideanSpace ℝ (Fin n × Fin d)) ℂ => h p.2)
+      (SchwartzMap.fourier_lineDerivOp_eq (f := slice) (m := m))
+  simpa [SchwartzMap.smulLeftCLM_apply_apply, hinner, Complex.real_smul,
+    smul_eq_mul, mul_assoc, mul_left_comm, mul_comm] using happly.symm
+
+omit [NeZero d] in
+theorem partialFourierSpatial_fun_spatialCoord_eq_transport
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d)
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    ((2 * Real.pi * Complex.I) * (((p.2 i : ℝ) : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n) f p =
+      partialFourierSpatial_fun (d := d) (n := n)
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (LineDeriv.lineDerivOp ((EuclideanSpace.single i (1 : ℝ), (0 : Fin n → ℝ)))
+            (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f))) p := by
+  have hinner :
+      inner ℝ p.2 (EuclideanSpace.single i (1 : ℝ)) = p.2 i := by
+    simpa using EuclideanSpace.inner_single_right (𝕜 := ℝ) i (1 : ℝ) p.2
+  simpa [hinner] using
+    partialFourierSpatial_fun_spatialInner_eq_transport
+      (d := d) (n := n) f (EuclideanSpace.single i (1 : ℝ)) p
+
+theorem exists_spatialCoord_norm_bound_partialFourierSpatial_fun
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        ‖(((p.2 i : ℝ) : ℂ) * partialFourierSpatial_fun (d := d) (n := n) f p)‖ ≤ C := by
+  let c : ℂ := 2 * Real.pi * Complex.I
+  let g : SchwartzNPoint d n :=
+    ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+      (LineDeriv.lineDerivOp ((EuclideanSpace.single i (1 : ℝ), (0 : Fin n → ℝ)))
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+  rcases exists_norm_bound_partialFourierSpatial_fun (d := d) (n := n) g with
+    ⟨C, hC, hbound⟩
+  have hc0 : c ≠ 0 := by
+    have htwoPi : (2 * Real.pi : ℂ) ≠ 0 := by
+      exact_mod_cast mul_ne_zero two_ne_zero Real.pi_ne_zero
+    exact mul_ne_zero htwoPi Complex.I_ne_zero
+  have hcnorm : 0 < ‖c‖ := norm_pos_iff.mpr hc0
+  refine ⟨C / ‖c‖, by positivity, ?_⟩
+  intro p
+  have hscaled_eq :
+      ‖c * ((((p.2 i : ℝ) : ℂ) * partialFourierSpatial_fun (d := d) (n := n) f p))‖ =
+        ‖partialFourierSpatial_fun (d := d) (n := n) g p‖ := by
+    congr 1
+    simpa [c, g, mul_assoc] using
+      partialFourierSpatial_fun_spatialCoord_eq_transport (d := d) (n := n) f i p
+  have hnorm_mul :
+      ‖c‖ * ‖(((p.2 i : ℝ) : ℂ) * partialFourierSpatial_fun (d := d) (n := n) f p)‖ ≤ C := by
+    calc
+      ‖c‖ * ‖(((p.2 i : ℝ) : ℂ) * partialFourierSpatial_fun (d := d) (n := n) f p)‖
+          = ‖partialFourierSpatial_fun (d := d) (n := n) g p‖ := by
+              rw [← hscaled_eq]
+              simpa [c, norm_mul, mul_assoc]
+      _ ≤ C := hbound p
+  exact (le_div_iff₀ hcnorm).2 <| by
+    simpa [mul_comm] using hnorm_mul
+
+theorem exists_spatialCoordPow_norm_bound_partialFourierSpatial_fun
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d),
+        ‖((((p.2 i : ℝ) : ℂ)) ^ k) *
+            partialFourierSpatial_fun (d := d) (n := n) f p‖ ≤ C := by
+  induction k generalizing f with
+  | zero =>
+      rcases exists_norm_bound_partialFourierSpatial_fun (d := d) (n := n) f with
+        ⟨C, hC, hbound⟩
+      refine ⟨C, hC, ?_⟩
+      intro p
+      simpa using hbound p
+  | succ k ih =>
+      let c : ℂ := 2 * Real.pi * Complex.I
+      let g : SchwartzNPoint d n :=
+        ((nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+          (LineDeriv.lineDerivOp ((EuclideanSpace.single i (1 : ℝ), (0 : Fin n → ℝ)))
+            (nPointSpatialTimeSchwartzCLE (d := d) (n := n) f)))
+      rcases ih g with ⟨C, hC, hbound⟩
+      have hc0 : c ≠ 0 := by
+        have htwoPi : (2 * Real.pi : ℂ) ≠ 0 := by
+          exact_mod_cast mul_ne_zero two_ne_zero Real.pi_ne_zero
+        exact mul_ne_zero htwoPi Complex.I_ne_zero
+      have hcnorm : 0 < ‖c‖ := norm_pos_iff.mpr hc0
+      refine ⟨C / ‖c‖, by positivity, ?_⟩
+      intro p
+      let z : ℂ := ((p.2 i : ℝ) : ℂ)
+      have htransport :
+          (c * z) * partialFourierSpatial_fun (d := d) (n := n) f p =
+            partialFourierSpatial_fun (d := d) (n := n) g p := by
+        simpa [c, g] using
+          partialFourierSpatial_fun_spatialCoord_eq_transport (d := d) (n := n) f i p
+      have hscaled_eq :
+          ‖c * ((z ^ (k + 1)) * partialFourierSpatial_fun (d := d) (n := n) f p)‖ =
+            ‖(z ^ k) * partialFourierSpatial_fun (d := d) (n := n) g p‖ := by
+        congr 1
+        calc
+          c * ((z ^ (k + 1)) * partialFourierSpatial_fun (d := d) (n := n) f p)
+              = (z ^ k) * ((c * z) * partialFourierSpatial_fun (d := d) (n := n) f p) := by
+                  simp [pow_succ', mul_assoc, mul_left_comm, mul_comm]
+          _ = (z ^ k) * partialFourierSpatial_fun (d := d) (n := n) g p := by
+                  rw [htransport]
+      have hnorm_mul :
+          ‖c‖ * ‖(z ^ (k + 1)) * partialFourierSpatial_fun (d := d) (n := n) f p‖ ≤ C := by
+        calc
+          ‖c‖ * ‖(z ^ (k + 1)) * partialFourierSpatial_fun (d := d) (n := n) f p‖
+              = ‖(z ^ k) * partialFourierSpatial_fun (d := d) (n := n) g p‖ := by
+                  rw [← hscaled_eq]
+                  simpa [c, norm_mul, mul_assoc]
+          _ ≤ C := hbound p
+      exact (le_div_iff₀ hcnorm).2 <| by
+        simpa [z, mul_comm] using hnorm_mul
+
+omit [NeZero d] in
 theorem continuous_partialFourierSpatial_fun
     (f : SchwartzNPoint d n) :
     Continuous (partialFourierSpatial_fun (d := d) (n := n) f) := by

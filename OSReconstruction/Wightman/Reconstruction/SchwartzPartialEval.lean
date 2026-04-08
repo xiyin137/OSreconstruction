@@ -5,6 +5,7 @@ import OSReconstruction.Wightman.Reconstruction.Core
 noncomputable section
 
 open SchwartzMap ContinuousLinearMap
+open scoped LineDeriv
 
 namespace OSReconstruction
 
@@ -103,6 +104,24 @@ def SchwartzMap.partialEval₂ (f : SchwartzMap (E₁ × E₂) F) (y : E₂) :
             gcongr
             exact norm_x_le_norm_prod x y
       _ ≤ C := hC (x, y)
+
+/-- Differentiating in the first factor commutes with partial evaluation in the
+second factor. This is the exact algebraic seam later used to transport spatial
+Fourier identities through product Schwartz data. -/
+theorem lineDerivOp_partialEval₂_comm
+    (f : SchwartzMap (E₁ × E₂) F) (y : E₂) (m : E₁) :
+    ∂_{m} (SchwartzMap.partialEval₂ f y) =
+      SchwartzMap.partialEval₂ (∂_{(m, (0 : E₂))} f) y := by
+  ext x
+  rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+  change (fderiv ℝ (fun x' => f (x', y)) x) m = (∂_{(m, (0 : E₂))} f) (x, y)
+  rw [SchwartzMap.lineDerivOp_apply_eq_fderiv]
+  have h :=
+    iteratedFDeriv_partialEval_eq_compContinuousLinearMap_inl (f := f) (y := y) (l := 1) (x := x)
+  have happly :=
+    congrArg
+      (fun A : ContinuousMultilinearMap ℝ (fun _ : Fin 1 => E₁) F => A (fun _ => m)) h
+  simpa [iteratedFDeriv_one_apply, ContinuousLinearMap.inl_apply] using happly
 
 /-- The Schwartz tails of `partialEval₂ f y` are uniformly small in the parameter `y`
 once `‖x‖` is sufficiently large. -/

@@ -5,6 +5,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
+import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43Codomain
 import OSReconstruction.SCV.PaleyWiener
 import OSReconstruction.SCV.PartialFourierSpatial
@@ -37,6 +38,7 @@ essential.
 open scoped Topology Classical NNReal
 open BigOperators Finset Complex
 open MeasureTheory Filter
+open OSReconstruction
 
 noncomputable section
 
@@ -100,6 +102,38 @@ theorem identity_theorem_right_halfplane
   have := heqOn hz
   simp only [Pi.sub_apply, Pi.zero_apply, sub_eq_zero] at this
   exact this
+
+private theorem identity_theorem_upperHalfPlane
+    (f g : ℂ → ℂ)
+    (hf : DifferentiableOn ℂ f SCV.upperHalfPlane)
+    (hg : DifferentiableOn ℂ g SCV.upperHalfPlane)
+    (hagree : ∀ η : ℝ, 0 < η → f (η * Complex.I) = g (η * Complex.I)) :
+    ∀ z : ℂ, 0 < z.im → f z = g z := by
+  let fR : ℂ → ℂ := fun w => f (Complex.I * w)
+  let gR : ℂ → ℂ := fun w => g (Complex.I * w)
+  have hmap : Set.MapsTo (fun w : ℂ => Complex.I * w)
+      {z : ℂ | 0 < z.re} SCV.upperHalfPlane := by
+    intro z hz
+    simpa [SCV.upperHalfPlane, Complex.mul_im] using hz
+  have hmul :
+      DifferentiableOn ℂ (fun w : ℂ => Complex.I * w)
+        {z : ℂ | 0 < z.re} := by
+    intro z hz
+    simpa using
+      (((differentiableAt_id : DifferentiableAt ℂ (fun y : ℂ => y) z).const_mul
+        Complex.I).differentiableWithinAt)
+  have hfR : DifferentiableOn ℂ fR {z : ℂ | 0 < z.re} := hf.comp hmul hmap
+  have hgR : DifferentiableOn ℂ gR {z : ℂ | 0 < z.re} := hg.comp hmul hmap
+  have hagreeR : ∀ t : ℝ, 0 < t → fR (t : ℂ) = gR (t : ℂ) := by
+    intro t ht
+    simpa [fR, gR, mul_comm] using hagree t ht
+  intro z hz
+  have hzR : 0 < (-Complex.I * z).re := by
+    simpa [Complex.mul_re] using hz
+  have hmain :=
+    identity_theorem_right_halfplane fR gR hfR hgR hagreeR (-Complex.I * z) hzR
+  dsimp [fR, gR] at hmain
+  convert hmain using 1 <;> ring_nf <;> simp
 
 /-! ## Part 2: Semigroup bridge for single-component pairs -/
 
@@ -183,58 +217,9 @@ The correct route is OS I Section 4.3: construct the transport map
 and prove `W(f* × f) = ‖u(f)‖²_H ≥ 0` directly. This does NOT go through
 any time-shifted Schwinger-vs-Wightman comparison. -/
 
-/-- The Euclidean positive-time degree-`n` test space from OS I Section 4.3.
-
-This is the paper's `S_+(ℝ^{4n})`: Schwartz `n`-point test functions whose
-topological support lies in the ordered positive-time region. -/
-def EuclideanPositiveTimeComponent (d n : ℕ) [NeZero d] :=
-  {f : SchwartzNPoint d n //
-    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
-
-/-- An equivalent submodule presentation of the Euclidean positive-time domain.
-
-The blueprint allows either the subtype or submodule form, as long as it
-represents the same Section-4.3 Euclidean input space. This submodule surface
-will be convenient when the transport map is eventually stated as a continuous
-linear map. -/
-def euclideanPositiveTimeSubmodule (d n : ℕ) [NeZero d] :
-    Submodule ℂ (SchwartzNPoint d n) where
-  carrier := {f |
-    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n}
-  zero_mem' := by
-    change tsupport (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) ⊆
-      OrderedPositiveTimeRegion d n
-    rw [show (((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ)) = 0 by rfl]
-    simpa using (empty_subset (OrderedPositiveTimeRegion d n) :
-      (∅ : Set (NPointDomain d n)) ⊆ OrderedPositiveTimeRegion d n)
-  add_mem' := by
-    intro f g hf hg x hx
-    have hx' := tsupport_add
-      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)
-      ((g : SchwartzNPoint d n) : NPointDomain d n → ℂ) hx
-    exact hx'.elim (hf ·) (hg ·)
-  smul_mem' := by
-    intro c f hf
-    exact (tsupport_smul_subset_right
-      (fun _ : NPointDomain d n => c)
-      ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ)).trans hf
-
-@[simp] theorem mem_euclideanPositiveTimeSubmodule
-    {n : ℕ} (f : SchwartzNPoint d n) :
-    f ∈ euclideanPositiveTimeSubmodule (d := d) n ↔
-      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n := Iff.rfl
-
 namespace EuclideanPositiveTimeComponent
 
 variable {n : ℕ}
-
-/-- Package a positive-time submodule element as the corresponding subtype
-object. This is the bridge from the current-code submodule model back to the
-existing Euclidean-side OS Hilbert-space vectors. -/
-def ofSubmodule
-    (f : euclideanPositiveTimeSubmodule (d := d) n) :
-    EuclideanPositiveTimeComponent d n :=
-  ⟨f.1, f.2⟩
 
 /-- A positive-time component viewed as the corresponding single positive-time
 Borchers sequence. This is the Euclidean-side input object whose image under
@@ -1456,6 +1441,70 @@ private theorem partialFourierSpatial_timeSliceCanonicalExtension_eq_complexLapl
     (fourierLaplaceExt_partialFourierSpatial_timeSlice_eq_complexLaplaceTransform
       (d := d) (n := n) f r t ξ hη)
 
+private theorem partialFourierSpatial_timeSliceCanonicalExtension_differentiableOn
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    DifferentiableOn ℂ
+      (partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) f r t ξ)
+      SCV.upperHalfPlane := by
+  let T :=
+    fourierInvPairingCLM
+      (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+  let Fcore : ℂ → ℂ := fun w =>
+    if hw : 0 < w.im then
+      SCV.fourierLaplaceExt T w hw
+    else
+      0
+  let F : ℂ → ℂ := Fcore ∘ fun w => (((2 * Real.pi : ℝ) : ℂ) * w)
+  have hF_diff : DifferentiableOn ℂ F SCV.upperHalfPlane := by
+    have hmap : Set.MapsTo (fun w : ℂ => (((2 * Real.pi : ℝ) : ℂ) * w))
+        SCV.upperHalfPlane SCV.upperHalfPlane := by
+      intro z hz
+      dsimp [SCV.upperHalfPlane] at hz ⊢
+      simpa [Complex.mul_im, mul_assoc] using mul_pos Real.two_pi_pos hz
+    have hmul :
+        DifferentiableOn ℂ (fun w : ℂ => (((2 * Real.pi : ℝ) : ℂ) * w))
+          SCV.upperHalfPlane := by
+      intro z hz
+      simpa using
+        ((((differentiableAt_id : DifferentiableAt ℂ (fun y : ℂ => y) z).const_mul
+          (((2 * Real.pi : ℝ) : ℂ))).differentiableWithinAt))
+    simpa [F, Fcore] using (SCV.fourierLaplaceExt_differentiableOn T).comp hmul hmap
+  have hEq : partialFourierSpatial_timeSliceCanonicalExtension
+      (d := d) (n := n) f r t ξ = F := by
+    funext w
+    by_cases hw : 0 < w.im
+    · have hscaled : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im := by
+        simpa [Complex.mul_im, mul_assoc] using mul_pos Real.two_pi_pos hw
+      show partialFourierSpatial_timeSliceCanonicalExtension
+          (d := d) (n := n) f r t ξ w =
+        Fcore ((((2 * Real.pi : ℝ) : ℂ) * w))
+      change partialFourierSpatial_timeSliceCanonicalExtension
+          (d := d) (n := n) f r t ξ w =
+        if hw' : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im then
+          SCV.fourierLaplaceExt T ((((2 * Real.pi : ℝ) : ℂ) * w)) hw'
+        else 0
+      rw [partialFourierSpatial_timeSliceCanonicalExtension, dif_pos hw, dif_pos hscaled]
+      simp [T]
+    · have hnotscaled : ¬ 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im := by
+        intro hscaled
+        have hscaled' : 0 < (2 * Real.pi) * w.im := by
+          simpa [Complex.mul_im, mul_assoc] using hscaled
+        nlinarith [Real.two_pi_pos, hscaled']
+      show partialFourierSpatial_timeSliceCanonicalExtension
+          (d := d) (n := n) f r t ξ w =
+        Fcore ((((2 * Real.pi : ℝ) : ℂ) * w))
+      change partialFourierSpatial_timeSliceCanonicalExtension
+          (d := d) (n := n) f r t ξ w =
+        if hw' : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im then
+          SCV.fourierLaplaceExt T ((((2 * Real.pi : ℝ) : ℂ) * w)) hw'
+        else 0
+      rw [partialFourierSpatial_timeSliceCanonicalExtension, dif_neg hw, dif_neg hnotscaled]
+  rw [hEq]
+  exact hF_diff
+
 /-- The actual branch-`3b` time slice, packaged as the one-variable Section 4.3
 positive-time test input. -/
 private noncomputable def partialFourierSpatial_timeSliceTest
@@ -1496,6 +1545,251 @@ private theorem fourierPairingDescendsToSection43PositiveEnergy1D_partialFourier
         (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
           (d := d) (n := n) f r t ξ))
       (f := partialFourierSpatial_timeSliceTest (d := d) (n := n) f r t ξ))
+
+/-- If two ambient Schwartz tests agree on the Section 4.3 positive-energy
+region, then their partial spatial Fourier transforms agree at every time
+vector with nonnegative coordinates. -/
+private theorem partialFourierSpatial_fun_eq_of_eqOn_section43PositiveEnergyRegion
+    {n : ℕ} {f g : SchwartzNPoint d n}
+    (hfg :
+      Set.EqOn (f : NPointDomain d n → ℂ) (g : NPointDomain d n → ℂ)
+        (section43PositiveEnergyRegion d n))
+    (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    partialFourierSpatial_fun (d := d) (n := n) f (t, ξ) =
+      partialFourierSpatial_fun (d := d) (n := n) g (t, ξ) := by
+  rw [partialFourierSpatial_fun_eq_integral (d := d) (n := n) f (t, ξ)]
+  rw [partialFourierSpatial_fun_eq_integral (d := d) (n := n) g (t, ξ)]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards with η
+  have hregion :
+      (nPointTimeSpatialCLE (d := d) n).symm (t, η) ∈
+        section43PositiveEnergyRegion d n := by
+    intro i
+    simpa [nPointTimeSpatialCLE] using ht i
+  have hval :
+      nPointTimeSpatialSchwartzCLE (d := d) (n := n) f (t, η) =
+        nPointTimeSpatialSchwartzCLE (d := d) (n := n) g (t, η) := by
+    simpa [nPointTimeSpatialSchwartzCLE, nPointTimeSpatialCLE,
+      SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hfg hregion
+  simp [hval]
+
+/-- If an ambient transformed-image representative `φ` and a positive-time
+preimage `f` define the same Section 4.3 quotient class, then freezing all but
+one time variable with nonnegative background times gives the same one-variable
+slice on `[0,∞)`. This is the first honest ambient-representative bridge
+needed by the corrected Stage-5 theorem surface. -/
+private theorem partialFourierSpatial_timeSlice_eqOn_nonneg_of_repr_eq_transport
+    {n : ℕ}
+    {φ : SchwartzNPoint d n}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Set.EqOn
+      ((partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ :
+          SchwartzMap ℝ ℂ) : ℝ → ℂ)
+      ((partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ :
+            SchwartzMap ℝ ℂ) : ℝ → ℂ)
+      (Set.Ici (0 : ℝ)) := by
+  have hregion :
+      Set.EqOn (φ : NPointDomain d n → ℂ)
+        ((f : euclideanPositiveTimeSubmodule (d := d) n) :
+          NPointDomain d n → ℂ)
+        (section43PositiveEnergyRegion d n) := by
+    have hq :
+        section43PositiveEnergyQuotientMap (d := d) n φ =
+          section43PositiveEnergyQuotientMap (d := d) n f.1 := by
+      simpa [os1TransportComponent_apply] using hφf
+    exact eqOn_region_of_section43PositiveEnergyQuotientMap_eq
+      (d := d) (n := n) (f := φ) (g := f.1) hq
+  intro s hs
+  have hnonneg : ∀ i : Fin n, 0 ≤ Function.update t r s i := by
+    intro i
+    by_cases hi : i = r
+    · subst hi
+      simpa using hs
+    · rw [Function.update_of_ne hi]
+      exact ht i hi
+  simpa [partialFourierSpatial_timeSliceSchwartz] using
+    partialFourierSpatial_fun_eq_of_eqOn_section43PositiveEnergyRegion
+      (d := d) (n := n) hregion (Function.update t r s) hnonneg ξ
+
+/-- Therefore the one-variable Section 4.3 quotient class of the ambient slice
+is the same as the transport slice class of its positive-time preimage. This is
+the direct current-code bridge from an ambient transformed-image representative
+to the one-variable quotient theorem used later in the Stage-5 adapter. -/
+private theorem section43PositiveEnergyQuotientMap1D_partialFourierSpatial_timeSlice_eq_of_repr_eq_transport
+    {n : ℕ}
+    {φ : SchwartzNPoint d n}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    section43PositiveEnergyQuotientMap1D
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ) =
+      os1TransportOneVar
+        (partialFourierSpatial_timeSliceTest (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ) := by
+  apply section43PositiveEnergyQuotientMap1D_eq_of_eqOn_nonneg
+  exact partialFourierSpatial_timeSlice_eqOn_nonneg_of_repr_eq_transport
+    (d := d) (n := n) hφf r t ht ξ
+
+/-- Equality of multivariate Section 4.3 quotient classes forces equality of
+the associated one-variable slice tests on `[0,\infty)`, provided the frozen
+background times are nonnegative. -/
+private theorem partialFourierSpatial_timeSlice_eqOn_nonneg_of_transport_eq
+    {n : ℕ}
+    {f g : euclideanPositiveTimeSubmodule (d := d) n}
+    (hfg : os1TransportComponent d n f = os1TransportComponent d n g)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Set.EqOn
+      ((partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ : SchwartzMap ℝ ℂ) : ℝ → ℂ)
+      ((partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule g).1 r t ξ : SchwartzMap ℝ ℂ) : ℝ → ℂ)
+      (Set.Ici (0 : ℝ)) := by
+  have hregion :
+      Set.EqOn ((f : euclideanPositiveTimeSubmodule (d := d) n) : NPointDomain d n → ℂ)
+        ((g : euclideanPositiveTimeSubmodule (d := d) n) : NPointDomain d n → ℂ)
+        (section43PositiveEnergyRegion d n) :=
+    eqOn_region_of_section43PositiveEnergyQuotientMap_eq (d := d)
+      (n := n) (f := (f : SchwartzNPoint d n)) (g := (g : SchwartzNPoint d n)) hfg
+  intro s hs
+  have hnonneg : ∀ i : Fin n, 0 ≤ Function.update t r s i := by
+    intro i
+    by_cases hi : i = r
+    · subst hi
+      simpa using hs
+    · rw [Function.update_of_ne hi]
+      exact ht i hi
+  simpa [partialFourierSpatial_timeSliceSchwartz] using
+    partialFourierSpatial_fun_eq_of_eqOn_section43PositiveEnergyRegion
+      (d := d) (n := n) hregion (Function.update t r s) hnonneg ξ
+
+/-- Therefore the one-variable quotient class of the branch-`3b` slice depends
+only on the multivariate Section 4.3 quotient class. This is the concrete
+slice-level descent step needed before the full iterated pairing theorem. -/
+private theorem os1TransportOneVar_partialFourierSpatial_timeSlice_eq_of_transport_eq
+    {n : ℕ}
+    {f g : euclideanPositiveTimeSubmodule (d := d) n}
+    (hfg : os1TransportComponent d n f = os1TransportComponent d n g)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    os1TransportOneVar
+      (partialFourierSpatial_timeSliceTest (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ) =
+    os1TransportOneVar
+      (partialFourierSpatial_timeSliceTest (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ) := by
+  apply section43PositiveEnergyQuotientMap1D_eq_of_eqOn_nonneg
+  exact partialFourierSpatial_timeSlice_eqOn_nonneg_of_transport_eq
+    (d := d) (n := n) hfg r t ht ξ
+
+/-- On the current support-restricted source, equality of multivariate
+Section-4.3 classes forces equality of the actual one-variable branch-`3b`
+slice Schwartz functions. On `[0,∞)` this is the quotient argument above; on
+`(-∞,0)` both slices vanish by positive-time support. -/
+private theorem partialFourierSpatial_timeSliceSchwartz_eq_of_transport_eq
+    {n : ℕ}
+    {f g : euclideanPositiveTimeSubmodule (d := d) n}
+    (hfg : os1TransportComponent d n f = os1TransportComponent d n g)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ =
+      partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule g).1 r t ξ := by
+  ext s
+  by_cases hs : 0 ≤ s
+  · exact partialFourierSpatial_timeSlice_eqOn_nonneg_of_transport_eq
+      (d := d) (n := n) hfg r t ht ξ hs
+  · have hf_zero :
+      partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ s = 0 := by
+      apply image_eq_zero_of_notMem_tsupport
+      intro hsupp
+      exact hs <|
+        tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+          (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ hsupp
+    have hg_zero :
+        partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule g).1 r t ξ s = 0 := by
+      apply image_eq_zero_of_notMem_tsupport
+      intro hsupp
+      exact hs <|
+        tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+          (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ hsupp
+    simp [hf_zero, hg_zero]
+
+/-- First concrete Stage-5 descended-pairing theorem: on the positive imaginary
+axis, the canonical Section-4.3 slice extension depends only on the multivariate
+quotient class. This is the honest current-code fragment of the blueprint's
+`section43_iteratedSlice_descendedPairing`. -/
+private theorem section43_iteratedSlice_descendedPairing_imagAxis
+    {n : ℕ}
+    {f g : euclideanPositiveTimeSubmodule (d := d) n}
+    (hfg : os1TransportComponent d n f = os1TransportComponent d n g)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    {η : ℝ} (hη : 0 < η) :
+    partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ
+        (η * Complex.I) =
+      partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ
+        (η * Complex.I) := by
+  rw [partialFourierSpatial_timeSliceCanonicalExtension_eq_complexLaplaceTransform
+    (d := d) (n := n) (f := EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ hη]
+  rw [partialFourierSpatial_timeSliceCanonicalExtension_eq_complexLaplaceTransform
+    (d := d) (n := n) (f := EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ hη]
+  simpa [partialFourierSpatial_timeSliceSchwartz_eq_of_transport_eq
+    (d := d) (n := n) hfg r t ht ξ]
+
+/-- Full Stage-5 slice descent: once two multivariate positive-time inputs have
+the same Section-4.3 quotient class, the canonical one-variable branch-`3b`
+slice extensions agree on the entire upper half-plane. This upgrades the
+previous imag-axis fragment by a one-variable identity theorem and does not use
+any forbidden many-variable separate-analyticity shortcut. -/
+private theorem section43_iteratedSlice_descendedPairing
+    {n : ℕ}
+    {f g : euclideanPositiveTimeSubmodule (d := d) n}
+    (hfg : os1TransportComponent d n f = os1TransportComponent d n g)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    {w : ℂ} (hw : 0 < w.im) :
+    partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ w =
+      partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ w := by
+  exact
+    identity_theorem_upperHalfPlane
+      (f := partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ)
+      (g := partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ)
+      (hf := partialFourierSpatial_timeSliceCanonicalExtension_differentiableOn
+        (d := d) (n := n) (f := EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ)
+      (hg := partialFourierSpatial_timeSliceCanonicalExtension_differentiableOn
+        (d := d) (n := n) (f := EuclideanPositiveTimeComponent.ofSubmodule g) r t ξ)
+      (hagree := fun η hη =>
+        section43_iteratedSlice_descendedPairing_imagAxis
+          (d := d) (n := n) hfg r t ht ξ hη)
+      w hw
 
 /-- The honest OS Hilbert-space vector determined by a positive-time Euclidean
 Borchers sequence. Package I will later define the Minkowski-side transport map
@@ -1562,6 +1856,63 @@ theorem positiveTimeBorchersVector_dense
   rw [hrange]
   exact UniformSpace.Completion.denseRange_coe
 
+/-- The degree-`n` Section 4.3 transformed image. -/
+def bvtTransportImage (d n : ℕ) [NeZero d] :
+    Set (Section43PositiveEnergyComponent (d := d) n) :=
+  Set.range (os1TransportComponent d n)
+
+/-- Additive closure of the transformed image. -/
+theorem bvtTransportImage_add
+    {n : ℕ} {f g : Section43PositiveEnergyComponent (d := d) n}
+    (hf : f ∈ bvtTransportImage (d := d) n)
+    (hg : g ∈ bvtTransportImage (d := d) n) :
+    f + g ∈ bvtTransportImage (d := d) n := by
+  rcases hf with ⟨f₀, rfl⟩
+  rcases hg with ⟨g₀, rfl⟩
+  exact ⟨f₀ + g₀, by simp [bvtTransportImage]⟩
+
+/-- Scalar closure of the transformed image. -/
+theorem bvtTransportImage_smul
+    {n : ℕ} {c : ℂ} {f : Section43PositiveEnergyComponent (d := d) n}
+    (hf : f ∈ bvtTransportImage (d := d) n) :
+    c • f ∈ bvtTransportImage (d := d) n := by
+  rcases hf with ⟨f₀, rfl⟩
+  exact ⟨c • f₀, by simp [bvtTransportImage]⟩
+
+/-- Finite Borchers data whose every component lies in the Section 4.3
+transformed image. This is the honest current-code carrier for the later
+on-image transport and Eq. `(4.28)` stages. -/
+structure BvtTransportImageSequence (d : ℕ) [NeZero d] where
+  toBorchers : BorchersSequence d
+  image_mem : ∀ n,
+    section43PositiveEnergyQuotientMap (d := d) n (toBorchers.funcs n) ∈
+      bvtTransportImage (d := d) n
+
+instance : Add (BvtTransportImageSequence d) where
+  add F G :=
+    { toBorchers := F.toBorchers + G.toBorchers
+      image_mem := fun n => by
+        have hsum :=
+            bvtTransportImage_add (d := d)
+              (hf := F.image_mem n) (hg := G.image_mem n)
+        simpa [BorchersSequence.add_funcs, map_add] using hsum }
+
+instance : SMul ℂ (BvtTransportImageSequence d) where
+  smul c F :=
+    { toBorchers := c • F.toBorchers
+      image_mem := fun n => by
+        have hsmul :=
+            bvtTransportImage_smul (d := d) (c := c) (hf := F.image_mem n)
+        simpa [BorchersSequence.smul_funcs] using hsmul }
+
+@[simp] theorem add_toBorchers
+    (F G : BvtTransportImageSequence d) :
+    (F + G).toBorchers = F.toBorchers + G.toBorchers := rfl
+
+@[simp] theorem smul_toBorchers
+    (c : ℂ) (F : BvtTransportImageSequence d) :
+    (c • F).toBorchers = c • F.toBorchers := rfl
+
 noncomputable def euclideanPositiveTimeSingleVector
     (OS : OsterwalderSchraderAxioms d)
     {n : ℕ} (f : EuclideanPositiveTimeComponent d n) :
@@ -1578,14 +1929,756 @@ noncomputable def euclideanPositiveTimeSingleVector
         (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d) f)).re := by
   simp [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector_norm_sq_eq]
 
+@[simp] theorem euclideanPositiveTimeSingleVector_ofSubmodule_add
+    (OS : OsterwalderSchraderAxioms d)
+    {n : ℕ} (f g : euclideanPositiveTimeSubmodule (d := d) n) :
+    euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule (f + g)) =
+      euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule f) +
+      euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule g) := by
+  have hpre :
+      let xfg : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule (f + g))⟧
+      let xf : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f)⟧
+      let xg : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule g)⟧
+      xfg = xf + xg := by
+    dsimp
+    change (Quotient.mk (osBorchersSetoid OS)
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule (f + g))) :
+          OSPreHilbertSpace OS) =
+      (Quotient.mk (osBorchersSetoid OS)
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f) +
+         EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule g)) :
+          OSPreHilbertSpace OS)
+    apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+    intro m
+    by_cases hm : m = n
+    · subst hm
+      simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule, BorchersSequence.add_funcs]
+    · simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule,
+        PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.add_funcs, hm]
+  simpa [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector,
+    UniformSpace.Completion.coe_add] using
+    congrArg (fun x : OSPreHilbertSpace OS => ((x : OSHilbertSpace OS))) hpre
+
+@[simp] theorem euclideanPositiveTimeSingleVector_ofSubmodule_smul
+    (OS : OsterwalderSchraderAxioms d)
+    {n : ℕ} (c : ℂ) (f : euclideanPositiveTimeSubmodule (d := d) n) :
+    euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule (c • f)) =
+      c • euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule f) := by
+  have hpre :
+      let xcf : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule (c • f))⟧
+      let xf : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f)⟧
+      xcf = c • xf := by
+    dsimp
+    change (Quotient.mk (osBorchersSetoid OS)
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule (c • f))) :
+          OSPreHilbertSpace OS) =
+      (Quotient.mk (osBorchersSetoid OS)
+        (c • EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f)) :
+          OSPreHilbertSpace OS)
+    apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+    intro m
+    by_cases hm : m = n
+    · subst hm
+      simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule, BorchersSequence.smul_funcs]
+    · simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule,
+        PositiveTimeBorchersSequence.single_toBorchersSequence,
+        BorchersSequence.smul_funcs, hm]
+  simpa [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector,
+    UniformSpace.Completion.coe_smul] using
+    congrArg (fun x : OSPreHilbertSpace OS => ((x : OSHilbertSpace OS))) hpre
+
+@[simp] theorem euclideanPositiveTimeSingleVector_ofSubmodule_zero
+    (OS : OsterwalderSchraderAxioms d)
+    {n : ℕ} :
+    euclideanPositiveTimeSingleVector (d := d) OS
+        (EuclideanPositiveTimeComponent.ofSubmodule
+          (0 : euclideanPositiveTimeSubmodule (d := d) n)) = 0 := by
+  have hpre :
+      let x0 : OSPreHilbertSpace OS :=
+        ⟦EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule
+            (0 : euclideanPositiveTimeSubmodule (d := d) n))⟧
+      x0 = 0 := by
+    dsimp
+    change (Quotient.mk (osBorchersSetoid OS)
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule
+            (0 : euclideanPositiveTimeSubmodule (d := d) n))) :
+          OSPreHilbertSpace OS) =
+      (0 : OSPreHilbertSpace OS)
+    apply OSPreHilbertSpace.mk_eq_of_funcs_eq
+    intro m
+    by_cases hm : m = n
+    · subst hm
+      simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule]
+    · simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+        EuclideanPositiveTimeComponent.ofSubmodule,
+        PositiveTimeBorchersSequence.single_toBorchersSequence, hm]
+  simpa [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector,
+    UniformSpace.Completion.coe_zero] using
+    congrArg (fun x : OSPreHilbertSpace OS => ((x : OSHilbertSpace OS))) hpre
+
+private noncomputable def bvtTransportImagePreimage
+    (F : BvtTransportImageSequence d) (n : ℕ) :
+    euclideanPositiveTimeSubmodule (d := d) n :=
+  Classical.choose (F.image_mem n)
+
+@[simp] private theorem bvtTransportImagePreimage_spec
+    (F : BvtTransportImageSequence d) (n : ℕ) :
+    os1TransportComponent d n (bvtTransportImagePreimage (d := d) F n) =
+      section43PositiveEnergyQuotientMap (d := d) n (F.toBorchers.funcs n) :=
+  Classical.choose_spec (F.image_mem n)
+
+/-- The Section 4.3 Hilbert transport on the transformed-image core. It is
+defined by choosing a positive-time Euclidean preimage degreewise and summing
+the resulting OS Hilbert vectors over the finite Borchers bound. -/
+noncomputable def bvt_transport_to_osHilbert_onImage
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransportImageSequence d) :
+    OSHilbertSpace OS :=
+  (Finset.range (F.toBorchers.bound + 1)).sum fun n =>
+    euclideanPositiveTimeSingleVector (d := d) OS
+      (EuclideanPositiveTimeComponent.ofSubmodule
+        (bvtTransportImagePreimage (d := d) F n))
+
+/-- The on-image transport does not depend on which positive-time Euclidean
+preimage family is used to represent the transformed-image data. The proof uses
+only `os1TransportComponent_injective`, not any density theorem. -/
+theorem bvt_transport_to_osHilbert_onImage_wellDefined
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransportImageSequence d)
+    (g : ∀ n, euclideanPositiveTimeSubmodule (d := d) n)
+    (hg : ∀ n,
+      os1TransportComponent d n (g n) =
+        section43PositiveEnergyQuotientMap (d := d) n (F.toBorchers.funcs n)) :
+    bvt_transport_to_osHilbert_onImage OS F =
+      (Finset.range (F.toBorchers.bound + 1)).sum fun n =>
+        euclideanPositiveTimeSingleVector (d := d) OS
+          (EuclideanPositiveTimeComponent.ofSubmodule (g n)) := by
+  unfold bvt_transport_to_osHilbert_onImage
+  refine Finset.sum_congr rfl ?_
+  intro n hn
+  have hpre :
+      bvtTransportImagePreimage (d := d) F n = g n := by
+    apply os1TransportComponent_injective (d := d) (n := n)
+    rw [bvtTransportImagePreimage_spec, hg]
+  simp [hpre]
+
+private theorem bvt_transport_to_osHilbert_onImage_eq_padded_sum
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hm : F.toBorchers.bound ≤ m) :
+    bvt_transport_to_osHilbert_onImage OS F =
+      (Finset.range (m + 1)).sum fun n =>
+        if h : n ≤ F.toBorchers.bound then
+          euclideanPositiveTimeSingleVector (d := d) OS
+            (EuclideanPositiveTimeComponent.ofSubmodule
+              (bvtTransportImagePreimage (d := d) F n))
+        else 0 := by
+  let v : ℕ → OSHilbertSpace OS := fun n =>
+    euclideanPositiveTimeSingleVector (d := d) OS
+      (EuclideanPositiveTimeComponent.ofSubmodule
+        (bvtTransportImagePreimage (d := d) F n))
+  unfold bvt_transport_to_osHilbert_onImage
+  have hprefix :
+      (Finset.range (F.toBorchers.bound + 1)).sum
+          (fun n => if h : n ≤ F.toBorchers.bound then v n else 0) =
+        (Finset.range (F.toBorchers.bound + 1)).sum v := by
+    refine Finset.sum_congr rfl ?_
+    intro n hn
+    have hle : n ≤ F.toBorchers.bound := Nat.lt_succ_iff.mp (Finset.mem_range.mp hn)
+    simp [v, hle]
+  have hmdecomp : m + 1 = (F.toBorchers.bound + 1) + (m - F.toBorchers.bound) := by
+    omega
+  have htail :
+      ((Finset.range (m - F.toBorchers.bound)).sum fun k =>
+        if h : F.toBorchers.bound + 1 + k ≤ F.toBorchers.bound then
+          v (F.toBorchers.bound + 1 + k)
+        else 0) = 0 := by
+    refine Finset.sum_eq_zero ?_
+    intro k hk
+    have hnot : ¬ F.toBorchers.bound + 1 + k ≤ F.toBorchers.bound := by
+      omega
+    simp [v, hnot]
+  have hpad :
+      (Finset.range (m + 1)).sum
+          (fun n => if h : n ≤ F.toBorchers.bound then v n else 0) =
+        (Finset.range (F.toBorchers.bound + 1)).sum
+          (fun n => if h : n ≤ F.toBorchers.bound then v n else 0) := by
+    rw [hmdecomp, Finset.sum_range_add, htail, add_zero]
+  calc
+    (Finset.range (F.toBorchers.bound + 1)).sum v =
+      (Finset.range (F.toBorchers.bound + 1)).sum
+        (fun n => if h : n ≤ F.toBorchers.bound then v n else 0) := by
+          symm
+          exact hprefix
+    _ =
+      (Finset.range (m + 1)).sum
+        (fun n => if h : n ≤ F.toBorchers.bound then v n else 0) := by
+          symm
+          exact hpad
+
+theorem bvt_transport_to_osHilbert_onImage_add
+    (OS : OsterwalderSchraderAxioms d)
+    (F G : BvtTransportImageSequence d) :
+    bvt_transport_to_osHilbert_onImage OS (F + G) =
+      bvt_transport_to_osHilbert_onImage OS F +
+      bvt_transport_to_osHilbert_onImage OS G := by
+  let m := max F.toBorchers.bound G.toBorchers.bound
+  have hfg :
+      ∀ n,
+        os1TransportComponent d n
+            ((if h : n ≤ F.toBorchers.bound then
+                bvtTransportImagePreimage (d := d) F n
+              else 0) +
+              (if h : n ≤ G.toBorchers.bound then
+                bvtTransportImagePreimage (d := d) G n
+              else 0)) =
+          section43PositiveEnergyQuotientMap (d := d) n
+            ((F + G).toBorchers.funcs n) := by
+    intro n
+    have hspecF :
+        section43PositiveEnergyQuotientMap (d := d) n
+            (bvtTransportImagePreimage (d := d) F n : SchwartzNPoint d n) =
+          section43PositiveEnergyQuotientMap (d := d) n (F.toBorchers.funcs n) := by
+      simpa [os1TransportComponent_apply] using
+        (bvtTransportImagePreimage_spec (d := d) F n)
+    have hspecG :
+        section43PositiveEnergyQuotientMap (d := d) n
+            (bvtTransportImagePreimage (d := d) G n : SchwartzNPoint d n) =
+          section43PositiveEnergyQuotientMap (d := d) n (G.toBorchers.funcs n) := by
+      simpa [os1TransportComponent_apply] using
+        (bvtTransportImagePreimage_spec (d := d) G n)
+    by_cases hF : n ≤ F.toBorchers.bound
+    · by_cases hG : n ≤ G.toBorchers.bound
+      · simp [hF, hG, add_toBorchers, BorchersSequence.add_funcs, map_add,
+          hspecF, hspecG]
+      · have hGt : G.toBorchers.bound < n := by omega
+        simp [hF, hG, G.toBorchers.bound_spec n hGt, add_toBorchers,
+          BorchersSequence.add_funcs, map_add, hspecF]
+    · have hFt : F.toBorchers.bound < n := by omega
+      by_cases hG : n ≤ G.toBorchers.bound
+      · simp [hF, hG, F.toBorchers.bound_spec n hFt, add_toBorchers,
+          BorchersSequence.add_funcs, map_add, hspecG]
+      · have hGt : G.toBorchers.bound < n := by omega
+        simp [hF, hG, F.toBorchers.bound_spec n hFt, G.toBorchers.bound_spec n hGt,
+          add_toBorchers, BorchersSequence.add_funcs, map_add]
+  rw [bvt_transport_to_osHilbert_onImage_wellDefined (d := d) (OS := OS)
+    (F := F + G) (g := fun n =>
+      (if h : n ≤ F.toBorchers.bound then
+        bvtTransportImagePreimage (d := d) F n
+      else 0) +
+      (if h : n ≤ G.toBorchers.bound then
+        bvtTransportImagePreimage (d := d) G n
+      else 0)) hfg]
+  rw [bvt_transport_to_osHilbert_onImage_eq_padded_sum (d := d) (OS := OS)
+    (F := F) (m := m) (by
+      dsimp [m]
+      exact le_max_left _ _)]
+  rw [bvt_transport_to_osHilbert_onImage_eq_padded_sum (d := d) (OS := OS)
+    (F := G) (m := m) (by
+      dsimp [m]
+      exact le_max_right _ _)]
+  dsimp [m]
+  have hsum :
+      (Finset.range (max F.toBorchers.bound G.toBorchers.bound + 1)).sum
+          (fun n =>
+            euclideanPositiveTimeSingleVector (d := d) OS
+              (EuclideanPositiveTimeComponent.ofSubmodule
+                ((if h : n ≤ F.toBorchers.bound then
+                    bvtTransportImagePreimage (d := d) F n
+                  else 0) +
+                  if h : n ≤ G.toBorchers.bound then
+                    bvtTransportImagePreimage (d := d) G n
+                  else 0))) =
+        (Finset.range (max F.toBorchers.bound G.toBorchers.bound + 1)).sum
+            (fun n =>
+              (if h : n ≤ F.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F n))
+              else 0) +
+              if h : n ≤ G.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) G n))
+              else 0) := by
+    refine Finset.sum_congr rfl ?_
+    intro n hn
+    by_cases hF : n ≤ F.toBorchers.bound
+    · by_cases hG : n ≤ G.toBorchers.bound
+      · simp [hF, hG, euclideanPositiveTimeSingleVector_ofSubmodule_add]
+      · simp [hF, hG, euclideanPositiveTimeSingleVector_ofSubmodule_add,
+          euclideanPositiveTimeSingleVector_ofSubmodule_zero]
+    · by_cases hG : n ≤ G.toBorchers.bound
+      · simp [hF, hG, euclideanPositiveTimeSingleVector_ofSubmodule_add,
+          euclideanPositiveTimeSingleVector_ofSubmodule_zero]
+      · simp [hF, hG, euclideanPositiveTimeSingleVector_ofSubmodule_add,
+          euclideanPositiveTimeSingleVector_ofSubmodule_zero]
+  calc
+    (Finset.range (max F.toBorchers.bound G.toBorchers.bound + 1)).sum
+        (fun n =>
+          euclideanPositiveTimeSingleVector (d := d) OS
+            (EuclideanPositiveTimeComponent.ofSubmodule
+              ((if n ≤ F.toBorchers.bound then
+                  bvtTransportImagePreimage (d := d) F n
+                else 0) +
+                if n ≤ G.toBorchers.bound then
+                  bvtTransportImagePreimage (d := d) G n
+                else 0))) =
+      (Finset.range (max F.toBorchers.bound G.toBorchers.bound + 1)).sum
+        (fun n =>
+          (if h : n ≤ F.toBorchers.bound then
+            euclideanPositiveTimeSingleVector (d := d) OS
+              (EuclideanPositiveTimeComponent.ofSubmodule
+                (bvtTransportImagePreimage (d := d) F n))
+          else 0) +
+          if h : n ≤ G.toBorchers.bound then
+            euclideanPositiveTimeSingleVector (d := d) OS
+              (EuclideanPositiveTimeComponent.ofSubmodule
+                (bvtTransportImagePreimage (d := d) G n))
+          else 0) := hsum
+    _ = _ := by
+      rw [Finset.sum_add_distrib]
+      rfl
+
+theorem bvt_transport_to_osHilbert_onImage_smul
+    (OS : OsterwalderSchraderAxioms d)
+    (c : ℂ) (F : BvtTransportImageSequence d) :
+    bvt_transport_to_osHilbert_onImage OS (c • F) =
+      c • bvt_transport_to_osHilbert_onImage OS F := by
+  have hF :
+      ∀ n,
+        os1TransportComponent d n (c • bvtTransportImagePreimage (d := d) F n) =
+          section43PositiveEnergyQuotientMap (d := d) n
+            ((c • F).toBorchers.funcs n) := by
+    intro n
+    rw [map_smul, bvtTransportImagePreimage_spec]
+    simp [smul_toBorchers, BorchersSequence.smul_funcs]
+  rw [bvt_transport_to_osHilbert_onImage_wellDefined (d := d) (OS := OS)
+    (F := c • F) (g := fun n => c • bvtTransportImagePreimage (d := d) F n) hF]
+  simp [bvt_transport_to_osHilbert_onImage, Finset.smul_sum,
+    euclideanPositiveTimeSingleVector_ofSubmodule_smul]
+
+private theorem inner_bvt_transport_to_osHilbert_onImage_eq_double_sum
+    (OS : OsterwalderSchraderAxioms d)
+    (F G : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m) (hGm : G.toBorchers.bound ≤ m) :
+    @inner ℂ (OSHilbertSpace OS) _
+        (bvt_transport_to_osHilbert_onImage OS F)
+        (bvt_transport_to_osHilbert_onImage OS G) =
+      (Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          @inner ℂ (OSHilbertSpace OS) _
+            (if h : n ≤ F.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) F n))
+            else 0)
+            (if h : k ≤ G.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) G k))
+            else 0) := by
+  rw [bvt_transport_to_osHilbert_onImage_eq_padded_sum (d := d) (OS := OS)
+      (F := F) (m := m) hFm]
+  rw [bvt_transport_to_osHilbert_onImage_eq_padded_sum (d := d) (OS := OS)
+      (F := G) (m := m) hGm]
+  rw [sum_inner]
+  refine Finset.sum_congr rfl ?_
+  intro n hn
+  rw [inner_sum]
+
+private theorem norm_sq_bvt_transport_to_osHilbert_onImage_eq_double_sum
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m) :
+    ‖bvt_transport_to_osHilbert_onImage OS F‖ ^ 2 =
+      ((Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          @inner ℂ (OSHilbertSpace OS) _
+            (if h : n ≤ F.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) F n))
+            else 0)
+            (if h : k ≤ F.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) F k))
+            else 0)).re := by
+  have hnorm :
+      RCLike.re
+        (@inner ℂ (OSHilbertSpace OS) _
+          (bvt_transport_to_osHilbert_onImage OS F)
+          (bvt_transport_to_osHilbert_onImage OS F)) =
+        ‖bvt_transport_to_osHilbert_onImage OS F‖ ^ 2 := by
+    simpa using
+      (inner_self_eq_norm_sq (𝕜 := ℂ) (bvt_transport_to_osHilbert_onImage OS F))
+  rw [← hnorm, inner_bvt_transport_to_osHilbert_onImage_eq_double_sum
+    (d := d) (OS := OS) (F := F) (G := F) (m := m) hFm hFm]
+  have houter :
+      RCLike.re
+          ((Finset.range (m + 1)).sum fun n =>
+            (Finset.range (m + 1)).sum fun k =>
+              @inner ℂ (OSHilbertSpace OS) _
+                (if h : n ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F n))
+                else 0)
+                (if h : k ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F k))
+                else 0)) =
+        (Finset.range (m + 1)).sum fun n =>
+          RCLike.re
+            ((Finset.range (m + 1)).sum fun k =>
+              @inner ℂ (OSHilbertSpace OS) _
+                (if h : n ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F n))
+                else 0)
+                (if h : k ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F k))
+                else 0)) := by
+    simpa using
+      (Complex.re_sum (s := Finset.range (m + 1))
+        (f := fun n =>
+          (Finset.range (m + 1)).sum fun k =>
+            @inner ℂ (OSHilbertSpace OS) _
+              (if h : n ≤ F.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F n))
+              else 0)
+              (if h : k ≤ F.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F k))
+              else 0)))
+  rw [houter]
+  have hinner :
+      ∀ n,
+        RCLike.re
+            ((Finset.range (m + 1)).sum fun k =>
+              @inner ℂ (OSHilbertSpace OS) _
+                (if h : n ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F n))
+                else 0)
+                (if h : k ≤ F.toBorchers.bound then
+                  euclideanPositiveTimeSingleVector (d := d) OS
+                    (EuclideanPositiveTimeComponent.ofSubmodule
+                      (bvtTransportImagePreimage (d := d) F k))
+                else 0)) =
+          (Finset.range (m + 1)).sum fun k =>
+            (@inner ℂ (OSHilbertSpace OS) _
+              (if h : n ≤ F.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F n))
+              else 0)
+              (if h : k ≤ F.toBorchers.bound then
+                euclideanPositiveTimeSingleVector (d := d) OS
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F k))
+              else 0)).re := by
+    intro n
+    simpa using
+      (Complex.re_sum (s := Finset.range (m + 1))
+        (f := fun k =>
+          @inner ℂ (OSHilbertSpace OS) _
+            (if h : n ≤ F.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) F n))
+            else 0)
+            (if h : k ≤ F.toBorchers.bound then
+              euclideanPositiveTimeSingleVector (d := d) OS
+                (EuclideanPositiveTimeComponent.ofSubmodule
+                  (bvtTransportImagePreimage (d := d) F k))
+            else 0)))
+  simpa [hinner]
+
+private theorem inner_euclideanPositiveTimeSingleVector_ofSubmodule_eq_osInner
+    (OS : OsterwalderSchraderAxioms d)
+    {n k : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) k) :
+    @inner ℂ (OSHilbertSpace OS) _
+        (euclideanPositiveTimeSingleVector (d := d) OS
+          (EuclideanPositiveTimeComponent.ofSubmodule f))
+        (euclideanPositiveTimeSingleVector (d := d) OS
+          (EuclideanPositiveTimeComponent.ofSubmodule g)) =
+      PositiveTimeBorchersSequence.osInner OS
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f))
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule g)) := by
+  simp [euclideanPositiveTimeSingleVector, positiveTimeBorchersVector_inner_eq]
+
+private theorem norm_sq_bvt_transport_to_osHilbert_onImage_eq_osInner_padded_double_sum
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m) :
+    ‖bvt_transport_to_osHilbert_onImage OS F‖ ^ 2 =
+      ((Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          if h₁ : n ≤ F.toBorchers.bound then
+            if h₂ : k ≤ F.toBorchers.bound then
+              PositiveTimeBorchersSequence.osInner OS
+                (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F n)))
+                (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F k)))
+            else 0
+          else 0).re := by
+  rw [norm_sq_bvt_transport_to_osHilbert_onImage_eq_double_sum
+    (d := d) (OS := OS) (F := F) (m := m) hFm]
+  congr 1
+  refine Finset.sum_congr rfl ?_
+  intro n hn
+  refine Finset.sum_congr rfl ?_
+  intro k hk
+  by_cases h₁ : n ≤ F.toBorchers.bound
+  · by_cases h₂ : k ≤ F.toBorchers.bound
+    · simp [h₁, h₂,
+        inner_euclideanPositiveTimeSingleVector_ofSubmodule_eq_osInner]
+    · simp [h₁, h₂]
+  · simp [h₁]
+
+private theorem bvt_wightmanInner_self_eq_padded_double_sum
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m) :
+    WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers =
+      (Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          if h₁ : n ≤ F.toBorchers.bound then
+            if h₂ : k ≤ F.toBorchers.bound then
+              bvt_W OS lgc (n + k)
+                ((F.toBorchers.funcs n).conjTensorProduct (F.toBorchers.funcs k))
+            else 0
+          else 0 := by
+  have hw :
+      WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers =
+        WightmanInnerProductN d (bvt_W OS lgc) F.toBorchers F.toBorchers
+          (m + 1) (m + 1) := by
+    apply WightmanInnerProduct_eq_extended (d := d) (W := bvt_W OS lgc)
+      (hlin := bvt_W_linear (d := d) OS lgc)
+    · exact Nat.succ_le_succ hFm
+    · exact Nat.succ_le_succ hFm
+  rw [hw]
+  unfold WightmanInnerProductN
+  refine Finset.sum_congr rfl ?_
+  intro n hn
+  by_cases hN : n ≤ F.toBorchers.bound
+  · refine Finset.sum_congr rfl ?_
+    intro k hk
+    by_cases hK : k ≤ F.toBorchers.bound
+    · simp [hN, hK]
+    · have hkgt : F.toBorchers.bound < k := by omega
+      simp [hN, hK, F.toBorchers.bound_spec k hkgt,
+        (bvt_W_linear (d := d) OS lgc (n + k)).map_zero]
+  · have hngt : F.toBorchers.bound < n := by omega
+    simp [hN]
+    apply Finset.sum_eq_zero
+    intro k hk
+    rw [F.toBorchers.bound_spec n hngt, SchwartzMap.conjTensorProduct_zero_left,
+      (bvt_W_linear (d := d) OS lgc (n + k)).map_zero]
+
+private theorem bvt_wightmanInner_self_eq_single_single_padded_double_sum
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m) :
+    WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers =
+      (Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          if h₁ : n ≤ F.toBorchers.bound then
+            if h₂ : k ≤ F.toBorchers.bound then
+              WightmanInnerProduct d (bvt_W OS lgc)
+                (BorchersSequence.single n (F.toBorchers.funcs n))
+                (BorchersSequence.single k (F.toBorchers.funcs k))
+            else 0
+          else 0 := by
+  rw [bvt_wightmanInner_self_eq_padded_double_sum
+    (d := d) (OS := OS) (lgc := lgc) (F := F) (m := m) hFm]
+  refine Finset.sum_congr rfl ?_
+  intro n hn
+  refine Finset.sum_congr rfl ?_
+  intro k hk
+  by_cases h₁ : n ≤ F.toBorchers.bound
+  · by_cases h₂ : k ≤ F.toBorchers.bound
+    · simp [h₁, h₂, WightmanInnerProduct_single_single, bvt_W_linear]
+    · simp [h₁, h₂]
+  · simp [h₁]
+
+private theorem single_single_wightman_eq_osInner_iff_kernel_eq
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n k : ℕ}
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d k)
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) k) :
+    WightmanInnerProduct d (bvt_W OS lgc)
+        (BorchersSequence.single n φ)
+        (BorchersSequence.single k ψ) =
+      PositiveTimeBorchersSequence.osInner OS
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f))
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule g))
+      ↔
+    bvt_W OS lgc (n + k) (φ.conjTensorProduct ψ) =
+      OS.S (n + k)
+        (ZeroDiagonalSchwartz.ofClassical
+          ((f : SchwartzNPoint d n).osConjTensorProduct
+            (g : SchwartzNPoint d k))) := by
+  rw [WightmanInnerProduct_single_single (d := d) (W := bvt_W OS lgc)
+      (hlin := bvt_W_linear (d := d) OS lgc) (n := n) (m := k)
+      (f := φ) (g := ψ)]
+  have hos :
+      PositiveTimeBorchersSequence.osInner OS
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule f))
+        (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+          (EuclideanPositiveTimeComponent.ofSubmodule g)) =
+      OS.S (n + k)
+        (ZeroDiagonalSchwartz.ofClassical
+          ((f : SchwartzNPoint d n).osConjTensorProduct
+            (g : SchwartzNPoint d k))) := by
+    unfold PositiveTimeBorchersSequence.osInner
+    simp [EuclideanPositiveTimeComponent.toPositiveTimeSingle,
+      EuclideanPositiveTimeComponent.ofSubmodule, OSInnerProduct_single_single,
+      OS.E0_linear]
+  rw [hos]
+
+private theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_single_single
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m)
+    (hss : ∀ n k,
+      n ≤ F.toBorchers.bound →
+      k ≤ F.toBorchers.bound →
+      WightmanInnerProduct d (bvt_W OS lgc)
+          (BorchersSequence.single n (F.toBorchers.funcs n))
+          (BorchersSequence.single k (F.toBorchers.funcs k)) =
+        PositiveTimeBorchersSequence.osInner OS
+          (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+            (EuclideanPositiveTimeComponent.ofSubmodule
+              (bvtTransportImagePreimage (d := d) F n)))
+          (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+            (EuclideanPositiveTimeComponent.ofSubmodule
+              (bvtTransportImagePreimage (d := d) F k)))) :
+    (WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers).re =
+      ‖bvt_transport_to_osHilbert_onImage OS F‖ ^ 2 := by
+  rw [bvt_wightmanInner_self_eq_single_single_padded_double_sum
+    (d := d) (OS := OS) (lgc := lgc) (F := F) (m := m) hFm]
+  rw [norm_sq_bvt_transport_to_osHilbert_onImage_eq_osInner_padded_double_sum
+    (d := d) (OS := OS) (F := F) (m := m) hFm]
+  have hsum :
+      ((Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          if h₁ : n ≤ F.toBorchers.bound then
+            if h₂ : k ≤ F.toBorchers.bound then
+              WightmanInnerProduct d (bvt_W OS lgc)
+                (BorchersSequence.single n (F.toBorchers.funcs n))
+                (BorchersSequence.single k (F.toBorchers.funcs k))
+            else 0
+          else 0) =
+      ((Finset.range (m + 1)).sum fun n =>
+        (Finset.range (m + 1)).sum fun k =>
+          if h₁ : n ≤ F.toBorchers.bound then
+            if h₂ : k ≤ F.toBorchers.bound then
+              PositiveTimeBorchersSequence.osInner OS
+                (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F n)))
+                (EuclideanPositiveTimeComponent.toPositiveTimeSingle (d := d)
+                  (EuclideanPositiveTimeComponent.ofSubmodule
+                    (bvtTransportImagePreimage (d := d) F k)))
+            else 0
+          else 0) := by
+    refine Finset.sum_congr rfl ?_
+    intro n hn
+    refine Finset.sum_congr rfl ?_
+    intro k hk
+    by_cases h₁ : n ≤ F.toBorchers.bound
+    · by_cases h₂ : k ≤ F.toBorchers.bound
+      · simp [h₁, h₂, hss n k h₁ h₂]
+      · simp [h₁, h₂]
+    · simp [h₁]
+  exact congrArg Complex.re hsum
+
+private theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_kernel_eq
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransportImageSequence d) {m : ℕ}
+    (hFm : F.toBorchers.bound ≤ m)
+    (hkernel : ∀ n k,
+      n ≤ F.toBorchers.bound →
+      k ≤ F.toBorchers.bound →
+      bvt_W OS lgc (n + k)
+        ((F.toBorchers.funcs n).conjTensorProduct (F.toBorchers.funcs k)) =
+      OS.S (n + k)
+        (ZeroDiagonalSchwartz.ofClassical
+          (((bvtTransportImagePreimage (d := d) F n : euclideanPositiveTimeSubmodule (d := d) n) :
+              SchwartzNPoint d n).osConjTensorProduct
+            ((bvtTransportImagePreimage (d := d) F k : euclideanPositiveTimeSubmodule (d := d) k) :
+              SchwartzNPoint d k)))) :
+    (WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers).re =
+      ‖bvt_transport_to_osHilbert_onImage OS F‖ ^ 2 := by
+  apply bvt_wightmanInner_eq_transport_norm_sq_onImage_of_single_single
+    (d := d) (OS := OS) (lgc := lgc) (F := F) (m := m) hFm
+  intro n k hn hk
+  exact
+    (single_single_wightman_eq_osInner_iff_kernel_eq
+      (d := d) (OS := OS) (lgc := lgc)
+      (φ := F.toBorchers.funcs n) (ψ := F.toBorchers.funcs k)
+      (f := bvtTransportImagePreimage (d := d) F n)
+      (g := bvtTransportImagePreimage (d := d) F k)).2
+      (hkernel n k hn hk)
+
 /-
 Package I transport note:
 
-The placeholder `def := by sorry` route for `os1TransportComponent` and its
-downstream consumers has been quarantined from production. The next honest
-production step is to replace that entire block with a real Section 4.3
-transport package on the corrected half-space codomain, after the codomain
-surface is settled in scratch and `agents_chat.md`.
+The old placeholder `def := by sorry` transport route has been removed. The
+current live Package-I frontier is now:
+1. establish the transformed-image quadratic identity,
+2. then close positivity from the transformed-image core using the already-built
+   Hilbert-space density of positive-time vectors.
 -/
 
 end

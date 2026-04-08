@@ -104,7 +104,7 @@ the codomain as `L(R_+^{4n})`, i.e. the half-space Schwartz target, not the
 full ambient Schwartz space.
 
 Iteration B's Option alpha is therefore retracted, and the chosen codomain
-reverts to **Option beta (half-space sub-object)**.
+reverts to **Option beta (quotient model of the half-space target)**.
 
 This retraction implies:
 
@@ -727,7 +727,8 @@ It is also **not** the full ambient `SchwartzNPoint d n` equipped with a
 false `DenseRange` claim.
 
 The correct theorem surface is the paper's half-space Schwartz target
-`L(R_+^{4n})`, implemented as a dedicated half-space Schwartz sub-object. The
+`L(R_+^{4n})`, implemented in production by the quotient model
+`SchwartzNPoint d n ⧸ {f | f = 0 on section43PositiveEnergyRegion}`. The
 current blueprint no longer endorses either:
 - the false support-restricted subtype
   `{f : SchwartzNPoint d n // tsupport f ⊆ PositiveEnergyRegion}`, or
@@ -760,48 +761,113 @@ theorem bvtTransportImage_smul
     f ∈ bvtTransportImage (d := d) n →
     c • f ∈ bvtTransportImage (d := d) n
 
-/-- OS I Lemma 4.1: dense range of the degree-`n` transport component. -/
-theorem os1TransportComponent_denseRange
+/-- For positive degree, the current support-restricted Section 4.3 source is
+not dense in the half-space quotient codomain. Degree `0` is exceptional: the
+source already is the full ambient Schwartz space there. The honest
+quotient-side dense map is the ambient Schwartz quotient map, not
+`os1TransportComponent` itself. -/
+theorem not_denseRange_os1TransportComponent_succ
     (n : ℕ) :
-    DenseRange (os1TransportComponent d n)
+    ¬ DenseRange (os1TransportComponent d (n + 1))
 
 /-- Finite Borchers data whose every component lies in the Section 4.3 image. -/
 structure BvtTransportImageSequence (d : ℕ) [NeZero d] where
   toBorchers : BorchersSequence d
-  image_mem : ∀ n, toBorchers.funcs n ∈ bvtTransportImage (d := d) n
+  image_mem : ∀ n,
+    section43PositiveEnergyQuotientMap (d := d) n (toBorchers.funcs n) ∈
+      bvtTransportImage (d := d) n
 
 /-- The OS I Section 4.3 transport map on the transformed-image core. -/
 noncomputable def bvt_transport_to_osHilbert_onImage
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
+    (OS : OsterwalderSchraderAxioms d) :
     BvtTransportImageSequence d → OSHilbertSpace OS
 
 /-- The transport map is independent of the Section 4.3 preimage choice. -/
 theorem bvt_transport_to_osHilbert_onImage_wellDefined
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (OS : OsterwalderSchraderAxioms d)
     (F : BvtTransportImageSequence d) :
     ...
 
 /-- Additivity on the transformed-image core. -/
 theorem bvt_transport_to_osHilbert_onImage_add
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (OS : OsterwalderSchraderAxioms d)
     (F G : BvtTransportImageSequence d) :
-    bvt_transport_to_osHilbert_onImage (d := d) OS lgc (F + G) =
-      bvt_transport_to_osHilbert_onImage (d := d) OS lgc F +
-      bvt_transport_to_osHilbert_onImage (d := d) OS lgc G
+    bvt_transport_to_osHilbert_onImage (d := d) OS (F + G) =
+      bvt_transport_to_osHilbert_onImage (d := d) OS F +
+      bvt_transport_to_osHilbert_onImage (d := d) OS G
 
 /-- Complex-linearity on the transformed-image core. -/
 theorem bvt_transport_to_osHilbert_onImage_smul
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (OS : OsterwalderSchraderAxioms d)
     (c : ℂ) (F : BvtTransportImageSequence d) :
-    bvt_transport_to_osHilbert_onImage (d := d) OS lgc (c • F) =
-      c • bvt_transport_to_osHilbert_onImage (d := d) OS lgc F
+    bvt_transport_to_osHilbert_onImage (d := d) OS (c • F) =
+      c • bvt_transport_to_osHilbert_onImage (d := d) OS F
+
+/-- Stage-5 prerequisite: multivariate quotient descent for the explicit
+Section-4.3 Fourier-Laplace transform.
+
+This is the multivariate analog of
+`fourierPairingDescendsToSection43PositiveEnergy1D_partialFourierSpatial_timeSlice`.
+It should identify the abstract quotient-valued transform
+`os1TransportComponent` with the concrete iterated `partialFourierSpatial_fun`
+/ `complexLaplaceTransform` / `fourierLaplaceExt` computation degreewise. -/
+theorem section43_iteratedSlice_descendedPairing
+    (n : ℕ) (f : EuclideanPositiveTimeComponent d n) :
+    ... := by
+  ...
+
+Exact current-code milestone:
+- the full slice-descent theorem is now formalized as the private theorem
+  `section43_iteratedSlice_descendedPairing` in
+  [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
+- the earlier theorem `section43_iteratedSlice_descendedPairing_imagAxis`
+  remains as the first concrete fragment, but it is no longer the live
+  milestone;
+- the next honest Stage-5 blocker is the concrete Section-4.3 / Lemma-4.2
+  adapter `lemma42_matrix_element_time_interchange`;
+- the transformed-image kernel theorem `bvt_W_matrixElement_onImage` is the
+  immediate consumer of that adapter, not a direct next step from slice
+  descent alone.
+
+/-- Concrete Section-4.3 / Lemma-4.2 adapter: rewrite the reconstructed
+Wightman matrix element in the same one-variable slice coordinates used by
+`section43_iteratedSlice_descendedPairing`, then perform the Section-8
+time-variable interchange there. This is the first theorem after slice
+descent that still contains genuinely new analytic content. -/
+theorem lemma42_matrix_element_time_interchange
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) m)
+    (hφ :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (hψ :
+      section43PositiveEnergyQuotientMap (d := d) m ψ =
+        os1TransportComponent d m g) :
+    ... := by
+  ...
+
+/-- Stage-5 prerequisite: expose the OS-II `bvt_W` quadratic form on
+transformed-image inputs in the same iterated Fourier-Laplace coordinates used
+by `section43_iteratedSlice_descendedPairing`, now consuming the concrete
+adapter `lemma42_matrix_element_time_interchange`. -/
+theorem bvt_W_matrixElement_onImage
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransportImageSequence d)
+    {n m : ℕ}
+    (hn : n ≤ F.toBorchers.bound)
+    (hm : m ≤ F.toBorchers.bound) :
+    ... := by
+  ...
 
 /-- OS I Eq. (4.28) on the transformed-image core. -/
 theorem bvt_wightmanInner_eq_transport_norm_sq_onImage
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F : BvtTransportImageSequence d) :
-    (WightmanInnerProduct d (bvt_W OS lgc) F.1 F.1).re =
-      ‖bvt_transport_to_osHilbert_onImage (d := d) OS lgc F‖ ^ 2
+    (WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers F.toBorchers).re =
+      ‖bvt_transport_to_osHilbert_onImage (d := d) OS F‖ ^ 2
 
 /-- Final public theorem-3 closure from the transformed image core. The closure
 step uses density in the Hilbert space `H`, not a Schwartz-space density
@@ -819,7 +885,8 @@ For theorem 3, the codomain choice is now fixed:
 1. the paper's Lemma 4.1 codomain is `L(R_+^{4n})`, the half-space Schwartz
    space;
 2. the blueprint therefore fixes **Option beta**:
-   `Section43PositiveEnergyComponent d n` is a half-space Schwartz sub-object;
+   `Section43PositiveEnergyComponent d n` is a quotient-model realization of
+   that half-space Schwartz target;
 3. the full-Schwartz / internal-Seeley-extension route from Iteration B is
    retracted and should not be implemented;
 4. any later equivalent coding of this codomain must remain definitionally
@@ -831,28 +898,32 @@ Proof transcript:
 1. define the degreewise transformed image `bvtTransportImage` exactly as in OS
    I Lemma 4.1, i.e. literally as the range of
    `os1TransportComponent d n`;
-2. define the transformed image `bvtTransportImage` as the range of
-   `os1TransportComponent d n`;
-3. do **not** implement `os1TransportComponent` as the naive unrestricted
+2. do **not** implement `os1TransportComponent` as the naive unrestricted
    real-axis Laplace integral by itself; the paper route factors through the
    intermediate `(4.19)` space and Lemma 8.2, and that is exactly what keeps
    the codomain on the genuine half-space Schwartz theorem surface rather than
    drifting either to a tempered-only theorem surface or to the false
    support-restricted codomain `tsupport ⊆ PositiveEnergyRegion`;
-4. derive additive/scalar closure of the image from linearity of
+3. derive additive/scalar closure of the image from linearity of
    `os1TransportComponent`;
-5. package finite-support sequences in that image as
+4. package finite-support sequences in that image as
    `BvtTransportImageSequence d`;
-6. define `bvt_transport_to_osHilbert_onImage` by the Section 4.3 preimage map
+5. define `bvt_transport_to_osHilbert_onImage` by the Section 4.3 preimage map
    followed by the existing OS Hilbert-space construction;
-7. prove preimage-independence / well-definedness using the zero-kernel part of
+6. prove preimage-independence / well-definedness using the zero-kernel part of
    OS I Lemma 4.1;
-8. prove `bvt_wightmanInner_eq_transport_norm_sq_onImage` by the Section 4.3
-   Fourier-Laplace / Lemma-4.2 computation on the transformed-image core;
-9. use the already-built density of positive-time vectors in `OSHilbertSpace OS`
+7. prove the multivariate iterated-slice descended-pairing theorem that
+   identifies the abstract quotient-valued transform with the concrete
+   iterated `partialFourierSpatial_fun` / Fourier-Laplace computation;
+8. prove the matching `bvt_W` matrix-element bridge on transformed-image
+   inputs, in the same iterated coordinates;
+9. prove `bvt_wightmanInner_eq_transport_norm_sq_onImage` by matching the
+   Wightman and transport double sums termwise through those two Stage-5
+   prerequisites;
+10. use the already-built density of positive-time vectors in `OSHilbertSpace OS`
    coming from the completion/GNS construction, not a separate density theorem
    in Schwartz space;
-10. extend positivity from the transported image to arbitrary public
+11. extend positivity from the transported image to arbitrary public
    `BorchersSequence d` by the resulting Hilbert-space closure plus continuity
    of `bvt_W`.
 
@@ -908,11 +979,14 @@ The proof must be decomposed into the following local steps.
        (f : EuclideanPositiveTimeTest1D) :
        ...
 
-   theorem os1TransportOneVar_denseRange :
-       DenseRange os1TransportOneVar
-
    theorem os1TransportOneVar_injective :
        Function.Injective os1TransportOneVar
+
+    theorem not_denseRange_os1TransportOneVar :
+        ¬ DenseRange os1TransportOneVar
+
+    theorem denseRange_section43PositiveEnergyQuotientMap1D :
+        DenseRange section43PositiveEnergyQuotientMap1D
    ```
 
 3. The exact analytic suppliers for that one-variable package are:
@@ -981,30 +1055,45 @@ theorem os1TransportComponent_continuous :
     Continuous (os1TransportComponent d n)
 ```
 
-### 5.9.2. Lemma 4.1 density: paper theorem, not the live positivity blocker
+### 5.9.2. Lemma 4.1 density: quotient-side theorem, not the live positivity blocker
 
-The dense-image half of OS I Lemma 4.1 is still a real paper theorem, but it is
-not currently the live blocker for `bvt_W_positive_direct`.
+The dense-image half of OS I Lemma 4.1 cannot be implemented on the current
+support-restricted subtype source. Production now proves the one-variable
+counterexample `not_denseRange_os1TransportOneVar`, and the same warning applies
+to the literal multivariate subtype target.
 
 What is settled:
 
-1. `DenseRange (os1TransportComponent d n)` in full `SchwartzNPoint d n` is
-   false and is withdrawn.
-2. A fixed Seeley extension has closed range, so no proof should aim at dense
+1. `DenseRange (os1TransportComponent d (n + 1))` on the current
+   `euclideanPositiveTimeSubmodule` source should not be used as a production
+   theorem slot. Degree `0` is exceptional and not part of this negative
+   theorem.
+2. `DenseRange (os1TransportComponent d (n + 1))` in full
+   `SchwartzNPoint d (n + 1)` is false and is withdrawn.
+3. A fixed Seeley extension has closed range, so no proof should aim at dense
    range in the full ambient Schwartz space.
-3. If Lemma 4.1 is later formalized faithfully, it must be stated on the
-   actual half-space codomain `L(R_+^{4n})` from Section 4.3.
-4. The positivity proof for theorem 3 does not need that Schwartz-density
+4. The honest quotient-side dense map is the ambient Schwartz quotient map
+   `section43PositiveEnergyQuotientMap`, and production already has its
+   one-variable and multivariate surjective/dense-range forms.
+5. If Lemma 4.1 is later formalized faithfully, it must be stated on the
+   actual half-space codomain `L(R_+^{4n})` from Section 4.3, not on the
+   support-restricted subtype currently used for Euclidean inputs.
+6. The positivity proof for theorem 3 does not need that Schwartz-density
    theorem as a live prerequisite. What it needs is:
    - the transport-map comparison on positive-time inputs,
    - density of the resulting vectors in the Hilbert space `H`,
    - continuity/closure on the `bvt_W` side.
 
-So `os1TransportComponent_denseRange` is now a paper-faithfulness side theorem,
-not part of the current minimal production route for `bvt_W_positive_direct`.
+So the current live route should not contain either
+`os1TransportOneVar_denseRange` or `os1TransportComponent_denseRange` as
+production targets. The only honest dense-range theorems now on this branch are
+the quotient-side maps
+`denseRange_section43PositiveEnergyQuotientMap1D` and
+`denseRange_section43PositiveEnergyQuotientMap`.
 
 The file should not attempt to prove `bvtTransportImage_dense` by separate
-topological arguments once `os1TransportComponent_denseRange` is available.
+topological arguments. The positivity route should go through injectivity /
+kernel-zero on the transport side and Hilbert-space density on the OS side.
 
 ### 5.9.3. Detailed proof of the on-image transport map
 
@@ -1014,7 +1103,8 @@ It is defined only on the transformed image.
 The honest current-code package is:
 
 1. represent the transformed-image core by a finite-support sequence whose
-   degree-`n` component lies in `bvtTransportImage (d := d) n`;
+   degree-`n` raw Schwartz component becomes a transformed-image point after
+   applying `section43PositiveEnergyQuotientMap (d := d) n`;
 2. choose, for each degree, a Euclidean positive-time preimage;
 3. map that preimage to the existing OS vector
    `euclideanPositiveTimeSingleVector`;
@@ -1026,7 +1116,8 @@ That is why the correct current-code structure is:
 structure BvtTransportImageSequence (d : ℕ) [NeZero d] where
   toBorchers : BorchersSequence d
   image_mem : ∀ n,
-    toBorchers.funcs n ∈ bvtTransportImage (d := d) n
+    section43PositiveEnergyQuotientMap (d := d) n (toBorchers.funcs n) ∈
+      bvtTransportImage (d := d) n
 ```
 
 The well-definedness proof must use `os1TransportComponent_eq_zero_iff`, not
@@ -1034,7 +1125,9 @@ density. The exact proof is:
 
 1. suppose two Euclidean preimages give the same transformed-image element;
 2. subtract them;
-3. the difference maps to zero under `os1TransportComponent`;
+3. the difference maps to zero under `os1TransportComponent` after comparing
+   both preimages to the same quotient class
+   `section43PositiveEnergyQuotientMap (d := d) n (F.toBorchers.funcs n)`;
 4. injectivity / kernel-zero gives equality of the preimages;
 5. therefore the OS Hilbert vector does not depend on the choice.
 
@@ -1057,9 +1150,16 @@ The proof transcript is:
    Section-4.3 / Lemma-4.2 Fourier-Laplace computation:
    - spatial Fourier transform is handled by the ordinary tempered
      distribution Fourier calculus already used elsewhere in the repo;
-   - time-variable interchange is exactly the hidden Section-8 one-variable
-     theorem recorded in `docs/os1_detailed_proof_audit.md` as
-     `lemma42_matrix_element_time_interchange`;
+   - the first direct consumer of the slice-descent theorem is the concrete
+     adapter `lemma42_matrix_element_time_interchange`;
+   - the purely configuration-space shell inside that adapter is already
+     formalized by `conjTensorProduct_timeShift_eq_tailTimeShift` and
+     `simpleTensor_timeShift_integral_eq_xiShift_conj` in
+     [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean);
+   - inside that adapter, time-variable interchange is exactly the hidden
+     Section-8 one-variable theorem recorded in
+     `docs/os1_detailed_proof_audit.md` as
+     `one_variable_time_interchange_for_wightman_pairing`;
    - the common kernel is the corrected OS-II-backed analytic-continuation
      object underlying `bvt_F` / `bvt_W`, not a fresh spectral-measure
      construction in Section 4.3 itself.
@@ -1101,13 +1201,15 @@ on raw `BorchersSequence d` remains off-route.
 
 Exact current implementation status:
 
-1. there is no current production theorem implementing Package I yet;
-2. the current production file `OSToWightmanPositivity.lean` now honestly
-   isolates Package I as one of the two remaining `sorry`s;
-3. the old raw same-input theorem slogan is withdrawn and must not be
+1. the old raw same-input theorem slogan is withdrawn and must not be
    implemented literally;
+2. the current local production branch already contains the Stage-3/4
+   transformed-image carrier and the on-image Hilbert transport;
+3. the live frontier is no longer a transport placeholder or a Schwartz-density
+   theorem, but the transformed-image quadratic identity and final positivity
+   closure;
 4. the theorem-3 blueprint now endorses only the transformed-image /
-   density-closure reading of Section 4.3.
+   Hilbert-density reading of Section 4.3.
 
 ## 6. Exact relation to the current production consumers
 
@@ -1178,9 +1280,6 @@ theorem re_WightmanInnerProduct_tendsto_of_componentwise_tendsto ... := by
 
 /- Step I: final theorem-3 closure via Section 4.3 transformed image. -/
 def bvtTransportImage ... := by
-  ...
-
-theorem bvtTransportImage_dense ... := by
   ...
 
 def BvtTransportImageSequence ... := by

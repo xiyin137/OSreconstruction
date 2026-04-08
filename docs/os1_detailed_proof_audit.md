@@ -386,7 +386,8 @@ The proof uses:
 So when formalizing this map, the honest local sublemmas are:
 - continuity of the Laplace/Fourier transform on the chosen Schwartz quotient,
 - injectivity from positive-support uniqueness,
-- and density of the image.
+- and, if needed later, density only on the honest quotient-side half-space
+  carrier rather than on the current support-restricted subtype source.
 
 The documentation should name a different hidden dependency instead:
 - the transform in `(4.19)`-`(4.20)` is explicit on test functions,
@@ -396,9 +397,12 @@ The documentation should name a different hidden dependency instead:
 So the later Lean port should break the Section-4.3 dependency chain as:
 
 1. define the explicit test-function transform `(4.19)`-`(4.20)`;
-2. prove continuity, injectivity, and dense range of that transform;
-3. import the Wightman-side kernel from the OS II repaired continuation route;
-4. combine the two through Lemma 4.2 and Eq. `(4.28)`.
+2. prove continuity and injectivity of that transform on the current
+   support-restricted positive-time source;
+3. record the honest quotient-side dense map separately, rather than asserting
+   dense range for the support-restricted source itself;
+4. import the Wightman-side kernel from the OS II repaired continuation route;
+5. combine the two through Lemma 4.2 and Eq. `(4.28)`.
 
 Implementation-level theorem-slot inventory for that corrected chain:
 
@@ -417,10 +421,15 @@ lemma section43_testFunctionTransform_injective
     Function.Injective (section43_testFunctionTransform (d := d)) := by
   -- one-variable positive-support uniqueness in each time variable
 
-lemma section43_testFunctionTransform_denseRange
+lemma not_denseRange_section43_testFunctionTransform
     :
-    DenseRange (section43_testFunctionTransform (d := d)) := by
-  -- density of the image in the Euclidean positive-time test space
+    ¬ DenseRange (section43_testFunctionTransform (d := d)) := by
+  -- current support-restricted subtype is too small; see production 1D obstruction
+
+lemma denseRange_section43PositiveEnergyQuotientMap
+    :
+    DenseRange (section43PositiveEnergyQuotientMap (d := d)) := by
+  -- quotient-side dense map from ambient Schwartz space
 
 lemma section43_wightmanKernel_from_os2_repair
     (lgc : OSLinearGrowthCondition d OS) :
@@ -468,8 +477,9 @@ into the following theorem slots:
    quotients;
 2. a tensor-product / iterated-variable lifting theorem that assembles the
    `n`-variable transform from repeated one-variable transforms;
-3. a density theorem saying the resulting positive-time Euclidean image is
-   dense in the target Schwartz space;
+3. the honest quotient-side dense map onto the positive-energy codomain,
+   rather than a false dense-range theorem for the support-restricted
+   positive-time transport itself;
 4. an injectivity theorem whose proof uses only one-variable positive-support
    uniqueness in each time variable.
 
@@ -486,11 +496,16 @@ Layer A. One-variable transform.
      `(4.19)`-`(4.20)`;
    - it lands in the positive-energy half-line codomain `q⁰ ≥ 0`.
 
-2. Prove its two key properties:
-   - injective / kernel-zero;
-   - dense range in the positive-energy one-variable Schwartz codomain.
+2. Prove its key honest property:
+   - injective / kernel-zero on the current support-restricted Euclidean
+     source.
 
-3. The exact analytic suppliers for this one-variable package are:
+3. Record the honest quotient-side density statement separately:
+   - the ambient-Schwartz quotient map onto the half-line codomain has dense
+     range;
+   - the support-restricted transport itself does not.
+
+4. The exact analytic suppliers for this one-variable package are:
    - `SCV.fourierLaplaceExt`,
    - `SCV.paley_wiener_half_line`,
    - the automorphism property of the Fourier transform on Schwartz space.
@@ -514,26 +529,31 @@ Layer C. Topological consequences.
    one-variable transform and the spatial Fourier automorphism;
 2. injectivity follows from the one-variable kernel-zero theorem, applied one
    time variable at a time;
-3. dense range follows by iterating the one-variable dense-range theorem.
+3. no separate dense-range theorem is needed on the support-restricted source;
+   the honest dense map is the ambient-Schwartz quotient map onto the
+   half-space codomain. For positive degree, the literal support-restricted
+   transport is in fact not dense; degree `0` is exceptional because the
+   source already equals the ambient Schwartz space there.
 
 So the honest implementation theorem package is:
 
 ```lean
 lemma section43_oneVar_transform
-    : EuclideanPositiveTimeTest1D →L[ℂ] SchwartzMap ℝ ℂ := by
+    : EuclideanPositiveTimeTest1D →L[ℂ] Section43PositiveEnergy1D := by
   ...
 
 lemma section43_oneVar_transform_injective :
     Function.Injective section43_oneVar_transform := by
   ...
 
-lemma section43_oneVar_transform_denseRange :
-    DenseRange section43_oneVar_transform := by
+lemma denseRange_section43PositiveEnergyQuotientMap1D :
+    DenseRange section43PositiveEnergyQuotientMap1D := by
   ...
 
 lemma section43_component_transform
     (n : ℕ) :
-    EuclideanPositiveTimeComponent d n →L[ℂ] SchwartzNPoint d n := by
+    EuclideanPositiveTimeComponent d n →L[ℂ]
+      Section43PositiveEnergyComponent d n := by
   ...
 
 lemma section43_component_transform_injective
@@ -541,15 +561,50 @@ lemma section43_component_transform_injective
     Function.Injective (section43_component_transform (d := d) n) := by
   ...
 
-lemma section43_component_transform_denseRange
+lemma denseRange_section43PositiveEnergyQuotientMap
     (n : ℕ) :
-    DenseRange (section43_component_transform (d := d) n) := by
+    DenseRange (section43PositiveEnergyQuotientMap (d := d) n) := by
+  ...
+
+/-- Stage-5 prerequisite: multivariate quotient descent from the abstract
+Section-4.3 transform to the concrete iterated Fourier-Laplace formula. -/
+lemma section43_iteratedSlice_descendedPairing
+    (n : ℕ) :
+    ... := by
+  ...
+
+Exact current-code milestone:
+- the full slice-descent theorem is now formalized as
+  `section43_iteratedSlice_descendedPairing`;
+- the older theorem `section43_iteratedSlice_descendedPairing_imagAxis`
+  remains as the first explicit one-variable fragment inside that proof;
+- the next exact analytic blocker is the concrete Section-4.3 adapter
+  `lemma42_matrix_element_time_interchange`;
+- the kernel-level theorem `bvt_W_matrixElement_onImage` is the immediate
+  consumer of that adapter, not the direct successor of slice descent.
+
+/-- Concrete Section-4.3 version of the Lemma-4.2 interchange step. This is
+the first theorem after slice descent that still contains new analytic
+content. -/
+lemma lemma42_matrix_element_time_interchange
+    (n : ℕ) :
+    ... := by
+  ...
+
+/-- Stage-5 prerequisite: the OS-II `bvt_W` kernel on transformed-image inputs,
+written in the same iterated coordinates as the previous lemma. -/
+lemma bvt_W_matrixElement_onImage
+    (n : ℕ) :
+    ... := by
   ...
 ```
 
 This transcript matters because it tells the later implementation exactly where
 the real analytic work belongs: in the one-variable transform, not in a fake
-many-variable theorem.
+many-variable theorem. It also makes explicit the final hidden bridge that the
+blueprint previously left implicit: Eq. `(4.28)` is not reached directly from
+injectivity/well-definedness alone, but through these two transformed-image
+pairing lemmas.
 
 ### 7.3. Lemma 4.2 unpacked
 
@@ -1588,11 +1643,14 @@ be recorded as:
 /-- Concrete Section 4.3 version of the Lemma 4.2 interchange step. -/
 theorem lemma42_matrix_element_time_interchange
     (W : WightmanDifferenceData d)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
     (f_left : PositiveEnergyWightmanTest n)
-    (f_right : PositiveEnergyWightmanTest m) :
-    section43_pairing_before_time_interchange W f_left f_right
+    (f_right : PositiveEnergyWightmanTest m)
+    (hφ : quotientClass φ = section43_transform f_left)
+    (hψ : quotientClass ψ = section43_transform f_right) :
+    section43_pairing_before_time_interchange W φ ψ f_left f_right
       =
-    section43_pairing_after_time_interchange W f_left f_right := by
+    section43_pairing_after_time_interchange W φ ψ f_left f_right := by
   -- reduce both sides to the one-variable positive-support theorem,
   -- then discharge the spatial Fourier bookkeeping separately
 ```
@@ -1603,6 +1661,12 @@ The point of naming both theorem slots is:
    analytic theorem;
 2. `lemma42_matrix_element_time_interchange` is the exact Section 4.3 adapter
    that the positivity proof will actually call.
+3. the purely configuration-space shell inside that adapter is already
+   formalized by `conjTensorProduct_timeShift_eq_tailTimeShift` and
+   `simpleTensor_timeShift_integral_eq_xiShift_conj` in
+   [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean), so the
+   remaining live gap is the genuine time-variable interchange /
+   boundary-value step rather than another shell-rewrite subproblem.
 
 Without the second name, a future implementation would still have to rediscover
 how the abstract one-variable theorem plugs into the concrete OS I formula
