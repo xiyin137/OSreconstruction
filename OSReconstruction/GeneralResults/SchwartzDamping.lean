@@ -397,7 +397,131 @@ private lemma seminorm_expDamping_sub_le
           -- j≥1: D^j[cexp∘L'-1] = D^j[cexp∘L'] with ‖L'‖^j = (ε‖L₀‖)^j ≤ ε·‖L₀‖^j (ε ≤ 1).
           -- Each term ≤ ε · C(n,j) · j! · exp(M) · ‖L₀‖^j · seminorm(k,n-j)(h).
           -- Total ≤ C₀ · ε ≤ (C₀ + 1) · ε.
-          sorry
+          -- Step 1: Distribute ‖ξ‖^k into the sum
+          rw [Finset.mul_sum]
+          -- Auxiliary: |L ξ| ≤ ‖L₀‖ * ‖ξ‖
+          have hLξ_le : |L ξ| ≤ ‖L₀‖ * ‖ξ‖ := by
+            have := L₀.le_opNorm ξ
+            rwa [show L₀ ξ = ((L ξ : ℝ) : ℂ) from by
+              simp [L₀, ContinuousLinearMap.comp_apply],
+              Complex.norm_real, Real.norm_eq_abs] at this
+          -- Step 2: Bound each summand
+          have hterm_bound : ∀ j ∈ Finset.range (n + 1),
+              ‖ξ‖ ^ k * ((n.choose j : ℝ) *
+                ‖iteratedFDeriv ℝ j (fun x => cexp (L' x) - 1) ξ‖ *
+                  ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖) ≤
+              (if j = 0 then
+                ε * (‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+                  M * Real.exp M * SchwartzMap.seminorm ℝ k n h)
+              else
+                ε * ((n.choose j : ℝ) * (j.factorial : ℝ) *
+                  Real.exp M * ‖L₀‖ ^ j *
+                    SchwartzMap.seminorm ℝ k (n - j) h)) := by
+            intro j hj
+            by_cases hj0_case : j = 0
+            · -- j = 0 case
+              subst hj0_case
+              simp only [ite_true, Nat.choose_zero_right, Nat.cast_one, one_mul, Nat.sub_zero]
+              have hsn := SchwartzMap.le_seminorm ℝ k n h ξ
+              have hsnk1 := SchwartzMap.le_seminorm ℝ (k + 1) n h ξ
+              -- ‖iteratedFDeriv ℝ 0 f ξ‖ = ‖f ξ‖
+              have hnorm_zero : ‖iteratedFDeriv ℝ 0 (fun x => cexp (L' x) - 1) ξ‖ =
+                  ‖cexp (L' ξ) - 1‖ := by
+                rw [norm_iteratedFDeriv_zero]
+              rw [hnorm_zero]
+              calc ‖ξ‖ ^ k * (‖cexp (L' ξ) - 1‖ * ‖iteratedFDeriv ℝ n (⇑h) ξ‖)
+                  ≤ ‖ξ‖ ^ k * (ε * (|L ξ| + M * Real.exp M) *
+                      ‖iteratedFDeriv ℝ n (⇑h) ξ‖) := by gcongr
+                _ = ε * (|L ξ| * (‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (⇑h) ξ‖) +
+                    M * Real.exp M * (‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (⇑h) ξ‖)) := by ring
+                _ ≤ ε * (‖L₀‖ * ‖ξ‖ * (‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (⇑h) ξ‖) +
+                    M * Real.exp M * SchwartzMap.seminorm ℝ k n h) := by
+                    gcongr
+                _ = ε * (‖L₀‖ * (‖ξ‖ ^ (k + 1) * ‖iteratedFDeriv ℝ n (⇑h) ξ‖) +
+                    M * Real.exp M * SchwartzMap.seminorm ℝ k n h) := by
+                    congr 1; congr 1; rw [pow_succ]; ring
+                _ ≤ ε * (‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+                    M * Real.exp M * SchwartzMap.seminorm ℝ k n h) := by
+                    gcongr
+            · -- j ≥ 1 case
+              simp only [hj0_case, ite_false]
+              -- D^j[cexp∘L' - 1] = D^j[cexp∘L'] for j ≥ 1
+              have hderiv_eq_j : iteratedFDeriv ℝ j (fun x => cexp (L' x) - 1) ξ =
+                  iteratedFDeriv ℝ j (fun x => cexp (L' x)) ξ := by
+                have hsub' := iteratedFDeriv_sub_apply
+                  (f := fun x => cexp (L' x))
+                  (g := fun _ => (1 : ℂ))
+                  ((Complex.contDiff_exp.comp L'.contDiff).contDiffAt)
+                  (contDiff_const.contDiffAt)
+                  (x := ξ) (i := j)
+                calc iteratedFDeriv ℝ j (fun x => cexp (L' x) - 1) ξ
+                    = iteratedFDeriv ℝ j ((fun x => cexp (L' x)) - fun _ => (1 : ℂ)) ξ := rfl
+                  _ = iteratedFDeriv ℝ j (fun x => cexp (L' x)) ξ -
+                        iteratedFDeriv ℝ j (fun _ => (1 : ℂ)) ξ := hsub'
+                  _ = iteratedFDeriv ℝ j (fun x => cexp (L' x)) ξ := by
+                        simp [iteratedFDeriv_const_of_ne (𝕜 := ℝ) hj0_case (1 : ℂ)]
+              rw [hderiv_eq_j]
+              have hexp_deriv := norm_iteratedFDeriv_cexp_comp_clm_le L' ξ j
+              have hL'_pow : ‖L'‖ ^ j = ε ^ j * ‖L₀‖ ^ j := by
+                rw [hL'_norm, mul_pow]
+              have hε_pow : ε ^ j ≤ ε := by
+                obtain ⟨j', rfl⟩ : ∃ j', j = j' + 1 := ⟨j - 1, by omega⟩
+                calc ε ^ (j' + 1) = ε ^ j' * ε := pow_succ ε j'
+                  _ ≤ 1 * ε := by gcongr; exact pow_le_one₀ hε.le hε1
+                  _ = ε := one_mul ε
+              have hsn_j := SchwartzMap.le_seminorm ℝ k (n - j) h ξ
+              calc ‖ξ‖ ^ k * ((n.choose j : ℝ) *
+                    ‖iteratedFDeriv ℝ j (fun x => cexp (L' x)) ξ‖ *
+                      ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖)
+                  = (n.choose j : ℝ) *
+                    ‖iteratedFDeriv ℝ j (fun x => cexp (L' x)) ξ‖ *
+                      (‖ξ‖ ^ k * ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖) := by ring
+                _ ≤ (n.choose j : ℝ) *
+                    (j.factorial * ‖cexp (L' ξ)‖ * ‖L'‖ ^ j) *
+                      SchwartzMap.seminorm ℝ k (n - j) h := by
+                    gcongr
+                _ ≤ (n.choose j : ℝ) *
+                    (j.factorial * Real.exp M * (ε ^ j * ‖L₀‖ ^ j)) *
+                      SchwartzMap.seminorm ℝ k (n - j) h := by
+                    gcongr; rw [hL'_pow]
+                _ ≤ (n.choose j : ℝ) *
+                    (j.factorial * Real.exp M * (ε * ‖L₀‖ ^ j)) *
+                      SchwartzMap.seminorm ℝ k (n - j) h := by
+                    gcongr
+                _ = ε * ((n.choose j : ℝ) * (j.factorial : ℝ) *
+                    Real.exp M * ‖L₀‖ ^ j *
+                      SchwartzMap.seminorm ℝ k (n - j) h) := by ring
+          -- Step 3: Sum the bounds and simplify to C₀ * ε
+          calc ∑ j ∈ Finset.range (n + 1),
+                  ‖ξ‖ ^ k * ((n.choose j : ℝ) *
+                    ‖iteratedFDeriv ℝ j (fun x => cexp (L' x) - 1) ξ‖ *
+                      ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖)
+              ≤ ∑ j ∈ Finset.range (n + 1),
+                  (if j = 0 then
+                    ε * (‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+                      M * Real.exp M * SchwartzMap.seminorm ℝ k n h)
+                  else
+                    ε * ((n.choose j : ℝ) * (j.factorial : ℝ) *
+                      Real.exp M * ‖L₀‖ ^ j *
+                        SchwartzMap.seminorm ℝ k (n - j) h)) :=
+                Finset.sum_le_sum hterm_bound
+            _ = ε * (‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+                  M * Real.exp M * SchwartzMap.seminorm ℝ k n h) +
+                ∑ j ∈ Finset.range n,
+                  ε * ((n.choose (j + 1) : ℝ) * ((j + 1).factorial : ℝ) *
+                    Real.exp M * ‖L₀‖ ^ (j + 1) *
+                      SchwartzMap.seminorm ℝ k (n - (j + 1)) h) := by
+                rw [Finset.sum_range_succ']
+                simp only [ite_true, Nat.succ_ne_zero, ite_false, add_comm]
+            _ = ε * ((‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+                  M * Real.exp M * SchwartzMap.seminorm ℝ k n h) +
+                ∑ j ∈ Finset.range n,
+                  ((n.choose (j + 1) : ℝ) * ((j + 1).factorial : ℝ) *
+                    Real.exp M * ‖L₀‖ ^ (j + 1) *
+                      SchwartzMap.seminorm ℝ k (n - (j + 1)) h)) := by
+                rw [← Finset.mul_sum]; ring
+            _ = ε * C₀ := by rfl
+            _ ≤ (C₀ + 1) * ε := by nlinarith [show 0 ≤ C₀ + 1 from by positivity]
   · -- Outside closure(supp h): vanishes
     have hzero : (fun x => (cexp (L' x) - 1) * h x) =ᶠ[nhds ξ] 0 := by
       rw [Filter.eventuallyEq_iff_exists_mem]
