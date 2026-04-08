@@ -3077,9 +3077,15 @@ theorem fourierLaplaceExtMultiDim_vladimirov_growth
           (1 + (Metric.infDist (fun i => (z i).im) Cᶜ)⁻¹) ^ M := by
         ring
 
-/-! ### Boundary values -/
+/-! ### Fourier conventions and boundary values
 
-/-- The inverse Fourier transform on `Fin m → ℝ`, defined by transporting
+**Fourier normalization note**: The tube kernel uses `exp(ix·ξ)` (physics convention),
+while Mathlib's `fourierTransformCLM` uses `exp(-2πi⟨x,ξ⟩)`. The boundary value
+`∫ F(x+i0η) f(x) dx` naturally produces `T(FT_phys(f))`. The `inverseFourierFlatCLM`
+below uses Mathlib's convention; the BV theorem statement needs adjustment.
+TODO: define `physicsFourierFlatCLM` matching `exp(ix·ξ)` and use in BV theorem. -/
+
+/-- The Mathlib-convention Fourier transform on `Fin m → ℝ`, defined by transporting
     through `EuclideanSpace ℝ (Fin m)` (which has `InnerProductSpace`)
     and applying Mathlib's `fourierTransformCLM`.
 
