@@ -3220,7 +3220,7 @@ private lemma realPlusIEpsEta_mem_tubeDomain
 /-- Pointwise identification of the Fubini-exchanged Schwartz kernel with the
 regularized physics Fourier transform. This is the remaining kernel-computation
 step in the boundary-value theorem. -/
-private axiom regularizedKernel_pointwise
+private theorem regularizedKernel_pointwise
     {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -3231,7 +3231,12 @@ private axiom regularizedKernel_pointwise
         multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient
           (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) ξ * f x) =
         Complex.exp (-(ε : ℂ) * (etaPairingCLM η ξ : ℂ)) *
-          (((dualConeCutoff C).val ξ : ℂ) * physicsFourierFlatCLM f ξ)
+          (((dualConeCutoff C).val ξ : ℂ) * physicsFourierFlatCLM f ξ) := by
+  intro ε hε ξ
+  -- Proof: unfold ψ_{x+iεη}(ξ) = χ(ξ) exp(-εη·ξ) exp(ix·ξ),
+  -- pull x-independent factors out of integral, identify ∫exp(ix·ξ)f(x)dx
+  -- with physicsFourierFlatCLM f ξ via fourierTransformFlat_eval.
+  sorry -- provable from fourierTransformFlat_eval + integral_mul_left + psiZRaw unfolding
 
 /-- **Boundary value convergence for the Fourier-Laplace extension.**
 
