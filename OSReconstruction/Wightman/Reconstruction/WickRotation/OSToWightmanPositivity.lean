@@ -1388,6 +1388,73 @@ private theorem fourierLaplaceExt_partialFourierSpatial_timeSlice_eq_complexLapl
       (d := d) (n := n) f r t ξ)
     hη
 
+/-- The one-variable Paley-Wiener theorem, specialized to the actual branch-`3b`
+positive-time time slice. This is the exact existential supplier that still
+needs to be assembled into the global Section 4.3 transport map. -/
+private theorem partialFourierSpatial_timeSlice_hasPaleyWienerExtension
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    ∃ F_ext : ℂ → ℂ,
+      DifferentiableOn ℂ F_ext SCV.upperHalfPlane ∧
+      (∀ η : ℝ, 0 < η →
+        SCV.HasPolynomialGrowthOnLine (fun x => F_ext (↑x + ↑η * Complex.I))) ∧
+      (∀ φ : SchwartzMap ℝ ℂ,
+        Filter.Tendsto (fun η : ℝ => ∫ x : ℝ, F_ext (↑x + ↑η * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (fourierInvPairingCLM
+              (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+              φ))) := by
+  simpa [fourierInvPairingCLM_apply] using
+    complexLaplaceTransform_hasPaleyWienerExtension
+      (f := partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+      (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+        (d := d) (n := n) f r t ξ)
+
+/-- The canonical one-variable Section-4.3 upper-half-plane extension attached
+to the actual branch-`3b` positive-time slice. This avoids arbitrary
+`Classical.choose` packaging: it is exactly the scaled `SCV.fourierLaplaceExt`
+that `paley_wiener_half_line` builds under the hood. -/
+private noncomputable def partialFourierSpatial_timeSliceCanonicalExtension
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (w : ℂ) : ℂ :=
+  if hw : 0 < w.im then
+    SCV.fourierLaplaceExt
+      (fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ))
+      (((2 * Real.pi : ℂ) * w))
+      (by
+        have hmul : 0 < (2 * Real.pi) * w.im := mul_pos Real.two_pi_pos hw
+        simpa [Complex.mul_im] using hmul)
+  else
+    0
+
+/-- On the positive imaginary axis, the canonical slice extension reproduces
+the raw one-sided Laplace transform of the branch-`3b` time slice. -/
+private theorem partialFourierSpatial_timeSliceCanonicalExtension_eq_complexLaplaceTransform
+    {n : ℕ} (f : EuclideanPositiveTimeComponent d n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    {η : ℝ} (hη : 0 < η) :
+    partialFourierSpatial_timeSliceCanonicalExtension
+        (d := d) (n := n) f r t ξ (η * Complex.I)
+      =
+    complexLaplaceTransform
+      (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) f.1 r t ξ)
+      ((2 * Real.pi * η : ℂ)) := by
+  have him : 0 < (η * Complex.I).im := by simpa using hη
+  simp only [partialFourierSpatial_timeSliceCanonicalExtension, dif_pos him]
+  have harg :
+      ((2 * Real.pi : ℂ) * (η * Complex.I)) = ((2 * Real.pi * η : ℂ) * Complex.I) := by
+    norm_num
+    ring
+  simpa [harg] using
+    (fourierLaplaceExt_partialFourierSpatial_timeSlice_eq_complexLaplaceTransform
+      (d := d) (n := n) f r t ξ hη)
+
 /-- The honest OS Hilbert-space vector determined by a positive-time Euclidean
 Borchers sequence. Package I will later define the Minkowski-side transport map
 by choosing a Euclidean preimage and landing in this existing vector. -/
