@@ -1160,6 +1160,10 @@ The proof transcript is:
      Section-8 one-variable theorem recorded in
      `docs/os1_detailed_proof_audit.md` as
      `one_variable_time_interchange_for_wightman_pairing`;
+   - in the current repo, the honest Lean supplier for that one-variable step
+     should be routed through `SCV.paley_wiener_one_step` /
+     `SCV.paley_wiener_half_line`, not a fresh ad hoc many-variable
+     continuation theorem;
    - the common kernel is the corrected OS-II-backed analytic-continuation
      object underlying `bvt_F` / `bvt_W`, not a fresh spectral-measure
      construction in Section 4.3 itself.

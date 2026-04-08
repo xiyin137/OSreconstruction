@@ -1633,6 +1633,16 @@ This theorem is not optional documentation frosting. Without naming it
 explicitly, the later Lean port of OS I positivity would still hide the only
 genuinely analytic step in Lemma 4.2.
 
+Implementation note:
+
+- in the current repo, this slot should be supplied through the already-built
+  one-variable theorem `SCV.paley_wiener_one_step` (and ultimately
+  `SCV.paley_wiener_half_line`), not by inventing a new many-variable
+  continuation principle;
+- the remaining work in Lemma 4.2 is therefore the concrete Section-4.3
+  packaging of that one-variable theorem into the matrix-element shell, not
+  the construction of a new Section-8 theorem family from scratch.
+
 The later Lean port should also keep a still more local theorem-slot name in
 reserve, because OS I Lemma 4.2 does not use a fully abstract positive-support
 theorem in isolation. It uses that theorem in the concrete matrix-element
