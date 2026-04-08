@@ -3,7 +3,9 @@ Copyright (c) 2025 ModularPhysics Contributors. All rights reserved.
 Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
+import OSReconstruction.SCV.ConeDefs
 import OSReconstruction.SCV.LaplaceSchwartz
+import OSReconstruction.SCV.PaleyWienerSchwartz
 import OSReconstruction.Wightman.SchwartzTensorProduct
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
@@ -37,31 +39,9 @@ open scoped Classical ComplexConjugate BigOperators
 open MeasureTheory
 noncomputable section
 
-/-! ### Definitions -/
+-- IsCone, IsSalientCone, TubeDomainSetPi are now in ConeDefs.lean
 
-/-- A set is a (positive) cone if it is closed under scaling by strictly
-    positive reals. Uses `•` which is pointwise on Pi types. -/
-def IsCone {E : Type*} [SMul ℝ E] (C : Set E) : Prop :=
-  ∀ y ∈ C, ∀ t : ℝ, 0 < t → t • y ∈ C
-
-/-- A cone is salient (or pointed) if its closure contains no complete line.
-    Equivalently: the only element whose negation also lies in the closure is 0.
-    This rules out cones like `{ y | y₁ > 0 }` where the `y₂` direction is
-    unconstrained.
-
-    For the Vladimirov-Tillmann theorem, salience ensures the dual cone has
-    nonempty interior, which is needed for the Fourier-Laplace representation
-    to yield global growth bounds. -/
-def IsSalientCone {E : Type*} [AddCommGroup E] [TopologicalSpace E] (C : Set E) : Prop :=
-  ∀ y, y ∈ closure C → -y ∈ closure C → y = 0
-
-/-- The tube domain T(C) = { z | Im(z) ∈ C } for the nested Pi type
-    used by the Wightman forward tube. -/
-def TubeDomainSetPi {n d : ℕ} (C : Set (Fin n → Fin (d + 1) → ℝ)) :
-    Set (Fin n → Fin (d + 1) → ℂ) :=
-  { z | (fun k μ => (z k μ).im) ∈ C }
-
-/-! ### The Vladimirov-Tillmann axiom -/
+/-! ### The Vladimirov-Tillmann theorem -/
 
 /-- The Vladimirov-Tillmann theorem for tube domains.
 
