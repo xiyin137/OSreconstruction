@@ -82,7 +82,17 @@ def TubeDomainSetPi {n d : ℕ} (C : Set (Fin n → Fin (d + 1) → ℝ)) :
     The `(1 + dist⁻¹)` form prevents the bound from collapsing to zero
     deep inside the cone (where dist → ∞) and captures the inverse-power
     singularity near ∂C (where dist → 0). -/
-axiom vladimirov_tillmann {n d : ℕ}
+-- Vladimirov-Tillmann: BV → growth.
+-- Proof route (Gemini, per Vladimirov §25):
+-- 1. bv_implies_fourier_support: F holo + BV W → W has Fourier support in C*
+--    (Vladimirov Thm 25.1-25.2, via Poisson integral)
+-- 2. Construct G(z) = W(ψ_z) (FL extension of W)
+-- 3. fourierLaplaceExtMultiDim_boundaryValue: G has BV W (proved in PW)
+-- 4. tube_holomorphic_unique_from_bv: F = G (same BV, both holomorphic)
+-- 5. fourierLaplaceExtMultiDim_vladimirov_growth: |G(z)| ≤ Vladimirov bound (proved in PW)
+-- Steps 1 and 4 are the two axioms needed (pure SCV, not yet formalized).
+-- Steps 2, 3, 5 are fully proved in PaleyWienerSchwartz.lean.
+theorem vladimirov_tillmann {n d : ℕ}
     (C : Set (Fin n → Fin (d + 1) → ℝ))
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -105,7 +115,16 @@ axiom vladimirov_tillmann {n d : ℕ}
     (∃ (C_bd : ℝ) (N q : ℕ), C_bd > 0 ∧
       ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
         ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N *
-          (1 + (Metric.infDist (fun k μ => (z k μ).im) Cᶜ)⁻¹) ^ q)
+          (1 + (Metric.infDist (fun k μ => (z k μ).im) Cᶜ)⁻¹) ^ q) := by
+  -- The proof chains through the Fourier-Laplace representation:
+  -- 1. W has Fourier support in C* (from BV + holomorphicity)
+  -- 2. F(z) = W(ψ_z) (FL representation, Vladimirov §25 Thm 25.5)
+  -- 3. |W(ψ_z)| ≤ C·seminorm(ψ_z) (CLM bound)
+  -- 4. seminorm(ψ_z) ≤ Vladimirov bound (proved in PaleyWienerSchwartz)
+  --
+  -- Step 2 is the main gap: showing F = FL extension of W.
+  -- This is the representation theorem (converse of BV existence).
+  sorry
 
 /-! ### Cluster property: distributional → tube interior -/
 
