@@ -1643,6 +1643,265 @@ private theorem section43PositiveEnergyQuotientMap1D_partialFourierSpatial_timeS
   exact partialFourierSpatial_timeSlice_eqOn_nonneg_of_repr_eq_transport
     (d := d) (n := n) hφf r t ht ξ
 
+/-- General one-variable descended-pairing form of the same bridge: once an
+ambient representative `φ` and a positive-time preimage `f` determine the same
+multivariate Section-4.3 class, every one-sided Fourier-support functional sees
+the same one-variable quotient class on the corresponding time slice. This is
+the real theorem surface needed later when the pairing functional is induced by
+the opposite factor's slice rather than by the same slice. -/
+private theorem fourierPairingDescendsToSection43PositiveEnergy1D_eq_of_repr_eq_transport
+    {n : ℕ}
+    {φ : SchwartzNPoint d n}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (hT_supp : SCV.HasOneSidedFourierSupport T)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    fourierPairingDescendsToSection43PositiveEnergy1D T hT_supp
+        (section43PositiveEnergyQuotientMap1D
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) =
+      fourierPairingDescendsToSection43PositiveEnergy1D T hT_supp
+        (os1TransportOneVar
+          (partialFourierSpatial_timeSliceTest (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ)) := by
+  rw [section43PositiveEnergyQuotientMap1D_partialFourierSpatial_timeSlice_eq_of_repr_eq_transport
+    (d := d) (n := n) hφf r t ht ξ]
+
+/-- Scalar descended-pairing form of the same bridge: if an ambient
+transformed-image representative `φ` and a positive-time preimage `f` define
+the same multivariate Section 4.3 quotient class, then the one-variable
+descended Fourier pairing attached to the positive-time slice of `f` already
+recovers the quotient class of the ambient slice of `φ`. This is the exact
+current-code scalar ingredient later needed inside the Lemma-4.2 matrix-element
+adapter. -/
+private theorem fourierPairingDescendsToSection43PositiveEnergy1D_repr_partialFourierSpatial_timeSlice
+    {n : ℕ}
+    {φ : SchwartzNPoint d n}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    OSReconstruction.fourierPairingDescendsToSection43PositiveEnergy1D
+        (fourierInvPairingCLM
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ))
+        (fourierInvPairing_hasOneSidedFourierSupport
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+          (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+            (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ))
+        (section43PositiveEnergyQuotientMap1D
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) =
+      fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)) := by
+  rw [fourierPairingDescendsToSection43PositiveEnergy1D_eq_of_repr_eq_transport
+    (d := d) (n := n) hφf
+    (T := fourierInvPairingCLM
+      (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ))
+    (hT_supp := fourierInvPairing_hasOneSidedFourierSupport
+      (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+        (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+      (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+        (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ))
+    r t ht ξ]
+  exact fourierPairingDescendsToSection43PositiveEnergy1D_partialFourierSpatial_timeSlice
+    (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ
+
+/-- Wrapper-free scalar form of the same bridge: for the one-variable pairing
+functional induced by the positive-time slice of `f`, the Fourier-side pairing
+against the ambient slice of `φ` already equals the same pairing against the
+actual positive-time slice. This is the scalar theorem-surface that the later
+Lemma-4.2 adapter should consume directly, without reintroducing quotient
+wrappers in its statement. -/
+private theorem fourierInvPairingCLM_partialFourierSpatial_timeSlice_eq_of_repr_eq_transport
+    {n : ℕ}
+    {φ : SchwartzNPoint d n}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ht : ∀ i : Fin n, i ≠ r → 0 ≤ t i)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) =
+      fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)) := by
+  have hleft :
+      fourierPairingDescendsToSection43PositiveEnergy1D
+          (fourierInvPairingCLM
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+              (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ))
+          (fourierInvPairing_hasOneSidedFourierSupport
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+              (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+            (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+              (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ))
+          (section43PositiveEnergyQuotientMap1D
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) =
+        fourierInvPairingCLM
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+          ((SchwartzMap.fourierTransformCLM ℂ)
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) := by
+    simpa using
+      (fourierPairingDescendsToSection43PositiveEnergy1D_apply
+        (T := fourierInvPairingCLM
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ))
+        (hT_supp := fourierInvPairing_hasOneSidedFourierSupport
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+          (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+            (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ))
+        (f := partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ))
+  calc
+    fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) =
+      fourierPairingDescendsToSection43PositiveEnergy1D
+          (fourierInvPairingCLM
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+              (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ))
+          (fourierInvPairing_hasOneSidedFourierSupport
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+              (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+            (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+              (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ))
+          (section43PositiveEnergyQuotientMap1D
+            (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ r t ξ)) := by
+        symm
+        exact hleft
+    _ =
+      fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+            (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)) := by
+        exact fourierPairingDescendsToSection43PositiveEnergy1D_repr_partialFourierSpatial_timeSlice
+          (d := d) (n := n) hφf r t ht ξ
+
+/-- Fourier-pairing symmetry on Fourier-transformed inputs: the slice pairing
+induced by `f` and evaluated on `𝓕 g` is the same scalar as the opposite
+pairing induced by `g` and evaluated on `𝓕 f`. This is the algebraic
+commutativity step later used to move the Section-4.3 descended pairing from
+one side of the Lemma-4.2 shell to the other without introducing any new
+analytic content. -/
+private theorem fourierInvPairingCLM_fourierTransform_symm
+    (f g : SchwartzMap ℝ ℂ) :
+    fourierInvPairingCLM f ((SchwartzMap.fourierTransformCLM ℂ) g) =
+      fourierInvPairingCLM g ((SchwartzMap.fourierTransformCLM ℂ) f) := by
+  rw [fourierInvPairingCLM_apply, fourierInvPairingCLM_apply]
+  rw [SchwartzMap.integral_fourierInv_mul_eq, SchwartzMap.integral_fourierInv_mul_eq]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards with x
+  simp [mul_comm]
+
+/-- Opposite-factor scalar pairing bridge on the corrected Stage-5 surface: if
+ambient representatives `φ, ψ` come from positive-time preimages `f, g`, then
+the one-variable Fourier pairing induced by the positive-time slice of `g`
+against the ambient slice of `φ` already agrees with the opposite pairing
+induced by the positive-time slice of `f` against the ambient slice of `ψ`.
+
+This is a genuine current-code ingredient for the later Lemma-4.2 adapter:
+both pairing functionals come from positive-time slices, so the descended
+pairing theorems apply on each side, and the middle equality is just the
+Fourier-pairing symmetry above. -/
+private theorem fourierInvPairingCLM_opposite_partialFourierSpatial_timeSlice_eq_of_repr_eq_transport
+    {n m : ℕ}
+    {φ : SchwartzNPoint d n}
+    {ψ : SchwartzNPoint d m}
+    {f : euclideanPositiveTimeSubmodule (d := d) n}
+    {g : euclideanPositiveTimeSubmodule (d := d) m}
+    (hφf :
+      section43PositiveEnergyQuotientMap (d := d) n φ =
+        os1TransportComponent d n f)
+    (hψg :
+      section43PositiveEnergyQuotientMap (d := d) m ψ =
+        os1TransportComponent d m g)
+    (rφ : Fin n) (tφ : Fin n → ℝ)
+    (htφ : ∀ i : Fin n, i ≠ rφ → 0 ≤ tφ i)
+    (ξφ : EuclideanSpace ℝ (Fin n × Fin d))
+    (rψ : Fin m) (tψ : Fin m → ℝ)
+    (htψ : ∀ i : Fin m, i ≠ rψ → 0 ≤ tψ i)
+    (ξψ : EuclideanSpace ℝ (Fin m × Fin d)) :
+    fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := m)
+          (EuclideanPositiveTimeComponent.ofSubmodule g).1 rψ tψ ξψ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ rφ tφ ξφ)) =
+      fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 rφ tφ ξφ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (partialFourierSpatial_timeSliceSchwartz (d := d) (n := m) ψ rψ tψ ξψ)) := by
+  let φSlice :=
+    partialFourierSpatial_timeSliceSchwartz (d := d) (n := n) φ rφ tφ ξφ
+  let ψSlice :=
+    partialFourierSpatial_timeSliceSchwartz (d := d) (n := m) ψ rψ tψ ξψ
+  let fSlice :=
+    partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+      (EuclideanPositiveTimeComponent.ofSubmodule f).1 rφ tφ ξφ
+  let gSlice :=
+    partialFourierSpatial_timeSliceSchwartz (d := d) (n := m)
+      (EuclideanPositiveTimeComponent.ofSubmodule g).1 rψ tψ ξψ
+  have hleft :
+      fourierInvPairingCLM gSlice ((SchwartzMap.fourierTransformCLM ℂ) φSlice) =
+        fourierInvPairingCLM gSlice ((SchwartzMap.fourierTransformCLM ℂ) fSlice) := by
+    simpa [φSlice, fSlice, gSlice] using
+      (fourierPairingDescendsToSection43PositiveEnergy1D_eq_of_repr_eq_transport
+        (d := d) (n := n) hφf
+        (T := fourierInvPairingCLM gSlice)
+        (hT_supp := fourierInvPairing_hasOneSidedFourierSupport gSlice
+          (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+            (d := d) (n := m) (EuclideanPositiveTimeComponent.ofSubmodule g)
+            rψ tψ ξψ))
+        rφ tφ htφ ξφ)
+  have hright :
+      fourierInvPairingCLM fSlice ((SchwartzMap.fourierTransformCLM ℂ) ψSlice) =
+        fourierInvPairingCLM fSlice ((SchwartzMap.fourierTransformCLM ℂ) gSlice) := by
+    simpa [ψSlice, fSlice, gSlice] using
+      (fourierPairingDescendsToSection43PositiveEnergy1D_eq_of_repr_eq_transport
+        (d := d) (n := m) hψg
+        (T := fourierInvPairingCLM fSlice)
+        (hT_supp := fourierInvPairing_hasOneSidedFourierSupport fSlice
+          (tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+            (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f)
+            rφ tφ ξφ))
+        rψ tψ htψ ξψ)
+  calc
+    fourierInvPairingCLM gSlice ((SchwartzMap.fourierTransformCLM ℂ) φSlice) =
+      fourierInvPairingCLM gSlice ((SchwartzMap.fourierTransformCLM ℂ) fSlice) := hleft
+    _ =
+      fourierInvPairingCLM fSlice ((SchwartzMap.fourierTransformCLM ℂ) gSlice) := by
+        exact fourierInvPairingCLM_fourierTransform_symm gSlice fSlice
+    _ =
+      fourierInvPairingCLM fSlice ((SchwartzMap.fourierTransformCLM ℂ) ψSlice) := by
+        symm
+        exact hright
+
 /-- Equality of multivariate Section 4.3 quotient classes forces equality of
 the associated one-variable slice tests on `[0,\infty)`, provided the frozen
 background times are nonnegative. -/
