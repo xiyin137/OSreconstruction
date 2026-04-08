@@ -6,6 +6,7 @@ Authors: Michael R. Douglas, ModularPhysics Contributors
 import OSReconstruction.SCV.ConeDefs
 import OSReconstruction.SCV.LaplaceSchwartz
 import OSReconstruction.SCV.PaleyWienerSchwartz
+import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
 import OSReconstruction.Wightman.SchwartzTensorProduct
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
@@ -40,6 +41,67 @@ open MeasureTheory
 noncomputable section
 
 -- IsCone, IsSalientCone, TubeDomainSetPi are now in ConeDefs.lean
+
+/-! ### Remaining SCV axioms for the VT bridge -/
+
+/-- **Boundary values imply dual-cone Fourier support.**
+
+If `F` is holomorphic on a tube `T(C)` and has tempered distributional boundary
+values `W`, then `W` has Fourier support in the dual cone `C*`.
+
+This is the SCV support theorem behind Vladimirov's Fourier-Laplace
+representation. The repository already proves the forward Paley-Wiener-Schwartz
+direction `T ↦ F`; this axiom supplies the converse support extraction needed
+to identify an arbitrary tube-holomorphic `F` with the Fourier-Laplace
+extension of its boundary value. -/
+axiom bv_implies_fourier_support {n d : ℕ}
+    (C : Set (Fin n → Fin (d + 1) → ℝ))
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
+    (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
+      ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+            F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
+    let eR := flattenCLEquivReal n (d + 1)
+    let Wflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+      W.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR)
+    HasFourierSupportInDualCone (eR '' C) Wflat
+
+/-- **Tube-holomorphic uniqueness from common boundary values.**
+
+Two holomorphic functions on the same tube domain with identical tempered
+distributional boundary values coincide on the whole tube.
+
+This packages the SCV uniqueness principle used in Vladimirov's Theorem 25.5:
+once the Paley-Wiener-Schwartz Fourier-Laplace extension is shown to have the
+same boundary distribution as the original tube-holomorphic function, the two
+functions must agree in the interior. -/
+axiom tube_holomorphic_unique_from_bv {n d : ℕ}
+    (C : Set (Fin n → Fin (d + 1) → ℝ))
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
+    (hG_holo : DifferentiableOn ℂ G (TubeDomainSetPi C))
+    (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
+    (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
+      ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+            F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ)))
+    (hG_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
+      ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+            G (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
+    Set.EqOn F G (TubeDomainSetPi C)
 
 /-! ### The Vladimirov-Tillmann theorem -/
 
@@ -96,14 +158,22 @@ theorem vladimirov_tillmann {n d : ℕ}
       ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
         ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N *
           (1 + (Metric.infDist (fun k μ => (z k μ).im) Cᶜ)⁻¹) ^ q) := by
-  -- The proof chains through the Fourier-Laplace representation:
-  -- 1. W has Fourier support in C* (from BV + holomorphicity)
-  -- 2. F(z) = W(ψ_z) (FL representation, Vladimirov §25 Thm 25.5)
-  -- 3. |W(ψ_z)| ≤ C·seminorm(ψ_z) (CLM bound)
-  -- 4. seminorm(ψ_z) ≤ Vladimirov bound (proved in PaleyWienerSchwartz)
+  -- Intended PW wiring:
+  -- 1. Flatten `Fin n → Fin (d+1)` to `Fin (n*(d+1))`.
+  -- 2. Transport F, W, C, and the BV hypothesis to the flat setting.
+  -- 3. Apply `bv_implies_fourier_support` to get dual-cone Fourier support
+  --    for the flattened boundary distribution.
+  -- 4. Form the Paley-Wiener-Schwartz Fourier-Laplace extension G from W.
+  -- 5. Use `fourierLaplaceExtMultiDim_boundaryValue` to show G has the same BV.
+  -- 6. Apply `tube_holomorphic_unique_from_bv` to identify F = G on the tube.
+  -- 7. Pull back `fourierLaplaceExtMultiDim_vladimirov_growth` to obtain
+  --    the global bound, then specialize to compact subcones for conclusion 1.
   --
-  -- Step 2 is the main gap: showing F = FL extension of W.
-  -- This is the representation theorem (converse of BV existence).
+  -- The remaining formal work is the flatten/unflatten transport between
+  -- `TubeDomainSetPi C` and `SCV.TubeDomain Cflat`, together with the induced
+  -- transport of Schwartz functionals along `flattenCLEquivReal`.
+  -- The analytical core is already in `PaleyWienerSchwartz.lean`; this theorem
+  -- is now isolated to that representation-level bookkeeping.
   sorry
 
 /-! ### Cluster property: distributional → tube interior -/
