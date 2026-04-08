@@ -3194,9 +3194,30 @@ private lemma realPlusIEpsEta_mem_tubeDomain
        T(χ · FT(f)) = T(FT(f)) = T(FT⁻¹(f)) by the Fourier support property.
     7. By continuity of T: T(Φ_ε) → T(FT⁻¹(f)).
 
-    **Current status**: The reduction to CLM-integral exchange + Schwartz
-    convergence (steps 3-5) is sorry'd. The tube domain membership (step 1)
-    and the unfolding F = T ∘ ψ (step 2) are fully proved. -/
+    **Current status**: The 1 remaining sorry is the BV convergence proof.
+    It reduces to `schwartz_clm_integral_tendsto` below. -/
+
+-- **Axiom: Distributional DCT for Schwartz pairings.**
+-- T(ψ_ε(x)) f(x) → T(ψ₀(x)) f(x) pointwise, with polynomial dominator,
+-- so ∫ T(ψ_ε) f → ∫ T(ψ₀) f by dominated convergence.
+-- Ref: Vladimirov §25 Thm 25.5; Reed-Simon I §IX.3.
+axiom schwartz_clm_integral_tendsto {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : ℝ → (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    (ψ₀ : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ)
+    -- Pointwise Schwartz convergence in x, uniform in seminorms
+    (hconv : ∀ (k n : ℕ), ∀ (x : Fin m → ℝ),
+      Filter.Tendsto (fun ε => SchwartzMap.seminorm ℝ k n (ψ ε x - ψ₀ x))
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds 0))
+    -- Uniform polynomial dominator
+    (hdom : ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ (ε : ℝ), 0 < ε → ε ≤ 1 → ∀ (x : Fin m → ℝ),
+        ‖T (ψ ε x)‖ ≤ C * (1 + ‖x‖) ^ N)
+    (f : SchwartzMap (Fin m → ℝ) ℂ) :
+    Filter.Tendsto
+      (fun ε => ∫ x : Fin m → ℝ, T (ψ ε x) * f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (∫ x : Fin m → ℝ, T (ψ₀ x) * f x))
 theorem fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
