@@ -231,6 +231,185 @@ private lemma expDampingSchwartz_apply_pos
   rw [dif_pos hε.le]
   rfl
 
+/-- For `-M ≤ r` and `0 < ε ≤ 1`, we have `‖cexp((-ε * r : ℝ) : ℂ) - 1‖ ≤ ε * (|r| + M * exp M)`.
+This is the key pointwise bound used in the convergence proof. -/
+private lemma norm_cexp_neg_eps_mul_sub_one_le
+    {r M ε : ℝ} (hM : 0 ≤ M) (hr : -M ≤ r) (hε : 0 < ε) (hε1 : ε ≤ 1) :
+    ‖cexp (((-ε * r : ℝ) : ℂ)) - 1‖ ≤ ε * (|r| + M * Real.exp M) := by
+  have hconv : cexp (((-ε * r : ℝ) : ℂ)) = ((Real.exp (-ε * r) : ℝ) : ℂ) :=
+    (Complex.ofReal_exp (-ε * r)).symm
+  rw [hconv, show ((Real.exp (-ε * r) : ℝ) : ℂ) - (1 : ℂ) =
+    ((Real.exp (-ε * r) - 1 : ℝ) : ℂ) from by push_cast; ring,
+    Complex.norm_real, Real.norm_eq_abs]
+  by_cases hr0 : 0 ≤ r
+  · -- r ≥ 0: exp(-εr) ≤ 1, |exp(-εr) - 1| = 1 - exp(-εr) ≤ εr = ε|r|
+    have harg : -ε * r ≤ 0 := by nlinarith
+    have hexp_le : Real.exp (-ε * r) ≤ 1 := Real.exp_le_one_iff.mpr harg
+    have hsub_nonpos : Real.exp (-ε * r) - 1 ≤ 0 := by linarith
+    rw [abs_of_nonpos hsub_nonpos]
+    -- 1 - exp(-εr) ≤ εr from exp(-εr) ≥ 1 - εr (i.e., exp(y) ≥ 1 + y with y = -εr)
+    have h1 : 1 - Real.exp (-ε * r) ≤ ε * r := by
+      have := Real.add_one_le_exp (-ε * r)
+      linarith
+    calc -(Real.exp (-ε * r) - 1) = 1 - Real.exp (-ε * r) := by ring
+      _ ≤ ε * r := h1
+      _ = ε * |r| := by rw [abs_of_nonneg hr0]
+      _ ≤ ε * (|r| + M * Real.exp M) := by
+          gcongr; exact le_add_of_nonneg_right (by positivity)
+  · -- r < 0: -M ≤ r < 0, exp(-εr) > 1, |exp(-εr)-1| = exp(-εr)-1 ≤ εM·exp(M)
+    push_neg at hr0
+    have harg_pos : 0 < -ε * r := by nlinarith
+    have hsub_nonneg : 0 ≤ Real.exp (-ε * r) - 1 := by
+      linarith [Real.one_le_exp harg_pos.le]
+    rw [abs_of_nonneg hsub_nonneg]
+    have harg_le : -ε * r ≤ ε * M := by nlinarith
+    -- exp(x) - 1 ≤ x · exp(x) for x ≥ 0: from exp(x) ≥ 1 + x, so exp(x) - 1 ≥ x,
+    -- and for x ≥ 0: exp(x) - 1 ≤ (exp(x) - 1) ≤ x · exp(x) since exp(x) ≥ 1.
+    have hx := -ε * r  -- this is ≥ 0
+    have h_exp_sub : Real.exp (-ε * r) - 1 ≤ (-ε * r) * Real.exp (-ε * r) := by
+      have h1 := Real.add_one_le_exp (-ε * r)  -- -εr + 1 ≤ exp(-εr)
+      have h2 := Real.exp_nonneg (-ε * r)      -- 0 ≤ exp(-εr)
+      -- Need: exp(-εr) - 1 ≤ (-εr) * exp(-εr)
+      -- ↔ exp(-εr) ≤ 1 + (-εr) * exp(-εr)
+      -- ↔ exp(-εr) * (1 - (-εr)) ≤ 1
+      -- ↔ exp(-εr) * (1 + εr) ≤ 1  ... not obviously true for large εr!
+      -- Actually for x ≥ 0: exp(x) - 1 ≤ x * exp(x) ↔ 1 - 1/exp(x) ≤ x ↔ 1 - exp(-x) ≤ x
+      -- which is true since exp(-x) ≥ 1 - x.
+      -- Cleaner: exp(x)(1 - x) ≤ 1 for all x. Check: f(x) = exp(x)(1-x), f(0) = 1, f'(x) = -x exp(x) ≤ 0 for x ≥ 0.
+      -- So f is decreasing on [0,∞), hence f(x) ≤ f(0) = 1 for x ≥ 0.
+      -- Alternatively: 1 = exp(x) * exp(-x) ≥ exp(x) * (1 - x)  since exp(-x) ≥ 1 - x.
+      have h3 := Real.add_one_le_exp (-(- ε * r))  -- -(-εr) + 1 ≤ exp(-(-εr))
+      -- h3: εr + 1 ≤ exp(εr), so exp(-(-εr)) = exp(εr) ≥ 1 + εr
+      -- We want: exp(-εr) ≤ 1 + (-εr) * exp(-εr)
+      -- i.e., exp(-εr) * (1 - (-εr)) ≤ 1, i.e., exp(-εr) * (1 + εr) ≤ 1
+      -- From exp(εr) ≥ 1 + εr (h3 after simplification):
+      -- 1 ≥ (1 + εr) / exp(εr) = (1 + εr) * exp(-εr)
+      -- From exp(-y) ≥ 1 - y (with y = -εr), we get exp(εr) ≥ 1 + εr.
+      -- Then: exp(-εr) * (1 + εr) ≤ exp(-εr) * exp(εr) = 1
+      have h4 : Real.exp (-ε * r) * (1 + ε * r) ≤ 1 := by
+        have : 1 + ε * r ≤ Real.exp (ε * r) := by
+          have := Real.add_one_le_exp (ε * r)
+          linarith
+        calc Real.exp (-ε * r) * (1 + ε * r)
+            ≤ Real.exp (-ε * r) * Real.exp (ε * r) := by
+              gcongr
+          _ = Real.exp ((-ε * r) + (ε * r)) := (Real.exp_add _ _).symm
+          _ = 1 := by simp
+      -- exp(-εr) ≤ 1 + (-εr) * exp(-εr) ↔ exp(-εr) * (1 - (-εr)) ≤ 1 ↔ exp(-εr) * (1 + εr) ≤ 1
+      nlinarith
+    calc Real.exp (-ε * r) - 1
+        ≤ (-ε * r) * Real.exp (-ε * r) := h_exp_sub
+      _ ≤ (ε * M) * Real.exp (ε * M) := by
+          apply mul_le_mul harg_le (Real.exp_le_exp.mpr harg_le) (Real.exp_nonneg _) (by positivity)
+      _ ≤ (ε * M) * Real.exp M := by
+          apply mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr (by nlinarith)) (by positivity)
+      _ = ε * (M * Real.exp M) := by ring
+      _ ≤ ε * (|r| + M * Real.exp M) := by
+          gcongr; exact le_add_of_nonneg_left (abs_nonneg _)
+
+/-! ### Linear-in-ε seminorm bound -/
+
+/-- The (k,n)-Schwartz seminorm of `exp(-εL)·h - h` is O(ε) for ε ∈ (0,1].
+
+On closure(supp h), the bound on the j=0 Leibniz term uses:
+- L(ξ) ≥ 0: `|exp(-εL(ξ)) - 1| = 1 - exp(-εL(ξ)) ≤ εL(ξ) ≤ ε‖L₀‖·‖ξ‖`
+- -M ≤ L(ξ) < 0: `|exp(-εL(ξ)) - 1| ≤ εM·exp(M)` (using `e^x - 1 ≤ xe^x`)
+The j ≥ 1 terms carry `‖L'‖^j = (ε‖L₀‖)^j ≤ ε·‖L₀‖^j` for ε ≤ 1. -/
+private lemma seminorm_expDamping_sub_le
+    (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
+    (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ)
+    (k n : ℕ) :
+    ∃ C : ℝ, 0 < C ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
+      SchwartzMap.seminorm ℝ k n (expDampingSchwartz h L M hM hsupp ε - h) ≤ C * ε := by
+  let L₀ : (Fin m → ℝ) →L[ℝ] ℂ := Complex.ofRealCLM.comp L
+  have hclosure := L_bounded_below_on_closure_support h L M hsupp
+  -- Define the constant: j=0 contributes (‖L₀‖·seminorm(k+1,n) + M·exp(M)·seminorm(k,n))
+  -- j≥1 contribute C(n,j)·j!·exp(M)·‖L₀‖^j·seminorm(k,n-j)
+  let C₀ : ℝ := (‖L₀‖ * SchwartzMap.seminorm ℝ (k + 1) n h +
+      M * Real.exp M * SchwartzMap.seminorm ℝ k n h) +
+    ∑ j ∈ Finset.range n, ((n.choose (j + 1) : ℝ) * ((j + 1).factorial : ℝ) *
+      Real.exp M * ‖L₀‖ ^ (j + 1) * SchwartzMap.seminorm ℝ k (n - (j + 1)) h)
+  refine ⟨C₀ + 1, by positivity, ?_⟩
+  intro ε hε hε1
+  apply SchwartzMap.seminorm_le_bound ℝ k n _ (by positivity : 0 ≤ (C₀ + 1) * ε)
+  intro ξ
+  -- Pointwise value
+  have hval : ∀ x, (expDampingSchwartz h L M hM hsupp ε - h) x =
+      (cexp (-(ε : ℂ) * (L x : ℂ)) - 1) * h x := by
+    intro x; simp [SchwartzMap.sub_apply, expDampingSchwartz_apply_pos h L M hM hsupp hε, sub_mul]
+  let L' : (Fin m → ℝ) →L[ℝ] ℂ := -(ε : ℂ) • L₀
+  have hval' : ∀ x, (expDampingSchwartz h L M hM hsupp ε - h) x =
+      (cexp (L' x) - 1) * h x := by
+    intro x; rw [hval]
+    simp [L', L₀, ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply, smul_eq_mul]
+  have hderiv_eq : iteratedFDeriv ℝ n (⇑(expDampingSchwartz h L M hM hsupp ε - h)) ξ =
+      iteratedFDeriv ℝ n (fun x => (cexp (L' x) - 1) * h x) ξ := by
+    congr 1; ext x; exact hval' x
+  rw [hderiv_eq]
+  by_cases hξ : ξ ∈ closure (Function.support (⇑h))
+  · -- On closure(supp h): Leibniz bound
+    have hexp_sub_smooth : ContDiff ℝ ∞ (fun x => cexp (L' x) - 1) :=
+      (Complex.contDiff_exp.comp L'.contDiff).sub contDiff_const
+    have hLeib := norm_iteratedFDeriv_mul_le hexp_sub_smooth h.smooth' ξ
+      (show (n : WithTop ℕ∞) ≤ ∞ from WithTop.coe_le_coe.mpr le_top)
+    -- ‖cexp(L' ξ)‖ ≤ exp(M)
+    have hexp_bd : ‖cexp (L' ξ)‖ ≤ Real.exp M := by
+      rw [Complex.norm_exp]
+      have : (L' ξ).re = -ε * L ξ := by
+        simp [L', L₀, ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply,
+          Complex.ofReal_re, Complex.neg_re, Complex.mul_re, Complex.ofReal_im, mul_zero, sub_zero]
+      rw [this]; exact Real.exp_le_exp.mpr (by nlinarith [hclosure ξ hξ])
+    -- ‖L'‖ = ε · ‖L₀‖
+    have hL'_norm : ‖L'‖ = ε * ‖L₀‖ := by
+      show ‖(-(ε : ℂ)) • L₀‖ = ε * ‖L₀‖
+      simp [norm_smul, RCLike.norm_ofReal, abs_of_nonneg hε.le]
+    -- j=0 bound via norm_cexp_neg_eps_mul_sub_one_le
+    have hj0 : ‖cexp (L' ξ) - 1‖ ≤ ε * (|L ξ| + M * Real.exp M) := by
+      have : L' ξ = ((- ε * L ξ : ℝ) : ℂ) := by
+        have hre : (L' ξ).re = -ε * L ξ := by
+          simp [L', L₀, ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply,
+            Complex.ofReal_re, Complex.neg_re, Complex.mul_re, Complex.ofReal_im, mul_zero, sub_zero]
+        have him : (L' ξ).im = 0 := by
+          simp [L', L₀, ContinuousLinearMap.smul_apply, ContinuousLinearMap.comp_apply,
+            Complex.ofReal_im, Complex.neg_im, Complex.mul_im, Complex.ofReal_re, mul_zero, zero_mul, add_zero]
+        exact Complex.ext hre him
+      rw [this]
+      exact norm_cexp_neg_eps_mul_sub_one_le hM (hclosure ξ hξ) hε hε1
+    -- Leibniz: j=0 term
+    -- ‖ξ‖^k * 1 * ‖cexp(L'ξ) - 1‖ * ‖D^n h‖
+    -- ≤ ε * (|L ξ| + M·exp(M)) * (‖ξ‖^k * ‖D^n h(ξ)‖)
+    -- ≤ ε * (‖L₀‖ * ‖ξ‖ * (‖ξ‖^k * ‖D^n h(ξ)‖) + M·exp(M) * seminorm(k,n)(h))
+    -- ≤ ε * (‖L₀‖ * seminorm(k+1,n)(h) + M·exp(M) * seminorm(k,n)(h))
+    -- Leibniz: j≥1 terms  (using D^j[cexp∘L' - 1] = D^j[cexp∘L'] for j≥1)
+    -- ≤ C(n,j) * j! * exp(M) * (ε‖L₀‖)^j * seminorm(k,n-j)(h)
+    -- ≤ ε * C(n,j) * j! * exp(M) * ‖L₀‖^j * seminorm(k,n-j)(h)  (since ε^{j-1} ≤ 1)
+    -- Total ≤ ε * C₀
+    -- Bound the full sum
+    calc ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n (fun x => (cexp (L' x) - 1) * h x) ξ‖
+        ≤ ‖ξ‖ ^ k * ∑ j ∈ Finset.range (n + 1),
+            (n.choose j : ℝ) * ‖iteratedFDeriv ℝ j (fun x => cexp (L' x) - 1) ξ‖ *
+              ‖iteratedFDeriv ℝ (n - j) (⇑h) ξ‖ :=
+          mul_le_mul_of_nonneg_left hLeib (pow_nonneg (norm_nonneg _) _)
+      _ ≤ (C₀ + 1) * ε := by
+          -- Distribute ‖ξ‖^k and split the sum into j=0 and j≥1 Leibniz terms.
+          -- j=0: ‖cexp(L'ξ)-1‖ · (‖ξ‖^k · ‖D^n h‖) ≤ ε·(‖L₀‖·seminorm(k+1,n) + M·exp(M)·seminorm(k,n))
+          --   using norm_cexp_neg_eps_mul_sub_one_le and Schwartz seminorm bounds.
+          -- j≥1: D^j[cexp∘L'-1] = D^j[cexp∘L'] with ‖L'‖^j = (ε‖L₀‖)^j ≤ ε·‖L₀‖^j (ε ≤ 1).
+          -- Each term ≤ ε · C(n,j) · j! · exp(M) · ‖L₀‖^j · seminorm(k,n-j)(h).
+          -- Total ≤ C₀ · ε ≤ (C₀ + 1) · ε.
+          sorry
+  · -- Outside closure(supp h): vanishes
+    have hzero : (fun x => (cexp (L' x) - 1) * h x) =ᶠ[nhds ξ] 0 := by
+      rw [Filter.eventuallyEq_iff_exists_mem]
+      exact ⟨(closure (Function.support (⇑h)))ᶜ,
+        isClosed_closure.isOpen_compl.mem_nhds hξ,
+        fun x hx => by
+          have : h x = 0 := by
+            by_contra hne; exact hx (subset_closure (Function.mem_support.mpr hne))
+          simp [this]⟩
+    rw [iteratedFDeriv_eq_zero_of_eventuallyEq_zero hzero n, norm_zero, mul_zero]
+    positivity
+
 /-! ### Convergence in Schwartz topology -/
 
 /-- The family `ε ↦ exp(-εL)·h` converges to h in the Schwartz topology as ε → 0⁺.
@@ -258,7 +437,25 @@ private lemma tendsto_expDampingSchwartz
     (h : SchwartzMap (Fin m → ℝ) ℂ) (L : (Fin m → ℝ) →L[ℝ] ℝ)
     (M : ℝ) (hM : 0 ≤ M) (hsupp : ∀ ξ, ξ ∈ Function.support (⇑h) → -M ≤ L ξ) :
     Tendsto (expDampingSchwartz h L M hM hsupp) (nhdsWithin 0 (Set.Ioi 0)) (nhds h) := by
-  sorry
+  rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ _]
+  intro p δ hδ
+  obtain ⟨k, n⟩ := p
+  -- Use the linear-in-ε seminorm bound
+  obtain ⟨C, hC_pos, hC_bound⟩ :=
+    seminorm_expDamping_sub_le h L M hM hsupp k n
+  let ε₀ : ℝ := min 1 (δ / C)
+  have hε₀_pos : 0 < ε₀ := lt_min zero_lt_one (div_pos hδ hC_pos)
+  apply Filter.mem_of_superset (Ioo_mem_nhdsGT hε₀_pos)
+  intro ε ⟨hε_pos, hε_lt⟩
+  have hε_le_1 : ε ≤ 1 := le_trans (le_of_lt hε_lt) (min_le_left _ _)
+  have hε_lt_δC : ε < δ / C := lt_of_lt_of_le hε_lt (min_le_right _ _)
+  show schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ (k, n)
+      (expDampingSchwartz h L M hM hsupp ε - h) < δ
+  simp only [schwartzSeminormFamily]
+  calc SchwartzMap.seminorm ℝ k n (expDampingSchwartz h L M hM hsupp ε - h)
+      ≤ C * ε := hC_bound ε hε_pos hε_le_1
+    _ < C * (δ / C) := by gcongr
+    _ = δ := by field_simp
 
 /-! ### Main theorem -/
 
