@@ -3931,7 +3931,12 @@ theorem fourierLaplace_boundaryValue_recovery {m : ℕ}
     SchwartzMap.smulLeftCLM ℂ (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ))
       (physicsFourierFlatCLM f)
   let Lη : (Fin m → ℝ) →L[ℝ] ℝ := etaPairingCLM η
-  obtain ⟨hε, hhε_apply, hhε_tendsto⟩ := schwartz_exp_damping_tendsto hχf Lη
+  have hsupp_Lη : ∃ M : ℝ, ∀ ξ, ξ ∈ Function.support (⇑hχf) → -M ≤ Lη ξ := by
+    -- The cutoff χ vanishes outside the 1-neighborhood of DualConeFlat C.
+    -- On that set, η ∈ C gives ⟨η, ξ⟩ ≥ -‖η‖ (since dist(ξ, C*) ≤ 1 and
+    -- ⟨η, ξ'⟩ ≥ 0 for ξ' ∈ C*).
+    sorry
+  obtain ⟨hε, hhε_apply, hhε_tendsto⟩ := schwartz_exp_damping_tendsto hχf Lη hsupp_Lη
   have hΦ_eq_hε : ∀ (ε : ℝ) (hε_pos : 0 < ε), Φ ε = hε ε := by
     intro ε hε_pos
     ext ξ
