@@ -681,25 +681,53 @@ private theorem multiDimPsiZDynamic_pointwise_vladimirov
   by_cases hCcompl : Cᶜ = (∅ : Set (Fin m → ℝ))
   · -- When C = univ, the cone is salient so m = 0 (subsingleton)
     have hsub := subsingleton_of_compl_empty hC_salient hCcompl
-    -- On a subsingleton domain, everything is evaluated at the unique point 0.
-    -- The bound is trivially satisfied for any B ≥ the value at 0.
-    -- For k > 0: ‖0‖^k = 0, so LHS = 0.
-    -- For k = 0: ‖0‖^0 = 1, need ‖D^n f(0)‖ ≤ B.
-    -- Choose B based on the actual value.
-    -- On subsingleton (m=0), ‖ξ‖ = 0 for every ξ.
-    -- For k ≥ 1: 0^k = 0, so LHS = 0 ≤ anything.
-    -- For k = 0: 0^0 = 1, but Subsingleton (Fin m → ℝ) means Fin m is empty (m=0),
-    --   so iteratedFDeriv on a function over Fin 0 → ℝ is just a constant.
-    --   We need ‖D^n f(ξ)‖ ≤ B, which holds for B large enough.
-    -- Since the quantifier is ∃ B, we can choose B after seeing the value.
-    -- But the value depends on z (through hz), so we need B uniform in z.
-    -- On Subsingleton, z is unique too, so there's only one value.
-    -- Just sorry this edge case — it never arises in practice (salient cones have m ≥ 1).
-    -- All elements of Fin m → ℝ are equal (subsingleton), so ‖ξ‖ = 0
-    -- Degenerate: Cᶜ = ∅ implies m = 0 (subsingleton). All z, ξ are equal.
-    -- For k ≥ 1: ‖ξ‖^k = 0, bound trivial. For k = 0: need B ≥ ‖D^n f(0)‖.
-    -- Mathematically trivial but Lean-fiddly (SchwartzMap extensionality through hz).
-    sorry
+    have hCuniv : C = Set.univ := by
+      ext y
+      by_cases hy : y ∈ C
+      · simp [hy]
+      · have : y ∈ Cᶜ := hy
+        simpa [hCcompl] using this
+    have hFinEmpty : IsEmpty (Fin m) := by
+      classical
+      by_contra hne
+      obtain ⟨i⟩ := not_isEmpty_iff.mp hne
+      let f : Fin m → ℝ := 0
+      let g : Fin m → ℝ := Function.update 0 i 1
+      have hfg : f ≠ g := by
+        intro h
+        have hi' := congrArg (fun h' : Fin m → ℝ => h' i) h
+        simp [f, g] at hi'
+      exact hfg (hsub.elim _ _)
+    let _ : IsEmpty (Fin m) := hFinEmpty
+    have hz0 : (0 : Fin m → ℂ) ∈ SCV.TubeDomain C := by
+      simp [SCV.TubeDomain, hCuniv]
+    let ψ0 := multiDimPsiZDynamic C hC_open hC_conv hC_cone hC_salient (0 : Fin m → ℂ) hz0
+    let B0 : ℝ := ‖iteratedFDeriv ℝ n (⇑ψ0) (0 : Fin m → ℝ)‖ + 1
+    refine ⟨B0, 0, 0, by positivity, ?_⟩
+    intro z hz ξ
+    have hz_eq : z = 0 := Subsingleton.elim _ _
+    have hξ_eq : ξ = 0 := Subsingleton.elim _ _
+    subst z
+    have hhz : hz = hz0 := Subsingleton.elim _ _
+    subst hz
+    subst ξ
+    change ‖(0 : Fin m → ℝ)‖ ^ k *
+        ‖iteratedFDeriv ℝ n (⇑ψ0) (0 : Fin m → ℝ)‖ ≤ B0 * (1 + ‖(0 : Fin m → ℂ)‖) ^ 0 *
+          (1 + (Metric.infDist (fun i => ((0 : Fin m → ℂ) i).im) Cᶜ)⁻¹) ^ 0
+    rw [pow_zero, pow_zero, mul_one, mul_one]
+    have hpow : ‖(0 : Fin m → ℝ)‖ ^ k ≤ 1 := by
+      cases k with
+      | zero =>
+          simp
+      | succ k =>
+          simp
+    calc
+      ‖(0 : Fin m → ℝ)‖ ^ k * ‖iteratedFDeriv ℝ n (⇑ψ0) (0 : Fin m → ℝ)‖
+          ≤ 1 * ‖iteratedFDeriv ℝ n (⇑ψ0) (0 : Fin m → ℝ)‖ := by
+              gcongr
+      _ ≤ B0 := by
+              dsimp [B0]
+              linarith [norm_nonneg (iteratedFDeriv ℝ n (⇑ψ0) (0 : Fin m → ℝ))]
   · -- ── Main case: Cᶜ ≠ ∅ ──
     let χ := (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
     obtain ⟨c₀, hc₀_pos, hc₀⟩ := dualConeFlat_coercivity_infDist hC_open hC_cone
@@ -3115,10 +3143,20 @@ noncomputable def inverseFourierFlatCLM {m : ℕ} :
 
 -- Physics-convention FT: f ↦ (ξ ↦ ∫ exp(ix·ξ) f(x) dx)
 -- Related to Mathlib's by: FT_phys(f)(ξ) = FT_Mathlib(f)(-ξ/(2π))
--- For now, just sorry the definition — the key is getting the BV statement right.
 noncomputable def physicsFourierFlatCLM {m : ℕ} :
-    SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ := by
-  sorry
+    SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ :=
+  let a : ℝˣ := Units.mk0 (-(1 / (2 * Real.pi) : ℝ)) <| by
+    apply neg_ne_zero.mpr
+    exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
+  let scaleNeg : (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
+    ContinuousLinearEquiv.smulLeft a
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg).comp inverseFourierFlatCLM
+
+@[simp] private lemma physicsFourierFlatCLM_apply {m : ℕ}
+    (f : SchwartzMap (Fin m → ℝ) ℂ) (ξ : Fin m → ℝ) :
+    physicsFourierFlatCLM f ξ =
+      inverseFourierFlatCLM f ((-(1 / (2 * Real.pi) : ℝ)) • ξ) := by
+  simp [physicsFourierFlatCLM]
 
 /-- The point `x + iεη` lies in the tube domain `T(C)` when `ε > 0` and `η ∈ C`.
 
