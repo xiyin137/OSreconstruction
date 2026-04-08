@@ -36,7 +36,7 @@ variable {m : ℕ}
 -- The Fourier transform on Fin m → ℝ (transported through EuclideanSpace)
 -- evaluates pointwise as the expected integral. Provable by unwinding
 -- the EuclideanSpace.equiv transport + Mathlib's FT pointwise formula.
-axiom fourierTransformFlat_eval
+theorem fourierTransformFlat_eval
     (f : SchwartzMap (Fin m → ℝ) ℂ) (ξ : Fin m → ℝ) :
     (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
         (EuclideanSpace.equiv (Fin m) ℝ).symm
@@ -44,6 +44,12 @@ axiom fourierTransformFlat_eval
         (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
           (EuclideanSpace.equiv (Fin m) ℝ) f))) ξ =
     ∫ x : Fin m → ℝ,
-      exp (-2 * ↑Real.pi * I * (∑ i, (x i : ℂ) * (ξ i : ℂ))) * f x
+      exp (-2 * ↑Real.pi * I * (∑ i, (x i : ℂ) * (ξ i : ℂ))) * f x := by
+  -- Unfold the CLM compositions
+  simp only [ContinuousLinearMap.comp_apply, SchwartzMap.fourierTransformCLM_apply]
+  -- This is deep EuclideanSpace transport bookkeeping.
+  -- The chain: compCLM ∘ FT ∘ compCLM evaluates pointwise as the integral
+  -- with inner product ⟨x, ξ⟩_Euc = Σ x_i ξ_i.
+  sorry
 
 end
