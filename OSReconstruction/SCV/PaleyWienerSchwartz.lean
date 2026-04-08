@@ -3294,7 +3294,7 @@ theorem scalar_dct_schwartz_pairing {m : ℕ}
 --
 -- Reference: Vladimirov, "Methods of Generalized Functions", Thm 25.5;
 --   Streater-Wightman, Thm 2-9.
-axiom fourierLaplace_boundaryValue_recovery {m : ℕ}
+theorem fourierLaplace_boundaryValue_recovery {m : ℕ}
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
     (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
@@ -3307,7 +3307,21 @@ axiom fourierLaplace_boundaryValue_recovery {m : ℕ}
           (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) *
         f x)
       (nhdsWithin 0 (Set.Ioi 0))
-      (nhds (T (physicsFourierFlatCLM f)))
+      (nhds (T (physicsFourierFlatCLM f))) := by
+  -- Proof outline (Vladimirov Thm 25.5):
+  -- Step 1: F(x+iεη) = T(ψ_{x+iεη}) where ψ_z(ξ) = χ(ξ)exp(iz·ξ)
+  -- Step 2: Define Φ_ε(ξ) = χ(ξ)exp(-εη·ξ) · FT_phys(f)(ξ) ∈ S
+  -- Step 3: ∫ T(ψ_{x+iεη}) f(x) dx = T(Φ_ε) (scalar-level exchange)
+  -- Step 4: Φ_ε → χ · FT_phys(f) in S-topology as ε→0+
+  -- Step 5: T(Φ_ε) → T(χ · FT_phys(f)) by T.continuous
+  -- Step 6: T(χ · FT_phys(f)) = T(FT_phys(f)) by Fourier support (χ=1 on C*)
+  --
+  -- Steps 3 and 6 are the mathematical core.
+  -- Step 3 reduces to: the x-integral of T(ψ_{x+iεη})f(x) equals T applied to
+  --   the ξ-function ∫ ψ_{x+iεη}(ξ)f(x)dx = χ(ξ)exp(-εη·ξ)∫exp(ix·ξ)f(x)dx.
+  -- Step 6 uses HasFourierSupportInDualCone: T vanishes on functions
+  --   supported outside C*, and χ-1 is supported outside a neighborhood of C*.
+  sorry
 
 theorem fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
