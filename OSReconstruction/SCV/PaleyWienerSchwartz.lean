@@ -3453,14 +3453,166 @@ theorem fourierLaplace_boundaryValue_recovery {m : ℕ}
       rw [hg_eq]
       exact hψ_cont.comp hι_cont
     · -- hg_bound: polynomial seminorm growth of g_ε(x) in x
-      -- For fixed ε > 0, η ∈ C:
-      --   seminorm k n (g ε x) = seminorm k n (ψ_{x+iεη})
-      -- By multiDimPsiZDynamic_seminorm_bound (or the fixed-R version):
-      --   ≤ B * (1 + ‖x+iεη‖)^N * (1 + infDist(εη, Cᶜ)⁻¹)^M
-      -- Since ‖x+iεη‖ ≤ ‖x‖ + ε‖η‖ (triangle inequality) and
-      -- infDist(εη, Cᶜ) is a positive constant (εη ∈ interior of C by cone+open),
-      -- this gives seminorm k n (g ε x) ≤ C_ε * (1 + ‖x‖)^N.
-      sorry -- multiDimPsiZExt_affine_seminorm_polynomial_bound
+      -- For fixed ε > 0, η ∈ C, z = x + iεη has Im(z) = εη (constant).
+      -- Coercivity of εη gives c₀ > 0, and the bound from
+      -- schwartz_seminorm_cutoff_exp_bound_affine_uniform yields
+      -- seminorm k n (g ε x) ≤ Bexp * (1 + ‖L_z‖)^n ≤ C_ε * (1+‖x‖)^n.
+      intro k n
+      -- Setup: canonical cutoff and coercivity for εη ∈ C
+      let χ : FixedConeCutoff (DualConeFlat C) :=
+        (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+      let y₀ : Fin m → ℝ := ε • η
+      have hy₀ : y₀ ∈ C := hC_cone η hη ε hε
+      have hC_star_ne : (DualConeFlat C).Nonempty := ⟨0, zero_mem_dualConeFlat C⟩
+      have hC_star_closed : IsClosed (DualConeFlat C) := dualConeFlat_closed C
+      obtain ⟨c₀, hc₀_pos, hc₀⟩ :=
+        dualConeFlat_coercivity hC_open hC_cone hy₀ hC_star_ne hC_star_closed
+      let K : ℝ := ((Fintype.card (Fin m) : ℝ) ^ 2)
+      let A₀ : ℝ := c₀ + K * ε * ‖η‖
+      obtain ⟨Bexp, hBexp_pos, hBexp⟩ :=
+        schwartz_seminorm_cutoff_exp_bound_affine_uniform
+          χ.val χ.smooth χ.deriv_bound A₀ c₀ hc₀_pos k n
+      -- Constant absorbing the fixed ε‖η‖ contribution
+      let mR : ℝ := (Fintype.card (Fin m) : ℝ)
+      let C_poly : ℝ := 1 + mR * ε * ‖η‖ + mR
+      have hmR_nn : (0 : ℝ) ≤ mR := Nat.cast_nonneg (Fintype.card (Fin m))
+      have hC_poly_pos : 0 < C_poly := by
+        dsimp [C_poly]
+        linarith [mul_nonneg (mul_nonneg hmR_nn hε.le) (norm_nonneg η)]
+      refine ⟨Bexp * C_poly ^ n, n, mul_pos hBexp_pos (pow_pos hC_poly_pos n), ?_⟩
+      intro x
+      -- z = x + iεη lies in the tube
+      let z : Fin m → ℂ := fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I
+      have hz : z ∈ SCV.TubeDomain C :=
+        realPlusIEpsEta_mem_tubeDomain C hC_cone x η hη ε hε
+      -- g ε x = multiDimPsiZ at z
+      have hg_eq_psiZ :
+          g ε x = multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz := by
+        show multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z =
+          multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz
+        exact multiDimPsiZExt_eq C hC_open hC_conv hC_cone hC_salient z hz
+      rw [hg_eq_psiZ]
+      -- Im(z) = εη = y₀, so coercivity of y₀ applies directly
+      have hy_eq : (fun i => (z i).im) = y₀ := by
+        ext i
+        simp [z, y₀, Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.I_im, Complex.I_re, Pi.smul_apply, smul_eq_mul]
+      have hc_z : ∀ ξ ∈ DualConeFlat C, ∑ i, (fun i => (z i).im) i * ξ i ≥ c₀ * ‖ξ‖ := by
+        rw [hy_eq]; exact hc₀
+      -- Exponential decay condition for multiDimPsiExpCLM z
+      have hexp_decay : ∀ ξ : Fin m → ℝ, χ.val ξ ≠ 0 →
+          (multiDimPsiExpCLM z ξ).re ≤ A₀ - c₀ * ‖ξ‖ := by
+        intro ξ hχξ
+        have hdistχ : Metric.infDist ξ (DualConeFlat C) ≤ 1 := by
+          by_contra h
+          exact hχξ (χ.support_bound ξ (by linarith))
+        have hExpBound :
+            ‖cexp (multiDimPsiExpCLM z ξ)‖ ≤
+              Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+          calc
+            ‖cexp (multiDimPsiExpCLM z ξ)‖
+                = ‖cexp (I * ∑ i, z i * (ξ i : ℂ))‖ := by
+                    rw [multiDimPsiExpCLM_apply]
+            _ ≤ Real.exp (((c₀ + K * ‖fun i => (z i).im‖)) * 1) *
+                  Real.exp (-(c₀ * ‖ξ‖)) := by
+                    exact cexp_bound_on_support hC_open hC_cone hz hc₀_pos hc_z
+                      zero_lt_one ξ hdistχ
+            _ ≤ Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+              gcongr
+              rw [mul_one]
+              show c₀ + K * ‖fun i => (z i).im‖ ≤ A₀
+              rw [hy_eq]; dsimp [y₀, A₀]
+              rw [norm_smul, Real.norm_eq_abs, abs_of_pos hε]; ring_nf; exact le_refl _
+        have hnormexp :
+            ‖cexp (multiDimPsiExpCLM z ξ)‖ =
+              Real.exp ((multiDimPsiExpCLM z ξ).re) := Complex.norm_exp _
+        have hExp' :
+            Real.exp ((multiDimPsiExpCLM z ξ).re) ≤ Real.exp (A₀ - c₀ * ‖ξ‖) := by
+          rw [← hnormexp]
+          simpa [sub_eq_add_neg, Real.exp_add] using hExpBound
+        exact Real.exp_le_exp.mp hExp'
+      -- Pointwise bound from schwartz_seminorm_cutoff_exp_bound_affine_uniform
+      have hpoint : ∀ ξ : Fin m → ℝ,
+          ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n
+              (fun ξ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) ξ‖ ≤
+            Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+        intro ξ
+        have hraw := hBexp (multiDimPsiExpCLM z) hexp_decay ξ
+        have hfunexp :
+            (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) =
+              (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (multiDimPsiExpCLM z ξ)) := by
+          funext ξ; rw [multiDimPsiExpCLM_apply]
+        rw [hfunexp]; exact hraw
+      -- Convert pointwise bound to SchwartzMap.seminorm bound
+      have hcoe :
+          ⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) = psiZRaw χ 1 z := rfl
+      have hrawfun :
+          psiZRaw χ 1 z =
+            (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) := by
+        funext ξ; simp [psiZRaw]
+      have hpoint' : ∀ ξ : Fin m → ℝ,
+          ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n
+              (⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)) ξ‖ ≤
+            Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+        intro ξ; rw [hcoe, hrawfun]; exact hpoint ξ
+      have hMnn : (0 : ℝ) ≤ Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+        apply mul_nonneg hBexp_pos.le
+        exact pow_nonneg (by linarith [norm_nonneg (multiDimPsiExpCLM z)]) _
+      have hseminorm :
+          SchwartzMap.seminorm ℝ k n
+            (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) ≤
+            Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n :=
+        SchwartzMap.seminorm_le_bound ℝ k n _ hMnn hpoint'
+      -- Bound ‖multiDimPsiExpCLM z‖ ≤ mR * (‖x‖ + ε * ‖η‖)
+      -- Componentwise: ‖z_i‖ = ‖x_i + iεη_i‖ ≤ |x_i| + ε|η_i| ≤ ‖x‖ + ε‖η‖
+      have hz_norm : ‖z‖ ≤ ‖x‖ + ε * ‖η‖ := by
+        have hnn : (0 : ℝ) ≤ ‖x‖ + ε * ‖η‖ := by positivity
+        apply (pi_norm_le_iff_of_nonneg hnn).2
+        intro i
+        calc ‖z i‖ = ‖(x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I‖ := rfl
+          _ ≤ ‖(x i : ℂ)‖ + ‖(ε : ℂ) * (η i : ℂ) * I‖ := norm_add_le _ _
+          _ = |x i| + ε * |η i| := by
+              congr 1
+              · exact Complex.norm_real (x i)
+              · rw [show (ε : ℂ) * (η i : ℂ) * I = ((ε * η i : ℝ) : ℂ) * I from by push_cast; ring]
+                rw [norm_mul, Complex.norm_real, Complex.norm_I, mul_one,
+                  Real.norm_eq_abs, abs_mul, abs_of_pos hε]
+          _ ≤ ‖x‖ + ε * ‖η‖ := by
+              gcongr
+              · exact norm_le_pi_norm x i
+              · exact norm_le_pi_norm η i
+      have hL_bound : ‖multiDimPsiExpCLM z‖ ≤ mR * (‖x‖ + ε * ‖η‖) := by
+        calc ‖multiDimPsiExpCLM z‖ ≤ mR * ‖z‖ := multiDimPsiExpCLM_norm_le z
+          _ ≤ mR * (‖x‖ + ε * ‖η‖) := by
+            apply mul_le_mul_of_nonneg_left hz_norm (Nat.cast_nonneg' _)
+      -- Polynomial absorption: (1 + ‖L_z‖)^n ≤ C_poly^n * (1+‖x‖)^n
+      -- Key: 1 + a + b ≤ (1+a+b_coeff)*(1+t) when a,b_coeff constant, b = b_coeff*t.
+      have hpoly_absorb :
+          (1 + ‖multiDimPsiExpCLM z‖) ^ n ≤ C_poly ^ n * (1 + ‖x‖) ^ n := by
+        rw [← mul_pow]
+        apply pow_le_pow_left₀ (by linarith [norm_nonneg (multiDimPsiExpCLM z)])
+        have hmR_nn : (0 : ℝ) ≤ mR := Nat.cast_nonneg' _
+        -- 1 + mR*ε*‖η‖ + mR*‖x‖ ≤ C_poly*(1+‖x‖) since
+        --   1 + mR*ε*‖η‖ ≤ C_poly and mR*‖x‖ ≤ C_poly*‖x‖
+        calc 1 + ‖multiDimPsiExpCLM z‖
+            ≤ 1 + mR * (‖x‖ + ε * ‖η‖) := by linarith [hL_bound]
+          _ = 1 + mR * ε * ‖η‖ + mR * ‖x‖ := by ring
+          _ ≤ C_poly * 1 + C_poly * ‖x‖ := by
+              apply add_le_add
+              · -- 1 + mR*ε*‖η‖ ≤ C_poly * 1
+                simp only [mul_one]; dsimp [C_poly]; linarith
+              · -- mR * ‖x‖ ≤ C_poly * ‖x‖
+                apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+                show mR ≤ 1 + mR * ε * ‖η‖ + mR
+                have : 0 ≤ mR * ε * ‖η‖ := by positivity
+                linarith
+          _ = C_poly * (1 + ‖x‖) := by ring
+      calc SchwartzMap.seminorm ℝ k n
+              (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)
+          ≤ Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := hseminorm
+        _ ≤ Bexp * (C_poly ^ n * (1 + ‖x‖) ^ n) := by
+            gcongr
+        _ = (Bexp * C_poly ^ n) * (1 + ‖x‖) ^ n := by ring
   -- Step B: Extract Φ_ε and show the limit T(Φ_ε) → T(physicsFourierFlatCLM f).
   --
   -- For ε > 0 sufficiently small, hFubini gives Φ_ε with
@@ -3517,24 +3669,54 @@ theorem fourierLaplace_boundaryValue_recovery {m : ℕ}
     intro ε hε
     obtain ⟨Φ, _, hTΦ⟩ := hFubini ε hε
     exact ⟨Φ, hTΦ⟩
-  -- The Schwartz-topology damping limit.
-  -- For any choice function ε ↦ Φ_ε satisfying T(Φ_ε) = ∫ T(g_ε(x)) f(x) dx,
-  -- we have T(Φ_ε) → T(physicsFourierFlatCLM f).
+  -- Extract a definite choice function Φ_ε for ε > 0 via Classical.choose.
+  let Φ : ℝ → SchwartzMap (Fin m → ℝ) ℂ := fun ε =>
+    if hε : 0 < ε then (hPhiExists ε hε).choose else 0
+  have hΦ_eq : ∀ (ε : ℝ) (hε : 0 < ε),
+      T (Φ ε) = ∫ x, T (g ε x) * f x := by
+    intro ε hε
+    simp only [Φ, dif_pos hε]
+    exact (hPhiExists ε hε).choose_spec
+  -- Rewrite: ∫ T(g ε x) f(x) dx = T(Φ_ε) for ε > 0.
+  -- Suffice: T(Φ_ε) → T(physicsFourierFlatCLM f).
+  suffices hTΦ_lim : Filter.Tendsto (fun ε => T (Φ ε))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (T (physicsFourierFlatCLM f))) by
+    apply hTΦ_lim.congr'
+    filter_upwards [self_mem_nhdsWithin] with ε hε
+    exact hΦ_eq ε (Set.mem_Ioi.mp hε)
+  -- ════════════════════════════════════════════════════════════════════
+  -- Reduction to Schwartz convergence.
   --
-  -- Mathematical content: Φ_ε(ξ) = ∫ ψ_{x+iεη}(ξ) f(x) dx
-  --   = χ(ξ) ∫ exp(i(x+iεη)·ξ) f(x) dx = χ(ξ) exp(-εη·ξ) FT_phys(f)(ξ).
-  -- As ε→0⁺: exp(-εη·ξ) → 1 pointwise, dominated by 1 (for ξ ∈ DualConeFlat C,
-  -- η·ξ ≥ 0 so exp(-εη·ξ) ≤ 1; outside, χ(ξ) provides compact support control).
+  -- T is continuous (it is a ContinuousLinearMap), so it suffices to show
+  -- Φ_ε → physicsFourierFlatCLM f in Schwartz topology.
+  --
+  -- Mathematical content (Vladimirov §25):
+  -- Φ_ε(ξ) = ∫ ψ_{x+iεη}(ξ) f(x) dx
+  --         = χ(ξ) ∫ exp(i(x+iεη)·ξ) f(x) dx
+  --         = χ(ξ) exp(-εη·ξ) FT_phys(f)(ξ).
+  --
+  -- As ε→0⁺: exp(-εη·ξ) → 1 pointwise, dominated by 1 on DualConeFlat C
+  -- (where η·ξ ≥ 0 ⟹ exp(-εη·ξ) ≤ 1), and controlled by compact support
+  -- of χ outside the dual cone.
+  --
   -- So Φ_ε → χ · FT_phys(f) in Schwartz topology.
-  -- Then T(χ · FT_phys(f)) = T(FT_phys(f)) = T(physicsFourierFlatCLM f)
-  -- by HasFourierSupportInDualCone (χ = 1 on C*, so χ · h - h is supported outside C*).
   --
-  -- This is a standard Vladimirov §25 argument. The formal proof requires:
-  --   (a) Schwartz seminorm estimates for exp(-εη·ξ) - 1 (product rule, chain rule)
-  --   (b) Dominated convergence in Schwartz topology
+  -- Then T(χ · FT_phys(f)) = T(FT_phys(f)) = T(physicsFourierFlatCLM f)
+  -- by HasFourierSupportInDualCone (χ = 1 on C*, so (χ-1)·h is supported
+  -- outside C*, killed by T).
+  --
+  -- Formal proof requires:
+  --   (a) Schwartz seminorm estimates for (exp(-εη·ξ) - 1) × FT_phys(f)
+  --       (product rule, chain rule, dominated by Schwartz decay of FT(f))
+  --   (b) Dominated convergence in Schwartz topology (Schwartz DCT)
   --   (c) The support identification T(χ · FT_phys(f)) = T(FT_phys(f))
   -- All ingredients exist in the codebase but the assembly is nontrivial.
-  sorry -- schwartz_damping_limit: T(Φ_ε) → T(physicsFourierFlatCLM f) via Schwartz DCT
+  -- ════════════════════════════════════════════════════════════════════
+  sorry -- schwartz_damping_limit:
+        -- Φ_ε → physicsFourierFlatCLM f in Schwartz topology as ε→0⁺,
+        -- then T.continuous gives T(Φ_ε) → T(physicsFourierFlatCLM f).
+        -- Ref: Vladimirov §25, Hörmander §7.4.
 
 theorem fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
