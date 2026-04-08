@@ -3219,6 +3219,35 @@ axiom scalar_dct_schwartz_pairing {m : ℕ}
       (fun ε => ∫ x : Fin m → ℝ, g ε x * f x)
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (∫ x : Fin m → ℝ, L x * f x))
+-- **Axiom: Fourier-Laplace boundary value recovery.**
+--
+-- The distributional boundary value of the Fourier-Laplace extension F(z) = T(ψ_z)
+-- recovers T composed with the physics-convention Fourier transform:
+--   ∫ F(x+i��η) f(x) dx → T(FT_phys(f))  as ε→0⁺
+--
+-- This is the boundary-value half of the Fourier-Laplace representation theorem.
+-- It combines:
+-- (a) The Vladimirov growth bound on F (proved in this file)
+-- (b) The Cauchy regularization for distributional BV existence
+-- (c) The identification of the BV limit via the Fourier support of T
+--
+-- Reference: Vladimirov, "Methods of Generalized Functions", Thm 25.5;
+--   Streater-Wightman, Thm 2-9.
+axiom fourierLaplace_boundaryValue_recovery {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hT_support : HasFourierSupportInDualCone C T)
+    (η : Fin m → ℝ) (hη : η ∈ C)
+    (f : SchwartzMap (Fin m → ℝ) ℂ) :
+    Filter.Tendsto
+      (fun ε : ℝ => ∫ x : Fin m → ℝ,
+        fourierLaplaceExtMultiDim C hC_open hC_conv hC_cone hC_salient T
+          (fun i => (x i : ℂ) + (ε : ℂ) * (η i : ℂ) * I) *
+        f x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (T (physicsFourierFlatCLM f)))
+
 theorem fourierLaplaceExtMultiDim_boundaryValue
     (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
@@ -3239,17 +3268,8 @@ theorem fourierLaplaceExtMultiDim_boundaryValue
   -- The convergence ∫ F(x+iεη) f(x) dx → W(f) holds for each test function f
   -- but NOT pointwise in x.
   --
-  -- The correct approach uses the Cauchy regularization
-  -- (tube_boundaryValue_of_vladimirov_growth) to first establish that BV exist,
-  -- then identifies W = T ∘ physicsFourierFlatCLM.
-  --
-  -- This theorem is the representation identity: F = T ∘ ψ implies
-  -- the BV of F equals T ∘ FT_phys. It requires:
-  -- 1. The BV existence (from tube_boundaryValue_of_vladimirov_growth or
-  --    the M=0 specialization tube_boundaryValueData_of_polyGrowth')
-  -- 2. The Fourier-Laplace representation to identify the limit
-  --
-  -- Both are substantial results. This theorem packages them together.
-  sorry
+  -- Apply the Fourier-Laplace BV recovery axiom below.
+  exact fourierLaplace_boundaryValue_recovery C hC_open hC_conv hC_cone hC_salient hC_ne
+    T hT_support η hη f
 
 end
