@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
+import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 
 /-!
 # Pointwise Evaluation of Fourier Transform on Fin m → ℝ
@@ -45,11 +46,42 @@ theorem fourierTransformFlat_eval
           (EuclideanSpace.equiv (Fin m) ℝ) f))) ξ =
     ∫ x : Fin m → ℝ,
       exp (-2 * ↑Real.pi * I * (∑ i, (x i : ℂ) * (ξ i : ℂ))) * f x := by
-  -- Unfold the CLM compositions
-  simp only [ContinuousLinearMap.comp_apply, SchwartzMap.fourierTransformCLM_apply]
-  -- This is deep EuclideanSpace transport bookkeeping.
-  -- The chain: compCLM ∘ FT ∘ compCLM evaluates pointwise as the integral
-  -- with inner product ⟨x, ξ⟩_Euc = Σ x_i ξ_i.
-  sorry
+  let e : EuclideanSpace ℝ (Fin m) ≃L[ℝ] (Fin m → ℝ) :=
+    EuclideanSpace.equiv (Fin m) ℝ
+  simp only [SchwartzMap.fourierTransformCLM_apply,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  rw [SchwartzMap.fourier_coe, Real.fourier_eq]
+  simp only [Real.fourierChar_apply, Circle.smul_def, mul_neg, neg_mul, smul_eq_mul]
+  have hcomp := ((PiLp.volume_preserving_toLp (ι := Fin m)).integral_comp
+      (MeasurableEquiv.toLp 2 (Fin m → ℝ)).measurableEmbedding
+      (fun x : EuclideanSpace ℝ (Fin m) =>
+        cexp (↑(-2 * Real.pi * inner ℝ x ((EuclideanSpace.equiv (Fin m) ℝ).symm ξ)) * I) *
+          ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (EuclideanSpace.equiv (Fin m) ℝ)) f) x)).symm
+  calc
+    ∫ v : EuclideanSpace ℝ (Fin m),
+        cexp (↑(-(2 * Real.pi * inner ℝ v ((EuclideanSpace.equiv (Fin m) ℝ).symm ξ))) * I) *
+          ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (EuclideanSpace.equiv (Fin m) ℝ)) f) v
+      = ∫ y : WithLp 2 (Fin m → ℝ),
+          cexp (↑(-(2 * Real.pi * inner ℝ y ((EuclideanSpace.equiv (Fin m) ℝ).symm ξ))) * I) * f y.ofLp := by
+            simp [PiLp.coe_continuousLinearEquiv]
+    _ = ∫ x : Fin m → ℝ,
+          cexp (↑(-(2 * Real.pi * inner ℝ (WithLp.toLp 2 x) ((EuclideanSpace.equiv (Fin m) ℝ).symm ξ))) * I) *
+            f ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 x)) := by
+            simpa [EuclideanSpace.equiv, PiLp.coe_continuousLinearEquiv] using hcomp
+    _ = ∫ x : Fin m → ℝ, cexp (-(2 * ↑Real.pi * I * (∑ i, (x i : ℂ) * (ξ i : ℂ)))) * f x := by
+          apply integral_congr_ae
+          filter_upwards with x
+          have hx : ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 x)) = x := by
+            ext i
+            simp [EuclideanSpace.equiv]
+          rw [hx]
+          have hinner : inner ℝ (WithLp.toLp 2 x) ((EuclideanSpace.equiv (Fin m) ℝ).symm ξ) =
+              ∑ i, x i * ξ i := by
+            rw [PiLp.inner_apply]
+            change ∑ i, ξ i * x i = ∑ i, x i * ξ i
+            simp_rw [mul_comm]
+          rw [hinner]
+          congr 1
+          simp [Finset.mul_sum, mul_assoc, mul_left_comm, mul_comm]
 
 end
