@@ -1269,15 +1269,232 @@ private lemma wfn_spectralConditionDistribution :
     Wfn.tempered Wfn.linear Wfn.translation_invariant).mpr
     Wfn.spectrum_condition
 
-/-- The diagonal spectral measure of P₀ for any vector on the GNS Hilbert space
-    is supported on [0, ∞), as a consequence of `SpectralConditionDistribution`.
+/-- **Stone spectral Fourier-Stieltjes representation** (Reed-Simon VIII.5):
+    for a strongly continuous one-parameter unitary group `U(t)` with self-adjoint
+    generator `A` and spectral measure `P`, the diagonal spectral measure is the
+    Fourier-Stieltjes measure of the function `t ↦ ⟪ψ, U(t)ψ⟫`:
 
-    For GNS vectors ψ = Ω_F, the positive-definite function t ↦ ⟪ψ, U₀(t)ψ⟫
-    decomposes via Wightman functions as Σ_{n,m} W_{n+m}(f̄_n ⊗ τ_{te₀} f_m).
-    By `SpectralConditionDistribution`, each term's Fourier transform in t has
-    support in {p₀ ≥ 0} (projection of V̄₊ onto the energy axis). By Bochner's
-    theorem, the Fourier-Stieltjes measure is supported on [0, ∞), which by
-    uniqueness equals the spectral measure. Extension to all ψ by density. -/
+    `⟪ψ, U(t)ψ⟫ = ∫ exp(itλ) d(P.diagonalMeasure ψ)(λ)`
+
+    This follows from the spectral theorem `U(t) = ∫ exp(itλ) dP(λ)` (operator integral
+    in the strong operator topology), specialized to diagonal matrix elements via
+    `operatorIntegral_inner_right`.
+
+    **Ref:** Reed-Simon, "Methods of Modern Mathematical Physics I", Theorem VIII.5-6;
+    Hall, "Quantum Theory for Mathematicians", Theorem 10.12. -/
+private lemma stone_spectral_representation
+    (𝒰 : OneParameterUnitaryGroup (GNSHilbertSpace Wfn))
+    (ψ : GNSHilbertSpace Wfn) (t : ℝ) :
+    let P := 𝒰.generator.spectralMeasure 𝒰.generator_densely_defined 𝒰.generator_selfadjoint
+    @inner ℂ _ _ ψ (𝒰.U t ψ) = ∫ s : ℝ,
+      Complex.exp (Complex.I * ↑t * ↑s) ∂(P.diagonalMeasure ψ) := by
+  intro P
+  -- Prove integrability and boundedness independently (the private lemmas
+  -- expI_integrable/expI_norm_le from SpectralPowers aren't accessible here)
+  have hf_norm : ∀ (x : ℝ), ‖Complex.exp (Complex.I * ↑t * ↑x)‖ ≤ 1 := fun x => by
+    rw [Complex.norm_exp]
+    have : (Complex.I * ↑t * ↑x).re = 0 := by
+      simp [Complex.mul_re, Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im]
+    rw [this, Real.exp_zero]
+  set f : ℝ → ℂ := fun x => Complex.exp (Complex.I * ↑t * ↑x) with hf_def
+  have hf_bdd : ∃ M, (0 : ℝ) ≤ M ∧ ∀ (s : ℝ), ‖f s‖ ≤ M :=
+    ⟨1, zero_le_one, hf_norm⟩
+  have hf_int : ∀ z : GNSHilbertSpace Wfn,
+      MeasureTheory.Integrable f (P.diagonalMeasure z) := by
+    intro z; haveI := P.diagonalMeasure_isFiniteMeasure z
+    exact (MeasureTheory.integrable_const (1 : ℂ)).mono
+      ((Complex.continuous_exp.comp
+        (continuous_const.mul Complex.continuous_ofReal)).measurable.aestronglyMeasurable)
+      (by filter_upwards with x; simp only [norm_one]; exact hf_norm x)
+  -- Stone's theorem + unitaryGroup definition give U(t) = functionalCalculus P exp(it·)
+  suffices h : 𝒰.U t = functionalCalculus P f hf_int hf_bdd by
+    rw [h]
+    exact functionalCalculus_inner_self P f hf_int hf_bdd ψ
+  -- unique_from_generator gives U(t) = unitaryGroup(...), which unfolds to
+  -- functionalCalculus P f _ _; proof irrelevance closes the gap
+  rw [𝒰.unique_from_generator 𝒰.generator
+    𝒰.generator_densely_defined 𝒰.generator_selfadjoint rfl t]
+  rfl
+
+/-- **Uniqueness of the Fourier-Stieltjes representation** (1-dimensional).
+
+    Two finite positive Borel measures on `ℝ` with the same Fourier-Stieltjes
+    transform are equal.  This is the uniqueness half of Bochner's theorem.
+
+    **Ref:** Rudin, *Fourier Analysis on Groups*, Theorem 1.3.6;
+    Reed-Simon I, Theorem IX.9; Folland, *A Course in Abstract Harmonic
+    Analysis*, Theorem 4.23. -/
+theorem bochner_uniqueness (μ₁ μ₂ : MeasureTheory.Measure ℝ)
+    [MeasureTheory.IsFiniteMeasure μ₁] [MeasureTheory.IsFiniteMeasure μ₂]
+    (h : ∀ t : ℝ, ∫ x : ℝ, Complex.exp (Complex.I * ↑t * ↑x) ∂μ₁ =
+                    ∫ x : ℝ, Complex.exp (Complex.I * ↑t * ↑x) ∂μ₂) :
+    μ₁ = μ₂ := by
+  sorry
+
+/-- A function `φ : ℝⁿ → ℂ` is positive-definite if for all finite collections of
+    points and complex coefficients, the Hermitian quadratic form is non-negative. -/
+def IsPositiveDefiniteFunction {n : ℕ} (φ : (Fin n → ℝ) → ℂ) : Prop :=
+  ∀ (m : ℕ) (c : Fin m → ℂ) (x : Fin m → (Fin n → ℝ)),
+    0 ≤ (∑ i : Fin m, ∑ j : Fin m, starRingEnd ℂ (c i) * c j * φ (x j - x i)).re
+
+/-- **Bochner's theorem** (multi-dimensional). Every continuous positive-definite
+    function on `ℝⁿ` is the Fourier-Stieltjes transform of a unique finite positive
+    Borel measure.
+
+    **Ref:** Reed-Simon I, Theorem IX.9; Rudin, *Fourier Analysis on Groups*, §1.4.3. -/
+theorem bochner_theorem {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
+    (hcont : Continuous φ)
+    (hpd : IsPositiveDefiniteFunction φ) :
+    ∃ (μ : MeasureTheory.Measure (Fin n → ℝ)),
+      MeasureTheory.IsFiniteMeasure μ ∧
+      ∀ x, φ x = ∫ p, Complex.exp (↑(∑ i : Fin n, x i * p i) * Complex.I) ∂μ := by
+  sorry
+
+/-- **SpectralConditionDistribution → diagonal spectral measure of P₀ supported on [0,∞)
+    for pre-Hilbert vectors.**
+
+    For `F : PreHilbertSpace Wfn`, `μ_F((-∞, 0)) = 0` where `μ_F` is the
+    diagonal spectral measure of the energy operator `P₀` at the embedded vector `↑F`.
+
+    **Proof sketch** (uses `stone_spectral_representation` + distribution theory):
+    1. By `inner_translate_eq_wip`, `t ↦ ⟪↑F, U₀(t)(↑F)⟫ = WightmanInnerProduct(F, T(te₀)F)`,
+       a finite sum of Wightman evaluations `Σ_{n,m} W_{n+m}(f*_n ⊗ τ_{te₀} f_m)`.
+    2. By `SpectralConditionDistribution`, each summand's distributional Fourier transform
+       in `t` has support in `{p₀ ≥ 0}` (the energy projection of V̄₊).
+    3. By `stone_spectral_representation`, `⟪↑F, U₀(t)(↑F)⟫ = ∫ e^{itλ} dμ_F(λ)`.
+    4. By uniqueness of Fourier-Stieltjes representations for finite positive measures
+       (Bochner's theorem), combining (2) and (3) gives `μ_F((-∞, 0)) = 0`. -/
+private lemma spectralCondition_diagonalMeasure_nonneg_dense
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (F : PreHilbertSpace Wfn) :
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).diagonalMeasure (F : GNSHilbertSpace Wfn) (Set.Iio 0) = 0 := by
+  intro P₀ hT hsa
+  set P := P₀.spectralMeasure hT hsa
+  set μ_F := P.diagonalMeasure (F : GNSHilbertSpace Wfn)
+  -- Step 1: Stone spectral representation.
+  -- P₀ = 𝒰₀.generator where 𝒰₀ is the time-translation one-parameter group,
+  -- so stone_spectral_representation gives ⟪F, U₀(t)F⟫ = ∫ e^{itλ} dμ_F(λ).
+  set 𝒰₀ := (gnsPoincareRep Wfn).translationGroup 0 (hsc 0)
+  have h_stone : ∀ t : ℝ, @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+      (𝒰₀.U t (F : GNSHilbertSpace Wfn)) =
+      ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂μ_F :=
+    fun t => stone_spectral_representation Wfn 𝒰₀ (F : GNSHilbertSpace Wfn) t
+  -- Step 2: The distributional spectral condition gives a measure supported on [0,∞).
+  -- By `inner_translate_eq_wip`, the function t ↦ ⟪F, U₀(t)F⟫ is a finite sum of
+  -- Wightman evaluations Σ_{n,m} W_{n+m}(f*_n ⊗ τ_{te₀} f_m).  By hSCD, each
+  -- summand's distributional Fourier transform in t has support in {p₀ ≥ 0}.
+  -- Bochner existence then gives a measure ν supported on [0,∞) representing
+  -- the same characteristic function.
+  have ⟨ν, hν_fin, hν_supp, hν_fs⟩ : ∃ (ν : MeasureTheory.Measure ℝ),
+      MeasureTheory.IsFiniteMeasure ν ∧
+      ν (Set.Iio 0) = 0 ∧
+      ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν =
+               ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂μ_F := by
+    -- Lift φ(t) = ⟪F, U₀(t)F⟫ to a function on Fin 1 → ℝ for bochner_theorem.
+    let φ₁ : (Fin 1 → ℝ) → ℂ := fun x =>
+      @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+        (𝒰₀.U (x 0) (F : GNSHilbertSpace Wfn))
+    -- Continuity: ⟪const, U₀(·)F⟫ is continuous by strong continuity of U₀.
+    have hcont₁ : Continuous φ₁ :=
+      Continuous.inner (𝕜 := ℂ) continuous_const
+        ((gns_stronglyContinuous_preHilbert Wfn 0 F).comp (continuous_apply 0))
+    -- Positive-definiteness: ∑ c̄ᵢcⱼ⟪F, U₀(xⱼ₀-xᵢ₀)F⟫ = ‖∑ cᵢ U₀(xᵢ₀)F‖² ≥ 0
+    have hpd₁ : IsPositiveDefiniteFunction φ₁ := by
+      sorry
+    -- Bochner's theorem gives a representing measure μ₁ on Fin 1 → ℝ.
+    obtain ⟨μ₁, hfin₁, hrepr₁⟩ := bochner_theorem φ₁ hcont₁ hpd₁
+    haveI : MeasureTheory.IsFiniteMeasure μ₁ := hfin₁
+    -- Push forward μ₁ to a measure on ℝ via evaluation at 0.
+    refine ⟨μ₁.map (fun f : Fin 1 → ℝ => f 0), ?_, ?_, ?_⟩
+    -- IsFiniteMeasure
+    · exact ⟨by rw [MeasureTheory.Measure.map_apply (measurable_pi_apply 0)
+        MeasurableSet.univ, Set.preimage_univ]; exact MeasureTheory.measure_lt_top μ₁ _⟩
+    -- ν(Iio 0) = 0: by SCD + inner_translate_eq_wip, the distributional Fourier
+    -- transform of t ↦ ⟪F, U₀(t)F⟫ is supported on [0,∞). The Bochner measure
+    -- (= the distributional FT as a positive measure) is supported on [0,∞).
+    · sorry
+    -- ∀ t, ∫ exp(I*t*s) dν = ∫ exp(I*t*s) dμ_F
+    · intro t
+      rw [MeasureTheory.integral_map (measurable_pi_apply 0).aemeasurable
+        (Complex.continuous_exp.comp
+          (continuous_const.mul Complex.continuous_ofReal)).aestronglyMeasurable]
+      -- Convention conversion: exp(I * t * (f 0)) = exp(↑(∑ i : Fin 1, t * f i) * I)
+      have hconv : (fun f : Fin 1 → ℝ =>
+            Complex.exp (Complex.I * ↑t * ↑(f 0))) =
+          (fun f => Complex.exp
+            (↑(∑ i : Fin 1, (fun _ : Fin 1 => t) i * f i) * Complex.I)) := by
+        ext f; congr 1; simp; ring
+      rw [hconv, ← hrepr₁]
+      -- φ₁(fun _ => t) = ⟪F, U₀(t)F⟫ = ∫ exp(I*t*s) dμ_F
+      exact h_stone t
+  -- Step 3: By Bochner uniqueness, ν = μ_F.
+  haveI : MeasureTheory.IsFiniteMeasure ν := hν_fin
+  haveI : MeasureTheory.IsFiniteMeasure μ_F := P.diagonalMeasure_isFiniteMeasure _
+  have h_eq := bochner_uniqueness ν μ_F hν_fs
+  -- Step 4: Transfer the support condition.
+  rw [← h_eq]; exact hν_supp
+
+/-- The spectral projection onto negative energies is zero on dense GNS vectors.
+
+    For `F : PreHilbertSpace Wfn` (a Borchers sequence modulo null vectors),
+    the spectral projection `P((-∞, 0))` kills the embedded vector `↑F`.
+
+    **Proof:** By `spectralCondition_diagonalMeasure_nonneg_dense`,
+    `P.diagonalMeasure (↑F) ((-∞, 0)) = 0`. Then `diagonalMeasure_apply_norm_sq`
+    gives `‖P.proj ((-∞,0))(↑F)‖² = 0`, hence the projection is zero. -/
+private lemma gns_negative_energy_proj_dense_zero
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (F : PreHilbertSpace Wfn) :
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).proj (Set.Iio 0)
+      (F : GNSHilbertSpace Wfn) = 0 := by
+  intro P₀ hT hsa
+  set P := P₀.spectralMeasure hT hsa
+  -- Step 1: Diagonal spectral measure has no mass on (-∞, 0)
+  have h_diag : P.diagonalMeasure (F : GNSHilbertSpace Wfn) (Set.Iio 0) = 0 :=
+    spectralCondition_diagonalMeasure_nonneg_dense Wfn hSCD hsc F
+  -- Step 2: Convert diagonal measure = 0 to ‖proj‖² = 0
+  have h_sq := P.diagonalMeasure_apply_norm_sq
+    (F : GNSHilbertSpace Wfn) (Set.Iio 0) measurableSet_Iio
+  rw [h_diag, ENNReal.toReal_zero] at h_sq
+  -- h_sq : 0 = ‖P.proj (Set.Iio 0) (↑F)‖ ^ 2
+  -- Step 3: ‖v‖² = 0 → ‖v‖ = 0 → v = 0
+  exact norm_eq_zero.mp (sq_eq_zero_iff.mp h_sq.symm)
+
+/-- The spectral projection onto negative energies is zero on the full GNS space.
+
+    Proved by extending the dense-vector result via continuity: the projection
+    `P((-∞, 0))` is a bounded operator, and the set `{ψ | P((-∞,0))ψ = 0}` is closed.
+    Since it contains the dense image of `PreHilbertSpace`, it equals the whole space. -/
+private lemma gns_negative_energy_projection_zero
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn)) :
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).proj (Set.Iio 0) = 0 := by
+  intro P₀ hT hsa
+  set P := P₀.spectralMeasure hT hsa
+  apply ContinuousLinearMap.ext
+  intro ψ
+  simp only [ContinuousLinearMap.zero_apply]
+  refine UniformSpace.Completion.induction_on ψ ?_ ?_
+  · exact isClosed_eq (P.proj (Set.Iio 0)).continuous continuous_const
+  · exact fun F => gns_negative_energy_proj_dense_zero Wfn hSCD hsc F
+
+/-- The diagonal spectral measure of P₀ for any vector on the GNS Hilbert space
+    is supported on `[0, ∞)`.
+
+    Derived from `gns_negative_energy_projection_zero`: since the spectral projection
+    `P((-∞, 0)) = 0`, we have `‖P((-∞,0))ψ‖ = 0` for all `ψ`, hence
+    `μ_ψ((-∞,0)) = ‖P((-∞,0))ψ‖² = 0` by `diagonalMeasure_apply_norm_sq`. -/
 private lemma gns_energy_spectral_support_nonneg
     (hSCD : SpectralConditionDistribution d Wfn.W)
     (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
@@ -1286,7 +1503,18 @@ private lemma gns_energy_spectral_support_nonneg
     let hT := PoincareRepresentation.momentumOp_denselyDefined (gnsPoincareRep Wfn) 0 (hsc 0)
     let hsa := PoincareRepresentation.momentumOp_selfAdjoint (gnsPoincareRep Wfn) 0 (hsc 0)
     (P₀.spectralMeasure hT hsa).diagonalMeasure ψ (Set.Iio 0) = 0 := by
-  sorry
+  intro P₀ hT hsa
+  set P := P₀.spectralMeasure hT hsa
+  have hproj : P.proj (Set.Iio 0) = 0 :=
+    gns_negative_energy_projection_zero Wfn hSCD hsc
+  have hpsi : P.proj (Set.Iio 0) ψ = 0 := by
+    simp [hproj]
+  have htoReal : (P.diagonalMeasure ψ (Set.Iio 0)).toReal = 0 := by
+    rw [P.diagonalMeasure_apply_norm_sq ψ (Set.Iio 0) measurableSet_Iio, hpsi, norm_zero]
+    norm_num
+  haveI := P.diagonalMeasure_isFiniteMeasure ψ
+  exact ((ENNReal.toReal_eq_zero_iff _).mp htoReal).resolve_right
+    (MeasureTheory.measure_ne_top _ _)
 
 /-- **Energy non-negativity** from the distribution-level spectral condition.
 
@@ -1321,7 +1549,48 @@ private lemma gns_energy_nonneg
   have h_trunc_nonneg : ∀ n : ℕ,
       0 ≤ (⟪ψ, spectralTruncation P₀ hT hsa n ψ⟫_ℂ).re := by
     intro n
-    sorry
+    set P := P₀.spectralMeasure hT hsa
+    -- Define f_n matching spectralTruncation definition
+    let f_n : ℝ → ℂ := fun s =>
+      (↑s : ℂ) * Set.indicator (Set.Icc (-(n : ℝ)) n) (fun _ => (1 : ℂ)) s
+    have hf_norm : ∀ s : ℝ, ‖f_n s‖ ≤ n := by
+      intro s; simp only [f_n, Set.indicator_apply]
+      split_ifs with hs
+      · simp only [mul_one, Complex.norm_real]; exact abs_le.mpr (Set.mem_Icc.mp hs)
+      · simp
+    have hf_meas : Measurable f_n :=
+      (Complex.continuous_ofReal.measurable).mul
+        (measurable_const.indicator measurableSet_Icc)
+    have hf_int : ∀ z : GNSHilbertSpace Wfn,
+        MeasureTheory.Integrable f_n (P.diagonalMeasure z) := by
+      intro z; haveI := P.diagonalMeasure_isFiniteMeasure z
+      exact (MeasureTheory.integrable_const ((n : ℂ))).mono
+        hf_meas.aestronglyMeasurable
+        (by filter_upwards with s; simp only [Complex.norm_natCast]; exact hf_norm s)
+    have hf_bdd : ∃ C, 0 ≤ C ∧ ∀ s, ‖f_n s‖ ≤ C := ⟨n, Nat.cast_nonneg n, hf_norm⟩
+    -- ⟪ψ, T_n ψ⟫ = ∫ f_n dμ_ψ
+    have h_eq : ⟪ψ, spectralTruncation P₀ hT hsa n ψ⟫_ℂ =
+        ∫ s, f_n s ∂(P.diagonalMeasure ψ) := by
+      rw [show spectralTruncation P₀ hT hsa n =
+        functionalCalculus P f_n hf_int hf_bdd from rfl]
+      exact functionalCalculus_inner_self P f_n hf_int hf_bdd ψ
+    rw [h_eq]
+    -- re(∫ f dμ) = ∫ re(f) dμ ≥ 0 since re(f(s)) ≥ 0 a.e.
+    show 0 ≤ RCLike.re (∫ s, f_n s ∂P.diagonalMeasure ψ)
+    rw [(integral_re (hf_int ψ)).symm]
+    apply MeasureTheory.integral_nonneg_of_ae
+    -- μ_ψ supported on [0, ∞), so s ≥ 0 a.e.
+    have h_supp : P.diagonalMeasure ψ (Set.Iio 0) = 0 :=
+      gns_energy_spectral_support_nonneg Wfn hSCD hsc ψ
+    have h_ae_nonneg : ∀ᵐ s ∂(P.diagonalMeasure ψ), (0 : ℝ) ≤ s := by
+      rw [MeasureTheory.ae_iff]
+      have : {s : ℝ | ¬(0 ≤ s)} = Set.Iio 0 := by ext s; simp [not_le]
+      rw [this]; exact h_supp
+    filter_upwards [h_ae_nonneg] with s hs
+    simp only [f_n, Set.indicator_apply]
+    split_ifs with h
+    · simp only [mul_one, Complex.ofReal_re]; exact hs
+    · simp [mul_zero, map_zero]
   -- Limit of non-negative sequence is non-negative
   exact ge_of_tendsto hlim_re (Filter.Eventually.of_forall h_trunc_nonneg)
 
@@ -1329,21 +1598,17 @@ private lemma gns_energy_nonneg
 
     For ψ in the appropriate domains, `⟪ψ, P₀²ψ⟫.re ≥ Σᵢ ⟪ψ, Pᵢ²ψ⟫.re`.
 
-    **Proof:** The (d+1)-parameter translation group `a ↦ U(a)` on the GNS space
-    gives a positive-definite function `a ↦ ⟪ψ, U(a) ψ⟫` on `ℝ^{d+1}`. By the
-    multi-dimensional Bochner theorem, this is the Fourier-Stieltjes transform of
-    a finite positive measure `μ_ψ` on `ℝ^{d+1}`. The `SpectralConditionDistribution`
-    implies `supp(μ_ψ) ⊆ V̄₊`.
+    **Proof:**
+    1. Self-adjointness of each `Pμ` gives `re(⟪ψ, Pμ²ψ⟫) = ‖Pμψ‖²`, reducing
+       the inequality to `‖P₀ψ‖² ≥ Σᵢ ‖Pᵢψ‖²`.
+    2. The positive-definite function `a ↦ ⟪ψ, U(a)ψ⟫` on `ℝ^{d+1}` admits a
+       finite positive Bochner measure `μ` by `bochner_theorem`.
+    3. `SpectralConditionDistribution` implies `supp(μ) ⊆ V̄₊`.
+    4. Differentiating the Bochner integral gives the moment identity
+       `‖P₀ψ‖² - Σᵢ ‖Pᵢψ‖² = ∫ (p₀² - |p⃗|²) dμ`.
+    5. The integral is non-negative since `p₀² ≥ |p⃗|²` on `V̄₊`.
 
-    Differentiating the Bochner representation in each direction μ gives the
-    second moments via ordinary 1D Stone (already in codebase):
-      `⟪ψ, Pμ²ψ⟫ = -∂²/∂t² ∫ e^{itpμ} dμ_ψ(p)|_{t=0} = ∫ pμ² dμ_ψ(p)`
-    Since all directions use the **same** Bochner measure `μ_ψ`:
-      `⟪ψ, P₀²ψ⟫ - Σᵢ ⟪ψ, Pᵢ²ψ⟫ = ∫ (p₀² - |p⃗|²) dμ_ψ(p) ≥ 0`
-    because `p₀² ≥ |p⃗|²` pointwise on `V̄₊`.
-
-    **Note:** This does NOT require SNAG (joint projection-valued measure). The
-    scalar Bochner measure per vector suffices. -/
+    **Ref:** Reed-Simon I, Theorem IX.8; Streater-Wightman, Chapter 3. -/
 private lemma gns_mass_shell
     (hSCD : SpectralConditionDistribution d Wfn.W)
     (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
@@ -1362,7 +1627,108 @@ private lemma gns_mass_shell
       (⟪ψ, ((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
         ⟨((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
           ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re := by
-  sorry
+  -- === Step 1: Self-adjointness reduces inner products to squared norms ===
+  -- For self-adjoint T: ⟪ψ, T(Tψ)⟫ = ⟪Tψ, Tψ⟫, so re(⟪ψ, T²ψ⟫) = ‖Tψ‖².
+  set P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+  have hT₀ := PoincareRepresentation.momentumOp_denselyDefined (gnsPoincareRep Wfn) 0 (hsc 0)
+  have hsa₀ := PoincareRepresentation.momentumOp_selfAdjoint (gnsPoincareRep Wfn) 0 (hsc 0)
+  have hsym₀ := P₀.selfadjoint_symmetric hT₀ hsa₀
+  -- re(⟪ψ, P₀²ψ⟫) = ‖P₀ψ‖²
+  have h₀ : (⟪ψ, P₀ ⟨P₀ ⟨ψ, hψ₀⟩, hP₀ψ⟩⟫_ℂ).re = ‖P₀ ⟨ψ, hψ₀⟩‖ ^ 2 := by
+    rw [show @inner ℂ _ _ ψ (P₀ ⟨P₀ ⟨ψ, hψ₀⟩, hP₀ψ⟩) =
+      @inner ℂ _ _ (P₀ ⟨ψ, hψ₀⟩) (P₀ ⟨ψ, hψ₀⟩)
+      from (hsym₀ ⟨ψ, hψ₀⟩ ⟨P₀ ⟨ψ, hψ₀⟩, hP₀ψ⟩).symm]
+    exact inner_self_eq_norm_sq (𝕜 := ℂ) (P₀ ⟨ψ, hψ₀⟩)
+  -- re(⟪ψ, Pᵢ²ψ⟫) = ‖Pᵢψ‖² for each spatial direction
+  have hᵢ : ∀ i : Fin d,
+      (⟪ψ, ((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
+        ⟨((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
+          ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩⟫_ℂ).re =
+      ‖((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
+        ⟨ψ, hψᵢ i⟩‖ ^ 2 := by
+    intro i
+    have hTᵢ := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) (Fin.succ i) (hsc (Fin.succ i))
+    have hsaᵢ := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) (Fin.succ i) (hsc (Fin.succ i))
+    have hsymᵢ := ((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+      (hsc (Fin.succ i))).selfadjoint_symmetric hTᵢ hsaᵢ
+    rw [show @inner ℂ _ _ ψ (((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+        (hsc (Fin.succ i))) ⟨((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+        (hsc (Fin.succ i))) ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩) =
+      @inner ℂ _ _ (((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+        (hsc (Fin.succ i))) ⟨ψ, hψᵢ i⟩) (((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+        (hsc (Fin.succ i))) ⟨ψ, hψᵢ i⟩)
+      from (hsymᵢ ⟨ψ, hψᵢ i⟩ ⟨((gnsPoincareRep Wfn).momentumOp (Fin.succ i)
+        (hsc (Fin.succ i))) ⟨ψ, hψᵢ i⟩, hPᵢψ i⟩).symm]
+    exact inner_self_eq_norm_sq (𝕜 := ℂ) _
+  -- Rewrite goal as ‖P₀ψ‖² ≥ Σᵢ ‖Pᵢψ‖²
+  rw [h₀, Finset.sum_congr rfl (fun i _ => hᵢ i)]
+  -- === Step 2: Apply Bochner's theorem ===
+  -- The positive-definite function φ(a) = ⟪ψ, U(a)ψ⟫ on ℝ^{d+1} has a Bochner measure μ.
+  -- By SpectralConditionDistribution, supp(μ) ⊆ V̄₊.
+  -- Differentiating the Bochner integral twice gives ‖Pμψ‖² = ∫ pμ² dμ.
+  have ⟨μ, _, hsupp, hmoment⟩ : ∃ (μ : MeasureTheory.Measure (MinkowskiSpace d)),
+      MeasureTheory.IsFiniteMeasure μ ∧
+      μ (ForwardMomentumCone d)ᶜ = 0 ∧
+      ‖P₀ ⟨ψ, hψ₀⟩‖ ^ 2 -
+        ∑ i : Fin d,
+          ‖((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
+            ⟨ψ, hψᵢ i⟩‖ ^ 2 =
+        ∫ p : MinkowskiSpace d,
+          ((p 0) ^ 2 - ∑ i : Fin d, (p (Fin.succ i)) ^ 2) ∂μ := by
+    -- === Step 2a: Define the positive-definite function φ(a) = ⟪ψ, U(translation a) ψ⟫ ===
+    set φ : MinkowskiSpace d → ℂ := fun a =>
+      @inner ℂ _ _ ψ ((gnsPoincareRep Wfn).U (PoincareGroup.translation' a) ψ)
+    -- === Step 2b: φ is continuous ===
+    -- Follows from joint strong continuity of translations on GNS Hilbert space
+    -- (each one-parameter group t ↦ U(t·eμ) is strongly continuous by `hsc`,
+    -- and on finite-dimensional ℝ^{d+1} separate continuity in each coordinate
+    -- implies joint continuity of the bilinear pairing a ↦ ⟪ψ, U(a)ψ⟫).
+    have hφ_cont : Continuous φ := by sorry
+    -- === Step 2c: φ is positive-definite ===
+    -- For any points aⱼ and coefficients cⱼ:
+    --   Σᵢⱼ c̄ᵢ cⱼ φ(aⱼ - aᵢ) = Σᵢⱼ c̄ᵢ cⱼ ⟪U(aᵢ)ψ, U(aⱼ)ψ⟫
+    --                             = ‖Σⱼ cⱼ U(aⱼ)ψ‖² ≥ 0
+    -- using unitarity U(a-b) = U(a) U(b)* and sesquilinearity of inner product.
+    have hφ_pd : IsPositiveDefiniteFunction φ := by sorry
+    -- === Step 2d: Apply Bochner's theorem to get the finite measure μ ===
+    obtain ⟨μ, hfin, hboch⟩ := bochner_theorem φ hφ_cont hφ_pd
+    -- hboch : ∀ x, φ x = ∫ p, exp(i Σⱼ xⱼ pⱼ) dμ(p)
+    -- === Step 2e: Support condition from SpectralConditionDistribution ===
+    -- The n=1 case of hSCD gives: the reduced 1-point Wightman function w₁
+    -- has Fourier transform supported in V̄₊. By uniqueness of the Bochner
+    -- representation (both μ and w₁ˆ give the same characteristic function
+    -- on a dense set of vectors), μ(V̄₊ᶜ) = 0.
+    have h_supp : μ (ForwardMomentumCone d)ᶜ = 0 := by sorry
+    -- === Step 2f: Moment identity via differentiation of the Bochner integral ===
+    -- Differentiating φ(a) = ∫ exp(i⟨a,p⟩) dμ(p) twice in direction eμ:
+    --   -∂²φ/∂aμ²|_{a=0} = ∫ pμ² dμ(p)
+    -- Combined with the Stone-generator identity:
+    --   -∂²φ/∂aμ²|_{a=0} = ‖Pμ ψ‖²
+    -- we get ‖Pμ ψ‖² = ∫ pμ² dμ for each μ. Subtracting:
+    --   ‖P₀ ψ‖² - Σᵢ ‖Pᵢ ψ‖² = ∫ (p₀² - Σᵢ pᵢ²) dμ
+    have h_moment : ‖P₀ ⟨ψ, hψ₀⟩‖ ^ 2 -
+        ∑ i : Fin d,
+          ‖((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
+            ⟨ψ, hψᵢ i⟩‖ ^ 2 =
+        ∫ p : MinkowskiSpace d,
+          ((p 0) ^ 2 - ∑ i : Fin d, (p (Fin.succ i)) ^ 2) ∂μ := by sorry
+    exact ⟨μ, hfin, h_supp, h_moment⟩
+  -- === Step 3: The integral is non-negative since p₀² ≥ |p⃗|² on V̄₊ ===
+  suffices h : 0 ≤ ∫ p : MinkowskiSpace d,
+      ((p 0) ^ 2 - ∑ i : Fin d, (p (Fin.succ i)) ^ 2) ∂μ by linarith
+  apply MeasureTheory.integral_nonneg_of_ae
+  have h_ae : ∀ᵐ p ∂μ, p ∈ ForwardMomentumCone d := MeasureTheory.ae_iff.mpr hsupp
+  filter_upwards [h_ae] with p hp
+  simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+    MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq] at hp
+  have hcausal := hp.1
+  rw [MinkowskiSpace.IsCausal] at hcausal
+  have h_decomp := MinkowskiSpace.minkowskiNormSq_decomp d p
+  have h_le : MinkowskiSpace.spatialNormSq d p ≤ (p 0) ^ 2 := by linarith
+  change 0 ≤ (p 0) ^ 2 - MinkowskiSpace.spatialNormSq d p
+  linarith
 
 /-- **Spectrum condition for the GNS Hilbert space.**
 
