@@ -146,6 +146,274 @@ theorem tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
       (f.conjTensorProduct g)).comp hconj
   exact hW.mono_left nhdsWithin_le_nhds
 
+/-- The reconstructed Wightman pairing against a fixed left factor is a
+continuous linear functional of the right factor. This packages the exact
+ambient-side scalar functional used later when building one-variable witnesses
+from real-time shifts on the right block. -/
+private noncomputable def bvt_W_conjTensorProduct_rightCLM
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (f : SchwartzNPoint d n) :
+    SchwartzNPoint d m →L[ℂ] ℂ where
+  toLinearMap :=
+    { toFun := fun g => bvt_W OS lgc (n + m) (f.conjTensorProduct g)
+      map_add' := fun g₁ g₂ => by
+        rw [SchwartzMap.conjTensorProduct_add_right]
+        exact (bvt_W_linear (d := d) OS lgc (n + m)).map_add _ _
+      map_smul' := fun c g => by
+        rw [SchwartzMap.conjTensorProduct_smul_right]
+        exact (bvt_W_linear (d := d) OS lgc (n + m)).map_smul _ _ }
+  cont := (bvt_W_continuous (d := d) OS lgc (n + m)).comp
+    (SchwartzMap.conjTensorProduct_continuous_right f)
+
+/-- Compact-support continuity of the ambient Wightman pairing along arbitrary
+real time shifts of the right factor. This is one of the two direct
+`paley_wiener_one_step` inputs for the ambient witness route. -/
+private theorem continuous_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    Continuous (fun t : ℝ =>
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+  refine continuous_iff_continuousAt.2 ?_
+  intro t₀
+  have hshift :
+      Filter.Tendsto
+        (fun t : ℝ => timeShiftSchwartzNPoint (d := d) t g)
+        (nhds t₀)
+        (nhds (timeShiftSchwartzNPoint (d := d) t₀ g)) := by
+    exact tendsto_timeShiftSchwartzNPoint_nhds_of_isCompactSupport_local
+      (d := d) g hg_compact t₀
+  have hconj :
+      Filter.Tendsto
+        (fun t : ℝ => f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))
+        (nhds t₀)
+        (nhds (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t₀ g))) := by
+    exact ((SchwartzMap.conjTensorProduct_continuous_right f).tendsto
+      (timeShiftSchwartzNPoint (d := d) t₀ g)).comp hshift
+  exact ((bvt_W_continuous (d := d) OS lgc (n + m)).tendsto
+    (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t₀ g))).comp hconj
+
+/-- Compact-support polynomial-growth input for the ambient witness route:
+along real time shifts of the right factor, the reconstructed Wightman pairing
+against a fixed left factor grows at most polynomially. -/
+private theorem hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m) :
+    SCV.HasPolynomialGrowthOnLine (fun t : ℝ =>
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))) := by
+  classical
+  let T : SchwartzNPoint d m →L[ℂ] ℂ :=
+    bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f
+  let ψ : SchwartzMap (Fin (m * (d + 1)) → ℝ) ℂ :=
+    flattenSchwartzNPoint (d := d) g
+  let Tflat : SchwartzMap (Fin (m * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+    T.comp (unflattenSchwartzNPoint (d := d))
+  let q : Seminorm ℂ (SchwartzMap (Fin (m * (d + 1)) → ℝ) ℂ) :=
+    (normSeminorm ℂ ℂ).comp Tflat.toLinearMap
+  have hq_cont : Continuous q := by
+    change Continuous (fun h : SchwartzMap (Fin (m * (d + 1)) → ℝ) ℂ => ‖Tflat h‖)
+    simpa [q, Seminorm.comp_apply, coe_normSeminorm] using
+      continuous_norm.comp Tflat.continuous
+  obtain ⟨s, C0, hC0_ne, hbound⟩ :=
+    Seminorm.bound_of_continuous
+      (schwartz_withSeminorms ℂ (Fin (m * (d + 1)) → ℝ) ℂ) q hq_cont
+  have hD :
+      ∀ p : ℕ × ℕ, ∃ D : ℝ, 0 ≤ D ∧
+        ∀ a : Fin (m * (d + 1)) → ℝ,
+          (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+            (SCV.translateSchwartz a ψ) ≤
+              D * (1 + ‖a‖) ^ p.1 := by
+    intro p
+    simpa [schwartzSeminormFamily] using
+      SCV.seminorm_translateSchwartz_le p.1 p.2 ψ
+  choose D hD_nonneg hD_bound using hD
+  let η : Fin (m * (d + 1)) → ℝ := flatTimeShiftDirection d m
+  let N : ℕ := s.sup Prod.fst
+  let A : ℝ := (1 + ‖η‖) ^ N
+  let Dsum : ℝ := ∑ p ∈ s, D p * A
+  let Cbound : ℝ := (C0 : ℝ) * Dsum + 1
+  have hC0_pos : 0 < (C0 : ℝ) := by
+    have hC0_ne' : (C0 : ℝ) ≠ 0 := by
+      exact_mod_cast hC0_ne
+    exact lt_of_le_of_ne C0.2 hC0_ne'.symm
+  have hDsum_nonneg : 0 ≤ Dsum := by
+    dsimp [Dsum]
+    refine Finset.sum_nonneg ?_
+    intro p hp
+    exact mul_nonneg (hD_nonneg p) (pow_nonneg (by positivity) _)
+  refine ⟨Cbound, N, by
+    dsimp [Cbound]
+    nlinarith, ?_⟩
+  intro t
+  let a : Fin (m * (d + 1)) → ℝ := t • η
+  let u : ℝ := 1 + ‖a‖
+  let v : ℝ := (1 + ‖η‖) * (1 + |t|)
+  have hu_nonneg : 0 ≤ u := by
+    dsimp [u]
+    positivity
+  have hv_nonneg : 0 ≤ v := by
+    dsimp [v]
+    positivity
+  have hv_ge_one : 1 ≤ v := by
+    dsimp [v]
+    have h1 : 1 ≤ 1 + ‖η‖ := by nlinarith [norm_nonneg η]
+    have h2 : 1 ≤ 1 + |t| := by nlinarith [abs_nonneg t]
+    nlinarith
+  have hu_le_v : u ≤ v := by
+    dsimp [u, v, a]
+    rw [norm_smul]
+    simpa using
+      (show 1 + |t| * ‖η‖ ≤ (1 + ‖η‖) * (1 + |t|) by
+        nlinarith [abs_nonneg t, norm_nonneg η])
+  have hsup_sum :
+      (s.sup (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ))
+          (SCV.translateSchwartz a ψ) ≤
+        (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+          (SCV.translateSchwartz a ψ) := by
+    exact Seminorm.le_def.mp
+      (Seminorm.finset_sup_le_sum
+        (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ) s)
+        (SCV.translateSchwartz a ψ)
+  have hsum_apply :
+      ∀ s' : Finset (ℕ × ℕ),
+        (∑ p ∈ s', schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+            (SCV.translateSchwartz a ψ) =
+          ∑ p ∈ s',
+            (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+              (SCV.translateSchwartz a ψ) := by
+    intro s'
+    induction s' using Finset.induction with
+    | empty =>
+        simp
+    | insert b s' hb ih =>
+        simp [Finset.sum_insert, hb, ih]
+  have hsum_bound :
+      (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+          (SCV.translateSchwartz a ψ) ≤
+        Dsum * (1 + |t|) ^ N := by
+    calc
+      (∑ p ∈ s, schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+          (SCV.translateSchwartz a ψ)
+        = ∑ p ∈ s,
+            (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+              (SCV.translateSchwartz a ψ) := by
+              simpa using hsum_apply s
+      _ ≤ ∑ p ∈ s, D p * v ^ N := by
+            refine Finset.sum_le_sum ?_
+            intro p hp
+            have hpN : p.1 ≤ N := Finset.le_sup hp
+            calc
+              (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+                  (SCV.translateSchwartz a ψ)
+                ≤ D p * u ^ p.1 := hD_bound p a
+              _ ≤ D p * v ^ p.1 := by
+                  refine mul_le_mul_of_nonneg_left ?_ (hD_nonneg p)
+                  exact pow_le_pow_left₀ hu_nonneg hu_le_v _
+              _ ≤ D p * v ^ N := by
+                  refine mul_le_mul_of_nonneg_left ?_ (hD_nonneg p)
+                  exact pow_le_pow_right₀ hv_ge_one hpN
+      _ = (∑ p ∈ s, D p) * v ^ N := by
+            simp [Finset.sum_mul]
+      _ ≤ Dsum * (1 + |t|) ^ N := by
+            have hA_ge_one : 1 ≤ A := by
+              dsimp [A]
+              exact one_le_pow₀ (by nlinarith [norm_nonneg η])
+            have hv_pow :
+                v ^ N = A * (1 + |t|) ^ N := by
+              dsimp [v, A]
+              rw [mul_pow]
+            rw [hv_pow]
+            calc
+              (∑ p ∈ s, D p) * (A * (1 + |t|) ^ N)
+                  = ((∑ p ∈ s, D p) * A) * (1 + |t|) ^ N := by ring
+              _ ≤ Dsum * (1 + |t|) ^ N := by
+                  rw [show (∑ p ∈ s, D p) * A = Dsum by
+                    simp [Dsum, Finset.sum_mul]]
+  have hmain :
+      ‖Tflat (SCV.translateSchwartz a ψ)‖ ≤
+        (C0 : ℝ) * (Dsum * (1 + |t|) ^ N) := by
+    calc
+      ‖Tflat (SCV.translateSchwartz a ψ)‖
+          ≤ (C0 • s.sup (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ))
+              (SCV.translateSchwartz a ψ) := by
+                simpa [q, Seminorm.comp_apply, coe_normSeminorm] using
+                  hbound (SCV.translateSchwartz a ψ)
+      _ = (C0 : ℝ) *
+            (s.sup (schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ))
+              (SCV.translateSchwartz a ψ) := by
+            rfl
+      _ ≤ (C0 : ℝ) *
+            ((∑ p ∈ s, schwartzSeminormFamily ℂ (Fin (m * (d + 1)) → ℝ) ℂ p)
+              (SCV.translateSchwartz a ψ)) := by
+            gcongr
+      _ ≤ (C0 : ℝ) * (Dsum * (1 + |t|) ^ N) := by
+            gcongr
+  have hEq :
+      bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) =
+        Tflat (SCV.translateSchwartz a ψ) := by
+    change T (timeShiftSchwartzNPoint (d := d) t g) = Tflat (SCV.translateSchwartz a ψ)
+    simp [T, Tflat, ψ, a, η, timeShiftSchwartzNPoint_eq_unflatten_translate_local]
+  calc
+    ‖bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))‖
+      = ‖Tflat (SCV.translateSchwartz a ψ)‖ := by rw [hEq]
+    _ ≤ (C0 : ℝ) * (Dsum * (1 + |t|) ^ N) := hmain
+    _ ≤ Cbound * (1 + |t|) ^ N := by
+        have hpow_nonneg : 0 ≤ (1 + |t|) ^ N := by positivity
+        have haux :
+            (C0 : ℝ) * (Dsum * (1 + |t|) ^ N) ≤
+              ((C0 : ℝ) * Dsum + 1) * (1 + |t|) ^ N := by
+          have hpow_ge_one : 1 ≤ (1 + |t|) ^ N := by
+            exact one_le_pow₀ (by nlinarith [abs_nonneg t])
+          nlinarith
+        simpa [Cbound, mul_assoc, mul_left_comm, mul_comm] using haux
+
+/-- Ambient-witness existence on the current Stage-5 route: once the real-time
+Wightman pairing against a fixed ambient tensor has one-sided Fourier support,
+the existing Paley-Wiener infrastructure produces the required upper-half-plane
+holomorphic witness. This is the honest ambient replacement for the rejected
+`H = singleSplit` shortcut. -/
+theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (h_spectral :
+      SCV.HasOneSidedFourierSupport
+        (fun χ : SchwartzMap ℝ ℂ =>
+          ∫ t : ℝ,
+            bvt_W OS lgc (n + m)
+              (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t)) :
+    ∃ H : ℂ → ℂ,
+      DifferentiableOn ℂ H SCV.upperHalfPlane ∧
+      (∀ η : ℝ, 0 < η →
+        SCV.HasPolynomialGrowthOnLine (fun x => H (↑x + ↑η * Complex.I))) ∧
+      (∀ χ : SchwartzMap ℝ ℂ,
+        Filter.Tendsto
+          (fun η : ℝ => ∫ x : ℝ, H (↑x + ↑η * Complex.I) * χ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (∫ t : ℝ,
+              bvt_W OS lgc (n + m)
+                (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t))) := by
+  exact SCV.paley_wiener_one_step_simple
+    (f := fun t : ℝ =>
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+    (continuous_bvt_W_conjTensorProduct_timeShift
+      (d := d) OS lgc f g hg_compact)
+    (hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShift
+      (d := d) OS lgc f g)
+    h_spectral
+
 /-- Zero-translation specialization of the proved Schwinger-side `t → 0+` limit
 for the compact ordered positive-time `singleSplit_xiShift` shell.
 

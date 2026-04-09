@@ -1154,16 +1154,37 @@ The proof transcript is:
      adapter `lemma42_matrix_element_time_interchange`;
    - the purely configuration-space shell inside that adapter is already
      formalized by `conjTensorProduct_timeShift_eq_tailTimeShift` and
-     `simpleTensor_timeShift_integral_eq_xiShift_conj` in
-     [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean);
+   `simpleTensor_timeShift_integral_eq_xiShift_conj` in
+   [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean);
    - inside that adapter, time-variable interchange is exactly the hidden
      Section-8 one-variable theorem recorded in
      `docs/os1_detailed_proof_audit.md` as
      `one_variable_time_interchange_for_wightman_pairing`;
+   - do not replace that one-variable step by a naive "the canonical
+     `xiShift(wickRotate(y), t * I)` shell is already pointwise inside
+     `ForwardTube` for every ambient `y`" argument: that statement is false on
+     the corrected ambient theorem surface, because the `xiShift` updates only
+     one time-difference coordinate and the remaining Wick-rotated differences
+     need not lie in the forward cone;
    - in the current repo, the honest Lean supplier for that one-variable step
      should be routed through `SCV.paley_wiener_one_step` /
      `SCV.paley_wiener_half_line`, not a fresh ad hoc many-variable
      continuation theorem;
+   - more precisely: `paley_wiener_half_line` first produces the **ambient**
+     witness on `SCV.upperHalfPlane`, because it is a Fourier/Laplace theorem
+     for a real-line tempered pairing; it does **not** directly hand us the
+     final right-half-plane witness used by the semigroup-side
+     `singleSplit_xiShift` comparison;
+   - so the immediate post-Paley-Wiener theorem slot is an upper-half-plane
+     witness/exact-boundary-value statement for the ambient Wightman pairing;
+   - the first direct consumer of that witness only needs the values on the
+     positive imaginary axis: if the canonical shell converges to `H(i t)` and
+     `H(i t)` is identified with the semigroup-side holomorphic value, the
+     current kernel reduction already closes;
+   - only if one wants a whole-domain comparison of holomorphic witnesses does
+     one then need the existing upper-half-plane identity theorem or an
+     explicit rotation bridge before invoking any right-half-plane uniqueness
+     statement;
    - the common kernel is the corrected OS-II-backed analytic-continuation
      object underlying `bvt_F` / `bvt_W`, not a fresh spectral-measure
      construction in Section 4.3 itself.
