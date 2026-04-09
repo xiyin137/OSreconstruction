@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanSemigroup
 import OSReconstruction.Wightman.Reconstruction.WickRotation.EuclideanPositiveTime
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43Codomain
@@ -2193,6 +2194,57 @@ private theorem tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift_boun
     tendsto_bvt_F_canonical_conjTensorProduct_timeShift_boundaryValue
       (d := d) (OS := OS) (lgc := lgc) (φ := φ) (ψ := ψ) (t := t)
 
+/-- Step-3 reduction for the current Lemma-4.2 route: once the canonical
+`ξ`-shift shell is shown to converge back to some explicit scalar `L` as
+`ε → 0+`, that scalar is forced to be the reconstructed Wightman pairing
+against the right-time-shifted ambient tensor.
+
+This keeps the remaining analytic content honest. After the Step-1/2 shell
+rewrite above, the next unresolved theorem is precisely the limit identification
+for the explicit canonical `ξ`-shift shell, not another hidden boundary-value
+argument. -/
+private theorem bvt_W_eq_of_tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m) (t : ℝ)
+    {L : ℂ}
+    (hL :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ y : NPointDomain d (n + m),
+            bvt_F OS lgc (n + m)
+              (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                (fun k μ =>
+                  ↑(y k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) (n + m) k μ) *
+                      Complex.I)
+                (t : ℂ)) *
+              (φ.conjTensorProduct ψ) y)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds L)) :
+    L =
+      bvt_W OS lgc (n + m)
+        (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ)) := by
+  have hW :
+      Filter.Tendsto
+        (fun ε : ℝ =>
+          ∫ y : NPointDomain d (n + m),
+            bvt_F OS lgc (n + m)
+              (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                (fun k μ =>
+                  ↑(y k μ) +
+                    ε * ↑(canonicalForwardConeDirection (d := d) (n + m) k μ) *
+                      Complex.I)
+                (t : ℂ)) *
+              (φ.conjTensorProduct ψ) y)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds
+          (bvt_W OS lgc (n + m)
+            (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ)))) :=
+    tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift_boundaryValue
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm) (φ := φ) (ψ := ψ) (t := t)
+  exact tendsto_nhds_unique hL hW
+
 /-- On the exact `bvt_F` shell used by the current Lemma-4.2 lane, the
 positive-real OS matrix element converges back to the unshifted Euclidean term
 as `t → 0+`. This is the current-code specialization of the already-proved
@@ -2347,6 +2399,210 @@ private theorem kernel_eq_of_osXiShift_eq_bvt_W_timeShift_on_positiveReals
     (d := d) (OS := OS) (lgc := lgc) (hm := hm)
     (f := f) (hf_ord := hf_ord) (g := g) (hg_ord := hg_ord) (t := t) ht]
   exact hreal t ht
+
+/-- Honest Stage-5 reduction for the current Lemma-4.2 lane: to prove the
+kernel equality at `t = 0`, it is enough to show that for every positive real
+`t`, the canonical forward-cone boundary-value shell converges to the explicit
+current-code `ξ`-shift shell against the positive-time preimages.
+
+This theorem is the immediate consumer of the new Step-1/2 shell rewrite. It
+shrinks the remaining live analytic content to one positive-real shell-limit
+statement, without reviving any false same-shell shortcut. -/
+private theorem kernel_eq_of_tendsto_bvt_F_canonical_xiShift_to_osXiShift_on_positiveReals
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hlimit :
+      ∀ t : ℝ, 0 < t →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                  (fun k μ =>
+                    ↑(y k μ) +
+                      ε * ↑(canonicalForwardConeDirection (d := d) (n + m) k μ) *
+                        Complex.I)
+                  (t : ℂ)) *
+                (φ.conjTensorProduct ψ) y)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                  (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+                (f.osConjTensorProduct g) y))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  refine kernel_eq_of_osXiShift_eq_bvt_W_timeShift_on_positiveReals
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (φ := φ) (ψ := ψ) (f := f)
+    (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (hψ_compact := hψ_compact) ?_
+  intro t ht
+  exact
+    (bvt_W_eq_of_tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+      (φ := φ) (ψ := ψ) (t := t)
+      (hL := hlimit t ht))
+
+/-- Internal-supplier reduction for the current Stage-5 frontier: if the
+chosen one-variable `singleSplit_xiShift` holomorphic trace built from the
+positive-time preimages `f, g` already agrees on positive real times with the
+reconstructed Wightman pairing against the ambient representatives `φ, ψ`,
+then the desired kernel equality at `t = 0` follows.
+
+This keeps the public theorem surface on the corrected ambient
+representative/preimage data while allowing the existing `singleSplit`
+holomorphic trace to be used only as an internal proof supplier. -/
+private theorem kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  have hW :
+      Filter.Tendsto
+        (fun t : ℝ =>
+          bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds
+          (bvt_W OS lgc (n + m)
+            (φ.conjTensorProduct ψ))) :=
+    tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_ofReal_eq_bvt_W_ambient_conjTensorProduct_timeShift
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+      (f := f) (hf_ord := hf_ord) (hf_compact := hf_compact)
+      (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+      (φ := φ) (ψ := ψ) (hψ_compact := hψ_compact) hreal
+  have hS :
+      Filter.Tendsto
+        (fun t : ℝ =>
+          bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds
+          (OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)))) :=
+    tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_schwinger
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+      (f := f) (hf_ord := hf_ord) (hf_compact := hf_compact)
+      (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+  exact tendsto_nhds_unique hW hS
+
+/-- Semigroup-side variant of the same reduction: since the chosen
+`singleSplit_xiShift` holomorphic trace already agrees with the OS
+time-shift holomorphic matrix element on the whole right half-plane, it is
+enough to identify that OS holomorphic value with the reconstructed Wightman
+pairing on positive real times. -/
+private theorem kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveReals
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n f hf_ord)
+          (PositiveTimeBorchersSequence.single m g hg_ord) (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  refine kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (φ := φ) (ψ := ψ) (f := f)
+    (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (hψ_compact := hψ_compact) ?_
+  intro t ht
+  rw [bvt_xiShift_eq_osInnerProduct_holomorphicValue_single
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (f := f) (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (z := (t : ℂ)) (hz := by simpa using ht)]
+  exact hreal t ht
+
+/-- Current best Stage-5 reduction: to prove the kernel equality at `t = 0`, it
+is enough to show that for every positive real `t`, the explicit canonical
+forward-cone `ξ`-shift shell has boundary value equal to the OS holomorphic
+matrix element for the positive-time preimages.
+
+This is the exact theorem surface the current branch-`3b` / Section-4.3
+machinery is built to attack: the Wightman side stays on the explicit canonical
+shell, while the target scalar is the already-built semigroup-side holomorphic
+family rather than a raw same-shell comparison. -/
+private theorem kernel_eq_of_tendsto_bvt_F_canonical_xiShift_to_osHolomorphicValue_on_positiveReals
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hlimit :
+      ∀ t : ℝ, 0 < t →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ∫ y : NPointDomain d (n + m),
+              bvt_F OS lgc (n + m)
+                (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                  (fun k μ =>
+                    ↑(y k μ) +
+                      ε * ↑(canonicalForwardConeDirection (d := d) (n + m) k μ) *
+                        Complex.I)
+                  (t : ℂ)) *
+                (φ.conjTensorProduct ψ) y)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+              (PositiveTimeBorchersSequence.single n f hf_ord)
+              (PositiveTimeBorchersSequence.single m g hg_ord) (t : ℂ)))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  refine kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveReals
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (φ := φ) (ψ := ψ) (f := f)
+    (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (hψ_compact := hψ_compact) ?_
+  intro t ht
+  exact
+    (bvt_W_eq_of_tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+      (φ := φ) (ψ := ψ) (t := t)
+      (hL := hlimit t ht))
 
 /-- Equality of multivariate Section 4.3 quotient classes forces equality of
 the associated one-variable slice tests on `[0,\infty)`, provided the frozen

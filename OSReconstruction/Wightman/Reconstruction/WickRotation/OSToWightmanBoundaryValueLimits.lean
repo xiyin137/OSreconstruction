@@ -481,6 +481,56 @@ theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_ofRea
     tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
       (OS := OS) (lgc := lgc) f g hg_compact
 
+/-- Ambient-representative variant of the same theorem: if the chosen scalar
+`singleSplit_xiShift` trace built from positive-time preimages `f, g` agrees on
+positive real times with the reconstructed Wightman pairing against ambient
+representatives `φ, ψ`, then its `t → 0+` limit is exactly
+`bvt_W (φ.conjTensorProduct ψ)`.
+
+This is the internal-supplier form used on the corrected Section-4.3 route:
+the public theorem surface stays on the ambient representative/preimage data,
+while the one-variable holomorphic trace remains local to this file. -/
+theorem tendsto_bvt_singleSplit_xiShiftHolomorphicValue_nhdsWithin_zero_of_ofReal_eq_bvt_W_ambient_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (φ : SchwartzNPoint d n)
+    (ψ : SchwartzNPoint d m)
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (bvt_W OS lgc (n + m)
+          (φ.conjTensorProduct ψ))) := by
+  have htrace :
+      (fun t : ℝ =>
+        bvt_singleSplit_xiShiftHolomorphicValue
+          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun t : ℝ =>
+        bvt_W OS lgc (n + m)
+          (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) := by
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    exact hreal t ht
+  exact Filter.Tendsto.congr' htrace.symm <|
+    tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
+      (OS := OS) (lgc := lgc) φ ψ hψ_compact
+
 /-- On the right half-plane, a holomorphic scalar trace is determined by its
 positive-real values.
 
