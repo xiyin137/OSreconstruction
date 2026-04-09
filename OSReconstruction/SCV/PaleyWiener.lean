@@ -140,6 +140,19 @@ theorem fourier_pairing_eq_of_eqOn_nonneg
   exact sub_eq_zero.mp (by
     simpa [map_sub] using hzero)
 
+/-- One-sided Fourier-support pairings vanish on Fourier-transformed Schwartz
+tests that are identically zero on `[0, ∞)`. This is the zero-specialization of
+`fourier_pairing_eq_of_eqOn_nonneg` and is the small dual lemma used when a
+Stage-5 slice difference is known to vanish on the positive half-line. -/
+theorem fourier_pairing_vanishes_of_eqOn_nonneg
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (hT_supp : HasOneSidedFourierSupport T)
+    {φ : SchwartzMap ℝ ℂ}
+    (h_zero : Set.EqOn φ 0 (Set.Ici 0)) :
+    T (SchwartzMap.fourierTransformCLM ℂ φ) = 0 := by
+  simpa using
+    (fourier_pairing_eq_of_eqOn_nonneg (T := T) hT_supp (φ := φ) (ψ := 0) h_zero)
+
 /-! ### Upper half-plane -/
 
 /-- The upper half-plane { z in C : Im(z) > 0 }. -/
