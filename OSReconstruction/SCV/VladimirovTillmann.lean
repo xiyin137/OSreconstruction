@@ -44,16 +44,22 @@ noncomputable section
 
 /-! ### Remaining SCV axioms for the VT bridge -/
 
-/-- **Boundary values imply dual-cone Fourier support.**
+/-- **Boundary values imply dual-cone spectral support.**
 
 If `F` is holomorphic on a tube `T(C)` and has tempered distributional boundary
-values `W`, then `W` has Fourier support in the dual cone `C*`.
+values `W`, then there exists a frequency-side tempered distribution `Tflat`
+(the Fourier transform of the flattened BV) with distributional support in the
+dual cone `C*`, such that `Wflat φ = Tflat (physicsFourierFlatCLM φ)`.
 
-This is the SCV support theorem behind Vladimirov's Fourier-Laplace
-representation. The repository already proves the forward Paley-Wiener-Schwartz
-direction `T ↦ F`; this axiom supplies the converse support extraction needed
-to identify an arbitrary tube-holomorphic `F` with the Fourier-Laplace
-extension of its boundary value. -/
+This is the SCV spectral support theorem (Vladimirov Thm 25.1–25.2,
+Hörmander Thm 8.4.15). The frequency-side distribution `Tflat` is the spectral
+measure of the boundary value: the BV distribution `W` acts on test functions `φ`
+by first applying the physics Fourier transform, then pairing with `Tflat`.
+The support of `Tflat` in `C*` is the spectral condition.
+
+**Convention**: `HasFourierSupportInDualCone` checks literal distributional support
+of its argument. Here `Tflat` is already on the frequency side, so literal support
+of `Tflat` in `C*` IS the Fourier support of the boundary value `W` in `C*`. -/
 axiom bv_implies_fourier_support {n d : ℕ}
     (C : Set (Fin n → Fin (d + 1) → ℝ))
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
@@ -70,7 +76,10 @@ axiom bv_implies_fourier_support {n d : ℕ}
     let eR := flattenCLEquivReal n (d + 1)
     let Wflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
       W.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR)
-    HasFourierSupportInDualCone (eR '' C) Wflat
+    ∃ (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      HasFourierSupportInDualCone (eR '' C) Tflat ∧
+      ∀ (φ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ),
+        Wflat φ = Tflat (physicsFourierFlatCLM φ)
 
 /-- **Tube-holomorphic uniqueness from common boundary values.**
 
@@ -108,19 +117,22 @@ axiom tube_holomorphic_unique_from_bv {n d : ℕ}
 /-- **Fourier-Laplace representation theorem.**
 
 If `F` is holomorphic on a tube `T(C)` in the Pi type (`Fin n → Fin (d+1) → ℂ`)
-with tempered distributional boundary values `W`, and the flattened distribution
-`Wflat` has Fourier support in the dual cone (as delivered by
-`bv_implies_fourier_support`), then `F` equals the Fourier-Laplace extension
-of `Wflat` on the tube, after flattening.
+with tempered distributional boundary values `W`, and the frequency-side
+distribution `Tflat` (the Fourier transform of the flattened BV, as delivered by
+`bv_implies_fourier_support`) has distributional support in the dual cone, then
+`F` equals the Fourier-Laplace extension of `Tflat` on the tube, after flattening.
 
 This is the main content of Vladimirov's Theorem 25.5: a tube-holomorphic
 function with tempered BV is uniquely representable as the FL integral of its
-spectrally supported boundary distribution. The proof combines:
+spectral distribution. The Fourier-Laplace extension `z ↦ Tflat(ψ_z)` is built
+from the frequency-side distribution `Tflat`, NOT the space-side BV `W`.
+
+The proof combines:
 1. The SCV uniqueness theorem (two tube-holomorphic functions with the same
    distributional BV agree on the tube)
-2. The BV matching: the FL extension of `Wflat` has the same distributional
-   boundary values as the flattened `F`, up to the Fourier-transform
-   convention absorbed into `bv_implies_fourier_support`'s output -/
+2. The BV matching: the FL extension of `Tflat` has distributional BV equal to
+   `Tflat ∘ physicsFourierFlatCLM` (proved in PW), which equals `Wflat` by the
+   relation from `bv_implies_fourier_support` -/
 axiom fl_representation_from_bv {n d : ℕ}
     (C : Set (Fin n → Fin (d + 1) → ℝ))
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
@@ -138,13 +150,16 @@ axiom fl_representation_from_bv {n d : ℕ}
     (hCflat_eq : Cflat = flattenCLEquivReal n (d + 1) '' C)
     (hCflat_open : IsOpen Cflat) (hCflat_conv : Convex ℝ Cflat)
     (hCflat_cone : IsCone Cflat) (hCflat_salient : IsSalientCone Cflat)
-    (Wflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
-    (hWflat_eq : Wflat = W.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
-      (flattenCLEquivReal n (d + 1))))
-    (hWflat_support : HasFourierSupportInDualCone Cflat Wflat) :
+    -- Tflat is the frequency-side spectral distribution (Fourier transform of the BV)
+    (Tflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_support : HasFourierSupportInDualCone Cflat Tflat)
+    -- Tflat is the Fourier transform of the flattened BV
+    (hTflat_eq : ∀ (φ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ),
+      W.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (flattenCLEquivReal n (d + 1))) φ = Tflat (physicsFourierFlatCLM φ)) :
     ∀ z ∈ TubeDomainSetPi C,
       F z = fourierLaplaceExtMultiDim Cflat hCflat_open hCflat_conv hCflat_cone
-        hCflat_salient Wflat (flattenCLEquiv n (d + 1) z)
+        hCflat_salient Tflat (flattenCLEquiv n (d + 1) z)
 
 /-! ### The Vladimirov-Tillmann theorem -/
 
@@ -169,9 +184,10 @@ axiom fl_representation_from_bv {n d : ℕ}
     singularity near ∂C (where dist → 0). -/
 -- Vladimirov-Tillmann: BV → growth.
 -- Proof route:
--- 1. bv_implies_fourier_support: F holo + BV W → Wflat has Fourier support in C*
--- 2. fl_representation_from_bv: F = FL(Wflat) on the tube (Vladimirov Thm 25.5)
--- 3. fourierLaplaceExtMultiDim_vladimirov_growth: |FL(Wflat)(z)| ≤ Vladimirov bound
+-- 1. bv_implies_fourier_support: F holo + BV W → ∃ Tflat with support in C*,
+--    Wflat φ = Tflat(FT_phys(φ))
+-- 2. fl_representation_from_bv: F = FL(Tflat) on the tube (Vladimirov Thm 25.5)
+-- 3. fourierLaplaceExtMultiDim_vladimirov_growth: |FL(Tflat)(z)| ≤ Vladimirov bound
 -- 4. Transport growth bound from flat coordinates back to Pi type
 -- Steps 1 and 2 are axioms (pure SCV, not yet formalized).
 -- Step 3 is fully proved in PaleyWienerSchwartz.lean.
@@ -224,19 +240,20 @@ theorem vladimirov_tillmann {n d : ℕ}
     subst h_neg
     -- Now y' ∈ closure C and -y' ∈ closure C, so y' = 0 by salientness
     exact show eR y' = 0 from by rw [hC_salient y' hy' hy'', map_zero]
-  -- Step 2: Apply bv_implies_fourier_support to get Fourier support
-  have hWflat_support : HasFourierSupportInDualCone Cflat Wflat :=
+  -- Step 2: Apply bv_implies_fourier_support to get frequency-side Tflat
+  obtain ⟨Tflat, hTflat_support, hTflat_eq⟩ :=
     bv_implies_fourier_support C hC_open hC_conv hC_cone hC_salient F hF_holo W hF_bv
-  -- Step 3: Apply fl_representation_from_bv to get F = FL(Wflat) on the tube
+  -- Step 3: Apply fl_representation_from_bv to get F = FL(Tflat) on the tube
   have hFL_repr : ∀ z ∈ TubeDomainSetPi C,
       F z = fourierLaplaceExtMultiDim Cflat hCflat_open hCflat_conv hCflat_cone
-        hCflat_salient Wflat (e z) :=
+        hCflat_salient Tflat (e z) :=
     fl_representation_from_bv C hC_open hC_conv hC_cone hC_salient F hF_holo W hF_bv
-      Cflat rfl hCflat_open hCflat_conv hCflat_cone hCflat_salient Wflat rfl hWflat_support
+      Cflat rfl hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      Tflat hTflat_support hTflat_eq
   -- Step 4: Get the growth bound on the FL extension (proved in PaleyWienerSchwartz)
   obtain ⟨C_bd_flat, N_flat, M_flat, hC_bd_pos, hFL_growth⟩ :=
     fourierLaplaceExtMultiDim_vladimirov_growth Cflat hCflat_open hCflat_conv
-      hCflat_cone hCflat_salient Wflat hWflat_support
+      hCflat_cone hCflat_salient Tflat hTflat_support
   -- Step 5: Transport infrastructure between Pi and flat coordinates
   -- Norm preservation for complex flatten
   have hflatten_norm : ∀ (z : Fin n → Fin (d + 1) → ℂ), ‖e z‖ = ‖z‖ := by
