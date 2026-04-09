@@ -42,7 +42,83 @@ noncomputable section
 
 -- IsCone, IsSalientCone, TubeDomainSetPi are now in ConeDefs.lean
 
-/-! ### Remaining SCV axioms for the VT bridge -/
+/-! ### Remaining SCV axioms for the VT bridge
+
+The VT theorem is proved from 4 bridge axioms (3 in this file + 1 in SchwartzFubini).
+Below is an informal explanation of each, aimed at a mathematician reviewing
+the axiom statements for correctness.
+
+#### Axiom 1: `bv_implies_fourier_support` (spectral support)
+
+**Plain English**: If F is holomorphic on a tube T(C) and has tempered distributional
+boundary values W, then the Fourier transform of W is supported in the dual cone C*.
+
+**Mathematics**: Given F holomorphic on T(C) = {z : Im(z) ∈ C} with boundary value
+W ∈ S'(ℝᵐ) defined by ∫ F(x+iεη) φ(x) dx → W(φ), there exists a tempered
+distribution T̂ (called `Tflat` in the code) such that:
+  (a) supp(T̂) ⊆ C* = {ξ : ξ·y ≥ 0 for all y ∈ C}
+  (b) W(φ) = T̂(FT_phys(φ)) for all φ ∈ S(ℝᵐ)
+where FT_phys(φ)(ξ) = ∫ exp(ix·ξ) φ(x) dx is the physics Fourier transform.
+The distribution T̂ is on the frequency side (momentum space); `HasFourierSupportInDualCone`
+checks its literal distributional support, which IS the Fourier support of W.
+
+**Reference**: Vladimirov, "Methods of Generalized Functions", Theorems 25.1–25.2.
+The proof uses the Poisson integral of the tube to extract spectral support from the
+holomorphic extension, without assuming polynomial growth a priori.
+
+#### Axiom 2: `tube_holomorphic_unique_from_bv` (uniqueness)
+
+**Plain English**: Two holomorphic functions on the same tube with the same tempered
+distributional boundary values are equal on the entire tube.
+
+**Mathematics**: If F, G : T(C) → ℂ are both holomorphic, and for every direction
+η ∈ C and test function φ ∈ S, the smeared slices ∫ F(x+iεη) φ(x) dx and
+∫ G(x+iεη) φ(x) dx converge to the same limit W(φ) as ε → 0⁺, then F = G on T(C).
+
+This is an immediate consequence of the edge-of-the-wedge theorem: the difference
+H = F − G is holomorphic on T(C) with zero distributional boundary values.
+By the edge-of-the-wedge theorem, H extends holomorphically across the boundary
+and vanishes there, hence vanishes identically by analytic continuation.
+
+**Reference**: Vladimirov §25; Streater-Wightman, Theorem 2-16 (edge of the wedge).
+
+#### Axiom 3: `fl_representation_from_bv` (Fourier-Laplace representation)
+
+**Plain English**: A tube-holomorphic function with tempered BV equals the
+Fourier-Laplace extension of the spectral distribution T̂ from Axiom 1.
+
+**Mathematics**: Given all the hypotheses of Axiom 1 plus the spectral distribution
+T̂ with supp(T̂) ⊆ C* and W(φ) = T̂(FT_phys(φ)), define the FL extension
+G(z) = T̂(ψ_z) where ψ_z(ξ) = χ(ξ) exp(iz·ξ) is a cutoff exponential in S(ℝᵐ).
+Then F(z) = G(z) for all z ∈ T(C).
+
+The proof route: G is holomorphic on T(C) (proved in PaleyWienerSchwartz.lean).
+Its distributional BV is T̂ ∘ FT_phys = W (from `fourierLaplaceExtMultiDim_boundaryValue`,
+proved in PW). So F and G have the same BV on T(C). By Axiom 2 (uniqueness), F = G.
+
+**Reference**: Vladimirov, Theorem 25.5. This is the representation theorem:
+every tube-holomorphic function with tempered BV is the Fourier-Laplace integral
+of a dual-cone-supported tempered distribution.
+
+#### Axiom 4: `schwartz_clm_fubini_exchange` (in SchwartzFubini.lean)
+
+**Plain English**: A continuous linear functional on Schwartz space commutes with
+parameter integrals of Schwartz-valued families.
+
+**Mathematics**: Given T : S(ℝᵐ) →L ℂ, a continuous Schwartz-valued family
+g : ℝᵐ → S(ℝᵐ) with polynomial seminorm growth, and f ∈ S(ℝᵐ), there exists
+Φ ∈ S(ℝᵐ) such that:
+  (a) Φ(ξ) = ∫ g(x)(ξ) · f(x) dx  (pointwise definition of the Schwartz integral)
+  (b) T(Φ) = ∫ T(g(x)) · f(x) dx  (exchange of T with the integral)
+
+Part (a) says the Bochner integral ∫ g(x) f(x) dx converges in S(ℝᵐ) (the polynomial
+seminorm growth of g times the rapid decay of f gives convergent Schwartz seminorms).
+Part (b) is T continuous ⟹ T(∫ ⋯) = ∫ T(⋯), the standard CLM exchange.
+
+**Reference**: Hörmander, "Analysis of Linear PDOs I", Ch. 5; Reed-Simon I, §V.3.
+The formal proof needs Schwartz-valued Bochner integration, which is not in Mathlib.
+
+-/
 
 /-- **Boundary values imply dual-cone spectral support.**
 
