@@ -1639,6 +1639,23 @@ Implementation note:
   one-variable theorem `SCV.paley_wiener_one_step` (and ultimately
   `SCV.paley_wiener_half_line`), not by inventing a new many-variable
   continuation principle;
+- but `SCV.paley_wiener_half_line` naturally produces the ambient witness on
+  `SCV.upperHalfPlane`, since it is a Fourier/Laplace continuation theorem for
+  a real-line tempered pairing; it does **not** directly output the final
+  right-half-plane witness used by the semigroup-side `singleSplit` formulas;
+- so the honest implementation order is:
+  1. build the ambient upper-half-plane witness from the Wightman pairing;
+  2. prove the positive-imaginary-axis shell identification;
+  3. use those axis values directly in the current kernel reduction whenever
+     possible;
+  4. only if a whole-domain comparison of witnesses is needed, use
+     `identity_theorem_upperHalfPlane` or an explicit rotation bridge to
+     compare with any right-half-plane scalar trace;
+- a tempting simplification must be rejected here: on the corrected ambient
+  theorem surface, the canonical shell
+  `xiShift(... wickRotate(y) ..., t * I)` is not pointwise a `ForwardTube`
+  evaluation for arbitrary ambient `y`, so the remaining step is not a trivial
+  interior continuity / dominated-convergence argument on the ambient shell;
 - the remaining work in Lemma 4.2 is therefore the concrete Section-4.3
   packaging of that one-variable theorem into the matrix-element shell, not
   the construction of a new Section-8 theorem family from scratch.

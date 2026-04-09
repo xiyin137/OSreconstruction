@@ -140,6 +140,19 @@ theorem fourier_pairing_eq_of_eqOn_nonneg
   exact sub_eq_zero.mp (by
     simpa [map_sub] using hzero)
 
+/-- One-sided Fourier-support pairings vanish on Fourier-transformed Schwartz
+tests that are identically zero on `[0, ∞)`. This is the zero-specialization of
+`fourier_pairing_eq_of_eqOn_nonneg` and is the small dual lemma used when a
+Stage-5 slice difference is known to vanish on the positive half-line. -/
+theorem fourier_pairing_vanishes_of_eqOn_nonneg
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (hT_supp : HasOneSidedFourierSupport T)
+    {φ : SchwartzMap ℝ ℂ}
+    (h_zero : Set.EqOn φ 0 (Set.Ici 0)) :
+    T (SchwartzMap.fourierTransformCLM ℂ φ) = 0 := by
+  simpa using
+    (fourier_pairing_eq_of_eqOn_nonneg (T := T) hT_supp (φ := φ) (ψ := 0) h_zero)
+
 /-! ### Upper half-plane -/
 
 /-- The upper half-plane { z in C : Im(z) > 0 }. -/
@@ -153,6 +166,150 @@ def HasPolynomialGrowthOnLine (f : ℝ → ℂ) : Prop :=
 /-- The upper half-plane is open. -/
 theorem upperHalfPlane_isOpen : IsOpen upperHalfPlane :=
   isOpen_lt continuous_const Complex.continuous_im
+
+private theorem im_mem_upperHalfPlane_of_mem_ball
+    {z z₀ : ℂ} (hz₀ : z₀ ∈ upperHalfPlane)
+    (hz : z ∈ Metric.ball z₀ (z₀.im / 2)) :
+    0 < z.im := by
+  have hz_norm : ‖z - z₀‖ < z₀.im / 2 := by
+    simpa [Metric.mem_ball, dist_eq_norm] using hz
+  have h_im_lower : -(‖z - z₀‖) ≤ (z - z₀).im := by
+    have habs : |(z - z₀).im| ≤ ‖z - z₀‖ := Complex.abs_im_le_norm (z - z₀)
+    exact (abs_le.mp habs).1
+  have hdelta : -(z₀.im / 2) < (z - z₀).im := by
+    linarith
+  have hz_eq : z.im = z₀.im + (z - z₀).im := by
+    have : z = z₀ + (z - z₀) := by ring
+    exact congrArg Complex.im this
+  have hz₀_im : 0 < z₀.im := hz₀
+  linarith
+
+private theorem fourierKernel_hasDerivAt
+    (ξ : ℝ) (z : ℂ) :
+    HasDerivAt
+      (fun w : ℂ => Complex.exp (-2 * Real.pi * Complex.I * w * (ξ : ℂ)))
+      (((-2 * Real.pi * Complex.I * (ξ : ℂ)) *
+          Complex.exp (-2 * Real.pi * Complex.I * z * (ξ : ℂ)))) z := by
+  have hlin :
+      HasDerivAt
+        (fun w : ℂ => -2 * Real.pi * Complex.I * w * (ξ : ℂ))
+        (-2 * Real.pi * Complex.I * (ξ : ℂ)) z := by
+    simpa [mul_assoc, mul_left_comm, mul_comm] using
+      (((hasDerivAt_id z).const_mul (-2 * Real.pi * Complex.I)).mul_const (ξ : ℂ))
+  simpa [mul_assoc, mul_left_comm, mul_comm] using
+    (Complex.hasDerivAt_exp (-2 * Real.pi * Complex.I * z * (ξ : ℂ))).comp z hlin
+
+private theorem fourierKernelDeriv_norm_le_weighted
+    (φ : SchwartzMap ℝ ℂ)
+    (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0)
+    {z z₀ : ℂ} (hz₀ : z₀ ∈ upperHalfPlane)
+    (hz : z ∈ Metric.ball z₀ (z₀.im / 2))
+    (ξ : ℝ) :
+    ‖(((-2 * Real.pi * Complex.I * (ξ : ℂ)) *
+          Complex.exp (-2 * Real.pi * Complex.I * z * (ξ : ℂ))) * φ ξ)‖
+      ≤ (2 * Real.pi) * (‖ξ‖ * ‖φ ξ‖) := by
+  by_cases hξ : (φ : ℝ → ℂ) ξ = 0
+  · simp [hξ]
+  · have hξ_neg : ξ < 0 := hφ ξ hξ
+    have hz_im : 0 < z.im := im_mem_upperHalfPlane_of_mem_ball hz₀ hz
+    have hre : (-2 * Real.pi * Complex.I * z * (ξ : ℂ)).re = 2 * Real.pi * z.im * ξ := by
+      simp [Complex.mul_re, Complex.mul_im, mul_left_comm, mul_comm, sub_eq_add_neg]
+    have hexp : Real.exp (2 * Real.pi * z.im * ξ) ≤ 1 := by
+      have hmul_nonneg : 0 ≤ 2 * Real.pi * z.im := by positivity
+      have hle : 2 * Real.pi * z.im * ξ ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hmul_nonneg hξ_neg.le
+      exact Real.exp_le_one_iff.mpr hle
+    rw [norm_mul, norm_mul, Complex.norm_exp, hre]
+    calc
+      ‖-2 * ↑Real.pi * Complex.I * ↑ξ‖ * Real.exp (2 * Real.pi * z.im * ξ) * ‖φ ξ‖
+          ≤ ‖-2 * ↑Real.pi * Complex.I * ↑ξ‖ * 1 * ‖φ ξ‖ := by
+            gcongr
+      _ = (2 * Real.pi * ‖ξ‖) * ‖φ ξ‖ := by
+            rw [Complex.norm_mul, Complex.norm_mul, Complex.norm_real, Complex.norm_I]
+            simp [Real.norm_eq_abs, abs_of_nonneg Real.pi_pos.le, abs_of_nonpos hξ_neg.le,
+              mul_assoc, mul_left_comm, mul_comm]
+      _ = (2 * Real.pi) * (‖ξ‖ * ‖φ ξ‖) := by ring
+
+/-- If a Schwartz test is supported in the negative half-line, then its Fourier
+transform kernel admits a holomorphic extension to the upper half-plane. This
+is the first honest analytic ingredient for the reverse Paley-Wiener /
+one-sided-spectral-support route. -/
+theorem fourierTransform_negSupport_holomorphic_UHP
+    (φ : SchwartzMap ℝ ℂ)
+    (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) :
+    DifferentiableOn ℂ
+      (fun z : ℂ => ∫ ξ : ℝ, Complex.exp (-2 * Real.pi * I * z * ξ) * φ ξ)
+      upperHalfPlane := by
+  intro z₀ hz₀
+  let F : ℂ → ℝ → ℂ :=
+    fun z ξ => Complex.exp (-2 * Real.pi * Complex.I * z * (ξ : ℂ)) * φ ξ
+  let F' : ℂ → ℝ → ℂ :=
+    fun z ξ =>
+      (((-2 * Real.pi * Complex.I * (ξ : ℂ)) *
+          Complex.exp (-2 * Real.pi * Complex.I * z * (ξ : ℂ))) * φ ξ)
+  let bound : ℝ → ℝ := fun ξ => (2 * Real.pi) * (‖ξ‖ * ‖φ ξ‖)
+  have hz₀_im : 0 < z₀.im := hz₀
+  have hs_ball : Metric.ball z₀ (z₀.im / 2) ∈ nhds z₀ := Metric.ball_mem_nhds z₀ (half_pos hz₀_im)
+  have hinner_cont : ∀ z : ℂ, Continuous (fun ξ : ℝ => -2 * Real.pi * Complex.I * z * (ξ : ℂ)) := by
+    intro z
+    simpa [mul_assoc, mul_left_comm, mul_comm] using
+      (Complex.continuous_ofReal.const_mul ((-2 * Real.pi * Complex.I * z) : ℂ))
+  have hkernel_meas : ∀ z : ℂ, MeasureTheory.AEStronglyMeasurable (F z) := by
+    intro z
+    exact ((Complex.continuous_exp.comp (hinner_cont z)).mul φ.continuous).aestronglyMeasurable
+  have hkernelDeriv_meas : MeasureTheory.AEStronglyMeasurable (F' z₀) := by
+    have hlin_cont : Continuous (fun ξ : ℝ => -2 * Real.pi * Complex.I * (ξ : ℂ)) := by
+      simpa [mul_assoc, mul_left_comm, mul_comm] using
+        (Complex.continuous_ofReal.const_mul ((-2 * Real.pi * Complex.I) : ℂ))
+    exact ((hlin_cont.mul (Complex.continuous_exp.comp (hinner_cont z₀))).mul
+      φ.continuous).aestronglyMeasurable
+  have hF_int : MeasureTheory.Integrable (F z₀) := by
+    refine MeasureTheory.Integrable.mono'
+      ((SchwartzMap.integrable (μ := MeasureTheory.volume) φ).norm)
+      (hkernel_meas z₀)
+      ?_
+    filter_upwards with ξ
+    rcases eq_or_ne ((φ : ℝ → ℂ) ξ) 0 with hξ | hξ
+    · simp [F, hξ]
+    · have hξ_neg : ξ < 0 := hφ ξ hξ
+      calc
+        ‖F z₀ ξ‖
+            = Real.exp (2 * Real.pi * z₀.im * ξ) * ‖φ ξ‖ := by
+                simp [F, Complex.norm_exp, mul_comm, mul_left_comm]
+        _ ≤ 1 * ‖φ ξ‖ := by
+              have hexp : Real.exp (2 * Real.pi * z₀.im * ξ) ≤ 1 := by
+                have hle : 2 * Real.pi * z₀.im * ξ ≤ 0 := by
+                  have hnonneg : 0 ≤ 2 * Real.pi * z₀.im := by positivity
+                  exact mul_nonpos_of_nonneg_of_nonpos hnonneg hξ_neg.le
+                exact Real.exp_le_one_iff.mpr hle
+              gcongr
+        _ = ‖φ ξ‖ := by ring
+  have hderiv_ev :
+      ∀ᵐ ξ : ℝ ∂MeasureTheory.volume,
+        ∀ z ∈ Metric.ball z₀ (z₀.im / 2),
+          HasDerivAt (fun z => F z ξ) (F' z ξ) z := by
+    filter_upwards with ξ z hz
+    simpa [F, F', mul_assoc, mul_left_comm, mul_comm] using
+      ((fourierKernel_hasDerivAt ξ z).mul_const (φ ξ))
+  have hbound_int : MeasureTheory.Integrable bound := by
+    convert ((SchwartzMap.integrable_pow_mul MeasureTheory.volume φ 1).const_mul (2 * Real.pi)) using 1
+    ext ξ
+    simp [bound, pow_one, mul_assoc, mul_left_comm, mul_comm]
+  have h :
+      HasDerivAt (fun z => ∫ ξ, F z ξ) (∫ ξ, F' z₀ ξ) z₀ := by
+    exact
+      (hasDerivAt_integral_of_dominated_loc_of_deriv_le
+        (F := F) (F' := F') (x₀ := z₀) (s := Metric.ball z₀ (z₀.im / 2))
+        (bound := bound)
+        hs_ball
+        (Filter.Eventually.of_forall hkernel_meas)
+        hF_int
+        hkernelDeriv_meas
+        (Filter.Eventually.of_forall fun ξ z hz =>
+          fourierKernelDeriv_norm_le_weighted φ hφ hz₀ hz ξ)
+        hbound_int
+        hderiv_ev).2
+  exact h.differentiableAt.differentiableWithinAt
+
 
 /-! ### Finite Schwartz-seminorm control of tempered functionals -/
 
