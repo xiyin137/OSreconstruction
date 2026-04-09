@@ -94,7 +94,8 @@ omit [NeZero d] in
     (ξ : NPointSpacetime d n) (k : Fin n) (μ : Fin (d + 1)) :
     diffVarSection d n ξ k.succ μ =
       diffVarSection d n ξ k.castSucc μ + ξ k μ := by
-  dsimp [diffVarSection]
+  change (∑ j : Fin (k.val + 1), ξ ⟨j.val, by omega⟩ μ) =
+    (∑ j : Fin k.val, ξ ⟨j.val, by omega⟩ μ) + ξ k μ
   rw [Fin.sum_univ_castSucc]
   simp [Fin.val_castSucc, Fin.val_last]
 
@@ -621,7 +622,8 @@ lemma complexDiffVarSection_succ (n : ℕ) (ζ : Fin n → Fin (d + 1) → ℂ)
     (k : Fin n) (μ : Fin (d + 1)) :
     complexDiffVarSection d n ζ k.succ μ =
       complexDiffVarSection d n ζ k.castSucc μ + ζ k μ := by
-  dsimp [complexDiffVarSection]
+  change (∑ j : Fin (k.val + 1), ζ ⟨j.val, by omega⟩ μ) =
+    (∑ j : Fin k.val, ζ ⟨j.val, by omega⟩ μ) + ζ k μ
   rw [Fin.sum_univ_castSucc]
   simp [Fin.val_castSucc, Fin.val_last]
 
