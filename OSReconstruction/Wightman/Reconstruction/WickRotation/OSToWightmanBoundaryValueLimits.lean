@@ -414,6 +414,62 @@ theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension
       (d := d) OS lgc f g)
     h_spectral
 
+/-- Honest Stage-5 spectral reduction for the ambient witness route: if an
+upper-half-plane trace `H` has the reconstructed Wightman time-shift pairing as
+its boundary value, and if the positive-height pairings against Fourier
+transforms of negative-support tests already vanish, then the ambient
+Paley-Wiener witness exists.
+
+This is not a new route or a fake shortcut. It simply packages the exact way
+the newly-landed reverse-Paley-Wiener reduction theorem feeds the existing
+ambient witness existence theorem. The remaining live content is therefore the
+shell-specific vanishing hypothesis `hzero`, not another abstract support
+statement. -/
+theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_boundaryValue_of_paired_zero
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (H : ℂ → ℂ)
+    (hH_bv :
+      ∀ χ : SchwartzMap ℝ ℂ,
+        Filter.Tendsto
+          (fun η : ℝ => ∫ x : ℝ, H (↑x + ↑η * Complex.I) * χ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (∫ t : ℝ,
+              bvt_W OS lgc (n + m)
+                (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t)))
+    (hzero :
+      ∀ (χ : SchwartzMap ℝ ℂ),
+        (∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0) →
+        ∀ η : ℝ, 0 < η →
+          ∫ x : ℝ, H (↑x + ↑η * Complex.I) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x = 0) :
+    ∃ Hw : ℂ → ℂ,
+      DifferentiableOn ℂ Hw SCV.upperHalfPlane ∧
+      (∀ η : ℝ, 0 < η →
+        SCV.HasPolynomialGrowthOnLine (fun x => Hw (↑x + ↑η * Complex.I))) ∧
+      (∀ χ : SchwartzMap ℝ ℂ,
+        Filter.Tendsto
+          (fun η : ℝ => ∫ x : ℝ, Hw (↑x + ↑η * Complex.I) * χ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (∫ t : ℝ,
+              bvt_W OS lgc (n + m)
+                (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t))) := by
+  refine bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension
+    (d := d) OS lgc f g hg_compact ?_
+  exact SCV.hasOneSidedFourierSupport_of_boundaryValue_of_paired_zero
+    H
+    (fun χ : SchwartzMap ℝ ℂ =>
+      ∫ t : ℝ,
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t)
+    hH_bv
+    hzero
+
 /-- Zero-translation specialization of the proved Schwinger-side `t → 0+` limit
 for the compact ordered positive-time `singleSplit_xiShift` shell.
 

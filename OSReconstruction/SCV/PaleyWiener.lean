@@ -153,6 +153,43 @@ theorem fourier_pairing_vanishes_of_eqOn_nonneg
   simpa using
     (fourier_pairing_eq_of_eqOn_nonneg (T := T) hT_supp (φ := φ) (ψ := 0) h_zero)
 
+/-- Honest reverse-Paley-Wiener reduction theorem: if a scalar functional `T`
+is the boundary value of an upper-half-plane trace `F`, and if that trace
+already annihilates Fourier transforms of negative-support Schwartz tests on
+every positive horizontal line, then `T` has one-sided Fourier support.
+
+This is the exact theorem surface needed by the current OS-route Stage-5
+spectral argument. It deliberately does not claim that upper-half-plane
+holomorphicity plus linewise polynomial growth alone already imply one-sided
+Fourier support; the real missing content is the paired contour-shift
+vanishing hypothesis `hzero`. -/
+theorem hasOneSidedFourierSupport_of_boundaryValue_of_paired_zero
+    (F : ℂ → ℂ)
+    (T : SchwartzMap ℝ ℂ → ℂ)
+    (hT_bv : ∀ φ : SchwartzMap ℝ ℂ,
+      Filter.Tendsto (fun η : ℝ => ∫ x : ℝ, F (↑x + ↑η * I) * φ x)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (T φ)))
+    (hzero :
+      ∀ (φ : SchwartzMap ℝ ℂ),
+        (∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) →
+        ∀ η : ℝ, 0 < η →
+          ∫ x : ℝ, F (↑x + ↑η * I) *
+            (SchwartzMap.fourierTransformCLM ℂ φ) x = 0) :
+    HasOneSidedFourierSupport T := by
+  intro φ hφ_neg_supp
+  have hT_val := hT_bv (SchwartzMap.fourierTransformCLM ℂ φ)
+  have htrace : (fun η : ℝ => ∫ x : ℝ,
+      F (↑x + ↑η * I) * (SchwartzMap.fourierTransformCLM ℂ φ) x)
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)] fun _ => (0 : ℂ) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    exact hzero φ hφ_neg_supp η hη
+  have hzero_limit : Filter.Tendsto (fun η : ℝ => ∫ x : ℝ,
+      F (↑x + ↑η * I) * (SchwartzMap.fourierTransformCLM ℂ φ) x)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) :=
+    Filter.Tendsto.congr' htrace.symm tendsto_const_nhds
+  exact tendsto_nhds_unique hT_val hzero_limit
+
 /-! ### Upper half-plane -/
 
 /-- The upper half-plane { z in C : Im(z) > 0 }. -/
