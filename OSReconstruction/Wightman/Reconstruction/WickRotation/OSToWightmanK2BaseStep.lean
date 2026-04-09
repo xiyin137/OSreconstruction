@@ -2474,7 +2474,8 @@ kernel against a positive-time compact Schwartz test is the same as integrating
 the pointwise Fourier-Laplace transform of that test against the measure. This
 is the exact first rewrite needed in theorem 3.
 -/
-private axiom integral_laplaceFourierKernel_mul_eq
+set_option maxHeartbeats 3000000 in
+private theorem integral_laplaceFourierKernel_mul_eq
     (μ : Measure (ℝ × (Fin d → ℝ)))
     [IsFiniteMeasure μ]
     (hsupp : μ (Set.prod (Set.Iio 0) Set.univ) = 0)
@@ -2486,8 +2487,7 @@ private axiom integral_laplaceFourierKernel_mul_eq
         ∫ ξ : SpacetimeDim d,
           Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
             Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
-            h ξ ∂volume ∂μ
-  /- Original proof below, commented out due to Mathlib 4.29 timeout:
+            h ξ ∂volume ∂μ := by
   let f : SpacetimeDim d → (ℝ × (Fin d → ℝ)) → ℂ := fun ξ p =>
     Complex.exp (-(↑(ξ 0 * p.1) : ℂ)) *
       Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
@@ -2597,7 +2597,7 @@ private axiom integral_laplaceFourierKernel_mul_eq
               (MeasureTheory.integral_mul_const (h ξ)
                 (fun p : ℝ × (Fin d → ℝ) =>
                   cexp (-(↑(ξ 0) * ↑p.1)) *
-                    cexp (Complex.I * ∑ x, ↑(p.2 x) * ↑(ξ x.succ)))).symm
+                    cexp (Complex.I * ↑(∑ x, p.2 x * ξ x.succ)))).symm
     _ = ∫ p : ℝ × (Fin d → ℝ),
           ∫ ξ : SpacetimeDim d, f ξ p ∂volume ∂μ := by
             exact MeasureTheory.integral_integral_swap (f := f) hf_int
@@ -2607,7 +2607,6 @@ private axiom integral_laplaceFourierKernel_mul_eq
               Complex.exp (Complex.I * ↑(∑ i : Fin d, p.2 i * ξ (Fin.succ i))) *
               h ξ ∂volume ∂μ := by
             simp [f]
-  -/
 
 private lemma mul_exp_neg_bound_local (c t : ℝ) (hc : 0 < c) :
     t * Real.exp (-c * t) ≤ Real.exp (-1) / c := by

@@ -25,9 +25,17 @@ later corrects that step. So the right modern reading is:
 
 The formalization should therefore treat OS I as:
 - authoritative for the semigroup construction, formulas `(4.3)`-`(4.11)`,
-  positivity transfer, cluster transfer, and the basic `R -> E` restriction;
+  the explicit test-function transform `(4.19)`-`(4.20)`, positivity transfer,
+  cluster transfer, and the basic `R -> E` restriction;
 - not authoritative for the leap from separate one-variable continuation to a
   joint many-variable Fourier-Laplace statement.
+
+But there is one crucial nuance for theorem 3: the **test-function transform**
+in Section 4.3 is explicit and one-variable in nature, whereas the
+**distribution** `\tilde W` used in `(4.24)`-`(4.28)` is imported from `(4.12)`
+and therefore from the Lemma-8.8 route. In production this dependence is
+repaired by the OS II `OSLinearGrowthCondition` route; the docs must keep that
+split explicit.
 
 ## 2. Section 2: Test Functions and Distribution Surfaces
 
@@ -260,6 +268,28 @@ This matters for Lean in two ways:
 OS I proves Wightman positivity by identifying the reconstructed Wightman
 pairing with the Hilbert-space norm obtained from the OS form.
 
+### 7.0. Production note: OS I Section 4.3 is used only through the OS II repair
+
+The current production route is **not** the literal OS I `(4.12)` route.
+
+Production's `bvt_W` is built from
+`full_analytic_continuation_with_symmetry_growth OS lgc n` in
+`OSToWightmanBoundaryValuesBase.lean`, and that construction explicitly records
+that the linear-growth condition `OSLinearGrowthCondition` is the OS II repair
+of the gap in OS I Lemma 8.8.
+
+So the later Lean implementation of Section 4.3 should keep two objects
+separate:
+
+1. the Section-4.3 **test-function transform** `f ↦ \check f` from
+   `(4.19)`-`(4.20)`, which is explicit and one-variable in character;
+2. the Wightman-side kernel `\tilde W` / `bvt_W`, which in production is
+   imported from the OS II repaired analytic-continuation route rather than
+   from the broken OS I Lemma 8.8.
+
+Whenever this audit mentions "Section 4.3" below, read it under that
+production convention.
+
 The theorem-shape lesson is subtle:
 - OS I does not prove Euclidean positivity by rewriting the OS form as a
   Minkowski pairing on the same test function.
@@ -315,16 +345,22 @@ of constructions:
 
 The logical dependency behind step 1 should be spelled out even more literally:
 
-1. Section 4.1 constructs the contraction semigroup `e^{-tH}`;
-2. Section 4.2 extracts the positive spectral measure / positive-energy support
-   statement from that semigroup;
-3. formulas `(4.19)`-`(4.20)` define the transform `f ↦ \tilde f` using that
-   already-constructed spectral representation;
-4. only after that transform exists do Lemmas 4.1 and 4.2 enter.
+1. Section 4.1 constructs the Hilbert space and the distribution `\tilde W`
+   through `(4.12)`, and in the original paper this uses Lemma 8.8;
+2. formulas `(4.19)`-`(4.20)` then define the **test-function** transform
+   `f ↦ \check f` explicitly as a Fourier-Laplace integral on positive-time
+   inputs;
+3. Lemma 4.1 studies that explicit transform on the test-function side;
+4. Lemma 4.2 and Eq. `(4.28)` combine the explicit transform with the already
+   constructed `\tilde W` kernel.
 
-So the positivity proof is not allowed to define `f ↦ \tilde f`
-independently of the semigroup/spectral package. Doing so would invert the
-paper's actual dependency order.
+So the positivity proof is not allowed to conflate:
+- the explicit test-function transform `(4.19)`-`(4.20)`, and
+- the Wightman-side kernel `\tilde W` consumed later in `(4.24)`-`(4.28)`.
+
+In the production formalization, the second object must come from the repaired
+OS II `full_analytic_continuation_with_symmetry_growth` / `OSLinearGrowthCondition`
+route rather than from the flawed OS I Lemma 8.8.
 
 Every one of those steps is mathematically necessary. If a later proof attempt
 tries to jump straight from "Wightman data" to "positive norm" without the
@@ -332,11 +368,11 @@ intermediate continuity-and-density package, it is skipping part of OS I.
 
 ### 7.2. Lemma 4.1 unpacked
 
-Lemma 4.1 is the first hidden workhorse. The map `f_n -> \tilde f_n` is not
-just an arbitrary integral transform; it is built so that:
+Lemma 4.1 is the first hidden workhorse. The map `f_n -> \check f_n` is an
+explicit Fourier-Laplace transform on test functions:
 
 - the Laplace factor forces positive-energy support,
-- the inverse transform lands in the positive-time Euclidean test space,
+- the codomain is the half-space Schwartz space `L(R_+^{4n})`,
 - and the kernel is trivial.
 
 The proof uses:
@@ -350,71 +386,89 @@ The proof uses:
 So when formalizing this map, the honest local sublemmas are:
 - continuity of the Laplace/Fourier transform on the chosen Schwartz quotient,
 - injectivity from positive-support uniqueness,
-- and density of the image.
+- and, if needed later, density only on the honest quotient-side half-space
+  carrier rather than on the current support-restricted subtype source.
 
-There is also one hidden dependency that the documentation should name
-explicitly: the transform in `(4.19)`-`(4.20)` is *defined using the spectral
-representation extracted in Section 4.2*. So the later Lean port should break
-Lemma 4.1 into the following logical chain:
+The documentation should name a different hidden dependency instead:
+- the transform in `(4.19)`-`(4.20)` is explicit on test functions,
+- but the later quadratic identity uses `\tilde W` from `(4.12)`,
+- and in the original paper `(4.12)` comes from Lemma 8.8.
 
-1. construct the positive self-adjoint generator from the contraction
-   semigroup;
-2. extract the spectral measure / positive-energy support theorem;
-3. define the Minkowski-to-Euclidean transform from that spectral data;
-4. prove continuity, injectivity, and dense range of the transform.
+So the later Lean port should break the Section-4.3 dependency chain as:
 
-Without step 2 written explicitly, a future formalization could accidentally
-make the transform primitive and thereby hide the paper's actual route.
+1. define the explicit test-function transform `(4.19)`-`(4.20)`;
+2. prove continuity and injectivity of that transform on the current
+   support-restricted positive-time source;
+3. record the honest quotient-side dense map separately, rather than asserting
+   dense range for the support-restricted source itself;
+4. import the Wightman-side kernel from the OS II repaired continuation route;
+5. combine the two through Lemma 4.2 and Eq. `(4.28)`.
 
-Implementation-level theorem-slot inventory for that dependency chain:
+Implementation-level theorem-slot inventory for that corrected chain:
 
 ```lean
-lemma positive_energy_spectral_measure_from_semigroup
-    (hsemigroup : OSContractionSemigroupPackage) :
-    ∃ μ, PositiveEnergySpectralMeasure μ := by
-  -- spectral theorem for the positive generator
+lemma section43_testFunctionTransform
+    :
+    EuclideanPositiveTimeTestSequence d → Section43PositiveEnergyTestSequence d := by
+  -- formulas `(4.19)`-`(4.20)` as an explicit Fourier-Laplace transform
 
-lemma minkowski_to_euclidean_transform_defined_from_spectral_measure
-    (μ : PositiveEnergySpectralMeasureData) :
-    MinkowskiTestSequence d → EuclideanPositiveTimeTestSequence d := by
-  -- formulas `(4.19)`-`(4.20)` as a transform defined from `μ`
+lemma section43_testFunctionTransform_continuous :
+    Continuous (section43_testFunctionTransform (d := d)) := by
+  -- continuity of the explicit transform on the chosen half-space codomain
 
-lemma transform_continuous_on_schwartz_quotient
-    (μ : PositiveEnergySpectralMeasureData) :
-    Continuous (minkowskiToEuclideanTransform μ) := by
-  -- continuity of the transform on the chosen Schwartz quotient
-
-lemma transform_injective_from_positive_support_uniqueness
-    (μ : PositiveEnergySpectralMeasureData) :
-    Function.Injective (minkowskiToEuclideanTransform μ) := by
+lemma section43_testFunctionTransform_injective
+    :
+    Function.Injective (section43_testFunctionTransform (d := d)) := by
   -- one-variable positive-support uniqueness in each time variable
 
-lemma transform_has_dense_range
-    (μ : PositiveEnergySpectralMeasureData) :
-    DenseRange (minkowskiToEuclideanTransform μ) := by
-  -- density of the image in the Euclidean positive-time test space
+lemma not_denseRange_section43_testFunctionTransform
+    :
+    ¬ DenseRange (section43_testFunctionTransform (d := d)) := by
+  -- current support-restricted subtype is too small; see production 1D obstruction
+
+lemma denseRange_section43PositiveEnergyQuotientMap
+    :
+    DenseRange (section43PositiveEnergyQuotientMap (d := d)) := by
+  -- quotient-side dense map from ambient Schwartz space
+
+lemma section43_wightmanKernel_from_os2_repair
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∃ K, CorrectedSection43Kernel d OS lgc K := by
+  -- this is where production replaces the broken OS I Lemma 8.8 route
 ```
 
 This is intentionally more detailed than the paper, because otherwise the later
-Lean implementation would still have to choose where the spectral-theorem input
-stops and the Fourier/Laplace transform package begins.
+Lean implementation would still have to choose where the explicit
+Fourier-Laplace test-function package stops and the OS-II-repaired Wightman
+kernel package begins.
 
-### 7.2.1. Why Lemma 4.1 does not depend on the flawed many-variable shortcut
+### 7.2.1. What part of Section 4.3 is one-variable, and what part is not
 
-The extracted paper text is explicit here:
+The extracted paper text is explicit about the **Lemma 4.1** part:
 
 - Lemma 4.1 reduces the claim to the map `/^J -> f_n`,
 - then says this is "an easy consequence of Lemma 8.2 and the fact that the
   Fourier transform is a homomorphism of Schwartz space onto itself."
 
-This matters because the flawed OS I many-variable jump is the later Section 8
-many-variable continuation shortcut, not this step.
+So the correct mathematical reading is split into two pieces:
 
-So the correct mathematical reading is:
-1. Lemma 4.1 uses only a one-variable positive-support Fourier/Laplace fact;
-2. it does not use the unsound many-variable analogue;
-3. therefore the density/injectivity package in Section 4.3 is safe in paper
-   logic even though Section 8 contains a later overreach.
+1. **Test-function transform (Lemma 4.1):**
+   `f ↦ \check f` uses only Lemma 8.2 (one-variable positive-support
+   Fourier/Laplace) plus the Schwartz Fourier automorphism. This step is safe
+   in OS I paper logic and does not depend on the broken Lemma 8.8.
+
+2. **Section-4.3 positivity argument as a whole (Eq. (4.28)):**
+   it consumes the Wightman distribution `\tilde W` from `(4.12)` inside
+   `(4.13)` / `(4.24)` / `(4.28)`. In OS I, `\tilde W` is built using
+   Lemma 8.8, so the Section-4.3 positivity argument transitively depends on
+   Lemma 8.8 in the original paper.
+
+3. **Production reading:**
+   the Lemma-8.8 dependency is bypassed via the OS II
+   `OSLinearGrowthCondition` repair. Production's `bvt_W` is constructed from
+   `full_analytic_continuation_with_symmetry_growth OS lgc n` in
+   `OSToWightmanBoundaryValuesBase.lean`, so the formalization is safe even
+   though the original OS I route is not.
 
 For Lean purposes, the map `f_n -> \tilde f_n` should therefore be decomposed
 into the following theorem slots:
@@ -423,8 +477,9 @@ into the following theorem slots:
    quotients;
 2. a tensor-product / iterated-variable lifting theorem that assembles the
    `n`-variable transform from repeated one-variable transforms;
-3. a density theorem saying the resulting positive-time Euclidean image is
-   dense in the target Schwartz space;
+3. the honest quotient-side dense map onto the positive-energy codomain,
+   rather than a false dense-range theorem for the support-restricted
+   positive-time transport itself;
 4. an injectivity theorem whose proof uses only one-variable positive-support
    uniqueness in each time variable.
 
@@ -441,11 +496,16 @@ Layer A. One-variable transform.
      `(4.19)`-`(4.20)`;
    - it lands in the positive-energy half-line codomain `q⁰ ≥ 0`.
 
-2. Prove its two key properties:
-   - injective / kernel-zero;
-   - dense range in the positive-energy one-variable Schwartz codomain.
+2. Prove its key honest property:
+   - injective / kernel-zero on the current support-restricted Euclidean
+     source.
 
-3. The exact analytic suppliers for this one-variable package are:
+3. Record the honest quotient-side density statement separately:
+   - the ambient-Schwartz quotient map onto the half-line codomain has dense
+     range;
+   - the support-restricted transport itself does not.
+
+4. The exact analytic suppliers for this one-variable package are:
    - `SCV.fourierLaplaceExt`,
    - `SCV.paley_wiener_half_line`,
    - the automorphism property of the Fourier transform on Schwartz space.
@@ -469,26 +529,31 @@ Layer C. Topological consequences.
    one-variable transform and the spatial Fourier automorphism;
 2. injectivity follows from the one-variable kernel-zero theorem, applied one
    time variable at a time;
-3. dense range follows by iterating the one-variable dense-range theorem.
+3. no separate dense-range theorem is needed on the support-restricted source;
+   the honest dense map is the ambient-Schwartz quotient map onto the
+   half-space codomain. For positive degree, the literal support-restricted
+   transport is in fact not dense; degree `0` is exceptional because the
+   source already equals the ambient Schwartz space there.
 
 So the honest implementation theorem package is:
 
 ```lean
 lemma section43_oneVar_transform
-    : EuclideanPositiveTimeTest1D →L[ℂ] SchwartzMap ℝ ℂ := by
+    : EuclideanPositiveTimeTest1D →L[ℂ] Section43PositiveEnergy1D := by
   ...
 
 lemma section43_oneVar_transform_injective :
     Function.Injective section43_oneVar_transform := by
   ...
 
-lemma section43_oneVar_transform_denseRange :
-    DenseRange section43_oneVar_transform := by
+lemma denseRange_section43PositiveEnergyQuotientMap1D :
+    DenseRange section43PositiveEnergyQuotientMap1D := by
   ...
 
 lemma section43_component_transform
     (n : ℕ) :
-    EuclideanPositiveTimeComponent d n →L[ℂ] SchwartzNPoint d n := by
+    EuclideanPositiveTimeComponent d n →L[ℂ]
+      Section43PositiveEnergyComponent d n := by
   ...
 
 lemma section43_component_transform_injective
@@ -496,15 +561,50 @@ lemma section43_component_transform_injective
     Function.Injective (section43_component_transform (d := d) n) := by
   ...
 
-lemma section43_component_transform_denseRange
+lemma denseRange_section43PositiveEnergyQuotientMap
     (n : ℕ) :
-    DenseRange (section43_component_transform (d := d) n) := by
+    DenseRange (section43PositiveEnergyQuotientMap (d := d) n) := by
+  ...
+
+/-- Stage-5 prerequisite: multivariate quotient descent from the abstract
+Section-4.3 transform to the concrete iterated Fourier-Laplace formula. -/
+lemma section43_iteratedSlice_descendedPairing
+    (n : ℕ) :
+    ... := by
+  ...
+
+Exact current-code milestone:
+- the full slice-descent theorem is now formalized as
+  `section43_iteratedSlice_descendedPairing`;
+- the older theorem `section43_iteratedSlice_descendedPairing_imagAxis`
+  remains as the first explicit one-variable fragment inside that proof;
+- the next exact analytic blocker is the concrete Section-4.3 adapter
+  `lemma42_matrix_element_time_interchange`;
+- the kernel-level theorem `bvt_W_matrixElement_onImage` is the immediate
+  consumer of that adapter, not the direct successor of slice descent.
+
+/-- Concrete Section-4.3 version of the Lemma-4.2 interchange step. This is
+the first theorem after slice descent that still contains new analytic
+content. -/
+lemma lemma42_matrix_element_time_interchange
+    (n : ℕ) :
+    ... := by
+  ...
+
+/-- Stage-5 prerequisite: the OS-II `bvt_W` kernel on transformed-image inputs,
+written in the same iterated coordinates as the previous lemma. -/
+lemma bvt_W_matrixElement_onImage
+    (n : ℕ) :
+    ... := by
   ...
 ```
 
 This transcript matters because it tells the later implementation exactly where
 the real analytic work belongs: in the one-variable transform, not in a fake
-many-variable theorem.
+many-variable theorem. It also makes explicit the final hidden bridge that the
+blueprint previously left implicit: Eq. `(4.28)` is not reached directly from
+injectivity/well-definedness alone, but through these two transformed-image
+pairing lemmas.
 
 ### 7.3. Lemma 4.2 unpacked
 
@@ -536,6 +636,13 @@ The paper text after `(4.24)` is explicit:
 - the spatial-variable interchange is justified by the ordinary definition of
   Fourier transform of a tempered distribution;
 - the time-variable interchange `ζ⁰ <-> q⁰` is justified by Lemma 8.4.
+
+**Paper citation:** OS I p. 96, immediately after `(4.23)`:
+
+> "Interchanging the order of integration in (4.23) we obtain (4.24) ... For
+> the space components ξ_k^{1,2,3} and q_k^{1,2,3} the change in the order of
+> integration is justified by the definition of the Fourier transform of a
+> distribution. For the time components ξ_k^0 and q_k^0 we refer to Lemma 8.4."
 
 So the hidden theorem used in Lemma 4.2 is not a generic "swap some
 integrals" statement. It is a one-variable positive-support
@@ -614,8 +721,8 @@ substeps:
    vector from Section 4.1;
 5. prove preimage-independence using the injective half of Lemma 4.1;
 6. expand the Wightman quadratic form degreewise;
-7. rewrite each degreewise term by the Section-4.2 spectral measure together
-   with the Lemma-4.2 Fourier/Laplace interchange;
+7. rewrite each degreewise term by the corrected OS-II-backed Wightman kernel
+   together with the Lemma-4.2 Fourier/Laplace interchange;
 8. recognize the resulting sum as the Hilbert norm square of the transported
    vector.
 
@@ -1121,6 +1228,11 @@ It is:
 - keep the one-variable Fourier-Laplace machinery,
 - replace only the unjustified many-variable upgrade.
 
+But another nuance must stay explicit: OS I Section 4.3 uses `\tilde W` from
+Eq. `(4.12)`, so in the original paper its positivity proof is not independent
+of Lemma 8.8. The modern project route is safe only because production replaces
+that dependence by the OS II repaired analytic-continuation package.
+
 This distinction is exactly what OS II does, and the Lean documentation should
 keep that distinction visible.
 
@@ -1521,6 +1633,16 @@ This theorem is not optional documentation frosting. Without naming it
 explicitly, the later Lean port of OS I positivity would still hide the only
 genuinely analytic step in Lemma 4.2.
 
+Implementation note:
+
+- in the current repo, this slot should be supplied through the already-built
+  one-variable theorem `SCV.paley_wiener_one_step` (and ultimately
+  `SCV.paley_wiener_half_line`), not by inventing a new many-variable
+  continuation principle;
+- the remaining work in Lemma 4.2 is therefore the concrete Section-4.3
+  packaging of that one-variable theorem into the matrix-element shell, not
+  the construction of a new Section-8 theorem family from scratch.
+
 The later Lean port should also keep a still more local theorem-slot name in
 reserve, because OS I Lemma 4.2 does not use a fully abstract positive-support
 theorem in isolation. It uses that theorem in the concrete matrix-element
@@ -1531,11 +1653,14 @@ be recorded as:
 /-- Concrete Section 4.3 version of the Lemma 4.2 interchange step. -/
 theorem lemma42_matrix_element_time_interchange
     (W : WightmanDifferenceData d)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
     (f_left : PositiveEnergyWightmanTest n)
-    (f_right : PositiveEnergyWightmanTest m) :
-    section43_pairing_before_time_interchange W f_left f_right
+    (f_right : PositiveEnergyWightmanTest m)
+    (hφ : quotientClass φ = section43_transform f_left)
+    (hψ : quotientClass ψ = section43_transform f_right) :
+    section43_pairing_before_time_interchange W φ ψ f_left f_right
       =
-    section43_pairing_after_time_interchange W f_left f_right := by
+    section43_pairing_after_time_interchange W φ ψ f_left f_right := by
   -- reduce both sides to the one-variable positive-support theorem,
   -- then discharge the spatial Fourier bookkeeping separately
 ```
@@ -1546,6 +1671,12 @@ The point of naming both theorem slots is:
    analytic theorem;
 2. `lemma42_matrix_element_time_interchange` is the exact Section 4.3 adapter
    that the positivity proof will actually call.
+3. the purely configuration-space shell inside that adapter is already
+   formalized by `conjTensorProduct_timeShift_eq_tailTimeShift` and
+   `simpleTensor_timeShift_integral_eq_xiShift_conj` in
+   [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean), so the
+   remaining live gap is the genuine time-variable interchange /
+   boundary-value step rather than another shell-rewrite subproblem.
 
 Without the second name, a future implementation would still have to rediscover
 how the abstract one-variable theorem plugs into the concrete OS I formula

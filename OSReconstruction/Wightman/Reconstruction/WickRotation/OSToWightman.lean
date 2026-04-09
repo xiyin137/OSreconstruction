@@ -844,6 +844,49 @@ private theorem osConjTensorProduct_timeShift_eq_tailTimeShift {n m : ℕ}
     (osConjTensorProduct_tailTimeShift_eq_timeShift
       (d := d) (f := f) (g := g) (hm := hm) (t := -t) (x := x)).symm
 
+/-- Wightman-side analogue of `osConjTensorProduct_timeShift_eq_tailTimeShift`:
+the right-factor positive time shift can be moved from the test function to the
+configuration by the same tail block translation. This is the exact
+configuration-space bookkeeping later used in the transformed-image matrix
+element comparison. -/
+private theorem conjTensorProduct_timeShift_eq_tailTimeShift {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (hm : 0 < m) (t : ℝ)
+    (x : NPointDomain d (n + m)) :
+    (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) x =
+      (f.conjTensorProduct g)
+        (tailTimeShiftConfig (d := d) ⟨n, by omega⟩ (-t) x) := by
+  let y : NPointDomain d (n + m) :=
+    tailTimeShiftConfig (d := d) ⟨n, by omega⟩ (-t) x
+  have hsplitFirst : splitFirst n m y = splitFirst n m x := by
+    ext i μ
+    have hi : ¬ n ≤ (Fin.castAdd m i).val := by
+      simpa using (not_le_of_gt i.isLt)
+    change (if n ≤ (Fin.castAdd m i).val then
+        x (Fin.castAdd m i) + timeShiftVec d (-t) else
+        x (Fin.castAdd m i)) μ = x (Fin.castAdd m i) μ
+    rw [if_neg hi]
+  have hsplitLast :
+      splitLast n m y = fun i => x (Fin.natAdd n i) + timeShiftVec d (-t) := by
+    ext i μ
+    have hi : n ≤ (Fin.natAdd n i).val := by
+      simp [Fin.natAdd]
+    change (if n ≤ (Fin.natAdd n i).val then
+        x (Fin.natAdd n i) + timeShiftVec d (-t) else
+        x (Fin.natAdd n i)) μ =
+      (x (Fin.natAdd n i) + timeShiftVec d (-t)) μ
+    rw [if_pos hi]
+  have hshift :
+      (fun i => splitLast n m x i - timeShiftVec d t) =
+        fun i => x (Fin.natAdd n i) + timeShiftVec d (-t) := by
+    ext i μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [splitLast, timeShiftVec]
+      ring
+    · simp [splitLast, timeShiftVec, hμ]
+  simp only [SchwartzMap.conjTensorProduct_apply, timeShiftSchwartzNPoint_apply]
+  rw [hsplitFirst, hsplitLast, hshift]
+
 /-- Tail translation of the right block preserves Lebesgue measure on configuration
 space. This is the change-of-variables ingredient for converting the sign-correct
 flat-update slice picture back to the Euclidean integral. -/
@@ -1147,10 +1190,89 @@ theorem simpleTensor_timeShift_integral_eq_xiShift {n m : ℕ}
     _ = ∫ y : NPointDomain d (n + m),
           Ψ (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
             (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
-            (f.osConjTensorProduct g) y := by
+          (f.osConjTensorProduct g) y := by
         refine MeasureTheory.integral_congr_ae ?_
         filter_upwards with y
         simp [mul_comm]
+
+/-- Wightman-side analogue of `simpleTensor_timeShift_integral_eq_xiShift`:
+moving the positive time shift from the right tensor factor to the Euclidean
+configuration produces the same `ξ`-shift shell, but now against the Borchers
+`conjTensorProduct`. This is the spatial bookkeeping input for the later
+Section-4.3 / Lemma-4.2 matrix-element adapter. -/
+theorem simpleTensor_timeShift_integral_eq_xiShift_conj {n m : ℕ}
+    (hm : 0 < m)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ)
+    (Ψ : (Fin (n + m) → Fin (d + 1) → ℂ) → ℂ) :
+    ∫ x : NPointDomain d (n + m),
+      Ψ (fun i => wickRotatePoint (x i)) *
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) x =
+      ∫ y : NPointDomain d (n + m),
+        Ψ (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+          (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+          (f.conjTensorProduct g) y := by
+  let j : Fin (n + m) := ⟨n, Nat.lt_add_of_pos_right hm⟩
+  let e : NPointDomain d (n + m) → ℂ := fun y =>
+    Ψ (fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j t y i)) *
+      (f.conjTensorProduct g) y
+  have htail_cancel :
+      ∀ x : NPointDomain d (n + m),
+        tailTimeShiftConfig (d := d) j t
+            (tailTimeShiftConfig (d := d) j (-t) x) = x := by
+    intro x
+    ext i μ
+    by_cases hi : n ≤ i.val
+    · by_cases hμ : μ = 0
+      · subst hμ
+        simp [j, tailTimeShiftConfig, hi, timeShiftVec]
+      · simp [j, tailTimeShiftConfig, hi, timeShiftVec, hμ]
+    · simp [j, tailTimeShiftConfig, hi]
+  calc
+    ∫ x : NPointDomain d (n + m),
+        Ψ (fun i => wickRotatePoint (x i)) *
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) x =
+      ∫ x : NPointDomain d (n + m),
+        Ψ (fun i => wickRotatePoint (x i)) *
+          (f.conjTensorProduct g)
+            (tailTimeShiftConfig (d := d) j (-t) x) := by
+        refine MeasureTheory.integral_congr_ae ?_
+        filter_upwards with x
+        rw [conjTensorProduct_timeShift_eq_tailTimeShift
+          (d := d) (f := f) (g := g) (hm := hm) (t := t) (x := x)]
+    _ = ∫ x : NPointDomain d (n + m),
+          e (tailTimeShiftConfig (d := d) j (-t) x) := by
+        refine MeasureTheory.integral_congr_ae ?_
+        filter_upwards with x
+        change (Ψ (fun i => wickRotatePoint (x i)) *
+            (f.conjTensorProduct g) (tailTimeShiftConfig (d := d) j (-t) x)) =
+          Ψ (fun i =>
+              wickRotatePoint
+                (tailTimeShiftConfig (d := d) j t
+                  (tailTimeShiftConfig (d := d) j (-t) x) i)) *
+            (f.conjTensorProduct g) (tailTimeShiftConfig (d := d) j (-t) x)
+        rw [htail_cancel x]
+    _ = ∫ x : NPointDomain d (n + m), e x := by
+        simpa [j] using
+          (integral_comp_rightBlockTailShift (d := d) (n := n) (m := m) (hm := hm)
+            (t := -t) (e := e))
+    _ = ∫ y : NPointDomain d (n + m),
+          Ψ (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+            (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+            (f.conjTensorProduct g) y := by
+        refine MeasureTheory.integral_congr_ae ?_
+        filter_upwards with y
+        have hPsi :
+            Ψ (fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j t y i)) =
+              Ψ (xiShift j 0 (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) := by
+          simpa [j] using congrArg Ψ
+            (xiShift_wickRotate_eq_tailTimeShift (d := d) (j := j) (x := y) (t := t)).symm
+        change
+          Ψ (fun i => wickRotatePoint (tailTimeShiftConfig (d := d) j t y i)) *
+              (f.conjTensorProduct g) y =
+            Ψ (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
+                (fun i => wickRotatePoint (y i)) ((t : ℂ) * Complex.I)) *
+              (f.conjTensorProduct g) y
+        rw [hPsi]
 
 /-- If a Euclidean witness `Ψ` recovers `OS.S (n+m)` on zero-diagonal tests, then
 the positive right-factor time shift of a simple tensor is recovered by the same

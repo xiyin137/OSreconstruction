@@ -276,11 +276,21 @@ Important current-status clarification:
    space;
 5. the final public closure route is Package I in its corrected Section 4.3
    form: transformed positive-time Euclidean data -> transformed-image core in
-   the Section-4.3 half-space/quotient Schwartz codomain -> quadratic identity there -> public
+   the Section-4.3 half-space Schwartz codomain -> quadratic identity there -> public
    density/continuity closure;
 6. so theorem-3 work should not drift back to either
    a raw density theorem or “add a `Submodule`/topology layer first” as if
    either were the main obstruction.
+
+Additional theorem-3 clarification:
+
+1. the Section-4.3 test-function transport `(4.19)`-`(4.20)` is explicit and
+   should not be documented as a spectral-measure definition;
+2. the Wightman-side kernel used later in `(4.24)`-`(4.28)` is the OS-II-repaired
+   `bvt_F` / `bvt_W` object, so the production route is safe even though the
+   original OS I paper used Lemma 8.8;
+3. the half-space dense-range theorem from Lemma 4.1 is a paper-faithfulness
+   theorem, but it is not the current minimal blocker for `bvt_W_positive`.
 
 ## 6. Operator-theory gaps
 

@@ -12,6 +12,8 @@ import OSReconstruction.SCV.IteratedCauchyIntegral
 import OSReconstruction.SCV.SeparatelyAnalytic
 import OSReconstruction.SCV.EdgeOfWedge
 import OSReconstruction.SCV.TubeDomainExtension
+import OSReconstruction.SCV.HasFDerivAtProd
+import OSReconstruction.SCV.PartialFourierSpatial
 
 /-!
 # Several Complex Variables

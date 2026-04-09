@@ -189,6 +189,18 @@ transport-input variant before theorem 4 can be considered settled.
 
 ### 5.1. Exact derivation route for the one-factor identities
 
+Note:
+
+The "one-factor transport" / "single-split core" decomposition below is a Lean
+implementation strategy chosen to fit the existing `WightmanInnerProduct` /
+`BorchersSequence` API and the already-proved single-split production hooks. It
+is **not** a paper decomposition. OS I Section 4.4 uses the full sesquilinear
+identity `(4.22)` together with the spatial-translation limit and continuity
+extension; it does not isolate one-factor or single-split layers. The Lean
+strategy is justified only because `(4.22)` expands as a finite degree sum in
+the repo's Borchers-sequence model, and the one-factor extraction lemmas are
+how that finite sum is manipulated locally.
+
 The needed one-factor transport statements should **not** be described as if
 they fell out of theorem 3 by simply "setting one factor equal to the vacuum."
 The corrected theorem-3 route no longer supplies same-shell identities at all.
