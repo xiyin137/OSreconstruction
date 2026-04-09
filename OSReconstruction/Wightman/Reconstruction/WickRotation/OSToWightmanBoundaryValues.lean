@@ -976,11 +976,12 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
   spectrum_condition := by
     intro n
     refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
-    -- Moderate growth of the OS analytic continuation on compact subsets.
-    -- Follows from the OS contraction semigroup (Hille-Yosida): ‖T(t)‖ ≤ 1 for t > 0
-    -- implies boundedness of the n-point function on the forward tube.
-    intro K _hK_compact _hK_sub
-    sorry
+    -- Compact-subset growth from the global polynomial bound already proved
+    -- in full_analytic_continuation_with_symmetry_growth (ACR(1) assembly).
+    intro K _hK_compact hK_sub
+    obtain ⟨C_bd, N, hC_pos, hgrowth⟩ :=
+      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
+    exact ⟨C_bd, N, hC_pos, fun z hz => hgrowth z (hK_sub hz)⟩
   locally_commutative := bvt_locally_commutative OS lgc
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc
