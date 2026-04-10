@@ -1549,6 +1549,18 @@ theorem bochner_fourier_fubini
 
     **Ref:** Rudin, *Fourier Analysis on Groups*, §1.3;
     Hörmander, *Analysis of PDE I*, Theorem 7.1.10. -/
+private theorem fourierInv_eq_cexp_integral'
+    (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
+    FourierTransform.fourierInv (φ : ℝ → ℂ) ξ =
+      ∫ x : ℝ, Complex.exp (2 * ↑Real.pi * Complex.I * ↑ξ * ↑x) * (φ : ℝ → ℂ) x := by
+  rw [Real.fourierInv_eq' (f := (φ : ℝ → ℂ)) (w := ξ)]
+  congr 1; ext v
+  have hinner : ∀ a b : ℝ, @inner ℝ ℝ _ a b = b * a := by
+    intro a b; simp [inner, mul_comm]
+  simp only [smul_eq_mul, hinner, Complex.ofReal_mul, Complex.ofReal_ofNat]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
 theorem oneSidedSupport_implies_schwartz_vanishing
     (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ]
     (hsupp : SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
@@ -1556,7 +1568,80 @@ theorem oneSidedSupport_implies_schwartz_vanishing
     (ψ : SchwartzMap ℝ ℂ)
     (hψ : ∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0) :
     ∫ s : ℝ, (ψ : ℝ → ℂ) s ∂μ = 0 := by
-  sorry
+  -- === Setup ===
+  have h2pi_pos : (0 : ℝ) < 2 * Real.pi := by positivity
+  have h2pi_ne : (2 * Real.pi : ℝ) ≠ 0 := ne_of_gt h2pi_pos
+  -- === Step 1: Construct χ(x) = ψ(2πx) as a Schwartz function ===
+  -- The continuous linear equivalence x ↦ (2π) • x on ℝ
+  set scaleCLE : ℝ ≃L[ℝ] ℝ :=
+    ContinuousLinearEquiv.smulLeft (M₁ := ℝ) (Units.mk0 (2 * Real.pi) h2pi_ne) with
+    hscaleCLE_def
+  set χ : SchwartzMap ℝ ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleCLE ψ with hχ_def
+  -- Pointwise: χ(x) = ψ(2πx)
+  have hχ_apply : ∀ x : ℝ, (χ : ℝ → ℂ) x = (ψ : ℝ → ℂ) (2 * Real.pi * x) := by
+    intro x
+    simp only [hχ_def, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, hscaleCLE_def,
+      ContinuousLinearEquiv.smulLeft_apply, Units.val_mk0, smul_eq_mul]
+  -- === Step 2: χ has support in (-∞, 0) ===
+  have hχ_supp : ∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0 := by
+    intro x hx
+    rw [Function.mem_support] at hx
+    rw [hχ_apply] at hx
+    have h2pix_neg := hψ (2 * Real.pi * x) (Function.mem_support.mpr hx)
+    -- 2π * x < 0 and 2π > 0 implies x < 0
+    by_contra h_nonneg
+    push_neg at h_nonneg
+    linarith [mul_nonneg (le_of_lt h2pi_pos) h_nonneg]
+  -- === Step 3: Apply HasOneSidedFourierSupport to χ ===
+  have h_zero := hsupp χ hχ_supp
+  -- h_zero : ∫ t, (∫ s, exp(I*t*s) dμ(s)) * (FT χ)(t) dt = 0
+  -- === Step 4: Apply Fubini to swap integrals ===
+  set g := SchwartzMap.fourierTransformCLM ℂ χ with hg_def
+  have h_fubini := bochner_fourier_fubini μ g
+  -- ∫ s, (∫ t, exp(I*t*s) * g(t) dt) dμ(s) = 0
+  have h_G_zero :
+      ∫ s, (∫ t, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t) ∂μ = 0 := by
+    rw [← h_fubini]; exact h_zero
+  -- === Step 5: Fourier inversion: G(s) = ψ(s) pointwise ===
+  -- G(s) := ∫ exp(its) (FT χ)(t) dt = FourierInv(FT χ)(s/(2π)) = χ(s/(2π)) = ψ(s)
+  suffices h_inner_eq : ∀ s : ℝ,
+      ∫ t, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t = (ψ : ℝ → ℂ) s by
+    -- Conclude: ∫ ψ dμ = ∫ G dμ = 0
+    calc ∫ s, (ψ : ℝ → ℂ) s ∂μ
+        = ∫ s, (∫ t, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t) ∂μ := by
+          congr 1; ext s; exact (h_inner_eq s).symm
+      _ = 0 := h_G_zero
+  -- Prove the pointwise Fourier inversion identity
+  intro s
+  -- Sub-step (a): Kernel convention change
+  -- exp(I*t*s) = exp(2πI*(s/(2π))*t) since I*t*s = 2πI*(s/(2π))*t
+  have h_kernel_eq : ∀ t : ℝ,
+      Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t =
+      Complex.exp (2 * ↑Real.pi * Complex.I * ↑(s / (2 * Real.pi)) * ↑t) *
+        (g : ℝ → ℂ) t := by
+    intro t; congr 1; congr 1
+    push_cast; field_simp; ring
+  simp_rw [h_kernel_eq]
+  -- Sub-step (b): Recognize as FourierInv(g) at s/(2π)
+  rw [← fourierInv_eq_cexp_integral' g (s / (2 * Real.pi))]
+  -- Goal: FourierTransform.fourierInv (g : ℝ → ℂ) (s / (2 * Real.pi)) = ψ s
+  -- Sub-step (c): Fourier inversion: FourierInv(FT χ) = χ
+  have h_fi_eq : FourierTransform.fourierInv (g : ℝ → ℂ) = (χ : ℝ → ℂ) := by
+    -- FourierTransform.fourierInv_fourier_eq gives SchwartzMap equality:
+    -- FourierTransform.fourierInv (FT χ) = χ
+    have h_inv := FourierTransform.fourierInv_fourier_eq χ
+    -- Coerce to function equality
+    have h_fn := congrArg (⇑·) h_inv
+    -- h_fn : ⇑(FourierTransform.fourierInv (FT χ)) = ⇑χ
+    -- Bridge SchwartzMap-level and function-level fourierInv via fourierInv_coe
+    rw [SchwartzMap.fourierInv_coe] at h_fn
+    -- h_fn : FourierTransform.fourierInv (⇑(FT χ)) = ⇑χ
+    exact h_fn
+  rw [h_fi_eq]
+  -- Sub-step (d): χ(s/(2π)) = ψ(2π * (s/(2π))) = ψ(s)
+  rw [hχ_apply]
+  congr 1; field_simp
 
 /-- **Theorem B: Schwartz test vanishing on an open set implies measure vanishing.**
 
