@@ -100,13 +100,17 @@ These are genuinely different: compact-subset growth says nothing about the rate
 
 For the OS reconstruction, the compact-subset growth hypothesis is supplied by the contraction semigroup property ($\|T(t)\| \le 1$ for $t > 0$ from Hille-Yosida), which gives global polynomial growth of the analytic continuation — already proved in the ACR(1) assembly theorem.
 
-## 6. Axiom budget
+## 6. VT-local axiom budget
+
+This table covers the axioms used in the VT proof chain only, not the full repo-wide inventory (which is 10 axioms total; see README.md).
 
 | Category | Count | Details |
 |----------|-------|---------|
-| New bridge axioms (this PR) | 4 | `bv_implies_fourier_support`, `tube_holomorphic_unique_from_bv`, `fl_representation_from_bv`, `schwartz_clm_fubini_exchange` |
-| Pre-existing (unchanged) | 4 | `distributional_cluster_lifts_to_tube`, `tube_boundaryValueData_of_polyGrowth`, `tube_boundaryValue_of_vladimirov_growth`, `tube_boundaryValue_realizes_dualCone_distribution` |
-| Net new sorrys from VT refactoring | 0 | All downstream code builds with no new sorrys |
+| New bridge axioms (this PR) | 3 | `bv_implies_fourier_support`, `fl_representation_from_bv`, `schwartz_clm_fubini_exchange` |
+| Eliminated | 1 | `tube_holomorphic_unique_from_bv` — converted to theorem from `distributional_uniqueness_tube_of_zero_bv` |
+| Pre-existing SCV (unchanged) | 4 | `distributional_cluster_lifts_to_tube`, `tube_boundaryValueData_of_polyGrowth`, `tube_boundaryValue_of_vladimirov_growth`, `tube_boundaryValue_realizes_dualCone_distribution` |
+
+**Net change vs main:** removed 1 axiom (`vladimirov_tillmann`), added 3 new axioms. Net +2 axioms (6 → 10 repo-wide, counting axioms added on other lanes by main).
 
 ## References
 

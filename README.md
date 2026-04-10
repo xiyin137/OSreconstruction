@@ -4,19 +4,25 @@ A Lean 4 formalization of the **Osterwalder-Schrader reconstruction theorem** an
 
 ## Current Axiom Inventory
 
-The tracked production tree currently contains **6 explicit axioms**:
+The tracked production tree currently contains **10 explicit axioms**:
+
+**Functional analysis (2):**
 - `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean` — **partially proved**: nuclearity of Schwartz space is now proved in the [`gaussian-field`](https://github.com/or-n/gaussian-field) library; the remaining gap is importing the instance and deriving the kernel theorem
 - `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
-- `vladimirov_tillmann` in `SCV/VladimirovTillmann.lean`
-- `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean` — distributional cluster on tube boundary lifts to pointwise cluster on tube interior (Poisson integral + Riemann-Lebesgue)
-- `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean` — Vladimirov-style boundary-value existence on tube domains from global polynomial growth
+
+**SCV / tube domain (7):**
+- `bv_implies_fourier_support` in `SCV/VladimirovTillmann.lean` — growth + BV → spectral support in dual cone (Vladimirov 25.1)
+- `fl_representation_from_bv` in `SCV/VladimirovTillmann.lean` — Fourier-Laplace representation from BV + spectral support (Vladimirov 25.5)
+- `schwartz_clm_fubini_exchange` in `GeneralResults/SchwartzFubini.lean` — CLM-integral exchange for Schwartz-valued families (Fréchet Bochner)
+- `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean` — distributional cluster on tube boundary lifts to pointwise cluster on tube interior
+- `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean` — BV existence from global polynomial growth
+- `tube_boundaryValue_of_vladimirov_growth` in `SCV/TubeBoundaryValueExistence.lean` — BV existence from Vladimirov growth (M>0)
+- `tube_boundaryValue_realizes_dualCone_distribution` in `SCV/FourierSupportCone.lean` — BV realized by dual-cone distribution
+
+**Reconstruction bridge (1):**
 - `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
 
-The first two are pure functional-analysis axioms on the Wightman/Schwartz side.
-The next three are pure SCV / complex-analytic axioms on the tube-domain
-side: Vladimirov-Tillmann growth, cluster lifting, and boundary-value existence from
-global polynomial growth. The sixth is the reduced-coordinate Bargmann-Hall-Wightman
-bridge on the Route 1 translation-invariance lane.
+The former `vladimirov_tillmann` axiom has been **proved as a theorem** from 3 of the SCV axioms above plus ~10K lines of Paley-Wiener-Schwartz proofs. See `docs/vladimirov_tillmann_summary.md` for details.
 
 Two former axioms — `semigroupGroup_bochner` and `laplaceFourier_measure_unique`
 (BCR Theorem 4.1.13) — have been **eliminated** by importing proved theorems from
@@ -112,21 +118,11 @@ This fetches Mathlib and dependencies automatically on first build.
 
 ## Project Status
 
-The tracked production tree currently includes **6 explicit `axiom`
-declarations**:
-- `schwartz_nuclear_extension` in `Wightman/WightmanAxioms.lean`
-- `exists_continuousMultilinear_ofSeparatelyContinuous` in `Wightman/WightmanAxioms.lean` — **proved** in [`gaussian-field`](https://github.com/mrdouglasny/gaussian-field) (`GeneralResults/SeparatelyContMultilinear.lean`, extension branch); remaining gap is importing the theorem
-- `vladimirov_tillmann` in `SCV/VladimirovTillmann.lean`
-- `distributional_cluster_lifts_to_tube` in `SCV/VladimirovTillmann.lean`
-- `tube_boundaryValueData_of_polyGrowth` in `SCV/TubeBoundaryValues.lean`
-- `reduced_bargmann_hall_wightman_of_input` in `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`
-
-The first two are pure functional-analysis axioms on the Wightman/Schwartz side
-(Schwartz kernel theorem and Banach-Steinhaus for finite multilinear maps). The
-next three are pure SCV tube-domain axioms: growth,
-cluster lifting, and boundary-value existence. The sixth is the deferred reduced-BHW
-bridge on the Route 1 translation-invariance lane. Remaining work outside these
-deferred surfaces is represented by explicit theorem-level `sorry` placeholders.
+The tracked production tree currently includes **10 explicit `axiom`
+declarations** (2 FA + 7 SCV + 1 reconstruction bridge). See the axiom
+inventory at the top of this file for the complete list. Remaining work
+outside these deferred surfaces is represented by explicit theorem-level
+`sorry` placeholders.
 The snapshot below counts only tracked production files; local scratch under
 `Proofideas/` and other untracked experiments are intentionally excluded.
 
