@@ -581,7 +581,7 @@ theorem cone_fourierLaplace_extension (d n : ℕ) [NeZero d]
   exact ⟨F, hF_holo, coneFourierLaplace_boundaryValue w hw_cont hw_lin hw_supp F hF_eq⟩
 
 /-- **Converse Paley-Wiener-Schwartz** (Vladimirov §26 Thm 26.1 / RS II §IX.3). -/
-axiom converse_paleyWiener_tube (d n : ℕ) [NeZero d]
+ theorem converse_paleyWiener_tube (d n : ℕ) [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n))
     (w : SchwartzNPointSpace d n → ℂ)
@@ -596,7 +596,8 @@ axiom converse_paleyWiener_tube (d n : ℕ) [NeZero d]
     ∀ φ : SchwartzNPointSpace d n,
       (∀ q : NPointSpacetime d n, φ q ≠ 0 →
         ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
-      w (φ.fourierTransform) = 0
+      w (φ.fourierTransform) = 0 := by
+  sorry
 
 /-! ### Complex Difference Coordinates -/
 

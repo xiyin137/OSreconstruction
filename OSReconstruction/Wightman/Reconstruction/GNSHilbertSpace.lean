@@ -1405,6 +1405,7 @@ private lemma scd_inner_hasOneSidedFourierSupport
         (𝒰₀.U t (F : GNSHilbertSpace Wfn)) * (ψ : ℝ → ℂ) t) := by
   sorry
 
+set_option maxHeartbeats 800000 in
 /-- **Theorem A (Fubini for Bochner–Stieltjes integrals).**
 
     For a finite positive Borel measure `μ` on `ℝ` and a Schwartz function `g`,
@@ -1423,7 +1424,49 @@ theorem bochner_fourier_fubini
     (g : SchwartzMap ℝ ℂ) :
     ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂μ) * (g : ℝ → ℂ) t =
     ∫ s : ℝ, (∫ t : ℝ, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t) ∂μ := by
-  sorry
+  -- ‖exp(I·t·s)‖ = 1 for all real t, s
+  have h_exp_norm : ∀ t s : ℝ,
+      ‖Complex.exp (Complex.I * ↑t * ↑s)‖ = 1 := fun t s => by
+    rw [show Complex.I * (t : ℂ) * (s : ℂ) = ↑(t * s) * Complex.I from by push_cast; ring,
+      Complex.norm_exp_ofReal_mul_I]
+  -- Step 1: Pull g(t) inside the s-integral via integral_mul_const
+  have h_pull : ∀ t : ℝ,
+      (∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂μ) * (g : ℝ → ℂ) t =
+      ∫ s, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t ∂μ :=
+    fun t => (MeasureTheory.integral_mul_const ((g : ℝ → ℂ) t)
+      (fun s : ℝ => Complex.exp (Complex.I * ↑t * ↑s))).symm
+  simp_rw [h_pull]
+  -- Step 2: Apply Fubini's theorem (integral_integral_swap)
+  apply MeasureTheory.integral_integral_swap
+  -- Step 3: Integrability of (t,s) ↦ exp(I·t·s)·g(t) on volume × μ.
+  show MeasureTheory.Integrable (fun p : ℝ × ℝ =>
+      Complex.exp (Complex.I * ↑p.1 * ↑p.2) * (g : ℝ → ℂ) p.1)
+      (MeasureTheory.volume.prod μ)
+  have hF_asm : MeasureTheory.AEStronglyMeasurable (fun p : ℝ × ℝ =>
+      Complex.exp (Complex.I * ↑p.1 * ↑p.2) * (g : ℝ → ℂ) p.1)
+      (MeasureTheory.volume.prod μ) :=
+    ((Complex.continuous_exp.comp
+      ((continuous_const.mul (Complex.continuous_ofReal.comp continuous_fst)).mul
+        (Complex.continuous_ofReal.comp continuous_snd))).mul
+      (g.continuous.comp continuous_fst)).aestronglyMeasurable
+  rw [MeasureTheory.integrable_prod_iff hF_asm]
+  refine ⟨Filter.Eventually.of_forall fun t => ?_, ?_⟩
+  · -- For fixed t: s ↦ exp(I·t·s)·g(t) is bounded by ‖g(t)‖ on finite measure μ
+    show MeasureTheory.Integrable
+      (fun (s : ℝ) => Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t) μ
+    exact MeasureTheory.Integrable.of_bound
+      ((Complex.continuous_exp.comp
+        (continuous_const.mul Complex.continuous_ofReal)).mul
+        continuous_const).aestronglyMeasurable
+      (‖(g : ℝ → ℂ) t‖)
+      (Filter.Eventually.of_forall fun s => by
+        rw [norm_mul, h_exp_norm, one_mul])
+  · -- The norm integral ∫ ‖F(t,·)‖ ∂μ = μ(ℝ) * ‖g(t)‖ is integrable in t
+    have h_inner : (fun t => ∫ s, ‖Complex.exp (Complex.I * ↑t * ↑s) *
+        (g : ℝ → ℂ) t‖ ∂μ) = (fun t => (μ Set.univ).toReal * ‖(g : ℝ → ℂ) t‖) := by
+      ext t; simp only [norm_mul, h_exp_norm, one_mul, MeasureTheory.integral_const,
+        smul_eq_mul]; rfl
+    rw [h_inner]; exact g.integrable.norm.const_mul _
 
 /-- **Theorem A + Fourier inversion: one-sided Fourier support of the FS transform
     implies vanishing of Schwartz integrals against the measure.**
