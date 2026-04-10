@@ -14,6 +14,8 @@ import OSReconstruction.Wightman.Reconstruction.PoincareRep
 import OSReconstruction.Wightman.SpectralEquivalence
 import OSReconstruction.vNA.Unbounded.SpectralPowers
 import OSReconstruction.SCV.PaleyWiener
+import Mathlib.MeasureTheory.Measure.CharacteristicFunction.Basic
+import OSReconstruction.Wightman.NuclearSpaces.BochnerMinlos
 
 /-!
 # GNS Hilbert Space Construction
@@ -1325,31 +1327,90 @@ private lemma stone_spectral_representation
     **Ref:** Rudin, *Fourier Analysis on Groups*, Theorem 1.3.6;
     Reed-Simon I, Theorem IX.9; Folland, *A Course in Abstract Harmonic
     Analysis*, Theorem 4.23. -/
-theorem bochner_uniqueness (μ₁ μ₂ : MeasureTheory.Measure ℝ)
+theorem bochner_uniqueness_real (μ₁ μ₂ : MeasureTheory.Measure ℝ)
     [MeasureTheory.IsFiniteMeasure μ₁] [MeasureTheory.IsFiniteMeasure μ₂]
     (h : ∀ t : ℝ, ∫ x : ℝ, Complex.exp (Complex.I * ↑t * ↑x) ∂μ₁ =
                     ∫ x : ℝ, Complex.exp (Complex.I * ↑t * ↑x) ∂μ₂) :
     μ₁ = μ₂ := by
-  sorry
-
-/-- A function `φ : ℝⁿ → ℂ` is positive-definite if for all finite collections of
-    points and complex coefficients, the Hermitian quadratic form is non-negative. -/
-def IsPositiveDefiniteFunction {n : ℕ} (φ : (Fin n → ℝ) → ℂ) : Prop :=
-  ∀ (m : ℕ) (c : Fin m → ℂ) (x : Fin m → (Fin n → ℝ)),
-    0 ≤ (∑ i : Fin m, ∑ j : Fin m, starRingEnd ℂ (c i) * c j * φ (x j - x i)).re
+  apply MeasureTheory.Measure.ext_of_charFun
+  funext t
+  rw [MeasureTheory.charFun_apply_real, MeasureTheory.charFun_apply_real]
+  -- charFun gives ∫ x, cexp (↑t * ↑x * I) ∂μ; hypothesis gives ∫ x, exp (I * ↑t * ↑x) ∂μ.
+  -- These differ only by commutativity of complex multiplication.
+  simp_rw [show ∀ (x : ℝ), (↑t : ℂ) * (↑x : ℂ) * Complex.I =
+    Complex.I * (↑t : ℂ) * (↑x : ℂ) from fun x => by ring]
+  exact h t
 
 /-- **Bochner's theorem** (multi-dimensional). Every continuous positive-definite
     function on `ℝⁿ` is the Fourier-Stieltjes transform of a unique finite positive
     Borel measure.
 
     **Ref:** Reed-Simon I, Theorem IX.9; Rudin, *Fourier Analysis on Groups*, §1.4.3. -/
-theorem bochner_theorem {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
+theorem bochner_finiteMeasure {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
     (hcont : Continuous φ)
-    (hpd : IsPositiveDefiniteFunction φ) :
+    (hpd : IsPositiveDefiniteFn φ) :
     ∃ (μ : MeasureTheory.Measure (Fin n → ℝ)),
       MeasureTheory.IsFiniteMeasure μ ∧
       ∀ x, φ x = ∫ p, Complex.exp (↑(∑ i : Fin n, x i * p i) * Complex.I) ∂μ := by
-  sorry
+  by_cases hφ0 : φ 0 = 0
+  · -- φ ≡ 0 by |φ(x)| ≤ φ(0).re = 0; zero measure works
+    refine ⟨0, inferInstance, fun x => ?_⟩
+    have hzero : φ x = 0 := by
+      have h := hpd.norm_le_eval_zero x
+      simp only [hφ0, Complex.zero_re] at h
+      exact norm_eq_zero.mp (le_antisymm h (norm_nonneg _))
+    simp [hzero]
+  · -- φ(0) is a positive real. Normalize ψ = φ / φ(0), apply bochner_existence, scale.
+    have hφ0_im : (φ 0).im = 0 := hpd.eval_zero_im
+    have hφ0_re_pos : 0 < (φ 0).re := by
+      rcases eq_or_lt_of_le hpd.eval_zero_nonneg with h | h
+      · exfalso; apply hφ0
+        apply Complex.ext_iff.mpr
+        exact ⟨by simp only [Complex.zero_re]; linarith, hφ0_im⟩
+      · exact h
+    set a := (φ 0).re with ha_def
+    have ha_pos : (0 : ℝ) < a := hφ0_re_pos
+    have hφ0_eq : φ 0 = (↑a : ℂ) := by
+      apply Complex.ext_iff.mpr
+      exact ⟨rfl, by simp [hφ0_im, Complex.ofReal_im]⟩
+    -- ψ = φ / a
+    set ψ : (Fin n → ℝ) → ℂ := fun t => φ t * (↑a)⁻¹
+    have hψ_cont : Continuous ψ := hcont.mul_const _
+    have hψ0 : ψ 0 = 1 := by
+      simp only [ψ, hφ0_eq]
+      rw [mul_inv_cancel₀]
+      exact_mod_cast ha_pos.ne'
+    have hψ_pd : IsPositiveDefiniteFn ψ := by
+      intro m x c
+      simp only [ψ]
+      have h_factor : (∑ i : Fin m, ∑ j : Fin m,
+          starRingEnd ℂ (c i) * c j * (φ (x j - x i) * (↑a)⁻¹)) =
+          (∑ i : Fin m, ∑ j : Fin m,
+          starRingEnd ℂ (c i) * c j * φ (x j - x i)) * (↑a)⁻¹ := by
+        conv_lhs =>
+          arg 2; ext i; arg 2; ext j
+          rw [show starRingEnd ℂ (c i) * c j * (φ (x j - x i) * (↑a)⁻¹) =
+            starRingEnd ℂ (c i) * c j * φ (x j - x i) * (↑a)⁻¹ from by ring]
+        simp_rw [← Finset.sum_mul]
+      rw [h_factor, show (↑a : ℂ)⁻¹ = (↑(a⁻¹) : ℂ) from by push_cast; rfl]
+      obtain ⟨him, hre⟩ := hpd m x c
+      exact ⟨by simp only [Complex.mul_im, Complex.ofReal_im, Complex.ofReal_re, him,
+                  mul_zero, zero_mul, add_zero],
+             by simp only [Complex.mul_re, Complex.ofReal_im, Complex.ofReal_re, him,
+                  mul_zero, sub_zero]
+                exact mul_nonneg hre (le_of_lt (inv_pos.mpr ha_pos))⟩
+    obtain ⟨μ, hμ_prob, hμ_cf⟩ := bochner_existence ψ hψ_cont hψ_pd hψ0
+    refine ⟨a.toNNReal • μ, inferInstance, fun x => ?_⟩
+    have hφ_eq : φ x = ↑a * ψ x := by
+      simp only [ψ]
+      rw [mul_comm, mul_assoc, inv_mul_cancel₀ (by exact_mod_cast ha_pos.ne'), mul_one]
+    rw [hφ_eq, hμ_cf x]
+    -- ↑a * ∫ ... ∂μ = ∫ ... ∂(a.toNNReal • μ)
+    have hsmul : a.toNNReal • μ = (a.toNNReal : ENNReal) • μ := rfl
+    symm
+    rw [hsmul, MeasureTheory.integral_smul_measure, ENNReal.coe_toReal, Complex.real_smul]
+    congr 1
+    exact_mod_cast Real.coe_toNNReal a ha_pos.le
 
 /-! ### Distribution-to-measure bridge lemmas
 
@@ -1519,7 +1580,69 @@ theorem measure_Iio_zero_of_schwartz_vanishing
       (∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0) →
       ∫ s : ℝ, (ψ : ℝ → ℂ) s ∂μ = 0) :
     μ (Set.Iio 0) = 0 := by
-  sorry
+  -- Step 1: Reduce to showing μ(Ioo (-(n+1)) 0) = 0 for each n : ℕ
+  suffices key : ∀ n : ℕ, μ (Set.Ioo (-(↑n + 1 : ℝ)) 0) = 0 by
+    apply le_antisymm _ (zero_le _)
+    calc μ (Set.Iio 0)
+        ≤ μ (⋃ n : ℕ, Set.Ioo (-(↑n + 1 : ℝ)) 0) := by
+          apply MeasureTheory.measure_mono
+          intro x hx
+          simp only [Set.mem_Iio] at hx
+          simp only [Set.mem_iUnion, Set.mem_Ioo]
+          exact ⟨⌈-x⌉₊, by
+            refine ⟨?_, hx⟩; linarith [Nat.le_ceil (-x)]⟩
+      _ = 0 := MeasureTheory.measure_iUnion_null key
+  -- Step 2: For each n, construct a bump and show μ(Ioo (-(n+1)) 0) = 0
+  intro n
+  set L : ℝ := ↑n + 1 with hL_def
+  have hL_pos : (0 : ℝ) < L := by positivity
+  set c : ℝ := -L / 2 with hc_def
+  -- ContDiffBump centered at c = -L/2 with support = ball c (L/2) = Ioo (-L) 0
+  let b : ContDiffBump c := ⟨L / 4, L / 2, by linarith, by linarith⟩
+  have hball : Metric.ball c (L / 2) = Set.Ioo (-L) 0 := by
+    rw [Real.ball_eq_Ioo]
+    congr 1 <;> simp [hc_def] <;> ring
+  -- Complex-valued version for the SchwartzMap
+  set f : ℝ → ℂ := fun x => (b x : ℂ) with hf_def
+  have hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f := by
+    exact Complex.ofRealCLM.contDiff.comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  set ψ : SchwartzMap ℝ ℂ := hf_compact.toSchwartzMap hf_smooth
+  -- Support of ψ is contained in Iio 0
+  have hsupp_neg : ∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0 := by
+    intro x hx
+    by_contra hge
+    simp only [not_lt] at hge
+    -- x ≥ 0 implies x ∉ ball c (L/2) = Ioo (-L) 0
+    have hx_ball : x ∉ Metric.ball c (L / 2) := by
+      rw [hball]; intro ⟨_, hx0⟩; linarith
+    -- So b x = 0 (since support b = ball c (L/2))
+    have hbx : b x = 0 := by
+      by_contra h; exact hx_ball (b.support_eq ▸ Function.mem_support.mpr h)
+    -- Hence ψ x = (b x : ℂ) = 0, contradicting x ∈ support ψ
+    exact absurd (show (ψ : ℝ → ℂ) x = 0 from by
+      show f x = 0; simp [hf_def, hbx]) (Function.mem_support.mp hx)
+  -- Apply hypothesis: ∫ ψ dμ = 0
+  have h_int := h ψ hsupp_neg
+  -- Convert complex integral to real: ∫ (↑(b s)) dμ = ↑(∫ b s dμ) = 0, so ∫ b dμ = 0
+  have h_real : ∫ s : ℝ, b s ∂μ = 0 := by
+    have h_eq : ∫ s : ℝ, (ψ : ℝ → ℂ) s ∂μ = ↑(∫ s : ℝ, b s ∂μ) := by
+      change ∫ s : ℝ, f s ∂μ = _
+      exact integral_ofReal
+    rw [h_eq] at h_int
+    exact_mod_cast h_int
+  -- b ≥ 0 and integrable with ∫ = 0 implies b = 0 μ-a.e.
+  have hb_int : MeasureTheory.Integrable (⇑b) μ :=
+    (b.contDiff (n := 0)).continuous.integrable_of_hasCompactSupport b.hasCompactSupport
+  have hb_ae : (⇑b) =ᵐ[μ] 0 :=
+    (MeasureTheory.integral_eq_zero_iff_of_nonneg (fun x => b.nonneg' x) hb_int).mp h_real
+  -- μ({b ≠ 0}) = 0, and {b ≠ 0} = support b = ball c (L/2) = Ioo (-L) 0
+  have h_meas : μ (Function.support (⇑b)) = 0 := by
+    have : μ {x : ℝ | ¬(b x = 0)} = 0 := MeasureTheory.ae_iff.mp hb_ae
+    convert this using 1
+  rw [b.support_eq, hball] at h_meas
+  exact h_meas
 
 /-- **SpectralConditionDistribution → diagonal spectral measure of P₀ supported on [0,∞)
     for pre-Hilbert vectors.**
@@ -1574,8 +1697,8 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
       Continuous.inner (𝕜 := ℂ) continuous_const
         ((gns_stronglyContinuous_preHilbert Wfn 0 F).comp (continuous_apply 0))
     -- Positive-definiteness: ∑ c̄ᵢcⱼ⟪F, U₀(xⱼ₀-xᵢ₀)F⟫ = ‖∑ cᵢ U₀(xᵢ₀)F‖² ≥ 0
-    have hpd₁ : IsPositiveDefiniteFunction φ₁ := by
-      intro m c x
+    have hpd₁ : IsPositiveDefiniteFn φ₁ := by
+      intro m x c
       -- Key: φ₁(xⱼ - xᵢ) = ⟪𝒰₀.U(xᵢ 0) F, 𝒰₀.U(xⱼ 0) F⟫
       -- Uses: U(s-t) = U(-t)∘U(s) = U(t)†∘U(s), then adjoint_inner_right
       have hφ₁_inner : ∀ i j : Fin m,
@@ -1596,14 +1719,14 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
       suffices h : (∑ i : Fin m, ∑ j : Fin m,
           starRingEnd ℂ (c i) * c j * @inner ℂ _ _ (y i) (y j)) =
           @inner ℂ _ _ v v by
-        rw [h]; exact inner_self_nonneg (𝕜 := ℂ)
+        rw [h]; exact ⟨inner_self_im (𝕜 := ℂ) v, inner_self_nonneg (𝕜 := ℂ)⟩
       symm; simp only [v]
       rw [sum_inner (𝕜 := ℂ)]
       simp_rw [_root_.inner_smul_left, inner_sum (𝕜 := ℂ), _root_.inner_smul_right]
       congr 1; ext i; rw [Finset.mul_sum]
       congr 1; ext j; ring
     -- Bochner's theorem gives a representing measure μ₁ on Fin 1 → ℝ.
-    obtain ⟨μ₁, hfin₁, hrepr₁⟩ := bochner_theorem φ₁ hcont₁ hpd₁
+    obtain ⟨μ₁, hfin₁, hrepr₁⟩ := bochner_finiteMeasure φ₁ hcont₁ hpd₁
     haveI : MeasureTheory.IsFiniteMeasure μ₁ := hfin₁
     -- Push forward μ₁ to a measure on ℝ via evaluation at 0.
     refine ⟨μ₁.map (fun f : Fin 1 → ℝ => f 0), ?_, ?_, ?_⟩
@@ -1666,7 +1789,7 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
   -- Step 3: By Bochner uniqueness, ν = μ_F.
   haveI : MeasureTheory.IsFiniteMeasure ν := hν_fin
   haveI : MeasureTheory.IsFiniteMeasure μ_F := P.diagonalMeasure_isFiniteMeasure _
-  have h_eq := bochner_uniqueness ν μ_F hν_fs
+  have h_eq := bochner_uniqueness_real ν μ_F hν_fs
   -- Step 4: Transfer the support condition.
   rw [← h_eq]; exact hν_supp
 
@@ -2071,8 +2194,8 @@ private lemma gns_mass_shell
     --   Σᵢⱼ c̄ᵢ cⱼ φ(aⱼ - aᵢ) = Σᵢⱼ c̄ᵢ cⱼ ⟪U(aᵢ)ψ, U(aⱼ)ψ⟫
     --                             = ‖Σⱼ cⱼ U(aⱼ)ψ‖² ≥ 0
     -- using unitarity U(a-b) = U(a) U(b)* and sesquilinearity of inner product.
-    have hφ_pd : IsPositiveDefiniteFunction φ := by
-      intro m c x
+    have hφ_pd : IsPositiveDefiniteFn φ := by
+      intro m x c
       -- Key: translation' a * translation' b = translation' (a + b)
       have htrans_mul : ∀ a b : MinkowskiSpace d,
           PoincareGroup.translation' a * PoincareGroup.translation' b =
@@ -2109,14 +2232,14 @@ private lemma gns_mass_shell
       suffices h : (∑ i : Fin m, ∑ j : Fin m,
           starRingEnd ℂ (c i) * c j * @inner ℂ _ _ (y i) (y j)) =
           @inner ℂ _ _ v v by
-        rw [h]; exact inner_self_nonneg (𝕜 := ℂ)
+        rw [h]; exact ⟨inner_self_im (𝕜 := ℂ) v, inner_self_nonneg (𝕜 := ℂ)⟩
       symm; simp only [v]
       rw [sum_inner (𝕜 := ℂ)]
       simp_rw [_root_.inner_smul_left, inner_sum (𝕜 := ℂ), _root_.inner_smul_right]
       congr 1; ext i; rw [Finset.mul_sum]
       congr 1; ext j; ring
     -- === Step 2d: Apply Bochner's theorem to get the finite measure μ ===
-    obtain ⟨μ, hfin, hboch⟩ := bochner_theorem φ hφ_cont hφ_pd
+    obtain ⟨μ, hfin, hboch⟩ := bochner_finiteMeasure φ hφ_cont hφ_pd
     -- hboch : ∀ x, φ x = ∫ p, exp(i Σⱼ xⱼ pⱼ) dμ(p)
     -- === Step 2e: Support condition from SpectralConditionDistribution ===
     -- By `scd_bochner_forwardCone_support`, the multi-dimensional analog of the 1D
@@ -2196,7 +2319,7 @@ private lemma gns_mass_shell
             simp [Finset.sum_ite_eq', Finset.mem_univ]]
           push_cast; ring
         -- Bochner uniqueness: ν = ν'
-        have h_eq : ν = ν' := bochner_uniqueness ν ν' (fun t => by
+        have h_eq : ν = ν' := bochner_uniqueness_real ν ν' (fun t => by
           rw [← h_stone t, h_boch_dir t])
         -- Substitute into norm identity and simplify
         constructor

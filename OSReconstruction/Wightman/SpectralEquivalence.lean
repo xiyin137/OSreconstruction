@@ -851,4 +851,4 @@ theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
       productTube_function_of_forwardTube d
         hW_tempered hW_linear hW_transl w hw_cont hw_lin hw_det
         W_analytic hWa_holo hWa_bv
-    exact @converse_paleyWiener_tube d ‹_› d n ‹_› F hF_holo w hw_cont hw_lin hF_bv
+    exact converse_paleyWiener_tube d n F hF_holo w hw_cont hw_lin hF_bv
