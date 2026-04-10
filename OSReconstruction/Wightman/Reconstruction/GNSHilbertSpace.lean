@@ -13,6 +13,7 @@ import OSReconstruction.Wightman.Reconstruction.PoincareAction
 import OSReconstruction.Wightman.Reconstruction.PoincareRep
 import OSReconstruction.Wightman.SpectralEquivalence
 import OSReconstruction.vNA.Unbounded.SpectralPowers
+import OSReconstruction.SCV.PaleyWiener
 
 /-!
 # GNS Hilbert Space Construction
@@ -1350,6 +1351,133 @@ theorem bochner_theorem {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
       ∀ x, φ x = ∫ p, Complex.exp (↑(∑ i : Fin n, x i * p i) * Complex.I) ∂μ := by
   sorry
 
+/-! ### Distribution-to-measure bridge lemmas
+
+The following four lemmas bridge between the distributional spectral condition
+(`SpectralConditionDistribution`) and the measure-level support condition
+`μ((-∞, 0)) = 0` needed for the GNS spectrum condition.
+
+The logical chain is:
+
+1. **`scd_inner_hasOneSidedFourierSupport`** (Steps 1+2):
+   SCD + `inner_translate_eq_wip` → the tempered distribution
+   `T_F(ψ) = ∫ ⟪F, U₀(t)F⟫ · ψ(t) dt` has one-sided Fourier support in `[0,∞)`.
+
+2. **`bochner_fourier_fubini`** (Theorem A):
+   Fubini for the Bochner–Stieltjes representation: if `φ(t) = ∫ exp(its) dμ(s)`,
+   the double integral `∫∫ exp(its) · g(t) dt dμ(s)` can be computed in either order.
+
+3. **`oneSidedSupport_implies_schwartz_vanishing`** (combining Theorem A + Fourier inversion):
+   If the Fourier–Stieltjes transform of μ has one-sided Fourier support,
+   then `∫ ψ dμ = 0` for every Schwartz ψ supported in `(-∞, 0)`.
+
+4. **`measure_Iio_zero_of_schwartz_vanishing`** (Theorem B):
+   If `∫ ψ dμ = 0` for all Schwartz ψ with `supp(ψ) ⊆ (-∞, 0)`,
+   then `μ((-∞, 0)) = 0`.
+-/
+
+/-- **Step 1+2: SCD → one-sided Fourier support of the GNS inner product function.**
+
+    The tempered distribution `T_F(ψ) = ∫ ⟪F, U₀(t)F⟫ · ψ(t) dt` has
+    one-sided Fourier support in `[0,∞)`, i.e., `T_F(ℱ[φ]) = 0` for every
+    Schwartz φ with `supp(φ) ⊆ (-∞, 0)`.
+
+    **Proof sketch:**
+    1. By `inner_translate_eq_wip`, lift to the pre-Hilbert space and choose
+       a Borchers representative `B` of `F`. Then
+       `⟪F, U₀(t)F⟫ = ∑_{n,m} W_{n+m}(f*_n ⊗ τ_{te₀} f_m)`.
+    2. By `SpectralConditionDistribution`, each summand `W_{n+m}` factors through
+       the reduced distribution `w` in difference variables, whose Fourier
+       transform is supported in `V̄₊^{n+m-1}`.
+    3. Time-translation `τ_{te₀}` acts on the last difference variable by
+       adding `te₀`, so the 1D Fourier transform in `t` of each summand
+       is a marginal of `ŵ` restricted to the energy component `p₀ ≥ 0`.
+    4. Summing over `n, m` preserves the support condition.
+
+    **Ref:** Streater-Wightman, §3-1; Reed-Simon II, Theorem X.40. -/
+private lemma scd_inner_hasOneSidedFourierSupport
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (F : PreHilbertSpace Wfn) :
+    let 𝒰₀ := (gnsPoincareRep Wfn).translationGroup 0 (hsc 0)
+    SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
+      ∫ t : ℝ, @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+        (𝒰₀.U t (F : GNSHilbertSpace Wfn)) * (ψ : ℝ → ℂ) t) := by
+  sorry
+
+/-- **Theorem A (Fubini for Bochner–Stieltjes integrals).**
+
+    For a finite positive Borel measure `μ` on `ℝ` and a Schwartz function `g`,
+    the double integral can be computed in either order:
+
+    `∫_t (∫_s exp(its) dμ(s)) · g(t) dt = ∫_s (∫_t exp(its) · g(t) dt) dμ(s)`
+
+    This follows from Fubini's theorem, using the fact that `|exp(its)| = 1`
+    and `g` is Schwartz (hence integrable), so the product is integrable
+    over the product measure `μ ⊗ Lebesgue`.
+
+    **Ref:** Folland, *Real Analysis*, Theorem 2.37;
+    Reed-Simon I, Theorem IX.9 (proof of Bochner's theorem). -/
+theorem bochner_fourier_fubini
+    (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ]
+    (g : SchwartzMap ℝ ℂ) :
+    ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂μ) * (g : ℝ → ℂ) t =
+    ∫ s : ℝ, (∫ t : ℝ, Complex.exp (Complex.I * ↑t * ↑s) * (g : ℝ → ℂ) t) ∂μ := by
+  sorry
+
+/-- **Theorem A + Fourier inversion: one-sided Fourier support of the FS transform
+    implies vanishing of Schwartz integrals against the measure.**
+
+    If `μ` is a finite positive Borel measure on `ℝ` whose Fourier-Stieltjes
+    transform `φ(t) = ∫ exp(its) dμ(s)` has one-sided Fourier support
+    (i.e., the tempered distribution `T(ψ) = ∫ φ(t) ψ(t) dt` satisfies
+    `SCV.HasOneSidedFourierSupport T`), then `∫ ψ dμ = 0` for every Schwartz
+    `ψ` with `supp(ψ) ⊆ (-∞, 0)`.
+
+    **Proof sketch:**
+    1. By `SCV.HasOneSidedFourierSupport`, for any Schwartz `χ` with
+       `supp(χ) ⊆ (-∞, 0)`: `∫ φ(t) · ℱ[χ](t) dt = 0`.
+    2. By `bochner_fourier_fubini`, `∫ φ(t) · ℱ[χ](t) dt = ∫ G(s) dμ(s)`
+       where `G(s) = ∫ exp(its) · ℱ[χ](t) dt`.
+    3. By Fourier inversion, `G(s) = c · χ(s/(2π))` (up to normalization).
+       Since `supp(χ) ⊆ (-∞, 0)` iff `supp(χ(·/(2π))) ⊆ (-∞, 0)`,
+       rescaling shows `∫ ψ dμ = 0` for all Schwartz `ψ` supported in `(-∞, 0)`.
+
+    **Ref:** Rudin, *Fourier Analysis on Groups*, §1.3;
+    Hörmander, *Analysis of PDE I*, Theorem 7.1.10. -/
+theorem oneSidedSupport_implies_schwartz_vanishing
+    (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ]
+    (hsupp : SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
+      ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂μ) * (ψ : ℝ → ℂ) t))
+    (ψ : SchwartzMap ℝ ℂ)
+    (hψ : ∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0) :
+    ∫ s : ℝ, (ψ : ℝ → ℂ) s ∂μ = 0 := by
+  sorry
+
+/-- **Theorem B: Schwartz test vanishing on an open set implies measure vanishing.**
+
+    If `μ` is a finite positive Borel measure on `ℝ` and `∫ ψ dμ = 0` for
+    every Schwartz function `ψ` with `supp(ψ) ⊆ (-∞, 0)`, then `μ((-∞, 0)) = 0`.
+
+    **Proof sketch:** By inner regularity, it suffices to show `μ(K) = 0`
+    for every compact `K ⊆ (-∞, 0)`. For any such `K`, construct a
+    non-negative Schwartz bump `ψ ≥ 0` with `ψ|_K ≥ 1` and
+    `supp(ψ) ⊆ (-∞, 0)`. Then `0 ≤ μ(K) ≤ ∫ ψ dμ = 0`.
+
+    The existence of such bumps follows from the density of Schwartz functions
+    in `C_c^∞((-∞, 0))` and the existence of compactly supported smooth
+    functions dominating indicators of compact sets.
+
+    **Ref:** Rudin, *Real and Complex Analysis*, Theorem 2.18;
+    Hörmander, *Analysis of PDE I*, Proposition 1.4.1. -/
+theorem measure_Iio_zero_of_schwartz_vanishing
+    (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ]
+    (h : ∀ (ψ : SchwartzMap ℝ ℂ),
+      (∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0) →
+      ∫ s : ℝ, (ψ : ℝ → ℂ) s ∂μ = 0) :
+    μ (Set.Iio 0) = 0 := by
+  sorry
+
 /-- **SpectralConditionDistribution → diagonal spectral measure of P₀ supported on [0,∞)
     for pre-Hilbert vectors.**
 
@@ -1404,7 +1532,33 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
         ((gns_stronglyContinuous_preHilbert Wfn 0 F).comp (continuous_apply 0))
     -- Positive-definiteness: ∑ c̄ᵢcⱼ⟪F, U₀(xⱼ₀-xᵢ₀)F⟫ = ‖∑ cᵢ U₀(xᵢ₀)F‖² ≥ 0
     have hpd₁ : IsPositiveDefiniteFunction φ₁ := by
-      sorry
+      intro m c x
+      -- Key: φ₁(xⱼ - xᵢ) = ⟪𝒰₀.U(xᵢ 0) F, 𝒰₀.U(xⱼ 0) F⟫
+      -- Uses: U(s-t) = U(-t)∘U(s) = U(t)†∘U(s), then adjoint_inner_right
+      have hφ₁_inner : ∀ i j : Fin m,
+          φ₁ (x j - x i) = @inner ℂ _ _
+            (𝒰₀.U (x i 0) (F : GNSHilbertSpace Wfn))
+            (𝒰₀.U (x j 0) (F : GNSHilbertSpace Wfn)) := by
+        intro i j
+        show @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+            (𝒰₀.U ((x j - x i) 0) (F : GNSHilbertSpace Wfn)) = _
+        simp only [Pi.sub_apply]
+        rw [show x j 0 - x i 0 = -(x i 0) + x j 0 from by ring, 𝒰₀.add]
+        simp only [ContinuousLinearMap.comp_apply]
+        rw [𝒰₀.neg, ContinuousLinearMap.adjoint_inner_right]
+      set y : Fin m → GNSHilbertSpace Wfn :=
+        fun i => 𝒰₀.U (x i 0) (F : GNSHilbertSpace Wfn)
+      simp_rw [hφ₁_inner]
+      set v := ∑ i : Fin m, c i • y i
+      suffices h : (∑ i : Fin m, ∑ j : Fin m,
+          starRingEnd ℂ (c i) * c j * @inner ℂ _ _ (y i) (y j)) =
+          @inner ℂ _ _ v v by
+        rw [h]; exact inner_self_nonneg (𝕜 := ℂ)
+      symm; simp only [v]
+      rw [sum_inner (𝕜 := ℂ)]
+      simp_rw [_root_.inner_smul_left, inner_sum (𝕜 := ℂ), _root_.inner_smul_right]
+      congr 1; ext i; rw [Finset.mul_sum]
+      congr 1; ext j; ring
     -- Bochner's theorem gives a representing measure μ₁ on Fin 1 → ℝ.
     obtain ⟨μ₁, hfin₁, hrepr₁⟩ := bochner_theorem φ₁ hcont₁ hpd₁
     haveI : MeasureTheory.IsFiniteMeasure μ₁ := hfin₁
@@ -1416,7 +1570,42 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
     -- ν(Iio 0) = 0: by SCD + inner_translate_eq_wip, the distributional Fourier
     -- transform of t ↦ ⟪F, U₀(t)F⟫ is supported on [0,∞). The Bochner measure
     -- (= the distributional FT as a positive measure) is supported on [0,∞).
-    · sorry
+    · -- Step A: Establish ν as a finite measure and compute its FS transform.
+      set ν := μ₁.map (fun f : Fin 1 → ℝ => f 0) with hν_def
+      haveI : MeasureTheory.IsFiniteMeasure ν :=
+        ⟨by rw [hν_def, MeasureTheory.Measure.map_apply (measurable_pi_apply 0)
+          MeasurableSet.univ, Set.preimage_univ]; exact MeasureTheory.measure_lt_top μ₁ _⟩
+      -- The FS transform of ν equals the inner product function.
+      -- From hrepr₁: φ₁(x) = ∫ exp(i⟨x,p⟩) dμ₁(p), specialising to x = (fun _ => t):
+      -- φ(t) = ⟪F, U₀(t)F⟫ = ∫ exp(its) dν(s).
+      have hν_fs : ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν =
+          @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+            (𝒰₀.U t (F : GNSHilbertSpace Wfn)) := by
+        intro t
+        rw [hν_def, MeasureTheory.integral_map (measurable_pi_apply 0).aemeasurable
+          (Complex.continuous_exp.comp
+            (continuous_const.mul Complex.continuous_ofReal)).aestronglyMeasurable]
+        have hconv : (fun f : Fin 1 → ℝ =>
+              Complex.exp (Complex.I * ↑t * ↑(f 0))) =
+            (fun f => Complex.exp
+              (↑(∑ i : Fin 1, (fun _ : Fin 1 => t) i * f i) * Complex.I)) := by
+          ext f; congr 1; simp; ring
+        rw [hconv, ← hrepr₁]
+      -- Step B: SCD gives one-sided Fourier support for the inner product function.
+      have h_ofs := scd_inner_hasOneSidedFourierSupport Wfn hSCD hsc F
+      -- Step C: Transfer one-sided Fourier support to the FS transform of ν.
+      -- Since ∫ exp(its) dν = ⟪F, U₀(t)F⟫, the distribution
+      -- T(ψ) = ∫ (∫ exp(its) dν) · ψ(t) dt has one-sided Fourier support.
+      have h_ofs_ν : SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
+          ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂ν) *
+            (ψ : ℝ → ℂ) t) := by
+        intro ψ hψ
+        simp_rw [hν_fs]
+        exact h_ofs ψ hψ
+      -- Step D: By Theorem A + Fourier inversion, Schwartz integrals against ν vanish
+      -- on (-∞, 0).  By Theorem B, ν((-∞, 0)) = 0.
+      exact measure_Iio_zero_of_schwartz_vanishing ν (fun ψ hψ =>
+        oneSidedSupport_implies_schwartz_vanishing ν h_ofs_ν ψ hψ)
     -- ∀ t, ∫ exp(I*t*s) dν = ∫ exp(I*t*s) dμ_F
     · intro t
       rw [MeasureTheory.integral_map (measurable_pi_apply 0).aemeasurable
@@ -1594,6 +1783,153 @@ private lemma gns_energy_nonneg
   -- Limit of non-negative sequence is non-negative
   exact ge_of_tendsto hlim_re (Filter.Eventually.of_forall h_trunc_nonneg)
 
+/-- **Joint strong continuity of the translation orbit map.**
+    The map `a ↦ U(translation' a) ψ` from `ℝ^{d+1}` to the GNS Hilbert space is continuous.
+
+    **Proof:**
+    1. Each `(s, x) ↦ U(translationInDirection μ s) x` is jointly continuous
+       (from isometry `‖U(g)x‖ = ‖x‖` and separate strong continuity `hsc μ`,
+       via `‖U(s)x - U(s₀)x₀‖ ≤ ‖x - x₀‖ + ‖U(s)x₀ - U(s₀)x₀‖`).
+    2. The decomposition `translation' a = ∏μ translationInDirection μ (a μ)`
+       reduces the orbit map to a composition of jointly continuous maps. -/
+private theorem translation_orbit_continuous
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (ψ : GNSHilbertSpace Wfn) :
+    Continuous (fun a : MinkowskiSpace d =>
+      poincareActGNS Wfn (PoincareGroup.translation' a) ψ) := by
+  -- Step 1: Joint continuity of (s, x) ↦ U(translationInDirection μ s) x
+  have hjoint : ∀ μ : Fin (d + 1),
+      Continuous (fun (p : ℝ × GNSHilbertSpace Wfn) =>
+        poincareActGNS Wfn
+          (PoincareRepresentation.translationInDirection d μ p.1) p.2) := by
+    intro μ
+    rw [Metric.continuous_iff]
+    intro ⟨s₀, x₀⟩ ε hε
+    -- Get δ₁ from strong continuity of t ↦ U(t) x₀
+    have hsc_x₀ := hsc μ x₀
+    rw [Metric.continuous_iff] at hsc_x₀
+    obtain ⟨δ₁, hδ₁_pos, hδ₁⟩ := hsc_x₀ s₀ (ε / 2) (half_pos hε)
+    refine ⟨min (ε / 2) δ₁, lt_min (half_pos hε) hδ₁_pos, ?_⟩
+    intro ⟨s, x⟩ hdist
+    simp only [Prod.dist_eq, max_lt_iff] at hdist
+    -- Triangle inequality: ‖U(s)x - U(s₀)x₀‖ ≤ ‖x - x₀‖ + ‖U(s)x₀ - U(s₀)x₀‖
+    calc dist (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s) x)
+          (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s₀) x₀)
+        ≤ dist (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s) x)
+              (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s) x₀) +
+          dist (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s) x₀)
+              (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s₀) x₀) :=
+        dist_triangle _ _ _
+      _ = dist x x₀ +
+          dist (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s) x₀)
+              (poincareActGNS Wfn (PoincareRepresentation.translationInDirection d μ s₀) x₀) := by
+        congr 1
+        -- U(g) is an isometry: dist(U(g)x, U(g)y) = dist(x, y)
+        simp only [dist_eq_norm, ← (poincareActGNS Wfn _).map_sub, poincareActGNS_norm]
+      _ < ε / 2 + ε / 2 := by
+        apply add_lt_add
+        · exact lt_of_lt_of_le hdist.2 (min_le_left _ _)
+        · exact hδ₁ s (lt_of_lt_of_le hdist.1 (min_le_right _ _))
+      _ = ε := add_halves ε
+  -- Step 2: The orbit map is continuous, by decomposing translation' a via
+  -- the standard basis and composing jointly continuous directional translations.
+  have htrans_mul : ∀ a b : MinkowskiSpace d,
+      PoincareGroup.translation' a * PoincareGroup.translation' b =
+      PoincareGroup.translation' (a + b) := by
+    intro a b
+    apply PoincareGroup.ext
+    · simp [PoincareGroup.translation', PoincareGroup.mul_translation,
+        PoincareGroup.one_lorentz_val, Matrix.one_mulVec]
+    · simp [PoincareGroup.translation', PoincareGroup.mul_lorentz]
+  -- Basis decomposition: a = ∑ μ, a μ • e_μ
+  have hbasis_decomp : ∀ a : MinkowskiSpace d,
+      ∑ μ : Fin (d + 1), a μ • PoincareRepresentation.basisVector d μ = a := by
+    intro a
+    have : ∀ μ : Fin (d + 1),
+        PoincareRepresentation.basisVector d μ = Pi.single μ 1 := by
+      intro μ; ext ν
+      simp [PoincareRepresentation.basisVector, Pi.single, Function.update]
+    simp_rw [this]; exact (pi_eq_sum_univ' a).symm
+  -- Convert goal to use the basis sum form
+  have hfun_eq : (fun a : MinkowskiSpace d =>
+      poincareActGNS Wfn (PoincareGroup.translation' a) ψ) =
+    (fun a => poincareActGNS Wfn (PoincareGroup.translation'
+      (∑ μ, a μ • PoincareRepresentation.basisVector d μ)) ψ) := by
+    ext a; rw [hbasis_decomp]
+  rw [hfun_eq]
+  -- Prove by Finset induction: each direction adds one jointly continuous layer
+  suffices h : ∀ S : Finset (Fin (d + 1)),
+      Continuous (fun a : MinkowskiSpace d =>
+        poincareActGNS Wfn (PoincareGroup.translation'
+          (∑ μ ∈ S, a μ • PoincareRepresentation.basisVector d μ)) ψ)
+    from h Finset.univ
+  intro S
+  induction S using Finset.induction with
+  | empty =>
+    simp only [Finset.sum_empty]
+    exact continuous_const
+  | @insert μ₀ S' hμ₀ ih =>
+    -- Use let-bindings to avoid expensive isDefEq in Continuous.comp
+    let f : MinkowskiSpace d → ℝ × GNSHilbertSpace Wfn :=
+      fun a => (a μ₀, poincareActGNS Wfn (PoincareGroup.translation'
+        (∑ μ ∈ S', a μ • PoincareRepresentation.basisVector d μ)) ψ)
+    let g : ℝ × GNSHilbertSpace Wfn → GNSHilbertSpace Wfn :=
+      fun p => poincareActGNS Wfn
+        (PoincareRepresentation.translationInDirection d μ₀ p.1) p.2
+    suffices hgf : Continuous (g ∘ f) by
+      have heq : (fun a : MinkowskiSpace d =>
+          poincareActGNS Wfn (PoincareGroup.translation'
+            (∑ μ ∈ Insert.insert μ₀ S', a μ •
+              PoincareRepresentation.basisVector d μ)) ψ) = g ∘ f := by
+        ext a
+        simp only [g, f, Function.comp,
+          PoincareRepresentation.translationInDirection]
+        rw [Finset.sum_insert hμ₀, ← htrans_mul,
+          poincareActGNS_mul Wfn, ContinuousLinearMap.comp_apply]
+      rw [heq]; exact hgf
+    exact (show Continuous g from hjoint μ₀).comp
+      (show Continuous f from Continuous.prodMk (continuous_apply μ₀) ih)
+
+/-- **Multi-dimensional Bochner support from SCD.**
+
+    If `μ` is the Bochner measure representing the translation inner product
+    `a ↦ ⟪ψ, U(a)ψ⟫` on `MinkowskiSpace d`, and the Wightman functions satisfy
+    `SpectralConditionDistribution`, then `μ` is supported on `ForwardMomentumCone d`.
+
+    **Proof sketch** (multi-dimensional analog of the 1D bridge chain):
+    1. For pre-Hilbert vectors `F`, express `⟪F, U(a)F⟫` as a sum of Wightman
+       function evaluations via `inner_translate_eq_wip`.
+    2. By SCD (at all n), each summand's distributional Fourier transform
+       is supported in the product forward cone `V̄₊ⁿ⁺ᵐ⁻¹`. The marginal
+       on the total 4-momentum variable is supported in `V̄₊`.
+    3. Multi-dimensional Bochner–Fubini: `∫ χ dμ_F = ∫ φ_F(a) · ℱ⁻¹[χ](a) da`
+       where `φ_F(a) = ⟪F, U(a)F⟫`. By step (2), this vanishes for Schwartz `χ`
+       supported in `(V̄₊)ᶜ`.
+    4. Inner regularity + Schwartz test function density: `μ_F((V̄₊)ᶜ) = 0`.
+    5. For general `ψ`, approximate by pre-Hilbert vectors. The Bochner
+       measures converge weakly (since `⟪ψ_n, U(a)ψ_n⟫ → ⟪ψ, U(a)ψ⟫`
+       pointwise), and support on the closed set `V̄₊` is preserved under
+       weak limits (Portmanteau theorem).
+
+    This is the multi-dimensional generalization of the 1D bridge chain
+    (`scd_inner_hasOneSidedFourierSupport` + `oneSidedSupport_implies_schwartz_vanishing`
+    + `measure_Iio_zero_of_schwartz_vanishing`).
+
+    **Ref:** Streater-Wightman, "PCT, Spin and Statistics", §3-1;
+    Reed-Simon I, Theorem IX.9. -/
+private lemma scd_bochner_forwardCone_support
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (ψ : GNSHilbertSpace Wfn)
+    (μ : MeasureTheory.Measure (MinkowskiSpace d))
+    [MeasureTheory.IsFiniteMeasure μ]
+    (hboch : ∀ x : MinkowskiSpace d,
+      @inner ℂ _ _ ψ ((gnsPoincareRep Wfn).U (PoincareGroup.translation' x) ψ) =
+      ∫ p : MinkowskiSpace d,
+        Complex.exp (↑(∑ i : Fin (d + 1), x i * p i) * Complex.I) ∂μ) :
+    μ (ForwardMomentumCone d)ᶜ = 0 := by
+  sorry
+
 /-- **Mass-shell condition** from the distribution-level spectral condition.
 
     For ψ in the appropriate domains, `⟪ψ, P₀²ψ⟫.re ≥ Σᵢ ⟪ψ, Pᵢ²ψ⟫.re`.
@@ -1685,22 +2021,66 @@ private lemma gns_mass_shell
     -- (each one-parameter group t ↦ U(t·eμ) is strongly continuous by `hsc`,
     -- and on finite-dimensional ℝ^{d+1} separate continuity in each coordinate
     -- implies joint continuity of the bilinear pairing a ↦ ⟪ψ, U(a)ψ⟫).
-    have hφ_cont : Continuous φ := by sorry
+    have hφ_cont : Continuous φ :=
+      Continuous.inner continuous_const (translation_orbit_continuous Wfn hsc ψ)
     -- === Step 2c: φ is positive-definite ===
     -- For any points aⱼ and coefficients cⱼ:
     --   Σᵢⱼ c̄ᵢ cⱼ φ(aⱼ - aᵢ) = Σᵢⱼ c̄ᵢ cⱼ ⟪U(aᵢ)ψ, U(aⱼ)ψ⟫
     --                             = ‖Σⱼ cⱼ U(aⱼ)ψ‖² ≥ 0
     -- using unitarity U(a-b) = U(a) U(b)* and sesquilinearity of inner product.
-    have hφ_pd : IsPositiveDefiniteFunction φ := by sorry
+    have hφ_pd : IsPositiveDefiniteFunction φ := by
+      intro m c x
+      -- Key: translation' a * translation' b = translation' (a + b)
+      have htrans_mul : ∀ a b : MinkowskiSpace d,
+          PoincareGroup.translation' a * PoincareGroup.translation' b =
+          PoincareGroup.translation' (a + b) := by
+        intro a b
+        apply PoincareGroup.ext
+        · simp [PoincareGroup.translation', PoincareGroup.mul_translation,
+            PoincareGroup.one_lorentz_val, Matrix.one_mulVec]
+        · simp [PoincareGroup.translation', PoincareGroup.mul_lorentz]
+      -- Key: φ(b - a) = ⟪U(translation' a) ψ, U(translation' b) ψ⟫
+      -- Uses: inner product preservation + group homomorphism + translation' decomposition
+      have hφ_inner : ∀ i j : Fin m,
+          φ (x j - x i) = @inner ℂ _ _
+            (poincareActGNS Wfn (PoincareGroup.translation' (x i)) ψ)
+            (poincareActGNS Wfn (PoincareGroup.translation' (x j)) ψ) := by
+        intro i j
+        -- Unfold φ and normalize to poincareActGNS
+        simp only [φ, show (gnsPoincareRep Wfn).U = poincareActGNS Wfn from rfl]
+        -- Rewrite translation'(xⱼ) = translation'(xᵢ) * translation'(xⱼ - xᵢ)
+        conv_rhs =>
+          rw [show PoincareGroup.translation' (x j) =
+            PoincareGroup.translation' (x i) * PoincareGroup.translation' (x j - x i)
+            from by rw [htrans_mul]; congr 1; abel]
+          rw [poincareActGNS_mul Wfn, ContinuousLinearMap.comp_apply]
+        -- ⟪ψ, U(xⱼ-xᵢ)ψ⟫ = ⟪U(xᵢ)ψ, U(xᵢ)(U(xⱼ-xᵢ)ψ)⟫ by inner product preservation
+        exact (poincareActGNS_inner Wfn (PoincareGroup.translation' (x i)) ψ _).symm
+      -- Set yᵢ = U(translation'(xᵢ)) ψ
+      set y : Fin m → GNSHilbertSpace Wfn :=
+        fun i => poincareActGNS Wfn (PoincareGroup.translation' (x i)) ψ
+      -- Rewrite φ to inner product
+      simp_rw [hφ_inner]
+      -- Convert double sum to ⟪v, v⟫ where v = ∑ cᵢ yᵢ, then use ⟪v,v⟫.re ≥ 0
+      set v := ∑ i : Fin m, c i • y i
+      suffices h : (∑ i : Fin m, ∑ j : Fin m,
+          starRingEnd ℂ (c i) * c j * @inner ℂ _ _ (y i) (y j)) =
+          @inner ℂ _ _ v v by
+        rw [h]; exact inner_self_nonneg (𝕜 := ℂ)
+      symm; simp only [v]
+      rw [sum_inner (𝕜 := ℂ)]
+      simp_rw [_root_.inner_smul_left, inner_sum (𝕜 := ℂ), _root_.inner_smul_right]
+      congr 1; ext i; rw [Finset.mul_sum]
+      congr 1; ext j; ring
     -- === Step 2d: Apply Bochner's theorem to get the finite measure μ ===
     obtain ⟨μ, hfin, hboch⟩ := bochner_theorem φ hφ_cont hφ_pd
     -- hboch : ∀ x, φ x = ∫ p, exp(i Σⱼ xⱼ pⱼ) dμ(p)
     -- === Step 2e: Support condition from SpectralConditionDistribution ===
-    -- The n=1 case of hSCD gives: the reduced 1-point Wightman function w₁
-    -- has Fourier transform supported in V̄₊. By uniqueness of the Bochner
-    -- representation (both μ and w₁ˆ give the same characteristic function
-    -- on a dense set of vectors), μ(V̄₊ᶜ) = 0.
-    have h_supp : μ (ForwardMomentumCone d)ᶜ = 0 := by sorry
+    -- By `scd_bochner_forwardCone_support`, the multi-dimensional analog of the 1D
+    -- bridge chain, the Bochner measure μ of a ↦ ⟪ψ, U(a)ψ⟫ is supported on V̄₊.
+    have h_supp : μ (ForwardMomentumCone d)ᶜ = 0 := by
+      haveI := hfin
+      exact scd_bochner_forwardCone_support Wfn hSCD hsc ψ μ (fun x => hboch x)
     -- === Step 2f: Moment identity via differentiation of the Bochner integral ===
     -- Differentiating φ(a) = ∫ exp(i⟨a,p⟩) dμ(p) twice in direction eμ:
     --   -∂²φ/∂aμ²|_{a=0} = ∫ pμ² dμ(p)
@@ -1713,7 +2093,108 @@ private lemma gns_mass_shell
           ‖((gnsPoincareRep Wfn).momentumOp (Fin.succ i) (hsc (Fin.succ i)))
             ⟨ψ, hψᵢ i⟩‖ ^ 2 =
         ∫ p : MinkowskiSpace d,
-          ((p 0) ^ 2 - ∑ i : Fin d, (p (Fin.succ i)) ^ 2) ∂μ := by sorry
+          ((p 0) ^ 2 - ∑ i : Fin d, (p (Fin.succ i)) ^ 2) ∂μ := by
+      haveI := hfin
+      -- Per-component Stone-Bochner moment identity: ‖Pμ ψ‖² = ∫ (p μ)² dμ
+      -- for each direction μ ∈ Fin (d+1).
+      -- Chain: norm_sq_domain_eq_integral gives ‖Pμ ψ‖² = Re(∫ s² d(spectral_diag_μ)).
+      -- stone_spectral_representation gives ⟪ψ, Uμ(t)ψ⟫ = ∫ exp(its) d(spectral_diag_μ).
+      -- Restricting hboch to x = t · eμ gives ⟪ψ, Uμ(t)ψ⟫ = ∫ exp(it·pμ) dμ(p)
+      --   = ∫ exp(its) d(μ.map eval_μ)(s) via integral_map.
+      -- bochner_uniqueness: spectral_diag_μ = μ.map (eval μ).
+      -- Substitution + integral_map + Re of real = ∫ (p μ)² dμ.
+      have h_comp : ∀ (μ_dir : Fin (d + 1))
+          (hψ_dir : ψ ∈ ((gnsPoincareRep Wfn).momentumOp μ_dir (hsc μ_dir)).domain),
+          MeasureTheory.Integrable (fun p : MinkowskiSpace d => (p μ_dir) ^ 2) μ ∧
+          ‖((gnsPoincareRep Wfn).momentumOp μ_dir (hsc μ_dir)) ⟨ψ, hψ_dir⟩‖ ^ 2 =
+            ∫ p : MinkowskiSpace d, (p μ_dir) ^ 2 ∂μ := by
+        intro μ_dir hψ_dir
+        set T := (gnsPoincareRep Wfn).momentumOp μ_dir (hsc μ_dir) with hT_def
+        have hT_dd := PoincareRepresentation.momentumOp_denselyDefined
+          (gnsPoincareRep Wfn) μ_dir (hsc μ_dir)
+        have hT_sa := PoincareRepresentation.momentumOp_selfAdjoint
+          (gnsPoincareRep Wfn) μ_dir (hsc μ_dir)
+        set P_sp := T.spectralMeasure hT_dd hT_sa
+        set ν := P_sp.diagonalMeasure ψ
+        haveI : MeasureTheory.IsFiniteMeasure ν := P_sp.diagonalMeasure_isFiniteMeasure ψ
+        -- ‖T ψ‖² = Re(∫ (s : ℂ)² dν)
+        have h_norm := norm_sq_domain_eq_integral T hT_dd hT_sa ⟨ψ, hψ_dir⟩
+        -- Stone spectral: ⟪ψ, 𝒰(t)ψ⟫ = ∫ exp(I*t*s) dν
+        set 𝒰 := (gnsPoincareRep Wfn).translationGroup μ_dir (hsc μ_dir)
+        have h_stone : ∀ t, @inner ℂ _ _ ψ (𝒰.U t ψ) =
+            ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν :=
+          fun t => stone_spectral_representation Wfn 𝒰 ψ t
+        -- Bochner pushforward: ⟪ψ, 𝒰(t)ψ⟫ = ∫ exp(I*t*s) d(μ.map eval_μ)(s)
+        set ν' := μ.map (fun p : MinkowskiSpace d => p μ_dir) with hν'_def
+        haveI hν'_fin : MeasureTheory.IsFiniteMeasure ν' := by
+          constructor
+          rw [hν'_def, MeasureTheory.Measure.map_apply (measurable_pi_apply μ_dir)
+            MeasurableSet.univ, Set.preimage_univ]
+          exact MeasureTheory.measure_lt_top μ _
+        have h_boch_dir : ∀ t, @inner ℂ _ _ ψ (𝒰.U t ψ) =
+            ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν' := by
+          intro t
+          -- 𝒰.U t ψ = π.U(translationInDirection d μ_dir t) ψ
+          --          = π.U(translation'(t • basisVector d μ_dir)) ψ
+          -- so inner = φ(t • basisVector d μ_dir) = ∫ exp(↑(∑ᵢ (t•eμ)ᵢ pᵢ) * I) dμ
+          have h1 : @inner ℂ _ _ ψ (𝒰.U t ψ) =
+              φ (t • PoincareRepresentation.basisVector d μ_dir) := by
+            simp only [𝒰, φ, PoincareRepresentation.translationGroup,
+              PoincareRepresentation.translationInDirection]
+          rw [h1, hboch]
+          rw [hν'_def, MeasureTheory.integral_map (measurable_pi_apply μ_dir).aemeasurable
+            (Complex.continuous_exp.comp
+              (continuous_const.mul Complex.continuous_ofReal)).aestronglyMeasurable]
+          congr 1; ext p; congr 1
+          -- ↑(∑ i, (t • basisVector d μ_dir) i * p i) * I = I * ↑t * ↑(p μ_dir)
+          simp only [PoincareRepresentation.basisVector, Pi.smul_apply, smul_eq_mul]
+          rw [show (∑ i : Fin (d + 1), (t * if i = μ_dir then (1 : ℝ) else 0) * p i) =
+            t * p μ_dir from by
+            simp [Finset.sum_ite_eq', Finset.mem_univ]]
+          push_cast; ring
+        -- Bochner uniqueness: ν = ν'
+        have h_eq : ν = ν' := bochner_uniqueness ν ν' (fun t => by
+          rw [← h_stone t, h_boch_dir t])
+        -- Substitute into norm identity and simplify
+        constructor
+        · -- Integrability: ψ ∈ dom(T) implies ∫ (p μ_dir)² dμ < ∞
+          -- Since ν = ν' = μ.map eval_μ, the spectral second moment ∫ s² dν < ∞
+          -- (from ψ ∈ dom(T)) transfers to ∫ (p μ_dir)² dμ via pushforward.
+          have h_sq_int_complex : MeasureTheory.Integrable
+              (fun s : ℝ => ((s : ℂ) ^ 2)) ν :=
+            (mem_domain_iff_square_integrable T hT_dd hT_sa ψ).mp hψ_dir
+          have h_sq_int : MeasureTheory.Integrable (fun s : ℝ => s ^ 2) ν := by
+            convert h_sq_int_complex.norm using 1; ext s
+            simp [Complex.norm_real, sq_abs]
+          rw [h_eq, hν'_def] at h_sq_int
+          rw [show (fun p : MinkowskiSpace d => (p μ_dir) ^ 2) =
+            (fun s : ℝ => s ^ 2) ∘ (fun p : MinkowskiSpace d => p μ_dir) from rfl]
+          exact h_sq_int.comp_measurable (measurable_pi_apply μ_dir)
+        · rw [h_norm]
+          -- Bridge coercion: ↑⟨ψ, hψ_dir⟩ = ψ, so the spectral diagonal measure is ν
+          show (∫ s : ℝ, ((s : ℂ) ^ 2) ∂ν).re = ∫ p : MinkowskiSpace d, (p μ_dir) ^ 2 ∂μ
+          rw [h_eq, hν'_def]
+          -- Re(∫ (s:ℂ)² d(μ.map eval_μ)) = ∫ (p μ_dir)² dμ
+          rw [MeasureTheory.integral_map (measurable_pi_apply μ_dir).aemeasurable
+            ((Complex.continuous_ofReal.pow 2).aestronglyMeasurable)]
+          -- Re(∫ (↑(p μ_dir))² dμ) = ∫ (p μ_dir)² dμ
+          -- Since (↑x : ℂ)² = ↑(x²), the integrand is real-valued.
+          simp_rw [show ∀ s : ℝ, (↑s : ℂ) ^ 2 = (↑(s ^ 2) : ℂ) from
+            fun s => by push_cast; ring]
+          norm_cast
+      -- Apply per-component identities
+      have h₀ := h_comp 0 hψ₀
+      have hᵢ := fun i => h_comp (Fin.succ i) (hψᵢ i)
+      rw [h₀.2, Finset.sum_congr rfl (fun i _ => (hᵢ i).2)]
+      -- ∫ (p 0)² dμ - ∑ᵢ ∫ (p (succ i))² dμ = ∫ ((p 0)² - ∑ᵢ (p (succ i))²) dμ
+      -- by integral linearity (integral_sub + integral_finset_sum)
+      have h_int_sum : MeasureTheory.Integrable
+          (fun p : MinkowskiSpace d => ∑ i : Fin d, (p (Fin.succ i)) ^ 2) μ :=
+        MeasureTheory.integrable_finset_sum Finset.univ (fun i _ => (hᵢ i).1)
+      have h_sub := MeasureTheory.integral_sub h₀.1 h_int_sum
+      have h_sum := MeasureTheory.integral_finset_sum Finset.univ
+        (fun (i : Fin d) (_ : i ∈ Finset.univ) => (hᵢ i).1)
+      linarith
     exact ⟨μ, hfin, h_supp, h_moment⟩
   -- === Step 3: The integral is non-negative since p₀² ≥ |p⃗|² on V̄₊ ===
   suffices h : 0 ≤ ∫ p : MinkowskiSpace d,
