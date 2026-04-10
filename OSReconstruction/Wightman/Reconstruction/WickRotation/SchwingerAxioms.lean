@@ -2100,8 +2100,8 @@ private theorem W_analytic_BHW_eq_extendF_on_extendedTube
         BHW.extendF (Wfn.spectrum_condition n).choose z := by
   let F : (Fin n → Fin (d + 1) → ℂ) → ℂ := (Wfn.spectrum_condition n).choose
   have hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n) := by
-    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
-      (Wfn.spectrum_condition n).choose_spec.1
+    rw [BHW_forwardTube_eq (d := d) (n := n)]
+    exact (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
       ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
@@ -2152,8 +2152,8 @@ private theorem bhw_real_hermitian_on_edge
     fun x => starRingEnd ℂ (BHW.extendF F (BHW.realEmbed (fun k => x (Fin.rev k))))
   let hVf : NPointDomain d n → ℂ := fun x => BHW.extendF F (BHW.realEmbed x)
   have hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n) := by
-    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
-      (Wfn.spectrum_condition n).choose_spec.1
+    rw [BHW_forwardTube_eq (d := d) (n := n)]
+    exact (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
       ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
@@ -2262,13 +2262,13 @@ private theorem bhw_real_hermitian_on_edge
       exact tendsto_nhds_unique
         (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
           n F hF_holo hF_cinv φ hφ_compact η hη_FT hφ_ET)
-        ((Wfn.spectrum_condition n).choose_spec.2 φ η hη)
+        ((Wfn.spectrum_condition n).choose_spec.2.2 φ η hη)
     have hpair_HC :
         (∫ x : NPointDomain d n, hVf x * φHC x) = Wfn.W n φHC := by
       exact tendsto_nhds_unique
         (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
           n F hF_holo hF_cinv φHC hφHC_compact η hη_FT hφHC_ET)
-        ((Wfn.spectrum_condition n).choose_spec.2 φHC η hη)
+        ((Wfn.spectrum_condition n).choose_spec.2.2 φHC η hη)
     have hW_herm : Wfn.W n φHC = starRingEnd ℂ (Wfn.W n φ) := by
       refine Wfn.hermitian n φ φHC ?_
       intro x
@@ -2622,8 +2622,8 @@ private theorem extendF_real_on_forwardJostSet
     fun x => starRingEnd ℂ (BHW.extendF F (BHW.realEmbed x))
   let hFJ : NPointDomain d n → ℂ := fun x => BHW.extendF F (BHW.realEmbed x)
   have hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n) := by
-    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
-      (Wfn.spectrum_condition n).choose_spec.1
+    rw [BHW_forwardTube_eq (d := d) (n := n)]
+    exact (Wfn.spectrum_condition n).choose_spec.1
   have hF_real_inv :
       ∀ (Λ : LorentzLieGroup.LorentzGroup d)
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
@@ -2693,7 +2693,7 @@ private theorem extendF_real_on_forwardJostSet
       exact tendsto_nhds_unique
         (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
           n F hF_holo hF_cinv φ hφ_compact η hη_FT hφ_ET)
-        ((Wfn.spectrum_condition n).choose_spec.2 φ η hη)
+        ((Wfn.spectrum_condition n).choose_spec.2.2 φ η hη)
     -- Pairing for conj(φ):
     let φ_conj : SchwartzNPoint d n := φ.conj
     have hφ_conj_compact : HasCompactSupport (φ_conj : NPointDomain d n → ℂ) := by
@@ -2715,7 +2715,7 @@ private theorem extendF_real_on_forwardJostSet
       exact tendsto_nhds_unique
         (BHW.tendsto_extendF_boundary_integral_of_hasCompactSupport_ET
           n F hF_holo hF_cinv φ_conj hφ_conj_compact η hη_FT hφ_conj_ET)
-        ((Wfn.spectrum_condition n).choose_spec.2 φ_conj η hη)
+        ((Wfn.spectrum_condition n).choose_spec.2.2 φ_conj η hη)
     -- Key identity: conj(W_n(conj φ)) = W_n(φ)
     -- Proof: φ.conj.borchersConj = φ.reverse, then Hermiticity + reversal invariance
     have hconj_bc_eq_rev : φ_conj.borchersConj = φ.reverse := by
@@ -3457,21 +3457,21 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
     (by -- BV convergence: spectrum condition in ForwardConeAbs form
       intro η hη φ
       have hη' := (inForwardCone_iff_mem_forwardConeAbs η).2 hη
-      have := (Wfn.spectrum_condition (n + m)).choose_spec.2 φ η hη'
+      have := (Wfn.spectrum_condition (n + m)).choose_spec.2.2 φ η hη'
       exact this)
     (ForwardConeAbs d n) (ForwardConeAbs d m)
     -- F₁ with W₁ = Wfn.W n
     (Wfn.spectrum_condition n).choose hF₁_holo
     (mkCLM n)
     (by intro η₁ hη₁ φ₁
-        have := (Wfn.spectrum_condition n).choose_spec.2 φ₁ η₁
+        have := (Wfn.spectrum_condition n).choose_spec.2.2 φ₁ η₁
           ((inForwardCone_iff_mem_forwardConeAbs η₁).2 hη₁)
         exact this)
     -- F₂ with W₂ = Wfn.W m
     (Wfn.spectrum_condition m).choose hF₂_holo
     (mkCLM m)
     (by intro η₂ hη₂ φ₂
-        have := (Wfn.spectrum_condition m).choose_spec.2 φ₂ η₂
+        have := (Wfn.spectrum_condition m).choose_spec.2.2 φ₂ η₂
           ((inForwardCone_iff_mem_forwardConeAbs η₂).2 hη₂)
         exact this)
     -- h_bv_cluster: directly from Wfn.cluster (R4).

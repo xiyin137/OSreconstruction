@@ -636,6 +636,7 @@ private theorem bvt_F_lorentz_restricted_wick
       bvt_lorentz_covariant_restricted (d := d) OS lgc n Γ f g hfg)
     (bvt_F OS lgc n)
     (bvt_F_holomorphic OS lgc n)
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
     (bvt_boundary_values OS lgc n)
     Λ φ hφ_compact hφ_tsupport
 
@@ -678,6 +679,7 @@ private theorem bvt_F_lorentz_restrictedCanonical
       bvt_lorentz_covariant_restricted (d := d) OS lgc n Γ f g hfg)
     (bvt_F OS lgc n)
     (bvt_F_holomorphic OS lgc n)
+    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
     (bvt_boundary_values OS lgc n)
     Λ z hz
 
@@ -704,6 +706,7 @@ noncomputable def bvt_absoluteForwardTubeInput
         bvt_lorentz_covariant_restricted (d := d) OS lgc (m + 1) Λ f g hfg)
       (bvt_F OS lgc (m + 1))
       (bvt_F_holomorphic OS lgc (m + 1))
+      (full_analytic_continuation_with_symmetry_growth OS lgc (m + 1)).choose_spec.2.2.2.2.2
       (bvt_boundary_values OS lgc (m + 1))
       Λ z ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hz)
   translation_invariant := by
@@ -975,7 +978,9 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
   lorentz_covariant := bvt_lorentz_covariant OS lgc
   spectrum_condition := by
     intro n
-    exact ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, bvt_boundary_values OS lgc n⟩
+    refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
+    -- Global polynomial growth from full_analytic_continuation_with_symmetry_growth (ACR(1)).
+    exact (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
   locally_commutative := bvt_locally_commutative OS lgc
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc

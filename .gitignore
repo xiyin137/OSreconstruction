@@ -1,6 +1,7 @@
 /build/
 /.lake/
 /lake-packages/
+research-dev
 .DS_Store
 **/.DS_Store
 /references/

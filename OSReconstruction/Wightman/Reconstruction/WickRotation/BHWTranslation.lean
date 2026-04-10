@@ -1327,7 +1327,7 @@ theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
         (nhdsWithin 0 (Set.Ioi 0))
         (nhds (Wfn.W n f)) := by
   intro f η hη
-  have h_sc := (Wfn.spectrum_condition n).choose_spec.2 f η hη
+  have h_sc := (Wfn.spectrum_condition n).choose_spec.2.2 f η hη
   refine Filter.Tendsto.congr' ?_ h_sc
   rw [Filter.eventuallyEq_iff_exists_mem]
   exact ⟨Set.Ioi 0, self_mem_nhdsWithin, fun ε hε =>
