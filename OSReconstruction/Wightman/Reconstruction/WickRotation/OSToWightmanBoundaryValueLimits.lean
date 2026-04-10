@@ -165,6 +165,83 @@ private noncomputable def bvt_W_conjTensorProduct_rightCLM
   cont := (bvt_W_continuous (d := d) OS lgc (n + m)).comp
     (SchwartzMap.conjTensorProduct_continuous_right f)
 
+/-- Exact flattening rewrite for the ambient time-shift pairing: after fixing
+the left factor, translating the right factor in real time is the same as
+applying the induced right-factor CLM to the flattened Schwartz function
+translated along `flatTimeShiftDirection`.
+
+This is a genuine blocker reduction for the current Stage-5 route. It moves the
+time-shift pairing from `SchwartzNPoint` to ordinary Schwartz translation on
+`ℝ^{m(d+1)}`, so later spectral arguments can target a fixed CLM on plain
+Schwartz space instead of redoing tensor/flattening bookkeeping each time. -/
+private theorem bvt_W_conjTensorProduct_timeShift_eq_flattened_translate
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (t : ℝ) :
+    bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) =
+      ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+        (unflattenSchwartzNPoint (d := d)))
+        (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+          (flattenSchwartzNPoint (d := d) g)) := by
+  simp [bvt_W_conjTensorProduct_rightCLM, timeShiftSchwartzNPoint_eq_unflatten_translate_local]
+
+/-- Stage-5 scalar pairing rewrite on the honest current theorem surface:
+after fixing the left factor, pairing the ambient right-time-shift scalar
+functional against a one-variable test `χ` is exactly the same as pairing `χ`
+against the corresponding flattened-Schwartz translation orbit.
+
+This is a genuine blocker reduction for the live `hzero` seam. It moves the
+entire scalar spectral pairing from `SchwartzNPoint` language to ordinary
+Schwartz translation on `ℝ^{m(d+1)}`, so the remaining work can target the
+flattened translation functional directly instead of repeatedly redoing
+tensor/flattening bookkeeping under the integral sign. -/
+private theorem integral_bvt_W_conjTensorProduct_timeShift_mul_eq_flattened_translate
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∫ t : ℝ,
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t =
+      ∫ t : ℝ,
+        ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+          (unflattenSchwartzNPoint (d := d)))
+          (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+            (flattenSchwartzNPoint (d := d) g)) * χ t := by
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards with t
+  rw [bvt_W_conjTensorProduct_timeShift_eq_flattened_translate
+    (d := d) (OS := OS) (lgc := lgc) f g t]
+
+/-- Fourier-transform specialization of
+`integral_bvt_W_conjTensorProduct_timeShift_mul_eq_flattened_translate`.
+This is the exact scalar pairing surface occurring in the current Stage-5
+spectral-support / paired-vanishing argument. -/
+private theorem integral_bvt_W_conjTensorProduct_timeShift_mul_fourierTransform_eq_flattened_translate
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (χ : SchwartzMap ℝ ℂ) :
+    ∫ t : ℝ,
+      bvt_W OS lgc (n + m)
+        (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) t =
+      ∫ t : ℝ,
+        ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+          (unflattenSchwartzNPoint (d := d)))
+          (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+            (flattenSchwartzNPoint (d := d) g)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) t := by
+  simpa using
+    integral_bvt_W_conjTensorProduct_timeShift_mul_eq_flattened_translate
+      (d := d) (OS := OS) (lgc := lgc) f g
+      (SchwartzMap.fourierTransformCLM ℂ χ)
+
 /-- Compact-support continuity of the ambient Wightman pairing along arbitrary
 real time shifts of the right factor. This is one of the two direct
 `paley_wiener_one_step` inputs for the ambient witness route. -/
@@ -358,8 +435,9 @@ private theorem hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShift
       bvt_W OS lgc (n + m)
           (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) =
         Tflat (SCV.translateSchwartz a ψ) := by
-    change T (timeShiftSchwartzNPoint (d := d) t g) = Tflat (SCV.translateSchwartz a ψ)
-    simp [T, Tflat, ψ, a, η, timeShiftSchwartzNPoint_eq_unflatten_translate_local]
+    simpa [T, Tflat, ψ, a, η] using
+      bvt_W_conjTensorProduct_timeShift_eq_flattened_translate
+        (d := d) (OS := OS) (lgc := lgc) f g t
   calc
     ‖bvt_W OS lgc (n + m)
         (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))‖

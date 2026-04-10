@@ -1293,6 +1293,67 @@ theorem fourierInvPairing_hasOneSidedFourierSupport
   filter_upwards with x
   simp [hzero x]
 
+/-- One-variable core of the current Stage-5 spectral route: if `f` has
+positive-time support and `φ` has negative support, then the inverse-Fourier
+pairing induced by `f` annihilates the Fourier transform of any pointwise
+product `g * φ`.
+
+This is not a new route or wrapper theorem. It is exactly the support-disjoint
+Parseval step needed after the future time-convolution / spatial-factorization
+rewrite: once the time-shift functional is rewritten into this one-variable
+form, the vanishing is immediate from `integral_fourierInv_mul_eq`. -/
+theorem fourierInvPairing_annihilates_FT_of_negSupport_product
+    (f : SchwartzMap ℝ ℂ)
+    (hf_supp : tsupport (f : ℝ → ℂ) ⊆ Set.Ici 0)
+    (g φ : SchwartzMap ℝ ℂ)
+    (hφ_supp : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) :
+    fourierInvPairingCLM f
+      ((SchwartzMap.fourierTransformCLM ℂ)
+        ((SchwartzMap.smulLeftCLM ℂ (fun x : ℝ => g x)) φ)) = 0 := by
+  have hprod_supp :
+      ∀ x ∈ Function.support
+        (((SchwartzMap.smulLeftCLM ℂ (fun y : ℝ => g y)) φ : SchwartzMap ℝ ℂ) : ℝ → ℂ),
+        x < 0 := by
+    intro x hx
+    apply hφ_supp x
+    apply Function.mem_support.mpr
+    intro hφx
+    apply hx
+    rw [SchwartzMap.smulLeftCLM_apply_apply (F := ℂ) g.hasTemperateGrowth, hφx]
+    simp
+  exact
+    (fourierInvPairing_hasOneSidedFourierSupport f hf_supp)
+      (((SchwartzMap.smulLeftCLM ℂ (fun x : ℝ => g x)) φ)) hprod_supp
+
+/-- Route-specific consumer of
+`fourierInvPairing_annihilates_FT_of_negSupport_product`: every branch-`3b`
+time slice coming from a positive-time Euclidean input has positive support, so
+its inverse-Fourier pairing annihilates Fourier transforms of pointwise
+products with a negative-support Schwartz factor.
+
+This is the exact one-variable statement the later Stage-5 factorization will
+need after rewriting the time-shift functional slice-by-slice; it keeps the
+remaining blocker on the factorization step itself rather than on support
+bookkeeping. -/
+theorem fourierInvPairingCLM_partialFourierSpatial_timeSlice_annihilates_FT_of_negSupport_product
+    {n : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (r : Fin n) (t : Fin n → ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (g χ : SchwartzMap ℝ ℂ)
+    (hχ_supp : ∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0) :
+    fourierInvPairingCLM
+        (partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+          (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          ((SchwartzMap.smulLeftCLM ℂ (fun x : ℝ => g x)) χ)) = 0 := by
+  refine fourierInvPairing_annihilates_FT_of_negSupport_product
+    (f := partialFourierSpatial_timeSliceSchwartz (d := d) (n := n)
+      (EuclideanPositiveTimeComponent.ofSubmodule f).1 r t ξ)
+    (g := g) (φ := χ) ?_ hχ_supp
+  exact tsupport_partialFourierSpatial_timeSlice_subset_Ici_of_orderedPositiveTime
+    (d := d) (n := n) (EuclideanPositiveTimeComponent.ofSubmodule f) r t ξ
+
 /-- Honest one-variable Section 4.3 supplier: from positive-support Schwartz
 input, obtain the Paley-Wiener upper-half-plane extension with the correct
 distributional boundary value. -/
@@ -2714,6 +2775,43 @@ private theorem kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
       (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
   exact tendsto_nhds_unique hW hS
 
+/-- Public Stage-5 matrix-element reduction in the concrete positive-real
+`singleSplit` form already used by the compact-approximation closure theorems:
+if the chosen `singleSplit_xiShift` holomorphic trace agrees with the ambient
+Wightman right-time-shift pairing on every positive real time, then the
+desired Section-4.3 kernel equality at `t = 0` follows.
+
+This is genuine progress on the OS route, not wrapper churn: it exposes the
+exact pairwise consumer of the current positive-real theorem surface, so later
+closure arguments no longer need to reach into a private reduction just to turn
+the proved/assumed `ofReal` equality into the actual matrix-element identity. -/
+theorem bvt_W_matrixElement_of_ofReal_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        bvt_singleSplit_xiShiftHolomorphicValue
+            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  exact kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (φ := φ) (ψ := ψ) (f := f)
+    (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (hψ_compact := hψ_compact) hreal
+
 /-- Honest Stage-5 per-pair kernel reduction after the reusable Section-8
 uniqueness step: once a holomorphic witness `H` on the right half-plane is
 constructed with the correct positive-real shell values and the correct
@@ -2804,6 +2902,44 @@ private theorem kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveRe
     (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
     (z := (t : ℂ)) (hz := by simpa using ht)]
   exact hreal t ht
+
+/-- Public Stage-5 matrix-element reduction on the semigroup-side positive-real
+theorem surface: if the OS holomorphic matrix element for the positive-time
+preimages already agrees with the ambient Wightman right-time-shift pairing on
+every positive real time, then the desired `t = 0` Section-4.3 kernel equality
+follows.
+
+This is the current best public reduction of the matrix-element problem to the
+actual live blocker. It does not solve the spatial-Fourier / witness seam, but
+it makes completely explicit that proving the positive-real OS-holomorphic
+identification is enough. -/
+theorem bvt_W_matrixElement_of_osHolomorphicValue_eq_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d m)
+    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
+    (hreal :
+      ∀ t : ℝ, 0 < t →
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
+          (PositiveTimeBorchersSequence.single n f hf_ord)
+          (PositiveTimeBorchersSequence.single m g hg_ord) (t : ℂ)
+          =
+            bvt_W OS lgc (n + m)
+              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
+  exact kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveReals
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+    (φ := φ) (ψ := ψ) (f := f)
+    (hf_ord := hf_ord) (hf_compact := hf_compact)
+    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
+    (hψ_compact := hψ_compact) hreal
 
 /-- Current best Stage-5 reduction: to prove the kernel equality at `t = 0`, it
 is enough to show that for every positive real `t`, the explicit canonical
@@ -4028,7 +4164,7 @@ private theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_single_single
     · simp [h₁]
   exact congrArg Complex.re hsum
 
-private theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_kernel_eq
+theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_kernel_eq
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F : BvtTransportImageSequence d) {m : ℕ}
     (hFm : F.toBorchers.bound ≤ m)
@@ -4060,7 +4196,7 @@ private theorem bvt_wightmanInner_eq_transport_norm_sq_onImage_of_kernel_eq
 transformed-image carrier, positivity on that carrier is immediate: the
 reconstructed Wightman quadratic form is already identified with the square
 norm of the transported OS Hilbert-space vector. -/
-private theorem bvt_wightmanInner_self_nonneg_onImage_of_kernel_eq
+theorem bvt_wightmanInner_self_nonneg_onImage_of_kernel_eq
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F : BvtTransportImageSequence d) {m : ℕ}
     (hFm : F.toBorchers.bound ≤ m)
