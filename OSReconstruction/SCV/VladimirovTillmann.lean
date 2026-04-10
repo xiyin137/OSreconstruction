@@ -183,7 +183,7 @@ H = F - G after flattening to the `Fin m → ℂ` type. -/
 theorem tube_holomorphic_unique_from_bv {n d : ℕ}
     (C : Set (Fin n → Fin (d + 1) → ℝ))
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
-    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C) (hC_ne : C.Nonempty)
     (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
     (hG_holo : DifferentiableOn ℂ G (TubeDomainSetPi C))
@@ -201,80 +201,69 @@ theorem tube_holomorphic_unique_from_bv {n d : ℕ}
             G (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
     Set.EqOn F G (TubeDomainSetPi C) := by
-  -- Strategy: show H = F - G has zero BV, then apply distributional uniqueness.
-  -- Work in flat coordinates via flattenCLEquiv.
+  -- Strategy: show H = F - G has zero BV, then apply distributional uniqueness
+  -- in flat coordinates via flattenCLEquiv.
+  let m := n * (d + 1)
   let e := flattenCLEquiv n (d + 1)
   let eR := flattenCLEquivReal n (d + 1)
-  let Cflat : Set (Fin (n * (d + 1)) → ℝ) := eR '' C
-  -- H = F - G in Pi coordinates
-  let H : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => F z - G z
-  -- Hflat = H ∘ e.symm in flat coordinates
-  let Hflat : (Fin (n * (d + 1)) → ℂ) → ℂ := H ∘ e.symm
-  -- Flattened cone properties
+  let Cflat : Set (Fin m → ℝ) := eR '' C
+  let Hflat : (Fin m → ℂ) → ℂ := (fun z => F z - G z) ∘ e.symm
+  -- Cone properties transport (all trivial from eR being a linear isomorphism)
   have hCflat_open : IsOpen Cflat := eR.toHomeomorph.isOpenMap _ hC_open
   have hCflat_conv : Convex ℝ Cflat := by
     intro x hx y hy a b ha hb hab
     obtain ⟨x', hx', rfl⟩ := hx; obtain ⟨y', hy', rfl⟩ := hy
     exact ⟨a • x' + b • y', hC_conv hx' hy' ha hb hab, by simp [map_add, map_smul]⟩
-  have hCflat_ne : Cflat.Nonempty := by
-    -- Open nonempty cone (salient cone in positive-dimensional space)
-    sorry
+  have hCflat_ne : Cflat.Nonempty := hC_ne.image _
   have hCflat_cone : ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat := by
-    intro t ht y hy
-    obtain ⟨y', hy', rfl⟩ := hy
+    intro t ht y hy; obtain ⟨y', hy', rfl⟩ := hy
     exact ⟨t • y', hC_cone y' hy' t ht, by simpa using eR.map_smul t y'⟩
   -- Tube membership transport
-  have hmem_tube : ∀ w : Fin (n * (d + 1)) → ℂ,
+  have hmem_tube : ∀ w : Fin m → ℂ,
       w ∈ SCV.TubeDomain Cflat → e.symm w ∈ TubeDomainSetPi C := by
     intro w hw
     show (fun k μ => ((e.symm w) k μ).im) ∈ C
-    change (fun i => (w i).im) ∈ Cflat at hw
-    obtain ⟨y, hy, hyw⟩ := hw
+    obtain ⟨y, hy, hyw⟩ := (hw : (fun i => (w i).im) ∈ Cflat)
     convert hy using 1; ext k μ
     have := congr_fun hyw (finProdFinEquiv (k, μ))
     simpa [e, eR, flattenCLEquiv_symm_apply, flattenCLEquivReal_apply] using this.symm
-  -- Hflat is holomorphic on TubeDomain Cflat
-  have hHflat_holo : DifferentiableOn ℂ Hflat (SCV.TubeDomain Cflat) := by
-    refine DifferentiableOn.comp (DifferentiableOn.sub hF_holo hG_holo)
-      e.symm.differentiableOn ?_
-    exact fun w hw => hmem_tube w hw
-  -- Hflat has zero distributional BV
-  have hHflat_bv_zero : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
-      (η : Fin (n * (d + 1)) → ℝ), η ∈ Cflat →
+  have hmem_flat : ∀ z ∈ TubeDomainSetPi C, e z ∈ SCV.TubeDomain Cflat := by
+    intro z hz; show (fun i => (e z i).im) ∈ Cflat
+    exact ⟨fun k μ => (z k μ).im, hz, by ext i; simp [e, eR, flattenCLEquiv_apply,
+      flattenCLEquivReal_apply]⟩
+  -- Hflat is holomorphic
+  have hHflat_holo : DifferentiableOn ℂ Hflat (SCV.TubeDomain Cflat) :=
+    (hF_holo.sub hG_holo).comp e.symm.differentiableOn (fun w hw => hmem_tube w hw)
+  -- Integrability: holomorphic → continuous on slice, times Schwartz → integrable
+  have hHflat_int : ∀ y ∈ Cflat, ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+      MeasureTheory.Integrable (fun x : Fin m → ℝ =>
+        Hflat (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x) := by
+    intro y hy ψ
+    -- Hflat is holomorphic → continuous on each slice x ↦ Hflat(x+iy).
+    -- Continuous function on ℝᵐ times Schwartz ψ is integrable because
+    -- ψ decays faster than any polynomial while Hflat(·+iy) is continuous
+    -- (hence locally bounded, and bounded on compact sets).
+    -- This is the same integrability argument used in forward_tube_bv_integrable.
+    sorry
+  -- Zero BV: both F and G have BV W, so H = F - G has BV 0
+  have hHflat_bv_zero : ∀ (f : SchwartzMap (Fin m → ℝ) ℂ)
+      (η : Fin m → ℝ), η ∈ Cflat →
       Filter.Tendsto
-        (fun ε : ℝ => ∫ x : Fin (n * (d + 1)) → ℝ,
+        (fun ε : ℝ => ∫ x : Fin m → ℝ,
           Hflat (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * f x)
         (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
     intro f η ⟨η_pi, hη_pi, hη_eq⟩
-    -- Transform to Pi coordinates
-    let φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
-      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR f
-    -- Both BV limits equal W(φ), so their difference → 0
-    have hF_lim := hF_bv η_pi hη_pi φ
-    have hG_lim := hG_bv η_pi hη_pi φ
-    -- The integral in flat coords = integral in Pi coords (by change of variables)
-    -- Since both converge to W(φ), their difference → 0
+    -- The flat integral ∫ Hflat(x+iεη) f(x) dx equals
+    -- ∫ (F-G)(eR⁻¹x + iε·η_pi·I) f(x) dx in Pi coords.
+    -- By change of variables x = eR(x'), this is
+    -- ∫ (F-G)(x'+iεη') (f∘eR)(x') dx' = ∫ F·φ - ∫ G·φ → W(φ) - W(φ) = 0
     sorry
-  -- Integrability: Hflat(x+iy) * ψ(x) is integrable for y ∈ Cflat, ψ ∈ S
-  have hHflat_int : ∀ y ∈ Cflat, ∀ ψ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
-      MeasureTheory.Integrable (fun x : Fin (n * (d + 1)) → ℝ =>
-        Hflat (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x) := by
-    intro y hy ψ
-    -- Hflat is holomorphic → continuous on tube → continuous on slice → locally bounded
-    -- Locally bounded × Schwartz → integrable
-    sorry
-  -- Apply distributional uniqueness
+  -- Apply distributional uniqueness (proved in DistributionalUniqueness.lean)
   have hHflat_zero := SCV.distributional_uniqueness_tube_of_zero_bv
     hCflat_open hCflat_conv hCflat_ne hCflat_cone hHflat_holo hHflat_int hHflat_bv_zero
   -- Transport back: F = G on TubeDomainSetPi C
   intro z hz
-  have hz_flat : e z ∈ SCV.TubeDomain Cflat := by
-    show (fun i => (e z i).im) ∈ Cflat
-    exact ⟨fun k μ => (z k μ).im, hz, by ext i; simp [e, eR, flattenCLEquiv_apply,
-      flattenCLEquivReal_apply]⟩
-  have h0 := hHflat_zero (e z) hz_flat
-  -- h0 : Hflat (e z) = 0, i.e., F(e.symm(e z)) - G(e.symm(e z)) = 0
-  -- Since e.symm (e z) = z, this gives F z - G z = 0
+  have h0 := hHflat_zero (e z) (hmem_flat z hz)
   change F (e.symm (e z)) - G (e.symm (e z)) = 0 at h0
   rwa [e.symm_apply_apply, sub_eq_zero] at h0
 
