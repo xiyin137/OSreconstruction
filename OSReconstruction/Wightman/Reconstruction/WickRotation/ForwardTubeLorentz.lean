@@ -472,6 +472,70 @@ theorem W_analytic_lorentz_holomorphic
   · intro z hz
     exact restricted_preserves_forward_tube Λ z hz
 
+/-- Global forward-tube polynomial growth is stable under real Lorentz
+    precomposition. -/
+theorem forward_tube_lorentz_growth
+    {d n : ℕ} [NeZero d]
+    (Λ : LorentzGroup d)
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
+    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n →
+        ‖F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+  obtain ⟨C_bd₀, N, hC₀, hF_growth⟩ := hF_growth
+  let A : ℝ := ∑ μ : Fin (d + 1), ∑ ν : Fin (d + 1), ‖(Λ.val μ ν : ℂ)‖
+  have hA_nonneg : 0 ≤ A := by
+    unfold A
+    exact Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => norm_nonneg _
+  refine ⟨C_bd₀ * (1 + A) ^ N, N, by positivity, ?_⟩
+  intro z hz
+  have hz_tube :
+      (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν) ∈ ForwardTube d n :=
+    restricted_preserves_forward_tube Λ z hz
+  have hAz :
+      ‖(fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖ ≤ A * ‖z‖ := by
+    refine (pi_norm_le_iff_of_nonneg (mul_nonneg hA_nonneg (norm_nonneg z))).2 ?_
+    intro k
+    refine (pi_norm_le_iff_of_nonneg (mul_nonneg hA_nonneg (norm_nonneg z))).2 ?_
+    intro μ
+    calc
+      ‖∑ ν, (Λ.val μ ν : ℂ) * z k ν‖ ≤ ∑ ν, ‖(Λ.val μ ν : ℂ) * z k ν‖ := norm_sum_le _ _
+      _ = ∑ ν, ‖(Λ.val μ ν : ℂ)‖ * ‖z k ν‖ := by simp
+      _ ≤ ∑ ν, ‖(Λ.val μ ν : ℂ)‖ * ‖z‖ := by
+            refine Finset.sum_le_sum ?_
+            intro ν _
+            gcongr
+            exact (norm_le_pi_norm (z k) ν).trans (norm_le_pi_norm z k)
+      _ = (∑ ν, ‖(Λ.val μ ν : ℂ)‖) * ‖z‖ := by rw [Finset.sum_mul]
+      _ ≤ A * ‖z‖ := by
+            have hrow : ∑ ν, ‖(Λ.val μ ν : ℂ)‖ ≤ A := by
+              unfold A
+              have hnonneg :
+                  ∀ μ' ∈ (Finset.univ : Finset (Fin (d + 1))),
+                    0 ≤ ∑ ν : Fin (d + 1), ‖(Λ.val μ' ν : ℂ)‖ := by
+                intro μ' _
+                exact Finset.sum_nonneg fun ν _ => norm_nonneg _
+              exact Finset.single_le_sum
+                hnonneg
+                (by exact Finset.mem_univ μ)
+            exact mul_le_mul_of_nonneg_right hrow (norm_nonneg z)
+  have hnorm :
+      1 + ‖(fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖ ≤ (1 + A) * (1 + ‖z‖) := by
+    have hnorm' : 1 + ‖(fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖ ≤ 1 + A * ‖z‖ := by
+      linarith
+    have hprod : 1 + A * ‖z‖ ≤ (1 + A) * (1 + ‖z‖) := by
+      nlinarith [hA_nonneg, norm_nonneg z]
+    exact hnorm'.trans hprod
+  calc
+    ‖F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖
+        ≤ C_bd₀ * (1 + ‖(fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν)‖) ^ N :=
+      hF_growth _ hz_tube
+    _ ≤ C_bd₀ * ((1 + A) * (1 + ‖z‖)) ^ N := by
+          gcongr
+    _ = C_bd₀ * (1 + A) ^ N * (1 + ‖z‖) ^ N := by rw [mul_pow]; ring
+    _ = (C_bd₀ * (1 + A) ^ N) * (1 + ‖z‖) ^ N := by ring
+
 /-! ### Textbook Axioms
 
 These are standard results from distribution theory and functional analysis
@@ -760,6 +824,8 @@ theorem forward_tube_slice_aestrongly_measurable {d n : ℕ} [NeZero d]
 theorem forward_tube_bv_integrable {d n : ℕ} [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (h_bv : ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
       ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
         InForwardCone d n η →
@@ -775,25 +841,76 @@ theorem forward_tube_bv_integrable {d n : ℕ} [NeZero d]
       (fun x : NPointDomain d n =>
         F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
       MeasureTheory.volume := by
-  -- Derive polynomial growth on the slice {x+iεη : x ∈ ℝⁿ} from global growth
-  -- provided by spectrum_condition. If no global growth is available, use
-  -- polynomial_growth_on_slice (which requires it as a hypothesis).
-  -- Here we use the BV hypothesis to get a W, then derive growth from it.
-  -- Actually, for integrability we only need a local bound, which follows from
-  -- holomorphicity (continuous function bounded on compact sets).
-  -- The slice x ↦ F(x+iεη) is continuous (holo on tube, affine embedding into tube).
-  -- On each compact K ⊆ ℝᵐ, ‖F(x+iεη)‖ ≤ M_K. Combined with Schwartz decay
-  -- of f, the product is integrable.
-  -- Polynomial growth of x ↦ F(x+iεη) on a fixed slice follows from:
-  -- F holomorphic on tube → x ↦ F(x+iεη) smooth → tempered distribution
-  -- (since the BV integral converges for Schwartz test functions).
-  -- A smooth tempered distribution has at most polynomial growth.
-  -- This is the Banach-Steinhaus / tempered distribution argument and does NOT
-  -- need the global VT growth hypothesis.
+  obtain ⟨C_bd₀, N, hC₀, hgrowth₀⟩ := hF_growth
+  let shift : Fin n → Fin (d + 1) → ℂ := fun k μ => ε * ↑(η k μ) * Complex.I
+  have hshift_nonneg : 0 ≤ ‖shift‖ := norm_nonneg _
+  have h_in_tube : ∀ x : NPointDomain d n,
+      (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) ∈ ForwardTube d n := by
+    intro x k
+    have hk := hη k
+    let diff : Fin (d + 1) → ℝ := fun μ => η k μ -
+      (if h : k.val = 0 then (0 : Fin (d + 1) → ℝ) else η ⟨k.val - 1, by omega⟩) μ
+    suffices hsuff : InOpenForwardCone d (fun μ => ε * diff μ) by
+      convert hsuff using 1
+      ext μ
+      simp only [diff]
+      split_ifs with h
+      · simp [Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.I_re, Complex.I_im]
+      · simp [Complex.sub_im, Complex.add_im, Complex.ofReal_im, Complex.mul_im,
+          Complex.ofReal_re, Complex.I_re, Complex.I_im]
+        ring
+    obtain ⟨hk0, hkneg⟩ := hk
+    refine ⟨mul_pos hε hk0, ?_⟩
+    show MinkowskiSpace.minkowskiNormSq d (fun μ => ε * diff μ) < 0
+    simp only [MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner]
+    have hsq :
+        ∑ i : Fin (d + 1), MinkowskiSpace.metricSignature d i * (ε * diff i) * (ε * diff i) =
+          ε ^ 2 * ∑ i : Fin (d + 1), MinkowskiSpace.metricSignature d i * diff i * diff i := by
+      rw [Finset.mul_sum]
+      congr 1
+      ext i
+      ring
+    rw [hsq]
+    exact mul_neg_of_pos_of_neg (pow_pos hε 2) hkneg
   obtain ⟨C_bd, N, hC, hgrowth⟩ : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
       ∀ x : NPointDomain d n,
         ‖F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤ C_bd * (1 + ‖x‖) ^ N := by
-    sorry
+    refine ⟨C_bd₀ * (1 + ‖shift‖) ^ N, N, by positivity, ?_⟩
+    intro x
+    have hofReal_norm :
+        ‖(fun k μ => (↑(x k μ) : ℂ))‖ ≤ ‖x‖ := by
+      refine (pi_norm_le_iff_of_nonneg (norm_nonneg x)).2 ?_
+      intro k
+      refine (pi_norm_le_iff_of_nonneg (norm_nonneg x)).2 ?_
+      intro μ
+      simpa using (norm_le_pi_norm (x k) μ).trans (norm_le_pi_norm x k)
+    have hslice_norm :
+        ‖(fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤ ‖x‖ + ‖shift‖ := by
+      calc
+        ‖(fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖
+            ≤ ‖(fun k μ => (↑(x k μ) : ℂ))‖ + ‖shift‖ := by
+              simpa [shift] using
+                norm_add_le (fun k μ => (↑(x k μ) : ℂ)) shift
+        _ ≤ ‖x‖ + ‖shift‖ := by gcongr
+    have hslice_growth :
+        1 + ‖(fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤
+          (1 + ‖shift‖) * (1 + ‖x‖) := by
+      have hstep :
+          1 + ‖(fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤
+            1 + (‖x‖ + ‖shift‖) := by
+        linarith
+      have hprod : 1 + (‖x‖ + ‖shift‖) ≤ (1 + ‖shift‖) * (1 + ‖x‖) := by
+        nlinarith [norm_nonneg x, hshift_nonneg]
+      exact hstep.trans hprod
+    calc
+      ‖F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖
+          ≤ C_bd₀ * (1 + ‖(fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖) ^ N :=
+        hgrowth₀ _ (h_in_tube x)
+      _ ≤ C_bd₀ * ((1 + ‖shift‖) * (1 + ‖x‖)) ^ N := by
+            gcongr
+      _ = C_bd₀ * (1 + ‖shift‖) ^ N * (1 + ‖x‖) ^ N := by rw [mul_pow]; ring
+      _ = (C_bd₀ * (1 + ‖shift‖) ^ N) * (1 + ‖x‖) ^ N := by ring
   -- Measurability: the slice map x ↦ F(x + εηi) is continuous since F is holomorphic
   -- on the forward tube and the affine embedding maps into it
   have hg_meas : MeasureTheory.AEStronglyMeasurable
@@ -1116,6 +1233,8 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (hF_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
@@ -1189,6 +1308,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
   · exact forward_tube_bv_integrable
       (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
       hF_lor_hol
+      (forward_tube_lorentz_growth Λ F hF_growth)
       ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩, cont := hW_cont },
         fun f' η' hη' =>
           lorentz_covariant_distributional_bv_of_restrictedCovariance
@@ -1196,6 +1316,7 @@ theorem W_analytic_lorentz_bv_agree_of_restrictedCovariance
             F hF_hol hF_bv Λ f' η' hη'⟩
       f η hη ε (Set.mem_Ioi.mp hε)
   · exact forward_tube_bv_integrable F hF_hol
+      hF_growth
       ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩, cont := hW_cont },
         hF_bv⟩
       f η hη ε (Set.mem_Ioi.mp hε)
@@ -1221,6 +1342,7 @@ theorem W_analytic_lorentz_bv_agree
     (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     (Wfn.spectrum_condition n).choose
     (Wfn.spectrum_condition n).choose_spec.1
+    (Wfn.spectrum_condition n).choose_spec.2.1
     (Wfn.spectrum_condition n).choose_spec.2.2
     Λ
 

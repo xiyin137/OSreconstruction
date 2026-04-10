@@ -39,6 +39,8 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (hF_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
@@ -90,6 +92,7 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
         exact forward_tube_bv_integrable
           (fun z => F (fun k μ => ∑ ν, (Λ.val μ ν : ℂ) * z k ν))
           hF_lor_hol
+          (forward_tube_lorentz_growth Λ F hF_growth)
           ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩,
              cont := hW_cont }, fun f' η' hη' =>
             lorentz_covariant_distributional_bv_of_restrictedCovariance
@@ -102,6 +105,7 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
           (fun x : NPointDomain d n =>
             F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * f x) := by
         exact forward_tube_bv_integrable F hF_hol
+          hF_growth
           ⟨{ toLinearMap := ⟨⟨W_n, hW_linear.map_add⟩, hW_linear.map_smul⟩,
              cont := hW_cont }, hF_bv⟩
           f η hη ε hε
@@ -109,7 +113,7 @@ theorem W_analytic_lorentz_on_tube_of_restrictedCovariance {d n : ℕ} [NeZero d
     (W_analytic_lorentz_bv_agree_of_restrictedCovariance
       (d := d) (n := n)
       W_n hW_linear hW_cont hW_lorentz
-      F hF_hol hF_bv
+      F hF_hol hF_growth hF_bv
       Λ)
   exact huniq z hz
 
@@ -132,6 +136,7 @@ theorem W_analytic_lorentz_on_tube (Wfn : WightmanFunctions d) (n : ℕ) :
     (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     (Wfn.spectrum_condition n).choose
     (Wfn.spectrum_condition n).choose_spec.1
+    (Wfn.spectrum_condition n).choose_spec.2.1
     (Wfn.spectrum_condition n).choose_spec.2.2
 
 /-- Connected Lorentz covariance of the boundary distribution already pays the
@@ -150,6 +155,8 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
         W_n f = W_n g)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_hol : DifferentiableOn ℂ F (ForwardTube d n))
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (hF_bv : ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
       InForwardCone d n η →
       Filter.Tendsto
@@ -186,7 +193,7 @@ theorem W_analytic_lorentz_wick_pairing_eq_of_restrictedCovariance {d n : ℕ} [
         exact W_analytic_lorentz_on_tube_of_restrictedCovariance
           (d := d) (n := n)
           W_n hW_linear hW_cont hW_lorentz
-          F hF_hol hF_bv
+          F hF_hol hF_growth hF_bv
           Λ⁻¹ (fun k => wickRotatePoint (x k)) hx_ft
       change
         F (fun k μ =>
