@@ -671,13 +671,12 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
     ∃ (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       -- Holomorphicity on the forward tube (DifferentiableOn avoids subtype issues)
       DifferentiableOn ℂ W_analytic (ForwardTube d n) ∧
-      -- Moderate growth: polynomial growth on compact subsets of the forward tube.
-      -- This is the Vladimirov H(T^C) condition needed for the spectral support
-      -- theorem (Thm 25.1). For Wightman functions constructed from the OS axioms,
-      -- this follows from the contraction semigroup property (Hille-Yosida).
-      (∀ (K : Set (Fin n → Fin (d + 1) → ℂ)), IsCompact K → K ⊆ ForwardTube d n →
-        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ z ∈ K, ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
+      -- Global polynomial growth on the forward tube (Vladimirov H(T^C) condition).
+      -- Strictly stronger than compact-subset growth (which is vacuous for continuous
+      -- functions) and strictly weaker than the full Vladimirov bound.
+      -- For Wightman functions from OS axioms, this is proved in the ACR(1) assembly.
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ForwardTube d n → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
       -- Boundary values: W_analytic recovers W_n as imaginary parts approach zero.
       -- For any test function f and approach direction η ∈ ForwardConeAbs,
       -- lim_{ε→0⁺} ∫ W_analytic(x + iε·η) f(x) dx = W_n(f)

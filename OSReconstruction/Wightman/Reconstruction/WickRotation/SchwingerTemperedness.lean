@@ -788,14 +788,12 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wcl φ)) := by
     intro η hη φ; rw [hWcl]
     exact hW_bv φ η ((inForwardCone_iff_mem_forwardConeAbs η).mpr hη)
-  -- Growth from spectrum_condition (compact-subset polynomial growth).
-  have hW_compact_growth := (Wfn.spectrum_condition n).choose_spec.2.1
-  have hW_growth : ∀ (K : Set (Fin n → Fin (d + 1) → ℂ)),
-      IsCompact K → K ⊆ TubeDomainSetPi (ForwardConeAbs d n) →
-        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ z ∈ K, ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-    intro K hK hKsub
-    exact hW_compact_growth K hK (hFT_eq ▸ hKsub)
+  -- Global polynomial growth from spectrum_condition.
+  have hW_global_growth := (Wfn.spectrum_condition n).choose_spec.2.1
+  have hW_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ TubeDomainSetPi (ForwardConeAbs d n) → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    obtain ⟨C_bd, N, hC_pos, hgrowth⟩ := hW_global_growth
+    exact ⟨C_bd, N, hC_pos, fun z hz => hgrowth z (hFT_eq ▸ hz)⟩
   obtain ⟨_, ⟨C_vt, N_vt, q_vt, hC_vt_pos, hVT_bound⟩⟩ :=
     vladimirov_tillmann (ForwardConeAbs d n) hC_open hC_conv hC_cone hC_salient
       W_analytic hW_holo' hW_growth Wcl hW_bv'

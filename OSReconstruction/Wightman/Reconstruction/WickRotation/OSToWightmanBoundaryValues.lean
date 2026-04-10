@@ -976,12 +976,8 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
   spectrum_condition := by
     intro n
     refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
-    -- Compact-subset growth from the global polynomial bound already proved
-    -- in full_analytic_continuation_with_symmetry_growth (ACR(1) assembly).
-    intro K _hK_compact hK_sub
-    obtain ⟨C_bd, N, hC_pos, hgrowth⟩ :=
-      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
-    exact ⟨C_bd, N, hC_pos, fun z hz => hgrowth z (hK_sub hz)⟩
+    -- Global polynomial growth from full_analytic_continuation_with_symmetry_growth (ACR(1)).
+    exact (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
   locally_commutative := bvt_locally_commutative OS lgc
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc

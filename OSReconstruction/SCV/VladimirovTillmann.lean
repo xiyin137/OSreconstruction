@@ -151,13 +151,17 @@ axiom bv_implies_fourier_support {n d : ℕ}
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
-    -- Polynomial growth on compact subsets of the tube (H(T^C) condition).
-    -- For Wightman functions from OS axioms, this follows from the contraction
-    -- semigroup property (Hille-Yosida: ‖T(t)‖ ≤ 1 for t > 0).
-    (hF_growth : ∀ (K : Set (Fin n → Fin (d + 1) → ℂ)),
-      IsCompact K → K ⊆ TubeDomainSetPi C →
-        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ z ∈ K, ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    -- Global polynomial growth on the tube (Vladimirov H(T^C) condition).
+    -- This is strictly stronger than compact-subset growth (which is vacuous for
+    -- continuous functions) and strictly weaker than the full Vladimirov bound
+    -- (which includes the boundary-distance singularity factor).
+    -- Counterexample showing compact-subset growth is insufficient: F(z) = exp(-iz)
+    -- on the upper half-plane has compact-subset growth but spectral support at -1 ∉ C*.
+    -- For Wightman functions from OS axioms, global polynomial growth is proved in
+    -- the ACR(1) assembly (full_analytic_continuation_with_symmetry_growth).
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
+        ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
     (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
       ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
@@ -454,10 +458,9 @@ theorem vladimirov_tillmann {n d : ℕ}
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (TubeDomainSetPi C))
-    (hF_growth : ∀ (K : Set (Fin n → Fin (d + 1) → ℂ)),
-      IsCompact K → K ⊆ TubeDomainSetPi C →
-        ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-          ∀ z ∈ K, ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ (z : Fin n → Fin (d + 1) → ℂ), z ∈ TubeDomainSetPi C →
+        ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (W : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ →L[ℂ] ℂ)
     (hF_bv : ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
       ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
