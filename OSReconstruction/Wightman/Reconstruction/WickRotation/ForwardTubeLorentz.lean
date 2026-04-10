@@ -623,45 +623,6 @@ theorem forwardConeAbs_salient (d n : ℕ) [NeZero d] :
           (show (⟨k.val - 1, hpred_lt⟩ : Fin n).val = m by simp; omega)
       linarith
 
-/-- Polynomial growth of a holomorphic function on a fixed interior slice of a tube domain.
-
-    If F is holomorphic on ForwardTube d n, has tempered distributional boundary
-    values, and ε > 0 with η ∈ V₊^n, then the
-    restriction x ↦ F(x + iεη) satisfies polynomial growth:
-    ‖F(x + iεη)‖ ≤ C · (1 + ‖x‖)^N for some C, N depending on F, ε, η.
-
-    Here this is obtained through `ForwardTubeDistributions`: convert Schwartz BV
-    data to flat-coordinate BV (`schwartz_bv_to_flat_bv`) and then apply
-    `polynomial_growth_forwardTube` on the compact singleton `{εη}`.
-
-    Current status:
-    this is still a weak placeholder theorem. Its previous proof relied on the
-    weak forward-tube boundary-value transport chain, which is now explicitly
-    reopened in `ForwardTubeDistributions`.
-
-    Ref: Vladimirov, "Methods of the Theory of Generalized Functions", Theorem 25.5 -/
-theorem polynomial_growth_on_slice {d n : ℕ} [NeZero d]
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF : DifferentiableOn ℂ F (ForwardTube d n))
-    (h_bv : ∃ (W : SchwartzNPoint d n →L[ℂ] ℂ),
-      ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
-        InForwardCone d n η →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointDomain d n,
-            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (W f)))
-    (η : Fin n → Fin (d + 1) → ℝ) (hη : InForwardCone d n η)
-    (ε : ℝ) (hε : ε > 0) :
-    ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-      ∀ (x : NPointDomain d n),
-        ‖F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)‖ ≤
-          C_bd * (1 + ‖x‖) ^ N := by
-  -- This theorem derives slice growth from BV + holomorphicity via VT.
-  -- It is no longer called by forward_tube_bv_integrable (which uses a
-  -- direct Banach-Steinhaus argument instead). Kept for reference.
-  sorry
-
 /-- Proved slice-growth theorem under regular flattened-tube Fourier-Laplace input. -/
 theorem polynomial_growth_on_slice_of_flatRegular {d n : ℕ} [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
