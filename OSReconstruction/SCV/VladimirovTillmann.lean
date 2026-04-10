@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael R. Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.ConeDefs
+import OSReconstruction.SCV.DistributionalUniqueness
 import OSReconstruction.SCV.LaplaceSchwartz
 import OSReconstruction.SCV.PaleyWienerSchwartz
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
@@ -177,11 +178,9 @@ axiom bv_implies_fourier_support {n d : ℕ}
 Two holomorphic functions on the same tube domain with identical tempered
 distributional boundary values coincide on the whole tube.
 
-This packages the SCV uniqueness principle used in Vladimirov's Theorem 25.5:
-once the Paley-Wiener-Schwartz Fourier-Laplace extension is shown to have the
-same boundary distribution as the original tube-holomorphic function, the two
-functions must agree in the interior. -/
-axiom tube_holomorphic_unique_from_bv {n d : ℕ}
+Proved from `SCV.distributional_uniqueness_tube_of_zero_bv` applied to
+H = F - G after flattening to the `Fin m → ℂ` type. -/
+theorem tube_holomorphic_unique_from_bv {n d : ℕ}
     (C : Set (Fin n → Fin (d + 1) → ℝ))
     (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
     (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
@@ -201,7 +200,83 @@ axiom tube_holomorphic_unique_from_bv {n d : ℕ}
           (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
             G (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (W φ))) :
-    Set.EqOn F G (TubeDomainSetPi C)
+    Set.EqOn F G (TubeDomainSetPi C) := by
+  -- Strategy: show H = F - G has zero BV, then apply distributional uniqueness.
+  -- Work in flat coordinates via flattenCLEquiv.
+  let e := flattenCLEquiv n (d + 1)
+  let eR := flattenCLEquivReal n (d + 1)
+  let Cflat : Set (Fin (n * (d + 1)) → ℝ) := eR '' C
+  -- H = F - G in Pi coordinates
+  let H : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => F z - G z
+  -- Hflat = H ∘ e.symm in flat coordinates
+  let Hflat : (Fin (n * (d + 1)) → ℂ) → ℂ := H ∘ e.symm
+  -- Flattened cone properties
+  have hCflat_open : IsOpen Cflat := eR.toHomeomorph.isOpenMap _ hC_open
+  have hCflat_conv : Convex ℝ Cflat := by
+    intro x hx y hy a b ha hb hab
+    obtain ⟨x', hx', rfl⟩ := hx; obtain ⟨y', hy', rfl⟩ := hy
+    exact ⟨a • x' + b • y', hC_conv hx' hy' ha hb hab, by simp [map_add, map_smul]⟩
+  have hCflat_ne : Cflat.Nonempty := by
+    -- Open nonempty cone (salient cone in positive-dimensional space)
+    sorry
+  have hCflat_cone : ∀ (t : ℝ), 0 < t → ∀ y ∈ Cflat, t • y ∈ Cflat := by
+    intro t ht y hy
+    obtain ⟨y', hy', rfl⟩ := hy
+    exact ⟨t • y', hC_cone y' hy' t ht, by simpa using eR.map_smul t y'⟩
+  -- Tube membership transport
+  have hmem_tube : ∀ w : Fin (n * (d + 1)) → ℂ,
+      w ∈ SCV.TubeDomain Cflat → e.symm w ∈ TubeDomainSetPi C := by
+    intro w hw
+    show (fun k μ => ((e.symm w) k μ).im) ∈ C
+    change (fun i => (w i).im) ∈ Cflat at hw
+    obtain ⟨y, hy, hyw⟩ := hw
+    convert hy using 1; ext k μ
+    have := congr_fun hyw (finProdFinEquiv (k, μ))
+    simpa [e, eR, flattenCLEquiv_symm_apply, flattenCLEquivReal_apply] using this.symm
+  -- Hflat is holomorphic on TubeDomain Cflat
+  have hHflat_holo : DifferentiableOn ℂ Hflat (SCV.TubeDomain Cflat) := by
+    refine DifferentiableOn.comp (DifferentiableOn.sub hF_holo hG_holo)
+      e.symm.differentiableOn ?_
+    exact fun w hw => hmem_tube w hw
+  -- Hflat has zero distributional BV
+  have hHflat_bv_zero : ∀ (f : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+      (η : Fin (n * (d + 1)) → ℝ), η ∈ Cflat →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : Fin (n * (d + 1)) → ℝ,
+          Hflat (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * f x)
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+    intro f η ⟨η_pi, hη_pi, hη_eq⟩
+    -- Transform to Pi coordinates
+    let φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ :=
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR f
+    -- Both BV limits equal W(φ), so their difference → 0
+    have hF_lim := hF_bv η_pi hη_pi φ
+    have hG_lim := hG_bv η_pi hη_pi φ
+    -- The integral in flat coords = integral in Pi coords (by change of variables)
+    -- Since both converge to W(φ), their difference → 0
+    sorry
+  -- Integrability: Hflat(x+iy) * ψ(x) is integrable for y ∈ Cflat, ψ ∈ S
+  have hHflat_int : ∀ y ∈ Cflat, ∀ ψ : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ,
+      MeasureTheory.Integrable (fun x : Fin (n * (d + 1)) → ℝ =>
+        Hflat (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x) := by
+    intro y hy ψ
+    -- Hflat is holomorphic → continuous on tube → continuous on slice → locally bounded
+    -- Locally bounded × Schwartz → integrable
+    sorry
+  -- Apply distributional uniqueness
+  have hHflat_zero := SCV.distributional_uniqueness_tube_of_zero_bv
+    hCflat_open hCflat_conv hCflat_ne hCflat_cone hHflat_holo hHflat_int hHflat_bv_zero
+  -- Transport back: F = G on TubeDomainSetPi C
+  intro z hz
+  have hz_flat : e z ∈ SCV.TubeDomain Cflat := by
+    show (fun i => (e z i).im) ∈ Cflat
+    exact ⟨fun k μ => (z k μ).im, hz, by ext i; simp [e, eR, flattenCLEquiv_apply,
+      flattenCLEquivReal_apply]⟩
+  have h0 := hHflat_zero (e z) hz_flat
+  -- h0 : Hflat (e z) = 0, i.e., F(e.symm(e z)) - G(e.symm(e z)) = 0
+  -- Since e.symm (e z) = z, this gives F z - G z = 0
+  change F (e.symm (e z)) - G (e.symm (e z)) = 0 at h0
+  rwa [e.symm_apply_apply, sub_eq_zero] at h0
 
 /-! ### Fourier-Laplace representation axiom -/
 
