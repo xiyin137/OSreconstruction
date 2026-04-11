@@ -5,6 +5,9 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.GNSHilbertSpace
 import OSReconstruction.Wightman.Reconstruction.WickRotation
+import OSReconstruction.GeneralResults.DenseIsometryExtension
+import Mathlib.LinearAlgebra.Isomorphisms
+import Mathlib.Analysis.InnerProductSpace.LinearMap
 
 /-!
 # Main Reconstruction Theorems (Wiring)
@@ -79,7 +82,134 @@ theorem wightman_uniqueness (qft₁ qft₂ : WightmanQFT d)
       (∀ (f : SchwartzSpacetime d) (ψ : qft₁.HilbertSpace),
         ψ ∈ qft₁.field.domain →
         U (qft₁.field.operator f ψ) = qft₂.field.operator f (U ψ)) := by
-  sorry
+  classical
+  let Gen : Type := Σ n : ℕ, Fin n → SchwartzSpacetime d
+  let toVec₁ : Gen → qft₁.HilbertSpace := fun g =>
+    qft₁.field.operatorPow g.1 g.2 qft₁.vacuum
+  let toVec₂ : Gen → qft₂.HilbertSpace := fun g =>
+    qft₂.field.operatorPow g.1 g.2 qft₂.vacuum
+  let S₁ : Submodule ℂ qft₁.HilbertSpace := Submodule.span ℂ (Set.range toVec₁)
+  let S₂ : Submodule ℂ qft₂.HilbertSpace := qft₂.field.algebraicSpan qft₂.vacuum
+  let L₁ : (Gen →₀ ℂ) →ₗ[ℂ] qft₁.HilbertSpace :=
+    Finsupp.linearCombination ℂ toVec₁
+  let L₂ : (Gen →₀ ℂ) →ₗ[ℂ] qft₂.HilbertSpace :=
+    Finsupp.linearCombination ℂ toVec₂
+  have hGenSet :
+      Set.range toVec₁ =
+        { ψ : qft₁.HilbertSpace |
+          ∃ (n : ℕ) (fs : Fin n → SchwartzSpacetime d),
+            ψ = qft₁.field.operatorPow n fs qft₁.vacuum } := by
+    ext ψ
+    constructor
+    · rintro ⟨⟨n, fs⟩, rfl⟩
+      exact ⟨n, fs, rfl⟩
+    · rintro ⟨n, fs, rfl⟩
+      exact ⟨⟨n, fs⟩, rfl⟩
+  have hDenseS₁ : Dense (S₁ : Set qft₁.HilbertSpace) := by
+    simpa [S₁, OperatorValuedDistribution.algebraicSpan, hGenSet] using qft₁.cyclicity
+  have hRange : S₁ = L₁.range := by
+    simpa [S₁, L₁] using (Finsupp.range_linearCombination (R := ℂ) (v := toVec₁)).symm
+  have hFormalInner :
+      ∀ c d : Gen →₀ ℂ,
+        inner ℂ (L₂ c) (L₂ d) = inner ℂ (L₁ c) (L₁ d) := by
+    have hGenInner :
+        ∀ g₁ g₂ : Gen,
+          inner ℂ (toVec₂ g₁) (toVec₂ g₂) = inner ℂ (toVec₁ g₁) (toVec₁ g₂) := by
+      -- Generator case: move the left operator power to the right using
+      -- `field_hermitian`, identify both sides with the same Wightman
+      -- function, then apply `h`.
+      sorry
+    intro c d
+    calc
+      inner ℂ (L₂ c) (L₂ d)
+          = d.sum (fun g₂ a₂ =>
+              a₂ * c.sum (fun g₁ a₁ =>
+                star a₁ * inner ℂ (toVec₂ g₁) (toVec₂ g₂))) := by
+            simp [L₂, Finsupp.linearCombination_apply, Finsupp.sum_inner,
+              Finsupp.inner_sum, inner_smul_left, inner_smul_right]
+      _ = d.sum (fun g₂ a₂ =>
+            a₂ * c.sum (fun g₁ a₁ =>
+              star a₁ * inner ℂ (toVec₁ g₁) (toVec₁ g₂))) := by
+            simp_rw [hGenInner]
+      _ = inner ℂ (L₁ c) (L₁ d) := by
+            simp [L₁, Finsupp.linearCombination_apply, Finsupp.sum_inner,
+              Finsupp.inner_sum, inner_smul_left, inner_smul_right]
+  have hker : LinearMap.ker L₁ ≤ LinearMap.ker L₂ := by
+    intro c hc
+    rw [LinearMap.mem_ker] at hc ⊢
+    have hself := hFormalInner c c
+    rw [hc] at hself
+    have hzero : inner ℂ (L₂ c) (L₂ c) = 0 := by
+      simpa using hself
+    exact inner_self_eq_zero.mp hzero
+  let Tq : ((Gen →₀ ℂ) ⧸ LinearMap.ker L₁) →ₗ[ℂ] qft₂.HilbertSpace :=
+    (LinearMap.ker L₁).liftQ L₂ hker
+  let eRange : ((Gen →₀ ℂ) ⧸ LinearMap.ker L₁) ≃ₗ[ℂ] S₁ :=
+    L₁.quotKerEquivRange.trans (LinearEquiv.ofEq L₁.range S₁ hRange.symm)
+  let TspanLin : S₁ →ₗ[ℂ] qft₂.HilbertSpace :=
+    Tq.comp eRange.symm.toLinearMap
+  have hTspanInner :
+      ∀ x y : S₁,
+        inner ℂ (TspanLin x) (TspanLin y) = inner ℂ x y := by
+    intro x y
+    obtain ⟨qx, rfl⟩ := eRange.surjective x
+    obtain ⟨qy, rfl⟩ := eRange.surjective y
+    simp [TspanLin]
+    refine Quotient.inductionOn₂ qx qy ?_
+    intro c d
+    simpa [Tq, eRange] using hFormalInner c d
+  let Tspan : S₁ →ₗᵢ[ℂ] qft₂.HilbertSpace :=
+    LinearMap.isometryOfInner TspanLin hTspanInner
+  obtain ⟨U, hUext⟩ :=
+    dense_submodule_isometry_extension S₁ hDenseS₁ Tspan
+  have hgen_mem₁ :
+      ∀ n (fs : Fin n → SchwartzSpacetime d),
+        qft₁.field.operatorPow n fs qft₁.vacuum ∈ S₁ := by
+    intro n fs
+    exact Submodule.subset_span (by
+      show qft₁.field.operatorPow n fs qft₁.vacuum ∈ Set.range toVec₁
+      exact ⟨⟨n, fs⟩, rfl⟩)
+  have hgen_mem₂ :
+      ∀ n (fs : Fin n → SchwartzSpacetime d),
+        qft₂.field.operatorPow n fs qft₂.vacuum ∈ S₂ := by
+    intro n fs
+    exact Submodule.subset_span ⟨n, fs, rfl⟩
+  have hTspan_gen :
+      ∀ n (fs : Fin n → SchwartzSpacetime d),
+        Tspan ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩ =
+          qft₂.field.operatorPow n fs qft₂.vacuum := by
+    intro n fs
+    let g : Gen := ⟨n, fs⟩
+    let c : Gen →₀ ℂ := Finsupp.single g 1
+    have hc :
+        eRange (Submodule.Quotient.mk c) =
+          ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩ := by
+      ext
+      change (L₁ c : qft₁.HilbertSpace) = qft₁.field.operatorPow n fs qft₁.vacuum
+      simp [L₁, c, g, toVec₁]
+    have hq :
+        eRange.symm ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩ =
+          Submodule.Quotient.mk c := by
+      exact eRange.symm_apply_eq.mpr hc.symm
+    change TspanLin ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩ =
+      qft₂.field.operatorPow n fs qft₂.vacuum
+    rw [show TspanLin ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩ =
+        Tq (eRange.symm ⟨qft₁.field.operatorPow n fs qft₁.vacuum, hgen_mem₁ n fs⟩) by rfl]
+    rw [hq, Submodule.liftQ_apply]
+    simp [L₂, toVec₂, c, g]
+  refine ⟨U, ?_, ?_⟩
+  · let Ω₁S : S₁ := ⟨qft₁.vacuum, hgen_mem₁ 0 (fun i => Fin.elim0 i)⟩
+    have hΩ : U Ω₁S =
+        qft₂.vacuum := by
+      rw [hUext]
+      simpa [Ω₁S, OperatorValuedDistribution.operatorPow] using
+        (hTspan_gen 0 (fun i => Fin.elim0 i))
+    simpa using hΩ
+  · intro f ψ hψ
+    -- The extension constructed above intertwines the fields on the cyclic span.
+    -- Extending this from the cyclic span to the full common domain requires an
+    -- additional domain-compatibility argument that is not yet formalized here.
+    sorry
 
 /-- **Theorem R→E** (Wightman -> zero-diagonal Euclidean side): a Wightman QFT,
     together with explicit forward-tube growth input for its holomorphic
