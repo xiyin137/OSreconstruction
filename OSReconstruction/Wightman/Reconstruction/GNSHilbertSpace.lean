@@ -1472,7 +1472,7 @@ private lemma scd_summand_integrable
         @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
           (poincareActGNS Wfn τt (G : GNSHilbertSpace Wfn)) := by
       -- h(t) = WIP(single n fn, single m (τ_t fm))
-      rw [← WightmanInnerProduct_single_single Wfn.W Wfn.linear n m fn
+      rw [← WightmanInnerProduct_single_single d Wfn.W Wfn.linear n m fn
         (poincareActNPoint τt fm)]
       -- WIP = inner_pre(F, ⟦single m (τ_t fm)⟧)
       rw [← inner_eq Wfn (BorchersSequence.single n fn)
@@ -1483,8 +1483,8 @@ private lemma scd_summand_integrable
         show _ = ⟦poincareActBorchers τt (BorchersSequence.single m fm)⟧
         exact (mk_eq_of_funcs_eq Wfn _ _ (fun n' => by
           by_cases h : n' = m
-          · subst h; simp
-          · simp [BorchersSequence.single_funcs_ne h, poincareActNPoint_zero])).symm
+          · subst h; simp [poincareActBorchers]
+          · simp [poincareActBorchers, BorchersSequence.single_funcs_ne h, poincareActNPoint_zero])).symm
       rw [h_q]
       -- inner_pre(F, poincareActPreHilbert(τ_t)(G)) = inner_GNS(F, U(τ_t)G)
       exact (inner_translate_eq_wip Wfn 0 F G t).symm
@@ -1536,7 +1536,7 @@ private lemma scd_summand_fourier_vanishing
     have h_triv : ∀ t : ℝ,
         poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm = fm := by
       intro t; ext x; simp only [poincareActNPoint_apply]
-      congr 1; exact funext Fin.elim0
+      congr 1; exact funext fun i => i.elim0
     simp_rw [h_triv]
     -- Integrand is constant × FT[φ](t), pull constant out
     rw [MeasureTheory.integral_const_mul]
@@ -1550,7 +1550,9 @@ private lemma scd_summand_fourier_vanishing
     -- Fourier inversion: FourierInv(FT[φ]) = φ at function level
     set g := SchwartzMap.fourierTransformCLM ℂ φ with hg_def
     have hinv : FourierTransform.fourierInv (g : ℝ → ℂ) = (φ : ℝ → ℂ) := by
-      have h := congrArg (⇑·) (FourierTransform.fourierInv_fourier_eq φ)
+      have h := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ))
+        (FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) φ)
+      dsimp only at h
       rwa [SchwartzMap.fourierInv_coe] at h
     -- FourierInv(g)(0) = ∫ g(t) dt (exponential kernel at 0 is 1)
     have h_fi_zero : FourierTransform.fourierInv (g : ℝ → ℂ) 0 =
@@ -1633,7 +1635,10 @@ private lemma scd_inner_hasOneSidedFourierSupport
       WightmanInnerProduct d Wfn.W B
         (poincareActBorchers
           (PoincareRepresentation.translationInDirection d 0 t) B) := by
-    intro t; rw [inner_translate_eq_wip Wfn 0 pB pB t]; rfl
+    intro t
+    have h_U : 𝒰₀.U t = poincareActGNS Wfn
+        (PoincareRepresentation.translationInDirection d 0 t) := rfl
+    rw [h_U, inner_translate_eq_wip Wfn 0 pB pB t]; rfl
   simp_rw [hinner_eq]
   -- Step 3: Unfold WightmanInnerProduct as a finite double sum.
   show ∫ t : ℝ,
@@ -1647,7 +1652,7 @@ private lemma scd_inner_hasOneSidedFourierSupport
   -- Step 5: Exchange integral and finite sum, then show each summand is 0.
   set FTφ := SchwartzMap.fourierTransformCLM ℂ φ with hFTφ_def
   rw [MeasureTheory.integral_finset_sum _ (fun n _ =>
-    MeasureTheory.Integrable.finset_sum _ (fun m _ =>
+    MeasureTheory.integrable_finset_sum _ (fun m _ =>
       scd_summand_integrable Wfn (B.funcs n) (B.funcs m) FTφ))]
   apply Finset.sum_eq_zero; intro n _
   rw [MeasureTheory.integral_finset_sum _ (fun m _ =>
@@ -1771,7 +1776,8 @@ theorem oneSidedSupport_implies_schwartz_vanishing
   have hχ_apply : ∀ x : ℝ, (χ : ℝ → ℂ) x = (ψ : ℝ → ℂ) (2 * Real.pi * x) := by
     intro x
     simp only [hχ_def, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, hscaleCLE_def,
-      ContinuousLinearEquiv.smulLeft_apply, Units.val_mk0, smul_eq_mul]
+      Function.comp_apply, ContinuousLinearEquiv.smulLeft_apply_apply,
+      Units.smul_def, Units.val_mk0, smul_eq_mul]
   -- === Step 2: χ has support in (-∞, 0) ===
   have hχ_supp : ∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0 := by
     intro x hx
@@ -1810,7 +1816,7 @@ theorem oneSidedSupport_implies_schwartz_vanishing
       Complex.exp (2 * ↑Real.pi * Complex.I * ↑(s / (2 * Real.pi)) * ↑t) *
         (g : ℝ → ℂ) t := by
     intro t; congr 1; congr 1
-    push_cast; field_simp; ring
+    push_cast; field_simp
   simp_rw [h_kernel_eq]
   -- Sub-step (b): Recognize as FourierInv(g) at s/(2π)
   rw [← fourierInv_eq_cexp_integral' g (s / (2 * Real.pi))]
@@ -1819,11 +1825,12 @@ theorem oneSidedSupport_implies_schwartz_vanishing
   have h_fi_eq : FourierTransform.fourierInv (g : ℝ → ℂ) = (χ : ℝ → ℂ) := by
     -- FourierTransform.fourierInv_fourier_eq gives SchwartzMap equality:
     -- FourierTransform.fourierInv (FT χ) = χ
-    have h_inv := FourierTransform.fourierInv_fourier_eq χ
+    have h_inv := FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) χ
     -- Coerce to function equality
-    have h_fn := congrArg (⇑·) h_inv
+    have h_fn := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ)) h_inv
     -- h_fn : ⇑(FourierTransform.fourierInv (FT χ)) = ⇑χ
     -- Bridge SchwartzMap-level and function-level fourierInv via fourierInv_coe
+    dsimp only at h_fn
     rw [SchwartzMap.fourierInv_coe] at h_fn
     -- h_fn : FourierTransform.fourierInv (⇑(FT χ)) = ⇑χ
     exact h_fn
@@ -2380,7 +2387,7 @@ private lemma scd_bochner_forwardCone_support
     set dotY := (fun p : MinkowskiSpace d => ∑ i : Fin (d + 1), y i * p i) with hdotY
     set ν_y := μ.map dotY with hν_y_def
     have h_meas : Measurable dotY :=
-      measurable_finset_sum _ (fun i _ => (measurable_const.mul (measurable_pi_apply i)))
+      Finset.measurable_sum _ (fun i _ => (measurable_const.mul (measurable_pi_apply i)))
     haveI : MeasureTheory.IsFiniteMeasure ν_y :=
       ⟨by rw [hν_y_def, MeasureTheory.Measure.map_apply h_meas MeasurableSet.univ,
         Set.preimage_univ]; exact MeasureTheory.measure_lt_top μ _⟩
