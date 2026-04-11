@@ -1448,17 +1448,60 @@ private lemma scd_summand_integrable
       Wfn.W (n + m) (fn.conjTensorProduct
         (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) *
       (ψ : ℝ → ℂ) t) := by
-  -- t ↦ W(n+m)(fn.conjTP(τ_t fm)) is continuous (composition of continuous maps:
-  -- continuous_translate_npoint_schwartz, conjTensorProduct_continuous_right, Wfn.tempered)
-  -- and has at most polynomial growth (temperedness of W + Schwartz seminorm bounds).
-  -- Product with Schwartz (rapidly decreasing) is integrable.
-  exact ((Wfn.tempered (n + m)).comp
-    ((SchwartzMap.conjTensorProduct_continuous_right fn).comp
-      (continuous_translate_npoint_schwartz 0 fm))).aestronglyMeasurable.mul_integrable
-    ψ.integrable (by
-      -- Boundedness on compact sets + tempered growth gives local boundedness
-      -- which combined with Schwartz decay gives integrability.
-      sorry)
+  -- The first factor t ↦ W(n+m)(fn.conjTP(τ_t fm)) is continuous.
+  have hcont : Continuous (fun t : ℝ =>
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm))) :=
+    (Wfn.tempered (n + m)).comp
+      ((SchwartzMap.conjTensorProduct_continuous_right fn).comp
+        (continuous_translate_npoint_schwartz 0 fm))
+  -- GNS vectors for the Cauchy-Schwarz bound.
+  set F : PreHilbertSpace Wfn := ⟦BorchersSequence.single n fn⟧
+  set G : PreHilbertSpace Wfn := ⟦BorchersSequence.single m fm⟧
+  set C := ‖(F : GNSHilbertSpace Wfn)‖ * ‖(G : GNSHilbertSpace Wfn)‖
+  -- The first factor equals ⟪F, U(τ_t)G⟫ in GNS, hence ‖h(t)‖ ≤ ‖F‖·‖G‖.
+  have hbound : ∀ t : ℝ, ‖Wfn.W (n + m) (fn.conjTensorProduct
+      (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm))‖ ≤ C := by
+    intro t
+    set τt := PoincareRepresentation.translationInDirection d 0 t
+    -- Chain: h(t) = WIP(single n fn, single m (τ_t fm))
+    --            = inner_pre(F, ⟦single m (τ_t fm)⟧)
+    --            = inner_pre(F, poincareActPreHilbert(τ_t)(G))
+    --            = inner_GNS(F, U(τ_t)G)
+    have h_eq : Wfn.W (n + m) (fn.conjTensorProduct (poincareActNPoint τt fm)) =
+        @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+          (poincareActGNS Wfn τt (G : GNSHilbertSpace Wfn)) := by
+      -- h(t) = WIP(single n fn, single m (τ_t fm))
+      rw [← WightmanInnerProduct_single_single Wfn.W Wfn.linear n m fn
+        (poincareActNPoint τt fm)]
+      -- WIP = inner_pre(F, ⟦single m (τ_t fm)⟧)
+      rw [← inner_eq Wfn (BorchersSequence.single n fn)
+        (BorchersSequence.single m (poincareActNPoint τt fm))]
+      -- ⟦single m (τ_t fm)⟧ = poincareActPreHilbert(τ_t)(G)
+      have h_q : (⟦BorchersSequence.single m (poincareActNPoint τt fm)⟧ :
+          PreHilbertSpace Wfn) = poincareActPreHilbert Wfn τt G := by
+        show _ = ⟦poincareActBorchers τt (BorchersSequence.single m fm)⟧
+        exact (mk_eq_of_funcs_eq Wfn _ _ (fun n' => by
+          by_cases h : n' = m
+          · subst h; simp
+          · simp [BorchersSequence.single_funcs_ne h, poincareActNPoint_zero])).symm
+      rw [h_q]
+      -- inner_pre(F, poincareActPreHilbert(τ_t)(G)) = inner_GNS(F, U(τ_t)G)
+      exact (inner_translate_eq_wip Wfn 0 F G t).symm
+    -- Cauchy-Schwarz + unitarity
+    rw [h_eq]
+    calc ‖@inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+            (poincareActGNS Wfn τt (G : GNSHilbertSpace Wfn))‖
+        ≤ ‖(F : GNSHilbertSpace Wfn)‖ *
+          ‖poincareActGNS Wfn τt (G : GNSHilbertSpace Wfn)‖ :=
+          norm_inner_le_norm _ _
+      _ = C := by rw [poincareActGNS_norm]
+  -- Integrability: bounded × Schwartz is L¹.
+  exact (ψ.integrable.norm.const_mul C).mono'
+    (hcont.mul ψ.continuous).aestronglyMeasurable
+    (Filter.Eventually.of_forall (fun t => by
+      rw [norm_mul]
+      exact mul_le_mul_of_nonneg_right (hbound t) (norm_nonneg _)))
 
 /-- **Per-summand one-sided Fourier vanishing for the WIP expansion.**
 
@@ -1521,15 +1564,33 @@ private lemma scd_summand_fourier_vanishing
         = FourierTransform.fourierInv (g : ℝ → ℂ) 0 := h_fi_zero.symm
       _ = (φ : ℝ → ℂ) 0 := congrFun hinv 0
       _ = 0 := hφ0
-  · -- Case n + m ≥ 1: Deep SCD distributional argument.
-    -- W_{n+m} factors as w ∘ diffVarReduction by SpectralConditionDistribution.
-    -- The reduced distribution w has Fourier support in V̄₊^{n+m-1}.
-    -- Time-translation τ_{te₀} shifts only the boundary difference variable's
-    -- time component. After exchanging w with the t-integral (by continuity
-    -- and linearity of w), the resulting test function in difference variables
-    -- has Fourier transform supported outside the forward momentum cone
-    -- (the energy component is restricted to supp(φ) ⊆ (-∞,0), giving p₀ < 0,
-    -- outside V̄₊ where p₀ ≥ 0). By the SCD support condition, w vanishes.
+  · -- Case n + m ≥ 1: SCD distributional argument.
+    have hpos : 0 < n + m := Nat.pos_of_ne_zero hnm
+    have hk : (n + m - 1) + 1 = n + m := Nat.sub_add_cancel hpos
+    -- Get the reduced distribution w at level k = n + m - 1 from SCD.
+    obtain ⟨w, hw_cont, hw_lin, hw_factor, hw_vanish⟩ := hSCD (n + m - 1)
+    -- hw_factor : ∀ f : SchwartzNPointSpace d ((n+m-1)+1), W ((n+m-1)+1) f = w (diffVarReduction d (n+m-1) f)
+    -- Transport lemma: W at propositionally equal level with cast argument.
+    have cast_W : ∀ (ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
+        Wfn.W ℓ (hℓ.symm ▸ f) = Wfn.W (n + m) f := fun ℓ hℓ f => by subst hℓ; rfl
+    -- Factor: W(n+m)(f) = w(diffVarReduction(cast f)) for all f.
+    have hw_eq : ∀ (f : SchwartzNPointSpace d (n + m)),
+        Wfn.W (n + m) f = w (diffVarReduction d (n + m - 1) (hk.symm ▸ f)) :=
+      fun f => by rw [← cast_W _ hk f]; exact hw_factor _
+    -- Rewrite each integrand through the factoring.
+    simp_rw [hw_eq]
+    -- Goal: ∫ t, w(diffVarReduction d (n+m-1) (hk.symm ▸ fn.conjTP(τ_t fm))) * FT[φ](t) dt = 0
+    -- By linearity/continuity of w, exchange w with the t-integral:
+    --   = w(∫ FT[φ](t) • diffVarReduction(hk.symm ▸ fn.conjTP(τ_t fm)) dt) =: w(Θ).
+    -- The Schwartz function Θ ∈ SchwartzNPointSpace d (n+m-1) encodes the
+    -- t-integrated test function. Its Fourier transform FT(Θ) has the property
+    -- that at every point q where FT(Θ)(q) ≠ 0, the boundary component
+    -- (index corresponding to the fn–fm junction) satisfies q_boundary ∉ V̄₊,
+    -- because time-translation τ_{te₀} shifts the boundary difference variable's
+    -- time component by t, and the t-Fourier integration pins the boundary energy
+    -- to supp(φ) ⊆ (-∞,0), giving p₀ < 0 ⟹ p ∉ V̄₊.
+    -- By the SCD vanishing condition hw_vanish, w(FT(Θ).fourierTransform) = 0,
+    -- hence the integral is zero.
     sorry
 
 /-- **Step 1+2: SCD → one-sided Fourier support of the GNS inner product function.**
@@ -2307,6 +2368,43 @@ private lemma scd_bochner_forwardCone_support
       ∫ p : MinkowskiSpace d,
         Complex.exp (↑(∑ i : Fin (d + 1), x i * p i) * Complex.I) ∂μ) :
     μ (ForwardMomentumCone d)ᶜ = 0 := by
+  -- === Step 1: For each y ∈ V̄₊, the null set μ({p | y·p < 0}) = 0. ===
+  -- The 1D pushforward ν_y = μ.map(p ↦ Σᵢ yᵢpᵢ) satisfies ν_y((-∞,0)) = 0.
+  -- Proof chain: restrict hboch to x = ty → Bochner representation of
+  -- t ↦ ⟪ψ, U(ty)ψ⟫ as ∫ exp(its) dν_y → one-sided Fourier support via
+  -- the SCD argument for direction y → 1D pipeline gives ν_y((-∞,0)) = 0.
+  have h_null : ∀ y : MinkowskiSpace d, y ∈ ForwardMomentumCone d →
+      μ {p : MinkowskiSpace d | ∑ i : Fin (d + 1), y i * p i < 0} = 0 := by
+    intro y hy
+    -- The 1D pushforward ν_y = μ.map(p ↦ y·p)
+    set dotY := (fun p : MinkowskiSpace d => ∑ i : Fin (d + 1), y i * p i) with hdotY
+    set ν_y := μ.map dotY with hν_y_def
+    have h_meas : Measurable dotY :=
+      measurable_finset_sum _ (fun i _ => (measurable_const.mul (measurable_pi_apply i)))
+    haveI : MeasureTheory.IsFiniteMeasure ν_y :=
+      ⟨by rw [hν_y_def, MeasureTheory.Measure.map_apply h_meas MeasurableSet.univ,
+        Set.preimage_univ]; exact MeasureTheory.measure_lt_top μ _⟩
+    -- Convert: μ({p | y·p < 0}) = ν_y((-∞,0))
+    rw [show {p : MinkowskiSpace d | ∑ i, y i * p i < 0} = dotY ⁻¹' Set.Iio 0 from rfl]
+    rw [← MeasureTheory.Measure.map_apply h_meas measurableSet_Iio]
+    -- SCD for direction y gives one-sided Fourier support of t ↦ ⟪ψ, U(ty)ψ⟫,
+    -- which via the 1D pipeline (oneSidedSupport_implies_schwartz_vanishing +
+    -- measure_Iio_zero_of_schwartz_vanishing) yields ν_y((-∞,0)) = 0.
+    -- The direction-y spectral condition follows from:
+    --   1. Decompose U(ty) via Borchers representatives
+    --   2. Each summand W(n+m)(fn.conjTP(τ_{ty} fm)) factors through SCD
+    --   3. The boundary diff variable is shifted by ty ∈ V̄₊ (scaled)
+    --   4. The t-FT pins the y-projection of boundary momentum to supp(φ) ⊆ (-∞,0)
+    --   5. For p_bdy ∈ V̄₊, self-duality gives y·p_bdy ≥ 0, contradicting step 4
+    --   6. So p_bdy ∉ V̄₊, and SCD vanishing applies
+    sorry
+  -- === Step 2: V̄₊ᶜ is covered by null sets via cone self-duality. ===
+  -- Decompose V̄₊ᶜ = {p | p₀ < 0} ∪ {p | p₀ ≥ 0 ∧ |p⃗|² > p₀²}.
+  -- Part A: {p | p₀ < 0} is null — take y = e₀ ∈ V̄₊.
+  -- Part B: {p | p₀ ≥ 0, |p⃗|² > p₀²} is null — for each such p, the lightlike
+  --   vector y = (|p⃗|, -p₁, ..., -p_d) ∈ V̄₊ satisfies y·p = |p⃗|(p₀-|p⃗|) < 0.
+  --   A countable dense subset of separating directions (via density of ℚ^d in ℝ^d)
+  --   gives V̄₊ᶜ ⊆ countable union of null sets, hence μ(V̄₊ᶜ) = 0.
   sorry
 
 /-- **Mass-shell condition** from the distribution-level spectral condition.
