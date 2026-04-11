@@ -2775,43 +2775,6 @@ private theorem kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
       (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
   exact tendsto_nhds_unique hW hS
 
-/-- Public Stage-5 matrix-element reduction in the concrete positive-real
-`singleSplit` form already used by the compact-approximation closure theorems:
-if the chosen `singleSplit_xiShift` holomorphic trace agrees with the ambient
-Wightman right-time-shift pairing on every positive real time, then the
-desired Section-4.3 kernel equality at `t = 0` follows.
-
-This is genuine progress on the OS route, not wrapper churn: it exposes the
-exact pairwise consumer of the current positive-real theorem surface, so later
-closure arguments no longer need to reach into a private reduction just to turn
-the proved/assumed `ofReal` equality into the actual matrix-element identity. -/
-theorem bvt_W_matrixElement_of_ofReal_eq_bvt_W_conjTensorProduct_timeShift
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    {n m : ℕ} (hm : 0 < m)
-    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
-    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
-    (g : SchwartzNPoint d m)
-    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
-    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
-    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
-    (hreal :
-      ∀ t : ℝ, 0 < t →
-        bvt_singleSplit_xiShiftHolomorphicValue
-            (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)
-          =
-            bvt_W OS lgc (n + m)
-              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
-    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
-      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
-  exact kernel_eq_of_singleSplit_eq_bvt_W_timeShift_on_positiveReals
-    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
-    (φ := φ) (ψ := ψ) (f := f)
-    (hf_ord := hf_ord) (hf_compact := hf_compact)
-    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
-    (hψ_compact := hψ_compact) hreal
-
 /-- Honest Stage-5 per-pair kernel reduction after the reusable Section-8
 uniqueness step: once a holomorphic witness `H` on the right half-plane is
 constructed with the correct positive-real shell values and the correct
@@ -2902,44 +2865,6 @@ private theorem kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveRe
     (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
     (z := (t : ℂ)) (hz := by simpa using ht)]
   exact hreal t ht
-
-/-- Public Stage-5 matrix-element reduction on the semigroup-side positive-real
-theorem surface: if the OS holomorphic matrix element for the positive-time
-preimages already agrees with the ambient Wightman right-time-shift pairing on
-every positive real time, then the desired `t = 0` Section-4.3 kernel equality
-follows.
-
-This is the current best public reduction of the matrix-element problem to the
-actual live blocker. It does not solve the spatial-Fourier / witness seam, but
-it makes completely explicit that proving the positive-real OS-holomorphic
-identification is enough. -/
-theorem bvt_W_matrixElement_of_osHolomorphicValue_eq_bvt_W_conjTensorProduct_timeShift
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    {n m : ℕ} (hm : 0 < m)
-    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
-    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
-    (g : SchwartzNPoint d m)
-    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
-    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
-    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
-    (hreal :
-      ∀ t : ℝ, 0 < t →
-        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
-          (PositiveTimeBorchersSequence.single n f hf_ord)
-          (PositiveTimeBorchersSequence.single m g hg_ord) (t : ℂ)
-          =
-            bvt_W OS lgc (n + m)
-              (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))) :
-    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
-      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
-  exact kernel_eq_of_osHolomorphicValue_eq_bvt_W_timeShift_on_positiveReals
-    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
-    (φ := φ) (ψ := ψ) (f := f)
-    (hf_ord := hf_ord) (hf_compact := hf_compact)
-    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
-    (hψ_compact := hψ_compact) hreal
 
 /-- Current best Stage-5 reduction: to prove the kernel equality at `t = 0`, it
 is enough to show that for every positive real `t`, the explicit canonical
@@ -3102,67 +3027,6 @@ theorem lemma42_matrix_element_time_interchange
       (hf_ord := hf_ord) (hf_compact := hf_compact)
       (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
       (hψ_compact := hψ_compact) (H := H) hH_imag_os hlimit
-
-/-- Same Stage-5 reduction, but with the target scalar written as the chosen
-one-variable `singleSplit_xiShift` holomorphic trace built from the positive-time
-preimages.
-
-This is a genuine blocker shrink rather than a new route: the target is still
-the same Section-4.3 one-variable holomorphic object, but now expressed in the
-preimage-side form that the remaining canonical-shell boundary-value theorem is
-expected to hit most directly. The semigroup-side holomorphic value is then
-recovered immediately from
-`bvt_xiShift_eq_osInnerProduct_holomorphicValue_single`. -/
-private theorem kernel_eq_of_tendsto_bvt_F_canonical_xiShift_to_singleSplit_on_positiveReals
-    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
-    {n m : ℕ} (hm : 0 < m)
-    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
-    (f : SchwartzNPoint d n)
-    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
-    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
-    (g : SchwartzNPoint d m)
-    (hg_ord : tsupport (g : NPointDomain d m → ℂ) ⊆ OrderedPositiveTimeRegion d m)
-    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
-    (hψ_compact : HasCompactSupport (ψ : NPointDomain d m → ℂ))
-    (hlimit :
-      ∀ t : ℝ, 0 < t →
-        Filter.Tendsto
-          (fun ε : ℝ =>
-            ∫ y : NPointDomain d (n + m),
-              bvt_F OS lgc (n + m)
-                (xiShift ⟨n, Nat.lt_add_of_pos_right hm⟩ 0
-                  (fun k μ =>
-                    ↑(y k μ) +
-                      ε * ↑(canonicalForwardConeDirection (d := d) (n + m) k μ) *
-                        Complex.I)
-                  (t : ℂ)) *
-                (φ.conjTensorProduct ψ) y)
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds
-            (bvt_singleSplit_xiShiftHolomorphicValue
-              (d := d) OS lgc hm
-              f hf_ord hf_compact g hg_ord hg_compact (t : ℂ)))) :
-    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ) =
-      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)) := by
-  refine kernel_eq_of_tendsto_bvt_F_canonical_xiShift_to_osHolomorphicValue_on_positiveReals
-    (d := d) (OS := OS) (lgc := lgc) (hm := hm)
-    (φ := φ) (ψ := ψ) (f := f)
-    (hf_ord := hf_ord) (hf_compact := hf_compact)
-    (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
-    (hψ_compact := hψ_compact) ?_
-  intro t ht
-  have hsingle :
-      bvt_singleSplit_xiShiftHolomorphicValue
-          (d := d) OS lgc hm f hf_ord hf_compact g hg_ord hg_compact (t : ℂ) =
-        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc
-          (PositiveTimeBorchersSequence.single n f hf_ord)
-          (PositiveTimeBorchersSequence.single m g hg_ord) (t : ℂ) := by
-    exact bvt_xiShift_eq_osInnerProduct_holomorphicValue_single
-      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
-      (f := f) (hf_ord := hf_ord) (hf_compact := hf_compact)
-      (g := g) (hg_ord := hg_ord) (hg_compact := hg_compact)
-      (z := (t : ℂ)) (hz := by simpa using ht)
-  simpa [hsingle] using hlimit t ht
 
 /-- Equality of multivariate Section 4.3 quotient classes forces equality of
 the associated one-variable slice tests on `[0,\infty)`, provided the frozen

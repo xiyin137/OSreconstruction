@@ -837,15 +837,17 @@ Exact current-code milestone:
   `fourierInvPairingCLM_opposite_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
   in
   [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
-- the next honest Stage-5 blocker is therefore no longer “prove generic
-  slice vanishing,” but the concrete spatial-Fourier factorization theorem
-  that rewrites the shell-specific paired-vanishing hypothesis `hzero` in
-  `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_boundaryValue_of_paired_zero`
-  in
-  [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean)
-  into those already-proved slice pairings, followed by the
-  positive-imaginary-axis identification of the resulting ambient
-  upper-half-plane witness;
+- the flattened spectral / dual-cone package is now closed in
+  [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean),
+  culminating in
+  `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened`;
+- the next honest Stage-5 blocker is therefore the actual witness-consuming
+  seam: the ambient upper-half-plane witness has now been canonicalized as an
+  explicit `fourierLaplaceExt` of the real-time Wightman pairing functional,
+  with a concrete imaginary-axis formula; the remaining work is to identify
+  those values with the semigroup-side holomorphic matrix element (spectral
+  Laplace comparison), together with the canonical-shell boundary-value limit
+  into those same witness values;
 - the concrete Section-4.3 / Lemma-4.2 adapter
   `lemma42_matrix_element_time_interchange` and the transformed-image kernel
   theorem `bvt_W_matrixElement_onImage` remain the public theorem slots that
@@ -1206,12 +1208,15 @@ The proof transcript is:
      `singleSplit_xiShift` comparison;
    - so the immediate post-Paley-Wiener theorem slot is an upper-half-plane
      witness/exact-boundary-value statement for the ambient Wightman pairing;
-   - in the current repo, that route has already been reduced further to
-     `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_boundaryValue_of_paired_zero`
+   - in the current repo, that route has already been reduced further to the
+     closed flattened spectral package ending at
+     `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened`
      in
-     [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean),
-     so the remaining live content is the shell-specific paired-vanishing
-     hypothesis `hzero` for the actual time-shift pairing functional;
+     [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean);
+   - so the remaining live content is no longer the paired-vanishing /
+     one-sided-support theorem, but the witness-consuming seam itself:
+     positive-imaginary-axis identification plus the canonical-shell limit
+     theorem for the actual ambient upper-half-plane witness;
    - the first direct consumer of that witness only needs the values on the
      positive imaginary axis: if the canonical shell converges to `H(i t)` and
      `H(i t)` is identified with the semigroup-side holomorphic value, the

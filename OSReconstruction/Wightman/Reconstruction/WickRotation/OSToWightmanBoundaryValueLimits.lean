@@ -2830,6 +2830,81 @@ theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
     (hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift
       (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g)
 
+/-- The canonical ambient upper-half-plane witness for the reconstructed
+Wightman right-time-shift pairing, chosen from the now-closed Stage-5 spectral
+package.
+
+This mirrors the existing `bvt_singleSplit_xiShiftHolomorphicValue` pattern:
+the witness is no longer merely existential in the theorem-3 lane. The live
+remaining blocker can now be stated directly on this explicit holomorphic
+function rather than on an anonymous `∃ H`. -/
+noncomputable def bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    ℂ → ℂ :=
+  Classical.choose <|
+    bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
+      (d := d) OS lgc hm f g hg_compact
+
+/-- The chosen ambient Wightman time-shift witness is holomorphic on the upper
+half-plane. -/
+theorem differentiableOn_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    DifferentiableOn ℂ
+      (bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+        (d := d) OS lgc hm f g hg_compact)
+      SCV.upperHalfPlane :=
+  (Classical.choose_spec <|
+    bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
+      (d := d) OS lgc hm f g hg_compact).1
+
+/-- The chosen ambient Wightman time-shift witness has polynomial growth on
+every positive horizontal line. -/
+theorem hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (η : ℝ) (hη : 0 < η) :
+    SCV.HasPolynomialGrowthOnLine
+      (fun x =>
+        bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+          (d := d) OS lgc hm f g hg_compact (↑x + ↑η * Complex.I)) :=
+  (Classical.choose_spec <|
+    bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
+      (d := d) OS lgc hm f g hg_compact).2.1 η hη
+
+/-- The chosen ambient Wightman time-shift witness has the reconstructed
+time-shift pairing as its distributional boundary value. -/
+theorem tendsto_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness_boundaryValue
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+            (d := d) OS lgc hm f g hg_compact (↑x + ↑η * Complex.I) * χ x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (∫ t : ℝ,
+          bvt_W OS lgc (n + m)
+            (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t)) :=
+  (Classical.choose_spec <|
+    bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
+      (d := d) OS lgc hm f g hg_compact).2.2 χ
+
 /-- Any upper-half-plane witness with the linewise polynomial-growth package
 used in the ambient Paley-Wiener route pairs integrably with Fourier transforms
 of Schwartz tests. This is the exact real-line integrability input needed by
@@ -2861,6 +2936,313 @@ private theorem integrable_mul_fourierTransform_of_upperHalfPlaneWitness
     hline_cont
     (hH_growth η hη)
     χ
+
+/-- Boundary-value recovery for the chosen ambient Wightman time-shift witness,
+specialized to Fourier transforms of Schwartz tests.
+
+This is the exact public theorem surface needed when the remaining theorem-3
+arguments pair the chosen witness against `𝓕χ` rather than a raw Schwartz test. -/
+theorem tendsto_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness_boundaryValue_fourierTransform
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+            (d := d) OS lgc hm f g hg_compact (↑x + ↑η * Complex.I) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (∫ t : ℝ,
+          bvt_W OS lgc (n + m)
+            (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)) := by
+  simpa using
+    tendsto_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness_boundaryValue
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm)
+      f g hg_compact ((SchwartzMap.fourierTransformCLM ℂ) χ)
+
+/-- Integrability of the chosen ambient Wightman time-shift witness against the
+Fourier transform of any Schwartz test along positive horizontal lines.
+
+This is the concrete public specialization of the generic upper-half-plane
+witness integrability theorem, so later theorem-3 arguments can stay on the
+chosen witness surface rather than re-opening existential packaging. -/
+theorem integrable_mul_fourierTransform_of_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    MeasureTheory.Integrable
+      (fun x : ℝ =>
+        bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+          (d := d) OS lgc hm f g hg_compact (↑x + ↑η * Complex.I) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+  exact integrable_mul_fourierTransform_of_upperHalfPlaneWitness
+    (H := bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+      (d := d) OS lgc hm f g hg_compact)
+    (differentiableOn_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g hg_compact)
+    (hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g hg_compact)
+    χ hη
+
+/-- The real-time Wightman pairing against a compactly supported right factor
+defines an actual tempered functional on one-variable Schwartz space.
+
+This is the explicit line-functional hidden inside the Stage-5 ambient
+Paley-Wiener witness. Making it concrete is the first honest step toward
+computing the witness on the positive imaginary axis, rather than carrying an
+anonymous `Classical.choose` witness forever. -/
+private theorem exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    ∃ T : SchwartzMap ℝ ℂ →L[ℂ] ℂ,
+      ∀ χ : SchwartzMap ℝ ℂ,
+        T χ =
+          ∫ t : ℝ,
+            bvt_W OS lgc (n + m)
+              (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t := by
+  let h : ℝ → ℂ := fun t =>
+    bvt_W OS lgc (n + m)
+      (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g))
+  have hh_cont : Continuous h :=
+    continuous_bvt_W_conjTensorProduct_timeShift
+      (d := d) OS lgc f g hg_compact
+  rcases hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShift
+      (d := d) OS lgc f g with ⟨C_bound, N, hC_bound_pos, h_growth_bound⟩
+  let M : ℕ := N + 2
+  let sem : SchwartzMap ℝ ℂ → ℝ :=
+    fun χ => (Finset.Iic (M, 0)).sup (schwartzSeminormFamily ℂ ℝ ℂ) χ
+  have h_decay_int_nat : MeasureTheory.Integrable
+      (fun t : ℝ => ((1 + ‖t‖) ^ 2)⁻¹) MeasureTheory.volume := by
+    have h_decay_int : MeasureTheory.Integrable
+        (fun t : ℝ => (1 + ‖t‖) ^ (-(2 : ℝ))) MeasureTheory.volume := by
+      have : (Module.finrank ℝ ℝ : ℝ) < (2 : ℝ) := by norm_num
+      simpa using integrable_one_add_norm this
+    simpa [Real.rpow_neg (by positivity : 0 ≤ (1 + ‖(0 : ℝ)‖)), Real.rpow_natCast] using
+      h_decay_int
+  have hsem_bound : ∀ (χ : SchwartzMap ℝ ℂ) (t : ℝ),
+      (1 + ‖t‖) ^ M * ‖χ t‖ ≤ 2 ^ M * sem χ := by
+    intro χ t
+    simpa [sem, M, norm_iteratedFDeriv_zero] using
+      (SchwartzMap.one_add_le_sup_seminorm_apply
+        (𝕜 := ℂ) (m := (M, 0)) (k := M) (n := 0)
+        (le_rfl) (le_rfl) χ t)
+  have h_pointwise_bound : ∀ (χ : SchwartzMap ℝ ℂ) (t : ℝ),
+      ‖h t * χ t‖ ≤
+        C_bound * 2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹ := by
+    intro χ t
+    have h_growth_t : ‖h t‖ ≤ C_bound * (1 + ‖t‖) ^ N := by
+      simpa [h] using h_growth_bound t
+    have h_pow_pos : 0 < (1 + ‖t‖) ^ 2 := by positivity
+    have h_decay_step :
+        (1 + ‖t‖) ^ N * ‖χ t‖ ≤
+          2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹ := by
+      rw [le_mul_inv_iff₀ h_pow_pos]
+      calc
+        (1 + ‖t‖) ^ N * ‖χ t‖ * (1 + ‖t‖) ^ 2
+            = (1 + ‖t‖) ^ M * ‖χ t‖ := by
+                rw [show M = N + 2 by simp [M], pow_add]
+                ring
+        _ ≤ 2 ^ M * sem χ := hsem_bound χ t
+    have h_decay_mul :
+        C_bound * (1 + ‖t‖) ^ N * ‖χ t‖ ≤
+          C_bound * (2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹) := by
+      simpa [mul_assoc] using
+        (mul_le_mul_of_nonneg_left h_decay_step (le_of_lt hC_bound_pos))
+    calc
+      ‖h t * χ t‖ = ‖h t‖ * ‖χ t‖ := norm_mul _ _
+      _ ≤ C_bound * (1 + ‖t‖) ^ N * ‖χ t‖ :=
+        mul_le_mul_of_nonneg_right h_growth_t (norm_nonneg _)
+      _ ≤ C_bound * (2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹) := h_decay_mul
+      _ = C_bound * 2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹ := by ring
+  have h_integrable : ∀ χ : SchwartzMap ℝ ℂ,
+      MeasureTheory.Integrable (fun t : ℝ => h t * χ t) MeasureTheory.volume := by
+    intro χ
+    have h_majorant_int : MeasureTheory.Integrable
+        (fun t : ℝ => C_bound * 2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹)
+        MeasureTheory.volume :=
+      h_decay_int_nat.const_mul (C_bound * 2 ^ M * sem χ)
+    refine h_majorant_int.mono' ((hh_cont.mul χ.continuous).aestronglyMeasurable) ?_
+    exact Filter.Eventually.of_forall (h_pointwise_bound χ)
+  let I₂ : ℝ := ∫ t : ℝ, ((1 + ‖t‖) ^ 2)⁻¹
+  let T : SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+    SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ)
+      (fun χ : SchwartzMap ℝ ℂ => ∫ t : ℝ, h t * χ t)
+      (fun χ ψ => by
+        simpa [h, mul_add] using
+          (MeasureTheory.integral_add
+            (f := fun t : ℝ => h t * χ t)
+            (g := fun t : ℝ => h t * ψ t)
+            (h_integrable χ) (h_integrable ψ)))
+      (fun a χ => by
+        simpa [h, mul_assoc, mul_left_comm, mul_comm] using
+          (MeasureTheory.integral_smul a (fun t : ℝ => h t * χ t)))
+      (by
+        have hI₂_nonneg : 0 ≤ I₂ := by
+          unfold I₂
+          exact MeasureTheory.integral_nonneg fun _ => by positivity
+        refine ⟨Finset.Iic (M, 0), C_bound * 2 ^ M * I₂, ?_, ?_⟩
+        · exact mul_nonneg (mul_nonneg (le_of_lt hC_bound_pos) (by positivity)) hI₂_nonneg
+        · intro χ
+          calc
+            ‖∫ t : ℝ, h t * χ t‖ ≤ ∫ t : ℝ, ‖h t * χ t‖ :=
+              MeasureTheory.norm_integral_le_integral_norm _
+            _ ≤ ∫ t : ℝ, C_bound * 2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹ :=
+              MeasureTheory.integral_mono_ae (h_integrable χ).norm
+                (h_decay_int_nat.const_mul (C_bound * 2 ^ M * sem χ))
+                (Filter.Eventually.of_forall (h_pointwise_bound χ))
+            _ = C_bound * 2 ^ M * I₂ * sem χ := by
+              rw [show (∫ t : ℝ, C_bound * 2 ^ M * sem χ * ((1 + ‖t‖) ^ 2)⁻¹) =
+                  (C_bound * 2 ^ M * sem χ) * I₂ by
+                    simp [I₂, MeasureTheory.integral_const_mul]]
+              ring
+            _ = (C_bound * 2 ^ M * I₂) *
+                (Finset.Iic (M, 0)).sup (schwartzSeminormFamily ℂ ℝ ℂ) χ := by
+              simp [sem, mul_assoc] )
+  refine ⟨T, ?_⟩
+  intro χ
+  rfl
+
+/-- The concrete Fourier-Laplace witness attached to the real-time Wightman
+pairing functional. Unlike the existing `Classical.choose` witness, this is an
+explicit scaled `SCV.fourierLaplaceExt`, so its interior values can be
+computed directly on the positive imaginary axis. -/
+private noncomputable def bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (w : ℂ) : ℂ :=
+  if hw : 0 < w.im then
+    let T :=
+      Classical.choose <|
+        exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+          (d := d) OS lgc f g hg_compact
+    SCV.fourierLaplaceExt T ((((2 * Real.pi : ℝ) : ℂ) * w))
+      (by
+        have hscaled : 0 < (2 * Real.pi) * w.im := mul_pos Real.two_pi_pos hw
+        simpa [Complex.mul_im] using hscaled)
+  else
+    0
+
+private theorem bvt_W_conjTensorProduct_timeShiftCanonicalExtension_differentiableOn
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    DifferentiableOn ℂ
+      (bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) OS lgc f g hg_compact)
+      SCV.upperHalfPlane := by
+  let T :=
+    Classical.choose <|
+      exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+        (d := d) OS lgc f g hg_compact
+  let Fcore : ℂ → ℂ := fun w =>
+    if hw : 0 < w.im then
+      SCV.fourierLaplaceExt T w hw
+    else
+      0
+  let F : ℂ → ℂ := Fcore ∘ fun w => (((2 * Real.pi : ℝ) : ℂ) * w)
+  have hF_diff : DifferentiableOn ℂ F SCV.upperHalfPlane := by
+    have hmap :
+        Set.MapsTo (fun w : ℂ => (((2 * Real.pi : ℝ) : ℂ) * w))
+          SCV.upperHalfPlane SCV.upperHalfPlane := by
+      intro z hz
+      dsimp [SCV.upperHalfPlane] at hz ⊢
+      simpa [Complex.mul_im, mul_assoc] using mul_pos Real.two_pi_pos hz
+    have hmul :
+        DifferentiableOn ℂ (fun w : ℂ => (((2 * Real.pi : ℝ) : ℂ) * w))
+          SCV.upperHalfPlane := by
+      intro z hz
+      simpa using
+        ((((differentiableAt_id : DifferentiableAt ℂ (fun y : ℂ => y) z).const_mul
+          (((2 * Real.pi : ℝ) : ℂ))).differentiableWithinAt))
+    simpa [F, Fcore] using (SCV.fourierLaplaceExt_differentiableOn T).comp hmul hmap
+  have hEq :
+      bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+          (d := d) OS lgc f g hg_compact = F := by
+    funext w
+    by_cases hw : 0 < w.im
+    · have hscaled : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im := by
+        simpa [Complex.mul_im, mul_assoc] using mul_pos Real.two_pi_pos hw
+      change
+        bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+            (d := d) OS lgc f g hg_compact w =
+          if hw' : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im then
+            SCV.fourierLaplaceExt T ((((2 * Real.pi : ℝ) : ℂ) * w)) hw'
+          else 0
+      rw [bvt_W_conjTensorProduct_timeShiftCanonicalExtension, dif_pos hw, dif_pos hscaled]
+    · have hnotscaled : ¬ 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im := by
+        intro hscaled
+        have hscaled' : 0 < (2 * Real.pi) * w.im := by
+          simpa [Complex.mul_im, mul_assoc] using hscaled
+        nlinarith [Real.two_pi_pos, hscaled']
+      change
+        bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+            (d := d) OS lgc f g hg_compact w =
+          if hw' : 0 < ((((2 * Real.pi : ℝ) : ℂ) * w)).im then
+            SCV.fourierLaplaceExt T ((((2 * Real.pi : ℝ) : ℂ) * w)) hw'
+          else 0
+      rw [bvt_W_conjTensorProduct_timeShiftCanonicalExtension, dif_neg hw, dif_neg hnotscaled]
+  rw [hEq]
+  exact hF_diff
+
+/-- On the positive imaginary axis, the canonical ambient witness is given by
+the Fourier-Laplace integral of the real-time Wightman pairing functional
+against the standard `ψ_z` kernel. This is the first concrete interior-value
+formula for the Stage-5 ambient witness. -/
+private theorem bvt_W_conjTensorProduct_timeShiftCanonicalExtension_eq_fourierLaplaceIntegral
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    {η : ℝ} (hη : 0 < η) :
+    bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) OS lgc f g hg_compact (η * Complex.I) =
+      ∫ t : ℝ,
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) *
+          (SchwartzMap.fourierTransformCLM ℂ
+          (SCV.schwartzPsiZ
+            (((2 * Real.pi : ℂ) * (η * Complex.I)))
+            (by
+              simpa [Complex.mul_im, hη.ne']
+                using mul_pos Real.two_pi_pos hη))) t := by
+  let T :=
+    Classical.choose <|
+      exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+        (d := d) OS lgc f g hg_compact
+  have hT_apply := Classical.choose_spec <|
+    exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+      (d := d) OS lgc f g hg_compact
+  have him : 0 < (η * Complex.I).im := by
+    simpa using hη
+  rw [bvt_W_conjTensorProduct_timeShiftCanonicalExtension, dif_pos him]
+  rw [SCV.fourierLaplaceExt_eq]
+  simpa [T] using
+    hT_apply
+      ((SchwartzMap.fourierTransformCLM ℂ)
+        (SCV.schwartzPsiZ
+          (((2 * Real.pi : ℂ) * (η * Complex.I)))
+          (by
+            simpa [Complex.mul_im, hη.ne']
+              using mul_pos Real.two_pi_pos hη)))
 
 /-- Zero-translation specialization of the proved Schwinger-side `t → 0+` limit
 for the compact ordered positive-time `singleSplit_xiShift` shell.
