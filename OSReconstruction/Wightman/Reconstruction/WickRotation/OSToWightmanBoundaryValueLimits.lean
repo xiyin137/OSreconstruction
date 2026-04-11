@@ -1961,6 +1961,683 @@ private theorem integrable_bvt_W_flattened_translate_mul_fourierTransform
       (d := d) OS lgc f g)
     χ
 
+/-- Zero-head-block insertion commutes with scalar multiplication. This lets the
+final flattened spectral step treat the inserted tail translation as a genuine
+one-parameter orbit `t • η`. -/
+@[simp] private theorem zeroHeadBlockShift_smul
+    {m n : ℕ}
+    (t : ℝ)
+    (a : Fin n → ℝ) :
+    OSReconstruction.zeroHeadBlockShift (m := m) (n := n) (t • a) =
+      t • OSReconstruction.zeroHeadBlockShift (m := m) (n := n) a := by
+  induction m generalizing a with
+  | zero =>
+      ext i
+      simp [OSReconstruction.zeroHeadBlockShift, Pi.smul_apply]
+  | succ m ih =>
+      rw [OSReconstruction.zeroHeadBlockShift, OSReconstruction.zeroHeadBlockShift,
+        ← ContinuousLinearEquiv.map_smul]
+      congr 1
+      ext i
+      refine Fin.cases ?_ ?_ i
+      · simp
+      · intro j
+        simp [ih, Pi.smul_apply]
+
+/-- Scalar real-translation orbits are continuous in the Schwartz topology. -/
+private theorem continuous_translateSchwartz_smul_local {m : ℕ}
+    (η : Fin m → ℝ) (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    Continuous (fun t : ℝ => SCV.translateSchwartz (t • η) ψ) := by
+  rw [continuous_iff_continuousAt]
+  intro t₀
+  let ψ₀ : SchwartzMap (Fin m → ℝ) ℂ := SCV.translateSchwartz (t₀ • η) ψ
+  have hzero : ContinuousAt (fun t : ℝ => SCV.translateSchwartz (t • η) ψ₀) 0 := by
+    simp only [ContinuousAt]
+    rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ _]
+    intro p ε hε
+    let D : SchwartzMap (Fin m → ℝ) ℂ := LineDeriv.lineDerivOp η ψ₀
+    let pSem : Seminorm ℝ (SchwartzMap (Fin m → ℝ) ℂ) :=
+      schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ p
+    have hquot := OSReconstruction.tendsto_diffQuotient_translateSchwartz_zero ψ₀ η
+    rw [(schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds _ _] at hquot
+    specialize hquot p 1 zero_lt_one
+    rw [Filter.Eventually, mem_nhdsWithin_iff_exists_mem_nhds_inter] at hquot
+    obtain ⟨s, hs_nhds, hs_prop⟩ := hquot
+    let M : ℝ := pSem D
+    have hM_nonneg : 0 ≤ M := apply_nonneg pSem D
+    have hM_pos : 0 < M + 1 := by linarith
+    let δ : ℝ := ε / (M + 1)
+    have hδ_pos : 0 < δ := by
+      dsimp [δ]
+      positivity
+    refine Filter.mem_of_superset
+      (Filter.inter_mem hs_nhds (Metric.ball_mem_nhds 0 hδ_pos)) ?_
+    intro t ht
+    rcases ht with ⟨hts, htball⟩
+    simp only [Set.mem_setOf_eq]
+    have htrans0 : SCV.translateSchwartz (0 : Fin m → ℝ) ψ₀ = ψ₀ := by
+      ext x
+      simp [SCV.translateSchwartz_apply]
+    rw [show (0 : ℝ) • η = (0 : Fin m → ℝ) from zero_smul ℝ η, htrans0]
+    have ht_abs : |t| < δ := by
+      simpa [Real.dist_eq, δ] using htball
+    by_cases ht0 : t = 0
+    · subst ht0
+      simpa [zero_smul, htrans0] using hε
+    · have htnz : t ∈ ({0}ᶜ : Set ℝ) := by
+        simpa [Set.mem_compl_iff, Set.mem_singleton_iff] using ht0
+      have hq :
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) < 1 :=
+        hs_prop ⟨hts, htnz⟩
+      have hsplit :
+          t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) =
+            (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + D := by
+        abel
+      have hq' :
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) < 1 + M := by
+        calc
+          pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀))
+              = pSem ((t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + D) := by
+                  congr 1
+          _ ≤ pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀) - D) + pSem D :=
+                map_add_le_add _ _ _
+          _ < 1 + M := by
+                dsimp [M] at *
+                linarith
+      have hdecomp :
+          SCV.translateSchwartz (t • η) ψ₀ - ψ₀ =
+            t • (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) := by
+        rw [smul_smul, mul_inv_cancel₀ ht0, one_smul]
+      calc
+        pSem (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)
+            = pSem (t • (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀))) :=
+              congr_arg pSem hdecomp
+        _ = |t| * pSem (t⁻¹ • (SCV.translateSchwartz (t • η) ψ₀ - ψ₀)) :=
+              map_smul_eq_mul _ _ _
+        _ < δ * (1 + M) := by
+              gcongr
+        _ = ε := by
+              dsimp [δ]
+              field_simp [hM_pos.ne']
+              ring
+  have hshift : ContinuousAt (fun t : ℝ => t - t₀) t₀ := by
+    simpa using (continuous_id.sub continuous_const).continuousAt
+  have hcomp :
+      ContinuousAt (fun t : ℝ => SCV.translateSchwartz ((t - t₀) • η) ψ₀) t₀ := by
+    simpa [Function.comp] using
+      (ContinuousAt.comp_of_eq hzero hshift (by simp))
+  have hEqfun :
+      (fun t : ℝ => SCV.translateSchwartz (t • η) ψ) =
+        (fun t : ℝ => SCV.translateSchwartz ((t - t₀) • η) ψ₀) := by
+    funext t
+    ext x
+    simp only [ψ₀, SCV.translateSchwartz_apply, sub_eq_add_neg]
+    congr 1
+    ext i
+    simp [Pi.smul_apply, Pi.add_apply]
+    ring
+  rw [hEqfun]
+  exact hcomp
+
+/-- Exact continuity of the full flattened Fourier-shift orbit used in the
+final Stage-5 support theorem. -/
+private theorem continuous_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
+    {n m : ℕ}
+    (Ψ : SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ) :
+    Continuous (fun t : ℝ =>
+      physicsFourierFlatCLM
+        (OSReconstruction.reindexSchwartzFin
+          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (SCV.translateSchwartz
+            (OSReconstruction.zeroHeadBlockShift
+              (m := n * (d + 1)) (n := m * (d + 1))
+              (t • flatTimeShiftDirection d m))
+            Ψ))) := by
+  let η :
+      Fin (n * (d + 1) + m * (d + 1)) → ℝ :=
+    OSReconstruction.zeroHeadBlockShift
+      (m := n * (d + 1)) (n := m * (d + 1))
+      (flatTimeShiftDirection d m)
+  have hcont_base :
+      Continuous (fun t : ℝ => SCV.translateSchwartz (t • η) Ψ) :=
+    continuous_translateSchwartz_smul_local η Ψ
+  have hcont_reindex :
+      Continuous (fun t : ℝ =>
+        OSReconstruction.reindexSchwartzFin
+          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (SCV.translateSchwartz (t • η) Ψ)) :=
+    ((OSReconstruction.reindexSchwartzFin
+      (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))).continuous).comp hcont_base
+  have hEq :
+      (fun t : ℝ =>
+        physicsFourierFlatCLM
+          (OSReconstruction.reindexSchwartzFin
+            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (SCV.translateSchwartz
+              (OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := m * (d + 1))
+                (t • flatTimeShiftDirection d m))
+              Ψ))) =
+      (fun t : ℝ =>
+        physicsFourierFlatCLM
+          (OSReconstruction.reindexSchwartzFin
+            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (SCV.translateSchwartz (t • η) Ψ))) := by
+    funext t
+    simp [η, zeroHeadBlockShift_smul]
+  rw [hEq]
+  exact physicsFourierFlatCLM.continuous.comp hcont_reindex
+
+/-- Polynomial seminorm growth of the full flattened Fourier-shift orbit. This
+is the exact Schwartz-family bound needed by `schwartz_clm_fubini_exchange` in
+the final flattened spectral step. -/
+private theorem exists_bound_seminorm_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
+    {n m : ℕ}
+    (Ψ : SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ)
+    (k l : ℕ) :
+    ∃ C : ℝ, ∃ N : ℕ, 0 < C ∧
+      ∀ t : ℝ,
+        SchwartzMap.seminorm ℝ k l
+          (physicsFourierFlatCLM
+            (OSReconstruction.reindexSchwartzFin
+              (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+              (SCV.translateSchwartz
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := m * (d + 1))
+                  (t • flatTimeShiftDirection d m))
+                Ψ))) ≤
+          C * (1 + |t|) ^ N := by
+  classical
+  let η :
+      Fin (n * (d + 1) + m * (d + 1)) → ℝ :=
+    OSReconstruction.zeroHeadBlockShift
+      (m := n * (d + 1)) (n := m * (d + 1))
+      (flatTimeShiftDirection d m)
+  let L :
+      SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin ((n + m) * (d + 1)) → ℝ) ℂ :=
+    (physicsFourierFlatCLM : _).comp
+      (OSReconstruction.reindexSchwartzFin
+        (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+  let q : Seminorm ℂ (SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ) :=
+    (schwartzSeminormFamily ℂ (Fin ((n + m) * (d + 1)) → ℝ) ℂ (k, l)).comp L.toLinearMap
+  have hq_cont : Continuous q := by
+    change Continuous (fun φ : SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ =>
+      schwartzSeminormFamily ℂ (Fin ((n + m) * (d + 1)) → ℝ) ℂ (k, l) (L φ))
+    exact
+      ((schwartz_withSeminorms ℂ (Fin ((n + m) * (d + 1)) → ℝ) ℂ).continuous_seminorm
+        (k, l)).comp L.continuous
+  obtain ⟨s, D, hD_ne, hq_bound⟩ :=
+    Seminorm.bound_of_continuous
+      (schwartz_withSeminorms ℂ (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ) q hq_cont
+  have hD_pos : 0 < (D : ℝ) := by
+    exact lt_of_le_of_ne D.2 (by exact_mod_cast hD_ne.symm)
+  have hB :
+      ∀ p : ℕ × ℕ, ∃ B : ℝ, 0 ≤ B ∧ ∀ t : ℝ,
+        schwartzSeminormFamily ℂ
+          (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p
+          (SCV.translateSchwartz (t • η) Ψ) ≤
+            B * (1 + |t|) ^ p.1 := by
+    intro p
+    obtain ⟨B0, hB0_nonneg, hB0⟩ :=
+      SCV.seminorm_translateSchwartz_le p.1 p.2 Ψ
+    let B : ℝ := B0 * (1 + ‖η‖) ^ p.1
+    refine ⟨B, by
+      dsimp [B]
+      exact mul_nonneg hB0_nonneg (pow_nonneg (by positivity) _), ?_⟩
+    intro t
+    calc
+      schwartzSeminormFamily ℂ
+          (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p
+          (SCV.translateSchwartz (t • η) Ψ)
+          ≤ B0 * (1 + ‖t • η‖) ^ p.1 := hB0 (t • η)
+      _ ≤ B0 * (((1 + ‖η‖) * (1 + |t|)) ^ p.1) := by
+          refine mul_le_mul_of_nonneg_left ?_ hB0_nonneg
+          have hmain : 1 + ‖t • η‖ ≤ (1 + ‖η‖) * (1 + |t|) := by
+            rw [norm_smul, Real.norm_eq_abs]
+            nlinarith [abs_nonneg t, norm_nonneg η]
+          exact pow_le_pow_left₀ (by positivity) hmain _
+      _ = B * (1 + |t|) ^ p.1 := by
+          calc
+            B0 * (((1 + ‖η‖) * (1 + |t|)) ^ p.1)
+                = B0 * ((1 + ‖η‖) ^ p.1 * (1 + |t|) ^ p.1) := by
+                    rw [mul_pow]
+            _ = B * (1 + |t|) ^ p.1 := by
+                    dsimp [B]
+                    ring
+  choose B hB_nonneg hB_bound using hB
+  let N : ℕ := s.sup Prod.fst
+  let Bsum : ℝ := ∑ p ∈ s, B p
+  let C : ℝ := (D : ℝ) * Bsum + 1
+  have hBsum_nonneg : 0 ≤ Bsum := by
+    dsimp [Bsum]
+    refine Finset.sum_nonneg ?_
+    intro p hp
+    exact hB_nonneg p
+  refine ⟨C, N, by
+    dsimp [C]
+    nlinarith [show 0 < (D : ℝ) from hD_pos], ?_⟩
+  intro t
+  let ψt : SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ :=
+    SCV.translateSchwartz (t • η) Ψ
+  let u : ℝ := 1 + |t|
+  have hu_ge_one : 1 ≤ u := by
+    dsimp [u]
+    linarith [abs_nonneg t]
+  have hsum_apply :
+      ∀ s' : Finset (ℕ × ℕ),
+        (∑ p ∈ s', schwartzSeminormFamily ℂ
+          (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p) ψt =
+          ∑ p ∈ s',
+            schwartzSeminormFamily ℂ
+              (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p ψt := by
+    intro s'
+    induction s' using Finset.induction with
+    | empty =>
+        simp
+    | insert a s' ha ih =>
+        simp [Finset.sum_insert, ha, ih]
+  have hsum_bound :
+      (∑ p ∈ s, schwartzSeminormFamily ℂ
+        (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p) ψt ≤
+        Bsum * u ^ N := by
+    calc
+      (∑ p ∈ s, schwartzSeminormFamily ℂ
+        (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p) ψt
+          = ∑ p ∈ s,
+              schwartzSeminormFamily ℂ
+                (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p ψt := by
+                  simpa using hsum_apply s
+      _ ≤ ∑ p ∈ s, B p * u ^ N := by
+            refine Finset.sum_le_sum ?_
+            intro p hp
+            have hpN : p.1 ≤ N := Finset.le_sup hp
+            calc
+              schwartzSeminormFamily ℂ
+                  (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p ψt
+                  ≤ B p * u ^ p.1 := hB_bound p t
+              _ ≤ B p * u ^ N := by
+                    refine mul_le_mul_of_nonneg_left ?_ (hB_nonneg p)
+                    exact pow_le_pow_right₀ hu_ge_one hpN
+      _ = Bsum * u ^ N := by
+            simp [Bsum, Finset.sum_mul]
+  have hL_bound :
+      SchwartzMap.seminorm ℝ k l (L ψt) ≤ (D : ℝ) * (Bsum * u ^ N) := by
+    calc
+      SchwartzMap.seminorm ℝ k l (L ψt) = q ψt := by
+        rfl
+      _ ≤ (D • s.sup (schwartzSeminormFamily ℂ
+            (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ)) ψt := hq_bound ψt
+      _ = (D : ℝ) *
+            (s.sup (schwartzSeminormFamily ℂ
+              (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ)) ψt := by
+            rfl
+      _ ≤ (D : ℝ) *
+            ((∑ p ∈ s, schwartzSeminormFamily ℂ
+              (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ p) ψt) := by
+            gcongr
+            exact Seminorm.le_def.mp
+              (Seminorm.finset_sup_le_sum
+                (schwartzSeminormFamily ℂ
+                  (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ) s) ψt
+      _ ≤ (D : ℝ) * (Bsum * u ^ N) := by
+            gcongr
+  calc
+    SchwartzMap.seminorm ℝ k l
+        (physicsFourierFlatCLM
+          (OSReconstruction.reindexSchwartzFin
+            (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+            (SCV.translateSchwartz
+              (OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := m * (d + 1))
+                (t • flatTimeShiftDirection d m))
+              Ψ)))
+        = SchwartzMap.seminorm ℝ k l (L ψt) := by
+            simp [L, ψt, η, zeroHeadBlockShift_smul]
+    _ ≤ (D : ℝ) * (Bsum * u ^ N) := hL_bound
+    _ ≤ C * u ^ N := by
+          have hCu : (D : ℝ) * (Bsum * u ^ N) ≤ ((D : ℝ) * Bsum + 1) * u ^ N := by
+            have hu_pow_ge_one : 1 ≤ u ^ N := by
+              exact one_le_pow₀ hu_ge_one
+            nlinarith
+          simpa [C, u, mul_assoc, mul_left_comm, mul_comm] using hCu
+
+/-- A one-variable normalized Schwartz bump with total integral `1`. -/
+private noncomputable def normedUnitBumpSchwartzLocal : SchwartzMap ℝ ℂ := by
+  let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
+  let f : ℝ → ℂ := fun x => ((b.normed MeasureTheory.volume x : ℝ) : ℂ)
+  have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
+    exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff_normed
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
+  exact hf_compact.toSchwartzMap hf_smooth
+
+private theorem integral_normedUnitBumpSchwartzLocal :
+    ∫ x : ℝ, normedUnitBumpSchwartzLocal x = 1 := by
+  let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
+  have happly :
+      (fun x : ℝ => normedUnitBumpSchwartzLocal x) =
+        fun x : ℝ => ((b.normed MeasureTheory.volume x : ℝ) : ℂ) := by
+    funext x
+    have hf_smooth : ContDiff ℝ (⊤ : ENat)
+        (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) := by
+      exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff_normed
+    have hf_compact :
+        HasCompactSupport (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) :=
+      b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
+    simpa [normedUnitBumpSchwartzLocal, b] using
+      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+  rw [happly, integral_complex_ofReal]
+  exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
+
+/-- A product normalized Schwartz bump on `Fin k → ℝ`. -/
+private noncomputable def normedUnitBumpSchwartzPi : ∀ k : ℕ,
+    SchwartzMap (Fin k → ℝ) ℂ
+  | 0 => by
+      let f : (Fin 0 → ℝ) → ℂ := fun _ => 1
+      have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
+        simpa [f] using (contDiff_const : ContDiff ℝ (⊤ : ENat) (fun _ : Fin 0 → ℝ => (1 : ℂ)))
+      have hf_compact : HasCompactSupport f := by
+        simpa [HasCompactSupport, tsupport, Function.support, f] using
+          (show IsCompact (Set.univ : Set (Fin 0 → ℝ)) from isCompact_univ)
+      exact hf_compact.toSchwartzMap hf_smooth
+  | k + 1 => normedUnitBumpSchwartzLocal.prependField (normedUnitBumpSchwartzPi k)
+
+private theorem integral_normedUnitBumpSchwartzPi :
+    ∀ k : ℕ, ∫ x : Fin k → ℝ, normedUnitBumpSchwartzPi k x = 1
+  | 0 => by
+      have happly :
+          (fun x : Fin 0 → ℝ => normedUnitBumpSchwartzPi 0 x) = fun _ : Fin 0 → ℝ => (1 : ℂ) := by
+        funext x
+        simp [normedUnitBumpSchwartzPi]
+      rw [happly]
+      have hvol :
+          (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)) =
+            MeasureTheory.Measure.dirac default := by
+        simpa using
+          (MeasureTheory.Measure.volume_pi_eq_dirac
+            (ι := Fin 0) (α := fun _ => ℝ) (x := default))
+      simpa [hvol] using
+        (MeasureTheory.integral_dirac (a := default) (f := fun _ : Fin 0 → ℝ => (1 : ℂ)))
+  | k + 1 => by
+      calc
+        ∫ x : Fin (k + 1) → ℝ, normedUnitBumpSchwartzPi (k + 1) x
+            =
+          ∫ z : ℝ × (Fin k → ℝ), normedUnitBumpSchwartzPi (k + 1) (Fin.cons z.1 z.2) := by
+              simpa using
+                (OSReconstruction.integral_finSucc_cons_eq
+                  (f := fun x : Fin (k + 1) → ℝ => normedUnitBumpSchwartzPi (k + 1) x)).symm
+        _ = ∫ z : ℝ × (Fin k → ℝ),
+              normedUnitBumpSchwartzLocal z.1 * normedUnitBumpSchwartzPi k z.2 := by
+              apply MeasureTheory.integral_congr_ae
+              filter_upwards with z
+              simp [normedUnitBumpSchwartzPi, SchwartzMap.prependField_apply]
+        _ = (∫ x : ℝ, normedUnitBumpSchwartzLocal x) *
+              (∫ y : Fin k → ℝ, normedUnitBumpSchwartzPi k y) := by
+              simpa using
+                (MeasureTheory.integral_prod_mul
+                  (f := fun x : ℝ => normedUnitBumpSchwartzLocal x)
+                  (g := fun y : Fin k → ℝ => normedUnitBumpSchwartzPi k y))
+        _ = 1 := by
+              rw [integral_normedUnitBumpSchwartzLocal, integral_normedUnitBumpSchwartzPi k]
+              ring
+
+/-- Change of variables through a finite coordinate reindexing. -/
+private theorem integral_comp_castFinCLE_eq {a b : ℕ}
+    (h : a = b)
+    (f : (Fin b → ℝ) → ℂ) :
+    (∫ x : Fin a → ℝ, f ((OSReconstruction.castFinCLE h) x)) =
+      ∫ y : Fin b → ℝ, f y := by
+  let e : (Fin a → ℝ) ≃ᵐ (Fin b → ℝ) :=
+    MeasurableEquiv.piCongrLeft (fun _ : Fin b => ℝ) (finCongr h)
+  have he :
+      MeasureTheory.MeasurePreserving e MeasureTheory.volume MeasureTheory.volume := by
+    simpa [e] using
+      (MeasureTheory.volume_measurePreserving_piCongrLeft
+        (fun _ : Fin b => ℝ) (finCongr h))
+  simpa [e, OSReconstruction.castFinCLE, MeasurableEquiv.piCongrLeft,
+    ContinuousLinearEquiv.piCongrLeft] using
+    (he.integral_comp' (f := e) (g := f))
+
+/-- Tail-block phase vanishing on the full flattened dual-cone surface. -/
+private theorem integral_zeroHeadBlockShift_flatTimeShiftDirection_phase_mul_fourierTransform_eq_zero_of_negSupport
+    {n m : ℕ}
+    (χ : SchwartzMap ℝ ℂ)
+    (hχ_supp : ∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0)
+    {ξ : Fin ((n + m) * (d + 1)) → ℝ}
+    (hξ :
+      ξ ∈ DualConeFlat
+        ((flattenCLEquivReal (n + m) (d + 1)) '' ForwardConeAbs d (n + m))) :
+    ∫ t : ℝ,
+      Complex.exp
+          (-(Complex.I *
+              ((∑ i,
+                  (((OSReconstruction.castFinCLE
+                    (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                    (OSReconstruction.zeroHeadBlockShift
+                      (m := n * (d + 1)) (n := m * (d + 1))
+                      (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) t = 0 := by
+  exact integral_phase_mul_fourierTransform_eq_zero_of_negSupport_of_nonpos
+    (χ := χ) hχ_supp
+    (zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone
+      (d := d) (n := n) (m := m) hξ)
+
+set_option maxHeartbeats 800000 in
+/-- Final flattened spectral vanishing on the live Stage-5 theorem surface:
+the translated full-flat VT dual-cone distribution annihilates Fourier
+transforms of negative-support one-variable tests. -/
+private theorem integral_bvt_W_flattened_translate_mul_fourierTransform_eq_zero_of_negSupport
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (χ : SchwartzMap ℝ ℂ)
+    (hχ_supp : ∀ x ∈ Function.support (χ : ℝ → ℂ), x < 0) :
+    ∫ t : ℝ,
+      ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+        (unflattenSchwartzNPoint (d := d)))
+        (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+          (flattenSchwartzNPoint (d := d) g)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) t = 0 := by
+  classical
+  let M : ℕ := (n + m) * (d + 1)
+  have hM_pos : 0 < M := by
+    dsimp [M]
+    have hnm_pos : 0 < n + m := by omega
+    exact Nat.mul_pos hnm_pos (Nat.succ_pos _)
+  let k : ℕ := M - 1
+  have hk : k + 1 = M := by
+    dsimp [k]
+    exact Nat.succ_pred_eq_of_pos hM_pos
+  let χhat : SchwartzMap ℝ ℂ := SchwartzMap.fourierTransformCLM ℂ χ
+  let β : SchwartzMap (Fin k → ℝ) ℂ := normedUnitBumpSchwartzPi k
+  let fpad0 : SchwartzMap (Fin (k + 1) → ℝ) ℂ := χhat.prependField β
+  let fpad : SchwartzMap (Fin M → ℝ) ℂ := OSReconstruction.reindexSchwartzFin hk fpad0
+  let Ψ : SchwartzMap (Fin (n * (d + 1) + m * (d + 1)) → ℝ) ℂ :=
+    (flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct
+      (flattenSchwartzNPoint (d := d) g)
+  let orbit : ℝ → SchwartzMap (Fin M → ℝ) ℂ :=
+    fun t =>
+      physicsFourierFlatCLM
+        (OSReconstruction.reindexSchwartzFin
+          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          (SCV.translateSchwartz
+            (OSReconstruction.zeroHeadBlockShift
+              (m := n * (d + 1)) (n := m * (d + 1))
+              (t • flatTimeShiftDirection d m))
+            Ψ))
+  let headCoord : (Fin M → ℝ) → ℝ :=
+    fun x => ((OSReconstruction.castFinCLE hk).symm x) 0
+  let gFamily : (Fin M → ℝ) → SchwartzMap (Fin M → ℝ) ℂ := fun x => orbit (headCoord x)
+  obtain ⟨Tflat, hTflat_supp, hTflat_repr⟩ :=
+    exists_flattened_bvt_W_conjTensorProduct_right_dualCone_distribution_translate
+      (d := d) OS lgc f g
+  have hg_cont : Continuous gFamily := by
+    dsimp [gFamily, orbit, headCoord]
+    exact
+      (continuous_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
+        (d := d) (n := n) (m := m) Ψ).comp
+        ((continuous_apply (0 : Fin (k + 1))).comp
+          ((OSReconstruction.castFinCLE hk).symm.continuous))
+  have hg_bound :
+      ∀ (k0 l0 : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+        ∀ x : Fin M → ℝ,
+          SchwartzMap.seminorm ℝ k0 l0 (gFamily x) ≤ C * (1 + ‖x‖) ^ N := by
+    intro k0 l0
+    obtain ⟨C, N, hC_pos, hC_bound⟩ :=
+      exists_bound_seminorm_physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift
+        (d := d) (n := n) (m := m) Ψ k0 l0
+    refine ⟨C, N, hC_pos, ?_⟩
+    intro x
+    have hcoord :
+        |headCoord x| ≤ ‖x‖ := by
+      have hhead :
+          headCoord x = x ((finCongr hk) 0) := by
+        simp [headCoord, OSReconstruction.castFinCLE_symm_apply]
+      rw [hhead]
+      simpa using (norm_le_pi_norm (f := x) (i := (finCongr hk) 0))
+    calc
+      SchwartzMap.seminorm ℝ k0 l0 (gFamily x)
+          ≤ C * (1 + |headCoord x|) ^ N := hC_bound (headCoord x)
+      _ ≤ C * (1 + ‖x‖) ^ N := by
+          refine mul_le_mul_of_nonneg_left ?_ (le_of_lt hC_pos)
+          exact pow_le_pow_left₀ (by positivity) (by linarith) N
+  obtain ⟨Φ, hΦ_eval, hΦ_pair⟩ :=
+    schwartz_clm_fubini_exchange Tflat gFamily fpad hg_cont hg_bound
+  have hPair_repr :
+      ∫ x : Fin M → ℝ, Tflat (gFamily x) * fpad x =
+        ∫ t : ℝ,
+          ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+            (unflattenSchwartzNPoint (d := d)))
+            (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+              (flattenSchwartzNPoint (d := d) g)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t := by
+    let pairing : ℝ → ℂ := fun t =>
+      ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+        (unflattenSchwartzNPoint (d := d)))
+        (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+          (flattenSchwartzNPoint (d := d) g))
+    have hrepr_x : ∀ x : Fin M → ℝ, Tflat (gFamily x) = pairing (headCoord x) := by
+      intro x
+      simpa [pairing, gFamily, headCoord, orbit] using (hTflat_repr (headCoord x)).symm
+    let F : (Fin (k + 1) → ℝ) → ℂ := fun z => pairing (z 0) * fpad0 z
+    calc
+      ∫ x : Fin M → ℝ, Tflat (gFamily x) * fpad x
+          = ∫ x : Fin M → ℝ, F ((OSReconstruction.castFinCLE hk).symm x) := by
+              apply MeasureTheory.integral_congr_ae
+              filter_upwards with x
+              rw [hrepr_x x]
+              simp [F, headCoord, fpad, fpad0, OSReconstruction.reindexSchwartzFin_apply]
+      _ = ∫ z : Fin (k + 1) → ℝ, F z := by
+            simpa using integral_comp_castFinCLE_eq (h := hk.symm) (f := F)
+      _ = ∫ p : ℝ × (Fin k → ℝ), pairing p.1 * (χhat p.1 * β p.2) := by
+            simpa [F, fpad0, SchwartzMap.prependField_apply, mul_assoc] using
+              (OSReconstruction.integral_finSucc_cons_eq (f := F)).symm
+      _ = (∫ t : ℝ, pairing t * χhat t) * (∫ y : Fin k → ℝ, β y) := by
+            simpa [mul_assoc] using
+              (MeasureTheory.integral_prod_mul
+                (f := fun t : ℝ => pairing t * χhat t)
+                (g := fun y : Fin k → ℝ => β y))
+      _ = ∫ t : ℝ, pairing t * χhat t := by
+            rw [integral_normedUnitBumpSchwartzPi]
+            ring
+  have hΦ_vanish :
+      ∀ ξ ∈ DualConeFlat
+        ((flattenCLEquivReal (n + m) (d + 1)) '' ForwardConeAbs d (n + m)),
+        Φ ξ = 0 := by
+    intro ξ hξ
+    rw [hΦ_eval ξ]
+    let phase : ℝ → ℂ := fun t =>
+      Complex.exp
+        (-(Complex.I *
+            ((∑ i,
+                (((OSReconstruction.castFinCLE
+                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                  (OSReconstruction.zeroHeadBlockShift
+                    (m := n * (d + 1)) (n := m * (d + 1))
+                    (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t))
+    let base : ℂ :=
+      physicsFourierFlatCLM
+        (OSReconstruction.reindexSchwartzFin
+          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))
+          Ψ) ξ
+    have horbit_phase : ∀ t : ℝ, orbit t ξ = phase t * base := by
+      intro t
+      dsimp [orbit, phase, base]
+      rw [physicsFourierFlatCLM_reindex_translate_zeroHeadBlockShift_apply
+        (d := d) (n := n) (m := m)
+        (a := t • flatTimeShiftDirection d m) (Ψ := Ψ) (ξ := ξ)]
+      congr 1
+      have hsum :
+          (∑ i,
+              ((((OSReconstruction.castFinCLE
+                (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := m * (d + 1))
+                  (t • flatTimeShiftDirection d m))) i : ℝ) : ℂ) *
+                (ξ i : ℂ)) =
+            ((∑ i,
+                (((OSReconstruction.castFinCLE
+                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                  (OSReconstruction.zeroHeadBlockShift
+                    (m := n * (d + 1)) (n := m * (d + 1))
+                    (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t := by
+        norm_num
+        simp [zeroHeadBlockShift_smul, Finset.mul_sum, Pi.smul_apply,
+          mul_assoc, mul_left_comm, mul_comm]
+      rw [hsum]
+      ring
+    let G : (Fin (k + 1) → ℝ) → ℂ := fun z => orbit (z 0) ξ * fpad0 z
+    calc
+      ∫ x : Fin M → ℝ, gFamily x ξ * fpad x
+          = ∫ x : Fin M → ℝ, G ((OSReconstruction.castFinCLE hk).symm x) := by
+              apply MeasureTheory.integral_congr_ae
+              filter_upwards with x
+              simp [G, gFamily, headCoord, fpad, fpad0, OSReconstruction.reindexSchwartzFin_apply]
+      _ = ∫ z : Fin (k + 1) → ℝ, G z := by
+            simpa using integral_comp_castFinCLE_eq (h := hk.symm) (f := G)
+      _ = ∫ p : ℝ × (Fin k → ℝ), orbit p.1 ξ * (χhat p.1 * β p.2) := by
+            simpa [G, fpad0, SchwartzMap.prependField_apply, mul_assoc] using
+              (OSReconstruction.integral_finSucc_cons_eq (f := G)).symm
+      _ = ∫ p : ℝ × (Fin k → ℝ), base * ((phase p.1 * χhat p.1) * β p.2) := by
+            apply MeasureTheory.integral_congr_ae
+            filter_upwards with p
+            rw [horbit_phase p.1]
+            ring
+      _ = base * ∫ p : ℝ × (Fin k → ℝ), (phase p.1 * χhat p.1) * β p.2 := by
+            simpa using
+              (MeasureTheory.integral_const_mul base
+                (fun p : ℝ × (Fin k → ℝ) => (phase p.1 * χhat p.1) * β p.2))
+      _ = base * ((∫ t : ℝ, phase t * χhat t) * (∫ y : Fin k → ℝ, β y)) := by
+            congr 1
+            simpa [mul_assoc] using
+              (MeasureTheory.integral_prod_mul
+                (f := fun t : ℝ => phase t * χhat t)
+                (g := fun y : Fin k → ℝ => β y))
+      _ = base * (0 * 1) := by
+            rw [integral_zeroHeadBlockShift_flatTimeShiftDirection_phase_mul_fourierTransform_eq_zero_of_negSupport
+              (d := d) (n := n) (m := m) (χ := χ) hχ_supp hξ,
+              integral_normedUnitBumpSchwartzPi]
+      _ = 0 := by ring
+  have hTflat_zero : Tflat Φ = 0 := by
+    unfold HasFourierSupportInDualCone HasFourierSupportIn at hTflat_supp
+    apply hTflat_supp
+    intro ξ hξ_supp hξ_dual
+    exact hξ_supp (hΦ_vanish ξ hξ_dual)
+  calc
+    ∫ t : ℝ,
+      ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+        (unflattenSchwartzNPoint (d := d)))
+        (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+          (flattenSchwartzNPoint (d := d) g)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) t
+        = ∫ x : Fin M → ℝ, Tflat (gFamily x) * fpad x := by
+            symm
+            exact hPair_repr
+    _ = Tflat Φ := by symm; exact hΦ_pair
+    _ = 0 := hTflat_zero
+
 /-- Exact hypothesis transfer for the live Stage-5 blocker: if the flattened
 translation functional has one-sided Fourier support, then so does the original
 time-shift pairing functional. This means the remaining spectral theorem can be
@@ -1993,6 +2670,43 @@ private theorem hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift_of_f
   rw [integral_bvt_W_conjTensorProduct_timeShift_mul_fourierTransform_eq_flattened_translate
     (d := d) (OS := OS) (lgc := lgc) f g χ]
   exact h_spectral_flat χ hχ_supp
+
+/-- The flattened Stage-5 spectral theorem on the exact theorem surface now
+proved in production: the full translated flat pairing annihilates Fourier
+transforms of negative-support tests. -/
+private theorem hasOneSidedFourierSupport_bvt_W_flattened_translate
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m) :
+    SCV.HasOneSidedFourierSupport
+      (fun χ : SchwartzMap ℝ ℂ =>
+        ∫ t : ℝ,
+          ((bvt_W_conjTensorProduct_rightCLM (d := d) OS lgc f).comp
+            (unflattenSchwartzNPoint (d := d)))
+            (SCV.translateSchwartz (t • flatTimeShiftDirection d m)
+              (flattenSchwartzNPoint (d := d) g)) * χ t) := by
+  intro χ hχ_supp
+  exact integral_bvt_W_flattened_translate_mul_fourierTransform_eq_zero_of_negSupport
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g χ hχ_supp
+
+/-- Honest Stage-5 spectral package on the original time-shift theorem surface:
+for compact right input and positive arity, the reconstructed Wightman
+time-shift pairing has one-sided Fourier support. -/
+private theorem hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m) :
+    SCV.HasOneSidedFourierSupport
+      (fun χ : SchwartzMap ℝ ℂ =>
+        ∫ t : ℝ,
+          bvt_W OS lgc (n + m)
+            (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t) := by
+  exact hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift_of_flattened
+    (d := d) (OS := OS) (lgc := lgc) (f := f) (g := g)
+    (hasOneSidedFourierSupport_bvt_W_flattened_translate
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g)
 
 /-- Ambient-witness existence on the current Stage-5 route: once the real-time
 Wightman pairing against a fixed ambient tensor has one-sided Fourier support,
@@ -2088,6 +2802,33 @@ theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_boundaryVal
           (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t)
     hH_bv
     hzero
+
+/-- The Stage-5 spectral blocker is now discharged on the original time-shift
+surface: for positive right arity, the Paley-Wiener witness for the reconstructed
+Wightman time-shift pairing exists unconditionally from the flattened dual-cone
+support theorem proved above. -/
+theorem bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    ∃ H : ℂ → ℂ,
+      DifferentiableOn ℂ H SCV.upperHalfPlane ∧
+      (∀ η : ℝ, 0 < η →
+        SCV.HasPolynomialGrowthOnLine (fun x => H (↑x + ↑η * Complex.I))) ∧
+      (∀ χ : SchwartzMap ℝ ℂ,
+        Filter.Tendsto
+          (fun η : ℝ => ∫ x : ℝ, H (↑x + ↑η * Complex.I) * χ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds
+            (∫ t : ℝ,
+              bvt_W OS lgc (n + m)
+                (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t))) := by
+  exact bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension
+    (d := d) OS lgc f g hg_compact
+    (hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift
+      (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g)
 
 /-- Any upper-half-plane witness with the linewise polynomial-growth package
 used in the ambient Paley-Wiener route pairs integrably with Fourier transforms
