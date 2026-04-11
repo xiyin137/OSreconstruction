@@ -393,7 +393,7 @@ noncomputable def spectrumConditionAbsoluteInput
     intro z c hz hzc
     exact W_analytic_translation_on_forwardTube (d := d) (n := m + 1) Wfn c z
       (hft_eq ▸ hz) (hft_eq ▸ hzc)
-  boundary_values := (Wfn.spectrum_condition (m + 1)).choose_spec.2
+  boundary_values := (Wfn.spectrum_condition (m + 1)).choose_spec.2.2
 
 /-- Reduced real-Lorentz invariance on the reduced forward tube. This is the
 part of the reduced symmetry that can already be descended directly from the
@@ -1204,10 +1204,11 @@ theorem route1ReducedBoundaryIntegral_eq_absoluteBoundaryIntegral
     exact forward_tube_bv_integrable
       (Wfn.spectrum_condition (m + 1)).choose
       (Wfn.spectrum_condition (m + 1)).choose_spec.1
+      (Wfn.spectrum_condition (m + 1)).choose_spec.2.1
       ⟨{ toLinearMap := ⟨⟨Wfn.W (m + 1), (Wfn.linear (m + 1)).map_add⟩,
            (Wfn.linear (m + 1)).map_smul⟩,
          cont := Wfn.tempered (m + 1) },
-        (Wfn.spectrum_condition (m + 1)).choose_spec.2⟩
+        (Wfn.spectrum_condition (m + 1)).choose_spec.2.2⟩
       (reducedTestLift m d χ f)
       (absoluteDirectionOfReduced d m η)
       (absoluteDirectionOfReduced_mem_forwardCone (d := d) m η hη)

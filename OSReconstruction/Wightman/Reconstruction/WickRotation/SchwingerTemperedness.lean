@@ -764,7 +764,7 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
   let W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ := (Wfn.spectrum_condition n).choose
   have hW_holo : DifferentiableOn ℂ W_analytic (ForwardTube d n) :=
     (Wfn.spectrum_condition n).choose_spec.1
-  have hW_bv := (Wfn.spectrum_condition n).choose_spec.2
+  have hW_bv := (Wfn.spectrum_condition n).choose_spec.2.2
   have hFT_eq : ForwardTube d n = TubeDomainSetPi (ForwardConeAbs d n) := by
     ext z; exact (forwardTube_eq_imPreimage d n ▸ Iff.rfl)
   have hC_open := forwardConeAbs_isOpen d n
@@ -788,9 +788,15 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
           (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wcl φ)) := by
     intro η hη φ; rw [hWcl]
     exact hW_bv φ η ((inForwardCone_iff_mem_forwardConeAbs η).mpr hη)
+  -- Global polynomial growth from spectrum_condition.
+  have hW_global_growth := (Wfn.spectrum_condition n).choose_spec.2.1
+  have hW_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ TubeDomainSetPi (ForwardConeAbs d n) → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    obtain ⟨C_bd, N, hC_pos, hgrowth⟩ := hW_global_growth
+    exact ⟨C_bd, N, hC_pos, fun z hz => hgrowth z (hFT_eq ▸ hz)⟩
   obtain ⟨_, ⟨C_vt, N_vt, q_vt, hC_vt_pos, hVT_bound⟩⟩ :=
     vladimirov_tillmann (ForwardConeAbs d n) hC_open hC_conv hC_cone hC_salient
-      W_analytic hW_holo' Wcl hW_bv'
+      W_analytic hW_holo' hW_growth Wcl hW_bv'
   -- Step 2: Get the universal projection constant
   obtain ⟨c_proj, hc_pos, hproj⟩ := exists_universal_time_projection d n
   let c_geom : ℝ := c_proj / (2 * d + 4 : ℝ)
@@ -1095,7 +1101,7 @@ theorem hasForwardTubeGrowth_of_wightman {d : ℕ} [NeZero d]
       hΔ_le_two_norm
       (norm_nonneg x)
       hz_nonneg
-  simpa [W_analytic, Δ, c_geom, C_z, CoincidenceLocus, η] using hcollapse
+  exact hcollapse
 
 /-- **Integrability of the Wick-rotated BHW kernel on the zero-diagonal test space.**
 

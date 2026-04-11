@@ -823,31 +823,62 @@ Exact current-code milestone:
 - the earlier theorem `section43_iteratedSlice_descendedPairing_imagAxis`
   remains as the first concrete fragment, but it is no longer the live
   milestone;
-- the next honest Stage-5 blocker is the concrete Section-4.3 / Lemma-4.2
-  adapter `lemma42_matrix_element_time_interchange`;
-- the transformed-image kernel theorem `bvt_W_matrixElement_onImage` is the
-  immediate consumer of that adapter, not a direct next step from slice
-  descent alone.
+- the reusable one-variable interchange step is now formalized privately as
+  `one_variable_time_interchange_for_wightman_pairing`, together with the
+  kernel-reduction chain down to an ambient upper-half-plane witness, in
+  [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
+- `OSToWightmanPositivity.lean` is now `sorry`-free; the active public
+  theorem-3 `sorry` remains `bvt_W_positive` in
+  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean);
+- the slice-side vanishing package is now formalized on both pairing
+  orientations, including
+  `fourierInvPairingCLM_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
+  and
+  `fourierInvPairingCLM_opposite_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
+  in
+  [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
+- the flattened spectral / dual-cone package is now closed in
+  [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean),
+  culminating in
+  `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened`;
+- the next honest Stage-5 blocker is therefore the actual witness-consuming
+  seam: the ambient upper-half-plane witness has now been canonicalized as an
+  explicit `fourierLaplaceExt` of the real-time Wightman pairing functional,
+  with a concrete imaginary-axis formula; the remaining work is to identify
+  those values with the semigroup-side holomorphic matrix element (spectral
+  Laplace comparison), together with the canonical-shell boundary-value limit
+  into those same witness values;
+- the concrete Section-4.3 / Lemma-4.2 adapter
+  `lemma42_matrix_element_time_interchange` and the transformed-image kernel
+  theorem `bvt_W_matrixElement_onImage` remain the public theorem slots that
+  consume that witness, not the immediate next step from slice descent alone;
+- `lemma42_matrix_element_time_interchange` is now present in
+  [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean)
+  on the honest witness-consuming surface: it already turns the positive-
+  imaginary-axis witness identification plus the canonical-shell limit theorem
+  into the desired per-pair kernel equality, so the remaining exposed blocker
+  is exactly the proof of those witness/limit hypotheses rather than another
+  hidden reduction layer.
 
-/-- Concrete Section-4.3 / Lemma-4.2 adapter: rewrite the reconstructed
-Wightman matrix element in the same one-variable slice coordinates used by
-`section43_iteratedSlice_descendedPairing`, then perform the Section-8
-time-variable interchange there. This is the first theorem after slice
-descent that still contains genuinely new analytic content. -/
+/-- Concrete Section-4.3 / Lemma-4.2 adapter: this theorem is now landed on the
+current honest theorem surface. It consumes:
+- an upper-half-plane witness `H`,
+- identification of `H` with the semigroup-side holomorphic matrix element on
+  the positive imaginary axis,
+- and the canonical-shell boundary-value limit into those same witness values.
+
+What remains is to prove those hypotheses from the spatial-Fourier / Section-8
+machinery, not to invent another reduction theorem. -/
 theorem lemma42_matrix_element_time_interchange
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     {n m : ℕ}
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m)
-    (f : euclideanPositiveTimeSubmodule (d := d) n)
-    (g : euclideanPositiveTimeSubmodule (d := d) m)
-    (hφ :
-      section43PositiveEnergyQuotientMap (d := d) n φ =
-        os1TransportComponent d n f)
-    (hψ :
-      section43PositiveEnergyQuotientMap (d := d) m ψ =
-        os1TransportComponent d m g) :
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (H : ℂ → ℂ)
+    ... :
     ... := by
-  ...
+  -- implemented in `OSToWightmanPositivity.lean`
 
 /-- Stage-5 prerequisite: expose the OS-II `bvt_W` quadratic form on
 transformed-image inputs in the same iterated Fourier-Laplace coordinates used
@@ -1154,16 +1185,46 @@ The proof transcript is:
      adapter `lemma42_matrix_element_time_interchange`;
    - the purely configuration-space shell inside that adapter is already
      formalized by `conjTensorProduct_timeShift_eq_tailTimeShift` and
-     `simpleTensor_timeShift_integral_eq_xiShift_conj` in
-     [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean);
-   - inside that adapter, time-variable interchange is exactly the hidden
-     Section-8 one-variable theorem recorded in
-     `docs/os1_detailed_proof_audit.md` as
-     `one_variable_time_interchange_for_wightman_pairing`;
+   `simpleTensor_timeShift_integral_eq_xiShift_conj` in
+   [OSToWightman.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightman.lean);
+   - inside that adapter, the reusable Section-8 one-variable theorem is now
+     already formalized privately as
+     `one_variable_time_interchange_for_wightman_pairing` in
+     [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
+   - do not replace that one-variable step by a naive "the canonical
+     `xiShift(wickRotate(y), t * I)` shell is already pointwise inside
+     `ForwardTube` for every ambient `y`" argument: that statement is false on
+     the corrected ambient theorem surface, because the `xiShift` updates only
+     one time-difference coordinate and the remaining Wick-rotated differences
+     need not lie in the forward cone;
    - in the current repo, the honest Lean supplier for that one-variable step
      should be routed through `SCV.paley_wiener_one_step` /
      `SCV.paley_wiener_half_line`, not a fresh ad hoc many-variable
      continuation theorem;
+   - more precisely: `paley_wiener_half_line` first produces the **ambient**
+     witness on `SCV.upperHalfPlane`, because it is a Fourier/Laplace theorem
+     for a real-line tempered pairing; it does **not** directly hand us the
+     final right-half-plane witness used by the semigroup-side
+     `singleSplit_xiShift` comparison;
+   - so the immediate post-Paley-Wiener theorem slot is an upper-half-plane
+     witness/exact-boundary-value statement for the ambient Wightman pairing;
+   - in the current repo, that route has already been reduced further to the
+     closed flattened spectral package ending at
+     `bvt_W_conjTensorProduct_timeShift_hasPaleyWienerExtension_of_flattened`
+     in
+     [OSToWightmanBoundaryValueLimits.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean);
+   - so the remaining live content is no longer the paired-vanishing /
+     one-sided-support theorem, but the witness-consuming seam itself:
+     positive-imaginary-axis identification plus the canonical-shell limit
+     theorem for the actual ambient upper-half-plane witness;
+   - the first direct consumer of that witness only needs the values on the
+     positive imaginary axis: if the canonical shell converges to `H(i t)` and
+     `H(i t)` is identified with the semigroup-side holomorphic value, the
+     current kernel reduction already closes;
+   - only if one wants a whole-domain comparison of holomorphic witnesses does
+     one then need the existing upper-half-plane identity theorem or an
+     explicit rotation bridge before invoking any right-half-plane uniqueness
+     statement;
    - the common kernel is the corrected OS-II-backed analytic-continuation
      object underlying `bvt_F` / `bvt_W`, not a fresh spectral-measure
      construction in Section 4.3 itself.
