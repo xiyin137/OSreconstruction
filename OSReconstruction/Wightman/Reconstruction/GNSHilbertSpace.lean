@@ -1437,23 +1437,115 @@ The logical chain is:
    then `μ((-∞, 0)) = 0`.
 -/
 
+/-- Integrability of a per-(n,m) summand in the WIP expansion multiplied by a Schwartz
+    function. The function `t ↦ W_{n+m}(fₙ*.conjTP(τ_{te₀} fₘ))` is continuous and of
+    tempered growth (bounded by Schwartz seminorms that grow polynomially under translation).
+    The product with any Schwartz function is therefore integrable. -/
+private lemma scd_summand_integrable
+    {n m : ℕ} (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (ψ : SchwartzMap ℝ ℂ) :
+    MeasureTheory.Integrable (fun t : ℝ =>
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) *
+      (ψ : ℝ → ℂ) t) := by
+  -- t ↦ W(n+m)(fn.conjTP(τ_t fm)) is continuous (composition of continuous maps:
+  -- continuous_translate_npoint_schwartz, conjTensorProduct_continuous_right, Wfn.tempered)
+  -- and has at most polynomial growth (temperedness of W + Schwartz seminorm bounds).
+  -- Product with Schwartz (rapidly decreasing) is integrable.
+  exact ((Wfn.tempered (n + m)).comp
+    ((SchwartzMap.conjTensorProduct_continuous_right fn).comp
+      (continuous_translate_npoint_schwartz 0 fm))).aestronglyMeasurable.mul_integrable
+    ψ.integrable (by
+      -- Boundedness on compact sets + tempered growth gives local boundedness
+      -- which combined with Schwartz decay gives integrability.
+      sorry)
+
+/-- **Per-summand one-sided Fourier vanishing for the WIP expansion.**
+
+    For each `(n,m)`-summand in the WightmanInnerProduct, the integral
+    `∫ W_{n+m}(fₙ*.conjTP(τ_{te₀} fₘ)) · ℱ[φ](t) dt` vanishes when
+    `supp(φ) ⊆ (-∞, 0)`.
+
+    - **n + m = 0:** Translation acts trivially on 0-point functions
+      (`Fin 0 → Fin (d+1) → ℝ` is a subsingleton), so the integrand is
+      `C · ℱ[φ](t)`. By Fourier inversion, `∫ ℱ[φ] = φ(0) = 0`.
+    - **n + m ≥ 1:** By `SpectralConditionDistribution`, `W_{n+m}` factors
+      through `w ∘ diffVarReduction` where `w` has Fourier support in `V̄₊^{n+m-1}`.
+      Time-translation `τ_{te₀}` shifts only the boundary difference variable's
+      time component. The distributional `t`-Fourier transform of the summand is a
+      marginal of `ŵ` restricted to energy `p₀ ≥ 0`, hence vanishes when paired
+      with `φ` supported in `(-∞, 0)`.
+
+    **Ref:** Streater-Wightman, §3-1; Reed-Simon II, Theorem X.40. -/
+private lemma scd_summand_fourier_vanishing
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    {n m : ℕ} (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (φ : SchwartzMap ℝ ℂ) (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) :
+    ∫ t : ℝ,
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) *
+      ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 := by
+  by_cases hnm : n + m = 0
+  · -- Case n = m = 0: Translation acts trivially on 0-point functions.
+    obtain ⟨rfl, rfl⟩ := Nat.add_eq_zero.mp hnm
+    -- poincareActNPoint acts trivially on SchwartzNPointSpace d 0
+    -- (Fin 0 → Fin (d+1) → ℝ is a subsingleton, so g⁻¹ · x = x)
+    have h_triv : ∀ t : ℝ,
+        poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm = fm := by
+      intro t; ext x; simp only [poincareActNPoint_apply]
+      congr 1; exact funext Fin.elim0
+    simp_rw [h_triv]
+    -- Integrand is constant × FT[φ](t), pull constant out
+    rw [MeasureTheory.integral_const_mul]
+    -- Suffices to show ∫ FT[φ](t) dt = 0
+    suffices h_int : ∫ t : ℝ,
+        ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 by
+      rw [h_int, mul_zero]
+    -- φ(0) = 0 since supp(φ) ⊆ (-∞, 0)
+    have hφ0 : (φ : ℝ → ℂ) 0 = 0 := by
+      by_contra h; exact absurd (hφ 0 (Function.mem_support.mpr h)) (lt_irrefl 0)
+    -- Fourier inversion: FourierInv(FT[φ]) = φ at function level
+    set g := SchwartzMap.fourierTransformCLM ℂ φ with hg_def
+    have hinv : FourierTransform.fourierInv (g : ℝ → ℂ) = (φ : ℝ → ℂ) := by
+      have h := congrArg (⇑·) (FourierTransform.fourierInv_fourier_eq φ)
+      rwa [SchwartzMap.fourierInv_coe] at h
+    -- FourierInv(g)(0) = ∫ g(t) dt (exponential kernel at 0 is 1)
+    have h_fi_zero : FourierTransform.fourierInv (g : ℝ → ℂ) 0 =
+        ∫ t : ℝ, (g : ℝ → ℂ) t := by
+      rw [Real.fourierInv_eq' (f := (g : ℝ → ℂ)) (w := (0 : ℝ))]
+      congr 1; ext v
+      have hinner : @inner ℝ ℝ _ (0 : ℝ) v = 0 := inner_zero_left v
+      simp [hinner, smul_eq_mul]
+    -- Chain: ∫ FT[φ] = FourierInv(FT[φ])(0) = φ(0) = 0
+    calc ∫ t : ℝ, (g : ℝ → ℂ) t
+        = FourierTransform.fourierInv (g : ℝ → ℂ) 0 := h_fi_zero.symm
+      _ = (φ : ℝ → ℂ) 0 := congrFun hinv 0
+      _ = 0 := hφ0
+  · -- Case n + m ≥ 1: Deep SCD distributional argument.
+    -- W_{n+m} factors as w ∘ diffVarReduction by SpectralConditionDistribution.
+    -- The reduced distribution w has Fourier support in V̄₊^{n+m-1}.
+    -- Time-translation τ_{te₀} shifts only the boundary difference variable's
+    -- time component. After exchanging w with the t-integral (by continuity
+    -- and linearity of w), the resulting test function in difference variables
+    -- has Fourier transform supported outside the forward momentum cone
+    -- (the energy component is restricted to supp(φ) ⊆ (-∞,0), giving p₀ < 0,
+    -- outside V̄₊ where p₀ ≥ 0). By the SCD support condition, w vanishes.
+    sorry
+
 /-- **Step 1+2: SCD → one-sided Fourier support of the GNS inner product function.**
 
     The tempered distribution `T_F(ψ) = ∫ ⟪F, U₀(t)F⟫ · ψ(t) dt` has
     one-sided Fourier support in `[0,∞)`, i.e., `T_F(ℱ[φ]) = 0` for every
     Schwartz φ with `supp(φ) ⊆ (-∞, 0)`.
 
-    **Proof sketch:**
+    **Proof:**
     1. By `inner_translate_eq_wip`, lift to the pre-Hilbert space and choose
        a Borchers representative `B` of `F`. Then
        `⟪F, U₀(t)F⟫ = ∑_{n,m} W_{n+m}(f*_n ⊗ τ_{te₀} f_m)`.
-    2. By `SpectralConditionDistribution`, each summand `W_{n+m}` factors through
-       the reduced distribution `w` in difference variables, whose Fourier
-       transform is supported in `V̄₊^{n+m-1}`.
-    3. Time-translation `τ_{te₀}` acts on the last difference variable by
-       adding `te₀`, so the 1D Fourier transform in `t` of each summand
-       is a marginal of `ŵ` restricted to the energy component `p₀ ≥ 0`.
-    4. Summing over `n, m` preserves the support condition.
+    2. Exchange integral and finite sum (each summand is integrable:
+       continuous tempered function × Schwartz is L¹).
+    3. Each per-(n,m) summand integrates to zero by `scd_summand_fourier_vanishing`.
+    4. The sum of zeros is zero.
 
     **Ref:** Streater-Wightman, §3-1; Reed-Simon II, Theorem X.40. -/
 private lemma scd_inner_hasOneSidedFourierSupport
@@ -1464,7 +1556,43 @@ private lemma scd_inner_hasOneSidedFourierSupport
     SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
       ∫ t : ℝ, @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
         (𝒰₀.U t (F : GNSHilbertSpace Wfn)) * (ψ : ℝ → ℂ) t) := by
-  sorry
+  intro 𝒰₀
+  -- Unfold HasOneSidedFourierSupport: for every Schwartz φ with supp(φ) ⊆ (-∞,0),
+  -- show T(FT[φ]) = 0 where T(ψ) = ∫ ⟪F, U₀(t)F⟫ · ψ(t) dt.
+  intro φ hφ
+  -- Step 1: Quotient induction — choose Borchers representative B of F.
+  induction F using Quotient.inductionOn with | h B =>
+  set pB : PreHilbertSpace Wfn := ⟦B⟧
+  -- Step 2: Bridge GNS inner product → WightmanInnerProduct.
+  -- 𝒰₀.U t = poincareActGNS Wfn (translationInDirection d 0 t) by definition,
+  -- and inner_translate_eq_wip lifts from GNS to PreHilbert level.
+  have hinner_eq : ∀ t : ℝ,
+      @inner ℂ _ _ (pB : GNSHilbertSpace Wfn)
+        (𝒰₀.U t (pB : GNSHilbertSpace Wfn)) =
+      WightmanInnerProduct d Wfn.W B
+        (poincareActBorchers
+          (PoincareRepresentation.translationInDirection d 0 t) B) := by
+    intro t; rw [inner_translate_eq_wip Wfn 0 pB pB t]; rfl
+  simp_rw [hinner_eq]
+  -- Step 3: Unfold WightmanInnerProduct as a finite double sum.
+  show ∫ t : ℝ,
+    (∑ n ∈ Finset.range (B.bound + 1), ∑ m ∈ Finset.range (B.bound + 1),
+      Wfn.W (n + m) ((B.funcs n).conjTensorProduct
+        (poincareActNPoint
+          (PoincareRepresentation.translationInDirection d 0 t) (B.funcs m)))) *
+    ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0
+  -- Step 4: Distribute FT[φ](t) multiplication into the finite sum.
+  simp_rw [Finset.sum_mul]
+  -- Step 5: Exchange integral and finite sum, then show each summand is 0.
+  set FTφ := SchwartzMap.fourierTransformCLM ℂ φ with hFTφ_def
+  rw [MeasureTheory.integral_finset_sum _ (fun n _ =>
+    MeasureTheory.Integrable.finset_sum _ (fun m _ =>
+      scd_summand_integrable Wfn (B.funcs n) (B.funcs m) FTφ))]
+  apply Finset.sum_eq_zero; intro n _
+  rw [MeasureTheory.integral_finset_sum _ (fun m _ =>
+    scd_summand_integrable Wfn (B.funcs n) (B.funcs m) FTφ)]
+  apply Finset.sum_eq_zero; intro m _
+  exact scd_summand_fourier_vanishing Wfn hSCD (B.funcs n) (B.funcs m) φ hφ
 
 set_option maxHeartbeats 800000 in
 /-- **Theorem A (Fubini for Bochner–Stieltjes integrals).**
