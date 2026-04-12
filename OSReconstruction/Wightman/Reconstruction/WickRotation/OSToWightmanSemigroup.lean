@@ -3476,6 +3476,957 @@ theorem hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValu
           nlinarith [norm_nonneg xF, norm_nonneg xG]
     _ = (2 * ‖xF‖ * ‖xG‖ + 1) * (1 + |x|) ^ 0 := by simp
 
+/-- Integrability of the rotated OS holomorphic matrix element against Fourier
+transforms of Schwartz tests along positive horizontal lines in the upper
+half-plane. This is the semigroup-side scalar integrability input needed for
+the forthcoming rotated boundary-value theorem. -/
+theorem integrable_mul_fourierTransform_of_rotated_OSInnerProductTimeShiftHolomorphicValue
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    MeasureTheory.Integrable
+      (fun x : ℝ =>
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) x) := by
+  have hline_cont :
+      Continuous
+        (fun x : ℝ =>
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+            (-Complex.I * ((x : ℂ) + η * Complex.I))) := by
+    have hmap_cont :
+        Continuous (fun x : ℝ => (x : ℂ) + η * Complex.I) := by
+      fun_prop
+    exact
+      (differentiableOn_rotated_OSInnerProductTimeShiftHolomorphicValue
+        (d := d) OS lgc F G).continuousOn.comp_continuous hmap_cont
+        (by
+          intro x
+          simp [SCV.upperHalfPlane, hη])
+  exact SCV.integrable_mul_fourierTransform_of_continuous_polynomialGrowthOnLine
+    (f := fun x : ℝ =>
+      OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+        (-Complex.I * ((x : ℂ) + η * Complex.I)))
+    hline_cont
+    (hasPolynomialGrowthOnLine_rotated_OSInnerProductTimeShiftHolomorphicValue
+      (d := d) OS lgc F G η hη)
+    χ
+
+section RotatedBoundaryValue
+
+variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
+
+/-- The diagonal spectral boundary functional obtained from the positive-support
+Laplace measure attached to a self-adjoint contraction. Evaluating it on a
+Schwartz test `χ` corresponds to pairing `χ(u / 2π)` against the spectral
+measure on the Fourier side. -/
+noncomputable def selfAdjointSpectralBoundaryValueDiagonal
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x : H)
+    (χ : SchwartzMap ℝ ℂ) : ℂ :=
+  ∫ u : ℝ,
+    χ (u / (2 * Real.pi)) ∂
+      BochnerLaplaceBridge.laplaceMeasurePos
+        (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+
+/-- The polarized off-diagonal spectral boundary functional obtained from the
+four diagonal spectral measures appearing in the standard polarization
+identity. This is the exact semigroup-side boundary distribution paired later
+against the canonical Wightman witness boundary value. -/
+noncomputable def selfAdjointSpectralBoundaryValueOffdiag
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x y : H)
+    (χ : SchwartzMap ℝ ℂ) : ℂ :=
+  (1 / 4 : ℂ) *
+    (selfAdjointSpectralBoundaryValueDiagonal A hA (x + y) χ -
+      selfAdjointSpectralBoundaryValueDiagonal A hA (x - y) χ -
+      Complex.I * selfAdjointSpectralBoundaryValueDiagonal A hA (x + Complex.I • y) χ +
+      Complex.I * selfAdjointSpectralBoundaryValueDiagonal A hA (x - Complex.I • y) χ)
+
+set_option backward.isDefEq.respectTransparency false in
+private theorem fourierInv_eq_cexp_integral_local
+    (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
+    FourierTransform.fourierInv φ ξ =
+      ∫ x : ℝ, Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x := by
+  have hcoe :
+      FourierTransform.fourierInv φ ξ =
+        FourierTransform.fourierInv (φ : ℝ → ℂ) ξ := by
+    simpa using
+      congrArg (fun g => g ξ) (SchwartzMap.fourierInv_coe (f := φ))
+  rw [hcoe, Real.fourierInv_eq' (f := (φ : ℝ → ℂ)) (w := ξ)]
+  congr 1
+  ext v
+  have hinner : ∀ a b : ℝ, @inner ℝ ℝ _ a b = b * a := by
+    intro a b
+    simp [inner, mul_comm]
+  simp only [smul_eq_mul, hinner, Complex.ofReal_mul, Complex.ofReal_ofNat]
+  ring
+
+/-- Pairing the oscillatory phase `x ↦ exp(iux)` against the Fourier transform
+of a Schwartz test recovers the test at the matching nonnegative frequency
+`u / 2π`. -/
+private theorem integral_phase_mul_fourierTransform_eq_eval_local
+    (χ : SchwartzMap ℝ ℂ)
+    (u : ℝ) :
+    ∫ t : ℝ,
+      Complex.exp (Complex.I * ((u : ℂ) * t)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) t =
+      χ (u / (2 * Real.pi)) := by
+  have hfourierInv :
+      FourierTransform.fourierInv
+          ((SchwartzMap.fourierTransformCLM ℂ) χ) (u / (2 * Real.pi)) =
+        χ (u / (2 * Real.pi)) := by
+    simpa using
+      congrArg
+        (fun f : SchwartzMap ℝ ℂ => f (u / (2 * Real.pi)))
+        (FourierTransform.fourierInv_fourier_eq χ)
+  rw [fourierInv_eq_cexp_integral_local
+      (φ := (SchwartzMap.fourierTransformCLM ℂ) χ)
+      (ξ := u / (2 * Real.pi))] at hfourierInv
+  calc
+    ∫ t : ℝ,
+        Complex.exp (Complex.I * ((u : ℂ) * t)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) t
+      =
+        ∫ t : ℝ,
+          Complex.exp
+              (2 * Real.pi * Complex.I * (((u / (2 * Real.pi) : ℝ) : ℂ) * (t : ℂ))) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t := by
+              refine MeasureTheory.integral_congr_ae ?_
+              filter_upwards with t
+              congr 2
+              have harg :
+                  Complex.I * ((u : ℂ) * t) =
+                    2 * Real.pi * Complex.I *
+                      (((u / (2 * Real.pi) : ℝ) : ℂ) * (t : ℂ)) := by
+                have hscalar :
+                    ((2 * Real.pi : ℂ) * (((u / (2 * Real.pi) : ℝ) : ℂ))) = (u : ℂ) := by
+                  exact_mod_cast (show (2 * Real.pi) * (u / (2 * Real.pi)) = u by
+                    field_simp [Real.pi_ne_zero])
+                calc
+                  Complex.I * ((u : ℂ) * t)
+                      = Complex.I *
+                          (((2 * Real.pi : ℂ) *
+                              (((u / (2 * Real.pi) : ℝ) : ℂ)) * (t : ℂ)) : ℂ) := by
+                                rw [hscalar]
+                  _ = 2 * Real.pi * Complex.I *
+                        ((((u / (2 * Real.pi) : ℝ) : ℂ) * (t : ℂ))) := by ring
+              rw [harg]
+    _ = χ (u / (2 * Real.pi)) := by
+          simpa [mul_assoc, mul_left_comm, mul_comm] using hfourierInv
+
+/-- Exact shell-to-spectral rewrite on the rotated diagonal spectral Laplace
+surface: pairing the rotated holomorphic diagonal matrix element against
+`𝓕χ` is the same as pairing the damped spectral phase against the positive
+Laplace measure. This is the diagonal Fubini step behind the semigroup-side
+rotated boundary-value theorem. -/
+private theorem integral_rotated_selfAdjointSpectralLaplaceDiagonal_mul_fourierTransform
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x : H)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    ∫ t : ℝ,
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) t =
+      ∫ u : ℝ,
+        Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)) ∂
+          BochnerLaplaceBridge.laplaceMeasurePos
+            (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x) := by
+  let μ : MeasureTheory.Measure ℝ :=
+    BochnerLaplaceBridge.laplaceMeasurePos
+      (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+  have hμ_nonneg :
+      μ (Set.Iio 0) = 0 := by
+    simpa [μ] using
+      (BochnerLaplaceBridge.laplaceMeasurePos_nonnegSupport
+        (μ := ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+        (hsupp_le_one :=
+          ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal_Ioi_eq_zero_of_spectrum_subset_Icc
+            (A := A) (hA := hA) (x := x) hspec))
+  let χhat : SchwartzMap ℝ ℂ := (SchwartzMap.fourierTransformCLM ℂ) χ
+  let f : ℝ → ℝ → ℂ := fun t u =>
+    (Complex.exp (Complex.I * ((u : ℂ) * t)) * χhat t) *
+      Complex.exp (-((η * u : ℝ) : ℂ))
+  have hf_meas :
+      MeasureTheory.AEStronglyMeasurable (Function.uncurry f)
+        (MeasureTheory.volume.prod μ) := by
+    have hcont :
+        Continuous (Function.uncurry f) := by
+      change Continuous (fun z : ℝ × ℝ =>
+        (Complex.exp (Complex.I * ((z.2 : ℂ) * z.1)) * χhat z.1) *
+          Complex.exp (-((η * z.2 : ℝ) : ℂ)))
+      have hphase :
+          Continuous (fun z : ℝ × ℝ => Complex.exp (Complex.I * ((z.2 : ℂ) * z.1))) := by
+        have harg : Continuous (fun z : ℝ × ℝ => Complex.I * ((z.2 : ℂ) * z.1)) := by
+          exact
+            continuous_const.mul
+              (((Complex.continuous_ofReal.comp continuous_snd).mul
+                (Complex.continuous_ofReal.comp continuous_fst)))
+        exact Complex.continuous_exp.comp harg
+      have hχhat : Continuous (fun z : ℝ × ℝ => χhat z.1) := χhat.continuous.comp continuous_fst
+      have hdamp :
+          Continuous (fun z : ℝ × ℝ => Complex.exp (-((η * z.2 : ℝ) : ℂ))) := by
+        have harg : Continuous (fun z : ℝ × ℝ => -((η * z.2 : ℝ) : ℂ)) := by
+          exact (Complex.continuous_ofReal.comp (continuous_const.mul continuous_snd)).neg
+        exact Complex.continuous_exp.comp harg
+      simpa [Function.uncurry, f, mul_assoc] using (hphase.mul hχhat).mul hdamp
+    simpa [Function.uncurry, f] using hcont.aestronglyMeasurable
+  have h_nonneg_u : ∀ᵐ u ∂μ, 0 ≤ u := by
+    rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
+    have hset : ({x : ℝ | 0 ≤ x}ᶜ : Set ℝ) = Set.Iio 0 := by
+      ext x
+      simp [not_le]
+    rw [hset]
+    exact hμ_nonneg
+  have h_nonneg_prod : ∀ᵐ z : ℝ × ℝ ∂(MeasureTheory.volume.prod μ), 0 ≤ z.2 := by
+    have hmeas : MeasurableSet {z : ℝ × ℝ | 0 ≤ z.2} := by
+      exact (((continuous_snd : Continuous fun z : ℝ × ℝ => z.2).measurable)
+        measurableSet_Ici)
+    rw [MeasureTheory.Measure.ae_prod_iff_ae_ae hmeas]
+    exact Filter.Eventually.of_forall fun _ => h_nonneg_u
+  have hbound :
+      ∀ᵐ z : ℝ × ℝ ∂(MeasureTheory.volume.prod μ),
+        ‖Function.uncurry f z‖ ≤ ‖χhat z.1‖ := by
+    filter_upwards [h_nonneg_prod] with z hz
+    rcases z with ⟨t, u⟩
+    have hexp_phase :
+        ‖Complex.exp (Complex.I * ((u : ℂ) * t))‖ = 1 := by
+      rw [Complex.norm_exp]
+      have hre : (Complex.I * ((u : ℂ) * t)).re = 0 := by
+        simp [Complex.mul_re, Complex.mul_im, mul_comm, mul_left_comm, mul_assoc]
+      simp [hre]
+    have hexp_damp :
+        ‖Complex.exp (-((η * u : ℝ) : ℂ))‖ ≤ 1 := by
+      rw [Complex.norm_exp]
+      have hηu : -(η * u) ≤ 0 := by nlinarith
+      exact Real.exp_le_one_iff.mpr hηu
+    calc
+      ‖Function.uncurry f (t, u)‖
+          = ‖Complex.exp (Complex.I * ((u : ℂ) * t))‖ * ‖χhat t‖ *
+              ‖Complex.exp (-((η * u : ℝ) : ℂ))‖ := by
+                simp [Function.uncurry, f, norm_mul, mul_assoc]
+      _ = 1 * ‖χhat t‖ * ‖Complex.exp (-((η * u : ℝ) : ℂ))‖ := by
+            simp [hexp_phase]
+      _ ≤ 1 * ‖χhat t‖ * 1 := by
+            gcongr
+      _ = ‖χhat t‖ := by simp
+  have hχhat_int :
+      MeasureTheory.Integrable (fun z : ℝ × ℝ => χhat z.1) (MeasureTheory.volume.prod μ) := by
+    simpa [χhat] using ((SchwartzMap.fourierTransformCLM ℂ χ).integrable (μ := MeasureTheory.volume)).comp_fst μ
+  have hf_int : MeasureTheory.Integrable (Function.uncurry f) (MeasureTheory.volume.prod μ) := by
+    exact (hχhat_int.norm).mono' hf_meas hbound
+  calc
+    ∫ t : ℝ,
+        ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+            (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) t
+      =
+        ∫ t : ℝ, ∫ u : ℝ, f t u ∂μ := by
+          congr 1
+          ext t
+          rw [ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal]
+          have hsplit_fun :
+              (fun u : ℝ =>
+                Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)))) =
+              (fun u : ℝ =>
+                Complex.exp (Complex.I * ((u : ℂ) * t)) *
+                  Complex.exp (-((η * u : ℝ) : ℂ))) := by
+            funext u
+            have harg :
+                -((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)) =
+                  Complex.I * ((u : ℂ) * t) + (-((η * u : ℝ) : ℂ)) := by
+              calc
+                -((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))
+                    = Complex.I * (((t : ℂ) + η * Complex.I) * (u : ℂ)) := by ring
+                _ = Complex.I * ((t : ℂ) * (u : ℂ)) +
+                      Complex.I * ((η : ℂ) * Complex.I * (u : ℂ)) := by ring
+                _ = Complex.I * ((u : ℂ) * t) + (Complex.I ^ 2) * ((η : ℂ) * (u : ℂ)) := by ring
+                _ = Complex.I * ((u : ℂ) * t) + (-((η * u : ℝ) : ℂ)) := by
+                      rw [Complex.I_sq]
+                      norm_num
+            rw [harg, Complex.exp_add]
+          calc
+            (∫ u : ℝ,
+                Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))) ∂μ) *
+                χhat t
+              =
+                ∫ u : ℝ,
+                  (Complex.exp (Complex.I * ((u : ℂ) * t)) *
+                    Complex.exp (-((η * u : ℝ) : ℂ))) * χhat t ∂μ := by
+                    rw [hsplit_fun]
+                    rw [(MeasureTheory.integral_mul_const (χhat t)
+                      (fun u : ℝ =>
+                        Complex.exp (Complex.I * ((u : ℂ) * t)) *
+                          Complex.exp (-((η * u : ℝ) : ℂ)))).symm]
+            _ = ∫ u : ℝ, f t u ∂μ := by
+                  refine MeasureTheory.integral_congr_ae ?_
+                  filter_upwards with u
+                  simp [f, mul_assoc, mul_left_comm, mul_comm]
+    _ = ∫ u : ℝ, ∫ t : ℝ, f t u ∂MeasureTheory.volume ∂μ := by
+          exact MeasureTheory.integral_integral_swap (f := f) hf_int
+    _ = ∫ u : ℝ,
+          Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)) ∂μ := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with u
+          calc
+            ∫ t : ℝ, f t u ∂MeasureTheory.volume
+                =
+                  (∫ t : ℝ,
+                    Complex.exp (Complex.I * ((u : ℂ) * t)) * χhat t ∂MeasureTheory.volume) *
+                    Complex.exp (-((η * u : ℝ) : ℂ)) := by
+                      rw [MeasureTheory.integral_mul_const]
+            _ = χ (u / (2 * Real.pi)) * Complex.exp (-((η * u : ℝ) : ℂ)) := by
+                  rw [integral_phase_mul_fourierTransform_eq_eval_local (χ := χ) u]
+            _ = Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)) := by ring
+
+/-- The rotated diagonal spectral Laplace function has the expected
+distributional boundary value against Fourier-transformed Schwartz tests. This
+is the diagonal semigroup-side boundary theorem used to build the off-diagonal
+OS witness comparison on the UHP. -/
+private theorem tendsto_rotated_selfAdjointSpectralLaplaceDiagonal_boundaryValue_fourierTransform
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x : H)
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA x χ)) := by
+  let μ : MeasureTheory.Measure ℝ :=
+    BochnerLaplaceBridge.laplaceMeasurePos
+      (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+  have hμ_nonneg :
+      μ (Set.Iio 0) = 0 := by
+    simpa [μ] using
+      (BochnerLaplaceBridge.laplaceMeasurePos_nonnegSupport
+        (μ := ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+        (hsupp_le_one :=
+          ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal_Ioi_eq_zero_of_spectrum_subset_Icc
+            (A := A) (hA := hA) (x := x) hspec))
+  have hEq :
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun η : ℝ =>
+        ∫ u : ℝ,
+          Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)) ∂μ) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    simpa [μ] using
+      integral_rotated_selfAdjointSpectralLaplaceDiagonal_mul_fourierTransform
+        (A := A) (hA := hA) (hspec := hspec) (x := x) (χ := χ) hη
+  have hμ_nonneg_ae : ∀ᵐ u ∂μ, 0 ≤ u := by
+    rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
+    have hset : ({x : ℝ | 0 ≤ x}ᶜ : Set ℝ) = Set.Iio 0 := by
+      ext x
+      simp [not_le]
+    rw [hset]
+    exact hμ_nonneg
+  let C : ℝ := SchwartzMap.seminorm ℂ 0 0 χ
+  have hF_meas :
+      ∀ᶠ η in nhdsWithin 0 (Set.Ioi 0),
+        MeasureTheory.AEStronglyMeasurable
+          (fun u : ℝ => Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi))) μ := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    have hcont :
+        Continuous (fun u : ℝ => Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi))) := by
+      have h1 : Continuous (fun u : ℝ => Complex.exp (-((η * u : ℝ) : ℂ))) := by
+        have harg : Continuous (fun u : ℝ => -((η * u : ℝ) : ℂ)) := by
+          exact (Complex.continuous_ofReal.comp (continuous_const.mul continuous_id)).neg
+        exact Complex.continuous_exp.comp harg
+      have h2 : Continuous (fun u : ℝ => χ (u / (2 * Real.pi))) := by
+        exact χ.continuous.comp (continuous_id.div_const _)
+      exact h1.mul h2
+    exact hcont.aestronglyMeasurable
+  have h_bound :
+      ∀ᶠ η in nhdsWithin 0 (Set.Ioi 0),
+        ∀ᵐ u ∂μ,
+          ‖Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi))‖ ≤ C := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    have hη_pos : 0 < η := by simpa using hη
+    filter_upwards [hμ_nonneg_ae] with u hu
+    have hχ_bound :
+        ‖χ (u / (2 * Real.pi))‖ ≤ C := by
+      simpa [C, Real.norm_eq_abs] using
+        (SchwartzMap.le_seminorm (𝕜 := ℂ) (k := 0) (n := 0) χ (u / (2 * Real.pi)))
+    have hexp_le :
+        ‖Complex.exp (-((η * u : ℝ) : ℂ))‖ ≤ 1 := by
+      rw [Complex.norm_exp]
+      have hηu : -(η * u) ≤ 0 := by
+        have : 0 ≤ η * u := mul_nonneg hη_pos.le hu
+        linarith
+      exact Real.exp_le_one_iff.mpr hηu
+    calc
+      ‖Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi))‖
+          = ‖Complex.exp (-((η * u : ℝ) : ℂ))‖ * ‖χ (u / (2 * Real.pi))‖ := norm_mul _ _
+      _ ≤ 1 * C := by
+            gcongr
+      _ = C := by ring
+  have hC_int : MeasureTheory.Integrable (fun _ : ℝ => C) μ := by
+    exact MeasureTheory.integrable_const C
+  have h_lim :
+      ∀ᵐ u ∂μ,
+        Filter.Tendsto
+          (fun η : ℝ => Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (χ (u / (2 * Real.pi)))) := by
+    filter_upwards with u
+    have harg :
+        Filter.Tendsto (fun η : ℝ => ((-(η * u) : ℝ) : ℂ))
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+      have hreal :
+          Filter.Tendsto (fun η : ℝ => -(η * u))
+            (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+        have hreal' :
+            Filter.Tendsto (fun η : ℝ => -(u * η))
+              (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+          have hmul :
+              Filter.Tendsto (fun η : ℝ => u * η)
+                (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+            have hmul0 :
+                Filter.Tendsto (fun η : ℝ => u * η)
+                  (nhdsWithin 0 (Set.Ioi 0)) (nhds (u * 0)) := by
+              exact
+                (continuousAt_const.mul
+                  (continuousAt_id : ContinuousAt (fun η : ℝ => η) 0)).continuousWithinAt.tendsto
+            simpa using hmul0
+          simpa using Filter.Tendsto.neg hmul
+        simpa [mul_comm] using hreal'
+      exact Complex.continuous_ofReal.continuousAt.tendsto.comp hreal
+    have hexp :
+        Filter.Tendsto (fun η : ℝ => Complex.exp (-((η * u : ℝ) : ℂ)))
+          (nhdsWithin 0 (Set.Ioi 0)) (nhds 1) := by
+      simpa using Complex.continuous_exp.continuousAt.tendsto.comp harg
+    simpa using hexp.mul tendsto_const_nhds
+  have hRhs :
+      Filter.Tendsto
+        (fun η : ℝ =>
+          ∫ u : ℝ,
+            Complex.exp (-((η * u : ℝ) : ℂ)) * χ (u / (2 * Real.pi)) ∂μ)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA x χ)) := by
+    simpa [selfAdjointSpectralBoundaryValueDiagonal, μ, C] using
+      (MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+        (μ := μ)
+        (l := nhdsWithin 0 (Set.Ioi 0))
+        (bound := fun _ : ℝ => C)
+        hF_meas h_bound hC_int h_lim)
+  exact Filter.Tendsto.congr' hEq.symm hRhs
+
+/-- Integrability of the rotated diagonal spectral Laplace function paired with
+`𝓕χ` on any positive horizontal line. This is the diagonal scalar input needed
+to polarize the semigroup-side rotated boundary-value theorem. -/
+private theorem integrable_mul_fourierTransform_of_rotated_selfAdjointSpectralLaplaceDiagonal
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x : H)
+    (χ : SchwartzMap ℝ ℂ)
+    {η : ℝ} (hη : 0 < η) :
+    MeasureTheory.Integrable
+      (fun t : ℝ =>
+        ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+            (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) t) := by
+  let μ : MeasureTheory.Measure ℝ :=
+    BochnerLaplaceBridge.laplaceMeasurePos
+      (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+  let M : ℝ := (μ Set.univ).toReal
+  let χhat : SchwartzMap ℝ ℂ := (SchwartzMap.fourierTransformCLM ℂ) χ
+  have hμ_nonneg :
+      μ (Set.Iio 0) = 0 := by
+    simpa [μ] using
+      (BochnerLaplaceBridge.laplaceMeasurePos_nonnegSupport
+        (μ := ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+        (hsupp_le_one :=
+          ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal_Ioi_eq_zero_of_spectrum_subset_Icc
+            (A := A) (hA := hA) (x := x) hspec))
+  have hμ_nonneg_ae : ∀ᵐ u ∂μ, 0 ≤ u := by
+    rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
+    have hset : ({x : ℝ | 0 ≤ x}ᶜ : Set ℝ) = Set.Iio 0 := by
+      ext x
+      simp [not_le]
+    rw [hset]
+    exact hμ_nonneg
+  have hline_meas :
+      MeasureTheory.AEStronglyMeasurable
+        (fun t : ℝ =>
+          ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            χhat t) MeasureTheory.volume := by
+    have hmap_cont : Continuous (fun t : ℝ => -Complex.I * ((t : ℂ) + η * Complex.I)) := by
+      fun_prop
+    have hdiag_cont :
+        Continuous (fun t : ℝ =>
+          ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+            (-Complex.I * ((t : ℂ) + η * Complex.I))) := by
+      exact
+        (ContinuousLinearMap.differentiableOn_selfAdjointSpectralLaplaceDiagonal
+          (A := A) (hA := hA) (hspec := hspec) (x := x)).continuousOn.comp_continuous
+          hmap_cont
+          (by
+            intro t
+            simp [Complex.mul_re, hη])
+    exact (hdiag_cont.mul χhat.continuous).aestronglyMeasurable
+  have hdiag_bound :
+      ∀ t : ℝ,
+        ‖ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+            (-Complex.I * ((t : ℂ) + η * Complex.I))‖ ≤ M := by
+    intro t
+    have hExpMeas :
+        MeasureTheory.AEStronglyMeasurable
+          (fun u : ℝ =>
+            Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)))) μ := by
+      have hcont :
+          Continuous
+            (fun u : ℝ =>
+              Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)))) := by
+        fun_prop
+      exact hcont.aestronglyMeasurable
+    have hExpInt :
+        MeasureTheory.Integrable
+          (fun u : ℝ =>
+            ‖Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)))‖) μ := by
+      refine (MeasureTheory.integrable_const (1 : ℝ)).mono' hExpMeas.norm ?_
+      filter_upwards [hμ_nonneg_ae] with u hu
+      rw [Complex.norm_exp]
+      have hre :
+          (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))).re = -(η * u) := by
+        simp [Complex.mul_re, Complex.mul_im, mul_comm, mul_left_comm, mul_assoc]
+      rw [hre]
+      have hηu : -(η * u) ≤ 0 := by
+        have : 0 ≤ η * u := mul_nonneg hη.le hu
+        linarith
+      simpa [Real.norm_eq_abs, abs_of_nonneg (Real.exp_nonneg _)] using
+        (Real.exp_le_one_iff.mpr hηu)
+    change
+      ‖∫ u : ℝ, Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))) ∂μ‖ ≤ M
+    calc
+      ‖∫ u : ℝ, Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))) ∂μ‖
+          ≤ ∫ u : ℝ, ‖Complex.exp (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ)))‖ ∂μ := by
+              exact MeasureTheory.norm_integral_le_integral_norm _
+      _ ≤ ∫ u : ℝ, (1 : ℝ) ∂μ := by
+            exact MeasureTheory.integral_mono_ae hExpInt (MeasureTheory.integrable_const (1 : ℝ))
+              (by
+                filter_upwards [hμ_nonneg_ae] with u hu
+                rw [Complex.norm_exp]
+                have hre :
+                    (-((-Complex.I * ((t : ℂ) + η * Complex.I)) * (u : ℂ))).re = -(η * u) := by
+                  simp [Complex.mul_re, Complex.mul_im, mul_comm, mul_left_comm, mul_assoc]
+                rw [hre]
+                have hηu : -(η * u) ≤ 0 := by
+                  have : 0 ≤ η * u := mul_nonneg hη.le hu
+                  linarith
+                simpa [Real.norm_eq_abs, abs_of_nonneg (Real.exp_nonneg _)] using
+                  (Real.exp_le_one_iff.mpr hηu))
+      _ = μ.real Set.univ := by
+            simp [MeasureTheory.integral_const]
+      _ = M := by
+            simpa [M, MeasureTheory.measureReal_def]
+  exact ((((χhat.integrable (μ := MeasureTheory.volume)).norm).const_mul M).mono'
+    hline_meas
+    (Filter.Eventually.of_forall fun t => by
+      calc
+        ‖ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+            (-Complex.I * ((t : ℂ) + η * Complex.I)) * χhat t‖
+            =
+          ‖ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x
+              (-Complex.I * ((t : ℂ) + η * Complex.I))‖ * ‖χhat t‖ := norm_mul _ _
+        _ ≤ M * ‖χhat t‖ := by
+              gcongr
+              exact hdiag_bound t))
+
+/-- The rotated off-diagonal spectral Laplace function has the expected
+distributional boundary value against Fourier-transformed Schwartz tests. This
+is the semigroup-side off-diagonal boundary theorem needed to compare the
+rotated OS witness with the canonical Wightman witness on the upper
+half-plane. -/
+theorem tendsto_rotated_selfAdjointSpectralLaplaceOffdiag_boundaryValue_fourierTransform
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x y : H)
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag A hA x y
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (selfAdjointSpectralBoundaryValueOffdiag A hA x y χ)) := by
+  let χhat : SchwartzMap ℝ ℂ := (SchwartzMap.fourierTransformCLM ℂ) χ
+  let L1 : ℝ → ℂ := fun η =>
+    ∫ t : ℝ,
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x + y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+  let L2 : ℝ → ℂ := fun η =>
+    ∫ t : ℝ,
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x - y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+  let L3 : ℝ → ℂ := fun η =>
+    ∫ t : ℝ,
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x + Complex.I • y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+  let L4 : ℝ → ℂ := fun η =>
+    ∫ t : ℝ,
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x - Complex.I • y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+  have h1 :
+      Filter.Tendsto L1
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA (x + y) χ)) := by
+    simpa [L1, χhat] using
+      tendsto_rotated_selfAdjointSpectralLaplaceDiagonal_boundaryValue_fourierTransform
+        (A := A) (hA := hA) (hspec := hspec) (x := x + y) (χ := χ)
+  have h2 :
+      Filter.Tendsto L2
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA (x - y) χ)) := by
+    simpa [L2, χhat] using
+      tendsto_rotated_selfAdjointSpectralLaplaceDiagonal_boundaryValue_fourierTransform
+        (A := A) (hA := hA) (hspec := hspec) (x := x - y) (χ := χ)
+  have h3 :
+      Filter.Tendsto L3
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA (x + Complex.I • y) χ)) := by
+    simpa [L3, χhat] using
+      tendsto_rotated_selfAdjointSpectralLaplaceDiagonal_boundaryValue_fourierTransform
+        (A := A) (hA := hA) (hspec := hspec) (x := x + Complex.I • y) (χ := χ)
+  have h4 :
+      Filter.Tendsto L4
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueDiagonal A hA (x - Complex.I • y) χ)) := by
+    simpa [L4, χhat] using
+      tendsto_rotated_selfAdjointSpectralLaplaceDiagonal_boundaryValue_fourierTransform
+        (A := A) (hA := hA) (hspec := hspec) (x := x - Complex.I • y) (χ := χ)
+  have hLim :
+      Filter.Tendsto
+        (fun η : ℝ =>
+          (1 / 4 : ℂ) *
+            ((L1 η - L2 η) + (((-Complex.I) * L3 η) + Complex.I * L4 η)))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds <|
+          ((1 / 4 : ℂ)) *
+            ((selfAdjointSpectralBoundaryValueDiagonal A hA (x + y) χ -
+                selfAdjointSpectralBoundaryValueDiagonal A hA (x - y) χ) +
+              (((-Complex.I) *
+                    selfAdjointSpectralBoundaryValueDiagonal A hA (x + Complex.I • y) χ) +
+                Complex.I *
+                  selfAdjointSpectralBoundaryValueDiagonal A hA (x - Complex.I • y) χ))) := by
+    apply Filter.Tendsto.const_mul
+    apply Filter.Tendsto.add
+    · exact Filter.Tendsto.sub h1 h2
+    · exact (Filter.Tendsto.const_mul (-Complex.I) h3).add
+        (Filter.Tendsto.const_mul Complex.I h4)
+  have hEq :
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag A hA x y
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            χhat t)
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun η : ℝ =>
+        (1 / 4 : ℂ) *
+          ((L1 η - L2 η) + (((-Complex.I) * L3 η) + Complex.I * L4 η))) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    let g1 : ℝ → ℂ := fun t =>
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x + y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+    let g2 : ℝ → ℂ := fun t =>
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x - y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+    let g3 : ℝ → ℂ := fun t =>
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x + Complex.I • y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+    let g4 : ℝ → ℂ := fun t =>
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA (x - Complex.I • y)
+          (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+        χhat t
+    have hI1 : MeasureTheory.Integrable g1 := by
+      simpa [g1, χhat] using
+        integrable_mul_fourierTransform_of_rotated_selfAdjointSpectralLaplaceDiagonal
+          (A := A) (hA := hA) (hspec := hspec) (x := x + y) (χ := χ) hη
+    have hI2 : MeasureTheory.Integrable g2 := by
+      simpa [g2, χhat] using
+        integrable_mul_fourierTransform_of_rotated_selfAdjointSpectralLaplaceDiagonal
+          (A := A) (hA := hA) (hspec := hspec) (x := x - y) (χ := χ) hη
+    have hI3 : MeasureTheory.Integrable g3 := by
+      simpa [g3, χhat] using
+        integrable_mul_fourierTransform_of_rotated_selfAdjointSpectralLaplaceDiagonal
+          (A := A) (hA := hA) (hspec := hspec) (x := x + Complex.I • y) (χ := χ) hη
+    have hI4 : MeasureTheory.Integrable g4 := by
+      simpa [g4, χhat] using
+        integrable_mul_fourierTransform_of_rotated_selfAdjointSpectralLaplaceDiagonal
+          (A := A) (hA := hA) (hspec := hspec) (x := x - Complex.I • y) (χ := χ) hη
+    have hI34 : MeasureTheory.Integrable (fun t : ℝ => (-Complex.I) * g3 t + Complex.I * g4 t) := by
+      exact (hI3.const_mul (-Complex.I)).add (hI4.const_mul Complex.I)
+    calc
+      ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag A hA x y
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            χhat t
+        =
+          ∫ t : ℝ,
+            (1 / 4 : ℂ) *
+              ((g1 t - g2 t) + (((-Complex.I) * g3 t) + Complex.I * g4 t)) := by
+                refine MeasureTheory.integral_congr_ae ?_
+                filter_upwards with t
+                simp [g1, g2, g3, g4, χhat,
+                  ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag]
+                ring
+      _ =
+          (1 / 4 : ℂ) *
+            (((∫ t : ℝ, g1 t) - (∫ t : ℝ, g2 t)) +
+              (((-Complex.I) * (∫ t : ℝ, g3 t)) +
+                Complex.I * (∫ t : ℝ, g4 t))) := by
+                  rw [MeasureTheory.integral_const_mul]
+                  have hsplit12 :
+                      ∫ t : ℝ, g1 t - g2 t + (-Complex.I * g3 t + Complex.I * g4 t)
+                        =
+                      (∫ t : ℝ, g1 t - g2 t) + ∫ t : ℝ, (-Complex.I * g3 t + Complex.I * g4 t) := by
+                        simpa using MeasureTheory.integral_add (hI1.sub hI2) hI34
+                  rw [hsplit12]
+                  rw [MeasureTheory.integral_sub hI1 hI2]
+                  have hsplit34 :
+                      ∫ t : ℝ, -Complex.I * g3 t + Complex.I * g4 t
+                        =
+                      (∫ t : ℝ, -Complex.I * g3 t) + ∫ t : ℝ, Complex.I * g4 t := by
+                        simpa using MeasureTheory.integral_add
+                          (hI3.const_mul (-Complex.I)) (hI4.const_mul Complex.I)
+                  rw [hsplit34]
+                  rw [MeasureTheory.integral_const_mul, MeasureTheory.integral_const_mul]
+      _ =
+          (1 / 4 : ℂ) *
+            ((L1 η - L2 η) + (((-Complex.I) * L3 η) + Complex.I * L4 η)) := by
+              simp [L1, L2, L3, L4, g1, g2, g3, g4]
+  have hTarget :
+      Filter.Tendsto
+        (fun η : ℝ =>
+          (1 / 4 : ℂ) *
+            ((L1 η - L2 η) + (((-Complex.I) * L3 η) + Complex.I * L4 η)))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (selfAdjointSpectralBoundaryValueOffdiag A hA x y χ)) := by
+    have hTargetEq :
+        ((1 / 4 : ℂ)) *
+            ((selfAdjointSpectralBoundaryValueDiagonal A hA (x + y) χ -
+                selfAdjointSpectralBoundaryValueDiagonal A hA (x - y) χ) +
+              (((-Complex.I) *
+                    selfAdjointSpectralBoundaryValueDiagonal A hA (x + Complex.I • y) χ) +
+                Complex.I *
+                  selfAdjointSpectralBoundaryValueDiagonal A hA (x - Complex.I • y) χ)) =
+          selfAdjointSpectralBoundaryValueOffdiag A hA x y χ := by
+      simp [selfAdjointSpectralBoundaryValueOffdiag]
+      ring
+    rw [← hTargetEq]
+    exact hLim
+  exact Filter.Tendsto.congr' hEq.symm hTarget
+
+/-- Evaluating the diagonal spectral boundary functional on the standard
+Paley-Wiener kernel `ψ_{2πit}` recovers the diagonal spectral Laplace value at
+the positive real time `t`. -/
+private theorem selfAdjointSpectralBoundaryValueDiagonal_eq_selfAdjointSpectralLaplaceDiagonal_psiZ
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x : H)
+    {t : ℝ} (ht : 0 < t) :
+    selfAdjointSpectralBoundaryValueDiagonal A hA x
+      (SCV.schwartzPsiZ
+        (((2 * Real.pi : ℂ) * (t * Complex.I)))
+        (by simpa [Complex.mul_im, ht.ne'] using mul_pos Real.two_pi_pos ht)) =
+      ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal A hA x (t : ℂ) := by
+  let μ : MeasureTheory.Measure ℝ :=
+    BochnerLaplaceBridge.laplaceMeasurePos
+      (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+  have hμ_nonneg :
+      μ (Set.Iio 0) = 0 := by
+    simpa [μ] using
+      (BochnerLaplaceBridge.laplaceMeasurePos_nonnegSupport
+        (μ := ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x)
+        (hsupp_le_one :=
+          ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal_Ioi_eq_zero_of_spectrum_subset_Icc
+            (A := A) (hA := hA) (x := x) hspec))
+  have hμ_nonneg_ae : ∀ᵐ u ∂μ, 0 ≤ u := by
+    rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
+    have hset : ({u : ℝ | 0 ≤ u}ᶜ : Set ℝ) = Set.Iio 0 := by
+      ext u
+      simp [not_le]
+    rw [hset]
+    exact hμ_nonneg
+  rw [selfAdjointSpectralBoundaryValueDiagonal,
+    ContinuousLinearMap.selfAdjointSpectralLaplaceDiagonal]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards [hμ_nonneg_ae] with u hu
+  rw [SCV.schwartzPsiZ_apply, SCV.psiZ_eq_exp_of_nonneg]
+  · have harg :
+        Complex.I * (((2 * Real.pi : ℂ) * (t * Complex.I))) * (((u / (2 * Real.pi) : ℝ) : ℂ)) =
+          -((t * u : ℝ) : ℂ) := by
+        have hreal :
+            (2 * Real.pi) * t * (u / (2 * Real.pi)) = t * u := by
+          field_simp [Real.pi_ne_zero]
+        have hpref :
+            Complex.I * (((2 * Real.pi : ℂ) * (t * Complex.I))) =
+              -(((2 * Real.pi * t : ℝ) : ℂ)) := by
+          ring_nf
+          simp
+        calc
+          Complex.I * (((2 * Real.pi : ℂ) * (t * Complex.I))) * (((u / (2 * Real.pi) : ℝ) : ℂ))
+              = -(((2 * Real.pi * t : ℝ) : ℂ)) * (((u / (2 * Real.pi) : ℝ) : ℂ)) := by
+                  rw [hpref]
+          _ = -((t * u : ℝ) : ℂ) := by
+                have hreal_neg :
+                    -(2 * Real.pi * t) * (u / (2 * Real.pi)) = -(t * u) := by
+                  calc
+                    -(2 * Real.pi * t) * (u / (2 * Real.pi))
+                        = -(2 * Real.pi * t * (u / (2 * Real.pi))) := by ring
+                    _ = -(t * u) := by simpa using congrArg Neg.neg hreal
+                congr 1
+                exact_mod_cast hreal_neg
+    rw [harg]
+    have hcast_mul : -((t * u : ℝ) : ℂ) = -((t : ℂ) * (u : ℂ)) := by
+      simp [Complex.ofReal_mul]
+    rw [hcast_mul]
+  · exact div_nonneg hu Real.two_pi_pos.le
+
+/-- Evaluating the polarized spectral boundary functional on the standard
+Paley-Wiener kernel `ψ_{2πit}` recovers the off-diagonal spectral Laplace
+value at the positive real time `t`. -/
+theorem selfAdjointSpectralBoundaryValueOffdiag_eq_selfAdjointSpectralLaplaceOffdiag_psiZ
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A)
+    (hspec : spectrum ℝ A ⊆ Set.Icc 0 1)
+    (x y : H)
+    {t : ℝ} (ht : 0 < t) :
+    selfAdjointSpectralBoundaryValueOffdiag A hA x y
+      (SCV.schwartzPsiZ
+        (((2 * Real.pi : ℂ) * (t * Complex.I)))
+        (by simpa [Complex.mul_im, ht.ne'] using mul_pos Real.two_pi_pos ht)) =
+      ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag A hA x y (t : ℂ) := by
+  simp [selfAdjointSpectralBoundaryValueOffdiag,
+    ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag,
+    selfAdjointSpectralBoundaryValueDiagonal_eq_selfAdjointSpectralLaplaceDiagonal_psiZ,
+    hspec, ht]
+end RotatedBoundaryValue
+
+/-- The rotated OS holomorphic matrix element has the same semigroup-side
+boundary-value distribution as the polarized spectral Laplace witness. This is
+the consumable OS specialization of the rotated off-diagonal boundary theorem
+proved above. -/
+theorem tendsto_rotated_OSInnerProductTimeShiftHolomorphicValue_boundaryValue_fourierTransform
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    (χ : SchwartzMap ℝ ℂ) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (selfAdjointSpectralBoundaryValueOffdiag
+          (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+          (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+          (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+          (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+          χ)) := by
+  let xF : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+  let xG : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+  have hEq :
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t)
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+      (fun η : ℝ =>
+        ∫ t : ℝ,
+          ContinuousLinearMap.selfAdjointSpectralLaplaceOffdiag
+              (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+              (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+              xF xG
+              (-Complex.I * ((t : ℂ) + η * Complex.I)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) t) := by
+    filter_upwards [self_mem_nhdsWithin] with η hη
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with t
+    have hη_pos : 0 < η := by simpa using hη
+    have hw : (t : ℂ) + η * Complex.I ∈ SCV.upperHalfPlane := by
+      simp [SCV.upperHalfPlane, hη_pos]
+    rw [rotated_OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+      (d := d) (OS := OS) (lgc := lgc) (F := F) (G := G)
+      (w := (t : ℂ) + η * Complex.I) hw]
+  exact Filter.Tendsto.congr' hEq.symm <|
+    by
+      simpa [xF, xG] using
+        (tendsto_rotated_selfAdjointSpectralLaplaceOffdiag_boundaryValue_fourierTransform
+          (A := osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+          (hA := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+          (hspec := spectrum_osTimeShiftHilbert_subset_Icc (d := d) OS lgc 1 one_pos)
+          (x := xF) (y := xG) (χ := χ))
+
+/-- Specializing the rotated OS boundary-value theorem to the standard
+Paley-Wiener kernel `ψ_{2πit}` recovers the actual OS holomorphic matrix
+element at the positive imaginary-axis point `it`. This is the semigroup-side
+analogue of the canonical-witness imag-axis theorem. -/
+theorem tendsto_rotated_OSInnerProductTimeShiftHolomorphicValue_to_imagAxis
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : PositiveTimeBorchersSequence d)
+    {t : ℝ} (ht : 0 < t) :
+    Filter.Tendsto
+      (fun η : ℝ =>
+        ∫ x : ℝ,
+          OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G
+              (-Complex.I * ((x : ℂ) + η * Complex.I)) *
+          (SchwartzMap.fourierTransformCLM ℂ
+            (SCV.schwartzPsiZ
+              (((2 * Real.pi : ℂ) * (t * Complex.I)))
+              (by
+                simpa [Complex.mul_im, ht.ne']
+                  using mul_pos Real.two_pi_pos ht))) x)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G (t : ℂ))) := by
+  let ψ : SchwartzMap ℝ ℂ :=
+    SCV.schwartzPsiZ
+      (((2 * Real.pi : ℂ) * (t * Complex.I)))
+      (by
+        simpa [Complex.mul_im, ht.ne']
+          using mul_pos Real.two_pi_pos ht)
+  have hBV :=
+    tendsto_rotated_OSInnerProductTimeShiftHolomorphicValue_boundaryValue_fourierTransform
+      (d := d) OS lgc F G ψ
+  let xF : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+  let xG : OSHilbertSpace OS := (((show OSPreHilbertSpace OS from (⟦G⟧)) : OSHilbertSpace OS))
+  have hTarget :
+      selfAdjointSpectralBoundaryValueOffdiag
+          (osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+          (osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+          xF xG ψ =
+        OSInnerProductTimeShiftHolomorphicValue (d := d) OS lgc F G (t : ℂ) := by
+    rw [selfAdjointSpectralBoundaryValueOffdiag_eq_selfAdjointSpectralLaplaceOffdiag_psiZ
+      (A := osTimeShiftHilbert (d := d) OS lgc 1 one_pos)
+      (hA := osTimeShiftHilbert_isSelfAdjoint (d := d) OS lgc 1 one_pos)
+      (hspec := spectrum_osTimeShiftHilbert_subset_Icc (d := d) OS lgc 1 one_pos)
+      (x := xF) (y := xG) (ht := ht)]
+    symm
+    simpa [xF, xG] using
+      OSInnerProductTimeShiftHolomorphicValue_eq_selfAdjointSpectralLaplaceOffdiag
+        (d := d) OS lgc F G (t : ℂ) (by simpa using ht)
+  rw [hTarget] at hBV
+  simpa [ψ] using hBV
+
 private theorem continuousOn_OSInnerProductTimeShiftHolomorphicValue
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (F G : PositiveTimeBorchersSequence d) :

@@ -3418,6 +3418,204 @@ theorem tendsto_sub_bvt_W_timeShiftUpperHalfPlaneWitness_canonicalExtension_boun
   refine Filter.Tendsto.congr' hEq.symm ?_
   simpa using hUpper.sub hCanonical
 
+/-- The older chosen upper-half-plane Stage-5 witness agrees pointwise on the
+upper half-plane with the explicit canonical witness.
+
+This collapses the two parallel witness surfaces by applying one-variable
+distributional uniqueness to their difference: the previous theorem already
+showed that difference has zero boundary value against Fourier transforms of
+Schwartz tests, which is enough because the Schwartz Fourier transform is an
+automorphism. -/
+theorem bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness_eq_canonicalExtension
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    Set.EqOn
+      (bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+        (d := d) OS lgc hm f g hg_compact)
+      (bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) OS lgc f g hg_compact)
+      SCV.upperHalfPlane := by
+  let HΔ : ℂ → ℂ := fun w =>
+    bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+        (d := d) OS lgc hm f g hg_compact w -
+      bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) OS lgc f g hg_compact w
+  let C : Set (Fin 1 → ℝ) := {y | 0 < y 0}
+  let G : (Fin 1 → ℂ) → ℂ := fun z => HΔ (z 0)
+  let eR : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+    ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+  let eM : ℝ ≃ᵐ (Fin 1 → ℝ) := eR.symm.toHomeomorph.toMeasurableEquiv
+  have hmp_eM : MeasureTheory.MeasurePreserving eM MeasureTheory.volume MeasureTheory.volume := by
+    simpa [eM, eR] using (MeasureTheory.volume_preserving_funUnique (Fin 1) ℝ).symm
+  have hHΔ_diff : DifferentiableOn ℂ HΔ SCV.upperHalfPlane := by
+    exact
+      (differentiableOn_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+        (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g hg_compact).sub
+      (bvt_W_conjTensorProduct_timeShiftCanonicalExtension_differentiableOn
+        (d := d) (OS := OS) (lgc := lgc) f g hg_compact)
+  have hHΔ_growth :
+      ∀ η : ℝ, 0 < η →
+        SCV.HasPolynomialGrowthOnLine (fun x => HΔ (↑x + ↑η * Complex.I)) := by
+    intro η hη
+    obtain ⟨C₁, N₁, hC₁, hbound₁⟩ :=
+      hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+        (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g hg_compact η hη
+    obtain ⟨C₂, N₂, hC₂, hbound₂⟩ :=
+      hasPolynomialGrowthOnLine_bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) (OS := OS) (lgc := lgc) f g hg_compact η hη
+    refine ⟨C₁ + C₂, max N₁ N₂, add_pos hC₁ hC₂, fun x => ?_⟩
+    have hbase_ge_one : 1 ≤ 1 + |x| := by
+      nlinarith [abs_nonneg x]
+    have hpow₁ :
+        (1 + |x|) ^ N₁ ≤ (1 + |x|) ^ max N₁ N₂ := by
+      exact pow_le_pow_right₀ hbase_ge_one (Nat.le_max_left _ _)
+    have hpow₂ :
+        (1 + |x|) ^ N₂ ≤ (1 + |x|) ^ max N₁ N₂ := by
+      exact pow_le_pow_right₀ hbase_ge_one (Nat.le_max_right _ _)
+    calc
+      ‖HΔ (↑x + ↑η * Complex.I)‖
+          ≤
+        ‖bvt_W_conjTensorProduct_timeShiftUpperHalfPlaneWitness
+            (d := d) OS lgc hm f g hg_compact (↑x + ↑η * Complex.I)‖ +
+          ‖bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+            (d := d) OS lgc f g hg_compact (↑x + ↑η * Complex.I)‖ := by
+              simp [HΔ]
+              exact norm_sub_le _ _
+      _ ≤ C₁ * (1 + |x|) ^ N₁ + C₂ * (1 + |x|) ^ N₂ := by
+            exact add_le_add (hbound₁ x) (hbound₂ x)
+      _ ≤ C₁ * (1 + |x|) ^ max N₁ N₂ + C₂ * (1 + |x|) ^ max N₁ N₂ := by
+            exact add_le_add
+              (mul_le_mul_of_nonneg_left hpow₁ (le_of_lt hC₁))
+              (mul_le_mul_of_nonneg_left hpow₂ (le_of_lt hC₂))
+      _ = (C₁ + C₂) * (1 + |x|) ^ max N₁ N₂ := by ring
+  have hC_open : IsOpen C := by
+    simpa [C] using isOpen_lt continuous_const (continuous_apply 0)
+  have hC_conv : Convex ℝ C := by
+    intro x hx y hy a b ha hb hab
+    dsimp [C] at hx hy ⊢
+    change 0 < a * x 0 + b * y 0
+    have hab_pos : 0 < a ∨ 0 < b := by
+      by_cases ha0 : a = 0
+      · right
+        linarith
+      · left
+        exact lt_of_le_of_ne ha (Ne.symm ha0)
+    cases hab_pos with
+    | inl ha_pos =>
+        exact add_pos_of_pos_of_nonneg (mul_pos ha_pos hx) (mul_nonneg hb (le_of_lt hy))
+    | inr hb_pos =>
+        exact add_pos_of_nonneg_of_pos (mul_nonneg ha (le_of_lt hx)) (mul_pos hb_pos hy)
+  have hC_ne : C.Nonempty := by
+    refine ⟨fun _ => 1, ?_⟩
+    simp [C]
+  have hC_cone : ∀ (t : ℝ), 0 < t → ∀ y ∈ C, t • y ∈ C := by
+    intro t ht y hy
+    dsimp [C] at hy ⊢
+    simpa [Pi.smul_apply, smul_eq_mul] using mul_pos ht hy
+  have hG_diff : DifferentiableOn ℂ G (SCV.TubeDomain C) := by
+    have hmap :
+        Set.MapsTo (fun z : Fin 1 → ℂ => z 0) (SCV.TubeDomain C) SCV.upperHalfPlane := by
+      intro z hz
+      simpa [C, SCV.TubeDomain, SCV.upperHalfPlane] using hz
+    have hproj_diff :
+        DifferentiableOn ℂ (fun z : Fin 1 → ℂ => z 0) (SCV.TubeDomain C) := by
+      exact
+        ((ContinuousLinearMap.differentiable
+          (ContinuousLinearMap.proj (R := ℂ) (ι := Fin 1) (φ := fun _ => ℂ) 0)).differentiableOn)
+    simpa [G] using
+      hHΔ_diff.comp hproj_diff hmap
+  have hG_int :
+      ∀ y ∈ C, ∀ ψ : SchwartzMap (Fin 1 → ℝ) ℂ,
+        MeasureTheory.Integrable
+          (fun x : Fin 1 → ℝ =>
+            G (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x) := by
+    intro y hy ψ
+    let ψ₁ : SchwartzMap ℝ ℂ := SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR.symm ψ
+    let χ : SchwartzMap ℝ ℂ := FourierTransform.fourierInv ψ₁
+    have hy0 : 0 < y 0 := hy
+    have hInt₁ :
+        MeasureTheory.Integrable
+          (fun t : ℝ =>
+            HΔ (↑t + ↑(y 0) * Complex.I) * (SchwartzMap.fourierTransformCLM ℂ χ) t) := by
+      exact integrable_mul_fourierTransform_of_upperHalfPlaneWitness
+        HΔ hHΔ_diff hHΔ_growth χ hy0
+    have hInt₁' :
+        MeasureTheory.Integrable
+          (fun t : ℝ => HΔ (↑t + ↑(y 0) * Complex.I) * ψ₁ t) := by
+      simpa [χ] using hInt₁
+    let g₁ : (Fin 1 → ℝ) → ℂ := fun x =>
+      G (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) * ψ x
+    have hcomp :
+        MeasureTheory.Integrable (fun t : ℝ => g₁ (eR.symm t)) := by
+      simpa [g₁, G, HΔ, ψ₁, eR] using hInt₁'
+    have hiff := hmp_eM.integrable_comp_emb eM.measurableEmbedding (g := g₁)
+    exact hiff.1 hcomp
+  have hG_bv_zero :
+      ∀ (ψ : SchwartzMap (Fin 1 → ℝ) ℂ) (η : Fin 1 → ℝ), η ∈ C →
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ∫ x : Fin 1 → ℝ,
+              G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * ψ x)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0) := by
+    intro ψ η hη
+    let ψ₁ : SchwartzMap ℝ ℂ := SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eR.symm ψ
+    let χ : SchwartzMap ℝ ℂ := FourierTransform.fourierInv ψ₁
+    have hη0 : 0 < η 0 := hη
+    have hbase :
+        Filter.Tendsto
+          (fun s : ℝ =>
+            ∫ t : ℝ, HΔ (↑t + ↑s * Complex.I) * ψ₁ t)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0) := by
+      simpa [HΔ, χ, ψ₁] using
+        tendsto_sub_bvt_W_timeShiftUpperHalfPlaneWitness_canonicalExtension_boundaryValue_fourierTransform_zero
+          (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g hg_compact χ
+    have hscale :
+        Filter.Tendsto
+          (fun ε : ℝ => ε * η 0)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhdsWithin 0 (Set.Ioi 0)) := by
+      refine tendsto_nhdsWithin_iff.mpr ?_
+      constructor
+      · have hcontWithin :
+            ContinuousWithinAt (fun ε : ℝ => ε * η 0) (Set.Ioi 0) 0 := by
+          exact (continuous_id.mul continuous_const).continuousAt.continuousWithinAt
+        simpa using hcontWithin.tendsto
+      · filter_upwards [self_mem_nhdsWithin] with ε hε
+        simpa using mul_pos hε hη0
+    have hscaled :
+        Filter.Tendsto
+          (fun ε : ℝ =>
+            ∫ t : ℝ, HΔ (↑t + ↑(ε * η 0) * Complex.I) * ψ₁ t)
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0) := hbase.comp hscale
+    have hEq :
+        (fun ε : ℝ =>
+          ∫ x : Fin 1 → ℝ,
+            G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * ψ x) =
+        (fun ε : ℝ =>
+          ∫ t : ℝ,
+            HΔ (↑t + ↑(ε * η 0) * Complex.I) * ψ₁ t) := by
+      funext ε
+      let g₁ : (Fin 1 → ℝ) → ℂ := fun x =>
+        G (fun i => (x i : ℂ) + ε * (η i : ℂ) * Complex.I) * ψ x
+      have hcov :
+          ∫ t : ℝ, g₁ (eM t) = ∫ x : Fin 1 → ℝ, g₁ x := by
+        simpa [eM] using (hmp_eM.integral_comp' (g := g₁))
+      simpa [g₁, G, HΔ, ψ₁, eR, mul_assoc, mul_left_comm, mul_comm] using hcov.symm
+    simpa [hEq] using hscaled
+  have hzero := SCV.distributional_uniqueness_tube_of_zero_bv
+    hC_open hC_conv hC_ne hC_cone hG_diff hG_int hG_bv_zero
+  intro w hw
+  have hw_tube : (fun _ => w) ∈ SCV.TubeDomain C := by
+    simpa [C, SCV.TubeDomain] using hw
+  have hzero_w := hzero (fun _ => w) hw_tube
+  exact sub_eq_zero.mp (by simpa [G, HΔ] using hzero_w)
+
 /-- On the positive imaginary axis, the canonical ambient witness is given by
 the Fourier-Laplace integral of the real-time Wightman pairing functional
 against the standard `ψ_z` kernel. This is the first concrete interior-value
