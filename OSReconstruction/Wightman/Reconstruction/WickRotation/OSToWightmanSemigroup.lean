@@ -3542,6 +3542,119 @@ noncomputable def selfAdjointSpectralBoundaryValueOffdiag
       Complex.I * selfAdjointSpectralBoundaryValueDiagonal A hA (x + Complex.I • y) χ +
       Complex.I * selfAdjointSpectralBoundaryValueDiagonal A hA (x - Complex.I • y) χ)
 
+/-- The spectral boundary kernel `χ ↦ ∫ χ(u / 2π) dμ(u)` is a continuous
+Schwartz functional for every finite scalar measure `μ`. This is the
+semigroup-side distribution package used to state the remaining Phase C' seam
+as an equality of named tempered functionals, without asserting any one-sided
+Fourier-support property for the spectral-boundary distribution. -/
+private theorem spectralBoundary_integrable_eval_div_two_pi
+    (χ : SchwartzMap ℝ ℂ) (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ] :
+    MeasureTheory.Integrable (fun u : ℝ => χ (u / (2 * Real.pi))) μ := by
+  let C : ℝ := SchwartzMap.seminorm ℂ 0 0 χ
+  have hmeas :
+      MeasureTheory.AEStronglyMeasurable (fun u : ℝ => χ (u / (2 * Real.pi))) μ := by
+    exact (χ.continuous.comp (continuous_id.div_const _)).aestronglyMeasurable
+  have hbound :
+      ∀ᵐ u ∂μ, ‖χ (u / (2 * Real.pi))‖ ≤ C := by
+    filter_upwards with u
+    simpa [C, Real.norm_eq_abs] using
+      (SchwartzMap.le_seminorm (𝕜 := ℂ) (k := 0) (n := 0) χ (u / (2 * Real.pi)))
+  exact (MeasureTheory.integrable_const C).mono' hmeas hbound
+
+private noncomputable def spectralBoundaryDiagonalCLMOfMeasure
+    (μ : MeasureTheory.Measure ℝ) [MeasureTheory.IsFiniteMeasure μ] :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ)
+    (fun χ : SchwartzMap ℝ ℂ => ∫ u : ℝ, χ (u / (2 * Real.pi)) ∂μ)
+    (fun χ ψ => by
+      simpa [Pi.add_apply] using
+        (MeasureTheory.integral_add
+          (f := fun u : ℝ => χ (u / (2 * Real.pi)))
+          (g := fun u : ℝ => ψ (u / (2 * Real.pi)))
+          (spectralBoundary_integrable_eval_div_two_pi χ μ)
+          (spectralBoundary_integrable_eval_div_two_pi ψ μ)))
+    (fun a χ => by
+      simpa [Pi.smul_apply] using
+        (MeasureTheory.integral_smul a (fun u : ℝ => χ (u / (2 * Real.pi)))))
+    (by
+      refine ⟨Finset.Iic ((0, 0) : ℕ × ℕ), μ.real Set.univ, ?_, ?_⟩
+      · positivity
+      · intro χ
+        let C : ℝ := SchwartzMap.seminorm ℂ 0 0 χ
+        have hInt := spectralBoundary_integrable_eval_div_two_pi χ μ
+        have hbound :
+            ∀ᵐ u ∂μ, ‖χ (u / (2 * Real.pi))‖ ≤ C := by
+          filter_upwards with u
+          simpa [C, Real.norm_eq_abs] using
+            (SchwartzMap.le_seminorm (𝕜 := ℂ) (k := 0) (n := 0) χ
+              (u / (2 * Real.pi)))
+        have hC_le :
+            C ≤
+              (Finset.Iic ((0, 0) : ℕ × ℕ)).sup
+                (schwartzSeminormFamily ℂ ℝ ℂ) χ := by
+          have hmem : ((0, 0) : ℕ × ℕ) ∈ Finset.Iic ((0, 0) : ℕ × ℕ) := by
+            rw [Finset.mem_Iic]
+          have hSem :
+              schwartzSeminormFamily ℂ ℝ ℂ ((0, 0) : ℕ × ℕ) ≤
+                (Finset.Iic ((0, 0) : ℕ × ℕ)).sup
+                  (schwartzSeminormFamily ℂ ℝ ℂ) := by
+            exact Finset.le_sup (f := schwartzSeminormFamily ℂ ℝ ℂ) hmem
+          have hApp := Seminorm.le_def.mp hSem χ
+          simpa [C, schwartzSeminormFamily] using hApp
+        calc
+          ‖∫ u : ℝ, χ (u / (2 * Real.pi)) ∂μ‖
+              ≤ ∫ u : ℝ, ‖χ (u / (2 * Real.pi))‖ ∂μ :=
+                MeasureTheory.norm_integral_le_integral_norm _
+          _ ≤ ∫ u : ℝ, C ∂μ := by
+                exact MeasureTheory.integral_mono_ae hInt.norm
+                  (MeasureTheory.integrable_const C) hbound
+          _ = μ.real Set.univ * C := by
+                simp [MeasureTheory.integral_const, MeasureTheory.measureReal_def, mul_comm]
+          _ ≤
+              μ.real Set.univ *
+                (Finset.Iic ((0, 0) : ℕ × ℕ)).sup
+                  (schwartzSeminormFamily ℂ ℝ ℂ) χ := by
+                gcongr)
+
+/-- Continuous-linear version of `selfAdjointSpectralBoundaryValueDiagonal`.
+The application theorem below keeps the existing scalar API unchanged while
+making the semigroup-side boundary value available as a named distribution. -/
+noncomputable def selfAdjointSpectralBoundaryValueDiagonalCLM
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x : H) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  spectralBoundaryDiagonalCLMOfMeasure
+    (BochnerLaplaceBridge.laplaceMeasurePos
+      (ContinuousLinearMap.selfAdjointSpectralMeasureDiagonalReal A hA x))
+
+@[simp] theorem selfAdjointSpectralBoundaryValueDiagonalCLM_apply
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x : H)
+    (χ : SchwartzMap ℝ ℂ) :
+    selfAdjointSpectralBoundaryValueDiagonalCLM A hA x χ =
+      selfAdjointSpectralBoundaryValueDiagonal A hA x χ := by
+  rfl
+
+/-- Continuous-linear version of `selfAdjointSpectralBoundaryValueOffdiag`,
+obtained by polarizing the diagonal CLMs. This is the exact OS spectral
+boundary distribution which the Wightman time-shift distribution must be
+identified with in Phase C'. -/
+noncomputable def selfAdjointSpectralBoundaryValueOffdiagCLM
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x y : H) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  (1 / 4 : ℂ) •
+    (selfAdjointSpectralBoundaryValueDiagonalCLM A hA (x + y) -
+      selfAdjointSpectralBoundaryValueDiagonalCLM A hA (x - y) -
+      Complex.I • selfAdjointSpectralBoundaryValueDiagonalCLM A hA (x + Complex.I • y) +
+      Complex.I • selfAdjointSpectralBoundaryValueDiagonalCLM A hA (x - Complex.I • y))
+
+@[simp] theorem selfAdjointSpectralBoundaryValueOffdiagCLM_apply
+    (A : H →L[ℂ] H) (hA : IsSelfAdjoint A) (x y : H)
+    (χ : SchwartzMap ℝ ℂ) :
+    selfAdjointSpectralBoundaryValueOffdiagCLM A hA x y χ =
+      selfAdjointSpectralBoundaryValueOffdiag A hA x y χ := by
+  simp [selfAdjointSpectralBoundaryValueOffdiagCLM,
+    selfAdjointSpectralBoundaryValueOffdiag]
+  ring_nf
+
 set_option backward.isDefEq.respectTransparency false in
 private theorem fourierInv_eq_cexp_integral_local
     (φ : SchwartzMap ℝ ℂ) (ξ : ℝ) :

@@ -3115,6 +3115,54 @@ private theorem exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
   intro χ
   rfl
 
+/-- The canonical tempered functional underlying the explicit Stage-5 ambient
+Fourier-Laplace witness. Its value is the real-time Wightman time-shift pairing
+against the chosen right tensor factor. -/
+noncomputable def bvt_W_conjTensorProduct_timeShiftTemperedFunctional
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  Classical.choose <|
+    exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+      (d := d) OS lgc f g hg_compact
+
+@[simp] theorem bvt_W_conjTensorProduct_timeShiftTemperedFunctional_apply
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ))
+    (χ : SchwartzMap ℝ ℂ) :
+    bvt_W_conjTensorProduct_timeShiftTemperedFunctional
+        (d := d) OS lgc f g hg_compact χ =
+      ∫ t : ℝ,
+        bvt_W OS lgc (n + m)
+          (f.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)) * χ t := by
+  exact
+    Classical.choose_spec
+      (exists_bvt_W_conjTensorProduct_timeShift_temperedFunctional
+        (d := d) OS lgc f g hg_compact) χ
+
+/-- The canonical Stage-5 time-shift tempered functional has one-sided Fourier
+support. This is the public support fact needed for Section-4.3 quotient
+descent, backed by the flattened-translation spectral theorem above. -/
+theorem bvt_W_conjTensorProduct_timeShiftTemperedFunctional_hasOneSidedFourierSupport
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ} (hm : 0 < m)
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m)
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    SCV.HasOneSidedFourierSupport
+      (bvt_W_conjTensorProduct_timeShiftTemperedFunctional
+        (d := d) OS lgc f g hg_compact) := by
+  intro χ hχ_supp
+  rw [bvt_W_conjTensorProduct_timeShiftTemperedFunctional_apply]
+  exact hasOneSidedFourierSupport_bvt_W_conjTensorProduct_timeShift
+    (d := d) (OS := OS) (lgc := lgc) (hm := hm) f g χ hχ_supp
+
 /-- The concrete Fourier-Laplace witness attached to the real-time Wightman
 pairing functional. Unlike the existing `Classical.choose` witness, this is an
 explicit scaled `SCV.fourierLaplaceExt`, so its interior values can be
