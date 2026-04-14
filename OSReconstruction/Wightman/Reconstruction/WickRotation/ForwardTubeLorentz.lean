@@ -1188,10 +1188,11 @@ theorem lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
 
     Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
     Streater-Wightman, Theorem 2-12 -/
-axiom wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
+theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n |
-        (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0
+        (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0 := by
+  sorry
 
 /-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
 
