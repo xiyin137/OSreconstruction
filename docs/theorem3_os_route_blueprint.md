@@ -12524,23 +12524,28 @@ is implemented in `Section43WightmanDescent.lean` and exact-checks after a
 narrow rebuild of `Section43FourierLaplaceTransform` to refresh the local
 `.olean`.
 
-Finally use the standard distribution-theoretic support theorem for character
-invariant frequency distributions:
+Finally separate total-momentum support into two steps:
+
+1. Coordinate annihilation from phase invariance.  This is implemented in
+   production as
 
 ```lean
-theorem tflat_annihilates_totalMomentumCoord_of_phase_invariant
-    (d N : ℕ) [NeZero d]
+theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
+    (d : ℕ) [NeZero d] {N : ℕ}
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
     (hphase :
       ∀ (a : Fin (d + 1) → ℝ)
         (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
         Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K) :
-    ∀ (μ : Fin (d + 1))
-      (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
-      Tflat
-        (SchwartzMap.smulLeftCLM ℂ
-          (fun ξ => (section43TotalMomentumFlat d N ξ μ : ℂ)) K) = 0
+    (μ : Fin (d + 1))
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0
+```
 
+2. Compact hyperplane division plus truncation.  This is the remaining
+   implementation frontier and should produce
+
+```lean
 theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
     (d N : ℕ) [NeZero d]
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
@@ -12551,41 +12556,12 @@ theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
     HasFourierSupportIn (section43TotalMomentumZeroFlat d N) Tflat
 ```
 
-Lean proof transcript for `tflat_annihilates_totalMomentumCoord...`:
-
-1. For fixed `μ` and `K`, consider the curve
-
-```lean
-fun t : ℝ =>
-  section43TotalMomentumPhaseCLM d N
-    (fun ν => if ν = μ then t else 0) K
-```
-
-   in Schwartz space.
-2. Prove its derivative at `0` is
-
-```lean
-(-Complex.I) •
-  SchwartzMap.smulLeftCLM ℂ
-    (fun ξ => (section43TotalMomentumFlat d N ξ μ : ℂ)) K
-```
-
-   by extensionality and the scalar derivative
-   `d/dt exp (-I * t * p) |_{t=0} = -I * p`.  The required topology theorem
-   is a standard `HasDerivAt` into Schwartz space; prove it by the seminorm
-   characterization and the bounded-smooth phase multiplier estimates already
-   needed for `section43TotalMomentumPhaseCLM`.
-3. Apply `congrArg (fun L => Tflat L)` to `hphase (t • eμ) K`; the scalar
-   function is constant in `t`.
-4. Differentiate both sides at `0`.  Continuity/linearity of `Tflat` moves
-   the derivative through `Tflat`; divide by `-Complex.I`.
-
-Implementation refinement, 2026-04-15: do not try to prove this by an
-unstructured Frechet derivative of the CLM-valued map
-`a ↦ section43TotalMomentumPhaseCLM d N a`.  The implementable theorem should
-be the one-parameter difference-quotient statement, modeled exactly on
-`tendsto_diffQuotient_translateSchwartz_zero` in
-`TranslationInvariantSchwartz.lean`.
+Do **not** revive the older direct phase-differentiation route
+`tflat_annihilates_totalMomentumCoord_of_phase_invariant`.  That sketch asked
+Lean for an unstructured Frechet derivative of the CLM-valued map
+`a ↦ section43TotalMomentumPhaseCLM d N a`; the production proof deliberately
+avoids it by transporting the already-proved real-translation difference
+quotient through the physics Fourier transform.
 
 For fixed `μ`, define the one-parameter phase multiplier
 
@@ -12711,17 +12687,16 @@ Production status, 2026-04-15: the helper
 flatComplexPairing_hasTemperateGrowth
 ```
 
-is implemented and exact-checks.  The theorem surfaces
+and the theorem surfaces
 
 ```lean
 physicsFourierFlatCLM_lineDeriv_eq_pairingMultiplier
 physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier
 ```
 
-have been added in `Section43FourierLaplaceTransform.lean` as the active WIP
-frontier and currently close by `sorry`.  The remaining Lean work is not a
-mathematical gap in the route: it is the explicit transported-scaling
-simplification after applying `SchwartzMap.fourier_lineDerivOp_eq`.
+are implemented in `Section43FourierLaplaceTransform.lean` and exact-check
+without warnings.  The transported-scaling simplification after applying
+`SchwartzMap.fourier_lineDerivOp_eq` is now closed in production.
 
 Only after this identity is available, use the existing translation
 difference quotient to prove coordinate annihilation.  For each `ξ`, the
@@ -12751,16 +12726,16 @@ t⁻¹ •
 Then prove coordinate annihilation without a direct phase-difference theorem:
 
 ```lean
-theorem tflat_annihilates_totalMomentumCoord_of_phase_invariant
-    (d N : ℕ) [NeZero d]
+theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
+    (d : ℕ) [NeZero d] {N : ℕ}
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
     (hphase :
       ∀ (a : Fin (d + 1) → ℝ)
         (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
         Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K) :
-    ∀ (μ : Fin (d + 1))
-      (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
-      Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0
+    (μ : Fin (d + 1))
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0
 ```
 
 Proof transcript:
@@ -12787,10 +12762,17 @@ Filter.Tendsto
    `physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier`
    and divide by `-Complex.I`.
 
+Production status, 2026-04-15: this theorem is implemented in
+`Section43WightmanDescent.lean` and exact-checks without warnings.  The proof
+uses `L := Tflat.comp physicsFourierFlatCLM`; the only Lean subtlety is that
+the real scalar action in the difference quotient is rewritten pointwise to
+the corresponding complex scalar action before applying complex linearity of
+`L`.
+
 Lean proof transcript for
 `hasFourierSupportIn_totalMomentumZero_of_phase_invariant`:
 
-1. Use `tflat_annihilates_totalMomentumCoord_of_phase_invariant` to obtain,
+1. Use `tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant` to obtain,
    for each `μ : Fin (d + 1)`,
 
 ```lean
@@ -12949,6 +12931,87 @@ Kc R := bumpTruncationRadius K R
    to pass from `Tflat (Kc R) = 0` for all `R` to `Tflat K = 0`.  This is
    exactly the `HasFourierSupportIn` condition for
    `section43TotalMomentumZeroFlat`.
+
+Implementation-ready theorem split for the remaining total-momentum support
+step:
+
+```lean
+theorem exists_eq_sum_headBlock_coord_smul_of_zeroHeadSection_of_hasCompactSupport
+    {p q : ℕ}
+    (F : SchwartzMap (Fin (p + q) → ℝ) ℂ)
+    (hF_compact : HasCompactSupport (F : (Fin (p + q) → ℝ) → ℂ))
+    (hF_zero :
+      ∀ y : Fin q → ℝ,
+        F (zeroHeadBlockShift (m := p) (n := q) y) = 0) :
+    ∃ G : Fin p → SchwartzMap (Fin (p + q) → ℝ) ℂ,
+      F =
+        ∑ μ : Fin p,
+          SchwartzMap.smulLeftCLM ℂ
+            (fun x : Fin (p + q) → ℝ => (x (Fin.castAdd q μ) : ℂ))
+            (G μ)
+
+noncomputable def section43TotalMomentumHeadTailCLE
+    (d N' : ℕ) [NeZero d] :
+    (Fin ((N' + 1) * (d + 1)) → ℝ) ≃L[ℝ]
+      (Fin ((d + 1) + (N' * (d + 1))) → ℝ)
+
+theorem exists_eq_sum_totalMomentum_smul_of_vanishes_totalMomentumZero_of_hasCompactSupport
+    (d N : ℕ) [NeZero d]
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (hK_compact : HasCompactSupport (K : (Fin (N * (d + 1)) → ℝ) → ℂ))
+    (hK_zero :
+      ∀ ξ, section43TotalMomentumFlat d N ξ = 0 → K ξ = 0) :
+    ∃ H : Fin (d + 1) →
+        SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+      K =
+        ∑ μ : Fin (d + 1),
+          section43TotalMomentumCoordMultiplierCLM d N μ (H μ)
+
+theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+    (d N : ℕ) [NeZero d]
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hphase :
+      ∀ (a : Fin (d + 1) → ℝ)
+        (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+        Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K) :
+    HasFourierSupportIn (section43TotalMomentumZeroFlat d N) Tflat
+```
+
+Lean implementation notes for this split:
+
+1. The generic head-block theorem should live outside the Section 4.3
+   OS-specific file, preferably in a small companion support file importing
+   `TranslationInvariantSchwartz.lean`, because it only depends on the
+   existing `headSectionCLM`, `unitBumpSchwartz.prependField`,
+   `hasCompactSupport_prependField`, and
+   `exists_eq_coord_smul_of_headSection_zero_of_hasCompactSupport`.
+2. The successor case for the generic theorem should first reindex
+   `Fin ((p + 1) + q)` to `Fin ((p + q) + 1)` using
+   `castFinCLE (Nat.succ_add p q)` so that `headSectionCLM (p + q)` applies
+   to the first head coordinate.  After the decomposition is proved in the
+   reindexed coordinates, push it back through
+   `SchwartzMap.compCLMOfContinuousLinearEquiv`.
+3. The base case `p = 0` is not a compactness argument: use
+   `splitLast_zeroHeadBlockShift_eq`/subsingleton extensionality to show every
+   `x : Fin (0 + q) → ℝ` is the zero-head insertion of its tail, hence
+   `F x = 0`; choose the empty coefficient family.
+4. For the total-momentum/head-tail CLE, define the forward map by cases on
+   `Fin ((d + 1) + (N' * (d + 1)))`: head indices
+   `Fin.castAdd (N' * (d + 1)) μ` map to
+   `section43TotalMomentumFlat d (N' + 1) ξ μ`; tail indices
+   `Fin.natAdd (d + 1) j` map to
+   `ξ (finProdFinEquiv (j.1.succ, j.2))` after identifying
+   `j : Fin (N' * (d + 1))` with `Fin N' × Fin (d + 1)` by
+   `finProdFinEquiv.symm`.
+5. Define the inverse by setting particle `0` equal to head momentum minus the
+   sum of the tail particles, and particles `j.succ` equal to the tail block.
+   The left/right inverse proofs reduce to extensionality over
+   `finProdFinEquiv (k, μ)` and the finite-sum split over `Fin (N' + 1)`.
+6. After pulling `K` back through the CLE, the zero-head-section hypothesis is
+   exactly `hK_zero`, because the head block is
+   `section43TotalMomentumFlat`.  Pushing the generic head-block decomposition
+   forward rewrites each head-coordinate multiplier to
+   `section43TotalMomentumCoordMultiplierCLM`.
 
 Then the combined support theorem is an intersection step for closed support
 sets:
