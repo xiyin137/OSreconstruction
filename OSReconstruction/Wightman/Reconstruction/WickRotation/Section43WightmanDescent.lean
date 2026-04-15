@@ -1,5 +1,7 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43TotalMomentumSupport
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
+import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 
 noncomputable section
 
@@ -142,6 +144,59 @@ theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
     simpa [L] using hline
   rw [Tflat.map_smul] at hcoord_neg
   exact (smul_eq_zero.mp hcoord_neg).resolve_left (by simp)
+
+theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+    (d : ℕ) [NeZero d] {N : ℕ}
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hphase :
+      ∀ (a : Fin (d + 1) → ℝ)
+        (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+        Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K) :
+    HasFourierSupportIn (section43TotalMomentumZeroFlat d N) Tflat := by
+  intro φ hφ
+  have hvanish_compact : ∀ n : ℕ, Tflat (bumpTruncationRadius φ n) = 0 := by
+    intro n
+    have hcompact : HasCompactSupport ((bumpTruncationRadius φ n :
+        SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) : (Fin (N * (d + 1)) → ℝ) → ℂ) := by
+      exact hasCompactSupport_cutoff_mul_radius
+        (bumpTruncationRadiusValue n) (bumpTruncationRadiusValue_pos n) φ
+    have hzero : ∀ ξ, section43TotalMomentumFlat d N ξ = 0 →
+        bumpTruncationRadius φ n ξ = 0 := by
+      intro ξ hξ
+      have hφzero : φ ξ = 0 := by
+        by_contra hne
+        exact hφ ξ (Function.mem_support.mpr hne) hξ
+      let ψ : (Fin (N * (d + 1)) → ℝ) → ℂ :=
+        unitBallBumpSchwartzPiRadius (N * (d + 1))
+          (bumpTruncationRadiusValue n)
+          (bumpTruncationRadiusValue_pos n)
+      have hψtemp : ψ.HasTemperateGrowth := by
+        simpa [ψ] using (unitBallBumpSchwartzPiRadius (N * (d + 1))
+          (bumpTruncationRadiusValue n)
+          (bumpTruncationRadiusValue_pos n)).hasTemperateGrowth
+      rw [bumpTruncationRadius]
+      rw [SchwartzMap.smulLeftCLM_apply_apply hψtemp]
+      simp [hφzero, ψ]
+    obtain ⟨H, hH⟩ :=
+      exists_eq_sum_totalMomentum_smul_of_vanishes_totalMomentumZero_of_hasCompactSupport
+        d N (bumpTruncationRadius φ n) hcompact hzero
+    rw [hH]
+    rw [map_sum]
+    apply Finset.sum_eq_zero
+    intro μ _hμ
+    exact tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant d Tflat hphase μ (H μ)
+  have htend : Filter.Tendsto (fun n : ℕ => Tflat (bumpTruncationRadius φ n))
+      Filter.atTop (𝓝 (Tflat φ)) :=
+    (Tflat.continuous.tendsto φ).comp (SchwartzMap.tendsto_bump_truncation_nhds φ)
+  have hzero_tend : Filter.Tendsto (fun _ : ℕ => (0 : ℂ)) Filter.atTop (𝓝 0) :=
+    tendsto_const_nhds
+  have heq : (fun n : ℕ => Tflat (bumpTruncationRadius φ n)) = fun _ : ℕ => (0 : ℂ) := by
+    funext n
+    exact hvanish_compact n
+  have hzero_tend' : Filter.Tendsto (fun n : ℕ => Tflat (bumpTruncationRadius φ n))
+      Filter.atTop (𝓝 0) := by
+    simp [heq, hzero_tend]
+  exact tendsto_nhds_unique htend hzero_tend'
 
 theorem bvt_W_eq_of_section43FrequencyProjection_eq
     (d : ℕ) [NeZero d]

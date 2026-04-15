@@ -12542,8 +12542,8 @@ theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
     Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0
 ```
 
-2. Compact hyperplane division plus truncation.  This is the remaining
-   implementation frontier and should produce
+2. Compact hyperplane division plus truncation.  This has now been implemented
+   in production and produces
 
 ```lean
 theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
@@ -12928,6 +12928,15 @@ R := F - unitBumpSchwartz.prependField h
       `Complex.real_smul`/`smul_eq_mul` identifies this with
       `section43TotalMomentumCoordMultiplierCLM d (N' + 1) μ`.
 
+   Production status, 2026-04-15: this compact total-momentum division theorem
+   is implemented in `Section43TotalMomentumSupport.lean` as
+   `exists_eq_sum_totalMomentum_smul_of_vanishes_totalMomentumZero_of_hasCompactSupport`.
+   The proof follows the transcript above: the `N = 0` case is zero, and the
+   successor case pulls back through `section43TotalMomentumHeadTailCLE`,
+   applies the generic compact head-block theorem, then pushes the coefficients
+   forward and rewrites the real head-coordinate multiplier to
+   `section43TotalMomentumCoordMultiplierCLM`.
+
 4. Apply the derivative equations from step 1 to every summand in the compact
    decomposition and sum the results.  This gives `Tflat Kc = 0` for every
    compactly supported Schwartz `Kc` that vanishes on the total-momentum zero
@@ -12947,8 +12956,16 @@ Kc R := bumpTruncationRadius K R
    exactly the `HasFourierSupportIn` condition for
    `section43TotalMomentumZeroFlat`.
 
-Implementation-ready theorem split for the remaining total-momentum support
-step:
+Production status, 2026-04-15: this support theorem is implemented in
+`Section43WightmanDescent.lean` as
+`hasFourierSupportIn_totalMomentumZero_of_phase_invariant` and exact-checks
+without warnings.  Its proof uses the compact bump truncations from
+`SchwartzDensity.lean`; each truncation is compactly supported, still vanishes
+on the total-momentum zero set pointwise, decomposes through the compact
+total-momentum division theorem, is killed by coordinate annihilation, and
+then converges back to the original Schwartz test by continuity of `Tflat`.
+
+Implemented theorem split for the total-momentum support step:
 
 ```lean
 theorem exists_eq_sum_headBlock_coord_smul_of_zeroHeadSection_of_hasCompactSupport
@@ -13032,8 +13049,8 @@ Lean implementation notes for this split:
    total-momentum coordinate multiplier; finish the type-level scalar
    conversion pointwise with `Complex.real_smul` and `smul_eq_mul`.
 
-Then the combined support theorem is an intersection step for closed support
-sets:
+The next honest frontier is now the combined support theorem: an intersection
+step for closed support sets.
 
 ```lean
 theorem hasFourierSupportIn_inter_of_closed

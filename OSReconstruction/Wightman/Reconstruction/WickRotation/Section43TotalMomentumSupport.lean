@@ -205,4 +205,93 @@ noncomputable def section43TotalMomentumHeadTailCLE
   ext j
   simp [splitLast]
 
+theorem exists_eq_sum_totalMomentum_smul_of_vanishes_totalMomentumZero_of_hasCompactSupport
+    (d N : ℕ) [NeZero d]
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (hK_compact : HasCompactSupport (K : (Fin (N * (d + 1)) → ℝ) → ℂ))
+    (hK_zero :
+      ∀ ξ, section43TotalMomentumFlat d N ξ = 0 → K ξ = 0) :
+    ∃ H : Fin (d + 1) → SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+      K = ∑ μ : Fin (d + 1), section43TotalMomentumCoordMultiplierCLM d N μ (H μ) := by
+  cases N with
+  | zero =>
+      refine ⟨fun _ => 0, ?_⟩
+      ext ξ
+      have hzero : section43TotalMomentumFlat d 0 ξ = 0 := by
+        ext μ
+        simp [section43TotalMomentumFlat]
+      calc
+        K ξ = 0 := hK_zero ξ hzero
+        _ = (∑ μ : Fin (d + 1),
+              section43TotalMomentumCoordMultiplierCLM d 0 μ ((fun _ => 0) μ)) ξ := by
+          simp
+  | succ N' =>
+      let e := section43TotalMomentumHeadTailCLE d N'
+      let F : SchwartzMap (Fin ((d + 1) + (N' * (d + 1))) → ℝ) ℂ :=
+        SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm K
+      have hFcompact :
+          HasCompactSupport (F : (Fin ((d + 1) + (N' * (d + 1))) → ℝ) → ℂ) := by
+        simpa [F, SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+          hK_compact.comp_homeomorph e.symm.toHomeomorph
+      have hFzero : ∀ y : Fin (N' * (d + 1)) → ℝ,
+          F (zeroHeadBlockShift (m := d + 1) (n := N' * (d + 1)) y) = 0 := by
+        intro y
+        let z : Fin ((d + 1) + (N' * (d + 1))) → ℝ :=
+          zeroHeadBlockShift (m := d + 1) (n := N' * (d + 1)) y
+        have hsplit : splitFirst (d + 1) (N' * (d + 1)) z =
+            section43TotalMomentumFlat d (N' + 1) (e.symm z) := by
+          simpa [e] using (splitFirst_section43TotalMomentumHeadTailCLE d N' (e.symm z))
+        have hhead : splitFirst (d + 1) (N' * (d + 1)) z = 0 := by
+          simp [z]
+        have htm : section43TotalMomentumFlat d (N' + 1) (e.symm z) = 0 := by
+          rw [← hsplit]
+          exact hhead
+        simpa [F, z, SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using
+          hK_zero (e.symm z) htm
+      obtain ⟨G, hG⟩ :=
+        exists_eq_sum_headBlock_coord_smul_of_zeroHeadSection_of_hasCompactSupport
+          (p := d + 1) (q := N' * (d + 1)) F hFcompact hFzero
+      let H : Fin (d + 1) → SchwartzMap (Fin ((N' + 1) * (d + 1)) → ℝ) ℂ :=
+        fun μ => SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e (G μ)
+      refine ⟨H, ?_⟩
+      ext ξ
+      have hEval :=
+        congrArg
+          (fun S : SchwartzMap (Fin ((d + 1) + (N' * (d + 1))) → ℝ) ℂ =>
+            S (e ξ)) hG
+      have hF_eval : F (e ξ) = K ξ := by
+        simp [F, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, e]
+      have hcoord : ∀ μ : Fin (d + 1),
+          (fun x : Fin ((d + 1) + (N' * (d + 1))) → ℝ =>
+            x (Fin.castAdd (N' * (d + 1)) μ)).HasTemperateGrowth := by
+        intro μ
+        exact (ContinuousLinearMap.proj (R := ℝ)
+          (ι := Fin ((d + 1) + (N' * (d + 1))))
+          (φ := fun _ => ℝ) (Fin.castAdd (N' * (d + 1)) μ)).hasTemperateGrowth
+      calc
+        K ξ = F (e ξ) := hF_eval.symm
+        _ = ((∑ μ : Fin (d + 1),
+              SchwartzMap.smulLeftCLM ℂ
+                (fun x : Fin ((d + 1) + (N' * (d + 1))) → ℝ =>
+                  x (Fin.castAdd (N' * (d + 1)) μ))
+                (G μ)) : SchwartzMap (Fin ((d + 1) + (N' * (d + 1))) → ℝ) ℂ)
+              (e ξ) := hEval
+        _ = ∑ μ : Fin (d + 1),
+              ((SchwartzMap.smulLeftCLM ℂ
+                (fun x : Fin ((d + 1) + (N' * (d + 1))) → ℝ =>
+                  x (Fin.castAdd (N' * (d + 1)) μ))
+                (G μ)) (e ξ)) := by
+          simp
+        _ = ∑ μ : Fin (d + 1),
+              (section43TotalMomentumCoordMultiplierCLM d (N' + 1) μ (H μ)) ξ := by
+          refine Finset.sum_congr rfl ?_
+          intro μ _hμ
+          rw [SchwartzMap.smulLeftCLM_apply_apply (hcoord μ)]
+          rw [section43TotalMomentumCoordMultiplierCLM_apply]
+          simp [H, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, e]
+          exact Complex.real_smul
+        _ = (∑ μ : Fin (d + 1),
+              section43TotalMomentumCoordMultiplierCLM d (N' + 1) μ (H μ)) ξ := by
+          simp
+
 end OSReconstruction
