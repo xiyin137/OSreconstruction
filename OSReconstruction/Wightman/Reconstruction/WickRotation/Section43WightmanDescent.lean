@@ -3,7 +3,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundar
 
 noncomputable section
 
-open scoped Topology FourierTransform
+open scoped Topology FourierTransform LineDeriv
 open Set MeasureTheory
 
 namespace OSReconstruction
@@ -69,6 +69,79 @@ theorem tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant
           exact bvt_W_flat_diagonalTranslate_eq (d := d) OS lgc a φflat
     _ = Tflat (physicsFourierFlatCLM φflat) := by
           rw [hTflat_bv]
+
+theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
+    (d : ℕ) [NeZero d] {N : ℕ}
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hphase :
+      ∀ (a : Fin (d + 1) → ℝ)
+        (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+        Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K)
+    (μ : Fin (d + 1))
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0 := by
+  obtain ⟨φflat, hφflat⟩ := physicsFourierFlatCLM_surjective (N * (d + 1)) K
+  let v : Fin (N * (d + 1)) → ℝ :=
+    section43DiagonalTranslationFlat d N (section43TotalMomentumBasis d μ)
+  let L : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+    Tflat.comp physicsFourierFlatCLM
+  have hline : L (∂_{v} φflat) = 0 := by
+    have hquot :
+        Filter.Tendsto
+          (fun t : ℝ =>
+            L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat)))
+          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 (L (∂_{v} φflat))) :=
+      (L.continuous.tendsto (∂_{v} φflat)).comp
+        (tendsto_diffQuotient_translateSchwartz_zero φflat v)
+    have hzero :
+        Filter.Tendsto (fun _ : ℝ => (0 : ℂ))
+          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 0) :=
+      tendsto_const_nhds
+    have heq :
+        (fun t : ℝ =>
+          L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat))) =
+          fun _ => (0 : ℂ) := by
+      funext t
+      have htrans : L (SCV.translateSchwartz (t • v) φflat) = L φflat := by
+        change
+          Tflat (physicsFourierFlatCLM (SCV.translateSchwartz (t • v) φflat)) =
+            Tflat (physicsFourierFlatCLM φflat)
+        rw [show t • v =
+            t • section43DiagonalTranslationFlat d N
+              (section43TotalMomentumBasis d μ) by rfl]
+        rw [physicsFourierFlatCLM_diagonalBasisTranslate_eq_basisPhaseCLM]
+        simpa [section43TotalMomentumBasisPhaseCLM] using
+          hphase (t • section43TotalMomentumBasis d μ)
+            (physicsFourierFlatCLM φflat)
+      let X : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ :=
+        SCV.translateSchwartz (t • v) φflat - φflat
+      have hreal_smul :
+          t⁻¹ • X = ((t⁻¹ : ℂ) • X) := by
+        ext ξ
+        change t⁻¹ • X ξ = ((t⁻¹ : ℂ) • X ξ)
+        rw [Complex.real_smul]
+        rw [smul_eq_mul]
+        rw [Complex.ofReal_inv]
+      change L (t⁻¹ • X) = 0
+      rw [hreal_smul]
+      rw [L.map_smul, map_sub, sub_eq_zero.mpr htrans, smul_zero]
+    have hzero' :
+        Filter.Tendsto
+          (fun t : ℝ =>
+            L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat)))
+          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 0) := by
+      simpa only [heq] using hzero
+    exact tendsto_nhds_unique hquot hzero'
+  have hderiv :=
+    physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier
+      (d := d) (N := N) (μ := μ) (φflat := φflat)
+  have hcoord_neg :
+      Tflat ((-Complex.I) • section43TotalMomentumCoordMultiplierCLM d N μ K) = 0 := by
+    rw [← hφflat]
+    rw [← hderiv]
+    simpa [L] using hline
+  rw [Tflat.map_smul] at hcoord_neg
+  exact (smul_eq_zero.mp hcoord_neg).resolve_left (by simp)
 
 theorem bvt_W_eq_of_section43FrequencyProjection_eq
     (d : ℕ) [NeZero d]

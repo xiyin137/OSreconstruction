@@ -1061,14 +1061,69 @@ theorem physicsFourierFlatCLM_lineDeriv_eq_pairingMultiplier {m : ℕ}
         (fun ξ : Fin m → ℝ =>
           ∑ i : Fin m, (v i : ℂ) * (ξ i : ℂ))
         (physicsFourierFlatCLM φ) := by
-  /-
-  Proof frontier: unfold `physicsFourierFlatCLM` into Mathlib Fourier plus the
-  `-(1 / (2π))` scaling, move `∂_v` through the Euclidean transport using
-  `SchwartzMap.lineDerivOp_compCLMOfContinuousLinearEquiv`, apply
-  `SchwartzMap.fourier_lineDerivOp_eq`, then simplify the transported
-  multiplier to the flat pairing on the right.
-  -/
-  sorry
+  let e : EuclideanSpace ℝ (Fin m) ≃L[ℝ] (Fin m → ℝ) :=
+    EuclideanSpace.equiv (Fin m) ℝ
+  have hderiv :
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) (∂_{v} φ) =
+        ∂_{e.symm v} ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e) φ) := by
+    symm
+    simpa [e] using
+      (SchwartzMap.lineDerivOp_compCLMOfContinuousLinearEquiv (𝕜 := ℂ)
+        (m := e.symm v) (g := e) (f := φ))
+  have hpair :
+      (fun ξ : Fin m → ℝ =>
+        ∑ i : Fin m, (v i : ℂ) * (ξ i : ℂ)).HasTemperateGrowth :=
+    flatComplexPairing_hasTemperateGrowth v
+  have hinner :
+      (fun x : EuclideanSpace ℝ (Fin m) =>
+        inner ℝ x (e.symm v)).HasTemperateGrowth := by
+    have hL : Function.HasTemperateGrowth ((innerSL ℝ) (e.symm v)) := by
+      exact ((innerSL ℝ) (e.symm v)).hasTemperateGrowth
+    simpa [real_inner_comm] using hL
+  ext ξ
+  rw [physicsFourierFlatCLM_apply]
+  rw [SchwartzMap.smul_apply]
+  rw [SchwartzMap.smulLeftCLM_apply_apply hpair]
+  rw [physicsFourierFlatCLM_apply]
+  unfold inverseFourierFlatCLM
+  simp only [ContinuousLinearMap.comp_apply]
+  rw [hderiv]
+  rw [SchwartzMap.fourierTransformCLM_apply]
+  rw [SchwartzMap.fourier_lineDerivOp_eq]
+  simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  rw [SchwartzMap.smul_apply]
+  rw [SchwartzMap.smulLeftCLM_apply_apply hinner]
+  have hinner_eval :
+      inner ℝ ((EuclideanSpace.equiv (Fin m) ℝ).symm
+          (-(1 / (2 * Real.pi)) • ξ)) (e.symm v) =
+        (-(1 / (2 * Real.pi))) * ∑ i : Fin m, ξ i * v i := by
+    rw [PiLp.inner_apply]
+    simp [e, EuclideanSpace.equiv, inner, Finset.mul_sum,
+      mul_assoc, mul_comm]
+  rw [hinner_eval]
+  simp only [e]
+  let Z : ℂ :=
+    (𝓕 ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (EuclideanSpace.equiv (Fin m) ℝ)) φ))
+      ((EuclideanSpace.equiv (Fin m) ℝ).symm (-(1 / (2 * Real.pi)) • ξ))
+  change (2 * (Real.pi : ℂ) * Complex.I) •
+      (((-(1 / (2 * Real.pi)) * ∑ i : Fin m, ξ i * v i) : ℝ) • Z) =
+    ((-Complex.I) • ((∑ i : Fin m, (v i : ℂ) * (ξ i : ℂ)) • Z))
+  simp [smul_eq_mul, Complex.real_smul, Complex.ofReal_sum, Finset.mul_sum,
+    mul_assoc, mul_comm]
+  have hscaled :
+      (∑ x : Fin m,
+          (v x : ℂ) * ((ξ x : ℂ) * ((Real.pi : ℂ)⁻¹ * 2⁻¹))) =
+        (∑ i : Fin m, (v i : ℂ) * (ξ i : ℂ)) *
+          ((Real.pi : ℂ)⁻¹ * 2⁻¹) := by
+    rw [Finset.sum_mul]
+    refine Finset.sum_congr rfl ?_
+    intro i _hi
+    ring
+  rw [hscaled]
+  have hπc : (Real.pi : ℂ) ≠ 0 := by
+    exact_mod_cast Real.pi_ne_zero
+  field_simp [hπc]
 
 theorem physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier
     (d N : ℕ) [NeZero d]
@@ -1081,12 +1136,17 @@ theorem physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier
     (-Complex.I) •
       section43TotalMomentumCoordMultiplierCLM d N μ
         (physicsFourierFlatCLM φflat) := by
-  /-
-  Follows from `physicsFourierFlatCLM_lineDeriv_eq_pairingMultiplier` and
-  `section43DiagonalTranslationFlat_complex_pair_eq_totalMomentum`, plus
-  `section43TotalMomentumBasis_sum_complex`.
-  -/
-  sorry
+  rw [physicsFourierFlatCLM_lineDeriv_eq_pairingMultiplier]
+  ext ξ
+  rw [SchwartzMap.smul_apply]
+  rw [SchwartzMap.smul_apply]
+  rw [section43TotalMomentumCoordMultiplierCLM_apply]
+  rw [SchwartzMap.smulLeftCLM_apply_apply]
+  · rw [section43DiagonalTranslationFlat_complex_pair_eq_totalMomentum]
+    rw [section43TotalMomentumBasis_sum_complex]
+    simp [smul_eq_mul]
+  · exact flatComplexPairing_hasTemperateGrowth
+      (section43DiagonalTranslationFlat d N (section43TotalMomentumBasis d μ))
 
 /-- Translate the right `m`-point tail by `-t` in the time coordinate only.
 
