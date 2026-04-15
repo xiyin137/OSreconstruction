@@ -12863,6 +12863,11 @@ p μ - ∑ j : Fin N', ηtail (finProdFinEquiv (j, μ)).
       This direct equivalence is preferable to a cumulative-tail equivalence:
       it exposes the total-momentum hyperplane as the literal zero-head
       section needed by the compact head-block division theorem.
+
+      Production status, 2026-04-15: this equivalence is implemented in
+      `Section43TotalMomentumSupport.lean` as
+      `section43TotalMomentumHeadTailCLE`, with exact head/tail and inverse
+      coordinate lemmas.  The file exact-checks without warnings.
    3. Pull `K` back along `section43TotalMomentumHeadTailCLE.symm`.  The pulled
       function has zero head-section for every tail value.
    4. Prove the compact head-block decomposition theorem, using the existing
@@ -13006,7 +13011,8 @@ Lean implementation notes for this split:
    `splitLast_zeroHeadBlockShift_eq`/subsingleton extensionality to show every
    `x : Fin (0 + q) → ℝ` is the zero-head insertion of its tail, hence
    `F x = 0`; choose the empty coefficient family.
-4. For the total-momentum/head-tail CLE, define the forward map by cases on
+4. The total-momentum/head-tail CLE is implemented in
+   `Section43TotalMomentumSupport.lean`.  Its forward map is by cases on
    `Fin ((d + 1) + (N' * (d + 1)))`: head indices
    `Fin.castAdd (N' * (d + 1)) μ` map to
    `section43TotalMomentumFlat d (N' + 1) ξ μ`; tail indices
@@ -13016,7 +13022,8 @@ Lean implementation notes for this split:
    `finProdFinEquiv.symm`.
 5. Define the inverse by setting particle `0` equal to head momentum minus the
    sum of the tail particles, and particles `j.succ` equal to the tail block.
-   The left/right inverse proofs reduce to extensionality over
+   This is now production code.  The left/right inverse proofs reduce to
+   extensionality over
    `finProdFinEquiv (k, μ)` and the finite-sum split over `Fin (N' + 1)`.
 6. After pulling `K` back through the CLE, the zero-head-section hypothesis is
    exactly `hK_zero`, because the head block is
