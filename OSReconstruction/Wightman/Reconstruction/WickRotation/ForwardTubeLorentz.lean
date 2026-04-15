@@ -1204,7 +1204,66 @@ theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
     -- Each {x | x i 0 = x j 0} = ker(L) where L(x) = x i 0 - x j 0 is a
     -- proper linear subspace, hence measure zero by addHaar_submodule.
     -- Finite union of measure-zero sets is measure zero.
-    sorry
+    have hsubset :
+        {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i = x j} ⊆
+          {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0} := by
+      intro x hx
+      rcases hx with ⟨i, j, hij, hEq⟩
+      exact ⟨i, j, hij, congrFun hEq 0⟩
+    apply MeasureTheory.measure_mono_null hsubset
+    have measure_timeEq_zero (i j : Fin n) (hij : i ≠ j) :
+        MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
+      let L : NPointDomain d n →ₗ[ℝ] ℝ :=
+        { toFun := fun x => x i 0 - x j 0
+          map_add' := by
+            intro x y
+            simp
+            ring
+          map_smul' := by
+            intro a x
+            simp
+            ring }
+      have hset :
+          {x : NPointDomain d n | x i 0 = x j 0} = (LinearMap.ker L : Set (NPointDomain d n)) := by
+        ext x
+        simp [L, LinearMap.mem_ker, sub_eq_zero]
+      have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+        intro htop
+        have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+        have hval : L (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+          simpa using congrArg
+            (fun f => f (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+        have hji : j ≠ i := by
+          intro h
+          exact hij h.symm
+        have : (1 : ℝ) = 0 := by
+          simp [L, hji] at hval
+        norm_num at this
+      rw [hset]
+      exact
+        MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume (LinearMap.ker L)
+          hker_ne_top
+    have hall : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+        ∀ p : {p : Fin n × Fin n // p.1 ≠ p.2}, x p.1.1 0 ≠ x p.1.2 0 := by
+      simpa using
+        ((Set.toFinite (Set.univ : Set {p : Fin n × Fin n // p.1 ≠ p.2})).eventually_all
+          (l := MeasureTheory.ae (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)))
+          (p := fun p => fun x : NPointDomain d n => x p.1.1 0 ≠ x p.1.2 0)).2
+          (fun p _ => by
+            let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
+            have hs0 : MeasureTheory.volume s = 0 := by
+              simpa [s] using measure_timeEq_zero p.1.1 p.1.2 p.2
+            have hsae :
+                sᶜ ∈ MeasureTheory.ae
+                  (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+              MeasureTheory.compl_mem_ae_iff.mpr hs0
+            simpa [s, Set.compl_setOf] using hsae)
+    refine MeasureTheory.compl_mem_ae_iff.mp ?_
+    filter_upwards [hall] with x hx
+    rw [Set.mem_compl_iff, Set.mem_setOf_eq]
+    intro h
+    rcases h with ⟨i, j, hij, hij0⟩
+    exact hx ⟨⟨i, j⟩, hij⟩ hij0
 
 /-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
 
