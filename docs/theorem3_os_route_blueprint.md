@@ -12339,6 +12339,19 @@ Production status, 2026-04-14: `section43TotalMomentumFlat`,
 `section43DiagonalTranslationFlat_pair_eq_totalMomentum` are implemented in
 `Section43FourierLaplaceTransform.lean` and exact-checked.
 
+Production status, 2026-04-15: the total-momentum coordinate layer has been
+extended with
+
+```lean
+section43TotalMomentumComponentCLM
+section43TotalMomentumPairingCLM
+section43DiagonalTranslationFlat_complex_pair_eq_totalMomentum
+```
+
+in `Section43FourierLaplaceTransform.lean`.  These are the CLM and complex
+pairing forms used by the phase multiplier and exact-check with the support
+file.
+
 The real-space translation invariance of `bvt_W` gives a flat test theorem:
 
 ```lean
@@ -12372,6 +12385,20 @@ unflattenSchwartzNPoint (d := d) φflat (fun j μ => x j μ + a μ)
    `section43DiagonalTranslationFlat`, and `flattenCLEquivReal_apply`.
 3. The sign matches `IsTranslationInvariantWeak`, whose hypothesis is exactly
    `g x = f (fun i => x i + a)`.
+
+Production status, 2026-04-15: the coordinate bridge
+
+```lean
+unflattenSchwartzNPoint_translate_section43DiagonalTranslationFlat
+```
+
+and the theorem
+
+```lean
+bvt_W_flat_diagonalTranslate_eq
+```
+
+are implemented in `Section43WightmanDescent.lean` and exact-check.
 
 The Fourier transform turns this diagonal translation into total-momentum
 phase multiplication:
@@ -12408,6 +12435,22 @@ Proof transcript: apply the existing
 `physicsFourierFlatCLM_translateSchwartz_apply` theorem and rewrite its flat
 pairing with `section43DiagonalTranslationFlat_pair_eq_totalMomentum`.
 
+Production status, 2026-04-15: this layer is implemented as
+
+```lean
+section43_physicsFourierFlatCLM_translateSchwartz_apply
+physicsFourierFlatCLM_diagonalTranslate_apply
+section43_realOscillatoryPhase_hasTemperateGrowth
+section43TotalMomentumPhase_hasTemperateGrowth
+section43TotalMomentumPhaseCLM
+physicsFourierFlatCLM_diagonalTranslate_eq_phaseCLM
+```
+
+in `Section43FourierLaplaceTransform.lean`.  The phase multiplier is packaged
+as an honest `SchwartzMap.smulLeftCLM`; its temperate-growth proof composes
+the one-variable bounded oscillatory phase with
+`section43TotalMomentumPairingCLM`.
+
 Next expose the Fourier transform as a continuous linear equivalence.  The
 current production surface has `physicsFourierFlatCLM` as a CLM; the support
 proof needs a range theorem:
@@ -12436,6 +12479,16 @@ used in `physicsFourierFlatCLM`.  This is pure Fourier-analysis
 infrastructure and should live near `physicsFourierFlatCLM`, not in the
 Wightman files.
 
+Production status, 2026-04-15: the needed theorem
+
+```lean
+physicsFourierFlatCLM_surjective
+```
+
+is implemented in `Section43FourierLaplaceTransform.lean`.  The proof names
+the inverse scaling, Euclidean transport, and Mathlib Fourier-inversion steps
+explicitly, avoiding reliance on a fragile terminal `simp`.
+
 Now derive phase invariance of the chosen `Tflat`:
 
 ```lean
@@ -12460,6 +12513,16 @@ Proof transcript:
    `physicsFourierFlatCLM_diagonalTranslate_apply` in reverse.
 3. Rewrite both sides with `hTflat_bv`.
 4. Apply `bvt_W_flat_diagonalTranslate_eq`.
+
+Production status, 2026-04-15:
+
+```lean
+tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant
+```
+
+is implemented in `Section43WightmanDescent.lean` and exact-checks after a
+narrow rebuild of `Section43FourierLaplaceTransform` to refresh the local
+`.olean`.
 
 Finally use the standard distribution-theoretic support theorem for character
 invariant frequency distributions:

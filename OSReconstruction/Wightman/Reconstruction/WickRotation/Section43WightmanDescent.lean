@@ -1,5 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
-import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 
 noncomputable section
 
@@ -7,6 +7,68 @@ open scoped Topology FourierTransform
 open Set MeasureTheory
 
 namespace OSReconstruction
+
+theorem unflattenSchwartzNPoint_translate_section43DiagonalTranslationFlat
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (x : NPointDomain d N) :
+    unflattenSchwartzNPoint (d := d)
+        (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat) x =
+      (unflattenSchwartzNPoint (d := d) φflat) (fun i => x i + a) := by
+  rw [unflattenSchwartzNPoint_apply, SCV.translateSchwartz_apply,
+    unflattenSchwartzNPoint_apply]
+  congr 1
+
+theorem bvt_W_flat_diagonalTranslate_eq
+    (d : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    bvt_W OS lgc N
+        (unflattenSchwartzNPoint (d := d)
+          (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat)) =
+      bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) := by
+  let f : SchwartzNPoint d N := unflattenSchwartzNPoint (d := d) φflat
+  let g : SchwartzNPoint d N :=
+    unflattenSchwartzNPoint (d := d)
+      (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat)
+  have hfg : ∀ x : NPointDomain d N, g.toFun x = f.toFun (fun i => x i + a) := by
+    intro x
+    exact unflattenSchwartzNPoint_translate_section43DiagonalTranslationFlat
+      (d := d) (N := N) a φflat x
+  have h := bvt_translation_invariant (d := d) OS lgc N a f g hfg
+  simpa [f, g] using h.symm
+
+theorem tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant
+    (d : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_bv :
+      ∀ φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+        bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+          Tflat (physicsFourierFlatCLM φflat)) :
+    ∀ (a : Fin (d + 1) → ℝ)
+      (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+      Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K := by
+  intro a K
+  obtain ⟨φflat, hφflat⟩ := physicsFourierFlatCLM_surjective (N * (d + 1)) K
+  rw [← hφflat]
+  calc
+    Tflat (section43TotalMomentumPhaseCLM d N a (physicsFourierFlatCLM φflat))
+        = Tflat (physicsFourierFlatCLM
+            (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat)) := by
+          rw [← physicsFourierFlatCLM_diagonalTranslate_eq_phaseCLM]
+    _ = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat)) := by
+          rw [← hTflat_bv]
+    _ = bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) := by
+          exact bvt_W_flat_diagonalTranslate_eq (d := d) OS lgc a φflat
+    _ = Tflat (physicsFourierFlatCLM φflat) := by
+          rw [hTflat_bv]
 
 theorem bvt_W_eq_of_section43FrequencyProjection_eq
     (d : ℕ) [NeZero d]

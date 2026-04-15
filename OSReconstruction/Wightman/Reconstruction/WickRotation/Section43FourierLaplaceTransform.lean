@@ -611,10 +611,155 @@ theorem physicsFourierFlat_eqOn_dualCone_of_section43FrequencyProjection_eq
   simpa [section43FrequencyRepresentative, qξ,
     SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using hpoint
 
+theorem section43_physicsFourierFlatCLM_translateSchwartz_apply
+    {m : ℕ}
+    (a : Fin m → ℝ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (ξ : Fin m → ℝ) :
+    physicsFourierFlatCLM (SCV.translateSchwartz a ψ) ξ =
+      Complex.exp (-(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ))) *
+        physicsFourierFlatCLM ψ ξ := by
+  rw [← physicsFourierFlatCLM_integral, ← physicsFourierFlatCLM_integral]
+  let g : (Fin m → ℝ) → ℂ := fun x =>
+    Complex.exp (Complex.I * ∑ i, (((x i : ℂ) - (a i : ℂ)) * (ξ i : ℂ))) * ψ x
+  have hg_shift :
+      (fun x : Fin m → ℝ => g (x + a)) =
+        (fun x : Fin m → ℝ =>
+          Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ)) *
+            SCV.translateSchwartz a ψ x) := by
+    funext x
+    simp [g, SCV.translateSchwartz_apply]
+  calc
+    ∫ x : Fin m → ℝ,
+        Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ)) *
+          SCV.translateSchwartz a ψ x
+      = ∫ x : Fin m → ℝ, g (x + a) := by
+          simp [hg_shift]
+    _ = ∫ x : Fin m → ℝ, g x := by
+          simpa [g] using MeasureTheory.integral_add_right_eq_self g a
+    _ = ∫ x : Fin m → ℝ,
+          Complex.exp (-(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ))) *
+            (Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ)) * ψ x) := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with x
+          dsimp [g]
+          have hsum :
+              Complex.I * ∑ i, (((x i : ℂ) - (a i : ℂ)) * (ξ i : ℂ)) =
+                -(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ)) +
+                  Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ) := by
+            calc
+              Complex.I * ∑ i, (((x i : ℂ) - (a i : ℂ)) * (ξ i : ℂ))
+                  = ∑ i, Complex.I *
+                      ((((x i : ℂ) - (a i : ℂ)) * (ξ i : ℂ))) := by
+                      rw [Finset.mul_sum]
+              _ = ∑ i, (Complex.I * ((x i : ℂ) * (ξ i : ℂ)) -
+                    Complex.I * ((a i : ℂ) * (ξ i : ℂ))) := by
+                      refine Finset.sum_congr rfl ?_
+                      intro i _hi
+                      ring
+              _ = -(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ)) +
+                    Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ) := by
+                      rw [Finset.sum_sub_distrib, Finset.mul_sum, Finset.mul_sum]
+                      ring
+          rw [hsum, Complex.exp_add]
+          simp [mul_assoc]
+    _ = Complex.exp (-(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ))) *
+          ∫ x : Fin m → ℝ,
+            Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ)) * ψ x := by
+          simpa [mul_assoc] using
+            (MeasureTheory.integral_const_mul
+              (Complex.exp (-(Complex.I * ∑ i, (a i : ℂ) * (ξ i : ℂ))))
+              (fun x : Fin m → ℝ =>
+                Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξ i : ℂ)) * ψ x))
+
+theorem physicsFourierFlatCLM_surjective (m : ℕ) :
+    Function.Surjective
+      (physicsFourierFlatCLM :
+        SchwartzMap (Fin m → ℝ) ℂ → SchwartzMap (Fin m → ℝ) ℂ) := by
+  intro K
+  let a : ℝˣ := Units.mk0 (-(1 / (2 * Real.pi) : ℝ)) <| by
+    apply neg_ne_zero.mpr
+    exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
+  let scaleNeg : (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
+    ContinuousLinearEquiv.smulLeft a
+  let e : EuclideanSpace ℝ (Fin m) ≃L[ℝ] (Fin m → ℝ) :=
+    EuclideanSpace.equiv (Fin m) ℝ
+  let toEuc : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ]
+      SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+  let fromEuc : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ →L[ℂ]
+      SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm
+  let unscaleK : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg.symm K
+  let A : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ := toEuc unscaleK
+  let ψE : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ := FourierTransform.fourierInv A
+  let φ : SchwartzMap (Fin m → ℝ) ℂ := fromEuc ψE
+  have h_to_from : toEuc φ = ψE := by
+    ext y
+    simp [toEuc, fromEuc, φ, e]
+  have h_fourier : (SchwartzMap.fourierTransformCLM ℂ) (toEuc φ) = A := by
+    rw [h_to_from]
+    simp [ψE]
+  have h_from_to : fromEuc A = unscaleK := by
+    ext ξ
+    change K (scaleNeg.symm ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 ξ))) =
+      K (scaleNeg.symm ξ)
+    have hx : ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 ξ)) = ξ := by
+      ext i
+      simp [EuclideanSpace.equiv]
+    rw [hx]
+  have h_scale :
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) unscaleK = K := by
+    ext ξ
+    change K (scaleNeg.symm (scaleNeg ξ)) = K ξ
+    rw [ContinuousLinearEquiv.symm_apply_apply]
+  refine ⟨φ, ?_⟩
+  calc
+    physicsFourierFlatCLM φ
+        = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg)
+            (fromEuc ((SchwartzMap.fourierTransformCLM ℂ) (toEuc φ))) := by
+            rfl
+    _ = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) (fromEuc A) := by
+            rw [h_fourier]
+    _ = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) unscaleK := by
+            rw [h_from_to]
+    _ = K := h_scale
+
 def section43TotalMomentumFlat
     (d N : ℕ) [NeZero d]
     (ξ : Fin (N * (d + 1)) → ℝ) : Fin (d + 1) → ℝ :=
   fun μ => ∑ k : Fin N, ξ (finProdFinEquiv (k, μ))
+
+noncomputable def section43TotalMomentumComponentCLM
+    (d N : ℕ) [NeZero d]
+    (μ : Fin (d + 1)) :
+    (Fin (N * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  ∑ k : Fin N,
+    ContinuousLinearMap.proj (R := ℝ) (ι := Fin (N * (d + 1)))
+      (φ := fun _ => ℝ) (finProdFinEquiv (k, μ))
+
+@[simp] theorem section43TotalMomentumComponentCLM_apply
+    (d N : ℕ) [NeZero d]
+    (μ : Fin (d + 1))
+    (ξ : Fin (N * (d + 1)) → ℝ) :
+    section43TotalMomentumComponentCLM d N μ ξ =
+      section43TotalMomentumFlat d N ξ μ := by
+  simp [section43TotalMomentumComponentCLM, section43TotalMomentumFlat]
+
+noncomputable def section43TotalMomentumPairingCLM
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ) :
+    (Fin (N * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  ∑ μ : Fin (d + 1), a μ • section43TotalMomentumComponentCLM d N μ
+
+@[simp] theorem section43TotalMomentumPairingCLM_apply
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (ξ : Fin (N * (d + 1)) → ℝ) :
+    section43TotalMomentumPairingCLM d N a ξ =
+      ∑ μ : Fin (d + 1), a μ * section43TotalMomentumFlat d N ξ μ := by
+  simp [section43TotalMomentumPairingCLM]
 
 def section43TotalMomentumZeroFlat
     (d N : ℕ) [NeZero d] :
@@ -666,6 +811,114 @@ theorem section43DiagonalTranslationFlat_pair_eq_totalMomentum
     _ = ∑ μ : Fin (d + 1),
           a μ * section43TotalMomentumFlat d N ξ μ := by
           simp [section43TotalMomentumFlat, Finset.mul_sum]
+
+theorem section43DiagonalTranslationFlat_complex_pair_eq_totalMomentum
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (ξ : Fin (N * (d + 1)) → ℝ) :
+    (∑ i : Fin (N * (d + 1)),
+        (section43DiagonalTranslationFlat d N a i : ℂ) * (ξ i : ℂ))
+      =
+    ∑ μ : Fin (d + 1),
+      (a μ : ℂ) * (section43TotalMomentumFlat d N ξ μ : ℂ) := by
+  have h := congrArg (fun r : ℝ => (r : ℂ))
+    (section43DiagonalTranslationFlat_pair_eq_totalMomentum d N a ξ)
+  simpa using h
+
+theorem physicsFourierFlatCLM_diagonalTranslate_apply
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (ξ : Fin (N * (d + 1)) → ℝ) :
+    physicsFourierFlatCLM
+        (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat) ξ
+      =
+    Complex.exp
+        (-(Complex.I *
+          ∑ μ : Fin (d + 1),
+            (a μ : ℂ) * (section43TotalMomentumFlat d N ξ μ : ℂ))) *
+      physicsFourierFlatCLM φflat ξ := by
+  rw [section43_physicsFourierFlatCLM_translateSchwartz_apply]
+  rw [section43DiagonalTranslationFlat_complex_pair_eq_totalMomentum]
+
+theorem section43_realOscillatoryPhase_hasTemperateGrowth (lam : ℝ) :
+    (fun τ : ℝ =>
+      Complex.exp (-(Complex.I * (lam : ℂ) * (τ : ℂ)))).HasTemperateGrowth := by
+  let c : ℂ := -(Complex.I * (lam : ℂ))
+  suffices htemp : (fun τ : ℝ => Complex.exp (c * (τ : ℂ))).HasTemperateGrowth by
+    convert htemp using 1
+    ext τ
+    simp [c, mul_assoc]
+  refine ⟨?_, ?_⟩
+  · have hlin : ContDiff ℝ (⊤ : ℕ∞) (fun τ : ℝ => c * (τ : ℂ)) := by
+      simpa using (contDiff_const.mul Complex.ofRealCLM.contDiff)
+    exact Complex.contDiff_exp.comp hlin
+  · intro n
+    refine ⟨0, ‖c ^ n‖, fun τ => ?_⟩
+    rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv]
+    have hiter := congr_fun (SCV.iteratedDeriv_cexp_const_mul_real n c) τ
+    rw [hiter]
+    have hre : (c * (τ : ℂ)).re = 0 := by
+      simp [c, Complex.mul_re]
+    calc
+      ‖c ^ n * Complex.exp (c * (τ : ℂ))‖ = ‖c ^ n‖ := by
+        rw [norm_mul, Complex.norm_exp, hre, Real.exp_zero, mul_one]
+      _ ≤ ‖c ^ n‖ * (1 + ‖τ‖) ^ 0 := by simp
+
+theorem section43TotalMomentumPhase_hasTemperateGrowth
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ) :
+    (fun ξ : Fin (N * (d + 1)) → ℝ =>
+      Complex.exp
+        (-(Complex.I *
+          ∑ μ : Fin (d + 1),
+            (a μ : ℂ) * (section43TotalMomentumFlat d N ξ μ : ℂ)))).HasTemperateGrowth := by
+  let L : (Fin (N * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+    section43TotalMomentumPairingCLM d N a
+  have hL : Function.HasTemperateGrowth L := by
+    exact L.hasTemperateGrowth
+  have hphase := (section43_realOscillatoryPhase_hasTemperateGrowth 1).comp hL
+  convert hphase using 1
+  ext ξ
+  simp [L]
+
+noncomputable def section43TotalMomentumPhaseCLM
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ) :
+    SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ :=
+  SchwartzMap.smulLeftCLM ℂ
+    (fun ξ : Fin (N * (d + 1)) → ℝ =>
+      Complex.exp
+        (-(Complex.I *
+          ∑ μ : Fin (d + 1),
+            (a μ : ℂ) * (section43TotalMomentumFlat d N ξ μ : ℂ))))
+
+@[simp] theorem section43TotalMomentumPhaseCLM_apply
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (ξ : Fin (N * (d + 1)) → ℝ) :
+    section43TotalMomentumPhaseCLM d N a K ξ =
+      Complex.exp
+        (-(Complex.I *
+          ∑ μ : Fin (d + 1),
+            (a μ : ℂ) * (section43TotalMomentumFlat d N ξ μ : ℂ))) * K ξ := by
+  rw [section43TotalMomentumPhaseCLM]
+  exact SchwartzMap.smulLeftCLM_apply_apply
+    (section43TotalMomentumPhase_hasTemperateGrowth d N a) K ξ
+
+theorem physicsFourierFlatCLM_diagonalTranslate_eq_phaseCLM
+    (d N : ℕ) [NeZero d]
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    physicsFourierFlatCLM
+        (SCV.translateSchwartz (section43DiagonalTranslationFlat d N a) φflat)
+      =
+    section43TotalMomentumPhaseCLM d N a (physicsFourierFlatCLM φflat) := by
+  ext ξ
+  rw [physicsFourierFlatCLM_diagonalTranslate_apply]
+  rw [section43TotalMomentumPhaseCLM_apply]
 
 /-- Translate the right `m`-point tail by `-t` in the time coordinate only.
 
