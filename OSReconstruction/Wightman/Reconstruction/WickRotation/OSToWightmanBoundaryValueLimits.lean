@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesComparison
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
 import OSReconstruction.SCV.PaleyWienerSchwartz
 import OSReconstruction.SCV.VladimirovTillmann
 
@@ -148,6 +149,103 @@ theorem tendsto_bvt_W_conjTensorProduct_timeShift_nhdsWithin_zero
       (f.conjTensorProduct g)).comp hconj
   exact hW.mono_left nhdsWithin_le_nhds
 
+private theorem bvt_translation_invariant_local
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    IsTranslationInvariantWeak d (bvt_W OS lgc) := by
+  intro n a f g hfg
+  have hF_inv :
+      ∀ (a : SpacetimeDim d) (x : NPointDomain d n)
+        (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ), 0 < ε →
+        bvt_F OS lgc n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+          bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) := by
+    intro a x η ε _hε
+    let aNeg : Fin (d + 1) → ℂ := fun μ => -(a μ : ℂ)
+    have hz :
+        (fun j => (fun μ => ↑(x j μ) + ε * ↑(η j μ) * Complex.I) + aNeg) =
+          (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) := by
+      funext j μ
+      simp [aNeg, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+    calc
+      bvt_F OS lgc n (fun k μ => ↑(x k μ - a μ) + ε * ↑(η k μ) * Complex.I) =
+          bvt_F OS lgc n (fun j =>
+            (fun μ => ↑(x j μ) + ε * ↑(η j μ) * Complex.I) + aNeg) := by
+            rw [hz.symm]
+      _ = bvt_F OS lgc n (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) := by
+            simpa [aNeg] using
+              bvt_F_translationInvariant (d := d) OS lgc n
+                (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) aNeg
+  exact bv_translation_invariance_transfer (d := d) n
+    (bvt_W OS lgc n)
+    (bvt_F OS lgc n)
+    (bvt_boundary_values OS lgc n)
+    hF_inv a f g hfg
+
+private theorem unflattenSchwartzNPoint_translate_section43DiagonalTranslationFlat_local
+    (N : ℕ)
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
+    (x : NPointDomain d N) :
+    unflattenSchwartzNPoint (d := d)
+        (SCV.translateSchwartz (OSReconstruction.section43DiagonalTranslationFlat d N a) φflat) x =
+      (unflattenSchwartzNPoint (d := d) φflat) (fun i => x i + a) := by
+  rw [unflattenSchwartzNPoint_apply, SCV.translateSchwartz_apply,
+    unflattenSchwartzNPoint_apply]
+  congr 1
+
+private theorem bvt_W_flat_diagonalTranslate_eq_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (a : Fin (d + 1) → ℝ)
+    (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
+    bvt_W OS lgc N
+        (unflattenSchwartzNPoint (d := d)
+          (SCV.translateSchwartz
+            (OSReconstruction.section43DiagonalTranslationFlat d N a) φflat)) =
+      bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) := by
+  let f : SchwartzNPoint d N := unflattenSchwartzNPoint (d := d) φflat
+  let g : SchwartzNPoint d N :=
+    unflattenSchwartzNPoint (d := d)
+      (SCV.translateSchwartz (OSReconstruction.section43DiagonalTranslationFlat d N a) φflat)
+  have hfg : ∀ x : NPointDomain d N, g.toFun x = f.toFun (fun i => x i + a) := by
+    intro x
+    exact unflattenSchwartzNPoint_translate_section43DiagonalTranslationFlat_local
+      (d := d) (N := N) a φflat x
+  have h := bvt_translation_invariant_local (d := d) OS lgc N a f g hfg
+  simpa [f, g] using h.symm
+
+private theorem tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant_local
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_bv :
+      ∀ φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+        bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+          Tflat (physicsFourierFlatCLM φflat)) :
+    ∀ (a : Fin (d + 1) → ℝ)
+      (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+      Tflat (OSReconstruction.section43TotalMomentumPhaseCLM d N a K) = Tflat K := by
+  intro a K
+  obtain ⟨φflat, hφflat⟩ :=
+    OSReconstruction.physicsFourierFlatCLM_surjective (N * (d + 1)) K
+  rw [← hφflat]
+  calc
+    Tflat (OSReconstruction.section43TotalMomentumPhaseCLM d N a
+        (physicsFourierFlatCLM φflat))
+        = Tflat (physicsFourierFlatCLM
+            (SCV.translateSchwartz
+              (OSReconstruction.section43DiagonalTranslationFlat d N a) φflat)) := by
+          rw [← OSReconstruction.physicsFourierFlatCLM_diagonalTranslate_eq_phaseCLM]
+    _ = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (SCV.translateSchwartz
+                (OSReconstruction.section43DiagonalTranslationFlat d N a) φflat)) := by
+          rw [← hTflat_bv]
+    _ = bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) := by
+          exact bvt_W_flat_diagonalTranslate_eq_local (d := d) OS lgc a φflat
+    _ = Tflat (physicsFourierFlatCLM φflat) := by
+          rw [hTflat_bv]
+
 /-- Flattened dual-cone support package for the reconstructed Wightman
 boundary values. This discharges the multivariate spectral-support input from
 the merged `spectrum_condition` data once and for all on the honest current
@@ -221,6 +319,31 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
   refine ⟨Tflat, hTflat_supp, ?_⟩
   intro φ
   simpa [Wcl, unflattenSchwartzNPoint] using hTflat_repr φ
+
+/-- Flattened Section 4.3 spectral-region support package for the reconstructed
+Wightman boundary values.
+
+This upgrades the existing dual-cone witness by adding total-momentum-zero
+support from translation invariance of `bvt_W`, then combines the two supports
+using the OS-specific projection/extension theorem in `Section43SpectralSupport`.
+-/
+theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    ∃ (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      HasFourierSupportIn (OSReconstruction.section43WightmanSpectralRegion d N) Tflat ∧
+        ∀ (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+          bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+            Tflat (physicsFourierFlatCLM φflat) := by
+  obtain ⟨Tflat, hdual, hTflat_bv⟩ :=
+    exists_flattened_bvt_W_dualCone_distribution (d := d) OS lgc N
+  refine ⟨Tflat, ?_, hTflat_bv⟩
+  have hphase :=
+    tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant_local
+      (d := d) OS lgc Tflat hTflat_bv
+  have htotal :=
+    OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant d Tflat hphase
+  exact OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero d N hdual htotal
 
 /-- Flattened dual-cone support package together with the Fourier-Laplace
 representation of the interior Wightman holomorphic function.

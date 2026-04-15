@@ -13080,33 +13080,464 @@ pointwise on the intersection while `T φ = 1`.  Thus the old generic
 intersection statement would be unsound for the exact support interface used
 by production.
 
-The corrected proof obligation is an OS-specific smooth ideal decomposition
-for the actual Section 4.3 pair:
+The corrected proof obligation is not a two-sided smooth partition.  The OS
+geometry gives a more concrete projection/extension route.
+
+For `N = N' + 1`, use the total-momentum/head-tail equivalence already
+implemented as `section43TotalMomentumHeadTailCLE d N'`.  Its head block is
+the total momentum, and its tail block consists of particles `1, ..., N'`.
+Define the zero-total-momentum projection by setting the head block to zero
+and keeping this tail block fixed:
 
 ```lean
-theorem section43SpectralIdealDecomposition
+noncomputable def section43TotalMomentumZeroProjection
+    (d N' : ℕ) [NeZero d] :
+    (Fin ((N' + 1) * (d + 1)) → ℝ) →L[ℝ]
+      (Fin ((N' + 1) * (d + 1)) → ℝ)
+```
+
+with defining equation
+
+```lean
+section43TotalMomentumHeadTailCLE d N'
+    (section43TotalMomentumZeroProjection d N' ξ)
+  =
+zeroHeadBlockShift
+  (m := d + 1) (n := N' * (d + 1))
+  (splitLast (d + 1) (N' * (d + 1))
+    (section43TotalMomentumHeadTailCLE d N' ξ))
+```
+
+This projection is the concrete Section 4.3 substitute for a generic
+closed-set intersection theorem.  It has three required properties:
+
+```lean
+theorem section43TotalMomentumZeroProjection_mem_totalMomentumZero
+    (d N' : ℕ) [NeZero d]
+    (ξ : Fin ((N' + 1) * (d + 1)) → ℝ) :
+    section43TotalMomentumZeroProjection d N' ξ ∈
+      section43TotalMomentumZeroFlat d (N' + 1)
+
+theorem section43TotalMomentumZeroProjection_eq_of_mem_totalMomentumZero
+    (d N' : ℕ) [NeZero d]
+    {ξ : Fin ((N' + 1) * (d + 1)) → ℝ}
+    (hξ : ξ ∈ section43TotalMomentumZeroFlat d (N' + 1)) :
+    section43TotalMomentumZeroProjection d N' ξ = ξ
+
+theorem section43TotalMomentumZeroProjection_mem_dualCone
+    (d N' : ℕ) [NeZero d]
+    {ξ : Fin ((N' + 1) * (d + 1)) → ℝ}
+    (hξ :
+      ξ ∈ DualConeFlat
+        ((flattenCLEquivReal (N' + 1) (d + 1)) ''
+          ForwardConeAbs d (N' + 1))) :
+    section43TotalMomentumZeroProjection d N' ξ ∈
+      DualConeFlat
+        ((flattenCLEquivReal (N' + 1) (d + 1)) ''
+          ForwardConeAbs d (N' + 1))
+```
+
+Proof transcript for the projection lemmas:
+
+1. The first two lemmas are direct from
+   `splitFirst_section43TotalMomentumHeadTailCLE`,
+   `splitFirst_zeroHeadBlockShift_eq_zero`, and injectivity of the
+   continuous linear equivalence.  The head block is
+   `section43TotalMomentumFlat`, so zeroing the head is exactly the
+   total-momentum-zero condition.
+2. For dual-cone preservation, use the unscaled cumulative-tail coordinates
+   `section43RawCumulativeTailMomentumCLE`, not the spatially rescaled
+   `section43CumulativeTailMomentumCLE`.  Prove first:
+
+```lean
+theorem section43DiffCoord_pairing_eq_rawCumulativeTail
+    (d n : ℕ) [NeZero d]
+    (δ : NPointDomain d n)
+    (ξ : Fin (n * (d + 1)) → ℝ) :
+    (∑ i : Fin (n * (d + 1)),
+        flattenCLEquivReal n (d + 1)
+          ((section43DiffCoordRealCLE d n).symm δ) i * ξ i)
+      =
+    ∑ j : Fin n, ∑ μ : Fin (d + 1),
+      δ j μ * section43RawCumulativeTailMomentumCLE d n ξ j μ
+```
+
+   This is the general version of the already implemented time-axis pairing
+   computation.  The proof uses
+   `section43DiffCoordRealCLE_symm_apply`,
+   `section43RawCumulativeTailMomentumCLE_apply`, and a local public copy of
+   the finite-sum rearrangement currently used privately in
+   `Section43FourierLaplaceTransform.lean`:
+
+```lean
+theorem section43_fin_prefix_sum_eq_lower_sum_public
+    {n : ℕ} {A : Type*} [AddCommMonoid A]
+    (f : Fin n → A) (k : Fin n) :
+    (∑ l : Fin (k.val + 1), f ⟨l.val, by omega⟩) =
+      ∑ j : Fin n, if j.val ≤ k.val then f j else 0
+
+theorem section43_fin_prefix_mul_eq_sum_tail_public
+    {n : ℕ} (a b : Fin n → ℝ) :
+    (∑ k : Fin n, (∑ l : Fin (k.val + 1), a ⟨l.val, by omega⟩) * b k) =
+      ∑ j : Fin n, a j * ∑ k : Fin n, if j.val ≤ k.val then b k else 0
+```
+
+   These are not new mathematics; copy the existing private proofs verbatim
+   into `Section43SpectralSupport.lean` with public names so this support file
+   does not depend on private declarations.
+3. Show the projection zeroes only the first raw cumulative tail momentum:
+
+```lean
+theorem section43TotalMomentumZeroProjection_rawCumulative_zero
+    (d N' : ℕ) [NeZero d]
+    (ξ : Fin ((N' + 1) * (d + 1)) → ℝ) (μ : Fin (d + 1)) :
+    section43RawCumulativeTailMomentumCLE d (N' + 1)
+      (section43TotalMomentumZeroProjection d N' ξ)
+      (0 : Fin (N' + 1)) μ = 0
+
+theorem section43TotalMomentumZeroProjection_rawCumulative_succ
+    (d N' : ℕ) [NeZero d]
+    (ξ : Fin ((N' + 1) * (d + 1)) → ℝ)
+    (j : Fin N') (μ : Fin (d + 1)) :
+    section43RawCumulativeTailMomentumCLE d (N' + 1)
+      (section43TotalMomentumZeroProjection d N' ξ)
+      (j.succ) μ =
+    section43RawCumulativeTailMomentumCLE d (N' + 1) ξ (j.succ) μ
+```
+
+   Coordinate proof: in head-tail coordinates, the projection keeps particles
+   `1, ..., N'` fixed and replaces particle `0` by the negative tail sum, so
+   the total raw cumulative momentum is zero and every later cumulative tail
+   is unchanged.
+4. To prove dual-cone preservation, introduce arbitrary
+   `y ∈ ForwardConeAbs d (N' + 1)`, write
+   `δ := section43DiffCoordRealCLE d (N' + 1) y`, and use the pairing lemma.
+   The target pairing with the projected point is the sum over `j.succ` only,
+   because the `j=0` raw cumulative tail is zero.
+5. If that target sum were negative, choose the first-difference perturbation
+
+```lean
+def section43FirstDiffTimeAxisPerturbation
+    (d N' : ℕ) [NeZero d]
+    (δ : NPointDomain d (N' + 1)) (ε : ℝ) :
+    NPointDomain d (N' + 1) :=
+  fun k μ =>
+    if k = 0 then
+      if μ = 0 then ε else 0
+    else
+      δ k μ
+```
+
+   The needed cone-membership helpers are public versions of private lemmas
+   already used in `Section43FourierLaplaceTransform.lean`:
+
+```lean
+theorem section43_inOpenForwardCone_timeAxis_public
+    (d : ℕ) [NeZero d] {a : ℝ} (ha : 0 < a) :
+    InOpenForwardCone d
+      (fun μ : Fin (d + 1) => if μ = 0 then a else 0)
+
+theorem section43DiffCoordRealCLE_mem_openForwardCone_of_mem_forwardConeAbs
+    (d n : ℕ) [NeZero d]
+    {y : NPointDomain d n} (hy : y ∈ ForwardConeAbs d n) :
+    ∀ k : Fin n, InOpenForwardCone d (section43DiffCoordRealCLE d n y k)
+
+theorem section43DiffCoordRealCLE_symm_mem_forwardConeAbs_public
+    (d n : ℕ) [NeZero d]
+    {δ : NPointDomain d n}
+    (hδ : ∀ k : Fin n, InOpenForwardCone d (δ k)) :
+    (section43DiffCoordRealCLE d n).symm δ ∈ ForwardConeAbs d n
+
+theorem section43FirstDiffTimeAxisPerturbation_mem_forwardConeAbs
+    (d N' : ℕ) [NeZero d]
+    {δ : NPointDomain d (N' + 1)} {ε : ℝ}
+    (hε : 0 < ε)
+    (hδ_tail : ∀ j : Fin N',
+      InOpenForwardCone d (δ j.succ)) :
+    (section43DiffCoordRealCLE d (N' + 1)).symm
+      (section43FirstDiffTimeAxisPerturbation d N' δ ε)
+      ∈ ForwardConeAbs d (N' + 1)
+```
+
+   The last proof is by
+   `section43DiffCoordRealCLE_symm_mem_forwardConeAbs_public`; the `k = 0`
+   case uses `section43_inOpenForwardCone_timeAxis_public hε`, and the
+   successor cases use `hδ_tail`.
+
+   Applying the original dual-cone hypothesis to this perturbed point gives
+
+```lean
+0 ≤ ε * c + targetSum
+```
+
+   where `c` is the finite first-tail pairing.  The only real-analysis helper
+   needed for the contradiction is:
+
+```lean
+theorem exists_pos_mul_abs_lt_of_neg {c s : ℝ} (hs : s < 0) :
+    ∃ ε : ℝ, 0 < ε ∧ ε * |c| < -s
+```
+
+   Prove it with `ε := (-s) / (2 * (|c| + 1))`; positivity is immediate from
+   `hs`, and `nlinarith [abs_nonneg c]` closes the strict bound.  With
+   `s = targetSum`, the inequalities
+   `ε * c ≤ ε * |c|` and `ε * |c| < -targetSum` imply
+   `ε * c + targetSum < 0`, contradicting `0 ≤ ε * c + targetSum`.  Hence the
+   target pairing is nonnegative for every `y`, which is exactly membership of
+   the projection in the dual cone.
+
+Next build a Schwartz extension from the total-momentum-zero hyperplane that
+agrees with a given test on that hyperplane and vanishes on the dual cone
+whenever the original test vanishes on the spectral region:
+
+```lean
+theorem exists_section43TotalMomentumZeroExtension_vanishes_dualCone
     (d N : ℕ) [NeZero d]
     (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ)
     (hK :
       ∀ ξ, ξ ∈ section43WightmanSpectralRegion d N → K ξ = 0) :
-    ∃ KS KH : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
-      K = KS + KH ∧
+    ∃ KE : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+      (∀ ξ, ξ ∈ section43TotalMomentumZeroFlat d N → KE ξ = K ξ) ∧
       (∀ ξ, ξ ∈
-        DualConeFlat ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N) →
-        KS ξ = 0) ∧
-      (∀ ξ, ξ ∈ section43TotalMomentumZeroFlat d N → KH ξ = 0)
+        DualConeFlat ((flattenCLEquivReal N (d + 1)) ''
+          ForwardConeAbs d N) → KE ξ = 0)
 ```
 
-This theorem is the exact algebraic/sheaf content needed by the strong
-support interface.  It says that the Schwartz ideal of tests vanishing on the
-spectral region is the sum of the ideal of tests vanishing on the dual cone and
-the ideal of tests vanishing on the total-momentum-zero hyperplane, for this
-particular OS geometry.  It is not a wrapper: without this decomposition, the
-available hypotheses `hdual` and `htotal` do not imply the desired pointwise
-`EqOn` support theorem.
+Implementation-ready helper packet for this extension should live in a new
+small file, for example
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43SpectralSupport.lean`,
+importing `Section43TotalMomentumSupport`.  Do not reopen the large stable
+Schwartz files for these route-specific helpers.
 
-Once `section43SpectralIdealDecomposition` is proved, the combined support
-theorem is short and implementation-ready:
+First expose the linear zero-head insertion.  The existing
+`zeroHeadBlockShift` is the right pointwise map; the new CLM is only the
+linear packaging needed to define the projection without hiding `sorry`s in a
+definition:
+
+```lean
+noncomputable def zeroHeadBlockShiftCLM (m n : ℕ) :
+    (Fin n → ℝ) →L[ℝ] (Fin (m + n) → ℝ)
+
+@[simp] theorem zeroHeadBlockShiftCLM_apply (m n : ℕ)
+    (y : Fin n → ℝ) :
+    zeroHeadBlockShiftCLM m n y =
+      zeroHeadBlockShift (m := m) (n := n) y
+```
+
+Proof transcript: define `toFun := zeroHeadBlockShift`; prove `map_add'` and
+`map_smul'` by induction on `m`, using the recursive definition of
+`zeroHeadBlockShift`, `castFinCLE`, `Fin.cons`, and extensionality.  The
+`m = 0` case reduces by `castFinCLE (Nat.zero_add n)`.  The successor case
+reduces to the induction hypothesis after applying `castFinCLE
+(Nat.succ_add m n)` to both sides.
+
+Then define the projection by CLM composition, not by a raw lambda:
+
+```lean
+noncomputable def section43TotalMomentumZeroProjection
+    (d N' : ℕ) [NeZero d] :
+    (Fin ((N' + 1) * (d + 1)) → ℝ) →L[ℝ]
+      (Fin ((N' + 1) * (d + 1)) → ℝ) :=
+  let e := section43TotalMomentumHeadTailCLE d N'
+  e.symm.toContinuousLinearMap.comp
+    ((zeroHeadBlockShiftCLM (d + 1) (N' * (d + 1))).comp
+      ((splitLastCLM (d + 1) (N' * (d + 1))).comp
+        e.toContinuousLinearMap))
+
+@[simp] theorem section43TotalMomentumZeroProjection_headTail
+    (d N' : ℕ) [NeZero d]
+    (ξ : Fin ((N' + 1) * (d + 1)) → ℝ) :
+    section43TotalMomentumHeadTailCLE d N'
+        (section43TotalMomentumZeroProjection d N' ξ)
+      =
+    zeroHeadBlockShift
+      (m := d + 1) (n := N' * (d + 1))
+      (splitLast (d + 1) (N' * (d + 1))
+        (section43TotalMomentumHeadTailCLE d N' ξ))
+```
+
+The proof of the head-tail equation is just `simp` with
+`zeroHeadBlockShiftCLM_apply`, `splitLastCLM_apply`, and
+`ContinuousLinearEquiv.apply_symm_apply`.
+
+The extension itself needs two generic head-block Schwartz helpers.  Avoid the
+tempting but insufficient shortcut "`G ∘ splitLast` is Schwartz": it is
+constant in the head directions and has no head decay.  The correct
+implementation is recursive and uses the already compiled
+`unitBumpSchwartz.prependField`, which builds in the missing head decay.
+
+```lean
+noncomputable def zeroHeadSectionCLM :
+    ∀ p q : ℕ,
+      SchwartzMap (Fin (p + q) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin q → ℝ) ℂ
+  | 0, q =>
+      reindexSchwartzFin (Nat.zero_add q)
+  | p + 1, q =>
+      (zeroHeadSectionCLM p q).comp
+        ((headSectionCLM (p + q)).comp
+          (reindexSchwartzFin (Nat.succ_add p q)))
+
+@[simp] theorem zeroHeadSectionCLM_apply
+    (p q : ℕ) (F : SchwartzMap (Fin (p + q) → ℝ) ℂ)
+    (y : Fin q → ℝ) :
+    zeroHeadSectionCLM p q F y =
+      F (zeroHeadBlockShift (m := p) (n := q) y)
+```
+
+Proof transcript: induction on `p`.  The base case uses
+`reindexSchwartzFin_apply` and the definition of `zeroHeadBlockShift` at
+`m = 0`.  The successor case uses `reindexSchwartzFin_apply`,
+`headSectionCLM_apply`, the recursive equation for `zeroHeadBlockShift`, and
+the induction hypothesis.
+
+```lean
+noncomputable def headBlockBumpExtension :
+    ∀ p q : ℕ,
+      SchwartzMap (Fin q → ℝ) ℂ →
+        SchwartzMap (Fin (p + q) → ℝ) ℂ
+  | 0, q, G =>
+      reindexSchwartzFin (Nat.zero_add q).symm G
+  | p + 1, q, G =>
+      reindexSchwartzFin (Nat.succ_add p q).symm
+        (unitBumpSchwartz.prependField
+          (headBlockBumpExtension p q G))
+
+@[simp] theorem headBlockBumpExtension_zeroHeadBlockShift
+    (p q : ℕ) (G : SchwartzMap (Fin q → ℝ) ℂ)
+    (y : Fin q → ℝ) :
+    headBlockBumpExtension p q G
+      (zeroHeadBlockShift (m := p) (n := q) y) =
+      G y
+
+theorem headBlockBumpExtension_eq_zero_of_tail_zero
+    (p q : ℕ) (G : SchwartzMap (Fin q → ℝ) ℂ)
+    (x : Fin (p + q) → ℝ)
+    (hG : G (splitLast p q x) = 0) :
+    headBlockBumpExtension p q G x = 0
+```
+
+Proof transcript for `headBlockBumpExtension_zeroHeadBlockShift`: induction on
+`p`; the base case is `simp [headBlockBumpExtension, zeroHeadBlockShift]`; the
+successor case rewrites the recursive `zeroHeadBlockShift` to
+`Fin.cons 0 (zeroHeadBlockShift ...)`, unfolds `prependField`, uses
+`unitBumpSchwartz_zero`, and applies the induction hypothesis.
+
+Proof transcript for `headBlockBumpExtension_eq_zero_of_tail_zero`: induction
+on `p`.  The base case follows from `splitLast 0 q` and
+`reindexSchwartzFin_apply`.  In the successor case, set
+`x' := castFinCLE (Nat.succ_add p q) x`; then
+
+```lean
+headBlockBumpExtension (p + 1) q G x =
+  unitBumpSchwartz (x' 0) *
+    headBlockBumpExtension p q G (fun i : Fin (p + q) => x' i.succ)
+```
+
+by `reindexSchwartzFin_apply` and `SchwartzMap.prependField_apply`.  The tail
+of `fun i => x' i.succ` is `splitLast (p + 1) q x`, so the induction
+hypothesis kills the second factor.  If Lean needs it, add this local helper
+beside the proof:
+
+```lean
+theorem splitLast_castFinCLE_succ_add_tail
+    {p q : ℕ} (x : Fin ((p + 1) + q) → ℝ) :
+    splitLast p q
+        (fun i : Fin (p + q) =>
+          (castFinCLE (Nat.succ_add p q) x) i.succ)
+      =
+    splitLast (p + 1) q x
+```
+
+This helper is a one-line extensionality proof after unfolding `splitLast`,
+`castFinCLE`, and `finCongr`; the index equality is `Fin.ext` plus `omega`.
+
+Proof transcript for the extension theorem:
+
+1. For `N = 0`, `section43TotalMomentumZeroFlat d 0 = Set.univ`; take
+   `KE = K`.  The vanishing on the dual cone follows from `hK`, because the
+   spectral region is the dual cone intersected with `Set.univ`.
+2. For `N = N' + 1`, pull `K` to head-tail coordinates with
+   `section43TotalMomentumHeadTailCLE d N'`.  Let
+
+```lean
+F := SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (section43TotalMomentumHeadTailCLE d N').symm K
+```
+
+3. Take the zero-head section using the helper:
+
+```lean
+G := zeroHeadSectionCLM (d + 1) (N' * (d + 1)) F
+```
+
+4. Extend `G` back to the full head-tail space with the recursive bump
+   extension:
+
+```lean
+B := headBlockBumpExtension (d + 1) (N' * (d + 1)) G
+```
+
+   The only pointwise facts needed downstream are:
+
+```lean
+B (zeroHeadBlockShift y) = G y
+G (splitLast ... x) = 0 → B x = 0
+```
+
+5. Push `B` back through `section43TotalMomentumHeadTailCLE d N'` to obtain
+   `KE`:
+
+```lean
+KE := SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+  (section43TotalMomentumHeadTailCLE d N') B
+```
+
+6. If `ξ ∈ section43TotalMomentumZeroFlat`, then
+   `splitFirst (d + 1) (N' * (d + 1))
+     (section43TotalMomentumHeadTailCLE d N' ξ) = 0`.  Use the generic
+   reconstruction helper
+
+```lean
+theorem eq_zeroHeadBlockShift_of_splitFirst_eq_zero
+    {p q : ℕ} {x : Fin (p + q) → ℝ}
+    (hx : splitFirst p q x = 0) :
+    x = zeroHeadBlockShift (m := p) (n := q) (splitLast p q x)
+```
+
+   proved by extensionality over `Fin.addCases`, `splitFirst`, `splitLast`,
+   and `zeroHeadBlockShift`.  Then
+   `headBlockBumpExtension_zeroHeadBlockShift` and
+   `zeroHeadSectionCLM_apply` give
+   `KE ξ = F (section43TotalMomentumHeadTailCLE d N' ξ) = K ξ`.
+7. If `ξ` lies in the dual cone, let
+
+```lean
+η := section43TotalMomentumZeroProjection d N' ξ
+```
+
+   Then `η` is in the total-momentum-zero set and, by the projection lemma,
+   still in the dual cone.  Thus `η ∈ section43WightmanSpectralRegion`, so
+   `K η = 0` by `hK`.  The projection head-tail equation gives
+
+```lean
+zeroHeadBlockShift
+  (m := d + 1) (n := N' * (d + 1))
+  (splitLast (d + 1) (N' * (d + 1))
+    (section43TotalMomentumHeadTailCLE d N' ξ))
+=
+section43TotalMomentumHeadTailCLE d N' η
+```
+
+   after symmetry.  Therefore
+   `G (splitLast ... (section43TotalMomentumHeadTailCLE d N' ξ)) = K η = 0`,
+   and `headBlockBumpExtension_eq_zero_of_tail_zero` gives `KE ξ = 0`.
+
+This extension theorem is the exact support-combination content needed by the
+strong `HasFourierSupportIn` interface.
+
+Once the extension theorem is proved, the combined support theorem is short and
+implementation-ready:
 
 ```lean
 theorem hasFourierSupportIn_wightmanSpectralRegion_of_dualCone_and_totalMomentumZero
@@ -13135,56 +13566,18 @@ have hKzero :
   exact hKsupp ξ (Function.mem_support.mpr hne) hξ
 ```
 
-3. Apply `section43SpectralIdealDecomposition d N K hKzero` and obtain
-   `K = KS + KH`, with `KS` vanishing on the dual cone and `KH` vanishing on
-   the total-momentum-zero hyperplane.
-4. Apply `hdual KS` and `htotal KH`.  Their support-disjointness obligations
-   are discharged exactly as in step 2, using the pointwise vanishing
-   conclusions from the decomposition.
-5. Rewrite `Tflat K` by `K = KS + KH`, use `map_add`, and close with the two
-   zero results.
+3. Apply
+   `exists_section43TotalMomentumZeroExtension_vanishes_dualCone d N K hKzero`
+   and obtain `KE`.
+4. Since `K - KE` vanishes pointwise on the total-momentum-zero set, apply
+   `htotal` to `K - KE` and use linearity to get `Tflat K = Tflat KE`.
+5. Since `KE` vanishes pointwise on the dual cone, apply `hdual KE` to get
+   `Tflat KE = 0`.
+6. Conclude `Tflat K = 0`.
 
-The remaining proof-doc work is therefore not `hasFourierSupportIn_inter`; it
-is the decomposition theorem `section43SpectralIdealDecomposition`.
-
-Implementation blueprint for `section43SpectralIdealDecomposition`:
-
-1. First move to the cumulative-tail coordinates already used by
-   `section43FrequencyProjection`.  The required geometry is not an arbitrary
-   pair of closed sets; it is the pair consisting of the OS I positive-energy
-   cone and the total-momentum linear constraint.
-2. In those coordinates, prove the exact set-theoretic description of
-   `section43WightmanSpectralRegion`.  This must include the total-momentum
-   equation, not just the dual-cone implication
-   `section43CumulativeTailMomentumCLE_mem_positiveEnergy_of_mem_dualCone`.
-3. Prove the finite-dimensional smooth ideal decomposition for the resulting
-   normal-crossing model:
-
-```lean
-theorem smoothIdealDecomposition_positiveOrthant_totalMomentum
-    {a b : ℕ}
-    (F : SchwartzMap ((Fin a → ℝ) × (Fin b → ℝ)) ℂ)
-    (hF :
-      ∀ x, x ∈ positiveOrthantModel a b ∩ totalMomentumModel a b →
-        F x = 0) :
-    ∃ FS FH : SchwartzMap ((Fin a → ℝ) × (Fin b → ℝ)) ℂ,
-      F = FS + FH ∧
-      (∀ x, x ∈ positiveOrthantModel a b → FS x = 0) ∧
-      (∀ x, x ∈ totalMomentumModel a b → FH x = 0)
-```
-
-   This is the hard new mathematical item.  It is an ideal-sum theorem, not a
-   partition-of-compact-support theorem.  The proof must use the exact
-   normal-crossing geometry of the OS positive-energy inequalities and the
-   total-momentum linear equations.  A generic compact `tsupport` partition is
-   not sufficient, because `Function.support K` may be disjoint from
-   `S ∩ H` while `tsupport K` accumulates on `S ∩ H`.
-4. Transport this model decomposition back through the Section 4.3 coordinate
-   equivalences.  Compact support is not needed in the final statement; the
-   output pieces are Schwartz because the model theorem is stated directly on
-   Schwartz maps.
-5. Only after this theorem is implemented should production expose
-   `hasFourierSupportIn_wightmanSpectralRegion_of_dualCone_and_totalMomentumZero`.
+The remaining proof-doc work is therefore focused and local: implement the
+zero-total-momentum projection, prove it preserves the dual cone, and build
+the Schwartz extension from the zero-head section.
 
 The OS-route helper is then:
 
@@ -13201,10 +13594,24 @@ theorem hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero
 ```
 
 This name may be kept for downstream compatibility, but its proof must go
-through `section43SpectralIdealDecomposition`, not through the false generic
-closed-set intersection lemma.
+through
+`exists_section43TotalMomentumZeroExtension_vanishes_dualCone`, not through
+the false generic closed-set intersection lemma.
 
-Only after this OS-specific decomposition/support helper exists does
+Production status, 2026-04-15: the projection/extension helper packet is
+implemented in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43SpectralSupport.lean`
+and exact-checked.  The generic phase-invariance-to-total-momentum support
+lemmas now live in that support module:
+
+```lean
+tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
+hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+hasFourierSupportIn_wightmanSpectralRegion_of_dualCone_and_totalMomentumZero
+hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero
+```
+
+Only after this OS-specific projection/extension helper exists does
 `bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion`
 become a direct implementation:
 
@@ -13215,6 +13622,25 @@ become a direct implementation:
    `hasFourierSupportIn_totalMomentumZero_of_phase_invariant`.
 4. Combine `hdual` and `htotal` with
    `hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero`.
+
+Production status, 2026-04-15: this stronger flattened Wightman support
+provider is implemented in
+`OSToWightmanBoundaryValueLimits.lean` as
+
+```lean
+bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion
+```
+
+It obtains the old private dual-cone witness, derives total-momentum-zero
+support from local `bvt_W` translation invariance, and combines the two
+supports using the Section-4.3 projection/extension theorem.  Fresh checks:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
+```
+
+both terminate with exit code `0`.
 
 Define the two frequency maps needed by the product expansion:
 
@@ -13453,10 +13879,13 @@ Updated implementation order for the left-factor/spectral-support packet:
    `bvt_translation_invariant` bridge, then prove
    `tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant` in the
    file that has both `hTflat_bv` and the Fourier translation theorem.
-5. In `SCV/FourierSupportCone.lean` or a small companion imported there,
-   prove `hasFourierSupportIn_totalMomentumZero_of_phase_invariant`,
-   `hasFourierSupportIn_inter_of_closed`, and the OS-specialized
-   `hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero`.
+5. In the new Wick-rotation companion
+   `Section43SpectralSupport.lean`, prove the OS-specific support-combination
+   packet: `zeroHeadBlockShiftCLM`, `zeroHeadSectionCLM`,
+   `headBlockBumpExtension`, `section43TotalMomentumZeroProjection`, dual-cone
+   preservation for the projection, the zero-head extension theorem, and
+   `hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero`.  Do not
+   resurrect the false generic `hasFourierSupportIn_inter_of_closed` route.
 6. Strengthen the existing
    `exists_flattened_bvt_W_dualCone_distribution` provider to
    `bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion`.
@@ -13804,6 +14233,51 @@ around the already implemented positive-energy block theorem plus
 `section43CumulativeTailMomentum_mem_positiveEnergy_of_mem_dualCone`; it is
 allowed because it packages the exact `section43WightmanSpectralRegion`
 surface consumed by S2.
+
+Production status, 2026-04-15: the first lightweight factorization coordinate
+packet is implemented in the new file
+`Section43SpectralFactorization.lean` and exact-checks:
+
+```lean
+section43SplitLeftFlat
+section43SplitRightFlat
+section43NegRevFlat
+section43LeftBorchersBlock
+section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
+section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
+```
+
+The inverse cumulative-tail coordinate lemmas are **not** implementation-ready
+as one-line `simp` proofs.  The next proof-doc gap is the finite-sum reindex
+packet needed for:
+
+```lean
+section43CumulativeTailMomentumCLE_splitRightFlat
+section43CumulativeTailMomentumCLE_negRevFlat_splitLeft_of_totalMomentum
+section43SplitRightFlat_eq_cumulativeTail_rightTail
+section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+```
+
+The right helper reduces componentwise to the reindex identity
+
+```text
+∑ x : Fin r, if j ≤ x then ξ_{n+x,μ} else 0
+=
+∑ y : Fin (n+r), if n+j ≤ y then ξ_{y,μ} else 0.
+```
+
+The left helper reduces componentwise to
+
+```text
+∑ x : Fin n, if j ≤ x then -ξ_{n-1-x,μ} else 0
+=
+∑ y : Fin (n+r), if n ≤ y+j then ξ_{y,μ} else 0,
+```
+
+using total momentum zero to replace the missing prefix by the negative tail.
+The Lean-ready next documentation task is to state and prove these two finite
+`Fin` sum reindex lemmas explicitly, preferably in
+`Section43SpectralFactorization.lean` before exposing the inverse CLE theorems.
 
 #### Packet S3: derive representative normal forms from the transform hypotheses
 

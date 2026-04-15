@@ -1,5 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceTransform
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43TotalMomentumSupport
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 import OSReconstruction.Wightman.Reconstruction.SchwartzDensity
 
@@ -72,131 +72,25 @@ theorem tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant
     _ = Tflat (physicsFourierFlatCLM φflat) := by
           rw [hTflat_bv]
 
-theorem tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant
-    (d : ℕ) [NeZero d] {N : ℕ}
+theorem hasFourierSupportIn_wightmanSpectralRegion_of_bvt_W_translationInvariant
+    (d : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
-    (hphase :
-      ∀ (a : Fin (d + 1) → ℝ)
-        (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
-        Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K)
-    (μ : Fin (d + 1))
-    (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) :
-    Tflat (section43TotalMomentumCoordMultiplierCLM d N μ K) = 0 := by
-  obtain ⟨φflat, hφflat⟩ := physicsFourierFlatCLM_surjective (N * (d + 1)) K
-  let v : Fin (N * (d + 1)) → ℝ :=
-    section43DiagonalTranslationFlat d N (section43TotalMomentumBasis d μ)
-  let L : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
-    Tflat.comp physicsFourierFlatCLM
-  have hline : L (∂_{v} φflat) = 0 := by
-    have hquot :
-        Filter.Tendsto
-          (fun t : ℝ =>
-            L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat)))
-          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 (L (∂_{v} φflat))) :=
-      (L.continuous.tendsto (∂_{v} φflat)).comp
-        (tendsto_diffQuotient_translateSchwartz_zero φflat v)
-    have hzero :
-        Filter.Tendsto (fun _ : ℝ => (0 : ℂ))
-          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 0) :=
-      tendsto_const_nhds
-    have heq :
-        (fun t : ℝ =>
-          L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat))) =
-          fun _ => (0 : ℂ) := by
-      funext t
-      have htrans : L (SCV.translateSchwartz (t • v) φflat) = L φflat := by
-        change
-          Tflat (physicsFourierFlatCLM (SCV.translateSchwartz (t • v) φflat)) =
-            Tflat (physicsFourierFlatCLM φflat)
-        rw [show t • v =
-            t • section43DiagonalTranslationFlat d N
-              (section43TotalMomentumBasis d μ) by rfl]
-        rw [physicsFourierFlatCLM_diagonalBasisTranslate_eq_basisPhaseCLM]
-        simpa [section43TotalMomentumBasisPhaseCLM] using
-          hphase (t • section43TotalMomentumBasis d μ)
-            (physicsFourierFlatCLM φflat)
-      let X : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ :=
-        SCV.translateSchwartz (t • v) φflat - φflat
-      have hreal_smul :
-          t⁻¹ • X = ((t⁻¹ : ℂ) • X) := by
-        ext ξ
-        change t⁻¹ • X ξ = ((t⁻¹ : ℂ) • X ξ)
-        rw [Complex.real_smul]
-        rw [smul_eq_mul]
-        rw [Complex.ofReal_inv]
-      change L (t⁻¹ • X) = 0
-      rw [hreal_smul]
-      rw [L.map_smul, map_sub, sub_eq_zero.mpr htrans, smul_zero]
-    have hzero' :
-        Filter.Tendsto
-          (fun t : ℝ =>
-            L (t⁻¹ • (SCV.translateSchwartz (t • v) φflat - φflat)))
-          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 0) := by
-      simpa only [heq] using hzero
-    exact tendsto_nhds_unique hquot hzero'
-  have hderiv :=
-    physicsFourierFlatCLM_lineDeriv_diagonalTranslation_eq_coordMultiplier
-      (d := d) (N := N) (μ := μ) (φflat := φflat)
-  have hcoord_neg :
-      Tflat ((-Complex.I) • section43TotalMomentumCoordMultiplierCLM d N μ K) = 0 := by
-    rw [← hφflat]
-    rw [← hderiv]
-    simpa [L] using hline
-  rw [Tflat.map_smul] at hcoord_neg
-  exact (smul_eq_zero.mp hcoord_neg).resolve_left (by simp)
-
-theorem hasFourierSupportIn_totalMomentumZero_of_phase_invariant
-    (d : ℕ) [NeZero d] {N : ℕ}
-    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
-    (hphase :
-      ∀ (a : Fin (d + 1) → ℝ)
-        (K : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
-        Tflat (section43TotalMomentumPhaseCLM d N a K) = Tflat K) :
-    HasFourierSupportIn (section43TotalMomentumZeroFlat d N) Tflat := by
-  intro φ hφ
-  have hvanish_compact : ∀ n : ℕ, Tflat (bumpTruncationRadius φ n) = 0 := by
-    intro n
-    have hcompact : HasCompactSupport ((bumpTruncationRadius φ n :
-        SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ) : (Fin (N * (d + 1)) → ℝ) → ℂ) := by
-      exact hasCompactSupport_cutoff_mul_radius
-        (bumpTruncationRadiusValue n) (bumpTruncationRadiusValue_pos n) φ
-    have hzero : ∀ ξ, section43TotalMomentumFlat d N ξ = 0 →
-        bumpTruncationRadius φ n ξ = 0 := by
-      intro ξ hξ
-      have hφzero : φ ξ = 0 := by
-        by_contra hne
-        exact hφ ξ (Function.mem_support.mpr hne) hξ
-      let ψ : (Fin (N * (d + 1)) → ℝ) → ℂ :=
-        unitBallBumpSchwartzPiRadius (N * (d + 1))
-          (bumpTruncationRadiusValue n)
-          (bumpTruncationRadiusValue_pos n)
-      have hψtemp : ψ.HasTemperateGrowth := by
-        simpa [ψ] using (unitBallBumpSchwartzPiRadius (N * (d + 1))
-          (bumpTruncationRadiusValue n)
-          (bumpTruncationRadiusValue_pos n)).hasTemperateGrowth
-      rw [bumpTruncationRadius]
-      rw [SchwartzMap.smulLeftCLM_apply_apply hψtemp]
-      simp [hφzero, ψ]
-    obtain ⟨H, hH⟩ :=
-      exists_eq_sum_totalMomentum_smul_of_vanishes_totalMomentumZero_of_hasCompactSupport
-        d N (bumpTruncationRadius φ n) hcompact hzero
-    rw [hH]
-    rw [map_sum]
-    apply Finset.sum_eq_zero
-    intro μ _hμ
-    exact tflat_totalMomentumCoordMultiplier_eq_zero_of_phaseInvariant d Tflat hphase μ (H μ)
-  have htend : Filter.Tendsto (fun n : ℕ => Tflat (bumpTruncationRadius φ n))
-      Filter.atTop (𝓝 (Tflat φ)) :=
-    (Tflat.continuous.tendsto φ).comp (SchwartzMap.tendsto_bump_truncation_nhds φ)
-  have hzero_tend : Filter.Tendsto (fun _ : ℕ => (0 : ℂ)) Filter.atTop (𝓝 0) :=
-    tendsto_const_nhds
-  have heq : (fun n : ℕ => Tflat (bumpTruncationRadius φ n)) = fun _ : ℕ => (0 : ℂ) := by
-    funext n
-    exact hvanish_compact n
-  have hzero_tend' : Filter.Tendsto (fun n : ℕ => Tflat (bumpTruncationRadius φ n))
-      Filter.atTop (𝓝 0) := by
-    simp [heq, hzero_tend]
-  exact tendsto_nhds_unique htend hzero_tend'
+    (hdual :
+      HasFourierSupportInDualCone
+        ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N) Tflat)
+    (hTflat_bv :
+      ∀ φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ,
+        bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+          Tflat (physicsFourierFlatCLM φflat)) :
+    HasFourierSupportIn (section43WightmanSpectralRegion d N) Tflat := by
+  have hphase :=
+    tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant
+      (d := d) OS lgc Tflat hTflat_bv
+  have htotal :=
+    hasFourierSupportIn_totalMomentumZero_of_phase_invariant d Tflat hphase
+  exact hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero d N hdual htotal
 
 theorem bvt_W_eq_of_section43FrequencyProjection_eq
     (d : ℕ) [NeZero d]
