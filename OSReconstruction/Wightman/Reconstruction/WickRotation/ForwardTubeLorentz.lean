@@ -6,6 +6,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction
 import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+import OSReconstruction.GeneralResults.SinusoidSeparation
 import OSReconstruction.SCV.VladimirovTillmann
 
 /-!
@@ -1192,7 +1193,14 @@ theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n |
         (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0 := by
-  sorry
+  apply MeasureTheory.measure_mono_null
+    (t := {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i = x j})
+  · -- Show complement ⊆ coincident set
+    intro x hx
+    simp only [Set.mem_setOf_eq] at hx ⊢
+    sorry  -- non-coincident ⟹ in PET (uses exists_angle_all_pos_and_distinct + boost)
+  · -- Show coincident set has measure zero
+    sorry  -- polynomial zero set argument via MvPolynomial.volume_zeroSet_eq_zero
 
 /-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
 
