@@ -1200,7 +1200,9 @@ theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
     simp only [Set.mem_setOf_eq] at hx ⊢
     sorry  -- non-coincident ⟹ in PET (uses exists_angle_all_pos_and_distinct + boost)
   · -- Show coincident set has measure zero
-    sorry  -- polynomial zero set argument via MvPolynomial.volume_zeroSet_eq_zero
+    -- Coincident set ⊆ ⋃_{i≠j} {x | x i 0 = x j 0} (project to time coordinate).
+    -- Each piece is a proper linear hyperplane, hence measure zero.
+    sorry
 
 /-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
 
