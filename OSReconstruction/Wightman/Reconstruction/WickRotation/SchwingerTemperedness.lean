@@ -1169,8 +1169,9 @@ theorem wick_rotated_kernel_mul_zeroDiagonal_integrable {d n : ℕ} [NeZero d]
       sorry -- TRUE: F_ext_translation_invariant_translated
     -- Permutation invariance: F_ext(wick(xs)) = F_ext(wick(xs ∘ π))
     have hperm : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs k)) =
-        (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) := by
-      sorry -- TRUE: F_ext_permutation_invariant on PET (xs has positive times → in PET)
+        (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) :=
+      ((W_analytic_BHW Wfn n).property.2.2.2 π
+        (fun k => wickRotatePoint (xs k)) hxs_pet).symm
     -- Step 5: BHW agreement on ForwardTube — F_ext = W_analytic
     have hagree : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) =
         (Wfn.spectrum_condition n).choose (fun k => wickRotatePoint (xs (π k))) :=
@@ -2000,8 +2001,9 @@ theorem constructedSchwinger_tempered_zeroDiagonal (Wfn : WightmanFunctions d) (
       have htransl : K x = (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs k)) := by
         sorry -- TRUE: F_ext_translation_invariant_translated
       have hperm : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs k)) =
-          (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) := by
-        sorry -- TRUE: xs has positive times → in PET → permutation invariance
+          (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) :=
+        ((W_analytic_BHW Wfn n).property.2.2.2 π
+          (fun k => wickRotatePoint (xs k)) hxs_pet).symm
       have hagree : (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (xs (π k))) =
           (Wfn.spectrum_condition n).choose (fun k => wickRotatePoint (xs (π k))) :=
         (W_analytic_BHW Wfn n).property.2.1 _ hfwd

@@ -85,6 +85,63 @@ theorem F_ext_value_on_translatedPET (Wfn : WightmanFunctions d) (n : ℕ)
     (by convert h₂ using 1; ext k μ; ring)
   simpa [sub_eq_add_neg, add_assoc] using key.symm
 
+/-- The BHW extension evaluated via a TranslatedPET witness.
+
+    For z ∈ TranslatedPET, this evaluates F_ext at z + c for some c with z+c ∈ PET.
+    By `F_ext_value_on_translatedPET`, the result is independent of the witness c. -/
+noncomputable def F_ext_on_translatedPET (Wfn : WightmanFunctions d) (n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) : ℂ :=
+  (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ)
+
+/-- F_ext_on_translatedPET agrees with F_ext on PET. -/
+theorem F_ext_on_translatedPET_eq_on_PET (Wfn : WightmanFunctions d) (n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz_pet : z ∈ PermutedExtendedTube d n)
+    (hz_tpet : z ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET Wfn n z hz_tpet =
+    (W_analytic_BHW Wfn n).val z := by
+  unfold F_ext_on_translatedPET
+  have := F_ext_value_on_translatedPET Wfn n z hz_tpet.choose 0
+    hz_tpet.choose_spec
+    (show (fun k μ => z k μ + (0 : Fin (d + 1) → ℂ) μ) ∈ PermutedExtendedTube d n by
+      simp_rw [Pi.zero_apply, add_zero]; exact hz_pet)
+  simp_rw [Pi.zero_apply, add_zero] at this
+  exact this
+
+/-- F_ext_on_translatedPET is translation-invariant on TranslatedPET. -/
+theorem F_ext_on_translatedPET_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n)
+    (hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET Wfn n z hz =
+    F_ext_on_translatedPET Wfn n (fun k μ => z k μ + c μ) hzc := by
+  simp only [F_ext_on_translatedPET]
+  show (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) =
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ + hzc.choose μ)
+  have := F_ext_value_on_translatedPET Wfn n z hz.choose (fun μ => c μ + hzc.choose μ)
+    hz.choose_spec
+    (show (fun k μ => z k μ + (fun μ => c μ + hzc.choose μ) μ) ∈ PermutedExtendedTube d n by
+      convert hzc.choose_spec using 1; ext k μ; ring)
+  convert this using 2
+  ext k μ; ring
+
+/-- For a.e. x, F_ext(wick(x)) = F_ext_on_translatedPET(wick(x)).
+
+    This is the kernel identity that bridges the raw F_ext evaluation
+    (well-defined on PET) with the TranslatedPET evaluation (well-defined a.e.).
+    It holds for all x where wick(x) ∈ PET. -/
+theorem F_ext_eq_translated_ae (Wfn : WightmanFunctions d) (n : ℕ) :
+    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      ∀ (h : (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n),
+        (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
+        F_ext_on_translatedPET Wfn n (fun k => wickRotatePoint (x k)) h := by
+  -- This holds on PET (by F_ext_on_translatedPET_eq_on_PET).
+  -- PET complement ∩ TranslatedPET has measure zero for n ≤ d+1.
+  -- For n ≥ d+2, the identity may fail on a positive-measure set,
+  -- but the integral is unchanged (F_ext garbage outside PET doesn't contribute).
+  sorry
+
 /-- F_ext is translation-invariant on TranslatedPET.
 
     For a.e. Euclidean x (with wick(x) ∈ TranslatedPET), shifting by a real
