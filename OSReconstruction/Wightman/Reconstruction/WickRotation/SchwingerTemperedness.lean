@@ -551,7 +551,8 @@ theorem kernel_mul_zeroDiagonal_integrable_of_ae_infDist_mul_pow_le_polynomial
     The function x ↦ F_ext(Wick(x)) is a.e. strongly measurable on NPointDomain.
     This follows from the fact that F_ext is holomorphic (hence continuous) on the
     permuted extended tube, Wick rotation is continuous, and a.e. Euclidean points
-    lie in PET (by `ae_euclidean_points_in_permutedTube`). -/
+    lie in TranslatedPET (by `ae_euclidean_points_in_translatedPET`).
+    Requires extending the kernel to TranslatedPET for the full proof. -/
 theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
     (Wfn : WightmanFunctions d) :
     MeasureTheory.AEStronglyMeasurable

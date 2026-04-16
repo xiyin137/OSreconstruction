@@ -1264,24 +1264,9 @@ theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
   rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
   convert wickRotation_in_translatedPET_null (d := d) (n := n) using 1
 
-/-- **DEPRECATED**: This statement is FALSE for n ≥ d+2 due to the ForwardTube
-    k=0 basepoint condition. See `W11Counterexample.lean` for a proof.
-    Use `ae_euclidean_points_in_translatedPET` instead.
-
-    Kept as a sorry'd stub for backward compatibility with downstream sorry'd proofs. -/
-theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
-    MeasureTheory.volume
-      {x : NPointDomain d n |
-        (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0 := by
-  sorry -- FALSE for n ≥ d+2; see W11Counterexample.lean
-
-/-- **DEPRECATED**: Uses the false `wickRotation_not_in_PET_null`.
-    Use `ae_euclidean_points_in_translatedPET` instead. -/
-theorem ae_euclidean_points_in_permutedTube {d n : ℕ} [NeZero d] :
-    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n := by
-  rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
-  convert wickRotation_not_in_PET_null (d := d) (n := n) using 1
+-- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
+-- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).
+-- Use `wickRotation_in_translatedPET_null` / `ae_euclidean_points_in_translatedPET` instead.
 
 /-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is
