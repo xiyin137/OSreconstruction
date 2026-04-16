@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralFactorization
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
 
 noncomputable section
@@ -53,6 +54,92 @@ private theorem section43_eq_natAdd_of_not_val_lt
   ext
   simp [Fin.natAdd]
   omega
+
+/-- Split an absolute `NPointDomain` block into its first and last point
+blocks.  This is the concrete product equivalence used by the Section 4.3
+Fubini step. -/
+private def section43NPointProductSplitMeasurableEquiv
+    (d n r : ℕ) :
+    NPointDomain d (n + r) ≃ᵐ (NPointDomain d n × NPointDomain d r) :=
+  ((MeasurableEquiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+    (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))).symm).trans
+      (MeasurableEquiv.sumPiEquivProdPi
+        (fun _ : Fin n ⊕ Fin r => SpacetimeDim d))
+
+private theorem section43NPointProductSplitMeasurableEquiv_measurePreserving
+    (d n r : ℕ) :
+    MeasureTheory.MeasurePreserving
+      (section43NPointProductSplitMeasurableEquiv d n r)
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d (n + r)))
+      ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d r))) := by
+  let e1 := MeasurableEquiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+    (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))
+  have he1 : MeasureTheory.MeasurePreserving e1 MeasureTheory.volume MeasureTheory.volume := by
+    simpa [e1] using
+      (MeasureTheory.volume_measurePreserving_piCongrLeft
+        (fun _ : Fin (n + r) => SpacetimeDim d)
+        (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r)))
+  have he2 : MeasureTheory.MeasurePreserving
+      (MeasurableEquiv.sumPiEquivProdPi
+        (fun _ : Fin n ⊕ Fin r => SpacetimeDim d))
+      MeasureTheory.volume
+      ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d r))) := by
+    simpa using
+      (MeasureTheory.volume_measurePreserving_sumPiEquivProdPi
+        (fun _ : Fin n ⊕ Fin r => SpacetimeDim d))
+  simpa [section43NPointProductSplitMeasurableEquiv, e1] using he2.comp (he1.symm e1)
+
+private theorem section43NPointProductSplitMeasurableEquiv_fst_apply
+    (d n r : ℕ) (x : NPointDomain d (n + r)) (i : Fin n) :
+    (section43NPointProductSplitMeasurableEquiv d n r x).1 i =
+      x (Fin.castAdd r i) := by
+  rw [section43NPointProductSplitMeasurableEquiv]
+  simp only [MeasurableEquiv.trans_apply, MeasurableEquiv.coe_sumPiEquivProdPi]
+  change ((Equiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+      (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))).symm x) (Sum.inl i) =
+    x (Fin.castAdd r i)
+  have h := Equiv.piCongrLeft_apply_apply
+    (fun _ : Fin (n + r) => SpacetimeDim d)
+    (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))
+    ((Equiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+      (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))).symm x)
+    (Sum.inl i)
+  rw [← h]
+  simp [finSumFinEquiv_apply_left]
+
+private theorem section43NPointProductSplitMeasurableEquiv_snd_apply
+    (d n r : ℕ) (x : NPointDomain d (n + r)) (j : Fin r) :
+    (section43NPointProductSplitMeasurableEquiv d n r x).2 j =
+      x (Fin.natAdd n j) := by
+  rw [section43NPointProductSplitMeasurableEquiv]
+  simp only [MeasurableEquiv.trans_apply, MeasurableEquiv.coe_sumPiEquivProdPi]
+  change ((Equiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+      (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))).symm x) (Sum.inr j) =
+    x (Fin.natAdd n j)
+  have h := Equiv.piCongrLeft_apply_apply
+    (fun _ : Fin (n + r) => SpacetimeDim d)
+    (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))
+    ((Equiv.piCongrLeft (fun _ : Fin (n + r) => SpacetimeDim d)
+      (finSumFinEquiv : Fin n ⊕ Fin r ≃ Fin (n + r))).symm x)
+    (Sum.inr j)
+  rw [← h]
+  simp [finSumFinEquiv_apply_right]
+
+private theorem section43NPointProductSplitMeasurableEquiv_fst_eq_splitFirst
+    (d n r : ℕ) (x : NPointDomain d (n + r)) :
+    (section43NPointProductSplitMeasurableEquiv d n r x).1 =
+      splitFirst n r x := by
+  ext i μ
+  exact congrFun (section43NPointProductSplitMeasurableEquiv_fst_apply d n r x i) μ
+
+private theorem section43NPointProductSplitMeasurableEquiv_snd_eq_splitLast
+    (d n r : ℕ) (x : NPointDomain d (n + r)) :
+    (section43NPointProductSplitMeasurableEquiv d n r x).2 =
+      splitLast n r x := by
+  ext j μ
+  exact congrFun (section43NPointProductSplitMeasurableEquiv_snd_apply d n r x j) μ
 
 /-- The raw shell after the left block has been put into Borchers
 chronological order. -/
@@ -665,6 +752,144 @@ private theorem section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRi
     rw [Complex.I_mul_I]
     ring
   rw [harg]
+
+/-- The successor-right Borchers phase's ordinary right tail is exactly the
+one-factor Section 4.3 Fourier-Laplace integral at the right cumulative-tail
+block. -/
+private theorem section43OSBorchersPhase_rightFactor_eq_fourierLaplaceIntegral_succRight
+    (d n m : ℕ) [NeZero d]
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    (∫ xR : NPointDomain d (m + 1),
+        Complex.exp
+          (Complex.I *
+            ∑ i : Fin ((m + 1) * (d + 1)),
+              flattenCLEquiv (m + 1) (d + 1)
+                (fun k => wickRotatePoint (xR k)) i *
+              (section43SplitRightFlat d n (m + 1) ξ i : ℂ)) *
+        g.1 xR) =
+      section43FourierLaplaceIntegral d (m + 1) g
+        (section43RightTailBlock d n (m + 1)
+          (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ)) := by
+  classical
+  let qR : NPointDomain d (m + 1) :=
+    section43RightTailBlock d n (m + 1)
+      (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ)
+  have hqR : qR ∈ section43PositiveEnergyRegion d (m + 1) := by
+    simpa [qR] using
+      section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
+        (d := d) (n := n) (r := m + 1) (ξ := ξ) hξ
+  have hξR :
+      (section43CumulativeTailMomentumCLE d (m + 1)).symm qR =
+        section43SplitRightFlat d n (m + 1) ξ := by
+    simpa [qR] using
+      (section43SplitRightFlat_eq_cumulativeTail_rightTail
+        (d := d) (n := n) (r := m + 1) ξ).symm
+  rw [section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy
+    (d := d) (n := m + 1) (f := g) (q := qR) hqR]
+  refine MeasureTheory.integral_congr_ae ?_
+  filter_upwards with xR
+  simp [qR, hξR]
+
+/-- After the left split variable has been time-reflected, the
+successor-right Borchers left factor is the complex conjugate of the one-factor
+Section 4.3 Fourier-Laplace integral at the shifted Borchers-left block. -/
+private theorem section43OSBorchersPhase_leftFactor_eq_star_fourierLaplaceIntegral_succRight
+    (d n m : ℕ) [NeZero d]
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    (∫ xL : NPointDomain d n,
+        star
+          (Complex.exp
+            (Complex.I *
+              ∑ i : Fin (n * (d + 1)),
+                flattenCLEquiv n (d + 1)
+                  (fun k => wickRotatePoint (xL k)) i *
+                (section43NegRevFlat d n
+                  (section43SplitLeftFlat d n (m + 1) ξ) i : ℂ)) *
+            f.1 xL)) =
+      star
+        (section43FourierLaplaceIntegral d n f
+          (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m)
+            (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ))) := by
+  classical
+  let qL : NPointDomain d n :=
+    section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m)
+      (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ)
+  have hqL : qL ∈ section43PositiveEnergyRegion d n := by
+    simpa [qL] using
+      section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
+        (d := d) (n := n) (r := m + 1) (ξ := ξ)
+        (Nat.succ_pos m) hξ
+  have hξL :
+      (section43CumulativeTailMomentumCLE d n).symm qL =
+        section43NegRevFlat d n (section43SplitLeftFlat d n (m + 1) ξ) := by
+    simpa [qL] using
+      section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+        (d := d) (n := n) (r := m + 1) (Nat.succ_pos m)
+        (ξ := ξ) hξ.2
+  rw [section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy
+    (d := d) (n := n) (f := f) (q := qL) hqL]
+  rw [hξL]
+  exact _root_.integral_conj
+
+/-- The scalar factor created by shifting the right OS block by Euclidean time
+`t` is exactly the `2π`-normalized semigroup damping factor used by the
+`ψ_Z` kernel. -/
+private theorem section43OSBorchersPhase_tailFactor_eq_eta_succRight
+    (d n m : ℕ) [NeZero d]
+    (t : ℝ)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    let lamξ : ℝ :=
+      ∑ i : Fin ((n + (m + 1)) * (d + 1)),
+        (((castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm)
+          (zeroHeadBlockShift
+            (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+            (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+    let ηξ : ℝ := -lamξ / (2 * Real.pi)
+    Complex.exp
+        (-(t : ℂ) *
+          (∑ j : Fin (m + 1),
+            (ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ))) =
+      Complex.exp (-(2 * Real.pi * t : ℂ) * (ηξ : ℂ)) := by
+  classical
+  let tailSum : ℝ :=
+    ∑ j : Fin (m + 1),
+      ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1))))
+  let lamξ : ℝ :=
+    ∑ i : Fin ((n + (m + 1)) * (d + 1)),
+      (((castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm)
+        (zeroHeadBlockShift
+          (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+          (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+  let ηξ : ℝ := -lamξ / (2 * Real.pi)
+  have hlam : lamξ = -tailSum := by
+    simpa [lamξ, tailSum] using
+      zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
+        (d := d) (n := n) (m := m + 1) (ξ := ξ)
+  dsimp only
+  rw [show
+      (∑ j : Fin (m + 1),
+          (ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ)) =
+        (tailSum : ℂ) by simp [tailSum]]
+  have hlam_norm :
+      ((-(∑ i : Fin ((n + (m + 1)) * (d + 1)),
+          ((castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm)
+            (zeroHeadBlockShift
+              (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+              (flatTimeShiftDirection d (m + 1)))) i * ξ i)) /
+        (2 * Real.pi)) =
+      (-lamξ) / (2 * Real.pi) := by
+    simp [lamξ]
+  rw [hlam_norm]
+  rw [hlam]
+  congr 1
+  norm_num
+  field_simp [Real.pi_ne_zero]
 
 /-- The explicit time-shift/`ψ_Z` Fourier kernel agrees with the OS I `(4.24)`
 kernel on the Section 4.3 Wightman spectral region. -/

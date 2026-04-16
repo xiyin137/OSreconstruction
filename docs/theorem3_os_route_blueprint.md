@@ -16133,7 +16133,127 @@ continuous linear equivalences, it may replace this shear induction, but the
 theorem statement above must still be the local API and the proof must still
 record that the determinant/scaling factor is exactly `1`.
 
-With that measure theorem, add the one-factor absolute-phase bridge:
+Implementation refinement, 2026-04-15: the one-factor bridge also needs the
+time/spatial coordinate split as an explicit measure-preserving equivalence.
+Do not hide this inside the final Borchers/Fubini theorem.
+
+Add these local APIs in a small companion file, preferably
+`Section43WickRotateFourierLaplaceBridge.lean`, importing
+`Section43FourierLaplaceTransform`, `Section43SpectralSupport`, and
+`GeneralResults.FinProductIntegral`:
+
+```lean
+noncomputable def section43NPointTimeSpatialMeasurableEquiv
+    (d n : ℕ) [NeZero d] :
+    NPointDomain d n ≃ᵐ
+      (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d) :=
+  (nPointTimeSpatialCLE (d := d) n).toHomeomorph.toMeasurableEquiv
+
+theorem section43NPointTimeSpatialCLE_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasurePreserving
+      (section43NPointTimeSpatialMeasurableEquiv d n)
+      (MeasureTheory.volume : Measure (NPointDomain d n))
+      (MeasureTheory.volume :
+        Measure ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)))
+```
+
+Lean proof route for `section43NPointTimeSpatialCLE_measurePreserving`:
+
+1. First prove the finite-product version with spatial block represented as
+   functions:
+
+```lean
+noncomputable def section43TimeSpatialFunctionMeasurableEquiv
+    (d n : ℕ) [NeZero d] :
+    NPointDomain d n ≃ᵐ
+      (Fin n → ℝ) × (Fin n × Fin d → ℝ)
+
+theorem section43TimeSpatialFunctionMeasurableEquiv_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasurePreserving
+      (section43TimeSpatialFunctionMeasurableEquiv d n)
+      (MeasureTheory.volume : Measure (NPointDomain d n))
+      (MeasureTheory.volume :
+        Measure ((Fin n → ℝ) × (Fin n × Fin d → ℝ)))
+```
+
+   Construct it from:
+   `flattenMeasurableEquiv d n` style code, but with the index equivalence
+   separating `(k, 0)` from `(k, Fin.succ μ)`, then
+   `MeasurableEquiv.sumPiEquivProdPi`.  The proof is exactly the same finite
+   product-measure argument as
+   `flattenMeasurableEquiv_measurePreserving` in
+   `ForwardTubeDistributions.lean` and `integral_fin_add_split` in
+   `GeneralResults/FinProductIntegral.lean`: use
+   `MeasureTheory.volume_measurePreserving_piCongrLeft`,
+   `MeasureTheory.volume_measurePreserving_sumPiEquivProdPi`, and
+   `MeasureTheory.MeasurePreserving.trans`.
+2. Then bridge `(Fin n × Fin d → ℝ)` to
+   `EuclideanSpace ℝ (Fin n × Fin d)` through the standard Euclidean
+   coordinate equivalence:
+
+```lean
+noncomputable def section43EuclideanSpaceMeasurableEquiv
+    (ι : Type*) [Fintype ι] :
+    EuclideanSpace ℝ ι ≃ᵐ (ι → ℝ) :=
+  (EuclideanSpace.equiv (ι := ι) (𝕜 := ℝ)).toHomeomorph.toMeasurableEquiv
+
+theorem section43EuclideanSpaceMeasurableEquiv_measurePreserving
+    (ι : Type*) [Fintype ι] :
+    MeasurePreserving
+      (section43EuclideanSpaceMeasurableEquiv ι)
+      (MeasureTheory.volume : Measure (EuclideanSpace ℝ ι))
+      (MeasureTheory.volume : Measure (ι → ℝ))
+```
+
+   The exact Lean proof has been scratch-checked:
+
+```lean
+  simpa [section43EuclideanSpaceMeasurableEquiv, EuclideanSpace.equiv] using
+    (PiLp.volume_preserving_ofLp ι)
+```
+
+   The required import is `Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace`.
+   This theorem is the preferred local API; do not rederive it from Haar
+   uniqueness in the Section 4.3 file.
+3. Compose the function-space split with
+   `(section43EuclideanSpaceMeasurableEquiv (Fin n × Fin d)).symm` on the
+   second factor via `MeasurePreserving.prod` / `MeasurePreserving.trans`.
+   This yields the exact measure-preserving theorem for
+   `nPointTimeSpatialCLE`.
+
+With the two measure-preservation theorems in hand, add the one-factor
+absolute-phase bridge:
+
+Production status, 2026-04-15:
+`Section43WickRotateFourierLaplaceBridge.lean` now contains and exact-checks:
+
+```lean
+section43DiffCoordRealMeasurableEquiv
+section43DiffCoordRealCLE_symm_measurePreserving
+section43DiffCoordRealCLE_measurePreserving
+section43FinSuccTimeSpatialEquiv
+section43TimeSpatialIndexEquiv
+section43TimeSpatialFunctionMeasurableEquiv
+section43TimeSpatialFunctionMeasurableEquiv_measurePreserving
+section43EuclideanSpaceMeasurableEquiv
+section43EuclideanSpaceMeasurableEquiv_measurePreserving
+section43NPointTimeSpatialMeasurableEquiv
+section43NPointTimeSpatialCLE_measurePreserving
+section43NPointTimeSpatialMeasurableEquiv_symm_apply_time
+section43NPointTimeSpatialMeasurableEquiv_symm_apply_spatial
+section43RawCumulativeTail_of_cumulativeTailMomentum_symm
+section43DiffCoord_pairing_coord_eq_rawCumulativeTail
+section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase
+integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy
+section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy
+```
+
+The coordinate-measure layer for the one-factor bridge is now production-backed.
+The scalar phase identity and the absolute Wick-rotated phase-integrability
+theorem are also production-backed.  The final change-of-variables/Fubini
+equality is now production-backed too, closing the one-factor bridge seam.
 
 ```lean
 private theorem
@@ -16190,38 +16310,73 @@ theorem
         f.1 x
 ```
 
+Production status, 2026-04-15: the phase algebra lemma, absolute Wick-rotated
+phase-integrability theorem, and final one-factor change-of-variables/Fubini
+equality are implemented and exact-checked in
+`Section43WickRotateFourierLaplaceBridge.lean`.
+
 Proof transcript for the phase algebra lemma:
 
-1. Rewrite `flattenCLEquiv` by `finProdFinEquiv`; split the finite sum over
-   `Fin (n * (d + 1))` as a double sum over `Fin n × Fin (d + 1)`.
-2. Split `Fin (d + 1)` into the time coordinate `0` and spatial coordinates
-   `Fin.succ μ`.
-3. For the time part, use
+1. Do not reprove the private prefix/tail algebra.  Reuse the public support
+   theorem from `Section43SpectralSupport.lean`:
+
+```lean
+section43DiffCoord_pairing_eq_rawCumulativeTail
+section43_fin_prefix_sum_eq_lower_sum_public
+section43_fin_prefix_mul_eq_sum_tail_public
+```
+
+2. Prove the cumulative-tail normalization lemma once:
+
+```lean
+theorem section43RawCumulativeTail_of_cumulativeTailMomentum_symm
+    (d n : ℕ) [NeZero d] (q : NPointDomain d n) :
+    section43RawCumulativeTailMomentumCLE d n
+      ((section43CumulativeTailMomentumCLE d n).symm q) =
+    (section43SpatialFourierScaleCLE d n).symm q
+```
+
+   This is an `ext k μ`; unfold
+   `section43CumulativeTailMomentumCLE` and simplify the inverse of the
+   transposed continuous-linear equivalence.
+3. Split the wick-rotated pairing into time and spatial pieces:
+
+```lean
+private theorem section43WickRotatePairing_timePart_after_diffCoord_symm
+private theorem section43WickRotatePairing_spatialPart_after_diffCoord_symm
+```
+
+   Each helper rewrites the relevant finite sum with
+   `section43DiffCoord_pairing_eq_rawCumulativeTail`, then applies
+   `section43RawCumulativeTail_of_cumulativeTailMomentum_symm`.
+4. For the time helper, use
    `wickRotatePoint x 0 = Complex.I * (x 0 : ℂ)` and
-   `section43CumulativeTailMomentumCLE_symm_apply` at `μ = 0`.  The external
-   `Complex.I` gives `Complex.I * Complex.I = -1`, hence the Laplace factor
-   `-∑ δ_time * q_time`.
-4. For the spatial part, use
+   `section43SpatialFourierScaleCLE_symm_apply` at `μ = 0`.  The external
+   `Complex.I` gives `Complex.I * Complex.I = -1`, producing exactly
+   `-∑ k, δ k 0 * section43QTime q k`.
+5. For the spatial helper, use
    `wickRotatePoint x (Fin.succ μ) = (x (Fin.succ μ) : ℂ)` and
-   `section43CumulativeTailMomentumCLE_symm_apply` at `μ ≠ 0`.  The inverse
-   cumulative map contributes `-(2 * Real.pi) * (q_k - q_{k+1})`; summation by
-   parts over absolute coordinates gives the spatial difference-coordinate
-   variables `δ k (Fin.succ μ)`, leaving
-   `-(2 * Real.pi) * Complex.I * ∑ δ_spatial * q_spatial`.
-5. Use `section43QTime` and `section43QSpatial_apply` to rewrite the `q`
-   coordinates.  Finish by `ring_nf` only after all finite-sum reindexing has
-   been discharged.
+   `section43SpatialFourierScaleCLE_symm_apply` at `μ ≠ 0`.  The scale gives
+   `-(2 * Real.pi) * q k (Fin.succ μ)`, so the external `Complex.I` produces
+   the factor
+   `-(2 * Real.pi : ℂ) * Complex.I`.
+6. Use `section43QTime`, `section43QSpatial`, `nPointTimeSpatialCLE`, and
+   `EuclideanSpace.equiv` only at the end to rewrite coordinates.  Finish by
+   `ring_nf` after all finite-sum and coordinate rewrites are done.
 
 Proof transcript for the integrability lemma:
 
-1. Change variables by `(section43DiffCoordRealCLE d n).symm`; it is enough to
-   prove integrability of the difference-coordinate integrand because
-   `section43DiffCoordRealCLE_symm_measurePreserving` preserves volume.
+1. Change variables by `(section43DiffCoordRealCLE d n).symm`; use
+   `section43DiffCoordRealCLE_symm_measurePreserving` and the exact orientation
+   pattern
+   `hmp.symm.integrable_comp_of_integrable` / `hmp.symm.integral_comp'`
+   appearing in `integral_fin_add_split`.
 2. Rewrite the phase by
    `section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase`.
-3. Split by `nPointTimeSpatialCLE`.  The spatial Fourier factor has norm `1`;
-   prove this after rewriting it to the Fourier-character/Circle form used by
-   `partialFourierSpatial_fun`:
+3. Split by `section43NPointTimeSpatialMeasurableEquiv` and
+   `section43NPointTimeSpatialCLE_measurePreserving`.  The spatial Fourier
+   factor has norm `1`; prove this after rewriting it to the
+   Fourier-character/Circle form used by `partialFourierSpatial_fun`:
 
 ```lean
 ‖((𝐞 (-(inner ℝ η ξ)) : Circle) : ℂ)‖ = 1
@@ -16239,7 +16394,10 @@ Proof transcript for the integrability lemma:
    `0 ≤ τ k`.
 5. The integrand is therefore bounded by the Schwartz function
    `‖section43DiffPullbackCLM d n f δ‖`, whose norm is integrable.  Use the
-   existing Schwartz integrability theorem for `SchwartzMap` norms.
+   existing theorem `SchwartzMap.integrable` and its `.norm` projection.
+   However, for the time-only domination do not redo the estimate: reuse
+   `integrable_section43FourierLaplace_timeIntegrand` after converting the
+   spatial integral by `partialFourierSpatial_fun_eq_integral`.
 
 Proof transcript:
 
@@ -16247,14 +16405,16 @@ Proof transcript:
    `(section43DiffCoordRealCLE d n).symm` and
    `section43DiffCoordRealCLE_symm_measurePreserving`, using
    `integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy` to
-   satisfy the Bochner integral change-of-variables side condition.
+   satisfy the Bochner integral side condition.
 2. Rewrite the transformed `f.1` as `section43DiffPullbackCLM d n f`.
-3. Apply
+3. Change variables again by
+   `section43NPointTimeSpatialMeasurableEquiv d n` using
+   `section43NPointTimeSpatialCLE_measurePreserving`.
+4. Apply
    `section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase`.
-4. Split the difference-coordinate variable by `nPointTimeSpatialCLE`.  The
-   time part is exactly the outer Laplace factor in
+5. The time part is exactly the outer Laplace factor in
    `section43FourierLaplaceIntegral_eq_time_spatial_integral`.
-5. For the spatial part, rewrite
+6. For the spatial part, rewrite
 
 ```lean
 Complex.exp
@@ -16270,7 +16430,7 @@ Complex.exp
 
    using `Real.fourierChar_apply`, `Circle.smul_def`, and the same algebra as
    `fourierTransformFlat_eval` / `physicsFourierFlatCLM_integral`.
-6. Close with
+7. Close with
    `section43FourierLaplaceIntegral_eq_time_spatial_integral`.
 
 This theorem is the normalization guard.  If the displayed formula needs a
@@ -16291,7 +16451,7 @@ private theorem
     (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
     (hξ :
       ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
-    let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
+    let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     let qL :=
       section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ
     let qR := section43RightTailBlock d n (m + 1) qξ
@@ -16325,6 +16485,330 @@ left integral with the conjugate of
 by Fubini; move the external tail phase outside.  The positive-energy inputs
 for the one-factor bridge are the left and right block positivity theorems
 from S2/S3.
+
+Implementation-ready expansion of the scalar factorization:
+
+This is the next live production seam after the one-factor bridge.  It is an
+unnumbered OS II Section 4.3 step around the `(4.24)` kernel, not a new
+theorem-shape assertion: it only expands the Borchers-ordered absolute
+Euclidean phase integral into the two already-defined Section 4.3
+Fourier-Laplace factors and the already-proved `ψ_Z` tail phase.
+
+Use these local abbreviations throughout the proof:
+
+```lean
+let r : ℕ := m + 1
+let N : ℕ := n + r
+let qξ : NPointDomain d N :=
+  section43CumulativeTailMomentumCLE d N ξ
+let qL : NPointDomain d n :=
+  section43LeftBorchersBlock d n r (Nat.succ_pos m) qξ
+let qR : NPointDomain d r :=
+  section43RightTailBlock d n r qξ
+let ξL : Fin (n * (d + 1)) → ℝ :=
+  (section43CumulativeTailMomentumCLE d n).symm qL
+let ξR : Fin (r * (d + 1)) → ℝ :=
+  (section43CumulativeTailMomentumCLE d r).symm qR
+let lamξ : ℝ :=
+  ∑ i : Fin (N * (d + 1)),
+    (((castFinCLE (Nat.add_mul n r (d + 1)).symm)
+      (zeroHeadBlockShift
+        (m := n * (d + 1)) (n := r * (d + 1))
+        (flatTimeShiftDirection d r))) i) * ξ i
+let ηξ : ℝ := -lamξ / (2 * Real.pi)
+```
+
+The two inverse cumulative-tail coordinate identities are already public and
+must be used exactly in this form:
+
+```lean
+have hξL :
+    ξL = section43NegRevFlat d n (section43SplitLeftFlat d n r ξ) := by
+  exact section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+    (d := d) (n := n) (r := r) (Nat.succ_pos m)
+    (ξ := ξ) (by simpa [N, section43WightmanSpectralRegion] using hξ.2)
+
+have hξR :
+    ξR = section43SplitRightFlat d n r ξ := by
+  exact section43SplitRightFlat_eq_cumulativeTail_rightTail
+    (d := d) (n := n) (r := r) ξ
+```
+
+After splitting the absolute variable with the production helper
+`section43NPointProductSplitMeasurableEquiv d n r`, make one further
+measure-preserving change on the left variable:
+
+```lean
+let y_of : NPointDomain d n × NPointDomain d r → NPointDomain d N :=
+  fun p => (section43NPointProductSplitMeasurableEquiv d n r).symm p
+
+-- In the left factor proof, replace the split left absolute variable `yL`
+-- by `timeReflectionN d xL`; `timeReflectionN_measurePreserving` is public
+-- in `Core.lean`.
+```
+
+Production status, 2026-04-15: this absolute-variable split packet is now
+implemented in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43NPointProductSplitMeasurableEquiv
+section43NPointProductSplitMeasurableEquiv_measurePreserving
+section43NPointProductSplitMeasurableEquiv_fst_apply
+section43NPointProductSplitMeasurableEquiv_snd_apply
+section43NPointProductSplitMeasurableEquiv_fst_eq_splitFirst
+section43NPointProductSplitMeasurableEquiv_snd_eq_splitLast
+```
+
+Use these names rather than the previously sketched
+`MeasurableEquiv.finAddProd`; no such project API was present in the route
+files.
+
+The key pointwise identity to prove first is the exact scalar expansion after
+both of these changes.  It is the theorem that prevents sign drift:
+
+```lean
+private theorem
+    section43OSBorchersPhase_pointwise_factorized_succRight
+    {n m : ℕ}
+    {t : ℝ} (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
+    let r : ℕ := m + 1
+    let N : ℕ := n + r
+    let y : NPointDomain d N :=
+      (section43NPointProductSplitMeasurableEquiv d n r).symm
+        (timeReflectionN d xL, xR)
+    let ξL : Fin (n * (d + 1)) → ℝ :=
+      section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)
+    let ξR : Fin (r * (d + 1)) → ℝ :=
+      section43SplitRightFlat d n r ξ
+    let tailSum : ℂ :=
+      ∑ j : Fin r,
+        (t : ℂ) * (ξ (finProdFinEquiv
+          (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ)
+    Complex.exp
+      (Complex.I *
+        ∑ i : Fin (N * (d + 1)),
+          flattenCLEquiv N (d + 1)
+            (section43OSBorchersTimeShiftConfig_succRight
+              (d := d) t y) i *
+          (ξ i : ℂ)) =
+      Complex.exp (-tailSum) *
+        star
+          (Complex.exp
+            (Complex.I *
+              ∑ i : Fin (n * (d + 1)),
+                flattenCLEquiv n (d + 1)
+                  (fun k => wickRotatePoint (xL k)) i *
+                (ξL i : ℂ))) *
+        Complex.exp
+          (Complex.I *
+            ∑ i : Fin (r * (d + 1)),
+              flattenCLEquiv r (d + 1)
+                (fun k => wickRotatePoint (xR k)) i *
+              (ξR i : ℂ))
+```
+
+Proof transcript for the pointwise identity:
+
+1. Expand the full flattened sum with `finProdFinEquiv.sum_comp` and
+   `Finset.sum_product`.
+2. Split the point index with `Fin.castAdd r i` and `Fin.natAdd n j`.
+   For left points, `section43LeftBlockReversePerm_succRight_castAdd` rewrites
+   the Borchers order to `Fin.rev i` and the `xiShift` condition is false.
+   For right points, `section43LeftBlockReversePerm_succRight_natAdd` rewrites
+   the point to `Fin.natAdd n j` and the `xiShift` condition is true exactly
+   in the time coordinate.
+3. The right-block terms split into the unshifted Wick-rotated phase plus
+   the tail term
+   `Complex.I * ((t : ℂ) * Complex.I) * S`, where
+   `S = ∑ j, ξ (finProdFinEquiv (Fin.natAdd n j, 0))`.
+   Rewrite this as `-((t : ℂ) * S)` using `Complex.I_mul_I` and `ring`.
+4. The left block is where old drafts lost a sign.  With
+   `yL = timeReflectionN d xL`, the left phase is
+   `star` of the one-factor phase at
+   `ξL = section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)`.
+   Prove it coordinatewise after reindexing by `Fin.rev`: time coordinates use
+   `wickRotatePoint (timeReflection d (xL k)) 0 = -Complex.I * (xL k 0)`,
+   spatial coordinates use
+   `wickRotatePoint (timeReflection d (xL k)) (Fin.succ μ) =
+     (xL k (Fin.succ μ) : ℂ)`, and the extra minus in `section43NegRevFlat`
+   is exactly cancelled by complex conjugation of the phase.
+5. Finish with `Complex.exp_add`, `Complex.exp_neg`, `map_mul`, and ring
+   normalization.  Do not use `simp` to hide this step unless the three scalar
+   subidentities above have already been named.
+
+The tail term is then converted to the existing `ηξ` convention by a separate
+lemma:
+
+```lean
+private theorem section43OSBorchersPhase_tailFactor_eq_eta_succRight
+    {n m : ℕ}
+    {t : ℝ}
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    let r : ℕ := m + 1
+    let N : ℕ := n + r
+    let lamξ : ℝ :=
+      ∑ i : Fin (N * (d + 1)),
+        (((castFinCLE (Nat.add_mul n r (d + 1)).symm)
+          (zeroHeadBlockShift
+            (m := n * (d + 1)) (n := r * (d + 1))
+            (flatTimeShiftDirection d r))) i) * ξ i
+    let ηξ : ℝ := -lamξ / (2 * Real.pi)
+    Complex.exp
+      (-(t : ℂ) *
+        (∑ j : Fin r,
+          (ξ (finProdFinEquiv
+            (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ))) =
+      Complex.exp (-(2 * Real.pi * t : ℂ) * (ηξ : ℂ))
+```
+
+Proof transcript: use the public theorem
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum` from
+`OSToWightmanBoundaryValueLimits.lean`; do not restate the whole tail
+positivity package.  The algebra is
+`lamξ = -∑ j, ξ (finProdFinEquiv (Fin.natAdd n j, 0))`, hence
+`ηξ = (∑ j, ξ ...)/(2 * Real.pi)`, and `Real.two_pi_pos.ne'` discharges the
+division denominator.
+
+Production status, 2026-04-15: this tail normalization theorem is now proved
+in `Section43OS24KernelComparison.lean`.  The finite-sum theorem
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum` was
+made public in `OSToWightmanBoundaryValueLimits.lean`; both the producer
+module and the consumer file have been exact-checked/refreshed.
+
+The right factor theorem is a direct application of the one-factor bridge:
+
+```lean
+private theorem
+    section43OSBorchersPhase_rightFactor_eq_fourierLaplaceIntegral_succRight
+    {n m : ℕ}
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let r : ℕ := m + 1
+    let qξ : NPointDomain d (n + r) :=
+      section43CumulativeTailMomentumCLE d (n + r) ξ
+    let qR : NPointDomain d r :=
+      section43RightTailBlock d n r qξ
+    (∫ xR : NPointDomain d r,
+        Complex.exp
+          (Complex.I *
+            ∑ i : Fin (r * (d + 1)),
+              flattenCLEquiv r (d + 1)
+                (fun k => wickRotatePoint (xR k)) i *
+              (section43SplitRightFlat d n r ξ i : ℂ)) *
+        g.1 xR) =
+      section43FourierLaplaceIntegral d r g qR
+```
+
+Proof transcript:
+
+1. Set `hqR := section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
+   (d := d) (n := n) (r := m + 1) hξ`.
+2. Rewrite the right side with
+   `section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`.
+3. Rewrite the inverse cumulative-tail momentum by
+   `(section43SplitRightFlat_eq_cumulativeTail_rightTail
+      (d := d) (n := n) (r := m + 1) ξ).symm`.
+4. Close by `rfl`/`integral_congr_ae`.
+
+Production status, 2026-04-15: this right-tail factor theorem is now proved
+in `Section43OS24KernelComparison.lean` and exact-checked with:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelComparison.lean
+```
+
+The command terminated successfully with no output after first building the
+new bridge module `.olean` by the narrow command:
+
+```bash
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
+```
+
+The left factor theorem is the conjugated version and must be proved before
+the scalar factorization theorem, because it is where the `Fin.rev` and OS
+time reflection interact:
+
+```lean
+private theorem
+    section43OSBorchersPhase_leftFactor_eq_star_fourierLaplaceIntegral_succRight
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let r : ℕ := m + 1
+    let qξ : NPointDomain d (n + r) :=
+      section43CumulativeTailMomentumCLE d (n + r) ξ
+    let qL : NPointDomain d n :=
+      section43LeftBorchersBlock d n r (Nat.succ_pos m) qξ
+    let ξL : Fin (n * (d + 1)) → ℝ :=
+      section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)
+    (∫ xL : NPointDomain d n,
+        star
+          (Complex.exp
+            (Complex.I *
+              ∑ i : Fin (n * (d + 1)),
+                flattenCLEquiv n (d + 1)
+                  (fun k => wickRotatePoint (xL k)) i *
+                (ξL i : ℂ)) *
+            f.1 xL)) =
+      star (section43FourierLaplaceIntegral d n f qL)
+```
+
+Proof transcript:
+
+1. Set `hqL := section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
+   (d := d) (n := n) (r := m + 1) (Nat.succ_pos m) hξ`.
+2. Rewrite `section43FourierLaplaceIntegral d n f qL` by
+   `section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`.
+3. Rewrite
+   `(section43CumulativeTailMomentumCLE d n).symm qL` by
+   `section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum`, using
+   `hξ.2` as the total-momentum-zero input.
+4. Use complex conjugation of Bochner integrals:
+   use `_root_.integral_conj`, as in
+   `physicsFourierFlatCLM_borchersConj_apply` in
+   `Section43SpectralFactorization.lean`.  The needed integrability is exactly
+   `integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy`
+   transported through the same coordinate rewrite.
+5. Push `star` through the product pointwise:
+   `star (Complex.exp phase * f.1 xL) =
+    star (Complex.exp phase * f.1 xL)`.
+   Do not unfold this further in the theorem statement; the pointwise
+   factorization theorem consumes the `star (...)` form directly.
+
+Production status, 2026-04-15: this left conjugated factor theorem is now
+proved in `Section43OS24KernelComparison.lean` using
+`section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion`,
+`section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum`, the
+one-factor bridge
+`section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`,
+and `_root_.integral_conj`.  The exact consumer check terminates with no
+output.
+
+With these three factor lemmas, the scalar theorem is now mechanical:
+
+1. Use `integral_fin_add_split n (m + 1)` with the explicit integrability
+   theorem below to rewrite the full integral over `y`.
+2. Change the left split variable by `timeReflectionN d` using
+   `timeReflectionN_measurePreserving.integral_comp'`.
+3. Rewrite the integrand by
+   `section43OSBorchersPhase_pointwise_factorized_succRight`.
+4. Pull the constant tail factor out with `MeasureTheory.integral_const_mul`.
+5. Separate the product integral with `MeasureTheory.integral_prod_mul`; this
+   is the same API already used in `Section43SpectralFactorization.lean` and
+   `OSToWightmanBoundaryValueLimits.lean`.  Use
+   `MeasureTheory.integral_const_mul` and `MeasureTheory.integral_mul_const`
+   only for scalar constants outside one of the one-variable integrals.  If
+   Lean requires a product-integrability proof, use the right and left factor
+   integrability corollaries from the one-factor bridge and
+   `Integrable.mul_const` / `Integrable.const_mul`.
+6. Replace the two one-factor integrals by the left/right factor theorems.
+7. Replace the tail factor by
+   `section43OSBorchersPhase_tailFactor_eq_eta_succRight`.
 
 Fubini side conditions for this theorem must be proved explicitly:
 
