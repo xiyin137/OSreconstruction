@@ -726,6 +726,40 @@ theorem physicsFourierFlatCLM_surjective (m : ℕ) :
             rw [h_from_to]
     _ = K := h_scale
 
+/-- The deterministic Section 4.3 frequency representative map is onto. -/
+theorem section43FrequencyRepresentative_surjective
+    (d n : ℕ) [NeZero d] :
+    Function.Surjective
+      (section43FrequencyRepresentative d n :
+        SchwartzNPoint d n → SchwartzNPoint d n) := by
+  intro Φ
+  let Kflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (section43CumulativeTailMomentumCLE d n) Φ
+  obtain ⟨φflat, hφflat⟩ :=
+    physicsFourierFlatCLM_surjective (n * (d + 1)) Kflat
+  refine ⟨unflattenSchwartzNPoint (d := d) φflat, ?_⟩
+  have hflat :
+      flattenSchwartzNPoint (d := d)
+          (unflattenSchwartzNPoint (d := d) φflat) = φflat := by
+    ext ξ
+    simp [flattenSchwartzNPoint_apply, unflattenSchwartzNPoint_apply]
+  calc
+    section43FrequencyRepresentative d n
+        (unflattenSchwartzNPoint (d := d) φflat)
+        =
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (section43CumulativeTailMomentumCLE d n).symm
+        (physicsFourierFlatCLM φflat) := by
+          simp [section43FrequencyRepresentative, hflat]
+    _ =
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (section43CumulativeTailMomentumCLE d n).symm Kflat := by
+          rw [hφflat]
+    _ = Φ := by
+          ext q
+          simp [Kflat, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
 def section43TotalMomentumFlat
     (d N : ℕ) [NeZero d]
     (ξ : Fin (N * (d + 1)) → ℝ) : Fin (d + 1) → ℝ :=
@@ -2004,6 +2038,31 @@ theorem section43FourierLaplaceRepresentative_apply
     (hq : q ∈ section43PositiveEnergyRegion d n) :
     Φ q = section43FourierLaplaceIntegral d n f q :=
   hΦ q hq
+
+/-- Transfer a Section 4.3 Fourier-Laplace representative through the
+positive-energy quotient to the deterministic frequency representative of an
+ambient Wightman test. -/
+theorem section43FrequencyRepresentative_is_fourierLaplaceRepresentative_of_quotient_eq
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n)
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (Φ : SchwartzNPoint d n)
+    (hΦ_rep : section43FourierLaplaceRepresentative d n f Φ)
+    (hφ_proj :
+      section43FrequencyProjection (d := d) n φ =
+        section43PositiveEnergyQuotientMap (d := d) n Φ) :
+    section43FourierLaplaceRepresentative d n f
+      (section43FrequencyRepresentative (d := d) n φ) := by
+  intro q hq
+  have hquot :
+      section43PositiveEnergyQuotientMap (d := d) n
+          (section43FrequencyRepresentative (d := d) n φ) =
+        section43PositiveEnergyQuotientMap (d := d) n Φ := by
+    simpa [section43FrequencyProjection] using hφ_proj
+  have hEqOn :=
+    eqOn_region_of_section43PositiveEnergyQuotientMap_eq
+      (d := d) (n := n) hquot
+  exact (hEqOn hq).trans (hΦ_rep q hq)
 
 /-- If a distinguished positive-energy time coordinate is `2π η`, then the
 corresponding imaginary-axis kernel can be rewritten to the real-cast height
