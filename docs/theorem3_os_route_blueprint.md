@@ -13786,13 +13786,156 @@ theorem physicsFourierFlatCLM_reindex_tensorProduct_apply
       physicsFourierFlatCLM G (section43SplitRightFlat d n r ξ)
 ```
 
-   Proof transcript: unfold `physicsFourierFlatCLM_integral`,
-   `reindexSchwartzFin_apply`, and `SchwartzMap.tensorProduct_apply`; transport
-   the integral through the finite-dimensional product equivalence
-   `Fin (n*(d+1)+r*(d+1)) ≃ (Fin (n*(d+1)) → ℝ) ×
-   (Fin (r*(d+1)) → ℝ)`; split the exponential with
-   `Finset.sum_add_distrib`; apply Fubini and identify the two factor
-   integrals with `physicsFourierFlatCLM_integral`.
+   Lean-ready proof packet:
+
+```lean
+private def section43FlatProductSplitMeasurableEquiv (a b : ℕ) :
+    (Fin (a + b) → ℝ) ≃ᵐ ((Fin a → ℝ) × (Fin b → ℝ)) :=
+  ((MeasurableEquiv.piCongrLeft (fun _ : Fin (a + b) => ℝ)
+    (finSumFinEquiv : Fin a ⊕ Fin b ≃ Fin (a + b))).symm).trans
+      (MeasurableEquiv.sumPiEquivProdPi (fun _ : Fin a ⊕ Fin b => ℝ))
+
+private theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
+    (a b : ℕ) :
+    MeasureTheory.MeasurePreserving
+      (section43FlatProductSplitMeasurableEquiv a b)
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (a + b) → ℝ))
+      ((MeasureTheory.volume : MeasureTheory.Measure (Fin a → ℝ)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (Fin b → ℝ)))
+```
+
+The measure-preserving proof composes
+`MeasureTheory.volume_measurePreserving_piCongrLeft` for `finSumFinEquiv`
+with `MeasureTheory.volume_measurePreserving_sumPiEquivProdPi`.
+
+The coordinate apply lemmas are:
+
+```lean
+private theorem section43FlatProductSplitMeasurableEquiv_fst_apply
+    (a b : ℕ) (x : Fin (a + b) → ℝ) (i : Fin a) :
+    (section43FlatProductSplitMeasurableEquiv a b x).1 i =
+      x (Fin.castAdd b i)
+
+private theorem section43FlatProductSplitMeasurableEquiv_snd_apply
+    (a b : ℕ) (x : Fin (a + b) → ℝ) (j : Fin b) :
+    (section43FlatProductSplitMeasurableEquiv a b x).2 j =
+      x (Fin.natAdd a j)
+```
+
+Proof transcript for the first one: unfold the measurable equivalence, use
+`MeasurableEquiv.coe_sumPiEquivProdPi`, change the goal to the underlying
+`Equiv.piCongrLeft`, set
+`h := Equiv.piCongrLeft_apply_apply ... (Sum.inl i)`, then `rw [← h]` and
+`simp [finSumFinEquiv_apply_left]`.  The second proof is identical with
+`Sum.inr j` and `finSumFinEquiv_apply_right`.
+
+Lift this through the final arithmetic cast:
+
+```lean
+private def section43FullFlatProductSplitMeasurableEquiv
+    (d n r : ℕ) [NeZero d] :
+    (Fin ((n + r) * (d + 1)) → ℝ) ≃ᵐ
+      ((Fin (n * (d + 1)) → ℝ) × (Fin (r * (d + 1)) → ℝ)) :=
+  ((MeasurableEquiv.piCongrLeft
+    (fun _ : Fin ((n + r) * (d + 1)) => ℝ)
+    (finCongr (by ring : n * (d + 1) + r * (d + 1) =
+      (n + r) * (d + 1)))).symm).trans
+    (section43FlatProductSplitMeasurableEquiv
+      (n * (d + 1)) (r * (d + 1)))
+
+private theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
+    (d n r : ℕ) [NeZero d] :
+    MeasureTheory.MeasurePreserving
+      (section43FullFlatProductSplitMeasurableEquiv d n r)
+      (MeasureTheory.volume : MeasureTheory.Measure
+        (Fin ((n + r) * (d + 1)) → ℝ))
+      ((MeasureTheory.volume : MeasureTheory.Measure
+          (Fin (n * (d + 1)) → ℝ)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure
+          (Fin (r * (d + 1)) → ℝ)))
+```
+
+Then prove the exact cast/split identifications:
+
+```lean
+private theorem splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat
+    (d n r : ℕ) [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    splitFirst (n * (d + 1)) (r * (d + 1))
+        ((castFinCLE (by ring : n * (d + 1) + r * (d + 1) =
+          (n + r) * (d + 1))).symm ξ) =
+      section43SplitLeftFlat d n r ξ
+
+private theorem splitLast_castFinCLE_symm_eq_section43SplitRightFlat
+    (d n r : ℕ) [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    splitLast (n * (d + 1)) (r * (d + 1))
+        ((castFinCLE (by ring : n * (d + 1) + r * (d + 1) =
+          (n + r) * (d + 1))).symm ξ) =
+      section43SplitRightFlat d n r ξ
+```
+
+Each proof is by `ext a`, writing `a` as `finProdFinEquiv p`, rewriting the
+corresponding `section43Split..._apply`, then `Fin.ext`; the left closes by
+`simp [finProdFinEquiv]`, and the right by the same `simp` plus `ring`.
+
+The pointwise tensor identity is:
+
+```lean
+private theorem reindex_tensorProduct_apply_section43Split
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+    (G : SchwartzMap (Fin (r * (d + 1)) → ℝ) ℂ)
+    (x : Fin ((n + r) * (d + 1)) → ℝ) :
+    reindexSchwartzFin
+        (by ring : n * (d + 1) + r * (d + 1) = (n + r) * (d + 1))
+        (F.tensorProduct G) x =
+      F (section43SplitLeftFlat d n r x) *
+        G (section43SplitRightFlat d n r x)
+```
+
+Proof: `rw [reindexSchwartzFin_apply, SchwartzMap.tensorProduct_apply]`, then
+the two cast/split lemmas.
+
+The phase split needed after change of variables is:
+
+```lean
+private theorem section43_fullFlat_pair_eq_splitFlat_pair
+    (d n r : ℕ) [NeZero d]
+    (x ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    (∑ a : Fin ((n + r) * (d + 1)), (x a : ℂ) * (ξ a : ℂ)) =
+      (∑ a : Fin (n * (d + 1)),
+        (section43SplitLeftFlat d n r x a : ℂ) *
+          (section43SplitLeftFlat d n r ξ a : ℂ)) +
+      (∑ a : Fin (r * (d + 1)),
+        (section43SplitRightFlat d n r x a : ℂ) *
+          (section43SplitRightFlat d n r ξ a : ℂ))
+```
+
+Proof transcript: set
+`h : n * (d + 1) + r * (d + 1) = (n + r) * (d + 1) := by ring`, rewrite the
+full sum by `← (finCongr h).sum_comp`, split it by
+`Fin.sum_univ_add`, and identify the two block terms with
+`section43SplitLeftFlat_apply` / `section43SplitRightFlat_apply`.  The left
+index equality is `Fin.ext; simp [finProdFinEquiv]`; the right is
+`Fin.ext; simp [finProdFinEquiv]; ring`.
+
+The final `physicsFourierFlatCLM_reindex_tensorProduct_apply` proof is:
+
+1. rewrite all three Fourier transforms by `← physicsFourierFlatCLM_integral`;
+2. set `e := section43FullFlatProductSplitMeasurableEquiv d n r`,
+   `ξL := section43SplitLeftFlat d n r ξ`,
+   `ξR := section43SplitRightFlat d n r ξ`;
+3. define
+   `g p := Complex.exp (Complex.I * ((∑ a, (p.1 a : ℂ) * (ξL a : ℂ)) +
+   (∑ b, (p.2 b : ℂ) * (ξR b : ℂ)))) * (F p.1 * G p.2)`;
+4. prove the original integrand equals `fun x => g (e x)` using the full-split
+   apply lemmas, the pointwise tensor identity, and
+   `section43_fullFlat_pair_eq_splitFlat_pair`;
+5. rewrite by
+   `section43FullFlatProductSplitMeasurableEquiv_measurePreserving.integral_comp'`;
+6. rewrite `g p` pointwise using `mul_add`, `Complex.exp_add`, and `ring`;
+7. finish with `MeasureTheory.integral_prod_mul`, simplifying by `mul_assoc`.
 
 2. Use this theorem with
 
@@ -13843,12 +13986,217 @@ theorem physicsFourierFlatCLM_borchersConj_apply
           (section43NegRevFlat d n ξL))
 ```
 
-   Proof transcript: use `physicsFourierFlatCLM_integral`, change variables by
-   the flat reversal equivalence induced by `Fin.rev` on the point block, and
-   use `map_integral`/`integral_conj` to move `star` outside the integral.
-   The exponent changes from `exp(i x·ξL)` to the conjugate of
-   `exp(i y·(-rev ξL))`, which is exactly the sign in
-   `section43NegRevFlat`.
+   Lean-ready helper packet for this theorem:
+
+```lean
+def section43FlatReverseEquiv (d n : ℕ) [NeZero d] :
+    Fin (n * (d + 1)) ≃ Fin (n * (d + 1)) :=
+  finProdFinEquiv.symm.trans
+    ((Equiv.prodCongr Fin.revPerm (Equiv.refl (Fin (d + 1)))).trans
+      finProdFinEquiv)
+
+noncomputable def section43FlatReverseCLE (d n : ℕ) [NeZero d] :
+    (Fin (n * (d + 1)) → ℝ) ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
+  (LinearEquiv.funCongrLeft ℝ ℝ
+    (section43FlatReverseEquiv d n)).toContinuousLinearEquiv
+
+@[simp] theorem section43FlatReverseCLE_apply
+    (x : Fin (n * (d + 1)) → ℝ) (i : Fin n) (μ : Fin (d + 1)) :
+    section43FlatReverseCLE d n x (finProdFinEquiv (i, μ)) =
+      x (finProdFinEquiv (Fin.rev i, μ)) := by
+  simp [section43FlatReverseCLE, section43FlatReverseEquiv]
+```
+
+The measure-preserving theorem should be named separately:
+
+```lean
+theorem section43FlatReverseCLE_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasureTheory.MeasurePreserving
+      (section43FlatReverseCLE d n)
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (n * (d + 1)) → ℝ))
+      MeasureTheory.volume
+```
+
+Proof transcript: realize the same map as the coordinate permutation
+`MeasurableEquiv.piCongrLeft (fun _ => ℝ)
+  (section43FlatReverseEquiv d n).symm`; then apply
+`MeasureTheory.volume_measurePreserving_piCongrLeft`.  The function equality
+is not definitional, but it is a short extensional proof:
+
+```lean
+by
+  convert
+    (MeasureTheory.volume_measurePreserving_piCongrLeft
+      (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm) using 1
+  ext x a
+  change x (section43FlatReverseEquiv d n a) =
+    (MeasurableEquiv.piCongrLeft (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm) x a
+  rw [MeasurableEquiv.coe_piCongrLeft]
+  simpa using
+    (Equiv.piCongrLeft_apply_apply
+      (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm x
+      ((section43FlatReverseEquiv d n) a)).symm
+```
+
+Next expose the pointwise flattened Borchers-conjugation identity:
+
+```lean
+theorem flatten_borchersConj_eq_star_flatten_comp_flatReverse
+    (φ : SchwartzNPoint d n)
+    (x : Fin (n * (d + 1)) → ℝ) :
+    flattenSchwartzNPoint (d := d) φ.borchersConj x =
+      starRingEnd ℂ
+        (flattenSchwartzNPoint (d := d) φ
+          (section43FlatReverseCLE d n x))
+```
+
+Proof transcript: unfold `flattenSchwartzNPoint_apply` and
+`SchwartzMap.borchersConj_apply`, then use extensionality in `(i, μ)` to prove
+that `(flattenCLEquivReal n (d+1)).symm (section43FlatReverseCLE d n x)` is the
+point-reversal of `(flattenCLEquivReal n (d+1)).symm x`:
+
+```lean
+by
+  simp only [flattenSchwartzNPoint_apply, SchwartzMap.borchersConj_apply]
+  apply congrArg (starRingEnd ℂ)
+  congr 1
+  ext i μ
+  simp [section43FlatReverseCLE_apply]
+```
+
+Also expose the involutivity of flat reversal, since the Fourier
+change-of-variables proof needs to simplify `R (R x)`:
+
+```lean
+theorem section43FlatReverseCLE_involutive
+    (x : Fin (n * (d + 1)) → ℝ) :
+    section43FlatReverseCLE d n (section43FlatReverseCLE d n x) = x := by
+  ext a
+  obtain ⟨p, rfl⟩ := finProdFinEquiv.surjective a
+  rw [section43FlatReverseCLE_apply, section43FlatReverseCLE_apply,
+    Fin.rev_rev]
+```
+
+The exponent algebra should be isolated as:
+
+```lean
+theorem section43FlatReverse_pair_eq_neg_negRevFlat_pair
+    (x ξL : Fin (n * (d + 1)) → ℝ) :
+    (∑ a : Fin (n * (d + 1)),
+        (section43FlatReverseCLE d n x a : ℂ) * (ξL a : ℂ)) =
+      -∑ a : Fin (n * (d + 1)),
+        (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ)
+```
+
+Proof transcript: rewrite the left sum through
+`← finProdFinEquiv.sum_comp`, then identify each flat index as
+`finProdFinEquiv (i, μ)`.  The checked Lean proof is:
+
+```lean
+by
+  classical
+  calc
+    (∑ a : Fin (n * (d + 1)),
+        (section43FlatReverseCLE d n x a : ℂ) * (ξL a : ℂ))
+        = ∑ p : Fin n × Fin (d + 1),
+            (x (finProdFinEquiv (Fin.rev p.1, p.2)) : ℂ) *
+              (ξL (finProdFinEquiv p) : ℂ) := by
+          rw [← finProdFinEquiv.sum_comp]
+          refine Finset.sum_congr rfl ?_
+          intro p _hp
+          rw [section43FlatReverseCLE_apply]
+    _ = ∑ p : Fin n × Fin (d + 1),
+            (x (finProdFinEquiv p) : ℂ) *
+              (ξL (finProdFinEquiv (Fin.rev p.1, p.2)) : ℂ) := by
+          refine Finset.sum_bij
+            (fun p (_hp : p ∈ (Finset.univ :
+                Finset (Fin n × Fin (d + 1)))) =>
+              (Fin.rev p.1, p.2)) ?hmem ?hinj ?hsurj ?hval
+          · intro p _hp
+            simp
+          · intro a ha b hb h
+            have h' : (Fin.rev a.1, a.2) = (Fin.rev b.1, b.2) := by
+              simpa using h
+            injection h' with hfst hsnd
+            apply Prod.ext
+            · exact Fin.rev_injective hfst
+            · exact hsnd
+          · intro b _hb
+            exact ⟨(Fin.rev b.1, b.2), by simp⟩
+          · intro p _hp
+            simp
+    _ = -∑ a : Fin (n * (d + 1)),
+          (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ) := by
+          rw [← Finset.sum_neg_distrib]
+          rw [← finProdFinEquiv.sum_comp]
+          refine Finset.sum_congr rfl ?_
+          intro p _hp
+          simp [section43NegRevFlat]
+```
+
+With those helpers, `physicsFourierFlatCLM_borchersConj_apply` is now
+Lean-ready with the following proof transcript.  The proof changes variables
+on the left integral by the measure-preserving flat reversal `R`; this turns
+the left exponent into the conjugate of the right exponent and `R (R x)` into
+`x`.
+
+```lean
+theorem physicsFourierFlatCLM_borchersConj_apply
+    (φ : SchwartzNPoint d n)
+    (ξL : Fin (n * (d + 1)) → ℝ) :
+    physicsFourierFlatCLM
+        (flattenSchwartzNPoint (d := d) φ.borchersConj) ξL =
+      star
+        (physicsFourierFlatCLM
+          (flattenSchwartzNPoint (d := d) φ)
+          (section43NegRevFlat d n ξL)) := by
+  rw [← physicsFourierFlatCLM_integral, ← physicsFourierFlatCLM_integral]
+  let R := section43FlatReverseCLE d n
+  let η := section43NegRevFlat d n ξL
+  have hcomp := (section43FlatReverseCLE_measurePreserving d n).integral_comp
+    (R.toHomeomorph.measurableEmbedding)
+    (fun x : Fin (n * (d + 1)) → ℝ =>
+      Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξL i : ℂ)) *
+        flattenSchwartzNPoint (d := d) φ.borchersConj x)
+  calc
+    (∫ x : Fin (n * (d + 1)) → ℝ,
+      Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξL i : ℂ)) *
+        flattenSchwartzNPoint (d := d) φ.borchersConj x)
+        = ∫ x : Fin (n * (d + 1)) → ℝ,
+            Complex.exp (Complex.I * ∑ i, ((R x) i : ℂ) * (ξL i : ℂ)) *
+              flattenSchwartzNPoint (d := d) φ.borchersConj (R x) := by
+            exact hcomp.symm
+    _ = ∫ x : Fin (n * (d + 1)) → ℝ,
+          starRingEnd ℂ
+            (Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (η i : ℂ)) *
+              flattenSchwartzNPoint (d := d) φ x) := by
+          apply integral_congr_ae
+          filter_upwards with x
+          rw [flatten_borchersConj_eq_star_flatten_comp_flatReverse]
+          dsimp only [R, η]
+          rw [section43FlatReverseCLE_involutive]
+          rw [section43FlatReverse_pair_eq_neg_negRevFlat_pair]
+          simp only [map_mul]
+          congr 1
+          have harg : Complex.I * -∑ a,
+              (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ) =
+              starRingEnd ℂ (Complex.I * ∑ a,
+                (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ)) := by
+            simp
+          rw [harg, Complex.exp_conj]
+    _ = starRingEnd ℂ (∫ x : Fin (n * (d + 1)) → ℝ,
+          Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (η i : ℂ)) *
+            flattenSchwartzNPoint (d := d) φ x) := by
+          exact _root_.integral_conj
+```
+
+This is still a support theorem, not the scalar interchange theorem.  If any
+of these helper statements fails to exact-check, the blueprint must be
+corrected before implementing the product factorization.
 
 5. Use
    `section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum` with the
@@ -14171,18 +14519,20 @@ Fourier-base-to-product draft.  It is permitted only on
 total-momentum support.
 
 ```lean
-private theorem
+theorem
     physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
     {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
     (hξ :
       ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
     let qξ :=
-      section43CumulativeTailMomentum d (n + (m + 1)) ξ
+      section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     physicsFourierFlatCLM
-      (OSReconstruction.reindexSchwartzFin
-        (Nat.add_mul n (m + 1) (d + 1)).symm
+      (reindexSchwartzFin
+        (by ring :
+          n * (d + 1) + (m + 1) * (d + 1) =
+            (n + (m + 1)) * (d + 1))
         (((flattenSchwartzNPoint (d := d) φ.borchersConj).tensorProduct
           (flattenSchwartzNPoint (d := d) ψ)))) ξ =
       star
@@ -14195,7 +14545,7 @@ private theorem
 Proof transcript:
 
 1. Split `hξ` into `hξ_dual` and `hξ_total`.
-2. Put `qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ`.
+2. Put `qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ`.
 3. Use `physicsFourierFlatCLM_reindex_tensorProduct_apply` to factor the
    full flattened transform into left and right flat Fourier transforms.  The
    split variables must be named by `section43SplitLeftFlat` and
@@ -14212,6 +14562,43 @@ Proof transcript:
 7. Unfold only `section43FrequencyRepresentative` at the end.  Do not unfold
    `section43FrequencyProjection`; this theorem is about deterministic
    representatives, not quotient classes.
+
+Checked production transcript, 2026-04-15:
+
+```lean
+by
+  classical
+  dsimp only
+  have hprod := physicsFourierFlatCLM_reindex_tensorProduct_apply
+    (d := d) (n := n) (r := m + 1)
+    (F := flattenSchwartzNPoint (d := d) φ.borchersConj)
+    (G := flattenSchwartzNPoint (d := d) ψ)
+    (ξ := ξ)
+  have hleftArg := section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+    (d := d) (n := n) (r := m + 1) (Nat.succ_pos m)
+    (ξ := ξ) hξ.2
+  have hleft :
+      physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ.borchersConj)
+          (section43SplitLeftFlat d n (m + 1) ξ) =
+        star
+          ((section43FrequencyRepresentative (d := d) n φ)
+            (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m)
+              (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ))) := by
+    rw [physicsFourierFlatCLM_borchersConj_apply]
+    rw [← hleftArg]
+    rfl
+  have hrightArg := section43SplitRightFlat_eq_cumulativeTail_rightTail
+    (d := d) (n := n) (r := m + 1) ξ
+  have hright :
+      physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ)
+          (section43SplitRightFlat d n (m + 1) ξ) =
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+          (section43RightTailBlock d n (m + 1)
+            (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ)) := by
+    rw [hrightArg]
+    rfl
+  rw [hprod, hleft, hright]
+```
 
 Required coordinate helper slots before S2:
 
@@ -14234,22 +14621,29 @@ around the already implemented positive-energy block theorem plus
 allowed because it packages the exact `section43WightmanSpectralRegion`
 surface consumed by S2.
 
-Production status, 2026-04-15: the first lightweight factorization coordinate
-packet is implemented in the new file
-`Section43SpectralFactorization.lean` and exact-checks:
+Production status, 2026-04-15: Packet S2 is implemented in
+`Section43SpectralFactorization.lean` and exact-checks.  The production file
+now contains:
 
 ```lean
 section43SplitLeftFlat
 section43SplitRightFlat
 section43NegRevFlat
 section43LeftBorchersBlock
+section43CumulativeTailMomentumCLE_splitRightFlat
+section43SplitRightFlat_eq_cumulativeTail_rightTail
+section43CumulativeTailMomentumCLE_negRevFlat_splitLeft_of_totalMomentum
+section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+physicsFourierFlatCLM_borchersConj_apply
+physicsFourierFlatCLM_reindex_tensorProduct_apply
+physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion
 section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
 section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
 ```
 
-The inverse cumulative-tail coordinate lemmas are **not** implementation-ready
-as one-line `simp` proofs.  The next proof-doc gap is the finite-sum reindex
-packet needed for:
+Historical correction: the inverse cumulative-tail coordinate lemmas were not
+one-line `simp` proofs.  The finite-sum reindex packet below is the checked
+proof-doc record that was implemented to close:
 
 ```lean
 section43CumulativeTailMomentumCLE_splitRightFlat
@@ -14275,9 +14669,105 @@ The left helper reduces componentwise to
 ```
 
 using total momentum zero to replace the missing prefix by the negative tail.
-The Lean-ready next documentation task is to state and prove these two finite
-`Fin` sum reindex lemmas explicitly, preferably in
-`Section43SpectralFactorization.lean` before exposing the inverse CLE theorems.
+Lean-ready finite-sum packet, 2026-04-15:
+
+The right reindex lemma should be implemented as the private helper
+
+```lean
+private theorem section43_splitRight_tail_sum_eq_full_tail
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (j : Fin r) (μ : Fin (d + 1)) :
+    (∑ x : Fin r,
+      if j.val ≤ x.val then
+        ξ (finProdFinEquiv (Fin.natAdd n x, μ))
+      else 0) =
+    ∑ y : Fin (n + r),
+      if (Fin.natAdd n j).val ≤ y.val then
+        ξ (finProdFinEquiv (y, μ))
+      else 0
+```
+
+Proof transcript: rewrite both sides with `← Finset.sum_filter`; use
+`Finset.sum_bij` with forward map `x ↦ Fin.natAdd n x`.  Membership is
+`Nat.add_le_add_left`.  Injectivity follows by applying `Fin.val` and
+simplifying `Fin.natAdd`.  For surjectivity, from
+`(Fin.natAdd n j).val ≤ y.val`, define
+`x : Fin r := ⟨y.val - n, by omega⟩`; the filter obligation is
+`Fin.le_iff_val_le_val.mpr (by omega)`, and extensionality proves
+`Fin.natAdd n x = y`.
+
+The left reindex must be stated in the form Lean naturally produces after
+simplifying `section43LeftBorchersBlock`, namely with the complementary
+conditions `y.val + j.val < n` and `n ≤ y.val + j.val`:
+
+```lean
+private theorem section43_negRev_left_tail_sum_eq_neg_prefix
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (j : Fin n) (μ : Fin (d + 1)) :
+    (∑ x : Fin n,
+      if j ≤ x then
+        -ξ (finProdFinEquiv (Fin.castAdd r (Fin.rev x), μ))
+      else 0) =
+    -(∑ y : Fin (n + r),
+      if y.val + j.val < n then
+        ξ (finProdFinEquiv (y, μ))
+      else 0)
+
+private theorem section43_full_tail_sum_eq_neg_prefix_of_totalMomentum
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (hξ_total : section43TotalMomentumFlat d (n + r) ξ = 0)
+    (j : Fin n) (μ : Fin (d + 1)) :
+    (∑ y : Fin (n + r),
+      if n ≤ y.val + j.val then
+        ξ (finProdFinEquiv (y, μ))
+      else 0) =
+    -(∑ y : Fin (n + r),
+      if y.val + j.val < n then
+        ξ (finProdFinEquiv (y, μ))
+      else 0)
+```
+
+The first proof again uses `Finset.sum_bij`, now with forward map
+`x ↦ Fin.castAdd r (Fin.rev x)`.  The target filter condition is
+`(Fin.rev x).val + j.val < n`, which is pure `omega` from
+`Fin.le_iff_val_le_val.mp hx`; surjectivity uses
+`a : Fin n := ⟨y.val, by omega⟩` and `x := Fin.rev a`.
+
+For the second proof, specialize total momentum zero at component `μ`:
+
+```lean
+have htotalμ : (∑ y : Fin (n + r), ξ (finProdFinEquiv (y, μ))) = 0 := by
+  have h := congrArg (fun f : Fin (d + 1) → ℝ => f μ) hξ_total
+  simpa [section43TotalMomentumFlat] using h
+```
+
+Then partition the total sum into the complementary predicates
+`y.val + j.val < n` and `n ≤ y.val + j.val` using
+`Finset.sum_add_distrib`; the arithmetic complement is closed by `omega`, and
+the final scalar equality is `linarith`.
+
+Combining those two left helpers gives
+
+```lean
+private theorem section43_negRev_left_tail_sum_eq_full_tail_of_totalMomentum
+```
+
+as a one-line transitivity proof.  The public coordinate API then becomes:
+
+```lean
+theorem section43CumulativeTailMomentumCLE_splitRightFlat
+theorem section43SplitRightFlat_eq_cumulativeTail_rightTail
+theorem section43CumulativeTailMomentumCLE_negRevFlat_splitLeft_of_totalMomentum
+theorem section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+```
+
+The two inverse-CLE theorems are formal: rewrite by the corresponding
+cumulative-tail equality and close with `simp` for
+`ContinuousLinearEquiv.symm_apply_apply`.  This packet has been implemented in
+`Section43SpectralFactorization.lean`.
 
 #### Packet S3: derive representative normal forms from the transform hypotheses
 
@@ -14301,16 +14791,16 @@ have hψ_rep :
 The left factor normal form is:
 
 ```lean
-private theorem
+theorem
     section43_leftBorchers_frequencyRepresentative_eq_fourierLaplaceIntegral
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n)
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (hφ_rep :
       section43FourierLaplaceRepresentative d n f
         (section43FrequencyRepresentative (d := d) n φ))
     {q : NPointDomain d (n + (m + 1))}
-    (hq :
+    (_hq :
       q ∈ section43PositiveEnergyRegion d (n + (m + 1)))
     (hq_left :
       section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) q ∈
@@ -14327,16 +14817,16 @@ The right factor normal form for the scalar OS I `(4.24)` theorem is the same
 basic representative-apply theorem, not the descended-`ψ_Z` Packet-H theorem:
 
 ```lean
-private theorem
+theorem
     section43_rightTail_frequencyRepresentative_eq_fourierLaplaceIntegral
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (ψ : SchwartzNPoint d (m + 1))
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
     (hψ_rep :
       section43FourierLaplaceRepresentative d (m + 1) g
         (section43FrequencyRepresentative (d := d) (m + 1) ψ))
     {q : NPointDomain d (n + (m + 1))}
-    (hq :
+    (_hq :
       q ∈ section43PositiveEnergyRegion d (n + (m + 1)))
     (hq_right :
       section43RightTailBlock d n (m + 1) q ∈
@@ -14349,6 +14839,19 @@ private theorem
 
 Proof: exact `section43FourierLaplaceRepresentative_apply` with `hq_right`.
 
+Production status, 2026-04-15: the two representative normal-form lemmas above
+are implemented in `Section43SpectralFactorization.lean` and exact-check.
+This completes the local S3 apply layer.  The quotient-to-representative
+conversion
+
+```lean
+section43FrequencyRepresentative_is_fourierLaplaceRepresentative
+```
+
+is still a future theorem, because the production code does not yet define the
+real `section43FourierLaplaceTransformComponent` map promised by the scalar
+OS-route theorem surface.
+
 This correction removes a fake zero-height blocker from the scalar theorem.
 The already implemented
 `section43FourierLaplaceRepresentative_rightTailBlock_eq_iterated_descendedPsiZ_of_height`
@@ -14358,9 +14861,13 @@ dependency of `section43OS24Kernel_pairing_eq_osScalar_succRight`.
 
 #### Packet S4: global kernel and spectral-support EqOn
 
-After S1-S3 are proved, first prove an existence theorem for the visible
-kernel as a real `SchwartzMap`.  The pointwise formula alone is not enough:
-the object passed to `Tflat` must live in the Schwartz space.
+After S1-S3 are proved, first prove an existence theorem for a real
+`SchwartzMap` kernel that agrees with the visible OS I `(4.24)` formula on the
+spectral region.  The formula cannot be required globally: the cutoff needed
+to make the extension Schwartz necessarily changes the function away from the
+spectral support.  The object passed to `Tflat` must live in the Schwartz
+space, and the Wightman support theorem only needs agreement on
+`section43WightmanSpectralRegion`.
 
 ```lean
 private theorem exists_section43OS24Kernel_succRight
@@ -14369,46 +14876,291 @@ private theorem exists_section43OS24Kernel_succRight
     (t : ℝ) (ht : 0 < t) :
     ∃ KOS : SchwartzMap
       (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ,
-      ∀ ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ,
-        let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
-        let lamξ : ℝ :=
-          ∑ i,
-            (((OSReconstruction.castFinCLE
-                (Nat.add_mul n (m + 1) (d + 1)).symm)
-              (OSReconstruction.zeroHeadBlockShift
-                (m := n * (d + 1)) (n := (m + 1) * (d + 1))
-                (flatTimeShiftDirection d (m + 1)))) i) * ξ i
-        let ηξ : ℝ := -lamξ / (2 * Real.pi)
-        KOS ξ =
+      Set.EqOn
+        (fun ξ => KOS ξ)
+        (fun ξ =>
+          let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+          let lamξ : ℝ :=
+            ∑ i,
+              (((OSReconstruction.castFinCLE
+                  (Nat.add_mul n (m + 1) (d + 1)).symm)
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+                  (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+          let ηξ : ℝ := -lamξ / (2 * Real.pi)
           (section43PsiZTimeTest t ht) ηξ *
             (star
               ((section43FrequencyRepresentative (d := d) n φ)
                 (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
               (section43FrequencyRepresentative (d := d) (m + 1) ψ)
-                (section43RightTailBlock d n (m + 1) qξ))
+                (section43RightTailBlock d n (m + 1) qξ)))
+        (section43WightmanSpectralRegion d (n + (m + 1)))
 ```
 
-Proof transcript for `exists_section43OS24Kernel_succRight`:
+Corrected proof transcript for `exists_section43OS24Kernel_succRight`,
+2026-04-15:
 
-1. Build the scalar multiplier
-   `ξ ↦ (section43PsiZTimeTest t ht) ηξ` by composing the Schwartz function
-   `section43PsiZTimeTest t ht : SchwartzMap ℝ ℂ` with the continuous linear
-   functional `ξ ↦ ηξ`.  Do **not** use the naked exponential globally: it has
-   the right formula only on the spectral cone and may grow in off-cone
-   directions.
-2. The left and right factors are Schwartz because they are compositions of
-   `section43FrequencyRepresentative` with continuous linear maps
-   `section43LeftBorchersBlock ∘ section43CumulativeTailMomentum` and
-   `section43RightTailBlock ∘ section43CumulativeTailMomentum`.
-3. Multiply the three Schwartz factors using the existing Schwartz algebra
-   product theorem.  If the product theorem is not exposed as a CLM, first add
-   the smallest local theorem that turns pointwise products of two
-   `SchwartzMap`s into a `SchwartzMap`.
-4. Return the constructed `KOS` and close its pointwise formula by extensional
-   unfolding only.  Do not use `Classical.choose` until this existence theorem
-   has the visible formula in its conclusion.
+The tempting direct construction is false as stated.  One cannot simply compose
+the two frequency representatives with
+`section43LeftBorchersBlock ∘ section43CumulativeTailMomentumCLE` and
+`section43RightTailBlock ∘ section43CumulativeTailMomentumCLE` and declare the
+result Schwartz.  In mathlib, `SchwartzMap.compCLM` requires the upper-growth
+condition
 
-Then define the kernel by choice and expose only the pointwise theorem:
+```lean
+∃ (k : ℕ) (C : ℝ), ∀ x, ‖x‖ ≤ C * (1 + ‖g x‖) ^ k
+```
+
+or, via `SchwartzMap.compCLMOfAntilipschitz`, an antilipschitz map.  The block
+maps above are projections; they forget the total-momentum coordinate, so this
+upper-growth condition fails.  Pulling a Schwartz function back by a nonproper
+projection is generally not Schwartz.  Therefore this packet must not be
+implemented by a raw projection-composition proof.
+
+The production CLM packet that is already implemented is still the right
+coordinate API:
+
+```lean
+section43LeftBorchersBlockCLM
+section43RightTailBlockCLM
+section43LeftBorchersFlatCLM
+section43RightTailFlatCLM
+```
+
+These CLMs are useful for pointwise formulas and future coordinate maps, but
+they are not a standalone Schwartzness proof.
+
+The implementation-ready construction must be:
+
+1. Work in cumulative-tail coordinates
+   `q = section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ`.  On
+   `section43WightmanSpectralRegion`, the zeroth cumulative-tail coordinate is
+   the total momentum and equals `0`.
+2. Split `q` into the total-momentum coordinate `q0 : SpacetimeDim d` and the
+   tail coordinates `qtail : Fin (n + m) → Fin (d + 1) → ℝ`, corresponding to
+   `q 1, ..., q (n + m)`.  This split should be a continuous linear
+   equivalence
+
+```lean
+noncomputable def section43CumulativeTailHeadTailCLE
+    (d N : ℕ) [NeZero d] :
+    NPointDomain d N ≃L[ℝ]
+      (SpacetimeDim d × (Fin (N - 1) → Fin (d + 1) → ℝ))
+```
+
+   or, if the `N - 1` arithmetic becomes noisy, the same construction with a
+   local successor parameter
+   `N = n + (m + 1)` and tail index `Fin (n + m)`.
+3. Add a total-momentum cutoff factor
+
+```lean
+χ0 : SchwartzMap (SpacetimeDim d) ℂ := unitBallBumpSchwartzPi (d + 1)
+```
+
+   and pull it back along the `q0` projection through a continuous linear
+   equivalence only.  On the spectral region, `q0 = 0`, so
+   `unitBallBumpSchwartzPi_one_of_mem_closedBall` gives `χ0 q0 = 1`.
+   This cutoff supplies exactly the missing decay in the forgotten
+   total-momentum directions.
+4. Build the tail-visible product as a Schwartz function of `qtail`, not of the
+   full `q` by projection, in the case `0 < n`.  Define a linear map
+
+```lean
+section43TailToBorchersProductCLM (hn : 0 < n) :
+    (Fin (n + m) → Fin (d + 1) → ℝ) →L[ℝ]
+      (NPointDomain d n × NPointDomain d (m + 1))
+```
+
+   whose value is
+   `(section43LeftBorchersBlock d n (m + 1) ... q,
+     section43RightTailBlock d n (m + 1) q)` for any `q` with head `q0 = 0`.
+   Concretely it maps the stored tail coordinates
+   `(q 1, ..., q (n + m))` to
+   `(q n, q (n - 1), ..., q 1)` on the left and
+   `(q n, q (n + 1), ..., q (n + m))` on the right.  The coordinate `q n` is
+   duplicated, but no coordinate is lost.
+5. Handle the degenerate case `n = 0` separately.  Then the right block is the
+   full cumulative-tail coordinate `q`, not a projection forgetting `q0`:
+
+```lean
+theorem section43RightTailBlock_zero_left
+    (q : NPointDomain d (m + 1)) :
+    section43RightTailBlock d 0 (m + 1) q = q
+```
+
+   The visible product is therefore a constant left/vacuum factor times the
+   existing Schwartz map `section43FrequencyRepresentative (d := d) (m + 1) ψ`
+   on full `q`.  Multiplication by the total-momentum cutoff is still allowed
+   because the final theorem is only `EqOn` the spectral region.
+6. Prove `section43TailToBorchersProductCLM hn` is injective.  Then obtain an
+   antilipschitz constant using finite-dimensional linear algebra:
+
+```lean
+have hanti :
+    ∃ K, AntilipschitzWith K (section43TailToBorchersProductCLM hn) :=
+  ((section43TailToBorchersProductCLM hn : _ →L[ℝ] _) : _ →ₗ[ℝ] _).injective_iff_antilipschitz.mp hinj
+```
+
+   The exact theorem exposed by mathlib is
+   `LinearMap.injective_iff_antilipschitz` under `[FiniteDimensional ℝ _]`.
+   This is the proper substitute for the invalid projection pullback.
+7. Build the separated product through the tensor-product domain
+   `NPointDomain d (n + (m + 1))`, not through an extra product-space
+   Schwartz construction.  Add the direct concat map
+
+```lean
+section43TailToBorchersConcatCLM (hn : 0 < n) :
+    NPointDomain d (n + m) →L[ℝ] NPointDomain d (n + (m + 1))
+```
+
+   whose first `n` coordinates are the Borchers-left block
+   `(q n, q (n - 1), ..., q 1)` and whose final `m + 1` coordinates are the
+   right tail `(q n, q (n + 1), ..., q (n + m))`.  Prove split apply lemmas:
+
+```lean
+section43TailToBorchersConcatCLM_splitFirst
+section43TailToBorchersConcatCLM_splitLast
+```
+
+   Prove this concat map injective/antilipschitz by the same coordinate
+   recovery as `section43TailToBorchersProductCLM`.  Then pull back
+
+```lean
+((section43FrequencyRepresentative (d := d) n φ).conj.tensorProduct
+  (section43FrequencyRepresentative (d := d) (m + 1) ψ))
+```
+
+   along `section43TailToBorchersConcatCLM hn` using
+   `SchwartzMap.compCLMOfAntilipschitz`.  The apply theorem then follows
+   directly from `SchwartzMap.tensorProduct_apply`,
+   `SchwartzMap.conj_apply`, and the two split lemmas.  The older product CLM
+   remains useful as an independently checked coordinate packet, but the
+   direct concat map is the Lean-clean route to the tensor-product pullback.
+8. Combine the total-momentum cutoff and the tail-visible product after the
+   head-tail equivalence, using `SchwartzMap.pairing (ContinuousLinearMap.mul
+   ℂ ℂ)` for pointwise multiplication.  This produces a genuine Schwartz
+   function of `q`, with the visible formula on the spectral region because
+   the cutoff is `1` when `q0 = 0`.
+9. Pull the resulting Schwartz function of `q` back to flat frequency
+   coordinates by
+   `SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+     (section43CumulativeTailMomentumCLE d (n + (m + 1)))`.
+10. Multiply the Paley/time-height factor
+   `ξ ↦ (section43PsiZTimeTest t ht) ηξ` by `SchwartzMap.smulLeftCLM`, not by
+   pretending that the one-dimensional projection pullback is automatically
+   Schwartz.  The scalar factor only needs `HasTemperateGrowth`; it is a
+   multiplier on the already-Schwartz cutoff-tail kernel.
+11. Return the constructed `KOS` and close its `EqOn` formula on the
+    spectral region using only:
+    `section43CumulativeTailMomentumCLE`, the head-zero consequence of
+    `section43TotalMomentumZeroFlat`, the cutoff identity at `0`, the
+    tail-map apply lemma, `SchwartzMap.pairing_apply_apply`, and
+    `SchwartzMap.smulLeftCLM_apply_apply`.
+
+S4 support packet status:
+
+Implemented and verified in `Section43SpectralFactorization.lean`:
+
+```lean
+section43SchwartzMul
+section43SchwartzMul_apply
+
+section43CumulativeTailMomentumCLE_head_zero_of_totalMomentumFlat
+section43WightmanSpectralRegion_cumulativeTail_head_zero
+
+section43CumulativeTailHeadTailLinearEquiv
+noncomputable def section43CumulativeTailHeadTailCLE
+section43CumulativeTailHeadTailCLE_head
+section43CumulativeTailHeadTailCLE_tail
+section43CumulativeTailHeadTailCLE_symm_zero
+section43CumulativeTailHeadTailCLE_symm_succ
+
+section43CumulativeTailHeadTailFlatForward
+section43CumulativeTailHeadTailFlatInverse
+section43CumulativeTailHeadTailFlatForward_head
+section43CumulativeTailHeadTailFlatForward_tail
+section43CumulativeTailHeadTailFlatInverse_zero
+section43CumulativeTailHeadTailFlatInverse_succ
+section43CumulativeTailHeadTailFlatLinearEquiv
+section43CumulativeTailHeadTailFlatCLE
+section43CumulativeTailHeadTailFlatCLE_splitFirst
+section43CumulativeTailHeadTailFlatCLE_splitLast
+
+section43LeftBorchersBlock_zero_left
+section43RightTailBlock_zero_left
+
+noncomputable def section43TailToBorchersProductCLM
+section43TailToBorchersProductCLM_left_apply
+section43TailToBorchersProductCLM_right_apply
+section43TailToBorchersProductCLM_injective
+section43TailToBorchersProductCLM_antilipschitz
+
+section43TailToBorchersConcatFun
+noncomputable def section43TailToBorchersConcatCLM
+section43TailToBorchersConcatCLM_left_apply
+section43TailToBorchersConcatCLM_right_apply
+section43TailToBorchersConcatCLM_splitFirst
+section43TailToBorchersConcatCLM_splitLast
+section43TailToBorchersConcatCLM_injective
+section43TailToBorchersConcatCLM_antilipschitz
+
+noncomputable def section43VisibleTailProductSchwartz
+theorem section43VisibleTailProductSchwartz_apply
+
+noncomputable def section43VisibleTailProductFlatSchwartz
+theorem section43VisibleTailProductFlatSchwartz_apply
+
+noncomputable def section43CutoffTailProductHeadTailSchwartz
+noncomputable def section43TotalMomentumCutoffSchwartz
+theorem section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero
+
+noncomputable def section43VisibleProductZeroLeftSchwartz
+theorem section43VisibleProductZeroLeftSchwartz_apply
+```
+
+Still needed before S4 is 100 percent Lean-ready:
+
+```lean
+exists_section43OS24Kernel_succRight
+section43OS24Kernel_succRight_eqOn_spectralRegion
+section43OS24Kernel_succRight_apply_of_mem_spectralRegion
+```
+
+The cutoff implementation is deliberately a cutoff-tail product, not a naked
+projection cutoff.  It flattens the visible tail product, extends it by
+`headBlockBumpExtension`, and pulls back through
+`section43CumulativeTailHeadTailFlatCLE`.  The theorem
+`section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero` says this
+extension agrees with the visible tail product when `q 0 = 0`.  The remaining
+final S4 theorem should case-split on `n`: for `n = 0`, use
+`section43VisibleProductZeroLeftSchwartz`; for `0 < n`, use
+`section43TotalMomentumCutoffSchwartz`.
+
+Important detail: the head statement is intentionally a zero theorem, not an
+unscaled equality with `section43TotalMomentumFlat`.  The corrected cumulative
+tail map rescales spatial components by `-(1 / (2 * Real.pi))`, so total
+momentum zero implies the zeroth cumulative-tail coordinate vanishes, but the
+coordinate is not literally the unscaled total momentum off the zero surface.
+
+Also expose or move the S1 Paley helpers currently local to
+`OSToWightmanPositivity.lean` before the EqOn theorem consumes them:
+
+```lean
+horizontalPhasePairingCLM
+horizontalPhasePairingCLM_apply
+horizontalPhasePairingCLM_fourierTransform
+horizontalPaley_frequency_nonneg_of_mem_dualCone
+```
+
+Until these items are filled in, S4 is not implementation-ready.  This is a
+productive blocker, not a wrapper gap: it is the exact Schwartz-extension
+issue needed to turn the spectral-region formula into a legal test function
+for `Tflat`.
+
+Then define the kernel by choice and expose only the spectral-region EqOn
+theorem, plus a pointwise theorem that requires a spectral-region hypothesis.
+Do not expose a global visible-formula apply theorem; it would be false for the
+cutoff extension.
 
 ```lean
 noncomputable def section43OS24Kernel_succRight
@@ -14421,12 +15173,41 @@ noncomputable def section43OS24Kernel_succRight
 ```
 
 ```lean
-theorem section43OS24Kernel_succRight_apply
+theorem section43OS24Kernel_succRight_eqOn_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {t : ℝ} (ht : 0 < t) :
+    Set.EqOn
+      (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+      (fun ξ =>
+        let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+        let lamξ : ℝ :=
+          ∑ i,
+            (((OSReconstruction.castFinCLE
+                (Nat.add_mul n (m + 1) (d + 1)).symm)
+              (OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+                (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+        let ηξ : ℝ := -lamξ / (2 * Real.pi)
+        (section43PsiZTimeTest t ht) ηξ *
+          (star
+            ((section43FrequencyRepresentative (d := d) n φ)
+              (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
+            (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+              (section43RightTailBlock d n (m + 1) qξ)))
+      (section43WightmanSpectralRegion d (n + (m + 1))) :=
+  Classical.choose_spec
+    (exists_section43OS24Kernel_succRight d n m φ ψ t ht)
+```
+
+```lean
+theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
     (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
     {t : ℝ} (ht : 0 < t)
-    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
-    let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     let lamξ : ℝ :=
       ∑ i,
         (((OSReconstruction.castFinCLE
@@ -14444,8 +15225,8 @@ theorem section43OS24Kernel_succRight_apply
             (section43RightTailBlock d n (m + 1) qξ))
 ```
 
-Proof: this is `Classical.choose_spec
-  (exists_section43OS24Kernel_succRight d n m φ ψ t ht) ξ`.
+Proof: this is
+`section43OS24Kernel_succRight_eqOn_spectralRegion d n m φ ψ ht hξ`.
 
 Then S1 and S2 give the support EqOn theorem:
 
@@ -14475,7 +15256,8 @@ Proof transcript:
 1. Introduce `ξ hξ`; split `hξ` into dual-cone and total-momentum parts.
 2. Apply S1 using the dual-cone part.
 3. Rewrite `base` by S2 using the full spectral-region hypothesis.
-4. Rewrite the target with `section43OS24Kernel_succRight_apply`.
+4. Rewrite the target with
+   `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
 5. Use `horizontalPaley_frequency_nonneg_of_mem_dualCone` and
    `SCV.psiZ_eq_exp_of_nonneg` to replace
    `(section43PsiZTimeTest t ht) ηξ` by
@@ -14927,7 +15709,10 @@ Proof uses:
    `section43_rightTail_frequencyRepresentative_eq_fourierLaplaceIntegral`
    for the right tail.  Do not use the descended-`ψ_Z` Packet-H theorem in
    this scalar recognition step.
-5. `section43OS24Kernel_succRight_apply` to close.
+5. `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ` to
+   close.  The spectral-region hypothesis is essential here: the cutoff-based
+   Schwartz extension only agrees with the visible OS I `(4.24)` scalar on
+   `section43WightmanSpectralRegion`, not globally.
 
 The preceding five-line proof outline is not detailed enough for production.
 The implementation must expose the scalar expansion as a named theorem before
@@ -15027,7 +15812,9 @@ Proof transcript:
    `section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion`.
 8. Rewrite the external phase with
    `section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight`.
-9. Close by `section43OS24Kernel_succRight_apply`.
+9. Close by `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
+   Do not replace this with a global apply theorem; the final kernel is only
+   specified by `EqOn` on the spectral region.
 
 If step 4 is not a one-screen proof, split it into these coordinate theorem
 slots before touching the scalar theorem:
@@ -15393,7 +16180,7 @@ is short: rewrite by the factorization theorem, use
 `section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight`, rewrite
 the two Fourier-Laplace integrals back to frequency representatives using
 `hφ_rep` and `hψ_rep`, and close with
-`section43OS24Kernel_succRight_apply`.
+`section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
 
 The forward-tube lift kernel is then:
 
