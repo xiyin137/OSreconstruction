@@ -19136,12 +19136,84 @@ theorem exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset
           (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}
 ```
 
-Proof: the continuous functions `x ↦ x i 0` and
-`x ↦ x j 0 - x i 0` are strictly positive on the compact set
-`tsupport f` by `hf_ord`.  Since there are finitely many inequalities, take
-the minimum of all finitely many positive minima and divide by `2`.  For
-`n = 0`, the finite family is empty; return any positive `δ`, since the target
-condition is vacuous.
+Compiled status, 2026-04-16: this theorem is implemented in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceWitness.lean`.
+The Lean proof uses an auxiliary compact-minimum lemma
+`exists_pos_le_on_compact_of_forall_pos`, builds one finite index family
+containing a dummy positive constraint, all wall constraints `x i 0`, and all
+gap constraints `x j 0 - x i 0`, and takes the finite infimum of the resulting
+positive lower bounds.  The dummy constraint handles the `n = 0`/empty-family
+case without a separate theorem shape.
+
+The margin has also been pushed through the OS-I difference-coordinate
+pullback:
+
+```lean
+theorem tsupport_section43DiffPullback_subset_margin_positiveOrthant
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    tsupport
+      (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) ⊆
+        {ξ | ∀ k : Fin n, δ ≤ ξ k 0}
+```
+
+The proof uses the already compiled formula for
+`section43DiffCoordRealCLE_apply`: the zeroth difference coordinate is the
+first ordered time, and each later difference coordinate is the adjacent
+ordered gap.
+
+Consequently spatial Fourier transform does not enlarge the time support:
+
+```lean
+theorem partialFourierSpatial_section43DiffPullback_eq_zero_of_exists_time_lt_margin
+    ... :
+    partialFourierSpatial_fun
+      (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) (τ, ξ) = 0
+```
+
+whenever `∃ i, τ i < δ`.  This is the strengthened version of the existing
+nonnegative-orthant theorem
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_exists_time_neg`.
+It is the support input for all later dominated-convergence and rapid-decay
+estimates.
+
+The first damping estimate is also compiled:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum
+    ... :
+    ‖Complex.exp
+        (-(∑ k : Fin n,
+          (τ k : ℂ) * (section43QTime (d := d) (n := n) q k : ℂ))) *
+      partialFourierSpatial_fun
+        (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+        (τ, section43QSpatial (d := d) (n := n) q)‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        ‖partialFourierSpatial_fun
+          (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+The proof splits on whether some `τ i < δ`.  In the below-margin case the
+partial spatial Fourier slice is zero.  Otherwise all `τ i ≥ δ`, and
+positive-energy `q` gives
+
+```text
+∑ i τ_i q_i^0 ≥ δ ∑ i q_i^0.
+```
+
+This is the precise bridge from compact ordered support to exponential
+positive-energy damping.
 
 Second, prove the Fourier-Laplace integral is a Schwartz function on the
 closed positive-energy half-space.  The statement should not mention ambient
@@ -19167,14 +19239,570 @@ For
 F q := section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q
 ```
 
-the proof uses:
+the proof should now be split into the following implementation lemmas.
 
-1. the strict support margin to get exponential decay in each positive time
-   frequency;
-2. integration by parts / existing `partialFourierSpatial_fun` derivative
-   estimates for spatial rapid decay;
-3. dominated differentiation under the integral, with domination supplied by
-   compact support in time and Schwartz decay in spatial variables.
+1. Base scalar bound on the closed positive-energy region:
+
+```lean
+theorem section43FourierLaplaceIntegral_norm_le_exp_margin_integral
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    ‖section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+      ∫ τ : Fin n → ℝ,
+        ‖partialFourierSpatial_fun
+          (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Compiled status, 2026-04-16: this theorem is implemented in
+`Section43FourierLaplaceWitness.lean`.  The proof unfolds
+`section43FourierLaplaceIntegral`, applies
+`norm_integral_le_integral_norm`, then uses
+`norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`.  The
+constant exponential factor is pulled through the integral by
+`integral_const_mul`; the needed integrability side condition is discharged
+from `integrable_partialFourierSpatial_timeSlice.norm.const_mul`.
+
+2. Spatial rapid bound for the remaining time integral:
+
+```lean
+theorem section43PartialFourier_timeIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (r : ℕ) :
+    ∃ C ≥ 0, ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+      (1 + ‖ξ‖) ^ r *
+        ∫ τ : Fin n → ℝ,
+          ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+Proof route: use the existing coordinate-power transport theorems in
+`PartialFourierSpatial.lean`,
+
+```lean
+exists_spatialCoordPow_norm_bound_partialFourierSpatial_fun
+exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
+```
+
+together with the newly compiled uniform time-decay version in
+`Section43FourierLaplaceWitness.lean`:
+
+```lean
+theorem exists_normPow_bound_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (K : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (τ : Fin n → ℝ) (ξ : EuclideanSpace ℝ (Fin n × Fin d)),
+        ‖τ‖ ^ K *
+          ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+and the uniform integral corollary:
+
+```lean
+theorem exists_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+The coordinatewise spatial integration-by-parts estimate is also compiled:
+
+```lean
+theorem exists_spatialCoordPow_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖((((ξ i : ℝ) : ℂ)) ^ k) *
+            partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+The first finite-coordinate comparison lemmas are compiled:
+
+```lean
+theorem euclidean_norm_le_sum_norm {ι : Type*} [Fintype ι]
+    (ξ : EuclideanSpace ℝ ι) :
+    ‖ξ‖ ≤ ∑ i : ι, ‖ξ i‖
+
+theorem one_add_euclidean_norm_le_sum_option_norm {ι : Type*} [Fintype ι]
+    (ξ : EuclideanSpace ℝ ι) :
+    1 + ‖ξ‖ ≤
+      ∑ a : Option ι, match a with | none => (1 : ℝ) | some i => ‖ξ i‖
+```
+
+The missing finite-power comparison and the resulting spatial rapid integral
+bound are now also compiled:
+
+```lean
+theorem one_add_euclidean_norm_pow_le_card_pow_sum_option_norm_pow
+    {ι : Type*} [Fintype ι] (r : ℕ)
+    (ξ : EuclideanSpace ℝ ι) :
+    (1 + ‖ξ‖) ^ r ≤
+      (Fintype.card (Option ι) : ℝ) ^ r *
+        ∑ a : Option ι,
+          (match a with | none => (1 : ℝ) | some i => ‖ξ i‖) ^ r
+
+theorem section43PartialFourier_timeIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (r : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ r *
+          ∫ τ : Fin n → ℝ,
+            ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+The finite-power comparison uses `pow_sum_le_card_mul_sum_pow` on the
+`Option ι` coordinate family.  The spatial rapid theorem then sums the
+compiled coordinate-power integral estimates: the `none` coordinate supplies
+the base integral bound, and each `some i` coordinate supplies the bound for
+`‖ξ i‖^r` times the time integral.  This closes the spatial half of the
+zero-derivative rapid estimate for the Fourier-Laplace witness.
+
+The important point is that the constant is independent of `ξ`; the older
+fixed-slice theorem exposed the same proof idea but with the quantifiers in a
+less useful order.
+
+3. Time rapid decay on the positive-energy half-space:
+
+```lean
+theorem exp_margin_sum_controls_positiveEnergy_time_polynomial
+    (d n : ℕ) [NeZero d]
+    {δ : ℝ} (hδ_pos : 0 < δ) (r : ℕ) :
+    ∃ C ≥ 0, ∀ q ∈ section43PositiveEnergyRegion d n,
+      (1 + ‖section43QTime (d := d) (n := n) q‖) ^ r *
+        Real.exp (-(δ * ∑ k : Fin n,
+          section43QTime (d := d) (n := n) q k)) ≤ C
+```
+
+Compiled status, 2026-04-16: this theorem is implemented in
+`Section43FourierLaplaceWitness.lean`, together with the finite sup-norm
+comparison lemmas
+
+```lean
+theorem pi_norm_le_sum_norm {ι : Type*} [Fintype ι]
+    (x : ι → ℝ) :
+    ‖x‖ ≤ ∑ i : ι, ‖x i‖
+
+theorem pi_norm_le_sum_of_nonneg {ι : Type*} [Fintype ι]
+    {x : ι → ℝ} (hx : ∀ i : ι, 0 ≤ x i) :
+    ‖x‖ ≤ ∑ i : ι, x i
+```
+
+On `section43PositiveEnergyRegion`, all time coordinates are nonnegative, so
+`‖section43QTime q‖` is bounded by the finite sum of the coordinates.  The
+proof then reduces to the already available one-variable real estimate
+
+```text
+∀ r, ∃ C, ∀ s ≥ 0, (1+s)^r * exp(-δ*s) ≤ C.
+```
+
+implemented as `SCV.pow_mul_exp_neg_le_const`; the harmless shift from `s` to
+`1+s` costs a factor `exp δ`.
+
+4. Base rapid estimate for `section43FourierLaplaceIntegral`:
+
+```lean
+theorem one_add_norm_le_section43_time_spatial_product
+    (d n : ℕ) [NeZero d] (q : NPointDomain d n) :
+    1 + ‖q‖ ≤
+      (1 + 2 * ‖(nPointTimeSpatialCLE (d := d) n).symm.toContinuousLinearMap‖) *
+        (1 + ‖section43QTime (d := d) (n := n) q‖) *
+          (1 + ‖section43QSpatial (d := d) (n := n) q‖)
+
+theorem section43FourierLaplaceIntegral_rapid_on_positiveEnergy_zeroDeriv
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ r : ℕ, ∃ C ≥ 0, ∀ q ∈ section43PositiveEnergyRegion d n,
+      (1 + ‖q‖) ^ r *
+        ‖section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q‖ ≤ C
+```
+
+Compiled status, 2026-04-16: both the product norm comparison and the
+zero-derivative rapid estimate are implemented in
+`Section43FourierLaplaceWitness.lean`.
+
+The proof decomposes `q` into time and spatial blocks by
+`nPointTimeSpatialCLE`.  The product-space constant is explicit:
+`1 + 2 * ‖(nPointTimeSpatialCLE d n).symm.toContinuousLinearMap‖`.  The final
+estimate multiplies three compiled inputs: the base scalar bound
+`section43FourierLaplaceIntegral_norm_le_exp_margin_integral`, the spatial
+rapid integral bound `section43PartialFourier_timeIntegral_spatialRapid`, and
+the time exponential-polynomial bound
+`exp_margin_sum_controls_positiveEnergy_time_polynomial`.
+
+5. Derivatives:
+
+The next Gap #2 task is the derivative rapid estimate feeding the `rapid`
+field of `Section43PositiveEnergySchwartzWitness`.  Spatial derivatives use
+the existing fderiv transport theorems for `partialFourierSpatial_fun`; time
+derivatives differentiate the Laplace exponential and introduce finite sums of
+time-coordinate powers `τ_i^k`.  These powers are controlled by
+`exists_timeCoordPow_norm_bound_partialFourierSpatial_fun`; the below-margin
+zero theorem remains available for the exponential damping.  The derivative
+statement should be developed as a direct theorem feeding the `rapid` field,
+not as an ambient-extension shortcut.
+
+Compiled derivative-domination subpacket, 2026-04-16:
+
+```lean
+theorem exists_timeMoment_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (K : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖τ‖ ^ K *
+            ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+
+theorem exists_spatialCoordPow_timeMoment_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) (k K : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖τ‖ ^ K *
+            ‖((((ξ i : ℝ) : ℂ)) ^ k) *
+              partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+
+theorem section43PartialFourier_timeMomentIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (K r : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ r *
+          ∫ τ : Fin n → ℝ,
+            ‖τ‖ ^ K *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+The first theorem is the `K`-moment version of the earlier zero-moment
+integral bound.  It reuses `integral_pow_mul_le_of_le_of_pow_mul_le` with
+`exists_normPow_bound_partialFourierSpatial_timeSlice_uniform` at exponent
+`K + μ.integrablePower`.  The coordinate-power theorem repeats the compiled
+spatial integration-by-parts induction, carrying the extra nonnegative factor
+`‖τ‖^K` through the integral.  The final theorem repeats the finite-coordinate
+`Option ι` summation argument to control the spatial rapid weight.
+
+These estimates are exactly the positive-half-space rapid-domination input for
+the first derivative formula: differentiating the exponential gives a factor
+bounded by `‖τ‖`, while differentiating the spatial momentum argument gives a
+finite sum of partial-Fourier transforms of transported Schwartz inputs.
+
+There is one important implementation correction before the derivative theorem:
+the `smoothOn` field should not be attacked by a custom closed-half-space
+parametric-integral theorem.  The target
+`exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport` assumes
+`hf_compact`, and compactness gives an **upper time slab** for the
+difference-coordinate pullback.  Therefore the Fourier-Laplace integral is
+ambient differentiable near every positive-energy boundary point; the
+closed-half-space condition is needed for rapid decay, not for basic
+differentiability.
+
+The next support lemmas are now compiled:
+
+```lean
+theorem exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ∃ R ≥ 0,
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R
+
+theorem partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound
+    ...
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (hτ : R < ‖τ‖) :
+    partialFourierSpatial_fun
+      (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+      (τ, ξ) = 0
+```
+
+Proof transcript for the upper-slab lemma:
+
+1. Let `K = tsupport (f : NPointDomain d n → ℂ)`.  From `hf_compact`, obtain
+   `hK : IsCompact K`.
+2. Apply `hK.exists_bound_of_continuousOn` to the continuous real function
+   `y ↦ ‖section43QTime (d := d) (n := n)
+       ((section43DiffCoordRealCLE d n) y)‖`.
+3. Replace the resulting bound `R₀` by `R = max R₀ 0` to make nonnegativity
+   explicit.
+4. If `ξ` lies in the `tsupport` of the pullback, then
+   `y = (section43DiffCoordRealCLE d n).symm ξ` lies in `K`, by
+   `tsupport_comp_subset_preimage`.
+5. Since `(section43DiffCoordRealCLE d n) y = ξ`, the compact bound gives
+   `‖section43QTime ξ‖ ≤ R₀ ≤ R`.
+
+Proof transcript for the upper-slab zero theorem:
+
+1. Unfold `partialFourierSpatial_fun` to its spatial integral.
+2. Prove the integrand is a.e. zero.  For fixed spatial variable `η`, put
+   `x = (nPointTimeSpatialCLE (d := d) n).symm (τ, η)`.
+3. If `x` were in the pullback `tsupport`, the upper-slab hypothesis would give
+   `‖τ‖ = ‖section43QTime x‖ ≤ R`, contradicting `R < ‖τ‖`.
+4. Thus the pullback value at `x` is zero by
+   `image_eq_zero_of_notMem_tsupport`, and the spatial Fourier integrand
+   vanishes.
+
+Compiled status, 2026-04-16: both upper-slab lemmas are implemented in
+`Section43FourierLaplaceWitness.lean`.  The same file now also contains the
+compiled selector CLMs
+
+```lean
+section43QTimeCLM
+section43QSpatialCLM
+```
+
+the pointwise derivative CLM, and the integrated derivative candidate
+
+```lean
+section43FourierLaplace_timeIntegrandFDerivCLM
+section43FourierLaplace_timeIntegrandFDerivCLM_apply
+section43FourierLaplace_expArgCLM
+section43FourierLaplace_expArgCLM_apply
+hasFDerivAt_section43FourierLaplace_timeIntegrand
+section43FourierLaplaceIntegral_fderivCandidate
+```
+
+The integrated CLM candidate uses the same narrow
+`set_option backward.isDefEq.respectTransparency false in` compatibility wrapper
+as `OSReconstruction.Mathlib429Compat`, because Lean 4.29 otherwise fails to
+synthesize the real/complex scalar-commutation instances needed for the normed
+operator-space structure on `NPointDomain d n →L[ℝ] ℂ`.
+
+With the upper slab available, the first derivative theorem can use Mathlib's
+ambient parametric-integral theorem
+`hasFDerivAt_integral_of_dominated_of_fderiv_le` on a genuine neighborhood of
+`q`.  The domination has two factors:
+
+1. a local exponential bound on the compact τ-slab
+   `‖τ‖ ≤ R`, because `q'` ranges over a small ambient ball around `q`;
+2. a Schwartz time-slice bound for the partial-spatial Fourier factors and
+   their coordinate transport derivatives, already supplied by the
+   time-moment and spatial-coordinate packets above.
+
+Update, 2026-04-16: the pointwise derivative step below is now implemented and
+exact-file checked in `Section43FourierLaplaceWitness.lean`.  The same pass
+also compiled the support lemma
+
+```lean
+section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_timeNorm_gt_bound
+hasCompactSupport_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact
+```
+
+which says the entire pointwise derivative CLM vanishes when `R < ‖τ‖`, not
+just the base partial-Fourier value, and then packages this as compact support
+in the `τ` variable.  The remaining first-derivative seam is therefore no
+longer the product-rule calculation or the support cutoff; it is the boundedness
+/ integrability / local-domination packet needed to pass the pointwise
+derivative under the Bochner integral.
+
+The remaining first derivative proof should be implemented in the following
+order.
+
+Already compiled pointwise integrand derivative:
+
+```lean
+theorem hasFDerivAt_section43FourierLaplace_timeIntegrand
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) * (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n) F
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      (section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ)
+      q
+```
+
+Compiled transcript:
+
+1. Define the time exponent argument CLM
+   `Lτ : NPointDomain d n →L[ℝ] ℂ` by the finite sum
+   `∑ k, ((proj k).comp (section43QTimeCLM d n)).smulRight (-(τ k : ℂ))`.
+   Then
+   `Lτ q = -(∑ k, (τ k : ℂ) * (section43QTime q k : ℂ))`.
+2. `Complex.hasDerivAt_exp (Lτ q)` composed with `Lτ.hasFDerivAt` gives
+   `HasFDerivAt (fun q' => Complex.exp (Lτ q')) (E • Lτ) q`.
+3. `differentiableAt_partialFourierSpatial_fun_spatial F τ (section43QSpatial q)`
+   composed with `section43QSpatialCLM` gives the spatial derivative term.
+4. Apply `HasFDerivAt.mul` to the exponential and spatial-Fourier factors.
+5. Extensionality on `m : NPointDomain d n`,
+   `ContinuousLinearMap.smulRight_apply`, and commutative ring normalization
+   identify the product-rule derivative with
+   `section43FourierLaplace_timeIntegrandFDerivCLM_apply`.
+
+Second prove the CLM-valued derivative is integrable at fixed `q` under compact
+ordered support:
+
+```lean
+theorem integrable_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        section43FourierLaplace_timeIntegrandFDerivCLM d n
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ)
+```
+
+Transcript: obtain `R` from
+`exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport`; split the
+time integral into the compact ball `‖τ‖ ≤ R` and its complement.  On the
+complement the CLM is now zero by the compiled theorem
+`section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_timeNorm_gt_bound`.
+On the compact ball, the remaining implementation choice is how to package
+boundedness:
+
+1. Preferred route: prove `τ ↦ section43FourierLaplace_timeIntegrandFDerivCLM
+   d n F q τ` is continuous as a CLM-valued map, using
+   `continuous_clm_apply`, `continuous_partialFourierSpatial_fun`, and
+   `continuous_partialFourierSpatial_fun_spatialDerivative_apply`; then apply
+   `Continuous.integrable_of_hasCompactSupport` with the compiled
+   `hasCompactSupport_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact`.
+2. Fallback route if CLM-valued continuity creates definitional-equality
+   friction: prove the norm bound directly on the compact ball.  Apply the
+   derivative CLM to a unit vector `m`, use the explicit apply theorem to bound
+   the finite time sum and the spatial derivative term, take the supremum on
+   the compact τ-ball via the scalar continuity hooks, and close with the
+   finite-dimensional operator-norm comparison.  This is not a wrapper route:
+   the bound is exactly the compact-slab domination needed by the parametric
+   integral theorem.
+
+Third prove the local dominated derivative bound needed by Mathlib:
+
+```lean
+theorem section43FourierLaplace_timeIntegrandFDerivCLM_local_bound
+    ... :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ q' ∈ Metric.ball q 1,
+        ‖section43FourierLaplace_timeIntegrandFDerivCLM d n
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q' τ‖ ≤ bound τ
+```
+
+The bound is supported on the same compact τ-ball.  On that ball, the local
+exponential factor is bounded by
+`exp(R * (1 + ‖section43QTime q‖))`; the partial-Fourier terms are bounded by
+the already compiled uniform Schwartz estimates and their finite coordinate
+transport analogues.
+
+Recommended first derivative theorem shape:
+
+```lean
+noncomputable def section43QTimeCLM (d n : ℕ) [NeZero d] :
+    NPointDomain d n →L[ℝ] (Fin n → ℝ) := ...
+
+noncomputable def section43QSpatialCLM (d n : ℕ) [NeZero d] :
+    NPointDomain d n →L[ℝ] EuclideanSpace ℝ (Fin n × Fin d) := ...
+
+noncomputable def section43FourierLaplace_timeIntegrandFDerivCLM
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    NPointDomain d n →L[ℝ] ℂ := ...
+
+noncomputable def section43FourierLaplaceIntegral_fderivCandidate
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    NPointDomain d n →L[ℝ] ℂ :=
+  ∫ τ : Fin n → ℝ,
+    section43FourierLaplace_timeIntegrandFDerivCLM
+      d n (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ
+
+theorem section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+    ... :
+    HasFDerivAt
+      (fun q => section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+      (section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q)
+      q
+```
+
+The pointwise expansion of `section43FourierLaplace_timeIntegrandFDerivCLM`
+applied to a direction `m : NPointDomain d n` is:
+
+```text
+E(q,τ) *
+  (-(∑ k, τ k * section43QTime m k) *
+      partialFourierSpatial_fun F (τ, section43QSpatial q)
+    + fderiv_ξ(partialFourierSpatial_fun F)(τ, section43QSpatial q)
+        (section43QSpatial m))
+```
+
+where `F = section43DiffPullbackCLM d n ⟨f, hf_ord⟩` and
+`E(q,τ) = exp(-∑ k τ k * section43QTime q k)`.  The spatial derivative term is
+rewritten by
+`fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz`; the
+operator-norm domination is obtained by expanding
+`section43QSpatial m` in the finite Euclidean basis, applying the coordinate
+transport estimates one coordinate at a time, and summing the finite constants.
+
+After this ambient first-derivative theorem is compiled, the `smoothOn` field is
+obtained by restriction:
+
+```lean
+(section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport ...).hasFDerivWithinAt
+```
+
+The `rapid` field remains a positive-energy estimate.  It should be proved by
+reusing the same pointwise derivative expansion and the already compiled
+positive-half-space damping
+`norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`; this is
+where the time-moment theorem
+`section43PartialFourier_timeMomentIntegral_spatialRapid` is consumed.  Once
+the first derivative formula is compiled, iterate the same candidate
+construction over transported Schwartz inputs to obtain the full `rapid` field.
 
 Third, prove or import the general extension theorem from the closed
 positive-energy half-space to ambient Schwartz space:
