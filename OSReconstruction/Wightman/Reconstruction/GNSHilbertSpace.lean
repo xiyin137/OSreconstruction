@@ -1270,7 +1270,8 @@ private lemma wfn_spectralConditionDistribution :
     SpectralConditionDistribution d Wfn.W :=
   (spectralConditionDistribution_iff_forwardTubeAnalyticity d
     Wfn.tempered Wfn.linear Wfn.translation_invariant).mpr
-    Wfn.spectrum_condition
+    (fun n => let ⟨W_an, hDiff, _, hBV⟩ := Wfn.spectrum_condition n
+      ⟨W_an, hDiff, hBV⟩)
 
 /-- **Stone spectral Fourier-Stieltjes representation** (Reed-Simon VIII.5):
     for a strongly continuous one-parameter unitary group `U(t)` with self-adjoint
@@ -1503,21 +1504,639 @@ private lemma scd_summand_integrable
       rw [norm_mul]
       exact mul_le_mul_of_nonneg_right (hbound t) (norm_nonneg _)))
 
+/-- The Fourier integral `∫ ℱ[φ](t) dt = φ(0)`, by Fourier inversion at the origin. -/
+private lemma integral_fourierTransform_eq_apply_zero
+    (φ : SchwartzMap ℝ ℂ) :
+    ∫ t : ℝ, ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = (φ : ℝ → ℂ) 0 := by
+  set g := SchwartzMap.fourierTransformCLM ℂ φ with hg_def
+  have hinv : FourierTransform.fourierInv (g : ℝ → ℂ) = (φ : ℝ → ℂ) := by
+    have h := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ))
+      (FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) φ)
+    dsimp only at h
+    rwa [SchwartzMap.fourierInv_coe] at h
+  have h_fi_zero : FourierTransform.fourierInv (g : ℝ → ℂ) 0 =
+      ∫ t : ℝ, (g : ℝ → ℂ) t := by
+    rw [Real.fourierInv_eq' (f := (g : ℝ → ℂ)) (w := (0 : ℝ))]
+    congr 1; ext v
+    simp [inner_zero_left v, smul_eq_mul]
+  calc ∫ t : ℝ, (g : ℝ → ℂ) t
+      = FourierTransform.fourierInv (g : ℝ → ℂ) 0 := h_fi_zero.symm
+    _ = (φ : ℝ → ℂ) 0 := congrFun hinv 0
+
+/-- A function `g : ℝ → ℂ` has **nonnegative distributional Fourier support** if
+    `∫ g(t) · ℱ[ψ](t) dt = 0` for every Schwartz `ψ` with `supp(ψ) ⊆ (-∞, 0)`.
+    Equivalently, the distributional Fourier transform of `g` is supported on `[0, ∞)`. -/
+private def HasNonnegDistrFourierSupport (g : ℝ → ℂ) : Prop :=
+  ∀ (ψ : SchwartzMap ℝ ℂ), (∀ x ∈ Function.support (ψ : ℝ → ℂ), x < 0) →
+    ∫ t : ℝ, g t * ((SchwartzMap.fourierTransformCLM ℂ ψ) : ℝ → ℂ) t = 0
+
+/-- Constant functions have nonnegative distributional Fourier support:
+    `∫ C · ℱ[ψ] dt = C · ψ(0) = 0` since `0 ∉ supp(ψ)`. -/
+private lemma hasNonnegDistrFourierSupport_const (c : ℂ) :
+    HasNonnegDistrFourierSupport (fun _ => c) := by
+  intro ψ hψ
+  have hψ0 : (ψ : ℝ → ℂ) 0 = 0 := by
+    by_contra h; exact absurd (hψ 0 (Function.mem_support.mpr h)) (lt_irrefl 0)
+  show ∫ t : ℝ, c * ((SchwartzMap.fourierTransformCLM ℂ ψ) : ℝ → ℂ) t = 0
+  rw [MeasureTheory.integral_const_mul, integral_fourierTransform_eq_apply_zero, hψ0, mul_zero]
+
+/-- **CLM exchange for Schwartz-valued distributional integrals (Gelfand–Pettis).**
+
+    Given a continuous ℂ-linear functional `w`, a Schwartz-topology-continuous family
+    `F : ℝ → SchwartzNPointSpace d n` with **polynomially bounded Schwartz seminorms**
+    (i.e. for each `(k, j)`, `‖F t‖_{k,j} ≤ C * (1 + ‖t‖)^N` for some `C, N`), the
+    pointwise integral `Θ(ξ) := ∫ t, ℱ[φ](t) * F(t)(ξ) dt` defines a Schwartz function
+    satisfying both:
+    1. `Θ(ξ) = ∫ t, ℱ[φ](t) * F(t)(ξ) dt` for all ξ   (pointwise formula)
+    2. `w(Θ) = ∫ t, w(F(t)) * ℱ[φ](t) dt`             (CLM exchange)
+
+    **Why polynomial growth is needed:** `ℱ[φ]` is Schwartz (decays faster than any
+    polynomial), so `|ℱ[φ](t)| * |F t ξ|` is integrable when `|F t ξ|` grows at most
+    polynomially in `t`.  Mere continuity of `F` is insufficient — a continuous function
+    can grow super-polynomially.  For the Schwartz property of `Θ`, one additionally needs
+    polynomial bounds on all Schwartz seminorms of `F t` to justify differentiation under
+    the integral sign and rapid decay of `Θ`.
+
+    **Proof sketch:** The pointwise integral converges by dominated convergence (using
+    Schwartz decay of `ℱ[φ]` against `hF_poly`). Smoothness of `Θ` follows by
+    differentiating under the integral sign; rapid decay from the Schwartz decay of `ℱ[φ]`.
+    The CLM exchange then follows by linearity of `w` and dominated convergence in ℂ. -/
+private lemma schwartz_clm_integral_exchange {n : ℕ}
+    (w : SchwartzNPointSpace d n → ℂ) (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
+    {F : ℝ → SchwartzNPointSpace d n} (hF_cont : Continuous F)
+    (hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+        SchwartzMap.seminorm ℝ k j (F t) ≤ C * (1 + ‖t‖) ^ N)
+    (φ : SchwartzMap ℝ ℂ) :
+    ∃ Θ : SchwartzNPointSpace d n,
+      (∀ ξ : NPointSpacetime d n,
+          Θ ξ = ∫ t : ℝ,
+            ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t * F t ξ) ∧
+      w Θ = ∫ t : ℝ,
+        w (F t) * ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t := by
+  -- Abbreviate phihat := ℱ[φ] throughout.
+  let phihat : SchwartzMap ℝ ℂ := SchwartzMap.fourierTransformCLM ℂ φ
+  -- ── Component 1a: Integrability ───────────────────────────────────────────────────
+  -- For each ξ, the map t ↦ phihat(t) * F(t)(ξ) is L¹(ℝ, ℂ).
+  -- Justification:
+  --   |F(t)(ξ)| ≤ ‖F(t)‖_{0,0} ≤ C₀ * (1 + ‖t‖)^N₀     (hF_poly 0 0 + le_seminorm)
+  --   |phihat(t)| decays faster than any polynomial        (Schwartz decay of phihat)
+  -- → polynomial growth × Schwartz ∈ L¹, analogue of integrable_polyGrowth_mul_schwartz.
+  have hInteg : ∀ ξ : NPointSpacetime d n,
+      MeasureTheory.Integrable (fun t : ℝ => (phihat : ℝ → ℂ) t * F t ξ) := by
+    intro ξ
+    obtain ⟨C₀, N₀, hbound₀⟩ := hF_poly 0 0
+    -- Pointwise bound: |F t ξ| ≤ C₀ * (1 + ‖t‖)^N₀
+    have hFξ_bound : ∀ t : ℝ, ‖F t ξ‖ ≤ C₀ * (1 + ‖t‖) ^ N₀ := by
+      intro t
+      have h1 : ‖F t ξ‖ ≤ SchwartzMap.seminorm ℝ 0 0 (F t) := by
+        simpa using SchwartzMap.le_seminorm ℝ 0 0 (F t) ξ
+      exact h1.trans (hbound₀ t)
+    -- [Polynomial-growth × Schwartz-decay → L¹(ℝ)]
+    -- Requires: analogue of integrable_polyGrowth_mul_schwartz for integration over ℝ
+    -- (rather than Fin m → ℝ); the function t ↦ F t ξ has growth ≤ C₀ * (1+‖t‖)^N₀.
+    sorry
+  -- ── Component 1: Define Θ pointwise ───────────────────────────────────────────────
+  let Θ_fun : NPointSpacetime d n → ℂ :=
+    fun ξ => ∫ t : ℝ, (phihat : ℝ → ℂ) t * F t ξ
+  -- ── Component 1d: Package as SchwartzMap (smooth' and decay' proved below) ────────
+  -- smooth': C^∞ in ξ by differentiating under the integral sign iteratively.
+  --   At each ξ₀, d/dε[Θ_fun(ξ₀ + εv)] = ∫ t, phihat(t) * d/dε[F(t)(ξ₀ + εv)]
+  --   via hasFDerivAt_integral_of_dominated_of_fderiv_le (ParametricIntegral.lean),
+  --   dominator C_{1,j} * (1+‖t‖)^N * ‖phihat t‖ ∈ L¹. Iterating → ContDiff ℝ ⊤.
+  -- decay': for each (k, j) and ξ:
+  --   ‖ξ‖^k * ‖iteratedFDeriv ℝ j Θ_fun ξ‖
+  --   ≤ (1+‖ξ‖)^k * ‖∫ t, phihat(t) * iteratedFDeriv ℝ j (F t) ξ‖  (‖ξ‖ ≤ 1+‖ξ‖)
+  --   ≤ ∫ t, |phihat(t)| * (1+‖ξ‖)^k * ‖iteratedFDeriv ℝ j (F t) ξ‖ (triangle ineq.)
+  --   ≤ ∫ t, |phihat(t)| * SchwartzMap.seminorm ℝ k j (F t)           (defn of seminorm)
+  --   ≤ ∫ t, |phihat(t)| * C_{k,j} * (1+‖t‖)^N_{k,j}                 (hF_poly k j)
+  --   This last integral is a finite constant independent of ξ.
+  let Θ : SchwartzNPointSpace d n := {
+    toFun := Θ_fun
+    smooth' := by
+      -- C^∞ in ξ from differentiating under the integral sign (see comment above)
+      sorry
+    decay' := by
+      intro k j
+      obtain ⟨C_kj, N_kj, hbound_kj⟩ := hF_poly k j
+      -- The finite bound: ∫ t, ‖phihat t‖ * (C_kj * (1 + ‖t‖)^N_kj)
+      refine ⟨∫ t : ℝ, ‖(phihat : ℝ → ℂ) t‖ * (C_kj * (1 + ‖t‖) ^ N_kj), fun ξ => ?_⟩
+      -- iteratedFDeriv Θ_fun = ∫ phihat * iteratedFDeriv (F t)  (from smooth')
+      -- then norm_integral_le_integral_norm + le_seminorm + hbound_kj
+      sorry
+  }
+  -- ── Component 2: Pointwise formula holds by construction (definitional) ───────────
+  have hpointwise : ∀ ξ : NPointSpacetime d n,
+      Θ ξ = ∫ t : ℝ, (phihat : ℝ → ℂ) t * F t ξ := fun _ => rfl
+  -- ── Component 3: CLM exchange w(Θ) = ∫ t, w(F t) * phihat t ─────────────────────
+  have hclm : w Θ = ∫ t : ℝ, w (F t) * (phihat : ℝ → ℂ) t := by
+    -- Step 3a: The integrand is L¹(ℝ, ℂ).
+    -- By continuity of w: ∃ k₀, j₀, C_w, ∀ f, |w f| ≤ C_w * ‖f‖_{k₀,j₀}
+    --   (Seminorm.bound_of_continuous on the Schwartz Fréchet space)
+    -- Then |w(F t)| ≤ C_w * C_{k₀,j₀} * (1+‖t‖)^N_{k₀,j₀}  (hF_poly k₀ j₀)
+    -- and |phihat(t)| decays rapidly → product is L¹.
+    have hw_F_integ : MeasureTheory.Integrable (fun t : ℝ => w (F t) * (phihat : ℝ → ℂ) t) := by
+      sorry
+    -- Step 3b: Gelfand–Pettis exchange for the Fréchet space SchwartzNPointSpace d n.
+    -- Θ is the Gelfand–Pettis integral of t ↦ phihat(t) * F(t) in SchwartzNPointSpace d n:
+    -- for any continuous functional w on a locally convex Hausdorff space E, if Θ ∈ E
+    -- satisfies ∀ ξ, ev_ξ(Θ) = ∫ t, phihat(t) * ev_ξ(F t)  and evaluations separate points,
+    -- then w(Θ) = ∫ t, phihat(t) * w(F t).
+    -- (Classical Pettis/Gelfand integral theory for nuclear Fréchet spaces.)
+    sorry
+  exact ⟨Θ, hpointwise, hclm⟩
+
+/-- **Fourier inversion and support condition for the SCD translate witness.**
+
+    Given `Θ : SchwartzNPointSpace d (n + m - 1)` defined pointwise as the Schwartz integral
+    of `t ↦ ℱ[φ](t) * diffVarReduction(fn.conjTP(τ_{te₀} fm))`, there exists
+    `ψ = ℱ⁻¹[Θ] : SchwartzNPointSpace d (n + m - 1)` satisfying:
+    1. `ψ.fourierTransform = Θ`                            (ℱ ∘ ℱ⁻¹ = id on Schwartz space)
+    2. `ψ(q) ≠ 0 → φ(q ⟨n-1, hbdry⟩ 0) ≠ 0`            (support from partial convolution)
+
+    **Proof sketch of (2):** The time-translation `τ_{te₀}` shifts all `m` fm-arguments by
+    `-t·e₀`. In difference variables, `F(t)(ξ)` is a translation of `F(0)(ξ)` by `-t` in
+    the sum `(Σ_{j<n} ξ_j)(0)` (the boundary slot adjacent to ξ_{n-1}). Thus Θ is a partial
+    convolution of G₀ = F(0) with ℱ[φ] in that slot. Inverting the full Fourier transform
+    converts the convolution to pointwise multiplication: `ψ(q) ∝ φ(q_{n-1,0}) · Ĝ₀(q)`,
+    so `ψ(q) ≠ 0` forces `φ(q_{n-1,0}) ≠ 0`. -/
+private lemma scd_fourierInv_translate_witness {n m : ℕ} (hn : 0 < n) (hm : 0 < m)
+    (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (φ : SchwartzMap ℝ ℂ) (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0)
+    (hk : (n + m - 1) + 1 = n + m) (hbdry : n - 1 < n + m - 1)
+    (Θ : SchwartzNPointSpace d (n + m - 1))
+    (hΘ : ∀ ξ : NPointSpacetime d (n + m - 1),
+        Θ ξ = ∫ t : ℝ,
+          ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+            diffVarReduction d (n + m - 1)
+              (hk.symm ▸ fn.conjTensorProduct
+                (poincareActNPoint
+                  (PoincareRepresentation.translationInDirection d 0 t) fm)) ξ) :
+    ∃ ψ : SchwartzNPointSpace d (n + m - 1),
+        ψ.fourierTransform = Θ ∧
+        ∀ q : NPointSpacetime d (n + m - 1),
+          ψ q ≠ 0 → (φ : ℝ → ℂ) (q ⟨n - 1, hbdry⟩ 0) ≠ 0 := by
+  sorry
+
+/-- **SCD ⟹ nonneg distributional Fourier support of the WIP summand.**
+
+    The function `t ↦ W_{n+m}(fₙ* ⊗ τ_{te₀} fₘ)` has distributional Fourier transform
+    supported on `[0, ∞)`. The proof applies the Fourier transform to the full integrand
+    and uses `ℱ ∘ ℱ = id` (up to reflection) to reduce to a support comparison:
+    `ℱ_distr[g]` is supported on non-negative energies by SCD, while `φ` is supported
+    on `(-∞, 0)`, so the distributional pairing `⟨ℱ[g], φ⟩ = ∫ g(t) · ℱ[φ](t) dt = 0`.
+
+    - **Degenerate cases** (`m = 0` or `n = 0`): `g(t)` is constant (trivial action
+      on `Fin 0` or translation invariance), giving `ℱ_distr[g] = C · δ₀` supported
+      at `{0} ⊆ [0, ∞)`.
+    - **Non-degenerate case** (`n, m ≥ 1`): Factor through the SCD reduced distribution
+      `w`. By the shift structure, time-translation shifts only the boundary difference
+      variable `ξ_{n-1}`. Exchanging `w` with the `t`-integral and applying
+      `ℱ ∘ ℱ = reflection` yields a Schwartz witness with support contradicting `V̄₊`,
+      so SCD gives vanishing.
+
+    **Ref:** Streater-Wightman, §3-1; Reed-Simon II, Theorem X.40. -/
+private lemma scd_summand_nonneg_fourier_support
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    {n m : ℕ} (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m) :
+    HasNonnegDistrFourierSupport (fun t =>
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm))) := by
+  intro φ hφ
+  by_cases hm : m = 0
+  · -- m = 0: τ acts trivially on fm (Fin 0 domain), so g(t) is constant.
+    -- ℱ_distr[const] = C · δ₀ supported at {0} ⊆ [0, ∞).
+    have h_act_fm : ∀ t, poincareActNPoint
+        (PoincareRepresentation.translationInDirection d 0 t) fm = fm := by
+      intro t; subst hm; ext x; simp only [poincareActNPoint_apply]
+      congr 1; ext i; exact Fin.elim0 i
+    simp_rw [h_act_fm]
+    exact hasNonnegDistrFourierSupport_const (Wfn.W (n + m) (fn.conjTensorProduct fm)) φ hφ
+  · by_cases hn : n = 0
+    · -- n = 0, m ≥ 1: g(t) is constant by translation invariance of W.
+      -- When n = 0, the Poincaré action on fn is trivial (Fin 0 domain is empty),
+      -- so W(fn.conjTP(τ_t fm)) = W((τ_t fn).conjTP(τ_t fm)) = W(fn.conjTP(fm))
+      -- by translation invariance. ℱ_distr[const] = C · δ₀ ⊆ [0, ∞).
+      have h_const : ∀ t : ℝ,
+          Wfn.W (n + m) (fn.conjTensorProduct
+            (poincareActNPoint
+              (PoincareRepresentation.translationInDirection d 0 t) fm)) =
+          Wfn.W (n + m) (fn.conjTensorProduct fm) := by
+        intro t
+        set τ := PoincareRepresentation.translationInDirection d 0 t with hτ_def
+        have h_act_fn : poincareActNPoint τ fn = fn := by
+          subst hn; ext x; simp only [poincareActNPoint_apply]
+          congr 1; ext i; exact Fin.elim0 i
+        conv_lhs => rw [← h_act_fn]
+        symm
+        apply Wfn.translation_invariant (n + m)
+          (-(t • PoincareRepresentation.basisVector d 0))
+        intro x
+        rw [poincareActNPoint_conjTensorProduct]
+        congr 1; ext i
+        simp only [poincareActNPointDomain, PoincareGroup.act_def,
+          PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+          hτ_def, PoincareRepresentation.translationInDirection,
+          PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
+          inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec]
+      simp_rw [h_const]
+      exact hasNonnegDistrFourierSupport_const (Wfn.W (n + m) (fn.conjTensorProduct fm)) φ hφ
+    · -- n ≥ 1, m ≥ 1: Non-degenerate SCD argument.
+      -- Factor W through the reduced distribution w from SCD.
+      have hpos : 0 < n + m := by omega
+      have hk : (n + m - 1) + 1 = n + m := Nat.sub_add_cancel hpos
+      obtain ⟨w, hw_cont, hw_lin, hw_factor, hw_vanish⟩ := hSCD (n + m - 1)
+      have cast_W : ∀ (ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
+          Wfn.W ℓ (hℓ.symm ▸ f) = Wfn.W (n + m) f := fun ℓ hℓ f => by subst hℓ; rfl
+      have hw_eq : ∀ (f : SchwartzNPointSpace d (n + m)),
+          Wfn.W (n + m) f = w (diffVarReduction d (n + m - 1) (hk.symm ▸ f)) :=
+        fun f => by rw [← cast_W _ hk f]; exact hw_factor _
+      simp_rw [hw_eq]
+      have hbdry : n - 1 < n + m - 1 := by omega
+      -- Apply ℱ to the full integrand via distributional Parseval:
+      --   ∫ w(F(t)) · ℱ[φ](t) dt = ⟨ℱ_distr[g], φ⟩
+      -- where g(t) = w(F(t)), F(t) = diffVarReduction(fₙ* ⊗ τ_{te₀} fₘ).
+      --
+      -- Step 1 (CLM exchange): ∫ w(F(t)) · ℱ[φ](t) dt = w(∫ ℱ[φ](t) • F(t) dt) =: w(Θ)
+      -- Step 2 (Shift structure): F(t)(ξ) = G₀(ξ', ξ_{n-1} - te₀, ξ'')
+      --   → Θ is a partial convolution of ℱ[φ] with G₀ in ξ_{n-1,0}
+      -- Step 3 (ℱ ∘ ℱ = reflection): Set ψ = ℱ⁻¹[Θ]. Then
+      --   ψ(q) = φ(±q_{n-1,0}) · ℱ⁻¹[G₀](...), so
+      --   ψ(q) ≠ 0 ⟹ φ(q_{n-1,0}) ≠ 0 ⟹ q_{n-1,0} < 0 ⟹ q_{n-1} ∉ V̄₊
+      -- Step 4 (Disjoint supports): w(ℱ[ψ]) = w(Θ) = ∫ ... = 0 by SCD vanishing.
+      suffices h_main : ∃ ψ : SchwartzNPointSpace d (n + m - 1),
+          (w (ψ.fourierTransform) =
+            ∫ t : ℝ,
+              w (diffVarReduction d (n + m - 1) (hk.symm ▸ fn.conjTensorProduct
+                  (poincareActNPoint
+                    (PoincareRepresentation.translationInDirection d 0 t) fm))) *
+              ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t) ∧
+          (∀ q : NPointSpacetime d (n + m - 1),
+            ψ q ≠ 0 → (φ : ℝ → ℂ) (q ⟨n - 1, hbdry⟩ 0) ≠ 0) by
+        -- Step 4: Disjoint supports ⟹ vanishing.
+        obtain ⟨ψ, h_eq, h_factor⟩ := h_main
+        have h_zero : w (ψ.fourierTransform) = 0 := hw_vanish ψ fun q hq =>
+          ⟨⟨n - 1, hbdry⟩, fun hmem => by
+            -- ψ(q) ≠ 0 ⟹ φ(q_{n-1,0}) ≠ 0 ⟹ q_{n-1,0} ∈ supp(φ) ⊆ (-∞,0)
+            have hφ_ne := h_factor q hq
+            have h_neg := hφ _ (Function.mem_support.mpr hφ_ne)
+            -- But V̄₊ = ForwardMomentumCone requires timeComponent ≥ 0
+            simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+              MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq,
+              MinkowskiSpace.timeComponent] at hmem
+            linarith [hmem.2]⟩
+        exact h_eq.symm.trans h_zero
+      -- Steps 1–3: Construct ψ via CLM exchange, shift structure, and ℱ ∘ ℱ = reflection.
+      -- ── Step 1a: Continuity of the translate family in the Schwartz topology ──────────
+      have hF_cont : Continuous (fun t : ℝ =>
+          diffVarReduction d (n + m - 1)
+            (hk.symm ▸ fn.conjTensorProduct
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm))) := by
+        -- The inner map is continuous: conjugate tensor product is continuous in the right
+        -- argument (conjTensorProduct_continuous_right), and translation is continuous in the
+        -- Schwartz topology (continuous_translate_npoint_schwartz).
+        have h_inner : Continuous (fun t : ℝ =>
+            fn.conjTensorProduct
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) :=
+          (SchwartzMap.conjTensorProduct_continuous_right fn).comp
+            (continuous_translate_npoint_schwartz 0 fm)
+        -- Compose with the CLM diffVarReduction and the continuous Nat-cast transport hk.symm ▸.
+        -- The cast hk.symm ▸ : SchwartzNPointSpace d (n + m) → SchwartzNPointSpace d ((n+m-1)+1)
+        -- is a continuous linear equivalence (same type up to the proof hk).
+        have h_eqMpr_cont : ∀ {a b : ℕ} (h : a = b),
+            Continuous (fun f : SchwartzNPointSpace d a =>
+              (h ▸ f : SchwartzNPointSpace d b)) :=
+          fun h => by subst h; exact continuous_id
+        exact (diffVarReduction d (n + m - 1)).continuous.comp
+          ((h_eqMpr_cont hk.symm).comp h_inner)
+      -- ── Step 1b: CLM exchange — produce Θ with w(Θ) = ∫ w(F t) · ℱ[φ](t) dt ─────────
+      -- Polynomial growth of F t in every Schwartz seminorm: time-translation τ_{te₀} of fm
+      -- satisfies ‖τ_{te₀} fm‖_{k,j} ≤ C_{k,j} · (1+|t|)^{k+j+1} (standard estimate),
+      -- and CLMs (diffVarReduction, conjTensorProduct, eqMpr) compose to preserve this.
+      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+          SchwartzMap.seminorm ℝ k j
+            (diffVarReduction d (n + m - 1)
+              (hk.symm ▸ fn.conjTensorProduct
+                (poincareActNPoint
+                  (PoincareRepresentation.translationInDirection d 0 t) fm))) ≤
+          C * (1 + ‖t‖) ^ N := by
+        intro k j
+        -- Step 1: Polynomial bound for the m-point translate family
+        -- ∃ Dτ, ∀ t, seminorm ℝ p q (τ_t fm) ≤ Dτ * (1 + ‖t‖)^p
+        -- Uses: seminorm_translateSchwartz_le + CLE precomposition ≤ 1
+        have hτ : ∀ (p q : ℕ), ∃ (Dτ : ℝ), 0 ≤ Dτ ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ p q
+              (poincareActNPoint
+                (PoincareRepresentation.translationInDirection d 0 t) fm) ≤
+            Dτ * (1 + ‖t‖) ^ p := by
+          intro p q
+          obtain ⟨D, hD_nn, hD⟩ := SCV.seminorm_translateSchwartz_le p q
+            (flattenSchwartzNPointLocal (d := d) fm)
+          set η := flatTranslationDirection (d := d) (n := m) 0 with hη_def
+          refine ⟨D * (1 + ‖η‖) ^ p, by positivity, fun t => ?_⟩
+          rw [poincareActNPoint_translationInDirection_eq_unflatten_translate]
+          set ψ_t := SCV.translateSchwartz (t • η) (flattenSchwartzNPointLocal (d := d) fm)
+          -- Precomposition with flattenCLEquivRealLocal (a CLE) does not increase seminorm
+          have h_unflatten_le : SchwartzMap.seminorm ℝ p q
+              (unflattenSchwartzNPointLocal (d := d) ψ_t) ≤
+              SchwartzMap.seminorm ℝ p q ψ_t := by
+            apply SchwartzMap.seminorm_le_bound ℝ p q _ (by positivity)
+            intro x
+            -- unflattenSchwartzNPointLocal ψ_t = ψ_t ∘ flattenCLEquivRealLocal m (d+1)
+            set e := (flattenCLEquivRealLocal m (d + 1)).toContinuousLinearMap
+            have hcomp : (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) =
+                ↑ψ_t ∘ flattenCLEquivRealLocal m (d + 1) := by
+              ext y
+              simp [unflattenSchwartzNPointLocal, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+            -- Chain rule: iteratedFDeriv of ψ_t ∘ e = compContinuousLinearMap of iteratedFDeriv ψ_t
+            have hiter : iteratedFDeriv ℝ q
+                (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x =
+                ContinuousMultilinearMap.compContinuousLinearMap
+                  (iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x))
+                  (fun _ => e) := by
+              rw [hcomp]
+              exact ContinuousLinearMap.iteratedFDeriv_comp_right e ψ_t.smooth' x
+                (by exact_mod_cast le_top)
+            have hnorm_le : ‖x‖ ≤ ‖flattenCLEquivRealLocal m (d + 1) x‖ := by
+              -- For each i : Fin m, j : Fin (d+1), |x i j| = |(flatten x)(finProdFinEquiv(i,j))|
+              -- ≤ ‖flatten x‖, so ‖x‖ = sup_i ‖x i‖ = sup_i sup_j |x i j| ≤ ‖flatten x‖
+              rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+              intro i
+              rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+              intro j
+              have heval : flattenCLEquivRealLocal m (d + 1) x (finProdFinEquiv (i, j)) = x i j :=
+                by simp [flattenCLEquivRealLocal_apply]
+              rw [show ‖x i j‖ = ‖flattenCLEquivRealLocal m (d + 1) x (finProdFinEquiv (i, j))‖
+                  from by rw [heval]]
+              exact norm_le_pi_norm _ _
+            have hprod_le : ∏ _ : Fin q, ‖e‖ ≤ 1 := by
+              -- ‖e‖ ≤ 1: for all y, ‖e y‖ = ‖flattenCLEquivRealLocal m (d+1) y‖ ≤ ‖y‖
+              -- since each component (flatten y) k = y i j with |y i j| ≤ ‖y i‖ ≤ ‖y‖
+              have he_norm : ‖e‖ ≤ 1 := by
+                apply ContinuousLinearMap.opNorm_le_bound _ zero_le_one
+                intro y
+                rw [one_mul]
+                rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+                intro k
+                -- e y k = flattenCLEquivRealLocal m (d+1) y k = y (finProdFinEquiv.symm k).1 ...
+                change ‖y (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2‖ ≤ ‖y‖
+                calc ‖y (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2‖
+                    ≤ ‖y (finProdFinEquiv.symm k).1‖ := norm_le_pi_norm _ _
+                  _ ≤ ‖y‖ := norm_le_pi_norm _ _
+              calc ∏ _ : Fin q, ‖e‖ ≤ ∏ _ : Fin q, (1 : ℝ) := by gcongr
+                _ = 1 := Finset.prod_const_one
+            have hiter_norm : ‖iteratedFDeriv ℝ q
+                (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x‖ ≤
+                ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ := by
+              rw [hiter]
+              calc ‖ContinuousMultilinearMap.compContinuousLinearMap
+                      (iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x))
+                      (fun _ => e)‖
+                  ≤ ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ *
+                      ∏ _ : Fin q, ‖e‖ :=
+                    ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+                _ ≤ ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ * 1 := by
+                    gcongr
+                _ = ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ :=
+                    mul_one _
+            calc ‖x‖ ^ p * ‖iteratedFDeriv ℝ q
+                    (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x‖
+                ≤ ‖flattenCLEquivRealLocal m (d + 1) x‖ ^ p *
+                    ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ := by
+                  gcongr
+              _ ≤ SchwartzMap.seminorm ℝ p q ψ_t :=
+                  SchwartzMap.le_seminorm ℝ p q ψ_t (flattenCLEquivRealLocal m (d + 1) x)
+          -- Apply seminorm_translateSchwartz_le and algebra
+          have h_translate_le : SchwartzMap.seminorm ℝ p q ψ_t ≤
+              D * (1 + ‖η‖) ^ p * (1 + ‖t‖) ^ p := by
+            have heq : SchwartzMap.seminorm ℝ p q ψ_t = SchwartzMap.seminorm ℂ p q ψ_t := rfl
+            rw [heq]
+            calc SchwartzMap.seminorm ℂ p q ψ_t ≤ D * (1 + ‖t • η‖) ^ p := hD _
+              _ = D * (1 + |t| * ‖η‖) ^ p := by rw [norm_smul, Real.norm_eq_abs]
+              _ ≤ D * ((1 + ‖η‖) * (1 + |t|)) ^ p := by
+                    gcongr; nlinarith [norm_nonneg η, abs_nonneg t]
+              _ = D * (1 + ‖η‖) ^ p * (1 + |t|) ^ p := by rw [mul_pow]; ring
+              _ = D * (1 + ‖η‖) ^ p * (1 + ‖t‖) ^ p := by
+                    rw [← Real.norm_eq_abs t]
+          linarith
+        -- Step 2: Polynomial bound for the tensor product
+        -- fn.conjTensorProduct = fn.borchersConj.tensorProduct (fixed in fn)
+        -- Use tensorProduct_seminorm_le + hτ bounds for each Leibniz term
+        have htens : ∃ (Ctens : ℝ), 0 ≤ Ctens ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ k j
+              (fn.conjTensorProduct
+                (poincareActNPoint
+                  (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤
+            Ctens * (1 + ‖t‖) ^ k := by
+          classical
+          let Dτ := fun p q => (hτ p q).choose
+          have hDτ_nn : ∀ p q, 0 ≤ Dτ p q := fun p q => (hτ p q).choose_spec.1
+          have hDτ_bound : ∀ p q t, SchwartzMap.seminorm ℝ p q
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm) ≤
+              Dτ p q * (1 + ‖t‖) ^ p := fun p q => (hτ p q).choose_spec.2
+          refine ⟨2 ^ k * ∑ i ∈ Finset.range (j + 1), (j.choose i : ℝ) *
+              (SchwartzMap.seminorm ℝ k i fn.borchersConj * Dτ 0 (j - i) +
+               SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ k (j - i)),
+            ?_, fun t => ?_⟩
+          · apply mul_nonneg (pow_nonneg (by norm_num : (0:ℝ) ≤ 2) k)
+            apply Finset.sum_nonneg
+            intro i _
+            apply mul_nonneg (by exact_mod_cast Nat.zero_le _)
+            apply add_nonneg
+            · exact mul_nonneg (apply_nonneg _ _) (hDτ_nn 0 (j - i))
+            · exact mul_nonneg (apply_nonneg _ _) (hDτ_nn k (j - i))
+          show SchwartzMap.seminorm ℝ k j (fn.borchersConj.tensorProduct
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤ _
+          have htens_base := SchwartzMap.tensorProduct_seminorm_le k j fn.borchersConj
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)
+          have h1_le_pow : (1 : ℝ) ≤ (1 + ‖t‖) ^ k := by
+            apply one_le_pow₀; linarith [norm_nonneg t]
+          have hstep : SchwartzMap.seminorm ℝ k j (fn.borchersConj.tensorProduct
+              (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤
+              2 ^ k * ∑ i ∈ Finset.range (j + 1), ↑(j.choose i) *
+                (SchwartzMap.seminorm ℝ k i fn.borchersConj * (Dτ 0 (j - i) * (1 + ‖t‖) ^ k) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                   (Dτ k (j - i) * (1 + ‖t‖) ^ k)) := by
+            apply htens_base.trans
+            apply mul_le_mul_of_nonneg_left _ (pow_nonneg (by norm_num) k)
+            apply Finset.sum_le_sum
+            intro i _
+            apply mul_le_mul_of_nonneg_left _ (by exact_mod_cast Nat.zero_le _)
+            apply add_le_add
+            · apply mul_le_mul_of_nonneg_left _ (apply_nonneg _ _)
+              exact (hDτ_bound 0 (j - i) t).trans
+                (by simp only [pow_zero, mul_one];
+                    exact le_mul_of_one_le_right (hDτ_nn 0 (j - i)) h1_le_pow)
+            · exact mul_le_mul_of_nonneg_left (hDτ_bound k (j - i) t) (apply_nonneg _ _)
+          have h_factor : ∑ i ∈ Finset.range (j + 1), ↑(j.choose i) *
+              (SchwartzMap.seminorm ℝ k i fn.borchersConj * (Dτ 0 (j - i) * (1 + ‖t‖) ^ k) +
+               SchwartzMap.seminorm ℝ 0 i fn.borchersConj * (Dτ k (j - i) * (1 + ‖t‖) ^ k)) =
+              (∑ i ∈ Finset.range (j + 1), (j.choose i : ℝ) *
+                (SchwartzMap.seminorm ℝ k i fn.borchersConj * Dτ 0 (j - i) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ k (j - i))) *
+              (1 + ‖t‖) ^ k := by
+            rw [Finset.sum_mul]
+            apply Finset.sum_congr rfl
+            intro i _; push_cast; ring
+          linarith [hstep.trans (by rw [h_factor, ← mul_assoc])]
+        -- Step 3: use Seminorm.bound_of_continuous on the composed seminorm
+        -- (diffVarReduction is a CLM, so the (k,j)-seminorm on the target is
+        --  bounded by finitely many source seminorms; each of those is bounded
+        --  polynomially via htens_all)
+        have hFpoly : ∃ (Cred : ℝ) (Nred : ℕ), 0 ≤ Cred ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ k j
+              (diffVarReduction d (n + m - 1)
+                (hk.symm ▸ fn.conjTensorProduct
+                  (poincareActNPoint
+                    (PoincareRepresentation.translationInDirection d 0 t) fm))) ≤
+            Cred * (1 + ‖t‖) ^ Nred := by
+          -- Generalize htens to all seminorm indices (p, q)
+          have htens_all : ∀ (p q : ℕ), ∃ (D : ℝ), 0 ≤ D ∧ ∀ t : ℝ,
+              SchwartzMap.seminorm ℝ p q
+                (fn.conjTensorProduct
+                  (poincareActNPoint
+                    (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤
+              D * (1 + ‖t‖) ^ p := by
+            intro p q
+            classical
+            let Dτ' := fun p' q' => (hτ p' q').choose
+            have hDτ'_nn : ∀ p' q', 0 ≤ Dτ' p' q' :=
+              fun p' q' => (hτ p' q').choose_spec.1
+            have hDτ'_bound : ∀ p' q' t, SchwartzMap.seminorm ℝ p' q'
+                (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm) ≤
+                Dτ' p' q' * (1 + ‖t‖) ^ p' :=
+              fun p' q' => (hτ p' q').choose_spec.2
+            refine ⟨2 ^ p * ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) *
+                (SchwartzMap.seminorm ℝ p i fn.borchersConj * Dτ' 0 (q - i) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ' p (q - i)),
+              ?_, fun t => ?_⟩
+            · apply mul_nonneg (pow_nonneg (by norm_num : (0:ℝ) ≤ 2) p)
+              apply Finset.sum_nonneg; intro i _
+              apply mul_nonneg (by exact_mod_cast Nat.zero_le _)
+              apply add_nonneg
+              · exact mul_nonneg (apply_nonneg _ _) (hDτ'_nn 0 (q - i))
+              · exact mul_nonneg (apply_nonneg _ _) (hDτ'_nn p (q - i))
+            · show SchwartzMap.seminorm ℝ p q (fn.borchersConj.tensorProduct
+                  (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤ _
+              have htens_base' := SchwartzMap.tensorProduct_seminorm_le p q fn.borchersConj
+                  (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)
+              have h1_le_pow' : (1 : ℝ) ≤ (1 + ‖t‖) ^ p := by
+                apply one_le_pow₀; linarith [norm_nonneg t]
+              have hstep' : SchwartzMap.seminorm ℝ p q (fn.borchersConj.tensorProduct
+                  (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤
+                  2 ^ p * ∑ i ∈ Finset.range (q + 1), ↑(q.choose i) *
+                    (SchwartzMap.seminorm ℝ p i fn.borchersConj *
+                        (Dτ' 0 (q - i) * (1 + ‖t‖) ^ p) +
+                     SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                       (Dτ' p (q - i) * (1 + ‖t‖) ^ p)) := by
+                apply htens_base'.trans
+                apply mul_le_mul_of_nonneg_left _ (pow_nonneg (by norm_num) p)
+                apply Finset.sum_le_sum; intro i _
+                apply mul_le_mul_of_nonneg_left _ (by exact_mod_cast Nat.zero_le _)
+                apply add_le_add
+                · apply mul_le_mul_of_nonneg_left _ (apply_nonneg _ _)
+                  exact (hDτ'_bound 0 (q - i) t).trans
+                    (by simp only [pow_zero, mul_one];
+                        exact le_mul_of_one_le_right (hDτ'_nn 0 (q - i)) h1_le_pow')
+                · exact mul_le_mul_of_nonneg_left (hDτ'_bound p (q - i) t) (apply_nonneg _ _)
+              have h_factor' : ∑ i ∈ Finset.range (q + 1), ↑(q.choose i) *
+                  (SchwartzMap.seminorm ℝ p i fn.borchersConj *
+                      (Dτ' 0 (q - i) * (1 + ‖t‖) ^ p) +
+                   SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                     (Dτ' p (q - i) * (1 + ‖t‖) ^ p)) =
+                  (∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) *
+                    (SchwartzMap.seminorm ℝ p i fn.borchersConj * Dτ' 0 (q - i) +
+                     SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ' p (q - i))) *
+                  (1 + ‖t‖) ^ p := by
+                rw [Finset.sum_mul]; apply Finset.sum_congr rfl; intro i _; push_cast; ring
+              linarith [hstep'.trans (by rw [h_factor', ← mul_assoc])]
+          -- Cast transparency: seminorm is insensitive to Eq.mpr transport
+          have hcast_pq : ∀ (p q ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
+              SchwartzMap.seminorm ℝ p q (hℓ.symm ▸ f) = SchwartzMap.seminorm ℝ p q f :=
+            fun p q ℓ hℓ f => by subst hℓ; rfl
+          -- Composed seminorm: (k,j)-seminorm on target precomposed with diffVarReduction
+          let qkj : Seminorm ℝ (SchwartzNPointSpace d (n + m - 1 + 1)) :=
+            (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1)) ℂ (k, j)).comp
+              ((diffVarReduction d (n + m - 1)).restrictScalars ℝ).toLinearMap
+          have hqkj_cont : Continuous ⇑qkj :=
+            ((schwartz_withSeminorms ℝ (NPointSpacetime d (n + m - 1)) ℂ).continuous_seminorm
+                (k, j)).comp (diffVarReduction d (n + m - 1)).continuous
+          -- Bound qkj by finitely many source seminorms (Seminorm.bound_of_continuous)
+          obtain ⟨s, C₀, _, hbound⟩ :=
+            Seminorm.bound_of_continuous
+              (schwartz_withSeminorms ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ) qkj hqkj_cont
+          -- Extract polynomial witnesses from htens_all for each index in s
+          let Ds := fun i : ℕ × ℕ => (htens_all i.1 i.2).choose
+          have hDs_nn : ∀ i, 0 ≤ Ds i := fun i => (htens_all i.1 i.2).choose_spec.1
+          have hDs_bound : ∀ (i : ℕ × ℕ) t, SchwartzMap.seminorm ℝ i.1 i.2
+              (fn.conjTensorProduct
+                (poincareActNPoint
+                  (PoincareRepresentation.translationInDirection d 0 t) fm)) ≤
+              Ds i * (1 + ‖t‖) ^ i.1 := fun i => (htens_all i.1 i.2).choose_spec.2
+          refine ⟨↑C₀ * ∑ i ∈ s, Ds i, s.sup (·.1), ?_, fun t => ?_⟩
+          · exact mul_nonneg C₀.prop (Finset.sum_nonneg (fun i _ => hDs_nn i))
+          set g_t := fn.conjTensorProduct
+            (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)
+            with hg_t_def
+          -- qkj unfolds to the (k,j)-seminorm of diffVarReduction applied to the input
+          have h_qkj : qkj (hk.symm ▸ g_t) =
+              SchwartzMap.seminorm ℝ k j
+                (diffVarReduction d (n + m - 1) (hk.symm ▸ g_t)) := rfl
+          rw [← h_qkj]
+          -- h1: apply the CLM bound from Seminorm.bound_of_continuous
+          have h1 : qkj (hk.symm ▸ g_t) ≤
+              ↑C₀ * (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                (hk.symm ▸ g_t) := by
+            have h := hbound (hk.symm ▸ g_t)
+            simp only [Seminorm.smul_apply, NNReal.smul_def, smul_eq_mul] at h
+            linarith
+          -- h2: bound each source seminorm using htens_all + hcast_pq
+          have h2 : (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                (hk.symm ▸ g_t) ≤ ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 := by
+            apply Seminorm.finset_sup_apply_le
+              (Finset.sum_nonneg (fun i _ => mul_nonneg (hDs_nn i) (by positivity)))
+            intro ⟨p, q⟩ hi
+            simp only [SchwartzMap.schwartzSeminormFamily_apply]
+            rw [hcast_pq p q ((n + m - 1) + 1) hk g_t]
+            exact (hDs_bound (p, q) t).trans
+              (Finset.single_le_sum
+                (fun j _ => mul_nonneg (hDs_nn j)
+                  (pow_nonneg (by linarith [norm_nonneg t]) j.1)) hi)
+          -- h3: factor out the largest power using monotonicity
+          have h3 : ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 ≤
+              (∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by
+            rw [Finset.sum_mul]
+            apply Finset.sum_le_sum; intro i hi
+            apply mul_le_mul_of_nonneg_left _ (hDs_nn i)
+            exact pow_le_pow_right₀ (by linarith [norm_nonneg t])
+              (Finset.le_sup (f := (·.1)) hi)
+          calc qkj (hk.symm ▸ g_t)
+              ≤ ↑C₀ * (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                  (hk.symm ▸ g_t) := h1
+            _ ≤ ↑C₀ * ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 :=
+                mul_le_mul_of_nonneg_left h2 C₀.prop
+            _ ≤ ↑C₀ * ((∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1)) :=
+                mul_le_mul_of_nonneg_left h3 C₀.prop
+            _ = (↑C₀ * ∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by ring
+        obtain ⟨Cred, Nred, _, hCred⟩ := hFpoly
+        exact ⟨Cred, Nred, hCred⟩
+      obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
+        schwartz_clm_integral_exchange w hw_cont hw_lin hF_cont hF_poly φ
+      -- ── Steps 2+3: ℱ⁻¹ of Θ gives ψ with ψ.fourierTransform = Θ and support condition ─
+      obtain ⟨ψ, hψ_ft, hψ_supp⟩ :=
+        scd_fourierInv_translate_witness (by omega : 0 < n) (by omega : 0 < m)
+          fn fm φ hφ hk hbdry Θ hΘ_pointwise
+      exact ⟨ψ, by rw [hψ_ft]; exact hΘ_w, hψ_supp⟩
+
 /-- **Per-summand one-sided Fourier vanishing for the WIP expansion.**
 
     For each `(n,m)`-summand in the WightmanInnerProduct, the integral
     `∫ W_{n+m}(fₙ*.conjTP(τ_{te₀} fₘ)) · ℱ[φ](t) dt` vanishes when
     `supp(φ) ⊆ (-∞, 0)`.
 
-    - **n + m = 0:** Translation acts trivially on 0-point functions
-      (`Fin 0 → Fin (d+1) → ℝ` is a subsingleton), so the integrand is
-      `C · ℱ[φ](t)`. By Fourier inversion, `∫ ℱ[φ] = φ(0) = 0`.
-    - **n + m ≥ 1:** By `SpectralConditionDistribution`, `W_{n+m}` factors
-      through `w ∘ diffVarReduction` where `w` has Fourier support in `V̄₊^{n+m-1}`.
-      Time-translation `τ_{te₀}` shifts only the boundary difference variable's
-      time component. The distributional `t`-Fourier transform of the summand is a
-      marginal of `ŵ` restricted to energy `p₀ ≥ 0`, hence vanishes when paired
-      with `φ` supported in `(-∞, 0)`.
+    This follows directly from `scd_summand_nonneg_fourier_support`: the spectral
+    condition forces the distributional Fourier transform of `t ↦ W(fₙ* ⊗ τ_{te₀} fₘ)`
+    to be supported on `[0, ∞)`, and `supp(φ) ⊆ (-∞, 0)`, so the distributional
+    pairing vanishes.
 
     **Ref:** Streater-Wightman, §3-1; Reed-Simon II, Theorem X.40. -/
 private lemma scd_summand_fourier_vanishing
@@ -1527,73 +2146,8 @@ private lemma scd_summand_fourier_vanishing
     ∫ t : ℝ,
       Wfn.W (n + m) (fn.conjTensorProduct
         (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) *
-      ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 := by
-  by_cases hnm : n + m = 0
-  · -- Case n = m = 0: Translation acts trivially on 0-point functions.
-    obtain ⟨rfl, rfl⟩ := Nat.add_eq_zero.mp hnm
-    -- poincareActNPoint acts trivially on SchwartzNPointSpace d 0
-    -- (Fin 0 → Fin (d+1) → ℝ is a subsingleton, so g⁻¹ · x = x)
-    have h_triv : ∀ t : ℝ,
-        poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm = fm := by
-      intro t; ext x; simp only [poincareActNPoint_apply]
-      congr 1; exact funext fun i => i.elim0
-    simp_rw [h_triv]
-    -- Integrand is constant × FT[φ](t), pull constant out
-    rw [MeasureTheory.integral_const_mul]
-    -- Suffices to show ∫ FT[φ](t) dt = 0
-    suffices h_int : ∫ t : ℝ,
-        ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 by
-      rw [h_int, mul_zero]
-    -- φ(0) = 0 since supp(φ) ⊆ (-∞, 0)
-    have hφ0 : (φ : ℝ → ℂ) 0 = 0 := by
-      by_contra h; exact absurd (hφ 0 (Function.mem_support.mpr h)) (lt_irrefl 0)
-    -- Fourier inversion: FourierInv(FT[φ]) = φ at function level
-    set g := SchwartzMap.fourierTransformCLM ℂ φ with hg_def
-    have hinv : FourierTransform.fourierInv (g : ℝ → ℂ) = (φ : ℝ → ℂ) := by
-      have h := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ))
-        (FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) φ)
-      dsimp only at h
-      rwa [SchwartzMap.fourierInv_coe] at h
-    -- FourierInv(g)(0) = ∫ g(t) dt (exponential kernel at 0 is 1)
-    have h_fi_zero : FourierTransform.fourierInv (g : ℝ → ℂ) 0 =
-        ∫ t : ℝ, (g : ℝ → ℂ) t := by
-      rw [Real.fourierInv_eq' (f := (g : ℝ → ℂ)) (w := (0 : ℝ))]
-      congr 1; ext v
-      have hinner : @inner ℝ ℝ _ (0 : ℝ) v = 0 := inner_zero_left v
-      simp [hinner, smul_eq_mul]
-    -- Chain: ∫ FT[φ] = FourierInv(FT[φ])(0) = φ(0) = 0
-    calc ∫ t : ℝ, (g : ℝ → ℂ) t
-        = FourierTransform.fourierInv (g : ℝ → ℂ) 0 := h_fi_zero.symm
-      _ = (φ : ℝ → ℂ) 0 := congrFun hinv 0
-      _ = 0 := hφ0
-  · -- Case n + m ≥ 1: SCD distributional argument.
-    have hpos : 0 < n + m := Nat.pos_of_ne_zero hnm
-    have hk : (n + m - 1) + 1 = n + m := Nat.sub_add_cancel hpos
-    -- Get the reduced distribution w at level k = n + m - 1 from SCD.
-    obtain ⟨w, hw_cont, hw_lin, hw_factor, hw_vanish⟩ := hSCD (n + m - 1)
-    -- hw_factor : ∀ f : SchwartzNPointSpace d ((n+m-1)+1), W ((n+m-1)+1) f = w (diffVarReduction d (n+m-1) f)
-    -- Transport lemma: W at propositionally equal level with cast argument.
-    have cast_W : ∀ (ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
-        Wfn.W ℓ (hℓ.symm ▸ f) = Wfn.W (n + m) f := fun ℓ hℓ f => by subst hℓ; rfl
-    -- Factor: W(n+m)(f) = w(diffVarReduction(cast f)) for all f.
-    have hw_eq : ∀ (f : SchwartzNPointSpace d (n + m)),
-        Wfn.W (n + m) f = w (diffVarReduction d (n + m - 1) (hk.symm ▸ f)) :=
-      fun f => by rw [← cast_W _ hk f]; exact hw_factor _
-    -- Rewrite each integrand through the factoring.
-    simp_rw [hw_eq]
-    -- Goal: ∫ t, w(diffVarReduction d (n+m-1) (hk.symm ▸ fn.conjTP(τ_t fm))) * FT[φ](t) dt = 0
-    -- By linearity/continuity of w, exchange w with the t-integral:
-    --   = w(∫ FT[φ](t) • diffVarReduction(hk.symm ▸ fn.conjTP(τ_t fm)) dt) =: w(Θ).
-    -- The Schwartz function Θ ∈ SchwartzNPointSpace d (n+m-1) encodes the
-    -- t-integrated test function. Its Fourier transform FT(Θ) has the property
-    -- that at every point q where FT(Θ)(q) ≠ 0, the boundary component
-    -- (index corresponding to the fn–fm junction) satisfies q_boundary ∉ V̄₊,
-    -- because time-translation τ_{te₀} shifts the boundary difference variable's
-    -- time component by t, and the t-Fourier integration pins the boundary energy
-    -- to supp(φ) ⊆ (-∞,0), giving p₀ < 0 ⟹ p ∉ V̄₊.
-    -- By the SCD vanishing condition hw_vanish, w(FT(Θ).fourierTransform) = 0,
-    -- hence the integral is zero.
-    sorry
+      ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 :=
+  scd_summand_nonneg_fourier_support Wfn hSCD fn fm φ hφ
 
 /-- **Step 1+2: SCD → one-sided Fourier support of the GNS inner product function.**
 
