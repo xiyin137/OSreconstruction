@@ -11,6 +11,16 @@ namespace OSReconstruction
     (x : Fin a → ℝ) (i : Fin b) :
     castFinCLE h x i = x ((finCongr h).symm i) := rfl
 
+/-- Reindex an `NPointDomain` along an equality of its point count. -/
+abbrev section43CastNPointCLE (d : ℕ) {a b : ℕ} (h : a = b) :
+    NPointDomain d a ≃L[ℝ] NPointDomain d b :=
+  ContinuousLinearEquiv.piCongrLeft ℝ (fun _ : Fin b => SpacetimeDim d) (finCongr h)
+
+@[simp] theorem section43CastNPointCLE_apply
+    (d : ℕ) {a b : ℕ} (h : a = b)
+    (q : NPointDomain d a) (i : Fin b) :
+    section43CastNPointCLE d h q i = q ((finCongr h).symm i) := rfl
+
 /-!
 # Section 4.3 Spectral Factorization Coordinates
 
@@ -1161,6 +1171,385 @@ noncomputable def section43VisibleProductZeroLeftSchwartz
           (0 : NPointDomain d 0)) *
         (section43FrequencyRepresentative (d := d) (m + 1) ψ) q := by
   simp [section43VisibleProductZeroLeftSchwartz, smul_eq_mul]
+
+/-- The one-variable Paley test at positive imaginary height `t`, with the
+`2π` scaling used by the Section 4.3 Fourier normalization. -/
+noncomputable def section43PsiZTimeTest (t : ℝ) (ht : 0 < t) :
+    SchwartzMap ℝ ℂ :=
+  SCV.schwartzPsiZ
+    (((2 * Real.pi : ℂ) * (t * Complex.I)))
+    (by
+      simpa [Complex.mul_im, ht.ne'] using
+        mul_pos Real.two_pi_pos ht)
+
+@[simp] theorem section43PsiZTimeTest_apply
+    (t : ℝ) (ht : 0 < t) (η : ℝ) :
+    section43PsiZTimeTest t ht η =
+      SCV.psiZ (((2 * Real.pi : ℂ) * (t * Complex.I))) η := by
+  simp [section43PsiZTimeTest, SCV.schwartzPsiZ_apply]
+
+/-- The flat positive-time shift direction used locally in the Section 4.3
+right block.  It matches the semigroup convention: shifting forward in
+Euclidean time translates flat functions by `-e_time`. -/
+abbrev section43FlatTimeShiftDirection (d n : ℕ) :
+    Fin (n * (d + 1)) → ℝ :=
+  fun k => if (finProdFinEquiv.symm k).2 = 0 then (-1 : ℝ) else 0
+
+/-- The flat right-time-shift direction embedded in the full
+`(n + (m + 1))` frequency coordinate. -/
+noncomputable def section43SuccRightTimeShiftFlatDirection
+    (d n m : ℕ) [NeZero d] :
+    Fin ((n + (m + 1)) * (d + 1)) → ℝ :=
+  castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm
+    (zeroHeadBlockShift
+      (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+      (section43FlatTimeShiftDirection d (m + 1)))
+
+/-- Pairing with the embedded right-time-shift direction. -/
+noncomputable def section43SuccRightTimeShiftPairingCLM
+    (d n m : ℕ) [NeZero d] :
+    (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  ∑ i : Fin ((n + (m + 1)) * (d + 1)),
+    (section43SuccRightTimeShiftFlatDirection d n m i) •
+      ContinuousLinearMap.proj (R := ℝ)
+        (ι := Fin ((n + (m + 1)) * (d + 1))) (φ := fun _ => ℝ) i
+
+@[simp] theorem section43SuccRightTimeShiftPairingCLM_apply
+    (d n m : ℕ) [NeZero d]
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    section43SuccRightTimeShiftPairingCLM d n m ξ =
+      ∑ i : Fin ((n + (m + 1)) * (d + 1)),
+        section43SuccRightTimeShiftFlatDirection d n m i * ξ i := by
+  simp [section43SuccRightTimeShiftPairingCLM]
+
+/-- The nonnegative Paley frequency on the spectral cone is
+`η = -λ / (2π)`, where `λ` is the right-time-shift pairing. -/
+noncomputable def section43SuccRightEtaCLM
+    (d n m : ℕ) [NeZero d] :
+    (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  (-(1 / (2 * Real.pi))) •
+    section43SuccRightTimeShiftPairingCLM d n m
+
+@[simp] theorem section43SuccRightEtaCLM_apply
+    (d n m : ℕ) [NeZero d]
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    section43SuccRightEtaCLM d n m ξ =
+      -(∑ i : Fin ((n + (m + 1)) * (d + 1)),
+          section43SuccRightTimeShiftFlatDirection d n m i * ξ i) /
+        (2 * Real.pi) := by
+  simp [section43SuccRightEtaCLM, div_eq_mul_inv, mul_assoc, mul_left_comm,
+    mul_comm]
+
+theorem section43PsiZTimeTest_comp_eta_hasTemperateGrowth
+    (d n m : ℕ) [NeZero d] {t : ℝ} (ht : 0 < t) :
+    (fun ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ =>
+      section43PsiZTimeTest t ht (section43SuccRightEtaCLM d n m ξ)
+    ).HasTemperateGrowth :=
+  (section43PsiZTimeTest t ht).hasTemperateGrowth.comp
+    (section43SuccRightEtaCLM d n m).hasTemperateGrowth
+
+private theorem section43_fourierInv_eq_cexp_integral
+    (χ : SchwartzMap ℝ ℂ) (ξ : ℝ) :
+    FourierTransform.fourierInv χ ξ =
+      ∫ x : ℝ, Complex.exp (2 * Real.pi * Complex.I * ξ * x) * χ x := by
+  have hcoe :
+      FourierTransform.fourierInv χ ξ =
+        FourierTransform.fourierInv (χ : ℝ → ℂ) ξ := by
+    simpa using congrArg (fun g => g ξ) (SchwartzMap.fourierInv_coe (f := χ))
+  rw [hcoe, Real.fourierInv_eq' (f := (χ : ℝ → ℂ)) (w := ξ)]
+  congr 1
+  ext v
+  have hinner : ∀ a b : ℝ, @inner ℝ ℝ _ a b = b * a := by
+    intro a b
+    simp [inner, mul_comm]
+  simp only [smul_eq_mul, hinner, Complex.ofReal_mul, Complex.ofReal_ofNat]
+  ring_nf
+
+/-- One-variable phase evaluation for the Section 4.3 horizontal kernel:
+pairing a pure oscillatory phase against the Fourier transform of a Schwartz
+test recovers the test at the matching frequency. -/
+theorem section43_integral_phase_mul_fourierTransform_eq_eval
+    (χ : SchwartzMap ℝ ℂ)
+    (lam : ℝ) :
+    ∫ τ : ℝ,
+      Complex.exp (-(Complex.I * (lam : ℂ) * τ)) *
+        (SchwartzMap.fourierTransformCLM ℂ χ) τ =
+      χ (-lam / (2 * Real.pi)) := by
+  have hfourierInv :
+      FourierTransform.fourierInv
+          ((SchwartzMap.fourierTransformCLM ℂ) χ) (-lam / (2 * Real.pi)) =
+        χ (-lam / (2 * Real.pi)) := by
+    set f := (SchwartzMap.fourierTransformCLM ℂ) χ
+    have hf : FourierTransform.fourierInv f = χ := by
+      simp [f, FourierTransform.fourierInv_fourier_eq χ]
+    exact congrArg (fun g : SchwartzMap ℝ ℂ => g (-lam / (2 * Real.pi))) hf
+  rw [section43_fourierInv_eq_cexp_integral
+      (χ := (SchwartzMap.fourierTransformCLM ℂ) χ)
+      (ξ := -lam / (2 * Real.pi))] at hfourierInv
+  calc
+    ∫ τ : ℝ,
+        Complex.exp (-(Complex.I * (lam : ℂ) * τ)) *
+          (SchwartzMap.fourierTransformCLM ℂ χ) τ
+      =
+        ∫ τ : ℝ,
+          Complex.exp
+              (2 * Real.pi * Complex.I *
+                ((-lam / (2 * Real.pi) : ℝ) : ℂ) * (τ : ℂ)) *
+            (SchwartzMap.fourierTransformCLM ℂ χ) τ := by
+              refine MeasureTheory.integral_congr_ae ?_
+              filter_upwards with τ
+              congr 2
+              have harg :
+                  2 * Real.pi * Complex.I *
+                      ((-lam / (2 * Real.pi) : ℝ) : ℂ) * (τ : ℂ) =
+                    -(Complex.I * (lam : ℂ) * τ) := by
+                have hscalar_real :
+                    (2 * Real.pi) * (-lam / (2 * Real.pi)) * τ =
+                      -(lam * τ) := by
+                  field_simp [Real.pi_ne_zero]
+                have hscalar :
+                    ((2 * Real.pi : ℂ) *
+                        (((-lam / (2 * Real.pi) : ℝ) : ℂ))) * (τ : ℂ) =
+                      -((lam : ℂ) * τ) := by
+                  exact_mod_cast hscalar_real
+                calc
+                  2 * Real.pi * Complex.I *
+                      ((-lam / (2 * Real.pi) : ℝ) : ℂ) * (τ : ℂ)
+                      = Complex.I *
+                          ((((2 * Real.pi : ℂ) *
+                              (((-lam / (2 * Real.pi) : ℝ) : ℂ))) *
+                            (τ : ℂ))) := by
+                            ring_nf
+                  _ = Complex.I * (-((lam : ℂ) * τ)) := by rw [hscalar]
+                  _ = -(Complex.I * (lam : ℂ) * τ) := by ring_nf
+              rw [harg]
+    _ = χ (-lam / (2 * Real.pi)) := hfourierInv
+
+/-- Fixed-frequency one-variable functional for the horizontal Paley kernel. -/
+noncomputable def section43HorizontalPhasePairingCLM
+    (base : ℂ) (lam : ℝ) :
+    SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  base •
+    ((SchwartzMap.integralCLM ℂ
+      (MeasureTheory.volume : MeasureTheory.Measure ℝ)).comp
+      (SchwartzMap.smulLeftCLM ℂ
+        (fun τ : ℝ =>
+          Complex.exp (-(Complex.I * (lam : ℂ) * (τ : ℂ))))))
+
+theorem section43HorizontalPhasePairingCLM_apply
+    (base : ℂ) (lam : ℝ) (χ : SchwartzMap ℝ ℂ) :
+    section43HorizontalPhasePairingCLM base lam χ =
+      base *
+        ∫ τ : ℝ,
+          Complex.exp (-(Complex.I * (lam : ℂ) * (τ : ℂ))) * χ τ := by
+  simp [section43HorizontalPhasePairingCLM, SchwartzMap.integralCLM_apply,
+    SchwartzMap.smulLeftCLM_apply_apply
+      (section43_realOscillatoryPhase_hasTemperateGrowth lam),
+    smul_eq_mul]
+
+theorem section43HorizontalPhasePairingCLM_fourierTransform
+    (base : ℂ) (lam : ℝ) (χ : SchwartzMap ℝ ℂ) :
+    section43HorizontalPhasePairingCLM base lam
+        ((SchwartzMap.fourierTransformCLM ℂ) χ) =
+      base * χ (-lam / (2 * Real.pi)) := by
+  rw [section43HorizontalPhasePairingCLM_apply]
+  rw [section43_integral_phase_mul_fourierTransform_eq_eval]
+
+/-- The branchwise cumulative-tail OS I `(4.24)` product, made Schwartz by the
+total-momentum cutoff when `0 < n` and by the zero-left visible product when
+`n = 0`. -/
+noncomputable def section43OS24CumulativeTailProduct
+    (d : ℕ) [NeZero d] :
+    (n m : ℕ) →
+      SchwartzNPoint d n → SchwartzNPoint d (m + 1) →
+        SchwartzMap (NPointDomain d (n + (m + 1))) ℂ
+  | 0, m, φ, ψ =>
+      SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (section43CastNPointCLE d (Nat.zero_add (m + 1)))
+        (section43VisibleProductZeroLeftSchwartz d m φ ψ)
+  | n + 1, m, φ, ψ =>
+      section43TotalMomentumCutoffSchwartz d (n + 1) m (Nat.succ_pos n) φ ψ
+
+theorem section43TailToBorchersProductCLM_left_tail_eq_leftBorchersBlock
+    (d n m : ℕ) [NeZero d] (hn : 0 < n)
+    (q : NPointDomain d (n + (m + 1))) :
+    (section43TailToBorchersProductCLM d n m hn
+      (fun j : Fin (n + m) => q j.succ)).1 =
+      section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) q := by
+  ext i μ
+  have hidx :
+      (⟨n - 1 - i.val, by omega⟩ : Fin (n + m)).succ =
+        (⟨n - i.val, by omega⟩ : Fin (n + (m + 1))) := by
+    ext
+    simp
+    omega
+  simpa [section43LeftBorchersBlock] using congrFun (congrArg q hidx) μ
+
+theorem section43TailToBorchersProductCLM_right_tail_eq_rightTailBlock
+    (d n m : ℕ) [NeZero d] (hn : 0 < n)
+    (q : NPointDomain d (n + (m + 1))) :
+    (section43TailToBorchersProductCLM d n m hn
+      (fun j : Fin (n + m) => q j.succ)).2 =
+      section43RightTailBlock d n (m + 1) q := by
+  ext j μ
+  have hidx :
+      (⟨n - 1 + j.val, by omega⟩ : Fin (n + m)).succ =
+        Fin.natAdd n j := by
+    ext
+    simp
+    omega
+  simpa [section43RightTailBlock] using congrFun (congrArg q hidx) μ
+
+theorem section43OS24CumulativeTailProduct_eq_visible_of_head_zero
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {q : NPointDomain d (n + (m + 1))}
+    (hq0 : q 0 = 0) :
+    section43OS24CumulativeTailProduct d n m φ ψ q =
+      star
+        ((section43FrequencyRepresentative (d := d) n φ)
+          (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) q)) *
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+          (section43RightTailBlock d n (m + 1) q) := by
+  cases n with
+  | zero =>
+      let e := section43CastNPointCLE d (Nat.zero_add (m + 1))
+      have hright : section43RightTailBlock d 0 (m + 1) q = e q := by
+        ext j μ
+        simp [e, section43RightTailBlock]
+      rw [section43OS24CumulativeTailProduct]
+      rw [SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+      rw [hright]
+      simp [e, section43LeftBorchersBlock_zero_left]
+  | succ n =>
+      have hcut :=
+        section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero
+          (d := d) (n := n + 1) (m := m) (Nat.succ_pos n)
+          (φ := φ) (ψ := ψ) (q := q) hq0
+      have hleft :=
+        section43TailToBorchersProductCLM_left_tail_eq_leftBorchersBlock
+          (d := d) (n := n + 1) (m := m) (Nat.succ_pos n) q
+      have hright :=
+        section43TailToBorchersProductCLM_right_tail_eq_rightTailBlock
+          (d := d) (n := n + 1) (m := m) (Nat.succ_pos n) q
+      rw [section43OS24CumulativeTailProduct]
+      rw [hcut]
+      rw [section43VisibleTailProductSchwartz_apply]
+      rw [hleft, hright]
+
+/-- The cumulative-tail product pulled back to flat frequency coordinates. -/
+noncomputable def section43OS24FlatBaseKernel_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ :=
+  SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+    (section43CumulativeTailMomentumCLE d (n + (m + 1)))
+    (section43OS24CumulativeTailProduct d n m φ ψ)
+
+@[simp] theorem section43OS24FlatBaseKernel_succRight_apply
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    section43OS24FlatBaseKernel_succRight d n m φ ψ ξ =
+      section43OS24CumulativeTailProduct d n m φ ψ
+        (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ) := by
+  simp [section43OS24FlatBaseKernel_succRight,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- The visible OS I `(4.24)` scalar on the spectral region. -/
+def section43OS24VisibleKernel_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (t : ℝ) (ht : 0 < t)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) : ℂ :=
+  let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+  section43PsiZTimeTest t ht (section43SuccRightEtaCLM d n m ξ) *
+    (star
+      ((section43FrequencyRepresentative (d := d) n φ)
+        (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
+      (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+        (section43RightTailBlock d n (m + 1) qξ))
+
+/-- Direct Schwartz witness for the OS I `(4.24)` kernel.  Its global values
+include the cutoff extension; only the spectral-region `EqOn` theorem exposes
+the visible formula. -/
+noncomputable def section43OS24KernelWitness_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (t : ℝ) (ht : 0 < t) :
+    SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ :=
+  SchwartzMap.smulLeftCLM ℂ
+    (fun ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ =>
+      section43PsiZTimeTest t ht (section43SuccRightEtaCLM d n m ξ))
+    (section43OS24FlatBaseKernel_succRight d n m φ ψ)
+
+theorem section43OS24KernelWitness_succRight_eqOn_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {t : ℝ} (ht : 0 < t) :
+    Set.EqOn
+      (fun ξ => section43OS24KernelWitness_succRight d n m φ ψ t ht ξ)
+      (section43OS24VisibleKernel_succRight d n m φ ψ t ht)
+      (section43WightmanSpectralRegion d (n + (m + 1))) := by
+  intro ξ hξ
+  have hN : 0 < n + (m + 1) := by omega
+  have hq0 :
+      section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ 0 = 0 :=
+    section43WightmanSpectralRegion_cumulativeTail_head_zero
+      (d := d) (N := n + (m + 1)) hN hξ
+  change
+    ((SchwartzMap.smulLeftCLM ℂ
+      (fun ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ =>
+        section43PsiZTimeTest t ht (section43SuccRightEtaCLM d n m ξ))
+      (section43OS24FlatBaseKernel_succRight d n m φ ψ)) ξ) =
+      section43OS24VisibleKernel_succRight d n m φ ψ t ht ξ
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (section43PsiZTimeTest_comp_eta_hasTemperateGrowth d n m ht)]
+  rw [section43OS24FlatBaseKernel_succRight_apply]
+  rw [section43OS24CumulativeTailProduct_eq_visible_of_head_zero
+    (d := d) (n := n) (m := m) (φ := φ) (ψ := ψ) hq0]
+  rfl
+
+private theorem exists_section43OS24Kernel_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (t : ℝ) (ht : 0 < t) :
+    ∃ KOS : SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ,
+      Set.EqOn
+        (fun ξ => KOS ξ)
+        (section43OS24VisibleKernel_succRight d n m φ ψ t ht)
+        (section43WightmanSpectralRegion d (n + (m + 1))) :=
+  ⟨section43OS24KernelWitness_succRight d n m φ ψ t ht,
+    section43OS24KernelWitness_succRight_eqOn_spectralRegion d n m φ ψ ht⟩
+
+noncomputable def section43OS24Kernel_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (t : ℝ) (ht : 0 < t) :
+    SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ :=
+  Classical.choose
+    (exists_section43OS24Kernel_succRight d n m φ ψ t ht)
+
+theorem section43OS24Kernel_succRight_eqOn_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {t : ℝ} (ht : 0 < t) :
+    Set.EqOn
+      (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+      (section43OS24VisibleKernel_succRight d n m φ ψ t ht)
+      (section43WightmanSpectralRegion d (n + (m + 1))) :=
+  Classical.choose_spec
+    (exists_section43OS24Kernel_succRight d n m φ ψ t ht)
+
+theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {t : ℝ} (ht : 0 < t)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    section43OS24Kernel_succRight d n m φ ψ t ht ξ =
+      section43OS24VisibleKernel_succRight d n m φ ψ t ht ξ :=
+  section43OS24Kernel_succRight_eqOn_spectralRegion d n m φ ψ ht hξ
 
 /-- Reindex the right split tail sum into the corresponding full tail sum. -/
 private theorem section43_splitRight_tail_sum_eq_full_tail

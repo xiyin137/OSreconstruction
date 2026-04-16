@@ -466,6 +466,73 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
   · intro z hz
     exact hFL_repr z hz
 
+/-- The Fourier-Laplace representation data for the same flattened
+frequency-side distribution used to represent the Wightman boundary value.
+
+This packet is deliberately small: it records only the flattened cone facts and
+the interior `bvt_F` Fourier-Laplace formula for the specified `Tflat`. -/
+structure section43TflatFourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ) where
+  hCflat_open :
+    IsOpen
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_conv :
+    Convex ℝ
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_cone :
+    IsCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_salient :
+    IsSalientCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hFL :
+    ∀ z : Fin N → Fin (d + 1) → ℂ,
+      z ∈ TubeDomainSetPi (ForwardConeAbs d N) →
+        bvt_F OS lgc N z =
+          fourierLaplaceExtMultiDim
+            ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            Tflat (flattenCLEquiv N (d + 1) z)
+
+/-- Public Section 4.3 `Tflat` packet with Wightman spectral support, boundary
+representation, and the interior Fourier-Laplace representation for the same
+flattened distribution.
+
+This is the data needed by the OS-route S5 scalar-recognition packet; the
+Fourier-Laplace witness is obtained before the boundary-value witness is
+projected to spectral-region support, so no uniqueness theorem is needed. -/
+theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    ∃ (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      HasFourierSupportIn (OSReconstruction.section43WightmanSpectralRegion d N) Tflat ∧
+        (∀ (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+          bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+            Tflat (physicsFourierFlatCLM φflat)) ∧
+        section43TflatFourierLaplaceWitness (d := d) OS lgc N Tflat := by
+  obtain
+    ⟨Tflat, hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+      hTflat_dualSupp, hTflat_bv, hTflat_FL⟩ :=
+    exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace_repr
+      (d := d) OS lgc N
+  refine ⟨Tflat, ?_, hTflat_bv, ?_⟩
+  · have hphase :=
+      tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant_local
+        (d := d) OS lgc Tflat hTflat_bv
+    have htotal :=
+      OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+        d Tflat hphase
+    exact
+      OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero
+        d N hTflat_dualSupp htotal
+  · exact
+      ⟨hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+        by
+          intro z hz
+          exact hTflat_FL z hz⟩
+
 /-- Reindex a flattened sum that only samples the time-coordinate slots. -/
 private theorem sum_over_flat_timeSlots
     {n : ℕ}

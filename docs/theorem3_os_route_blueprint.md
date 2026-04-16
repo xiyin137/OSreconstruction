@@ -15152,6 +15152,59 @@ horizontalPhasePairingCLM_fourierTransform
 horizontalPaley_frequency_nonneg_of_mem_dualCone
 ```
 
+Implementation-ready refinement for the first S4 Lean pass, 2026-04-15:
+
+The `exists_section43OS24Kernel_succRight` theorem itself does not yet need the
+horizontal integral-collapse helpers above.  It only needs a production
+definition of the one-variable Paley time test and the linear frequency
+`eta = -lambda/(2*pi)` used to evaluate it.  Add these before the existence
+theorem:
+
+```lean
+noncomputable def section43PsiZTimeTest (t : ℝ) (ht : 0 < t) :
+    SchwartzMap ℝ ℂ :=
+  SCV.schwartzPsiZ (((2 * Real.pi : ℂ) * (t * Complex.I))) ...
+
+noncomputable def section43SuccRightTimeShiftFlatDirection
+    (d n m : ℕ) [NeZero d] :
+    Fin ((n + (m + 1)) * (d + 1)) → ℝ :=
+  castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm
+    (zeroHeadBlockShift
+      (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+      (section43FlatTimeShiftDirection d (m + 1)))
+
+noncomputable def section43SuccRightEtaCLM
+    (d n m : ℕ) [NeZero d] :
+    (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  -(1 / (2 * Real.pi)) •
+    sum_i (section43SuccRightTimeShiftFlatDirection d n m i) • proj_i
+```
+
+Then build the kernel directly as:
+
+1. A cumulative-tail product `Kq` by dependent case split on `n`.
+   For `n = 0`, use `section43VisibleProductZeroLeftSchwartz`.
+   For `n = n' + 1`, use `section43TotalMomentumCutoffSchwartz`.
+2. Pull `Kq` back by `section43CumulativeTailMomentumCLE`.
+3. Multiply by
+   `(section43PsiZTimeTest t ht) (section43SuccRightEtaCLM d n m xi)`
+   using `SchwartzMap.smulLeftCLM`; do not attempt to make the one-dimensional
+   projection pullback itself into a Schwartz function.
+
+The `EqOn` proof is pointwise:
+
+1. `hxi : xi in section43WightmanSpectralRegion d (n + (m + 1))` gives
+   `(section43CumulativeTailMomentumCLE ... xi) 0 = 0` by
+   `section43WightmanSpectralRegion_cumulativeTail_head_zero`.
+2. In the `n = 0` branch, `section43LeftBorchersBlock_zero_left` and
+   `section43RightTailBlock_zero_left` identify the visible product.
+3. In the `0 < n` branch,
+   `section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero` reduces the
+   cutoff-tail product to `section43VisibleTailProductSchwartz`, and the
+   tail-product apply lemmas identify the left and right OS I `(4.24)` blocks.
+4. The final visible formula is obtained from
+   `SchwartzMap.smulLeftCLM_apply_apply` and the eta apply theorem.
+
 Until these items are filled in, S4 is not implementation-ready.  This is a
 productive blocker, not a wrapper gap: it is the exact Schwartz-extension
 issue needed to turn the spectral-region formula into a legal test function
@@ -15228,7 +15281,21 @@ theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
 Proof: this is
 `section43OS24Kernel_succRight_eqOn_spectralRegion d n m φ ψ ht hξ`.
 
-Then S1 and S2 give the support EqOn theorem:
+Production status, 2026-04-15: the S4 kernel witness surface above is now
+implemented and verified in
+`Section43SpectralFactorization.lean`.  The production theorem uses the helper
+function `section43OS24VisibleKernel_succRight` for the visible scalar, rather
+than repeating the full `let qξ`, `let λξ`, `let ηξ` expression in every
+statement.  The pointwise theorem is:
+
+```lean
+theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
+    ...
+    section43OS24Kernel_succRight d n m φ ψ t ht ξ =
+      section43OS24VisibleKernel_succRight d n m φ ψ t ht ξ
+```
+
+Next, S1 and S2 give the support EqOn theorem:
 
 ```lean
 private theorem
@@ -15254,15 +15321,22 @@ private theorem
 Proof transcript:
 
 1. Introduce `ξ hξ`; split `hξ` into dual-cone and total-momentum parts.
-2. Apply S1 using the dual-cone part.
-3. Rewrite `base` by S2 using the full spectral-region hypothesis.
-4. Rewrite the target with
+2. Rewrite `hKψZ_eval ξ` using `timeShiftFlatOrbit_apply_phase` to identify
+   the integral with the one-variable oscillatory pairing
+   `section43HorizontalPhasePairingCLM base lam
+     ((SchwartzMap.fourierTransformCLM ℂ) (section43PsiZTimeTest t ht))`.
+3. Apply the direct Fourier identity
+   `section43HorizontalPhasePairingCLM_fourierTransform` to get
+   `base * (section43PsiZTimeTest t ht) (-lam/(2*pi))`.
+4. Rewrite `base` by S2 using the full spectral-region hypothesis.
+5. Rewrite the target with
    `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
-5. Use `horizontalPaley_frequency_nonneg_of_mem_dualCone` and
-   `SCV.psiZ_eq_exp_of_nonneg` to replace
-   `(section43PsiZTimeTest t ht) ηξ` by
-   `Complex.exp (-(2 * Real.pi * t : ℂ) * (ηξ : ℂ))` on the spectral region.
-6. Close by associativity/commutativity of scalar multiplication only; do not
+6. Use `section43SuccRightEtaCLM_apply` to identify the eta argument with the
+   displayed `-lam/(2*pi)` frequency.  No finite-height `epsilon` factor and no
+   `SCV.psiZ_eq_exp_of_nonneg` rewrite are needed for this EqOn theorem,
+   because the OS24 visible kernel keeps the one-variable Paley test
+   `(section43PsiZTimeTest t ht)` unevaluated.
+7. Close by associativity/commutativity of scalar multiplication only; do not
    unfold the definitions of the left/right blocks.
 
 #### Packet S5: OS scalar recognition by the `bvt_F` Fourier-Laplace shell
@@ -15283,11 +15357,11 @@ restriction / `xiShift` bridge for the chosen continuation `bvt_F`.  Therefore
 Packet S5 must consume a full Fourier-Laplace witness for the same flattened
 distribution `Tflat`, not just the boundary-value equality `hTflat_bv`.
 
-Use the following local structure to keep theorem statements readable without
+Use the following public structure to keep theorem statements readable without
 hiding any data:
 
 ```lean
-private structure section43TflatFourierLaplaceWitness
+structure section43TflatFourierLaplaceWitness
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (N : ℕ)
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ) where
@@ -15345,6 +15419,26 @@ section43Tflat_fourierLaplaceRep_of_boundaryValue_unique
 which recovers `hTflat_FL` from the boundary-value identity and support.
 Do not prove S5 for an unconstrained `Tflat`; that would leave the OS scalar
 unconnected to the actual analytic continuation.
+
+Production status, 2026-04-15: the witness structure is now public in
+`OSToWightmanBoundaryValueLimits.lean` as
+
+```lean
+section43TflatFourierLaplaceWitness
+```
+
+and the current public supplier is
+
+```lean
+bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+```
+
+It returns one and the same `Tflat` together with
+`HasFourierSupportIn (section43WightmanSpectralRegion d N) Tflat`, the
+boundary-value identity for `bvt_W`, and the Fourier-Laplace witness for
+`bvt_F`.  Downstream S5 theorems should consume this public packet; they should
+not duplicate the private `bv_implies_fourier_support` proof and should not
+attempt a uniqueness reconstruction from the boundary identity.
 
 S5 is split into four non-wrapper theorems.
 
@@ -15539,6 +15633,24 @@ private theorem
 
 Proof transcript:
 
+Production status, 2026-04-15: the support-ordering theorems are implemented
+and exact-checked in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43OSConjTensorProduct_support_left_reflected_ordered_succRight
+section43OSConjTensorProduct_support_right_ordered_succRight
+section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight
+section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
+```
+
+They use `Function.support` to split a nonzero OS tensor product into nonzero
+left and right factors, then move those factors into `tsupport` by
+`subset_tsupport` and apply `f.2`/`g.2`.  The strict-order theorem uses the
+three left/left, left/right, and right/right case split below.  The
+forward-tube membership theorem builds the globally translated real
+configuration `xs`, proves it is Wick-rotated back to the lift, and applies
+`euclidean_ordered_in_forwardTube`.
+
 1. For
    `section43OSConjTensorProduct_support_left_reflected_ordered_succRight`,
    unfold `SchwartzNPoint.osConjTensorProduct` and
@@ -15566,6 +15678,53 @@ Proof transcript:
    is `splitFirst n (m + 1) y 0 0 < 0`, while the first right-tail shifted time
    is `splitLast n (m + 1) y 0 0 + t`, which is positive by right support and
    `ht`.
+
+Lean-ready case split for
+`section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight`:
+
+1. Introduce `i j : Fin (n + (m + 1))` and `hij : i < j`.
+2. Split first on `hj_left : j.val < n`.  If true, then
+   `hi_left : i.val < n` follows from `i.val < j.val`.  Set
+   `ii : Fin n := ⟨i.val, hi_left⟩` and
+   `jj : Fin n := ⟨j.val, hj_left⟩`; rewrite
+   `i = Fin.castAdd (m + 1) ii` and
+   `j = Fin.castAdd (m + 1) jj` by `Fin.ext rfl`.  The coordinate normal form
+   reduces the goal to
+   `y (Fin.castAdd (m + 1) (Fin.rev ii)) 0 <
+    y (Fin.castAdd (m + 1) (Fin.rev jj)) 0`.  Prove
+   `Fin.rev jj < Fin.rev ii` with `Fin.rev_lt_iff` from `ii < jj`; apply the
+   left reflected ordered theorem at `Fin.rev jj`, `Fin.rev ii`; unfold
+   `timeReflectionN`, `timeReflection`, and `splitFirst`; close by `nlinarith`.
+3. If `¬ hj_left`, split on `hi_left : i.val < n`.  In the mixed case define
+   `ii : Fin n := ⟨i.val, hi_left⟩` and
+   `jj : Fin (m + 1) := ⟨j.val - n, by omega⟩`; rewrite
+   `i = Fin.castAdd (m + 1) ii` and `j = Fin.natAdd n jj`.
+   The left support theorem gives the left raw time is `< 0`; the right
+   support theorem gives `0 < y (Fin.natAdd n jj) 0`; with `ht`, the shifted
+   right time is positive, and `nlinarith` closes.
+4. In the right/right case define
+   `ii : Fin (m + 1) := ⟨i.val - n, by omega⟩` and
+   `jj : Fin (m + 1) := ⟨j.val - n, by omega⟩`; rewrite both indices as
+   `Fin.natAdd n _`.  From `i < j`, get `ii < jj` by `omega`.  The right
+   support theorem gives strict increase before the shift; the coordinate
+   normal forms add the same `t` to both sides and `nlinarith` closes.
+
+If Lean resists the index rewrites, add these local helpers before the
+strict-order theorem:
+
+```lean
+private theorem section43_eq_castAdd_of_val_lt
+    {n m : ℕ} {i : Fin (n + (m + 1))} (hi : i.val < n) :
+    i = Fin.castAdd (m + 1) (⟨i.val, hi⟩ : Fin n)
+
+private theorem section43_eq_natAdd_of_not_val_lt
+    {n m : ℕ} {i : Fin (n + (m + 1))} (hi : ¬ i.val < n) :
+    i = Fin.natAdd n (⟨i.val - n, by omega⟩ : Fin (m + 1))
+```
+
+Both are `Fin.ext` plus `omega`.  These helpers are not wrappers; they are the
+index-normalization lemmas needed by the strict chronological case split.
+
 6. The global translation makes the first imaginary time `1` and preserves
    every consecutive gap.  Define the real configuration
 
@@ -15625,7 +15784,20 @@ private theorem
           flattenCLEquiv (n + (m + 1)) (d + 1)
             (section43OSBorchersTimeShiftConfig_succRight (d := d) t y) i *
             (ξ i : ℂ))
+```
 
+Production status, 2026-04-15: the concrete raw shell, left-block reversal
+permutation, Borchers-ordered shell, forward-tube lift, left/right
+time-coordinate normal forms, lift-as-Wick-rotation theorem, forward-tube
+membership theorem, complex diagonal translation pairing, total-momentum-zero
+phase-cancellation theorem, and the `multiDimPsiZExt` evaluation theorem below
+are implemented and exact-checked in
+`Section43OS24KernelComparison.lean`.  The left-block reversal is defined via
+`finSumFinEquiv` and `Fin.revPerm`, with compiled simp facts for both
+`Fin.castAdd` and `Fin.natAdd`, so later support proofs should use these
+objects directly rather than re-encoding the chronological permutation.
+
+```lean
 private theorem
     section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_succRight
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
@@ -15749,6 +15921,23 @@ Proof transcript:
    `SCV.psiZ_eq_exp_of_nonneg`.
 4. Close by the algebra used in S1: unfold `section43PsiZTimeTest` and `ηξ`
    only at the final step, then `ring_nf`.
+
+Production status, 2026-04-15: the tail-shift sign and Paley-factor theorem
+are implemented and exact-checked in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43SuccRightEtaCLM_nonneg_of_mem_dualCone
+section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion
+section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight
+```
+
+The proof uses the public
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone`,
+rewrites the direction by
+`section43SuccRightTimeShiftFlatDirection_eq_flatTimeShiftDirection`, and then
+uses `SCV.psiZ_eq_exp_of_nonneg` at
+`section43SuccRightEtaCLM d n m ξ`.  This fixes the sign of the external
+tail-shift phase before the product factorization theorem.
 
 Then name the full scalar factorization of the Borchers-ordered phase:
 
