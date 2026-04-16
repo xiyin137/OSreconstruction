@@ -2734,6 +2734,213 @@ theorem multiDimPsiZ_seminorm_continuous {m : ℕ}
           _ ≤ 1 * ε := by gcongr; exact (div_le_one h1).mpr (by linarith)
           _ = ε := one_mul ε
 
+/-- Continuous parameter maps into a tube remain continuous after applying the
+tube-safe fixed-radius Paley-Wiener Schwartz family. -/
+theorem continuous_multiDimPsiZExt_comp_of_mem_tube {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    {α : Type*} [TopologicalSpace α]
+    (z : α → Fin m → ℂ)
+    (hz_cont : Continuous z)
+    (hz_mem : ∀ a, z a ∈ SCV.TubeDomain C) :
+    Continuous
+      (fun a =>
+        multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient (z a)) := by
+  let ψ : SCV.TubeDomain C → SchwartzMap (Fin m → ℝ) ℂ :=
+    fun z => multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z.1 z.2
+  have hψ_cont : Continuous ψ := by
+    rw [continuous_iff_continuousAt]
+    intro z₀
+    rw [ContinuousAt]
+    exact ((schwartz_withSeminorms ℝ (Fin m → ℝ) ℂ).tendsto_nhds ψ (ψ z₀)).2 <| by
+      intro p ε hε
+      obtain ⟨δ, hδ_pos, hδ⟩ :=
+        multiDimPsiZ_seminorm_continuous C hC_open hC_conv hC_cone hC_salient
+          p.1 p.2 z₀.1 z₀.2 ε hε
+      filter_upwards [Metric.ball_mem_nhds z₀ hδ_pos] with w hw
+      exact hδ w.1 w.2 (by
+        have : dist (w : Fin m → ℂ) (z₀ : Fin m → ℂ) =
+            ‖(w : Fin m → ℂ) - (z₀ : Fin m → ℂ)‖ := dist_eq_norm _ _
+        have hwd : dist (w : Fin m → ℂ) (z₀ : Fin m → ℂ) < δ := hw
+        linarith)
+  let ι : α → SCV.TubeDomain C := fun a => ⟨z a, hz_mem a⟩
+  have hι_cont : Continuous ι := by
+    exact Continuous.subtype_mk hz_cont (fun a => hz_mem a)
+  have hEq :
+      (fun a =>
+        multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient (z a)) =
+        ψ ∘ ι := by
+    funext a
+    exact
+      multiDimPsiZExt_eq C hC_open hC_conv hC_cone hC_salient
+        (z a) (hz_mem a)
+  rw [hEq]
+  exact hψ_cont.comp hι_cont
+
+/-- Fixed-radius Paley-Wiener seminorm growth along a horizontal real slice with
+fixed imaginary part in the cone.
+
+This is the reusable fixed-radius estimate needed by Fubini/interchange
+arguments. It packages the growth block from
+`fourierLaplaceExtMultiDim_boundaryValue` without exposing the private
+`multiDimPsiExpCLM` internals outside this file. -/
+theorem multiDimPsiZExt_fixedImaginary_seminorm_bound {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    {η : Fin m → ℝ} (hη : η ∈ C) (k n : ℕ) :
+    ∃ (B : ℝ) (N : ℕ), 0 < B ∧
+      ∀ x : Fin m → ℝ,
+        SchwartzMap.seminorm ℝ k n
+          (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient
+            (fun i => (x i : ℂ) + (η i : ℂ) * I)) ≤
+          B * (1 + ‖x‖) ^ N := by
+  let χ : FixedConeCutoff (DualConeFlat C) :=
+    (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+  have hC_star_ne : (DualConeFlat C).Nonempty := ⟨0, zero_mem_dualConeFlat C⟩
+  have hC_star_closed : IsClosed (DualConeFlat C) := dualConeFlat_closed C
+  obtain ⟨c₀, hc₀_pos, hc₀⟩ :=
+    dualConeFlat_coercivity hC_open hC_cone hη hC_star_ne hC_star_closed
+  let K : ℝ := ((Fintype.card (Fin m) : ℝ) ^ 2)
+  let A₀ : ℝ := c₀ + K * ‖η‖
+  obtain ⟨Bexp, hBexp_pos, hBexp⟩ :=
+    schwartz_seminorm_cutoff_exp_bound_affine_uniform
+      χ.val χ.smooth χ.deriv_bound A₀ c₀ hc₀_pos k n
+  let mR : ℝ := (Fintype.card (Fin m) : ℝ)
+  let C_poly : ℝ := 1 + mR * ‖η‖ + mR
+  have hC_poly_pos : 0 < C_poly := by
+    dsimp [C_poly, mR]
+    positivity
+  refine ⟨Bexp * C_poly ^ n, n, mul_pos hBexp_pos (pow_pos hC_poly_pos n), ?_⟩
+  intro x
+  let z : Fin m → ℂ := fun i => (x i : ℂ) + (η i : ℂ) * I
+  have hz : z ∈ SCV.TubeDomain C := by
+    show (fun i => (z i).im) ∈ C
+    convert hη using 1
+    ext i
+    simp [z]
+  have hExt_eq :
+      multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z =
+        multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz :=
+    multiDimPsiZExt_eq C hC_open hC_conv hC_cone hC_salient z hz
+  rw [hExt_eq]
+  have hy_eq : (fun i => (z i).im) = η := by
+    ext i
+    simp [z]
+  have hc_z : ∀ ξ ∈ DualConeFlat C,
+      ∑ i, (fun i => (z i).im) i * ξ i ≥ c₀ * ‖ξ‖ := by
+    rw [hy_eq]
+    exact hc₀
+  have hexp_decay : ∀ ξ : Fin m → ℝ, χ.val ξ ≠ 0 →
+      (multiDimPsiExpCLM z ξ).re ≤ A₀ - c₀ * ‖ξ‖ := by
+    intro ξ hχξ
+    have hdistχ : Metric.infDist ξ (DualConeFlat C) ≤ 1 := by
+      by_contra h
+      exact hχξ (χ.support_bound ξ (by linarith))
+    have hExpBound :
+        ‖cexp (multiDimPsiExpCLM z ξ)‖ ≤
+          Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+      calc
+        ‖cexp (multiDimPsiExpCLM z ξ)‖
+            = ‖cexp (I * ∑ i, z i * (ξ i : ℂ))‖ := by
+                rw [multiDimPsiExpCLM_apply]
+        _ ≤ Real.exp (((c₀ + K * ‖fun i => (z i).im‖)) * 1) *
+              Real.exp (-(c₀ * ‖ξ‖)) := by
+                simpa [K] using
+                  cexp_bound_on_support hC_open hC_cone hz hc₀_pos hc_z
+                    zero_lt_one ξ hdistχ
+        _ ≤ Real.exp A₀ * Real.exp (-(c₀ * ‖ξ‖)) := by
+          gcongr
+          rw [mul_one, hy_eq]
+    have hnormexp :
+        ‖cexp (multiDimPsiExpCLM z ξ)‖ =
+          Real.exp ((multiDimPsiExpCLM z ξ).re) := Complex.norm_exp _
+    have hExp' :
+        Real.exp ((multiDimPsiExpCLM z ξ).re) ≤
+          Real.exp (A₀ - c₀ * ‖ξ‖) := by
+      rw [← hnormexp]
+      simpa [sub_eq_add_neg, Real.exp_add] using hExpBound
+    exact Real.exp_le_exp.mp hExp'
+  have hpoint : ∀ ξ : Fin m → ℝ,
+      ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n
+          (fun ξ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) ξ‖ ≤
+        Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+    intro ξ
+    have hraw := hBexp (multiDimPsiExpCLM z) hexp_decay ξ
+    have hfunexp :
+        (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) =
+          (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (multiDimPsiExpCLM z ξ)) := by
+      funext ξ
+      rw [multiDimPsiExpCLM_apply]
+    rw [hfunexp]
+    exact hraw
+  have hcoe :
+      ⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) = psiZRaw χ 1 z := rfl
+  have hrawfun :
+      psiZRaw χ 1 z =
+        (fun ξ : Fin m → ℝ => (χ.val ξ : ℂ) * cexp (I * ∑ i, z i * (ξ i : ℂ))) := by
+    funext ξ
+    simp [psiZRaw]
+  have hpoint' : ∀ ξ : Fin m → ℝ,
+      ‖ξ‖ ^ k * ‖iteratedFDeriv ℝ n
+          (⇑(multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)) ξ‖ ≤
+        Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+    intro ξ
+    rw [hcoe, hrawfun]
+    exact hpoint ξ
+  have hMnn : (0 : ℝ) ≤ Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := by
+    apply mul_nonneg hBexp_pos.le
+    exact pow_nonneg (by linarith [norm_nonneg (multiDimPsiExpCLM z)]) _
+  have hseminorm :
+      SchwartzMap.seminorm ℝ k n
+        (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz) ≤
+        Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n :=
+    SchwartzMap.seminorm_le_bound ℝ k n _ hMnn hpoint'
+  have hz_norm : ‖z‖ ≤ ‖x‖ + ‖η‖ := by
+    have hnn : (0 : ℝ) ≤ ‖x‖ + ‖η‖ := by positivity
+    apply (pi_norm_le_iff_of_nonneg hnn).2
+    intro i
+    calc
+      ‖z i‖ = ‖(x i : ℂ) + (η i : ℂ) * I‖ := rfl
+      _ ≤ ‖(x i : ℂ)‖ + ‖(η i : ℂ) * I‖ := norm_add_le _ _
+      _ = |x i| + |η i| := by
+          rw [Complex.norm_real, norm_mul, Complex.norm_real, Complex.norm_I, mul_one,
+            Real.norm_eq_abs, Real.norm_eq_abs]
+      _ ≤ ‖x‖ + ‖η‖ := by
+          gcongr
+          · exact norm_le_pi_norm x i
+          · exact norm_le_pi_norm η i
+  have hL_bound : ‖multiDimPsiExpCLM z‖ ≤ mR * (‖x‖ + ‖η‖) := by
+    calc
+      ‖multiDimPsiExpCLM z‖ ≤ mR * ‖z‖ := multiDimPsiExpCLM_norm_le z
+      _ ≤ mR * (‖x‖ + ‖η‖) := by
+          apply mul_le_mul_of_nonneg_left hz_norm (Nat.cast_nonneg' _)
+  have hpoly_absorb :
+      (1 + ‖multiDimPsiExpCLM z‖) ^ n ≤ C_poly ^ n * (1 + ‖x‖) ^ n := by
+    rw [← mul_pow]
+    apply pow_le_pow_left₀ (by linarith [norm_nonneg (multiDimPsiExpCLM z)])
+    have hmR_nn : (0 : ℝ) ≤ mR := Nat.cast_nonneg' _
+    calc
+      1 + ‖multiDimPsiExpCLM z‖
+          ≤ 1 + mR * (‖x‖ + ‖η‖) := by linarith [hL_bound]
+      _ = 1 + mR * ‖η‖ + mR * ‖x‖ := by ring
+      _ ≤ C_poly * 1 + C_poly * ‖x‖ := by
+          apply add_le_add
+          · simp only [mul_one]
+            dsimp [C_poly]
+            linarith
+          · apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+            show mR ≤ 1 + mR * ‖η‖ + mR
+            have : 0 ≤ mR * ‖η‖ := by positivity
+            linarith
+      _ = C_poly * (1 + ‖x‖) := by ring
+  calc
+    SchwartzMap.seminorm ℝ k n
+        (multiDimPsiZ C hC_open hC_conv hC_cone hC_salient z hz)
+        ≤ Bexp * (1 + ‖multiDimPsiExpCLM z‖) ^ n := hseminorm
+    _ ≤ Bexp * (C_poly ^ n * (1 + ‖x‖) ^ n) := by
+        gcongr
+    _ = (Bexp * C_poly ^ n) * (1 + ‖x‖) ^ n := by ring
+
 /-- The difference quotient of ψ_z converges in Schwartz seminorms.
     For fixed z in the tube and direction e_j:
 
@@ -3246,6 +3453,23 @@ private lemma fixedConeCutoff_eq_one_on_dualCone
     χ.val ξ = 1 := by
   obtain ⟨ε, hε, hone⟩ := χ.one_on_neighborhood
   exact hone ξ (by simpa [Metric.infDist_zero_of_mem hξ] using hε)
+
+/-- On the dual cone itself, the fixed-radius Vladimirov test used by
+`multiDimPsiZExt` is the bare Fourier-Laplace exponential. -/
+theorem multiDimPsiZExt_apply_of_mem_dualCone {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+    (z : Fin m → ℂ) (hz : z ∈ SCV.TubeDomain C)
+    {ξ : Fin m → ℝ} (hξ : ξ ∈ DualConeFlat C) :
+    multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z ξ =
+      Complex.exp (Complex.I * ∑ i, z i * (ξ i : ℂ)) := by
+  rw [multiDimPsiZExt_eq C hC_open hC_conv hC_cone hC_salient z hz]
+  let χ : FixedConeCutoff (DualConeFlat C) :=
+    (fixedConeCutoff_exists (DualConeFlat C) (dualConeFlat_closed C)).some
+  change psiZRaw χ 1 z ξ =
+    Complex.exp (Complex.I * ∑ i, z i * (ξ i : ℂ))
+  have hχ : χ.val ξ = 1 := fixedConeCutoff_eq_one_on_dualCone χ hξ
+  simp [psiZRaw, hχ]
 
 /-- The point `x + iεη` lies in the tube domain `T(C)` when `ε > 0` and `η ∈ C`.
 

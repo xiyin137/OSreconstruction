@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.TubeDistributions
+import OSReconstruction.SCV.ConeDefs
 import OSReconstruction.SCV.LaplaceSchwartz
 import OSReconstruction.SCV.DistributionalUniqueness
 import OSReconstruction.Wightman.Reconstruction
@@ -357,6 +358,33 @@ theorem flattenCLEquiv_im (n d : ℕ) (z : Fin n → Fin d → ℂ) :
     (fun k => (flattenCLEquiv n d z k).im) =
       flattenCLEquivReal n d (fun i j => (z i j).im) := by
   ext k; simp
+
+/-- Flattening transports a nested tube-domain point to the corresponding
+flat SCV tube over the image cone. -/
+theorem flattenCLEquiv_mem_tubeDomain_image
+    {n r : ℕ} {C : Set (Fin n → Fin (r + 1) → ℝ)}
+    {z : Fin n → Fin (r + 1) → ℂ}
+    (hz : z ∈ TubeDomainSetPi C) :
+    flattenCLEquiv n (r + 1) z ∈
+      SCV.TubeDomain ((flattenCLEquivReal n (r + 1)) '' C) := by
+  show (fun k => (flattenCLEquiv n (r + 1) z k).im) ∈
+    (flattenCLEquivReal n (r + 1)) '' C
+  rw [flattenCLEquiv_im]
+  exact ⟨fun i j => (z i j).im, hz, rfl⟩
+
+/-- The inverse flattening transports a flat SCV tube-domain point over an image
+cone back to the nested tube-domain point. -/
+theorem flattenCLEquiv_symm_mem_tubeDomainSetPi_of_mem_tubeDomain_image
+    {n r : ℕ} {C : Set (Fin n → Fin (r + 1) → ℝ)}
+    {w : Fin (n * (r + 1)) → ℂ}
+    (hw : w ∈ SCV.TubeDomain ((flattenCLEquivReal n (r + 1)) '' C)) :
+    (flattenCLEquiv n (r + 1)).symm w ∈ TubeDomainSetPi C := by
+  show (fun i j => ((flattenCLEquiv n (r + 1)).symm w i j).im) ∈ C
+  obtain ⟨η, hη, hηw⟩ := hw
+  convert hη using 1
+  ext i j
+  have hcoord := congr_fun hηw (finProdFinEquiv (i, j))
+  simpa [flattenCLEquiv_symm_apply, flattenCLEquivReal_apply] using hcoord.symm
 
 /-- The flattening as a `MeasurableEquiv`. Composition of uncurrying
     `(Fin n → Fin d → ℝ) ≃ᵐ (Fin n × Fin d → ℝ)` with reindexing

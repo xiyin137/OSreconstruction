@@ -108,6 +108,21 @@ theorem hasFourierSupportIn_eqOn {S : Set (Fin m → ℝ)}
     exact hx (sub_eq_zero.mpr (h_eq x hxS))
   exact sub_eq_zero.mp (by rw [← map_sub]; exact hsub)
 
+/-- A frequency-side distribution supported in the dual cone cannot distinguish
+two Schwartz kernels that agree on that dual cone. -/
+theorem tflat_pairing_eq_of_eqOn_dualCone {S : Set (Fin m → ℝ)}
+    (Tflat : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_supp : HasFourierSupportInDualCone S Tflat)
+    (KAmbient KTransport : SchwartzMap (Fin m → ℝ) ℂ)
+    (hEq :
+      Set.EqOn
+        (KAmbient : (Fin m → ℝ) → ℂ)
+        (KTransport : (Fin m → ℝ) → ℂ)
+        (DualConeFlat S)) :
+    Tflat KAmbient = Tflat KTransport := by
+  exact hasFourierSupportIn_eqOn (S := DualConeFlat S) hTflat_supp
+    (fun ξ hξ => hEq hξ)
+
 /-! ### Slice functionals -/
 
 /-- The inverse Fourier transform on `Fin m → ℝ`, transported through

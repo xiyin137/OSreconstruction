@@ -24,7 +24,6 @@ namespace Task4Bridge
 
 open Task3Bridge
 
-set_option maxHeartbeats 0 in
 /-- Exponential neighborhood lemma for the distributional Euclidean bridge. -/
 private theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
     ∀ᶠ Λ in 𝓝 (1 : ComplexLorentzGroup d),
@@ -77,8 +76,8 @@ private theorem exp_nhd_of_one_euclidean (ε : ℝ) (hε : 0 < ε) :
   intro Λ ⟨X, hexpX, hXS, hnXS, hcXS, hXε⟩
   refine ⟨X, ?_, hexpX.symm, hXε⟩
   have h1 : mexp (η * X.transpose * η) = η * mexp X.transpose * η := by
-    show NormedSpace.exp (η * X.transpose * η) = η * NormedSpace.exp X.transpose * η
-    exact NormedSpace.exp_units_conj (ComplexLorentzGroup.ηℂ_unit) X.transpose
+    simpa [η, ComplexLorentzGroup.ηℂ_unit] using
+      (Matrix.exp_units_conj' (ComplexLorentzGroup.ηℂ_unit (d := d)) X.transpose)
   have h2 : mexp X.transpose = (mexp X).transpose :=
     show NormedSpace.exp X.transpose = (NormedSpace.exp X).transpose from
       Matrix.exp_transpose X

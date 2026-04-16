@@ -207,8 +207,9 @@ theorem distributional_uniqueness_tube_of_regular {m : ℕ}
     unique holomorphic function on T(conv C) = ℝᵐ + i(conv C), where conv C
     is the convex hull of C.
 
-    This is a fundamental result in several complex variables: holomorphic functions
-    on tube domains automatically extend to the convex hull of the base.
+    This is a fundamental result in several complex variables: holomorphic
+    functions on tube domains with connected base automatically extend to the
+    convex hull of the base.
 
     In the OS reconstruction, this is used only after the relevant cone geometry
     has been identified correctly. The current infrastructure proves Bochner's
@@ -221,12 +222,12 @@ theorem distributional_uniqueness_tube_of_regular {m : ℕ}
     variables" (1938); Vladimirov §20.2; Hörmander, "An Introduction to Complex
     Analysis in Several Variables", Theorem 2.5.10 -/
 theorem bochner_tube_theorem {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty)
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty) (hconn : IsConnected C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C)) :
     ∃ (F_ext : (Fin m → ℂ) → ℂ),
       DifferentiableOn ℂ F_ext (TubeDomain (convexHull ℝ C)) ∧
       ∀ z ∈ TubeDomain C, F_ext z = F z :=
-  bochner_tube_extension hC hne hF
+  bochner_tube_extension hC hne hconn hF
 
 end SCV
 

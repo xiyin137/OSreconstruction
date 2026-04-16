@@ -183,8 +183,9 @@ theorem holomorphic_extension_from_local_family {m : ℕ}
     simp only [f_ext, dif_pos (hU_sub hz)]
     exact hG_agree z (hU_sub hz) z ⟨hz, hV_mem z (hU_sub hz)⟩
 
-/-- **Bochner's tube theorem**: If F is holomorphic on T(C) where C is an open
-    nonempty set in ℝᵐ, then F extends to a holomorphic function on T(conv C).
+/-- **Bochner's tube theorem**: If `F` is holomorphic on `T(C)` where `C` is an
+    open connected nonempty set in `ℝᵐ`, then `F` extends to a holomorphic
+    function on `T(conv C)`.
 
     This is a fundamental theorem of several complex variables. The proof combines:
     1. Local extension at each z ∈ T(conv C) via iterated Cauchy integrals on
@@ -202,7 +203,7 @@ theorem holomorphic_extension_from_local_family {m : ℕ}
 
     Ref: Bochner (1938); Hörmander, Theorem 2.5.10; Vladimirov §10. -/
 axiom bochner_tube_extension {m : ℕ}
-    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty)
+    {C : Set (Fin m → ℝ)} (hC : IsOpen C) (hne : C.Nonempty) (hconn : IsConnected C)
     {F : (Fin m → ℂ) → ℂ} (hF : DifferentiableOn ℂ F (TubeDomain C)) :
     ∃ (F_ext : (Fin m → ℂ) → ℂ),
       DifferentiableOn ℂ F_ext (TubeDomain (convexHull ℝ C)) ∧

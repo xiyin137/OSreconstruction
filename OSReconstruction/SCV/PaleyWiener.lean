@@ -1045,6 +1045,294 @@ private theorem weightedDerivToBCFCLM_scaledHorizontal_growth
           exact one_add_abs_two_pi_mul_rpow_le n x
     _ = (D0 * (2 * Real.pi) ^ n) * (1 + |x|) ^ n := by ring
 
+/-- Continuity in the Schwartz topology of the scaled horizontal `ψ_Z` family. -/
+private theorem continuous_scaledHorizontalSchwartzPsi
+    (η : ℝ) (hη : 0 < η) :
+    Continuous (fun x : ℝ => scaledHorizontalSchwartzPsi η hη x) := by
+  rw [continuous_iff_continuousAt]
+  intro x
+  change Tendsto (fun y : ℝ => scaledHorizontalSchwartzPsi η hη y) (nhds x)
+    (nhds (scaledHorizontalSchwartzPsi η hη x))
+  rw [(schwartz_withSeminorms ℂ ℝ ℂ).tendsto_nhds _ _]
+  intro p ε hε
+  have hcont :
+      ContinuousAt
+        (fun y : ℝ =>
+          weightedDerivToBCFCLM p.1 p.2 (scaledHorizontalSchwartzPsi η hη y)) x :=
+    (continuous_weightedDerivToBCFCLM_scaledHorizontal η hη p.1 p.2).continuousAt
+  rw [Metric.continuousAt_iff] at hcont
+  obtain ⟨δ, hδ_pos, hδ⟩ := hcont ε hε
+  refine Filter.mem_of_superset (Metric.ball_mem_nhds x hδ_pos) ?_
+  intro y hy
+  have hdist := hδ hy
+  have hnorm :
+      ‖weightedDerivToBCFCLM p.1 p.2
+          (scaledHorizontalSchwartzPsi η hη y - scaledHorizontalSchwartzPsi η hη x)‖ < ε := by
+    simpa [dist_eq_norm, map_sub] using hdist
+  exact lt_of_le_of_lt
+    (schwartzSeminorm_le_probe_component_norm p.1 p.2
+      (scaledHorizontalSchwartzPsi η hη y - scaledHorizontalSchwartzPsi η hη x))
+    hnorm
+
+/-- Public `2π`-scaled horizontal `ψ_Z` continuity package used by the
+OS-route horizontal Fubini step. -/
+theorem continuous_schwartzPsiZ_twoPi_horizontal
+    {η : ℝ} (hη : 0 < η) :
+    Continuous
+      (fun x : ℝ =>
+        schwartzPsiZ
+          ((((2 * Real.pi : ℝ) : ℂ) * ((x : ℂ) + η * Complex.I)))
+          (by
+            have hscaled : 0 < (2 * Real.pi) *
+                (((x : ℂ) + η * Complex.I).im) :=
+              mul_pos Real.two_pi_pos (by simpa using hη)
+            simpa [Complex.mul_im] using hscaled)) := by
+  have hfun :
+      (fun x : ℝ =>
+        schwartzPsiZ
+          ((((2 * Real.pi : ℝ) : ℂ) * ((x : ℂ) + η * Complex.I)))
+          (by
+            have hscaled : 0 < (2 * Real.pi) *
+                (((x : ℂ) + η * Complex.I).im) :=
+              mul_pos Real.two_pi_pos (by simpa using hη)
+            simpa [Complex.mul_im] using hscaled)) =
+      (fun x : ℝ => scaledHorizontalSchwartzPsi η hη x) := by
+    funext x
+    ext ξ
+    simp [scaledHorizontalSchwartzPsi, horizontalSchwartzPsi, schwartzPsiZ_apply]
+    ring_nf
+  rw [hfun]
+  exact continuous_scaledHorizontalSchwartzPsi η hη
+
+private theorem funUnique_abs_le_norm
+    (x1 : Fin 1 → ℝ) :
+    |(ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ) x1| ≤ ‖x1‖ := by
+  simpa [Real.norm_eq_abs] using (norm_le_pi_norm (f := x1) (i := (0 : Fin 1)))
+
+/-- `Fin 1` reindexed Fourier-transform horizontal `ψ_Z` family continuity. -/
+theorem continuous_fin1_reindexed_fourierTransform_schwartzPsiZ_horizontal
+    {ε : ℝ} (hε : 0 < ε) :
+    Continuous
+      (fun x1 : Fin 1 → ℝ =>
+        let e1 : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+          ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+        let toFin1 : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+          SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e1
+        toFin1
+          ((SchwartzMap.fourierTransformCLM ℂ)
+            (schwartzPsiZ
+              ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+              (by
+                have hscaled : 0 < (2 * Real.pi) *
+                    (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                  mul_pos Real.two_pi_pos (by simpa using hε)
+                simpa [Complex.mul_im] using hscaled)))) := by
+  let e1 : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+    ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+  let toFin1 : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e1
+  let L : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+    toFin1.comp (SchwartzMap.fourierTransformCLM ℂ)
+  have hcont :
+      Continuous (fun x1 : Fin 1 → ℝ =>
+        L
+          (schwartzPsiZ
+            ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+            (by
+              have hscaled : 0 < (2 * Real.pi) *
+                  (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                mul_pos Real.two_pi_pos (by simpa using hε)
+              simpa [Complex.mul_im] using hscaled))) :=
+    L.continuous.comp
+      ((continuous_schwartzPsiZ_twoPi_horizontal hε).comp e1.continuous)
+  simpa [L, toFin1, e1] using hcont
+
+/-- Polynomial seminorm growth of the `Fin 1` reindexed Fourier-transform
+horizontal `ψ_Z` family. -/
+theorem seminorm_fin1_reindexed_fourierTransform_schwartzPsiZ_horizontal_growth
+    {ε : ℝ} (hε : 0 < ε) :
+    ∀ (k n : ℕ), ∃ (C : ℝ) (N : ℕ), C > 0 ∧
+      ∀ (x1 : Fin 1 → ℝ),
+        SchwartzMap.seminorm ℝ k n
+          (let e1 : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+            ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+           let toFin1 : SchwartzMap ℝ ℂ →L[ℂ]
+                SchwartzMap (Fin 1 → ℝ) ℂ :=
+            SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e1
+           toFin1
+            ((SchwartzMap.fourierTransformCLM ℂ)
+              (schwartzPsiZ
+                ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+                (by
+                  have hscaled : 0 < (2 * Real.pi) *
+                      (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                    mul_pos Real.two_pi_pos (by simpa using hε)
+                  simpa [Complex.mul_im] using hscaled)))) ≤
+          C * (1 + ‖x1‖) ^ N := by
+  classical
+  intro k n
+  let e1 : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+    ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+  let toFin1 : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e1
+  let L : SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap (Fin 1 → ℝ) ℂ :=
+    toFin1.comp (SchwartzMap.fourierTransformCLM ℂ)
+  let q : Seminorm ℂ (SchwartzMap ℝ ℂ) :=
+    (schwartzSeminormFamily ℂ (Fin 1 → ℝ) ℂ (k, n)).comp L.toLinearMap
+  have hq_cont : Continuous q := by
+    change Continuous (fun φ : SchwartzMap ℝ ℂ =>
+      schwartzSeminormFamily ℂ (Fin 1 → ℝ) ℂ (k, n) (L φ))
+    exact
+      ((schwartz_withSeminorms ℂ (Fin 1 → ℝ) ℂ).continuous_seminorm
+        (k, n)).comp L.continuous
+  obtain ⟨s, D, hD_ne, hq_bound⟩ :=
+    Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ ℝ ℂ) q hq_cont
+  have hD_pos : 0 < (D : ℝ) := by
+    exact lt_of_le_of_ne D.2 (by exact_mod_cast hD_ne.symm)
+  have hB :
+      ∀ p : ℕ × ℕ, ∃ B : ℝ, 0 ≤ B ∧ ∀ x1 : Fin 1 → ℝ,
+        schwartzSeminormFamily ℂ ℝ ℂ p
+          (schwartzPsiZ
+            ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+            (by
+              have hscaled : 0 < (2 * Real.pi) *
+                  (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                mul_pos Real.two_pi_pos (by simpa using hε)
+              simpa [Complex.mul_im] using hscaled)) ≤
+            B * (1 + ‖x1‖) ^ p.2 := by
+    intro p
+    obtain ⟨B0, hB0_nonneg, hB0_bound⟩ :=
+      schwartzPsiZ_seminorm_horizontal_bound (2 * Real.pi * ε) (by positivity) p.1 p.2
+    refine ⟨B0 * (2 * Real.pi) ^ p.2, by positivity, ?_⟩
+    intro x1
+    have hscale :
+        1 + |2 * Real.pi * e1 x1| ≤ (2 * Real.pi) * (1 + ‖x1‖) := by
+      rw [abs_mul, abs_of_pos (show (0 : ℝ) < 2 * Real.pi by positivity)]
+      have hfun := funUnique_abs_le_norm x1
+      nlinarith [Real.pi_gt_three, hfun, norm_nonneg x1]
+    have hpow :
+        (1 + |2 * Real.pi * e1 x1|) ^ p.2 ≤
+          ((2 * Real.pi) * (1 + ‖x1‖)) ^ p.2 := by
+      exact pow_le_pow_left₀ (by positivity) hscale p.2
+    calc
+      schwartzSeminormFamily ℂ ℝ ℂ p
+          (schwartzPsiZ
+            ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+            (by
+              have hscaled : 0 < (2 * Real.pi) *
+                  (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                mul_pos Real.two_pi_pos (by simpa using hε)
+              simpa [Complex.mul_im] using hscaled))
+          =
+        schwartzSeminormFamily ℂ ℝ ℂ p
+          (horizontalSchwartzPsi (2 * Real.pi * ε) (by positivity) (2 * Real.pi * e1 x1)) := by
+            congr 1
+            ext ξ
+            simp [horizontalSchwartzPsi, schwartzPsiZ_apply]
+            ring_nf
+      _ ≤ B0 * (1 + |2 * Real.pi * e1 x1|) ^ p.2 :=
+            by simpa [horizontalSchwartzPsi] using hB0_bound (2 * Real.pi * e1 x1)
+      _ ≤ B0 * (((2 * Real.pi) * (1 + ‖x1‖)) ^ p.2) := by
+            gcongr
+      _ = (B0 * (2 * Real.pi) ^ p.2) * (1 + ‖x1‖) ^ p.2 := by
+            rw [mul_pow]
+            ring
+  choose B hB_nonneg hB_bound using hB
+  let N : ℕ := s.sup Prod.snd
+  let Bsum : ℝ := ∑ p ∈ s, B p
+  let C : ℝ := (D : ℝ) * Bsum + 1
+  have hBsum_nonneg : 0 ≤ Bsum := by
+    dsimp [Bsum]
+    refine Finset.sum_nonneg ?_
+    intro p hp
+    exact hB_nonneg p
+  refine ⟨C, N, by
+    dsimp [C]
+    nlinarith [show 0 < (D : ℝ) from hD_pos], ?_⟩
+  intro x1
+  let ψx : SchwartzMap ℝ ℂ :=
+    schwartzPsiZ
+      ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+      (by
+        have hscaled : 0 < (2 * Real.pi) *
+            (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+          mul_pos Real.two_pi_pos (by simpa using hε)
+        simpa [Complex.mul_im] using hscaled)
+  let u : ℝ := 1 + ‖x1‖
+  have hu_nonneg : 0 ≤ u := by
+    dsimp [u]
+    positivity
+  have hu_ge_one : 1 ≤ u := by
+    dsimp [u]
+    have hx : 0 ≤ ‖x1‖ := norm_nonneg x1
+    linarith
+  have hsum_apply :
+      ∀ s' : Finset (ℕ × ℕ),
+        (∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p) ψx =
+          ∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p ψx := by
+    intro s'
+    induction s' using Finset.induction with
+    | empty =>
+        simp
+    | insert a s' ha ih =>
+        simp [Finset.sum_insert, ha, ih]
+  have hsum_bound :
+      (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) ψx ≤ Bsum * u ^ N := by
+    calc
+      (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) ψx
+          = ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p ψx := by
+              simpa using hsum_apply s
+      _ ≤ ∑ p ∈ s, B p * u ^ N := by
+            refine Finset.sum_le_sum ?_
+            intro p hp
+            have hpN : p.2 ≤ N := Finset.le_sup hp
+            calc
+              schwartzSeminormFamily ℂ ℝ ℂ p ψx
+                  ≤ B p * u ^ p.2 := hB_bound p x1
+              _ ≤ B p * u ^ N := by
+                    refine mul_le_mul_of_nonneg_left ?_ (hB_nonneg p)
+                    exact pow_le_pow_right₀ hu_ge_one hpN
+      _ = Bsum * u ^ N := by
+            simp [Bsum, Finset.sum_mul]
+  have hL_bound : SchwartzMap.seminorm ℝ k n (L ψx) ≤ (D : ℝ) * (Bsum * u ^ N) := by
+    calc
+      SchwartzMap.seminorm ℝ k n (L ψx) = q ψx := by
+        rfl
+      _ ≤ (D • s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) ψx := hq_bound ψx
+      _ = (D : ℝ) * (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) ψx := by
+            rfl
+      _ ≤ (D : ℝ) * ((∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) ψx) := by
+            gcongr
+            exact Seminorm.le_def.mp
+              (Seminorm.finset_sup_le_sum (schwartzSeminormFamily ℂ ℝ ℂ) s) ψx
+      _ ≤ (D : ℝ) * (Bsum * u ^ N) := by
+            gcongr
+  calc
+    SchwartzMap.seminorm ℝ k n
+      (let e1 : (Fin 1 → ℝ) ≃L[ℝ] ℝ :=
+        ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ
+       let toFin1 : SchwartzMap ℝ ℂ →L[ℂ]
+            SchwartzMap (Fin 1 → ℝ) ℂ :=
+        SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e1
+       toFin1
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          (schwartzPsiZ
+            ((((2 * Real.pi : ℝ) : ℂ) * ((e1 x1 : ℂ) + ε * Complex.I)))
+            (by
+              have hscaled : 0 < (2 * Real.pi) *
+                  (((e1 x1 : ℂ) + ε * Complex.I).im) :=
+                mul_pos Real.two_pi_pos (by simpa using hε)
+              simpa [Complex.mul_im] using hscaled))))
+        = SchwartzMap.seminorm ℝ k n (L ψx) := by
+            simp [L, toFin1, e1, ψx]
+    _ ≤ (D : ℝ) * (Bsum * u ^ N) := hL_bound
+    _ ≤ C * u ^ N := by
+          have hCu : (D : ℝ) * (Bsum * u ^ N) ≤ ((D : ℝ) * Bsum + 1) * u ^ N := by
+            have hu_pow_ge_one : 1 ≤ u ^ N := by
+              exact pow_le_pow_right₀ hu_ge_one (Nat.zero_le _)
+            nlinarith [hBsum_nonneg, show 0 < (D : ℝ) from hD_pos]
+          simpa [C, u, mul_assoc, mul_left_comm, mul_comm] using hCu
+
 private theorem integrable_one_add_abs_rpow_mul_norm
     (φ : SchwartzMap ℝ ℂ) (n : ℕ) :
     Integrable (fun x : ℝ => (1 + |x|) ^ n * ‖φ x‖) := by
@@ -2277,6 +2565,16 @@ private theorem psiZ_pairing_formula
       (smoothCutoff ξ : ℂ)
       (fun (x : ℝ) => Complex.exp (2 * Real.pi * Complex.I * ξ * x) * φ x)]
   ring
+
+/-- Public `2π`-normalized `ψ_z` pairing formula used by the OS-route
+time-shift expansion. -/
+theorem psiZ_twoPi_pairing_formula
+    (φ : SchwartzMap ℝ ℂ) (η ξ : ℝ) :
+    ∫ x : ℝ,
+      psiZ ((2 * Real.pi : ℂ) * (x + η * Complex.I)) ξ * φ x =
+        smoothCutoff ξ * Complex.exp (-(2 * Real.pi * η : ℂ) * ξ) *
+          FourierTransform.fourierInv φ ξ :=
+  psiZ_pairing_formula φ η ξ
 
 private def stepAScalarDerivIntegrand
     (η : ℝ) (hη : 0 < η) (φ : SchwartzMap ℝ ℂ) (n : ℕ) (ξ x : ℝ) : ℂ :=
