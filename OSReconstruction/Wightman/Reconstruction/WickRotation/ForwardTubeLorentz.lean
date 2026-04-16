@@ -1197,6 +1197,30 @@ theorem PermutedExtendedTube_subset_TranslatedPET {d n : ℕ} [NeZero d] :
   intro z hz
   exact ⟨0, by simpa using hz⟩
 
+/-- `TranslatedPET` is stable under uniform complex translations. -/
+theorem translatedPET_translate {d n : ℕ} [NeZero d]
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n := by
+  rcases hz with ⟨a, ha⟩
+  refine ⟨fun μ => a μ - c μ, ?_⟩
+  simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using ha
+
+/-- Translation by a uniform complex vector is an equivalence on
+`TranslatedPET`. -/
+theorem translatedPET_translate_iff {d n : ℕ} [NeZero d]
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n ↔
+      z ∈ TranslatedPET d n := by
+  constructor
+  · intro hz
+    simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+      translatedPET_translate (d := d) (n := n) hz (-c)
+  · intro hz
+    exact translatedPET_translate (d := d) (n := n) hz c
+
 /-- **A.e. Wick-rotated Euclidean configuration lies in the translated PET.**
 
     For a.e. configuration x = (x₁, ..., xₙ) of Euclidean spacetime points,

@@ -65,22 +65,31 @@ theorem constructedZeroDiagonalSchwinger_linear (Wfn : WightmanFunctions d) (n :
       _ = c • ∫ x : NPointDomain d n, K x * f.1 x :=
             MeasureTheory.integral_smul c (fun x : NPointDomain d n => K x * f.1 x)
 
+/-- **F_ext has a well-defined value on TranslatedPET.**
+
+    If z+c₁ and z+c₂ are both in PET, then F_ext(z+c₁) = F_ext(z+c₂).
+    This is the key property enabling the migration from PET to TranslatedPET:
+    F_ext can be unambiguously evaluated at any TranslatedPET point by choosing
+    any translation that puts it in PET.
+
+    Proof: Apply bhw_translation_invariant with translation (c₂ - c₁). -/
+theorem F_ext_value_on_translatedPET (Wfn : WightmanFunctions d) (n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c₁ c₂ : Fin (d + 1) → ℂ)
+    (h₁ : (fun k μ => z k μ + c₁ μ) ∈ PermutedExtendedTube d n)
+    (h₂ : (fun k μ => z k μ + c₂ μ) ∈ PermutedExtendedTube d n) :
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₁ μ) =
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₂ μ) := by
+  have key := bhw_translation_invariant Wfn (fun μ => c₂ μ - c₁ μ)
+    (fun k μ => z k μ + c₁ μ) h₁
+    (by convert h₂ using 1; ext k μ; ring)
+  simpa [sub_eq_add_neg, add_assoc] using key.symm
+
 /-- The BHW extension F_ext inherits translation invariance from the Wightman
-    distribution W_n.
-
-    Both z ↦ F_ext(z) and z ↦ F_ext(z + c) (for real c) are holomorphic on the
-    permuted extended tube with the same distributional boundary values (by
-    translation invariance of W_n). By uniqueness of analytic continuation on the
-    connected permuted extended tube, they agree.
-
-    Requires: identity theorem for holomorphic functions on tube domains in ℂⁿ.
-    The multi-dimensional identity theorem is proved in `SCV/IdentityTheorem.lean`
-    (modulo Hartogs analyticity).
-
-    This pointwise form requires both Euclidean configurations
+    distribution W_n. This pointwise form requires both Euclidean configurations
     `wick(x)` and `wick(x + a)` to lie in PET.
 
-    Ref: Streater-Wightman, Theorem 2.8 (uniqueness of holomorphic extension to tubes) -/
+    Ref: Streater-Wightman, Theorem 2.8 -/
 theorem F_ext_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
     (a : SpacetimeDim d) (x : NPointDomain d n)
     (htube : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n)
@@ -351,6 +360,38 @@ theorem ae_reflected_reversed_euclidean_points_in_permutedTube {d n : ℕ} [NeZe
     simpa [s] using
       (MeasureTheory.mem_ae_iff.mp (ae_euclidean_points_in_permutedTube (d := d) (n := n)))
   simpa [T, s, timeReflectionN] using hT.preimage_null hs_null
+
+/-- Reflected-reversed Euclidean configurations also lie in `TranslatedPET`
+    a.e. This is the corrected W11 surface compatible with the basepoint issue. -/
+theorem ae_reflected_reversed_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
+    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) ∈
+        TranslatedPET d n := by
+  let T : NPointDomain d n → NPointDomain d n :=
+    fun x => timeReflectionN d (fun i => x (Fin.rev i))
+  have hT :
+      MeasureTheory.MeasurePreserving T MeasureTheory.volume MeasureTheory.volume :=
+    (measurePreserving_timeReflectionN (d := d) (n := n)).comp
+      (measurePreserving_revPerm (d := d) (n := n))
+  rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
+  let s : Set (NPointDomain d n) :=
+    {x | (fun k => wickRotatePoint (x k)) ∉ TranslatedPET d n}
+  have hs_null : MeasureTheory.volume s = 0 := by
+    simpa [s] using
+      (MeasureTheory.mem_ae_iff.mp
+        (ae_euclidean_points_in_translatedPET (d := d) (n := n)))
+  simpa [T, s, timeReflectionN] using hT.preimage_null hs_null
+
+/-- Original and reflected-reversed Euclidean configurations lie in
+`TranslatedPET` simultaneously a.e. -/
+theorem ae_euclidean_points_in_translatedPET_overlap {d n : ℕ} [NeZero d] :
+    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n ∧
+      (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) ∈
+        TranslatedPET d n := by
+  filter_upwards [ae_euclidean_points_in_translatedPET (d := d) (n := n),
+    ae_reflected_reversed_euclidean_points_in_translatedPET (d := d) (n := n)] with x hx hx'
+  exact ⟨hx, hx'⟩
 
 /-- Original and reflected-reversed Euclidean configurations lie in PET simultaneously a.e. -/
 theorem ae_euclidean_points_in_permutedTube_overlap {d n : ℕ} [NeZero d] :
