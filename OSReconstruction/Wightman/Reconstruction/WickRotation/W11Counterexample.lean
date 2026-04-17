@@ -9,6 +9,21 @@ import OSReconstruction.ComplexLieGroups.BHWCore
 /-!
 # W11 Counterexample: `wickRotation_not_in_PET_null` is false for n ≥ d+2
 
+## What this file formalizes
+
+This file contains the **algebraic core** of the obstruction: the specific
+points `x₁=(1,0)`, `x₂=(-1,0)` in `d=1` (and analogous n=3 triangle), the key
+identities `z₂ = -z₁` and `(½)x₁ + (½)x₂ = 0`, and the no-valid-ordering
+contradiction `¬(a > 0 ∧ -2a > 0)` for any real `a`.
+
+The full non-membership theorem
+`(fun k => wickRotatePoint (w11_counterexample_config k)) ∉ PermutedExtendedTube 1 2`
+is argued informally in the module docstring below but is **not yet itself a
+Lean theorem in this file** — closing the loop requires unfolding the
+`PermutedExtendedTube` `iUnion` over (π, Λ) and combining the algebraic facts
+below with the `InOpenForwardCone` definitional conditions. The algebraic
+obstruction is fully Lean-formalized; the final unfolding is currently prose.
+
 ## The issue
 
 The `ForwardTube` definition (WightmanAxioms.lean) requires for k=0 that

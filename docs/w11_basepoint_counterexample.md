@@ -71,7 +71,23 @@ This requires a < 0 AND a > 0. Contradiction.
 Since Fin 2 has exactly 2 permutations (id and swap), and both are impossible
 for ANY Λ, the configuration is not in PET. QED.
 
-**This counterexample is verified in Lean 4 (0 sorrys).** See W11Counterexample.lean.
+**Status in Lean (`W11Counterexample.lean`, 0 sorrys):** The file formalizes the
+*algebraic core* of the obstruction:
+
+- `w11_counterexample_distinct`: x₁ ≠ x₂.
+- `w11_counterexample_wick_time`, `_wick_spatial`: z₂ = −z₁ componentwise.
+- `w11_no_valid_ordering`: for any a ∈ ℝ, we cannot have (a > 0 ∧ −2a > 0) and
+  we cannot have (−a > 0 ∧ 2a > 0) — the two permutation-specific contradictions.
+- `w11_origin_in_convex_hull`, `w11_origin_in_triangle`, `w11_barycentric_valid`:
+  (½)x₁ + (½)x₂ = 0 for n=2, and (¼)x₁ + (⅓)x₂ + (5⁄12)x₃ = 0 for n=3.
+
+The full non-membership theorem
+`(fun k => wickRotatePoint (w11_counterexample_config k)) ∉ PermutedExtendedTube 1 2`
+is argued informally in this document but is **not yet itself a Lean theorem in
+the file** — closing the loop requires unfolding the `PermutedExtendedTube`
+`iUnion` over (π, Λ) and combining the algebraic facts above with the
+`InOpenForwardCone` definitional conditions. The algebraic obstruction is
+fully Lean-formalized; the final unfolding step is currently expressed in prose.
 
 ## Why this is positive measure for n ≥ d+2
 

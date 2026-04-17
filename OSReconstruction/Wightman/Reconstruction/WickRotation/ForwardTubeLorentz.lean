@@ -1223,23 +1223,34 @@ theorem translatedPET_translate_iff {d n : ℕ} [NeZero d]
 
 /-- **A.e. Wick-rotated Euclidean configuration lies in the translated PET.**
 
-    For a.e. configuration x = (x₁, ..., xₙ) of Euclidean spacetime points,
-    the Wick-rotated configuration (iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) lies in the
-    translated permuted extended tube.
+    **STATUS: this declaration is currently an `axiom`, not a `theorem`.** The
+    statement replaces the earlier (FALSE for `n ≥ d+2`) claim that
+    `wick⁻¹(PermutedExtendedTube)` has full measure (see `W11Counterexample.lean`
+    and `docs/w11_basepoint_counterexample.md`). The `TranslatedPET` surface is
+    strictly weaker (it relaxes the k=0 basepoint condition), so a measure-zero
+    complement is consistent with the known physics. A full Lean proof is
+    **not yet supplied in this file** and is tracked as future work.
 
-    The proof reduces to two measure-zero conditions on x:
-    (1) Non-coincident: all x_i pairwise distinct (codimension ≥ 1).
-    (2) Generic spatial projection: for some spatial direction, the 2D projections
-        (τ_k, x_k · v) are pairwise distinct and nonzero (codimension ≥ 1).
+    Proof sketch (to be formalized):
+    (1) Non-coincident: the set of `x` with two coincident times has measure 0
+        (covered by `measure_timeEq_zero` in `SchwingerTemperedness.lean`).
+    (2) Generic spatial projection: for a.e. `x`, there is a spatial direction
+        `v` along which the 2D projections `(τ_k, x_k · v)` are pairwise
+        distinct and nonzero (codimension ≥ 1).
+    (3) The `sinusoid_separation` lemma (`GeneralResults/SinusoidSeparation.lean`,
+        already sorry-free) then provides a boost angle making all consecutive
+        imaginary differences positive and in V⁺.
+    (4) A uniform imaginary-time translation fixes the k=0 basepoint condition,
+        yielding membership in `TranslatedPET`.
 
-    For such x, the sinusoid separation lemma provides a boost angle making all
-    consecutive imaginary differences positive and in V⁺. A uniform imaginary-time
-    translation then fixes the k=0 basepoint condition.
-
-    **Mathematical justification:** The standard (difference-only) PET contains
+    **Mathematical justification:** the standard (difference-only) PET contains
     all non-coincident Wick-rotated Euclidean configurations (Jost §IV.4). Our
     `TranslatedPET` is equivalent to the standard PET since translation preserves
-    the Wightman function value by translation invariance (R3). -/
+    the Wightman function value by translation invariance (R3).
+
+    Downstream consumers (`ae_euclidean_points_in_translatedPET`, and through it
+    the new `F_ext_on_translatedPET_total` kernel) currently inherit this
+    axiom. -/
 axiom wickRotation_in_translatedPET_null {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n |
