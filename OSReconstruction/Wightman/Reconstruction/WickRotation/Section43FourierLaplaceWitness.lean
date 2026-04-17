@@ -1231,6 +1231,79 @@ theorem section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
   simpa [section43FourierLaplaceIntegral,
     section43FourierLaplaceIntegral_fderivCandidate, Fint, Fderiv, Fpull] using hmain
 
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact ordered support, the integrated first-derivative candidate
+depends continuously on the ambient momentum variable. -/
+theorem continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    Continuous fun q : NPointDomain d n =>
+      section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q := by
+  rw [continuous_iff_continuousAt]
+  intro q
+  let Fpull : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+  let Fderiv : NPointDomain d n → (Fin n → ℝ) → NPointDomain d n →L[ℝ] ℂ :=
+    fun q' τ => section43FourierLaplace_timeIntegrandFDerivCLM d n Fpull q' τ
+  rcases section43FourierLaplace_timeIntegrandFDerivCLM_local_bound_of_compact
+    d n f hf_ord hf_compact q with ⟨bound, hbound_int, hbound⟩
+  let s : Set (NPointDomain d n) := Metric.closedBall q (1 : ℝ)
+  have hs_mem : s ∈ 𝓝 q := by
+    simpa [s] using Metric.closedBall_mem_nhds q zero_lt_one
+  have hcontOn :
+      ContinuousOn (fun q' : NPointDomain d n => ∫ τ : Fin n → ℝ, Fderiv q' τ) s := by
+    refine MeasureTheory.continuousOn_of_dominated
+      (μ := volume) (F := Fderiv) (bound := bound) ?hmeas ?hbound hbound_int ?hcont
+    · intro q' _hq'
+      exact (continuous_section43FourierLaplace_timeIntegrandFDerivCLM
+        (d := d) (n := n) Fpull q').aestronglyMeasurable
+    · intro q' hq'
+      exact hbound.mono fun τ hτ => by
+        simpa [Fderiv, Fpull, s] using hτ q' hq'
+    · exact Filter.Eventually.of_forall (fun τ => by
+        have hpath : Continuous fun q' : NPointDomain d n => (q', τ) :=
+          continuous_id.prodMk continuous_const
+        exact ((continuous_section43FourierLaplace_timeIntegrandFDerivCLM_joint
+          (d := d) (n := n) Fpull).comp hpath).continuousOn)
+  have hcontAt :
+      ContinuousAt (fun q' : NPointDomain d n => ∫ τ : Fin n → ℝ, Fderiv q' τ) q :=
+    hcontOn.continuousAt hs_mem
+  change ContinuousAt (fun q' : NPointDomain d n => ∫ τ : Fin n → ℝ, Fderiv q' τ) q
+  exact hcontAt
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact ordered support, the Section 4.3 Fourier-Laplace integral is
+ambient `C¹`.  This packages the differentiated-under-the-integral theorem
+with continuity of the integrated derivative candidate. -/
+theorem section43FourierLaplaceIntegral_contDiff_one_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ 1
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q) := by
+  rw [contDiff_one_iff_fderiv]
+  constructor
+  · intro q
+    exact (section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+      d n f hf_ord hf_compact q).differentiableAt
+  · have hfderiv :
+        fderiv ℝ
+            (fun q : NPointDomain d n =>
+              section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q) =
+          fun q : NPointDomain d n =>
+            section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q := by
+      funext q
+      exact (section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+        d n f hf_ord hf_compact q).fderiv
+    rw [hfderiv]
+    exact continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+      d n f hf_ord hf_compact
+
 /-- On time slices above a strict support margin, the Laplace exponential gains
 uniform damping by the total positive-energy time. -/
 theorem norm_exp_neg_section43_timePair_le_exp_neg_margin_sum

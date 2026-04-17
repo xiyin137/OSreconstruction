@@ -20010,8 +20010,91 @@ The first-derivative/dominated-convergence seam is closed.  The live
 implementation target is now the all-derivatives `smoothOn`/`rapid` package
 for the positive-energy witness.
 
-The remaining first derivative proof should be implemented in the following
-order.
+Before the all-derivatives induction, there is one implementation-ready C¹
+packaging step which is not a wrapper: combine the compiled pointwise
+`HasFDerivAt` theorem with continuity of the integrated derivative candidate.
+This gives the first smoothness layer that the eventual
+`Section43PositiveEnergySchwartzWitness.smoothOn` field will consume.
+
+Recommended theorem statements:
+
+```lean
+theorem continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    Continuous fun q : NPointDomain d n =>
+      section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q
+
+theorem section43FourierLaplaceIntegral_contDiff_one_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ 1
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+```
+
+Implementation transcript for derivative-candidate continuity:
+
+1. Fix `q₀`.  Use
+   `section43FourierLaplace_timeIntegrandFDerivCLM_local_bound_of_compact` at
+   `q₀` to obtain an integrable scalar `bound` which dominates the
+   pointwise derivative CLM for all `q' ∈ Metric.closedBall q₀ 1`.
+2. Apply `MeasureTheory.continuousOn_of_dominated` on that closed ball to
+   the integrand
+   `fun q' τ =>
+      section43FourierLaplace_timeIntegrandFDerivCLM d n
+        (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q' τ`.
+3. The measurability hypothesis is supplied by the already compiled fixed-`q`
+   continuity theorem
+   `continuous_section43FourierLaplace_timeIntegrandFDerivCLM`.
+4. The pointwise continuity hypothesis is supplied by joint continuity
+   `continuous_section43FourierLaplace_timeIntegrandFDerivCLM_joint`, composed
+   with `q' ↦ (q', τ)`.
+5. Since `Metric.closedBall q₀ 1 ∈ 𝓝 q₀`, convert the closed-ball
+   `ContinuousOn` result to `ContinuousAt` using
+   `ContinuousOn.continuousAt`.
+6. Rewrite the integral as
+   `section43FourierLaplaceIntegral_fderivCandidate`.
+
+Implementation transcript for `ContDiff ℝ 1`:
+
+1. Use `contDiff_one_iff_fderiv`.
+2. Differentiability at every `q` is
+   `(section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+      ... q).differentiableAt`.
+3. Rewrite `fderiv` pointwise using the same `HasFDerivAt` theorem:
+   the derivative is exactly
+   `section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q`.
+4. Close the derivative-continuity field with
+   `continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport`.
+
+This C¹ theorem is the correct next production target because it uses the
+compiled first-derivative content and exposes a theorem surface consumed by the
+future smooth witness.  It does not define
+`section43FourierLaplaceTransformComponent`, does not introduce a new
+`Classical.choose`, and does not pretend to solve the all-order rapid/Seeley
+extension seam.
+
+Update, 2026-04-17: the C¹ packaging step is now implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`:
+
+```lean
+continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+section43FourierLaplaceIntegral_contDiff_one_of_compact_orderedSupport
+```
+
+The remaining proof-doc frontier is therefore genuinely the all-derivatives
+finite-term induction and the general positive-half-space Schwartz extension
+theorem.  Do not add another first-derivative wrapper; the C¹ layer is already
+available as production support.
+
+The compiled first derivative proof is summarized in the following order.
 
 Already compiled pointwise integrand derivative:
 
