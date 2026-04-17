@@ -1191,4 +1191,368 @@ theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
       simpa [A, S, F] using happly
     simpa [A, S, F] using hop
 
+set_option backward.isDefEq.respectTransparency false in
+/-- All-order derivative candidate for the Section 4.3 Fourier-Laplace
+integral, defined in the same Bochner-integral category as the already
+compiled first-derivative candidate. -/
+noncomputable def section43FourierLaplaceIntegral_iteratedFDerivCandidate
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+  ∫ τ : Fin n → ℝ,
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      q
+
+/-- Real finite-word majorant for the norm of the pointwise all-order
+Fourier-Laplace integrand derivative. -/
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+
+/-- The integrated finite-word majorant, with each time moment integrated
+before the finite word sum is assembled. -/
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ∫ τ : Fin n → ℝ,
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+
+/-- Integrability of the finite-word majorant follows word-by-word from the
+compiled time-moment integrability theorem for partial spatial Fourier
+transforms. -/
+theorem integrable_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ)
+      (volume : Measure (Fin n → ℝ)) := by
+  classical
+  change Integrable
+    (fun τ : Fin n → ℝ =>
+      ∑ a : Section43DerivativeWord d n r,
+        section43DerivativeWordCoeff d n r a *
+          ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a) (τ, ξ)‖)
+    (volume : Measure (Fin n → ℝ))
+  refine integrable_finset_sum _ ?_
+  intro a _ha
+  have hbase :
+      Integrable
+        (fun τ : Fin n → ℝ =>
+          ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a) (τ, ξ)‖)
+        (volume : Measure (Fin n → ℝ)) :=
+    integrable_timeMoment_norm_partialFourierSpatial_timeSlice
+      (d := d) (n := n) (section43DerivativeWordInput d n r F a)
+      (section43DerivativeWordTimeCount d n r a) ξ
+  simpa [mul_assoc] using
+    hbase.const_mul (section43DerivativeWordCoeff d n r a)
+
+/-- The integral of the finite-word majorant is the finite sum of the word
+time-moment integrals. -/
+theorem integral_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ τ) =
+      section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ := by
+  classical
+  dsimp [section43FourierLaplace_iteratedFDerivWordMajorant,
+    section43FourierLaplace_iteratedFDerivWordMajorantIntegral]
+  rw [MeasureTheory.integral_finset_sum]
+  · refine Finset.sum_congr rfl ?_
+    intro a _ha
+    calc
+      (∫ τ : Fin n → ℝ,
+        section43DerivativeWordCoeff d n r a *
+          ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a) (τ, ξ)‖) =
+          ∫ τ : Fin n → ℝ,
+            section43DerivativeWordCoeff d n r a *
+              (‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+                ‖partialFourierSpatial_fun (d := d) (n := n)
+                  (section43DerivativeWordInput d n r F a) (τ, ξ)‖) := by
+            apply MeasureTheory.integral_congr_ae
+            filter_upwards with τ
+            ring
+      _ = section43DerivativeWordCoeff d n r a *
+          ∫ τ : Fin n → ℝ,
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43DerivativeWordInput d n r F a) (τ, ξ)‖ := by
+            rw [MeasureTheory.integral_const_mul]
+  · intro a _ha
+    have hbase :
+        Integrable
+          (fun τ : Fin n → ℝ =>
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43DerivativeWordInput d n r F a) (τ, ξ)‖)
+          (volume : Measure (Fin n → ℝ)) :=
+      integrable_timeMoment_norm_partialFourierSpatial_timeSlice
+        (d := d) (n := n) (section43DerivativeWordInput d n r F a)
+        (section43DerivativeWordTimeCount d n r a) ξ
+    simpa [mul_assoc] using
+      hbase.const_mul (section43DerivativeWordCoeff d n r a)
+
+/-- Spatial rapid decay of the integrated finite-word majorant.  Each word is
+handled by the compiled time-moment rapid theorem, then the finite word
+constants are summed. -/
+theorem section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (s : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ s *
+          section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+            d n r F ξ ≤ C := by
+  classical
+  choose Cword hCword_nonneg hCword_bound using
+    fun a : Section43DerivativeWord d n r =>
+      section43PartialFourier_timeMomentIntegral_spatialRapid
+        (d := d) (n := n)
+        (section43DerivativeWordInput d n r F a)
+        (section43DerivativeWordTimeCount d n r a) s
+  let C : ℝ :=
+    ∑ a : Section43DerivativeWord d n r,
+      section43DerivativeWordCoeff d n r a * Cword a
+  refine ⟨C, ?_, ?_⟩
+  · dsimp [C]
+    refine Finset.sum_nonneg ?_
+    intro a _ha
+    exact mul_nonneg (section43DerivativeWordCoeff_nonneg d n r a)
+      (hCword_nonneg a)
+  intro ξ
+  let W : ℝ := (1 + ‖ξ‖) ^ s
+  let I : Section43DerivativeWord d n r → ℝ := fun a =>
+    ∫ τ : Fin n → ℝ,
+      ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+  calc
+    W *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ =
+        W * ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a * I a := by
+          simp [W, I, section43FourierLaplace_iteratedFDerivWordMajorantIntegral]
+    _ =
+        ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a * (W * I a) := by
+          rw [Finset.mul_sum]
+          refine Finset.sum_congr rfl ?_
+          intro a _ha
+          ring
+    _ ≤ ∑ a : Section43DerivativeWord d n r,
+        section43DerivativeWordCoeff d n r a * Cword a := by
+          refine Finset.sum_le_sum ?_
+          intro a _ha
+          exact mul_le_mul_of_nonneg_left
+            (by simpa [W, I] using hCword_bound a ξ)
+            (section43DerivativeWordCoeff_nonneg d n r a)
+    _ = C := by
+          simp [C]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The integrated all-order derivative candidate is bounded by the
+exponentially damped integrated finite-word majorant. -/
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let E : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n r f hf_ord q‖ ≤
+      E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+          d n r F ξ := by
+  intro F E ξ
+  let G : (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+    fun τ =>
+      iteratedFDeriv ℝ r
+        (fun q' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+        q
+  let Jfun : (Fin n → ℝ) → ℝ :=
+    section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ
+  have hJ_int :
+      Integrable Jfun (volume : Measure (Fin n → ℝ)) := by
+    simpa [Jfun, F, ξ] using
+      integrable_section43FourierLaplace_iteratedFDerivWordMajorant
+        d n r F ξ
+  have hEJ_int :
+      Integrable (fun τ : Fin n → ℝ => E * Jfun τ)
+        (volume : Measure (Fin n → ℝ)) :=
+    hJ_int.const_mul E
+  have hpoint : ∀ τ : Fin n → ℝ, ‖G τ‖ ≤ E * Jfun τ := by
+    intro τ
+    have hbound :=
+      norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
+        d n r f hf_ord hδ_supp q hq τ
+    simpa [G, Jfun, F, E, ξ,
+      section43FourierLaplace_iteratedFDerivWordMajorant] using hbound
+  calc
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n r f hf_ord q‖ =
+        ‖∫ τ : Fin n → ℝ, G τ‖ := by
+          simp [section43FourierLaplaceIntegral_iteratedFDerivCandidate, G, F]
+    _ ≤ ∫ τ : Fin n → ℝ, ‖G τ‖ :=
+        MeasureTheory.norm_integral_le_integral_norm _
+    _ ≤ ∫ τ : Fin n → ℝ, E * Jfun τ := by
+        exact MeasureTheory.integral_mono_of_nonneg
+          (Filter.Eventually.of_forall fun τ => norm_nonneg (G τ))
+          hEJ_int
+          (Filter.Eventually.of_forall hpoint)
+    _ = E * ∫ τ : Fin n → ℝ, Jfun τ := by
+        rw [MeasureTheory.integral_const_mul]
+    _ = E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ := by
+        rw [integral_section43FourierLaplace_iteratedFDerivWordMajorant]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Rapid decay of the all-order derivative candidate on the positive-energy
+half-space. -/
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+            d n r f hf_ord q‖ ≤ C := by
+  intro s
+  let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+  rcases section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid
+      (d := d) (n := n) r F s with
+    ⟨Csp, hCsp_nonneg, hCsp_bound⟩
+  rcases exp_margin_sum_controls_positiveEnergy_time_polynomial
+      (d := d) (n := n) hδ_pos s with
+    ⟨Ct, hCt_nonneg, hCt_bound⟩
+  let A : ℝ :=
+    1 + 2 * ‖(nPointTimeSpatialCLE (d := d) n).symm.toContinuousLinearMap‖
+  let C : ℝ := A ^ s * Ct * Csp
+  have hA_nonneg : 0 ≤ A := by
+    dsimp [A]
+    positivity
+  refine ⟨C, mul_nonneg (mul_nonneg (pow_nonneg hA_nonneg s) hCt_nonneg) hCsp_nonneg, ?_⟩
+  intro q hq
+  let t : Fin n → ℝ := section43QTime (d := d) (n := n) q
+  let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+    section43QSpatial (d := d) (n := n) q
+  let E : ℝ := Real.exp (-(δ * ∑ k : Fin n, t k))
+  let J : ℝ :=
+    section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ
+  have hJ_nonneg : 0 ≤ J := by
+    dsimp [J, section43FourierLaplace_iteratedFDerivWordMajorantIntegral]
+    refine Finset.sum_nonneg ?_
+    intro a _ha
+    exact mul_nonneg (section43DerivativeWordCoeff_nonneg d n r a)
+      (integral_nonneg fun τ =>
+        mul_nonneg (pow_nonneg (norm_nonneg τ) _)
+          (norm_nonneg _))
+  have hspatial :
+      (1 + ‖ξ‖) ^ s * J ≤ Csp := by
+    simpa [J, F, ξ] using hCsp_bound ξ
+  have htime :
+      (1 + ‖t‖) ^ s * E ≤ Ct := by
+    simpa [t, E] using hCt_bound q hq
+  have hscalar :
+      ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n r f hf_ord q‖ ≤ E * J := by
+    simpa [E, J, F, t, ξ] using
+      section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals
+        d n r f hf_ord hδ_supp q hq
+  have hnorm :
+      1 + ‖q‖ ≤ A * (1 + ‖t‖) * (1 + ‖ξ‖) := by
+    simpa [A, t, ξ] using
+      one_add_norm_le_section43_time_spatial_product d n q
+  have hpow_norm :
+      (1 + ‖q‖) ^ s ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ s := by
+    exact pow_le_pow_left₀ (by positivity) hnorm s
+  have htime_nonneg : 0 ≤ (1 + ‖t‖) ^ s * E := by
+    exact mul_nonneg (pow_nonneg (by positivity) s) (Real.exp_pos _).le
+  have hspatial_nonneg : 0 ≤ (1 + ‖ξ‖) ^ s * J := by
+    exact mul_nonneg (pow_nonneg (by positivity) s) hJ_nonneg
+  have hterm_prod :
+      ((1 + ‖t‖) ^ s * E) * ((1 + ‖ξ‖) ^ s * J) ≤ Ct * Csp := by
+    calc
+      ((1 + ‖t‖) ^ s * E) * ((1 + ‖ξ‖) ^ s * J)
+          ≤ Ct * ((1 + ‖ξ‖) ^ s * J) := by
+            exact mul_le_mul_of_nonneg_right htime hspatial_nonneg
+      _ ≤ Ct * Csp := by
+            exact mul_le_mul_of_nonneg_left hspatial hCt_nonneg
+  calc
+    (1 + ‖q‖) ^ s *
+        ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q‖
+        ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ s *
+            ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+              d n r f hf_ord q‖ := by
+          exact mul_le_mul_of_nonneg_right hpow_norm (norm_nonneg _)
+    _ ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ s * (E * J) := by
+          exact mul_le_mul_of_nonneg_left hscalar (pow_nonneg (by positivity) s)
+    _ = A ^ s * (((1 + ‖t‖) ^ s * E) * ((1 + ‖ξ‖) ^ s * J)) := by
+          rw [mul_pow, mul_pow]
+          ring
+    _ ≤ A ^ s * (Ct * Csp) := by
+          exact mul_le_mul_of_nonneg_left hterm_prod (pow_nonneg hA_nonneg s)
+    _ = C := by
+          simp [C, mul_assoc]
+
 end OSReconstruction

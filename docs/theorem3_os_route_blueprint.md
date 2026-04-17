@@ -20115,9 +20115,13 @@ theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_t
 theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
 ```
 
-The integrated rapid estimate should be implemented first for the finite-word
-candidate.  This theorem does not need compact support, because it only bounds
-the already-defined Bochner integrals of the word majorants:
+The integrated rapid estimate should be implemented first for the
+Bochner-integral candidate.  There is no longer an "either/or" implementation
+choice here: the candidate is the CLM-valued Bochner integral of the pointwise
+`iteratedFDeriv`, while the finite-word expansion is used only to build a real
+majorant for its norm.  This keeps the candidate in the same category as the
+first-derivative candidate already compiled in
+`Section43FourierLaplaceWitness.lean`.
 
 ```lean
 noncomputable def section43FourierLaplaceIntegral_iteratedFDerivCandidate
@@ -20127,9 +20131,137 @@ noncomputable def section43FourierLaplaceIntegral_iteratedFDerivCandidate
       tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
     (q : NPointDomain d n) :
     ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
-  -- Bochner integral of the pointwise `iteratedFDeriv`, or the equivalent
-  -- finite sum of word integrals.
-  ...
+  ∫ τ : Fin n → ℝ,
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      q
+```
+
+The real finite-word majorant for fixed spatial momentum `ξ` is:
+
+```lean
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ∫ τ : Fin n → ℝ,
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+```
+
+The immediate Lean package before the rapid theorem is:
+
+```lean
+theorem integrable_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ)
+      (volume : Measure (Fin n → ℝ))
+
+theorem integral_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ τ) =
+      section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ
+
+theorem section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (s : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ s *
+          section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+            d n r F ξ ≤ C
+```
+
+Proof transcript for this package:
+
+1. Integrability is a finite sum over words.  For each word `a`, use
+   `integrable_timeMoment_norm_partialFourierSpatial_timeSlice` on the
+   transported Schwartz input
+   `section43DerivativeWordInput d n r F a` and time moment
+   `section43DerivativeWordTimeCount d n r a`, then multiply by the constant
+   `section43DerivativeWordCoeff d n r a`.
+2. The integral identity is `MeasureTheory.integral_finset_sum` followed by
+   `MeasureTheory.integral_const_mul` for each word summand.
+3. The spatial rapid theorem chooses, for each word `a`, a constant from
+   `section43PartialFourier_timeMomentIntegral_spatialRapid` applied to the
+   same transported input and time moment.  Sum the finitely many constants
+   after multiplying by the nonnegative word coefficients.
+4. Nonnegativity of the word-majorant integral follows termwise from
+   `section43DerivativeWordCoeff_nonneg` and `integral_nonneg`.
+
+The candidate norm estimate is:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let E : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n r f hf_ord q‖ ≤
+      E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+          d n r F ξ
+```
+
+Proof transcript:
+
+1. Unfold the candidate as `∫ τ, G τ`, where `G τ` is the pointwise
+   `iteratedFDeriv` CLM.
+2. Apply `MeasureTheory.norm_integral_le_integral_norm`.
+3. Apply the compiled operator bound
+   `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`,
+   rewritten as
+   `‖G τ‖ ≤ E * section43FourierLaplace_iteratedFDerivWordMajorant ... τ`.
+4. Use integrability of `E * wordMajorant` from the finite-sum integrability
+   theorem and `MeasureTheory.integral_mono_of_nonneg`.
+5. Pull out the constant `E` with `MeasureTheory.integral_const_mul`, then
+   use the word-majorant integral identity.
+
+The rapid theorem then has the exact first-derivative proof skeleton, with
+`J` equal to the word-majorant integral:
 
 theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy
     (d n r : ℕ) [NeZero d]
@@ -20151,21 +20283,18 @@ theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiv
 
 Proof transcript:
 
-1. Apply `norm_integral_le_integral_norm` to the integrated candidate, or
-   unfold the finite word-sum candidate and use `norm_sum_le`.
-2. Apply the operator-norm word bound.
-3. Use `one_add_norm_le_section43_time_spatial_product` exactly as in the
+1. Use
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`.
+2. Use `one_add_norm_le_section43_time_spatial_product` exactly as in the
    zero- and first-derivative rapid proofs to split `(1 + ‖q‖)^s` into time
    and spatial weights.
-4. Use `exp_margin_sum_controls_positiveEnergy_time_polynomial` for the time
+3. Use `exp_margin_sum_controls_positiveEnergy_time_polynomial` for the time
    weight and exponential margin.
-5. For each word `a`, apply
-   `section43PartialFourier_timeMomentIntegral_spatialRapid` to the Schwartz
-   input `section43DerivativeWordInput ... a` with
-   `K = section43DerivativeWordTimeCount ... a`.
-6. Sum the finitely many word constants.  This is exactly why the word
-   expansion is the right implementation surface: every generated term
-   consumes one call to the compiled moment theorem.
+4. Use
+   `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`
+   for the spatial weight and finite word sum.
+5. Finish with the same product estimate as the compiled zero- and
+   first-derivative rapid theorems.
 
 Only after the compact-support smoothness theorem identifies the candidate
 with the actual derivative should production state the actual
@@ -20289,20 +20418,23 @@ Implementation readiness checkpoint:
   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin`,
   and
   `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`.
-- Ready next: prove the integrated finite-word candidate rapid estimate.
-- Implementation caution for the next theorem: the induction step naturally
-  differentiates the CLM-valued map
-  `q ↦ iteratedFDeriv ℝ r G q`, while the desired statement is applied to
-  directions.  The clean Lean route is either to formulate an intermediate
-  CLM-valued finite-word candidate, or to use the constant-application
-  derivative theorem to pass from the CLM-valued derivative to the applied
-  scalar function.  This is now handled in the compiled proof by
-  `fderiv_continuousMultilinear_apply_const_apply`, after proving smoothness
-  of the pointwise integrand.
-- Then ready: prove the integrated candidate rapid theorem by finite
-  summation of `section43PartialFourier_timeMomentIntegral_spatialRapid`.
-- Then ready: under `hf_compact`, identify the candidate with actual
-  `iteratedFDeriv` and derive the actual derivative rapid theorem.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate`,
+  `section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral`,
+  `integrable_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `integral_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`,
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`,
+  and
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+  Exact file check and narrow module build both terminated successfully on
+  2026-04-17.
+- Ready next: under `hf_compact`, identify the candidate with actual
+  `iteratedFDeriv` by an all-order dominated differentiation theorem using
+  compact upper time-slab support.
+- Then ready: derive the actual derivative rapid theorem from that
+  identification and the compiled candidate rapid theorem.
 - Not ready to implement yet: the positive-half-space Schwartz extension
   theorem; it should be documented separately after the all-order witness
   packet is compiled.
