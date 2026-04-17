@@ -466,6 +466,73 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
   · intro z hz
     exact hFL_repr z hz
 
+/-- The Fourier-Laplace representation data for the same flattened
+frequency-side distribution used to represent the Wightman boundary value.
+
+This packet is deliberately small: it records only the flattened cone facts and
+the interior `bvt_F` Fourier-Laplace formula for the specified `Tflat`. -/
+structure section43TflatFourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ) where
+  hCflat_open :
+    IsOpen
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_conv :
+    Convex ℝ
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_cone :
+    IsCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_salient :
+    IsSalientCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hFL :
+    ∀ z : Fin N → Fin (d + 1) → ℂ,
+      z ∈ TubeDomainSetPi (ForwardConeAbs d N) →
+        bvt_F OS lgc N z =
+          fourierLaplaceExtMultiDim
+            ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            Tflat (flattenCLEquiv N (d + 1) z)
+
+/-- Public Section 4.3 `Tflat` packet with Wightman spectral support, boundary
+representation, and the interior Fourier-Laplace representation for the same
+flattened distribution.
+
+This is the data needed by the OS-route S5 scalar-recognition packet; the
+Fourier-Laplace witness is obtained before the boundary-value witness is
+projected to spectral-region support, so no uniqueness theorem is needed. -/
+theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    ∃ (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      HasFourierSupportIn (OSReconstruction.section43WightmanSpectralRegion d N) Tflat ∧
+        (∀ (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+          bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+            Tflat (physicsFourierFlatCLM φflat)) ∧
+        section43TflatFourierLaplaceWitness (d := d) OS lgc N Tflat := by
+  obtain
+    ⟨Tflat, hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+      hTflat_dualSupp, hTflat_bv, hTflat_FL⟩ :=
+    exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace_repr
+      (d := d) OS lgc N
+  refine ⟨Tflat, ?_, hTflat_bv, ?_⟩
+  · have hphase :=
+      tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant_local
+        (d := d) OS lgc Tflat hTflat_bv
+    have htotal :=
+      OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+        d Tflat hphase
+    exact
+      OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero
+        d N hTflat_dualSupp htotal
+  · exact
+      ⟨hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+        by
+          intro z hz
+          exact hTflat_FL z hz⟩
+
 /-- Reindex a flattened sum that only samples the time-coordinate slots. -/
 private theorem sum_over_flat_timeSlots
     {n : ℕ}
@@ -1342,140 +1409,6 @@ private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_
 
 -/
 
- /-
-/-- The inserted full-flat tail time-shift vector pairs with any frequency
-vector as the negative sum of the tail-block time-frequency coordinates.
-
-This is just the algebraic content of the inserted-tail geometry. It does not
-yet use the dual-cone hypothesis; that analytic sign step remains the live
-blocker. -/
-private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
-    {n m : ℕ}
-    (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
-    ∑ i,
-      (((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
-        (OSReconstruction.zeroHeadBlockShift
-          (m := n * (d + 1)) (n := m * (d + 1))
-          (flatTimeShiftDirection d m))) i) * ξ i =
-      - ∑ j : Fin m, ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1)))) := by
-  let S : ℝ :=
-    ∑ j : Fin m, ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1))))
-  let xSplit : Fin (n * (d + 1) + m * (d + 1)) → ℝ :=
-    OSReconstruction.zeroHeadBlockShift
-      (m := n * (d + 1)) (n := m * (d + 1))
-      (flatTimeShiftDirection d m)
-  let vEff : Fin ((n + m) * (d + 1)) → ℝ :=
-    ((OSReconstruction.castFinCLE
-      (by ring : (n + m) * (d + 1) = n * (d + 1) + m * (d + 1))).symm xSplit)
-  have hvEff_targetVec :
-      vEff =
-        ((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) xSplit) := by
-    ext i
-    rfl
-  let y : Fin (n + m) → Fin (d + 1) → ℝ :=
-    (flattenCLEquivReal (n + m) (d + 1)).symm vEff
-  have hsplitFirst :
-      splitFirst n m y = 0 := by
-    dsimp [y, vEff]
-    rw [splitFirst_reindex_flatten_symm_eq
-      (d := d) (n := n) (m := m)
-      (x := xSplit)]
-    simp
-  have hsplitLast :
-      splitLast n m y =
-        (flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m) := by
-    dsimp [y, vEff]
-    rw [splitLast_reindex_flatten_symm_eq
-      (d := d) (n := n) (m := m)
-      (x := xSplit)]
-    simp
-  have hy_formula :
-      ∀ k : Fin (n + m), ∀ μ : Fin (d + 1),
-        y k μ = if μ = 0 then if (k : ℕ) < n then 0 else -1 else 0 := by
-    intro k μ
-    by_cases hk : (k : ℕ) < n
-    · let k' : Fin n := ⟨k, hk⟩
-      have hk_cast : Fin.castAdd m k' = k := by
-        apply Fin.ext
-        simp [k']
-      have hval :
-          y k μ = 0 := by
-        have h := congrArg (fun z : Fin n → Fin (d + 1) → ℝ => z k') hsplitFirst
-        have h' := congrArg (fun f : Fin (d + 1) → ℝ => f μ) h
-        simpa [k', hk_cast] using h'
-      simp [hk, hval]
-    · let j : Fin m := ⟨(k : ℕ) - n, by omega⟩
-      have hk_tail : Fin.natAdd n j = k := by
-        apply Fin.ext
-        simp [j, Fin.natAdd]
-        omega
-      have hval :
-          y k μ =
-            ((flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m)) j μ := by
-        have h := congrArg (fun z : Fin m → Fin (d + 1) → ℝ => z j) hsplitLast
-        have h' := congrArg (fun f : Fin (d + 1) → ℝ => f μ) h
-        simpa [splitLast, j, hk_tail] using h'
-      have hflat :
-          ((flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m)) j μ =
-            if μ = 0 then -1 else 0 := by
-        change flatTimeShiftDirection d m (finProdFinEquiv (j, μ)) = _
-        simp [flatTimeShiftDirection]
-      simp [hk, hval, hflat]
-  have hsum_eq :
-      ∑ i, vEff i * ξ i = -S := by
-    change ∑ i,
-        (if (finProdFinEquiv.symm i).2 = 0 then
-            if ((finProdFinEquiv.symm i).1 : ℕ) < n then 0 else (-1 : ℝ)
-          else 0) * ξ i = -S
-    rw [sum_over_flat_timeSlots
-      (d := d)
-      (a := fun k : Fin (n + m) => if (k : ℕ) < n then (0 : ℝ) else -1) ξ]
-    have htail :
-        ∑ k : Fin (n + m),
-          (if (k : ℕ) < n then (0 : ℝ) else -1) *
-            ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) = -S := by
-      rw [show ∑ k : Fin (n + m),
-            (if (k : ℕ) < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) =
-            ∑ k in Finset.range (n + m),
-              (if k < n then (0 : ℝ) else -1) *
-                ξ (finProdFinEquiv (⟨k, by omega⟩, (0 : Fin (d + 1)))) by
-            simpa using
-              (Fin.sum_univ_eq_sum_range
-                (f := fun k : Fin (n + m) =>
-                  (if (k : ℕ) < n then (0 : ℝ) else -1) *
-                    ξ (finProdFinEquiv (k, (0 : Fin (d + 1))))))]
-      rw [Finset.sum_range_add]
-      have hhead_zero :
-          ∑ k in Finset.range n,
-            (if k < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (⟨k, by omega⟩, (0 : Fin (d + 1)))) = 0 := by
-        refine Finset.sum_eq_zero ?_
-        intro k hk
-        simp [hk]
-      have htail_eq :
-          ∑ k in Finset.range m,
-            (if n + k < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (⟨n + k, by omega⟩, (0 : Fin (d + 1)))) = -S := by
-        rw [S, Fin.sum_univ_eq_sum_range]
-        refine Finset.sum_congr rfl ?_
-        intro k hk
-        have hk_not_lt : ¬ ((⟨n + k, by omega⟩ : Fin (n + m)) : ℕ) < n := by omega
-        congr 2
-        · simp [hk_not_lt]
-        · congr 1
-          apply congrArg (fun i : Fin (n + m) => finProdFinEquiv (i, (0 : Fin (d + 1))))
-          apply Fin.ext
-          simp [Fin.natAdd]
-      rw [hhead_zero, zero_add, htail_eq]
-    simpa [hy_formula] using htail
-  dsimp [vEff]
-  rw [hsum_eq]
-
--/
-
 /-- Reindexing a translated Schwartz function is the same as translating the
 reindexed Schwartz function by the correspondingly reindexed vector. This lets
 the flattened Stage-5 spectral step use the already-proved Fourier shift
@@ -1605,7 +1538,7 @@ vector as the negative sum of the tail-block time-frequency coordinates.
 This is just the algebraic content of the inserted-tail geometry. It does not
 yet use the dual-cone hypothesis; that analytic sign step remains the live
 blocker. -/
-private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
+theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
     {n m : ℕ}
     (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
     ∑ i,
