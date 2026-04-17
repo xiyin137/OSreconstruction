@@ -1254,9 +1254,9 @@ The GNS Poincaré representation satisfies the Streater-Wightman spectral condit
 4. Since p₀ ≥ 0 and p₀² ≥ |**p**|² pointwise on V̄₊, integrating against the
    positive spectral density gives `energy_nonneg` and `mass_shell`. -/
 
-/-! ### Helper lemmas for remaining sorry's in gnsQFT
+/-! ### Spectrum condition and remaining GNS properties
 
-* `gns_spectrum_condition` — spectrum condition (via SpectralConditionDistribution)
+* `gns_spectrum_condition` — PROVED (via SpectralConditionDistribution)
 * `gns_cyclicity` — Schwartz nuclear theorem (density of product test functions)
 * `gns_vacuum_unique_of_poincare_invariant` — PROVED via cluster decomposition
 -/
