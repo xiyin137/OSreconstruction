@@ -6,6 +6,7 @@ Authors: Michael Douglas, ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction
 import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+import OSReconstruction.GeneralResults.SinusoidSeparation
 import OSReconstruction.SCV.VladimirovTillmann
 
 /-!
@@ -1171,51 +1172,163 @@ theorem lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
     (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     F _hF_hol hF_bv Λ f η hη
 
-/-- The set of Euclidean configurations whose Wick rotation does NOT lie in the
-    permuted extended tube has Lebesgue measure zero.
+/-! ### W11: A.e. Wick-rotated Euclidean configs lie in the PET
 
-    **Proof strategy (Jost's theorem):** A Wick-rotated configuration lies in
-    the PET whenever some permutation σ makes the consecutive differences satisfy
-    the Jost condition (spacelike with sufficient spatial spread for a complex
-    Lorentz boost). The complement — configurations where NO permutation works —
-    is contained in a finite union of proper algebraic subvarieties (coincident
-    or collinear point configurations). Each such subvariety has codimension >= 1
-    in ℝ^{n(d+1)}, hence Lebesgue measure zero (by induction on dimension + Fubini).
+The standard physics forward tube uses only n-1 difference conditions, with
+no basepoint condition on `z₀`. Our `ForwardTube` definition adds `Im(z₀) ∈ V⁺`,
+making the PET slightly smaller. The `TranslatedPET` below corrects for this by
+allowing a uniform complex translation (which cancels in differences).
 
-    Blocked by: (1) Jost characterization of PET membership (`swap_jost_set_exists`).
-    (2) The algebraic-subvariety-measure-zero step is NOW PROVED:
-    `MvPolynomial.volume_zeroSet_eq_zero` in `GeneralResults/PolynomialMeasureZeroProof.lean`.
+See `W11Counterexample.lean` for a proof that the original statement using
+`PermutedExtendedTube` directly is false for n ≥ d+2.
 
-    Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
-    Streater-Wightman, Theorem 2-12 -/
-theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
+Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
+Streater-Wightman, Theorem 2-12 -/
+
+/-- The translated permuted extended tube: configurations that lie in the PET
+    after a uniform complex translation. The translation cancels in differences,
+    so this only relaxes the k=0 basepoint condition `Im(z₀) ∈ V⁺`. -/
+def TranslatedPET (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
+  { z | ∃ c : Fin (d + 1) → ℂ, (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n }
+
+/-- The PET is contained in the translated PET (take c = 0). -/
+theorem PermutedExtendedTube_subset_TranslatedPET {d n : ℕ} [NeZero d] :
+    PermutedExtendedTube d n ⊆ TranslatedPET d n := by
+  intro z hz
+  exact ⟨0, by simpa using hz⟩
+
+/-- `TranslatedPET` is stable under uniform complex translations. -/
+theorem translatedPET_translate {d n : ℕ} [NeZero d]
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n := by
+  rcases hz with ⟨a, ha⟩
+  refine ⟨fun μ => a μ - c μ, ?_⟩
+  simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using ha
+
+/-- Translation by a uniform complex vector is an equivalence on
+`TranslatedPET`. -/
+theorem translatedPET_translate_iff {d n : ℕ} [NeZero d]
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n ↔
+      z ∈ TranslatedPET d n := by
+  constructor
+  · intro hz
+    simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+      translatedPET_translate (d := d) (n := n) hz (-c)
+  · intro hz
+    exact translatedPET_translate (d := d) (n := n) hz c
+
+/-- The coincident-time hyperplane `{x : x i 0 = x j 0}` is Haar-null for
+    `i ≠ j`. -/
+private theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
+    MeasureTheory.volume
+      {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
+  let L : NPointDomain d n →ₗ[ℝ] ℝ :=
+    { toFun := fun x => x i 0 - x j 0
+      map_add' := by intro x y; simp; ring
+      map_smul' := by intro a x; simp; ring }
+  have hset :
+      {x : NPointDomain d n | x i 0 = x j 0} = (LinearMap.ker L : Set _) := by
+    ext x; simp [L, LinearMap.mem_ker, sub_eq_zero]
+  have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+    intro htop
+    have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+    have hval : L (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+      simpa using congrArg
+        (fun f => f (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+    have hji : j ≠ i := fun h => hij h.symm
+    have : (1 : ℝ) = 0 := by simp [L, hji] at hval
+    norm_num at this
+  rw [hset]
+  exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume
+    (LinearMap.ker L) hker_ne_top
+
+/-- The set of configurations with at least one pair of coincident times is a
+    finite union of hyperplanes, hence Haar-null. -/
+private theorem measure_timeCoinc_zero {d n : ℕ} [NeZero d] :
+    MeasureTheory.volume
+      {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0} = 0 := by
+  classical
+  set S : Set (NPointDomain d n) :=
+    {x | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0}
+  have hS_cover :
+      S ⊆ ⋃ p : {p : Fin n × Fin n // p.1 ≠ p.2}, {x | x p.1.1 0 = x p.1.2 0} := by
+    intro x hx
+    obtain ⟨i, j, hij, heq⟩ := hx
+    exact Set.mem_iUnion.mpr ⟨⟨(i, j), hij⟩, heq⟩
+  refine MeasureTheory.measure_mono_null hS_cover ?_
+  apply MeasureTheory.measure_iUnion_null
+  rintro ⟨⟨i, j⟩, hij⟩
+  exact measure_timeEq_zero_local (d := d) (n := n) i j hij
+
+/-- **A.e. Wick-rotated Euclidean configuration lies in the translated PET.**
+
+    Proof strategy: if `x` has pairwise distinct times (a full-measure condition),
+    shift by `a = (A, 0, …, 0)` where `A = 1 + Σ|x_i 0|`. Then `x + a` has
+    strictly positive pairwise-distinct times, so `wick(x + a) ∈ PET` by
+    `euclidean_distinct_in_permutedTube`. Since `wick(x + a) = wick(x) + wick(a)`
+    (with `wick(a) = (iA, 0, …, 0)`), the vector `c := wick(a)` witnesses
+    `wick(x) ∈ TranslatedPET`. -/
+theorem wickRotation_in_translatedPET_null {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n |
-        (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0 := by
-  sorry
+        (fun k => wickRotatePoint (x k)) ∉ TranslatedPET d n} = 0 := by
+  refine MeasureTheory.measure_mono_null ?_ (measure_timeCoinc_zero (d := d) (n := n))
+  intro x hx
+  simp only [Set.mem_setOf_eq] at hx ⊢
+  by_contra hdist_all
+  push_neg at hdist_all
+  -- hdist_all : ∀ i j, i ≠ j → x i 0 ≠ x j 0
+  apply hx
+  -- Goal: (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n
+  -- Construct the shift a = (A, 0, ..., 0)
+  let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
+  let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
+  let xs : NPointDomain d n := fun k μ => x k μ + a μ
+  have hpos : ∀ i : Fin n, xs i 0 > 0 := by
+    intro i
+    have hi_le : |x i 0| ≤ ∑ j : Fin n, |x j 0| :=
+      Finset.single_le_sum (fun j _ => abs_nonneg (x j 0)) (Finset.mem_univ i)
+    have : 0 < x i 0 + A := by dsimp [A]; linarith [neg_abs_le (x i 0)]
+    simpa [xs, a] using this
+  have hdistinct_xs : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0 := by
+    intro i j hij
+    simpa [xs, a] using hdist_all i j hij
+  have hxs_pet : (fun k => wickRotatePoint (xs k)) ∈ PermutedExtendedTube d n :=
+    euclidean_distinct_in_permutedTube xs hdistinct_xs hpos
+  have hwick_add :
+      (fun k => wickRotatePoint (xs k)) =
+        (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a μ) := by
+    ext k μ
+    simp only [xs, a, wickRotatePoint]
+    split_ifs <;> push_cast <;> ring
+  exact ⟨wickRotatePoint a, hwick_add ▸ hxs_pet⟩
 
-/-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
+/-- **Almost every Euclidean Wick-rotated configuration lies in the translated PET.**
 
     For a.e. configuration x = (x₁, ..., xₙ) of Euclidean spacetime points,
     the Wick-rotated configuration (iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) lies in the
-    permuted extended tube T''_n.
-
-    This is a consequence of Jost's theorem: the extended tube T'_n contains
-    all "Jost points" (real points where consecutive differences are spacelike).
-    The set of configurations that are NOT Jost points (after any permutation
-    and complex Lorentz transformation) has measure zero.
+    translated permuted extended tube.
 
     This suffices for all downstream uses: the Schwinger function properties
     (translation invariance, rotation invariance, permutation symmetry) are
-    proved via integral identities that only need pointwise equality a.e.
+    proved via integral identities that only need pointwise equality a.e.,
+    and the Wightman function value is unchanged by translation (axiom R3).
 
     Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
     Streater-Wightman, Theorem 2-12 -/
-theorem ae_euclidean_points_in_permutedTube {d n : ℕ} [NeZero d] :
+theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n := by
+      (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n := by
   rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
-  convert wickRotation_not_in_PET_null (d := d) (n := n) using 1
+  convert wickRotation_in_translatedPET_null (d := d) (n := n) using 1
+
+-- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
+-- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).
+-- Use `wickRotation_in_translatedPET_null` / `ae_euclidean_points_in_translatedPET` instead.
 
 /-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is

@@ -86,9 +86,9 @@ varieties in ℝⁿ has Lebesgue measure zero (by `measure_iUnion_null`).
 This is a standard result in real algebraic geometry. It is not yet in
 Mathlib (as of 2026-03) and would be a natural contribution.
 
-**Downstream use:** `wickRotation_not_in_PET_null` in
+**Downstream use:** `wickRotation_in_translatedPET_null` in
 `ForwardTubeLorentz.lean` — a.e. Wick-rotated Euclidean configuration
-lies in the permuted extended tube. -/
+lies in the translated permuted extended tube. -/
 theorem MvPolynomial.volume_zeroSet_eq_zero
     (n : ℕ) (p : MvPolynomial (Fin n) ℝ) (hp : p ≠ 0) :
     volume {x : Fin n → ℝ | eval x p = 0} = 0 :=
