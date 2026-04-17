@@ -3448,6 +3448,7 @@ private theorem translation_orbit_continuous
     exact (show Continuous g from hjoint μ₀).comp
       (show Continuous f from Continuous.prodMk (continuous_apply μ₀) ih)
 
+set_option maxHeartbeats 800000 in
 /-- **Multi-dimensional Bochner support from SCD.**
 
     If `μ` is the Bochner measure representing the translation inner product
@@ -3510,9 +3511,20 @@ private lemma scd_bochner_forwardCone_support
     have hν_fs : ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν_y =
         @inner ℂ _ _ ψ (poincareActGNS Wfn (PoincareGroup.translation' ((t : ℝ) • y)) ψ) := by
       intro t
-      -- Chain: ∫ exp(I*t*s) d(μ.map dotY) = ∫ exp(I*t*(y·p)) dμ  (integral_map)
-      --      = ∫ exp(↑(∑ (t•y)ᵢ pᵢ)*I) dμ  (algebra)  = ⟪ψ, U(t•y)ψ⟫  (hboch)
-      sorry
+      -- integral_map: ∫ exp(I*t*s) d(μ.map dotY) = ∫ exp(I*t*(dotY p)) dμ
+      have h_aesm : MeasureTheory.AEStronglyMeasurable
+          (fun s : ℝ => Complex.exp (Complex.I * ↑t * ↑s))
+          (MeasureTheory.Measure.map dotY μ) :=
+        Continuous.aestronglyMeasurable (f := fun s : ℝ => Complex.exp (Complex.I * ↑t * ↑s))
+          (Complex.continuous_exp.comp (continuous_const.mul Complex.continuous_ofReal))
+      have h_map := MeasureTheory.integral_map h_meas.aemeasurable h_aesm
+      trans (∫ p, Complex.exp (↑(∑ i, (t • y) i * p i) * Complex.I) ∂μ)
+      · rw [hν_y_def, h_map]; congr 1; ext p; congr 1
+        simp only [hdotY, Pi.smul_apply, smul_eq_mul]; push_cast
+        conv_rhs => rw [mul_comm]
+        rw [mul_assoc, Finset.mul_sum]; congr 1
+        apply Finset.sum_congr rfl; intro i _; ring
+      · exact (hboch (t • y)).symm
     -- === Step 1b: One-sided Fourier support via density ===
     have h_ofs_ν : SCV.HasOneSidedFourierSupport (fun φ : SchwartzMap ℝ ℂ =>
         ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂ν_y) *
@@ -3590,8 +3602,41 @@ private lemma scd_bochner_forwardCone_support
       have h_val_bound : ‖val‖ ≤
           ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) * L := by
         rw [show val = val - 0 from (sub_zero _).symm, ← h_vanish F]
-        -- ‖∫(a-b)*g‖ ≤ ∫‖(a-b)*g‖ ≤ ∫(C·‖g‖) = C·L where C = ‖ψ-F‖·(‖ψ‖+‖F‖)
-        sorry
+        -- Orbit continuity → integrand continuity → integrability
+        have hcont_int : ∀ x : GNSHilbertSpace Wfn, Continuous (fun t : ℝ =>
+            @inner ℂ _ _ x (poincareActGNS Wfn
+              (PoincareGroup.translation' (t • y)) x) * (FTφ : ℝ → ℂ) t) :=
+          fun x => (continuous_inner.comp (continuous_const.prodMk
+            ((translation_orbit_continuous Wfn hsc x).comp
+              (continuous_id.smul continuous_const)))).mul FTφ.continuous
+        have hint : ∀ x : GNSHilbertSpace Wfn, MeasureTheory.Integrable (fun t : ℝ =>
+            @inner ℂ _ _ x (poincareActGNS Wfn
+              (PoincareGroup.translation' (t • y)) x) * (FTφ : ℝ → ℂ) t) := by
+          intro x
+          exact MeasureTheory.Integrable.mono'
+            ((SchwartzMap.integrable FTφ).norm.const_mul (‖x‖ ^ 2))
+            (hcont_int x).aestronglyMeasurable
+            (Filter.Eventually.of_forall fun t => by
+              rw [norm_mul]
+              exact mul_le_mul_of_nonneg_right
+                ((norm_inner_le_norm _ _).trans (by rw [h_norm_pres]; exact le_of_eq (sq ‖x‖).symm))
+                (norm_nonneg _))
+        -- Combine integrals and bound
+        simp only [val]
+        rw [← MeasureTheory.integral_sub (hint ψ) (hint ↑F)]
+        calc ‖∫ t, _‖
+            ≤ ∫ t, ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) *
+                ‖(FTφ : ℝ → ℂ) t‖ :=
+              MeasureTheory.norm_integral_le_of_norm_le
+                ((SchwartzMap.integrable FTφ).norm.const_mul
+                  (‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖)))
+                (Filter.Eventually.of_forall fun t => by
+                  have hfact : ∀ (a b c : ℂ), a * c - b * c = (a - b) * c :=
+                    fun a b c => by ring
+                  rw [hfact, norm_mul]
+                  exact mul_le_mul_of_nonneg_right (h_inner_diff t) (norm_nonneg _))
+          _ = ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) * L :=
+              MeasureTheory.integral_const_mul _ _
       -- ‖F‖ ≤ ‖ψ‖ + dist(ψ,F)
       have hF_norm : ‖(F : GNSHilbertSpace Wfn)‖ ≤ ‖ψ‖ + dist ψ ↑F :=
         calc ‖(F : GNSHilbertSpace Wfn)‖
@@ -3713,7 +3758,11 @@ private lemma scd_bochner_forwardCone_support
       constructor
       · -- minkowskiNormSq(y_q) = -1 + ∑ qᵢ² ≤ 0
         have : MinkowskiSpace.minkowskiNormSq d (yDir q) = -1 + ∑ i : Fin d, (q i : ℝ) ^ 2 := by
-          sorry -- unfold minkowskiNormSq, expand sum, simplify yDir
+          rw [MinkowskiSpace.minkowskiNormSq_decomp]
+          have h0 : (yDir q) 0 = 1 := dif_pos rfl
+          have hsucc : ∀ i : Fin d, (yDir q) (Fin.succ i) = (q i : ℝ) := by
+            intro i; simp [yDir, Fin.succ_ne_zero, Fin.pred_succ]
+          simp only [h0, MinkowskiSpace.spatialNormSq, hsucc]; ring
         linarith
       · -- timeComponent ≥ 0: y_q(0) = 1 ≥ 0
         simp [yDir]
@@ -3732,7 +3781,73 @@ private lemma scd_bochner_forwardCone_support
     -- then approximate by rational via density of ℚ^d in ℝ^d.
     have h_cover : {p : MinkowskiSpace d |
         p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2} ⊆ ⋃ q, S q := by
-      sorry -- density of ℚ^d + separating direction; see communication/gns_hilbertspace_todo.md
+      intro p ⟨hp0, hpσ⟩
+      simp only [Set.mem_iUnion]
+      -- Let σ = spatialNormSq, s = √σ
+      set σ := MinkowskiSpace.spatialNormSq d p with hσ_def
+      have hσ_pos : (0 : ℝ) < σ := by linarith [sq_nonneg (p 0)]
+      set s := Real.sqrt σ with hs_def
+      have hs_pos : (0 : ℝ) < s := Real.sqrt_pos_of_pos hσ_pos
+      have hs_sq : s * s = σ := Real.mul_self_sqrt hσ_pos.le
+      -- s > p 0 (from σ > p₀²)
+      have hs_gt : s > p 0 := by
+        calc p 0 ≤ |p 0| := le_abs_self _
+          _ = Real.sqrt ((p 0) ^ 2) := (Real.sqrt_sq_eq_abs _).symm
+          _ < Real.sqrt σ := Real.sqrt_lt_sqrt (sq_nonneg _) hpσ
+      -- Separating direction: r_i = -(s + p₀) * p_{i+1} / (2σ)
+      -- satisfies ∑ rᵢ² < 1 and p₀ + ∑ rᵢ * p_{i+1} < 0
+      set r : Fin d → ℝ := fun i => -(s + p 0) / (2 * σ) * p (Fin.succ i)
+      -- Key computations
+      have hσ_ne : σ ≠ 0 := ne_of_gt hσ_pos
+      have hr_sq_sum : ∑ i : Fin d, (r i) ^ 2 = (s + p 0) ^ 2 / (4 * σ) := by
+        simp only [r, mul_pow, div_pow]
+        rw [← Finset.mul_sum]
+        have hσ_eq : ∑ i : Fin d, (p (Fin.succ i)) ^ 2 = σ := by
+          simp [hσ_def, MinkowskiSpace.spatialNormSq]
+        rw [hσ_eq]; field_simp; ring
+      have hr_sum_lt : ∑ i : Fin d, (r i) ^ 2 < 1 := by
+        rw [hr_sq_sum]
+        rw [div_lt_one (by positivity)]
+        have : s + p 0 < 2 * s := by linarith
+        nlinarith
+      have hr_dot : p 0 + ∑ i : Fin d, r i * p (Fin.succ i) = (p 0 - s) / 2 := by
+        simp only [r]
+        have hsum : ∀ i : Fin d, -(s + p 0) / (2 * σ) * p (Fin.succ i) * p (Fin.succ i) =
+            -(s + p 0) / (2 * σ) * (p (Fin.succ i) * p (Fin.succ i)) := fun i => by ring
+        simp_rw [hsum, ← Finset.mul_sum]
+        have hσ_eq : ∑ i : Fin d, p (Fin.succ i) * p (Fin.succ i) = σ := by
+          simp [hσ_def, MinkowskiSpace.spatialNormSq, sq]
+        rw [hσ_eq]; field_simp; ring
+      have hr_dot_neg : p 0 + ∑ i : Fin d, r i * p (Fin.succ i) < 0 := by
+        rw [hr_dot]; linarith
+      -- The open set U = {v | ∑ vᵢ² < 1 ∧ p₀ + ∑ vᵢ*p_{i+1} < 0}
+      -- is open, nonempty, and we approximate by rational via density of ℚ^d
+      have hU_open : IsOpen ({v : Fin d → ℝ | ∑ i, v i ^ 2 < 1} ∩
+          {v | p 0 + ∑ i, v i * p (Fin.succ i) < 0}) :=
+        (isOpen_lt (continuous_finset_sum _ fun i _ => (continuous_apply i).pow 2)
+            continuous_const).inter
+          (isOpen_lt (continuous_const.add (continuous_finset_sum _ fun i _ =>
+              (continuous_apply i).mul continuous_const)) continuous_const)
+      have hr_in_U : r ∈ {v : Fin d → ℝ | ∑ i, v i ^ 2 < 1} ∩
+          {v | p 0 + ∑ i, v i * p (Fin.succ i) < 0} :=
+        ⟨hr_sum_lt, hr_dot_neg⟩
+      -- Density of ℚ^d in ℝ^d
+      have hDense : DenseRange (fun q : Fin d → ℚ => fun i : Fin d => (q i : ℝ)) :=
+        DenseRange.piMap (fun _ => Rat.denseRange_cast)
+      obtain ⟨q, hq⟩ := hDense.exists_mem_open hU_open ⟨r, hr_in_U⟩
+      simp only [Set.mem_inter_iff, Set.mem_setOf_eq] at hq
+      -- q satisfies ∑ (q i : ℝ)² < 1 and p₀ + ∑ (q i : ℝ) * p_{i+1} < 0
+      refine ⟨q, ?_⟩
+      dsimp only [S]
+      rw [if_pos (le_of_lt hq.1)]
+      simp only [Set.mem_setOf_eq]
+      -- Show ∑ yDir q i * p i < 0
+      rw [Fin.sum_univ_succ]
+      simp only [yDir, dif_pos rfl, one_mul]
+      have : ∀ i : Fin d, (if h : Fin.succ i = 0 then (1 : ℝ) else
+          ↑(q ((Fin.succ i).pred h))) * p (Fin.succ i) = ↑(q i) * p (Fin.succ i) := by
+        intro i; simp [Fin.succ_ne_zero, Fin.pred_succ]
+      simp_rw [this]; exact hq.2
     apply le_antisymm _ (zero_le _)
     calc μ {p | p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2}
         ≤ μ (⋃ q, S q) := MeasureTheory.measure_mono h_cover
