@@ -35,7 +35,7 @@ theorem constructedZeroDiagonalSchwinger_linear (Wfn : WightmanFunctions d) (n :
   constructor
   · intro f g
     let K : NPointDomain d n → ℂ :=
-      fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+      fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
     have hf_int := wick_rotated_kernel_mul_zeroDiagonal_integrable (Wfn := Wfn) f
     have hg_int := wick_rotated_kernel_mul_zeroDiagonal_integrable (Wfn := Wfn) g
     simp only [constructZeroDiagonalSchwingerFunctions, constructSchwingerFunctions,
@@ -51,7 +51,7 @@ theorem constructedZeroDiagonalSchwinger_linear (Wfn : WightmanFunctions d) (n :
     exact MeasureTheory.integral_add hf_int hg_int
   · intro c f
     let K : NPointDomain d n → ℂ :=
-      fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+      fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
     simp only [constructZeroDiagonalSchwingerFunctions, constructSchwingerFunctions,
       wickRotatedBoundaryPairing]
     change ∫ x : NPointDomain d n, K x * (c • f.1) x =
@@ -64,84 +64,6 @@ theorem constructedZeroDiagonalSchwinger_linear (Wfn : WightmanFunctions d) (n :
               simp [smul_eq_mul, mul_assoc, mul_left_comm, mul_comm]
       _ = c • ∫ x : NPointDomain d n, K x * f.1 x :=
             MeasureTheory.integral_smul c (fun x : NPointDomain d n => K x * f.1 x)
-
-/-- **F_ext has a well-defined value on TranslatedPET.**
-
-    If z+c₁ and z+c₂ are both in PET, then F_ext(z+c₁) = F_ext(z+c₂).
-    This is the key property enabling the migration from PET to TranslatedPET:
-    F_ext can be unambiguously evaluated at any TranslatedPET point by choosing
-    any translation that puts it in PET.
-
-    Proof: Apply bhw_translation_invariant with translation (c₂ - c₁). -/
-theorem F_ext_value_on_translatedPET (Wfn : WightmanFunctions d) (n : ℕ)
-    (z : Fin n → Fin (d + 1) → ℂ)
-    (c₁ c₂ : Fin (d + 1) → ℂ)
-    (h₁ : (fun k μ => z k μ + c₁ μ) ∈ PermutedExtendedTube d n)
-    (h₂ : (fun k μ => z k μ + c₂ μ) ∈ PermutedExtendedTube d n) :
-    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₁ μ) =
-    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₂ μ) := by
-  have key := bhw_translation_invariant Wfn (fun μ => c₂ μ - c₁ μ)
-    (fun k μ => z k μ + c₁ μ) h₁
-    (by convert h₂ using 1; ext k μ; ring)
-  simpa [sub_eq_add_neg, add_assoc] using key.symm
-
-/-- The BHW extension evaluated via a TranslatedPET witness.
-
-    For z ∈ TranslatedPET, this evaluates F_ext at z + c for some c with z+c ∈ PET.
-    By `F_ext_value_on_translatedPET`, the result is independent of the witness c. -/
-noncomputable def F_ext_on_translatedPET (Wfn : WightmanFunctions d) (n : ℕ)
-    (z : Fin n → Fin (d + 1) → ℂ)
-    (hz : z ∈ TranslatedPET d n) : ℂ :=
-  (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ)
-
-/-- F_ext_on_translatedPET agrees with F_ext on PET. -/
-theorem F_ext_on_translatedPET_eq_on_PET (Wfn : WightmanFunctions d) (n : ℕ)
-    (z : Fin n → Fin (d + 1) → ℂ)
-    (hz_pet : z ∈ PermutedExtendedTube d n)
-    (hz_tpet : z ∈ TranslatedPET d n) :
-    F_ext_on_translatedPET Wfn n z hz_tpet =
-    (W_analytic_BHW Wfn n).val z := by
-  unfold F_ext_on_translatedPET
-  have := F_ext_value_on_translatedPET Wfn n z hz_tpet.choose 0
-    hz_tpet.choose_spec
-    (show (fun k μ => z k μ + (0 : Fin (d + 1) → ℂ) μ) ∈ PermutedExtendedTube d n by
-      simp_rw [Pi.zero_apply, add_zero]; exact hz_pet)
-  simp_rw [Pi.zero_apply, add_zero] at this
-  exact this
-
-/-- F_ext_on_translatedPET is translation-invariant on TranslatedPET. -/
-theorem F_ext_on_translatedPET_translation_invariant (Wfn : WightmanFunctions d) (n : ℕ)
-    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
-    (hz : z ∈ TranslatedPET d n)
-    (hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n) :
-    F_ext_on_translatedPET Wfn n z hz =
-    F_ext_on_translatedPET Wfn n (fun k μ => z k μ + c μ) hzc := by
-  simp only [F_ext_on_translatedPET]
-  show (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) =
-    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ + hzc.choose μ)
-  have := F_ext_value_on_translatedPET Wfn n z hz.choose (fun μ => c μ + hzc.choose μ)
-    hz.choose_spec
-    (show (fun k μ => z k μ + (fun μ => c μ + hzc.choose μ) μ) ∈ PermutedExtendedTube d n by
-      convert hzc.choose_spec using 1; ext k μ; ring)
-  convert this using 2
-  ext k μ; ring
-
-/-! **Note on the kernel extension gap.**
-
-`F_ext_on_translatedPET` is well-defined and translation-invariant on TranslatedPET
-(proved above, 0 sorrys). But the raw kernel `F_ext(wick(x))` used in
-`wickRotatedBoundaryPairing` (BHWTranslation.lean) evaluates F_ext at `wick(x)`,
-which may not be in PET for n ≥ d+2. The pointwise identity
-`F_ext(wick(x)) = F_ext_on_translatedPET(wick(x))` does NOT hold a.e. in general.
-
-The correct fix is to change `wickRotatedBoundaryPairing` to use
-`F_ext_on_translatedPET` as its kernel. This is an upstream change in
-BHWTranslation.lean that should be coordinated with xiyin.
-
-Until then, the `F_ext_*_invariant_translated` theorems below carry a sorry
-for the kernel bridge step. These sorrys are mathematically valid (the boundary
-pairing integral is insensitive to the kernel's values outside PET) but cannot
-be formalized without the upstream kernel change. -/
 
 /-- F_ext is translation-invariant on TranslatedPET.
 
@@ -162,14 +84,18 @@ theorem F_ext_translation_invariant_translated (Wfn : WightmanFunctions d) (n : 
     (htube : (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n)
     (htube_shift : (fun k => wickRotatePoint (fun μ => x k μ + a μ)) ∈
       TranslatedPET d n) :
-    (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
-    (W_analytic_BHW Wfn n).val
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+    F_ext_on_translatedPET_total Wfn
       (fun k => wickRotatePoint (fun μ => x k μ + a μ)) := by
-  -- The PET-translated values F_ext(wick(x)+c₁) and F_ext(wick(x+a)+c₂) agree
-  -- by bhw_translation_invariant (proved in F_ext_value_on_translatedPET).
-  -- The bridge F_ext(wick(x)) = F_ext(wick(x)+c₁) requires the kernel extension
-  -- to TranslatedPET. This sorry is TRUE — see F_ext_value_on_translatedPET.
-  sorry
+  have hwick_add :
+      (fun k => wickRotatePoint (fun μ => x k μ + a μ)) =
+        (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a μ) := by
+    ext k μ
+    simp only [wickRotatePoint]
+    split_ifs <;> push_cast <;> ring
+  rw [hwick_add]
+  exact F_ext_on_translatedPET_total_translation_invariant
+    Wfn (fun k => wickRotatePoint (x k)) (wickRotatePoint a) htube
 
 /-- F_ext is translation-invariant on PET (original version).
 
@@ -203,7 +129,7 @@ theorem wickRotatedBoundaryPairing_translation_invariant (Wfn : WightmanFunction
   simp_rw [hfg']
   set a' : NPointDomain d n := fun _ => a
   set K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+    fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
   let P : NPointDomain d n → Prop :=
     fun x => (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n
   have hP_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume, P x :=
@@ -232,10 +158,11 @@ theorem F_ext_rotation_invariant_translated (Wfn : WightmanFunctions d) (n : ℕ
     (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ) (hR : R.transpose * R = 1)
     (hdet : R.det = 1) (x : NPointDomain d n)
     (htube : (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n) :
-    (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
-    (W_analytic_BHW Wfn n).val
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+    F_ext_on_translatedPET_total Wfn
       (fun k => wickRotatePoint (R.mulVec (x k))) := by
-  sorry -- TRUE: rotation commutes with translation, same bridge argument
+  exact F_ext_on_translatedPET_total_rotation_invariant
+    Wfn R hdet hR (fun k => x k) htube
 
 /-- F_ext is rotation-invariant on PET (original version).
 
@@ -473,7 +400,7 @@ theorem wickRotatedBoundaryPairing_rotation_invariant (Wfn : WightmanFunctions d
       (f : NPointDomain d n → ℂ) (fun i => R.mulVec (x i)) := hfg
   simp_rw [hfg']
   set K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+    fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
   -- K is rotation-invariant a.e.: K(x) = K(Rx) for a.e. x with wick(x) ∈ PET
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (fun i => R.mulVec (x i)) := by
@@ -1640,15 +1567,6 @@ private theorem differentiableOn_hermitianReverse_partner {d n : ℕ} [NeZero d]
     simpa [Function.comp] using hdiffAt.star_star
   simpa [Function.comp, hermitianReverse, hρ_apply] using hstarstar.differentiableWithinAt
 
-/-- Euclidean Wick points lie in the Hermiticity overlap a.e. -/
-private theorem ae_euclidean_points_in_hermitianReverseOverlap {d n : ℕ} [NeZero d] :
-    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      (fun k => wickRotatePoint (x k)) ∈ hermitianReverseOverlap (d := d) (n := n) := by
-  filter_upwards [ae_euclidean_points_in_translatedPET_overlap (d := d) (n := n)] with x hx
-  -- hx gives TranslatedPET membership; hermitianReverseOverlap needs PET membership
-  -- Bridge: TranslatedPET → PET at this point requires kernel extension (TRUE sorry)
-  sorry
-
 private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
   let L : NPointDomain d n →ₗ[ℝ] ℝ :=
@@ -2515,9 +2433,10 @@ theorem wickRotatedBoundaryPairing_reflection_positive (Wfn : WightmanFunctions 
 theorem F_ext_permutation_invariant_translated (Wfn : WightmanFunctions d) (n : ℕ)
     (σ : Equiv.Perm (Fin n)) (x : NPointDomain d n)
     (htube : (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n) :
-    (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) =
-    (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x (σ k))) := by
-  sorry -- TRUE: permutation commutes with translation, same bridge argument
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x (σ k))) := by
+  exact F_ext_on_translatedPET_total_perm_invariant
+    Wfn σ (fun k => wickRotatePoint (x k)) htube
 
 /-- F_ext is permutation-invariant on PET (original version).
     Ref: Jost, §IV.5; Streater-Wightman, Theorem 3.6 -/
@@ -2554,7 +2473,7 @@ theorem wickRotatedBoundaryPairing_symmetric (Wfn : WightmanFunctions d)
       (f : NPointDomain d n → ℂ) (fun i => x (σ i)) := hfg
   simp_rw [hfg']
   set K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+    fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
   -- K is permutation-invariant a.e.: K(x) = K(x ∘ σ) for a.e. x with wick(x) ∈ PET
   have hK_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
       K x = K (fun i => x (σ i)) := by
@@ -3034,8 +2953,9 @@ private theorem eq_zero_hermitianReverseOverlap_d1_forwardJost
     `constructedSchwinger_reality`. -/
 theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      starRingEnd ℂ ((W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))) =
-        (W_analytic_BHW Wfn n).val
+      starRingEnd ℂ
+          (F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))) =
+        F_ext_on_translatedPET_total Wfn
           (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) := by
   let F : (Fin n → Fin (d + 1) → ℂ) → ℂ := (W_analytic_BHW Wfn n).val
   let G : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
@@ -3066,9 +2986,11 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
     · simpa [hermitianReverse_realEmbed, V, hermitianRealOverlap, D, hermitianReverseOverlap,
         BHW_permutedExtendedTube_eq (d := d) (n := n)] using
         BHW.extendedTube_subset_permutedExtendedTube hx.2
-  have hwick_mem : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      (fun k => wickRotatePoint (x k)) ∈ D :=
-    ae_euclidean_points_in_hermitianReverseOverlap (d := d) (n := n)
+  have hwick_overlap : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n ∧
+        (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) ∈
+          TranslatedPET d n :=
+    ae_euclidean_points_in_translatedPET_overlap (d := d) (n := n)
   have hH_real :
       ∀ x ∈ V, H (BHW.realEmbed x) = 0 := by
     intro x hx
@@ -3077,13 +2999,14 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
   have hmain_of_V_nonempty :
       V.Nonempty →
       ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-        starRingEnd ℂ ((W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))) =
-          (W_analytic_BHW Wfn n).val
+        starRingEnd ℂ
+            (F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))) =
+          F_ext_on_translatedPET_total Wfn
             (fun k => wickRotatePoint (timeReflection d (x (Fin.rev k)))) := by
     intro hV_ne
     rcases hV_ne with ⟨x0, hx0⟩
-    filter_upwards [hwick_mem, ae_pairwise_distinct_timeCoords (d := d) (n := n)]
-      with x hxD hdistinct
+    filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords (d := d) (n := n)]
+      with x hxT hdistinct
     let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
     let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
     let xs : NPointDomain d n := fun k μ => x k μ + a μ
@@ -3115,8 +3038,6 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
     have hzShift_mem : zShift ∈ PermutedExtendedTube d n := by
       simpa [BHW_permutedExtendedTube_eq (d := d) (n := n)] using
         permutedForwardTube_subset_permutedExtendedTube_BHW π hzπ
-    have hzRev_mem : zRev ∈ PermutedExtendedTube d n := by
-      simpa [D, z, zRev, hermitianReverse_wickRotate] using hxD.2
     have hzShiftRev_mem : zShiftRev ∈ PermutedExtendedTube d n := by
       have hzσPET :
           BHW.complexLorentzAction (hermitianTwistCLG d) (hermitianReverse zShift) ∈
@@ -3137,9 +3058,21 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
     have hHerm_shift : starRingEnd ℂ (F zShift) = F zShiftRev := by
       have hstar := congrArg (starRingEnd ℂ) hHerm_shift₀
       simpa using hstar.symm
-    have hF_shift : F z = F zShift := by
-      exact F_ext_translation_invariant Wfn n a x hxD.1 hzShift_mem
-    have hF_shift_rev : F zRev = F zShiftRev := by
+    have hwick_add :
+        zShift = (fun k μ => z k μ + wickRotatePoint a μ) := by
+      ext k μ
+      simp [zShift, z, xs, wickRotatePoint]
+      split_ifs <;> push_cast <;> ring
+    have htransl :
+        F_ext_on_translatedPET_total Wfn z = F zShift := by
+      rw [F_ext_on_translatedPET_total, dif_pos hxT.1, F_ext_on_translatedPET]
+      rw [hwick_add]
+      exact F_ext_value_on_translatedPET Wfn z hxT.1.choose (wickRotatePoint a)
+        hxT.1.choose_spec (hwick_add ▸ hzShift_mem)
+    have htransl_rev : F_ext_on_translatedPET_total Wfn zRev = F zShiftRev := by
+      let zRevShift : Fin n → Fin (d + 1) → ℂ :=
+        fun k => wickRotatePoint (fun μ =>
+          timeReflection d (x (Fin.rev k)) μ + timeReflection d a μ)
       have hxRevShift_cfg_eq :
           (fun k μ => timeReflection d (x (Fin.rev k)) μ + timeReflection d a μ) =
             fun k μ => timeReflection d (xs (Fin.rev k)) μ := by
@@ -3149,23 +3082,26 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
           simp [xs, a, timeReflection]
           ring
         · simp [xs, a, timeReflection, hμ]
-      let zRevShift : Fin n → Fin (d + 1) → ℂ :=
-        fun k => wickRotatePoint (fun μ =>
-          timeReflection d (x (Fin.rev k)) μ + timeReflection d a μ)
       have hzRevShift_eq : zRevShift = zShiftRev := by
         simpa [zRevShift, zShiftRev] using
           congrArg (fun cfg : NPointDomain d n => fun k => wickRotatePoint (cfg k))
             hxRevShift_cfg_eq
-      have hzRevShift_mem : zRevShift ∈ PermutedExtendedTube d n := by
-        simpa [hzRevShift_eq] using hzShiftRev_mem
-      have hF_shift_rev' : F zRev = F zRevShift := by
-        exact F_ext_translation_invariant Wfn n (timeReflection d a)
-          (fun k => timeReflection d (x (Fin.rev k))) hzRev_mem hzRevShift_mem
-      simpa [hzRevShift_eq] using hF_shift_rev'
+      have hwick_add_rev :
+          zRevShift = (fun k μ => zRev k μ + wickRotatePoint (timeReflection d a) μ) := by
+        ext k μ
+        simp [zRevShift, zRev, wickRotatePoint]
+        split_ifs <;> push_cast <;> ring
+      rw [F_ext_on_translatedPET_total, dif_pos hxT.2, F_ext_on_translatedPET]
+      rw [← hzRevShift_eq, hwick_add_rev]
+      exact F_ext_value_on_translatedPET Wfn zRev hxT.2.choose
+        (wickRotatePoint (timeReflection d a)) hxT.2.choose_spec
+        (hwick_add_rev ▸ (show zRevShift ∈ PermutedExtendedTube d n by
+          simpa [hzRevShift_eq] using hzShiftRev_mem))
     calc
-      starRingEnd ℂ (F z) = starRingEnd ℂ (F zShift) := by rw [hF_shift]
+      starRingEnd ℂ (F_ext_on_translatedPET_total Wfn z) = starRingEnd ℂ (F zShift) := by
+        rw [htransl]
       _ = F zShiftRev := hHerm_shift
-      _ = F zRev := by rw [← hF_shift_rev]
+      _ = F_ext_on_translatedPET_total Wfn zRev := by rw [← htransl_rev]
   by_cases h2 : 2 ≤ d
   · exact hmain_of_V_nonempty
       (hermitianRealOverlap_nonempty_of_two_le (d := d) (n := n) h2)
@@ -3181,8 +3117,8 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
       -- The key new input is `eq_zero_hermitianReverseOverlap_d1_forwardJost`
       -- which shows H = 0 on permuted forward tube points via a distributional
       -- Schwarz reflection argument on the forward Jost set.
-      filter_upwards [hwick_mem, ae_pairwise_distinct_timeCoords (d := 1) (n := n)]
-        with x hxD hdistinct
+      filter_upwards [hwick_overlap, ae_pairwise_distinct_timeCoords (d := 1) (n := n)]
+        with x hxT hdistinct
       let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
       let a : SpacetimeDim 1 := fun μ => if μ = 0 then A else 0
       let xs : NPointDomain 1 n := fun k μ => x k μ + a μ
@@ -3214,8 +3150,6 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
       have hzShift_mem : zShift ∈ PermutedExtendedTube 1 n := by
         simpa [BHW_permutedExtendedTube_eq (d := 1) (n := n)] using
           permutedForwardTube_subset_permutedExtendedTube_BHW π hzπ
-      have hzRev_mem : zRev ∈ PermutedExtendedTube 1 n := by
-        simpa [D, z, zRev, hermitianReverse_wickRotate] using hxD.2
       have hzShiftRev_mem : zShiftRev ∈ PermutedExtendedTube 1 n := by
         have hzσPET :
             BHW.complexLorentzAction (hermitianTwistCLG 1) (hermitianReverse zShift) ∈
@@ -3241,9 +3175,18 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
       have hHerm_shift : starRingEnd ℂ (F zShift) = F zShiftRev := by
         have hstar := congrArg (starRingEnd ℂ) hHerm_shift₀
         simpa using hstar.symm
-      have hF_shift : F z = F zShift := by
-        exact F_ext_translation_invariant Wfn n a x hxD.1 hzShift_mem
-      have hF_shift_rev : F zRev = F zShiftRev := by
+      have hwick_add :
+          zShift = (fun k μ => z k μ + wickRotatePoint a μ) := by
+        ext k μ
+        simp [zShift, z, xs, wickRotatePoint]
+        split_ifs <;> push_cast <;> ring
+      have htransl :
+          F_ext_on_translatedPET_total Wfn z = F zShift := by
+        rw [F_ext_on_translatedPET_total, dif_pos hxT.1, F_ext_on_translatedPET]
+        rw [hwick_add]
+        exact F_ext_value_on_translatedPET Wfn z hxT.1.choose (wickRotatePoint a)
+          hxT.1.choose_spec (hwick_add ▸ hzShift_mem)
+      have htransl_rev : F_ext_on_translatedPET_total Wfn zRev = F zShiftRev := by
         have hxRevShift_cfg_eq :
             (fun k μ => timeReflection 1 (x (Fin.rev k)) μ + timeReflection 1 a μ) =
               fun k μ => timeReflection 1 (xs (Fin.rev k)) μ := by
@@ -3260,16 +3203,22 @@ theorem bhw_euclidean_reality_ae (Wfn : WightmanFunctions d) (n : ℕ) :
           simpa [zRevShift, zShiftRev] using
             congrArg (fun cfg : NPointDomain 1 n => fun k => wickRotatePoint (cfg k))
               hxRevShift_cfg_eq
-        have hzRevShift_mem : zRevShift ∈ PermutedExtendedTube 1 n := by
-          simpa [hzRevShift_eq] using hzShiftRev_mem
-        have hF_shift_rev' : F zRev = F zRevShift := by
-          exact F_ext_translation_invariant Wfn n (timeReflection 1 a)
-            (fun k => timeReflection 1 (x (Fin.rev k))) hzRev_mem hzRevShift_mem
-        simpa [hzRevShift_eq] using hF_shift_rev'
+        have hwick_add_rev :
+            zRevShift = (fun k μ => zRev k μ + wickRotatePoint (timeReflection 1 a) μ) := by
+          ext k μ
+          simp [zRevShift, zRev, wickRotatePoint]
+          split_ifs <;> push_cast <;> ring
+        rw [F_ext_on_translatedPET_total, dif_pos hxT.2, F_ext_on_translatedPET]
+        rw [← hzRevShift_eq, hwick_add_rev]
+        exact F_ext_value_on_translatedPET Wfn zRev hxT.2.choose
+          (wickRotatePoint (timeReflection 1 a)) hxT.2.choose_spec
+          (hwick_add_rev ▸ (show zRevShift ∈ PermutedExtendedTube 1 n by
+            simpa [hzRevShift_eq] using hzShiftRev_mem))
       calc
-        starRingEnd ℂ (F z) = starRingEnd ℂ (F zShift) := by rw [hF_shift]
+        starRingEnd ℂ (F_ext_on_translatedPET_total Wfn z) = starRingEnd ℂ (F zShift) := by
+          rw [htransl]
         _ = F zShiftRev := hHerm_shift
-        _ = F zRev := by rw [← hF_shift_rev]
+        _ = F_ext_on_translatedPET_total Wfn zRev := by rw [← htransl_rev]
     · have hV_nonempty : V.Nonempty := by
         by_cases hn0 : n = 0
         · subst hn0
@@ -3328,7 +3277,7 @@ theorem wickRotatedBoundaryPairing_reality (Wfn : WightmanFunctions d) (n : ℕ)
       measurable_toFun := (osReflectionN_measurePreserving (d := d) (n := n)).measurable
       measurable_invFun := (osReflectionN_measurePreserving (d := d) (n := n)).measurable }
   let K : NPointDomain d n → ℂ :=
-    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k))
+    fun x => F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))
   let frev : SchwartzNPoint d n := f.reverse
   have hpattern :
       starRingEnd ℂ (wickRotatedBoundaryPairing Wfn n f) =
@@ -3647,14 +3596,14 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖(∫ x : NPointDomain d (n + m),
-              (W_analytic_BHW Wfn (n + m)).val
+              F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) *
               (f.tensorProduct g_a) x) -
             (∫ x : NPointDomain d n,
-              (W_analytic_BHW Wfn n).val
+              F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) * f x) *
             (∫ x : NPointDomain d m,
-              (W_analytic_BHW Wfn m).val
+              F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε := by
   -- Strategy: bhw_pointwise_cluster_forwardTube + dominated convergence.
   --

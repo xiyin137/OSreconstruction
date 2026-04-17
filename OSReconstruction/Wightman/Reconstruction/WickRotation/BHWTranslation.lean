@@ -1256,6 +1256,207 @@ theorem bhw_translation_invariant {d n : ℕ} [NeZero d]
     _ = G z := BHW.route1AbsoluteBHWExtensionCanonical_translate Wfn χ m z c
     _ = (W_analytic_BHW Wfn (m + 1)).val z := hG_eq z hz
 
+/-! #### TranslatedPET kernel extension
+
+    The BHW extension `F_ext = (W_analytic_BHW Wfn n).val` is defined by
+    `Classical.choice` as a total function on `Fin n → Fin (d + 1) → ℂ`, but only
+    behaves meaningfully on `PermutedExtendedTube` (PET). For n ≥ d+2, Wick-rotated
+    Euclidean configurations generically lie in `TranslatedPET \ PET`, a set of
+    positive measure (see W11Counterexample.lean).
+
+    The definitions below give a well-defined, translation-invariant kernel on
+    `TranslatedPET` by choosing any PET witness. This is the correct upstream
+    surface for Wick-rotated pairings. -/
+
+/-- **F_ext has a well-defined value on TranslatedPET.**
+
+    If z+c₁ and z+c₂ are both in PET, then F_ext(z+c₁) = F_ext(z+c₂).
+    Proof: Apply `bhw_translation_invariant` with translation (c₂ - c₁). -/
+theorem F_ext_value_on_translatedPET {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c₁ c₂ : Fin (d + 1) → ℂ)
+    (h₁ : (fun k μ => z k μ + c₁ μ) ∈ PermutedExtendedTube d n)
+    (h₂ : (fun k μ => z k μ + c₂ μ) ∈ PermutedExtendedTube d n) :
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₁ μ) =
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c₂ μ) := by
+  have key := bhw_translation_invariant Wfn (fun μ => c₂ μ - c₁ μ)
+    (fun k μ => z k μ + c₁ μ) h₁
+    (by convert h₂ using 1; ext k μ; ring)
+  simpa [sub_eq_add_neg, add_assoc] using key.symm
+
+/-- The BHW extension evaluated via a TranslatedPET witness.
+
+    For z ∈ TranslatedPET, this evaluates F_ext at z + c for some c with z+c ∈ PET.
+    By `F_ext_value_on_translatedPET`, the result is independent of the witness c. -/
+noncomputable def F_ext_on_translatedPET {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) : ℂ :=
+  (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ)
+
+/-- `F_ext_on_translatedPET` agrees with `F_ext` on PET. -/
+theorem F_ext_on_translatedPET_eq_on_PET {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz_pet : z ∈ PermutedExtendedTube d n)
+    (hz_tpet : z ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET Wfn z hz_tpet =
+    (W_analytic_BHW Wfn n).val z := by
+  unfold F_ext_on_translatedPET
+  have := F_ext_value_on_translatedPET Wfn z hz_tpet.choose 0
+    hz_tpet.choose_spec
+    (show (fun k μ => z k μ + (0 : Fin (d + 1) → ℂ) μ) ∈ PermutedExtendedTube d n by
+      simp_rw [Pi.zero_apply, add_zero]; exact hz_pet)
+  simp_rw [Pi.zero_apply, add_zero] at this
+  exact this
+
+/-- `F_ext_on_translatedPET` is translation-invariant on TranslatedPET. -/
+theorem F_ext_on_translatedPET_translation_invariant {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n)
+    (hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET Wfn z hz =
+    F_ext_on_translatedPET Wfn (fun k μ => z k μ + c μ) hzc := by
+  simp only [F_ext_on_translatedPET]
+  show (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) =
+    (W_analytic_BHW Wfn n).val (fun k μ => z k μ + c μ + hzc.choose μ)
+  have := F_ext_value_on_translatedPET Wfn z hz.choose (fun μ => c μ + hzc.choose μ)
+    hz.choose_spec
+    (show (fun k μ => z k μ + (fun μ => c μ + hzc.choose μ) μ) ∈ PermutedExtendedTube d n by
+      convert hzc.choose_spec using 1; ext k μ; ring)
+  convert this using 2
+  ext k μ; ring
+
+/-- Total-function version of `F_ext_on_translatedPET`: returns the TranslatedPET
+    value when z ∈ TranslatedPET, else 0. This gives a well-defined integrand
+    everywhere, with the "correct" BHW-extended value on the only set that matters
+    (the complement is null for Wick-rotated Euclidean configurations, by
+    `ae_euclidean_points_in_translatedPET`). -/
+noncomputable def F_ext_on_translatedPET_total {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ) : ℂ :=
+  if hz : z ∈ TranslatedPET d n then
+    F_ext_on_translatedPET Wfn z hz
+  else 0
+
+/-- On PET, `F_ext_on_translatedPET_total` unfolds to the raw BHW extension. -/
+theorem F_ext_on_translatedPET_total_eq_on_PET {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz_pet : z ∈ PermutedExtendedTube d n) :
+    F_ext_on_translatedPET_total Wfn z =
+    (W_analytic_BHW Wfn n).val z := by
+  have hz_tpet : z ∈ TranslatedPET d n :=
+    PermutedExtendedTube_subset_TranslatedPET hz_pet
+  simp only [F_ext_on_translatedPET_total, dif_pos hz_tpet]
+  exact F_ext_on_translatedPET_eq_on_PET Wfn z hz_pet hz_tpet
+
+/-- `F_ext_on_translatedPET_total` is translation-invariant on TranslatedPET. -/
+theorem F_ext_on_translatedPET_total_translation_invariant {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET_total Wfn z =
+    F_ext_on_translatedPET_total Wfn (fun k μ => z k μ + c μ) := by
+  have hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n :=
+    translatedPET_translate hz c
+  simp only [F_ext_on_translatedPET_total, dif_pos hz, dif_pos hzc]
+  exact F_ext_on_translatedPET_translation_invariant Wfn z c hz hzc
+
+private theorem permutedExtendedTube_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ PermutedExtendedTube d n) :
+    (fun k => z (σ k)) ∈ PermutedExtendedTube d n := by
+  rw [← BHW_permutedExtendedTube_eq (d := d) (n := n)] at hz ⊢
+  obtain ⟨π, hπ⟩ := Set.mem_iUnion.mp hz
+  rcases hπ with ⟨Λ, w, hw, hzw⟩
+  refine Set.mem_iUnion.mpr ⟨σ.symm * π, ⟨Λ, fun k => w (σ k), ?_, ?_⟩⟩
+  · simpa [BHW.PermutedForwardTube] using hw
+  · ext k μ
+    simp [hzw, BHW.complexLorentzAction]
+
+/-- `F_ext_on_translatedPET_total` is permutation-invariant on `TranslatedPET`. -/
+theorem F_ext_on_translatedPET_total_perm_invariant {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET_total Wfn z =
+    F_ext_on_translatedPET_total Wfn (fun k => z (σ k)) := by
+  let zσ : Fin n → Fin (d + 1) → ℂ := fun k => z (σ k)
+  have hzc : (fun k μ => z k μ + hz.choose μ) ∈ PermutedExtendedTube d n :=
+    hz.choose_spec
+  have hzσc : (fun k μ => zσ k μ + hz.choose μ) ∈ PermutedExtendedTube d n := by
+    simpa [zσ] using permutedExtendedTube_perm (d := d) (n := n) σ hzc
+  have hzσ : zσ ∈ TranslatedPET d n := ⟨hz.choose, hzσc⟩
+  have hperm :
+      (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) =
+        (W_analytic_BHW Wfn n).val (fun k μ => zσ k μ + hz.choose μ) := by
+    simpa [zσ] using
+      (((W_analytic_BHW Wfn n).property.2.2.2 σ
+        (fun k μ => z k μ + hz.choose μ) hzc)).symm
+  have hbridge :
+      (W_analytic_BHW Wfn n).val (fun k μ => zσ k μ + hz.choose μ) =
+        (W_analytic_BHW Wfn n).val (fun k μ => zσ k μ + hzσ.choose μ) :=
+    F_ext_value_on_translatedPET Wfn zσ hz.choose hzσ.choose hzσc hzσ.choose_spec
+  rw [F_ext_on_translatedPET_total, dif_pos hz, F_ext_on_translatedPET,
+    F_ext_on_translatedPET_total, dif_pos hzσ, F_ext_on_translatedPET]
+  exact hperm.trans hbridge
+
+/-- Euclidean rotations preserve the total TranslatedPET extension. -/
+theorem F_ext_on_translatedPET_total_rotation_invariant {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (R : Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ)
+    (hR_det : R.det = 1) (hR_orth : R.transpose * R = 1)
+    (x : Fin n → Fin (d + 1) → ℝ)
+    (hz : (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n) :
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+    F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (R.mulVec (x k))) := by
+  let Λ := ComplexLorentzGroup.ofEuclidean R hR_det hR_orth
+  let z : Fin n → Fin (d + 1) → ℂ := fun k => wickRotatePoint (x k)
+  let zR : Fin n → Fin (d + 1) → ℂ := fun k => wickRotatePoint (R.mulVec (x k))
+  let cR : Fin (d + 1) → ℂ := fun μ => ∑ ν, Λ.val μ ν * hz.choose ν
+  have hzc : (fun k μ => z k μ + hz.choose μ) ∈ PermutedExtendedTube d n :=
+    hz.choose_spec
+  have hzR_add :
+      (fun k μ => zR k μ + cR μ) =
+        BHW.complexLorentzAction Λ (fun k μ => z k μ + hz.choose μ) := by
+    ext k μ
+    rw [show zR k μ = ∑ ν, Λ.val μ ν * wickRotatePoint (x k) ν by
+      simpa [zR, z, BHW.complexLorentzAction] using
+        wickRotatePoint_ofEuclidean R hR_det hR_orth (x k) μ]
+    simp [cR, BHW.complexLorentzAction, z]
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro ν hν
+    ring
+  have hzR_pet : (fun k μ => zR k μ + cR μ) ∈ PermutedExtendedTube d n := by
+    have hzcBHW :
+        (fun k μ => z k μ + hz.choose μ) ∈ BHW.PermutedExtendedTube d n := by
+      simpa [BHW_permutedExtendedTube_eq (d := d) (n := n)] using hzc
+    have hzR_petBHW :
+        BHW.complexLorentzAction Λ (fun k μ => z k μ + hz.choose μ) ∈
+          BHW.PermutedExtendedTube d n :=
+      BHW.complexLorentzAction_mem_permutedExtendedTube hzcBHW Λ
+    simpa [BHW_permutedExtendedTube_eq (d := d) (n := n), hzR_add] using hzR_petBHW
+  have hzR : zR ∈ TranslatedPET d n := ⟨cR, hzR_pet⟩
+  have hlor :
+      (W_analytic_BHW Wfn n).val (fun k μ => zR k μ + cR μ) =
+        (W_analytic_BHW Wfn n).val (fun k μ => z k μ + hz.choose μ) := by
+    have h :=
+      (W_analytic_BHW Wfn n).property.2.2.1 Λ (fun k μ => z k μ + hz.choose μ) hzc
+    simpa [hzR_add, BHW.complexLorentzAction] using h
+  have hbridge :
+      (W_analytic_BHW Wfn n).val (fun k μ => zR k μ + cR μ) =
+        (W_analytic_BHW Wfn n).val (fun k μ => zR k μ + hzR.choose μ) :=
+    F_ext_value_on_translatedPET Wfn zR cR hzR.choose hzR_pet hzR.choose_spec
+  simp only [F_ext_on_translatedPET_total, dif_pos hz, dif_pos hzR, F_ext_on_translatedPET,
+    z, zR]
+  exact hlor.symm.trans hbridge
+
 /-- The smeared BHW extension equals the smeared W_analytic for approach directions
     within the forward tube cone.
 
@@ -1337,15 +1538,19 @@ theorem bhw_distributional_boundary_values {d n : ℕ} [NeZero d]
 
 /-- Define Schwinger functions from Wightman functions via Wick rotation.
 
-    The construction uses the BHW extension F_ext (from `W_analytic_BHW`) composed
-    with the Wick rotation map (τ,x⃗) ↦ (iτ,x⃗):
+    The construction uses the **TranslatedPET-extended** BHW kernel
+    `F_ext_on_translatedPET_total` composed with the Wick rotation map
+    (τ,x⃗) ↦ (iτ,x⃗):
 
-      S_n(f) = ∫_x F_ext_n(iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) f(x₁,...,xₙ) dx
+      S_n(f) = ∫_x F_ext_on_translatedPET_total(iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) f(x₁,...,xₙ) dx
 
-    where F_ext is the BHW extension of W_analytic to the permuted extended tube.
-    We use F_ext rather than W_analytic because F_ext is defined and well-behaved
-    on all Euclidean points (not just time-ordered ones), and carries the complex
-    Lorentz invariance and permutation symmetry needed for E1b and E3.
+    `F_ext_on_translatedPET_total` agrees with `F_ext` on PET and extends to
+    `TranslatedPET` via translation invariance (`bhw_translation_invariant`),
+    returning 0 on the null set where wick(x) ∉ TranslatedPET. This is crucial
+    for `n ≥ d+2`, where Wick-rotated Euclidean configurations generically lie
+    in `TranslatedPET \ PET` (see `W11Counterexample.lean`). On this set, the
+    raw `F_ext` value would be arbitrary `Classical.choice` garbage, but the
+    TranslatedPET-extended value is the unique translation-invariant extension.
 
     Important: this full-Schwartz pairing belongs to the Wightman side of the
     story. Wightman functions are tempered distributions on all of
@@ -1364,7 +1569,7 @@ def wickRotatedBoundaryPairing (Wfn : WightmanFunctions d) :
     (n : ℕ) → SchwartzNPoint d n → ℂ :=
   fun n f =>
     ∫ x : NPointDomain d n,
-      (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) * (f x)
+      F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) * (f x)
 
 /-- The honest OS-I Euclidean family extracted from Wightman functions: the raw
     Wick-rotated pairing restricted to `ZeroDiagonalSchwartz`.
