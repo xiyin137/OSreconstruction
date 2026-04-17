@@ -42,7 +42,7 @@ def ProductForwardMomentumCone (n : ℕ) : Set (Fin n → Fin (d + 1) → ℝ) :
   { q | ∀ k : Fin n, q k ∈ ForwardMomentumCone d }
 
 /-- Uncurrying `(Fin n → Fin m → ℝ)` to `(Fin n × Fin m → ℝ)` as a linear equivalence. -/
-private def uncurryLinearEquiv (d n : ℕ) :
+def uncurryLinearEquiv (d n : ℕ) :
     (Fin n → Fin (d + 1) → ℝ) ≃ₗ[ℝ] (Fin n × Fin (d + 1) → ℝ) where
   toFun f p := f p.1 p.2
   invFun g i j := g (i, j)
@@ -54,7 +54,7 @@ private def uncurryLinearEquiv (d n : ℕ) :
 /-- Continuous linear equivalence from `NPointSpacetime d n` to
     `EuclideanSpace ℝ (Fin n × Fin (d + 1))`, used to transfer the Fourier
     transform from Mathlib's inner-product-space formulation. -/
-private noncomputable def nPointToEuclidean (n : ℕ) :
+noncomputable def nPointToEuclidean (n : ℕ) :
     NPointSpacetime d n ≃L[ℝ] EuclideanSpace ℝ (Fin n × Fin (d + 1)) :=
   (uncurryLinearEquiv d n).toContinuousLinearEquiv |>.trans
     (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin n × Fin (d + 1) => ℝ)).symm
@@ -74,7 +74,7 @@ noncomputable def SchwartzNPointSpace.fourierTransform {n : ℕ}
 
 /-- Zero-basepoint section: embeds n difference variables into (n+1) absolute
     spacetime coordinates by setting the basepoint to zero and taking partial sums. -/
-private noncomputable def diffVarSection (n : ℕ) :
+noncomputable def diffVarSection (n : ℕ) :
     NPointSpacetime d n →L[ℝ] NPointSpacetime d (n + 1) :=
   LinearMap.toContinuousLinearMap
     { toFun := fun ξ k μ => ∑ j : Fin k.val, ξ ⟨j.val, by omega⟩ μ
@@ -84,13 +84,13 @@ private noncomputable def diffVarSection (n : ℕ) :
         intro c ξ; ext k μ; simp [Finset.mul_sum] }
 
 omit [NeZero d] in
-@[simp] private theorem diffVarSection_zero (n : ℕ)
+@[simp] theorem diffVarSection_zero (n : ℕ)
     (ξ : NPointSpacetime d n) (μ : Fin (d + 1)) :
     diffVarSection d n ξ 0 μ = 0 := by
   simp [diffVarSection]
 
 omit [NeZero d] in
-@[simp] private theorem diffVarSection_succ (n : ℕ)
+@[simp] theorem diffVarSection_succ (n : ℕ)
     (ξ : NPointSpacetime d n) (k : Fin n) (μ : Fin (d + 1)) :
     diffVarSection d n ξ k.succ μ =
       diffVarSection d n ξ k.castSucc μ + ξ k μ := by
@@ -100,7 +100,7 @@ omit [NeZero d] in
   simp [Fin.val_castSucc, Fin.val_last]
 
 omit [NeZero d] in
-private theorem diffVarSection_injective (n : ℕ) :
+theorem diffVarSection_injective (n : ℕ) :
     Function.Injective (diffVarSection d n) := by
   intro ξ₁ ξ₂ h
   ext k μ
@@ -234,7 +234,7 @@ The construction is the multivariate Fourier-Laplace transform:
 
 /-- The Euclidean inner product on spacetime (no Minkowski sign flip):
     `⟨η, p⟩_Eucl = ∑_μ η(μ) · p(μ)`. -/
-private def euclideanDot (η p : Fin (d + 1) → ℝ) : ℝ :=
+def euclideanDot (η p : Fin (d + 1) → ℝ) : ℝ :=
   ∑ μ, η μ * p μ
 
 /-- **Quantitative self-duality of the forward cone**: for η ∈ V₊°, there exists c > 0 such that
@@ -299,6 +299,41 @@ private lemma euclideanDot_lower_bound
       rwa [Real.sqrt_sq_eq_abs, Real.sqrt_sq hp0] at h
   -- Conclude: (η₀ - sη) * p₀ ≥ (η₀ - sη) * ‖p‖
   linarith [mul_le_mul_of_nonneg_left h_norm_le (le_of_lt (sub_pos.mpr hsη_lt))]
+
+/-- **Self-duality of the closed forward cone (qualitative).**
+    For `y, p ∈ V̄₊`, the Euclidean dot product `∑_μ y(μ) · p(μ) ≥ 0`.
+
+    Proof: `y₀p₀ ≥ √(spatialNormSq y) · √(spatialNormSq p) ≥ |spatialInner y p|`
+    by Cauchy-Schwarz. So `euclideanDot y p = y₀p₀ + spatialInner y p ≥ 0`. -/
+lemma euclideanDot_nonneg_closedCone
+    (y : Fin (d + 1) → ℝ) (hy : y ∈ ForwardMomentumCone d)
+    (p : Fin (d + 1) → ℝ) (hp : p ∈ ForwardMomentumCone d) :
+    euclideanDot y p ≥ 0 := by
+  -- Unpack V̄₊ membership: causal + forward
+  simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+    MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq,
+    MinkowskiSpace.IsCausal, MinkowskiSpace.timeComponent] at hy hp
+  have hy0 : y 0 ≥ 0 := hy.2
+  have hp0 : p 0 ≥ 0 := hp.2
+  have hy_spatial : MinkowskiSpace.spatialNormSq d y ≤ (y 0) ^ 2 := by
+    have := MinkowskiSpace.minkowskiNormSq_decomp d y; linarith [hy.1]
+  have hp_spatial : MinkowskiSpace.spatialNormSq d p ≤ (p 0) ^ 2 := by
+    have := MinkowskiSpace.minkowskiNormSq_decomp d p; linarith [hp.1]
+  -- Decompose euclideanDot = y₀p₀ + spatialInner
+  have h_decomp : euclideanDot y p = y 0 * p 0 + MinkowskiSpace.spatialInner d y p := by
+    simp only [euclideanDot, MinkowskiSpace.spatialInner, Fin.sum_univ_succ]
+  rw [h_decomp]
+  -- Cauchy-Schwarz: (spatialInner y p)² ≤ spatialNormSq y * spatialNormSq p ≤ (y₀ p₀)²
+  have hcs := MinkowskiSpace.spatial_cauchy_schwarz d y p
+  have h_sq_le : (MinkowskiSpace.spatialInner d y p) ^ 2 ≤ (y 0 * p 0) ^ 2 := by
+    calc (MinkowskiSpace.spatialInner d y p) ^ 2
+        ≤ MinkowskiSpace.spatialNormSq d y * MinkowskiSpace.spatialNormSq d p := hcs
+      _ ≤ (y 0) ^ 2 * (p 0) ^ 2 := mul_le_mul hy_spatial hp_spatial
+          (MinkowskiSpace.spatialNormSq_nonneg d p) (sq_nonneg _)
+      _ = (y 0 * p 0) ^ 2 := by ring
+  -- spatialInner y p ≥ -(y₀ p₀), so y₀p₀ + spatialInner ≥ 0
+  have := (abs_le_of_sq_le_sq' h_sq_le (mul_nonneg hy0 hp0)).1
+  linarith
 
 /-- Complex n-point Euclidean dot product: `⟨z, q⟩ = ∑_k ∑_μ z_k(μ) · q_k(μ)`.
     For z = x + iy, Im⟨z, q⟩ = ∑_k ⟨y_k, q_k⟩_Eucl provides the damping. -/

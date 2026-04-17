@@ -16,6 +16,7 @@ import OSReconstruction.vNA.Unbounded.SpectralPowers
 import OSReconstruction.SCV.PaleyWiener
 import Mathlib.MeasureTheory.Measure.CharacteristicFunction.Basic
 import OSReconstruction.Wightman.NuclearSpaces.BochnerMinlos
+import OSReconstruction.GeneralResults.SchwartzFubini
 
 /-!
 # GNS Hilbert Space Construction
@@ -1540,110 +1541,387 @@ private lemma hasNonnegDistrFourierSupport_const (c : ℂ) :
   show ∫ t : ℝ, c * ((SchwartzMap.fourierTransformCLM ℂ ψ) : ℝ → ℂ) t = 0
   rw [MeasureTheory.integral_const_mul, integral_fourierTransform_eq_apply_zero, hψ0, mul_zero]
 
-/-- **CLM exchange for Schwartz-valued distributional integrals (Gelfand–Pettis).**
+/-- Time-translation of the fm-argument in diffVarReduction coordinates equals
+    a shift in the time component of the boundary difference variable `ξ_{n-1}(0)`.
 
-    Given a continuous ℂ-linear functional `w`, a Schwartz-topology-continuous family
-    `F : ℝ → SchwartzNPointSpace d n` with **polynomially bounded Schwartz seminorms**
-    (i.e. for each `(k, j)`, `‖F t‖_{k,j} ≤ C * (1 + ‖t‖)^N` for some `C, N`), the
-    pointwise integral `Θ(ξ) := ∫ t, ℱ[φ](t) * F(t)(ξ) dt` defines a Schwartz function
-    satisfying both:
-    1. `Θ(ξ) = ∫ t, ℱ[φ](t) * F(t)(ξ) dt` for all ξ   (pointwise formula)
-    2. `w(Θ) = ∫ t, w(F(t)) * ℱ[φ](t) dt`             (CLM exchange)
+    `diffVarSection` embeds difference variables as cumulative sums
+    `x_k(μ) = Σ_{j<k} ξ_j(μ)`. Translation by `te₀` shifts fm-arguments (indices ≥ n)
+    by `-te₀`. In difference variables, the shift cancels for all `ξ_j` with `j ≠ n-1`
+    (both endpoints move together), and only `ξ_{n-1}(0)` is shifted by `-t`. -/
+private lemma diffVarReduction_translate_eq_shift {n m : ℕ} (hn : 0 < n) (hm : 0 < m)
+    (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (hk : (n + m - 1) + 1 = n + m) (hbdry : n - 1 < n + m - 1) (t : ℝ)
+    (ξ : NPointSpacetime d (n + m - 1)) :
+    diffVarReduction d (n + m - 1)
+      (hk.symm ▸ fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm)) ξ =
+    diffVarReduction d (n + m - 1)
+      (hk.symm ▸ fn.conjTensorProduct fm)
+      (Function.update ξ ⟨n - 1, hbdry⟩
+        (Function.update (ξ ⟨n - 1, hbdry⟩) 0 (ξ ⟨n - 1, hbdry⟩ 0 - t))) := by
+  -- Step 1: Establish how the ▸ cast interacts with SchwartzMap evaluation.
+  -- For K a variable and hK : K = (n+m-1)+1, (hK ▸ f) y = f (fun i μ => y ⟨i.val, _⟩ μ)
+  -- Proof: subst hK makes the cast trivial, then rfl.
+  have heval : ∀ (f : SchwartzNPointSpace d (n + m))
+      (y : NPointSpacetime d ((n + m - 1) + 1)),
+      (hk.symm ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
+      f (fun (i : Fin (n + m)) (μ : Fin (d + 1)) => y ⟨i.val, by omega⟩ μ) := by
+    have := fun (K : ℕ) (hK : K = (n + m - 1) + 1)
+        (f : SchwartzNPointSpace d K) (y : NPointSpacetime d ((n + m - 1) + 1)) =>
+      show (hK ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
+        f (fun i μ => y ⟨i.val, hK ▸ i.isLt⟩ μ) from by subst hK; rfl
+    exact this (n + m) hk.symm
+  -- Step 2: Unfold diffVarReduction to composition with diffVarSection
+  simp only [diffVarReduction, SchwartzMap.compCLMOfAntilipschitz_apply, Function.comp_apply]
+  -- Step 3: Apply the cast evaluation identity to both sides
+  simp only [heval]
+  -- Now both sides are: fn.conjTP(g) (fun i μ => diffVarSection ξ_arg ⟨i.val, _⟩ μ)
+  -- Step 4: Unfold conjTensorProduct to split into fn and fm parts
+  simp only [SchwartzMap.conjTensorProduct_apply]
+  -- Both sides are: starRingEnd ℂ (fn (fn_args)) * fm_or_τtfm (fm_args)
+  simp only [splitFirst, poincareActNPoint_apply]
+  -- Unfold diffVarSection to its Finset.sum definition on both sides
+  dsimp [diffVarSection]
+  congr 1
+  · -- fn parts: sums at indices n-(i+1) ≤ n-1 don't include the update at n-1
+    congr 2; funext i; funext μ
+    apply Finset.sum_congr rfl
+    intro ⟨j, hj⟩ _
+    -- j < n-(↑i+1) ≤ n-1, so the update at index ⟨n-1, hbdry⟩ doesn't fire
+    simp only [Function.update, Fin.mk.injEq]
+    split_ifs with h
+    · omega
+    · rfl
+  · -- fm parts: the Poincaré translation matches the shift in cumulative sums
+    congr 1; funext j; funext μ
+    dsimp
+    simp only [Function.update_apply, splitLast, poincareActNPointDomain,
+      PoincareRepresentation.translationInDirection, PoincareGroup.act_def,
+      PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+      PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
+      inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
+      Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul,
+      PoincareRepresentation.basisVector]
+    -- Goal: (∑ ξ_i μ) + -(t * δ_{μ,0}) = ∑ (if cond then update else ξ_i) μ
+    -- Split μ = 0 vs μ ≠ 0 to evaluate basisVector, then extract the n-1 term
+    split_ifs with hμ <;> subst_vars
+    all_goals (
+      have hn1 : n - 1 < n + ↑j := by omega
+      conv_rhs =>
+        rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
+      conv_lhs => lhs; rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
+      simp only [Fin.mk.injEq, ite_true]
+      -- Rearrange LHS: (ξ_{n-1} + ∑_erase) + offset → (ξ_{n-1} + offset) + ∑_erase
+      rw [show ∀ (a b c : ℝ), (a + b) + c = (a + c) + b from fun a b c => by ring]
+      congr 1
+      · simp only [Function.update_apply]; split_ifs <;> ring
+      · exact Finset.sum_congr rfl fun x hx => by
+          simp only [Finset.mem_erase, ne_eq, Finset.mem_univ, and_true] at hx
+          have : ¬(↑x : ℕ) = n - 1 := fun h => hx (Fin.ext h)
+          simp [this])
 
-    **Why polynomial growth is needed:** `ℱ[φ]` is Schwartz (decays faster than any
-    polynomial), so `|ℱ[φ](t)| * |F t ξ|` is integrable when `|F t ξ|` grows at most
-    polynomially in `t`.  Mere continuity of `F` is insufficient — a continuous function
-    can grow super-polynomially.  For the Schwartz property of `Θ`, one additionally needs
-    polynomial bounds on all Schwartz seminorms of `F t` to justify differentiation under
-    the integral sign and rapid decay of `Θ`.
+/-- **Partial convolution Fourier factorization.**
 
-    **Proof sketch:** The pointwise integral converges by dominated convergence (using
-    Schwartz decay of `ℱ[φ]` against `hF_poly`). Smoothness of `Θ` follows by
-    differentiating under the integral sign; rapid decay from the Schwartz decay of `ℱ[φ]`.
-    The CLM exchange then follows by linearity of `w` and dominated convergence in ℂ. -/
-private lemma schwartz_clm_integral_exchange {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ) (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
-    {F : ℝ → SchwartzNPointSpace d n} (hF_cont : Continuous F)
-    (hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
-        SchwartzMap.seminorm ℝ k j (F t) ≤ C * (1 + ‖t‖) ^ N)
-    (φ : SchwartzMap ℝ ℂ) :
-    ∃ Θ : SchwartzNPointSpace d n,
-      (∀ ξ : NPointSpacetime d n,
-          Θ ξ = ∫ t : ℝ,
-            ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t * F t ξ) ∧
-      w Θ = ∫ t : ℝ,
-        w (F t) * ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t := by
-  -- Abbreviate phihat := ℱ[φ] throughout.
-  let phihat : SchwartzMap ℝ ℂ := SchwartzMap.fourierTransformCLM ℂ φ
-  -- ── Component 1a: Integrability ───────────────────────────────────────────────────
-  -- For each ξ, the map t ↦ phihat(t) * F(t)(ξ) is L¹(ℝ, ℂ).
-  -- Justification:
-  --   |F(t)(ξ)| ≤ ‖F(t)‖_{0,0} ≤ C₀ * (1 + ‖t‖)^N₀     (hF_poly 0 0 + le_seminorm)
-  --   |phihat(t)| decays faster than any polynomial        (Schwartz decay of phihat)
-  -- → polynomial growth × Schwartz ∈ L¹, analogue of integrable_polyGrowth_mul_schwartz.
-  have hInteg : ∀ ξ : NPointSpacetime d n,
-      MeasureTheory.Integrable (fun t : ℝ => (phihat : ℝ → ℂ) t * F t ξ) := by
-    intro ξ
-    obtain ⟨C₀, N₀, hbound₀⟩ := hF_poly 0 0
-    -- Pointwise bound: |F t ξ| ≤ C₀ * (1 + ‖t‖)^N₀
-    have hFξ_bound : ∀ t : ℝ, ‖F t ξ‖ ≤ C₀ * (1 + ‖t‖) ^ N₀ := by
-      intro t
-      have h1 : ‖F t ξ‖ ≤ SchwartzMap.seminorm ℝ 0 0 (F t) := by
-        simpa using SchwartzMap.le_seminorm ℝ 0 0 (F t) ξ
-      exact h1.trans (hbound₀ t)
-    -- [Polynomial-growth × Schwartz-decay → L¹(ℝ)]
-    -- Requires: analogue of integrable_polyGrowth_mul_schwartz for integration over ℝ
-    -- (rather than Fin m → ℝ); the function t ↦ F t ξ has growth ≤ C₀ * (1+‖t‖)^N₀.
-    sorry
-  -- ── Component 1: Define Θ pointwise ───────────────────────────────────────────────
-  let Θ_fun : NPointSpacetime d n → ℂ :=
-    fun ξ => ∫ t : ℝ, (phihat : ℝ → ℂ) t * F t ξ
-  -- ── Component 1d: Package as SchwartzMap (smooth' and decay' proved below) ────────
-  -- smooth': C^∞ in ξ by differentiating under the integral sign iteratively.
-  --   At each ξ₀, d/dε[Θ_fun(ξ₀ + εv)] = ∫ t, phihat(t) * d/dε[F(t)(ξ₀ + εv)]
-  --   via hasFDerivAt_integral_of_dominated_of_fderiv_le (ParametricIntegral.lean),
-  --   dominator C_{1,j} * (1+‖t‖)^N * ‖phihat t‖ ∈ L¹. Iterating → ContDiff ℝ ⊤.
-  -- decay': for each (k, j) and ξ:
-  --   ‖ξ‖^k * ‖iteratedFDeriv ℝ j Θ_fun ξ‖
-  --   ≤ (1+‖ξ‖)^k * ‖∫ t, phihat(t) * iteratedFDeriv ℝ j (F t) ξ‖  (‖ξ‖ ≤ 1+‖ξ‖)
-  --   ≤ ∫ t, |phihat(t)| * (1+‖ξ‖)^k * ‖iteratedFDeriv ℝ j (F t) ξ‖ (triangle ineq.)
-  --   ≤ ∫ t, |phihat(t)| * SchwartzMap.seminorm ℝ k j (F t)           (defn of seminorm)
-  --   ≤ ∫ t, |phihat(t)| * C_{k,j} * (1+‖t‖)^N_{k,j}                 (hF_poly k j)
-  --   This last integral is a finite constant independent of ξ.
-  let Θ : SchwartzNPointSpace d n := {
-    toFun := Θ_fun
-    smooth' := by
-      -- C^∞ in ξ from differentiating under the integral sign (see comment above)
-      sorry
-    decay' := by
-      intro k j
-      obtain ⟨C_kj, N_kj, hbound_kj⟩ := hF_poly k j
-      -- The finite bound: ∫ t, ‖phihat t‖ * (C_kj * (1 + ‖t‖)^N_kj)
-      refine ⟨∫ t : ℝ, ‖(phihat : ℝ → ℂ) t‖ * (C_kj * (1 + ‖t‖) ^ N_kj), fun ξ => ?_⟩
-      -- iteratedFDeriv Θ_fun = ∫ phihat * iteratedFDeriv (F t)  (from smooth')
-      -- then norm_integral_le_integral_norm + le_seminorm + hbound_kj
-      sorry
-  }
-  -- ── Component 2: Pointwise formula holds by construction (definitional) ───────────
-  have hpointwise : ∀ ξ : NPointSpacetime d n,
-      Θ ξ = ∫ t : ℝ, (phihat : ℝ → ℂ) t * F t ξ := fun _ => rfl
-  -- ── Component 3: CLM exchange w(Θ) = ∫ t, w(F t) * phihat t ─────────────────────
-  have hclm : w Θ = ∫ t : ℝ, w (F t) * (phihat : ℝ → ℂ) t := by
-    -- Step 3a: The integrand is L¹(ℝ, ℂ).
-    -- By continuity of w: ∃ k₀, j₀, C_w, ∀ f, |w f| ≤ C_w * ‖f‖_{k₀,j₀}
-    --   (Seminorm.bound_of_continuous on the Schwartz Fréchet space)
-    -- Then |w(F t)| ≤ C_w * C_{k₀,j₀} * (1+‖t‖)^N_{k₀,j₀}  (hF_poly k₀ j₀)
-    -- and |phihat(t)| decays rapidly → product is L¹.
-    have hw_F_integ : MeasureTheory.Integrable (fun t : ℝ => w (F t) * (phihat : ℝ → ℂ) t) := by
-      sorry
-    -- Step 3b: Gelfand–Pettis exchange for the Fréchet space SchwartzNPointSpace d n.
-    -- Θ is the Gelfand–Pettis integral of t ↦ phihat(t) * F(t) in SchwartzNPointSpace d n:
-    -- for any continuous functional w on a locally convex Hausdorff space E, if Θ ∈ E
-    -- satisfies ∀ ξ, ev_ξ(Θ) = ∫ t, phihat(t) * ev_ξ(F t)  and evaluations separate points,
-    -- then w(Θ) = ∫ t, phihat(t) * w(F t).
-    -- (Classical Pettis/Gelfand integral theory for nuclear Fréchet spaces.)
-    sorry
-  exact ⟨Θ, hpointwise, hclm⟩
+    If `Θ(ξ)` is a partial convolution of `ℱ[φ]` with `G` in the time component of
+    the `j`-th variable:
+      `Θ(ξ) = ∫ ℱ[φ](t) · G(ξ with ξ_j(0) ← ξ_j(0) - t) dt`
+    then `ψ = ℱ⁻¹[Θ]` factorizes as `ψ(q) = φ(q_j(0)) · ℱ⁻¹[G](q)`.
+
+    In particular, `ψ(q) ≠ 0` implies `φ(q_j(0)) ≠ 0`.
+
+    Proof: apply full inverse Fourier transform to Θ. Substituting `u = ξ_j(0) - t`
+    and separating the `e^{2πi q_j(0) t}` factor gives
+    `∫ ℱ[φ](t) e^{2πi q_j(0) t} dt = ℱ⁻¹[ℱ[φ]](q_j(0)) = φ(q_j(0))` by Fourier
+    inversion, times the remaining full inverse Fourier transform of G. -/
+private theorem partial_convolution_fourier_factorization
+    {n_pts : ℕ} (j : Fin n_pts)
+    (G : SchwartzNPointSpace d n_pts)
+    (φ : SchwartzMap ℝ ℂ)
+    (Θ : SchwartzNPointSpace d n_pts)
+    (hΘ : ∀ ξ : NPointSpacetime d n_pts,
+        Θ ξ = ∫ t : ℝ,
+          ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+            G (Function.update ξ j (Function.update (ξ j) 0 (ξ j 0 - t)))) :
+    ∃ ψ : SchwartzNPointSpace d n_pts,
+        ψ.fourierTransform = Θ ∧
+        ∀ q : NPointSpacetime d n_pts,
+          ψ q ≠ 0 → (φ : ℝ → ℂ) (q j 0) ≠ 0 := by
+  -- Construct ψ = ℱ⁻¹[Θ] and K = ℱ⁻¹[G] explicitly via nPointToEuclidean
+  let e := nPointToEuclidean d n_pts
+  let ψ : SchwartzNPointSpace d n_pts :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+      (FourierTransform.fourierInv
+        (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ))
+  let K : SchwartzNPointSpace d n_pts :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+      (FourierTransform.fourierInv
+        (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G))
+  -- Step 1: Show ψ.fourierTransform = Θ
+  have hψ_ft : ψ.fourierTransform = Θ := by
+    simp only [SchwartzNPointSpace.fourierTransform, ψ]
+    ext x
+    simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+      SchwartzMap.fourierTransformCLM_apply]
+    have h_cancel : ∀ (f : SchwartzMap _ ℂ),
+        SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm
+          (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e f) = f := by
+      intro f; ext y
+      simp [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+        ContinuousLinearEquiv.symm_apply_apply]
+    rw [h_cancel]
+    exact congrFun (congrArg _ (FourierTransform.fourier_fourierInv_eq _)) _
+  refine ⟨ψ, hψ_ft, fun q hq => ?_⟩
+  -- Step 2: Show ψ q = φ(q j 0) * K q, then conclude
+  suffices hfactor : ψ q = (φ : ℝ → ℂ) (q j 0) * K q by
+    rw [hfactor] at hq; exact left_ne_zero_of_mul hq
+  -- ψ and K are let-bound and unfold to fourierInv at (e q)
+  simp only [ψ, K, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  -- Goal: (fourierInv (Θ ∘ e.symm))(e q) = φ(q j 0) * (fourierInv (G ∘ e.symm))(e q)
+  -- Convert SchwartzMap fourierInv to function-level
+  rw [show (FourierTransform.fourierInv
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ) : _ → ℂ) (e q) =
+    FourierTransform.fourierInv
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ : _ → ℂ)) (e q) from
+    congrFun (SchwartzMap.fourierInv_coe _) (e q)]
+  rw [show (FourierTransform.fourierInv
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G) : _ → ℂ) (e q) =
+    FourierTransform.fourierInv
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G : _ → ℂ)) (e q) from
+    congrFun (SchwartzMap.fourierInv_coe _) (e q)]
+  -- Goal: fourierInv(Θ ∘ e⁻¹)(e q) = φ(q j 0) * fourierInv(G ∘ e⁻¹)(e q)
+  simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  -- Goal: FourierTransformInv.fourierInv (⇑Θ ∘ ⇑e.symm) (e q) =
+  --   φ (q j 0) * FourierTransformInv.fourierInv (⇑G ∘ ⇑e.symm) (e q)
+  -- Express as explicit integrals
+  rw [Real.fourierInv_eq' (f := (⇑Θ ∘ ⇑e.symm)) (w := e q),
+      Real.fourierInv_eq' (f := (⇑G ∘ ⇑e.symm)) (w := e q)]
+  -- LHS: ∫ v, exp(2πi⟨v, e q⟩) • (Θ(e⁻¹ v))
+  -- RHS: φ(q j 0) * ∫ v, exp(2πi⟨v, e q⟩) • (G(e⁻¹ v))
+  -- Substitute Θ(e⁻¹ v) = ∫ ℱ[φ](t) * G(shift(e⁻¹ v)) dt via hΘ
+  simp_rw [Function.comp_apply, hΘ]
+  -- Goal: ∫ v, exp(2πi⟨v, eq⟩) • (∫ t, ℱ[φ](t) * G(shift(e⁻¹ v))) =
+  --   φ(q j 0) * ∫ v, exp(2πi⟨v, eq⟩) • G(e⁻¹ v)
+  -- ══ Partial convolution theorem ══════════════════════════════════
+  -- Strategy: relate the NPointSpacetime shift to a EuclideanSpace translation,
+  -- then for each fixed v, change variables t → t in the inner integral,
+  -- rewrite ∫_v of ∫_t as ∫_t of ∫_v via Fubini, do COV v → v + t·ej0,
+  -- decompose the inner product, factor the exponential, and apply Fourier inversion.
+  -- ─── Abbreviations ─────────────────────────────────────────────
+  set ej0 : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) :=
+    EuclideanSpace.single (j, (0 : Fin (d + 1))) 1 with hej0_def
+  set w := e q with hw_def
+  set FTφ_s := (SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) with hFTφ_s_def
+  -- ─── Step 1: Shift = EuclideanSpace translation ────────────────
+  have h_shift : ∀ (v : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1))) (t : ℝ),
+      Function.update (e.symm v) j
+        (Function.update (e.symm v j) 0 (e.symm v j 0 - t)) =
+      e.symm (v - t • ej0) := by
+    intro v t; ext i μ
+    simp only [Function.update_apply]
+    -- Unfold e.symm(...) through definitions and simplify
+    simp only [e, ej0, nPointToEuclidean, uncurryLinearEquiv, PiLp.single_apply,
+      PiLp.continuousLinearEquiv_symm_apply, Pi.sub_apply, Pi.smul_apply,
+      smul_eq_mul, Prod.mk.injEq, and_comm, ContinuousLinearEquiv.trans_apply,
+      ContinuousLinearEquiv.symm_trans_apply]
+    split_ifs <;> simp_all [Function.update_apply] <;> split_ifs <;> simp_all <;> ring
+  simp_rw [h_shift]
+  -- ─── Step 2: Key coordinate / inner-product facts ─────────────
+  have h_coord : w (j, (0 : Fin (d + 1))) = q j 0 := by
+    simp [w, e, nPointToEuclidean, uncurryLinearEquiv,
+      PiLp.continuousLinearEquiv_symm_apply]
+  have h_inner_ej0 : @inner ℝ _ _ ej0 w = q j 0 := by
+    rw [EuclideanSpace.inner_single_left]; simp [h_coord]
+  -- ─── Step 3: 1-D Fourier inversion ∫ ℱ[φ](t)·exp(2πi·t·k) = φ(k) ──
+  have h_fourier_inv_at :
+      ∫ t : ℝ, (FTφ_s : ℝ → ℂ) t *
+        Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ (t • ej0) w) * Complex.I) =
+      (φ : ℝ → ℂ) (q j 0) := by
+    -- Rewrite ⟪t • ej0, w⟫ = t * ⟪ej0, w⟫ = t * (q j 0)
+    simp only [real_inner_smul_left, h_inner_ej0]
+    -- Now: ∫ t, FTφ(t) * exp(↑(2π(t*(q j 0))) * I) = φ(q j 0)
+    -- This is ℱ⁻¹[ℱ[φ]](q j 0) by Real.fourierInv_eq'
+    have hinv : FourierTransform.fourierInv (FTφ_s : ℝ → ℂ) = (φ : ℝ → ℂ) := by
+      have h := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ))
+        (FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) φ)
+      dsimp only at h; rwa [SchwartzMap.fourierInv_coe] at h
+    have h_eval := congrFun hinv (q j 0)
+    rw [Real.fourierInv_eq'] at h_eval
+    rw [← h_eval]; refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with t; rw [smul_eq_mul, mul_comm (Complex.exp _)]
+    congr 1; congr 1; congr 1; congr 1
+    simp [inner, mul_comm]
+  -- ─── Step 4: Integrable helpers ───────────────────────────────
+  -- G ∘ e.symm as a SchwartzMap on EuclideanSpace (for integrability)
+  set Ge : SchwartzMap (EuclideanSpace ℝ (Fin n_pts × Fin (d + 1))) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G with hGe_def
+  have hGe_eq : ∀ v, Ge v = G (e.symm v) := fun v => by
+    simp [Ge, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  -- ─── Step 5: For each v, change variables in the inner integral ──
+  -- We show: ∫ t, FTφ(t) * G(e⁻¹(v - t•ej0))
+  --        = ∫ t, FTφ(t) * exp(2πi⟪t•ej0, w⟫ I) * G(e⁻¹ v)
+  -- is FALSE in general (the inner integral depends on v through the shift).
+  -- Instead we work with the DOUBLE integral.
+  --
+  -- We show ∫ v exp(⟨v,w⟩) * ∫ t FTφ(t) * G(e⁻¹(v-t·ej0))
+  --       = ∫ v exp(⟨v,w⟩) * G(e⁻¹ v) * ∫ t FTφ(t) * exp(2πi t (q j 0))
+  --       = (∫ t FTφ(t) * exp(2πi t (q j 0))) * ∫ v exp(⟨v,w⟩) * G(e⁻¹ v)
+  --       = φ(q j 0) * ∫ v exp(⟨v,w⟩) • G(e⁻¹ v)
+  --
+  -- The key step replaces each inner integral with a factored form via
+  -- an integral identity that uses translation-invariance of Lebesgue measure.
+  -- Instead of Fubini on the full product, we express the v-integral of
+  -- the partial convolution via the substitution v ↦ v + t·ej0.
+  --
+  -- Identity: for each v,
+  --   ∫ t, FTφ(t) * G(e⁻¹(v - t·ej0)) dt                 (original)
+  -- = ∫ t, FTφ(t) * G(e⁻¹(v - t·ej0)) dt                 (rename)
+  --
+  -- After multiplying by exp(⟨v,w⟩) and integrating over v:
+  -- ∫ v, exp(⟨v,w⟩) * (∫ t, FTφ(t) * G(e⁻¹(v - t·ej0)))
+  --
+  -- We need Fubini to swap. Instead, we use a direct calculation.
+  -- Observe: the function v ↦ exp(⟨v,w⟩) * (∫ t ...) is the inverse FT of
+  -- Θ ∘ e⁻¹ evaluated at w, and similarly for the RHS. We already know
+  -- ℱ⁻¹(ℱ ψ) = ψ and ψ.fourierTransform = Θ, so it suffices to show
+  -- the FOURIER TRANSFORMS of both sides agree.
+  --
+  -- This is a circular argument at the integral level. So we really do Fubini.
+  -- We proceed by establishing product integrability, then doing the calc.
+  --
+  -- *** Product integrability ***
+  have hGe_int : MeasureTheory.Integrable (Ge : _ → ℂ) := Ge.integrable
+  have hFTφ_int : MeasureTheory.Integrable (FTφ_s : ℝ → ℂ) := FTφ_s.integrable
+  -- The integrand (after h_shift) uses G (e.symm ...). Rewrite with Ge.
+  -- *** Main calc chain ***
+  -- Instead of explicit Fubini + COV, use integral manipulations with translation invariance.
+  -- We show:  ∫ v, E(v) • (∫ t, F(t) * G(e⁻¹(v-t·ej0)))
+  --         = φ(q j 0) * ∫ v, E(v) • G(e⁻¹ v)
+  -- by rewriting G(e⁻¹ ·) as Ge, applying Fubini, COV, factoring, and Fourier inversion.
+  -- Rewrite G(e.symm ·) as Ge throughout using hGe_eq
+  simp_rw [← hGe_eq]
+  -- Push smul into inner integral
+  simp_rw [smul_eq_mul]
+  -- The proof proceeds by integral manipulations.
+  -- We combine Fubini + COV + exp factoring + Fourier inversion into one block.
+  -- Key claim: ∫ v, E(v) * ∫ t, F(t) * Ge(v - t•ej0) = φ(k) * ∫ v, E(v) * Ge(v)
+  -- where E(v) = exp(2πi⟪v,w⟫*I), F = FTφ_s, k = q j 0.
+  -- Step: push E(v) inside inner integral and swap via Fubini
+  have h_fubini_cov : ∀ t : ℝ,
+      ∫ v, Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+        Ge (v - t • ej0) =
+      Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I) *
+        ∫ v, Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) * Ge v := by
+    intro t
+    -- COV: v → v + t•ej0
+    have h_cov := (MeasureTheory.integral_add_right_eq_self
+      (μ := (MeasureTheory.volume :
+        MeasureTheory.Measure (EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)))))
+      (fun v => Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+        Ge (v - t • ej0)) (t • ej0))
+    simp only [add_sub_cancel_right] at h_cov
+    rw [← h_cov]
+    -- Decompose inner product and factor exponential
+    simp_rw [_root_.inner_add_left, real_inner_smul_left, h_inner_ej0]
+    simp_rw [show ∀ (a b : ℝ), ↑(2 * Real.pi * (a + b)) * Complex.I =
+      ↑(2 * Real.pi * a) * Complex.I + ↑(2 * Real.pi * b) * Complex.I from by
+      intro a b; push_cast; ring]
+    simp_rw [Complex.exp_add]
+    -- Pull constant factor out of integral
+    simp_rw [show ∀ u, (Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ u w) * Complex.I) *
+        Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I)) * Ge u =
+      Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I) *
+        (Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ u w) * Complex.I) * Ge u) from
+      fun u => by ring]
+    rw [← smul_eq_mul (a := Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I)),
+        ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+  -- Now use Fubini + h_fubini_cov to rewrite the double integral.
+  -- Goal: ∫ v, E(v) * (∫ t, F(t) * Ge(v - t•ej0)) = φ(k) * ∫ v, E(v) * Ge(v)
+  -- Push E(v) into the inner integral, swap via Fubini, apply h_fubini_cov, factor.
+  -- ─── Integrability for Fubini ───────────────────────────────
+  set E_fun := fun v : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) =>
+    Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I)
+  have hE_norm : ∀ v, ‖E_fun v‖ = 1 := fun v => Complex.norm_exp_ofReal_mul_I _
+  have h_int_prod : MeasureTheory.Integrable
+      (fun p : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) × ℝ =>
+        E_fun p.1 * ((FTφ_s : ℝ → ℂ) p.2 * Ge (p.1 - p.2 • ej0)))
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    have hcont_prod : Continuous (fun p : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) × ℝ =>
+        E_fun p.1 * ((FTφ_s : ℝ → ℂ) p.2 * Ge (p.1 - p.2 • ej0))) := by
+      apply Continuous.mul
+      · exact Complex.continuous_exp.comp (((Complex.continuous_ofReal.comp
+            (continuous_const.mul (continuous_inner.comp
+              (Continuous.prodMk continuous_fst continuous_const)))).mul
+            continuous_const))
+      · exact (FTφ_s.continuous.comp continuous_snd).mul
+            (Ge.continuous.comp (continuous_fst.sub (continuous_snd.smul continuous_const)))
+    rw [MeasureTheory.integrable_prod_iff' hcont_prod.aestronglyMeasurable]
+    refine ⟨Filter.Eventually.of_forall fun t => ?_, ?_⟩
+    · -- Fiberwise integrability: for fixed t, v ↦ ... is integrable
+      -- |E(v) * (F(t) * Ge(v-shift))| = |F(t)| * |Ge(v-shift)|, both integrable
+      refine ((hGe_int.comp_sub_right (t • ej0)).norm.const_mul
+        ‖(FTφ_s : ℝ → ℂ) t‖).mono'
+        ((hcont_prod.comp (Continuous.prodMk continuous_id
+          (continuous_const (y := t)))).aestronglyMeasurable) ?_
+      filter_upwards with v; simp [norm_mul, hE_norm]
+    · -- Outer integrability: t ↦ ∫ ‖...‖ dv is integrable
+      have h_bound : ∀ t : ℝ,
+          ∫ v, ‖E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0))‖ =
+          ‖(FTφ_s : ℝ → ℂ) t‖ * ∫ v, ‖Ge v‖ := by
+        intro t; simp only [norm_mul, hE_norm, one_mul]
+        rw [← smul_eq_mul (a := ‖(FTφ_s : ℝ → ℂ) t‖),
+            ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+        exact MeasureTheory.integral_sub_right_eq_self
+          (fun v => ‖(FTφ_s : ℝ → ℂ) t‖ * ‖Ge v‖) (t • ej0)
+      simp_rw [h_bound]
+      exact hFTφ_int.norm.mul_const _
+  -- ─── Fubini + h_fubini_cov + Fourier inversion ─────────────
+  -- Push E(v) inside inner integral
+  have h_push : ∀ v, E_fun v * (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) =
+      ∫ t, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) := by
+    intro v; rw [← smul_eq_mul (a := E_fun v), ← MeasureTheory.integral_smul]
+    simp_rw [smul_eq_mul]
+  conv_lhs => arg 2; ext v; rw [show Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+    (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) = E_fun v * (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) from rfl,
+    h_push]
+  -- Fubini: swap v and t
+  rw [MeasureTheory.integral_integral_swap h_int_prod]
+  -- For each t, use h_fubini_cov
+  have h_inner : ∀ t, ∫ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) =
+      (FTφ_s : ℝ → ℂ) t * (Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I) *
+        ∫ v, E_fun v * Ge v) := by
+    intro t
+    have : ∫ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) =
+        (FTφ_s : ℝ → ℂ) t * ∫ v, E_fun v * Ge (v - t • ej0) := by
+      simp_rw [show ∀ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ej0)) =
+        (FTφ_s : ℝ → ℂ) t * (E_fun v * Ge (v - t • ej0)) from fun v => by ring]
+      rw [← smul_eq_mul (a := (FTφ_s : ℝ → ℂ) t),
+          ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+    rw [this, h_fubini_cov]
+  simp_rw [h_inner]
+  -- Factor and apply Fourier inversion
+  simp_rw [show ∀ t, (FTφ_s : ℝ → ℂ) t *
+      (Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I) *
+        ∫ u, E_fun u * Ge u) =
+    ((FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I)) *
+      (∫ u, E_fun u * Ge u) from fun t => by ring]
+  -- Pull constant (∫ u, E_fun u * Ge u) out of the t-integral and apply Fourier inversion
+  -- The goal is: ∫ y, f(y) * C = φ(k) * C'  where C = ∫ v, E_fun v * Ge v
+  -- Commute inside the integral, pull out C, apply Fourier inversion
+  simp_rw [show ∀ y, (FTφ_s : ℝ → ℂ) y *
+      Complex.exp (↑(2 * Real.pi * (y * (q j 0))) * Complex.I) *
+      (∫ v, E_fun v * Ge v) =
+    (∫ v, E_fun v * Ge v) •
+      ((FTφ_s : ℝ → ℂ) y *
+        Complex.exp (↑(2 * Real.pi * (y * (q j 0))) * Complex.I)) from
+    fun y => by rw [smul_eq_mul]; ring]
+  rw [MeasureTheory.integral_smul, smul_eq_mul]
+  simp_rw [show ∀ t, (FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * (t * (q j 0))) * Complex.I) =
+    (FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ (t • ej0) w) * Complex.I) from
+    fun t => by rw [real_inner_smul_left, h_inner_ej0]]
+  rw [h_fourier_inv_at, mul_comm]
 
 /-- **Fourier inversion and support condition for the SCD translate witness.**
 
@@ -1675,7 +1953,21 @@ private lemma scd_fourierInv_translate_witness {n m : ℕ} (hn : 0 < n) (hm : 0 
         ψ.fourierTransform = Θ ∧
         ∀ q : NPointSpacetime d (n + m - 1),
           ψ q ≠ 0 → (φ : ℝ → ℂ) (q ⟨n - 1, hbdry⟩ 0) ≠ 0 := by
-  sorry
+  -- Step 1: Rewrite the integrand using the shift structure (Lemma 1).
+  -- F(t)(ξ) = G₀(ξ with ξ_{n-1}(0) shifted by -t)
+  let G₀ := diffVarReduction d (n + m - 1) (hk.symm ▸ fn.conjTensorProduct fm)
+  have hΘ_shift : ∀ ξ : NPointSpacetime d (n + m - 1),
+      Θ ξ = ∫ t : ℝ,
+        ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+          G₀ (Function.update ξ ⟨n - 1, hbdry⟩
+            (Function.update (ξ ⟨n - 1, hbdry⟩) 0 (ξ ⟨n - 1, hbdry⟩ 0 - t))) := by
+    intro ξ
+    rw [hΘ ξ]
+    congr 1; ext t; congr 1
+    exact diffVarReduction_translate_eq_shift hn hm fn fm hk hbdry t ξ
+  -- Step 2: Apply the partial convolution factorization (Lemma 2).
+  -- ψ = ℱ⁻¹[Θ] satisfies ψ(q) = φ(q_{n-1,0}) · ℱ⁻¹[G₀](q)
+  exact partial_convolution_fourier_factorization ⟨n - 1, hbdry⟩ G₀ φ Θ hΘ_shift
 
 /-- **SCD ⟹ nonneg distributional Fourier support of the WIP summand.**
 
@@ -2120,7 +2412,8 @@ private lemma scd_summand_nonneg_fourier_support
         obtain ⟨Cred, Nred, _, hCred⟩ := hFpoly
         exact ⟨Cred, Nred, hCred⟩
       obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
-        schwartz_clm_integral_exchange w hw_cont hw_lin hF_cont hF_poly φ
+        schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
+          (SchwartzMap.fourierTransformCLM ℂ φ)
       -- ── Steps 2+3: ℱ⁻¹ of Θ gives ψ with ψ.fourierTransform = Θ and support condition ─
       obtain ⟨ψ, hψ_ft, hψ_supp⟩ :=
         scd_fourierInv_translate_witness (by omega : 0 < n) (by omega : 0 < m)
@@ -2213,6 +2506,270 @@ private lemma scd_inner_hasOneSidedFourierSupport
     scd_summand_integrable Wfn (B.funcs n) (B.funcs m) FTφ)]
   apply Finset.sum_eq_zero; intro m _
   exact scd_summand_fourier_vanishing Wfn hSCD (B.funcs n) (B.funcs m) φ hφ
+
+/-! ### Generalized direction chain: `e₀` → arbitrary `y ∈ V̄₊`
+
+The following lemmas generalize the SCD → one-sided Fourier support chain
+from the time direction `e₀` to an arbitrary direction `y ∈ V̄₊`. This is
+needed for `scd_bochner_forwardCone_support` (multi-dimensional Bochner measure
+support on V̄₊ via per-direction null sets).
+
+The proof structure is identical to the `e₀` chain above, with two changes:
+1. The shift `ξ_{n-1}(0) ← ξ_{n-1}(0) - t` becomes `ξ_{n-1} ← ξ_{n-1} - t•y`.
+2. The contradiction `q_{n-1,0} < 0 → q_{n-1} ∉ V̄₊` (trivial from `timeComponent ≥ 0`)
+   becomes `y·q_{n-1} < 0 → q_{n-1} ∉ V̄₊` (by self-duality of V̄₊). -/
+
+/-- Generalization of `diffVarReduction_translate_eq_shift` to arbitrary translation direction.
+    Translation by `t • y` shifts the full boundary difference variable `ξ_{n-1}` by `t • y`,
+    instead of shifting only the 0-th component. -/
+private lemma diffVarReduction_translate_eq_shift_dir {n m : ℕ} (hn : 0 < n) (hm : 0 < m)
+    (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (y : MinkowskiSpace d)
+    (hk : (n + m - 1) + 1 = n + m) (hbdry : n - 1 < n + m - 1) (t : ℝ)
+    (ξ : NPointSpacetime d (n + m - 1)) :
+    diffVarReduction d (n + m - 1)
+      (hk.symm ▸ fn.conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ξ =
+    diffVarReduction d (n + m - 1)
+      (hk.symm ▸ fn.conjTensorProduct fm)
+      (Function.update ξ ⟨n - 1, hbdry⟩ (ξ ⟨n - 1, hbdry⟩ - t • y)) := by
+  -- Step 1: Establish how the ▸ cast interacts with SchwartzMap evaluation.
+  have heval : ∀ (f : SchwartzNPointSpace d (n + m))
+      (y : NPointSpacetime d ((n + m - 1) + 1)),
+      (hk.symm ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
+      f (fun (i : Fin (n + m)) (μ : Fin (d + 1)) => y ⟨i.val, by omega⟩ μ) := by
+    have := fun (K : ℕ) (hK : K = (n + m - 1) + 1)
+        (f : SchwartzNPointSpace d K) (y : NPointSpacetime d ((n + m - 1) + 1)) =>
+      show (hK ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
+        f (fun i μ => y ⟨i.val, hK ▸ i.isLt⟩ μ) from by subst hK; rfl
+    exact this (n + m) hk.symm
+  -- Step 2: Unfold diffVarReduction to composition with diffVarSection
+  simp only [diffVarReduction, SchwartzMap.compCLMOfAntilipschitz_apply, Function.comp_apply]
+  -- Step 3: Apply the cast evaluation identity to both sides
+  simp only [heval]
+  -- Step 4: Unfold conjTensorProduct to split into fn and fm parts
+  simp only [SchwartzMap.conjTensorProduct_apply]
+  simp only [splitFirst, poincareActNPoint_apply]
+  -- Unfold diffVarSection to its Finset.sum definition on both sides
+  dsimp [diffVarSection]
+  congr 1
+  · -- fn parts: sums at indices n-(i+1) ≤ n-1 don't include the update at n-1
+    congr 2; funext i; funext μ
+    apply Finset.sum_congr rfl
+    intro ⟨j, hj⟩ _
+    simp only [Function.update, Fin.mk.injEq]
+    split_ifs with h
+    · omega
+    · rfl
+  · -- fm parts: translation'(t • y) shifts all fm-arguments by -t • y
+    congr 1; funext j; funext μ
+    dsimp
+    simp only [Function.update_apply, splitLast, poincareActNPointDomain,
+      PoincareGroup.act_def,
+      PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+      PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
+      inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
+      Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul]
+    -- Goal: (∑ ξ_i μ) + -(t * y μ) = ∑ (if cond then (ξ_i - t • y) else ξ_i) μ
+    -- Extract the n-1 term from the RHS sum
+    have hn1 : n - 1 < n + ↑j := by omega
+    conv_rhs =>
+      rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
+    conv_lhs => lhs; rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
+    simp only [Fin.mk.injEq, ite_true]
+    -- Rearrange LHS: (ξ_{n-1} + ∑_erase) + offset → (ξ_{n-1} + offset) + ∑_erase
+    rw [show ∀ (a b c : ℝ), (a + b) + c = (a + c) + b from fun a b c => by ring]
+    congr 1
+    -- erase-sum: terms with index ≠ n-1 are unchanged
+    exact Finset.sum_congr rfl fun x hx => by
+      simp only [Finset.mem_erase, ne_eq, Finset.mem_univ, and_true] at hx
+      have : ¬(↑x : ℕ) = n - 1 := fun h => hx (Fin.ext h)
+      simp [this]
+
+/-- Generalization of `partial_convolution_fourier_factorization` to arbitrary direction.
+    The partial convolution along `t • y` (shifting the full j-th variable) factorizes as
+    `ψ(q) = φ(∑_μ y(μ) · q(j)(μ)) · K(q)` in the Fourier domain. -/
+private theorem partial_convolution_fourier_factorization_dir
+    {n_pts : ℕ} (j : Fin n_pts)
+    (y : MinkowskiSpace d)
+    (G : SchwartzNPointSpace d n_pts)
+    (φ : SchwartzMap ℝ ℂ)
+    (Θ : SchwartzNPointSpace d n_pts)
+    (hΘ : ∀ ξ : NPointSpacetime d n_pts,
+        Θ ξ = ∫ t : ℝ,
+          ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+            G (Function.update ξ j (ξ j - t • y))) :
+    ∃ ψ : SchwartzNPointSpace d n_pts,
+        ψ.fourierTransform = Θ ∧
+        ∀ q : NPointSpacetime d n_pts,
+          ψ q ≠ 0 → (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q j μ) ≠ 0 := by
+  -- The proof follows `partial_convolution_fourier_factorization` exactly.
+  -- Key changes: ej0 = EuclideanSpace.single (j, 0) 1 becomes
+  -- ey : EuclideanSpace where ey(j', μ) = if j' = j then y μ else 0.
+  -- The inner product identity: ⟪ey, w⟫ = ∑_μ y(μ) · q(j)(μ).
+  -- Fourier inversion: ∫ FTφ(t) · exp(2πi t (y·q_j)) = φ(y·q_j). Same structure.
+  sorry
+
+/-- Generalization of `scd_fourierInv_translate_witness` to arbitrary direction. -/
+private lemma scd_fourierInv_translate_witness_dir {n m : ℕ} (hn : 0 < n) (hm : 0 < m)
+    (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (y : MinkowskiSpace d)
+    (φ : SchwartzMap ℝ ℂ) (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0)
+    (hk : (n + m - 1) + 1 = n + m) (hbdry : n - 1 < n + m - 1)
+    (Θ : SchwartzNPointSpace d (n + m - 1))
+    (hΘ : ∀ ξ : NPointSpacetime d (n + m - 1),
+        Θ ξ = ∫ t : ℝ,
+          ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+            diffVarReduction d (n + m - 1)
+              (hk.symm ▸ fn.conjTensorProduct
+                (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ξ) :
+    ∃ ψ : SchwartzNPointSpace d (n + m - 1),
+        ψ.fourierTransform = Θ ∧
+        ∀ q : NPointSpacetime d (n + m - 1),
+          ψ q ≠ 0 → (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q ⟨n - 1, hbdry⟩ μ) ≠ 0 := by
+  -- Combine shift_dir + partial_convolution_dir, exactly as the e₀ version.
+  let G₀ := diffVarReduction d (n + m - 1) (hk.symm ▸ fn.conjTensorProduct fm)
+  have hΘ_shift : ∀ ξ : NPointSpacetime d (n + m - 1),
+      Θ ξ = ∫ t : ℝ,
+        ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t *
+          G₀ (Function.update ξ ⟨n - 1, hbdry⟩ (ξ ⟨n - 1, hbdry⟩ - t • y)) := by
+    intro ξ; rw [hΘ ξ]; congr 1; ext t; congr 1
+    exact diffVarReduction_translate_eq_shift_dir hn hm fn fm y hk hbdry t ξ
+  exact partial_convolution_fourier_factorization_dir ⟨n - 1, hbdry⟩ y G₀ φ Θ hΘ_shift
+
+/-- Generalization of `scd_summand_nonneg_fourier_support` to arbitrary `y ∈ V̄₊`.
+    Uses self-duality of the forward cone: `y, q ∈ V̄₊ → ∑_μ y_μ q_μ ≥ 0`. -/
+private lemma scd_summand_nonneg_fourier_support_dir
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (y : MinkowskiSpace d) (hy : y ∈ ForwardMomentumCone d)
+    {n m : ℕ} (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m) :
+    HasNonnegDistrFourierSupport (fun t =>
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))) := by
+  intro φ hφ
+  by_cases hm : m = 0
+  · -- m = 0: τ acts trivially on fm (Fin 0 domain), so g(t) is constant.
+    have h_act_fm : ∀ t : ℝ,
+        poincareActNPoint (PoincareGroup.translation' ((t : ℝ) • y)) fm = fm := by
+      intro t; subst hm; ext x; simp only [poincareActNPoint_apply]
+      congr 1; ext i; exact Fin.elim0 i
+    simp_rw [h_act_fm]
+    exact hasNonnegDistrFourierSupport_const (Wfn.W (n + m) (fn.conjTensorProduct fm)) φ hφ
+  · by_cases hn : n = 0
+    · -- n = 0: g(t) is constant by translation invariance (any direction).
+      have h_const : ∀ t : ℝ,
+          Wfn.W (n + m) (fn.conjTensorProduct
+            (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) =
+          Wfn.W (n + m) (fn.conjTensorProduct fm) := by
+        intro t
+        set τ := PoincareGroup.translation' (t • y) with hτ_def
+        have h_act_fn : poincareActNPoint τ fn = fn := by
+          subst hn; ext x; simp only [poincareActNPoint_apply]
+          congr 1; ext i; exact Fin.elim0 i
+        conv_lhs => rw [← h_act_fn]
+        symm
+        apply Wfn.translation_invariant (n + m) (-(t • y))
+        intro x
+        rw [poincareActNPoint_conjTensorProduct]
+        congr 1; ext i
+        simp only [poincareActNPointDomain, PoincareGroup.act_def,
+          PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+          hτ_def, PoincareGroup.translation'_translation,
+          PoincareGroup.translation'_lorentz,
+          inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec]
+      simp_rw [h_const]
+      exact hasNonnegDistrFourierSupport_const (Wfn.W (n + m) (fn.conjTensorProduct fm)) φ hφ
+    · -- n ≥ 1, m ≥ 1: Non-degenerate SCD argument with self-duality.
+      have hpos : 0 < n + m := by omega
+      have hk : (n + m - 1) + 1 = n + m := Nat.sub_add_cancel hpos
+      obtain ⟨w, hw_cont, hw_lin, hw_factor, hw_vanish⟩ := hSCD (n + m - 1)
+      have cast_W : ∀ (ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
+          Wfn.W ℓ (hℓ.symm ▸ f) = Wfn.W (n + m) f := fun ℓ hℓ f => by subst hℓ; rfl
+      have hw_eq : ∀ (f : SchwartzNPointSpace d (n + m)),
+          Wfn.W (n + m) f = w (diffVarReduction d (n + m - 1) (hk.symm ▸ f)) :=
+        fun f => by rw [← cast_W _ hk f]; exact hw_factor _
+      simp_rw [hw_eq]
+      have hbdry : n - 1 < n + m - 1 := by omega
+      -- The key `h_main`: construct ψ with ψ.fourierTransform = Θ and support condition
+      suffices h_main : ∃ ψ : SchwartzNPointSpace d (n + m - 1),
+          (w (ψ.fourierTransform) =
+            ∫ t : ℝ,
+              w (diffVarReduction d (n + m - 1) (hk.symm ▸ fn.conjTensorProduct
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))) *
+              ((SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) : ℝ → ℂ) t) ∧
+          (∀ q : NPointSpacetime d (n + m - 1),
+            ψ q ≠ 0 → (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q ⟨n - 1, hbdry⟩ μ) ≠ 0) by
+        -- Self-duality contradiction: y·q_{n-1} < 0 contradicts y, q_{n-1} ∈ V̄₊
+        obtain ⟨ψ, h_eq, h_factor⟩ := h_main
+        have h_zero : w (ψ.fourierTransform) = 0 := hw_vanish ψ fun q hq =>
+          ⟨⟨n - 1, hbdry⟩, fun hmem => by
+            have hφ_ne := h_factor q hq
+            have h_neg := hφ _ (Function.mem_support.mpr hφ_ne)
+            -- Self-duality: y ∈ V̄₊ and q_{n-1} ∈ V̄₊ → ∑_μ y_μ q_{n-1,μ} ≥ 0
+            have h_nn : ∑ μ : Fin (d + 1), y μ * q ⟨n - 1, hbdry⟩ μ ≥ 0 :=
+              euclideanDot_nonneg_closedCone y hy (q ⟨n - 1, hbdry⟩) hmem
+            linarith⟩
+        exact h_eq.symm.trans h_zero
+      -- Steps 1–3: Construct ψ via CLM exchange + shift_dir + partial_convolution_dir.
+      -- This requires polynomial growth bounds and integrability, following the e₀ version.
+      sorry
+
+/-- Generalization of `scd_summand_fourier_vanishing` to arbitrary `y ∈ V̄₊`. -/
+private lemma scd_summand_fourier_vanishing_dir
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (y : MinkowskiSpace d) (hy : y ∈ ForwardMomentumCone d)
+    {n m : ℕ} (fn : SchwartzNPointSpace d n) (fm : SchwartzNPointSpace d m)
+    (φ : SchwartzMap ℝ ℂ) (hφ : ∀ x ∈ Function.support (φ : ℝ → ℂ), x < 0) :
+    ∫ t : ℝ,
+      Wfn.W (n + m) (fn.conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) *
+      ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0 :=
+  scd_summand_nonneg_fourier_support_dir Wfn hSCD y hy fn fm φ hφ
+
+/-- **Generalized one-sided Fourier support for arbitrary `y ∈ V̄₊`.**
+
+    For any `y ∈ V̄₊` and pre-Hilbert vector `F`, the tempered distribution
+    `T_F(ψ) = ∫ ⟪F, U(ty)F⟫ · ψ(t) dt` has one-sided Fourier support in `[0,∞)`.
+    This generalizes `scd_inner_hasOneSidedFourierSupport` from `e₀` to arbitrary `y`. -/
+private lemma scd_inner_hasOneSidedFourierSupport_dir
+    (hSCD : SpectralConditionDistribution d Wfn.W)
+    (hsc : PoincareRepresentation.translationStronglyContinuous (gnsPoincareRep Wfn))
+    (y : MinkowskiSpace d) (hy : y ∈ ForwardMomentumCone d)
+    (F : PreHilbertSpace Wfn) :
+    SCV.HasOneSidedFourierSupport (fun ψ : SchwartzMap ℝ ℂ =>
+      ∫ t : ℝ, @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+        (poincareActGNS Wfn (PoincareGroup.translation' (t • y))
+          (F : GNSHilbertSpace Wfn)) * (ψ : ℝ → ℂ) t) := by
+  -- Follows `scd_inner_hasOneSidedFourierSupport` exactly.
+  intro φ hφ
+  -- Step 1: Quotient induction — choose Borchers representative B of F.
+  induction F using Quotient.inductionOn with | h B =>
+  set pB : PreHilbertSpace Wfn := ⟦B⟧
+  -- Step 2: Bridge GNS inner product → WightmanInnerProduct.
+  have hinner_eq : ∀ t : ℝ,
+      @inner ℂ _ _ (pB : GNSHilbertSpace Wfn)
+        (poincareActGNS Wfn (PoincareGroup.translation' (t • y))
+          (pB : GNSHilbertSpace Wfn)) =
+      WightmanInnerProduct d Wfn.W B
+        (poincareActBorchers (PoincareGroup.translation' (t • y)) B) := by
+    intro t
+    rw [show poincareActGNS Wfn (PoincareGroup.translation' (t • y))
+          (pB : GNSHilbertSpace Wfn) =
+        ((poincareActPreHilbert Wfn (PoincareGroup.translation' (t • y)) pB :
+          PreHilbertSpace Wfn) : GNSHilbertSpace Wfn) from
+      poincareActGNS_coe Wfn (PoincareGroup.translation' (t • y)) pB,
+      UniformSpace.Completion.inner_coe]; rfl
+  simp_rw [hinner_eq]
+  -- Step 3: Unfold WightmanInnerProduct as a finite double sum.
+  show ∫ t : ℝ,
+    (∑ n ∈ Finset.range (B.bound + 1), ∑ m ∈ Finset.range (B.bound + 1),
+      Wfn.W (n + m) ((B.funcs n).conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) (B.funcs m)))) *
+    ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0
+  -- Step 4: Distribute, exchange integral and finite sum, apply per-summand vanishing.
+  simp_rw [Finset.sum_mul]
+  -- Exchange integral and finite sum (integrability needs to be established)
+  sorry
 
 set_option maxHeartbeats 800000 in
 /-- **Theorem A (Fubini for Bochner–Stieltjes integrals).**
@@ -2948,25 +3505,245 @@ private lemma scd_bochner_forwardCone_support
     -- Convert: μ({p | y·p < 0}) = ν_y((-∞,0))
     rw [show {p : MinkowskiSpace d | ∑ i, y i * p i < 0} = dotY ⁻¹' Set.Iio 0 from rfl]
     rw [← MeasureTheory.Measure.map_apply h_meas measurableSet_Iio]
-    -- SCD for direction y gives one-sided Fourier support of t ↦ ⟪ψ, U(ty)ψ⟫,
-    -- which via the 1D pipeline (oneSidedSupport_implies_schwartz_vanishing +
-    -- measure_Iio_zero_of_schwartz_vanishing) yields ν_y((-∞,0)) = 0.
-    -- The direction-y spectral condition follows from:
-    --   1. Decompose U(ty) via Borchers representatives
-    --   2. Each summand W(n+m)(fn.conjTP(τ_{ty} fm)) factors through SCD
-    --   3. The boundary diff variable is shifted by ty ∈ V̄₊ (scaled)
-    --   4. The t-FT pins the y-projection of boundary momentum to supp(φ) ⊆ (-∞,0)
-    --   5. For p_bdy ∈ V̄₊, self-duality gives y·p_bdy ≥ 0, contradicting step 4
-    --   6. So p_bdy ∉ V̄₊, and SCD vanishing applies
-    sorry
-  -- === Step 2: V̄₊ᶜ is covered by null sets via cone self-duality. ===
-  -- Decompose V̄₊ᶜ = {p | p₀ < 0} ∪ {p | p₀ ≥ 0 ∧ |p⃗|² > p₀²}.
-  -- Part A: {p | p₀ < 0} is null — take y = e₀ ∈ V̄₊.
-  -- Part B: {p | p₀ ≥ 0, |p⃗|² > p₀²} is null — for each such p, the lightlike
-  --   vector y = (|p⃗|, -p₁, ..., -p_d) ∈ V̄₊ satisfies y·p = |p⃗|(p₀-|p⃗|) < 0.
-  --   A countable dense subset of separating directions (via density of ℚ^d in ℝ^d)
-  --   gives V̄₊ᶜ ⊆ countable union of null sets, hence μ(V̄₊ᶜ) = 0.
-  sorry
+    -- === Step 1a: FS transform of ν_y equals inner product function ===
+    have hU : (gnsPoincareRep Wfn).U = poincareActGNS Wfn := rfl
+    have hν_fs : ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν_y =
+        @inner ℂ _ _ ψ (poincareActGNS Wfn (PoincareGroup.translation' ((t : ℝ) • y)) ψ) := by
+      intro t
+      -- Chain: ∫ exp(I*t*s) d(μ.map dotY) = ∫ exp(I*t*(y·p)) dμ  (integral_map)
+      --      = ∫ exp(↑(∑ (t•y)ᵢ pᵢ)*I) dμ  (algebra)  = ⟪ψ, U(t•y)ψ⟫  (hboch)
+      sorry
+    -- === Step 1b: One-sided Fourier support via density ===
+    have h_ofs_ν : SCV.HasOneSidedFourierSupport (fun φ : SchwartzMap ℝ ℂ =>
+        ∫ t : ℝ, (∫ s : ℝ, Complex.exp (Complex.I * ↑t * ↑s) ∂ν_y) *
+          (φ : ℝ → ℂ) t) := by
+      intro φ hφ
+      simp_rw [hν_fs]
+      set FTφ := (SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ)
+      -- For PreHilbertSpace F, the integral vanishes by the generalized SCD chain
+      have h_vanish : ∀ F : PreHilbertSpace Wfn,
+          ∫ t : ℝ, @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+            (poincareActGNS Wfn (PoincareGroup.translation' ((t : ℝ) • y))
+              (F : GNSHilbertSpace Wfn)) * (FTφ : ℝ → ℂ) t = 0 :=
+        fun F => scd_inner_hasOneSidedFourierSupport_dir Wfn hSCD hsc y hy F φ hφ
+      -- Norm preservation: ‖U(g)x‖ = ‖x‖
+      have h_norm_pres : ∀ (g : PoincareGroup d) (x : GNSHilbertSpace Wfn),
+          ‖poincareActGNS Wfn g x‖ = ‖x‖ := by
+        intro g x
+        have h1 := inner_self_eq_norm_sq (𝕜 := ℂ) (poincareActGNS Wfn g x)
+        have h2 := inner_self_eq_norm_sq (𝕜 := ℂ) x
+        have h3 := congr_arg Complex.re (poincareActGNS_inner Wfn g x x)
+        -- ‖Ux‖² = re⟪Ux,Ux⟫ = re⟪x,x⟫ = ‖x‖²
+        have hsq : ‖poincareActGNS Wfn g x‖ ^ 2 = ‖x‖ ^ 2 := by
+          rw [← h1, ← h2]; exact h3
+        -- a² = b², a ≥ 0, b ≥ 0 → a = b
+        have h_diff_sq : (‖poincareActGNS Wfn g x‖ - ‖x‖) *
+            (‖poincareActGNS Wfn g x‖ + ‖x‖) = 0 := by nlinarith
+        rcases mul_eq_zero.mp h_diff_sq with h | h
+        · linarith
+        · linarith [norm_nonneg (poincareActGNS Wfn g x), norm_nonneg x]
+      -- Density: PreHilbertSpace is dense in GNSHilbertSpace.
+      -- Strategy: by contradiction, pick F close to ψ, bound the integral difference.
+      rw [← norm_eq_zero]
+      apply le_antisymm _ (norm_nonneg _)
+      by_contra h_pos
+      push_neg at h_pos
+      set val := ∫ t : ℝ, @inner ℂ _ _ ψ (poincareActGNS Wfn
+        (PoincareGroup.translation' ((t : ℝ) • y)) ψ) * (FTφ : ℝ → ℂ) t
+      set L := ∫ t : ℝ, ‖(FTφ : ℝ → ℂ) t‖
+      have hL_nn : 0 ≤ L := MeasureTheory.integral_nonneg (fun t => norm_nonneg _)
+      set δ₀ := min 1 (‖val‖ / (4 * (‖ψ‖ + 1) * (L + 1)))
+      have hδ : (0 : ℝ) < δ₀ := lt_min one_pos (by positivity)
+      obtain ⟨F, hF⟩ := (UniformSpace.Completion.denseRange_coe
+        (α := PreHilbertSpace Wfn)).exists_dist_lt ψ hδ
+      -- Pointwise inner product difference bound:
+      -- ‖⟪ψ,Uψ⟫ - ⟪F,UF⟫‖ ≤ ‖ψ-F‖·(‖ψ‖+‖F‖)
+      have h_inner_diff : ∀ t : ℝ,
+          ‖@inner ℂ _ _ ψ (poincareActGNS Wfn
+              (PoincareGroup.translation' ((t : ℝ) • y)) ψ) -
+            @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
+              (poincareActGNS Wfn (PoincareGroup.translation' ((t : ℝ) • y))
+                (F : GNSHilbertSpace Wfn))‖ ≤
+          ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) := by
+        intro t
+        set g := PoincareGroup.translation' ((t : ℝ) • y)
+        have h_decomp : @inner ℂ _ _ ψ (poincareActGNS Wfn g ψ) -
+            @inner ℂ _ _ (↑F) (poincareActGNS Wfn g ↑F) =
+          @inner ℂ _ _ (ψ - ↑F) (poincareActGNS Wfn g ψ) +
+          @inner ℂ _ _ (↑F : GNSHilbertSpace Wfn)
+            (poincareActGNS Wfn g (ψ - ↑F)) := by
+          simp only [inner_sub_left, map_sub, inner_sub_right]; ring
+        rw [h_decomp]
+        calc ‖_ + _‖
+            ≤ ‖@inner ℂ _ _ (ψ - ↑F) (poincareActGNS Wfn g ψ)‖ +
+              ‖@inner ℂ _ _ (↑F : GNSHilbertSpace Wfn)
+                (poincareActGNS Wfn g (ψ - ↑F))‖ := norm_add_le _ _
+          _ ≤ ‖ψ - ↑F‖ * ‖poincareActGNS Wfn g ψ‖ +
+              ‖(F : GNSHilbertSpace Wfn)‖ * ‖poincareActGNS Wfn g (ψ - ↑F)‖ := by
+              gcongr <;> exact norm_inner_le_norm _ _
+          _ = ‖ψ - ↑F‖ * ‖ψ‖ +
+              ‖(F : GNSHilbertSpace Wfn)‖ * ‖ψ - ↑F‖ := by
+              rw [h_norm_pres g ψ, h_norm_pres g (ψ - ↑F)]
+          _ = ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) := by ring
+      -- Integral bound: ‖val - ∫⟪F,UF⟫g‖ ≤ ‖ψ-F‖·(‖ψ‖+‖F‖)·L
+      -- Uses h_inner_diff pointwise, then integrates against |g|.
+      have h_val_bound : ‖val‖ ≤
+          ‖ψ - ↑F‖ * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) * L := by
+        rw [show val = val - 0 from (sub_zero _).symm, ← h_vanish F]
+        -- ‖∫(a-b)*g‖ ≤ ∫‖(a-b)*g‖ ≤ ∫(C·‖g‖) = C·L where C = ‖ψ-F‖·(‖ψ‖+‖F‖)
+        sorry
+      -- ‖F‖ ≤ ‖ψ‖ + dist(ψ,F)
+      have hF_norm : ‖(F : GNSHilbertSpace Wfn)‖ ≤ ‖ψ‖ + dist ψ ↑F :=
+        calc ‖(F : GNSHilbertSpace Wfn)‖
+            = ‖ψ - (ψ - (F : GNSHilbertSpace Wfn))‖ := by congr 1; abel
+          _ ≤ ‖ψ‖ + ‖ψ - (F : GNSHilbertSpace Wfn)‖ := norm_sub_le _ _
+          _ = ‖ψ‖ + dist ψ (F : GNSHilbertSpace Wfn) := by rw [dist_eq_norm]
+      -- Contradiction: ‖val‖ ≤ dist·(2‖ψ‖+dist)·L < ‖val‖
+      -- Since dist < δ = ‖val‖/(2(‖ψ‖+1)(L+1)), the product < ‖val‖.
+      rw [dist_eq_norm] at hF hF_norm
+      -- ‖val‖ ≤ ‖ψ-F‖ * (‖ψ‖+‖F‖) * L ≤ ‖ψ-F‖ * (2‖ψ‖+‖ψ-F‖) * L
+      -- ‖ψ-F‖ < δ = ‖val‖ / (2(‖ψ‖+1)(L+1))
+      -- So ‖val‖ < δ * (2‖ψ‖+δ) * L ≤ δ * 2(‖ψ‖+1) * (L+1) = ‖val‖
+      -- Contradiction.
+      set ε := ‖ψ - (F : GNSHilbertSpace Wfn)‖
+      have hε_nn : 0 ≤ ε := norm_nonneg _
+      have hε_lt : ε < δ₀ := hF
+      have h_prod : 2 * (‖ψ‖ + 1) * (L + 1) > 0 := by positivity
+      -- Chain of inequalities
+      -- ε < δ₀ ≤ 1, so ε < 1 and 2‖ψ‖ + ε ≤ 2(‖ψ‖ + 1)
+      have hε_lt1 : ε < 1 := lt_of_lt_of_le hε_lt (min_le_left 1 _)
+      -- ε < ‖val‖/(4(‖ψ‖+1)(L+1))
+      have hε_lt2 : ε < ‖val‖ / (4 * (‖ψ‖ + 1) * (L + 1)) :=
+        lt_of_lt_of_le hε_lt (min_le_right 1 _)
+      have h_4prod : 4 * (‖ψ‖ + 1) * (L + 1) > 0 := by positivity
+      -- Direct: ‖val‖ ≤ ε*(‖ψ‖+‖F‖)*L ≤ ε*(2‖ψ‖+ε)*L
+      --       ≤ ε²*(2‖ψ‖+1)*L + ε*(2‖ψ‖)*L  ... too complex
+      -- Simpler: ε*(‖ψ‖+‖F‖)*L ≤ ε*(2‖ψ‖+1)*(L+1)
+      --   since ‖F‖ ≤ ‖ψ‖+ε ≤ ‖ψ‖+1 and L ≤ L+1
+      have hF_le : ‖(F : GNSHilbertSpace Wfn)‖ ≤ ‖ψ‖ + 1 := by linarith
+      have : ‖val‖ < ‖val‖ := calc
+        ‖val‖ ≤ ε * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) * L := h_val_bound
+        _ ≤ ε * (2 * ‖ψ‖ + 1) * (L + 1) := by
+            have h1 : ‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖ ≤ 2 * ‖ψ‖ + 1 := by linarith [hF_le]
+            have h2 : ε * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) ≤ ε * (2 * ‖ψ‖ + 1) :=
+              mul_le_mul_of_nonneg_left h1 hε_nn
+            calc ε * (‖ψ‖ + ‖(F : GNSHilbertSpace Wfn)‖) * L
+                ≤ ε * (2 * ‖ψ‖ + 1) * L := by nlinarith
+              _ ≤ ε * (2 * ‖ψ‖ + 1) * (L + 1) := by nlinarith [norm_nonneg ψ]
+        _ ≤ ε * (4 * (‖ψ‖ + 1) * (L + 1)) := by nlinarith [norm_nonneg ψ]
+        _ < ‖val‖ / (4 * (‖ψ‖ + 1) * (L + 1)) * (4 * (‖ψ‖ + 1) * (L + 1)) :=
+            mul_lt_mul_of_pos_right hε_lt2 h_4prod
+        _ = ‖val‖ := by field_simp
+      linarith
+    -- === Step 1c: Apply the 1D pipeline ===
+    exact measure_Iio_zero_of_schwartz_vanishing ν_y (fun ψ_test hψ_test =>
+      oneSidedSupport_implies_schwartz_vanishing ν_y h_ofs_ν ψ_test hψ_test)
+  -- === Step 2: V̄₊ᶜ ⊆ countable union of null sets. ===
+  -- For each p ∉ V̄₊, self-duality gives y ∈ V̄₊ with y·p < 0.
+  -- Covering V̄₊ᶜ by open half-spaces {p | y·p < 0} for y in a countable
+  -- dense subset of V̄₊ gives the result.
+  -- Part A: {p | p₀ < 0} is null (y = e₀).
+  -- Part B: {p | p₀ ≥ 0, not causal} covered by countably many null half-spaces.
+  --
+  -- We show V̄₊ᶜ ⊆ ⋃_{q ∈ ℚ^{d+1} ∩ V̄₊} {p | q·p < 0}, then use measure_iUnion_null.
+  -- Separation: if p ∉ V̄₊, ∃ y ∈ V̄₊ with y·p < 0 (reverse self-duality).
+  -- Continuity: y ↦ y·p is continuous, so a nearby rational y' still satisfies y'·p < 0.
+  --
+  -- Implementation: decompose V̄₊ᶜ into Part A ∪ Part B and handle each.
+  apply le_antisymm _ (zero_le _)
+  -- Part A: {p | p₀ < 0}
+  have hA : μ {p : MinkowskiSpace d | p 0 < 0} = 0 := by
+    -- e₀ ∈ V̄₊: IsCausal (minkowskiNormSq ≤ 0 since -1 + 0 ≤ 0) and timeComponent ≥ 0
+    have he₀ : (fun i : Fin (d + 1) => if i = 0 then (1 : ℝ) else 0) ∈
+        ForwardMomentumCone d := by
+      simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+        MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq,
+        MinkowskiSpace.IsCausal, MinkowskiSpace.timeComponent]
+      constructor
+      · -- minkowskiNormSq ≤ 0
+        simp only [MinkowskiSpace.minkowskiNormSq, MinkowskiSpace.minkowskiInner,
+          MinkowskiSpace.metricSignature]
+        simp [Fin.sum_univ_succ, ite_mul, mul_ite, Fin.succ_ne_zero]
+      · -- timeComponent ≥ 0
+        simp
+    -- {p | p₀ < 0} = {p | e₀·p < 0}
+    have : {p : MinkowskiSpace d | p 0 < 0} =
+        {p | ∑ i : Fin (d + 1), (fun i => if i = 0 then (1 : ℝ) else 0) i * p i < 0} := by
+      ext p; simp [Fin.sum_univ_succ]
+    rw [this]; exact h_null _ he₀
+  -- Part B: {p | p₀ ≥ 0, spatialNormSq > p₀²} — covered by countable null sets
+  -- V̄₊ᶜ ⊆ {p | p₀ < 0} ∪ {p | p₀ ≥ 0 ∧ spatialNormSq > p₀²}
+  have h_decomp : (ForwardMomentumCone d)ᶜ ⊆
+      {p | p 0 < 0} ∪ {p | p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2} := by
+    intro p hp
+    simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+      MinkowskiSpace.ForwardLightCone, Set.mem_compl_iff, Set.mem_setOf_eq,
+      MinkowskiSpace.IsCausal, MinkowskiSpace.timeComponent, not_and_or,
+      not_le] at hp
+    simp only [Set.mem_union, Set.mem_setOf_eq]
+    rcases hp with hncausal | htime
+    · -- not causal: 0 < minkowskiNormSq d p, i.e., spatialNormSq > p₀²
+      by_cases hp0 : p 0 < 0
+      · left; exact hp0
+      · right
+        push_neg at hp0
+        refine ⟨hp0, ?_⟩
+        have h_decomp := MinkowskiSpace.minkowskiNormSq_decomp d p
+        linarith
+    · -- ¬(p 0 ≥ 0), i.e., p 0 < 0
+      left; linarith
+  -- Part B is null: for each p with p₀ ≥ 0 and spatialNormSq > p₀²,
+  -- the separating direction argument gives y ∈ V̄₊ with y·p < 0.
+  -- This requires a countable covering. We use the fact that {p | y·p < 0}
+  -- for y ranging over a countable dense subset of V̄₊ covers Part B.
+  have hB : μ {p : MinkowskiSpace d |
+      p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2} = 0 := by
+    -- Cover Part B by countably many null half-spaces indexed by q : Fin d → ℚ.
+    -- For each q with ∑ qᵢ² ≤ 1, define y_q = (1, q₁, ..., q_d) ∈ V̄₊.
+    -- Direction: y_q(0) = 1, y_q(succ i) = ↑(q i)
+    set yDir : (Fin d → ℚ) → MinkowskiSpace d :=
+      fun q i => if h : i = 0 then 1 else ↑(q (i.pred h))
+    -- y_q ∈ V̄₊ when ∑ (q i)² ≤ 1
+    have hyDir_mem : ∀ q : Fin d → ℚ, (∑ i, (q i : ℝ) ^ 2) ≤ 1 →
+        yDir q ∈ ForwardMomentumCone d := by
+      intro q hq
+      simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+        MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq,
+        MinkowskiSpace.IsCausal, MinkowskiSpace.timeComponent]
+      constructor
+      · -- minkowskiNormSq(y_q) = -1 + ∑ qᵢ² ≤ 0
+        have : MinkowskiSpace.minkowskiNormSq d (yDir q) = -1 + ∑ i : Fin d, (q i : ℝ) ^ 2 := by
+          sorry -- unfold minkowskiNormSq, expand sum, simplify yDir
+        linarith
+      · -- timeComponent ≥ 0: y_q(0) = 1 ≥ 0
+        simp [yDir]
+    -- Each null set: conditioned on ∑ qᵢ² ≤ 1 (empty otherwise)
+    set S : (Fin d → ℚ) → Set (MinkowskiSpace d) :=
+      fun q => if (∑ i, (q i : ℝ) ^ 2) ≤ 1
+        then {p | ∑ i, yDir q i * p i < 0} else ∅
+    have hS_null : ∀ q, μ (S q) = 0 := by
+      intro q; simp only [S]
+      split_ifs with h
+      · exact h_null (yDir q) (hyDir_mem q h)
+      · exact MeasureTheory.measure_empty
+    -- Covering: Part B ⊆ ⋃_q S(q)
+    -- For each p in Part B, find q with ∑ qᵢ² ≤ 1 and y_q · p < 0.
+    -- Use shrunk direction r' = -p_spatial/(2s) (∑ r'ᵢ² = 1/4 < 1)
+    -- then approximate by rational via density of ℚ^d in ℝ^d.
+    have h_cover : {p : MinkowskiSpace d |
+        p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2} ⊆ ⋃ q, S q := by
+      sorry -- density of ℚ^d + separating direction; see communication/gns_hilbertspace_todo.md
+    apply le_antisymm _ (zero_le _)
+    calc μ {p | p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2}
+        ≤ μ (⋃ q, S q) := MeasureTheory.measure_mono h_cover
+      _ = 0 := MeasureTheory.measure_iUnion_null hS_null
+  calc μ (ForwardMomentumCone d)ᶜ
+      ≤ μ ({p | p 0 < 0} ∪ {p | p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2}) :=
+        MeasureTheory.measure_mono h_decomp
+    _ ≤ μ {p | p 0 < 0} +
+        μ {p | p 0 ≥ 0 ∧ MinkowskiSpace.spatialNormSq d p > (p 0) ^ 2} :=
+        MeasureTheory.measure_union_le _ _
+    _ = 0 := by rw [hA, hB, add_zero]
 
 /-- **Mass-shell condition** from the distribution-level spectral condition.
 
