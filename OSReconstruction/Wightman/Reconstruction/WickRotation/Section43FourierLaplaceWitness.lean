@@ -2046,6 +2046,42 @@ theorem exists_timeMoment_integral_norm_partialFourierSpatial_timeSlice_uniform
     (μ := μ) (f := F) (C₁ := C0) (C₂ := C1) (k := K) hbound0 hboundPow
   simpa [F, μ, C, I] using hmain
 
+/-- Fixed-spatial-frequency integrability of every polynomial time moment of
+the partial spatial Fourier transform. -/
+theorem integrable_timeMoment_norm_partialFourierSpatial_timeSlice
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (K : ℕ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        ‖τ‖ ^ K *
+          ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖)
+      (volume : Measure (Fin n → ℝ)) := by
+  let μ : Measure (Fin n → ℝ) := volume
+  let F : (Fin n → ℝ) → ℂ := fun τ =>
+    partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)
+  have hF_meas : AEStronglyMeasurable F μ := by
+    simpa [F, μ] using
+      (contDiff_partialFourierSpatial_fun_time
+        (d := d) (n := n) f ξ).continuous.aestronglyMeasurable
+  rcases exists_norm_bound_partialFourierSpatial_fun (d := d) (n := n) f with
+    ⟨C0, _hC0_nonneg, hC0⟩
+  rcases exists_normPow_bound_partialFourierSpatial_timeSlice_uniform
+      (d := d) (n := n) f (K + μ.integrablePower) with
+    ⟨C1, _hC1_nonneg, hC1⟩
+  have hbase : ∀ τ : Fin n → ℝ, ‖F τ‖ ≤ C0 := by
+    intro τ
+    simpa [F] using hC0 (τ, ξ)
+  have hpow : ∀ τ : Fin n → ℝ,
+      ‖τ‖ ^ (K + μ.integrablePower) * ‖F τ‖ ≤ C1 := by
+    intro τ
+    simpa [F] using hC1 τ ξ
+  simpa [F, μ] using
+    (integrable_of_le_of_pow_mul_le
+      (μ := μ) (f := F) (C₁ := C0) (C₂ := C1) (k := K)
+      hbase hpow hF_meas)
+
 /-- Uniform time-integral control after multiplying by a spatial coordinate
 power.  This is the coordinatewise integration-by-parts estimate used for the
 spatial rapid-decay half of the Fourier-Laplace witness construction. -/
@@ -2350,6 +2386,456 @@ theorem section43PartialFourier_timeMomentIntegral_spatialRapid
               exact mul_le_mul_of_nonneg_left hsum_le (by positivity)
     _ = C := by
               simp [C, D]
+
+/-- Time-coordinate operator norm coefficient in the first derivative bound. -/
+noncomputable def section43QTimeCoordOpNorm
+    (d n : ℕ) [NeZero d] (k : Fin n) : ℝ :=
+  ‖((ContinuousLinearMap.proj
+    (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) k).comp
+    (section43QTimeCLM d n))‖
+
+/-- Spatial-coordinate operator norm coefficient in the first derivative
+bound. -/
+noncomputable def section43QSpatialCoordOpNorm
+    (d n : ℕ) [NeZero d] (i : Fin n × Fin d) : ℝ :=
+  ‖((EuclideanSpace.proj (𝕜 := ℝ) i).comp
+    (section43QSpatialCLM d n))‖
+
+/-- Time part of the pointwise first-derivative norm majorant. -/
+noncomputable def section43FourierLaplace_timeDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  ∑ k : Fin n,
+    section43QTimeCoordOpNorm d n k *
+      (A * (‖τ‖ *
+        ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖))
+
+/-- Spatial part of the pointwise first-derivative norm majorant. -/
+noncomputable def section43FourierLaplace_spatialDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  A * ∑ i : Fin n × Fin d,
+    section43QSpatialCoordOpNorm d n i *
+      ‖partialFourierSpatial_fun (d := d) (n := n)
+        (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖
+
+/-- Full pointwise first-derivative norm majorant. -/
+noncomputable def section43FourierLaplace_fderivNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  section43FourierLaplace_timeDerivativeNormMajorant d n F A ξ τ +
+    section43FourierLaplace_spatialDerivativeNormMajorant d n F A ξ τ
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Pointwise derivative-CLM norm estimate, packaged with the finite-sum
+majorant used for integration. -/
+theorem norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_fderivNormMajorant_of_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n)
+    (τ : Fin n → ℝ) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let A : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ‖ ≤
+      section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+  intro F A ξ
+  have h :=
+    norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_exp_margin_sum_of_orderedSupport
+      d n f hf_ord hδ_supp q hq τ
+  have hraw :
+      ‖section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ‖ ≤
+        (∑ k : Fin n,
+          section43QTimeCoordOpNorm d n k *
+            (‖τ‖ * A *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖)) +
+        A * ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖ := by
+    simpa [F, A, ξ, section43QTimeCoordOpNorm, section43QSpatialCoordOpNorm]
+      using h
+  have hrhs :
+      (∑ k : Fin n,
+          section43QTimeCoordOpNorm d n k *
+            (‖τ‖ * A *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖)) +
+        A * ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖ =
+      section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+    simp only [section43FourierLaplace_fderivNormMajorant,
+      section43FourierLaplace_timeDerivativeNormMajorant,
+      section43FourierLaplace_spatialDerivativeNormMajorant]
+    congr 1
+    refine Finset.sum_congr rfl ?_
+    intro k _hk
+    ring
+  exact hraw.trans_eq hrhs
+
+/-- Integrability of the time part of the derivative norm majorant. -/
+theorem integrable_section43FourierLaplace_timeDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        section43FourierLaplace_timeDerivativeNormMajorant d n F A ξ τ)
+      (volume : Measure (Fin n → ℝ)) := by
+  let baseNorm : (Fin n → ℝ) → ℝ := fun τ =>
+    ‖τ‖ *
+      ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖
+  have hbase_int : Integrable baseNorm (volume : Measure (Fin n → ℝ)) := by
+    simpa [baseNorm, pow_one] using
+      integrable_timeMoment_norm_partialFourierSpatial_timeSlice
+        (d := d) (n := n) F 1 ξ
+  dsimp [section43FourierLaplace_timeDerivativeNormMajorant]
+  refine integrable_finset_sum _ ?_
+  intro k _hk
+  simpa [baseNorm, mul_assoc, mul_left_comm, mul_comm] using
+    hbase_int.const_mul (section43QTimeCoordOpNorm d n k * A)
+
+/-- Integrability of the spatial part of the derivative norm majorant. -/
+theorem integrable_section43FourierLaplace_spatialDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        section43FourierLaplace_spatialDerivativeNormMajorant d n F A ξ τ)
+      (volume : Measure (Fin n → ℝ)) := by
+  have hspace_int : ∀ i : Fin n × Fin d,
+      Integrable
+        (fun τ : Fin n → ℝ =>
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)
+        (volume : Measure (Fin n → ℝ)) := by
+    intro i
+    simpa using
+      (integrable_partialFourierSpatial_timeSlice
+        (d := d) (n := n)
+        (section43SpatialMultiplierTransport d n F i) ξ).norm
+  dsimp [section43FourierLaplace_spatialDerivativeNormMajorant]
+  refine (integrable_finset_sum _ ?_).const_mul A
+  intro i _hi
+  simpa using (hspace_int i).const_mul (section43QSpatialCoordOpNorm d n i)
+
+/-- Integrability of the full derivative norm majorant. -/
+theorem integrable_section43FourierLaplace_fderivNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        section43FourierLaplace_fderivNormMajorant d n F A ξ τ)
+      (volume : Measure (Fin n → ℝ)) := by
+  simpa [section43FourierLaplace_fderivNormMajorant] using
+    (integrable_section43FourierLaplace_timeDerivativeNormMajorant
+      (d := d) (n := n) F A ξ).add
+      (integrable_section43FourierLaplace_spatialDerivativeNormMajorant
+        (d := d) (n := n) F A ξ)
+
+/-- Integral evaluation for the time part of the derivative norm majorant. -/
+theorem integral_section43FourierLaplace_timeDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_timeDerivativeNormMajorant d n F A ξ τ) =
+      A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖)) := by
+  let baseNorm : (Fin n → ℝ) → ℝ := fun τ =>
+    ‖τ‖ *
+      ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖
+  have hbase_int : Integrable baseNorm (volume : Measure (Fin n → ℝ)) := by
+    simpa [baseNorm, pow_one] using
+      integrable_timeMoment_norm_partialFourierSpatial_timeSlice
+        (d := d) (n := n) F 1 ξ
+  calc
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_timeDerivativeNormMajorant d n F A ξ τ) =
+        ∑ k : Fin n,
+          ∫ τ : Fin n → ℝ,
+            section43QTimeCoordOpNorm d n k * (A * baseNorm τ) := by
+          dsimp [section43FourierLaplace_timeDerivativeNormMajorant, baseNorm]
+          rw [MeasureTheory.integral_finset_sum]
+          intro k _hk
+          simpa [baseNorm, mul_assoc, mul_left_comm, mul_comm] using
+            hbase_int.const_mul (section43QTimeCoordOpNorm d n k * A)
+    _ = ∑ k : Fin n,
+          section43QTimeCoordOpNorm d n k *
+            (A * ∫ τ : Fin n → ℝ, baseNorm τ) := by
+          refine Finset.sum_congr rfl ?_
+          intro k _hk
+          calc
+            (∫ τ : Fin n → ℝ,
+                section43QTimeCoordOpNorm d n k * (A * baseNorm τ)) =
+                ∫ τ : Fin n → ℝ,
+                  (section43QTimeCoordOpNorm d n k * A) * baseNorm τ := by
+                  apply MeasureTheory.integral_congr_ae
+                  filter_upwards with τ
+                  ring
+            _ = (section43QTimeCoordOpNorm d n k * A) *
+                  ∫ τ : Fin n → ℝ, baseNorm τ := by
+                  rw [MeasureTheory.integral_const_mul]
+            _ = section43QTimeCoordOpNorm d n k *
+                  (A * ∫ τ : Fin n → ℝ, baseNorm τ) := by
+                  ring
+    _ = (∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (A * ∫ τ : Fin n → ℝ, baseNorm τ) := by
+          rw [Finset.sum_mul]
+    _ = A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ, baseNorm τ)) := by
+          ring
+
+/-- Integral evaluation for the spatial part of the derivative norm majorant. -/
+theorem integral_section43FourierLaplace_spatialDerivativeNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_spatialDerivativeNormMajorant d n F A ξ τ) =
+      A * ∑ i : Fin n × Fin d,
+        section43QSpatialCoordOpNorm d n i *
+          (∫ τ : Fin n → ℝ,
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖) := by
+  have hspace_int : ∀ i : Fin n × Fin d,
+      Integrable
+        (fun τ : Fin n → ℝ =>
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)
+        (volume : Measure (Fin n → ℝ)) := by
+    intro i
+    simpa using
+      (integrable_partialFourierSpatial_timeSlice
+        (d := d) (n := n)
+        (section43SpatialMultiplierTransport d n F i) ξ).norm
+  calc
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_spatialDerivativeNormMajorant d n F A ξ τ) =
+        ∫ τ : Fin n → ℝ,
+          A * ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i *
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖ := by
+          rfl
+    _ =
+        A * ∫ τ : Fin n → ℝ,
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i *
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖ := by
+          rw [MeasureTheory.integral_const_mul]
+    _ = A *
+        (∑ i : Fin n × Fin d,
+          ∫ τ : Fin n → ℝ,
+            section43QSpatialCoordOpNorm d n i *
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖) := by
+          congr 1
+          rw [MeasureTheory.integral_finset_sum]
+          intro i _hi
+          simpa using
+            (hspace_int i).const_mul (section43QSpatialCoordOpNorm d n i)
+    _ = A * ∑ i : Fin n × Fin d,
+        section43QSpatialCoordOpNorm d n i *
+          (∫ τ : Fin n → ℝ,
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖) := by
+          congr 1
+          refine Finset.sum_congr rfl ?_
+          intro i _hi
+          rw [MeasureTheory.integral_const_mul]
+
+/-- Integral evaluation for the full derivative norm majorant. -/
+theorem integral_section43FourierLaplace_fderivNormMajorant
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (A : ℝ)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_fderivNormMajorant d n F A ξ τ) =
+      A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+        ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            (∫ τ : Fin n → ℝ,
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)) := by
+  have htime_int :=
+    integrable_section43FourierLaplace_timeDerivativeNormMajorant
+      (d := d) (n := n) F A ξ
+  have hspace_int :=
+    integrable_section43FourierLaplace_spatialDerivativeNormMajorant
+      (d := d) (n := n) F A ξ
+  calc
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_fderivNormMajorant d n F A ξ τ) =
+        (∫ τ : Fin n → ℝ,
+          section43FourierLaplace_timeDerivativeNormMajorant d n F A ξ τ) +
+        ∫ τ : Fin n → ℝ,
+          section43FourierLaplace_spatialDerivativeNormMajorant d n F A ξ τ := by
+          dsimp [section43FourierLaplace_fderivNormMajorant]
+          rw [MeasureTheory.integral_add htime_int hspace_int]
+    _ = A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+        ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            (∫ τ : Fin n → ℝ,
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)) := by
+          rw [integral_section43FourierLaplace_timeDerivativeNormMajorant,
+            integral_section43FourierLaplace_spatialDerivativeNormMajorant]
+          ring
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The first-derivative candidate is bounded by the integral of the derivative
+norm majorant. -/
+theorem section43FourierLaplaceIntegral_fderivCandidate_norm_le_fderivNormMajorant_integral
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let A : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤
+      ∫ τ : Fin n → ℝ,
+        section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+  intro F A ξ
+  let G : (Fin n → ℝ) → NPointDomain d n →L[ℝ] ℂ := fun τ =>
+    section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ
+  have hmajorant_int :
+      Integrable
+        (fun τ : Fin n → ℝ =>
+          section43FourierLaplace_fderivNormMajorant d n F A ξ τ)
+        (volume : Measure (Fin n → ℝ)) :=
+    integrable_section43FourierLaplace_fderivNormMajorant
+      (d := d) (n := n) F A ξ
+  have hpoint : ∀ τ : Fin n → ℝ,
+      ‖G τ‖ ≤ section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+    intro τ
+    simpa [G, F, A, ξ] using
+      norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_fderivNormMajorant_of_orderedSupport
+        d n f hf_ord hδ_supp q hq τ
+  calc
+    ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ =
+        ‖∫ τ : Fin n → ℝ, G τ‖ := by
+          simp [section43FourierLaplaceIntegral_fderivCandidate, G, F]
+    _ ≤ ∫ τ : Fin n → ℝ, ‖G τ‖ :=
+        MeasureTheory.norm_integral_le_integral_norm _
+    _ ≤ ∫ τ : Fin n → ℝ,
+        section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+        exact MeasureTheory.integral_mono_of_nonneg
+          (Filter.Eventually.of_forall fun τ => norm_nonneg (G τ))
+          hmajorant_int
+          (Filter.Eventually.of_forall hpoint)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Norm estimate for the first-derivative candidate of the Section 4.3
+Fourier-Laplace integral.  The pointwise derivative bound is integrated in
+`τ`, with the finite time- and spatial-coordinate sums pulled outside the
+integral. -/
+theorem section43FourierLaplaceIntegral_fderivCandidate_norm_le_exp_margin_integrals
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let A : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤
+      A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+        ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            (∫ τ : Fin n → ℝ,
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)) := by
+  intro F A ξ
+  calc
+    ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤
+        ∫ τ : Fin n → ℝ,
+          section43FourierLaplace_fderivNormMajorant d n F A ξ τ := by
+          simpa [F, A, ξ] using
+            section43FourierLaplaceIntegral_fderivCandidate_norm_le_fderivNormMajorant_integral
+              d n f hf_ord hδ_supp q hq
+    _ = A *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+        ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            (∫ τ : Fin n → ℝ,
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)) := by
+          simpa using
+            integral_section43FourierLaplace_fderivNormMajorant
+              (d := d) (n := n) F A ξ
 
 /-- Spatial rapid decay of the time-integrated partial spatial Fourier
 transform. -/
