@@ -2603,12 +2603,200 @@ private theorem partial_convolution_fourier_factorization_dir
         ψ.fourierTransform = Θ ∧
         ∀ q : NPointSpacetime d n_pts,
           ψ q ≠ 0 → (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q j μ) ≠ 0 := by
-  -- The proof follows `partial_convolution_fourier_factorization` exactly.
-  -- Key changes: ej0 = EuclideanSpace.single (j, 0) 1 becomes
-  -- ey : EuclideanSpace where ey(j', μ) = if j' = j then y μ else 0.
-  -- The inner product identity: ⟪ey, w⟫ = ∑_μ y(μ) · q(j)(μ).
-  -- Fourier inversion: ∫ FTφ(t) · exp(2πi t (y·q_j)) = φ(y·q_j). Same structure.
-  sorry
+  -- Construct ψ = ℱ⁻¹[Θ] and K = ℱ⁻¹[G] via nPointToEuclidean (identical to e₀ version)
+  let e := nPointToEuclidean d n_pts
+  let ψ : SchwartzNPointSpace d n_pts :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+      (FourierTransform.fourierInv
+        (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ))
+  let K : SchwartzNPointSpace d n_pts :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+      (FourierTransform.fourierInv
+        (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G))
+  -- Step 1: ψ.fourierTransform = Θ (identical to e₀)
+  have hψ_ft : ψ.fourierTransform = Θ := by
+    simp only [SchwartzNPointSpace.fourierTransform, ψ]
+    ext x
+    simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+      SchwartzMap.fourierTransformCLM_apply]
+    have h_cancel : ∀ (f : SchwartzMap _ ℂ),
+        SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm
+          (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e f) = f := by
+      intro f; ext y
+      simp [SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+        ContinuousLinearEquiv.symm_apply_apply]
+    rw [h_cancel]
+    exact congrFun (congrArg _ (FourierTransform.fourier_fourierInv_eq _)) _
+  refine ⟨ψ, hψ_ft, fun q hq => ?_⟩
+  -- Step 2: ψ q = φ(∑ y μ * q j μ) * K q
+  suffices hfactor : ψ q = (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q j μ) * K q by
+    rw [hfactor] at hq; exact left_ne_zero_of_mul hq
+  simp only [ψ, K, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  rw [show (FourierTransform.fourierInv
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ) : _ → ℂ) (e q) =
+    FourierTransform.fourierInv
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm Θ : _ → ℂ)) (e q) from
+    congrFun (SchwartzMap.fourierInv_coe _) (e q)]
+  rw [show (FourierTransform.fourierInv
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G) : _ → ℂ) (e q) =
+    FourierTransform.fourierInv
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G : _ → ℂ)) (e q) from
+    congrFun (SchwartzMap.fourierInv_coe _) (e q)]
+  simp only [SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+  rw [Real.fourierInv_eq' (f := (⇑Θ ∘ ⇑e.symm)) (w := e q),
+      Real.fourierInv_eq' (f := (⇑G ∘ ⇑e.symm)) (w := e q)]
+  simp_rw [Function.comp_apply, hΘ]
+  -- ─── Direction vector and abbreviations ────────────────────────
+  set ey : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) :=
+    ∑ μ : Fin (d + 1), y μ • EuclideanSpace.single (j, μ) 1 with hey_def
+  set w := e q with hw_def
+  set FTφ_s := (SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) with hFTφ_s_def
+  -- ─── Coordinate and inner product identities ──────────────────
+  have h_coord : ∀ μ : Fin (d + 1), w (j, μ) = q j μ := by
+    intro μ; simp [w, e, nPointToEuclidean, uncurryLinearEquiv,
+      PiLp.continuousLinearEquiv_symm_apply]
+  have h_inner_ey : @inner ℝ _ _ ey w = ∑ μ : Fin (d + 1), y μ * q j μ := by
+    simp only [ey, sum_inner, real_inner_smul_left, EuclideanSpace.inner_single_left]
+    congr 1; funext μ; rw [map_one, one_mul, h_coord μ]
+  -- ─── Shift = EuclideanSpace translation ────────────────────────
+  have h_shift : ∀ (v : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1))) (t : ℝ),
+      Function.update (e.symm v) j ((e.symm v) j - t • y) =
+      e.symm (v - t • ey) := by
+    intro v t; ext i μ
+    simp only [Function.update_apply]
+    simp only [e, ey, nPointToEuclidean, uncurryLinearEquiv,
+      PiLp.continuousLinearEquiv_symm_apply, Pi.sub_apply, Pi.smul_apply,
+      smul_eq_mul, ContinuousLinearEquiv.trans_apply,
+      ContinuousLinearEquiv.symm_trans_apply, Finset.sum_apply,
+      EuclideanSpace.single_apply, PiLp.single_apply, Prod.mk.injEq]
+    split_ifs <;> simp_all <;> ring
+  simp_rw [h_shift]
+  -- ─── 1-D Fourier inversion ────────────────────────────────────
+  have h_fourier_inv_at :
+      ∫ t : ℝ, (FTφ_s : ℝ → ℂ) t *
+        Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ (t • ey) w) * Complex.I) =
+      (φ : ℝ → ℂ) (∑ μ : Fin (d + 1), y μ * q j μ) := by
+    simp only [real_inner_smul_left, h_inner_ey]
+    have hinv : FourierTransform.fourierInv (FTφ_s : ℝ → ℂ) = (φ : ℝ → ℂ) := by
+      have h := congrArg (fun (f : SchwartzMap ℝ ℂ) => (f : ℝ → ℂ))
+        (FourierTransform.fourierInv_fourier_eq (F := SchwartzMap ℝ ℂ) φ)
+      dsimp only at h; rwa [SchwartzMap.fourierInv_coe] at h
+    have h_eval := congrFun hinv (∑ μ : Fin (d + 1), y μ * q j μ)
+    rw [Real.fourierInv_eq'] at h_eval
+    rw [← h_eval]; refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with t; rw [smul_eq_mul, mul_comm (Complex.exp _)]
+    congr 1; congr 1; congr 1; congr 1
+    simp [inner, mul_comm]
+  -- ─── Integrability ─────────────────────────────────────────────
+  set Ge : SchwartzMap (EuclideanSpace ℝ (Fin n_pts × Fin (d + 1))) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm G with hGe_def
+  have hGe_eq : ∀ v, Ge v = G (e.symm v) := fun v => by
+    simp [Ge, SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  have hGe_int : MeasureTheory.Integrable (Ge : _ → ℂ) := Ge.integrable
+  have hFTφ_int : MeasureTheory.Integrable (FTφ_s : ℝ → ℂ) := FTφ_s.integrable
+  simp_rw [← hGe_eq]
+  simp_rw [smul_eq_mul]
+  -- ─── Fubini + COV ─────────────────────────────────────────────
+  set E_fun := fun v : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) =>
+    Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I)
+  have hE_norm : ∀ v, ‖E_fun v‖ = 1 := fun v => Complex.norm_exp_ofReal_mul_I _
+  have h_int_prod : MeasureTheory.Integrable
+      (fun p : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) × ℝ =>
+        E_fun p.1 * ((FTφ_s : ℝ → ℂ) p.2 * Ge (p.1 - p.2 • ey)))
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    have hcont_prod : Continuous (fun p : EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)) × ℝ =>
+        E_fun p.1 * ((FTφ_s : ℝ → ℂ) p.2 * Ge (p.1 - p.2 • ey))) := by
+      apply Continuous.mul
+      · exact Complex.continuous_exp.comp (((Complex.continuous_ofReal.comp
+            (continuous_const.mul (continuous_inner.comp
+              (Continuous.prodMk continuous_fst continuous_const)))).mul
+            continuous_const))
+      · exact (FTφ_s.continuous.comp continuous_snd).mul
+            (Ge.continuous.comp (continuous_fst.sub (continuous_snd.smul continuous_const)))
+    rw [MeasureTheory.integrable_prod_iff' hcont_prod.aestronglyMeasurable]
+    refine ⟨Filter.Eventually.of_forall fun t => ?_, ?_⟩
+    · refine ((hGe_int.comp_sub_right (t • ey)).norm.const_mul
+        ‖(FTφ_s : ℝ → ℂ) t‖).mono'
+        ((hcont_prod.comp (Continuous.prodMk continuous_id
+          (continuous_const (y := t)))).aestronglyMeasurable) ?_
+      filter_upwards with v; simp [norm_mul, hE_norm]
+    · have h_bound : ∀ t : ℝ,
+          ∫ v, ‖E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ey))‖ =
+          ‖(FTφ_s : ℝ → ℂ) t‖ * ∫ v, ‖Ge v‖ := by
+        intro t; simp only [norm_mul, hE_norm, one_mul]
+        rw [← smul_eq_mul (a := ‖(FTφ_s : ℝ → ℂ) t‖),
+            ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+        exact MeasureTheory.integral_sub_right_eq_self
+          (fun v => ‖(FTφ_s : ℝ → ℂ) t‖ * ‖Ge v‖) (t • ey)
+      simp_rw [h_bound]
+      exact hFTφ_int.norm.mul_const _
+  -- ─── COV step ──────────────────────────────────────────────────
+  have h_fubini_cov : ∀ t : ℝ,
+      ∫ v, Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+        Ge (v - t • ey) =
+      Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I) *
+        ∫ v, Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) * Ge v := by
+    intro t
+    have h_cov := (MeasureTheory.integral_add_right_eq_self
+      (μ := (MeasureTheory.volume :
+        MeasureTheory.Measure (EuclideanSpace ℝ (Fin n_pts × Fin (d + 1)))))
+      (fun v => Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+        Ge (v - t • ey)) (t • ey))
+    simp only [add_sub_cancel_right] at h_cov
+    rw [← h_cov]
+    simp_rw [_root_.inner_add_left, real_inner_smul_left, h_inner_ey]
+    simp_rw [show ∀ (a b : ℝ), ↑(2 * Real.pi * (a + b)) * Complex.I =
+      ↑(2 * Real.pi * a) * Complex.I + ↑(2 * Real.pi * b) * Complex.I from by
+      intro a b; push_cast; ring]
+    simp_rw [Complex.exp_add]
+    simp_rw [show ∀ u, (Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ u w) * Complex.I) *
+        Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I)) * Ge u =
+      Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I) *
+        (Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ u w) * Complex.I) * Ge u) from
+      fun u => by ring]
+    rw [← smul_eq_mul (a := Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I)),
+        ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+  -- ─── Main calc chain ──────────────────────────────────────────
+  have h_push : ∀ v, E_fun v * (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) =
+      ∫ t, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) := by
+    intro v; rw [← smul_eq_mul (a := E_fun v), ← MeasureTheory.integral_smul]
+    simp_rw [smul_eq_mul]
+  conv_lhs => arg 2; ext v; rw [show Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ v w) * Complex.I) *
+    (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) = E_fun v * (∫ t, (FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) from rfl,
+    h_push]
+  rw [MeasureTheory.integral_integral_swap h_int_prod]
+  have h_inner : ∀ t, ∫ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) =
+      (FTφ_s : ℝ → ℂ) t * (Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I) *
+        ∫ v, E_fun v * Ge v) := by
+    intro t
+    have : ∫ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) =
+        (FTφ_s : ℝ → ℂ) t * ∫ v, E_fun v * Ge (v - t • ey) := by
+      simp_rw [show ∀ v, E_fun v * ((FTφ_s : ℝ → ℂ) t * Ge (v - t • ey)) =
+        (FTφ_s : ℝ → ℂ) t * (E_fun v * Ge (v - t • ey)) from fun v => by ring]
+      rw [← smul_eq_mul (a := (FTφ_s : ℝ → ℂ) t),
+          ← MeasureTheory.integral_smul]; simp_rw [smul_eq_mul]
+    rw [this, h_fubini_cov]
+  simp_rw [h_inner]
+  simp_rw [show ∀ t, (FTφ_s : ℝ → ℂ) t *
+      (Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I) *
+        ∫ u, E_fun u * Ge u) =
+    ((FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I)) *
+      (∫ u, E_fun u * Ge u) from fun t => by ring]
+  simp_rw [show ∀ y_val, (FTφ_s : ℝ → ℂ) y_val *
+      Complex.exp (↑(2 * Real.pi * (y_val * (∑ μ, y μ * q j μ))) * Complex.I) *
+      (∫ v, E_fun v * Ge v) =
+    (∫ v, E_fun v * Ge v) •
+      ((FTφ_s : ℝ → ℂ) y_val *
+        Complex.exp (↑(2 * Real.pi * (y_val * (∑ μ, y μ * q j μ))) * Complex.I)) from
+    fun y_val => by rw [smul_eq_mul]; ring]
+  rw [MeasureTheory.integral_smul, smul_eq_mul]
+  simp_rw [show ∀ t, (FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * (t * (∑ μ, y μ * q j μ))) * Complex.I) =
+    (FTφ_s : ℝ → ℂ) t *
+      Complex.exp (↑(2 * Real.pi * @inner ℝ _ _ (t • ey) w) * Complex.I) from
+    fun t => by rw [real_inner_smul_left, h_inner_ey]]
+  rw [h_fourier_inv_at, mul_comm]
 
 /-- Generalization of `scd_fourierInv_translate_witness` to arbitrary direction. -/
 private lemma scd_fourierInv_translate_witness_dir {n m : ℕ} (hn : 0 < n) (hm : 0 < m)
@@ -2637,6 +2825,7 @@ private lemma scd_fourierInv_translate_witness_dir {n m : ℕ} (hn : 0 < n) (hm 
     exact diffVarReduction_translate_eq_shift_dir hn hm fn fm y hk hbdry t ξ
   exact partial_convolution_fourier_factorization_dir ⟨n - 1, hbdry⟩ y G₀ φ Θ hΘ_shift
 
+set_option maxHeartbeats 800000 in
 /-- Generalization of `scd_summand_nonneg_fourier_support` to arbitrary `y ∈ V̄₊`.
     Uses self-duality of the forward cone: `y, q ∈ V̄₊ → ∑_μ y_μ q_μ ≥ 0`. -/
 private lemma scd_summand_nonneg_fourier_support_dir
@@ -2711,8 +2900,312 @@ private lemma scd_summand_nonneg_fourier_support_dir
             linarith⟩
         exact h_eq.symm.trans h_zero
       -- Steps 1–3: Construct ψ via CLM exchange + shift_dir + partial_convolution_dir.
-      -- This requires polynomial growth bounds and integrability, following the e₀ version.
-      sorry
+      -- Follows the e₀ version with translation'(t•y) replacing translationInDirection d 0 t.
+      -- ── Flat translation equivalence ──────────────────────────────────────────
+      set η_y : Fin (m * (d + 1)) → ℝ :=
+        fun k => -(y ((finProdFinEquiv.symm k).2)) with hη_y_def
+      have h_translate_eq : ∀ t : ℝ,
+          poincareActNPoint (PoincareGroup.translation' (t • y)) fm =
+          unflattenSchwartzNPointLocal (d := d)
+            (SCV.translateSchwartz (t • η_y)
+              (flattenSchwartzNPointLocal (d := d) fm)) := by
+        intro t; ext x
+        simp only [poincareActNPoint_apply, SCV.translateSchwartz_apply,
+          unflattenSchwartzNPointLocal_apply, flattenSchwartzNPointLocal_apply]
+        congr 1; funext i; ext ν
+        simp only [poincareActNPointDomain, PoincareGroup.act_def,
+          PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+          PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
+          inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
+          flattenCLEquivRealLocal_symm_apply, flattenCLEquivRealLocal_apply,
+          Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul, hη_y_def,
+          Equiv.symm_apply_apply]
+        ring
+      -- ── Step 1a: Continuity ────────────────────────────────────────────────
+      have hF_cont : Continuous (fun t : ℝ =>
+          diffVarReduction d (n + m - 1)
+            (hk.symm ▸ fn.conjTensorProduct
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))) := by
+        have h_inner : Continuous (fun t : ℝ =>
+            fn.conjTensorProduct
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) := by
+          simp_rw [h_translate_eq]
+          exact (SchwartzMap.conjTensorProduct_continuous_right fn).comp
+            ((unflattenSchwartzNPointLocal (d := d) : _ →L[ℂ] _).continuous.comp
+              (continuous_translateSchwartz_smul
+                (η := η_y) (flattenSchwartzNPointLocal (d := d) fm)))
+        have h_eqMpr_cont : ∀ {a b : ℕ} (h : a = b),
+            Continuous (fun f : SchwartzNPointSpace d a =>
+              (h ▸ f : SchwartzNPointSpace d b)) :=
+          fun h => by subst h; exact continuous_id
+        exact (diffVarReduction d (n + m - 1)).continuous.comp
+          ((h_eqMpr_cont hk.symm).comp h_inner)
+      -- ── Step 1b: Polynomial growth bounds ──────────────────────────────────
+      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+          SchwartzMap.seminorm ℝ k j
+            (diffVarReduction d (n + m - 1)
+              (hk.symm ▸ fn.conjTensorProduct
+                (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))) ≤
+          C * (1 + ‖t‖) ^ N := by
+        intro k j
+        -- Polynomial bound for the translate family
+        have hτ : ∀ (p q : ℕ), ∃ (Dτ : ℝ), 0 ≤ Dτ ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ p q
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm) ≤
+            Dτ * (1 + ‖t‖) ^ p := by
+          intro p q
+          obtain ⟨D, hD_nn, hD⟩ := SCV.seminorm_translateSchwartz_le p q
+            (flattenSchwartzNPointLocal (d := d) fm)
+          refine ⟨D * (1 + ‖η_y‖) ^ p, by positivity, fun t => ?_⟩
+          rw [h_translate_eq]
+          set ψ_t := SCV.translateSchwartz (t • η_y) (flattenSchwartzNPointLocal (d := d) fm)
+          have h_unflatten_le : SchwartzMap.seminorm ℝ p q
+              (unflattenSchwartzNPointLocal (d := d) ψ_t) ≤
+              SchwartzMap.seminorm ℝ p q ψ_t := by
+            apply SchwartzMap.seminorm_le_bound ℝ p q _ (by positivity)
+            intro x
+            set e := (flattenCLEquivRealLocal m (d + 1)).toContinuousLinearMap
+            have hcomp : (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) =
+                ↑ψ_t ∘ flattenCLEquivRealLocal m (d + 1) := by
+              ext y; simp [unflattenSchwartzNPointLocal,
+                SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+            have hiter : iteratedFDeriv ℝ q
+                (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x =
+                ContinuousMultilinearMap.compContinuousLinearMap
+                  (iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x))
+                  (fun _ => e) := by
+              rw [hcomp]
+              exact ContinuousLinearMap.iteratedFDeriv_comp_right e ψ_t.smooth' x
+                (by exact_mod_cast le_top)
+            have hnorm_le : ‖x‖ ≤ ‖flattenCLEquivRealLocal m (d + 1) x‖ := by
+              rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+              intro i; rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+              intro j
+              rw [show ‖x i j‖ =
+                  ‖flattenCLEquivRealLocal m (d + 1) x (finProdFinEquiv (i, j))‖
+                from by simp [flattenCLEquivRealLocal_apply]]
+              exact norm_le_pi_norm _ _
+            have hprod_le : ∏ _ : Fin q, ‖e‖ ≤ 1 := by
+              have he_norm : ‖e‖ ≤ 1 := by
+                apply ContinuousLinearMap.opNorm_le_bound _ zero_le_one
+                intro y_val; rw [one_mul, pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+                intro k
+                change ‖y_val (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2‖ ≤ ‖y_val‖
+                calc ‖y_val (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2‖
+                    ≤ ‖y_val (finProdFinEquiv.symm k).1‖ := norm_le_pi_norm _ _
+                  _ ≤ ‖y_val‖ := norm_le_pi_norm _ _
+              calc ∏ _ : Fin q, ‖e‖ ≤ ∏ _ : Fin q, (1 : ℝ) := by gcongr
+                _ = 1 := Finset.prod_const_one
+            have hiter_norm : ‖iteratedFDeriv ℝ q
+                (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x‖ ≤
+                ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ := by
+              rw [hiter]
+              calc ‖ContinuousMultilinearMap.compContinuousLinearMap _ _‖
+                  ≤ ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ *
+                      ∏ _ : Fin q, ‖e‖ :=
+                    ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+                _ ≤ ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ * 1 :=
+                    by gcongr
+                _ = _ := mul_one _
+            calc ‖x‖ ^ p * ‖iteratedFDeriv ℝ q
+                    (unflattenSchwartzNPointLocal (d := d) ψ_t : NPointDomain d m → ℂ) x‖
+                ≤ ‖flattenCLEquivRealLocal m (d + 1) x‖ ^ p *
+                    ‖iteratedFDeriv ℝ q ↑ψ_t (flattenCLEquivRealLocal m (d + 1) x)‖ :=
+                  by gcongr
+              _ ≤ SchwartzMap.seminorm ℝ p q ψ_t :=
+                  SchwartzMap.le_seminorm ℝ p q ψ_t (flattenCLEquivRealLocal m (d + 1) x)
+          have h_translate_le : SchwartzMap.seminorm ℝ p q ψ_t ≤
+              D * (1 + ‖η_y‖) ^ p * (1 + ‖t‖) ^ p := by
+            have heq : SchwartzMap.seminorm ℝ p q ψ_t = SchwartzMap.seminorm ℂ p q ψ_t := rfl
+            rw [heq]
+            calc SchwartzMap.seminorm ℂ p q ψ_t ≤ D * (1 + ‖t • η_y‖) ^ p := hD _
+              _ = D * (1 + |t| * ‖η_y‖) ^ p := by rw [norm_smul, Real.norm_eq_abs]
+              _ ≤ D * ((1 + ‖η_y‖) * (1 + |t|)) ^ p := by
+                    gcongr; nlinarith [norm_nonneg η_y, abs_nonneg t]
+              _ = D * (1 + ‖η_y‖) ^ p * (1 + |t|) ^ p := by rw [mul_pow]; ring
+              _ = D * (1 + ‖η_y‖) ^ p * (1 + ‖t‖) ^ p := by rw [← Real.norm_eq_abs t]
+          linarith
+        -- Tensor product bounds (same structure as e₀)
+        have htens : ∃ (Ctens : ℝ), 0 ≤ Ctens ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ k j
+              (fn.conjTensorProduct
+                (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤
+            Ctens * (1 + ‖t‖) ^ k := by
+          classical
+          let Dτ := fun p q => (hτ p q).choose
+          have hDτ_nn : ∀ p q, 0 ≤ Dτ p q := fun p q => (hτ p q).choose_spec.1
+          have hDτ_bound : ∀ p q t, SchwartzMap.seminorm ℝ p q
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm) ≤
+              Dτ p q * (1 + ‖t‖) ^ p := fun p q => (hτ p q).choose_spec.2
+          refine ⟨2 ^ k * ∑ i ∈ Finset.range (j + 1), (j.choose i : ℝ) *
+              (SchwartzMap.seminorm ℝ k i fn.borchersConj * Dτ 0 (j - i) +
+               SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ k (j - i)),
+            ?_, fun t => ?_⟩
+          · apply mul_nonneg (pow_nonneg (by norm_num : (0:ℝ) ≤ 2) k)
+            apply Finset.sum_nonneg; intro i _
+            apply mul_nonneg (by exact_mod_cast Nat.zero_le _)
+            apply add_nonneg
+            · exact mul_nonneg (apply_nonneg _ _) (hDτ_nn 0 (j - i))
+            · exact mul_nonneg (apply_nonneg _ _) (hDτ_nn k (j - i))
+          show SchwartzMap.seminorm ℝ k j (fn.borchersConj.tensorProduct
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤ _
+          have htens_base := SchwartzMap.tensorProduct_seminorm_le k j fn.borchersConj
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)
+          have h1_le_pow : (1 : ℝ) ≤ (1 + ‖t‖) ^ k := by
+            apply one_le_pow₀; linarith [norm_nonneg t]
+          have hstep : SchwartzMap.seminorm ℝ k j (fn.borchersConj.tensorProduct
+              (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤
+              2 ^ k * ∑ i ∈ Finset.range (j + 1), ↑(j.choose i) *
+                (SchwartzMap.seminorm ℝ k i fn.borchersConj * (Dτ 0 (j - i) * (1 + ‖t‖) ^ k) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                   (Dτ k (j - i) * (1 + ‖t‖) ^ k)) := by
+            apply htens_base.trans
+            apply mul_le_mul_of_nonneg_left _ (pow_nonneg (by norm_num) k)
+            apply Finset.sum_le_sum; intro i _
+            apply mul_le_mul_of_nonneg_left _ (by exact_mod_cast Nat.zero_le _)
+            apply add_le_add
+            · apply mul_le_mul_of_nonneg_left _ (apply_nonneg _ _)
+              exact (hDτ_bound 0 (j - i) t).trans
+                (by simp only [pow_zero, mul_one];
+                    exact le_mul_of_one_le_right (hDτ_nn 0 (j - i)) h1_le_pow)
+            · exact mul_le_mul_of_nonneg_left (hDτ_bound k (j - i) t) (apply_nonneg _ _)
+          have h_factor : ∑ i ∈ Finset.range (j + 1), ↑(j.choose i) *
+              (SchwartzMap.seminorm ℝ k i fn.borchersConj * (Dτ 0 (j - i) * (1 + ‖t‖) ^ k) +
+               SchwartzMap.seminorm ℝ 0 i fn.borchersConj * (Dτ k (j - i) * (1 + ‖t‖) ^ k)) =
+              (∑ i ∈ Finset.range (j + 1), (j.choose i : ℝ) *
+                (SchwartzMap.seminorm ℝ k i fn.borchersConj * Dτ 0 (j - i) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ k (j - i))) *
+              (1 + ‖t‖) ^ k := by
+            rw [Finset.sum_mul]; apply Finset.sum_congr rfl; intro i _; push_cast; ring
+          linarith [hstep.trans (by rw [h_factor, ← mul_assoc])]
+        -- Composed with diffVarReduction (same structure as e₀)
+        have hFpoly : ∃ (Cred : ℝ) (Nred : ℕ), 0 ≤ Cred ∧ ∀ t : ℝ,
+            SchwartzMap.seminorm ℝ k j
+              (diffVarReduction d (n + m - 1)
+                (hk.symm ▸ fn.conjTensorProduct
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))) ≤
+            Cred * (1 + ‖t‖) ^ Nred := by
+          have htens_all : ∀ (p q : ℕ), ∃ (D : ℝ), 0 ≤ D ∧ ∀ t : ℝ,
+              SchwartzMap.seminorm ℝ p q
+                (fn.conjTensorProduct
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤
+              D * (1 + ‖t‖) ^ p := by
+            intro p q; classical
+            let Dτ' := fun p' q' => (hτ p' q').choose
+            have hDτ'_nn : ∀ p' q', 0 ≤ Dτ' p' q' :=
+              fun p' q' => (hτ p' q').choose_spec.1
+            have hDτ'_bound : ∀ p' q' t, SchwartzMap.seminorm ℝ p' q'
+                (poincareActNPoint (PoincareGroup.translation' (t • y)) fm) ≤
+                Dτ' p' q' * (1 + ‖t‖) ^ p' :=
+              fun p' q' => (hτ p' q').choose_spec.2
+            refine ⟨2 ^ p * ∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) *
+                (SchwartzMap.seminorm ℝ p i fn.borchersConj * Dτ' 0 (q - i) +
+                 SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ' p (q - i)),
+              ?_, fun t => ?_⟩
+            · apply mul_nonneg (pow_nonneg (by norm_num : (0:ℝ) ≤ 2) p)
+              apply Finset.sum_nonneg; intro i _
+              apply mul_nonneg (by exact_mod_cast Nat.zero_le _)
+              apply add_nonneg
+              · exact mul_nonneg (apply_nonneg _ _) (hDτ'_nn 0 (q - i))
+              · exact mul_nonneg (apply_nonneg _ _) (hDτ'_nn p (q - i))
+            · show SchwartzMap.seminorm ℝ p q (fn.borchersConj.tensorProduct
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤ _
+              have htens_base' := SchwartzMap.tensorProduct_seminorm_le p q fn.borchersConj
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)
+              have h1_le_pow' : (1 : ℝ) ≤ (1 + ‖t‖) ^ p := by
+                apply one_le_pow₀; linarith [norm_nonneg t]
+              have hstep' : SchwartzMap.seminorm ℝ p q (fn.borchersConj.tensorProduct
+                  (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤
+                  2 ^ p * ∑ i ∈ Finset.range (q + 1), ↑(q.choose i) *
+                    (SchwartzMap.seminorm ℝ p i fn.borchersConj *
+                        (Dτ' 0 (q - i) * (1 + ‖t‖) ^ p) +
+                     SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                       (Dτ' p (q - i) * (1 + ‖t‖) ^ p)) := by
+                apply htens_base'.trans
+                apply mul_le_mul_of_nonneg_left _ (pow_nonneg (by norm_num) p)
+                apply Finset.sum_le_sum; intro i _
+                apply mul_le_mul_of_nonneg_left _ (by exact_mod_cast Nat.zero_le _)
+                apply add_le_add
+                · apply mul_le_mul_of_nonneg_left _ (apply_nonneg _ _)
+                  exact (hDτ'_bound 0 (q - i) t).trans
+                    (by simp only [pow_zero, mul_one];
+                        exact le_mul_of_one_le_right (hDτ'_nn 0 (q - i)) h1_le_pow')
+                · exact mul_le_mul_of_nonneg_left (hDτ'_bound p (q - i) t) (apply_nonneg _ _)
+              have h_factor' : ∑ i ∈ Finset.range (q + 1), ↑(q.choose i) *
+                  (SchwartzMap.seminorm ℝ p i fn.borchersConj *
+                      (Dτ' 0 (q - i) * (1 + ‖t‖) ^ p) +
+                   SchwartzMap.seminorm ℝ 0 i fn.borchersConj *
+                     (Dτ' p (q - i) * (1 + ‖t‖) ^ p)) =
+                  (∑ i ∈ Finset.range (q + 1), (q.choose i : ℝ) *
+                    (SchwartzMap.seminorm ℝ p i fn.borchersConj * Dτ' 0 (q - i) +
+                     SchwartzMap.seminorm ℝ 0 i fn.borchersConj * Dτ' p (q - i))) *
+                  (1 + ‖t‖) ^ p := by
+                rw [Finset.sum_mul]; apply Finset.sum_congr rfl; intro i _; push_cast; ring
+              linarith [hstep'.trans (by rw [h_factor', ← mul_assoc])]
+          have hcast_pq : ∀ (p q ℓ : ℕ) (hℓ : ℓ = n + m) (f : SchwartzNPointSpace d (n + m)),
+              SchwartzMap.seminorm ℝ p q (hℓ.symm ▸ f) = SchwartzMap.seminorm ℝ p q f :=
+            fun p q ℓ hℓ f => by subst hℓ; rfl
+          let qkj : Seminorm ℝ (SchwartzNPointSpace d (n + m - 1 + 1)) :=
+            (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1)) ℂ (k, j)).comp
+              ((diffVarReduction d (n + m - 1)).restrictScalars ℝ).toLinearMap
+          have hqkj_cont : Continuous ⇑qkj :=
+            ((schwartz_withSeminorms ℝ (NPointSpacetime d (n + m - 1)) ℂ).continuous_seminorm
+                (k, j)).comp (diffVarReduction d (n + m - 1)).continuous
+          obtain ⟨s, C₀, _, hbound⟩ :=
+            Seminorm.bound_of_continuous
+              (schwartz_withSeminorms ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ) qkj hqkj_cont
+          let Ds := fun i : ℕ × ℕ => (htens_all i.1 i.2).choose
+          have hDs_nn : ∀ i, 0 ≤ Ds i := fun i => (htens_all i.1 i.2).choose_spec.1
+          have hDs_bound : ∀ (i : ℕ × ℕ) t, SchwartzMap.seminorm ℝ i.1 i.2
+              (fn.conjTensorProduct
+                (poincareActNPoint (PoincareGroup.translation' (t • y)) fm)) ≤
+              Ds i * (1 + ‖t‖) ^ i.1 := fun i => (htens_all i.1 i.2).choose_spec.2
+          refine ⟨↑C₀ * ∑ i ∈ s, Ds i, s.sup (·.1), ?_, fun t => ?_⟩
+          · exact mul_nonneg C₀.prop (Finset.sum_nonneg (fun i _ => hDs_nn i))
+          set g_t := fn.conjTensorProduct
+            (poincareActNPoint (PoincareGroup.translation' (t • y)) fm) with hg_t_def
+          have h_qkj : qkj (hk.symm ▸ g_t) =
+              SchwartzMap.seminorm ℝ k j
+                (diffVarReduction d (n + m - 1) (hk.symm ▸ g_t)) := rfl
+          rw [← h_qkj]
+          have h1 : qkj (hk.symm ▸ g_t) ≤
+              ↑C₀ * (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                (hk.symm ▸ g_t) := by
+            have h := hbound (hk.symm ▸ g_t)
+            simp only [Seminorm.smul_apply, NNReal.smul_def, smul_eq_mul] at h; linarith
+          have h2 : (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                (hk.symm ▸ g_t) ≤ ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 := by
+            apply Seminorm.finset_sup_apply_le
+              (Finset.sum_nonneg (fun i _ => mul_nonneg (hDs_nn i) (by positivity)))
+            intro ⟨p, q⟩ hi
+            simp only [SchwartzMap.schwartzSeminormFamily_apply]
+            rw [hcast_pq p q ((n + m - 1) + 1) hk g_t]
+            exact (hDs_bound (p, q) t).trans
+              (Finset.single_le_sum
+                (fun j _ => mul_nonneg (hDs_nn j) (pow_nonneg (by linarith [norm_nonneg t]) j.1))
+                hi)
+          have h3 : ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 ≤
+              (∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by
+            rw [Finset.sum_mul]; apply Finset.sum_le_sum; intro i hi
+            apply mul_le_mul_of_nonneg_left _ (hDs_nn i)
+            exact pow_le_pow_right₀ (by linarith [norm_nonneg t]) (Finset.le_sup (f := (·.1)) hi)
+          calc qkj (hk.symm ▸ g_t)
+              ≤ ↑C₀ * (s.sup (schwartzSeminormFamily ℝ (NPointSpacetime d (n + m - 1 + 1)) ℂ))
+                  (hk.symm ▸ g_t) := h1
+            _ ≤ ↑C₀ * ∑ i ∈ s, Ds i * (1 + ‖t‖) ^ i.1 := mul_le_mul_of_nonneg_left h2 C₀.prop
+            _ ≤ ↑C₀ * ((∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1)) :=
+                mul_le_mul_of_nonneg_left h3 C₀.prop
+            _ = (↑C₀ * ∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by ring
+        obtain ⟨Cred, Nred, _, hCred⟩ := hFpoly
+        exact ⟨Cred, Nred, hCred⟩
+      -- ── CLM exchange + Fourier inversion ───────────────────────────────────
+      obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
+        schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
+          (SchwartzMap.fourierTransformCLM ℂ φ)
+      obtain ⟨ψ, hψ_ft, hψ_supp⟩ :=
+        scd_fourierInv_translate_witness_dir (by omega : 0 < n) (by omega : 0 < m)
+          fn fm y φ hφ hk hbdry Θ hΘ_pointwise
+      exact ⟨ψ, by rw [hψ_ft]; exact hΘ_w, hψ_supp⟩
 
 /-- Generalization of `scd_summand_fourier_vanishing` to arbitrary `y ∈ V̄₊`. -/
 private lemma scd_summand_fourier_vanishing_dir
@@ -2768,10 +3261,91 @@ private lemma scd_inner_hasOneSidedFourierSupport_dir
     ((SchwartzMap.fourierTransformCLM ℂ φ) : ℝ → ℂ) t = 0
   -- Step 4: Distribute, exchange integral and finite sum, apply per-summand vanishing.
   simp_rw [Finset.sum_mul]
-  -- Exchange integral and finite sum (integrability needs to be established)
-  sorry
+  set FTφ := SchwartzMap.fourierTransformCLM ℂ φ with hFTφ_def
+  -- Integrability of each summand (bounded × Schwartz is L¹)
+  have hint_dir : ∀ (n' : ℕ) (m' : ℕ) (fn' : SchwartzNPointSpace d n')
+      (fm' : SchwartzNPointSpace d m'),
+      MeasureTheory.Integrable (fun t : ℝ =>
+        Wfn.W (n' + m') (fn'.conjTensorProduct
+          (poincareActNPoint (PoincareGroup.translation' (t • y)) fm')) *
+        (FTφ : ℝ → ℂ) t) := by
+    intro n' m' fn' fm'
+    -- Continuity of the translation family in Schwartz topology
+    have hcont_translate : Continuous (fun t : ℝ =>
+        poincareActNPoint (PoincareGroup.translation' (t • y)) fm') := by
+      set η_y' : Fin (m' * (d + 1)) → ℝ := fun k => -(y ((finProdFinEquiv.symm k).2)) with hη_y'_def
+      have h_eq : ∀ t : ℝ,
+          poincareActNPoint (PoincareGroup.translation' (t • y)) fm' =
+          unflattenSchwartzNPointLocal (d := d)
+            (SCV.translateSchwartz (t • η_y') (flattenSchwartzNPointLocal (d := d) fm')) := by
+        intro t; ext x
+        simp only [poincareActNPoint_apply, SCV.translateSchwartz_apply,
+          unflattenSchwartzNPointLocal_apply, flattenSchwartzNPointLocal_apply]
+        congr 1; funext i; ext ν
+        simp only [poincareActNPointDomain, PoincareGroup.act_def,
+          PoincareGroup.inv_translation, PoincareGroup.inv_lorentz,
+          PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
+          inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
+          flattenCLEquivRealLocal_symm_apply, flattenCLEquivRealLocal_apply,
+          Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul,
+          hη_y'_def, Equiv.symm_apply_apply]; ring
+      simp_rw [h_eq]
+      exact (unflattenSchwartzNPointLocal (d := d) : _ →L[ℂ] _).continuous.comp
+        (continuous_translateSchwartz_smul (η := η_y') (flattenSchwartzNPointLocal (d := d) fm'))
+    have hcont : Continuous (fun t : ℝ =>
+        Wfn.W (n' + m') (fn'.conjTensorProduct
+          (poincareActNPoint (PoincareGroup.translation' (t • y)) fm'))) :=
+      (Wfn.tempered (n' + m')).comp
+        ((SchwartzMap.conjTensorProduct_continuous_right fn').comp hcont_translate)
+    -- Boundedness via GNS Cauchy-Schwarz
+    set F' : PreHilbertSpace Wfn := ⟦BorchersSequence.single n' fn'⟧
+    set G' : PreHilbertSpace Wfn := ⟦BorchersSequence.single m' fm'⟧
+    set C' := ‖(F' : GNSHilbertSpace Wfn)‖ * ‖(G' : GNSHilbertSpace Wfn)‖
+    have hbound : ∀ t : ℝ, ‖Wfn.W (n' + m') (fn'.conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) fm'))‖ ≤ C' := by
+      intro t
+      set τt := PoincareGroup.translation' (t • y)
+      have h_eq : Wfn.W (n' + m') (fn'.conjTensorProduct (poincareActNPoint τt fm')) =
+          @inner ℂ _ _ (F' : GNSHilbertSpace Wfn)
+            (poincareActGNS Wfn τt (G' : GNSHilbertSpace Wfn)) := by
+        rw [← WightmanInnerProduct_single_single d Wfn.W Wfn.linear n' m' fn'
+          (poincareActNPoint τt fm')]
+        rw [← inner_eq Wfn (BorchersSequence.single n' fn')
+          (BorchersSequence.single m' (poincareActNPoint τt fm'))]
+        have h_q : (⟦BorchersSequence.single m' (poincareActNPoint τt fm')⟧ :
+            PreHilbertSpace Wfn) = poincareActPreHilbert Wfn τt G' := by
+          show _ = ⟦poincareActBorchers τt (BorchersSequence.single m' fm')⟧
+          exact (mk_eq_of_funcs_eq Wfn _ _ (fun n'' => by
+            by_cases h : n'' = m'
+            · subst h; simp [poincareActBorchers]
+            · simp [poincareActBorchers, BorchersSequence.single_funcs_ne h,
+                poincareActNPoint_zero])).symm
+        rw [h_q, show poincareActGNS Wfn τt (G' : GNSHilbertSpace Wfn) =
+            ((poincareActPreHilbert Wfn τt G' : PreHilbertSpace Wfn) :
+              GNSHilbertSpace Wfn) from poincareActGNS_coe Wfn τt G',
+          UniformSpace.Completion.inner_coe]
+      rw [h_eq]
+      calc ‖@inner ℂ _ _ (F' : GNSHilbertSpace Wfn)
+              (poincareActGNS Wfn τt (G' : GNSHilbertSpace Wfn))‖
+          ≤ ‖(F' : GNSHilbertSpace Wfn)‖ *
+            ‖poincareActGNS Wfn τt (G' : GNSHilbertSpace Wfn)‖ :=
+            norm_inner_le_norm _ _
+        _ = C' := by rw [poincareActGNS_norm]
+    exact (FTφ.integrable.norm.const_mul C').mono'
+      (hcont.mul FTφ.continuous).aestronglyMeasurable
+      (Filter.Eventually.of_forall (fun t => by
+        rw [norm_mul]
+        exact mul_le_mul_of_nonneg_right (hbound t) (norm_nonneg _)))
+  -- Exchange integral and finite sums, apply per-summand vanishing
+  rw [MeasureTheory.integral_finset_sum _ (fun n' _ =>
+    MeasureTheory.integrable_finset_sum _ (fun m' _ =>
+      hint_dir n' m' (B.funcs n') (B.funcs m')))]
+  apply Finset.sum_eq_zero; intro n' _
+  rw [MeasureTheory.integral_finset_sum _ (fun m' _ =>
+    hint_dir n' m' (B.funcs n') (B.funcs m'))]
+  apply Finset.sum_eq_zero; intro m' _
+  exact scd_summand_fourier_vanishing_dir Wfn hSCD y hy (B.funcs n') (B.funcs m') φ hφ
 
-set_option maxHeartbeats 800000 in
 /-- **Theorem A (Fubini for Bochner–Stieltjes integrals).**
 
     For a finite positive Borel measure `μ` on `ℝ` and a Schwartz function `g`,
