@@ -19224,7 +19224,7 @@ structure Section43PositiveEnergySchwartzWitness
     (d n : ℕ) [NeZero d]
     (F : NPointDomain d n → ℂ) : Prop where
   smoothOn :
-    ContDiffOn ℝ ⊤ F (section43PositiveEnergyRegion d n)
+    ContDiffOn ℝ (↑(⊤ : ℕ∞)) F (section43PositiveEnergyRegion d n)
   rapid :
     ∀ k l : ℕ, ∃ C > 0,
       ∀ q ∈ section43PositiveEnergyRegion d n,
@@ -19522,8 +19522,9 @@ finite sum of partial-Fourier transforms of transported Schwartz inputs.
 
 #### First-Derivative Rapid Packet
 
-The next production target should be the first-derivative rapid estimate for
-the compiled CLM-valued derivative candidate:
+This packet is now compiled and is retained here as the `r = 1` model for the
+all-order word induction.  The first-derivative rapid estimate for the compiled
+CLM-valued derivative candidate is:
 
 ```lean
 theorem section43FourierLaplaceIntegral_fderivCandidate_rapid_on_positiveEnergy
@@ -19542,12 +19543,16 @@ theorem section43FourierLaplaceIntegral_fderivCandidate_rapid_on_positiveEnergy
         ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤ C
 ```
 
+Compiled status, 2026-04-17: this theorem is implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`.
+
 This theorem is the `k = 1` rapid field, because the compiled ambient
 first-derivative theorem identifies the derivative of
 `section43FourierLaplaceIntegral` with
 `section43FourierLaplaceIntegral_fderivCandidate`.
 
-The proof should be split into the following Lean lemmas.
+The proof was split into the following Lean lemmas; the same decomposition is
+the template for the all-order word package.
 
 1. Lower-margin derivative vanishing:
 
@@ -19802,57 +19807,1214 @@ packet.
 
 #### Higher-Derivative Smooth/Rapid Induction
 
-For `ContDiffOn ℝ ⊤` and the full rapid field, do not try to write each order
-by hand.  The implementation should introduce an inductive finite-term
-description of derivatives of the integrand.
+For `ContDiffOn ℝ (↑(⊤ : ℕ∞))` and the full rapid field, do not try to write each order
+by hand and do not introduce another first-derivative wrapper.  The compiled
+first derivative and C¹ package are the base case.  The remaining proof must
+encode the finite algebra of all higher derivatives of the same integrand.
+
+The correct finite algebra is a word expansion, not the earlier coarse
+`timeDegree/spatialInput/coeff` sketch.  The word records exactly which factor
+each derivative slot hits.
 
 Recommended data shape:
 
 ```lean
-structure Section43DerivativeTerm (d n : ℕ) [NeZero d] where
-  timeDegree : ℕ
-  spatialInput : SchwartzNPoint d n
-  coeff : ℝ
+inductive Section43DerivativeAtom (d n : ℕ) where
+  | time (k : Fin n)
+  | spatial (i : Fin n × Fin d)
+  deriving DecidableEq, Fintype
+
+abbrev Section43DerivativeWord (d n r : ℕ) :=
+  Fin r → Section43DerivativeAtom d n
 ```
 
-The semantic term represented by
-`T : Section43DerivativeTerm d n` is
+For a derivative order `r`, a word
+`a : Section43DerivativeWord d n r` is read against directions
+`m : Fin r → NPointDomain d n`.  Its scalar and transported input are defined
+recursively by adding the newest derivative slot on the left, matching
+`iteratedFDeriv_succ_apply_left`.
+
+Base word:
 
 ```text
-q, τ ↦ coeff *
-  polynomial_in(τ, section43QTime directions) of degree ≤ timeDegree *
-  exp(-∑ τ_i q_i^0) *
-  partialFourierSpatial_fun T.spatialInput (τ, section43QSpatial q)
+wordScalar 0 empty τ m = 1
+wordInput  0 empty F     = F
+timeCount  0 empty       = 0
 ```
 
-For a fixed derivative order `k`, the `k`th derivative is a finite sum of such
-terms, multilinear in the `k` direction variables.  Differentiating once more
-does only two things:
+Step, with newest direction `v` and old word `a`:
 
-1. hit the exponential factor, increasing `timeDegree` by one and keeping the
-   same `spatialInput`;
-2. hit the spatial momentum argument, replacing `spatialInput` by one of the
-   finitely many spatial-coordinate transport Schwartz inputs.
+```text
+prepend (time k):
+  wordScalar := (-(τ k : ℂ) * (section43QTime v k : ℂ)) * oldScalar
+  wordInput  := oldInput
+  timeCount  := oldTimeCount + 1
 
-This induction gives three reusable theorem families:
+prepend (spatial i):
+  wordScalar := ((section43QSpatial v i : ℝ) : ℂ) * oldScalar
+  wordInput  := section43SpatialMultiplierTransport d n oldInput i
+  timeCount  := oldTimeCount
+```
+
+The implementation can realize this either as recursive definitions over
+`r`, using `Fin.cons`/`Fin.tail`, or as list definitions plus a length-indexed
+conversion.  The recursion-over-`r` version is preferred because the induction
+step aligns directly with `iteratedFDeriv_succ_apply_left`:
 
 ```lean
-theorem section43FourierLaplace_integrand_iteratedFDeriv_finiteExpansion
-    ...
+-- Pseudocode only; names should be stabilized in Lean when implemented.
+noncomputable def section43DerivativeWordScalar
+    (d n r : ℕ) [NeZero d]
+    (a : Section43DerivativeWord d n r)
+    (τ : Fin n → ℝ) (m : Fin r → NPointDomain d n) : ℂ := ...
 
-theorem section43FourierLaplace_integrand_iteratedFDeriv_dominated
-    ...
+noncomputable def section43DerivativeWordInput
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (a : Section43DerivativeWord d n r) : SchwartzNPoint d n := ...
 
-theorem section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
-    ...
+def section43DerivativeWordTimeCount
+    (d n r : ℕ)
+    (a : Section43DerivativeWord d n r) : ℕ := ...
 ```
 
-The domination theorem consumes exactly the compiled moment estimate
-`section43PartialFourier_timeMomentIntegral_spatialRapid`, with
-`K = timeDegree`, and the same positive-energy exponential bound.  This is the
-right proof-doc criterion for implementation readiness: each generated term
-must reduce to one call to the moment rapid theorem plus finite sums/products
-of constants.
+The first implementation theorem should be the pointwise applied
+`iteratedFDeriv` expansion for the integrand
+
+```text
+G_F(q, τ) =
+  exp(-∑ k, (τ k : ℂ) * (section43QTime q k : ℂ)) *
+    partialFourierSpatial_fun F (τ, section43QSpatial q).
+```
+
+Exact theorem shape:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    (m : Fin r → NPointDomain d n) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m =
+      ∑ a : Section43DerivativeWord d n r,
+        section43DerivativeWordScalar d n r a τ m *
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a)
+            (τ, section43QSpatial (d := d) (n := n) q)
+```
+
+Proof transcript:
+
+1. Base `r = 0`: `iteratedFDeriv ℝ 0` is the original function, and the only
+   word is the empty word.
+2. Step from `r` to `r + 1`: rewrite the left side using
+   `iteratedFDeriv_succ_apply_left`, so the new direction is
+   `v : NPointDomain d n` and the old directions are
+   `u : Fin r → NPointDomain d n`.
+3. Rewrite the inductive hypothesis for the `r`-th derivative as a finite sum
+   over old words.
+4. Differentiate each summand with `HasFDerivAt.mul`.
+5. If the derivative hits the exponential, prepend `time k`.  The derivative
+   of the exponent is the already compiled linear expression using
+   `section43QTimeCLM`; after evaluation on `v`, the scalar contribution is
+   `-(τ k : ℂ) * (section43QTime v k : ℂ)`.
+6. If the derivative hits the spatial partial-Fourier factor, use the compiled
+   coordinate expansion
+   `fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTransport`
+   with `section43QSpatial v`.  Each coordinate `i` prepends `spatial i` and
+   replaces the old input by
+   `section43SpatialMultiplierTransport d n oldInput i`.
+7. Reindex the finite sum over
+   `Option (Fin n) ⊕ (Fin n × Fin d)` into
+   `Section43DerivativeWord d n (r + 1)` by the two constructors
+   `time` and `spatial`.  In Lean this should be expressed as two `Finset.sum`
+   pieces and then folded into the `Fintype` sum over words.
+
+The corresponding scalar norm theorem is the second implementation theorem:
+
+```lean
+theorem section43DerivativeWordScalar_norm_le
+    (d n r : ℕ) [NeZero d]
+    (a : Section43DerivativeWord d n r)
+    (τ : Fin n → ℝ) (m : Fin r → NPointDomain d n) :
+    ‖section43DerivativeWordScalar d n r a τ m‖ ≤
+      section43DerivativeWordCoeff d n r a *
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ∏ j : Fin r, ‖m j‖
+```
+
+Here `section43DerivativeWordCoeff` is a nonnegative finite product of the
+already compiled coordinate projection operator norms:
+
+```text
+time k    contributes section43QTimeCoordOpNorm d n k
+spatial i contributes section43QSpatialCoordOpNorm d n i
+```
+
+Proof transcript:
+
+1. Induct over the same word recursion.
+2. For a time atom, use
+   `abs_section43QTime_coord_le_opNorm` and `|τ k| ≤ ‖τ‖`.
+3. For a spatial atom, use
+   `abs_section43QSpatial_coord_le_opNorm`.
+4. Use `norm_mul`, finite-product associativity, and
+   `pow_succ` in the time case.
+
+The applied pointwise derivative bound follows by combining the expansion and
+the scalar norm theorem:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    {δ : ℝ}
+    (q : NPointDomain d n) (hq : q ∈ section43PositiveEnergyRegion d n)
+    (τ : Fin n → ℝ)
+    (hτ_margin : ∀ k : Fin n, δ ≤ τ k)
+    (m : Fin r → NPointDomain d n) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        (∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖) *
+        ∏ j : Fin r, ‖m j‖
+```
+
+Proof transcript:
+
+1. Rewrite by the finite-word expansion.
+2. Use `norm_sum_le`, `norm_mul`, and the scalar norm theorem.
+3. Bound the exponential by
+   `norm_exp_neg_section43_timePair_le_exp_neg_margin_sum` using
+   `hτ_margin` and `hq`.
+4. Pull the common factors
+   `Real.exp (...)` and `∏ j, ‖m j‖` outside the finite sum.
+
+Compiled status, 2026-04-17: the pointwise finite-word expansion and applied
+positive-energy norm bound are implemented and exact-file checked in
+`Section43FourierLaplaceHigherDerivatives.lean`:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words
+```
+
+For the lower-margin branch, do not prove that every transported word
+vanishes.  Prove instead that the original integrand is identically zero as a
+function of `q`, and therefore all of its iterated derivatives are zero:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (τ : Fin n → ℝ)
+    (hτ : ∃ i : Fin n, τ i < δ) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      =
+      0
+```
+
+Proof transcript:
+
+1. For every `q'`, the compiled lower-margin support theorem gives
+   `partialFourierSpatial_fun ... (τ, section43QSpatial q') = 0`.
+2. Hence the whole integrand function is definitionally equal to the zero
+   function by `funext`.
+3. Rewrite the `iteratedFDeriv` of that function to the derivative of `0`,
+   then close by simp.  This avoids any support claim about transported word
+   inputs.
+
+Combining the above-margin and lower-margin branches gives the CLM/operator
+norm estimate.  The applied estimate has the factor
+`∏ j, ‖m j‖`; use `ContinuousMultilinearMap.opNorm_le_bound` to remove the
+directions:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n) (hq : q ∈ section43PositiveEnergyRegion d n)
+    (τ : Fin n → ℝ) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r
+                (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Compiled status, 2026-04-17: the lower-margin all-order zero theorem and the
+operator-norm word bound are implemented and exact-file checked in
+`Section43FourierLaplaceHigherDerivatives.lean`:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
+```
+
+The integrated rapid estimate should be implemented first for the
+Bochner-integral candidate.  There is no longer an "either/or" implementation
+choice here: the candidate is the CLM-valued Bochner integral of the pointwise
+`iteratedFDeriv`, while the finite-word expansion is used only to build a real
+majorant for its norm.  This keeps the candidate in the same category as the
+first-derivative candidate already compiled in
+`Section43FourierLaplaceWitness.lean`.
+
+```lean
+noncomputable def section43FourierLaplaceIntegral_iteratedFDerivCandidate
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+  ∫ τ : Fin n → ℝ,
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      q
+```
+
+The real finite-word majorant for fixed spatial momentum `ξ` is:
+
+```lean
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ∫ τ : Fin n → ℝ,
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+```
+
+The immediate Lean package before the rapid theorem is:
+
+```lean
+theorem integrable_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ)
+      (volume : Measure (Fin n → ℝ))
+
+theorem integral_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ τ) =
+      section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ
+
+theorem section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (s : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ s *
+          section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+            d n r F ξ ≤ C
+```
+
+Proof transcript for this package:
+
+1. Integrability is a finite sum over words.  For each word `a`, use
+   `integrable_timeMoment_norm_partialFourierSpatial_timeSlice` on the
+   transported Schwartz input
+   `section43DerivativeWordInput d n r F a` and time moment
+   `section43DerivativeWordTimeCount d n r a`, then multiply by the constant
+   `section43DerivativeWordCoeff d n r a`.
+2. The integral identity is `MeasureTheory.integral_finset_sum` followed by
+   `MeasureTheory.integral_const_mul` for each word summand.
+3. The spatial rapid theorem chooses, for each word `a`, a constant from
+   `section43PartialFourier_timeMomentIntegral_spatialRapid` applied to the
+   same transported input and time moment.  Sum the finitely many constants
+   after multiplying by the nonnegative word coefficients.
+4. Nonnegativity of the word-majorant integral follows termwise from
+   `section43DerivativeWordCoeff_nonneg` and `integral_nonneg`.
+
+The candidate norm estimate is:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let E : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n r f hf_ord q‖ ≤
+      E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+          d n r F ξ
+```
+
+Proof transcript:
+
+1. Unfold the candidate as `∫ τ, G τ`, where `G τ` is the pointwise
+   `iteratedFDeriv` CLM.
+2. Apply `MeasureTheory.norm_integral_le_integral_norm`.
+3. Apply the compiled operator bound
+   `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`,
+   rewritten as
+   `‖G τ‖ ≤ E * section43FourierLaplace_iteratedFDerivWordMajorant ... τ`.
+4. Use integrability of `E * wordMajorant` from the finite-sum integrability
+   theorem and `MeasureTheory.integral_mono_of_nonneg`.
+5. Pull out the constant `E` with `MeasureTheory.integral_const_mul`, then
+   use the word-majorant integral identity.
+
+The rapid theorem then has the exact first-derivative proof skeleton, with
+`J` equal to the word-majorant integral:
+
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+            d n r f hf_ord q‖ ≤ C
+```
+
+Proof transcript:
+
+1. Use
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`.
+2. Use `one_add_norm_le_section43_time_spatial_product` exactly as in the
+   zero- and first-derivative rapid proofs to split `(1 + ‖q‖)^s` into time
+   and spatial weights.
+3. Use `exp_margin_sum_controls_positiveEnergy_time_polynomial` for the time
+   weight and exponential margin.
+4. Use
+   `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`
+   for the spatial weight and finite word sum.
+5. Finish with the same product estimate as the compiled zero- and
+   first-derivative rapid theorems.
+
+Only after the compact-support smoothness theorem identifies the candidate
+with the actual derivative should production state the actual
+`iteratedFDeriv` rapid theorem:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖iteratedFDeriv ℝ r
+            (fun q' : NPointDomain d n =>
+              section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+            q‖ ≤ C
+```
+
+Proof transcript:
+
+1. Use the all-order compact-support dominated integral theorem below to
+   identify `iteratedFDeriv` of the integral with
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate`.
+2. Close by the candidate rapid theorem.
+
+Compiled status, 2026-04-17: the actual derivative rapid theorem is
+implemented in `Section43FourierLaplaceCompactDifferentiation.lean` as
+
+```lean
+section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+```
+
+The proof is exactly the two-line consumer described above: rewrite by
+`section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport`
+and apply
+`section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+
+The smoothness proof under compact support is a separate all-order dominated
+integral theorem.  It should use compact `τ`-slab domination, not the
+positive-energy exponential damping:
+
+```lean
+theorem section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ (↑(⊤ : ℕ∞))
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+```
+
+Implementation transcript:
+
+1. For each finite order `r`, define the integrated derivative candidate as
+   the Bochner integral of the pointwise `iteratedFDeriv` CLM, or equivalently
+   as the finite sum of the word integrals from the expansion.
+2. Prove fixed-`q` integrability from compact upper-slab support:
+   the existing upper-slab support theorem gives compact support in `τ`, and
+   the finite-word expansion is continuous on the compact product.
+3. Prove local domination on `Metric.closedBall q 1`: on the compact product
+   `Metric.closedBall q 1 ×ˢ Metric.closedBall 0 R`, joint continuity of each
+   word term gives a finite bound, and outside the `τ`-slab the original
+   integrand and all its derivatives vanish because the integrand is
+   identically zero.
+4. Apply Mathlib's dominated differentiation theorem at each finite order,
+   inducting with `contDiff_succ_iff_fderiv_apply` or the corresponding
+   finite-dimensional `ContDiff` theorem already used elsewhere in the repo.
+5. Upgrade finite-order smoothness to `ContDiff ℝ (↑(⊤ : ℕ∞))` by introducing the
+   arbitrary finite order at the start of the proof.
+
+Compiled status, 2026-04-17: this ambient smoothness theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Important Lean-order correction: ordinary `C∞` smoothness is written
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, not `ContDiff ℝ ⊤`.  The latter is a strictly
+stronger top order in Mathlib's `WithTop ℕ∞` scale and is not what follows
+from the all-finite-order dominated-differentiation induction.
+
+After the previous two theorem families are compiled, the positive-energy
+witness packet becomes implementation-ready:
+
+```lean
+structure Section43PositiveEnergySchwartzWitness
+    (d n : ℕ) [NeZero d] (F : NPointDomain d n → ℂ) where
+  smoothOn :
+    ContDiffOn ℝ (↑(⊤ : ℕ∞)) F (section43PositiveEnergyRegion d n)
+  rapid :
+    ∀ k l : ℕ, ∃ C : ℝ,
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        ‖q‖ ^ k *
+          ‖iteratedFDerivWithin ℝ l F
+            (section43PositiveEnergyRegion d n) q‖ ≤ C
+```
+
+The bridge from ambient theorems to this structure is:
+
+1. `smoothOn` follows from
+   `section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport` by
+   `.contDiffOn`.
+2. The `rapid` field follows from
+   `section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy`;
+   if Lean keeps the field in `iteratedFDerivWithin` form, use the ambient
+   smoothness theorem plus the positive-energy set restriction theorem to
+   rewrite `iteratedFDerivWithin` to ambient `iteratedFDeriv` on the region.
+3. Only after this structure is populated should the general
+   positive-half-space Schwartz extension theorem be used to obtain an ambient
+   `SchwartzNPoint`.
+
+Implementation readiness checkpoint:
+
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `Section43DerivativeAtom`, `Section43DerivativeWord`,
+  `section43DerivativeWordScalar`, `section43DerivativeWordInput`,
+  `section43DerivativeWordTimeCount`, `section43DerivativeWordCoeff`,
+  `section43DerivativeWordCoeff_nonneg`,
+  `section43DerivativeWordScalar_norm_le`,
+  `section43DerivativeAtomEquivSum`,
+  `section43DerivativeAtom_sum`,
+  `section43DerivativeWordCons`,
+  `section43DerivativeWordEquivCons`,
+  `section43DerivativeWord_sum_cons`,
+  the cons/tail simp lemmas for word scalar/input/count/coeff, and the
+  one-letter expansion theorem
+  `section43FourierLaplace_timeIntegrandFDerivCLM_apply_eq_sum_atoms`.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `contDiff_section43FourierLaplace_timeIntegrand_q`,
+  `section43FourierLaplace_sum_words_fderivCLM_apply_eq_sum_cons`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`,
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin`,
+  and
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate`,
+  `section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral`,
+  `integrable_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `integral_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`,
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`,
+  and
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+  Exact file check and narrow module build both terminated successfully on
+  2026-04-17.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean` and
+  exact-file checked on 2026-04-17:
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words_absExp`,
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words_absExp`,
+  `section43FourierLaplace_timeIntegrand_eq_zero_of_timeNorm_gt_bound`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound`,
+  and
+  `hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+- Compiled now in
+  `Section43FourierLaplaceCompactDifferentiation.lean` and exact-file checked
+  on 2026-04-17:
+  `norm_le_of_mem_time_closedBall_zero`,
+  `norm_nPoint_le_norm_add_one_of_mem_closedBall`,
+  `norm_exp_neg_section43_timePair_le_local_closedBall`, and
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact`.
+- Compiled now in
+  `Section43FourierLaplaceCompactDifferentiation.lean` and exact-file checked
+  on 2026-04-17:
+  `continuous_cmlm_apply_nPoint`,
+  `continuous_section43DerivativeWordScalar`,
+  `continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply`,
+  `continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv`,
+  `integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact`,
+  and
+  `aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+- Compiled next: the CMLM/CLM topology seam for
+  `hasFDerivAt_integral_of_dominated_of_fderiv_le` is closed by explicit
+  normed-topology `Integrable` hypotheses and a local `curryLI`.
+- Compiled next: `hasFDerivAt_integral_of_dominated_of_fderiv_le` identifies
+  the derivative of the integrated candidate with the next candidate.
+- Compiled next: the candidate is identified with actual `iteratedFDeriv` by
+  induction.
+- Compiled next: ambient smoothness is available as
+  `ContDiff ℝ (↑(⊤ : ℕ∞))`.
+- Then ready: derive the actual derivative rapid theorem from that
+  identification and the compiled candidate rapid theorem.
+- Not ready to implement yet: the positive-half-space Schwartz extension
+  theorem; it should be documented separately after the all-order witness
+  packet is compiled.
+
+The all-order candidate-identification theorem should be proved in the
+following smaller theorem order.  Do **not** jump straight to
+`ContDiff ℝ ⊤`; ordinary C∞ smoothness is
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, and the local domination theorem is the real seam.
+
+First add the no-margin pointwise norm estimates.  These are the compact-slab
+analogues of the positive-energy word bounds, but with the exponential left as
+its actual norm:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words_absExp
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    (m : Fin r → NPointDomain d n) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m‖ ≤
+      ‖Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q k : ℂ)))‖ *
+        (∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖) *
+        ∏ j : Fin r, ‖m j‖
+
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words_absExp
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q‖ ≤
+      ‖Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q k : ℂ)))‖ *
+        ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Proof transcript:
+
+1. Repeat the compiled positive-energy proof, but do not use
+   `norm_exp_neg_section43_timePair_le_exp_neg_margin_sum`.
+2. Rewrite by
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`.
+3. Use `norm_sum_le`, `norm_mul`, and
+   `section43DerivativeWordScalar_norm_le`.
+4. Pull out the common factors
+   `‖Complex.exp ...‖` and `∏ j, ‖m j‖`.
+5. Convert the applied theorem to the operator-norm theorem with
+   `ContinuousMultilinearMap.opNorm_le_bound`.
+
+Second add the upper-slab all-order zero theorem.  This is exactly the
+upper-slab version of the already compiled lower-margin theorem:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_eq_zero_of_timeNorm_gt_bound
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {R : ℝ}
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (τ : Fin n → ℝ)
+    (hτ : R < ‖τ‖) :
+    (fun q' : NPointDomain d n =>
+      Complex.exp
+        (-(∑ k : Fin n,
+          (τ k : ℂ) *
+            (section43QTime (d := d) (n := n) q' k : ℂ))) *
+      partialFourierSpatial_fun (d := d) (n := n)
+        (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+        (τ, section43QSpatial (d := d) (n := n) q')) =
+      fun _ => 0
+
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {R : ℝ}
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (τ : Fin n → ℝ)
+    (hτ : R < ‖τ‖) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q')) =
+      0
+```
+
+Proof transcript: use
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound`
+for every `q'`, `funext` the original integrand to the zero function, then
+`rw` and `simp` all iterated derivatives of `0`.
+
+Third prove the pointwise derivative of the pointwise `r`-th derivative.  The
+derivative target must be the left-curry of the `(r+1)`-linear map, because
+Mathlib's `iteratedFDeriv_succ_apply_left` convention puts the newest
+direction in slot `0`:
+
+```lean
+theorem hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        iteratedFDeriv ℝ r
+          (fun q'' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n) F
+              (τ, section43QSpatial (d := d) (n := n) q''))
+          q')
+      ((iteratedFDeriv ℝ (r + 1)
+        (fun q'' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q''))
+        q).curryLeft)
+      q
+```
+
+Proof transcript:
+
+1. Let `G τ q` be the scalar pointwise integrand.
+2. From `contDiff_section43FourierLaplace_timeIntegrand_q`, get
+   `DifferentiableAt ℝ (iteratedFDeriv ℝ r G) q` by
+   `ContDiffAt.differentiableAt_iteratedFDeriv`.
+3. The derivative supplied by `hdiff.hasFDerivAt` is
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q`.
+4. Prove
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q =
+    (iteratedFDeriv ℝ (r + 1) G q).curryLeft`
+   by extensionality in `v` and `mtail`; the application equality is
+   definitional from the `iteratedFDeriv` successor convention and
+   `ContinuousMultilinearMap.curryLeft_apply`.
+
+Fourth prove compact local domination for the candidate derivative:
+
+```lean
+theorem norm_exp_neg_section43_timePair_le_local_closedBall
+    (d n : ℕ) [NeZero d]
+    (q q' : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    {R : ℝ} (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R)
+    (hq' : q' ∈ Metric.closedBall q (1 : ℝ)) :
+    ‖Complex.exp
+      (-(∑ k : Fin n,
+        (τ k : ℂ) *
+          (section43QTime (d := d) (n := n) q' k : ℂ)))‖ ≤
+      Real.exp
+        (R * ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (‖q‖ + 1)))
+
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ q' ∈ Metric.closedBall q (1 : ℝ),
+        ‖(iteratedFDeriv ℝ (r + 1)
+          (fun q'' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n)
+              (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+              (τ, section43QSpatial (d := d) (n := n) q''))
+          q').curryLeft‖ ≤ bound τ
+```
+
+Proof transcript:
+
+1. Choose `R ≥ 0` from
+   `exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport`.
+2. Let `Kτ = Metric.closedBall (0 : Fin n → ℝ) R`.
+3. Prove the local exponential bound:
+   - From `hτ : τ ∈ Kτ`, obtain `‖τ‖ ≤ R` by rewriting
+     `Metric.mem_closedBall`, `dist_eq_norm`, and `sub_zero`.
+   - From `hq' : q' ∈ Metric.closedBall q 1`, obtain
+     `‖q'‖ ≤ ‖q‖ + 1` by combining
+     `‖q'‖ = ‖(q' - q) + q‖`, `norm_add_le`, and
+     `dist q' q ≤ 1`.
+   - For each `k`, combine `norm_le_pi_norm τ k` and
+     `abs_section43QTime_coord_le_opNorm d n q' k` to prove
+     `|τ k * section43QTime q' k| ≤
+      R * (section43QTimeCoordOpNorm d n k * (‖q‖ + 1))`.
+   - Use `Complex.norm_exp`, compute the real part of the exponent by `simp`,
+     bound `-(∑ k, τ k * section43QTime q' k)` by
+     `∑ k, |τ k * section43QTime q' k|` via
+     `neg_le_abs` and `Finset.abs_sum_le_sum_abs`, and finish with
+     `Real.exp_le_exp`.
+   - Rewrite the final finite sum as
+     `R * ((∑ k, section43QTimeCoordOpNorm d n k) * (‖q‖ + 1))`
+     using distributivity and commutativity.
+4. Off `Kτ`, the derivative is zero by the upper-slab all-order zero theorem,
+   so the bound can be zero there.
+5. On `Kτ` and `Metric.closedBall q 1`, use the no-margin operator norm
+   estimate for order `r + 1` plus `ContinuousMultilinearMap.curryLeft_norm`.
+6. For each word `a`, choose a global constant from
+   `exists_norm_bound_partialFourierSpatial_fun` for
+   `section43DerivativeWordInput d n (r + 1)
+      (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) a`.
+7. Use `‖τ‖ ^ K ≤ R ^ K` on `Kτ` and the nonnegativity of word
+   coefficients to build a single constant
+   `C = Cexp * ∑ a, coeff(a) * R ^ timeCount(a) * Cword(a)`, where
+   `Cexp =
+    Real.exp (R * ((∑ k, section43QTimeCoordOpNorm d n k) * (‖q‖ + 1)))`.
+8. Take `bound = Set.indicator Kτ (fun _ => C)`.  Integrability is exactly
+   `integrable_indicator_time_closedBall_const`.
+
+Fifth apply Mathlib's dominated parametric integral theorem to the
+CLM-valued candidate:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n (r + 1) f hf_ord q).curryLeft)
+      q
+```
+
+Proof transcript:
+
+1. Use
+   `hasFDerivAt_integral_of_dominated_of_fderiv_le` with codomain
+   `ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ`.
+2. Before this theorem, compile the fixed-`q` hypothesis packet:
+
+```lean
+theorem continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n) :
+    Continuous fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r
+        (fun q' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+        q
+
+theorem integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    Integrable fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r
+        (fun q' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+        q
+
+theorem aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    AEStronglyMeasurable
+      (fun τ : Fin n → ℝ =>
+        (iteratedFDeriv ℝ (r + 1)
+          (fun q' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n)
+              (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+              (τ, section43QSpatial (d := d) (n := n) q'))
+          q).curryLeft)
+```
+
+Proof transcript for the continuity packet:
+
+1. Prove a finite-dimensional application criterion for CMLM-valued maps,
+   by induction on `r`, using `continuous_clm_apply` for the curry-left
+   representation and `continuousMultilinearCurryFin0` for the zero-arity
+   endpoint:
+   `Continuous (fun x => L x) ↔ ∀ m, Continuous (fun x => L x m)`.
+2. For each direction tuple `m`, rewrite the applied function by
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`.
+3. Each finite-word scalar is continuous in `τ` by induction on the word
+   length; time atoms contribute the coordinate `τ k`, while spatial atoms
+   are independent of `τ`.
+4. Each partial-Fourier word term is continuous in `τ` by
+   `continuous_partialFourierSpatial_fun` composed with
+   `τ ↦ (τ, section43QSpatial q)`.
+5. Finite sums and products give applied continuity, hence CMLM-valued
+   continuity.
+6. Integrability follows from the compiled local domination theorem with
+   center `q`, together with the continuity/aestrong-measurability theorem
+   and `Integrable.mono'`/the dominated-bound integrability.
+7. The curry-left derivative measurability theorem uses the order `r + 1`
+   integrability theorem and then composes its `AEStronglyMeasurable` field
+   with the continuous curry-left linear isometry.  This is why the compiled
+   theorem includes the compact-support hypothesis.
+
+Resolved topology-transport seam for the dominated-integral theorem:
+
+1. The point was not new mathematics: it was an instance/topology alignment
+   between `ContinuousMultilinearMap.instTopologicalSpace` and the
+   pseudometric topology coming from the operator norm.
+2. The compiled solution does not add a wrapper theorem.  It keeps the
+   dominated-differentiation theorem at the real Section 4.3 surface and makes
+   the relevant `Integrable` hypotheses explicit with the normed/pseudometric
+   topology where Lean would otherwise infer the bundled CMLM/CLM topology.
+3. No `set_option maxHeartbeats 0` is used.  The compiled theorem has one
+   local finite `set_option maxHeartbeats 220000`, needed only for the final
+   Bochner integral/curry-left commutation after all implicit instances are
+   made explicit.  The same theorem times out at the default `200000`, while
+   `220000` exact-checks.
+4. The proof now uses the previously compiled ingredients exactly:
+   local bound, `hF_meas`, `hF_int`, `hF'_meas`, pointwise curry-left
+   derivative, and Bochner integral compatibility for the derivative integral.
+
+Lean-ready refinement of the topology seam:
+
+1. In the dominated-differentiation proof, define
+
+```lean
+let Fint : NPointDomain d n → (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+
+let Fderiv : NPointDomain d n → (Fin n → ℝ) →
+    NPointDomain d n →L[ℝ]
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+```
+
+where `Fderiv q' τ` is the curry-left pointwise `(r+1)`-derivative.
+2. Build `hF_meas` from the compiled integrability theorem, not from the
+continuity theorem:
+
+```lean
+have hF_meas : ∀ᶠ q' in 𝓝 q, AEStronglyMeasurable (Fint q') := by
+  exact Filter.Eventually.of_forall fun q' =>
+    (integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+      d n r f hf_ord hf_compact q').aestronglyMeasurable
+```
+
+This is the preferred first attempt because `Integrable` packages the
+measurability field through the same normed codomain structure that the
+parametric-integral theorem quantifies over.
+3. Build `hF'_meas` from a normed-topology integrability proof for the
+   curry-left derivative.  The compiled proof introduces
+
+```lean
+let Phi : (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ
+      (fun _ : Fin (r + 1) => NPointDomain d n) ℂ := ...
+```
+
+then proves `Integrable (Fderiv q)` from `Integrable Phi` by the
+`LipschitzWith 1` map `L ↦ L.curryLeft` and the norm identity
+`ContinuousMultilinearMap.curryLeft_norm`.
+4. The derivative integral returned by
+`hasFDerivAt_integral_of_dominated_of_fderiv_le` has target
+
+```lean
+∫ τ, (iteratedFDeriv ℝ (r + 1) ... q).curryLeft
+```
+
+and must be identified with
+
+```lean
+(section43FourierLaplaceIntegral_iteratedFDerivCandidate
+  d n (r + 1) f hf_ord q).curryLeft
+```
+
+by applying Bochner integral compatibility to a locally defined linear
+isometry `curryLI : L ↦ L.curryLeft`.  This avoids the bundled-instance
+choice in `continuousMultilinearCurryLeftEquiv` and keeps the codomain in the
+same normed topology expected by `hasFDerivAt_integral_of_dominated_of_fderiv_le`.
+
+Compiled status, 2026-04-17:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n (r + 1) f hf_ord q).curryLeft)
+      q
+```
+
+3. The parameter set is `Metric.closedBall q 1`, which is in `𝓝 q`.
+4. The pointwise `HasFDerivAt` hypothesis is
+   `hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+5. The dominated bound is
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact`.
+6. Simplify the resulting derivative integral to
+   `(section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n (r + 1) f hf_ord q).curryLeft` using
+   Bochner integral compatibility with a local normed linear isometry
+   `curryLI : L ↦ L.curryLeft`.  The local isometry avoids the bundled
+   topology chosen by the global `continuousMultilinearCurryLeftEquiv`.
+
+Finally identify the actual iterated derivative by induction:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+      q =
+      section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n r f hf_ord q
+```
+
+Proof transcript:
+
+1. Base `r = 0`: ext the zero-linear maps on `m : Fin 0 → NPointDomain d n`.
+   The left side evaluates to the Fourier-Laplace integral and the right side
+   evaluates to the Bochner integral of the zero-th pointwise derivative; close
+   by the definition of `section43FourierLaplaceIntegral` and integral
+   compatibility with fixed zero-linear-map evaluation.
+2. Step `r → r+1`: use the induction hypothesis as a function equality for
+   `q'`, differentiate it at `q`, and use
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`.
+3. Convert the resulting curried derivative equality back to an
+   `(r+1)`-linear map by applying `.uncurryLeft`; this is exactly
+   `ContinuousMultilinearMap.uncurry_curryLeft`.
+
+Compiled status, 2026-04-17: the induction theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Implementation notes:
+
+1. The induction is generalized over `q`, so the successor step has a function
+   equality for all ambient variables.
+2. The base case first changes the goal to the zero-arity integral statement,
+   then uses `ContinuousMultilinearMap.integral_apply` with the already
+   compiled order-`0` integrability theorem.
+3. The successor step rewrites
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q` by differentiating the induction
+   equality and applying
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`;
+   the final `rfl` shape is discharged by
+   `ContinuousMultilinearMap.uncurry_curryLeft`.
 
 There is one important implementation correction before the derivative theorem:
 the `smoothOn` field should not be attacked by a custom closed-half-space
@@ -20271,7 +21433,7 @@ the positive-energy region by:
 (section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport ...).hasFDerivWithinAt
 ```
 
-The `smoothOn : ContDiffOn ℝ ⊤ ...` and `rapid` fields remain positive-energy
+The `smoothOn : ContDiffOn ℝ (↑(⊤ : ℕ∞)) ...` and `rapid` fields remain positive-energy
 estimates.  They should be proved by iterating the same pointwise derivative
 construction and reusing the already compiled positive-half-space damping
 `norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`; this is
