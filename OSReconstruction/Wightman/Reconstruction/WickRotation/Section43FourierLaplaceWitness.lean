@@ -2936,6 +2936,114 @@ theorem section43PartialFourier_timeIntegral_spatialRapid
     _ = C := by
               simp [C, D]
 
+/-- Spatial rapid decay of the integrated first-derivative majorant components.
+
+The time part uses the `K = 1` time-moment estimate, while each transported
+spatial term uses the `K = 0` estimate. -/
+theorem section43FourierLaplace_fderivIntegralComponents_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (r : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ r *
+          ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+            (∫ τ : Fin n → ℝ,
+              ‖τ‖ *
+                ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i *
+              (∫ τ : Fin n → ℝ,
+                ‖partialFourierSpatial_fun (d := d) (n := n)
+                  (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)) ≤ C := by
+  classical
+  rcases section43PartialFourier_timeMomentIntegral_spatialRapid
+      (d := d) (n := n) F 1 r with
+    ⟨Ctime, hCtime_nonneg, hCtime_bound⟩
+  choose Cspace hCspace_nonneg hCspace_bound using
+    fun i : Fin n × Fin d =>
+      section43PartialFourier_timeMomentIntegral_spatialRapid
+        (d := d) (n := n)
+        (section43SpatialMultiplierTransport d n F i) 0 r
+  let T : ℝ := ∑ k : Fin n, section43QTimeCoordOpNorm d n k
+  let C : ℝ :=
+    T * Ctime +
+      ∑ i : Fin n × Fin d, section43QSpatialCoordOpNorm d n i * Cspace i
+  have hT_nonneg : 0 ≤ T := by
+    dsimp [T]
+    exact Finset.sum_nonneg fun k _hk => by
+      dsimp [section43QTimeCoordOpNorm]
+      exact norm_nonneg _
+  have hScoef_nonneg : ∀ i : Fin n × Fin d,
+      0 ≤ section43QSpatialCoordOpNorm d n i := by
+    intro i
+    dsimp [section43QSpatialCoordOpNorm]
+    exact norm_nonneg _
+  refine ⟨C, ?_, ?_⟩
+  · exact add_nonneg
+      (mul_nonneg hT_nonneg hCtime_nonneg)
+      (Finset.sum_nonneg fun i _hi =>
+        mul_nonneg (hScoef_nonneg i) (hCspace_nonneg i))
+  intro ξ
+  let W : ℝ := (1 + ‖ξ‖) ^ r
+  let Itime : ℝ :=
+    ∫ τ : Fin n → ℝ,
+      ‖τ‖ *
+        ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖
+  let Ispace : (Fin n × Fin d) → ℝ := fun i =>
+    ∫ τ : Fin n → ℝ,
+      ‖partialFourierSpatial_fun (d := d) (n := n)
+        (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖
+  have htime :
+      W * Itime ≤ Ctime := by
+    simpa [W, Itime, pow_one] using hCtime_bound ξ
+  have hspace : ∀ i : Fin n × Fin d,
+      W * Ispace i ≤ Cspace i := by
+    intro i
+    simpa [W, Ispace, pow_zero] using hCspace_bound i ξ
+  have hdist :
+      W *
+        (T * Itime +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i * Ispace i) =
+        T * (W * Itime) +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i * (W * Ispace i) := by
+    rw [mul_add, Finset.mul_sum]
+    congr 1
+    · ring
+    · refine Finset.sum_congr rfl ?_
+      intro i _hi
+      ring
+  calc
+    (1 + ‖ξ‖) ^ r *
+        ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (∫ τ : Fin n → ℝ,
+            ‖τ‖ *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+        ∑ i : Fin n × Fin d,
+          section43QSpatialCoordOpNorm d n i *
+            (∫ τ : Fin n → ℝ,
+              ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖))
+        = W *
+        (T * Itime +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i * Ispace i) := by
+          rfl
+    _ = T * (W * Itime) +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i * (W * Ispace i) := hdist
+    _ ≤ T * Ctime +
+          ∑ i : Fin n × Fin d,
+            section43QSpatialCoordOpNorm d n i * Cspace i := by
+          exact add_le_add
+            (mul_le_mul_of_nonneg_left htime hT_nonneg)
+            (Finset.sum_le_sum fun i _hi =>
+              mul_le_mul_of_nonneg_left (hspace i) (hScoef_nonneg i))
+    _ = C := by
+          rfl
+
 /-- Exponential damping in the positive-energy time variables dominates every
 polynomial weight in the time norm. -/
 theorem exp_margin_sum_controls_positiveEnergy_time_polynomial
@@ -3128,6 +3236,127 @@ theorem section43FourierLaplaceIntegral_rapid_on_positiveEnergy_zeroDeriv
     _ ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ r * (E * I) := by
           exact mul_le_mul_of_nonneg_left hscalar (pow_nonneg (by positivity) r)
     _ = A ^ r * (((1 + ‖t‖) ^ r * E) * ((1 + ‖ξ‖) ^ r * I)) := by
+          rw [mul_pow, mul_pow]
+          ring
+    _ ≤ A ^ r * (Ct * Csp) := by
+          exact mul_le_mul_of_nonneg_left hterm_prod (pow_nonneg hA_nonneg r)
+    _ = C := by
+          simp [C, mul_assoc]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- First-derivative rapid decay of the Section 4.3 Fourier-Laplace integral
+candidate on the positive-energy half-space. -/
+theorem section43FourierLaplaceIntegral_fderivCandidate_rapid_on_positiveEnergy
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ r : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ r *
+          ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤ C := by
+  intro r
+  let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+  rcases section43FourierLaplace_fderivIntegralComponents_spatialRapid
+      (d := d) (n := n) F r with
+    ⟨Csp, hCsp_nonneg, hCsp_bound⟩
+  rcases exp_margin_sum_controls_positiveEnergy_time_polynomial
+      (d := d) (n := n) hδ_pos r with
+    ⟨Ct, hCt_nonneg, hCt_bound⟩
+  let A : ℝ :=
+    1 + 2 * ‖(nPointTimeSpatialCLE (d := d) n).symm.toContinuousLinearMap‖
+  let C : ℝ := A ^ r * Ct * Csp
+  have hA_nonneg : 0 ≤ A := by
+    dsimp [A]
+    positivity
+  refine ⟨C, mul_nonneg (mul_nonneg (pow_nonneg hA_nonneg r) hCt_nonneg) hCsp_nonneg, ?_⟩
+  intro q hq
+  let t : Fin n → ℝ := section43QTime (d := d) (n := n) q
+  let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+    section43QSpatial (d := d) (n := n) q
+  let E : ℝ := Real.exp (-(δ * ∑ k : Fin n, t k))
+  let J : ℝ :=
+    (∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+      (∫ τ : Fin n → ℝ,
+        ‖τ‖ *
+          ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖) +
+    ∑ i : Fin n × Fin d,
+      section43QSpatialCoordOpNorm d n i *
+        (∫ τ : Fin n → ℝ,
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖)
+  have hT_nonneg :
+      0 ≤ ∑ k : Fin n, section43QTimeCoordOpNorm d n k := by
+    exact Finset.sum_nonneg fun k _hk => by
+      dsimp [section43QTimeCoordOpNorm]
+      exact norm_nonneg _
+  have hItime_nonneg :
+      0 ≤ ∫ τ : Fin n → ℝ,
+        ‖τ‖ *
+          ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ := by
+    exact integral_nonneg fun τ =>
+      mul_nonneg (norm_nonneg τ) (norm_nonneg _)
+  have hIspace_nonneg : ∀ i : Fin n × Fin d,
+      0 ≤ ∫ τ : Fin n → ℝ,
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖ := by
+    intro i
+    exact integral_nonneg fun τ => norm_nonneg _
+  have hJ_nonneg : 0 ≤ J := by
+    dsimp [J]
+    exact add_nonneg
+      (mul_nonneg hT_nonneg hItime_nonneg)
+      (Finset.sum_nonneg fun i _hi =>
+        mul_nonneg
+          (by
+            dsimp [section43QSpatialCoordOpNorm]
+            exact norm_nonneg _)
+          (hIspace_nonneg i))
+  have hspatial :
+      (1 + ‖ξ‖) ^ r * J ≤ Csp := by
+    simpa [J, F, ξ] using hCsp_bound ξ
+  have htime :
+      (1 + ‖t‖) ^ r * E ≤ Ct := by
+    simpa [t, E] using hCt_bound q hq
+  have hscalar :
+      ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤ E * J := by
+    simpa [E, J, F, t, ξ] using
+      section43FourierLaplaceIntegral_fderivCandidate_norm_le_exp_margin_integrals
+        d n f hf_ord hδ_supp q hq
+  have hnorm :
+      1 + ‖q‖ ≤ A * (1 + ‖t‖) * (1 + ‖ξ‖) := by
+    simpa [A, t, ξ] using
+      one_add_norm_le_section43_time_spatial_product d n q
+  have hpow_norm :
+      (1 + ‖q‖) ^ r ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ r := by
+    exact pow_le_pow_left₀ (by positivity) hnorm r
+  have htime_nonneg : 0 ≤ (1 + ‖t‖) ^ r * E := by
+    exact mul_nonneg (pow_nonneg (by positivity) r) (Real.exp_pos _).le
+  have hspatial_nonneg : 0 ≤ (1 + ‖ξ‖) ^ r * J := by
+    exact mul_nonneg (pow_nonneg (by positivity) r) hJ_nonneg
+  have hterm_prod :
+      ((1 + ‖t‖) ^ r * E) * ((1 + ‖ξ‖) ^ r * J) ≤ Ct * Csp := by
+    calc
+      ((1 + ‖t‖) ^ r * E) * ((1 + ‖ξ‖) ^ r * J)
+          ≤ Ct * ((1 + ‖ξ‖) ^ r * J) := by
+            exact mul_le_mul_of_nonneg_right htime hspatial_nonneg
+      _ ≤ Ct * Csp := by
+            exact mul_le_mul_of_nonneg_left hspatial hCt_nonneg
+  calc
+    (1 + ‖q‖) ^ r *
+        ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖
+        ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ r *
+            ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ := by
+          exact mul_le_mul_of_nonneg_right hpow_norm (norm_nonneg _)
+    _ ≤ (A * (1 + ‖t‖) * (1 + ‖ξ‖)) ^ r * (E * J) := by
+          exact mul_le_mul_of_nonneg_left hscalar (pow_nonneg (by positivity) r)
+    _ = A ^ r * (((1 + ‖t‖) ^ r * E) * ((1 + ‖ξ‖) ^ r * J)) := by
           rw [mul_pow, mul_pow]
           ring
     _ ≤ A ^ r * (Ct * Csp) := by
