@@ -1285,7 +1285,7 @@ private theorem continuousOn_OSInnerProduct_right_timeShift_nonneg_of_isCompactS
         (hf_pos := hF_pos n) (hg_pos := hG_pos m) (hg_compact := hG_compact m)
   exact hN.congr hEq.symm
 
-private theorem tendsto_OSInnerProduct_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+theorem tendsto_OSInnerProduct_right_timeShift_nhdsWithin_zero_of_isCompactSupport
     (OS : OsterwalderSchraderAxioms d) (F G : BorchersSequence d)
     (hF_pos : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n)
@@ -4577,7 +4577,7 @@ private theorem OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_of_isCompactSu
     timeShiftPositiveTimeBorchers]
 
 /-- Real Euclidean time shift of a concentrated OS tensor term. -/
-private theorem OSInnerProduct_single_right_timeShift
+theorem OSInnerProduct_single_right_timeShift
     (OS : OsterwalderSchraderAxioms d)
     {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ) :
     OSInnerProduct d OS.S (BorchersSequence.single n f)

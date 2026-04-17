@@ -345,6 +345,159 @@ theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion
     OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant d Tflat hphase
   exact OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero d N hdual htotal
 
+/-- Public Wightman descent through the Section 4.3 frequency projection.
+
+The private flattened dual-cone support witness for `bvt_W` implies that the
+boundary-value functional cannot distinguish two test functions whose Section
+4.3 positive-energy frequency projections agree.  This is the lower-layer
+descent theorem needed by the final positivity closure; it avoids importing the
+public `OSToWightmanBoundaryValues.lean` frontier back into this support file. -/
+theorem bvt_W_eq_of_section43FrequencyProjection_eq_public
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (φ ψ : SchwartzNPoint d N)
+    (hproj :
+      OSReconstruction.section43FrequencyProjection (d := d) N φ =
+        OSReconstruction.section43FrequencyProjection (d := d) N ψ) :
+    bvt_W OS lgc N φ = bvt_W OS lgc N ψ := by
+  obtain ⟨Tflat, hTflat_supp, hTflat_bv⟩ :=
+    exists_flattened_bvt_W_dualCone_distribution (d := d) OS lgc N
+  have hEqDual :=
+    OSReconstruction.physicsFourierFlat_eqOn_dualCone_of_section43FrequencyProjection_eq
+      (d := d) (N := N) φ ψ hproj
+  have hφ_flat :
+      unflattenSchwartzNPoint (d := d)
+          (flattenSchwartzNPoint (d := d) φ) = φ := by
+    ext x
+    simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
+  have hψ_flat :
+      unflattenSchwartzNPoint (d := d)
+          (flattenSchwartzNPoint (d := d) ψ) = ψ := by
+    ext x
+    simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
+  calc
+    bvt_W OS lgc N φ
+        = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (flattenSchwartzNPoint (d := d) φ)) := by
+          rw [hφ_flat]
+    _ = Tflat (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ)) := by
+          simpa using hTflat_bv (flattenSchwartzNPoint (d := d) φ)
+    _ = Tflat (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ)) := by
+          exact tflat_pairing_eq_of_eqOn_dualCone
+            (S := (flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+            Tflat hTflat_supp
+            (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ))
+            (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ))
+            hEqDual
+    _ = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (flattenSchwartzNPoint (d := d) ψ)) := by
+          simpa using (hTflat_bv (flattenSchwartzNPoint (d := d) ψ)).symm
+    _ = bvt_W OS lgc N ψ := by
+          rw [hψ_flat]
+
+/-- The reconstructed Wightman boundary-value functional descended to the
+Section 4.3 positive-energy frequency quotient.
+
+The raw representative functional first applies the explicit continuous linear
+right inverse of `section43FrequencyRepresentative`, then evaluates `bvt_W`.
+The public frequency-projection descent theorem proves this raw functional
+vanishes on the quotient kernel, so `Submodule.liftQ` gives a genuine
+continuous linear map on `Section43PositiveEnergyComponent`. -/
+noncomputable def bvt_W_descended_frequencyProjection
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    OSReconstruction.Section43PositiveEnergyComponent (d := d) N →L[ℂ] ℂ := by
+  let raw : SchwartzNPoint d N →L[ℂ] ℂ :=
+    { toLinearMap :=
+        { toFun := fun Φ =>
+            bvt_W OS lgc N
+              (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+          map_add' := by
+            intro Φ Ψ
+            rw [(OSReconstruction.section43FrequencyRepresentativeInv d N).map_add]
+            exact (bvt_W_linear (d := d) OS lgc N).map_add _ _
+          map_smul' := by
+            intro c Φ
+            rw [(OSReconstruction.section43FrequencyRepresentativeInv d N).map_smul]
+            exact (bvt_W_linear (d := d) OS lgc N).map_smul c _ }
+      cont := by
+        exact (bvt_W_continuous (d := d) OS lgc N).comp
+          (OSReconstruction.section43FrequencyRepresentativeInv d N).continuous }
+  have hker :
+      OSReconstruction.section43PositiveEnergyVanishingSubmodule (d := d) N ≤
+        LinearMap.ker raw.toLinearMap := by
+    intro Φ hΦ
+    rw [LinearMap.mem_ker]
+    change raw Φ = 0
+    have hq_zero :
+        OSReconstruction.section43PositiveEnergyQuotientMap (d := d) N Φ = 0 := by
+      change (Submodule.Quotient.mk Φ :
+          OSReconstruction.Section43PositiveEnergyComponent (d := d) N) = 0
+      rw [Submodule.Quotient.mk_eq_zero]
+      exact hΦ
+    have hproj :
+        OSReconstruction.section43FrequencyProjection (d := d) N
+            (OSReconstruction.section43FrequencyRepresentativeInv d N Φ) =
+          OSReconstruction.section43FrequencyProjection (d := d) N 0 := by
+      calc
+        OSReconstruction.section43FrequencyProjection (d := d) N
+            (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+            = OSReconstruction.section43PositiveEnergyQuotientMap (d := d) N Φ := by
+              simp [OSReconstruction.section43FrequencyProjection,
+                OSReconstruction.section43FrequencyRepresentativeInv_right]
+        _ = 0 := hq_zero
+        _ = OSReconstruction.section43FrequencyProjection (d := d) N 0 := by
+              simp [OSReconstruction.section43FrequencyProjection]
+    have hW :=
+      bvt_W_eq_of_section43FrequencyProjection_eq_public (d := d) OS lgc
+        (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+        (0 : SchwartzNPoint d N) hproj
+    have hraw : raw Φ =
+        bvt_W OS lgc N
+          (OSReconstruction.section43FrequencyRepresentativeInv d N Φ) := rfl
+    rw [hraw, hW]
+    exact (bvt_W_linear (d := d) OS lgc N).map_zero
+  let descended :
+      OSReconstruction.Section43PositiveEnergyComponent (d := d) N →ₗ[ℂ] ℂ :=
+    (OSReconstruction.section43PositiveEnergyVanishingSubmodule (d := d) N).liftQ
+      raw.toLinearMap hker
+  refine ContinuousLinearMap.mk descended ?_
+  let hopen :=
+    (OSReconstruction.section43PositiveEnergyVanishingSubmodule
+      (d := d) N).isOpenQuotientMap_mkQ
+  exact hopen.isQuotientMap.continuous_iff.2 <| by
+    simpa [descended, raw, Function.comp] using raw.continuous
+
+/-- Evaluation rule for the descended Wightman functional on deterministic
+Section 4.3 frequency projections. -/
+theorem bvt_W_descended_frequencyProjection_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (φ : SchwartzNPoint d N) :
+    bvt_W_descended_frequencyProjection (d := d) OS lgc N
+        (OSReconstruction.section43FrequencyProjection (d := d) N φ) =
+      bvt_W OS lgc N φ := by
+  change bvt_W OS lgc N
+      (OSReconstruction.section43FrequencyRepresentativeInv d N
+        (OSReconstruction.section43FrequencyRepresentative d N φ)) =
+    bvt_W OS lgc N φ
+  have hproj :
+      OSReconstruction.section43FrequencyProjection (d := d) N
+          (OSReconstruction.section43FrequencyRepresentativeInv d N
+            (OSReconstruction.section43FrequencyRepresentative d N φ)) =
+        OSReconstruction.section43FrequencyProjection (d := d) N φ := by
+    simp [OSReconstruction.section43FrequencyProjection,
+      OSReconstruction.section43FrequencyRepresentativeInv_right]
+  exact bvt_W_eq_of_section43FrequencyProjection_eq_public (d := d) OS lgc
+    (OSReconstruction.section43FrequencyRepresentativeInv d N
+      (OSReconstruction.section43FrequencyRepresentative d N φ))
+    φ hproj
+
 /-- Flattened dual-cone support package together with the Fourier-Laplace
 representation of the interior Wightman holomorphic function.
 
@@ -1864,7 +2017,7 @@ ambient conjugated tensor product is exactly the ordinary flat tensor product of
 the left Borchers conjugate with the right factor. This is the precise
 factorization seam needed to turn the live Stage-5 right-block CLM into a
 consumer of the full flattened `(n+m)`-point spectral package. -/
-private theorem reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
+theorem reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
     {n m : ℕ}
     (f : SchwartzNPoint d n)
     (g : SchwartzNPoint d m) :

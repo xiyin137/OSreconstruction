@@ -2053,7 +2053,7 @@ private theorem section43SuccRightEtaCLM_nonneg_of_mem_dualCone
   rw [section43SuccRightEtaCLM_apply]
   exact div_nonneg (neg_nonneg.mpr hlam') Real.two_pi_pos.le
 
-private theorem section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion
+theorem section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion
     (d n m : ℕ) [NeZero d]
     {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
     (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
