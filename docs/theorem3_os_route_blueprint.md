@@ -19224,7 +19224,7 @@ structure Section43PositiveEnergySchwartzWitness
     (d n : ℕ) [NeZero d]
     (F : NPointDomain d n → ℂ) : Prop where
   smoothOn :
-    ContDiffOn ℝ ⊤ F (section43PositiveEnergyRegion d n)
+    ContDiffOn ℝ (↑(⊤ : ℕ∞)) F (section43PositiveEnergyRegion d n)
   rapid :
     ∀ k l : ℕ, ∃ C > 0,
       ∀ q ∈ section43PositiveEnergyRegion d n,
@@ -19807,7 +19807,7 @@ packet.
 
 #### Higher-Derivative Smooth/Rapid Induction
 
-For `ContDiffOn ℝ ⊤` and the full rapid field, do not try to write each order
+For `ContDiffOn ℝ (↑(⊤ : ℕ∞))` and the full rapid field, do not try to write each order
 by hand and do not introduce another first-derivative wrapper.  The compiled
 first derivative and C¹ package are the base case.  The remaining proof must
 encode the finite algebra of all higher derivatives of the same integrand.
@@ -20329,6 +20329,18 @@ Proof transcript:
    `section43FourierLaplaceIntegral_iteratedFDerivCandidate`.
 2. Close by the candidate rapid theorem.
 
+Compiled status, 2026-04-17: the actual derivative rapid theorem is
+implemented in `Section43FourierLaplaceCompactDifferentiation.lean` as
+
+```lean
+section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+```
+
+The proof is exactly the two-line consumer described above: rewrite by
+`section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport`
+and apply
+`section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+
 The smoothness proof under compact support is a separate all-order dominated
 integral theorem.  It should use compact `τ`-slab domination, not the
 positive-energy exponential damping:
@@ -20340,7 +20352,7 @@ theorem section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport
     (hf_ord :
       tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
     (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
-    ContDiff ℝ ⊤
+    ContDiff ℝ (↑(⊤ : ℕ∞))
       (fun q : NPointDomain d n =>
         section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
 ```
@@ -20361,8 +20373,16 @@ Implementation transcript:
 4. Apply Mathlib's dominated differentiation theorem at each finite order,
    inducting with `contDiff_succ_iff_fderiv_apply` or the corresponding
    finite-dimensional `ContDiff` theorem already used elsewhere in the repo.
-5. Upgrade finite-order smoothness to `ContDiff ℝ ⊤` by introducing the
+5. Upgrade finite-order smoothness to `ContDiff ℝ (↑(⊤ : ℕ∞))` by introducing the
    arbitrary finite order at the start of the proof.
+
+Compiled status, 2026-04-17: this ambient smoothness theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Important Lean-order correction: ordinary `C∞` smoothness is written
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, not `ContDiff ℝ ⊤`.  The latter is a strictly
+stronger top order in Mathlib's `WithTop ℕ∞` scale and is not what follows
+from the all-finite-order dominated-differentiation induction.
 
 After the previous two theorem families are compiled, the positive-energy
 witness packet becomes implementation-ready:
@@ -20371,7 +20391,7 @@ witness packet becomes implementation-ready:
 structure Section43PositiveEnergySchwartzWitness
     (d n : ℕ) [NeZero d] (F : NPointDomain d n → ℂ) where
   smoothOn :
-    ContDiffOn ℝ ⊤ F (section43PositiveEnergyRegion d n)
+    ContDiffOn ℝ (↑(⊤ : ℕ∞)) F (section43PositiveEnergyRegion d n)
   rapid :
     ∀ k l : ℕ, ∃ C : ℝ,
       ∀ q ∈ section43PositiveEnergyRegion d n,
@@ -20455,18 +20475,15 @@ Implementation readiness checkpoint:
   `integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact`,
   and
   `aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
-- Ready next: align the CMLM codomain topology/normed-space instance surface
-  for `hasFDerivAt_integral_of_dominated_of_fderiv_le`.  The first attempt
-  showed the honest remaining Lean seam: the theorem expects the normed /
-  pseudometric topology on
-  `ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ`, while
-  direct continuity lemmas naturally produce `AEStronglyMeasurable` under the
-  bundled CMLM topology.  Close this with a small topology-transport lemma, not
-  with heartbeat increases or wrapper reductions.
-- Then apply `hasFDerivAt_integral_of_dominated_of_fderiv_le` to identify the
-  derivative of the integrated candidate with the next candidate.
-- Then ready: identify the candidate with actual `iteratedFDeriv` by
+- Compiled next: the CMLM/CLM topology seam for
+  `hasFDerivAt_integral_of_dominated_of_fderiv_le` is closed by explicit
+  normed-topology `Integrable` hypotheses and a local `curryLI`.
+- Compiled next: `hasFDerivAt_integral_of_dominated_of_fderiv_le` identifies
+  the derivative of the integrated candidate with the next candidate.
+- Compiled next: the candidate is identified with actual `iteratedFDeriv` by
   induction.
+- Compiled next: ambient smoothness is available as
+  `ContDiff ℝ (↑(⊤ : ℕ∞))`.
 - Then ready: derive the actual derivative rapid theorem from that
   identification and the compiled candidate rapid theorem.
 - Not ready to implement yet: the positive-half-space Schwartz extension
@@ -20475,7 +20492,8 @@ Implementation readiness checkpoint:
 
 The all-order candidate-identification theorem should be proved in the
 following smaller theorem order.  Do **not** jump straight to
-`ContDiff ℝ ⊤`; the local domination theorem is the real seam.
+`ContDiff ℝ ⊤`; ordinary C∞ smoothness is
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, and the local domination theorem is the real seam.
 
 First add the no-margin pointwise norm estimates.  These are the compact-slab
 analogues of the positive-energy word bounds, but with the exponential left as
@@ -20842,22 +20860,100 @@ Proof transcript for the continuity packet:
    with the continuous curry-left linear isometry.  This is why the compiled
    theorem includes the compact-support hypothesis.
 
-Remaining topology-transport seam before the dominated-integral theorem:
+Resolved topology-transport seam for the dominated-integral theorem:
 
-1. Add a small lemma that restates the compiled `AEStronglyMeasurable` facts
-   for CMLM-valued maps using the exact codomain topology inferred by
-   `hasFDerivAt_integral_of_dominated_of_fderiv_le`.
-2. The point is not new mathematics: it is an instance/topology alignment
+1. The point was not new mathematics: it was an instance/topology alignment
    between `ContinuousMultilinearMap.instTopologicalSpace` and the
    pseudometric topology coming from the operator norm.
-3. Do not use `set_option maxHeartbeats 0`; if a finite local synth-heartbeat
-   option appears necessary, first try explicit local instances or an
-   equality/identity transport lemma and document the exact statement.
-4. Once this transport compiles, the previously attempted `HasFDerivAt` proof
-   should be reintroduced with the same ingredients already compiled:
+2. The compiled solution does not add a wrapper theorem.  It keeps the
+   dominated-differentiation theorem at the real Section 4.3 surface and makes
+   the relevant `Integrable` hypotheses explicit with the normed/pseudometric
+   topology where Lean would otherwise infer the bundled CMLM/CLM topology.
+3. No `set_option maxHeartbeats 0` is used.  The compiled theorem has one
+   local finite `set_option maxHeartbeats 220000`, needed only for the final
+   Bochner integral/curry-left commutation after all implicit instances are
+   made explicit.  The same theorem times out at the default `200000`, while
+   `220000` exact-checks.
+4. The proof now uses the previously compiled ingredients exactly:
    local bound, `hF_meas`, `hF_int`, `hF'_meas`, pointwise curry-left
-   derivative, and the integral-application extensionality proof for the
-   derivative integral.
+   derivative, and Bochner integral compatibility for the derivative integral.
+
+Lean-ready refinement of the topology seam:
+
+1. In the dominated-differentiation proof, define
+
+```lean
+let Fint : NPointDomain d n → (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+
+let Fderiv : NPointDomain d n → (Fin n → ℝ) →
+    NPointDomain d n →L[ℝ]
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+```
+
+where `Fderiv q' τ` is the curry-left pointwise `(r+1)`-derivative.
+2. Build `hF_meas` from the compiled integrability theorem, not from the
+continuity theorem:
+
+```lean
+have hF_meas : ∀ᶠ q' in 𝓝 q, AEStronglyMeasurable (Fint q') := by
+  exact Filter.Eventually.of_forall fun q' =>
+    (integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+      d n r f hf_ord hf_compact q').aestronglyMeasurable
+```
+
+This is the preferred first attempt because `Integrable` packages the
+measurability field through the same normed codomain structure that the
+parametric-integral theorem quantifies over.
+3. Build `hF'_meas` from a normed-topology integrability proof for the
+   curry-left derivative.  The compiled proof introduces
+
+```lean
+let Phi : (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ
+      (fun _ : Fin (r + 1) => NPointDomain d n) ℂ := ...
+```
+
+then proves `Integrable (Fderiv q)` from `Integrable Phi` by the
+`LipschitzWith 1` map `L ↦ L.curryLeft` and the norm identity
+`ContinuousMultilinearMap.curryLeft_norm`.
+4. The derivative integral returned by
+`hasFDerivAt_integral_of_dominated_of_fderiv_le` has target
+
+```lean
+∫ τ, (iteratedFDeriv ℝ (r + 1) ... q).curryLeft
+```
+
+and must be identified with
+
+```lean
+(section43FourierLaplaceIntegral_iteratedFDerivCandidate
+  d n (r + 1) f hf_ord q).curryLeft
+```
+
+by applying Bochner integral compatibility to a locally defined linear
+isometry `curryLI : L ↦ L.curryLeft`.  This avoids the bundled-instance
+choice in `continuousMultilinearCurryLeftEquiv` and keeps the codomain in the
+same normed topology expected by `hasFDerivAt_integral_of_dominated_of_fderiv_le`.
+
+Compiled status, 2026-04-17:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n (r + 1) f hf_ord q).curryLeft)
+      q
+```
 
 3. The parameter set is `Metric.closedBall q 1`, which is in `𝓝 q`.
 4. The pointwise `HasFDerivAt` hypothesis is
@@ -20867,9 +20963,9 @@ Remaining topology-transport seam before the dominated-integral theorem:
 6. Simplify the resulting derivative integral to
    `(section43FourierLaplaceIntegral_iteratedFDerivCandidate
       d n (r + 1) f hf_ord q).curryLeft` using
-   Bochner integral compatibility with the continuous linear map
-   `ContinuousMultilinearMap.curryLeft`, i.e. the linear isometry
-   `continuousMultilinearCurryLeftEquiv`.
+   Bochner integral compatibility with a local normed linear isometry
+   `curryLI : L ↦ L.curryLeft`.  The local isometry avoids the bundled
+   topology chosen by the global `continuousMultilinearCurryLeftEquiv`.
 
 Finally identify the actual iterated derivative by induction:
 
@@ -20901,6 +20997,23 @@ Proof transcript:
    `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`.
 3. Convert the resulting curried derivative equality back to an
    `(r+1)`-linear map by applying `.uncurryLeft`; this is exactly
+   `ContinuousMultilinearMap.uncurry_curryLeft`.
+
+Compiled status, 2026-04-17: the induction theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Implementation notes:
+
+1. The induction is generalized over `q`, so the successor step has a function
+   equality for all ambient variables.
+2. The base case first changes the goal to the zero-arity integral statement,
+   then uses `ContinuousMultilinearMap.integral_apply` with the already
+   compiled order-`0` integrability theorem.
+3. The successor step rewrites
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q` by differentiating the induction
+   equality and applying
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`;
+   the final `rfl` shape is discharged by
    `ContinuousMultilinearMap.uncurry_curryLeft`.
 
 There is one important implementation correction before the derivative theorem:
@@ -21320,7 +21433,7 @@ the positive-energy region by:
 (section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport ...).hasFDerivWithinAt
 ```
 
-The `smoothOn : ContDiffOn ℝ ⊤ ...` and `rapid` fields remain positive-energy
+The `smoothOn : ContDiffOn ℝ (↑(⊤ : ℕ∞)) ...` and `rapid` fields remain positive-energy
 estimates.  They should be proved by iterating the same pointwise derivative
 construction and reusing the already compiled positive-half-space damping
 `norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`; this is

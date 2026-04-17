@@ -596,4 +596,323 @@ theorem aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeri
     e.continuous.comp_aestronglyMeasurable hint.aestronglyMeasurable
   simpa [F, e] using hmeas
 
+set_option maxHeartbeats 220000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact ordered support, the integrated all-order derivative
+candidate has derivative given by the curry-left of the next integrated
+candidate. -/
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n (r + 1) f hf_ord q).curryLeft)
+      q := by
+  classical
+  let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+  let Fint : NPointDomain d n → (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+    fun q' τ =>
+      iteratedFDeriv ℝ r
+        (fun q'' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q''))
+        q'
+  let Fderiv : NPointDomain d n → (Fin n → ℝ) →
+      NPointDomain d n →L[ℝ]
+        ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+    fun q' τ =>
+      (iteratedFDeriv ℝ (r + 1)
+        (fun q'' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q''))
+        q').curryLeft
+  rcases
+    section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+      d n r f hf_ord hf_compact q with
+    ⟨bound, hbound_int, hbound⟩
+  have hs : Metric.closedBall q (1 : ℝ) ∈ 𝓝 q :=
+    Metric.closedBall_mem_nhds q zero_lt_one
+  have hF_meas : ∀ᶠ q' in 𝓝 q, AEStronglyMeasurable (Fint q') := by
+    exact Filter.Eventually.of_forall fun q' =>
+      (integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+        d n r f hf_ord hf_compact q').aestronglyMeasurable
+  have hF_int : Integrable (Fint q) := by
+    simpa [Fint, F] using
+      integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+        d n r f hf_ord hf_compact q
+  have hbound' : ∀ᵐ τ : Fin n → ℝ, ∀ q' ∈ Metric.closedBall q (1 : ℝ),
+      ‖Fderiv q' τ‖ ≤ bound τ := by
+    simpa [Fderiv, F] using hbound
+  have hq_self : q ∈ Metric.closedBall q (1 : ℝ) := by
+    simp [Metric.mem_closedBall]
+  let Phi : (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ
+        (fun _ : Fin (r + 1) => NPointDomain d n) ℂ :=
+    fun τ =>
+      iteratedFDeriv ℝ (r + 1)
+        (fun q'' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q''))
+        q
+  have hnext_int :
+      @Integrable
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => NPointDomain d n) ℂ)
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace
+        SeminormedAddGroup.toContinuousENorm
+        (Fin n → ℝ) _ Phi volume := by
+    simpa [F] using
+      integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+        d n (r + 1) f hf_ord hf_compact q
+  have hcurry_lipschitz :
+      LipschitzWith 1
+        (fun L : ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => NPointDomain d n) ℂ =>
+          L.curryLeft) := by
+    refine LipschitzWith.of_dist_le_mul ?_
+    intro L M
+    simp only [NNReal.coe_one, one_mul]
+    rw [dist_eq_norm, dist_eq_norm]
+    have hsub : L.curryLeft - M.curryLeft = (L - M).curryLeft := by
+      ext v mtail
+      simp [ContinuousMultilinearMap.curryLeft_apply]
+    rw [hsub, ContinuousMultilinearMap.curryLeft_norm]
+  have hFderiv_int :
+      @Integrable
+        (NPointDomain d n →L[ℝ]
+          ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ)
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace
+        SeminormedAddGroup.toContinuousENorm
+        (Fin n → ℝ) _ (Fderiv q) volume := by
+    refine Integrable.mono
+      (f := Fderiv q)
+      (g := Phi)
+      hnext_int ?_ ?_
+    · have hmeas :
+          AEStronglyMeasurable
+            (fun τ : Fin n → ℝ => (Phi τ).curryLeft) :=
+          hcurry_lipschitz.continuous.comp_aestronglyMeasurable
+            hnext_int.aestronglyMeasurable
+      simpa [Fderiv, Phi] using hmeas
+    · filter_upwards with τ
+      simp [Fderiv, Phi, ContinuousMultilinearMap.curryLeft_norm]
+  have hFderiv_meas := hFderiv_int.aestronglyMeasurable
+  have hdiff : ∀ᵐ τ : Fin n → ℝ, ∀ q' ∈ Metric.closedBall q (1 : ℝ),
+      HasFDerivAt (Fint · τ) (Fderiv q' τ) q' := by
+    filter_upwards with τ q' _hq'
+    simpa [Fint, Fderiv, F] using
+      hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft
+        d n r F q' τ
+  have hmain :=
+    hasFDerivAt_integral_of_dominated_of_fderiv_le
+      (𝕜 := ℝ) (μ := volume)
+      (F := Fint) (F' := Fderiv) (x₀ := q)
+      (s := Metric.closedBall q (1 : ℝ)) (bound := bound)
+      hs hF_meas hF_int hFderiv_meas hbound' hbound_int hdiff
+  have hderivIntegral :
+      (∫ τ : Fin n → ℝ, Fderiv q τ) =
+        ((∫ τ : Fin n → ℝ, Phi τ).curryLeft) := by
+    letI : SeminormedAddCommGroup
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => NPointDomain d n) ℂ) :=
+      NormedAddCommGroup.toSeminormedAddCommGroup
+    letI : SeminormedAddCommGroup
+        (NPointDomain d n →L[ℝ]
+          ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ) :=
+      NormedAddCommGroup.toSeminormedAddCommGroup
+    let curryLI :
+        ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => NPointDomain d n) ℂ →ₗᵢ[ℝ]
+          (NPointDomain d n →L[ℝ]
+            ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ) :=
+      { toLinearMap :=
+          { toFun := fun L => L.curryLeft
+            map_add' := by
+              intro L M
+              rfl
+            map_smul' := by
+              intro c L
+              rfl }
+        norm_map' := by
+          intro L
+          exact ContinuousMultilinearMap.curryLeft_norm L }
+    haveI : CompleteSpace
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => NPointDomain d n) ℂ) := inferInstance
+    change (∫ τ : Fin n → ℝ, curryLI (Phi τ)) =
+      curryLI (∫ τ : Fin n → ℝ, Phi τ)
+    exact
+      (ContinuousLinearMap.integral_comp_comm
+          (𝕜 := ℝ)
+          (E := ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => NPointDomain d n) ℂ)
+          (Fₗ := NPointDomain d n →L[ℝ]
+            ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ)
+          (X := Fin n → ℝ)
+          (μ := volume)
+          curryLI.toContinuousLinearMap hnext_int)
+  rw [hderivIntegral] at hmain
+  simpa [section43FourierLaplaceIntegral_iteratedFDerivCandidate,
+    Fint, Fderiv, F] using hmain
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact ordered support, the iterated derivatives of the
+Fourier-Laplace integral are the integrated pointwise derivative candidates. -/
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+      q =
+      section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n r f hf_ord q := by
+  classical
+  let G : NPointDomain d n → ℂ := fun q' =>
+    section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q'
+  induction r generalizing q with
+  | zero =>
+      ext m
+      have hint :
+          Integrable
+            (fun τ : Fin n → ℝ =>
+              iteratedFDeriv ℝ 0
+                (fun q' : NPointDomain d n =>
+                  Complex.exp
+                    (-(∑ k : Fin n,
+                      (τ k : ℂ) *
+                        (section43QTime (d := d) (n := n) q' k : ℂ))) *
+                  partialFourierSpatial_fun (d := d) (n := n)
+                    (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+                    (τ, section43QSpatial (d := d) (n := n) q'))
+                q) := by
+        simpa using
+          integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+            d n 0 f hf_ord hf_compact q
+      change
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q =
+          (∫ τ : Fin n → ℝ,
+            iteratedFDeriv ℝ 0
+              (fun q' : NPointDomain d n =>
+                Complex.exp
+                  (-(∑ k : Fin n,
+                    (τ k : ℂ) *
+                      (section43QTime (d := d) (n := n) q' k : ℂ))) *
+                partialFourierSpatial_fun (d := d) (n := n)
+                  (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+                  (τ, section43QSpatial (d := d) (n := n) q'))
+              q) m
+      rw [ContinuousMultilinearMap.integral_apply hint m]
+      simp [section43FourierLaplaceIntegral, iteratedFDeriv_zero_apply]
+  | succ r ih =>
+      have hfun :
+          iteratedFDeriv ℝ r G =
+          fun q' : NPointDomain d n =>
+            section43FourierLaplaceIntegral_iteratedFDerivCandidate
+              d n r f hf_ord q' := by
+        funext q'
+        simpa [G] using ih q'
+      have hfd :
+          fderiv ℝ (iteratedFDeriv ℝ r G) q =
+            (section43FourierLaplaceIntegral_iteratedFDerivCandidate
+              d n (r + 1) f hf_ord q).curryLeft := by
+        have hderiv :=
+          section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+            d n r f hf_ord hf_compact q
+        rw [hfun]
+        exact hderiv.fderiv
+      rw [iteratedFDeriv_succ_eq_comp_left, Function.comp_apply, hfd]
+      exact ContinuousMultilinearMap.uncurry_curryLeft _
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact ordered support, the Section 4.3 Fourier-Laplace integral is
+ambient smooth in the positive-energy variable. -/
+theorem section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ (↑(⊤ : ℕ∞))
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q) := by
+  classical
+  let G : NPointDomain d n → ℂ := fun q =>
+    section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q
+  change ContDiff ℝ (↑(⊤ : ℕ∞)) G
+  refine contDiff_of_differentiable_iteratedFDeriv
+    (𝕜 := ℝ) (E := NPointDomain d n) (F := ℂ) (f := G) (n := (⊤ : ℕ∞)) ?_
+  intro r _hr
+  have hfun :
+      iteratedFDeriv ℝ r G =
+      fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q := by
+    funext q
+    simpa [G] using
+      section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+        d n r f hf_ord hf_compact q
+  rw [hfun]
+  intro q
+  exact
+    (section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+      d n r f hf_ord hf_compact q).differentiableAt
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Rapid decay of the actual all-order derivatives of the Section 4.3
+Fourier-Laplace integral on the positive-energy half-space. -/
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖iteratedFDeriv ℝ r
+            (fun q' : NPointDomain d n =>
+              section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+            q‖ ≤ C := by
+  intro s
+  rcases
+    section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy
+      d n r f hf_ord hδ_pos hδ_supp s with
+    ⟨C, hC_nonneg, hC_bound⟩
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro q hq
+  rw [section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+    d n r f hf_ord hf_compact q]
+  exact hC_bound q hq
+
 end OSReconstruction
