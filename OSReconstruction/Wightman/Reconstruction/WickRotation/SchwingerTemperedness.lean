@@ -546,21 +546,6 @@ theorem kernel_mul_zeroDiagonal_integrable_of_ae_infDist_mul_pow_le_polynomial
       _ = C_bd * Cf * (1 + ‖x‖) ^ (-(↑(D + 1) : ℝ)) := by
           rw [Real.rpow_neg (by positivity), Real.rpow_natCast]
 
-/-- **The Wick-rotated BHW kernel is a.e. strongly measurable.**
-
-    The function x ↦ F_ext(Wick(x)) is a.e. strongly measurable on NPointDomain.
-    This follows from the fact that F_ext is holomorphic (hence continuous) on the
-    permuted extended tube, Wick rotation is continuous, and a.e. Euclidean points
-    lie in TranslatedPET (by `ae_euclidean_points_in_translatedPET`).
-    Requires extending the kernel to TranslatedPET for the full proof. -/
-theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
-    (Wfn : WightmanFunctions d) :
-    MeasureTheory.AEStronglyMeasurable
-      (fun x : NPointDomain d n =>
-        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)))
-      MeasureTheory.volume := by
-  sorry
-
 private theorem measure_timeEq_zero {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
     MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
   let L : NPointDomain d n →ₗ[ℝ] ℝ :=
@@ -612,6 +597,128 @@ private theorem ae_pairwise_distinct_timeCoords {d n : ℕ} :
           simpa [s, Set.compl_setOf] using hsae)
   filter_upwards [hall] with x hx i j hij
   exact hx ⟨⟨i, j⟩, hij⟩
+
+/-- **The Wick-rotated BHW kernel is a.e. strongly measurable.**
+
+    Strategy: the raw kernel `x ↦ F_ext_on_translatedPET_total Wfn (wick(x))`
+    uses `Classical.choose` on the `TranslatedPET` witness and is not obviously
+    measurable. But we can construct an a.e.-equal measurable surrogate.
+
+    Let `shift(x)(k)(μ) := x(k)(μ) + A(x) · [μ=0]`, where `A(x) := 1 + ∑|x_i(0)|`.
+    Then `shift` is continuous, `wick ∘ shift` is continuous, and for a.e. x
+    (those with pairwise distinct times), `wick(shift(x)) ∈ PermutedExtendedTube`
+    (by `euclidean_distinct_in_permutedTube`). Since F_ext is ContinuousOn PET,
+    the composition `g(x) := F_ext(wick(shift(x)))` is AE strongly measurable.
+
+    Finally, F_ext_on_translatedPET_total(wick(x)) = g(x) a.e.: for wick(x) ∈
+    TranslatedPET, both sides evaluate F_ext at a PET-translate of wick(x), so
+    by `F_ext_value_on_translatedPET` they agree. -/
+theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) :
+    MeasureTheory.AEStronglyMeasurable
+      (fun x : NPointDomain d n =>
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)))
+      MeasureTheory.volume := by
+  -- Step 1: Measurable shift that puts Wick-rotated configs into PET a.e.
+  let A : NPointDomain d n → ℝ := fun x => 1 + ∑ i : Fin n, |x i 0|
+  let aShift : NPointDomain d n → SpacetimeDim d :=
+    fun x μ => if μ = 0 then A x else 0
+  let shiftFn : NPointDomain d n → NPointDomain d n :=
+    fun x k μ => x k μ + aShift x μ
+  let g : NPointDomain d n → ℂ :=
+    fun x => (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (shiftFn x k))
+  -- Continuity of shiftFn
+  have hA_cont : Continuous A := by
+    refine continuous_const.add ?_
+    refine continuous_finset_sum Finset.univ fun i _ => ?_
+    exact continuous_abs.comp ((continuous_apply (0 : Fin (d + 1))).comp (continuous_apply i))
+  have hshift_cont : Continuous shiftFn := by
+    refine continuous_pi fun k => continuous_pi fun μ => ?_
+    refine Continuous.add ((continuous_apply μ).comp (continuous_apply k)) ?_
+    dsimp [aShift]
+    by_cases hμ : μ = 0
+    · simp [hμ]; exact hA_cont
+    · simp [hμ]; exact continuous_const
+  -- Continuity of wick
+  have hwick_cont :
+      Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
+    refine continuous_pi fun k => continuous_pi fun μ => ?_
+    simp only [wickRotatePoint]
+    split_ifs
+    · exact continuous_const.mul
+        (Complex.continuous_ofReal.comp ((continuous_apply 0).comp (continuous_apply k)))
+    · exact Complex.continuous_ofReal.comp
+        ((continuous_apply μ).comp (continuous_apply k))
+  have hwick_shift_cont :
+      Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (shiftFn x k)) :=
+    hwick_cont.comp hshift_cont
+  -- PET is open
+  have hPET_open : IsOpen (PermutedExtendedTube d n) :=
+    BHW_permutedExtendedTube_eq (d := d) (n := n) ▸ BHW.isOpen_permutedExtendedTube
+  -- S = {x : wick(shift(x)) ∈ PET} is open and has full measure.
+  let S : Set (NPointDomain d n) :=
+    (fun x : NPointDomain d n => fun k => wickRotatePoint (shiftFn x k)) ⁻¹'
+      PermutedExtendedTube d n
+  have hS_open : IsOpen S := hPET_open.preimage hwick_shift_cont
+  have hS_ae : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume, x ∈ S := by
+    filter_upwards [ae_pairwise_distinct_timeCoords (d := d) (n := n)] with x hdist
+    have hdistinct_sx :
+        ∀ i j : Fin n, i ≠ j → shiftFn x i 0 ≠ shiftFn x j 0 := by
+      intro i j hij; simp [shiftFn, aShift]; exact hdist i j hij
+    have hpos_sx : ∀ i : Fin n, shiftFn x i 0 > 0 := by
+      intro i
+      have hi_le : |x i 0| ≤ ∑ j : Fin n, |x j 0| :=
+        Finset.single_le_sum (fun j _ => abs_nonneg (x j 0)) (Finset.mem_univ i)
+      have : 0 < x i 0 + A x := by dsimp [A]; linarith [neg_abs_le (x i 0)]
+      simpa [shiftFn, aShift] using this
+    exact euclidean_distinct_in_permutedTube (shiftFn x) hdistinct_sx hpos_sx
+  -- F_ext continuous on PET → g continuous on S → AE strongly measurable.
+  have hF_cont :
+      ContinuousOn (W_analytic_BHW Wfn n).val (PermutedExtendedTube d n) :=
+    (W_analytic_BHW Wfn n).property.1.continuousOn
+  have hg_cont : ContinuousOn g S :=
+    hF_cont.comp hwick_shift_cont.continuousOn (fun _ hx => hx)
+  have hS_meas : MeasurableSet S := hS_open.measurableSet
+  have hg_ae_strong : MeasureTheory.AEStronglyMeasurable g MeasureTheory.volume := by
+    have hg_restr :
+        MeasureTheory.AEStronglyMeasurable g (MeasureTheory.volume.restrict S) :=
+      hg_cont.aestronglyMeasurable hS_meas
+    have hrestr_eq :
+        MeasureTheory.volume.restrict S =
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+      MeasureTheory.Measure.restrict_eq_self_of_ae_mem hS_ae
+    rwa [hrestr_eq] at hg_restr
+  -- Step 2: the kernel equals g a.e. via F_ext_value_on_translatedPET.
+  refine hg_ae_strong.congr ?_
+  filter_upwards [ae_euclidean_points_in_translatedPET (d := d) (n := n), hS_ae] with
+    x hx_tpet hx_S
+  -- Unfold F_ext_on_translatedPET_total at wick(x)
+  simp only [F_ext_on_translatedPET_total, dif_pos hx_tpet, F_ext_on_translatedPET]
+  -- Goal: F_ext(wick(x) + hx_tpet.choose) = g(x) = F_ext(wick(shiftFn(x)))
+  -- wick(shiftFn(x)) = wick(x) + wick(aShift(x))
+  have hwick_add :
+      (fun k => wickRotatePoint (shiftFn x k)) =
+      (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint (aShift x) μ) := by
+    ext k μ
+    simp only [shiftFn, wickRotatePoint, aShift]
+    split_ifs <;> push_cast <;> ring
+  have hx_shift_pet :
+      (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint (aShift x) μ) ∈
+        PermutedExtendedTube d n := by
+    have hmem : (fun k => wickRotatePoint (shiftFn x k)) ∈ PermutedExtendedTube d n := hx_S
+    rw [hwick_add] at hmem
+    exact hmem
+  -- Apply F_ext_value_on_translatedPET with witnesses wick(aShift x) and hx_tpet.choose.
+  have key :=
+    F_ext_value_on_translatedPET Wfn (fun k => wickRotatePoint (x k))
+      (wickRotatePoint (aShift x)) hx_tpet.choose
+      hx_shift_pet hx_tpet.choose_spec
+  -- key : F_ext(wick(x) + wick(aShift x)) = F_ext(wick(x) + hx_tpet.choose)
+  show g x = (W_analytic_BHW Wfn n).val
+    (fun k μ => wickRotatePoint (x k) μ + hx_tpet.choose μ)
+  dsimp [g]
+  rw [hwick_add]
+  exact key
 
 theorem schwartz_polynomial_kernel_integrable {d n : ℕ} [NeZero d]
     (K : NPointDomain d n → ℂ)
