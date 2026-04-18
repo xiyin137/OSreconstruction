@@ -2522,9 +2522,35 @@ before attempting production Lean.
 
 ## Layer 3: Add Spatial Fourier Transform
 
+Layer-3 correction, 2026-04-18:
+
+The phrase "compose with the spatial Fourier transform" is not by itself an
+implementation-ready proof.  The final source type requires compact support in
+spacetime.  Therefore the dense spatial factors cannot be arbitrary inverse
+Fourier transforms: `FourierTransform.fourierInv χ` is generally not compactly
+supported.  The correct dense set on the spatial-frequency side is the Fourier
+image of compactly supported spatial Schwartz sources.
+
 Definitions:
 
 ```lean
+abbrev Section43SpatialSpace (d n : ℕ) [NeZero d] :=
+  EuclideanSpace ℝ (Fin n × Fin d)
+
+def Section43SpatialCompactSource (d n : ℕ) [NeZero d] :=
+  {κ : SchwartzMap (Section43SpatialSpace d n) ℂ //
+    HasCompactSupport (κ : Section43SpatialSpace d n → ℂ)}
+
+def section43SpatialFourierCompactRange
+    (d n : ℕ) [NeZero d] :
+    Set (SchwartzMap (Section43SpatialSpace d n) ℂ) :=
+  Set.range fun κ : Section43SpatialCompactSource d n =>
+    SchwartzMap.fourierTransformCLM ℂ κ.1
+
+theorem dense_section43SpatialFourierCompactRange
+    (d n : ℕ) [NeZero d] :
+    Dense (section43SpatialFourierCompactRange d n)
+
 structure Section43CompactStrictPositiveTimeSpatialSource
     (d n : ℕ) [NeZero d] where
   f : SchwartzNPoint d n
@@ -2548,6 +2574,173 @@ def section43TimeLaplaceSpatialFourierRepresentative
             (τ, section43QSpatial (d := d) (n := n) q)
 ```
 
+The proof of `dense_section43SpatialFourierCompactRange` is a required
+subpacket, not a handwave:
+
+1. Prove compactly supported Schwartz functions are dense on
+   `Section43SpatialSpace d n`.  Transport the compiled theorem
+   `SchwartzMap.dense_hasCompactSupport` from
+   `SchwartzMap (Fin (n * d) → ℝ) ℂ` through the continuous linear equivalence
+   ```lean
+   section43SpatialFlatCLE (d n) :
+     Section43SpatialSpace d n ≃L[ℝ] (Fin (n * d) → ℝ)
+   ```
+   built from `EuclideanSpace.equiv (Fin n × Fin d) ℝ` and
+   `finProdFinEquiv`.
+2. Compact support is preserved by this transport because a continuous linear
+   equivalence maps compact sets to compact sets and pulls support back along
+   the inverse map.
+3. For any target spatial-frequency Schwartz function `χ`, set
+   `κ₀ := FourierTransform.fourierInv χ`.  Approximate `κ₀` by compactly
+   supported spatial Schwartz functions `κ_j`.
+4. Continuity of `SchwartzMap.fourierTransformCLM ℂ` gives
+   `𝓕 κ_j → 𝓕 κ₀`, and
+   `FourierTransform.fourier_fourierInv_eq` identifies the limit with `χ`.
+
+The time-spatial product tensors used in the density proof are:
+
+```lean
+noncomputable def section43TimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+    SchwartzNPoint d n
+```
+
+Lean construction transcript for `section43TimeSpatialTensor`:
+
+1. Transport the spatial factor through
+   `section43SpatialFlatCLE d n` to
+   `SchwartzMap (Fin (n * d) → ℝ) ℂ`.
+2. Use `SchwartzMap.tensorProduct Φ χflat` to obtain a Schwartz function on
+   `Fin (n + n * d) → ℝ`.
+3. Transport that function back through the continuous linear equivalence
+   between `Fin (n + n*d) → ℝ` and
+   `(Fin n → ℝ) × Section43SpatialSpace d n`, then through
+   `nPointTimeSpatialSchwartzCLE d n`.
+4. Its pointwise formula must be recorded as a simp theorem:
+   ```lean
+   theorem section43TimeSpatialTensor_apply
+       (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (q : NPointDomain d n) :
+       section43TimeSpatialTensor d n Φ χ q =
+         Φ (section43QTime (d := d) (n := n) q) *
+         χ (section43QSpatial (d := d) (n := n) q)
+   ```
+
+The restricted product-tensor density theorem needed here is:
+
+```lean
+theorem dense_section43TimeSpatialTensor_span_of_factor_dense
+    (d n : ℕ) [NeZero d]
+    {St : Set (SchwartzMap (Fin n → ℝ) ℂ)}
+    {Sx : Set (SchwartzMap (Section43SpatialSpace d n) ℂ)}
+    (hSt : Dense St) (hSx : Dense Sx) :
+    Dense
+      (((Submodule.span ℂ
+        {F : SchwartzNPoint d n |
+          ∃ Φ ∈ St, ∃ χ ∈ Sx,
+            F = section43TimeSpatialTensor d n Φ χ}) :
+        Submodule ℂ (SchwartzNPoint d n)) :
+        Set (SchwartzNPoint d n))
+```
+
+Proof transcript:
+
+1. First prove the unrestricted simple-tensor span is dense by transporting
+   `productTensor_span_dense 0 (n + n*d)` through the same finite-dimensional
+   flattening equivalences.  This is the two-factor analogue of
+   `section43_timeProductTensor_span_dense`.
+2. Let `D := St ×ˢ Sx`.  `Dense D` follows from `Dense.prod hSt hSx` or the
+   corresponding product-filter theorem.
+3. The map `(Φ, χ) ↦ section43TimeSpatialTensor d n Φ χ` is continuous.  Prove
+   this by transporting `SchwartzMap.tensorProduct_continuous` through the
+   finite-dimensional equivalences.
+4. As in `section43_timeProductTensor_span_dense_of_factor_dense`, the closure
+   of the restricted span contains every unrestricted simple tensor; since the
+   unrestricted span is dense, the restricted span is dense.
+
+Production status, 2026-04-18: the product-space half of Layer 3 is now
+compiled in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceSpatialDensity.lean`.
+The compiled declarations deliberately stop before the final
+`SchwartzNPoint d n` transport:
+
+```lean
+Section43SpatialSpace
+section43SpatialFlatCLE
+section43SpatialFlatSchwartzCLE
+Section43SpatialCompactSource
+dense_section43Spatial_hasCompactSupport
+section43SpatialFourierCompactRange
+dense_section43SpatialFourierCompactRange
+Section43TimeSpatialSpace
+section43TimeSpatialFlatCLE
+section43TimeSpatialFlatCLE_splitFirst
+section43TimeSpatialFlatCLE_splitLast
+section43TimeSpatialTensor
+section43TimeSpatialTensor_apply
+dense_section43_flatBlockTensor_span
+dense_section43TimeSpatialTensor_span
+dense_section43TimeSpatialTensor_span_of_factor_dense
+dense_section43TimeSpatialTensor_span_compactLaplace_spatialFourier
+```
+
+The final theorem above uses
+`dense_section43IteratedLaplaceCompactTransform_preimage n` for the finite-time
+factor and `dense_section43SpatialFourierCompactRange d n` for the spatial
+factor.  It proves density of finite sums of tensors whose time factor is in
+the compact-Laplace positive-time preimage and whose spatial factor is the
+Fourier transform of a compact spatial source.  No new axioms, wrappers,
+`sorry`s, or heartbeat overrides are used.
+
+Important boundary: the compiled `section43TimeSpatialTensor` currently has
+codomain
+`SchwartzMap ((Fin n → ℝ) × Section43SpatialSpace d n) ℂ`, not
+`SchwartzNPoint d n`.  The next Lean step is to transport this packet through
+`nPointTimeSpatialSchwartzCLE` and prove the transported pointwise formula in
+terms of `section43QTime` and `section43QSpatial`.  Only after that transport
+should the compact spacetime product source and the
+`partialFourierSpatial_fun` factorization be implemented.
+
+The source attached to a restricted tensor is:
+
+```lean
+noncomputable def section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    Section43CompactStrictPositiveTimeSpatialSource d n
+```
+
+Construction and obligations:
+
+1. In `(τ, η)` variables the underlying Schwartz function is
+   `g.f τ * κ.1 η`, transported through `nPointTimeSpatialSchwartzCLE`.
+2. Strict positive-time support follows because if the product is nonzero then
+   `τ ∈ tsupport g.f`, hence `g.positive` gives
+   `∀ i, 0 < τ i`.
+3. Compact support follows from
+   `tsupport (g.f τ * κ η) ⊆ tsupport g.f ×ˢ tsupport κ` and compactness of
+   both factors, transported through the time/spatial continuous linear
+   equivalence.
+4. The spatial Fourier slice factorizes:
+   ```lean
+   theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
+       (g : Section43CompactStrictPositiveTimeSource n)
+       (κ : Section43SpatialCompactSource d n)
+       (τ : Fin n → ℝ) (ξ : Section43SpatialSpace d n) :
+       partialFourierSpatial_fun
+         (d := d) (n := n)
+         (section43TimeSpatialProductSource d n g κ).f
+         (τ, ξ) =
+       g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+   ```
+   Implementation route: unfold `partialFourierSpatial_fun`; the fixed-time
+   slice is `g.f τ • κ.1`; apply `(SchwartzMap.fourierTransformCLM ℂ).map_smul`.
+   This avoids manual Fourier-integral normalization.
+
 Main theorem:
 
 ```lean
@@ -2564,14 +2757,49 @@ theorem dense_section43TimeLaplaceSpatialFourier_compact_preimage
 
 Proof:
 
-1. Use `nPointTimeSpatialCLE` to identify `NPointDomain d n` with
-   `(Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)`.
-2. Apply Layer 2 in the time variables.
-3. Use the spatial Fourier transform as a continuous linear equivalence in the
-   spatial variables.  Density is preserved by continuous linear equivalences
-   and by the open quotient map.
-4. Use `partialFourierSpatial_fun_eq_integral` to identify the representative
-   formula with the production spatial Fourier convention.
+1. Let
+   ```lean
+   St :=
+     (section43TimePositiveQuotientMap n) ⁻¹'
+       Set.range (section43IteratedLaplaceCompactTransform n)
+   Sx := section43SpatialFourierCompactRange d n
+   ```
+   The compiled theorem
+   `dense_section43IteratedLaplaceCompactTransform_preimage n` gives
+   `Dense St`; the new spatial packet gives `Dense Sx`.
+2. Apply
+   `dense_section43TimeSpatialTensor_span_of_factor_dense d n hSt hSx`.
+3. Show every restricted tensor lies in the target preimage.  If
+   `Φ ∈ St`, choose
+   `g : Section43CompactStrictPositiveTimeSource n` with
+   `section43IteratedLaplaceCompactTransform n g =
+    section43TimePositiveQuotientMap n Φ`.
+   If `χ ∈ Sx`, choose
+   `κ : Section43SpatialCompactSource d n` with
+   `χ = SchwartzMap.fourierTransformCLM ℂ κ.1`.
+4. Let `Ψt := section43IteratedLaplaceSchwartzRepresentative n g` and
+   `Ψ := section43TimeSpatialTensor d n Ψt χ`.  On the positive-energy region,
+   quotient equality for `Φ` gives
+   `Φ σ = Ψt σ` for `σ = section43QTime q`, and hence
+   `section43TimeSpatialTensor d n Φ χ` and `Ψ` agree pointwise.
+5. Let `G := section43TimeSpatialProductSource d n g κ`.  The representative
+   predicate for `Ψ` follows from
+   `partialFourierSpatial_fun_section43TimeSpatialProductSource` and the
+   defining theorem
+   `section43IteratedLaplaceSchwartzRepresentative_apply_of_mem`.
+6. Therefore every restricted tensor is in the target.  Since the target is the
+   preimage of a linear range under the quotient map once the time-spatial
+   transform is packaged linearly, it is a submodule; otherwise prove directly
+   that it is closed under finite linear combinations using additivity of the
+   representative predicate and quotient map.  Prefer the linear-map packaging,
+   mirroring `section43IteratedLaplaceCompactTransformLinearMap`.
+7. Conclude density by `Dense.mono` from the dense restricted span.
+
+The `n = 0` case must be kept explicit in implementation.  Then
+`Fin n → ℝ` and `Section43SpatialSpace d n` are singleton/zero-dimensional
+spaces, the time integral is over a point, and the theorem reduces to the
+spatial Fourier compact-range density plus scalar multiplication.  Do not
+force this case through one-variable Laplace statements.
 
 ## Layer 4: Difference-Coordinate Transport
 
