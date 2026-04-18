@@ -57,8 +57,9 @@ denseRange_section43FourierLaplaceTransformComponentMap_of_dense_preimage
 bvt_W_positive_of_component_dense_preimage
 ```
 
-Production status, 2026-04-17: this density file now exists and the foundation
-plus one-variable Paley-Wiener uniqueness packets are compiled:
+Production status, 2026-04-17: this density file now exists and the foundation,
+raw one-sided Laplace calculus, cutoff-Schwartz representative, and
+one-variable Paley-Wiener uniqueness packets are compiled:
 
 ```lean
 Section43CompactPositiveTimeSource1D
@@ -74,6 +75,23 @@ exists_positive_Icc_bounds_of_compactPositiveTimeSource
 section43SmoothCutoff_complex_iteratedFDeriv_support_subset_Ici_neg_one
 section43OneSidedLaplaceCutoffFun
 section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg
+section43OneSidedLaplaceRawDerivCandidate
+section43OneSidedLaplaceRawDerivCandidate_integrable
+section43OneSidedLaplaceRawDerivKernel_hasDerivAt
+section43OneSidedLaplaceRawDerivCandidate_hasDerivAt
+section43OneSidedLaplaceRaw_iteratedDeriv_formula
+section43OneSidedLaplaceRaw_contDiff
+section43OneSidedLaplaceRaw_iteratedFDeriv_formula
+section43OneSidedLaplaceRawDerivCandidate_norm_le_of_re_bound
+section43OneSidedLaplaceRawDerivCandidate_norm_le_strip
+section43OneSidedLaplaceRawDerivCandidate_norm_le_nonneg
+section43OneSidedLaplaceRaw_rapid_on_Ici_neg_one
+section43OneSidedLaplaceSchwartzRepresentative1D
+section43OneSidedLaplaceSchwartzRepresentative1D_apply
+exists_section43OneSidedLaplaceRepresentative1D
+section43OneSidedLaplaceCompactTransform1D
+section43OneSidedLaplaceCompactTransform1D_choose_spec
+section43OneSidedLaplaceCompactTransform1D_eq_cutoff_quotient
 section43FourierInvCLM1D
 section43FourierInvCLM1D_apply
 section43PositiveEnergy1D_to_oneSidedFourierFunctional
@@ -82,8 +100,11 @@ fourierPairingDescendsToSection43PositiveEnergy1D_to_oneSided
 section43OneSidedAnnihilatorFL
 section43OneSidedAnnihilatorFL_eq_fourierLaplaceExt_to_oneSided
 section43OneSidedAnnihilatorFLOnImag
+section43ImagAxisPsiKernel
 section43OneSidedAnnihilatorFLOnImag_of_pos
 section43OneSidedAnnihilatorFLOnImag_of_not_pos
+section43OneSidedAnnihilatorFLOnImag_eq_apply_kernel
+continuousOn_section43OneSidedAnnihilatorFLOnImag_Ioi
 section43PositiveEnergy1D_ext_of_FL_zero
 ```
 
@@ -91,8 +112,6 @@ The remaining one-variable blocker is no longer Paley-Wiener uniqueness.  It is
 the compact-source annihilator bridge:
 
 ```lean
-exists_section43OneSidedLaplaceRepresentative1D
-section43OneSidedLaplaceCompactTransform1D
 section43OneSidedAnnihilatorFL_integral_zero_of_annihilates_laplace
 section43OneSidedAnnihilatorFLOnImag_eq_zero_of_annihilates_laplace
 section43OneSidedAnnihilatorFL_eq_zero_of_annihilates_laplace
@@ -125,17 +144,16 @@ The small density file is:
 OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceDensity.lean
 ```
 
-Suggested imports:
+Current imports:
 
 ```lean
-import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceClosure
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OneVariableSlice
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
 ```
 
-If this creates an import cycle, import only the lower files needed for the
-analytic packet, then move `Section43CompactOrderedSource` and
-`section43FourierLaplaceTransformComponentMap` from
-`Section43FourierLaplaceClosure.lean` into the density file or a tiny shared
-source file.  Do not import `OSToWightmanPositivity.lean`.
+This keeps the density file below `OSToWightmanPositivity.lean` while reusing
+the already-compiled general cutoff-times-rapid-to-Schwartz theorem from
+`Section43FourierLaplaceCompactDifferentiation.lean`.
 
 ## Layer 1: One-Variable OS I Lemma 8.2
 
@@ -276,9 +294,11 @@ theorem section43OneSidedLaplaceRaw_rapid_on_Ici_neg_one
 
 Lean-ready raw-Laplace calculus packet:
 
-Production status, 2026-04-17: this packet is compiled through Step 8 in
-`Section43FourierLaplaceDensity.lean`.  The remaining theorem from this group
-is the rapid estimate on `Set.Ici (-1)`.
+Production status, 2026-04-17: this packet is compiled through the rapid
+estimate and cutoff-Schwartz representative construction in
+`Section43FourierLaplaceDensity.lean`.  The next theorem group is the
+annihilator bridge from compact one-sided Laplace sources to vanishing of
+`section43OneSidedAnnihilatorFL`.
 
 1. Add the genuine derivative-candidate integral, not as a wrapper but as the
    object that appears after differentiating under the integral:
@@ -657,12 +677,128 @@ density theorem: the production Laplace kernel is
 agrees on `σ ≥ 0` with `Complex.exp (Complex.I * ((t : ℂ) * I) * σ)`,
 hence with the same `Complex.exp (-(t : ℂ) * σ)` kernel.
 
-Then convert integral vanishing against every compact strict-positive source to
-pointwise vanishing on the strict half-line using the existing local
-distribution lemma:
+Do not try to prove this theorem as one monolithic Fubini block.  The
+implementation-ready bridge should be split into the following exact subpacket.
+
+First define the imaginary-axis kernel with the same off-half-line branch as
+`section43OneSidedAnnihilatorFLOnImag`:
 
 ```lean
-OSReconstruction.SCV.eq_zero_on_open_of_compactSupport_schwartz_integral_zero
+noncomputable def section43ImagAxisPsiKernel (t : ℝ) : SchwartzMap ℝ ℂ :=
+  if ht : 0 < t then
+    SCV.schwartzPsiZ ((t : ℂ) * Complex.I) (by simpa [Complex.mul_im] using ht)
+  else
+    0
+```
+
+Compile its quotient-pairing identity:
+
+```lean
+theorem section43OneSidedAnnihilatorFLOnImag_eq_apply_kernel
+    (A : Section43PositiveEnergy1D →L[ℂ] ℂ) (t : ℝ) :
+    section43OneSidedAnnihilatorFLOnImag A t =
+      A (section43PositiveEnergyQuotientMap1D
+        (section43ImagAxisPsiKernel t))
+```
+
+Proof split:
+
+- If `0 < t`, unfold both definitions and use proof irrelevance for the
+  positivity proofs.
+- If `¬ 0 < t`, both sides are zero.
+
+Important formalization correction: do **not** define a Bochner integral valued
+in `SchwartzMap ℝ ℂ`.  In this repository `SchwartzMap` carries the locally
+convex Schwartz topology, but it is not a `NormedAddCommGroup`, so
+`∫ t, g.f t • section43ImagAxisPsiKernel t` is not a legal Bochner integral in
+Lean.  The correct bridge is a scalar, weak Fubini theorem after applying an
+arbitrary continuous linear functional.
+
+The next implementation target should therefore be:
+
+```lean
+theorem section43OneSidedLaplace_scalar_fubini_apply
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (g : Section43CompactPositiveTimeSource1D) :
+    T (section43OneSidedLaplaceSchwartzRepresentative1D g) =
+      ∫ t : ℝ, T (section43ImagAxisPsiKernel t) * g.f t
+```
+
+After this theorem, the annihilator Fubini theorem is short:
+
+```lean
+have hT :
+    A (section43PositiveEnergyQuotientMap1D
+        (section43OneSidedLaplaceSchwartzRepresentative1D g)) =
+      ∫ t : ℝ,
+        section43OneSidedAnnihilatorFLOnImag A t * g.f t := by
+  simpa [ContinuousLinearMap.comp_apply,
+    section43OneSidedAnnihilatorFLOnImag_eq_apply_kernel,
+    mul_comm, mul_left_comm, mul_assoc]
+    using section43OneSidedLaplace_scalar_fubini_apply
+      ((A.comp section43PositiveEnergyQuotientMap1D)) g
+```
+
+Then combine with
+`section43OneSidedLaplaceCompactTransform1D_eq_cutoff_quotient` and `hA g`.
+
+Lean proof plan for `section43OneSidedLaplace_scalar_fubini_apply`:
+
+1. Use `SCV.schwartz_functional_bound T` to choose a finite set of Schwartz
+   seminorms and a constant controlling `‖T φ‖`.
+2. Use `exists_positive_Icc_bounds_of_compactPositiveTimeSource g` to reduce
+   all source-time integrals to a compact interval `[δ,R]` with `0 < δ`.
+3. Prove a compact-vertical-segment seminorm bound for the imaginary-axis
+   kernels:
+
+```lean
+theorem section43ImagAxisPsiKernel_seminorm_le_on_Icc
+    {δ R : ℝ} (hδ_pos : 0 < δ) (hδR : δ ≤ R)
+    (k n : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ t ∈ Set.Icc δ R,
+        SchwartzMap.seminorm ℂ k n (section43ImagAxisPsiKernel t) ≤ C
+```
+
+   This is best proved directly from the explicit `SCV.psiZ` formula.  For
+   `t ∈ [δ,R]` and derivative order `n`, the derivative contributes a power of
+   `t`, bounded by `max |δ| |R| ^ n`, and the exponential factor decays like
+   `exp (-t * σ)` on `σ ≥ 0` while the cutoff side of `SCV.psiZ` handles
+   `σ < 0` by the already-proved Schwartz estimates in `SCV.schwartzPsiZ`.
+   If direct proof is too large, first prove the bound by continuity of
+   `t ↦ weightedDerivToBCFCLM k n (section43ImagAxisPsiKernel t)` on compact
+   `[δ,R]`, following the horizontal-continuity pattern in `SCV.PaleyWiener`.
+4. Prove scalar integrability:
+
+```lean
+theorem integrable_section43_scalar_kernel_after_functional
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (g : Section43CompactPositiveTimeSource1D) :
+    Integrable (fun t : ℝ => T (section43ImagAxisPsiKernel t) * g.f t)
+```
+
+   Use the seminorm bound from Step 3, the functional bound from Step 1, and
+   compact support/integrability of `g.f`.
+5. Prove the weak integral identity by approximating the compactly supported
+   parameter integral in the Schwartz topology using Riemann sums or a standard
+   parameter-integral theorem formulated in terms of the finite seminorm family
+   from Step 1.  The statement should avoid constructing a
+   `SchwartzMap`-valued Bochner integral; it only needs convergence after
+   applying `T`.
+6. On the nonnegative axis, rewrite the explicit representative with
+   `section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg`,
+   `SCV.schwartzPsiZ_apply`, and `SCV.psiZ_eq_exp_of_nonneg`.  On
+   `¬ 0 < t`, use `g.f t = 0`, which follows from `g.positive` and
+   `Function.support_subset_tsupport`.
+
+Then convert integral vanishing against every compact strict-positive source to
+pointwise vanishing on the strict half-line using the existing local
+distribution lemma.  Since `section43OneSidedAnnihilatorFLOnImag` has an
+off-half-line zero branch and need not be globally continuous at the origin, use
+the continuous-on-open version, not the global-continuity version:
+
+```lean
+OSReconstruction.SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
 ```
 
 The Lean target is:
@@ -677,14 +813,27 @@ theorem section43OneSidedAnnihilatorFLOnImag_eq_zero_of_annihilates_laplace
       section43OneSidedAnnihilatorFLOnImag A t = 0
 ```
 
+Compiled continuity input:
+
+```lean
+theorem continuousOn_section43OneSidedAnnihilatorFLOnImag_Ioi
+    (A : Section43PositiveEnergy1D →L[ℂ] ℂ) :
+    ContinuousOn (section43OneSidedAnnihilatorFLOnImag A) (Set.Ioi (0 : ℝ))
+```
+
+It rewrites `section43OneSidedAnnihilatorFL` as
+`SCV.fourierLaplaceExt (section43PositiveEnergy1D_to_oneSidedFourierFunctional A)`,
+uses `SCV.fourierLaplaceExt_differentiableOn.continuousOn`, and composes with
+the vertical path `t ↦ (t : ℂ) * Complex.I`.
+
 Proof transcript:
 
-1. Apply `eq_zero_on_open_of_compactSupport_schwartz_integral_zero` with
-   `U := Set.Ioi (0 : ℝ)` and
-   `g := section43OneSidedAnnihilatorFLOnImag A`.
-2. Continuity of `g` on `Set.Ioi 0` follows from holomorphicity or directly
-   from continuity of `SCV.schwartzPsiZ` in the imaginary-axis parameter and
-   continuity of `A`.
+1. Apply `eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
+   with `U := Set.Ioi (0 : ℝ)`, `g := section43OneSidedAnnihilatorFLOnImag A`,
+   and `h := 0`.
+2. Continuity of `g` on `Set.Ioi 0` is exactly
+   `continuousOn_section43OneSidedAnnihilatorFLOnImag_Ioi A`; continuity of
+   `h := 0` is immediate.
 3. Its test-function hypothesis is exactly
    `section43OneSidedAnnihilatorFL_integral_zero_of_annihilates_laplace`, after
    packaging an arbitrary compactly supported Schwartz test with support in

@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OneVariableSlice
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
 
 /-!
 # Section 4.3 Fourier-Laplace Density
@@ -432,6 +433,335 @@ theorem section43OneSidedLaplaceRaw_iteratedFDeriv_formula
   rw [ContinuousMultilinearMap.mkPiAlgebraFin_apply]
   rw [List.prod_ofFn]
 
+/-- If the exponential kernel has a real-part bound on the compact source
+support, then the derivative-candidate integral has the corresponding scalar
+norm bound. -/
+theorem section43OneSidedLaplaceRawDerivCandidate_norm_le_of_re_bound
+    (g : Section43CompactPositiveTimeSource1D) (r : ℕ)
+    {δ R σ E : ℝ}
+    (hδ_pos : 0 < δ)
+    (hsupp : tsupport (g.f : ℝ → ℂ) ⊆ Set.Icc δ R)
+    (hRe : ∀ t : ℝ, g.f t ≠ 0 →
+      (-(t : ℂ) * (σ : ℂ)).re ≤ E) :
+    ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ ≤
+      ((max |δ| |R|) ^ r * Real.exp E) * ∫ t : ℝ, ‖g.f t‖ := by
+  let M : ℝ := max |δ| |R|
+  let K : ℝ := M ^ r * Real.exp E
+  have hM_nonneg : 0 ≤ M := by
+    dsimp [M]
+    exact (abs_nonneg δ).trans (le_max_left |δ| |R|)
+  have hK_nonneg : 0 ≤ K := by
+    dsimp [K]
+    exact mul_nonneg (pow_nonneg hM_nonneg r) (Real.exp_pos E).le
+  have hpoint :
+      ∀ t : ℝ,
+        ‖((-t : ℂ) ^ r *
+            Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t‖ ≤
+          K * ‖g.f t‖ := by
+    intro t
+    by_cases htzero : g.f t = 0
+    · simp [K, htzero]
+    · have ht_supp : t ∈ tsupport (g.f : ℝ → ℂ) :=
+        subset_tsupport _ htzero
+      have htIcc : t ∈ Set.Icc δ R := hsupp ht_supp
+      have htδ : δ ≤ t := htIcc.1
+      have htR : t ≤ R := htIcc.2
+      have ht_nonneg : 0 ≤ t := le_trans (le_of_lt hδ_pos) htδ
+      have ht_abs_le : |t| ≤ M := by
+        rw [abs_of_nonneg ht_nonneg]
+        exact htR.trans ((le_abs_self R).trans (le_max_right |δ| |R|))
+      have hpow_le : ‖(-t : ℂ) ^ r‖ ≤ M ^ r := by
+        calc
+          ‖(-t : ℂ) ^ r‖ = |t| ^ r := by
+            rw [norm_pow, norm_neg, Complex.norm_real, Real.norm_eq_abs]
+          _ ≤ M ^ r := pow_le_pow_left₀ (abs_nonneg t) ht_abs_le r
+      have hexp_le :
+          ‖Complex.exp (-(t : ℂ) * (σ : ℂ))‖ ≤ Real.exp E := by
+        rw [Complex.norm_exp]
+        exact Real.exp_le_exp.mpr (hRe t htzero)
+      calc
+        ‖((-t : ℂ) ^ r *
+            Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t‖
+            = ‖(-t : ℂ) ^ r‖ *
+                ‖Complex.exp (-(t : ℂ) * (σ : ℂ))‖ * ‖g.f t‖ := by
+              rw [norm_mul, norm_mul]
+        _ ≤ (M ^ r * Real.exp E) * ‖g.f t‖ := by
+              exact mul_le_mul_of_nonneg_right
+                (mul_le_mul hpow_le hexp_le (norm_nonneg _)
+                  (pow_nonneg hM_nonneg r))
+                (norm_nonneg (g.f t))
+        _ = K * ‖g.f t‖ := by
+              rfl
+  have hleft_int :
+      Integrable
+        (fun t : ℝ =>
+          ‖((-t : ℂ) ^ r *
+            Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t‖) :=
+    (section43OneSidedLaplaceRawDerivCandidate_integrable g r σ).norm
+  have hright_int : Integrable (fun t : ℝ => K * ‖g.f t‖) :=
+    g.f.integrable.norm.const_mul K
+  calc
+    ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖
+        ≤ ∫ t : ℝ,
+            ‖((-t : ℂ) ^ r *
+              Complex.exp (-(t : ℂ) * (σ : ℂ))) * g.f t‖ := by
+          exact MeasureTheory.norm_integral_le_integral_norm _
+    _ ≤ ∫ t : ℝ, K * ‖g.f t‖ := by
+          exact integral_mono hleft_int hright_int hpoint
+    _ = K * ∫ t : ℝ, ‖g.f t‖ := by
+          rw [integral_const_mul]
+    _ = ((max |δ| |R|) ^ r * Real.exp E) * ∫ t : ℝ, ‖g.f t‖ := by
+          rfl
+
+/-- Uniform bound for derivative candidates in the cutoff transition strip
+`-1 ≤ σ ≤ 0`. -/
+theorem section43OneSidedLaplaceRawDerivCandidate_norm_le_strip
+    (g : Section43CompactPositiveTimeSource1D) (r : ℕ)
+    {δ R σ : ℝ}
+    (hδ_pos : 0 < δ) (hδR : δ ≤ R)
+    (hsupp : tsupport (g.f : ℝ → ℂ) ⊆ Set.Icc δ R)
+    (hσ_lower : -1 ≤ σ) (hσ_nonpos : σ ≤ 0) :
+    ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ ≤
+      ((max |δ| |R|) ^ r * Real.exp R) * ∫ t : ℝ, ‖g.f t‖ := by
+  refine section43OneSidedLaplaceRawDerivCandidate_norm_le_of_re_bound
+    (g := g) (r := r) (δ := δ) (R := R) (σ := σ) (E := R)
+    hδ_pos hsupp ?_
+  intro t htzero
+  have ht_supp : t ∈ tsupport (g.f : ℝ → ℂ) :=
+    subset_tsupport _ htzero
+  have htIcc : t ∈ Set.Icc δ R := hsupp ht_supp
+  have htδ : δ ≤ t := htIcc.1
+  have htR : t ≤ R := htIcc.2
+  have ht_nonneg : 0 ≤ t := le_trans (le_of_lt hδ_pos) htδ
+  have hR_pos : 0 < R := lt_of_lt_of_le hδ_pos hδR
+  have hneg_nonneg : 0 ≤ -σ := by linarith
+  have hneg_le_one : -σ ≤ 1 := by linarith
+  have hre : (-(t : ℂ) * (σ : ℂ)).re = -(t * σ) := by
+    simp [Complex.mul_re]
+  rw [hre]
+  calc
+    -(t * σ) = t * (-σ) := by ring
+    _ ≤ R * 1 := by
+          exact mul_le_mul htR hneg_le_one hneg_nonneg (le_of_lt hR_pos)
+    _ = R := by ring
+
+/-- Exponential-decay bound for derivative candidates on the positive half-line. -/
+theorem section43OneSidedLaplaceRawDerivCandidate_norm_le_nonneg
+    (g : Section43CompactPositiveTimeSource1D) (r : ℕ)
+    {δ R σ : ℝ}
+    (hδ_pos : 0 < δ)
+    (hsupp : tsupport (g.f : ℝ → ℂ) ⊆ Set.Icc δ R)
+    (hσ_nonneg : 0 ≤ σ) :
+    ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ ≤
+      ((max |δ| |R|) ^ r * Real.exp (-(δ * σ))) *
+        ∫ t : ℝ, ‖g.f t‖ := by
+  refine section43OneSidedLaplaceRawDerivCandidate_norm_le_of_re_bound
+    (g := g) (r := r) (δ := δ) (R := R) (σ := σ) (E := -(δ * σ))
+    hδ_pos hsupp ?_
+  intro t htzero
+  have ht_supp : t ∈ tsupport (g.f : ℝ → ℂ) :=
+    subset_tsupport _ htzero
+  have htIcc : t ∈ Set.Icc δ R := hsupp ht_supp
+  have htδ : δ ≤ t := htIcc.1
+  have hre : (-(t : ℂ) * (σ : ℂ)).re = -(t * σ) := by
+    simp [Complex.mul_re]
+  rw [hre]
+  have hmul : δ * σ ≤ t * σ :=
+    mul_le_mul_of_nonneg_right htδ hσ_nonneg
+  linarith
+
+/-- The raw compact one-sided Laplace transform has rapid decay on the support
+of the cutoff derivatives, namely on `Set.Ici (-1)`. -/
+theorem section43OneSidedLaplaceRaw_rapid_on_Ici_neg_one
+    (g : Section43CompactPositiveTimeSource1D) :
+    ∀ r s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ σ ∈ Set.Ici (-1 : ℝ),
+        (1 + ‖σ‖) ^ s *
+          ‖iteratedFDeriv ℝ r (section43OneSidedLaplaceRaw g) σ‖ ≤ C := by
+  intro r s
+  rcases exists_positive_Icc_bounds_of_compactPositiveTimeSource g with
+    ⟨δ, R, hδ_pos, hδR, hsupp⟩
+  rcases SCV.pow_mul_exp_neg_le_const hδ_pos s with
+    ⟨C0, hC0_pos, hC0_bound⟩
+  let M : ℝ := max |δ| |R|
+  let I : ℝ := ∫ t : ℝ, ‖g.f t‖
+  let Cstrip : ℝ := (2 : ℝ) ^ s * ((M ^ r * Real.exp R) * I)
+  let Cpos : ℝ := (M ^ r * I) * (Real.exp δ * C0)
+  let C : ℝ := Cstrip + Cpos
+  have hM_nonneg : 0 ≤ M := by
+    dsimp [M]
+    exact (abs_nonneg δ).trans (le_max_left |δ| |R|)
+  have hI_nonneg : 0 ≤ I := by
+    dsimp [I]
+    exact integral_nonneg fun t => norm_nonneg (g.f t)
+  have hstripBase_nonneg : 0 ≤ (M ^ r * Real.exp R) * I := by
+    exact mul_nonneg
+      (mul_nonneg (pow_nonneg hM_nonneg r) (Real.exp_pos R).le)
+      hI_nonneg
+  have hCstrip_nonneg : 0 ≤ Cstrip := by
+    dsimp [Cstrip]
+    exact mul_nonneg (pow_nonneg (by norm_num : (0 : ℝ) ≤ 2) s)
+      hstripBase_nonneg
+  have hA_nonneg : 0 ≤ M ^ r * I := by
+    exact mul_nonneg (pow_nonneg hM_nonneg r) hI_nonneg
+  have hC0_nonneg : 0 ≤ C0 := le_of_lt hC0_pos
+  have hCpos_nonneg : 0 ≤ Cpos := by
+    dsimp [Cpos]
+    exact mul_nonneg hA_nonneg
+      (mul_nonneg (Real.exp_pos δ).le hC0_nonneg)
+  refine ⟨C, add_nonneg hCstrip_nonneg hCpos_nonneg, ?_⟩
+  intro σ hσ_mem
+  have hσ_lower : -1 ≤ σ := by
+    simpa [Set.mem_Ici] using hσ_mem
+  have hF_norm :
+      ‖iteratedFDeriv ℝ r (section43OneSidedLaplaceRaw g) σ‖ =
+        ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ := by
+    rw [norm_iteratedFDeriv_eq_norm_iteratedDeriv,
+      section43OneSidedLaplaceRaw_iteratedDeriv_formula]
+  by_cases hσ_nonpos : σ ≤ 0
+  · have hraw_bound :
+        ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ ≤
+          (M ^ r * Real.exp R) * I := by
+      simpa [M, I] using
+        section43OneSidedLaplaceRawDerivCandidate_norm_le_strip
+          (g := g) (r := r) (δ := δ) (R := R) (σ := σ)
+          hδ_pos hδR hsupp hσ_lower hσ_nonpos
+    have hnorm_le_one : ‖σ‖ ≤ 1 := by
+      rw [Real.norm_eq_abs]
+      exact abs_le.mpr ⟨hσ_lower, by linarith⟩
+    have hpoly_le : (1 + ‖σ‖) ^ s ≤ (2 : ℝ) ^ s := by
+      exact pow_le_pow_left₀ (by positivity) (by linarith) s
+    calc
+      (1 + ‖σ‖) ^ s *
+          ‖iteratedFDeriv ℝ r (section43OneSidedLaplaceRaw g) σ‖
+          = (1 + ‖σ‖) ^ s *
+              ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ := by
+            rw [hF_norm]
+      _ ≤ (1 + ‖σ‖) ^ s * ((M ^ r * Real.exp R) * I) := by
+            exact mul_le_mul_of_nonneg_left hraw_bound (by positivity)
+      _ ≤ (2 : ℝ) ^ s * ((M ^ r * Real.exp R) * I) := by
+            exact mul_le_mul_of_nonneg_right hpoly_le hstripBase_nonneg
+      _ = Cstrip := by
+            rfl
+      _ ≤ C := by
+            dsimp [C]
+            exact le_add_of_nonneg_right hCpos_nonneg
+  · have hσ_nonneg : 0 ≤ σ := le_of_not_ge hσ_nonpos
+    have hraw_bound :
+        ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ ≤
+          (M ^ r * Real.exp (-(δ * σ))) * I := by
+      simpa [M, I] using
+        section43OneSidedLaplaceRawDerivCandidate_norm_le_nonneg
+          (g := g) (r := r) (δ := δ) (R := R) (σ := σ)
+          hδ_pos hsupp hσ_nonneg
+    have hposBase_nonneg :
+        0 ≤ (M ^ r * Real.exp (-(δ * σ))) * I := by
+      exact mul_nonneg
+        (mul_nonneg (pow_nonneg hM_nonneg r)
+          (Real.exp_pos (-(δ * σ))).le)
+        hI_nonneg
+    have htail :
+        (1 + ‖σ‖) ^ s * Real.exp (-(δ * σ)) ≤
+          Real.exp δ * C0 := by
+      have hx_nonneg : 0 ≤ 1 + σ := by linarith
+      have htail0 := hC0_bound (1 + σ) hx_nonneg
+      have hexp_eq :
+          Real.exp (-(δ * σ)) =
+            Real.exp δ * Real.exp (-(δ * (1 + σ))) := by
+        rw [← Real.exp_add]
+        congr 1
+        ring
+      rw [Real.norm_eq_abs, abs_of_nonneg hσ_nonneg]
+      calc
+        (1 + σ) ^ s * Real.exp (-(δ * σ))
+            = Real.exp δ *
+                ((1 + σ) ^ s * Real.exp (-(δ * (1 + σ)))) := by
+              rw [hexp_eq]
+              ring
+        _ ≤ Real.exp δ * C0 := by
+              exact mul_le_mul_of_nonneg_left htail0 (Real.exp_pos δ).le
+    calc
+      (1 + ‖σ‖) ^ s *
+          ‖iteratedFDeriv ℝ r (section43OneSidedLaplaceRaw g) σ‖
+          = (1 + ‖σ‖) ^ s *
+              ‖section43OneSidedLaplaceRawDerivCandidate g r σ‖ := by
+            rw [hF_norm]
+      _ ≤ (1 + ‖σ‖) ^ s *
+            ((M ^ r * Real.exp (-(δ * σ))) * I) := by
+            exact mul_le_mul_of_nonneg_left hraw_bound (by positivity)
+      _ = (M ^ r * I) *
+            ((1 + ‖σ‖) ^ s * Real.exp (-(δ * σ))) := by
+            ring
+      _ ≤ (M ^ r * I) * (Real.exp δ * C0) := by
+            exact mul_le_mul_of_nonneg_left htail hA_nonneg
+      _ = Cpos := by
+            rfl
+      _ ≤ C := by
+            dsimp [C]
+            exact le_add_of_nonneg_left hCstrip_nonneg
+
+/-- The cutoff product is the ambient Schwartz representative of the compact
+one-sided Laplace transform. -/
+noncomputable def section43OneSidedLaplaceSchwartzRepresentative1D
+    (g : Section43CompactPositiveTimeSource1D) : SchwartzMap ℝ ℂ :=
+  schwartzMap_of_temperate_mul_rapid_on_derivSupport
+    (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ))
+    (section43OneSidedLaplaceRaw g)
+    (Set.Ici (-1 : ℝ))
+    SCV.smoothCutoff_complex_hasTemperateGrowth
+    section43SmoothCutoff_complex_iteratedFDeriv_support_subset_Ici_neg_one
+    (section43OneSidedLaplaceRaw_contDiff g)
+    (section43OneSidedLaplaceRaw_rapid_on_Ici_neg_one g)
+
+@[simp] theorem section43OneSidedLaplaceSchwartzRepresentative1D_apply
+    (g : Section43CompactPositiveTimeSource1D) (σ : ℝ) :
+    section43OneSidedLaplaceSchwartzRepresentative1D g σ =
+      section43OneSidedLaplaceCutoffFun g σ := rfl
+
+theorem exists_section43OneSidedLaplaceRepresentative1D
+    (g : Section43CompactPositiveTimeSource1D) :
+    ∃ Φ : SchwartzMap ℝ ℂ,
+      section43OneSidedLaplaceRepresentative1D g Φ := by
+  refine ⟨section43OneSidedLaplaceSchwartzRepresentative1D g, ?_⟩
+  intro σ hσ
+  rw [section43OneSidedLaplaceSchwartzRepresentative1D_apply,
+    section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg g hσ]
+  rfl
+
+/-- Compact strict-positive one-sided Laplace sources as elements of the
+one-dimensional positive-energy quotient. -/
+noncomputable def section43OneSidedLaplaceCompactTransform1D :
+    Section43CompactPositiveTimeSource1D → Section43PositiveEnergy1D :=
+  fun g =>
+    section43PositiveEnergyQuotientMap1D
+      (Classical.choose (exists_section43OneSidedLaplaceRepresentative1D g))
+
+theorem section43OneSidedLaplaceCompactTransform1D_choose_spec
+    (g : Section43CompactPositiveTimeSource1D) :
+    section43OneSidedLaplaceRepresentative1D g
+      (Classical.choose (exists_section43OneSidedLaplaceRepresentative1D g)) :=
+  Classical.choose_spec (exists_section43OneSidedLaplaceRepresentative1D g)
+
+/-- The abstractly chosen compact transform is represented by the explicit
+cutoff-Schwartz representative. -/
+theorem section43OneSidedLaplaceCompactTransform1D_eq_cutoff_quotient
+    (g : Section43CompactPositiveTimeSource1D) :
+    section43OneSidedLaplaceCompactTransform1D g =
+      section43PositiveEnergyQuotientMap1D
+        (section43OneSidedLaplaceSchwartzRepresentative1D g) := by
+  dsimp [section43OneSidedLaplaceCompactTransform1D]
+  apply section43PositiveEnergyQuotientMap1D_eq_of_eqOn_nonneg
+  intro σ hσ
+  calc
+    Classical.choose (exists_section43OneSidedLaplaceRepresentative1D g) σ
+        = ∫ t : ℝ,
+            Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t :=
+          section43OneSidedLaplaceCompactTransform1D_choose_spec g σ hσ
+    _ = section43OneSidedLaplaceSchwartzRepresentative1D g σ := by
+          rw [section43OneSidedLaplaceSchwartzRepresentative1D_apply,
+            section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg g hσ]
+          rfl
+
 /-- Local name for Mathlib's inverse Fourier continuous linear map on
 one-dimensional Schwartz space. -/
 noncomputable def section43FourierInvCLM1D :
@@ -523,6 +853,15 @@ noncomputable def section43OneSidedAnnihilatorFLOnImag
   else
     0
 
+/-- Imaginary-axis Paley-Wiener kernel, with a zero branch off the strict
+positive half-line. -/
+noncomputable def section43ImagAxisPsiKernel (t : ℝ) : SchwartzMap ℝ ℂ :=
+  if ht : 0 < t then
+    SCV.schwartzPsiZ ((t : ℂ) * Complex.I)
+      (by simpa [Complex.mul_im] using ht)
+  else
+    0
+
 @[simp] theorem section43OneSidedAnnihilatorFLOnImag_of_pos
     (A : Section43PositiveEnergy1D →L[ℂ] ℂ)
     {t : ℝ} (ht : 0 < t) :
@@ -536,6 +875,49 @@ theorem section43OneSidedAnnihilatorFLOnImag_of_not_pos
     {t : ℝ} (ht : ¬ 0 < t) :
     section43OneSidedAnnihilatorFLOnImag A t = 0 := by
   simp [section43OneSidedAnnihilatorFLOnImag, ht]
+
+theorem section43OneSidedAnnihilatorFLOnImag_eq_apply_kernel
+    (A : Section43PositiveEnergy1D →L[ℂ] ℂ) (t : ℝ) :
+    section43OneSidedAnnihilatorFLOnImag A t =
+      A (section43PositiveEnergyQuotientMap1D
+        (section43ImagAxisPsiKernel t)) := by
+  by_cases ht : 0 < t
+  · simp [section43OneSidedAnnihilatorFLOnImag, section43ImagAxisPsiKernel,
+      section43OneSidedAnnihilatorFL, ht]
+  · simp [section43OneSidedAnnihilatorFLOnImag, section43ImagAxisPsiKernel,
+      ht]
+
+theorem continuousOn_section43OneSidedAnnihilatorFLOnImag_Ioi
+    (A : Section43PositiveEnergy1D →L[ℂ] ℂ) :
+    ContinuousOn (section43OneSidedAnnihilatorFLOnImag A) (Set.Ioi (0 : ℝ)) := by
+  let T := section43PositiveEnergy1D_to_oneSidedFourierFunctional A
+  let F : ℂ → ℂ := fun w =>
+    if hw : 0 < w.im then
+      SCV.fourierLaplaceExt T w hw
+    else
+      0
+  have hF_cont : ContinuousOn F SCV.upperHalfPlane := by
+    simpa [F] using (SCV.fourierLaplaceExt_differentiableOn T).continuousOn
+  have hpath_cont :
+      ContinuousOn (fun t : ℝ => (t : ℂ) * Complex.I) (Set.Ioi (0 : ℝ)) := by
+    exact ((Complex.continuous_ofReal.comp continuous_id).mul
+      (continuous_const : Continuous (fun _ : ℝ => Complex.I))).continuousOn
+  have hmap :
+      Set.MapsTo (fun t : ℝ => (t : ℂ) * Complex.I)
+        (Set.Ioi (0 : ℝ)) SCV.upperHalfPlane := by
+    intro t ht
+    simpa [SCV.upperHalfPlane, Complex.mul_im] using ht
+  refine (hF_cont.comp hpath_cont hmap).congr ?_
+  intro t ht
+  have htpos : 0 < t := by simpa using ht
+  have hw : 0 < (((t : ℂ) * Complex.I).im) := by
+    simpa [Complex.mul_im] using htpos
+  change section43OneSidedAnnihilatorFLOnImag A t = F (((t : ℂ) * Complex.I))
+  rw [section43OneSidedAnnihilatorFLOnImag_of_pos A htpos]
+  dsimp [F]
+  rw [dif_pos (by simpa [Complex.mul_im] using htpos)]
+  exact section43OneSidedAnnihilatorFL_eq_fourierLaplaceExt_to_oneSided
+    (A := A) (((t : ℂ) * Complex.I)) hw
 
 theorem section43PositiveEnergy1D_ext_of_FL_zero
     (A : Section43PositiveEnergy1D →L[ℂ] ℂ)
