@@ -25271,6 +25271,53 @@ Proof transcript:
    compiled in `Section43FourierLaplaceSpatialDensity.lean`.
 6. Package the time-spatial compact transform as a linear map, or prove the
    representative target is closed under finite linear combinations directly.
+   The next compiled subpacket should first avoid any span closure issue and
+   prove generator containment.  The key quotient lemma is:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+       (d n : ℕ) [NeZero d]
+       {φ ψ : SchwartzMap (Fin n → ℝ) ℂ}
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφψ :
+         section43TimePositiveQuotientMap n φ =
+           section43TimePositiveQuotientMap n ψ) :
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n φ χ) =
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n ψ χ)
+   ```
+   It is just `section43PositiveEnergyQuotientMap_eq_of_eqOn_region` plus
+   `eqOn_region_of_section43TimePositiveQuotientMap_eq` evaluated at
+   `section43QTime q`.
+
+   Then prove:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d]
+       (φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφ :
+         φ ∈ ((section43TimePositiveQuotientMap n) ⁻¹'
+           Set.range (section43IteratedLaplaceCompactTransform n)))
+       (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+       ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+         (Ψ : SchwartzNPoint d n),
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+         section43PositiveEnergyQuotientMap (d := d) n
+           (section43NPointTimeSpatialTensor d n φ χ) =
+         section43PositiveEnergyQuotientMap (d := d) n Ψ
+   ```
+   Here `hφ` chooses `g` with
+   `section43IteratedLaplaceCompactTransform n g =
+   section43TimePositiveQuotientMap n φ`, `hχ` chooses `κ`, the representative
+   is the product-source theorem above, and quotient equality follows from
+   `section43IteratedLaplaceCompactTransform_eq_quotient` for
+   `section43IteratedLaplaceSchwartzRepresentative n g`.
+   Production update, 2026-04-18: this generator-containment subpacket is
+   compiled in `Section43FourierLaplaceSpatialDensity.lean`:
+   `section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq`
+   and
+   `section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget`.
    Then the restricted dense span is contained in the target preimage, so
    density follows by `Dense.mono`.
 7. Treat `n = 0` explicitly if the finite-dimensional tensor construction does

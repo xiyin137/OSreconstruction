@@ -3036,6 +3036,81 @@ Proof:
    that it is closed under finite linear combinations using additivity of the
    representative predicate and quotient map.  Prefer the linear-map packaging,
    mirroring `section43IteratedLaplaceCompactTransformLinearMap`.
+   The immediate Lean subpacket before the full span/submodule closure is:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+       (d n : ℕ) [NeZero d]
+       {φ ψ : SchwartzMap (Fin n → ℝ) ℂ}
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφψ :
+         section43TimePositiveQuotientMap n φ =
+           section43TimePositiveQuotientMap n ψ) :
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n φ χ) =
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n ψ χ)
+   ```
+   Proof skeleton:
+   ```lean
+   apply section43PositiveEnergyQuotientMap_eq_of_eqOn_region (d := d)
+   intro q hq
+   have hσ :
+       section43QTime (d := d) (n := n) q ∈
+         section43TimePositiveRegion n := by
+     intro i
+     simpa [section43PositiveEnergyRegion, section43QTime,
+       nPointTimeSpatialCLE] using hq i
+   have hφψ_point :
+       φ (section43QTime (d := d) (n := n) q) =
+         ψ (section43QTime (d := d) (n := n) q) :=
+     eqOn_region_of_section43TimePositiveQuotientMap_eq hφψ hσ
+   simp [section43NPointTimeSpatialTensor_apply, hφψ_point]
+   ```
+   Then prove the restricted-generator witness theorem:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d]
+       (φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφ :
+         φ ∈ ((section43TimePositiveQuotientMap n) ⁻¹'
+           Set.range (section43IteratedLaplaceCompactTransform n)))
+       (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+       ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+         (Ψ : SchwartzNPoint d n),
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+         section43PositiveEnergyQuotientMap (d := d) n
+           (section43NPointTimeSpatialTensor d n φ χ) =
+         section43PositiveEnergyQuotientMap (d := d) n Ψ
+   ```
+   Proof route:
+   ```lean
+   rcases hφ with ⟨g, hg⟩
+   rcases hχ with ⟨κ, rfl⟩
+   let Ψt := section43IteratedLaplaceSchwartzRepresentative n g
+   let Ψ :=
+     section43NPointTimeSpatialTensor d n Ψt
+       (SchwartzMap.fourierTransformCLM ℂ κ.1)
+   refine ⟨section43TimeSpatialProductSource d n g κ, Ψ, ?_, ?_⟩
+   · exact section43TimeLaplaceSpatialFourierRepresentative_productSource d n g κ
+   · have hΨt_rep : section43IteratedLaplaceRepresentative n g Ψt := by
+       intro σ hσ
+       exact section43IteratedLaplaceSchwartzRepresentative_apply_of_mem g hσ
+     have hcompact :
+         section43IteratedLaplaceCompactTransform n g =
+           section43TimePositiveQuotientMap n Ψt :=
+       section43IteratedLaplaceCompactTransform_eq_quotient n g Ψt hΨt_rep
+     exact
+       section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+         d n (SchwartzMap.fourierTransformCLM ℂ κ.1)
+         (hg.symm.trans hcompact)
+   ```
+   Production update, 2026-04-18: both generator-level theorems above are now
+   compiled in `Section43FourierLaplaceSpatialDensity.lean`:
+   ```lean
+   section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+   section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
+   ```
 7. Conclude density by `Dense.mono` from the dense restricted span.
 
 The `n = 0` case must be kept explicit in implementation.  Then
