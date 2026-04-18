@@ -24897,6 +24897,30 @@ Next stage: prove the finite-product dense-preimage theorem for
 `section43IteratedLaplaceCompactTransform` in a new small companion file rather
 than extending `Section43FourierLaplaceTimeProduct.lean` further.
 
+Updated production status, 2026-04-18: the finite-product dense-preimage stage
+is now compiled in
+`Section43FourierLaplaceTimeProductDensity.lean`.  The new file proves:
+
+```lean
+section43IteratedLaplaceCompactTransform_map_add
+section43IteratedLaplaceCompactTransform_map_smul
+section43IteratedLaplaceCompactTransformLinearMap
+section43TimeProductTensor_mem_iteratedLaplaceCompactTransform_preimage
+dense_section43IteratedLaplaceCompactTransform_preimage
+denseRange_section43IteratedLaplaceCompactTransformLinearMap
+```
+
+The key correction is that the finite-time transform range is used through the
+compiled linear map, so the span-density argument is mathematically sound:
+product tensors with one-variable compact-Laplace preimage factors lie in the
+finite-time preimage, and the finite-time preimage is the comap of the linear
+range submodule under `section43TimePositiveQuotientMap`.
+
+The next stage is not to attack `bvt_W_positive` directly.  First make Layer 3
+implementation-ready: transport the finite-time dense range through the spatial
+Fourier variables and identify the resulting representative with
+`partialFourierSpatial_fun`.
+
 5. The rapid-decay proof must reuse the compiled time-only estimates
    `norm_exp_neg_timePair_le_exp_thickened_margin_sum` and
    `exp_margin_sum_controls_thickened_time_polynomial`; do not introduce a new

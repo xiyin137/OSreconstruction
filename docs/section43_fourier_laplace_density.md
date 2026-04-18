@@ -2492,6 +2492,34 @@ product-integral lemmas handle the empty finite product.  Do not split the main
 density theorem unless Lean's finite-product integral API forces a local
 `n = 0` helper.
 
+Production status, 2026-04-18: the finite-product dense-preimage package is
+compiled in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceTimeProductDensity.lean`.
+It proves the missing linearity rather than assuming that the plain function
+range is a submodule:
+
+```lean
+eqOn_nonneg_of_section43PositiveEnergyQuotientMap1D_eq
+section43IteratedLaplaceRaw_add
+section43IteratedLaplaceRaw_smul
+section43IteratedLaplaceRepresentative_add
+section43IteratedLaplaceRepresentative_smul
+section43IteratedLaplaceCompactTransform_map_add
+section43IteratedLaplaceCompactTransform_map_smul
+section43IteratedLaplaceCompactTransformLinearMap
+section43TimeProductTensor_mem_iteratedLaplaceCompactTransform_preimage
+dense_section43IteratedLaplaceCompactTransform_preimage
+denseRange_section43IteratedLaplaceCompactTransformLinearMap
+```
+
+The proof uses the one-variable dense preimage theorem, the compiled
+factor-dense product-tensor theorem, quotient extensionality on each
+coordinate, and the product-source transform identity.  No new axioms,
+wrappers, or placeholders are used.  The next proof-doc frontier is Layer 3:
+make the spatial-Fourier transport from
+`SchwartzMap (Fin n → ℝ) ℂ` to `SchwartzNPoint d n` implementation-ready
+before attempting production Lean.
+
 ## Layer 3: Add Spatial Fourier Transform
 
 Definitions:
