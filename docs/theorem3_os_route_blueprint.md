@@ -25571,6 +25571,14 @@ section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
 dense_section43FourierLaplace_compact_ordered_preimage_raw
 ```
 
+Production update, 2026-04-18: the public theorem-3 positivity frontier
+`bvt_W_positive` in `OSToWightmanBoundaryValues.lean` is now closed by applying
+`OSReconstruction.bvt_W_positive_of_component_dense_preimage` to
+`OSReconstruction.dense_section43FourierLaplace_compact_ordered_preimage_raw`.
+This is the planned OS-route endpoint for Section 4.3 positivity: all analysis
+is in the Section 4.3 density/closure files, and the public frontier only
+connects the compiled density theorem to the closed-set positivity bridge.
+
 Implementation guardrails:
 
 1. Do not use `os1TransportComponent`; it is the raw quotient of the Euclidean

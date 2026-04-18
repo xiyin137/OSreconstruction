@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundar
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesCompactApprox
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesEuclidean
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
 /-!
@@ -383,7 +384,12 @@ private theorem bvt_W_positive
     (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
-  sorry
+  intro F
+  exact
+    OSReconstruction.bvt_W_positive_of_component_dense_preimage (d := d) OS lgc
+      (fun n =>
+        OSReconstruction.dense_section43FourierLaplace_compact_ordered_preimage_raw d n)
+      F
 
 /-- Theorem 4 frontier: cluster transfer for the canonical BV pairing.
 

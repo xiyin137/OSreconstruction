@@ -3665,3 +3665,10 @@ fun OS lgc F =>
     (fun n => dense_section43FourierLaplaceTransformComponentMap_preimage d n)
     F
 ```
+
+Production update, 2026-04-18: theorem-3 positivity is now closed in
+`OSToWightmanBoundaryValues.lean`.  The proof imports the compiled ordered
+density bridge and applies
+`OSReconstruction.bvt_W_positive_of_component_dense_preimage` with
+`OSReconstruction.dense_section43FourierLaplace_compact_ordered_preimage_raw`.
+No additional analytic theorem is inserted at the public frontier.
