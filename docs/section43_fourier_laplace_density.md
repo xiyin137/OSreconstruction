@@ -606,28 +606,139 @@ theorem dense_section43OneSidedLaplaceCompactTransform1D_preimage :
 
 Preferred proof is the OS I Lemma-8.2 dual-annihilator proof.
 
-Use the following locally convex separation helper.  If Mathlib already exposes
-this theorem under a different name, add a local wrapper with this statement so
-the density proof has a stable target:
+Important theorem-shape correction: the dual-annihilator proof cannot be
+applied to an arbitrary non-linear `Set.range`.  It proves density of a linear
+subspace.  Therefore the Lean route must first expose the compact strict-positive
+sources as a complex vector space and prove that the compact one-sided Laplace
+transform is linear.
+
+Add the source operations:
 
 ```lean
-theorem denseRange_of_dual_annihilator_zero
-    {E F : Type*}
-    [AddCommGroup E] [Module ℂ E] [TopologicalSpace E]
-    [AddCommGroup F] [Module ℂ F] [TopologicalSpace F]
-    [LocallyConvexSpace ℂ F]
-    (L : E → F)
-    (hlin : IsLinearMap ℂ L)
-    (hann :
-      ∀ A : F →L[ℂ] ℂ,
-        (∀ x : E, A (L x) = 0) → A = 0) :
-    DenseRange L
+namespace Section43CompactPositiveTimeSource1D
+
+instance : Zero Section43CompactPositiveTimeSource1D
+instance : Add Section43CompactPositiveTimeSource1D
+instance : SMul ℕ Section43CompactPositiveTimeSource1D
+instance : AddCommMonoid Section43CompactPositiveTimeSource1D
+instance : SMul ℂ Section43CompactPositiveTimeSource1D
+instance : Module ℂ Section43CompactPositiveTimeSource1D
+
+end Section43CompactPositiveTimeSource1D
 ```
 
-If the target is a quotient and it is easier to work in the ambient space, use
-the equivalent preimage form supplied by `IsOpenQuotientMap.dense_preimage_iff`.
+The proof obligations are only support stability:
 
-Then prove the analytic annihilator lemma:
+- zero source: `HasCompactSupport.zero` and empty support;
+- addition: `tsupport_add` plus union into `Set.Ioi 0`, and
+  `HasCompactSupport.add`;
+- natural scalar multiplication: use `(n : ℂ) • g.f`, with
+  `Nat.cast_smul_eq_nsmul` for the additive monoid law;
+- scalar multiplication: `tsupport_smul_subset_right` and
+  `HasCompactSupport.smul_left`.
+
+Then prove linearity of the quotient-valued compact transform:
+
+```lean
+theorem section43OneSidedLaplaceCompactTransform1D_map_add
+    (g h : Section43CompactPositiveTimeSource1D) :
+    section43OneSidedLaplaceCompactTransform1D (g + h) =
+      section43OneSidedLaplaceCompactTransform1D g +
+        section43OneSidedLaplaceCompactTransform1D h
+
+theorem section43OneSidedLaplaceCompactTransform1D_map_smul
+    (c : ℂ) (g : Section43CompactPositiveTimeSource1D) :
+    section43OneSidedLaplaceCompactTransform1D (c • g) =
+      c • section43OneSidedLaplaceCompactTransform1D g
+
+noncomputable def section43OneSidedLaplaceCompactTransform1DLinearMap :
+    Section43CompactPositiveTimeSource1D →ₗ[ℂ] Section43PositiveEnergy1D
+```
+
+Proof transcript for `map_add` and `map_smul`:
+
+- Rewrite each transform with
+  `section43OneSidedLaplaceCompactTransform1D_eq_cutoff_quotient`.
+- Reduce quotient equality with
+  `section43PositiveEnergyQuotientMap1D_eq_of_eqOn_nonneg`.
+- On `σ ≥ 0`, rewrite the explicit Schwartz representative with
+  `section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg`.
+- Use the raw Laplace integral definition, `integral_add` with
+  `section43OneSidedLaplaceRaw_integrable_of_nonneg`, and `integral_const_mul`
+  for scalar multiplication.
+
+Production status, 2026-04-17: the source module structure, transform
+linearity, and linear-map packaging are compiled in
+`Section43FourierLaplaceFiniteProbe.lean`.
+
+The density theorem is best proved directly in the ambient Schwartz preimage,
+not first inside the quotient.  The quotient does not currently expose a handy
+`LocallyConvexSpace ℝ Section43PositiveEnergy1D` instance, and no such
+infrastructure is needed for the target theorem.
+
+Use:
+
+```lean
+let L := section43OneSidedLaplaceCompactTransform1DLinearMap
+let Mq : Submodule ℂ Section43PositiveEnergy1D := LinearMap.range L
+let q := section43PositiveEnergyQuotientMap1D
+let S : Submodule ℂ (SchwartzMap ℝ ℂ) := Mq.comap q.toLinearMap
+```
+
+Proof transcript:
+
+1. Rewrite the target set as `(S : Set (SchwartzMap ℝ ℂ))`.
+2. It suffices to show `S.topologicalClosure = ⊤`, via
+   `Submodule.dense_iff_topologicalClosure_eq_top`.
+3. If `S.topologicalClosure ≠ ⊤`, choose
+   `x : SchwartzMap ℝ ℂ` outside the closure.
+4. Apply the real locally-convex Hahn-Banach theorem
+   `geometric_hahn_banach_closed_point` in the ambient Schwartz space to
+   `S.topologicalClosure`.  The convexity proof uses the complex submodule
+   operations with real coefficients cast into `ℂ`.
+5. The separation functional is real-linear:
+
+```lean
+f : SchwartzMap ℝ ℂ →L[ℝ] ℝ
+```
+
+   The usual scaling argument shows `f` vanishes on `S.topologicalClosure`.
+6. Extend `f` to a complex-linear functional on ambient Schwartz space:
+
+```lean
+let F : SchwartzMap ℝ ℂ →L[ℂ] ℂ :=
+  StrongDual.extendRCLike (𝕜 := ℂ) f
+```
+
+   Since `S.topologicalClosure` is a complex submodule, both `f y` and
+   `f (I • y)` vanish on the closure, hence `F` vanishes there.
+7. Because the quotient kernel is contained in `S`, `F` descends through
+   `section43PositiveEnergyQuotientMap1D` to a complex continuous functional
+
+```lean
+A : Section43PositiveEnergy1D →L[ℂ] ℂ
+```
+
+8. `F` vanishes on representatives of every compact transform, so
+   `A (section43OneSidedLaplaceCompactTransform1D g) = 0` for every compact
+   strict-positive source `g`.
+9. Apply the compiled annihilator theorem
+   `section43OneSidedLaplaceCompactTransform1D_dual_annihilator` to get
+   `A = 0`; therefore `F = 0` on ambient Schwartz, and the real-part identity
+   for `StrongDual.extendRCLike` gives `f x = 0`, contradicting the separating
+   inequality.
+10. The quotient dense-range theorem is then a corollary of the preimage theorem
+    by `IsOpenQuotientMap.dense_preimage_iff.mp`.
+
+Production status, 2026-04-17: this ambient preimage proof and the dense-range
+corollary are compiled as:
+
+```lean
+dense_section43OneSidedLaplaceCompactTransform1D_preimage
+denseRange_section43OneSidedLaplaceCompactTransform1DLinearMap
+```
+
+The analytic annihilator lemma used in Step 9 is:
 
 ```lean
 theorem section43OneSidedLaplaceCompactTransform1D_dual_annihilator
@@ -966,7 +1077,124 @@ section43ProbeCLM s (section43OneSidedLaplaceSchwartzRepresentative1D g) =
 This should now be placed in a small companion file, because
 `Section43FourierLaplaceDensity.lean` is already around 1600 lines.
 
-5. Prove integrability of the finite-probe family:
+5. Prove the finite-probe integrability through compact-support continuity,
+   not by trying to build a global Schwartz-valued majorant.
+
+The companion file should start with the following public support lemma copied
+from the private Paley-Wiener proof, with the `section43*` names:
+
+```lean
+theorem section43WeightedDerivToBCFCLM_norm_le
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
+    ‖section43WeightedDerivToBCFCLM k n f‖ ≤
+      (2 : ℝ) ^ k *
+        (SchwartzMap.seminorm ℝ 0 n f +
+          SchwartzMap.seminorm ℝ (2 * k) n f)
+```
+
+Proof transcript:
+
+- Use `BoundedContinuousFunction.dist_le` after rewriting the norm as distance
+  from zero.
+- For `|σ| ≤ 1`, use
+  `‖section43PolyWeight k σ‖ ≤ 2^k` and
+  `SchwartzMap.le_seminorm' (k := 0)`.
+- For `1 < |σ|`, use
+  `‖section43PolyWeight k σ‖ ≤ 2^k * |σ|^(2*k)` and
+  `SchwartzMap.le_seminorm' (k := 2*k)`.
+- This is exactly the estimate needed to turn Schwartz-topology convergence of
+  `ψ_z` into BCF-norm convergence of the weighted probes.
+
+Then prove positive-axis continuity of the weighted probe family:
+
+```lean
+theorem continuousOn_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_Ioi
+    (k n : ℕ) :
+    ContinuousOn
+      (fun t : ℝ =>
+        section43WeightedDerivToBCFCLM k n
+          (section43ImagAxisPsiKernel t))
+      (Set.Ioi (0 : ℝ))
+```
+
+Proof transcript:
+
+- Fix `t₀ > 0`.  On a small neighborhood with
+  `‖h‖ ≤ t₀ / 2`, both `t₀ + h` and `t₀` remain in the positive branch, so
+  `section43ImagAxisPsiKernel (t₀ + h)` and
+  `section43ImagAxisPsiKernel t₀` unfold to
+  `SCV.schwartzPsiZ (((t₀ + h : ℝ) : ℂ) * Complex.I) _` and
+  `SCV.schwartzPsiZ ((t₀ : ℂ) * Complex.I) _`.
+- Apply the already public remainder theorem
+  `SCV.schwartzPsiZExpTaylorLinearRemainderQuot_seminorm_le` at
+  `z := (t₀ : ℂ) * Complex.I` and complex increment
+  `hC := (h : ℂ) * Complex.I`.  Its hypotheses are:
+  `0 < z.im`, `‖hC‖ ≤ z.im / 2`, and `‖hC‖ ≤ 1`.
+- Use the identity behind
+  `SCV.psiZ_sub_sub_deriv_eq_smul_remainder` to write
+
+```lean
+SCV.schwartzPsiZ (z + hC) _ - SCV.schwartzPsiZ z _ =
+  hC • ((SchwartzMap.smulLeftCLM ℂ (fun σ : ℝ => Complex.I * (σ : ℂ)))
+      (SCV.schwartzPsiZ z _)) +
+  hC • SCV.schwartzPsiZExpTaylorLinearRemainderQuot z _ hC _ _
+```
+
+  after extensionality in `σ`.
+- Apply `section43WeightedDerivToBCFCLM k n` to that equality.  Bound the norm
+  by the sum of the two `hC`-scaled terms.  The derivative term has fixed norm;
+  the remainder term is bounded by
+  `section43WeightedDerivToBCFCLM_norm_le` and
+  `SCV.schwartzPsiZExpTaylorLinearRemainderQuot_seminorm_le` for seminorms
+  `(0,n)` and `(2*k,n)`.
+- The resulting bound is `const * ‖h‖`, which tends to zero.  This proves
+  continuity at `t₀`; assemble with `continuousOn_iff_continuousAt`.
+
+This is the exact vertical analogue of the private horizontal-continuity block
+in `SCV.PaleyWiener` around
+`tendsto_weightedDerivToBCFCLM_schwartzPsiZ_horizontal_diff_zero` and
+`continuous_weightedDerivToBCFCLM_schwartzPsiZ_horizontal`, except the complex
+increment is `h * I` instead of `h`.
+
+Now prove component integrability, using the compact strict-positive support of
+`g`:
+
+```lean
+theorem integrable_section43WeightedProbe_imagAxisPsiKernel_source
+    (g : Section43CompactPositiveTimeSource1D)
+    (k n : ℕ) :
+    Integrable
+      (fun t : ℝ =>
+        g.f t •
+          section43WeightedDerivToBCFCLM k n
+            (section43ImagAxisPsiKernel t))
+```
+
+Proof transcript:
+
+- Choose `δ R` from
+  `exists_positive_Icc_bounds_of_compactPositiveTimeSource g`.
+- Prove the support inclusion
+
+```lean
+Function.support
+  (fun t : ℝ =>
+    g.f t • section43WeightedDerivToBCFCLM k n
+      (section43ImagAxisPsiKernel t))
+  ⊆ Set.Icc δ R
+```
+
+  because if the smul is nonzero then `g.f t ≠ 0`, hence
+  `t ∈ tsupport (g.f : ℝ → ℂ)`, and the chosen support bound applies.
+- Prove `ContinuousOn` of the same function on `Set.Icc δ R` by combining:
+  `g.f.continuous.continuousOn`,
+  `continuousOn_section43WeightedDerivToBCFCLM_imagAxisPsiKernel_Ioi k n`,
+  and `Set.Icc δ R ⊆ Set.Ioi 0`, which follows from `0 < δ` and `δ ≤ t`.
+- Apply `ContinuousOn.integrableOn_compact` on `Set.Icc δ R`, then convert to
+  global integrability using
+  `integrableOn_iff_integrable_of_support_subset`.
+
+The finite-product integrability theorem is then mechanical:
 
 ```lean
 theorem integrable_section43Probe_imagAxisPsiKernel_source
@@ -977,10 +1205,40 @@ theorem integrable_section43Probe_imagAxisPsiKernel_source
         g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t))
 ```
 
-   Use `exists_positive_Icc_bounds_of_compactPositiveTimeSource g` to reduce to
-   `[δ,R]`; outside this compact support the factor `g.f t` is zero.  On
-   `[δ,R]`, the explicit derivative formula in Step 3 gives a uniform bound for
-   each selected weighted derivative probe.
+Proof transcript:
+
+- Use `Integrable.of_eval`.
+- For each `p : ↑s.attach`, unfold `section43ProbeCLM` and use
+  `integrable_section43WeightedProbe_imagAxisPsiKernel_source g
+    p.1.1.1 p.1.1.2`.
+
+With this integrability in hand, the Banach-valued probe identity is a pure
+extensionality argument:
+
+```lean
+theorem section43Probe_integral_imagAxisPsiKernel
+    (s : Finset (ℕ × ℕ))
+    (g : Section43CompactPositiveTimeSource1D) :
+    section43ProbeCLM s (section43OneSidedLaplaceSchwartzRepresentative1D g) =
+      ∫ t : ℝ,
+        g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t)
+```
+
+Proof transcript:
+
+- `ext p σ`.
+- Move the finite-product projection through the Bochner integral using
+  `(ContinuousLinearMap.proj ... p).integral_comp_comm
+    (integrable_section43Probe_imagAxisPsiKernel_source s g)`.
+- Move BCF evaluation through the component integral using
+  `(BoundedContinuousFunction.evalCLM ℂ σ).integral_comp_comm
+    (integrable_section43WeightedProbe_imagAxisPsiKernel_source g
+      p.1.1.1 p.1.1.2)`.
+- Simplify the projected/evaluated integrand to
+  `g.f t * section43WeightedDerivToBCFCLM p.1.1.1 p.1.1.2
+    (section43ImagAxisPsiKernel t) σ`.
+- Finish with the already compiled scalar component identity
+  `section43WeightedDerivToBCFCLM_representative_eq_integral_kernel_apply`.
 
 6. Combine finite-probe Fubini with the factorization:
 
@@ -1218,7 +1476,22 @@ part of the packet.  It should stay isolated as pure analysis.
 
 ## Layer 2: Finite Time Product
 
-Definitions:
+Layer 2 should not be implemented as a vague "coordinate induction".  The
+Lean-ready route is a tensor-product density argument:
+
+- use the already-compiled one-variable dense preimage theorem for each factor;
+- use the nuclear/product-tensor density theorem to reduce the finite time
+  Schwartz space to finite sums of pure tensors;
+- prove that a pure tensor whose factors are one-variable compact-Laplace
+  preimage representatives lies in the multitime compact-Laplace preimage;
+- close density because the multitime preimage is a submodule.
+
+This is still OS I Lemma 4.1: Lemma 8.2 supplies the one-coordinate positive
+support Fourier-Laplace density, and the Schwartz nuclear theorem supplies the
+finite product passage.
+
+Definitions to add in a new small companion file, not in the already-large
+one-variable density file:
 
 ```lean
 def section43TimePositiveRegion (n : ℕ) : Set (Fin n → ℝ) :=
@@ -1255,6 +1528,724 @@ def section43IteratedLaplaceRepresentative
           g.f τ
 ```
 
+The source type must be made into a complex module exactly as in the
+one-variable source packet:
+
+```lean
+namespace Section43CompactStrictPositiveTimeSource
+
+instance : Zero (Section43CompactStrictPositiveTimeSource n)
+instance : Add (Section43CompactStrictPositiveTimeSource n)
+instance : SMul ℕ (Section43CompactStrictPositiveTimeSource n)
+instance : AddCommMonoid (Section43CompactStrictPositiveTimeSource n)
+instance : SMul ℂ (Section43CompactStrictPositiveTimeSource n)
+instance : Module ℂ (Section43CompactStrictPositiveTimeSource n)
+
+end Section43CompactStrictPositiveTimeSource
+```
+
+The proof obligations are the same support-stability obligations as in the
+one-variable file.  Addition uses `tsupport_add` and
+`HasCompactSupport.add`; scalar multiplication uses
+`tsupport_smul_subset_right` and `HasCompactSupport.smul_left`.
+
+Package the multitime transform as a linear map:
+
+```lean
+noncomputable def section43IteratedLaplaceCompactTransform
+    (n : ℕ) :
+    Section43CompactStrictPositiveTimeSource n →
+      Section43TimePositiveComponent n
+
+theorem section43IteratedLaplaceCompactTransform_eq_quotient
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (hΦ : section43IteratedLaplaceRepresentative n g Φ) :
+    section43IteratedLaplaceCompactTransform n g =
+      section43TimePositiveQuotientMap n Φ
+
+theorem section43IteratedLaplaceCompactTransform_map_add
+    (g h : Section43CompactStrictPositiveTimeSource n) :
+    section43IteratedLaplaceCompactTransform n (g + h) =
+      section43IteratedLaplaceCompactTransform n g +
+        section43IteratedLaplaceCompactTransform n h
+
+theorem section43IteratedLaplaceCompactTransform_map_smul
+    (c : ℂ) (g : Section43CompactStrictPositiveTimeSource n) :
+    section43IteratedLaplaceCompactTransform n (c • g) =
+      c • section43IteratedLaplaceCompactTransform n g
+
+noncomputable def section43IteratedLaplaceCompactTransformLinearMap
+    (n : ℕ) :
+    Section43CompactStrictPositiveTimeSource n →ₗ[ℂ]
+      Section43TimePositiveComponent n
+```
+
+For `map_add` and `map_smul`, use quotient equality on
+`section43TimePositiveRegion n`; rewrite the representative integral by
+linearity of the scalar integral.  Integrability follows from compact support of
+the source and boundedness of the exponential on compact support when
+`σ` is fixed in the closed positive orthant.
+
+### Layer 2A: Time Product Tensors
+
+Name the pure tensor map explicitly:
+
+```lean
+noncomputable def section43TimeProductTensor
+    {n : ℕ} (fs : Fin n → SchwartzMap ℝ ℂ) :
+    SchwartzMap (Fin n → ℝ) ℂ :=
+  SchwartzMap.productTensor fs
+```
+
+The first density input is product-tensor density for `SchwartzMap (Fin n → ℝ)
+ℂ`.  The existing theorem
+
+```lean
+productTensor_span_dense 0 n
+```
+
+lives on
+
+```lean
+SchwartzMap (Fin n → Fin 1 → ℝ) ℂ
+```
+
+so add an explicit transport:
+
+```lean
+noncomputable def section43TimeAsOnePointCLE (n : ℕ) :
+    (Fin n → ℝ) ≃L[ℝ] (Fin n → Fin 1 → ℝ)
+
+theorem section43_timeProductTensor_span_dense (n : ℕ) :
+    Dense
+      (((Submodule.span ℂ
+        {F : SchwartzMap (Fin n → ℝ) ℂ |
+          ∃ fs : Fin n → SchwartzMap ℝ ℂ,
+            F = section43TimeProductTensor fs}) :
+        Submodule ℂ (SchwartzMap (Fin n → ℝ) ℂ)) :
+        Set (SchwartzMap (Fin n → ℝ) ℂ))
+```
+
+Proof transcript:
+
+1. Define `section43TimeAsOnePointCLE n` by
+   `x i () = x i`, with inverse `y i = y i 0`.
+2. Transfer `productTensor_span_dense 0 n` through
+   `SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+     (section43TimeAsOnePointCLE n)` and its inverse.
+3. The pointwise compatibility theorem is:
+
+```lean
+theorem section43TimeAsOnePoint_productTensor
+    (fs : Fin n → SchwartzMap ℝ ℂ) :
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (section43TimeAsOnePointCLE n).symm
+        (section43TimeProductTensor fs)
+      =
+    SchwartzMap.productTensor
+      (fun i : Fin n =>
+        SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (ContinuousLinearEquiv.funUnique (Fin 1) ℝ ℝ)
+          (fs i))
+```
+
+   Prove by extensionality and `SchwartzMap.productTensor_apply`.
+
+The second density input is the factorwise dense-subset version:
+
+```lean
+theorem section43_timeProductTensor_span_dense_of_factor_dense
+    {S : Set (SchwartzMap ℝ ℂ)}
+    (hS : Dense S) (n : ℕ) :
+    Dense
+      (((Submodule.span ℂ
+        {F : SchwartzMap (Fin n → ℝ) ℂ |
+          ∃ fs : Fin n → SchwartzMap ℝ ℂ,
+            (∀ i : Fin n, fs i ∈ S) ∧
+            F = section43TimeProductTensor fs}) :
+        Submodule ℂ (SchwartzMap (Fin n → ℝ) ℂ)) :
+        Set (SchwartzMap (Fin n → ℝ) ℂ))
+```
+
+Proof transcript:
+
+1. Let `Pall` be all time product tensors and `PS` product tensors whose
+   factors lie in `S`.
+2. Show `Pall ⊆ closure (Submodule.span ℂ PS)`.
+3. For a fixed `fs`, use density of the finite product set
+   `{gs : Fin n → SchwartzMap ℝ ℂ | ∀ i, gs i ∈ S}` in
+   `Fin n → SchwartzMap ℝ ℂ`.  This is the finite-pi density theorem from
+   Mathlib, applied to `hS`.
+4. Apply continuity of `fun gs => section43TimeProductTensor gs`
+   (`SchwartzMap.productTensor_continuous`) to put
+   `section43TimeProductTensor fs` in the closure of the image of this dense
+   pi-set.
+5. The image is contained in `PS`, hence in `Submodule.span ℂ PS`.
+6. Since `Submodule.topologicalClosure` is a submodule, it contains
+   `Submodule.span ℂ Pall`.
+7. Finish with `section43_timeProductTensor_span_dense n`.
+
+This theorem is purely topological.  It should not mention Laplace transforms,
+OS positivity, or Wightman objects.
+
+Production status, 2026-04-18: the finite-time quotient/source surface and the
+pure product-tensor density packet are compiled in
+`Section43FourierLaplaceTimeProduct.lean`:
+
+```lean
+section43TimePositiveRegion
+section43TimeStrictPositiveRegion
+section43TimePositiveThickening
+section43TimePositiveCutoff
+section43TimePositiveCutoff_eq_one_of_mem
+section43TimePositiveCutoff_eq_zero_of_time_le_neg_one
+section43TimePositiveCutoff_eq_zero_of_not_mem_thickening_one
+section43TimePositiveCutoff_contDiff
+section43TimePositiveCutoff_hasTemperateGrowth
+section43TimePositiveCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickening_one
+section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+section43TimeVanishingSubmodule
+Section43TimePositiveComponent
+section43TimePositiveQuotientMap
+section43TimePositiveQuotientMap_eq_of_eqOn_region
+eqOn_region_of_section43TimePositiveQuotientMap_eq
+section43TimeProductTensor
+section43TimeAsOnePointCLE
+section43TimeAsOnePoint_productTensor
+section43TimeAsOnePoint_symm_productTensor
+section43TimeAsOnePoint_comp_symm
+section43TimeAsOnePoint_symm_comp
+section43_timeProductTensor_span_dense
+section43_timeProductTensor_span_dense_of_factor_dense
+Section43CompactStrictPositiveTimeSource
+Section43CompactStrictPositiveTimeSource.instZero
+Section43CompactStrictPositiveTimeSource.instAdd
+Section43CompactStrictPositiveTimeSource.instSMulNat
+Section43CompactStrictPositiveTimeSource.instAddCommMonoid
+Section43CompactStrictPositiveTimeSource.instSMul
+Section43CompactStrictPositiveTimeSource.instModule
+exists_positive_margin_of_isCompact_subset_Ioi
+exists_positive_margin_of_compact_time_tsupport_subset_strictPositive
+exists_time_closedBall_of_compact_tsupport
+continuous_cmlm_apply_time
+tsupport_section43TimeProductTensor_subset_pi_tsupport
+hasCompactSupport_section43TimeProductTensor
+section43TimeProductSource
+section43IteratedLaplaceRaw
+section43IteratedLaplaceCutoffFun
+section43IteratedLaplaceCutoffFun_eq_raw_of_mem
+contDiff_section43IteratedLaplaceRaw_integrand_sigma
+hasFDerivAt_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft
+section43IteratedLaplaceRaw_iteratedFDerivCandidate
+section43TimeProductSource_integral_eq_product_raw
+section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral
+section43IteratedLaplaceRepresentative
+section43TimeProductTensor_oneSidedLaplaceRepresentative
+exists_section43IteratedLaplaceRepresentative_productSource
+```
+
+This closes Layer 2A and the product-source support/factorization half of
+Layer 2B.  The remaining Layer 2B implementation starts at the honest multitime
+Laplace transform package:
+
+```lean
+section43IteratedLaplaceRepresentative
+exists_section43IteratedLaplaceRepresentative
+section43IteratedLaplaceCompactTransform
+section43IteratedLaplaceCompactTransform_eq_quotient
+section43IteratedLaplaceCompactTransform_productSource
+```
+
+### Layer 2B-0: Arbitrary Multitime Representative Existence
+
+The theorem
+
+```lean
+theorem exists_section43IteratedLaplaceRepresentative
+    (n : ℕ)
+    (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ Φ : SchwartzMap (Fin n → ℝ) ℂ,
+      section43IteratedLaplaceRepresentative n g Φ
+```
+
+must not be proved by the old vague "coordinate induction" sketch.  The
+implementation-ready route is the time-only analogue of the already compiled
+production theorem
+`exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin`.
+The architecture is:
+
+1. Build a time-only product cutoff.
+2. Prove the raw multitime Laplace integral is smooth.
+3. Prove its derivatives are rapidly decaying on the one-sided collar
+   `{σ | ∀ i, -1 ≤ σ i}`.
+4. Apply the compiled general constructor
+   `schwartzMap_of_temperate_mul_rapid_on_derivSupport`.
+
+Use these exact definitions:
+
+```lean
+def section43TimePositiveThickening (n : ℕ) (ε : ℝ) :
+    Set (Fin n → ℝ) :=
+  {σ | ∀ i : Fin n, -ε ≤ σ i}
+
+noncomputable def section43TimePositiveCutoff (n : ℕ) :
+    (Fin n → ℝ) → ℂ :=
+  fun σ => ∏ i : Fin n, (SCV.smoothCutoff (σ i) : ℂ)
+
+noncomputable def section43IteratedLaplaceRaw
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) : ℂ :=
+  ∫ τ : Fin n → ℝ,
+    Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+      g.f τ
+
+noncomputable def section43IteratedLaplaceCutoffFun
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) : ℂ :=
+  section43TimePositiveCutoff n σ *
+    section43IteratedLaplaceRaw n g σ
+```
+
+The cutoff packet is a direct copy of the compiled
+`section43PositiveEnergyCutoff` packet, with `section43QTime` replaced by the
+coordinate projection `fun σ => σ i`:
+
+```lean
+theorem section43TimePositiveCutoff_eq_one_of_mem
+    {σ : Fin n → ℝ} :
+    σ ∈ section43TimePositiveRegion n →
+      section43TimePositiveCutoff n σ = 1
+
+theorem section43TimePositiveCutoff_eq_zero_of_time_le_neg_one
+    {σ : Fin n → ℝ} {i : Fin n} :
+    σ i ≤ -1 → section43TimePositiveCutoff n σ = 0
+
+theorem section43TimePositiveCutoff_eq_zero_of_not_mem_thickening_one
+    {σ : Fin n → ℝ} :
+    σ ∉ section43TimePositiveThickening n 1 →
+      section43TimePositiveCutoff n σ = 0
+
+theorem section43TimePositiveCutoff_contDiff :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (section43TimePositiveCutoff n)
+
+theorem section43TimePositiveCutoff_hasTemperateGrowth :
+    Function.HasTemperateGrowth (section43TimePositiveCutoff n)
+
+theorem section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+    (r : ℕ) :
+    ∀ σ : Fin n → ℝ,
+      iteratedFDeriv ℝ r (section43TimePositiveCutoff n) σ ≠ 0 →
+        σ ∈ section43TimePositiveThickening n 1
+```
+
+The proof uses only:
+
+```lean
+SCV.smoothCutoff_one_of_nonneg
+SCV.smoothCutoff_zero_of_le_neg_one
+SCV.smoothCutoff_contDiff
+SCV.smoothCutoff_complex_hasTemperateGrowth
+iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+```
+
+For source geometry, isolate the compact-support consequences before doing
+any differentiation:
+
+```lean
+theorem exists_positive_margin_of_compact_time_tsupport_subset_strictPositive
+    (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ δ, 0 < δ ∧
+      tsupport (g.f : (Fin n → ℝ) → ℂ) ⊆
+        {τ | ∀ i : Fin n, δ ≤ τ i}
+
+theorem exists_time_closedBall_of_compact_tsupport
+    (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ R, 0 ≤ R ∧
+      tsupport (g.f : (Fin n → ℝ) → ℂ) ⊆
+        Metric.closedBall (0 : Fin n → ℝ) R
+```
+
+For the margin theorem, the Lean proof should use the compact set
+`K := tsupport (g.f : (Fin n → ℝ) → ℂ)`.  For each coordinate `i`, the image
+`(fun τ => τ i) '' K` is compact and contained in `Set.Ioi 0`; apply the
+one-dimensional compact-positive margin argument to that image.  If
+`Fin n` is empty, choose `δ = 1` and the coordinate condition is vacuous.  If
+`Fin n` is nonempty, take the finite minimum of the coordinate margins and use
+positivity of a finite minimum of positive numbers.  The closed-ball theorem
+comes from `g.compact.isCompact.exists_bound_of_continuousOn` applied to
+`fun τ => ‖τ‖`, followed by replacing the bound with `max bound 0`.
+
+For smoothness, use the same integrated-candidate architecture already used in
+`Section43FourierLaplaceCompactDifferentiation.lean`.  Define the candidate by
+integrating the pointwise iterated derivative, rather than expanding all
+finite words by hand:
+
+```lean
+noncomputable def section43IteratedLaplaceRaw_iteratedFDerivCandidate
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ :=
+  ∫ τ : Fin n → ℝ,
+    iteratedFDeriv ℝ r
+      (fun σ' : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+          g.f τ)
+      σ
+```
+
+Then prove the following analogues of the compiled ordered-support theorems:
+
+```lean
+theorem integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        iteratedFDeriv ℝ r
+          (fun σ' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+              g.f τ)
+          σ)
+
+theorem section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun σ' : Fin n → ℝ =>
+        section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ')
+      ((section43IteratedLaplaceRaw_iteratedFDerivCandidate n (r + 1) g σ).curryLeft)
+      σ
+
+theorem section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ =
+      section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ
+
+theorem section43IteratedLaplaceRaw_contDiff
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (section43IteratedLaplaceRaw n g)
+```
+
+The local dominated-convergence proof for
+`section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt` should be a
+time-only copy of
+`section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`:
+use `hasFDerivAt_integral_of_dominated_of_fderiv_le`, the local ball
+`Metric.closedBall σ 1`, and the compact time bound
+`tsupport g.f ⊆ Metric.closedBall 0 R`.  The pointwise derivative
+`HasFDerivAt` is obtained from smoothness of
+`fun σ' => Complex.exp (-(∑ i, (τ i : ℂ) * (σ' i : ℂ))) * g.f τ`.
+
+For rapid decay on the cutoff-derivative support, reuse the already compiled
+time-only estimates:
+
+```lean
+norm_exp_neg_timePair_le_exp_thickened_margin_sum
+exp_margin_sum_controls_thickened_time_polynomial
+```
+
+With `ε = 1`, `δ` from the strict-positive support margin, and `R` from the
+compact closed-ball bound, they give:
+
+```lean
+theorem section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+    (n r s : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ σ ∈ section43TimePositiveThickening n 1,
+        (1 + ‖σ‖) ^ s *
+          ‖iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ‖ ≤ C
+```
+
+The proof first rewrites the derivative by
+`section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate`, bounds the pointwise
+candidate by a compact-support integrable majorant, applies
+`norm_exp_neg_timePair_le_exp_thickened_margin_sum`, and then absorbs the
+remaining polynomial in `σ` using
+`exp_margin_sum_controls_thickened_time_polynomial`.
+
+The final representative is then:
+
+```lean
+noncomputable def section43IteratedLaplaceSchwartzRepresentative
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    SchwartzMap (Fin n → ℝ) ℂ :=
+  schwartzMap_of_temperate_mul_rapid_on_derivSupport
+    (χ := section43TimePositiveCutoff n)
+    (F := section43IteratedLaplaceRaw n g)
+    (S := section43TimePositiveThickening n 1)
+    (section43TimePositiveCutoff_hasTemperateGrowth n)
+    (fun r σ hne =>
+      section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+        (n := n) r σ hne)
+    (section43IteratedLaplaceRaw_contDiff n g)
+    (by
+      intro r s
+      exact section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+        n r s g)
+
+theorem section43IteratedLaplaceSchwartzRepresentative_apply_of_mem
+    (g : Section43CompactStrictPositiveTimeSource n)
+    {σ : Fin n → ℝ} :
+    σ ∈ section43TimePositiveRegion n →
+      section43IteratedLaplaceSchwartzRepresentative n g σ =
+        section43IteratedLaplaceRaw n g σ
+
+theorem exists_section43IteratedLaplaceRepresentative
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ Φ : SchwartzMap (Fin n → ℝ) ℂ,
+      section43IteratedLaplaceRepresentative n g Φ
+```
+
+The last theorem is just
+`⟨section43IteratedLaplaceSchwartzRepresentative n g, ...⟩`, unfolding
+`section43IteratedLaplaceRepresentative`, rewriting by
+`section43IteratedLaplaceSchwartzRepresentative_apply_of_mem`, and unfolding
+`section43IteratedLaplaceRaw`.
+
+Production status, 2026-04-18: the low-risk first half of this package is
+compiled in `Section43FourierLaplaceTimeProduct.lean`:
+
+```lean
+section43TimePositiveThickening
+section43TimePositiveCutoff
+section43TimePositiveCutoff_eq_one_of_mem
+section43TimePositiveCutoff_eq_zero_of_time_le_neg_one
+section43TimePositiveCutoff_eq_zero_of_not_mem_thickening_one
+section43TimePositiveCutoff_contDiff
+section43TimePositiveCutoff_hasTemperateGrowth
+section43TimePositiveCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickening_one
+section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+exists_positive_margin_of_isCompact_subset_Ioi
+exists_positive_margin_of_compact_time_tsupport_subset_strictPositive
+exists_time_closedBall_of_compact_tsupport
+continuous_cmlm_apply_time
+section43IteratedLaplaceRaw
+section43IteratedLaplaceCutoffFun
+section43IteratedLaplaceCutoffFun_eq_raw_of_mem
+contDiff_section43IteratedLaplaceRaw_integrand_sigma
+hasFDerivAt_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft
+section43IteratedLaplaceRaw_iteratedFDerivCandidate
+```
+
+The remaining implementation frontier in this package is now exactly the
+integrated derivative candidate estimates and their consequences:
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+```
+
+### Layer 2B: Product Sources
+
+For factorwise compact positive sources, define the product source:
+
+```lean
+noncomputable def section43TimeProductSource
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    Section43CompactStrictPositiveTimeSource n :=
+{ f := section43TimeProductTensor (fun i => (gs i).f)
+  positive := ...
+  compact := ... }
+```
+
+Support proof transcript:
+
+1. If
+   `x ∈ tsupport ((section43TimeProductTensor fun i => (gs i).f) :
+      (Fin n → ℝ) → ℂ)`,
+   then for every `i`, `x i ∈ tsupport ((gs i).f : ℝ → ℂ)`.
+2. Prove the contrapositive: if `x i` is outside the one-variable tsupport,
+   choose a neighborhood of `x i` on which `(gs i).f` is zero; the cylinder
+   neighborhood in `Fin n → ℝ` makes the product tensor zero.
+3. Apply `(gs i).positive` to get `0 < x i`.
+4. Compactness follows from support containment in the finite product of the
+   compact one-variable tsupports.  In Lean this is:
+   `HasCompactSupport.of_support_subset_isCompact`,
+   `subset_tsupport`, and `isCompact_univ_pi (fun i => (gs i).compact.isCompact)`.
+
+Needed helper theorem names:
+
+```lean
+theorem tsupport_section43TimeProductTensor_subset_pi_tsupport
+    (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    tsupport
+      ((section43TimeProductTensor (fun i => (gs i).f) :
+          SchwartzMap (Fin n → ℝ) ℂ) : (Fin n → ℝ) → ℂ)
+      ⊆ {x | ∀ i, x i ∈ tsupport ((gs i).f : ℝ → ℂ)}
+
+theorem hasCompactSupport_section43TimeProductTensor
+    (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    HasCompactSupport
+      ((section43TimeProductTensor (fun i => (gs i).f) :
+          SchwartzMap (Fin n → ℝ) ℂ) : (Fin n → ℝ) → ℂ)
+
+noncomputable def section43TimeProductSource
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    Section43CompactStrictPositiveTimeSource n
+```
+
+For `n = 0`, the positive condition is vacuous and compact support is compact
+support on the one-point space.  Keep the same theorem statements; the finite
+product compactness proof should handle this case.
+
+The product-source support packet is now compiled in
+`Section43FourierLaplaceTimeProduct.lean`.  The compactness proof uses the
+finite product set
+
+```lean
+Set.pi Set.univ (fun i => tsupport ((gs i).f : ℝ → ℂ))
+```
+
+and does not require any OS or Wightman input.
+
+The product-source representative theorem is now compiled:
+
+```lean
+theorem section43TimeProductTensor_oneSidedLaplaceRepresentative
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    section43IteratedLaplaceRepresentative n (section43TimeProductSource gs)
+      (section43TimeProductTensor
+        (fun i : Fin n =>
+          section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+
+theorem exists_section43IteratedLaplaceRepresentative_productSource
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    ∃ Φ : SchwartzMap (Fin n → ℝ) ℂ,
+      section43IteratedLaplaceRepresentative n (section43TimeProductSource gs) Φ
+```
+
+After the arbitrary-source compact transform is defined, prove the transform
+compatibility:
+
+```lean
+theorem section43IteratedLaplaceCompactTransform_productSource
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    section43IteratedLaplaceCompactTransform n
+        (section43TimeProductSource gs) =
+      section43TimePositiveQuotientMap n
+        (section43TimeProductTensor
+          (fun i =>
+            section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+```
+
+Proof transcript:
+
+1. Apply `section43IteratedLaplaceCompactTransform_eq_quotient` with
+   `Φ := section43TimeProductTensor
+      (fun i => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))`.
+2. The representative proof argument is the compiled theorem
+   `section43TimeProductTensor_oneSidedLaplaceRepresentative gs`.
+3. No further analysis is needed at this stage; all pointwise analysis has
+   already been compiled in
+   `section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral`.
+
+For reference, the pointwise theorem proved the following finite-product
+calculation.  The multitime representative integral for
+`section43TimeProductSource gs` has integrand
+
+```lean
+fun τ =>
+  ∏ i,
+    Complex.exp (-((τ i : ℂ) * (σ i : ℂ))) * (gs i).f (τ i)
+```
+
+after rewriting the exponential of a finite sum as a product with
+`Complex.exp_sum`.  The exact Mathlib theorem used for the finite-product
+Fubini calculation is:
+
+```lean
+MeasureTheory.integral_fintype_prod_volume_eq_prod
+```
+
+In the compiled product-source theorem, it gives
+
+```lean
+theorem section43TimeProductSource_integral_eq_product_raw
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    (σ : Fin n → ℝ) :
+    (∫ τ : Fin n → ℝ,
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        (section43TimeProductSource gs).f τ) =
+      ∏ i : Fin n,
+        ∫ t : ℝ, Complex.exp (-(t : ℂ) * (σ i : ℂ)) * (gs i).f t
+```
+
+The proof rewrites
+`Complex.exp (-(∑ i, (τ i : ℂ) * (σ i : ℂ)))` as
+`∏ i, Complex.exp (-(τ i : ℂ) * (σ i : ℂ))` using
+`Complex.exp_sum`, `Finset.sum_neg_distrib`, and a per-coordinate `ring`.
+It then rewrites each factor by
+`section43OneSidedLaplaceSchwartzRepresentative1D_apply` and
+`section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg`, finishing with
+`SchwartzMap.productTensor_apply`.
+
+The pointwise product-source representative identity on the closed positive
+orthant is also compiled:
+
+```lean
+theorem section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D)
+    {σ : Fin n → ℝ} (hσ : σ ∈ section43TimePositiveRegion n) :
+    (section43TimeProductTensor
+      (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)) :
+        SchwartzMap (Fin n → ℝ) ℂ) σ =
+    ∫ τ : Fin n → ℝ,
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        (section43TimeProductSource gs).f τ
+```
+
+No bespoke finite-`Fin n` induction is needed here: the existing
+`MeasureTheory.integral_fintype_prod_volume_eq_prod` theorem is exactly the
+finite product-integral statement.
+
+The factorwise preimage theorem is then short:
+
+```lean
+def section43OneSidedCompactPreimageSet :
+    Set (SchwartzMap ℝ ℂ) :=
+  section43PositiveEnergyQuotientMap1D ⁻¹'
+    Set.range section43OneSidedLaplaceCompactTransform1D
+
+def section43IteratedCompactPreimageSet (n : ℕ) :
+    Set (SchwartzMap (Fin n → ℝ) ℂ) :=
+  section43TimePositiveQuotientMap n ⁻¹'
+    Set.range (section43IteratedLaplaceCompactTransform n)
+
+theorem section43TimeProductTensor_mem_iteratedCompactPreimageSet
+    {n : ℕ} {fs : Fin n → SchwartzMap ℝ ℂ}
+    (hfs : ∀ i : Fin n, fs i ∈ section43OneSidedCompactPreimageSet) :
+    section43TimeProductTensor fs ∈
+      section43IteratedCompactPreimageSet n
+```
+
+Proof transcript:
+
+1. Choose `gs i` from `hfs i`, so
+   `section43PositiveEnergyQuotientMap1D (fs i) =
+    section43OneSidedLaplaceCompactTransform1D (gs i)`.
+2. Convert each quotient equality into equality on `Set.Ici 0` using the
+   one-variable quotient extensionality theorem
+   `eqOn_nonneg_of_section43PositiveEnergyQuotientMap1D_eq`.
+3. On `σ ∈ section43TimePositiveRegion n`, multiply those coordinatewise
+   equalities to show
+
+```lean
+section43TimeProductTensor fs σ =
+section43TimeProductTensor
+  (fun i => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)) σ
+```
+
+4. Apply `section43IteratedLaplaceCompactTransform_productSource`.
+
+### Layer 2C: Dense Preimage Theorem
+
 Main theorem:
 
 ```lean
@@ -1265,20 +2256,41 @@ theorem dense_section43IteratedLaplaceCompactTransform_preimage
         Set.range (section43IteratedLaplaceCompactTransform n))
 ```
 
-Proof:
+Proof transcript:
 
-1. `n = 0`: the quotient is one-dimensional.  Choose the constant scalar
-   source on the one-point domain.
-2. `n + 1`: split `Fin (n + 1) → ℝ` by
-   `MeasurableEquiv.piFinSuccAbove`.  Use the one-coordinate transform formula
-   and apply the one-variable dense theorem in the distinguished coordinate.
-3. Preserve strict compact support by choosing approximants with support in a
-   compact subinterval of `(0,∞)` and multiplying by the already compact
-   background support in the remaining coordinates.
-4. Use finite induction over coordinates.
+1. Let
 
-This is the formal version of the OS I Lemma-4.1 reduction from the
-multivariate transform to Lemma 8.2.
+```lean
+S1 := section43OneSidedCompactPreimageSet
+Sn := section43IteratedCompactPreimageSet n
+```
+
+2. `S1` is dense by the compiled theorem
+   `dense_section43OneSidedLaplaceCompactTransform1D_preimage`.
+3. `Sn` is a submodule carrier:
+
+```lean
+let Ln := section43IteratedLaplaceCompactTransformLinearMap n
+let qn := section43TimePositiveQuotientMap n
+let Mn : Submodule ℂ (Section43TimePositiveComponent n) := LinearMap.range Ln
+let SnSub : Submodule ℂ (SchwartzMap (Fin n → ℝ) ℂ) :=
+  Mn.comap qn.toLinearMap
+```
+
+   Prove `Sn = (SnSub : Set _)` by extensionality.
+4. Apply
+   `section43_timeProductTensor_span_dense_of_factor_dense
+     (hS := dense_section43OneSidedLaplaceCompactTransform1D_preimage) n`.
+5. The product-tensor generating set is contained in `Sn` by
+   `section43TimeProductTensor_mem_iteratedCompactPreimageSet`.
+6. Since `SnSub` is a submodule, its carrier contains the span of those product
+   tensors.
+7. A dense subset contained in `Sn` proves `Dense Sn`.
+
+This proof handles `n = 0` automatically if the product-source and
+product-integral lemmas handle the empty finite product.  Do not split the main
+density theorem unless Lean's finite-product integral API forces a local
+`n = 0` helper.
 
 ## Layer 3: Add Spatial Fourier Transform
 

@@ -24756,17 +24756,53 @@ theorem dense_section43IteratedLaplaceCompactTransform_preimage
 with continuity from `isOpenQuotientMap_mkQ`, exactly as in
 `section43PositiveEnergyQuotientMap`.
 
-Proof transcript:
+Updated proof transcript, 2026-04-18:
 
-1. For `n = 0`, the positive orthant is a singleton quotient; choose the
-   degree-zero compact source with the required scalar value.
-2. For `n + 1`, use the already documented iterated one-coordinate formula.
-   Apply the one-variable dense-preimage theorem in the distinguished
-   coordinate and use finite-product / currying continuity to lift the
-   approximation to `Fin (n + 1) → ℝ`.
-3. Iterate over all time coordinates.  This is OS I's Lemma-8.2 induction
-   inside Lemma 4.1; no Wightman support theorem enters.
-4. Keep the target as a quotient by vanishing on `∀ i, 0 ≤ τ i`; this avoids a
+The old coordinate-induction sketch is not implementation-ready and should not
+be used as the Lean route.  The current route is the tensor-density route
+documented in `docs/section43_fourier_laplace_density.md`.
+
+1. Use the compiled one-variable compact-Laplace dense preimage theorem in each
+   factor.
+2. Use the compiled transported product-tensor density theorem
+   `section43_timeProductTensor_span_dense_of_factor_dense`.
+3. Use the compiled product-source support and finite-product Fubini packet:
+   `section43TimeProductSource`,
+   `section43TimeProductSource_integral_eq_product_raw`, and
+   `section43TimeProductTensor_oneSidedLaplaceRepresentative`.
+4. Before defining the full arbitrary-source map
+   `section43IteratedLaplaceCompactTransform`, prove the time-only analogue of
+   `exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin`.
+   Its required sublemmas are:
+
+```lean
+section43TimePositiveThickening
+section43TimePositiveCutoff
+section43TimePositiveCutoff_eq_one_of_mem
+section43TimePositiveCutoff_hasTemperateGrowth
+section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+section43IteratedLaplaceRaw
+exists_positive_margin_of_compact_time_tsupport_subset_strictPositive
+exists_time_closedBall_of_compact_tsupport
+section43IteratedLaplaceRaw_iteratedFDerivCandidate
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+```
+
+5. The rapid-decay proof must reuse the compiled time-only estimates
+   `norm_exp_neg_timePair_le_exp_thickened_margin_sum` and
+   `exp_margin_sum_controls_thickened_time_polynomial`; do not introduce a new
+   analytic route.
+6. After `exists_section43IteratedLaplaceRepresentative` is compiled, define
+   `section43IteratedLaplaceCompactTransform` by choosing this representative,
+   prove `section43IteratedLaplaceCompactTransform_eq_quotient`, and discharge
+   `section43IteratedLaplaceCompactTransform_productSource` by applying the
+   already compiled product-source representative theorem.
+7. Keep the target as a quotient by vanishing on `∀ i, 0 ≤ τ i`; this avoids a
    false support-restricted dense-range theorem.
 
 Third, insert the spatial Fourier transform.  This is a homeomorphism on the
