@@ -24793,6 +24793,110 @@ section43IteratedLaplaceSchwartzRepresentative
 exists_section43IteratedLaplaceRepresentative
 ```
 
+Implementation correction for the local dominated-differentiation seam:
+
+The local-bound theorem for
+`section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt` should be
+proved from the explicit finite-time Laplace linear functional, not by copying
+the spatial derivative-word expansion from the ordered-support
+Fourier-Laplace proof.  The σ-dependence is
+
+```lean
+fun σ => Complex.exp (section43TimeLaplaceLinearCLM n τ σ)
+```
+
+where
+
+```lean
+section43TimeLaplaceLinearCLM n τ σ =
+  -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)).
+```
+
+The exact helper packet to compile before the local-bound theorem is:
+
+```lean
+section43TimeLaplaceLinearCLM
+section43TimeLaplaceLinearCLM_apply
+norm_time_le_norm_add_one_of_mem_closedBall
+norm_section43TimeLaplaceLinearCLM_le
+norm_exp_neg_timePair_le_local_time_closedBall
+exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+```
+
+The bound is
+
+```lean
+Set.indicator (Metric.closedBall (0 : Fin n → ℝ) R)
+  (fun _ =>
+    (r + 1).factorial *
+      Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1)) *
+      (∑ _ : Fin n, R) ^ (r + 1) *
+      Cg)
+```
+
+where `R` bounds `tsupport g.f` and `Cg` bounds `‖g.f τ‖` on that closed
+ball.  On the closed ball, use
+`norm_iteratedFDeriv_cexp_comp_clm_le` plus
+`iteratedFDeriv_smul_const_apply`; off the closed ball, use
+`tsupport g.f ⊆ Metric.closedBall 0 R` to show `g.f τ = 0`, hence every
+pointwise σ-derivative is zero.  This is the implementation-ready replacement
+for any older sketch involving finite-height shells, spatial derivative words,
+or wrapper reductions.
+
+Production status, 2026-04-18: the local-bound packet above is compiled in
+`Section43FourierLaplaceTimeProduct.lean`, including
+
+```lean
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+integrable_section43IteratedLaplaceRaw_integrand_of_compact
+```
+
+The next theorem is
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+```
+
+and the remaining proof-doc gap is the all-order measurability side.  The
+successor integrability proof should reuse the compiled local bound exactly as
+the ordered-support theorem does, but it must first prove that
+
+```lean
+fun τ =>
+  iteratedFDeriv ℝ r
+    (fun σ' =>
+      Complex.exp (-(∑ i, (τ i : ℂ) * (σ' i : ℂ))) * g.f τ)
+    σ
+```
+
+is AEStronglyMeasurable.  The preferred route is an explicit continuity lemma
+in `τ`, proved from the finite-dimensional formula for the σ-derivatives of
+the exponential linear functional and continuity of `g.f`.  Do not add a
+measurability hypothesis to the theorem statement.
+
+Updated production status, 2026-04-18: the full arbitrary compact
+strict-positive finite-time representative packet is now compiled in
+`Section43FourierLaplaceTimeProduct.lean`.  In particular, the following
+previously planned theorems are no longer blockers:
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+section43IteratedLaplaceCompactTransform
+section43IteratedLaplaceCompactTransform_productSource
+```
+
+Next stage: prove the finite-product dense-preimage theorem for
+`section43IteratedLaplaceCompactTransform` in a new small companion file rather
+than extending `Section43FourierLaplaceTimeProduct.lean` further.
+
 5. The rapid-decay proof must reuse the compiled time-only estimates
    `norm_exp_neg_timePair_le_exp_thickened_margin_sum` and
    `exp_margin_sum_controls_thickened_time_polynomial`; do not introduce a new

@@ -15,6 +15,8 @@ noncomputable section
 open scoped Topology FourierTransform BoundedContinuousFunction
 open Set MeasureTheory Filter
 
+attribute [local instance 101] secondCountableTopologyEither_of_left
+
 namespace OSReconstruction
 
 /-- Closed positive orthant in the finite Euclidean time variables. -/
@@ -593,6 +595,173 @@ theorem exists_time_closedBall_of_compact_tsupport
   have hτR : ‖τ‖ ≤ max B 0 := hτB.trans (le_max_left B 0)
   simpa [Metric.mem_closedBall, dist_eq_norm, sub_zero] using hτR
 
+/-- The real-linear functional whose exponential gives the finite-time
+Laplace kernel for a fixed source-time vector `τ`. -/
+noncomputable def section43TimeLaplaceLinearMap
+    (n : ℕ) (τ : Fin n → ℝ) : (Fin n → ℝ) →ₗ[ℝ] ℂ where
+  toFun := fun σ => -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))
+  map_add' := by
+    intro σ σ'
+    simp only [Pi.add_apply, Complex.ofReal_add, mul_add]
+    rw [Finset.sum_add_distrib]
+    ring
+  map_smul' := by
+    intro c σ
+    simp only [Pi.smul_apply, smul_eq_mul, Complex.ofReal_mul]
+    calc
+      -(∑ i : Fin n, (τ i : ℂ) * ((c : ℂ) * (σ i : ℂ)))
+          = -(∑ i : Fin n, (c : ℂ) * ((τ i : ℂ) * (σ i : ℂ))) := by
+              congr 1
+              exact Finset.sum_congr rfl (fun i _hi => by ring)
+      _ = (RingHom.id ℝ) c • -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)) := by
+              simp [Finset.mul_sum]
+
+/-- Continuous version of the finite-time Laplace linear functional. -/
+noncomputable def section43TimeLaplaceLinearCLM
+    (n : ℕ) (τ : Fin n → ℝ) : (Fin n → ℝ) →L[ℝ] ℂ :=
+  ContinuousLinearMap.mk (section43TimeLaplaceLinearMap n τ) (by
+    have hcont :
+        Continuous fun σ : Fin n → ℝ =>
+          -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)) := by
+      fun_prop
+    simpa [section43TimeLaplaceLinearMap] using hcont)
+
+@[simp] theorem section43TimeLaplaceLinearCLM_apply
+    (n : ℕ) (τ σ : Fin n → ℝ) :
+    section43TimeLaplaceLinearCLM n τ σ =
+      -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)) := rfl
+
+/-- A point in the unit closed ball around a finite-time vector has norm at
+most `‖σ‖ + 1`. -/
+theorem norm_time_le_norm_add_one_of_mem_closedBall
+    (n : ℕ) (σ σ' : Fin n → ℝ)
+    (hσ' : σ' ∈ Metric.closedBall σ (1 : ℝ)) :
+    ‖σ'‖ ≤ ‖σ‖ + 1 := by
+  have hdist : dist σ' σ ≤ (1 : ℝ) := by
+    simpa [Metric.mem_closedBall] using hσ'
+  have hsub : ‖σ' - σ‖ ≤ (1 : ℝ) := by
+    simpa [dist_eq_norm] using hdist
+  have htri : ‖σ'‖ ≤ ‖σ' - σ‖ + ‖σ‖ := by
+    calc
+      ‖σ'‖ = ‖(σ' - σ) + σ‖ := by
+        simp
+      _ ≤ ‖σ' - σ‖ + ‖σ‖ := norm_add_le _ _
+  linarith
+
+set_option backward.isDefEq.respectTransparency false in
+/-- On a compact time ball, the explicit Laplace linear functional has
+operator norm bounded by the coordinate-sum radius. -/
+theorem norm_section43TimeLaplaceLinearCLM_le
+    (n : ℕ) (τ : Fin n → ℝ) {R : ℝ}
+    (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R) :
+    ‖section43TimeLaplaceLinearCLM n τ‖ ≤ ∑ _ : Fin n, R := by
+  have hτ_norm : ‖τ‖ ≤ R :=
+    norm_le_of_mem_time_closedBall_zero n τ hτ
+  refine ContinuousLinearMap.opNorm_le_bound _ ?_ ?_
+  · exact Finset.sum_nonneg fun _ _ => hR_nonneg
+  · intro σ
+    have hsum :
+        ‖∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)‖ ≤
+          ∑ _ : Fin n, R * ‖σ‖ := by
+      calc
+        ‖∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)‖
+            ≤ ∑ i : Fin n, ‖(τ i : ℂ) * (σ i : ℂ)‖ := norm_sum_le _ _
+        _ ≤ ∑ _ : Fin n, R * ‖σ‖ := by
+              refine Finset.sum_le_sum ?_
+              intro i _hi
+              have hτi : |τ i| ≤ R := by
+                have hcoord : ‖τ i‖ ≤ ‖τ‖ := norm_le_pi_norm τ i
+                have hcoord_abs : |τ i| ≤ ‖τ‖ := by
+                  simpa [Real.norm_eq_abs] using hcoord
+                exact hcoord_abs.trans hτ_norm
+              have hσi : |σ i| ≤ ‖σ‖ := by
+                have hcoord : ‖σ i‖ ≤ ‖σ‖ := norm_le_pi_norm σ i
+                simpa [Real.norm_eq_abs] using hcoord
+              calc
+                ‖(τ i : ℂ) * (σ i : ℂ)‖ = |τ i| * |σ i| := by
+                  rw [norm_mul]
+                  simp [Real.norm_eq_abs]
+                _ ≤ R * ‖σ‖ := by
+                  exact mul_le_mul hτi hσi (abs_nonneg _) hR_nonneg
+    calc
+      ‖section43TimeLaplaceLinearCLM n τ σ‖ =
+          ‖∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)‖ := by
+            rw [section43TimeLaplaceLinearCLM_apply, norm_neg]
+      _ ≤ ∑ _ : Fin n, R * ‖σ‖ := hsum
+      _ = (∑ _ : Fin n, R) * ‖σ‖ := by
+            rw [Finset.sum_mul]
+
+/-- On a compact product of a source-time ball and a unit σ-ball, the finite
+time Laplace exponential is uniformly bounded. -/
+theorem norm_exp_neg_timePair_le_local_time_closedBall
+    (n : ℕ) (σ σ' τ : Fin n → ℝ)
+    {R : ℝ} (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R)
+    (hσ' : σ' ∈ Metric.closedBall σ (1 : ℝ)) :
+    ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ ≤
+      Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1)) := by
+  rw [Complex.norm_exp]
+  apply Real.exp_le_exp.mpr
+  have hτ_norm : ‖τ‖ ≤ R :=
+    norm_le_of_mem_time_closedBall_zero n τ hτ
+  have hσ_norm : ‖σ'‖ ≤ ‖σ‖ + 1 :=
+    norm_time_le_norm_add_one_of_mem_closedBall n σ σ' hσ'
+  have hterm :
+      ∀ i : Fin n, |τ i * σ' i| ≤ R * (‖σ‖ + 1) := by
+    intro i
+    have hτi : |τ i| ≤ R := by
+      have hcoord : ‖τ i‖ ≤ ‖τ‖ := norm_le_pi_norm τ i
+      have hcoord_abs : |τ i| ≤ ‖τ‖ := by
+        simpa [Real.norm_eq_abs] using hcoord
+      exact hcoord_abs.trans hτ_norm
+    have hσi : |σ' i| ≤ ‖σ‖ + 1 := by
+      have hcoord : ‖σ' i‖ ≤ ‖σ'‖ := norm_le_pi_norm σ' i
+      have hcoord_abs : |σ' i| ≤ ‖σ'‖ := by
+        simpa [Real.norm_eq_abs] using hcoord
+      exact hcoord_abs.trans hσ_norm
+    calc
+      |τ i * σ' i| = |τ i| * |σ' i| := by rw [abs_mul]
+      _ ≤ R * (‖σ‖ + 1) := by
+            exact mul_le_mul hτi hσi (abs_nonneg _) hR_nonneg
+  have hsum_abs :
+      -(∑ i : Fin n, τ i * σ' i) ≤
+        ∑ i : Fin n, |τ i * σ' i| := by
+    calc
+      -(∑ i : Fin n, τ i * σ' i)
+          ≤ |∑ i : Fin n, τ i * σ' i| := neg_le_abs _
+      _ ≤ ∑ i : Fin n, |τ i * σ' i| := Finset.abs_sum_le_sum_abs _ _
+  have hsum_bound :
+      ∑ i : Fin n, |τ i * σ' i| ≤
+        ∑ _ : Fin n, R * (‖σ‖ + 1) := by
+    exact Finset.sum_le_sum fun i _hi => hterm i
+  have hre :
+      (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))).re =
+        -(∑ i : Fin n, τ i * σ' i) := by
+    simp
+  rw [hre]
+  exact hsum_abs.trans hsum_bound
+
+/-- A compact strict-positive finite-time source is uniformly bounded on every
+closed time ball. -/
+theorem exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) (R : ℝ) :
+    ∃ Cg : ℝ, 0 ≤ Cg ∧
+      ∀ τ ∈ Metric.closedBall (0 : Fin n → ℝ) R, ‖g.f τ‖ ≤ Cg := by
+  let K : Set (Fin n → ℝ) := Metric.closedBall (0 : Fin n → ℝ) R
+  have hK_compact : IsCompact K := isCompact_closedBall (0 : Fin n → ℝ) R
+  have hcont : Continuous fun τ : Fin n → ℝ => ‖g.f τ‖ :=
+    continuous_norm.comp g.f.continuous
+  obtain ⟨B, hB⟩ :=
+    hK_compact.exists_bound_of_continuousOn
+      (f := fun τ : Fin n → ℝ => ‖g.f τ‖) hcont.continuousOn
+  refine ⟨max B 0, le_max_right B 0, ?_⟩
+  intro τ hτ
+  have hτB : ‖g.f τ‖ ≤ B := by
+    have h := hB τ hτ
+    simpa [Real.norm_eq_abs, norm_nonneg] using h
+  exact hτB.trans (le_max_left B 0)
+
 /-- In finite-dimensional time domain, continuity of a family of continuous
 multilinear maps is equivalent to continuity of all applied scalar families. -/
 theorem continuous_cmlm_apply_time
@@ -710,6 +879,423 @@ noncomputable def section43IteratedLaplaceRaw
     Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
       g.f τ
 
+set_option backward.isDefEq.respectTransparency false in
+/-- For a smooth function of two variables, iterated derivatives of the partial
+evaluation in the first variable are obtained by composing the full derivative
+with the left injection. -/
+theorem iteratedFDeriv_partialEval_eq_compContinuousLinearMap_inl_of_contDiff
+    {E₁ E₂ F : Type*}
+    [NormedAddCommGroup E₁] [NormedSpace ℝ E₁]
+    [NormedAddCommGroup E₂] [NormedSpace ℝ E₂]
+    [NormedAddCommGroup F] [NormedSpace ℝ F]
+    (f : E₁ × E₂ → F) (hf : ContDiff ℝ (⊤ : ℕ∞) f) (y : E₂) (l : ℕ)
+    (x : E₁) :
+    iteratedFDeriv ℝ l (fun x' => f (x', y)) x =
+      (iteratedFDeriv ℝ l f (x, y)).compContinuousLinearMap
+        (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂) := by
+  have htranslate : ∀ x',
+      iteratedFDeriv ℝ l (fun z : E₁ × E₂ => f (z + (0, y))) (x', (0 : E₂)) =
+        iteratedFDeriv ℝ l f (x' + 0, (0 : E₂) + y) := by
+    intro x'
+    rw [iteratedFDeriv_comp_add_right' l (0, y)]
+    simp [Prod.add_def]
+  have hcomp : ContDiff ℝ (⊤ : ℕ∞)
+      (fun z : E₁ × E₂ => f (z + ((0 : E₁), y))) :=
+    hf.comp ((contDiff_id.add contDiff_const).of_le le_top)
+  have hinl_comp := ContinuousLinearMap.iteratedFDeriv_comp_right
+    (ContinuousLinearMap.inl ℝ E₁ E₂) hcomp x
+      (by exact_mod_cast le_top (a := (l : ℕ∞)))
+  have hlhs :
+      (fun x' => f (x', y)) =
+        (fun z : E₁ × E₂ => f (z + (0, y))) ∘
+          (ContinuousLinearMap.inl ℝ E₁ E₂) := by
+    ext x'
+    simp [ContinuousLinearMap.inl_apply]
+  rw [hlhs, hinl_comp]
+  exact congrArg
+    (fun A : ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F =>
+      A.compContinuousLinearMap (fun _ => ContinuousLinearMap.inl ℝ E₁ E₂))
+    (by simpa [ContinuousLinearMap.inl_apply] using htranslate x)
+
+/-- For fixed `σ`, the raw finite-time Laplace integrand is continuous in the
+source time variable. -/
+theorem continuous_section43IteratedLaplaceRaw_integrand_tau
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    Continuous fun τ : Fin n → ℝ =>
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        g.f τ := by
+  have harg : Continuous fun τ : Fin n → ℝ =>
+      -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)) := by
+    fun_prop
+  exact (Complex.continuous_exp.comp harg).mul g.f.continuous
+
+/-- For fixed `σ`, the raw finite-time Laplace integrand is compactly supported
+in the source time variable. -/
+theorem hasCompactSupport_section43IteratedLaplaceRaw_integrand_of_compact
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    HasCompactSupport fun τ : Fin n → ℝ =>
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        g.f τ := by
+  rcases exists_time_closedBall_of_compact_tsupport g with
+    ⟨R, _hR_nonneg, hR_supp⟩
+  refine HasCompactSupport.of_support_subset_isCompact
+    (isCompact_closedBall (0 : Fin n → ℝ) R) ?_
+  intro τ hτ_support
+  by_contra hτ_ball
+  have hnot_tsupport :
+      τ ∉ tsupport (g.f : (Fin n → ℝ) → ℂ) := by
+    intro hτ_tsupport
+    exact hτ_ball (hR_supp hτ_tsupport)
+  have hnot_support : τ ∉ Function.support (g.f : (Fin n → ℝ) → ℂ) := by
+    intro hsupport
+    exact hnot_tsupport (subset_tsupport _ hsupport)
+  have hzero : g.f τ = 0 := by
+    by_contra hne
+    exact hnot_support hne
+  exact hτ_support (by simp [hzero])
+
+/-- For fixed `σ`, the raw finite-time Laplace integrand is integrable in the
+source time variable. -/
+theorem integrable_section43IteratedLaplaceRaw_integrand_of_compact
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    Integrable fun τ : Fin n → ℝ =>
+      Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+        g.f τ :=
+  (continuous_section43IteratedLaplaceRaw_integrand_tau n g σ).integrable_of_hasCompactSupport
+    (hasCompactSupport_section43IteratedLaplaceRaw_integrand_of_compact n g σ)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- For fixed `σ`, every pointwise σ-derivative of the raw finite-time
+Laplace integrand is continuous in the source time variable. -/
+theorem continuous_section43IteratedLaplaceRaw_integrand_iteratedFDeriv
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    Continuous fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r
+        (fun σ' : Fin n → ℝ =>
+          Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+            g.f τ)
+        σ := by
+  let F : (Fin n → ℝ) × (Fin n → ℝ) → ℂ := fun p =>
+    Complex.exp (-(∑ i : Fin n, (p.2 i : ℂ) * (p.1 i : ℂ))) *
+      g.f p.2
+  have hF : ContDiff ℝ (⊤ : ℕ∞) F := by
+    have harg : ContDiff ℝ (⊤ : ℕ∞)
+        (fun p : (Fin n → ℝ) × (Fin n → ℝ) =>
+          -(∑ i : Fin n, (p.2 i : ℂ) * (p.1 i : ℂ))) := by
+      apply ContDiff.neg
+      apply ContDiff.sum
+      intro i _hi
+      have hτcoord : ContDiff ℝ (⊤ : ℕ∞)
+          (fun p : (Fin n → ℝ) × (Fin n → ℝ) => (p.2 i : ℂ)) := by
+        have hreal : ContDiff ℝ (⊤ : ℕ∞)
+            (fun p : (Fin n → ℝ) × (Fin n → ℝ) => p.2 i) := by
+          simpa using
+            (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+              (φ := fun _ => ℝ) i).contDiff :
+                ContDiff ℝ (⊤ : ℕ∞) (fun τ : Fin n → ℝ =>
+                  (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+                    (φ := fun _ => ℝ) i) τ)).comp contDiff_snd)
+        exact Complex.ofRealCLM.contDiff.comp hreal
+      have hσcoord : ContDiff ℝ (⊤ : ℕ∞)
+          (fun p : (Fin n → ℝ) × (Fin n → ℝ) => (p.1 i : ℂ)) := by
+        have hreal : ContDiff ℝ (⊤ : ℕ∞)
+            (fun p : (Fin n → ℝ) × (Fin n → ℝ) => p.1 i) := by
+          simpa using
+            (((ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+              (φ := fun _ => ℝ) i).contDiff :
+                ContDiff ℝ (⊤ : ℕ∞) (fun σ : Fin n → ℝ =>
+                  (ContinuousLinearMap.proj (R := ℝ) (ι := Fin n)
+                    (φ := fun _ => ℝ) i) σ)).comp contDiff_fst)
+        exact Complex.ofRealCLM.contDiff.comp hreal
+      exact hτcoord.mul hσcoord
+    have hg : ContDiff ℝ (⊤ : ℕ∞)
+        (fun p : (Fin n → ℝ) × (Fin n → ℝ) => g.f p.2) := by
+      exact g.f.smooth'.comp contDiff_snd
+    exact (Complex.contDiff_exp.comp harg).mul hg
+  let A :
+      ContinuousMultilinearMap ℝ
+          (fun _ : Fin r => (Fin n → ℝ) × (Fin n → ℝ)) ℂ →L[ℝ]
+        ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ :=
+    ContinuousMultilinearMap.compContinuousLinearMapL (F := _)
+      (fun _ => ContinuousLinearMap.inl ℝ (Fin n → ℝ) (Fin n → ℝ))
+  have hfull : Continuous fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r F (σ, τ) := by
+    have hderiv_cont : Continuous (iteratedFDeriv ℝ r F) := by
+      exact hF.continuous_iteratedFDeriv
+        (by exact_mod_cast le_top (a := (r : ℕ∞)))
+    exact hderiv_cont.comp (continuous_const.prodMk continuous_id)
+  have hA : Continuous fun τ : Fin n → ℝ =>
+      A (iteratedFDeriv ℝ r F (σ, τ)) := A.continuous.comp hfull
+  have heq :
+      (fun τ : Fin n → ℝ =>
+        iteratedFDeriv ℝ r
+          (fun σ' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+              g.f τ)
+          σ)
+        =
+        fun τ : Fin n → ℝ => A (iteratedFDeriv ℝ r F (σ, τ)) := by
+    funext τ
+    simp [A, F,
+      iteratedFDeriv_partialEval_eq_compContinuousLinearMap_inl_of_contDiff F hF τ r σ]
+  rw [heq]
+  exact hA
+
+/-- If the source time variable lies outside the topological support of the
+compact source, then every σ-derivative of the pointwise Laplace integrand is
+zero. -/
+theorem section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    {τ : Fin n → ℝ}
+    (hτ : τ ∉ tsupport (g.f : (Fin n → ℝ) → ℂ)) :
+    iteratedFDeriv ℝ r
+      (fun σ : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+          g.f τ) =
+      0 := by
+  have hnot_support : τ ∉ Function.support (g.f : (Fin n → ℝ) → ℂ) := by
+    intro hsupport
+    exact hτ (subset_tsupport _ hsupport)
+  have hzero : g.f τ = 0 := by
+    by_contra hne
+    exact hnot_support hne
+  have hfun :
+      (fun σ : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+          g.f τ) =
+        fun _ => 0 := by
+    funext σ
+    simp [hzero]
+  rw [hfun]
+  funext σ
+  simp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Explicit norm bound for every σ-derivative of the pointwise finite-time
+Laplace integrand. -/
+theorem norm_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_le
+    (n r : ℕ) (τ σ : Fin n → ℝ) (c : ℂ) :
+    ‖iteratedFDeriv ℝ r
+      (fun σ' : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) * c)
+      σ‖ ≤
+      r.factorial *
+        ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ *
+        ‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖c‖ := by
+  let L : (Fin n → ℝ) →L[ℝ] ℂ := section43TimeLaplaceLinearCLM n τ
+  let f : (Fin n → ℝ) → ℂ := fun x => Complex.exp (L x)
+  have hf_cont : ContDiffAt ℝ (r : ℕ) f σ := by
+    have hf : ContDiff ℝ (⊤ : ℕ∞) f := by
+      simpa [f] using (Complex.contDiff_exp.comp L.contDiff)
+    exact hf.contDiffAt.of_le (by exact mod_cast le_top)
+  have hfun :
+      (fun σ' : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) * c)
+        = fun σ' : Fin n → ℝ => f σ' • c := by
+    funext σ'
+    simp [f, L, section43TimeLaplaceLinearCLM_apply, smul_eq_mul]
+  rw [hfun]
+  rw [iteratedFDeriv_smul_const_apply (v := c) hf_cont]
+  have hcomp :=
+    ((ContinuousLinearMap.id ℝ ℂ).smulRight c).norm_compContinuousMultilinearMap_le
+      (iteratedFDeriv ℝ r f σ)
+  have hf_bound :
+      ‖iteratedFDeriv ℝ r f σ‖ ≤
+        r.factorial * ‖Complex.exp (L σ)‖ * ‖L‖ ^ r := by
+    simpa [f] using norm_iteratedFDeriv_cexp_comp_clm_le L σ r
+  have hsmul_norm_le :
+      ‖((ContinuousLinearMap.id ℝ ℂ).smulRight c)‖ ≤ ‖c‖ := by
+    refine ContinuousLinearMap.opNorm_le_bound _ (norm_nonneg c) ?_
+    intro z
+    simp [ContinuousLinearMap.smulRight_apply, mul_comm]
+  calc
+    ‖((ContinuousLinearMap.id ℝ ℂ).smulRight c).compContinuousMultilinearMap
+        (iteratedFDeriv ℝ r f σ)‖
+        ≤ ‖((ContinuousLinearMap.id ℝ ℂ).smulRight c)‖ *
+            ‖iteratedFDeriv ℝ r f σ‖ := hcomp
+    _ ≤ ‖c‖ * ‖iteratedFDeriv ℝ r f σ‖ := by
+          exact mul_le_mul_of_nonneg_right hsmul_norm_le (norm_nonneg _)
+    _ ≤ ‖c‖ * (r.factorial * ‖Complex.exp (L σ)‖ * ‖L‖ ^ r) := by
+          exact mul_le_mul_of_nonneg_left hf_bound (norm_nonneg c)
+    _ =
+        r.factorial *
+          ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ *
+          ‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖c‖ := by
+          simp [L]
+          ring
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Compact local domination for the curry-left pointwise derivative of the
+raw finite-time Laplace integrand. -/
+theorem section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ σ' ∈ Metric.closedBall σ (1 : ℝ),
+        ‖(iteratedFDeriv ℝ (r + 1)
+          (fun σ'' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+              g.f τ)
+          σ').curryLeft‖ ≤ bound τ := by
+  classical
+  rcases exists_time_closedBall_of_compact_tsupport g with
+    ⟨R, hR_nonneg, hR_supp⟩
+  let Kτ : Set (Fin n → ℝ) := Metric.closedBall (0 : Fin n → ℝ) R
+  rcases exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+    n g R with ⟨Cg, hCg_nonneg, hCg_bound⟩
+  let Cexp : ℝ := Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1))
+  let CL : ℝ := ∑ _ : Fin n, R
+  let C : ℝ := (r + 1).factorial * Cexp * CL ^ (r + 1) * Cg
+  refine ⟨Set.indicator Kτ (fun _ => C), ?_, ?_⟩
+  · simpa [Kτ, C] using integrable_indicator_time_closedBall_const n R C
+  · filter_upwards with τ σ' hσ'
+    by_cases hτ_mem : τ ∈ Kτ
+    · rw [Set.indicator_of_mem hτ_mem]
+      have hExp :
+          ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ ≤
+            Cexp := by
+        simpa [Cexp, Kτ] using
+          norm_exp_neg_timePair_le_local_time_closedBall
+            n σ σ' τ hR_nonneg hτ_mem hσ'
+      have hL :
+          ‖section43TimeLaplaceLinearCLM n τ‖ ≤ CL := by
+        simpa [CL, Kτ] using
+          norm_section43TimeLaplaceLinearCLM_le
+            n τ hR_nonneg hτ_mem
+      have hLpow :
+          ‖section43TimeLaplaceLinearCLM n τ‖ ^ (r + 1) ≤
+            CL ^ (r + 1) := by
+        exact pow_le_pow_left₀ (norm_nonneg _) hL (r + 1)
+      have hSrc : ‖g.f τ‖ ≤ Cg := hCg_bound τ (by simpa [Kτ] using hτ_mem)
+      have hmain :=
+        norm_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_le
+          n (r + 1) τ σ' (g.f τ)
+      have hbase :
+          ‖(iteratedFDeriv ℝ (r + 1)
+            (fun σ'' : Fin n → ℝ =>
+              Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+                g.f τ)
+            σ').curryLeft‖ ≤
+            (r + 1).factorial * Cexp * CL ^ (r + 1) * Cg := by
+        calc
+          ‖(iteratedFDeriv ℝ (r + 1)
+            (fun σ'' : Fin n → ℝ =>
+              Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+                g.f τ)
+            σ').curryLeft‖ =
+              ‖iteratedFDeriv ℝ (r + 1)
+                (fun σ'' : Fin n → ℝ =>
+                  Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+                    g.f τ)
+                σ'‖ := by
+                rw [ContinuousMultilinearMap.curryLeft_norm]
+          _ ≤
+              (r + 1).factorial *
+                ‖Complex.exp
+                  (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ *
+                ‖section43TimeLaplaceLinearCLM n τ‖ ^ (r + 1) *
+                ‖g.f τ‖ := hmain
+          _ ≤ (r + 1).factorial * Cexp *
+              CL ^ (r + 1) * Cg := by
+                have hEL :
+                    ‖Complex.exp
+                      (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ *
+                      ‖section43TimeLaplaceLinearCLM n τ‖ ^ (r + 1) ≤
+                      Cexp * CL ^ (r + 1) := by
+                  exact mul_le_mul hExp hLpow
+                    (pow_nonneg (norm_nonneg _) _)
+                    (Real.exp_pos _).le
+                have hELS :
+                    ‖Complex.exp
+                      (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ *
+                      ‖section43TimeLaplaceLinearCLM n τ‖ ^ (r + 1) *
+                      ‖g.f τ‖ ≤
+                      Cexp * CL ^ (r + 1) * Cg := by
+                  exact mul_le_mul hEL hSrc (norm_nonneg _)
+                    (mul_nonneg (Real.exp_pos _).le
+                      (pow_nonneg (Finset.sum_nonneg fun _ _ => hR_nonneg) _))
+                have hA_nonneg : 0 ≤ ((r + 1).factorial : ℝ) :=
+                  Nat.cast_nonneg _
+                simpa [mul_assoc] using
+                  mul_le_mul_of_nonneg_left hELS hA_nonneg
+      simpa [C, mul_assoc] using hbase
+    · rw [Set.indicator_of_notMem hτ_mem]
+      have hnot_tsupport :
+          τ ∉ tsupport (g.f : (Fin n → ℝ) → ℂ) := by
+        intro hτ_support
+        exact hτ_mem (by simpa [Kτ] using hR_supp hτ_support)
+      have hzero_fun :=
+        section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+          n (r + 1) g hnot_tsupport
+      have hzero_at :
+          iteratedFDeriv ℝ (r + 1)
+            (fun σ'' : Fin n → ℝ =>
+              Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+                g.f τ)
+            σ' = 0 := by
+        simpa using congrFun hzero_fun σ'
+      simp [hzero_at]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Under compact source support, every pointwise σ-derivative of the raw
+finite-time Laplace integrand is Bochner-integrable in the source time
+variable. -/
+theorem integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        iteratedFDeriv ℝ r
+          (fun σ' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+              g.f τ)
+          σ) := by
+  have hmeas : AEStronglyMeasurable
+      (fun τ : Fin n → ℝ =>
+        iteratedFDeriv ℝ r
+          (fun σ' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+              g.f τ)
+          σ) :=
+    (continuous_section43IteratedLaplaceRaw_integrand_iteratedFDeriv
+      n r g σ).aestronglyMeasurable
+  cases r with
+  | zero =>
+      let e :=
+        continuousMultilinearCurryFin0 ℝ (Fin n → ℝ) ℂ
+      have hbase :
+          Integrable
+            (fun τ : Fin n → ℝ =>
+              Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+                g.f τ) :=
+        integrable_section43IteratedLaplaceRaw_integrand_of_compact n g σ
+      have hcomp :
+          Integrable
+            (fun τ : Fin n → ℝ =>
+              e.symm
+                (Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+                  g.f τ)) :=
+        (e.symm : ℂ →L[ℝ]
+          ContinuousMultilinearMap ℝ (fun _ : Fin 0 => Fin n → ℝ) ℂ).integrable_comp hbase
+      convert hcomp using 1
+  | succ r =>
+      rcases
+        section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+          n r g σ with
+        ⟨bound, hbound_int, hbound⟩
+      have hσ_self : σ ∈ Metric.closedBall σ (1 : ℝ) := by
+        simp [Metric.mem_closedBall]
+      refine Integrable.mono' hbound_int ?_ ?_
+      · simpa using hmeas
+      · exact hbound.mono fun τ hτ => by
+          have hτσ := hτ σ hσ_self
+          simpa [ContinuousMultilinearMap.curryLeft_norm] using hτσ
+
 /-- The cutoff version of the raw multitime Laplace scalar. -/
 noncomputable def section43IteratedLaplaceCutoffFun
     (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
@@ -805,6 +1391,403 @@ noncomputable def section43IteratedLaplaceRaw_iteratedFDerivCandidate
         σ :
       ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ)
 
+set_option backward.isDefEq.respectTransparency false in
+/-- The integrated all-order derivative candidate has derivative given by the
+curry-left of the next integrated candidate. -/
+theorem section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun σ' : Fin n → ℝ =>
+        section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ')
+      ((section43IteratedLaplaceRaw_iteratedFDerivCandidate n (r + 1) g σ).curryLeft)
+      σ := by
+  classical
+  let Fint : (Fin n → ℝ) → (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ :=
+    fun σ' τ =>
+      iteratedFDeriv ℝ r
+        (fun σ'' : Fin n → ℝ =>
+          Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+            g.f τ)
+        σ'
+  let Fderiv : (Fin n → ℝ) → (Fin n → ℝ) →
+      (Fin n → ℝ) →L[ℝ]
+        ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ :=
+    fun σ' τ =>
+      (iteratedFDeriv ℝ (r + 1)
+        (fun σ'' : Fin n → ℝ =>
+          Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+            g.f τ)
+        σ').curryLeft
+  rcases
+    section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+      n r g σ with
+    ⟨bound, hbound_int, hbound⟩
+  have hs : Metric.closedBall σ (1 : ℝ) ∈ 𝓝 σ :=
+    Metric.closedBall_mem_nhds σ zero_lt_one
+  have hF_meas : ∀ᶠ σ' in 𝓝 σ, AEStronglyMeasurable (Fint σ') := by
+    exact Filter.Eventually.of_forall fun σ' =>
+      (integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+        n r g σ').aestronglyMeasurable
+  have hF_int : Integrable (Fint σ) := by
+    simpa [Fint] using
+      integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+        n r g σ
+  have hbound' : ∀ᵐ τ : Fin n → ℝ, ∀ σ' ∈ Metric.closedBall σ (1 : ℝ),
+      ‖Fderiv σ' τ‖ ≤ bound τ := by
+    simpa [Fderiv] using hbound
+  let Phi : (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ
+        (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ :=
+    fun τ =>
+      iteratedFDeriv ℝ (r + 1)
+        (fun σ'' : Fin n → ℝ =>
+          Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+            g.f τ)
+        σ
+  have hnext_int :
+      @Integrable
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ)
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace
+        SeminormedAddGroup.toContinuousENorm
+        (Fin n → ℝ) _ Phi volume := by
+    simpa [Phi] using
+      integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+        n (r + 1) g σ
+  have hcurry_lipschitz :
+      LipschitzWith 1
+        (fun L : ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ =>
+          L.curryLeft) := by
+    refine LipschitzWith.of_dist_le_mul ?_
+    intro L M
+    simp only [NNReal.coe_one, one_mul]
+    rw [dist_eq_norm, dist_eq_norm]
+    have hsub : L.curryLeft - M.curryLeft = (L - M).curryLeft := by
+      ext v mtail
+      simp [ContinuousMultilinearMap.curryLeft_apply]
+    rw [hsub, ContinuousMultilinearMap.curryLeft_norm]
+  have hFderiv_int :
+      @Integrable
+        ((Fin n → ℝ) →L[ℝ]
+          ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ)
+        PseudoMetricSpace.toUniformSpace.toTopologicalSpace
+        SeminormedAddGroup.toContinuousENorm
+        (Fin n → ℝ) _ (Fderiv σ) volume := by
+    refine Integrable.mono
+      (f := Fderiv σ)
+      (g := Phi)
+      hnext_int ?_ ?_
+    · have hmeas :
+          AEStronglyMeasurable
+            (fun τ : Fin n → ℝ => (Phi τ).curryLeft) :=
+          hcurry_lipschitz.continuous.comp_aestronglyMeasurable
+            hnext_int.aestronglyMeasurable
+      simpa [Fderiv, Phi] using hmeas
+    · filter_upwards with τ
+      simp [Fderiv, Phi, ContinuousMultilinearMap.curryLeft_norm]
+  have hFderiv_meas := hFderiv_int.aestronglyMeasurable
+  have hdiff : ∀ᵐ τ : Fin n → ℝ, ∀ σ' ∈ Metric.closedBall σ (1 : ℝ),
+      HasFDerivAt (Fint · τ) (Fderiv σ' τ) σ' := by
+    filter_upwards with τ σ' _hσ'
+    simpa [Fint, Fderiv] using
+      hasFDerivAt_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft
+        (r := r) g σ' τ
+  have hmain :=
+    hasFDerivAt_integral_of_dominated_of_fderiv_le
+      (𝕜 := ℝ) (μ := volume)
+      (F := Fint) (F' := Fderiv) (x₀ := σ)
+      (s := Metric.closedBall σ (1 : ℝ)) (bound := bound)
+      hs hF_meas hF_int hFderiv_meas hbound' hbound_int hdiff
+  have hderivIntegral :
+      (∫ τ : Fin n → ℝ, Fderiv σ τ) =
+        ((∫ τ : Fin n → ℝ, Phi τ).curryLeft) := by
+    letI : SeminormedAddCommGroup
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ) :=
+      NormedAddCommGroup.toSeminormedAddCommGroup
+    letI : SeminormedAddCommGroup
+        ((Fin n → ℝ) →L[ℝ]
+          ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ) :=
+      NormedAddCommGroup.toSeminormedAddCommGroup
+    let curryLI :
+        ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ →ₗᵢ[ℝ]
+          ((Fin n → ℝ) →L[ℝ]
+            ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ) :=
+      { toLinearMap :=
+          { toFun := fun L => L.curryLeft
+            map_add' := by
+              intro L M
+              rfl
+            map_smul' := by
+              intro c L
+              rfl }
+        norm_map' := by
+          intro L
+          exact ContinuousMultilinearMap.curryLeft_norm L }
+    haveI : CompleteSpace
+        (ContinuousMultilinearMap ℝ
+          (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ) := inferInstance
+    change (∫ τ : Fin n → ℝ, curryLI (Phi τ)) =
+      curryLI (∫ τ : Fin n → ℝ, Phi τ)
+    exact
+      (ContinuousLinearMap.integral_comp_comm
+          (𝕜 := ℝ)
+          (E := ContinuousMultilinearMap ℝ
+            (fun _ : Fin (r + 1) => Fin n → ℝ) ℂ)
+          (Fₗ := (Fin n → ℝ) →L[ℝ]
+            ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ)
+          (X := Fin n → ℝ)
+          (μ := volume)
+          curryLI.toContinuousLinearMap hnext_int)
+  rw [hderivIntegral] at hmain
+  simpa [section43IteratedLaplaceRaw_iteratedFDerivCandidate,
+    Fint, Fderiv] using hmain
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The iterated derivatives of the raw finite-time Laplace scalar are the
+integrated pointwise derivative candidates. -/
+theorem section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ =
+      section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ := by
+  classical
+  let G : (Fin n → ℝ) → ℂ := fun σ' =>
+    section43IteratedLaplaceRaw n g σ'
+  induction r generalizing σ with
+  | zero =>
+      ext m
+      have hint :
+          Integrable
+            (fun τ : Fin n → ℝ =>
+              iteratedFDeriv ℝ 0
+                (fun σ' : Fin n → ℝ =>
+                  Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+                    g.f τ)
+                σ) := by
+        simpa using
+          integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+            n 0 g σ
+      change
+        section43IteratedLaplaceRaw n g σ =
+          (∫ τ : Fin n → ℝ,
+            iteratedFDeriv ℝ 0
+              (fun σ' : Fin n → ℝ =>
+                Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+                  g.f τ)
+              σ) m
+      rw [ContinuousMultilinearMap.integral_apply hint m]
+      simp [section43IteratedLaplaceRaw, iteratedFDeriv_zero_apply]
+  | succ r ih =>
+      have hfun :
+          iteratedFDeriv ℝ r G =
+          fun σ' : Fin n → ℝ =>
+            section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ' := by
+        funext σ'
+        simpa [G] using ih σ'
+      have hfd :
+          fderiv ℝ (iteratedFDeriv ℝ r G) σ =
+            (section43IteratedLaplaceRaw_iteratedFDerivCandidate
+              n (r + 1) g σ).curryLeft := by
+        have hderiv :=
+          section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+            n r g σ
+        rw [hfun]
+        exact hderiv.fderiv
+      rw [iteratedFDeriv_succ_eq_comp_left, Function.comp_apply, hfd]
+      exact ContinuousMultilinearMap.uncurry_curryLeft _
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The raw finite-time Laplace scalar is ambient smooth in the finite-time
+positive-energy variable. -/
+theorem section43IteratedLaplaceRaw_contDiff
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) (section43IteratedLaplaceRaw n g) := by
+  classical
+  let G : (Fin n → ℝ) → ℂ := fun σ =>
+    section43IteratedLaplaceRaw n g σ
+  change ContDiff ℝ (↑(⊤ : ℕ∞)) G
+  refine contDiff_of_differentiable_iteratedFDeriv
+    (𝕜 := ℝ) (E := Fin n → ℝ) (F := ℂ) (f := G) (n := (⊤ : ℕ∞)) ?_
+  intro r _hr
+  have hfun :
+      iteratedFDeriv ℝ r G =
+      fun σ : Fin n → ℝ =>
+        section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ := by
+    funext σ
+    simpa [G] using
+      section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate n r g σ
+  rw [hfun]
+  intro σ
+  exact
+    (section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+      n r g σ).differentiableAt
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Rapid decay of the actual all-order derivatives of the raw finite-time
+Laplace scalar on the unit one-sided time collar. -/
+theorem section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+    (n r s : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ σ ∈ section43TimePositiveThickening n 1,
+        (1 + ‖σ‖) ^ s *
+          ‖iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ‖ ≤ C := by
+  classical
+  rcases exists_positive_margin_of_compact_time_tsupport_subset_strictPositive g with
+    ⟨δ, hδ_pos, hδ_supp⟩
+  rcases exists_time_closedBall_of_compact_tsupport g with
+    ⟨R, hR_nonneg, hR_supp⟩
+  rcases exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+    n g R with ⟨Cg, hCg_nonneg, hCg_bound⟩
+  let Kτ : Set (Fin n → ℝ) := Metric.closedBall (0 : Fin n → ℝ) R
+  let CL : ℝ := ∑ _ : Fin n, R
+  let Cderiv : ℝ := r.factorial * CL ^ r * Cg
+  let M : ℝ := ∫ τ : Fin n → ℝ, Set.indicator Kτ (fun _ : Fin n → ℝ => Cderiv) τ
+  rcases exp_margin_sum_controls_thickened_time_polynomial
+      (n := n) (δ := δ) (ε := (1 : ℝ)) (R := R)
+      hδ_pos zero_le_one hR_nonneg s with
+    ⟨Ct, hCt_nonneg, hCt_bound⟩
+  let C : ℝ := Ct * M
+  have hCL_nonneg : 0 ≤ CL := by
+    exact Finset.sum_nonneg fun _ _ => hR_nonneg
+  have hCderiv_nonneg : 0 ≤ Cderiv := by
+    dsimp [Cderiv]
+    positivity
+  have hM_nonneg : 0 ≤ M := by
+    dsimp [M]
+    exact integral_nonneg fun τ => by
+      by_cases hτ : τ ∈ Kτ
+      · simp [Set.indicator_of_mem hτ, hCderiv_nonneg]
+      · simp [Set.indicator_of_notMem hτ]
+  refine ⟨C, mul_nonneg hCt_nonneg hM_nonneg, ?_⟩
+  intro σ hσ
+  let Eσ : ℝ :=
+    Real.exp (∑ _ : Fin n, R * (1 : ℝ)) *
+      Real.exp (-(δ * ∑ i : Fin n, (σ i + 1)))
+  let G : (Fin n → ℝ) →
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => Fin n → ℝ) ℂ :=
+    fun τ =>
+      iteratedFDeriv ℝ r
+        (fun σ' : Fin n → ℝ =>
+          Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ))) *
+            g.f τ)
+        σ
+  have hE_nonneg : 0 ≤ Eσ := by
+    dsimp [Eσ]
+    positivity
+  have hbound_int :
+      Integrable
+        (fun τ : Fin n → ℝ =>
+          Eσ * Set.indicator Kτ (fun _ : Fin n → ℝ => Cderiv) τ) :=
+    (integrable_indicator_time_closedBall_const n R Cderiv).const_mul Eσ
+  have hpoint : ∀ τ : Fin n → ℝ,
+      ‖G τ‖ ≤ Eσ * Set.indicator Kτ (fun _ : Fin n → ℝ => Cderiv) τ := by
+    intro τ
+    by_cases hτK : τ ∈ Kτ
+    · rw [Set.indicator_of_mem hτK]
+      by_cases hτ_supp : τ ∈ tsupport (g.f : (Fin n → ℝ) → ℂ)
+      · have hτ_low : ∀ i : Fin n, δ ≤ τ i := hδ_supp hτ_supp
+        have hτ_norm : ‖τ‖ ≤ R := by
+          simpa [Kτ] using norm_le_of_mem_time_closedBall_zero n τ hτK
+        have hExp :
+            ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ ≤ Eσ := by
+          simpa [Eσ] using
+            norm_exp_neg_timePair_le_exp_thickened_margin_sum
+              n hδ_pos zero_le_one hR_nonneg σ τ hσ hτ_low hτ_norm
+        have hL :
+            ‖section43TimeLaplaceLinearCLM n τ‖ ≤ CL := by
+          simpa [CL, Kτ] using
+            norm_section43TimeLaplaceLinearCLM_le n τ hR_nonneg hτK
+        have hLpow :
+            ‖section43TimeLaplaceLinearCLM n τ‖ ^ r ≤ CL ^ r := by
+          exact pow_le_pow_left₀ (norm_nonneg _) hL r
+        have hSrc : ‖g.f τ‖ ≤ Cg := hCg_bound τ (by simpa [Kτ] using hτK)
+        have hmain :=
+          norm_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_le
+            n r τ σ (g.f τ)
+        have hLCg :
+            ‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖g.f τ‖ ≤
+              CL ^ r * Cg := by
+          exact mul_le_mul hLpow hSrc (norm_nonneg _)
+            (pow_nonneg hCL_nonneg _)
+        have hExpLCg :
+            ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ *
+                (‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖g.f τ‖) ≤
+              Eσ * (CL ^ r * Cg) := by
+          exact mul_le_mul hExp hLCg
+            (mul_nonneg (pow_nonneg (norm_nonneg _) _) (norm_nonneg _))
+            hE_nonneg
+        calc
+          ‖G τ‖ ≤
+              r.factorial *
+                ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ *
+                ‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖g.f τ‖ := by
+                simpa [G] using hmain
+          _ = r.factorial *
+                (‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)))‖ *
+                  (‖section43TimeLaplaceLinearCLM n τ‖ ^ r * ‖g.f τ‖)) := by
+                ring
+          _ ≤ r.factorial * (Eσ * (CL ^ r * Cg)) := by
+                exact mul_le_mul_of_nonneg_left hExpLCg (Nat.cast_nonneg _)
+          _ = Eσ * Cderiv := by
+                simp [Cderiv]
+                ring
+      · have hzero_fun :=
+          section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+            n r g hτ_supp
+        have hzero : G τ = 0 := by
+          simpa [G] using congrFun hzero_fun σ
+        calc
+          ‖G τ‖ = 0 := by simp [hzero]
+          _ ≤ Eσ * Cderiv := mul_nonneg hE_nonneg hCderiv_nonneg
+    · rw [Set.indicator_of_notMem hτK]
+      have hnot_tsupport :
+          τ ∉ tsupport (g.f : (Fin n → ℝ) → ℂ) := by
+        intro hτ_supp
+        exact hτK (by simpa [Kτ] using hR_supp hτ_supp)
+      have hzero_fun :=
+        section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+          n r g hnot_tsupport
+      have hzero : G τ = 0 := by
+        simpa [G] using congrFun hzero_fun σ
+      simp [hzero]
+  have hcandidate_norm :
+      ‖section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ‖ ≤
+        Eσ * M := by
+    calc
+      ‖section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ‖ =
+          ‖∫ τ : Fin n → ℝ, G τ‖ := by
+            simp [section43IteratedLaplaceRaw_iteratedFDerivCandidate, G]
+      _ ≤ ∫ τ : Fin n → ℝ, ‖G τ‖ :=
+          MeasureTheory.norm_integral_le_integral_norm _
+      _ ≤ ∫ τ : Fin n → ℝ,
+            Eσ * Set.indicator Kτ (fun _ : Fin n → ℝ => Cderiv) τ := by
+          exact MeasureTheory.integral_mono_of_nonneg
+            (Filter.Eventually.of_forall fun τ => norm_nonneg (G τ))
+            hbound_int
+            (Filter.Eventually.of_forall hpoint)
+      _ = Eσ * M := by
+          rw [MeasureTheory.integral_const_mul]
+  have htime :
+      (1 + ‖σ‖) ^ s * Eσ ≤ Ct := by
+    simpa [Eσ] using hCt_bound σ hσ
+  calc
+    (1 + ‖σ‖) ^ s *
+        ‖iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ‖ =
+        (1 + ‖σ‖) ^ s *
+          ‖section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ‖ := by
+          rw [section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate]
+    _ ≤ (1 + ‖σ‖) ^ s * (Eσ * M) := by
+          exact mul_le_mul_of_nonneg_left hcandidate_norm (pow_nonneg (by positivity) s)
+    _ = ((1 + ‖σ‖) ^ s * Eσ) * M := by ring
+    _ ≤ Ct * M := by
+          exact mul_le_mul_of_nonneg_right htime hM_nonneg
+    _ = C := rfl
+
 /-- A finite-time ambient Schwartz representative of the multitime
 one-sided Laplace transform, modulo equality on the closed positive orthant. -/
 def section43IteratedLaplaceRepresentative
@@ -813,6 +1796,81 @@ def section43IteratedLaplaceRepresentative
     (Φ : SchwartzMap (Fin n → ℝ) ℂ) : Prop :=
   ∀ σ : Fin n → ℝ, σ ∈ section43TimePositiveRegion n →
     Φ σ = section43IteratedLaplaceRaw n g σ
+
+/-- Ambient Schwartz representative obtained by cutting off the raw multitime
+Laplace scalar on the positive time orthant. -/
+noncomputable def section43IteratedLaplaceSchwartzRepresentative
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    SchwartzMap (Fin n → ℝ) ℂ :=
+  schwartzMap_of_temperate_mul_rapid_on_derivSupport
+    (χ := section43TimePositiveCutoff n)
+    (F := section43IteratedLaplaceRaw n g)
+    (S := section43TimePositiveThickening n 1)
+    (section43TimePositiveCutoff_hasTemperateGrowth n)
+    (fun r σ hne =>
+      section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+        (n := n) (r := r) (τ := σ) hne)
+    (section43IteratedLaplaceRaw_contDiff n g)
+    (by
+      intro r s
+      exact section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+        n r s g)
+
+/-- On the closed positive orthant, the cutoff Schwartz representative agrees
+with the raw multitime Laplace scalar. -/
+theorem section43IteratedLaplaceSchwartzRepresentative_apply_of_mem
+    {n : ℕ} (g : Section43CompactStrictPositiveTimeSource n)
+    {σ : Fin n → ℝ} (hσ : σ ∈ section43TimePositiveRegion n) :
+    section43IteratedLaplaceSchwartzRepresentative n g σ =
+      section43IteratedLaplaceRaw n g σ := by
+  change section43TimePositiveCutoff n σ *
+      section43IteratedLaplaceRaw n g σ =
+    section43IteratedLaplaceRaw n g σ
+  rw [section43TimePositiveCutoff_eq_one_of_mem hσ]
+  simp
+
+/-- Every compact strict-positive finite-time source has an ambient Schwartz
+representative of its multitime one-sided Laplace transform. -/
+theorem exists_section43IteratedLaplaceRepresentative
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ Φ : SchwartzMap (Fin n → ℝ) ℂ,
+      section43IteratedLaplaceRepresentative n g Φ :=
+  ⟨section43IteratedLaplaceSchwartzRepresentative n g, by
+    intro σ hσ
+    exact section43IteratedLaplaceSchwartzRepresentative_apply_of_mem g hσ⟩
+
+/-- The compact strict-positive multitime Laplace transform, valued in the
+finite-time positive-energy quotient. -/
+noncomputable def section43IteratedLaplaceCompactTransform
+    (n : ℕ) :
+    Section43CompactStrictPositiveTimeSource n →
+      Section43TimePositiveComponent n :=
+  fun g =>
+    section43TimePositiveQuotientMap n
+      (Classical.choose (exists_section43IteratedLaplaceRepresentative n g))
+
+theorem section43IteratedLaplaceCompactTransform_choose_spec
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) :
+    section43IteratedLaplaceRepresentative n g
+      (Classical.choose (exists_section43IteratedLaplaceRepresentative n g)) :=
+  Classical.choose_spec (exists_section43IteratedLaplaceRepresentative n g)
+
+/-- Any representative of the raw multitime Laplace scalar gives the same
+compact transform quotient class. -/
+theorem section43IteratedLaplaceCompactTransform_eq_quotient
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (hΦ : section43IteratedLaplaceRepresentative n g Φ) :
+    section43IteratedLaplaceCompactTransform n g =
+      section43TimePositiveQuotientMap n Φ := by
+  dsimp [section43IteratedLaplaceCompactTransform]
+  apply section43TimePositiveQuotientMap_eq_of_eqOn_region
+  intro σ hσ
+  calc
+    Classical.choose (exists_section43IteratedLaplaceRepresentative n g) σ
+        = section43IteratedLaplaceRaw n g σ :=
+          section43IteratedLaplaceCompactTransform_choose_spec n g σ hσ
+    _ = Φ σ := (hΦ σ hσ).symm
 
 /-- The multitime Laplace integrand of a product source factors coordinatewise.
 This is the finite-product Fubini calculation needed for the product-source
@@ -887,6 +1945,20 @@ theorem section43TimeProductTensor_oneSidedLaplaceRepresentative
   intro σ hσ
   simpa [section43IteratedLaplaceRaw] using
     section43TimeProductTensor_oneSidedLaplaceRepresentative_eq_integral gs hσ
+
+/-- For product sources, the compact multitime transform is represented by the
+product tensor of the one-dimensional compact Laplace representatives. -/
+theorem section43IteratedLaplaceCompactTransform_productSource
+    {n : ℕ} (gs : Fin n → Section43CompactPositiveTimeSource1D) :
+    section43IteratedLaplaceCompactTransform n (section43TimeProductSource gs) =
+      section43TimePositiveQuotientMap n
+        (section43TimeProductTensor
+          (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i))) :=
+  section43IteratedLaplaceCompactTransform_eq_quotient
+    n (section43TimeProductSource gs)
+    (section43TimeProductTensor
+      (fun i : Fin n => section43OneSidedLaplaceSchwartzRepresentative1D (gs i)))
+    (section43TimeProductTensor_oneSidedLaplaceRepresentative gs)
 
 /-- Product-source representative existence, isolated from the harder
 arbitrary-source representative theorem. -/

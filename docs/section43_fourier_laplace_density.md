@@ -1938,6 +1938,125 @@ use `hasFDerivAt_integral_of_dominated_of_fderiv_le`, the local ball
 `HasFDerivAt` is obtained from smoothness of
 `fun σ' => Complex.exp (-(∑ i, (τ i : ℂ) * (σ' i : ℂ))) * g.f τ`.
 
+Lean-ready local-bound packet, 2026-04-18:
+
+The time-only local domination theorem should not copy the spatial
+derivative-word sum from the ordered-support Fourier-Laplace proof.  In the
+present setting the σ-dependence is just the exponential of a continuous
+linear functional, multiplied by the fixed scalar `g.f τ`.  The implementation
+should first compile these helper lemmas:
+
+```lean
+noncomputable def section43TimeLaplaceLinearCLM
+    (n : ℕ) (τ : Fin n → ℝ) : (Fin n → ℝ) →L[ℝ] ℂ
+
+theorem section43TimeLaplaceLinearCLM_apply
+    (n : ℕ) (τ σ : Fin n → ℝ) :
+    section43TimeLaplaceLinearCLM n τ σ =
+      -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))
+
+theorem norm_time_le_norm_add_one_of_mem_closedBall
+    (n : ℕ) (σ σ' : Fin n → ℝ)
+    (hσ' : σ' ∈ Metric.closedBall σ (1 : ℝ)) :
+    ‖σ'‖ ≤ ‖σ‖ + 1
+
+theorem norm_section43TimeLaplaceLinearCLM_le
+    (n : ℕ) (τ : Fin n → ℝ) {R : ℝ}
+    (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R) :
+    ‖section43TimeLaplaceLinearCLM n τ‖ ≤ ∑ _ : Fin n, R
+
+theorem norm_exp_neg_timePair_le_local_time_closedBall
+    (n : ℕ) (σ σ' τ : Fin n → ℝ)
+    {R : ℝ} (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R)
+    (hσ' : σ' ∈ Metric.closedBall σ (1 : ℝ)) :
+    ‖Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ' i : ℂ)))‖ ≤
+      Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1))
+
+theorem exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+    (n : ℕ) (g : Section43CompactStrictPositiveTimeSource n) (R : ℝ) :
+    ∃ Cg : ℝ, 0 ≤ Cg ∧
+      ∀ τ ∈ Metric.closedBall (0 : Fin n → ℝ) R, ‖g.f τ‖ ≤ Cg
+
+theorem section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    {τ : Fin n → ℝ}
+    (hτ : τ ∉ tsupport (g.f : (Fin n → ℝ) → ℂ)) :
+    iteratedFDeriv ℝ r
+      (fun σ : Fin n → ℝ =>
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+          g.f τ) =
+      0
+```
+
+For the zero theorem, first use
+`notMem_tsupport_iff_eventuallyEq` or `subset_tsupport` to prove `g.f τ = 0`,
+then the σ-function is definitionally the zero function after `funext`, so
+`iteratedFDeriv` reduces to `0`.
+
+Then prove the actual local dominated derivative bound:
+
+```lean
+theorem section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+    (n r : ℕ) (g : Section43CompactStrictPositiveTimeSource n)
+    (σ : Fin n → ℝ) :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ σ' ∈ Metric.closedBall σ (1 : ℝ),
+        ‖(iteratedFDeriv ℝ (r + 1)
+          (fun σ'' : Fin n → ℝ =>
+            Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ'' i : ℂ))) *
+              g.f τ)
+          σ').curryLeft‖ ≤ bound τ
+```
+
+Proof transcript:
+
+1. Choose `R ≥ 0` and
+   `hR_supp : tsupport g.f ⊆ Metric.closedBall 0 R` from
+   `exists_time_closedBall_of_compact_tsupport`.
+2. Set `Kτ = Metric.closedBall (0 : Fin n → ℝ) R`.
+3. Choose `Cg ≥ 0` bounding `‖g.f τ‖` on `Kτ`.
+4. Let
+   `Cexp = Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1))` and
+   `CL = ∑ _ : Fin n, R`.
+5. Let
+   `C = (r + 1).factorial * Cexp * CL ^ (r + 1) * Cg`.
+6. Take `bound = Set.indicator Kτ (fun _ => C)`.  Integrability is
+   `integrable_indicator_time_closedBall_const n R C`.
+7. On `Kτ`, rewrite the scalar integrand as
+   `(fun σ'' => Complex.exp (section43TimeLaplaceLinearCLM n τ σ''))`
+   multiplied by the constant `g.f τ`.  Apply
+   `iteratedFDeriv_smul_const_apply`,
+   `norm_iteratedFDeriv_cexp_comp_clm_le`,
+   `norm_section43TimeLaplaceLinearCLM_le`, the local exponential bound, and
+   the source bound.
+8. Off `Kτ`, `τ ∉ tsupport g.f` by `hR_supp`, so the whole pointwise
+   derivative is zero by the zero theorem.
+
+Production status, 2026-04-18: this local-bound packet is compiled in
+`Section43FourierLaplaceTimeProduct.lean`.  The compiled theorem
+
+```lean
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+```
+
+is now the exact time-only analogue needed by
+`hasFDerivAt_integral_of_dominated_of_fderiv_le`.  The next missing proof-doc
+item is not another bound; it is the measurability/integrability transcript for
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+```
+
+The base scalar integrability theorem is already compiled as
+`integrable_section43IteratedLaplaceRaw_integrand_of_compact`.  For the
+successor case, reuse the local-bound theorem and prove the required
+AEStronglyMeasurable fact by an explicit time-only continuity lemma for
+`τ ↦ iteratedFDeriv ... σ`.  Do not introduce a wrapper theorem that assumes
+measurability as a hypothesis; the measurability is part of this seam.
+
 For rapid decay on the cutoff-derivative support, reuse the already compiled
 time-only estimates:
 
@@ -1964,6 +2083,50 @@ candidate by a compact-support integrable majorant, applies
 `norm_exp_neg_timePair_le_exp_thickened_margin_sum`, and then absorbs the
 remaining polynomial in `σ` using
 `exp_margin_sum_controls_thickened_time_polynomial`.
+
+Lean-ready rapid-decay transcript, 2026-04-18:
+
+The time-only rapid proof is simpler than the ordered-support spatial proof.
+Do not introduce derivative words.  For fixed `r,s`:
+
+1. Rewrite
+   `iteratedFDeriv ℝ r (section43IteratedLaplaceRaw n g) σ` by
+   `section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate`.
+2. Choose `δ > 0` from
+   `exists_positive_margin_of_compact_time_tsupport_subset_strictPositive g`.
+3. Choose `R ≥ 0` from `exists_time_closedBall_of_compact_tsupport g`.
+4. Choose `Cg ≥ 0` bounding `‖g.f τ‖` on `Metric.closedBall 0 R`.
+5. Let
+   `CL = ∑ _ : Fin n, R`,
+   `Cderiv = r.factorial * CL ^ r * Cg`, and
+   `Kτ = Metric.closedBall (0 : Fin n → ℝ) R`.
+6. Let
+   `M = ∫ τ, Set.indicator Kτ (fun _ => Cderiv) τ`.
+   This is finite by `integrable_indicator_time_closedBall_const` and
+   nonnegative by `integral_nonneg`.
+7. For `σ ∈ section43TimePositiveThickening n 1`, define
+   `Eσ =
+      Real.exp (∑ _ : Fin n, R * 1) *
+        Real.exp (-(δ * ∑ i : Fin n, (σ i + 1)))`.
+8. Pointwise in `τ`, prove
+   `‖G σ τ‖ ≤ Eσ * Set.indicator Kτ (fun _ => Cderiv) τ`, where `G` is the
+   integrand defining
+   `section43IteratedLaplaceRaw_iteratedFDerivCandidate n r g σ`.
+9. Inside `Kτ`, if `τ ∉ tsupport g.f`, the derivative is zero by
+   `section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport`.
+   If `τ ∈ tsupport g.f`, use the support margin for `δ ≤ τ i`, the closed-ball
+   bound `‖τ‖ ≤ R`, the collar hypothesis `-1 ≤ σ i`, and
+   `norm_exp_neg_timePair_le_exp_thickened_margin_sum`.
+10. The derivative factor is bounded by
+    `norm_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_le`,
+    `norm_section43TimeLaplaceLinearCLM_le`, and the source bound `Cg`.
+11. Integrating gives
+    `‖candidate σ‖ ≤ Eσ * M`.
+12. Apply
+    `exp_margin_sum_controls_thickened_time_polynomial
+       (n := n) (δ := δ) (ε := 1) (R := R) ... s`
+    to get `Ct` with `(1 + ‖σ‖)^s * Eσ ≤ Ct`.
+13. The final rapid constant is `C = Ct * M`.
 
 The final representative is then:
 
@@ -2003,6 +2166,43 @@ The last theorem is just
 `section43IteratedLaplaceRepresentative`, rewriting by
 `section43IteratedLaplaceSchwartzRepresentative_apply_of_mem`, and unfolding
 `section43IteratedLaplaceRaw`.
+
+Production status, 2026-04-18: the arbitrary-source representative package is
+compiled in `Section43FourierLaplaceTimeProduct.lean`, including
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+section43IteratedLaplaceCompactTransform
+section43IteratedLaplaceCompactTransform_productSource
+```
+
+The next implementation step should not continue growing
+`Section43FourierLaplaceTimeProduct.lean`; it is now close to the 2000-line
+support-file limit.  Start a small companion file for the finite-product dense
+preimage theorem:
+
+```lean
+theorem dense_section43IteratedLaplaceCompactTransform_preimage
+    (n : ℕ) :
+    Dense
+      ((section43TimePositiveQuotientMap n) ⁻¹'
+        Set.range (section43IteratedLaplaceCompactTransform n))
+```
+
+This theorem should use:
+
+```lean
+dense_section43OneSidedLaplaceCompactTransform1D_preimage
+section43_timeProductTensor_span_dense_of_factor_dense
+section43IteratedLaplaceCompactTransform_productSource
+section43TimePositiveQuotientMap_eq_of_eqOn_region
+```
 
 Production status, 2026-04-18: the low-risk first half of this package is
 compiled in `Section43FourierLaplaceTimeProduct.lean`:
