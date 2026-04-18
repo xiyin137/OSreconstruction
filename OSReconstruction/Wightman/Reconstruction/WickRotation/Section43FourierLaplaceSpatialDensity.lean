@@ -542,4 +542,157 @@ theorem dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourie
     (hSt := dense_section43IteratedLaplaceCompactTransform_preimage n)
     (hSx := dense_section43SpatialFourierCompactRange d n)
 
+/-- The topological support of a transported time/spatial tensor is controlled
+by the topological support of its time factor. -/
+theorem tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+    tsupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+      ⊆
+    (section43QTime (d := d) (n := n)) ⁻¹'
+      tsupport (φ : (Fin n → ℝ) → ℂ) := by
+  intro q hq
+  have hfun :
+      (((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)) =
+        fun q : NPointDomain d n =>
+          φ (section43QTime (d := d) (n := n) q) *
+            χ (section43QSpatial (d := d) (n := n) q) := by
+    funext q
+    simp
+  have hprod :
+      q ∈ tsupport
+        (fun q : NPointDomain d n =>
+          φ (section43QTime (d := d) (n := n) q) *
+            χ (section43QSpatial (d := d) (n := n) q)) := by
+    simpa [hfun] using hq
+  have ht_pullback :
+      q ∈ tsupport
+        (fun q : NPointDomain d n =>
+          φ (section43QTime (d := d) (n := n) q)) :=
+    (tsupport_mul_subset_left
+      (f := fun q : NPointDomain d n =>
+        φ (section43QTime (d := d) (n := n) q))
+      (g := fun q : NPointDomain d n =>
+        χ (section43QSpatial (d := d) (n := n) q))) hprod
+  exact
+    (tsupport_comp_subset_preimage
+      (φ : (Fin n → ℝ) → ℂ)
+      (f := section43QTime (d := d) (n := n))
+      (by
+        simpa [section43QTimeCLM_apply] using
+          (section43QTimeCLM d n).continuous)) ht_pullback
+
+/-- A transported time/spatial tensor is compactly supported if both factors
+are compactly supported. -/
+theorem hasCompactSupport_section43NPointTimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hφ : HasCompactSupport (φ : (Fin n → ℝ) → ℂ))
+    (hχ : HasCompactSupport (χ : Section43SpatialSpace d n → ℂ)) :
+    HasCompactSupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ) := by
+  let e := nPointTimeSpatialCLE (d := d) n
+  let K : Set (NPointDomain d n) :=
+    e.symm '' (tsupport (φ : (Fin n → ℝ) → ℂ) ×ˢ
+      tsupport (χ : Section43SpatialSpace d n → ℂ))
+  have hKcompact : IsCompact K := by
+    exact (hφ.isCompact.prod hχ.isCompact).image e.symm.continuous
+  refine HasCompactSupport.of_support_subset_isCompact hKcompact ?_
+  intro q hq
+  rw [Function.mem_support] at hq
+  have hφq : φ (section43QTime (d := d) (n := n) q) ≠ 0 := by
+    intro hzero
+    apply hq
+    simp [section43NPointTimeSpatialTensor_apply, hzero]
+  have hχq : χ (section43QSpatial (d := d) (n := n) q) ≠ 0 := by
+    intro hzero
+    apply hq
+    simp [section43NPointTimeSpatialTensor_apply, hzero]
+  refine ⟨(section43QTime (d := d) (n := n) q,
+      section43QSpatial (d := d) (n := n) q), ?_, ?_⟩
+  · exact ⟨subset_tsupport _ (Function.mem_support.mpr hφq),
+      subset_tsupport _ (Function.mem_support.mpr hχq)⟩
+  · simp [e, section43QTime, section43QSpatial]
+
+/-- Compact time/spatial sources in difference variables, supported in the
+strict positive time orthant. -/
+structure Section43CompactStrictPositiveTimeSpatialSource
+    (d n : ℕ) [NeZero d] where
+  f : SchwartzNPoint d n
+  positive :
+    tsupport (f : NPointDomain d n → ℂ) ⊆
+      {q | ∀ i : Fin n, 0 < section43QTime (d := d) (n := n) q i}
+  compact : HasCompactSupport (f : NPointDomain d n → ℂ)
+
+/-- Product a compact strict-positive time source with a compact spatial source,
+then transport it to the `n`-point difference-coordinate Schwartz space. -/
+noncomputable def section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    Section43CompactStrictPositiveTimeSpatialSource d n where
+  f := section43NPointTimeSpatialTensor d n g.f κ.1
+  positive := by
+    intro q hq i
+    exact g.positive
+      (tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+        d n g.f κ.1 hq) i
+  compact :=
+    hasCompactSupport_section43NPointTimeSpatialTensor
+      d n g.f κ.1 g.compact κ.2
+
+/-- The fixed-time spatial slice of a product source is scalar multiplication
+of the spatial source by the time-source value. -/
+theorem partialEval₂_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) :
+    SchwartzMap.partialEval₂
+      (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+        (section43TimeSpatialProductSource d n g κ).f) τ =
+    g.f τ • κ.1 := by
+  ext η
+  change
+    nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+      (section43TimeSpatialProductSource d n g κ).f (η, τ) =
+    (g.f τ • κ.1) η
+  rw [nPointSpatialTimeSchwartzCLE_apply]
+  change
+    nPointTimeSpatialSchwartzCLE (d := d) (n := n)
+      (section43NPointTimeSpatialTensor d n g.f κ.1) (τ, η) =
+    (g.f τ • κ.1) η
+  change section43TimeSpatialTensor d n g.f κ.1 (τ, η) = (g.f τ • κ.1) η
+  simp [smul_eq_mul]
+
+/-- The partial spatial Fourier transform of a product source factorizes into
+the time source times the full spatial Fourier transform of the spatial
+source. -/
+theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) (ξ : Section43SpatialSpace d n) :
+    partialFourierSpatial_fun
+      (d := d) (n := n)
+      (section43TimeSpatialProductSource d n g κ).f
+      (τ, ξ) =
+    g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ := by
+  rw [partialFourierSpatial_fun]
+  change
+    (SchwartzMap.fourierTransformCLM ℂ
+      (SchwartzMap.partialEval₂
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+          (section43TimeSpatialProductSource d n g κ).f) τ)) ξ =
+      g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+  rw [partialEval₂_section43TimeSpatialProductSource]
+  rw [(SchwartzMap.fourierTransformCLM ℂ).map_smul]
+  simp [smul_eq_mul]
+
 end OSReconstruction

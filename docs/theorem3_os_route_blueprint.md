@@ -25027,6 +25027,119 @@ unfolding `partialFourierSpatial_fun`: the fixed-time slice of
 Fourier transform is obtained from `(SchwartzMap.fourierTransformCLM ℂ).map_smul`
 with no manual Fourier-normalization rewrite.
 
+The source-side product construction must use the following Lean-ready support
+packet; this is the next production target after the compiled
+`SchwartzNPoint` tensor-density transport.
+
+First, introduce the time-support control lemma:
+
+```lean
+theorem tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+    tsupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+      ⊆
+    (section43QTime (d := d) (n := n)) ⁻¹'
+      tsupport (φ : (Fin n → ℝ) → ℂ)
+```
+
+Proof route: rewrite by `section43NPointTimeSpatialTensor_apply`, apply
+`tsupport_mul_subset_left` to the product
+`φ (section43QTime q) * χ (section43QSpatial q)`, and then use
+`tsupport_comp_subset_preimage` with the continuity supplied by
+`section43QTimeCLM d n`.  In Lean, first insert the explicit function
+equality
+`((section43NPointTimeSpatialTensor d n φ χ : SchwartzNPoint d n) :
+NPointDomain d n → ℂ) = fun q => φ (section43QTime q) *
+χ (section43QSpatial q)` by `funext; simp`, then call
+`tsupport_comp_subset_preimage (φ : (Fin n → ℝ) → ℂ)
+(f := section43QTime (d := d) (n := n)) ...`.
+
+Second, prove compact support without relying on a false generic compact
+preimage statement:
+
+```lean
+theorem hasCompactSupport_section43NPointTimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hφ : HasCompactSupport (φ : (Fin n → ℝ) → ℂ))
+    (hχ : HasCompactSupport (χ : Section43SpatialSpace d n → ℂ)) :
+    HasCompactSupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+```
+
+Proof route: set `e := nPointTimeSpatialCLE (d := d) n` and
+`K := e.symm '' (tsupport φ ×ˢ tsupport χ)`.  Compactness is
+`(hφ.isCompact.prod hχ.isCompact).image e.symm.continuous`.  For the support
+subset, if the product value at `q` is nonzero, then both factors are nonzero;
+convert them to topological-support membership with `subset_tsupport _` and
+`Function.mem_support.mpr`, then witness `q ∈ K` by
+`(section43QTime q, section43QSpatial q)`.
+
+Third, define:
+
+```lean
+noncomputable def section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    Section43CompactStrictPositiveTimeSpatialSource d n
+```
+
+with underlying function `section43NPointTimeSpatialTensor d n g.f κ.1`.
+The `positive` field is the time-support lemma followed by `g.positive`; the
+`compact` field is the compact-support lemma applied to `g.compact` and
+`κ.2`.
+
+Fourth, prove the fixed-time slice identity before the Fourier identity:
+
+```lean
+theorem partialEval₂_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) :
+    SchwartzMap.partialEval₂
+      (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+        (section43TimeSpatialProductSource d n g κ).f) τ =
+    g.f τ • κ.1
+```
+
+Proof route: extensionality in the spatial variable, then simp using
+`nPointSpatialTimeSchwartzCLE_apply` and `smul_eq_mul`.  In compiled Lean this
+is clearest with explicit `change` steps:
+`partialEval₂` becomes evaluation of the spatial-time Schwartz map at
+`(η, τ)`, `nPointSpatialTimeSchwartzCLE_apply` rewrites it to the time-spatial
+value `(τ, η)`, and the transported tensor reduces to
+`section43TimeSpatialTensor d n g.f κ.1 (τ, η)`.  This confirms the
+orientation: `partialEval₂` fixes the time coordinate of the spatial-time
+Schwartz map.
+
+Finally:
+
+```lean
+theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) (ξ : Section43SpatialSpace d n) :
+    partialFourierSpatial_fun
+      (d := d) (n := n)
+      (section43TimeSpatialProductSource d n g κ).f
+      (τ, ξ) =
+    g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+```
+
+Proof route: unfold `partialFourierSpatial_fun`, rewrite the slice by
+`partialEval₂_section43TimeSpatialProductSource`, apply
+`(SchwartzMap.fourierTransformCLM ℂ).map_smul`, and normalize scalar
+multiplication with `simp [smul_eq_mul]`.
+
 Production status, 2026-04-18: the product-space density half of this Layer-3
 packet is compiled in
 `OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceSpatialDensity.lean`.

@@ -2737,14 +2737,135 @@ Construction and obligations:
 
 1. In `(τ, η)` variables the underlying Schwartz function is
    `g.f τ * κ.1 η`, transported through `nPointTimeSpatialSchwartzCLE`.
-2. Strict positive-time support follows because if the product is nonzero then
-   `τ ∈ tsupport g.f`, hence `g.positive` gives
-   `∀ i, 0 < τ i`.
-3. Compact support follows from
-   `tsupport (g.f τ * κ η) ⊆ tsupport g.f ×ˢ tsupport κ` and compactness of
-   both factors, transported through the time/spatial continuous linear
-   equivalence.
-4. The spatial Fourier slice factorizes:
+2. Strict positive-time support should be proved by the following explicit
+   local lemma, using the compiled pointwise formula for the transported
+   tensor:
+   ```lean
+   theorem tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+       (d n : ℕ) [NeZero d]
+       (φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+       tsupport
+         ((section43NPointTimeSpatialTensor d n φ χ :
+             SchwartzNPoint d n) : NPointDomain d n → ℂ)
+         ⊆
+       (section43QTime (d := d) (n := n)) ⁻¹'
+         tsupport (φ : (Fin n → ℝ) → ℂ)
+   ```
+   Proof skeleton:
+   ```lean
+   intro q hq
+   have hfun :
+       (((section43NPointTimeSpatialTensor d n φ χ :
+           SchwartzNPoint d n) : NPointDomain d n → ℂ)) =
+         fun q : NPointDomain d n =>
+           φ (section43QTime (d := d) (n := n) q) *
+             χ (section43QSpatial (d := d) (n := n) q) := by
+     funext q
+     simp
+   have hprod :
+       q ∈ tsupport
+         (fun q : NPointDomain d n =>
+           φ (section43QTime (d := d) (n := n) q) *
+             χ (section43QSpatial (d := d) (n := n) q)) := by
+     simpa [hfun] using hq
+   have ht_pullback :
+       q ∈ tsupport
+         (fun q : NPointDomain d n =>
+           φ (section43QTime (d := d) (n := n) q)) :=
+     (tsupport_mul_subset_left
+       (f := fun q : NPointDomain d n =>
+         φ (section43QTime (d := d) (n := n) q))
+       (g := fun q : NPointDomain d n =>
+         χ (section43QSpatial (d := d) (n := n) q))) hprod
+   exact
+     (tsupport_comp_subset_preimage
+       (φ : (Fin n → ℝ) → ℂ)
+       (f := section43QTime (d := d) (n := n))
+       (by simpa [section43QTimeCLM_apply] using
+         (section43QTimeCLM d n).continuous)) ht_pullback
+   ```
+   Then `positive` is:
+   ```lean
+   intro q hq i
+   exact g.positive
+     (tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+       d n g.f κ.1 hq) i
+   ```
+3. Compact support should not be attempted by taking a generic preimage of a
+   compact set.  The safe Lean route is to work with ordinary `support`, place
+   it inside the image of a compact product under the inverse time/spatial
+   homeomorphism, and use `HasCompactSupport.of_support_subset_isCompact`.
+   The helper lemma should be:
+   ```lean
+   theorem hasCompactSupport_section43NPointTimeSpatialTensor
+       (d n : ℕ) [NeZero d]
+       (φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφ : HasCompactSupport (φ : (Fin n → ℝ) → ℂ))
+       (hχ : HasCompactSupport (χ : Section43SpatialSpace d n → ℂ)) :
+       HasCompactSupport
+         ((section43NPointTimeSpatialTensor d n φ χ :
+             SchwartzNPoint d n) : NPointDomain d n → ℂ)
+   ```
+   Proof skeleton:
+   ```lean
+   let e := nPointTimeSpatialCLE (d := d) n
+   let K : Set (NPointDomain d n) :=
+     e.symm '' (tsupport (φ : (Fin n → ℝ) → ℂ) ×ˢ
+       tsupport (χ : Section43SpatialSpace d n → ℂ))
+   have hKcompact : IsCompact K := by
+     exact (hφ.isCompact.prod hχ.isCompact).image e.symm.continuous
+   refine HasCompactSupport.of_support_subset_isCompact hKcompact ?_
+   intro q hq
+   rw [Function.mem_support] at hq
+   have hφq : φ (section43QTime (d := d) (n := n) q) ≠ 0 := by
+     intro hzero
+     apply hq
+     simp [section43NPointTimeSpatialTensor_apply, hzero]
+   have hχq : χ (section43QSpatial (d := d) (n := n) q) ≠ 0 := by
+     intro hzero
+     apply hq
+     simp [section43NPointTimeSpatialTensor_apply, hzero]
+   refine ⟨(section43QTime (d := d) (n := n) q,
+       section43QSpatial (d := d) (n := n) q), ?_, ?_⟩
+   · exact ⟨subset_tsupport _ (Function.mem_support.mpr hφq),
+       subset_tsupport _ (Function.mem_support.mpr hχq)⟩
+   · simp [e, section43QTime, section43QSpatial]
+   ```
+4. The fixed-time slice should be separated from the Fourier theorem:
+   ```lean
+   theorem partialEval₂_section43TimeSpatialProductSource
+       (d n : ℕ) [NeZero d]
+       (g : Section43CompactStrictPositiveTimeSource n)
+       (κ : Section43SpatialCompactSource d n)
+       (τ : Fin n → ℝ) :
+       SchwartzMap.partialEval₂
+         (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+           (section43TimeSpatialProductSource d n g κ).f) τ =
+       g.f τ • κ.1
+   ```
+   Proof skeleton:
+   ```lean
+   ext η
+   change
+     nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+       (section43TimeSpatialProductSource d n g κ).f (η, τ) =
+     (g.f τ • κ.1) η
+   rw [nPointSpatialTimeSchwartzCLE_apply]
+   change
+     nPointTimeSpatialSchwartzCLE (d := d) (n := n)
+       (section43NPointTimeSpatialTensor d n g.f κ.1) (τ, η) =
+     (g.f τ • κ.1) η
+   change section43TimeSpatialTensor d n g.f κ.1 (τ, η) =
+     (g.f τ • κ.1) η
+   simp [smul_eq_mul]
+   ```
+   The orientation check is essential: `partialEval₂` fixes the second
+   coordinate of the spatial-time Schwartz map, so
+   `nPointSpatialTimeSchwartzCLE_apply` rewrites `(η, τ)` to the
+   time-spatial value `(τ, η)`.
+5. The spatial Fourier slice factorizes:
    ```lean
    theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
        (g : Section43CompactStrictPositiveTimeSource n)
@@ -2756,8 +2877,19 @@ Construction and obligations:
          (τ, ξ) =
        g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
    ```
-   Implementation route: unfold `partialFourierSpatial_fun`; the fixed-time
-   slice is `g.f τ • κ.1`; apply `(SchwartzMap.fourierTransformCLM ℂ).map_smul`.
+   Proof skeleton:
+   ```lean
+   rw [partialFourierSpatial_fun]
+   change
+     (SchwartzMap.fourierTransformCLM ℂ
+       (SchwartzMap.partialEval₂
+         (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+           (section43TimeSpatialProductSource d n g κ).f) τ)) ξ =
+       g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+   rw [partialEval₂_section43TimeSpatialProductSource]
+   rw [(SchwartzMap.fourierTransformCLM ℂ).map_smul]
+   simp [smul_eq_mul]
+   ```
    This avoids manual Fourier-integral normalization.
 
 Main theorem:
