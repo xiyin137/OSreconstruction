@@ -25453,50 +25453,122 @@ Fourth, transport from difference coordinates back to ordered Euclidean
 coordinates.  This is the already compiled map
 `section43DiffCoordRealCLE d n`.
 
+Implementation file: add a new downstream companion
+`Section43FourierLaplaceOrderedDensity.lean` importing
+`Section43FourierLaplaceSpatialDensity` and `Section43FourierLaplaceClosure`.
+Do not reopen the large transform or closure files for this packet.
+
 ```lean
 theorem dense_section43FourierLaplace_compact_ordered_preimage_raw
     (d n : ℕ) [NeZero d] :
     Dense
-      {Φ : SchwartzNPoint d n |
-        ∃ (f : SchwartzNPoint d n)
-          (hf_ord :
-            tsupport (f : NPointDomain d n → ℂ) ⊆
-              OrderedPositiveTimeRegion d n)
-          (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)),
-          section43PositiveEnergyQuotientMap (d := d) n Φ =
-            section43FourierLaplaceTransformComponent d n
-              f hf_ord hf_compact}
+      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+        Set.range (section43FourierLaplaceTransformComponentMap d n))
 ```
 
 Proof transcript:
 
-1. Use `section43DiffCoordRealCLE d n` to rewrite ordered positive-time support
-   of `f` as positive-orthant support of
-   `section43DiffPullbackCLM d n ⟨f, hf_ord⟩`.
-2. Use
-   `section43FourierLaplaceIntegral_eq_time_spatial_integral` to identify the
-   transformed representative with the time-Laplace / spatial-Fourier
-   transform from the previous lemma.
-3. For compact sources, use
-   `section43FourierLaplaceTransformComponent_has_representative` to replace
-   the abstract representative by the production quotient class.  If two
-   representatives satisfy `section43FourierLaplaceRepresentative` for the
-   same source, their quotient classes are equal by
-   `section43PositiveEnergyQuotientMap_eq_of_eqOn_region`.
+1. Prove the order lemma:
+   ```lean
+   theorem section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+       (d n : ℕ) [NeZero d]
+       {δ : NPointDomain d n}
+       (hδ : ∀ i : Fin n, 0 < δ i 0) :
+       (section43DiffCoordRealCLE d n).symm δ ∈
+         OrderedPositiveTimeRegion d n
+   ```
+   Use `section43DiffCoordRealCLE_symm_apply`: ordered coordinates are partial
+   sums of positive difference times.  First-coordinate positivity is
+   `Finset.sum_pos`; strict ordering follows because the later partial sum is
+   the earlier one plus a nonempty positive block.  If Lean needs it, isolate:
+   ```lean
+   lemma partialSum_strictMono_of_pos
+       {n : ℕ} {a : Fin n → ℝ}
+       (ha : ∀ i, 0 < a i) :
+       StrictMono fun k : Fin n =>
+         ∑ r : Fin (k.val + 1), a ⟨r.val, by omega⟩
+   ```
+	   The concrete strict-order proof should rewrite both finite sums by
+	   `Finset.sum_fin_eq_sum_range`, decompose the larger range with
+	   `Finset.sum_range_add_sum_Ico`, prove the interval
+	   `Finset.Ico (i.val + 1) (j.val + 1)` is nonempty using `i < j`, and close
+	   with `lt_add_of_pos_right` plus `Finset.sum_pos`.  The compiled proof uses
+	   a local Nat-indexed function `fj` for the larger partial sum and rewrites
+	   the smaller partial sum into `fj` before applying
+	   `← Finset.sum_range_add_sum_Ico fj hle`; this is the robust Lean shape
+	   because the dependent coordinate `δ ⟨r, _⟩` needs the `r ≤ j.val` bound
+	   extracted from `r < j.val + 1`.
+2. Define the ordered pushforward source:
+   ```lean
+   noncomputable def section43OrderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       Section43CompactOrderedSource d n
+   ```
+   Carrier:
+   ```lean
+   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+     (section43DiffCoordRealCLE d n) G.f
+   ```
+   Ordered support: map support through
+   `tsupport_comp_subset_preimage`, apply `G.positive`, then step 1.
+   Compactness: use `tsupport_comp_eq_preimage`, rewrite the preimage as the
+   image of `tsupport G.f` under `(section43DiffCoordRealCLE d n).symm`, and
+   apply compact image.
+3. Prove the pullback identity:
+   ```lean
+   theorem section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       section43DiffPullbackCLM d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ =
+       G.f
+   ```
+   This is an `ext δ` proof using `section43DiffPullbackCLM_apply` and
+   `ContinuousLinearEquiv.apply_symm_apply`.
+4. Convert Layer-3 representatives to OS-I representatives:
+   ```lean
+   theorem section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+       (d n : ℕ) [NeZero d]
+       {G : Section43CompactStrictPositiveTimeSpatialSource d n}
+       {Ψ : SchwartzNPoint d n}
+       (hΨ :
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ) :
+       section43FourierLaplaceRepresentative d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ Ψ
+   ```
+   For `q ∈ section43PositiveEnergyRegion`, unfold
+   `section43FourierLaplaceIntegral` and rewrite the pullback by step 3; the
+   resulting integral is exactly `hΨ q hq`.
+5. Prove target containment:
+   ```lean
+   theorem section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+       (d n : ℕ) [NeZero d] :
+       section43TimeLaplaceSpatialFourierTarget d n ⊆
+         (section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+           Set.range (section43FourierLaplaceTransformComponentMap d n)
+   ```
+   Given `Φ` with witness `G, Ψ, hΨ, hΦq`, set
+   `src := section43OrderedSourceOfTimeSpatialSource d n G`.  Step 4 makes
+   `Ψ` a `section43FourierLaplaceRepresentative` for `src`.  Use
+   `section43FourierLaplaceTransformComponent_has_representative` to obtain the
+   chosen component representative `Φc`; quotient equality between `Ψ` and
+   `Φc` follows by `section43PositiveEnergyQuotientMap_eq_of_eqOn_region`.
+   Combine that equality with `hΦq` and provide the range witness `src`.
+6. Conclude by `Dense.mono` from
+   `dense_section43TimeLaplaceSpatialFourier_compact_preimage`.
 
-Finally, prove the production theorem by unfolding the `Section43CompactOrderedSource`
-wrapper:
-
+Production update, 2026-04-18: this ordered-density bridge is compiled in
+`Section43FourierLaplaceOrderedDensity.lean`:
 ```lean
-theorem dense_section43FourierLaplaceTransformComponentMap_preimage
-    (d n : ℕ) [NeZero d] :
-    Dense
-      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
-        Set.range (section43FourierLaplaceTransformComponentMap d n)) := by
-  -- use `dense_section43FourierLaplace_compact_ordered_preimage_raw`;
-  -- convert the raw existential `(f, hf_ord, hf_compact)` into
-  -- `Section43CompactOrderedSource`;
-  -- unfold `section43FourierLaplaceTransformComponentMap`.
+section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+section43OrderedSourceOfTimeSpatialSource
+section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+dense_section43FourierLaplace_compact_ordered_preimage_raw
 ```
 
 Implementation guardrails:

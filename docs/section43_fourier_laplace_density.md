@@ -3439,16 +3439,202 @@ theorem dense_section43FourierLaplace_compact_ordered_preimage_raw
 
 Proof:
 
-1. Pull ordered sources to difference coordinates with
-   `section43DiffPullbackCLM d n`.
-2. `OrderedPositiveTimeRegion` becomes strict positive time-difference support
-   under `section43DiffCoordRealCLE`.
-3. Compact support is preserved by the continuous linear equivalence.
-4. The formula
-   `section43FourierLaplaceIntegral_eq_time_spatial_integral` identifies the
-   resulting transform with the Layer-3 representative.
-5. Convert representatives to production quotient classes using
-   `section43FourierLaplaceTransformComponent_has_representative`.
+Implementation file: use a new downstream companion
+`Section43FourierLaplaceOrderedDensity.lean` importing both
+`Section43FourierLaplaceSpatialDensity` and
+`Section43FourierLaplaceClosure`.  This avoids reopening the large transform
+or closure files while giving access to the compiled Layer-3 dense target and
+the existing component map `section43FourierLaplaceTransformComponentMap`.
+
+The required ordered-transport packet is:
+
+1. Prove the strict-positive-differences-to-ordered-times lemma:
+   ```lean
+   theorem section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+       (d n : ℕ) [NeZero d]
+       {δ : NPointDomain d n}
+       (hδ : ∀ i : Fin n, 0 < δ i 0) :
+       (section43DiffCoordRealCLE d n).symm δ ∈
+         OrderedPositiveTimeRegion d n
+   ```
+   Proof route: unfold `OrderedPositiveTimeRegion`; use
+   `section43DiffCoordRealCLE_symm_apply` to rewrite each ordered time as a
+   partial sum of `δ r 0`.  Positivity of the first time is
+   `Finset.sum_pos` over `Fin (i.val + 1)`, with witness `0`.  For `i < j`,
+   prove the difference of partial sums is the sum of the nonempty block
+   `r = i.val + 1, ..., j.val`; this sum is positive by `Finset.sum_pos`.
+   Equivalently, use an auxiliary Nat-indexed lemma:
+   ```lean
+   lemma partialSum_strictMono_of_pos
+       {n : ℕ} {a : Fin n → ℝ}
+       (ha : ∀ i, 0 < a i) :
+       StrictMono fun k : Fin n =>
+         ∑ r : Fin (k.val + 1), a ⟨r.val, by omega⟩
+   ```
+   Then apply it to `a i = δ i 0`.
+   Lean skeleton for the strict inequality case.  The concrete implementation
+   uses an auxiliary Nat-indexed function `fj` for the larger partial sum; this
+   avoids trying to form the dependent term `δ ⟨r, by omega⟩` before Lean knows
+   the required bound from `r < j.val + 1`.
+   ```lean
+   intro i j hij
+   rw [section43DiffCoordRealCLE_symm_apply,
+     section43DiffCoordRealCLE_symm_apply]
+   rw [Finset.sum_fin_eq_sum_range, Finset.sum_fin_eq_sum_range]
+   have hijv : i.val < j.val := by exact hij
+   have hle : i.val + 1 ≤ j.val + 1 := Nat.succ_le_succ hijv.le
+   let fj : ℕ → ℝ := fun r =>
+     if h : r < j.val + 1 then
+       δ ⟨(⟨r, h⟩ : Fin (j.val + 1)).val, by
+         have hj := j.isLt
+         omega⟩ 0
+     else 0
+   have hblock_nonempty : (Finset.Ico (i.val + 1) (j.val + 1)).Nonempty := by
+     refine ⟨i.val + 1, ?_⟩
+     exact Finset.mem_Ico.mpr ⟨le_rfl, Nat.succ_lt_succ hijv⟩
+   have hleft :
+       (∑ r ∈ Finset.range (i.val + 1),
+         if h : r < i.val + 1 then
+           δ ⟨(⟨r, h⟩ : Fin (i.val + 1)).val, by
+             have hi := i.isLt
+             omega⟩ 0
+         else 0) =
+       (∑ r ∈ Finset.range (i.val + 1), fj r) := by
+     refine Finset.sum_congr rfl ?_
+     intro r hr
+     have hri : r < i.val + 1 := Finset.mem_range.mp hr
+     have hrj : r < j.val + 1 := lt_of_lt_of_le hri hle
+     have hrjle : r ≤ j.val := Nat.lt_succ_iff.mp hrj
+     rw [dif_pos hri]
+     simp [fj, hrjle]
+   have hblock_pos :
+       0 < ∑ r ∈ Finset.Ico (i.val + 1) (j.val + 1), fj r := by
+     refine Finset.sum_pos ?_ hblock_nonempty
+     intro r hr
+     have hrj : r < j.val + 1 := (Finset.mem_Ico.mp hr).2
+     have hrjle : r ≤ j.val := Nat.lt_succ_iff.mp hrj
+     simpa [fj, hrjle] using hδ ⟨r, by
+       have hj := j.isLt
+       omega⟩
+   rw [hleft]
+   change (∑ r ∈ Finset.range (i.val + 1), fj r) <
+     ∑ r ∈ Finset.range (j.val + 1), fj r
+   rw [← Finset.sum_range_add_sum_Ico fj hle]
+   exact lt_add_of_pos_right _ hblock_pos
+   ```
+   The positivity case is the same `Finset.sum_fin_eq_sum_range` rewrite plus
+   `Finset.sum_pos` on `range (i.val + 1)`.
+
+2. Define the ordered pushforward of a compact strict-positive difference
+   source:
+   ```lean
+   noncomputable def section43OrderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       Section43CompactOrderedSource d n
+   ```
+   with carrier
+   ```lean
+   f :=
+     SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+       (section43DiffCoordRealCLE d n) G.f
+   ```
+   so pointwise
+   `f y = G.f (section43DiffCoordRealCLE d n y)`.
+   Ordered support proof: if `y ∈ tsupport f`, use
+   `tsupport_comp_subset_preimage` to get
+   `section43DiffCoordRealCLE d n y ∈ tsupport G.f`, apply `G.positive`, and
+   then apply the strict-positive-differences-to-ordered-times lemma to
+   `δ := section43DiffCoordRealCLE d n y`.
+   Compactness proof: use `tsupport_comp_eq_preimage` for
+   `(section43DiffCoordRealCLE d n).toHomeomorph`, rewrite the preimage as
+   `(section43DiffCoordRealCLE d n).symm '' tsupport G.f`, and use
+   `G.compact.isCompact.image`.
+
+3. Prove the pullback of this ordered pushforward is the original
+   difference-coordinate source:
+   ```lean
+   theorem section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       section43DiffPullbackCLM d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ =
+       G.f
+   ```
+   Proof route: ext `δ`; unfold `section43DiffPullbackCLM_apply` and the
+   pushforward carrier; simplify
+   `section43DiffCoordRealCLE d n ((section43DiffCoordRealCLE d n).symm δ)`.
+
+4. Convert a Layer-3 time/spatial representative to the existing OS-I
+   Fourier-Laplace representative:
+   ```lean
+   theorem section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+       (d n : ℕ) [NeZero d]
+       {G : Section43CompactStrictPositiveTimeSpatialSource d n}
+       {Ψ : SchwartzNPoint d n}
+       (hΨ :
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ) :
+       section43FourierLaplaceRepresentative d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ Ψ
+   ```
+   Proof route: for `q ∈ section43PositiveEnergyRegion`, rewrite
+   `section43FourierLaplaceIntegral`; use
+   `section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource` so the integrand
+   is definitionally the same as in `hΨ q hq`.
+
+5. Convert a Layer-3 target witness into membership in the component-map
+   preimage:
+   ```lean
+   theorem section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+       (d n : ℕ) [NeZero d] :
+       section43TimeLaplaceSpatialFourierTarget d n ⊆
+         (section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+           Set.range (section43FourierLaplaceTransformComponentMap d n)
+   ```
+   Proof route: take `Φ` with witness `G, Ψ, hΨ, hΦq`.  Let
+   `src := section43OrderedSourceOfTimeSpatialSource d n G`.  Get
+   `hΨ_FL` from step 4.  Obtain
+   `⟨Φc, hΦc_FL, hΦc_q⟩` from
+   `section43FourierLaplaceTransformComponent_has_representative` for
+   `src.f src.ordered src.compact`.  Since `Ψ` and `Φc` are both
+   `section43FourierLaplaceRepresentative` for the same ordered source, use
+   `section43PositiveEnergyQuotientMap_eq_of_eqOn_region` to prove
+   `section43PositiveEnergyQuotientMap Ψ =
+    section43PositiveEnergyQuotientMap Φc`.  Then combine with `hΦq` and
+   `hΦc_q`, and use
+   `⟨src, by simp [section43FourierLaplaceTransformComponentMap]⟩` for the
+   range witness.
+
+6. Prove the raw ordered preimage density theorem:
+   ```lean
+   theorem dense_section43FourierLaplace_compact_ordered_preimage_raw
+       (d n : ℕ) [NeZero d] :
+       Dense
+         ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+           Set.range (section43FourierLaplaceTransformComponentMap d n))
+   ```
+   Proof route:
+   ```lean
+   exact Dense.mono
+     (section43TimeLaplaceSpatialFourierTarget_subset_component_preimage d n)
+     (by
+       simpa [section43TimeLaplaceSpatialFourierTarget] using
+         dense_section43TimeLaplaceSpatialFourier_compact_preimage d n)
+   ```
+
+Production update, 2026-04-18: this ordered-density bridge is compiled in the
+new companion file
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceOrderedDensity.lean`:
+```lean
+section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+section43OrderedSourceOfTimeSpatialSource
+section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+dense_section43FourierLaplace_compact_ordered_preimage_raw
+```
 
 ## Final Production Theorem
 
