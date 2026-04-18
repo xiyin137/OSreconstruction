@@ -1,3 +1,4 @@
+import OSReconstruction.Mathlib429Compat
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OneVariableSlice
 import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceCompactDifferentiation
 
@@ -12,7 +13,7 @@ Fourier-Laplace kernels, and the positive-energy quotient.
 
 noncomputable section
 
-open scoped Topology FourierTransform
+open scoped Topology FourierTransform BoundedContinuousFunction
 open Set MeasureTheory Filter
 
 namespace OSReconstruction
@@ -124,6 +125,19 @@ theorem Section43CompactPositiveTimeSource1D.tsupport_subset_Ici
     tsupport (g.f : ℝ → ℂ) ⊆ Set.Ici (0 : ℝ) := by
   intro t ht
   exact le_of_lt (Set.mem_Ioi.mp (g.positive ht))
+
+theorem Section43CompactPositiveTimeSource1D.pos_of_ne_zero
+    (g : Section43CompactPositiveTimeSource1D)
+    {t : ℝ} (ht : g.f t ≠ 0) :
+    0 < t :=
+  g.positive (subset_tsupport _ ht)
+
+theorem Section43CompactPositiveTimeSource1D.eq_zero_of_not_pos
+    (g : Section43CompactPositiveTimeSource1D)
+    {t : ℝ} (ht : ¬ 0 < t) :
+    g.f t = 0 := by
+  by_contra hne
+  exact ht (g.pos_of_ne_zero hne)
 
 theorem section43OneSidedLaplaceRaw_eq_complexLaplaceTransform
     (g : Section43CompactPositiveTimeSource1D) (σ : ℝ) :
@@ -861,6 +875,633 @@ noncomputable def section43ImagAxisPsiKernel (t : ℝ) : SchwartzMap ℝ ℂ :=
       (by simpa [Complex.mul_im] using ht)
   else
     0
+
+@[simp] theorem section43ImagAxisPsiKernel_of_pos
+    {t : ℝ} (ht : 0 < t) :
+    section43ImagAxisPsiKernel t =
+      SCV.schwartzPsiZ ((t : ℂ) * Complex.I)
+        (by simpa [Complex.mul_im] using ht) := by
+  simp [section43ImagAxisPsiKernel, ht]
+
+theorem section43ImagAxisPsiKernel_of_not_pos
+    {t : ℝ} (ht : ¬ 0 < t) :
+    section43ImagAxisPsiKernel t = 0 := by
+  simp [section43ImagAxisPsiKernel, ht]
+
+@[simp] theorem section43ImagAxisPsiKernel_apply_of_not_pos
+    {t σ : ℝ} (ht : ¬ 0 < t) :
+    section43ImagAxisPsiKernel t σ = 0 := by
+  rw [section43ImagAxisPsiKernel_of_not_pos ht]
+  rfl
+
+theorem section43ImagAxisPsiKernel_apply_of_pos_of_nonneg
+    {t σ : ℝ} (ht : 0 < t) (hσ : 0 ≤ σ) :
+    section43ImagAxisPsiKernel t σ =
+      Complex.exp (-(t : ℂ) * (σ : ℂ)) := by
+  rw [section43ImagAxisPsiKernel_of_pos ht, SCV.schwartzPsiZ_apply,
+    SCV.psiZ_eq_exp_of_nonneg hσ]
+  congr 1
+  calc
+    Complex.I * ((t : ℂ) * Complex.I) * (σ : ℂ)
+        = (Complex.I * Complex.I) * (t : ℂ) * (σ : ℂ) := by ring
+    _ = -(t : ℂ) * (σ : ℂ) := by
+          rw [Complex.I_mul_I]
+          ring
+
+theorem section43ImagAxisPsiKernel_apply_mul_source_of_nonneg
+    (g : Section43CompactPositiveTimeSource1D)
+    {σ : ℝ} (hσ : 0 ≤ σ) (t : ℝ) :
+    section43ImagAxisPsiKernel t σ * g.f t =
+      Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t := by
+  by_cases ht : 0 < t
+  · rw [section43ImagAxisPsiKernel_apply_of_pos_of_nonneg ht hσ]
+  · rw [section43ImagAxisPsiKernel_apply_of_not_pos ht,
+      g.eq_zero_of_not_pos ht]
+    simp
+
+theorem section43ImagAxisPsiKernel_apply_mul_source
+    (g : Section43CompactPositiveTimeSource1D)
+    (σ t : ℝ) :
+    section43ImagAxisPsiKernel t σ * g.f t =
+      (SCV.smoothCutoff σ : ℂ) *
+        (Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t) := by
+  by_cases ht : 0 < t
+  · rw [section43ImagAxisPsiKernel_of_pos ht, SCV.schwartzPsiZ_apply]
+    simp only [SCV.psiZ_eq]
+    have harg :
+        Complex.I * ((t : ℂ) * Complex.I) * (σ : ℂ) =
+          -(t : ℂ) * (σ : ℂ) := by
+      calc
+        Complex.I * ((t : ℂ) * Complex.I) * (σ : ℂ)
+            = (Complex.I * Complex.I) * (t : ℂ) * (σ : ℂ) := by ring
+        _ = -(t : ℂ) * (σ : ℂ) := by
+              rw [Complex.I_mul_I]
+              ring
+    rw [harg]
+    ring
+  · rw [section43ImagAxisPsiKernel_apply_of_not_pos ht,
+      g.eq_zero_of_not_pos ht]
+    simp
+
+theorem section43OneSidedLaplaceCutoffFun_eq_integral_imagAxisPsiKernel
+    (g : Section43CompactPositiveTimeSource1D)
+    (σ : ℝ) :
+    section43OneSidedLaplaceCutoffFun g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t := by
+  unfold section43OneSidedLaplaceCutoffFun section43OneSidedLaplaceRaw
+  calc
+    (SCV.smoothCutoff σ : ℂ) *
+        ∫ t : ℝ, Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t
+        = ∫ t : ℝ,
+            (SCV.smoothCutoff σ : ℂ) *
+              (Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t) := by
+            simpa using
+              (MeasureTheory.integral_const_mul
+                (SCV.smoothCutoff σ : ℂ)
+                (fun t : ℝ =>
+                  Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t)).symm
+    _ = ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with t
+          exact (section43ImagAxisPsiKernel_apply_mul_source g σ t).symm
+
+theorem section43OneSidedLaplaceRaw_eq_integral_imagAxisPsiKernel_of_nonneg
+    (g : Section43CompactPositiveTimeSource1D)
+    {σ : ℝ} (hσ : 0 ≤ σ) :
+    section43OneSidedLaplaceRaw g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t := by
+  unfold section43OneSidedLaplaceRaw
+  refine (MeasureTheory.integral_congr_ae ?_).symm
+  filter_upwards with t
+  exact section43ImagAxisPsiKernel_apply_mul_source_of_nonneg g hσ t
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel_of_nonneg
+    (g : Section43CompactPositiveTimeSource1D)
+    {σ : ℝ} (hσ : 0 ≤ σ) :
+    section43OneSidedLaplaceSchwartzRepresentative1D g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t := by
+  rw [section43OneSidedLaplaceSchwartzRepresentative1D_apply,
+    section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg g hσ,
+    section43OneSidedLaplaceRaw_eq_integral_imagAxisPsiKernel_of_nonneg g hσ]
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel
+    (g : Section43CompactPositiveTimeSource1D)
+    (σ : ℝ) :
+    section43OneSidedLaplaceSchwartzRepresentative1D g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t := by
+  rw [section43OneSidedLaplaceSchwartzRepresentative1D_apply,
+    section43OneSidedLaplaceCutoffFun_eq_integral_imagAxisPsiKernel]
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula
+    (g : Section43CompactPositiveTimeSource1D) (n : ℕ) (σ : ℝ) :
+    iteratedDeriv n (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∑ i ∈ Finset.range (n + 1),
+        n.choose i *
+          iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+            section43OneSidedLaplaceRawDerivCandidate g (n - i) σ := by
+  have hχ :
+      ContDiffAt ℝ n (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ := by
+    have hχ_smooth :
+        ContDiff ℝ (↑(⊤ : ℕ∞)) (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) := by
+      simpa using (Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff)
+    exact (hχ_smooth.contDiffAt.of_le
+      (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
+        exact mod_cast le_top))
+  have hraw :
+      ContDiffAt ℝ n (section43OneSidedLaplaceRaw g) σ := by
+    exact ((section43OneSidedLaplaceRaw_contDiff g).contDiffAt.of_le
+      (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
+        exact mod_cast le_top))
+  change iteratedDeriv n
+      (fun σ : ℝ =>
+        (SCV.smoothCutoff σ : ℂ) * section43OneSidedLaplaceRaw g σ) σ = _
+  have hmul :=
+    iteratedDeriv_mul (x := σ) hχ hraw
+  have hmul' :
+      iteratedDeriv n
+          (fun σ : ℝ =>
+            (SCV.smoothCutoff σ : ℂ) * section43OneSidedLaplaceRaw g σ) σ =
+        ∑ i ∈ Finset.range (n + 1),
+          n.choose i *
+            iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+              iteratedDeriv (n - i) (section43OneSidedLaplaceRaw g) σ := by
+    simpa only [Pi.mul_apply] using hmul
+  rw [hmul']
+  refine Finset.sum_congr rfl ?_
+  intro i hi
+  rw [section43OneSidedLaplaceRaw_iteratedDeriv_formula]
+
+theorem section43ImagAxisPsiKernel_iteratedDeriv_mul_source
+    (g : Section43CompactPositiveTimeSource1D)
+    (n : ℕ) (σ t : ℝ) :
+    iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+        g.f t =
+      ∑ i ∈ Finset.range (n + 1),
+        n.choose i *
+          iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+            ((-(t : ℂ)) ^ (n - i) *
+              Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t) := by
+  by_cases ht : 0 < t
+  · have hχ :
+        ContDiffAt ℝ n (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ := by
+      have hχ_smooth :
+          ContDiff ℝ (↑(⊤ : ℕ∞)) (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) := by
+        simpa using (Complex.ofRealCLM.contDiff.comp SCV.smoothCutoff_contDiff)
+      exact (hχ_smooth.contDiffAt.of_le
+        (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
+          exact mod_cast le_top))
+    have he :
+        ContDiffAt ℝ n
+          (fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) σ := by
+      have he_smooth :
+          ContDiff ℝ (↑(⊤ : ℕ∞))
+            (fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) := by
+        have hcoef :
+            ContDiff ℝ (↑(⊤ : ℕ∞)) (fun _ : ℝ => -(t : ℂ)) :=
+          contDiff_const
+        have hofReal :
+            ContDiff ℝ (↑(⊤ : ℕ∞)) (fun σ : ℝ => (σ : ℂ)) :=
+          Complex.ofRealCLM.contDiff
+        exact Complex.contDiff_exp.comp (hcoef.mul hofReal)
+      exact (he_smooth.contDiffAt.of_le
+        (show (n : WithTop ℕ∞) ≤ (↑(⊤ : ℕ∞) : WithTop ℕ∞) by
+          exact mod_cast le_top))
+    have hkernel :
+        (fun σ : ℝ => section43ImagAxisPsiKernel t σ) =
+          fun σ : ℝ =>
+            (SCV.smoothCutoff σ : ℂ) *
+              Complex.exp (-(t : ℂ) * (σ : ℂ)) := by
+      funext σ'
+      rw [section43ImagAxisPsiKernel_of_pos ht, SCV.schwartzPsiZ_apply,
+        SCV.psiZ_eq]
+      have harg :
+          Complex.I * ((t : ℂ) * Complex.I) * (σ' : ℂ) =
+            -(t : ℂ) * (σ' : ℂ) := by
+        calc
+          Complex.I * ((t : ℂ) * Complex.I) * (σ' : ℂ)
+              = (Complex.I * Complex.I) * (t : ℂ) * (σ' : ℂ) := by ring
+          _ = -(t : ℂ) * (σ' : ℂ) := by
+                rw [Complex.I_mul_I]
+                ring
+      rw [harg]
+    rw [hkernel]
+    have hmul :=
+      iteratedDeriv_mul (x := σ) hχ he
+    have hmul' :
+        iteratedDeriv n
+            (fun σ : ℝ =>
+              (SCV.smoothCutoff σ : ℂ) *
+                Complex.exp (-(t : ℂ) * (σ : ℂ))) σ =
+          ∑ i ∈ Finset.range (n + 1),
+            n.choose i *
+              iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+                iteratedDeriv (n - i)
+                  (fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) σ := by
+      simpa only [Pi.mul_apply] using hmul
+    rw [hmul']
+    rw [Finset.sum_mul]
+    refine Finset.sum_congr rfl ?_
+    intro i hi
+    have hexp :
+        iteratedDeriv (n - i)
+            (fun σ : ℝ => Complex.exp (-(t : ℂ) * (σ : ℂ))) σ =
+          (-(t : ℂ)) ^ (n - i) *
+            Complex.exp (-(t : ℂ) * (σ : ℂ)) := by
+      simpa using
+        congrFun (SCV.iteratedDeriv_cexp_const_mul_real (n - i) (-(t : ℂ))) σ
+    rw [hexp]
+    ring
+  · rw [section43ImagAxisPsiKernel_of_not_pos ht,
+      g.eq_zero_of_not_pos ht]
+    simp
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_eq_integral_kernel_iteratedDeriv
+    (g : Section43CompactPositiveTimeSource1D) (n : ℕ) (σ : ℝ) :
+    iteratedDeriv n (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∫ t : ℝ,
+        iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+          g.f t := by
+  classical
+  let χ : ℕ → ℂ := fun i =>
+    n.choose i *
+      iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ
+  let K : ℕ → ℝ → ℂ := fun i t =>
+    (-(t : ℂ)) ^ (n - i) *
+      Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t
+  have hterm_int :
+      ∀ i ∈ Finset.range (n + 1),
+        Integrable (fun t : ℝ => χ i * K i t) := by
+    intro i hi
+    have hbase := section43OneSidedLaplaceRawDerivCandidate_integrable
+      (g := g) (r := n - i) (σ := σ)
+    simpa [K, mul_assoc] using hbase.const_mul (χ i)
+  have hkernel_integral :
+      (∫ t : ℝ,
+        iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+          g.f t) =
+        ∫ t : ℝ, ∑ i ∈ Finset.range (n + 1), χ i * K i t := by
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with t
+    have hpoint :=
+      section43ImagAxisPsiKernel_iteratedDeriv_mul_source
+        (g := g) (n := n) (σ := σ) (t := t)
+    simpa [χ, K, mul_assoc] using hpoint
+  rw [section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula]
+  rw [hkernel_integral]
+  rw [MeasureTheory.integral_finset_sum]
+  · refine Finset.sum_congr rfl ?_
+    intro i hi
+    unfold section43OneSidedLaplaceRawDerivCandidate
+    calc
+      n.choose i *
+          iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+            ∫ t : ℝ,
+              (-(t : ℂ)) ^ (n - i) *
+                Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t
+          = χ i * ∫ t : ℝ, K i t := by
+            rfl
+      _ = ∫ t : ℝ, χ i * K i t := by
+            simpa using
+              (MeasureTheory.integral_const_mul
+                (χ i) (fun t : ℝ => K i t)).symm
+  · intro i hi
+    exact hterm_int i hi
+
+/-- Polynomial weight used in the finite-probe reduction of Schwartz
+functionals. -/
+def section43PolyWeight (k : ℕ) (σ : ℝ) : ℂ := ((1 + σ ^ 2) ^ k : ℝ)
+
+theorem section43PolyWeight_hasTemperateGrowth (k : ℕ) :
+    (section43PolyWeight k).HasTemperateGrowth := by
+  unfold section43PolyWeight
+  fun_prop
+
+/-- Continuous linear map sending a Schwartz function to its `n`th derivative,
+as a Schwartz function. -/
+noncomputable def section43IteratedDerivCLM :
+    ℕ → SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap ℝ ℂ
+  | 0 => ContinuousLinearMap.id ℂ _
+  | n + 1 => (SchwartzMap.derivCLM ℂ ℂ).comp (section43IteratedDerivCLM n)
+
+theorem section43IteratedDerivCLM_apply
+    (n : ℕ) (f : SchwartzMap ℝ ℂ) (σ : ℝ) :
+    section43IteratedDerivCLM n f σ = iteratedDeriv n f σ := by
+  induction n generalizing f σ with
+  | zero => simp [section43IteratedDerivCLM]
+  | succ n ih =>
+      have hf : ⇑(section43IteratedDerivCLM n f) =
+          fun y : ℝ => iteratedDeriv n f y := by
+        ext y
+        exact ih f y
+      rw [section43IteratedDerivCLM, ContinuousLinearMap.comp_apply,
+        SchwartzMap.derivCLM_apply]
+      rw [hf, ← iteratedDeriv_succ]
+
+/-- Weighted derivative probe into bounded continuous functions. -/
+noncomputable def section43WeightedDerivToBCFCLM
+    (k n : ℕ) : SchwartzMap ℝ ℂ →L[ℂ] ℝ →ᵇ ℂ :=
+  (SchwartzMap.toBoundedContinuousFunctionCLM ℂ ℝ ℂ).comp <|
+    (SchwartzMap.smulLeftCLM ℂ (section43PolyWeight k)).comp <|
+      section43IteratedDerivCLM n
+
+theorem section43WeightedDerivToBCFCLM_apply
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) (σ : ℝ) :
+    section43WeightedDerivToBCFCLM k n f σ =
+      section43PolyWeight k σ * iteratedDeriv n f σ := by
+  rw [section43WeightedDerivToBCFCLM, ContinuousLinearMap.comp_apply,
+    ContinuousLinearMap.comp_apply,
+    SchwartzMap.toBoundedContinuousFunctionCLM_apply,
+    SchwartzMap.smulLeftCLM_apply_apply
+      (section43PolyWeight_hasTemperateGrowth k),
+    section43IteratedDerivCLM_apply]
+  simp [section43PolyWeight]
+
+theorem section43_abs_pow_le_polyWeight (k : ℕ) (σ : ℝ) :
+    |σ| ^ k ≤ ‖section43PolyWeight k σ‖ := by
+  rw [section43PolyWeight, Complex.norm_real]
+  have h1 : |σ| ≤ 1 + σ ^ 2 := by
+    have hσ2_nonneg : 0 ≤ σ ^ 2 := sq_nonneg σ
+    nlinarith [sq_abs σ]
+  calc
+    |σ| ^ k ≤ (1 + σ ^ 2) ^ k := by
+      exact pow_le_pow_left₀ (abs_nonneg σ) h1 k
+    _ = ‖((1 + σ ^ 2) ^ k : ℝ)‖ := by
+      rw [Real.norm_of_nonneg]
+      positivity
+
+/-- Finite product of weighted derivative probes.  This is the Banach-valued
+target where the later parameter integral is legal. -/
+noncomputable def section43ProbeCLM (s : Finset (ℕ × ℕ)) :
+    SchwartzMap ℝ ℂ →L[ℂ] ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) :=
+  ContinuousLinearMap.pi fun p : ↑s.attach =>
+    section43WeightedDerivToBCFCLM p.1.1.1 p.1.1.2
+
+set_option backward.isDefEq.respectTransparency false in
+theorem section43SchwartzSeminorm_le_probe_component_norm
+    (k n : ℕ) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap.seminorm ℝ k n f ≤
+      ‖section43WeightedDerivToBCFCLM k n f‖ := by
+  refine SchwartzMap.seminorm_le_bound' (𝕜 := ℝ) k n f (norm_nonneg _) ?_
+  intro σ
+  have h1 :
+      |σ| ^ k * ‖iteratedDeriv n f σ‖ ≤
+        ‖section43PolyWeight k σ‖ * ‖iteratedDeriv n f σ‖ := by
+    exact mul_le_mul_of_nonneg_right
+      (section43_abs_pow_le_polyWeight k σ) (norm_nonneg _)
+  calc
+    |σ| ^ k * ‖iteratedDeriv n f σ‖
+        ≤ ‖section43PolyWeight k σ‖ * ‖iteratedDeriv n f σ‖ := h1
+    _ = ‖section43PolyWeight k σ * iteratedDeriv n f σ‖ := by
+          rw [norm_mul]
+    _ = ‖section43WeightedDerivToBCFCLM k n f σ‖ := by
+          rw [section43WeightedDerivToBCFCLM_apply]
+    _ ≤ ‖section43WeightedDerivToBCFCLM k n f‖ := by
+          simpa using
+            (BoundedContinuousFunction.norm_coe_le_norm
+              (section43WeightedDerivToBCFCLM k n f) σ)
+
+set_option backward.isDefEq.respectTransparency false in
+theorem section43SchwartzSeminorm_le_probe_norm
+    (s : Finset (ℕ × ℕ)) (p : ↑s.attach) (f : SchwartzMap ℝ ℂ) :
+    SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f ≤
+      ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+  calc
+    SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f
+        ≤ ‖section43WeightedDerivToBCFCLM p.1.1.1 p.1.1.2 f‖ :=
+          section43SchwartzSeminorm_le_probe_component_norm
+            p.1.1.1 p.1.1.2 f
+    _ ≤ ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+          simpa [section43ProbeCLM] using
+            (norm_le_pi_norm
+              (section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ))) p)
+
+set_option backward.isDefEq.respectTransparency false in
+theorem section43SchwartzFunctional_bound_by_probeNorm
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : NNReal, C ≠ 0 ∧
+      ∀ f : SchwartzMap ℝ ℂ,
+        ‖T f‖ ≤
+          (C : ℝ) *
+            ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+  classical
+  obtain ⟨s, C0, hC0, hbound⟩ := SCV.schwartz_functional_bound T
+  refine ⟨s, C0 * (s.card + 1), by
+    refine mul_ne_zero hC0 ?_
+    exact_mod_cast Nat.succ_ne_zero s.card, ?_⟩
+  intro f
+  have hsup_sum :
+      (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f ≤
+        (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f := by
+    exact Seminorm.le_def.mp
+      (Seminorm.finset_sup_le_sum (schwartzSeminormFamily ℂ ℝ ℂ) s) f
+  have hsum_apply_all :
+      ∀ s' : Finset (ℕ × ℕ),
+        (∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p) f =
+          ∑ p ∈ s', schwartzSeminormFamily ℂ ℝ ℂ p f := by
+    intro s'
+    induction s' using Finset.induction with
+    | empty =>
+        simp
+    | insert a s' ha ih =>
+        simp [Finset.sum_insert, ha, ih]
+  have hsum_apply :
+      (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f =
+        ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f := hsum_apply_all s
+  have hsum_probe :
+      ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f ≤
+        s.card *
+          ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+    calc
+      ∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f
+          ≤ ∑ _p ∈ s,
+              ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+              refine Finset.sum_le_sum ?_
+              intro a ha
+              let p : ↑s.attach := ⟨⟨a, ha⟩, by simp⟩
+              simpa [schwartzSeminormFamily, p] using
+                section43SchwartzSeminorm_le_probe_norm s p f
+      _ = s.card *
+            ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+            simp
+  calc
+    ‖T f‖ ≤ (C0 • s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f := hbound f
+    _ = (C0 : ℝ) * (s.sup (schwartzSeminormFamily ℂ ℝ ℂ)) f := by rfl
+    _ ≤ (C0 : ℝ) *
+          ((∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p) f) := by
+        exact mul_le_mul_of_nonneg_left hsup_sum C0.coe_nonneg
+    _ = (C0 : ℝ) *
+          (∑ p ∈ s, schwartzSeminormFamily ℂ ℝ ℂ p f) := by
+        rw [hsum_apply]
+    _ ≤ (C0 : ℝ) *
+          (s.card *
+            ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖) := by
+        exact mul_le_mul_of_nonneg_left hsum_probe C0.coe_nonneg
+    _ ≤ (C0 : ℝ) *
+          ((s.card + 1 : ℝ) *
+            ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖) := by
+        have hcard : (s.card : ℝ) ≤ s.card + 1 := by
+          exact_mod_cast Nat.le_succ s.card
+        have hnorm :=
+          norm_nonneg (section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))
+        have hcardnorm :
+            (s.card : ℝ) *
+                ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ ≤
+              (s.card + 1 : ℝ) *
+                ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+          exact mul_le_mul_of_nonneg_right hcard hnorm
+        exact mul_le_mul_of_nonneg_left hcardnorm C0.coe_nonneg
+    _ = ((C0 * (s.card + 1) : NNReal) : ℝ) *
+          ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ := by
+        rw [NNReal.coe_mul]
+        norm_num
+        ring
+
+private noncomputable def section43RangeLiftLinear
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (hker :
+      LinearMap.ker (section43ProbeCLM s).toLinearMap ≤
+        LinearMap.ker T.toLinearMap) :
+    LinearMap.range (section43ProbeCLM s).toLinearMap →ₗ[ℂ] ℂ :=
+  ((LinearMap.ker (section43ProbeCLM s).toLinearMap).liftQ
+      T.toLinearMap hker).comp
+    ((section43ProbeCLM s).toLinearMap.quotKerEquivRange.symm.toLinearMap)
+
+private theorem section43RangeLiftLinear_apply
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (hker :
+      LinearMap.ker (section43ProbeCLM s).toLinearMap ≤
+        LinearMap.ker T.toLinearMap)
+    (f : SchwartzMap ℝ ℂ) :
+    section43RangeLiftLinear T s hker
+        ⟨section43ProbeCLM s f, LinearMap.mem_range_self _ f⟩ = T f := by
+  change
+    ((LinearMap.ker (section43ProbeCLM s).toLinearMap).liftQ
+        T.toLinearMap hker)
+      (((section43ProbeCLM s).toLinearMap.quotKerEquivRange.symm)
+        ⟨section43ProbeCLM s f, LinearMap.mem_range_self _ f⟩) = T f
+  have hsymm :
+      ((section43ProbeCLM s).toLinearMap.quotKerEquivRange.symm)
+          ⟨section43ProbeCLM s f, LinearMap.mem_range_self _ f⟩ =
+        (LinearMap.ker (section43ProbeCLM s).toLinearMap).mkQ f := by
+    simpa using
+      (LinearMap.quotKerEquivRange_symm_apply_image
+        ((section43ProbeCLM s).toLinearMap) f
+        (LinearMap.mem_range_self _ f))
+  rw [hsymm]
+  simp
+
+private theorem section43RangeLiftLinear_bound
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ)
+    (s : Finset (ℕ × ℕ))
+    (C : NNReal)
+    (hbound : ∀ f : SchwartzMap ℝ ℂ,
+      ‖T f‖ ≤
+        (C : ℝ) *
+          ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖)
+    (hker :
+      LinearMap.ker (section43ProbeCLM s).toLinearMap ≤
+        LinearMap.ker T.toLinearMap) :
+    ∀ y, ‖section43RangeLiftLinear T s hker y‖ ≤ (C : ℝ) * ‖y‖ := by
+  intro y
+  rcases y with ⟨y, hy⟩
+  rcases hy with ⟨f, rfl⟩
+  simpa [section43RangeLiftLinear_apply] using hbound f
+
+/-- Any continuous Schwartz functional factors through finitely many weighted
+derivative probes landing in a Banach finite product.  This is the finite
+normed replacement for the unavailable `SchwartzMap`-valued Bochner integral. -/
+theorem section43_exists_probe_factorization
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ),
+    ∃ G : ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) →L[ℂ] ℂ,
+      T = G.comp (section43ProbeCLM s) := by
+  classical
+  obtain ⟨s, C, _hC, hbound⟩ :=
+    section43SchwartzFunctional_bound_by_probeNorm T
+  have hker :
+      LinearMap.ker (section43ProbeCLM s).toLinearMap ≤
+        LinearMap.ker T.toLinearMap := by
+    intro f hf
+    rw [LinearMap.mem_ker] at hf ⊢
+    apply norm_eq_zero.mp
+    apply le_antisymm
+    · calc
+        ‖T f‖ ≤
+            (C : ℝ) *
+              ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ :=
+              hbound f
+        _ = 0 := by
+          have hfnorm :
+              ‖(section43ProbeCLM s f : (↑s.attach → (ℝ →ᵇ ℂ)))‖ = 0 := by
+            simpa using congrArg norm hf
+          rw [hfnorm, mul_zero]
+    · exact norm_nonneg _
+  let FrangeLin :
+      LinearMap.range (section43ProbeCLM s).toLinearMap →ₗ[ℂ] ℂ :=
+    section43RangeLiftLinear T s hker
+  let Frange :
+      StrongDual ℂ (LinearMap.range (section43ProbeCLM s).toLinearMap) :=
+    FrangeLin.mkContinuous (C : ℝ)
+      (section43RangeLiftLinear_bound T s C hbound hker)
+  obtain ⟨G, hGext, _⟩ :=
+    exists_extension_norm_eq
+      (LinearMap.range (section43ProbeCLM s).toLinearMap) Frange
+  refine ⟨s, G, ?_⟩
+  ext f
+  have hmem : section43ProbeCLM s f ∈
+      LinearMap.range (section43ProbeCLM s).toLinearMap :=
+    LinearMap.mem_range_self _ f
+  change T f = G (section43ProbeCLM s f)
+  calc
+    T f = FrangeLin ⟨section43ProbeCLM s f, hmem⟩ := by
+      exact (section43RangeLiftLinear_apply T s hker f).symm
+    _ = Frange ⟨section43ProbeCLM s f, hmem⟩ := by
+      rfl
+    _ = G (section43ProbeCLM s f) := by
+      symm
+      exact hGext ⟨section43ProbeCLM s f, hmem⟩
+
+theorem section43WeightedDerivToBCFCLM_representative_eq_integral_kernel_apply
+    (g : Section43CompactPositiveTimeSource1D)
+    (k n : ℕ) (σ : ℝ) :
+    section43WeightedDerivToBCFCLM k n
+        (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∫ t : ℝ,
+        g.f t *
+          section43WeightedDerivToBCFCLM k n
+            (section43ImagAxisPsiKernel t) σ := by
+  rw [section43WeightedDerivToBCFCLM_apply]
+  rw [section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_eq_integral_kernel_iteratedDeriv]
+  calc
+    section43PolyWeight k σ *
+        ∫ t : ℝ,
+          iteratedDeriv n
+              (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+            g.f t
+        =
+          ∫ t : ℝ,
+            section43PolyWeight k σ *
+              (iteratedDeriv n
+                  (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+                g.f t) := by
+          simpa using
+            (MeasureTheory.integral_const_mul
+              (section43PolyWeight k σ)
+              (fun t : ℝ =>
+                iteratedDeriv n
+                    (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+                  g.f t)).symm
+    _ =
+        ∫ t : ℝ,
+          g.f t *
+            section43WeightedDerivToBCFCLM k n
+              (section43ImagAxisPsiKernel t) σ := by
+          refine MeasureTheory.integral_congr_ae ?_
+          filter_upwards with t
+          rw [section43WeightedDerivToBCFCLM_apply]
+          ring
 
 @[simp] theorem section43OneSidedAnnihilatorFLOnImag_of_pos
     (A : Section43PositiveEnergy1D →L[ℂ] ℂ)

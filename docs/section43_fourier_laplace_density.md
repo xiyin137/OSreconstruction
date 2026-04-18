@@ -101,6 +101,34 @@ section43OneSidedAnnihilatorFL
 section43OneSidedAnnihilatorFL_eq_fourierLaplaceExt_to_oneSided
 section43OneSidedAnnihilatorFLOnImag
 section43ImagAxisPsiKernel
+section43ImagAxisPsiKernel_of_pos
+section43ImagAxisPsiKernel_of_not_pos
+section43ImagAxisPsiKernel_apply_of_not_pos
+section43ImagAxisPsiKernel_apply_of_pos_of_nonneg
+section43ImagAxisPsiKernel_apply_mul_source_of_nonneg
+section43ImagAxisPsiKernel_apply_mul_source
+Section43CompactPositiveTimeSource1D.pos_of_ne_zero
+Section43CompactPositiveTimeSource1D.eq_zero_of_not_pos
+section43OneSidedLaplaceCutoffFun_eq_integral_imagAxisPsiKernel
+section43OneSidedLaplaceRaw_eq_integral_imagAxisPsiKernel_of_nonneg
+section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel_of_nonneg
+section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel
+section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula
+section43ImagAxisPsiKernel_iteratedDeriv_mul_source
+section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_eq_integral_kernel_iteratedDeriv
+section43PolyWeight
+section43PolyWeight_hasTemperateGrowth
+section43IteratedDerivCLM
+section43IteratedDerivCLM_apply
+section43WeightedDerivToBCFCLM
+section43WeightedDerivToBCFCLM_apply
+section43_abs_pow_le_polyWeight
+section43ProbeCLM
+section43SchwartzSeminorm_le_probe_component_norm
+section43SchwartzSeminorm_le_probe_norm
+section43SchwartzFunctional_bound_by_probeNorm
+section43_exists_probe_factorization
+section43WeightedDerivToBCFCLM_representative_eq_integral_kernel_apply
 section43OneSidedAnnihilatorFLOnImag_of_pos
 section43OneSidedAnnihilatorFLOnImag_of_not_pos
 section43OneSidedAnnihilatorFLOnImag_eq_apply_kernel
@@ -707,6 +735,44 @@ Proof split:
   positivity proofs.
 - If `¬ 0 < t`, both sides are zero.
 
+Production status, 2026-04-17: the branch/evaluation subpacket is compiled.
+The important representatives are:
+
+```lean
+theorem Section43CompactPositiveTimeSource1D.eq_zero_of_not_pos
+    (g : Section43CompactPositiveTimeSource1D)
+    {t : ℝ} (ht : ¬ 0 < t) :
+    g.f t = 0
+
+theorem section43ImagAxisPsiKernel_apply_of_pos_of_nonneg
+    {t σ : ℝ} (ht : 0 < t) (hσ : 0 ≤ σ) :
+    section43ImagAxisPsiKernel t σ =
+      Complex.exp (-(t : ℂ) * (σ : ℂ))
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel_of_nonneg
+    (g : Section43CompactPositiveTimeSource1D)
+    {σ : ℝ} (hσ : 0 ≤ σ) :
+    section43OneSidedLaplaceSchwartzRepresentative1D g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel
+    (g : Section43CompactPositiveTimeSource1D)
+    (σ : ℝ) :
+    section43OneSidedLaplaceSchwartzRepresentative1D g σ =
+      ∫ t : ℝ, section43ImagAxisPsiKernel t σ * g.f t
+```
+
+The last theorem is global in `σ`, not merely a nonnegative-axis statement:
+`SCV.psiZ z σ` is `(SCV.smoothCutoff σ : ℂ) * exp (I * z * σ)`, so along
+`z = t * I` it equals the same cutoff times `exp (-t * σ)` on all of `ℝ`.
+This removes the branch-support and `SCV.psiZ` exponential-identification seam
+from the weak-Fubini bridge.
+
+This global value identity is still not enough by itself for an arbitrary
+continuous functional `T : SchwartzMap ℝ ℂ →L[ℂ] ℂ`.  Such a `T` may depend on
+derivatives and polynomial weights, so the next bridge must identify finitely
+many weighted derivative probes under the compact `t`-integral.
+
 Important formalization correction: do **not** define a Bochner integral valued
 in `SchwartzMap ℝ ℂ`.  In this repository `SchwartzMap` carries the locally
 convex Schwartz topology, but it is not a `NormedAddCommGroup`, so
@@ -744,12 +810,204 @@ Then combine with
 
 Lean proof plan for `section43OneSidedLaplace_scalar_fubini_apply`:
 
-1. Use `SCV.schwartz_functional_bound T` to choose a finite set of Schwartz
-   seminorms and a constant controlling `‖T φ‖`.
-2. Use `exists_positive_Icc_bounds_of_compactPositiveTimeSource g` to reduce
-   all source-time integrals to a compact interval `[δ,R]` with `0 < δ`.
-3. Prove a compact-vertical-segment seminorm bound for the imaginary-axis
-   kernels:
+1. Introduce local public copies of the finite-probe machinery currently used
+   privately in `SCV.PaleyWiener`: a polynomial weight, iterated derivative CLM,
+   weighted derivative BCF CLM, and finite product probe.
+
+```lean
+def section43PolyWeight (k : ℕ) (σ : ℝ) : ℂ := ((1 + σ^2) ^ k : ℝ)
+
+def section43IteratedDerivCLM :
+    ℕ → SchwartzMap ℝ ℂ →L[ℂ] SchwartzMap ℝ ℂ
+
+def section43WeightedDerivToBCFCLM
+    (k n : ℕ) : SchwartzMap ℝ ℂ →L[ℂ] ℝ →ᵇ ℂ
+
+def section43ProbeCLM (s : Finset (ℕ × ℕ)) :
+    SchwartzMap ℝ ℂ →L[ℂ] ((p : ↑s.attach) → (ℝ →ᵇ ℂ))
+```
+
+   This is not a wrapper around the theorem statement; it is the finite
+   normed target where Bochner integration is legal.
+
+2. Prove a public factorization theorem for continuous Schwartz functionals,
+   parallel to the private `exists_probe_factorization` in `SCV.PaleyWiener`:
+
+```lean
+theorem section43_exists_probe_factorization
+    (T : SchwartzMap ℝ ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ),
+    ∃ G : ((p : ↑s.attach) → (ℝ →ᵇ ℂ)) →L[ℂ] ℂ,
+      T = G.comp (section43ProbeCLM s)
+```
+
+   Proof transcript:
+
+   - Use `SCV.schwartz_functional_bound T`.
+   - Show each selected Schwartz seminorm is bounded by the norm of the
+     corresponding probe component, exactly as in
+     `schwartzSeminorm_le_probe_component_norm`.
+   - Bound `‖T f‖` by `C * ‖section43ProbeCLM s f‖`.
+   - Show `ker (section43ProbeCLM s) ≤ ker T`.
+   - Define the linear map on the range of `section43ProbeCLM s`.
+   - Apply Hahn-Banach `exists_extension_norm_eq` to extend it to the finite
+     Banach product.
+
+Production status, 2026-04-17: Steps 1 and 2 are compiled in
+`Section43FourierLaplaceDensity.lean`.
+
+3. Prove the derivative-level kernel identity, not only the value identity:
+
+```lean
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_eq_integral_kernel_iteratedDeriv
+    (g : Section43CompactPositiveTimeSource1D) (n : ℕ) (σ : ℝ) :
+    iteratedDeriv n (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∫ t : ℝ,
+        iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+          g.f t
+```
+
+   Proof transcript:
+
+   - Let `χ σ := (SCV.smoothCutoff σ : ℂ)`.
+   - For the left side, use
+     `section43OneSidedLaplaceSchwartzRepresentative1D_apply`,
+     `section43OneSidedLaplaceCutoffFun`, and `iteratedDeriv_mul` to get
+
+```lean
+∑ i ∈ Finset.range (n + 1),
+  (n.choose i : ℂ) *
+    iteratedDeriv i χ σ *
+      section43OneSidedLaplaceRawDerivCandidate g (n - i) σ
+```
+
+   - For the right side, use
+     `section43ImagAxisPsiKernel_apply_mul_source`: on `0 < t` the kernel is
+     `χ σ * exp (-(t : ℂ) * σ)`, while on `¬ 0 < t` the source value is zero.
+   - Apply `iteratedDeriv_mul` to the product
+     `χ σ * exp (-(t : ℂ) * σ)`.
+   - Use `iteratedDeriv_cexp_const_mul_real` to rewrite the exponential
+     derivative as `(-(t : ℂ)) ^ (n - i) * exp (-(t : ℂ) * σ)`.
+   - Move the finite sum through the scalar integral using `integral_finset_sum`
+     and use `section43OneSidedLaplaceRawDerivCandidate_integrable` for each
+     summand.
+   - Pull constants independent of `t` out with `integral_const_mul`.
+
+Production status, 2026-04-17: Step 3 is compiled as:
+
+```lean
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_formula
+    (g : Section43CompactPositiveTimeSource1D) (n : ℕ) (σ : ℝ) :
+    iteratedDeriv n (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∑ i ∈ Finset.range (n + 1),
+        n.choose i *
+          iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+            section43OneSidedLaplaceRawDerivCandidate g (n - i) σ
+
+theorem section43ImagAxisPsiKernel_iteratedDeriv_mul_source
+    (g : Section43CompactPositiveTimeSource1D)
+    (n : ℕ) (σ t : ℝ) :
+    iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+        g.f t =
+      ∑ i ∈ Finset.range (n + 1),
+        n.choose i *
+          iteratedDeriv i (fun σ : ℝ => (SCV.smoothCutoff σ : ℂ)) σ *
+            ((-(t : ℂ)) ^ (n - i) *
+              Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t)
+
+theorem section43OneSidedLaplaceSchwartzRepresentative1D_iteratedDeriv_eq_integral_kernel_iteratedDeriv
+    (g : Section43CompactPositiveTimeSource1D) (n : ℕ) (σ : ℝ) :
+    iteratedDeriv n (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∫ t : ℝ,
+        iteratedDeriv n (fun σ : ℝ => section43ImagAxisPsiKernel t σ) σ *
+          g.f t
+```
+
+The remaining weak-Fubini work now starts at Step 4: packaging these scalar
+derivative identities into equality after applying `section43ProbeCLM s`.
+
+4. Upgrade the derivative identity to finite probes:
+
+```lean
+theorem section43Probe_integral_imagAxisPsiKernel
+    (s : Finset (ℕ × ℕ))
+    (g : Section43CompactPositiveTimeSource1D) :
+    section43ProbeCLM s (section43OneSidedLaplaceSchwartzRepresentative1D g) =
+      ∫ t : ℝ,
+        g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t)
+```
+
+   This is a Banach-valued Bochner integral in the finite product of bounded
+   continuous functions, not a Schwartz-valued integral.  Prove by extensionality
+   in `p : s.attach` and `σ : ℝ`, using the derivative identity from Step 3.
+
+Production status, 2026-04-17: the scalar component/evaluation form of Step 4
+is compiled:
+
+```lean
+theorem section43WeightedDerivToBCFCLM_representative_eq_integral_kernel_apply
+    (g : Section43CompactPositiveTimeSource1D)
+    (k n : ℕ) (σ : ℝ) :
+    section43WeightedDerivToBCFCLM k n
+        (section43OneSidedLaplaceSchwartzRepresentative1D g) σ =
+      ∫ t : ℝ,
+        g.f t *
+          section43WeightedDerivToBCFCLM k n
+            (section43ImagAxisPsiKernel t) σ
+```
+
+The remaining part of Step 4 is the Banach-valued packaging:
+
+```lean
+section43ProbeCLM s (section43OneSidedLaplaceSchwartzRepresentative1D g) =
+  ∫ t : ℝ, g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t)
+```
+
+This should now be placed in a small companion file, because
+`Section43FourierLaplaceDensity.lean` is already around 1600 lines.
+
+5. Prove integrability of the finite-probe family:
+
+```lean
+theorem integrable_section43Probe_imagAxisPsiKernel_source
+    (s : Finset (ℕ × ℕ))
+    (g : Section43CompactPositiveTimeSource1D) :
+    Integrable
+      (fun t : ℝ =>
+        g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t))
+```
+
+   Use `exists_positive_Icc_bounds_of_compactPositiveTimeSource g` to reduce to
+   `[δ,R]`; outside this compact support the factor `g.f t` is zero.  On
+   `[δ,R]`, the explicit derivative formula in Step 3 gives a uniform bound for
+   each selected weighted derivative probe.
+
+6. Combine finite-probe Fubini with the factorization:
+
+```lean
+obtain ⟨s, G, hTG⟩ := section43_exists_probe_factorization T
+calc
+  T (section43OneSidedLaplaceSchwartzRepresentative1D g)
+      = G (section43ProbeCLM s
+          (section43OneSidedLaplaceSchwartzRepresentative1D g)) := by
+          rw [hTG]
+  _ = G (∫ t, g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t)) := by
+          rw [section43Probe_integral_imagAxisPsiKernel]
+  _ = ∫ t, G (g.f t • section43ProbeCLM s (section43ImagAxisPsiKernel t)) := by
+          exact (G.integral_comp_comm
+            (integrable_section43Probe_imagAxisPsiKernel_source s g)).symm
+  _ = ∫ t, T (section43ImagAxisPsiKernel t) * g.f t := by
+          apply integral_congr_ae
+          filter_upwards with t
+          rw [hTG]
+          simp [map_smul, smul_eq_mul, mul_comm]
+```
+
+The older compact-vertical-segment seminorm bound remains useful as a possible
+way to prove Step 5, but it is not sufficient alone.  The finite-probe identity
+requires derivative-level equality under the compact scalar integral.
+
+Earlier seminorm-bound target, retained as a support lemma:
 
 ```lean
 theorem section43ImagAxisPsiKernel_seminorm_le_on_Icc
@@ -768,7 +1026,7 @@ theorem section43ImagAxisPsiKernel_seminorm_le_on_Icc
    If direct proof is too large, first prove the bound by continuity of
    `t ↦ weightedDerivToBCFCLM k n (section43ImagAxisPsiKernel t)` on compact
    `[δ,R]`, following the horizontal-continuity pattern in `SCV.PaleyWiener`.
-4. Prove scalar integrability:
+7. Prove scalar integrability as a corollary of Steps 2 and 5:
 
 ```lean
 theorem integrable_section43_scalar_kernel_after_functional
@@ -779,17 +1037,10 @@ theorem integrable_section43_scalar_kernel_after_functional
 
    Use the seminorm bound from Step 3, the functional bound from Step 1, and
    compact support/integrability of `g.f`.
-5. Prove the weak integral identity by approximating the compactly supported
-   parameter integral in the Schwartz topology using Riemann sums or a standard
-   parameter-integral theorem formulated in terms of the finite seminorm family
-   from Step 1.  The statement should avoid constructing a
-   `SchwartzMap`-valued Bochner integral; it only needs convergence after
-   applying `T`.
-6. On the nonnegative axis, rewrite the explicit representative with
-   `section43OneSidedLaplaceCutoffFun_eq_raw_of_nonneg`,
-   `SCV.schwartzPsiZ_apply`, and `SCV.psiZ_eq_exp_of_nonneg`.  On
-   `¬ 0 < t`, use `g.f t = 0`, which follows from `g.positive` and
-   `Function.support_subset_tsupport`.
+8. The global scalar rewrite is already compiled as
+   `section43OneSidedLaplaceSchwartzRepresentative1D_eq_integral_imagAxisPsiKernel`.
+   It should be used as the `n = 0`, `k = 0` sanity check for Step 3, not as a
+   substitute for the derivative-level probe identity.
 
 Then convert integral vanishing against every compact strict-positive source to
 pointwise vanishing on the strict half-line using the existing local
