@@ -84,6 +84,26 @@ actual hypotheses:
 - `Connectedness/PermutedTubeGluing.lean :: gluedPETValue`
 - `Connectedness/PermutedTubeGluing.lean :: gluedPETValue_eq_of_mem_sector`
 - `Connectedness/PermutedTubeGluing.lean :: gluedPETValue_holomorphicOn`
+- `Connectedness/PermutedTubeMonodromy.lean :: permutedForwardTube_sector_eq_of_mem`
+- `Connectedness/PermutedTubeMonodromy.lean :: mem_extendedTube_iff_exists_lorentz_mem_forwardTube`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorAdjStep`
+- `Connectedness/PermutedTubeMonodromy.lean :: petReachableLabelSet`
+- `Connectedness/PermutedTubeMonodromy.lean :: petReachableLabelAdjStep`
+- `Connectedness/PermutedTubeMonodromy.lean :: one_mem_petReachableLabelSet_of_forwardTube`
+- `Connectedness/PermutedTubeMonodromy.lean :: mem_petReachableLabelSet_iff_exists_lorentz_mem_permutedForwardTube`
+- `Connectedness/PermutedTubeMonodromy.lean :: petReachableLabelSet_adjacent_connected_of_orbitChamberConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorFiber_forwardTube_chain_of_reachableLabelConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorFiber_adjacent_connected_of_reachableLabelConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorFiber_adjacent_connected_of_identity_chain`
+- `Connectedness/PermutedTubeMonodromy.lean :: permutedExtendedTubeSector_complexLorentzAction_iff`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorFiber_identity_chain_of_forwardTube_chain`
+- `Connectedness/PermutedTubeMonodromy.lean :: petSectorFiber_forwardTube_chain_of_suffixRemoval`
+- `Connectedness/PermutedTubeMonodromy.lean :: extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: extendF_pet_branch_independence_of_adjacent_of_reachableLabelConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
+- `Connectedness/PermutedTubeMonodromy.lean :: extendF_perm_eq_on_extendedTube_of_petBranchIndependence`
+- `Connectedness/PermutedTubeMonodromy.lean :: F_permutation_invariance_of_petBranchIndependence`
+- `Connectedness/PermutedTubeMonodromy.lean :: fullExtendF_well_defined_of_petBranchIndependence`
 - `OSToWightmanSelectedWitness.lean :: SelectedAdjacentPermutationEdgeData`
 - `OSToWightmanSelectedWitness.lean :: SelectedAllPermutationEdgeData` (overstrong conditional helper only)
 - `OSToWightmanSelectedWitness.lean :: bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
@@ -3419,6 +3439,77 @@ The Lean implementation is therefore not ready to close this theorem from the
 current local data alone.  The missing item is a BHW cover-gluing/monodromy
 theorem, not another wrapper around `SelectedAdjacentPermutationEdgeData`.
 
+There is, however, a sharper diagnostic split that should guide the next proof
+docs.  The easiest route would be a **fixed-fiber sector graph theorem**:
+
+```lean
+def BHW.petSectorAdjStep
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (π ρ : Equiv.Perm (Fin n)) : Prop :=
+  ∃ (i : Fin n) (hi : i.val + 1 < n),
+    ρ = π * Equiv.swap i ⟨i.val + 1, hi⟩ ∧
+      z ∈ BHW.permutedExtendedTubeSector d n π ∧
+      z ∈ BHW.permutedExtendedTubeSector d n ρ
+
+theorem BHW.petSectorFiber_adjacent_connected
+    [NeZero d]
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ) :
+    Relation.ReflTransGen
+      (BHW.petSectorAdjStep (d := d) (n := n) z) π ρ
+```
+
+If this theorem is true, then the PET branch-independence proof is elementary:
+induct over the `Relation.ReflTransGen` chain.  Each adjacent edge in the chain
+keeps the same point `z` inside both neighboring sectors, so the local adjacent
+equality hypothesis applies directly at `z`.  This gives an implementation-ready
+conditional theorem:
+
+```lean
+theorem BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hAdj :
+      ∀ (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n)
+        (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.permutedExtendedTubeSector d n π →
+        z ∈ BHW.permutedExtendedTubeSector d n
+          (π * Equiv.swap i ⟨i.val + 1, hi⟩) →
+        BHW.extendF F (fun k => z ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) =
+          BHW.extendF F (fun k => z (π k)))
+    (hFiber :
+      ∀ (π ρ : Equiv.Perm (Fin n))
+        (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.permutedExtendedTubeSector d n π →
+        z ∈ BHW.permutedExtendedTubeSector d n ρ →
+        Relation.ReflTransGen
+          (BHW.petSectorAdjStep (d := d) (n := n) z) π ρ) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π →
+      z ∈ BHW.permutedExtendedTubeSector d n ρ →
+      BHW.extendF F (fun k => z (π k)) =
+        BHW.extendF F (fun k => z (ρ k))
+```
+
+Lean proof skeleton:
+
+```lean
+  intro π ρ z hzπ hzρ
+  have hchain := hFiber π ρ z hzπ hzρ
+  induction hchain with
+  | refl => rfl
+  | tail hprev hlast ih =>
+      rcases hlast with ⟨i, hi, rfl, hleft, hright⟩
+      exact ih.trans (hAdj _ i hi z hleft hright).symm
+```
+
+The proof direction may need `ih.symm.trans ...` depending on the chosen
+orientation of `petSectorAdjStep`, but no analytic theorem is hidden in this
+adapter.  All genuine geometry is isolated in
+`BHW.petSectorFiber_adjacent_connected`.
+
 The incorrect pointwise route is already visible in the older
 `BHWPermutation/PermutationFlow.lean` scaffolding:
 
@@ -3439,6 +3530,574 @@ configuration `y` to remain inside ET along a chosen adjacent-swap word.  The
 whole reason to use PET is that analytic continuation can move through the
 sector cover even when that fixed configuration is not in the intermediate
 absolute ET sectors.
+
+The corrected fixed-fiber theorem above is not the same as the old midpoint
+condition.  It does not demand that every adjacent decomposition of
+`ρ * π⁻¹` works, nor that one can always drop the final adjacent swap.  It asks
+only for the existence of some adjacent path inside the sector labels that
+actually contain the given `z`.  This is the exact geometry claim to verify
+next.  If it fails, the route must switch to a genuine germ-level monodromy
+theorem whose continuation path is allowed to move the base point in PET.
+
+Existing private connected-index scaffolding in
+`BHWPermutation/PermutationFlow.lean` should not be mistaken for this theorem.
+The older lemmas around
+
+```lean
+permForwardOverlapSet
+permForwardOverlapIndexSet
+isConnected_permForwardOverlapSet_of_indexConnected
+extendF_perm_overlap_of_jostWitness_and_forwardOverlapConnected
+```
+
+address a different question: for a fixed permutation `σ`, is the two-sector
+overlap `{z | z ∈ ET ∧ σ·z ∈ ET}` connected enough to propagate equality from a
+real Jost edge?  That route needs either a Jost witness in the overlap or
+strong index-connectedness hypotheses.  It remains useful for conditional
+overlap uniqueness, but it does not by itself prove that the set of sector
+labels containing a given PET point is adjacent-connected.
+
+The next proof-doc task is therefore binary and concrete:
+
+1. Prove `BHW.petSectorFiber_adjacent_connected`.  Then implement
+   `BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected`
+   by the chain induction above, instantiate `hFiber`, and close
+   `BHW.extendF_pet_branch_independence_of_adjacent`.
+2. If `BHW.petSectorFiber_adjacent_connected` is false, stop trying fixed-point
+   chains.  Replace it with a true monodromy theorem over the adjacent-glued
+   Riemann domain of germs.  That theorem must explicitly prove that the two
+   germs over a common PET point have the same analytic continuation value,
+   not merely that PET is preconnected as a subset of affine space.
+
+The fixed-fiber theorem is the preferred next target because its consumer is
+short, non-analytic, and Lean-ready.  The proof of the fixed-fiber theorem
+itself is the currently unresolved mathematical geometry problem.
+
+#### Forward-tube model for the fixed-fiber theorem
+
+The ordinary permuted forward-tube cover has no nontrivial fixed-fiber graph.
+This is now checked:
+
+```lean
+theorem BHW.permutedForwardTube_sector_eq_of_mem
+    (π ρ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hzπ : z ∈ BHW.PermutedForwardTube d n π)
+    (hzρ : z ∈ BHW.PermutedForwardTube d n ρ) :
+    π = ρ
+```
+
+Proof idea: if `w := z ∘ π` lies in `ForwardTube d n`, and
+`z ∘ ρ` also lies in `ForwardTube d n`, then `w` lies in
+`PermutedForwardTube d n (π⁻¹ * ρ)`.  The existing theorem
+`permutedForwardTube_forces_perm_one` forces `π⁻¹ * ρ = 1`, hence `π = ρ`.
+
+Consequences for the PET proof:
+
+1. `BHW.petSectorFiber_adjacent_connected` is not a combinatorial fact about
+   forward-tube orderings; forward-tube fibers are singletons.
+2. Any nontrivial sector-label fiber over a PET point comes from the
+   `ExtendedTube` existential witnesses, i.e. from different complex Lorentz
+   frames representing different reordered configurations.
+3. A proof of `BHW.petSectorFiber_adjacent_connected` therefore needs an
+   additional **common-frame / orbit-fiber** theorem.  The shape is schematic,
+   not yet a Lean target:
+
+```lean
+Input:
+  z ∈ S π and z ∈ S ρ.
+Output:
+  either a single Lorentz frame reducing both memberships to the ordinary
+  permuted-forward-tube singleton theorem, or an adjacent sector-label path
+  over the fixed point `z` built from orbit witnesses.
+```
+
+The exact common-frame theorem is not yet mathematically specified.  The next
+proof-doc work must identify the correct orbit-fiber statement.  It is not
+enough to cite
+`permutedExtendedTube_isPreconnected`, because connectedness of PET as a set
+does not control the discrete label fiber over one point.
+
+The general two-label fixed-fiber theorem has also been reduced to the
+identity-label case:
+
+```lean
+theorem BHW.petSectorFiber_adjacent_connected_of_identity_chain
+    (hChain :
+      ∀ (σ : Equiv.Perm (Fin n))
+        (y : Fin n → Fin (d + 1) → ℂ),
+        y ∈ BHW.ExtendedTube d n →
+        (fun k => y (σ k)) ∈ BHW.ExtendedTube d n →
+        Relation.ReflTransGen
+          (BHW.petSectorAdjStep (d := d) (n := n) y)
+          (1 : Equiv.Perm (Fin n)) σ) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π →
+      z ∈ BHW.permutedExtendedTubeSector d n ρ →
+      Relation.ReflTransGen
+        (BHW.petSectorAdjStep (d := d) (n := n) z) π ρ
+```
+
+The proof sets `σ := π⁻¹ * ρ` and `y := z ∘ π`.  Then `z ∈ S π` becomes
+`y ∈ ET`, while `z ∈ S ρ` becomes `y ∘ σ ∈ ET`; the identity-chain hypothesis
+gives a chain from `1` to `σ`, and left multiplication by `π` transports it
+back to a chain from `π` to `ρ` over the original fixed point `z`.
+
+So the remaining fixed-fiber geometry target is now:
+
+```lean
+theorem BHW.petSectorFiber_identity_chain
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (y : Fin n → Fin (d + 1) → ℂ)
+    (hy : y ∈ BHW.ExtendedTube d n)
+    (hσy : (fun k => y (σ k)) ∈ BHW.ExtendedTube d n) :
+    Relation.ReflTransGen
+      (BHW.petSectorAdjStep (d := d) (n := n) y)
+      (1 : Equiv.Perm (Fin n)) σ
+```
+
+This is exactly the old `hChain` hypothesis from the private
+`PermutationFlow.lean` wrapper, but now isolated without the overstrong
+`hmidCond`.  The implementation-ready consumer exists; the mathematical gap is
+the identity-chain geometry theorem itself.
+
+The identity-chain theorem has been reduced once more to the forward-tube-start
+case.  The checked Lorentz-invariance lemma is:
+
+```lean
+theorem BHW.permutedExtendedTubeSector_complexLorentzAction_iff
+    (Λ : ComplexLorentzGroup d)
+    (π : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    BHW.complexLorentzAction Λ z ∈ BHW.permutedExtendedTubeSector d n π ↔
+      z ∈ BHW.permutedExtendedTubeSector d n π
+```
+
+Using it, the checked reduction is:
+
+```lean
+theorem BHW.petSectorFiber_identity_chain_of_forwardTube_chain
+    (hChainFT :
+      ∀ (σ : Equiv.Perm (Fin n))
+        (w : Fin n → Fin (d + 1) → ℂ),
+        w ∈ BHW.ForwardTube d n →
+        (fun k => w (σ k)) ∈ BHW.ExtendedTube d n →
+        Relation.ReflTransGen
+          (BHW.petSectorAdjStep (d := d) (n := n) w)
+          (1 : Equiv.Perm (Fin n)) σ) :
+    ∀ (σ : Equiv.Perm (Fin n))
+      (y : Fin n → Fin (d + 1) → ℂ),
+      y ∈ BHW.ExtendedTube d n →
+      (fun k => y (σ k)) ∈ BHW.ExtendedTube d n →
+      Relation.ReflTransGen
+        (BHW.petSectorAdjStep (d := d) (n := n) y)
+        (1 : Equiv.Perm (Fin n)) σ
+```
+
+Proof idea: choose an extended-tube witness `y = Λ • w` with `w ∈ FT`.
+Since Lorentz action commutes with coordinate permutations, `y ∘ σ ∈ ET`
+implies `w ∘ σ ∈ ET` after applying `Λ⁻¹`.  The forward-tube-chain hypothesis
+gives the chain over `w`, and sector-membership Lorentz invariance transports
+each adjacent step back to `y`.
+
+So the remaining fixed-fiber geometry target is now even sharper:
+
+```lean
+theorem BHW.petSectorFiber_forwardTube_chain
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ BHW.ForwardTube d n)
+    (hσw : (fun k => w (σ k)) ∈ BHW.ExtendedTube d n) :
+    Relation.ReflTransGen
+      (BHW.petSectorAdjStep (d := d) (n := n) w)
+      (1 : Equiv.Perm (Fin n)) σ
+```
+
+This theorem says: if a forward-tube point remains in the extended tube after a
+permutation, then there is an adjacent-swap path from the identity ordering to
+that permutation, and every intermediate reordered point remains in the
+extended tube.  This is a purely BHW orbit/fiber geometry statement.  It is
+strictly weaker and cleaner than the old `hmidCond`, but it is still not proved
+by the existing PET connectedness theorem.
+
+A natural but ultimately overstrong geometry lemma is the forward-tube-start
+suffix-removal property:
+
+```lean
+theorem BHW.forwardTube_chain_suffixRemoval
+    [NeZero d]
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ BHW.ForwardTube d n)
+    (σ : Equiv.Perm (Fin n))
+    (i : Fin n) (hi : i.val + 1 < n)
+    (hσswap :
+      (fun k => w ((σ * Equiv.swap i ⟨i.val + 1, hi⟩) k)) ∈
+        BHW.ExtendedTube d n) :
+    (fun k => w (σ k)) ∈ BHW.ExtendedTube d n
+```
+
+If true, `BHW.petSectorFiber_forwardTube_chain` would follow by
+`Fin.Perm.adjSwap_induction_right`: decompose `σ` as
+`σ₀ * swap(i,i+1)`, use suffix-removal to obtain the intermediate endpoint
+`w ∘ σ₀ ∈ ET`, apply the induction hypothesis to get a chain from `1` to
+`σ₀`, then append the adjacent step from `σ₀` to `σ₀ * swap(i,i+1)`.
+This conditional adapter is now checked:
+
+```lean
+theorem BHW.petSectorFiber_forwardTube_chain_of_suffixRemoval
+    (hSuffix :
+      ∀ (w : Fin n → Fin (d + 1) → ℂ),
+        w ∈ BHW.ForwardTube d n →
+        ∀ (σ : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n),
+          (fun k => w ((σ * Equiv.swap i ⟨i.val + 1, hi⟩) k)) ∈
+            BHW.ExtendedTube d n →
+          (fun k => w (σ k)) ∈ BHW.ExtendedTube d n) :
+    ∀ (σ : Equiv.Perm (Fin n))
+      (w : Fin n → Fin (d + 1) → ℂ),
+      w ∈ BHW.ForwardTube d n →
+      (fun k => w (σ k)) ∈ BHW.ExtendedTube d n →
+      Relation.ReflTransGen
+        (BHW.petSectorAdjStep (d := d) (n := n) w)
+        (1 : Equiv.Perm (Fin n)) σ
+```
+
+This suffix-removal statement is close to the old private `hmidCond`, but even
+with the two intended corrections it is still too strong:
+
+1. it is restricted to a starting point `w ∈ ForwardTube d n`, after using the
+   checked Lorentz reduction above;
+2. it is a sufficient theorem, not the definition of the route.  If it is false,
+   the weaker existential chain theorem may still hold.
+
+It is false in this unrestricted form.  Take `n = 2`, `d ≥ 1`, and the
+collinear imaginary-time forward-tube point
+
+```text
+w₀ = i e₀,
+w₁ = 2 i e₀.
+```
+
+Then `w ∈ FT`: the first imaginary vector is `e₀ ∈ V_+`, and the successive
+difference has imaginary part `e₀ ∈ V_+`.  Apply suffix-removal with
+`σ = swap(0,1)` and the same adjacent swap.  Since `σ * swap = 1`, the
+hypothesis is just `w ∈ ET`, which follows from `w ∈ FT`.  The conclusion
+would be `w ∘ swap ∈ ET`.
+
+But `w ∘ swap = (2 i e₀, i e₀)` cannot lie in `ET`.  Indeed, if some complex
+Lorentz transform `Λ` sent it into `FT`, then writing `u := Λ(i e₀)`, the two
+transformed coordinates would be `2u` and `u`.  The forward-tube conditions
+would force both
+
+```text
+Im(2u) ∈ V_+
+Im(u - 2u) = - Im(u) ∈ V_+,
+```
+
+which is impossible because the open future cone contains no vector together
+with its negative.  The Lorentz action preserves the linear relation between
+the two coordinates, so no alternate frame escapes this contradiction.
+The checked helper
+
+```lean
+theorem BHW.mem_extendedTube_iff_exists_lorentz_mem_forwardTube
+```
+
+is exactly the Lean doorway for formalizing this argument: it replaces
+`w ∘ swap ∈ ET` by the existence of a forwardizing complex Lorentz frame.
+
+Thus suffix-removal is a useful diagnostic only: it explains one sufficient
+monotone route, but it is not an active target and must not be introduced as an
+axiom or production assumption.
+
+The exact failed set-theoretic form is:
+
+```lean
+BHW.permForwardOverlapSet (d := d) n
+    (σ * Equiv.swap i ⟨i.val + 1, hi⟩)
+  ⊆
+BHW.permForwardOverlapSet (d := d) n σ
+```
+
+because
+
+```lean
+BHW.permForwardOverlapSet (d := d) n τ
+  = {w | w ∈ BHW.ForwardTube d n ∧
+          (fun k => w (τ k)) ∈ BHW.ExtendedTube d n}
+```
+
+So suffix-removal would say the forward-overlap sets are downward closed under
+right weak-order deletion of a final adjacent generator.  The `n = 2` example
+above shows that this downward-closedness fails: for `σ = swap`, deleting the
+final adjacent generator lands at the identity set, and the implication would
+force the whole forward tube into the adjacent-swap forward-overlap set.
+
+The corrected proof-doc task is therefore:
+
+1. Do **not** try to prove weak-order downward-closedness of
+   `permForwardOverlapSet`.
+2. Determine whether the weaker existential theorem
+   `BHW.petSectorFiber_forwardTube_chain` is true by a non-monotone adjacent
+   path inside the reachable-label set
+   `{σ | (fun k => w (σ k)) ∈ ET}`.
+3. If the fixed-fiber reachable-label theorem is false or too hard, switch to
+   a genuine germ-level monodromy theorem over the adjacent-glued PET sector
+   cover.
+
+The fixed-fiber route should now be formulated as graph connectivity, not
+monotonicity:
+
+```lean
+def BHW.petReachableLabelSet
+    (w : Fin n → Fin (d + 1) → ℂ) :
+    Set (Equiv.Perm (Fin n)) :=
+  {σ | (fun k => w (σ k)) ∈ BHW.ExtendedTube d n}
+
+theorem BHW.petReachableLabelSet_adjacent_connected
+    [NeZero d]
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ BHW.ForwardTube d n)
+    (σ : Equiv.Perm (Fin n))
+    (hσ : σ ∈ BHW.petReachableLabelSet (d := d) (n := n) w) :
+    Relation.ReflTransGen
+      (fun α β =>
+        ∃ (i : Fin n) (hi : i.val + 1 < n),
+          β = α * Equiv.swap i ⟨i.val + 1, hi⟩ ∧
+          α ∈ BHW.petReachableLabelSet (d := d) (n := n) w ∧
+          β ∈ BHW.petReachableLabelSet (d := d) (n := n) w)
+      (1 : Equiv.Perm (Fin n)) σ
+```
+
+This theorem is exactly equivalent to `BHW.petSectorFiber_forwardTube_chain`
+after unfolding `petSectorAdjStep` at a forward-tube base point.  Unlike
+suffix-removal, it does not specify a particular reduced word and does not
+claim the reachable set is a weak-order ideal.
+
+The Lean surface now reflects this corrected target:
+
+```lean
+def BHW.petReachableLabelSet
+def BHW.petReachableLabelAdjStep
+
+theorem BHW.one_mem_petReachableLabelSet_of_forwardTube
+theorem BHW.mem_petReachableLabelSet_iff_exists_lorentz_mem_permutedForwardTube
+theorem BHW.petReachableLabelSet_adjacent_connected_of_orbitChamberConnected
+theorem BHW.petSectorFiber_forwardTube_chain_of_reachableLabelConnected
+theorem BHW.petSectorFiber_adjacent_connected_of_reachableLabelConnected
+theorem BHW.extendF_pet_branch_independence_of_adjacent_of_reachableLabelConnected
+theorem BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected
+```
+
+The orbit/chamber characterization says:
+
+```lean
+σ ∈ petReachableLabelSet w
+  ↔ ∃ Λ : ComplexLorentzGroup d,
+      complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ
+```
+
+So the reachable labels are exactly the ordinary forward-tube chambers hit by
+the complex Lorentz orbit of `w`.  The checked adapters now carry
+reachable-label graph connectivity all the way to the desired all-overlap PET
+branch equality:
+
+```lean
+orbitChamberConnected
+  → petReachableLabelSet_adjacent_connected
+  → petSectorFiber_forwardTube_chain
+  → petSectorFiber_adjacent_connected
+  → extendF_pet_branch_independence_of_adjacent
+```
+
+The unproved mathematical content is therefore exactly the chamber-hit
+graph-connectivity theorem for this orbit, not any monotone suffix deletion
+principle and not another analytic wrapper.
+
+A plausible proof path is now an orbit/chamber crossing theorem:
+
+```lean
+theorem BHW.orbit_permutedForwardTube_chamberHitGraph_connected
+    [NeZero d]
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ BHW.ForwardTube d n) :
+    -- the induced adjacent-Cayley graph on
+    -- {σ | ∃ Λ, complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ}
+    -- is connected from `1`
+    ...
+```
+
+This should be proved, if true, by applying a path in the connected complex
+Lorentz group from `1` to a forwardizing frame for `σ`, and showing that the
+set of ordinary chamber labels hit along the orbit path changes only through
+adjacent chamber crossings.  The missing geometry is the chamber-crossing
+lemma: an orbit path cannot jump from one ordinary permuted forward-tube
+chamber to a non-adjacent chamber without hitting a chain of adjacent chamber
+closures.  This is now the most concrete fixed-fiber proof-doc target.
+
+Important caution: connectedness of `ComplexLorentzGroup d` alone is **not**
+enough.  For a fixed `w`, the sets
+
+```lean
+{Λ | BHW.complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ}
+```
+
+are pairwise disjoint open subsets of the group, because ordinary permuted
+forward-tube chambers are disjoint.  A path from `1` to a frame hitting
+`σ` may leave the union of all these chamber-hit sets for a long interval.
+Therefore the proof cannot be a finite-open-cover nerve argument on the group.
+It needs a stronger chamber-discretization theorem:
+
+```lean
+theorem BHW.orbit_chamber_path_discretization
+    [NeZero d]
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ BHW.ForwardTube d n)
+    (σ : Equiv.Perm (Fin n))
+    (Λ : ComplexLorentzGroup d)
+    (hΛσ :
+      BHW.complexLorentzAction Λ w ∈
+        BHW.PermutedForwardTube d n σ) :
+    ∃ (m : ℕ) (label : Fin (m + 1) → Equiv.Perm (Fin n)),
+      label 0 = 1 ∧
+      label ⟨m, Nat.lt_succ_self m⟩ = σ ∧
+      (∀ j, ∃ Γ : ComplexLorentzGroup d,
+        BHW.complexLorentzAction Γ w ∈
+          BHW.PermutedForwardTube d n (label j)) ∧
+      (∀ j : Fin m, ∃ (i : Fin n) (hi : i.val + 1 < n),
+        label j.succ = label j.castSucc * Equiv.swap i ⟨i.val + 1, hi⟩)
+```
+
+This statement says that every target chamber hit by the orbit can be reached
+by a finite adjacent sequence of chambers **also hit by the same orbit**.  It
+is precisely what `petReachableLabelSet_adjacent_connected` needs after
+rewriting reachable labels via
+`mem_petReachableLabelSet_iff_exists_lorentz_mem_permutedForwardTube`.
+
+Potential geometric proof strategy:
+
+1. Choose a continuous path `γ : [0,1] → ComplexLorentzGroup d` from `1` to
+   `Λ`.
+2. Track the real imaginary-time coordinates
+   `t_j(s) := Im((γ(s) • w_j)_0)`.  Whenever the orbit point lies in an
+   ordinary permuted forward tube, the label is the strict order of these
+   coordinates, refined by the forward-cone conditions on consecutive
+   differences.
+3. Perturb `γ`, if necessary, so the finitely many equal-time hypersurfaces
+   `t_a = t_b` are crossed generically and one at a time.
+4. Prove that each generic crossing changes the strict order by one adjacent
+   transposition and that the forward-cone inequalities can be preserved or
+   recovered on both sides by nearby chamber-hit points.
+5. Extract the finite label list from the ordered crossing times.
+
+Step 4 is the actual missing BHW geometry.  It is not currently supplied by the
+repo, and it must be proved or replaced by the germ-monodromy fallback before
+we can claim the fixed-fiber route is implementation-ready.
+
+If the fixed-fiber theorem is not available, the fallback should be stated as
+a genuine analytic-continuation theorem, not as a topology-only gluing lemma.
+The correct abstraction is a chain of sector germs:
+
+```lean
+structure BHW.PETGermChain
+    (d n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) : Prop where
+  length : ℕ
+  label : Fin (length + 1) → Equiv.Perm (Fin n)
+  label_zero : label 0 = π
+  label_last : label ⟨length, Nat.lt_succ_self length⟩ = ρ
+  domain : (j : Fin (length + 1)) →
+    Set (Fin n → Fin (d + 1) → ℂ)
+  domain_open : ∀ j, IsOpen (domain j)
+  domain_preconnected : ∀ j, IsPreconnected (domain j)
+  domain_subset_sector :
+    ∀ j, domain j ⊆ BHW.permutedExtendedTubeSector d n (label j)
+  endpoint_mem_start : z ∈ domain 0
+  endpoint_mem_last : z ∈ domain ⟨length, Nat.lt_succ_self length⟩
+  adjacent_or_overlap :
+    ∀ j : Fin length,
+      let j0 : Fin (length + 1) := j.castSucc
+      let j1 : Fin (length + 1) := j.succ
+      (domain j0 ∩ domain j1).Nonempty ∧
+      -- either the labels are equal, or they differ by one adjacent swap
+      (label j0 = label j1 ∨
+        ∃ (i : Fin n) (hi : i.val + 1 < n),
+          label j1 = label j0 * Equiv.swap i ⟨i.val + 1, hi⟩)
+```
+
+This raw structure is still not enough by itself.  Pairwise consecutive overlap
+control does not let Lean define one glued function on the growing union:
+when adding `domain (j+1)`, the new domain may intersect earlier domains in
+components not connected to the last adjacent overlap.  Therefore the
+implementation theorem needs a cumulative-prefix condition, not merely
+pairwise overlap connectedness:
+
+```lean
+def BHW.PETGermChain.prefixUnion
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1)) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  ⋃ k : {k : Fin (C.length + 1) // k.val ≤ j.val}, C.domain k.1
+
+prefix_inter_next_preconnected :
+  ∀ j : Fin length,
+    IsPreconnected
+      (prefixUnion C j.castSucc ∩ C.domain j.succ)
+
+prefix_inter_next_hits_adjacent_overlap :
+  ∀ j : Fin length,
+    (prefixUnion C j.castSucc ∩ C.domain j.succ ∩
+      C.domain j.castSucc).Nonempty
+```
+
+The second condition says that the cumulative intersection contains a point in
+the last consecutive overlap.  Since `hAdj` gives equality on the full adjacent
+sector overlap, the old glued function and the new sector branch agree on a
+nonempty open neighborhood inside this cumulative intersection.  The first
+condition then lets the identity theorem propagate that equality across the
+whole cumulative intersection, making the next gluing step well-defined.
+
+The strong version yields an implementation theorem of the form:
+
+```lean
+theorem BHW.pet_branch_independence_of_germChain
+    (G : (π : Equiv.Perm (Fin n)) →
+      (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hG_holo :
+      ∀ π, DifferentiableOn ℂ (G π) (BHW.permutedExtendedTubeSector d n π))
+    (hAdj :
+      ∀ (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n)
+        (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.permutedExtendedTubeSector d n π →
+        z ∈ BHW.permutedExtendedTubeSector d n
+          (π * Equiv.swap i ⟨i.val + 1, hi⟩) →
+        G (π * Equiv.swap i ⟨i.val + 1, hi⟩) z = G π z)
+    (hChain :
+      BHW.PETGermChain d n π ρ z)
+    (hPrefixPreconnected :
+      ∀ j : Fin hChain.length,
+        IsPreconnected
+          (hChain.prefixUnion j.castSucc ∩ hChain.domain j.succ))
+    (hPrefixHits :
+      ∀ j : Fin hChain.length,
+        (hChain.prefixUnion j.castSucc ∩ hChain.domain j.succ ∩
+          hChain.domain j.castSucc).Nonempty) :
+    G π z = G ρ z
+```
+
+The proof would inductively glue a holomorphic function on the prefix union.
+At step `j`, the new branch agrees with the prefix-glued function on the last
+adjacent overlap by `hAdj`; `hPrefixHits` supplies a nonempty seed in the
+cumulative intersection; `hPrefixPreconnected` and the identity theorem extend
+that equality to the whole cumulative intersection; then the usual local
+piecewise definition is well-defined on the enlarged union.  This is heavier
+than the fixed-fiber route and should not be implemented until the exact
+chain/overlap theorem is mathematically specified.  At present the repo has
+identity/connectivity tools, but no monodromy or germ API, so this fallback is
+proof-doc work, not Lean-ready production work.
 
 The correct theorem should be formulated at the level of analytic branches on
 open sectors.  Write
@@ -3553,7 +4212,19 @@ theorem BHW.F_permutation_invariance_of_petBranchIndependence
         F (BHW.complexLorentzAction Γ (fun k => w (τ k))) = F w
 ```
 
-Proof sketch for the Lean term:
+This theorem has now been implemented in
+`Connectedness/PermutedTubeMonodromy.lean`.  The checked Lean proof factors
+through the public reduction
+`BHW.permutation_invariance_of_extendF_on_extendedTube`; the extra adapter
+
+```lean
+theorem BHW.extendF_perm_eq_on_extendedTube_of_petBranchIndependence
+```
+
+turns the all-sector `hPET` statement into the precise extended-tube
+permutation hypothesis expected by that reduction.
+
+Equivalent direct proof sketch:
 
 1. set `z := BHW.complexLorentzAction Γ (fun k => w (τ k))`;
 2. `z ∈ S 1` because the hypothesis says `z ∈ ForwardTube`, hence `z ∈ ET`;
@@ -3585,7 +4256,9 @@ theorem BHW.fullExtendF_well_defined_of_petBranchIndependence
     F w₁ = F w₂
 ```
 
-The proof is the existing private proof with the call to
+This theorem has also been implemented in
+`Connectedness/PermutedTubeMonodromy.lean`.  The proof is the existing private
+proof with the call to
 `F_permutation_invariance` replaced by
 `F_permutation_invariance_of_petBranchIndependence`.
 
@@ -4532,20 +5205,23 @@ Primary planned theorem-2 closure slots:
 10. `bvt_selectedPETBranch`
 11. `bvt_selectedPETBranch_holomorphicOn_sector`
 12. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
-13. `BHW.extendF_pet_branch_independence_of_adjacent`
-14. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
-15. `BHW.F_permutation_invariance_of_petBranchIndependence`
-16. `BHW.fullExtendF_well_defined_of_petBranchIndependence`
-17. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
-18. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
-19. `BHW.permuteSchwartz`
-20. `BHW.permute_support_jost`
-21. `BHW.permute_tsupport_jost`
-22. `BHW.permuteSchwartz_hasCompactSupport`
-23. `BHW.integral_perm_eq_self`
-24. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
-25. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
-26. `bvt_locally_commutative_from_symmetric_PET_boundary`
+13. `BHW.petSectorAdjStep` (implemented)
+14. `BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected` (implemented conditional adapter)
+15. `BHW.petSectorFiber_adjacent_connected`
+16. `BHW.extendF_pet_branch_independence_of_adjacent`
+17. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
+18. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
+19. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
+20. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+21. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
+22. `BHW.permuteSchwartz`
+23. `BHW.permute_support_jost`
+24. `BHW.permute_tsupport_jost`
+25. `BHW.permuteSchwartz_hasCompactSupport`
+26. `BHW.integral_perm_eq_self`
+27. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
+28. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+29. `bvt_locally_commutative_from_symmetric_PET_boundary`
 
 The following older slot names are no longer primary construction targets:
 
