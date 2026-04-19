@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
+import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeMonodromy
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 
 /-!
