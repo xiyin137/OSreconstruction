@@ -20,7 +20,7 @@ contains all the required data and properties.
 ## Main Definitions
 
 * `WightmanQFT` - The complete structure satisfying all Wightman axioms
-* `WightmanQFT.spectrumCondition` - Energy-momentum spectrum lies in forward light cone
+* `WightmanQFT.spectrum_condition` - exported quadratic-form spectral condition
 * `WightmanQFT.locality` - Spacelike-separated fields commute
 
 ## The Wightman Axioms
@@ -29,7 +29,8 @@ The Wightman axioms (W1-W4) as formalized here:
 
 **W1 (Covariance)**:
 - There is a continuous unitary representation U of the Poincaré group on H
-- The generators P_μ (energy-momentum) have spectrum in the forward light cone V₊
+- The exported spectral-condition field records strong continuity, nonnegative
+  energy, and the quadratic-form mass-shell inequality on the Stone-generator domains
 - There exists a unique vacuum vector Ω invariant under U(g)
 
 **W2 (Field Operators)**:
@@ -131,13 +132,15 @@ theorem MatrixElementSpectralCondition.continuousInDirection
     PoincareRepresentation.translationContinuousInDirection π μ :=
   MatrixElementSpectralCondition.strongly_continuous hπ μ
 
-/-- **Streater-Wightman Spectral Condition** (Axiom II of Streater-Wightman §3-1).
+/-- **Quadratic-form spectral condition surface** (Axiom II proxy).
 
-    The joint spectrum of the energy-momentum operators P₀, P₁, …, P_d
-    lies in the closed forward light cone:
-      spec(P) ⊆ V̄₊ = { p : p₀ ≥ 0, −p₀² + |p⃗|² ≤ 0 }
+    This exported structure records the spectral-condition data currently used on
+    the Hilbert-space side: strong continuity of translations, nonnegative energy,
+    and the quadratic-form inequality `P₀² ≥ Σᵢ Pᵢ²` on the relevant Stone-generator
+    domains.
 
-    Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator domains. -/
+    It should be viewed as a proved proxy for the full Streater-Wightman joint-spectrum
+    statement, not as the full support theorem itself. -/
 structure SpectralConditionQFT (d : ℕ) [NeZero d]
     {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (π : PoincareRepresentation d H) : Prop where
@@ -227,10 +230,10 @@ structure WightmanQFT (d : ℕ) [NeZero d] where
   -- W1: Poincaré Covariance and Spectrum Condition
   /-- The unitary representation of the Poincaré group -/
   poincare_rep : @PoincareRepresentation d _ HilbertSpace instNormedAddCommGroup instInnerProductSpace instCompleteSpace
-  /-- **Spectrum condition** (Streater-Wightman Axiom II): The joint spectrum of
-      the energy-momentum operators P₀, …, P_d lies in the closed forward light
-      cone V̄₊. Expressed as P₀ ≥ 0 and P₀² ≥ Σᵢ Pᵢ² on the Stone-generator
-      domains. See `SpectralConditionQFT` for the full docstring. -/
+  /-- **Spectral-condition proxy field**: the current exported Hilbert-space
+      surface consisting of strong continuity, nonnegative energy, and the
+      quadratic-form mass-shell inequality. See `SpectralConditionQFT` for the
+      precise scope. -/
   spectrum_condition :
     @SpectralConditionQFT d _ HilbertSpace
       instNormedAddCommGroup instInnerProductSpace instCompleteSpace poincare_rep
