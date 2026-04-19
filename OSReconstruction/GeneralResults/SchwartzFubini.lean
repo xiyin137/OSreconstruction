@@ -84,7 +84,7 @@ theorem schwartz_clm_fubini_exchange_real
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (w : SchwartzMap E ℂ → ℂ) (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
     (G : ℝ → SchwartzMap E ℂ) (hG_cont : Continuous G)
-    (hG_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+    (hG_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), 0 < C ∧ ∀ t : ℝ,
         SchwartzMap.seminorm ℝ k j (G t) ≤ C * (1 + ‖t‖) ^ N)
     (φ : SchwartzMap ℝ ℂ) :
     ∃ Θ : SchwartzMap E ℂ,

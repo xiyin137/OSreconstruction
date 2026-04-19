@@ -109,21 +109,38 @@ theorem diffVarSection_injective (n : ℕ) :
   simp only [diffVarSection_succ] at h_succ
   linarith
 
-/-- Reduction to difference variables: precomposes a Schwartz function on (n+1)
-    spacetime points with the zero-basepoint section map, producing a Schwartz
-    function of n difference variables `ξⱼ = xⱼ₊₁ - xⱼ`. -/
+/-- Fiber integration over the basepoint: maps a Schwartz function on (n+1)
+    spacetime points to a Schwartz function of n difference variables by
+    integrating over the common translation orbit:
+
+      `(diffVarReduction f)(ξ) = ∫ₐ f(a, a + ξ₁, a + ξ₁ + ξ₂, …) da`
+
+    where `a ∈ ℝ^{d+1}` is the basepoint. This is the correct test-function
+    reduction for translation-invariant distributions: if `W_{n+1}` is
+    translation-invariant, then `W_{n+1}(f) = w(diffVarReduction f)` defines
+    the reduced distribution `w` in difference variables.
+
+    Note: the previous definition (precomposition with the zero-basepoint
+    section `ξ ↦ (0, ξ₁, ξ₁+ξ₂, …)`) was incorrect — it gave
+    `w(f ∘ section) ≠ W(f)` for general test functions `f`. -/
 noncomputable def diffVarReduction (n : ℕ) :
-    SchwartzNPointSpace d (n + 1) →L[ℂ] SchwartzNPointSpace d n :=
-  let hanti := (diffVarSection d n).toLinearMap.injective_iff_antilipschitz.mp
-    (diffVarSection_injective d n)
-  SchwartzMap.compCLMOfAntilipschitz ℂ
-    (diffVarSection d n).hasTemperateGrowth hanti.choose_spec.2
+    SchwartzNPointSpace d (n + 1) →L[ℂ] SchwartzNPointSpace d n where
+  toFun f :=
+    ⟨fun ξ => ∫ a : Fin (d + 1) → ℝ,
+        f (fun k μ => a μ + diffVarSection d n ξ k μ),
+      sorry, -- ContDiff: differentiation under the integral sign
+      sorry⟩ -- Rapid decay: dominated convergence + Schwartz decay of f
+  map_add' := sorry -- Linearity: integral_add + integrability of Schwartz functions
+  map_smul' := sorry -- Scalar linearity: integral_smul
+  cont := sorry -- Continuity in Schwartz topology
 
 /-- **Spectral condition (distribution-level / Streater-Wightman form).**
 
     For each n, there exists a tempered distribution `w` on n copies of spacetime
-    (the reduced Wightman function in difference variables ξⱼ = xⱼ - xⱼ₊₁) such that:
-    1. `w` determines `W_{n+1}` via `diffVarReduction`.
+    (the reduced Wightman function in difference variables ξⱼ = xⱼ₊₁ - xⱼ) such that:
+    1. `w` determines `W_{n+1}` via fiber integration over the basepoint:
+       `W_{n+1}(f) = w(diffVarReduction f)` where
+       `(diffVarReduction f)(ξ) = ∫ₐ f(a, a+ξ₁, a+ξ₁+ξ₂, …) da`.
     2. The Fourier transform of `w` has support in V̄₊ⁿ.
 
     Ref: Streater-Wightman, "PCT, Spin and Statistics, and All That", §3-1. -/

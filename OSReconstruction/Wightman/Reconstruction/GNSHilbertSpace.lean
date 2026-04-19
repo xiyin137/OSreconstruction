@@ -1559,9 +1559,20 @@ private lemma diffVarReduction_translate_eq_shift {n m : ℕ} (hn : 0 < n) (hm :
       (hk.symm ▸ fn.conjTensorProduct fm)
       (Function.update ξ ⟨n - 1, hbdry⟩
         (Function.update (ξ ⟨n - 1, hbdry⟩) 0 (ξ ⟨n - 1, hbdry⟩ 0 - t))) := by
-  -- Step 1: Establish how the ▸ cast interacts with SchwartzMap evaluation.
-  -- For K a variable and hK : K = (n+m-1)+1, (hK ▸ f) y = f (fun i μ => y ⟨i.val, _⟩ μ)
-  -- Proof: subst hK makes the cast trivial, then rfl.
+  -- Both sides are fiber integrals; the integrands are pointwise equal in `a`.
+  -- Step 1: Unfold diffVarReduction to the fiber integral
+  show (∫ a : Fin (d + 1) → ℝ,
+      (hk.symm ▸ fn.conjTensorProduct
+        (poincareActNPoint (PoincareRepresentation.translationInDirection d 0 t) fm))
+        (fun k μ => a μ + diffVarSection d (n + m - 1) ξ k μ)) =
+    (∫ a : Fin (d + 1) → ℝ,
+      (hk.symm ▸ fn.conjTensorProduct fm)
+        (fun k μ => a μ + diffVarSection d (n + m - 1)
+          (Function.update ξ ⟨n - 1, hbdry⟩
+            (Function.update (ξ ⟨n - 1, hbdry⟩) 0 (ξ ⟨n - 1, hbdry⟩ 0 - t))) k μ))
+  -- Step 2: The integrands are pointwise equal
+  congr 1; ext a
+  -- Step 3: Establish how the ▸ cast interacts with SchwartzMap evaluation
   have heval : ∀ (f : SchwartzNPointSpace d (n + m))
       (y : NPointSpacetime d ((n + m - 1) + 1)),
       (hk.symm ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
@@ -1571,23 +1582,18 @@ private lemma diffVarReduction_translate_eq_shift {n m : ℕ} (hn : 0 < n) (hm :
       show (hK ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
         f (fun i μ => y ⟨i.val, hK ▸ i.isLt⟩ μ) from by subst hK; rfl
     exact this (n + m) hk.symm
-  -- Step 2: Unfold diffVarReduction to composition with diffVarSection
-  simp only [diffVarReduction, SchwartzMap.compCLMOfAntilipschitz_apply, Function.comp_apply]
-  -- Step 3: Apply the cast evaluation identity to both sides
   simp only [heval]
-  -- Now both sides are: fn.conjTP(g) (fun i μ => diffVarSection ξ_arg ⟨i.val, _⟩ μ)
   -- Step 4: Unfold conjTensorProduct to split into fn and fm parts
   simp only [SchwartzMap.conjTensorProduct_apply]
-  -- Both sides are: starRingEnd ℂ (fn (fn_args)) * fm_or_τtfm (fm_args)
   simp only [splitFirst, poincareActNPoint_apply]
-  -- Unfold diffVarSection to its Finset.sum definition on both sides
+  -- Both sides: starRingEnd ℂ (fn (fn_args)) * (fm or τtfm) (fm_args)
+  -- with fn_args and fm_args involving a + diffVarSection sums
   dsimp [diffVarSection]
   congr 1
-  · -- fn parts: sums at indices n-(i+1) ≤ n-1 don't include the update at n-1
-    congr 2; funext i; funext μ
+  · -- fn parts: sums at indices < n don't include the update at n-1
+    congr 2; funext i; funext μ; congr 1
     apply Finset.sum_congr rfl
     intro ⟨j, hj⟩ _
-    -- j < n-(↑i+1) ≤ n-1, so the update at index ⟨n-1, hbdry⟩ doesn't fire
     simp only [Function.update, Fin.mk.injEq]
     split_ifs with h
     · omega
@@ -1602,23 +1608,41 @@ private lemma diffVarReduction_translate_eq_shift {n m : ℕ} (hn : 0 < n) (hm :
       inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
       Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul,
       PoincareRepresentation.basisVector]
-    -- Goal: (∑ ξ_i μ) + -(t * δ_{μ,0}) = ∑ (if cond then update else ξ_i) μ
-    -- Split μ = 0 vs μ ≠ 0 to evaluate basisVector, then extract the n-1 term
-    split_ifs with hμ <;> subst_vars
-    all_goals (
-      have hn1 : n - 1 < n + ↑j := by omega
-      conv_rhs =>
-        rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
-      conv_lhs => lhs; rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
-      simp only [Fin.mk.injEq, ite_true]
-      -- Rearrange LHS: (ξ_{n-1} + ∑_erase) + offset → (ξ_{n-1} + offset) + ∑_erase
-      rw [show ∀ (a b c : ℝ), (a + b) + c = (a + c) + b from fun a b c => by ring]
+    -- Goal: a μ + ∑ ξ_i(μ) + -(t * δ_{μ,0}) = a μ + ∑ (if cond then update else ξ)(μ)
+    -- Strategy: show the if-sum and the plain sum differ only at n-1,
+    -- and the difference accounts for the -(t * δ_{μ,0}) offset.
+    -- First, handle μ = 0 vs μ ≠ 0
+    split_ifs with hμ
+    · -- Case μ = 0: the offset is -t, and the n-1 term changes by -t
+      subst hμ
+      simp only [mul_one]
+      -- Suffices: ∑(if cond then update else ξ)(0) = ∑ ξ(0) - t
+      suffices h : ∀ x : Fin (n + ↑j),
+          (if (⟨↑x, by omega⟩ : Fin (n + m - 1)) = ⟨n - 1, hbdry⟩
+           then Function.update (ξ ⟨n - 1, hbdry⟩) 0 (ξ ⟨n - 1, hbdry⟩ 0 - t)
+           else ξ ⟨↑x, by omega⟩) 0 =
+          ξ ⟨↑x, by omega⟩ 0 +
+            if x = (⟨n - 1, by omega⟩ : Fin (n + ↑j)) then -t else 0 by
+        simp_rw [h, Finset.sum_add_distrib]
+        simp only [Finset.sum_ite_eq', Finset.mem_univ, ite_true]; ring
+      intro x
+      simp only [Fin.mk.injEq, Fin.ext_iff]
+      split_ifs with hx
+      · simp only [Function.update_self]
+        rw [show ξ ⟨↑x, by omega⟩ = ξ ⟨n - 1, hbdry⟩ from
+          congr_arg ξ (Fin.ext hx : (⟨↑x, _⟩ : Fin (n + m - 1)) = ⟨n - 1, hbdry⟩)]
+        ring
+      · simp
+    · -- Case μ ≠ 0: the offset is 0, and the n-1 term is unchanged
+      simp only [mul_zero, neg_zero, add_zero]
       congr 1
-      · simp only [Function.update_apply]; split_ifs <;> ring
-      · exact Finset.sum_congr rfl fun x hx => by
-          simp only [Finset.mem_erase, ne_eq, Finset.mem_univ, and_true] at hx
-          have : ¬(↑x : ℕ) = n - 1 := fun h => hx (Fin.ext h)
-          simp [this])
+      apply Finset.sum_congr rfl; intro x _
+      simp only [Fin.mk.injEq]
+      split_ifs with hx
+      · have : (⟨↑x, by omega⟩ : Fin (n + m - 1)) = ⟨n - 1, hbdry⟩ := Fin.ext hx
+        rw [show ξ ⟨↑x, by omega⟩ = ξ ⟨n - 1, hbdry⟩ from congr_arg ξ this]
+        exact (Function.update_of_ne hμ _ _).symm
+      · rfl
 
 /-- **Partial convolution Fourier factorization.**
 
@@ -2104,7 +2128,7 @@ private lemma scd_summand_nonneg_fourier_support
       -- Polynomial growth of F t in every Schwartz seminorm: time-translation τ_{te₀} of fm
       -- satisfies ‖τ_{te₀} fm‖_{k,j} ≤ C_{k,j} · (1+|t|)^{k+j+1} (standard estimate),
       -- and CLMs (diffVarReduction, conjTensorProduct, eqMpr) compose to preserve this.
-      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), 0 < C ∧ ∀ t : ℝ,
           SchwartzMap.seminorm ℝ k j
             (diffVarReduction d (n + m - 1)
               (hk.symm ▸ fn.conjTensorProduct
@@ -2409,8 +2433,12 @@ private lemma scd_summand_nonneg_fourier_support
             _ ≤ ↑C₀ * ((∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1)) :=
                 mul_le_mul_of_nonneg_left h3 C₀.prop
             _ = (↑C₀ * ∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by ring
-        obtain ⟨Cred, Nred, _, hCred⟩ := hFpoly
-        exact ⟨Cred, Nred, hCred⟩
+        obtain ⟨Cred, Nred, hCred_nn, hCred⟩ := hFpoly
+        exact ⟨Cred + 1, Nred, by linarith, fun t =>
+          (hCred t).trans (mul_le_mul_of_nonneg_right (by linarith)
+            (pow_nonneg (by linarith [norm_nonneg t]) _))⟩
+      -- Bundle w as a CLM for schwartz_clm_fubini_exchange_real
+      -- w is already Continuous + IsLinearMap ℂ
       obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
         schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
           (SchwartzMap.fourierTransformCLM ℂ φ)
@@ -2533,7 +2561,19 @@ private lemma diffVarReduction_translate_eq_shift_dir {n m : ℕ} (hn : 0 < n) (
     diffVarReduction d (n + m - 1)
       (hk.symm ▸ fn.conjTensorProduct fm)
       (Function.update ξ ⟨n - 1, hbdry⟩ (ξ ⟨n - 1, hbdry⟩ - t • y)) := by
-  -- Step 1: Establish how the ▸ cast interacts with SchwartzMap evaluation.
+  -- Both sides are fiber integrals; the integrands are pointwise equal in `a`.
+  -- Step 1: Unfold diffVarReduction to the fiber integral
+  show (∫ a : Fin (d + 1) → ℝ,
+      (hk.symm ▸ fn.conjTensorProduct
+        (poincareActNPoint (PoincareGroup.translation' (t • y)) fm))
+        (fun k μ => a μ + diffVarSection d (n + m - 1) ξ k μ)) =
+    (∫ a : Fin (d + 1) → ℝ,
+      (hk.symm ▸ fn.conjTensorProduct fm)
+        (fun k μ => a μ + diffVarSection d (n + m - 1)
+          (Function.update ξ ⟨n - 1, hbdry⟩ (ξ ⟨n - 1, hbdry⟩ - t • y)) k μ))
+  -- Step 2: The integrands are pointwise equal
+  congr 1; ext a
+  -- Step 3: Establish how the ▸ cast interacts with SchwartzMap evaluation
   have heval : ∀ (f : SchwartzNPointSpace d (n + m))
       (y : NPointSpacetime d ((n + m - 1) + 1)),
       (hk.symm ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
@@ -2543,18 +2583,14 @@ private lemma diffVarReduction_translate_eq_shift_dir {n m : ℕ} (hn : 0 < n) (
       show (hK ▸ f : SchwartzNPointSpace d ((n + m - 1) + 1)) y =
         f (fun i μ => y ⟨i.val, hK ▸ i.isLt⟩ μ) from by subst hK; rfl
     exact this (n + m) hk.symm
-  -- Step 2: Unfold diffVarReduction to composition with diffVarSection
-  simp only [diffVarReduction, SchwartzMap.compCLMOfAntilipschitz_apply, Function.comp_apply]
-  -- Step 3: Apply the cast evaluation identity to both sides
   simp only [heval]
   -- Step 4: Unfold conjTensorProduct to split into fn and fm parts
   simp only [SchwartzMap.conjTensorProduct_apply]
   simp only [splitFirst, poincareActNPoint_apply]
-  -- Unfold diffVarSection to its Finset.sum definition on both sides
   dsimp [diffVarSection]
   congr 1
-  · -- fn parts: sums at indices n-(i+1) ≤ n-1 don't include the update at n-1
-    congr 2; funext i; funext μ
+  · -- fn parts: sums at indices < n don't include the update at n-1
+    congr 2; funext i; funext μ; congr 1
     apply Finset.sum_congr rfl
     intro ⟨j, hj⟩ _
     simp only [Function.update, Fin.mk.injEq]
@@ -2570,21 +2606,23 @@ private lemma diffVarReduction_translate_eq_shift_dir {n m : ℕ} (hn : 0 < n) (
       PoincareGroup.translation'_translation, PoincareGroup.translation'_lorentz,
       inv_one, PoincareGroup.one_lorentz_val, Matrix.one_mulVec,
       Pi.add_apply, Pi.neg_apply, Pi.smul_apply, smul_eq_mul]
-    -- Goal: (∑ ξ_i μ) + -(t * y μ) = ∑ (if cond then (ξ_i - t • y) else ξ_i) μ
-    -- Extract the n-1 term from the RHS sum
-    have hn1 : n - 1 < n + ↑j := by omega
-    conv_rhs =>
-      rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
-    conv_lhs => lhs; rw [← Finset.add_sum_erase _ _ (Finset.mem_univ ⟨n - 1, hn1⟩)]
-    simp only [Fin.mk.injEq, ite_true]
-    -- Rearrange LHS: (ξ_{n-1} + ∑_erase) + offset → (ξ_{n-1} + offset) + ∑_erase
-    rw [show ∀ (a b c : ℝ), (a + b) + c = (a + c) + b from fun a b c => by ring]
-    congr 1
-    -- erase-sum: terms with index ≠ n-1 are unchanged
-    exact Finset.sum_congr rfl fun x hx => by
-      simp only [Finset.mem_erase, ne_eq, Finset.mem_univ, and_true] at hx
-      have : ¬(↑x : ℕ) = n - 1 := fun h => hx (Fin.ext h)
-      simp [this]
+    -- Goal: a μ + ∑ ξ_i(μ) + -(t * y μ) = a μ + ∑ (if cond then (ξ_{n-1} - t•y) else ξ)(μ)
+    -- The if-sum differs from plain sum only at n-1, by exactly -t * y(μ).
+    suffices h : ∀ x : Fin (n + ↑j),
+        (if (⟨↑x, by omega⟩ : Fin (n + m - 1)) = ⟨n - 1, hbdry⟩
+         then (ξ ⟨n - 1, hbdry⟩ - t • y)
+         else ξ ⟨↑x, by omega⟩) μ =
+        ξ ⟨↑x, by omega⟩ μ +
+          if x = (⟨n - 1, by omega⟩ : Fin (n + ↑j)) then -(t * y μ) else 0 by
+      simp_rw [h, Finset.sum_add_distrib]
+      simp only [Finset.sum_ite_eq', Finset.mem_univ, ite_true]; ring
+    intro x
+    simp only [Fin.ext_iff]
+    split_ifs with hx
+    · rw [show ξ ⟨↑x, by omega⟩ = ξ ⟨n - 1, hbdry⟩ from
+        congr_arg ξ (Fin.ext hx : (⟨↑x, _⟩ : Fin (n + m - 1)) = ⟨n - 1, hbdry⟩)]
+      simp [Pi.sub_apply, Pi.smul_apply, smul_eq_mul]; ring
+    · simp
 
 /-- Generalization of `partial_convolution_fourier_factorization` to arbitrary direction.
     The partial convolution along `t • y` (shifting the full j-th variable) factorizes as
@@ -2941,7 +2979,7 @@ private lemma scd_summand_nonneg_fourier_support_dir
         exact (diffVarReduction d (n + m - 1)).continuous.comp
           ((h_eqMpr_cont hk.symm).comp h_inner)
       -- ── Step 1b: Polynomial growth bounds ──────────────────────────────────
-      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), ∀ t : ℝ,
+      have hF_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), 0 < C ∧ ∀ t : ℝ,
           SchwartzMap.seminorm ℝ k j
             (diffVarReduction d (n + m - 1)
               (hk.symm ▸ fn.conjTensorProduct
@@ -3196,9 +3234,12 @@ private lemma scd_summand_nonneg_fourier_support_dir
             _ ≤ ↑C₀ * ((∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1)) :=
                 mul_le_mul_of_nonneg_left h3 C₀.prop
             _ = (↑C₀ * ∑ i ∈ s, Ds i) * (1 + ‖t‖) ^ s.sup (·.1) := by ring
-        obtain ⟨Cred, Nred, _, hCred⟩ := hFpoly
-        exact ⟨Cred, Nred, hCred⟩
+        obtain ⟨Cred, Nred, hCred_nn, hCred⟩ := hFpoly
+        exact ⟨Cred + 1, Nred, by linarith, fun t =>
+          (hCred t).trans (mul_le_mul_of_nonneg_right (by linarith)
+            (pow_nonneg (by linarith [norm_nonneg t]) _))⟩
       -- ── CLM exchange + Fourier inversion ───────────────────────────────────
+      -- w is already Continuous + IsLinearMap ℂ
       obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
         schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
           (SchwartzMap.fourierTransformCLM ℂ φ)
