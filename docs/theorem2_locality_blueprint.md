@@ -74,6 +74,8 @@ actual hypotheses:
 - `ForwardTubeLorentz.lean :: translatedPETValueTotal`
 - `ForwardTubeLorentz.lean :: translatedPETValueTotal_eq_on_PET`
 - `ForwardTubeLorentz.lean :: translatedPETValueTotal_translation_invariant`
+- `ForwardTubeLorentz.lean :: translatedPETValue_perm_invariant`
+- `ForwardTubeLorentz.lean :: translatedPETValueTotal_perm_invariant`
 - `OSToWightmanBoundaryValuesBase.lean :: bvt_F_acrOne_package`
 - `Connectedness/PermutedTube.lean :: permutedExtendedTubeSector`
 - `Connectedness/PermutedTube.lean :: isOpen_permutedExtendedTubeSector`
@@ -128,6 +130,8 @@ actual hypotheses:
 - `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData`
 - `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData_translate`
 - `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData_translate_on_PET`
+- `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData_holomorphicOn_PET`
+- `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData_permInvariant`
 - `OSToWightmanSelectedWitness.lean :: bvt_selectedPETExtensionOfReducedData_eq_bvt_F_on_forwardTube`
 
 Important correction: the first four BHW/adjacency locality surfaces above
@@ -3018,9 +3022,24 @@ from `WightmanFunctions` to a non-circular selected OS input carrying
 `bvt_absoluteForwardTubeInput`.
 
 Implementation status after the generic `TranslatedPET` value API: the TPET
-witness-independence algebra is no longer a blocker.  The remaining
-implementation blocker is specifically the PET scalar `bvt_F_PETExtension`
-and its PET translation invariance:
+witness-independence algebra is no longer a blocker.  The generic API now also
+includes the permutation-inheritance lemmas
+
+```lean
+theorem translatedPETValue_perm_invariant
+theorem translatedPETValueTotal_perm_invariant
+```
+
+These say that if a PET scalar is invariant under uniform translations on PET
+and under coordinate permutations on PET, then its translated-PET value and
+total translated-PET value have the same permutation invariance.  This removes
+the need to copy the `BHWTranslation.lean` witness-choice proof for the
+selected OS scalar.
+
+This is only algebra.  It does **not** construct the selected OS PET scalar and
+it does not prove permutation invariance of that scalar.  The remaining
+implementation blocker is specifically the PET scalar `bvt_F_PETExtension`,
+its PET translation invariance, and its PET permutation invariance:
 
 ```lean
 -- the exact hard input now needed by `translatedPETValue`
@@ -3033,6 +3052,17 @@ theorem bvt_F_PETExtension_translation_invariant_on_PET
     (hz : z ∈ PermutedExtendedTube d n)
     (hzc : (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n) :
     bvt_F_PETExtension OS lgc n (fun k μ => z k μ + c μ) =
+      bvt_F_PETExtension OS lgc n z
+
+theorem bvt_F_PETExtension_perm_invariant_on_PET
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ PermutedExtendedTube d n)
+    (hσz : (fun k => z (σ k)) ∈ PermutedExtendedTube d n) :
+    bvt_F_PETExtension OS lgc n (fun k => z (σ k)) =
       bvt_F_PETExtension OS lgc n z
 ```
 
@@ -3100,11 +3130,30 @@ theorem bvt_selectedPETTranslationScalar_exists
         Fpet (fun k μ => z k μ + c μ) = Fpet z)
 ```
 
-This narrower route is enough for `translatedPETValue` and the compact
-positive-time support argument.  It still must not be proved from global
-`IsLocallyCommutativeWeak d (bvt_W OS lgc)`.  Its proof should identify `Fpet`
-with the reduced pullback on PET and with raw `BHW.extendF` only on the ordinary
-ET branch, where raw `extendF` is meaningful.
+This narrower route is enough for `translatedPETValue`, the compact
+positive-time support argument, and the newly available
+`translatedPETValueTotal_perm_invariant` theorem.  It still must not be proved
+from global `IsLocallyCommutativeWeak d (bvt_W OS lgc)`.  Its proof should
+identify `Fpet` with the reduced pullback on PET and with raw `BHW.extendF`
+only on the ordinary ET branch, where raw `extendF` is meaningful.
+
+The next proof-doc gap is therefore narrower than before:
+
+1. formulate the selected reduced/PET extension construction that yields a
+   `ReducedBHWExtensionData` for
+   `bvt_selectedReducedForwardTubeInput OS lgc χ m`;
+2. prove that the pulled-back scalar
+   `bvt_selectedPETExtensionOfReducedData OS lgc m Fred` is the desired
+   `bvt_F_PETExtension` on PET;
+3. export its PET translation invariance from
+   `bvt_selectedPETExtensionOfReducedData_translate_on_PET`;
+4. export its PET permutation invariance from the `Fred.perm_invariant` field
+   and `permOnReducedDiff_reducedDiffMap`;
+5. only then instantiate the generic translated-PET permutation theorem.
+
+No production theorem should define `bvt_F_PETExtension` by a dummy total
+function, by raw `BHW.extendF` off ordinary ET, or by choosing
+`os_to_wightman_full OS lgc`.
 
 For both routes, the first Lean-ready preinput sublemmas are now implemented:
 
@@ -3126,7 +3175,44 @@ theorem bvt_route1AbsolutePrePullback_eq_bvt_F_on_forwardTube
     (hz : z ∈ ForwardTube d (m + 1)) :
     bvt_route1AbsolutePrePullback OS lgc m z =
       bvt_F OS lgc (m + 1) z
+
+theorem bvt_selectedPETExtensionOfReducedData_holomorphicOn_PET
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData ... ) :
+    DifferentiableOn ℂ
+      (bvt_selectedPETExtensionOfReducedData OS lgc m Fred)
+      (BHW.PermutedExtendedTube d (m + 1))
+
+theorem bvt_selectedPETExtensionOfReducedData_permInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData ... )
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hz : z ∈ BHW.PermutedExtendedTube d (m + 1))
+    (hσz : (fun k => z (σ k)) ∈
+      BHW.PermutedExtendedTube d (m + 1)) :
+    bvt_selectedPETExtensionOfReducedData OS lgc m Fred
+        (fun k => z (σ k)) =
+      bvt_selectedPETExtensionOfReducedData OS lgc m Fred z
 ```
+
+Thus, once the real selected extension datum `Fred` is constructed, the
+following parts are already Lean-ready and compiled:
+
+1. PET holomorphy of the absolute pullback;
+2. PET translation invariance of the absolute pullback;
+3. PET permutation invariance of the absolute pullback;
+4. agreement with the selected OS witness on the forward tube;
+5. generic promotion of PET translation/permutation invariance to
+   translated-PET values.
+
+The only remaining unfilled selected-PET scalar gap is the construction of the
+datum `Fred` itself, with the correct non-circular BHW/PET extension theorem.
+That construction must be the next proof-doc target.
 
 These sublemmas are algebraic/reduced-coordinate and forward-tube comparison
 statements.  They isolate the selected translation-invariant preinput without
@@ -3996,6 +4082,211 @@ Step 4 is the actual missing BHW geometry.  It is not currently supplied by the
 repo, and it must be proved or replaced by the germ-monodromy fallback before
 we can claim the fixed-fiber route is implementation-ready.
 
+#### Stress test of orbit/chamber discretization
+
+Claude's review correctly warns that the orbit/chamber claim must be tested
+before any more adapters are added.  A first numerical stress test in the
+`d = 1`, `n = 3` complex-boost model raises a serious concern.
+
+Represent the `1+1` complex Lorentz group by complex boosts
+
+```text
+Λ(θ) = [[cosh θ, sinh θ],
+        [sinh θ, cosh θ]]
+```
+
+and sample a forward-tube point `w` with arbitrary real parts and
+future-timelike imaginary increments.  For the concrete sample
+
+```text
+w₀ = (1.0576445900575475 + 1.6209368993349254 i,
+      -1.8330548784085745 - 0.6745469170449656 i)
+w₁ = (0.7335797734084579 + 2.4286748804806555 i,
+       0.010949855196996428 - 0.5606074163819775 i)
+w₂ = (0.5417748221635246 + 3.0138108111962216 i,
+       1.8149305952325392 - 0.3342417063453761 i)
+```
+
+the imaginary increments are future-timelike, so `w ∈ FT`.  A dense rectangular
+sample of `θ = a + i b`, with `a ∈ [-6,6]` and `b ∈ [-π,π]`, found chamber hits
+only for
+
+```text
+id       = (0,1,2)
+reverse  = (2,1,0)
+```
+
+and found no hits for the adjacent intermediate labels
+
+```text
+(1,0,2), (0,2,1), (1,2,0), (2,0,1).
+```
+
+The best sampled forward-cone margin for the missing intermediate chambers
+remained negative; for example, at grid sizes `51, 101, 151, 201`, the best
+margin for `(2,0,1)` approached zero but stayed negative in the sample.  This
+is not a formal counterexample, but it is strong enough to stop treating
+`orbit_chamber_path_discretization` as a safe route target.
+
+Interpretation:
+
+1. The local `n = 2` sanity check is harmless: a reachable set containing only
+   `id`, or both `id` and the unique swap, is automatically connected.
+2. In `n = 3`, the orbit-hit label set can plausibly be disconnected as an
+   induced adjacent-Cayley subgraph.
+3. Therefore the fixed-fiber route is now suspect.  It may fail because the
+   analytic continuation path through PET can move through non-ordinary
+   chamber regions, while the orbit/chamber graph records only ordinary
+   permuted-forward-tube chamber hits.
+
+Until this numerical warning is either formalized away or turned into an
+explicit counterexample theorem, no further wrappers should target
+`orbit_chamber_path_discretization`.  The fixed-fiber reachable-label adapters
+that have already been checked in Lean are still logically sound conditional
+theorems, but they are now quarantined as diagnostic infrastructure.  They
+should not be used as the active construction route for theorem 2 unless the
+fixed-fiber chamber claim is first rehabilitated by a real proof.
+
+#### Route decision after the fixed-fiber audit
+
+The next route must be a genuine PET edge/germ monodromy route.  This agrees
+with the standard BHW/Jost story in spirit: the analytic continuation must move
+through the adjacent-glued sector cover, with Jost real edges supplying the
+local equality seeds.  It must not require a fixed point or a fixed Lorentz
+orbit to hit a connected sequence of ordinary permuted forward-tube chambers.
+
+There is an important Lean-facing correction to the informal "Jost shortcut."
+The local API does **not** currently provide a theorem named or shaped like
+
+```lean
+∀ x, x ∈ BHW.JostSet d n →
+  BHW.realEmbed x ∈ BHW.ExtendedTube d n
+```
+
+nor the stronger all-sector consequence
+
+```lean
+∀ x, x ∈ BHW.JostSet d n →
+  ∀ π, BHW.realEmbed x ∈ BHW.permutedExtendedTubeSector d n π
+```
+
+The checked theorem is only
+
+```lean
+theorem BHW.forwardJostSet_subset_extendedTube
+```
+
+and `ForwardJostSet` is the forward ordered real edge, not a permutation-
+invariant all-sector Jost edge.  By contrast, `BHW.JostSet` is permutation
+invariant, but it is only the pairwise-spacelike locality support set.  Older
+`PermutationFlow` code explicitly treats the full Jost-to-extended-tube bridge
+as a hypothesis `hJostET`, which is the right warning sign.
+
+The stronger warning is that the current repo `BHW.JostSet → ExtendedTube`
+statement is false, not merely unproved.  In `d = 1`, `n = 2`, set
+
+```text
+x₀ = (0,  1),   x₁ = (0, -1).
+```
+
+Then each `xᵢ` is spacelike and `x₀ - x₁ = (0,2)` is spacelike, so
+`x ∈ BHW.JostSet 1 2`.  But `realEmbed x ∉ BHW.ExtendedTube 1 2`.  Indeed, if
+`realEmbed x ∈ ET`, then
+`mem_extendedTube_iff_exists_lorentz_mem_forwardTube` gives a complex Lorentz
+frame in which the transformed configuration `w` lies in `ForwardTube`.  The
+linear relation `x₁ = -x₀` is preserved by every Lorentz action, so
+`w₁ = -w₀`.  Forward-tube membership would require both
+
+```text
+Im(w₀) ∈ V₊,
+Im(w₁ - w₀) = -2 Im(w₀) ∈ V₊,
+```
+
+which is impossible for the open future cone.  Thus the current `BHW.JostSet`
+is correct for locality support, but too broad for global tube-edge membership.
+
+Therefore the active proof docs must not write "Jost points lie in every PET
+sector" as an available fact for the current `BHW.JostSet`.  Every
+Lean-facing Jost-edge theorem must carry explicit local edge hypotheses:
+
+```lean
+(hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+(hV_ET : ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+(hV_permET :
+  ∀ x ∈ V,
+    BHW.realEmbed (fun k => x (σ k)) ∈ BHW.ExtendedTube d n)
+```
+
+This is the current safe route.  It matches the already documented
+compact-support edge-distribution package and avoids smuggling a geometric
+theorem that is false for the current definition.  A future classical BHW
+all-sector route would require introducing a **different, stronger**
+tube-Jost set, for example a condition on all nontrivial positive convex
+combinations of consecutive differences.  That would be new geometry and is
+not needed for the current adjacent-edge route.
+
+PET connectedness alone is also not enough to identify all sector branches.
+To turn adjacent branch equality into all-overlap compatibility, the proof
+must supply one of these real mathematical inputs:
+
+1. a pairwise sector-overlap theorem: each relevant
+   `S π ∩ S ρ` is connected/preconnected and contains a real Jost open seed
+   on which the two branches agree; or
+2. a genuine monodromy theorem for the adjacent-glued Riemann domain of sector
+   germs over PET.
+
+The first option is close to the older two-sector overlap machinery in
+`BHWPermutation/PermutationFlow.lean`, but it still depends on real Jost-edge
+membership and connectedness hypotheses that are not currently global facts.
+The second option is the preferred theorem-2 surface, because it is exactly
+what the sector-cover proof needs and it does not confuse PET connectivity
+with fixed-fiber chamber connectivity.
+
+The active blocker should now be recorded as:
+
+```lean
+theorem BHW.extendF_pet_branch_independence_of_adjacent
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+    (hF_lorentz :
+      ∀ (Λ : RestrictedLorentzGroup d)
+        (z : Fin n → Fin (d + 1) → ℂ), z ∈ BHW.ForwardTube d n →
+        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+    (hAdj :
+      ∀ (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n)
+        (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.permutedExtendedTubeSector d n π →
+        z ∈ BHW.permutedExtendedTubeSector d n
+          (π * Equiv.swap i ⟨i.val + 1, hi⟩) →
+        BHW.extendF F (fun k => z ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) =
+          BHW.extendF F (fun k => z (π k))) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n → Fin (d + 1) → ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π →
+      z ∈ BHW.permutedExtendedTubeSector d n ρ →
+      BHW.extendF F (fun k => z (π k)) =
+        BHW.extendF F (fun k => z (ρ k))
+```
+
+but the proof of this theorem must come from an explicit PET monodromy/Jost
+edge package, not from `orbit_chamber_path_discretization`.  The proof docs
+below refine the germ-chain version of that package.
+
+The immediate next documentation task is to make the germ-chain theorem fully
+Lean-ready:
+
+1. specify the prefix-union gluing data precisely enough that the generic
+   analytic gluing proof is routine SCV/topology;
+2. specify the BHW geometry theorem that produces such data for PET sector
+   germs, using local Jost edge seeds with explicit `hV_ET`/`hV_permET`
+   membership;
+3. only after these two statements are stable should production Lean move past
+   the already-checked conditional adapters.
+
+This supersedes the earlier "preferred fixed-fiber target" language in this
+section.  The fixed-fiber path is now a quarantined diagnostic route, not the
+active theorem-2 implementation plan.
+
 If the fixed-fiber theorem is not available, the fallback should be stated as
 a genuine analytic-continuation theorem, not as a topology-only gluing lemma.
 The correct abstraction is a chain of sector germs:
@@ -4004,7 +4295,7 @@ The correct abstraction is a chain of sector germs:
 structure BHW.PETGermChain
     (d n : ℕ)
     (π ρ : Equiv.Perm (Fin n))
-    (z : Fin n → Fin (d + 1) → ℂ) : Prop where
+    (z : Fin n → Fin (d + 1) → ℂ) where
   length : ℕ
   label : Fin (length + 1) → Equiv.Perm (Fin n)
   label_zero : label 0 = π
@@ -4076,6 +4367,37 @@ theorem BHW.pet_branch_independence_of_germChain
           (π * Equiv.swap i ⟨i.val + 1, hi⟩) →
         G (π * Equiv.swap i ⟨i.val + 1, hi⟩) z = G π z)
     (hChain :
+      BHW.PETGermChainReady d n π ρ z) :
+    G π z = G ρ z
+```
+
+The earlier three-argument form with separate `hPrefixPreconnected` and
+`hPrefixHits` is logically equivalent, but the ready record is cleaner for
+Lean: the chain data and the prefix-intersection data travel together.
+
+An important implementation constraint: `PETGermChain` and
+`PETGermChainReady` must be data-carrying types, not `Prop`-valued structures.
+Their `length`, `label`, and `domain` fields are used to define
+`prefixUnion` and `prefixValue`; putting the structures in `Prop` would create
+proof-irrelevance/elimination problems and would be a bad Lean interface.
+
+The proof would inductively glue a holomorphic function on the prefix union.
+At step `j`, the new branch agrees with the prefix-glued function on the last
+adjacent overlap by `hAdj`; the ready chain supplies a nonempty seed in the
+cumulative intersection; prefix preconnectedness and the identity theorem
+extend that equality to the whole cumulative intersection; then the usual
+local piecewise definition is well-defined on the enlarged union.  This is
+heavier than the fixed-fiber route and should not be implemented until the
+exact chain/overlap theorem is mathematically specified.  At present the repo
+has identity/connectivity tools, but no monodromy or germ API, so this fallback
+is proof-doc work, not Lean-ready production work.
+
+The older sketch was:
+
+```lean
+theorem BHW.pet_branch_independence_of_germChain_old_shape
+    ...
+    (hChain :
       BHW.PETGermChain d n π ρ z)
     (hPrefixPreconnected :
       ∀ j : Fin hChain.length,
@@ -4088,16 +4410,190 @@ theorem BHW.pet_branch_independence_of_germChain
     G π z = G ρ z
 ```
 
-The proof would inductively glue a holomorphic function on the prefix union.
-At step `j`, the new branch agrees with the prefix-glued function on the last
-adjacent overlap by `hAdj`; `hPrefixHits` supplies a nonempty seed in the
-cumulative intersection; `hPrefixPreconnected` and the identity theorem extend
-that equality to the whole cumulative intersection; then the usual local
-piecewise definition is well-defined on the enlarged union.  This is heavier
-than the fixed-fiber route and should not be implemented until the exact
-chain/overlap theorem is mathematically specified.  At present the repo has
-identity/connectivity tools, but no monodromy or germ API, so this fallback is
-proof-doc work, not Lean-ready production work.
+To make the generic gluing theorem Lean-ready, split it into a purely formal
+SCV/topology theorem and a separate BHW geometry theorem.
+
+The formal theorem should use a strengthened chain record:
+
+```lean
+structure BHW.PETGermChainReady
+    (d n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    extends BHW.PETGermChain d n π ρ z where
+  prefix_inter_next_preconnected :
+    ∀ j : Fin length,
+      IsPreconnected
+        (prefixUnion j.castSucc ∩ domain j.succ)
+  prefix_inter_next_seed :
+    ∀ j : Fin length,
+      (prefixUnion j.castSucc ∩ domain j.succ ∩
+        domain j.castSucc).Nonempty
+```
+
+The notation here is schematic: in Lean, `prefixUnion` should be defined as a
+namespace function taking the base chain as an explicit argument, because a
+structure cannot directly refer to a later namespace definition in an extends
+field.  The intended production shape is:
+
+```lean
+def BHW.PETGermChain.prefixUnion
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1)) :
+    Set (Fin n → Fin (d + 1) → ℂ) := ...
+
+structure BHW.PETGermChainReady ... where
+  toChain : BHW.PETGermChain d n π ρ z
+  prefix_inter_next_preconnected :
+    ∀ j : Fin toChain.length,
+      IsPreconnected
+        (toChain.prefixUnion j.castSucc ∩ toChain.domain j.succ)
+  prefix_inter_next_seed :
+    ∀ j : Fin toChain.length,
+      (toChain.prefixUnion j.castSucc ∩ toChain.domain j.succ ∩
+        toChain.domain j.castSucc).Nonempty
+```
+
+The generic proof should then be implemented through the following helper
+lemmas, all independent of OS/QFT:
+
+```lean
+theorem BHW.PETGermChain.prefixUnion_open
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1)) :
+    IsOpen (C.prefixUnion j)
+
+theorem BHW.PETGermChain.prefixUnion_mem_of_domain_mem
+    (C : BHW.PETGermChain d n π ρ z)
+    {j k : Fin (C.length + 1)} (hkj : k.val ≤ j.val) :
+    C.domain k ⊆ C.prefixUnion j
+
+theorem BHW.branch_eq_on_consecutive_domain_overlap
+    (G : (π : Equiv.Perm (Fin n)) →
+      (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hAdj : ...)
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin C.length) :
+    EqOn (G (C.label j.castSucc)) (G (C.label j.succ))
+      (C.domain j.castSucc ∩ C.domain j.succ)
+```
+
+For the induction, define a prefix value on `C.prefixUnion j` by choosing any
+domain in the prefix containing the point:
+
+```lean
+noncomputable def BHW.PETGermChain.prefixValue
+    (G : (π : Equiv.Perm (Fin n)) →
+      (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1))
+    (w : Fin n → Fin (d + 1) → ℂ) : ℂ := ...
+```
+
+This definition is safe only after proving the prefix compatibility invariant:
+
+```lean
+theorem BHW.PETGermChain.prefixValue_eq_branch
+    (G : ...)
+    (hG_holo : ...)
+    (hAdj : ...)
+    (C : BHW.PETGermChainReady d n π ρ z)
+    (j : Fin (C.toChain.length + 1))
+    (k : Fin (C.toChain.length + 1))
+    (hkj : k.val ≤ j.val) :
+    EqOn (C.toChain.prefixValue G j) (G (C.toChain.label k))
+      (C.toChain.domain k)
+```
+
+The induction step for `prefixValue_eq_branch` is the only real proof:
+
+1. set
+
+```lean
+I_j := C.toChain.prefixUnion j.castSucc ∩ C.toChain.domain j.succ
+```
+
+2. prove `IsOpen I_j` from `prefixUnion_open` and `domain_open`;
+3. prove `IsConnected I_j` from `prefix_inter_next_preconnected` plus the
+   nonempty seed;
+4. use `prefix_inter_next_seed` to obtain a point in
+   `domain j.castSucc ∩ domain j.succ`, where the old prefix value equals
+   `G (label j.castSucc)` by the induction hypothesis and the new branch
+   equals it by `branch_eq_on_consecutive_domain_overlap`;
+5. because both `domain j.castSucc` and `domain j.succ` are open, this seed
+   gives an `eventuallyEq` neighborhood inside `I_j`;
+6. apply `SCV.identity_theorem_product` on `I_j` to prove the old prefix value
+   and the new branch agree on all of `I_j`;
+7. use this equality to extend the prefix compatibility invariant to
+   `j.succ`.
+
+After the final induction step, the target follows without another analytic
+argument:
+
+```lean
+have hstart :
+    C.toChain.prefixValue G last z = G π z :=
+  -- `endpoint_mem_start`, `label_zero`, and `prefixValue_eq_branch`
+have hend :
+    C.toChain.prefixValue G last z = G ρ z :=
+  -- `endpoint_mem_last`, `label_last`, and `prefixValue_eq_branch`
+exact hstart.symm.trans hend
+```
+
+This generic theorem is a good small Lean target **only after** the geometry
+theorem below is made precise enough to consume it:
+
+```lean
+theorem BHW.petGermChainReady_exists
+    [NeZero d]
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ) :
+    Nonempty (BHW.PETGermChainReady d n π ρ z)
+```
+
+This is the true BHW/PET monodromy geometry statement.  It must not be proved
+by fixed-fiber reachable-label connectivity.  Its proof should construct a
+finite sector-germ continuation chain in PET whose cumulative intersections
+are preconnected and seeded by adjacent Jost/EOW overlaps.  The local real-edge
+seeds must carry explicit `hV_ET` and `hV_permET` hypotheses.  They must not
+rely on a global `BHW.JostSet → ExtendedTube` theorem for the current
+`BHW.JostSet`, since the pairwise-spacelike definition is too broad for that
+claim.
+
+At the current frontier, the formal gluing theorem is close to Lean-ready, but
+`BHW.petGermChainReady_exists` is not.  That geometry theorem is the next
+proof-doc gap to fill before production implementation should resume.
+
+There is one more planning gate before committing to a global
+`petGermChainReady_exists` proof.  The theorem-2 consumer is locality, i.e. an
+adjacent spacelike interchange after suitable ordering/localization.  The repo
+already has the adjacent-overlap theorem
+
+```lean
+theorem bvt_F_extendF_adjacent_overlap_of_selectedEdgeData
+```
+
+and the selected-branch adjacent compatibility theorem
+
+```lean
+theorem bvt_selectedPETBranch_adjacent_eq_on_sector_overlap
+```
+
+Both consume `SelectedAdjacentPermutationEdgeData`, whose real-edge witness
+already carries explicit `hV_ET` and `hV_permET`.  Therefore the next
+proof-doc step must decide whether theorem 2 can be closed by a **direct
+adjacent boundary/locality route** using these adjacent overlap equalities.  If
+so, the global PET all-branch monodromy theorem is unnecessary for the current
+closure and should remain future infrastructure.
+
+Only if the live downstream consumer truly needs a symmetric scalar on all of
+PET should we continue with the global monodromy theorem
+`BHW.petGermChainReady_exists`.  In that case it must be documented as a
+standard BHW monodromy theorem or through a stronger, correctly defined
+tube-Jost set, not through the current pairwise-spacelike `BHW.JostSet` and not
+through fixed-fiber chamber connectivity.
 
 The correct theorem should be formulated at the level of analytic branches on
 open sectors.  Write
@@ -4876,6 +5372,98 @@ This directly supplies the `hEdge` input for
 `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`.  No difference-form
 rewrite is needed in the uniqueness adapter.
 
+#### Consumer audit: arbitrary transposition is the live surface
+
+The current public theorem-2 bridge does not ask only for adjacent swaps.  In
+`OSToWightmanBoundaryValues.lean`, `bvt_locally_commutative` calls
+
+```lean
+theorem bv_local_commutativity_transfer_of_swap_pairing
+```
+
+with the private frontier
+
+```lean
+private theorem bvt_F_swapCanonical_pairing
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i j k))) →
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                Complex.I) * g x
+      =
+      ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) *
+                Complex.I) * f x
+```
+
+The swap is an arbitrary transposition `Equiv.swap i j`.  Therefore the
+checked adjacent-overlap theorem
+
+```lean
+bvt_F_extendF_adjacent_overlap_of_selectedEdgeData
+```
+
+cannot by itself close the current consumer.  The old bubble-sort idea of
+decomposing `swap i j` into adjacent swaps fails at the real-edge level because
+the support hypothesis only says the selected pair `(x i, x j)` is spacelike;
+it does not say the intermediate adjacent pairs are spacelike.  This is why a
+naive adjacent-swap induction is not an OS proof.
+
+The next proof-doc stage must choose between two precise consumer shapes:
+
+1. **Rewrite the downstream bridge to an adjacent-only locality surface.**
+   This would replace or supplement `bv_local_commutativity_transfer_of_swap_pairing`
+   with a theorem that only asks for adjacent `swap i (i+1)` at the BV pairing
+   level, and then prove the public `IsLocallyCommutativeWeak` arbitrary
+   transposition statement by a separate distributional/permutation argument.
+   This is only valid if that second step does not reintroduce the same
+   unsupported intermediate-spacelike assumptions.
+
+2. **Keep the arbitrary-transposition consumer and supply PET transport.**
+   This is closer to the classical BHW route: use real-edge equality only for
+   the selected spacelike pair, and use analytic continuation in ET/PET to
+   transport through intermediate non-spacelike reorderings.  In this shape,
+   adjacent edge data remains the local seed, but a PET-level transport or
+   single-valuedness theorem is still needed to reach arbitrary `swap i j`.
+
+Thus the immediate next blocker is not yet the generic
+`BHW.petGermChainReady_exists`; it is the smaller decision theorem:
+
+```lean
+-- schematic
+theorem theorem2_arbitrarySwap_consumer_reduction_decision :
+  -- Either produce an adjacent-only replacement for
+  -- `bv_local_commutativity_transfer_of_swap_pairing`,
+  -- or show the current arbitrary-swap bridge requires PET-level
+  -- all-branch transport.
+```
+
+For proof documentation, this means the next transcript must expand the
+arbitrary-swap pairing proof at the canonical shell:
+
+1. rewrite the left integral with `g x = f (x ∘ swap i j)`;
+2. change variables so both integrals are tested against `f`;
+3. identify the two complex shell configurations related by `swap i j`;
+4. determine exactly which PET sectors contain those two shells under the
+   selected spacelike support hypothesis;
+5. show whether the equality follows from one adjacent overlap theorem or from
+   a necessary PET transport through additional sector branches.
+
+Only after this transcript is written should we decide whether to implement a
+global PET monodromy theorem or a narrower arbitrary-swap canonical-shell
+transport theorem.
+
 The optional `bvt_W` compatibility adapter then continues:
 
 6. Set `φσ := BHW.permuteSchwartz σ⁻¹ φ` and use the change-of-variables
@@ -5205,23 +5793,24 @@ Primary planned theorem-2 closure slots:
 10. `bvt_selectedPETBranch`
 11. `bvt_selectedPETBranch_holomorphicOn_sector`
 12. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
-13. `BHW.petSectorAdjStep` (implemented)
-14. `BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected` (implemented conditional adapter)
-15. `BHW.petSectorFiber_adjacent_connected`
-16. `BHW.extendF_pet_branch_independence_of_adjacent`
-17. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
-18. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
-19. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
-20. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
-21. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
-22. `BHW.permuteSchwartz`
-23. `BHW.permute_support_jost`
-24. `BHW.permute_tsupport_jost`
-25. `BHW.permuteSchwartz_hasCompactSupport`
-26. `BHW.integral_perm_eq_self`
-27. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
-28. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
-29. `bvt_locally_commutative_from_symmetric_PET_boundary`
+13. `BHW.PETGermChain`
+14. `BHW.PETGermChainReady`
+15. `BHW.pet_branch_independence_of_germChain`
+16. `BHW.petGermChainReady_exists`
+17. `BHW.extendF_pet_branch_independence_of_adjacent`
+18. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
+19. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
+20. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
+21. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+22. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
+23. `BHW.permuteSchwartz`
+24. `BHW.permute_support_jost`
+25. `BHW.permute_tsupport_jost`
+26. `BHW.permuteSchwartz_hasCompactSupport`
+27. `BHW.integral_perm_eq_self`
+28. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
+29. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+30. `bvt_locally_commutative_from_symmetric_PET_boundary`
 
 The following older slot names are no longer primary construction targets:
 
@@ -5229,7 +5818,10 @@ The following older slot names are no longer primary construction targets:
 2. `BHW.isConnected_permForwardOverlapSet_for_perm`;
 3. `bvt_F_extendF_perm_edgeDistribution_eq_from_OS`;
 4. `bvt_F_hasPermutationEdgeDistributionEquality`;
-5. `bvt_F_extendF_perm_overlap`.
+5. `bvt_F_extendF_perm_overlap`;
+6. `BHW.petSectorFiber_adjacent_connected`;
+7. `BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected`;
+8. `BHW.orbit_chamber_path_discretization`.
 
 They may remain as conditional compatibility lemmas if their hypotheses are
 explicitly supplied, but theorem 2 must not try to construct arbitrary
