@@ -61,6 +61,9 @@ actual hypotheses:
 - `OSToWightmanTubeIdentity.lean :: tsupport_timeShiftSchwartzNPoint_subset_positiveTimeTranslate_image`
 - `OSToWightmanTubeIdentity.lean :: measure_timeCoord_eq_zero`
 - `OSToWightmanTubeIdentity.lean :: ae_pairwise_distinct_timeCoords`
+- `ForwardTubeLorentz.lean :: isOpen_translatedPET`
+- `ForwardTubeLorentz.lean :: translatedPET_perm`
+- `ForwardTubeLorentz.lean :: translatedPET_perm_iff`
 - `OSToWightmanBoundaryValuesBase.lean :: bvt_F_acrOne_package`
 
 Important correction: the first four BHW/adjacency locality surfaces above
@@ -2954,6 +2957,26 @@ Once PET value-invariance exists, define the selected translated-PET value
 without any arbitrary branch choice:
 
 ```lean
+theorem isOpen_translatedPET {d n : ℕ} [NeZero d] :
+    IsOpen (TranslatedPET d n) := by
+  -- `TranslatedPET` is the union over uniform translations `c` of the
+  -- preimages of the open `PermutedExtendedTube d n` under
+  -- `z ↦ fun k μ => z k μ + c μ`.
+
+theorem translatedPET_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n := by
+  -- If `z + c` is in the PET, then `(z ∘ σ) + c` is in the PET by absorbing
+  -- the extra permutation into the PET permutation index.
+
+theorem translatedPET_perm_iff {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n ↔ z ∈ TranslatedPET d n := by
+  -- Apply `translatedPET_perm` with `σ` and with `σ.symm`.
+
 theorem bvt_F_PETExtension_value_on_translatedPET
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)

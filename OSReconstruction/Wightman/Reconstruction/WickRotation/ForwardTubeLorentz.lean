@@ -1221,6 +1221,81 @@ theorem translatedPET_translate_iff {d n : ℕ} [NeZero d]
   · intro hz
     exact translatedPET_translate (d := d) (n := n) hz c
 
+/-- `TranslatedPET` is open: it is the union of translated preimages of the
+open permuted extended tube. -/
+theorem isOpen_translatedPET {d n : ℕ} [NeZero d] :
+    IsOpen (TranslatedPET d n) := by
+  rw [TranslatedPET]
+  have hset :
+      {z : Fin n → Fin (d + 1) → ℂ |
+        ∃ c : Fin (d + 1) → ℂ,
+          (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n} =
+        ⋃ c : Fin (d + 1) → ℂ,
+          {z : Fin n → Fin (d + 1) → ℂ |
+            (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n} := by
+    ext z
+    simp
+  rw [hset]
+  refine isOpen_iUnion fun c => ?_
+  have hcont :
+      Continuous
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          fun k μ => z k μ + c μ) := by
+    apply continuous_pi
+    intro k
+    apply continuous_pi
+    intro μ
+    have hk :
+        Continuous
+          (fun z : Fin n → Fin (d + 1) → ℂ => z k) :=
+      continuous_apply k
+    have hcoord :
+        Continuous
+          (fun z : Fin n → Fin (d + 1) → ℂ => z k μ) :=
+      (continuous_apply μ).comp hk
+    exact hcoord.add continuous_const
+  exact
+    (BHW_permutedExtendedTube_eq (d := d) (n := n) ▸ BHW.isOpen_permutedExtendedTube).preimage
+      hcont
+
+/-- The permuted extended tube is stable under coordinate permutations. -/
+theorem permutedExtendedTube_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ PermutedExtendedTube d n) :
+    (fun k => z (σ k)) ∈ PermutedExtendedTube d n := by
+  rw [← BHW_permutedExtendedTube_eq (d := d) (n := n)] at hz ⊢
+  obtain ⟨π, hπ⟩ := Set.mem_iUnion.mp hz
+  rcases hπ with ⟨Λ, w, hw, hzw⟩
+  refine Set.mem_iUnion.mpr ⟨σ.symm * π, ⟨Λ, fun k => w (σ k), ?_, ?_⟩⟩
+  · simpa [BHW.PermutedForwardTube] using hw
+  · ext k μ
+    simp [hzw, BHW.complexLorentzAction]
+
+/-- `TranslatedPET` is stable under coordinate permutations. -/
+theorem translatedPET_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n := by
+  rcases hz with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  simpa using permutedExtendedTube_perm (d := d) (n := n) σ hc
+
+/-- Coordinate permutation is an equivalence on `TranslatedPET`. -/
+theorem translatedPET_perm_iff {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n ↔ z ∈ TranslatedPET d n := by
+  constructor
+  · intro hz
+    have hback :=
+      translatedPET_perm (d := d) (n := n) σ.symm
+        (z := fun k => z (σ k)) hz
+    simpa using hback
+  · intro hz
+    exact translatedPET_perm (d := d) (n := n) σ hz
+
 /-- The coincident-time hyperplane `{x : x i 0 = x j 0}` is Haar-null for
     `i ≠ j`. -/
 private theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
