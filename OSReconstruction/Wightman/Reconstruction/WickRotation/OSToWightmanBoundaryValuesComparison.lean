@@ -87,32 +87,20 @@ theorem bvt_F_negCanonical (OS : OsterwalderSchraderAxioms d)
     have hF_negCanonical :
         ∀ (x : NPointDomain d n) (ε : ℝ), 0 < ε →
           starRingEnd ℂ
-            ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-              (fun j μ =>
-                ↑(x j μ) +
-                  ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)) =
-          (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-            (fun j μ =>
-              ↑(x j μ) -
-                ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I) := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.1
-    change
-      starRingEnd ℂ
-        ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-          (fun j μ =>
-            ↑(x j μ) +
-              ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)) =
-      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-        (fun j μ =>
-          ↑(x j μ) -
-            ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)
-    simpa [bvt_F, canonicalForwardConeDirection] using
-      hF_negCanonical x ε hε
+            ((full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
+              (fun k μ =>
+                ↑(x k μ) +
+                  ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)) =
+          (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
+            (fun k μ =>
+              ↑(x k μ) -
+                ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
+      intro x ε hε
+      simpa [canonicalForwardConeDirection] using
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.1
+          x ε hε
+    unfold bvt_F
+    exact hF_negCanonical x ε hε
 
 /-! #### Helper lemmas for property transfer: OS axiom → F_analytic → W_n -/
 

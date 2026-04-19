@@ -288,12 +288,9 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
           0 < C_bd ∧
           ∀ z ∈ ForwardTube d n,
             ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.2
+      rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+        ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+      exact hGrowth
     obtain ⟨C_bd, N, hC_pos, hbound⟩ := hGrowthPkg
     refine ⟨C_bd, N, hC_pos, ?_⟩
     intro z hz
@@ -558,12 +555,9 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
           0 < C_bd ∧
           ∀ z ∈ ForwardTube d n,
             ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.2
+      rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+        ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+      exact hGrowth
     obtain ⟨C_bd, N, hC_pos, hbound⟩ := hGrowthPkg
     refine ⟨C_bd, N, hC_pos, ?_⟩
     intro z hz

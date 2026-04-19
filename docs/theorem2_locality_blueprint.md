@@ -100,9 +100,9 @@ theorem-2 bridge.
 | `bvt_F_distributionalEOW_permBranch_from_euclideanEdge` | SCV/BHW theorem-2 support layer | selected `bvt_F` ACR(1) package, compact-test Euclidean edge equality, and a distributional EOW theorem | transports compact-test Euclidean branch equality to compact-test real-Jost branch equality without raw real-trace continuity |
 | `bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS` | WickRotation theorem-2 support layer | adjacent Euclidean order change plus `bvt_F_distributionalEOW_permBranch_from_euclideanEdge` | adjacent/order-change version of the branch distribution equality; the true local EOW seed |
 | `bvt_F_extendF_perm_edgeDistribution_eq_from_OS` | WickRotation theorem-2 support layer | adjacent branch-distribution seed plus BHW/PET permutation-flow propagation, or explicit transported-overlap induction | equality of the two `extendF (bvt_F OS lgc n)` real-overlap branch pairings against compact tests for a finite permutation |
-| `BHW.permuteSchwartz` and support/measure lemmas | `BHWPermutation/PermutationFlow.lean` support layer, publicized from existing private code | coordinate permutation as a continuous linear equivalence | reusable permuted Schwartz test functions, Jost-support transport, compact-support transport, and permutation-invariant integral change of variables |
+| `BHW.permuteSchwartz` and support/measure lemmas | `BHWPermutation/EdgeDistribution.lean` | implemented from coordinate permutation as a continuous linear equivalence | reusable permuted Schwartz test functions, Jost-support transport, compact-support transport, topological-support transport, and permutation-invariant integral change of variables |
 | `bvt_W_perm_invariant_on_compactJostOverlap_from_OS` | WickRotation theorem-2 support layer | `bvt_F_extendF_perm_edgeDistribution_eq_from_OS`, change of variables, ET/permuted-ET support transport, and `bvt_boundary_values` | optional compatibility adapter: distributional permutation equality for `bvt_W OS lgc n` on compactly supported tests with `tsupport ⊆ V` |
-| `BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality` | `BHWPermutation/PermutationFlow.lean` or new companion file | `BHW.HasPermutationEdgeDistributionEquality`, continuity of the two `extendF` real-edge traces, and `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` | pointwise equality of `extendF F` on any real-open Jost/permutation-overlap edge |
+| `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality` | `BHWPermutation/EdgeDistribution.lean` | implemented from compact-test pairing equality, continuity of the two `extendF` real-edge traces, and `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` | pointwise equality of `extendF F` on any real-open Jost/permutation-overlap edge |
 | `BHW.extendF_perm_eq_on_realOpen_of_jost_distribution_symmetry` | `BHWPermutation/PermutationFlow.lean` or new companion file | secondary compatibility route copying the private hLC proof spine, with `hW_overlap_perm` replacing `hF_local_dist` | same pointwise equality as the direct edge-distribution theorem; not the preferred primary route once `bvt_F_hasPermutationEdgeDistributionEquality` is available |
 | `bvt_F_hasPermutationEdgeDistributionEquality` | WickRotation theorem-2 support layer | `bvt_F_extendF_perm_edgeDistribution_eq_from_OS` and the support-zero lemma outside `tsupport` | OS-side edge-distribution equality for every finite permutation, without any global `IsLocallyCommutativeWeak d (bvt_W OS lgc)` input |
 | `adjacent_boundary_pairing_eq_of_openEdgeBoundaryCompatibility` | `BHWExtension.lean`, with lower helpers in `AdjacencyDistributional.lean` if needed | Route-B ET support, Euclidean/permutation symmetry, and EOW/uniqueness inputs | adjacent-only raw-boundary pairing equality without any global `IsLocallyCommutativeWeak d (bvt_W OS lgc)` input |
@@ -113,18 +113,21 @@ theorem-2 bridge.
 | `bvt_F_adjacentSwapCanonical_pairing_from_pointwise` | `OSToWightmanBoundaryValueLimits.lean` or `OSToWightmanBoundaryValuesComparison.lean` support layer | measure-preserving coordinate reindexing, support-zero outside `tsupport f`, `hswap`, and the pointwise finite-shell theorem | adjacent canonical-shift pairing equality |
 | `bvt_F_reduced` | `OSToWightmanReduced.lean` | implemented from `safeSection` and the selected OS witness | reduced-coordinate representative of `bvt_F` |
 | `bvt_F_eq_bvt_F_reduced_reducedDiffMap` | `OSToWightmanReduced.lean` | implemented from `bvt_F_translationInvariant`, `reducedDiffMap_safeSection`, and `exists_uniformShift_eq_of_reducedDiffMap_eq` | pointwise factorization of `bvt_F OS lgc n z` through `reducedDiffMap n d z` |
-| `canonicalForwardConeDirection_reducedDiff_eq_canonicalReducedDirection` | same reduced shell support layer | definitions of `canonicalForwardConeDirection`, `reducedDiffMapReal`, and `safeBasepointVec` | reduced direction of the public canonical shell is the product-cone direction `safeBasepointVec` in every reduced slot |
-| `permutedCanonicalForwardDirection_reducedDiff_eq_permOnReducedDiff` | same reduced shell support layer | `permOnReducedDiff_reducedDiffMap` and the previous direction lemma | reduced direction of `canonicalForwardConeDirection ∘ Equiv.swap i j` |
-| `reducedPairDiff_reducedDiffMapReal` | same reduced shell support layer | `realDiffCoordCLE`, `prependBasepointReal`, and translation-cancellation algebra | support hypothesis `AreSpacelikeSeparated d (x i) (x j)` rewritten in reduced coordinates |
+| `canonicalForwardConeDirection_reducedDiff_eq_canonicalReducedDirection` | `OSToWightmanReduced.lean` | implemented from `canonicalForwardConeDirection`, `reducedDiffMap`, and `safeBasepointVec` | reduced direction of the public canonical shell is the product-cone direction `safeBasepointVec` in every reduced slot |
+| `permutedCanonicalForwardDirection_reducedDiff_eq_permOnReducedDiff` | `OSToWightmanReduced.lean` | implemented from `permOnReducedDiff_reducedDiffMap` and the previous direction lemma | reduced direction of `canonicalForwardConeDirection ∘ Equiv.swap i j` |
+| `reducedPairDiff_reducedDiffMapReal` | `OSToWightmanReduced.lean` | implemented from `realDiffCoordCLE`, `prependBasepointReal`, and translation-cancellation algebra | support hypothesis `AreSpacelikeSeparated d (x i) (x j)` rewritten in reduced coordinates |
 | `bvt_F_reduced_permOnReducedDiff` | `OSToWightmanReduced.lean` | implemented from reduced factorization, `permOnReducedDiff_reducedDiffMap`, and `bvt_F_perm` | reduced-coordinate permutation invariance of the descended OS-side witness |
 | `permOnReducedDiff_swap_permutedCanonicalDirection` | `OSToWightmanReduced.lean` | implemented from `permOnReducedDiff_mul` and involutivity of `Equiv.swap` | selected swap sends the permuted canonical reduced direction back to the canonical reduced direction |
 | `bvt_F_reduced_permutedDirection_to_realPermutedCanonical` | `OSToWightmanReduced.lean` | implemented from `bvt_F_reduced_permOnReducedDiff` | converts the permuted-imaginary-direction comparison into a canonical-direction comparison at the permuted real reduced basepoint |
-| `reducedSpacelikeSwapEdge` / `isOpen_reducedSpacelikeSwapEdge` | reduced local EOW support layer | `reducedPairDiff` and openness of the spacelike cone | the real reduced edge on which the selected pair is spacelike |
-| `bvt_F_reduced_boundary_perm_eq_on_reducedSpacelikeSwapEdge` | reduced local EOW support layer | `bvt_F_reduced_permOnReducedDiff` | boundary equality of the two reduced branches on the spacelike real edge |
-| `bvt_F_reduced_holomorphicOn_reducedForwardTube` / `bvt_F_reduced_holomorphicOn_swapPulledForwardTube` | reduced local EOW support layer | `bvt_F_holomorphic`, `safeSection_mem_forwardTube`, and continuity of `permOnReducedDiff` | holomorphicity of the two reduced branches on their tube domains |
+| `reducedSpacelikeSwapEdge` | `OSToWightmanReduced.lean` | implemented from `reducedPairDiff` and `MinkowskiSpace.IsSpacelike` | the real reduced edge on which the selected pair is spacelike |
+| `isOpen_reducedSpacelikeSwapEdge` | `OSToWightmanReduced.lean` | implemented from continuity of `reducedPairDiff` and openness of the spacelike cone | openness of the real reduced edge for local EOW neighborhoods |
+| `bvt_F_reduced_boundary_perm_eq_on_reducedSpacelikeSwapEdge` | `OSToWightmanReduced.lean` | implemented from `bvt_F_reduced_permOnReducedDiff` | boundary equality of the two reduced branches on the spacelike real edge |
+| `bvt_F_reduced_holomorphicOn_reducedForwardTube` / `bvt_F_reduced_holomorphicOn_swapPulledForwardTube` | `OSToWightmanReduced.lean` | implemented from `bvt_F_holomorphic`, `safeSection_mem_forwardTube`, and differentiability of the safe section / reduced permutation map | holomorphicity of the two reduced branches on their tube domains |
 | `reduced_local_EOW_canonicalRealSwap` | reduced BHW/EOW support layer | the reduced real edge, boundary equality, branch holomorphicity, and a non-circular two-cone EOW/BHW continuation theorem | canonical-direction equality after acting on the reduced real basepoint by the selected transposition |
 | `bvt_F_reduced_canonicalRealSwap_eq_of_pairSpacelike` | reduced finite-shell adapter layer | `reduced_local_EOW_canonicalRealSwap` | theorem-2-facing canonical real-swap equality under the pointwise spacelike hypothesis |
 | `bvt_F_reduced_permutedCanonicalDirection_eq_canonical_of_pairSpacelike` | reduced finite-shell adapter layer | the three algebraic reduced-permutation lemmas and `bvt_F_reduced_canonicalRealSwap_eq_of_pairSpacelike` | equality between the reduced permuted-canonical-direction shell and the reduced canonical shell |
+| `reducedDiffMap_canonicalShell_eq` | `OSToWightmanReduced.lean` | implemented from reduced real differences and canonical reduced direction | reduced coordinates of the canonical shell split into real reduced basepoint plus canonical imaginary direction |
+| `reducedDiffMap_permutedEtaCanonicalShellOfPerm_eq` | `OSToWightmanReduced.lean` | implemented from reduced real differences and the permuted canonical reduced direction | reduced coordinates of the permuted-eta shell split into real reduced basepoint plus permuted imaginary direction |
 | `bvt_F_permutedEtaCanonicalShellOfSwap_eq_canonicalShell_of_spacelike` | theorem-2 finite-shell layer | reduced factorization, reduced direction lemmas, `reducedPairDiff_reducedDiffMapReal`, and the reduced local-edge theorem | pointwise equality between the arbitrary-swap permuted-eta shell and the canonical shell for the same spacelike pair |
 | `bvt_F_swapCanonical_pairing_from_transposition_pointwise` | `OSToWightmanBoundaryValueLimits.lean` or `OSToWightmanBoundaryValuesComparison.lean` support layer | measure-preserving coordinate reindexing, support-zero outside `tsupport f`, `hswap`, and the arbitrary-transposition pointwise finite-shell theorem | the general `swap i j` canonical pairing equality required by the frontier theorem |
 | `bvt_F_swapCanonical_pairing` | `OSToWightmanBoundaryValues.lean` | only the completed arbitrary-transposition pairing theorem | final private frontier theorem consumed by `bv_local_commutativity_transfer_of_swap_pairing` |
@@ -1905,7 +1908,7 @@ the current private hLC-based proof, with the hLC-dependent step replaced by
 the OS-side edge equality:
 
 ```lean
-theorem BHW.extendF_perm_eq_on_realOpen_of_symmetric_boundary
+theorem BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality
     (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
@@ -1914,23 +1917,28 @@ theorem BHW.extendF_perm_eq_on_realOpen_of_symmetric_boundary
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
         F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
     (σ : Equiv.Perm (Fin n))
-    (hEdge : BHW.HasPermutationEdgeDistributionEquality d n F σ)
     (V : Set (NPointDomain d n))
     (hV_open : IsOpen V)
-    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
     (hV_ET : ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
     (hV_permET :
       ∀ x ∈ V,
-        BHW.realEmbed (fun k => x (σ k)) ∈ BHW.ExtendedTube d n) :
+        BHW.realEmbed (fun k => x (σ k)) ∈ BHW.ExtendedTube d n)
+    (hEdge :
+      ∀ (φ : SchwartzNPoint d n),
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ x : NPointDomain d n,
+            BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) * φ x
+          =
+          ∫ x : NPointDomain d n,
+            BHW.extendF F (BHW.realEmbed x) * φ x) :
     ∀ x ∈ V,
       BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) =
         BHW.extendF F (BHW.realEmbed x) := by
-  -- `extendF` is continuous on the ET side of the edge.
-  -- Apply `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
-  -- to the two continuous real-edge traces, using `hEdge V ...` for the
-  -- compactly supported distribution equality.
+  -- implemented in `BHWPermutation/EdgeDistribution.lean`.
+  -- This is the direct compact-test pairing form consumed by the SCV theorem.
 
-theorem BHW.extendF_perm_overlap_of_symmetric_boundary
+theorem BHW.extendF_perm_overlap_of_edgePairingEquality
     (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
@@ -1939,23 +1947,35 @@ theorem BHW.extendF_perm_overlap_of_symmetric_boundary
         (z : Fin n → Fin (d + 1) → ℂ), z ∈ ForwardTube d n →
         F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
     (σ : Equiv.Perm (Fin n))
-    (hEdge : BHW.HasPermutationEdgeDistributionEquality d n F σ)
-    (hJostWitness :
-      ∃ x : NPointDomain d n,
-        x ∈ BHW.JostSet d n ∧
-        BHW.realEmbed x ∈ BHW.ExtendedTube d n ∧
+    (hOverlap_conn :
+      IsConnected
+        {z : Fin n → Fin (d + 1) → ℂ |
+          z ∈ BHW.ExtendedTube d n ∧
+          BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n})
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V) (hV_ne : V.Nonempty)
+    (hV_ET : ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hV_permET :
+      ∀ x ∈ V,
         BHW.realEmbed (fun k => x (σ k)) ∈ BHW.ExtendedTube d n)
-    (hFwd_conn : IsConnected (BHW.permForwardOverlapSet (d := d) n σ)) :
+    (hEdge :
+      ∀ (φ : SchwartzNPoint d n),
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ x : NPointDomain d n,
+            BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) * φ x
+          =
+          ∫ x : NPointDomain d n,
+            BHW.extendF F (BHW.realEmbed x) * φ x) :
     ∀ z : Fin n → Fin (d + 1) → ℂ,
       z ∈ BHW.ExtendedTube d n →
       BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n →
       BHW.extendF F (BHW.permAct (d := d) σ z) =
         BHW.extendF F z := by
-  -- Same connected-domain identity-theorem reduction as
-  -- `extendF_perm_overlap_of_jostWitness_and_forwardOverlapConnected`, but
-  -- the real-open equality is supplied by
-  -- `extendF_perm_eq_on_realOpen_of_symmetric_boundary`, not by global
-  -- `IsLocallyCommutativeWeak`.
+  -- implemented in `BHWPermutation/EdgeDistribution.lean`.
+  -- It applies `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`
+  -- on `V`, then uses `extendF_perm_eq_on_connectedDomain_of_realOpen`
+  -- on the explicit connected overlap.
 ```
 
 For `F := bvt_F OS lgc n`, the concrete theorem slot is:
@@ -1969,7 +1989,9 @@ theorem bvt_F_restrictedLorentzInvariant_forwardTube
       bvt_F OS lgc n
         (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
       bvt_F OS lgc n z := by
-  -- expose the proof currently embedded in `bvt_absoluteForwardTubeInput`.
+  -- implemented in `OSToWightmanSelectedWitness.lean` from
+  -- `BHW.Task5Bridge.real_lorentz_invariance_from_euclidean_distributional`
+  -- and `bvt_F_ofEuclidean_wick_pairing`.
 
 theorem bvt_F_complexLorentzInvariant_forwardTube
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
@@ -1980,13 +2002,9 @@ theorem bvt_F_complexLorentzInvariant_forwardTube
       BHW.complexLorentzAction Λ z ∈ ForwardTube d n →
       bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
         bvt_F OS lgc n z := by
-  intro Λ z hz hΛz
-  exact
-    BHW.complex_lorentz_invariance
-      (d := d) n (bvt_F OS lgc n)
-      (bvt_F_holomorphic (d := d) OS lgc n)
-      (bvt_F_restrictedLorentzInvariant_forwardTube (d := d) OS lgc n)
-      Λ z hz hΛz
+  -- implemented in `OSToWightmanSelectedWitness.lean` from
+  -- `BHW.complex_lorentz_invariance` and the restricted real theorem above,
+  -- with the `BHW.ForwardTube`/root `ForwardTube` adapter made explicit.
 
 theorem bvt_F_extendF_perm_eq_on_realJost_of_OS_symmetry
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
@@ -2140,7 +2158,7 @@ the compact-support uniqueness theorem applied to the two continuous
 `extendF` traces:
 
 ```lean
-theorem BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality
+theorem BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality
     (n : ℕ)
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
@@ -2151,7 +2169,6 @@ theorem BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality
     (σ : Equiv.Perm (Fin n))
     (V : Set (NPointDomain d n))
     (hV_open : IsOpen V)
-    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
     (hV_ET : ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
     (hV_permET :
       ∀ x ∈ V,
@@ -2161,9 +2178,10 @@ theorem BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality
         HasCompactSupport (φ : NPointDomain d n → ℂ) →
         tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
         ∫ x : NPointDomain d n,
-            (BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) -
-              BHW.extendF F (BHW.realEmbed x)) * φ x
-          = 0) :
+            BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) * φ x
+          =
+          ∫ x : NPointDomain d n,
+            BHW.extendF F (BHW.realEmbed x) * φ x) :
     ∀ x ∈ V,
       BHW.extendF F (BHW.realEmbed (fun k => x (σ k))) =
         BHW.extendF F (BHW.realEmbed x) := by
@@ -2172,9 +2190,15 @@ theorem BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality
   -- Use `extendF_holomorphicOn` to get continuity of both traces on `V`.
   -- Apply
   -- `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`.
-  -- In the test-function callback, rewrite the equality of pairings from
-  -- `hEdge φ hφ_compact hφ_tsupport` by `integral_sub` and `sub_mul`.
+  -- In the test-function callback, pass
+  -- `hEdge φ hφ_compact hφ_tsupport` directly.
 ```
+
+This theorem is implemented and exact-checked in
+`BHWPermutation/EdgeDistribution.lean`.  The zero-of-difference formulation of
+edge distribution equality remains useful as an OS-side mathematical package,
+but the Lean-facing uniqueness theorem consumes pairing equality directly,
+which avoids smuggling an extra integrability obligation into this adapter.
 
 The theorem below is a secondary compatibility route, useful only if we decide
 to mine the private hLC proof literally.  It should not be the primary route
@@ -3177,9 +3201,9 @@ continuity of holomorphic functions on the interior domain `U`, exactly as in
 the checked `OSToWightmanTubeIdentity` proof.
 
 Equivalently, package this as `bvt_F_hasPermutationEdgeDistributionEquality`
-by moving the difference to one side.  Then
-`BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality` converts this
-compact distribution equality to pointwise equality on `V`.
+as compact-test pairing equality.  Then the checked theorem
+`BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality` converts this compact
+edge pairing equality to pointwise equality on `V`.
 
 The `bvt_W` theorem below is only a compatibility adapter after the direct
 branch equality has been proved.  It is useful for comparing with the private
@@ -3303,9 +3327,8 @@ The proof transcript for the branch theorem should then be:
    ```
 
 This directly supplies the `hEdge` input for
-`BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality`, after rewriting
-the equality above as an integral of
-`(extendF F (realEmbed (x ∘ σ)) - extendF F (realEmbed x)) * φ x`.
+`BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`.  No difference-form
+rewrite is needed in the uniqueness adapter.
 
 The optional `bvt_W` compatibility adapter then continues:
 
@@ -3630,7 +3653,7 @@ Primary planned theorem-2 closure slots:
 4. `bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS`
 5. `bvt_F_extendF_perm_edgeDistribution_eq_from_OS`
 6. `bvt_F_hasPermutationEdgeDistributionEquality`
-7. `BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality`
+7. `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`
 8. `bvt_F_restrictedLorentzInvariant_forwardTube`
 9. `bvt_F_complexLorentzInvariant_forwardTube`
 10. `BHW.permuteSchwartz`
@@ -3643,8 +3666,8 @@ Primary planned theorem-2 closure slots:
 17. `bvt_F_extendF_perm_eq_on_realJost_of_OS_symmetry`
 18. `BHW.jostWitness_exists_for_perm_overlap`
 19. `BHW.isConnected_permForwardOverlapSet_for_perm`
-20. `BHW.extendF_perm_eq_on_realOpen_of_symmetric_boundary`
-21. `BHW.extendF_perm_overlap_of_symmetric_boundary`
+20. `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`
+21. `BHW.extendF_perm_overlap_of_edgePairingEquality`
 22. `BHW.bargmann_hall_wightman_theorem_of_extendF_perm`
 23. `bvt_F_extendF_perm_overlap`
 24. `bvt_F_symmetric_PET_extension`
@@ -3730,18 +3753,16 @@ theorem bvt_F_extendF_perm_overlap
       BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) σ z) =
         BHW.extendF (bvt_F OS lgc n) z := by
   intro σ z hz hzσ
-  have hEdge :=
-    bvt_F_hasPermutationEdgeDistributionEquality (d := d) OS lgc n σ
-  have hJostWitness :=
-    BHW.jostWitness_exists_for_perm_overlap (d := d) (n := n) σ
-  have hConn :=
-    BHW.isConnected_permForwardOverlapSet_for_perm (d := d) (n := n) σ
+  have hOverlapConn :=
+    BHW.isConnected_permExtendedOverlap_for_perm (d := d) (n := n) σ
+  obtain ⟨V, hV_open, hV_ne, hV_ET, hV_permET, hEdgePair⟩ :=
+    bvt_F_extendF_perm_edgePairing_eq_from_OS (d := d) OS lgc n σ
   exact
-    BHW.extendF_perm_overlap_of_symmetric_boundary
+    BHW.extendF_perm_overlap_of_edgePairingEquality
       (d := d) n (bvt_F OS lgc n)
       (bvt_F_holomorphic (d := d) OS lgc n)
       (bvt_F_restrictedLorentzInvariant_forwardTube (d := d) OS lgc n)
-      σ hEdge hJostWitness hConn z hz hzσ
+      σ hOverlapConn V hV_open hV_ne hV_ET hV_permET hEdgePair z hz hzσ
 
 theorem bvt_F_symmetric_PET_extension
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
@@ -4179,7 +4200,7 @@ The next Lean implementation should follow the primary BHW/PET boundary route:
    permutation-flow spine;
 3. prove `bvt_F_distributionalEOW_permBranch_from_euclideanEdge`;
 4. package the result as `bvt_F_hasPermutationEdgeDistributionEquality`;
-5. apply `BHW.extendF_perm_eq_on_realOpen_of_edgeDistributionEquality`;
+5. apply `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`;
 6. add the boundary-transfer theorem that proves
    `IsLocallyCommutativeWeak d (bvt_W OS lgc)` from this PET boundary package.
 
