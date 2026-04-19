@@ -924,6 +924,68 @@ theorem bvt_selectedPETExtensionOfReducedData_translate_on_PET
       bvt_selectedPETExtensionOfReducedData (d := d) OS lgc m Fred z :=
   bvt_selectedPETExtensionOfReducedData_translate (d := d) OS lgc m Fred z c
 
+/-- The selected PET scalar built from reduced extension data is holomorphic on
+the absolute PET, because it is the pullback of a reduced PET-holomorphic
+scalar along `reducedDiffMap`. -/
+theorem bvt_selectedPETExtensionOfReducedData_holomorphicOn_PET
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (BHW.descendAbsoluteForwardTubeInput (d := d) (m := m)
+        (bvt_absoluteForwardTubeInput (d := d) OS lgc m)).toFun) :
+    DifferentiableOn ℂ
+      (bvt_selectedPETExtensionOfReducedData (d := d) OS lgc m Fred)
+      (BHW.PermutedExtendedTube d (m + 1)) := by
+  intro z hz
+  change DifferentiableWithinAt ℂ
+    (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+      Fred.toFun (BHW.reducedDiffMap (m + 1) d z))
+    (BHW.PermutedExtendedTube d (m + 1)) z
+  have hdiff :
+      DifferentiableWithinAt ℂ
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.reducedDiffMap (m + 1) d z)
+        (BHW.PermutedExtendedTube d (m + 1)) z :=
+    (BHW.reducedDiffMap (m + 1) d).differentiable.differentiableAt.differentiableWithinAt
+  have hmaps :
+      Set.MapsTo
+        (fun z : Fin (m + 1) → Fin (d + 1) → ℂ =>
+          BHW.reducedDiffMap (m + 1) d z)
+        (BHW.PermutedExtendedTube d (m + 1))
+        (BHW.ReducedPermutedExtendedTubeN d m) := by
+    intro w hw
+    exact ⟨w, hw, rfl⟩
+  exact (Fred.holomorphic _ ⟨z, hz, rfl⟩).comp z hdiff hmaps
+
+/-- The selected PET scalar built from reduced extension data inherits PET
+permutation invariance from the reduced extension datum. -/
+theorem bvt_selectedPETExtensionOfReducedData_permInvariant
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (m : ℕ)
+    (Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (BHW.descendAbsoluteForwardTubeInput (d := d) (m := m)
+        (bvt_absoluteForwardTubeInput (d := d) OS lgc m)).toFun)
+    (σ : Equiv.Perm (Fin (m + 1)))
+    (z : Fin (m + 1) → Fin (d + 1) → ℂ)
+    (hz : z ∈ BHW.PermutedExtendedTube d (m + 1))
+    (hσz : (fun k => z (σ k)) ∈ BHW.PermutedExtendedTube d (m + 1)) :
+    bvt_selectedPETExtensionOfReducedData (d := d) OS lgc m Fred
+        (fun k => z (σ k)) =
+      bvt_selectedPETExtensionOfReducedData (d := d) OS lgc m Fred z := by
+  haveI : NeZero (m + 1) := ⟨Nat.succ_ne_zero m⟩
+  change
+    Fred.toFun (BHW.reducedDiffMap (m + 1) d (fun k => z (σ k))) =
+      Fred.toFun (BHW.reducedDiffMap (m + 1) d z)
+  rw [← BHW.permOnReducedDiff_reducedDiffMap (d := d) (n := m + 1) σ z]
+  exact
+    Fred.perm_invariant σ (BHW.reducedDiffMap (m + 1) d z)
+      ⟨z, hz, rfl⟩
+      (by
+        rw [BHW.permOnReducedDiff_reducedDiffMap (d := d) (n := m + 1) σ z]
+        exact ⟨fun k => z (σ k), hσz, rfl⟩)
+
 /-- The selected PET scalar built from reduced extension data agrees with
 `bvt_F` on the original forward tube. -/
 theorem bvt_selectedPETExtensionOfReducedData_eq_bvt_F_on_forwardTube
