@@ -1880,7 +1880,7 @@ lemma forwardTubeAnalyticity_zero
   · refine ⟨‖W 0 e‖ + 1, 0, by positivity, ?_⟩
     intro z hz
     simp only [pow_zero, mul_one]
-    exact le_trans (norm_nonneg _) (le_of_lt (lt_add_of_pos_right _ zero_lt_one))
+    exact le_of_lt (lt_add_of_pos_right _ zero_lt_one)
   intro f η _
   have h_integral : ∫ x : NPointSpacetime d 0, W 0 e * f x = W 0 f := by
     rw [volume_nPointSpacetime_zero_eq_dirac, MeasureTheory.integral_dirac]
