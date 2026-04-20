@@ -1782,6 +1782,8 @@ lemma forwardTube_extension_of_productTube {n : ℕ}
         (nhds (w φ))) :
     ∃ (W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ W_analytic (ForwardTube d (n + 1)) ∧
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ForwardTube d (n + 1) → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
       (∀ (f : SchwartzNPointSpace d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
         InForwardCone d (n + 1) η →
         Filter.Tendsto
@@ -1799,7 +1801,7 @@ lemma forwardTube_extension_of_productTube {n : ℕ}
     have hL_diff : DifferentiableAt ℂ (complexDiffCoord d n) z :=
       (complexDiffCoord d n).toContinuousLinearMap.differentiableAt
     exact (hF_at.comp z hL_diff).differentiableWithinAt
-  · -- Boundary values
+  · -- Growth + boundary values
     sorry
 
 variable (d) in
@@ -1864,6 +1866,8 @@ lemma forwardTubeAnalyticity_zero
     (hW_linear : ∀ n, IsLinearMap ℂ (W n)) :
     ∃ (W_analytic : (Fin 0 → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ W_analytic (ForwardTube d 0) ∧
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ForwardTube d 0 → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
       (∀ (f : SchwartzNPointSpace d 0) (η : Fin 0 → Fin (d + 1) → ℝ),
         InForwardCone d 0 η →
         Filter.Tendsto
@@ -1872,7 +1876,11 @@ lemma forwardTubeAnalyticity_zero
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W 0 f))) := by
   let e := schwartzConstOne d
-  refine ⟨fun _ => W 0 e, differentiableOn_const _, ?_⟩
+  refine ⟨fun _ => W 0 e, differentiableOn_const _, ?_, ?_⟩
+  · refine ⟨‖W 0 e‖ + 1, 0, by positivity, ?_⟩
+    intro z hz
+    simp only [pow_zero, mul_one]
+    exact le_trans (norm_nonneg _) (le_of_lt (lt_add_of_pos_right _ zero_lt_one))
   intro f η _
   have h_integral : ∫ x : NPointSpacetime d 0, W 0 e * f x = W 0 f := by
     rw [volume_nPointSpacetime_zero_eq_dirac, MeasureTheory.integral_dirac]
@@ -1916,7 +1924,7 @@ theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
       exact forwardTube_extension_of_productTube d
         hW_tempered hW_linear hW_transl w hw_det F hF_holo hF_bv
   · intro hAnal n
-    obtain ⟨W_analytic, hWa_holo, hWa_bv⟩ := hAnal (n + 1)
+    obtain ⟨W_analytic, hWa_holo, hWa_growth, hWa_bv⟩ := hAnal (n + 1)
     obtain ⟨w, hw_cont, hw_lin, hw_det⟩ :=
       exists_diffVar_distribution d hW_tempered hW_linear hW_transl n
     refine ⟨w, hw_cont, hw_lin, hw_det, ?_⟩
