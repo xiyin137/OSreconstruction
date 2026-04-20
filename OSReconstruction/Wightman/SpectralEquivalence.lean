@@ -5,6 +5,8 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
+import OSReconstruction.Wightman.Reconstruction.BlockIntegral
+import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
@@ -29,7 +31,7 @@ This file contains:
 
 noncomputable section
 
-open MeasureTheory Complex Filter Set Topology Module
+open MeasureTheory Complex Filter Set Topology Module OSReconstruction
 
 /-! ### Momentum-Space Spectral Condition Definitions -/
 
@@ -1743,6 +1745,80 @@ lemma inForwardCone_succ_implies_diffs_inOpenForwardCone (n : ℕ)
 
 /-! ### Proof of the Main Equivalence -/
 
+private abbrev BasepointSpace (d : ℕ) := Fin (d + 1) → ℝ
+
+/-- A normalized Schwartz bump on the basepoint variable. This is the cutoff
+used to choose a section of `diffVarReduction`. The implementation should
+eventually follow the local `normedUnitBumpSchwartzPi` pattern recorded in the
+blueprint. -/
+private noncomputable def normalizedBasepointBump (d : ℕ) :
+    SchwartzMap (BasepointSpace d) ℂ := by
+  sorry
+
+private lemma integral_normalizedBasepointBump (d : ℕ) :
+    ∫ a : BasepointSpace d, normalizedBasepointBump d a = 1 := by
+  sorry
+
+/-- A chosen Schwartz section of `diffVarReduction`. This should eventually be
+implemented by transporting the tensor product `(a, ξ) ↦ φ₀(a) g(ξ)` back from
+basepoint-plus-difference coordinates. -/
+private noncomputable def sectionOf (d : ℕ) (n : ℕ)
+    (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
+    SchwartzNPointSpace d n → SchwartzNPointSpace d (n + 1) := by
+  sorry
+
+private noncomputable def sectionOfCLM (d : ℕ) (n : ℕ)
+    (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
+    SchwartzNPointSpace d n →L[ℂ] SchwartzNPointSpace d (n + 1) where
+  toFun := sectionOf d n φ₀
+  map_add' := by
+    sorry
+  map_smul' := by
+    sorry
+  cont := by
+    sorry
+
+@[simp] private lemma sectionOfCLM_apply (d : ℕ) (n : ℕ)
+    (φ₀ : SchwartzMap (BasepointSpace d) ℂ) (g : SchwartzNPointSpace d n) :
+    sectionOfCLM d n φ₀ g = sectionOf d n φ₀ g := rfl
+
+/-- The chosen section is a right inverse to `diffVarReduction` once the bump
+has total integral `1`. -/
+private lemma diffVarReduction_sectionOf (d : ℕ) [NeZero d] (n : ℕ)
+    (φ₀ : SchwartzMap (BasepointSpace d) ℂ)
+    (hφ₀ : ∫ a : BasepointSpace d, φ₀ a = 1)
+    (g : SchwartzNPointSpace d n) :
+    diffVarReduction d n (sectionOf d n φ₀ g) = g := by
+  sorry
+
+private lemma diffVarReduction_sub_sectionOf_eq_zero (d : ℕ) [NeZero d] (n : ℕ)
+    (φ₀ : SchwartzMap (BasepointSpace d) ℂ)
+    (hφ₀ : ∫ a : BasepointSpace d, φ₀ a = 1)
+    (f : SchwartzNPointSpace d (n + 1)) :
+    diffVarReduction d n
+      (f - sectionOf d n φ₀ (diffVarReduction d n f)) = 0 := by
+  rw [(diffVarReduction d n).map_sub, diffVarReduction_sectionOf d n φ₀ hφ₀, sub_self]
+
+/-- The kernel theorem isolated in the blueprint: a diagonal-translation
+invariant tempered distribution vanishes on the kernel of
+`diffVarReduction`. The preferred proof route is the head-block transport
+argument recorded in the blueprint. -/
+private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
+    (d : ℕ) [NeZero d]
+    (n : ℕ)
+    {W : SchwartzNPointSpace d (n + 1) → ℂ}
+    (hW_cont : Continuous W)
+    (hW_lin : IsLinearMap ℂ W)
+    (hW_transl : ∀ (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d (n + 1)),
+      (∀ x : NPointSpacetime d (n + 1),
+        g.toFun x = f.toFun (fun i => x i + a)) →
+      W f = W g) :
+    ∀ f : SchwartzNPointSpace d (n + 1),
+      diffVarReduction d n f = 0 → W f = 0 := by
+  intro f hf
+  sorry
+
 variable (d) in
 /-- The reduced distribution in difference variables exists from translation invariance. -/
 lemma exists_diffVar_distribution
@@ -1757,7 +1833,50 @@ lemma exists_diffVar_distribution
     ∃ (w : SchwartzNPointSpace d n → ℂ),
       Continuous w ∧ IsLinearMap ℂ w ∧
       (∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f)) := by
-  sorry
+  let φ₀ : SchwartzMap (BasepointSpace d) ℂ := normalizedBasepointBump d
+  have hφ₀_int : ∫ a : BasepointSpace d, φ₀ a = 1 := by
+    simpa [φ₀] using integral_normalizedBasepointBump d
+  let φSect : SchwartzNPointSpace d n →L[ℂ] SchwartzNPointSpace d (n + 1) :=
+    sectionOfCLM d n φ₀
+  have hsection_right_inv :
+      ∀ g : SchwartzNPointSpace d n, diffVarReduction d n (φSect g) = g := by
+    intro g
+    simpa [φSect, sectionOfCLM_apply] using
+      diffVarReduction_sectionOf d n φ₀ hφ₀_int g
+  have hker :
+      ∀ f : SchwartzNPointSpace d (n + 1),
+        diffVarReduction d n f = 0 → W (n + 1) f = 0 := by
+    intro f hf
+    exact translationInvariant_vanishesOn_diffVarReduction_kernel d n
+      (hW_cont := hW_tempered (n + 1))
+      (hW_lin := hW_linear (n + 1))
+      (hW_transl := hW_transl (n + 1))
+      f hf
+  let w : SchwartzNPointSpace d n → ℂ := fun g => W (n + 1) (φSect g)
+  have hw_cont : Continuous w := by
+    exact (hW_tempered (n + 1)).comp φSect.continuous
+  have hw_lin : IsLinearMap ℂ w := by
+    refine { map_add := ?_, map_smul := ?_ }
+    · intro g h
+      show W (n + 1) (φSect (g + h)) = W (n + 1) (φSect g) + W (n + 1) (φSect h)
+      rw [map_add, (hW_linear (n + 1)).map_add]
+    · intro c g
+      show W (n + 1) (φSect (c • g)) = c * W (n + 1) (φSect g)
+      rw [map_smul, (hW_linear (n + 1)).map_smul, smul_eq_mul]
+  have hw_det :
+      ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f) := by
+    intro f
+    have hred :
+        diffVarReduction d n
+          (f - φSect (diffVarReduction d n f)) = 0 := by
+      simpa [φSect, sectionOfCLM_apply] using
+        diffVarReduction_sub_sectionOf_eq_zero d n φ₀ hφ₀_int f
+    have hzero :
+        W (n + 1) (f - φSect (diffVarReduction d n f)) = 0 := hker _ hred
+    have hlin := hW_linear (n + 1)
+    rw [hlin.map_sub, sub_eq_zero] at hzero
+    simpa [w] using hzero
+  exact ⟨w, hw_cont, hw_lin, hw_det⟩
 
 variable (d) in
 /-- Forward direction helper: lift F from ProductForwardTube to ForwardTube. -/
