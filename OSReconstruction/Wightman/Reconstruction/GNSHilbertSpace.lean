@@ -1271,8 +1271,8 @@ private lemma wfn_spectralConditionDistribution :
     SpectralConditionDistribution d Wfn.W :=
   (spectralConditionDistribution_iff_forwardTubeAnalyticity d
     Wfn.tempered Wfn.linear Wfn.translation_invariant).mpr
-    (fun n => let ⟨W_an, hDiff, _, hBV⟩ := Wfn.spectrum_condition n
-      ⟨W_an, hDiff, hBV⟩)
+    (fun n => by
+      simpa [ForwardTubeAnalyticity] using Wfn.spectrum_condition n)
 
 /-- **Stone spectral Fourier-Stieltjes representation** (Reed-Simon VIII.5):
     for a strongly continuous one-parameter unitary group `U(t)` with self-adjoint

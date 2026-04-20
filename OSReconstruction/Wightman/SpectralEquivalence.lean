@@ -1165,12 +1165,19 @@ def SpectralConditionDistribution
 /-- **Forward tube analyticity condition.**
 
     For each n, `W_n` extends to a holomorphic function on the forward tube `T_n`,
-    with distributional boundary values recovering `W_n`. -/
+    with a global polynomial-growth bound there, and with distributional boundary
+    values recovering `W_n`.
+
+    This matches the Vladimirov / Paley-Wiener-Schwartz tube hypothesis used by the
+    backward implication to spectral support: holomorphicity alone plus boundary
+    values is too weak without the slow-growth condition in the tube. -/
 def ForwardTubeAnalyticity
     (W : (n : ℕ) → SchwartzNPointSpace d n → ℂ) : Prop :=
   ∀ (n : ℕ),
     ∃ (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ W_analytic (ForwardTube d n) ∧
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ForwardTube d n → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
       (∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
         InForwardCone d n η →
         Filter.Tendsto
@@ -1880,6 +1887,14 @@ lemma forwardTubeAnalyticity_zero
 
 variable (d) in
 /-- **Equivalence of the two spectral condition formulations.**
+
+    `SpectralConditionDistribution d W ↔ ForwardTubeAnalyticity d W`.
+
+    The forward direction uses the Fourier-Laplace representation theorem
+    (Vladimirov §25), and the backward direction uses the converse
+    Paley-Wiener-Schwartz tube theorem (Vladimirov §26), so the tube side must
+    include the standard global polynomial-growth hypothesis in addition to
+    holomorphicity and boundary-value recovery.
     Ref: Streater-Wightman, Theorem 3-5; Reed-Simon Vol. II, §IX.3. -/
 theorem spectralConditionDistribution_iff_forwardTubeAnalyticity
     {W : (n : ℕ) → SchwartzNPointSpace d n → ℂ}
