@@ -3131,12 +3131,9 @@ private theorem bvt_F_hasGlobalForwardTubeGrowth
       0 < C_bd ∧
       ∀ z ∈ ForwardTube d k,
         ‖bvt_F OS lgc k z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-  rcases (full_analytic_continuation_with_symmetry_growth OS lgc k).choose_spec with
-    ⟨_hhol, hrest⟩
-  rcases hrest with ⟨_hEuclid, hrest⟩
-  rcases hrest with ⟨_hPerm, hrest⟩
-  rcases hrest with ⟨_hTrans, hrest⟩
-  exact hrest.2
+  rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc k).choose_spec with
+    ⟨_hACR, _hFT, _hEuclid, _hPerm, _hTrans, _hNegCanonical, hGrowth⟩
+  exact hGrowth
 
 /-- Exact Step-1 Wightman-side boundary-value shell for the current
 Lemma-4.2 route: the reconstructed pairing against the right-time-shifted

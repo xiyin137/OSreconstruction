@@ -341,30 +341,26 @@ private theorem bvt_F_lorentz_ortho_wick
         simpa [hφ_coeff] using hφx
       simp [hφ0]
 
-/-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
+/-- Theorem 2 frontier: locality / swap symmetry for the reconstructed
+boundary-value functional.
 
 OS paper target:
 - OS I Section 4.5 "Locality", pp. 104-105
 - OS II IV.2, p. 288, which says the remaining Wightman axioms are established
   as in Sections 4.2-4.5 of OS I
 
-This sorry is the locality transfer step on the boundary-value route. -/
-private theorem bvt_F_swapCanonical_pairing
+This sorry is the direct boundary-distributional locality statement on the OS
+route.  It should be supplied by the OS Section 4.5 branch-difference /
+boundary-transfer argument, not by any finite-height canonical-shell equality.
+-/
+private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n),
       (∀ x, f.toFun x ≠ 0 →
         MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
       (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
-      =
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
   sorry
 
 /-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
@@ -731,12 +727,7 @@ theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i j f g hsupp hswap
-  exact bv_local_commutativity_transfer_of_swap_pairing (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (bvt_F_swapCanonical_pairing (d := d) OS lgc n)
-    i j f g hsupp hswap
+  exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i j f g hsupp hswap
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :

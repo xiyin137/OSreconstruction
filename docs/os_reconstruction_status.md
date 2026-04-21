@@ -83,10 +83,11 @@ actively building infrastructure for this.
 **Estimate:** Weeks of focused work, with the boundary-value identification as the
 critical bottleneck.
 
-### W1: Locality (`bvt_F_swapCanonical_pairing`) — swap symmetry
+### W1: Locality (`bvt_W_swap_pairing_of_spacelike`) — swap symmetry
 
-**Statement:** For spacelike-separated test functions, the Wightman BV pairing
-commutes: `∫ F(x+iεη) (f ⊗ g) = ∫ F(x+iεη) (g ⊗ f)` in the appropriate sense.
+**Statement:** For spacelike-separated test functions related by a coordinate
+swap, the reconstructed boundary-value functional satisfies
+`bvt_W OS lgc n f = bvt_W OS lgc n g`.
 
 **Proof strategy (OS I §4.2):**
 1. The OS Euclidean covariance gives permutation symmetry of Schwinger functions.
