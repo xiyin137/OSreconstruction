@@ -965,9 +965,11 @@ theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
               bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε := by
   exact bvt_W_cluster (d := d) OS lgc
 
-def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+/-- The checked `E' -> R'` output before the theorem-2 locality and theorem-4
+cluster frontiers are supplied. -/
+def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    WightmanFunctions d where
+    WightmanFunctionsCore d where
   W := bvt_W OS lgc
   linear := bvt_W_linear OS lgc
   tempered := bvt_W_continuous OS lgc
@@ -979,10 +981,23 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
     refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
     -- Global polynomial growth for the same ACR-selected witness used by `bvt_F`.
     exact (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.2
-  locally_commutative := bvt_locally_commutative OS lgc
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc
-  cluster := bvt_cluster OS lgc
+
+/-- Upgrade the checked core package to full Wightman functions once the
+adjacent locality and cluster frontiers are supplied explicitly. -/
+def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+      ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+        ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+          ∀ (g_a : SchwartzNPoint d m),
+            (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+            ‖bvt_W OS lgc (n + m) (f.tensorProduct g_a) -
+              bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε) :
+    WightmanFunctions d :=
+  (constructWightmanFunctionsCore OS lgc).toWightmanFunctions hlocal hcluster
 
 /-- The OS pre-Hilbert space constructed from the Wightman functions obtained
     data. -/
@@ -1060,9 +1075,9 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d) :
 
 theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∃ (Wfn : WightmanFunctions d),
+    ∃ (Wfn : WightmanFunctionsCore d),
       IsWickRotationPair OS.schwinger Wfn.W := by
-  refine ⟨constructWightmanFunctions OS lgc, fun n => ?_⟩
+  refine ⟨constructWightmanFunctionsCore OS lgc, fun n => ?_⟩
   exact ⟨bvt_F OS lgc n,
     bvt_F_holomorphic OS lgc n,
     bvt_boundary_values OS lgc n,
