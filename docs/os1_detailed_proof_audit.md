@@ -582,9 +582,11 @@ Exact current-code milestone:
   `one_variable_time_interchange_for_wightman_pairing`, together with the
   kernel-reduction chain down to an ambient upper-half-plane witness, in
   [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
-- `OSToWightmanPositivity.lean` is now `sorry`-free; the active public
-  theorem-3 `sorry` remains `bvt_W_positive` in
-  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean);
+- `OSToWightmanPositivity.lean` is now `sorry`-free, and
+  `bvt_W_positive` in
+  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean)
+  is now closed by
+  `OSReconstruction.bvt_W_positive_of_component_dense_preimage`;
 - the slice-side vanishing package is now available on both pairing
   orientations, including
   `fourierInvPairingCLM_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
@@ -785,8 +787,9 @@ The important point for the current repo is that the cluster step is downstream
 of the semigroup/Hilbert-space bridge. It is not the place where one should try
 to solve the positive-time analytic continuation problem.
 
-So if theorem 3 on the current `E -> R` side is still open, theorem 4 should be
-treated as a downstream consumer, not an independent route to repair theorem 3.
+Theorem 3 on the current `E -> R` side is now closed, so theorem 4 should be
+treated as a downstream consumer of that closed positivity/isometry package, not
+as an independent route to repair theorem 3.
 
 The internal proof shape is:
 1. use the Euclidean cluster axiom on the OS side for spatially translated

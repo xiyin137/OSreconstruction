@@ -8,7 +8,7 @@ two theorems:
 
 | Direction | Theorem | Status |
 |-----------|---------|--------|
-| E→R | `os_to_wightman` : OS axioms + linear growth → Wightman functions | Proof assembled, **6 sorrys** in subtheorems |
+| E→R | `os_to_wightman` : OS axioms + linear growth → Wightman functions | Proof assembled, **5 live sorrys** in subtheorems |
 | R→E | `wightman_to_os` : Wightman functions → Schwinger functions | Proof assembled, **depends on 3 axioms + sorrys in BHW chain** |
 
 Both theorem statements are proved in `Main.lean` from their respective
@@ -18,7 +18,7 @@ the individual Wightman/OS axioms.
 ### Axiom dependencies (from `#print axioms`)
 
 **`os_to_wightman`** depends on:
-- `sorryAx` (6 sorrys in W1–W6)
+- `sorryAx` (5 live sorrys in W1, W3-W6)
 - `tube_boundaryValueData_of_polyGrowth` (SCV axiom: BV existence)
 
 **`wightman_to_os`** depends on:
@@ -54,42 +54,34 @@ Granting all of these, the **R→E direction becomes sorry-free** modulo:
 
 ## QFT-specific sorrys: the irreducible core
 
-After granting all non-QFT textbook results, exactly **6 sorrys** remain on the
+After granting all non-QFT textbook results, exactly **5 live sorrys** remain on the
 E→R path. These ARE the OS reconstruction — the mathematical content that
 establishes the Euclidean-to-Minkowski bridge.
 
-### W2: Positivity (`bvt_W_positive`) — THE main theorem
+### W2: Positivity (`bvt_W_positive`) — closed
 
-**Statement:** The Wightman inner product `⟨F, F⟩_W` is non-negative for all
-Borchers sequences F.
+**Statement:** The reconstructed Wightman inner product is non-negative on all
+Borchers sequences.
 
-**Proof strategy (OS I §4.3):**
-1. The OS reflection positivity gives `⟨u, u⟩_OS ≥ 0` for OS Hilbert vectors u.
-2. The boundary value identification: for positive-time Euclidean data,
-   `⟨F, F⟩_W = ‖u(F)‖²_OS` where u(F) is the OS Hilbert vector.
-3. Extend to general Borchers sequences by density + continuity.
+**Closure route (OS I §4.3 / OS II §4.3):**
+1. build positivity on the transformed-image / dense-core package,
+2. identify the Wightman quadratic form with the OS Hilbert norm on that core,
+3. extend to arbitrary Borchers sequences by density and continuity.
 
-**Current status:** The route goes through "Package I" (OS I §4.3 transformed-image
-theorem). Packages A-B (one-variable support infrastructure) are proved. The
-active frontier is the boundary-value identification step: showing the Wightman
-inner product matches the OS inner product on a dense core.
+**Current status:** closed in
+`OSToWightmanBoundaryValues.lean` via
+`OSReconstruction.bvt_W_positive_of_component_dense_preimage`.
 
-**Difficulty:** Hard. This is the deepest result in the reconstruction. The proof
-requires: (a) constructing the OS→Wightman isometry on the positive-time core,
-(b) identifying boundary values with OS inner products via analytic continuation,
-(c) extending to all Borchers sequences by density. Xiyin's stage 5 work is
-actively building infrastructure for this.
-
-**Estimate:** Weeks of focused work, with the boundary-value identification as the
-critical bottleneck.
+**Role now:** theorem 3 is no longer a live frontier; theorem 4 consumes this
+closed positivity/isometry package.
 
 ### W1: Locality (`bvt_W_swap_pairing_of_spacelike`) — swap symmetry
 
-**Statement:** For spacelike-separated test functions related by a coordinate
-swap, the reconstructed boundary-value functional satisfies
+**Statement:** For spacelike-separated test functions related by an adjacent
+coordinate swap, the reconstructed boundary-value functional satisfies
 `bvt_W OS lgc n f = bvt_W OS lgc n g`.
 
-**Proof strategy (OS I §4.2):**
+**Proof strategy (OS I §4.5):**
 1. The OS Euclidean covariance gives permutation symmetry of Schwinger functions.
 2. Analytic continuation preserves this symmetry on the extended tube.
 3. For spacelike separations, the points lie in the PET (Jost's theorem),
@@ -186,12 +178,11 @@ on Schwartz spaces as standard FA.
 
 | Phase | What | Sorrys eliminated | Effort |
 |-------|------|-------------------|--------|
-| 0 (done) | Grant non-QFT textbook results | R→E direction clean | — |
+| 0 (done) | Grant non-QFT textbook results + close theorem 3 positivity | R→E direction clean; theorem 3 closed | — |
 | 1 | W4-W6: base-step assembly | 3 sorrys | 1-2 weeks |
-| 2 | W1: locality via BHW chain | 1 sorry | days-weeks |
+| 2 | W1: locality via OS I §4.5 / BHW chain | 1 sorry | days-weeks |
 | 3 | W3: cluster via limit exchange | 1 sorry | days |
-| 4 | W2: positivity (Package I) | 1 sorry (THE theorem) | weeks |
 
-Total estimated effort to sorry-free E→R: **4-8 weeks** of focused work.
-The critical path is W2 (positivity), which is the mathematical heart of
-OS reconstruction and cannot be shortened by granting textbook results.
+Total estimated effort to sorry-free live E→R: **2-6 weeks** of focused work.
+The critical path is now the theorem-2/theorem-4 boundary-value package together
+with the three older `OSToWightman.lean` support holes.

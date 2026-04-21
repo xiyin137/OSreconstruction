@@ -140,7 +140,7 @@ theorem extendF_adjSwap_pairing_eq_of_distributional_local_commutativity
   have h_pairing_f : (∫ x : NPointDomain d n, extendF F (realEmbed x) * f x) = W n f :=
     tendsto_nhds_unique h_tendsto_f h_bv_f
   have hW_eq : W n g = W n f :=
-    (hF_local_dist n i ⟨i.val + 1, hi⟩ f g hsep hswap).symm
+    (hF_local_dist n i hi f g hsep hswap).symm
   calc
     ∫ x : NPointDomain d n, extendF F (realEmbed x) * g x = W n g := h_pairing_g
     _ = W n f := hW_eq

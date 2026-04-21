@@ -1,7 +1,7 @@
 # Theorem 3 OS-Route Blueprint
 
-Purpose: this note is the implementation blueprint for the live `E -> R`
-frontier theorem
+Purpose: this note is the implementation blueprint for the OS-route closure of
+the former theorem-3 `E -> R` frontier
 
 - `OSToWightmanBoundaryValues.lean`, private theorem `bvt_W_positive`.
 
@@ -16,9 +16,9 @@ This note should be read together with:
 - `docs/mathlib_gap_analysis.md`
 - `docs/sorry_triage.md`
 
-## 1. The live theorem and the current production situation
+## 1. The theorem and the current production situation
 
-The live theorem is:
+The theorem closed by this blueprint is:
 
 ```lean
 private theorem bvt_W_positive
@@ -30,8 +30,8 @@ private theorem bvt_W_positive
 
 The current production files still expose an older reduction chain through
 boundary-ray / Schwinger / compact-approximation consumer interfaces. Those
-surfaces are part of the current code graph, but they are **not** the theorem-3
-blueprint any more. They are legacy consumers.
+surfaces are part of the current code graph, but they are **not** the active
+theorem-3 frontier any more. They are legacy consumers.
 
 The theorem-3 blueprint now has exactly one endorsed route:
 
@@ -59,9 +59,9 @@ Implementation discipline:
 
 ### 1.0. Mandatory documentation readiness gate
 
-For this frontier, inability to close the live `bvt_W_positive` `sorry` is not
-an invitation to add more production Lean scaffolding. It means this blueprint
-is still missing mathematical proof detail.
+For any future refactor of this theorem surface, inability to reconstruct the
+`bvt_W_positive` closure route is not an invitation to add more production Lean
+scaffolding. It means this blueprint is still missing mathematical proof detail.
 
 Before any further blocker-facing Lean edit, the relevant subsection below must
 state:
@@ -1022,9 +1022,11 @@ Exact current-code milestone:
   `one_variable_time_interchange_for_wightman_pairing`, together with the
   kernel-reduction chain down to an ambient upper-half-plane witness, in
   [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
-- `OSToWightmanPositivity.lean` is now `sorry`-free; the active public
-  theorem-3 `sorry` remains `bvt_W_positive` in
-  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean);
+- `OSToWightmanPositivity.lean` is now `sorry`-free, and
+  `bvt_W_positive` in
+  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean)
+  is now closed by
+  `OSReconstruction.bvt_W_positive_of_component_dense_preimage`;
 - the slice-side vanishing package is now formalized on both pairing
   orientations, including
   `fourierInvPairingCLM_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
