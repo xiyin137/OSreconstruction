@@ -1,5 +1,6 @@
 import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
 import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
 
 noncomputable section
@@ -256,6 +257,135 @@ theorem choose_os45_real_open_edge_for_adjacent_swap
     exact (hr_sub hy).2.1
   · intro y hy
     exact (hr_sub hy).2.2
+
+/-- The real Jost set is disjoint from the Euclidean coincidence locus. -/
+theorem jostSet_disjoint_coincidenceLocus :
+    Disjoint (JostSet d n) (CoincidenceLocus d n) := by
+  refine Set.disjoint_left.mpr ?_
+  intro x hxJ hxCoin
+  rcases hxCoin with ⟨i, j, hij, hij_eq⟩
+  have hsp : IsSpacelike d (fun μ => x i μ - x j μ) := hxJ.2 i j hij
+  have hzero : ∀ μ, x i μ - x j μ = 0 := by
+    intro μ
+    rw [hij_eq]
+    simp
+  have hsp0 := hsp
+  simp [IsSpacelike, hzero] at hsp0
+
+/-- Any Schwartz test whose topological support is contained in a real Jost
+overlap vanishes to infinite order on the coincidence locus, hence belongs to
+the OS-I zero-diagonal test space. -/
+theorem zeroDiagonal_of_tsupport_subset_jostOverlap
+    (V : Set (NPointDomain d n))
+    (hV_jost : ∀ x ∈ V, x ∈ JostSet d n)
+    (φ : SchwartzNPoint d n)
+    (hφ_tsupport : tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
+    VanishesToInfiniteOrderOnCoincidence φ := by
+  have hdisj : Disjoint (tsupport (φ : NPointDomain d n → ℂ)) (CoincidenceLocus d n) := by
+    refine Set.disjoint_left.mpr ?_
+    intro x hxSupp hxCoin
+    have hxV : x ∈ V := hφ_tsupport hxSupp
+    exact Set.disjoint_left.mp (jostSet_disjoint_coincidenceLocus (d := d) (n := n))
+      (hV_jost x hxV) hxCoin
+  exact VanishesToInfiniteOrderOnCoincidence_of_tsupport_disjoint φ hdisj
+
+/-- Reindexing a zero-diagonal Schwartz test by a finite permutation preserves
+the zero-diagonal condition. -/
+def permuteZeroDiagonalSchwartz
+    (σ : Equiv.Perm (Fin n))
+    (f : ZeroDiagonalSchwartz d n) :
+    ZeroDiagonalSchwartz d n :=
+  ⟨reindexSchwartz (d := d) σ f.1,
+    VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv
+      (d := d) f.2 σ⟩
+
+@[simp] theorem permuteZeroDiagonalSchwartz_apply
+    (σ : Equiv.Perm (Fin n)) (f : ZeroDiagonalSchwartz d n)
+    (x : NPointDomain d n) :
+    (permuteZeroDiagonalSchwartz (d := d) σ f).1 x =
+      f.1 (fun i => x (σ i)) := by
+  rfl
+
+private theorem integral_perm_eq_self_locality
+    (σ : Equiv.Perm (Fin n))
+    (h : NPointDomain d n → ℂ) :
+    ∫ x : NPointDomain d n, h (fun i => x (σ i)) =
+      ∫ x : NPointDomain d n, h x :=
+  (MeasureTheory.volume_measurePreserving_piCongrLeft
+    (fun _ : Fin n => Fin (d + 1) → ℝ) σ).symm.integral_comp' h
+
+/-- OS §4.5 Euclidean layer: on a real Jost edge slice, E3 symmetry and the
+Euclidean boundary-value identification give equality of the adjacent Wick-edge
+pairings against any compact test supported in that slice. -/
+theorem os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (hV_jost : ∀ x ∈ V, x ∈ JostSet d n)
+    (ρ : Equiv.Perm (Fin n))
+    (_hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+    (_hV_swap_ordered : ∀ x ∈ V,
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+    (φ : SchwartzNPoint d n)
+    (hφ_tsupport :
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
+    ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k => wickRotatePoint (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+          φ x
+      =
+    ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  let φZ : ZeroDiagonalSchwartz d n :=
+    ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+      (d := d) (n := n) V hV_jost φ hφ_tsupport⟩
+  let ψZ : ZeroDiagonalSchwartz d n :=
+    permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+  have hE3 : OS.S n φZ = OS.S n ψZ := by
+    refine OS.E3_symmetric (n := n) (σ := τ.symm) φZ ψZ ?_
+    intro x
+    change (permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ).1 x =
+      φZ.1 (fun i => x (τ.symm i))
+    simp
+  have hφZ :
+      OS.S n φZ =
+        ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
+    simpa [φZ] using bvt_euclidean_restriction (d := d) OS lgc n φZ
+  have hψZ :
+      OS.S n ψZ =
+        ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+            φ (fun k => x (τ k)) := by
+    simpa [ψZ, φZ, τ] using bvt_euclidean_restriction (d := d) OS lgc n ψZ
+  have hperm :
+      ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) * φ x
+        =
+      ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+            φ (fun k => x (τ k)) := by
+    simpa [τ] using
+      (integral_perm_eq_self_locality (d := d) (n := n) τ
+        (fun x : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+            φ (fun k => x (τ k))))
+  calc
+    ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k => wickRotatePoint (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+          φ x
+      = OS.S n ψZ := by
+          rw [show Equiv.swap i ⟨i.val + 1, hi⟩ = τ by rfl, hperm, ← hψZ]
+    _ = OS.S n φZ := by simpa using hE3.symm
+    _ = ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := hφZ
 
 /-- If the test support is contained in `V` and the integrands agree on `V`,
 then their pairings against the test function are equal. -/
