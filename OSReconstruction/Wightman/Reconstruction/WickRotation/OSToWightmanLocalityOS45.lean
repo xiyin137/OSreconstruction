@@ -389,6 +389,405 @@ theorem choose_os45_real_open_edge_for_adjacent_swap_with_domains
     exact realEmbed_mem_adjacentOS45RealEdgeDomain_of_ET
       (d := d) (n := n) i hi x (hV_ET x hx) (hV_swapET x hx)
 
+/-- Fixed OS45 quarter-turn on the time coordinate.  This is the chart used to
+exhibit the Wick and real traces as opposite-tube points over the same real
+edge. -/
+def os45QuarterTurnConfig
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    Fin n → Fin (d + 1) → ℂ :=
+  fun k μ => if μ = 0 then z k μ / 2 - (z k μ / 2) * Complex.I else z k μ
+
+private theorem os45QuarterTurnScalar_ne_zero :
+    (((1 : ℂ) - Complex.I) / 2 : ℂ) ≠ 0 := by
+  refine div_ne_zero ?_ (by norm_num)
+  intro h
+  have hre := congrArg Complex.re h
+  simp at hre
+
+private noncomputable def os45QuarterTurnScalarUnit : ℂˣ :=
+  Units.mk0 (((1 : ℂ) - Complex.I) / 2) os45QuarterTurnScalar_ne_zero
+
+/-- The fixed time-coordinate quarter-turn as a continuous complex-linear
+equivalence on `ℂ`.  This is the concrete chart used in the OS45 local EOW
+formalization. -/
+noncomputable def os45QuarterTurnTimeCLE : ℂ ≃L[ℂ] ℂ :=
+  ContinuousLinearEquiv.smulLeft os45QuarterTurnScalarUnit
+
+@[simp] theorem os45QuarterTurnTimeCLE_apply (z : ℂ) :
+    os45QuarterTurnTimeCLE z = z / 2 - (z / 2) * Complex.I := by
+  change ((((1 : ℂ) - Complex.I) / 2 : ℂ) * z) =
+    z / 2 - (z / 2) * Complex.I
+  ring
+
+@[simp] theorem os45QuarterTurnTimeCLE_symm_apply (z : ℂ) :
+    os45QuarterTurnTimeCLE.symm z = (1 + Complex.I) * z := by
+  apply os45QuarterTurnTimeCLE.injective
+  simp [os45QuarterTurnTimeCLE_apply]
+  have hcoeff :
+      (((1 : ℂ) + Complex.I) / 2 - (((1 : ℂ) + Complex.I) / 2) * Complex.I) = 1 := by
+    calc
+      (((1 : ℂ) + Complex.I) / 2 - (((1 : ℂ) + Complex.I) / 2) * Complex.I)
+          = (1 / 2 : ℂ) + Complex.I ^ 2 * (-1 / 2) := by
+              ring
+      _ = (1 / 2 : ℂ) + (-1 : ℂ) * (-1 / 2) := by simp
+      _ = 1 := by norm_num
+  calc
+    z = (1 : ℂ) * z := by ring
+    _ = ((((1 : ℂ) + Complex.I) / 2 - (((1 : ℂ) + Complex.I) / 2) * Complex.I) * z) := by
+          rw [hcoeff]
+    _ = (1 + Complex.I) * z / 2 - (1 + Complex.I) * z / 2 * Complex.I := by
+          ring
+
+/-- The fixed quarter-turn on one spacetime point.  It only rotates/scales the
+time coordinate; spatial coordinates are unchanged. -/
+noncomputable def os45QuarterTurnSpacetimeCLE :
+    (Fin (d + 1) → ℂ) ≃L[ℂ] (Fin (d + 1) → ℂ) :=
+  ContinuousLinearEquiv.piCongrRight fun μ =>
+    if _ : μ = 0 then os45QuarterTurnTimeCLE else ContinuousLinearEquiv.refl ℂ ℂ
+
+@[simp] theorem os45QuarterTurnSpacetimeCLE_apply
+    (z : Fin (d + 1) → ℂ) :
+    os45QuarterTurnSpacetimeCLE (d := d) z =
+      fun μ => if μ = 0 then z μ / 2 - (z μ / 2) * Complex.I else z μ := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45QuarterTurnSpacetimeCLE, os45QuarterTurnTimeCLE_apply]
+  · simp [os45QuarterTurnSpacetimeCLE, hμ]
+
+@[simp] theorem os45QuarterTurnSpacetimeCLE_symm_apply
+    (z : Fin (d + 1) → ℂ) :
+    (os45QuarterTurnSpacetimeCLE (d := d)).symm z =
+      fun μ => if μ = 0 then (1 + Complex.I) * z μ else z μ := by
+  ext μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45QuarterTurnSpacetimeCLE, os45QuarterTurnTimeCLE_symm_apply]
+  · simp [os45QuarterTurnSpacetimeCLE, hμ]
+
+/-- The fixed quarter-turn chart on full `n`-point complexified configurations.
+This packages the chosen OS45 chart as one global continuous linear
+equivalence. -/
+noncomputable def os45QuarterTurnCLE :
+    (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ] (Fin n → Fin (d + 1) → ℂ) :=
+  ContinuousLinearEquiv.piCongrRight fun _ =>
+    os45QuarterTurnSpacetimeCLE (d := d)
+
+@[simp] theorem os45QuarterTurnCLE_apply
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    os45QuarterTurnCLE (d := d) (n := n) z = os45QuarterTurnConfig (d := d) (n := n) z := by
+  ext k μ
+  simp [os45QuarterTurnCLE, os45QuarterTurnConfig, os45QuarterTurnSpacetimeCLE_apply]
+
+@[simp] theorem os45QuarterTurnCLE_symm_apply
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    (os45QuarterTurnCLE (d := d) (n := n)).symm z =
+      fun k μ => if μ = 0 then (1 + Complex.I) * z k μ else z k μ := by
+  ext k μ
+  simp [os45QuarterTurnCLE, os45QuarterTurnSpacetimeCLE_symm_apply]
+
+/-- Common real edge point for the OS45 quarter-turn chart. -/
+def os45CommonEdgeRealPoint
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    NPointDomain d n :=
+  fun k μ => if μ = 0 then x (σ k) 0 / 2 else x (σ k) μ
+
+/-- Positive-tube direction produced by the OS45 quarter-turn chart. -/
+def os45HalfTimeDirection
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    Fin n → Fin (d + 1) → ℝ :=
+  fun k μ => if μ = 0 then x (σ k) 0 / 2 else 0
+
+/-- For the adjacent OS45 pair, the swapped branch uses the same common real
+edge point as the unswapped branch once the order label is changed from `ρ` to
+`τ.symm * ρ`. -/
+theorem os45CommonEdgeRealPoint_adjacent_swap_eq
+    (i : Fin n) (hi : i.val + 1 < n)
+    (ρ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    os45CommonEdgeRealPoint (d := d) (n := n)
+        ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) =
+      os45CommonEdgeRealPoint (d := d) (n := n) ρ x := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45CommonEdgeRealPoint, Equiv.Perm.mul_apply]
+  · simp [os45CommonEdgeRealPoint, hμ, Equiv.Perm.mul_apply]
+
+/-- The adjacent swapped OS45 branch carries the same half-time direction as
+the unswapped branch after the corresponding change of order label. -/
+theorem os45HalfTimeDirection_adjacent_swap_eq
+    (i : Fin n) (hi : i.val + 1 < n)
+    (ρ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    os45HalfTimeDirection (d := d) (n := n)
+        ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) =
+      os45HalfTimeDirection (d := d) (n := n) ρ x := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45HalfTimeDirection, Equiv.Perm.mul_apply]
+  · simp [os45HalfTimeDirection, hμ]
+
+private theorem os45HalfTimeDirection_mem_forwardCone_of_orderedPositiveTimeRegion
+    [NeZero d]
+    (x : NPointDomain d n)
+    (hx : x ∈ OrderedPositiveTimeRegion d n) :
+    InForwardCone d n (fun k μ => if μ = 0 then x k 0 / 2 else 0) := by
+  intro k
+  let η : Fin n → Fin (d + 1) → ℝ := fun j μ => if μ = 0 then x j 0 / 2 else 0
+  let prev : Fin (d + 1) → ℝ :=
+    if h : k.val = 0 then 0 else η ⟨k.val - 1, by omega⟩
+  let diff : Fin (d + 1) → ℝ := fun μ => η k μ - prev μ
+  have hdiff_time_pos : 0 < diff 0 := by
+    by_cases hk : k.val = 0
+    · have htime_pos : 0 < x k 0 / 2 := by
+        nlinarith [(hx k).1]
+      simpa [η, prev, diff, hk] using htime_pos
+    · let j : Fin n := ⟨k.val - 1, by omega⟩
+      have hj_lt_k : j < k := Fin.lt_def.mpr (by
+        dsimp [j]
+        omega)
+      have htime_gap : x j 0 < x k 0 := (hx j).2 k hj_lt_k
+      have hhalf_gap : 0 < x k 0 / 2 - x j 0 / 2 := by
+        linarith
+      simpa [η, prev, diff, hk, j] using hhalf_gap
+  have hdiff_spatial_zero : ∀ i : Fin d, diff i.succ = 0 := by
+    intro i
+    by_cases hk : k.val = 0
+    · simp [η, prev, diff, hk]
+    · simp [η, prev, diff, hk]
+  refine ⟨hdiff_time_pos, ?_⟩
+  rw [MinkowskiSpace.minkowskiNormSq_decomp]
+  have hspatial_zero : MinkowskiSpace.spatialNormSq d diff = 0 := by
+    unfold MinkowskiSpace.spatialNormSq
+    simp [hdiff_spatial_zero]
+  rw [hspatial_zero]
+  nlinarith [sq_pos_of_pos hdiff_time_pos]
+
+/-- Ordered Euclidean time data turns the OS45 half-time direction into an
+honest forward-cone direction after the chosen permutation. -/
+theorem os45HalfTimeDirection_mem_forwardCone_of_ordered
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n)
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) σ) :
+    InForwardCone d n (os45HalfTimeDirection (d := d) (n := n) σ x) := by
+  let xσ : NPointDomain d n := fun k μ => x (σ k) μ
+  have hxσ : xσ ∈ OrderedPositiveTimeRegion d n := hx
+  simpa [os45HalfTimeDirection, xσ] using
+    os45HalfTimeDirection_mem_forwardCone_of_orderedPositiveTimeRegion
+      (d := d) (n := n) xσ hxσ
+
+private theorem realEmbed_add_I_mem_forwardTube
+    [NeZero d]
+    (x : NPointDomain d n)
+    (η : Fin n → Fin (d + 1) → ℝ)
+    (hη : InForwardCone d n η) :
+    (fun k μ => BHW.realEmbed x k μ + (η k μ : ℂ) * Complex.I) ∈
+      BHW.ForwardTube d n := by
+  have hη_bhw :
+      ∀ k : Fin n,
+        BHW.InOpenForwardCone d
+          (fun μ =>
+            η k μ -
+              (if h : k.val = 0 then (0 : Fin (d + 1) → ℝ) else η ⟨k.val - 1, by omega⟩) μ) := by
+    intro k
+    exact (inOpenForwardCone_iff _).2 (hη k)
+  intro k
+  by_cases hk0 : k.val = 0
+  · simpa [BHW.ForwardTube, hk0, BHW.realEmbed, Complex.add_im, Complex.ofReal_im,
+      Complex.mul_im, Complex.ofReal_re, Complex.I_re, Complex.I_im] using hη_bhw k
+  · simpa [BHW.ForwardTube, hk0, BHW.realEmbed, Complex.add_im, Complex.sub_im,
+      Complex.ofReal_im, Complex.mul_im, Complex.ofReal_re, Complex.I_re,
+      Complex.I_im] using hη_bhw k
+
+/-- After the fixed OS45 quarter-turn, the real branch sits on the negative
+tube over the common real edge. -/
+theorem os45QuarterTurn_perm_realEmbed_eq_common_minus
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    os45QuarterTurnConfig (fun k => BHW.realEmbed x (σ k)) =
+      fun k μ =>
+        BHW.realEmbed (os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ -
+          (os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) * Complex.I := by
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45QuarterTurnConfig, os45CommonEdgeRealPoint, os45HalfTimeDirection, BHW.realEmbed]
+  · simp [os45QuarterTurnConfig, os45CommonEdgeRealPoint, os45HalfTimeDirection,
+      BHW.realEmbed, hμ]
+
+/-- After the fixed OS45 quarter-turn, the Wick branch sits on the positive
+tube over the same common real edge. -/
+theorem os45QuarterTurn_perm_wickRotate_eq_common_plus
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) :
+    os45QuarterTurnConfig (fun k => wickRotatePoint (x (σ k))) =
+      fun k μ =>
+        BHW.realEmbed (os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ +
+          (os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) * Complex.I := by
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [os45QuarterTurnConfig, os45CommonEdgeRealPoint, os45HalfTimeDirection,
+      BHW.realEmbed, wickRotatePoint]
+    let a : ℂ := x (σ k) 0
+    calc
+      Complex.I * a / 2 - Complex.I * a / 2 * Complex.I
+          = Complex.I * a / 2 - (Complex.I * Complex.I) * a / 2 := by
+              ring
+      _ = Complex.I * a / 2 + a / 2 := by
+            have hI : Complex.I * Complex.I = (-1 : ℂ) := by
+              simp
+            rw [hI]
+            ring
+      _ = a / 2 + a / 2 * Complex.I := by
+            ring
+  · simp [os45QuarterTurnConfig, os45CommonEdgeRealPoint, os45HalfTimeDirection,
+      BHW.realEmbed, wickRotatePoint, hμ]
+
+/-- In the fixed OS45 quarter-turn chart, the ordered Wick branch lands in the
+ordinary forward tube over the common real edge. -/
+theorem os45QuarterTurn_perm_wickRotate_mem_forwardTube_of_ordered
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n)
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) σ) :
+    os45QuarterTurnConfig (fun k => wickRotatePoint (x (σ k))) ∈
+      BHW.ForwardTube d n := by
+  let xedge := os45CommonEdgeRealPoint (d := d) (n := n) σ x
+  let η := os45HalfTimeDirection (d := d) (n := n) σ x
+  have hη : InForwardCone d n η :=
+    os45HalfTimeDirection_mem_forwardCone_of_ordered (d := d) (n := n) σ x hx
+  have hmem :
+      (fun k μ => BHW.realEmbed xedge k μ + (η k μ : ℂ) * Complex.I) ∈
+        BHW.ForwardTube d n :=
+    realEmbed_add_I_mem_forwardTube (d := d) (n := n) xedge η hη
+  simpa [xedge, η] using
+    (os45QuarterTurn_perm_wickRotate_eq_common_plus (d := d) (n := n) σ x).symm ▸ hmem
+
+/-- In the fixed OS45 quarter-turn chart, negating the ordered real branch
+puts it in the ordinary forward tube. This is the negative-tube half of the
+common-boundary OS45 geometry. -/
+theorem neg_os45QuarterTurn_perm_realEmbed_mem_forwardTube_of_ordered
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n)
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) σ) :
+    (fun k μ => -os45QuarterTurnConfig (fun k => BHW.realEmbed x (σ k)) k μ) ∈
+      BHW.ForwardTube d n := by
+  let xedge := os45CommonEdgeRealPoint (d := d) (n := n) σ x
+  let η := os45HalfTimeDirection (d := d) (n := n) σ x
+  have hη : InForwardCone d n η :=
+    os45HalfTimeDirection_mem_forwardCone_of_ordered (d := d) (n := n) σ x hx
+  have hmem :
+      (fun k μ =>
+        BHW.realEmbed (fun j ν => -xedge j ν) k μ + (η k μ : ℂ) * Complex.I) ∈
+        BHW.ForwardTube d n :=
+    realEmbed_add_I_mem_forwardTube (d := d) (n := n) (fun j ν => -xedge j ν) η hη
+  have hneg :
+      (fun k μ => -os45QuarterTurnConfig (fun k => BHW.realEmbed x (σ k)) k μ) =
+        fun k μ =>
+          BHW.realEmbed (fun j ν => -xedge j ν) k μ + (η k μ : ℂ) * Complex.I := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [xedge, η, os45QuarterTurn_perm_realEmbed_eq_common_minus,
+        os45CommonEdgeRealPoint, os45HalfTimeDirection, BHW.realEmbed]
+      ring
+    · simp [xedge, η, os45QuarterTurn_perm_realEmbed_eq_common_minus,
+        os45CommonEdgeRealPoint, os45HalfTimeDirection, BHW.realEmbed, hμ]
+  simpa [hneg] using hmem
+
+/-- Branch-level OS45 geometry after the fixed quarter-turn chart: the real and
+Wick traces become opposite-tube points over a common real edge. -/
+structure OS45OppositeTubeBranchGeometry
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) : Prop where
+  η_mem :
+    InForwardCone d n (os45HalfTimeDirection (d := d) (n := n) σ x)
+  real_eq :
+    os45QuarterTurnConfig (fun k => BHW.realEmbed x (σ k)) =
+      fun k μ =>
+        BHW.realEmbed (os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ -
+          (os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) * Complex.I
+  wick_eq :
+    os45QuarterTurnConfig (fun k => wickRotatePoint (x (σ k))) =
+      fun k μ =>
+        BHW.realEmbed (os45CommonEdgeRealPoint (d := d) (n := n) σ x) k μ +
+          (os45HalfTimeDirection (d := d) (n := n) σ x k μ : ℂ) * Complex.I
+
+/-- Ordered Euclidean time data gives the branch-level OS45 opposite-tube
+geometry in the fixed quarter-turn chart. -/
+theorem os45OppositeTubeBranchGeometry_of_ordered
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (x : NPointDomain d n)
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) σ) :
+    OS45OppositeTubeBranchGeometry (d := d) (n := n) σ x := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact os45HalfTimeDirection_mem_forwardCone_of_ordered
+      (d := d) (n := n) σ x hx
+  · exact os45QuarterTurn_perm_realEmbed_eq_common_minus
+      (d := d) (n := n) σ x
+  · exact os45QuarterTurn_perm_wickRotate_eq_common_plus
+      (d := d) (n := n) σ x
+
+/-- OS45 slot-1 geometry: on the selected real-open adjacent edge, the fixed
+quarter-turn chart exhibits both adjacent branches as opposite-tube points over
+common real edges with honest forward-cone directions. -/
+theorem os45_adjacent_localEOWGeometry
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+      (∀ x ∈ V, x ∈ JostSet d n) ∧
+      (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+      (∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+      (∀ x ∈ V,
+        (fun k => wickRotatePoint (x k)) ∈
+          adjacentOS45WickSeedDomain (d := d) (n := n) i hi ρ) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed x ∈
+          adjacentOS45RealEdgeDomain (d := d) (n := n) i hi) ∧
+      (∀ x ∈ V,
+        OS45OppositeTubeBranchGeometry (d := d) (n := n) ρ x) ∧
+      (∀ x ∈ V,
+        OS45OppositeTubeBranchGeometry (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  rcases choose_os45_real_open_edge_for_adjacent_swap_with_domains
+      (d := d) (n := n) hd i hi with
+    ⟨V, ρ, hV_open, hV_conn, hV_ne, hV_jost, hV_ET, hV_swapET, hV_ordered,
+      hV_swap_ordered, hV_wick, hV_real⟩
+  refine ⟨V, ρ, hV_open, hV_conn, hV_ne, hV_jost, hV_ET, hV_swapET, hV_ordered,
+    hV_swap_ordered, hV_wick, hV_real, ?_, ?_⟩
+  · intro x hx
+    exact os45OppositeTubeBranchGeometry_of_ordered
+      (d := d) (n := n) ρ x (hV_ordered x hx)
+  · intro x hx
+    exact os45OppositeTubeBranchGeometry_of_ordered
+      (d := d) (n := n) (τ.symm * ρ) (fun k => x (τ k))
+      (hV_swap_ordered x hx)
+
 /-- The real Jost set is disjoint from the Euclidean coincidence locus. -/
 theorem jostSet_disjoint_coincidenceLocus :
     Disjoint (JostSet d n) (CoincidenceLocus d n) := by
@@ -569,5 +968,77 @@ theorem integral_eq_of_tsupport_subset_of_pointwise_on
       exact hxV (hφ_tsupport hx)
     have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx_not_tsupport
     simp [hφx]
+
+/-- A connected holomorphic adjacent branch-difference envelope transports the
+OS45 Wick-edge pairing equality to compact-test equality of the two adjacent
+real-edge `extendF` traces on the chosen real-open slice. -/
+theorem bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_nonempty : V.Nonempty)
+    (E : AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
+      (Equiv.swap i ⟨i.val + 1, hi⟩) V) :
+    ∀ φ : SchwartzNPoint d n,
+      HasCompactSupport (φ : NPointDomain d n → ℂ) →
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * φ x
+        =
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  have hWickZero :
+      ∀ x ∈ V, E.H (fun k => wickRotatePoint (x k)) = 0 := by
+    intro x hx
+    have hEq :
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) =
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) := by
+      simpa [τ] using
+        (bvt_F_acrOne_package (d := d) OS lgc n).2.2.1 τ
+          (fun k => wickRotatePoint (x k))
+    have hsub :
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) = 0 :=
+      sub_eq_zero.mpr hEq
+    simpa [τ, E.wick_diff x hx] using hsub
+  have hEqOn_H :
+      Set.EqOn E.H (fun _ => 0) E.U := by
+    refine eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+      (d := d) (n := n)
+      E.U V E.U_open E.U_connected hV_open hV_nonempty E.wick_mem
+      E.H (fun _ => 0) E.H_holo
+      (by intro z hz; exact differentiableWithinAt_const (x := z) (c := (0 : ℂ))) ?_
+    intro ψ _hψ_compact hψ_tsupport
+    exact integral_eq_of_tsupport_subset_of_pointwise_on
+      (d := d) (n := n) V
+      (fun x => E.H (fun k => wickRotatePoint (x k)))
+      (fun _ => 0)
+      ψ hψ_tsupport hWickZero
+  have hpoint :
+      ∀ x ∈ V,
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (fun k => x (τ k))) =
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) := by
+    intro x hx
+    have hHx : E.H (BHW.realEmbed x) = 0 := hEqOn_H (E.real_mem x hx)
+    have hsub :
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed (fun k => x (τ k))) -
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) = 0 := by
+      simpa [τ, E.real_diff x hx] using hHx
+    exact sub_eq_zero.mp hsub
+  intro φ _hφ_compact hφ_tsupport
+  exact integral_eq_of_tsupport_subset_of_pointwise_on
+    (d := d) (n := n) V
+    (fun x =>
+      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed (fun k => x (τ k))))
+    (fun x =>
+      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
+    φ hφ_tsupport hpoint
 
 end BHW

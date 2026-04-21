@@ -212,6 +212,30 @@ Post-`#1146` architectural correction, now binding on the active route:
   it must not be counted as theorem-2 progress unless it directly shortens the
   path to slot 6.
 
+Post-`#1156` blueprint-sync correction, also binding on the active route:
+
+- the fixed quarter-turn map
+  `z ↦ z / 2 - (z / 2) * I` used in
+  `OSToWightmanLocalityOS45.lean` is an approved **formalization choice** for
+  the OS45 local EOW step; it is not a literal OS-paper theorem statement, so
+  any theorem using it should say explicitly that it is a concrete chart choice
+  implementing the OS I §4.5 opposite-wedge setup;
+- the current production geometry / bridge objects that the blueprint must
+  track by name are:
+  `OS45OppositeTubeBranchGeometry`,
+  `os45CommonEdgeRealPoint_adjacent_swap_eq`,
+  `os45HalfTimeDirection_adjacent_swap_eq`,
+  `adjacentOS45RealEdgeDifference`,
+  `adjacentOS45RealEdgeDifference_holomorphicOn`,
+  `adjacentOS45RealEdgeDifference_continuousOn`, and
+  `adjacentOS45RealEdgeDifference_realEmbed_continuousOn`;
+- any older subsection that still uses
+  `OS45AdjacentWickDifference*`,
+  `OS45AdjacentRealDifference*`,
+  `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed`,
+  `pos_orbit_id`, or `pos_orbit_swap`
+  is archival/fallback text only unless it is explicitly rewritten below.
+
 ### 0.0C. Repo-local / Mathlib prerequisite checklist
 
 Before starting the supplier proof, verify the following surfaces are the ones
@@ -1557,6 +1581,22 @@ Paper-faithful proof transcript for this theorem:
   wedge used for EOW; the whole real branch domain is **not** mapped into that
   opposite wedge.
 
+  **Archival fallback only.**  The `SCV.LocalDifferenceEOWChartData` packet in
+  this subsection records an older generic local-chart fallback.  It is not the
+  current implementation target, and it is no longer synchronized with the live
+  production file after the removal of the deleted
+  `OS45AdjacentWickDifference*` / `OS45AdjacentRealDifference*` wrappers.  The
+  active production route now uses:
+
+  - the fixed quarter-turn geometry in `OSToWightmanLocalityOS45.lean`,
+  - the bridge object `adjacentOS45RealEdgeDifference` in
+    `OSToWightmanLocalityOS45Bridge.lean`, and
+  - the sharpened envelope packet `AdjacentOSEOWDifferenceEnvelope` below.
+
+  Read the theorem shapes in this subsection as background analysis only, not
+  as the next Lean file edits.  Any code block here that still mentions the
+  deleted wrapper names is archival notation, not a live production interface.
+
   Geometry alone is still not enough.  A theorem with arbitrary holomorphic
   `H_wick` and `H_real`, plus only local wedge geometry and Wick-side
   compact-test zero, would be false: take `H_wick = 0` and `H_real = 1`.  The
@@ -1816,6 +1856,20 @@ Paper-faithful proof transcript for this theorem:
   3. Evaluate at `BHW.realEmbed x` for `x ∈ V` and rewrite by the real-trace
      field to obtain `H_real (BHW.realEmbed x) = 0`.
 
+  **Archival note.**  The concrete definitions immediately below use the
+  deleted `OS45AdjacentWickDifference*` / `OS45AdjacentRealDifference*`
+  wrappers.  Those names are no longer live production objects.  The active
+  route now uses:
+
+  - the positive-side natural branch difference
+    `z ↦ bvt_F OS lgc n (fun k => z (τ k)) - bvt_F OS lgc n z`
+    on the quarter-turn positive chart, and
+  - the negative-side real-edge bridge
+    `adjacentOS45RealEdgeDifference`.
+
+  The wrapper-based definitions are retained only as archival notation for the
+  fallback generic-chart discussion.
+
   For the concrete OS §4.5 adjacent branch, do not leave `D_wick`,
   `D_real`, `H_wick`, and `H_real` abstract.  They should be the following
   definitions:
@@ -1860,7 +1914,13 @@ Paper-faithful proof transcript for this theorem:
       OS45RealChart (d := d) OS lgc n 1 z
   ```
 
-  The concrete OS45 data theorem should then be:
+  The following concrete OS45 data theorem is likewise archival fallback only:
+  it records the older generic-chart packaging that predates the current
+  quarter-turn / bridge-file route.  Do not implement it verbatim while the
+  active route runs through `OS45AdjacentSingleEOWGeometry` and
+  `AdjacentOSEOWDifferenceEnvelope`.
+
+  The historical theorem shape was:
 
   ```lean
   theorem os45_adjacent_localDifferenceEOWChartData
@@ -3095,6 +3155,14 @@ Paper-faithful proof transcript for this theorem:
   Thus the preferred production theorem is the combined selector-and-envelope
   statement:
 
+  **Active-route implementation note.**  The quarter-turn chart is now the
+  concrete production choice.  The current code already exports the
+  quarter-turn branch geometry and the shared-edge equalities
+  `os45CommonEdgeRealPoint_adjacent_swap_eq` and
+  `os45HalfTimeDirection_adjacent_swap_eq`.  Any implementation of the theorem
+  below should build on those concrete objects rather than resurrecting the
+  deleted wrapper domains.
+
   ```lean
   theorem os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart
       (hd : 2 ≤ d)
@@ -3291,13 +3359,14 @@ Paper-faithful proof transcript for this theorem:
 
   The OS-dependent boundary-value part is then a theorem over this geometry:
 
-  **Post-#1146 binding correction.**  The theorem surface below is only
+  **Post-#1146 / #1156 binding correction.**  The theorem surface below is only
   trustworthy after replacing the deleted chart-wrapper language by the natural
   adjacent branch-difference formulas.  On the positive side the active object
   is the natural Wick difference
   `z ↦ bvt_F OS lgc n (fun k => z (τ k)) - bvt_F OS lgc n z`, pulled back
   through the single-chart geometry.  On the negative side the active object is
-  the corresponding adjacent `extendF (bvt_F OS lgc n)` real-edge difference.
+  the corresponding adjacent `extendF (bvt_F OS lgc n)` real-edge difference,
+  now implemented as `adjacentOS45RealEdgeDifference`.
   Any remaining occurrence of `OS45AdjacentWickDifference*` in this subsection
   should be read as archival notation to be rewritten during implementation,
   not as a production target.
@@ -3309,23 +3378,25 @@ Paper-faithful proof transcript for this theorem:
       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
       (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n))
       (G : OS45AdjacentSingleEOWGeometry (d := d) n i hi V ρ) :
+      let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
       ∃ bv : (Fin G.m → ℝ) → ℂ,
         ContinuousOn bv G.E ∧
         (∀ y ∈ G.E,
           bv y =
-            OS45AdjacentRealDifference (d := d) OS lgc n i hi
+            adjacentOS45RealEdgeDifference (d := d) OS lgc n i hi
               (G.center + G.chartCLE.symm (SCV.realEmbed y))) ∧
         (∀ y ∈ G.E,
           Filter.Tendsto
             (fun u =>
-              OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
-                (G.center + G.chartCLE.symm u))
+              bvt_F OS lgc n
+                  (fun k => (G.center + G.chartCLE.symm u) (τ k)) -
+                bvt_F OS lgc n (G.center + G.chartCLE.symm u))
             (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain G.C))
             (nhds (bv y))) ∧
         (∀ y ∈ G.E,
           Filter.Tendsto
             (fun u =>
-              OS45AdjacentRealDifference (d := d) OS lgc n i hi
+              adjacentOS45RealEdgeDifference (d := d) OS lgc n i hi
                 (G.center + G.chartCLE.symm u))
             (nhdsWithin (SCV.realEmbed y)
               (SCV.TubeDomain (Neg.neg '' G.C)))
@@ -3337,30 +3408,42 @@ Paper-faithful proof transcript for this theorem:
   1. Set
 
      ```lean
+     let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+
      f_plus u :=
-       OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
-         (G.center + G.chartCLE.symm u)
+       bvt_F OS lgc n
+           (fun k => (G.center + G.chartCLE.symm u) (τ k)) -
+         bvt_F OS lgc n (G.center + G.chartCLE.symm u)
 
      f_minus u :=
-       OS45AdjacentRealDifference (d := d) OS lgc n i hi
+       adjacentOS45RealEdgeDifference (d := d) OS lgc n i hi
          (G.center + G.chartCLE.symm u)
      ```
 
-  2. This old branchwise step is also retracted in its `G.pos_orbit_*` form.
-     A corrected theorem may still apply a branch-difference OS §4.5/BHW-Jost
-     boundary theorem, but it must obtain the positive-side identification from
-     the common analytic continuation / PET branch theorem, not from local
-     Lorentz orbit witnesses for point permutations.
-  3. Let `bv_id` and `bv_τ` be the branchwise boundary values and set
-     `bv y := bv_τ y - bv_id y`.
-  4. Continuity of `bv` follows by subtraction.
-  5. The real-edge formula unfolds to `f_minus (SCV.realEmbed y)` by the
-     definitions of `OS45AdjacentRealDifference`, `OS45RealChart`, and the two
-     branchwise real-edge formulas.
-  6. The positive-wedge and negative-wedge Tendsto fields are obtained by
-     subtracting the two branchwise Tendsto statements.  This is only a common
-     boundary-value statement for the adjacent branch **difference**; it does
-     not assert any one-branch Wick-to-real equality.
+  2. The positive-side identification must be the **natural adjacent branch
+     difference** above.  Do not reintroduce the deleted
+     `OS45AdjacentWickDifference*` wrappers, and do not attempt to recover this
+     branch difference from `G.pos_orbit_*`-style local Lorentz orbit fields.
+     The required positive-side function is fixed by the theorem statement.
+  3. Use the current real-edge bridge object
+     `adjacentOS45RealEdgeDifference` for the negative-side branch difference.
+     This is the production object whose holomorphy / continuity package lives
+     in `OSToWightmanLocalityOS45Bridge.lean`.
+  4. Apply the OS §4.5 / BHW-Jost common-boundary theorem directly to the pair
+     `(f_plus, f_minus)` on the single-chart geometry `G`, obtaining one
+     boundary function `bv` on `G.E`.
+  5. Continuity of `bv` is part of that common-boundary theorem.  The real-edge
+     formula is exactly the unfolded definition of `f_minus`.
+  6. The positive- and negative-side `Filter.Tendsto` clauses are the two
+     outputs of the common-boundary theorem for this adjacent branch
+     **difference**.  This is not a one-branch Wick-to-real statement and it is
+     not a tautological cancellation theorem.
+
+  Free-field sanity gate for this theorem surface: in a free scalar model, the
+  positive-side term must genuinely detect the adjacent Wick branch difference
+  under the shared chart, while the negative-side term must reduce to the
+  corresponding adjacent `extendF` real-edge difference.  If either side
+  collapses to an identity independent of the swap, the theorem shape is wrong.
 
   The EOW call inside the combined theorem should then use the exact coordinate
   functions above:
@@ -3381,11 +3464,13 @@ Paper-faithful proof transcript for this theorem:
       hf_plus_bv hf_minus_bv
   ```
 
-  The proof of `hf_plus` is: `G.pos_domain` maps the positive tube into
-  `OS45AdjacentWickDifferenceDomain`; compose holomorphy of
-  `OS45AdjacentWickDifference` on that domain with the affine map
-  `u ↦ G.center + G.chartCLE.symm u`.  The proof of `hf_minus` is identical
-  with `G.neg_domain` and `OS45AdjacentRealDifferenceDomain`.
+  The proof of `hf_plus` is: use the positive-side domain/control fields of
+  `G` together with the `bvt_F` ACR(1) package to show both
+  `u ↦ bvt_F OS lgc n (fun k => (G.center + G.chartCLE.symm u) (τ k))` and
+  `u ↦ bvt_F OS lgc n (G.center + G.chartCLE.symm u)` are holomorphic on
+  `SCV.TubeDomain G.C`, then subtract.  The proof of `hf_minus` is the bridge
+  theorem `adjacentOS45RealEdgeDifference_holomorphicOn` composed with the same
+  affine chart map on the negative tube.
 
   Here `hHc_pos` is the agreement clause later used for the Wick trace, while
   `hUc_edge_mem` and `hHc_edge_value` are used for the real trace and for the
@@ -3804,6 +3889,8 @@ Binding active-route subledger:
 | Slot | Home | Must consume | Must export |
 | --- | --- | --- | --- |
 | `choose_os45_real_open_edge_for_adjacent_swap` | theorem-2 geometry layer | `2 ≤ d`, `exists_real_open_nhds_adjSwap`, a real Jost seed, and fixed Euclidean time order | an open connected real edge `V`, a time-order label `ρ`, Jost/ET/swap-ET control, and ordered-sector fields for both `x` and `x ∘ τ` |
+| `OS45OppositeTubeBranchGeometry` + quarter-turn equalities | `OSToWightmanLocalityOS45.lean` | ordered-sector data for one branch, plus the fixed OS45 quarter-turn choice | the concrete common-edge / opposite-tube formulas used by the active single-chart route, including `os45CommonEdgeRealPoint_adjacent_swap_eq` and `os45HalfTimeDirection_adjacent_swap_eq` |
+| `adjacentOS45RealEdgeDifference` | `OSToWightmanLocalityOS45Bridge.lean` | the selected `extendF (bvt_F OS lgc n)` branch and ET/swap-ET overlap | the genuine adjacent real-edge branch difference together with its holomorphy / continuity package |
 | `bvt_F_acrOne_package` | `OSToWightmanBoundaryValuesBase.lean` or a small theorem-2 support file | the selected continuation witness underlying `bvt_F OS lgc n` | the ACR(1) analytic package: holomorphy, Euclidean reproduction, permutation symmetry, and translation symmetry for the selected branch |
 | `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | OS §4.5 Euclidean layer | `OS.E3_symmetric`, `bvt_euclidean_restriction`, fixed ordered sector data, and compact support on `V` | compact-test equality of the two Wick-edge pairings on the selected ordered sector |
 | `os45_adjacent_localEOWGeometry` | OS/BHW local chart layer | the chosen real-open edge `V`, adjacent Wick branches, and local BHW/Jost geometry | a local common-boundary chart comparing the adjacent Wick and real branches without any locality hypothesis |
