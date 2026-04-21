@@ -81,6 +81,10 @@ closed positivity/isometry package.
 
 ### W1: Locality (`bvt_W_swap_pairing_of_spacelike`) — swap symmetry
 
+**Statement:** For spacelike-separated test functions related by a coordinate
+swap, the reconstructed boundary-value functional satisfies
+`bvt_W OS lgc n f = bvt_W OS lgc n g`.
+
 **Statement:** For spacelike-separated test functions related by an adjacent
 coordinate swap, the reconstructed boundary-value functional satisfies
 `bvt_W OS lgc n f = bvt_W OS lgc n g`.
