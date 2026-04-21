@@ -17,6 +17,9 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWTranslationCore
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
 import OSReconstruction.Wightman.Reconstruction.WickRotation.HermitianBoundaryPairing
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BaseFiberInflation
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Bridge
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45CommonEdge
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 
 /-!
