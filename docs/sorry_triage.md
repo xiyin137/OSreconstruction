@@ -6,7 +6,9 @@ Purpose: this note is the repo-wide triage sheet for every direct production
 Count convention:
 - direct tactic holes only: `^[[:space:]]*sorry([[:space:]]|$)`
 - checked on `2026-04-20`
-- current live count: `56`
+- raw regex count: `56`
+- live elaborating count: `55` (one raw hit sits inside a commented legacy
+  block in `WickRotation/K2VI1/Frontier.lean`)
 
 This note should be read together with:
 - `docs/theorem2_locality_blueprint.md`
@@ -28,6 +30,10 @@ This note should be read together with:
 | `OSReconstruction/vNA` | 36 |
 | **Total** | **56** |
 
+The raw Wightman count includes one grep-only archaeological hit inside the
+commented legacy block in `WickRotation/K2VI1/Frontier.lean`; the live
+elaborating Wightman count is therefore `17`, and the live total is `55`.
+
 ## 2. Highest-priority OS-route frontiers
 
 These are the blockers closest to the current public reconstruction lane.
@@ -35,7 +41,7 @@ These are the blockers closest to the current public reconstruction lane.
 | ID | File:line | Theorem | Why it matters | Primary doc |
 |---|---|---|---|---|
 | W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:356` | `bvt_W_swap_pairing_of_spacelike` | theorem 2 locality frontier | `docs/theorem2_locality_blueprint.md` |
-| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster frontier | `docs/theorem4_cluster_blueprint.md` |
+| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster frontier | `docs/theorem4_cluster_blueprint.md` |
 
 Everything else in this document should be interpreted relative to those two
 live public blockers.
@@ -43,6 +49,9 @@ live public blockers.
 Note: theorem 3 positivity (`bvt_W_positive`) is now closed in production and
 no longer appears in the direct-`sorry` census, though its blueprint remains
 relevant as upstream support for theorem 4.
+
+Note: the raw regex census still sees one commented legacy `sorry` in
+`WickRotation/K2VI1/Frontier.lean`; that line is not a live theorem blocker.
 
 ## 3. Wightman-side direct `sorry`s (18)
 
@@ -54,8 +63,8 @@ relevant as upstream support for theorem 4.
 | W5 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean:209` | `acrOne_productTensor_witness_euclidKernelPackage` | base-step support package | active |
 | W6 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean:376` | `compactlySupported_zeroDiagonal_subset_closure_admissibleProductTensorSet` | base-step closure/density package | active |
 | W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:356` | `bvt_W_swap_pairing_of_spacelike` | theorem 2 locality | active |
-| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster | active |
-| W7 | `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133` | `hasCompactSupport_twoPointCenterShearDescent_reflected_local` | theorem-1 / K2 residual support theorem | medium |
+| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster | active |
+| W7 | `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133` | commented legacy `exists_probeSeq_euclid_local` block | grep-only archaeology | not live |
 
 ### 3.2. `R -> E` / reverse-direction and historical side lanes
 
@@ -201,35 +210,35 @@ This file should be updated whenever the direct `sorry` count changes.
 
 ## 9. High-priority Wightman blockers with concrete next packages
 
-The repo-wide table above is useful for census purposes. The five frontiers
+The repo-wide table above is useful for census purposes. The four live frontiers
 below are the ones that currently deserve the most detailed implementation
-attention.
+attention, followed by one grep-only archaeological note for the commented K2
+block.
 
-### 9.1. `hasCompactSupport_twoPointCenterShearDescent_reflected_local`
+### 9.1. Grep-only archaeological entry in `K2VI1/Frontier.lean`
 
 File:
 - `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133`
 
 Concrete next packages:
 
-1. finish the residual reflected-support shell descent for the `k = 2`
-   VI.1 frontier,
-2. keep the work local to the shell-support / center-shear route,
-3. feed the resulting compact-support package directly into the residual K2
-   frontier assembly.
+1. do not schedule this line as active work; it sits inside a commented legacy
+   block,
+2. treat `K2VI1/Frontier.lean` as archaeology until a new live theorem is
+   intentionally reintroduced there.
 
 What should not happen:
 
-1. do not reopen theorem-2 or theorem-4 boundary-value logic inside K2,
-2. do not replace the current residual frontier with new wrappers.
+1. do not let this grep artifact re-enter blocker planning,
+2. do not reconstruct a fake K2 frontier from commented legacy text.
 
 Estimated remaining Lean size:
-- `70-180` lines, depending on how much support packaging is reused.
+- `0` on the current live frontier map.
 
 ### 9.2. `bvt_F_clusterCanonicalEventually_translate`
 
 File:
-- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412`
+- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401`
 
 Concrete next packages:
 
@@ -395,14 +404,12 @@ the public OS-route frontier, the docs should enforce the following phases.
 
 #### Phase 1. Public `E -> R` completion
 
-1. `W2` theorem 3 positivity,
-2. `W3` theorem 4 cluster,
-3. `W1` theorem 2 locality.
+1. `W3` theorem 4 cluster,
+2. `W1` theorem 2 locality.
 
 #### Phase 2. Immediate `E -> R` support cleanup
 
-1. `W4-W6` in `OSToWightman.lean`,
-2. `W7` in `K2VI1/Frontier.lean`.
+1. `W4-W6` in `OSToWightman.lean`.
 
 #### Phase 3. Generalization / SCV support
 

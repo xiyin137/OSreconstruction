@@ -349,32 +349,33 @@ OS paper target:
 - OS II IV.2, p. 288, which says the remaining Wightman axioms are established
   as in Sections 4.2-4.5 of OS I
 
-This sorry is the direct boundary-distributional locality statement on the OS
-route.  It should be supplied by the OS Section 4.5 branch-difference /
-boundary-transfer argument, not by any finite-height canonical-shell equality.
+This sorry is the direct boundary-distributional adjacent-swap locality
+statement on the OS route.  It should be supplied by the OS Section 4.5
+branch-difference / boundary-transfer argument, not by any finite-height
+canonical-shell equality.
 -/
 private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n),
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
       (∀ x, f.toFun x ≠ 0 →
-        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
-      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
       bvt_W OS lgc n f = bvt_W OS lgc n g := by
   sorry
 
-/-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
+/-- Theorem 3 closure: positivity of the reconstructed Wightman inner product.
 
 OS paper target:
 - OS I Section 4.3 "Positivity", pp. 102-103
 - OS II IV.2, p. 288, reducing the remaining Wightman axioms to the OS I
   arguments after continuation
 
-Current active substep on the repo's OS route:
+Closure route on the repo's OS route:
 - OS II Theorem 4.3, p. 289, together with Chapter VI.1, pp. 297-298
 
-This sorry is the OS-isometry / boundary-value identification step, not any
-same-test-function equality `W_n(f) = S_n(f)`. -/
+This theorem is closed by the OS-isometry / boundary-value identification
+step, not by any same-test-function equality `W_n(f) = S_n(f)`. -/
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -726,8 +727,8 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
-  intro n i j f g hsupp hswap
-  exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i j f g hsupp hswap
+  intro n i hi f g hsupp hswap
+  exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :

@@ -127,24 +127,28 @@ def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop
 /-- Local commutativity condition for Wightman functions.
 
     For a collection of n-point functions W_n, local commutativity means:
-    When points x_i and x_j are spacelike separated, swapping them in W_n
-    doesn't change the value (for bosonic fields; fermionic fields get a sign).
+    When adjacent points x_i and x_{i+1} are spacelike separated, swapping them
+    in W_n doesn't change the value (for bosonic fields; fermionic fields get a
+    sign).
 
     The precise condition is:
-    W_n(..., x_i, ..., x_j, ...) = W_n(..., x_j, ..., x_i, ...)
-    when (x_i - x_j)² > 0 (spacelike separation in mostly positive signature).
+    W_n(..., x_i, x_{i+1}, ...) = W_n(..., x_{i+1}, x_i, ...)
+    when (x_i - x_{i+1})² > 0 (spacelike separation in mostly positive
+    signature).
 
     At the distribution level, this is expressed via test functions with
     spacelike-separated supports: if supp(f) and supp(g) are spacelike separated,
     then W₂(f ⊗ g) = W₂(g ⊗ f). -/
 def IsLocallyCommutativeWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
-  -- For Schwartz functions f, g where g is the swap of coordinates i, j in f,
-  -- and the supports of f have spacelike-separated i-th and j-th arguments,
-  -- we have W_n(f) = W_n(g). Avoids constructing the swapped Schwartz function.
-  ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n),
+  -- For Schwartz functions f, g where g is the swap of adjacent coordinates
+  -- i and i+1 in f, and the supports of f have spacelike-separated adjacent
+  -- arguments, we have W_n(f) = W_n(g). Avoids constructing the swapped
+  -- Schwartz function.
+  ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, f.toFun x ≠ 0 →
-      MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
-    (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+    (∀ x : NPointDomain d n,
+      g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
     W n f = W n g
 
 /-! ### Positive Definiteness -/

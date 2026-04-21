@@ -711,7 +711,18 @@ private theorem locality_term_eq
       (Hn.conjTensorProduct (SchwartzMap.prependField f (SchwartzMap.prependField g hk))) =
     Wfn.W (n + (k + 2))
       (Hn.conjTensorProduct (SchwartzMap.prependField g (SchwartzMap.prependField f hk))) := by
-  apply Wfn.locally_commutative (n + (k + 2)) ⟨n, by omega⟩ ⟨n + 1, by omega⟩
+  have hi_mem : n < n + (k + 2) := by
+    have hk_pos : 0 < k + 2 := by omega
+    exact Nat.lt_add_of_pos_right hk_pos
+  let i : Fin (n + (k + 2)) := ⟨n, hi_mem⟩
+  have hi_adj : i.val + 1 < n + (k + 2) := by
+    dsimp [i]
+    omega
+  refine
+    Wfn.locally_commutative (n + (k + 2)) i hi_adj
+      (Hn.conjTensorProduct (SchwartzMap.prependField f (SchwartzMap.prependField g hk)))
+      (Hn.conjTensorProduct (SchwartzMap.prependField g (SchwartzMap.prependField f hk)))
+      ?_ ?_
   · -- Support condition: when the test function doesn't vanish at x,
     -- coordinates n and n+1 are spacelike separated
     intro x hx
@@ -733,8 +744,8 @@ private theorem locality_term_eq
     intro x
     show (Hn.conjTensorProduct (SchwartzMap.prependField g (SchwartzMap.prependField f hk))) x =
       (Hn.conjTensorProduct (SchwartzMap.prependField f (SchwartzMap.prependField g hk)))
-        (fun k => x (Equiv.swap ⟨n, by omega⟩ ⟨n + 1, by omega⟩ k))
-    exact conjTP_prependField_swap f g hk n Hn x
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi_adj⟩ k))
+    simpa [i] using conjTP_prependField_swap f g hk n Hn x
 
 /-- The Wightman inner product is the same for φ(f)φ(g)F and φ(g)φ(f)F in the
     second argument, when f, g have spacelike-separated supports. -/
