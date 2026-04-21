@@ -20,6 +20,16 @@ both in
 These are the two theorem slots preventing the fully general permutation-flow
 route from being sorry-free.
 
+Scope note for theorem 2: accepting these deferred blockers puts the
+dimension-one case on the same footing as the higher-dimensional case for the
+BHW permutation-flow endgame.  It does **not** automatically close the
+non-circular OS-to-locality proof.  The second blocker assumes
+`hF_local_dist : IsLocallyCommutativeWeak 1 W`, so it cannot be used to prove
+the target locality theorem for `W := bvt_W OS lgc` unless that locality has
+already been obtained non-circularly.  The OS route must get its `d = 1`
+supplier from a separate real-open edge theorem, a direct complex-edge/PET
+boundary theorem, or an explicitly approved non-circular trust boundary.
+
 ## 2. What is already proved
 
 The BHW permutation lane already has substantial proved infrastructure:

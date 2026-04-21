@@ -824,17 +824,24 @@ So the logical dependency is linear:
 
 ## 9. Section 4.5: Locality
 
-Locality is obtained from symmetry plus analytic continuation:
-- symmetry of Euclidean Green's functions;
-- analyticity on permuted domains;
-- then a gluing / edge-of-the-wedge style argument.
+Locality is obtained from symmetry plus analytic continuation, in the order OS
+uses it:
+- E3 and the earlier Fourier-Laplace/Lorentz-covariance equations produce a
+  symmetric selected analytic continuation on the permuted forward-tube union;
+- the Bargmann-Hall-Wightman theorem enlarges that continuation to the
+  complex-Lorentz saturation;
+- the cited Jost boundary theorem gives locality of the Wightman boundary
+  distributions.
 
 For the modern formalization this remains a good guide:
 - locality lives on the analytic continuation and permutation side;
 - it is not a semigroup positivity theorem.
 
 This supports the current project discipline that theorem 2 belongs to the BHW /
-Jost / PET / permutation package, not to the theorem-3 positivity lane.
+Jost / PET / permutation package, not to the theorem-3 positivity lane.  It
+also fixes the blueprint discipline: theorem-2 proof docs should follow OS I
+§4.5 closely, with external BHW/Jost theorems isolated as external analytic
+inputs rather than replaced by unrelated Lean-convenience routes.
 
 The proof package can be restated more concretely:
 1. use Euclidean symmetry to compare Schwinger functions on permuted real
@@ -843,6 +850,27 @@ The proof package can be restated more concretely:
 3. invoke uniqueness / edge-of-the-wedge style reasoning to identify the two
    analytic continuations;
 4. take boundary values to get locality of the Wightman distributions.
+
+Lean-facing correction: this is a **branch-difference** argument.  OS §4.5 does
+not identify the value of one Euclidean Wick branch at `iτ` with the value of
+the corresponding Wightman boundary branch at real time `τ`.  The safe formal
+shape is:
+- form the adjacent difference of two permuted analytic branches;
+- use E3 to show this difference has zero Euclidean/Wick edge distribution;
+- use EOW/BHW uniqueness to continue the same difference to the real Jost edge;
+- conclude the real-edge adjacent difference vanishes.
+
+Any theorem surface equating a single Wick value with a single real-time
+`extendF` value on the same real configuration should be treated as a category
+error unless an explicit paper bridge proves exactly that statement.
+
+Implementation detail for the local EOW bridge: it is not enough for the SCV
+theorem to return agreement on the two open tube sides.  The OS §4.5
+branch-difference consumer needs the value on the real Jost edge itself, so the
+local EOW strengthening must also export
+`F(realEmbed y) = bv y`, and the chart-data packet must identify
+`bv y` with the `extendF` real-edge branch difference.  This is still a boundary
+limit statement at the real edge, not a same-shell Wick-to-real equality.
 
 This is why locality should not be mixed into theorem 3:
 - theorem 3 is about positivity/isometry through the semigroup bridge;

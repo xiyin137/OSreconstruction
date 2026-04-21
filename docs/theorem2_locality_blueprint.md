@@ -2,18 +2,35 @@
 
 Purpose: this note is the theorem-specific implementation blueprint for the
 theorem-2 `E -> R` locality frontier.  The current production code still has
-the private sufficient-condition frontier
+the private frontier theorem
 
 - `OSToWightmanBoundaryValues.lean`, private theorem
-  `bvt_F_swapCanonical_pairing`.
+  `bvt_W_swap_pairing_of_spacelike`.
 
-The recommended proof route is no longer to force that overstrong finite-height
-canonical-shell theorem first.  The primary OS route is now the BHW/PET
-boundary route: prove a non-circular permutation-edge theorem for
-`extendF (bvt_F OS lgc n)`, add the corresponding boundary-transfer theorem,
-and then retire or bypass the private finite-shell sufficient condition.  The
-finite-shell packet remains a fallback only if we deliberately keep the current
-private consumer unchanged.
+The retired finite-height shell theorem `bvt_F_swapCanonical_pairing` is kept in
+this document only as historical/fallback analysis.  After the #1065 route
+audit and the local OS I §4.5 reread, the primary route must be anchored to the
+paper's order of argument:
+
+1. **OS-internal §4.5 continuation stage.**  Use E3 together with the
+   already-constructed Fourier-Laplace / ACR(1) witness and Lorentz covariance
+   to obtain the symmetric selected analytic continuation on the permuted
+   forward-tube union.  In current Lean terms, the adjacent real-edge packet is
+   only a local interface for proving the required `extendF` overlap equality;
+   it is not a replacement proof route.
+2. **External BHW/Jost stage.**  Formalize the Bargmann-Hall-Wightman and
+   Jost boundary-value theorem as external analytic inputs: BHW enlarges the
+   symmetric continuation to the complex-Lorentz saturated domain, and the Jost
+   theorem converts that symmetric continuation into locality of the boundary
+   distributions.
+3. **OS-internal boundary transfer.**  Apply the selected boundary-value
+   package to identify the boundary distributions with the reconstructed
+   `bvt_W OS lgc` family and close R3.
+
+The finite-shell packet remains a fallback only if we deliberately keep the
+current private consumer unchanged.  Conversely, PET germ/channel monodromy is
+not the next implementation target until the OS-internal §4.5 continuation
+stage has a complete proof transcript.
 
 This note supersedes older gap notes that were written before
 `edge_of_the_wedge` was proved as a theorem.
@@ -23,6 +40,3252 @@ This note should be read together with:
 - `docs/theorem3_os_route_blueprint.md` only for route discipline,
 - `docs/edge_of_the_wedge_proof_plan.md` and
   `docs/edge_of_the_wedge_gap_analysis.md` only as historical reference.
+
+### 0.0. OS §4.5 priority correction after #1065
+
+Theorem 2 should not invert the structure of OS I §4.5.  The paper's locality
+argument has OS-internal content before and after the BHW/Jost citations:
+
+General route discipline for this blueprint: for theorems actually proved in
+the OS papers, follow the OS proof closely.  External citations such as BHW may
+be formalized independently in their own modules, and the known OS I error must
+be corrected rather than reproduced, but OS-internal locality steps should be
+documented as a faithful proof transcript of §4.5 before Lean implementation.
+
+The local OS I text says the §4.5 proof proceeds as follows.  First, from E3
+and the previously constructed equations `(4.1)`, `(4.12)`, and `(4.14)`, the
+selected Wightman analytic function is symmetric and single-valued on the
+permuted forward-tube domain `S'_n`.  Second, the Bargmann-Hall-Wightman theorem
+extends that symmetric function to the complex-Lorentz saturation `S''_n`.
+Third, the cited Jost theorem turns this symmetric analytic continuation into
+local commutativity of the boundary distributions.
+
+That paper ledger is the source of truth.  The current Lean structure
+`SelectedAdjacentPermutationEdgeData` is acceptable only as a narrow
+implementation bridge for the first sentence above: it supplies adjacent
+`extendF` overlap equality so that the selected branch data can be glued into
+`bvt_F_symmetric_PET_extension`.  If this interface starts to require more than
+the OS §4.5 continuation argument provides, the interface should be changed
+rather than the blueprint drifting away from the paper.
+
+| Step | Content | Ownership in this formalization |
+| --- | --- | --- |
+| 1 | E3 + `(4.1)`, `(4.12)`, `(4.14)` produce the symmetric selected analytic continuation on the permuted forward-tube union `S'_n` | OS-internal; active target |
+| 1a | adjacent `extendF` overlap equality / real-edge packet used by the current Lean branch-gluing interface | OS-internal implementation bridge, subordinate to Step 1 |
+| 2 | BHW extends the symmetric continuation to the complex-Lorentz saturation `S''_n` | external BHW infrastructure |
+| 3 | the cited Jost boundary theorem converts symmetric continuation into locality of boundary distributions | external Jost/SCV theorem plus OS boundary-value identification |
+| 4 | identify the boundary distributions with `bvt_W OS lgc` and close R3 | OS-internal final theorem-2 bridge |
+
+Paper-step to Lean-name ledger:
+
+| OS §4.5 ingredient | Current / planned Lean surface |
+| --- | --- |
+| E3 symmetry of Euclidean Green functions | `OS.E3_symmetric`; selected-witness consequence `bvt_F_perm` |
+| `(4.1)` ordered Euclidean relative-coordinate restriction | `bvt_euclidean_restriction`, `bvt_F_acrOne_package` |
+| `(4.12)` Fourier-Laplace representation of the selected Wightman analytic function | `full_analytic_continuation_with_acr_symmetry_growth`, `bvt_F_holomorphic`, `bvt_boundary_values` |
+| `(4.14)` Lorentz covariance / spectrum-side covariance | `bvt_F_restrictedLorentzInvariant_forwardTube`, then complex-Lorentz propagation for `extendF` |
+| symmetric continuation on `S'_n` | `bvt_F_symmetric_PET_extension_of_adjacentEdgeData` or a more direct `bvt_F_symmetric_PET_extension` if the adjacent-edge interface is retired |
+| BHW enlargement to `S''_n` | `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality` / non-circular sibling of the existing BHW theorem |
+| Jost boundary theorem giving R3 | `bv_local_commutativity_transfer_of_symmetric_PET_boundary` |
+| identification with the reconstructed family | `bvt_boundary_values`, `bv_local_commutativity_transfer_of_swap_pairing` only if the finite-shell fallback remains active |
+
+Therefore the immediate target is not another PET-germ adapter.  In the current
+Lean API, the next concrete target is construction of the adjacent edge packet,
+but only because it is the smallest missing bridge into the OS §4.5 symmetric
+continuation theorem:
+
+```lean
+theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    SelectedAdjacentPermutationEdgeData OS lgc n
+```
+
+The suffix `_of_two_le` is not cosmetic.  This is the implementation target for
+the real-open OS45 edge packet in the `2 ≤ d` branch.  It should not be renamed
+or wrapped as an all-`[NeZero d]` theorem unless a separate `d = 1` proof
+constructs the same real-open fields.  If the `d = 1` proof instead uses a
+complex edge, it belongs in a different theorem surface and should feed the
+final locality theorem by a dimension-case split.
+
+This theorem must provide both fields of `SelectedAdjacentPermutationEdgeData`:
+
+1. `overlap_connected`: adjacent ET/swap-ET overlap connectedness, a BHW
+   geometry lemma independent of OS.
+2. `edge_witness`: a nonempty real-open adjacent Jost/ET overlap `V` and
+   compact-test equality
+
+   ```lean
+   ∫ x, BHW.extendF (bvt_F OS lgc n)
+       (BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * φ x
+     =
+   ∫ x, BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x
+   ```
+
+   for every compactly supported `φ` with `tsupport φ ⊆ V`.
+
+The proof transcript for `edge_witness` must be complete before Lean
+implementation resumes on this seam:
+
+1. choose the exact adjacent real-open Jost set `V`;
+2. prove `V` is open, connected, nonempty, and lies in both ET and swapped ET;
+3. show `tsupport φ ⊆ V` makes `φ` an honest zero-diagonal Euclidean test;
+4. use E3 on the permuted zero-diagonal test and the change-of-variables lemma
+   to get the Euclidean Wick-edge compact pairing equality;
+5. use `bvt_F_acrOne_package` plus the many-variable
+   EOW/totally-real identity theorem to transport that Euclidean pairing
+   equality to the real Jost edge for `extendF (bvt_F OS lgc n)`;
+6. package the result into `SelectedAdjacentPermutationEdgeData`.
+
+Resolved route decisions for this seam:
+
+1. Do not rely on a global implication `BHW.JostSet -> ExtendedTube`, which is
+   false for the current pairwise-spacelike repo predicate.  The selected
+   adjacent edge theorem chooses a small real-open `V` with explicit
+   `hV_jost`, `hV_ET`, `hV_swapET`, and ordered-sector fields.
+2. The EOW theorem surface is branch-difference shaped.  The preferred
+   implementation now shrinks the selected real-open ball into one local EOW
+   chart and uses
+   `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`, which
+   returns the final `V` only after the EOW domain is known.
+   The broader `SCV.differenceEnvelope_of_localBoundaryCharts` theorem remains
+   a fallback only if this single-chart shrink fails.
+3. The route constructs a pointwise holomorphic branch-difference envelope
+   first, then uses compact-test Wick-edge zero with
+   `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen` to force
+   the real-edge branch difference to vanish.  It does not assume raw
+   continuity of `bvt_F OS lgc n` on real boundary points; the real trace is the
+   continuous `extendF` trace.
+
+#### Lean-shaped transcript for the OS edge supplier
+
+The active proof-doc target can be decomposed into the following Lean-facing
+lemmas.  This is the transcript that should be completed before attempting the
+next production proof.
+
+**A. Geometry and zero-diagonal preparation.**
+
+The chosen edge `V` must lie in the current pairwise-spacelike `BHW.JostSet`
+and in the two relevant ET real traces.  Pairwise Jost support is enough to
+promote compactly supported tests to the honest OS-I zero-diagonal space,
+because no Jost point is coincident:
+
+```lean
+theorem BHW.jostSet_disjoint_coincidenceLocus
+    (d n : ℕ) :
+    Disjoint (BHW.JostSet d n) (CoincidenceLocus d n)
+
+theorem zeroDiagonal_of_tsupport_subset_jostOverlap
+    (V : Set (NPointDomain d n))
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (φ : SchwartzNPoint d n)
+    (hφ_tsupport :
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
+    VanishesToInfiniteOrderOnCoincidence φ := by
+  -- Prove `Disjoint (tsupport φ) (CoincidenceLocus d n)` using
+  -- `hφ_tsupport`, `hV_jost`, and `BHW.jostSet_disjoint_coincidenceLocus`;
+  -- then apply `VanishesToInfiniteOrderOnCoincidence_of_tsupport_disjoint`.
+```
+
+The permutation action on zero-diagonal tests should use the existing
+`reindexSchwartz` / `VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv`
+in `Core.lean`; it must not use `ZeroDiagonalSchwartz.ofClassical` as a hidden
+fallback:
+
+```lean
+def BHW.permuteZeroDiagonalSchwartz
+    (σ : Equiv.Perm (Fin n))
+    (f : ZeroDiagonalSchwartz d n) :
+    ZeroDiagonalSchwartz d n :=
+  ⟨BHW.permuteSchwartz (d := d) σ f.1,
+    f.2.compCLMOfContinuousLinearEquiv σ⟩
+
+@[simp] theorem BHW.permuteZeroDiagonalSchwartz_apply
+    (σ : Equiv.Perm (Fin n)) (f : ZeroDiagonalSchwartz d n)
+    (x : NPointDomain d n) :
+    (BHW.permuteZeroDiagonalSchwartz (d := d) σ f).1 x =
+      f.1 (fun k => x (σ k))
+```
+
+The adjacent real-open edge can use the existing local theorem
+`BHW.exists_real_open_nhds_adjSwap`, but its seed point must be chosen from
+actual OS/BHW adjacent Jost geometry **and** from a fixed Euclidean time-order
+sector.  The time-order data is not optional: OS §4.5 starts from Euclidean
+ordered/Wick points in the permuted forward-tube union, and the adjacent swap
+usually moves the Wick point to a different permuted time-order sector.  Thus a
+helper that returns only `V`, `hV_ET`, and `hV_swapET` is not enough for the
+EOW branch-identification theorem.
+
+The correct construction helper should export the fields needed by
+`SelectedAdjacentPermutationEdgeData.edge_witness`, plus the fixed order used
+on the Wick side:
+
+```lean
+theorem choose_os45_real_open_edge_for_adjacent_swap
+    (hd : 2 ≤ d)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+      (∀ x ∈ V, x ∈ BHW.JostSet d n) ∧
+      (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+      (∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+```
+
+Do not replace this by a global theorem
+`BHW.JostSet d n ⊆ {x | BHW.realEmbed x ∈ BHW.ExtendedTube d n}`; that
+statement is false for the current `BHW.JostSet`.
+
+Lean proof sketch for the time-order fields:
+
+First isolate the seed theorem:
+
+```lean
+theorem adjacent_os45_seed_exists
+    (hd : 2 ≤ d)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (x0 : NPointDomain d n) (ρ : Equiv.Perm (Fin n)),
+      x0 ∈ BHW.JostSet d n ∧
+      BHW.realEmbed x0 ∈ BHW.ExtendedTube d n ∧
+      BHW.realEmbed
+        (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n ∧
+      x0 ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ ∧
+      (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+```
+
+Seed proof transcript:
+
+1. Start from the checked adjacent-overlap witness theorem
+   `adjacent_overlap_real_spacelike_witness_exists (d := d) hd i hi`.
+   This already returns a real point `x` with the selected adjacent pair
+   spacelike and both
+   `BHW.realEmbed x ∈ BHW.ExtendedTube d n` and
+   `BHW.realEmbed (x ∘ τ) ∈ BHW.ExtendedTube d n`, where
+   `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.
+2. Strengthen the exported witness theorem, rather than re-proving the private
+   internals of `AdjacentOverlapWitness.lean`, to expose the missing Jost field:
+
+   ```lean
+   theorem adjacent_overlap_real_jost_witness_exists
+       (hd : 2 ≤ d) (i : Fin n) (hi : i.val + 1 < n) :
+       ∃ x : NPointDomain d n,
+         x ∈ BHW.JostSet d n ∧
+         (∑ μ, minkowskiSignature d μ *
+             (x ⟨i.val + 1, hi⟩ μ - x i μ) ^ 2 > 0) ∧
+         (∀ k : Fin n, x k 0 = 0) ∧
+         BHW.realEmbed x ∈ BHW.ExtendedTube d n ∧
+         BHW.realEmbed
+           (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           BHW.ExtendedTube d n
+   ```
+
+   Proof source: the existing adjacent witness is built from
+   `swapWitnessReal`, whose private proof already goes through
+   `ForwardJostSet`; the public theorem should expose
+   `forwardJostSet_subset_jostSet` at the same time as the ET fields.  This is
+   a real theorem-surface improvement, not a wrapper: downstream OS §4.5 needs
+   the `hV_jost` field.
+
+   Lean proof transcript:
+
+   1. use `swapWitnessReal (d := d) (n := n) hd i hi` as the witness;
+   2. obtain `hd1 : 1 ≤ d` from `hd`;
+   3. set
+      `hxFJ := swapWitnessReal_mem_forwardJostSet (d := d) (n := n) hd i hi`;
+   4. prove `x ∈ BHW.JostSet d n` by
+      `BHW.forwardJostSet_subset_jostSet hd1 hxFJ`;
+   5. prove the selected adjacent spacelike inequality by reusing the same
+      `forwardJostSet_consec_spacelike` calculation already present in
+      `adjacent_overlap_real_spacelike_witness_exists`;
+   6. prove the zero-time field by `intro k; simp [swapWitnessReal]`;
+   7. reuse `swapWitnessReal_mem_extendedTube` and
+      `swapWitnessRealSwapped_mem_extendedTube`, rewriting the swapped real
+      embedding with `[swapWitnessRealSwapped]`.
+
+   This theorem should be added near
+   `adjacent_overlap_real_spacelike_witness_exists` in
+   `AdjacentOverlapWitness.lean`, because it deliberately publicizes facts
+   already proved by that file's private witness construction.
+3. Add the time-order field by a separate small-perturbation lemma around the
+   chosen adjacent witness.  Do **not** state this as a theorem about an
+   arbitrary nonempty open overlap: an open set can sit entirely at negative
+   Euclidean times, while `OrderedPositiveTimeRegion` requires positive times.
+
+   ```lean
+   theorem exists_ordered_small_time_perturb_in_adjacent_overlap
+       (hd : 2 ≤ d)
+       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+       (U : Set (NPointDomain d n))
+       (hU_open : IsOpen U)
+       (x : NPointDomain d n)
+       (hxU : x ∈ U)
+       (hx_time0 : ∀ k : Fin n, x k 0 = 0) :
+       ∃ (x0 : NPointDomain d n) (ρ : Equiv.Perm (Fin n)),
+         x0 ∈ U ∧
+         x0 ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ ∧
+         (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+   ```
+
+   Proof idea: use `hU_open.mem_nhds hxU` and the curve
+   `xε k μ := if μ = 0 then ε * ((k : ℝ) + 1) else x k μ`.  For sufficiently
+   small `ε > 0`, `xε ∈ U`; its Euclidean times are strictly positive and
+   strictly increasing, so `ρ = 1` works.  The swapped ordered sector is then
+   forced by the same ordered list and the identity `τ.symm * ρ`.  This lemma
+   should cite the public definition `EuclideanOrderedPositiveTimeSector` and
+   prove the ordering directly; it should not rely on a false density theorem
+   for arbitrary open subsets.
+4. Build the open overlap `U` from the strengthened witness and existing open
+   sets:
+
+   ```lean
+   def adjacentOS45RawOverlap
+       (d n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+       Set (NPointDomain d n) :=
+     {x | x ∈ BHW.JostSet d n ∧
+       BHW.realEmbed x ∈ BHW.ExtendedTube d n ∧
+       BHW.realEmbed
+         (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+         BHW.ExtendedTube d n}
+
+   theorem isOpen_adjacentOS45RawOverlap :
+       IsOpen (adjacentOS45RawOverlap d n i hi)
+   ```
+
+   Proof source: `BHW.isOpen_jostSet`, `BHW.isOpen_extendedTube`, continuity of
+   `BHW.realEmbed`, and continuity of the finite-coordinate permutation map.
+   Nonemptiness comes from `adjacent_overlap_real_jost_witness_exists`.
+
+   Lean proof transcript for openness:
+
+   1. rewrite `adjacentOS45RawOverlap` as an intersection of three preimages;
+   2. use `BHW.isOpen_jostSet` for the first factor;
+   3. use `BHW.isOpen_extendedTube.preimage` with continuity of
+      `BHW.realEmbed` for the second factor;
+   4. use `BHW.isOpen_extendedTube.preimage` with continuity of
+      `fun x => BHW.realEmbed (fun k => x (τ k))` for the third factor;
+   5. combine the three open sets with `IsOpen.inter`.
+
+   Lean proof transcript for nonemptiness:
+
+   1. obtain `x` from `adjacent_overlap_real_jost_witness_exists`;
+   2. return `⟨x, hx_jost, hx_ET, hx_swapET⟩`.
+5. After choosing an ordered point `x0` and `ρ`, use a **small connected open
+   ball**, not a connected component, to define the final real edge `V`.
+   The generic helper should be:
+
+   ```lean
+   theorem exists_connected_open_ball_subset
+       {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+       {S : Set E} {x0 : E}
+       (hS_open : IsOpen S) (hx0 : x0 ∈ S) :
+       ∃ r : ℝ,
+         0 < r ∧
+         IsOpen (Metric.ball x0 r) ∧
+         IsConnected (Metric.ball x0 r) ∧
+         (Metric.ball x0 r).Nonempty ∧
+         Metric.ball x0 r ⊆ S
+   ```
+
+   Proof transcript:
+
+   1. from `hS_open.mem_nhds hx0`, obtain `r > 0` with
+      `Metric.ball x0 r ⊆ S`;
+   2. `IsOpen (Metric.ball x0 r)` is standard;
+   3. `Metric.ball x0 r` is convex in a real normed vector space, hence
+      preconnected/connected because it is nonempty;
+   4. nonemptiness is witnessed by `x0`.
+
+   In the actual selector, set
+
+   ```lean
+   S :=
+     adjacentOS45RawOverlap d n i hi ∩
+     EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ ∩
+     {x | (fun k => x (τ k)) ∈
+       EuclideanOrderedPositiveTimeSector (d := d) (n := n) (τ.symm * ρ)}
+   ```
+
+   Then apply the ball helper at the ordered point from
+   `exists_ordered_small_time_perturb_in_adjacent_overlap`.
+
+   The final selector theorem `choose_os45_real_open_edge_for_adjacent_swap`
+   should take `V := Metric.ball x0 r`.  All exported fields are inherited from
+   `V ⊆ S`; connectedness comes from the ball helper.  This avoids needing
+   global connectedness of the whole raw overlap; only the
+   `SelectedAdjacentPermutationEdgeData.overlap_connected` field separately
+   uses the BHW connectedness theorem.
+6. Do **not** extend this real-open-edge theorem from `2 ≤ d` to `[NeZero d]`
+   by a large-spatial-slope argument.  The `d = 1` case is not a routine
+   specialization; it is a different complex-edge problem.
+
+   The replacement target should be a new, fully specified complex-edge chart
+   packet for dimension one.  It is **not** implementation-ready yet, and it
+   should not be represented by a placeholder theorem statement.  Before Lean
+   work resumes on the all-dimensional theorem, the docs must say exactly what
+   complex edge replaces the real-open `V`, how compact real Jost test supports
+   are recovered as boundary values, and how the OS §4.5 EOW step reaches the
+   real spacelike boundary in `d = 1`.
+
+   The existing `adjacent_overlap_witness_exists_d1` gives a **complex**
+   adjacent ET/swap-ET witness, not a real Jost seed with fixed Euclidean time
+   order.  It can be mined for the explicit rapidity/Wick-rotation calculation,
+   but it cannot be used as this theorem by projection to real or imaginary
+   parts.  A naive real choice
+   `x0 k = (ε * (k+1), L * (k+1))` proves the identity ordered sector and
+   pairwise spacelike/Jost inequalities for `L >> ε`, but the adjacent-swapped
+   consecutive spatial differences change orientation.  Thus its swapped ET
+   membership is **not** a one-line `ForwardJostSet` consequence.
+
+   Stress test for why the real theorem should not be targeted in `d = 1`:
+   for `n = 2`, an adjacent swap sends the original consecutive difference
+   `ζ₁ = x₁ - x₀` to `-ζ₁`.  The `d = 1` rapidity normal form in
+   `D1OrbitSet.lean` says a real configuration in the real trace of one
+   extended-tube sector has its consecutive spacelike differences in one
+   light-cone orientation after a single complex rapidity.  The swapped
+   configuration would require the opposite orientation for `ζ₁`.  Thus a
+   single real `x0` cannot be expected to satisfy both real-trace ET fields.
+   The production-safe action is therefore to keep
+   `choose_os45_real_open_edge_for_adjacent_swap` as a `2 ≤ d` theorem and
+   develop a separate `d = 1` complex-edge EOW chart if theorem 2 is to remain
+   stated for all `[NeZero d]`.
+
+   Audit of the current `d = 1` permutation-flow blocker:
+
+   - `BHWPermutation/PermutationFlowBlocker.lean` contains the deferred theorem
+     `blocker_iterated_eow_hExtPerm_d1_nontrivial` as a theorem-level `sorry`.
+     This declaration is not an ad hoc placeholder: its production docstring
+     records the dedicated `d = 1` numerical validation campaign and the exact
+     BHW permutation-flow role it is intended to play.  The point here is only
+     theorem-shape separation.  Its hypotheses include
+     `hF_local_dist : IsLocallyCommutativeWeak 1 W`, so it is circular for the
+     current `E -> R` theorem-2 locality proof.  It may be useful downstream in
+     a Wightman/BHW permutation-flow proof, but it cannot be cited as the
+     non-circular OS45 supplier.
+   - Likewise, `blocker_isConnected_permSeedSet_nontrivial` is a carefully
+     documented geometric/topological blocker with explicit `d = 1,n = 2`
+     numerical support in the file docstring.  It supports the BHW
+     permutation-flow route.  It does not by itself supply the OS45 real-open
+     adjacent edge `V`, because `SelectedAdjacentPermutationEdgeData.edge_witness`
+     asks for a compact-test OS edge equality on a chosen real-open
+     Jost/ET/swap-ET overlap.
+   - `BHWReducedExtension.lean` contains the explicit axiom
+     `reduced_bargmann_hall_wightman_of_input`, stated for all `[NeZero d]`.
+     This is a generic reduced BHW bridge and therefore includes `d = 1`, but
+     using it would move the proof to the reduced-BHW fallback route.  It is
+     not the OS I §4.5 complex-edge chart packet and should not be silently
+     substituted for that missing dimension-one argument.
+   - If we deliberately choose an axiomatic `d = 1` closure for theorem 2, the
+     axiom must be documented as a new or explicitly reused trust boundary and
+     must be non-circular: it should be pure BHW/SCV complex-edge geometry or a
+     reduced BHW extension theorem, not a theorem whose hypotheses already
+     include local commutativity of the target Wightman family.
+
+   Dimension-split implementation invariant:
+
+   - In the `2 ≤ d` branch, the current target really is
+     `SelectedAdjacentPermutationEdgeData`.  Its real-open witness `V` is the
+     interface consumed by the existing adjacent-overlap propagation theorem in
+     `OSToWightmanSelectedWitness.lean`.
+   - In the `d = 1` branch, the validated `PermutationFlowBlocker.lean`
+     theorems put the dimension-one case on equal footing with `d ≥ 2` only
+     for the deferred BHW/permutation-flow endgame.  They do not by themselves
+     provide the non-circular OS §4.5 supplier.
+   - Therefore the all-dimensional theorem-2 proof must not say “use the
+     `2 ≤ d` real-edge packet with `d = 1`.”  It has two honest options:
+     either prove a dimension-one real/complex edge theorem strong enough to
+     fill the same downstream locality role, or prove a parallel direct
+     dimension-one boundary-locality theorem.
+   - If a dedicated `d = 1` argument actually constructs a real-open
+     Jost/ET/swap-ET edge satisfying the fields of
+     `SelectedAdjacentPermutationEdgeData.edge_witness`, then it may feed the
+     same adjacent-edge/PET machinery.  But that is a new theorem, not a
+     consequence of `JostWitnessGeneralSigma.jostWitness_exists`, not a
+     projection of `adjacent_overlap_witness_exists_d1`, and not a use of
+     `blocker_iterated_eow_hExtPerm_d1_nontrivial`.
+   - If the dimension-one construction is genuinely complex-edge rather than
+     real-open-edge, then it should not be forced through
+     `SelectedAdjacentPermutationEdgeData`.  The proof docs must instead name a
+     separate theorem such as
+
+     ```lean
+     theorem bvt_locally_commutative_boundary_route_of_one
+         (OS : OsterwalderSchraderAxioms 1)
+         (lgc : OSLinearGrowthCondition 1 OS) :
+         IsLocallyCommutativeWeak 1 (bvt_W OS lgc)
+     ```
+
+     whose proof uses OS E3, the selected analytic witness, the
+     one-dimensional complex-edge/EOW packet, and `bvt_boundary_values`, but no
+     hypothesis of the form
+     `IsLocallyCommutativeWeak 1 (bvt_W OS lgc)`.
+
+   Lean-readiness consequence: the `2 ≤ d` branch can proceed toward
+   implementation once the adjacent branch-difference EOW packet below is
+   complete.  The all-`[NeZero d]` theorem is **not** implementation-ready
+   until either the `d = 1` real-open edge theorem or the direct
+   `bvt_locally_commutative_boundary_route_of_one` transcript is specified to
+   the same level of detail.
+
+   Dimension-one proof-doc target surfaces:
+
+   The all-dimensional closure should choose one of the following branches
+   before any production Lean is written for `d = 1`.
+
+   **D1-R, real-open variant.**  Prove a theorem with the same fields as the
+   `2 ≤ d` edge selector, but by a dimension-one argument:
+
+   ```lean
+   theorem choose_os45_real_open_edge_for_adjacent_swap_d1
+       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+       ∃ (V : Set (NPointDomain 1 n)) (ρ : Equiv.Perm (Fin n)),
+         IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+         (∀ x ∈ V, x ∈ BHW.JostSet 1 n) ∧
+         (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube 1 n) ∧
+         (∀ x ∈ V,
+           BHW.realEmbed
+             (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+             BHW.ExtendedTube 1 n) ∧
+         (∀ x ∈ V,
+           x ∈ EuclideanOrderedPositiveTimeSector (d := 1) (n := n) ρ) ∧
+         (∀ x ∈ V,
+           (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+             EuclideanOrderedPositiveTimeSector (d := 1) (n := n)
+               ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+   ```
+
+   If this theorem is true, the rest of the `2 ≤ d` OS45 edge transcript can be
+   replayed in dimension one, producing
+
+   ```lean
+   theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_d1
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) :
+       SelectedAdjacentPermutationEdgeData OS lgc n
+   ```
+
+   This route is implementation-ready only after the real-open theorem above
+   has a proof transcript from `D1OrbitSet.lean` / `IndexSetD1.lean` or a
+   direct one-dimensional OS45 geometry argument.  The existing validated
+   `PermutationFlowBlocker.lean` blockers do not prove it.
+
+   **D1-C, complex-edge/PET variant.**  If the real-open edge theorem is false
+   or not the right OS §4.5 object in dimension one, the target should be the
+   symmetric PET extension itself, not `SelectedAdjacentPermutationEdgeData`:
+
+   ```lean
+   theorem bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) :
+       ∃ Fext : (Fin n → Fin (1 + 1) → ℂ) → ℂ,
+         DifferentiableOn ℂ Fext (BHW.PermutedExtendedTube 1 n) ∧
+         (∀ z ∈ ForwardTube 1 n, Fext z = bvt_F OS lgc n z) ∧
+         (∀ (Λ : ComplexLorentzGroup 1) z,
+           z ∈ BHW.PermutedExtendedTube 1 n →
+           Fext (BHW.complexLorentzAction Λ z) = Fext z) ∧
+         (∀ (σ : Equiv.Perm (Fin n)) z,
+           z ∈ BHW.PermutedExtendedTube 1 n →
+           Fext (fun k => z (σ k)) = Fext z)
+   ```
+
+   Proof transcript for D1-C:
+
+   1. Use `bvt_F_holomorphic`, `bvt_F_perm`,
+      `bvt_F_complexLorentzInvariant_forwardTube`, and
+      `bvt_boundary_values`; do not use
+      `IsLocallyCommutativeWeak 1 (bvt_W OS lgc)`.
+   2. Replace the `2 ≤ d` real-open adjacent edge by a one-dimensional
+      complex-edge chart packet.  The packet must state exactly which
+      dimension-one edge/domain replaces `V`, how the two adjacent branches
+      have a common OS boundary value there, and how the EOW/identity theorem
+      propagates equality across adjacent sector overlaps.
+   3. Prove adjacent selected PET branch compatibility in dimension one from
+      that complex-edge packet.  This theorem may use the validated
+      `D1OrbitSet.lean` / `IndexSetD1.lean` geometry, but it may not call
+      `blocker_iterated_eow_hExtPerm_d1_nontrivial` unless the
+      `hF_local_dist` hypothesis has been supplied by a non-circular theorem
+      already proved for the selected OS family.
+   4. Glue the finite sector cover exactly as in the `2 ≤ d` route, yielding
+      the symmetric PET extension above.
+   5. Apply `bv_local_commutativity_transfer_of_symmetric_PET_boundary` with
+      `bvt_boundary_values` to obtain:
+
+      ```lean
+      theorem bvt_locally_commutative_boundary_route_of_one
+          (OS : OsterwalderSchraderAxioms 1)
+          (lgc : OSLinearGrowthCondition 1 OS) :
+          IsLocallyCommutativeWeak 1 (bvt_W OS lgc)
+      ```
+
+   D1-C is currently the safer proof-doc target if the real-open edge theorem
+   remains geometrically unclear, because it follows the OS paper statement
+   “construct a symmetric continuation on `S'_n`” directly instead of forcing a
+   dimension-one complex edge through a real-open-edge data structure.
+
+   Minimum missing theorem slots for D1-C:
+
+   ```lean
+   theorem d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ)
+       (π : Equiv.Perm (Fin n))
+       (i : Fin n) (hi : i.val + 1 < n)
+       (z : Fin n → Fin (1 + 1) → ℂ)
+       (hzπ : z ∈ BHW.permutedExtendedTubeSector 1 n π)
+       (hzπswap :
+         z ∈ BHW.permutedExtendedTubeSector 1 n
+           (π * Equiv.swap i ⟨i.val + 1, hi⟩)) :
+       bvt_selectedPETBranch (d := 1) OS lgc n
+           (π * Equiv.swap i ⟨i.val + 1, hi⟩) z =
+         bvt_selectedPETBranch (d := 1) OS lgc n π z
+   ```
+
+   This theorem is the dimension-one analogue of
+   `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.  It is the correct
+   consumer for PET gluing in D1-C, because it proves adjacent branch equality
+   directly on sector overlaps without first constructing a real-open
+   `SelectedAdjacentPermutationEdgeData.edge_witness`.
+
+   Its proof must be decomposed before Lean implementation into honest local
+   theorem slots, not placeholder statements:
+
+   1. a concrete one-dimensional complex chart/domain theorem crossing the
+      adjacent `π` / `π * swap` sectors;
+   2. branch holomorphy for the two selected OS PET branches on that chart;
+   3. a common OS boundary-value theorem from E3, `(4.1)`, `(4.12)`, and
+      `(4.14)`, with no locality hypothesis;
+   4. a one-dimensional EOW/identity theorem that turns the common boundary
+      value into equality of the two branch germs;
+   5. a connectedness or monodromy theorem propagating the local germ equality
+      to the full adjacent sector overlap containing `z`.
+4. Once `adjacent_os45_seed_exists` is proved, first intersect the open
+   neighborhoods of:
+   `BHW.JostSet d n`,
+   `{x | BHW.realEmbed x ∈ BHW.ExtendedTube d n}`,
+   `{x | BHW.realEmbed (x ∘ τ) ∈ BHW.ExtendedTube d n}`,
+   `EuclideanOrderedPositiveTimeSector ρ`, and
+   the swapped ordered sector.  The seed belongs to all five sets, so the
+   intersection is an open neighborhood of the seed.  Then choose a small open
+   ball around the seed whose closed or open ball is contained in that
+   intersection, and take this ball as `V`.  This gives `IsOpen V`,
+   `IsConnected V`, and `V.Nonempty`, while all five membership fields follow
+   by subset transitivity.  The connectedness is needed only by the
+   local-to-global EOW gluing proof; `SelectedAdjacentPermutationEdgeData`
+   itself does not store it.
+5. The swapped ordered-sector field uses the identity
+   `(fun k => (fun j => x (τ j)) ((τ.symm * ρ) k)) = fun k => x (ρ k)`.
+   In the final Lean proof this should be a small simp lemma for adjacent
+   swaps and permutation multiplication orientation.
+
+The other geometry field of `SelectedAdjacentPermutationEdgeData` is external
+BHW infrastructure:
+
+```lean
+theorem BHW.isConnected_adjSwapExtendedOverlap
+    [NeZero d]
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+    IsConnected
+      {z : Fin n → Fin (d + 1) → ℂ |
+        z ∈ BHW.ExtendedTube d n ∧
+          BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) z ∈
+            BHW.ExtendedTube d n}
+```
+
+The existing route to this statement is through
+`BHW.isConnected_adjSwapExtendedOverlap_of_forwardOverlapConnected` and the
+real-double-coset generation theorem for the adjacent forward-overlap index
+set.  This is BHW work, but it is a small external geometry lemma, not the
+PET-germ monodromy project.
+
+**B. E3 gives the Euclidean Wick-edge compact equality.**
+
+Let `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.  For any compactly supported test with
+`tsupport φ ⊆ V`, first build
+
+```lean
+φZ : ZeroDiagonalSchwartz d n := ⟨φ,
+  zeroDiagonal_of_tsupport_subset_jostOverlap V hV_jost φ hφ_tsupport⟩
+```
+
+Then apply E3 to `φZ` and the inverse-permuted test
+`BHW.permuteZeroDiagonalSchwartz τ.symm φZ`.  The inverse is intentional:
+after the change of variables it produces the desired branch
+`x ↦ bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))`.
+
+```lean
+theorem bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (φ : SchwartzNPoint d n)
+    (hφ_tsupport :
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
+    ∫ x : NPointDomain d n,
+        bvt_F OS lgc n
+          (fun k => wickRotatePoint (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+          φ x
+      =
+    ∫ x : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
+  -- 1. construct `φZ`;
+  -- 2. set `ψZ := BHW.permuteZeroDiagonalSchwartz τ.symm φZ`;
+  -- 3. use `OS.E3_symmetric n τ.symm φZ ψZ`;
+  -- 4. rewrite both Schwinger values by
+  --    `bvt_euclidean_restriction OS lgc n`;
+  -- 5. use `BHW.integral_perm_eq_self τ.symm` to move from
+  --    `φ (x ∘ τ.symm)` to the branch `wick(x ∘ τ)`.
+```
+
+This is the OS §4.5 E3 step in compact-test form.  It uses only OS-internal
+data plus the already-selected Euclidean reproduction theorem for `bvt_F`.
+
+**C. ACR(1)/EOW transports the Euclidean equality to the real Jost edge.**
+
+This is the remaining OS-internal analytic seam.  Since
+`AnalyticContinuationRegion d n 1` is the positive-time-difference tube, the
+real Jost edge is not obtained by simply proving
+`realEmbed x ∈ AnalyticContinuationRegion d n 1`.  The OS §4.5 argument uses an
+EOW/BHW envelope connecting the Euclidean Wick section to the real Jost edge.
+Make that envelope explicit as data first:
+
+```lean
+structure AdjacentOSEOWEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (τ : Equiv.Perm (Fin n))
+    (V : Set (NPointDomain d n)) where
+  U : Set (Fin n → Fin (d + 1) → ℂ)
+  U_open : IsOpen U
+  U_connected : IsConnected U
+  F_id : (Fin n → Fin (d + 1) → ℂ) → ℂ
+  F_perm : (Fin n → Fin (d + 1) → ℂ) → ℂ
+  F_id_holo : DifferentiableOn ℂ F_id U
+  F_perm_holo : DifferentiableOn ℂ F_perm U
+  wick_mem :
+    ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U
+  real_mem :
+    ∀ x ∈ V, BHW.realEmbed x ∈ U
+  wick_id :
+    ∀ x ∈ V,
+      F_id (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k))
+  wick_perm :
+    ∀ x ∈ V,
+      F_perm (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))
+  real_id :
+    ∀ x ∈ V,
+      F_id (BHW.realEmbed x) =
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)
+  real_perm :
+    ∀ x ∈ V,
+      F_perm (BHW.realEmbed x) =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed (fun k => x (τ k)))
+```
+
+This two-branch structure is not meant to hide the theorem, but it is stronger
+than the current edge-data consumer needs.  It is safe only if both branches are
+constructed as genuine OS §4.5 analytic continuations.  The sharper active
+target below is the branch-difference envelope, because OS §4.5 transports the
+zero of an adjacent branch difference rather than identifying one Wick value
+with one real-time value.  If we keep the two-branch record, its existence
+theorem is:
+
+```lean
+theorem adjacent_osEOWEnvelope_exists_from_OS45
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (ρ : Equiv.Perm (Fin n))
+    (hV_open : IsOpen V)
+    (hV_connected : IsConnected V)
+    (hV_nonempty : V.Nonempty)
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (hV_ET : ∀ x ∈ V,
+      BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hV_swapET : ∀ x ∈ V,
+      BHW.realEmbed
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n)
+    (hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+    (hV_swap_ordered : ∀ x ∈ V,
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+    Nonempty
+      (AdjacentOSEOWEnvelope (d := d) OS lgc n
+        (Equiv.swap i ⟨i.val + 1, hi⟩) V)
+```
+
+Paper-faithful proof transcript for this theorem:
+
+1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.  The theorem is the adjacent
+   localization of OS I §4.5's first sentence: E3 plus `(4.1)`, `(4.12)`, and
+   `(4.14)` give a symmetric selected analytic continuation on the permuted
+   forward-tube union.  It must not be proved by assuming Wightman locality or
+   by invoking the later PET monodromy theorem.
+2. Use the selected witness facts already present in production:
+   `bvt_F_holomorphic`, `bvt_F_acrOne_package`, `bvt_F_perm`,
+   `bvt_F_translationInvariant`, and
+   `bvt_F_restrictedLorentzInvariant_forwardTube`.  In paper language these
+   are the Lean names for the Fourier-Laplace construction `(4.12)`, the
+   Wightman distribution definition `(4.13)`, Lorentz covariance `(4.14)`, and
+   Euclidean symmetry E3 after the selected-witness choice.
+3. The ordered-sector hypotheses are essential.  From `hV_ordered`,
+   `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector` gives
+
+   ```lean
+   (fun k => wickRotatePoint (x (ρ k))) ∈ ForwardTube d n.
+   ```
+
+   From `hV_swap_ordered`, the same theorem gives the forward-tube membership
+   for the swapped Wick configuration in the order
+   `τ.symm * ρ`.  These two memberships are the Lean version of OS's
+   permuted forward-tube domain `S'_n`; without them the theorem would be an
+   overstatement about arbitrary Jost/ET neighborhoods.
+4. Prove the local OS §4.5 envelope and final edge witness, preferably via the
+   combined single-chart theorem
+   `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`.
+   The older fixed-`V` branch-difference theorem
+   `os45_adjacent_branchDifferenceEnvelope_exists` is now a fallback only if
+   the generic local-chart gluing route is used.  The stronger optional
+   two-branch theorem is `adjacent_osEOWEnvelope_exists_from_OS45`.  Do **not**
+   split off a weak
+   geometry theorem saying only that there is an open connected `U` containing
+   the Wick edge and the two real edges: `U = Set.univ` would satisfy such a
+   statement and it would not encode any EOW continuation content.  A split is
+   acceptable only if the geometric lemma carries the analytic source-domain
+   data needed to construct the holomorphic branches.
+5. If using the stronger two-branch theorem, construct `U`, `F_id`, and
+   `F_perm` by the OS §4.5 analytic continuation, not by arbitrary choice.  The
+   proof obligation is exactly:
+
+   ```lean
+   ∃ U F_id F_perm,
+     IsOpen U ∧ IsConnected U ∧
+     DifferentiableOn ℂ F_id U ∧
+     DifferentiableOn ℂ F_perm U ∧
+     (∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U) ∧
+     (∀ x ∈ V, BHW.realEmbed x ∈ U) ∧
+     (∀ x ∈ V,
+       F_id (fun k => wickRotatePoint (x k)) =
+         bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
+     (∀ x ∈ V,
+       F_perm (fun k => wickRotatePoint (x k)) =
+         bvt_F OS lgc n
+           (fun k =>
+             wickRotatePoint
+               (x (Equiv.swap i ⟨i.val + 1, hi⟩ k)))) ∧
+     (∀ x ∈ V,
+       F_id (BHW.realEmbed x) =
+         BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)) ∧
+     (∀ x ∈ V,
+       F_perm (BHW.realEmbed x) =
+         BHW.extendF (bvt_F OS lgc n)
+           (BHW.realEmbed
+             (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))))
+   ```
+
+   This is the exact mathematical content of the OS §4.5 branch-identification
+   step in the current Lean vocabulary.  Its proof uses the selected
+   Fourier-Laplace continuation and uniqueness of analytic continuation from
+   the Euclidean Wick edge to the Jost edge.  It is allowed to cite or prove a
+   standard SCV/EOW theorem, but it may not mention `IsLocallyCommutativeWeak`
+   or consume theorem-2 locality.
+
+   The branch origins must be recorded in the proof, because this is where a
+   common false shortcut can enter.  Let
+   `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and `ρτ := τ.symm * ρ`.
+
+   - For `x ∈ V`, `hV_ordered` gives
+     `(fun k => wickRotatePoint (x (ρ k))) ∈ ForwardTube d n`.  The identity
+     Wick branch is therefore the selected forward-tube value after reordering
+     by `ρ`, transported back to the unpermuted Wick point by `bvt_F_perm`.
+   - For the swapped configuration `xτ := fun k => x (τ k)`,
+     `hV_swap_ordered` gives
+     `(fun k => wickRotatePoint (xτ (ρτ k))) ∈ ForwardTube d n`; using
+     `ρτ = τ.symm * ρ`, this is the same ordered Wick configuration as
+     `fun k => wickRotatePoint (x (ρ k))`.  The permuted Wick branch is
+     transported back to `fun k => wickRotatePoint (xτ k)` by `bvt_F_perm`.
+   - Do **not** require
+     `fun k => wickRotatePoint (x (τ k)) ∈ ForwardTube d n`; for an adjacent
+     swap this generally contradicts the strict time ordering.  Do **not**
+     require it to be in the ordinary `ExtendedTube` either.  OS §4.5 first
+     lives on the permuted forward-tube union `S'_n`, and BHW/Jost/EOW is what
+     relates that union to the real Jost/extended-tube edge.
+   - On the real edge, the two branches must be the BHW/Jost continuations
+     `BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)` and
+     `BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed (fun k => x (τ k)))`.
+     This real-edge identification is analytic content, not a definitional
+     rewrite from the Wick-side branch.
+
+   The implementation should expose the preceding paragraph through a
+   two-chart theorem, not by trying to guess values of `F_id` and `F_perm`
+   pointwise.  The source charts are:
+
+   ```lean
+   def OS45WickChartDomain
+       (σ ρσ : Equiv.Perm (Fin n)) :
+       Set (Fin n → Fin (d + 1) → ℂ) :=
+     {z | BHW.permAct (d := d) ρσ
+         (BHW.permAct (d := d) σ z) ∈ ForwardTube d n}
+
+   def OS45RealChartDomain
+       (σ : Equiv.Perm (Fin n)) :
+       Set (Fin n → Fin (d + 1) → ℂ) :=
+     {z | BHW.permAct (d := d) σ z ∈ BHW.ExtendedTube d n}
+
+   def OS45WickChart
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ)
+       (σ ρσ : Equiv.Perm (Fin n)) :
+       (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+     fun z =>
+       bvt_F OS lgc n
+         (BHW.permAct (d := d) ρσ
+           (BHW.permAct (d := d) σ z))
+
+   def OS45RealChart
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ)
+       (σ : Equiv.Perm (Fin n)) :
+       (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+     fun z =>
+       BHW.extendF (bvt_F OS lgc n)
+         (BHW.permAct (d := d) σ z)
+   ```
+
+   For `σ = 1`, the ordered label is `ρ`.  For the adjacent-swapped branch,
+   `σ = τ` and the ordered label is `ρτ := τ.symm * ρ`.  On the Wick section,
+   the key simplification is
+
+   ```lean
+   BHW.permAct (d := d) ρτ
+       (BHW.permAct (d := d) τ
+         (fun k => wickRotatePoint (x k)))
+     =
+   BHW.permAct (d := d) ρ
+       (fun k => wickRotatePoint (x k))
+   ```
+
+   because `τ (ρτ k) = ρ k`.  Thus both Wick charts are represented on the
+   same ordered forward-tube point.  The identities in the
+   `AdjacentOSEOWEnvelope` record then follow from `bvt_F_perm`, not from a
+   false claim that `wick(x ∘ τ)` itself lies in the ordinary forward tube.
+
+   The acceptable split theorem is therefore the following chart-carrying
+   statement.  It is not wrapper-shaped, because it carries the actual analytic
+   charts whose restrictions must be glued by the OS §4.5 EOW/ACR argument:
+
+   ```lean
+   theorem os45_adjacent_twoChartEnvelope_exists
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+       (V : Set (NPointDomain d n))
+       (ρ : Equiv.Perm (Fin n))
+       (hV_open : IsOpen V)
+       (hV_connected : IsConnected V)
+       (hV_nonempty : V.Nonempty)
+       (hV_ordered : ∀ x ∈ V,
+         x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+       (hV_swap_ordered : ∀ x ∈ V,
+         (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+       (hV_ET : ∀ x ∈ V,
+         BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+       (hV_swapET : ∀ x ∈ V,
+         BHW.realEmbed
+           (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           BHW.ExtendedTube d n) :
+       ∃ (U : Set (Fin n → Fin (d + 1) → ℂ))
+         (F_id F_perm : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+         IsOpen U ∧ IsConnected U ∧
+         DifferentiableOn ℂ F_id U ∧
+         DifferentiableOn ℂ F_perm U ∧
+         (∀ x ∈ V,
+           (fun k => wickRotatePoint (x k)) ∈ U ∩
+             OS45WickChartDomain (d := d) (n := n) 1 ρ) ∧
+         (∀ x ∈ V,
+           BHW.realEmbed x ∈ U ∩
+             OS45RealChartDomain (d := d) (n := n) 1) ∧
+         (∀ x ∈ V,
+           (fun k => wickRotatePoint (x k)) ∈ U ∩
+             OS45WickChartDomain (d := d) (n := n)
+               (Equiv.swap i ⟨i.val + 1, hi⟩)
+               ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+         (∀ x ∈ V,
+           BHW.realEmbed x ∈ U ∩
+             OS45RealChartDomain (d := d) (n := n)
+               (Equiv.swap i ⟨i.val + 1, hi⟩)) ∧
+         (Set.EqOn F_id
+           (OS45WickChart (d := d) OS lgc n 1 ρ)
+           (U ∩ OS45WickChartDomain (d := d) (n := n) 1 ρ)) ∧
+         (Set.EqOn F_id
+           (OS45RealChart (d := d) OS lgc n 1)
+           (U ∩ OS45RealChartDomain (d := d) (n := n) 1)) ∧
+         (Set.EqOn F_perm
+           (OS45WickChart (d := d) OS lgc n
+             (Equiv.swap i ⟨i.val + 1, hi⟩)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+           (U ∩ OS45WickChartDomain (d := d) (n := n)
+             (Equiv.swap i ⟨i.val + 1, hi⟩)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))) ∧
+         (Set.EqOn F_perm
+           (OS45RealChart (d := d) OS lgc n
+             (Equiv.swap i ⟨i.val + 1, hi⟩))
+           (U ∩ OS45RealChartDomain (d := d) (n := n)
+             (Equiv.swap i ⟨i.val + 1, hi⟩)))
+   ```
+
+   Proof transcript for `os45_adjacent_twoChartEnvelope_exists`:
+
+   - `OS45WickChartDomain σ ρσ` is open because it is the preimage of
+     `ForwardTube d n` under a continuous coordinate permutation.  Its Wick
+     membership fields are exactly `hV_ordered` and `hV_swap_ordered` passed
+     through `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`.
+   - `OS45RealChartDomain σ` is open because it is the preimage of
+     `BHW.ExtendedTube d n` under a continuous coordinate permutation.  Its
+     real membership fields are exactly `hV_ET` and `hV_swapET`.
+   - The Wick charts are holomorphic on their Wick chart domains by
+     `bvt_F_holomorphic` composed with the coordinate permutations.
+   - The real charts are holomorphic on their real chart domains by
+     `BHW.extendF_holomorphicOn`, using
+     `bvt_F_holomorphic` and
+     `bvt_F_complexLorentzInvariant_forwardTube`.
+   - Do not try to prove a one-branch identity
+    `OS45WickChart σ ρσ = OS45RealChart σ`, either from
+    `BHW.extendF_eq_on_forwardTube` or from the OS Fourier-Laplace formula.
+    That would be the same kind of Euclidean-vs-Minkowski value comparison
+    forbidden elsewhere in this project: a Wick value at
+    `fun k => wickRotatePoint (x k)` is not the real-time boundary value at
+    `BHW.realEmbed x`.  The OS §4.5 argument transports **equality of two
+    adjacent branches**, not equality of each branch with itself on two
+    different sections.
+   - The correct EOW/ACR object is therefore the adjacent branch difference
+
+    ```lean
+    H_wick z =
+      OS45WickChart OS lgc n τ (τ.symm * ρ) z -
+      OS45WickChart OS lgc n 1 ρ z
+
+    H_real z =
+      OS45RealChart OS lgc n τ z -
+      OS45RealChart OS lgc n 1 z
+    ```
+
+    OS E3 plus `(4.1)`, `(4.12)`, and `(4.14)` show that the Wick-side
+    difference has zero compact-test pairing on the ordered Euclidean edge.
+    The OS §4.5 EOW/BHW step constructs a single holomorphic difference
+    witness whose Wick-edge trace is `H_wick` and whose real-Jost trace is
+    `H_real`.  Only after this common difference witness exists do we use
+    the totally-real/distributional identity theorem to conclude that
+    `H_real` vanishes on the real edge.
+   - The common `U` for the branch-difference witness must be a connected
+    envelope containing both the Wick edge and the real Jost edge for the same
+    already-chosen real-open set `V`.  Its nonemptiness is supplied by
+    `hV_nonempty`.  The real-open edge supplied by
+    `choose_os45_real_open_edge_for_adjacent_swap` must already be chosen
+    small enough that both edge maps land in this component; the envelope
+    theorem must not silently replace `V` by a smaller set after the compact
+    support hypothesis has been fixed.  This is why the edge-selection helper
+    and the envelope theorem both take `hV_open`, `hV_connected`, and
+    `hV_nonempty`, not just a single base point.
+   - The theorem may cite a standard SCV EOW result, but the result must have
+     these chart restrictions as hypotheses/conclusions.  A theorem producing
+     only an open connected set containing the edges is not enough.
+
+   With this theorem in hand, the edge supplier should either fill the existing
+   two-branch `AdjacentOSEOWEnvelope` honestly or, preferably, fill the sharper
+   `AdjacentOSEOWDifferenceEnvelope` below.  The difference packet is closer to
+   the actual consumer because the downstream proof only needs the real-edge
+   adjacent difference to vanish.
+
+   The precise Euclidean distributional input to the chart-gluing theorem is a
+   **branch-difference zero statement**, not a one-branch Wick-to-real
+   comparison.  A Lean-ready form is:
+
+  ```lean
+  theorem os45_adjacent_wick_branchDifference_pairing_zero
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ)
+      (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (hV_ordered : ∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hV_swap_ordered : ∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ x : NPointDomain d n,
+            (OS45WickChart (d := d) OS lgc n
+                (Equiv.swap i ⟨i.val + 1, hi⟩)
+                ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+                (fun k => wickRotatePoint (x k)) -
+              OS45WickChart (d := d) OS lgc n 1 ρ
+                (fun k => wickRotatePoint (x k))) * φ x
+          = 0
+  ```
+
+  This is the OS §4.5 E3 step in chart language.  It is essentially the
+  existing planned theorem
+  `bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3`, with the chart
+  definitions unfolded.  Its proof is:
+
+  1. set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and
+     `ρτ := τ.symm * ρ`;
+  2. rewrite the two Wick-chart integrands as
+     `bvt_F OS lgc n (BHW.permAct ρτ (BHW.permAct τ (wick x)))`
+     and `bvt_F OS lgc n (BHW.permAct ρ (wick x))`;
+  3. use `τ (ρτ k) = ρ k` to identify the two ordered Wick configurations;
+  4. apply `bvt_F_perm` / E3 symmetry and support-zero bookkeeping.
+
+  The hard OS §4.5 analytic step should likewise be stated for this branch
+  difference.  The generic fixed-`V` fallback theorem is:
+
+  ```lean
+  theorem os45_adjacent_branchDifferenceEnvelope_exists
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (hV_open : IsOpen V)
+      (hV_connected : IsConnected V)
+      (hV_nonempty : V.Nonempty)
+      (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+      (hV_ordered : ∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hV_swap_ordered : ∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+      (hV_ET : ∀ x ∈ V,
+        BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+      (hV_swapET : ∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) :
+      ∃ (U : Set (Fin n → Fin (d + 1) → ℂ))
+        (H : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+        IsOpen U ∧ IsConnected U ∧
+        DifferentiableOn ℂ H U ∧
+        (∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U) ∧
+        (∀ x ∈ V, BHW.realEmbed x ∈ U) ∧
+        (∀ x ∈ V,
+          H (fun k => wickRotatePoint (x k)) =
+            OS45WickChart (d := d) OS lgc n
+              (Equiv.swap i ⟨i.val + 1, hi⟩)
+              ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+              (fun k => wickRotatePoint (x k)) -
+            OS45WickChart (d := d) OS lgc n 1 ρ
+              (fun k => wickRotatePoint (x k))) ∧
+        (∀ x ∈ V,
+          H (BHW.realEmbed x) =
+            OS45RealChart (d := d) OS lgc n
+              (Equiv.swap i ⟨i.val + 1, hi⟩) (BHW.realEmbed x) -
+            OS45RealChart (d := d) OS lgc n 1 (BHW.realEmbed x))
+  ```
+
+  This theorem is not a wrapper: it is the exact OS §4.5 analytic-continuation
+  content needed by the current Lean edge-data interface.  It says the adjacent
+  Wick-branch difference and the adjacent real-Jost `extendF` difference are
+  restrictions of one holomorphic function on a connected envelope.  It never
+  asserts that a single Wick value equals a single real-time value.
+
+  The SCV/BHW input behind this theorem must also be difference-shaped.
+  The previous packet
+  `SCV.LocalTwoChartEOWGeometry D_wick D_real V` with
+  `P ∩ D_real ⊆ TubeDomain (-C)` is false as stated: `D_real` contains the real
+  edge point itself, while `TubeDomain (-C)` excludes real points because
+  `0 ∉ C`.  The corrected local packet should instead say that the real branch
+  is holomorphic on a neighborhood of the real edge and contains an opposite
+  wedge used for EOW; the whole real branch domain is **not** mapped into that
+  opposite wedge.
+
+  Geometry alone is still not enough.  A theorem with arbitrary holomorphic
+  `H_wick` and `H_real`, plus only local wedge geometry and Wick-side
+  compact-test zero, would be false: take `H_wick = 0` and `H_real = 1`.  The
+  packet must carry the **common boundary-value compatibility** of the two
+  branch differences on the EOW real edge.  It must not carry the final glued
+  envelope as a structure field: during active development that would hide the
+  real blocker in a data payload.  A Lean-facing corrected hypothesis shape is:
+
+  ```lean
+  structure SCV.LocalDifferenceEOWChartData
+      (D_wick D_real : Set (Fin n → Fin (d + 1) → ℂ))
+      (H_wick H_real : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (V : Set (NPointDomain d n)) where
+    U0 : Set (Fin n → Fin (d + 1) → ℂ)
+    U0_open : IsOpen U0
+    U0_connected : IsConnected U0
+    wick_mem : ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U0 ∩ D_wick
+    real_mem : ∀ x ∈ V, BHW.realEmbed x ∈ U0 ∩ D_real
+    -- For every `x0 ∈ V`, a finite-dimensional affine complex chart supplies
+    -- the positive wedge for the Wick branch and an opposite wedge contained
+    -- in the real branch's holomorphic neighborhood.  The real branch itself
+    -- may be defined on a full extended-tube neighborhood, not only on the
+    -- opposite wedge.
+    local_tube_chart :
+      ∀ x0 ∈ V,
+        ∃ (m : ℕ) (C : Set (Fin m → ℝ))
+           (chart :
+             (Fin n → Fin (d + 1) → ℂ) → (Fin m → ℂ))
+           (unchart :
+             (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+           (P : Set (Fin n → Fin (d + 1) → ℂ))
+           (E : Set (Fin m → ℝ))
+           (bv : (Fin m → ℝ) → ℂ),
+           IsOpen P ∧ BHW.realEmbed x0 ∈ P ∧
+           IsOpen E ∧
+           IsConnected E ∧
+           E.Nonempty ∧
+           (∃ y0 ∈ E, unchart (SCV.realEmbed y0) = BHW.realEmbed x0) ∧
+           DifferentiableOn ℂ chart P ∧
+           Continuous unchart ∧
+           DifferentiableOn ℂ unchart (SCV.TubeDomain C) ∧
+           DifferentiableOn ℂ unchart (SCV.TubeDomain (Neg.neg '' C)) ∧
+           (∀ z ∈ P, unchart (chart z) = z) ∧
+           (∀ u, unchart u ∈ P → chart (unchart u) = u) ∧
+           (∀ y ∈ E, unchart (SCV.realEmbed y) ∈ P ∩ U0 ∩ D_real) ∧
+           IsOpen C ∧ Convex ℝ C ∧ C.Nonempty ∧
+           (0 : Fin m → ℝ) ∉ C ∧
+           (∀ t y, 0 < t → y ∈ C → t • y ∈ C) ∧
+           (∀ u ∈ SCV.TubeDomain C, unchart u ∈ P ∩ D_wick) ∧
+           (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+              unchart u ∈ P ∩ D_real) ∧
+           (∀ z ∈ P ∩ D_wick, chart z ∈ SCV.TubeDomain C) ∧
+           ContinuousOn bv E ∧
+           (∀ y ∈ E,
+              bv y = H_real (unchart (SCV.realEmbed y))) ∧
+           (∀ y ∈ E,
+              Filter.Tendsto
+                (fun u => H_wick (unchart u))
+                (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain C))
+                (nhds (bv y))) ∧
+           (∀ y ∈ E,
+              Filter.Tendsto
+                (fun u => H_real (unchart u))
+                (nhdsWithin (SCV.realEmbed y)
+                  (SCV.TubeDomain (Neg.neg '' C)))
+                (nhds (bv y)))
+
+  theorem SCV.differenceEnvelope_of_localBoundaryCharts
+      (D_wick D_real : Set (Fin n → Fin (d + 1) → ℂ))
+      (H_wick H_real : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (V : Set (NPointDomain d n))
+      (hV_open : IsOpen V)
+      (hV_connected : IsConnected V)
+      (Data :
+        SCV.LocalDifferenceEOWChartData D_wick D_real H_wick H_real V)
+      (hH_wick : DifferentiableOn ℂ H_wick D_wick)
+      (hH_real : DifferentiableOn ℂ H_real D_real) :
+      ∃ (U : Set (Fin n → Fin (d + 1) → ℂ))
+        (H : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+        IsOpen U ∧ IsConnected U ∧
+        DifferentiableOn ℂ H U ∧
+        (∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U) ∧
+        (∀ x ∈ V, BHW.realEmbed x ∈ U) ∧
+        (∀ x ∈ V,
+          H (fun k => wickRotatePoint (x k)) =
+            H_wick (fun k => wickRotatePoint (x k))) ∧
+        (∀ x ∈ V,
+          H (BHW.realEmbed x) = H_real (BHW.realEmbed x))
+
+  theorem SCV.eow_differenceEnvelope_of_boundaryData_and_wickZero
+      (D_wick D_real : Set (Fin n → Fin (d + 1) → ℂ))
+      (H_wick H_real : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+      (V : Set (NPointDomain d n))
+      (hV_open : IsOpen V)
+      (hV_connected : IsConnected V)
+      (Data :
+        SCV.LocalDifferenceEOWChartData D_wick D_real H_wick H_real V)
+      (hH_wick : DifferentiableOn ℂ H_wick D_wick)
+      (hH_real : DifferentiableOn ℂ H_real D_real)
+      (hWickZero :
+        ∀ φ : SchwartzNPoint d n,
+          HasCompactSupport (φ : NPointDomain d n → ℂ) →
+          tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+          ∫ x : NPointDomain d n,
+            H_wick (fun k => wickRotatePoint (x k)) * φ x = 0) :
+      ∃ (U : Set (Fin n → Fin (d + 1) → ℂ))
+        (H : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+        IsOpen U ∧ IsConnected U ∧
+        DifferentiableOn ℂ H U ∧
+        (∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U) ∧
+        (∀ x ∈ V, BHW.realEmbed x ∈ U) ∧
+        (∀ x ∈ V,
+          H (fun k => wickRotatePoint (x k)) =
+            H_wick (fun k => wickRotatePoint (x k))) ∧
+        (∀ x ∈ V,
+          H (BHW.realEmbed x) = H_real (BHW.realEmbed x)) ∧
+        (∀ x ∈ V, H (BHW.realEmbed x) = 0)
+  ```
+
+  Proof transcript for `SCV.differenceEnvelope_of_localBoundaryCharts`:
+
+  1. For each `x0 ∈ V`, unpack `Data.local_tube_chart x0 hx0`.
+  2. In chart coordinates, set
+     `h_plus u := H_wick (unchart u)` on `SCV.TubeDomain C` and
+     `h_minus u := H_real (unchart u)` on
+     `SCV.TubeDomain (Neg.neg '' C)`.
+  3. Holomorphy of `h_plus` and `h_minus` follows from `hH_wick`,
+     `hH_real`, the positive/negative tube-to-domain fields, and
+     differentiability of `unchart`.  This is why the data packet has both
+     `∀ u ∈ TubeDomain C, unchart u ∈ P ∩ D_wick` and
+     `∀ u ∈ TubeDomain (-C), unchart u ∈ P ∩ D_real`; the one-way field
+     `z ∈ P ∩ D_wick -> chart z ∈ TubeDomain C` is needed later for agreement
+     on Wick-domain points, but it is not enough to prove holomorphy of
+     `H_wick ∘ unchart` on the whole tube.
+  4. The two boundary-value hypotheses in `LocalDifferenceEOWChartData` give a
+     common continuous boundary value `bv` on `E`.
+  5. Apply `SCV.edge_of_the_wedge_theorem_connected_of_connected_edge` in these
+     chart coordinates, using the `IsConnected E` field from
+     `Data.local_tube_chart`, to obtain a connected local holomorphic extension
+     `H_x0_chart` and the edge-value identity
+     `H_x0_chart (SCV.realEmbed y) = bv y` for `y ∈ E`.
+  6. Pull `H_x0_chart` back by `chart` to a local original-coordinate extension
+     `H_x0` on `P ∩ U0`.  The inverse fields for `chart`/`unchart` prove its
+     agreement with `H_wick` on the Wick wedge and with `H_real` on the real
+     opposite wedge.  The real-edge trace follows from the EOW edge-value
+     identity and the data field
+     `bv y = H_real (unchart (SCV.realEmbed y))`.
+  7. On overlaps of two local patches, the pulled-back extensions agree by the
+     uniqueness clause in `SCV.edge_of_the_wedge_theorem` or by the ordinary
+     identity theorem on the shared Wick wedge.  This is why `Data.U0_connected`
+     is part of the packet.
+  8. Glue in two layers.  First include the Wick-side domain piece
+     `U_wick := U0 ∩ D_wick` with function `H_wick`; this is what contains the
+     Wick-section points by `Data.wick_mem`.  Each local EOW patch overlaps this
+     Wick piece on the image of `U_chart ∩ TubeDomain C`, because the data field
+     `TubeDomain C -> P ∩ D_wick` puts the pulled-back positive wedge inside
+     `D_wick` and the EOW agreement clause identifies the patch value with
+     `H_wick` there.  Then glue the EOW patches to the Wick piece and to each
+     other by the uniqueness/identity theorem.
+  9. Take the connected component of this glued open union that contains the
+     connected Wick-section image of `V`.  Every real-edge point
+     `BHW.realEmbed x`, `x ∈ V`, lies in that same component because the local
+     EOW patch at `x` contains the real edge point and a nonempty positive-tube
+     overlap with the Wick component.  This gives the promised connected `U`
+     containing both `{wick x | x ∈ V}` and `{realEmbed x | x ∈ V}`.
+  10. The existing `SCV.edge_of_the_wedge_theorem` returns an open extension
+     domain but does not expose connectedness.  Implementation should therefore
+     add a small SCV strengthening, for example
+     `SCV.edge_of_the_wedge_theorem_connected_of_connected_edge`, proved by
+     the same polydisc construction plus the connected-edge argument above,
+     rather than weakening the downstream identity theorem.
+
+  Lean-facing statement for that SCV strengthening:
+
+  ```lean
+  theorem SCV.edge_of_the_wedge_theorem_connected_of_connected_edge {m : ℕ}
+      (C : Set (Fin m → ℝ))
+      (hC : IsOpen C) (hconv : Convex ℝ C)
+      (h0 : (0 : Fin m → ℝ) ∉ C)
+      (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
+      (hCne : C.Nonempty)
+      (f_plus f_minus : (Fin m → ℂ) → ℂ)
+      (hf_plus : DifferentiableOn ℂ f_plus (SCV.TubeDomain C))
+      (hf_minus :
+        DifferentiableOn ℂ f_minus (SCV.TubeDomain (Neg.neg '' C)))
+      (E : Set (Fin m → ℝ))
+      (hE_open : IsOpen E)
+      (hE_connected : IsConnected E)
+      (bv : (Fin m → ℝ) → ℂ)
+      (hbv_cont : ContinuousOn bv E)
+      (hf_plus_bv : ∀ x ∈ E,
+        Filter.Tendsto f_plus
+          (nhdsWithin (SCV.realEmbed x) (SCV.TubeDomain C))
+          (nhds (bv x)))
+      (hf_minus_bv : ∀ x ∈ E,
+        Filter.Tendsto f_minus
+          (nhdsWithin (SCV.realEmbed x) (SCV.TubeDomain (Neg.neg '' C)))
+          (nhds (bv x))) :
+      ∃ (U : Set (Fin m → ℂ)) (F : (Fin m → ℂ) → ℂ),
+        IsOpen U ∧ IsConnected U ∧
+        (∀ x ∈ E, SCV.realEmbed x ∈ U) ∧
+        DifferentiableOn ℂ F U ∧
+        (∀ x ∈ E, F (SCV.realEmbed x) = bv x) ∧
+        (∀ z ∈ U ∩ SCV.TubeDomain C, F z = f_plus z) ∧
+        (∀ z ∈ U ∩ SCV.TubeDomain (Neg.neg '' C), F z = f_minus z) ∧
+        (∀ (G : (Fin m → ℂ) → ℂ), DifferentiableOn ℂ G U →
+          (∀ z ∈ U ∩ SCV.TubeDomain C, G z = f_plus z) →
+          ∀ z ∈ U, G z = F z)
+  ```
+
+  Proof transcript:
+
+  1. Reuse the exact `P_loc`, `F_loc`, `U := ⋃ x ∈ E, P_loc x`, and `F`
+     construction from the proved `SCV.edge_of_the_wedge_theorem`; do not
+     reprove the Cauchy-integral estimates or introduce a parallel EOW
+     construction.
+  2. The existing proof already has, for each `x ∈ E`, `IsOpen (P_loc x)`,
+     `Convex ℝ (P_loc x)`, and `SCV.realEmbed x ∈ P_loc x`.  Hence every
+     `P_loc x` is connected, and it meets the connected real-edge image
+     `SCV.realEmbed '' E`.
+  3. Prove `IsConnected U` by the standard union lemma: `SCV.realEmbed '' E` is
+     connected by continuity of `SCV.realEmbed` and `hE_connected`; it is
+     contained in `U`; each connected patch `P_loc x` intersects this common
+     connected subset at `SCV.realEmbed x`; therefore the union of all patches
+     over `E` is connected.  This is an extra wrapper around the existing proof,
+     not a new analytic theorem.
+  4. Keep the existing definition of `F` by choosing a local patch.  The
+     independence of the chosen patch, holomorphy of `F`, the two tube
+     agreement clauses, and the uniqueness clause are inherited verbatim from
+     `SCV.edge_of_the_wedge_theorem`.
+  5. Add the edge-value field
+     `∀ x ∈ E, F (SCV.realEmbed x) = bv x` as follows.  From `F` holomorphic on
+     the open set `U`, get continuity of `F` at `SCV.realEmbed x`.  Since
+     `SCV.realEmbed x ∈ U` and `U` is open, the filter
+     `nhdsWithin (SCV.realEmbed x) (SCV.TubeDomain C)` is eventually inside
+     `U ∩ SCV.TubeDomain C`; on that filter `F = f_plus`.  The hypothesis
+     `hf_plus_bv` gives convergence to `bv x`, while continuity gives
+     convergence to `F (SCV.realEmbed x)`.  Uniqueness of limits in `ℂ` gives
+     the desired equality.  The same proof could use the negative side, but one
+     side is enough.
+  6. The only new exported fields are `IsConnected U` and the real-edge value
+     identity.  All analytic agreement and uniqueness content remains the
+     already-proved EOW theorem, so this strengthening should be a short
+     companion theorem in `SCV/TubeDomainExtension.lean`, not a new axiom.
+
+  Proof transcript for `SCV.eow_differenceEnvelope_of_boundaryData_and_wickZero`
+  after `SCV.differenceEnvelope_of_localBoundaryCharts` is available:
+
+  1. Apply `SCV.differenceEnvelope_of_localBoundaryCharts` with `hV_open` and
+     `hV_connected` to obtain `U`, `H`, holomorphy, Wick-edge trace, and
+     real-edge trace.
+  2. Apply
+     `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen` to
+     `H` and the zero function on `U`, using `hWickZero` rewritten by the
+     Wick-trace field, `hV_open`, and `hV_connected.1` for nonemptiness.  This
+     gives `H = 0` on `U`.
+  3. Evaluate at `BHW.realEmbed x` for `x ∈ V` and rewrite by the real-trace
+     field to obtain `H_real (BHW.realEmbed x) = 0`.
+
+  For the concrete OS §4.5 adjacent branch, do not leave `D_wick`,
+  `D_real`, `H_wick`, and `H_real` abstract.  They should be the following
+  definitions:
+
+  ```lean
+  def OS45AdjacentWickDifferenceDomain
+      (i : Fin n) (hi : i.val + 1 < n)
+      (ρ : Equiv.Perm (Fin n)) :
+      Set (Fin n → Fin (d + 1) → ℂ) :=
+    OS45WickChartDomain (d := d) (n := n) 1 ρ ∩
+    OS45WickChartDomain (d := d) (n := n)
+      (Equiv.swap i ⟨i.val + 1, hi⟩)
+      ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+
+  def OS45AdjacentRealDifferenceDomain
+      (i : Fin n) (hi : i.val + 1 < n) :
+      Set (Fin n → Fin (d + 1) → ℂ) :=
+    OS45RealChartDomain (d := d) (n := n) 1 ∩
+    OS45RealChartDomain (d := d) (n := n)
+      (Equiv.swap i ⟨i.val + 1, hi⟩)
+
+  def OS45AdjacentWickDifference
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (ρ : Equiv.Perm (Fin n)) :
+      (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      OS45WickChart (d := d) OS lgc n
+        (Equiv.swap i ⟨i.val + 1, hi⟩)
+        ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ) z -
+      OS45WickChart (d := d) OS lgc n 1 ρ z
+
+  def OS45AdjacentRealDifference
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+      (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun z =>
+      OS45RealChart (d := d) OS lgc n
+        (Equiv.swap i ⟨i.val + 1, hi⟩) z -
+      OS45RealChart (d := d) OS lgc n 1 z
+  ```
+
+  The concrete OS45 data theorem should then be:
+
+  ```lean
+  theorem os45_adjacent_localDifferenceEOWChartData
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (hV_open : IsOpen V)
+      (hV_nonempty : V.Nonempty)
+      (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+      (hV_ordered : ∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hV_swap_ordered : ∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+      (hV_ET : ∀ x ∈ V,
+        BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+      (hV_swapET : ∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) :
+      SCV.LocalDifferenceEOWChartData
+        (OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ)
+        (OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi)
+        (OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ)
+        (OS45AdjacentRealDifference (d := d) OS lgc n i hi)
+        V
+  ```
+
+  Proof transcript for `os45_adjacent_localDifferenceEOWChartData`:
+
+  1. Use `U0 := Set.univ` for the ambient chart packet.  This is not the final
+     glued envelope and not a weak `U = Set.univ` shortcut: `U0` is only the
+     harmless ambient set in which local EOW charts are expressed.  The actual
+     connected holomorphic envelope is produced later by
+     `SCV.differenceEnvelope_of_localBoundaryCharts`.
+  2. `wick_mem` is exactly `hV_ordered` and `hV_swap_ordered`, transported by
+     `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector` and the
+     definitions of the two `OS45WickChartDomain`s.
+  3. `real_mem` is exactly `hV_ET` and `hV_swapET`, transported through
+     `OS45RealChartDomain` and `BHW.permAct`.
+  4. Holomorphy of `OS45AdjacentWickDifference` on
+     `OS45AdjacentWickDifferenceDomain` is subtraction of the two
+     `bvt_F_holomorphic` compositions.
+  5. Holomorphy of `OS45AdjacentRealDifference` on
+     `OS45AdjacentRealDifferenceDomain` is subtraction of the two
+     `BHW.extendF_holomorphicOn` compositions, using
+     `bvt_F_complexLorentzInvariant_forwardTube`.
+  6. For each `x0 ∈ V`, the local chart and common boundary-value fields are
+     the exact OS I §4.5 adjacent EOW/BHW claim: the two branch differences
+     have the same boundary value on the real edge in a chart where the
+     Wick-side branch occupies the positive wedge and the real branch contains
+     an opposite wedge.  The chart is recorded as local `chart`/`unchart` data,
+     not as a global linear map through the origin, because the EOW edge may be
+     centered at an arbitrary real Jost point.  The hypothesis `hV_jost` is
+     consumed here by the local BHW/Jost geometry theorem; ET and swapped-ET
+     membership alone do not assert the real point is in the Jost edge.  The
+     chart edge `E` should be chosen as a small connected real ball.  This is
+     the remaining genuine
+     analytic theorem; it should be proved or cited as a BHW/Jost-style local
+     theorem with the fields above, not hidden as a generic geometry-only
+     adapter.
+
+  To make that last item implementation-ready, isolate the per-point theorem
+  that fills exactly one `local_tube_chart` field:
+
+  ```lean
+  theorem os45_adjacent_local_tube_chart_with_commonBoundary
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+      (hV_ordered : ∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hV_swap_ordered : ∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+      (hV_ET : ∀ x ∈ V,
+        BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+      (hV_swapET : ∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n)
+      (x0 : NPointDomain d n) (hx0 : x0 ∈ V) :
+      ∃ (m : ℕ) (C : Set (Fin m → ℝ))
+         (chart :
+           (Fin n → Fin (d + 1) → ℂ) → (Fin m → ℂ))
+         (unchart :
+           (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+         (P : Set (Fin n → Fin (d + 1) → ℂ))
+         (E : Set (Fin m → ℝ))
+         (bv : (Fin m → ℝ) → ℂ),
+         -- exactly the conjunction required by
+         -- `SCV.LocalDifferenceEOWChartData.local_tube_chart` for
+         -- `D_wick = OS45AdjacentWickDifferenceDomain i hi ρ`,
+         -- `D_real = OS45AdjacentRealDifferenceDomain i hi`,
+         -- `H_wick = OS45AdjacentWickDifference OS lgc n i hi ρ`, and
+         -- `H_real = OS45AdjacentRealDifference OS lgc n i hi`.
+         IsOpen P ∧ BHW.realEmbed x0 ∈ P ∧
+         IsOpen E ∧ IsConnected E ∧ E.Nonempty ∧
+         (∃ y0 ∈ E, unchart (SCV.realEmbed y0) = BHW.realEmbed x0) ∧
+         DifferentiableOn ℂ chart P ∧
+         Continuous unchart ∧
+         DifferentiableOn ℂ unchart (SCV.TubeDomain C) ∧
+         DifferentiableOn ℂ unchart (SCV.TubeDomain (Neg.neg '' C)) ∧
+         (∀ z ∈ P, unchart (chart z) = z) ∧
+         (∀ u, unchart u ∈ P → chart (unchart u) = u) ∧
+         (∀ y ∈ E,
+            unchart (SCV.realEmbed y) ∈ P ∩
+              OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi) ∧
+         IsOpen C ∧ Convex ℝ C ∧ C.Nonempty ∧
+         (0 : Fin m → ℝ) ∉ C ∧
+         (∀ t y, 0 < t → y ∈ C → t • y ∈ C) ∧
+         (∀ u ∈ SCV.TubeDomain C,
+            unchart u ∈ P ∩
+              OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ) ∧
+         (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+            unchart u ∈ P ∩
+              OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi) ∧
+         (∀ z ∈ P ∩
+            OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ,
+            chart z ∈ SCV.TubeDomain C) ∧
+         ContinuousOn bv E ∧
+         (∀ y ∈ E,
+            bv y =
+              OS45AdjacentRealDifference (d := d) OS lgc n i hi
+                (unchart (SCV.realEmbed y))) ∧
+         (∀ y ∈ E,
+            Filter.Tendsto
+              (fun u =>
+                OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+                  (unchart u))
+              (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain C))
+              (nhds (bv y))) ∧
+         (∀ y ∈ E,
+            Filter.Tendsto
+              (fun u =>
+                OS45AdjacentRealDifference (d := d) OS lgc n i hi
+                  (unchart u))
+              (nhdsWithin (SCV.realEmbed y)
+                (SCV.TubeDomain (Neg.neg '' C)))
+              (nhds (bv y)))
+  ```
+
+  Proof transcript for `os45_adjacent_local_tube_chart_with_commonBoundary`:
+
+  1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and
+     `ρτ := τ.symm * ρ`.  The two Wick branches are
+     `OS45WickChart 1 ρ` and `OS45WickChart τ ρτ`; the two real branches are
+     `OS45RealChart 1` and `OS45RealChart τ`.
+  2. Use `hV_ordered x0 hx0` and `hV_swap_ordered x0 hx0`, via
+     `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`, to place
+     the two Wick charts in the correct permuted forward-tube source domains.
+     Use `hV_ET x0 hx0` and `hV_swapET x0 hx0` to place the two real charts in
+     the two extended-tube source domains.
+  3. Apply the local BHW/Jost geometry theorem at the adjacent real Jost point
+     `BHW.realEmbed x0`, using `hV_jost x0 hx0` as the Jost-edge hypothesis.
+     The theorem supplies a finite-dimensional affine chart centered at this
+     point, a connected real edge ball `E`, and an open cone `C` with four
+     distinct direction fields:
+     positive-tube points map into `P ∩` the adjacent Wick difference domain,
+     negative-tube points map into `P ∩` the adjacent real difference domain,
+     real edge points map into the real difference domain, and Wick-domain
+     points in the local patch map back into `TubeDomain C`.  This theorem is
+     pure BHW/SCV geometry; it should mention only the relevant tube domains and
+     adjacent Jost/ET hypotheses, not OS fields.
+  4. Apply the branchwise OS §4.5/BHW-Jost boundary theorem
+     `os45_singleBranch_commonBoundaryValue_from_localEOWGeometry` to the
+     identity branch `(σ, ρσ) = (1, ρ)` and to the adjacent branch
+     `(σ, ρσ) = (τ, ρτ)`.  This produces boundary values `bv_id` and `bv_τ`
+     equal to the corresponding real `extendF` traces on the real edge.  The
+     Wick-side Tendsto clauses are part of this branchwise theorem; they must
+     not be replaced by a bare `BHW.extendF_eq_on_forwardTube`, because the
+     permuted branch argument need not lie in the ordinary forward tube.
+  5. Define the branch-difference boundary value by
+     `bv y := bv_τ y - bv_id y`.  Continuity follows from continuity of the two
+     branch boundary values.  The two Tendsto clauses are obtained by
+     subtracting the branchwise Tendsto statements.
+  6. The theorem never proves or uses
+     `OS45WickChart σ ρσ (wick x) = OS45RealChart σ (realEmbed x)` for a
+     single branch.  It only identifies the common boundary values of the two
+     analytic continuations in the local EOW chart, and then subtracts.
+
+  The two sublemmas that make the per-point theorem implementation-ready are
+  the following.  First isolate the geometry, with no `OS` or `lgc` parameters:
+
+  ```lean
+  theorem os45_adjacent_localEOWGeometry
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+      (hV_ordered : ∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hV_swap_ordered : ∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
+      (hV_ET : ∀ x ∈ V,
+        BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+      (hV_swapET : ∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n)
+      (x0 : NPointDomain d n) (hx0 : x0 ∈ V) :
+      ∃ (m : ℕ) (C : Set (Fin m → ℝ))
+         (chart :
+           (Fin n → Fin (d + 1) → ℂ) → (Fin m → ℂ))
+         (unchart :
+           (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+         (P : Set (Fin n → Fin (d + 1) → ℂ))
+         (E : Set (Fin m → ℝ)),
+         IsOpen P ∧ BHW.realEmbed x0 ∈ P ∧
+         IsOpen E ∧ IsConnected E ∧ E.Nonempty ∧
+         (∃ y0 ∈ E, unchart (SCV.realEmbed y0) = BHW.realEmbed x0) ∧
+         DifferentiableOn ℂ chart P ∧
+         Continuous unchart ∧
+         DifferentiableOn ℂ unchart (SCV.TubeDomain C) ∧
+         DifferentiableOn ℂ unchart (SCV.TubeDomain (Neg.neg '' C)) ∧
+         (∀ z ∈ P, unchart (chart z) = z) ∧
+         (∀ u, unchart u ∈ P → chart (unchart u) = u) ∧
+         (∀ y ∈ E,
+            unchart (SCV.realEmbed y) ∈ P ∩
+              OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi) ∧
+         IsOpen C ∧ Convex ℝ C ∧ C.Nonempty ∧
+         (0 : Fin m → ℝ) ∉ C ∧
+         (∀ t y, 0 < t → y ∈ C → t • y ∈ C) ∧
+         (∀ u ∈ SCV.TubeDomain C,
+            unchart u ∈ P ∩
+              OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ) ∧
+         (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+            unchart u ∈ P ∩
+              OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi) ∧
+         (∀ z ∈ P ∩
+            OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ,
+            chart z ∈ SCV.TubeDomain C)
+  ```
+
+  Proof transcript for `os45_adjacent_localEOWGeometry`:
+
+  1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and `ρτ := τ.symm * ρ`.
+  2. Use the ordered-sector hypotheses only to prove that the Wick-rotated
+     `ρ`-ordered and `ρτ`-ordered configurations are in `ForwardTube d n`.
+     This supplies the positive-tube direction field for the two Wick chart
+     domains; do not assert that the raw swapped Wick configuration is itself in
+     the ordinary forward tube.
+  3. Use `hV_ET` and `hV_swapET` only for the real branch domain.  Since
+     `BHW.ExtendedTube d n` is open and stable under the local BHW/Jost
+     opposite-wedge construction, and since `hV_jost x0 hx0` supplies the real
+     Jost-edge base point, choose a small connected real edge ball `E` around
+     the chart coordinate of `BHW.realEmbed x0` whose real image remains inside
+     both real chart domains and inside the real edge patch required by the
+     local BHW/Jost theorem.
+  4. The previously preferred affine single-chart supplier
+     `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` has been retracted:
+     its full-dimensional orbit-witness fields were too strong.  A corrected
+     chart route may still choose a local wedge over the adjacent real edge,
+     but the chart theorem must identify branch differences through common
+     analytic continuation / PET-Jost boundary transfer.  It must not assert
+     that an adjacent point swap is implemented by a Lorentz transformation on
+     a generic full-dimensional tube.
+  5. Use an affine chart whose inverse identities hold on `P`; in the simplest
+     implementation `P` may be `Set.univ`, but it must at least contain the
+     positive and negative tube images required by the two tube-to-domain fields.
+     The fields `pos_tube -> P ∩ D_wick` and `neg_tube -> P ∩ D_real` are what
+     make the later EOW-to-Wick gluing honest.
+
+  **Retraction.**  The branchwise local-boundary theorem surfaces in the rest
+  of this subsection are not active, because they depend on the same false
+  `hposOrbit` idea.  The OS §4.5 boundary-value step must be rewritten as a
+  branch-difference theorem using common analytic continuation / PET-Jost
+  boundary transfer, not as a pair of single-branch `extendF` continuity
+  theorems from local orbit witnesses.
+
+  The older, now-retracted branchwise theorem surface was:
+
+  ```lean
+  theorem os45_singleBranch_commonBoundaryValue_from_localEOWGeometry
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ)
+      (σ ρσ : Equiv.Perm (Fin n))
+      (m : ℕ) (C : Set (Fin m → ℝ))
+      (unchart :
+        (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+      (E : Set (Fin m → ℝ))
+      (hE_open : IsOpen E)
+      (hE_to_real :
+        ∀ y ∈ E,
+          unchart (SCV.realEmbed y) ∈
+            OS45RealChartDomain (d := d) (n := n) σ)
+      (hunchart_cont : Continuous unchart)
+      (hpos :
+        ∀ u ∈ SCV.TubeDomain C,
+          unchart u ∈
+            OS45WickChartDomain (d := d) (n := n) σ ρσ)
+      (hneg :
+        ∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+          unchart u ∈
+            OS45RealChartDomain (d := d) (n := n) σ)
+      (hposOrbit :
+        ∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) σ (unchart u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d) ρσ
+                  (BHW.permAct (d := d) σ (unchart u)))) :
+      ∃ bvσ : (Fin m → ℝ) → ℂ,
+        ContinuousOn bvσ E ∧
+        (∀ y ∈ E,
+          bvσ y =
+            OS45RealChart (d := d) OS lgc n σ
+              (unchart (SCV.realEmbed y))) ∧
+        (∀ y ∈ E,
+          Filter.Tendsto
+            (fun u =>
+              OS45WickChart (d := d) OS lgc n σ ρσ (unchart u))
+            (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain C))
+            (nhds (bvσ y))) ∧
+        (∀ y ∈ E,
+          Filter.Tendsto
+            (fun u =>
+              OS45RealChart (d := d) OS lgc n σ (unchart u))
+            (nhdsWithin (SCV.realEmbed y)
+              (SCV.TubeDomain (Neg.neg '' C)))
+            (nhds (bvσ y)))
+  ```
+
+  Proof transcript for
+  `os45_singleBranch_commonBoundaryValue_from_localEOWGeometry`:
+
+  1. Define
+     `bvσ y := OS45RealChart OS lgc n σ (unchart (SCV.realEmbed y))`.
+  2. Continuity of `bvσ` follows from `hunchart_cont`, `hE_to_real`, and
+     `BHW.extendF_holomorphicOn` for the selected witness.
+  3. The negative-wedge Tendsto is ordinary continuity of
+     `OS45RealChart σ ∘ unchart` on the real chart domain, using `hneg` and
+     `hE_to_real`.
+  4. The positive-wedge Tendsto is the standard local BHW/Jost boundary
+     compatibility between the permuted forward-tube branch
+     `OS45WickChart σ ρσ` and the `extendF` branch `OS45RealChart σ`.
+     It consumes the selected witness holomorphy,
+     `bvt_F_complexLorentzInvariant_forwardTube`, `hpos`, `hposOrbit`, and
+     the local BHW chart geometry.  Do not replace this step by a bare
+     `BHW.extendF_eq_on_forwardTube`: for a permuted branch, the argument of
+     `extendF` need not lie in the ordinary forward tube.
+
+  Circularity firewall for this branchwise theorem:
+
+  - Do **not** cite `W_analytic_swap_boundary_pairing_eq`,
+    `analytic_extended_local_commutativity`,
+    `BHW.extendF_adjSwap_eq_on_realOpen_of_distributional_local_commutativity`,
+    or any theorem whose hypotheses include `IsLocallyCommutativeWeak d W`.
+    Those results are downstream of locality and are therefore circular for
+    theorem 2.
+  - Do **not** use `extendF_adjSwap_eq_on_realOpen`,
+    `extendF_adjSwap_eq_of_connected_overlap`, or the selected-edge-data
+    consumer to prove this theorem.  Those are exactly the theorems the OS45
+    packet is meant to supply.
+  - The allowed inputs are OS-internal and external analytic inputs only:
+    `bvt_F_holomorphic`, `bvt_F_perm` only for harmless Wick-section
+    normalization, the selected boundary-value/growth package for `bvt_F`,
+    `bvt_F_complexLorentzInvariant_forwardTube`, and the non-circular local
+    BHW/Jost orbit theorem.
+
+  Lean-facing proof of the positive-wedge Tendsto should be organized as
+  follows, so the circularity is visible in the code:
+
+  1. For fixed `y ∈ E`, set `z₀ := unchart (SCV.realEmbed y)`.  From
+     `hE_to_real`, obtain
+     `BHW.permAct σ z₀ ∈ BHW.ExtendedTube d n`; this only identifies the
+     real branch domain of `OS45RealChart σ`.
+  2. For `u → SCV.realEmbed y` inside `SCV.TubeDomain C`, use `hpos` to know
+     `BHW.permAct ρσ (BHW.permAct σ (unchart u)) ∈ ForwardTube d n`.  Thus
+     the positive-side branch is the selected forward-tube function
+     `bvt_F OS lgc n` evaluated on an honest forward-tube point.
+  3. The local BHW/Jost theorem supplies a complex-Lorentz/Jost continuation
+     bridge from those positive-side forward-tube points to the real
+     extended-tube branch `BHW.extendF (bvt_F OS lgc n) (BHW.permAct σ z₀)`.
+     The proof of this bridge uses OS §4.5 equations `(4.12)` and `(4.14)`:
+     `(4.12)` gives the selected Fourier-Laplace analytic function and
+     `(4.14)` gives the Lorentz-covariance compatibility needed to pass along
+     the complex-Lorentz orbit.  It does **not** use already-proved locality.
+  4. The permutation `ρσ` is handled by the local orbit witness: the ordered
+     point `BHW.permAct ρσ (BHW.permAct σ (unchart u))` is the actual
+     forward-tube preimage used to evaluate the selected witness.  Do not claim
+     `BHW.permAct σ (unchart u)` itself lies in the ordinary forward tube.  A
+     `bvt_F_perm` rewrite is needed only later on the Wick section, where the
+     identity
+     `BHW.permAct (τ.symm * ρ) (BHW.permAct τ (wick x)) =
+      BHW.permAct ρ (wick x)`
+     normalizes the two adjacent Wick traces.
+  5. The conclusion is exactly the Tendsto statement to
+     `bvσ y = OS45RealChart OS lgc n σ z₀`.  No pointwise equality between a
+     Wick-section value and a real-section value is produced.
+
+  The positive-wedge boundary step should be implemented through a local
+  orbit-to-`extendF` bridge, not as a black-box continuity assertion for the
+  total function `bvt_F`.  The Lean-facing helper is:
+
+  ```lean
+  theorem os45_singleBranch_positiveTube_eq_extendF_from_localOrbit
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ)
+      (σ ρσ : Equiv.Perm (Fin n))
+      (m : ℕ) (C : Set (Fin m → ℝ))
+      (unchart :
+        (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+      (hposFT :
+        ∀ u ∈ SCV.TubeDomain C,
+          BHW.permAct (d := d) ρσ
+            (BHW.permAct (d := d) σ (unchart u)) ∈
+            BHW.ForwardTube d n)
+      (hposOrbit :
+        ∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) σ (unchart u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d) ρσ
+                  (BHW.permAct (d := d) σ (unchart u)))) :
+      ∀ u ∈ SCV.TubeDomain C,
+        OS45WickChart (d := d) OS lgc n σ ρσ (unchart u) =
+          OS45RealChart (d := d) OS lgc n σ (unchart u)
+  ```
+
+  Proof transcript:
+
+  1. Set `F := bvt_F OS lgc n`,
+     `w u := BHW.permAct ρσ (BHW.permAct σ (unchart u))`, and
+     `z u := BHW.permAct σ (unchart u)`.
+  2. Convert `bvt_F_complexLorentzInvariant_forwardTube` to the BHW
+     `ForwardTube` convention using `BHW_forwardTube_eq`; call the resulting
+     complex Lorentz invariance hypothesis `hF_cinv`.
+  3. For fixed `u ∈ TubeDomain C`, obtain `Λ` from `hposOrbit u hu`.
+     Together with `hposFT u hu`, this proves `z u ∈ BHW.ExtendedTube d n`
+     and gives an explicit forward-tube preimage of `z u`.
+  4. Unfold `OS45WickChart` and `OS45RealChart`.  The desired equality is
+     exactly the defining equality for `BHW.extendF F (z u)` with preimage
+     `w u`; prove it using `BHW.extendF_preimage_eq` or the local
+     `extendF` preimage lemma already available in `BHWCore.lean`.
+  5. This proof uses only selected-witness holomorphy/covariance and the local
+     BHW orbit witness.  It does **not** use
+     `extendF_perm_overlap_of_edgePairingEquality`,
+     `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`, or any theorem that
+     assumes local commutativity.
+
+  The actual positive-side Tendsto in
+  `os45_singleBranch_commonBoundaryValue_from_localEOWGeometry` then follows
+  from this helper plus continuity of `extendF` on `BHW.ExtendedTube`:
+
+  ```lean
+  theorem os45_singleBranch_positiveTendsto_from_localOrbit
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ)
+      (σ ρσ : Equiv.Perm (Fin n))
+      (m : ℕ) (C : Set (Fin m → ℝ))
+      (unchart :
+        (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+      (E : Set (Fin m → ℝ))
+      (hunchart_cont : Continuous unchart)
+      (hposFT :
+        ∀ u ∈ SCV.TubeDomain C,
+          BHW.permAct (d := d) ρσ
+            (BHW.permAct (d := d) σ (unchart u)) ∈
+            BHW.ForwardTube d n)
+      (hposOrbit :
+        ∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) σ (unchart u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d) ρσ
+                  (BHW.permAct (d := d) σ (unchart u))))
+      (hrealET :
+        ∀ y ∈ E,
+          BHW.permAct (d := d) σ (unchart (SCV.realEmbed y)) ∈
+            BHW.ExtendedTube d n) :
+      ∀ y ∈ E,
+        Filter.Tendsto
+          (fun u =>
+            OS45WickChart (d := d) OS lgc n σ ρσ (unchart u))
+          (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain C))
+          (nhds
+            (OS45RealChart (d := d) OS lgc n σ
+              (unchart (SCV.realEmbed y))))
+  ```
+
+  Proof transcript:
+
+  1. Use `os45_singleBranch_positiveTube_eq_extendF_from_localOrbit` to
+     replace the positive-side function by
+     `u ↦ BHW.extendF (bvt_F OS lgc n) (BHW.permAct σ (unchart u))` on
+     `SCV.TubeDomain C`.
+  2. The map `u ↦ BHW.permAct σ (unchart u)` is continuous by
+     `hunchart_cont` and continuity of finite coordinate permutation.
+  3. The local orbit equality plus `hposFT` shows that this map sends the
+     positive tube into `BHW.ExtendedTube d n`; `hrealET` gives the boundary
+     point's membership.
+  4. `BHW.extendF_holomorphicOn` applied to `bvt_F_holomorphic` and
+     `bvt_F_complexLorentzInvariant_forwardTube` gives `ContinuousOn
+     (BHW.extendF (bvt_F OS lgc n)) (BHW.ExtendedTube d n)`.
+  5. Compose these continuities to get Tendsto to the real branch value.  This
+     is the precise replacement for the previously vague phrase "BHW/Jost
+     boundary compatibility".
+
+  The corresponding negative-side Tendsto is even smaller:
+
+  ```lean
+  theorem os45_singleBranch_negativeTendsto_from_extendF_continuity
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ)
+      (σ : Equiv.Perm (Fin n))
+      (m : ℕ) (C : Set (Fin m → ℝ))
+      (unchart :
+        (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+      (E : Set (Fin m → ℝ))
+      (hunchart_cont : Continuous unchart)
+      (hnegET :
+        ∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+          BHW.permAct (d := d) σ (unchart u) ∈
+            BHW.ExtendedTube d n)
+      (hrealET :
+        ∀ y ∈ E,
+          BHW.permAct (d := d) σ (unchart (SCV.realEmbed y)) ∈
+            BHW.ExtendedTube d n) :
+      ∀ y ∈ E,
+        Filter.Tendsto
+          (fun u =>
+            OS45RealChart (d := d) OS lgc n σ (unchart u))
+          (nhdsWithin (SCV.realEmbed y)
+            (SCV.TubeDomain (Neg.neg '' C)))
+          (nhds
+            (OS45RealChart (d := d) OS lgc n σ
+              (unchart (SCV.realEmbed y))))
+  ```
+
+  Its proof is continuity of
+  `BHW.extendF (bvt_F OS lgc n) ∘ BHW.permAct σ ∘ unchart` on the negative
+  tube.  It needs no permutation symmetry input at all.
+
+  The adjacent branch-difference boundary theorem is then obtained by applying
+  the single-branch theorem twice and subtracting:
+
+  ```lean
+  theorem os45_adjacent_commonBoundaryValue_from_localEOWGeometry
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (ρ : Equiv.Perm (Fin n))
+      (m : ℕ) (C : Set (Fin m → ℝ))
+      (unchart :
+        (Fin m → ℂ) → (Fin n → Fin (d + 1) → ℂ))
+      (E : Set (Fin m → ℝ))
+      (hE_open : IsOpen E)
+      (hE_to_real :
+        ∀ y ∈ E,
+          unchart (SCV.realEmbed y) ∈
+            OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi)
+      (hunchart_cont : Continuous unchart)
+      (hpos :
+        ∀ u ∈ SCV.TubeDomain C,
+          unchart u ∈
+            OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ)
+      (hneg :
+        ∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+          unchart u ∈
+            OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi)
+      (hposOrbit_id :
+        ∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+                (unchart u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d) ρ
+                  (BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+                    (unchart u))))
+      (hposOrbit_swap :
+        ∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                (unchart u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d)
+                  ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+                  (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                    (unchart u)))) :
+      ∃ bv : (Fin m → ℝ) → ℂ,
+        ContinuousOn bv E ∧
+        (∀ y ∈ E,
+          bv y =
+            OS45AdjacentRealDifference (d := d) OS lgc n i hi
+              (unchart (SCV.realEmbed y))) ∧
+        (∀ y ∈ E,
+          Filter.Tendsto
+            (fun u =>
+              OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+                (unchart u))
+            (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain C))
+            (nhds (bv y))) ∧
+        (∀ y ∈ E,
+          Filter.Tendsto
+            (fun u =>
+              OS45AdjacentRealDifference (d := d) OS lgc n i hi
+                (unchart u))
+            (nhdsWithin (SCV.realEmbed y)
+              (SCV.TubeDomain (Neg.neg '' C)))
+            (nhds (bv y)))
+  ```
+
+  Proof transcript for
+  `os45_adjacent_commonBoundaryValue_from_localEOWGeometry`:
+
+  1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and `ρτ := τ.symm * ρ`.
+  2. From `hpos`, derive the two branchwise positive-domain fields for
+     `(σ, ρσ) = (1, ρ)` and `(τ, ρτ)`.  From `hneg` and `hE_to_real`, derive
+     the corresponding real-domain and real-edge fields.  Pass
+     `hposOrbit_id` and `hposOrbit_swap` to the positive Tendsto helper.
+  3. Apply `os45_singleBranch_commonBoundaryValue_from_localEOWGeometry` twice,
+     obtaining `bv_id` and `bv_τ`.
+  4. Define `bv y := bv_τ y - bv_id y`.  Continuity follows by subtraction, and
+     the real-edge trace field unfolds to
+     `OS45AdjacentRealDifference OS lgc n i hi (unchart (SCV.realEmbed y))`.
+  5. Subtract the two branchwise Tendsto statements to get the final
+     branch-difference Tendsto clauses.  This is a boundary-limit comparison at
+     the real edge; it does not compare a Wick-section value with a real-section
+     value at the same real configuration.
+
+  This is still a theorem-shape target, not a new axiom request.  The missing
+  theorem is the construction of `LocalDifferenceEOWChartData` for the concrete
+  adjacent OS45 chart pair, from the ACR(1) / permuted-forward-tube /
+  extended-tube geometry and the common real-edge boundary statement in OS I
+  §4.5.  The pointwise EOW theorem is sufficient for this local chart packet
+  because the boundary value is the continuous `extendF` real-edge trace, not a
+  raw value of `bvt_F` at a real boundary point.  The compact-test/distributional
+  input enters later, when
+  `SCV.eow_differenceEnvelope_of_boundaryData_and_wickZero` uses the Wick-side
+  zero pairing to force the already-constructed difference envelope to vanish.
+  If a future route tries to bypass the `extendF` trace and use raw
+  `bvt_F(realEmbed x)` values, that would require a separate distributional EOW
+  theorem for **branch differences**, not a one-branch Wick-to-real equality.
+
+  Implementation transcript for `os45_adjacent_branchDifferenceEnvelope_exists`:
+
+  1. Set
+     `D_wick := OS45AdjacentWickDifferenceDomain i hi ρ`,
+     `D_real := OS45AdjacentRealDifferenceDomain i hi`,
+     `H_wick := OS45AdjacentWickDifference OS lgc n i hi ρ`, and
+     `H_real := OS45AdjacentRealDifference OS lgc n i hi`.
+  2. Obtain
+
+     ```lean
+     Data :
+       SCV.LocalDifferenceEOWChartData D_wick D_real H_wick H_real V
+     ```
+
+     from `os45_adjacent_localDifferenceEOWChartData` with the same
+     `ρ`, `hV_jost`, `hV_ordered`, `hV_swap_ordered`, `hV_ET`, and
+     `hV_swapET`.
+     This theorem-level statement is the OS §4.5 local EOW/BHW analytic input;
+     do not hide it as a field in another structure.
+  3. Prove
+     `DifferentiableOn ℂ H_wick D_wick` by subtracting the two
+     `OS45WickChart` holomorphy lemmas, and prove
+     `DifferentiableOn ℂ H_real D_real` by subtracting the two
+     `OS45RealChart` holomorphy lemmas.
+  4. Apply
+
+     ```lean
+     SCV.differenceEnvelope_of_localBoundaryCharts
+       D_wick D_real H_wick H_real V hV_open hV_connected Data
+       hH_wick hH_real
+     ```
+
+     and unpack the returned `U`, `H`, `U_open`, `U_connected`, `H_holo`,
+     `wick_mem`, `real_mem`, `wick_trace`, and `real_trace`.
+  5. Repackage those fields as the conclusion of
+     `os45_adjacent_branchDifferenceEnvelope_exists`.  The two trace fields are
+     definitional after unfolding `H_wick` and `H_real`; no single-branch
+     Wick-to-real comparison is used.
+
+  Production placement rule: if this reaches Lean before every proof is
+  available, the only acceptable theorem-level `sorry`s are the standard SCV
+  theorem `SCV.differenceEnvelope_of_localBoundaryCharts` and/or the concrete
+  OS theorem `os45_adjacent_localDifferenceEOWChartData`.  Do not introduce a
+  production structure with a `glued_envelope` field, and do not put `sorry` in
+  any definition or structure field.
+
+  Implementation refinement after the #1092 audit: the generic local-chart
+  gluing theorem is mathematically honest, but it is broader than the current
+  `2 ≤ d` edge supplier needs.  The selector already chooses `V` as a small
+  connected ball around one adjacent real Jost point.  The preferred Lean route
+  is therefore to choose that ball **inside one OS45 local EOW chart** and build
+  the branch-difference envelope from a single application of the connected
+  EOW theorem.  This avoids a large sheaf-gluing proof while preserving the
+  same mathematical content.
+
+  **Retraction after the #1104 orbit-invariant audit.**  The single-chart
+  geometry shape below is no longer an implementation target.  It asked for a
+  full-dimensional affine tube on which a nontrivial point permutation is
+  realized by a complex Lorentz transformation at every point of the tube.
+  That is generically false: complex Lorentz transformations preserve the
+  labelled Minkowski Gram matrix of the spacetime vectors, while swapping two
+  arbitrary point labels changes the labelled diagonal entries unless the two
+  point norms happen to agree.  A full-dimensional tube necessarily contains
+  configurations with unequal labelled quadratic forms.
+
+  Therefore the code block below is retained only as a negative design record:
+  do not implement it, do not reintroduce its `pos_orbit_id` /
+  `pos_orbit_swap` fields, and do not use a theorem-level `sorry` to reserve
+  this shape.  The production theorem
+  `BHW.localAdjacentJostOppositeCone_at_seed` was removed from
+  `OS45LocalOppositeWedge.lean` after this audit.  The proved helper lemmas in
+  that file remain valid.
+
+  The now-retracted Lean-facing shape was:
+
+  ```lean
+  structure OS45AdjacentSingleEOWGeometry
+      (d n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)) where
+    V_open : IsOpen V
+    V_connected : IsConnected V
+    V_nonempty : V.Nonempty
+    V_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n
+    V_ET : ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n
+    V_swapET : ∀ x ∈ V,
+      BHW.realEmbed
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n
+    V_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ
+    V_swap_ordered : ∀ x ∈ V,
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+    m : ℕ
+    C : Set (Fin m → ℝ)
+    center : Fin n → Fin (d + 1) → ℂ
+    chartCLE :
+      (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ] (Fin m → ℂ)
+    realChartCoord : NPointDomain d n → Fin m → ℝ
+    realChartCoord_cont : Continuous realChartCoord
+    E : Set (Fin m → ℝ)
+    E_open : IsOpen E
+    E_connected : IsConnected E
+    E_nonempty : E.Nonempty
+    C_open : IsOpen C
+    C_convex : Convex ℝ C
+    C_nonempty : C.Nonempty
+    C_not_zero : (0 : Fin m → ℝ) ∉ C
+    C_cone : ∀ t y, 0 < t → y ∈ C → t • y ∈ C
+    wick_coord : ∀ x ∈ V,
+      chartCLE ((fun k => wickRotatePoint (x k)) - center) ∈
+        SCV.TubeDomain C
+    real_coord_eq : ∀ x ∈ V,
+      chartCLE (BHW.realEmbed x - center) =
+        SCV.realEmbed (realChartCoord x)
+    real_coord_mem : ∀ x ∈ V, realChartCoord x ∈ E
+    pos_domain : ∀ u ∈ SCV.TubeDomain C,
+      center + chartCLE.symm u ∈
+        OS45AdjacentWickDifferenceDomain (d := d) (n := n) i hi ρ
+    neg_domain : ∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+      center + chartCLE.symm u ∈
+        OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi
+    edge_domain : ∀ y ∈ E,
+      center + chartCLE.symm (SCV.realEmbed y) ∈
+        OS45AdjacentRealDifferenceDomain (d := d) (n := n) i hi
+    pos_orbit_id : ∀ u ∈ SCV.TubeDomain C,
+      ∃ Λ : ComplexLorentzGroup d,
+        BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+            (center + chartCLE.symm u) =
+          BHW.complexLorentzAction Λ
+            (BHW.permAct (d := d) ρ
+              (BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+                (center + chartCLE.symm u)))
+    pos_orbit_swap : ∀ u ∈ SCV.TubeDomain C,
+      ∃ Λ : ComplexLorentzGroup d,
+        BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+            (center + chartCLE.symm u) =
+          BHW.complexLorentzAction Λ
+            (BHW.permAct (d := d)
+              ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+              (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                (center + chartCLE.symm u)))
+  ```
+
+  The fatal point in this retracted shape is not the use of an affine chart or
+  the connected real edge.  The fatal point is the full-dimensional
+  `pos_orbit_*` requirement.  Point permutations act on the label set
+  `Fin n`; Lorentz transformations act on the spacetime index
+  `Fin (d + 1)`.  For a nontrivial adjacent swap, demanding
+  `permAct τ z = Λ • z` on a full-dimensional open tube would force equality
+  of the Lorentz-invariant labelled quadratic data of the two swapped point
+  vectors throughout that tube.  This is not an open condition and fails for
+  generic configurations.
+
+  A correct OS §4.5 route must therefore avoid pointwise "permutation is a
+  Lorentz orbit" witnesses on a full ambient tube.  The branch comparison has
+  to be carried by the BHW/PET analytic continuation and Jost boundary theorem,
+  or by a genuinely local edge-of-the-wedge chart whose domain is a local edge
+  wedge and whose equality statement is a branch-difference boundary statement,
+  not a full-tube Lorentz-orbit parametrization of point permutations.
+
+  The previously vague phrase "apply the local BHW/Jost opposite-wedge
+  theorem" still has to be replaced, but not by the retracted full-dimensional
+  orbit statement.  The corrected replacement must be one of the following:
+
+  1. a generic external BHW/PET branch-independence theorem for forward-tube
+     holomorphic functions, independent of `OS` and `lgc`, followed by the OS
+     §4.5 boundary-value/Jost theorem; or
+  2. a local edge-of-the-wedge chart theorem whose domain is explicitly local
+     over a real edge `E` and whose conclusion identifies the adjacent
+     branch-difference boundary value, without claiming that a point
+     permutation is implemented by a Lorentz transformation on a full
+     ambient tube.
+
+  The following older theorem surface is retracted and must not be promoted to
+  Lean:
+
+  ```lean
+  theorem BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed
+      (hd : 2 ≤ d)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (x0 : NPointDomain d n)
+      (ρ : Equiv.Perm (Fin n))
+      (hx0_jost : x0 ∈ BHW.JostSet d n)
+      (hx0_ET : BHW.realEmbed x0 ∈ BHW.ExtendedTube d n)
+      (hx0_swapET :
+        BHW.realEmbed
+          (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n)
+      (hx0_ordered :
+        x0 ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hx0_swap_ordered :
+        (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+      ∃ (Vraw : Set (NPointDomain d n))
+        (m : ℕ)
+        (C : Set (Fin m → ℝ))
+        (center : Fin n → Fin (d + 1) → ℂ)
+        (chartCLE :
+          (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ] (Fin m → ℂ))
+        (realChartCoord : NPointDomain d n → Fin m → ℝ)
+        (E : Set (Fin m → ℝ)),
+        center = BHW.realEmbed x0 ∧
+        x0 ∈ Vraw ∧
+        IsOpen Vraw ∧ IsConnected Vraw ∧ Vraw.Nonempty ∧
+        (∀ x ∈ Vraw, x ∈ BHW.JostSet d n) ∧
+        (∀ x ∈ Vraw, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+        (∀ x ∈ Vraw,
+          BHW.realEmbed
+            (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ x ∈ Vraw,
+          x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+        (∀ x ∈ Vraw,
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+            EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+              ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+        Continuous realChartCoord ∧
+        IsOpen E ∧ IsConnected E ∧ E.Nonempty ∧
+        IsOpen C ∧ Convex ℝ C ∧ C.Nonempty ∧
+        (0 : Fin m → ℝ) ∉ C ∧
+        (∀ t y, 0 < t → y ∈ C → t • y ∈ C) ∧
+        (∀ x ∈ Vraw,
+          chartCLE ((fun k => wickRotatePoint (x k)) - center) ∈
+            SCV.TubeDomain C) ∧
+        (∀ x ∈ Vraw,
+          chartCLE (BHW.realEmbed x - center) =
+            SCV.realEmbed (realChartCoord x)) ∧
+        (∀ x ∈ Vraw, realChartCoord x ∈ E) ∧
+        (∀ u ∈ SCV.TubeDomain C,
+          BHW.permAct (d := d) ρ (center + chartCLE.symm u) ∈
+            BHW.ForwardTube d n) ∧
+        (∀ u ∈ SCV.TubeDomain C,
+          BHW.permAct (d := d)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+            (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+              (center + chartCLE.symm u)) ∈
+            BHW.ForwardTube d n) ∧
+        (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+          BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+            (center + chartCLE.symm u) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+          BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+            (center + chartCLE.symm u) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ y ∈ E,
+          BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+            (center + chartCLE.symm (SCV.realEmbed y)) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ y ∈ E,
+          BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+            (center + chartCLE.symm (SCV.realEmbed y)) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+                (center + chartCLE.symm u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d) ρ
+                  (center + chartCLE.symm u))) ∧
+        (∀ u ∈ SCV.TubeDomain C,
+          ∃ Λ : ComplexLorentzGroup d,
+            BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                (center + chartCLE.symm u) =
+              BHW.complexLorentzAction Λ
+                (BHW.permAct (d := d)
+                  ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+                  (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                    (center + chartCLE.symm u))))
+  ```
+
+  The old proof transcript for
+  `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` is retracted with the
+  statement.  The only reusable piece is the ordered-Wick seed membership:
+  `BHW.permAct ρ (wick x0) ∈ BHW.ForwardTube d n` and
+  `BHW.permAct (τ.symm * ρ) (BHW.permAct τ (wick x0)) ∈
+  BHW.ForwardTube d n`.  Those are ordinary forward-tube source-domain facts;
+  they do not imply that the unpermuted or swapped branch point is an ordinary
+  extended-tube point via a Lorentz transform.
+
+  Surviving implementation pieces from this retracted theorem:
+
+  1. First expose the permutation and ordered-Wick helpers as small public
+     lemmas, because these are routine and should not be hidden inside the hard
+     BHW/Jost proof.  These helper lemmas are now implemented in
+     `OSReconstruction/Wightman/Reconstruction/WickRotation/OS45LocalOppositeWedge.lean`:
+
+     ```lean
+     @[simp] theorem BHW.permAct_one
+         (z : Fin n → Fin (d + 1) → ℂ) :
+         BHW.permAct (d := d) (1 : Equiv.Perm (Fin n)) z = z
+
+     theorem BHW.permAct_mul
+         (π τ : Equiv.Perm (Fin n))
+         (z : Fin n → Fin (d + 1) → ℂ) :
+         BHW.permAct (d := d) (π * τ) z =
+           BHW.permAct (d := d) τ (BHW.permAct (d := d) π z)
+
+     theorem BHW.permAct_wickRotatePoint
+         (σ : Equiv.Perm (Fin n))
+         (x : NPointDomain d n) :
+         BHW.permAct (d := d) σ (fun k => wickRotatePoint (x k)) =
+           fun k => wickRotatePoint (x (σ k))
+     ```
+
+     Check the multiplication orientation against the actual definition of
+     `BHW.permAct`; the private helper in
+     `Connectedness/BHWPermutation/PermutationFlow.lean` currently proves this
+     orientation by `simp [permAct, Equiv.Perm.mul_apply]`.  The public theorem
+     must match that orientation exactly.
+
+  2. Then isolate the ordered-Wick seed lemma.  This lemma is also implemented
+     in `OS45LocalOppositeWedge.lean`:
+
+     ```lean
+     theorem BHW.os45_adjacent_orderedWickSeeds_mem_forwardTube
+         (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+         (x : NPointDomain d n)
+         (ρ : Equiv.Perm (Fin n))
+         (hx_ordered :
+           x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+         (hx_swap_ordered :
+           (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+             EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+               ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+         BHW.permAct (d := d) ρ (fun k => wickRotatePoint (x k)) ∈
+             BHW.ForwardTube d n ∧
+         BHW.permAct (d := d)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+             (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+               (fun k => wickRotatePoint (x k))) ∈
+             BHW.ForwardTube d n
+     ```
+
+     The first component is
+     `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`.  The second
+     component first rewrites
+     `BHW.permAct τ (wick x)` to `wick (x ∘ τ)`, then applies the same theorem
+     with order label `τ.symm * ρ`.
+
+  3. The attempted hard geometric core below has been rejected.  It is not a
+     valid theorem slot, because the full-dimensional `pos_orbit_*`
+     conclusions would force a nontrivial point permutation to be Lorentz on a
+     generic open set.  It was briefly present in
+     `OS45LocalOppositeWedge.lean` as a theorem-level WIP `sorry`, but has now
+     been removed.  Keep this statement only as a negative test when designing
+     the replacement:
+
+     ```lean
+     theorem BHW.localAdjacentJostOppositeCone_at_seed
+         (hd : 2 ≤ d)
+         (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+         (x0 : NPointDomain d n)
+         (ρ : Equiv.Perm (Fin n))
+         (hx0_jost : x0 ∈ BHW.JostSet d n)
+         (hx0_ET : BHW.realEmbed x0 ∈ BHW.ExtendedTube d n)
+         (hx0_swapET :
+           BHW.realEmbed
+             (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+             BHW.ExtendedTube d n)
+         (hseedFT_id :
+           BHW.permAct (d := d) ρ (fun k => wickRotatePoint (x0 k)) ∈
+             BHW.ForwardTube d n)
+         (hseedFT_swap :
+           BHW.permAct (d := d)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+             (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+               (fun k => wickRotatePoint (x0 k))) ∈
+             BHW.ForwardTube d n) :
+         ∃ (m : ℕ)
+           (C : Set (Fin m → ℝ))
+           (center : Fin n → Fin (d + 1) → ℂ)
+           (chartCLE :
+             (Fin n → Fin (d + 1) → ℂ) ≃L[ℂ] (Fin m → ℂ))
+           (realChartCoord : NPointDomain d n → Fin m → ℝ)
+           (E : Set (Fin m → ℝ)),
+           center = BHW.realEmbed x0 ∧
+           Continuous realChartCoord ∧
+           IsOpen E ∧ IsConnected E ∧ E.Nonempty ∧
+           IsOpen C ∧ Convex ℝ C ∧ C.Nonempty ∧
+           (0 : Fin m → ℝ) ∉ C ∧
+           (∀ t y, 0 < t → y ∈ C → t • y ∈ C) ∧
+           chartCLE ((fun k => wickRotatePoint (x0 k)) - center) ∈
+             SCV.TubeDomain C ∧
+           chartCLE (BHW.realEmbed x0 - center) =
+             SCV.realEmbed (realChartCoord x0) ∧
+           realChartCoord x0 ∈ E ∧
+           (∀ u ∈ SCV.TubeDomain C,
+             BHW.permAct (d := d) ρ (center + chartCLE.symm u) ∈
+               BHW.ForwardTube d n) ∧
+           (∀ u ∈ SCV.TubeDomain C,
+             BHW.permAct (d := d)
+               ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+               (BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                 (center + chartCLE.symm u)) ∈
+               BHW.ForwardTube d n) ∧
+           (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+             BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+               (center + chartCLE.symm u) ∈
+               BHW.ExtendedTube d n) ∧
+           (∀ u ∈ SCV.TubeDomain (Neg.neg '' C),
+             BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+               (center + chartCLE.symm u) ∈
+               BHW.ExtendedTube d n) ∧
+           (∀ y ∈ E,
+             BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+               (center + chartCLE.symm (SCV.realEmbed y)) ∈
+               BHW.ExtendedTube d n) ∧
+           (∀ y ∈ E,
+             BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+               (center + chartCLE.symm (SCV.realEmbed y)) ∈
+               BHW.ExtendedTube d n) ∧
+           (∀ u ∈ SCV.TubeDomain C,
+             ∃ Λ : ComplexLorentzGroup d,
+               BHW.permAct (d := d) (1 : Equiv.Perm (Fin n))
+                   (center + chartCLE.symm u) =
+                 BHW.complexLorentzAction Λ
+                   (BHW.permAct (d := d) ρ
+                     (center + chartCLE.symm u))) ∧
+           (∀ u ∈ SCV.TubeDomain C,
+             ∃ Λ : ComplexLorentzGroup d,
+               BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+                   (center + chartCLE.symm u) =
+                 BHW.complexLorentzAction Λ
+                   (BHW.permAct (d := d)
+                     ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)
+                     (BHW.permAct (d := d)
+                       (Equiv.swap i ⟨i.val + 1, hi⟩)
+                       (center + chartCLE.symm u))))
+     ```
+
+     This rejected theorem is not a mathematical BHW/Jost core.  It returns no
+     `Vraw`, but more importantly its full-dimensional orbit conclusions are
+     false for generic configurations.  Do not reintroduce this statement as a
+     placeholder, structure field, theorem-level `sorry`, or axiom.  The
+     temporary production `sorry` was removed from
+     `OS45LocalOppositeWedge.lean`, and the direct-sorry census was restored.
+
+  4. The real-ball shrink is a separate topology theorem over the chart core:
+
+     Its production conclusion is:
+
+     ```lean
+     ∃ Vraw : Set (NPointDomain d n),
+       x0 ∈ Vraw ∧
+       IsOpen Vraw ∧ IsConnected Vraw ∧ Vraw.Nonempty ∧
+       (∀ x ∈ Vraw, x ∈ BHW.JostSet d n) ∧
+       (∀ x ∈ Vraw, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+       (∀ x ∈ Vraw,
+         BHW.realEmbed
+           (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           BHW.ExtendedTube d n) ∧
+       (∀ x ∈ Vraw,
+         x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+       (∀ x ∈ Vraw,
+         (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+           EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+             ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+       (∀ x ∈ Vraw,
+         chartCLE ((fun k => wickRotatePoint (x k)) - center) ∈
+           SCV.TubeDomain C) ∧
+       (∀ x ∈ Vraw,
+         chartCLE (BHW.realEmbed x - center) =
+           SCV.realEmbed (realChartCoord x)) ∧
+       (∀ x ∈ Vraw, realChartCoord x ∈ E)
+     ```
+
+     The proof is `exists_connected_open_ball_subset` applied to the open
+     intersection of the field preimages.  This step is Lean-topological, not a
+     new BHW theorem.
+
+  5. The composition into
+     `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` is also retracted,
+     because its hard core is false as stated.  The correct response is not to
+     add a conditional wrapper around the same orbit fields.  The replacement
+     must either invoke a genuine BHW/PET branch theorem or use a local EOW
+     branch-difference chart whose hypotheses and conclusions stay local over
+     the real edge.
+
+  The older pure-geometry theorem below is likewise retracted.  It is useful
+  only as a record of what not to ask from BHW/Jost geometry:
+
+  ```lean
+  theorem os45_adjacent_localBHWJostOrbitChart_at_seed
+      (hd : 2 ≤ d)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (x0 : NPointDomain d n)
+      (ρ : Equiv.Perm (Fin n))
+      (hx0_jost : x0 ∈ BHW.JostSet d n)
+      (hx0_ET : BHW.realEmbed x0 ∈ BHW.ExtendedTube d n)
+      (hx0_swapET :
+        BHW.realEmbed
+          (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n)
+      (hx0_ordered :
+        x0 ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+      (hx0_swap_ordered :
+        (fun k => x0 (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+      ∃ V₀ : Set (NPointDomain d n),
+        x0 ∈ V₀ ∧
+        Nonempty
+          (OS45AdjacentSingleEOWGeometry (d := d) n i hi V₀ ρ)
+  ```
+
+  This theorem is pure BHW/SCV geometry.  It should live with the BHW/Jost
+  local geometry support, not in the OS analytic files.  Its proof transcript
+  should be:
+
+  The replacement transcript must start from the same safe ordered-Wick seed
+  lemma, but after that it must **not** ask for
+  `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed`, `pos_orbit_id`, or
+  `pos_orbit_swap`.  The missing proof-doc item is now the exact OS §4.5
+  branch-difference theorem:
+
+  1. use E3 to get adjacent Euclidean branch equality on the Wick edge;
+  2. use the OS §4.5 ACR(1) continuation and the external BHW/Jost theorem to
+     identify the common analytic branch on the relevant PET/Jost boundary;
+  3. recover equality of the real-Jost adjacent branch difference by boundary
+     values;
+  4. only then package the compact-test edge witness.
+
+  If a local chart formulation is still preferred, its domain must be a local
+  wedge over a real edge `E`, not the full ambient `SCV.TubeDomain C`, and its
+  conclusion must be equality of branch-difference boundary values, not
+  existence of Lorentz transformations implementing point permutations.
+
+  The preliminary concrete geometry theorem is:
+
+  ```lean
+  theorem choose_os45_singleEOWChart_preedge_for_adjacent_swap
+      (hd : 2 ≤ d)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+      ∃ (V₀ : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)),
+        Nonempty
+          (OS45AdjacentSingleEOWGeometry (d := d) n i hi V₀ ρ)
+  ```
+
+  Proof transcript:
+
+  1. start from `adjacent_overlap_real_jost_witness_exists` and perturb it by
+     `exists_ordered_small_time_perturb_in_adjacent_overlap`;
+  2. apply
+     `os45_adjacent_localBHWJostOrbitChart_at_seed` at the resulting real Jost
+     point and order label.  This theorem already performs the preliminary
+     ball shrink and exports `center`, `chartCLE`, `C`, `E`, the real
+     coordinate map, the positive/negative/edge domain inclusions, and the
+     two `pos_orbit_*` witnesses;
+  3. return the `V₀`, `ρ`, and `Nonempty
+     (OS45AdjacentSingleEOWGeometry ...)` from that theorem.  The selector
+     should not re-prove or weaken any of the local BHW/Jost orbit fields.
+
+  Important correction: this pure geometry selector is not, by itself, the
+  final production selector.  Its `V₀` is only a preliminary small real edge on
+  which the chart and all raw Jost/ET/order fields are valid.  The EOW theorem
+  returns an open chart-domain
+  `Uc`, and the proof must know that the Wick section
+  `x ↦ chartCLE (wick(x) - center)` lands in `Uc`.  That membership generally
+  cannot be fixed before the EOW theorem is applied, because `Uc` is produced by
+  the analytic construction.  The final real ball `V` should therefore be
+  chosen as a subset of `V₀` **after** applying EOW, by shrinking around the
+  seed inside the open preimages of:
+
+  - the Jost/ET/swap-ET/order conditions;
+  - the real-edge chart set `E`;
+  - the pulled-back EOW domain `Uc`;
+  - the positive-tube chart condition for the Wick section.
+
+  Thus the preferred production theorem is the combined selector-and-envelope
+  statement:
+
+  ```lean
+  theorem os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart
+      (hd : 2 ≤ d)
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+      ∃ (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n))
+        (U : Set (Fin n → Fin (d + 1) → ℂ))
+        (H : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+        IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+        (∀ x ∈ V, x ∈ BHW.JostSet d n) ∧
+        (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+        (∀ x ∈ V,
+          BHW.realEmbed
+            (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+            BHW.ExtendedTube d n) ∧
+        (∀ x ∈ V,
+          x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+        (∀ x ∈ V,
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+            EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+              ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+        IsOpen U ∧ IsConnected U ∧
+        DifferentiableOn ℂ H U ∧
+        (∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U) ∧
+        (∀ x ∈ V, BHW.realEmbed x ∈ U) ∧
+        (∀ x ∈ V,
+          H (fun k => wickRotatePoint (x k)) =
+            OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+              (fun k => wickRotatePoint (x k))) ∧
+        (∀ x ∈ V,
+          H (BHW.realEmbed x) =
+            OS45AdjacentRealDifference (d := d) OS lgc n i hi
+              (BHW.realEmbed x))
+  ```
+
+  Proof transcript for the combined theorem:
+
+  1. construct the seed, order label, affine chart, cone, and edge set by the
+     pure local BHW/Jost geometry theorem, obtaining a preliminary edge
+     `V₀`, a label `ρ`, and
+     `G : OS45AdjacentSingleEOWGeometry d n i hi V₀ ρ`;
+  2. prove the branch-difference common boundary value in that chart;
+  3. apply `SCV.edge_of_the_wedge_theorem_connected_of_connected_edge`, getting
+     `Uc` and `Hc`;
+  4. define the pulled-back complex domain
+     `U := {z | chartCLE (z - center) ∈ Uc}` and
+     `H z := Hc (chartCLE (z - center))`;
+  5. choose the final edge `V := Metric.ball xseed r` by the post-EOW shrink
+     lemma below, with `V ⊆ V₀` and all chart-domain memberships;
+  6. export the Jost/ET/order fields by `V ⊆ V₀` and the fields of `G`.  Export
+     the Wick trace from the positive-tube agreement clause, and export the real
+     trace by rewriting
+     `chartCLE (realEmbed x - center) = SCV.realEmbed (realChartCoord x)` and
+     using the EOW real-edge value at `realChartCoord x`.
+
+  The post-EOW shrink should be isolated as a routine topology lemma, because
+  it is exactly where several open conditions are synchronized:
+
+  ```lean
+  theorem os45_singleChart_postEOW_shrink
+      (V₀ : Set (NPointDomain d n))
+      (ρ : Equiv.Perm (Fin n))
+      (G : OS45AdjacentSingleEOWGeometry (d := d) n i hi V₀ ρ)
+      (xseed : NPointDomain d n)
+      (hxseed : xseed ∈ V₀)
+      (Uc : Set (Fin G.m → ℂ))
+      (hUc_open : IsOpen Uc)
+      (hUc_edge : ∀ y ∈ G.E, SCV.realEmbed y ∈ Uc) :
+      ∃ V : Set (NPointDomain d n),
+        IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+        xseed ∈ V ∧
+        V ⊆ V₀ ∧
+        (∀ x ∈ V, G.realChartCoord x ∈ G.E) ∧
+        (∀ x ∈ V,
+          G.chartCLE ((fun k => wickRotatePoint (x k)) - G.center) ∈
+            Uc ∩ SCV.TubeDomain G.C) ∧
+        (∀ x ∈ V,
+          G.chartCLE (BHW.realEmbed x - G.center) ∈ Uc)
+  ```
+
+  Proof transcript for `os45_singleChart_postEOW_shrink`:
+
+  1. define the final admissible set
+
+     ```lean
+     Sfinal :=
+       V₀ ∩
+       {x | G.realChartCoord x ∈ G.E} ∩
+       {x | G.chartCLE ((fun k => wickRotatePoint (x k)) - G.center) ∈
+         Uc ∩ SCV.TubeDomain G.C} ∩
+       {x | G.chartCLE (BHW.realEmbed x - G.center) ∈ Uc}
+     ```
+
+  2. prove `IsOpen Sfinal`.  Use `G.V_open`, `G.E_open`,
+     `SCV.tubeDomain_isOpen G.C_open`, `hUc_open`, continuity of
+     `G.realChartCoord`, continuity of `continuous_wickRotateRealConfig`,
+     continuity of `BHW.realEmbed`, and continuity of the affine maps
+     `z ↦ z - G.center` and `G.chartCLE`;
+  3. prove `xseed ∈ Sfinal`.  The first three components come from
+     `hxseed`, `G.real_coord_mem xseed hxseed`, and `G.wick_coord xseed hxseed`.
+     For the real `Uc` component, rewrite by
+     `G.real_coord_eq xseed hxseed` and use
+     `hUc_edge (G.realChartCoord xseed) (G.real_coord_mem xseed hxseed)`;
+  4. apply `exists_connected_open_ball_subset hSfinal_open hxseedSfinal` to get
+     `V := Metric.ball xseed r` with `V ⊆ Sfinal`;
+  5. all exported fields are projections of `V ⊆ Sfinal`.
+
+  The pullback from chart coordinates to absolute coordinates should also be
+  factored explicitly.  Define the affine chart homeomorphism associated to
+  `G`:
+
+  ```lean
+  noncomputable def OS45AdjacentSingleEOWGeometry.affineChartHomeomorph
+      (G : OS45AdjacentSingleEOWGeometry (d := d) n i hi V₀ ρ) :
+      (Fin n → Fin (d + 1) → ℂ) ≃ₜ (Fin G.m → ℂ) where
+    toFun z := G.chartCLE (z - G.center)
+    invFun u := G.center + G.chartCLE.symm u
+    left_inv := by
+      intro z
+      -- `G.center + G.chartCLE.symm (G.chartCLE (z - G.center)) = z`
+      simp
+    right_inv := by
+      intro u
+      -- `G.chartCLE (G.center + G.chartCLE.symm u - G.center) = u`
+      simp
+    continuous_toFun := by
+      -- continuity of subtraction by a constant and of `G.chartCLE`
+      continuity
+    continuous_invFun := by
+      -- continuity of addition of a constant and of `G.chartCLE.symm`
+      continuity
+  ```
+
+  With this helper, the coordinate EOW output pulls back mechanically:
+
+  ```lean
+  theorem os45_singleChart_pullback_EOW_output
+      (G : OS45AdjacentSingleEOWGeometry (d := d) n i hi V₀ ρ)
+      (V : Set (NPointDomain d n))
+      (Uc : Set (Fin G.m → ℂ))
+      (Hc : (Fin G.m → ℂ) → ℂ)
+      (hUc_open : IsOpen Uc)
+      (hUc_connected : IsConnected Uc)
+      (hHc_holo : DifferentiableOn ℂ Hc Uc)
+      (hHc_pos :
+        ∀ u ∈ Uc ∩ SCV.TubeDomain G.C,
+          Hc u =
+            OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+              (G.center + G.chartCLE.symm u))
+      (hHc_edge :
+        ∀ y ∈ G.E, Hc (SCV.realEmbed y) =
+          OS45AdjacentRealDifference (d := d) OS lgc n i hi
+            (G.center + G.chartCLE.symm (SCV.realEmbed y))) :
+      ∃ (U : Set (Fin n → Fin (d + 1) → ℂ))
+        (H : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+        U = (G.affineChartHomeomorph ⁻¹' Uc) ∧
+        H = (fun z => Hc (G.chartCLE (z - G.center))) ∧
+        IsOpen U ∧ IsConnected U ∧ DifferentiableOn ℂ H U ∧
+        (∀ x ∈ V,
+          G.chartCLE ((fun k => wickRotatePoint (x k)) - G.center) ∈
+            Uc ∩ SCV.TubeDomain G.C →
+          H (fun k => wickRotatePoint (x k)) =
+            OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+              (fun k => wickRotatePoint (x k))) ∧
+        (∀ x ∈ V,
+          G.realChartCoord x ∈ G.E →
+          G.chartCLE (BHW.realEmbed x - G.center) =
+            SCV.realEmbed (G.realChartCoord x) →
+          H (BHW.realEmbed x) =
+            OS45AdjacentRealDifference (d := d) OS lgc n i hi
+              (BHW.realEmbed x))
+  ```
+
+  Proof transcript for `os45_singleChart_pullback_EOW_output`:
+
+  1. set `A := G.affineChartHomeomorph`,
+     `U := A ⁻¹' Uc`, and `H z := Hc (A z)`;
+  2. `IsOpen U` is `hUc_open.preimage A.continuous`;
+  3. `IsConnected U` follows from `hUc_connected` transported by the
+     homeomorphism `A.symm`/`A`; equivalently rewrite `U = A.symm '' Uc` and
+     use continuity of `A.symm`;
+  4. `DifferentiableOn ℂ H U` is `hHc_holo` composed with the continuous-linear
+     part of the affine chart.  In Lean, prove a small local lemma that
+     `fun z => G.chartCLE (z - G.center)` is differentiable everywhere, then
+     apply `DifferentiableOn.comp`;
+  5. for the Wick trace, the post-EOW shrink gives
+     `A (wick x) ∈ Uc ∩ TubeDomain G.C`; use `hHc_pos` and the inverse identity
+     `G.center + G.chartCLE.symm (A (wick x)) = wick x`;
+  6. for the real trace, use
+     `G.real_coord_eq x hx` to rewrite `A (realEmbed x)` as
+     `SCV.realEmbed (G.realChartCoord x)`, then use `hHc_edge` and the inverse
+     identity.  This avoids any one-branch Wick-to-real comparison.
+
+  The OS-dependent boundary-value part is then a theorem over this geometry:
+
+  ```lean
+  theorem os45_adjacent_singleChart_commonBoundaryValue
+      (OS : OsterwalderSchraderAxioms d)
+      (lgc : OSLinearGrowthCondition d OS)
+      (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n))
+      (G : OS45AdjacentSingleEOWGeometry (d := d) n i hi V ρ) :
+      ∃ bv : (Fin G.m → ℝ) → ℂ,
+        ContinuousOn bv G.E ∧
+        (∀ y ∈ G.E,
+          bv y =
+            OS45AdjacentRealDifference (d := d) OS lgc n i hi
+              (G.center + G.chartCLE.symm (SCV.realEmbed y))) ∧
+        (∀ y ∈ G.E,
+          Filter.Tendsto
+            (fun u =>
+              OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+                (G.center + G.chartCLE.symm u))
+            (nhdsWithin (SCV.realEmbed y) (SCV.TubeDomain G.C))
+            (nhds (bv y))) ∧
+        (∀ y ∈ G.E,
+          Filter.Tendsto
+            (fun u =>
+              OS45AdjacentRealDifference (d := d) OS lgc n i hi
+                (G.center + G.chartCLE.symm u))
+            (nhdsWithin (SCV.realEmbed y)
+              (SCV.TubeDomain (Neg.neg '' G.C)))
+            (nhds (bv y)))
+  ```
+
+  Proof transcript for `os45_adjacent_singleChart_commonBoundaryValue`:
+
+  1. Set
+
+     ```lean
+     f_plus u :=
+       OS45AdjacentWickDifference (d := d) OS lgc n i hi ρ
+         (G.center + G.chartCLE.symm u)
+
+     f_minus u :=
+       OS45AdjacentRealDifference (d := d) OS lgc n i hi
+         (G.center + G.chartCLE.symm u)
+     ```
+
+  2. This old branchwise step is also retracted in its `G.pos_orbit_*` form.
+     A corrected theorem may still apply a branch-difference OS §4.5/BHW-Jost
+     boundary theorem, but it must obtain the positive-side identification from
+     the common analytic continuation / PET branch theorem, not from local
+     Lorentz orbit witnesses for point permutations.
+  3. Let `bv_id` and `bv_τ` be the branchwise boundary values and set
+     `bv y := bv_τ y - bv_id y`.
+  4. Continuity of `bv` follows by subtraction.
+  5. The real-edge formula unfolds to `f_minus (SCV.realEmbed y)` by the
+     definitions of `OS45AdjacentRealDifference`, `OS45RealChart`, and the two
+     branchwise real-edge formulas.
+  6. The positive-wedge and negative-wedge Tendsto fields are obtained by
+     subtracting the two branchwise Tendsto statements.  This is only a common
+     boundary-value statement for the adjacent branch **difference**; it does
+     not assert any one-branch Wick-to-real equality.
+
+  The EOW call inside the combined theorem should then use the exact coordinate
+  functions above:
+
+  ```lean
+  have hf_plus :
+      DifferentiableOn ℂ f_plus (SCV.TubeDomain G.C)
+
+  have hf_minus :
+      DifferentiableOn ℂ f_minus (SCV.TubeDomain (Neg.neg '' G.C))
+
+  obtain ⟨Uc, Hc, hUc_open, hUc_connected, hUc_edge_mem, hHc_holo,
+      hHc_edge_value, hHc_pos, hHc_neg, hHc_unique⟩ :=
+    SCV.edge_of_the_wedge_theorem_connected_of_connected_edge
+      G.C G.C_open G.C_convex G.C_not_zero G.C_cone G.C_nonempty
+      f_plus f_minus hf_plus hf_minus
+      G.E G.E_open G.E_connected bv hbv_cont
+      hf_plus_bv hf_minus_bv
+  ```
+
+  The proof of `hf_plus` is: `G.pos_domain` maps the positive tube into
+  `OS45AdjacentWickDifferenceDomain`; compose holomorphy of
+  `OS45AdjacentWickDifference` on that domain with the affine map
+  `u ↦ G.center + G.chartCLE.symm u`.  The proof of `hf_minus` is identical
+  with `G.neg_domain` and `OS45AdjacentRealDifferenceDomain`.
+
+  Here `hHc_pos` is the agreement clause later used for the Wick trace, while
+  `hUc_edge_mem` and `hHc_edge_value` are used for the real trace and for the
+  post-EOW shrink.  The negative-tube agreement is retained for uniqueness but
+  is not needed by the final compact-test consumer.
+
+  Do not implement a separate fixed-`V`
+  `os45_adjacent_branchDifferenceEnvelope_exists_singleChart` theorem unless
+  its hypotheses explicitly include the post-EOW membership
+  `∀ x ∈ V, chartCLE (wick(x) - center) ∈ Uc`.  Without that field, the proof
+  cannot show the Wick section lies in the pulled-back EOW domain.  The
+  production-safe surface is the combined selector-and-envelope theorem above,
+  where `V` is shrunk after `Uc` is known.
+
+  If the combined single-chart theorem is implemented, the broader
+  `SCV.differenceEnvelope_of_localBoundaryCharts` can be deferred.  If the
+  single-chart shrink fails, then the fallback is the generic local chart
+  gluing theorem above; do not add another wrapper around the same seam.
+6. Fill either the existing `AdjacentOSEOWEnvelope` record from genuine
+   one-branch continuations, or replace the downstream consumer by the sharper
+   difference-envelope theorem above.  In either case, no field may be supplied
+   by a dummy total function or by a non-mathematical choice.
+
+For Lean implementation the sharper packet should be:
+
+```lean
+structure AdjacentOSEOWDifferenceEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (τ : Equiv.Perm (Fin n))
+    (V : Set (NPointDomain d n)) where
+  U : Set (Fin n → Fin (d + 1) → ℂ)
+  U_open : IsOpen U
+  U_connected : IsConnected U
+  H : (Fin n → Fin (d + 1) → ℂ) → ℂ
+  H_holo : DifferentiableOn ℂ H U
+  wick_mem :
+    ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U
+  real_mem :
+    ∀ x ∈ V, BHW.realEmbed x ∈ U
+  wick_diff :
+    ∀ x ∈ V,
+      H (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) -
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k))
+  real_diff :
+    ∀ x ∈ V,
+      H (BHW.realEmbed x) =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed (fun k => x (τ k))) -
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)
+```
+
+Given this envelope, the compact-test edge theorem is mechanical and should be
+proved separately:
+
+```lean
+theorem bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_nonempty : V.Nonempty)
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (E : AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
+      (Equiv.swap i ⟨i.val + 1, hi⟩) V) :
+    ∀ φ : SchwartzNPoint d n,
+      HasCompactSupport (φ : NPointDomain d n → ℂ) →
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * φ x
+        =
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x := by
+  intro φ hφ_compact hφ_tsupport
+  have hEqOn :
+      Set.EqOn E.H (fun _ => 0) E.U := by
+    refine
+      eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+        (d := d) (n := n)
+        E.U V E.U_open E.U_connected hV_open hV_nonempty
+        E.wick_mem E.H (fun _ => 0) E.H_holo
+        (by intro z hz; exact differentiableWithinAt_const _ _) ?_
+    intro ψ hψ_compact hψ_tsupport
+    -- Rewrite by `E.wick_diff`, then use the E3 compact equality from part B.
+    simpa [E.wick_diff] using
+      bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3
+        (d := d) OS lgc n i hi V hV_jost ψ hψ_tsupport
+  -- Specialize at the real edge and rewrite by `E.real_diff`.
+  have hpoint :
+      ∀ x ∈ V,
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) =
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) := by
+    intro x hx
+    have h := hEqOn (BHW.realEmbed x) (E.real_mem x hx)
+    have hsub :
+        BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) -
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) = 0 := by
+      simpa [E.real_diff x hx] using h
+    exact sub_eq_zero.mp hsub
+  -- Integrands agree on `V`; outside `tsupport φ`, `φ = 0`.
+  exact integral_eq_of_tsupport_subset_of_pointwise_on
+    (d := d) (n := n) V
+    (fun x =>
+      BHW.extendF (bvt_F OS lgc n)
+        (BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))))
+    (fun x =>
+      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
+    φ hφ_tsupport hpoint
+```
+
+The helper `integral_eq_of_tsupport_subset_of_pointwise_on` is the standard
+support-zero bookkeeping lemma, but it should still be a named Lean lemma, not
+an inline proof repeated at the edge frontier:
+
+```lean
+theorem integral_eq_of_tsupport_subset_of_pointwise_on
+    (V : Set (NPointDomain d n))
+    (A B : NPointDomain d n → ℂ)
+    (φ : SchwartzNPoint d n)
+    (hφ_tsupport :
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ V)
+    (hAB : ∀ x ∈ V, A x = B x) :
+    ∫ x : NPointDomain d n, A x * φ x =
+      ∫ x : NPointDomain d n, B x * φ x := by
+  apply integral_congr_ae
+  filter_upwards with x
+  by_cases hxV : x ∈ V
+  · simp [hAB x hxV]
+  · have hx_not_tsupport :
+        x ∉ tsupport (φ : NPointDomain d n → ℂ) := by
+      intro hx
+      exact hxV (hφ_tsupport hx)
+    have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx_not_tsupport
+    simp [hφx]
+```
+
+This lemma uses no integrability assumptions because the Bochner integral is
+congruent under a.e. equality.  The only support fact needed is
+`image_eq_zero_of_notMem_tsupport`, already used elsewhere in the repo.
+
+The theorem consumed by `SelectedAdjacentPermutationEdgeData` should now return
+the edge witness, because the final `V` is chosen after the single-chart EOW
+domain is known:
+
+```lean
+theorem bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ V : Set (NPointDomain d n),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+      (∀ x ∈ V, x ∈ BHW.JostSet d n) ∧
+      (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed
+          (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) ∧
+      (∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed
+                (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * φ x
+          =
+        ∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+```
+
+with proof:
+
+1. obtain `V`, `ρ`, `U`, `H`, and all edge/envelope fields from
+   `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`;
+2. build an `AdjacentOSEOWDifferenceEnvelope` from these fields;
+3. fill `AdjacentOSEOWDifferenceEnvelope.wick_diff` by simplifying the two
+   Wick chart fields with `bvt_F_perm` and
+   `τ ((τ.symm * ρ) k) = ρ k`;
+4. fill `AdjacentOSEOWDifferenceEnvelope.real_diff` directly from the real-edge
+   field of the combined single-chart theorem;
+5. apply
+   `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`.
+6. return `V` with `hV_open`, `hV_connected`, `hV_nonempty`, `hV_jost`,
+   `hV_ET`, `hV_swapET`, and the compact-test equality.
+
+The exact combined single-chart selector/envelope theorem is now the main
+proof-doc gap in this OS-internal packet.  It must mention ACR/EOW geometry,
+post-EOW shrinking of `V`, and local adjacent branch identification, not PET
+global monodromy and not one-branch Wick-to-real equality.  Once that theorem is
+proved, the compact-test theorem above is ready for Lean implementation modulo
+routine support-zero and `simp` orientation details.
+
+**D. Package `SelectedAdjacentPermutationEdgeData`.**
+
+Once A-C are proved, the final constructor is routine:
+
+```lean
+theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    SelectedAdjacentPermutationEdgeData OS lgc n := by
+  refine ⟨?overlap_connected, ?edge_witness⟩
+  · intro i hi
+    simpa [BHW.adjSwapExtendedOverlapSet, BHW.permAct] using
+      BHW.isConnected_adjSwapExtendedOverlap (d := d) n i hi
+  · intro i hi
+    obtain ⟨V, hV_open, hV_connected, hV_ne, hV_jost, hV_ET, hV_swapET,
+      hEdgeEq⟩ :=
+      bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le
+        (d := d) hd OS lgc n i hi
+    refine ⟨V, hV_open, hV_ne, hV_ET, hV_swapET, ?_⟩
+    exact hEdgeEq
+```
+
+Readiness status after the #1104 orbit-invariant audit: A and the final
+packaging are close to implementation; B is Lean-routine but must be checked
+for inverse-permutation orientation.  C is **not** implementation-ready.  The
+previous preferred single-chart theorem surface
+`BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` has been rejected because
+its positive orbit witnesses would make a point permutation into a Lorentz
+transformation on a full-dimensional tube.  The hard ingredient to document
+next is instead a corrected OS §4.5 branch-difference supplier:
+either a generic BHW/PET branch theorem plus Jost boundary-value transfer, or a
+local edge-wedge chart theorem with genuinely local domain over `E` and no
+full-tube `pos_orbit_*` fields.  The broader
+`SCV.differenceEnvelope_of_localBoundaryCharts` remains a possible SCV
+implementation tool only after that corrected local theorem shape is written
+down.  None of these may be replaced by a hidden envelope field, a wrapper
+theorem, a one-branch Wick-to-real comparison, or a point-permutation
+Lorentz-orbit witness on a generic open set.
+This packaging theorem is now explicitly the `2 ≤ d` real-edge supplier.  The
+all-`[NeZero d]` theorem-2 supplier is not implementation-ready until the
+`d = 1` complex-edge replacement is specified.
 
 ### 0.1. Checked production inventory and current trap
 
@@ -34,10 +3297,27 @@ checked file inventory before any Lean implementation resumes:
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValuesComparison.lean`
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean`
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/BHWExtension.lean`
+- `OSReconstruction/Wightman/Reconstruction/WickRotation/OS45LocalOppositeWedge.lean`
 - `OSReconstruction/Wightman/Reconstruction/ForwardTubeDistributions.lean`
 - `OSReconstruction/ComplexLieGroups/JostPoints.lean`
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/Adjacency.lean`
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/AdjacencyDistributional.lean`
+
+Planned small support file for the next implementation batch:
+
+- `OSReconstruction/Wightman/Reconstruction/WickRotation/OS45LocalOppositeWedge.lean`
+
+This file currently contains only the public `BHW.permAct_*` helpers and the
+ordered-Wick seed lemma.  It must not contain the retracted
+`BHW.localAdjacentJostOppositeCone_at_seed` theorem surface.  Any replacement
+for the local OS45/BHW geometry must first be rewritten here in the blueprint
+at implementation level and checked against the Lorentz-invariant obstruction.
+Keeping this support separate prevents the theorem-2 frontier from reopening
+large stable support files unless the exact import graph forces that move.  The
+location is intentional:
+`wickRotatePoint` and `EuclideanOrderedPositiveTimeSector` already live in the
+WickRotation layer, so placing the OS45 chart supplier under `ComplexLieGroups`
+would create the wrong dependency direction.
 
 Checked-present theorem surfaces that are useful but must be used with their
 actual hypotheses:
@@ -163,7 +3443,7 @@ theorem-2 bridge.
 
 | Slot | Home | Must consume | Must export |
 | --- | --- | --- | --- |
-| `choose_real_open_edge_for_adjacent_swap` | `BHWPermutation/Adjacency.lean` or a theorem-2 wrapper next to it | `exists_real_open_nhds_adjSwap` plus compact support inclusion for `tsupport f` | an open real edge `V` containing `tsupport f`, with ET and swapped-ET control |
+| `choose_os45_real_open_edge_for_adjacent_swap` | `BHWPermutation/Adjacency.lean` or a small theorem-2 geometry companion | `2 ≤ d`, `exists_real_open_nhds_adjSwap`, a seed with fixed Euclidean time order, and large-spatial Jost geometry | an open connected real edge `V`, a time-order label `ρ`, Jost/ET/swap-ET control, and ordered-sector fields for both `x` and `x ∘ τ`; not a `d = 1` theorem |
 | `swapped_support_lies_in_swapped_open_edge` | same Route-B geometry layer | the swap identity for `g` and `tsupport f ⊆ V` | support transport for `g` into the swapped open edge |
 | `bvt_F_acrOne_package` | `OSToWightmanBoundaryValuesBase.lean` or a small selected-witness support file | a strengthened/refactored `full_analytic_continuation_with_symmetry_growth` theorem that retains the ACR(1) conjunct from the chosen witness | ACR(1) holomorphy, Euclidean reproduction, permutation symmetry, and translation symmetry for the selected `bvt_F OS lgc n` |
 | `bvt_F_extendF_perm_eq_on_realJost_of_OS_symmetry` | `BHWExtension.lean` theorem-2 boundary layer, with OS adapters near WickRotation if cleaner | `OS.E3_symmetric`, `bvt_euclidean_restriction`, Lorentz invariance of `bvt_F`, Jost/BHW geometry, and identity/EOW propagation on the connected real Jost edge | pointwise equality of the BHW analytic continuation `extendF (bvt_F OS lgc n)` on permuted real Jost edge points |
@@ -924,7 +4204,7 @@ theorem bvt_F_permutedEtaCanonicalShell_eq_canonicalShell_of_spacelike
       MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩) →
       bvt_F OS lgc n (permutedEtaCanonicalShell (d := d) n i hi x ε) =
       bvt_F OS lgc n (canonicalShell (d := d) n x ε) := by
-  -- True finite-shell EOW/BHW comparison.
+  -- Genuine finite-shell EOW/BHW comparison.
   -- The two configurations have the same real edge `x`, but the imaginary
   -- direction on the left is adjacent-swapped.  This is where
   -- `canonical_adjacentSwap_shell_mem_EOW_domain`, holomorphy, boundary
@@ -3442,16 +6722,23 @@ theorem bvt_selectedPETBranch_adjacent_eq_on_sector_overlap
         (π * Equiv.swap i ⟨i.val + 1, hi⟩) z =
       bvt_selectedPETBranch OS lgc n π z
 
-theorem bvt_selectedReducedBHWExtensionData_exists
+noncomputable def bvt_selectedReducedBHWExtensionData
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (χ : BHW.NormalizedBasepointCutoff d)
     (m : ℕ)
     (hEdge : SelectedAdjacentPermutationEdgeData OS lgc (m + 1)) :
-    ∃ Fred : BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
-      (bvt_selectedReducedForwardTubeInput OS lgc χ m).toFun,
-      True
+    BHW.ReducedBHWExtensionData (d := d) (n := m + 1)
+      (bvt_selectedReducedForwardTubeInput OS lgc χ m).toFun
 ```
+
+This must be a real constructor for the `ReducedBHWExtensionData` record, not an
+existential theorem with a dummy postcondition.  The record fields themselves
+are the mathematical content: holomorphy on the reduced PET, agreement with the
+selected reduced forward-tube input, reduced Lorentz invariance, and reduced
+permutation invariance.  If the proof is not available, the implementation
+should leave this as the named hard theorem/definition surface, not replace its
+content by an existential with a dummy postcondition.
 
 `SelectedAdjacentPermutationEdgeData` is not a global locality hypothesis.  Its
 `edge_witness` field is exactly the compact-test equality consumed by
@@ -3461,6 +6748,19 @@ spacelike edges where the OS/Jost input is expected to exist.  Its
 The branch-cover package above is the Lean-ready local compatibility layer:
 each branch is holomorphic on its own explicit sector, and adjacent branches
 agree on adjacent sector overlaps.
+
+Route correction after #1065: this paragraph is conditional on already having
+`hEdge : SelectedAdjacentPermutationEdgeData OS lgc n`.  The project does not
+yet have the OS proof of `hEdge`, and that proof is the current active
+theorem-2 target.  Do not spend the next implementation round on PET
+single-valuedness while `SelectedAdjacentPermutationEdgeData` is still only an
+assumption packet.  The BHW/PET gluing work becomes live after
+`bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le` is documented
+and implemented in the `2 ≤ d` real-edge range.  If the public theorem remains
+all-dimensional, the `d = 1` branch must be documented separately: either a
+real-open edge theorem that genuinely constructs the same fields, or a direct
+complex-edge boundary-locality proof that does not pretend to fill
+`SelectedAdjacentPermutationEdgeData`.
 
 The purely formal finite-cover gluing step has now been split off and
 implemented in `PermutedTubeGluing.lean`.  It deliberately assumes compatibility
@@ -3499,8 +6799,8 @@ theorem BHW.gluedPETValue_holomorphicOn
     DifferentiableOn ℂ (BHW.gluedPETValue G) (BHW.PermutedExtendedTube d n)
 ```
 
-The remaining hard gap is therefore even sharper: prove all-overlap branch
-compatibility from adjacent overlap compatibility.
+Conditional on the OS edge packet, the next BHW-side hard gap is all-overlap
+branch compatibility from adjacent overlap compatibility.
 
 ```lean
 theorem bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData
@@ -3521,12 +6821,13 @@ non-adjacent sectors need not lie in every intermediate sector.  The proof must
 obtain independence of analytic continuation over the finite open cover,
 rather than asking for a nonexistent all-permutation real edge.
 
-The Lean implementation is therefore not ready to close this theorem from the
-current local data alone.  The missing item is a BHW cover-gluing/monodromy
+The Lean implementation is therefore not ready to close this BHW-side theorem
+from the current local data alone.  The missing item is a BHW
+cover-gluing/monodromy
 theorem, not another wrapper around `SelectedAdjacentPermutationEdgeData`.
 
-There is, however, a sharper diagnostic split that should guide the next proof
-docs.  The easiest route would be a **fixed-fiber sector graph theorem**:
+Historical diagnostic, now quarantined after the #1049/#1061 audits: one
+tempting route was a **fixed-fiber sector graph theorem**:
 
 ```lean
 def BHW.petSectorAdjStep
@@ -3547,7 +6848,8 @@ theorem BHW.petSectorFiber_adjacent_connected
       (BHW.petSectorAdjStep (d := d) (n := n) z) π ρ
 ```
 
-If this theorem is true, then the PET branch-independence proof is elementary:
+If this theorem were true, then the PET branch-independence proof would be
+elementary:
 induct over the `Relation.ReflTransGen` chain.  Each adjacent edge in the chain
 keeps the same point `z` inside both neighboring sectors, so the local adjacent
 equality hypothesis applies directly at `z`.  This gives an implementation-ready
@@ -3643,7 +6945,7 @@ strong index-connectedness hypotheses.  It remains useful for conditional
 overlap uniqueness, but it does not by itself prove that the set of sector
 labels containing a given PET point is adjacent-connected.
 
-The next proof-doc task is therefore binary and concrete:
+The historical diagnostic was binary:
 
 1. Prove `BHW.petSectorFiber_adjacent_connected`.  Then implement
    `BHW.extendF_pet_branch_independence_of_adjacent_of_sectorFiberConnected`
@@ -3655,9 +6957,11 @@ The next proof-doc task is therefore binary and concrete:
    germs over a common PET point have the same analytic continuation value,
    not merely that PET is preconnected as a subset of affine space.
 
-The fixed-fiber theorem is the preferred next target because its consumer is
-short, non-analytic, and Lean-ready.  The proof of the fixed-fiber theorem
-itself is the currently unresolved mathematical geometry problem.
+The #1049/#1061 correction selects the second branch for the active route.
+`BHW.petSectorFiber_adjacent_connected` and its reachable-label/orbit-chamber
+adapters may remain as conditional lemmas, but they are **not** construction
+targets unless the fixed-fiber geometry is independently rehabilitated by a
+real proof.  The active target is the germ-level monodromy theorem below.
 
 #### Forward-tube model for the fixed-fiber theorem
 
@@ -4242,7 +7546,7 @@ The second option is the preferred theorem-2 surface, because it is exactly
 what the sector-cover proof needs and it does not confuse PET connectivity
 with fixed-fiber chamber connectivity.
 
-The active blocker should now be recorded as:
+Conditional BHW-side blocker after the OS edge supplier exists:
 
 ```lean
 theorem BHW.extendF_pet_branch_independence_of_adjacent
@@ -4270,9 +7574,11 @@ theorem BHW.extendF_pet_branch_independence_of_adjacent
 
 but the proof of this theorem must come from an explicit PET monodromy/Jost
 edge package, not from `orbit_chamber_path_discretization`.  The proof docs
-below refine the germ-chain version of that package.
+below refine the germ-chain version of that package as deferred BHW
+infrastructure.
 
-The immediate next documentation task is to make the germ-chain theorem fully
+The BHW-phase documentation task, once the adjacent OS edge supplier is ready
+in the relevant dimension range, is to make the germ-chain theorem fully
 Lean-ready:
 
 1. specify the prefix-union gluing data precisely enough that the generic
@@ -4490,7 +7796,30 @@ noncomputable def BHW.PETGermChain.prefixValue
     (w : Fin n → Fin (d + 1) → ℂ) : ℂ := ...
 ```
 
-This definition is safe only after proving the prefix compatibility invariant:
+The Lean-safe definition should be by classical choice from the prefix union:
+
+```lean
+noncomputable def BHW.PETGermChain.prefixWitness
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1))
+    (w : Fin n → Fin (d + 1) → ℂ)
+    (hw : w ∈ C.prefixUnion j) :
+    {k : Fin (C.length + 1) // k.val ≤ j.val ∧ w ∈ C.domain k} := ...
+
+noncomputable def BHW.PETGermChain.prefixValue
+    (G : (π : Equiv.Perm (Fin n)) →
+      (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (C : BHW.PETGermChain d n π ρ z)
+    (j : Fin (C.length + 1))
+    (w : Fin n → Fin (d + 1) → ℂ) : ℂ :=
+  if hw : w ∈ C.prefixUnion j then
+    G (C.label ((C.prefixWitness j w hw).1)) w
+  else
+    0
+```
+
+This definition is allowed before well-definedness is known.  The proof of
+well-definedness is exactly the prefix compatibility invariant:
 
 ```lean
 theorem BHW.PETGermChain.prefixValue_eq_branch
@@ -4505,7 +7834,45 @@ theorem BHW.PETGermChain.prefixValue_eq_branch
       (C.toChain.domain k)
 ```
 
-The induction step for `prefixValue_eq_branch` is the only real proof:
+The formal gluing theorem should prove three invariants simultaneously by
+induction on `j`:
+
+```lean
+theorem BHW.PETGermChain.prefixValue_eq_branch
+theorem BHW.PETGermChain.prefixValue_holomorphicOn
+theorem BHW.PETGermChain.prefixValue_extends_succ
+```
+
+with the following intended theorem shapes:
+
+```lean
+theorem BHW.PETGermChain.prefixValue_holomorphicOn
+    (G : ...)
+    (hG_holo : ...)
+    (hAdj : ...)
+    (C : BHW.PETGermChainReady d n π ρ z)
+    (j : Fin (C.toChain.length + 1)) :
+    DifferentiableOn ℂ (C.toChain.prefixValue G j)
+      (C.toChain.prefixUnion j)
+
+theorem BHW.PETGermChain.prefixValue_extends_succ
+    (G : ...)
+    (hG_holo : ...)
+    (hAdj : ...)
+    (C : BHW.PETGermChainReady d n π ρ z)
+    (j : Fin C.toChain.length) :
+    EqOn
+      (C.toChain.prefixValue G j.castSucc)
+      (G (C.toChain.label j.succ))
+      (C.toChain.prefixUnion j.castSucc ∩ C.toChain.domain j.succ)
+```
+
+`prefixValue_holomorphicOn` follows from `prefixValue_eq_branch`: if
+`w ∈ prefixUnion j`, choose a prefix domain `C.domain k` containing `w`.
+Since `C.domain k` is open and `prefixValue G j = G (label k)` on that domain,
+`prefixValue G j` is eventually equal to a holomorphic branch near `w`.
+
+The induction step for `prefixValue_extends_succ` is the only analytic proof:
 
 1. set
 
@@ -4514,8 +7881,8 @@ I_j := C.toChain.prefixUnion j.castSucc ∩ C.toChain.domain j.succ
 ```
 
 2. prove `IsOpen I_j` from `prefixUnion_open` and `domain_open`;
-3. prove `IsConnected I_j` from `prefix_inter_next_preconnected` plus the
-   nonempty seed;
+3. use `prefix_inter_next_preconnected` as the preconnectedness input for the
+   identity theorem;
 4. use `prefix_inter_next_seed` to obtain a point in
    `domain j.castSucc ∩ domain j.succ`, where the old prefix value equals
    `G (label j.castSucc)` by the induction hypothesis and the new branch
@@ -4526,6 +7893,18 @@ I_j := C.toChain.prefixUnion j.castSucc ∩ C.toChain.domain j.succ
    and the new branch agree on all of `I_j`;
 7. use this equality to extend the prefix compatibility invariant to
    `j.succ`.
+
+The update from prefix `j` to prefix `j.succ` then splits into two cases for a
+point `w ∈ prefixUnion j.succ`:
+
+1. if `w ∈ prefixUnion j.castSucc`, use the old prefix compatibility theorem;
+2. if `w ∈ domain j.succ`, use either the definition of `prefixValue` on the
+   new domain or, on the overlap with the old prefix, the just-proved
+   `prefixValue_extends_succ`.
+
+This is the Lean step that prevents hidden monodromy assumptions: the only
+place equality is propagated beyond the last adjacent overlap is the explicit
+identity-theorem call on `I_j`.
 
 After the final induction step, the target follows without another analytic
 argument:
@@ -4562,6 +7941,580 @@ rely on a global `BHW.JostSet → ExtendedTube` theorem for the current
 `BHW.JostSet`, since the pairwise-spacelike definition is too broad for that
 claim.
 
+The cover-level construction of `petGermChainReady_exists` should be split into
+two independent pieces.
+
+First, a finite adjacent word from `π` to `ρ`.  This is purely combinatorial:
+
+```lean
+structure BHW.PETAdjacentLabelWord
+    (n : ℕ)
+    (π ρ : Equiv.Perm (Fin n)) where
+  length : ℕ
+  label : Fin (length + 1) → Equiv.Perm (Fin n)
+  label_zero : label 0 = π
+  label_last : label ⟨length, Nat.lt_succ_self length⟩ = ρ
+  step :
+    ∀ j : Fin length,
+      ∃ (i : Fin n) (hi : i.val + 1 < n),
+        label j.succ = label j.castSucc * Equiv.swap i ⟨i.val + 1, hi⟩
+```
+
+Existence follows from adjacent transpositions generating `Equiv.Perm (Fin n)`,
+using the same induction principle already used in
+`PermutedTubeConnected.lean`:
+
+```lean
+theorem BHW.petAdjacentLabelWord_exists
+    (π ρ : Equiv.Perm (Fin n)) :
+    Nonempty (BHW.PETAdjacentLabelWord n π ρ)
+```
+
+Second, choose analytic channel domains for that word.  The transition seeds
+are **not required to be the endpoint `z`**; this is the key distinction from
+the false fixed-fiber route.  For each adjacent step, use adjacent sector
+overlap nonemptiness to choose a point
+
+```lean
+q_j ∈ S (label j.castSucc) ∩ S (label j.succ).
+```
+
+Then choose an open preconnected channel domain inside each sector that links
+the previous transition seed to the next transition seed.  At the ends, the
+channels must also contain the target point `z`:
+
+```lean
+structure BHW.PETGermChannelData
+    (d n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (W : BHW.PETAdjacentLabelWord n π ρ) where
+  transition :
+    (j : Fin W.length) → Fin n → Fin (d + 1) → ℂ
+  transition_mem_left :
+    ∀ j : Fin W.length,
+      transition j ∈ BHW.permutedExtendedTubeSector d n (W.label j.castSucc)
+  transition_mem_right :
+    ∀ j : Fin W.length,
+      transition j ∈ BHW.permutedExtendedTubeSector d n (W.label j.succ)
+  domain :
+    (j : Fin (W.length + 1)) → Set (Fin n → Fin (d + 1) → ℂ)
+  domain_open : ∀ j, IsOpen (domain j)
+  domain_preconnected : ∀ j, IsPreconnected (domain j)
+  domain_subset_sector :
+    ∀ j, domain j ⊆ BHW.permutedExtendedTubeSector d n (W.label j)
+  start_mem : z ∈ domain 0
+  last_mem : z ∈ domain ⟨W.length, Nat.lt_succ_self W.length⟩
+  transition_mem_prev_domain :
+    ∀ j : Fin W.length, transition j ∈ domain j.castSucc
+  transition_mem_next_domain :
+    ∀ j : Fin W.length, transition j ∈ domain j.succ
+```
+
+Define its prefix union exactly as for `PETGermChain`:
+
+```lean
+def BHW.PETGermChannelData.prefixUnion
+    (C : BHW.PETGermChannelData d n π ρ z W)
+    (j : Fin (W.length + 1)) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  ⋃ k : {k : Fin (W.length + 1) // k.val ≤ j.val}, C.domain k.1
+```
+
+This channel data is still not enough for Lean gluing, because a new channel
+can intersect the earlier prefix in extra components not connected to the last
+transition seed.  The ready data must include the cumulative-intersection
+conditions from `PETGermChainReady`:
+
+```lean
+structure BHW.PETGermChannelData.Ready
+    (C : BHW.PETGermChannelData d n π ρ z W) : Prop where
+  prefix_inter_next_preconnected :
+    ∀ j : Fin W.length,
+      IsPreconnected
+        (C.prefixUnion j.castSucc ∩ C.domain j.succ)
+  prefix_inter_next_seed :
+    ∀ j : Fin W.length,
+      C.transition j ∈
+        C.prefixUnion j.castSucc ∩ C.domain j.succ ∩ C.domain j.castSucc
+```
+
+These conditions are precisely what converts cover-level adjacent equality
+into global branch equality.  They are also the place where the remaining BHW
+geometry lives.  In prose, the missing geometry theorem is:
+
+```lean
+theorem BHW.petGermChannelData_exists
+    [NeZero d]
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ)
+    (W : BHW.PETAdjacentLabelWord n π ρ) :
+    ∃ C : BHW.PETGermChannelData d n π ρ z W,
+      -- the cumulative prefix intersections are preconnected and hit
+      -- the prescribed adjacent transition seeds
+      BHW.PETGermChannelData.Ready C
+```
+
+The conversion from channel data to the generic germ-chain record is direct:
+
+```lean
+def BHW.PETGermChannelData.toPETGermChain
+    (C : BHW.PETGermChannelData d n π ρ z W) :
+    BHW.PETGermChain d n π ρ z where
+  length := W.length
+  label := W.label
+  label_zero := W.label_zero
+  label_last := W.label_last
+  domain := C.domain
+  domain_open := C.domain_open
+  domain_preconnected := C.domain_preconnected
+  domain_subset_sector := C.domain_subset_sector
+  endpoint_mem_start := C.start_mem
+  endpoint_mem_last := C.last_mem
+  adjacent_or_overlap := by
+    intro j
+    refine ⟨⟨C.transition j, C.transition_mem_prev_domain j,
+      C.transition_mem_next_domain j⟩, Or.inr ?_⟩
+    exact W.step j
+
+def BHW.PETGermChannelData.toPETGermChainReady
+    (C : BHW.PETGermChannelData d n π ρ z W)
+    (hC : BHW.PETGermChannelData.Ready C) :
+    BHW.PETGermChainReady d n π ρ z where
+  toChain := C.toPETGermChain
+  prefix_inter_next_preconnected := by
+    -- identify `C.prefixUnion` with `C.toPETGermChain.prefixUnion`
+    simpa [BHW.PETGermChannelData.toPETGermChain,
+      BHW.PETGermChannelData.prefixUnion,
+      BHW.PETGermChain.prefixUnion] using hC.prefix_inter_next_preconnected
+  prefix_inter_next_seed := by
+    -- same prefix-union identification
+    simpa [BHW.PETGermChannelData.toPETGermChain,
+      BHW.PETGermChannelData.prefixUnion,
+      BHW.PETGermChain.prefixUnion] using hC.prefix_inter_next_seed
+```
+
+This theorem may be proved by constructing small "tubes" inside the
+preconnected open sectors connecting endpoint/transition points while
+controlling overlaps with the previous prefix.  That is genuine complex-domain
+geometry.  It is weaker than fixed-fiber chamber connectivity because the
+transition points may move in PET, but it is stronger than bare PET
+connectedness because it controls the prefix intersections used by the
+identity theorem.
+
+Once `petAdjacentLabelWord_exists` and `petGermChannelData_exists` are proved,
+`petGermChainReady_exists` is just packaging:
+
+```lean
+theorem BHW.petGermChainReady_exists
+    [NeZero d]
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ) :
+    Nonempty (BHW.PETGermChainReady d n π ρ z) := by
+  obtain ⟨W⟩ := BHW.petAdjacentLabelWord_exists π ρ
+  obtain ⟨C, hCready⟩ :=
+    BHW.petGermChannelData_exists π ρ z hzπ hzρ W
+  exact ⟨C.toPETGermChainReady hCready⟩
+```
+
+The proof of `petGermChannelData_exists` should itself be decomposed rather
+than left as a black box.  The following geometry lemmas are the intended
+subtargets.
+
+First, each explicit sector should be path connected.  The repo already has
+preconnectedness:
+
+```lean
+theorem BHW.permutedExtendedTubeSector_isPreconnected
+```
+
+Since sectors are open subsets of a finite-dimensional complex vector space,
+path connectedness should follow from local path-connectedness:
+
+```lean
+theorem BHW.permutedExtendedTubeSector_pathConnected
+    [NeZero d]
+    (π : Equiv.Perm (Fin n)) :
+    IsPathConnected (BHW.permutedExtendedTubeSector d n π)
+```
+
+If the exact Mathlib theorem is inconvenient, use the weaker path-existence
+form needed by the construction:
+
+```lean
+theorem BHW.exists_path_in_permutedExtendedTubeSector
+    [NeZero d]
+    (π : Equiv.Perm (Fin n))
+    {a b : Fin n → Fin (d + 1) → ℂ}
+    (ha : a ∈ BHW.permutedExtendedTubeSector d n π)
+    (hb : b ∈ BHW.permutedExtendedTubeSector d n π) :
+    ∃ γ : C( unitInterval, Fin n → Fin (d + 1) → ℂ),
+      γ 0 = a ∧ γ 1 = b ∧
+      ∀ t, γ t ∈ BHW.permutedExtendedTubeSector d n π
+```
+
+Second, a compact path inside an open set should have a connected open tube
+inside that open set:
+
+```lean
+theorem BHW.exists_open_preconnected_tube_around_path
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+    [FiniteDimensional ℂ E]
+    {U : Set E} (hU_open : IsOpen U)
+    {γ : C(unitInterval, E)}
+    (hγU : ∀ t, γ t ∈ U) :
+    ∃ D : Set E,
+      IsOpen D ∧ IsPreconnected D ∧
+      Set.range γ ⊆ D ∧ D ⊆ U
+```
+
+This is a standard compactness/Lebesgue-number argument: cover the compact path
+image by balls contained in `U`; extract a finite chain of overlapping balls
+along a subdivision of the path; take their union.  The union is open and
+preconnected because consecutive balls overlap.
+
+Together these give an uncontrolled sector channel:
+
+```lean
+theorem BHW.exists_sector_channel
+    [NeZero d]
+    (π : Equiv.Perm (Fin n))
+    {a b : Fin n → Fin (d + 1) → ℂ}
+    (ha : a ∈ BHW.permutedExtendedTubeSector d n π)
+    (hb : b ∈ BHW.permutedExtendedTubeSector d n π) :
+    ∃ D : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen D ∧ IsPreconnected D ∧
+      D ⊆ BHW.permutedExtendedTubeSector d n π ∧
+      a ∈ D ∧ b ∈ D
+```
+
+This uncontrolled channel is not sufficient for `Ready`; it does not control
+how the new channel intersects the previous prefix.  The controlled extension
+theorem needed for the induction must be **prefix-specific**.  It should not be
+implemented as a blanket theorem for arbitrary open `P`, since an arbitrary
+open set can intersect a new channel in many disconnected components.  The
+production theorem should take a partial ready channel prefix as input, carrying
+whatever tameness/separation data the construction maintains.
+
+The schematic shape is:
+
+```lean
+theorem BHW.exists_controlled_sector_channel_for_ready_prefix
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    -- In production, replace these schematic `P`, `Dprev`, and hypotheses by
+    -- a partial `PETGermChannelData` prefix whose maintained invariants imply
+    -- the displayed conditions.
+    (P Dprev : Set (Fin n → Fin (d + 1) → ℂ))
+    (hP_open : IsOpen P)
+    (hDprev_open : IsOpen Dprev)
+    {qprev qnext : Fin n → Fin (d + 1) → ℂ}
+    (hqprevP : qprev ∈ P)
+    (hqprevDprev : qprev ∈ Dprev)
+    (hqprevσ : qprev ∈ BHW.permutedExtendedTubeSector d n σ)
+    (hqnextσ : qnext ∈ BHW.permutedExtendedTubeSector d n σ) :
+    ∃ D : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen D ∧ IsPreconnected D ∧
+      D ⊆ BHW.permutedExtendedTubeSector d n σ ∧
+      qprev ∈ D ∧ qnext ∈ D ∧
+      IsPreconnected (P ∩ D) ∧
+      qprev ∈ P ∩ D ∩ Dprev
+```
+
+This theorem is the current genuine geometric sub-blocker.  It says: given the
+already-glued controlled prefix `P`, the previous channel `Dprev`, the
+transition seed `qprev` where the old and new branches already agree, and the
+next transition seed `qnext`, choose the next channel `D` inside the current
+sector so that `P ∩ D` is a single preconnected region hit by `qprev`.
+
+If this controlled-prefix theorem is still too strong, the `Ready` record
+should be weakened or replaced by a Riemann-domain monodromy theorem.  What
+must not happen is to silently replace it by bare sector preconnectedness or
+PET connectedness.  Those facts do not control `P ∩ D`.
+
+To make the prefix-specific version Lean-shaped, preselect all adjacent
+transition seeds and then build domains one at a time.
+
+```lean
+structure BHW.PETGermTransitionPlan
+    (d n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (W : BHW.PETAdjacentLabelWord n π ρ) where
+  transition :
+    (j : Fin W.length) → Fin n → Fin (d + 1) → ℂ
+  transition_mem_left :
+    ∀ j : Fin W.length,
+      transition j ∈ BHW.permutedExtendedTubeSector d n (W.label j.castSucc)
+  transition_mem_right :
+    ∀ j : Fin W.length,
+      transition j ∈ BHW.permutedExtendedTubeSector d n (W.label j.succ)
+```
+
+Existence is a finite choice over adjacent overlap nonemptiness:
+
+```lean
+theorem BHW.petGermTransitionPlan_exists
+    [NeZero d]
+    (W : BHW.PETAdjacentLabelWord n π ρ) :
+    Nonempty (BHW.PETGermTransitionPlan d n π ρ W)
+```
+
+For prefix indexing, define the two casts once:
+
+```lean
+def BHW.PETAdjacentLabelWord.prefixIndex
+    (W : BHW.PETAdjacentLabelWord n π ρ)
+    {r : ℕ} (hr : r ≤ W.length)
+    (j : Fin (r + 1)) : Fin (W.length + 1) :=
+  ⟨j.val, by
+    -- `j.val ≤ r ≤ W.length`, hence `j.val < W.length + 1`
+    omega⟩
+
+def BHW.PETAdjacentLabelWord.prefixStepIndex
+    (W : BHW.PETAdjacentLabelWord n π ρ)
+    {r : ℕ} (hr : r ≤ W.length)
+    (j : Fin r) : Fin W.length :=
+  ⟨j.val, by
+    -- `j.val < r ≤ W.length`
+    omega⟩
+```
+
+Then the partial ready prefix should be a data-carrying structure:
+
+```lean
+structure BHW.PETGermChannelPrefix
+    (d n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (W : BHW.PETAdjacentLabelWord n π ρ)
+    (T : BHW.PETGermTransitionPlan d n π ρ W)
+    (r : ℕ) (hr : r ≤ W.length) where
+  domain :
+    (j : Fin (r + 1)) → Set (Fin n → Fin (d + 1) → ℂ)
+  domain_open : ∀ j, IsOpen (domain j)
+  domain_preconnected : ∀ j, IsPreconnected (domain j)
+  domain_subset_sector :
+    ∀ j, domain j ⊆
+      BHW.permutedExtendedTubeSector d n
+        (W.label (W.prefixIndex hr j))
+  start_mem : z ∈ domain 0
+  transition_mem_prev :
+    ∀ j : Fin r,
+      T.transition (W.prefixStepIndex hr j) ∈ domain j.castSucc
+  transition_mem_next :
+    ∀ j : Fin r,
+      T.transition (W.prefixStepIndex hr j) ∈ domain j.succ
+  outgoing_mem :
+    ∀ h : r < W.length,
+      T.transition ⟨r, h⟩ ∈ domain ⟨r, Nat.lt_succ_self r⟩
+  final_mem :
+    r = W.length → z ∈ domain ⟨r, Nat.lt_succ_self r⟩
+```
+
+The `outgoing_mem` field is the key bookkeeping point.  A prefix ending at
+label `r` already contains the transition seed to the next label when such a
+next label exists.  Therefore the one-step extension has a seed in the old
+prefix intersection.
+
+The prefix union for a partial prefix is:
+
+```lean
+def BHW.PETGermChannelPrefix.prefixUnion
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T r hr)
+    (j : Fin (r + 1)) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  ⋃ k : {k : Fin (r + 1) // k.val ≤ j.val}, P.domain k.1
+```
+
+The ready-prefix conditions are:
+
+```lean
+structure BHW.PETGermChannelPrefix.Ready
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T r hr) : Prop where
+  prefix_inter_next_preconnected :
+    ∀ j : Fin r,
+      IsPreconnected
+        (P.prefixUnion j.castSucc ∩ P.domain j.succ)
+  prefix_inter_next_seed :
+    ∀ j : Fin r,
+      T.transition (W.prefixStepIndex hr j) ∈
+        P.prefixUnion j.castSucc ∩ P.domain j.succ ∩ P.domain j.castSucc
+```
+
+The one-step extension theorem should now be stated against this prefix record,
+not against arbitrary open sets:
+
+```lean
+theorem BHW.PETGermChannelPrefix.extend_one
+    [NeZero d]
+    {r : ℕ} {hr : r ≤ W.length}
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T r hr)
+    (hP : BHW.PETGermChannelPrefix.Ready P)
+    (hrlt : r < W.length) :
+    ∃ P' : BHW.PETGermChannelPrefix d n π ρ z W T (r + 1)
+        (Nat.succ_le_of_lt hrlt),
+      BHW.PETGermChannelPrefix.Ready P' ∧
+      -- `P'` restricts to `P` on the first `r + 1` domains.
+      BHW.PETGermChannelPrefix.Extends P P'
+```
+
+Here `Extends` should be a small equality-on-prefix relation:
+
+```lean
+def BHW.PETGermChannelPrefix.Extends
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T r hr)
+    (P' : BHW.PETGermChannelPrefix d n π ρ z W T (r + 1) hr')
+    : Prop :=
+  ∀ j : Fin (r + 1),
+    P'.domain j.castSucc = P.domain j
+```
+
+The proof of `extend_one` is exactly the controlled-channel geometry.  Let
+
+```lean
+qprev := T.transition ⟨r, hrlt⟩
+qnext :=
+  if hnext : r + 1 < W.length then
+    T.transition ⟨r + 1, hnext⟩
+  else
+    z
+```
+
+Use `P.outgoing_mem hrlt` to know `qprev ∈ P.domain last`, hence
+`qprev ∈ P.prefixUnion last`.  Then construct a new domain `D` inside
+`S (W.label (r+1))` containing `qprev` and `qnext`, with
+`P.prefixUnion last ∩ D` preconnected and containing `qprev`.  Append `D` as
+the new last domain.  The new `outgoing_mem` is supplied by `qnext` when
+`hnext` holds; the new `final_mem` is supplied by `qnext = z` in the final
+case.
+
+This makes the remaining sub-blocker completely explicit:
+
+```lean
+theorem BHW.PETGermChannelPrefix.exists_extend_domain
+    [NeZero d]
+    {r : ℕ} {hr : r ≤ W.length}
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T r hr)
+    (hP : BHW.PETGermChannelPrefix.Ready P)
+    (hrlt : r < W.length) :
+    ∃ D : Set (Fin n → Fin (d + 1) → ℂ),
+      IsOpen D ∧
+      IsPreconnected D ∧
+      D ⊆ BHW.permutedExtendedTubeSector d n
+        (W.label ⟨r + 1, Nat.succ_lt_succ hrlt⟩) ∧
+      T.transition ⟨r, hrlt⟩ ∈ D ∧
+      (if hnext : r + 1 < W.length then
+          T.transition ⟨r + 1, hnext⟩ ∈ D
+        else
+          z ∈ D) ∧
+      IsPreconnected
+        (P.prefixUnion ⟨r, Nat.lt_succ_self r⟩ ∩ D) ∧
+      T.transition ⟨r, hrlt⟩ ∈
+        P.prefixUnion ⟨r, Nat.lt_succ_self r⟩ ∩
+          D ∩ P.domain ⟨r, Nat.lt_succ_self r⟩
+```
+
+If `exists_extend_domain` cannot be proved for the maintained prefix invariant
+above, the channel-domain route should be abandoned in favor of a direct
+Riemann-domain monodromy theorem.
+
+A sufficient path-level theorem for `exists_extend_domain` is:
+
+```lean
+theorem BHW.exists_sector_path_with_controlled_prefix_intersection
+    [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (P Dprev : Set (Fin n → Fin (d + 1) → ℂ))
+    (hP_open : IsOpen P)
+    (hDprev_open : IsOpen Dprev)
+    {qprev qnext : Fin n → Fin (d + 1) → ℂ}
+    (hqprevP : qprev ∈ P)
+    (hqprevDprev : qprev ∈ Dprev)
+    (hqprevσ : qprev ∈ BHW.permutedExtendedTubeSector d n σ)
+    (hqnextσ : qnext ∈ BHW.permutedExtendedTubeSector d n σ) :
+    ∃ γ : C(unitInterval, Fin n → Fin (d + 1) → ℂ),
+      γ 0 = qprev ∧ γ 1 = qnext ∧
+      (∀ t, γ t ∈ BHW.permutedExtendedTubeSector d n σ) ∧
+      ∃ D : Set (Fin n → Fin (d + 1) → ℂ),
+        IsOpen D ∧ IsPreconnected D ∧
+        Set.range γ ⊆ D ∧
+        D ⊆ BHW.permutedExtendedTubeSector d n σ ∧
+        IsPreconnected (P ∩ D) ∧
+        qprev ∈ P ∩ D ∩ Dprev
+```
+
+This statement says the path can be thickened to an open preconnected tube
+whose intersection with the existing prefix is still preconnected.  It is
+exactly the nontrivial topological control missing from the bare sector
+path-connectedness theorem.
+
+At present this path-control theorem is **not** established.  It may require
+extra maintained invariants, for example relatively compact channel closures,
+a tree-like prefix construction, or an avoidance lemma saying the new path can
+avoid the old prefix except near `qprev`.  If such invariants are needed, add
+them to `PETGermChannelPrefix`; do not prove a false arbitrary-open-set
+version.
+
+With `initial_prefix` and `extend_one`, `petGermChannelData_exists` is an
+ordinary finite induction over `r ≤ W.length`:
+
+```lean
+theorem BHW.PETGermChannelPrefix.initial
+    [NeZero d]
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ)
+    (W : BHW.PETAdjacentLabelWord n π ρ)
+    (T : BHW.PETGermTransitionPlan d n π ρ W) :
+    ∃ P0 : BHW.PETGermChannelPrefix d n π ρ z W T 0
+        (Nat.zero_le W.length),
+      BHW.PETGermChannelPrefix.Ready P0
+```
+
+The initial proof splits on `W.length = 0`.
+
+1. If `W.length = 0`, then `W.label 0 = π = ρ`, and one channel inside `S π`
+   containing `z` gives both `start_mem` and `final_mem`.
+2. If `0 < W.length`, use `exists_sector_channel` in `S (W.label 0)` to
+   connect `z` to `T.transition 0`.  This supplies `start_mem` and
+   `outgoing_mem`; there are no prefix-intersection obligations for `r = 0`.
+
+Then iterate:
+
+```lean
+theorem BHW.PETGermChannelPrefix.exists_full
+    [NeZero d]
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector d n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector d n ρ)
+    (W : BHW.PETAdjacentLabelWord n π ρ)
+    (T : BHW.PETGermTransitionPlan d n π ρ W) :
+    ∃ P : BHW.PETGermChannelPrefix d n π ρ z W T W.length
+        (le_rfl),
+      BHW.PETGermChannelPrefix.Ready P
+```
+
+The proof is induction on `r` from `0` to `W.length`, applying
+`extend_one` whenever `r < W.length`.  At the final prefix, `final_mem`
+supplies `z ∈ domain last`, and `Ready P` supplies all cumulative
+prefix-intersection conditions.
+
+Finally convert the full prefix into `PETGermChannelData` by reusing its
+domains and the preselected transition plan:
+
+```lean
+def BHW.PETGermChannelPrefix.toChannelData
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T W.length le_rfl) :
+    BHW.PETGermChannelData d n π ρ z W := ...
+
+theorem BHW.PETGermChannelPrefix.toChannelData_ready
+    (P : BHW.PETGermChannelPrefix d n π ρ z W T W.length le_rfl)
+    (hP : BHW.PETGermChannelPrefix.Ready P) :
+    BHW.PETGermChannelData.Ready (P.toChannelData) := ...
+```
+
 At the current frontier, the formal gluing theorem is close to Lean-ready, but
 `BHW.petGermChainReady_exists` is not.  That geometry theorem is the next
 proof-doc gap to fill before production implementation should resume.
@@ -4594,6 +8547,45 @@ PET should we continue with the global monodromy theorem
 standard BHW monodromy theorem or through a stronger, correctly defined
 tube-Jost set, not through the current pairwise-spacelike `BHW.JostSet` and not
 through fixed-fiber chamber connectivity.
+
+#### Current Gate A after the #1061 correction
+
+The corrected Gate A is a cover-level classical-germ theorem, not a
+fixed-fiber chain theorem and not a direct application of PET connectedness.
+The tempting shortcut
+
+```text
+adjacent overlaps + connected PET + identity theorem
+```
+
+is incomplete because each branch `G π` is holomorphic on its own sector
+`S π`, and the difference `G π - G ρ` is holomorphic only on
+`S π ∩ S ρ`.  Adjacent equality along a decomposition of `π⁻¹ * ρ` provides
+seeds in adjacent overlaps along the chain, not automatically in the final
+two-sector overlap containing the target point `z`.
+
+Thus the Lean-facing theorem must explicitly encode analytic continuation
+through a cover of germs.  The acceptable proof routes are:
+
+1. a data-carrying `PETGermChainReady` theorem whose prefix intersections are
+   preconnected and seeded by adjacent overlaps;
+2. an equivalent Riemann-domain single-valuedness theorem for the adjacent
+   glued sector cover;
+3. a stronger, correctly defined tube-Jost theorem whose hypotheses imply the
+   required germ-chain data.
+
+The unacceptable routes are:
+
+1. fixed-fiber/reachable-label/orbit-chamber connectivity without a new proof;
+2. global `BHW.JostSet → ⋂π S π`, which is false for the current
+   pairwise-spacelike `BHW.JostSet`;
+3. citing `BHW.isConnected_permutedExtendedTube` without giving branch
+   holomorphy and equality on a single connected domain.
+
+The next proof-doc obligation is therefore to make the first route
+implementation-ready: define exactly what `PETGermChainReady` supplies, prove
+the formal analytic gluing theorem from that data, and only then specialize it
+to selected OS branches.
 
 The correct theorem should be formulated at the level of analytic branches on
 open sectors.  Write
@@ -5781,36 +9773,77 @@ direct final theorem-2 calls on `W := bvt_W OS lgc`:
 
 Primary planned theorem-2 closure slots:
 
+Priority boundary after the #1065 audit and the OS I §4.5 reread: slots 1-13
+are active only as the local Lean bridge into the paper's symmetric
+continuation stage.  The paper-level target starts at slot 25: construct the
+symmetric PET/BHW continuation and then apply the Jost boundary theorem to
+locality.  Slots 18-24 are deferred BHW/PET single-valuedness work; they should
+not receive additional implementation or proof-doc expansion until
+`bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le` has a complete
+Lean-ready transcript for the `2 ≤ d` branch.  The `d = 1` closure is a
+separate branch: either prove a dedicated dimension-one real-open edge theorem
+with the same `SelectedAdjacentPermutationEdgeData` fields, or prove a direct
+dimension-one complex-edge boundary-locality theorem.  Do not describe a
+complex-edge-only theorem as if it filled the real-open
+`SelectedAdjacentPermutationEdgeData.edge_witness` field.
+
 1. `bvt_F_restrictedLorentzInvariant_forwardTube`
 2. `bvt_F_complexLorentzInvariant_forwardTube`
-3. `BHW.HasPermutationEdgeDistributionEquality`
-4. `bvt_F_distributionalEOW_permBranch_from_euclideanEdge`
-5. `bvt_F_permBranchEnvelope_on_jostOverlap_from_ACR_and_BHW`
-6. `bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS`
-7. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS`
-8. `SelectedAdjacentPermutationEdgeData`
-9. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
-10. `bvt_selectedPETBranch`
-11. `bvt_selectedPETBranch_holomorphicOn_sector`
-12. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
-13. `BHW.PETGermChain`
-14. `BHW.PETGermChainReady`
-15. `BHW.pet_branch_independence_of_germChain`
-16. `BHW.petGermChainReady_exists`
-17. `BHW.extendF_pet_branch_independence_of_adjacent`
-18. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
-19. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
-20. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
-21. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
-22. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
-23. `BHW.permuteSchwartz`
-24. `BHW.permute_support_jost`
-25. `BHW.permute_tsupport_jost`
-26. `BHW.permuteSchwartz_hasCompactSupport`
-27. `BHW.integral_perm_eq_self`
-28. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
-29. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
-30. `bvt_locally_commutative_from_symmetric_PET_boundary`
+3. `choose_os45_real_open_edge_for_adjacent_swap`
+4. `zeroDiagonal_of_tsupport_subset_jostOverlap`
+5. `bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3`
+6. `SCV.edge_of_the_wedge_theorem_connected_of_connected_edge`
+7. Corrected OS §4.5 branch-difference supplier, not yet implementation-ready:
+   replace the retracted
+   `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` / full-tube
+   `pos_orbit_*` route by either a generic BHW/PET branch theorem plus Jost
+   boundary-value transfer, or a genuinely local EOW chart over a real edge `E`
+   with no point-permutation-as-Lorentz claim.
+8. Corrected preliminary adjacent geometry after slot 7 is rewritten.  The
+   proved `BHW.permAct_*` helpers and
+   `BHW.os45_adjacent_orderedWickSeeds_mem_forwardTube` may be reused, but no
+   replacement theorem may quantify full-dimensionally over a tube and require
+   Lorentz orbit witnesses for point permutations.
+9. Corrected branchwise boundary-value theorem for the OS §4.5
+   branch-difference.  It must compare adjacent branch differences through the
+   common analytic continuation / Jost boundary theorem, not through
+   one-branch Wick-to-real equality and not through `extendF_preimage_eq`
+   supplied by false orbit witnesses.
+10. `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart` only
+   after slots 7-9 are rewritten; otherwise use
+   `SCV.differenceEnvelope_of_localBoundaryCharts` as a local-chart gluing tool
+   for the corrected local theorem shape.
+11. `AdjacentOSEOWDifferenceEnvelope`
+12. `bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le`
+13. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`
+    for the `2 ≤ d` real-edge branch only
+14. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_d1` only if a
+    dedicated non-circular `d = 1` real-open edge theorem is actually proved
+15. `bvt_locally_commutative_boundary_route_of_one` if the `d = 1` proof uses
+    a complex-edge/direct-boundary route instead of the real-open edge record
+16. `SelectedAdjacentPermutationEdgeData`
+17. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
+18. `bvt_selectedPETBranch`
+19. `bvt_selectedPETBranch_holomorphicOn_sector`
+20. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
+21. `BHW.PETGermChain`
+22. `BHW.PETGermChainReady`
+23. `BHW.pet_branch_independence_of_germChain`
+24. `BHW.petGermChainReady_exists`
+25. `BHW.extendF_pet_branch_independence_of_adjacent`
+26. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
+27. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
+28. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
+29. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+30. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
+31. `BHW.permuteSchwartz`
+32. `BHW.permute_support_jost`
+33. `BHW.permute_tsupport_jost`
+34. `BHW.permuteSchwartz_hasCompactSupport`
+35. `BHW.integral_perm_eq_self`
+36. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
+37. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+38. `bvt_locally_commutative_from_symmetric_PET_boundary`
 
 The following older slot names are no longer primary construction targets:
 
@@ -5895,10 +9928,11 @@ implementation is drifting back toward a stale or circular locality plan.
 
 ## 11. Minimal Lean pseudocode for the full closure
 
-Primary PET-extension construction:
+Primary PET-extension construction in the real-edge range `2 ≤ d`:
 
 ```lean
-theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS
+theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
+    (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) :
     SelectedAdjacentPermutationEdgeData OS lgc n := by
@@ -5965,13 +9999,15 @@ plus the PET monodromy theorem
 Primary boundary-level closure:
 
 ```lean
-private theorem bvt_locally_commutative_boundary_route
+private theorem bvt_locally_commutative_boundary_route_of_two_le
+    (hd : 2 ≤ d)
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
   intro n i j f g hsep hswap
   have hEdge : SelectedAdjacentPermutationEdgeData OS lgc n :=
-    bvt_F_selectedAdjacentPermutationEdgeData_from_OS (d := d) OS lgc n
+    bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
+      (d := d) hd OS lgc n
   obtain ⟨Fext, hFext_holo, hFext_agree, hFext_lorentz, hFext_perm⟩ :=
     bvt_F_symmetric_PET_extension_of_adjacentEdgeData (d := d) OS lgc n hEdge
   exact
@@ -5988,6 +10024,29 @@ private theorem bvt_locally_commutative_boundary_route
       hFext_perm
       i j f g hsep hswap
 ```
+
+The unqualified theorem-2 closure must now be a case split.  The `2 ≤ d` case
+uses `bvt_locally_commutative_boundary_route_of_two_le`.  The `d = 1` case must
+use one of the two explicitly documented non-circular routes:
+
+```lean
+private theorem bvt_locally_commutative_boundary_route_of_one
+    (OS : OsterwalderSchraderAxioms 1)
+    (lgc : OSLinearGrowthCondition 1 OS) :
+    IsLocallyCommutativeWeak 1 (bvt_W OS lgc) := by
+  -- Route 1: produce a genuine d=1 real-open adjacent edge packet and reuse
+  -- the selected-adjacent/PET boundary route; or
+  -- Route 2: use a d=1 complex-edge OS45/EOW boundary theorem directly.
+  -- This proof may cite the validated d=1 BHW blockers only after their
+  -- hypotheses are non-circular for the selected OS family.  In particular it
+  -- must not supply `hF_local_dist` with the target theorem itself.
+```
+
+Do not call the `2 ≤ d` real-edge packet under only `[NeZero d]`; that would
+reintroduce the false real adjacent-seed assumption.  Also do not represent a
+complex-edge-only `d = 1` argument as a proof of
+`SelectedAdjacentPermutationEdgeData` unless it really constructs the required
+real-open `V` with the two real ET fields and compact-test edge equality.
 
 Fallback finite-height closure, only if the current private consumer is kept:
 
@@ -6364,15 +10423,55 @@ more direct permutation-edge theorem for `extendF`.
 
 ### 15.4. Recommended implementation order
 
-The next Lean implementation should follow the primary BHW/PET boundary route:
+After the #1065 route audit, the next Lean implementation must start with the
+OS-internal edge supplier, not PET monodromy.  The immediate proof-doc-to-Lean
+order is:
 
-1. prove the adjacent branch-envelope theorem for the selected `bvt_F`;
-2. export the arbitrary-permutation branch envelope through the BHW/PET
-   permutation-flow spine;
-3. prove `bvt_F_distributionalEOW_permBranch_from_euclideanEdge`;
-4. package the result as `bvt_F_hasPermutationEdgeDistributionEquality`;
-5. apply `BHW.extendF_perm_eq_on_realOpen_of_edgePairingEquality`;
-6. add the boundary-transfer theorem that proves
+1. finish the Lean-ready transcript for
+   `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`;
+2. implement/check the adjacent real-open edge geometry in the `2 ≤ d` range:
+   `choose_real_open_edge_for_adjacent_swap`, ET membership, swapped-ET
+   membership, nonemptiness, and adjacent overlap connectedness;
+3. implement/check the test-function preparation:
+   `BHW.permuteZeroDiagonalSchwartz`, support transport, compact support
+   transport, `BHW.jostSet_disjoint_coincidenceLocus`, and
+   `zeroDiagonal_of_tsupport_subset_jostOverlap`;
+4. prove the Euclidean branch-pairing equality from E3 and
+   `bvt_euclidean_restriction`;
+5. prove the corrected ACR/EOW/BHW transport theorem that turns the Euclidean
+   pairing equality into the real-Jost `extendF` compact edge equality, using
+   the OS §4.5 common analytic continuation and Jost boundary theorem rather
+   than local Lorentz orbit witnesses for point permutations;
+6. package these results as
+   `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`.
+
+For the unqualified `[NeZero d]` theorem, do **not** insert a vaguely named
+`d = 1` complex-edge supplier into step 6 unless it actually fills the
+real-open fields of `SelectedAdjacentPermutationEdgeData`.  Instead, split the
+proof by dimension:
+
+1. `2 ≤ d`: implement steps 1-6 exactly as the real-open OS45 adjacent-edge
+   packet.
+2. `d = 1`, real-open variant: first prove a dedicated theorem constructing
+   the actual `SelectedAdjacentPermutationEdgeData.edge_witness` fields in
+   dimension one, then reuse the adjacent-edge/PET route.
+3. `d = 1`, complex-edge variant: bypass `SelectedAdjacentPermutationEdgeData`
+   and prove `bvt_locally_commutative_boundary_route_of_one` directly from the
+   dimension-one OS45/EOW boundary packet.
+
+The existing validated `PermutationFlowBlocker.lean` blockers are downstream
+BHW/permutation-flow trust surfaces.  They may support a later BHW endgame, but
+they must not be used in the non-circular theorem-2 proof while their
+hypotheses include the target locality statement.
+
+Only after that packet exists should the implementation return to the BHW/PET
+boundary route:
+
+1. prove/export the adjacent branch-envelope theorem for the selected `bvt_F`;
+2. export arbitrary-permutation branch independence through the BHW/PET
+   permutation-flow or germ-chain spine;
+3. build the symmetric PET boundary package;
+4. add the boundary-transfer theorem that proves
    `IsLocallyCommutativeWeak d (bvt_W OS lgc)` from this PET boundary package.
 
 Route C should be implemented only if that primary route is blocked or if we
