@@ -7,6 +7,11 @@ the private frontier theorem
 - `OSToWightmanBoundaryValues.lean`, private theorem
   `bvt_W_swap_pairing_of_spacelike`.
 
+As of `2026-04-20`, both `IsLocallyCommutativeWeak` and the live theorem-2
+frontier surface are **adjacent-swap only**.  Any older arbitrary-`(i, j)`
+discussion below should be read as historical analysis of the retired
+overstrong surface unless it is explicitly restated in adjacent form.
+
 The retired finite-height shell theorem `bvt_F_swapCanonical_pairing` is kept in
 this document only as historical/fallback analysis.  After the #1065 route
 audit and the local OS I §4.5 reread, the primary route must be anchored to the
@@ -10004,7 +10009,7 @@ private theorem bvt_locally_commutative_boundary_route_of_two_le
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
-  intro n i j f g hsep hswap
+  intro n i hi f g hsep hswap
   have hEdge : SelectedAdjacentPermutationEdgeData OS lgc n :=
     bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
       (d := d) hd OS lgc n
