@@ -119,19 +119,21 @@ decomposition is:
 3. **Adjacent real-edge distribution theorem for `extendF`.**
 
    ```lean
-   theorem bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS
+   theorem bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
        (hd : 2 ≤ d)
        (OS : OsterwalderSchraderAxioms d)
        (lgc : OSLinearGrowthCondition d OS)
        (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
-       (V : Set (NPointDomain d n)) ... :
+       (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n))
+       (E : AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
+         (Equiv.swap i ⟨i.val + 1, hi⟩) V) ... :
        ∀ φ, HasCompactSupport ... →
          tsupport ... ⊆ V →
          -- equality of the two `extendF` edge integrals
    ```
 
-   This theorem is the **true local seed** consumed by
-   `SelectedAdjacentPermutationEdgeData.edge_witness`.
+   This is the sharp compact-test consumer of the single-chart envelope.  It
+   is mechanical once the envelope packet is available.
 
 4. **Adjacent supplier package.**
 
@@ -145,7 +147,7 @@ decomposition is:
    ```
 
    This packages overlap connectedness plus the adjacent edge-distribution
-   theorem.  This is the next production theorem to implement.
+   theorem.  It is not the next production theorem to implement.
 
 5. **Arbitrary-permutation export, only after the adjacent supplier exists.**
 
@@ -161,6 +163,54 @@ decomposition is:
    PET/branch-independence spine.  It is **not** the next theorem to code.
 
 In short: the implementer should stop at step 4, not jump directly to step 5.
+
+Active constructor freeze after checkpoints `2dd4c3e` and `4e41562`:
+
+- already checkpointed in Lean:
+  `choose_os45_real_open_edge_for_adjacent_swap`,
+  `adjacentOS45WickSeedDomain`,
+  `adjacentOS45RealEdgeDomain`,
+  `choose_os45_real_open_edge_for_adjacent_swap_with_domains`,
+  `jostSet_disjoint_coincidenceLocus`,
+  `zeroDiagonal_of_tsupport_subset_jostOverlap`,
+  `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`,
+  `AdjacentOSEOWDifferenceEnvelope`, and
+  `integral_eq_of_tsupport_subset_of_pointwise_on`;
+- the only permitted next theorem order on the active `2 ≤ d` route is:
+  1. `os45_adjacent_localEOWGeometry`
+  2. `os45_adjacent_singleChart_commonBoundaryValue`
+  3. `os45_singleChart_postEOW_shrink`
+  4. `os45_singleChart_pullback_EOW_output`
+  5. `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`
+  6. `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
+  7. `bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le`
+  8. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`
+
+No other theorem surface may be inserted on the active route without first
+rewriting this freeze note.  In particular, do not revive
+`bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS` on the active route, do
+not route through a one-branch Wick-to-real comparison, and do not reopen the
+arbitrary-permutation or finite-shell packages before slot 8 exists.
+
+Post-`#1146` architectural correction, now binding on the active route:
+
+- the deleted chart-bookkeeping wrappers
+  `OS45AdjacentWickDifference*` / `OS45AdjacentRealDifference*` are **not**
+  milestone theorem surfaces and are **not** the target of
+  `AdjacentOSEOWDifferenceEnvelope.wick_diff`;
+- slot 1 must be built from the current production geometry layer
+  (`adjacentOS45WickSeedDomain`, `adjacentOS45RealEdgeDomain`, and the
+  strengthened selector), not by reintroducing chart-difference wrappers as a
+  new support block;
+- slots 2-5 must construct the **natural adjacent branch difference**
+  explicitly:
+  on the Wick side, `z ↦ bvt_F OS lgc n (fun k => z (τ k)) - bvt_F OS lgc n z`,
+  and on the real side, the corresponding
+  `extendF (bvt_F OS lgc n)` adjacent-swap difference;
+- any future chart-language helper is acceptable only as a local proof device
+  inside slots 2-5.  It must not reappear as a public checkpoint theorem, and
+  it must not be counted as theorem-2 progress unless it directly shortens the
+  path to slot 6.
 
 ### 0.0C. Repo-local / Mathlib prerequisite checklist
 
@@ -2002,6 +2052,17 @@ Paper-faithful proof transcript for this theorem:
   The two sublemmas that make the per-point theorem implementation-ready are
   the following.  First isolate the geometry, with no `OS` or `lgc` parameters:
 
+  **Post-#1146 binding correction.**  The older chart-language statement below
+  still mentions the deleted `OS45AdjacentWickDifference*` /
+  `OS45AdjacentRealDifference*` wrappers.  Those names are now archival only.
+  The active slot-1 implementation must instead express the geometry in terms
+  of the current production domains
+  `adjacentOS45WickSeedDomain` / `adjacentOS45RealEdgeDomain`, together with a
+  chart whose positive tube feeds the natural Wick-side branch difference and
+  whose negative tube feeds the real `extendF` branch difference.  Do not
+  reintroduce the deleted wrappers as theorem surfaces when implementing this
+  block.
+
   ```lean
   theorem os45_adjacent_localEOWGeometry
       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
@@ -3230,6 +3291,17 @@ Paper-faithful proof transcript for this theorem:
 
   The OS-dependent boundary-value part is then a theorem over this geometry:
 
+  **Post-#1146 binding correction.**  The theorem surface below is only
+  trustworthy after replacing the deleted chart-wrapper language by the natural
+  adjacent branch-difference formulas.  On the positive side the active object
+  is the natural Wick difference
+  `z ↦ bvt_F OS lgc n (fun k => z (τ k)) - bvt_F OS lgc n z`, pulled back
+  through the single-chart geometry.  On the negative side the active object is
+  the corresponding adjacent `extendF (bvt_F OS lgc n)` real-edge difference.
+  Any remaining occurrence of `OS45AdjacentWickDifference*` in this subsection
+  should be read as archival notation to be rewritten during implementation,
+  not as a production target.
+
   ```lean
   theorem os45_adjacent_singleChart_commonBoundaryValue
       (OS : OsterwalderSchraderAxioms d)
@@ -3579,24 +3651,28 @@ checked file inventory before any Lean implementation resumes:
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValuesComparison.lean`
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean`
 - `OSReconstruction/Wightman/Reconstruction/WickRotation/BHWExtension.lean`
-- `OSReconstruction/Wightman/Reconstruction/WickRotation/OS45LocalOppositeWedge.lean`
+- `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45.lean`
 - `OSReconstruction/Wightman/Reconstruction/ForwardTubeDistributions.lean`
 - `OSReconstruction/ComplexLieGroups/JostPoints.lean`
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/Adjacency.lean`
 - `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/AdjacencyDistributional.lean`
 
-Planned small support file for the next implementation batch:
+Current active theorem-2 support file for the OS45 route:
 
-- `OSReconstruction/Wightman/Reconstruction/WickRotation/OS45LocalOppositeWedge.lean`
+- `OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45.lean`
 
-This file currently contains only the public `BHW.permAct_*` helpers and the
-ordered-Wick seed lemma.  It must not contain the retracted
-`BHW.localAdjacentJostOppositeCone_at_seed` theorem surface.  Any replacement
-for the local OS45/BHW geometry must first be rewritten here in the blueprint
-at implementation level and checked against the Lorentz-invariant obstruction.
-Keeping this support separate prevents the theorem-2 frontier from reopening
-large stable support files unless the exact import graph forces that move.  The
-location is intentional:
+This file now contains the stage-A selector layer, the concrete ordered-seed /
+real-edge domains, the Euclidean compact-pairing theorem, the support-zero
+bookkeeping lemma, and the `AdjacentOSEOWDifferenceEnvelope` packet.  The
+tautological chart-difference layer was removed from production after `#1146`;
+if a later proof needs chart-language helpers, they must stay internal to the
+constructor theorems rather than reappearing as public route milestones.  The
+next additions in that file must be the exact constructor chain frozen above,
+beginning with `os45_adjacent_localEOWGeometry`; do not reopen the retired
+`OS45LocalOppositeWedge.lean` route on the active theorem-2 path.  Keeping this
+support separate prevents the theorem-2 frontier from reopening large stable
+support files unless the exact import graph forces that move.  The location is
+intentional:
 `wickRotatePoint` and `EuclideanOrderedPositiveTimeSector` already live in the
 WickRotation layer, so placing the OS45 chart supplier under `ComplexLieGroups`
 would create the wrong dependency direction.
