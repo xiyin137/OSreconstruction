@@ -1,5 +1,6 @@
 import OSReconstruction.ComplexLieGroups.AdjacentOverlapWitness
 import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTube
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OS45LocalOppositeWedge
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesBase
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanTubeIdentity
 
@@ -21,6 +22,14 @@ private theorem continuous_realEmbed :
 
 private theorem continuous_permNPoint (τ : Equiv.Perm (Fin n)) :
     Continuous (fun x : NPointDomain d n => fun k => x (τ k)) := by
+  apply continuous_pi
+  intro k
+  apply continuous_pi
+  intro μ
+  exact (continuous_apply μ).comp (continuous_apply (τ k))
+
+private theorem continuous_permComplexConfig (τ : Equiv.Perm (Fin n)) :
+    Continuous (fun z : Fin n → Fin (d + 1) → ℂ => fun k => z (τ k)) := by
   apply continuous_pi
   intro k
   apply continuous_pi
@@ -257,6 +266,128 @@ theorem choose_os45_real_open_edge_for_adjacent_swap
     exact (hr_sub hy).2.1
   · intro y hy
     exact (hr_sub hy).2.2
+
+/-- The ordered-Wick seed domain used by the OS45 locality route: the original
+ordered Wick seed lies in the `ρ` PET sector, and the adjacent-swapped Wick
+seed lies in the `τ.symm * ρ` PET sector. -/
+def adjacentOS45WickSeedDomain
+    (i : Fin n) (hi : i.val + 1 < n)
+    (ρ : Equiv.Perm (Fin n)) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  BHW.permutedExtendedTubeSector d n ρ ∩
+    {z | BHW.permAct (d := d) τ z ∈
+      BHW.permutedExtendedTubeSector d n (τ.symm * ρ)}
+
+/-- The real adjacent edge domain used by the OS45 locality route:
+real configurations whose two adjacent branches both lie in the extended
+tube. -/
+def adjacentOS45RealEdgeDomain
+    (i : Fin n) (hi : i.val + 1 < n) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  BHW.ExtendedTube d n ∩
+    {z | BHW.permAct (d := d) τ z ∈ BHW.ExtendedTube d n}
+
+/-- The ordered-Wick seed domain is open. -/
+theorem isOpen_adjacentOS45WickSeedDomain
+    (i : Fin n) (hi : i.val + 1 < n)
+    (ρ : Equiv.Perm (Fin n)) :
+    IsOpen (adjacentOS45WickSeedDomain (d := d) (n := n) i hi ρ) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  dsimp [adjacentOS45WickSeedDomain]
+  exact (BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) ρ).inter
+    ((BHW.isOpen_permutedExtendedTubeSector (d := d) (n := n) (τ.symm * ρ)).preimage
+      (continuous_permComplexConfig (d := d) (n := n) τ))
+
+/-- The real adjacent edge domain is open. -/
+theorem isOpen_adjacentOS45RealEdgeDomain
+    (i : Fin n) (hi : i.val + 1 < n) :
+    IsOpen (adjacentOS45RealEdgeDomain (d := d) (n := n) i hi) := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  dsimp [adjacentOS45RealEdgeDomain]
+  exact BHW.isOpen_extendedTube.inter
+    (BHW.isOpen_extendedTube.preimage
+      (continuous_permComplexConfig (d := d) (n := n) τ))
+
+/-- Ordered Euclidean time data places the Wick-rotated configuration in the
+concrete adjacent OS45 Wick-seed domain. -/
+theorem wickRotate_mem_adjacentOS45WickSeedDomain_of_ordered
+    [NeZero d]
+    (i : Fin n) (hi : i.val + 1 < n)
+    (x : NPointDomain d n)
+    (ρ : Equiv.Perm (Fin n))
+    (hx_ordered :
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+    (hx_swap_ordered :
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) :
+    (fun k => wickRotatePoint (x k)) ∈
+      adjacentOS45WickSeedDomain (d := d) (n := n) i hi ρ := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  rcases BHW.os45_adjacent_orderedWickSeeds_mem_forwardTube
+      (d := d) (n := n) i hi x ρ hx_ordered hx_swap_ordered with
+    ⟨hseed_id, hseed_swap⟩
+  refine ⟨?_, ?_⟩
+  · simpa [BHW.permutedExtendedTubeSector, BHW.permAct] using
+      BHW.forwardTube_subset_extendedTube hseed_id
+  · simpa [BHW.permutedExtendedTubeSector] using
+      BHW.forwardTube_subset_extendedTube hseed_swap
+
+/-- ET overlap data places the real configuration in the concrete adjacent
+OS45 real-edge domain. -/
+theorem realEmbed_mem_adjacentOS45RealEdgeDomain_of_ET
+    (i : Fin n) (hi : i.val + 1 < n)
+    (x : NPointDomain d n)
+    (hx_ET : BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+    (hx_swapET :
+      BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n) :
+    BHW.realEmbed x ∈
+      adjacentOS45RealEdgeDomain (d := d) (n := n) i hi := by
+  let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+  refine ⟨hx_ET, ?_⟩
+  simpa [BHW.permAct, τ, BHW.realEmbed] using hx_swapET
+
+/-- Strengthened OS45 selector: the chosen real-open edge lies simultaneously
+in the concrete real-edge domain and its Wick rotation lies in the concrete
+ordered-seed domain used by the next local EOW step. -/
+theorem choose_os45_real_open_edge_for_adjacent_swap_with_domains
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (i : Fin n) (hi : i.val + 1 < n) :
+    ∃ (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)),
+      IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧
+      (∀ x ∈ V, x ∈ JostSet d n) ∧
+      (∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          BHW.ExtendedTube d n) ∧
+      (∀ x ∈ V,
+        x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ) ∧
+      (∀ x ∈ V,
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+            ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ)) ∧
+      (∀ x ∈ V,
+        (fun k => wickRotatePoint (x k)) ∈
+          adjacentOS45WickSeedDomain (d := d) (n := n) i hi ρ) ∧
+      (∀ x ∈ V,
+        BHW.realEmbed x ∈
+          adjacentOS45RealEdgeDomain (d := d) (n := n) i hi) := by
+  rcases choose_os45_real_open_edge_for_adjacent_swap
+      (d := d) (n := n) hd i hi with
+    ⟨V, ρ, hV_open, hV_conn, hV_ne, hV_jost, hV_ET, hV_swapET, hV_ordered,
+      hV_swap_ordered⟩
+  refine ⟨V, ρ, hV_open, hV_conn, hV_ne, hV_jost, hV_ET, hV_swapET,
+    hV_ordered, hV_swap_ordered, ?_, ?_⟩
+  · intro x hx
+    exact wickRotate_mem_adjacentOS45WickSeedDomain_of_ordered
+      (d := d) (n := n) i hi x ρ (hV_ordered x hx) (hV_swap_ordered x hx)
+  · intro x hx
+    exact realEmbed_mem_adjacentOS45RealEdgeDomain_of_ET
+      (d := d) (n := n) i hi x (hV_ET x hx) (hV_swapET x hx)
 
 /-- The real Jost set is disjoint from the Euclidean coincidence locus. -/
 theorem jostSet_disjoint_coincidenceLocus :
