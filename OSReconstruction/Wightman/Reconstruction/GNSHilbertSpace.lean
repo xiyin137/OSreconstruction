@@ -1240,8 +1240,8 @@ The GNS Poincaré representation satisfies the Streater-Wightman spectral condit
 **Proof strategy** (bypasses SNAG theorem):
 
 1. Convert `Wfn.spectrum_condition` (forward tube analyticity) to
-   `SpectralConditionDistribution` via the backward direction of
-   `spectralConditionDistribution_iff_forwardTubeAnalyticity`.
+   `SpectralConditionDistribution` via the one-way theorem
+   `spectralConditionDistribution_of_forwardTubeAnalyticity`.
 
 2. `SpectralConditionDistribution` says: the Fourier transform of the reduced
    Wightman distribution (in difference variables) is supported in V̄₊ⁿ.
@@ -1266,11 +1266,11 @@ The GNS Poincaré representation satisfies the Streater-Wightman spectral condit
     is supported in the product forward momentum cone V̄₊ⁿ.
 
     Derived from `Wfn.spectrum_condition` (forward tube analyticity) via the
-    backward direction of `spectralConditionDistribution_iff_forwardTubeAnalyticity`. -/
+    one-way theorem `spectralConditionDistribution_of_forwardTubeAnalyticity`. -/
 private lemma wfn_spectralConditionDistribution :
     SpectralConditionDistribution d Wfn.W :=
-  (spectralConditionDistribution_iff_forwardTubeAnalyticity d
-    Wfn.tempered Wfn.linear Wfn.translation_invariant).mpr
+  spectralConditionDistribution_of_forwardTubeAnalyticity d
+    Wfn.tempered Wfn.linear Wfn.translation_invariant
     (fun n => by
       simpa [ForwardTubeAnalyticity] using Wfn.spectrum_condition n)
 
@@ -4763,7 +4763,7 @@ private lemma gns_mass_shell
 
     Proved from `SpectralConditionDistribution` (Fourier support of reduced Wightman
     functions in V̄₊ⁿ), which is derived from `Wfn.spectrum_condition` (forward tube
-    analyticity) via `spectralConditionDistribution_iff_forwardTubeAnalyticity`. -/
+    analyticity) via `spectralConditionDistribution_of_forwardTubeAnalyticity`. -/
 theorem gns_spectrum_condition :
     SpectralConditionQFT d (gnsPoincareRep Wfn) where
   strongly_continuous := gns_translationStronglyContinuous Wfn
