@@ -46,6 +46,165 @@ This note should be read together with:
 - `docs/edge_of_the_wedge_proof_plan.md` and
   `docs/edge_of_the_wedge_gap_analysis.md` only as historical reference.
 
+### 0.0A. Implementation-readiness patch after #1124
+
+Claude's `#1124` audit is correct: this blueprint was mathematically strong but
+still too expensive to pick up directly for Lean implementation.  The active
+route is unchanged, but the implementer-facing entry points are now fixed here.
+
+Implementer skip table:
+
+| Use | Sections | Status |
+| --- | --- | --- |
+| Read first | current preamble, Sections 1-4, Section 7, Section 11, this patch | active |
+| Mine for theorem names / existing hooks | Sections 5.1-5.4 and the theorem-name ledger near Section 9 | active reference |
+| Do **not** code from directly | most of Section 6 | exploratory / stress-test material |
+| Use only if the primary route fails | Sections 13-15 | fallback only |
+
+The immediate theorem-2 implementation order is therefore:
+
+1. finish the adjacent single-chart OS45 edge transcript in doc form;
+2. implement the `2 ≤ d` supplier
+   `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`;
+3. feed it into the already-checked selected-branch / PET gluing theorems;
+4. close `bvt_W_swap_pairing_of_spacelike`;
+5. handle `d = 1` by a separate documented branch.
+
+The default dimension-one choice is now fixed for planning purposes:
+
+- **primary `d = 1` proof-doc target:** D1-C, the direct complex-edge /
+  symmetric-PET route;
+- **non-primary `d = 1` route:** D1-R, only if a genuine real-open adjacent
+  edge theorem is actually proved.
+
+This is not a mathematical change.  It is a route-discipline correction: the
+`2 ≤ d` real-open edge packet is the current implementable supplier, while the
+dimension-one case should not block that work by remaining undecided.
+
+### 0.0B. Critical decomposition of the OS edge-distribution seam
+
+Theorem `bvt_F_hasPermutationEdgeDistributionEquality` is no longer allowed to
+stand as a single unresolved "true local EOW seed".  Its implementation-ready
+decomposition is:
+
+1. **Adjacent Euclidean edge equality on a fixed ordered sector.**
+
+   ```lean
+   theorem os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+       (hd : 2 ≤ d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+       (V : Set (NPointDomain d n)) (ρ : Equiv.Perm (Fin n)) :
+       -- hypotheses: `V` open/nonempty, `V` and swapped `V` lie in the chosen
+       -- ordered positive-time sectors for `ρ` and `swap * ρ`
+       -- conclusion: compact-test equality of the two Wick-edge pairings
+       -- on `V`
+   ```
+
+   This is the OS-side use of `OS.E3_symmetric`, test permutation, and
+   `bvt_euclidean_restriction`.  No BHW permutation flow appears here.
+
+2. **Adjacent single-chart branch-difference envelope.**
+
+   ```lean
+   theorem os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart
+       (hd : 2 ≤ d)
+       ...
+   ```
+
+   This is the honest analytic seam.  It produces one connected holomorphic
+   chart carrying both branches and the common real-open edge `V`.
+
+3. **Adjacent real-edge distribution theorem for `extendF`.**
+
+   ```lean
+   theorem bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS
+       (hd : 2 ≤ d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+       (V : Set (NPointDomain d n)) ... :
+       ∀ φ, HasCompactSupport ... →
+         tsupport ... ⊆ V →
+         -- equality of the two `extendF` edge integrals
+   ```
+
+   This theorem is the **true local seed** consumed by
+   `SelectedAdjacentPermutationEdgeData.edge_witness`.
+
+4. **Adjacent supplier package.**
+
+   ```lean
+   theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
+       (hd : 2 ≤ d)
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ) :
+       SelectedAdjacentPermutationEdgeData OS lgc n
+   ```
+
+   This packages overlap connectedness plus the adjacent edge-distribution
+   theorem.  This is the next production theorem to implement.
+
+5. **Arbitrary-permutation export, only after the adjacent supplier exists.**
+
+   ```lean
+   theorem bvt_F_hasPermutationEdgeDistributionEquality
+       (OS : OsterwalderSchraderAxioms d)
+       (lgc : OSLinearGrowthCondition d OS)
+       (n : ℕ) :
+       ∀ σ, BHW.HasPermutationEdgeDistributionEquality d n (bvt_F OS lgc n) σ
+   ```
+
+   This export is downstream of the adjacent supplier and the checked
+   PET/branch-independence spine.  It is **not** the next theorem to code.
+
+In short: the implementer should stop at step 4, not jump directly to step 5.
+
+### 0.0C. Repo-local / Mathlib prerequisite checklist
+
+Before starting the supplier proof, verify the following surfaces are the ones
+being reused rather than rediscovered during compile-fix:
+
+1. `SchwartzMap.compCLMOfContinuousLinearEquiv`
+2. `SchwartzMap.compCLMOfContinuousLinearEquiv_apply`
+3. `MeasureTheory.MeasurePreserving.integral_comp'`
+4. `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
+5. `SCV.identity_theorem_totally_real_product`
+6. `VanishesToInfiniteOrderOnCoincidence_of_tsupport_disjoint`
+7. `VanishesToInfiniteOrderOnCoincidence.compCLMOfContinuousLinearEquiv`
+8. `image_eq_zero_of_notMem_tsupport`
+9. `HasCompactSupport.of_support_subset_isCompact`
+10. `ContinuousLinearEquiv.toHomeomorph.isOpenMap`
+11. `BHW.extendF_perm_overlap_of_edgePairingEquality`
+12. `BHW.extendF_pet_branch_independence_of_adjacent`
+13. `bvt_F_restrictedLorentzInvariant_forwardTube`
+14. `bvt_F_complexLorentzInvariant_forwardTube`
+15. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
+16. `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`
+17. `positiveTimeTranslateHomeomorph`
+18. `isOpen_positiveTimeTranslate_image`
+
+If any of these surfaces turns out to be missing or mis-shaped, stop and repair
+the blueprint before implementation rather than letting the theorem shape drift.
+
+### 0.0D. Free-field sanity check requirement
+
+Before implementing the adjacent supplier theorem, the boundary route must pass
+one explicit free-field sanity screen:
+
+1. on the Euclidean side, the adjacent swap equality should reduce to the known
+   bosonic symmetry of Schwinger functions on ordered positive-time support;
+2. on the real-edge side, the resulting theorem should compare the **same**
+   boundary trace of the symmetric PET extension, not two finite-height shells
+   with mismatched imaginary directions;
+3. the statement must remain true in the free scalar two-point / four-point
+   model under the repo's actual `canonicalForwardConeDirection` conventions.
+
+This sanity check is a gate on theorem shape, not a demand for a separate free
+field implementation.
+
 ### 0.0. OS §4.5 priority correction after #1065
 
 Theorem 2 should not invert the structure of OS I §4.5.  The paper's locality
@@ -89,10 +248,10 @@ Paper-step to Lean-name ledger:
 | `(4.1)` ordered Euclidean relative-coordinate restriction | `bvt_euclidean_restriction`, `bvt_F_acrOne_package` |
 | `(4.12)` Fourier-Laplace representation of the selected Wightman analytic function | `full_analytic_continuation_with_acr_symmetry_growth`, `bvt_F_holomorphic`, `bvt_boundary_values` |
 | `(4.14)` Lorentz covariance / spectrum-side covariance | `bvt_F_restrictedLorentzInvariant_forwardTube`, then complex-Lorentz propagation for `extendF` |
-| symmetric continuation on `S'_n` | `bvt_F_symmetric_PET_extension_of_adjacentEdgeData` or a more direct `bvt_F_symmetric_PET_extension` if the adjacent-edge interface is retired |
-| BHW enlargement to `S''_n` | `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality` / non-circular sibling of the existing BHW theorem |
+| symmetric continuation on `S'_n` | `bvt_F_symmetric_PET_extension_of_adjacentEdgeData` |
+| BHW enlargement to `S''_n` | `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality` |
 | Jost boundary theorem giving R3 | `bv_local_commutativity_transfer_of_symmetric_PET_boundary` |
-| identification with the reconstructed family | `bvt_boundary_values`, `bv_local_commutativity_transfer_of_swap_pairing` only if the finite-shell fallback remains active |
+| identification with the reconstructed family | `bvt_boundary_values`; `bv_local_commutativity_transfer_of_swap_pairing` is fallback-only legacy infrastructure |
 
 Therefore the immediate target is not another PET-germ adapter.  In the current
 Lean API, the next concrete target is construction of the adjacent edge packet,
@@ -439,12 +598,13 @@ Seed proof transcript:
    specialization; it is a different complex-edge problem.
 
    The replacement target should be a new, fully specified complex-edge chart
-   packet for dimension one.  It is **not** implementation-ready yet, and it
-   should not be represented by a placeholder theorem statement.  Before Lean
-   work resumes on the all-dimensional theorem, the docs must say exactly what
-   complex edge replaces the real-open `V`, how compact real Jost test supports
-   are recovered as boundary values, and how the OS §4.5 EOW step reaches the
-   real spacelike boundary in `d = 1`.
+   packet for dimension one.  It should not be represented by a placeholder
+   theorem statement.  Before Lean work resumes on the all-dimensional theorem,
+   the docs must say exactly what complex edge replaces the real-open `V`, how
+   compact real Jost test supports are recovered as boundary values, and how
+   the OS §4.5 EOW step reaches the real spacelike boundary in `d = 1`.  The
+   D1-C theorem slots below are the implementation-facing version of that
+   packet.
 
    The existing `adjacent_overlap_witness_exists_d1` gives a **complex**
    adjacent ET/swap-ET witness, not a real Jost seed with fixed Euclidean time
@@ -511,10 +671,10 @@ Seed proof transcript:
      for the deferred BHW/permutation-flow endgame.  They do not by themselves
      provide the non-circular OS §4.5 supplier.
    - Therefore the all-dimensional theorem-2 proof must not say “use the
-     `2 ≤ d` real-edge packet with `d = 1`.”  It has two honest options:
-     either prove a dimension-one real/complex edge theorem strong enough to
-     fill the same downstream locality role, or prove a parallel direct
-     dimension-one boundary-locality theorem.
+     `2 ≤ d` real-edge packet with `d = 1`.”  The binding choice in this
+     blueprint is the parallel direct dimension-one boundary-locality theorem,
+     with D1-R retained only as archival fallback if a genuine real-open
+     replacement is later proved.
    - If a dedicated `d = 1` argument actually constructs a real-open
      Jost/ET/swap-ET edge satisfying the fields of
      `SelectedAdjacentPermutationEdgeData.edge_witness`, then it may feed the
@@ -539,17 +699,19 @@ Seed proof transcript:
      hypothesis of the form
      `IsLocallyCommutativeWeak 1 (bvt_W OS lgc)`.
 
-   Lean-readiness consequence: the `2 ≤ d` branch can proceed toward
-   implementation once the adjacent branch-difference EOW packet below is
-   complete.  The all-`[NeZero d]` theorem is **not** implementation-ready
-   until either the `d = 1` real-open edge theorem or the direct
-   `bvt_locally_commutative_boundary_route_of_one` transcript is specified to
-   the same level of detail.
+  Lean-readiness consequence: the all-dimensional theorem-2 closure is now
+  implementation-ready only as an explicit case split.  The `2 ≤ d` branch
+  runs through the real-open adjacent supplier packet below, while the `d = 1`
+  branch runs through the direct complex-edge theorem
+  `bvt_locally_commutative_boundary_route_of_one`.  Do not collapse these into
+  one all-`[NeZero d]` supplier theorem unless a genuine dimension-one
+  real-open replacement is actually proved.
 
    Dimension-one proof-doc target surfaces:
 
-   The all-dimensional closure should choose one of the following branches
-   before any production Lean is written for `d = 1`.
+   The all-dimensional closure now has two documented `d = 1` branches:
+   D1-C is the active route, while D1-R is retained only as a non-primary
+   archival alternative.
 
    **D1-R, real-open variant.**  Prove a theorem with the same fields as the
    `2 ≤ d` edge selector, but by a dimension-one argument:
@@ -584,14 +746,14 @@ Seed proof transcript:
        SelectedAdjacentPermutationEdgeData OS lgc n
    ```
 
-   This route is implementation-ready only after the real-open theorem above
-   has a proof transcript from `D1OrbitSet.lean` / `IndexSetD1.lean` or a
-   direct one-dimensional OS45 geometry argument.  The existing validated
-   `PermutationFlowBlocker.lean` blockers do not prove it.
+   This archival D1-R route would become implementation-ready only after the
+   real-open theorem above has a proof transcript from `D1OrbitSet.lean` /
+   `IndexSetD1.lean` or a direct one-dimensional OS45 geometry argument.  The
+   existing validated `PermutationFlowBlocker.lean` blockers do not prove it.
 
-   **D1-C, complex-edge/PET variant.**  If the real-open edge theorem is false
-   or not the right OS §4.5 object in dimension one, the target should be the
-   symmetric PET extension itself, not `SelectedAdjacentPermutationEdgeData`:
+   **D1-C, complex-edge/PET variant.**  This is the active dimension-one
+   theorem-2 route.  Its target is the symmetric PET extension itself, not
+   `SelectedAdjacentPermutationEdgeData`:
 
    ```lean
    theorem bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge
@@ -615,21 +777,29 @@ Seed proof transcript:
       `bvt_F_complexLorentzInvariant_forwardTube`, and
       `bvt_boundary_values`; do not use
       `IsLocallyCommutativeWeak 1 (bvt_W OS lgc)`.
-   2. Replace the `2 ≤ d` real-open adjacent edge by a one-dimensional
-      complex-edge chart packet.  The packet must state exactly which
-      dimension-one edge/domain replaces `V`, how the two adjacent branches
-      have a common OS boundary value there, and how the EOW/identity theorem
-      propagates equality across adjacent sector overlaps.
-   3. Prove adjacent selected PET branch compatibility in dimension one from
-      that complex-edge packet.  This theorem may use the validated
-      `D1OrbitSet.lean` / `IndexSetD1.lean` geometry, but it may not call
+   2. Prove the local complex-edge packet using the exact D1-C theorem slots
+      named below:
+      `d1_complexEdge_adjacent_chartData`,
+      `d1_commonBoundaryValue_adjacent_branches_from_OS45`,
+      `d1_complexEdge_eow_adjacent_branch_eq_germ`, and
+      `d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap`.
+   3. From the adjacent-overlap theorem in step 2, build the all-overlap PET
+      equality helper
+      `bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge`
+      by calling the checked monodromy theorem
+      `BHW.extendF_pet_branch_independence_of_adjacent` at `d = 1`.
+      This theorem may use the validated `D1OrbitSet.lean` /
+      `IndexSetD1.lean` geometry, but it may not call
       `blocker_iterated_eow_hExtPerm_d1_nontrivial` unless the
       `hF_local_dist` hypothesis has been supplied by a non-circular theorem
       already proved for the selected OS family.
-   4. Glue the finite sector cover exactly as in the `2 ≤ d` route, yielding
-      the symmetric PET extension above.
+   4. Apply
+      `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+      with the all-overlap equality from step 3 to obtain
+      `bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge`.
    5. Apply `bv_local_commutativity_transfer_of_symmetric_PET_boundary` with
-      `bvt_boundary_values` to obtain:
+      `bvt_boundary_values` and the symmetric continuation from step 4 to
+      obtain:
 
       ```lean
       theorem bvt_locally_commutative_boundary_route_of_one
@@ -638,14 +808,64 @@ Seed proof transcript:
           IsLocallyCommutativeWeak 1 (bvt_W OS lgc)
       ```
 
-   D1-C is currently the safer proof-doc target if the real-open edge theorem
-   remains geometrically unclear, because it follows the OS paper statement
-   “construct a symmetric continuation on `S'_n`” directly instead of forcing a
-   dimension-one complex edge through a real-open-edge data structure.
+   D1-C is the binding proof-doc target for `d = 1`, because it follows the OS
+   paper statement “construct a symmetric continuation on `S'_n`” directly
+   instead of forcing a dimension-one complex edge through a real-open-edge
+   data structure.
 
-   Minimum missing theorem slots for D1-C:
+   Exact D1-C theorem slots:
 
    ```lean
+   structure D1AdjacentComplexEdgeData
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) (π : Equiv.Perm (Fin n))
+       (i : Fin n) (hi : i.val + 1 < n) where
+     Ω : Set (Fin n → Fin (1 + 1) → ℂ)
+     E : Set (Fin n → Fin (1 + 1) → ℂ)
+     Fπ : (Fin n → Fin (1 + 1) → ℂ) → ℂ
+     Fπτ : (Fin n → Fin (1 + 1) → ℂ) → ℂ
+     hΩ_open : IsOpen Ω
+     hΩ_connected : IsConnected Ω
+     hE_nonempty : E.Nonempty
+     hE_subset : E ⊆ Ω
+     hFπ_holo : DifferentiableOn ℂ Fπ Ω
+     hFπτ_holo : DifferentiableOn ℂ Fπτ Ω
+     hFπ_eq_branch :
+       ∀ z ∈ Ω,
+         z ∈ BHW.permutedExtendedTubeSector 1 n π →
+         Fπ z = bvt_selectedPETBranch (d := 1) OS lgc n π z
+     hFπτ_eq_branch :
+       ∀ z ∈ Ω,
+         z ∈ BHW.permutedExtendedTubeSector 1 n
+           (π * Equiv.swap i ⟨i.val + 1, hi⟩) →
+         Fπτ z =
+           bvt_selectedPETBranch (d := 1) OS lgc n
+             (π * Equiv.swap i ⟨i.val + 1, hi⟩) z
+
+   theorem d1_complexEdge_adjacent_chartData
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) (π : Equiv.Perm (Fin n))
+       (i : Fin n) (hi : i.val + 1 < n) :
+       D1AdjacentComplexEdgeData OS lgc n π i hi
+
+   theorem d1_commonBoundaryValue_adjacent_branches_from_OS45
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) (π : Equiv.Perm (Fin n))
+       (i : Fin n) (hi : i.val + 1 < n)
+       (hData : D1AdjacentComplexEdgeData OS lgc n π i hi) :
+       ∀ z ∈ hData.E, hData.Fπτ z = hData.Fπ z
+
+   theorem d1_complexEdge_eow_adjacent_branch_eq_germ
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ) (π : Equiv.Perm (Fin n))
+       (i : Fin n) (hi : i.val + 1 < n)
+       (hData : D1AdjacentComplexEdgeData OS lgc n π i hi) :
+       ∀ z ∈ hData.Ω, hData.Fπτ z = hData.Fπ z
+
    theorem d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap
        (OS : OsterwalderSchraderAxioms 1)
        (lgc : OSLinearGrowthCondition 1 OS)
@@ -662,24 +882,63 @@ Seed proof transcript:
          bvt_selectedPETBranch (d := 1) OS lgc n π z
    ```
 
-   This theorem is the dimension-one analogue of
-   `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.  It is the correct
-   consumer for PET gluing in D1-C, because it proves adjacent branch equality
-   directly on sector overlaps without first constructing a real-open
-   `SelectedAdjacentPermutationEdgeData.edge_witness`.
+   The first three theorems replace the old “complex-edge packet” prose with
+   exact local theorem slots.  The fourth theorem is the dimension-one analogue
+   of `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap` and is the direct
+   consumer for PET gluing in D1-C.
 
-   Its proof must be decomposed before Lean implementation into honest local
-   theorem slots, not placeholder statements:
+   Proof transcript for the D1-C local slot chain:
 
-   1. a concrete one-dimensional complex chart/domain theorem crossing the
-      adjacent `π` / `π * swap` sectors;
-   2. branch holomorphy for the two selected OS PET branches on that chart;
-   3. a common OS boundary-value theorem from E3, `(4.1)`, `(4.12)`, and
-      `(4.14)`, with no locality hypothesis;
-   4. a one-dimensional EOW/identity theorem that turns the common boundary
-      value into equality of the two branch germs;
-   5. a connectedness or monodromy theorem propagating the local germ equality
-      to the full adjacent sector overlap containing `z`.
+   1. `d1_complexEdge_adjacent_chartData`:
+      start from the checked complex adjacent witness
+      `adjacent_overlap_witness_exists_d1`; use the explicit one-dimensional
+      rapidity / Wick-rotation geometry from `D1OrbitSet.lean` and
+      `IndexSetD1.lean` to construct an open connected chart meeting both
+      adjacent PET sectors and a complex edge inside that chart.  The theorem
+      must export the chart domain, the edge subset, and the inclusion of the
+      two adjacent branches into the same chart.
+   2. `d1_commonBoundaryValue_adjacent_branches_from_OS45`:
+      rewrite the two adjacent chart branches on the chosen complex edge back to
+      the same OS Euclidean boundary value using `OS.E3_symmetric`,
+      `bvt_euclidean_restriction`, the selected `bvt_F_acrOne_package`, and the
+      explicit chart identifications from step 1.  No locality hypothesis may
+      enter here.
+   3. `d1_complexEdge_eow_adjacent_branch_eq_germ`:
+      apply the one-dimensional edge-of-the-wedge / identity theorem to the
+      common boundary value from step 2 on the chart from step 1, concluding
+      equality of the two adjacent branch germs on that chart.
+   4. `d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap`:
+      transport the local germ equality from step 3 to the full adjacent PET
+      sector overlap containing `z` by the checked overlap connectedness /
+      monodromy package for the two sectors.  This is the only place where
+      connectedness is used; do not call
+      `blocker_iterated_eow_hExtPerm_d1_nontrivial` unless its locality
+      hypothesis has already been supplied non-circularly.
+
+   With those local theorems in hand, the remaining D1-C continuation and
+   closure steps should be named explicitly as:
+
+   ```lean
+   theorem bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge
+       (OS : OsterwalderSchraderAxioms 1)
+       (lgc : OSLinearGrowthCondition 1 OS)
+       (n : ℕ)
+       (π ρ : Equiv.Perm (Fin n))
+       (z : Fin n → Fin (1 + 1) → ℂ)
+       (hzπ : z ∈ BHW.permutedExtendedTubeSector 1 n π)
+       (hzρ : z ∈ BHW.permutedExtendedTubeSector 1 n ρ) :
+       bvt_selectedPETBranch (d := 1) OS lgc n π z =
+         bvt_selectedPETBranch (d := 1) OS lgc n ρ z
+   ```
+
+   Proof transcript:
+   1. use
+      `d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap`
+      as the adjacent-overlap hypothesis;
+   2. feed it into
+      `BHW.extendF_pet_branch_independence_of_adjacent`
+      at `d = 1`;
+   3. return the resulting all-overlap PET equality.
 4. Once `adjacent_os45_seed_exists` is proved, first intersect the open
    neighborhoods of:
    `BHW.JostSet d n`,
@@ -735,12 +994,19 @@ after the change of variables it produces the desired branch
 `x ↦ bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))`.
 
 ```lean
-theorem bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3
+theorem os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS)
     (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
     (V : Set (NPointDomain d n))
     (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (ρ : Equiv.Perm (Fin n))
+    (hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+    (hV_swap_ordered : ∀ x ∈ V,
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
     (φ : SchwartzNPoint d n)
     (hφ_tsupport :
       tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
@@ -755,7 +1021,9 @@ theorem bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3
   -- 2. set `ψZ := BHW.permuteZeroDiagonalSchwartz τ.symm φZ`;
   -- 3. use `OS.E3_symmetric n τ.symm φZ ψZ`;
   -- 4. rewrite both Schwinger values by
-  --    `bvt_euclidean_restriction OS lgc n`;
+  --    `bvt_euclidean_restriction OS lgc n`, using `hV_ordered` and
+  --    `hV_swap_ordered` to place the two Wick configurations in the
+  --    correct ordered sectors;
   -- 5. use `BHW.integral_perm_eq_self τ.symm` to move from
   --    `φ (x ∘ τ.symm)` to the branch `wick(x ∘ τ)`.
 ```
@@ -871,7 +1139,7 @@ Paper-faithful proof transcript for this theorem:
    `τ.symm * ρ`.  These two memberships are the Lean version of OS's
    permuted forward-tube domain `S'_n`; without them the theorem would be an
    overstatement about arbitrary Jost/ET neighborhoods.
-4. Prove the local OS §4.5 envelope and final edge witness, preferably via the
+4. Prove the local OS §4.5 envelope and final edge witness via the
    combined single-chart theorem
    `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`.
    The older fixed-`V` branch-difference theorem
@@ -1126,11 +1394,11 @@ Paper-faithful proof transcript for this theorem:
      these chart restrictions as hypotheses/conclusions.  A theorem producing
      only an open connected set containing the edges is not enough.
 
-   With this theorem in hand, the edge supplier should either fill the existing
-   two-branch `AdjacentOSEOWEnvelope` honestly or, preferably, fill the sharper
-   `AdjacentOSEOWDifferenceEnvelope` below.  The difference packet is closer to
-   the actual consumer because the downstream proof only needs the real-edge
-   adjacent difference to vanish.
+   With this theorem in hand, the edge supplier should fill the sharper
+   `AdjacentOSEOWDifferenceEnvelope` below.  The older two-branch
+   `AdjacentOSEOWEnvelope` is no longer the active route.  The difference
+   packet is the correct consumer-facing object because the downstream proof
+   only needs the real-edge adjacent difference to vanish.
 
    The precise Euclidean distributional input to the chart-gluing theorem is a
    **branch-difference zero statement**, not a one-branch Wick-to-real
@@ -1165,7 +1433,7 @@ Paper-faithful proof transcript for this theorem:
 
   This is the OS §4.5 E3 step in chart language.  It is essentially the
   existing planned theorem
-  `bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3`, with the chart
+  `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, with the chart
   definitions unfolded.  Its proof is:
 
   1. set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and
@@ -3064,10 +3332,10 @@ Paper-faithful proof transcript for this theorem:
   `SCV.differenceEnvelope_of_localBoundaryCharts` can be deferred.  If the
   single-chart shrink fails, then the fallback is the generic local chart
   gluing theorem above; do not add another wrapper around the same seam.
-6. Fill either the existing `AdjacentOSEOWEnvelope` record from genuine
-   one-branch continuations, or replace the downstream consumer by the sharper
-   difference-envelope theorem above.  In either case, no field may be supplied
-   by a dummy total function or by a non-mathematical choice.
+6. Use the sharper `AdjacentOSEOWDifferenceEnvelope` / compact-test theorem
+   route above.  Do not revive the older `AdjacentOSEOWEnvelope` consumer on
+   the active route.  No field may be supplied by a dummy total function or by
+   a non-mathematical choice.
 
 For Lean implementation the sharper packet should be:
 
@@ -3112,6 +3380,13 @@ theorem bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
     (hV_open : IsOpen V)
     (hV_nonempty : V.Nonempty)
     (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n)
+    (ρ : Equiv.Perm (Fin n))
+    (hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) ρ)
+    (hV_swap_ordered : ∀ x ∈ V,
+      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          ((Equiv.swap i ⟨i.val + 1, hi⟩).symm * ρ))
     (E : AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
       (Equiv.swap i ⟨i.val + 1, hi⟩) V) :
     ∀ φ : SchwartzNPoint d n,
@@ -3136,8 +3411,9 @@ theorem bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope
     intro ψ hψ_compact hψ_tsupport
     -- Rewrite by `E.wick_diff`, then use the E3 compact equality from part B.
     simpa [E.wick_diff] using
-      bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3
-        (d := d) OS lgc n i hi V hV_jost ψ hψ_tsupport
+      os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+        (d := d) OS lgc n i hi V hV_jost ρ
+        hV_ordered hV_swap_ordered ψ hψ_tsupport
   -- Specialize at the real edge and rewrite by `E.real_diff`.
   have hpoint :
       ∀ x ∈ V,
@@ -3237,12 +3513,14 @@ with proof:
 4. fill `AdjacentOSEOWDifferenceEnvelope.real_diff` directly from the real-edge
    field of the combined single-chart theorem;
 5. apply
-   `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`.
+   `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`,
+   passing the same `ρ`, `hV_ordered`, and `hV_swap_ordered` obtained from the
+   combined single-chart theorem.
 6. return `V` with `hV_open`, `hV_connected`, `hV_nonempty`, `hV_jost`,
    `hV_ET`, `hV_swapET`, and the compact-test equality.
 
 The exact combined single-chart selector/envelope theorem is now the main
-proof-doc gap in this OS-internal packet.  It must mention ACR/EOW geometry,
+analytic seam in this OS-internal packet.  It must mention ACR/EOW geometry,
 post-EOW shrinking of `V`, and local adjacent branch identification, not PET
 global monodromy and not one-branch Wick-to-real equality.  Once that theorem is
 proved, the compact-test theorem above is ready for Lean implementation modulo
@@ -3272,25 +3550,24 @@ theorem bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le
     exact hEdgeEq
 ```
 
-Readiness status after the #1104 orbit-invariant audit: A and the final
-packaging are close to implementation; B is Lean-routine but must be checked
-for inverse-permutation orientation.  C is **not** implementation-ready.  The
+Readiness status after the #1129/#1130 cleanup: A and B are Lean-routine with
+the theorem surfaces above fixed.  C now also has an implementation-ready
+surface: the live analytic seam is the combined theorem
+`os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`, followed
+by the mechanical consumer
+`bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`.  The
 previous preferred single-chart theorem surface
-`BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` has been rejected because
+`BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` remains rejected because
 its positive orbit witnesses would make a point permutation into a Lorentz
-transformation on a full-dimensional tube.  The hard ingredient to document
-next is instead a corrected OS §4.5 branch-difference supplier:
-either a generic BHW/PET branch theorem plus Jost boundary-value transfer, or a
-local edge-wedge chart theorem with genuinely local domain over `E` and no
-full-tube `pos_orbit_*` fields.  The broader
-`SCV.differenceEnvelope_of_localBoundaryCharts` remains a possible SCV
-implementation tool only after that corrected local theorem shape is written
-down.  None of these may be replaced by a hidden envelope field, a wrapper
-theorem, a one-branch Wick-to-real comparison, or a point-permutation
-Lorentz-orbit witness on a generic open set.
+transformation on a full-dimensional tube.  The broader
+`SCV.differenceEnvelope_of_localBoundaryCharts` remains a fallback SCV
+implementation tool only if the corrected local theorem shape above fails.
+None of these may be replaced by a hidden envelope field, a wrapper theorem, a
+one-branch Wick-to-real comparison, or a point-permutation Lorentz-orbit
+witness on a generic open set.
 This packaging theorem is now explicitly the `2 ≤ d` real-edge supplier.  The
-all-`[NeZero d]` theorem-2 supplier is not implementation-ready until the
-`d = 1` complex-edge replacement is specified.
+all-`[NeZero d]` theorem-2 closure therefore splits into the documented
+`2 ≤ d` real-edge route and the binding `d = 1` complex-edge route.
 
 ### 0.1. Checked production inventory and current trap
 
@@ -3429,10 +3706,10 @@ of these theorem surfaces may be instantiated directly with
 Lean term typechecks.
 
 The missing theorem-2 work is consequently sharper than older drafts suggested.
-The primary OS-I-faithful route needs a non-circular BHW/PET permutation-edge
-supplier for `extendF`, plus the geometry and transfer adapters that feed it.
-The older adjacent-swap finite-shell package remains a fallback only if we
-retain the current overstrong canonical-shell consumer.
+The primary OS-I-faithful route needs a non-circular adjacent OS supplier for
+`extendF`, plus the PET/BHW continuation and boundary-transfer adapters that
+feed it.  The older finite-shell package remains archival fallback material
+only if the user explicitly reopens that route.
 
 ### 0.2. Route-contract ledger for the missing theorem-2 package
 
@@ -3445,6 +3722,28 @@ global continuity of the raw real trace
 distributional in general.  Any `HasFourierLaplaceReprRegular` or
 `boundary_continuous` package below is fallback/support context, not the primary
 theorem-2 bridge.
+
+Binding active-route subledger:
+
+| Slot | Home | Must consume | Must export |
+| --- | --- | --- | --- |
+| `choose_os45_real_open_edge_for_adjacent_swap` | theorem-2 geometry layer | `2 ≤ d`, `exists_real_open_nhds_adjSwap`, a real Jost seed, and fixed Euclidean time order | an open connected real edge `V`, a time-order label `ρ`, Jost/ET/swap-ET control, and ordered-sector fields for both `x` and `x ∘ τ` |
+| `bvt_F_acrOne_package` | `OSToWightmanBoundaryValuesBase.lean` or a small theorem-2 support file | the selected continuation witness underlying `bvt_F OS lgc n` | the ACR(1) analytic package: holomorphy, Euclidean reproduction, permutation symmetry, and translation symmetry for the selected branch |
+| `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | OS §4.5 Euclidean layer | `OS.E3_symmetric`, `bvt_euclidean_restriction`, fixed ordered sector data, and compact support on `V` | compact-test equality of the two Wick-edge pairings on the selected ordered sector |
+| `os45_adjacent_localEOWGeometry` | OS/BHW local chart layer | the chosen real-open edge `V`, adjacent Wick branches, and local BHW/Jost geometry | a local common-boundary chart comparing the adjacent Wick and real branches without any locality hypothesis |
+| `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart` | OS/BHW single-chart EOW layer | the Euclidean adjacent equality and the local EOW chart packet | one connected branch-difference envelope carrying both adjacent branches and the common real edge `V` |
+| `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope` | WickRotation theorem-2 support layer | the branch-difference envelope plus the `bvt_F` ACR(1) package | adjacent compact-test equality of the two `extendF (bvt_F OS lgc n)` real-edge traces |
+| `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le` | selected-witness theorem-2 layer | the chosen `V`, adjacent edge-distribution equality, and overlap connectedness | the full adjacent selected-witness packet for the `2 ≤ d` branch |
+| `BHW.extendF_pet_branch_independence_of_adjacent` | BHW/PET monodromy layer | adjacent branch equality on overlaps, holomorphy, and Lorentz invariance | all-overlap equality of selected PET branches on the permuted sector cover |
+| `bvt_F_symmetric_PET_extension_of_adjacentEdgeData` | theorem-2 PET layer | the adjacent-edge supplier packet and the BHW continuation theorem | the symmetric PET extension used in the final boundary-value transfer |
+| `bv_local_commutativity_transfer_of_symmetric_PET_boundary` | existing theorem-2 transfer layer | `bvt_boundary_values`, symmetric continuation `Fext`, and permutation invariance on compact Jost overlaps | the final adjacent-swap boundary-distribution theorem for `bvt_W` |
+| `bvt_W_swap_pairing_of_spacelike` | `OSToWightmanBoundaryValues.lean` | only the completed adjacent boundary-transfer theorem | the live private theorem-2 frontier consumed by `bvt_locally_commutative` |
+| `bvt_locally_commutative_boundary_route_of_one` | theorem-2 `d = 1` closure layer | the separate D1-C complex-edge packet, not the real-open `2 ≤ d` supplier | the dimension-one adjacent locality theorem for `bvt_W OS lgc` |
+
+The longer ledger below is retained only as archival/fallback analysis.  Rows
+mentioning arbitrary-permutation real-edge packages, raw-boundary continuity
+packages, or finite-shell canonical comparisons are not part of the active
+theorem-2 route.
 
 | Slot | Home | Must consume | Must export |
 | --- | --- | --- | --- |
@@ -3488,7 +3787,8 @@ theorem-2 bridge.
 | `bvt_F_swapCanonical_pairing_from_transposition_pointwise` | `OSToWightmanBoundaryValueLimits.lean` or `OSToWightmanBoundaryValuesComparison.lean` support layer | measure-preserving coordinate reindexing, support-zero outside `tsupport f`, `hswap`, and the arbitrary-transposition pointwise finite-shell theorem | the general `swap i j` canonical pairing equality required by the frontier theorem |
 | `bvt_F_swapCanonical_pairing` | `OSToWightmanBoundaryValues.lean` | only the completed arbitrary-transposition pairing theorem | final private frontier theorem consumed by `bv_local_commutativity_transfer_of_swap_pairing` |
 
-Two negative ownership rules are part of the route contract:
+If the archival fallback ledger is ever reopened, the following negative
+ownership rules still apply:
 
 1. no slot below the final frontier theorem may consume global
    `IsLocallyCommutativeWeak d (bvt_W OS lgc)`;
@@ -3506,37 +3806,49 @@ Two negative ownership rules are part of the route contract:
 
 ## 1. The live theorem and its consumers
 
-The live frontier theorem is:
+The live frontier theorem is now the adjacent boundary-distributional theorem
 
 ```lean
-private theorem bvt_F_swapCanonical_pairing
+private theorem bvt_W_swap_pairing_of_spacelike
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g
 ```
 
 in `OSToWightmanBoundaryValues.lean`.
 
 Its immediate consumers are:
 
-1. `bv_local_commutativity_transfer_of_swap_pairing`
-   in `OSToWightmanBoundaryValuesComparison.lean`,
-2. `bvt_locally_commutative`
-   in `OSToWightmanBoundaryValues.lean`,
-3. the public Wightman axiom field `locally_commutative` in
-   `os_to_wightman_full`.
+1. `bvt_locally_commutative` in `OSToWightmanBoundaryValues.lean`,
+2. `constructWightmanFunctions`, which fills the
+   `WightmanFunctions.locally_commutative` field,
+3. `os_to_wightman_full`, which exports the reconstructed Wightman package.
 
-So theorem 2 is the unique boundary-value bridge from the analytic permutation
-package to the public locality axiom.
+This matches the current production surface in `Core.lean`:
+`IsLocallyCommutativeWeak` is adjacent-only, with indices `(i, i+1)`.  Any
+sentence in older docs that still calls `bvt_F_swapCanonical_pairing` the live
+theorem-2 frontier is now stale.
 
 ## 2. OS-paper reading of theorem 2
 
 OS I Section 4.5 proves locality by:
 
-1. Euclidean symmetry on the real side,
-2. analytic continuation to overlapping permuted tube domains,
-3. a uniqueness / edge-of-the-wedge step,
+1. Euclidean symmetry on an ordered real/Wick edge,
+2. OS-side analytic continuation / edge-of-the-wedge for the adjacent branch
+   difference,
+3. BHW symmetric continuation on the union of permuted sectors,
 4. passage to boundary values.
 
-This means theorem 2 belongs to the BHW / PET / Jost / edge-of-the-wedge lane.
-It is not part of the theorem-3 positivity / semigroup lane.
+This means theorem 2 belongs to the BHW / PET / Jost / edge-of-the-wedge lane,
+and its honest theorem surface is the boundary-distributional adjacent-swap
+statement for `bvt_W`.  It is not part of the theorem-3 positivity /
+semigroup lane, and it is not a theorem about finite canonical-shell equality.
 
 ### 2.1. OS I error / OS II correction note
 
@@ -3562,106 +3874,133 @@ The disallowed reading is:
 
 ## 3. Exact production hooks already available
 
-The current code already contains the major analytic ingredients.
+The current code already contains the large-scale analytic infrastructure.
 
-In `OSToWightmanBoundaryValuesBase.lean`:
+On the OS side:
 
-1. `bvt_F_perm`
-   gives permutation invariance of the analytic boundary-value continuation
-   `bvt_F`.
+1. `bvt_F_holomorphic`;
+2. `bvt_F_perm`;
+3. `bvt_F_restrictedLorentzInvariant_forwardTube` and the complex-Lorentz
+   continuation facts derived from it;
+4. `bvt_boundary_values`.
 
-In `BHWExtension.lean`:
+On the selected-witness / PET side:
 
-1. `W_analytic_swap_boundary_pairing_eq`
-   gives adjacent-swap equality of boundary pairings for compactly supported
-   tests whose real support already lies in the extended tube.  It is not
-   directly callable on `W := bvt_W OS lgc` in theorem 2 unless the global
-   locality hypothesis is supplied non-circularly.
-2. `analytic_extended_local_commutativity`
-   gives pointwise adjacent-swap equality on real ET overlap points for the BHW
-   extension, again with a global `IsLocallyCommutativeWeak d W` input in the
-   checked theorem surface.
-3. `analytic_boundary_local_commutativity_of_boundary_continuous`
-   descends that pointwise equality from `BHW.extendF W_analytic` to raw
-   boundary values of `W_analytic`, provided the needed boundary continuity is
-   available at the two real ET points.  This theorem has the same global
-   locality input and therefore belongs to the checked supplier inventory, not
-   to the non-circular theorem-2 endgame by itself.
-4. `W_analytic_BHW`
-   packages the BHW extension used by the reverse-direction side and by any
-   later uniqueness comparison.
+1. `SelectedAdjacentPermutationEdgeData`;
+2. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`;
+3. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.
 
-In `AnalyticContinuation.lean` and `SCV/TubeDomainExtension.lean`:
+On the BHW continuation side:
 
-1. `edge_of_the_wedge`
-   is a proved theorem, not an axiom.
-2. `SCV.edge_of_the_wedge_theorem`
-   is the underlying multi-dimensional theorem.
-3. `jost_lemma`
-   packages the real-point spacelike geometry on the extended tube.
+1. `BHW.extendF_pet_branch_independence_of_adjacent`;
+2. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`.
 
-In `OSToWightmanBoundaryValuesComparison.lean`:
+On the boundary-transfer side:
 
-1. `bv_local_commutativity_transfer_of_swap_pairing`
-   is already the public transfer theorem from the canonical BV swap pairing to
-   locality of the reconstructed Wightman distribution.
+1. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`.
 
-So theorem 2 does not lack edge-of-the-wedge infrastructure any more. The live
-gap is the last boundary-pairing adapter that feeds the existing transfer
-theorem.
+On the geometry side:
+
+1. `BHW.exists_real_open_nhds_adjSwap`;
+2. `BHW.isConnected_adjSwapExtendedOverlap`;
+3. the proved SCV/BHW edge-of-the-wedge theorems.
+
+So theorem 2 does not lack continuation or boundary-value infrastructure.  The
+remaining missing packet is the non-circular OS-side adjacent supplier that
+turns OS §4.5 Euclidean symmetry into the `SelectedAdjacentPermutationEdgeData`
+needed by the existing PET/BHW spine.
 
 ## 4. Honest remaining gap
 
-The current frontier theorem asks directly for equality of the two canonical BV
-pairings
+The remaining theorem-2 task is not a finite-shell comparison and not an
+arbitrary-permutation real-edge theorem.  The honest gap is the adjacent
+boundary-distributional supplier packet.
 
-```lean
-∫ bvt_F(... canonical shift ...) * g
-=
-∫ bvt_F(... canonical shift ...) * f
-```
+For the `2 ≤ d` branch, the missing work is exactly:
 
-under:
+1. choose the real-open adjacent edge `V` and the fixed ordered sector label
+   `ρ`;
+2. turn compact support in `V` into a zero-diagonal Euclidean test;
+3. prove the OS Euclidean adjacent compact equality on that edge using
+   `OS.E3_symmetric`;
+4. prove the local OS/BHW branch-difference chart theorem for the adjacent
+   Wick/real branches;
+5. turn that local EOW chart into the adjacent compact-test equality of the two
+   `extendF (bvt_F OS lgc n)` real-edge traces;
+6. package the result as
+   `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`;
+7. feed that package through the already-existing PET/BHW and boundary-value
+   transfer theorems to obtain
+   `bvt_W_swap_pairing_of_spacelike`.
 
-1. selected-pair spacelike separation on the support of `f`,
-2. `g = f ∘ swap(i,j)`.
+For the `d = 1` branch, the missing work is different in kind: a separate D1-C
+complex-edge packet must produce the same boundary-distributional conclusion
+without pretending to construct the `2 ≤ d` real-open edge witness.
 
-Older drafts said that the BHW package already proves the analogous statement
-once ET-support and boundary-continuity data are supplied.  That is not precise
-enough for the current tree.  The checked BHW statements do provide the correct
-shape, but their theorem surfaces still include
-
-```lean
-hLC : IsLocallyCommutativeWeak d W
-```
-
-or an equivalent local-commutativity input.  For `W := bvt_W OS lgc`, that
-input is circular: theorem 2 is exactly the production step meant to prove
-`IsLocallyCommutativeWeak d (bvt_W OS lgc)`.
-
-So the remaining theorem-2 task is not "prove locality from scratch," but it is
-also not "instantiate the existing BHW theorem."  The honest gap is:
-
-1. identify the exact analytic representative behind `bvt_F`;
-2. prove the Route-B real-open-edge / ET-support package for the selected
-   transposition `Equiv.swap i j`;
-3. prove the flattened regularity and boundary-continuity package for `bvt_F`;
-4. build a non-circular raw-boundary or edge-compatibility theorem whose proof
-   uses Euclidean symmetry, the open-edge/EOW machinery, and boundary
-   continuity, but not global locality of `bvt_W OS lgc`;
-5. prove the finite canonical-shell arbitrary-transposition interchange theorem
-   for each `ε > 0`; this is not a boundary-value recovery statement;
-6. prove the general `swap i j` pairing adapter directly from that pointwise
-   theorem.
-
-This is the key theorem-shape correction for the next Lean stage: any proof
-that closes the frontier by supplying `bvt_locally_commutative` or
-`IsLocallyCommutativeWeak d (bvt_W OS lgc)` as an input has merely introduced a
-cycle, not proved theorem 2.
+So the live mathematical seam is now small and honest: build the adjacent OS
+supplier, not a stronger finite-shell theorem.  Any proof that closes theorem 2
+by supplying `IsLocallyCommutativeWeak d (bvt_W OS lgc)` or by reintroducing a
+canonical-shell frontier has merely moved the cycle around.
 
 ## 5. Exact theorem-slot inventory still needed
 
-The documentation-standard theorem slots are:
+The active theorem-2 inventory is now:
+
+### 5.0A. `2 ≤ d` OS supplier chain
+
+1. `adjacent_overlap_real_jost_witness_exists`
+2. `exists_ordered_small_time_perturb_in_adjacent_overlap`
+3. `choose_os45_real_open_edge_for_adjacent_swap`
+4. `zeroDiagonal_of_tsupport_subset_jostOverlap`
+5. `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`
+6. `os45_adjacent_localEOWGeometry`
+7. `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`
+8. `AdjacentOSEOWDifferenceEnvelope`
+9. `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
+10. `bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le`
+11. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`
+
+### 5.0B. PET/BHW continuation chain
+
+1. `SelectedAdjacentPermutationEdgeData`
+2. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
+3. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
+4. `BHW.PETGermChain`
+5. `BHW.PETGermChainReady`
+6. `BHW.pet_branch_independence_of_germChain`
+7. `BHW.petGermChainReady_exists`
+8. `BHW.extendF_pet_branch_independence_of_adjacent`
+9. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
+10. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+11. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
+
+### 5.0C. Boundary-value closure chain
+
+1. `BHW.permuteSchwartz`
+2. `BHW.permute_support_jost`
+3. `BHW.permute_tsupport_jost`
+4. `BHW.permuteSchwartz_hasCompactSupport`
+5. `BHW.integral_perm_eq_self`
+6. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
+7. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+8. `bvt_W_swap_pairing_of_spacelike`
+9. `bvt_locally_commutative`
+
+### 5.0D. Binding `d = 1` chain
+
+1. `d1_complexEdge_adjacent_chartData`
+2. `d1_commonBoundaryValue_adjacent_branches_from_OS45`
+3. `d1_complexEdge_eow_adjacent_branch_eq_germ`
+4. `d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap`
+5. `bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge`
+6. `bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge`
+7. `bvt_locally_commutative_boundary_route_of_one`
+
+The longer raw-boundary / finite-shell inventory below is retained only as
+archival fallback analysis.  It is not the active theorem-2 implementation
+plan.
+
+The longer archival theorem-slot inventory follows:
 
 ```lean
 lemma choose_real_open_edge_for_adjacent_swap
@@ -5771,9 +6110,23 @@ theorem bvt_F_extendF_adjacentEdgeDistribution_eq_from_OS
       =
     ∫ x : NPointDomain d n,
         BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x := by
-  -- OS.E3_symmetric gives equality on the Euclidean edge.
-  -- The selected ACR(1) branch package and many-variable EOW propagate that
-  -- equality to the adjacent real-open Jost overlap `V`.
+  -- Proof transcript:
+  -- 1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.
+  -- 2. Obtain the compact Euclidean edge equality
+  --    `hEuclid` from the OS §4.5 Euclidean theorem on the same chosen edge
+  --    `V`.  In the active route this is
+  --    `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, specialized
+  --    using the ordered-sector data supplied upstream by
+  --    `choose_os45_real_open_edge_for_adjacent_swap`.
+  -- 3. Apply
+  --    `bvt_F_distributionalEOW_permBranch_from_euclideanEdge`
+  --    with `σ := τ`, the same `V`, and `hEuclid`.
+  -- 4. The real-edge closure inside that theorem is the local identity-theorem
+  --    bridge
+  --    `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`;
+  --    once it yields pointwise equality of the two `extendF` real-edge traces
+  --    on `V`, the displayed integral equality for `φ` is recovered by
+  --    `MeasureTheory.integral_congr_ae`.
 ```
 
 The analytic theorem hidden in the last comment must be stated separately.  The
@@ -5818,6 +6171,19 @@ theorem bvt_F_distributionalEOW_permBranch_from_euclideanEdge
         =
       ∫ x : NPointDomain d n,
           BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x := by
+  -- Proof transcript:
+  -- 1. Use `bvt_F_acrOne_package` to obtain the selected ACR(1) analytic
+  --    witness for `bvt_F OS lgc n`, together with the Wick-edge
+  --    representation needed to compare compact-test pairings.
+  -- 2. Build the two local Wick/real branch sections on the common chart coming
+  --    from the OS45 adjacent branch-difference envelope over `V`.
+  -- 3. Insert the Euclidean compact-test equality `hEuclid` on that chart and
+  --    close the real-edge branch equality by the local identity theorem
+  --    `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`.
+  -- 4. Evaluate the resulting pointwise equality of the two real-edge traces at
+  --    `BHW.realEmbed x` for `x ∈ V`, then recover the displayed compact-test
+  --    integral equality by `MeasureTheory.integral_congr_ae`.
+  --
   -- This is the honest analytic seam.  It should be proved as a compact-test
   -- distributional EOW statement for the selected `bvt_F_acrOne_package`.
   -- It must not assert pointwise continuity of
@@ -5826,8 +6192,8 @@ theorem bvt_F_distributionalEOW_permBranch_from_euclideanEdge
 
 This theorem is allowed to be an SCV/BHW support theorem if stated without QFT
 objects, but if it mentions `OS`, `bvt_F`, or `bvt_W`, it belongs in the
-Wick-rotation theorem-2 support layer.  In either placement, it is the remaining
-mathematical proof-doc gap for the branch-distribution route.
+Wick-rotation theorem-2 support layer.  In either placement, it is the central
+analytic theorem of the branch-distribution route.
 
 The implementation-ready decomposition is the following.  The local version of
 the already-checked Wick-section identity theorem has now been added in
@@ -6804,8 +7170,8 @@ theorem BHW.gluedPETValue_holomorphicOn
     DifferentiableOn ℂ (BHW.gluedPETValue G) (BHW.PermutedExtendedTube d n)
 ```
 
-Conditional on the OS edge packet, the next BHW-side hard gap is all-overlap
-branch compatibility from adjacent overlap compatibility.
+Conditional on the OS edge packet, the BHW-side downstream consumer is the
+all-overlap compatibility theorem below.
 
 ```lean
 theorem bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData
@@ -6819,17 +7185,14 @@ theorem bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData
 ```
 
 This is the exact point where the proof must use the BHW sector-graph/monodromy
-argument: adjacent swaps generate the permutation graph and PET is the connected
-analytic continuation domain for the adjacent-glued sectors.  It is not enough
-to chain adjacent equalities at a fixed point, because a fixed `z` in two
-non-adjacent sectors need not lie in every intermediate sector.  The proof must
-obtain independence of analytic continuation over the finite open cover,
-rather than asking for a nonexistent all-permutation real edge.
-
-The Lean implementation is therefore not ready to close this BHW-side theorem
-from the current local data alone.  The missing item is a BHW
-cover-gluing/monodromy
-theorem, not another wrapper around `SelectedAdjacentPermutationEdgeData`.
+argument: adjacent swaps generate the permutation graph and PET is the
+connected analytic continuation domain for the adjacent-glued sectors.  It is
+not enough to chain adjacent equalities at a fixed point, because a fixed `z`
+in two non-adjacent sectors need not lie in every intermediate sector.  The
+required cover-gluing/monodromy theorem is now the checked production theorem
+`BHW.extendF_pet_branch_independence_of_adjacent`, so this BHW step is no
+longer the live theorem-2 blocker.  The live blocker is upstream:
+constructing the non-circular OS supplier packet `hEdge`.
 
 Historical diagnostic, now quarantined after the #1049/#1061 audits: one
 tempting route was a **fixed-fiber sector graph theorem**:
@@ -8769,8 +9132,10 @@ non-circularly.  The key requirement is the same: the theorem must prove
 single-valued PET analytic continuation from adjacent branch equality, not
 assume all-permutation real edge data and not assume global Wightman locality.
 
-Only after one of these BHW monodromy / well-definedness statements is proved
-should the selected theorem be implemented:
+The BHW monodromy / well-definedness step is now available through the checked
+theorem `BHW.extendF_pet_branch_independence_of_adjacent`.  The selected
+consumer theorem can therefore be implemented once the upstream OS packet
+`SelectedAdjacentPermutationEdgeData OS lgc n` is supplied:
 
 ```lean
 theorem bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData
@@ -8787,9 +9152,9 @@ by instantiating `G` with `bvt_selectedPETBranch OS lgc n`, `hG_holo` with
 `bvt_selectedPETBranch_holomorphicOn_sector`, and `hAdj` with
 `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.
 
-This is the next proof-doc completion target.  Production Lean should not add a
-theorem named `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData` until
-the single-valued PET monodromy / well-definedness theorem above is proved.
+This is no longer the next proof-doc completion target.  The BHW side is ready;
+the next live proof-doc target remains the upstream OS supplier theorem
+`bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`.
 
 There is also an explicitly overstrong conditional helper:
 
@@ -9488,10 +9853,11 @@ This is the precise place where the OS-II correction matters: the proof must use
 the repaired many-variable `bvt_F` / ACR(1) branch package.  It must not invoke a
 one-variable Lemma-8.8-style continuation or a hidden global locality theorem.
 
-This subpacket is now the primary proof-doc gap.  It is smaller and more
-OS-faithful than the finite-height endpoint-symmetry problem, but it is still
-not a one-line instantiation of any checked production theorem.  The exact
-missing proof is the OS-side branch-distribution equality
+This subpacket is now archival compatibility analysis, not the active theorem-2
+route.  It is smaller and more OS-faithful than the finite-height
+endpoint-symmetry problem, but it is still not a one-line instantiation of any
+checked production theorem.  The exact missing proof on that archival branch is
+the OS-side branch-distribution equality
 `bvt_F_extendF_perm_edgeDistribution_eq_from_OS`, packaged afterward as
 `bvt_F_hasPermutationEdgeDistributionEquality`, plus the public exposure of the
 already-present `extendF`-overlap/PET-extension spine.
@@ -9499,12 +9865,15 @@ already-present `extendF`-overlap/PET-extension spine.
 Then the public theorem can avoid the overstrong private finite-shell frontier:
 
 ```lean
-theorem bvt_locally_commutative_from_symmetric_PET_boundary
+private theorem bvt_W_swap_pairing_of_spacelike
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) := by
+  -- prove the adjacent boundary-pairing frontier via
+  -- `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+
+theorem bvt_locally_commutative
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
-  -- obtain `Fext` from `bvt_F_symmetric_PET_extension`;
-  -- apply `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
-  -- with `F := bvt_F OS lgc n` and `W_n := bvt_W OS lgc n`.
+  -- consume `bvt_W_swap_pairing_of_spacelike`.
 ```
 
 If we deliberately keep the current finite-height consumer
@@ -9676,64 +10045,38 @@ Then the absolute pointwise theorem is only an adapter:
 
 ## 7. Exact proof decomposition for theorem 2
 
-After the candidate-symmetry audit, the recommended Lean proof should follow
-the OS-I-faithful boundary route first.
+The theorem-2 proof is now fixed to the boundary-distributional OS route.  The
+exact decomposition is:
 
-1. Publicize the non-circular `extendF` overlap/PET-extension spine currently
-   present only as private support in `PermutationFlow.lean`.
-2. Prove `bvt_F_hasPermutationEdgeDistributionEquality`, the OS-side real-open
-   Jost edge distribution equality replacing the hLC input in the current BHW
-   theorem.
-3. Use that edge equality to prove `bvt_F_extendF_perm_overlap`, i.e. the
-   `extendF` equality on every ET/permuted-ET overlap needed by
-   `bargmann_hall_wightman_theorem_of_extendF_perm`.
-4. Prove or expose the OS-side PET extension theorem
-   `bvt_F_symmetric_PET_extension`.
-5. Prove the generic Jost/BHW boundary transfer theorem
-   `bv_local_commutativity_transfer_of_symmetric_PET_boundary`.
-6. Replace the proof of `bvt_locally_commutative` so it calls the boundary
-   transfer theorem directly, using `bvt_F`, `bvt_W`, `bvt_boundary_values`,
-   and the PET extension from step 4.
-7. Leave `bvt_F_swapCanonical_pairing` as a private overstrong sufficient
-   theorem, or retire it from the active dependency path if no other consumer
-   needs finite-height shell equality.
+1. **`2 ≤ d` OS supplier stage.**
+   Construct the adjacent real-open edge `V`, the Euclidean ordered sector, the
+   OS E3 compact equality on that edge, the local branch-difference EOW chart,
+   and finally the compact-test adjacent `extendF` edge equality.  Package this
+   as `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`.
+2. **PET/BHW single-valuedness stage.**
+   Feed the adjacent selected-witness packet into
+   `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`,
+   `BHW.extendF_pet_branch_independence_of_adjacent`, and
+   `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality` to obtain the
+   symmetric continuation
+   `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`.
+3. **Boundary-value transfer stage.**
+   Use `bvt_boundary_values` and compact-support permutation transport on Jost
+   overlaps to prove the live private frontier
+   `bvt_W_swap_pairing_of_spacelike`, then export
+   `bvt_locally_commutative`.
+4. **`d = 1` stage.**
+   Do not call the `2 ≤ d` supplier.  Instead prove the D1-C complex-edge chain
+   from Section 5.0D and close
+   `bvt_locally_commutative_boundary_route_of_one`.
 
-This route keeps the proof aligned with OS I Section 4.5: locality is a
-statement about boundary distributions of a symmetric BHW continuation, not
-about equality of every positive-height canonical shell integral.
+This is exactly the OS I §4.5 route: Euclidean symmetry, OS-side adjacent
+analytic continuation, BHW symmetric continuation, then boundary values.
 
-If we decide to retain the current finite-height consumer anyway, then the
-fallback proof order is:
-
-1. Prove the algebraic reduced-shell packet:
-   `bvt_F_reduced`, `bvt_F_eq_bvt_F_reduced_reducedDiffMap`, the canonical
-   direction lemmas, `reducedPairDiff_reducedDiffMapReal`,
-   `bvt_F_reduced_permOnReducedDiff`, and
-   `permOnReducedDiff_swap_permutedCanonicalDirection`.
-2. Prove the reduced permutation adapter
-   `bvt_F_reduced_permutedDirection_to_realPermutedCanonical`.
-3. Prove the reduced local-edge theorem
-   `bvt_F_reduced_canonicalRealSwap_eq_of_pairSpacelike`.
-   This factors through `reducedSpacelikeSwapEdge`,
-   `bvt_F_reduced_boundary_perm_eq_on_reducedSpacelikeSwapEdge`, branch
-   holomorphicity, and `reduced_local_EOW_canonicalRealSwap`.
-4. Derive
-   `bvt_F_reduced_permutedCanonicalDirection_eq_canonical_of_pairSpacelike`
-   as a short adapter from the previous two steps.
-5. Use the reduced packet to prove
-   `bvt_F_permutedEtaCanonicalShellOfSwap_eq_canonicalShell_of_spacelike`.
-6. Use `bvt_F_perm` to prove
-   `bvt_F_swapCanonical_pointwise_of_spacelike`.
-7. Use measure-preserving coordinate swap and support-zero outside `tsupport f`
-   to prove `bvt_F_swapCanonical_pairing_from_transposition_pointwise`.
-8. Feed the result into
-   `bv_local_commutativity_transfer_of_swap_pairing`.
-
-The fallback should not be started until the symmetric-envelope or verified
-slice-reflection packet is implementation-ready.  The theorem should not be
-attacked by opening a new permutation-continuation front in the middle of
-`OSToWightmanBoundaryValues.lean`; the generic PET/Jost machinery belongs in
-the BHW/SCV layer.
+Sections 12-15 keep the older finite-shell and reduced-coordinate material as
+archived fallback analysis only.  They are not part of the active theorem-2
+proof decomposition and must not be reopened unless the user explicitly asks to
+reactivate that fallback route.
 
 ## 8. Historical docs that are no longer frontier guidance
 
@@ -9760,95 +10103,86 @@ new theorem-2 closure slots.
 Checked-present surfaces to use only where their hypotheses are non-circular:
 
 1. `bvt_F_perm`
-2. `bv_local_commutativity_transfer_of_swap_pairing`
-3. `exists_real_open_nhds_adjSwap`
-4. `boundary_function_continuous_forwardTube_of_flatRegular`
+2. `bvt_F_holomorphic`
+3. `bvt_F_restrictedLorentzInvariant_forwardTube`
+4. `bvt_boundary_values`
 5. `edge_of_the_wedge`
 6. `SCV.edge_of_the_wedge_theorem`
 7. `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`
 8. `bvt_F_acrOne_package`
+9. `exists_real_open_nhds_adjSwap`
+10. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
 
 Checked-present surfaces that are comparison/supplier context but are not
 direct final theorem-2 calls on `W := bvt_W OS lgc`:
 
-1. `W_analytic_swap_boundary_pairing_eq`
-2. `analytic_extended_local_commutativity`
-3. `analytic_boundary_local_commutativity_of_boundary_continuous`
-4. `extendF_adjSwap_pairing_eq_of_distributional_local_commutativity`
+1. `SelectedAdjacentPermutationEdgeData`
+2. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
+3. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
+4. `BHW.extendF_pet_branch_independence_of_adjacent`
+5. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
 
 Primary planned theorem-2 closure slots:
 
-Priority boundary after the #1065 audit and the OS I §4.5 reread: slots 1-13
-are active only as the local Lean bridge into the paper's symmetric
-continuation stage.  The paper-level target starts at slot 25: construct the
-symmetric PET/BHW continuation and then apply the Jost boundary theorem to
-locality.  Slots 18-24 are deferred BHW/PET single-valuedness work; they should
-not receive additional implementation or proof-doc expansion until
-`bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le` has a complete
-Lean-ready transcript for the `2 ≤ d` branch.  The `d = 1` closure is a
-separate branch: either prove a dedicated dimension-one real-open edge theorem
-with the same `SelectedAdjacentPermutationEdgeData` fields, or prove a direct
-dimension-one complex-edge boundary-locality theorem.  Do not describe a
-complex-edge-only theorem as if it filled the real-open
-`SelectedAdjacentPermutationEdgeData.edge_witness` field.
+Priority boundary after the #1065 audit and the OS I §4.5 reread:
+
+- slots `1-12` are the `2 ≤ d` OS supplier chain;
+- slot `13` is the separate D1-C closure theorem;
+- slot `14` is the non-primary archival D1-R branch;
+- slots `15-24` are the PET/BHW single-valuedness chain fed by adjacent edge
+  data;
+- slots `25-38` are the symmetric-continuation and boundary-transfer
+  consequences.
+
+Implementation work must stop after slot `12` until the supplier transcript is
+fully stable.  The `d = 1` real-open edge theorem
+`bvt_F_selectedAdjacentPermutationEdgeData_from_OS_d1` remains non-primary and
+should only be pursued if its real-open supplier is genuinely proved.  Do not
+describe a complex-edge-only theorem as if it filled the real-open
+`SelectedAdjacentPermutationEdgeData.edge_witness` field.  The D1-C closure
+internally factors through
+`bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge` before the final
+boundary-transfer theorem.
 
 1. `bvt_F_restrictedLorentzInvariant_forwardTube`
 2. `bvt_F_complexLorentzInvariant_forwardTube`
 3. `choose_os45_real_open_edge_for_adjacent_swap`
 4. `zeroDiagonal_of_tsupport_subset_jostOverlap`
-5. `bvt_F_euclidean_adjacent_branch_pairing_eq_from_E3`
-6. `SCV.edge_of_the_wedge_theorem_connected_of_connected_edge`
-7. Corrected OS §4.5 branch-difference supplier, not yet implementation-ready:
-   replace the retracted
-   `BHW.localAdjacentOS45OppositeWedgeChart_at_jostSeed` / full-tube
-   `pos_orbit_*` route by either a generic BHW/PET branch theorem plus Jost
-   boundary-value transfer, or a genuinely local EOW chart over a real edge `E`
-   with no point-permutation-as-Lorentz claim.
-8. Corrected preliminary adjacent geometry after slot 7 is rewritten.  The
-   proved `BHW.permAct_*` helpers and
-   `BHW.os45_adjacent_orderedWickSeeds_mem_forwardTube` may be reused, but no
-   replacement theorem may quantify full-dimensionally over a tube and require
-   Lorentz orbit witnesses for point permutations.
-9. Corrected branchwise boundary-value theorem for the OS §4.5
-   branch-difference.  It must compare adjacent branch differences through the
-   common analytic continuation / Jost boundary theorem, not through
-   one-branch Wick-to-real equality and not through `extendF_preimage_eq`
-   supplied by false orbit witnesses.
-10. `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart` only
-   after slots 7-9 are rewritten; otherwise use
-   `SCV.differenceEnvelope_of_localBoundaryCharts` as a local-chart gluing tool
-   for the corrected local theorem shape.
-11. `AdjacentOSEOWDifferenceEnvelope`
-12. `bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le`
-13. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`
-    for the `2 ≤ d` real-edge branch only
+5. `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`
+6. `eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen`
+7. `os45_adjacent_localEOWGeometry`
+8. `os45_adjacent_branchDifferenceEnvelope_and_edge_exists_singleChart`
+9. `AdjacentOSEOWDifferenceEnvelope`
+10. `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
+11. `bvt_F_adjacent_edgeWitness_from_OS_ACR_of_two_le`
+12. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le`
+13. `bvt_locally_commutative_boundary_route_of_one`
 14. `bvt_F_selectedAdjacentPermutationEdgeData_from_OS_d1` only if a
     dedicated non-circular `d = 1` real-open edge theorem is actually proved
-15. `bvt_locally_commutative_boundary_route_of_one` if the `d = 1` proof uses
-    a complex-edge/direct-boundary route instead of the real-open edge record
-16. `SelectedAdjacentPermutationEdgeData`
-17. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
-18. `bvt_selectedPETBranch`
-19. `bvt_selectedPETBranch_holomorphicOn_sector`
-20. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
-21. `BHW.PETGermChain`
-22. `BHW.PETGermChainReady`
-23. `BHW.pet_branch_independence_of_germChain`
-24. `BHW.petGermChainReady_exists`
-25. `BHW.extendF_pet_branch_independence_of_adjacent`
-26. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
-27. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
-28. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
-29. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
-30. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
-31. `BHW.permuteSchwartz`
-32. `BHW.permute_support_jost`
-33. `BHW.permute_tsupport_jost`
-34. `BHW.permuteSchwartz_hasCompactSupport`
-35. `BHW.integral_perm_eq_self`
-36. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
-37. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
-38. `bvt_locally_commutative_from_symmetric_PET_boundary`
+15. `SelectedAdjacentPermutationEdgeData`
+16. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
+17. `bvt_selectedPETBranch`
+18. `bvt_selectedPETBranch_holomorphicOn_sector`
+19. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
+20. `BHW.PETGermChain`
+21. `BHW.PETGermChainReady`
+22. `BHW.pet_branch_independence_of_germChain`
+23. `BHW.petGermChainReady_exists`
+24. `BHW.extendF_pet_branch_independence_of_adjacent`
+25. `bvt_selectedPETBranch_allOverlap_eq_of_adjacentEdgeData`
+26. `BHW.F_permutation_invariance_of_petBranchIndependence` (implemented)
+27. `BHW.fullExtendF_well_defined_of_petBranchIndependence` (implemented)
+28. `BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality`
+29. `bvt_F_symmetric_PET_extension_of_adjacentEdgeData`
+30. `BHW.permuteSchwartz`
+31. `BHW.permute_support_jost`
+32. `BHW.permute_tsupport_jost`
+33. `BHW.permuteSchwartz_hasCompactSupport`
+34. `BHW.integral_perm_eq_self`
+35. `bvt_W_perm_invariant_on_compactJostOverlap_from_OS`
+36. `bv_local_commutativity_transfer_of_symmetric_PET_boundary`
+37. `bvt_W_swap_pairing_of_spacelike`
+38. `bvt_locally_commutative`
 
 The following older slot names are no longer primary construction targets:
 
@@ -9992,6 +10326,51 @@ theorem bvt_F_symmetric_PET_extension_of_adjacentEdgeData
   exact ⟨Fext, hFext_holo, hFext_agree, hFext_lorentz, hFext_perm⟩
 ```
 
+Dimension-one PET/BHW continuation, on the separate D1-C route:
+
+```lean
+theorem bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge
+    (OS : OsterwalderSchraderAxioms 1) (lgc : OSLinearGrowthCondition 1 OS)
+    (n : ℕ)
+    (π ρ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (1 + 1) → ℂ)
+    (hzπ : z ∈ BHW.permutedExtendedTubeSector 1 n π)
+    (hzρ : z ∈ BHW.permutedExtendedTubeSector 1 n ρ) :
+    bvt_selectedPETBranch (d := 1) OS lgc n π z =
+      bvt_selectedPETBranch (d := 1) OS lgc n ρ z := by
+  exact
+    BHW.extendF_pet_branch_independence_of_adjacent
+      (d := 1) n (bvt_F OS lgc n)
+      (bvt_F_holomorphic (d := 1) OS lgc n)
+      (bvt_F_restrictedLorentzInvariant_forwardTube (d := 1) OS lgc n)
+      (by
+        intro π i hi z hzπ hzπswap
+        exact d1_selectedPETBranch_adjacent_eq_on_complexEdgeOverlap
+          OS lgc n π i hi z hzπ hzπswap)
+      π ρ z hzπ hzρ
+
+theorem bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge
+    (OS : OsterwalderSchraderAxioms 1)
+    (lgc : OSLinearGrowthCondition 1 OS)
+    (n : ℕ) :
+    ∃ Fext : (Fin n → Fin (1 + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ Fext (BHW.PermutedExtendedTube 1 n) ∧
+      (∀ z ∈ ForwardTube 1 n, Fext z = bvt_F OS lgc n z) ∧
+      (∀ (Λ : ComplexLorentzGroup 1) z,
+        z ∈ BHW.PermutedExtendedTube 1 n →
+        Fext (BHW.complexLorentzAction Λ z) = Fext z) ∧
+      (∀ (σ : Equiv.Perm (Fin n)) z,
+        z ∈ BHW.PermutedExtendedTube 1 n →
+        Fext (fun k => z (σ k)) = Fext z) := by
+  obtain ⟨Fext, hFext_holo, hFext_agree, hFext_lorentz, hFext_perm, _huniq⟩ :=
+    BHW.bargmann_hall_wightman_theorem_of_adjacentBranchEquality
+      (d := 1) n (bvt_F OS lgc n)
+      (bvt_F_holomorphic (d := 1) OS lgc n)
+      (bvt_F_restrictedLorentzInvariant_forwardTube (d := 1) OS lgc n)
+      (bvt_selectedPETBranch_allOverlap_eq_of_d1_complexEdge OS lgc n)
+  exact ⟨Fext, hFext_holo, hFext_agree, hFext_lorentz, hFext_perm⟩
+```
+
 The old arbitrary-permutation pseudocode using
 `bvt_F_extendF_perm_edgePairing_eq_from_OS`,
 `BHW.jostWitness_exists_for_perm_overlap`, and
@@ -10027,24 +10406,66 @@ private theorem bvt_locally_commutative_boundary_route_of_two_le
       hFext_agree
       hFext_lorentz
       hFext_perm
-      i j f g hsep hswap
+      i hi f g hsep hswap
 ```
 
 The unqualified theorem-2 closure must now be a case split.  The `2 ≤ d` case
 uses `bvt_locally_commutative_boundary_route_of_two_le`.  The `d = 1` case must
-use one of the two explicitly documented non-circular routes:
+use the explicitly preferred non-circular D1-C route unless D1-R is later
+proved as a genuine real-open replacement:
 
 ```lean
 private theorem bvt_locally_commutative_boundary_route_of_one
     (OS : OsterwalderSchraderAxioms 1)
     (lgc : OSLinearGrowthCondition 1 OS) :
     IsLocallyCommutativeWeak 1 (bvt_W OS lgc) := by
-  -- Route 1: produce a genuine d=1 real-open adjacent edge packet and reuse
-  -- the selected-adjacent/PET boundary route; or
-  -- Route 2: use a d=1 complex-edge OS45/EOW boundary theorem directly.
-  -- This proof may cite the validated d=1 BHW blockers only after their
-  -- hypotheses are non-circular for the selected OS family.  In particular it
-  -- must not supply `hF_local_dist` with the target theorem itself.
+  intro n i hi f g hsep hswap
+  obtain ⟨Fext, hFext_holo, hFext_agree, hFext_lorentz, hFext_perm⟩ :=
+    bvt_F_symmetric_PET_extension_of_OS_d1_complexEdge OS lgc n
+  exact
+    bv_local_commutativity_transfer_of_symmetric_PET_boundary
+      (d := 1) n
+      (bvt_W OS lgc n)
+      (bvt_F OS lgc n)
+      Fext
+      (bvt_F_holomorphic (d := 1) OS lgc n)
+      (bvt_boundary_values (d := 1) OS lgc n)
+      hFext_holo
+      hFext_agree
+      hFext_lorentz
+      hFext_perm
+      i hi f g hsep hswap
+```
+
+The live frontier theorem and the public closure should then be written as the
+explicit dimension split:
+
+```lean
+private theorem bvt_W_swap_pairing_of_spacelike
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (f g : SchwartzNPoint d n),
+      (∀ x, f.toFun x ≠ 0 →
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
+  by_cases hd : 2 ≤ d
+  · exact bvt_locally_commutative_boundary_route_of_two_le
+      (d := d) hd OS lgc
+  · have hd1 : d = 1 := by
+      omega
+    subst hd1
+    exact bvt_locally_commutative_boundary_route_of_one OS lgc
+
+theorem bvt_locally_commutative
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
+  intro n i hi f g hsep hswap
+  exact
+    bvt_W_swap_pairing_of_spacelike OS lgc n i hi f g hsep hswap
 ```
 
 Do not call the `2 ≤ d` real-edge packet under only `[NeZero d]`; that would
@@ -10514,7 +10935,9 @@ forward-Jost theorem is genuinely proved under the current theorem surface.
    bookkeeping, and existing `DifferenceCoordinatesReduced` permutation
    lemmas.
 2. Reduced canonical-real-swap local-edge theorem:
-   not yet line-estimated; this remains the single hard analytic seam.
+   estimated `220-380` Lean lines for the theorem itself, plus whatever local
+   geometry adapters are still missing at implementation time.  This remains
+   the single hard analytic seam on the fallback route.
 3. Reduced permuted-direction adapter:
    `20-50` lines after the reduced permutation algebra compiles.
 4. Absolute finite-shell adapter from the reduced theorem:
