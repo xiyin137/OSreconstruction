@@ -387,6 +387,38 @@ theorem os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
     _ = ∫ x : NPointDomain d n,
           bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := hφZ
 
+/-- The sharp OS45 branch-difference envelope used by the theorem-2 adjacent
+real-edge consumer.  This packages one connected holomorphic chart carrying the
+Wick branch difference and the real-edge `extendF` difference on the same slice
+`V`. -/
+structure AdjacentOSEOWDifferenceEnvelope
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (τ : Equiv.Perm (Fin n))
+    (V : Set (NPointDomain d n)) where
+  U : Set (Fin n → Fin (d + 1) → ℂ)
+  U_open : IsOpen U
+  U_connected : IsConnected U
+  H : (Fin n → Fin (d + 1) → ℂ) → ℂ
+  H_holo : DifferentiableOn ℂ H U
+  wick_mem :
+    ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U
+  real_mem :
+    ∀ x ∈ V, BHW.realEmbed x ∈ U
+  wick_diff :
+    ∀ x ∈ V,
+      H (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) -
+        bvt_F OS lgc n (fun k => wickRotatePoint (x k))
+  real_diff :
+    ∀ x ∈ V,
+      H (BHW.realEmbed x) =
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed (fun k => x (τ k))) -
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)
+
 /-- If the test support is contained in `V` and the integrands agree on `V`,
 then their pairings against the test function are equal. -/
 theorem integral_eq_of_tsupport_subset_of_pointwise_on
