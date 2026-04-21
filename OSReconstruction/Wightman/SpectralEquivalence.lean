@@ -1751,32 +1751,167 @@ private abbrev BasepointSpace (d : ℕ) := Fin (d + 1) → ℝ
 used to choose a section of `diffVarReduction`. The implementation should
 eventually follow the local `normedUnitBumpSchwartzPi` pattern recorded in the
 blueprint. -/
+private noncomputable def normedUnitBumpSchwartzLocal :
+    SchwartzMap ℝ ℂ := by
+  let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
+  let f : ℝ → ℂ := fun x => ((b.normed MeasureTheory.volume x : ℝ) : ℂ)
+  have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
+    exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff_normed
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
+  exact hf_compact.toSchwartzMap hf_smooth
+
+private lemma integral_normedUnitBumpSchwartzLocal :
+    ∫ x : ℝ, normedUnitBumpSchwartzLocal x = 1 := by
+  let b : ContDiffBump (0 : ℝ) := ⟨1, 2, zero_lt_one, one_lt_two⟩
+  have happly :
+      (fun x : ℝ => normedUnitBumpSchwartzLocal x) =
+        fun x : ℝ => ((b.normed MeasureTheory.volume x : ℝ) : ℂ) := by
+    funext x
+    have hf_smooth : ContDiff ℝ (⊤ : ENat)
+        (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) := by
+      exact (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff_normed
+    have hf_compact :
+        HasCompactSupport (fun y : ℝ => ((b.normed MeasureTheory.volume y : ℝ) : ℂ)) :=
+      b.hasCompactSupport_normed.comp_left Complex.ofReal_zero
+    simpa [normedUnitBumpSchwartzLocal, b] using
+      (HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth x)
+  rw [happly, integral_complex_ofReal]
+  exact congrArg (fun r : ℝ => (r : ℂ)) (b.integral_normed (μ := MeasureTheory.volume))
+
+private noncomputable def normedUnitBumpSchwartzPi : ∀ k : ℕ,
+    SchwartzMap (Fin k → ℝ) ℂ
+  | 0 => by
+      let f : (Fin 0 → ℝ) → ℂ := fun _ => 1
+      have hf_smooth : ContDiff ℝ (⊤ : ENat) f := by
+        simpa [f] using
+          (contDiff_const : ContDiff ℝ (⊤ : ENat) (fun _ : Fin 0 → ℝ => (1 : ℂ)))
+      have hf_compact : HasCompactSupport f := by
+        simpa [HasCompactSupport, tsupport, Function.support, f] using
+          (show IsCompact (Set.univ : Set (Fin 0 → ℝ)) from isCompact_univ)
+      exact hf_compact.toSchwartzMap hf_smooth
+  | k + 1 => normedUnitBumpSchwartzLocal.prependField (normedUnitBumpSchwartzPi k)
+
+private lemma integral_normedUnitBumpSchwartzPi :
+    ∀ k : ℕ, ∫ x : Fin k → ℝ, normedUnitBumpSchwartzPi k x = 1
+  | 0 => by
+      have happly :
+          (fun x : Fin 0 → ℝ => normedUnitBumpSchwartzPi 0 x) =
+            fun _ : Fin 0 → ℝ => (1 : ℂ) := by
+        funext x
+        simp [normedUnitBumpSchwartzPi]
+      rw [happly]
+      have hvol :
+          (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)) =
+            MeasureTheory.Measure.dirac default := by
+        simpa using
+          (MeasureTheory.Measure.volume_pi_eq_dirac
+            (ι := Fin 0) (α := fun _ => ℝ) (x := default))
+      simpa [hvol] using
+        (MeasureTheory.integral_dirac (a := default) (f := fun _ : Fin 0 → ℝ => (1 : ℂ)))
+  | k + 1 => by
+      calc
+        ∫ x : Fin (k + 1) → ℝ, normedUnitBumpSchwartzPi (k + 1) x
+            =
+          ∫ z : ℝ × (Fin k → ℝ), normedUnitBumpSchwartzPi (k + 1) (Fin.cons z.1 z.2) := by
+              simpa using
+                (OSReconstruction.integral_finSucc_cons_eq
+                  (f := fun x : Fin (k + 1) → ℝ => normedUnitBumpSchwartzPi (k + 1) x)).symm
+        _ = ∫ z : ℝ × (Fin k → ℝ),
+              normedUnitBumpSchwartzLocal z.1 * normedUnitBumpSchwartzPi k z.2 := by
+              apply MeasureTheory.integral_congr_ae
+              filter_upwards with z
+              simp [normedUnitBumpSchwartzPi, SchwartzMap.prependField_apply]
+        _ = (∫ x : ℝ, normedUnitBumpSchwartzLocal x) *
+              (∫ y : Fin k → ℝ, normedUnitBumpSchwartzPi k y) := by
+              simpa using
+                (MeasureTheory.integral_prod_mul
+                  (f := fun x : ℝ => normedUnitBumpSchwartzLocal x)
+                  (g := fun y : Fin k → ℝ => normedUnitBumpSchwartzPi k y))
+        _ = 1 := by
+              rw [integral_normedUnitBumpSchwartzLocal, integral_normedUnitBumpSchwartzPi k]
+              ring
+
 private noncomputable def normalizedBasepointBump (d : ℕ) :
-    SchwartzMap (BasepointSpace d) ℂ := by
-  sorry
+    SchwartzMap (BasepointSpace d) ℂ :=
+  normedUnitBumpSchwartzPi (d + 1)
 
 private lemma integral_normalizedBasepointBump (d : ℕ) :
     ∫ a : BasepointSpace d, normalizedBasepointBump d a = 1 := by
-  sorry
+  simpa [normalizedBasepointBump] using integral_normedUnitBumpSchwartzPi (d + 1)
+
+private noncomputable def basepointDiffCLE (d : ℕ) (n : ℕ) :
+    NPointSpacetime d (n + 1) ≃L[ℝ] (Fin (n + 1) → BasepointSpace d) where
+  toFun x := Fin.cons (x 0) (fun k => fun μ => x k.succ μ - x k.castSucc μ)
+  invFun y k μ := y 0 μ + diffVarSection d n (fun i => y i.succ) k μ
+  left_inv := by
+    intro x; ext k μ
+    refine Fin.cases ?_ ?_ k
+    · simp [diffVarSection_zero]
+    · intro i
+      suffices h : ∀ j : Fin (n + 1),
+          x 0 μ + diffVarSection d n (fun l ν => x l.succ ν - x l.castSucc ν) j μ = x j μ from
+        h i.succ
+      intro j; induction j using Fin.induction with
+      | zero => simp [diffVarSection_zero]
+      | succ j ih =>
+          have hsucc := diffVarSection_succ (d := d) n (fun l ν => x l.succ ν - x l.castSucc ν) j μ
+          simp only [] at hsucc
+          linarith
+  right_inv := by
+    intro y; ext k μ
+    refine Fin.cases ?_ ?_ k
+    · simp [diffVarSection_zero]
+    · intro i
+      change (y 0 μ + diffVarSection d n (fun j => y j.succ) i.succ μ) -
+          (y 0 μ + diffVarSection d n (fun j => y j.succ) i.castSucc μ) = y i.succ μ
+      rw [diffVarSection_succ]
+      ring
+  map_add' := by
+    intro x y
+    ext k μ <;> refine Fin.cases ?_ ?_ k <;> simp [Pi.add_apply, add_sub_add_comm]
+  map_smul' := by
+    intro c x
+    ext k μ <;> refine Fin.cases ?_ ?_ k <;> simp [Pi.smul_apply, smul_sub, mul_sub]
+  continuous_toFun := by
+    apply continuous_pi; intro k; refine Fin.cases ?_ ?_ k
+    · simp only [Fin.cons_zero]
+      exact continuous_apply 0
+    · intro i; simp only [Fin.cons_succ]
+      exact continuous_pi fun μ =>
+        ((continuous_apply μ).comp (continuous_apply i.succ)).sub
+          ((continuous_apply μ).comp (continuous_apply i.castSucc))
+  continuous_invFun := by
+    apply continuous_pi; intro k; apply continuous_pi; intro μ
+    apply Continuous.add
+    · exact (continuous_apply μ).comp (continuous_apply 0)
+    · exact (continuous_apply μ).comp ((continuous_apply k).comp
+        ((diffVarSection d n).continuous.comp
+          (continuous_pi fun i => continuous_apply i.succ)))
+
+@[simp] private lemma basepointDiffCLE_apply_zero (d : ℕ) (n : ℕ)
+    (x : NPointSpacetime d (n + 1)) :
+    basepointDiffCLE d n x 0 = x 0 := rfl
+
+@[simp] private lemma basepointDiffCLE_apply_succ (d : ℕ) (n : ℕ)
+    (x : NPointSpacetime d (n + 1)) (k : Fin n) :
+    basepointDiffCLE d n x k.succ = fun μ => x k.succ μ - x k.castSucc μ := rfl
 
 /-- A chosen Schwartz section of `diffVarReduction`. This should eventually be
 implemented by transporting the tensor product `(a, ξ) ↦ φ₀(a) g(ξ)` back from
 basepoint-plus-difference coordinates. -/
 private noncomputable def sectionOf (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
-    SchwartzNPointSpace d n → SchwartzNPointSpace d (n + 1) := by
-  sorry
+    SchwartzNPointSpace d n → SchwartzNPointSpace d (n + 1) :=
+  fun g =>
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)
+      (φ₀.prependField g)
 
 private noncomputable def sectionOfCLM (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) :
-    SchwartzNPointSpace d n →L[ℂ] SchwartzNPointSpace d (n + 1) where
-  toFun := sectionOf d n φ₀
-  map_add' := by
-    sorry
-  map_smul' := by
-    sorry
-  cont := by
-    sorry
+    SchwartzNPointSpace d n →L[ℂ] SchwartzNPointSpace d (n + 1) :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)).comp
+    (SchwartzMap.prependFieldCLMRight φ₀)
 
 @[simp] private lemma sectionOfCLM_apply (d : ℕ) (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ) (g : SchwartzNPointSpace d n) :
@@ -1789,7 +1924,32 @@ private lemma diffVarReduction_sectionOf (d : ℕ) [NeZero d] (n : ℕ)
     (hφ₀ : ∫ a : BasepointSpace d, φ₀ a = 1)
     (g : SchwartzNPointSpace d n) :
     diffVarReduction d n (sectionOf d n φ₀ g) = g := by
-  sorry
+  ext ξ
+  change
+    ∫ a : Fin (d + 1) → ℝ,
+      sectionOf d n φ₀ g (fun k μ => a μ + diffVarSection d n ξ k μ) = g ξ
+  calc
+    ∫ a : Fin (d + 1) → ℝ,
+        sectionOf d n φ₀ g (fun k μ => a μ + diffVarSection d n ξ k μ)
+      = ∫ a : Fin (d + 1) → ℝ, φ₀ a * g ξ := by
+          apply MeasureTheory.integral_congr_ae
+          filter_upwards with a
+          show (φ₀.prependField g)
+              (basepointDiffCLE d n (fun k μ => a μ + diffVarSection d n ξ k μ)) = φ₀ a * g ξ
+          have key : basepointDiffCLE d n (fun k μ => a μ + diffVarSection d n ξ k μ) =
+              Fin.cons a ξ := by
+            funext k μ; refine Fin.cases ?_ ?_ k
+            · simp [diffVarSection_zero]
+            · intro i
+              simp only [basepointDiffCLE_apply_succ, Fin.cons_succ, diffVarSection_succ]
+              ring
+          simp [key, SchwartzMap.prependField_apply, Fin.cons_zero, Fin.cons_succ]
+    _ = (∫ a : Fin (d + 1) → ℝ, φ₀ a) * g ξ := by
+          trans g ξ • ∫ a : Fin (d + 1) → ℝ, (φ₀ a : ℂ)
+          · rw [← integral_smul]
+            congr 1; funext a; rw [smul_eq_mul, mul_comm]
+          · rw [smul_eq_mul, mul_comm]
+    _ = g ξ := by rw [hφ₀]; ring
 
 private lemma diffVarReduction_sub_sectionOf_eq_zero (d : ℕ) [NeZero d] (n : ℕ)
     (φ₀ : SchwartzMap (BasepointSpace d) ℂ)
@@ -1817,7 +1977,85 @@ private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
     ∀ f : SchwartzNPointSpace d (n + 1),
       diffVarReduction d n f = 0 → W f = 0 := by
   intro f hf
-  sorry
+  let hcast : (n + 1) * (d + 1) = (d + 1) + n * (d + 1) := by ring
+  let toBasepoint :
+      SchwartzNPointSpace d (n + 1) →L[ℂ]
+        SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n).symm
+  let fromBasepoint :
+      SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ →L[ℂ]
+        SchwartzNPointSpace d (n + 1) :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)
+  let flatBasepointCLE :
+      (Fin (n + 1) → BasepointSpace d) ≃L[ℝ]
+        (Fin ((n + 1) * (d + 1)) → ℝ) :=
+    (({ (Equiv.curry (Fin (n + 1)) (Fin (d + 1)) ℝ).symm with
+          map_add' := fun _ _ => rfl
+          map_smul' := fun _ _ => rfl } :
+         (Fin (n + 1) → Fin (d + 1) → ℝ) ≃ₗ[ℝ]
+           (Fin (n + 1) × Fin (d + 1) → ℝ)).trans
+        (LinearEquiv.funCongrLeft ℝ ℝ finProdFinEquiv.symm)).toContinuousLinearEquiv
+  let flattenBasepoint :
+      SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ →L[ℂ]
+        SchwartzMap (Fin ((n + 1) * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ flatBasepointCLE.symm
+  let unflattenBasepoint :
+      SchwartzMap (Fin ((n + 1) * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ flatBasepointCLE
+  let flatTo :
+      SchwartzNPointSpace d (n + 1) →L[ℂ]
+        SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ :=
+    (reindexSchwartzFin hcast).comp (flattenBasepoint.comp toBasepoint)
+  let flatFrom :
+      SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ]
+        SchwartzNPointSpace d (n + 1) :=
+    fromBasepoint.comp (unflattenBasepoint.comp (reindexSchwartzFin hcast.symm))
+  let T :
+      SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+    { toFun := fun ψ => W (flatFrom ψ)
+      map_add' := by
+        intro ψ χ
+        simp [flatFrom, (hW_lin.map_add _ _)]
+      map_smul' := by
+        intro c ψ
+        simp only [map_smul, hW_lin.map_smul, RingHom.id_apply]
+      cont := hW_cont.comp flatFrom.continuous }
+  let F := flatTo f
+  have hT :
+      IsHeadBlockTranslationInvariantSchwartzCLM
+        (m := d + 1) (n := n * (d + 1)) T := by
+    intro a
+    ext ψ
+    -- This is the transported version of diagonal translation invariance:
+    -- after `basepointDiffCLE` and flattening/reindexing, translating every
+    -- absolute spacetime point by `a` becomes head-block translation by
+    -- `zeroTailBlockShift a`.
+    sorry
+  have hIntF :
+      integrateHeadBlock (m := d + 1) (n := n * (d + 1)) F = 0 := by
+    -- Identify head-block integration of `flatTo f` with `diffVarReduction d n f`
+    -- after flattening the difference variables. Then use `hf`.
+    sorry
+  have hmap :
+      T F = T 0 := by
+    exact map_eq_of_integrateHeadBlock_eq_of_headBlockTranslationInvariant
+      (m := d + 1) (n := n * (d + 1)) T hT F 0 (by
+        have h0 : integrateHeadBlock (m := d + 1) (n := n * (d + 1)) 0 = 0 := by
+          have h := integrateHeadBlock_sub (m := d + 1) (n := n * (d + 1)) F F
+          simp [sub_self] at h; exact h
+        rw [hIntF, h0])
+  have hflat_eval : flatFrom F = f := by
+    -- `flatFrom` is the inverse transport of `flatTo`.
+    sorry
+  have hzeroT : T 0 = 0 := by
+    have hW0 : W (0 : SchwartzNPointSpace d (n + 1)) = 0 := by
+      simpa using (hW_lin.map_smul (0 : ℂ) (0 : SchwartzNPointSpace d (n + 1)))
+    simpa [T, flatFrom] using hW0
+  calc
+    W f = T F := by simpa [T, F, hflat_eval]
+    _ = T 0 := hmap
+    _ = 0 := hzeroT
 
 variable (d) in
 /-- The reduced distribution in difference variables exists from translation invariance. -/
@@ -1858,11 +2096,12 @@ lemma exists_diffVar_distribution
   have hw_lin : IsLinearMap ℂ w := by
     refine { map_add := ?_, map_smul := ?_ }
     · intro g h
-      show W (n + 1) (φSect (g + h)) = W (n + 1) (φSect g) + W (n + 1) (φSect h)
-      rw [map_add, (hW_linear (n + 1)).map_add]
+      show W (n + 1) (sectionOfCLM d n φ₀ (g + h)) =
+          W (n + 1) (sectionOfCLM d n φ₀ g) + W (n + 1) (sectionOfCLM d n φ₀ h)
+      rw [(sectionOfCLM d n φ₀).map_add, (hW_linear (n + 1)).map_add]
     · intro c g
-      show W (n + 1) (φSect (c • g)) = c * W (n + 1) (φSect g)
-      rw [map_smul, (hW_linear (n + 1)).map_smul, smul_eq_mul]
+      show W (n + 1) (sectionOfCLM d n φ₀ (c • g)) = c • W (n + 1) (sectionOfCLM d n φ₀ g)
+      rw [(sectionOfCLM d n φ₀).map_smul, (hW_linear (n + 1)).map_smul]
   have hw_det :
       ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f) := by
     intro f
