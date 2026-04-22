@@ -2576,7 +2576,7 @@ private theorem wightman_perm_invariant_on_jost_support (Wfn : WightmanFunctions
         (hxJ.2 i ⟨i.val + 1, hi⟩ hij)
     have hswap0 :
         Wfn.W n gτ = Wfn.W n (permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) := by
-      refine Wfn.locally_commutative n i ⟨i.val + 1, hi⟩ gτ
+      refine Wfn.locally_commutative n i hi gτ
         (permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) hsupp ?_
       intro x
       change permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ x =

@@ -1428,7 +1428,7 @@ private theorem distributional_perm_invariant_on_jost_support
     have hswap0 :
         W n gτ =
           W n (permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) := by
-      refine hF_local_dist n i ⟨i.val + 1, hi⟩ gτ
+      refine hF_local_dist n i hi gτ
         (permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) hsupp ?_
       intro x
       change permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ x =

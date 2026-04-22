@@ -341,44 +341,41 @@ private theorem bvt_F_lorentz_ortho_wick
         simpa [hφ_coeff] using hφx
       simp [hφ0]
 
-/-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
+/-- Theorem 2 frontier: locality / swap symmetry for the reconstructed
+boundary-value functional.
 
 OS paper target:
 - OS I Section 4.5 "Locality", pp. 104-105
 - OS II IV.2, p. 288, which says the remaining Wightman axioms are established
   as in Sections 4.2-4.5 of OS I
 
-This sorry is the locality transfer step on the boundary-value route. -/
-private theorem bvt_F_swapCanonical_pairing
+This sorry is the direct boundary-distributional adjacent-swap locality
+statement on the OS route.  It should be supplied by the OS Section 4.5
+branch-difference / boundary-transfer argument, not by any finite-height
+canonical-shell equality.
+-/
+private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
       (∀ x, f.toFun x ≠ 0 →
-        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
-      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
-      =
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
   sorry
 
-/-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
+/-- Theorem 3 closure: positivity of the reconstructed Wightman inner product.
 
 OS paper target:
 - OS I Section 4.3 "Positivity", pp. 102-103
 - OS II IV.2, p. 288, reducing the remaining Wightman axioms to the OS I
   arguments after continuation
 
-Current active substep on the repo's OS route:
+Closure route on the repo's OS route:
 - OS II Theorem 4.3, p. 289, together with Chapter VI.1, pp. 297-298
 
-This sorry is the OS-isometry / boundary-value identification step, not any
-same-test-function equality `W_n(f) = S_n(f)`. -/
+This theorem is closed by the OS-isometry / boundary-value identification
+step, not by any same-test-function equality `W_n(f) = S_n(f)`. -/
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -730,13 +727,8 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
-  intro n i j f g hsupp hswap
-  exact bv_local_commutativity_transfer_of_swap_pairing (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (bvt_F_swapCanonical_pairing (d := d) OS lgc n)
-    i j f g hsupp hswap
+  intro n i hi f g hsupp hswap
+  exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -973,9 +965,11 @@ theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
               bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε := by
   exact bvt_W_cluster (d := d) OS lgc
 
-def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+/-- The checked `E' -> R'` output before the theorem-2 locality and theorem-4
+cluster frontiers are supplied. -/
+def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    WightmanFunctions d where
+    WightmanFunctionsCore d where
   W := bvt_W OS lgc
   linear := bvt_W_linear OS lgc
   tempered := bvt_W_continuous OS lgc
@@ -987,10 +981,23 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
     refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
     -- Global polynomial growth for the same ACR-selected witness used by `bvt_F`.
     exact (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.2
-  locally_commutative := bvt_locally_commutative OS lgc
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc
-  cluster := bvt_cluster OS lgc
+
+/-- Upgrade the checked core package to full Wightman functions once the
+adjacent locality and cluster frontiers are supplied explicitly. -/
+def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+      ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+        ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+          ∀ (g_a : SchwartzNPoint d m),
+            (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+            ‖bvt_W OS lgc (n + m) (f.tensorProduct g_a) -
+              bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε) :
+    WightmanFunctions d :=
+  (constructWightmanFunctionsCore OS lgc).toWightmanFunctions hlocal hcluster
 
 /-- The OS pre-Hilbert space constructed from the Wightman functions obtained
     data. -/
@@ -1068,9 +1075,9 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d) :
 
 theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∃ (Wfn : WightmanFunctions d),
+    ∃ (Wfn : WightmanFunctionsCore d),
       IsWickRotationPair OS.schwinger Wfn.W := by
-  refine ⟨constructWightmanFunctions OS lgc, fun n => ?_⟩
+  refine ⟨constructWightmanFunctionsCore OS lgc, fun n => ?_⟩
   exact ⟨bvt_F OS lgc n,
     bvt_F_holomorphic OS lgc n,
     bvt_boundary_values OS lgc n,
