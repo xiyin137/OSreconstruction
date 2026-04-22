@@ -26,7 +26,7 @@ This module develops the infrastructure for the Osterwalder-Schrader bridge theo
 - **Theorem R→E** (`wightman_to_os_full`): Wightman functions → honest
   zero-diagonal Euclidean Schwinger family via Wick rotation
 - **Theorem E'→R'** (`os_to_wightman_full`): OS axioms + linear growth →
-  Wightman functions (the corrected OS II reconstruction surface)
+  the checked core Wightman package (the corrected OS II reconstruction surface)
 
 The correction to keep in mind throughout this folder is that Euclidean kernels
 may have genuine coincidence singularities. The honest OS-I pairing is therefore

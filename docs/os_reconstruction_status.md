@@ -8,17 +8,21 @@ two theorems:
 
 | Direction | Theorem | Status |
 |-----------|---------|--------|
-| E→R | `os_to_wightman` : OS axioms + linear growth → Wightman functions | Proof assembled, **5 live sorrys** in subtheorems |
+| E→R | `os_to_wightman` : OS axioms + linear growth → checked core Wightman package | Proof assembled; theorem-2 locality and theorem-4 cluster remain separate upgrade frontiers |
 | R→E | `wightman_to_os` : Wightman functions → Schwinger functions | Proof assembled, **depends on 3 axioms + sorrys in BHW chain** |
 
 Both theorem statements are proved in `Main.lean` from their respective
-assembly functions. The sorrys are in the private subtheorems that verify
-the individual Wightman/OS axioms.
+assembly functions. On the forward `E→R` side, `os_to_wightman` now returns
+`WightmanFunctionsCore`: the checked package up through temperedness,
+covariance, spectrum, positivity, and Hermiticity. The theorem-2 locality and
+theorem-4 cluster fields stay outside the public export until their OS-paper
+proofs are formalized.
 
 ### Axiom dependencies (from `#print axioms`)
 
 **`os_to_wightman`** depends on:
-- `sorryAx` (5 live sorrys in W1, W3-W6)
+- `sorryAx` (remaining forward-route supplier sorrys; locality and cluster are no
+  longer part of the direct public export surface)
 - `tube_boundaryValueData_of_polyGrowth` (SCV axiom: BV existence)
 
 **`wightman_to_os`** depends on:

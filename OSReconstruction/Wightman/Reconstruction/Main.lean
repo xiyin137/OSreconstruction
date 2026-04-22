@@ -26,7 +26,7 @@ proofs from the GNS construction and Wick rotation modules.
   (Proof: `wightman_to_os_full` in WickRotation.lean)
 
 * `os_to_wightman` — Theorem E'→R': corrected OS axioms with linear growth →
-  Wightman functions
+  checked core Wightman functions
   (Proof: `os_to_wightman_full` in WickRotation.lean)
 
 ## Import Structure
@@ -101,8 +101,8 @@ theorem wightman_to_os (Wfn : WightmanFunctions d) :
   wightman_to_os_full Wfn
 
 /-- **Theorem E'→R'** (OS II): Schwinger functions satisfying the linear growth
-    condition E0' together with E1-E4 can be analytically continued to
-    Wightman distributions satisfying R0-R5.
+    condition E0' together with E1-E4 can be analytically continued to a
+    checked core Wightman package.
 
     **Critical**: Without the linear growth condition, this theorem may be FALSE.
     The issue is that analytic continuation involves infinitely many Sₖ, and
@@ -114,12 +114,13 @@ theorem wightman_to_os (Wfn : WightmanFunctions d) :
     false full-Schwartz Euclidean axiom.
 
     The main mathematical content is exactly the hard passage from Euclidean
-    Schwinger data on `ZeroDiagonalSchwartz` to full tempered Wightman
-    distributions on Schwartz space. If that passage were already built into the
-    Euclidean hypothesis, there would be little OS reconstruction left to prove. -/
+    Schwinger data on `ZeroDiagonalSchwartz` to tempered Wightman
+    distributions on Schwartz space. The remaining theorem-2 locality and
+    theorem-4 cluster upgrades stay separate until their OS-paper proofs are
+    formalized on the forward route. -/
 theorem os_to_wightman (OS : OsterwalderSchraderAxioms d)
     (linear_growth : OSLinearGrowthCondition d OS) :
-    ∃ (Wfn : WightmanFunctions d),
+    ∃ (Wfn : WightmanFunctionsCore d),
       IsWickRotationPair OS.schwinger Wfn.W :=
   os_to_wightman_full OS linear_growth
 
