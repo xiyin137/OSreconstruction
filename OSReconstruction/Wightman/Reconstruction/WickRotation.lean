@@ -20,6 +20,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.BaseFiberInflation
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Bridge
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45CommonEdge
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BranchPullback
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 
 /-!

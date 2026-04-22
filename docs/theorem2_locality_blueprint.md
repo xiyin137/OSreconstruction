@@ -13,6 +13,12 @@ There is no alternate active route. The only exception that could justify a
 route change would be an explicit OS-paper error documented locally first; no
 such exception is in scope here.
 
+This note should be read together with
+[`bhw_permutation_blueprint.md`](/Users/xiyin/OSReconstruction/docs/bhw_permutation_blueprint.md).
+That sibling note owns the external BHW permutation-geometry obligations.  The
+present note owns the theorem-2 consumer chain from the OS45 local edge packet
+to the final `bvt_W` locality theorem.
+
 ## 1. Final theorem surface
 
 The live frontier is the adjacent boundary-distributional statement:
@@ -130,6 +136,40 @@ In `Wightman/Reconstruction/WickRotation/OSToWightmanSelectedWitness.lean`:
 
 These are downstream consumers. The OS45 supplier must target their exact input
 shape rather than inventing a parallel interface.
+
+### 3.3. Checked PET gluing / monodromy / boundary-transfer algebra
+
+In `ComplexLieGroups/Connectedness/PermutedTubeGluing.lean`:
+
+- `BHW.gluedPETValue`
+- `BHW.gluedPETValue_eq_of_mem_sector`
+- `BHW.gluedPETValue_holomorphicOn`
+
+In `ComplexLieGroups/Connectedness/PermutedTubeMonodromy.lean`:
+
+- `BHW.petReachableLabelSet_adjacent_connected_of_orbitChamberConnected`
+- `BHW.petSectorFiber_adjacent_connected_of_reachableLabelConnected`
+- `BHW.extendF_pet_branch_independence_of_adjacent_of_reachableLabelConnected`
+- `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
+- `BHW.extendF_perm_eq_on_extendedTube_of_petBranchIndependence`
+- `BHW.F_permutation_invariance_of_petBranchIndependence`
+
+In `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValuesComparison.lean`:
+
+- `bv_local_commutativity_transfer_of_swap_pairing`
+
+These files are checked algebra.  They are **not** a license to skip the
+missing BHW/Jost geometry input.  In particular:
+
+1. `PermutedTubeGluing.lean` assumes all-overlap compatibility on PET; it does
+   not create that compatibility from adjacent data.
+2. `PermutedTubeMonodromy.lean` reduces adjacent compatibility to all-overlap
+   compatibility **once** the fixed-fiber / reachable-label geometry is
+   supplied.
+3. theorem 2 must stay on this monodromy file, not on the generic
+   `PermutationFlow.iterated_eow_permutation_extension` consumer, because the
+   latter mixes in the deferred dimension-one blocker
+   `blocker_iterated_eow_hExtPerm_d1_nontrivial`.
 
 ## 4. Exact remaining theorem slots for `2 <= d`
 
@@ -292,30 +332,333 @@ Proof:
 That theorem is the exact handoff point from the new OS45 local work to the
 already checked selected-witness / PET side.
 
-## 5. Checked downstream chain after Slot 4
+## 5. Exact downstream chain after Slot 4 for `2 <= d`
 
-Once Slot 4 is proved, the rest of the `2 <= d` route should consume checked
-theorems, not create new local geometry.
+After Slot 4, no new OS45 local geometry is allowed.  The remaining work is the
+literal BHW/PET/Jost endgame.  The exact order below is now part of the
+implementation contract.
 
-1. `bvt_F_extendF_adjacent_overlap_of_selectedEdgeData`
-   gives equality of the selected `extendF` branches on the whole adjacent
-   ET/swap-ET overlap.
-2. `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`
-   gives adjacent compatibility of the selected PET branches.
-3. The existing PET gluing / monodromy package then promotes adjacent
-   compatibility to the symmetric continuation on the relevant PET/BHW domain.
-4. The external BHW/Jost boundary-value route converts that symmetric
-   continuation into locality of the boundary distributions.
-5. The existing boundary-transfer layer closes
-   `bvt_W_swap_pairing_of_spacelike`.
+### Slot 5. `bvt_F_adjacent_sector_compatibility_of_two_le`
 
-No new theorem slot below `bvt_W_swap_pairing_of_spacelike` should ask for a
-general transposition, a finite-shell equality, or a prepackaged locality field
-from `os_to_wightman_full`.
+This is a small wrapper theorem turning Slot 4 into the exact `hAdj` hypothesis
+consumed by `PermutedTubeMonodromy.lean`.
 
-## 6. Dimension-one route
+```lean
+theorem bvt_F_adjacent_sector_compatibility_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hEdge : SelectedAdjacentPermutationEdgeData OS lgc n) :
+    ∀ (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n)
+      (z : Fin n -> Fin (d + 1) -> ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π ->
+      z ∈ BHW.permutedExtendedTubeSector d n
+        (π * Equiv.swap i ⟨i.val + 1, hi⟩) ->
+      BHW.extendF (bvt_F OS lgc n)
+        (fun k => z ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) =
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (π k))
+```
 
-Dimension one is a separate closure theorem and should stay separate.
+Proof transcript:
+
+1. apply `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`,
+2. unfold `bvt_selectedPETBranch`,
+3. rewrite the result into the displayed `extendF` branch equality.
+
+This wrapper is theorem-2-facing only; it must not introduce any new geometry
+or any all-permutation edge-data structure.
+
+### Slot 6. `petOrbitChamberConnected_of_two_le`
+
+This is the exact external BHW permutation-geometry input needed next.  It is
+the `hOrbit` hypothesis of
+`BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`.
+
+```lean
+theorem petOrbitChamberConnected_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (n : ℕ) :
+    ∀ (w : Fin n -> Fin (d + 1) -> ℂ),
+      w ∈ BHW.ForwardTube d n ->
+      ∀ (σ : Equiv.Perm (Fin n)) (Λ : ComplexLorentzGroup d),
+        BHW.complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ ->
+        Relation.ReflTransGen
+          (BHW.petReachableLabelAdjStep (d := d) (n := n) w)
+          (1 : Equiv.Perm (Fin n)) σ
+```
+
+Mathematical role:
+
+- this is the Lean-facing BHW monodromy geometry theorem for the `d >= 2`
+  branch;
+- it packages the statement that the complex-Lorentz orbit of a forward-tube
+  point meets a Cayley-connected set of permuted forward-tube chambers;
+- it is the correct place to consume the external BHW geometry obligation from
+  `bhw_permutation_blueprint.md`.
+
+Exact proof transcript:
+
+1. use `JostWitnessGeneralSigma.jostWitness_exists` to get the nonempty seed
+   packet for each nontrivial permutation chamber;
+2. use `blocker_isConnected_permSeedSet_nontrivial` as the only deferred
+   geometric input on the `d >= 2` branch;
+3. transport that connectedness through
+   `isConnected_permSeedSet_iff_permForwardOverlapSet`;
+4. convert the resulting orbit/chamber connectedness into the displayed
+   reachable-label chain by the checked adapters in
+   `PermutedTubeMonodromy.lean`.
+
+Hard veto condition:
+
+- this slot may depend on
+  `blocker_isConnected_permSeedSet_nontrivial`;
+- it must **not** depend on
+  `blocker_iterated_eow_hExtPerm_d1_nontrivial`.
+
+### Slot 7. `bvt_F_petBranchIndependence_of_two_le`
+
+Once Slots 4-6 exist, the next theorem is the checked monodromy consumer:
+
+```lean
+theorem bvt_F_petBranchIndependence_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n -> Fin (d + 1) -> ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π ->
+      z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (π k)) =
+        BHW.extendF (bvt_F OS lgc n) (fun k => z (ρ k))
+```
+
+Proof transcript:
+
+1. let `hEdge := bvt_F_selectedAdjacentPermutationEdgeData_from_OS_of_two_le hd OS lgc n`;
+2. build `hAdj` by Slot 5 from `hEdge`;
+3. build `hOrbit` by Slot 6;
+4. apply
+   `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
+   to `F := bvt_F OS lgc n`.
+
+This theorem is the first place where the theorem-2 route reaches the
+all-overlap PET single-valuedness required by OS I §4.5.
+
+At this point the route must still stay on the generic checked monodromy
+theorems above.  It must **not** try to replace Slot 7 by constructing
+`SelectedAllPermutationEdgeData` or by switching to
+`bvt_selectedAbsolutePETGluedValue`; those surfaces belong to the
+all-permutation helper lane, not to the strict theorem-2 consumer packet.
+
+### Slot 8. `bvt_F_perm_eq_on_extendedTube_of_two_le`
+
+This is the checked PET-to-ET consequence:
+
+```lean
+theorem bvt_F_perm_eq_on_extendedTube_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    ∀ (τ : Equiv.Perm (Fin n))
+      (z : Fin n -> Fin (d + 1) -> ℂ),
+      z ∈ BHW.ExtendedTube d n ->
+      (fun k => z (τ k)) ∈ BHW.ExtendedTube d n ->
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (τ k)) =
+        BHW.extendF (bvt_F OS lgc n) z
+```
+
+Proof:
+
+1. obtain `hPET` from Slot 7;
+2. apply
+   `BHW.extendF_perm_eq_on_extendedTube_of_petBranchIndependence`.
+
+### Slot 9. `bvt_F_permutation_invariance_on_S'_n_of_two_le`
+
+This is the Lean-facing version of the symmetric continuation on `S'_n`.
+
+```lean
+theorem bvt_F_permutation_invariance_on_S'_n_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) :
+    ∀ {w : Fin n -> Fin (d + 1) -> ℂ}
+      (hw : w ∈ BHW.ForwardTube d n)
+      {τ : Equiv.Perm (Fin n)} {Γ : ComplexLorentzGroup d},
+      BHW.complexLorentzAction Γ (fun k => w (τ k)) ∈
+        BHW.ForwardTube d n ->
+      bvt_F OS lgc n
+        (BHW.complexLorentzAction Γ (fun k => w (τ k))) =
+      bvt_F OS lgc n w
+```
+
+Proof:
+
+1. obtain `hPET` from Slot 7;
+2. apply
+   `BHW.F_permutation_invariance_of_petBranchIndependence`
+   to `F := bvt_F OS lgc n`.
+
+This is the exact point where the OS route has recovered the symmetric
+continuation required before the BHW/Jost boundary step.
+
+### Slot 10. `bvt_F_swapCanonical_pairing_of_spacelike_of_two_le`
+
+This is the theorem-2-specific boundary theorem surface consumed by the checked
+transfer theorem in `OSToWightmanBoundaryValuesComparison.lean`.
+
+```lean
+theorem bvt_F_swapCanonical_pairing_of_spacelike_of_two_le
+    [NeZero d]
+    (hd : 2 <= d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε ->
+      (∀ x, f.toFun x ≠ 0 ->
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) ->
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) ->
+      ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+            (g x)
+        =
+      ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) *
+            (f x)
+```
+
+Mathematical content:
+
+1. use Slot 9 as the symmetric continuation on the permuted forward-tube
+   union `S'_n`;
+2. use the BHW enlargement theorem to pass to the complex-Lorentz saturation
+   `S''_n`;
+3. use the cited Jost boundary theorem to conclude locality of the boundary
+   distributions;
+4. rewrite the resulting boundary equality into the displayed canonical-shell
+   pairing equality.
+
+This theorem is **not** the dead finite-height route revived.  It is the exact
+canonical-pairing consumer that the already-checked boundary-transfer layer
+expects.
+
+### Slot 11. `bvt_W_swap_pairing_of_spacelike_of_two_le`
+
+This is the final checked consumer step.
+
+Proof pseudocode:
+
+```lean
+have hcanonical :=
+  bvt_F_swapCanonical_pairing_of_spacelike_of_two_le
+    (d := d) hd OS lgc
+have hBV := bvt_boundary_values (d := d) OS lgc n
+exact
+  bv_local_commutativity_transfer_of_swap_pairing
+    (d := d) n (bvt_W OS lgc n) (bvt_F OS lgc n) hBV hcanonical
+    i ⟨i.val + 1, hi⟩ f g hsupp hswap
+```
+
+No theorem below this point is allowed to ask for a general transposition, a
+finite-shell equality, or a locality field from a prebuilt
+`WightmanFunctions` package.
+
+## 6. Exact dimension-one route
+
+Dimension one is a separate OS-paper lane.  It is not allowed to import the
+real-open `2 <= d` OS45 geometry, and it is not allowed to use
+`blocker_iterated_eow_hExtPerm_d1_nontrivial`, because that theorem assumes the
+target locality statement.
+
+The dimension-one closure packet is:
+
+### Slot D1-1. `d1_adjacent_sector_compatibility`
+
+```lean
+theorem d1_adjacent_sector_compatibility
+    (OS : OsterwalderSchraderAxioms 1)
+    (lgc : OSLinearGrowthCondition 1 OS)
+    (n : ℕ) :
+    ∀ (π : Equiv.Perm (Fin n)) (i : Fin n) (hi : i.val + 1 < n)
+      (z : Fin n -> Fin (1 + 1) -> ℂ),
+      z ∈ BHW.permutedExtendedTubeSector 1 n π ->
+      z ∈ BHW.permutedExtendedTubeSector 1 n
+        (π * Equiv.swap i ⟨i.val + 1, hi⟩) ->
+      BHW.extendF (bvt_F OS lgc n)
+        (fun k => z ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) =
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (π k))
+```
+
+This is the direct one-dimensional complex-edge / symmetric-PET theorem.  It
+must be proved from the one-dimensional boundary theorem on the complex edge,
+not by appealing to any theorem that already assumes
+`IsLocallyCommutativeWeak 1 (bvt_W OS lgc)`.
+
+### Slot D1-2. `d1_petBranchIndependence`
+
+```lean
+theorem d1_petBranchIndependence
+    (OS : OsterwalderSchraderAxioms 1)
+    (lgc : OSLinearGrowthCondition 1 OS)
+    (n : ℕ) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n -> Fin (1 + 1) -> ℂ),
+      z ∈ BHW.permutedExtendedTubeSector 1 n π ->
+      z ∈ BHW.permutedExtendedTubeSector 1 n ρ ->
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (π k)) =
+        BHW.extendF (bvt_F OS lgc n) (fun k => z (ρ k))
+```
+
+This is the dimension-one symmetric-PET single-valuedness statement.  It is the
+exact replacement for the circular temptation to use
+`blocker_iterated_eow_hExtPerm_d1_nontrivial`.
+
+### Slot D1-3. `bvt_F_swapCanonical_pairing_of_spacelike_of_one`
+
+```lean
+theorem bvt_F_swapCanonical_pairing_of_spacelike_of_one
+    (OS : OsterwalderSchraderAxioms 1)
+    (lgc : OSLinearGrowthCondition 1 OS) :
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+      (f g : SchwartzNPoint 1 n) (ε : ℝ), 0 < ε ->
+      (∀ x, f.toFun x ≠ 0 ->
+        MinkowskiSpace.AreSpacelikeSeparated 1 (x i) (x ⟨i.val + 1, hi⟩)) ->
+      (∀ x, g.toFun x =
+        f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) ->
+      ∫ x : NPointDomain 1 n,
+          bvt_F OS lgc n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := 1) n k μ) * Complex.I) *
+            (g x)
+        =
+      ∫ x : NPointDomain 1 n,
+          bvt_F OS lgc n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := 1) n k μ) * Complex.I) *
+            (f x)
+```
+
+Proof route:
+
+1. use Slot D1-2 as the one-dimensional symmetric continuation on PET;
+2. run the cited one-dimensional Jost boundary theorem;
+3. rewrite the boundary equality into the canonical pairing equality above.
+
+### Slot D1-4. `bvt_locally_commutative_boundary_route_of_one`
 
 ```lean
 private theorem bvt_locally_commutative_boundary_route_of_one
@@ -324,9 +667,21 @@ private theorem bvt_locally_commutative_boundary_route_of_one
     IsLocallyCommutativeWeak 1 (bvt_W OS lgc)
 ```
 
-This route must use the documented D1-C complex-edge / symmetric-PET argument.
-It must not delay the `2 <= d` supplier chain, and it must not import the
-real-open `2 <= d` OS45 geometry as though it were available in dimension one.
+Proof pseudocode:
+
+```lean
+intro n i hi f g hsupp hswap
+have hcanonical :=
+  bvt_F_swapCanonical_pairing_of_spacelike_of_one OS lgc
+have hBV := bvt_boundary_values (d := 1) OS lgc n
+exact
+  bv_local_commutativity_transfer_of_swap_pairing
+    (d := 1) n (bvt_W OS lgc n) (bvt_F OS lgc n) hBV hcanonical
+    i ⟨i.val + 1, hi⟩ f g hsupp hswap
+```
+
+This is the only acceptable dimension-one theorem-2 closure packet under the
+current route discipline.
 
 ## 7. Cautionary warning
 
@@ -341,13 +696,16 @@ theorem surfaces for the OS route.
 
 ## 8. Status after this rewrite
 
-This document is now intentionally active-route only.
+This document is now intentionally active-route only and is meant to be
+implementation-ready.
 
 - The checked OS45 geometry / Euclidean-edge layer is recorded in Section 3.
-- The first unproved theorem on the active route is
-  `os45_adjacent_singleChart_commonBoundaryValue`.
-- The required downstream consumer shape is fixed by
-  `SelectedAdjacentPermutationEdgeData`.
+- The `2 <= d` route is frozen as Slots 1-11.
+- The `d = 1` route is frozen as Slots D1-1 through D1-4.
+- The exact boundary-transfer consumer is now named:
+  `bv_local_commutativity_transfer_of_swap_pairing`.
+- The exact BHW monodromy consumer is now named:
+  `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`.
 
 If later work needs a theorem not named in Sections 4-6, that is a sign that
 the route has drifted and this blueprint should be revised before more

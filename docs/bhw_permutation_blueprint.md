@@ -251,3 +251,51 @@ Rough expected size:
 This blueprint is implementation-ready once those three chunks are treated as
 the literal work units and no extra permutation wrapper theorem is inserted in
 between.
+
+## 10. Theorem-2 consumer contract
+
+Theorem 2 does **not** consume the whole generic permutation-flow package.
+The strict OS-route consumer packet is narrower:
+
+1. theorem 2 first builds adjacent real-edge data on the OS side,
+2. then proves adjacent PET-sector compatibility,
+3. then consumes only the checked monodromy theorems in
+   `PermutedTubeMonodromy.lean`,
+4. and only then invokes the BHW/Jost boundary theorem.
+
+So for theorem 2 the exact external BHW geometry input is the `d ≥ 2`
+orbit/chamber connectivity theorem
+
+```lean
+petOrbitChamberConnected_of_two_le
+```
+
+with target shape
+
+```lean
+∀ (w : Fin n → Fin (d + 1) → ℂ),
+  w ∈ BHW.ForwardTube d n →
+  ∀ (σ : Equiv.Perm (Fin n)) (Λ : ComplexLorentzGroup d),
+    BHW.complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ →
+    Relation.ReflTransGen
+      (BHW.petReachableLabelAdjStep (d := d) (n := n) w)
+      (1 : Equiv.Perm (Fin n)) σ
+```
+
+and it is consumed by
+
+```lean
+BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected
+```
+
+from `PermutedTubeMonodromy.lean`.
+
+The theorem-2 corollary of this section is therefore:
+
+1. `blocker_isConnected_permSeedSet_nontrivial` is on the strict OS route and
+   may be used indirectly through the `d ≥ 2` orbit/chamber connectivity slot;
+2. `blocker_iterated_eow_hExtPerm_d1_nontrivial` is **not** a theorem-2 input,
+   because it assumes the target locality statement in dimension one;
+3. any theorem-2 proof doc or Lean file that jumps straight from adjacent
+   sector equality to global PET single-valuedness without naming the monodromy
+   step has left a real mathematical gap.
