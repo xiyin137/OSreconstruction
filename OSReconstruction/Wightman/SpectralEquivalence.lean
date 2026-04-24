@@ -12,13 +12,13 @@ import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
 
 /-!
-# Spectral Condition: Definitions and Equivalence
+# Spectral Condition: Definitions and One-Way Theorem
 
 This file contains:
 1. **Momentum-space spectral condition definitions**: Fourier transform on n-point
    Schwartz space, difference-variable reduction, `SpectralConditionDistribution`,
    `ForwardTubeAnalyticity`.
-2. **One-way implication**:
+2. **One-way implication only**:
    `ForwardTubeAnalyticity d W → SpectralConditionDistribution d W`,
    using the converse Paley-Wiener-Schwartz tube theorem
    (Vladimirov §26 Thm 26.1 / RS II §IX.3).
@@ -1748,7 +1748,7 @@ lemma inForwardCone_succ_implies_diffs_inOpenForwardCone (n : ℕ)
   intro k
   exact hη k.succ
 
-/-! ### Proof of the Main Equivalence -/
+/-! ### One-Way Direction Infrastructure -/
 
 private abbrev BasepointSpace (d : ℕ) := Fin (d + 1) → ℝ
 
@@ -1964,6 +1964,1225 @@ private lemma diffVarReduction_sub_sectionOf_eq_zero (d : ℕ) [NeZero d] (n : �
       (f - sectionOf d n φ₀ (diffVarReduction d n f)) = 0 := by
   rw [(diffVarReduction d n).map_sub, diffVarReduction_sectionOf d n φ₀ hφ₀, sub_self]
 
+private theorem eq_of_splitFirst_eq_splitLast_eq_local {p q : ℕ}
+    {x y : Fin (p + q) → ℝ}
+    (hfirst : splitFirst p q x = splitFirst p q y)
+    (hlast : splitLast p q x = splitLast p q y) :
+    x = y := by
+  ext i
+  refine Fin.addCases ?_ ?_ i
+  · intro a
+    exact congrFun hfirst a
+  · intro b
+    exact congrFun hlast b
+
+private theorem splitFirst_smul_local {p q : ℕ} (r : ℝ)
+    (x : Fin (p + q) → ℝ) :
+    splitFirst p q (r • x) = r • splitFirst p q x := by
+  ext i
+  simp [splitFirst, Pi.smul_apply]
+
+private theorem splitLast_smul_local {p q : ℕ} (r : ℝ)
+    (x : Fin (p + q) → ℝ) :
+    splitLast p q (r • x) = r • splitLast p q x := by
+  ext i
+  simp [splitLast, Pi.smul_apply]
+
+@[simp] private theorem castFinCLE_apply_local {a b : ℕ} (h : a = b)
+    (x : Fin a → ℝ) (i : Fin b) :
+    castFinCLE h x i = x ((finCongr h).symm i) := rfl
+
+private noncomputable def basepointDiffPairCLE (d : ℕ) (n : ℕ) :
+    NPointSpacetime d (n + 1) ≃L[ℝ] (BasepointSpace d × NPointSpacetime d n) where
+  toFun x := (x 0, fun k μ => x k.succ μ - x k.castSucc μ)
+  invFun y k μ := y.1 μ + diffVarSection d n y.2 k μ
+  left_inv := by
+    intro x
+    ext k μ
+    refine Fin.cases ?_ ?_ k
+    · simp [diffVarSection_zero]
+    · intro i
+      suffices h : ∀ j : Fin (n + 1),
+          x 0 μ + diffVarSection d n (fun l ν => x l.succ ν - x l.castSucc ν) j μ = x j μ by
+        exact h i.succ
+      intro j
+      induction j using Fin.induction with
+      | zero =>
+          simp [diffVarSection_zero]
+      | succ j ih =>
+          have hsucc :=
+            diffVarSection_succ (d := d) n
+              (fun l ν => x l.succ ν - x l.castSucc ν) j μ
+          simp only [] at hsucc
+          linarith
+  right_inv := by
+    intro y
+    rcases y with ⟨a, ξ⟩
+    apply Prod.ext
+    · funext μ
+      simp [diffVarSection_zero]
+    · funext k
+      funext μ
+      change (a μ + diffVarSection d n ξ k.succ μ) -
+          (a μ + diffVarSection d n ξ k.castSucc μ) = ξ k μ
+      rw [diffVarSection_succ]
+      ring
+  map_add' := by
+    intro x y
+    apply Prod.ext
+    · funext μ
+      simp
+    · funext k
+      funext μ
+      simp [add_sub_add_comm]
+  map_smul' := by
+    intro c x
+    apply Prod.ext
+    · funext μ
+      simp
+    · funext k
+      funext μ
+      change c * x k.succ μ - c * x k.castSucc μ = c * (x k.succ μ - x k.castSucc μ)
+      ring
+  continuous_toFun := by
+    exact Continuous.prodMk (continuous_apply 0) <| by
+      apply continuous_pi
+      intro k
+      apply continuous_pi
+      intro μ
+      exact ((continuous_apply μ).comp (continuous_apply k.succ)).sub
+        ((continuous_apply μ).comp (continuous_apply k.castSucc))
+  continuous_invFun := by
+    apply continuous_pi
+    intro k
+    apply continuous_pi
+    intro μ
+    apply Continuous.add
+    · exact (continuous_apply μ).comp continuous_fst
+    · exact (continuous_apply μ).comp
+        ((continuous_apply k).comp
+          ((diffVarSection d n).continuous.comp continuous_snd))
+
+@[simp] private lemma basepointDiffPairCLE_apply
+    (d : ℕ) (n : ℕ) (x : NPointSpacetime d (n + 1)) :
+    basepointDiffPairCLE d n x =
+      (x 0, fun k μ => x k.succ μ - x k.castSucc μ) := rfl
+
+@[simp] private lemma basepointDiffPairCLE_translate_diagonal
+    (d : ℕ) (n : ℕ) (a : BasepointSpace d) (x : NPointSpacetime d (n + 1)) :
+    basepointDiffPairCLE d n (fun i μ => x i μ + a μ) =
+      ((basepointDiffPairCLE d n x).1 + a, (basepointDiffPairCLE d n x).2) := by
+  apply Prod.ext
+  · funext μ
+    simp [basepointDiffPairCLE]
+  · funext k
+    funext μ
+    simp [basepointDiffPairCLE, add_sub_add_right_eq_sub]
+
+private noncomputable def flattenDiffCLE (d : ℕ) (n : ℕ) :
+    NPointSpacetime d n ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
+  (({ (Equiv.curry (Fin n) (Fin (d + 1)) ℝ).symm with
+        map_add' := fun _ _ => rfl
+        map_smul' := fun _ _ => rfl } :
+      (Fin n → Fin (d + 1) → ℝ) ≃ₗ[ℝ] (Fin n × Fin (d + 1) → ℝ)).trans
+    (LinearEquiv.funCongrLeft ℝ ℝ finProdFinEquiv.symm)).toContinuousLinearEquiv
+
+@[simp] private lemma flattenDiffCLE_symm_apply
+    (d : ℕ) (n : ℕ) (u : Fin (n * (d + 1)) → ℝ) (i : Fin n) (j : Fin (d + 1)) :
+    (flattenDiffCLE d n).symm u i j = u (finProdFinEquiv (i, j)) := rfl
+
+@[simp] private lemma flattenSchwartzNPoint_apply_flattenDiff
+    (d : ℕ) (n : ℕ) (g : SchwartzNPointSpace d n) (u : Fin (n * (d + 1)) → ℝ) :
+    flattenSchwartzNPoint (d := d) g u = g ((flattenDiffCLE d n).symm u) := by
+  rw [flattenSchwartzNPoint_apply]
+  congr 1
+
+private noncomputable def flattenBasepointDiffCLE (d : ℕ) (n : ℕ) :
+    (BasepointSpace d × NPointSpacetime d n) ≃L[ℝ]
+      (Fin ((d + 1) + n * (d + 1)) → ℝ) :=
+  (({ toFun := fun y =>
+        zeroTailBlockShift (m := d + 1) (n := n * (d + 1)) y.1 +
+          zeroHeadBlockShift (m := d + 1) (n := n * (d + 1))
+            (flattenDiffCLE d n y.2)
+      invFun := fun u =>
+        (splitFirst (d + 1) (n * (d + 1)) u,
+          (flattenDiffCLE d n).symm (splitLast (d + 1) (n * (d + 1)) u))
+      left_inv := by
+        intro y
+        rcases y with ⟨a, ξ⟩
+        apply Prod.ext
+        · funext μ
+          simp
+        · apply (flattenDiffCLE d n).injective
+          funext i
+          simp
+      right_inv := by
+        intro u
+        apply eq_of_splitFirst_eq_splitLast_eq_local
+        · simp
+        · simp
+      map_add' := by
+        intro y z
+        apply eq_of_splitFirst_eq_splitLast_eq_local
+        · simp [map_add]
+        · simp [map_add]
+      map_smul' := by
+        intro r y
+        apply eq_of_splitFirst_eq_splitLast_eq_local
+        · simp [splitFirst_smul_local, map_smul]
+        · simp [splitLast_smul_local, map_smul] } :
+      (BasepointSpace d × NPointSpacetime d n) ≃ₗ[ℝ]
+        (Fin ((d + 1) + n * (d + 1)) → ℝ))).toContinuousLinearEquiv
+
+@[simp] private lemma flattenBasepointDiffCLE_add_basepoint
+    (d : ℕ) (n : ℕ) (a₀ : BasepointSpace d)
+    (y : BasepointSpace d × NPointSpacetime d n) :
+    flattenBasepointDiffCLE d n (y.1 + a₀, y.2) =
+      flattenBasepointDiffCLE d n y +
+        zeroTailBlockShift (m := d + 1) (n := n * (d + 1)) a₀ := by
+  rcases y with ⟨a, ξ⟩
+  apply eq_of_splitFirst_eq_splitLast_eq_local
+  · ext i
+    simp [flattenBasepointDiffCLE, splitFirst_add, add_assoc, add_left_comm, add_comm]
+  · ext i
+    simp [flattenBasepointDiffCLE, splitLast_add, add_assoc, add_left_comm, add_comm]
+
+private noncomputable def flattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
+    SchwartzNPointSpace d (n + 1) →L[ℂ]
+      SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (flattenBasepointDiffCLE d n).symm).comp
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (basepointDiffPairCLE d n).symm)
+
+@[simp] private lemma flattenBasepointDiffSchwartz_apply
+    (d : ℕ) (n : ℕ) (f : SchwartzNPointSpace d (n + 1))
+    (u : Fin ((d + 1) + n * (d + 1)) → ℝ) :
+    flattenBasepointDiffSchwartz d n f u =
+      f ((basepointDiffPairCLE d n).symm ((flattenBasepointDiffCLE d n).symm u)) := by
+  simp [flattenBasepointDiffSchwartz, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+private noncomputable def unflattenBasepointDiffSchwartz (d : ℕ) (n : ℕ) :
+    SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzNPointSpace d (n + 1) :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffPairCLE d n)).comp
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (flattenBasepointDiffCLE d n))
+
+@[simp] private lemma unflatten_flattenBasepointDiffSchwartz
+    (d : ℕ) (n : ℕ) (f : SchwartzNPointSpace d (n + 1)) :
+    unflattenBasepointDiffSchwartz d n (flattenBasepointDiffSchwartz d n f) = f := by
+  ext x
+  simpa [unflattenBasepointDiffSchwartz, flattenBasepointDiffSchwartz, basepointDiffPairCLE] using
+    congrArg f ((basepointDiffPairCLE d n).symm_apply_apply x)
+
+private noncomputable def transportedWHeadBlockCLM
+    (d : ℕ) (n : ℕ)
+    (W : SchwartzNPointSpace d (n + 1) → ℂ)
+    (hW_cont : Continuous W)
+    (hW_lin : IsLinearMap ℂ W) :
+    SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
+  { toFun := fun ψ => W (unflattenBasepointDiffSchwartz d n ψ)
+    map_add' := by
+      intro ψ χ
+      simp [unflattenBasepointDiffSchwartz, hW_lin.map_add]
+    map_smul' := by
+      intro c ψ
+      simp [unflattenBasepointDiffSchwartz, hW_lin.map_smul]
+    cont := hW_cont.comp (unflattenBasepointDiffSchwartz d n).continuous }
+
+private lemma transportedWHeadBlockInvariant
+    (d : ℕ) [NeZero d] (n : ℕ)
+    {W : SchwartzNPointSpace d (n + 1) → ℂ}
+    (hW_cont : Continuous W)
+    (hW_lin : IsLinearMap ℂ W)
+    (hW_transl : ∀ (a : BasepointSpace d)
+      (f g : SchwartzNPointSpace d (n + 1)),
+      (∀ x : NPointSpacetime d (n + 1),
+        g.toFun x = f.toFun (fun i => x i + a)) →
+      W f = W g) :
+    IsHeadBlockTranslationInvariantSchwartzCLM
+      (m := d + 1) (n := n * (d + 1))
+      (transportedWHeadBlockCLM d n W hW_cont hW_lin) := by
+  intro a
+  ext ψ
+  symm
+  refine hW_transl a _ _ ?_
+  intro x
+  change ψ
+      (flattenBasepointDiffCLE d n (basepointDiffPairCLE d n x) +
+        zeroTailBlockShift (m := d + 1) (n := n * (d + 1)) a) =
+    ψ (flattenBasepointDiffCLE d n
+      (basepointDiffPairCLE d n (fun i μ => x i μ + a μ)))
+  rw [basepointDiffPairCLE_translate_diagonal, flattenBasepointDiffCLE_add_basepoint]
+
+private def basepointAssemble (d : ℕ) (m : ℕ) (hm : m ≤ d + 1) :
+    (Fin m → ℝ) → (Fin (d + 1 - m) → ℝ) → (Fin (d + 1) → ℝ) :=
+  fun aHead aTail =>
+    castFinCLE (Nat.add_sub_of_le hm)
+      (fun i : Fin (m + (d + 1 - m)) =>
+        Fin.addCases (fun j => aHead (Fin.rev j)) aTail i)
+
+@[simp] private lemma basepointAssemble_zero
+    (d : ℕ) (aTail : Fin (d + 1) → ℝ) :
+    basepointAssemble d 0 (Nat.zero_le (d + 1)) default aTail = aTail := by
+  ext i
+  rw [basepointAssemble, castFinCLE_apply_local]
+  have hidx :
+      ((finCongr (Nat.add_sub_of_le (Nat.zero_le (d + 1)))).symm i) = Fin.natAdd 0 i := by
+    apply Fin.ext
+    simp [Fin.natAdd]
+  rw [hidx, Fin.addCases_right]
+
+@[simp] private lemma basepointAssemble_zero_any
+    (d : ℕ) (hm : 0 ≤ d + 1) (aTail : Fin (d + 1) → ℝ) :
+    basepointAssemble d 0 hm default aTail = aTail := by
+  have hproof : hm = Nat.zero_le (d + 1) := Subsingleton.elim _ _
+  cases hproof
+  simpa using basepointAssemble_zero d aTail
+
+private lemma basepointAssemble_cons
+    (d : ℕ) (m : ℕ) (hm : m + 1 ≤ d + 1)
+    (aHead : Fin m → ℝ) (aTail : Fin (d + 1 - (m + 1)) → ℝ) (t : ℝ) :
+    basepointAssemble d m (by omega) aHead
+      (show Fin (d + 1 - m) → ℝ from
+        castFinCLE (by omega : (d + 1 - (m + 1)) + 1 = d + 1 - m) (Fin.cons t aTail)) =
+      basepointAssemble d (m + 1) hm (Fin.cons t aHead) aTail := by
+  have hm₀ : m ≤ d + 1 := by omega
+  have h' : (d + 1 - (m + 1)) + 1 = d + 1 - m := by omega
+  ext i
+  -- Unfold both basepointAssemble evaluations through castFinCLE
+  rw [basepointAssemble, basepointAssemble]
+  simp only [castFinCLE_apply_local]
+  -- Name the reindexed points
+  set iL : Fin (m + (d + 1 - m)) :=
+    (finCongr (Nat.add_sub_of_le hm₀)).symm i with hiL_def
+  set iR : Fin ((m + 1) + (d + 1 - (m + 1))) :=
+    (finCongr (Nat.add_sub_of_le hm)).symm i with hiR_def
+  have hiL_val : iL.val = i.val := by simp [iL]
+  have hiR_val : iR.val = i.val := by simp [iR]
+  -- Case analysis on i.val
+  rcases lt_or_ge i.val m with h₁ | h₁
+  · -- i.val < m: both sides reduce to aHead evaluated at the reversed head index
+    have hLlt : iL.val < m := hiL_val ▸ h₁
+    have hRlt : iR.val < m + 1 := by rw [hiR_val]; omega
+    have hL_eq : iL = Fin.castAdd (d + 1 - m) (iL.castLT hLlt) := by
+      apply Fin.ext; simp
+    have hR_eq : iR = Fin.castAdd (d + 1 - (m + 1)) (iR.castLT hRlt) := by
+      apply Fin.ext; simp
+    rw [hL_eq, Fin.addCases_left, hR_eq, Fin.addCases_left]
+    -- Both head indices have the same val = i.val < m, so the right is
+    -- `Fin.castSucc` of the left.
+    have hcastSucc :
+        (iR.castLT hRlt : Fin (m + 1)) = Fin.castSucc (iL.castLT hLlt) := by
+      apply Fin.ext
+      simp [hiL_val, hiR_val]
+    rw [hcastSucc, Fin.rev_castSucc, Fin.cons_succ]
+  · rcases eq_or_lt_of_le h₁ with h₂ | h₂
+    · -- i.val = m: LHS hits the new cons head `t`; RHS hits Fin.cons t aHead 0 = t
+      have hLnlt : ¬ iL.val < m := by rw [hiL_val, ← h₂]; omega
+      have hRlt : iR.val < m + 1 := by rw [hiR_val, ← h₂]; omega
+      have hLge : m ≤ iL.val := by rw [hiL_val, ← h₂]
+      have hR_eq : iR = Fin.castAdd (d + 1 - (m + 1)) (iR.castLT hRlt) := by
+        apply Fin.ext; simp
+      -- LHS: use right branch of addCases with subNat-reconstruction
+      have hLsub_val :
+          (⟨iL.val - m, by
+            have : iL.val < m + (d + 1 - m) := iL.isLt
+            omega⟩ : Fin (d + 1 - m)).val = 0 := by
+        show iL.val - m = 0
+        omega
+      have hL_eq :
+          iL = Fin.natAdd m
+            (⟨iL.val - m, by
+              have : iL.val < m + (d + 1 - m) := iL.isLt
+              omega⟩ : Fin (d + 1 - m)) := by
+        apply Fin.ext
+        show iL.val = m + (iL.val - m)
+        omega
+      rw [hL_eq, Fin.addCases_right, hR_eq, Fin.addCases_left]
+      -- RHS head index: val m on Fin (m + 1) → Fin.last m
+      have hRlast : (iR.castLT hRlt : Fin (m + 1)) = Fin.last m := by
+        apply Fin.ext
+        show iR.val = m
+        omega
+      rw [hRlast, Fin.rev_last, Fin.cons_zero]
+      -- LHS: castFinCLE h' (Fin.cons t aTail) at the subNat index (val 0) equals t
+      rw [castFinCLE_apply_local]
+      have h0 :
+          ((finCongr h').symm (⟨iL.val - m, by
+            have : iL.val < m + (d + 1 - m) := iL.isLt
+            omega⟩ : Fin (d + 1 - m)) : Fin ((d + 1 - (m + 1)) + 1)) = 0 := by
+        apply Fin.ext
+        exact hLsub_val
+      rw [h0, Fin.cons_zero]
+    · -- i.val > m: both sides reduce to `aTail` at the tail index i.val - (m+1)
+      have hLnlt : ¬ iL.val < m := by rw [hiL_val]; omega
+      have hRnlt : ¬ iR.val < m + 1 := by rw [hiR_val]; omega
+      have hLge : m ≤ iL.val := by rw [hiL_val]; omega
+      have hRge : m + 1 ≤ iR.val := by rw [hiR_val]; omega
+      have hL_eq :
+          iL = Fin.natAdd m
+            (⟨iL.val - m, by
+              have : iL.val < m + (d + 1 - m) := iL.isLt
+              omega⟩ : Fin (d + 1 - m)) := by
+        apply Fin.ext
+        show iL.val = m + (iL.val - m)
+        omega
+      have hR_eq :
+          iR = Fin.natAdd (m + 1)
+            (⟨iR.val - (m + 1), by
+              have : iR.val < (m + 1) + (d + 1 - (m + 1)) := iR.isLt
+              omega⟩ : Fin (d + 1 - (m + 1))) := by
+        apply Fin.ext
+        show iR.val = (m + 1) + (iR.val - (m + 1))
+        omega
+      rw [hL_eq, Fin.addCases_right, hR_eq, Fin.addCases_right]
+      -- LHS: castFinCLE h' (Fin.cons t aTail) at a subNat index with val > 0
+      rw [castFinCLE_apply_local]
+      -- Show the cast index equals Fin.succ of something, then use Fin.cons_succ
+      have hsucc :
+          ((finCongr h').symm (⟨iL.val - m, by
+            have : iL.val < m + (d + 1 - m) := iL.isLt
+            omega⟩ : Fin (d + 1 - m)) : Fin ((d + 1 - (m + 1)) + 1)) =
+          Fin.succ (⟨iR.val - (m + 1), by
+            have : iR.val < (m + 1) + (d + 1 - (m + 1)) := iR.isLt
+            omega⟩ : Fin (d + 1 - (m + 1))) := by
+        apply Fin.ext
+        simp [hiL_val, hiR_val]
+        omega
+      rw [hsucc, Fin.cons_succ]
+
+@[simp] private lemma splitFirst_flattenBasepointDiffCLE
+    (d : ℕ) (n : ℕ) (y : BasepointSpace d × NPointSpacetime d n) :
+    splitFirst (d + 1) (n * (d + 1))
+      (flattenBasepointDiffCLE d n y) = y.1 := by
+  rcases y with ⟨a, ξ⟩
+  simp [flattenBasepointDiffCLE]
+
+@[simp] private lemma splitLast_flattenBasepointDiffCLE
+    (d : ℕ) (n : ℕ) (y : BasepointSpace d × NPointSpacetime d n) :
+    splitLast (d + 1) (n * (d + 1))
+      (flattenBasepointDiffCLE d n y) = flattenDiffCLE d n y.2 := by
+  rcases y with ⟨a, ξ⟩
+  simp [flattenBasepointDiffCLE]
+
+private lemma splitFirst_castFinCLE_succ_add_symm_cons_local {m n : ℕ}
+    (t : ℝ) (x : Fin (m + n) → ℝ) :
+    splitFirst (m + 1) n ((castFinCLE (Nat.succ_add m n)).symm (Fin.cons t x)) =
+      Fin.cons t (splitFirst m n x) := by
+  ext i
+  refine Fin.cases ?_ ?_ i
+  · have hcast :
+        Fin.cast (Nat.succ_add m n) (Fin.castAdd n (0 : Fin (m + 1))) = 0 := by
+      apply Fin.ext
+      simp
+    simp [splitFirst, hcast]
+  · intro i
+    have hcast :
+        Fin.cast (Nat.succ_add m n) (Fin.castAdd n i.succ) = (Fin.castAdd n i).succ := by
+      apply Fin.ext
+      simp
+    simp [splitFirst, hcast]
+
+private lemma splitLast_castFinCLE_succ_add_symm_cons_local {m n : ℕ}
+    (t : ℝ) (x : Fin (m + n) → ℝ) :
+    splitLast (m + 1) n ((castFinCLE (Nat.succ_add m n)).symm (Fin.cons t x)) =
+      splitLast m n x := by
+  ext j
+  have hcast :
+      Fin.cast (Nat.succ_add m n) (Fin.natAdd (m + 1) j) = (Fin.natAdd m j).succ := by
+    apply Fin.ext
+    simp
+    omega
+  simp [splitLast, hcast]
+
+private lemma sliceIntegral_flattenBasepointDiff_step
+    (d : ℕ) (n : ℕ) (m : ℕ)
+    (hm : m + 1 ≤ d + 1)
+    (f : SchwartzNPointSpace d (n + 1))
+    (x : Fin (m + ((d + 1 - (m + 1)) + n * (d + 1))) → ℝ) :
+    sliceIntegral
+      (reindexSchwartzFin
+        (Nat.succ_add m ((d + 1 - (m + 1)) + n * (d + 1)))
+        (reindexSchwartzFin
+          (by omega : (d + 1) + n * (d + 1) =
+            (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)))
+          (flattenBasepointDiffSchwartz d n f))) x
+      =
+    ∫ t : ℝ,
+      (reindexSchwartzFin
+        (by omega : (d + 1) + n * (d + 1) =
+          (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)))
+        (flattenBasepointDiffSchwartz d n f))
+        ((castFinCLE
+            (Nat.succ_add m ((d + 1 - (m + 1)) + n * (d + 1)))).symm
+          (Fin.cons t x)) := by
+  simp [sliceIntegral_apply, sliceIntegralRaw, reindexSchwartzFin_apply]
+
+private lemma integrateHeadBlock_slice_swap_flattenBasepoint
+    {m N : ℕ}
+    (F : SchwartzMap (Fin ((m + 1) + N) → ℝ) ℂ)
+    (u : Fin N → ℝ) :
+    integrateHeadBlock (m := m)
+        (n := N)
+        (sliceIntegral
+          (reindexSchwartzFin (Nat.succ_add m N) F)) u =
+      ∫ t : ℝ,
+        integrateHeadBlock (m := m)
+            (n := N + 1)
+            (reindexSchwartzFin (by omega : (m + 1) + N = m + (N + 1)) F)
+          (Fin.cons t u) := by
+  induction m generalizing N u with
+  | zero =>
+      simp only [integrateHeadBlock, reindexSchwartzFin_apply, sliceIntegral_apply,
+        sliceIntegralRaw]
+      congr 1
+      funext t
+      apply congrArg
+      ext i
+      rcases i with ⟨iv, hiv⟩
+      cases iv with
+      | zero =>
+          simp only [castFinCLE_symm_apply, Fin.cons]
+          rfl
+      | succ k =>
+          simp only [castFinCLE_symm_apply, Fin.cons]
+          rfl
+  | succ m ihm =>
+      -- F : SchwartzMap (Fin (((m + 1) + 1) + N) → ℝ) ℂ
+      -- which equals Fin ((m + 2) + N) → ℝ by defn-eq (since (m+1)+1 = m+2 defn).
+      -- Goal: integrateHeadBlock (m+1) (sliceIntegral (reindexSchwartzFin (Nat.succ_add (m+1) N) F)) u = ...
+      -- Unfold integrateHeadBlock (m+1) on LHS via its recursive definition.
+      let G :
+          SchwartzMap (Fin ((m + 1) + N) → ℝ) ℂ :=
+        sliceIntegral (reindexSchwartzFin (Nat.succ_add (m + 1) N) F)
+      let F' :
+          SchwartzMap (Fin ((m + 1) + (N + 1)) → ℝ) ℂ :=
+        reindexSchwartzFin (by omega : ((m + 1) + 1) + N = (m + 1) + (N + 1)) F
+      have hG_reindex :
+          reindexSchwartzFin (by omega : (m + 1) + N = m + (N + 1)) G =
+          sliceIntegral (reindexSchwartzFin (Nat.succ_add m (N + 1)) F') := by
+        ext x
+        simp only [G, F', reindexSchwartzFin_apply, sliceIntegral_apply, sliceIntegralRaw]
+        congr 1
+        funext t
+        apply congrArg
+        ext i
+        rcases i with ⟨iv, hiv⟩
+        cases iv with
+        | zero =>
+            simp only [castFinCLE_symm_apply, Fin.cons]
+            rfl
+        | succ k =>
+            simp only [castFinCLE_symm_apply, Fin.cons]
+            rfl
+      calc
+        integrateHeadBlock (m := m + 1) (n := N)
+            (sliceIntegral (reindexSchwartzFin (Nat.succ_add (m + 1) N) F)) u
+          =
+            integrateHeadBlock (m := m) (n := N)
+              (sliceIntegral (reindexSchwartzFin (Nat.succ_add m N) G)) u := by
+                simp [integrateHeadBlock, G]
+        _ =
+            ∫ s : ℝ,
+              integrateHeadBlock (m := m) (n := N + 1)
+                (reindexSchwartzFin (by omega : (m + 1) + N = m + (N + 1)) G)
+                (Fin.cons s u) := by
+                  exact ihm (N := N) (u := u) (F := G)
+        _ =
+            ∫ s : ℝ,
+              integrateHeadBlock (m := m) (n := N + 1)
+                (sliceIntegral (reindexSchwartzFin (Nat.succ_add m (N + 1)) F'))
+                (Fin.cons s u) := by
+                  apply MeasureTheory.integral_congr_ae
+                  filter_upwards with s
+                  rw [hG_reindex]
+        _ =
+            ∫ s : ℝ, ∫ t : ℝ,
+              integrateHeadBlock (m := m) (n := (N + 1) + 1)
+                (reindexSchwartzFin (by omega : (m + 1) + (N + 1) = m + ((N + 1) + 1)) F')
+                (Fin.cons t (Fin.cons s u)) := by
+                  apply MeasureTheory.integral_congr_ae
+                  filter_upwards with s
+                  exact ihm (N := N + 1) (u := Fin.cons s u) (F := F')
+        _ =
+            ∫ s : ℝ,
+              integrateHeadBlock (m := m + 1) (n := N + 1)
+                (reindexSchwartzFin
+                  (by omega : ((m + 1) + 1) + N = (m + 1) + (N + 1)) F)
+                (Fin.cons s u) := by
+                  apply MeasureTheory.integral_congr_ae
+                  filter_upwards with s
+                  symm
+                  show integrateHeadBlock (m := m + 1) (n := N + 1) F' (Fin.cons s u) = _
+                  show integrateHeadBlock (m := m) (n := N + 1)
+                      (sliceIntegral (reindexSchwartzFin (Nat.succ_add m (N + 1)) F'))
+                      (Fin.cons s u) = _
+                  exact ihm (N := N + 1) (u := Fin.cons s u) (F := F')
+
+
+private lemma integrateHeadBlock_flattenBasepointDiff_aux_m
+    (d : ℕ) [NeZero d] (n : ℕ)
+    (m : ℕ) (hm : m ≤ d + 1)
+    (f : SchwartzNPointSpace d (n + 1))
+    (u : Fin ((d + 1 - m) + n * (d + 1)) → ℝ) :
+    integrateHeadBlock (m := m) (n := (d + 1 - m) + n * (d + 1))
+      (reindexSchwartzFin (by omega)
+        (flattenBasepointDiffSchwartz d n f)) u =
+    ∫ aHead : Fin m → ℝ,
+      f (fun k μ =>
+        (basepointAssemble d m hm aHead
+          (splitFirst (d + 1 - m) (n * (d + 1)) u)) μ +
+        diffVarSection d n
+          ((flattenDiffCLE d n).symm
+            (splitLast (d + 1 - m) (n * (d + 1)) u)) k μ) := by
+  induction m with
+  | zero =>
+      have hvol :
+          (MeasureTheory.volume : MeasureTheory.Measure (Fin 0 → ℝ)) =
+            MeasureTheory.Measure.dirac default := by
+        simpa using
+          (MeasureTheory.Measure.volume_pi_eq_dirac
+            (ι := Fin 0) (α := fun _ => ℝ) (x := default))
+      have hu :
+          ((castFinCLE
+              (by omega : (d + 1) + n * (d + 1) =
+                0 + (d + 1 - 0 + n * (d + 1)))).symm
+            ((castFinCLE (Nat.zero_add (d + 1 - 0 + n * (d + 1)))).symm u)) = u := by
+        ext i
+        simp [castFinCLE_symm_apply]
+      rw [integrateHeadBlock, hvol, MeasureTheory.integral_dirac]
+      rw [reindexSchwartzFin_apply]
+      rw [reindexSchwartzFin_apply]
+      rw [flattenBasepointDiffSchwartz_apply]
+      rw [hu]
+      have hA :
+          basepointAssemble d 0 hm default
+            (splitFirst (d + 1 - 0) (n * (d + 1)) u) =
+          splitFirst (d + 1 - 0) (n * (d + 1)) u := by
+        simpa using
+          basepointAssemble_zero_any d hm
+            (splitFirst (d + 1 - 0) (n * (d + 1)) u)
+      congr 1
+      ext k μ
+      rw [hA]
+      change ((flattenBasepointDiffCLE d n).symm u).1 μ +
+          diffVarSection d n (((flattenBasepointDiffCLE d n).symm u).2) k μ =
+        splitFirst (d + 1) (n * (d + 1)) u μ +
+          diffVarSection d n
+            ((flattenDiffCLE d n).symm (splitLast (d + 1) (n * (d + 1)) u)) k μ
+      simp [flattenBasepointDiffCLE]
+  | succ m ihm =>
+      have hm' : m + 1 ≤ d + 1 := hm
+      have hmle : m ≤ d + 1 := by omega
+      have hdiff : (d + 1 - m) = (d + 1 - (m + 1)) + 1 := by omega
+      have hcastEq : (d + 1 - m) + n * (d + 1) =
+          ((d + 1 - (m + 1)) + n * (d + 1)) + 1 := by omega
+      have hRindex : (d + 1) + n * (d + 1) =
+          (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)) := by omega
+      have hRindex' : (d + 1) + n * (d + 1) =
+          m + ((d + 1 - m) + n * (d + 1)) := by omega
+      rw [integrateHeadBlock]
+      have hswap :
+          integrateHeadBlock (m := m)
+              (n := (d + 1 - (m + 1)) + n * (d + 1))
+              (sliceIntegral
+                (reindexSchwartzFin
+                  (Nat.succ_add m ((d + 1 - (m + 1)) + n * (d + 1)))
+                  (reindexSchwartzFin hRindex
+                    (flattenBasepointDiffSchwartz d n f)))) u =
+            ∫ t : ℝ,
+              integrateHeadBlock (m := m)
+                  (n := (d + 1 - m) + n * (d + 1))
+                  (reindexSchwartzFin hRindex'
+                    (flattenBasepointDiffSchwartz d n f))
+                ((castFinCLE hcastEq).symm (Fin.cons t u)) := by
+        have hswap0 :=
+          integrateHeadBlock_slice_swap_flattenBasepoint
+            (F := reindexSchwartzFin hRindex (flattenBasepointDiffSchwartz d n f))
+            (u := u)
+        have hreindex :
+            reindexSchwartzFin
+                (by omega : (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)) =
+                  m + (((d + 1 - (m + 1)) + n * (d + 1)) + 1))
+                (reindexSchwartzFin hRindex
+                  (flattenBasepointDiffSchwartz d n f)) =
+              reindexSchwartzFin
+                (by omega : m + (d + 1 - m + n * (d + 1)) =
+                  m + (((d + 1 - (m + 1)) + n * (d + 1)) + 1))
+                (reindexSchwartzFin hRindex'
+                  (flattenBasepointDiffSchwartz d n f)) := by
+          ext x
+          rw [reindexSchwartzFin_apply, reindexSchwartzFin_apply,
+            reindexSchwartzFin_apply, reindexSchwartzFin_apply]
+          rw [flattenBasepointDiffSchwartz_apply, flattenBasepointDiffSchwartz_apply]
+          congr 1
+        calc
+          integrateHeadBlock (m := m)
+              (n := (d + 1 - (m + 1)) + n * (d + 1))
+              (sliceIntegral
+                (reindexSchwartzFin
+                  (Nat.succ_add m ((d + 1 - (m + 1)) + n * (d + 1)))
+                  (reindexSchwartzFin hRindex
+                    (flattenBasepointDiffSchwartz d n f)))) u
+              =
+            ∫ t : ℝ,
+              integrateHeadBlock (m := m)
+                  (n := ((d + 1 - (m + 1)) + n * (d + 1)) + 1)
+                  (reindexSchwartzFin
+                    (by omega : (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)) =
+                      m + (((d + 1 - (m + 1)) + n * (d + 1)) + 1))
+                    (reindexSchwartzFin hRindex
+                      (flattenBasepointDiffSchwartz d n f)))
+                  (Fin.cons t u) := by
+                    exact hswap0
+          _ =
+            ∫ t : ℝ,
+              integrateHeadBlock (m := m)
+                  (n := (d + 1 - m) + n * (d + 1))
+                  (reindexSchwartzFin hRindex'
+                    (flattenBasepointDiffSchwartz d n f))
+                  ((castFinCLE hcastEq).symm (Fin.cons t u)) := by
+                    apply MeasureTheory.integral_congr_ae
+                    filter_upwards with t
+                    have hG :
+                        integrateHeadBlock (m := m)
+                            (n := ((d + 1 - (m + 1)) + n * (d + 1)) + 1)
+                            (reindexSchwartzFin
+                              (by omega : (m + 1) + ((d + 1 - (m + 1)) + n * (d + 1)) =
+                                m + (((d + 1 - (m + 1)) + n * (d + 1)) + 1))
+                              (reindexSchwartzFin hRindex
+                                (flattenBasepointDiffSchwartz d n f)))
+                            (Fin.cons t u)
+                          =
+                        integrateHeadBlock (m := m)
+                            (n := (d + 1 - m) + n * (d + 1))
+                            (reindexSchwartzFin hRindex'
+                              (flattenBasepointDiffSchwartz d n f))
+                            ((castFinCLE hcastEq).symm (Fin.cons t u)) := by
+                      rw [hreindex]
+                      have hnat : ∀ (p : ℕ) (a b : ℕ) (hab : a = b)
+                          (h : p + a = p + b)
+                          (F : SchwartzMap (Fin (p + a) → ℝ) ℂ) (y : Fin b → ℝ),
+                          integrateHeadBlock (m := p) (n := b)
+                              (reindexSchwartzFin h F) y =
+                            integrateHeadBlock (m := p) (n := a) F
+                              ((castFinCLE hab).symm y) := by
+                        intro p
+                        induction p with
+                        | zero =>
+                            intro a b hab h F y
+                            simp only [integrateHeadBlock, reindexSchwartzFin_apply]
+                            apply congrArg F
+                            ext i
+                            simp only [castFinCLE_symm_apply]
+                            apply congrArg y
+                            apply Fin.ext
+                            rfl
+                        | succ k ihk =>
+                            intro a b hab h F y
+                            show integrateHeadBlock (m := k) (n := b)
+                                  (sliceIntegral
+                                    (reindexSchwartzFin (Nat.succ_add k b)
+                                      (reindexSchwartzFin h F))) y =
+                                integrateHeadBlock (m := k) (n := a)
+                                  (sliceIntegral
+                                    (reindexSchwartzFin (Nat.succ_add k a) F))
+                                  ((castFinCLE hab).symm y)
+                            have h' : k + a = k + b := by omega
+                            have hs :
+                                sliceIntegral
+                                    (reindexSchwartzFin (Nat.succ_add k b)
+                                      (reindexSchwartzFin h F))
+                                  =
+                                reindexSchwartzFin h'
+                                  (sliceIntegral
+                                    (reindexSchwartzFin (Nat.succ_add k a) F)) := by
+                              apply SchwartzMap.ext
+                              intro z
+                              simp only [reindexSchwartzFin_apply, sliceIntegral_apply,
+                                sliceIntegralRaw]
+                              congr 1
+                              funext tt
+                              apply congrArg F
+                              ext i
+                              rcases i with ⟨iv, hiv⟩
+                              cases iv with
+                              | zero =>
+                                  simp only [castFinCLE_symm_apply, Fin.cons]
+                                  rfl
+                              | succ iv' =>
+                                  simp only [castFinCLE_symm_apply, Fin.cons]
+                                  rfl
+                            rw [hs]
+                            exact ihk a b hab h' _ y
+                      exact hnat m _ _ hcastEq _ _ (Fin.cons t u)
+                    exact hG
+      rw [hswap]
+      simp_rw [ihm hmle]
+      have hSF : ∀ t : ℝ,
+          splitFirst (d + 1 - m) (n * (d + 1))
+            ((castFinCLE hcastEq).symm (Fin.cons t u)) =
+          (castFinCLE hdiff).symm
+            (Fin.cons t (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) := by
+        intro t
+        ext i
+        simp only [splitFirst, castFinCLE_symm_apply]
+        rcases Nat.eq_zero_or_pos i.val with hi0 | hipos
+        · have hL_zero :
+              (finCongr hcastEq) (Fin.castAdd (n * (d + 1)) i) =
+                (0 : Fin (d + 1 - (m + 1) + n * (d + 1) + 1)) := by
+            apply Fin.ext
+            simp [Fin.val_castAdd, hi0]
+          have hR_zero :
+              (finCongr hdiff) i = (0 : Fin (d + 1 - (m + 1) + 1)) := by
+            apply Fin.ext
+            simp [hi0]
+          rw [hL_zero, hR_zero, Fin.cons_zero, Fin.cons_zero]
+        · have hipred : i.val - 1 < d + 1 - (m + 1) := by
+            have := i.isLt; omega
+          have hipred' : i.val - 1 < d + 1 - (m + 1) + n * (d + 1) := by
+            have := i.isLt; omega
+          have hL_succ :
+              (finCongr hcastEq) (Fin.castAdd (n * (d + 1)) i) =
+                Fin.succ ⟨i.val - 1, hipred'⟩ := by
+            apply Fin.ext
+            simp [Fin.val_castAdd, Fin.val_succ]
+            omega
+          have hR_succ :
+              (finCongr hdiff) i = Fin.succ ⟨i.val - 1, hipred⟩ := by
+            apply Fin.ext
+            simp [Fin.val_succ]
+            omega
+          rw [hL_succ, hR_succ, Fin.cons_succ, Fin.cons_succ]
+          rfl
+      have hSL : ∀ t : ℝ,
+          splitLast (d + 1 - m) (n * (d + 1))
+            ((castFinCLE hcastEq).symm (Fin.cons t u)) =
+          splitLast (d + 1 - (m + 1)) (n * (d + 1)) u := by
+        intro t
+        ext j
+        simp only [splitLast, castFinCLE_symm_apply]
+        have hjpos :
+            0 < ((finCongr hcastEq) (Fin.natAdd (d + 1 - m) j)).val := by
+          simp [Fin.val_natAdd]
+          omega
+        have hj_pred_lt :
+            ((finCongr hcastEq) (Fin.natAdd (d + 1 - m) j)).val - 1 <
+              d + 1 - (m + 1) + n * (d + 1) := by
+          have := ((finCongr hcastEq) (Fin.natAdd (d + 1 - m) j)).isLt
+          omega
+        have hj_succ :
+            (finCongr hcastEq) (Fin.natAdd (d + 1 - m) j) =
+              Fin.succ ⟨((finCongr hcastEq) (Fin.natAdd (d + 1 - m) j)).val - 1,
+                hj_pred_lt⟩ := by
+          apply Fin.ext
+          simp [Fin.val_succ]
+          omega
+        rw [hj_succ, Fin.cons_succ]
+        apply congrArg u
+        apply Fin.ext
+        simp [Fin.val_natAdd]
+        omega
+      simp_rw [hSF, hSL]
+      have happend :
+          ∀ (t : ℝ) (aHead : Fin m → ℝ),
+            basepointAssemble d m hmle aHead
+              ((castFinCLE hdiff).symm
+                (Fin.cons t
+                  (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u))) =
+              basepointAssemble d (m + 1) hm' (Fin.cons t aHead)
+                (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) := by
+        intro t aHead
+        simpa using
+          (basepointAssemble_cons (d := d) (m := m) (hm := hm')
+            (aHead := aHead)
+            (aTail := splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) t)
+      simp_rw [happend]
+      have hFubini :
+          (∫ z : ℝ × (Fin m → ℝ),
+            f (fun k μ =>
+              (basepointAssemble d (m + 1) hm' (Fin.cons z.1 z.2)
+                (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
+              diffVarSection d n
+                ((flattenDiffCLE d n).symm
+                  (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ)
+            ∂((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+              (MeasureTheory.Measure.pi fun _ : Fin m =>
+                (MeasureTheory.volume : MeasureTheory.Measure ℝ)))) =
+          ∫ a : Fin (m + 1) → ℝ,
+            f (fun k μ =>
+              (basepointAssemble d (m + 1) hm' a
+                (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
+              diffVarSection d n
+                ((flattenDiffCLE d n).symm
+                  (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ) := by
+        simpa using
+          (OSReconstruction.integral_finSucc_cons_eq
+            (f := fun a : Fin (m + 1) → ℝ =>
+              f (fun k μ =>
+                (basepointAssemble d (m + 1) hm' a
+                  (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
+                diffVarSection d n
+                  ((flattenDiffCLE d n).symm
+                    (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ)))
+      -- Use Fubini: the integrand (as a function of z = (t, aHead)) is integrable because
+      -- it equals a Schwartz function composed with an affine transformation, hence rapidly
+      -- decaying in both variables. Apply `MeasureTheory.integral_prod` + `hFubini`.
+      have hint :
+          MeasureTheory.Integrable
+            (fun z : ℝ × (Fin m → ℝ) =>
+              f (fun k μ =>
+                (basepointAssemble d (m + 1) hm' (Fin.cons z.1 z.2)
+                  (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)) μ +
+                diffVarSection d n
+                  ((flattenDiffCLE d n).symm
+                    (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)) k μ))
+            ((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+              (MeasureTheory.Measure.pi fun _ : Fin m =>
+                (MeasureTheory.volume : MeasureTheory.Measure ℝ))) := by
+        -- Define the affine map `g : (Fin (m+1) → ℝ) → NPointSpacetime d (n+1)`
+        -- whose composition with f gives the integrand.
+        let gBase : (Fin (m + 1) → ℝ) → (Fin (d + 1) → ℝ) := fun a =>
+          basepointAssemble d (m + 1) hm' a
+            (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)
+        let gDiff : NPointSpacetime d n :=
+          (flattenDiffCLE d n).symm
+            (splitLast (d + 1 - (m + 1)) (n * (d + 1)) u)
+        let g : (Fin (m + 1) → ℝ) → NPointSpacetime d (n + 1) := fun a =>
+          (basepointDiffPairCLE d n).symm (gBase a, gDiff)
+        -- Linear part of `gBase`: a ↦ basepointAssemble d (m+1) hm' a 0.
+        let L : (Fin (m + 1) → ℝ) →L[ℝ] (Fin (d + 1) → ℝ) :=
+          { toFun := fun a => basepointAssemble d (m + 1) hm' a
+              (0 : Fin (d + 1 - (m + 1)) → ℝ)
+            map_add' := by
+              intro a a'
+              ext i
+              simp only [basepointAssemble, castFinCLE_apply_local, Pi.add_apply]
+              set j := (finCongr (Nat.add_sub_of_le hm')).symm i
+              induction j using Fin.addCases with
+              | left k => simp
+              | right k => simp
+            map_smul' := by
+              intro r a
+              ext i
+              simp only [basepointAssemble, castFinCLE_apply_local, Pi.smul_apply,
+                RingHom.id_apply, smul_eq_mul]
+              set j := (finCongr (Nat.add_sub_of_le hm')).symm i
+              induction j using Fin.addCases with
+              | left k => simp
+              | right k => simp
+            cont := by
+              apply continuous_pi
+              intro i
+              simp only [basepointAssemble, castFinCLE_apply_local]
+              set j := (finCongr (Nat.add_sub_of_le hm')).symm i with hj
+              clear_value j
+              induction j using Fin.addCases with
+              | left k =>
+                  simp only [Fin.addCases_left]
+                  exact continuous_apply _
+              | right k =>
+                  simp only [Fin.addCases_right]
+                  exact continuous_const }
+        let cBase : Fin (d + 1) → ℝ :=
+          basepointAssemble d (m + 1) hm' (0 : Fin (m + 1) → ℝ)
+            (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u)
+        have hgBase_eq : ∀ a, gBase a = L a + cBase := by
+          intro a
+          ext i
+          change basepointAssemble d (m + 1) hm' a
+              (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) i =
+            basepointAssemble d (m + 1) hm' a
+              (0 : Fin (d + 1 - (m + 1)) → ℝ) i +
+            basepointAssemble d (m + 1) hm' (0 : Fin (m + 1) → ℝ)
+              (splitFirst (d + 1 - (m + 1)) (n * (d + 1)) u) i
+          simp only [basepointAssemble, castFinCLE_apply_local]
+          set j := (finCongr (Nat.add_sub_of_le hm')).symm i
+          induction j using Fin.addCases with
+          | left k => simp
+          | right k => simp
+        have hgBase_temp : Function.HasTemperateGrowth gBase := by
+          have hL_temp := L.hasTemperateGrowth
+          have hcBase_temp :
+              Function.HasTemperateGrowth (fun _ : Fin (m + 1) → ℝ => cBase) :=
+            Function.HasTemperateGrowth.const cBase
+          have hsum :
+              Function.HasTemperateGrowth (fun a => L a + cBase) :=
+            hL_temp.add hcBase_temp
+          have heq : (fun a => L a + cBase) = gBase := by
+            funext a
+            exact (hgBase_eq a).symm
+          rwa [heq] at hsum
+        -- K : CLM y ↦ CLE.symm (y, 0)
+        let K : (Fin (d + 1) → ℝ) →L[ℝ] NPointSpacetime d (n + 1) :=
+          (basepointDiffPairCLE d n).symm.toContinuousLinearMap.comp
+            (ContinuousLinearMap.inl ℝ (Fin (d + 1) → ℝ) (NPointSpacetime d n))
+        let c_g : NPointSpacetime d (n + 1) :=
+          (basepointDiffPairCLE d n).symm ((0 : Fin (d + 1) → ℝ), gDiff)
+        have hg_eq : ∀ a, g a = K (gBase a) + c_g := by
+          intro a
+          show (basepointDiffPairCLE d n).symm (gBase a, gDiff) =
+              (basepointDiffPairCLE d n).symm (gBase a, (0 : NPointSpacetime d n)) +
+              (basepointDiffPairCLE d n).symm ((0 : Fin (d + 1) → ℝ), gDiff)
+          rw [← ContinuousLinearEquiv.map_add]
+          congr 1
+          simp
+        have hg_temp : Function.HasTemperateGrowth g := by
+          have hK_temp := K.hasTemperateGrowth
+          have hK_comp :
+              Function.HasTemperateGrowth (fun a => K (gBase a)) :=
+            hK_temp.comp hgBase_temp
+          have hc_g_temp :
+              Function.HasTemperateGrowth (fun _ : Fin (m + 1) → ℝ => c_g) :=
+            Function.HasTemperateGrowth.const c_g
+          have hsum :
+              Function.HasTemperateGrowth (fun a => K (gBase a) + c_g) :=
+            hK_comp.add hc_g_temp
+          have heq : (fun a => K (gBase a) + c_g) = g := by
+            funext a
+            exact (hg_eq a).symm
+          rwa [heq] at hsum
+        -- Upper bound: ‖a‖ ≤ ‖g a‖ ≤ 1 * (1 + ‖g a‖)^1
+        have hg_upper : ∃ (k : ℕ) (C : ℝ), ∀ a, ‖a‖ ≤ C * (1 + ‖g a‖) ^ k := by
+          refine ⟨1, 1, ?_⟩
+          intro a
+          -- Step 1: ‖a‖ ≤ ‖gBase a‖  (each coord of a appears in gBase a)
+          have hhead : ‖a‖ ≤ ‖gBase a‖ := by
+            rw [pi_norm_le_iff_of_nonneg (norm_nonneg _)]
+            intro i
+            have hμ_eq : gBase a
+                ((finCongr (Nat.add_sub_of_le hm'))
+                  (Fin.castAdd (d + 1 - (m + 1)) (Fin.rev i))) = a i := by
+              simp only [gBase, basepointAssemble, castFinCLE_apply_local]
+              have hj_eq :
+                  (finCongr (Nat.add_sub_of_le hm')).symm
+                    ((finCongr (Nat.add_sub_of_le hm'))
+                      (Fin.castAdd (d + 1 - (m + 1)) (Fin.rev i))) =
+                    Fin.castAdd (d + 1 - (m + 1)) (Fin.rev i) := by
+                simp
+              rw [hj_eq, Fin.addCases_left, Fin.rev_rev]
+            rw [← hμ_eq]
+            exact norm_le_pi_norm (gBase a) _
+          -- Step 2: g a 0 = gBase a, so ‖gBase a‖ = ‖g a 0‖
+          have hg0 : g a 0 = gBase a := by
+            ext μ
+            show (gBase a) μ + diffVarSection d n gDiff 0 μ = gBase a μ
+            rw [diffVarSection_zero]
+            simp
+          have h0 : ‖gBase a‖ ≤ ‖g a 0‖ := by rw [hg0]
+          have h1 : ‖g a 0‖ ≤ ‖g a‖ := norm_le_pi_norm (g a) 0
+          calc
+            ‖a‖ ≤ ‖gBase a‖ := hhead
+            _ ≤ ‖g a 0‖ := h0
+            _ ≤ ‖g a‖ := h1
+            _ ≤ 1 * (1 + ‖g a‖) ^ (1 : ℕ) := by
+                simp [pow_one]
+        -- Build G := f ∘ g as Schwartz map.
+        let G : SchwartzMap (Fin (m + 1) → ℝ) ℂ :=
+          SchwartzMap.compCLM ℂ (g := g) hg_temp hg_upper f
+        have hG_apply : ∀ a, G a = f (g a) := by
+          intro a
+          rfl
+        -- G is integrable on (Fin (m+1) → ℝ).
+        have hG_int :
+            MeasureTheory.Integrable
+              (fun a : Fin (m + 1) → ℝ => G a)
+              (MeasureTheory.volume :
+                MeasureTheory.Measure (Fin (m + 1) → ℝ)) := by
+          simpa using
+            (SchwartzMap.integrable
+              (μ := (MeasureTheory.volume :
+                MeasureTheory.Measure (Fin (m + 1) → ℝ))) G)
+        -- Transfer via piFinSuccAbove to ℝ × (Fin m → ℝ).
+        let e := MeasurableEquiv.piFinSuccAbove (fun _ : Fin (m + 1) => ℝ) 0
+        have hmp :
+            MeasureTheory.MeasurePreserving e
+              (MeasureTheory.volume :
+                MeasureTheory.Measure (Fin (m + 1) → ℝ))
+              ((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+                (MeasureTheory.volume :
+                  MeasureTheory.Measure (Fin m → ℝ))) := by
+          simpa [e] using
+            (MeasureTheory.volume_preserving_piFinSuccAbove
+              (fun _ : Fin (m + 1) => ℝ) 0)
+        have hpair_int :
+            MeasureTheory.Integrable
+              (fun p : ℝ × (Fin m → ℝ) => G (Fin.cons p.1 p.2))
+              ((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+                (MeasureTheory.volume :
+                  MeasureTheory.Measure (Fin m → ℝ))) := by
+          have hiff :=
+            hmp.symm.integrable_comp_emb e.symm.measurableEmbedding
+              (g := fun a : Fin (m + 1) → ℝ => G a)
+          simpa [e, MeasurableEquiv.piFinSuccAbove_symm_apply] using hiff.2 hG_int
+        -- The target measure Measure.pi equals volume on Fin m → ℝ.
+        have hint0 :
+            MeasureTheory.Integrable
+              (fun p : ℝ × (Fin m → ℝ) => G (Fin.cons p.1 p.2))
+              ((MeasureTheory.volume : MeasureTheory.Measure ℝ).prod
+                (MeasureTheory.Measure.pi fun _ : Fin m =>
+                  (MeasureTheory.volume : MeasureTheory.Measure ℝ))) := hpair_int
+        -- Congr to the actual integrand.
+        refine hint0.congr ?_
+        refine Filter.Eventually.of_forall ?_
+        intro z
+        show G (Fin.cons z.1 z.2) = _
+        rw [hG_apply]
+        show f (g (Fin.cons z.1 z.2)) = _
+        rfl
+      have integ := MeasureTheory.integral_prod _ hint
+      exact integ.symm.trans hFubini
+
+private lemma integrateHeadBlock_flattenBasepointDiff_aux
+    (d : ℕ) [NeZero d] (n : ℕ)
+    (f : SchwartzNPointSpace d (n + 1))
+    (u : Fin (n * (d + 1)) → ℝ) :
+    integrateHeadBlock (m := d + 1) (n := n * (d + 1))
+      (flattenBasepointDiffSchwartz d n f) u =
+    ∫ a : Fin (d + 1) → ℝ,
+      f (fun k μ => a μ + diffVarSection d n ((flattenDiffCLE d n).symm u) k μ) := by
+  have hm : d + 1 ≤ d + 1 := le_refl _
+  have hab_eq : n * (d + 1) = (d + 1 - (d + 1)) + n * (d + 1) := by omega
+  have hreix : (d + 1) + n * (d + 1) =
+      (d + 1) + ((d + 1 - (d + 1)) + n * (d + 1)) := by omega
+  -- Cast u up to aux_m's shape.
+  let u' : Fin ((d + 1 - (d + 1)) + n * (d + 1)) → ℝ := castFinCLE hab_eq u
+  -- Inline naturality for integrateHeadBlock w.r.t. tail reindex.
+  have hnat_m : ∀ (p : ℕ) (a b : ℕ) (hab0 : a = b) (h : p + a = p + b)
+      (F : SchwartzMap (Fin (p + a) → ℝ) ℂ) (y : Fin b → ℝ),
+      integrateHeadBlock (m := p) (n := b) (reindexSchwartzFin h F) y =
+        integrateHeadBlock (m := p) (n := a) F ((castFinCLE hab0).symm y) := by
+    intro p
+    induction p with
+    | zero =>
+        intro a b hab0 h F y
+        simp only [integrateHeadBlock, reindexSchwartzFin_apply]
+        apply congrArg F
+        ext i
+        simp only [castFinCLE_symm_apply]
+        apply congrArg y
+        apply Fin.ext
+        rfl
+    | succ k ihk =>
+        intro a b hab0 h F y
+        show integrateHeadBlock (m := k) (n := b)
+              (sliceIntegral (reindexSchwartzFin (Nat.succ_add k b)
+                (reindexSchwartzFin h F))) y =
+            integrateHeadBlock (m := k) (n := a)
+              (sliceIntegral (reindexSchwartzFin (Nat.succ_add k a) F))
+              ((castFinCLE hab0).symm y)
+        have h' : k + a = k + b := by omega
+        have hs :
+            sliceIntegral (reindexSchwartzFin (Nat.succ_add k b)
+              (reindexSchwartzFin h F)) =
+            reindexSchwartzFin h'
+              (sliceIntegral (reindexSchwartzFin (Nat.succ_add k a) F)) := by
+          apply SchwartzMap.ext
+          intro z
+          simp only [reindexSchwartzFin_apply, sliceIntegral_apply, sliceIntegralRaw]
+          congr 1
+          funext tt
+          apply congrArg F
+          ext i
+          rcases i with ⟨iv, hiv⟩
+          cases iv with
+          | zero =>
+              simp only [castFinCLE_symm_apply, Fin.cons]
+              rfl
+          | succ iv' =>
+              simp only [castFinCLE_symm_apply, Fin.cons]
+              rfl
+        rw [hs]
+        exact ihk a b hab0 h' _ y
+  -- Apply aux_m and naturality.
+  have haux := integrateHeadBlock_flattenBasepointDiff_aux_m d n (d + 1) hm f u'
+  have hLHS := hnat_m (d + 1) _ _ hab_eq hreix
+    (flattenBasepointDiffSchwartz d n f) u'
+  have hu'_symm : (castFinCLE hab_eq).symm u' = u := by
+    ext i
+    simp [u']
+  rw [hu'_symm] at hLHS
+  rw [← hLHS, haux]
+  -- Simplify splitLast.
+  have hsL : splitLast (d + 1 - (d + 1)) (n * (d + 1)) u' = u := by
+    ext j
+    show u' (Fin.natAdd (d + 1 - (d + 1)) j) = u j
+    simp only [u', castFinCLE_apply_local]
+    apply congrArg u
+    apply Fin.ext
+    simp [Fin.val_natAdd]
+  simp_rw [hsL]
+  -- Simplify basepointAssemble at m = d+1: it equals aHead ∘ Fin.rev.
+  have hba : ∀ (aHead : Fin (d + 1) → ℝ),
+      basepointAssemble d (d + 1) hm aHead
+        (splitFirst (d + 1 - (d + 1)) (n * (d + 1)) u') =
+      fun μ => aHead (Fin.rev μ) := by
+    intro aHead
+    ext μ
+    show basepointAssemble d (d + 1) hm aHead
+        (splitFirst (d + 1 - (d + 1)) (n * (d + 1)) u') μ = aHead (Fin.rev μ)
+    simp only [basepointAssemble, castFinCLE_apply_local]
+    set j := (finCongr (Nat.add_sub_of_le hm)).symm μ with hj_def
+    have hj_val : j.val = μ.val := by simp [hj_def]
+    have hj_lt : j.val < d + 1 := by
+      have := μ.isLt; omega
+    have hj_cast : j = Fin.castAdd (d + 1 - (d + 1)) ⟨j.val, hj_lt⟩ := by
+      apply Fin.ext
+      simp [Fin.val_castAdd]
+    rw [hj_cast, Fin.addCases_left]
+    apply congrArg aHead
+    apply Fin.ext
+    simp [hj_val]
+  simp_rw [hba]
+  -- Change of variable via (piCongrLeft Fin.revPerm).symm (aHead ↦ aHead ∘ Fin.rev).
+  let ψ : (Fin (d + 1) → ℝ) ≃ᵐ (Fin (d + 1) → ℝ) :=
+    (MeasurableEquiv.piCongrLeft (fun _ : Fin (d + 1) => ℝ) Fin.revPerm).symm
+  have hmp : MeasureTheory.MeasurePreserving ψ
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (d + 1) → ℝ))
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (d + 1) → ℝ)) :=
+    (MeasureTheory.volume_measurePreserving_piCongrLeft
+      (fun _ : Fin (d + 1) => ℝ) Fin.revPerm).symm _
+  -- ψ aHead μ = aHead (Fin.rev μ) via piCongrLeft_symm_apply.
+  have hψ_apply : ∀ (aHead : Fin (d + 1) → ℝ) (μ : Fin (d + 1)),
+      ψ aHead μ = aHead (Fin.rev μ) := by
+    intro aHead μ
+    show (Equiv.piCongrLeft (fun _ : Fin (d + 1) => ℝ) Fin.revPerm).symm aHead μ
+      = aHead (Fin.rev μ)
+    rw [Equiv.piCongrLeft_symm_apply]
+    rfl
+  -- Change variable: ∫ aHead, integrand (ψ aHead) = ∫ a, integrand a
+  rw [show
+      (∫ aHead : Fin (d + 1) → ℝ,
+        f (fun k μ =>
+          aHead (Fin.rev μ) +
+          diffVarSection d n ((flattenDiffCLE d n).symm u) k μ))
+      =
+      (∫ aHead : Fin (d + 1) → ℝ,
+        (fun a : Fin (d + 1) → ℝ =>
+          f (fun k μ =>
+            a μ +
+            diffVarSection d n ((flattenDiffCLE d n).symm u) k μ)) (ψ aHead))
+      from by
+        refine MeasureTheory.integral_congr_ae ?_
+        refine Filter.Eventually.of_forall ?_
+        intro aHead
+        simp only [hψ_apply]]
+  exact hmp.integral_comp' (g := fun a : Fin (d + 1) → ℝ =>
+    f (fun k μ =>
+      a μ +
+      diffVarSection d n ((flattenDiffCLE d n).symm u) k μ))
+
+private lemma integrateHeadBlock_transport_eq_diffVarReduction
+    (d : ℕ) [NeZero d] (n : ℕ)
+    (f : SchwartzNPointSpace d (n + 1)) :
+    integrateHeadBlock (m := d + 1) (n := n * (d + 1))
+      (flattenBasepointDiffSchwartz d n f) =
+    flattenSchwartzNPoint (d := d) (diffVarReduction d n f) := by
+  ext u
+  simpa [diffVarReduction] using
+    integrateHeadBlock_flattenBasepointDiff_aux d n f u
+
 /-- The kernel theorem isolated in the blueprint: a diagonal-translation
 invariant tempered distribution vanishes on the kernel of
 `diffVarReduction`. The preferred proof route is the head-block transport
@@ -1982,66 +3201,15 @@ private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
     ∀ f : SchwartzNPointSpace d (n + 1),
       diffVarReduction d n f = 0 → W f = 0 := by
   intro f hf
-  let hcast : (n + 1) * (d + 1) = (d + 1) + n * (d + 1) := by ring
-  let toBasepoint :
-      SchwartzNPointSpace d (n + 1) →L[ℂ]
-        SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ :=
-    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n).symm
-  let fromBasepoint :
-      SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ →L[ℂ]
-        SchwartzNPointSpace d (n + 1) :=
-    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (basepointDiffCLE d n)
-  let flatBasepointCLE :
-      (Fin (n + 1) → BasepointSpace d) ≃L[ℝ]
-        (Fin ((n + 1) * (d + 1)) → ℝ) :=
-    (({ (Equiv.curry (Fin (n + 1)) (Fin (d + 1)) ℝ).symm with
-          map_add' := fun _ _ => rfl
-          map_smul' := fun _ _ => rfl } :
-         (Fin (n + 1) → Fin (d + 1) → ℝ) ≃ₗ[ℝ]
-           (Fin (n + 1) × Fin (d + 1) → ℝ)).trans
-        (LinearEquiv.funCongrLeft ℝ ℝ finProdFinEquiv.symm)).toContinuousLinearEquiv
-  let flattenBasepoint :
-      SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ →L[ℂ]
-        SchwartzMap (Fin ((n + 1) * (d + 1)) → ℝ) ℂ :=
-    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ flatBasepointCLE.symm
-  let unflattenBasepoint :
-      SchwartzMap (Fin ((n + 1) * (d + 1)) → ℝ) ℂ →L[ℂ]
-        SchwartzMap (Fin (n + 1) → BasepointSpace d) ℂ :=
-    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ flatBasepointCLE
-  let flatTo :
-      SchwartzNPointSpace d (n + 1) →L[ℂ]
-        SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ :=
-    (reindexSchwartzFin hcast).comp (flattenBasepoint.comp toBasepoint)
-  let flatFrom :
-      SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ]
-        SchwartzNPointSpace d (n + 1) :=
-    fromBasepoint.comp (unflattenBasepoint.comp (reindexSchwartzFin hcast.symm))
-  let T :
-      SchwartzMap (Fin ((d + 1) + n * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ :=
-    { toFun := fun ψ => W (flatFrom ψ)
-      map_add' := by
-        intro ψ χ
-        simp [flatFrom, (hW_lin.map_add _ _)]
-      map_smul' := by
-        intro c ψ
-        simp only [map_smul, hW_lin.map_smul, RingHom.id_apply]
-      cont := hW_cont.comp flatFrom.continuous }
-  let F := flatTo f
+  let T := transportedWHeadBlockCLM d n W hW_cont hW_lin
+  let F := flattenBasepointDiffSchwartz d n f
   have hT :
       IsHeadBlockTranslationInvariantSchwartzCLM
-        (m := d + 1) (n := n * (d + 1)) T := by
-    intro a
-    ext ψ
-    -- This is the transported version of diagonal translation invariance:
-    -- after `basepointDiffCLE` and flattening/reindexing, translating every
-    -- absolute spacetime point by `a` becomes head-block translation by
-    -- `zeroTailBlockShift a`.
-    sorry
+        (m := d + 1) (n := n * (d + 1)) T :=
+    transportedWHeadBlockInvariant d n hW_cont hW_lin hW_transl
   have hIntF :
       integrateHeadBlock (m := d + 1) (n := n * (d + 1)) F = 0 := by
-    -- Identify head-block integration of `flatTo f` with `diffVarReduction d n f`
-    -- after flattening the difference variables. Then use `hf`.
-    sorry
+    simpa [F, hf] using integrateHeadBlock_transport_eq_diffVarReduction d n f
   have hmap :
       T F = T 0 := by
     exact map_eq_of_integrateHeadBlock_eq_of_headBlockTranslationInvariant
@@ -2050,15 +3218,14 @@ private lemma translationInvariant_vanishesOn_diffVarReduction_kernel
           have h := integrateHeadBlock_sub (m := d + 1) (n := n * (d + 1)) F F
           simp [sub_self] at h; exact h
         rw [hIntF, h0])
-  have hflat_eval : flatFrom F = f := by
-    -- `flatFrom` is the inverse transport of `flatTo`.
-    sorry
   have hzeroT : T 0 = 0 := by
     have hW0 : W (0 : SchwartzNPointSpace d (n + 1)) = 0 := by
       simpa using (hW_lin.map_smul (0 : ℂ) (0 : SchwartzNPointSpace d (n + 1)))
-    simpa [T, flatFrom] using hW0
+    simpa [T, transportedWHeadBlockCLM, unflattenBasepointDiffSchwartz] using hW0
   calc
-    W f = T F := by simpa [T, F, hflat_eval]
+    W f = T F := by
+      simp [T, F, transportedWHeadBlockCLM,
+        unflatten_flattenBasepointDiffSchwartz]
     _ = T 0 := hmap
     _ = 0 := hzeroT
 
@@ -2123,7 +3290,13 @@ lemma exists_diffVar_distribution
   exact ⟨w, hw_cont, hw_lin, hw_det⟩
 
 variable (d) in
-/-- Forward direction helper: lift F from ProductForwardTube to ForwardTube. -/
+/-- Deferred forward-direction helper: lift `F` from `ProductForwardTube` to
+`ForwardTube`.
+
+This helper is not used by the current main theorem
+`spectralConditionDistribution_of_forwardTubeAnalyticity`; it is retained only
+as scaffolding for a possible future reverse direction under a different
+analytic growth surface. -/
 lemma forwardTube_extension_of_productTube {n : ℕ}
     {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
     (hW_tempered : ∀ m, Continuous (W m))
@@ -2198,7 +3371,115 @@ lemma productTube_function_of_forwardTube {n : ℕ}
             F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (w φ))) := by
-  sorry
+  classical
+  let z₀ : Fin (d + 1) → ℂ := fun μ => if μ = 0 then Complex.I else 0
+  have hz₀ : InOpenForwardCone d (fun μ => (z₀ μ).im) := by
+    constructor
+    · simp [z₀]
+    · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+      simp [z₀, MinkowskiSpace.spatialNormSq]
+  let F : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+    fun ζ => W_analytic (fun k μ => z₀ μ + complexDiffVarSection d n ζ k μ)
+  have hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n) := by
+    intro ζ hζ
+    have hsec :
+        (fun k μ => z₀ μ + complexDiffVarSection d n ζ k μ) ∈ ForwardTube d (n + 1) := by
+      exact shifted_section_maps_productTube_to_forwardTube (d := d) n z₀ hz₀ ζ hζ
+    have hmaps :
+        Set.MapsTo
+          (fun ζ : Fin n → Fin (d + 1) → ℂ =>
+            fun k μ => z₀ μ + complexDiffVarSection d n ζ k μ)
+          (ProductForwardTube d n) (ForwardTube d (n + 1)) := by
+      intro ξ hξ
+      exact shifted_section_maps_productTube_to_forwardTube (d := d) n z₀ hz₀ ξ hξ
+    have hsec_diff :
+        DifferentiableAt ℂ
+          (fun ζ : Fin n → Fin (d + 1) → ℂ =>
+            fun k μ => z₀ μ + complexDiffVarSection d n ζ k μ) ζ := by
+      let c : Fin (n + 1) → Fin (d + 1) → ℂ := fun k μ => z₀ μ
+      have hderiv :
+          HasFDerivAt
+            (fun ζ' : Fin n → Fin (d + 1) → ℂ => complexDiffVarSection d n ζ' + c)
+            ((complexDiffVarSection d n).toContinuousLinearMap) ζ := by
+        simpa [c] using ((complexDiffVarSection d n).toContinuousLinearMap.hasFDerivAt).add_const c
+      simpa [c, Pi.add_apply] using hderiv.differentiableAt
+    exact (hWa_holo _ hsec).comp ζ hsec_diff.differentiableWithinAt hmaps
+  have hF_bv :
+      ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+        (∀ k : Fin n, InOpenForwardCone d (η k)) →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (w φ)) := by
+    intro φ η hη
+    let φ₀ : SchwartzMap (BasepointSpace d) ℂ := normalizedBasepointBump d
+    have hφ₀_int : ∫ a : BasepointSpace d, φ₀ a = 1 := by
+      simpa [φ₀] using integral_normalizedBasepointBump d
+    let fφ : SchwartzNPointSpace d (n + 1) := sectionOf d n φ₀ φ
+    have hfφ_red : diffVarReduction d n fφ = φ := by
+      simpa [fφ, φ₀] using
+        diffVarReduction_sectionOf d n φ₀ hφ₀_int φ
+    let η' : Fin (n + 1) → Fin (d + 1) → ℝ :=
+      fun k μ =>
+        Fin.cases
+          ((z₀ μ).im)
+          (fun i => (z₀ μ).im + ∑ j : Fin (i.val + 1), η ⟨j.val, by omega⟩ μ) k
+    have hη'_succ :
+        ∀ (i : Fin n) (μ : Fin (d + 1)),
+          η' i.succ μ - η' i.castSucc μ = η i μ := by
+      cases n with
+      | zero =>
+          intro i
+          exact Fin.elim0 i
+      | succ n =>
+          intro i μ
+          refine Fin.cases ?_ ?_ i
+          · change
+              ((z₀ μ).im + ∑ j : Fin (0 + 1), η ⟨j.val, by omega⟩ μ) - (z₀ μ).im =
+                η 0 μ
+            simp
+          · intro j
+            change
+              ((z₀ μ).im + ∑ x : Fin (j.val + 2), η ⟨x.val, by omega⟩ μ) -
+                  ((z₀ μ).im + ∑ x : Fin (j.val + 1), η ⟨x.val, by omega⟩ μ) =
+                η j.succ μ
+            have hsplit :
+                (∑ x : Fin (j.val + 2), η ⟨x.val, by omega⟩ μ) =
+                  (∑ x : Fin (j.val + 1), η ⟨x.val, by omega⟩ μ) + η j.succ μ := by
+              simpa [Fin.val_castSucc, Fin.val_last] using
+                (Fin.sum_univ_castSucc
+                  (f := fun x : Fin (j.val + 2) => η ⟨x.val, by omega⟩ μ))
+            linarith
+    have hη' : InForwardCone d (n + 1) η' := by
+      intro k
+      refine Fin.cases ?_ ?_ k
+      · simpa [η', z₀]
+      · intro i
+        convert hη i using 1
+        ext μ
+        exact hη'_succ i μ
+    have hbase := hWa_bv fφ η' hη'
+    have hchange :
+        ∀ ε : ℝ,
+          ∫ x : NPointSpacetime d (n + 1),
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x)
+          =
+          ∫ ξ : NPointSpacetime d n,
+            F (fun k μ => ↑(ξ k μ) + ε * ↑(η k μ) * Complex.I) * (φ ξ) := by
+      intro ε
+      sorry
+    have hbase' :
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointSpacetime d (n + 1),
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (w φ)) := by
+      simpa [F, fφ, hw_det, hfφ_red] using hbase
+    convert hbase' using 1
+    funext ε
+    exact (hchange ε).symm
+  exact ⟨F, hF_holo, hF_bv⟩
 
 /-- The constant-1 Schwartz function on the 0-dimensional spacetime. -/
 private noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPointSpace d 0 :=
@@ -2222,7 +3503,9 @@ private lemma volume_nPointSpacetime_zero_eq_dirac (d : ℕ) [NeZero d] :
   rw [volume_pi, Measure.pi_of_empty (x := (0 : NPointSpacetime d 0))]
 
 variable (d) in
-/-- The zero-point case of ForwardTubeAnalyticity is trivial. -/
+/-- Deferred zero-point forward-direction helper.
+
+This is not used by the current one-way main theorem. -/
 lemma forwardTubeAnalyticity_zero
     {W : (n : ℕ) → SchwartzNPointSpace d n → ℂ}
     (hW_tempered : ∀ n, Continuous (W n))
@@ -2254,7 +3537,7 @@ lemma forwardTubeAnalyticity_zero
   change W 0 f = ∫ x : NPointSpacetime d 0, W 0 e * f x
   exact h_integral.symm
 
-/-! ### Main Theorem -/
+/-! ### Main One-Way Theorem -/
 
 variable (d) in
 /-- **Spectral condition from forward tube analyticity** (one-way direction).
