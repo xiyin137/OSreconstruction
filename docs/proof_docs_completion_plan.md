@@ -23,6 +23,100 @@ This note should be read together with:
 - `docs/nuclear_spaces_blueprint.md`
 - `docs/vna_infrastructure_blueprint.md`
 
+## 0. Paper-authority rule
+
+Every proof doc and production implementation must follow the OS papers
+strictly.  OS II is the authoritative correction for the `E -> R` analytic
+continuation, growth, and tempered boundary-value route wherever OS I depended
+on Lemma 8.8.  The only currently documented OS-paper error is OS I Lemma 8.8;
+all other deviations require a new local paper audit entry before they can
+affect theorem surfaces or implementation.
+
+Allowed "fill-in" work is limited to:
+
+1. spelling out paper steps as Lean theorem packages;
+2. adding standard analytic/topological lemmas needed to formalize those paper
+   steps;
+3. replacing the false OS I Lemma 8.8 many-variable jump with the OS II Chapter
+   V/VI induction and estimate machinery.
+
+Not allowed:
+
+1. alternate proof routes chosen for implementation convenience;
+2. theorem surfaces that weaken or strengthen the OS statement without a paper
+   reason;
+3. generic infrastructure shortcuts that bypass an OS-paper step;
+4. same-test Euclidean/Minkowski equalities unless an explicit proved bridge
+   justifies that exact surface.
+
+## 0.1. External-theorem circularity audit
+
+Before any external theorem is accepted as a theorem-2 input, audit the proof of
+that external theorem for direct or transitive dependence on local
+commutativity, weak local commutativity, or any equivalent permutation
+symmetry of the Wightman boundary distributions being proved.
+
+If such a dependence is present, the theorem is circular for theorem 2 and must
+be fenced off as orientation only.  It may not be used as a proof supplier even
+if its conclusion has the right shape.
+
+Current examples:
+
+1. `blocker_iterated_eow_hExtPerm_d1_nontrivial` is not a theorem-2 input in
+   dimension one because it assumes `IsLocallyCommutativeWeak 1 W`.
+2. Streater-Wightman Theorem 3-6 is not a theorem-2 input because its proof
+   uses local commutativity.
+3. Streater-Wightman Figure 2-4 remains allowed only as adjacent geometric
+   real-environment input, because that local geometry does not use QFT
+   locality.
+4. `hallWightman_fixedPoint_endpointActiveGallery_of_two_le` is no longer an
+   active theorem-2 frontier in its documented form. Its edge relation requires
+   common fixed-`w` permuted-forward-tube witnesses, but the repository proves
+   that distinct permuted forward-tube sectors are disjoint. The active
+   replacement is the generic direct BHW source branch-law theorem
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
+   whose proved PET-algebra assembly theorem is
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, and whose
+   branch-equality corollary is
+   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` on permuted
+   extended-tube sectors, specialized to the OS witness as
+   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.  Its generic
+   source contract uses restricted real Lorentz invariance plus permutation
+   symmetry on the tube family; complex-Lorentz single-valuedness on `S''_n`
+   is the Hall-Wightman output, not an input.  The Lean implementation locus is
+   the new small file
+   `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`.
+   Its checked support theorem
+   `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz` proves
+   sector-branch holomorphicity; the theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` now proves the
+   forward-tube agreement plus PET Lorentz/permutation outputs from the source
+   branch law.  The genuine remaining frontier is the Hall-Wightman
+   compatibility/single-valued `Fpet` branch-law construction, not any
+   downstream OS wrapper;
+   `BHWPermutation/PermutationFlow.lean` is forbidden for this source theorem
+   because its current BHW theorem depends on `IsLocallyCommutativeWeak`.
+   A checked false shortcut has been ruled out: pointwise permutation symmetry
+   of the raw base function does not by itself compare arbitrary PET sector
+   branches, because the complex-Lorentz representative needed for the
+   comparison need not stay in the base forward tube.  The remaining gap is
+   exactly Hall-Wightman single-valued continuation for the symmetric
+   permuted-tube datum.
+5. Streater-Wightman Theorem 2-11 has now been audited as another statement of
+   the BHW analytic-continuation theorem, not as a source for the missing
+   active-gallery theorem. Streater-Wightman Figure 2-4 remains only the
+   adjacent common-real-environment input; it does not supply a global finite
+   chamber gallery.
+6. Jost, *The general theory of quantized fields*, p. 83, second theorem, has
+   been page-audited in the local image PDF. It is the OS I §4.5 boundary
+   locality theorem: Wightman properties except locality plus total symmetry
+   imply locality. The remaining Slot-10 work is the Lean translation into the
+   canonical-shell pairing theorem, not source identification.
+7. The theorem-2 Slot-6/Slot-7 interface no longer has two active branches.
+   Use the direct source-backed BHW single-valuedness theorem on `S''_n`; do
+   not route theorem 2 through `petOrbitChamberConnected_of_two_le` or a
+   common-forward-tube fixed-orbit gallery.
+
 ## 1. What "100% implementation-ready" means
 
 A proof doc counts as complete only when all of the following are true.
@@ -248,3 +342,6 @@ The proof-doc stack is complete only when:
    the per-theorem blueprints;
 4. production work can proceed by proving named theorem packages rather than by
    making fresh mathematical choices.
+5. every named external theorem is separated into source-backed content and any
+   additional derived formalization obligation, with no derived obligation
+   mislabeled as a verbatim paper theorem.
