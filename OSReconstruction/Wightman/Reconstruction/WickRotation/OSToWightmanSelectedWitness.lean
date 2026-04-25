@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.EdgeDistribution
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceExtension
 import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeMonodromy
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValues
 
@@ -62,6 +63,181 @@ structure SelectedAdjacentPermutationEdgeData
             =
           ∫ x : NPointDomain d n,
               BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x)
+
+/-- OS-side source data for the distributional Euclidean/Jost anchor consumed
+by the corrected Hall-Wightman source theorem.
+
+Unlike `SelectedAdjacentPermutationEdgeData`, this is a data-carrying packet:
+it stores the actual real Jost patches and scalar-product uniqueness
+environments needed to supply `BHW.SourceDistributionalAdjacentTubeAnchor` for
+the selected OS analytic witness. -/
+structure SelectedAdjacentDistributionalJostAnchorData
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) where
+  basePatch :
+    (i : Fin n) → (hi : i.val + 1 < n) → Set (NPointDomain d n)
+  basePatch_open :
+    ∀ i hi, IsOpen (basePatch i hi)
+  basePatch_nonempty :
+    ∀ i hi, (basePatch i hi).Nonempty
+  basePatch_jost :
+    ∀ i hi x, x ∈ basePatch i hi → x ∈ BHW.JostSet d n
+  basePatch_left_ET :
+    ∀ i hi x, x ∈ basePatch i hi →
+      BHW.realEmbed x ∈ BHW.ExtendedTube d n
+  basePatch_right_ET :
+    ∀ i hi x, x ∈ basePatch i hi →
+      BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n
+  baseGramEnvironment :
+    (i : Fin n) → (hi : i.val + 1 < n) → Set (Fin n → Fin n → ℝ)
+  baseGramEnvironment_unique :
+    ∀ i hi,
+      BHW.sourceDistributionalUniquenessSetOnVariety d n
+        (baseGramEnvironment i hi)
+  baseGram_left_mem :
+    ∀ i hi x, x ∈ basePatch i hi →
+      BHW.sourceRealMinkowskiGram d n x ∈ baseGramEnvironment i hi
+  baseGram_realized :
+    ∀ i hi G, G ∈ baseGramEnvironment i hi →
+      ∃ x ∈ basePatch i hi,
+        BHW.sourceRealMinkowskiGram d n x = G
+  baseCompactEq :
+    ∀ i hi (φ : SchwartzNPoint d n),
+      HasCompactSupport (φ : NPointDomain d n → ℂ) →
+      tsupport (φ : NPointDomain d n → ℂ) ⊆ basePatch i hi →
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * φ x
+        =
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+            φ x
+
+private def realPerm (π : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) : NPointDomain d n :=
+  fun k => x (π k)
+
+omit [NeZero d] in
+private theorem continuous_realPerm (π : Equiv.Perm (Fin n)) :
+    Continuous (realPerm (d := d) π) := by
+  apply continuous_pi
+  intro k
+  exact continuous_apply (π k)
+
+/-- Reindex a selected adjacent OS anchor into the permutation-indexed source
+anchor consumed by the corrected Hall-Wightman theorem. -/
+def bvt_F_distributionalJostAnchor_of_selectedJostData
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hData : SelectedAdjacentDistributionalJostAnchorData OS lgc n) :
+    BHW.SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) := by
+  refine
+    { realPatch := ?realPatch
+      realPatch_open := ?realPatch_open
+      realPatch_nonempty := ?realPatch_nonempty
+      realPatch_jost := ?realPatch_jost
+      realPatch_left_sector := ?realPatch_left_sector
+      realPatch_right_sector := ?realPatch_right_sector
+      gramEnvironment := ?gramEnvironment
+      gramEnvironment_unique := ?gramEnvironment_unique
+      gram_left_mem := ?gram_left_mem
+      gram_environment_realized := ?gram_environment_realized
+      gram_right_eq_perm_left := ?gram_right_eq_perm_left
+      compact_branch_eq := ?compact_branch_eq }
+  · exact fun π i hi => {x | realPerm (d := d) π x ∈ hData.basePatch i hi}
+  · intro π i hi
+    exact (hData.basePatch_open i hi).preimage (continuous_realPerm (d := d) π)
+  · intro π i hi
+    rcases hData.basePatch_nonempty i hi with ⟨y, hy⟩
+    refine ⟨realPerm (d := d) π.symm y, ?_⟩
+    have hperm :
+        realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+      ext k μ
+      simp [realPerm]
+    simpa [hperm] using hy
+  · intro π i hi x hx
+    have hy := hData.basePatch_jost i hi (realPerm (d := d) π x) hx
+    simpa [realPerm] using
+      BHW.jostSet_permutation_invariant (d := d) (n := n) π.symm hy
+  · intro π i hi x hx
+    have hy := hData.basePatch_left_ET i hi (realPerm (d := d) π x) hx
+    simpa [BHW.permutedExtendedTubeSector, realPerm] using hy
+  · intro π i hi x hx
+    have hy := hData.basePatch_right_ET i hi (realPerm (d := d) π x) hx
+    simpa [BHW.permutedExtendedTubeSector, realPerm, Equiv.Perm.mul_apply]
+      using hy
+  · exact fun _π i hi => hData.baseGramEnvironment i hi
+  · exact fun _π i hi => hData.baseGramEnvironment_unique i hi
+  · intro π i hi x hx
+    simpa [realPerm] using
+      hData.baseGram_left_mem i hi (realPerm (d := d) π x) hx
+  · intro π i hi G hG
+    rcases hData.baseGram_realized i hi G hG with ⟨y, hy, hG_y⟩
+    refine ⟨realPerm (d := d) π.symm y, ?_, ?_⟩
+    · have hperm :
+          realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+        ext k μ
+        simp [realPerm]
+      simpa [hperm] using hy
+    · simpa [realPerm] using hG_y
+  · intro π i hi x hx
+    ext a b
+    simp [BHW.sourceRealMinkowskiGram, BHW.sourcePermuteGram,
+      Equiv.Perm.mul_apply]
+  · intro π i hi φ hφ_compact hφ_tsupport
+    let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+    let ψ : SchwartzNPoint d n := BHW.permuteSchwartz (d := d) π.symm φ
+    have hψ_compact :
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) :=
+      BHW.permuteSchwartz_hasCompactSupport (d := d) π.symm φ
+        (by simpa using hφ_compact)
+    have hψ_tsupport :
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ hData.basePatch i hi := by
+      intro y hy
+      have hyφ :
+          realPerm (d := d) π.symm y ∈
+            tsupport (φ : NPointDomain d n → ℂ) := by
+        have hsupp_eq := BHW.tsupport_permuteSchwartz (d := d) π.symm φ
+        rw [show ψ = BHW.permuteSchwartz (d := d) π.symm φ from rfl] at hy
+        rw [hsupp_eq] at hy
+        simpa [realPerm] using hy
+      have hxPatch :
+          realPerm (d := d) π (realPerm (d := d) π.symm y) ∈
+            hData.basePatch i hi :=
+        hφ_tsupport hyφ
+      have hperm :
+          realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+        ext k μ
+        simp [realPerm]
+      simpa [hperm] using hxPatch
+    have hbase := hData.baseCompactEq i hi ψ hψ_compact hψ_tsupport
+    have hleft :
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (fun k => BHW.realEmbed x (π k)) * φ x) =
+          ∫ y : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed y) * ψ y := by
+      simpa [ψ, realPerm] using
+        BHW.integral_perm_eq_self (d := d) (n := n) π
+          (fun y : NPointDomain d n =>
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed y) * ψ y)
+    have hright :
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (fun k => BHW.realEmbed x ((π * τ) k)) * φ x) =
+          ∫ y : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => y (τ k))) * ψ y := by
+      simpa [ψ, realPerm, τ, Equiv.Perm.mul_apply] using
+        BHW.integral_perm_eq_self (d := d) (n := n) π
+          (fun y : NPointDomain d n =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => y (τ k))) * ψ y)
+    exact hleft.trans (hbase.trans hright.symm)
 
 /-- Overstrong all-permutation edge data at fixed public arity.
 

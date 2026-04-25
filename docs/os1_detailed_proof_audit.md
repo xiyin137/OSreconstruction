@@ -893,6 +893,25 @@ The locality proof uses three layers of analytic continuation:
    convert that symmetric analytic continuation into locality of the boundary
    distributions.
 
+Source-boundary update after the local Hall-Wightman and Streater-Wightman
+audits:
+
+1. Hall-Wightman and Streater-Wightman Theorem 2-11 justify the BHW analytic
+   continuation step: Lorentz-covariant holomorphic tube functions continue
+   single-valuedly to the extended tube.
+2. Streater-Wightman's adjacent permuted-tube paragraph and Figure 2-4 justify
+   only the local common-real-environment geometry for one adjacent
+   transposition.
+3. Neither source directly proves the fixed-`w` finite adjacent active-gallery
+   theorem currently used as the Lean-facing Slot-6 target. That theorem must
+   be treated as a derived chamber-stratification obligation, not as a direct
+   citation.
+4. Jost p. 83, second theorem, has been identified in the local image PDF as
+   the theorem OS I cites after the BHW step: Wightman-function properties
+   except locality, together with symmetry, imply locality. This supports the
+   Slot-10 boundary theorem surface after the symmetric `S''_n` continuation
+   has been supplied.
+
 This matters because it shows exactly where the heavy analytic input sits:
 - not in the semigroup package,
 - but in the permutation-domain continuation and boundary-value uniqueness.
