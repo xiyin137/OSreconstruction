@@ -279,10 +279,14 @@ itself. For theorem 2, the readiness gate is now:
    `petOrbitChamberConnected_of_two_le` as theorem-2 frontiers;
 2. the documented common fixed-`w` forward-tube edge is impossible for distinct
    permutation labels, by the repo's permuted-forward-tube disjointness facts;
-3. the active theorem-2 surface is the direct BHW single-valuedness theorem
-   packet in `docs/theorem2_locality_blueprint.md`: first the generic source
-   theorem `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, then
-   the sector equality theorem
+3. the active theorem-2 surface is the distributional Euclidean/Jost-anchored BHW
+   single-valuedness theorem packet in
+   `docs/theorem2_locality_blueprint.md`: first the corrected source
+   branch-law theorem replacing the hF_perm-only
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
+   then the proved assembly theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, then the
+   sector equality theorem
    `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, then the
    OS-specific
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`;
@@ -299,8 +303,8 @@ Rough expected size:
 
 For theorem 2, these sizes are historical guidance for the generic
 permutation-flow lane.  The current docs-first blocker is more specific:
-finish the direct BHW single-valuedness theorem transcript before attempting
-the planned Slot-6/Slot-7 theorem surfaces.
+finish the distributional Euclidean/Jost-anchored BHW single-valuedness theorem transcript
+before attempting the planned Slot-6/Slot-7 theorem surfaces.
 
 ## 10. Theorem-2 consumer contract
 
@@ -309,26 +313,33 @@ The strict OS-route consumer packet is now narrower than the older monodromy
 plan:
 
 1. theorem 2 builds the OS-II-corrected analytic witness `bvt_F OS lgc n`;
-2. OS symmetry supplies the symmetric analytic datum on the permuted
-   forward-tube family `S'_n`;
+2. OS-II Euclidean symmetry and branch/Schwinger matching supply the symmetric
+   analytic datum on the permuted forward-tube family `S'_n`;
 3. the source-backed BHW theorem extends that datum single-valuedly to the
    permuted extended tube `S''_n`;
 4. Jost p. 83, second theorem, converts the symmetric boundary values into
    locality.
 
-So for theorem 2 the exact source-facing generic BHW target is
+So for theorem 2 the exact source-facing BHW frontier is the
+distributional Euclidean/Jost-anchored replacement for
+
+```lean
+BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
+```
+
+Its proved PET-algebra assembly theorem is
 
 ```lean
 BHW.permutedExtendedTube_extension_of_forwardTube_symmetry
 ```
 
-and its derived sector equality theorem is
+Its derived sector equality theorem is
 
 ```lean
 BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry
 ```
 
-and its OS-specific consumer is
+Its OS-specific consumer is
 
 ```lean
 bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le
@@ -368,10 +379,12 @@ Source ledger for this theorem packet:
    geometry.
    The local image-PDF audit identifies the cited theorem on printed page 83:
    Wightman-function properties except locality plus symmetry imply locality.
-4. Consequently the next theorem-2 BHW theorem is the generic source branch-law
-   theorem
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`.
-   It feeds the proved source-extension assembly theorem
+4. Consequently the next theorem-2 BHW theorem is the distributional
+   Euclidean/Jost-anchored source compatibility theorem
+   `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
+   The hF_perm-only branch-law surface is archived historical context, not a
+   source theorem to close as stated.  The corrected compatibility theorem feeds the
+   proved source-extension assembly theorem
    `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, with the
    derived sector equality
    `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` specialized
@@ -408,17 +421,21 @@ What is locally verified versus external:
    search supports extended-tube analytic continuation and single-valuedness.
    It does not provide, and the repo definitions do not permit, common
    fixed-`w` permuted-forward-tube overlaps for distinct labels.
-3. The theorem-2 packet therefore uses the direct BHW source branch-law theorem
-   that constructs one single-valued PET extension on `S''_n`, proves the
-   extension theorem's PET algebra from it, and then takes sector branch
-   equality as a corollary.
+3. The theorem-2 packet therefore uses the distributional Euclidean/Jost-anchored BHW source
+   branch-law theorem that constructs one single-valued PET extension on
+   `S''_n`, proves the extension theorem's PET algebra from it, and then takes
+   sector branch equality as a corollary.  The approved Deep Research audit
+   rejected the hF_perm-only generic source boundary: total values of `F` away
+   from the ordered forward tube can satisfy the formal permutation hypothesis
+   without constraining the analytic germ whose extended-tube branches must be
+   compared.
 4. Figure 2-4 may justify local common real environments for adjacent
    **extended** tubes.  It does not manufacture forward-tube overlaps.
 
 The Slot-6 proof-doc contract is therefore the following mathematical
 derivation:
 
-1. state the source-backed generic BHW branch-law theorem
+1. state the distributional Euclidean/Jost-anchored BHW branch-law theorem replacing
    `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
    in the local `BHW.PermutedExtendedTube` /
    `BHW.permutedExtendedTubeSector` language;
@@ -430,7 +447,8 @@ derivation:
    `BHW.bargmann_hall_wightman_theorem` take such a hypothesis and are
    circular for theorem 2;
 4. specialize it using `bvt_F_holomorphic`,
-   `bvt_F_restrictedLorentzInvariant_forwardTube`, and `bvt_F_perm`, then
+   `bvt_F_restrictedLorentzInvariant_forwardTube`, `bvt_F_perm` as auxiliary
+   formal symmetry data, and the OS-II Euclidean/Jost anchor package, then
    package the result as `bvt_F_petBranchIndependence_of_two_le`.
 
 The equality theorem
@@ -442,20 +460,42 @@ PET function and `z` lies in the `π`- and `ρ`-sectors, then both
 
 Implementation locus:
 
-1. create a new file
+1. use the small source file
    `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`;
-2. prove the local support theorem
+2. the local support theorem
    `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz`, which
    discharges branch holomorphicity from `BHW.extendF_holomorphicOn` after
    deriving complex-Lorentz overlap invariance from restricted real Lorentz
-   invariance;
-3. prove or source-import only
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
+   invariance, is checked;
+3. the generic branch-law, extension, and single-valuedness theorems now carry
+   `BHW.SourceDistributionalAdjacentTubeAnchor` explicitly and are checked
+   consumers of the one remaining source theorem;
+4. prove or source-import only
+   `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
    as the hard theorem-level frontier;
-4. prove `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` from
-   that branch law plus PET sector transport;
-5. prove `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`
-   immediately afterward as the branch-law corollary;
+5. the OS layer now has
+   `SelectedAdjacentDistributionalJostAnchorData` and the checked reindexing
+   definition `bvt_F_distributionalJostAnchor_of_selectedJostData`; the next
+   OS-side construction target is the genuine OS-II supplier
+   `bvt_F_distributionalJostAnchor_of_OSII`;
+   the checked SCV lemmas
+   `BHW.sourceDistributionalUniquenessSet_of_isOpen_nonempty` and
+   `BHW.sourceDistributionalUniquenessSet_of_contains_open` are only
+   full-matrix sufficient criteria.  They do not supply the general OS
+   anchor, because source Gram images are symmetric and, above the spacetime
+   vector dimension, rank-bounded.  The remaining supplier geometry is to
+   produce a Hall-Wightman real environment in the scalar-product variety; the
+   production anchor now carries the variety-level predicate
+   `BHW.sourceDistributionalUniquenessSetOnVariety`.  The OS supplier should
+   take the environment `E` to be the whole Gram image of the selected OS45
+   real patch and prove uniqueness by finding a smaller regular
+   Hall-Wightman real environment inside `E`, then applying the checked
+   monotonicity lemma
+   `BHW.sourceDistributionalUniquenessSetOnVariety_mono`.  The checked
+   regular-stratum definitions are `sourceGramExpectedDim`,
+   `sourceConfigurationSpan`, `sourceComplexConfigurationSpan`,
+   `SourceGramRegularAt`, `SourceComplexGramRegularAt`, and the concrete
+   full-span template `sourceFullSpanTemplate`;
 6. do not import or reuse `BHWPermutation.PermutationFlow` for this source
    theorem, because its current BHW theorem and private well-definedness
    helpers carry `IsLocallyCommutativeWeak` / boundary-distribution inputs and
@@ -469,17 +509,79 @@ For local Lean APIs such as `BHW.extendF_holomorphicOn`, the required
 forward-tube complex-Lorentz overlap invariance should be derived internally
 from `BHW.complex_lorentz_invariance n F hF_holo hF_lorentz`.
 
-The displayed generic branch-law theorem in the theorem-2 blueprint is the
-collapsed one-function version of the source situation: the permuted-tube
-branch family is `F_π z = F (fun k => z (π k))`, and `hF_perm` is the symmetry
-condition that identifies these branches as the single symmetric analytic datum
-on `S'_n`.  A later internal proof may introduce a family-indexed
+The displayed generic hF_perm-only branch-law theorem in the theorem-2
+blueprint is now historical API context, not a valid source boundary.  The
+permuted-tube branch family is still
+`F_π z = F (fun k => z (π k))`, but its symmetry as Hall-Wightman's `S'_n`
+datum must be anchored on the Euclidean/Jost uniqueness set where the OS-II
+Schwinger construction supplies both branch agreement and Schwinger
+permutation symmetry.  A later internal proof may introduce a family-indexed
 Hall-Wightman helper, but the theorem-2-facing source input should remain the
-collapsed branch-law theorem
-`BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`.
+corrected branch-law theorem, not a raw hF_perm-only theorem.
 The larger theorem
 `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` is now the proved
 PET-algebra assembly from that branch law.
+
+The theorem-2 blueprint now fixes the only allowed private branch-law lemma
+ladder:
+
+```lean
+source_permutedForwardBranch_holomorphicOn
+source_permutedForwardBranch_restrictedLorentzInvariant
+source_permutedForwardBranch_symmetric
+hallWightman_source_permutedBranch_compatibility
+```
+
+The first three are elementary packaging of the symmetric `S'_n` datum.  The
+last is the only non-elementary source-facing compatibility theorem: if one
+PET point lies in two explicit sectors, the two `extendF` branch values agree.
+The public branch-law theorem should then build `Fpet` mechanically with
+`BHW.gluedPETValue`, `BHW.gluedPETValue_holomorphicOn`, and
+`BHW.gluedPETValue_eq_of_mem_sector`.  It must not become a second public
+wrapper or a second `sorry`.  The approved Deep Research check corrected the
+source boundary: this compatibility shape is non-circular only when it is
+proved from the distributional Euclidean/Jost-anchored Hall-Wightman datum, not from total
+`hF_perm` alone.  Growth/temperedness remains routed to the upstream OS-II
+boundary-value construction and is not added as a separate hypothesis to this
+isolated identity-theorem step.
+
+The theorem-2 blueprint now also gives the exact lower source package for
+closing `hallWightman_source_permutedBranch_compatibility`.  The genuine
+mathematical input is
+
+```lean
+hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
+```
+
+which says that any two PET sector branches
+`z ↦ BHW.extendF F (fun k => z (π k))` agree at a common PET-sector point.
+Internally, its proof may produce a common scalar-product representative
+`Φ (sourceMinkowskiGram d n z)`, but that `Φ` is a consequence, not an OS
+input.  Its source proof is Hall-Wightman scalar-product theory plus
+distributional edge-of-the-wedge
+applied to the distributionally anchored symmetric permuted-tube datum `S'_n`:
+define `sourceMinkowskiGram`, get branch scalar-product representatives, use
+compact-test Schwinger symmetry and branch-boundary distribution matching on
+adjacent permutation-indexed Jost real patches, apply uniqueness on the
+scalar-product real environment, and conclude the branch law on `S''_n` as the
+Hall-Wightman single-valued continuation theorem.  If an internal proof uses
+adjacent patches plus cover connectivity, that geometry is part of the
+source theorem proof and not a separate theorem-2 hypothesis.  A common
+pointwise `Φ` is a consequence of this source theorem, not an OS input.
+
+The Deep Research route-risk check
+`v1_ChdUSW5yYWFuUkhNNlVfdU1QOE9YaGtRWRIXVElucmFhblJITTZVX3VNUDhPWGhrUVk`
+specifically rejects treating
+`BHW.petSectorFiber_adjacent_connected_of_two_le` as a theorem-2 prerequisite.
+That fixed-point sector-fiber chain is not an OS/Hall-Wightman input and may be
+false as a pointwise PET-geometry assertion.  Keep it out of the active route
+unless it is later proved as an independent diagnostic theorem.
+
+Do not make an ordinary
+`BHW.extendF F (fun k => x (σ k)) = BHW.extendF F x` theorem the primary
+source boundary.  It may be a corollary after the branch-level scalar-product
+representative is known, but as a source input it hides the `S'_n` content and
+risks over-reading the total `hF_perm` hypothesis on the ordered forward tube.
 
 Do not replace this source step by the tempting base-extended-tube shortcut
 `extendF F (fun k => z (τ k)) = extendF F z`.  The repo has private historical
@@ -492,10 +594,35 @@ strict OS II theorem-2 route consumes Hall-Wightman's single-valued
 continuation on the symmetric `S'_n` datum and treats compatibility on `S''_n`
 as the source theorem content.
 
-These items are now the exact statement-level contract for the direct BHW
-theorem.  The unresolved Lean work is the analytic proof or explicitly
-approved source-import treatment of that theorem, not the theorem-2 consumer
-surface.
+These items are now the exact statement-level contract for the corrected BHW
+theorem.  The unresolved Lean work is the distributional Euclidean/Jost-anchored analytic
+proof of that theorem, or a separately approved theorem after the required
+source and circularity audit, not the theorem-2 consumer surface.
+
+The theorem-2 blueprint now gives the implementation packet for that source
+proof in scalar-product coordinates.  The packet must be followed in this
+order:
+
+1. use `sourcePermuteComplexGram`, `sourceMinkowskiGram_perm`,
+   `sourceExtendedTubeGramDomain`, `sourceDoublePermutationGramDomain`,
+   `sourceRealMinkowskiGram_perm`, and `sourceRealGramComplexify_perm`;
+2. build `SourceScalarRepresentativeData` for `extendF F` from the ordinary
+   Hall-Wightman invariant analytic-function theorem, currently exposed in
+   Lean as the theorem-level source obligation
+   `hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz`;
+3. convert `SourceDistributionalAdjacentTubeAnchor.compact_branch_eq` to
+   pointwise equality on each real patch by compact-support uniqueness
+   (checked in Lean);
+4. rewrite that pointwise equality as adjacent seed equality for the scalar
+   representative on each Gram environment (checked in Lean);
+5. apply the Hall-Wightman scalar-overlap continuation theorem on `S''_n`;
+6. close
+   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
+   by the documented scalar-domain proof transcript (checked in Lean).
+
+This is the source theorem itself, not a new wrapper.  It is also the point at
+which any source import would need the explicit `AGENT.md` axiom/source-import
+approval gate; the consumer theorems after it are already mechanical.
 
 Existing global PET connectedness should also not be overread. The repository
 already has useful theorems such as:
@@ -508,9 +635,12 @@ theorem BHW.isConnected_permutedExtendedTube
 
 These prove ambient statements about the permuted extended-tube cover.  They
 are not the BHW source theorem by themselves, and they do not revive the
-fixed-`w` forward-tube gallery.  The theorem-2 route is now decided: use the
-direct BHW single-valuedness surface and do not cite Streater-Wightman Theorem
-3-6 or any theorem whose proof uses local commutativity.
+fixed-`w` forward-tube gallery.  Likewise,
+`BHW.gluedPETValue_holomorphicOn` assumes all-overlap compatibility as an
+input.  The theorem-2 route is now decided: use the direct BHW
+single-valuedness surface after the Hall-Wightman source branch law supplies
+the single-valued `Fpet`, and do not cite Streater-Wightman Theorem 3-6 or any
+theorem whose proof uses local commutativity.
 
 The archived fixed-`w` packet below is not an implementation target:
 
@@ -707,7 +837,8 @@ theorem PETOrbitChamberChain.toReflTransGen
 noncomputable def PETOrbitChamberChain.ofReflTransGen
 ```
 
-Planned theorem surfaces that are **not** implemented by that support alone:
+Archived theorem surfaces that are **not** implemented by that support alone
+and should not be implemented for theorem 2:
 
 ```lean
 theorem hallWightman_fixedPoint_endpointActiveGallery_of_two_le
@@ -722,8 +853,9 @@ Diagnostic-only corollary outside the current implementation gate:
 theorem bhw_fixedPoint_chamberAdjacency_connected_of_two_le
 ```
 
-The following target inventory mixes the checked support with those planned
-theorem surfaces; do not read it as a compile-verified current export list:
+The following archived diagnostic inventory mixes checked support with those
+rejected theorem surfaces; do not read it as a compile-verified current export
+list or as an implementation target:
 
 ```lean
 theorem permForwardOverlap_connected_nontrivial
@@ -894,9 +1026,9 @@ theorem petOrbitChamberAdjStep_iff_exists_slice_overlap
 This is the general-`d` analogue of the `d = 1` object `permLambdaSliceD1`.
 
 So the theorem-2 route does **not** currently consume this fixed-`w` slice
-geometry.  It consumes the direct BHW source branch-law theorem, the proved
-source-extension assembly theorem, and the single-valued sector-equality
-corollary on permuted extended-tube sectors documented in
+geometry.  It consumes the distributional Euclidean/Jost-anchored BHW source branch-law
+theorem, the proved source-extension assembly theorem, and the single-valued
+sector-equality corollary on permuted extended-tube sectors documented in
 `docs/theorem2_locality_blueprint.md`.
 
 The checked monodromy reduction chain is:
@@ -910,7 +1042,8 @@ theorem extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected
 So theorem 2 should no longer treat any provisional theorem
 `..._of_connectedForwardOverlap`, `petOrbitChamberChain_of_two_le`, or
 `petOrbitChamberConnected_of_two_le` as the next implementation target.  The
-next missing theorem is the source branch-law theorem
+next missing theorem is the distributional Euclidean/Jost-anchored source branch-law theorem
+replacing
 `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
 followed by the proved assembly theorem
 `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, the mechanical

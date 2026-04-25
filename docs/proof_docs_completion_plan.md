@@ -72,19 +72,26 @@ Current examples:
 4. `hallWightman_fixedPoint_endpointActiveGallery_of_two_le` is no longer an
    active theorem-2 frontier in its documented form. Its edge relation requires
    common fixed-`w` permuted-forward-tube witnesses, but the repository proves
-   that distinct permuted forward-tube sectors are disjoint. The active
-   replacement is the generic direct BHW source branch-law theorem
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
+   that distinct permuted forward-tube sectors are disjoint. The hF_perm-only
+   generic direct BHW source branch-law theorem
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
+   is also not ready to close as stated.  The approved Deep Research audit
+   found the statement mathematically unsafe: because nontrivial permuted
+   forward tubes are disjoint from the ordered forward tube, total Lean values
+   of `F` off the ordered tube can satisfy `hF_perm` without constraining the
+   analytic germ whose BHW continuation is being compared.  The active
+   replacement is the distributional Euclidean/Jost-anchored BHW source branch-law theorem,
    whose proved PET-algebra assembly theorem is
    `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, and whose
    branch-equality corollary is
    `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` on permuted
    extended-tube sectors, specialized to the OS witness as
-   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.  Its generic
-   source contract uses restricted real Lorentz invariance plus permutation
-   symmetry on the tube family; complex-Lorentz single-valuedness on `S''_n`
-   is the Hall-Wightman output, not an input.  The Lean implementation locus is
-   the new small file
+   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.  Its corrected
+   source contract uses restricted real Lorentz invariance plus the real
+   distributional Euclidean/Jost uniqueness anchor supplied by OS II; complex-Lorentz
+   single-valuedness on `S''_n` is the Hall-Wightman output, not an input.  The
+   Lean implementation locus is
+   the small source file
    `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`.
    Its checked support theorem
    `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz` proves
@@ -100,8 +107,93 @@ Current examples:
    of the raw base function does not by itself compare arbitrary PET sector
    branches, because the complex-Lorentz representative needed for the
    comparison need not stay in the base forward tube.  The remaining gap is
-   exactly Hall-Wightman single-valued continuation for the symmetric
-   permuted-tube datum.
+   exactly Hall-Wightman single-valued continuation for the distributionally anchored
+   symmetric permuted-tube datum.  The theorem-2 blueprint now fixes the internal
+   branch-law proof contract: make the branches
+   `G π z = BHW.extendF F (fun k => z (π k))` explicit, obtain their sector
+   holomorphicity from
+   `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz`, build
+   the symmetric `S'_n` datum using the distributional Euclidean/Jost anchor, apply the source
+   Hall-Wightman/BHW compatibility theorem on `S''_n`, and only then build
+   one `Fpet` by the existing `BHW.gluedPETValue` API.  The blueprint now also fixes
+   the private lemma ladder for the implementation pass:
+   `source_permutedForwardBranch_holomorphicOn`,
+   `source_permutedForwardBranch_restrictedLorentzInvariant`,
+   `source_permutedForwardBranch_symmetric`, and exactly one non-elementary
+   source-facing compatibility theorem
+   `hallWightman_source_permutedBranch_compatibility`.  No helper may assume
+   the `S''_n` compatibility that this source theorem is meant to prove.
+   The Lean surface now also includes the data-carrying
+   `SelectedAdjacentDistributionalJostAnchorData` packet and the checked
+   reindexing definition
+   `bvt_F_distributionalJostAnchor_of_selectedJostData` in
+   `OSToWightmanSelectedWitness.lean`; that bridge introduces no new `sorry`
+   and supplies `BHW.SourceDistributionalAdjacentTubeAnchor` from selected
+   adjacent OS anchor data.
+   The source side also now has checked full-matrix sufficient theorems
+   `BHW.sourceDistributionalUniquenessSet_of_isOpen_nonempty` and
+   `BHW.sourceDistributionalUniquenessSet_of_contains_open`: a nonempty open
+   real set in the full product coordinate space is a uniqueness set for
+   holomorphic scalar-product representatives, by the repo's totally-real
+   identity theorem.  These lemmas are true but not the general OS supplier.
+   The attempted theorem that the Gram image of an OS45 Jost patch contains a
+   full-matrix open subset is false: Gram matrices are symmetric, and in
+   arity above the spacetime vector dimension they lie in a rank-bounded
+   Hall-Wightman scalar-product variety.  The API-backed Deep Research check
+   `v1_ChYtLURyYWZ4UjFKNy00d19TbWNMUUJnEhYtLURyYWZ4UjFKNy00d19TbWNMUUJn`
+   confirmed this correction; the production anchor now carries the
+   variety-level predicate `BHW.sourceDistributionalUniquenessSetOnVariety`.
+   The approved Deep Research check rejected the hF_perm-only source boundary
+   and routed growth/temperedness to the upstream OS-II boundary-value
+   construction.  The remaining implementation step is now specified down to
+   Lean pseudocode: prove or source-import
+   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
+   from Hall-Wightman's scalar-product theorem plus distributional EOW on the
+   distributionally anchored symmetric permuted-tube datum `S'_n`, using
+   `sourceMinkowskiGram`, branch scalar-product representatives,
+   compact-test Schwinger symmetry on adjacent permutation-indexed Jost
+   patches, branch-boundary distribution matching there, scalar-product
+   uniqueness, and Hall-Wightman single-valued continuation on `S''_n`.  Any
+   adjacent-patch cover connectivity used internally belongs inside that source
+   theorem, not in the theorem-2 consumer API.  A common pointwise `Φ` may be
+   produced as a corollary after this source theorem, but it is not the OS
+   input.  The follow-up Deep Research check
+   `v1_ChdUSW5yYWFuUkhNNlVfdU1QOE9YaGtRWRIXVElucmFhblJITTZVX3VNUDhPWGhrUVk`
+   specifically rejects promoting
+   `BHW.petSectorFiber_adjacent_connected_of_two_le` to an active theorem-2
+   gate.
+   The corrected OS supplier now has an implementation-level decomposition:
+   `E` should be the whole Gram image of the selected OS45 patch, while
+   uniqueness is proved by finding a smaller regular Hall-Wightman real
+   environment inside that image and applying the checked monotonicity lemma
+   `BHW.sourceDistributionalUniquenessSetOnVariety_mono`.  The remaining
+   proof-doc gaps are therefore the genuine finite-dimensional geometry and
+   SCV source facts: dense/open maximal-span configurations, the regular
+   Gram-map local real-environment theorem, and Hall-Wightman uniqueness from
+   a maximal-totally-real scalar-product environment.  The regular-stratum
+   definitions themselves are now checked in Lean:
+   `sourceGramExpectedDim`, `sourceConfigurationSpan`,
+   `sourceComplexConfigurationSpan`, `SourceGramRegularAt`, and
+   `SourceComplexGramRegularAt`, together with the concrete template
+   `sourceFullSpanTemplate`.  The theorem-2 blueprint now also gives
+   proof skeletons for the three supplier facts: maximal-span density/open
+   regular locus via determinant minors, regular Gram-map rank/local
+   real-environment via the constant-rank theorem, and Hall-Wightman
+   real-environment uniqueness via local maximal-totally-real charts plus
+   analytic continuation on the connected scalar-product variety.
+   The theorem-2 blueprint now also gives the full scalar-coordinate
+   Hall-Wightman source packet needed after those suppliers are available:
+   checked Gram-permutation/domain definitions, the
+   `SourceScalarRepresentativeData` package, the ordinary extended-tube scalar
+   representative existence theorem, the compact-test-to-pointwise real-patch
+   conversion, adjacent seed equality on the Gram environments, the
+   scalar-overlap continuation theorem on `S''_n`, and the final Lean
+   transcript closing
+   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
+   The compact-test-to-pointwise conversion, adjacent seed equality, and final
+   PET branch transcript are now checked in Lean; the two remaining source
+   obligations are the Hall-Wightman scalar representative existence theorem
+   and the Hall-Wightman scalar-overlap continuation theorem.
 5. Streater-Wightman Theorem 2-11 has now been audited as another statement of
    the BHW analytic-continuation theorem, not as a source for the missing
    active-gallery theorem. Streater-Wightman Figure 2-4 remains only the

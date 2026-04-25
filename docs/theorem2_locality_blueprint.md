@@ -51,20 +51,29 @@ inputs are explicit enough to be reviewed line-by-line against the local
 references:
 
 1. **Slot 6 source-backed BHW single-valuedness.** The active theorem packet
-   is now the direct OS I §4.5 / Hall-Wightman packet on the permuted extended
-   tube: the source branch-law theorem
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
-   the proved source-extension assembly theorem
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, the derived
-   sector equality theorem
-   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, and the
-   OS specialization
-   `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, feeding the
-   public Slot-7 branch-independence theorem
-   `bvt_F_petBranchIndependence_of_two_le`.  The earlier fixed-`w`
-   forward-tube chamber-chain packet is rejected for theorem 2: its proposed
-   edges require one point to lie in two distinct permuted forward tubes, while
-   the repository already proves
+   is still the OS I §4.5 / Hall-Wightman packet on the permuted extended
+   tube, but the current generic Lean statement
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
+   is **not** implementation-ready with only
+   `hF_holo`, `hF_lorentz`, and total `hF_perm`.  The approved Deep Research
+   audit and the local `BHWReducedExtension.lean` warning both identify the
+   same issue: total off-domain values of a Lean function can make
+   `hF_perm` hold without constraining the analytic germ on the ordered
+   forward tube.  The production surface must therefore be refactored before
+   the remaining `sorry` is closed.  The allowed refactor is either the
+   distributional Euclidean/Jost-anchored Hall-Wightman/EOW theorem documented
+   in Section 4 below, or the OS-specific selected-edge specialization that
+   supplies that anchor from the OS-II-corrected `bvt_F` construction.  Once
+   that source surface is fixed, the proved source-extension assembly theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, the sector
+   equality theorem
+   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, the OS
+   specialization `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`,
+   and the public Slot-7 branch-independence theorem
+   `bvt_F_petBranchIndependence_of_two_le` are mechanical consumers.  The
+   earlier fixed-`w` forward-tube chamber-chain packet remains rejected for
+   theorem 2: its proposed edges require one point to lie in two distinct
+   permuted forward tubes, while the repository already proves
    `BHW.permutedForwardTube_sector_eq_of_mem` and
    `BHW.forwardTube_inter_permutedForwardTube_eq_empty_of_ne_one`.
    Any remaining fixed-fiber graph theorem is background geometry only unless
@@ -599,11 +608,18 @@ Reason for rejection:
 
 Correct replacement:
 
-Slot 6 should be split into a generic source-backed BHW theorem and an
-OS-specific specialization.  The generic analytic input must not mention OS,
-Wightman distributions, locality, or boundary values.
+Slot 6 should be split into a source-backed BHW theorem and an OS-specific
+specialization.  The source theorem must not use locality or any theorem whose
+proof uses locality.  It also must not rely on total `hF_perm` values outside
+the ordered forward tube as if they were boundary data.  The generic version
+therefore needs the Euclidean/Jost anchor package documented later in this
+section; alternatively, the OS-specific specialization may carry the anchor
+directly from the OS-II-corrected `bvt_F` construction.
 
-The one remaining source frontier is the Hall-Wightman branch-law theorem:
+The following hF_perm-only statement is kept as an archived unsafe
+intermediate because it is the current Lean theorem name and explains the
+downstream API shape.  It is **not** the statement to close as a source
+theorem:
 
 ```lean
 theorem BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
@@ -629,8 +645,10 @@ theorem BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
         Fpet z = BHW.extendF F (fun k => z (π k))
 ```
 
-The theorem-2-facing source extension theorem is now the proved PET-algebra
-assembly from that branch law:
+The theorem-2-facing source extension theorem is a proved PET-algebra assembly
+from the corrected distributionally anchored branch law.  Its current Lean
+statement carries the explicit source anchor and then remains a mechanical
+consumer:
 
 ```lean
 theorem BHW.permutedExtendedTube_extension_of_forwardTube_symmetry
@@ -647,7 +665,8 @@ theorem BHW.permutedExtendedTube_extension_of_forwardTube_symmetry
     (hF_perm :
       ∀ (σ : Equiv.Perm (Fin n))
         (z : Fin n -> Fin (d + 1) -> ℂ),
-        F (fun k => z (σ k)) = F z) :
+        F (fun k => z (σ k)) = F z)
+    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
     ∃ Fpet : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
       DifferentiableOn ℂ Fpet (BHW.PermutedExtendedTube d n) ∧
       (∀ z ∈ BHW.ForwardTube d n, Fpet z = F z) ∧
@@ -691,7 +710,8 @@ theorem BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry
     (hF_perm :
       ∀ (σ : Equiv.Perm (Fin n))
         (z : Fin n -> Fin (d + 1) -> ℂ),
-        F (fun k => z (σ k)) = F z) :
+        F (fun k => z (σ k)) = F z)
+    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
     ∀ (π ρ : Equiv.Perm (Fin n))
       (z : Fin n -> Fin (d + 1) -> ℂ),
       z ∈ BHW.permutedExtendedTubeSector d n π ->
@@ -707,13 +727,14 @@ Lean-shaped derivation from the source theorem:
   obtain ⟨Fpet, hFpet_holo, hFpet_FT, hFpet_branch,
       hFpet_lorentz, hFpet_perm⟩ :=
     BHW.permutedExtendedTube_extension_of_forwardTube_symmetry
-      (d := d) hd n F hF_holo hF_lorentz hF_perm
+      (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
   exact (hFpet_branch π z hzπ).symm.trans (hFpet_branch ρ z hzρ)
 ```
 
-Together these two generic theorems are the direct local Lean form of the OS I
-§4.5 use of Hall-Wightman/BHW: a real-Lorentz-invariant symmetric holomorphic
-datum on the permuted forward-tube family `S'_n` has a single-valued symmetric
+Together the branch-law theorem, the extension assembly theorem, and the
+branch-equality corollary are the direct local Lean form of the OS I §4.5 use
+of Hall-Wightman/BHW: a real-Lorentz-invariant symmetric holomorphic datum on
+the permuted forward-tube family `S'_n` has a single-valued symmetric
 `L_+(ℂ)`-invariant continuation on the complex-Lorentz saturation `S''_n`.
 
 Implementation discipline: the branch-law theorem is the only theorem-level
@@ -722,6 +743,959 @@ the branch-equality theorem are mechanical consumers of it.  None of these
 theorems may be introduced as an `axiom` without the user's explicit approval.
 All statements are intentionally pure SCV/BHW and contain no OS or QFT-specific
 objects.
+
+Internal contract for the branch-law proof after the source-surface refactor:
+
+1. keep the branch family explicit:
+
+   ```lean
+   let G : (π : Equiv.Perm (Fin n)) ->
+       (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+     fun π z => BHW.extendF F (fun k => z (π k))
+   ```
+
+2. prove `∀ π, DifferentiableOn ℂ (G π)
+   (BHW.permutedExtendedTubeSector d n π)` by the already checked theorem
+   `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz`;
+3. build the `S'_n` source datum from the forward-tube restrictions
+   `z ∈ BHW.PermutedForwardTube d n π ↦ F (fun k => z (π k))`, but identify
+   it as symmetric only through the Euclidean/Jost anchor: Schwinger symmetry
+   on the real uniqueness set and branch agreement with the Schwinger
+   function there.  The raw total `hF_perm` hypothesis is not enough for this
+   source step;
+4. apply the Hall-Wightman/BHW scalar-product source theorem to that
+   Euclidean-anchored symmetric `S'_n` datum, producing one holomorphic
+   `Fpet` on `BHW.PermutedExtendedTube d n`;
+5. identify the restriction of this source `Fpet` on each explicit PET sector
+   with the already-defined branch `G π`;
+6. return exactly the existential statement of
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`.
+
+Any family-indexed helper introduced to organize these steps must stay local
+to the branch-law proof or be a plainly source-facing lemma consumed
+immediately by it.  It must not become a new public theorem-2 wrapper, must not
+assume sector compatibility on `S''_n`, and must not use
+`BHW.gluedPETValue_holomorphicOn`, since that theorem assumes the compatibility
+that Hall-Wightman is supposed to provide.
+
+Existing repo API audit for this proof:
+
+1. `BHW.extendF`, `BHW.extendF_preimage_eq`,
+   `BHW.extendF_eq_on_forwardTube`, and
+   `BHW.extendF_complex_lorentz_invariant` already formalize the ordinary
+   one-forward-tube Hall-Wightman continuation to `BHW.ExtendedTube d n`;
+2. `BHW.permutedExtendedTube_isPreconnected` and
+   `BHW.isConnected_permutedExtendedTube` supply the topology of the explicit
+   PET sector cover, but topology alone does not compare the analytic branch
+   values on sector overlaps;
+3. `BHW.gluedPETValue` and `BHW.gluedPETValue_holomorphicOn` are therefore
+   downstream packaging only: they can name the `Fpet` after the source theorem
+   supplies compatibility, but they cannot be used to prove that compatibility.
+
+Lean lemma ladder for the branch-law proof:
+
+The implementation should keep the following as private proof-local facts in
+`SourceExtension.lean` unless one of them is already available under a checked
+name.  They are not new theorem-2 wrappers; they only spell out the source
+datum that Hall-Wightman consumes.
+
+1. **Permuted forward-tube branches.**
+
+   ```lean
+   let Gpft : (π : Equiv.Perm (Fin n)) ->
+       (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+     fun π z => F (fun k => z (π k))
+   ```
+
+   The elementary local theorem is:
+
+   ```lean
+   private theorem source_permutedForwardBranch_holomorphicOn
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (π : Equiv.Perm (Fin n)) :
+       DifferentiableOn ℂ
+         (fun z : Fin n -> Fin (d + 1) -> ℂ => F (fun k => z (π k)))
+         (BHW.PermutedForwardTube d n π)
+   ```
+
+   This is just `hF_holo.comp` with the continuous coordinate-permutation map.
+
+2. **Restricted Lorentz invariance on each permuted forward tube.**
+
+   ```lean
+   private theorem source_permutedForwardBranch_restrictedLorentzInvariant
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (π : Equiv.Perm (Fin n)) :
+       ∀ (Λ : RestrictedLorentzGroup d)
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ BHW.PermutedForwardTube d n π ->
+         (fun z' : Fin n -> Fin (d + 1) -> ℂ =>
+             F (fun k => z' (π k)))
+           (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal Λ) z) =
+         F (fun k => z (π k))
+   ```
+
+   The proof uses the already checked commutation of Lorentz action with
+   coordinate permutations and the fact that `ComplexLorentzGroup.ofReal Λ`
+   preserves the forward tube.
+
+3. **Symmetry of the `S'_n` datum before BHW enlargement.**
+
+   ```lean
+   private theorem source_permutedForwardBranch_symmetric
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z) :
+       ∀ (π ρ : Equiv.Perm (Fin n))
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         F (fun k => z (π k)) = F (fun k => z (ρ k))
+   ```
+
+   This is the exact place where `hF_perm` enters the `S'_n` source datum.  It
+   must not be confused with the false PET shortcut
+   `BHW.extendF F (fun k => z (π k)) =
+    BHW.extendF F (fun k => z (ρ k))`, which is the Hall-Wightman output.
+
+4. **Source compatibility theorem after the datum is packaged.**
+
+   With the three local facts above in scope, the only remaining
+   non-elementary theorem is cross-sector compatibility supplied by
+   Hall-Wightman single-valuedness plus the OS-II distributional anchor.  The
+   Lean surface has now been refactored so that the distributional anchor is
+   an explicit input:
+
+   ```lean
+   private theorem hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∀ (π ρ : Equiv.Perm (Fin n))
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ BHW.permutedExtendedTubeSector d n π ->
+         z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+         BHW.extendF F (fun k => z (π k)) =
+           BHW.extendF F (fun k => z (ρ k))
+   ```
+
+   The wrapper
+   `hallWightman_source_permutedBranch_compatibility` has the same anchor in
+   its hypotheses and immediately calls this theorem.  The
+   fixed-sector graph lemmas in `PermutedTubeMonodromy.lean` remain useful
+   checked algebra for adjacent-to-all propagation, but they are not a public
+   Hall-Wightman hypothesis for theorem 2.  OS I §4.5 invokes
+   Hall-Wightman as the single-valuedness theorem on the whole `S''_n`, so any
+   sector-chain or cover-connectivity argument belongs inside the source
+   theorem proof, not in the theorem-2 consumer surface.  This is
+   the exact mathematical point where Hall-Wightman enters: the
+   symmetric `S'_n` datum has a single-valued continuation on `S''_n`, so two
+   explicit PET sector branches that meet at the same point have the same
+   value.  It is not a wrapper; it is the genuine source content.  The proof
+   docs should not ask Lean to prove this from `BHW.gluedPETValue`, because
+   gluing assumes this compatibility.  It must not be introduced as an axiom or
+   imported source theorem without the separate explicit approval, source
+   audit, and circularity audit required by `AGENT.md`.
+
+   Source-scope sanity check:
+
+   - The approved Gemini Deep Research route
+     (`deep-research-pro-preview-12-2025`, Interactions API, 2026-04-24)
+     found the hF_perm-only generic theorem surface mathematically unsafe.
+     Because the ordered forward tube is disjoint from its nontrivial
+     permuted copies, a total Lean hypothesis
+     `F (fun k => z (σ k)) = F z` can be satisfied by off-domain "junk
+     values" and does not constrain the analytic germ on the ordered forward
+     tube.  This is the same trap already documented in
+     `BHWReducedExtension.lean` for the removed raw reduced BHW axiom.
+   - Therefore the currently displayed generic source theorem cannot be
+     justified from `hF_holo`, `hF_lorentz`, and total `hF_perm` alone.  The
+     correct OS I §4.5 source surface must include the distributional
+     Euclidean/Jost uniqueness anchor: compact-test Schwinger symmetry on
+     permutation-indexed real patches, agreement of the BHW branch boundary
+     distributions with the Schwinger distribution there, and the
+     distributional EOW/identity theorem on the scalar-product variety.
+   - Growth/temperedness is not an extra hypothesis of the isolated
+     Hall-Wightman uniqueness step once the holomorphic `F` and distributional
+     Euclidean matching are available.  It remains essential upstream in the
+     OS-II-corrected construction of `bvt_F` and its tempered boundary values
+     from Schwinger data.
+   - The theorem statement remains exactly for `hd : 2 <= d`.  If a later
+     source audit found that an imported Hall-Wightman formulation only covers
+     a stricter dimension range, the theorem surface would need a documented
+     split before implementation.  No such split is currently authorized.
+   - A further Deep Research route-risk check
+     (`v1_ChdUSW5yYWFuUkhNNlVfdU1QOE9YaGtRWRIXVElucmFhblJITTZVX3VNUDhPWGhrUVk`)
+     rejected making `BHW.petSectorFiber_adjacent_connected_of_two_le` a
+     theorem-2 prerequisite.  The fixed-point sector-fiber chain is not a
+     theorem in OS I, OS II, or Hall-Wightman, and it is at best a separate
+     hard PET-geometry project.  The theorem-2 source surface must state
+     Hall-Wightman single-valuedness on `S''_n` directly from the symmetric
+     distributionally anchored `S'_n` datum.
+
+   The compatibility theorem now has the right implementation-ready surface:
+   the following distributional Euclidean/Jost-anchored Hall-Wightman/EOW
+   source theorem.  This theorem is the precise source consequence needed
+   here; it is not a wrapper and it is not allowed to be introduced as an
+   axiom without the `AGENT.md` approval gate.
+
+   First define the complex Minkowski Gram matrix of the ordered vector tuple:
+
+   ```lean
+   private def sourceMinkowskiGram (d n : ℕ)
+       (x : Fin n -> Fin (d + 1) -> ℂ) :
+       Fin n -> Fin n -> ℂ :=
+     fun i j =>
+       ∑ μ : Fin (d + 1),
+         (MinkowskiSpace.metricSignature d μ : ℂ) * x i μ * x j μ
+   ```
+
+   Follow-up Deep Research check
+   `v1_ChdOWVRyYWQzZ0xhRFFfdU1Qb19ud3FRTRIXTllUcmFkM2dMYURRX3VNUG9fbndxUU0`
+   rejected the tempting **single pointwise** `E, S` anchor as overstrong for
+   this repo.  The reasons are concrete:
+
+   - the local `JostSet` is not globally known to lie in `ExtendedTube`; the
+     repo even records the global `JostSet -> ExtendedTube` bridge as false;
+   - OS data is distributional (`OS.S n : ZeroDiagonalSchwartz d n -> ℂ`),
+     and the available Lean facts are compact-test equalities such as
+     `bvt_euclidean_restriction` and
+     `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`;
+   - the already-built OS45 infrastructure constructs real-open **adjacent**
+     edge slices, not one real open set that lies in every permuted sector.
+
+   Therefore the source theorem must be stated with permutation-indexed
+   real-open patches and compact-test distributional anchors.  A pointwise
+   scalar-product representative is a Hall-Wightman consequence after this
+   anchor has been supplied; it is not the input shape for the OS-II Lean
+   route.
+
+   The active source package is the following theorem-surface shape, now
+   implemented in
+   `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`.
+   The pure BHW file deliberately spells the real configuration space as
+   `Fin n -> Fin (d + 1) -> ℝ` rather than importing the OS-side abbreviation
+   `NPointDomain d n`; `NPointDomain` is definitionally this tuple type in the
+   reconstruction layer.
+
+   ```lean
+   private def sourceRealMinkowskiGram (d n : ℕ)
+       (x : Fin n -> Fin (d + 1) -> ℝ) :
+       Fin n -> Fin n -> ℝ :=
+     fun i j =>
+       ∑ μ : Fin (d + 1),
+         MinkowskiSpace.metricSignature d μ * x i μ * x j μ
+
+   private def sourcePermuteGram (n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (G : Fin n -> Fin n -> ℝ) :
+       Fin n -> Fin n -> ℝ :=
+     fun i j => G (σ i) (σ j)
+
+   structure SourceDistributionalAdjacentTubeAnchor
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) where
+     realPatch :
+       Equiv.Perm (Fin n) ->
+       (i : Fin n) ->
+       (hi : i.val + 1 < n) ->
+       Set (Fin n -> Fin (d + 1) -> ℝ)
+     realPatch_open :
+       ∀ π i hi, IsOpen (realPatch π i hi)
+     realPatch_nonempty :
+       ∀ π i hi, (realPatch π i hi).Nonempty
+     realPatch_jost :
+       ∀ π i hi, realPatch π i hi ⊆ BHW.JostSet d n
+     realPatch_left_sector :
+       ∀ π i hi x, x ∈ realPatch π i hi ->
+         BHW.realEmbed (d := d) x ∈
+           BHW.permutedExtendedTubeSector d n π
+     realPatch_right_sector :
+       ∀ π i hi x, x ∈ realPatch π i hi ->
+         BHW.realEmbed (d := d) x ∈
+           BHW.permutedExtendedTubeSector d n
+             (π * Equiv.swap i ⟨i.val + 1, hi⟩)
+     gramEnvironment :
+       Equiv.Perm (Fin n) ->
+       (i : Fin n) ->
+       (hi : i.val + 1 < n) ->
+       Set (Fin n -> Fin n -> ℝ)
+     gramEnvironment_unique :
+       ∀ π i hi,
+         BHW.sourceDistributionalUniquenessSetOnVariety d n
+           (gramEnvironment π i hi)
+     gram_left_mem :
+       ∀ π i hi x, x ∈ realPatch π i hi ->
+         sourceRealMinkowskiGram d n (fun k => x (π k)) ∈
+           gramEnvironment π i hi
+     gram_environment_realized :
+       ∀ π i hi G, G ∈ gramEnvironment π i hi ->
+         ∃ x ∈ realPatch π i hi,
+           sourceRealMinkowskiGram d n (fun k => x (π k)) = G
+     gram_right_eq_perm_left :
+       ∀ π i hi x, x ∈ realPatch π i hi ->
+         sourceRealMinkowskiGram d n
+             (fun k => x ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) =
+           sourcePermuteGram n (Equiv.swap i ⟨i.val + 1, hi⟩)
+             (sourceRealMinkowskiGram d n (fun k => x (π k)))
+     compact_branch_eq :
+       ∀ π i hi (φ : SchwartzMap (Fin n -> Fin (d + 1) -> ℝ) ℂ),
+         HasCompactSupport
+           (φ : (Fin n -> Fin (d + 1) -> ℝ) -> ℂ) ->
+         tsupport (φ : (Fin n -> Fin (d + 1) -> ℝ) -> ℂ) ⊆
+           realPatch π i hi ->
+         ∫ x : Fin n -> Fin (d + 1) -> ℝ,
+             BHW.extendF F (fun k => BHW.realEmbed (d := d) x (π k)) *
+               φ x
+           =
+         ∫ x : Fin n -> Fin (d + 1) -> ℝ,
+             BHW.extendF F
+               (fun k =>
+                 BHW.realEmbed (d := d) x
+                   ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) *
+               φ x
+   ```
+
+   The corresponding Hall-Wightman/EOW source theorem is:
+
+   ```lean
+   private theorem hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hAnchor :
+         SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∀ (π ρ : Equiv.Perm (Fin n))
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ BHW.permutedExtendedTubeSector d n π ->
+         z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+         BHW.extendF F (fun k => z (π k)) =
+           BHW.extendF F (fun k => z (ρ k))
+   ```
+
+   Its proof is the real mathematical source step:
+
+   1. for each adjacent step, use Hall-Wightman to represent the two adjacent
+      branches by scalar-product holomorphic representatives;
+   2. use `hAnchor.compact_branch_eq` on the indexed real patch to get equality
+      of the adjacent boundary distributions on a real environment in
+      scalar-product space;
+   3. apply distributional edge-of-the-wedge / totally-real uniqueness on that
+      real environment to identify the adjacent scalar-product
+      representatives;
+   4. conclude the all-sector branch law on `S''_n` as the Hall-Wightman
+      single-valued continuation theorem.  If the internal proof is organized
+      through adjacent real environments, the required cover-continuation
+      argument is part of this source theorem.  It must not appear as a
+      separate theorem-2 hypothesis such as
+      `BHW.petSectorFiber_adjacent_connected_of_two_le`.
+
+   This is the precise place where a future theorem may produce a pointwise
+   scalar representative
+   `Φ (sourceMinkowskiGram d n z)`.  That representative is an output of the
+   source theorem, not an OS input.
+
+   Do not replace this source theorem by an ordinary
+   `BHW.extendF F (x ∘ σ) = BHW.extendF F x` theorem as the primary source
+   input.  Such a theorem may be a derived corollary after the branch-level
+   scalar-product representative is known, but using it as the source boundary
+   hides the `S'_n` content and risks over-reading the total `hF_perm`
+   hypothesis on the ordered forward tube.
+
+   Full Lean-ready Hall-Wightman scalar-product packet:
+
+   The source theorem should be proved in scalar-product coordinates before it
+   is translated back to PET sector branches.  The following checked
+   definitions now exist in `SourceExtension.lean` and must be used rather
+   than ad hoc matrix manipulation:
+
+   ```lean
+   def BHW.sourcePermuteComplexGram
+       (n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (Z : Fin n -> Fin n -> ℂ) :
+       Fin n -> Fin n -> ℂ :=
+     fun i j => Z (σ i) (σ j)
+
+   theorem BHW.sourceMinkowskiGram_perm
+       (d n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (z : Fin n -> Fin (d + 1) -> ℂ) :
+       BHW.sourceMinkowskiGram d n (fun k => z (σ k)) =
+         BHW.sourcePermuteComplexGram n σ
+           (BHW.sourceMinkowskiGram d n z)
+
+   def BHW.sourceExtendedTubeGramDomain (d n : ℕ) :
+       Set (Fin n -> Fin n -> ℂ) :=
+     BHW.sourceMinkowskiGram d n '' BHW.ExtendedTube d n
+
+   def BHW.sourceDoublePermutationGramDomain
+       (d n : ℕ)
+       (σ : Equiv.Perm (Fin n)) :
+       Set (Fin n -> Fin n -> ℂ) :=
+     {Z | Z ∈ BHW.sourceExtendedTubeGramDomain d n ∧
+       BHW.sourcePermuteComplexGram n σ Z ∈
+         BHW.sourceExtendedTubeGramDomain d n}
+
+   theorem BHW.sourceRealMinkowskiGram_perm
+       (d n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (x : Fin n -> Fin (d + 1) -> ℝ) :
+       BHW.sourceRealMinkowskiGram d n (fun k => x (σ k)) =
+         BHW.sourcePermuteGram n σ
+           (BHW.sourceRealMinkowskiGram d n x)
+
+   theorem BHW.sourceRealGramComplexify_perm
+       (n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (G : Fin n -> Fin n -> ℝ) :
+       BHW.sourceRealGramComplexify n
+           (BHW.sourcePermuteGram n σ G) =
+         BHW.sourcePermuteComplexGram n σ
+           (BHW.sourceRealGramComplexify n G)
+   ```
+
+   The scalar-product representative supplied by Hall-Wightman Theorem I
+   should be packaged as data, not as a pointwise shortcut:
+
+   ```lean
+   structure BHW.SourceScalarRepresentativeData
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) where
+     U : Set (Fin n -> Fin n -> ℂ)
+     U_eq :
+       U = BHW.sourceExtendedTubeGramDomain d n
+     U_relOpen :
+       BHW.IsRelOpenInSourceComplexGramVariety d n U
+     U_connected :
+       IsConnected U
+     Phi : (Fin n -> Fin n -> ℂ) -> ℂ
+     Phi_holomorphic :
+       BHW.SourceVarietyHolomorphicOn d n Phi U
+     branch_eq :
+       ∀ w : Fin n -> Fin (d + 1) -> ℂ,
+         w ∈ BHW.ExtendedTube d n ->
+         Phi (BHW.sourceMinkowskiGram d n w) =
+           BHW.extendF F w
+   ```
+
+   The first non-elementary theorem is exactly Hall-Wightman's invariant
+   analytic-function theorem for the ordinary extended tube:
+
+   ```lean
+   theorem BHW.hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z) :
+       ∃ hRep : BHW.SourceScalarRepresentativeData (d := d) n F, True
+   ```
+
+   The checked Lean surface is an existence theorem because Lean declarations
+   whose type is data are definitions, not propositions.  This avoids hiding
+   the Hall-Wightman input in a `def`; the unresolved mathematical content
+   remains an explicit theorem-level source fact.
+
+   Proof content:
+
+   1. derive complex-Lorentz overlap invariance from restricted real Lorentz
+      invariance using `BHW.complex_lorentz_invariance`;
+   2. use `BHW.extendF_holomorphicOn` to get the single ordinary
+      extended-tube continuation `BHW.extendF F`;
+   3. apply Hall-Wightman Theorem I to obtain a scalar-product representative
+      on `BHW.sourceExtendedTubeGramDomain d n`;
+   4. use Hall-Wightman Lemma 3 to record `U_relOpen`, `U_connected`, and
+      local variety holomorphicity.  For `n > d + 1`, this is relative
+      holomorphicity on the rank-bounded scalar-product variety, not
+      full-matrix holomorphicity.
+
+   The compact-test anchor must next be converted to pointwise equality on the
+   real patch.  This is a standard distributional-to-pointwise step using the
+   already available compact-support uniqueness theorem and continuity of
+   `extendF F` on the ordinary extended tube:
+
+   ```lean
+   theorem BHW.sourceAnchor_compactBranchEq_pointwise_on_realPatch
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (π : Equiv.Perm (Fin n))
+       (i : Fin n)
+       (hi : i.val + 1 < n) :
+       ∀ x, x ∈ hAnchor.realPatch π i hi ->
+         BHW.extendF F (fun k => BHW.realEmbed x (π k)) =
+           BHW.extendF F
+             (fun k =>
+               BHW.realEmbed x
+                 ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k))
+   ```
+
+   Proof transcript:
+
+   ```lean
+     let L x := BHW.extendF F (fun k => BHW.realEmbed x (π k))
+     let R x := BHW.extendF F
+       (fun k =>
+         BHW.realEmbed x
+           ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k))
+     have hL_cont : ContinuousOn L (hAnchor.realPatch π i hi) := by
+       -- compose `extendF_holomorphicOn.continuousOn` with
+       -- `realEmbed` and use `hAnchor.realPatch_left_sector`.
+     have hR_cont : ContinuousOn R (hAnchor.realPatch π i hi) := by
+       -- same, using `hAnchor.realPatch_right_sector`.
+     have hEqOn : Set.EqOn L R (hAnchor.realPatch π i hi) := by
+       refine SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+         (hAnchor.realPatch_open π i hi) hL_cont hR_cont ?_
+       intro φ hφ_compact hφ_tsupport
+       exact hAnchor.compact_branch_eq π i hi φ hφ_compact hφ_tsupport
+     exact hEqOn
+   ```
+
+   The pointwise real-patch equality then becomes equality of the scalar
+   representative on the anchor Gram environment:
+
+   ```lean
+   theorem BHW.sourceScalarRepresentative_adjacent_seed_eq_on_environment
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hRep :
+         BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (π : Equiv.Perm (Fin n))
+       (i : Fin n)
+       (hi : i.val + 1 < n) :
+       let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+       ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+         hRep.Phi (BHW.sourceRealGramComplexify n G) =
+           hRep.Phi
+             (BHW.sourcePermuteComplexGram n τ
+               (BHW.sourceRealGramComplexify n G))
+   ```
+
+   Proof transcript:
+
+   ```lean
+     intro τ G hG
+     rcases hAnchor.gram_environment_realized π i hi G hG with
+       ⟨x, hxPatch, hGx⟩
+     have hpoint :=
+       BHW.sourceAnchor_compactBranchEq_pointwise_on_realPatch
+         (d := d) n F hF_holo hF_lorentz hAnchor π i hi x hxPatch
+     have hleft_ET :
+         BHW.realEmbed (fun k => x (π k)) ∈ BHW.ExtendedTube d n := by
+       simpa [BHW.permutedExtendedTubeSector, BHW.realEmbed] using
+         hAnchor.realPatch_left_sector π i hi x hxPatch
+     have hright_ET :
+         BHW.realEmbed
+           (fun k => x ((π * τ) k)) ∈ BHW.ExtendedTube d n := by
+       simpa [BHW.permutedExtendedTubeSector, BHW.realEmbed] using
+         hAnchor.realPatch_right_sector π i hi x hxPatch
+     have hleft :=
+       hRep.branch_eq
+         (BHW.realEmbed (fun k => x (π k))) hleft_ET
+     have hright :=
+       hRep.branch_eq
+         (BHW.realEmbed (fun k => x ((π * τ) k))) hright_ET
+     -- Rewrite the two Gram arguments by
+     -- `sourceMinkowskiGram_realEmbed`,
+     -- `sourceRealGramComplexify_perm`,
+     -- `hAnchor.gram_right_eq_perm_left`, and `hGx`.
+     calc
+       hRep.Phi (BHW.sourceRealGramComplexify n G)
+           = BHW.extendF F (fun k => BHW.realEmbed x (π k)) := by
+             simpa [hGx, BHW.sourceMinkowskiGram_realEmbed] using hleft
+       _ = BHW.extendF F
+             (fun k => BHW.realEmbed x ((π * τ) k)) := hpoint
+       _ = hRep.Phi
+             (BHW.sourcePermuteComplexGram n τ
+               (BHW.sourceRealGramComplexify n G)) := by
+             have hrightGram :
+                 BHW.sourceMinkowskiGram d n
+                     (BHW.realEmbed (fun k => x ((π * τ) k))) =
+                   BHW.sourcePermuteComplexGram n τ
+                     (BHW.sourceRealGramComplexify n G) := by
+               calc
+                 BHW.sourceMinkowskiGram d n
+                     (BHW.realEmbed (fun k => x ((π * τ) k)))
+                     = BHW.sourceRealGramComplexify n
+                         (BHW.sourceRealMinkowskiGram d n
+                           (fun k => x ((π * τ) k))) := by
+                         exact BHW.sourceMinkowskiGram_realEmbed
+                           (d := d) (n := n)
+                           (fun k => x ((π * τ) k))
+                 _ = BHW.sourceRealGramComplexify n
+                         (BHW.sourcePermuteGram n τ
+                           (BHW.sourceRealMinkowskiGram d n
+                             (fun k => x (π k)))) := by
+                         rw [hAnchor.gram_right_eq_perm_left π i hi x hxPatch]
+                 _ = BHW.sourceRealGramComplexify n
+                         (BHW.sourcePermuteGram n τ G) := by
+                         rw [hGx]
+                 _ = BHW.sourcePermuteComplexGram n τ
+                         (BHW.sourceRealGramComplexify n G) := by
+                         exact BHW.sourceRealGramComplexify_perm
+                           (n := n) τ G
+             have hright' :
+                 hRep.Phi
+                     (BHW.sourcePermuteComplexGram n τ
+                       (BHW.sourceRealGramComplexify n G)) =
+                   BHW.extendF F
+                     (fun k => BHW.realEmbed x ((π * τ) k)) := by
+               simpa [hrightGram] using hright
+             exact hright'.symm
+   ```
+
+   The adjacent seed equality is still only a seed.  The real
+   Hall-Wightman continuation theorem consumes all adjacent seeds and extends
+   them across the whole scalar-product double domain `S''_n`:
+
+   ```lean
+   theorem BHW.hallWightman_sourceScalarRepresentative_perm_invariant
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hRep :
+         BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∀ (σ : Equiv.Perm (Fin n))
+         (Z : Fin n -> Fin n -> ℂ),
+         Z ∈ BHW.sourceDoublePermutationGramDomain d n σ ->
+         hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) =
+           hRep.Phi Z
+   ```
+
+   This theorem is the formal local version of Hall-Wightman's statement that
+   the symmetric `S'_n` datum has a single-valued continuation on `S''_n`.
+   Its proof must be organized as follows.
+
+   1. Reduce `σ` to a word in adjacent swaps using the adjacent-transposition
+      generation of `Equiv.Perm (Fin n)`.
+   2. For each adjacent swap `τ`, use
+      `sourceScalarRepresentative_adjacent_seed_eq_on_environment` to get seed
+      equality on `hAnchor.gramEnvironment π i hi`.
+   3. Use
+      `hAnchor.gramEnvironment_unique π i hi :
+        sourceDistributionalUniquenessSetOnVariety d n
+          (hAnchor.gramEnvironment π i hi)`
+      to upgrade the seed equality to equality of
+      `hRep.Phi` and
+      `fun Z => hRep.Phi (sourcePermuteComplexGram n τ Z)` on the connected
+      scalar-product overlap component where both sides are defined.
+   4. Use Hall-Wightman's Lemma 3 / Section 2 continuation geometry to move
+      along the overlap components inside `S''_n`.  This is internal to the
+      source theorem and must not be exposed as a theorem-2 hypothesis named
+      after PET chamber connectivity.
+   5. Compose the adjacent invariances along the word for `σ`, rewriting
+      `sourcePermuteComplexGram n (α * β)` by function extensionality.
+
+   The exact local continuation helper used in step 4 should be source-facing
+   and scalar-coordinate only:
+
+   ```lean
+   theorem BHW.hallWightman_scalarOverlapContinuation_from_adjacentSeeds
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hRep :
+         BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (hSeed :
+         ∀ π i hi,
+           let τ : Equiv.Perm (Fin n) :=
+             Equiv.swap i ⟨i.val + 1, hi⟩
+           ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+             hRep.Phi (BHW.sourceRealGramComplexify n G) =
+               hRep.Phi
+                 (BHW.sourcePermuteComplexGram n τ
+                   (BHW.sourceRealGramComplexify n G))) :
+       ∀ (σ : Equiv.Perm (Fin n))
+         (Z : Fin n -> Fin n -> ℂ),
+         Z ∈ BHW.sourceDoublePermutationGramDomain d n σ ->
+         hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) =
+           hRep.Phi Z
+   ```
+
+   `hallWightman_scalarOverlapContinuation_from_adjacentSeeds` is the only
+   remaining source-level Hall-Wightman theorem after the representative and
+   real-environment suppliers are installed.  It is not an OS theorem, it must
+   not mention Wightman locality, and it must not import
+   `BHWPermutation.PermutationFlow`.
+
+   With these scalar-coordinate facts available, the current source frontier
+   has a short Lean proof:
+
+   ```lean
+   private theorem hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∀ (π ρ : Equiv.Perm (Fin n))
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ BHW.permutedExtendedTubeSector d n π ->
+         z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+         BHW.extendF F (fun k => z (π k)) =
+           BHW.extendF F (fun k => z (ρ k)) := by
+     intro π ρ z hzπ hzρ
+     let σ : Equiv.Perm (Fin n) := π.symm * ρ
+     let w : Fin n -> Fin (d + 1) -> ℂ := fun k => z (π k)
+     have hw : w ∈ BHW.ExtendedTube d n := by
+       simpa [w, BHW.permutedExtendedTubeSector] using hzπ
+     have hσw : (fun k => w (σ k)) ∈ BHW.ExtendedTube d n := by
+       simpa [w, σ, Equiv.Perm.mul_apply,
+         BHW.permutedExtendedTubeSector] using hzρ
+     let Z : Fin n -> Fin n -> ℂ := BHW.sourceMinkowskiGram d n w
+     have hZ : Z ∈ BHW.sourceDoublePermutationGramDomain d n σ := by
+       refine ⟨?_, ?_⟩
+       · exact ⟨w, hw, rfl⟩
+       · rw [← BHW.sourceMinkowskiGram_perm (d := d) (n := n) σ w]
+         exact ⟨fun k => w (σ k), hσw, rfl⟩
+     obtain ⟨hRep, _⟩ :=
+       BHW.hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz
+         (d := d) hd n F hF_holo hF_lorentz
+     have hperm :
+         hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) =
+           hRep.Phi Z :=
+       BHW.hallWightman_sourceScalarRepresentative_perm_invariant
+         (d := d) hd n F hF_holo hF_lorentz hF_perm hRep hAnchor
+         σ Z hZ
+     have hleft :
+         hRep.Phi Z = BHW.extendF F (fun k => z (π k)) := by
+       simpa [Z, w] using hRep.branch_eq w hw
+     have hright :
+         hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) =
+           BHW.extendF F (fun k => z (ρ k)) := by
+       rw [← BHW.sourceMinkowskiGram_perm (d := d) (n := n) σ w]
+       simpa [w, σ, Equiv.Perm.mul_apply] using
+         hRep.branch_eq (fun k => w (σ k)) hσw
+     exact hleft.symm.trans (hperm.symm.trans hright)
+   ```
+
+   Finally, the currently remaining `sorry`
+   `hallWightman_source_permutedBranch_compatibility` closes by pure sector
+   bookkeeping:
+
+   ```lean
+   private theorem hallWightman_source_permutedBranch_compatibility
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz : ...)
+       (hF_perm : ...)
+       (hAnchor :
+         SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∀ (π ρ : Equiv.Perm (Fin n))
+         (z : Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ BHW.permutedExtendedTubeSector d n π ->
+         z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+         BHW.extendF F (fun k => z (π k)) =
+           BHW.extendF F (fun k => z (ρ k)) := by
+     intro π ρ z hzπ hzρ
+     exact
+       hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
+         (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
+         π ρ z hzπ hzρ
+   ```
+
+   Consequence for the current Lean surface: the generic BHW branch-law,
+   extension, and sector-equality theorems now carry
+   `SourceDistributionalAdjacentTubeAnchor` explicitly.  The subsequent
+   PET-gluing code remains the correct mechanical consumer; the remaining work
+   is to prove the source compatibility theorem from the anchor, and then to
+   construct the OS-specific anchor for `bvt_F` from the OS-II
+   Schwinger/edge data.
+
+5. **Final theorem proof after source-surface correction.**
+
+   The public branch-law theorem now carries the
+   distributional Euclidean/Jost anchor package from item 4.  It may later be
+   replaced later by an OS-specific theorem that supplies that package
+   internally.  Its generic proof is mechanical: construct the elementary
+   `S'_n` branch facts, apply the distributional source compatibility theorem,
+   and then use the existing `BHW.gluedPETValue` API to build the single
+   `Fpet`.
+
+   Immediate Lean proof transcript for the generic distributional-anchor
+   version:
+
+   ```lean
+   theorem BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
+       (hF_lorentz :
+         ∀ (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.ForwardTube d n ->
+           F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
+       (hF_perm :
+         ∀ (σ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (σ k)) = F z)
+       (hAnchor :
+         SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
+       ∃ Fpet : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+         DifferentiableOn ℂ Fpet (BHW.PermutedExtendedTube d n) ∧
+         ∀ (π : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.permutedExtendedTubeSector d n π ->
+           Fpet z = BHW.extendF F (fun k => z (π k)) := by
+     let G : (π : Equiv.Perm (Fin n)) ->
+         (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+       fun π z => BHW.extendF F (fun k => z (π k))
+
+     have hGpft_holo :
+         ∀ π, DifferentiableOn ℂ
+           (fun z : Fin n -> Fin (d + 1) -> ℂ => F (fun k => z (π k)))
+           (BHW.PermutedForwardTube d n π) :=
+       fun π =>
+         source_permutedForwardBranch_holomorphicOn
+           (d := d) (n := n) F hF_holo π
+
+     have hGpft_lorentz :
+         ∀ π (Λ : RestrictedLorentzGroup d)
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.PermutedForwardTube d n π ->
+           (fun z' : Fin n -> Fin (d + 1) -> ℂ =>
+               F (fun k => z' (π k)))
+             (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal Λ) z) =
+           F (fun k => z (π k)) :=
+       fun π =>
+         source_permutedForwardBranch_restrictedLorentzInvariant
+           (d := d) (n := n) F hF_lorentz π
+
+     have hGpft_symm :
+         ∀ π ρ (z : Fin n -> Fin (d + 1) -> ℂ),
+           F (fun k => z (π k)) = F (fun k => z (ρ k)) :=
+       source_permutedForwardBranch_symmetric
+         (d := d) (n := n) F hF_perm
+
+     have hG_holo :
+         ∀ π, DifferentiableOn ℂ (G π)
+           (BHW.permutedExtendedTubeSector d n π) :=
+       fun π =>
+         BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz
+           (d := d) n F hF_holo hF_lorentz π
+
+     have hcompat :
+         ∀ (π ρ : Equiv.Perm (Fin n))
+           (z : Fin n -> Fin (d + 1) -> ℂ),
+           z ∈ BHW.permutedExtendedTubeSector d n π ->
+           z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+           G π z = G ρ z :=
+       hallWightman_source_permutedBranch_compatibility
+         (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
+
+     refine ⟨BHW.gluedPETValue (d := d) (n := n) G, ?_, ?_⟩
+     · exact BHW.gluedPETValue_holomorphicOn
+         (d := d) (n := n) G hG_holo hcompat
+     · intro π z hzπ
+       exact BHW.gluedPETValue_eq_of_mem_sector
+         (d := d) (n := n) G hcompat π z hzπ
+   ```
+
+   The variables `hGpft_holo`, `hGpft_lorentz`, and `hGpft_symm` are written
+   in the transcript to make the formal `S'_n` datum explicit.  The
+   `hGpft_symm` line is not the mathematical anchor by itself; the anchor is
+   the distributional compact-test package `hAnchor`.  If Lean reports the
+   elementary datum facts unused in the final proof of the public theorem,
+   they should be moved into the proof of
+   `hallWightman_source_permutedBranch_compatibility`, not deleted from the
+   mathematical proof plan.
+
+   The theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` must remain a
+   downstream consumer.
 
 The OS-specific Slot-6 theorem is then only the specialization to the selected
 OS-II-corrected witness:
@@ -741,10 +1715,16 @@ theorem bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le
         bvt_selectedPETBranch (d := d) OS lgc n ρ z
 ```
 
-Lean-shaped specialization proof:
+Lean-shaped specialization proof after the distributional anchor package is
+supplied from the OS-II construction:
 
 ```lean
   intro π ρ z hzπ hzρ
+  have hAnchor :
+      SourceDistributionalAdjacentTubeAnchor
+        (d := d) n (bvt_F OS lgc n) :=
+    bvt_F_distributionalJostAnchor_of_OSII
+      (d := d) hd OS lgc n
   simpa [bvt_selectedPETBranch] using
     BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry
       (d := d) hd n (bvt_F OS lgc n)
@@ -758,8 +1738,907 @@ Lean-shaped specialization proof:
             (d := d) OS lgc n Λ z
             (by simpa [BHW_forwardTube_eq (d := d) (n := n)] using hz))
       (bvt_F_perm (d := d) OS lgc n)
+      hAnchor
       π ρ z hzπ hzρ
 ```
+
+The new proof-doc target `bvt_F_distributionalJostAnchor_of_OSII` is not a
+wrapper.  It is the OS-II content that turns the reconstructed Schwinger
+distributions, OS E3 symmetry, and the OS45 local real-edge construction into
+the compact-test real-environment data used by Hall-Wightman/EOW.  It must
+return adjacent, permutation-indexed real-open patches, scalar-product real
+environments, and distributional equality of selected adjacent branch boundary
+values there; it must not manufacture a pointwise Schwinger function or a
+single real set lying in all permuted sectors.  A theorem named
+`BHW.petSectorFiber_adjacent_connected_of_two_le`, if ever proved, is optional
+background PET geometry.  It is not an implementation prerequisite for the
+strict OS I §4.5 / OS II theorem-2 route unless a later source audit proves
+that Hall-Wightman must be decomposed in that particular way.
+
+Lean-ready expansion of the OS-II supplier:
+
+`bvt_F_distributionalJostAnchor_of_OSII` must be built directly from the OS45
+local real-edge construction.  It cannot be proved from
+`SelectedAdjacentPermutationEdgeData` alone, because that checked selected-edge
+record intentionally forgets the Jost membership, the ordered Euclidean
+time-sector data, and the scalar-product real-environment information needed by
+Hall-Wightman.  The implementation should either enrich the selected-edge
+record or introduce the following source-facing OS package next to the
+locality files:
+
+```lean
+structure SelectedAdjacentDistributionalJostAnchorData
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) where
+  basePatch :
+    (i : Fin n) -> (hi : i.val + 1 < n) -> Set (NPointDomain d n)
+  basePatch_open :
+    ∀ i hi, IsOpen (basePatch i hi)
+  basePatch_nonempty :
+    ∀ i hi, (basePatch i hi).Nonempty
+  basePatch_jost :
+    ∀ i hi x, x ∈ basePatch i hi -> x ∈ BHW.JostSet d n
+  basePatch_left_ET :
+    ∀ i hi x, x ∈ basePatch i hi ->
+      BHW.realEmbed (d := d) x ∈ BHW.ExtendedTube d n
+  basePatch_right_ET :
+    ∀ i hi x, x ∈ basePatch i hi ->
+      BHW.realEmbed (d := d)
+        (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+        BHW.ExtendedTube d n
+  baseGramEnvironment :
+    (i : Fin n) -> (hi : i.val + 1 < n) ->
+      Set (Fin n -> Fin n -> ℝ)
+  baseGramEnvironment_unique :
+    ∀ i hi,
+      BHW.sourceDistributionalUniquenessSetOnVariety d n
+        (baseGramEnvironment i hi)
+  baseGram_left_mem :
+    ∀ i hi x, x ∈ basePatch i hi ->
+      sourceRealMinkowskiGram d n x ∈ baseGramEnvironment i hi
+  baseGram_realized :
+    ∀ i hi G, G ∈ baseGramEnvironment i hi ->
+      ∃ x ∈ basePatch i hi,
+        sourceRealMinkowskiGram d n x = G
+  baseCompactEq :
+    ∀ i hi (φ : SchwartzNPoint d n),
+      HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+      tsupport (φ : NPointDomain d n -> ℂ) ⊆ basePatch i hi ->
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (d := d) x) * φ x
+        =
+      ∫ x : NPointDomain d n,
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed (d := d)
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * φ x
+```
+
+Construction of this package is genuine theorem-2 mathematics:
+
+1. obtain `V`, `rho`, and all real-edge side conditions from
+   `BHW.os45_adjacent_localEOWGeometry (d := d) hd i hi`;
+2. obtain the single-chart branch-difference envelope from
+   `os45_adjacent_singleChart_commonBoundaryValue`;
+3. apply
+   `BHW.bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
+   to get the compact-test equality on `V`, using `.symm` if the checked
+   theorem is stated in the swap-first orientation;
+4. use the corrected Hall-Wightman scalar-product geometry lemma
+   `BHW.sourceRealEnvironment_of_os45JostPatch` to construct
+   `baseGramEnvironment`, its variety-level uniqueness proof, and the
+   realization/lift facts.
+
+The last lemma is a genuine SCV/Hall-Wightman geometry theorem, not a wrapper:
+it says that the Minkowski-Gram image of the chosen open Jost patch supplies a
+Hall-Wightman real environment for the corresponding scalar-product
+holomorphic representatives.
+
+The source file now has two checked full-matrix sufficient criteria.  Any
+nonempty open real set of full Gram-coordinate matrices is a valid
+`sourceDistributionalUniquenessSet`, by applying the existing totally-real
+identity theorem in product coordinates `Fin n -> Fin n`:
+
+```lean
+theorem BHW.sourceDistributionalUniquenessSet_of_isOpen_nonempty
+    (d n : ℕ)
+    {E : Set (Fin n -> Fin n -> ℝ)}
+    (hE_open : IsOpen E)
+    (hE_ne : E.Nonempty) :
+    BHW.sourceDistributionalUniquenessSet d n E := by
+  refine ⟨hE_ne, ?_⟩
+  intro U Φ Ψ hU_open hU_conn hE_sub hΦ hΨ h_eq
+  have hsub :
+      ∀ G ∈ E, SCV.realToComplexProduct G ∈ U := by
+    intro G hG
+    simpa [BHW.sourceRealGramComplexify, SCV.realToComplexProduct] using
+      hE_sub G hG
+  have hzero :
+      ∀ G ∈ E, (Φ - Ψ) (SCV.realToComplexProduct G) = 0 := by
+    intro G hG
+    have hG_eq := h_eq G hG
+    simpa [BHW.sourceRealGramComplexify, SCV.realToComplexProduct,
+      sub_eq_zero] using hG_eq
+  have hident :
+      ∀ Z ∈ U, (Φ - Ψ) Z = 0 :=
+    SCV.identity_theorem_totally_real_product
+      (n := n) (p := n)
+      hU_open hU_conn (hΦ.sub hΨ) hE_open hE_ne hsub hzero
+  intro Z hZ
+  exact sub_eq_zero.mp (hident Z hZ)
+```
+
+The source file also has the checked containment version:
+
+```lean
+theorem BHW.sourceDistributionalUniquenessSet_of_contains_open
+    (d n : ℕ)
+    {E O : Set (Fin n -> Fin n -> ℝ)}
+    (hO_open : IsOpen O)
+    (hO_ne : O.Nonempty)
+    (hO_sub : O ⊆ E) :
+    BHW.sourceDistributionalUniquenessSet d n E := by
+  refine ⟨hO_ne.mono hO_sub, ?_⟩
+  intro U Φ Ψ hU_open hU_conn hE_sub hΦ hΨ h_eq
+  exact
+    (BHW.sourceDistributionalUniquenessSet_of_isOpen_nonempty
+      (d := d) (n := n) hO_open hO_ne).2
+      U Φ Ψ hU_open hU_conn
+      (fun G hG => hE_sub G (hO_sub hG))
+      hΦ hΨ
+      (fun G hG => h_eq G (hO_sub hG))
+```
+
+These two lemmas are true, but they are **not** the general OS supplier for
+theorem 2.  The attempted next theorem
+
+```lean
+theorem BHW.sourceGramImage_contains_open_of_regularJostPatch
+    [NeZero d]
+    (hd : 2 <= d)
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_ne : V.Nonempty)
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n) :
+    ∃ O : Set (Fin n -> Fin n -> ℝ),
+      IsOpen O ∧ O.Nonempty ∧
+      O ⊆ BHW.sourceRealMinkowskiGram d n '' V
+```
+
+is rejected.  It is mathematically false as a general theorem-2 statement:
+
+1. `BHW.sourceRealMinkowskiGram d n x` is symmetric, so its image lies in the
+   proper symmetric linear subspace of `Fin n -> Fin n -> ℝ` whenever `2 <= n`.
+   This is now recorded in Lean as `BHW.sourceRealMinkowskiGram_symm`.
+2. For arity larger than the spacetime vector dimension `d + 1`, the image lies
+   in the rank-`<= d + 1` scalar-product variety, so it also has empty interior
+   in the full symmetric matrix space.
+3. Hall-Wightman explicitly works on the scalar-product variety of symmetric
+   matrices.  The local OCR of `hall_wightman_invariant_analytic_functions_1957.pdf`
+   says the scalar products label symmetric matrices, that for large arity the
+   domain is open on a `4 n - 6` dimensional algebraic variety in four
+   spacetime dimensions, and that the spacelike real points form real
+   environments on that variety, not full-matrix open subsets.
+4. The API-backed Gemini Deep Research check
+   `v1_ChYtLURyYWZ4UjFKNy00d19TbWNMUUJnEhYtLURyYWZ4UjFKNy00d19TbWNMUUJn`
+   independently confirmed this correction and recommended fixing the
+   production predicate before treating the OS supplier as implementation-ready.
+
+Correct replacement: the OS supplier must target a Hall-Wightman
+scalar-product-variety real environment.  The proof-doc contract is therefore
+the following Lean surface, with `D = d + 1` the spacetime vector dimension:
+
+```lean
+/-- Complex scalar-product variety: the Hall-Wightman variety of symmetric
+rank-`<= d + 1` Gram matrices, represented without choosing minors as the
+range of the complex Minkowski Gram map. -/
+def BHW.sourceComplexGramVariety (d n : ℕ) :
+    Set (Fin n -> Fin n -> ℂ) :=
+  Set.range (BHW.sourceMinkowskiGram d n)
+
+/-- Real scalar-product variety, represented as the range of the real Gram
+map. -/
+def BHW.sourceRealGramVariety (d n : ℕ) :
+    Set (Fin n -> Fin n -> ℝ) :=
+  Set.range (BHW.sourceRealMinkowskiGram d n)
+
+theorem BHW.sourceMinkowskiGram_realEmbed
+    (d n : ℕ)
+    (x : Fin n -> Fin (d + 1) -> ℝ) :
+    BHW.sourceMinkowskiGram d n (BHW.realEmbed x) =
+      BHW.sourceRealGramComplexify n
+        (BHW.sourceRealMinkowskiGram d n x)
+
+theorem BHW.sourceRealGramComplexify_mem_sourceComplexGramVariety
+    (d n : ℕ)
+    {G : Fin n -> Fin n -> ℝ}
+    (hG : G ∈ BHW.sourceRealGramVariety d n) :
+    BHW.sourceRealGramComplexify n G ∈
+      BHW.sourceComplexGramVariety d n
+
+def BHW.IsRelOpenInSourceComplexGramVariety
+    (d n : ℕ) (U : Set (Fin n -> Fin n -> ℂ)) : Prop :=
+  ∃ U0 : Set (Fin n -> Fin n -> ℂ),
+    IsOpen U0 ∧ U = U0 ∩ BHW.sourceComplexGramVariety d n
+
+def BHW.IsRelOpenInSourceRealGramVariety
+    (d n : ℕ) (E : Set (Fin n -> Fin n -> ℝ)) : Prop :=
+  ∃ E0 : Set (Fin n -> Fin n -> ℝ),
+    IsOpen E0 ∧ E = E0 ∩ BHW.sourceRealGramVariety d n
+
+def BHW.SourceVarietyHolomorphicOn
+    (d n : ℕ)
+    (Φ : (Fin n -> Fin n -> ℂ) -> ℂ)
+    (U : Set (Fin n -> Fin n -> ℂ)) : Prop :=
+  ∀ Z ∈ U, ∃ U0 : Set (Fin n -> Fin n -> ℂ),
+    IsOpen U0 ∧ Z ∈ U0 ∧
+      DifferentiableOn ℂ Φ U0 ∧
+      U0 ∩ BHW.sourceComplexGramVariety d n ⊆ U
+
+def BHW.sourceDistributionalUniquenessSetOnVariety
+    (d n : ℕ)
+    (E : Set (Fin n -> Fin n -> ℝ)) : Prop :=
+  E.Nonempty ∧
+    ∀ (U : Set (Fin n -> Fin n -> ℂ))
+      (Φ Ψ : (Fin n -> Fin n -> ℂ) -> ℂ),
+      BHW.IsRelOpenInSourceComplexGramVariety d n U ->
+      IsConnected U ->
+      (∀ G ∈ E,
+        BHW.sourceRealGramComplexify n G ∈ U) ->
+      BHW.SourceVarietyHolomorphicOn d n Φ U ->
+      BHW.SourceVarietyHolomorphicOn d n Ψ U ->
+      (∀ G ∈ E,
+        Φ (BHW.sourceRealGramComplexify n G) =
+          Ψ (BHW.sourceRealGramComplexify n G)) ->
+      Set.EqOn Φ Ψ U
+```
+
+The production anchor now carries
+`BHW.sourceDistributionalUniquenessSetOnVariety`; the older
+`BHW.sourceDistributionalUniquenessSet` remains only as a full-matrix
+sufficient predicate.  The checked full-matrix lemmas may remain as
+small-arity/full-dimensional sufficient tools, but they must not be used to
+claim that a general OS45 Jost patch has full matrix interior.
+
+The corrected OS-side supplier theorem is:
+
+```lean
+theorem BHW.sourceRealEnvironment_of_os45JostPatch
+    [NeZero d]
+    (hd : 2 <= d)
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_ne : V.Nonempty)
+    (hV_jost : ∀ x ∈ V, x ∈ BHW.JostSet d n) :
+    ∃ E : Set (Fin n -> Fin n -> ℝ),
+      BHW.sourceDistributionalUniquenessSetOnVariety d n E ∧
+      (∀ x ∈ V, BHW.sourceRealMinkowskiGram d n x ∈ E) ∧
+      (∀ G ∈ E, ∃ x ∈ V,
+        BHW.sourceRealMinkowskiGram d n x = G)
+```
+
+This is the genuine Hall-Wightman geometry step.  It says that the selected
+OS45 real-open Jost slice maps to a real environment in the scalar-product
+variety.  It is **not** a claim about full-matrix interior.
+
+Lean-ready decomposition of this geometry step:
+
+```lean
+/-- Dimension of the regular Hall-Wightman scalar-product variety.
+For `D = d + 1` and `m = min n D`, this is
+`n * m - m * (m - 1) / 2`; in four spacetime dimensions this gives
+`1, 3, 6, 10, 4n - 6`, matching Hall-Wightman. -/
+def BHW.sourceGramExpectedDim (d n : ℕ) : ℕ :=
+  let m := min n (d + 1)
+  n * m - (m * (m - 1)) / 2
+
+/-- The span of the source vectors in real spacetime. -/
+def BHW.sourceConfigurationSpan
+    (d n : ℕ)
+    (x : NPointDomain d n) :
+    Submodule ℝ (Fin (d + 1) -> ℝ) :=
+  Submodule.span ℝ (Set.range x)
+
+/-- Regular real configurations are the maximal-span configurations.  For the
+nondegenerate Minkowski form this is exactly the regular stratum of the Gram
+map onto the Hall-Wightman scalar-product variety. -/
+def BHW.SourceGramRegularAt
+    (d n : ℕ)
+    (x : NPointDomain d n) : Prop :=
+  Module.finrank ℝ (BHW.sourceConfigurationSpan d n x) =
+    min n (d + 1)
+
+/-- Differential of the real source Gram map at `x`. -/
+def BHW.sourceRealGramDifferential
+    (d n : ℕ)
+    (x : NPointDomain d n) :
+    NPointDomain d n →ₗ[ℝ] (Fin n -> Fin n -> ℝ) :=
+{ toFun := fun h i j =>
+    ∑ μ : Fin (d + 1),
+      MinkowskiSpace.metricSignature d μ *
+        (h i μ * x j μ + x i μ * h j μ)
+  map_add' := by
+    intro h₁ h₂
+    ext i j
+    simp [add_mul, mul_add, Finset.sum_add_distrib]
+    ring
+  map_smul' := by
+    intro c h
+    ext i j
+    simp [mul_add, Finset.mul_sum]
+    ring }
+
+/-- Regular configurations have the expected differential rank. -/
+theorem BHW.sourceRealGramDifferential_rank_of_regular
+    (d n : ℕ)
+    {x : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x) :
+    Module.finrank ℝ
+      (LinearMap.range (BHW.sourceRealGramDifferential d n x)) =
+      BHW.sourceGramExpectedDim d n
+
+/-- Complex span of source vectors. -/
+def BHW.sourceComplexConfigurationSpan
+    (d n : ℕ)
+    (z : Fin n -> Fin (d + 1) -> ℂ) :
+    Submodule ℂ (Fin (d + 1) -> ℂ) :=
+  Submodule.span ℂ (Set.range z)
+
+/-- Regular complex configurations are the maximal complex-span
+configurations. -/
+def BHW.SourceComplexGramRegularAt
+    (d n : ℕ)
+    (z : Fin n -> Fin (d + 1) -> ℂ) : Prop :=
+  Module.finrank ℂ (BHW.sourceComplexConfigurationSpan d n z) =
+    min n (d + 1)
+
+/-- Differential of the complex source Gram map. -/
+def BHW.sourceComplexGramDifferential
+    (d n : ℕ)
+    (z : Fin n -> Fin (d + 1) -> ℂ) :
+    (Fin n -> Fin (d + 1) -> ℂ) →ₗ[ℂ] (Fin n -> Fin n -> ℂ) :=
+{ toFun := fun h i j =>
+    ∑ μ : Fin (d + 1),
+      (MinkowskiSpace.metricSignature d μ : ℂ) *
+        (h i μ * z j μ + z i μ * h j μ)
+  map_add' := by
+    intro h₁ h₂
+    ext i j
+    simp [add_mul, mul_add, Finset.sum_add_distrib]
+    ring
+  map_smul' := by
+    intro c h
+    ext i j
+    simp [mul_add, Finset.mul_sum]
+    ring }
+
+/-- Maximal-rank configurations are dense in real configuration space. -/
+theorem BHW.dense_sourceGramRegularAt
+    (d n : ℕ) :
+    Dense {x : NPointDomain d n | BHW.SourceGramRegularAt d n x}
+
+/-- The regular locus is open. -/
+theorem BHW.isOpen_sourceGramRegularAt
+    (d n : ℕ) :
+    IsOpen {x : NPointDomain d n | BHW.SourceGramRegularAt d n x}
+
+/-- Real tangent space supplied by the Gram differential at a regular
+representative. -/
+def BHW.sourceRealGramTangentSpaceAt
+    (d n : ℕ)
+    (G : Fin n -> Fin n -> ℝ) :
+    Set (Fin n -> Fin n -> ℝ) :=
+  {δG | ∃ x : NPointDomain d n,
+    BHW.SourceGramRegularAt d n x ∧
+    BHW.sourceRealMinkowskiGram d n x = G ∧
+    δG ∈ LinearMap.range (BHW.sourceRealGramDifferential d n x)}
+
+/-- Complex tangent space supplied by the complex Gram differential at a
+regular representative. -/
+def BHW.sourceComplexGramTangentSpaceAt
+    (d n : ℕ)
+    (Z : Fin n -> Fin n -> ℂ) :
+    Set (Fin n -> Fin n -> ℂ) :=
+  {δZ | ∃ z : Fin n -> Fin (d + 1) -> ℂ,
+    BHW.SourceComplexGramRegularAt d n z ∧
+    BHW.sourceMinkowskiGram d n z = Z ∧
+    δZ ∈ LinearMap.range (BHW.sourceComplexGramDifferential d n z)}
+
+/-- The Hall-Wightman real locus is maximal totally real at `G`: after
+complexification, the real tangent supplied by the regular real Gram map has
+complex span equal to the complex tangent of the scalar-product variety. -/
+def BHW.SourceComplexifiedRealTangentEqualsComplexTangent
+    (d n : ℕ)
+    (G : Fin n -> Fin n -> ℝ) : Prop :=
+  Submodule.span ℂ
+      (BHW.sourceRealGramComplexify n ''
+        BHW.sourceRealGramTangentSpaceAt d n G) =
+    Submodule.span ℂ
+      (BHW.sourceComplexGramTangentSpaceAt d n
+        (BHW.sourceRealGramComplexify n G))
+
+/-- Every nonempty open real patch contains a regular configuration. -/
+theorem BHW.exists_sourceGramRegularAt_in_nonempty_open
+    [NeZero d]
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_ne : V.Nonempty) :
+    ∃ x ∈ V, BHW.SourceGramRegularAt d n x
+
+/-- Hall-Wightman's real-environment predicate.  `O` contains a relatively open
+regular real Gram patch, realized by Jost configurations, whose complexified
+real tangent space is the complex tangent space of the scalar-product variety.
+This is the Bochner-Martin/Hall-Wightman "real environment" condition, not a
+full-matrix openness condition. -/
+structure BHW.IsHWRealEnvironment
+    (d n : ℕ)
+    (O : Set (Fin n -> Fin n -> ℝ)) : Prop where
+  nonempty : O.Nonempty
+  relOpen : BHW.IsRelOpenInSourceRealGramVariety d n O
+  realized_by_jost :
+    ∀ G ∈ O, ∃ x : NPointDomain d n,
+      x ∈ BHW.JostSet d n ∧
+      BHW.SourceGramRegularAt d n x ∧
+      BHW.sourceRealMinkowskiGram d n x = G
+  maximal_totally_real :
+    ∀ G ∈ O,
+      BHW.SourceComplexifiedRealTangentEqualsComplexTangent d n G
+
+/-- At a regular real Jost configuration, the real Gram map is relatively open
+onto a Hall-Wightman real environment in the scalar-product variety. -/
+theorem BHW.sourceRealGramMap_realEnvironmentAt_of_regular
+    [NeZero d]
+    (n : ℕ)
+    {x0 : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x0)
+    (hx0_jost : x0 ∈ BHW.JostSet d n)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hx0V : x0 ∈ V) :
+    ∃ O : Set (Fin n -> Fin n -> ℝ),
+      O ⊆ BHW.sourceRealMinkowskiGram d n '' V ∧
+      BHW.IsHWRealEnvironment d n O
+
+/-- Hall-Wightman's real-environment uniqueness theorem on the scalar-product
+variety.  This is the source-backed analytic theorem, not a wrapper around the
+full-matrix totally-real identity theorem. -/
+theorem BHW.sourceDistributionalUniquenessSetOnVariety_of_realEnvironment
+    [NeZero d]
+    (n : ℕ)
+    {E : Set (Fin n -> Fin n -> ℝ)}
+    (hE_env : BHW.IsHWRealEnvironment d n E) :
+    BHW.sourceDistributionalUniquenessSetOnVariety d n E
+
+/-- Variety-level uniqueness is monotone in the real environment.  This checked
+Lean lemma lets the OS supplier use the whole Gram image of the selected patch
+after proving that it contains a smaller Hall-Wightman real environment. -/
+theorem BHW.sourceDistributionalUniquenessSetOnVariety_mono
+    (d n : ℕ)
+    {O E : Set (Fin n -> Fin n -> ℝ)}
+    (hO : BHW.sourceDistributionalUniquenessSetOnVariety d n O)
+    (hOE : O ⊆ E) :
+    BHW.sourceDistributionalUniquenessSetOnVariety d n E
+```
+
+The proof of `BHW.sourceRealEnvironment_of_os45JostPatch` should now be:
+
+```lean
+  classical
+  let E : Set (Fin n -> Fin n -> ℝ) :=
+    BHW.sourceRealMinkowskiGram d n '' V
+  obtain ⟨x0, hx0V, hreg⟩ :=
+    BHW.exists_sourceGramRegularAt_in_nonempty_open
+      (d := d) (n := n) V hV_open hV_ne
+  have hx0_jost : x0 ∈ BHW.JostSet d n := hV_jost x0 hx0V
+  obtain ⟨O, hO_sub_E, hO_env⟩ :=
+    BHW.sourceRealGramMap_realEnvironmentAt_of_regular
+      (d := d) (n := n) hreg hx0_jost V hV_open hx0V
+  have hO_unique :
+      BHW.sourceDistributionalUniquenessSetOnVariety d n O :=
+    BHW.sourceDistributionalUniquenessSetOnVariety_of_realEnvironment
+      (d := d) (n := n) hO_env
+  have hE_unique :
+      BHW.sourceDistributionalUniquenessSetOnVariety d n E :=
+    BHW.sourceDistributionalUniquenessSetOnVariety_mono
+      (d := d) (n := n) hO_unique hO_sub_E
+  refine ⟨E, hE_unique, ?_, ?_⟩
+  · intro x hxV
+    exact ⟨x, hxV, rfl⟩
+  · intro G hG
+    rcases hG with ⟨x, hxV, rfl⟩
+    exact ⟨x, hxV, rfl⟩
+```
+
+The implementation may merge the source-level `IsHWRealEnvironment` and
+uniqueness theorem if the eventual Hall-Wightman formalization exposes a
+single real-environment theorem.  It must not replace them by an assertion of
+openness in `Fin n -> Fin n -> ℝ`.
+
+Detailed proof obligations for the three remaining supplier facts:
+
+**A. Dense/open regular configurations.**
+
+The Lean proof of `dense_sourceGramRegularAt` and
+`isOpen_sourceGramRegularAt` should use ordinary finite-dimensional linear
+algebra, not Hall-Wightman.
+
+```lean
+/-- A concrete full-span template: the first `m = min n (d + 1)` source
+vectors are coordinate basis vectors and the remaining vectors are zero or
+repetitions. -/
+noncomputable def BHW.sourceFullSpanTemplate
+    (d n : ℕ) : NPointDomain d n :=
+  fun k μ => if μ.val = k.val then 1 else 0
+
+theorem BHW.sourceFullSpanTemplate_regular
+    (d n : ℕ) :
+    BHW.SourceGramRegularAt d n
+      (BHW.sourceFullSpanTemplate d n)
+
+/-- Maximal span is witnessed by a nonzero coordinate minor. -/
+theorem BHW.sourceGramRegularAt_iff_exists_nonzero_minor
+    (d n : ℕ)
+    (x : NPointDomain d n) :
+    BHW.SourceGramRegularAt d n x ↔
+      ∃ I : Fin (min n (d + 1)) -> Fin n,
+        Function.Injective I ∧
+        ∃ J : Fin (min n (d + 1)) -> Fin (d + 1),
+          Function.Injective J ∧
+          Matrix.det (fun a b => x (I a) (J b)) ≠ 0
+
+theorem BHW.isOpen_sourceGramRegularAt
+    (d n : ℕ) :
+    IsOpen {x : NPointDomain d n | BHW.SourceGramRegularAt d n x} := by
+  rw [Set.ext_iff] -- use the nonzero-minor characterization
+  -- finite union over `(I,J)` of preimages of `{r | r ≠ 0}` under continuous
+  -- determinant polynomials.
+
+theorem BHW.dense_sourceGramRegularAt
+    (d n : ℕ) :
+    Dense {x : NPointDomain d n | BHW.SourceGramRegularAt d n x} := by
+  -- For any `x` and any neighbourhood, perturb along a full-span template:
+  -- `x_t = x + t • sourceFullSpanTemplate d n`.
+  -- Choose a fixed minor nonzero on the template.  The same minor of `x_t`
+  -- is a univariate polynomial whose leading coefficient is that nonzero
+  -- template determinant, hence the polynomial is not identically zero.
+  -- A nonzero univariate polynomial has finitely many zeros, so choose
+  -- arbitrarily small nonzero `t` avoiding them.
+```
+
+If the univariate perturbation proof becomes awkward, use the existing
+polynomial zero-set infrastructure in `GeneralResults/PolynomialMeasureZero`:
+the complement of the finite union of all maximal-minor zero sets has empty
+interior because one minor is nonzero at `sourceFullSpanTemplate`.
+
+**B. Differential rank and local real environments.**
+
+At a regular configuration, the derivative
+
+```lean
+dG_x(h) i j =
+  ∑ μ, η_μ * (h i μ * x j μ + x i μ * h j μ)
+```
+
+has rank `sourceGramExpectedDim d n`.  The proof is the standard Gram-map
+rank calculation for a nondegenerate symmetric bilinear form:
+
+1. let `m = min n (d + 1)`;
+2. choose `m` source vectors forming a basis of the source span and express
+   every remaining source vector in that basis;
+3. split variations into components tangent to the source span and components
+   annihilating all source vectors under the Minkowski pairing;
+4. the normal-annihilator variations contribute
+   `n * ((d + 1) - m)` to the kernel;
+5. the span-tangent kernel is the infinitesimal skew-adjoint part, of dimension
+   `m * (m - 1) / 2`;
+6. the total kernel has dimension
+   `n * ((d + 1) - m) + m * (m - 1) / 2`;
+7. rank-nullity gives image dimension
+   `n * (d + 1) - (n * ((d + 1) - m) + m * (m - 1) / 2) =
+    n * m - m * (m - 1) / 2`;
+8. equivalently, the image consists of:
+   - arbitrary symmetric variations of the `m × m` basis Gram block, and
+   - arbitrary variations of the coefficients of the remaining `n - m`
+     vectors in the chosen span;
+9. conclude image dimension `n * m - m * (m - 1) / 2`;
+10. for `n <= d + 1`, this says the map is a submersion onto all symmetric
+   matrices; for `d + 1 <= n`, it is a submersion onto the regular
+   rank-`d + 1` scalar-product variety.
+
+Lean-facing theorem packet:
+
+```lean
+/-- Kernel dimension of the Gram differential at a regular point.  The kernel
+contains both normal-annihilator variations and infinitesimal skew-adjoint
+span rotations. -/
+theorem BHW.sourceRealGramDifferential_kernel_finrank_of_regular
+    (d n : ℕ)
+    {x : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x) :
+    Module.finrank ℝ
+      (LinearMap.ker (BHW.sourceRealGramDifferential d n x)) =
+      n * ((d + 1) - min n (d + 1)) +
+        (min n (d + 1)) * ((min n (d + 1)) - 1) / 2
+
+theorem BHW.sourceRealGramDifferential_rank_of_regular
+    (d n : ℕ)
+    {x : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x) :
+    Module.finrank ℝ
+      (LinearMap.range (BHW.sourceRealGramDifferential d n x)) =
+      BHW.sourceGramExpectedDim d n
+```
+
+Then apply the finite-dimensional constant-rank theorem to the smooth
+polynomial map `sourceRealMinkowskiGram d n`.  The chart produced by constant
+rank is the local real part of Hall-Wightman's scalar-product variety.
+
+```lean
+theorem BHW.sourceRealGramMap_realEnvironmentAt_of_regular
+    [NeZero d]
+    (n : ℕ)
+    {x0 : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x0)
+    (hx0_jost : x0 ∈ BHW.JostSet d n)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hx0V : x0 ∈ V) :
+    ∃ O : Set (Fin n -> Fin n -> ℝ),
+      O ⊆ BHW.sourceRealMinkowskiGram d n '' V ∧
+      BHW.IsHWRealEnvironment d n O := by
+  -- shrink `V` to `V0 = V ∩ JostSet d n ∩ regularLocus ∩ metric chart`
+  -- using `hV_open`, `BHW.isOpen_jostSet`, and
+  -- `BHW.isOpen_sourceGramRegularAt`;
+  -- apply constant-rank/local-submersion to `sourceRealMinkowskiGram`;
+  -- set `O = sourceRealMinkowskiGram d n '' V0`;
+  -- `O ⊆ sourceRealMinkowskiGram d n '' V` is immediate from `V0 ⊆ V`;
+  -- `relOpen` comes from the local-submersion chart;
+  -- `realized_by_jost` comes from the definition of `O`;
+  -- `maximal_totally_real` is the real/complex tangent comparison below.
+```
+
+The complex tangent comparison is algebraic: complexifying a real regular
+configuration remains regular, and the complex differential is the
+complexification of the real differential.
+
+```lean
+theorem BHW.sourceComplex_regular_of_real_regular
+    (d n : ℕ)
+    {x : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x) :
+    BHW.SourceComplexGramRegularAt d n (BHW.realEmbed x)
+
+theorem BHW.sourceComplexGramDifferential_realEmbed
+    (d n : ℕ)
+    (x h : NPointDomain d n) :
+    BHW.sourceComplexGramDifferential d n (BHW.realEmbed x)
+      (BHW.realEmbed h) =
+      BHW.sourceRealGramComplexify n
+        ((BHW.sourceRealGramDifferential d n x) h)
+
+theorem BHW.sourceComplexifiedRealTangentEqualsComplexTangent_of_regular
+    (d n : ℕ)
+    {x : NPointDomain d n}
+    (hreg : BHW.SourceGramRegularAt d n x) :
+    BHW.SourceComplexifiedRealTangentEqualsComplexTangent d n
+      (BHW.sourceRealMinkowskiGram d n x)
+```
+
+**C. Hall-Wightman uniqueness from a real environment.**
+
+This is the source-backed SCV theorem.  It should be proved once, at the
+scalar-product-variety level, and then reused by the OS supplier.  The proof is
+Hall-Wightman's Section 2 real-environment argument plus the ordinary identity
+theorem in local variety charts:
+
+1. use `IsHWRealEnvironment.maximal_totally_real` to choose a chart in which
+   `O` contains a nonempty open subset of the real slice `ℝ^N ⊂ ℂ^N`;
+2. restrict `(Φ - Ψ)` to that chart;
+3. apply the totally-real identity theorem in `Fin N` complex coordinates;
+4. the zero set of `Φ - Ψ` is relatively open and closed in the connected
+   relatively open subset `U` of the scalar-product variety;
+5. conclude `Set.EqOn Φ Ψ U`.
+
+Lean-facing theorem packet:
+
+```lean
+theorem BHW.sourceVariety_localChart_totallyReal_identity
+    (d n : ℕ)
+    {O : Set (Fin n -> Fin n -> ℝ)}
+    (hO : BHW.IsHWRealEnvironment d n O)
+    {U : Set (Fin n -> Fin n -> ℂ)}
+    {Φ Ψ : (Fin n -> Fin n -> ℂ) -> ℂ}
+    (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
+    (hO_sub : ∀ G ∈ O, BHW.sourceRealGramComplexify n G ∈ U)
+    (hΦ : BHW.SourceVarietyHolomorphicOn d n Φ U)
+    (hΨ : BHW.SourceVarietyHolomorphicOn d n Ψ U)
+    (h_eq : ∀ G ∈ O,
+      Φ (BHW.sourceRealGramComplexify n G) =
+        Ψ (BHW.sourceRealGramComplexify n G)) :
+    ∃ W : Set (Fin n -> Fin n -> ℂ),
+      BHW.IsRelOpenInSourceComplexGramVariety d n W ∧
+      W.Nonempty ∧ W ⊆ U ∧ Set.EqOn Φ Ψ W
+
+theorem BHW.sourceVariety_identity_continuation
+    (d n : ℕ)
+    {U W : Set (Fin n -> Fin n -> ℂ)}
+    {Φ Ψ : (Fin n -> Fin n -> ℂ) -> ℂ}
+    (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
+    (hU_conn : IsConnected U)
+    (hW_rel : BHW.IsRelOpenInSourceComplexGramVariety d n W)
+    (hW_ne : W.Nonempty)
+    (hW_sub : W ⊆ U)
+    (hΦ : BHW.SourceVarietyHolomorphicOn d n Φ U)
+    (hΨ : BHW.SourceVarietyHolomorphicOn d n Ψ U)
+    (hW_eq : Set.EqOn Φ Ψ W) :
+    Set.EqOn Φ Ψ U
+
+theorem BHW.sourceDistributionalUniquenessSetOnVariety_of_realEnvironment
+    [NeZero d]
+    (n : ℕ)
+    {O : Set (Fin n -> Fin n -> ℝ)}
+    (hO_env : BHW.IsHWRealEnvironment d n O) :
+    BHW.sourceDistributionalUniquenessSetOnVariety d n O := by
+  refine ⟨hO_env.nonempty, ?_⟩
+  intro U Φ Ψ hU_rel hU_conn hO_sub hΦ hΨ h_eq
+  obtain ⟨W, hW_rel, hW_ne, hW_sub, hW_eq⟩ :=
+    BHW.sourceVariety_localChart_totallyReal_identity
+      (d := d) (n := n) hO_env hU_rel hO_sub hΦ hΨ h_eq
+  exact
+    BHW.sourceVariety_identity_continuation
+      (d := d) (n := n) hU_rel hU_conn hW_rel hW_ne hW_sub
+      hΦ hΨ hW_eq
+```
+
+The conversion from this base adjacent package to the permutation-indexed
+`SourceDistributionalAdjacentTubeAnchor` is pure bookkeeping and is now
+implemented as
+`bvt_F_distributionalJostAnchor_of_selectedJostData` in
+`OSToWightmanSelectedWitness.lean`.  The source file's `compact_branch_eq` quantifies
+over `SchwartzMap (Fin n -> Fin (d + 1) -> ℝ) ℂ`; after importing the
+reconstruction layer this is definitionally the same test-function carrier as
+`SchwartzNPoint d n = SchwartzMap (NPointDomain d n) ℂ`, with
+`NPointDomain d n = Fin n -> Fin (d + 1) -> ℝ`.
+
+```lean
+private def realPerm (π : Equiv.Perm (Fin n))
+    (x : NPointDomain d n) : NPointDomain d n :=
+  fun k => x (π k)
+
+private theorem continuous_realPerm (π : Equiv.Perm (Fin n)) :
+    Continuous (realPerm (d := d) π) := by
+  apply continuous_pi
+  intro k
+  exact continuous_apply (π k)
+
+def bvt_F_distributionalJostAnchor_of_selectedJostData
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hData : SelectedAdjacentDistributionalJostAnchorData OS lgc n) :
+    SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) := by
+  refine
+    { realPatch := ?realPatch
+      realPatch_open := ?realPatch_open
+      realPatch_nonempty := ?realPatch_nonempty
+      realPatch_jost := ?realPatch_jost
+      realPatch_left_sector := ?realPatch_left_sector
+      realPatch_right_sector := ?realPatch_right_sector
+      gramEnvironment := ?gramEnvironment
+      gramEnvironment_unique := ?gramEnvironment_unique
+      gram_left_mem := ?gram_left_mem
+      gram_environment_realized := ?gram_environment_realized
+      gram_right_eq_perm_left := ?gram_right_eq_perm_left
+      compact_branch_eq := ?compact_branch_eq }
+  · exact fun π i hi => {x | realPerm (d := d) π x ∈ hData.basePatch i hi}
+  · intro π i hi
+    exact (hData.basePatch_open i hi).preimage (continuous_realPerm (d := d) π)
+  · intro π i hi
+    rcases hData.basePatch_nonempty i hi with ⟨y, hy⟩
+    refine ⟨realPerm (d := d) π.symm y, ?_⟩
+    have hperm :
+        realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+      ext k μ
+      simp [realPerm]
+    simpa [hperm] using hy
+  · intro π i hi x hx
+    have hy := hData.basePatch_jost i hi (realPerm (d := d) π x) hx
+    simpa [realPerm] using
+      BHW.jostSet_permutation_invariant (d := d) (n := n) π.symm hy
+  · intro π i hi x hx
+    have hy := hData.basePatch_left_ET i hi (realPerm (d := d) π x) hx
+    simpa [BHW.permutedExtendedTubeSector, realPerm] using hy
+  · intro π i hi x hx
+    have hy :=
+      hData.basePatch_right_ET i hi (realPerm (d := d) π x) hx
+    simpa [BHW.permutedExtendedTubeSector, realPerm, Equiv.Perm.mul_apply]
+      using hy
+  · exact fun _π i hi => hData.baseGramEnvironment i hi
+  · exact fun _π i hi => hData.baseGramEnvironment_unique i hi
+  · intro π i hi x hx
+    simpa [realPerm] using
+      hData.baseGram_left_mem i hi (realPerm (d := d) π x) hx
+  · intro π i hi G hG
+    rcases hData.baseGram_realized i hi G hG with ⟨y, hy, hG_y⟩
+    refine ⟨realPerm (d := d) π.symm y, ?_, ?_⟩
+    · have hperm :
+          realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+        ext k μ
+        simp [realPerm]
+      simpa [hperm] using hy
+    · simpa [realPerm] using hG_y
+  · intro π i hi x hx
+    ext a b
+    simp [BHW.sourceRealMinkowskiGram, BHW.sourcePermuteGram,
+      Equiv.Perm.mul_apply]
+  · intro π i hi φ hφ_compact hφ_tsupport
+    let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+    let ψ : SchwartzNPoint d n :=
+      BHW.permuteSchwartz (d := d) π.symm φ
+    have hψ_compact :
+        HasCompactSupport (ψ : NPointDomain d n -> ℂ) :=
+      BHW.permuteSchwartz_hasCompactSupport (d := d) π.symm φ
+        (by simpa using hφ_compact)
+    have hψ_tsupport :
+        tsupport (ψ : NPointDomain d n -> ℂ) ⊆ hData.basePatch i hi := by
+      intro y hy
+      have hyφ :
+          realPerm (d := d) π.symm y ∈
+            tsupport (φ : NPointDomain d n -> ℂ) := by
+        have hsupp_eq :=
+          BHW.tsupport_permuteSchwartz (d := d) π.symm φ
+        rw [show ψ = BHW.permuteSchwartz (d := d) π.symm φ from rfl] at hy
+        rw [hsupp_eq] at hy
+        simpa [realPerm] using hy
+      have hxPatch :
+          realPerm (d := d) π
+              (realPerm (d := d) π.symm y) ∈
+            hData.basePatch i hi :=
+        hφ_tsupport hyφ
+      have hperm :
+          realPerm (d := d) π (realPerm (d := d) π.symm y) = y := by
+        ext k μ
+        simp [realPerm]
+      simpa [hperm] using hxPatch
+    have hbase :=
+      hData.baseCompactEq i hi ψ hψ_compact hψ_tsupport
+    have hleft :
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (fun k => BHW.realEmbed x (π k)) * φ x) =
+          ∫ y : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed y) * ψ y := by
+      simpa [ψ, realPerm] using
+        BHW.integral_perm_eq_self (d := d) (n := n) π
+          (fun y : NPointDomain d n =>
+            BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed y) * ψ y)
+    have hright :
+        (∫ x : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (fun k => BHW.realEmbed x ((π * τ) k)) * φ x) =
+          ∫ y : NPointDomain d n,
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => y (τ k))) * ψ y := by
+      simpa [ψ, realPerm, τ, Equiv.Perm.mul_apply] using
+        BHW.integral_perm_eq_self (d := d) (n := n) π
+          (fun y : NPointDomain d n =>
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.realEmbed (fun k => y (τ k))) * ψ y)
+    exact hleft.trans (hbase.trans hright.symm)
+```
+
+The support proof above is the required one: rewrite
+`tsupport (BHW.permuteSchwartz π.symm φ)` by
+`BHW.tsupport_permuteSchwartz`, apply the original
+`hφ_tsupport`, and simplify the two inverse coordinate permutations.  The Lean
+pass must not add an extra support hypothesis.
 
 In the current Lean representation, `S''_n` is covered by the sectors
 `BHW.permutedExtendedTubeSector d n π`; the checked cover facts are
@@ -769,9 +2648,10 @@ In the current Lean representation, `S''_n` is covered by the sectors
 
 Exact proof transcript for the replacement:
 
-1. prove or import
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
-   as the pure SCV/BHW source theorem;
+1. prove the three elementary private `S'_n` datum lemmas:
+   `source_permutedForwardBranch_holomorphicOn`,
+   `source_permutedForwardBranch_restrictedLorentzInvariant`, and
+   `source_permutedForwardBranch_symmetric`;
 2. inside the generic theorem, derive the ordinary forward-tube
    complex-Lorentz overlap invariance by the checked Hall-Wightman core lemma:
    `BHW.complex_lorentz_invariance n F hF_holo hF_lorentz`;
@@ -785,9 +2665,9 @@ Exact proof transcript for the replacement:
    Lean theorem
    `BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz` in
    `BHWPermutation/SourceExtension.lean`;
-6. the hard Hall-Wightman source step is exactly the assertion that these
-   branches are restrictions of one single-valued holomorphic function `Fpet`
-   on `BHW.PermutedExtendedTube d n`, with the displayed branch law;
+6. the hard Hall-Wightman source step is exactly the compatibility theorem
+   `hallWightman_source_permutedBranch_compatibility`: if one point lies in
+   two explicit PET sectors, the two `G` branches have the same value;
 
    This is a genuine Hall-Wightman compatibility step, not a shortcut from the
    raw formula `hF_perm`.  If `z` lies in two PET sectors, the two branch values
@@ -798,8 +2678,8 @@ Exact proof transcript for the replacement:
    Therefore the ordinary forward-tube invariance of `F`, even combined with
    pointwise permutation symmetry, does not by itself prove all-sector branch
    equality.  The source input must be Hall-Wightman's one-function
-   single-valued continuation for the symmetric permuted-tube datum on `S'_n`,
-   enlarged to `S''_n`.
+   single-valued continuation for the Euclidean-anchored symmetric
+   permuted-tube datum on `S'_n`, enlarged to `S''_n`.
 
    Lean-shaped form of the exact source obligation:
 
@@ -814,18 +2694,27 @@ Exact proof transcript for the replacement:
        BHW.permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz
          (d := d) n F hF_holo hF_lorentz π
    -- Hall-Wightman source step, not supplied by `gluedPETValue`:
-   have hHW :
-       ∃ Fpet,
-         DifferentiableOn ℂ Fpet (BHW.PermutedExtendedTube d n) ∧
-         (∀ π z, z ∈ BHW.permutedExtendedTubeSector d n π ->
-           Fpet z = G π z) := by
-     -- this is exactly the remaining source theorem content
-     sorry
+   have hcompat :
+       ∀ π ρ z,
+         z ∈ BHW.permutedExtendedTubeSector d n π ->
+         z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+         G π z = G ρ z :=
+     hallWightman_source_permutedBranch_compatibility
+       (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
+   refine ⟨BHW.gluedPETValue (d := d) (n := n) G, ?_, ?_⟩
+   · exact BHW.gluedPETValue_holomorphicOn
+       (d := d) (n := n) G hG_holo hcompat
+   · intro π z hzπ
+     exact BHW.gluedPETValue_eq_of_mem_sector
+       (d := d) (n := n) G hcompat π z hzπ
    ```
 
    The final Lean theorem
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` now consumes
-   this source branch law and proves the forward-tube agreement,
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`
+   should be the mechanical gluing proof above after the source compatibility
+   theorem has been supplied.  The theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` then consumes
+   the public branch law and proves the forward-tube agreement,
    complex-Lorentz invariance, and permutation invariance outputs.
 7. derive
    `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` from that
@@ -833,25 +2722,29 @@ Exact proof transcript for the replacement:
 8. supply `hF_holo` from `bvt_F_holomorphic`;
 9. supply `hF_lorentz` from
    `bvt_F_restrictedLorentzInvariant_forwardTube`;
-10. supply `hF_perm` from `bvt_F_perm`;
-11. specialize the generic equality theorem to any common sector point `z` and labels
+10. supply the distributional Euclidean/Jost anchor from
+   `bvt_F_distributionalJostAnchor_of_OSII`;
+11. supply `hF_perm` from `bvt_F_perm` only as auxiliary formal branch-family
+   symmetry where retained by the generic API;
+12. specialize the corrected generic equality theorem to any common sector point `z` and labels
    `π`, `ρ`;
-12. rewrite `bvt_selectedPETBranch` to the displayed `BHW.extendF` expression
+13. rewrite `bvt_selectedPETBranch` to the displayed `BHW.extendF` expression
    used by Slot 7.
 
 The local helper `BHW.gluedPETValue` is downstream packaging only.  Its theorem
 `BHW.gluedPETValue_holomorphicOn` assumes all-sector compatibility
 `hcompat`; it does not prove the Hall-Wightman single-valuedness theorem.
-After the source theorem has supplied the branch law, `gluedPETValue` may be
-used to name the resulting `Fpet`, but it is not the analytic input.
+After the source compatibility theorem has supplied all-sector branch equality,
+`gluedPETValue` is used to name the resulting `Fpet`, but it is not the
+analytic input.
 
 Lean implementation packet for the next pass:
 
-1. Put the pure source theorem in a new small file:
+1. Keep the pure source theorem in the already-created small file:
    `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`.
    Do not place it in `BHWPermutation/PermutationFlow.lean`; that file contains
    circular theorem surfaces used only as historical infrastructure.
-2. The planned imports for the new file are:
+2. The current imports for this file are:
 
 ```lean
 import OSReconstruction.ComplexLieGroups.Connectedness.ComplexInvarianceCore
@@ -860,16 +2753,9 @@ import OSReconstruction.ComplexLieGroups.Connectedness.PermutedTubeGluing
 import OSReconstruction.ComplexLieGroups.JostPoints
 ```
 
-   If Lean shows that `JostPoints` already exports one of these dependencies,
-   the implementation may minimize imports, but it must not import
-   `BHWPermutation.PermutationFlow` to get the source theorem.
-3. Add the new file to the aggregate import
-   `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation.lean` only
-   after the file has an exact successful
-   `lake env lean
-   OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean`
-   check.
-4. The exact later verification sequence for this packet is:
+   The implementation must not import `BHWPermutation.PermutationFlow` to get
+   the source theorem.
+3. The exact verification sequence for this packet is:
 
 ```bash
 lake env lean OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceExtension.lean
@@ -904,11 +2790,15 @@ Forbidden support in `SourceExtension.lean`:
    because it belongs to the archived graph route and assumes exactly the
    all-sector branch independence that the source theorem is meant to supply.
 
-The only allowed theorem-level frontier in this new file is
-`BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`.
-The theorem `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` is the
-proved assembly theorem from that branch law, and
-`BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` must remain its
+The only allowed theorem-level frontier in this new file is the
+Euclidean-anchored source compatibility theorem
+`BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
+(or an OS-specific theorem that internally supplies the same anchor).  The old
+hF_perm-only source statement has now been refactored out of the public
+frontier and must not be revived as the theorem to close.  The theorem
+`BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` is the proved
+assembly theorem from a corrected branch law, and
+`BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` must remain a
 mechanical corollary, not a second analytic `sorry`.
 
 This input order is deliberate.  Hall-Wightman starts from a function analytic
@@ -930,11 +2820,13 @@ Source-audit anchors:
    invariance under the real orthochronous Lorentz group.  It proves that the
    relation `f(Az) = f(z)` defines a single-valued analytic continuation to
    the extended tube.
-3. Therefore the active generic Lean frontier is the collapsed one-function
-   specialization of the source branch law to the branch family
-   `F_π z = F (fun k => z (π k))`.  The permutation hypothesis
-   `hF_perm` identifies this as the symmetric `S'_n` datum; the BHW theorem
-   supplies the single-valuedness on `S''_n`.
+3. Therefore the active source frontier is the branch law for the branch family
+   `F_π z = F (fun k => z (π k))`, but the source audit rules out the
+   hF_perm-only generic version as a final theorem.  Symmetry of the
+   `S'_n` datum must be anchored on the Euclidean/Jost uniqueness set where
+   the OS-II Schwinger construction identifies the branch boundary values and
+   supplies Schwinger permutation symmetry.  Hall-Wightman then supplies the
+   single-valuedness on `S''_n`.
 4. If the eventual internal proof is organized in a more literal
    family-indexed form, that helper should stay private or source-facing; the
    theorem-2 consumer should still see the one-function theorem displayed
@@ -1154,8 +3046,9 @@ theorem 2:
 Quarantined diagnostic-only corollary, not in the current implementation gate:
 `bhw_fixedPoint_chamberAdjacency_connected_of_two_le`.
 
-The inventory below is therefore a target inventory, not a statement that every
-displayed theorem is already exported by the current Lean files:
+The inventory below is therefore an archived diagnostic inventory, not a target
+inventory and not a statement that every displayed theorem is already exported
+by the current Lean files:
 
 ```lean
 theorem permForwardOverlap_connected_nontrivial
@@ -1682,10 +3575,9 @@ The original Hall-Wightman paper is present locally as
    continuing between permuted branches.
 
 Consequently, `hallWightman_fixedPoint_endpointActiveGallery_of_two_le` must
-not be advertised as a direct Hall-Wightman paper-extraction theorem. It is the
-candidate Lean-facing **derived** theorem needed by Slot 6. To make it
-mathematically ready, the proof docs still have to supply the missing
-chamber-stratification argument combining:
+not be advertised as a direct Hall-Wightman paper-extraction theorem. It is an
+archived rejected theorem surface, not a theorem-2 dependency. The old route
+would have needed a chamber-stratification argument combining:
 
 1. Hall-Wightman single-valued complex-Lorentz continuation on the extended
    tube;
@@ -1699,10 +3591,9 @@ chamber-stratification argument combining:
    finite adjacent gallery whose edges have actual common fixed-`w` slice
    witnesses.
 
-The missing chamber-stratification proof should be decomposed into the
-following source-aligned lemmas before Lean implementation:
-
-Lean-shaped lemma inventory for the next documentation pass:
+The old missing chamber-stratification proof would have had to decompose into
+the following source-aligned lemmas. These names are retained only to document
+why the fixed-`w` route was not made implementation-ready:
 
 1. `bhw_source_singleValuedOn_extendedTube`: source-backed by Hall-Wightman
    Lemma I / Streater-Wightman Theorem 2-11. It should be stated in the local
@@ -1725,9 +3616,8 @@ Lean-shaped lemma inventory for the next documentation pass:
    label are connected by a finite adjacent gallery inside the active fixed-`w`
    chamber family.
 
-These four names are documentation labels only until the exact local theorem
-statements are written out. They must not be copied into Lean as placeholder
-theorem statements.
+These four names are archived documentation labels only. They must not be
+copied into Lean as placeholder theorem statements.
 
 The rejected derived claim was the following fixed-orbit chamber-refinement
 statement, specialized to the theorem-2 endpoints:
@@ -1831,9 +3721,10 @@ as the Slot-6 frontier, and in particular it may not be replaced by:
 - `Fin.Perm.adjSwap_induction_right`, because an arbitrary adjacent word need
   not stay inside the active chamber family for this fixed `w`.
 
-#### HW-4. Gallery-to-data theorem
+#### HW-4. Archived gallery-to-data theorem
 
-Once HW-3 exists, the proof-local data theorem is mechanical:
+In the rejected route, once HW-3 existed, the proof-local data theorem would
+have been mechanical. This theorem is not an implementation target:
 
 ```lean
 theorem hallWightman_fixedPoint_adjacentChainData_of_two_le
@@ -2757,10 +4648,16 @@ stagewise rather than global.
 ### 8.1. Current implementation gate on the current branch
 
 This section is the docs-first handoff gate for the next production Lean pass.
-The `2 <= d` route now has one active Slot-6/Slot-7 interface: the direct
-source-backed BHW single-valuedness theorem on permuted extended-tube sectors.
-The fixed-`w` forward-tube endpoint-gallery theorem is archived, not a
-production frontier.
+The `2 <= d` route has one active Slot-6/Slot-7 interface.  Its generic BHW
+source surface has now been corrected to require the explicit distributional
+anchor; implementation should next construct that OS-II anchor and close the
+source compatibility theorem.  The direct
+hF_perm-only BHW single-valuedness theorem on permuted extended-tube sectors is
+archived as unsafe.  The active gate is the distributional
+Euclidean/Jost-anchored Hall-Wightman/EOW source theorem, or the OS-specific
+specialization that supplies that anchor from the OS-II `bvt_F` construction.
+The fixed-`w` forward-tube
+endpoint-gallery theorem is archived, not a production frontier.
 
 Exact scope:
 
@@ -2772,22 +4669,29 @@ Exact scope:
    `bvt_selectedPETBranch`,
    `bvt_selectedPETBranch_holomorphicOn_sector`, and
    `bvt_selectedPETBranch_adjacent_eq_on_sector_overlap`.
-3. The next theorem-level analytic frontier is the pure BHW/SCV branch-law
-   theorem
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`;
-   the source extension theorem
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` is now proved
-   from that branch law, and the sector equality theorem
-   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` is its
-   mechanical corollary.
+3. The next theorem-level analytic frontier is the distributional
+   Euclidean/Jost-anchored BHW/SCV source theorem
+   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
+   and the corresponding refactor of
+   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`.
+   The source extension theorem
+   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry` is already
+   proved as a PET-algebra consumer of a branch law, and the sector equality
+   theorem `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry` is
+   its mechanical corollary after the corrected source theorem is installed.
 4. The OS-specific specialization is
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, with no
-   `IsLocallyCommutativeWeak` hypothesis; it consumes
+   `IsLocallyCommutativeWeak` hypothesis; after the source-surface refactor it consumes
    `bvt_F_holomorphic`,
-   `bvt_F_restrictedLorentzInvariant_forwardTube`, and `bvt_F_perm`.
+   `bvt_F_restrictedLorentzInvariant_forwardTube`, `bvt_F_perm`, and
+   the OS-II distributional Jost anchor.
+   Its genuine missing mathematical input is
+   `bvt_F_distributionalJostAnchor_of_OSII`: permutation-indexed open Jost
+   patches, compact-test Schwinger symmetry, and branch-boundary distribution
+   matching data.
 5. The public consumer is
    `bvt_F_petBranchIndependence_of_two_le`, whose proof is the short wrapper
-   around the direct BHW theorem.
+   around the corrected BHW theorem.
 6. `PETOrbitChamberChain.lean` and `PermutedTubeMonodromy.lean` are background
    infrastructure for the archived graph route.  They are not the active
    theorem-2 implementation surface.
@@ -2804,8 +4708,10 @@ Exact verification boundary for that stage:
    OSReconstruction/Wightman/Reconstruction/WickRotation.lean`
 
 The exact Lean verification boundary above is recorded for later.  It is not a
-signal to start implementation before the direct BHW theorem statement has
-been audited against OS I §4.5 and the Hall-Wightman source.
+signal to widen theorem-2 implementation before the OS-specific
+distributional Jost anchor has been constructed and the Euclidean-anchored
+source theorem has been proved or explicitly approved as a source import under
+`AGENT.md`.
 
 ### 8.2. Later documented stages on the same theorem-2 route
 
@@ -2814,8 +4720,9 @@ immediate implementation gate above.
 
 1. The checked OS45 geometry / Euclidean-edge layer is recorded in Section 3.
 2. The `2 <= d` route is frozen as Slots 1-11.
-3. Slot 6 is the generic direct BHW source branch-law theorem
-   `BHW.hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry`,
+3. Slot 6 is the distributional Euclidean/Jost-anchored BHW source branch-law
+   theorem
+   `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
    followed by the proved assembly theorem
    `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`, the sector
    equality theorem
