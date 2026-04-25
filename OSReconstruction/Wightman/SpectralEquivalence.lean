@@ -7,6 +7,13 @@ import OSReconstruction.Wightman.WightmanAxioms
 import OSReconstruction.Wightman.Spacetime.MinkowskiGeometry
 import OSReconstruction.Wightman.Reconstruction.BlockIntegral
 import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
+import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
+import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+import OSReconstruction.SCV.TotallyRealIdentity
+import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
+import OSReconstruction.ComplexLieGroups.BHWCore
+import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Mathlib.Analysis.SpecialFunctions.JapaneseBracket
@@ -50,7 +57,7 @@ def ProductForwardMomentumCone (n : ℕ) : Set (Fin n → Fin (d + 1) → ℝ) :
   { q | ∀ k : Fin n, q k ∈ ForwardMomentumCone d }
 
 /-- Uncurrying `(Fin n → Fin m → ℝ)` to `(Fin n × Fin m → ℝ)` as a linear equivalence. -/
-def uncurryLinearEquiv (d n : ℕ) :
+def uncurryLinearEquivSpec (d n : ℕ) :
     (Fin n → Fin (d + 1) → ℝ) ≃ₗ[ℝ] (Fin n × Fin (d + 1) → ℝ) where
   toFun f p := f p.1 p.2
   invFun g i j := g (i, j)
@@ -64,7 +71,7 @@ def uncurryLinearEquiv (d n : ℕ) :
     transform from Mathlib's inner-product-space formulation. -/
 noncomputable def nPointToEuclidean (n : ℕ) :
     NPointSpacetime d n ≃L[ℝ] EuclideanSpace ℝ (Fin n × Fin (d + 1)) :=
-  (uncurryLinearEquiv d n).toContinuousLinearEquiv |>.trans
+  (uncurryLinearEquivSpec d n).toContinuousLinearEquiv |>.trans
     (PiLp.continuousLinearEquiv 2 ℝ (fun _ : Fin n × Fin (d + 1) => ℝ)).symm
 
 /-- The Fourier transform of a Schwartz function on n-point spacetime,
@@ -1229,7 +1236,7 @@ theorem isOpen_productForwardTube (n : ℕ) :
   exact Complex.continuous_im.comp ((continuous_apply μ).comp (continuous_apply k))
 
 /-- The open forward cone is stable under multiplication by a positive scalar. -/
-private theorem inOpenForwardCone_smul (d : ℕ) [NeZero d]
+private theorem inOpenForwardCone_smul_spec (d : ℕ) [NeZero d]
     (c : ℝ) (hc : 0 < c) (η : Fin (d + 1) → ℝ) (hη : InOpenForwardCone d η) :
     InOpenForwardCone d (c • η) := by
   constructor
@@ -1256,7 +1263,7 @@ private lemma shifted_point_in_productForwardTube {n : ℕ}
       Complex.I_im, Complex.I_re, Pi.smul_apply, smul_eq_mul,
       mul_zero, mul_one, zero_add, add_zero, ← Complex.ofReal_mul, Complex.ofReal_re]
   rw [him]
-  exact inOpenForwardCone_smul d ε hε (η k) (hη k)
+  exact inOpenForwardCone_smul_spec d ε hε (η k) (hη k)
 
 /-! ### Proof Infrastructure for the Forward Paley-Wiener-Schwartz Theorem
 
@@ -3341,6 +3348,596 @@ lemma forwardTube_extension_of_productTube {n : ℕ}
     sorry
 
 variable (d) in
+/-- Uniform real diagonal shifts preserve the absolute forward tube. -/
+private lemma forwardTube_add_real_shift {n : ℕ}
+    (a : Fin (d + 1) → ℝ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ ForwardTube d n) :
+    (fun k μ => z k μ + (a μ : ℂ)) ∈ ForwardTube d n := by
+  intro k
+  by_cases hk : (k : ℕ) = 0
+  · simpa [hk, Complex.add_im, Complex.ofReal_im] using hz k
+  · simpa [hk, Complex.sub_im, Complex.add_im, Complex.ofReal_im] using hz k
+
+variable (d) in
+/-- Backward-direction transport theorem still missing from the abstract route:
+analytic diagonal translation invariance of `W_analytic` on the forward tube.
+
+This is the abstract analogue of
+`BHWTranslationCore.W_analytic_translation_on_forwardTube`. It is needed before
+`productTube_function_of_forwardTube` can honestly rewrite the boundary-value
+integral after basepoint/difference coordinates. -/
+private lemma forwardTube_analytic_translationInvariant {n : ℕ}
+    {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
+    (hW_tempered : ∀ m, Continuous (W m))
+    (hW_linear : ∀ m, IsLinearMap ℂ (W m))
+    (hW_transl : ∀ (m : ℕ) (a : Fin (d + 1) → ℝ)
+      (f g : SchwartzNPointSpace d m),
+      (∀ x : NPointSpacetime d m, g.toFun x = f.toFun (fun i => x i + a)) →
+      W m f = W m g)
+    (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hWa_holo : DifferentiableOn ℂ W_analytic (ForwardTube d n))
+    (hWa_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d n → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
+    (hWa_bv : ∀ (f : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
+      InForwardCone d n η →
+      Filter.Tendsto
+        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
+          W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (W n f)))
+    (c : Fin (d + 1) → ℂ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ ForwardTube d n)
+    (hzc : (fun k μ => z k μ + c μ) ∈ ForwardTube d n) :
+    W_analytic (fun k μ => z k μ + c μ) = W_analytic z := by
+  classical
+  by_cases hc : c = 0
+  · simp [hc]
+  by_cases hn : n = 0
+  · subst hn
+    have hshift : (fun k μ => z k μ + c μ) = z := by
+      ext k
+      exact Fin.elim0 k
+    simp [hshift]
+  have hreal_shift :
+      ∀ (a : Fin (d + 1) → ℝ) (w : Fin n → Fin (d + 1) → ℂ),
+        w ∈ ForwardTube d n →
+        W_analytic (fun k μ => w k μ + (a μ : ℂ)) = W_analytic w := by
+    intro a w hw
+    -- Port of the first half of
+    -- `BHWTranslationCore.W_analytic_translation_on_forwardTube`:
+    -- define `F₁(z) = W_analytic(z + a)`, prove `F₁ - W_analytic` has zero
+    -- boundary values using `hW_transl`, then apply forward-tube distributional
+    -- uniqueness.
+    let aN : NPointSpacetime d n := fun _ => a
+    let F₁ : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+      fun z => W_analytic (fun k μ => z k μ + (a μ : ℂ))
+    -- F₁ is holomorphic on ForwardTube d n.
+    have hF₁_holo : DifferentiableOn ℂ F₁ (ForwardTube d n) := by
+      intro z hz
+      have hz_shift : (fun k μ => z k μ + (a μ : ℂ)) ∈ ForwardTube d n :=
+        forwardTube_add_real_shift d a z hz
+      have hshift_diff : Differentiable ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ => (fun k μ => z k μ + (a μ : ℂ))) := by
+        have h1 : Differentiable ℂ
+            (fun z : Fin n → Fin (d + 1) → ℂ => z) := differentiable_id
+        have h2 : Differentiable ℂ
+            (fun _ : Fin n → Fin (d + 1) → ℂ =>
+              (fun _k : Fin n => fun μ : Fin (d + 1) => (a μ : ℂ))) :=
+          differentiable_const _
+        change Differentiable ℂ
+            (fun z : Fin n → Fin (d + 1) → ℂ =>
+              z + (fun _k : Fin n => fun μ : Fin (d + 1) => (a μ : ℂ)))
+        exact h1.add h2
+      exact (hWa_holo _ hz_shift).comp z
+        hshift_diff.differentiableAt.differentiableWithinAt
+        (fun y hy => forwardTube_add_real_shift d a y hy)
+    -- Translation machinery for Schwartz maps on NPointSpacetime d n.
+    have hShiftFn_temp :
+        Function.HasTemperateGrowth
+          (fun x : NPointSpacetime d n => x - aN) := by
+      have h1 :
+          Function.HasTemperateGrowth
+            (fun x : NPointSpacetime d n => x) :=
+        (ContinuousLinearMap.id ℝ (NPointSpacetime d n)).hasTemperateGrowth
+      have h2 :
+          Function.HasTemperateGrowth
+            (fun _ : NPointSpacetime d n => aN) :=
+        Function.HasTemperateGrowth.const aN
+      exact h1.sub h2
+    have hShiftFn_upper :
+        ∃ (k : ℕ) (C : ℝ),
+          ∀ x : NPointSpacetime d n, ‖x‖ ≤ C * (1 + ‖x - aN‖) ^ k := by
+      refine ⟨1, 1 + ‖aN‖, ?_⟩
+      intro x
+      have htri : ‖x‖ ≤ ‖x - aN‖ + ‖aN‖ := by
+        calc ‖x‖ = ‖(x - aN) + aN‖ := by simp
+          _ ≤ ‖x - aN‖ + ‖aN‖ := norm_add_le _ _
+      have hpow : (1 + ‖x - aN‖) ^ (1 : ℕ) = 1 + ‖x - aN‖ := by simp
+      rw [hpow]
+      nlinarith [norm_nonneg (x - aN), norm_nonneg aN]
+    -- Bundle W n as a CLM for use with forward_tube_bv_integrable.
+    let Wn_CLM : SchwartzNPoint d n →L[ℂ] ℂ :=
+      { toLinearMap :=
+          { toFun := W n
+            map_add' := (hW_linear n).map_add
+            map_smul' := (hW_linear n).map_smul }
+        cont := hW_tempered n }
+    have hWbv_pkg :
+        ∃ (W₀ : SchwartzNPoint d n →L[ℂ] ℂ),
+          ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+            InForwardCone d n η →
+            Filter.Tendsto
+              (fun ε : ℝ => ∫ x : NPointDomain d n,
+                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                  (f x))
+              (nhdsWithin 0 (Set.Ioi 0))
+              (nhds (W₀ f)) := ⟨Wn_CLM, hWa_bv⟩
+    -- BV difference tends to 0 for every Schwartz f and forward-cone η.
+    have h_agree :
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+          InForwardCone d n η →
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : NPointDomain d n,
+              (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
+               W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) *
+                (f x))
+            (nhdsWithin 0 (Set.Ioi 0))
+            (nhds 0) := by
+      intro f η hη
+      let g : SchwartzNPointSpace d n :=
+        SchwartzMap.compCLM ℂ
+          (g := fun x : NPointSpacetime d n => x - aN)
+          hShiftFn_temp hShiftFn_upper f
+      have hg_transl :
+          ∀ x, g.toFun x = f.toFun (fun i => x i + (-a)) := by
+        intro x
+        show f (x - aN) = f (fun i => x i + (-a))
+        apply congrArg f
+        funext i
+        show (x - aN) i = x i + (-a)
+        simp [aN, sub_eq_add_neg]
+      have hW_fg : W n f = W n g := hW_transl n (-a) f g hg_transl
+      -- Integral identity via translation invariance of Lebesgue measure.
+      have hI_eq : ∀ ε : ℝ,
+          ∫ x : NPointDomain d n,
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) =
+            ∫ x : NPointDomain d n,
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x) := by
+        intro ε
+        let hε_fn : NPointDomain d n → ℂ := fun x =>
+          W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (g x)
+        have htrans : ∫ x : NPointDomain d n, hε_fn (x + aN) =
+            ∫ x : NPointDomain d n, hε_fn x :=
+          MeasureTheory.integral_add_right_eq_self hε_fn aN
+        calc
+          ∫ x : NPointDomain d n,
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)
+            = ∫ x : NPointDomain d n, hε_fn (x + aN) := by
+                congr 1; funext x
+                have hF₁_eq :
+                    F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) =
+                    W_analytic
+                      (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I) := by
+                  show W_analytic
+                      (fun k μ =>
+                        (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ)) =
+                    W_analytic
+                      (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I)
+                  congr 1
+                  funext k μ
+                  show (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ) =
+                    ↑(x k μ + a μ) + ε * ↑(η k μ) * Complex.I
+                  push_cast [aN]
+                  ring
+                have hg_add : g (x + aN) = f x := by
+                  show f ((x + aN) - aN) = f x
+                  congr 1
+                  funext i
+                  simp [aN]
+                simp only [hε_fn, hF₁_eq, hg_add]
+          _ = ∫ x : NPointDomain d n, hε_fn x := htrans
+          _ = ∫ x : NPointDomain d n,
+                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                  (g x) := rfl
+      have hlim_F₁ : Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W n f)) := by
+        have htail :
+            Filter.Tendsto
+              (fun ε : ℝ => ∫ x : NPointDomain d n,
+                W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                  (g x))
+              (nhdsWithin 0 (Set.Ioi 0))
+              (nhds (W n f)) := by
+          have := hWa_bv g η hη
+          simpa [hW_fg] using this
+        refine htail.congr' ?_
+        exact Filter.Eventually.of_forall (fun ε => (hI_eq ε).symm)
+      have hlim_W : Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W n f)) := hWa_bv f η hη
+      have hdiff : Filter.Tendsto
+          (fun ε : ℝ =>
+            (∫ x : NPointDomain d n,
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) -
+            (∫ x : NPointDomain d n,
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                (f x)))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds 0) := by
+        have := Filter.Tendsto.sub hlim_F₁ hlim_W
+        simpa using this
+      refine hdiff.congr' ?_
+      filter_upwards [self_mem_nhdsWithin] with ε hε
+      have hε_pos : 0 < ε := Set.mem_Ioi.mp hε
+      have hInt_Wf : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              (f x)) :=
+        forward_tube_bv_integrable W_analytic hWa_holo hWa_growth hWbv_pkg
+          f η hη ε hε_pos
+      have hInt_Wg : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              (g x)) :=
+        forward_tube_bv_integrable W_analytic hWa_holo hWa_growth hWbv_pkg
+          g η hη ε hε_pos
+      have hInt_F₁f : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+        have hEq :
+            (fun x : NPointDomain d n =>
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) =
+            (fun x : NPointDomain d n =>
+              (fun y : NPointDomain d n =>
+                W_analytic (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) *
+                  (g y)) (x + aN)) := by
+          funext x
+          have hF₁_eq :
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) =
+              W_analytic
+                (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I) := by
+            show W_analytic
+                (fun k μ =>
+                  (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ)) =
+              W_analytic
+                (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I)
+            congr 1
+            funext k μ
+            show (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ) =
+              ↑(x k μ + a μ) + ε * ↑(η k μ) * Complex.I
+            push_cast [aN]
+            ring
+          have hg_add : g (x + aN) = f x := by
+            show f ((x + aN) - aN) = f x
+            congr 1
+            funext i
+            simp [aN]
+          simp only [hF₁_eq, hg_add]
+        rw [hEq]
+        exact hInt_Wg.comp_add_right aN
+      rw [← MeasureTheory.integral_sub hInt_F₁f hInt_Wf]
+      congr 1
+      ext x
+      ring
+    -- Integrability side condition for distributional uniqueness.
+    have h_integrable :
+        ∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ) (ε : ℝ),
+          0 < ε → InForwardCone d n η →
+          MeasureTheory.Integrable
+            (fun x : NPointDomain d n =>
+              (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
+               W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) *
+                (f x)) := by
+      intro f η ε hε hη
+      let g : SchwartzNPointSpace d n :=
+        SchwartzMap.compCLM ℂ
+          (g := fun x : NPointSpacetime d n => x - aN)
+          hShiftFn_temp hShiftFn_upper f
+      have hInt_Wf : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              (f x)) :=
+        forward_tube_bv_integrable W_analytic hWa_holo hWa_growth hWbv_pkg
+          f η hη ε hε
+      have hInt_Wg : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              (g x)) :=
+        forward_tube_bv_integrable W_analytic hWa_holo hWa_growth hWbv_pkg
+          g η hη ε hε
+      have hInt_F₁f : MeasureTheory.Integrable
+          (fun x : NPointDomain d n =>
+            F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) := by
+        have hEq :
+            (fun x : NPointDomain d n =>
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x)) =
+            (fun x : NPointDomain d n =>
+              (fun y : NPointDomain d n =>
+                W_analytic (fun k μ => ↑(y k μ) + ε * ↑(η k μ) * Complex.I) *
+                  (g y)) (x + aN)) := by
+          funext x
+          have hF₁_eq :
+              F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) =
+              W_analytic
+                (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I) := by
+            show W_analytic
+                (fun k μ =>
+                  (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ)) =
+              W_analytic
+                (fun k μ => ↑((x + aN) k μ) + ε * ↑(η k μ) * Complex.I)
+            congr 1
+            funext k μ
+            show (↑(x k μ) + ε * ↑(η k μ) * Complex.I) + (a μ : ℂ) =
+              ↑(x k μ + a μ) + ε * ↑(η k μ) * Complex.I
+            push_cast [aN]
+            ring
+          have hg_add : g (x + aN) = f x := by
+            show f ((x + aN) - aN) = f x
+            congr 1
+            funext i
+            simp [aN]
+          simp only [hF₁_eq, hg_add]
+        rw [hEq]
+        exact hInt_Wg.comp_add_right aN
+      have hsub :
+          (fun x : NPointDomain d n =>
+            (F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) -
+             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I)) *
+              (f x)) =
+          (fun x =>
+            F₁ (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x) -
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+              (f x)) := by
+        funext x; ring
+      rw [hsub]
+      exact hInt_F₁f.sub hInt_Wf
+    -- Apply forward-tube distributional uniqueness.
+    exact distributional_uniqueness_forwardTube hF₁_holo hWa_holo
+      h_integrable h_agree w hw
+  have hcomplex_shift :
+      W_analytic (fun k μ => z k μ + c μ) = W_analytic z := by
+    -- Second half of the BHW argument: extend from real shifts to complex shifts
+    -- by the identity theorem in the shift parameter, viewing
+    --   `hfun s := W_analytic (z + s) - W_analytic z`
+    -- as holomorphic on the open connected set
+    --   `D := {s | (z + s) ∈ ForwardTube d n}`,
+    -- vanishing on the totally real subset (by `hreal_shift`), hence vanishing
+    -- on all of `D`, in particular at `s = c`.
+    let D : Set (Fin (d + 1) → ℂ) :=
+      {s | (fun k μ => z k μ + s μ) ∈ ForwardTube d n}
+    let hfun : (Fin (d + 1) → ℂ) → ℂ :=
+      fun s => W_analytic (fun k μ => z k μ + s μ) - W_analytic z
+    have hFT_open : IsOpen (ForwardTube d n) :=
+      BHW_forwardTube_eq (d := d) (n := n) ▸ BHW.isOpen_forwardTube
+    have hD_open : IsOpen D := by
+      have hshift_cont :
+          Continuous (fun s : Fin (d + 1) → ℂ => (fun k μ => z k μ + s μ)) := by
+        apply continuous_pi; intro k
+        apply continuous_pi; intro μ
+        exact continuous_const.add (continuous_apply μ)
+      simpa [D] using (hFT_open.preimage hshift_cont)
+    have hD_convex : Convex ℝ D := by
+      intro s hs t ht a b ha hb hab
+      have hsFT : (fun k μ => z k μ + s μ) ∈ BHW.ForwardTube d n := by
+        simpa [BHW_forwardTube_eq (d := d) (n := n)] using hs
+      have htFT : (fun k μ => z k μ + t μ) ∈ BHW.ForwardTube d n := by
+        simpa [BHW_forwardTube_eq (d := d) (n := n)] using ht
+      have hconv :
+          a • (fun k μ => z k μ + s μ) + b • (fun k μ => z k μ + t μ) ∈
+            ForwardTube d n := by
+        have hconv' := BHW.forwardTube_convex hsFT htFT ha hb hab
+        simpa [BHW_forwardTube_eq (d := d) (n := n)] using hconv'
+      have hcomb :
+          a • (fun k μ => z k μ + s μ) + b • (fun k μ => z k μ + t μ) =
+            (fun k μ => z k μ + (a • s + b • t) μ) := by
+        ext k μ
+        have habC : (a : ℂ) + (b : ℂ) = 1 := by exact_mod_cast hab
+        calc
+          (a • (fun k μ => z k μ + s μ) + b • (fun k μ => z k μ + t μ)) k μ
+              = (a : ℂ) * z k μ + (a : ℂ) * s μ +
+                  ((b : ℂ) * z k μ + (b : ℂ) * t μ) := by
+                  simp [Pi.smul_apply, add_assoc]
+          _ = ((a : ℂ) + (b : ℂ)) * z k μ +
+                ((a : ℂ) * s μ + (b : ℂ) * t μ) := by ring
+          _ = z k μ + ((a : ℂ) * s μ + (b : ℂ) * t μ) := by simp [habC]
+          _ = z k μ + (a • s + b • t) μ := by simp [Pi.smul_apply]
+      have htarget :
+          (fun k μ => z k μ + (a • s + b • t) μ) ∈ ForwardTube d n := by
+        simpa [hcomb] using hconv
+      simpa [D] using htarget
+    have hD_ne : D.Nonempty := ⟨0, by simpa [D] using hz⟩
+    have hD_conn : IsConnected D := hD_convex.isConnected hD_ne
+    have hhfun_holo : DifferentiableOn ℂ hfun D := by
+      let rep : (Fin (d + 1) → ℂ) → (Fin n → Fin (d + 1) → ℂ) :=
+        fun s => fun _ μ => s μ
+      let constZ : (Fin (d + 1) → ℂ) → (Fin n → Fin (d + 1) → ℂ) :=
+        fun _ => fun k μ => z k μ
+      have hrep_diff : Differentiable ℂ rep := by
+        refine (differentiable_pi).2 ?_
+        intro _
+        exact differentiable_id
+      have hconstZ_diff : Differentiable ℂ constZ :=
+        differentiable_const _
+      have hshift_diff' :
+          Differentiable ℂ (fun s : Fin (d + 1) → ℂ => constZ s + rep s) :=
+        hconstZ_diff.add hrep_diff
+      have hshift_eq :
+          (fun s : Fin (d + 1) → ℂ => constZ s + rep s) =
+            (fun s : Fin (d + 1) → ℂ => (fun k μ => z k μ + s μ)) := by
+        funext s; ext k μ; simp [constZ, rep]
+      have hshift_diff :
+          Differentiable ℂ
+            (fun s : Fin (d + 1) → ℂ => (fun k μ => z k μ + s μ)) := by
+        rw [← hshift_eq]; exact hshift_diff'
+      intro s hs
+      have hcomp :
+          DifferentiableWithinAt ℂ
+            (fun s : Fin (d + 1) → ℂ =>
+              W_analytic (fun k μ => z k μ + s μ)) D s :=
+        (hWa_holo _ hs).comp s
+          hshift_diff.differentiableAt.differentiableWithinAt
+          (fun y hy => hy)
+      exact hcomp.sub (differentiableWithinAt_const _)
+    have hV_sub :
+        ∀ x ∈ (Set.univ : Set (Fin (d + 1) → ℝ)),
+          SCV.realToComplex x ∈ D := by
+      intro x _
+      show (fun k μ => z k μ + (x μ : ℂ)) ∈ ForwardTube d n
+      exact forwardTube_add_real_shift d x z hz
+    have hhfun_zero_real :
+        ∀ x ∈ (Set.univ : Set (Fin (d + 1) → ℝ)),
+          hfun (SCV.realToComplex x) = 0 := by
+      intro x _
+      show W_analytic (fun k μ => z k μ + (x μ : ℂ)) - W_analytic z = 0
+      exact sub_eq_zero.mpr (hreal_shift x z hz)
+    have hzero_on_D :=
+      SCV.identity_theorem_totally_real
+        hD_open hD_conn hhfun_holo
+        (V := Set.univ) isOpen_univ Set.univ_nonempty hV_sub hhfun_zero_real
+    have hcD : c ∈ D := by simpa [D] using hzc
+    have hc_zero : hfun c = 0 := hzero_on_D c hcD
+    exact sub_eq_zero.mp hc_zero
+  exact hcomplex_shift
+
+/-- Prepend a basepoint `a` to `n` difference variables `ξ` to obtain an
+`n+1`-tuple of real spacetime points. After applying `realDiffCoordCLE.symm`
+(partial sums), the result is `fun k μ => a μ + diffVarSection d n ξ k μ`. -/
+private def prependBasepointReal (d n : ℕ) (a : Fin (d + 1) → ℝ)
+    (ξ : Fin n → Fin (d + 1) → ℝ) : Fin (n + 1) → Fin (d + 1) → ℝ :=
+  Fin.cons a ξ
+
+@[simp] private theorem prependBasepointReal_zero (d n : ℕ)
+    (a : Fin (d + 1) → ℝ) (ξ : Fin n → Fin (d + 1) → ℝ) :
+    prependBasepointReal d n a ξ 0 = a := by
+  show (Fin.cons a ξ : Fin (n + 1) → Fin (d + 1) → ℝ) 0 = a
+  simp
+
+/-- The 0-th component of `realDiffCoordCLE.symm` applied to
+`prependBasepointReal a ξ` is `a`. -/
+private theorem realDiffCoordCLE_symm_prependBasepointReal_zero
+    (d n : ℕ) (a : Fin (d + 1) → ℝ) (ξ : Fin n → Fin (d + 1) → ℝ)
+    (μ : Fin (d + 1)) :
+    (BHW.realDiffCoordCLE (n + 1) d).symm
+        (prependBasepointReal d n a ξ) 0 μ =
+      a μ := by
+  -- (realDiffCoordCLE.symm y) 0 μ = ∑ j : Fin 1, y ⟨j.val, _⟩ μ = y 0 μ.
+  show (∑ j : Fin 1, prependBasepointReal d n a ξ ⟨j.val, by omega⟩ μ) = a μ
+  simp [prependBasepointReal]
+
+/-- The reduced differences of `realDiffCoordCLE.symm (prependBasepointReal a ξ)`
+recover `ξ`. -/
+private theorem reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
+    {d : ℕ} {m : ℕ} (a : Fin (d + 1) → ℝ) (ξ : Fin m → Fin (d + 1) → ℝ) :
+    BHW.reducedDiffMapReal (m + 1) d
+        ((BHW.realDiffCoordCLE (m + 1) d).symm
+          (prependBasepointReal d m a ξ)) = ξ := by
+  funext j μ
+  show ((BHW.realDiffCoordCLE (m + 1) d).symm
+            (prependBasepointReal d m a ξ)) ⟨j.val + 1, by omega⟩ μ -
+       ((BHW.realDiffCoordCLE (m + 1) d).symm
+            (prependBasepointReal d m a ξ)) ⟨j.val, by omega⟩ μ =
+        ξ j μ
+  -- Both terms unfold to partial sums of `prependBasepointReal d m a ξ`.
+  show
+      (∑ i : Fin (j.val + 1 + 1),
+          prependBasepointReal d m a ξ ⟨i.val, by omega⟩ μ) -
+        (∑ i : Fin (j.val + 1),
+          prependBasepointReal d m a ξ ⟨i.val, by omega⟩ μ) = ξ j μ
+  -- The (j+2)-th sum minus the (j+1)-th sum equals the (j+1)-th term.
+  have hsplit :
+      (∑ i : Fin (j.val + 1 + 1),
+          prependBasepointReal d m a ξ ⟨i.val, by omega⟩ μ) =
+        (∑ i : Fin (j.val + 1),
+          prependBasepointReal d m a ξ ⟨i.val, by omega⟩ μ) +
+        prependBasepointReal d m a ξ ⟨j.val + 1, by omega⟩ μ := by
+    simpa [Fin.val_castSucc, Fin.val_last] using
+      (Fin.sum_univ_castSucc
+        (f := fun i : Fin (j.val + 1 + 1) =>
+          prependBasepointReal d m a ξ ⟨i.val, by omega⟩ μ))
+  rw [hsplit]
+  -- prependBasepointReal d m a ξ ⟨j.val + 1, _⟩ = ξ ⟨j.val, _⟩ = ξ j (Fin.ext).
+  have heval :
+      prependBasepointReal d m a ξ ⟨j.val + 1, by omega⟩ μ = ξ j μ := by
+    have hjm : j.val < m := by have := j.isLt; omega
+    show (Fin.cons a ξ : Fin (m + 1) → Fin (d + 1) → ℝ)
+        ⟨j.val + 1, show j.val + 1 < m + 1 by omega⟩ μ = ξ j μ
+    have hcast :
+        (⟨j.val + 1, show j.val + 1 < m + 1 by omega⟩ : Fin (m + 1)) =
+          Fin.succ ⟨j.val, hjm⟩ := by
+      apply Fin.ext
+      simp [Fin.val_succ]
+    rw [hcast]
+    show (Fin.cons a ξ : Fin (m + 1) → Fin (d + 1) → ℝ)
+        (Fin.succ ⟨j.val, hjm⟩) μ = ξ j μ
+    rw [Fin.cons_succ]
+    -- ξ ⟨j.val, hjm⟩ μ = ξ j μ since j and ⟨j.val, hjm⟩ are equal Fin m elements.
+    congr 1
+  rw [heval]
+  ring
+
+/-- The change-of-variables identity for the triangular Jacobian-1 map
+`(a, ξ) ↦ realDiffCoordCLE.symm (prependBasepointReal a ξ)
+       = fun k μ => a μ + diffVarSection d n ξ k μ`,
+sending Lebesgue measure on `BasepointSpace d × NPointSpacetime d n` to
+Lebesgue measure on `NPointSpacetime d (n + 1)`. -/
+private theorem integral_realDiffCoord_change_variables
+    (d : ℕ) [NeZero d] (n : ℕ)
+    (G : NPointSpacetime d (n + 1) → ℂ)
+    (hG : MeasureTheory.Integrable G) :
+    ∫ x : NPointSpacetime d (n + 1), G x =
+      ∫ ξ : NPointSpacetime d n, ∫ a : BasepointSpace d,
+        G ((BHW.realDiffCoordCLE (n + 1) d).symm
+          (prependBasepointReal d n a ξ)) := by
+  let eCLE := (BHW.realDiffCoordCLE (n + 1) d).symm.toHomeomorph.toMeasurableEquiv
+  have h_mp_cle : MeasureTheory.MeasurePreserving eCLE
+      MeasureTheory.volume MeasureTheory.volume := by
+    have := BHW.realDiffCoordCLE_symm_measurePreserving (n + 1) d
+    convert this using 1
+  set H := fun y => G (eCLE y) with hH_def
+  have h1 : ∫ x : NPointSpacetime d (n + 1), G x =
+      ∫ y : NPointSpacetime d (n + 1), H y := by
+    exact (h_mp_cle.integral_comp' (g := G)).symm
+  let eSplit := MeasurableEquiv.piFinSuccAbove
+    (fun _ : Fin (n + 1) => Fin (d + 1) → ℝ) 0
+  have h_mp_split : MeasureTheory.MeasurePreserving eSplit
+      MeasureTheory.volume
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    simpa [eSplit] using MeasureTheory.volume_preserving_piFinSuccAbove
+      (fun _ : Fin (n + 1) => Fin (d + 1) → ℝ) 0
+  have hH_int : MeasureTheory.Integrable H := by
+    exact (h_mp_cle.integrable_comp_emb eCLE.measurableEmbedding (g := G)).mpr hG
+  have hH_pair_int : MeasureTheory.Integrable
+      (fun p : BasepointSpace d × NPointSpacetime d n => H (Fin.cons p.1 p.2))
+      (MeasureTheory.volume.prod MeasureTheory.volume) := by
+    have hiff := h_mp_split.symm.integrable_comp_emb
+      eSplit.symm.measurableEmbedding (g := H)
+    simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using hiff.2 hH_int
+  rw [h1]
+  calc
+    ∫ y : NPointSpacetime d (n + 1), H y
+      =
+    ∫ p : BasepointSpace d × NPointSpacetime d n, H (Fin.cons p.1 p.2) := by
+        symm
+        simpa [eSplit, MeasurableEquiv.piFinSuccAbove_symm_apply] using
+          h_mp_split.symm.integral_comp' (g := H)
+    _ =
+    ∫ ξ : NPointSpacetime d n, ∫ a : BasepointSpace d, H (Fin.cons a ξ) := by
+        exact MeasureTheory.integral_prod_symm _ hH_pair_int
+    _ =
+    ∫ ξ : NPointSpacetime d n, ∫ a : BasepointSpace d,
+        G ((BHW.realDiffCoordCLE (n + 1) d).symm
+          (prependBasepointReal d n a ξ)) := by
+        rw [hH_def]
+        rfl
+
+variable (d) in
 /-- Backward direction helper: construct F on ProductForwardTube from W_analytic. -/
 lemma productTube_function_of_forwardTube {n : ℕ}
     {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
@@ -3355,6 +3952,8 @@ lemma productTube_function_of_forwardTube {n : ℕ}
     (hw_det : ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f))
     (W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ)
     (hWa_holo : DifferentiableOn ℂ W_analytic (ForwardTube d (n + 1)))
+    (hWa_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ForwardTube d (n + 1) → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (hWa_bv : ∀ (f : SchwartzNPointSpace d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
       InForwardCone d (n + 1) η →
       Filter.Tendsto
@@ -3461,14 +4060,321 @@ lemma productTube_function_of_forwardTube {n : ℕ}
         exact hη'_succ i μ
     have hbase := hWa_bv fφ η' hη'
     have hchange :
-        ∀ ε : ℝ,
+        Filter.EventuallyEq
+          (nhdsWithin 0 (Set.Ioi 0))
+          (fun ε : ℝ =>
+            ∫ x : NPointSpacetime d (n + 1),
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x))
+          (fun ε : ℝ =>
+            ∫ ξ : NPointSpacetime d n,
+              F (fun k μ => ↑(ξ k μ) + ε * ↑(η k μ) * Complex.I) * (φ ξ)) := by
+      rw [Filter.eventuallyEq_iff_exists_mem]
+      refine ⟨Set.Ioi 0, self_mem_nhdsWithin, ?_⟩
+      intro ε hε
+      have hεpos : 0 < ε := hε
+      let zProd : NPointSpacetime d n → (Fin n → Fin (d + 1) → ℂ) :=
+        fun ξ k μ => ↑(ξ k μ) + ε * ↑(η k μ) * Complex.I
+      let zTarget : NPointSpacetime d n → (Fin (n + 1) → Fin (d + 1) → ℂ) :=
+        fun ξ k μ => z₀ μ + complexDiffVarSection d n (zProd ξ) k μ
+      let zMid : NPointSpacetime d n → (Fin (n + 1) → Fin (d + 1) → ℂ) :=
+        fun ξ k μ => ε * z₀ μ + complexDiffVarSection d n (zProd ξ) k μ
+      let zSrc :
+          BasepointSpace d →
+          NPointSpacetime d n →
+          (Fin (n + 1) → Fin (d + 1) → ℂ) :=
+        fun a ξ k μ => ↑(a μ) + zMid ξ k μ
+      let cε : BasepointSpace d → Fin (d + 1) → ℂ :=
+        fun a μ => -(↑(a μ)) + (1 - ε) * z₀ μ
+      have hzProd :
+          ∀ ξ : NPointSpacetime d n, zProd ξ ∈ ProductForwardTube d n := by
+        intro ξ
+        exact shifted_point_in_productForwardTube η hη ε hεpos ξ
+      have hzMid0 :
+          InOpenForwardCone d (fun μ => ((ε * z₀ μ)).im) := by
+        have hz0im : InOpenForwardCone d (fun μ => (z₀ μ).im) := hz₀
+        simpa [Pi.smul_apply, smul_eq_mul, mul_comm, mul_left_comm, mul_assoc]
+          using inOpenForwardCone_smul d ε hεpos (fun μ => (z₀ μ).im) hz0im
+      have hzTarget :
+          ∀ ξ : NPointSpacetime d n, zTarget ξ ∈ ForwardTube d (n + 1) := by
+        intro ξ
+        exact shifted_section_maps_productTube_to_forwardTube
+          (d := d) n z₀ hz₀ (zProd ξ) (hzProd ξ)
+      have hzMid :
+          ∀ ξ : NPointSpacetime d n, zMid ξ ∈ ForwardTube d (n + 1) := by
+        intro ξ
+        exact shifted_section_maps_productTube_to_forwardTube
+          (d := d) n (fun μ => ε * z₀ μ) hzMid0 (zProd ξ) (hzProd ξ)
+      have hzSrc :
+          ∀ a ξ, zSrc a ξ ∈ ForwardTube d (n + 1) := by
+        intro a ξ
+        simpa [zSrc, zMid, add_assoc, add_left_comm, add_comm]
+          using forwardTube_add_real_shift (d := d) a (zMid ξ) (hzMid ξ)
+      have hpointwise :
+          ∀ a ξ,
+            W_analytic (zSrc a ξ) = W_analytic (zTarget ξ) := by
+        intro a ξ
+        have hshift_eq :
+            (fun k μ => zSrc a ξ k μ + cε a μ) = zTarget ξ := by
+          funext k μ
+          simp [zSrc, zMid, zTarget, cε, sub_eq_add_neg, add_assoc, add_left_comm, add_comm,
+            add_mul]
+        have hzcε :
+            (fun k μ => zSrc a ξ k μ + cε a μ) ∈ ForwardTube d (n + 1) := by
+          rw [hshift_eq]
+          exact hzTarget ξ
+        have htrans :=
+          forwardTube_analytic_translationInvariant
+            (d := d)
+            (hW_tempered := hW_tempered)
+            (hW_linear := hW_linear)
+            (hW_transl := hW_transl)
+            (W_analytic := W_analytic)
+            (hWa_holo := hWa_holo)
+            (hWa_growth := hWa_growth)
+            (hWa_bv := hWa_bv)
+            (c := cε a)
+            (z := zSrc a ξ)
+            (hz := hzSrc a ξ)
+            (hzc := hzcε)
+        simpa [hshift_eq] using htrans.symm
+      have htransport :
           ∫ x : NPointSpacetime d (n + 1),
+              W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x)
+            =
+          ∫ ξ : NPointSpacetime d n,
+              ∫ a : BasepointSpace d,
+                W_analytic (zSrc a ξ) * (φ₀ a * φ ξ) := by
+        let Gabs : NPointSpacetime d (n + 1) → ℂ := fun x =>
+          W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x)
+        let Wn1_CLM : SchwartzNPoint d (n + 1) →L[ℂ] ℂ :=
+          { toLinearMap :=
+              { toFun := W (n + 1)
+                map_add' := (hW_linear (n + 1)).map_add
+                map_smul' := (hW_linear (n + 1)).map_smul }
+            cont := hW_tempered (n + 1) }
+        have hWbv_pkg :
+            ∃ (W₀ : SchwartzNPoint d (n + 1) →L[ℂ] ℂ),
+              ∀ (f : SchwartzNPoint d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
+                InForwardCone d (n + 1) η →
+                Filter.Tendsto
+                  (fun ε : ℝ => ∫ x : NPointDomain d (n + 1),
+                    W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) *
+                      (f x))
+                  (nhdsWithin 0 (Set.Ioi 0))
+                  (nhds (W₀ f)) := ⟨Wn1_CLM, hWa_bv⟩
+        have hGabs_int :
+            MeasureTheory.Integrable Gabs := by
+          simpa [Gabs] using
+            forward_tube_bv_integrable W_analytic hWa_holo hWa_growth hWbv_pkg
+              fφ η' hη' ε hεpos
+        calc
+          ∫ x : NPointSpacetime d (n + 1), Gabs x
+            =
+          ∫ ξ : NPointSpacetime d n, ∫ a : BasepointSpace d,
+              Gabs ((BHW.realDiffCoordCLE (n + 1) d).symm
+                (prependBasepointReal d n a ξ)) := by
+              simpa [Gabs] using
+                (integral_realDiffCoord_change_variables (d := d) n Gabs hGabs_int)
+          _ =
+          ∫ ξ : NPointSpacetime d n, ∫ a : BasepointSpace d,
+              W_analytic (zSrc a ξ) * (φ₀ a * φ ξ) := by
+              apply integral_congr_ae
+              filter_upwards with ξ
+              apply integral_congr_ae
+              filter_upwards with a
+              have hpair :
+                  basepointDiffPairCLE d n
+                    ((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ)) = (a, ξ) := by
+                apply Prod.ext
+                · ext μ
+                  show (basepointDiffPairCLE d n
+                    ((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ))).1 μ = a μ
+                  show ((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ)) 0 μ = a μ
+                  exact realDiffCoordCLE_symm_prependBasepointReal_zero d n a ξ μ
+                · ext k μ
+                  change
+                    (BHW.realDiffCoordCLE (n + 1) d).symm
+                        (prependBasepointReal d n a ξ) k.succ μ -
+                      (BHW.realDiffCoordCLE (n + 1) d).symm
+                        (prependBasepointReal d n a ξ) k.castSucc μ = ξ k μ
+                  simpa [BHW.reducedDiffMapReal_apply] using
+                    congrFun
+                      (congrFun
+                        (reducedDiffMapReal_realDiffCoordCLE_symm_prependBasepointReal
+                          (d := d) (m := n) a ξ) k) μ
+              have hx_eq :
+                  ((BHW.realDiffCoordCLE (n + 1) d).symm
+                    (prependBasepointReal d n a ξ)) =
+                  (fun k μ => a μ + diffVarSection d n ξ k μ) := by
+                have hx_eq' :
+                    ((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ)) =
+                    (basepointDiffPairCLE d n).symm (a, ξ) := by
+                  apply (basepointDiffPairCLE d n).injective
+                  simpa [hpair] using
+                    (basepointDiffPairCLE d n).apply_symm_apply (a, ξ)
+                simpa [basepointDiffPairCLE] using hx_eq'
+              have hf_eval :
+                  fφ ((BHW.realDiffCoordCLE (n + 1) d).symm
+                    (prependBasepointReal d n a ξ)) = φ₀ a * φ ξ := by
+                rw [hx_eq]
+                have key :
+                    basepointDiffCLE d n (fun k μ => a μ + diffVarSection d n ξ k μ) =
+                      Fin.cons a ξ := by
+                  funext k μ
+                  refine Fin.cases ?_ ?_ k
+                  · simp [diffVarSection_zero]
+                  · intro i
+                    simp only [basepointDiffCLE_apply_succ, Fin.cons_succ, diffVarSection_succ]
+                    ring
+                simp [fφ, sectionOf, SchwartzMap.prependField_apply, key]
+              have hz₀_im_mul_I : ∀ μ : Fin (d + 1),
+                  (((z₀ μ).im : ℂ)) * Complex.I = z₀ μ := by
+                intro μ
+                simp only [z₀]
+                split_ifs with hμ <;> simp
+              have harg :
+                  (fun k μ =>
+                    ↑(((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ)) k μ) +
+                      ε * ↑(η' k μ) * Complex.I) = zSrc a ξ := by
+                rw [hx_eq]
+                funext k μ
+                -- Compute complexDiffVarSection d n (zProd ξ) k μ.
+                have hcds :
+                    complexDiffVarSection d n (zProd ξ) k μ =
+                      ↑(diffVarSection d n ξ k μ) +
+                        Complex.I * ↑(diffVarSection d n η k μ) * ↑ε := by
+                  -- Both sides are sums over Fin k.val.
+                  show (∑ j : Fin k.val,
+                      (↑(ξ ⟨j.val, by omega⟩ μ) +
+                        ↑ε * ↑(η ⟨j.val, by omega⟩ μ) * Complex.I)) =
+                    ↑(diffVarSection d n ξ k μ) +
+                      Complex.I * ↑(diffVarSection d n η k μ) * ↑ε
+                  have h1 :
+                      (↑(diffVarSection d n ξ k μ) : ℂ) =
+                        ∑ j : Fin k.val, (↑(ξ ⟨j.val, by omega⟩ μ) : ℂ) := by
+                    show (↑(∑ j : Fin k.val, ξ ⟨j.val, by omega⟩ μ) : ℂ) =
+                      ∑ j : Fin k.val, ↑(ξ ⟨j.val, by omega⟩ μ)
+                    push_cast; rfl
+                  have h2 :
+                      (↑(diffVarSection d n η k μ) : ℂ) =
+                        ∑ j : Fin k.val, (↑(η ⟨j.val, by omega⟩ μ) : ℂ) := by
+                    show (↑(∑ j : Fin k.val, η ⟨j.val, by omega⟩ μ) : ℂ) =
+                      ∑ j : Fin k.val, ↑(η ⟨j.val, by omega⟩ μ)
+                    push_cast; rfl
+                  rw [h1, h2, Finset.sum_add_distrib]
+                  congr 1
+                  rw [Finset.mul_sum, Finset.sum_mul]
+                  apply Finset.sum_congr rfl
+                  intro j _
+                  ring
+                -- Compute η' k μ.
+                have hη'_eq :
+                    (↑(η' k μ) : ℂ) =
+                      ↑((z₀ μ).im) + ↑(diffVarSection d n η k μ) := by
+                  refine Fin.cases ?_ ?_ k
+                  · -- k = 0 case
+                    have : η' 0 μ = (z₀ μ).im := rfl
+                    rw [this, diffVarSection_zero]
+                    push_cast; ring
+                  · intro i
+                    -- k = i.succ case
+                    have heta : η' i.succ μ =
+                        (z₀ μ).im +
+                          ∑ j : Fin (i.val + 1), η ⟨j.val, by omega⟩ μ :=
+                      rfl
+                    rw [heta]
+                    have hdvs :
+                        diffVarSection d n η i.succ μ =
+                          ∑ j : Fin (i.val + 1),
+                            η ⟨j.val, by omega⟩ μ := rfl
+                    rw [hdvs]
+                    push_cast; rfl
+                -- The key z₀ identity.
+                have hz₀_eq : z₀ μ = (↑((z₀ μ).im) : ℂ) * Complex.I :=
+                  (hz₀_im_mul_I μ).symm
+                -- Goal: ↑(a μ + diffVarSection d n ξ k μ)
+                --       + ε * ↑(η' k μ) * I = zSrc a ξ k μ
+                show (↑((fun k μ => a μ + diffVarSection d n ξ k μ) k μ) : ℂ)
+                    + ↑ε * ↑(η' k μ) * Complex.I = zSrc a ξ k μ
+                show (↑(a μ + diffVarSection d n ξ k μ) : ℂ)
+                    + ↑ε * ↑(η' k μ) * Complex.I =
+                  ↑(a μ) + (↑ε * z₀ μ +
+                    complexDiffVarSection d n (zProd ξ) k μ)
+                rw [hcds, hη'_eq]
+                -- The residual identity expands the cast of a real sum.
+                have hcast_a :
+                    (↑(a μ + diffVarSection d n ξ k μ) : ℂ) =
+                      ↑(a μ) + ↑(diffVarSection d n ξ k μ) := by
+                  push_cast; rfl
+                rw [hcast_a]
+                -- Move all symbolic z₀ μ to its purely-imaginary form.
+                set Z : ℂ := z₀ μ
+                set ZI : ℝ := Z.im
+                have hZ : Z = (↑ZI : ℂ) * Complex.I := hz₀_im_mul_I μ |>.symm
+                rw [hZ]
+                ring
+              show Gabs ((BHW.realDiffCoordCLE (n + 1) d).symm
+                  (prependBasepointReal d n a ξ)) =
+                W_analytic (zSrc a ξ) * (φ₀ a * φ ξ)
+              show (W_analytic (fun k μ =>
+                    ↑(((BHW.realDiffCoordCLE (n + 1) d).symm
+                      (prependBasepointReal d n a ξ)) k μ) +
+                      ↑ε * ↑(η' k μ) * Complex.I)) *
+                  fφ ((BHW.realDiffCoordCLE (n + 1) d).symm
+                    (prependBasepointReal d n a ξ)) =
+                W_analytic (zSrc a ξ) * (φ₀ a * φ ξ)
+              rw [harg, hf_eval]
+      calc
+        ∫ x : NPointSpacetime d (n + 1),
             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η' k μ) * Complex.I) * (fφ x)
           =
-          ∫ ξ : NPointSpacetime d n,
+        ∫ ξ : NPointSpacetime d n,
+            ∫ a : BasepointSpace d,
+              W_analytic (zSrc a ξ) * (φ₀ a * φ ξ) := htransport
+        _ =
+        ∫ ξ : NPointSpacetime d n,
+            ∫ a : BasepointSpace d,
+              W_analytic (zTarget ξ) * (φ₀ a * φ ξ) := by
+              apply integral_congr_ae
+              filter_upwards with ξ
+              apply integral_congr_ae
+              filter_upwards with a
+              rw [hpointwise a ξ]
+        _ =
+        ∫ ξ : NPointSpacetime d n,
+            ((∫ a : BasepointSpace d, φ₀ a) *
+              (W_analytic (zTarget ξ) * φ ξ)) := by
+              apply integral_congr_ae
+              filter_upwards with ξ
+              calc
+                ∫ a : BasepointSpace d, W_analytic (zTarget ξ) * (φ₀ a * φ ξ)
+                  = ∫ a : BasepointSpace d,
+                      (W_analytic (zTarget ξ) * φ ξ) * φ₀ a := by
+                        congr 1
+                        ext a
+                        ring
+                _ = (W_analytic (zTarget ξ) * φ ξ) * (∫ a : BasepointSpace d, φ₀ a) := by
+                      simpa [mul_comm, mul_left_comm, mul_assoc] using
+                        (MeasureTheory.integral_const_mul
+                          (W_analytic (zTarget ξ) * φ ξ)
+                          (fun a : BasepointSpace d => φ₀ a))
+                _ = (∫ a : BasepointSpace d, φ₀ a) * (W_analytic (zTarget ξ) * φ ξ) := by
+                      ring
+        _ =
+        ∫ ξ : NPointSpacetime d n,
+            W_analytic (zTarget ξ) * φ ξ := by
+              simp [hφ₀_int]
+        _ =
+        ∫ ξ : NPointSpacetime d n,
             F (fun k μ => ↑(ξ k μ) + ε * ↑(η k μ) * Complex.I) * (φ ξ) := by
-      intro ε
-      sorry
+              apply integral_congr_ae
+              filter_upwards with ξ
+              simp [F, zTarget, zProd]
     have hbase' :
         Filter.Tendsto
           (fun ε : ℝ => ∫ x : NPointSpacetime d (n + 1),
@@ -3476,9 +4382,7 @@ lemma productTube_function_of_forwardTube {n : ℕ}
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (w φ)) := by
       simpa [F, fφ, hw_det, hfφ_red] using hbase
-    convert hbase' using 1
-    funext ε
-    exact (hchange ε).symm
+    exact hbase'.congr' hchange
   exact ⟨F, hF_holo, hF_bv⟩
 
 /-- The constant-1 Schwartz function on the 0-dimensional spacetime. -/
@@ -3577,5 +4481,5 @@ theorem spectralConditionDistribution_of_forwardTubeAnalyticity
   obtain ⟨F, hF_holo, hF_bv⟩ :=
     productTube_function_of_forwardTube d
       hW_tempered hW_linear hW_transl w hw_cont hw_lin hw_det
-      W_analytic hWa_holo hWa_bv
+      W_analytic hWa_holo hWa_growth hWa_bv
   exact converse_paleyWiener_tube d n F hF_holo w hw_cont hw_lin hF_bv
