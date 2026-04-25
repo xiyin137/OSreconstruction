@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalEOWRepresentative
 import Mathlib.Analysis.Calculus.BumpFunction.Basic
+import Mathlib.Analysis.Calculus.MeanValue
 
 /-!
 # Compact Approximate-Identity Kernels for Distributional EOW
@@ -615,5 +616,339 @@ theorem iteratedFDeriv_realConvolutionTest_sub_eq_integral_apply
           (θ : ComplexChartSpace m → ℂ) z)) u at h
   rw [ContinuousMultilinearMap.integral_apply hInt u] at h
   simpa [smul_sub, smul_eq_mul, mul_sub] using h
+
+/-- A global first-order translation estimate for the weighted `l`-th
+Schwartz derivative field.  This is the quantitative core of the
+approximate-identity convergence proof: one small real translation costs one
+extra Schwartz derivative. -/
+theorem exists_weighted_iteratedFDeriv_realTranslate_sub_le_linear
+    (θ : SchwartzMap (ComplexChartSpace m) ℂ) (k l : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (z : ComplexChartSpace m) (t : Fin m → ℝ),
+        ‖t‖ ≤ 1 →
+          ‖z‖ ^ k *
+            ‖iteratedFDeriv ℝ l
+                (θ : ComplexChartSpace m → ℂ) (z - realEmbed t) -
+              iteratedFDeriv ℝ l
+                (θ : ComplexChartSpace m → ℂ) z‖ ≤ C * ‖t‖ := by
+  let C : ℝ :=
+    2 ^ (k - 1) *
+      (SchwartzMap.seminorm ℂ k (l + 1) θ +
+        SchwartzMap.seminorm ℂ 0 (l + 1) θ)
+  have hC_nonneg : 0 ≤ C := by
+    dsimp [C]
+    positivity
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro z t ht
+  let a : ComplexChartSpace m := realEmbed t
+  let D : ComplexChartSpace m →
+      ContinuousMultilinearMap ℝ (fun _ : Fin l => ComplexChartSpace m) ℂ :=
+    fun w => iteratedFDeriv ℝ l (θ : ComplexChartSpace m → ℂ) w
+  let γ : ℝ →
+      ContinuousMultilinearMap ℝ (fun _ : Fin l => ComplexChartSpace m) ℂ :=
+    fun s => ‖z‖ ^ k • D (z - s • a)
+  have hD_diff : Differentiable ℝ D := by
+    simpa [D] using
+      (θ.smooth (l + 1)).differentiable_iteratedFDeriv (by
+        exact_mod_cast Nat.lt_succ_self l)
+  have hγ_hasDeriv :
+      ∀ s : ℝ,
+        HasDerivAt γ
+          (‖z‖ ^ k • (fderiv ℝ D (z - s • a) (-a))) s := by
+    intro s
+    have hpath :
+        HasDerivAt (fun r : ℝ => z - r • a) (-a) s := by
+      let L : ℝ →L[ℝ] ComplexChartSpace m :=
+        ContinuousLinearMap.smulRight (1 : ℝ →L[ℝ] ℝ) a
+      have hL : HasDerivAt (fun r : ℝ => r • a) a s := by
+        simpa [L, ContinuousLinearMap.smulRight_apply, one_smul] using
+          L.hasDerivAt
+      have hneg : HasDerivAt (fun r : ℝ => -(r • a)) (-a) s := hL.neg
+      simpa [sub_eq_add_neg] using hneg.const_add z
+    have hcomp :
+        HasDerivAt (fun r : ℝ => D (z - r • a))
+          ((fderiv ℝ D (z - s • a)) (-a)) s :=
+      (hD_diff (z - s • a)).hasFDerivAt.comp_hasDerivAt s hpath
+    simpa [γ] using hcomp.const_smul (‖z‖ ^ k)
+  have hγ_bound :
+      ∀ s ∈ Set.Ico (0 : ℝ) 1,
+        ‖‖z‖ ^ k • (fderiv ℝ D (z - s • a) (-a))‖ ≤ C * ‖t‖ := by
+    intro s hs
+    have hs_abs : |s| ≤ 1 := by
+      rw [abs_of_nonneg hs.1]
+      exact le_of_lt hs.2
+    have ha_norm : ‖a‖ ≤ 1 := by
+      exact le_trans (by simpa [a] using norm_realEmbed_le (m := m) t) ht
+    have hsa_norm : ‖s • a‖ ≤ 1 := by
+      calc
+        ‖s • a‖ = |s| * ‖a‖ := by
+          rw [norm_smul, Real.norm_eq_abs]
+        _ ≤ 1 * 1 := by
+          gcongr
+        _ = 1 := by norm_num
+    let w : ComplexChartSpace m := z - s • a
+    have hz_le : ‖z‖ ≤ ‖w‖ + 1 := by
+      have hz_eq : w + s • a = z := by
+        simp [w, sub_eq_add_neg, add_assoc]
+      calc
+        ‖z‖ = ‖w + s • a‖ := by rw [hz_eq]
+        _ ≤ ‖w‖ + ‖s • a‖ := norm_add_le _ _
+        _ ≤ ‖w‖ + 1 := by gcongr
+    have hweight :
+        ‖z‖ ^ k *
+            ‖iteratedFDeriv ℝ (l + 1)
+              (θ : ComplexChartSpace m → ℂ) w‖ ≤ C := by
+      calc
+        ‖z‖ ^ k *
+            ‖iteratedFDeriv ℝ (l + 1)
+              (θ : ComplexChartSpace m → ℂ) w‖
+            ≤ (‖w‖ + 1) ^ k *
+                ‖iteratedFDeriv ℝ (l + 1)
+                  (θ : ComplexChartSpace m → ℂ) w‖ := by
+              gcongr
+        _ ≤ (2 ^ (k - 1) * (‖w‖ ^ k + 1 ^ k)) *
+                ‖iteratedFDeriv ℝ (l + 1)
+                  (θ : ComplexChartSpace m → ℂ) w‖ := by
+              have hpow :
+                  (‖w‖ + 1) ^ k ≤
+                    2 ^ (k - 1) * (‖w‖ ^ k + 1 ^ k) := by
+                simpa [add_comm] using
+                  add_pow_le (norm_nonneg w) (by norm_num : (0 : ℝ) ≤ 1) k
+              exact mul_le_mul_of_nonneg_right hpow (norm_nonneg _)
+        _ =
+            2 ^ (k - 1) *
+              (‖w‖ ^ k *
+                  ‖iteratedFDeriv ℝ (l + 1)
+                    (θ : ComplexChartSpace m → ℂ) w‖ +
+                ‖iteratedFDeriv ℝ (l + 1)
+                  (θ : ComplexChartSpace m → ℂ) w‖) := by
+              ring
+        _ ≤
+            2 ^ (k - 1) *
+              (SchwartzMap.seminorm ℂ k (l + 1) θ +
+                SchwartzMap.seminorm ℂ 0 (l + 1) θ) := by
+              gcongr
+              · exact SchwartzMap.le_seminorm ℂ k (l + 1) θ w
+              · simpa using
+                  SchwartzMap.norm_iteratedFDeriv_le_seminorm
+                    (𝕜 := ℂ) θ (l + 1) w
+        _ = C := rfl
+    calc
+      ‖‖z‖ ^ k • (fderiv ℝ D (z - s • a) (-a))‖
+          = ‖z‖ ^ k * ‖(fderiv ℝ D (z - s • a)) (-a)‖ := by
+              rw [norm_smul, Real.norm_eq_abs]
+              exact congrArg (fun r => r * ‖(fderiv ℝ D (z - s • a)) (-a)‖)
+                (abs_of_nonneg (pow_nonneg (norm_nonneg z) k))
+      _ ≤ ‖z‖ ^ k * (‖fderiv ℝ D (z - s • a)‖ * ‖a‖) := by
+              gcongr
+              simpa using ContinuousLinearMap.le_opNorm
+                (fderiv ℝ D (z - s • a)) (-a)
+      _ = (‖z‖ ^ k * ‖fderiv ℝ D (z - s • a)‖) * ‖a‖ := by ring
+      _ =
+          (‖z‖ ^ k *
+            ‖iteratedFDeriv ℝ (l + 1)
+              (θ : ComplexChartSpace m → ℂ) (z - s • a)‖) * ‖a‖ := by
+            rw [norm_fderiv_iteratedFDeriv]
+      _ ≤ C * ‖a‖ := by
+            exact mul_le_mul_of_nonneg_right (by simpa [w] using hweight)
+              (norm_nonneg a)
+      _ ≤ C * ‖t‖ := by
+            gcongr
+            simpa [a] using norm_realEmbed_le (m := m) t
+  have hmv :=
+    norm_image_sub_le_of_norm_deriv_le_segment_01'
+      (f := γ)
+      (f' := fun s => ‖z‖ ^ k • (fderiv ℝ D (z - s • a) (-a)))
+      (fun s _ => (hγ_hasDeriv s).hasDerivWithinAt)
+      hγ_bound
+  have hγ_diff :
+      γ 1 - γ 0 = ‖z‖ ^ k • (D (z - a) - D z) := by
+    have h1 : (1 : ℝ) • a = a := one_smul ℝ a
+    have h0 : (0 : ℝ) • a = 0 := zero_smul ℝ a
+    rw [show γ 1 = ‖z‖ ^ k • D (z - a) by
+        simp only [γ]
+        rw [h1],
+      show γ 0 = ‖z‖ ^ k • D z by
+        simp only [γ]
+        rw [h0, sub_zero]]
+    exact (smul_sub (‖z‖ ^ k) (D (z - a)) (D z)).symm
+  calc
+    ‖z‖ ^ k *
+        ‖iteratedFDeriv ℝ l
+            (θ : ComplexChartSpace m → ℂ) (z - realEmbed t) -
+          iteratedFDeriv ℝ l
+            (θ : ComplexChartSpace m → ℂ) z‖
+        = ‖γ 1 - γ 0‖ := by
+            rw [hγ_diff]
+            simp [D, a, norm_smul]
+    _ ≤ C * ‖t‖ := hmv
+
+/-- Uniform smallness of weighted translated derivative differences. -/
+theorem weighted_iteratedFDeriv_realTranslate_sub_tendsto_zero
+    (θ : SchwartzMap (ComplexChartSpace m) ℂ) (k l : ℕ) :
+    ∀ ε > 0, ∃ δ > 0, ∀ (z : ComplexChartSpace m) (t : Fin m → ℝ),
+      ‖t‖ < δ →
+        ‖z‖ ^ k *
+          ‖iteratedFDeriv ℝ l
+              (θ : ComplexChartSpace m → ℂ) (z - realEmbed t) -
+            iteratedFDeriv ℝ l
+              (θ : ComplexChartSpace m → ℂ) z‖ < ε := by
+  intro ε hε
+  obtain ⟨C, hC_nonneg, hC⟩ :=
+    exists_weighted_iteratedFDeriv_realTranslate_sub_le_linear θ k l
+  let δ : ℝ := min 1 (ε / (C + 1))
+  have hC1 : 0 < C + 1 := by linarith
+  have hδ_pos : 0 < δ := by
+    exact lt_min zero_lt_one (div_pos hε hC1)
+  refine ⟨δ, hδ_pos, ?_⟩
+  intro z t htδ
+  have ht_one : ‖t‖ ≤ 1 := by
+    exact le_trans (le_of_lt htδ) (min_le_left _ _)
+  have hlin := hC z t ht_one
+  have hsmall : C * ‖t‖ < ε := by
+    have ht_eps : ‖t‖ < ε / (C + 1) :=
+      lt_of_lt_of_le htδ (min_le_right _ _)
+    calc
+      C * ‖t‖ ≤ (C + 1) * ‖t‖ := by
+        gcongr
+        linarith
+      _ < (C + 1) * (ε / (C + 1)) := by
+        exact mul_lt_mul_of_pos_left ht_eps hC1
+      _ = ε := by field_simp [hC1.ne']
+  exact lt_of_le_of_lt hlin hsmall
+
+/-- Normalized real nonnegative kernels with support shrinking like
+`1/(n+1)` form an approximate identity for `realConvolutionTest` in the
+Schwartz topology. -/
+theorem tendsto_realConvolutionTest_of_shrinking_normalized_support
+    (θ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψn : ℕ → SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ_nonneg : ∀ n t, 0 ≤ (ψn n t).re)
+    (hψ_real : ∀ n t, (ψn n t).im = 0)
+    (hψ_norm : ∀ n, ∫ t : Fin m → ℝ, ψn n t = 1)
+    (hψ_support : ∀ n,
+      KernelSupportWithin (ψn n) (1 / (n + 1 : ℝ))) :
+    Filter.Tendsto
+      (fun n => realConvolutionTest θ (ψn n))
+      Filter.atTop
+      (nhds θ) := by
+  rw [(schwartz_withSeminorms ℂ (ComplexChartSpace m) ℂ).tendsto_nhds_atTop _ _]
+  intro p ε hε
+  obtain ⟨k, l⟩ := p
+  have hε2 : 0 < ε / 2 := by linarith
+  obtain ⟨δ, hδ_pos, hδ⟩ :=
+    weighted_iteratedFDeriv_realTranslate_sub_tendsto_zero θ k l (ε / 2) hε2
+  obtain ⟨N, hN⟩ := exists_nat_one_div_lt hδ_pos
+  refine ⟨N, ?_⟩
+  intro n hn
+  have hsmall : 1 / (n + 1 : ℝ) < δ := by
+    have hmono : 1 / (n + 1 : ℝ) ≤ 1 / (N + 1 : ℝ) := by
+      have hNle : (N + 1 : ℝ) ≤ n + 1 := by
+        exact_mod_cast Nat.succ_le_succ hn
+      exact one_div_le_one_div_of_le (by positivity) hNle
+    exact lt_of_le_of_lt hmono hN
+  refine lt_of_le_of_lt ?_ (half_lt_self hε)
+  refine SchwartzMap.seminorm_le_bound ℂ k l
+    (realConvolutionTest θ (ψn n) - θ) (by positivity) ?_
+  intro z
+  let Δ : (Fin m → ℝ) →
+      ContinuousMultilinearMap ℝ (fun _ : Fin l => ComplexChartSpace m) ℂ :=
+    fun t =>
+      iteratedFDeriv ℝ l
+          (θ : ComplexChartSpace m → ℂ) (z - realEmbed t) -
+        iteratedFDeriv ℝ l
+          (θ : ComplexChartSpace m → ℂ) z
+  have hformula :=
+    iteratedFDeriv_realConvolutionTest_sub_eq_integral
+      θ (ψn n) (hψ_norm n) l z
+  have hbound : ∀ t : Fin m → ℝ,
+      ‖‖z‖ ^ k • ((ψn n t) • Δ t)‖ ≤
+        (ε / 2) * ‖ψn n t‖ := by
+    intro t
+    by_cases htball :
+        t ∈ Metric.closedBall (0 : Fin m → ℝ) (1 / (n + 1 : ℝ))
+    · have ht_norm : ‖t‖ < δ := by
+        have ht_le : ‖t‖ ≤ 1 / (n + 1 : ℝ) := by
+          simpa [Metric.mem_closedBall, dist_eq_norm] using htball
+        exact lt_of_le_of_lt ht_le hsmall
+      have htrans := hδ z t ht_norm
+      calc
+        ‖‖z‖ ^ k • ((ψn n t) • Δ t)‖
+            = ‖ψn n t‖ * (‖z‖ ^ k * ‖Δ t‖) := by
+                rw [norm_smul, norm_smul, Real.norm_eq_abs,
+                  abs_of_nonneg (pow_nonneg (norm_nonneg z) k)]
+                ring
+        _ ≤ ‖ψn n t‖ * (ε / 2) := by
+                exact mul_le_mul_of_nonneg_left (le_of_lt htrans) (norm_nonneg _)
+        _ = (ε / 2) * ‖ψn n t‖ := by ring
+    · have hzero : ψn n t = 0 :=
+        kernel_eq_zero_of_not_mem_closedBall (ψn n) (hψ_support n) htball
+      calc
+        ‖‖z‖ ^ k • ((ψn n t) • Δ t)‖ = 0 := by
+          rw [hzero]
+          rw [zero_smul ℂ (Δ t)]
+          rw [norm_smul, norm_zero, mul_zero]
+        _ ≤ (ε / 2) * ‖ψn n t‖ := by positivity
+  have hnorm_int : ∫ t : Fin m → ℝ, ‖ψn n t‖ = 1 :=
+    integral_norm_eq_one_of_real_nonneg_normalized
+      (ψn n) (hψ_nonneg n) (hψ_real n) (hψ_norm n)
+  calc
+    ‖z‖ ^ k *
+        ‖iteratedFDeriv ℝ l
+          (realConvolutionTest θ (ψn n) - θ : ComplexChartSpace m → ℂ) z‖
+        =
+        ‖‖z‖ ^ k •
+          iteratedFDeriv ℝ l
+            (realConvolutionTest θ (ψn n) - θ : ComplexChartSpace m → ℂ) z‖ := by
+          rw [norm_smul, Real.norm_eq_abs]
+          exact congrArg
+            (fun r => r *
+              ‖iteratedFDeriv ℝ l
+                (realConvolutionTest θ (ψn n) - θ : ComplexChartSpace m → ℂ) z‖)
+            (abs_of_nonneg (pow_nonneg (norm_nonneg z) k)).symm
+    _ =
+        ‖‖z‖ ^ k •
+          ∫ t : Fin m → ℝ, (ψn n t) • Δ t‖ := by
+          rw [hformula]
+    _ =
+        ‖∫ t : Fin m → ℝ, ‖z‖ ^ k • ((ψn n t) • Δ t)‖ := by
+          rw [MeasureTheory.integral_smul]
+    _ ≤ ∫ t : Fin m → ℝ, ‖‖z‖ ^ k • ((ψn n t) • Δ t)‖ := by
+          exact norm_integral_le_integral_norm _
+    _ ≤ ∫ t : Fin m → ℝ, (ε / 2) * ‖ψn n t‖ := by
+          apply MeasureTheory.integral_mono_of_nonneg
+          · exact Filter.Eventually.of_forall (fun _ => norm_nonneg _)
+          · exact (((SchwartzMap.integrable (ψn n)).norm).const_mul (ε / 2))
+          · exact Filter.Eventually.of_forall hbound
+    _ = (ε / 2) * ∫ t : Fin m → ℝ, ‖ψn n t‖ := by
+          rw [MeasureTheory.integral_const_mul]
+    _ = ε / 2 := by
+          simp [hnorm_int]
+
+/-- Public compact approximate-identity package for the convolution tests used
+by the distributional-holomorphicity passage. -/
+theorem exists_realConvolutionTest_approxIdentity
+    {r : ℝ} (hr : 0 < r) :
+    ∃ ψn : ℕ → SchwartzMap (Fin m → ℝ) ℂ,
+      (∀ n, ∫ t : Fin m → ℝ, ψn n t = 1) ∧
+      (∀ n,
+        KernelSupportWithin (ψn n)
+          (min (r / 2) (1 / (n + 1 : ℝ)))) ∧
+      (∀ n, KernelSupportWithin (ψn n) r) ∧
+      (∀ θ : SchwartzMap (ComplexChartSpace m) ℂ,
+        Filter.Tendsto
+          (fun n => realConvolutionTest θ (ψn n))
+          Filter.atTop
+          (nhds θ)) := by
+  obtain ⟨ψn, hnonneg, hreal, hnorm, hmin, hradius⟩ :=
+    exists_shrinking_normalized_schwartz_bump_sequence (m := m) hr
+  refine ⟨ψn, hnorm, hmin, hradius, ?_⟩
+  intro θ
+  refine tendsto_realConvolutionTest_of_shrinking_normalized_support
+    θ ψn hnonneg hreal hnorm ?_
+  intro n t ht
+  have htmin := hmin n ht
+  rw [Metric.mem_closedBall] at htmin ⊢
+  exact le_trans htmin (min_le_right _ _)
 
 end SCV

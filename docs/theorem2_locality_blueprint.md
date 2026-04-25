@@ -1323,27 +1323,29 @@ Current implementation order:
    `SCV.schwartzTensorProduct₂CLMRight`,
    `SCV.complexRealFiberTranslationDescentCLM`, and
    `SCV.map_eq_complexRealFiberTranslationDescentCLM_of_fiberTranslationInvariant`.
-   The next substrate target is therefore the product-kernel extension and
-   translation-covariant descent layer:
-   `SCV.schwartzKernel₂_extension`,
-   `SCV.translationCovariantProductKernel_descends`, and
-   `SCV.distributionalHolomorphic_regular`.  The descent theorem now has the
-   Lean-facing global/local split required by the Streater-Wightman kernel
-   step: global covariance
-   `SCV.ProductKernelRealTranslationCovariantGlobal` proves the pure descent,
-   and local support covariance is used only after the fixed-cutoff extension.
-   The remaining mathematical blocker is the mixed product-tensor
-   density/kernel-extension theorem; without it, product-test covariance cannot
-   honestly be promoted to fiber-translation invariance of
-   `SCV.shearedProductKernelFunctional K` on all mixed Schwartz tests.  The
-   tensor-level sign bridge before that density step is now explicit:
+   The product-density/descent layer is now checked as well:
+   `SCV.shearedProductKernel_fiberTranslate_shearedTensor_eq_self_of_productCovariant`,
+   `SCV.shearedProductKernel_fiberInvariant_of_productCovariant_of_shearedProductTensorDense`,
+   `SCV.translationCovariantProductKernel_descends_of_shearedProductTensorDense`,
+   `SCV.translationCovariantProductKernel_descends_of_productTensorDense`,
+   `SCV.ProductTensorDense_all`, and
+   `SCV.translationCovariantProductKernel_descends`.  The
+   product-kernel `∂bar` consumer, distributional-holomorphicity continuity
+   passage, and compact approximate-identity construction are also checked via
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero`,
+   `SCV.translationCovariantKernel_distributionalHolomorphic`,
+   `SCV.tendsto_realConvolutionTest_of_shrinking_normalized_support`, and
+   `SCV.exists_realConvolutionTest_approxIdentity`.  The next genuine SCV
+   substrate target is therefore `SCV.distributionalHolomorphic_regular`, whose
+   proof-doc route is the localized Weyl/`∂bar` regularity package recorded in
+   `docs/scv_infrastructure_blueprint.md`.  The tensor-level sign bridge before
+   the density step remains explicit:
    `SCV.shearedProductKernel_fiberTranslate_shearedTensor_eq_self_of_productCovariant`
    proves invariance on each sheared product tensor by applying
    `SCV.ProductKernelRealTranslationCovariantGlobal` at `-a` and simplifying
    `translateSchwartz (-a) (translateSchwartz a ψ)` to `ψ`.  This is the
    correct intermediate theorem: it proves the OS-II covariance calculation on
-   generators, while leaving the dense-span promotion as the next genuine
-   functional-analytic blocker.  The promotion theorem itself should retain the
+   generators.  The promotion theorem itself retains the
    explicit hypothesis `SCV.ShearedProductTensorDense m`: from that dense-span
    hypothesis, `Submodule.span_induction` plus closedness of the equalizer of
    two continuous linear maps gives
@@ -1353,10 +1355,9 @@ Current implementation order:
    with the descended distribution
    `SCV.complexRealFiberTranslationDescentCLM
      (SCV.shearedProductKernelFunctional K) η`.
-   The unqualified descent theorem remains blocked exactly by proving
-   `SCV.ShearedProductTensorDense m`/`SCV.schwartzKernel₂_extension`, not by any
-   further sign or quotient algebra.  The conditional dense-span promotion and
-   descent are now checked in `SCV/DistributionalEOWProductKernel.lean`.
+   The conditional dense-span promotion and descent are now checked in
+   `SCV/DistributionalEOWProductKernel.lean`, and the unqualified descent
+   theorem is discharged by the checked product-density theorem.
    The next product-kernel reduction is now checked: introduce the
    unsheared generator family
    `SCV.productTensorSet m = {schwartzTensorProduct₂ φ ψ}`, its span
@@ -1374,10 +1375,7 @@ Current implementation order:
    `SCV.compCLMOfContinuousLinearEquiv_symm_left_inv`, and apply
    `DenseRange.topologicalClosure_map_submodule`.  The corollary
    `SCV.translationCovariantProductKernel_descends_of_productTensorDense`
-   is the theorem-2 consumer surface for this stage; the only remaining
-   unproved content after it is the standard QFT-free product-Schwartz density
-   theorem `SCV.ProductTensorDense m`, equivalently the mixed two-space kernel
-   theorem `SCV.schwartzKernel₂_extension`.
+   is the theorem-2 consumer surface for this stage.
    The proof of `SCV.ProductTensorDense m` is now routed through pure
    SCV/GaussianField infrastructure:
    flatten the mixed chart by `SCV.mixedChartFiberFirstCLE m`, use the checked
@@ -1494,16 +1492,16 @@ Current implementation order:
    `SCV.exists_normalized_schwartz_bump_kernelSupportWithin` is also now
    checked in pure SCV, as is
    `SCV.exists_shrinking_normalized_schwartz_bump_sequence`.  The remaining
-   approximate-identity theorem surfaces are
+   approximate-identity theorem surfaces
    `SCV.tendsto_realConvolutionTest_of_shrinking_normalized_support` and
-   `SCV.exists_realConvolutionTest_approxIdentity`.  The Lean-ready proof
-   route is now pinned in `docs/scv_infrastructure_blueprint.md`: first check
-   the elementary kernel-mass/support/real-embedding lemmas plus the translated
-   derivative integrability and zeroth-order convolution identity, then prove
-   `iteratedFDeriv_realConvolutionTest_eq_integral`, the global weighted
-   small-real-translation estimate for Schwartz derivatives, and finally the
-   seminorm-topology convergence theorem.  This remains pure SCV and does not
-   introduce a bundled EOW wrapper or a Wightman-source import.
+   `SCV.exists_realConvolutionTest_approxIdentity` are also now checked.  The
+   Lean proof follows the route pinned in
+   `docs/scv_infrastructure_blueprint.md`: elementary kernel-mass/support and
+   real-embedding lemmas, translated derivative integrability, zeroth-order
+   and all-orders derivative-through-convolution identities, the global
+   mean-value linear small-real-translation estimate for Schwartz derivatives,
+   and the final seminorm-topology convergence theorem.  This remains pure SCV
+   and does not introduce a bundled EOW wrapper or a Wightman-source import.
 2. prove the strengthened Slot 1 surface above.  The coordinate prerequisites
    `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
    `BHW.wickRotate_ordered_mem_acrOne`,

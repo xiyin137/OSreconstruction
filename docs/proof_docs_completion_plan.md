@@ -415,19 +415,18 @@ Current examples:
    convergence of `realConvolutionTest θ (ψι i)` to `θ` in the Schwartz
    topology for every `θ`.  The next genuine theorem-2 SCV target is therefore
    the approximate-identity construction that supplies those two hypotheses:
-   `SCV.exists_normalized_schwartz_bump_kernelSupportWithin` and
-   `SCV.exists_shrinking_normalized_schwartz_bump_sequence` are now checked,
-   so the remaining target is
-   `SCV.tendsto_realConvolutionTest_of_shrinking_normalized_support`, followed
-   by `SCV.exists_realConvolutionTest_approxIdentity`.  The proof doc now
-   decomposes this target into exact Lean theorem slots: kernel `L¹` mass from
-   real nonnegative normalization, `norm_realEmbed_le`, `continuous_realEmbed`,
+   `SCV.exists_normalized_schwartz_bump_kernelSupportWithin`,
+   `SCV.exists_shrinking_normalized_schwartz_bump_sequence`,
+   `SCV.tendsto_realConvolutionTest_of_shrinking_normalized_support`, and
+   `SCV.exists_realConvolutionTest_approxIdentity` are now checked.  The
+   implemented proof uses the exact Lean slots recorded in
+   `docs/scv_infrastructure_blueprint.md`: kernel `L¹` mass from real
+   nonnegative normalization, `norm_realEmbed_le`, `continuous_realEmbed`,
    support-to-zero from `KernelSupportWithin`, the translated-derivative
-   identity, integrability of the translated derivative kernel, the checked
-   zeroth-order derivative-through-convolution identity, full derivative
-   commutation through `realConvolutionTest`, the global compact/tail
-   small-translation estimate in Schwartz seminorms, and the final
-   `WithSeminorms` convergence argument.
+   identity, integrability of the translated derivative kernel, zeroth-order
+   and all-orders derivative-through-convolution identities, the global
+   mean-value linear small-translation estimate in Schwartz seminorms, and the
+   final `WithSeminorms` convergence argument.
    Because `SCV/DistributionalEOWKernel.lean` is now a checked, sorry-free
    1000-line support file, the next implementation stage uses new pure-SCV
    companions rather than growing it.  `SCV.HeadBlockIntegral` is now
@@ -531,13 +530,22 @@ Current examples:
    `SCV.local_distributional_edge_of_the_wedge_envelope` theorem must include
    uniqueness on the constructed open set, the
    `distributionalHolomorphic_regular` input is preceded by a concrete
-   three-lemma `∂̄` integration-by-parts package, and the OS45 boundary-value
-   step requires a compact-subcone-uniform strengthening of
+   regularity package, and the OS45 boundary-value step requires a
+   compact-subcone-uniform strengthening of
    `bvt_boundary_values` derived from the OS-II polynomial-growth boundary
    value theorem.  In particular, `bvt_boundary_values` as currently checked is
    raywise in `η`; the theorem-2 consumer needs the documented
    `TendstoUniformlyOn` theorem over every compact direction set before the
    SCV envelope can be applied.
+   The next proof-doc frontier is now exactly
+   `SCV.distributionalHolomorphic_regular`.  The blueprint records the Lean
+   helper sequence: `dzSchwartzCLM` and its support lemmas, the
+   `laplacianSchwartzCLM_eq_four_sum_dbar_dz` identity, the reduction from
+   distributional `∂bar`-holomorphy to local harmonicity, the localized Weyl
+   lemma/parametrix for the real Laplacian, extraction of pointwise
+   Cauchy-Riemann equations from the smooth representative using the checked
+   `∂bar` integration-by-parts theorem, and conversion from real smoothness
+   plus CR equations to `DifferentiableOn ℂ`.
    The initial coordinate and trace-membership support
    `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
    `BHW.wickRotate_ordered_mem_acrOne`,

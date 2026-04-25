@@ -4703,7 +4703,68 @@ Exact product-kernel/descent subpackage:
    the final scalar simplification is `smul_eq_mul` and `mul_sub`.
 
    The global small-translation estimate is the real mathematical heart of
-   the convergence proof:
+   the convergence proof.  The endorsed Lean route is the direct mean-value
+   estimate below, not the older compact/tail split.  For Schwartz functions
+   the mean-value proof is stronger and shorter: one derivative is spent, and
+   the polynomial weight at `z` is compared to the polynomial weight at
+   `z - s • realEmbed t` using `‖t‖ ≤ 1`.
+
+   First prove the quantitative linear estimate:
+
+   ```lean
+   theorem exists_weighted_iteratedFDeriv_realTranslate_sub_le_linear
+       (θ : SchwartzMap (ComplexChartSpace m) ℂ) (k l : ℕ) :
+       ∃ C : ℝ, 0 ≤ C ∧
+         ∀ (z : ComplexChartSpace m) (t : Fin m -> ℝ),
+           ‖t‖ ≤ 1 ->
+             ‖z‖ ^ k *
+               ‖iteratedFDeriv ℝ l
+                   (θ : ComplexChartSpace m -> ℂ) (z - realEmbed t) -
+                 iteratedFDeriv ℝ l
+                   (θ : ComplexChartSpace m -> ℂ) z‖ ≤ C * ‖t‖
+   ```
+
+   Lean proof transcript.  Let
+   `D w = iteratedFDeriv ℝ l (θ : ComplexChartSpace m -> ℂ) w` and set
+   ```
+   C = 2 ^ (k - 1) *
+     (SchwartzMap.seminorm ℂ k (l + 1) θ +
+      SchwartzMap.seminorm ℂ 0 (l + 1) θ)
+   ```
+   (any nonnegative larger constant is fine).  For fixed `z,t`, define the
+   one-variable path
+   ```
+   γ s = ‖z‖ ^ k • D (z - s • realEmbed t)
+   ```
+   and apply `norm_image_sub_le_of_norm_deriv_le_segment_01'` on `[0,1]`.
+   The derivative is
+   ```
+   ‖z‖ ^ k •
+     fderiv ℝ D (z - s • realEmbed t) (-(realEmbed t))
+   ```
+   by the chain rule.  Use `norm_fderiv_iteratedFDeriv` to rewrite
+   `‖fderiv ℝ D w‖` as
+   `‖iteratedFDeriv ℝ (l + 1) (θ : ComplexChartSpace m -> ℂ) w‖`.
+   If `s ∈ Set.Ico 0 1` and `‖t‖ ≤ 1`, then
+   `norm_realEmbed_le t` gives `‖s • realEmbed t‖ ≤ 1` and therefore
+   ```
+   ‖z‖ = ‖(z - s • realEmbed t) + s • realEmbed t‖
+        ≤ ‖z - s • realEmbed t‖ + 1.
+   ```
+   The elementary inequality `add_pow_le` yields
+   ```
+   ‖z‖ ^ k * ‖D_{l+1} θ (z - s • realEmbed t)‖
+     ≤ 2 ^ (k - 1) *
+       (SchwartzMap.seminorm ℂ k (l + 1) θ +
+        SchwartzMap.seminorm ℂ 0 (l + 1) θ).
+   ```
+   Multiplying by `‖realEmbed t‖ ≤ ‖t‖` gives the derivative bound required by
+   the mean-value theorem.  Finally identify
+   `γ 1 - γ 0` with
+   `‖z‖ ^ k • (D (z - realEmbed t) - D z)` and remove the scalar norm.
+
+   The qualitative small-translation theorem is then just this linear estimate
+   with `δ = min 1 (ε / (C + 1))`:
 
    ```lean
    theorem weighted_iteratedFDeriv_realTranslate_sub_tendsto_zero
@@ -4716,26 +4777,6 @@ Exact product-kernel/descent subpackage:
                iteratedFDeriv ℝ l
                  (θ : ComplexChartSpace m -> ℂ) z‖ < ε
    ```
-
-   Proof transcript.  Let
-   `D z = iteratedFDeriv ℝ l (θ : ComplexChartSpace m -> ℂ) z`.
-   Pick the tail seminorm
-   `S = SchwartzMap.seminorm ℂ (k + 1) l θ`.  Choose `R ≥ 4` so
-   `(2 ^ (k + 1) + 1) * max 1 S / R < ε / 2`.  If `‖t‖ ≤ 1`, then
-   `norm_realEmbed_le t` gives `‖realEmbed t‖ ≤ 1`; for `R ≤ ‖z‖`,
-   the reverse triangle inequality gives
-   `‖z - realEmbed t‖ ≥ ‖z‖ / 2`.  The two applications of
-   `SchwartzMap.le_seminorm ℂ (k + 1) l θ` then give the tail estimate
-   ```
-   ‖z‖ ^ k * ‖D (z - realEmbed t) - D z‖ < ε / 2.
-   ```
-   On `Metric.closedBall 0 (R + 1)`, continuity of `D` follows from
-   `θ.smooth l` and `ContDiff.continuous_iteratedFDeriv`.  Compactness of the
-   closed ball gives `UniformContinuousOn D`; choose `δ₀ ≤ 1` so
-   `dist (z - realEmbed t) z < δ₀` implies
-   `‖D (z - realEmbed t) - D z‖ < ε / (2 * max 1 (R ^ k))`.  For
-   `‖z‖ ≤ R` and `‖t‖ < δ₀`, the compact estimate gives the same weighted
-   bound.  The final `δ` is `min 1 δ₀`.
 
    The convergence theorem then has a short transcript.  Given `k,l,ε`, take
    `δ` from the weighted translation theorem with `ε / 2`.  From
@@ -4785,12 +4826,210 @@ Exact product-kernel/descent subpackage:
    public theorem only exports the fields consumed by
    `translationCovariantKernel_distributionalHolomorphic`.
 
-   This is the real mathematical blocker left by the checked
-   `translationCovariantKernel_distributionalHolomorphic`; it is not allowed
-   to be replaced by an opaque assumption except as the explicit theorem
-   statement above.
+   This approximate-identity package is now checked in
+   `SCV/DistributionalEOWApproxIdentity.lean`.  It is the concrete input
+   consumed by the checked
+   `translationCovariantKernel_distributionalHolomorphic`; no opaque
+   approximate-identity assumption is used.
 7. Apply `distributionalHolomorphic_regular` to obtain a genuine holomorphic
    function `H` on `U0` representing `Hdist`.
+
+   Lean-ready transcript for `distributionalHolomorphic_regular`.  This is the
+   standard local Weyl regularity theorem for the `∂bar` complex, specialized
+   to the repo's complex-chart tempered-distribution surface.  It is pure SCV:
+   no OS, Wightman, BHW, Hamiltonian, or boundary-value hypotheses enter this
+   theorem.
+
+   The public theorem surface remains:
+
+   ```lean
+   theorem distributionalHolomorphic_regular
+       (Hdist : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       {U0 : Set (ComplexChartSpace m)}
+       (hU0_open : IsOpen U0)
+       (hCR : IsDistributionalHolomorphicOn Hdist U0) :
+       ∃ H : ComplexChartSpace m -> ℂ,
+         DifferentiableOn ℂ H U0 ∧
+         RepresentsDistributionOnComplexDomain Hdist H U0
+   ```
+
+   Implement it in a new focused file
+   `SCV/DistributionalEOWRegularity.lean`, importing the checked
+   `DistributionalEOWApproxIdentity` and mathlib's distribution derivative
+   files.  Do not put it back into the large kernel file.
+
+   The first internal layer is the test-function `∂/∂z_j` operator and the
+   real Laplacian identity.  These are genuine calculus facts, not wrappers:
+
+   ```lean
+   def dzSchwartzCLM {m : ℕ} (j : Fin m) :
+       SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ]
+         SchwartzMap (ComplexChartSpace m) ℂ :=
+     (1 / 2 : ℂ) •
+       (directionalDerivSchwartzCLM (complexRealDir j) -
+         Complex.I • directionalDerivSchwartzCLM (complexImagDir j))
+
+   theorem dzSchwartzCLM_tsupport_subset
+       (j : Fin m) (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+       tsupport ((dzSchwartzCLM j φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+         ComplexChartSpace m -> ℂ) ⊆
+       tsupport (φ : ComplexChartSpace m -> ℂ)
+
+   theorem SupportsInOpen.dz
+       (hφ : SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0)
+       (j : Fin m) :
+       SupportsInOpen ((dzSchwartzCLM j φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+         ComplexChartSpace m -> ℂ) U0
+
+   theorem dbar_dzSchwartzCLM_comm
+       (j : Fin m) (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+       dbarSchwartzCLM j (dzSchwartzCLM j φ) =
+         dzSchwartzCLM j (dbarSchwartzCLM j φ)
+
+   theorem laplacianSchwartzCLM_eq_four_sum_dbar_dz
+       (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+       LineDeriv.laplacianCLM ℝ (ComplexChartSpace m)
+           (SchwartzMap (ComplexChartSpace m) ℂ) φ =
+         (4 : ℂ) •
+           ∑ j : Fin m, dbarSchwartzCLM j (dzSchwartzCLM j φ)
+
+   theorem local_laplacian_zero_of_distributionalHolomorphic
+       (Hdist : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       {U0 : Set (ComplexChartSpace m)}
+       (hCR : IsDistributionalHolomorphicOn Hdist U0)
+       (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+       (hφ : SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0) :
+       Hdist
+         (LineDeriv.laplacianCLM ℝ (ComplexChartSpace m)
+           (SchwartzMap (ComplexChartSpace m) ℂ) φ) = 0
+   ```
+
+   The proof of the last theorem rewrites the Laplacian by
+   `laplacianSchwartzCLM_eq_four_sum_dbar_dz`, pushes `Hdist` through the finite
+   sum and scalar, and applies `hCR j (dzSchwartzCLM j φ) (hφ.dz j)`.
+   The support lemmas follow exactly the pattern already checked for
+   `dbarSchwartzCLM_tsupport_subset`: each directional derivative has support
+   contained in the original topological support, and finite linear
+   combinations preserve the subset.
+
+   The hard analytic input is Weyl's lemma for the real Laplacian, localized to
+   Schwartz tests.  This is the remaining genuine mathematical theorem for this
+   stage; it must be proved or imported as a checked pure-analysis theorem, not
+   smuggled as a theorem-2 wrapper:
+
+   ```lean
+   theorem weyl_laplacian_distribution_regular_on_open
+       (T : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       {U0 : Set (ComplexChartSpace m)}
+       (hU0_open : IsOpen U0)
+       (hΔ :
+         ∀ φ : SchwartzMap (ComplexChartSpace m) ℂ,
+           SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0 ->
+             T
+               (LineDeriv.laplacianCLM ℝ (ComplexChartSpace m)
+                 (SchwartzMap (ComplexChartSpace m) ℂ) φ) = 0) :
+       ∃ H : ComplexChartSpace m -> ℂ,
+         ContDiffOn ℝ (⊤ : ℕ∞) H U0 ∧
+         RepresentsDistributionOnComplexDomain T H U0
+   ```
+
+   Proof transcript for the Weyl lemma.  Work locally on a closed ball
+   `closedBall c (2 * r) ⊆ U0`.  Convolve `T` with the standard
+   finite-dimensional Newton kernel cut off outside `closedBall 0 r`; the
+   checked mathlib distribution derivative API already supplies the sign
+   convention for the test Laplacian:
+   `TemperedDistribution.laplacian_apply_apply`.  The cutoff Newton kernel
+   gives a local parametrix
+   ```
+   Δ (N_r * φ) = φ + R_r φ
+   ```
+   where `R_r` is represented by a smooth kernel on the smaller ball.  Pairing
+   against `T` and using `hΔ` removes the singular part, so `T` is represented
+   on `ball c r` by the smooth function obtained from the remainder kernel.
+   On overlapping balls, the two smooth representatives have the same
+   pairings with all compactly supported Schwartz tests in the overlap; apply
+   the already checked
+   `eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` to patch
+   them.  This gives the displayed global `H`.
+
+   After Weyl regularity gives a smooth representative, recover the pointwise
+   Cauchy-Riemann equations from the distributional equations:
+
+   ```lean
+   def pointwiseDbar (j : Fin m) (H : ComplexChartSpace m -> ℂ)
+       (z : ComplexChartSpace m) : ℂ :=
+     (1 / 2 : ℂ) *
+       (fderiv ℝ H z (complexRealDir j) +
+        Complex.I * fderiv ℝ H z (complexImagDir j))
+
+   theorem pointwiseDbar_eq_zero_of_distributionalHolomorphic
+       (Hdist : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       {U0 : Set (ComplexChartSpace m)}
+       (hU0_open : IsOpen U0)
+       (hCR : IsDistributionalHolomorphicOn Hdist U0)
+       (H : ComplexChartSpace m -> ℂ)
+       (hH_smooth : ContDiffOn ℝ (⊤ : ℕ∞) H U0)
+       (hRep : RepresentsDistributionOnComplexDomain Hdist H U0) :
+       ∀ j : Fin m, ∀ z ∈ U0, pointwiseDbar j H z = 0
+   ```
+
+   Proof transcript.  Fix `j` and a compactly supported Schwartz test `φ`
+   supported in `U0`.  From `hRep` and `hCR`,
+   ```
+   0 = Hdist (dbarSchwartzCLM j φ)
+     = ∫ z, H z * (dbarSchwartzCLM j φ) z.
+   ```
+   Choose a smooth compact cutoff equal to one near `tsupport φ`; multiplying
+   it by the smooth representative `H` gives a global Schwartz representative
+   on the support.  Apply the checked integration-by-parts theorem
+   `integral_mul_dbarSchwartzCLM_right_eq_neg_left` to get
+   ```
+   ∫ z, pointwiseDbar j H z * φ z = 0.
+   ```
+   Since `pointwiseDbar j H` is continuous on `U0`, the checked pointwise
+   extraction theorem
+   `eq_zero_on_open_of_compactSupport_schwartz_integral_zero` gives
+   `pointwiseDbar j H z = 0` for every `z ∈ U0`.
+
+   Finally convert smooth real differentiability plus the Cauchy-Riemann
+   equations into complex differentiability:
+
+   ```lean
+   theorem differentiableOn_complex_of_contDiffOn_real_and_pointwiseDbar_zero
+       {H : ComplexChartSpace m -> ℂ} {U0 : Set (ComplexChartSpace m)}
+       (hU0_open : IsOpen U0)
+       (hH_smooth : ContDiffOn ℝ (⊤ : ℕ∞) H U0)
+       (hDbar : ∀ j : Fin m, ∀ z ∈ U0, pointwiseDbar j H z = 0) :
+       DifferentiableOn ℂ H U0
+   ```
+
+   At `z ∈ U0`, the real derivative `fderiv ℝ H z` is a continuous real-linear
+   map.  The equations `pointwiseDbar j H z = 0` say
+   `L (complexImagDir j) = Complex.I * L (complexRealDir j)` for every
+   coordinate.  Decompose an arbitrary vector into its real and imaginary
+   coordinate directions to prove `L (Complex.I • v) = Complex.I * L v`; hence
+   `L` is the restriction of a continuous complex-linear map.  This supplies
+   the `HasFDerivAt` witness over `ℂ` and therefore `DifferentiableOn ℂ H U0`.
+
+   Assembly of `distributionalHolomorphic_regular` is then:
+
+   ```lean
+   obtain ⟨H, hH_smooth, hRep⟩ :=
+     weyl_laplacian_distribution_regular_on_open Hdist hU0_open
+       (local_laplacian_zero_of_distributionalHolomorphic Hdist hCR)
+   have hDbar :=
+     pointwiseDbar_eq_zero_of_distributionalHolomorphic
+       Hdist hU0_open hCR H hH_smooth hRep
+   exact ⟨H,
+     differentiableOn_complex_of_contDiffOn_real_and_pointwiseDbar_zero
+       hU0_open hH_smooth hDbar,
+     hRep⟩
+   ```
+
+   This is the next proof-doc frontier before Lean implementation.  The only
+   hard theorem in the list is the localized Weyl lemma/parametrix; everything
+   else is finite-dimensional calculus, support preservation, integration by
+   parts, and already checked pointwise extraction.
 8. Use the representation identity with an approximate identity `ψι -> δ0`.
    The tests `realConvolutionTest φ ψι` converge to `φ`, while on wedge pieces
    `Gψι` agrees with the real mollifications of `Fplus`/`Fminus`; the existing
@@ -4913,12 +5152,13 @@ For theorem 2, the immediate SCV implementation order is:
    `realConvolutionTest`, the real-fiber translation CLM, fiber-integral
    invariance under real-fiber translation, the product-test fiber integral
    identity, the real/complex translation composition laws, the
-   sheared-functional / fiber-invariance predicates, and the sheared tensor
-   fiber-translation identity.  The remaining portion is the sheared
-   covariance-to-invariance theorem after density, the mixed fiber-factorization
-   theorem, `schwartzKernel₂_extension`,
-   `translationCovariantProductKernel_descends`, and
-   `distributionalHolomorphic_regular`;
+   sheared-functional / fiber-invariance predicates, the sheared tensor
+   fiber-translation identity, the mixed fiber quotient, product density,
+   translation-covariant descent, the product-kernel `∂bar` consumer, the
+   distributional-holomorphicity continuity passage, and compact
+   approximate-identity convergence.  The remaining portion is
+   `distributionalHolomorphic_regular`, followed by the regularized-envelope
+   recovery and local continuous EOW extraction;
 2. `SCV/LocalContinuousEOW.lean`: expose the local continuous EOW theorem by
    refactoring `local_eow_extension` and `local_extensions_consistent` from
    `TubeDomainExtension.lean`;
@@ -5018,11 +5258,12 @@ descent are now checked.  The support-preservation companion
 `KernelSupportWithin_hasCompactSupport`,
 `directionalDerivSchwartzCLM_tsupport_subset`,
 `directionalDerivSchwartzCLM_supportsInOpen`,
-`dbarSchwartzCLM_tsupport_subset`, and `SupportsInOpen.dbar`.  The next
-declarations should therefore address the distributional-regularity layer
-`tendsto_realConvolutionTest_of_shrinking_normalized_support`,
-`exists_realConvolutionTest_approxIdentity`,
-`distributionalHolomorphic_regular`, and the regularized-envelope kernel
+`dbarSchwartzCLM_tsupport_subset`, and `SupportsInOpen.dbar`.  The checked
+approximate-identity companion now also supplies
+`tendsto_realConvolutionTest_of_shrinking_normalized_support` and
+`exists_realConvolutionTest_approxIdentity`.  The next declarations should
+therefore address the distributional-regularity layer
+`distributionalHolomorphic_regular` and the regularized-envelope kernel
 recovery surfaces listed in Section 2.4.
 
 ## 11. Exact proof transcript for tube boundary values from polynomial growth
