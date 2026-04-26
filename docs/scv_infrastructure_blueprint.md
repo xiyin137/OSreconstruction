@@ -5508,13 +5508,37 @@ Exact product-kernel/descent subpackage:
    `Hρ x = T (euclideanReflectedTranslate x ρ)` and
    `∫ Hρ x * φ x dx = T (ρ̌ * φ)` with Mathlib's convolution convention.
 
-   Next upgrade the checked continuity of distributional mollifications to
-   differentiability and then smoothness.  The first lemma in the split
-   difference-quotient layer,
-   `euclideanDiffQuotient_iteratedFDeriv_pointwise`, is checked.  The remaining
-   difference-quotient layer is:
+   The checked continuity of distributional mollifications has now been
+   upgraded to the one-parameter differentiability theorem needed for every
+   fixed line.  The full checked split difference-quotient layer is:
 
    ```lean
+   theorem euclideanTranslateSchwartzCLM_zero
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       euclideanTranslateSchwartzCLM (0 : EuclideanSpace ℝ ι) φ = φ
+
+   theorem euclideanDiffQuotient_weighted_pointwise_bound
+       {n : ℕ}
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (v : EuclideanSpace ℝ ι) (k : ℕ)
+       {C : ℝ} (hC_nonneg : 0 ≤ C)
+       (hC : ∀ t : ℝ, |t| ≤ 1 ->
+         SchwartzMap.seminorm ℝ k n
+           (euclideanTranslateSchwartzCLM (t • v)
+             (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) -
+             ∂_{v} φ) ≤ C * |t|)
+       {t : ℝ} (ht_ne : t ≠ 0) (ht_abs : |t| ≤ 1)
+       (x : EuclideanSpace ℝ ι) :
+       ‖x‖ ^ k *
+           ‖t⁻¹ •
+               (iteratedFDeriv ℝ n
+                 (φ : EuclideanSpace ℝ ι -> ℂ) (x + t • v) -
+                iteratedFDeriv ℝ n
+                 (φ : EuclideanSpace ℝ ι -> ℂ) x) -
+             iteratedFDeriv ℝ n
+               (((∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+                 EuclideanSpace ℝ ι -> ℂ)) x‖ ≤ C * |t|
+
    theorem exists_seminorm_diffQuotient_euclideanTranslateSchwartz_sub_lineDeriv_le
        (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
        (v : EuclideanSpace ℝ ι) (k n : ℕ) :
@@ -5533,7 +5557,7 @@ Exact product-kernel/descent subpackage:
          (nhdsWithin (0 : ℝ) ({0}ᶜ)) (𝓝 (∂_{v} φ))
    ```
 
-   After those are checked, the distributional derivative theorem is:
+   The checked distributional derivative consumer is:
 
    ```lean
    theorem hasDerivAt_regularizedDistribution_along
@@ -5546,37 +5570,758 @@ Exact product-kernel/descent subpackage:
          (-T (euclideanReflectedTranslate x
            (LineDeriv.lineDerivOp v ρ)))
          0
+   ```
+
+   The next implementation gate is **not** another line-derivative wrapper.
+   A `ContDiff` theorem needs a Fréchet derivative in the center variable, so
+   the missing analytic content is the direction-uniform translation remainder
+   in Schwartz topology.  The package should be proved in this order:
+   because `SCV/EuclideanWeyl.lean` is now a checked 1000-line support file,
+   the next gate should live in a small companion file
+   `SCV/EuclideanWeylFrechet.lean` importing `SCV/EuclideanWeyl.lean`, not by
+   continuing to enlarge the stable file.
+
+   ```lean
+   noncomputable def euclideanLineDerivDirectionCLM
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       EuclideanSpace ℝ ι ->L[ℝ]
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ
+
+   theorem euclideanLineDerivDirectionCLM_apply
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (v : EuclideanSpace ℝ ι) :
+       euclideanLineDerivDirectionCLM ρ v = ∂_{v} ρ
+
+   theorem exists_seminorm_diffQuotient_euclideanTranslateSchwartz_sub_lineDeriv_le_uniform_unit
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (k n : ℕ) :
+       ∃ C : ℝ, 0 ≤ C ∧
+         ∀ v : EuclideanSpace ℝ ι, ‖v‖ ≤ 1 ->
+         ∀ t : ℝ, t ≠ 0 -> |t| ≤ 1 ->
+           SchwartzMap.seminorm ℝ k n
+             (t⁻¹ • (euclideanTranslateSchwartzCLM (t • v) φ - φ) -
+               ∂_{v} φ) ≤ C * |t|
+
+   theorem exists_seminorm_euclideanTranslateSchwartz_sub_lineDeriv_le_quadratic_norm
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (k n : ℕ) :
+       ∃ C : ℝ, 0 ≤ C ∧
+         ∀ h : EuclideanSpace ℝ ι, ‖h‖ ≤ 1 ->
+           SchwartzMap.seminorm ℝ k n
+             (euclideanTranslateSchwartzCLM h φ - φ -
+               euclideanLineDerivDirectionCLM φ h) ≤ C * ‖h‖ ^ 2
+
+   theorem tendsto_frechetRemainder_euclideanTranslateSchwartz_zero
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       Tendsto
+         (fun h : EuclideanSpace ℝ ι =>
+           ‖h‖⁻¹ •
+             (euclideanTranslateSchwartzCLM h φ - φ -
+               euclideanLineDerivDirectionCLM φ h))
+         (nhdsWithin (0 : EuclideanSpace ℝ ι) ({0}ᶜ))
+         (𝓝 0)
+
+   noncomputable def regularizedDistributionFDeriv
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x : EuclideanSpace ℝ ι) :
+       EuclideanSpace ℝ ι ->L[ℝ] ℂ :=
+     -(((T.restrictScalars ℝ).comp
+          ((euclideanTranslateSchwartzCLM (-x)).restrictScalars ℝ)).comp
+          (euclideanLineDerivDirectionCLM ρ))
+
+   theorem regularizedDistributionFDeriv_apply
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x v : EuclideanSpace ℝ ι) :
+       regularizedDistributionFDeriv T ρ x v =
+         -T (euclideanReflectedTranslate x (∂_{v} ρ))
+
+   theorem hasDerivAt_regularizedDistribution_along_fderiv_apply
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x v : EuclideanSpace ℝ ι) :
+       HasDerivAt
+         (fun t : ℝ =>
+           T (euclideanReflectedTranslate (x + t • v) ρ))
+         (regularizedDistributionFDeriv T ρ x v)
+         0
+
+   theorem exists_seminorm_secondLineDeriv_unit_bound
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (k n : ℕ) :
+       ∃ C : ℝ, 0 ≤ C ∧
+         ∀ v : EuclideanSpace ℝ ι, ‖v‖ ≤ 1 ->
+           SchwartzMap.seminorm ℝ k n
+             (∂_{v} (∂_{v} φ :
+               SchwartzMap (EuclideanSpace ℝ ι) ℂ)) ≤ C
+
+   theorem exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (k n : ℕ) :
+       ∃ C : ℝ, 0 ≤ C ∧
+         ∀ v : EuclideanSpace ℝ ι, ‖v‖ ≤ 1 ->
+         ∀ t : ℝ, |t| ≤ 1 ->
+           SchwartzMap.seminorm ℝ k n
+             (euclideanTranslateSchwartzCLM (t • v)
+               (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) -
+               ∂_{v} φ) ≤ C * |t|
+
+   theorem hasFDerivAt_regularizedDistribution
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x : EuclideanSpace ℝ ι) :
+       HasFDerivAt
+         (fun x => T (euclideanReflectedTranslate x ρ))
+         (regularizedDistributionFDeriv T ρ x) x
 
    theorem contDiff_regularizedDistribution
        (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-       (hρ_compact : HasCompactSupport
-         (ρ : EuclideanSpace ℝ ι -> ℂ)) :
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
        ContDiff ℝ (⊤ : ℕ∞)
          (fun x => T (euclideanReflectedTranslate x ρ))
    ```
 
-   For the derivative formula, start with one direction `v` and use
-   `tendsto_diffQuotient_euclideanTranslateSchwartz_zero`; compose the limit
-   with `T.continuous`.  For the reflected translate,
-   `euclideanReflectedTranslate (x + t • v) ρ =
-   euclideanTranslateSchwartzCLM (-(x + t • v)) ρ`, so the derivative is the
-   negative of the translate of `∂_v ρ`.
-   Iterate this directional statement, or equivalently prove the corresponding
-   Fréchet derivative statement, to obtain `contDiff_regularizedDistribution`.
-   The exact sign is fixed by
-   `euclideanReflectedTranslate x ρ y = ρ (y - x)`.
+   Production status: the derivative-candidate packaging declarations
+   `euclideanLineDerivDirectionCLM`,
+   `euclideanLineDerivDirectionCLM_apply`,
+   `euclideanSecondLineDerivDirectionCLM`,
+   `euclideanSecondLineDerivDirectionCLM_apply`,
+   `exists_seminorm_secondLineDeriv_unit_bound`,
+   `exists_seminorm_translate_secondLineDeriv_unit_bound`,
+   `exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit`,
+   `exists_seminorm_diffQuotient_euclideanTranslateSchwartz_sub_lineDeriv_le_uniform_unit`,
+   `exists_seminorm_euclideanTranslateSchwartz_sub_lineDeriv_le_quadratic_norm`,
+   `tendsto_frechetRemainder_euclideanTranslateSchwartz_zero`,
+   `regularizedDistributionFDeriv`,
+   `regularizedDistributionFDeriv_apply`, and
+   `hasDerivAt_regularizedDistribution_along_fderiv_apply`, and
+   `hasFDerivAt_regularizedDistribution`, and
+   `contDiff_regularizedDistribution` are checked in
+   `SCV/EuclideanWeylFrechet.lean`.  The remaining theorem-2 SCV
+   implementation content now returns to the localized Euclidean Weyl
+   mollifier layer below.
+
+   Proof transcript for the Fréchet gate:
+
+   1. `euclideanLineDerivDirectionCLM` is the linear map
+      `v ↦ ∂_v ρ`.  Linearity is exactly
+      `lineDerivOp_left_add` and `lineDerivOp_left_smul`; continuity follows
+      from `LinearMap.continuous_of_finiteDimensional`, since the direction
+      space `EuclideanSpace ℝ ι` is finite-dimensional.
+   2. The uniform-unit quotient theorem is the real missing estimate.  Do not
+      obtain it by taking the already checked
+      `exists_seminorm_diffQuotient...` for each `v`, because that gives a
+      constant depending on `v`.  First prove
+      `exists_seminorm_secondLineDeriv_unit_bound` by the following exact Lean
+      ladder in `SCV/EuclideanWeylFrechet.lean`.
+
+      The second derivative should be packaged as the continuous bilinear map
+      already supplied abstractly by Mathlib's line-derivative notation:
+
+      ```lean
+      noncomputable def euclideanSecondLineDerivDirectionCLM
+          (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+          EuclideanSpace ℝ ι ->L[ℝ]
+            EuclideanSpace ℝ ι ->L[ℝ]
+              SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+        (LineDeriv.bilinearLineDerivTwo ℝ φ).toContinuousBilinearMap
+
+      @[simp]
+      theorem euclideanSecondLineDerivDirectionCLM_apply
+          (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+          (v w : EuclideanSpace ℝ ι) :
+          euclideanSecondLineDerivDirectionCLM φ v w =
+            (∂_{v} (∂_{w} φ :
+              SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+              SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+      ```
+
+      Use `EuclideanSpace.basisFun ι ℝ` and
+      `(EuclideanSpace.basisFun ι ℝ).sum_repr v` to expand
+
+      ```lean
+      v = ∑ i : ι, v i • EuclideanSpace.basisFun ι ℝ i.
+      ```
+
+      With `B := LineDeriv.bilinearLineDerivTwo ℝ φ`, linearity gives the
+      diagonal expansion
+
+      ```lean
+      B v v =
+        ∑ i : ι, ∑ j : ι,
+          (v i * v j) • B (EuclideanSpace.basisFun ι ℝ i)
+            (EuclideanSpace.basisFun ι ℝ j).
+      ```
+
+      The implementation proof uses only `map_sum`, `map_smul`,
+      `Finset.smul_sum`, and `smul_smul`; no new analytic theorem is hidden in
+      this expansion.  Add a private local helper if needed:
+
+      ```lean
+      private theorem seminorm_finset_sum_le
+          (p : Seminorm ℝ V) (s : Finset α) (g : α -> V) :
+          p (∑ i ∈ s, g i) ≤ ∑ i ∈ s, p (g i)
+      ```
+
+      Then apply it twice, rewrite scalar factors with
+      `map_smul_eq_mul`, and prove the coordinate estimate
+      `‖v i‖ ≤ ‖v‖` from `EuclideanSpace.norm_sq_eq`:
+
+      ```lean
+      have hsq_i : ‖v i‖ ^ 2 ≤ ∑ j : ι, ‖v j‖ ^ 2 :=
+        Finset.single_le_sum
+          (fun j _ => sq_nonneg (‖v j‖)) (Finset.mem_univ i)
+      have hsq : ‖v i‖ ^ 2 ≤ ‖v‖ ^ 2 := by
+        simpa [EuclideanSpace.norm_sq_eq] using hsq_i
+      exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
+      ```
+
+      Together with `‖v‖ ≤ 1`, this gives `|v i| ≤ 1` and hence
+      `|v i * v j| ≤ 1`.  The uniform constant is exactly
+
+      ```lean
+      C =
+        ∑ i : ι, ∑ j : ι,
+          SchwartzMap.seminorm ℝ k n
+            (∂_{EuclideanSpace.basisFun ι ℝ i}
+              (∂_{EuclideanSpace.basisFun ι ℝ j} φ :
+                SchwartzMap (EuclideanSpace ℝ ι) ℂ))
+      ```
+
+      This is nonnegative termwise.  The resulting theorem is the real
+      direction-uniform analytic input:
+
+      ```lean
+      theorem exists_seminorm_secondLineDeriv_unit_bound
+          (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+          (k n : ℕ) :
+          ∃ C : ℝ, 0 ≤ C ∧
+            ∀ v : EuclideanSpace ℝ ι, ‖v‖ ≤ 1 ->
+              SchwartzMap.seminorm ℝ k n
+                (∂_{v} (∂_{v} φ :
+                  SchwartzMap (EuclideanSpace ℝ ι) ℂ)) ≤ C
+      ```
+   3. Prove
+      `exists_seminorm_translate_lineDeriv_sub_le_linear_uniform_unit` by the
+      existing mean-value translation proof, but first insert the genuinely
+      needed translated-second-derivative estimate:
+
+      ```lean
+      theorem exists_seminorm_translate_secondLineDeriv_unit_bound
+          (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+          (k n : ℕ) :
+          ∃ C : ℝ, 0 ≤ C ∧
+            ∀ v : EuclideanSpace ℝ ι, ‖v‖ ≤ 1 ->
+            ∀ a : EuclideanSpace ℝ ι, ‖a‖ ≤ 1 ->
+              SchwartzMap.seminorm ℝ k n
+                (euclideanTranslateSchwartzCLM a
+                  (∂_{v} (∂_{v} φ :
+                    SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+                    SchwartzMap (EuclideanSpace ℝ ι) ℂ)) ≤ C
+      ```
+
+      Proof: apply `exists_seminorm_secondLineDeriv_unit_bound φ k n` and
+      `exists_seminorm_secondLineDeriv_unit_bound φ 0 n` to get uniform
+      constants `Ck` and `C0` for
+      `h_v := ∂_v ∂_v φ`.  For `‖a‖ ≤ 1`,
+
+      ```lean
+      ‖x‖ ≤ ‖x + a‖ + ‖a‖
+      (‖x + a‖ + ‖a‖)^k
+        ≤ 2^(k-1) * (‖x + a‖^k + ‖a‖^k)
+        ≤ 2^(k-1) * (‖x + a‖^k + 1)
+      ```
+
+      and `SchwartzMap.le_seminorm ℝ k n h_v (x+a)` plus
+      `SchwartzMap.le_seminorm ℝ 0 n h_v (x+a)` bound the two summands.
+      Thus `C = 2^(k-1) * (Ck + C0)` controls the translated second derivative
+      uniformly on the unit translation ball.  With this helper in hand, for
+      each `v` with `‖v‖ ≤ 1`, the derivative along the path
+      `s ↦ euclideanTranslateSchwartzCLM (s • (t • v)) (∂_v φ)` is
+      `∂_{t • v} (∂_v φ) = t • ∂_v ∂_v φ`, so the uniform second-derivative
+      translated bound at `a = s • (t • v)` gives `C * |t|`.
+   4. Prove
+      `exists_seminorm_diffQuotient_euclideanTranslateSchwartz_sub_lineDeriv_le_uniform_unit`
+      by feeding the uniform translate-line-derivative estimate into the now
+      public `euclideanDiffQuotient_weighted_pointwise_bound`, then closing the
+      Schwartz seminorm with `SchwartzMap.seminorm_le_bound`.
+   5. For `h ≠ 0`, set `t = ‖h‖` and `v = ‖h‖⁻¹ • h`.  Then `‖v‖ = 1`,
+      `h = t • v`, and `∂_h φ = t • ∂_v φ`.  Multiplying the uniform quotient
+      estimate by `‖h‖` gives the quadratic-norm remainder theorem.  The case
+      `h = 0` is immediate by simp.
+   6. The quadratic remainder theorem gives
+      `seminorm (‖h‖⁻¹ • remainder h) ≤ C * ‖h‖` on `0 < ‖h‖ ≤ 1`, hence
+      `tendsto_frechetRemainder_euclideanTranslateSchwartz_zero` by the same
+      seminorm-neighborhood argument used for
+      `tendsto_diffQuotient_euclideanTranslateSchwartz_zero`.  The Lean proof
+      should be written at the seminorm level:
+
+      ```lean
+      rw [(schwartz_withSeminorms ℝ
+        (EuclideanSpace ℝ ι) ℂ).tendsto_nhds _ _]
+      intro p ε hε
+      obtain ⟨C, hC_nonneg, hC⟩ :=
+        exists_seminorm_euclideanTranslateSchwartz_sub_lineDeriv_le_quadratic_norm
+          φ p.1 p.2
+      let δ : ℝ := min 1 (ε / (C + 1))
+      have hδ_pos : 0 < δ := by
+        have hC1 : 0 < C + 1 := by linarith
+        have hquot : 0 < ε / (C + 1) := by positivity
+        exact lt_min zero_lt_one hquot
+      have hball :
+          Metric.ball (0 : EuclideanSpace ℝ ι) δ ∩
+              ({0}ᶜ : Set (EuclideanSpace ℝ ι)) ∈
+            nhdsWithin (0 : EuclideanSpace ℝ ι)
+              ({0}ᶜ : Set (EuclideanSpace ℝ ι)) := by
+        simpa [Set.inter_comm] using
+          inter_mem_nhdsWithin ({0}ᶜ : Set (EuclideanSpace ℝ ι))
+            (Metric.ball_mem_nhds (0 : EuclideanSpace ℝ ι) hδ_pos)
+      refine Filter.mem_of_superset hball ?_
+      intro h hh
+      rcases hh with ⟨hh_ball, hh_punctured⟩
+      have hh_norm_lt : ‖h‖ < δ := by
+        simpa [dist_eq_norm] using hh_ball
+      have hh_unit : ‖h‖ ≤ 1 :=
+        le_trans (le_of_lt hh_norm_lt) (min_le_left _ _)
+      have hh_ne : h ≠ 0 := by
+        simpa using hh_punctured
+      have hnorm_pos : 0 < ‖h‖ := norm_pos_iff.mpr hh_ne
+      have hbound_quad := hC h hh_unit
+      have hbound_linear :
+          SchwartzMap.seminorm ℝ p.1 p.2
+            (‖h‖⁻¹ •
+              (euclideanTranslateSchwartzCLM h φ - φ -
+                euclideanLineDerivDirectionCLM φ h)) ≤
+            C * ‖h‖ := by
+        calc
+          SchwartzMap.seminorm ℝ p.1 p.2
+              (‖h‖⁻¹ •
+                (euclideanTranslateSchwartzCLM h φ - φ -
+                  euclideanLineDerivDirectionCLM φ h))
+              = |‖h‖⁻¹| *
+                  SchwartzMap.seminorm ℝ p.1 p.2
+                    (euclideanTranslateSchwartzCLM h φ - φ -
+                      euclideanLineDerivDirectionCLM φ h) := by
+                    rw [map_smul_eq_mul, Real.norm_eq_abs]
+          _ = ‖h‖⁻¹ *
+                  SchwartzMap.seminorm ℝ p.1 p.2
+                    (euclideanTranslateSchwartzCLM h φ - φ -
+                      euclideanLineDerivDirectionCLM φ h) := by
+                    rw [abs_of_nonneg
+                      (inv_nonneg.mpr (norm_nonneg h))]
+          _ ≤ ‖h‖⁻¹ * (C * ‖h‖ ^ 2) := by
+                    exact mul_le_mul_of_nonneg_left hbound_quad
+                      (inv_nonneg.mpr (norm_nonneg h))
+          _ = C * ‖h‖ := by
+                    field_simp [hnorm_pos.ne']
+      have hδ_eps : C * ‖h‖ < ε := by
+        have hC1 : 0 < C + 1 := by linarith
+        have hC_le : C ≤ C + 1 := by linarith
+        have hh_eps : ‖h‖ < ε / (C + 1) :=
+          lt_of_lt_of_le hh_norm_lt (min_le_right _ _)
+        calc
+          C * ‖h‖ ≤ (C + 1) * ‖h‖ := by gcongr
+          _ < (C + 1) * (ε / (C + 1)) := by gcongr
+          _ = ε := by field_simp [ne_of_gt hC1]
+      simpa using lt_of_le_of_lt hbound_linear hδ_eps
+      ```
+   7. For the reflected translate at center `x`, rewrite
+      `euclideanReflectedTranslate (x + h) ρ =
+       euclideanTranslateSchwartzCLM (-x)
+         (euclideanTranslateSchwartzCLM (-h) ρ)`.  Compose the Fréchet
+      remainder limit for `-h` with
+      `(T.restrictScalars ℝ).comp
+       ((euclideanTranslateSchwartzCLM (-x)).restrictScalars ℝ)`.
+      The sign in `regularizedDistributionFDeriv_apply` comes from
+      `∂_{-h} ρ = -∂_h ρ`.
+
+      The checked implementation keeps the proof under Lean's heartbeat budget
+      by splitting the scalar algebra from the topology.  The algebra helpers
+      are private, but mathematically they assert only the identity
+      "normalized scalar remainder = continuous functional applied to the
+      normalized Schwartz remainder":
+
+      ```lean
+      private theorem regularizedDistribution_remainder_eq
+          (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+          (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+          (x h : EuclideanSpace ℝ ι) :
+          let L : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℝ] ℂ :=
+            (T.restrictScalars ℝ).comp
+              ((euclideanTranslateSchwartzCLM (-x)).restrictScalars ℝ)
+          let R : EuclideanSpace ℝ ι -> SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+            fun h => ‖-h‖⁻¹ •
+              (euclideanTranslateSchwartzCLM (-h) ρ - ρ -
+                euclideanLineDerivDirectionCLM ρ (-h))
+          L (R h) = ‖h‖⁻¹ •
+            (T (euclideanReflectedTranslate (x + h) ρ) -
+              T (euclideanReflectedTranslate x ρ) -
+              regularizedDistributionFDeriv T ρ x h)
+
+      private theorem regularizedDistribution_remainder_norm_eq
+          ... :
+          ‖L (R h)‖ =
+            ‖h‖⁻¹ *
+              ‖T (euclideanReflectedTranslate (x + h) ρ) -
+                T (euclideanReflectedTranslate x ρ) -
+                regularizedDistributionFDeriv T ρ x h‖
+      ```
+
+      The topology helper is then:
+
+      ```lean
+      private theorem regularizedDistribution_remainder_norm_tendsto_zero
+          (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+          (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+          (x : EuclideanSpace ℝ ι) :
+          let L : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℝ] ℂ :=
+            (T.restrictScalars ℝ).comp
+              ((euclideanTranslateSchwartzCLM (-x)).restrictScalars ℝ)
+          let R : EuclideanSpace ℝ ι -> SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+            fun h => ‖-h‖⁻¹ •
+              (euclideanTranslateSchwartzCLM (-h) ρ - ρ -
+                euclideanLineDerivDirectionCLM ρ (-h))
+          let G : EuclideanSpace ℝ ι -> ℝ := fun h => ‖L (R h)‖
+          Tendsto G (𝓝 (0 : EuclideanSpace ℝ ι)) (𝓝 0)
+      ```
+
+      Proof transcript:
+
+      ```lean
+      let L : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℝ] ℂ :=
+        (T.restrictScalars ℝ).comp
+          ((euclideanTranslateSchwartzCLM (-x)).restrictScalars ℝ)
+      let R : EuclideanSpace ℝ ι -> SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+        fun h => ‖-h‖⁻¹ •
+          (euclideanTranslateSchwartzCLM (-h) ρ - ρ -
+            euclideanLineDerivDirectionCLM ρ (-h))
+      let G : EuclideanSpace ℝ ι -> ℝ := fun h => ‖L (R h)‖
+      have hneg_nhds : Tendsto (fun h : EuclideanSpace ℝ ι => -h)
+          (𝓝[≠] (0 : EuclideanSpace ℝ ι))
+          (𝓝 (0 : EuclideanSpace ℝ ι)) := by
+        exact tendsto_nhdsWithin_of_tendsto_nhds (by simpa using
+          (continuous_neg.tendsto (0 : EuclideanSpace ℝ ι)))
+      have hneg_mem : ∀ᶠ h : EuclideanSpace ℝ ι in
+          𝓝[≠] (0 : EuclideanSpace ℝ ι),
+          -h ∈ ({0}ᶜ : Set (EuclideanSpace ℝ ι)) := by
+        filter_upwards [eventually_mem_nhdsWithin] with h hh
+        simpa using (neg_ne_zero.mpr hh)
+      have hneg : Tendsto (fun h : EuclideanSpace ℝ ι => -h)
+          (𝓝[≠] (0 : EuclideanSpace ℝ ι))
+          (𝓝[≠] (0 : EuclideanSpace ℝ ι)) := by
+        exact tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+          (fun h : EuclideanSpace ℝ ι => -h) hneg_nhds hneg_mem
+      have hbase :=
+        (tendsto_frechetRemainder_euclideanTranslateSchwartz_zero ρ).comp hneg
+      have hL_punct : Tendsto (fun h : EuclideanSpace ℝ ι => L (R h))
+          (𝓝[≠] (0 : EuclideanSpace ℝ ι)) (𝓝 0) := by
+        have hraw := L.continuous.continuousAt.tendsto.comp hbase
+        simpa [R, Function.comp_def, norm_neg] using hraw
+      have hnorm_punct : Tendsto G
+          (𝓝[≠] (0 : EuclideanSpace ℝ ι)) (𝓝 0) := by
+        simpa using hL_punct.norm
+      have hG0 : G 0 = 0 := by
+        simp [G, R, L]
+      have hnorm_pure : Tendsto G
+          (pure (0 : EuclideanSpace ℝ ι)) (𝓝 0) := by
+        simpa [hG0] using (tendsto_pure_nhds G
+          (0 : EuclideanSpace ℝ ι))
+      rw [← nhdsNE_sup_pure (0 : EuclideanSpace ℝ ι)]
+      exact hnorm_punct.sup hnorm_pure
+      ```
+
+      Finally shift from increments to points:
+
+      ```lean
+      have hshift : Tendsto (fun y : EuclideanSpace ℝ ι => y - x)
+          (𝓝 x) (𝓝 (0 : EuclideanSpace ℝ ι)) := by
+        simpa using (tendsto_id.sub tendsto_const_nhds :
+          Tendsto (fun y : EuclideanSpace ℝ ι => y - x) (𝓝 x)
+            (𝓝 (x - x)))
+      have htarget :=
+        (regularizedDistribution_remainder_norm_tendsto_zero T ρ x).comp hshift
+      refine htarget.congr' ?_
+      exact Filter.Eventually.of_forall
+        (fun y : EuclideanSpace ℝ ι =>
+          regularizedDistribution_remainder_norm_eq_sub T ρ x y)
+      ```
+
+      The public theorem is therefore:
+
+      ```lean
+      rw [hasFDerivAt_iff_tendsto]
+      exact regularizedDistribution_remainder_norm_tendsto_at T ρ x
+      ```
+   8. For `contDiff_regularizedDistribution`, iterate the Fréchet derivative
+      identity.  The recursive formula is:
+      the derivative of `x ↦ T (euclideanReflectedTranslate x (∂^u ρ))` in
+      direction `v` is
+      `x ↦ -T (euclideanReflectedTranslate x (∂_v (∂^u ρ)))`.
+      Use `euclideanLineDerivOp_iterated_comm` to keep the derivative order in
+      the canonical `∂^{u.cons v}` form, and apply `contDiff_infty_iff_fderiv`
+      (or its finite-dimensional `fderiv_apply` form) inductively.
+
+      The checked Lean route should avoid direct manipulation of
+      `iteratedFDeriv`.  First prove every finite order by induction on
+      `r : ℕ`:
+
+      ```lean
+      private theorem contDiff_regularizedDistribution_nat
+          (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+          (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+          ∀ r : ℕ, ContDiff ℝ (r : ℕ∞)
+            (fun x : EuclideanSpace ℝ ι =>
+              T (euclideanReflectedTranslate x ρ))
+        | 0 => by
+            have hd : Differentiable ℝ
+                (fun x : EuclideanSpace ℝ ι =>
+                  T (euclideanReflectedTranslate x ρ)) := fun x =>
+              (hasFDerivAt_regularizedDistribution T ρ x).differentiableAt
+            exact (contDiff_zero (𝕜 := ℝ)
+              (f := fun x : EuclideanSpace ℝ ι =>
+                T (euclideanReflectedTranslate x ρ))).2 hd.continuous
+        | r + 1 => by
+            refine (contDiff_succ_iff_hasFDerivAt (𝕜 := ℝ)
+              (E := EuclideanSpace ℝ ι) (F := ℂ)
+              (f := fun x : EuclideanSpace ℝ ι =>
+                T (euclideanReflectedTranslate x ρ)) (n := r)).2 ?_
+            refine ⟨regularizedDistributionFDeriv T ρ, ?_, ?_⟩
+            · rw [contDiff_clm_apply_iff]
+              intro v
+              have hbase := contDiff_regularizedDistribution_nat T
+                (∂_{v} ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) r
+              simpa [regularizedDistributionFDeriv_apply] using hbase.neg
+            · intro x
+              exact hasFDerivAt_regularizedDistribution T ρ x
+      ```
+
+      The key mathematical point is that the derivative field evaluated at
+      `v` is exactly the negative of the same regularized distribution with
+      test function `∂_v ρ`; hence the induction decreases only the
+      differentiability order, not any analytic regularity of `ρ`.  The
+      infinite-order theorem is then immediate:
+
+      ```lean
+      theorem contDiff_regularizedDistribution
+          (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+          (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+          ContDiff ℝ (⊤ : ℕ∞)
+            (fun x : EuclideanSpace ℝ ι =>
+              T (euclideanReflectedTranslate x ρ)) := by
+        rw [contDiff_iff_forall_nat_le]
+        intro m hm
+        exact contDiff_regularizedDistribution_nat T ρ m
+      ```
 
    The scale-invariance heart of Weyl's lemma is a pure radial-bump theorem.
-   Use Mathlib `ContDiffBump (0 : EuclideanSpace ℝ ι)` and its normalized
-   form.  For `0 < ε`, let `weylBump ε` be the normalized bump with support in
-   `closedBall 0 ε`.
+   The first Lean slice is only the normalized compact Euclidean bump package.
+   This is genuine substrate, but it is **not** the Poisson/right-inverse
+   theorem.  The radial Poisson theorem below remains the hard
+   scale-invariance input.  Keep the bump file separate from the already large
+   Euclidean translation files:
 
    ```lean
+   import OSReconstruction.SCV.EuclideanWeylFrechet
+   import Mathlib.Analysis.Calculus.BumpFunction.Normed
+   import Mathlib.Analysis.Calculus.BumpFunction.InnerProduct
+   import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
+   import Mathlib.MeasureTheory.Integral.IntegralEqImproper
+   ```
+
+   Do not define the Weyl bump through the generic `ContDiffBump.normed` API.
+   That API gives smoothness, support, and normalization, but it hides the
+   selected `ContDiffBumpBase` behind `someContDiffBumpBase`, so Lean cannot
+   later recover the radial profile needed by the Poisson ODE.  Instead,
+   define the bump directly from the explicit inner-product base
+   `ContDiffBumpBase.ofInnerProductSpace`; this keeps radiality available as a
+   theorem while still reusing Mathlib's smooth-transition construction.
+
+   ```lean
+   noncomputable def euclideanWeylRawBumpReal
+       {ι : Type*} [Fintype ι]
+       (ε : ℝ) : EuclideanSpace ℝ ι -> ℝ
+
+   theorem euclideanWeylRawBumpReal_contDiff
+       (ε : ℝ) :
+       ContDiff ℝ (⊤ : ℕ∞)
+         (euclideanWeylRawBumpReal (ι := ι) ε)
+
+   theorem euclideanWeylRawBumpReal_nonneg
+       (ε : ℝ) (x : EuclideanSpace ℝ ι) :
+       0 ≤ euclideanWeylRawBumpReal ε x
+
+   theorem euclideanWeylRawBumpReal_apply
+       {ε : ℝ} (hε : 0 < ε) (x : EuclideanSpace ℝ ι) :
+       euclideanWeylRawBumpReal ε x =
+         Real.smoothTransition (2 - 2 * (‖x‖ / ε))
+
+   theorem euclideanWeylRawBumpReal_support
+       {ε : ℝ} (hε : 0 < ε) :
+       Function.support (euclideanWeylRawBumpReal (ι := ι) ε) =
+         Metric.ball (0 : EuclideanSpace ℝ ι) ε
+
+   theorem euclideanWeylRawBumpReal_hasCompactSupport
+       {ε : ℝ} (hε : 0 < ε) :
+       HasCompactSupport (euclideanWeylRawBumpReal (ι := ι) ε)
+
+   theorem euclideanWeylRawBumpReal_integrable
+       {ε : ℝ} (hε : 0 < ε) :
+       Integrable (euclideanWeylRawBumpReal (ι := ι) ε)
+
+   theorem euclideanWeylRawBumpReal_integral_pos
+       {ε : ℝ} (hε : 0 < ε) :
+       0 < ∫ x : EuclideanSpace ℝ ι, euclideanWeylRawBumpReal ε x
+
+   noncomputable def euclideanWeylRawIntegralReal
+       {ι : Type*} [Fintype ι] (ε : ℝ) : ℝ
+
+   theorem euclideanWeylRawIntegralReal_pos
+       {ε : ℝ} (hε : 0 < ε) :
+       0 < euclideanWeylRawIntegralReal (ι := ι) ε
+
+   theorem euclideanWeylRawIntegralReal_scale
+       {ε : ℝ} (hε : 0 < ε) :
+       euclideanWeylRawIntegralReal (ι := ι) ε =
+         ε ^ Fintype.card ι *
+           euclideanWeylRawIntegralReal (ι := ι) 1
+
+   noncomputable def euclideanWeylBaseProfile (r : ℝ) : ℂ :=
+     (Real.smoothTransition (2 - 2 * |r|) : ℂ)
+
+   theorem euclideanWeylBaseProfile_eq_zero_of_one_le_abs
+       {r : ℝ} (hr : 1 ≤ |r|) :
+       euclideanWeylBaseProfile r = 0
+
+   theorem euclideanWeylBaseProfile_eq_one_of_abs_le_half
+       {r : ℝ} (hr : |r| ≤ 1 / 2) :
+       euclideanWeylBaseProfile r = 1
+
+   noncomputable def euclideanWeylWeightedRawMass
+       (N : ℕ) (ε : ℝ) : ℂ
+
+   theorem euclideanWeylWeightedRawMass_scale
+       {N : ℕ} (hNpos : 0 < N) {ε : ℝ} (hε : 0 < ε) :
+       euclideanWeylWeightedRawMass N ε =
+         (((ε ^ N : ℝ) : ℂ)) * euclideanWeylWeightedRawMass N 1
+
+   noncomputable def euclideanWeylNormalizedProfile
+       {ι : Type*} [Fintype ι] (ε : ℝ) : ℝ -> ℂ
+
+   theorem euclideanWeylNormalizedProfile_eq_zero_of_epsilon_le_abs
+       {ε : ℝ} (hε : 0 < ε) {r : ℝ}
+       (hr : ε ≤ |r|) :
+       euclideanWeylNormalizedProfile (ι := ι) ε r = 0
+
+   theorem euclideanWeylNormalizedProfile_support_subset
+       {ε : ℝ} (hε : 0 < ε) :
+       Function.support (euclideanWeylNormalizedProfile (ι := ι) ε) ⊆
+         Set.Icc (-ε) ε
+
+   theorem euclideanWeylNormalizedProfile_eq_plateau_of_abs_le_half_epsilon
+       {ε : ℝ} (hε : 0 < ε) {r : ℝ}
+       (hr : |r| ≤ ε / 2) :
+       euclideanWeylNormalizedProfile (ι := ι) ε r =
+         (((euclideanWeylRawIntegralReal (ι := ι) ε : ℝ) : ℂ)⁻¹)
+
+   theorem euclideanWeylNormalizedProfile_contDiff
+       {ε : ℝ} (hε : 0 < ε) :
+       ContDiff ℝ (⊤ : ℕ∞) (euclideanWeylNormalizedProfile (ι := ι) ε)
+
+   theorem euclideanWeylWeightedNormalizedProfile_integrable
+       (N : ℕ) {ε : ℝ} (hε : 0 < ε) :
+       Integrable (fun r : ℝ =>
+         ((r ^ (N - 1) : ℝ) : ℂ) *
+           euclideanWeylNormalizedProfile (ι := ι) ε r)
+
+   theorem euclideanWeylBump_weightedMass_eq_const
+       {ι : Type*} [Fintype ι] [Nonempty ι]
+       {ε : ℝ} (hε : 0 < ε) :
+       ∫ r in Set.Ioi 0,
+         ((r ^ (Fintype.card ι - 1) : ℝ) : ℂ) *
+           euclideanWeylNormalizedProfile (ι := ι) ε r =
+       (((euclideanWeylRawIntegralReal (ι := ι) 1 : ℝ) : ℂ)⁻¹) *
+         euclideanWeylWeightedRawMass (Fintype.card ι) 1
+
+   noncomputable def euclideanWeylBumpSubProfile
+       {ι : Type*} [Fintype ι]
+       (ε δ : ℝ) : ℝ -> ℂ
+
+   theorem euclideanWeylBumpSubProfile_eq_zero_of_max_le_abs
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) {r : ℝ}
+       (hr : max ε δ ≤ |r|) :
+       euclideanWeylBumpSubProfile (ι := ι) ε δ r = 0
+
+   theorem euclideanWeylBumpSubProfile_support_subset
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       Function.support (euclideanWeylBumpSubProfile (ι := ι) ε δ) ⊆
+         Set.Icc (-(max ε δ)) (max ε δ)
+
+   theorem euclideanWeylBumpSubProfile_eq_plateau_of_abs_le_half_min
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) {r : ℝ}
+       (hr : |r| ≤ min ε δ / 2) :
+       euclideanWeylBumpSubProfile (ι := ι) ε δ r =
+         (((euclideanWeylRawIntegralReal (ι := ι) ε : ℝ) : ℂ)⁻¹) -
+           (((euclideanWeylRawIntegralReal (ι := ι) δ : ℝ) : ℂ)⁻¹)
+
+   theorem euclideanWeylBumpSubProfile_exists_plateau
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       ∃ η : ℝ, ∃ c : ℂ, 0 < η ∧
+         ∀ r ∈ Set.Icc 0 η,
+           euclideanWeylBumpSubProfile (ι := ι) ε δ r = c
+
+   theorem euclideanWeylBumpSubProfile_weightedMass_eq_zero
+       {ι : Type*} [Fintype ι] [Nonempty ι]
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       ∫ r in Set.Ioi 0,
+         ((r ^ (Fintype.card ι - 1) : ℝ) : ℂ) *
+           euclideanWeylBumpSubProfile (ι := ι) ε δ r = 0
+
    noncomputable def euclideanWeylBump
-       {ι : Type*} [Fintype ι] [DecidableEq ι]
+       {ι : Type*} [Fintype ι]
        (ε : ℝ) (hε : 0 < ε) :
        SchwartzMap (EuclideanSpace ℝ ι) ℂ
+
+   @[simp]
+   theorem euclideanWeylBump_apply
+       (ε : ℝ) (hε : 0 < ε) (x : EuclideanSpace ℝ ι) :
+       euclideanWeylBump ε hε x =
+         ((euclideanWeylRawBumpReal ε x /
+           (∫ y : EuclideanSpace ℝ ι,
+             euclideanWeylRawBumpReal ε y) : ℝ) : ℂ)
+
+   theorem euclideanWeylBump_raw_profile
+       {ε : ℝ} (hε : 0 < ε) (x : EuclideanSpace ℝ ι) :
+       euclideanWeylBump ε hε x =
+         euclideanWeylNormalizedProfile (ι := ι) ε ‖x‖
+
+   theorem euclideanWeylBump_eq_of_norm_eq
+       {ε : ℝ} (hε : 0 < ε)
+       {x y : EuclideanSpace ℝ ι} (hxy : ‖x‖ = ‖y‖) :
+       euclideanWeylBump ε hε x = euclideanWeylBump ε hε y
+
+   theorem euclideanWeylBump_sub_eq_of_norm_eq
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+       {x y : EuclideanSpace ℝ ι} (hxy : ‖x‖ = ‖y‖) :
+       ((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) x) =
+       ((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) y)
+
+   theorem euclideanWeylBumpSubProfile_norm_eq_bump_sub
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+       (x : EuclideanSpace ℝ ι) :
+       euclideanWeylBumpSubProfile (ι := ι) ε δ ‖x‖ =
+         (euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+           SchwartzMap (EuclideanSpace ℝ ι) ℂ) x
+
+   theorem euclideanWeylBump_nonneg_re
+       (ε : ℝ) (hε : 0 < ε) (x : EuclideanSpace ℝ ι) :
+       0 ≤ (euclideanWeylBump ε hε x).re
+
+   theorem euclideanWeylBump_im_eq_zero
+       (ε : ℝ) (hε : 0 < ε) (x : EuclideanSpace ℝ ι) :
+       (euclideanWeylBump ε hε x).im = 0
 
    theorem euclideanWeylBump_normalized
        (ε : ℝ) (hε : 0 < ε) :
@@ -5587,77 +6332,1061 @@ Exact product-kernel/descent subpackage:
        tsupport (euclideanWeylBump ε hε :
          EuclideanSpace ℝ ι -> ℂ) ⊆ Metric.closedBall 0 ε
 
-   theorem exists_compactSmooth_laplacian_eq_bump_sub_bump
+   theorem euclideanWeylBump_sub_integral_eq_zero
        {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
-       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
-         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
-         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
-           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
-           euclideanWeylBump ε hε - euclideanWeylBump δ hδ
+       ∫ x : EuclideanSpace ℝ ι,
+         (euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+           SchwartzMap (EuclideanSpace ℝ ι) ℂ) x = 0
+
+   theorem euclideanWeylBump_sub_support
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       tsupport ((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+         EuclideanSpace ℝ ι -> ℂ) ⊆ Metric.closedBall 0 (max ε δ)
+
+   theorem euclideanWeylBump_sub_hasCompactSupport
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       HasCompactSupport
+         (((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+           SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+           EuclideanSpace ℝ ι -> ℂ))
    ```
 
-   The last theorem is the only hard scalar-analysis sublemma inside the Weyl
-   proof.  It is the compactly supported radial Poisson equation for a
-   zero-integral radial right-hand side.  Split its proof into the following
-   scalar/profile lemmas so the final theorem is not an opaque parametrix
-   wrapper:
+   The checked implementation proves these declarations directly in
+   `SCV/EuclideanWeylBump.lean`.  The raw smoothness proof composes
+   `ContDiffBumpBase.ofInnerProductSpace.smooth` with
+   `x ↦ (2, (2 / ε) • x)`, whose first component stays in `Set.Ioi 1`.
+   The support proof rewrites the raw support as the preimage of
+   `Metric.ball 0 2` under scalar multiplication by `2 / ε`, hence exactly
+   `Metric.ball 0 ε`.  Positivity of the raw integral follows from
+   `integral_pos_iff_support_of_nonneg`, nonnegativity of the base profile, and
+   positive volume of the ball.  Normalization is then just
+   `integral_complex_ofReal` plus `MeasureTheory.integral_div`.
+
+   The next theorem is the hard scalar-analysis sublemma inside the Weyl
+   proof.  It must not be stated as a generic compact-support right inverse for
+   the Laplacian: for non-radial compact tests the image of
+   `Δ : C_c^\infty -> C_c^\infty` annihilates every harmonic polynomial, not
+   only constants.  The theorem needed here is narrower and true because the
+   right-hand side is the difference of two centered radial normalized bumps.
+   The radiality kills all nonconstant harmonic-polynomial moments by angular
+   averaging, and the zero integral kills the constant moment.  Therefore the
+   implementation should prove the bump-difference theorem through the
+   following explicit radial package, not through an abstract parametrix
+   wrapper.
+
+   First record the radiality and weighted-mass facts for the checked bump.
+   The `ContDiffBumpBase.ofInnerProductSpace` construction is radial in the
+   Euclidean norm, and the normalized denominator is scalar, so equality of
+   norms gives equality of bump values:
+
+   ```lean
+   theorem euclideanWeylBump_eq_of_norm_eq
+       {ι : Type*} [Fintype ι]
+       {ε : ℝ} (hε : 0 < ε)
+       {x y : EuclideanSpace ℝ ι} (hxy : ‖x‖ = ‖y‖) :
+       euclideanWeylBump ε hε x = euclideanWeylBump ε hε y
+
+   theorem euclideanWeylBump_sub_eq_of_norm_eq
+       {ι : Type*} [Fintype ι]
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+       {x y : EuclideanSpace ℝ ι} (hxy : ‖x‖ = ‖y‖) :
+       ((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) x) =
+       ((euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) y)
+   ```
+
+   Next isolate the mass-compatibility input needed by the ODE.  Do **not**
+   introduce a full polar-coordinate theorem here unless later work actually
+   needs it.  For this bump difference, the weighted radial mass is zero by a
+   smaller scaling argument: all radii use one fixed radial profile
+   `β(s) = smoothTransition (2 - 2 * s)`; the Euclidean normalization
+   denominator scales like `ε ^ N` under the linear change of variables
+   `x = ε • y`, and the one-variable weighted profile integral scales by the
+   same `ε ^ N` under `r = ε * s`.  Hence every normalized radius has the same
+   weighted radial mass, so the difference of two normalized radii has weighted
+   mass zero.  This avoids a broad integration theorem and keeps the proof
+   exactly on the mollifier scale-invariance route.
+
+   ```lean
+   noncomputable def euclideanWeylBaseProfile (r : ℝ) : ℂ :=
+     (Real.smoothTransition (2 - 2 * |r|) : ℂ)
+
+   noncomputable def euclideanWeylRawIntegralReal
+       {ι : Type*} [Fintype ι] (ε : ℝ) : ℝ :=
+     ∫ x : EuclideanSpace ℝ ι, euclideanWeylRawBumpReal ε x
+
+   noncomputable def euclideanWeylWeightedRawMass
+       (N : ℕ) (ε : ℝ) : ℂ :=
+     ∫ r in Set.Ioi 0,
+       ((r ^ (N - 1) : ℝ) : ℂ) * euclideanWeylBaseProfile (r / ε)
+
+   noncomputable def euclideanWeylNormalizedProfile
+       {ι : Type*} [Fintype ι] (ε : ℝ) : ℝ -> ℂ :=
+     fun r =>
+       (((euclideanWeylRawIntegralReal (ι := ι) ε : ℝ) : ℂ)⁻¹) *
+         euclideanWeylBaseProfile (r / ε)
+
+   theorem euclideanWeylBump_raw_profile
+       {ι : Type*} [Fintype ι]
+       {ε : ℝ} (hε : 0 < ε) :
+       ∀ x : EuclideanSpace ℝ ι,
+         euclideanWeylBump ε hε x =
+           euclideanWeylNormalizedProfile (ι := ι) ε ‖x‖
+
+   theorem euclideanWeylRawIntegralReal_scale
+       {ι : Type*} [Fintype ι]
+       {ε : ℝ} (hε : 0 < ε) :
+       euclideanWeylRawIntegralReal (ι := ι) ε =
+         ε ^ Fintype.card ι *
+           euclideanWeylRawIntegralReal (ι := ι) 1
+
+   theorem euclideanWeylWeightedRawMass_scale
+       {N : ℕ} (hNpos : 0 < N) {ε : ℝ} (hε : 0 < ε) :
+       euclideanWeylWeightedRawMass N ε =
+         (((ε ^ N : ℝ) : ℂ)) * euclideanWeylWeightedRawMass N 1
+
+   theorem euclideanWeylBump_weightedMass_eq_const
+       {ι : Type*} [Fintype ι] [Nonempty ι]
+       {ε : ℝ} (hε : 0 < ε) :
+       ∫ r in Set.Ioi 0,
+         ((r ^ (Fintype.card ι - 1) : ℝ) : ℂ) *
+           euclideanWeylNormalizedProfile (ι := ι) ε r =
+       (((euclideanWeylRawIntegralReal (ι := ι) 1 : ℝ) : ℂ)⁻¹) *
+         euclideanWeylWeightedRawMass (Fintype.card ι) 1
+
+   noncomputable def euclideanWeylBumpSubProfile
+       {ι : Type*} [Fintype ι]
+       (ε δ : ℝ) : ℝ -> ℂ :=
+     fun r =>
+       euclideanWeylNormalizedProfile (ι := ι) ε r -
+       euclideanWeylNormalizedProfile (ι := ι) δ r
+
+   theorem euclideanWeylBumpSubProfile_spec
+       {ι : Type*} [Fintype ι] [Nonempty ι]
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       ContDiff ℝ (⊤ : ℕ∞) (euclideanWeylBumpSubProfile (ι := ι) ε δ) ∧
+       Function.support (euclideanWeylBumpSubProfile (ι := ι) ε δ) ⊆
+         Set.Icc (-(max ε δ)) (max ε δ) ∧
+       (∃ η : ℝ, ∃ c : ℂ, 0 < η ∧
+         ∀ r ∈ Set.Icc 0 η,
+           euclideanWeylBumpSubProfile (ι := ι) ε δ r = c) ∧
+       (∀ x : EuclideanSpace ℝ ι,
+         euclideanWeylBumpSubProfile (ι := ι) ε δ ‖x‖ =
+           (euclideanWeylBump ε hε - euclideanWeylBump δ hδ :
+             SchwartzMap (EuclideanSpace ℝ ι) ℂ) x) ∧
+       (∫ r in Set.Ioi 0,
+         ((r ^ (Fintype.card ι - 1) : ℝ) : ℂ) *
+           euclideanWeylBumpSubProfile (ι := ι) ε δ r) = 0
+   ```
+
+   The proof of `euclideanWeylRawIntegralReal_scale` is the exact Euclidean
+   Haar scaling theorem, not polar integration.  Rewrite
+   `euclideanWeylRawBumpReal ε x` as
+   `euclideanWeylRawBumpReal 1 (ε⁻¹ • x)` by
+   `euclideanWeylRawBumpReal_apply`, then use
+   `MeasureTheory.Measure.integral_comp_inv_smul_of_nonneg volume` and
+   `finrank_euclideanSpace`.  The proof of
+   `euclideanWeylWeightedRawMass_scale` is the one-dimensional substitution
+   theorem `MeasureTheory.integral_comp_mul_left_Ioi`: after applying it to
+   `G r = ((r ^ (N - 1) : ℝ) : ℂ) *
+     euclideanWeylBaseProfile (r / ε)`, the integrand
+   `G (ε * s)` rewrites to
+   `(((ε ^ (N - 1) : ℝ) : ℂ)) *
+     ((s ^ (N - 1) : ℝ) : ℂ) * euclideanWeylBaseProfile s`.
+   Multiplying by the Jacobian `ε` gives `ε ^ N`.  The normalized weighted
+   mass is therefore independent of the radius because the Euclidean
+   denominator and the weighted one-dimensional numerator carry the same
+   `ε ^ N` factor.  Positivity of the real raw integral supplies the nonzero
+   denominator.
+
+   The profile `euclideanWeylBumpSubProfile ε δ` is built directly from the
+   explicit `ContDiffBumpBase.ofInnerProductSpace` formula.  Its scalar
+   smoothness is proved without differentiating `|r|` directly: identify
+   `r ↦ euclideanWeylBaseProfile (r / ε)` with the checked raw Euclidean bump
+   on `EuclideanSpace ℝ (Fin 1)` along the smooth line
+   `r ↦ r • EuclideanSpace.single 0 1`.  Near `0` the subprofile is constant
+   because each bump is equal to its normalized plateau value on
+   `closedBall 0 (min ε δ / 2)`.  Near and beyond `max ε δ` it is identically
+   zero.  These two local-constancy facts are what make the radial primitive
+   smooth at the origin and compactly supported at the outer radius; do not
+   replace them by an unexplained "radial smoothness" phrase.
+
+   The radial Poisson primitive itself lives in a separate companion file, so
+   the checked bump file stays small:
+
+   ```lean
+   import OSReconstruction.SCV.EuclideanWeylBump
+   import Mathlib.Analysis.InnerProductSpace.Calculus
+   import Mathlib.Analysis.InnerProductSpace.Laplacian
+   import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
+   import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+   ```
 
    ```lean
    def radialProfileLaplacian (N : ℕ) (a : ℝ -> ℂ) (r : ℝ) : ℂ :=
-     deriv (deriv a) r + ((N - 1 : ℝ) / r) * deriv a r
+     deriv (deriv a) r + (((N - 1 : ℝ) / r : ℝ) : ℂ) * deriv a r
 
-   theorem laplacian_radialProfile_off_origin
-       {N : ℕ} (hN : N = Fintype.card ι)
-       {a : ℝ -> ℂ}
-       (ha : ContDiffOn ℝ (⊤ : ℕ∞) a (Set.Ioi 0))
-       (x : EuclideanSpace ℝ ι) (hx : x ≠ 0) :
-       Laplacian.laplacian (fun y : EuclideanSpace ℝ ι => a ‖y‖) x =
-         radialProfileLaplacian N a ‖x‖
+   noncomputable def radialMass (N : ℕ) (F : ℝ -> ℂ) (r : ℝ) : ℂ :=
+     ∫ s in (0)..r, ((s ^ (N - 1) : ℝ) : ℂ) * F s
 
-   theorem exists_compactSupport_radialPrimitive_zeroMass
+   noncomputable def radialPrimitiveDeriv
+       (N : ℕ) (F : ℝ -> ℂ) (r : ℝ) : ℂ :=
+     if r = 0 then 0
+     else (((r ^ (N - 1) : ℝ) : ℂ)⁻¹) * radialMass N F r
+
+   noncomputable def radialPrimitiveProfile
+       (N : ℕ) (F : ℝ -> ℂ) (R r : ℝ) : ℂ :=
+     -∫ t in r..R, radialPrimitiveDeriv N F t
+
+   theorem radialMass_eq_weightedMass_of_support
+       {N : ℕ} {F : ℝ -> ℂ} {R : ℝ}
+       (hR : 0 ≤ R)
+       (hweight_int :
+         IntegrableOn
+           (fun r : ℝ => ((r ^ (N - 1) : ℝ) : ℂ) * F r)
+           (Set.Ioi 0) volume)
+       (hF_support : Function.support F ⊆ Set.Icc (-R) R) :
+       radialMass N F R =
+         ∫ r in Set.Ioi 0, ((r ^ (N - 1) : ℝ) : ℂ) * F r
+
+   theorem radialMass_eq_const_near_zero
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {η r : ℝ} {c : ℂ}
+       (hη : 0 < η)
+       (hr_nonneg : 0 ≤ r) (hr_le : r ≤ η)
+       (hF_zero : ∀ s ∈ Set.Icc 0 η, F s = c) :
+       radialMass N F r =
+         c * (((r ^ N : ℝ) : ℂ) / (N : ℂ))
+
+   theorem radialPrimitiveDeriv_eq_linear_near_zero
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {η r : ℝ} {c : ℂ}
+       (hη : 0 < η)
+       (hr_pos : 0 < r) (hr_le : r ≤ η)
+       (hF_zero : ∀ s ∈ Set.Icc 0 η, F s = c) :
+       radialPrimitiveDeriv N F r =
+         c * (((r : ℝ) : ℂ) / (N : ℂ))
+
+   theorem radialPrimitiveProfile_eq_quadratic_near_zero
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hprim_int_tail :
+         IntervalIntegrable (radialPrimitiveDeriv N F) volume η R)
+       (hF_zero : ∀ s ∈ Set.Icc 0 η, F s = c) :
+       ∃ C : ℂ,
+         ∀ r ∈ Set.Icc 0 η,
+           radialPrimitiveProfile N F R r =
+             C + (c / (2 * (N : ℂ))) * (((r ^ 2 : ℝ) : ℂ))
+
+   theorem deriv_radialMass
+       {N : ℕ} {F : ℝ -> ℂ}
+       (hF_cont : Continuous F) :
+       ∀ r ∈ Set.Ioi 0,
+         deriv (radialMass N F) r =
+           ((r ^ (N - 1) : ℝ) : ℂ) * F r
+
+   theorem deriv_radialPrimitiveDeriv
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ}
+       (hF_cont : Continuous F) :
+       ∀ r ∈ Set.Ioi 0,
+         deriv (radialPrimitiveDeriv N F) r +
+           (((((N - 1 : ℕ) : ℝ) / r : ℝ) : ℂ) *
+             radialPrimitiveDeriv N F r) = F r
+
+   theorem continuousAt_radialPrimitiveDeriv_of_pos
+       {N : ℕ} {F : ℝ -> ℂ}
+       (hF_cont : Continuous F) {r : ℝ} (hr : 0 < r) :
+       ContinuousAt (radialPrimitiveDeriv N F) r
+
+   theorem intervalIntegrable_radialPrimitiveDeriv_of_pos
+       {N : ℕ} {F : ℝ -> ℂ}
+       (hF_cont : Continuous F) {a b : ℝ}
+       (ha : 0 < a) (hb : 0 < b) :
+       IntervalIntegrable (radialPrimitiveDeriv N F) volume a b
+
+   theorem hasDerivAt_radialPrimitiveProfile_of_pos
+       {N : ℕ} {F : ℝ -> ℂ} {R r : ℝ}
+       (hF_cont : Continuous F)
+       (hprim_int :
+         IntervalIntegrable (radialPrimitiveDeriv N F) volume r R)
+       (hr : 0 < r) :
+       HasDerivAt (fun u : ℝ => radialPrimitiveProfile N F R u)
+         (radialPrimitiveDeriv N F r) r
+
+   theorem radialProfileLaplacian_radialPrimitiveProfile_of_pos_of_R_pos
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {R : ℝ}
+       (hF_cont : Continuous F) (hRpos : 0 < R) :
+       ∀ r ∈ Set.Ioi 0,
+         radialProfileLaplacian N
+             (fun u : ℝ => radialPrimitiveProfile N F R u) r = F r
+
+   theorem radialPrimitiveProfile_eventually_quadratic_norm_near_zero
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hprim_int_tail :
+         IntervalIntegrable (radialPrimitiveDeriv N F) volume η R)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c) :
+       ∃ C : ℂ, ∀ᶠ x : EuclideanSpace ℝ ι in 𝓝 0,
+         radialPrimitiveProfile N F R ‖x‖ =
+           C + (c / (2 * (N : ℂ))) * (((‖x‖ ^ 2 : ℝ) : ℂ))
+
+   theorem laplacian_norm_sq_real
+       {ι : Type*} [Fintype ι] (x : EuclideanSpace ℝ ι) :
+       Laplacian.laplacian
+           (fun y : EuclideanSpace ℝ ι => ‖y‖ ^ 2) x =
+         (2 * Fintype.card ι : ℝ)
+
+   theorem laplacian_quadratic_norm_complex
+       {ι : Type*} [Fintype ι]
+       (C K : ℂ) (x : EuclideanSpace ℝ ι) :
+       Laplacian.laplacian
+           (fun y : EuclideanSpace ℝ ι =>
+             C + K * (((‖y‖ ^ 2 : ℝ) : ℂ))) x =
+         K * ((2 * Fintype.card ι : ℝ) : ℂ)
+
+   theorem contDiffAt_radialPrimitiveProfile_norm_zero
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hNpos : 0 < N) {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hprim_int_tail :
+         IntervalIntegrable (radialPrimitiveDeriv N F) volume η R)
+       (hF_zero : ∀ s ∈ Set.Icc 0 η, F s = c) :
+       ContDiffAt ℝ (⊤ : ℕ∞)
+         (fun x : EuclideanSpace ℝ ι =>
+           radialPrimitiveProfile N F R ‖x‖) 0
+
+   theorem laplacian_radialPrimitiveProfile_norm_zero
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hN : N = Fintype.card ι) (hNpos : 0 < N)
+       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hprim_int_tail :
+         IntervalIntegrable (radialPrimitiveDeriv N F) volume η R)
+       (hF_zero : ∀ s ∈ Set.Icc 0 η, F s = c) :
+       Laplacian.laplacian
+           (fun x : EuclideanSpace ℝ ι =>
+             radialPrimitiveProfile N F R ‖x‖) 0 = c
+
+   theorem radialPrimitiveProfile_eventually_zero_outside
+       {N : ℕ} {F : ℝ -> ℂ} {R : ℝ}
+       (hF_cont : Continuous F)
+       (hR : 0 ≤ R)
+       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+       (hMass_R : radialMass N F R = 0) :
+       ∀ᶠ r : ℝ in Filter.atTop, radialPrimitiveProfile N F R r = 0
+
+   theorem contDiff_radialPrimitiveProfile_norm
+       {ι : Type*} [Fintype ι]
        {N : ℕ} (hNpos : 0 < N)
-       {f : ℝ -> ℂ} {R : ℝ}
-       (hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f)
-       (hf_support : Function.support f ⊆ Set.Icc 0 R)
-       (hf_zeroMass :
-         ∫ r in Set.Ioi 0, (r ^ (N - 1)) • f r = 0) :
-       ∃ a : ℝ -> ℂ,
-         ContDiff ℝ (⊤ : ℕ∞) a ∧
-         Function.support a ⊆ Set.Icc 0 R ∧
-         ∀ r ∈ Set.Ioi 0, radialProfileLaplacian N a r = f r
+       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hRpos : 0 < R)
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c) :
+       ContDiff ℝ (⊤ : ℕ∞)
+         (fun x : EuclideanSpace ℝ ι =>
+           radialPrimitiveProfile N F R ‖x‖)
 
-   theorem compactSmooth_laplacian_radialPrimitive
-       {f : EuclideanSpace ℝ ι -> ℂ}
-       (hf_radial : ∃ fp : ℝ -> ℂ, f = fun x => fp ‖x‖)
-       (hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f)
-       (hf_compact : HasCompactSupport f)
-       (hf_integral : ∫ x, f x = 0) :
+   theorem laplacian_radialPrimitiveProfile
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hN : N = Fintype.card ι)
+       (hNpos : 0 < N) {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hRpos : 0 < R)
+       (hη : 0 < η) (hηR : η ≤ R)
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c) :
+       ∀ x : EuclideanSpace ℝ ι,
+         Laplacian.laplacian
+           (fun y : EuclideanSpace ℝ ι =>
+             radialPrimitiveProfile N F R ‖y‖) x = F ‖x‖
+
+	   theorem exists_schwartz_radialPrimitiveProfile_norm
+	       {ι : Type*} [Fintype ι]
+	       {N : ℕ} (hNpos : 0 < N)
+	       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hRpos : 0 < R) (hη : 0 < η) (hηR : η ≤ R)
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c)
+       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+       (hMass_R : radialMass N F R = 0) :
+	       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+	         ∀ x : EuclideanSpace ℝ ι,
+	           A x = radialPrimitiveProfile N F R ‖x‖
+
+	   theorem tsupport_radialPrimitiveProfile_norm_subset
+	       {ι : Type*} [Fintype ι]
+	       {N : ℕ} {F : ℝ -> ℂ} {R : ℝ}
+	       (hF_cont : Continuous F) (hR : 0 ≤ R)
+	       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+	       (hMass_R : radialMass N F R = 0) :
+	       tsupport
+	           (fun x : EuclideanSpace ℝ ι =>
+	             radialPrimitiveProfile N F R ‖x‖) ⊆
+	         Metric.closedBall 0 R
+
+	   theorem exists_schwartz_radialPrimitiveProfile_norm_with_support
+	       {ι : Type*} [Fintype ι]
+	       {N : ℕ} (hNpos : 0 < N)
+	       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+	       (hRpos : 0 < R) (hη : 0 < η) (hηR : η ≤ R)
+	       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+	       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c)
+	       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+	       (hMass_R : radialMass N F R = 0) :
+	       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+	         tsupport (A : EuclideanSpace ℝ ι -> ℂ) ⊆
+	           Metric.closedBall 0 R ∧
+	         ∀ x : EuclideanSpace ℝ ι,
+	           A x = radialPrimitiveProfile N F R ‖x‖
+
+	   theorem exists_compact_laplacian_eq_radial_schwartz
+	       {ι : Type*} [Fintype ι]
+	       {N : ℕ} (hN : N = Fintype.card ι) (hNpos : 0 < N)
+       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hRpos : 0 < R) (hη : 0 < η) (hηR : η ≤ R)
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c)
+       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+       (hMass_R : radialMass N F R = 0)
+       (B : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (hB : ∀ x : EuclideanSpace ℝ ι, B x = F ‖x‖) :
+	       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+	         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A = B
+
+	   theorem exists_compact_laplacian_eq_radial_schwartz_with_support
+	       {ι : Type*} [Fintype ι]
+	       {N : ℕ} (hN : N = Fintype.card ι) (hNpos : 0 < N)
+	       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+	       (hRpos : 0 < R) (hη : 0 < η) (hηR : η ≤ R)
+	       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+	       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c)
+	       (hF_support : Function.support F ⊆ Set.Icc (-R) R)
+	       (hMass_R : radialMass N F R = 0)
+	       (B : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (hB : ∀ x : EuclideanSpace ℝ ι, B x = F ‖x‖) :
+	       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+	         tsupport (A : EuclideanSpace ℝ ι -> ℂ) ⊆
+	           Metric.closedBall 0 R ∧
+	         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A = B
+
+	   theorem exists_compact_laplacian_eq_euclideanWeylBump_sub
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
        ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
          HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
-         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
-           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
-           hf_compact.toSchwartzMap hf_smooth
-   ```
+	         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
+	           euclideanWeylBump ε hε - euclideanWeylBump δ hδ
 
-   The proof reduces radial functions on `EuclideanSpace ℝ ι` to the
-   one-variable ODE `(r^(N-1) A'(r))' = r^(N-1) F(r)`, with
-   `N = Fintype.card ι`; the zero-integral condition from the two normalized
-   bumps makes `A'` vanish outside the larger support, hence `A` can be chosen
-   compactly supported.  The `N = 0` case is degenerate and easier: the
-   Euclidean space is a singleton and the zero-integral right-hand side is
-   identically zero.  The `N = 1` case uses the same formula with
-   `r^(N-1)=1`; no singular coefficient appears.  Keep these theorems pure
-   analysis and independent of `T`, `U0`, OS, Wightman, or EOW.
+	   theorem exists_compact_laplacian_eq_euclideanWeylBump_sub_with_support
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+	       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+	         tsupport (A : EuclideanSpace ℝ ι -> ℂ) ⊆
+	           Metric.closedBall 0 (max ε δ) ∧
+	         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
+	           euclideanWeylBump ε hε - euclideanWeylBump δ hδ
+	   ```
 
-   From this primitive theorem, prove local scale invariance of a harmonic
-   distribution.  The support condition ensures every translated test fed to
-   `hΔ` is supported in `V`:
+   Production status in `SCV/EuclideanWeylPoisson.lean`: the definitions
+   `radialMass`, `radialPrimitiveDeriv`, and `radialPrimitiveProfile`, plus
+   `radialMass_zero`, `radialPrimitiveDeriv_zero`,
+   `radialPrimitiveProfile_self`, `deriv_radialMass`,
+   `hasDerivAt_radialMass`,
+   `radialMass_eq_weightedMass_of_support`,
+   `radialMass_eq_const_near_zero`,
+   `radialPrimitiveDeriv_eq_inv_mul`,
+   `radialPrimitiveDeriv_mul_power_eq_radialMass`, and
+   `radialPrimitiveDeriv_eq_linear_near_zero`, and
+   `radialPrimitiveProfile_eq_quadratic_near_zero`,
+   `deriv_radialPrimitiveDeriv`,
+   `continuousAt_radialPrimitiveDeriv_of_pos`,
+   `intervalIntegrable_radialPrimitiveDeriv_of_pos`,
+   `hasDerivAt_radialPrimitiveProfile_of_pos`,
+   `deriv_radialPrimitiveProfile_of_pos`,
+   `radialProfileLaplacian_radialPrimitiveProfile_of_pos`,
+   `radialProfileLaplacian_radialPrimitiveProfile_of_pos_of_R_pos`,
+   `radialPrimitiveProfile_eventually_quadratic_norm_near_zero`,
+   `laplacian_norm_sq_real`,
+   `laplacian_quadratic_norm_complex`,
+   `contDiffAt_radialPrimitiveProfile_norm_zero`,
+   `laplacian_radialPrimitiveProfile_norm_zero`,
+   `contDiffOn_radialPrimitiveDeriv_of_smooth`,
+   `contDiffOn_radialPrimitiveProfile_of_pos`,
+   `contDiffOn_radialPrimitiveDeriv_of_smooth_infty`,
+   `contDiffOn_radialPrimitiveProfile_of_pos_infty`,
+   `eventually_fderiv_radial_comp_basisFun_eq`,
+   `iteratedFDeriv_radial_comp_basisFun_basisFun`,
+   `laplacian_radialProfile_off_origin`,
+   `laplacian_radialPrimitiveProfile`,
+   `contDiff_radialPrimitiveProfile_norm`,
+	   `radialMass_eq_radialMass_of_support_ge`,
+	   `radialPrimitiveProfile_eq_zero_of_ge`, and
+	   `radialPrimitiveProfile_eventually_zero_outside`,
+	   `tsupport_radialPrimitiveProfile_norm_subset`,
+	   `hasCompactSupport_radialPrimitiveProfile_norm`,
+	   `exists_schwartz_radialPrimitiveProfile_norm`,
+	   `exists_schwartz_radialPrimitiveProfile_norm_with_support`,
+	   `exists_compact_laplacian_eq_radial_schwartz`,
+	   `exists_compact_laplacian_eq_radial_schwartz_with_support`,
+	   `exists_compact_laplacian_eq_euclideanWeylBump_sub`,
+	   `exists_compact_laplacian_eq_euclideanWeylBump_sub_with_support`,
+	   `lineDerivOp_euclideanTranslateSchwartzCLM`,
+	   `lineDerivOp_euclideanReflectedTranslate`, and
+	   `laplacianCLM_euclideanReflectedTranslate`, and
+	   `regularizedDistribution_bump_scale_eq` are checked.  The
+	   finite-dimensional norm-to-coordinate-Laplacian calculation, its assembly
+	   with the checked origin theorem, and the resulting all-points radial
+	   Poisson equation are no longer blockers.  The bump-difference specialization
+	   as a compactly supported Schwartz test function is checked in positive
+	   dimension, with the exact support radius needed by translated local
+	   harmonicity; the reflected-translate Laplacian commutation is checked; and
+	   local harmonic scale invariance for normalized bumps is checked.  The
+	   companion `SCV/EuclideanWeylRegularity.lean` now also checks
+	   `closedBall_subset_ball_of_half_margin`,
+	   `closedBall_subset_ball_of_uniform_margin`,
+	   `euclideanWeylBallRepresentative`,
+	   `euclideanWeylBallRepresentative_eq_regularized`,
+	   `euclideanWeylBallRepresentative_eq_regularized_on_ball`, and
+	   `contDiffOn_euclideanWeylBallRepresentative`.  Remaining local Weyl work
+	   is the convolution/approximate-identity representation assembly, plus
+	   zero-dimensional bookkeeping if a caller needs a dimension-free
+	   bump-difference theorem.
+
+   Proof transcript.  Split first on `Fintype.card ι = 0`; after that no
+   separate `card = 1` mathematical route is needed.  For every
+   positive-dimensional Euclidean space, the same proof works: off the origin
+   the norm is smooth and the standard radial-Laplacian formula is valid, while
+   the origin is handled by the checked quadratic germ.
+
+   * If `Fintype.card ι = 0`, the Euclidean space is a singleton.  Use
+     `Subsingleton.elim` for the domain and the checked normalization of both
+     bumps to show the bump difference is the zero Schwartz function; take
+     `A = 0`.  This is the only zero-dimensional route; do not try to feed
+     `N = 0` into the radial ODE, where `r ^ (N - 1)` is not the intended
+     Jacobian.
+
+   * If `0 < Fintype.card ι`, use the standard radial-Laplacian theorem.  Obtain
+     the profile `F` and `weightedMass = 0` from
+     `euclideanWeylBumpSubProfile_spec`, set `N = Fintype.card ι`,
+     `R = max ε δ`, and define
+     `A₀ x = radialPrimitiveProfile N F R ‖x‖`.  The profile is an even smooth
+     extension in the scalar variable, with support in `[-R, R]`; the ODE uses
+     only its restriction to `r >= 0`.  The derivative calculation is exactly
+     `(r^(N-1) A'(r))' = r^(N-1) F(r)`: `deriv_radialMass` is FTC-1,
+     `deriv_radialPrimitiveDeriv` is one field-simplification on `0 < r`,
+     `radialProfileLaplacian_radialPrimitiveProfile_of_pos_of_R_pos` gives the
+     scalar profile Laplacian for `r > 0`, and
+     `laplacian_radialPrimitiveProfile_norm_zero` gives the Euclidean
+     Laplacian at `x = 0`.  The absolute-value cusp in dimension one is not
+     hidden: it is exactly the origin case already discharged by the quadratic
+     norm theorem.
+
+	   In the positive-dimensional cases, the support theorem uses
+	   `radialMass N F R = 0` and `F = 0` for `r >= R` to prove `A₀ = 0` outside
+	   `closedBall 0 R`.  This must be recorded as the stronger support-radius
+	   theorem
+	   `tsupport_radialPrimitiveProfile_norm_subset`, not merely as compact
+	   support, because the local scale-invariance proof must feed the translated
+	   primitive to a hypothesis whose support is restricted to the open set `V`.
+	   The proof is:
+
+	   ```lean
+	   theorem tsupport_radialPrimitiveProfile_norm_subset ... :
+	       tsupport (fun x => radialPrimitiveProfile N F R ‖x‖) ⊆
+	         Metric.closedBall 0 R := by
+	     let E := EuclideanSpace ℝ ι
+	     have hsupp :
+	         Function.support
+	           (fun x : E => radialPrimitiveProfile N F R ‖x‖) ⊆
+	         Metric.closedBall 0 R := by
+	       intro x hx
+	       rw [Metric.mem_closedBall, dist_eq_norm, sub_zero]
+	       by_contra hnot
+	       have hR_le : R ≤ ‖x‖ := le_of_lt (not_le.mp hnot)
+	       exact hx
+	         (radialPrimitiveProfile_eq_zero_of_ge
+	           hF_cont hR hR_le hF_support hMass_R)
+	     rw [tsupport]
+	     exact closure_minimal hsupp isClosed_closedBall
+	   ```
+
+	   Then `hasCompactSupport_radialPrimitiveProfile_norm` is the compactness
+	   corollary obtained from `isCompact_closedBall`, and the Schwartz packaging
+	   theorem should carry both outputs:
+
+	   ```lean
+	   rcases exists_schwartz_radialPrimitiveProfile_norm_with_support ... with
+	     ⟨A, hAcompact, hAsupp, hAeq⟩
+	   ```
+
+	   Use `SchwartzMap.laplacian_apply` and
+	   `laplacian_radialPrimitiveProfile` to ext the Laplacian equality.  Keep
+	   these theorems pure analysis and independent of `T`, `U0`, OS, Wightman,
+	   or EOW.
+
+   Lean proof notes for the radial ODE package:
+
+   * `radialMass_eq_weightedMass_of_support` is now checked.  It is the bridge
+     from the checked `Ioi` weighted-mass theorem to the ODE boundary condition.
+     Its statement explicitly assumes `IntegrableOn` of the weighted profile on
+     `Set.Ioi 0`; this is supplied later by smooth compact support, and should
+     not be hidden in the bridge.  The proof rewrites the `Ioi` integral as the
+     interval integral over `(0, R]` plus the tail over `(R, ∞)`, then kills the
+     tail using `Function.support F ⊆ Set.Icc (-R) R`.
+
+   * `deriv_radialMass` should use
+     `Continuous.deriv_integral` /
+     `intervalIntegral.integral_hasDerivAt_right` for the continuous integrand
+     `s ↦ ((s ^ (N - 1) : ℝ) : ℂ) * F s`.  Keep the statement on `Set.Ioi 0`
+     so all later field simplifications can use `r ≠ 0`.
+
+   * Near zero, prove the three explicit formulas in order:
+     `radialMass_eq_const_near_zero`,
+     `radialPrimitiveDeriv_eq_linear_near_zero`, and
+     `radialPrimitiveProfile_eq_quadratic_near_zero`.  All three are now
+     checked.  The key checked algebra is
+     `∫ s in 0..r, s^(N-1) = r^N / N` for `0 ≤ r ≤ η` and `0 < N`, using
+     `intervalIntegral.integral_congr`, `integral_complex_ofReal`, and
+     `integral_pow`.  The quadratic theorem chooses one constant
+     independent of `r`,
+     `C = -(∫ t in η..R, radialPrimitiveDeriv N F t) -
+       (c / (2 * (N : ℂ))) * (((η ^ 2 : ℝ) : ℂ))`,
+     and proves the formula for every `r ∈ Icc 0 η` by splitting
+     `∫ t in r..R` into `∫ t in r..η + ∫ t in η..R`.  This is what removes the
+     apparent singularity at `r = 0`; it must appear as an explicit theorem,
+     not as a comment inside the Laplacian proof.
+
+   * Away from zero, `hasDerivAt_radialMass` and
+     `deriv_radialPrimitiveDeriv` are now checked.  The proof uses the local
+     identity
+     `radialPrimitiveDeriv N F r =
+       (((r ^ (N - 1) : ℝ) : ℂ)⁻¹) * radialMass N F r`
+     on `Set.Ioi 0`, differentiates the real inverse power
+     `r ↦ (r ^ (N - 1))⁻¹`, composes it through `Complex.ofRealCLM`, and closes
+     the log-derivative algebra with the split `N = 1` / `N ≥ 2`.  The checked
+     statement is exactly
+     `deriv (radialPrimitiveDeriv N F) r +
+       (((((N - 1 : ℕ) : ℝ) / r : ℝ) : ℂ) *
+         radialPrimitiveDeriv N F r) = F r`
+     for `0 < r`.
+
+   * Outside `R`, `radialMass_eq_radialMass_of_support_ge`,
+     `radialPrimitiveProfile_eq_zero_of_ge`, and
+     `radialPrimitiveProfile_eventually_zero_outside` are now checked.  The
+     mass-constancy lemma assumes `Continuous F`, splits `∫ 0..r` at `R`, and
+     kills `∫ R..r` by support zero on the `uIoc` interval.  Combined with
+     `radialMass N F R = 0`, the primitive derivative vanishes for `R < r`;
+     the defining interval integral for `radialPrimitiveProfile` is then zero
+     for every `r ≥ R`, hence eventually at `Filter.atTop`.
+
+   * The scalar profile-Laplacian theorem is now checked.  The proof first
+     proves continuity of `radialPrimitiveDeriv` on `Ioi 0`, then obtains
+     `HasDerivAt (radialPrimitiveProfile N F R) (radialPrimitiveDeriv N F r)`
+     by the left-endpoint FTC.  Differentiating the first-derivative identity
+     only locally on `Ioi 0` gives
+     `radialProfileLaplacian N (fun r => radialPrimitiveProfile N F R r) r =
+     F r`.  The convenient consumer
+     `radialProfileLaplacian_radialPrimitiveProfile_of_pos_of_R_pos` supplies
+     all interval-integrability hypotheses from `Continuous F` and `0 < R`.
+
+   * The origin theorem is now checked.  The explicit near-zero formula is
+     transported to Euclidean space by
+     `radialPrimitiveProfile_eventually_quadratic_norm_near_zero`.  Mathlib's
+     function Laplacian API gives
+     `laplacian_norm_sq_real : Δ (fun x => ‖x‖^2) = 2 * Fintype.card ι`;
+     composing with `Complex.ofRealCLM`, adding the constant, and multiplying
+     by `K = c / (2 * (N : ℂ))` gives
+     `laplacian_quadratic_norm_complex`.  Therefore
+     `contDiffAt_radialPrimitiveProfile_norm_zero` and
+     `laplacian_radialPrimitiveProfile_norm_zero` are both checked with no
+     dimension split.
+
+   The off-origin geometric lemma is now checked.  It is the direct
+   finite-dimensional calculus identity below, with no parametrix wrapper:
 
    ```lean
-   theorem regularizedDistribution_bump_scale_eq
-       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       {V : Set (EuclideanSpace ℝ ι)}
-       (hΔ :
+   theorem laplacian_radialProfile_off_origin
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hN : N = Fintype.card ι)
+       {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+       (hx : x ≠ 0)
+       (ha : ContDiffAt ℝ 2 a ‖x‖) :
+       Laplacian.laplacian
+           (fun y : EuclideanSpace ℝ ι => a ‖y‖) x =
+         radialProfileLaplacian N a ‖x‖
+   ```
+
+   The proof should not introduce a parametrix wrapper.  It is a direct
+   finite-dimensional calculus identity:
+
+   1. Let `ρ y = ‖y‖`, `e i = EuclideanSpace.basisFun ι ℝ i`, and
+      `r = ρ x`.  From `hx`, get `0 < r`.
+   2. Prove the norm derivatives away from zero:
+
+      ```lean
+      have hρ₁ :
+        HasFDerivAt ρ ((r⁻¹ : ℝ) • innerSL ℝ x) x
+      have hρ₁_i :
+        fderiv ℝ ρ x (e i) = x i / r
+      have hρ₂_i :
+        iteratedFDeriv ℝ 2 ρ x ![e i, e i] =
+          1 / r - (x i)^2 / r^3
+      ```
+
+      `hρ₁` comes from `ρ = sqrt (fun y => ‖y‖^2)` and
+      `hasStrictFDerivAt_norm_sq`; `hρ₂_i` is the derivative of
+      `y ↦ inner ℝ y (e i) / ‖y‖` in the same coordinate direction.
+      Use `EuclideanSpace.basisFun_inner`, `real_inner_self_eq_norm_sq`, and
+      `field_simp [hr.ne']`.
+   3. Apply the one-variable chain rule twice to `a ∘ ρ`:
+
+      ```lean
+      iteratedFDeriv ℝ 2 (fun y => a (ρ y)) x ![e i, e i] =
+        deriv (deriv a) r * (((x i / r : ℝ) : ℂ)^2) +
+        deriv a r * (((1 / r - (x i)^2 / r^3 : ℝ) : ℂ))
+      ```
+
+      This is the real Hessian formula for a scalar radial function; keep it as
+      an explicit lemma if the term-level chain rule is long.
+   4. Sum over `i`.  Use
+      `EuclideanSpace.norm_sq_eq` to rewrite
+      `∑ i, (x i)^2 = r^2`, and `hN` to rewrite the number of basis vectors.
+      This summation layer should be proved before the full chain-rule
+      theorem, since it is pure finite-dimensional Euclidean algebra:
+
+      ```lean
+      theorem euclidean_card_pos_of_ne_zero
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          0 < Fintype.card ι
+
+      theorem nat_cast_card_sub_one_of_ne_zero
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          (((Fintype.card ι - 1 : ℕ) : ℝ) =
+            (Fintype.card ι : ℝ) - 1)
+
+      theorem sum_coord_sq_div_norm_sq_eq_one
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          (∑ i : ι, (x i / ‖x‖)^2) = (1 : ℝ)
+
+      theorem sum_complex_coord_sq_div_norm_sq_eq_one
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          (∑ i : ι, (((x i / ‖x‖ : ℝ) : ℂ)^2)) = (1 : ℂ)
+
+      theorem sum_radial_norm_hessian_coeff
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          (∑ i : ι, (1 / ‖x‖ - (x i)^2 / ‖x‖^3)) =
+            ((Fintype.card ι : ℝ) - 1) / ‖x‖
+
+      theorem sum_complex_radial_norm_hessian_coeff
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          (∑ i : ι,
+            (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))) =
+            ((((Fintype.card ι : ℝ) - 1) / ‖x‖ : ℝ) : ℂ)
+      ```
+
+      Proof transcript: `euclidean_card_pos_of_ne_zero` is by contradiction;
+      if `Fintype.card ι = 0`, then `ι` is empty and
+      `EuclideanSpace ℝ ι` is subsingleton, contradicting `x ≠ 0`.
+      The first sum identity rewrites `‖x‖^2` by
+      `EuclideanSpace.norm_sq_eq`, with `Real.norm_eq_abs` and `sq_abs`, then
+      divides by `‖x‖^2` using `norm_pos_iff.mpr hx`.  The Hessian-coefficient
+      sum uses `Finset.sum_sub_distrib`, `Finset.sum_const`,
+      `Finset.sum_div`, the same norm-square identity, and `field_simp`.
+      The complex versions are `exact_mod_cast` from the real identities.
+
+      Therefore the coordinate sum is
+      `deriv (deriv a) r + (((N - 1 : ℝ) / r : ℝ) : ℂ) * deriv a r`,
+      which is exactly `radialProfileLaplacian N a r`.
+
+   5. Keep the analytic chain-rule layer separate from the summation layer.
+      The final off-origin theorem should depend on these exact calculus
+      slots, not on any parametrix or Poisson-specific wrapper:
+
+      ```lean
+      theorem hasFDerivAt_norm_off_origin
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) :
+          HasFDerivAt
+            (fun y : EuclideanSpace ℝ ι => ‖y‖)
+            ((‖x‖⁻¹ : ℝ) • innerSL ℝ x) x
+
+      theorem fderiv_norm_basisFun_off_origin
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) (i : ι) :
+          fderiv ℝ (fun y : EuclideanSpace ℝ ι => ‖y‖) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            x i / ‖x‖
+
+      theorem iteratedFDeriv_norm_basisFun_basisFun_off_origin
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) (i : ι) :
+          iteratedFDeriv ℝ 2
+              (fun y : EuclideanSpace ℝ ι => ‖y‖) x
+              ![(EuclideanSpace.basisFun ι ℝ) i,
+                (EuclideanSpace.basisFun ι ℝ) i] =
+            1 / ‖x‖ - (x i)^2 / ‖x‖^3
+
+      theorem fderiv_coord_div_norm_basisFun
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) (i : ι) :
+          fderiv ℝ (fun y : EuclideanSpace ℝ ι => y i / ‖y‖) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            1 / ‖x‖ - (x i)^2 / ‖x‖^3
+
+      theorem fderiv_complex_coord_div_norm_basisFun
+          {ι : Type*} [Fintype ι]
+          {x : EuclideanSpace ℝ ι} (hx : x ≠ 0) (i : ι) :
+          fderiv ℝ
+              (fun y : EuclideanSpace ℝ ι =>
+                (((y i / ‖y‖ : ℝ) : ℂ))) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))
+
+      theorem fderiv_radial_comp_basisFun_off_origin
+          {ι : Type*} [Fintype ι]
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0) (ha : DifferentiableAt ℝ a ‖x‖) (i : ι) :
+          fderiv ℝ (fun y : EuclideanSpace ℝ ι => a ‖y‖) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            deriv a ‖x‖ * (((x i / ‖x‖ : ℝ) : ℂ))
+
+      theorem fderiv_deriv_radial_comp_basisFun_off_origin
+          {ι : Type*} [Fintype ι]
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0)
+          (hda : DifferentiableAt ℝ (deriv a) ‖x‖) (i : ι) :
+          fderiv ℝ
+              (fun y : EuclideanSpace ℝ ι => deriv a ‖y‖) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            deriv (deriv a) ‖x‖ * (((x i / ‖x‖ : ℝ) : ℂ))
+
+      theorem fderiv_radial_chain_product_basisFun
+          {ι : Type*} [Fintype ι]
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0)
+          (hda : DifferentiableAt ℝ (deriv a) ‖x‖) (i : ι) :
+          fderiv ℝ (fun y : EuclideanSpace ℝ ι =>
+              deriv a ‖y‖ * (((y i / ‖y‖ : ℝ) : ℂ))) x
+              ((EuclideanSpace.basisFun ι ℝ) i) =
+            deriv (deriv a) ‖x‖ *
+                (((x i / ‖x‖ : ℝ) : ℂ)^2) +
+              deriv a ‖x‖ *
+                (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))
+
+      theorem iteratedFDeriv_radial_comp_basisFun_basisFun
+          {ι : Type*} [Fintype ι]
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0) (ha : ContDiffAt ℝ 2 a ‖x‖) (i : ι) :
+          iteratedFDeriv ℝ 2
+              (fun y : EuclideanSpace ℝ ι => a ‖y‖) x
+              ![(EuclideanSpace.basisFun ι ℝ) i,
+                (EuclideanSpace.basisFun ι ℝ) i] =
+            deriv (deriv a) ‖x‖ *
+                (((x i / ‖x‖ : ℝ) : ℂ)^2) +
+              deriv a ‖x‖ *
+                (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))
+      ```
+
+      Proof transcript: obtain `hasFDerivAt_norm_off_origin` by composing
+      `hasStrictFDerivAt_norm_sq` with `Real.sqrt` on a neighborhood where
+      `‖y‖^2` stays positive.  The coordinate first derivative follows by
+      applying the Frechet derivative to `basisFun i` and using
+      `EuclideanSpace.basisFun_inner`.  For the second derivative, rewrite
+      the first coordinate derivative locally as
+      `fun y => inner ℝ y (basisFun i) / ‖y‖`; differentiate in the same
+      coordinate using the product/inverse rule and the already proved first
+      derivative of the norm.  The checked product-rule lemma
+      `fderiv_radial_chain_product_basisFun` proves the algebraic body of the
+      radial second chain rule once the first derivative has been locally
+      rewritten as `deriv a ‖y‖ * ((y i / ‖y‖ : ℝ) : ℂ)`.
+
+      The checked bridge for
+      `iteratedFDeriv_radial_comp_basisFun_basisFun` is:
+
+      ```lean
+      theorem eventually_fderiv_radial_comp_basisFun_eq
+          {ι : Type*} [Fintype ι]
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0) (ha : ContDiffAt ℝ 2 a ‖x‖) (i : ι) :
+          (fun y : EuclideanSpace ℝ ι =>
+              fderiv ℝ
+                (fun z : EuclideanSpace ℝ ι => a ‖z‖) y
+                ((EuclideanSpace.basisFun ι ℝ) i)) =ᶠ[𝓝 x]
+            (fun y : EuclideanSpace ℝ ι =>
+              deriv a ‖y‖ * (((y i / ‖y‖ : ℝ) : ℂ)))
+      ```
+
+      Proof transcript: use `hx` to restrict to `y ≠ 0`; use
+      `ha.eventually` and continuity of `norm` to ensure
+      `DifferentiableAt ℝ a ‖y‖` on a neighborhood of `x`.  At each such `y`,
+      apply the checked `fderiv_radial_comp_basisFun_off_origin`.  The
+      differentiability input for `deriv a` in
+      `fderiv_radial_chain_product_basisFun` comes from `ha.fderiv_right` /
+      `ContDiffAt.differentiableAt` together with the one-dimensional identity
+      between `fderiv` and `deriv`.  Then `Filter.EventuallyEq.fderiv_eq`, the
+      checked product-rule lemma, the evaluation-map chain rule for
+      `L ↦ L (basisFun i)`, and `iteratedFDeriv_two_apply` give the radial
+      composition theorem.  This is the one-variable second chain rule with
+      `ρ = fun y => ‖y‖`: the `a''(ρ x) * (Dρ[e_i])^2` term plus the
+      `a'(ρ x) * D^2ρ[e_i,e_i]` term.  This is now checked in
+      `EuclideanWeylPoisson.lean`.
+
+      The checked final off-origin theorem is the trace/summation step:
+
+      ```lean
+      theorem laplacian_radialProfile_off_origin
+          {ι : Type*} [Fintype ι]
+          {N : ℕ} (hN : N = Fintype.card ι)
+          {a : ℝ -> ℂ} {x : EuclideanSpace ℝ ι}
+          (hx : x ≠ 0) (ha : ContDiffAt ℝ 2 a ‖x‖) :
+          Laplacian.laplacian
+              (fun y : EuclideanSpace ℝ ι => a ‖y‖) x =
+            radialProfileLaplacian N a ‖x‖ := by
+        calc
+          Laplacian.laplacian (fun y => a ‖y‖) x
+              = ∑ i : ι,
+                  iteratedFDeriv ℝ 2 (fun y => a ‖y‖) x
+                    ![(EuclideanSpace.basisFun ι ℝ) i,
+                      (EuclideanSpace.basisFun ι ℝ) i] := by
+                exact congrFun
+                  (InnerProductSpace.laplacian_eq_iteratedFDeriv_orthonormalBasis
+                    (fun y => a ‖y‖) (EuclideanSpace.basisFun ι ℝ)) x
+          _ = ∑ i : ι,
+                (deriv (deriv a) ‖x‖ *
+                    (((x i / ‖x‖ : ℝ) : ℂ)^2) +
+                  deriv a ‖x‖ *
+                    (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))) := by
+                apply Finset.sum_congr rfl
+                intro i _
+                rw [iteratedFDeriv_radial_comp_basisFun_basisFun hx ha i]
+          _ = deriv (deriv a) ‖x‖ *
+                  (∑ i : ι, (((x i / ‖x‖ : ℝ) : ℂ)^2)) +
+                deriv a ‖x‖ *
+                  (∑ i : ι,
+                    (((1 / ‖x‖ - (x i)^2 / ‖x‖^3 : ℝ) : ℂ))) := by
+                rw [Finset.sum_add_distrib]
+                rw [← Finset.mul_sum, ← Finset.mul_sum]
+          _ = radialProfileLaplacian N a ‖x‖ := by
+                rw [sum_complex_coord_sq_div_norm_sq_eq_one hx,
+                    sum_complex_radial_norm_hessian_coeff hx]
+                subst N
+                rw [← nat_cast_card_sub_one_of_ne_zero hx]
+                simp [radialProfileLaplacian, mul_comm]
+      ```
+
+   The positive-half-line regularity and all-points assembly are also checked:
+
+   ```lean
+   theorem contDiffOn_radialPrimitiveDeriv_of_smooth
+       {N : ℕ} {F : ℝ -> ℂ} (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F) :
+       ContDiffOn ℝ 1 (radialPrimitiveDeriv N F) (Set.Ioi 0)
+
+   theorem contDiffOn_radialPrimitiveProfile_of_pos
+       {N : ℕ} {F : ℝ -> ℂ} {R : ℝ}
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F) (hRpos : 0 < R) :
+       ContDiffOn ℝ 2
+         (fun r : ℝ => radialPrimitiveProfile N F R r) (Set.Ioi 0)
+   ```
+
+   `contDiffOn_radialPrimitiveDeriv_of_smooth` uses the honest positive-line
+   formula
+   `radialPrimitiveDeriv N F r =
+   (((r^(N-1) : ℝ) : ℂ)⁻¹) * radialMass N F r`, proves `radialMass` is `C^1`
+   from `hasDerivAt_radialMass` plus the continuous integrand
+   `((r^(N-1) : ℝ) : ℂ) * F r`, and inverts the nonzero power on `Ioi 0`.
+   `contDiffOn_radialPrimitiveProfile_of_pos` then applies
+   `contDiffOn_succ_iff_deriv_of_isOpen isOpen_Ioi`, the checked FTC theorem
+   `hasDerivAt_radialPrimitiveProfile_of_pos`, and the derivative congruence
+   `deriv_radialPrimitiveProfile_of_pos`.
+
+   The checked all-points assembly is:
+
+   ```lean
+   theorem laplacian_radialPrimitiveProfile
+       {ι : Type*} [Fintype ι]
+       {N : ℕ} (hN : N = Fintype.card ι) (hNpos : 0 < N)
+       {F : ℝ -> ℂ} {R η : ℝ} {c : ℂ}
+       (hRpos : 0 < R) (hη : 0 < η) (hηR : η ≤ R)
+       (hF_smooth : ContDiff ℝ (⊤ : ℕ∞) F)
+       (hF_zero : ∀ r ∈ Set.Icc 0 η, F r = c) :
+       ∀ x : EuclideanSpace ℝ ι,
+         Laplacian.laplacian
+           (fun y : EuclideanSpace ℝ ι =>
+             radialPrimitiveProfile N F R ‖y‖) x = F ‖x‖
+   ```
+
+   Its proof is `by_cases hx : x = 0`.  At `x = 0`, use
+   `laplacian_radialPrimitiveProfile_norm_zero hN hNpos hη hηR ...` and
+   `hF_zero 0 ⟨le_rfl, hη.le⟩`.  At `x ≠ 0`, use
+   `laplacian_radialProfile_off_origin` with
+   `a = fun r => radialPrimitiveProfile N F R r`, then rewrite the scalar
+   profile Laplacian by
+   `radialProfileLaplacian_radialPrimitiveProfile_of_pos_of_R_pos hNpos
+   hF_smooth.continuous hRpos ‖x‖ (norm_pos_iff.mpr hx)`.
+   The `ha : ContDiffAt ℝ 2 a ‖x‖` input for the off-origin lemma is obtained
+   by applying `contDiffOn_radialPrimitiveProfile_of_pos` and
+   `Ioi_mem_nhds (norm_pos_iff.mpr hx)`.  For the final Schwartz primitive,
+   combine this all-points Poisson theorem with the outside-support constancy
+   theorem and the existing compact-bump hypotheses to package the profile as a
+   compactly supported `SchwartzMap`.
+
+   The scale-invariance consumer also needed one translation-commutation lemma
+   for the Laplacian of a reflected translate.  This calculus identity is now
+   checked:
+
+   ```lean
+   theorem lineDerivOp_euclideanReflectedTranslate
+       {ι : Type*} [Fintype ι]
+       (x v : EuclideanSpace ℝ ι)
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       (∂_{v} (euclideanReflectedTranslate x φ) :
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ) =
+       euclideanReflectedTranslate x
+         (∂_{v} φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+
+   theorem laplacianCLM_euclideanReflectedTranslate
+       {ι : Type*} [Fintype ι]
+       (x : EuclideanSpace ℝ ι)
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+           (SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+           (euclideanReflectedTranslate x φ) =
+         euclideanReflectedTranslate x
+           (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+             (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ)
+   ```
+
+	   From this primitive theorem, the local scale invariance of a harmonic
+	   distribution is now checked.  This is the last Weyl-scale step before
+	   defining local representatives.  The support condition is exactly why the
+	   primitive theorem has the strengthened radius output: if
+	   `tsupport A ⊆ closedBall 0 (max ε δ)` and
+	   `closedBall x (max ε δ) ⊆ V`, then
+	   `supportsInOpen_euclideanReflectedTranslate_of_kernelSupport` proves the
+	   translated test is supported in `V`.
+
+	   ```lean
+	   theorem regularizedDistribution_bump_scale_eq
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       {V : Set (EuclideanSpace ℝ ι)}
+	       (hΔ :
          ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
            SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
              T
@@ -5667,118 +7396,753 @@ Exact product-kernel/descent subpackage:
        (hε : 0 < ε) (hδ : 0 < δ)
        (hxε : Metric.closedBall x ε ⊆ V)
        (hxδ : Metric.closedBall x δ ⊆ V) :
-       T (euclideanReflectedTranslate x (euclideanWeylBump ε hε)) =
-       T (euclideanReflectedTranslate x (euclideanWeylBump δ hδ))
-   ```
+	       T (euclideanReflectedTranslate x (euclideanWeylBump ε hε)) =
+	       T (euclideanReflectedTranslate x (euclideanWeylBump δ hδ))
+	   ```
 
-   Proof: obtain `A` from
-   `exists_compactSmooth_laplacian_eq_bump_sub_bump`, translate it by `x`,
-   prove its support lies in `V`, use derivative-translation commutation to
-   rewrite the Laplacian of the translated `A` as the translated difference of
-   bumps, and apply `hΔ` to this compactly supported Schwartz test.
+	   Lean-ready proof transcript:
 
-   Now define the local representative on a ball by choosing any bump radius
-   small enough to remain inside the larger ball:
+	   ```lean
+	   rcases exists_compact_laplacian_eq_euclideanWeylBump_sub_with_support
+	       (ι := ι) hε hδ with
+	     ⟨A, hAcompact, hAsupp, hAlap⟩
+	   have hxR : Metric.closedBall x (max ε δ) ⊆ V := by
+	     intro y hy
+	     by_cases hδε : δ ≤ ε
+	     · apply hxε
+	       simpa [max_eq_left hδε] using hy
+	     · have hεδ : ε ≤ δ := le_of_lt (lt_of_not_ge hδε)
+	       apply hxδ
+	       simpa [max_eq_right hεδ] using hy
+	   have hAsuppV :
+	       SupportsInOpen
+	         (euclideanReflectedTranslate x A : EuclideanSpace ℝ ι -> ℂ) V :=
+	     supportsInOpen_euclideanReflectedTranslate_of_kernelSupport hxR hAsupp
+	   have hzero := hΔ (euclideanReflectedTranslate x A) hAsuppV
+	   rw [laplacianCLM_euclideanReflectedTranslate, hAlap] at hzero
+	   have htranslate_sub :
+	       euclideanReflectedTranslate x
+	           (euclideanWeylBump ε hε - euclideanWeylBump δ hδ) =
+	         euclideanReflectedTranslate x (euclideanWeylBump ε hε) -
+	           euclideanReflectedTranslate x (euclideanWeylBump δ hδ) := by
+	     simp [euclideanReflectedTranslate]
+	   rw [htranslate_sub] at hzero
+	   rw [map_sub] at hzero
+	   exact sub_eq_zero.mp hzero
+	   ```
 
-   ```lean
-   noncomputable def euclideanWeylBallRepresentative
-       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       (c : EuclideanSpace ℝ ι) (R : ℝ)
-       (x : EuclideanSpace ℝ ι) : ℂ :=
-     if hx : x ∈ Metric.ball c R then
-       let ε := (R - dist x c) / 2
-       have hε : 0 < ε := by
-         dsimp [ε]
-         rw [Metric.mem_ball] at hx
-         linarith
-       T (euclideanReflectedTranslate x
-         (euclideanWeylBump ε hε))
-     else 0
+	   This proof uses only the checked Poisson primitive, the checked reflected
+	   translate support theorem, and the checked Laplacian-translation
+	   commutation.  It does not add a new harmonic-analysis axiom and does not
+	   change the OS-II route.
 
-   theorem euclideanWeylBallRepresentative_eq_regularized
-       {r R ε : ℝ} (hrR : r < R) (hε : 0 < ε)
-       (hε_support : ∀ x ∈ Metric.ball c r,
-         Metric.closedBall x ε ⊆ Metric.ball c R) :
-       ∀ x ∈ Metric.ball c r,
-         euclideanWeylBallRepresentative T c R x =
-           T (euclideanReflectedTranslate x (euclideanWeylBump ε hε))
-   ```
+	   The next checked stage now lives in the companion file
+	   `SCV/EuclideanWeylRegularity.lean`, importing
+	   `SCV/EuclideanWeylPoisson.lean`, rather than continuing to grow the
+	   already-large Poisson file.  It defines the local ball representative and
+	   proves its smoothness on smaller balls.  The two checked metric support
+	   lemmas are:
 
-   On a smaller ball `ball c r`, choose a uniform `ε < (R - r) / 2`; the
-   scale-invariance theorem identifies the chosen variable-radius definition
-   with this fixed-ε regularization.  Therefore smoothness on `ball c r`
-   follows from `contDiff_regularizedDistribution`.
+	   ```lean
+	   theorem closedBall_subset_ball_of_half_margin
+	       {ι : Type*} [Fintype ι]
+	       {c x : EuclideanSpace ℝ ι} {R : ℝ}
+	       (hx : x ∈ Metric.ball c R) :
+	       Metric.closedBall x ((R - dist x c) / 2) ⊆ Metric.ball c R := by
+	     intro y hy
+	     rw [Metric.mem_ball] at hx ⊢
+	     have hyx : dist y x ≤ (R - dist x c) / 2 := by
+	       simpa [Metric.mem_closedBall] using hy
+	     have hyc : dist y c ≤ dist y x + dist x c := dist_triangle y x c
+	     have hlt : dist y x + dist x c < R := by
+	       nlinarith
+	     exact lt_of_le_of_lt hyc hlt
 
-   Finally prove representation on the smaller ball by approximate identity:
+	   theorem closedBall_subset_ball_of_uniform_margin
+	       {ι : Type*} [Fintype ι]
+	       {c x : EuclideanSpace ℝ ι} {r R ε : ℝ}
+	       (hx : x ∈ Metric.ball c r)
+	       (hεR : ε + r < R) :
+	       Metric.closedBall x ε ⊆ Metric.ball c R := by
+	     intro y hy
+	     rw [Metric.mem_ball] at hx ⊢
+	     have hyx : dist y x ≤ ε := by
+	       simpa [Metric.mem_closedBall] using hy
+	     have hyc : dist y c ≤ dist y x + dist x c := dist_triangle y x c
+	     have hlt : dist y x + dist x c < R := by
+	       nlinarith
+	     exact lt_of_le_of_lt hyc hlt
 
-   ```lean
-   noncomputable def euclideanConvolutionTest
-       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
-       SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
-     SchwartzMap.convolution (ContinuousLinearMap.lsmul ℂ ℂ) φ ρ
+	   noncomputable def euclideanWeylBallRepresentative
+	       {ι : Type*} [Fintype ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       (c : EuclideanSpace ℝ ι) (R : ℝ)
+	       (x : EuclideanSpace ℝ ι) : ℂ :=
+	     by
+	       classical
+	       exact
+	         if hx : x ∈ Metric.ball c R then
+	           let ε := (R - dist x c) / 2
+	           have hε : 0 < ε := by
+	             dsimp [ε]
+	             rw [Metric.mem_ball] at hx
+	             linarith
+	           T (euclideanReflectedTranslate x
+	             (euclideanWeylBump ε hε))
+	         else 0
 
-   theorem euclideanConvolutionTest_apply
-       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-       (x : EuclideanSpace ℝ ι) :
-       euclideanConvolutionTest φ ρ x =
-         ∫ y : EuclideanSpace ℝ ι, φ (x - y) * ρ y
+	   theorem euclideanWeylBallRepresentative_eq_regularized
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       {c : EuclideanSpace ℝ ι} {R ε : ℝ}
+	       (hΔ :
+	         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+	             (Metric.ball c R) ->
+	             T
+	               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0)
+	       {x : EuclideanSpace ℝ ι}
+	       (hε : 0 < ε)
+	       (hxε : Metric.closedBall x ε ⊆ Metric.ball c R) :
+	         euclideanWeylBallRepresentative T c R x =
+	           T (euclideanReflectedTranslate x (euclideanWeylBump ε hε))
 
-   theorem euclideanConvolutionTest_eq_integral_reflectedTranslate
-       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
-       euclideanConvolutionTest φ ρ =
-         ∫ x : EuclideanSpace ℝ ι,
-           φ x • euclideanReflectedTranslate x ρ
+	   theorem euclideanWeylBallRepresentative_eq_regularized_on_ball
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       {c : EuclideanSpace ℝ ι} {r R ε : ℝ}
+	       (hε : 0 < ε)
+	       (hεR : ε + r < R)
+	       (hΔ :
+	         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+	             (Metric.ball c R) ->
+	             T
+	               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+	       ∀ x ∈ Metric.ball c r,
+	         euclideanWeylBallRepresentative T c R x =
+	           T (euclideanReflectedTranslate x (euclideanWeylBump ε hε))
 
-   theorem regularizedDistribution_integral_pairing
-       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
-       ∫ x, T (euclideanReflectedTranslate x ρ) * φ x =
-         T (euclideanConvolutionTest φ ρ)
+	   theorem contDiffOn_euclideanWeylBallRepresentative
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       {c : EuclideanSpace ℝ ι} {r R ε : ℝ}
+	       (hε : 0 < ε)
+	       (hεR : ε + r < R)
+	       (hΔ :
+	         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+	             (Metric.ball c R) ->
+	             T
+	               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+	       ContDiffOn ℝ (⊤ : ℕ∞)
+	         (euclideanWeylBallRepresentative T c R) (Metric.ball c r)
+	   ```
 
-   theorem tendsto_euclideanConvolutionTest_of_shrinking_normalized_support
-       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-       (ρn : ℕ -> SchwartzMap (EuclideanSpace ℝ ι) ℂ)
-       (hρ_nonneg : ∀ n x, 0 ≤ (ρn n x).re)
-       (hρ_real : ∀ n x, (ρn n x).im = 0)
-       (hρ_norm : ∀ n, ∫ x, ρn n x = 1)
-       (hρ_support : ∀ n,
-         tsupport (ρn n : EuclideanSpace ℝ ι -> ℂ) ⊆
-           Metric.closedBall 0 (1 / (n + 1 : ℝ))) :
-       Tendsto (fun n => euclideanConvolutionTest φ (ρn n))
-         atTop (𝓝 φ)
+	   Production status: all six declarations in this local representative
+	   package are checked in `SCV/EuclideanWeylRegularity.lean`.
 
-   theorem euclidean_laplacian_distribution_regular_on_ball
-       {ι : Type*} [Fintype ι] [DecidableEq ι]
-       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       (c : EuclideanSpace ℝ ι) {r R : ℝ}
-       (hr : 0 < r) (hrR : r < R)
-       (hΔ :
-         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
-           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
-             (Metric.ball c R) ->
-             T
-               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
-                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
-       ∃ H : EuclideanSpace ℝ ι -> ℂ,
-         ContDiffOn ℝ (⊤ : ℕ∞) H (Metric.ball c r) ∧
-         RepresentsEuclideanDistributionOn T H (Metric.ball c r)
-   ```
+	   Proof transcript:
 
-   `euclideanConvolutionTest_eq_integral_reflectedTranslate` is the Bochner
-   integral identity in Schwartz space; apply the available
-   continuous-linear-map integral theorem to get
-   `regularizedDistribution_integral_pairing`.  The pointwise formula is
-   Mathlib's `SchwartzMap.convolution_apply`.
+	   * In `euclideanWeylBallRepresentative_eq_regularized`, first derive
+	     `hx : x ∈ ball c R` from the fixed-radius support hypothesis by applying
+	     it to `x ∈ closedBall x ε`.  Unfold the representative and rewrite the
+	     dependent `if` by `rw [dif_pos hx]`.  Then apply
+	     `regularizedDistribution_bump_scale_eq` with
+	     `closedBall_subset_ball_of_half_margin hx` for the definition's
+	     variable radius and `hxε` for the fixed radius.
+	   * The `_on_ball` theorem is the pointwise theorem plus
+	     `closedBall_subset_ball_of_uniform_margin hx hεR`.
+	   * For `contDiffOn_euclideanWeylBallRepresentative`, obtain
+	     `hreg := contDiff_regularizedDistribution T (euclideanWeylBump ε hε)`,
+	     then use `hreg.contDiffOn.congr` and the `_on_ball` equality.  This is
+	     the first genuinely smooth representative theorem; it is not the final
+	     distribution-representation theorem, which still needs the convolution
+	     and approximate-identity step below.
 
-   For a test `φ` supported in `ball c r`, choose `ε` small enough that
-   `closedBall x ε ⊆ ball c R` for every `x ∈ tsupport φ`; outside
-   `tsupport φ` the integral is zero.  Scale invariance lets the fixed
-   representative replace every smaller approximate-identity regularization in
-   the integral.  The convergence theorem gives
-   `T (euclideanConvolutionTest φ ρ_n) -> T φ` by continuity of `T`, while the
-   left side is constant for all sufficiently small `ρ_n`; hence it equals
-   `T φ`.  This proves the representation identity.
+	   Finally prove representation on the smaller ball by approximate identity.
+	   Lean route correction: do **not** write
+	   `∫ x, φ x • euclideanReflectedTranslate x ρ` as a Bochner integral with
+	   values in `SchwartzMap`; in the current Mathlib API `SchwartzMap` has the
+	   complete locally convex topology needed for continuity, but it is not a
+	   `NormedAddCommGroup`, so the ordinary Bochner integral theorem
+	   `ContinuousLinearMap.integral_comp_comm` does not apply.  The honest Lean
+	   route is to define the test by Mathlib's Schwartz convolution and then
+	   prove the scalar pairing identity as its own functional-analytic lemma.
+
+	   ```lean
+	   -- Checked in `SCV/EuclideanWeylRegularity.lean`.
+	   noncomputable def euclideanConvolutionTest
+	       {ι : Type*} [Fintype ι]
+	       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+	       SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+	     SchwartzMap.convolution (ContinuousLinearMap.lsmul ℂ ℂ) φ ρ
+
+	   theorem euclideanConvolutionTest_apply
+	       {ι : Type*} [Fintype ι]
+	       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (x : EuclideanSpace ℝ ι) :
+	       euclideanConvolutionTest φ ρ x =
+	         ∫ y : EuclideanSpace ℝ ι, φ y * ρ (x - y)
+
+	   theorem euclideanConvolutionTest_apply_reflected
+	       {ι : Type*} [Fintype ι]
+	       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (x : EuclideanSpace ℝ ι) :
+	       euclideanConvolutionTest φ ρ x =
+	         ∫ y : EuclideanSpace ℝ ι, ρ (x - y) * φ y
+
+	   theorem euclideanConvolutionTest_apply_reflectedTranslate
+	       {ι : Type*} [Fintype ι]
+	       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (y : EuclideanSpace ℝ ι) :
+	       euclideanConvolutionTest φ ρ y =
+	         ∫ x : EuclideanSpace ℝ ι,
+	           euclideanReflectedTranslate x ρ y * φ x
+
+	   theorem regularizedDistribution_integral_pairing
+	       {ι : Type*} [Fintype ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (hρ_compact : HasCompactSupport
+	         (ρ : EuclideanSpace ℝ ι -> ℂ))
+	       (hφ_compact : HasCompactSupport
+	         (φ : EuclideanSpace ℝ ι -> ℂ)) :
+	       ∫ x : EuclideanSpace ℝ ι,
+	         T (euclideanReflectedTranslate x ρ) * φ x =
+	         T (euclideanConvolutionTest φ ρ)
+
+	   theorem tendsto_euclideanConvolutionTest_of_shrinking_normalized_support
+	       {ι : Type*} [Fintype ι]
+	       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (ρn : ℕ -> SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	       (hρ_nonneg : ∀ n x, 0 ≤ (ρn n x).re)
+	       (hρ_real : ∀ n x, (ρn n x).im = 0)
+	       (hρ_norm : ∀ n, ∫ x, ρn n x = 1)
+	       (hρ_support : ∀ n,
+	         tsupport (ρn n : EuclideanSpace ℝ ι -> ℂ) ⊆
+	           Metric.closedBall 0 (1 / (n + 1 : ℝ))) :
+	       Tendsto (fun n => euclideanConvolutionTest φ (ρn n))
+	         atTop (𝓝 φ)
+
+	   theorem exists_euclideanConvolutionTest_approxIdentity
+	       {ι : Type*} [Fintype ι] {r : ℝ} (hr : 0 < r) :
+	       ∃ ρn : ℕ -> SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	         (∀ n, ∫ x, ρn n x = 1) ∧
+	         (∀ n,
+	           tsupport (ρn n : EuclideanSpace ℝ ι -> ℂ) ⊆
+	             Metric.closedBall 0 (min (r / 2) (1 / (n + 1 : ℝ)))) ∧
+	         (∀ n,
+	           tsupport (ρn n : EuclideanSpace ℝ ι -> ℂ) ⊆
+	             Metric.closedBall 0 r) ∧
+	         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	           Tendsto (fun n => euclideanConvolutionTest φ (ρn n))
+	             atTop (𝓝 φ)
+
+	   theorem integral_pairing_congr_of_eq_on_tsupport
+	       {ι : Type*} [Fintype ι]
+	       {φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ}
+	       {H G : EuclideanSpace ℝ ι -> ℂ}
+	       (hHG : ∀ x ∈ tsupport (φ : EuclideanSpace ℝ ι -> ℂ),
+	         H x = G x) :
+	       (∫ x, H x * φ x) = ∫ x, G x * φ x
+
+	   theorem euclidean_laplacian_distribution_regular_on_ball
+	       {ι : Type*} [Fintype ι] [Nonempty ι]
+	       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	       (c : EuclideanSpace ℝ ι) {r R : ℝ}
+	       (hr : 0 < r) (hrR : r < R)
+	       (hΔ :
+	         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+	             (Metric.ball c R) ->
+	             T
+	               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+	       ∃ H : EuclideanSpace ℝ ι -> ℂ,
+	         ContDiffOn ℝ (⊤ : ℕ∞) H (Metric.ball c r) ∧
+	         RepresentsEuclideanDistributionOn T H (Metric.ball c r)
+	   ```
+
+	   Proof obligations for this representation stage:
+
+	   * The `euclideanConvolutionTest` surface is checked.  It imports
+	     `Mathlib.Analysis.Fourier.Convolution`, defines Mathlib convolution
+	     `(φ * ρ)(x) = ∫ y, φ y * ρ (x - y)`, and proves the reflected-translate
+	     formula
+	     `(φ * ρ)(y) = ∫ x, euclideanReflectedTranslate x ρ y * φ x`.
+	     This is the sign convention needed for the scalar pairing identity.
+	   * `regularizedDistribution_integral_pairing` is the genuine
+	     functional-analytic step.  It says the scalar function
+	     `x ↦ T (euclideanReflectedTranslate x ρ)` is exactly the distributional
+	     convolution of `T` with a compactly supported regularizing kernel `ρ`,
+	     paired against compactly supported `φ`.  This is **not** a wrapper and
+	     should not be hidden behind an unsupported Bochner integral into
+	     `SchwartzMap`.  The compact-kernel hypothesis is the one needed by the
+	     Weyl route because the consumers use the checked normalized compact
+	     Euclidean bumps.
+
+	     The Lean route should use the same finite-probe idea already used in
+	     `SCV/PaleyWiener.lean` for its `paley_wiener_half_line` boundary-value
+	     identity.  For a continuous Schwartz functional `T`, first factor `T`
+	     through finitely many weighted coordinate-line-derivative probes landing
+	     in a Banach product of bounded continuous functions:
+
+	     ```lean
+	     noncomputable def euclideanWeightedLineDerivToBCFCLM
+	         {ι : Type*} [Fintype ι]
+	         (k n : ℕ) (u : Fin n -> ι) :
+	         SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+	           EuclideanSpace ℝ ι ->ᵇ ℂ
+
+	     noncomputable def euclideanProbeCLM
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ)) :
+	         SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+	           ((p : s.attach) ->
+	             (Fin p.1.2 -> ι) -> EuclideanSpace ℝ ι ->ᵇ ℂ)
+
+	     theorem euclideanSchwartzFunctional_exists_probe_factorization
+	         {ι : Type*} [Fintype ι]
+	         (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ) :
+	         ∃ s : Finset (ℕ × ℕ),
+	         ∃ G :
+	           (((p : s.attach) ->
+	             (Fin p.1.2 -> ι) -> EuclideanSpace ℝ ι ->ᵇ ℂ) ->L[ℂ] ℂ),
+	           T = G.comp (euclideanProbeCLM s)
+	     ```
+
+	     The implementation starts with the concrete probe substrate, not with
+	     an abstract "finite family of seminorms" placeholder.  The first slice
+	     is checked in the small companion
+	     `SCV/EuclideanWeylProbe.lean`, importing
+	     `SCV/EuclideanWeylRegularity.lean`:
+
+	     ```lean
+	     noncomputable def euclideanPolynomialWeight
+	         {ι : Type*} [Fintype ι]
+	         (k : ℕ) (x : EuclideanSpace ℝ ι) : ℂ :=
+	       (((1 : ℝ) + ‖x‖ ^ 2) ^ k : ℝ)
+
+	     theorem euclideanPolynomialWeight_hasTemperateGrowth
+	         {ι : Type*} [Fintype ι]
+	         (k : ℕ) :
+	         (euclideanPolynomialWeight (ι := ι) k).HasTemperateGrowth
+
+	     noncomputable def euclideanCoordinateDirs
+	         {ι : Type*} [Fintype ι] {n : ℕ} (u : Fin n -> ι) :
+	         Fin n -> EuclideanSpace ℝ ι :=
+	       fun j => EuclideanSpace.basisFun ι ℝ (u j)
+
+	     noncomputable def euclideanIteratedCoordinateLineDerivCLM
+	         {ι : Type*} [Fintype ι] :
+	         (n : ℕ) -> (Fin n -> ι) ->
+	           SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+	             SchwartzMap (EuclideanSpace ℝ ι) ℂ
+
+	     theorem euclideanIteratedCoordinateLineDerivCLM_apply
+	         {ι : Type*} [Fintype ι] {n : ℕ}
+	         (u : Fin n -> ι)
+	         (f : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+	         euclideanIteratedCoordinateLineDerivCLM n u f =
+	           ∂^{euclideanCoordinateDirs u} f
+
+	     noncomputable def euclideanWeightedLineDerivToBCFCLM
+	         {ι : Type*} [Fintype ι]
+	         (k n : ℕ) (u : Fin n -> ι) :
+	         SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+	           BoundedContinuousFunction (EuclideanSpace ℝ ι) ℂ
+
+	     theorem euclideanWeightedLineDerivToBCFCLM_apply
+	         {ι : Type*} [Fintype ι]
+	         (k n : ℕ) (u : Fin n -> ι)
+	         (f : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	         (x : EuclideanSpace ℝ ι) :
+	         euclideanWeightedLineDerivToBCFCLM k n u f x =
+	           euclideanPolynomialWeight k x *
+	             (∂^{euclideanCoordinateDirs u} f) x
+
+	     noncomputable abbrev EuclideanProbeSpace
+	         {ι : Type*} [Fintype ι] (s : Finset (ℕ × ℕ)) :=
+	       (p : ↑s.attach) ->
+	         (Fin p.1.1.2 -> ι) ->
+	           BoundedContinuousFunction (EuclideanSpace ℝ ι) ℂ
+
+	     noncomputable def euclideanProbeCLM
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ)) :
+	         SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+	           EuclideanProbeSpace (ι := ι) s
+
+	     theorem euclideanProbeCLM_apply
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ))
+	         (f : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	         (p : ↑s.attach) (u : Fin p.1.1.2 -> ι)
+	         (x : EuclideanSpace ℝ ι) :
+	         euclideanProbeCLM s f p u x =
+	           euclideanPolynomialWeight p.1.1.1 x *
+	             (∂^{euclideanCoordinateDirs u} f) x
+	     ```
+
+	     The implementation details are already fixed by existing APIs:
+	     `euclideanPolynomialWeight_hasTemperateGrowth` is `fun_prop` after
+	     unfolding; the line-derivative CLM is recursive, using
+	     `LineDeriv.lineDerivOpCLM ℂ (SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	     (EuclideanSpace.basisFun ι ℝ (u 0))` and `Fin.tail`; the apply theorem
+	     rewrites by `LineDeriv.iteratedLineDerivOp_succ_left`; the weighted BCF
+	     map is
+	     `SchwartzMap.toBoundedContinuousFunctionCLM.comp
+	     (SchwartzMap.smulLeftCLM.comp
+	     euclideanIteratedCoordinateLineDerivCLM)`; and the finite probe map is
+	     `ContinuousLinearMap.pi` twice.
+
+	     The nontrivial domination lemma behind the later factorization is
+	     finite dimensional, not distributional: full `iteratedFDeriv` seminorms
+	     are controlled by finitely many coordinate line-derivative probes in the
+	     orthonormal basis `EuclideanSpace.basisFun ι ℝ`.  It must not be hidden
+	     inside the factorization theorem.  State it explicitly:
+
+	     ```lean
+	     theorem euclideanContinuousMultilinearMap_norm_le_coordinate_sum
+	         {ι : Type*} [Fintype ι] (n : ℕ)
+	         (A : (EuclideanSpace ℝ ι) [×n]→L[ℝ] ℂ) :
+	         ‖A‖ ≤
+	           Finset.univ.sum
+	             (fun u : Fin n -> ι =>
+	               ‖A (euclideanCoordinateDirs u)‖)
+
+	     theorem euclideanSchwartzSeminorm_le_coordinateProbeNorm
+	         {ι : Type*} [Fintype ι]
+	         (k n : ℕ)
+	         (f : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+	         SchwartzMap.seminorm ℝ k n f ≤
+	           Finset.univ.sum
+	             (fun u : Fin n -> ι =>
+	               ‖euclideanWeightedLineDerivToBCFCLM k n u f‖)
+	     ```
+
+	     Proof transcript for
+	     `euclideanContinuousMultilinearMap_norm_le_coordinate_sum`: expand
+	     each input vector in the orthonormal basis by
+	     `(EuclideanSpace.basisFun ι ℝ).sum_repr`, use multilinearity to expand
+	     `A v` as a finite sum over `u : Fin n -> ι`, bound
+	     `‖v j (u j)‖ ≤ ‖v j‖`, then apply
+	     `ContinuousMultilinearMap.opNorm_le_bound`.  The exact constant is
+	     checked as `1`, so no hidden finite-dimensional norm-equivalence
+	     constant is being used.  Then
+	     `euclideanSchwartzSeminorm_le_coordinateProbeNorm` follows by
+	     `SchwartzMap.seminorm_le_bound`, rewriting coordinate values with
+	     `SchwartzMap.iteratedLineDerivOp_eq_iteratedFDeriv` and
+	     `euclideanWeightedLineDerivToBCFCLM_apply`, and absorbing the harmless
+	     inequality `‖x‖ ^ k ≤ ‖euclideanPolynomialWeight k x‖`.
+	     Both domination theorems are checked in `SCV/EuclideanWeylProbe.lean`.
+
+	     The Hahn-Banach factorization stage is now checked in the same small
+	     file, following the checked
+	     `SCV/PaleyWiener.lean` pattern with the Euclidean coordinate-probe
+	     domination theorem replacing the one-dimensional probe bound:
+
+	     ```lean
+	     theorem euclideanSchwartzFunctional_bound
+	         {ι : Type*} [Fintype ι]
+	         (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ) :
+	         ∃ s : Finset (ℕ × ℕ), ∃ C : NNReal, C ≠ 0 ∧
+	           ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	             ‖T φ‖ ≤
+	               (C • s.sup
+	                 (schwartzSeminormFamily ℂ
+	                   (EuclideanSpace ℝ ι) ℂ)) φ
+
+	     theorem euclideanSchwartzSeminorm_le_probeNorm
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ)) (p : ↑s.attach)
+	         (f : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+	         SchwartzMap.seminorm ℝ p.1.1.1 p.1.1.2 f ≤
+	           Fintype.card (Fin p.1.1.2 -> ι) *
+	             ‖(euclideanProbeCLM s f :
+	               EuclideanProbeSpace (ι := ι) s)‖
+
+	     theorem euclideanSchwartzFunctional_bound_by_probeNorm
+	         {ι : Type*} [Fintype ι]
+	         (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ) :
+	         ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+	           ∀ f : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	             ‖T f‖ ≤
+	               C * ‖(euclideanProbeCLM s f :
+	                 EuclideanProbeSpace (ι := ι) s)‖
+
+	     theorem euclideanSchwartzFunctional_exists_probe_factorization
+	         {ι : Type*} [Fintype ι]
+	         (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ) :
+	         ∃ s : Finset (ℕ × ℕ),
+	         ∃ G : EuclideanProbeSpace (ι := ι) s ->L[ℂ] ℂ,
+	           T = G.comp (euclideanProbeCLM s)
+	     ```
+
+	     Proof transcript:
+
+	     1. Build the seminorm
+	        `q := (normSeminorm ℂ ℂ).comp T.toLinearMap`; continuity is
+	        `continuous_norm.comp T.continuous`, and
+	        `Seminorm.bound_of_continuous
+	          (schwartz_withSeminorms ℂ (EuclideanSpace ℝ ι) ℂ) q`
+	        gives the finite family `s`.
+	     2. For each attached index `p : s.attach`, apply the checked
+	        `euclideanSchwartzSeminorm_le_coordinateProbeNorm` and bound every
+	        component
+	        `euclideanWeightedLineDerivToBCFCLM p.1.1.1 p.1.1.2 u f`
+	        first by the `p`-fiber norm and then by the full Pi norm using
+	        `norm_le_pi_norm`.  The finite coordinate count is exactly
+	        `Fintype.card (Fin p.1.1.2 -> ι)`.
+	     3. Sum these bounds over `s`, using
+	        `Seminorm.finset_sup_le_sum`, to obtain a real constant
+	        `C0 * ∑ p ∈ s, Fintype.card (Fin p.2 -> ι)`.
+	     4. From the probe-norm bound, prove
+	        `ker (euclideanProbeCLM s) ≤ ker T`: if the probe packet is zero,
+	        the bound gives `‖T f‖ ≤ 0`, hence `T f = 0`.
+	     5. Define the range functional by quotienting by the probe kernel:
+
+	        ```lean
+	        ((LinearMap.ker (euclideanProbeCLM s).toLinearMap).liftQ
+	            T.toLinearMap hker).comp
+	          ((euclideanProbeCLM s).toLinearMap
+	            .quotKerEquivRange.symm.toLinearMap)
+	        ```
+
+	        The apply theorem is
+	        `LinearMap.quotKerEquivRange_symm_apply_image`; the norm bound on
+	        the range is the probe-norm bound rewritten on range representatives.
+	     6. Turn the range functional into a `StrongDual` with
+	        `LinearMap.mkContinuous`, extend it to the ambient Banach probe
+	        space by `exists_extension_norm_eq`, and extensionality gives
+	        `T = G.comp (euclideanProbeCLM s)`.
+
+	     The factorization theorem and the scalar pairing theorem are now
+	     checked.  The pairing is proved in the small companion
+	     `SCV/EuclideanWeylPairing.lean` by factoring only through this Banach
+	     probe space.  This is the exact replacement for the forbidden
+	     `SchwartzMap`-valued Bochner integral:
+
+	     ```lean
+	     noncomputable def euclideanPairingProbeFamily
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ))
+	         (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	         (x : EuclideanSpace ℝ ι) :
+	         ((p : s.attach) ->
+	           (Fin p.1.2 -> ι) -> EuclideanSpace ℝ ι ->ᵇ ℂ) :=
+	       euclideanProbeCLM s
+	         (φ x • euclideanReflectedTranslate x ρ)
+
+	     theorem integrable_euclideanPairingProbeFamily
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ))
+	         (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	         (hφ_compact : HasCompactSupport
+	           (φ : EuclideanSpace ℝ ι -> ℂ))
+	         (hρ_compact : HasCompactSupport
+	           (ρ : EuclideanSpace ℝ ι -> ℂ)) :
+	         Integrable (euclideanPairingProbeFamily s φ ρ)
+
+	     theorem integral_euclideanPairingProbeFamily_eq_probe_convolution
+	         {ι : Type*} [Fintype ι]
+	         (s : Finset (ℕ × ℕ))
+	         (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+	         (hφ_compact : HasCompactSupport
+	           (φ : EuclideanSpace ℝ ι -> ℂ))
+	         (hρ_compact : HasCompactSupport
+	           (ρ : EuclideanSpace ℝ ι -> ℂ)) :
+	         ∫ x : EuclideanSpace ℝ ι,
+	             euclideanPairingProbeFamily s φ ρ x =
+	           euclideanProbeCLM s (euclideanConvolutionTest φ ρ)
+	     ```
+
+	     Componentwise, the last theorem is the standard regularization
+	     computation from Streater-Wightman §2-1:
+	     `D^u(φ * ρ)(y) = ∫ x, φ x * D^uρ(y - x)`.  In Lean this is now checked
+	     from `euclideanConvolutionTest_apply_reflectedTranslate`, ordinary
+	     Banach-valued integral evaluation through Pi projections and
+	     `BoundedContinuousFunction.evalCLM`, Fourier-transform injectivity on
+	     Euclidean Schwartz space, and the derivative-through-convolution lemma
+	     `iteratedLineDerivOp_euclideanConvolutionTest_right`.
+
+	     The final proof transcript is then:
+
+	     ```lean
+	     obtain ⟨s, G, hTG⟩ :=
+	       euclideanSchwartzFunctional_exists_probe_factorization T
+	     have hT_apply :
+	         ∀ f, T f = G (euclideanProbeCLM s f) := by
+	       intro f; exact congrArg (fun L => L f) hTG
+	     calc
+	       ∫ x, T (euclideanReflectedTranslate x ρ) * φ x
+	           = ∫ x, T (φ x • euclideanReflectedTranslate x ρ) := by
+	             apply MeasureTheory.integral_congr_ae
+	             filter_upwards with x
+	             simp [map_smul, smul_eq_mul, mul_comm]
+	       _ = ∫ x, G (euclideanPairingProbeFamily s φ ρ x) := by
+	             apply MeasureTheory.integral_congr_ae
+	             filter_upwards with x
+	             rw [hT_apply]
+	             rfl
+	       _ = G (∫ x, euclideanPairingProbeFamily s φ ρ x) := by
+	             exact G.integral_comp_comm
+	               (integrable_euclideanPairingProbeFamily
+	                 s φ ρ hφ_compact hρ_compact)
+	       _ = G (euclideanProbeCLM s (euclideanConvolutionTest φ ρ)) := by
+	             rw [integral_euclideanPairingProbeFamily_eq_probe_convolution]
+	       _ = T (euclideanConvolutionTest φ ρ) := by
+	             rw [hT_apply]
+	     ```
+
+	     This proves the exact scalar identity while keeping all actual integrals
+	     Banach-valued or scalar-valued.
+	     API-backed Gemini Deep Research interaction
+	     `v1_ChdJRG51YWRtQUtvNm9fdU1QMkx1MmdRTRIXSURudWFkbUFLbzZvX3VNUDJMdTJnUU0`
+	     completed on 2026-04-26 and sanity-checked this theorem shape: the
+	     scalar pairing identity is true with the current reflected-translate
+	     convention, no sign correction is needed, and the finite-probe /
+	     ordinary-Bochner route is a mathematically faithful formal substitute
+	     for the usual weak/Pettis regularization argument.  Its main warning is
+	     the same one recorded above: the coordinate-probe domination,
+	     derivative-under-the-integral, and compact-support integrability lemmas
+	     must be proved explicitly rather than hidden behind a generalized
+	     Schwartz-valued integral.
+	   * `tendsto_euclideanConvolutionTest_of_shrinking_normalized_support` is
+	     now checked in `SCV/EuclideanWeylApproxIdentity.lean`; the proved
+	     theorem is slightly stronger than the consumer requirement and holds
+	     for every Euclidean Schwartz test `φ`.  The proof is the Euclidean
+	     analogue of
+	     `tendsto_realConvolutionTest_of_shrinking_normalized_support`: first
+	     prove the symmetric formula
+	     `euclideanConvolutionTest_apply_swap`,
+	     differentiate through convolution on the left by
+	     `iteratedLineDerivOp_euclideanConvolutionTest_left`, prove the
+	     CLM-valued difference formula
+	     `iteratedFDeriv_euclideanConvolutionTest_sub_eq_integral`, prove the
+	     weighted translation estimate
+	     `exists_weighted_iteratedFDeriv_euclideanTranslate_sub_le_linear`, use
+	     nonnegative real normalization to get
+	     `∫ x, ‖ρn n x‖ = 1`, and then close every
+	     `schwartz_withSeminorms` seminorm.  The compactness needed for the
+	     CLM-valued Bochner integral comes from the kernel support hypothesis,
+	     not from a `SchwartzMap`-valued integral shortcut.
+	   * The checked constructor
+	     `exists_euclideanConvolutionTest_approxIdentity` uses the explicit
+	     normalized radial kernels `euclideanWeylBump` with radii
+	     `min (r / 2) (1 / (n + 1))`; it exports normalization, the fixed-radius
+	     support bound needed for ball margins, and the full Schwartz-topology
+	     convergence theorem above.
+	   * For a test `φ` supported in `ball c r`, choose `ε0 > 0` with
+	     `ε0 + r < R`, and choose a shrinking normalized bump sequence with
+	     support radius at most `ε0`.  On `tsupport φ`, scale invariance identifies
+	     `euclideanWeylBallRepresentative T c R x` with
+	     `T (euclideanReflectedTranslate x (ρn n))`; outside `tsupport φ`, the
+	     factor `φ x` is zero.  Therefore
+	     `∫ H x * φ x = T (euclideanConvolutionTest φ (ρn n))` for all `n`.
+	     The approximate-identity theorem and continuity of `T` give
+	     `T (euclideanConvolutionTest φ (ρn n)) -> T φ`, while the left side is
+	     constant, so `T φ = ∫ H x * φ x`.  This proves the representation
+	     identity.
+
+	     Lean-ready transcript for the ball theorem:
+
+	     ```lean
+	     theorem euclidean_laplacian_distribution_regular_on_ball
+	         {ι : Type*} [Fintype ι] [Nonempty ι]
+	         (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+	         (c : EuclideanSpace ℝ ι) {r R : ℝ}
+	         (hr : 0 < r) (hrR : r < R)
+	         (hΔ :
+	           ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+	             SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+	               (Metric.ball c R) ->
+	               T
+	                 (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+	                   (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+	         ∃ H : EuclideanSpace ℝ ι -> ℂ,
+	           ContDiffOn ℝ (⊤ : ℕ∞) H (Metric.ball c r) ∧
+	           RepresentsEuclideanDistributionOn T H (Metric.ball c r) := by
+	       let H := euclideanWeylBallRepresentative T c R
+	       let η : ℝ := (R - r) / 2
+	       have hη_pos : 0 < η := by linarith
+	       have hηR : η + r < R := by linarith
+	       have hH_smooth :
+	           ContDiffOn ℝ (⊤ : ℕ∞) H (Metric.ball c r) :=
+	         contDiffOn_euclideanWeylBallRepresentative T hη_pos hηR hΔ
+	       refine ⟨H, hH_smooth, ?_⟩
+	       intro φ hφ
+	       let εn : ℕ -> ℝ := fun n => min (η / 2) (1 / (n + 1 : ℝ))
+	       have hεn_pos : ∀ n, 0 < εn n := ...
+	       let ρn : ℕ -> SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+	         fun n => euclideanWeylBump (εn n) (hεn_pos n)
+	       have happrox :
+	           Tendsto (fun n => euclideanConvolutionTest φ (ρn n))
+	             atTop (𝓝 φ) :=
+	         tendsto_euclideanConvolutionTest_of_shrinking_normalized_support
+	           φ ρn
+	             (fun n x => euclideanWeylBump_nonneg_re (εn n) (hεn_pos n) x)
+	             (fun n x => euclideanWeylBump_im_eq_zero (εn n) (hεn_pos n) x)
+	             (fun n => euclideanWeylBump_normalized (εn n) (hεn_pos n))
+	             (by
+	               intro n
+	               exact (euclideanWeylBump_support (εn n) (hεn_pos n)).trans
+	                 (Metric.closedBall_subset_closedBall (min_le_right _ _)))
+	       have hpair :
+	           ∀ n,
+	             (∫ x, H x * φ x) =
+	               T (euclideanConvolutionTest φ (ρn n)) := by
+	         intro n
+	         have hρ_compact :
+	             HasCompactSupport (ρn n : EuclideanSpace ℝ ι -> ℂ) := ...
+	         have hH_eq :
+	             ∀ x ∈ tsupport (φ : EuclideanSpace ℝ ι -> ℂ),
+	               H x = T (euclideanReflectedTranslate x (ρn n)) := by
+	           intro x hx
+	           have hx_ball : x ∈ Metric.ball c r := hφ.2 hx
+	           have hxε :
+	               Metric.closedBall x (εn n) ⊆ Metric.ball c R :=
+	             closedBall_subset_ball_of_uniform_margin hx_ball
+	               (by have hε_le : εn n ≤ η := ...; linarith)
+	           simpa [H, ρn] using
+	             euclideanWeylBallRepresentative_eq_regularized
+	               T hΔ (hεn_pos n) hxε
+	         calc
+	           (∫ x, H x * φ x) =
+	               ∫ x, T (euclideanReflectedTranslate x (ρn n)) * φ x := by
+	                 apply integral_congr_ae
+	                 filter_upwards with x
+	                 by_cases hx : x ∈ tsupport (φ : EuclideanSpace ℝ ι -> ℂ)
+	                 · rw [hH_eq x hx]
+	                 · have hφx : φ x = 0 := image_eq_zero_of_notMem_tsupport hx
+	                   simp [hφx]
+	           _ = T (euclideanConvolutionTest φ (ρn n)) :=
+	                 regularizedDistribution_integral_pairing
+	                   T (ρn n) φ hρ_compact hφ.1
+	       have hTend :
+	           Tendsto (fun n => T (euclideanConvolutionTest φ (ρn n)))
+	             atTop (𝓝 (T φ)) :=
+	         T.continuous.tendsto φ |>.comp happrox
+	       have hconst :
+	           Tendsto (fun _ : ℕ => ∫ x, H x * φ x)
+	             atTop (𝓝 (T φ)) := by
+	         simpa [hpair] using hTend
+	       exact (tendsto_nhds_unique tendsto_const_nhds hconst).symm
+	     ```
+
+	     This ball theorem is now checked in
+	     `SCV/EuclideanWeylRepresentation.lean` as
+	     `euclidean_laplacian_distribution_regular_on_ball`.  The remaining
+	     Weyl regularity target is the open-set assembly below: finite
+	     partition of unity on `tsupport φ`, support preservation for the
+	     localized products, overlap equality of local representatives, and
+	     patching the ball representatives into one smooth representative on
+	     `V`.
 
    The open-set theorem is a local assembly over balls:
 

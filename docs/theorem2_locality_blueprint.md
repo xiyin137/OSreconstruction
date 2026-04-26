@@ -1350,15 +1350,89 @@ Current implementation order:
    pullback theorem are checked as well.  The first pure Euclidean
    moving-kernel layer for the Weyl route, including reflected translate support
    control, derivative commutation, first-order translation seminorm estimates,
-   the pointwise quotient-derivative identity, and compact-kernel continuity in
-   Schwartz topology, is checked in `SCV/EuclideanWeyl.lean`.  The next genuine
-   SCV substrate target is to close the remaining seminorm and topology pieces
-   of the Euclidean difference-quotient theorem for
-   `euclideanTranslateSchwartzCLM`, then the localized Euclidean Weyl theorem
-   itself, now routed through the mollifier-scale-invariance proof recorded in
-   `docs/scv_infrastructure_blueprint.md`, followed by pointwise CR extraction and
-   real-smooth-plus-CR-to-complex-differentiability, as recorded in
-   `docs/scv_infrastructure_blueprint.md`.  The tensor-level sign bridge before
+   the pointwise quotient-derivative identity, compact-kernel continuity,
+   Schwartz-topology difference-quotient convergence, and the one-parameter
+   derivative theorem for reflected regularizations, is checked in
+   `SCV/EuclideanWeyl.lean`.  The direction-uniform Fréchet remainder ladder is
+   now checked in `SCV/EuclideanWeylFrechet.lean` through
+   `hasFDerivAt_regularizedDistribution` and
+   `contDiff_regularizedDistribution`.  The proof slot is recorded in
+   `docs/scv_infrastructure_blueprint.md`: build
+   `exists_seminorm_secondLineDeriv_unit_bound` from
+   `LineDeriv.bilinearLineDerivTwo ℝ φ`, `EuclideanSpace.basisFun ι ℝ`,
+   `EuclideanSpace.norm_sq_eq`, `Finset.single_le_sum`, and the seminorm
+   finite-sum triangle inequality, promote it to uniform translated and
+   quadratic remainders, then compose the Schwartz-topology limit with the
+   reflected functional and close smoothness by finite-order induction.  The
+   first normalized Euclidean bump substrate is now checked in
+   `SCV/EuclideanWeylBump.lean`: normalized compact radial bumps, real-valued
+   nonnegativity, support in `closedBall 0 ε`, and zero integral/compact
+   support for differences.  The profile-scaling weighted-mass subpackage is
+   now also checked: the real raw integral scales by Euclidean Haar scaling, the
+   one-variable weighted raw mass scales by the same power, and the normalized
+   weighted mass is independent of the radius.  The bump-subprofile support,
+   plateau, and norm-equality facts are checked as well.  The first
+   finite-interval radial Poisson substrate is now checked in
+   `SCV/EuclideanWeylPoisson.lean`: the radial mass and primitive definitions,
+   the FTC derivative of the radial mass, the global weighted-mass bridge from
+   the checked `Ioi` mass to the finite ODE boundary condition, the near-zero
+   constant-mass formula, the linear primitive-derivative formula, and the
+   quadratic primitive profile at the origin, the away-from-zero radial ODE,
+   the positive-radius scalar profile-Laplacian theorem, primitive vanishing
+   outside the support radius, and the Euclidean origin smoothness/Laplacian
+   calculation from the quadratic norm germ.  The off-origin norm geometry is
+   now checked through the finite-sum identities, norm Hessian, coordinate
+   quotient derivative, local `ContDiffAt` neighborhood rewrite of the first
+   derivative of `a ∘ ‖·‖`, radial second-chain-rule product body, summed
+   off-origin profile Laplacian, positive-half-line smoothness for the
+	   primitive profile, the all-points Poisson theorem
+	   `laplacian_radialPrimitiveProfile`, compact support and exact
+	   topological-support radius for the norm-composed primitive, Schwartz
+	   packaging, the positive-dimensional bump-difference primitive theorem
+	   `exists_compact_laplacian_eq_euclideanWeylBump_sub_with_support`,
+	   reflected-translate Laplacian commutation, and the harmonic bump
+	   scale-invariance theorem `regularizedDistribution_bump_scale_eq`.  The
+	   local ball-representative layer is now checked in
+	   `SCV/EuclideanWeylRegularity.lean`: the margin support lemmas,
+	   `euclideanWeylBallRepresentative`, fixed-regularization equality on
+	   smaller balls, `contDiffOn_euclideanWeylBallRepresentative`, and the
+	   checked Mathlib-convolution surface
+	   `euclideanConvolutionTest_apply_reflectedTranslate`.  The next genuine
+	   SCV substrate target remains the localized Euclidean Weyl theorem itself,
+	   now at the scalar distribution-pairing identity plus compact-support
+	   approximate-identity representation assembly.  The pairing route is the
+	   finite-probe/ordinary-Bochner route recorded in
+	   `docs/scv_infrastructure_blueprint.md`, matching the
+	   Streater-Wightman regularization identity and avoiding any
+	   `SchwartzMap`-valued Bochner shortcut.  That SCV blueprint now fixes the
+	   first Lean implementation packet exactly, and
+	   `SCV/EuclideanWeylProbe.lean` checks it: Euclidean polynomial weights,
+	   coordinate iterated line-derivative CLMs, weighted bounded-continuous
+	   probes, `euclideanProbeCLM`, and the finite-dimensional
+	   coordinate-domination theorem required before the Hahn-Banach
+	   factorization.  The Hahn-Banach factorization through the checked probe
+	   map is now also checked as
+	   `SCV.euclideanSchwartzFunctional_exists_probe_factorization`; it does not
+	   add an axiom or a theorem-level `sorry`.  The componentwise
+	   Banach-valued probe integral identity and the compact-kernel scalar
+	   pairing theorem are now checked in `SCV/EuclideanWeylPairing.lean` as
+	   `integral_euclideanPairingProbeFamily_eq_probe_convolution` and
+	   `regularizedDistribution_integral_pairing`; these are the ordinary
+	   Bochner replacement after finite factorization.  The Euclidean
+	   approximate-identity theorem is now checked in
+	   `SCV/EuclideanWeylApproxIdentity.lean` through
+	   `tendsto_euclideanConvolutionTest_of_shrinking_normalized_support` and
+	   `exists_euclideanConvolutionTest_approxIdentity`; it proves convergence
+	   in the full Schwartz topology from explicit normalized compact Weyl
+	   bumps.  The smaller-ball representation theorem is now checked in
+	   `SCV/EuclideanWeylRepresentation.lean` as
+	   `euclidean_laplacian_distribution_regular_on_ball`; it combines
+	   scale-invariance, scalar pairing, and approximate identity to represent
+	   the harmonic distribution on `Metric.ball c r`.  The next implementation
+	   stage is the open-set representation assembly.  After that lands,
+	   the route continues with pointwise CR extraction and
+	   real-smooth-plus-CR-to-complex-differentiability, as recorded in
+	   `docs/scv_infrastructure_blueprint.md`.  The tensor-level sign bridge before
    the density step remains explicit:
    `SCV.shearedProductKernel_fiberTranslate_shearedTensor_eq_self_of_productCovariant`
    proves invariance on each sheared product tensor by applying

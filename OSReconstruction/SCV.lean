@@ -22,6 +22,14 @@ import OSReconstruction.SCV.DistributionalEOWRepresentative
 import OSReconstruction.SCV.DistributionalEOWApproxIdentity
 import OSReconstruction.SCV.DistributionalEOWRegularity
 import OSReconstruction.SCV.EuclideanWeyl
+import OSReconstruction.SCV.EuclideanWeylFrechet
+import OSReconstruction.SCV.EuclideanWeylBump
+import OSReconstruction.SCV.EuclideanWeylPoisson
+import OSReconstruction.SCV.EuclideanWeylRegularity
+import OSReconstruction.SCV.EuclideanWeylProbe
+import OSReconstruction.SCV.EuclideanWeylPairing
+import OSReconstruction.SCV.EuclideanWeylApproxIdentity
+import OSReconstruction.SCV.EuclideanWeylRepresentation
 import OSReconstruction.SCV.SchwartzPrependField
 import OSReconstruction.SCV.SchwartzPartialEval
 import OSReconstruction.SCV.TranslationDifferentiation
