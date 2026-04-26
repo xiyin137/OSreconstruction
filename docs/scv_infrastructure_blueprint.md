@@ -5293,13 +5293,14 @@ Exact product-kernel/descent subpackage:
    def transportedDistributionToEuclidean
    theorem transportedDistributionToEuclidean_apply
    theorem supportsInOpen_transport_to_euclidean
+   theorem complexChartEuclideanCLE_volumePreserving
+   theorem integral_comp_complexChartEuclideanCLE
    ```
 
    These declarations are checked in
    `SCV/DistributionalEOWRegularity.lean`.  The remaining Lean work for this
-   substage is no longer coordinate bookkeeping; it is the genuine local
-   Euclidean Weyl theorem and the volume-preserving change-of-variables lemma
-   needed to transport the representative back.
+   substage is no longer coordinate, support, or Jacobian bookkeeping; it is
+   the genuine local Euclidean Weyl theorem.
 
    Exact remaining theorem surfaces for the Weyl package:
 
@@ -5312,18 +5313,6 @@ Exact product-kernel/descent subpackage:
      ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
        SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
          T φ = ∫ x, H x * φ x
-
-   theorem complexChartEuclideanCLE_volumePreserving
-       (m : ℕ) :
-       MeasurePreserving (complexChartEuclideanCLE m)
-
-   theorem integral_comp_complexChartEuclideanCLE
-       (m : ℕ)
-       (H : EuclideanSpace ℝ (Fin (m * 2)) -> ℂ)
-       (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
-       (∫ x : EuclideanSpace ℝ (Fin (m * 2)),
-           H x * (complexChartEuclideanSchwartzCLE m φ) x) =
-         ∫ z : ComplexChartSpace m, H (complexChartEuclideanCLE m z) * φ z
 
    theorem euclidean_laplacian_distribution_regular_on_ball
        {ι : Type*} [Fintype ι] [DecidableEq ι]

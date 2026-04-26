@@ -542,4 +542,133 @@ theorem supportsInOpen_transport_to_euclidean {m : ℕ}
     rcases hφ.2 hez with ⟨z', hz'U, hz'eq⟩
     exact (e.injective hz'eq).symm ▸ hz'U
 
+/-- Measurable real-coordinate flattening in the same coordinate order as
+`realBlockFlattenCLE`. -/
+private def realBlockFlattenMeasurableEquiv (n d : ℕ) :
+    (Fin n → Fin d → ℝ) ≃ᵐ (Fin (n * d) → ℝ) :=
+  (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.trans
+    (MeasurableEquiv.piCongrLeft (fun _ => ℝ) finProdFinEquiv)
+
+@[simp]
+private theorem realBlockFlattenMeasurableEquiv_apply (n d : ℕ)
+    (f : Fin n → Fin d → ℝ) (k : Fin (n * d)) :
+    realBlockFlattenMeasurableEquiv n d f k =
+      f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2 := by
+  simp [realBlockFlattenMeasurableEquiv, MeasurableEquiv.trans_apply,
+    MeasurableEquiv.coe_curry_symm, MeasurableEquiv.piCongrLeft,
+    Equiv.piCongrLeft, Function.uncurry]
+
+private theorem volume_map_curry_symm_realBlock (n d : ℕ) :
+    (volume : Measure (Fin n → Fin d → ℝ)).map
+      (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm =
+    (volume : Measure (Fin n × Fin d → ℝ)) := by
+  symm
+  apply Measure.pi_eq
+  intro s hs
+  rw [Measure.map_apply
+    (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.measurable
+    (MeasurableSet.univ_pi hs)]
+  have h_preimage :
+      (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm ⁻¹'
+        (Set.univ.pi s) =
+      Set.univ.pi (fun i => Set.univ.pi (fun j => s (i, j))) := by
+    ext f
+    simp only [Set.mem_preimage, Set.mem_univ_pi,
+      MeasurableEquiv.coe_curry_symm, Function.uncurry]
+    exact ⟨fun h i j => h (i, j), fun h ⟨i, j⟩ => h i j⟩
+  rw [h_preimage, volume_pi_pi]
+  simp_rw [volume_pi_pi]
+  rw [← Finset.prod_product', ← Finset.univ_product_univ]
+
+private theorem realBlockFlattenMeasurableEquiv_measurePreserving (n d : ℕ) :
+    MeasurePreserving (realBlockFlattenMeasurableEquiv n d) := by
+  have h_uncurry :
+      MeasurePreserving
+        (MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm
+        volume volume := by
+    refine ⟨(MeasurableEquiv.curry (Fin n) (Fin d) ℝ).symm.measurable, ?_⟩
+    exact volume_map_curry_symm_realBlock n d
+  exact (MeasureTheory.volume_measurePreserving_piCongrLeft
+      (fun _ => ℝ) finProdFinEquiv).comp h_uncurry
+
+/-- Measurable coordinatewise real/imaginary chart. -/
+private def complexChartRealBlockMeasurableEquiv (m : ℕ) :
+    ComplexChartSpace m ≃ᵐ (Fin m → Fin 2 → ℝ) :=
+  MeasurableEquiv.arrowCongr' (Equiv.refl (Fin m))
+    Complex.measurableEquivPi
+
+private theorem complexChartRealBlockMeasurableEquiv_measurePreserving
+    (m : ℕ) :
+    MeasurePreserving (complexChartRealBlockMeasurableEquiv m) := by
+  exact MeasureTheory.volume_preserving_arrowCongr'
+    (Equiv.refl (Fin m)) Complex.measurableEquivPi
+    Complex.volume_preserving_equiv_pi
+
+private def complexChartRealFlattenMeasurableEquiv (m : ℕ) :
+    ComplexChartSpace m ≃ᵐ (Fin (m * 2) → ℝ) :=
+  (complexChartRealBlockMeasurableEquiv m).trans
+    (realBlockFlattenMeasurableEquiv m 2)
+
+private theorem complexChartRealFlattenMeasurableEquiv_measurePreserving
+    (m : ℕ) :
+    MeasurePreserving (complexChartRealFlattenMeasurableEquiv m) :=
+  (complexChartRealBlockMeasurableEquiv_measurePreserving m).trans
+    (realBlockFlattenMeasurableEquiv_measurePreserving m 2)
+
+/-- The measurable equivalence matching `complexChartEuclideanCLE`. -/
+private def complexChartEuclideanMeasurableEquiv (m : ℕ) :
+    ComplexChartSpace m ≃ᵐ EuclideanSpace ℝ (Fin (m * 2)) :=
+  (complexChartRealFlattenMeasurableEquiv m).trans
+    (MeasurableEquiv.toLp 2 (Fin (m * 2) → ℝ))
+
+private theorem complexChartEuclideanMeasurableEquiv_apply (m : ℕ)
+    (z : ComplexChartSpace m) :
+    complexChartEuclideanMeasurableEquiv m z =
+      complexChartEuclideanCLE m z := by
+  ext k
+  obtain ⟨p, rfl⟩ := finProdFinEquiv.surjective k
+  rcases p with ⟨i, b⟩
+  fin_cases b <;>
+    simp [complexChartEuclideanMeasurableEquiv,
+      complexChartRealFlattenMeasurableEquiv,
+      complexChartRealBlockMeasurableEquiv,
+      MeasurableEquiv.arrowCongr', Equiv.arrowCongr',
+      Equiv.arrowCongr, complexChartEuclideanCLE,
+      complexChartRealFlattenCLE, complexChartRealBlockCLE,
+      complexToFinTwoCLE]
+
+/-- The complex-chart Euclidean flattening preserves Lebesgue/Haar volume. -/
+theorem complexChartEuclideanCLE_volumePreserving (m : ℕ) :
+    MeasurePreserving (complexChartEuclideanCLE m) := by
+  have hmp : MeasurePreserving (complexChartEuclideanMeasurableEquiv m) :=
+    (complexChartRealFlattenMeasurableEquiv_measurePreserving m).trans
+      (by simpa using (PiLp.volume_preserving_toLp (Fin (m * 2))))
+  exact hmp.congr (complexChartEuclideanCLE m).continuous.measurable (by
+    filter_upwards with z
+    exact complexChartEuclideanMeasurableEquiv_apply m z)
+
+/-- Change of variables along the volume-preserving complex-chart Euclidean
+flattening. -/
+theorem integral_comp_complexChartEuclideanCLE (m : ℕ)
+    (H : EuclideanSpace ℝ (Fin (m * 2)) → ℂ)
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+    (∫ x : EuclideanSpace ℝ (Fin (m * 2)),
+        H x * (complexChartEuclideanSchwartzCLE m φ) x) =
+      ∫ z : ComplexChartSpace m, H (complexChartEuclideanCLE m z) * φ z := by
+  simp only [complexChartEuclideanSchwartzCLE_apply]
+  let e := complexChartEuclideanCLE m
+  let G : EuclideanSpace ℝ (Fin (m * 2)) → ℂ :=
+    fun x => H x * φ (e.symm x)
+  have hmp := complexChartEuclideanCLE_volumePreserving m
+  change (∫ x : EuclideanSpace ℝ (Fin (m * 2)), G x) =
+    ∫ z : ComplexChartSpace m, H (e z) * φ z
+  have hright :
+      (fun z : ComplexChartSpace m => H (e z) * φ z) =
+        fun z : ComplexChartSpace m => G (e z) := by
+    ext z
+    simp [G, e]
+  rw [hright]
+  simpa [G, e] using
+    (hmp.integral_comp e.toHomeomorph.measurableEmbedding G).symm
+
 end SCV

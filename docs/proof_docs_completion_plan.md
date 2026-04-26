@@ -547,7 +547,7 @@ Current examples:
    chart to a Euclidean model, the checked `pointwiseDbar`, Euclidean
    chart/Schwartz transport bridges, coordinate-direction transport,
    Laplacian transport, transported distribution, and support transport,
-   extraction
+   plus the volume-preserving chart-change theorem, extraction
    of pointwise Cauchy-Riemann equations from the smooth representative using the checked
    `∂bar` integration-by-parts theorem, and conversion from real smoothness
    plus CR equations to `DifferentiableOn ℂ`.
