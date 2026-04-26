@@ -5326,12 +5326,21 @@ Exact product-kernel/descent subpackage:
    theorem integral_comp_complexChartEuclideanCLE
    def RepresentsEuclideanDistributionOn
    theorem representsDistributionOnComplexDomain_of_euclidean
+   def euclideanTranslateSchwartzCLM
+   theorem euclideanTranslateSchwartz_apply
+   def euclideanReflectedTranslate
+   theorem euclideanReflectedTranslate_apply
+   theorem supportsInOpen_euclideanReflectedTranslate_of_kernelSupport
+   theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
+   theorem continuous_apply_euclideanTranslateSchwartz_of_isCompactSupport
+   theorem continuous_apply_euclideanReflectedTranslate_of_isCompactSupport
    ```
 
-   These declarations are checked in
-   `SCV/DistributionalEOWRegularity.lean`.  The remaining Lean work for this
-   substage is no longer coordinate, support, or Jacobian bookkeeping; it is
-   the genuine local Euclidean Weyl theorem.
+   The chart/representative declarations are checked in
+   `SCV/DistributionalEOWRegularity.lean`; the Euclidean moving-kernel
+   declarations are checked in `SCV/EuclideanWeyl.lean`.  The remaining Lean
+   work for this substage is no longer coordinate, support, Jacobian, or
+   reflected-kernel bookkeeping; it is the genuine local Euclidean Weyl theorem.
 
    Exact remaining theorem surfaces for the Weyl package:
 
@@ -5378,10 +5387,8 @@ Exact product-kernel/descent subpackage:
    wrapper and do not add an axiom.  Prove the pure Euclidean theorem by the
    standard mollifier-scale-invariance proof of Weyl's lemma.
 
-   First introduce Euclidean translation and kernel notation in a new focused
-   file, e.g. `SCV/EuclideanWeyl.lean`, importing
-   `DistributionalEOWRegularity` only if the representation predicate has not
-   yet been split into a smaller Euclidean file:
+   The first Euclidean translation, reflected-kernel support, and compact-kernel
+   continuity layer is now checked in `SCV/EuclideanWeyl.lean`:
 
    ```lean
    noncomputable def euclideanTranslateSchwartzCLM
@@ -5394,13 +5401,13 @@ Exact product-kernel/descent subpackage:
        (a : EuclideanSpace ℝ ι)
        (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
        (x : EuclideanSpace ℝ ι) :
-       euclideanTranslateSchwartz a φ x = φ (x + a)
+       euclideanTranslateSchwartzCLM a φ x = φ (x + a)
 
    noncomputable def euclideanReflectedTranslate
        (x : EuclideanSpace ℝ ι)
        (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
        SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
-     euclideanTranslateSchwartz (-x) ρ
+     euclideanTranslateSchwartzCLM (-x) ρ
 
    theorem euclideanReflectedTranslate_apply
        (x y : EuclideanSpace ℝ ι)
@@ -5416,30 +5423,42 @@ Exact product-kernel/descent subpackage:
        SupportsInOpen
          (euclideanReflectedTranslate x ρ :
            EuclideanSpace ℝ ι -> ℂ) V
-   ```
 
-   The proofs are the existing `translateSchwartz` proofs transported from
-   `Fin m -> ℝ` to `EuclideanSpace ℝ ι`: `SchwartzMap.compCLM` for
-   translation, `tsupport_comp_eq_preimage` for support, and
-   `isCompact_closedBall` for compactness.  The reflected convention is chosen
-   so that the eventual regularization is
-   `Hρ x = T (euclideanReflectedTranslate x ρ)` and
-   `∫ Hρ x * φ x dx = T (ρ̌ * φ)` with Mathlib's convolution convention.
-
-   Next prove the smoothness of distributional mollifications.  This is the
-   Euclidean analogue of the checked translation-differentiation lemmas in
-   `SCV/TranslationDifferentiation.lean`, but all variables are Euclidean and
-   no OS data enter:
-
-   ```lean
    theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
        (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
        (hρ_compact : HasCompactSupport
          (ρ : EuclideanSpace ℝ ι -> ℂ))
        (a0 : EuclideanSpace ℝ ι) :
-       Tendsto (fun a => euclideanTranslateSchwartz a ρ) (𝓝 a0)
-         (𝓝 (euclideanTranslateSchwartz a0 ρ))
+       Tendsto
+         (fun a : EuclideanSpace ℝ ι =>
+           euclideanTranslateSchwartzCLM a ρ)
+         (𝓝 a0) (𝓝 (euclideanTranslateSchwartzCLM a0 ρ))
 
+   theorem continuous_apply_euclideanReflectedTranslate_of_isCompactSupport
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (hρ_compact : HasCompactSupport
+         (ρ : EuclideanSpace ℝ ι -> ℂ)) :
+       Continuous
+         (fun x : EuclideanSpace ℝ ι =>
+           T (euclideanReflectedTranslate x ρ))
+   ```
+
+   The proofs are the existing `translateSchwartz` proofs transported from
+   `Fin m -> ℝ` to `EuclideanSpace ℝ ι`: `SchwartzMap.compCLM` for
+   translation, `tsupport_comp_eq_preimage` for support, and
+   `isCompact_closedBall` for compactness.  This layer is already compiled and
+   exported by `SCV.lean`.  The reflected convention is chosen so that the
+   eventual regularization is
+   `Hρ x = T (euclideanReflectedTranslate x ρ)` and
+   `∫ Hρ x * φ x dx = T (ρ̌ * φ)` with Mathlib's convolution convention.
+
+   Next upgrade the checked continuity of distributional mollifications to
+   smoothness.  This is the Euclidean analogue of the checked
+   translation-differentiation lemmas in `SCV/TranslationDifferentiation.lean`,
+   but all variables are Euclidean and no OS data enter:
+
+   ```lean
    theorem hasDerivAt_regularizedDistribution_along
        (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
        (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)

@@ -1347,9 +1347,12 @@ Current implementation order:
    coordinate Laplacian comparison, chart-Laplacian transport theorem,
    transported distribution, support transport in both directions,
    volume-preserving chart-change theorem, and Euclidean-representative
-   pullback theorem are checked as well.  The next genuine SCV substrate target
-   is therefore the localized Euclidean Weyl theorem itself, now routed through
-   the mollifier-scale-invariance proof recorded in
+   pullback theorem are checked as well.  The first pure Euclidean
+   moving-kernel layer for the Weyl route, including reflected translate support
+   control and compact-kernel continuity in Schwartz topology, is checked in
+   `SCV/EuclideanWeyl.lean`.  The next genuine SCV substrate target is
+   therefore the localized Euclidean Weyl theorem itself, now routed through the
+   mollifier-scale-invariance proof recorded in
    `docs/scv_infrastructure_blueprint.md`, followed by pointwise CR extraction and
    real-smooth-plus-CR-to-complex-differentiability, as recorded in
    `docs/scv_infrastructure_blueprint.md`.  The tensor-level sign bridge before
