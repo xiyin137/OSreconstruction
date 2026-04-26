@@ -1345,10 +1345,12 @@ Current implementation order:
    `SCV.dbarSchwartzCLM_apply_eq_pointwiseDbar` bridge.  The first Euclidean
    transport objects, coordinate-direction transport lemmas, Euclidean
    coordinate Laplacian comparison, chart-Laplacian transport theorem,
-   transported distribution, support transport theorem, and volume-preserving
-   chart-change theorem are checked as well.  The next genuine SCV substrate
-   target is therefore the localized Euclidean Weyl/parametrix theorem,
-   followed by pointwise CR extraction and
+   transported distribution, support transport in both directions,
+   volume-preserving chart-change theorem, and Euclidean-representative
+   pullback theorem are checked as well.  The next genuine SCV substrate target
+   is therefore the localized Euclidean Weyl theorem itself, now routed through
+   the mollifier-scale-invariance proof recorded in
+   `docs/scv_infrastructure_blueprint.md`, followed by pointwise CR extraction and
    real-smooth-plus-CR-to-complex-differentiability, as recorded in
    `docs/scv_infrastructure_blueprint.md`.  The tensor-level sign bridge before
    the density step remains explicit:

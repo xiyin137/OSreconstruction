@@ -5121,6 +5121,16 @@ Exact product-kernel/descent subpackage:
              SchwartzMap (ComplexChartSpace m) ℂ) :
            ComplexChartSpace m -> ℂ) U0
 
+   theorem supportsInOpen_transport_from_euclidean
+       {φ : SchwartzMap (ComplexChartSpace m) ℂ}
+       {U0 : Set (ComplexChartSpace m)}
+       (hφ : SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0) :
+       SupportsInOpen
+         ((complexChartEuclideanSchwartzCLE m φ :
+             SchwartzMap (EuclideanSpace ℝ (Fin (m * 2))) ℂ) :
+           EuclideanSpace ℝ (Fin (m * 2)) -> ℂ)
+         ((complexChartEuclideanCLE m) '' U0)
+
    theorem euclidean_weyl_laplacian_distribution_regular_on_open
        {ι : Type*} [Fintype ι]
        (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
@@ -5137,6 +5147,17 @@ Exact product-kernel/descent subpackage:
          ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
            SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
              T φ = ∫ x, H x * φ x
+
+   theorem representsDistributionOnComplexDomain_of_euclidean
+       (T : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       {U0 : Set (ComplexChartSpace m)}
+       (HE : EuclideanSpace ℝ (Fin (m * 2)) -> ℂ)
+       (hHE :
+         RepresentsEuclideanDistributionOn
+           (transportedDistributionToEuclidean T) HE
+           ((complexChartEuclideanCLE m) '' U0)) :
+       RepresentsDistributionOnComplexDomain T
+         (fun z => HE (complexChartEuclideanCLE m z)) U0
    ```
 
    Lean transcript for the Euclidean transport lemmas.
@@ -5221,8 +5242,9 @@ Exact product-kernel/descent subpackage:
       summands; `euclideanCoordinateLaplacianSchwartzCLM_eq_laplacianCLM`
       finishes the comparison with Mathlib's Laplacian.
 
-   5. `supportsInOpen_transport_to_euclidean` is a topological-support
-      transport lemma for a homeomorphism.  Use
+   5. `supportsInOpen_transport_to_euclidean` and
+      `supportsInOpen_transport_from_euclidean` are topological-support
+      transport lemmas for the two directions of the same homeomorphism.  Use
       `complexChartEuclideanSchwartzCLE_symm_apply` to identify the pulled-back
       function with `φ ∘ complexChartEuclideanCLE`; show compact support from
       `hφ.1.comp_homeomorph` or the corresponding compact-image/preimage
@@ -5231,7 +5253,10 @@ Exact product-kernel/descent subpackage:
       `tsupport (((complexChartEuclideanSchwartzCLE m).symm φ) : _ -> ℂ) ⊆ U0`
       by mapping any point in the support into
       `(complexChartEuclideanCLE m) '' U0` and applying injectivity of
-      `complexChartEuclideanCLE m`.
+      `complexChartEuclideanCLE m`.  The forward lemma is the same argument
+      with `complexChartEuclideanSchwartzCLE_apply`: its support is the
+      `complexChartEuclideanCLE m` image of the original support, so it lies in
+      `(complexChartEuclideanCLE m) '' U0`.
 
    6. The final chart Weyl theorem is then a short transport proof once the
       Euclidean theorem is available:
@@ -5258,11 +5283,14 @@ Exact product-kernel/descent subpackage:
       refine ⟨fun z => HE (complexChartEuclideanCLE m z), ?smooth, ?rep⟩
       ```
 
-      The representation proof uses the same linear change-of-variables
-      theorem as the existing `integral_comp_euclidean_equiv` pattern: rewrite
-      `T φ` as the transported distribution applied to
-      `complexChartEuclideanSchwartzCLE m φ`, apply `hHE_rep`, and change
-      variables along `complexChartEuclideanCLE m`.
+      The representation proof is the checked helper
+      `representsDistributionOnComplexDomain_of_euclidean`: rewrite `T φ` as
+      the transported distribution applied to
+      `complexChartEuclideanSchwartzCLE m φ`, use
+      `supportsInOpen_transport_from_euclidean` to feed the Euclidean
+      representative theorem, then apply
+      `integral_comp_complexChartEuclideanCLE` to change variables.  This is
+      the exact point where the volume-preserving theorem is consumed.
 
    The transport proof of `weyl_laplacian_distribution_regular_on_open` then
    applies the Euclidean theorem to
@@ -5293,8 +5321,11 @@ Exact product-kernel/descent subpackage:
    def transportedDistributionToEuclidean
    theorem transportedDistributionToEuclidean_apply
    theorem supportsInOpen_transport_to_euclidean
+   theorem supportsInOpen_transport_from_euclidean
    theorem complexChartEuclideanCLE_volumePreserving
    theorem integral_comp_complexChartEuclideanCLE
+   def RepresentsEuclideanDistributionOn
+   theorem representsDistributionOnComplexDomain_of_euclidean
    ```
 
    These declarations are checked in
@@ -5305,15 +5336,6 @@ Exact product-kernel/descent subpackage:
    Exact remaining theorem surfaces for the Weyl package:
 
    ```lean
-   def RepresentsEuclideanDistributionOn
-       {ι : Type*} [Fintype ι]
-       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
-       (H : EuclideanSpace ℝ ι -> ℂ)
-       (V : Set (EuclideanSpace ℝ ι)) : Prop :=
-     ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
-       SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
-         T φ = ∫ x, H x * φ x
-
    theorem euclidean_laplacian_distribution_regular_on_ball
        {ι : Type*} [Fintype ι] [DecidableEq ι]
        (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
@@ -5347,32 +5369,379 @@ Exact product-kernel/descent subpackage:
    ```
 
    The volume-preserving lemma is not a new analytic input.  It is a finite
-   product/permutation calculation: compose
-   `Complex.volume_preserving_equiv_real_prod`,
-   `MeasureTheory.volume_preserving_pi`, the coordinate-flattening
-   permutation underlying `realBlockFlattenCLE`, and
-   `PiLp.volume_preserving_toLp`.  This proves that no Jacobian factor appears
-   in `integral_comp_complexChartEuclideanCLE`.
+   product/permutation calculation: compose the measurable real/imaginary
+   complex chart, the coordinate-flattening permutation underlying
+   `realBlockFlattenCLE`, and `PiLp.volume_preserving_toLp`.  This proves that
+   no Jacobian factor appears in `integral_comp_complexChartEuclideanCLE`.
 
-   Proof transcript for the Euclidean Weyl lemma.  Work locally on a closed ball
-   `closedBall c (2 * r) ⊆ V`.  Convolve the Euclidean distribution with the
-   standard finite-dimensional Newton kernel cut off
-   outside `closedBall 0 r`; the checked mathlib distribution derivative API
-   supplies the sign convention for the test Laplacian, while the transport
-   lemmas identify it with `complexChartLaplacianSchwartzCLM`.  The cutoff
-   Newton kernel
-   gives a local parametrix
+   Lean-ready Euclidean Weyl proof route.  Do not introduce a theorem-2
+   wrapper and do not add an axiom.  Prove the pure Euclidean theorem by the
+   standard mollifier-scale-invariance proof of Weyl's lemma.
+
+   First introduce Euclidean translation and kernel notation in a new focused
+   file, e.g. `SCV/EuclideanWeyl.lean`, importing
+   `DistributionalEOWRegularity` only if the representation predicate has not
+   yet been split into a smaller Euclidean file:
+
+   ```lean
+   noncomputable def euclideanTranslateSchwartzCLM
+       {ι : Type*} [Fintype ι]
+       (a : EuclideanSpace ℝ ι) :
+       SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ]
+         SchwartzMap (EuclideanSpace ℝ ι) ℂ
+
+   theorem euclideanTranslateSchwartz_apply
+       (a : EuclideanSpace ℝ ι)
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x : EuclideanSpace ℝ ι) :
+       euclideanTranslateSchwartz a φ x = φ (x + a)
+
+   noncomputable def euclideanReflectedTranslate
+       (x : EuclideanSpace ℝ ι)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+     euclideanTranslateSchwartz (-x) ρ
+
+   theorem euclideanReflectedTranslate_apply
+       (x y : EuclideanSpace ℝ ι)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       euclideanReflectedTranslate x ρ y = ρ (y - x)
+
+   theorem supportsInOpen_euclideanReflectedTranslate_of_kernelSupport
+       {V : Set (EuclideanSpace ℝ ι)}
+       {x : EuclideanSpace ℝ ι} {r : ℝ}
+       (hx : Metric.closedBall x r ⊆ V)
+       (hρ : tsupport (ρ : EuclideanSpace ℝ ι -> ℂ) ⊆
+         Metric.closedBall 0 r) :
+       SupportsInOpen
+         (euclideanReflectedTranslate x ρ :
+           EuclideanSpace ℝ ι -> ℂ) V
    ```
-   Δ (N_r * φ) = φ + R_r φ
+
+   The proofs are the existing `translateSchwartz` proofs transported from
+   `Fin m -> ℝ` to `EuclideanSpace ℝ ι`: `SchwartzMap.compCLM` for
+   translation, `tsupport_comp_eq_preimage` for support, and
+   `isCompact_closedBall` for compactness.  The reflected convention is chosen
+   so that the eventual regularization is
+   `Hρ x = T (euclideanReflectedTranslate x ρ)` and
+   `∫ Hρ x * φ x dx = T (ρ̌ * φ)` with Mathlib's convolution convention.
+
+   Next prove the smoothness of distributional mollifications.  This is the
+   Euclidean analogue of the checked translation-differentiation lemmas in
+   `SCV/TranslationDifferentiation.lean`, but all variables are Euclidean and
+   no OS data enter:
+
+   ```lean
+   theorem tendsto_euclideanTranslateSchwartz_nhds_of_isCompactSupport
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (hρ_compact : HasCompactSupport
+         (ρ : EuclideanSpace ℝ ι -> ℂ))
+       (a0 : EuclideanSpace ℝ ι) :
+       Tendsto (fun a => euclideanTranslateSchwartz a ρ) (𝓝 a0)
+         (𝓝 (euclideanTranslateSchwartz a0 ρ))
+
+   theorem hasDerivAt_regularizedDistribution_along
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x v : EuclideanSpace ℝ ι) :
+       HasDerivAt
+         (fun t : ℝ =>
+           T (euclideanReflectedTranslate (x + t • v) ρ))
+         (-T (euclideanReflectedTranslate x
+           (LineDeriv.lineDerivOp v ρ)))
+         0
+
+   theorem contDiff_regularizedDistribution
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (hρ_compact : HasCompactSupport
+         (ρ : EuclideanSpace ℝ ι -> ℂ)) :
+       ContDiff ℝ (⊤ : ℕ∞)
+         (fun x => T (euclideanReflectedTranslate x ρ))
    ```
-   where `R_r` is represented by a smooth kernel on the smaller ball.  Pairing
-   against `T` and using `hΔ` removes the singular part, so `T` is represented
-   on `ball c r` by the smooth function obtained from the remainder kernel.
-   On overlapping balls, the two smooth representatives have the same
-   pairings with all compactly supported Schwartz tests in the overlap; apply
-   the already checked
-   `eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` to patch
-   them.  This gives the displayed global `H`.
+
+   The first theorem is copied from
+   `tendsto_translateSchwartz_nhds_of_isCompactSupport`.  For the derivative
+   formula, start with one direction `v` and prove the displayed
+   one-variable difference quotient
+   using `SCV.exists_seminorm_diffQuotient_translateSchwartz_sub_lineDeriv_le`
+   ported to `EuclideanSpace`; compose the limit with `T.continuous`.
+   Iterate this directional statement, or equivalently prove the corresponding
+   Fréchet derivative statement, to obtain `contDiff_regularizedDistribution`.
+   The exact sign is fixed by
+   `euclideanReflectedTranslate x ρ y = ρ (y - x)`.
+
+   The scale-invariance heart of Weyl's lemma is a pure radial-bump theorem.
+   Use Mathlib `ContDiffBump (0 : EuclideanSpace ℝ ι)` and its normalized
+   form.  For `0 < ε`, let `weylBump ε` be the normalized bump with support in
+   `closedBall 0 ε`.
+
+   ```lean
+   noncomputable def euclideanWeylBump
+       {ι : Type*} [Fintype ι] [DecidableEq ι]
+       (ε : ℝ) (hε : 0 < ε) :
+       SchwartzMap (EuclideanSpace ℝ ι) ℂ
+
+   theorem euclideanWeylBump_normalized
+       (ε : ℝ) (hε : 0 < ε) :
+       ∫ x : EuclideanSpace ℝ ι, euclideanWeylBump ε hε x = 1
+
+   theorem euclideanWeylBump_support
+       (ε : ℝ) (hε : 0 < ε) :
+       tsupport (euclideanWeylBump ε hε :
+         EuclideanSpace ℝ ι -> ℂ) ⊆ Metric.closedBall 0 ε
+
+   theorem exists_compactSmooth_laplacian_eq_bump_sub_bump
+       {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ) :
+       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
+           euclideanWeylBump ε hε - euclideanWeylBump δ hδ
+   ```
+
+   The last theorem is the only hard scalar-analysis sublemma inside the Weyl
+   proof.  It is the compactly supported radial Poisson equation for a
+   zero-integral radial right-hand side.  Split its proof into the following
+   scalar/profile lemmas so the final theorem is not an opaque parametrix
+   wrapper:
+
+   ```lean
+   def radialProfileLaplacian (N : ℕ) (a : ℝ -> ℂ) (r : ℝ) : ℂ :=
+     deriv (deriv a) r + ((N - 1 : ℝ) / r) * deriv a r
+
+   theorem laplacian_radialProfile_off_origin
+       {N : ℕ} (hN : N = Fintype.card ι)
+       {a : ℝ -> ℂ}
+       (ha : ContDiffOn ℝ (⊤ : ℕ∞) a (Set.Ioi 0))
+       (x : EuclideanSpace ℝ ι) (hx : x ≠ 0) :
+       Laplacian.laplacian (fun y : EuclideanSpace ℝ ι => a ‖y‖) x =
+         radialProfileLaplacian N a ‖x‖
+
+   theorem exists_compactSupport_radialPrimitive_zeroMass
+       {N : ℕ} (hNpos : 0 < N)
+       {f : ℝ -> ℂ} {R : ℝ}
+       (hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f)
+       (hf_support : Function.support f ⊆ Set.Icc 0 R)
+       (hf_zeroMass :
+         ∫ r in Set.Ioi 0, (r ^ (N - 1)) • f r = 0) :
+       ∃ a : ℝ -> ℂ,
+         ContDiff ℝ (⊤ : ℕ∞) a ∧
+         Function.support a ⊆ Set.Icc 0 R ∧
+         ∀ r ∈ Set.Ioi 0, radialProfileLaplacian N a r = f r
+
+   theorem compactSmooth_laplacian_radialPrimitive
+       {f : EuclideanSpace ℝ ι -> ℂ}
+       (hf_radial : ∃ fp : ℝ -> ℂ, f = fun x => fp ‖x‖)
+       (hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f)
+       (hf_compact : HasCompactSupport f)
+       (hf_integral : ∫ x, f x = 0) :
+       ∃ A : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+         HasCompactSupport (A : EuclideanSpace ℝ ι -> ℂ) ∧
+         LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+           (SchwartzMap (EuclideanSpace ℝ ι) ℂ) A =
+           hf_compact.toSchwartzMap hf_smooth
+   ```
+
+   The proof reduces radial functions on `EuclideanSpace ℝ ι` to the
+   one-variable ODE `(r^(N-1) A'(r))' = r^(N-1) F(r)`, with
+   `N = Fintype.card ι`; the zero-integral condition from the two normalized
+   bumps makes `A'` vanish outside the larger support, hence `A` can be chosen
+   compactly supported.  The `N = 0` case is degenerate and easier: the
+   Euclidean space is a singleton and the zero-integral right-hand side is
+   identically zero.  The `N = 1` case uses the same formula with
+   `r^(N-1)=1`; no singular coefficient appears.  Keep these theorems pure
+   analysis and independent of `T`, `U0`, OS, Wightman, or EOW.
+
+   From this primitive theorem, prove local scale invariance of a harmonic
+   distribution.  The support condition ensures every translated test fed to
+   `hΔ` is supported in `V`:
+
+   ```lean
+   theorem regularizedDistribution_bump_scale_eq
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       {V : Set (EuclideanSpace ℝ ι)}
+       (hΔ :
+         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
+             T
+               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0)
+       {x : EuclideanSpace ℝ ι} {ε δ : ℝ}
+       (hε : 0 < ε) (hδ : 0 < δ)
+       (hxε : Metric.closedBall x ε ⊆ V)
+       (hxδ : Metric.closedBall x δ ⊆ V) :
+       T (euclideanReflectedTranslate x (euclideanWeylBump ε hε)) =
+       T (euclideanReflectedTranslate x (euclideanWeylBump δ hδ))
+   ```
+
+   Proof: obtain `A` from
+   `exists_compactSmooth_laplacian_eq_bump_sub_bump`, translate it by `x`,
+   prove its support lies in `V`, use derivative-translation commutation to
+   rewrite the Laplacian of the translated `A` as the translated difference of
+   bumps, and apply `hΔ` to this compactly supported Schwartz test.
+
+   Now define the local representative on a ball by choosing any bump radius
+   small enough to remain inside the larger ball:
+
+   ```lean
+   noncomputable def euclideanWeylBallRepresentative
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (c : EuclideanSpace ℝ ι) (R : ℝ)
+       (x : EuclideanSpace ℝ ι) : ℂ :=
+     if hx : x ∈ Metric.ball c R then
+       let ε := (R - dist x c) / 2
+       have hε : 0 < ε := by
+         dsimp [ε]
+         rw [Metric.mem_ball] at hx
+         linarith
+       T (euclideanReflectedTranslate x
+         (euclideanWeylBump ε hε))
+     else 0
+
+   theorem euclideanWeylBallRepresentative_eq_regularized
+       {r R ε : ℝ} (hrR : r < R) (hε : 0 < ε)
+       (hε_support : ∀ x ∈ Metric.ball c r,
+         Metric.closedBall x ε ⊆ Metric.ball c R) :
+       ∀ x ∈ Metric.ball c r,
+         euclideanWeylBallRepresentative T c R x =
+           T (euclideanReflectedTranslate x (euclideanWeylBump ε hε))
+   ```
+
+   On a smaller ball `ball c r`, choose a uniform `ε < (R - r) / 2`; the
+   scale-invariance theorem identifies the chosen variable-radius definition
+   with this fixed-ε regularization.  Therefore smoothness on `ball c r`
+   follows from `contDiff_regularizedDistribution`.
+
+   Finally prove representation on the smaller ball by approximate identity:
+
+   ```lean
+   noncomputable def euclideanConvolutionTest
+       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       SchwartzMap (EuclideanSpace ℝ ι) ℂ :=
+     SchwartzMap.convolution (ContinuousLinearMap.lsmul ℂ ℂ) φ ρ
+
+   theorem euclideanConvolutionTest_apply
+       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (x : EuclideanSpace ℝ ι) :
+       euclideanConvolutionTest φ ρ x =
+         ∫ y : EuclideanSpace ℝ ι, φ (x - y) * ρ y
+
+   theorem euclideanConvolutionTest_eq_integral_reflectedTranslate
+       (φ ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       euclideanConvolutionTest φ ρ =
+         ∫ x : EuclideanSpace ℝ ι,
+           φ x • euclideanReflectedTranslate x ρ
+
+   theorem regularizedDistribution_integral_pairing
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (ρ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ) :
+       ∫ x, T (euclideanReflectedTranslate x ρ) * φ x =
+         T (euclideanConvolutionTest φ ρ)
+
+   theorem tendsto_euclideanConvolutionTest_of_shrinking_normalized_support
+       (φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (ρn : ℕ -> SchwartzMap (EuclideanSpace ℝ ι) ℂ)
+       (hρ_nonneg : ∀ n x, 0 ≤ (ρn n x).re)
+       (hρ_real : ∀ n x, (ρn n x).im = 0)
+       (hρ_norm : ∀ n, ∫ x, ρn n x = 1)
+       (hρ_support : ∀ n,
+         tsupport (ρn n : EuclideanSpace ℝ ι -> ℂ) ⊆
+           Metric.closedBall 0 (1 / (n + 1 : ℝ))) :
+       Tendsto (fun n => euclideanConvolutionTest φ (ρn n))
+         atTop (𝓝 φ)
+
+   theorem euclidean_laplacian_distribution_regular_on_ball
+       {ι : Type*} [Fintype ι] [DecidableEq ι]
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       (c : EuclideanSpace ℝ ι) {r R : ℝ}
+       (hr : 0 < r) (hrR : r < R)
+       (hΔ :
+         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ)
+             (Metric.ball c R) ->
+             T
+               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+       ∃ H : EuclideanSpace ℝ ι -> ℂ,
+         ContDiffOn ℝ (⊤ : ℕ∞) H (Metric.ball c r) ∧
+         RepresentsEuclideanDistributionOn T H (Metric.ball c r)
+   ```
+
+   `euclideanConvolutionTest_eq_integral_reflectedTranslate` is the Bochner
+   integral identity in Schwartz space; apply the available
+   continuous-linear-map integral theorem to get
+   `regularizedDistribution_integral_pairing`.  The pointwise formula is
+   Mathlib's `SchwartzMap.convolution_apply`.
+
+   For a test `φ` supported in `ball c r`, choose `ε` small enough that
+   `closedBall x ε ⊆ ball c R` for every `x ∈ tsupport φ`; outside
+   `tsupport φ` the integral is zero.  Scale invariance lets the fixed
+   representative replace every smaller approximate-identity regularization in
+   the integral.  The convergence theorem gives
+   `T (euclideanConvolutionTest φ ρ_n) -> T φ` by continuity of `T`, while the
+   left side is constant for all sufficiently small `ρ_n`; hence it equals
+   `T φ`.  This proves the representation identity.
+
+   The open-set theorem is a local assembly over balls:
+
+   ```lean
+   theorem exists_finite_schwartz_partitionOfUnity_on_compact
+       {ι : Type*} [Fintype ι]
+       {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+       {K : Set E} (hK : IsCompact K)
+       {U : ι -> Set E}
+       (hU_open : ∀ i, IsOpen (U i))
+       (hcover : K ⊆ ⋃ i, U i) :
+       ∃ χ : ι -> SchwartzMap E ℂ,
+         (∀ i, HasCompactSupport (χ i : E -> ℂ)) ∧
+         (∀ i, tsupport (χ i : E -> ℂ) ⊆ U i) ∧
+         (∀ x ∈ K, ∑ i, χ i x = 1)
+
+   theorem supportsInOpen_partition_mul
+       {χ φ : SchwartzMap E ℂ} {U V : Set E}
+       (hχ : tsupport (χ : E -> ℂ) ⊆ U)
+       (hφ : SupportsInOpen (φ : E -> ℂ) V) :
+       SupportsInOpen
+         ((SchwartzMap.smulLeftCLM ℂ (χ : E -> ℂ) φ) : E -> ℂ)
+         (U ∩ V)
+
+   theorem euclidean_weyl_laplacian_distribution_regular_on_open
+       {ι : Type*} [Fintype ι] [DecidableEq ι]
+       (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ ->L[ℂ] ℂ)
+       {V : Set (EuclideanSpace ℝ ι)}
+       (hV_open : IsOpen V)
+       (hΔ :
+         ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+           SupportsInOpen (φ : EuclideanSpace ℝ ι -> ℂ) V ->
+             T
+               (LineDeriv.laplacianCLM ℝ (EuclideanSpace ℝ ι)
+                 (SchwartzMap (EuclideanSpace ℝ ι) ℂ) φ) = 0) :
+       ∃ H : EuclideanSpace ℝ ι -> ℂ,
+         ContDiffOn ℝ (⊤ : ℕ∞) H V ∧
+         RepresentsEuclideanDistributionOn T H V
+   ```
+
+   For each `x ∈ V`, choose `R_x > 0` with `closedBall x R_x ⊆ V` and apply
+   the ball theorem with `r = R_x / 2`.  Define `H x` by the corresponding
+   local representative if `x ∈ V`, and `0` outside.  On overlaps, the two
+   representatives have identical pairings against all compactly supported
+   Schwartz tests in the overlap because both represent `T`; use
+   `eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` to prove
+   pointwise equality.  Smoothness is local from the ball representatives.
+   The global representation for a test supported in `V` follows by covering
+   `tsupport φ` with finitely many such balls and applying
+   `exists_finite_schwartz_partitionOfUnity_on_compact`.  Each product
+   `χ i * φ` is a Schwartz test supported in the corresponding ball by
+   `supportsInOpen_partition_mul`; apply the local representation to each
+   product and sum.  The partition theorem is pure finite-dimensional
+   topology/calculus: choose smaller closed neighborhoods inside the open
+   cover using normality/compactness, obtain bump functions by
+   `exists_contDiff_tsupport_subset`, divide by the finite positive sum on
+   `K`, and convert the compactly supported smooth functions to
+   `SchwartzMap`s with `HasCompactSupport.toSchwartzMap`.
 
    After Weyl regularity gives a smooth representative, recover the pointwise
    Cauchy-Riemann equations from the distributional equations.  The pointwise

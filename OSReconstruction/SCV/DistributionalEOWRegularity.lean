@@ -542,6 +542,38 @@ theorem supportsInOpen_transport_to_euclidean {m : ℕ}
     rcases hφ.2 hez with ⟨z', hz'U, hz'eq⟩
     exact (e.injective hz'eq).symm ▸ hz'U
 
+/-- Compact support inside a complex chart open set pushes forward to compact
+support inside the transported Euclidean open set. -/
+theorem supportsInOpen_transport_from_euclidean {m : ℕ}
+    {φ : SchwartzMap (ComplexChartSpace m) ℂ}
+    {U0 : Set (ComplexChartSpace m)}
+    (hφ : SupportsInOpen (φ : ComplexChartSpace m → ℂ) U0) :
+    SupportsInOpen
+      ((complexChartEuclideanSchwartzCLE m φ :
+          SchwartzMap (EuclideanSpace ℝ (Fin (m * 2))) ℂ) :
+        EuclideanSpace ℝ (Fin (m * 2)) → ℂ)
+      ((complexChartEuclideanCLE m) '' U0) := by
+  let e := complexChartEuclideanCLE m
+  constructor
+  · change HasCompactSupport fun x : EuclideanSpace ℝ (Fin (m * 2)) =>
+      φ (e.symm x)
+    exact hφ.1.comp_homeomorph e.toHomeomorph.symm
+  · have htsupport :
+        tsupport
+          ((complexChartEuclideanSchwartzCLE m φ :
+              SchwartzMap (EuclideanSpace ℝ (Fin (m * 2))) ℂ) :
+            EuclideanSpace ℝ (Fin (m * 2)) → ℂ) =
+          e.toHomeomorph.symm ⁻¹'
+            tsupport (φ : ComplexChartSpace m → ℂ) := by
+      simpa [e, complexChartEuclideanSchwartzCLE_apply] using
+        (tsupport_comp_eq_preimage
+          (g := (φ : ComplexChartSpace m → ℂ)) e.toHomeomorph.symm)
+    intro x hx
+    have hex :
+        e.symm x ∈ tsupport (φ : ComplexChartSpace m → ℂ) := by
+      simpa [htsupport] using hx
+    exact ⟨e.symm x, hφ.2 hex, by simp [e]⟩
+
 /-- Measurable real-coordinate flattening in the same coordinate order as
 `realBlockFlattenCLE`. -/
 private def realBlockFlattenMeasurableEquiv (n d : ℕ) :
@@ -670,5 +702,42 @@ theorem integral_comp_complexChartEuclideanCLE (m : ℕ)
   rw [hright]
   simpa [G, e] using
     (hmp.integral_comp e.toHomeomorph.measurableEmbedding G).symm
+
+/-- A Euclidean function represents a Euclidean-chart distribution on tests
+supported in `V`. -/
+def RepresentsEuclideanDistributionOn
+    {ι : Type*} [Fintype ι]
+    (T : SchwartzMap (EuclideanSpace ℝ ι) ℂ →L[ℂ] ℂ)
+    (H : EuclideanSpace ℝ ι → ℂ)
+    (V : Set (EuclideanSpace ℝ ι)) : Prop :=
+  ∀ φ : SchwartzMap (EuclideanSpace ℝ ι) ℂ,
+    SupportsInOpen (φ : EuclideanSpace ℝ ι → ℂ) V →
+      T φ = ∫ x, H x * φ x
+
+/-- Pull a Euclidean representative back through the volume-preserving complex
+chart. -/
+theorem representsDistributionOnComplexDomain_of_euclidean {m : ℕ}
+    (T : SchwartzMap (ComplexChartSpace m) ℂ →L[ℂ] ℂ)
+    {U0 : Set (ComplexChartSpace m)}
+    (HE : EuclideanSpace ℝ (Fin (m * 2)) → ℂ)
+    (hHE :
+      RepresentsEuclideanDistributionOn
+        (transportedDistributionToEuclidean T) HE
+        ((complexChartEuclideanCLE m) '' U0)) :
+    RepresentsDistributionOnComplexDomain T
+      (fun z => HE (complexChartEuclideanCLE m z)) U0 := by
+  intro φ hφ
+  have hφE := supportsInOpen_transport_from_euclidean (m := m) hφ
+  have hrep := hHE (complexChartEuclideanSchwartzCLE m φ) hφE
+  calc
+    T φ =
+        transportedDistributionToEuclidean T
+          (complexChartEuclideanSchwartzCLE m φ) := by
+      simp [transportedDistributionToEuclidean]
+    _ = ∫ x : EuclideanSpace ℝ (Fin (m * 2)),
+        HE x * (complexChartEuclideanSchwartzCLE m φ) x := hrep
+    _ = ∫ z : ComplexChartSpace m,
+        HE (complexChartEuclideanCLE m z) * φ z := by
+      exact integral_comp_complexChartEuclideanCLE m HE φ
 
 end SCV
