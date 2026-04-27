@@ -10,9 +10,11 @@ import OSReconstruction.Wightman.Reconstruction.HeadBlockTranslationInvariant
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
 import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43SpectralSupport
 import OSReconstruction.SCV.TotallyRealIdentity
 import OSReconstruction.ComplexLieGroups.Connectedness.ForwardTubeDomain
 import OSReconstruction.ComplexLieGroups.BHWCore
+import OSReconstruction.ComplexLieGroups.DifferenceCoordinates
 import OSReconstruction.ComplexLieGroups.DifferenceCoordinatesReduced
 import Mathlib.Analysis.Distribution.SchwartzSpace.Fourier
 import Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace
@@ -1659,10 +1661,544 @@ theorem cone_fourierLaplace_extension (d n : ℕ) [NeZero d]
   obtain ⟨F, hF_eq, hF_holo⟩ := coneFourierLaplace_holomorphic w hw_cont hw_lin
   exact ⟨F, hF_holo, coneFourierLaplace_boundaryValue w hw_cont hw_lin hw_supp F hF_eq⟩
 
+private lemma exists_openForwardCone_pairing_neg_of_not_mem_forwardMomentumCone
+    (d : ℕ) [NeZero d]
+    {p : Fin (d + 1) → ℝ}
+    (hp : p ∉ ForwardMomentumCone d) :
+    ∃ y : Fin (d + 1) → ℝ,
+      InOpenForwardCone d y ∧ euclideanDot y p < 0 := by
+  simp only [ForwardMomentumCone, MinkowskiSpace.ClosedForwardLightCone,
+    MinkowskiSpace.ForwardLightCone, Set.mem_setOf_eq,
+    MinkowskiSpace.IsCausal, MinkowskiSpace.timeComponent,
+    not_and_or, not_le] at hp
+  rcases hp with hncausal | htime
+  · by_cases hp0 : p 0 < 0
+    · refine ⟨fun i => if i = 0 then (1 : ℝ) else 0, ?_, ?_⟩
+      · constructor
+        · simp
+        · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+          simp [MinkowskiSpace.spatialNormSq, Fin.succ_ne_zero]
+      · simp [euclideanDot, Fin.sum_univ_succ, hp0]
+    · push_neg at hp0
+      have hpσ : (p 0) ^ 2 < MinkowskiSpace.spatialNormSq d p := by
+        have h_decomp := MinkowskiSpace.minkowskiNormSq_decomp d p
+        linarith
+      set σ := MinkowskiSpace.spatialNormSq d p with hσ_def
+      have hσ_pos : (0 : ℝ) < σ := by
+        linarith [sq_nonneg (p 0)]
+      set s := Real.sqrt σ with hs_def
+      have hs_gt : s > p 0 := by
+        calc
+          p 0 ≤ |p 0| := le_abs_self _
+          _ = Real.sqrt ((p 0) ^ 2) := (Real.sqrt_sq_eq_abs _).symm
+          _ < Real.sqrt σ := Real.sqrt_lt_sqrt (sq_nonneg _) hpσ
+      set r : Fin d → ℝ := fun i => -(s + p 0) / (2 * σ) * p (Fin.succ i)
+      have hσ_ne : σ ≠ 0 := ne_of_gt hσ_pos
+      have hr_sq_sum :
+          ∑ i : Fin d, (r i) ^ 2 = (s + p 0) ^ 2 / (4 * σ) := by
+        simp only [r, mul_pow, div_pow]
+        rw [← Finset.mul_sum]
+        have hσ_eq : ∑ i : Fin d, (p (Fin.succ i)) ^ 2 = σ := by
+          simp [hσ_def, MinkowskiSpace.spatialNormSq]
+        rw [hσ_eq]
+        field_simp [hσ_ne]
+        ring
+      have hr_sum_lt : ∑ i : Fin d, (r i) ^ 2 < 1 := by
+        rw [hr_sq_sum]
+        rw [div_lt_one (by positivity)]
+        have hs_lt : s + p 0 < 2 * s := by linarith
+        have hs_pos : 0 < s := Real.sqrt_pos_of_pos hσ_pos
+        have hs_sq : s ^ 2 = σ := by
+          rw [hs_def]
+          exact Real.sq_sqrt hσ_pos.le
+        nlinarith
+      have hr_dot :
+          p 0 + ∑ i : Fin d, r i * p (Fin.succ i) = (p 0 - s) / 2 := by
+        simp only [r]
+        have hsum :
+            ∀ i : Fin d,
+              -(s + p 0) / (2 * σ) * p (Fin.succ i) * p (Fin.succ i) =
+                -(s + p 0) / (2 * σ) * (p (Fin.succ i) * p (Fin.succ i)) := by
+          intro i
+          ring
+        simp_rw [hsum, ← Finset.mul_sum]
+        have hσ_eq :
+            ∑ i : Fin d, p (Fin.succ i) * p (Fin.succ i) = σ := by
+          simp [hσ_def, MinkowskiSpace.spatialNormSq, sq]
+        rw [hσ_eq]
+        field_simp [hσ_ne]
+        ring
+      have hr_dot_neg : p 0 + ∑ i : Fin d, r i * p (Fin.succ i) < 0 := by
+        rw [hr_dot]
+        linarith
+      let y : Fin (d + 1) → ℝ := fun i => if h : i = 0 then 1 else r (i.pred h)
+      have hy_mem : InOpenForwardCone d y := by
+        constructor
+        · simp [y]
+        · have hmink :
+            MinkowskiSpace.minkowskiNormSq d y = -1 + ∑ i : Fin d, (r i) ^ 2 := by
+            rw [MinkowskiSpace.minkowskiNormSq_decomp]
+            simp [MinkowskiSpace.spatialNormSq, y, Fin.succ_ne_zero]
+          linarith
+      have hy_neg : euclideanDot y p < 0 := by
+        rw [euclideanDot, Fin.sum_univ_succ]
+        simp [y, Fin.succ_ne_zero]
+        rw [hr_dot]
+        linarith
+      exact ⟨y, hy_mem, hy_neg⟩
+  · refine ⟨fun i => if i = 0 then (1 : ℝ) else 0, ?_, ?_⟩
+    · constructor
+      · simp
+      · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+        simp [MinkowskiSpace.spatialNormSq, Fin.succ_ne_zero]
+    · simp [euclideanDot, Fin.sum_univ_succ, htime]
+
+private lemma flatten_productForwardCone_dual_to_momentum
+    (d n : ℕ) [NeZero d]
+    {ξ : Fin (n * (d + 1)) → ℝ}
+    (hξ : ξ ∈ DualConeFlat
+      ((flattenCLEquivReal n (d + 1)) '' BHW.ProductForwardConeReal d n)) :
+    ((flattenCLEquivReal n (d + 1)).symm ξ) ∈ ProductForwardMomentumCone d n := by
+  let q : Fin n → Fin (d + 1) → ℝ := (flattenCLEquivReal n (d + 1)).symm ξ
+  have hBHWcone_iff : ∀ η : Fin (d + 1) → ℝ, BHW.InOpenForwardCone d η ↔ InOpenForwardCone d η := by
+    intro η
+    rw [InOpenForwardCone]
+    exact inOpenForwardCone_iff (d := d) η
+  have hpair_expand (y : Fin n → Fin (d + 1) → ℝ) :
+      ∑ i : Fin (n * (d + 1)), flattenCLEquivReal n (d + 1) y i * ξ i =
+        ∑ l : Fin n, ∑ μ : Fin (d + 1), y l μ * q l μ := by
+    calc
+      ∑ i : Fin (n * (d + 1)), flattenCLEquivReal n (d + 1) y i * ξ i
+          =
+        ∑ p : Fin n × Fin (d + 1),
+          flattenCLEquivReal n (d + 1) y (finProdFinEquiv p) * ξ (finProdFinEquiv p) := by
+            symm
+            refine Fintype.sum_equiv finProdFinEquiv
+              (fun p => flattenCLEquivReal n (d + 1) y (finProdFinEquiv p) *
+                ξ (finProdFinEquiv p))
+              (fun i => flattenCLEquivReal n (d + 1) y i * ξ i)
+              ?_
+            intro p
+            rfl
+      _ = ∑ p : Fin n × Fin (d + 1), y p.1 p.2 * ξ (finProdFinEquiv p) := by
+            simp [flattenCLEquivReal_apply]
+      _ = ∑ l : Fin n, ∑ μ : Fin (d + 1), y l μ * q l μ := by
+            rw [Fintype.sum_prod_type]
+            simp [q]
+  intro k
+  have hq_time : 0 ≤ q k 0 := by
+    by_contra hneg
+    have hqk_neg : q k 0 < 0 := lt_of_not_ge hneg
+    let C : ℝ := ∑ l : Fin n, if l = k then 0 else q l 0
+    obtain ⟨ε, hε_pos, hε_small⟩ :=
+      exists_pos_mul_abs_lt_of_neg (c := C) (s := q k 0) hqk_neg
+    let y : Fin n → Fin (d + 1) → ℝ :=
+      fun l μ => if l = k then (if μ = 0 then 1 else 0) else if μ = 0 then ε else 0
+    have hy_mem : y ∈ BHW.ProductForwardConeReal d n := by
+      intro l
+      by_cases hl : l = k
+      · subst hl
+        rw [hBHWcone_iff]
+        constructor
+        · simp [y]
+        · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+          simp [MinkowskiSpace.spatialNormSq, y, Fin.succ_ne_zero]
+      · rw [hBHWcone_iff]
+        constructor
+        · simp [y, hl, hε_pos]
+        · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+          simp [MinkowskiSpace.spatialNormSq, y, hl, Fin.succ_ne_zero]
+          have hεsq : 0 < ε ^ 2 := sq_pos_of_pos hε_pos
+          linarith
+    have hy_flat :
+        flattenCLEquivReal n (d + 1) y ∈
+          (flattenCLEquivReal n (d + 1)) '' BHW.ProductForwardConeReal d n := by
+      exact ⟨y, hy_mem, rfl⟩
+    have hpair_nonneg := hξ (flattenCLEquivReal n (d + 1) y) hy_flat
+    have hpair :
+        ∑ i : Fin (n * (d + 1)), flattenCLEquivReal n (d + 1) y i * ξ i =
+          q k 0 + ε * C := by
+      rw [hpair_expand]
+      have hinner : ∀ l : Fin n, ∑ μ : Fin (d + 1), y l μ * q l μ =
+          if l = k then q l 0 else ε * q l 0 := by
+        intro l
+        by_cases hl : l = k
+        · subst hl
+          simp [y, Fin.sum_univ_succ]
+        · simp [y, hl, Fin.sum_univ_succ]
+      rw [Finset.sum_congr rfl (fun l _ => hinner l)]
+      have hsplit : ∀ l : Fin n,
+          (if l = k then q l 0 else ε * q l 0 : ℝ) =
+            (if l = k then q l 0 else 0) +
+              (if l = k then 0 else ε * q l 0) := by
+        intro l
+        by_cases h : l = k <;> simp [h]
+      rw [Finset.sum_congr rfl (fun l _ => hsplit l), Finset.sum_add_distrib]
+      rw [show (∑ l : Fin n, if l = k then q l 0 else (0 : ℝ)) = q k 0 by
+        simp [Finset.sum_ite_eq']]
+      have hC_eq : ε * C =
+          ∑ l : Fin n, if l = k then 0 else ε * q l 0 := by
+        show ε * (∑ l : Fin n, if l = k then 0 else q l 0) =
+          ∑ l : Fin n, if l = k then 0 else ε * q l 0
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl
+        intro l _
+        by_cases hl : l = k <;> simp [hl]
+      rw [hC_eq]
+    have hεC_le : ε * C ≤ ε * |C| := by
+      exact mul_le_mul_of_nonneg_left (le_abs_self C) hε_pos.le
+    have hneg_pair : q k 0 + ε * C < 0 := by
+      have : ε * |C| < -q k 0 := hε_small
+      linarith
+    linarith [hpair_nonneg, hpair, hneg_pair]
+  have hq_causal : MinkowskiSpace.IsCausal d (q k) := by
+    by_contra hnot_causal
+    have hmk : q k ∉ ForwardMomentumCone d := by
+      intro hmem
+      exact hnot_causal hmem.1
+    obtain ⟨y0, hy0_mem, hy0_neg⟩ :=
+      exists_openForwardCone_pairing_neg_of_not_mem_forwardMomentumCone
+        (d := d) (p := q k) hmk
+    let C : ℝ := ∑ l : Fin n, if l = k then 0 else q l 0
+    obtain ⟨ε, hε_pos, hε_small⟩ :=
+      exists_pos_mul_abs_lt_of_neg (c := C) (s := euclideanDot y0 (q k)) hy0_neg
+    let y : Fin n → Fin (d + 1) → ℝ :=
+      fun l μ => if l = k then y0 μ else if μ = 0 then ε else 0
+    have hy_mem : y ∈ BHW.ProductForwardConeReal d n := by
+      intro l'
+      by_cases hl : l' = k
+      · rw [hBHWcone_iff]
+        have hyl_eq : y l' = y0 := by
+          funext μ
+          simp [y, hl]
+        rw [hyl_eq]
+        exact hy0_mem
+      · rw [hBHWcone_iff]
+        constructor
+        · simp [y, hl, hε_pos]
+        · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+          simp [MinkowskiSpace.spatialNormSq, y, hl, Fin.succ_ne_zero]
+          have hεsq : 0 < ε ^ 2 := sq_pos_of_pos hε_pos
+          linarith
+    have hy_flat :
+        flattenCLEquivReal n (d + 1) y ∈
+          (flattenCLEquivReal n (d + 1)) '' BHW.ProductForwardConeReal d n := by
+      exact ⟨y, hy_mem, rfl⟩
+    have hpair_nonneg := hξ (flattenCLEquivReal n (d + 1) y) hy_flat
+    have hpair :
+        ∑ i : Fin (n * (d + 1)), flattenCLEquivReal n (d + 1) y i * ξ i =
+          euclideanDot y0 (q k) + ε * C := by
+      rw [hpair_expand]
+      have hinner : ∀ l : Fin n, ∑ μ : Fin (d + 1), y l μ * q l μ =
+          if l = k then euclideanDot y0 (q l) else ε * q l 0 := by
+        intro l
+        by_cases hl : l = k
+        · rw [if_pos hl]
+          have hy_eq : ∀ μ, y l μ = y0 μ := by intro μ; simp [y, hl]
+          simp_rw [hy_eq]
+          rfl
+        · simp [y, hl, Fin.sum_univ_succ]
+      rw [Finset.sum_congr rfl (fun l _ => hinner l)]
+      have hsplit : ∀ l : Fin n,
+          (if l = k then euclideanDot y0 (q l) else ε * q l 0 : ℝ) =
+            (if l = k then euclideanDot y0 (q l) else 0) +
+              (if l = k then 0 else ε * q l 0) := by
+        intro l
+        by_cases h : l = k <;> simp [h]
+      rw [Finset.sum_congr rfl (fun l _ => hsplit l), Finset.sum_add_distrib]
+      rw [show (∑ l : Fin n, if l = k then euclideanDot y0 (q l) else (0 : ℝ)) =
+          euclideanDot y0 (q k) by
+        simp [Finset.sum_ite_eq']]
+      have hC_eq : ε * C =
+          ∑ l : Fin n, if l = k then 0 else ε * q l 0 := by
+        show ε * (∑ l : Fin n, if l = k then 0 else q l 0) =
+          ∑ l : Fin n, if l = k then 0 else ε * q l 0
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl
+        intro l _
+        by_cases hl : l = k <;> simp [hl]
+      rw [hC_eq]
+    have hεC_le : ε * C ≤ ε * |C| := by
+      exact mul_le_mul_of_nonneg_left (le_abs_self C) hε_pos.le
+    have hneg_pair : euclideanDot y0 (q k) + ε * C < 0 := by
+      have : ε * |C| < -euclideanDot y0 (q k) := hε_small
+      linarith
+    linarith [hpair_nonneg, hpair, hneg_pair]
+  exact ⟨hq_causal, hq_time⟩
+
+private noncomputable def flatPositiveRescaleCLE (m : ℕ) :
+    (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
+  let a : ℝˣ := Units.mk0 ((1 / (2 * Real.pi) : ℝ)) <| by
+    exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
+  ContinuousLinearEquiv.smulLeft a
+
+@[simp] private lemma flatPositiveRescaleCLE_apply
+    (m : ℕ) (ξ : Fin m → ℝ) :
+    flatPositiveRescaleCLE m ξ = ((1 / (2 * Real.pi) : ℝ) • ξ) := by
+  rfl
+
+private lemma physicsFourierFlatCLM_flatten_fourierTransform_rescale
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzNPointSpace d n) (ξ : Fin (n * (d + 1)) → ℝ) :
+    physicsFourierFlatCLM
+        (flattenSchwartzNPoint (d := d) (φ.fourierTransform)) ξ =
+      flattenSchwartzNPoint (d := d) φ (((1 / (2 * Real.pi) : ℝ) • ξ)) := by
+  let φflatPublic : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (flattenCLEquivReal n (d + 1)).symm) φ
+  let eFlat : EuclideanSpace ℝ (Fin (n * (d + 1))) ≃L[ℝ]
+      (Fin (n * (d + 1)) → ℝ) :=
+    EuclideanSpace.equiv (Fin (n * (d + 1))) ℝ
+  let eIdx :
+      EuclideanSpace ℝ (Fin n × Fin (d + 1)) ≃L[ℝ]
+        EuclideanSpace ℝ (Fin (n * (d + 1))) :=
+    ((EuclideanSpace.equiv (Fin n × Fin (d + 1)) ℝ).trans
+      ((LinearEquiv.funCongrLeft ℝ ℝ finProdFinEquiv.symm).toContinuousLinearEquiv)).trans
+      eFlat.symm
+  let toEuc : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ →L[ℂ]
+      SchwartzMap (EuclideanSpace ℝ (Fin (n * (d + 1)))) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eFlat
+  let fromEuc :
+      SchwartzMap (EuclideanSpace ℝ (Fin (n * (d + 1)))) ℂ →L[ℂ]
+        SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eFlat.symm
+  have hflat_agree :
+      φflatPublic = flattenSchwartzNPoint (d := d) φ := by
+    ext u
+    -- Both sides reduce to `φ` applied to the same coordinate-flattened point.
+    -- `(flattenCLEquivReal n (d+1)).symm` and the (private) flatten used by
+    -- `flattenSchwartzNPoint_apply` both send `u` to
+    -- `fun i j => u (finProdFinEquiv (i, j))`.
+    rw [show φflatPublic u = φ ((flattenCLEquivReal n (d + 1)).symm u) from rfl]
+    rw [flattenSchwartzNPoint_apply]
+    apply congrArg φ
+    funext i j
+    rfl
+  have hflat_ft_public :
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (flattenCLEquivReal n (d + 1)).symm) (φ.fourierTransform) =
+        inverseFourierFlatCLM φflatPublic := by
+    ext ζ
+    show (φ.fourierTransform) ((flattenCLEquivReal n (d + 1)).symm ζ) =
+      inverseFourierFlatCLM φflatPublic ζ
+    simp only [SchwartzNPointSpace.fourierTransform,
+      SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply,
+      inverseFourierFlatCLM, φflatPublic]
+    let G : SchwartzMap (EuclideanSpace ℝ (Fin n × Fin (d + 1))) ℂ :=
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (nPointToEuclidean d n).symm) φ
+    let H : SchwartzMap (EuclideanSpace ℝ (Fin (n * (d + 1)))) ℂ :=
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ eFlat) φflatPublic
+    have hcoords0 :
+        eIdx (nPointToEuclidean d n ((flattenCLEquivReal n (d + 1)).symm ζ)) =
+          eFlat.symm ζ := by
+      -- Coordinate seam: the n-point Euclidean route and the public flat route
+      -- agree after reindexing by `finProdFinEquiv`.
+      ext i
+      change
+        ((LinearMap.funLeft ℝ ℝ ⇑finProdFinEquiv.symm)
+          (fun p => ζ (finProdFinEquiv p))) i = ζ i
+      change ζ (finProdFinEquiv (finProdFinEquiv.symm i)) = ζ i
+      rw [Equiv.apply_symm_apply]
+    have hcoords :
+        nPointToEuclidean d n ((flattenCLEquivReal n (d + 1)).symm ζ) =
+          eIdx.symm (eFlat.symm ζ) := by
+      simpa using congrArg eIdx.symm hcoords0
+    have hfourier_route :
+        FourierTransform.fourier G
+            (nPointToEuclidean d n ((flattenCLEquivReal n (d + 1)).symm ζ)) =
+          FourierTransform.fourier H (eFlat.symm ζ) := by
+      -- Package the `finProdFinEquiv` reindexing as a linear isometry.
+      let eIdxIso : EuclideanSpace ℝ (Fin n × Fin (d + 1)) ≃ₗᵢ[ℝ]
+          EuclideanSpace ℝ (Fin (n * (d + 1))) :=
+        LinearIsometryEquiv.piLpCongrLeft 2 ℝ ℝ finProdFinEquiv
+      -- The CLE `eIdx` and the LIE `eIdxIso` have the same forward map on
+      -- `EuclideanSpace ℝ (Fin n × Fin (d + 1))`.
+      have hfwd_agree :
+          ∀ v : EuclideanSpace ℝ (Fin n × Fin (d + 1)),
+            eIdx v = eIdxIso v := by
+        intro v
+        ext k
+        change v (finProdFinEquiv.symm k) = (eIdxIso v) k
+        show v (finProdFinEquiv.symm k) =
+          (LinearIsometryEquiv.piLpCongrLeft 2 ℝ ℝ finProdFinEquiv v) k
+        rw [LinearIsometryEquiv.piLpCongrLeft_apply]
+        rfl
+      -- Inverse maps agree.
+      have hsymm_agree :
+          ∀ w : EuclideanSpace ℝ (Fin (n * (d + 1))),
+            eIdx.symm w = eIdxIso.symm w := by
+        intro w
+        have h1 : eIdx (eIdx.symm w) = eIdxIso (eIdx.symm w) := hfwd_agree _
+        have h2 : w = eIdxIso (eIdx.symm w) := by
+          rw [← h1, ContinuousLinearEquiv.apply_symm_apply]
+        have h3 := congrArg eIdxIso.symm h2
+        rw [eIdxIso.symm_apply_apply] at h3
+        exact h3.symm
+      -- Generalized coordinate seam (matches `hcoords0` proof technique
+      -- but for arbitrary `x`).
+      have hcoords_gen :
+          ∀ x : NPointSpacetime d n,
+            eIdx (nPointToEuclidean d n x) =
+              eFlat.symm (flattenCLEquivReal n (d + 1) x) := by
+        intro x
+        ext i
+        change
+          ((LinearMap.funLeft ℝ ℝ ⇑finProdFinEquiv.symm)
+            (fun p => x p.1 p.2)) i = (flattenCLEquivReal n (d + 1) x) i
+        change x (finProdFinEquiv.symm i).1 (finProdFinEquiv.symm i).2 =
+          x (finProdFinEquiv.symm i).1 (finProdFinEquiv.symm i).2
+        rfl
+      -- Functional identity: `H` equals `G ∘ eIdxIso.symm` as
+      -- `EuclideanSpace ℝ (Fin (n*(d+1))) → ℂ`.
+      have hH_eq :
+          ∀ w : EuclideanSpace ℝ (Fin (n * (d + 1))),
+            (H : EuclideanSpace ℝ (Fin (n * (d + 1))) → ℂ) w =
+              (G : EuclideanSpace ℝ (Fin n × Fin (d + 1)) → ℂ) (eIdxIso.symm w) := by
+        intro w
+        show φflatPublic (eFlat w) =
+          φ ((nPointToEuclidean d n).symm (eIdxIso.symm w))
+        show φ ((flattenCLEquivReal n (d + 1)).symm (eFlat w)) =
+          φ ((nPointToEuclidean d n).symm (eIdxIso.symm w))
+        apply congrArg φ
+        apply (nPointToEuclidean d n).injective
+        rw [(nPointToEuclidean d n).apply_symm_apply]
+        have h := hcoords_gen ((flattenCLEquivReal n (d + 1)).symm (eFlat w))
+        rw [(flattenCLEquivReal n (d + 1)).apply_symm_apply,
+            eFlat.symm_apply_apply] at h
+        -- h : eIdx (nPointToEuclidean d n ((flatten).symm (eFlat w))) = w
+        have h2 : nPointToEuclidean d n
+            ((flattenCLEquivReal n (d + 1)).symm (eFlat w)) = eIdx.symm w := by
+          have := congrArg eIdx.symm h
+          rw [eIdx.symm_apply_apply] at this
+          exact this
+        rw [h2, hsymm_agree]
+      have hfun_eq :
+          (G : EuclideanSpace ℝ (Fin n × Fin (d + 1)) → ℂ) ∘ eIdxIso.symm =
+            (H : EuclideanSpace ℝ (Fin (n * (d + 1))) → ℂ) := by
+        funext w
+        exact (hH_eq w).symm
+      -- Bring the LHS evaluation point into the `eIdxIso.symm (eFlat.symm ζ)` form.
+      rw [hcoords, hsymm_agree (eFlat.symm ζ)]
+      -- Convert SchwartzMap-level Fourier to function-level.
+      have hLHS_coe :
+          (FourierTransform.fourier G :
+            EuclideanSpace ℝ (Fin n × Fin (d + 1)) → ℂ)
+            (eIdxIso.symm (eFlat.symm ζ)) =
+          FourierTransform.fourier
+            (G : EuclideanSpace ℝ (Fin n × Fin (d + 1)) → ℂ)
+            (eIdxIso.symm (eFlat.symm ζ)) :=
+        congrFun (SchwartzMap.fourier_coe G) _
+      have hRHS_coe :
+          (FourierTransform.fourier H :
+            EuclideanSpace ℝ (Fin (n * (d + 1))) → ℂ) (eFlat.symm ζ) =
+          FourierTransform.fourier
+            (H : EuclideanSpace ℝ (Fin (n * (d + 1))) → ℂ) (eFlat.symm ζ) :=
+        congrFun (SchwartzMap.fourier_coe H) _
+      rw [hLHS_coe, hRHS_coe, ← hfun_eq]
+      -- Goal:
+      --   𝓕 G (eIdxIso.symm (eFlat.symm ζ)) =
+      --   𝓕 (G ∘ eIdxIso.symm) (eFlat.symm ζ)
+      exact (Real.fourier_comp_linearIsometry eIdxIso.symm
+        (G : EuclideanSpace ℝ (Fin n × Fin (d + 1)) → ℂ) (eFlat.symm ζ)).symm
+    simpa [G, H] using hfourier_route
+  have hflat_ft :
+      flattenSchwartzNPoint (d := d) (φ.fourierTransform) =
+        inverseFourierFlatCLM φflatPublic := by
+    ext ζ
+    rw [flattenSchwartzNPoint_apply]
+    trans (φ.fourierTransform) ((flattenCLEquivReal n (d + 1)).symm ζ)
+    · apply congrArg (φ.fourierTransform)
+      funext i j
+      rfl
+    · simpa using congrArg (fun F => F ζ) hflat_ft_public
+  rw [physicsFourierFlatCLM_apply]
+  -- After `physicsFourierFlatCLM_apply`, the LHS is
+  -- `inverseFourierFlatCLM (flatten (φ.ft)) ((-(1/(2π))) • ξ)`.
+  -- Substitute `flatten (φ.ft) = inverseFourierFlatCLM φflatPublic` via the
+  -- bridge so it becomes a double-FT applied at `(-(1/(2π))) • ξ`.
+  have hflat_eval :
+      inverseFourierFlatCLM
+          (flattenSchwartzNPoint (d := d) (φ.fourierTransform))
+          ((-(1 / (2 * Real.pi) : ℝ)) • ξ) =
+        inverseFourierFlatCLM (inverseFourierFlatCLM φflatPublic)
+          ((-(1 / (2 * Real.pi) : ℝ)) • ξ) := by
+    rw [hflat_ft]
+  rw [hflat_eval]
+  let A : SchwartzMap (EuclideanSpace ℝ (Fin (n * (d + 1)))) ℂ := toEuc φflatPublic
+  have hfft :
+      ((SchwartzMap.fourierTransformCLM ℂ)
+          ((SchwartzMap.fourierTransformCLM ℂ) A))
+        (eFlat.symm (((-(1 / (2 * Real.pi) : ℝ)) • ξ))) =
+        A (eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ))) := by
+    -- Step 1: replace the argument `-c • ξ` by `-(c • ξ)` and pass `-` through
+    -- `eFlat.symm` (linearity).
+    have hfourier_neg :
+        ((SchwartzMap.fourierTransformCLM ℂ)
+            ((SchwartzMap.fourierTransformCLM ℂ) A))
+          (eFlat.symm (((-(1 / (2 * Real.pi) : ℝ)) • ξ))) =
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          ((SchwartzMap.fourierTransformCLM ℂ) A))
+          (-(eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ)))) := by
+      congr 1
+      ext i
+      simp [eFlat, EuclideanSpace.equiv, Pi.neg_apply, Pi.smul_apply, smul_eq_mul]
+    -- Step 2: Mathlib's `FourierPair` on the Euclidean Schwartz space:
+    -- `𝓕⁻(𝓕 G) = G`, and `𝓕⁻ G = (compCLMOfCLE neg) (𝓕 G)`, so
+    -- `𝓕(𝓕 G)(-y) = G y`.
+    have hdouble_fourier :
+        ((SchwartzMap.fourierTransformCLM ℂ)
+          ((SchwartzMap.fourierTransformCLM ℂ) A))
+          (-(eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ)))) =
+        A (eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ))) := by
+      let x := eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ))
+      have h_inv_eval :
+          FourierTransformInv.fourierInv (FourierTransform.fourier A) x = A x := by
+        have h_inv :
+            FourierTransformInv.fourierInv (FourierTransform.fourier A) = A := by
+          simpa using (FourierPair.fourierInv_fourier_eq A)
+        exact congrArg (fun F => F x) h_inv
+      have h_inv_apply :
+          FourierTransformInv.fourierInv (FourierTransform.fourier A) x =
+            ((SchwartzMap.fourierTransformCLM ℂ)
+              ((SchwartzMap.fourierTransformCLM ℂ) A)) (-x) := by
+        simpa [x, SchwartzMap.fourierTransformCLM_apply,
+          SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+          using congrArg (fun F => F x) (SchwartzMap.fourierInv_apply_eq
+            (FourierTransform.fourier A))
+      exact h_inv_apply.symm.trans h_inv_eval
+    exact hfourier_neg.trans hdouble_fourier
+  have h_eval :
+      ((A : SchwartzMap (EuclideanSpace ℝ (Fin (n * (d + 1)))) ℂ) :
+        EuclideanSpace ℝ (Fin (n * (d + 1))) → ℂ)
+        (eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ))) =
+        φflatPublic (((1 / (2 * Real.pi) : ℝ) • ξ)) := by
+    -- A = toEuc φflatPublic = compCLMOfCLE eFlat φflatPublic, so
+    -- A x = φflatPublic (eFlat x), and eFlat (eFlat.symm y) = y.
+    show φflatPublic (eFlat (eFlat.symm (((1 / (2 * Real.pi) : ℝ) • ξ)))) =
+      φflatPublic (((1 / (2 * Real.pi) : ℝ) • ξ))
+    rw [ContinuousLinearEquiv.apply_symm_apply]
+  have hξ_euc :
+      (EuclideanSpace.equiv (Fin (n * (d + 1))) ℝ)
+          (WithLp.toLp 2 ξ) = ξ := by
+    ext i
+    simp [EuclideanSpace.equiv]
+  have hξ_scale_euc :
+      (EuclideanSpace.equiv (Fin (n * (d + 1))) ℝ)
+          (WithLp.toLp 2 (((1 / (2 * Real.pi) : ℝ) • ξ))) =
+        ((1 / (2 * Real.pi) : ℝ) • ξ) := by
+    ext i
+    simp [EuclideanSpace.equiv, Pi.smul_apply]
+  simp only [inverseFourierFlatCLM, toEuc, fromEuc,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply, Function.comp_apply]
+  rw [hflat_agree]
+  simpa [A, h_eval, hξ_euc, hξ_scale_euc, flattenSchwartzNPoint_apply] using hfft
+
 /-- **Converse Paley-Wiener-Schwartz** (Vladimirov §26 Thm 26.1 / RS II §IX.3). -/
  theorem converse_paleyWiener_tube (d n : ℕ) [NeZero d]
     (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
     (hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n))
+    (hF_growth : ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+      ∀ z, z ∈ ProductForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N)
     (w : SchwartzNPointSpace d n → ℂ)
     (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
     (hF_bv : ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
@@ -1676,7 +2212,161 @@ theorem cone_fourierLaplace_extension (d n : ℕ) [NeZero d]
       (∀ q : NPointSpacetime d n, φ q ≠ 0 →
         ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
       w (φ.fourierTransform) = 0 := by
-  sorry
+  let Wclm : SchwartzNPointSpace d n →L[ℂ] ℂ :=
+    { toLinearMap :=
+        { toFun := w
+          map_add' := hw_lin.map_add
+          map_smul' := hw_lin.map_smul }
+      cont := hw_cont }
+  let C : Set (Fin n → Fin (d + 1) → ℝ) := BHW.ProductForwardConeReal d n
+  have hBHWcone_iff : ∀ η : Fin (d + 1) → ℝ, BHW.InOpenForwardCone d η ↔ InOpenForwardCone d η := by
+    intro η
+    unfold BHW.InOpenForwardCone InOpenForwardCone
+    constructor <;> intro h <;> refine ⟨h.1, ?_⟩
+    · rw [MinkowskiSpace.minkowskiNormSq_decomp]
+      simpa [BHW.minkowski_sum_decomp, MinkowskiSpace.spatialNormSq] using h.2
+    · have hquad : -η 0 ^ 2 + ∑ i : Fin d, η i.succ ^ 2 < 0 := by
+        simpa [MinkowskiSpace.minkowskiNormSq_decomp, MinkowskiSpace.spatialNormSq] using h.2
+      simpa [BHW.minkowski_sum_decomp] using hquad
+  have hC_open : IsOpen C := by
+    simpa [C] using BHW.isOpen_productForwardConeReal (n := n) (d := d)
+  have hC_conv : Convex ℝ C := by
+    simpa [C] using BHW.productForwardConeReal_convex (n := n) (d := d)
+  have hC_cone : IsCone C := by
+    intro η hη t ht
+    simpa [C] using BHW.productForwardConeReal_smul_pos (n := n) (d := d) t ht η hη
+  have hC_salient : IsSalientCone C := by
+    have hC_eq :
+        C = (section43DiffCoordRealCLE d n) '' ForwardConeAbs d n := by
+      ext η
+      constructor
+      · intro hη
+        refine ⟨(section43DiffCoordRealCLE d n).symm η, ?_, by simp⟩
+        apply section43DiffCoordRealCLE_symm_mem_forwardConeAbs_public
+          (d := d) (n := n)
+        intro k
+        rw [← hBHWcone_iff]
+        simpa [C, BHW.ProductForwardConeReal] using hη k
+      · rintro ⟨y, hy, rfl⟩
+        show section43DiffCoordRealCLE d n y ∈ C
+        show ∀ k : Fin n,
+          BHW.InOpenForwardCone d (section43DiffCoordRealCLE d n y k)
+        intro k
+        rw [hBHWcone_iff]
+        exact section43DiffCoordRealCLE_mem_openForwardCone_of_mem_forwardConeAbs
+          (d := d) (n := n) hy k
+    intro y hy hy_neg
+    rw [hC_eq, show closure ((section43DiffCoordRealCLE d n) '' ForwardConeAbs d n) =
+        (section43DiffCoordRealCLE d n) '' closure (ForwardConeAbs d n) from
+          ((section43DiffCoordRealCLE d n).toHomeomorph.image_closure
+            (ForwardConeAbs d n)).symm] at hy hy_neg
+    obtain ⟨y', hy', rfl⟩ := hy
+    obtain ⟨y'', hy'', hyw⟩ := hy_neg
+    have h_neg : y'' = -y' := (section43DiffCoordRealCLE d n).injective (by
+      rw [hyw, map_neg])
+    subst h_neg
+    exact show section43DiffCoordRealCLE d n y' = 0 from by
+      rw [forwardConeAbs_salient d n y' hy' hy'', map_zero]
+  have hTube_eq : TubeDomainSetPi C = ProductForwardTube d n := by
+    ext z
+    simp [C, TubeDomainSetPi, ProductForwardTube, BHW.ProductForwardConeReal, hBHWcone_iff]
+  have hF_holo' : DifferentiableOn ℂ F (TubeDomainSetPi C) := by
+    rwa [hTube_eq]
+  have hF_growth' :
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ TubeDomainSetPi C → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    rcases hF_growth with ⟨C_bd, N, hC_bd, hbound⟩
+    refine ⟨C_bd, N, hC_bd, ?_⟩
+    intro z hz
+    have hz' : z ∈ ProductForwardTube d n := by
+      rw [← hTube_eq]
+      exact hz
+    exact hbound z hz'
+  have hF_bv' :
+      ∀ (η : Fin n → Fin (d + 1) → ℝ), η ∈ C →
+        ∀ (φ : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ),
+          Filter.Tendsto
+            (fun ε : ℝ => ∫ x : Fin n → Fin (d + 1) → ℝ,
+              F (fun k μ => (x k μ : ℂ) + (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+            (nhdsWithin 0 (Set.Ioi 0)) (nhds (Wclm φ)) := by
+    intro η hη φ
+    have hη' : ∀ k : Fin n, InOpenForwardCone d (η k) := by
+      intro k
+      exact (hBHWcone_iff (η k)).1 (by simpa [C, BHW.ProductForwardConeReal] using hη k)
+    simpa [Wclm] using hF_bv φ η hη'
+  obtain ⟨Tflat, hTflat_support, hTflat_eq⟩ :=
+    bv_implies_fourier_support C hC_open hC_conv hC_cone hC_salient
+      F hF_holo' hF_growth' Wclm hF_bv'
+  intro φ hφ
+  have hvanish :
+      w (φ.fourierTransform) = 0 := by
+    let ψflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+      flattenSchwartzNPoint (d := d) (φ.fourierTransform)
+    have hsupport_phys :
+        ∀ ξ : Fin (n * (d + 1)) → ℝ,
+          physicsFourierFlatCLM ψflat ξ ≠ 0 →
+            ξ ∉ DualConeFlat ((flattenCLEquivReal n (d + 1)) '' C) := by
+      intro ξ hξ hdual
+      have hscaled_dual :
+          flatPositiveRescaleCLE (n * (d + 1)) ξ ∈
+            DualConeFlat ((flattenCLEquivReal n (d + 1)) '' C) := by
+        rw [mem_dualConeFlat] at hdual ⊢
+        intro y hy
+        have hy0 := hdual y hy
+        have hpos : 0 ≤ (1 / (2 * Real.pi) : ℝ) := by positivity
+        simpa [flatPositiveRescaleCLE_apply, Pi.smul_apply, Finset.mul_sum,
+          mul_assoc, mul_left_comm, mul_comm] using mul_nonneg hpos hy0
+      rw [physicsFourierFlatCLM_flatten_fourierTransform_rescale
+        (d := d) (n := n) φ ξ] at hξ
+      have hq :
+          ((flattenCLEquivReal n (d + 1)).symm (flatPositiveRescaleCLE (n * (d + 1)) ξ))
+            ∈ ProductForwardMomentumCone d n := by
+        exact flatten_productForwardCone_dual_to_momentum (d := d) (n := n) hscaled_dual
+      have hnot :=
+        hφ ((flattenCLEquivReal n (d + 1)).symm
+            (flatPositiveRescaleCLE (n * (d + 1)) ξ)) (by
+          simpa [SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+            Function.comp_apply, flattenSchwartzNPoint_apply] using hξ)
+      rcases hnot with ⟨k, hk⟩
+      exact hk (hq k)
+    have hzero_phys :
+        Tflat (physicsFourierFlatCLM ψflat) = 0 := by
+      apply hTflat_support
+      intro ξ hξ hdual
+      exact hsupport_phys ξ hξ hdual
+    -- (compCLM eR) ∘ flattenSchwartzNPoint = id pointwise,
+    -- using that `flattenCLEquivReal` and the `flattenCLEquivRealBlock`
+    -- underlying `flattenSchwartzNPoint` agree pointwise (both formulas are
+    -- `f ↦ fun k => f (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2`),
+    -- so the round-trip composes to the identity.
+    have heq_apply :
+        ∀ y : SchwartzMap (Fin n → Fin (d + 1) → ℝ) ℂ,
+          (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (flattenCLEquivReal n (d + 1)))
+            (flattenSchwartzNPoint (d := d) y) = y := by
+      intro y
+      apply SchwartzMap.ext
+      intro x
+      rw [SchwartzMap.compCLMOfContinuousLinearEquiv_apply,
+        Function.comp_apply, flattenSchwartzNPoint_apply]
+      apply congrArg
+      ext i j
+      simp [flattenCLEquivReal_apply]
+    have hroundtrip := heq_apply (φ.fourierTransform)
+    calc
+      w (φ.fourierTransform)
+          = Tflat (physicsFourierFlatCLM ψflat) := by
+              have h := hTflat_eq ψflat
+              show w (φ.fourierTransform) = Tflat (physicsFourierFlatCLM ψflat)
+              rw [← hroundtrip]
+              show Wclm
+                  ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                    (flattenCLEquivReal n (d + 1)))
+                    (flattenSchwartzNPoint (d := d) (φ.fourierTransform))) =
+                  Tflat (physicsFourierFlatCLM ψflat)
+              exact h
+      _ = 0 := hzero_phys
+  exact hvanish
 
 /-! ### Complex Difference Coordinates -/
 
@@ -3963,6 +4653,8 @@ lemma productTube_function_of_forwardTube {n : ℕ}
         (nhds (W (n + 1) f))) :
     ∃ (F : (Fin n → Fin (d + 1) → ℂ) → ℂ),
       DifferentiableOn ℂ F (ProductForwardTube d n) ∧
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ProductForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
       (∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
         (∀ k : Fin n, InOpenForwardCone d (η k)) →
         Filter.Tendsto
@@ -4003,6 +4695,11 @@ lemma productTube_function_of_forwardTube {n : ℕ}
         simpa [c] using ((complexDiffVarSection d n).toContinuousLinearMap.hasFDerivAt).add_const c
       simpa [c, Pi.add_apply] using hderiv.differentiableAt
     exact (hWa_holo _ hsec).comp ζ hsec_diff.differentiableWithinAt hmaps
+  have hF_growth :
+      ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ProductForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
+    -- Growth transport needs the norm comparison for the shifted partial-sum section.
+    sorry
   have hF_bv :
       ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
         (∀ k : Fin n, InOpenForwardCone d (η k)) →
@@ -4383,7 +5080,7 @@ lemma productTube_function_of_forwardTube {n : ℕ}
           (nhds (w φ)) := by
       simpa [F, fφ, hw_det, hfφ_red] using hbase
     exact hbase'.congr' hchange
-  exact ⟨F, hF_holo, hF_bv⟩
+  exact ⟨F, hF_holo, hF_growth, hF_bv⟩
 
 /-- The constant-1 Schwartz function on the 0-dimensional spacetime. -/
 private noncomputable def schwartzConstOne (d : ℕ) [NeZero d] : SchwartzNPointSpace d 0 :=
@@ -4478,8 +5175,8 @@ theorem spectralConditionDistribution_of_forwardTubeAnalyticity
   obtain ⟨w, hw_cont, hw_lin, hw_det⟩ :=
     exists_diffVar_distribution d hW_tempered hW_linear hW_transl n
   refine ⟨w, hw_cont, hw_lin, hw_det, ?_⟩
-  obtain ⟨F, hF_holo, hF_bv⟩ :=
+  obtain ⟨F, hF_holo, hF_growth, hF_bv⟩ :=
     productTube_function_of_forwardTube d
       hW_tempered hW_linear hW_transl w hw_cont hw_lin hw_det
       W_analytic hWa_holo hWa_growth hWa_bv
-  exact converse_paleyWiener_tube d n F hF_holo w hw_cont hw_lin hF_bv
+  exact converse_paleyWiener_tube d n F hF_holo hF_growth w hw_cont hw_lin hF_bv
