@@ -244,7 +244,20 @@ Current examples:
    `IsHWRealEnvironment`.  The tangent-complexification support theorem
    `sourceComplexGramDifferential_realEmbed_range_eq_complex_span` is now
    checked too: at a real source point, the complex differential range is the
-   complex span of the real differential range.  The regular-locus
+   complex span of the real differential range.  The maximal-totally-real
+   tangent packet is now checked in
+   `BHWPermutation/SourceComplexTangent.lean`: it proves the easy tangent
+   inclusions, complex selected-row span transfer, shared real coefficient
+   expansion, selected Schur-complement differential formula, complex selected
+   differential surjectivity by real/imaginary splitting, the hard theorem
+   `sourceComplexGramTangent_subset_realEmbed_range_of_regular`, and
+   `sourceComplexifiedRealTangentEqualsComplexTangent_of_regular`.  The local
+   Hall-Wightman real-environment supplier
+   `sourceRealGramMap_realEnvironmentAt_of_regular` is also checked: it shrinks
+   a prescribed source neighborhood by `JostSet`, uses the checked relative-open
+   source Gram image theorem, and fills `IsHWRealEnvironment` with Jost
+   realizers and the new maximal-totally-real tangent theorem.  The
+   regular-locus
    template/minor support is now
    checked too: `sourceTemplateDomainIndex`, `sourceTemplateCoordIndex`,
    `sourceTemplateDomainIndex_injective`,
@@ -273,8 +286,295 @@ Current examples:
    Gram-map rank/local real-environment via the explicit selected-coordinate
    rank theorem and a selected-coordinate constant-rank chart for the finite
    source Gram map, and Hall-Wightman real-environment uniqueness via local
-   maximal-totally-real charts plus analytic continuation on the connected
-   scalar-product variety.  The local chart target is relative openness in
+   maximal-totally-real selected-coordinate charts plus analytic continuation on
+   the irreducible scalar-product variety.  The latter is the remaining genuine
+   Hall-Wightman source theorem: connectedness alone is not enough for identity
+   continuation on a reducible analytic set, so the proof must include the
+   scalar-product-variety irreducibility/content theorem rather than reuse the
+   full-matrix totally-real identity shortcut.  The theorem-2 blueprint now pins
+   this source theorem to zero-function Lean surfaces.  The analytic
+   bookkeeping lemma `SourceVarietyHolomorphicOn.sub` is now checked in
+   `SourceExtension.lean`.  The complex selected-coordinate local-IFT substrate
+   is also checked in `SourceComplexChart.lean`
+   (`contDiff_sourceMinkowskiGram`,
+   `sourceMinkowskiGram_hasFDerivAt`,
+   `sourceSelectedComplexSymCoordSubspace`,
+   `sourceSelectedComplexGramDifferentialToSym`,
+   `sourceSelectedComplexGramMap`,
+   `sourceSelectedComplexGramMap_hasStrictFDerivAt`,
+   `sourceSelectedComplexGramDifferentialToSym_surjective_of_sourceRegularMinor_ne_zero`,
+   `sourceSelectedComplexGramMap_implicit_chart_of_nonzero_minor`,
+   `sourceSelectedSymCoordKey`,
+   `sourceSelectedComplexSymCoordKeyEquiv`,
+   `sourceSelectedRealSymCoordKeyEquiv`,
+   `sourceSelectedSymCoordRealComplexify`,
+   `sourceSelectedComplexSymCoordKeyEquiv_real_slice`,
+   `sourceSelectedComplexSymCoordFinEquiv`,
+   `sourceSelectedRealSymCoordFinEquiv`,
+   `sourceSelectedComplexSymCoordFinEquiv_real_slice`,
+   `sourceComplexRegularMinor`,
+   `continuous_sourceComplexRegularMinor`,
+   `sourceComplexRegularMinor_realEmbed`,
+   `exists_nonzero_complex_coordinate_minor_of_linearIndependent`,
+   `sourceComplexGramRegularAt_of_exists_nonzero_minor`,
+   `exists_nonzero_minor_of_sourceComplexGramRegularAt`,
+   `sourceComplexGramRegularAt_iff_exists_nonzero_minor`,
+   `isOpen_sourceComplexGramRegularAt`,
+   `linearIndependent_complex_sourceRows_of_sourceComplexRegularMinor_ne_zero`,
+   `span_sourceComplexRows_eq_sourceComplexConfigurationSpan_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceSelectedComplexRows_span_top_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceComplexStdBasis_sum`,
+   `sourceComplexMinkowskiDualVectorOfLinearFunctional`,
+   `sourceComplexMinkowskiInner_dualVectorOfLinearFunctional`,
+   `exists_sourceComplexMinkowski_dual_family_of_linearIndependent`,
+   `exists_sourceComplexMinkowski_dual_sourceRows_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceComplexMinkowskiInner_sum_smul_dual_left`,
+   `sourceSelectedComplexGramCoord_comp_differential_range_eq_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceSelectedComplexGramDifferentialToSym_surjective_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceSelectedComplexGramMap_implicit_chart_of_complex_nonzero_minor`,
+   `sourceComplexRows_coefficients_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceSelectedComplexGramCoord_eq_fullGram_eq_of_leftMinor_rightSpanTop`,
+   `sourceSelectedComplexGramCoord_eq_fullGram_eq_of_sourceComplexRegularMinor_ne_zero`,
+   `sourceComplexGramMap_constant_on_selectedVerticalFibers`,
+   `sourceComplexGramMap_localRelOpenImage_in_open_of_complexRegular`,
+   `sourceSelectedComplexRows_span_top_of_selectedComplexGramCoord_eq_regular`,
+   `sourceSelectedComplexGramCoord_eq_fullGram_eq_of_sourceComplexRegularMinor_ne_zero_of_mem_variety`,
+   `sourceComplexGramMap_localRelOpenImage_in_open_of_realRegular`,
+   `contDiff_sourceSelectedComplexGramMap_of_injective`,
+   `sourceSelectedComplexGramKernelProjection`,
+   `sourceSelectedComplexGramKernelProjection_apply_ker`,
+   `sourceSelectedComplexGramProdMap`,
+   `contDiff_sourceSelectedComplexGramProdMap`,
+   `sourceSelectedComplexGramProdMap_hasFDerivAt`,
+   `sourceSelectedComplexGramProdMap_fderiv`,
+   `sourceSelectedComplexGramProdMap_base_fderiv_isInvertible`,
+   `sourceSelectedComplexGramProdMap_local_invertible_nhds`,
+   `sourceSelectedComplexGramImplicitChart`,
+   `sourceSelectedComplexGramImplicitChart_apply`,
+   `sourceSelectedComplexGramImplicitChart_mem_source`,
+   `sourceSelectedComplexGramImplicitChart_self`,
+   `sourceSelectedComplexZeroKernelTargetCLM`,
+   `sourceSelectedComplexZeroKernelTargetCLM_apply`,
+   `sourceSelectedComplexGramZeroSection_differentiableOn`,
+   `sourceSelectedComplexGramZeroSection_selectedGram`,
+   `sourceSelectedComplexGramZeroSection_base`,
+   `sourceSelectedComplexGramFlatCoordCLM`,
+   `sourceSelectedComplexGramFlatCoordCLM_apply`,
+   `sourceSelectedComplexGramFlatCoordCLM_source`,
+   `sourceSelectedComplexGramCoord_eq_of_flatCoord_eq`,
+   `sourceSelectedComplexGramZeroSection_image_eq_flatCoord_preimage`,
+   `sourceSelectedComplexGramZeroSection_image_relOpen`,
+   `sourceSelectedComplexGramZeroSection_gram_differentiableOn`,
+   `exists_sourceSelectedComplexGramZeroSection_good_ball`,
+   `sourceSelectedComplexSymCoordFinEquiv_symm_real_slice`,
+   `sourceSelectedRealGramImplicitChart`,
+   `sourceSelectedRealGramImplicitChart_mem_source`,
+   `sourceSelectedRealGramImplicitChart_self`,
+   `sourceSelectedRealGramImplicitChart_fst`,
+   `sourceSelectedRealZeroKernelTargetCLM`,
+   `sourceSelectedRealZeroKernelTargetCLM_apply`,
+   `sourceSelectedRealGramZeroSection_selectedGram`,
+   `sourceSelectedRealGramZeroSection_base`,
+   `sourceSelectedRealGramZeroSection_continuousOn`,
+   `sourceSelectedComplexGramZeroSection_real_slice_gram`,
+   `exists_sourceSelectedRealGramZeroSection_good_ball`,
+   `sourceSelectedComplexGramBaseCoord_real_slice`,
+   `sourceComplexGramVariety_selectedChart_of_realRegular`,
+   `SourceVarietyHolomorphicOn.comp_differentiableOn_chart`,
+   and `sourceVariety_localChart_totallyReal_zero`,
+   all sorry-free).  The global identity support has started with the checked
+   Minkowski-to-dot reduction
+   `complexMinkowskiToDotLinearEquiv`,
+   `sourceComplexMinkowskiInner_eq_dot_after_equiv`,
+   `sourceMinkowskiGram_eq_dotGram_after_equiv`, and
+   `sourceComplexGramVariety_eq_dotGram_range` in
+   `BHWPermutation/SourceComplexGlobalIdentity.lean`.  The remaining
+   symmetric-space definitions and inclusions
+   `sourceSymmetricMatrixSpace`, `sourceMatrixMinor`,
+   `sourceSymmetricRankLEVariety`, `sourceComplexDotGram_symm`,
+   `sourceComplexDotGram_mem_sourceSymmetricMatrixSpace`, and
+   `sourceComplexGramVariety_subset_sourceSymmetricMatrixSpace` are checked
+   there too.  The determinant/minor forward inclusion is now checked as
+   `sourceComplexDotGram_minor_eq_zero`,
+   `sourceComplexDotGram_mem_sourceSymmetricRankLEVariety`, and
+   `sourceComplexGramVariety_subset_sourceSymmetricRankLEVariety`; the next
+   diagonal square-root substep is checked as `complexSquareRootChoice`,
+   `complexSquareRootChoice_mul_self`, and
+   `sourceComplexDiagonal_factorization_self`.  The orthogonal-diagonalization
+   spine is now also checked as `bilinform_orthogonal_basis_expansion`,
+   `sourceMatrix_toBilin_isSymm`,
+   `sourceSymmetricMatrix_exists_orthogonal_coordinate_expansion`,
+   `sourceSymmetricMatrix_factorization_finrank`, and
+   `sourceSymmetricMatrix_factorization_self`.  This proves the unrestricted
+   complex symmetric `Z = A * Aᵀ` factorization in `n` coordinates.  The
+   rank-compression theorem is now checked as
+   `complex_symmetric_matrix_factorization_of_rank_le`, and the rank-defined
+   reverse inclusion into the source variety is checked as
+   `sourceComplexGramVariety_mem_of_symmetric_rank_le`.  The minor-to-rank
+   bridge is now checked as `sourceMatrix_rank_le_of_minors_eq_zero`, with
+   row/column extraction support
+   `exists_linearIndependent_rows_of_rank_ge` and
+   `exists_nondegenerate_square_submatrix_of_rank_ge`.  The converse rank-to-
+   minor direction and rank-stratum API are checked as
+   `matrix_rank_ge_of_nondegenerate_square_submatrix`,
+   `sourceMatrix_minors_eq_zero_of_rank_le`,
+   `sourceSymmetricRankLEVariety_eq_rank_le`,
+   `sourceSymmetricRankExactStratum`, and
+   `sourceSymmetricRankExactStratum_subset_rankLE`, with the positive-rank
+   difference characterization
+   `sourceSymmetricRankExactStratum_eq_rankLE_diff`.  Thus the full algebraic
+   identification is checked as
+   `sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety`, with the direct
+   rank-defined source characterization
+   `sourceComplexGramVariety_eq_rank_le` and stratum inclusion
+   `sourceSymmetricRankExactStratum_subset_sourceComplexGramVariety` also
+   checked.  The closedness/regular-locus topology needed for the singular
+   closure stage is now also checked:
+   `continuous_sourceMatrixMinor`, `isClosed_sourceSymmetricMatrixSpace`,
+   `isClosed_sourceSymmetricRankLEVariety`,
+   `isClosed_sourceComplexGramVariety`,
+   `sourceComplexGramVariety_diff_lowerRank_eq_rankExact`, and
+   `sourceSymmetricRankExactStratum_relOpenIn_sourceComplexGramVariety`.  The
+   first Schur-complement regular-patch obstruction is checked as
+   `matrix_rank_ge_card_of_nondegenerate_square_submatrix` and
+   `schur_complement_entry_eq_zero_of_rank_le`: on an invertible principal
+   block, rank at most the block size forces every Schur-complement entry to
+   vanish.  The converse graph-to-rank half is checked as
+   `rank_fromBlocks_zero₂₂_le_card_left` and
+   `rank_fromBlocks_le_of_schur_complement_eq_zero`: Schur-complement zero
+   forces rank at most the principal-block size via mathlib's LDU
+   factorization and elementary row-span rank control of `fromBlocks A 0 0 0`.
+   The arbitrary-coordinate packaging is checked as
+   `toBlocks₂₁_eq_transpose_toBlocks₁₂_of_symm`,
+	   `schur_complement_entry_eq_zero_of_rank_le_reindex`, and
+	   `rank_le_of_reindexed_schur_complement_eq_zero`, transporting the canonical
+	   Schur equivalence through `Matrix.reindex` for any equivalence
+	   `ι ≃ r ⊕ q`.  The principal-patch graph characterization is now checked in
+	   `BHWPermutation/SourceComplexSchurPatch.lean` as
+	   `rank_eq_card_iff_reindexed_schur_complement_eq_zero`,
+	   `sourceSymmetricRankExactStratum_iff_reindexed_schur_complement_eq_zero`,
+	   and `sourceComplexGramVariety_iff_reindexed_schur_complement_eq_zero`:
+	   on an invertible selected principal block of size `d + 1`, membership in
+	   the source complex Gram variety is exactly symmetry plus vanishing
+	   Schur complement.  This is the local graph model needed for the
+	   Hall-Wightman regular-rank stratum, not a wrapper around the identity
+	   theorem.  The rectangular all-minor implementation cover is also checked
+	   in the same file: `reindexedRectSchurComplement`,
+	   `rank_fromBlocks_zero₂₂_le_card_left_rect`,
+	   `schur_complement_entry_eq_zero_of_rank_le_rect`,
+	   `rank_fromBlocks_le_of_schur_complement_eq_zero_rect`,
+	   `rank_eq_card_iff_reindexed_rect_schur_complement_eq_zero`,
+	   `sourceSymmetricRankExactStratum_iff_reindexed_rect_schur_complement_eq_zero`,
+	   and `sourceComplexGramVariety_iff_reindexed_rect_schur_complement_eq_zero`.
+	   This lets the regular-stratum cover use the already checked arbitrary
+	   nonzero-minor extraction, while the principal-patch theorem remains the
+	   Hall-Wightman-facing specialization.  The selected-minor complement
+	   packaging is also checked as `selectedIndexComplement`,
+	   `selectedIndexSumEquiv`, `selectedIndexSumEquiv_apply_selected`,
+	   `selectedIndexSumEquiv_toBlocks₁₁`,
+	   `isUnit_selectedIndexSumEquiv_toBlocks₁₁_det`, and
+	   `sourceComplexGramVariety_iff_selected_rect_schur_complement_eq_zero`.
+	   Thus an actual nonzero minor `sourceMatrixMinor n (d+1) I J Z ≠ 0`
+	   directly produces the rectangular Schur chart of the source Gram variety.
+	   The cover extraction is now checked as
+	   `sourceMatrixMinor_ne_zero_left_injective`,
+	   `sourceMatrixMinor_ne_zero_right_injective`,
+	   `exists_sourceMatrixMinor_ne_zero_of_sourceSymmetricRankExactStratum`,
+	   `exists_selected_rect_schur_chart_of_sourceSymmetricRankExactStratum`,
+	   and
+	   `exists_selected_rect_schur_chart_of_sourceComplexGramVariety_rankExact`:
+	   every rank-exact point yields injective selected row/column maps, a
+	   nonzero selected minor, and the selected Schur graph equivalence for the
+	   source complex Gram variety on the resulting patch.  The corresponding
+	   topology is checked as `isOpen_sourceMatrixMinor_ne_zero`,
+	   `sourceMatrixMinor_ne_zero_relOpenInSourceComplexGramVariety`, and
+	   `sourceComplexGramVariety_regularSelectedMinorPatch_relOpen`: selected
+	   determinant-nonzero patches, and their intersections with the regular
+	   rank-`d+1` stratum, are relatively open in the source complex Gram
+	   variety.  The selected-chart dimension count is checked in the new small
+	   companion `BHWPermutation/SourceComplexDimension.lean` as
+	   `finrank_sourceSelectedComplexSymCoordSubspace`: the selected complex
+	   symmetric-coordinate subspace has finrank
+	   `n*m - m*(m-1)/2`, using the existing real dimension theorem and the
+	   checked real/complex coordinate-key equivalences.  The same companion
+	   now carries the lower-rank codimension arithmetic:
+	   `sourceRankExactChartDim_sub_previous` proves the paper formula
+	   `dim(rankExact D) - dim(rankExact (D-1)) = n-D+1`, and
+	   `finrank_sourceSelectedComplexSymCoordSubspace_lowerRankCodim_ge_two`
+	   gives codimension at least two in the singular case `D < n`.  The
+	   complex source-density packet is now checked too in
+	   `BHWPermutation/SourceComplexDensity.lean`: it complexifies
+	   `sourceFullSpanTemplate`, uses the determinant polynomial of the
+	   canonical regular minor along
+	   `z + t • sourceComplexFullSpanTemplate d n`, and proves
+	   `dense_sourceComplexGramRegularAt`.  The next implementation target in
+	   that companion is now Lean-ready: under the necessary hard-range
+	   hypothesis `d + 1 <= n`, a nonzero complex regular source minor makes the
+	   selected Gram rows linearly independent; row-rank comparison gives
+	   `d + 1 <= rank(sourceMinkowskiGram d n z)`, and the checked
+	   `sourceComplexGramVariety_eq_rank_le` upper bound upgrades every regular
+	   source Gram matrix to membership in
+	   `sourceSymmetricRankExactStratum n (d + 1)`.  The immediate density
+	   corollary is also Lean-ready: for any point of the source complex Gram
+	   variety and any ambient open neighborhood, choose a source realization,
+	   pull the neighborhood back along the continuous Gram map, use
+	   `dense_sourceComplexGramRegularAt`, and push the chosen regular source
+	   point forward with the rank-exact bridge.  Closedness of
+	   `sourceComplexGramVariety d n` and
+	   `sourceSymmetricRankExactStratum_subset_sourceComplexGramVariety` then
+	   give
+	   `closure (sourceSymmetricRankExactStratum n (d + 1)) =
+	    sourceComplexGramVariety d n`.  The consumer corollary is now pinned:
+	   every nonempty relatively open subset of `sourceComplexGramVariety d n`
+	   meets `sourceSymmetricRankExactStratum n (d + 1)`, obtained by applying
+	   `mem_closure_iff` to the ambient-open representative of the relatively
+	   open set.  The checked consumer upgrades this to relative
+	   density inside each relatively open source-variety domain `U`, and then
+	   proves the pure continuity-extension lemma: if a continuous scalar-product
+	   representative on `U` vanishes on
+	   `U ∩ sourceSymmetricRankExactStratum n (d + 1)`, it vanishes on all of
+	   `U`.  The production `SourceVarietyHolomorphicOn` hypothesis now also
+	   exposes `ContinuousOn` by local ambient differentiability through the
+	   checked `SourceVarietyHolomorphicOn.continuousOn`, so the
+	   continuity-extension lemma applies directly to theorem-2 representatives.
+	   The easy-arity algebraic reduction is now pinned next: when
+	   `n <= d + 1`, `sourceComplexGramVariety d n` equals
+	   `sourceSymmetricMatrixSpace n`, since the rank bound in
+	   `sourceComplexGramVariety_eq_rank_le` is automatic.
+	   The full symmetric affine coordinate model for this easy branch is now
+	   checked too: `sourceFullSymCoordMapCLM`,
+	   `sourceFullSymCoordMap_mem_sourceSymmetricMatrixSpace`,
+	   `continuous_sourceFullSymCoordMap`,
+	   `differentiable_sourceFullSymCoordMap`,
+	   `sourceSymmetricMatrixSpace_eq_range_sourceFullSymCoordMap`, and
+	   `isOpen_sourceFullSymCoordMap_preimage_of_relOpen_of_le` identify the
+	   symmetric affine space with selected symmetric coordinates and turn
+	   relatively open easy-branch source-variety domains into honest open
+	   finite-dimensional complex coordinate domains.  The connectedness
+	   transport is now checked as
+	   `isConnected_sourceFullSymCoordMap_preimage_of_relOpen_of_le`, using the
+	   inverse coordinate map on the subtype `U`.  The easy-branch identity
+	   theorem itself is now checked as
+	   `sourceComplexGramVariety_identity_principle_easy`: it applies the
+	   ordinary SCV identity theorem to `H ∘ sourceFullSymCoordMap n` on the
+	   open connected coordinate domain and pushes equality back to `U`.  The
+	   final global theorem should now be a short arity split: use this checked
+	   easy theorem when `n <= d + 1`; when `d + 1 < n`, prove the checked
+	   regular-rank-stratum identity theorem and then invoke the already checked
+	   rank-exact density/continuity extension.
+	   The remaining
+	   proof-doc/Lean target is `sourceComplexGramVariety_identity_principle`;
+   the pairwise
+   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` proof should
+   be a direct `H := Φ - Ψ` consumer, not a wrapper ladder.  Deep Research audit
+   `v1_ChdsVFR2YVpiQUN0U1lfdU1Qa1pidjZBMBIXbFRUdmFaYkFDdFNZX3VNUGtaYnY2QTA`
+   agrees with the rank-bounded-variety and irreducible-analytic-identity
+   theorem shape, and flags the same hidden obligations: strong/local-ambient
+   holomorphy, singular lower-rank handling, and analytic irreducibility of the
+   source symmetric determinantal variety.  The blueprint now also records the
+   needed complex symmetric rank factorization and warns that the source-space
+   pullback shortcut is insufficient unless it proves the same irreducibility /
+   monodromy content.  The local chart target is relative openness in
    the scalar-product variety; it is not the false affine claim that the Gram
    image contains an open subset of `G0 + range dG_x0`.  The algebraic
    selected-coordinate uniqueness step

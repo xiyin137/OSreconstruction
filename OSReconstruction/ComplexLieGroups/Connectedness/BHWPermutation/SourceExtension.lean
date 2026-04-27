@@ -1135,6 +1135,24 @@ def SourceVarietyHolomorphicOn
     IsOpen U0 ∧ Z ∈ U0 ∧ DifferentiableOn ℂ Φ U0 ∧
       U0 ∩ sourceComplexGramVariety d n ⊆ U
 
+/-- Local ambient source-variety holomorphic representatives are continuous on
+their variety domain. -/
+theorem SourceVarietyHolomorphicOn.continuousOn
+    (d n : ℕ)
+    {U : Set (Fin n → Fin n → ℂ)}
+    {Φ : (Fin n → Fin n → ℂ) → ℂ}
+    (hΦ : SourceVarietyHolomorphicOn d n Φ U) :
+    ContinuousOn Φ U := by
+  rw [continuousOn_iff]
+  intro Z hZU T hT_open hΦZT
+  rcases hΦ Z hZU with ⟨U0, hU0_open, hZU0, hDiffU0, _hU0_sub⟩
+  have hContU0 : ContinuousOn Φ U0 := hDiffU0.continuousOn
+  rcases (continuousOn_iff.mp hContU0) Z hZU0 T hT_open hΦZT with
+    ⟨V, hV_open, hZV, hV_sub⟩
+  refine ⟨V ∩ U0, hV_open.inter hU0_open, ⟨hZV, hZU0⟩, ?_⟩
+  intro W hW
+  exact hV_sub ⟨hW.1.1, hW.1.2⟩
+
 /-- Restrict variety-holomorphicity from a set to a relatively open subset. -/
 theorem SourceVarietyHolomorphicOn.of_subset_relOpen
     (d n : ℕ)
@@ -1154,6 +1172,23 @@ theorem SourceVarietyHolomorphicOn.of_subset_relOpen
   · intro W hW
     rw [hV0_eq]
     exact ⟨hW.1.2, hW.2⟩
+
+/-- Source-variety holomorphicity is stable under subtraction. -/
+theorem SourceVarietyHolomorphicOn.sub
+    (d n : ℕ)
+    {U : Set (Fin n → Fin n → ℂ)}
+    {Φ Ψ : (Fin n → Fin n → ℂ) → ℂ}
+    (hΦ : SourceVarietyHolomorphicOn d n Φ U)
+    (hΨ : SourceVarietyHolomorphicOn d n Ψ U) :
+    SourceVarietyHolomorphicOn d n (fun Z => Φ Z - Ψ Z) U := by
+  intro Z hZU
+  rcases hΦ Z hZU with ⟨UΦ, hUΦ_open, hZUΦ, hDiffΦ, hUΦ_sub⟩
+  rcases hΨ Z hZU with ⟨UΨ, hUΨ_open, hZUΨ, hDiffΨ, _hUΨ_sub⟩
+  refine ⟨UΦ ∩ UΨ, hUΦ_open.inter hUΨ_open, ⟨hZUΦ, hZUΨ⟩, ?_, ?_⟩
+  · exact (hDiffΦ.mono (by intro W hW; exact hW.1)).sub
+      (hDiffΨ.mono (by intro W hW; exact hW.2))
+  · intro W hW
+    exact hUΦ_sub ⟨hW.1.1, hW.2⟩
 
 /-- Source-variety holomorphicity is stable under a source Gram coordinate
 permutation. -/
