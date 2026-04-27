@@ -93,7 +93,14 @@ final envelope theorem:
 ```lean
 lemma localContinuousEOW_envelope
 lemma localRealMollifySide_holomorphicOn_of_translate_margin
-lemma localRealMollify_commonContinuousBoundary
+lemma realMollifyLocal_eq_sliceIntegral_translate
+lemma realMollifyLocal_eq_sliceFunctional
+lemma exists_cutoffSliceIntegral_clm_of_continuousOn
+lemma realMollifyLocal_eq_cutoffSliceCLM
+lemma tendsto_cutoffSliceCLM_of_boundaryValue
+lemma exists_cutoffSliceCLM_family_of_boundaryValue
+lemma localRealMollify_commonContinuousBoundary_of_clm
+lemma sliceCLM_family_from_distributionalBoundary
 lemma regularizedLocalEOW_family
 lemma regularizedEnvelope_linearContinuousInKernel
 lemma regularizedEnvelope_translationCovariant
@@ -192,7 +199,7 @@ Source ledger for the internal helper list:
 | `localEOW_uniform_slowGrowth_order` | Compactness plus maxima of the two local slow-growth orders. |
 | `localEOW_nested_axis_boxes`, `localEOW_support_margin` | Finite-dimensional topology: choose `B0 ⋐ B1 ⋐ E` and kernel-support radius `r` so `B0 + supp ψ ⊆ B1`. |
 | `localRealMollifySide_holomorphicOn_of_translate_margin` | Checked in `SCV/LocalDistributionalEOW.lean`: local version of `differentiableOn_realMollify_tubeDomain`; real-direction convolution of a holomorphic wedge function is holomorphic on the shrunken wedge whenever the support margin keeps all translates of the real-kernel support inside the original local wedge. |
-| `localRealMollify_commonContinuousBoundary` | Streater-Wightman regularization step: the regularized plus/minus sides have the same continuous boundary value `x ↦ T (translateSchwartz (-x) ψ)`.  This reuses `continuous_apply_translateSchwartz_of_isCompactSupport` and compact-support stability. |
+| `localRealMollify_commonContinuousBoundary_of_clm` | Checked extraction step: if the plus/minus slice CLMs converge pointwise to the same chart distribution and correctly evaluate the translated kernels appearing in `realMollifyLocal`, then the regularized plus/minus sides have the same continuous boundary value `x ↦ T (translateSchwartz (-x) ψ)`.  The remaining hard input is constructing these slice CLMs from the OS-II distributional boundary-value hypotheses, not assuming common continuous boundary. |
 | `regularizedLocalEOW_family` | Apply local continuous EOW to every fixed smoothing kernel, using one neighborhood determined by the nested boxes and support radius. |
 | `regularizedEnvelope_linearContinuousInKernel` | For each point in the common neighborhood, the value of the regularized envelope is a continuous linear functional of the smoothing kernel.  Use a fixed compactly supported cutoff `χr = 1` on the allowed kernel-support ball so the functional is a genuine `SchwartzMap ->L[ℂ] ℂ`, not an LF-space wrapper. |
 | `regularizedEnvelope_translationCovariant` | The regularized envelopes satisfy the translation law forced by real-translation of the kernel and the identity theorem on the regularized wedge pieces. |
@@ -318,9 +325,12 @@ Implementation notes:
    hypothesis.
 9. Define the continuous boundary function
    `bvψ u = Tchart (translateSchwartz (-u) ψ)` on `B0`.
-   `localRealMollify_commonContinuousBoundary` proves continuity of `bvψ` and
-   the plus/minus boundary convergence.  This is exactly the
-   Streater-Wightman `T(f_x)` boundary-value step.
+   `localRealMollify_commonContinuousBoundary_of_clm` proves continuity of
+   `bvψ` and the plus/minus boundary convergence after
+   `sliceCLM_family_from_distributionalBoundary` constructs the plus/minus
+   slice functionals and their convergence to `Tchart`.  This is exactly the
+   Streater-Wightman `T(f_x)` boundary-value step; it is not an assumption of
+   common continuous boundary.
 10. Apply `localContinuousEOW_envelope` to `Fplusψ`, `Fminusψ`, and `bvψ`,
     producing a regularized envelope `Gψ` on a fixed local complex
     neighborhood `U0` determined by `B0`, `B1`, and `rψ`, not by the individual
@@ -399,7 +409,9 @@ Regularization notation that must be instantiated before theorem proving:
 5. `mollifiedBoundary T ψ u` is
    `T (translateSchwartz (-u) ψ)`.  With the convention
    `translateSchwartz a ψ x = ψ (x + a)`, this is the boundary value of
-   `realMollifyLocal F ψ` at the real point `u`.
+   `realMollifyLocal F ψ` at the real point `u` after the checked
+   change-of-variables identity rewrites the mollifier as the slice functional
+   at imaginary part `im z` evaluated on the translated test kernel.
 6. `SmallKernelSpace r` is the test-kernel space used by the kernel theorem:
    in production Lean this should be implemented by a fixed smooth cutoff
    `χr` rather than by introducing a new LF-space wrapper.  Choose
@@ -567,77 +579,56 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
         z + realEmbed t ∈ Ω) :
     DifferentiableOn ℂ (realMollifyLocal F ψ) D
 
-lemma mollifiedBoundary_continuousOn
+theorem regularizedBoundaryValue_continuousOn
     {m : ℕ}
-    (B : Set (Fin m -> ℝ))
     (T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
     (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (E : Set (Fin m -> ℝ))
     (hψ_compact : HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ)) :
-    ContinuousOn (mollifiedBoundary T ψ) B
+    ContinuousOn (fun x : Fin m -> ℝ =>
+      T (translateSchwartz (-x) ψ)) E
 
-lemma localRealMollify_commonContinuousBoundary
+theorem localRealMollify_commonContinuousBoundary_of_clm
     {m : ℕ}
-    (DplusSmall DminusSmall DplusLarge DminusLarge : Set (Fin m -> ℂ))
-    (B C : Set (Fin m -> ℝ))
-    (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
-    (hFplus : DifferentiableOn ℂ Fplus DplusLarge)
-    (hFminus : DifferentiableOn ℂ Fminus DminusLarge)
-    (T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
+    (Ωplus Ωminus : Set (ComplexChartSpace m))
+    {Cplus Cminus : Set (Fin m -> ℝ)}
+    (Fplus Fminus : ComplexChartSpace m -> ℂ)
+    (Tplus Tminus :
+      (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
     (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
-    (r : ℝ)
-    (hψ : KernelSupportWithin ψ r)
-    (hmargin_plus : LocalTranslateMargin DplusSmall DplusLarge r)
-    (hmargin_minus : LocalTranslateMargin DminusSmall DminusLarge r)
-    (hslow_plus :
-      ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ B ->
-        ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-          ∃ (A : ℝ) (N : ℕ) (r0 : ℝ), 0 < A ∧ 0 < r0 ∧
-            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r0 ->
-              ‖Fplus (fun a => (x a : ℂ) +
-                (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤ A * (ε⁻¹) ^ N)
-    (hslow_minus :
-      ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ B ->
-        ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-          ∃ (A : ℝ) (N : ℕ) (r0 : ℝ), 0 < A ∧ 0 < r0 ∧
-            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r0 ->
-              ‖Fminus (fun a => (x a : ℂ) -
-                (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤ A * (ε⁻¹) ^ N)
-    (hplus_bv :
-      ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-        ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
-          HasCompactSupport (φ : (Fin m -> ℝ) -> ℂ) ->
-          tsupport (φ : (Fin m -> ℝ) -> ℂ) ⊆ B ->
-          TendstoUniformlyOn
-            (fun ε η =>
-              ∫ x : Fin m -> ℝ,
-                Fplus (fun a => (x a : ℂ) +
-                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
-            (fun _ : Fin m -> ℝ => T φ)
-            (nhdsWithin 0 (Set.Ioi 0))
-            Kη)
-    (hminus_bv :
-      ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-        ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
-          HasCompactSupport (φ : (Fin m -> ℝ) -> ℂ) ->
-          tsupport (φ : (Fin m -> ℝ) -> ℂ) ⊆ B ->
-          TendstoUniformlyOn
-            (fun ε η =>
-              ∫ x : Fin m -> ℝ,
-                Fminus (fun a => (x a : ℂ) -
-                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
-            (fun _ : Fin m -> ℝ => T φ)
-            (nhdsWithin 0 (Set.Ioi 0))
-            Kη)
-    :
-    ContinuousOn (mollifiedBoundary T ψ) B ∧
-    (∀ u ∈ B,
+    (B : Set (Fin m -> ℝ))
+    (hψ_compact : HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ))
+    (hΩplus_sub : Ωplus ⊆ TubeDomain Cplus)
+    (hΩminus_sub : Ωminus ⊆ TubeDomain Cminus)
+    (hplus_eval :
+      ∀ w ∈ Ωplus,
+        realMollifyLocal Fplus ψ w =
+          Tplus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ w ∈ Ωminus,
+        realMollifyLocal Fminus ψ w =
+          Tminus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f))) :
+    ContinuousOn (fun x : Fin m -> ℝ =>
+      Tchart (translateSchwartz (-x) ψ)) B ∧
+    (∀ x ∈ B,
       Tendsto (realMollifyLocal Fplus ψ)
-        (nhdsWithin (realEmbed u) DplusSmall)
-        (nhds (mollifiedBoundary T ψ u))) ∧
-    (∀ u ∈ B,
+        (nhdsWithin (realEmbed x) Ωplus)
+        (nhds (Tchart (translateSchwartz (-x) ψ)))) ∧
+    (∀ x ∈ B,
       Tendsto (realMollifyLocal Fminus ψ)
-        (nhdsWithin (realEmbed u) DminusSmall)
-        (nhds (mollifiedBoundary T ψ u)))
+        (nhdsWithin (realEmbed x) Ωminus)
+        (nhds (Tchart (translateSchwartz (-x) ψ))))
 
 lemma regularizedLocalEOW_family
     {m : ℕ}
@@ -1085,25 +1076,181 @@ theorem regularizedBoundaryValue_continuousOn
     (hψ_compact : HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ)) :
     ContinuousOn (fun x : Fin m -> ℝ => T (translateSchwartz (-x) ψ)) E
 
-theorem localRealMollify_commonContinuousBoundary
+theorem realMollifyLocal_eq_sliceIntegral_translate
+    {m : ℕ}
+    (F : ComplexChartSpace m -> ℂ)
+    (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (w : ComplexChartSpace m) :
+    realMollifyLocal F ψ w =
+      ∫ x : Fin m -> ℝ,
+        F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
+          translateSchwartz (fun i => - (w i).re) ψ x
+
+theorem realMollifyLocal_eq_sliceFunctional
+    {m : ℕ}
+    (F : ComplexChartSpace m -> ℂ)
+    (Tseq : (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (hTseq_eval :
+      ∀ (y : Fin m -> ℝ) (φ : SchwartzMap (Fin m -> ℝ) ℂ),
+        Tseq y φ =
+          ∫ x : Fin m -> ℝ,
+            F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x) :
+    realMollifyLocal F ψ w =
+      Tseq (fun i => (w i).im)
+        (translateSchwartz (fun i => - (w i).re) ψ)
+
+theorem exists_cutoffSliceIntegral_clm_of_continuousOn
+    {m : ℕ}
+    (F : ComplexChartSpace m -> ℂ)
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (y : Fin m -> ℝ)
+    (hΩ_open : IsOpen Ω)
+    (hF_cont : ContinuousOn F Ω)
+    (hχ_compact : HasCompactSupport (χ : (Fin m -> ℝ) -> ℂ))
+    (hmargin :
+      ∀ x ∈ tsupport (χ : (Fin m -> ℝ) -> ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ω) :
+    ∃ T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ,
+      ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        T φ = ∫ x : Fin m -> ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) *
+            φ x
+
+theorem realMollifyLocal_eq_cutoffSliceCLM
+    {m : ℕ}
+    (F : ComplexChartSpace m -> ℂ)
+    (χ ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (hχ_one :
+      ∀ x ∈ tsupport
+          ((translateSchwartz (fun i => - (w i).re) ψ :
+            SchwartzMap (Fin m -> ℝ) ℂ) : (Fin m -> ℝ) -> ℂ),
+        χ x = 1)
+    (hT :
+      ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        T φ = ∫ x : Fin m -> ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I)) *
+            φ x) :
+    realMollifyLocal F ψ w =
+      T (translateSchwartz (fun i => - (w i).re) ψ)
+
+theorem tendsto_cutoffSliceCLM_of_boundaryValue
+    {m : ℕ}
+    {C : Set (Fin m -> ℝ)}
+    (F : ComplexChartSpace m -> ℂ)
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (Traw : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (Tseq : (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (hTseq :
+      ∀ (y : Fin m -> ℝ) (φ : SchwartzMap (Fin m -> ℝ) ℂ),
+        Tseq y φ = ∫ x : Fin m -> ℝ,
+          (χ x * F (fun i =>
+            (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) * φ x)
+    (hbv :
+      ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto
+          (fun y : Fin m -> ℝ => ∫ x : Fin m -> ℝ,
+            F (fun i =>
+              (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 C)
+          (nhds (Traw φ))) :
+    ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+      Tendsto (fun y : Fin m -> ℝ => Tseq y φ) (nhdsWithin 0 C)
+        (nhds (Traw ((SchwartzMap.smulLeftCLM ℂ
+          (χ : (Fin m -> ℝ) -> ℂ)) φ)))
+
+theorem exists_cutoffSliceCLM_family_of_boundaryValue
+    {m : ℕ}
+    {C : Set (Fin m -> ℝ)}
+    (F : ComplexChartSpace m -> ℂ)
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (Traw : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (hΩ_open : IsOpen Ω)
+    (hF_cont : ContinuousOn F Ω)
+    (hχ_compact : HasCompactSupport (χ : (Fin m -> ℝ) -> ℂ))
+    (hmargin :
+      ∀ y ∈ C, ∀ x ∈ tsupport (χ : (Fin m -> ℝ) -> ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ω)
+    (hbv :
+      ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto
+          (fun y : Fin m -> ℝ => ∫ x : Fin m -> ℝ,
+            F (fun i =>
+              (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 C)
+          (nhds (Traw φ))) :
+    ∃ Tseq : (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ,
+      (∀ y ∈ C, ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tseq y φ = ∫ x : Fin m -> ℝ,
+          (χ x * F (fun i =>
+            (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) * φ x) ∧
+      (∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y : Fin m -> ℝ => Tseq y φ) (nhdsWithin 0 C)
+          (nhds (Traw ((SchwartzMap.smulLeftCLM ℂ
+            (χ : (Fin m -> ℝ) -> ℂ)) φ))))
+
+theorem tendsto_mollified_boundary_of_clm
+    {m : ℕ}
+    {C : Set (Fin m -> ℝ)}
+    {Tseq : (Fin m -> ℝ) ->
+      SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ}
+    {T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ}
+    (hT :
+      ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y => Tseq y f) (nhdsWithin 0 C) (nhds (T f)))
+    (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (hψ_compact : HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ))
+    (x0 : Fin m -> ℝ) :
+    Tendsto
+      (fun w : ComplexChartSpace m =>
+        Tseq (fun i => (w i).im)
+          (translateSchwartz (fun i => - (w i).re) ψ))
+      (nhdsWithin (realEmbed x0) (TubeDomain C))
+      (nhds (T (translateSchwartz (fun i => - x0 i) ψ)))
+
+theorem localRealMollify_commonContinuousBoundary_of_clm
     {m : ℕ}
     (Ωplus Ωminus : Set (ComplexChartSpace m))
-    (B0 : Set (Fin m -> ℝ))
-    (C0 : Set (Fin m -> ℝ))
+    {Cplus Cminus : Set (Fin m -> ℝ)}
     (Fplus Fminus : ComplexChartSpace m -> ℂ)
+    (Tplus Tminus :
+      (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
     (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
     (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
-    -- open/nested-box/support-margin hypotheses
-    -- slow-growth bounds for the two signs
-    -- compact-subcone distributional boundary hypotheses for Fplus/Fminus
-    :
+    (B : Set (Fin m -> ℝ))
+    (hψ_compact : HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ))
+    (hΩplus_sub : Ωplus ⊆ TubeDomain Cplus)
+    (hΩminus_sub : Ωminus ⊆ TubeDomain Cminus)
+    (hplus_eval :
+      ∀ w ∈ Ωplus,
+        realMollifyLocal Fplus ψ w =
+          Tplus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ w ∈ Ωminus,
+        realMollifyLocal Fminus ψ w =
+          Tminus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f))) :
     ContinuousOn (fun x : Fin m -> ℝ =>
-      Tchart (translateSchwartz (-x) ψ)) B0 ∧
-    (∀ x ∈ B0,
+      Tchart (translateSchwartz (-x) ψ)) B ∧
+    (∀ x ∈ B,
       Tendsto (realMollifyLocal Fplus ψ)
         (nhdsWithin (realEmbed x) Ωplus)
         (nhds (Tchart (translateSchwartz (-x) ψ)))) ∧
-    (∀ x ∈ B0,
+    (∀ x ∈ B,
       Tendsto (realMollifyLocal Fminus ψ)
         (nhdsWithin (realEmbed x) Ωminus)
         (nhds (Tchart (translateSchwartz (-x) ψ))))
@@ -1234,41 +1381,243 @@ the two `∀ n` wedge identities feed its eventual hypotheses by
 
 Proof transcript for the next target:
 
-1. Prove `localRealMollifySide_holomorphicOn_of_translate_margin` by adapting
-   the checked differentiation-under-the-integral proof of
-   `differentiableOn_realMollify_tubeDomain`; replace the tube-domain
+1. `localRealMollifySide_holomorphicOn_of_translate_margin` is now checked in
+   `SCV/LocalDistributionalEOW.lean`.  It adapts the checked
+   differentiation-under-the-integral proof of
+   `differentiableOn_realMollify_tubeDomain` and replaces tube-domain
    imaginary-part invariance with the explicit support-margin hypothesis
    `z + realEmbed t ∈ Ω` on `tsupport ψ`.
 2. Prove `regularizedBoundaryValue_continuousOn` directly from
    `continuous_apply_translateSchwartz_of_isCompactSupport` and continuity of
-   `x ↦ -x`.
-3. Prove `localRealMollify_commonContinuousBoundary` by Fubini on the compact
-   real support of `ψ`: rewrite the regularized boundary pairing as
-   `Tchart (translateSchwartz (-x) ψ)`, use the compact-subcone uniform
-   distributional boundary hypotheses for the two signs, and use the
-   slow-growth bounds only for the domination needed to interchange the
-   real-kernel integral with the boundary limit.
-4. Apply `SCV.local_continuous_edge_of_the_wedge_envelope` to the two
+   `x ↦ -x`.  Lean proof:
+
+   ```lean
+   have hcont :
+       Continuous (fun t : Fin m -> ℝ => T (translateSchwartz t ψ)) :=
+     continuous_apply_translateSchwartz_of_isCompactSupport T ψ hψ_compact
+   simpa [Function.comp_def] using (hcont.comp continuous_neg).continuousOn
+   ```
+
+   This theorem supplies only continuity of the candidate boundary function
+   `bvψ x = T (translateSchwartz (-x) ψ)`; it does not by itself prove the
+   plus/minus mollified sides converge to that function.
+3. Prove `tendsto_mollified_boundary_of_clm` as the nonzero version of the
+   existing checked theorem `tendsto_mollified_boundary_zero_of_clm_zero`.
+   The proof uses the same maps
+   `w ↦ im w` and `w ↦ -re w`; the first tends to `nhdsWithin 0 C` inside
+   `TubeDomain C`, the second tends to `-x0`; then
+   `SchwartzMap.tempered_apply_tendsto_of_tendsto_filter` combines pointwise
+   convergence of the slice functionals with convergence of the translated
+   Schwartz test.
+4. Prove the checked slice-to-mollifier bridge
+   `realMollifyLocal_eq_sliceIntegral_translate` by translating the real
+   integration variable by `re w`:
+
+   ```lean
+   let a : Fin m -> ℝ := fun i => (w i).re
+   let f : (Fin m -> ℝ) -> ℂ := fun x =>
+     F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
+       translateSchwartz (fun i => - (w i).re) ψ x
+   calc
+     realMollifyLocal F ψ w
+         = ∫ t, F (fun i =>
+             ((t i + a i : ℝ) : ℂ) + ((w i).im : ℂ) * Complex.I) * ψ t := by
+           -- pointwise coordinate algebra using `Complex.re_add_im`
+           ...
+     _ = ∫ t, f (t + a) := by
+           -- `translateSchwartz (-re w) ψ (t + re w) = ψ t`
+           ...
+     _ = ∫ x, f x := MeasureTheory.integral_add_right_eq_self (μ := volume) f a
+   ```
+
+   The follow-up theorem `realMollifyLocal_eq_sliceFunctional` is then a direct
+   rewrite by the slice-functional representation
+   `Tseq y φ = ∫ x, F (x + i y) * φ x`.
+5. Prove `localRealMollify_commonContinuousBoundary_of_clm` from the two
+   checked ingredients above.  Lean proof shape:
+
+   ```lean
+   refine ⟨regularizedBoundaryValue_continuousOn Tchart ψ B hψ_compact, ?_, ?_⟩
+   · intro x hx
+     have h := tendsto_mollified_boundary_of_clm
+       (C := Cplus) (Tseq := Tplus) (T := Tchart.restrictScalars ℝ)
+       hplus_limit ψ hψ_compact x
+     have hΩ := h.mono_left (nhdsWithin_mono _ hΩplus_sub)
+     refine Tendsto.congr' ?_ hΩ
+     filter_upwards [self_mem_nhdsWithin] with w hw
+     exact (hplus_eval w hw).symm
+   ```
+
+   The minus side is identical.  This theorem is the precise
+   Streater-Wightman regularization extraction: it proves common continuous
+   boundary values for each compact real kernel once the slice CLMs have been
+   constructed and shown to converge to the same chart distribution.
+6. Remaining proof-doc gap before the next major implementation step:
+   construct the local slice CLMs `Tplus y` and `Tminus y` from the OS-II
+   distributional boundary-value hypotheses.  This is where the Fubini and
+   slow-growth work belongs.  The required production theorem must show:
+
+   ```lean
+   theorem sliceCLM_family_from_distributionalBoundary
+       (Ωplus Ωminus : Set (ComplexChartSpace m))
+       {Cplus Cminus : Set (Fin m -> ℝ)}
+       (Fplus Fminus : ComplexChartSpace m -> ℂ)
+       (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
+       (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+       -- local chart/wedge data, fixed cutoff equal to 1 on all translated
+       -- kernels, compact subcones, slow-growth hypotheses, and OS-II
+       -- distributional boundary convergence hypotheses
+       :
+       ∃ Tplus Tminus :
+           (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ,
+         (∀ w ∈ Ωplus,
+           realMollifyLocal Fplus ψ w =
+             Tplus (fun i => (w i).im)
+               (translateSchwartz (fun i => - (w i).re) ψ)) ∧
+         (∀ w ∈ Ωminus,
+           realMollifyLocal Fminus ψ w =
+             Tminus (fun i => (w i).im)
+               (translateSchwartz (fun i => - (w i).re) ψ)) ∧
+         (∀ φ, Tendsto (fun y => Tplus y φ) (nhdsWithin 0 Cplus)
+           (nhds ((Tchart.restrictScalars ℝ) φ))) ∧
+         (∀ φ, Tendsto (fun y => Tminus y φ) (nhdsWithin 0 Cminus)
+           (nhds ((Tchart.restrictScalars ℝ) φ)))
+   ```
+
+   This theorem is not optional and must not be replaced by a wrapper that
+   assumes the four displayed conclusions.  The mathematical content is:
+   a fixed local cutoff extends compactly supported slice tests to global
+   Schwartz CLMs; the support margin makes this cutoff invisible on
+   `translateSchwartz (-re w) ψ`; compact support gives finite local real
+   integration; slow growth gives the domination needed near the edge; and the
+   OS-II distributional BV hypothesis gives convergence on every compactly
+   supported Schwartz test after chart pullback.
+
+   The exact implementation transcript should be:
+
+   1. Choose nested real edge sets
+      `B0 ⋐ B1 ⋐ B2 ⋐ Echart` and a support radius `rψ` with
+      `u + tsupport ψ ⊆ B1` for every `u ∈ B0`.  Equivalently, for
+      `w` in the local plus/minus wedge with `re w ∈ B0`,
+      `Function.support (translateSchwartz (fun i => - (w i).re) ψ) ⊆ B1`.
+      This follows from `translateSchwartz_apply` and the already documented
+      `BoxMargin B0 B1 rψ`.
+   2. Choose a compactly supported smooth cutoff `χ` with `χ = 1` on `B1` and
+      `tsupport χ ⊆ B2`.  In Lean this should be exposed as a multiplication
+      CLM
+      `cutoffSchwartzCLM χ : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ]
+        SchwartzMap (Fin m -> ℝ) ℂ`
+      together with:
+
+      ```lean
+      cutoffSchwartzCLM_apply
+      cutoffSchwartzCLM_eq_self_of_support_subset_oneRegion
+      cutoffSchwartzCLM_preserves_compact_support
+      ```
+
+      This is a genuine cutoff/multiplication theorem, not an LF-space wrapper.
+   3. Define the local chart distribution as the cutoff extension
+      `Tchart φ = Traw (cutoffSchwartzCLM χ φ)`.  This is why
+      `hplus_limit` and `hminus_limit` may target `Tchart` on all Schwartz
+      tests even though the original paper hypothesis is local on compactly
+      supported tests in `E`.
+   4. For each fixed `y`, set
+      `gplus_y x = χ x * Fplus (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I)`
+      and similarly for the minus side.  Since `χ` has compact support and
+      the local wedge hypotheses keep `x + i y` inside the holomorphy domain
+      on `B2`, prove `Continuous gplus_y` and
+      `∀ φ, Integrable (fun x => gplus_y x * φ x)`.  Then use the existing
+      checked constructor
+      `exists_integral_clm_of_continuous` from
+      `SCV/DistributionalUniqueness.lean` to obtain
+
+      ```lean
+      Tplus y φ =
+        ∫ x, (χ x * Fplus (fun i =>
+          (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) * φ x
+      Tminus y φ =
+        ∫ x, (χ x * Fminus (fun i =>
+          (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) * φ x
+      ```
+
+      as real-linear Schwartz CLMs.  This is now checked as
+      `exists_cutoffSliceIntegral_clm_of_continuousOn`: outside `tsupport χ`
+      the integrand is eventually zero, while on `tsupport χ` local continuity
+      of `F` gives continuity of the slice; compactness of `tsupport χ` gives
+      the integrability needed by `exists_integral_clm_of_continuous`.
+   5. Prove the evaluation hypotheses for the chosen kernel `ψ`: on the support
+      of `translateSchwartz (-re w) ψ`, the cutoff is `1`, so
+
+      ```lean
+      Tplus (im w) (translateSchwartz (-re w) ψ)
+        = ∫ x, Fplus (x + i * im w) *
+            translateSchwartz (-re w) ψ x
+        = realMollifyLocal Fplus ψ w
+      ```
+
+      This is now checked as `realMollifyLocal_eq_cutoffSliceCLM`, using
+      `realMollifyLocal_eq_sliceIntegral_translate` and the cutoff-one
+      hypothesis on the translated kernel support.
+   6. Prove pointwise convergence of the CLMs from the OS-II/SW distributional
+      boundary-value hypothesis applied to the cutoff tests:
+
+      ```lean
+      Tplus y φ
+        = ∫ x, Fplus (x + i y) * (cutoffSchwartzCLM χ φ) x
+        --> Traw (cutoffSchwartzCLM χ φ)
+        = Tchart φ
+      ```
+
+      and similarly on the minus side.  For the `T(f_x)` family needed by
+      Streater-Wightman 2-16, the already checked
+      `tendsto_translateSchwartz_nhds_of_isCompactSupport` supplies the
+      bounded/continuous translated-test family in Schwartz topology; the
+      Banach-Steinhaus payoff is already encapsulated in
+      `tendsto_mollified_boundary_of_clm`.
+
+      The cutoff-pullback part is now checked as
+      `tendsto_cutoffSliceCLM_of_boundaryValue`.  Its proof applies the raw
+      boundary-value hypothesis to
+      `(SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ)) φ`, then rewrites
+      the integrand by
+      `SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth`.  Thus the
+      remaining work is not Banach-Steinhaus or moving-test convergence; it is
+      the local OS-II hypothesis plumbing that identifies the correct
+      cutoff-extended `Traw` for the plus and minus sides.
+
+   Paper-faithfulness check against Streater-Wightman Theorem 2-16: the paper
+   regularizes by
+   `F_f(x + i y) = ∫ dξ f(x - ξ) F(ξ + i y)` and observes that, as `y -> 0`
+   through the cone, the regularized function has continuous boundary value
+   `T(f_x)` uniformly for `x` in small compact subsets of the edge, because
+   distributional convergence is uniform on bounded sets of test functions.
+   The Lean route above is the same argument in local-chart form:
+   `translateSchwartz (-x) ψ` is the `f_x` family, the checked continuity
+   theorem proves `x ↦ T(f_x)` is continuous, and the next slice-CLM theorem
+   must prove convergence for that bounded translated-kernel family from the
+   original distributional BV hypothesis.  No step may replace this with a
+   pre-assumed continuous common boundary value.
+7. Apply `SCV.local_continuous_edge_of_the_wedge_envelope` to the two
    regularized sides.  The nested boxes and support radius must be chosen
    before `ψ`; this is why the output domain `U0` is independent of the
    smoothing kernel inside the fixed support window.
-5. Prove linearity in `ψ` by applying uniqueness in the local continuous EOW
+8. Prove linearity in `ψ` by applying uniqueness in the local continuous EOW
    theorem to `G (a • ψ1 + b • ψ2)` and
    `a • G ψ1 + b • G ψ2`; the two sides agree on both regularized wedge
    pieces by linearity of the real convolution integral and the common
    boundary value.
-6. Prove real-translation covariance by applying the same uniqueness theorem
+9. Prove real-translation covariance by applying the same uniqueness theorem
    to `G (translateSchwartz a ψ) z` and `G ψ (z - realEmbed a)` on the
    overlap where both points lie in `U0`; the plus/minus wedge identities
    reduce the claim to the checked translation formula for
    `realMollifyLocal`.
-7. Use the fixed cutoff `χr = 1` on `closedBall 0 r` to extend the windowed
+10. Use the fixed cutoff `χr = 1` on `closedBall 0 r` to extend the windowed
    continuous linear functional
    `ψ ↦ ∫ z, G ψ z * φ z` to all Schwartz kernels.  This constructs an
    honest global product kernel `K`; it is not an LF-space wrapper and not an
    arbitrary extension, because all later uses are on kernels whose support is
    inside the fixed ball where `χr = 1`.
-8. Prove `ProductKernelRealTranslationCovariantGlobal K` from the covariance
+11. Prove `ProductKernelRealTranslationCovariantGlobal K` from the covariance
    of `G` and the support/cutoff identities.  Then the checked theorem
    `regularizedEnvelope_chartEnvelope_from_productKernel` supplies the
    holomorphic chart envelope and wedge agreement.

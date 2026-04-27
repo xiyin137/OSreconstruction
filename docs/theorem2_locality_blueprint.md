@@ -2472,10 +2472,14 @@ datum that Hall-Wightman consumes.
        ∃ hRep : BHW.SourceScalarRepresentativeData (d := d) n F, True
    ```
 
-   The checked Lean surface is an existence theorem because Lean declarations
-   whose type is data are definitions, not propositions.  This avoids hiding
-   the Hall-Wightman input in a `def`; the unresolved mathematical content
-   remains an explicit theorem-level source fact.
+   This is a proof-doc theorem surface, not a current production declaration.
+   The theorem was briefly exposed as production Lean in PR #78, but that
+   introduced an admitted Hall-Wightman source obligation on the active import
+   path.  It is now intentionally quarantined here until it has either a
+   checked proof or an explicitly approved source-import boundary.  When it
+   returns to Lean, it should be an existence theorem because Lean
+   declarations whose type is data are definitions, not propositions; that
+   keeps the Hall-Wightman input explicit instead of hiding it in a `def`.
 
    Proof content:
 
@@ -2730,11 +2734,15 @@ datum that Hall-Wightman consumes.
            hRep.Phi Z
    ```
 
-   `hallWightman_scalarOverlapContinuation_from_adjacentSeeds` is the only
+   `hallWightman_scalarOverlapContinuation_from_adjacentSeeds` is the main
    remaining source-level Hall-Wightman theorem after the representative and
    real-environment suppliers are installed.  It is not an OS theorem, it must
    not mention Wightman locality, and it must not import
-   `BHWPermutation.PermutationFlow`.
+   `BHWPermutation.PermutationFlow`.  Because this statement compresses
+   real-environment uniqueness, scalar-variety adjacent continuation, and
+   adjacent-transposition word propagation, it must remain a proof-doc
+   obligation until those internal steps have Lean-ready transcripts or are
+   replaced by one explicitly approved source-import theorem.
 
    With these scalar-coordinate facts available, the current source frontier
    has a short Lean proof:

@@ -681,9 +681,11 @@ order:
    `sourceExtendedTubeGramDomain`, `sourceDoublePermutationGramDomain`,
    `sourceRealMinkowskiGram_perm`, and `sourceRealGramComplexify_perm`;
 2. build `SourceScalarRepresentativeData` for `extendF F` from the ordinary
-   Hall-Wightman invariant analytic-function theorem, currently exposed in
-   Lean as the theorem-level source obligation
-   `hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz`;
+   Hall-Wightman invariant analytic-function theorem.  The intended
+   theorem-level source obligation is
+   `hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz`,
+   but it is deliberately quarantined in this blueprint until it has a checked
+   proof or an explicitly approved source-import boundary;
 3. convert `SourceDistributionalAdjacentTubeAnchor.compact_branch_eq` to
    pointwise equality on each real patch by compact-support uniqueness
    (checked in Lean);
@@ -692,7 +694,9 @@ order:
 5. apply the Hall-Wightman scalar-overlap continuation theorem on `S''_n`;
 6. close
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
-   by the documented scalar-domain proof transcript (checked in Lean).
+   by the documented scalar-domain proof transcript.  The production
+   `SourceExtension.lean` module currently stops before this unresolved source
+   gate and contains only sorry-free data/support lemmas.
 
 This is the source theorem itself, not a new wrapper.  It is also the point at
 which any source import would need the explicit `AGENT.md` axiom/source-import

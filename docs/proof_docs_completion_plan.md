@@ -716,6 +716,24 @@ Current examples:
 	   `SCV.localRealMollifySide_holomorphicOn_of_translate_margin` in
 	   `SCV/LocalDistributionalEOW.lean`, proving local holomorphy of the
 	   real-direction mollifier from the explicit support-translate margin.
+	   The next boundary-extraction slice is also checked:
+	   `SCV.regularizedBoundaryValue_continuousOn`,
+	   `SCV.realMollifyLocal_eq_sliceIntegral_translate`,
+	   `SCV.realMollifyLocal_eq_sliceFunctional`,
+	   `SCV.exists_cutoffSliceIntegral_clm_of_continuousOn`,
+	   `SCV.realMollifyLocal_eq_cutoffSliceCLM`,
+	   `SCV.tendsto_cutoffSliceCLM_of_boundaryValue`,
+	   `SCV.tendsto_mollified_boundary_of_clm`, and
+	   `SCV.localRealMollify_commonContinuousBoundary_of_clm`.  These prove the
+	   cutoff-local slice-CLM construction, evaluation of the cutoff CLM on the
+	   translated mollifier kernel, convergence of those cutoff CLMs from the
+	   raw distributional boundary-value hypothesis via
+	   `SchwartzMap.smulLeftCLM`, and the Streater-Wightman regularized
+	   common-boundary extraction.  The remaining pure-SCV blocker is now the
+	   local OS-II chart plumbing that supplies the plus/minus raw boundary
+	   hypotheses and the cutoff-one/support-margin data in the documented
+	   `sliceCLM_family_from_distributionalBoundary`, not another common
+	   boundary wrapper.
    The initial coordinate and trace-membership support
    `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
    `BHW.wickRotate_ordered_mem_acrOne`,
@@ -740,10 +758,13 @@ Current examples:
    scalar-overlap continuation theorem on `S''_n`, and the final Lean
    transcript closing
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
-   The compact-test-to-pointwise conversion, adjacent seed equality, and final
-   PET branch transcript are now checked in Lean; the two remaining source
-   obligations are the Hall-Wightman scalar representative existence theorem
-   and the Hall-Wightman scalar-overlap continuation theorem.
+   The compact-test-to-pointwise conversion and adjacent seed equality are
+   checked in Lean as sorry-free support lemmas.  The final PET branch
+   transcript has been moved back to proof-doc status because it depends on
+   the two remaining Hall-Wightman source obligations: the scalar
+   representative existence theorem and the scalar-overlap continuation
+   theorem.  Those obligations must not appear as production `sorry`s on the
+   active import path.
 5. Streater-Wightman Theorem 2-11 has now been audited as another statement of
    the BHW analytic-continuation theorem, not as a source for the missing
    active-gallery theorem. Streater-Wightman Figure 2-4 remains only the

@@ -7,18 +7,15 @@ import OSReconstruction.SCV.DistributionalUniqueness
 /-!
 # Source BHW extension on the permuted extended tube
 
-This file contains the theorem-2-facing, source-backed Hall-Wightman input in
-local PET language.
+This file contains the theorem-2-facing, source-coordinate Hall-Wightman data
+and local support lemmas in PET language.
 
-The only analytic frontier here is
-`hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`.
-It is intentionally pure SCV/BHW: it assumes holomorphicity on the forward
-tube, restricted real Lorentz invariance, permutation symmetry, and an explicit
-distributional Euclidean/Jost uniqueness anchor.  It does not mention Wightman
-boundary distributions, locality, or `IsLocallyCommutativeWeak`.
-
-The theorem-2-facing extension theorem below proves the remaining PET algebra
-from that source branch law.
+The unresolved Hall-Wightman/BHW branch-law theorem is deliberately kept in
+the proof docs until it has a checked proof or an explicitly approved source
+import boundary.  This production module only exposes the scalar-product
+domains, the distributional adjacent anchor, the scalar representative data
+shape, and checked local translations of compact-test equality into adjacent
+scalar Gram seed equality.
 -/
 
 noncomputable section
@@ -428,21 +425,10 @@ structure SourceScalarRepresentativeData
       w ∈ ExtendedTube d n →
       Phi (sourceMinkowskiGram d n w) = extendF F w
 
-/-- Existence form of Hall-Wightman's invariant analytic-function theorem in
-source scalar-product coordinates for the ordinary extended tube. -/
-theorem hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z) :
-    ∃ hRep : SourceScalarRepresentativeData (d := d) n F, True := by
-  sorry
+/- The unresolved Hall-Wightman source existence theorem for this data is kept
+in the proof docs until it has a checked proof or an explicitly approved source
+import boundary.  This production module contains only checked source data and
+support lemmas. -/
 
 /-- Compact-test equality in the adjacent source anchor gives pointwise
 equality on the selected real patch. -/
@@ -606,72 +592,10 @@ theorem sourceScalarRepresentative_adjacent_seed_eq_on_environment
       hRep.branch_eq (realEmbed (fun k => x ((π * τ) k))) hright_ET
   exact hleft.trans (hpoint.trans hright.symm)
 
-/-- Hall-Wightman scalar-overlap continuation on `S''_n` from adjacent real
-Gram seeds.  This is the remaining non-elementary scalar-coordinate source
-input after the representative and compact-anchor translations. -/
-theorem hallWightman_scalarOverlapContinuation_from_adjacentSeeds
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hRep : SourceScalarRepresentativeData (d := d) n F)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F)
-    (hSeed :
-      ∀ π i hi,
-        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-        ∀ G, G ∈ hAnchor.gramEnvironment π i hi →
-          hRep.Phi (sourceRealGramComplexify n G) =
-            hRep.Phi
-              (sourcePermuteComplexGram n τ
-                (sourceRealGramComplexify n G))) :
-    ∀ (σ : Equiv.Perm (Fin n))
-      (Z : Fin n → Fin n → ℂ),
-      Z ∈ sourceDoublePermutationGramDomain d n σ →
-      hRep.Phi (sourcePermuteComplexGram n σ Z) =
-        hRep.Phi Z := by
-  sorry
-
-/-- Hall-Wightman single-valuedness of the scalar-product representative on
-the double permuted source domain. -/
-theorem hallWightman_sourceScalarRepresentative_perm_invariant
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hRep : SourceScalarRepresentativeData (d := d) n F)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∀ (σ : Equiv.Perm (Fin n))
-      (Z : Fin n → Fin n → ℂ),
-      Z ∈ sourceDoublePermutationGramDomain d n σ →
-      hRep.Phi (sourcePermuteComplexGram n σ Z) =
-        hRep.Phi Z := by
-  have hSeed :
-      ∀ π i hi,
-        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-        ∀ G, G ∈ hAnchor.gramEnvironment π i hi →
-          hRep.Phi (sourceRealGramComplexify n G) =
-            hRep.Phi
-              (sourcePermuteComplexGram n τ
-                (sourceRealGramComplexify n G)) := by
-    intro π i hi
-    exact sourceScalarRepresentative_adjacent_seed_eq_on_environment
-      (d := d) n F hF_holo hF_lorentz hRep hAnchor π i hi
-  exact hallWightman_scalarOverlapContinuation_from_adjacentSeeds
-    (d := d) hd n F hF_perm hRep hAnchor hSeed
+/- The scalar-overlap continuation theorem from adjacent real Gram seeds is
+also deliberately not exposed as production Lean yet.  The checked theorem
+above is the last local support lemma before that genuine Hall-Wightman source
+obligation. -/
 
 private theorem source_lorentz_perm_commute
     (Γ : ComplexLorentzGroup d)
@@ -843,301 +767,8 @@ theorem permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz
     simpa [Function.comp_def] using hExt_at.comp z hperm_diff.differentiableAt
   exact hbranch_at.differentiableWithinAt
 
-/-- Hall-Wightman source compatibility from the distributionally anchored
-symmetric permuted-tube datum.
-
-This is the one non-elementary source frontier in the file: if a point belongs
-to two explicit PET sectors, the ordinary `extendF` branches induced by the
-symmetric `S'_n` datum have the same value there.  The distributional anchor
-is the OS-II/Hall-Wightman uniqueness input missing from the old hF_perm-only
-surface. -/
-private theorem hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∀ (π ρ : Equiv.Perm (Fin n))
-      (z : Fin n → Fin (d + 1) → ℂ),
-      z ∈ permutedExtendedTubeSector d n π →
-      z ∈ permutedExtendedTubeSector d n ρ →
-      extendF F (fun k => z (π k)) =
-        extendF F (fun k => z (ρ k)) := by
-  intro π ρ z hzπ hzρ
-  let σ : Equiv.Perm (Fin n) := π.symm * ρ
-  let w : Fin n → Fin (d + 1) → ℂ := fun k => z (π k)
-  have hw : w ∈ ExtendedTube d n := by
-    simpa [w, permutedExtendedTubeSector] using hzπ
-  have hσw : (fun k => w (σ k)) ∈ ExtendedTube d n := by
-    simpa [w, σ, Equiv.Perm.mul_apply, permutedExtendedTubeSector] using hzρ
-  let Z : Fin n → Fin n → ℂ := sourceMinkowskiGram d n w
-  have hZ : Z ∈ sourceDoublePermutationGramDomain d n σ := by
-    refine ⟨?_, ?_⟩
-    · exact ⟨w, hw, rfl⟩
-    · rw [← sourceMinkowskiGram_perm (d := d) (n := n) σ w]
-      exact ⟨fun k => w (σ k), hσw, rfl⟩
-  obtain ⟨hRep, _⟩ :=
-    hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz
-      (d := d) hd n F hF_holo hF_lorentz
-  have hperm :
-      hRep.Phi (sourcePermuteComplexGram n σ Z) =
-        hRep.Phi Z :=
-    hallWightman_sourceScalarRepresentative_perm_invariant
-      (d := d) hd n F hF_holo hF_lorentz hF_perm hRep hAnchor
-      σ Z hZ
-  have hleft :
-      hRep.Phi Z = extendF F (fun k => z (π k)) := by
-    simpa [Z, w] using hRep.branch_eq w hw
-  have hright :
-      hRep.Phi (sourcePermuteComplexGram n σ Z) =
-        extendF F (fun k => z (ρ k)) := by
-    rw [← sourceMinkowskiGram_perm (d := d) (n := n) σ w]
-    simpa [w, σ, Equiv.Perm.mul_apply] using
-      hRep.branch_eq (fun k => w (σ k)) hσw
-  exact hleft.symm.trans (hperm.symm.trans hright)
-
-/-- Derived compatibility wrapper with the corrected source boundary.
-
-The old hF_perm-only theorem surface was mathematically too weak.  This helper
-keeps the local proof plumbing small while making the Euclidean/Jost anchor an
-explicit hypothesis. -/
-private theorem hallWightman_source_permutedBranch_compatibility
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∀ (π ρ : Equiv.Perm (Fin n))
-      (z : Fin n → Fin (d + 1) → ℂ),
-      z ∈ permutedExtendedTubeSector d n π →
-      z ∈ permutedExtendedTubeSector d n ρ →
-      extendF F (fun k => z (π k)) =
-        extendF F (fun k => z (ρ k)) := by
-  intro π ρ z hzπ hzρ
-  exact
-    hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor
-      (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor π ρ z hzπ hzρ
-
-/-- Hall-Wightman source branch law on the permuted extended tube.
-
-This is the single analytic frontier in this file.  It is the local PET form of
-the Hall-Wightman/BHW statement that the symmetric permuted-tube datum gives
-one holomorphic function on `S''_n`, whose restriction to each explicit sector
-is the corresponding ordinary `extendF` branch. -/
-theorem hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∃ Fpet : (Fin n → Fin (d + 1) → ℂ) → ℂ,
-      DifferentiableOn ℂ Fpet (PermutedExtendedTube d n) ∧
-      ∀ (π : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ permutedExtendedTubeSector d n π →
-        Fpet z = extendF F (fun k => z (π k)) := by
-  let G : (π : Equiv.Perm (Fin n)) →
-      (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-    fun π z => extendF F (fun k => z (π k))
-  have hGpft_holo :
-      ∀ π, DifferentiableOn ℂ
-        (fun z : Fin n → Fin (d + 1) → ℂ => F (fun k => z (π k)))
-        (PermutedForwardTube d n π) := by
-    intro π
-    exact source_permutedForwardBranch_holomorphicOn (d := d) (n := n) F hF_holo π
-  have hGpft_lorentz :
-      ∀ π (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ PermutedForwardTube d n π →
-        (fun z' : Fin n → Fin (d + 1) → ℂ => F (fun k => z' (π k)))
-          (complexLorentzAction (ComplexLorentzGroup.ofReal Λ) z) =
-        F (fun k => z (π k)) := by
-    intro π
-    exact source_permutedForwardBranch_restrictedLorentzInvariant
-      (d := d) (n := n) F hF_lorentz π
-  have hGpft_symm :
-      ∀ (π ρ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (π k)) = F (fun k => z (ρ k)) :=
-    source_permutedForwardBranch_symmetric (d := d) (n := n) F hF_perm
-  have hG_holo :
-      ∀ π, DifferentiableOn ℂ (G π) (permutedExtendedTubeSector d n π) := by
-    intro π
-    simpa [G] using
-      permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz
-        (d := d) n F hF_holo hF_lorentz π
-  have hcompat :
-      ∀ (π ρ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ permutedExtendedTubeSector d n π →
-        z ∈ permutedExtendedTubeSector d n ρ →
-        G π z = G ρ z := by
-    intro π ρ z hzπ hzρ
-    exact hallWightman_source_permutedBranch_compatibility
-      (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor π ρ z hzπ hzρ
-  refine ⟨gluedPETValue (d := d) (n := n) G, ?_, ?_⟩
-  · exact gluedPETValue_holomorphicOn (d := d) (n := n) G hG_holo hcompat
-  · intro π z hzπ
-    exact gluedPETValue_eq_of_mem_sector (d := d) (n := n) G hcompat π z hzπ
-
-/-- Source-backed BHW/Hall-Wightman continuation on the permuted extended tube.
-
-This is the direct local form of the OS I Section 4.5 BHW step: a symmetric
-holomorphic datum on the permuted forward-tube family extends single-valuedly
-to the permuted extended tube.  The complex-Lorentz and permutation invariance
-conclusions are outputs, not source hypotheses.
-
-The remaining proof is not the elementary observation that the original `F` is
-permutation-invariant.  On a PET sector overlap the two `extendF` values may be
-represented by different complex-Lorentz preimages, and the intermediate
-permuted representative need not lie in the base forward tube.  The missing
-input is therefore the Hall-Wightman single-valued continuation for the whole
-symmetric permuted-tube datum. -/
-theorem permutedExtendedTube_extension_of_forwardTube_symmetry
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∃ Fpet : (Fin n → Fin (d + 1) → ℂ) → ℂ,
-      DifferentiableOn ℂ Fpet (PermutedExtendedTube d n) ∧
-      (∀ z ∈ ForwardTube d n, Fpet z = F z) ∧
-      (∀ (π : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ permutedExtendedTubeSector d n π →
-        Fpet z = extendF F (fun k => z (π k))) ∧
-      (∀ (Λ : ComplexLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ PermutedExtendedTube d n →
-        complexLorentzAction Λ z ∈ PermutedExtendedTube d n →
-        Fpet (complexLorentzAction Λ z) = Fpet z) ∧
-      (∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ PermutedExtendedTube d n →
-        (fun k => z (σ k)) ∈ PermutedExtendedTube d n →
-        Fpet (fun k => z (σ k)) = Fpet z) := by
-  obtain ⟨Fpet, hFpet_holo, hFpet_branch⟩ :=
-    hallWightman_permutedExtendedTube_branchLaw_of_forwardTube_symmetry
-      (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
-  refine ⟨Fpet, hFpet_holo, ?_, hFpet_branch, ?_, ?_⟩
-  · intro z hz
-    have hz_sector : z ∈ permutedExtendedTubeSector d n (1 : Equiv.Perm (Fin n)) := by
-      simpa [permutedExtendedTubeSector] using forwardTube_subset_extendedTube hz
-    calc
-      Fpet z = extendF F (fun k => z ((1 : Equiv.Perm (Fin n)) k)) :=
-        hFpet_branch 1 z hz_sector
-      _ = extendF F z := by simp
-      _ = F z := extendF_eq_on_forwardTube n F hF_holo hF_lorentz z hz
-  · intro Λ z hzPET _hΛzPET
-    let π : Equiv.Perm (Fin n) :=
-      permutedExtendedTubeBranch (d := d) (n := n) z hzPET
-    have hzπ : z ∈ permutedExtendedTubeSector d n π := by
-      simpa [π, permutedExtendedTubeSector] using
-        permutedExtendedTubeBranch_mem_extendedTube (d := d) (n := n) z hzPET
-    have hΛzπ :
-        complexLorentzAction Λ z ∈ permutedExtendedTubeSector d n π :=
-      (source_permutedExtendedTubeSector_complexLorentzAction_iff
-        (d := d) (n := n) Λ π z).2 hzπ
-    have hcomm :
-        (fun k => (complexLorentzAction Λ z) (π k)) =
-          complexLorentzAction Λ (fun k => z (π k)) := by
-      simpa using
-        (source_lorentz_perm_commute (d := d) (n := n) Λ z π).symm
-    calc
-      Fpet (complexLorentzAction Λ z) =
-          extendF F (fun k => (complexLorentzAction Λ z) (π k)) :=
-        hFpet_branch π (complexLorentzAction Λ z) hΛzπ
-      _ = extendF F (complexLorentzAction Λ (fun k => z (π k))) := by
-        rw [hcomm]
-      _ = extendF F (fun k => z (π k)) :=
-        extendF_complex_lorentz_invariant n F hF_holo hF_lorentz Λ
-          (fun k => z (π k)) hzπ
-      _ = Fpet z := (hFpet_branch π z hzπ).symm
-  · intro σ z _hzPET hσzPET
-    let y : Fin n → Fin (d + 1) → ℂ := fun k => z (σ k)
-    let π : Equiv.Perm (Fin n) :=
-      permutedExtendedTubeBranch (d := d) (n := n) y hσzPET
-    have hyπ : y ∈ permutedExtendedTubeSector d n π := by
-      simpa [π, y, permutedExtendedTubeSector] using
-        permutedExtendedTubeBranch_mem_extendedTube (d := d) (n := n) y hσzPET
-    have hzσπ : z ∈ permutedExtendedTubeSector d n (σ * π) := by
-      simpa [y, permutedExtendedTubeSector, Equiv.Perm.mul_apply] using hyπ
-    calc
-      Fpet (fun k => z (σ k)) = Fpet y := rfl
-      _ = extendF F (fun k => y (π k)) :=
-        hFpet_branch π y hyπ
-      _ = extendF F (fun k => z ((σ * π) k)) := by
-        simp [y, Equiv.Perm.mul_apply]
-      _ = Fpet z := (hFpet_branch (σ * π) z hzσπ).symm
-
-/-- Sector-branch single-valuedness on PET, derived from the source BHW
-extension theorem above. -/
-theorem permutedExtendedTube_singleValued_of_forwardTube_symmetry
-    [NeZero d]
-    (hd : 2 <= d)
-    (n : ℕ)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ForwardTube d n))
-    (hF_lorentz :
-      ∀ (Λ : RestrictedLorentzGroup d)
-        (z : Fin n → Fin (d + 1) → ℂ),
-        z ∈ ForwardTube d n →
-        F (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) = F z)
-    (hF_perm :
-      ∀ (σ : Equiv.Perm (Fin n))
-        (z : Fin n → Fin (d + 1) → ℂ),
-        F (fun k => z (σ k)) = F z)
-    (hAnchor : SourceDistributionalAdjacentTubeAnchor (d := d) n F) :
-    ∀ (π ρ : Equiv.Perm (Fin n))
-      (z : Fin n → Fin (d + 1) → ℂ),
-      z ∈ permutedExtendedTubeSector d n π →
-      z ∈ permutedExtendedTubeSector d n ρ →
-      extendF F (fun k => z (π k)) =
-        extendF F (fun k => z (ρ k)) := by
-  intro π ρ z hzπ hzρ
-  obtain ⟨Fpet, _hFpet_holo, _hFpet_FT, hFpet_branch,
-      _hFpet_lorentz, _hFpet_perm⟩ :=
-    permutedExtendedTube_extension_of_forwardTube_symmetry
-      (d := d) hd n F hF_holo hF_lorentz hF_perm hAnchor
-  exact (hFpet_branch π z hzπ).symm.trans (hFpet_branch ρ z hzρ)
+/- The PET branch law, PET extension theorem, and sector single-valuedness
+corollary are likewise proof-doc obligations until the Hall-Wightman source
+compatibility theorem is proved. -/
 
 end BHW

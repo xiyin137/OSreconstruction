@@ -247,4 +247,420 @@ theorem localRealMollifySide_holomorphicOn_of_translate_margin
         hs hF_meas hF_int hF'_meas h_bound hbound_int h_diff
   simpa [realMollifyLocal, I] using hderiv.differentiableAt.differentiableWithinAt
 
+/-- The regularized boundary value
+`x ↦ T (translateSchwartz (-x) ψ)` is continuous on any real edge set when the
+regularizing kernel has compact support. -/
+theorem regularizedBoundaryValue_continuousOn
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (E : Set (Fin m → ℝ))
+    (hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ)) :
+    ContinuousOn (fun x : Fin m → ℝ => T (translateSchwartz (-x) ψ)) E := by
+  have hcont :
+      Continuous (fun t : Fin m → ℝ => T (translateSchwartz t ψ)) :=
+    continuous_apply_translateSchwartz_of_isCompactSupport T ψ hψ_compact
+  simpa [Function.comp_def] using (hcont.comp continuous_neg).continuousOn
+
+/-- A real-direction mollified value is the boundary slice at the imaginary
+part, paired with the translated real kernel centered at the real part. -/
+theorem realMollifyLocal_eq_sliceIntegral_translate
+    (F : ComplexChartSpace m → ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (w : ComplexChartSpace m) :
+    realMollifyLocal F ψ w =
+      ∫ x : Fin m → ℝ,
+        F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
+          translateSchwartz (fun i => - (w i).re) ψ x := by
+  let a : Fin m → ℝ := fun i => (w i).re
+  let f : (Fin m → ℝ) → ℂ := fun x =>
+    F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
+      translateSchwartz (fun i => - (w i).re) ψ x
+  calc
+    realMollifyLocal F ψ w =
+        ∫ t : Fin m → ℝ,
+          F (fun i => ((t i + a i : ℝ) : ℂ) + ((w i).im : ℂ) * Complex.I) *
+            ψ t := by
+          apply integral_congr_ae
+          filter_upwards with t
+          congr 2
+          ext i
+          simp [realEmbed, a]
+          conv_lhs => rw [← Complex.re_add_im (w i)]
+          abel
+    _ = ∫ t : Fin m → ℝ, f (t + a) := by
+          apply integral_congr_ae
+          filter_upwards with t
+          dsimp [f]
+          have hshift : t + a + (fun i => - (w i).re) = t := by
+            ext i
+            simp [a]
+          rw [hshift]
+    _ = ∫ x : Fin m → ℝ, f x := by
+          exact MeasureTheory.integral_add_right_eq_self (μ := volume) f a
+    _ =
+        ∫ x : Fin m → ℝ,
+          F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
+            translateSchwartz (fun i => - (w i).re) ψ x := rfl
+
+/-- If the slice functional at imaginary part `y` is represented by integrating
+`F(x + i y)` against the test function, then local real mollification at `w`
+is exactly that slice functional evaluated on the kernel translated by
+`-re w`. -/
+theorem realMollifyLocal_eq_sliceFunctional
+    (F : ComplexChartSpace m → ℂ)
+    (Tseq : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (hTseq_eval :
+      ∀ (y : Fin m → ℝ) (φ : SchwartzMap (Fin m → ℝ) ℂ),
+        Tseq y φ =
+          ∫ x : Fin m → ℝ,
+            F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x) :
+    realMollifyLocal F ψ w =
+      Tseq (fun i => (w i).im)
+        (translateSchwartz (fun i => - (w i).re) ψ) := by
+  rw [realMollifyLocal_eq_sliceIntegral_translate]
+  rw [hTseq_eval]
+
+/-- A compactly supported cutoff times a continuous boundary slice defines a
+tempered slice functional.  This is the local Streater-Wightman construction of
+the `F(x + i y)` slice after extending compactly supported edge tests by a fixed
+cutoff. -/
+theorem exists_cutoffSliceIntegral_clm_of_continuousOn
+    (F : ComplexChartSpace m → ℂ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (y : Fin m → ℝ)
+    (hΩ_open : IsOpen Ω)
+    (hF_cont : ContinuousOn F Ω)
+    (hχ_compact : HasCompactSupport (χ : (Fin m → ℝ) → ℂ))
+    (hmargin :
+      ∀ x ∈ tsupport (χ : (Fin m → ℝ) → ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ω) :
+    ∃ T : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ,
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        T φ = ∫ x : Fin m → ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) *
+            φ x := by
+  let slice : (Fin m → ℝ) → ComplexChartSpace m :=
+    fun x i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I
+  let g : (Fin m → ℝ) → ℂ := fun x => χ x * F (slice x)
+  have hslice_cont : Continuous slice := by
+    refine continuous_pi ?_
+    intro i
+    exact (Complex.continuous_ofReal.comp (continuous_apply i)).add continuous_const
+  have hg_cont : Continuous g := by
+    rw [continuous_iff_continuousAt]
+    intro x
+    by_cases hx : x ∈ tsupport (χ : (Fin m → ℝ) → ℂ)
+    · have hFx : slice x ∈ Ω := hmargin x hx
+      have hF_at : ContinuousAt F (slice x) :=
+        (hF_cont (slice x) hFx).continuousAt (hΩ_open.mem_nhds hFx)
+      have hF_slice : ContinuousAt (fun u : Fin m → ℝ => F (slice u)) x :=
+        hF_at.comp hslice_cont.continuousAt
+      simpa [g] using χ.continuous.continuousAt.mul hF_slice
+    · have hχ_zero : (χ : (Fin m → ℝ) → ℂ) =ᶠ[nhds x] fun _ => 0 := by
+        rwa [notMem_tsupport_iff_eventuallyEq] at hx
+      have hg_zero : g =ᶠ[nhds x] fun _ => 0 := by
+        filter_upwards [hχ_zero] with u hu
+        simp [g, hu]
+      exact hg_zero.continuousAt
+  have hg_support_subset :
+      Function.support g ⊆ Function.support (χ : (Fin m → ℝ) → ℂ) := by
+    intro x hx
+    by_contra hnot
+    have hχx : χ x = 0 := by
+      simpa [Function.mem_support] using hnot
+    have hgx : g x = 0 := by simp [g, hχx]
+    exact hx (by simp [hgx])
+  have hg_compact : HasCompactSupport g := by
+    rw [HasCompactSupport]
+    refine hχ_compact.of_isClosed_subset isClosed_closure ?_
+    exact
+      closure_minimal
+        (fun x hx => subset_tsupport _ (hg_support_subset hx))
+        (isClosed_tsupport _)
+  have hg_int : ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      Integrable (fun x : Fin m → ℝ => g x * φ x) := by
+    intro φ
+    have hprod_support_subset :
+        Function.support (fun x : Fin m → ℝ => g x * φ x) ⊆
+          Function.support g := by
+      intro x hx
+      by_contra hnot
+      have hgx : g x = 0 := by
+        simpa [Function.mem_support] using hnot
+      have hprod : g x * φ x = 0 := by simp [hgx]
+      exact hx (by simp [hprod])
+    have hprod_compact :
+        HasCompactSupport (fun x : Fin m → ℝ => g x * φ x) := by
+      rw [HasCompactSupport]
+      refine hg_compact.of_isClosed_subset isClosed_closure ?_
+      exact
+        closure_minimal
+          (fun x hx => subset_tsupport _ (hprod_support_subset hx))
+          (isClosed_tsupport _)
+    exact (hg_cont.mul φ.continuous).integrable_of_hasCompactSupport hprod_compact
+  obtain ⟨T, hT⟩ := exists_integral_clm_of_continuous hg_cont hg_int
+  refine ⟨T, ?_⟩
+  intro φ
+  simpa [g, slice, mul_assoc] using hT φ
+
+/-- If the cutoff is identically one on the translated regularizing kernel
+support, then the cutoff slice functional evaluates to the real mollifier. -/
+theorem realMollifyLocal_eq_cutoffSliceCLM
+    (F : ComplexChartSpace m → ℂ)
+    (χ ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (hχ_one :
+      ∀ x ∈ tsupport
+          ((translateSchwartz (fun i => - (w i).re) ψ :
+            SchwartzMap (Fin m → ℝ) ℂ) : (Fin m → ℝ) → ℂ),
+        χ x = 1)
+    (hT :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        T φ = ∫ x : Fin m → ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I)) *
+            φ x) :
+    realMollifyLocal F ψ w =
+      T (translateSchwartz (fun i => - (w i).re) ψ) := by
+  rw [realMollifyLocal_eq_sliceIntegral_translate, hT]
+  apply integral_congr_ae
+  filter_upwards with x
+  by_cases hx : x ∈ Function.support
+      ((translateSchwartz (fun i => - (w i).re) ψ :
+        SchwartzMap (Fin m → ℝ) ℂ) : (Fin m → ℝ) → ℂ)
+  · have hxt : x ∈ tsupport
+        ((translateSchwartz (fun i => - (w i).re) ψ :
+          SchwartzMap (Fin m → ℝ) ℂ) : (Fin m → ℝ) → ℂ) :=
+      subset_tsupport _ hx
+    have hχx : χ x = 1 := hχ_one x hxt
+    simp [hχx]
+  · have hψx : translateSchwartz (fun i => - (w i).re) ψ x = 0 := by
+      simpa [Function.mem_support] using hx
+    simp [hψx]
+
+/-- A raw distributional boundary value for the uncut slice implies convergence
+of the cutoff slice CLMs to the cutoff-pulled boundary distribution. -/
+theorem tendsto_cutoffSliceCLM_of_boundaryValue
+    {C : Set (Fin m → ℝ)}
+    (F : ComplexChartSpace m → ℂ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (Traw : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tseq : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (hTseq :
+      ∀ (y : Fin m → ℝ) (φ : SchwartzMap (Fin m → ℝ) ℂ),
+        Tseq y φ = ∫ x : Fin m → ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) *
+            φ x)
+    (hbv :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto
+          (fun y : Fin m → ℝ => ∫ x : Fin m → ℝ,
+            F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 C)
+          (nhds (Traw φ))) :
+    ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      Tendsto (fun y : Fin m → ℝ => Tseq y φ) (nhdsWithin 0 C)
+        (nhds (Traw ((SchwartzMap.smulLeftCLM ℂ
+          (χ : (Fin m → ℝ) → ℂ)) φ))) := by
+  intro φ
+  let φχ : SchwartzMap (Fin m → ℝ) ℂ :=
+    (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ)) φ
+  have h := hbv φχ
+  refine Tendsto.congr' ?_ h
+  filter_upwards with y
+  rw [hTseq y φ]
+  apply integral_congr_ae
+  filter_upwards with x
+  simp [φχ, SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth]
+  ring
+
+/-- Cone-local family version of the cutoff slice construction.  The slice CLM
+is constructed only where the cone-side margin places the cutoff support inside
+the holomorphy domain; outside the cone it is set to zero, which is irrelevant
+for the `nhdsWithin 0 C` boundary limit. -/
+theorem exists_cutoffSliceCLM_family_of_boundaryValue
+    {C : Set (Fin m → ℝ)}
+    (F : ComplexChartSpace m → ℂ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (Traw : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (hΩ_open : IsOpen Ω)
+    (hF_cont : ContinuousOn F Ω)
+    (hχ_compact : HasCompactSupport (χ : (Fin m → ℝ) → ℂ))
+    (hmargin :
+      ∀ y ∈ C, ∀ x ∈ tsupport (χ : (Fin m → ℝ) → ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ω)
+    (hbv :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto
+          (fun y : Fin m → ℝ => ∫ x : Fin m → ℝ,
+            F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) * φ x)
+          (nhdsWithin 0 C)
+          (nhds (Traw φ))) :
+    ∃ Tseq : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ,
+      (∀ y ∈ C, ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        Tseq y φ = ∫ x : Fin m → ℝ,
+          (χ x * F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) *
+            φ x) ∧
+      (∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y : Fin m → ℝ => Tseq y φ) (nhdsWithin 0 C)
+          (nhds (Traw ((SchwartzMap.smulLeftCLM ℂ
+            (χ : (Fin m → ℝ) → ℂ)) φ)))) := by
+  classical
+  let Tseq : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ := fun y =>
+    if hy : y ∈ C then
+      (exists_cutoffSliceIntegral_clm_of_continuousOn
+        F χ Ω y hΩ_open hF_cont hχ_compact (hmargin y hy)).choose
+    else 0
+  have hTseq_repr : ∀ y ∈ C, ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+      Tseq y φ = ∫ x : Fin m → ℝ,
+        (χ x * F (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I)) *
+          φ x := by
+    intro y hy φ
+    dsimp [Tseq]
+    simp [hy, (exists_cutoffSliceIntegral_clm_of_continuousOn
+      F χ Ω y hΩ_open hF_cont hχ_compact (hmargin y hy)).choose_spec φ]
+  refine ⟨Tseq, hTseq_repr, ?_⟩
+  intro φ
+  let φχ : SchwartzMap (Fin m → ℝ) ℂ :=
+    (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ)) φ
+  have hraw := hbv φχ
+  refine Tendsto.congr' ?_ hraw
+  filter_upwards [self_mem_nhdsWithin] with y hy
+  rw [hTseq_repr y hy φ]
+  apply integral_congr_ae
+  filter_upwards with x
+  simp [φχ, SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth]
+  ring
+
+/-- Nonzero-limit version of the mollified boundary-trace theorem for a family
+of slice functionals.  If the slice functionals converge pointwise to `T` as
+the imaginary part tends to the cone edge, then their evaluations on translated
+compactly supported kernels converge to the regularized boundary value. -/
+theorem tendsto_mollified_boundary_of_clm
+    {C : Set (Fin m → ℝ)}
+    {Tseq : (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ}
+    {T : SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ}
+    (hT :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tseq y f) (nhdsWithin 0 C) (nhds (T f)))
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ))
+    (x₀ : Fin m → ℝ) :
+    Tendsto
+      (fun w : ComplexChartSpace m =>
+        Tseq (fun i => (w i).im)
+          (translateSchwartz (fun i => - (w i).re) ψ))
+      (nhdsWithin (realEmbed x₀) (TubeDomain C))
+      (nhds (T (translateSchwartz (fun i => - x₀ i) ψ))) := by
+  let l := nhdsWithin (realEmbed x₀) (TubeDomain C)
+  have him :
+      Tendsto (fun w : ComplexChartSpace m => fun i => (w i).im) l
+        (nhdsWithin 0 C) := by
+    let imMap : ComplexChartSpace m → (Fin m → ℝ) := fun w i => (w i).im
+    have him_cont : Continuous imMap := by
+      refine continuous_pi ?_
+      intro i
+      exact Complex.continuous_im.comp (continuous_apply i)
+    have him_maps : MapsTo imMap (TubeDomain C) C := by
+      intro w hw
+      simpa [imMap] using hw
+    simpa [l, imMap, realEmbed] using
+      him_cont.continuousAt.continuousWithinAt.tendsto_nhdsWithin him_maps
+  have hre :
+      Tendsto (fun w : ComplexChartSpace m => fun i => - (w i).re) l
+        (nhds (fun i => - x₀ i)) := by
+    let reMap : ComplexChartSpace m → (Fin m → ℝ) := fun w i => - (w i).re
+    have hre_cont : Continuous reMap := by
+      refine continuous_pi ?_
+      intro i
+      exact (Complex.continuous_re.comp (continuous_apply i)).neg
+    simpa [l, reMap, realEmbed] using
+      hre_cont.continuousAt.tendsto.comp
+        (tendsto_id'.2 (show l ≤ nhds (realEmbed x₀) by
+          exact nhdsWithin_le_nhds))
+  have hu :
+      Tendsto
+        (fun w : ComplexChartSpace m =>
+          translateSchwartz (fun i => - (w i).re) ψ)
+        l
+        (nhds (translateSchwartz (fun i => - x₀ i) ψ)) :=
+    (tendsto_translateSchwartz_nhds_of_isCompactSupport
+      ψ hψ_compact (fun i => - x₀ i)).comp hre
+  have hT_comp :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto
+          (fun w : ComplexChartSpace m => Tseq (fun i => (w i).im) f)
+          l
+          (nhds (T f)) := by
+    intro f
+    exact (hT f).comp him
+  exact SchwartzMap.tempered_apply_tendsto_of_tendsto_filter hT_comp hu
+
+/-- Slice-functional convergence gives a common continuous boundary value for
+the plus and minus real-direction mollifications.  The only analytic input is
+the pointwise convergence of the slice CLMs to the same distributional boundary
+functional together with the exact evaluation of those CLMs on the translated
+kernels appearing in the real mollifier. -/
+theorem localRealMollify_commonContinuousBoundary_of_clm
+    {Cplus Cminus : Set (Fin m → ℝ)}
+    (Ωplus Ωminus : Set (ComplexChartSpace m))
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (B : Set (Fin m → ℝ))
+    (hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ))
+    (hΩplus_sub : Ωplus ⊆ TubeDomain Cplus)
+    (hΩminus_sub : Ωminus ⊆ TubeDomain Cminus)
+    (hplus_eval :
+      ∀ w ∈ Ωplus,
+        realMollifyLocal Fplus ψ w =
+          Tplus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ w ∈ Ωminus,
+        realMollifyLocal Fminus ψ w =
+          Tminus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f))) :
+    ContinuousOn (fun x : Fin m → ℝ => Tchart (translateSchwartz (-x) ψ)) B ∧
+    (∀ x ∈ B,
+      Tendsto (realMollifyLocal Fplus ψ)
+        (nhdsWithin (realEmbed x) Ωplus)
+        (nhds (Tchart (translateSchwartz (-x) ψ)))) ∧
+    (∀ x ∈ B,
+      Tendsto (realMollifyLocal Fminus ψ)
+        (nhdsWithin (realEmbed x) Ωminus)
+        (nhds (Tchart (translateSchwartz (-x) ψ)))) := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact regularizedBoundaryValue_continuousOn Tchart ψ B hψ_compact
+  · intro x _hx
+    have h := tendsto_mollified_boundary_of_clm
+      (C := Cplus) (Tseq := Tplus) (T := Tchart.restrictScalars ℝ)
+      hplus_limit ψ hψ_compact x
+    have hΩ := h.mono_left (nhdsWithin_mono _ hΩplus_sub)
+    refine Tendsto.congr' ?_ hΩ
+    filter_upwards [self_mem_nhdsWithin] with w hw
+    exact (hplus_eval w hw).symm
+  · intro x _hx
+    have h := tendsto_mollified_boundary_of_clm
+      (C := Cminus) (Tseq := Tminus) (T := Tchart.restrictScalars ℝ)
+      hminus_limit ψ hψ_compact x
+    have hΩ := h.mono_left (nhdsWithin_mono _ hΩminus_sub)
+    refine Tendsto.congr' ?_ hΩ
+    filter_upwards [self_mem_nhdsWithin] with w hw
+    exact (hminus_eval w hw).symm
+
 end SCV
