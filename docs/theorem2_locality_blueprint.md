@@ -227,6 +227,13 @@ In `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45.lean`:
 - `AdjacentOSEOWDifferenceEnvelope`
 - `bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
 
+In
+`Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45TraceMembership.lean`:
+
+- `adjacent_wick_traces_mem_acrOne`
+- `os45CommonChart_real_mem_pulledRealBranchDomain_pair`
+- `adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`
+
 In `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45Bridge.lean`:
 
 - `adjacentOS45RealEdgeDifference`
@@ -362,7 +369,8 @@ This theorem is where the actual OS I §4.5 local common-boundary argument lives
 It is not a replacement for the paper route; it is the local chart-level
 formalization of the OS branch-difference step.
 
-Checked support already available for Slot 1 after checkpoint `1ad959e`:
+Checked support already available for Slot 1 after checkpoint `1ad959e` and
+the later checked coordinate-packaging pass:
 
 - `os45PulledRealBranch`
 - `os45PulledRealBranch_holomorphicOn`
@@ -370,12 +378,19 @@ Checked support already available for Slot 1 after checkpoint `1ad959e`:
 - `os45QuarterTurnConfig_reindexed_realBranch_eq`
 - `os45PulledRealBranch_apply_reindexed_commonPoint`
 - `os45PulledRealBranch_sub_eq_adjacentOS45RealEdgeDifference`
+- `adjacent_wick_traces_mem_acrOne`
+- `os45CommonChart_real_mem_pulledRealBranchDomain_pair`
+- `adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`
 
 These theorems live in
-`OSToWightmanLocalityOS45BranchPullback.lean`.  Their role is precise:
-they provide a non-tautological common-chart representation of the
-negative-side real branch difference.  They do **not** close Slot 1 by
-themselves.
+`OSToWightmanLocalityOS45BranchPullback.lean` and
+`OSToWightmanLocalityOS45TraceMembership.lean`.  Their role is precise:
+they provide the two trace-membership calculations, a non-tautological
+common-chart representation of the negative-side real branch difference, and a
+checked pullback from a common-chart envelope to the direct-coordinate
+`AdjacentOSEOWDifferenceEnvelope`.  They do **not** close Slot 1 by themselves:
+the genuine OS45 common-boundary theorem still has to construct the common
+connected chart and holomorphic function.
 
 Exact Lean-shaped use of the branch-pullback support:
 
@@ -405,7 +420,7 @@ have hrealDiff :
       (d := d) (n := n) OS lgc τ ρ x
 ```
 
-Lean-ready common-chart to direct-envelope transcript:
+Lean-ready common-chart supplier and checked direct-envelope transcript:
 
 ```lean
 let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
@@ -415,11 +430,6 @@ rcases BHW.os45_adjacent_localEOWGeometry
     hV_ordered, hV_swap_ordered, hV_wick, hV_real,
     hV_geom, hV_swap_geom⟩
 
--- Common-chart coordinate: first relabel by `ρ`, then apply the fixed OS45
--- quarter turn.
-let Qρ : (Fin n -> Fin (d + 1) -> ℂ) -> (Fin n -> Fin (d + 1) -> ℂ) :=
-  fun z => BHW.os45QuarterTurnConfig (d := d) (n := n) (fun k => z (ρ k))
-
 -- The genuine OS45 common-boundary theorem, proved from the two
 -- `OS45OppositeTubeBranchGeometry` packets and the OS-II/ACR-one Wick branch
 -- data, must return a common chart and not merely a domain.
@@ -428,14 +438,20 @@ have hCommon :
       (Hc : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ),
       IsOpen Uc ∧ IsConnected Uc ∧
       DifferentiableOn ℂ Hc Uc ∧
-      (∀ x ∈ V, Qρ (fun k => wickRotatePoint (x k)) ∈ Uc) ∧
-      (∀ x ∈ V, Qρ (BHW.realEmbed (d := d) x) ∈ Uc) ∧
       (∀ x ∈ V,
-        Hc (Qρ (fun k => wickRotatePoint (x k))) =
+        BHW.os45CommonChartCLE (d := d) (n := n) ρ
+          (fun k => wickRotatePoint (x k)) ∈ Uc) ∧
+      (∀ x ∈ V,
+        BHW.os45CommonChartCLE (d := d) (n := n) ρ
+          (BHW.realEmbed (d := d) x) ∈ Uc) ∧
+      (∀ x ∈ V,
+        Hc (BHW.os45CommonChartCLE (d := d) (n := n) ρ
+            (fun k => wickRotatePoint (x k))) =
           bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k))) -
           bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
       (∀ x ∈ V,
-        Hc (Qρ (BHW.realEmbed (d := d) x)) =
+        Hc (BHW.os45CommonChartCLE (d := d) (n := n) ρ
+            (BHW.realEmbed (d := d) x)) =
           BHW.extendF (bvt_F OS lgc n)
             (BHW.realEmbed (d := d) (fun k => x (τ k))) -
           BHW.extendF (bvt_F OS lgc n)
@@ -451,60 +467,11 @@ rcases hCommon with
   ⟨Uc, Hc, hUc_open, hUc_conn, hHc_holo,
     hwick_mem_c, hreal_mem_c, hwick_trace_c, hreal_trace_c⟩
 
--- In implementation, package `Qρ` as a complex-linear homeomorphism:
--- permutation of labels followed by `os45QuarterTurnCLE`.
-let Qρe : (Fin n -> Fin (d + 1) -> ℂ) ≃L[ℂ]
-    (Fin n -> Fin (d + 1) -> ℂ) :=
-  BHW.os45CommonChartCLE (d := d) (n := n) ρ
-
-let U : Set (Fin n -> Fin (d + 1) -> ℂ) := Qρe.symm '' Uc
-let H : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ := fun z => Hc (Qρe z)
-
-have hU_open : IsOpen U := by
-  simpa [U] using Qρe.symm.toHomeomorph.isOpenMap Uc hUc_open
-
-have hU_conn : IsConnected U := by
-  simpa [U] using
-    hUc_conn.image Qρe.symm Qρe.symm.continuous.continuousOn
-
-have hH_holo : DifferentiableOn ℂ H U := by
-  -- compose `hHc_holo` with the complex-linear chart map `Qρe`; for
-  -- `z ∈ Qρe.symm '' Uc`, `Qρe z ∈ Uc`.
-  intro z hz
-  rcases hz with ⟨w, hwUc, rfl⟩
-  have hmap : Qρe (Qρe.symm w) ∈ Uc := by
-    simpa using hwUc
-  exact
-    (hHc_holo (Qρe (Qρe.symm w)) hmap).comp
-      (Qρe.symm w)
-      (Qρe.differentiableAt.differentiableWithinAt)
-      (by
-        intro y hy
-        rcases hy with ⟨u, huUc, rfl⟩
-        simpa using huUc)
-
-refine
-  { U := U
-    U_open := hU_open
-    U_connected := hU_conn
-    H := H
-    H_holo := hH_holo
-    wick_mem := ?wick_mem
-    real_mem := ?real_mem
-    wick_diff := ?wick_diff
-    real_diff := ?real_diff }
-· intro x hx
-  refine ⟨Qρe (fun k => wickRotatePoint (x k)), ?_, ?_⟩
-  · simpa [Qρe, Qρ] using hwick_mem_c x hx
-  · simp
-· intro x hx
-  refine ⟨Qρe (BHW.realEmbed (d := d) x), ?_, ?_⟩
-  · simpa [Qρe, Qρ] using hreal_mem_c x hx
-  · simp
-· intro x hx
-  simpa [H, Qρe, Qρ, τ] using hwick_trace_c x hx
-· intro x hx
-  simpa [H, Qρe, Qρ, τ] using hreal_trace_c x hx
+exact
+  BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope
+    (d := d) OS lgc n i hi V ρ Uc Hc
+    hUc_open hUc_conn hHc_holo
+    hwick_mem_c hreal_mem_c hwick_trace_c hreal_trace_c
 ```
 
 The new theorem named in this transcript,
@@ -739,6 +706,74 @@ Proof decomposition of this theorem, without hiding the analytic work:
    distributional category, it must state and prove a genuine local
    distributional EOW envelope theorem, not assume one through a record field.
 
+   The continuous-EOW extraction needed inside the distributional proof should
+   itself have a uniform geometric theorem surface, because the regularized
+   family must use one fixed chart domain `U0` for every smoothing kernel.  The
+   Lean target is:
+
+   ```lean
+   theorem SCV.local_continuous_edge_of_the_wedge_geometry
+       {m : ℕ}
+       (Ωplus Ωminus : Set (ComplexChartSpace m))
+       (E : Set (Fin m -> ℝ))
+       (hΩplus_open : IsOpen Ωplus)
+       (hΩminus_open : IsOpen Ωminus)
+       (hE_open : IsOpen E)
+       (hE_ne : E.Nonempty)
+       (C : Set (Fin m -> ℝ))
+       (hC_open : IsOpen C)
+       (hC_conv : Convex ℝ C)
+       (hC_ne : C.Nonempty)
+       (hC_not_zero : (0 : Fin m -> ℝ) ∉ C)
+       (hC_cone : ∀ (t : ℝ), 0 < t -> ∀ y ∈ C, t • y ∈ C)
+       (hlocal_wedge :
+         ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
+           ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
+             ∃ r : ℝ, 0 < r ∧
+               ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
+                 (fun a => (x a : ℂ) +
+                   (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus ∧
+                 (fun a => (x a : ℂ) -
+                   (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωminus) :
+       ∃ U0 : Set (ComplexChartSpace m),
+         IsOpen U0 ∧
+         (∀ x ∈ E, realEmbed x ∈ U0) ∧
+         ∀ (Fplus Fminus : ComplexChartSpace m -> ℂ)
+           (bv : (Fin m -> ℝ) -> ℂ),
+           DifferentiableOn ℂ Fplus Ωplus ->
+           DifferentiableOn ℂ Fminus Ωminus ->
+           ContinuousOn bv E ->
+           (∀ x ∈ E,
+             Tendsto Fplus (nhdsWithin (realEmbed x) Ωplus)
+               (nhds (bv x))) ->
+           (∀ x ∈ E,
+             Tendsto Fminus (nhdsWithin (realEmbed x) Ωminus)
+               (nhds (bv x))) ->
+             ∃ F : ComplexChartSpace m -> ℂ,
+               DifferentiableOn ℂ F U0 ∧
+               (∀ z ∈ U0 ∩ Ωplus, F z = Fplus z) ∧
+               (∀ z ∈ U0 ∩ Ωminus, F z = Fminus z) ∧
+               (∀ G : ComplexChartSpace m -> ℂ,
+                 DifferentiableOn ℂ G U0 ->
+                 (∀ z ∈ U0 ∩ Ωplus, G z = Fplus z) ->
+                 (∀ z ∈ U0 ∩ Ωminus, G z = Fminus z) ->
+                   ∀ z ∈ U0, G z = F z)
+   ```
+
+   Proof transcript:
+
+   1. choose for each `x0 ∈ E` a local polybox using `hlocal_wedge`, exactly as
+      `SCV.edge_of_the_wedge_theorem` chooses its polydiscs from the global
+      tube geometry;
+   2. define `U0` as the union of these boxes before any functions are supplied;
+   3. for fixed `Fplus,Fminus,bv`, run the existing Cauchy-polydisc extension
+      construction on each box, replacing the global `TubeDomain C` membership
+      lemmas by the local wedge membership supplied in step 1;
+   4. patch the local continuous envelopes by the ordinary identity theorem on
+      the plus or minus wedge pieces;
+   5. prove uniqueness on `U0` by the same identity-theorem argument, using that
+      each component of `U0` meets one of the local wedge pieces.
+
 6. The theorem surface needed by Slot 1 is therefore the following pure-SCV
    local envelope theorem, followed by its OS45 instantiation.  This theorem is
    the Lean-facing form of the standard distributional edge-of-the-wedge
@@ -930,6 +965,133 @@ Proof decomposition of this theorem, without hiding the analytic work:
        covariance by uniqueness, and package those facts as the exact
        `K,G,hcov,hG_holo,hK_rep` hypotheses consumed by
        `regularizedEnvelope_chartEnvelope_from_productKernel`.
+
+      Lean pseudo-code for this remaining upstream package should use the
+      checked recovery theorem's hypotheses verbatim.  The point is to construct
+      real mathematical data, not a wrapper around the recovery theorem:
+
+      ```lean
+      theorem SCV.regularizedLocalEOW_productKernel_from_continuousEOW
+          {m : ℕ} {r : ℝ}
+          (hm : 0 < m) (hr : 0 < r)
+          (Cplus Cminus : Set (Fin m -> ℝ))
+          (Ωplus Ωminus Ucore U0 DplusSmall DminusSmall :
+            Set (ComplexChartSpace m))
+          (Fplus Fminus : ComplexChartSpace m -> ℂ)
+          (Tplus Tminus :
+            (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+          (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
+          (hUcore_open : IsOpen Ucore)
+          (hU0_open : IsOpen U0)
+          (hcore_U0 : Ucore ⊆ U0)
+          (hmargin_r :
+            ∀ z ∈ Ucore, ∀ t : Fin m -> ℝ, ‖t‖ ≤ r ->
+              z + realEmbed t ∈ U0)
+          (hΩplus_sub : Ωplus ⊆ TubeDomain Cplus)
+          (hΩminus_sub : Ωminus ⊆ TubeDomain Cminus)
+          (hFplus_holo : DifferentiableOn ℂ Fplus Ωplus)
+          (hFminus_holo : DifferentiableOn ℂ Fminus Ωminus)
+          (hplus_eval :
+            ∀ ψ, KernelSupportWithin ψ r ->
+              ∀ w ∈ Ωplus,
+                realMollifyLocal Fplus ψ w =
+                  Tplus (fun i => (w i).im)
+                    (translateSchwartz (fun i => - (w i).re) ψ))
+          (hminus_eval :
+            ∀ ψ, KernelSupportWithin ψ r ->
+              ∀ w ∈ Ωminus,
+                realMollifyLocal Fminus ψ w =
+                  Tminus (fun i => (w i).im)
+                    (translateSchwartz (fun i => - (w i).re) ψ))
+          (hplus_limit :
+            ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+              Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+                (nhds ((Tchart.restrictScalars ℝ) f)))
+          (hminus_limit :
+            ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+              Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+                (nhds ((Tchart.restrictScalars ℝ) f)))
+          -- This is the extracted local continuous EOW theorem with one fixed
+          -- chart `U0` and uniqueness on `U0`.
+          (hcontinuousEOW :
+            ∀ ψ, KernelSupportWithin ψ r ->
+              ∃ Gψ : ComplexChartSpace m -> ℂ,
+                DifferentiableOn ℂ Gψ U0 ∧
+                (∀ z ∈ Ucore ∩ DplusSmall,
+                  Gψ z = realMollifyLocal Fplus ψ z) ∧
+                (∀ z ∈ Ucore ∩ DminusSmall,
+                  Gψ z = realMollifyLocal Fminus ψ z) ∧
+                (∀ G', DifferentiableOn ℂ G' U0 ->
+                  (∀ z ∈ Ucore ∩ DplusSmall,
+                    G' z = realMollifyLocal Fplus ψ z) ->
+                  (∀ z ∈ Ucore ∩ DminusSmall,
+                    G' z = realMollifyLocal Fminus ψ z) ->
+                    ∀ z ∈ U0, G' z = Gψ z)) :
+          ∃ (K : SchwartzMap
+                (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
+            (G : SchwartzMap (Fin m -> ℝ) ℂ -> ComplexChartSpace m -> ℂ)
+            (ψn : ℕ -> SchwartzMap (Fin m -> ℝ) ℂ),
+            ProductKernelRealTranslationCovariantGlobal K ∧
+            (∀ ψ, KernelSupportWithin ψ r ->
+              DifferentiableOn ℂ (G ψ) U0) ∧
+            (∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+                (ψ : SchwartzMap (Fin m -> ℝ) ℂ),
+              SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0 ->
+              KernelSupportWithin ψ r ->
+                K (schwartzTensorProduct₂ φ ψ) =
+                  ∫ z : ComplexChartSpace m, G ψ z * φ z) ∧
+            (∀ n t, 0 ≤ (ψn n t).re) ∧
+            (∀ n t, (ψn n t).im = 0) ∧
+            (∀ n, ∫ t : Fin m -> ℝ, ψn n t = 1) ∧
+            (∀ n, KernelSupportWithin (ψn n) (1 / (n + 1 : ℝ))) ∧
+            (∀ n, KernelSupportWithin (ψn n) r) ∧
+            (∀ᶠ n in atTop, ∀ z ∈ Ucore ∩ DplusSmall,
+              G (ψn n) z = realMollifyLocal Fplus (ψn n) z) ∧
+            (∀ᶠ n in atTop, ∀ z ∈ Ucore ∩ DminusSmall,
+              G (ψn n) z = realMollifyLocal Fminus (ψn n) z) ∧
+            (∀ z ∈ Ucore ∩ DplusSmall,
+              Tendsto (fun n => realMollifyLocal Fplus (ψn n) z)
+                atTop (nhds (Fplus z))) ∧
+            (∀ z ∈ Ucore ∩ DminusSmall,
+              Tendsto (fun n => realMollifyLocal Fminus (ψn n) z)
+                atTop (nhds (Fminus z)))
+      ```
+
+      The proof transcript is:
+
+      1. use `exists_shrinking_normalized_schwartz_bump_sequence hr` for
+         `ψn`;
+      2. define `G ψ` by the unique `Gψ` selected from `hcontinuousEOW` when
+         `KernelSupportWithin ψ r`, and by `0` otherwise;
+      3. prove `hG_holo`, `hG_plus`, and `hG_minus` directly from
+         `hcontinuousEOW`;
+      4. prove linearity of `ψ ↦ G ψ` on the support-radius subspace by applying
+         the uniqueness clause of `hcontinuousEOW` to `G(ψ₁ + ψ₂)` and
+         `Gψ₁ + Gψ₂`, and similarly to scalar multiples;
+      5. prove continuity in the Schwartz topology from the uniform continuous
+         EOW construction plus the checked seminorm bounds in the local
+         mollifier layer;
+      6. build `K` as the continuous bilinear product-kernel functional
+         represented by `(φ,ψ) ↦ ∫ z, G ψ z * φ z`;
+      7. prove `ProductKernelRealTranslationCovariantGlobal K` by applying the
+         uniqueness clause to the real-translated regularized EOW family;
+      8. prove the two approximate-identity limits with
+         `tendsto_realConvolutionTest_of_shrinking_normalized_support` and the
+         checked pointwise real-mollifier identities.
+
+      Only after this theorem is proved should Lean call
+      `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`; that call is
+      the checked recovery consumer, not the remaining source of mathematical
+      difficulty.
+
+      In the final `SCV.local_distributional_edge_of_the_wedge_envelope`
+      implementation, `hcontinuousEOW` is not an extra assumption: it is obtained
+      inside the proof by applying
+      `SCV.localRealMollify_commonContinuousBoundary_of_clm` to
+      `hplus_eval`, `hminus_eval`, `hplus_limit`, and `hminus_limit`, followed
+      by the extracted local continuous EOW theorem.  The theorem above is only
+      the honest product-kernel sublemma for the regularized family.
+
    13. Let `ψρ` be a compactly supported approximate identity with supports
        inside `closedBall 0 rψ`.  On the positive and negative wedge pieces,
        `Gψρ` converges to `FplusChart` and `FminusChart` by the already checked
@@ -1260,6 +1422,12 @@ Active decomposition of Slot 1:
 3. pull `Hc` back through the OS45 common-chart equivalence `Qρe`;
 4. package the resulting direct-coordinate trace identities as
    `AdjacentOSEOWDifferenceEnvelope`.
+
+Steps 3 and 4 are now checked in Lean as
+`BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`.  The live
+mathematical work in Slot 1 is therefore exactly steps 1 and 2: prove the
+common-chart OS45 distributional EOW supplier with the Wick and real trace
+identities on the same selected patch `V`.
 
 With that choice:
 
@@ -1758,6 +1926,33 @@ Proof:
 
 That theorem is the exact handoff point from the new OS45 local work to the
 already checked selected-witness / PET side.
+
+Checked route update: the selected-witness file now has the intermediate
+handoff
+
+```lean
+theorem bvt_F_selectedAdjacentPermutationEdgeData_of_selectedJostData_and_permSeedGeometry
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hData : SelectedAdjacentDistributionalJostAnchorData OS lgc n) :
+    SelectedAdjacentPermutationEdgeData OS lgc n
+```
+
+This theorem discharges the `overlap_connected` field using existing BHW
+geometry:
+
+- `BHW.isConnected_adjSwapExtendedOverlap_of_forwardOverlapConnected`;
+- `BHW.isConnected_permSeedSet_iff_permForwardOverlapSet`;
+- the existing pure-geometry blocker
+  `BHW.blocker_isConnected_permSeedSet_nontrivial`.
+
+Therefore Slot 4 is now reduced to constructing
+`SelectedAdjacentDistributionalJostAnchorData OS lgc n`.  The adjacent
+ET-overlap connectedness should no longer be treated as an independent OS-side
+hypothesis; it is a BHW geometry dependency already exposed in the Lean
+dependency graph.
 
 ## 5. Exact downstream chain after Slot 4 for `2 <= d`
 
@@ -2494,6 +2689,13 @@ datum that Hall-Wightman consumes.
       holomorphicity on the rank-bounded scalar-product variety, not
       full-matrix holomorphicity.
 
+   Packaging note: this local `SourceScalarRepresentativeData` object should
+   stay tied to the ordinary extended-tube scalar image
+   `sourceExtendedTubeGramDomain d n`.  The later global Hall-Wightman
+   single-valuedness statement on `M_n` / `S''_n` is a separate continuation
+   theorem for this branch data, not evidence that the representative itself
+   should already be packaged as a globally defined object at this stage.
+
    The compact-test anchor must next be converted to pointwise equality on the
    real patch.  This is a standard distributional-to-pointwise step using the
    already available compact-support uniqueness theorem and continuity of
@@ -2679,27 +2881,30 @@ datum that Hall-Wightman consumes.
 
    This theorem is the formal local version of Hall-Wightman's statement that
    the symmetric `S'_n` datum has a single-valued continuation on `S''_n`.
-   Its proof must be organized as follows.
+   The proof docs no longer expose an adjacent-word induction as the endorsed
+   theorem-2 route for this theorem.  The accepted contract is:
 
-   1. Reduce `σ` to a word in adjacent swaps using the adjacent-transposition
-      generation of `Equiv.Perm (Fin n)`.
-   2. For each adjacent swap `τ`, use
-      `sourceScalarRepresentative_adjacent_seed_eq_on_environment` to get seed
-      equality on `hAnchor.gramEnvironment π i hi`.
-   3. Use
-      `hAnchor.gramEnvironment_unique π i hi :
-        sourceDistributionalUniquenessSetOnVariety d n
-          (hAnchor.gramEnvironment π i hi)`
-      to upgrade the seed equality to equality of
-      `hRep.Phi` and
-      `fun Z => hRep.Phi (sourcePermuteComplexGram n τ Z)` on the connected
-      scalar-product overlap component where both sides are defined.
-   4. Use Hall-Wightman's Lemma 3 / Section 2 continuation geometry to move
-      along the overlap components inside `S''_n`.  This is internal to the
-      source theorem and must not be exposed as a theorem-2 hypothesis named
-      after PET chamber connectivity.
-   5. Compose the adjacent invariances along the word for `σ`, rewriting
-      `sourcePermuteComplexGram n (α * β)` by function extensionality.
+   1. use the checked adjacent seed equality theorem on each
+      `hAnchor.gramEnvironment π i hi`;
+   2. use Hall-Wightman real-environment uniqueness to upgrade seed equality to
+      local overlap equality;
+   3. use Hall-Wightman scalar-domain continuation geometry to extend from
+      those local overlaps to the connected scalar-product double domains;
+   4. consume the source-backed global Hall-Wightman single-valued continuation
+      theorem on `S''_n` for arbitrary `σ`.
+
+   An adjacent-word or cover-chain argument may still exist as an internal
+   proof decomposition, but it is not part of the active theorem-2 contract
+   unless and until it is separately formalized honestly at the scalar-domain
+   level.
+
+   Lean packaging note: the repo's existing permutation support already works
+   with concrete adjacent swaps `Equiv.swap i ⟨i.val + 1, hi⟩` and the theorem
+   `BHW.Fin.Perm.adjSwap_induction`.  So the proof docs should minimize use of
+   an abstract predicate `IsAdjacentTransposition τ`.  The only acceptable
+   abstract use is at the normalization boundary where one proves
+   `τ = Equiv.swap i ⟨i.val + 1, hi⟩`; downstream theorem surfaces should then
+   quantify over `(i, hi)` directly whenever possible.
 
    The exact local continuation helper used in step 4 should be source-facing
    and scalar-coordinate only:
@@ -2743,6 +2948,842 @@ datum that Hall-Wightman consumes.
    adjacent-transposition word propagation, it must remain a proof-doc
    obligation until those internal steps have Lean-ready transcripts or are
    replaced by one explicitly approved source-import theorem.
+
+   To count as implementation-ready, this compressed theorem must be treated as
+   a package of three source-level sub-obligations.  The production theorem
+   should not return until each of the following has its own Lean transcript or
+   until a checked source import replaces the whole package.
+
+   **(A) Real-environment uniqueness for one adjacent swap.**
+
+   This is the Hall-Wightman/Bochner-Martin identity theorem on the
+   scalar-product variety, specialized to the two functions
+   `Φ` and `Z ↦ Φ (sourcePermuteComplexGram n τ Z)` on one overlap component.
+
+   ```lean
+   theorem BHW.sourceScalarRepresentative_adjacent_eq_on_overlap_of_realEnvironment
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep :
+         BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (π : Equiv.Perm (Fin n))
+       (i : Fin n)
+       (hi : i.val + 1 < n)
+       (data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi)
+       (hSeed :
+         let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+         ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+           hRep.Phi (BHW.sourceRealGramComplexify n G) =
+             hRep.Phi
+               (BHW.sourcePermuteComplexGram n τ
+                 (BHW.sourceRealGramComplexify n G))) :
+       let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+       ∀ Z,
+         Z ∈ data.overlap ->
+           hRep.Phi (BHW.sourcePermuteComplexGram n τ Z) = hRep.Phi Z
+   ```
+
+   Here `data.overlap` is the scalar-product overlap domain attached to the
+   adjacent real environment `hAnchor.gramEnvironment π i hi`.  After the
+   source audit, the docs should no longer treat connectedness of the full
+   adjacent double scalar-product domain as automatic.  Hall-Wightman gives
+   connectedness/simply-connectedness for the global scalar domain `M_n`, but
+   that does not by itself identify the adjacent double domain
+   `sourceDoublePermutationGramDomain ... τ` as connected.  So the active
+   internal implementation route should define the final overlap object as the
+   connected component of a chosen Hall-Wightman real-environment neighbourhood
+   intersected with the adjacent double scalar-product domain, containing the
+   complexified real Gram environment.
+
+   This exposes an important code-shape point: the current production constant
+   `sourceAdjacentPermutationGramOverlap d n π i hi` is only a placeholder
+   surface.  The final component-based overlap cannot honestly stay parameter-
+   free in `(d,n,π,i,hi)` alone; it must also depend on the chosen local
+   Hall-Wightman neighbourhood data, directly or through a packaged witness
+   built from `hAnchor` (and possibly `hRep`).  The docs must therefore treat
+   the present parameter-free constant as temporary and avoid building new API
+   around it as if it were already the final mathematical object.
+
+   The exact domain suppliers that must be present before implementation are
+   best packaged through one witness structure, rather than as a parameter-free
+   standalone set:
+
+   ```lean
+   structure BHW.SourceAdjacentOverlapWitness
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (π : Equiv.Perm (Fin n))
+       (i : Fin n)
+       (hi : i.val + 1 < n) where
+     U : Set (Fin n -> Fin n -> ℂ)
+     U_relOpen : BHW.IsRelOpenInSourceComplexGramVariety d n U
+     U_contains_environment :
+       ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+         BHW.sourceRealGramComplexify n G ∈ U
+     overlap :
+       Set (Fin n -> Fin n -> ℂ)
+     overlap_def :
+       overlap =
+         connectedComponentIn
+           (BHW.sourceDoublePermutationGramDomain d n
+             (Equiv.swap i ⟨i.val + 1, hi⟩) ∩ U)
+           (BHW.sourceRealGramComplexify n
+             (chosenGramSeed hAnchor π i hi))
+     overlap_relOpen :
+       BHW.IsRelOpenInSourceComplexGramVariety d n overlap
+     overlap_connected :
+       IsConnected overlap
+     environment_mem_overlap :
+       ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+         BHW.sourceRealGramComplexify n G ∈ overlap
+
+   theorem BHW.sourceAdjacentOverlap_relOpen
+       [NeZero d]
+       (data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi) :
+       BHW.IsRelOpenInSourceComplexGramVariety d n
+         data.overlap
+
+   theorem BHW.sourceAdjacentOverlap_connected
+       [NeZero d]
+       (data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi) :
+       IsConnected data.overlap
+
+   theorem BHW.gramEnvironment_complexify_mem_adjacentOverlap
+       [NeZero d]
+       (data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi) :
+       ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+         BHW.sourceRealGramComplexify n G ∈ data.overlap
+   ```
+
+   Without these exact suppliers, the “use uniqueness on the overlap
+   component” line is still only prose.
+
+   Source provenance:
+
+   1. Hall-Wightman Theorem I / Lemma I supplies the scalar-product
+      representative and single-valuedness on the scalar-product variety;
+   2. Hall-Wightman Section 2 plus Lemma 3 supports the claims that the
+      scalar-product image `M_n` is an open connected subset of the rank-bounded
+      scalar-product variety and that neighbourhoods in vector space project to
+      neighbourhoods in scalar-product space;
+   3. the real-environment uniqueness itself is sourced by Hall-Wightman's
+      discussion of real environments in Section 2;
+   4. the *adjacent* overlap domain attached to one OS/Streater-Wightman real
+      environment, and the finite-chain enlargement from those local overlaps
+      to the whole adjacent double scalar-product domain, are repo-level
+      derived specializations and must therefore be proved explicitly rather
+      than cited as direct paper theorems.
+
+   Lean proof transcript:
+
+   ```lean
+     intro τ Z hZ
+     let data :
+         BHW.SourceAdjacentOverlapWitness
+           (d := d) n F hRep hAnchor π i hi := by
+       -- Hall-Wightman local-neighbourhood / component supplier
+     let Ψ : (Fin n -> Fin n -> ℂ) -> ℂ :=
+       fun W => hRep.Phi (BHW.sourcePermuteComplexGram n τ W)
+     have hU_rel :
+         BHW.IsRelOpenInSourceComplexGramVariety d n
+           data.overlap := by
+       exact BHW.sourceAdjacentOverlap_relOpen data
+     have hU_conn :
+         IsConnected data.overlap := by
+       exact BHW.sourceAdjacentOverlap_connected data
+     have hΦ :
+         BHW.SourceVarietyHolomorphicOn d n hRep.Phi
+           data.overlap := by
+       -- restrict `hRep.Phi_holomorphic`
+     have hΨ :
+         BHW.SourceVarietyHolomorphicOn d n Ψ
+           data.overlap := by
+       -- compose `hRep.Phi_holomorphic` with the permutation map
+     have hreal :
+         ∀ G, G ∈ hAnchor.gramEnvironment π i hi ->
+           hRep.Phi (BHW.sourceRealGramComplexify n G) =
+             Ψ (BHW.sourceRealGramComplexify n G) := by
+       intro G hG
+       simpa [Ψ] using hSeed G hG
+     have hEqOn :
+         Set.EqOn hRep.Phi Ψ
+           data.overlap :=
+       (hAnchor.gramEnvironment_unique π i hi).2
+         _ _ _ hU_rel hU_conn
+         -- real Gram inclusion
+         -- holomorphicity of both branches
+         -- real-environment equality `hreal`
+     simpa [Ψ] using hEqOn hZ
+   ```
+
+   **(B) Scalar-variety adjacent continuation along an overlap chain.**
+
+   This is the step that propagates one adjacent equality from one overlap
+   component to the overlap component relevant for the target `Z`.  It is pure
+   Hall-Wightman continuation geometry on the scalar-product variety, not PET
+   chamber bookkeeping.
+
+   ```lean
+   theorem BHW.sourceScalarRepresentative_adjacent_eq_on_doubleDomain_of_chain
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep :
+         BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor :
+         BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (τ : Equiv.Perm (Fin n))
+       (hAdj : IsAdjacentTransposition τ)
+       (hLocal :
+         ∀ Z, Z ∈ BHW.sourceAdjacentSeedCover n F hRep hAnchor τ ->
+           hRep.Phi (BHW.sourcePermuteComplexGram n τ Z) = hRep.Phi Z) :
+       ∀ Z, Z ∈ BHW.sourceDoublePermutationGramDomain d n τ ->
+         hRep.Phi (BHW.sourcePermuteComplexGram n τ Z) = hRep.Phi Z
+   ```
+
+   The domain `sourceAdjacentSeedCover` should be the union of the adjacent
+   overlap components coming from the real-environment suppliers.  After the
+   source audit, this seed-cover layer is no longer treated as optional
+   bookkeeping.  It is the active internal route for enlarging local adjacent
+   equality to arbitrary points of the adjacent double scalar-product domain,
+   unless a separate stronger direct theorem is actually proved later.
+
+   The scalar-continuation geometry should therefore expose:
+
+   ```lean
+   def BHW.sourceAdjacentSeedCover
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (τ : Equiv.Perm (Fin n)) :
+       Set (Fin n -> Fin n -> ℂ)
+
+   theorem BHW.sourceAdjacentPermutationGramOverlap_subset_seedCover
+       [NeZero d]
+       (data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi) :
+       data.overlap ⊆
+         BHW.sourceAdjacentSeedCover n F hRep hAnchor
+           (Equiv.swap i ⟨i.val + 1, hi⟩)
+
+   theorem BHW.sourceDoublePermutationGramDomain_adjacent_chain
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (hAdj : IsAdjacentTransposition τ)
+       {Z : Fin n -> Fin n -> ℂ}
+       (hZ : Z ∈ BHW.sourceDoublePermutationGramDomain d n τ) :
+       ∃ (m : ℕ) (chain : Fin (m + 1) -> Fin n -> Fin n -> ℂ),
+         chain 0 ∈ BHW.sourceAdjacentSeedCover n F hRep hAnchor τ ∧
+         chain ⟨m, Nat.lt_succ_self m⟩ = Z ∧
+         (∀ j : Fin m,
+           chain ⟨j.val, Nat.lt_succ_of_lt j.is_lt⟩ ∈
+               BHW.sourceAdjacentSeedCover n F hRep hAnchor τ ∧
+           chain ⟨j.val + 1, Nat.succ_lt_succ j.is_lt⟩ ∈
+               BHW.sourceAdjacentSeedCover n F hRep hAnchor τ)
+   ```
+
+   The definition of `sourceAdjacentSeedCover` must be fixed at the same time:
+
+   ```lean
+   theorem BHW.sourceAdjacentSeedCover_eq_union
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       {τ : Equiv.Perm (Fin n)}
+       (hAdj : IsAdjacentTransposition τ) :
+       ∃ (i : Fin n) (hi : i.val + 1 < n),
+         τ = Equiv.swap i ⟨i.val + 1, hi⟩ ∧
+         BHW.sourceAdjacentSeedCover n F hRep hAnchor τ =
+           ⋃ π : Equiv.Perm (Fin n),
+             {Z |
+               ∃ data : BHW.SourceAdjacentOverlapWitness
+                 (d := d) n F hRep hAnchor π i hi,
+                 Z ∈ data.overlap}
+
+   def BHW.sourceAdjacentOverlapLabelSet
+       [NeZero d]
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (i : Fin n)
+       (hi : i.val + 1 < n) :
+       Set (Equiv.Perm (Fin n)) :=
+     {π | ∃ data : BHW.SourceAdjacentOverlapWitness
+         (d := d) n F hRep hAnchor π i hi,
+         data.overlap.Nonempty}
+   ```
+
+   To make this genuinely Lean-ready, the proof docs should name the two
+   suppliers hidden inside that theorem:
+
+   ```lean
+   theorem BHW.sourceAdjacentSeedCover_cover_doubleDomain
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (hAdj : IsAdjacentTransposition τ) :
+       BHW.sourceDoublePermutationGramDomain d n τ ⊆
+         BHW.sourceAdjacentSeedCover n F hRep hAnchor τ
+   ```
+
+   The genuinely load-bearing theorem behind this cover-reaching statement is
+   better written first as witness construction:
+
+   ```lean
+   theorem BHW.exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (i : Fin n)
+       (hi : i.val + 1 < n)
+       {Z : Fin n -> Fin n -> ℂ}
+       (hZ :
+         Z ∈ BHW.sourceDoublePermutationGramDomain d n
+           (Equiv.swap i ⟨i.val + 1, hi⟩)) :
+       ∃ (π : Equiv.Perm (Fin n))
+         (data : BHW.SourceAdjacentOverlapWitness
+           (d := d) n F hRep hAnchor π i hi),
+         Z ∈ data.overlap
+   ```
+
+   Then `sourceAdjacentSeedCover_cover_doubleDomain` is the one-line corollary
+   that packages this witness into the seed cover.
+
+   Unfolded at the normalized adjacent swap, this means:
+
+   ```lean
+   theorem BHW.mem_sourceAdjacentSeedCover_of_mem_doubleDomain
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (i : Fin n)
+       (hi : i.val + 1 < n)
+       {Z : Fin n -> Fin n -> ℂ}
+       (hZ :
+         Z ∈ BHW.sourceDoublePermutationGramDomain d n
+           (Equiv.swap i ⟨i.val + 1, hi⟩)) :
+       Z ∈ BHW.sourceAdjacentSeedCover n F hRep hAnchor
+         (Equiv.swap i ⟨i.val + 1, hi⟩)
+   ```
+
+   This is the first theorem where the docs must stop saying merely
+   "Hall-Wightman gives local scalar neighbourhoods" and instead explain how
+   those neighbourhoods are chosen so that every point of the adjacent double
+   scalar-product domain lies in one of the overlap components indexed by `π`.
+   The intended source-facing proof route is:
+
+   1. realize both `Z` and `τ · Z` by ordinary extended-tube configurations,
+      via the checked supplier
+      `exists_sourceExtendedTube_realizations_of_mem_doubleDomain`;
+   2. choose Hall-Wightman real-environment neighbourhoods around the relevant
+      real boundary data for those realizations.  For this step to be honestly
+      implementation-ready, the proof docs must treat it as the following
+      concrete subproblem rather than one blurred sentence:
+      - start from the two extended-tube realizations supplied by step 1;
+      - identify the real boundary/Jost data whose Gram image is the anchor
+        seed to be compared;
+      - select one scalar-variety neighbourhood `U` around that real Gram
+        data on which Hall-Wightman uniqueness applies;
+      - prove `U` is relatively open in the source Gram variety;
+      - prove the chosen anchor real-environment Gram set lies inside `U`;
+      - intersect `U` with the normalized adjacent double scalar domain and
+        take the connected component containing the anchor Gram environment.
+   3. normalize the adjacent transposition to `Equiv.swap i ⟨i+1⟩`;
+   4. show one permutation label `π` places the chosen local real environment
+      into the anchor family `hAnchor.gramEnvironment π i hi`;
+   5. build `data : SourceAdjacentOverlapWitness ... π i hi` from that chosen
+      local real-environment neighbourhood and component;
+   6. conclude that `Z ∈ data.overlap`.
+
+   The seed-cover membership theorem is then just:
+
+   7. insert the witness `(π, data)` into the existential definition of
+      `sourceAdjacentSeedCover`.
+
+   The first is the honest scalar-domain reachability theorem.  The second is
+   now best treated by reusing mathlib's
+   `IsConnected.biUnion_of_reflTransGen` rather than introducing a bespoke
+   finite-open-cover theorem: once the overlap components are individually
+   connected and their index graph is `ReflTransGen`-connected via nonempty
+   intersections, mathlib already supplies connectedness of their union.  Then
+   `sourceDoublePermutationGramDomain_adjacent_chain` is obtained by combining
+   cover-reaching with the `ReflTransGen`-connected union of overlap
+   components, and finally extracting an explicit finite list witness from the
+   `ReflTransGen` proof only at the very end if a concrete chain datatype is
+   still needed by the downstream permutation-induction API.
+
+   So the overlap-index connectivity theorem should be recorded explicitly as:
+
+   ```lean
+   theorem BHW.sourceAdjacentOverlapIndex_reflTransGen
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       (i : Fin n)
+       (hi : i.val + 1 < n) :
+       ∀ π₁ ∈ BHW.sourceAdjacentOverlapLabelSet n F hRep hAnchor i hi,
+         ∀ π₂ ∈ BHW.sourceAdjacentOverlapLabelSet n F hRep hAnchor i hi,
+         ReflTransGen
+           (fun a b : Equiv.Perm (Fin n) =>
+             ∃ dataa : BHW.SourceAdjacentOverlapWitness
+                 (d := d) n F hRep hAnchor a i hi,
+               ∃ datab : BHW.SourceAdjacentOverlapWitness
+                 (d := d) n F hRep hAnchor b i hi,
+                 (dataa.overlap ∩ datab.overlap).Nonempty)
+           π₁ π₂
+   ```
+
+   This restricted label set is the right theorem surface for the current
+   route: it talks only about overlap components that actually occur.  What is
+   not acceptable is to leave the connected-union step as unnamed prose.
+
+   The intended proof transcript is:
+
+   1. use `sourceAdjacentSeedCover_eq_union` to rewrite the seed cover as a
+      union of overlap components indexed by `sourceAdjacentOverlapLabelSet`;
+   2. prove each overlap component in that label set is connected by
+      `sourceAdjacentPermutationGramOverlap_connected`;
+   3. use Hall-Wightman/source-side reachability to show the seed cover is
+      connected as a subset of the adjacent double scalar-product domain;
+   4. apply the contrapositive of disconnected unions: if two active labels
+      were not related by `ReflTransGen` through nonempty intersections, the
+      union would split into two disjoint relatively open subunions, violating
+      connectedness of the seed cover;
+   5. feed the resulting `ReflTransGen` witness to
+      `IsConnected.biUnion_of_reflTransGen`.
+
+   This is a genuine topological lemma about the chosen cover, not new QFT
+   content, but it must still be written down explicitly because the later
+   permutation-induction API depends on an actual chain of overlap components.
+
+   The chain theorem is intentionally phrased in scalar-product language only.
+   If the eventual proof uses Hall-Wightman Lemma 3 in a stronger way, the
+   stronger theorem must still be stated at this scalar-domain level.
+   This is the first place where the docs now deliberately leave the realm of
+   direct source quotation: Hall-Wightman gives connectedness/simply-connected
+   scalar-product geometry for the global scalar domain, but the adjacent seed
+   cover, cover-reaching theorem, and finite-chain extraction are derived
+   specializations needed for the Lean
+   route.  They must be justified from the source geometry, not merely named.
+
+   Lean proof transcript:
+
+   ```lean
+     intro Z hZ
+     obtain ⟨m, chain, hchain0, hchainZ, hstep⟩ :=
+       BHW.sourceDoublePermutationGramDomain_adjacent_chain
+         (d := d) (n := n) τ hAdj Z hZ
+     have hprop :
+         ∀ j : Fin (m + 1),
+           hRep.Phi (BHW.sourcePermuteComplexGram n τ (chain j)) =
+             hRep.Phi (chain j) := by
+       intro j
+       -- induct along the overlap chain using `hLocal` on each component
+     simpa [hchainZ] using
+       hprop ⟨m, Nat.lt_succ_self m⟩
+   ```
+
+   The only acceptable hidden supplier here is a scalar-product-domain chain
+   theorem extracted from Hall-Wightman Lemma 3 / Section 2.  It must not
+   smuggle back in `PermutationFlow`, fixed-`w` chamber galleries, or any
+   locality-dependent theorem.  On the current route this chain layer is live
+   internal source geometry, not optional decoration.
+
+   **(C) Propagation from adjacent steps to a general permutation.**
+
+   After the correction above, this is no longer “pure algebra.”  The passage
+   from adjacent transpositions to a general permutation needs both:
+
+   1. permutation algebra (`sourcePermuteComplexGram_mul` and an adjacent-word
+      decomposition of `σ`), and
+   2. an admissible chain of intermediate scalar points showing that the
+      adjacent invariance theorem may be applied step by step on the relevant
+      double domains.
+
+   So the theorem must be documented as a word-chain propagation theorem, not
+   as a naked group-theoretic corollary.
+
+   **Route decision.**
+
+   At this point the proof docs should no longer treat this word-chain route as
+   the endorsed theorem-2 implementation path.  Hall-Wightman's paper gives a
+   global single-valued continuation theorem on the scalar-product domain
+   `M_n`/`S''_n`; it does not advertise a separate adjacent-word induction on
+   permutation generators.  The adjacent-word package below is therefore best
+   understood as a possible internal decomposition of the Hall-Wightman source
+   theorem, not as a theorem-2 contract in its own right.
+
+   The active route is:
+
+   1. keep (A) as the local real-environment uniqueness theorem;
+   2. keep (B) as the source-facing adjacent continuation geometry, implemented
+      through the overlap-component / seed-cover / reachability package;
+   3. treat the passage from adjacent seeds to arbitrary `σ` as the direct
+      Hall-Wightman single-valued continuation theorem on the connected
+      scalar-product double domain, unless and until a fully honest scalar-word
+      theorem is actually proved.
+
+   In particular, the proof-doc target is now split cleanly into two stages:
+
+   1. a local Hall-Wightman scalar representative on the ordinary
+      extended-tube scalar image (`SourceScalarRepresentativeData`), and
+   2. a separate global continuation theorem transporting that branch across
+      the connected double scalar-product domain.
+
+   This is faithful to the source and avoids the false pressure to globalize
+   `SourceScalarRepresentativeData` itself.
+
+   In particular, the theorem names
+   `sourceScalarRepresentative_permInvariant_of_adjacentGenerators`,
+   `SourcePermutationWordChain`, and
+   `sourcePermutationWordChain_of_mem_doubleDomain`
+   should remain quarantined in the proof docs.  They are no longer part of
+   the endorsed immediate implementation target for theorem 2.
+
+   ```lean
+   theorem BHW.sourceScalarRepresentative_permInvariant_of_adjacentGenerators
+       [NeZero d]
+       (hd : 2 <= d)
+       (n : ℕ)
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAdj :
+         ∀ τ : Equiv.Perm (Fin n),
+           IsAdjacentTransposition τ ->
+           ∀ Z, Z ∈ BHW.sourceDoublePermutationGramDomain d n τ ->
+             hRep.Phi (BHW.sourcePermuteComplexGram n τ Z) = hRep.Phi Z) :
+       ∀ σ : Equiv.Perm (Fin n),
+         ∀ Z, Z ∈ BHW.sourceDoublePermutationGramDomain d n σ ->
+           hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) = hRep.Phi Z
+   ```
+
+   Lean proof transcript:
+
+   ```lean
+     intro σ Z hZ
+     let hChain :=
+       BHW.sourcePermutationWordChain_of_mem_doubleDomain
+         (d := d) (n := n) hZ
+     induction hChain.word generalizing Z with
+     | nil =>
+         simpa using rfl
+     | cons step rest ih =>
+         have hstep :
+             hRep.Phi
+                 (BHW.sourcePermuteComplexGram n step (hChain.chain 0)) =
+               hRep.Phi (hChain.chain 0) :=
+           hAdj step ?hstep_adj (hChain.chain 0) ?hstep_mem
+         have hrest :
+             hRep.Phi
+                 (BHW.sourcePermuteComplexGram n
+                   (rest.foldr (· * ·) 1)
+                   (hChain.chain 1)) =
+               hRep.Phi (hChain.chain 1) :=
+           ih ?hrest_chain
+         -- rewrite the nested permutation action into multiplication order and
+         -- identify the endpoint with `hChain.chain_last`
+         simpa [BHW.sourcePermuteComplexGram_mul] using hrest.trans hstep
+   ```
+
+   The domain-membership lemmas `hstep_mem` and `hrest_mem` are not mere
+   bookkeeping: they are the exact place where the scalar-product double-domain
+   geometry for a permutation word must be stated.  In fact, the naive
+   `mul_mem_left/right` route is too optimistic: from
+   `Z ∈ BHW.sourceDoublePermutationGramDomain d n (α * β)` one does not
+   automatically get either `Z ∈ BHW.sourceDoublePermutationGramDomain d n α`
+   or `BHW.sourcePermuteComplexGram n α Z ∈
+   BHW.sourceDoublePermutationGramDomain d n β`, because the ordinary extended
+   tube is not permutation-invariant.  So the proof doc must not rely on those
+   statements as if they were formal consequences of the current domain
+   definition.
+
+   If one insists on the adjacent-word internal decomposition anyway, the
+   minimum algebra/geometry supplier package would be:
+
+   ```lean
+   theorem BHW.sourcePermuteComplexGram_mul
+       (n : ℕ)
+       (α β : Equiv.Perm (Fin n))
+       (Z : Fin n -> Fin n -> ℂ) :
+       BHW.sourcePermuteComplexGram n (α * β) Z =
+         BHW.sourcePermuteComplexGram n β
+           (BHW.sourcePermuteComplexGram n α Z)
+
+   theorem BHW.perm_word_of_adjacent_transpositions
+       (n : ℕ)
+       (σ : Equiv.Perm (Fin n)) :
+       ∃ word : List (Equiv.Perm (Fin n)),
+         (∀ τ ∈ word, IsAdjacentTransposition τ) ∧
+         word.foldr (· * ·) 1 = σ
+
+   structure BHW.SourcePermutationWordChain
+       (d n : ℕ)
+       (σ : Equiv.Perm (Fin n))
+       (Z : Fin n -> Fin n -> ℂ) where
+     word : List (Equiv.Perm (Fin n))
+     word_adj :
+       ∀ τ ∈ word, IsAdjacentTransposition τ
+     word_eval :
+       word.foldr (· * ·) 1 = σ
+     chain :
+       Fin (word.length + 1) -> Fin n -> Fin n -> ℂ
+     chain_zero :
+       chain 0 = Z
+     chain_last :
+       chain ⟨word.length, Nat.lt_succ_self word.length⟩ =
+         BHW.sourcePermuteComplexGram n σ Z
+     step_mem :
+       ∀ j : Fin word.length,
+         chain ⟨j.val, Nat.lt_succ_of_lt j.is_lt⟩ ∈
+             BHW.sourceDoublePermutationGramDomain d n (word.get j) ∧
+         chain ⟨j.val + 1, Nat.succ_lt_succ j.is_lt⟩ =
+           BHW.sourcePermuteComplexGram n (word.get j)
+             (chain ⟨j.val, Nat.lt_succ_of_lt j.is_lt⟩)
+
+   theorem BHW.sourcePermutationWordChain_of_mem_doubleDomain
+       [NeZero d]
+       {σ : Equiv.Perm (Fin n)}
+       {Z : Fin n -> Fin n -> ℂ}
+       (hZ : Z ∈ BHW.sourceDoublePermutationGramDomain d n σ) :
+       BHW.SourcePermutationWordChain d n σ Z
+   ```
+
+   There is one more theorem surface that must be fixed before this package is
+   truly implementation-ready: the normalization of an abstract adjacent
+   transposition into the concrete swap index used by the OS anchor.
+
+   ```lean
+   theorem BHW.exists_adjacentSwapIndex
+       (n : ℕ)
+       {τ : Equiv.Perm (Fin n)}
+       (hAdj : IsAdjacentTransposition τ) :
+       ∃ (i : Fin n) (hi : i.val + 1 < n),
+         τ = Equiv.swap i ⟨i.val + 1, hi⟩
+   ```
+
+   The seed-cover definition should then commit to the corresponding union over
+   permutation labels `π`:
+
+   ```lean
+   theorem BHW.sourceAdjacentSeedCover_eq_union
+       [NeZero d]
+       (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hRep : BHW.SourceScalarRepresentativeData (d := d) n F)
+       (hAnchor : BHW.SourceDistributionalAdjacentTubeAnchor (d := d) n F)
+       {τ : Equiv.Perm (Fin n)}
+       (hAdj : IsAdjacentTransposition τ) :
+       ∃ (i : Fin n) (hi : i.val + 1 < n),
+         τ = Equiv.swap i ⟨i.val + 1, hi⟩ ∧
+         BHW.sourceAdjacentSeedCover n F hRep hAnchor τ =
+           ⋃ π : Equiv.Perm (Fin n),
+             {Z |
+               ∃ data : BHW.SourceAdjacentOverlapWitness
+                 (d := d) n F hRep hAnchor π i hi,
+                 Z ∈ data.overlap}
+   ```
+
+   This is not cosmetic bookkeeping.  Without it, the final wrapper still hides
+   the step from an abstract adjacent generator `τ` to the concrete
+   Hall-Wightman real environment data stored by
+   `SourceDistributionalAdjacentTubeAnchor`.
+
+   These suppliers are now mathematically scoped tightly enough that the
+   blueprint can state how each one should be proved, rather than merely
+   naming it.
+
+   **Proof plan for the derived scalar-geometry suppliers.**
+
+   1. `data.overlap` for `data : SourceAdjacentOverlapWitness`:
+      active definition:
+      packaged by `SourceAdjacentOverlapWitness`; concretely, the overlap is
+      the connected component of
+      `sourceDoublePermutationGramDomain d n τ ∩ U`, where `U` is the
+      scalar-variety neighbourhood supplied by the real-environment theorem,
+      containing the complexified real Gram image of the adjacent seed.
+      Optional later simplification:
+      if a separate theorem really proves the whole adjacent double domain is
+      already the needed connected neighbourhood, then this definition may be
+      collapsed to `sourceDoublePermutationGramDomain d n τ`.
+   2. `sourceAdjacentOverlap_relOpen`:
+      active route: deduce relative openness because both pieces in the
+      intersection are relatively open in the scalar-product variety:
+      `sourceDoublePermutationGramDomain` is open by its defining inequalities,
+      and `U` is relatively open by the Hall-Wightman real-environment
+      theorem.  Then pass to the chosen connected component of a relatively
+      open subset.
+   3. `sourceAdjacentOverlap_connected`:
+      active route: immediate from the definition as a connected component.
+      A direct full-domain connectedness proof would be a later optimization,
+      not current source-gate input.
+
+      The exact theorem surface is:
+
+      ```lean
+      theorem BHW.sourceAdjacentOverlap_connected
+          [NeZero d]
+          (data : BHW.SourceAdjacentOverlapWitness
+            (d := d) n F hRep hAnchor π i hi) :
+          IsConnected data.overlap
+      ```
+
+      This theorem is no longer the live mathematical blocker.  The real
+      remaining scalar-geometry burden is the later enlargement from these
+      seed overlap components to the full adjacent double scalar-product
+      domain.
+   4. `gramEnvironment_complexify_mem_adjacentOverlap`:
+      show that each real Gram point in
+      `hAnchor.gramEnvironment π i hi` lies in the Hall-Wightman neighbourhood
+      `U` by construction, and lies in the adjacent double scalar-product
+      domain because the same real configuration is admissible for both the
+      identity and adjacent-permuted source orderings.  Then the distinguished
+      component condition is satisfied by definition of the overlap component.
+   5. `sourceAdjacentSeedCover`:
+      active route. Define it as the union of all adjacent overlap components
+      associated to the same adjacent transposition `τ`.
+   6. `sourceAdjacentPermutationGramOverlap_subset_seedCover`:
+      active route, tautological from the union definition of the seed cover.
+   7. `sourceDoublePermutationGramDomain_adjacent_chain`:
+      this is now the main scalar-geometry lemma.  The doc should commit to
+      the following route: use the source-backed global Hall-Wightman geometry
+      on `M_n` / `S''_n` together with the repo-level adjacent overlap cover to
+      show that every point of the adjacent double scalar-product domain is
+      reached by a finite chain of overlap components beginning at a component
+      containing a real-environment seed point.  The finite-chain extraction
+      itself is standard topology; the nontrivial content is that the chosen
+      overlap cover really reaches the entire adjacent double domain.  This is
+      the honest remaining internal source-gate theorem.
+
+   **Important correction about the tempting vector-overlap shortcut.**
+
+   It is not enough to observe that the repo already proves connectedness of
+   the vector-valued adjacent overlap domain
+   `adjSwapExtendedOverlapSet d n i hi` and then try to transfer that
+   connectedness to
+   `sourceDoublePermutationGramDomain d n (Equiv.swap i ⟨i.val + 1, hi⟩)` by a
+   Gram-map image theorem.  The reason is structural:
+
+   - `adjSwapExtendedOverlapSet` asks for one complex configuration `w` such
+     that both `w` and `w ∘ τ` lie in `ExtendedTube`;
+   - `sourceDoublePermutationGramDomain` asks only that `Z` and `τ·Z` each
+     occur as Gram matrices of *some* extended-tube configurations, not
+     necessarily the same configuration and its permute.
+
+   So the naive equality
+
+   ```lean
+   sourceDoublePermutationGramDomain d n τ =
+     sourceMinkowskiGram d n '' adjSwapExtendedOverlapSet d n i hi
+   ```
+
+   is not justified and should not be used in the proof docs.  Any transfer of
+   connectedness from vector overlap to scalar-product overlap would need an
+   additional Hall-Wightman theorem saying that whenever `Z` and `τ·Z` are both
+   realized in the extended tube, they may be realized by one common
+   configuration orbit in the required overlap domain.  That theorem is not
+   currently part of the approved route.
+
+   A related tempting symmetry shortcut is also invalid: the scalar
+   double-domain is not obviously equivariant under simultaneous conjugation of
+   the permutation parameter and the Gram coordinates, because
+   `sourceExtendedTubeGramDomain` itself is not permutation-invariant.  So the
+   docs must not assume a theorem of the form
+
+   ```lean
+   sourcePermuteComplexGram n α Z ∈
+     sourceDoublePermutationGramDomain d n (α * σ * α⁻¹) ↔
+   Z ∈ sourceDoublePermutationGramDomain d n σ
+   ```
+
+   unless that statement is separately proved from stronger source geometry.
+   8. `sourcePermuteComplexGram_mul`:
+      prove by direct index calculation from the definition of
+      `sourcePermuteComplexGram`; this is purely algebraic and should be
+      discharged before any analytic continuation work resumes.
+   9. `perm_word_of_adjacent_transpositions`:
+      import or prove the standard Coxeter-generation fact for `Fin n`
+      permutations.  This remains a finite-group lemma, but it is only one
+      input to the corrected step (C), not the whole theorem.
+   10. `exists_adjacentSwapIndex` and
+       `sourceAdjacentSeedCover_eq_union`:
+       the first is pure finite permutation combinatorics; the second is the
+       bridge from that combinatorics to the checked anchor API.  The proof of
+       the second should be by unfolding the definition of
+       `sourceAdjacentSeedCover` after normalizing `τ` to
+       `Equiv.swap i ⟨i.val + 1, hi⟩`; no new analytic content should appear
+       here.
+   11. `SourcePermutationWordChain` and
+       `sourcePermutationWordChain_of_mem_doubleDomain`:
+       these replace the false naive `mul_mem_left/right` route.  The required
+       content is not “membership descends automatically along a product,” but
+       “for each `Z` admissible for `σ`, choose an adjacent-transposition word
+       and an accompanying chain of intermediate scalar points such that each
+       step is admissible for the next adjacent transposition.”  This is the
+       genuine geometry/combinatorics supplier that the induction proof of (C)
+       needs.
+
+   But the active blueprint should now assume the opposite default: unless this
+   word-chain package is separately justified in full detail, the docs should
+   retreat to the stronger global Hall-Wightman continuation theorem rather
+   than force a bad local induction.
+
+   If the implementation needs a different left/right orientation for the word
+   recursion, the docs must fix that orientation before the Lean pass begins.
+   This entire package is derived algebra/geometry rather than a paper theorem:
+   the paper gives the single-valued continuation result, while the Lean route
+   decomposes its use into adjacent generators plus domain-membership
+   bookkeeping.  That decomposition is allowed, but only if these exact
+   membership lemmas are treated as genuine proof obligations.
+
+   Accordingly, the endorsed source theorem surface is still the global one:
+
+   ```lean
+   theorem BHW.hallWightman_scalarOverlapContinuation_from_adjacentSeeds
+       ... :
+       ∀ (σ : Equiv.Perm (Fin n))
+         (Z : Fin n -> Fin n -> ℂ),
+         Z ∈ BHW.sourceDoublePermutationGramDomain d n σ ->
+         hRep.Phi (BHW.sourcePermuteComplexGram n σ Z) = hRep.Phi Z
+   ```
+
+   Its accepted proof transcript is now:
+
+   1. for each adjacent real environment `hAnchor.gramEnvironment π i hi`, use
+      the checked seed equality theorem plus Hall-Wightman uniqueness to obtain
+      equality on the corresponding local overlap component (step (A));
+   2. use the Hall-Wightman scalar-domain continuation geometry to enlarge
+      those local equalities to the connected adjacent double domains (step
+      (B));
+   3. invoke the source-backed Hall-Wightman single-valued continuation theorem
+      on the connected scalar-product double domain for arbitrary `σ`, rather
+      than inserting an unproved local word-induction theorem;
+   4. close the PET branch-compatibility theorem from that global source
+      equality.
+
+   This is the unique endorsed route.  The adjacent-word package is retained
+   below only as an archived possible internal decomposition, not as a live
+   theorem-2 contract.
 
    With these scalar-coordinate facts available, the current source frontier
    has a short Lean proof:
@@ -5476,11 +6517,45 @@ Lean-shaped implementation:
 This theorem is the first place where the theorem-2 route reaches the
 all-overlap PET single-valuedness required by OS I §4.5.
 
-At this point the route must stay within the source-audited direct BHW
-transcript above. It must **not** try to replace Slot 7 by constructing
-`SelectedAllPermutationEdgeData` or by switching to
-`bvt_selectedAbsolutePETGluedValue`; those surfaces belong to the
-all-permutation helper lane, not to the strict theorem-2 consumer packet.
+Route correction after the BHW/PET audit: the forbidden object is the
+locality-assuming top-level theorem
+`BHW.bargmann_hall_wightman_theorem`, not the lower-layer BHW monodromy
+machinery.  The checked theorem-2-facing entry point is now:
+
+```lean
+theorem bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (hEdge : SelectedAdjacentPermutationEdgeData OS lgc n)
+    (hOrbit :
+      ∀ (w : Fin n -> Fin (d + 1) -> ℂ),
+        w ∈ BHW.ForwardTube d n ->
+        ∀ (σ : Equiv.Perm (Fin n)) (Λ : ComplexLorentzGroup d),
+          BHW.complexLorentzAction Λ w ∈ BHW.PermutedForwardTube d n σ ->
+          Relation.ReflTransGen
+            (BHW.petReachableLabelAdjStep (d := d) (n := n) w)
+            (1 : Equiv.Perm (Fin n)) σ) :
+    ∀ (π ρ : Equiv.Perm (Fin n))
+      (z : Fin n -> Fin (d + 1) -> ℂ),
+      z ∈ BHW.permutedExtendedTubeSector d n π ->
+      z ∈ BHW.permutedExtendedTubeSector d n ρ ->
+      BHW.extendF (bvt_F OS lgc n) (fun k => z (π k)) =
+        BHW.extendF (bvt_F OS lgc n) (fun k => z (ρ k))
+```
+
+This theorem uses `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
+directly.  It does not consume `IsLocallyCommutativeWeak`; the old circular
+locality hypothesis is replaced by the OS-II adjacent/Jost input
+`SelectedAdjacentPermutationEdgeData` plus the explicit PET orbit-connectivity
+obligation `hOrbit`.
+
+Consequently, `bvt_selectedAbsolutePETGluedValue` is no longer an
+all-permutation side lane when used through the checked
+`*_of_selectedAdjacentEdgeData` theorems.  It is the theorem-2-facing glued PET
+scalar.  What remains forbidden is constructing or consuming
+`SelectedAllPermutationEdgeData` as the theorem-2 route.
 
 ### Slot 8. `bvt_F_perm_eq_on_extendedTube_of_two_le`
 

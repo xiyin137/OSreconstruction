@@ -734,17 +734,28 @@ Current examples:
 	   hypotheses and the cutoff-one/support-margin data in the documented
 	   `sliceCLM_family_from_distributionalBoundary`, not another common
 	   boundary wrapper.
-   The initial coordinate and trace-membership support
-   `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
-   `BHW.wickRotate_ordered_mem_acrOne`,
-   `BHW.adjacent_wick_traces_mem_acrOne`, and
-   `BHW.os45CommonChart_real_mem_pulledRealBranchDomain_pair` is checked in
-   `OSToWightmanLocalityOS45CommonChart.lean` and
-   `OSToWightmanLocalityOS45TraceMembership.lean`, so the next unresolved proof
-   document/Lean targets are the pure-SCV local distributional envelope theorem
-   and its OS45 instantiation.
-   `BHW.sourceRealEnvironment_of_os45JostPatch` supplies the Gram environment
-   for that same `V`; and
+	   The initial coordinate and trace-membership support
+	   `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
+	   `BHW.wickRotate_ordered_mem_acrOne`,
+	   `BHW.adjacent_wick_traces_mem_acrOne`, and
+	   `BHW.os45CommonChart_real_mem_pulledRealBranchDomain_pair`, together with
+	   the direct-envelope packaging
+	   `BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`, is checked in
+	   `OSToWightmanLocalityOS45CommonChart.lean` and
+	   `OSToWightmanLocalityOS45TraceMembership.lean`, so the next unresolved proof
+	   document/Lean targets are the pure-SCV local distributional envelope theorem
+	   and its OS45 instantiation.
+	   The theorem-2 blueprint now also states the exact Lean pseudo-code for the
+	   uniform local continuous EOW geometry theorem
+	   `SCV.local_continuous_edge_of_the_wedge_geometry`, whose key output is one
+	   fixed chart domain `U0` usable for every regularizing kernel, and for the
+	   remaining pure-SCV upstream package
+	   `SCV.regularizedLocalEOW_productKernel_from_continuousEOW`: it must build
+	   the actual `K,G,ψn,hcov,hG_holo,hK_rep` data consumed by the checked
+	   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`, not wrap or
+	   restate that checked recovery theorem.
+	   `BHW.sourceRealEnvironment_of_os45JostPatch` supplies the Gram environment
+	   for that same `V`; and
    `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII` fills the
    eleven fields of `SelectedAdjacentDistributionalJostAnchorData` before the
    already checked bridge constructs
@@ -765,6 +776,123 @@ Current examples:
    representative existence theorem and the scalar-overlap continuation
    theorem.  Those obligations must not appear as production `sorry`s on the
    active import path.
+   On the active overlap-component route, the openness half is now also checked:
+   `sourceAdjacentPermutationGramOverlap_relOpen`
+   and `gramEnvironment_complexify_mem_adjacentOverlap` are in production Lean.
+   The remaining live source-geometry blocker in that package is no longer the
+   connectedness of one local overlap component.  With the overlap defined as
+   a connected component around the real Gram environment, the real remaining
+   burden is the enlargement from these local overlap components to the full
+   adjacent double scalar-product domain, i.e. the finite-chain / cover-reaching
+   theorem currently documented as
+   `sourceDoublePermutationGramDomain_adjacent_chain`.
+   The blueprint now further splits that into:
+   `sourceAdjacentSeedCover_cover_doubleDomain` (the honest scalar-domain
+   reachability theorem) plus reuse of mathlib's
+   `IsConnected.biUnion_of_reflTransGen` for the connected-union step.
+   The detailed blueprint now also fixes the missing exact surfaces around
+   that split:
+   `sourceAdjacentSeedCover_eq_union`,
+   `sourceAdjacentOverlapLabelSet`,
+   `exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain`,
+   `mem_sourceAdjacentSeedCover_of_mem_doubleDomain`, and
+   `sourceAdjacentOverlapIndex_reflTransGen` on the active label set.
+   The step-1 realization input for that witness theorem is now also fixed at
+   the exact Lean surface
+   `exists_sourceExtendedTube_realizations_of_mem_doubleDomain`.
+   The latest doc pass also aligns the permutation side with the actual repo
+   API: use concrete swaps and `BHW.Fin.Perm.adjSwap_induction` as the Lean
+   surface, and keep abstract adjacent-transposition predicates only at the
+   normalization boundary.
+   For theorem 2 to be 100% implementation-ready, the second obligation may no
+   longer remain one compressed theorem surface.  The proof docs must expose:
+   1. real-environment uniqueness on one adjacent scalar overlap component;
+   2. scalar-variety adjacent continuation from the real-environment overlap to
+      the full adjacent double-domain;
+   3. adjacent-transposition word propagation to a general permutation.
+   The theorem-2 blueprint now contains Lean-shaped theorem surfaces and proof
+   transcripts for those three pieces.  Until the exact overlap-domain
+   definitions, overlap-chain geometry, and permutation-word domain-membership
+   lemmas are all named there explicitly, the BHW source gate is not ready to
+   reopen in production Lean.  Those supplier names are now fixed there as:
+   `SourceAdjacentOverlapWitness`,
+   `sourceAdjacentOverlap_relOpen`,
+   `sourceAdjacentOverlap_connected`,
+   `gramEnvironment_complexify_mem_adjacentOverlap`,
+   `sourceAdjacentSeedCover`,
+   `sourceAdjacentPermutationGramOverlap_subset_seedCover`,
+   `sourceAdjacentSeedCover_eq_union`,
+   `exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain`,
+   `mem_sourceAdjacentSeedCover_of_mem_doubleDomain`,
+   `sourceAdjacentOverlapIndex_reflTransGen`,
+   `sourceAdjacentSeedCover_cover_doubleDomain`,
+   `sourceDoublePermutationGramDomain_adjacent_chain`, and
+   `exists_sourceExtendedTube_realizations_of_mem_doubleDomain`.
+   The theorem-2 blueprint now also fixes the intended proof route for each:
+   the adjacent overlap is the connected component of a Hall-Wightman
+   real-environment neighbourhood intersected with the adjacent double scalar
+   domain; the seed cover is the union of those overlap components; the chain
+   theorem comes from the cover-reaching theorem
+   `sourceAdjacentSeedCover_cover_doubleDomain` together with connected-union
+   propagation via `IsConnected.biUnion_of_reflTransGen`;
+   the normalization step from an abstract `IsAdjacentTransposition τ` to a
+   concrete `Equiv.swap i ⟨i.val + 1, hi⟩` is fixed; and the step-1 input to
+   witness construction is the checked realization theorem
+   `exists_sourceExtendedTube_realizations_of_mem_doubleDomain`.  The archived
+   adjacent-word package remains available only as a possible later internal
+   decomposition if the direct Hall-Wightman global continuation route needs
+   it, not as part of the active theorem-2 contract.
+   One more theorem-shape correction is now explicit: the final overlap object
+   for this route cannot honestly remain parameter-free in `(d,n,π,i,hi)`
+   alone. Because it is defined from a chosen Hall-Wightman local
+   neighbourhood around `hAnchor.gramEnvironment π i hi`, the final code-level
+   surface must depend on that chosen neighbourhood data, directly or through a
+   packaged witness derived from `hAnchor` (and possibly `hRep`). The current
+   production parameter-free constant should therefore be treated only as a
+   placeholder, not as the final mathematical API.
+   The route decision is now explicit: this adjacent-word package is archived
+   as a possible internal decomposition only.  The endorsed theorem-2 contract
+   is instead the stronger global Hall-Wightman continuation theorem on the
+   connected scalar-product double domain, with the local overlap/real-
+   environment lemmas (A) and adjacent-continuation geometry (B) as its
+   documented suppliers.  This fixes the live route and quarantines the old
+   word-chain detour, but it is not yet enough by itself to claim the source
+   gate is 100% implementation-ready: the remaining live internal blocker is
+   the enlargement / cover-reaching theorem
+   `sourceDoublePermutationGramDomain_adjacent_chain`, not connectedness of a
+   single local overlap component.
+   More precisely, the first unresolved theorem surface is
+   `exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain`, whose proof docs
+   must now expose the Hall-Wightman local-neighbourhood selection step in
+   Lean-shaped form:
+   1. choose extended-tube realizations for `Z` and `τ · Z`;
+   2. extract the relevant real boundary/environment data from those
+      realizations;
+   3. select a Hall-Wightman scalar-variety neighbourhood around that real
+      data;
+   4. identify the corresponding anchor label `π`;
+   5. package the resulting connected overlap component as
+      `SourceAdjacentOverlapWitness`.
+   The correct packaging is two-stage: `SourceScalarRepresentativeData` is
+   local branch data on `sourceExtendedTubeGramDomain d n`, while the global
+   Hall-Wightman theorem on `M_n` / `S''_n` is the later continuation theorem
+   for that branch.  The docs should not blur those two roles.
+   After the latest source audit, the docs no longer treat connectedness of
+   the full adjacent double scalar-product domain as automatic.  The active
+   internal implementation route now keeps
+   `sourceAdjacentPermutationGramOverlap` as a connected component around the
+   real Gram environment, and treats the seed-cover / chain machinery as the
+   honest route for reaching arbitrary points of the adjacent double domain.
+   A future collapse of that overlap to the full adjacent double domain would
+   be an optimization only after a separate proof justifies it.
+   One more tempting shortcut has now been ruled out explicitly: the scalar
+   double-domain is not automatically the Gram-map image of the vector-valued
+   adjacent overlap domain, because `sourceDoublePermutationGramDomain`
+   remembers separate realizability of `Z` and `τ·Z`, not realizability by one
+   common configuration `w` with both `w` and `τ·w` in `ExtendedTube`.
+   Likewise, the scalar double-domain should not be treated as obviously
+   conjugation-equivariant under permutation of Gram coordinates, since
+   `sourceExtendedTubeGramDomain` itself is not permutation-invariant.
 5. Streater-Wightman Theorem 2-11 has now been audited as another statement of
    the BHW analytic-continuation theorem, not as a source for the missing
    active-gallery theorem. Streater-Wightman Figure 2-4 remains only the

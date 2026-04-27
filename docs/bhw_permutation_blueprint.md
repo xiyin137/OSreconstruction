@@ -570,10 +570,15 @@ Implementation locus:
    `sourceConfigurationSpan`, `sourceComplexConfigurationSpan`,
    `SourceGramRegularAt`, `SourceComplexGramRegularAt`, and the concrete
    full-span template `sourceFullSpanTemplate`;
-6. do not import or reuse `BHWPermutation.PermutationFlow` for this source
-   theorem, because its current BHW theorem and private well-definedness
-   helpers carry `IsLocallyCommutativeWeak` / boundary-distribution inputs and
-   are circular for theorem 2.
+6. do not consume the top-level
+   `BHWPermutation.PermutationFlow.bargmann_hall_wightman_theorem` for theorem
+   2, because its current public statement carries
+   `IsLocallyCommutativeWeak` / boundary-distribution inputs and is circular for
+   theorem 2.  The lower-layer, non-circular BHW/PET support in
+   `PermutedTubeMonodromy.lean` is permitted and is now the checked active entry
+   point:
+   `BHW.extendF_pet_branch_independence_of_adjacent_of_orbitChamberConnected`
+   and `BHW.F_permutation_invariance_of_petBranchIndependence`.
 
 The restricted-real Lorentz input is intentional: it is the Hall-Wightman
 source hypothesis.  Complex-Lorentz single-valued continuation on the extended
@@ -697,6 +702,102 @@ order:
    by the documented scalar-domain proof transcript.  The production
    `SourceExtension.lean` module currently stops before this unresolved source
    gate and contains only sorry-free data/support lemmas.
+
+The packaging is intentionally two-stage.  `SourceScalarRepresentativeData`
+is local data for the ordinary extended-tube scalar image
+`sourceExtendedTubeGramDomain d n`; the later Hall-Wightman theorem on
+`M_n` / `S''_n` is a continuation theorem for that branch data, not a reason to
+repackage the representative itself as globally defined source data.
+
+For the proof doc to count as implementation-ready, step 5 must no longer be
+treated as one opaque source theorem.  The theorem
+`hallWightman_scalarOverlapContinuation_from_adjacentSeeds` is now understood
+as a compressed package of three Hall-Wightman sub-obligations:
+
+1. real-environment uniqueness for one adjacent scalar overlap component;
+2. scalar-variety adjacent continuation from that local overlap to the full
+   adjacent double-domain;
+3. adjacent-transposition word propagation from one adjacent swap to a general
+   permutation.
+
+The theorem-2 blueprint now gives Lean-shaped statements and proof transcripts
+for those three pieces.  Until the proof docs expose the exact overlap domains,
+chain geometry, and permutation-word domain-membership lemmas needed by that
+split, the source gate is not 100% ready for implementation.
+It now also fixes the proof strategy for those suppliers: define the adjacent
+overlap as a connected component of a Hall-Wightman real-environment
+neighbourhood intersected with the adjacent double scalar domain; define the
+seed cover as the union of such overlaps; obtain the adjacent-chain theorem
+from connectedness plus finite-chain extraction on that open cover; treat
+`sourcePermuteComplexGram_mul` and
+`perm_word_of_adjacent_transpositions` as separate permutation algebra; and
+replace the false naive `mul_mem_left/right` step with a stronger
+word-chain supplier that records admissible intermediate scalar points for the
+chosen adjacent word.  So the final passage from adjacent swaps to a general
+permutation is no longer advertised as “pure algebra”; it is algebra plus
+scalar-domain continuation geometry.  It also now fixes the normalization step from an
+abstract adjacent transposition `τ` to a concrete consecutive swap
+`Equiv.swap i ⟨i.val + 1, hi⟩`, and uses that normalization to define the seed
+cover for `τ` as the union over permutation labels `π` of the corresponding
+overlap components.
+The route decision is now explicit: this adjacent-word package is retained
+only as a possible internal decomposition.  The active theorem-2 contract is
+the stronger global Hall-Wightman single-valued continuation theorem on the
+connected scalar-product double domain, supplied by the local real-environment
+overlap theorem and the adjacent scalar-domain continuation geometry.  The
+route is now unique and the supplier theorem surfaces are fixed, but the proof
+docs are not yet fully discharged until the remaining enlargement /
+cover-reaching supplier `sourceDoublePermutationGramDomain_adjacent_chain` is
+justified from the approved Hall-Wightman geometry.
+The detailed theorem-2 blueprint now splits that further into the scalar-domain
+reachability theorem `sourceAdjacentSeedCover_cover_doubleDomain` and reuse of
+mathlib's `IsConnected.biUnion_of_reflTransGen` for the connected-union step.
+It now also pins down the exact supporting theorem surfaces needed to make that
+usable in Lean: `sourceAdjacentSeedCover_eq_union`,
+`sourceAdjacentOverlapLabelSet`,
+`exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain`,
+`mem_sourceAdjacentSeedCover_of_mem_doubleDomain`, and
+`sourceAdjacentOverlapIndex_reflTransGen` on that active label set.  The
+step-1 realization input to this witness theorem is now fixed at the checked
+Lean surface `exists_sourceExtendedTube_realizations_of_mem_doubleDomain`.
+Permutation-side theorem surfaces should now be stated against the existing
+repo API of concrete swaps plus `BHW.Fin.Perm.adjSwap_induction`, not against
+an abstract adjacent-transposition predicate except at the normalization step.
+One more code-shape correction is now explicit: the final overlap object on
+this route cannot honestly remain parameter-free in `(d,n,π,i,hi)` alone,
+because it is built from a chosen Hall-Wightman local neighbourhood around the
+anchor Gram environment.  So the current production parameter-free overlap
+constant should be treated only as a placeholder surface.
+Active implementation detail: keep
+`sourceAdjacentPermutationGramOverlap` as the connected component around the
+real Gram environment inside the adjacent double scalar-product domain.  The
+seed-cover / chain layer is therefore not dead fallback bookkeeping; it is the
+honest internal route for reaching arbitrary points of the adjacent double
+domain unless a separate direct connectedness theorem is later proved.
+The final active overlap object is therefore the `overlap` field inside
+`SourceAdjacentOverlapWitness`; the old parameter-free
+`sourceAdjacentPermutationGramOverlap d n π i hi` remains only a placeholder
+surface in production Lean and should not be treated as the final theorem-2
+API.
+Also ruled out explicitly: do not identify that scalar double-domain with the
+Gram-map image of the vector-valued adjacent overlap domain unless a separate
+theorem proves common-configuration realizability.  The current scalar-domain
+definition is weaker than that.
+
+Current checked/unchecked boundary:
+
+1. checked in production Lean:
+   `sourceAnchor_compactBranchEq_pointwise_on_realPatch`,
+   `sourceScalarRepresentative_adjacent_seed_eq_on_environment`,
+   `sourceAdjacentPermutationGramOverlap_relOpen`,
+   `gramEnvironment_complexify_mem_adjacentOverlap`,
+   `permutedExtendF_holomorphicOn_sector_of_forwardTube_lorentz`;
+2. quarantined to proof docs:
+   `hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz`,
+   the three split scalar-overlap continuation obligations,
+   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
+   and the downstream PET branch-law / PET extension / sector single-valuedness
+   consumers.
 
 This is the source theorem itself, not a new wrapper.  It is also the point at
 which any source import would need the explicit `AGENT.md` axiom/source-import
@@ -1210,8 +1311,12 @@ The theorem-2 corollary of this section is therefore:
 3. any theorem-2 proof doc or Lean file that uses monodromy must first supply a
    valid extended-tube sector-fiber theorem; the archived common-forward-tube
    gallery does not supply one;
-4. the active proof doc should instead name the direct BHW single-valuedness
-   theorem and verify that it has no locality hypothesis.
+4. the active proof doc should instead name the lower-layer BHW/PET
+   single-valuedness theorem and verify that it has no locality hypothesis; in
+   Lean this is the selected-witness theorem
+   `bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData`, whose
+   remaining non-OS-field hypothesis is the explicit `hOrbit` PET
+   reachable-label/connectivity statement.
 
 Additional theorem-2 checkpoint note after local branch-pullback support:
 

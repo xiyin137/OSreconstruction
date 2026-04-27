@@ -3,6 +3,8 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 
 noncomputable section
 
+open Complex Topology
+
 namespace BHW
 
 variable {d n : ℕ} [NeZero d]
@@ -64,6 +66,93 @@ theorem os45CommonChart_real_mem_pulledRealBranchDomain_pair
         BHW.os45QuarterTurnConfig_reindexed_realBranch_eq
           (d := d) (n := n) τ ρ x
       exact hchart ▸ hmem'
-    simpa using hcommon
+    simpa [BHW.os45CommonChartCLE_apply] using hcommon
+
+/-- Convert a common-chart OS45 branch-difference envelope into the direct
+coordinate `AdjacentOSEOWDifferenceEnvelope` consumed by the real-edge
+distributional equality theorem.
+
+The hard EOW/common-boundary construction is deliberately an input here.  This
+lemma only performs the checked coordinate pullback through the common chart and
+packages the resulting direct Wick and real traces. -/
+def adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (V : Set (NPointDomain d n))
+    (ρ : Equiv.Perm (Fin n))
+    (Uc : Set (Fin n → Fin (d + 1) → ℂ))
+    (Hc : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hUc_open : IsOpen Uc)
+    (hUc_conn : IsConnected Uc)
+    (hHc_holo : DifferentiableOn ℂ Hc Uc)
+    (hwick_mem :
+      ∀ x ∈ V,
+        os45CommonChartCLE (d := d) (n := n) ρ
+          (fun k => wickRotatePoint (x k)) ∈ Uc)
+    (hreal_mem :
+      ∀ x ∈ V,
+        os45CommonChartCLE (d := d) (n := n) ρ
+          (BHW.realEmbed x) ∈ Uc)
+    (hwick_trace :
+      ∀ x ∈ V,
+        Hc (os45CommonChartCLE (d := d) (n := n) ρ
+          (fun k => wickRotatePoint (x k))) =
+          bvt_F OS lgc n
+            (fun k => wickRotatePoint
+              (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)))
+    (hreal_trace :
+      ∀ x ∈ V,
+        Hc (os45CommonChartCLE (d := d) (n := n) ρ
+          (BHW.realEmbed x)) =
+          BHW.extendF (bvt_F OS lgc n)
+            (BHW.realEmbed
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) -
+          BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)) :
+    AdjacentOSEOWDifferenceEnvelope (d := d) OS lgc n
+      (Equiv.swap i ⟨i.val + 1, hi⟩) V := by
+  let Qρe := os45CommonChartCLE (d := d) (n := n) ρ
+  let U : Set (Fin n → Fin (d + 1) → ℂ) := Qρe ⁻¹' Uc
+  let H : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z => Hc (Qρe z)
+  have hU_open : IsOpen U := by
+    exact hUc_open.preimage Qρe.continuous
+  have hU_eq : U = Qρe.symm '' Uc := by
+    ext z
+    constructor
+    · intro hz
+      refine ⟨Qρe z, hz, ?_⟩
+      exact Qρe.symm_apply_apply z
+    · rintro ⟨w, hw, rfl⟩
+      have hq : Qρe (Qρe.symm w) = w := Qρe.apply_symm_apply w
+      simpa [U, hq] using hw
+  have hU_conn : IsConnected U := by
+    rw [hU_eq]
+    exact hUc_conn.image Qρe.symm Qρe.symm.continuous.continuousOn
+  have hH_holo : DifferentiableOn ℂ H U := by
+    intro z hz
+    exact (hHc_holo (Qρe z) hz).comp z
+      Qρe.differentiableAt.differentiableWithinAt
+      (by
+        intro y hy
+        exact hy)
+  refine
+    { U := U
+      U_open := hU_open
+      U_connected := hU_conn
+      H := H
+      H_holo := hH_holo
+      wick_mem := ?wick_mem
+      real_mem := ?real_mem
+      wick_diff := ?wick_diff
+      real_diff := ?real_diff }
+  · intro x hx
+    exact hwick_mem x hx
+  · intro x hx
+    exact hreal_mem x hx
+  · intro x hx
+    simpa [H, Qρe] using hwick_trace x hx
+  · intro x hx
+    simpa [H, Qρe] using hreal_trace x hx
 
 end BHW
