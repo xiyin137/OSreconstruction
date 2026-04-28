@@ -328,6 +328,7 @@ Source ledger for the internal helper list:
 | `exists_localRudinIntegrand_smulLeftCLM_clmFamily` | Checked in `SCV/LocalDistributionalEOW.lean`: for fixed `w` and cutoff `χ`, constructs the real-linear CLM family in the Rudin circle parameter.  Positive angles use the plus side value CLM precomposed with cutoff multiplication, negative angles use the minus side value CLM, and boundary angles are zero.  Pointwise boundedness is obtained from the checked compact bound for the continuous local EOW integrand. |
 | `exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value` | Checked in `SCV/LocalDistributionalEOW.lean`: for each coordinate-ball point `w`, the actual cutoff envelope value `ψ ↦ localRudinEnvelope ... (χ • ψ) w` is bounded by one finite Schwartz seminorm.  This is the quantitative endpoint estimate needed for `SchwartzMap.mkCLMtoNormedSpace`. |
 | `regularizedEnvelope_valueCLM_of_cutoff` | Checked in `SCV/LocalDistributionalEOW.lean`: for each coordinate-ball point `w`, constructs the complex continuous linear functional `Lw` represented by `ψ ↦ localRudinEnvelope ... (χ • ψ) w`.  The proof uses the finite seminorm bound plus checked additivity and complex homogeneity of the fixed-window family. |
+| `regularizedLocalEOW_originalFamily_compactValueCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: chooses the checked per-point value CLMs over a compact chart window and proves one common finite Schwartz-seminorm bound by Banach-Steinhaus over the closed-ball subtype.  Pointwise boundedness comes from a single `exists_bound_localRudinIntegrand` application for each fixed cutoff test, uniformly over the full `δ / 2` Rudin ball. |
 | `integrable_realMollifyLocal_integrand_of_translate_margin` | Checked in `SCV/LocalDistributionalEOW.lean`: compact kernel support plus local holomorphy/continuity on all real translates gives Bochner integrability of `t ↦ F (z + realEmbed t) * ψ t`.  This discharges the honest integrability hypothesis in `realMollifyLocal_add_of_integrable` on the side domains. |
 | `localRealMollify_commonContinuousBoundary_of_clm` | Checked extraction step: if the plus/minus slice CLMs converge pointwise to the same chart distribution and correctly evaluate the translated kernels appearing in `realMollifyLocal`, then the regularized plus/minus sides have the same continuous boundary value `x ↦ T (translateSchwartz (-x) ψ)`.  The remaining hard input is constructing these slice CLMs from the OS-II distributional boundary-value hypotheses, not assuming common continuous boundary. |
 | `realMollifyLocal_translateSchwartz` | Checked in `SCV/LocalDistributionalEOW.lean`: translating the real smoothing kernel by `a` is exactly the same as evaluating the original real mollifier at `z - realEmbed a`.  This is the change-of-variables input for the fixed-window family covariance proof. |
@@ -3982,9 +3983,10 @@ Proof transcript for the next target:
    surfaces must be proved in this order.  These are not wrappers: together
    they are exactly the functional-analytic content needed to turn the local
    family `Gchart` into one mixed Schwartz continuous linear functional.  The
-   cutoff helpers and the full partial-evaluation CLM/apply/tensor/seminorm
-   package are already checked; the next unchecked helper is
-   `regularizedLocalEOW_originalFamily_compactValueCLM`.
+   cutoff helpers, the full partial-evaluation CLM/apply/tensor/seminorm
+   package, and the compact original-family value-CLM bound are already
+   checked; the next unchecked helper is
+   `regularizedLocalEOW_chartKernelFamily_valueCLM`.
 
    ```lean
    theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
@@ -4033,8 +4035,17 @@ Proof transcript for the next target:
                  (ComplexChartSpace m × (Fin m -> ℝ)) ℂ) F
 
    theorem regularizedLocalEOW_originalFamily_compactValueCLM
-       -- same fixed-window hypotheses as `regularizedEnvelope_valueCLM_of_cutoff`
-       -- with an original-edge cutoff `χψ`
+       -- copy the exact parameter block of the checked theorem
+       -- `regularizedEnvelope_valueCLM_of_cutoff`:
+       --   `{Cplus Cminus : Set (Fin m -> ℝ)} {rLarge ρ r δ : ℝ}`,
+       --   `hm`, `Ωplus`, `Ωminus`, `Dplus`, `Dminus`, `E`,
+       --   all openness hypotheses including `hE_open`,
+       --   `Fplus`, `Fminus`, their differentiability hypotheses,
+       --   closed support-margin hypotheses, `hDplus_sub`, `hDminus_sub`,
+       --   `Tplus`, `Tminus`, `Tchart`, evaluation and limit hypotheses,
+       --   `x0`, `ys`, `hδ`, `hδρ`, `hδsum`, `hE_mem`,
+       --   `hplus`, `hminus`, and the original-edge cutoff
+       --   `χψ` with `hχψ_support`.
        (Rcut : ℝ)
        (hRcut_window :
          Metric.closedBall (0 : ComplexChartSpace m) Rcut ⊆
@@ -4101,17 +4112,51 @@ Proof transcript for the next target:
      `s' = s` and `C = 1`; the hypotheses `z ∈ closedBall 0 R` and `0 ≤ R`
      are retained only for the downstream compact-family API.  No
      Banach-Steinhaus input is used here.
-   * `regularizedLocalEOW_originalFamily_compactValueCLM` is the compact
-     version of `regularizedEnvelope_valueCLM_of_cutoff`.  For each `z`, use
-     the existing pointwise CLM.  For the single finite-seminorm bound on
-     `closedBall 0 Rcut`, index the Rudin-circle CLM family by
-     `z ∈ closedBall 0 Rcut` and `θ ∈ Set.uIoc (-Real.pi) Real.pi`; the
-     checked `exists_bound_localRudinIntegrand` already supplies pointwise
-     boundedness uniformly in `z` over the full `δ / 2` ball.  Apply the same
-     Banach-Steinhaus theorem used in
-     `exists_schwartz_bound_normalized_intervalIntegral_clm_family`, then
-     integrate over `θ`.  This is the step that prevents a hidden
-     pointwise-continuity-to-continuity gap in the mixed `K`.
+   * `regularizedLocalEOW_originalFamily_compactValueCLM` is checked as the
+     compact version of `regularizedEnvelope_valueCLM_of_cutoff`.  Its proof
+     not rebuild the circle-parameter CLM from scratch.  Define the total
+     family
+     ```
+     L z =
+       if hz : z ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2) then
+         (regularizedEnvelope_valueCLM_of_cutoff ... z hz).choose
+       else
+         0
+     ```
+     using the same original-edge cutoff `χψ`.  On
+     `z ∈ Metric.closedBall 0 Rcut`, the hypothesis
+     `closedBall 0 Rcut ⊆ ball 0 (δ / 2)` supplies `hz`, and
+     `.choose_spec` gives the exact value identity
+     `L z η = localRudinEnvelope δ x0 ys
+       (realMollifyLocal Fplus (χψ • η))
+       (realMollifyLocal Fminus (χψ • η)) z`.
+
+     For the single finite-seminorm bound, index Banach-Steinhaus by the
+     compact-window subtype
+     `Zcut := {z // z ∈ Metric.closedBall (0 : ComplexChartSpace m) Rcut}`
+     and the real-linear family `z ↦ (L z).restrictScalars ℝ`.  For each fixed
+     test `η`, let `ηχ := χψ • η`.  The support lemma
+     `KernelSupportWithin.smulLeftCLM_of_leftSupport hχψ_support η` gives
+     `KernelSupportWithin ηχ rLarge`; hence `ηχ` has compact support and the
+     existing side-margin, side-holomorphy, and common-boundary proofs used in
+     `exists_localRudinIntegrand_smulLeftCLM_clmFamily` apply verbatim.
+     Applying `exists_bound_localRudinIntegrand` once to this fixed `ηχ`
+     gives a constant `Mη` that bounds the Rudin integrand for every
+     `w ∈ ball 0 (δ / 2)` and every circle parameter `θ`.  Therefore every
+     `z : Zcut` satisfies
+     ```
+     ‖L z η‖ ≤ ‖((2 * Real.pi)⁻¹ : ℝ)‖ *
+       ((max Mη 0) * |Real.pi - (-Real.pi)|).
+     ```
+     This proves pointwise boundedness of the family `z ↦ L z` on each fixed
+     test `η`.  Apply
+     `SchwartzMap.tempered_uniform_schwartz_bound` to the subtype-indexed
+     real-linear family, convert the resulting real Schwartz seminorm
+     supremum to the complex one by the same `sup_apply_real_eq_complex`
+     induction used in
+     `exists_schwartz_bound_normalized_intervalIntegral_clm_family`, and return
+     the common finite set and constant.  This is the step that prevents a
+     hidden pointwise-continuity-to-continuity gap in the mixed `K`.
 
    The theorem package is:
 
@@ -4441,11 +4486,11 @@ Proof transcript for the next target:
    2b. `schwartzPartialEval₁CLM_compactSeminormBound`: checked; the compact
        finite-seminorm estimate for `z ∈ closedBall 0 Rcut`, with exact
        witnesses `s' = s` and `C = 1`.
-   3. `regularizedLocalEOW_originalFamily_compactValueCLM`: next target; the compact
+   3. `regularizedLocalEOW_originalFamily_compactValueCLM`: checked; the compact
       uniform version of `regularizedEnvelope_valueCLM_of_cutoff` on
       `closedBall 0 Rcut`, with one finite Schwartz seminorm bound for all
       `z` in the compact chart support.
-   4. `regularizedLocalEOW_chartKernelFamily_valueCLM`: define
+   4. `regularizedLocalEOW_chartKernelFamily_valueCLM`: next target; define
       `Lchart z = Lorig z ∘ localEOWRealLinearKernelPushforwardCLM ys hli ∘
       (χr • ·)`.  On `KernelSupportWithin ψ r`, remove the chart cutoff, the
       pushed original-edge cutoff, and obtain `Lchart z ψ = Gchart ψ z`.
