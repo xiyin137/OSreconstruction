@@ -4429,9 +4429,27 @@ Proof transcript for the next target:
          (Metric.closedBall (0 : ComplexChartSpace m) Rcut)
    ```
 
-   Proof transcript for this continuity helper:
+   Proof transcript for this continuity helper.  This theorem should not be
+   implemented as one monolithic proof; the Lean-ready route is the following
+   four-helper stack.
 
-   1. First record the pointwise formula for the varying cutoff kernel.  For
+   1. First prove continuity of the actual varying cutoff kernel:
+      ```lean
+      theorem continuous_chartKernelCutoffSlice
+          (F : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ) :
+          let P := localEOWRealLinearKernelPushforwardCLM ys hli
+          Continuous fun z : ComplexChartSpace m =>
+            SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m -> ℝ) -> ℂ)
+              (P (SchwartzMap.smulLeftCLM ℂ
+                (χr : (Fin m -> ℝ) -> ℂ)
+                (schwartzPartialEval₁CLM z F)))
+      ```
+      This is a pure composition of
+      `continuous_schwartzPartialEval₁CLM F` with the continuous linear maps
+      `χr • ·`, `localEOWRealLinearKernelPushforwardCLM ys hli`, and
+      `χψ • ·`.
+
+      Also record the pointwise formula.  For
       `z : ComplexChartSpace m` and `y : Fin m -> ℝ`,
       ```
       η z y =
@@ -4445,33 +4463,122 @@ Proof transcript for the next target:
       `SchwartzMap.smulLeftCLM_apply_apply`, and
       `schwartzPartialEval₁CLM_apply`.  The right-hand side is continuous in
       `(z,y)`.
-   2. The original-edge cutoff controls support uniformly:
+
+   2. Prove a reusable varying-kernel real-mollifier continuity lemma:
+      ```lean
+      theorem continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport
+          {X : Type*} [TopologicalSpace X]
+          [FirstCountableTopology X] [LocallyCompactSpace X]
+          (S : Set X) (K : Set (Fin m -> ℝ))
+          (Fside : ComplexChartSpace m -> ℂ)
+          (Ω : Set (ComplexChartSpace m))
+          (w : X -> ComplexChartSpace m)
+          (η : X -> SchwartzMap (Fin m -> ℝ) ℂ)
+          (hK : IsCompact K)
+          (hFside_cont : ContinuousOn Fside Ω)
+          (hw_cont : ContinuousOn w S)
+          (hη_eval_cont :
+            ContinuousOn
+              (fun p : X × (Fin m -> ℝ) => η p.1 p.2)
+              (S ×ˢ Set.univ))
+          (hη_zero : ∀ q ∈ S, ∀ t ∉ K, η q t = 0)
+          (hmargin : ∀ q ∈ S, ∀ t ∈ K,
+            w q + realEmbed t ∈ Ω) :
+          ContinuousOn
+            (fun q => realMollifyLocal Fside (η q) (w q)) S
+      ```
+      Its proof is exactly the checked
+      `continuousOn_realMollifyLocal_of_translate_margin`, but with parameter
+      space `X` and variable kernel.  Let
+      `f q t = Fside (w q + realEmbed t) * η q t`; prove
+      `ContinuousOn f.uncurry (S ×ˢ Set.univ)` by `hFside_cont`, `hw_cont`,
+      continuity of `realEmbed`, and `hη_eval_cont`; prove `f q t = 0`
+      outside the fixed compact `K` by `hη_zero`; then apply mathlib's
+      checked `MeasureTheory.continuousOn_integral_of_compact_support`.
+
+      For the chart-kernel slice, take `K = tsupport χψ`.  The support is
+      compact because `χψ` is Schwartz with compact support, and
       `KernelSupportWithin (η z) rψLarge` follows from
       `KernelSupportWithin.smulLeftCLM_of_leftSupport hχψ_support _`.  Thus
       every real-mollifier integral may be restricted to the compact
       `closedBall 0 rψLarge`, and the fixed-window side-margin hypotheses keep
       all translated points inside `Ωplus` or `Ωminus`.
-   3. For each side and each Rudin circle parameter, unfold
-      `realMollifyLocal` and use
-      `MeasureTheory.continuous_parametric_integral_of_continuous` on the
-      compact real ball.  The parameter is the pair consisting of the outer
-      chart variable and the current Rudin arc point; the integrand is the
-      continuous function
-      `Fside (w + realEmbed y) * η z y` on the compact support ball.
-   4. For the circle integral, use the same endpoint split as
-      `continuousAt_localRudinIntegral_of_bound`: positive angles use the plus
-      side, negative angles use the minus side, and the endpoint values are
-      controlled by the common boundary CLM.  The boundary term is continuous
-      in `z` because `z ↦ schwartzPartialEval₁CLM z F` is continuous by
-      `continuous_schwartzPartialEval₁CLM`, the cutoff maps
-      `χr • ·`, `localEOWRealLinearKernelPushforwardCLM ys hli`, and `χψ • ·`
-      are continuous linear maps on Schwartz space, and `Tchart` is a
-      continuous linear functional.  The compact product of
-      `closedBall 0 Rcut`, `closedBall 0 rψLarge`, and `[-π,π]` supplies a
-      single dominating bound; apply
-      `intervalIntegral.continuousAt_of_dominated_interval` exactly as in the
-      checked local Rudin continuity proof.
-   5. Multiplication by the fixed Schwartz cutoff `χU` preserves continuity on
+
+   3. Prove the missing uniform bound as a parametric version of the checked
+      compact-bound theorem:
+      ```lean
+      theorem exists_bound_localRudinIntegrand_varyingKernel
+          (Z : Set (ComplexChartSpace m))
+          (η : ComplexChartSpace m -> SchwartzMap (Fin m -> ℝ) ℂ)
+          (hZ_compact : IsCompact Z)
+          (hη_cont : ContinuousOn η Z)
+          (hη_support : ∀ z ∈ Z, KernelSupportWithin (η z) rψLarge)
+          -- fixed-window side holomorphy, side margins, and common-boundary
+          -- CLM hypotheses from `regularizedLocalEOW_family_from_fixedWindow`
+          :
+          ∃ M : ℝ, ∀ z ∈ Z, ∀ θ : ℝ,
+            ‖localRudinIntegrand δ x0 ys
+              (realMollifyLocal Fplus (η z))
+              (realMollifyLocal Fminus (η z)) z θ‖ ≤ M
+      ```
+      This is not a compactness handwave.  Its proof copies the checked
+      `exists_bound_localRudinIntegrand` construction with one extra compact
+      parameter `z ∈ Z`: replace the compact set
+      `closedBall 0 (δ/2) × sphere 0 1` by
+      `Z ×ˢ closedBall 0 (δ/2) ×ˢ sphere 0 1`.  On positive and negative
+      arcs, use the varying-kernel real-mollifier continuity lemma above.  On
+      the real boundary of the Rudin circle, the boundary branch is
+      `Tchart (translateSchwartz (-u) (η z))`; it is continuous in `(z,u)`
+      because `hη_cont`, real-kernel translation continuity, and `Tchart` are
+      continuous.  The same continuous patching argument as the checked bound
+      theorem then gives one `M` for the whole compact parameter product.
+
+   4. Prove a varying-kernel Rudin-envelope continuity theorem:
+      ```lean
+      theorem continuousOn_localRudinEnvelope_varyingKernel_of_bound
+          (Z : Set (ComplexChartSpace m))
+          (η : ComplexChartSpace m -> SchwartzMap (Fin m -> ℝ) ℂ)
+          (hside_plus :
+            ∀ θ, 0 < Real.sin θ ->
+              ContinuousOn
+                (fun z => realMollifyLocal Fplus (η z)
+                  (localEOWChart x0 ys
+                    (localEOWSmp δ z
+                      (Complex.exp ((θ : ℂ) * Complex.I))))) Z)
+          (hside_minus :
+            ∀ θ, Real.sin θ < 0 ->
+              ContinuousOn
+                (fun z => realMollifyLocal Fminus (η z)
+                  (localEOWChart x0 ys
+                    (localEOWSmp δ z
+                      (Complex.exp ((θ : ℂ) * Complex.I))))) Z)
+          (M : ℝ)
+          (hM : ∀ z ∈ Z, ∀ θ,
+            ‖localRudinIntegrand δ x0 ys
+              (realMollifyLocal Fplus (η z))
+              (realMollifyLocal Fminus (η z)) z θ‖ ≤ M) :
+          ContinuousOn
+            (fun z =>
+              localRudinEnvelope δ x0 ys
+                (realMollifyLocal Fplus (η z))
+                (realMollifyLocal Fminus (η z)) z) Z
+      ```
+      The proof is the same dominated interval argument as
+      `continuousAt_localRudinIntegral_of_bound`, but the parameter is now the
+      outer chart point `z`.  For a fixed `θ`, positive/negative sine cases
+      use `hside_plus`/`hside_minus`; the zero-sine case is identically `0`.
+      The bound `hM` supplies the domination for
+      `intervalIntegral.continuousWithinAt_of_dominated_interval`, and the
+      final normalized envelope is a fixed real scalar multiple of the Rudin
+      integral.
+
+   5. Instantiate these helpers with
+      `Z = Metric.closedBall (0 : ComplexChartSpace m) Rcut` and
+      `η z = χψ • P (χr • schwartzPartialEval₁CLM z F)`.  The side-arc maps
+      for step 4 are supplied by step 2 with parameter space
+      `X = Z`, `w z = localEOWChart x0 ys (localEOWSmp δ z e^{iθ})`, and the
+      fixed-window side-margin hypotheses.  Then multiplication by the fixed
+      Schwartz cutoff `χU` preserves continuity on
       the closed ball.  Since `tsupport χU ⊆ closedBall 0 Rcut`, the eventual
       integral over all chart space is the same as the set integral over this
       compact ball.
@@ -4943,7 +5050,11 @@ Proof transcript for the next target:
       chosen original identity radius `rψ`, remove the original-edge cutoff,
       and obtain `Lchart z ψ = Gchart ψ z`.  Its common finite-seminorm bound
       is the compact `Lorig` bound composed with the helper in 4a.
-   5a. `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
+   5a. `continuous_chartKernelCutoffSlice`,
+       `continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport`,
+       `exists_bound_localRudinIntegrand_varyingKernel`,
+       `continuousOn_localRudinEnvelope_varyingKernel_of_bound`, and then
+       `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
        defining the mixed integral, prove continuity of the actual cutoff
        envelope integrand
        `z ↦ χU z * Gorig (χψ • P (χr • schwartzPartialEval₁CLM z F)) z`
