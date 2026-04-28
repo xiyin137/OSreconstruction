@@ -989,11 +989,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       transverse holomorphic functions, and the naive polynomial-correction
       shortcut is false.
    6. At a real edge point `x0 ∈ E`, choose cone-basis vectors
-      `ys : Fin m -> Fin m -> ℝ` with `ys j ∈ C` and linearly independent.
-      Pull the edge to an axis box `B` by
-      `u ↦ x0 + Σ j, u j • ys j`; shrink `B` so its closed box maps into `E`.
-      The positive and negative chart polywedges are
-      `B + i(0,δ)^m` and `B - i(0,δ)^m`.
+      `ys : Fin m -> Fin m -> ℝ` with `ys j ∈ C`; the eventual distribution
+      pullback still needs a real linear chart, but the immediate
+      neighborhood-containment step only uses continuity of
+      `localEOWRealChart x0 ys`.  The checked local target is
+      `SCV.localEOWRealChart_closedBall_subset`: choose `ρ > 0` with
+      `Metric.closedBall 0 ρ` mapped into `E`.  The positive and negative chart
+      polywedges over the inner ball are then fed to
+      `SCV.localEOWChart_twoSided_polywedge_mem`.
    7. Pull `Fplus`, `Fminus`, and the common distribution `T` back to this
       chart.  The distribution pullback must include the determinant/Jacobian
       factor of the real linear chart.  Apply the local wedge hypothesis and
@@ -1002,9 +1005,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `N0` valid for both signs.
    8. Choose nested chart boxes `B0 ⋐ B1 ⋐ Echart` and a support radius
       `rψ > 0` so `u ∈ B0` and `t ∈ closedBall 0 rψ` imply `u + t ∈ B1`.
-      Shrink the positive and negative polywedges over `B0` so every real
-      translate by such `t` remains inside the corresponding large local wedge
-      over `B1`.
+      The checked closed-ball version is
+      `SCV.localEOW_closedBall_support_margin`: from `ρ > 0`, take
+      `B0 = Metric.closedBall 0 (ρ/2)`, `B1 = Metric.closedBall 0 ρ`, and
+      `rψ = ρ/2`.  Shrink the positive and negative polywedges over `B0` so
+      every real translate by such `t` remains inside the corresponding large
+      local wedge over `B1`.
    9. For each compactly supported Schwartz kernel `ψ` with
       `tsupport ψ ⊆ closedBall 0 rψ`, form the real-direction regularizations
       `Fplusψ z = ∫ t, FplusChart (z + realEmbed t) * ψ t` and
@@ -1532,7 +1538,14 @@ Implementation-readiness gate for the next Lean stage:
   recovery endpoint is
   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`; the remaining
   theorem-2 work is the upstream supplier data that feed it.
-* The next QFT-free SCV theorem to prove is
+* The next QFT-free SCV stage is the local continuous-EOW geometry supplier,
+  culminating in `SCV.local_continuous_edge_of_the_wedge_envelope`.  The
+  immediate checked support targets for that stage are
+  `SCV.localEOWRealChart_closedBall_subset` and
+  `SCV.localEOW_closedBall_support_margin`, followed by the local Rudin-map
+  sign, size, and chart-entry lemmas `SCV.localEOWSmp_*` and
+  `SCV.localEOWChart_smp_*`.
+* After the local continuous envelope exists, prove
   `SCV.regularizedLocalEOW_productKernel_from_continuousEOW` in
   `SCV/LocalDistributionalEOW.lean`.  Its output fields must be exactly the
   hypotheses of `regularizedEnvelope_chartEnvelope_from_productKernel`:
@@ -1554,27 +1567,72 @@ Current implementation order:
 
 1. finish the pure-SCV theorem package needed by Slot 1, reading the checked
    declaration ledger literally.  The checked substrate is now:
-	   `SCV.complexTranslateSchwartz`, `SCV.schwartzTensorProduct₂`,
-	   `SCV.realConvolutionTest`,
-	   `SCV.translationCovariantProductKernel_descends`,
-	   `SCV.distributionalHolomorphic_regular`,
-	   `SCV.localEOWCoefficientSimplex`,
-	   `SCV.localEOWSimplexDirections`,
-	   `SCV.isCompact_localEOWCoefficientSimplex`,
-	   `SCV.isCompact_localEOWSimplexDirections`,
-	   `SCV.localEOWRealChart`,
-	   `SCV.localEOWChart`,
-	   `SCV.continuous_localEOWRealChart`,
-	   `SCV.isCompact_localEOWRealChart_image`,
-	   `SCV.localEOWChart_real_imag`,
-	   `SCV.localEOWSimplexDirections_subset_cone`,
-	   `SCV.localEOW_positive_imag_normalized_mem_simplex`,
-	   `SCV.localEOW_chart_positive_polywedge_mem`,
-	   `SCV.localEOW_chart_negative_polywedge_mem`,
-	   `SCV.localEOW_chart_twoSided_polywedge_mem`,
-	   `SCV.localEOWChart_twoSided_polywedge_mem`,
-	   `SCV.localRealMollifySide_holomorphicOn_of_translate_margin`,
-	   `SCV.localRealMollify_commonContinuousBoundary_of_clm`,
+   `SCV.complexTranslateSchwartz`, `SCV.schwartzTensorProduct₂`,
+   `SCV.realConvolutionTest`,
+   `SCV.translationCovariantProductKernel_descends`,
+   `SCV.distributionalHolomorphic_regular`,
+   `SCV.localEOWCoefficientSimplex`,
+   `SCV.localEOWSimplexDirections`,
+   `SCV.isCompact_localEOWCoefficientSimplex`,
+   `SCV.isCompact_localEOWSimplexDirections`,
+   `SCV.localEOWRealChart`,
+   `SCV.localEOWChart`,
+   `SCV.continuous_localEOWRealChart`,
+   `SCV.localEOWChart_zero`,
+   `SCV.differentiable_localEOWChart`,
+   `SCV.continuous_localEOWChart`,
+   `SCV.localEOWChart_im`,
+   `SCV.localEOWChart_real`,
+   `SCV.localEOWChart_conj`,
+   `SCV.localEOWChart_affine_real_combo`,
+   `SCV.localEOWChart_inverse_conj`,
+   `SCV.localEOWChart_equiv`,
+   `SCV.localEOWChart_inverse_ball_geometry`,
+   `SCV.isCompact_localEOWRealChart_image`,
+   `SCV.localEOWRealChart_closedBall_subset`,
+   `SCV.localEOW_closedBall_support_margin`,
+   `SCV.localEOWSmp`,
+   `SCV.localEOWSmp_zero`,
+   `SCV.localEOWSmp_im_pos_of_real`,
+   `SCV.localEOWSmp_im_neg_of_real`,
+   `SCV.localEOWSmp_norm_le_extended`,
+   `SCV.localEOWSmp_norm_le_extended_of_closedBall`,
+   `SCV.localEOWSmp_div_norm_lt_one_of_closedBall`,
+   `SCV.localEOWSmp_im_zero_of_unit_real`,
+   `SCV.localEOWChart_smp_realEdge_eq_of_unit_real`,
+   `SCV.continuous_localEOWSmp_theta`,
+   `SCV.localEOWSmp_im_zero_of_real`,
+   `SCV.localEOWChart_smp_realEdge_eq_of_real`,
+   `SCV.continuousAt_localEOWSmp_of_norm_lt_two`,
+   `SCV.continuousAt_localEOWChart_smp_of_norm_lt_two`,
+   `SCV.differentiableAt_localEOWSmp_of_real`,
+   `SCV.differentiableAt_localEOWChart_smp_of_real`,
+   `SCV.differentiableOn_localEOWChart_smp_upperHalfPlane_of_real`,
+   `SCV.differentiableOn_localEOWChart_smp_lowerHalfPlane_of_real`,
+   `SCV.tendsto_localEOWChart_smp_upperHalfPlane_to_realEdge`,
+   `SCV.tendsto_localEOWChart_smp_lowerHalfPlane_to_realEdge`,
+   `SCV.continuousAt_localEOWRealChart_smp_re_of_norm_lt_two`,
+   `SCV.continuousAt_localEOWBoundaryValue_smp`,
+   `SCV.differentiableOn_localEOWUpperBranch_smp_of_real`,
+   `SCV.differentiableOn_localEOWLowerBranch_smp_of_real`,
+   `SCV.tendsto_localEOWUpperBranch_smp_to_boundaryValue`,
+   `SCV.tendsto_localEOWLowerBranch_smp_to_boundaryValue`,
+   `SCV.local_rudin_mean_value_real`,
+   `SCV.localEOWSmp_re_mem_closedBall`,
+   `SCV.exists_localEOWSmp_delta`,
+   `SCV.localEOWChart_smp_upper_mem_of_delta`,
+   `SCV.localEOWChart_smp_lower_mem_of_delta`,
+   `SCV.exists_localEOWChart_smp_delta`,
+   `SCV.localEOWChart_real_imag`,
+   `SCV.localEOWSimplexDirections_subset_cone`,
+   `SCV.localEOW_positive_imag_normalized_mem_simplex`,
+   `SCV.localEOW_chart_positive_polywedge_mem`,
+   `SCV.localEOW_chart_negative_polywedge_mem`,
+   `SCV.localEOW_chart_twoSided_polywedge_mem`,
+   `SCV.localEOWChart_twoSided_polywedge_mem`,
+   `SCV.local_edge_of_the_wedge_1d`,
+   `SCV.localRealMollifySide_holomorphicOn_of_translate_margin`,
+   `SCV.localRealMollify_commonContinuousBoundary_of_clm`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero`,
    `SCV.translationCovariantKernel_distributionalHolomorphic`,
    `SCV.regularizedEnvelope_holomorphicDistribution_from_productKernel`,

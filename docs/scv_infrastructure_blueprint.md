@@ -282,16 +282,52 @@ Its proof is a localization of the existing `TubeDomainExtension.lean` proof:
 1. For `m = 0`, use `hC_ne` and `hC_not_zero` as in the global theorem.
 2. For `0 < m`, choose linearly independent `ys : Fin m -> Fin m -> ℝ` in the
    open cone `C` using `open_set_contains_basis`.
-3. Define the same affine holomorphic chart
-   `Phi x0 ys w = realEmbed x0 + Σ j, w j • ys j`.
-4. Replace the global lemmas `Phi_pos_in_tube` / `Phi_neg_in_tube` by local
-   compact-subcone lemmas: for each sufficiently small polydisc around `0`,
-   all directions of the form `Σ j, a_j • ys j` with `a_j ≥ 0` and not all zero,
-   after normalization, lie in the compact simplex image
-   `simplexDirectionCompact ys ⊆ C`; `hlocal_wedge` then supplies a radius
-   making `Phi x0 ys w ∈ Ωplus` when all `0 < (w j).im`, and
-   `Phi x0 ys w ∈ Ωminus` when all `(w j).im < 0`.
-5. Reuse the checked Cauchy-polydisc construction and patching pattern from
+3. Define the same affine holomorphic chart, using the checked public names
+   `localEOWRealChart x0 ys` and `localEOWChart x0 ys`.
+4. Choose `ρ > 0` by `localEOWRealChart_closedBall_subset`, so
+   `localEOWRealChart x0 ys '' closedBall 0 ρ ⊆ E`.
+5. Apply `localEOWChart_twoSided_polywedge_mem` to
+   `B = closedBall 0 ρ`, the compact simplex direction set, and the local
+   wedge hypothesis.  This returns one polywedge radius `r > 0` for both signs.
+6. Choose `δ > 0` by `exists_localEOWChart_smp_delta`.  This single `δ`
+   simultaneously guarantees:
+   - real-part control inside `closedBall 0 ρ`;
+   - upper chart membership for `localEOWSmp δ w l` when `0 < Im l`;
+   - lower chart membership when `Im l < 0`;
+   - the finite sum bound needed by the local polywedge radius.
+7. Use the checked Rudin transcript lemmas
+   `localEOWSmp_zero`, `continuous_localEOWSmp_theta`,
+   `localEOWSmp_im_zero_of_unit_real`,
+   `localEOWChart_smp_realEdge_eq_of_unit_real`,
+   `localEOWSmp_im_zero_of_real`,
+   `localEOWChart_smp_realEdge_eq_of_real`,
+   `continuousAt_localEOWSmp_of_norm_lt_two`, and
+   `continuousAt_localEOWChart_smp_of_norm_lt_two`, together with the
+   upper/lower half-plane differentiability lemmas
+   `differentiableOn_localEOWChart_smp_upperHalfPlane_of_real` and
+   `differentiableOn_localEOWChart_smp_lowerHalfPlane_of_real`, and the
+   upper/lower boundary-filter lemmas
+   `tendsto_localEOWChart_smp_upperHalfPlane_to_realEdge` and
+   `tendsto_localEOWChart_smp_lowerHalfPlane_to_realEdge`, in the
+   Cauchy/mean-value construction.  The unit-real lemmas handle the circle
+   boundary in the Cauchy integral; the arbitrary-real and `‖l‖ < 2` lemmas
+   handle the real interval in the one-variable boundary-value identity; the
+   half-plane differentiability lemmas supply the holomorphic one-variable
+   branches; and the boundary-filter lemmas transport the local wedge
+   boundary hypotheses to the real edge.  Together they are the local
+   replacements for the corresponding
+   private `smp_zero`, `smp_theta_continuous`, `hsmp_ca_real`,
+   `hgp_diff`/`hgm_diff`, `hgp_bv`/`hgm_bv`, and real-boundary facts inside
+   `rudin_orthant_extension` and `rudin_mean_value_real`.  The real-line
+   branch continuity needed by the `hbv_real` input is checked separately as
+   `continuousAt_localEOWRealChart_smp_re_of_norm_lt_two` and
+   `continuousAt_localEOWBoundaryValue_smp`.  The branch-level hypotheses for
+   applying the local one-variable EOW theorem are checked as
+   `differentiableOn_localEOWUpperBranch_smp_of_real`,
+   `differentiableOn_localEOWLowerBranch_smp_of_real`,
+   `tendsto_localEOWUpperBranch_smp_to_boundaryValue`, and
+   `tendsto_localEOWLowerBranch_smp_to_boundaryValue`.
+8. Reuse the checked Cauchy-polydisc construction and patching pattern from
    `local_eow_extension`, but with these local membership lemmas and the
    two `nhdsWithin (realEmbed x)` boundary hypotheses for `Ωplus` and
    `Ωminus`.
@@ -313,6 +349,58 @@ same seven geometric/analytic fields:
   (∀ z ∈ P ∩ Ωminus, F_loc z = Fminus z)
 ```
 
+The existing global `edge_of_the_wedge_1d` theorem is not by itself the right
+one-variable input for this local extraction: it assumes differentiability on
+the full upper and lower half-planes, whereas the local Rudin map is controlled
+only inside the disk
+`Metric.ball (((a + b) / 2 : ℝ) : ℂ) ((b - a) / 2)`.  The next checked
+one-variable theorem must therefore be local on that ball, while keeping the
+same boundary-value hypotheses on `(a,b)`.  Its production surface is:
+
+```lean
+theorem local_edge_of_the_wedge_1d
+    (a b : ℝ) (hab : a < b)
+    (f_plus f_minus : ℂ -> ℂ)
+    (hf_plus : DifferentiableOn ℂ f_plus
+      (Metric.ball (((a + b) / 2 : ℝ) : ℂ) ((b - a) / 2) ∩
+        EOW.UpperHalfPlane))
+    (hf_minus : DifferentiableOn ℂ f_minus
+      (Metric.ball (((a + b) / 2 : ℝ) : ℂ) ((b - a) / 2) ∩
+        EOW.LowerHalfPlane))
+    (hcont_plus : ∀ x : ℝ, a < x -> x < b ->
+      Filter.Tendsto f_plus
+        (nhdsWithin (x : ℂ) EOW.UpperHalfPlane) (nhds (f_plus x)))
+    (hcont_minus : ∀ x : ℝ, a < x -> x < b ->
+      Filter.Tendsto f_minus
+        (nhdsWithin (x : ℂ) EOW.LowerHalfPlane) (nhds (f_minus x)))
+    (hmatch : ∀ x : ℝ, a < x -> x < b -> f_plus x = f_minus x)
+    (hbv_cont : ∀ x0 : ℝ, a < x0 -> x0 < b ->
+      Filter.Tendsto f_plus
+        (nhdsWithin (x0 : ℂ) {c : ℂ | c.im = 0}) (nhds (f_plus x0))) :
+    ∃ (U : Set ℂ) (F : ℂ -> ℂ),
+      IsOpen U ∧ Convex ℝ U ∧
+      (∀ z ∈ U, starRingEnd ℂ z ∈ U) ∧
+      (∀ x : ℝ, a < x -> x < b -> (x : ℂ) ∈ U) ∧
+      DifferentiableOn ℂ F U ∧
+      (∀ z ∈ U ∩ EOW.UpperHalfPlane, F z = f_plus z) ∧
+      (∀ z ∈ U ∩ EOW.LowerHalfPlane, F z = f_minus z) ∧
+      Metric.ball (((a + b) / 2 : ℝ) : ℂ) ((b - a) / 2) ⊆ U
+```
+
+Lean proof transcript: define the glued function
+`F z = if z.im > 0 then f_plus z else if z.im < 0 then f_minus z else f_plus z`
+on the ball.  Continuity on real boundary points is exactly the same filter
+decomposition as in `edge_of_the_wedge_1d`, using `hcont_plus`,
+`hcont_minus`, `hmatch`, and `hbv_cont`; continuity off the real line uses the
+local differentiability hypotheses on
+`ball ∩ EOW.UpperHalfPlane` / `ball ∩ EOW.LowerHalfPlane`.  Holomorphy on the
+ball minus the real line is immediate from the same local differentiability
+hypotheses and eventual equality with the glued branch.  Then apply the
+already checked `differentiableOn_of_continuous_off_real_1d` theorem from
+`SeparatelyAnalytic.lean` to obtain holomorphy on the whole ball.  The output
+sets `U` to the same ball, so openness, convexity, conjugation stability,
+interval containment, and ball containment are direct.
+
 The local analogue of `local_extensions_consistent` should keep the same
 identity-theorem proof: if two local patches have a nonempty overlap, convexity
 and conjugation invariance put a real midpoint in the overlap, and
@@ -331,11 +419,12 @@ overlap.  This is the exact replacement for the current global
    property imply that every nonzero positive linear combination of the `ys j`
    lies in `C`.  This is the chart used by both local continuous EOW and the
    Streater-Wightman regularization construction.
-3. `localEOW_chart_real_box` localizes the real edge.  For each `x0 ∈ E` and
-   basis `ys`, pull `E` back by `u ↦ x0 + Σ j, u j • ys j`; because `E` is
-   open, choose an axis box `B = Π j (a j, b j)` around `0` whose closure maps
-   into `E`.  No global convexity of `E` is needed; all integration is done in
-   this local box.
+3. `localEOWRealChart_closedBall_subset` localizes the real edge.  For each
+   `x0 ∈ E` and basis `ys`, pull `E` back by
+   `u ↦ x0 + Σ j, u j • ys j`; because `E` is open, choose
+   `ρ > 0` such that the closed ball `closedBall 0 ρ` maps into `E`.
+   No global convexity of `E` is needed; all integration is done in this
+   local closed-ball window.
 4. `localEOW_chart_positive_polywedge_mem` proves that the chart
    `Phi x0 ys w = realEmbed x0 + Σ j, w j • complexify (ys j)` maps a small
    positive polywedge over `B` into `Ωplus` and the reflected negative
@@ -392,12 +481,12 @@ overlap.  This is the exact replacement for the current global
        (hlocal_wedge :
          ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
            ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-	             ∃ r : ℝ, 0 < r ∧
-	               ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
-	                 (fun a => (x a : ℂ) +
-	                   (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus)
-	       (hC_conv : Convex ℝ C)
-	       (ys : Fin m -> Fin m -> ℝ)
+             ∃ r : ℝ, 0 < r ∧
+               ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
+                 (fun a => (x a : ℂ) +
+                   (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Ωplus)
+       (hC_conv : Convex ℝ C)
+       (ys : Fin m -> Fin m -> ℝ)
        (hys_C : ∀ j, ys j ∈ C)
        (B : Set (Fin m -> ℝ))
        (hB_compact : IsCompact B)
@@ -422,8 +511,664 @@ overlap.  This is the exact replacement for the current global
    The common-radius two-sided version is also checked as
    `localEOW_chart_twoSided_polywedge_mem`.  This finite-dimensional geometry is
    now checked; it is not a wrapper around the global tube theorem.  The next
-   continuous-EOW step can directly use these membership lemmas inside the
-   public `local_eow_extension` proof pattern.
+   continuous-EOW step can use these membership lemmas while extracting/adapting
+   the `local_eow_extension` proof pattern.
+
+   The public affine-chart layer is checked under the following exact names:
+
+   ```lean
+   def localEOWRealChart
+       (x0 : Fin m -> ℝ)
+       (ys : Fin m -> Fin m -> ℝ) :
+       (Fin m -> ℝ) -> (Fin m -> ℝ)
+
+   def localEOWChart
+       (x0 : Fin m -> ℝ)
+       (ys : Fin m -> Fin m -> ℝ) :
+       (Fin m -> ℂ) -> (Fin m -> ℂ)
+
+   theorem continuous_localEOWRealChart
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ) :
+       Continuous (localEOWRealChart x0 ys)
+
+   theorem localEOWChart_zero
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ) :
+       localEOWChart x0 ys 0 = realEmbed x0
+
+   theorem differentiable_localEOWChart
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ) :
+       Differentiable ℂ (localEOWChart x0 ys)
+
+   theorem continuous_localEOWChart
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ) :
+       Continuous (localEOWChart x0 ys)
+
+   theorem localEOWChart_im
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (w : Fin m -> ℂ) (i : Fin m) :
+       (localEOWChart x0 ys w i).im = ∑ j, (w j).im * ys j i
+
+   theorem localEOWChart_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (t : Fin m -> ℝ) :
+       localEOWChart x0 ys (fun j => (t j : ℂ)) =
+         realEmbed (localEOWRealChart x0 ys t)
+
+   theorem localEOWChart_conj
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (w : Fin m -> ℂ) :
+       localEOWChart x0 ys (fun j => starRingEnd ℂ (w j)) =
+         fun i => starRingEnd ℂ (localEOWChart x0 ys w i)
+
+   theorem localEOWChart_affine_real_combo
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (w1 w2 : Fin m -> ℂ) (a b : ℝ) (hab : a + b = 1) :
+       localEOWChart x0 ys (a • w1 + b • w2) =
+         a • localEOWChart x0 ys w1 + b • localEOWChart x0 ys w2
+
+   theorem localEOWChart_inverse_conj
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (Φinv : (Fin m -> ℂ) -> (Fin m -> ℂ))
+       (hleft : ∀ w, Φinv (localEOWChart x0 ys w) = w)
+       (hright : ∀ z, localEOWChart x0 ys (Φinv z) = z)
+       (z : Fin m -> ℂ) :
+       Φinv (fun i => starRingEnd ℂ (z i)) =
+         fun j => starRingEnd ℂ (Φinv z j)
+
+   theorem localEOWChart_equiv
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hli : LinearIndependent ℝ ys) :
+       ∃ (Φinv : (Fin m -> ℂ) -> (Fin m -> ℂ)),
+         Differentiable ℂ Φinv ∧
+         (∀ w, Φinv (localEOWChart x0 ys w) = w) ∧
+         (∀ z, localEOWChart x0 ys (Φinv z) = z)
+
+   theorem localEOWChart_inverse_ball_geometry
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hρ : 0 < ρ)
+       (Φinv : (Fin m -> ℂ) -> (Fin m -> ℂ))
+       (hΦinv_diff : Differentiable ℂ Φinv)
+       (hleft : ∀ w, Φinv (localEOWChart x0 ys w) = w)
+       (hright : ∀ z, localEOWChart x0 ys (Φinv z) = z) :
+       IsOpen (Φinv ⁻¹' Metric.ball (0 : Fin m -> ℂ) ρ) ∧
+       Convex ℝ (Φinv ⁻¹' Metric.ball (0 : Fin m -> ℂ) ρ) ∧
+       (∀ z ∈ Φinv ⁻¹' Metric.ball (0 : Fin m -> ℂ) ρ,
+         (fun i => starRingEnd ℂ (z i)) ∈
+           Φinv ⁻¹' Metric.ball (0 : Fin m -> ℂ) ρ) ∧
+       realEmbed x0 ∈ Φinv ⁻¹' Metric.ball (0 : Fin m -> ℂ) ρ
+
+   theorem localEOWChart_real_imag
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (u v : Fin m -> ℝ) :
+       localEOWChart x0 ys
+         (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) =
+         fun a => (localEOWRealChart x0 ys u a : ℂ) +
+           (∑ j, (v j : ℂ) * (ys j a : ℂ)) * Complex.I
+
+   theorem localEOWChart_twoSided_polywedge_mem
+       ... :
+       ∃ r : ℝ, 0 < r ∧
+         (∀ u ∈ B, ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j -> (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus) ∧
+         (∀ u ∈ B, ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j -> (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus)
+   ```
+
+   The next local-neighborhood geometry must not require linear independence:
+   continuity of `localEOWRealChart x0 ys` alone gives the real closed-ball
+   domain needed for local compactness.  Linear independence is used only
+   later, through `localEOWChart_equiv`, to push the orthant-coordinate
+   extension back to the original local complex coordinates and to prove the
+   resulting patch is convex and conjugation symmetric.  The checked
+   `localEOWChart_inverse_ball_geometry` theorem packages exactly that patch
+   geometry for the inverse-chart ball used by the local extension proof:
+   openness from differentiability of the inverse, convexity from
+   `localEOWChart_affine_real_combo`, conjugation stability from
+   `localEOWChart_inverse_conj`, and real-point membership from
+   `localEOWChart_zero`.  The production real-neighborhood theorem is now
+   checked as:
+
+   ```lean
+   theorem localEOWRealChart_closedBall_subset
+       {E : Set (Fin m -> ℝ)}
+       (hE_open : IsOpen E)
+       (x0 : Fin m -> ℝ) (hx0 : x0 ∈ E)
+       (ys : Fin m -> Fin m -> ℝ) :
+       ∃ ρ : ℝ, 0 < ρ ∧
+         ∀ u : Fin m -> ℝ,
+           u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ ->
+             localEOWRealChart x0 ys u ∈ E
+   ```
+
+   Lean proof transcript: take the open preimage
+   `(localEOWRealChart x0 ys) ⁻¹' E`, use
+   `continuous_localEOWRealChart x0 ys`, prove `0` lies in this preimage by
+   `simp [localEOWRealChart]`, choose an open ball `Metric.ball 0 ε` from
+   `Metric.isOpen_iff`, and return `ρ = ε / 2`; closed-ball membership gives
+   `dist u 0 ≤ ε/2 < ε`.
+
+   The real-translation margin used by mollifier supports should also be a
+   checked closed-ball theorem, not an opaque `BoxMargin` package:
+
+   ```lean
+   theorem localEOW_closedBall_support_margin
+       {ρ : ℝ} (hρ : 0 < ρ) :
+       ∃ r : ℝ, 0 < r ∧
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) (ρ / 2),
+         ∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r,
+           u + t ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ
+   ```
+
+   Lean proof transcript: choose `r = ρ / 2`; after rewriting
+   `Metric.mem_closedBall` and `dist_zero_right`, the goal is
+   `‖u + t‖ ≤ ρ`, which follows from
+   `norm_add_le u t`, `‖u‖ ≤ ρ/2`, and `‖t‖ ≤ ρ/2`.
+
+   The local Rudin/Möbius map used inside the continuous EOW proof is now
+   exposed as checked finite-dimensional geometry:
+
+   ```lean
+   def localEOWSmp
+       (δ : ℝ) (w : Fin m -> ℂ) (l : ℂ) : Fin m -> ℂ :=
+     fun j => (δ : ℂ) * moebiusProd (fun k => w k / (δ : ℂ)) l j
+
+   theorem localEOWSmp_zero
+       (hδ : δ ≠ 0) (w : Fin m -> ℂ) :
+       localEOWSmp δ w 0 = w
+
+   theorem localEOWSmp_im_pos_of_real
+       (hδ : 0 < δ)
+       (hw_real : ∀ j, (w j).im = 0)
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (hl_pos : 0 < l.im) :
+       ∀ j, 0 < (localEOWSmp δ w l j).im
+
+   theorem localEOWSmp_im_neg_of_real
+       (hδ : 0 < δ)
+       (hw_real : ∀ j, (w j).im = 0)
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (hl_neg : l.im < 0) :
+       ∀ j, (localEOWSmp δ w l j).im < 0
+
+   theorem localEOWSmp_norm_le_extended
+       (hδ : 0 < δ)
+       (hw_half : ∀ j, ‖w j / (δ : ℂ)‖ ≤ 1 / 2)
+       (hl : ‖l‖ ≤ 2) :
+       ∀ j, ‖localEOWSmp δ w l j‖ ≤ δ * 10
+
+   theorem localEOWSmp_norm_le_extended_of_closedBall
+       (hδ : 0 < δ)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hl : ‖l‖ ≤ 2) :
+       ∀ j, ‖localEOWSmp δ w l j‖ ≤ δ * 10
+
+   theorem localEOWSmp_div_norm_lt_one_of_closedBall
+       (hδ : 0 < δ)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2)) :
+       ∀ j, ‖w j / (δ : ℂ)‖ < 1
+
+   theorem localEOWSmp_im_zero_of_unit_real
+       (hl_norm : Complex.normSq l = 1) (hl_im : l.im = 0) :
+       ∀ j, (localEOWSmp δ w l j).im = 0
+
+   theorem localEOWSmp_im_zero_of_real
+       (hw_real : ∀ j, (w j).im = 0) (hl_im : l.im = 0) :
+       ∀ j, (localEOWSmp δ w l j).im = 0
+
+   theorem localEOWChart_smp_realEdge_eq_of_unit_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hl_norm : Complex.normSq l = 1) (hl_im : l.im = 0) :
+       localEOWChart x0 ys (localEOWSmp δ w l) =
+         realEmbed
+           (localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w l j).re))
+
+   theorem localEOWChart_smp_realEdge_eq_of_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0) (hl_im : l.im = 0) :
+       localEOWChart x0 ys (localEOWSmp δ w l) =
+         realEmbed
+           (localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w l j).re))
+
+   theorem continuous_localEOWSmp_theta
+       (hδ : 0 < δ)
+       (hw : w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2)) :
+       Continuous (fun θ : ℝ =>
+         localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I)))
+
+   theorem continuousAt_localEOWSmp_of_norm_lt_two
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (hl : ‖l‖ < 2) :
+       ContinuousAt (fun l' : ℂ => localEOWSmp δ w l') l
+
+   theorem continuousAt_localEOWChart_smp_of_norm_lt_two
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (hl : ‖l‖ < 2) :
+       ContinuousAt
+         (fun l' : ℂ => localEOWChart x0 ys (localEOWSmp δ w l')) l
+
+   theorem differentiableAt_localEOWSmp_of_real
+       (hw_real : ∀ j, (w j).im = 0)
+       (hl_ne : l.im ≠ 0) :
+       DifferentiableAt ℂ (fun l' : ℂ => localEOWSmp δ w l') l
+
+   theorem differentiableAt_localEOWChart_smp_of_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0)
+       (hl_ne : l.im ≠ 0) :
+       DifferentiableAt ℂ
+         (fun l' : ℂ => localEOWChart x0 ys (localEOWSmp δ w l')) l
+
+   theorem differentiableOn_localEOWChart_smp_upperHalfPlane_of_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0) :
+       DifferentiableOn ℂ
+         (fun l : ℂ => localEOWChart x0 ys (localEOWSmp δ w l))
+         EOW.UpperHalfPlane
+
+   theorem differentiableOn_localEOWChart_smp_lowerHalfPlane_of_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0) :
+       DifferentiableOn ℂ
+         (fun l : ℂ => localEOWChart x0 ys (localEOWSmp δ w l))
+         EOW.LowerHalfPlane
+
+   theorem tendsto_localEOWChart_smp_upperHalfPlane_to_realEdge
+       (hm : 0 < m)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j ->
+           (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hx : |x| < 2) :
+       Filter.Tendsto
+         (fun l : ℂ => localEOWChart x0 ys (localEOWSmp δ w l))
+         (nhdsWithin (x : ℂ) EOW.UpperHalfPlane)
+         (nhdsWithin
+           (realEmbed (localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w (x : ℂ) j).re))) Ωplus)
+
+   theorem tendsto_localEOWChart_smp_lowerHalfPlane_to_realEdge
+       (hm : 0 < m)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hminus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j ->
+           (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hx : |x| < 2) :
+       Filter.Tendsto
+         (fun l : ℂ => localEOWChart x0 ys (localEOWSmp δ w l))
+         (nhdsWithin (x : ℂ) EOW.LowerHalfPlane)
+         (nhdsWithin
+           (realEmbed (localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w (x : ℂ) j).re))) Ωminus)
+
+   theorem continuousAt_localEOWRealChart_smp_re_of_norm_lt_two
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (ht : |t| < 2) :
+       ContinuousAt
+         (fun s : ℝ =>
+           localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w (s : ℂ) j).re)) t
+
+   theorem continuousAt_localEOWBoundaryValue_smp
+       (hE_open : IsOpen E)
+       (bv : (Fin m -> ℝ) -> ℂ) (hbv_cont : ContinuousOn bv E)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_norm : ∀ j, ‖w j / (δ : ℂ)‖ < 1)
+       (ht : |t| < 2)
+       (hmem : ∀ s : ℝ, |s| < 2 ->
+         localEOWRealChart x0 ys
+           (fun j => (localEOWSmp δ w (s : ℂ) j).re) ∈ E) :
+       ContinuousAt
+         (fun s : ℝ =>
+           bv (localEOWRealChart x0 ys
+             (fun j => (localEOWSmp δ w (s : ℂ) j).re))) t
+
+   theorem differentiableOn_localEOWUpperBranch_smp_of_real
+       (Ωplus : Set (Fin m -> ℂ)) (hΩplus_open : IsOpen Ωplus)
+       (Fplus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0)
+       (hmem : ∀ l ∈ Metric.ball (0 : ℂ) 2 ∩ EOW.UpperHalfPlane,
+         localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωplus) :
+       DifferentiableOn ℂ
+         (fun l : ℂ => Fplus (localEOWChart x0 ys (localEOWSmp δ w l)))
+         (Metric.ball (0 : ℂ) 2 ∩ EOW.UpperHalfPlane)
+
+   theorem differentiableOn_localEOWLowerBranch_smp_of_real
+       (Ωminus : Set (Fin m -> ℂ)) (hΩminus_open : IsOpen Ωminus)
+       (Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hw_real : ∀ j, (w j).im = 0)
+       (hmem : ∀ l ∈ Metric.ball (0 : ℂ) 2 ∩ EOW.LowerHalfPlane,
+         localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωminus) :
+       DifferentiableOn ℂ
+         (fun l : ℂ => Fminus (localEOWChart x0 ys (localEOWSmp δ w l)))
+         (Metric.ball (0 : ℂ) 2 ∩ EOW.LowerHalfPlane)
+
+   theorem tendsto_localEOWUpperBranch_smp_to_boundaryValue
+       (hm : 0 < m)
+       (Ωplus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (Fplus : (Fin m -> ℂ) -> ℂ) (bv : (Fin m -> ℝ) -> ℂ)
+       (hFplus_bv : ∀ y ∈ E,
+         Filter.Tendsto Fplus
+           (nhdsWithin (realEmbed y) Ωplus) (nhds (bv y)))
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j ->
+           (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hx : |x| < 2)
+       (hE_mem : localEOWRealChart x0 ys
+         (fun j => (localEOWSmp δ w (x : ℂ) j).re) ∈ E) :
+       Filter.Tendsto
+         (fun l : ℂ => Fplus (localEOWChart x0 ys (localEOWSmp δ w l)))
+         (nhdsWithin (x : ℂ) EOW.UpperHalfPlane)
+         (nhds (bv (localEOWRealChart x0 ys
+           (fun j => (localEOWSmp δ w (x : ℂ) j).re))))
+
+   theorem tendsto_localEOWLowerBranch_smp_to_boundaryValue
+       (hm : 0 < m)
+       (Ωminus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (Fminus : (Fin m -> ℂ) -> ℂ) (bv : (Fin m -> ℝ) -> ℂ)
+       (hFminus_bv : ∀ y ∈ E,
+         Filter.Tendsto Fminus
+           (nhdsWithin (realEmbed y) Ωminus) (nhds (bv y)))
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hminus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j ->
+           (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hx : |x| < 2)
+       (hE_mem : localEOWRealChart x0 ys
+         (fun j => (localEOWSmp δ w (x : ℂ) j).re) ∈ E) :
+       Filter.Tendsto
+         (fun l : ℂ => Fminus (localEOWChart x0 ys (localEOWSmp δ w l)))
+       (nhdsWithin (x : ℂ) EOW.LowerHalfPlane)
+       (nhds (bv (localEOWRealChart x0 ys
+         (fun j => (localEOWSmp δ w (x : ℂ) j).re))))
+
+   theorem local_rudin_mean_value_real
+       (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (hE_open : IsOpen E)
+       (bv : (Fin m -> ℝ) -> ℂ) (hbv_cont : ContinuousOn bv E)
+       (hFplus_bv : ∀ y ∈ E,
+         Filter.Tendsto Fplus
+           (nhdsWithin (realEmbed y) Ωplus) (nhds (bv y)))
+       (hFminus_bv : ∀ y ∈ E,
+         Filter.Tendsto Fminus
+           (nhdsWithin (realEmbed y) Ωminus) (nhds (bv y)))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j ->
+           (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       (hminus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j ->
+           (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hE_mem : ∀ s : ℝ, |s| < 2 ->
+         localEOWRealChart x0 ys
+           (fun j => (localEOWSmp δ w (s : ℂ) j).re) ∈ E) :
+       let G : ℝ -> ℂ := fun θ =>
+         if 0 < Real.sin θ then
+           Fplus (localEOWChart x0 ys
+             (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))
+         else if Real.sin θ < 0 then
+           Fminus (localEOWChart x0 ys
+             (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))
+         else 0
+       (2 * ↑Real.pi)⁻¹ • ∫ θ in (-Real.pi)..Real.pi, G θ =
+         bv (localEOWRealChart x0 ys (fun j => (w j).re))
+
+   theorem localEOWSmp_re_mem_closedBall
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hl : ‖l‖ ≤ 2) :
+       (fun j => (localEOWSmp δ w l j).re) ∈
+         Metric.closedBall (0 : Fin m -> ℝ) ρ
+
+   theorem localEOWChart_smp_upper_mem_of_delta
+       (hm : 0 < m)
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j ->
+           (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hl_pos : 0 < l.im) (hl_norm : ‖l‖ ≤ 2) :
+       localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωplus
+
+   theorem localEOWChart_smp_lower_mem_of_delta
+       (hm : 0 < m)
+       (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hminus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j ->
+           (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus)
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hw_real : ∀ j, (w j).im = 0)
+       (hl_neg : l.im < 0) (hl_norm : ‖l‖ ≤ 2) :
+       localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωminus
+
+   theorem exists_localEOWSmp_delta
+       (hm : 0 < m) (hρ : 0 < ρ) (hr : 0 < r) :
+       ∃ δ : ℝ, 0 < δ ∧ δ * 10 ≤ ρ ∧
+         (Fintype.card (Fin m) : ℝ) * (δ * 10) < r
+
+   theorem exists_localEOWChart_smp_delta
+       (hm : 0 < m)
+       (hρ : 0 < ρ) (hr : 0 < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j ->
+           (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       (hminus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ,
+           (∀ j, v j ≤ 0) ->
+           0 < ∑ j, -v j ->
+           (∑ j, -v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus) :
+       ∃ δ : ℝ, 0 < δ ∧
+         (∀ {w : Fin m -> ℂ} {l : ℂ},
+           w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2) ->
+           (∀ j, (w j).im = 0) ->
+           0 < l.im ->
+           ‖l‖ ≤ 2 ->
+             localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωplus) ∧
+         (∀ {w : Fin m -> ℂ} {l : ℂ},
+           w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2) ->
+           (∀ j, (w j).im = 0) ->
+           l.im < 0 ->
+           ‖l‖ ≤ 2 ->
+             localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωminus)
+   ```
+
+   These lemmas are the local version of the sign and size estimates used in
+   `rudin_orthant_extension`: real starting points preserve the sign of
+   `Im l`, and the real part of the scaled Möbius product stays inside the
+   selected real edge ball when `δ * 10 ≤ ρ`.  The closed-ball helpers package
+   the denominator estimate `‖w j / δ‖ < 1` directly from
+   `w ∈ closedBall 0 (δ / 2)`.  The zero, real-boundary, and continuity lemmas
+   expose the remaining Rudin transcript used by the Cauchy integral and
+   real-line mean-value proofs.  The unit-real lemmas are for the compact
+   circle boundary.  The arbitrary-real lemmas are for the interval
+   `-2 < l.re < 2` in the one-variable EOW identity, where real starting
+   points must stay on the real edge without assuming `Complex.normSq l = 1`.
+   `continuousAt_localEOWSmp_of_norm_lt_two` is the local version of the
+   private `hsmp_ca_real` block in `rudin_mean_value_real`; its denominator
+   estimate uses `rudinC_lt_half` to prove
+   `‖rudinC * l * (w j / δ)‖ < 1` whenever `‖l‖ < 2` and
+   `‖w j / δ‖ < 1`.  The chart continuity theorem is just composition with
+   `continuous_localEOWChart`, but it is a checked theorem because this is the
+   exact map used in the boundary-value trace.
+
+   The half-plane differentiability lemmas expose the local analogue of the
+   private `hgp_diff`/`hgm_diff` setup in `rudin_mean_value_real`.  Their proof
+   is not an assumption: for real starting coordinates, division by the real
+   scale `δ` remains real, and `moebiusRudin_differentiableAt_of_real` gives
+   differentiability whenever `l.im ≠ 0`; composing with
+   `differentiable_localEOWChart` gives the chart version.  Restricting to
+   `EOW.UpperHalfPlane` and `EOW.LowerHalfPlane` is then just
+   `DifferentiableAt.differentiableWithinAt`.
+
+   The boundary-filter lemmas package the corresponding local
+   `hgp_bv`/`hgm_bv` input.  For `|x| < 2`, the `‖l‖ < 2` condition is
+   eventually true in `nhdsWithin (x : ℂ)` by openness of the norm ball.
+   Combining this eventual norm bound with the upper/lower chart-membership
+   theorems gives eventual membership in `Ωplus` or `Ωminus`; combining that
+   with `continuousAt_localEOWChart_smp_of_norm_lt_two` and the real-edge
+   identity gives the target `nhdsWithin` convergence.  This is the exact
+   filter shape needed to compose with the local continuous boundary-value
+   hypotheses.
+
+   The real-line continuity lemmas package the remaining `hbv_real` input for
+   the local one-variable EOW theorem.  First, continuity of
+   `l ↦ localEOWSmp δ w l` on `‖l‖ < 2`, composed with the real embedding
+   `s ↦ (s : ℂ)`, coordinatewise real part, and
+   `continuous_localEOWRealChart`, gives continuity of the real chart path.
+   Second, if this path stays in the real-edge set `E` for `|s| < 2`, then
+   `ContinuousOn bv E` composes with the chart path to give continuity of the
+   scalar boundary function.  This is not an additional boundary-value
+   assumption; it is the continuity of the already supplied real boundary
+   function along the Rudin real slice.
+
+   The branch-level lemmas package the remaining local hypotheses for
+   `local_edge_of_the_wedge_1d`.  The differentiability lemmas compose
+   `DifferentiableOn ℂ Fplus Ωplus` / `DifferentiableOn ℂ Fminus Ωminus`
+   with the checked differentiability of the local Rudin chart, using
+   openness of the plus/minus wedge and the local chart-membership hypothesis
+   on the disk half.  The boundary-value lemmas compose the local
+   `nhdsWithin realEdge Ωplus/Ωminus` convergence with the supplied
+   boundary-value hypotheses for `Fplus` and `Fminus`.  These four facts are
+   exactly the local `hgp_diff`, `hgm_diff`, `hgp_bv`, and `hgm_bv` blocks
+   needed before the mean-value/circle-average identity.
+
+   The checked `local_rudin_mean_value_real` theorem completes the local
+   analogue of the private `rudin_mean_value_real` block in
+   `TubeDomainExtension.lean`.  The proof transcript is now Lean-ready:
+
+   - define the one-variable branches
+     `gp l = if 0 < l.im then Fplus (localEOWChart x0 ys (localEOWSmp δ w l))
+       else bv_smp l.re` and
+     `gm l = if l.im < 0 then Fminus (localEOWChart x0 ys (localEOWSmp δ w l))
+       else bv_smp l.re`;
+   - prove disk-half membership in `Ωplus` and `Ωminus` from
+     `localEOWChart_smp_upper_mem_of_delta` and
+     `localEOWChart_smp_lower_mem_of_delta`;
+   - obtain `DifferentiableOn ℂ gp` and `DifferentiableOn ℂ gm` on the
+     upper/lower half-disks by `DifferentiableOn.congr` from the checked
+     branch differentiability lemmas;
+   - obtain the upper/lower boundary filters for `gp` and `gm` by composing
+     `tendsto_localEOWUpperBranch_smp_to_boundaryValue` and
+     `tendsto_localEOWLowerBranch_smp_to_boundaryValue` with the eventual
+     equalities `gp = Fplus ∘ chart` and `gm = Fminus ∘ chart`;
+   - obtain the real-line boundary filter for `gp` from
+     `continuousAt_localEOWBoundaryValue_smp` and the equality
+     `gp l = bv_smp l.re` on `{l | l.im = 0}`;
+   - apply `local_edge_of_the_wedge_1d (-2) 2` to get a holomorphic
+     `F_disc` on the disk `Metric.ball 0 2`;
+   - use `DiffContOnCl.circleAverage` on `closedBall 0 1`, and prove
+     `F_disc 0 = bv (localEOWRealChart x0 ys (fun j => (w j).re))` from
+     `localEOWSmp_zero` and uniqueness of limits from the upper half-plane;
+   - identify the circle integral with the stated piecewise integrand by
+     `circleMap_zero`, excluding only `{0, Real.pi}`, a measure-zero set, and
+     then shift the interval by the period `2 * Real.pi`.
+
+   Thus the mean-value identity is a proved consequence of local wedge
+   holomorphy, common continuous boundary values, and the checked Rudin
+   Möbius geometry.  It introduces no new analytic assumption and no new
+   source theorem.
+
+   The two `localEOWChart_smp_*_mem_of_delta`
+   theorems then prove the actual Rudin arc membership in the upper and lower
+   local chart wedges: the real part is controlled by
+   `localEOWSmp_re_mem_closedBall`, the imaginary coordinates have the correct
+   sign by `localEOWSmp_im_pos_of_real`/`localEOWSmp_im_neg_of_real`, and
+   `∑ |Im| < r` follows from the finite-cardinality bound
+   `(Fintype.card (Fin m) : ℝ) * (δ * 10) < r`.  Finally
+   `exists_localEOWChart_smp_delta` chooses a single small `δ`, explicitly
+   `min (ρ / 20) (r / (card * 20))` up to definitional unfolding, that works
+   for both sides.  This is the Lean-ready replacement for the informal
+   "shrink the local Rudin map into the polywedge" step.
 5. `localEOW_pullback_boundary_value` transports the distributional boundary
    value to the chart.  If `L : (Fin m -> ℝ) ≃L[ℝ] (Fin m -> ℝ)` sends the
    standard basis to `ys`, then
@@ -586,19 +1331,18 @@ lemma localEOW_choose_cone_basis
         (∀ j, 0 < a j) ->
           (∑ j, a j • ys j) ∈ C)
 
-def localEOWChart
-    {m : ℕ}
-    (x0 : Fin m -> ℝ)
-    (ys : Fin m -> Fin m -> ℝ) :
-    (Fin m -> ℂ) -> (Fin m -> ℂ) :=
-  fun w a => (x0 a : ℂ) + ∑ j, w j * (ys j a : ℂ)
-
+-- Checked in `SCV/LocalContinuousEOW.lean`; shown here as the active API:
 def localEOWRealChart
     {m : ℕ}
     (x0 : Fin m -> ℝ)
     (ys : Fin m -> Fin m -> ℝ) :
-    (Fin m -> ℝ) -> (Fin m -> ℝ) :=
-  fun u a => x0 a + ∑ j, u j * ys j a
+    (Fin m -> ℝ) -> (Fin m -> ℝ)
+
+def localEOWChart
+    {m : ℕ}
+    (x0 : Fin m -> ℝ)
+    (ys : Fin m -> Fin m -> ℝ) :
+    (Fin m -> ℂ) -> (Fin m -> ℂ)
 
 def IsOpenAxisBox {m : ℕ} (B : Set (Fin m -> ℝ)) : Prop :=
   ∃ a b : Fin m -> ℝ,
@@ -612,31 +1356,37 @@ def NegativePolywedge {m : ℕ} (B : Set (Fin m -> ℝ)) (δ : ℝ) :
     Set (Fin m -> ℂ) :=
   {z | (fun j => (z j).re) ∈ B ∧ ∀ j, -δ < (z j).im ∧ (z j).im < 0}
 
-lemma localEOW_chart_real_box
+lemma localEOWRealChart_closedBall_subset
     {m : ℕ} {E : Set (Fin m -> ℝ)}
     (hE_open : IsOpen E)
     (x0 : Fin m -> ℝ)
     (hx0 : x0 ∈ E)
-    (ys : Fin m -> Fin m -> ℝ)
-    (hys_li : LinearIndependent ℝ ys) :
-    ∃ (a b : Fin m -> ℝ),
-      (∀ j, a j < 0 ∧ 0 < b j) ∧
+    (ys : Fin m -> Fin m -> ℝ) :
+    ∃ ρ : ℝ, 0 < ρ ∧
       (∀ u : Fin m -> ℝ,
-        (∀ j, a j ≤ u j ∧ u j ≤ b j) ->
+        u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ ->
           localEOWRealChart x0 ys u ∈ E)
 
-lemma localEOW_nested_axis_boxes
+lemma localEOW_closedBall_support_margin
+    {m : ℕ} {ρ : ℝ} (hρ : 0 < ρ) :
+    ∃ r : ℝ, 0 < r ∧
+      ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) (ρ / 2),
+      ∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r,
+        u + t ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ
+
+lemma localEOW_nested_closed_balls
     {m : ℕ} {E : Set (Fin m -> ℝ)}
     (hE_open : IsOpen E)
     (x0 : Fin m -> ℝ)
     (hx0 : x0 ∈ E)
-    (ys : Fin m -> Fin m -> ℝ)
-    (hys_li : LinearIndependent ℝ ys) :
-    ∃ (B0 B1 : Set (Fin m -> ℝ)) (r : ℝ),
-      IsOpenAxisBox B0 ∧ IsOpenAxisBox B1 ∧ 0 < r ∧
-      x0 ∈ localEOWRealChart x0 ys '' B0 ∧
-      (∀ u ∈ B0, ∀ t ∈ Metric.closedBall 0 r, u + t ∈ B1) ∧
-      (∀ u ∈ B1, localEOWRealChart x0 ys u ∈ E)
+    (ys : Fin m -> Fin m -> ℝ) :
+    ∃ ρ r : ℝ, 0 < r ∧
+      0 < ρ ∧
+      (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E) ∧
+      (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) (ρ / 2),
+        ∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r,
+          u + t ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ)
 
 def KernelSupportWithin
     {m : ℕ}
