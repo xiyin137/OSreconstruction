@@ -1140,12 +1140,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `‖a‖ < δ / 4`; if `φ = 0`, the covariance identity is trivial.
       3. `SCV.translationCovariantProductKernel_descends_local`.  It defines
          `Hdist := complexRealFiberTranslationDescentCLM
-           (shearedProductKernelFunctional K) η` with a normalized real cutoff
-         `η`, then reruns the checked sheared fiber-quotient proof only for
-         product tests supported in `Udesc`.  Every fiber translation has norm
-         at most `r + rη`, and the margin
-         `Udesc + closedBall 0 (r + rη) ⊆ Ucov` is what permits each use of
-         local covariance.
+           (shearedProductKernelFunctional K) η` with a normalized real
+         cutoff `η`, but it does not call the checked global arbitrary-test
+         fiber quotient.  Instead it proves the product-test identity directly:
+         expand the sheared convolution tensor as a Bochner integral of
+         translated product tensors, use local covariance only for parameters
+         whose nonzero kernel factor forces `‖a‖ ≤ r + rη`, and collapse
+         `∫ a, translateSchwartz (-a) (η • translateSchwartz a ψ)` back to
+         `ψ` using `∫ η = 1`.  The margin
+         `Udesc + closedBall 0 (r + rη) ⊆ Ucov` is exactly what makes the two
+         complex-chart supports legal in those covariance calls.
       4. `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`.  It
          first proves local distributional holomorphy of `Hdist` on `Udesc`
          using the local descent identity and the checked `∂bar` product
@@ -1669,8 +1673,12 @@ Implementation-readiness gate for the next Lean stage:
      the shifted-overlap covariance theorem and explicit support/margin
      hypotheses;
   3. `translationCovariantProductKernel_descends_local`, the local analogue of
-     the checked sheared-product descent theorem, where every translation
-     covariance use is guarded by the local support window;
+     the checked sheared-product descent theorem.  It is not an invocation of
+     the global arbitrary-test quotient; it uses the direct product-test
+     averaging lemmas
+     `shearedRealConvolutionTensor_eq_integral_productTranslations` and
+     `fiberCutoffAverage_eq_self`, with every covariance use guarded by the
+     local support window;
   4. `regularizedEnvelope_chartEnvelope_from_localProductKernel`, replacing
      the global product-kernel consumer by local `Hdist`, local
      `IsDistributionalHolomorphicOn`, local product-test descent, and the
@@ -1865,6 +1873,9 @@ Current implementation order:
    package
    `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`,
    `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
+   `SCV.schwartzTensorProduct₂CLMLeft`,
+   `SCV.shearedRealConvolutionTensor_eq_integral_productTranslations`,
+   `SCV.fiberCutoffAverage_eq_self`,
    `SCV.translationCovariantProductKernel_descends_local`,
    `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`, and finally
    `SCV.local_distributional_edge_of_the_wedge_envelope`.  The retired

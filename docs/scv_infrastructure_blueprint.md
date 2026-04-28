@@ -171,8 +171,16 @@ surfaces plus the final envelope theorem:
 
 ```lean
 lemma sliceCLM_family_from_distributionalBoundary
+theorem continuous_schwartzPartialEval₁CLM
+theorem KernelSupportWithin.mono
+theorem SchwartzMap.exists_schwartzCLM_finsetSeminormBound
+theorem regularizedLocalEOW_chartKernelFamily_valueCLM
+theorem continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand
 theorem regularizedLocalEOW_pairingCLM_of_fixedWindow
 theorem regularizedLocalEOW_pairingCLM_localCovariant
+theorem schwartzTensorProduct₂CLMLeft
+theorem shearedRealConvolutionTensor_eq_integral_productTranslations
+theorem fiberCutoffAverage_eq_self
 theorem translationCovariantProductKernel_descends_local
 theorem regularizedEnvelope_chartEnvelope_from_localProductKernel
 lemma chartDistributionalEOW_local_envelope
@@ -4624,6 +4632,46 @@ Proof transcript for the next target:
       product-kernel covariance.
 
    ```lean
+   def schwartzTensorProduct₂CLMLeft
+       {m : ℕ}
+       (φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+       SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ]
+         SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ
+
+   theorem schwartzTensorProduct₂CLMLeft_apply
+       {m : ℕ}
+       (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+       (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+       (z : ComplexChartSpace m) (t : Fin m -> ℝ) :
+       schwartzTensorProduct₂CLMLeft φ ψ (z,t) = φ z * ψ t
+
+   theorem shearedRealConvolutionTensor_eq_integral_productTranslations
+       {m : ℕ} {r rη : ℝ}
+       (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+       (ψ η : SchwartzMap (Fin m -> ℝ) ℂ)
+       (hψ : KernelSupportWithin ψ r)
+       (hη : KernelSupportWithin η rη) :
+       (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+           (realConvolutionShearCLE m).symm)
+         (schwartzTensorProduct₂ (realConvolutionTest φ ψ) η)
+       =
+       ∫ a : Fin m -> ℝ,
+         schwartzTensorProduct₂
+           (complexTranslateSchwartz (-a) φ)
+           (SchwartzMap.smulLeftCLM ℂ
+             (η : (Fin m -> ℝ) -> ℂ) (translateSchwartz a ψ))
+
+   theorem fiberCutoffAverage_eq_self
+       {m : ℕ} {r rη : ℝ}
+       (ψ η : SchwartzMap (Fin m -> ℝ) ℂ)
+       (hψ : KernelSupportWithin ψ r)
+       (hη : KernelSupportWithin η rη)
+       (hη_norm : ∫ t : Fin m -> ℝ, η t = 1) :
+       (∫ a : Fin m -> ℝ,
+         translateSchwartz (-a)
+           (SchwartzMap.smulLeftCLM ℂ
+             (η : (Fin m -> ℝ) -> ℂ) (translateSchwartz a ψ))) = ψ
+
    theorem translationCovariantProductKernel_descends_local
        (K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
        (Udesc Ucov : Set (ComplexChartSpace m)) (r rη : ℝ)
@@ -4646,48 +4694,75 @@ Proof transcript for the next target:
    Proof transcript for local descent:
 
    1. Define `T := shearedProductKernelFunctional K` and
-      `Hdist := complexRealFiberTranslationDescentCLM T η`, using the same
-      descent functional as the checked global theorem.  Do **not** call
-      `translationCovariantProductKernel_descends`: that theorem requires
-      `ProductKernelRealTranslationCovariantGlobal K`, which the localized
-      cutoff construction does not provide.
-   2. Prove only the product-test factorization needed here:
-      ```lean
-      theorem map_eq_complexRealFiberTranslationDescentCLM_of_localProductSupport
-          (hφ : SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Udesc)
-          (hψ : KernelSupportWithin ψ r) :
-          shearedProductKernelFunctional K
-            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
-              (realConvolutionShearCLE m))
-              (schwartzTensorProduct₂ φ ψ)) =
-          complexRealFiberTranslationDescentCLM
-            (shearedProductKernelFunctional K) η
-            (realConvolutionTest φ ψ)
+      `Hdist := complexRealFiberTranslationDescentCLM T η`.  Do **not** call
+      `translationCovariantProductKernel_descends` or
+      `map_eq_complexRealFiberTranslationDescentCLM_of_fiberTranslationInvariant`:
+      those checked theorems require full fiber-translation invariance on
+      arbitrary mixed Schwartz tests.  Local product covariance is weaker, so
+      the descent proof here is a direct product-test averaging argument.
+   2. Prove the fixed-left tensor CLM
+      `schwartzTensorProduct₂CLMLeft φ` (the analogue of the checked
+      `schwartzTensorProduct₂CLMRight`).  It is needed to move a Bochner
+      integral in the real-kernel variable through the tensor product and then
+      through `K`.
+   3. Prove the sheared convolution expansion.  For
+      `κ a := SchwartzMap.smulLeftCLM ℂ (η : (Fin m -> ℝ) -> ℂ)
+        (translateSchwartz a ψ)`,
       ```
-      This theorem is the local replacement for
-      `map_eq_complexRealFiberTranslationDescentCLM_of_fiberTranslationInvariant`.
-      Its conclusion is deliberately restricted to supported product tests.
-   3. The comparison test
-      `G = schwartzTensorProduct₂ (realConvolutionTest φ ψ) η` has the same
-      fiber integral as `F` by
-      `complexRealFiberIntegral_schwartzTensorProduct₂` and `hη_norm`.
-   4. In the head-fiber antiderivative/quotient argument for `F - G`, every
-      elementary fiber translation is by a vector in
-      `closedBall 0 (r + rη)`: it is a difference of one point in
-      `tsupport ψ ⊆ closedBall 0 r` and one point in
-      `tsupport η ⊆ closedBall 0 rη`.  The hypothesis
-      `hmargin : Udesc + closedBall 0 (r + rη) ⊆ Ucov` implies that both
-      complex-chart tests occurring in each covariance call are supported in
-      `Ucov`.  Therefore each generator-level use of global fiber invariance
-      in the checked proof is replaced by
-      `ProductKernelRealTranslationCovariantLocal K Ucov (r + rη)`.
-   5. The support of the convolved test is supplied by the checked theorem
-      `realConvolutionTest_supportsInOpen_of_translate_margin`, using
-      `KernelSupportWithin_hasCompactSupport hψ` and the smaller margin
-      `Udesc + closedBall 0 r ⊆ Ucov` derived from `hmargin`.
-   6. This proves `T F = T G`, which unfolds to
-      `K (schwartzTensorProduct₂ φ ψ) =
-       Hdist (realConvolutionTest φ ψ)`.
+      (realConvolutionTest φ ψ ⊗ η) ∘ (realConvolutionShearCLE m).symm
+        = ∫ a, schwartzTensorProduct₂
+            (complexTranslateSchwartz (-a) φ) (κ a).
+      ```
+      Pointwise, at `(z,t)`, the right side is
+      `∫ a, φ (z - realEmbed a) * η t * ψ (t + a)`, and the substitution
+      `s = t + a` gives exactly
+      `realConvolutionTest φ ψ (z + realEmbed t) * η t`.
+      The equality must be in Schwartz space, not only pointwise: compact
+      support of `ψ` and `η` implies the parameter `a` is supported in
+      `closedBall 0 (r + rη)`; continuity of translations and the checked
+      tensor CLMs give Bochner integrability.
+   4. For each `a`, set `κ a = η • translateSchwartz a ψ`.  If `κ a = 0`,
+      the covariance identity for that parameter is trivial.  Otherwise choose
+      `t ∈ tsupport (κ a)`.  Then `t ∈ tsupport η` and
+      `t + a ∈ tsupport ψ`, so
+      `‖a‖ = ‖(t + a) - t‖ ≤ r + rη`.  This bound gives:
+      - `SupportsInOpen φ Ucov`, from `hφ` and `hmargin` with translation `0`;
+      - `SupportsInOpen (complexTranslateSchwartz (-a) φ) Ucov`, because every
+        support point has the form `u + realEmbed a` with `u ∈ Udesc`;
+      - `KernelSupportWithin (κ a) (r + rη)`, from the support of `η`;
+      - `KernelSupportWithin (translateSchwartz (-a) (κ a)) (r + rη)`, from
+        the pointwise formula
+        `(translateSchwartz (-a) (κ a)) x = η (x - a) * ψ x`, hence support
+        inside `tsupport ψ`.
+      Therefore `hcov (-a)` applies and gives
+      ```
+      K (schwartzTensorProduct₂ (complexTranslateSchwartz (-a) φ) (κ a))
+        =
+      K (schwartzTensorProduct₂ φ (translateSchwartz (-a) (κ a))).
+      ```
+   5. Integrate the equality in `a` and use continuity of `K` plus
+      `schwartzTensorProduct₂CLMLeft φ`:
+      ```
+      Hdist (realConvolutionTest φ ψ)
+        = ∫ a, K (schwartzTensorProduct₂
+            (complexTranslateSchwartz (-a) φ) (κ a))
+        = K (schwartzTensorProduct₂ φ
+            (∫ a, translateSchwartz (-a) (κ a))).
+      ```
+   6. Prove the normalized cutoff-average identity
+      ```
+      ∫ a, translateSchwartz (-a) (η • translateSchwartz a ψ) = ψ.
+      ```
+      Pointwise at `x`, the integrand is `η (x - a) * ψ x`, so the integral is
+      `ψ x * ∫ a, η (x - a) = ψ x * ∫ a, η a = ψ x`.  Again the equality is
+      a Schwartz-space Bochner integral; compact support of `ψ` and `η`
+      supplies integrability, and the finite-seminorm bounds for translation
+      supply the topology proof.
+   7. Steps 5 and 6 yield
+      `Hdist (realConvolutionTest φ ψ) = K (schwartzTensorProduct₂ φ ψ)`.
+      This is the exact local product-test descent identity needed by the
+      recovery consumer.  No density theorem and no arbitrary-test fiber
+      quotient is invoked.
 
 13. Once the local product-test descent identity exists, local
    distributional holomorphy and pointwise recovery are separate checked-style
@@ -4849,9 +4924,18 @@ Proof transcript for the next target:
       supplies the small-shift seed lemma for shifted overlaps.
    7. `regularizedLocalEOW_pairingCLM_localCovariant`: prove
       `ProductKernelRealTranslationCovariantLocal K Ucov r`.
-   8. `translationCovariantProductKernel_descends_local`: adapt the checked
-      sheared fiber quotient to supported product tests with the explicit
-      `Udesc + closedBall 0 (r + rη) ⊆ Ucov` margin.
+   8a. `schwartzTensorProduct₂CLMLeft`,
+       `shearedRealConvolutionTensor_eq_integral_productTranslations`, and
+       `fiberCutoffAverage_eq_self`: direct local product-test descent
+       infrastructure.  These replace the previously tempting but invalid
+       shortcut of applying the checked global arbitrary-test fiber quotient to
+       a locally covariant cutoff kernel.
+   8b. `translationCovariantProductKernel_descends_local`: prove the local
+       product-test descent identity by averaging translated product tests
+       against the normalized fiber cutoff, applying
+       `ProductKernelRealTranslationCovariantLocal` only for parameters whose
+       supports force `‖a‖ ≤ r + rη`, and collapsing the averaged real kernel
+       back to `ψ`.
    9. `translationCovariantKernel_distributionalHolomorphic_local`: localize
       the checked distributional-holomorphy passage.
    10. `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel` and
@@ -5277,6 +5361,7 @@ Kernel-recovery implementation substrate:
        {m : ℕ}
        (K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
        (Udesc Ucov : Set (ComplexChartSpace m)) (r rη : ℝ)
+       (hr_nonneg : 0 ≤ r) (hrη_nonneg : 0 ≤ rη)
        (η : SchwartzMap (Fin m -> ℝ) ℂ)
        (hη_norm : ∫ t : Fin m -> ℝ, η t = 1)
        (hη_support : KernelSupportWithin η rη)
@@ -5710,13 +5795,14 @@ Detailed kernel-recovery proof transcript:
    `z ↦ ∫ t, φ (z - realEmbed t) * ψ t`.  This is the precise Lean object
    replacing the informal phrase "the kernel depends only on `z + t`."
 
-   The local/support-restricted theorem used by the regularized envelope should
-   be a corollary of this global descent applied after the fixed cutoff
-   `χr = 1` on the allowed kernel-support ball.  Do not use the older
-   support-restricted predicate as the direct input for a global `Hdist`;
-   that hides a density gap.  The implementation should first prove the global
-   pure-SCV descent theorem, then add the local envelope corollary with
-   `SupportsInOpen` and `KernelSupportWithin` hypotheses.
+   Historical note, now superseded by the local-descent route above: the
+   support-restricted theorem must **not** be treated as a corollary of global
+   descent after inserting a fixed complex-chart cutoff.  That cutoff breaks
+   `ProductKernelRealTranslationCovariantGlobal`.  The active theorem-2 route
+   proves only the product-test local descent needed by the regularized
+   envelope, using the normalized fiber cutoff and local product covariance
+   under explicit support/margin hypotheses.  The checked global descent theorem
+   remains available only for a genuinely globally covariant kernel.
 
 Exact product-kernel/descent subpackage:
 
