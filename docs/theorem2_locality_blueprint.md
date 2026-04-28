@@ -1191,10 +1191,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `SCV/LocalDistributionalEOW.lean`; the current covariance substrate is
          `SCV.regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`.
 
-      The next Lean implementation must start with the helper stack feeding
-      the pairing CLM: complex-chart cutoff, `SupportsInOpen` cutoff removal,
-      SCV-local `schwartzPartialEval₁CLM`, and the compact value-CLM bound.
-      Only after those are checked should Lean introduce
+      The Lean implementation has checked the first helper layers feeding the
+      pairing CLM: complex-chart cutoff, `SupportsInOpen` cutoff removal, and
+      the SCV-local `schwartzPartialEval₁CLM` apply/tensor/seminorm package.
+      The next Lean target is the compact value-CLM bound for `Lorig`.  Only
+      after that is checked should Lean introduce
       `regularizedLocalEOW_pairingCLM_of_fixedWindow`; it must not revive the
       retired global `regularizedLocalEOW_productKernel_from_continuousEOW`
       surface.  In the final `SCV.local_distributional_edge_of_the_wedge_envelope`
@@ -1651,10 +1652,11 @@ Implementation-readiness gate for the next Lean stage:
      already checked pointwise-representation/delta-limit arguments.
   These four surfaces now have their hypotheses, support margins, and proof
   transcripts written out in `docs/scv_infrastructure_blueprint.md`; Lean
-  should proceed with the helper extraction order there, beginning with the
-  complex-chart cutoff, the SCV-local `schwartzPartialEval₁CLM`, the compact
-  uniform value-CLM bound, and only then the pairing CLM.  The
-  partial-evaluation helper must be proved in the SCV layer from
+  should proceed with the helper extraction order there.  The complex-chart
+  cutoff and SCV-local `schwartzPartialEval₁CLM` apply/tensor/seminorm package
+  are checked; the remaining helper order is the compact uniform value-CLM
+  bound and only then the pairing CLM.  The partial-evaluation helper is
+  proved in the SCV layer from
   `SchwartzMap.compCLM`; importing the Wightman partial-evaluation file would
   be route drift for this pure-SCV theorem.
 * The next OS-side boundary-value theorem is

@@ -318,6 +318,8 @@ Source ledger for the internal helper list:
 | `KernelSupportWithin.smulLeftCLM`, `KernelSupportWithin.smulLeftCLM_of_leftSupport`, `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: multiplying by a Schwartz-side cutoff preserves support either from the original kernel or from the cutoff itself, and a cutoff equal to `1` on `closedBall 0 r` acts as the identity on kernels with `KernelSupportWithin ψ r`.  These are the cutoff support lemmas needed to extend supported-kernel identities to full Schwartz-space CLMs without introducing a `SmallKernelSpace` wrapper. |
 | `exists_schwartz_cutoff_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: a direct `ContDiffBump` construction of a Schwartz cutoff equal to `1` on `closedBall 0 r` and topologically supported in `closedBall 0 rLarge`, for `0 < r < rLarge`.  This replaces the former blueprint-only `KernelCutoff`/`cutoffKernelCLM` placeholders. |
 | `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`, `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` | Checked in `SCV/DistributionalEOWSupport.lean`: the complex-chart analogue of the closed-ball cutoff construction and the support-window cutoff-removal lemma.  These are the first helper layer for the local pairing CLM; the complex-chart cutoff makes the global mixed Schwartz CLM compactly supported in the chart variable, and the `SupportsInOpen` removal lemma proves the cutoff is invisible on product tests supported in `Ucov`. |
+| `schwartzPartialEval₁CLM`, `schwartzPartialEval₁CLM_apply`, `schwartzPartialEval₁CLM_tensorProduct₂` | Checked in `SCV/DistributionalEOWKernel.lean`: fixed-chart partial evaluation `F ↦ (t ↦ F (z,t))` is a genuine continuous linear map on mixed Schwartz tests, built from `SchwartzMap.compCLM` along `t ↦ (z,t)`.  The apply and tensor-product specialization theorems are checked. |
+| `iteratedFDeriv_partialEval₁_eq_compContinuousLinearMap_inr`, `norm_iteratedFDeriv_partialEval₁_le`, `schwartzPartialEval₁CLM_seminorm_le`, `schwartzPartialEval₁CLM_compactSeminormBound` | Checked in `SCV/SchwartzPartialEval.lean` and `SCV/DistributionalEOWKernel.lean`: first-variable partial evaluation has the expected derivative formula through `ContinuousLinearMap.inr`, each fixed partial evaluation is bounded by the corresponding mixed Schwartz seminorm, and the compact finite-seminorm bound is checked with exact witnesses `s' = s` and `C = 1`. |
 | `exists_closedBall_integral_clm_of_continuousOn` | Checked in `SCV/DistributionalEOWSupport.lean`: integration over `Metric.closedBall 0 R` against a coefficient that is continuous on that closed ball is a continuous complex-linear functional on real-chart Schwartz kernels, with the explicit seminorm bound using `SchwartzMap.seminorm ℂ 0 0`.  This is the real-radius local replacement for the older natural-radius/global-continuity compact-ball integral CLM. |
 | `exists_realMollifyLocal_valueCLM_of_closedBall` | Checked in `SCV/LocalDistributionalEOW.lean`: for a fixed chart point `z`, if `F` is continuous on a side domain containing all translates `z + realEmbed t` for `t ∈ closedBall 0 r`, then `ψ ↦ realMollifyLocal F ψ z` is represented on `KernelSupportWithin ψ r` by a continuous complex-linear functional.  The proof uses the compact-ball integral CLM plus the support condition to replace the full integral by the closed-ball integral. |
 | `exists_bound_realMollifyLocal_smulLeftCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: after multiplying kernels by a fixed Schwartz cutoff whose topological support is inside `closedBall 0 r`, each side mollifier value is bounded by `C * SchwartzMap.seminorm ℂ 0 0 ψ`.  This is the explicit seminorm estimate needed before integrating the side value CLMs through the local Rudin envelope. |
@@ -3980,8 +3982,9 @@ Proof transcript for the next target:
    surfaces must be proved in this order.  These are not wrappers: together
    they are exactly the functional-analytic content needed to turn the local
    family `Gchart` into one mixed Schwartz continuous linear functional.  The
-   first two cutoff helpers are already checked; the next unchecked helper is
-   `schwartzPartialEval₁CLM`.
+   cutoff helpers and the full partial-evaluation CLM/apply/tensor/seminorm
+   package are already checked; the next unchecked helper is
+   `regularizedLocalEOW_originalFamily_compactValueCLM`.
 
    ```lean
    theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
@@ -4066,19 +4069,38 @@ Proof transcript for the next target:
    * `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` is checked as the
      complex-chart analogue of
      `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall`.
-   * `schwartzPartialEval₁CLM z` must be built in the SCV layer, not by
-     importing the Wightman partial-evaluation file.  Use `SchwartzMap.compCLM`
-     for the affine temperate map `t ↦ (z,t)`.  The reverse growth bound is
-     `‖t‖ ≤ ‖(z,t)‖` (or the corresponding product-norm lemma), so no compact
-     `z` hypothesis is needed for the definition.  The tensor-product theorem
-     is by extensionality and `schwartzTensorProduct₂_apply`.
-   * The compact partial-evaluation seminorm bound is proved by expanding
-     `SchwartzMap.seminorm`: derivatives in the fiber variable are mixed
-     derivatives in directions `(0,v)`, and the weight satisfies
-     `(1 + ‖t‖)^k ≤ (1 + ‖(z,t)‖)^k`.  For a finite set of target seminorms,
-     collect the same derivative orders as source seminorms.  Any harmless
-     product-norm constants are absorbed into one `C`; no Banach-Steinhaus
-     input is used here.
+   * `schwartzPartialEval₁CLM z` is checked in the SCV layer, without
+     importing the Wightman partial-evaluation file.  Define
+     `g z : (Fin m -> ℝ) -> ComplexChartSpace m × (Fin m -> ℝ)` by
+     `g z t = (z,t)` and set the CLM to
+     `SchwartzMap.compCLM (𝕜 := ℂ) (g := g z) ...`.  The temperate-growth
+     proof is exact: write `g z` as the pointwise sum of the constant map
+     `fun _ => (z,0)` and the continuous linear inclusion
+     `ContinuousLinearMap.inr ℝ (ComplexChartSpace m) (Fin m -> ℝ)`.  The
+     reverse-growth witness is `(k,C) = (1,1)`, because the product norm gives
+     `‖t‖ ≤ ‖(z,t)‖ ≤ 1 * (1 + ‖(z,t)‖)^1`.  Therefore no compact `z`
+     hypothesis is needed for the definition.  The apply theorem is checked by
+     definitional reduction (`rfl`), and the tensor-product theorem is checked
+     by extensionality plus `schwartzTensorProduct₂_apply`.
+   * The compact partial-evaluation seminorm bound is checked and stronger
+     than the compact statement needs.  The proof adds the pure first-variable
+     derivative lemmas to
+     `SCV/SchwartzPartialEval.lean`:
+     `iteratedFDeriv_partialEval₁_eq_compContinuousLinearMap_inr` and
+     `norm_iteratedFDeriv_partialEval₁_le`.  They are the `inr` analogues of
+     the existing `partialEval₂` lemmas.  It then proves
+     `schwartzPartialEval₁CLM_seminorm_le` in the kernel layer:
+     ```
+     SchwartzMap.seminorm ℂ k l (schwartzPartialEval₁CLM z F) ≤
+       SchwartzMap.seminorm ℂ k l F
+     ```
+     because the derivative of `t ↦ F (z,t)` is the full mixed derivative
+     precomposed with `ContinuousLinearMap.inr`, whose operator norm is at
+     most one, and the product norm gives `‖t‖ ≤ ‖(z,t)‖`.  Therefore
+     `schwartzPartialEval₁CLM_compactSeminormBound` uses the exact witnesses
+     `s' = s` and `C = 1`; the hypotheses `z ∈ closedBall 0 R` and `0 ≤ R`
+     are retained only for the downstream compact-family API.  No
+     Banach-Steinhaus input is used here.
    * `regularizedLocalEOW_originalFamily_compactValueCLM` is the compact
      version of `regularizedEnvelope_valueCLM_of_cutoff`.  For each `z`, use
      the existing pointwise CLM.  For the single finite-seminorm bound on
@@ -4411,12 +4433,15 @@ Proof transcript for the next target:
    1b. `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on`: checked; removes the
        complex-chart cutoff on tests whose topological support lies in the
        declared support window.
-   2. `schwartzPartialEval₁CLM`: the continuous linear map
+   2. `schwartzPartialEval₁CLM`: checked; the continuous linear map
       `F ↦ (t ↦ F (z,t))`, built directly in the SCV layer from
-      `SchwartzMap.compCLM` along the affine map `t ↦ (z,t)`.  Include its
-      apply theorem, tensor-product theorem, and compact finite-seminorm
-      estimate.  Do not import the Wightman partial-evaluation file.
-   3. `regularizedLocalEOW_originalFamily_compactValueCLM`: the compact
+      `SchwartzMap.compCLM` along the affine map `t ↦ (z,t)`, with checked
+      apply and tensor-product theorems.  No Wightman partial-evaluation file
+      is imported.
+   2b. `schwartzPartialEval₁CLM_compactSeminormBound`: checked; the compact
+       finite-seminorm estimate for `z ∈ closedBall 0 Rcut`, with exact
+       witnesses `s' = s` and `C = 1`.
+   3. `regularizedLocalEOW_originalFamily_compactValueCLM`: next target; the compact
       uniform version of `regularizedEnvelope_valueCLM_of_cutoff` on
       `closedBall 0 Rcut`, with one finite Schwartz seminorm bound for all
       `z` in the compact chart support.

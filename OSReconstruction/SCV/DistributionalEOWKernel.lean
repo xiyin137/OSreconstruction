@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalUniqueness
+import OSReconstruction.SCV.SchwartzPartialEval
 import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 
 /-!
@@ -289,6 +290,94 @@ theorem schwartzTensorProduct₂_apply {m : ℕ}
     (z : ComplexChartSpace m) (t : Fin m → ℝ) :
     schwartzTensorProduct₂ φ ψ (z, t) = φ z * ψ t := by
   rfl
+
+/-- Partial evaluation of a mixed chart/fiber Schwartz test at a fixed chart
+point, as a continuous linear map in the ambient Schwartz test. -/
+def schwartzPartialEval₁CLM {m : ℕ} (z : ComplexChartSpace m) :
+    SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ]
+      SchwartzMap (Fin m → ℝ) ℂ := by
+  let g : (Fin m → ℝ) → ComplexChartSpace m × (Fin m → ℝ) := fun t => (z, t)
+  have hg : g.HasTemperateGrowth := by
+    have hconst : Function.HasTemperateGrowth
+        (fun _ : Fin m → ℝ => ((z, 0) : ComplexChartSpace m × (Fin m → ℝ))) :=
+      Function.HasTemperateGrowth.const _
+    have hlin : Function.HasTemperateGrowth
+        (⇑(ContinuousLinearMap.inr ℝ (ComplexChartSpace m) (Fin m → ℝ))) :=
+      (ContinuousLinearMap.inr ℝ (ComplexChartSpace m) (Fin m → ℝ)).hasTemperateGrowth
+    convert hconst.add hlin using 1
+    ext t <;> simp [g, ContinuousLinearMap.inr_apply, Prod.add_def]
+  have hg_upper : ∃ (k : ℕ) (C : ℝ), ∀ t, ‖t‖ ≤ C * (1 + ‖g t‖) ^ k := by
+    refine ⟨1, 1, ?_⟩
+    intro t
+    have ht : ‖t‖ ≤ ‖g t‖ := by
+      simp [g, Prod.norm_def]
+    have hnonneg : 0 ≤ ‖g t‖ := norm_nonneg _
+    nlinarith
+  exact SchwartzMap.compCLM (𝕜 := ℂ) (g := g) hg hg_upper
+
+@[simp]
+theorem schwartzPartialEval₁CLM_apply {m : ℕ} (z : ComplexChartSpace m)
+    (F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (t : Fin m → ℝ) :
+    schwartzPartialEval₁CLM z F t = F (z, t) := by
+  rfl
+
+@[simp]
+theorem schwartzPartialEval₁CLM_tensorProduct₂ {m : ℕ} (z : ComplexChartSpace m)
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    schwartzPartialEval₁CLM z (schwartzTensorProduct₂ φ ψ) =
+      φ z • ψ := by
+  ext t
+  simp [schwartzTensorProduct₂_apply]
+
+/-- Partial evaluation at a fixed chart point is bounded by the corresponding
+mixed Schwartz seminorm with the same weight and derivative order. -/
+theorem schwartzPartialEval₁CLM_seminorm_le {m : ℕ} (z : ComplexChartSpace m)
+    (F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (k l : ℕ) :
+    SchwartzMap.seminorm ℂ k l (schwartzPartialEval₁CLM z F) ≤
+      SchwartzMap.seminorm ℂ k l F := by
+  apply SchwartzMap.seminorm_le_bound ℂ k l _ (apply_nonneg _ _)
+  intro t
+  calc
+    ‖t‖ ^ k * ‖iteratedFDeriv ℝ l (fun x => (schwartzPartialEval₁CLM z F) x) t‖
+        ≤ ‖t‖ ^ k * ‖iteratedFDeriv ℝ l (⇑F) (z, t)‖ := by
+          apply mul_le_mul_of_nonneg_left
+          · simpa [schwartzPartialEval₁CLM_apply]
+              using norm_iteratedFDeriv_partialEval₁_le (f := F) z l t
+          · positivity
+    _ ≤ ‖(z, t)‖ ^ k * ‖iteratedFDeriv ℝ l (⇑F) (z, t)‖ := by
+          apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+          gcongr
+          simp [Prod.norm_def]
+    _ ≤ SchwartzMap.seminorm ℂ k l F :=
+          SchwartzMap.le_seminorm ℂ k l F (z, t)
+
+/-- Uniform finite-seminorm control for partial evaluation on a compact chart
+window.  The proof is pointwise in the chart variable, so the compact radius is
+kept only to match the downstream local-EOW API. -/
+theorem schwartzPartialEval₁CLM_compactSeminormBound {m : ℕ}
+    (R : ℝ) (_hR : 0 ≤ R) (s : Finset (ℕ × ℕ)) :
+    ∃ s' : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) R,
+      ∀ F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ,
+        s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)
+            (schwartzPartialEval₁CLM z F) ≤
+          C * s'.sup
+            (schwartzSeminormFamily ℂ
+              (ComplexChartSpace m × (Fin m → ℝ)) ℂ) F := by
+  refine ⟨s, 1, zero_le_one, ?_⟩
+  intro z _ F
+  rw [one_mul]
+  apply Seminorm.finset_sup_apply_le
+  · exact apply_nonneg _ _
+  · intro a ha
+    rcases a with ⟨k, l⟩
+    exact (schwartzPartialEval₁CLM_seminorm_le (z := z) (F := F) k l).trans
+      ((Seminorm.le_finset_sup_apply
+        (p := schwartzSeminormFamily ℂ (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+        (s := s) (x := F) ha))
 
 /-- The real embedding as a continuous real-linear map. -/
 private def realEmbedCLM {m : ℕ} : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=

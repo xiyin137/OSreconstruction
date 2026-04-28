@@ -82,6 +82,57 @@ theorem norm_iteratedFDeriv_partialEval_le
     _ = ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ := by
         simp
 
+/-- The iterated derivative of a first-variable partial evaluation is the full
+product iterated derivative precomposed with the second-factor inclusion. -/
+theorem iteratedFDeriv_partialEval₁_eq_compContinuousLinearMap_inr
+    (f : SchwartzMap (E₁ × E₂) F) (x : E₁) (l : ℕ) (y : E₂) :
+    iteratedFDeriv ℝ l (fun y' => f (x, y')) y =
+      (iteratedFDeriv ℝ l (⇑f) (x, y)).compContinuousLinearMap
+        (fun _ => ContinuousLinearMap.inr ℝ E₁ E₂) := by
+  have htranslate : ∀ y',
+      iteratedFDeriv ℝ l (fun z : E₁ × E₂ => f (z + (x, 0))) ((0 : E₁), y') =
+        iteratedFDeriv ℝ l (⇑f) ((0 : E₁) + x, y' + 0) := by
+    intro y'
+    rw [iteratedFDeriv_comp_add_right' l (x, 0)]
+    simp [Prod.add_def]
+  have hcomp : ContDiff ℝ (↑(⊤ : ℕ∞))
+      (fun z : E₁ × E₂ => f (z + (x, (0 : E₂)))) :=
+    f.smooth'.comp ((contDiff_id.add contDiff_const).of_le le_top)
+  have hinr_comp := ContinuousLinearMap.iteratedFDeriv_comp_right
+    (ContinuousLinearMap.inr ℝ E₁ E₂) hcomp y (by exact_mod_cast le_top (a := (l : ℕ∞)))
+  have hlhs :
+      (fun y' => f (x, y')) =
+        (fun z : E₁ × E₂ => f (z + (x, (0 : E₂)))) ∘
+          (ContinuousLinearMap.inr ℝ E₁ E₂) := by
+    ext y'
+    simp [ContinuousLinearMap.inr_apply]
+  rw [hlhs, hinr_comp]
+  exact congrArg
+    (fun A : ContinuousMultilinearMap ℝ (fun _ : Fin l => E₁ × E₂) F =>
+      A.compContinuousLinearMap (fun _ => ContinuousLinearMap.inr ℝ E₁ E₂))
+    (by simpa [ContinuousLinearMap.inr_apply] using htranslate y)
+
+/-- The iterated derivatives of a first-variable partial evaluation are
+norm-controlled by the corresponding full product derivatives. -/
+theorem norm_iteratedFDeriv_partialEval₁_le
+    (f : SchwartzMap (E₁ × E₂) F) (x : E₁) (l : ℕ) (y : E₂) :
+    ‖iteratedFDeriv ℝ l (fun y' => f (x, y')) y‖ ≤
+      ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ := by
+  rw [iteratedFDeriv_partialEval₁_eq_compContinuousLinearMap_inr]
+  calc
+    ‖(iteratedFDeriv ℝ l (⇑f) (x, y)).compContinuousLinearMap
+        (fun _ => ContinuousLinearMap.inr ℝ E₁ E₂)‖
+      ≤ ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ *
+          ∏ _ : Fin l, ‖ContinuousLinearMap.inr ℝ E₁ E₂‖ := by
+        exact ContinuousMultilinearMap.norm_compContinuousLinearMap_le _ _
+    _ ≤ ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ * 1 := by
+        apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
+        apply Finset.prod_le_one (fun _ _ => norm_nonneg _)
+        intro _ _
+        exact ContinuousLinearMap.norm_inr_le_one ℝ E₁ E₂
+    _ = ‖iteratedFDeriv ℝ l (⇑f) (x, y)‖ := by
+        simp
+
 /-- Partial evaluation of a Schwartz map in the second variable. -/
 def schwartzPartialEval₂ (f : SchwartzMap (E₁ × E₂) F) (y : E₂) :
     SchwartzMap E₁ F where
