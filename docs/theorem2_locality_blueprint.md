@@ -1224,15 +1224,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`, so the
       set integral defining `K` is an integral of the actual continuous cutoff
       envelope and not of an arbitrary choice of `Lchart z`.  The proof doc
-      for this continuity step is now split into the required helper stack:
+      for this continuity step is now split into the required helper stack.
+      The first checked layer lives in `SCV/VaryingKernelContinuity.lean`:
       continuity of the cutoff slice, varying-kernel real-mollifier
       continuity with fixed compact support and an open original side domain,
-      the uniform-on-compact Schwartz seminorm estimate needed for
-      fixed-support joint continuity of
-      `(z,u) ↦ translateSchwartz (-u) (η z)`, the parametric
-      Rudin-integrand bound over `closedBall 0 Rcut` with the inner Rudin
-      side domains separated from the original holomorphy domains, and the
+      the real-seminorm uniform-on-compact translation estimate controlling
+      both `k,l` and `0,l` seminorms, fixed-support joint continuity of
+      `(z,u) ↦ translateSchwartz (-u) (η z)`, and the
       varying-kernel Rudin-envelope dominated-continuity theorem.  The
+      remaining proof-doc-ready layer is the scalar evaluation/support theorem
+      for the actual chart-kernel slice, the CLM boundary-data derivation, the
+      parametric Rudin-integrand bound over `closedBall 0 Rcut` with the inner
+      Rudin side domains separated from the original holomorphy domains, and
+      the final cutoff-envelope continuity theorem.  The
       boundary limits in that stack cannot be merely fixed-`z` limits: the
       kernel varies along the approaching Rudin arc.  They are supplied by the
       checked local BHW/EOW side-value identities, the existing CLM boundary

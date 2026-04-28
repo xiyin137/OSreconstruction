@@ -175,6 +175,14 @@ theorem continuous_schwartzPartialEval₁CLM
 theorem KernelSupportWithin.mono
 theorem SchwartzMap.exists_schwartzCLM_finsetSeminormBound
 theorem regularizedLocalEOW_chartKernelFamily_valueCLM
+theorem continuous_chartKernelCutoffSlice
+theorem continuous_chartKernelCutoffSlice_eval
+theorem seminorm_translateSchwartz_uniformOn
+theorem continuousOn_translateSchwartz_varyingKernel_of_fixedSupport
+theorem continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport
+theorem localRudin_varyingKernel_boundaryData_of_clm
+theorem exists_bound_localRudinIntegrand_varyingKernel
+theorem continuousOn_localRudinEnvelope_varyingKernel_of_bound
 theorem continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand
 theorem regularizedLocalEOW_pairingCLM_of_fixedWindow
 theorem regularizedLocalEOW_pairingCLM_localCovariant
@@ -4464,6 +4472,54 @@ Proof transcript for the next target:
       `schwartzPartialEval₁CLM_apply`.  The right-hand side is continuous in
       `(z,y)`.
 
+      The scalar evaluation continuity used by the variable-kernel mollifier is
+      a separate small theorem, not an implicit property of Schwartz-space
+      convergence:
+      ```lean
+      theorem continuous_chartKernelCutoffSlice_eval
+          (ys : Fin m -> Fin m -> ℝ) (hli : LinearIndependent ℝ ys)
+          (χr χψ : SchwartzMap (Fin m -> ℝ) ℂ)
+          (F : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ) :
+          let P := localEOWRealLinearKernelPushforwardCLM ys hli
+          Continuous fun p : ComplexChartSpace m × (Fin m -> ℝ) =>
+            (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m -> ℝ) -> ℂ)
+              (P (SchwartzMap.smulLeftCLM ℂ
+                (χr : (Fin m -> ℝ) -> ℂ)
+                (schwartzPartialEval₁CLM p.1 F)))) p.2
+      ```
+      Proof: use the displayed pointwise formula.  The maps
+      `p ↦ p.1`, `p ↦ (localEOWRealLinearCLE ys hli).symm p.2`, the two
+      cutoff evaluations, and the mixed Schwartz test evaluation
+      `p ↦ F (p.1, (localEOWRealLinearCLE ys hli).symm p.2)` are continuous;
+      multiplication by the constant inverse Jacobian is continuous.  This
+      theorem supplies the `hη_eval_cont` input of
+      `continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport` by
+      restriction to any parameter set.
+
+      The support input is also explicit:
+      ```lean
+      theorem KernelSupportWithin.chartKernelCutoffSlice
+          (ys : Fin m -> Fin m -> ℝ) (hli : LinearIndependent ℝ ys)
+          (χr χψ : SchwartzMap (Fin m -> ℝ) ℂ)
+          (F : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ)
+          {rψLarge : ℝ}
+          (hχψ_support :
+            tsupport (χψ : (Fin m -> ℝ) -> ℂ) ⊆
+              Metric.closedBall 0 rψLarge) :
+          let P := localEOWRealLinearKernelPushforwardCLM ys hli
+          ∀ z : ComplexChartSpace m,
+            KernelSupportWithin
+              (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m -> ℝ) -> ℂ)
+                (P (SchwartzMap.smulLeftCLM ℂ
+                  (χr : (Fin m -> ℝ) -> ℂ)
+                  (schwartzPartialEval₁CLM z F))))
+              rψLarge
+      ```
+      This is exactly
+      `KernelSupportWithin.smulLeftCLM_of_leftSupport hχψ_support _`.
+      When a pointwise zero-outside-`closedBall` hypothesis is needed, combine
+      this support inclusion with `image_eq_zero_of_notMem_tsupport`.
+
    2. Prove a reusable varying-kernel real-mollifier continuity lemma:
       ```lean
       theorem continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport
@@ -4522,16 +4578,20 @@ Proof transcript for the next target:
           (k l : ℕ) :
           ∃ C : ℝ, 0 ≤ C ∧
             ∀ a ∈ E, ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
-              (SchwartzMap.seminorm ℂ k l) (translateSchwartz a ψ) ≤
-                C * (SchwartzMap.seminorm ℂ k l) ψ
+              (SchwartzMap.seminorm ℝ k l) (translateSchwartz a ψ) ≤
+                C * ((SchwartzMap.seminorm ℝ k l) ψ +
+                  (SchwartzMap.seminorm ℝ 0 l) ψ)
       ```
       Proof: use compactness of `E` and continuity of `a ↦ ‖a‖` to choose
       `R` with `0 ≤ R` and `‖a‖ ≤ R` on `E`.  For
       `(translateSchwartz a ψ) x = ψ (x + a)`, rewrite derivatives with
-      `iteratedFDeriv_comp_add_right`.  With `y = x + a`,
-      `‖x‖ = ‖y - a‖ ≤ ‖y‖ + R`, hence
-      `(1 + ‖x‖)^k ≤ (1 + R)^k * (1 + ‖y‖)^k`.  The seminorm bound follows
-      with `C = (1 + R)^k`.  This is a real estimate, not a wrapper around the
+      `iteratedFDeriv_comp_add_right`.  With `y = x + a`, use
+      `‖x‖ = ‖y - a‖ ≤ ‖y‖ + ‖a‖` and `add_pow_le` to control the translated
+      `k,l` seminorm by the sum of the original `k,l` and `0,l` seminorms,
+      uniformly for `a ∈ E`; one admissible constant is
+      `C = 2 ^ (k - 1) * (1 + R) ^ k`.  The extra `0,l` seminorm is essential:
+      the `k,l` seminorm alone does not control values translated through the
+      origin.  This is a real estimate, not a wrapper around the
       existing pointwise-growth theorem `seminorm_translateSchwartz_le`; the
       old theorem has a constant depending on `ψ`, while this one is uniform
       as a continuous operator bound on compact translation sets.
@@ -4596,7 +4656,6 @@ Proof transcript for the next target:
           (Z : Set (ComplexChartSpace m))
           (η : ComplexChartSpace m -> SchwartzMap (Fin m -> ℝ) ℂ)
           (hZ_compact : IsCompact Z)
-          (hZ_nonempty : Z.Nonempty)
           (hZ_ball :
             Z ⊆ Metric.ball (0 : ComplexChartSpace m) (δ / 2))
           (hη_eval_cont :
@@ -4737,12 +4796,136 @@ Proof transcript for the next target:
       `sample (z0,l0) = realEmbed (realSample (z0,l0))` with
       `localEOWChart_smp_realEdge_eq_of_unit_real`.
 
+      The preceding `hbv_cont`, `hplus_boundary`, and `hminus_boundary`
+      hypotheses are supplied by one CLM boundary-data theorem, so they are not
+      new assumptions in the final chart-kernel instantiation:
+      ```lean
+      theorem localRudin_varyingKernel_boundaryData_of_clm
+          {Cplus Cminus : Set (Fin m -> ℝ)} {δ ρ r rψLarge : ℝ}
+          (hm : 0 < m)
+          (Dplus Dminus : Set (ComplexChartSpace m))
+          (E : Set (Fin m -> ℝ))
+          (Fplus Fminus : ComplexChartSpace m -> ℂ)
+          (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+          (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+          (Tplus Tminus :
+            (Fin m -> ℝ) ->
+              SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+          (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
+          (hplus_eval :
+            ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+              KernelSupportWithin ψ rψLarge ->
+              ∀ w ∈ Dplus,
+                realMollifyLocal Fplus ψ w =
+                  Tplus (fun i => (w i).im)
+                    (translateSchwartz (fun i => - (w i).re) ψ))
+          (hminus_eval :
+            ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+              KernelSupportWithin ψ rψLarge ->
+              ∀ w ∈ Dminus,
+                realMollifyLocal Fminus ψ w =
+                  Tminus (fun i => (w i).im)
+                    (translateSchwartz (fun i => - (w i).re) ψ))
+          (hplus_limit :
+            ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+              Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+                (nhds ((Tchart.restrictScalars ℝ) f)))
+          (hminus_limit :
+            ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
+              Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+                (nhds ((Tchart.restrictScalars ℝ) f)))
+          (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+          (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+          (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+          (Z : Set (ComplexChartSpace m))
+          (η : ComplexChartSpace m -> SchwartzMap (Fin m -> ℝ) ℂ)
+          (hZ_ball :
+            Z ⊆ Metric.ball (0 : ComplexChartSpace m) (δ / 2))
+          (hE_compact : IsCompact E)
+          (hη_cont : ContinuousOn η Z)
+          (hη_support : ∀ z ∈ Z, KernelSupportWithin (η z) rψLarge)
+          (hE_mem :
+            ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+              localEOWRealChart x0 ys u ∈ E)
+          (hplus :
+            ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+            ∀ v : Fin m -> ℝ,
+              (∀ j, 0 ≤ v j) ->
+              0 < ∑ j, v j ->
+              (∑ j, v j) < r ->
+                localEOWChart x0 ys
+                  (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+          (hminus :
+            ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+            ∀ v : Fin m -> ℝ,
+              (∀ j, v j ≤ 0) ->
+              0 < ∑ j, -v j ->
+              (∑ j, -v j) < r ->
+                localEOWChart x0 ys
+                  (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) :
+          ContinuousOn
+            (fun p : ComplexChartSpace m × (Fin m -> ℝ) =>
+              Tchart (translateSchwartz (-p.2) (η p.1)))
+            (Z ×ˢ E) ∧
+          (∀ z0 ∈ Z, ∀ l0 ∈ Metric.sphere (0 : ℂ) 1,
+            l0.im = 0 ->
+              Filter.Tendsto
+                (fun p : ComplexChartSpace m × ℂ =>
+                  realMollifyLocal Fplus (η p.1)
+                    (localEOWChart x0 ys (localEOWSmp δ p.1 p.2)))
+                (nhdsWithin (z0, l0)
+                  ((Z ×ˢ Metric.sphere (0 : ℂ) 1) ∩
+                    {p : ComplexChartSpace m × ℂ | 0 < p.2.im}))
+                (nhds
+                  (Tchart
+                    (translateSchwartz
+                      (-(localEOWRealChart x0 ys
+                        (fun j => (localEOWSmp δ z0 l0 j).re)))
+                      (η z0))))) ∧
+          (∀ z0 ∈ Z, ∀ l0 ∈ Metric.sphere (0 : ℂ) 1,
+            l0.im = 0 ->
+              Filter.Tendsto
+                (fun p : ComplexChartSpace m × ℂ =>
+                  realMollifyLocal Fminus (η p.1)
+                    (localEOWChart x0 ys (localEOWSmp δ p.1 p.2)))
+                (nhdsWithin (z0, l0)
+                  ((Z ×ˢ Metric.sphere (0 : ℂ) 1) ∩
+                    {p : ComplexChartSpace m × ℂ | p.2.im < 0}))
+                (nhds
+                  (Tchart
+                    (translateSchwartz
+                      (-(localEOWRealChart x0 ys
+                        (fun j => (localEOWSmp δ z0 l0 j).re)))
+                      (η z0)))))
+      ```
+      Proof: first derive `η z t = 0` outside
+      `Metric.closedBall 0 rψLarge` from `hη_support` and
+      `image_eq_zero_of_notMem_tsupport`, then apply
+      `continuousOn_translateSchwartz_varyingKernel_of_fixedSupport` on
+      `Z ×ˢ E` and compose with `Tchart.continuous`.  For the positive
+      side-limit, work with the filter on
+      `(Z ×ˢ sphere 0 1) ∩ {0 < im}`.  The side-evaluation identity
+      `hplus_eval (η z) (hη_support z hz)` rewrites the mollifier to
+      `Tplus (im sample) (translateSchwartz (-realSample) (η z))`.
+      The imaginary part tends to `nhdsWithin 0 Cplus` because
+      `sample` is continuous, the endpoint is real by
+      `localEOWChart_smp_realEdge_eq_of_unit_real`, and
+      `hDplus_sub` maps the positive side into `TubeDomain Cplus`.  The
+      translated kernels tend by the just-proved `hbv_cont`, composed with the
+      continuous real-sample map.  Then
+      `SchwartzMap.tempered_apply_tendsto_of_tendsto_filter` combines
+      `hplus_limit` with this moving-kernel convergence.  The negative branch
+      is the same argument with `hminus_eval`, `hminus_limit`, and
+      `hDminus_sub`.
+
       The same three-way `ContinuousWithinAt.union` patching argument as in
       the checked bound theorem gives `ContinuousOn H S`.  Since
-      `hZ_compact.prod (isCompact_sphere 0 1)` makes `S` compact and
-      `hZ_nonempty` makes it nonempty, `S.exists_bound_of_continuousOn` gives
-      one bound `M`; replace it by `max M 0` to return a nonnegative bound.
-      Finally rewrite `l = Complex.exp ((θ : ℂ) * Complex.I)` exactly as in
+      `hZ_compact.prod (isCompact_sphere 0 1)` makes `S` compact,
+      `S.exists_bound_of_continuousOn` gives one bound `M0`; return
+      `max M0 0`.  No nonemptiness hypothesis on `Z` is needed: if `S` is
+      empty the final universal bound is vacuous, and otherwise every norm is
+      bounded by `M0 ≤ max M0 0`.  Finally rewrite
+      `l = Complex.exp ((θ : ℂ) * Complex.I)` exactly as in
       `exists_bound_localRudinIntegrand`.
 
    5. Prove a varying-kernel Rudin-envelope continuity theorem:
@@ -5305,8 +5488,16 @@ Proof transcript for the next target:
        `seminorm_translateSchwartz_uniformOn`,
        `continuousOn_realMollifyLocal_varyingKernel_of_fixedSupport`,
        `continuousOn_translateSchwartz_varyingKernel_of_fixedSupport`,
+       `continuousOn_localRudinEnvelope_varyingKernel_of_bound`: checked in
+       `SCV/VaryingKernelContinuity.lean`.  The checked
+       `seminorm_translateSchwartz_uniformOn` uses real Schwartz seminorms and
+       controls the output `k,l` seminorm by both the input `k,l` and `0,l`
+       seminorms; that `0,l` term is mathematically necessary near the origin.
+       The remaining continuity-support targets before the mixed pairing CLM
+       are `continuous_chartKernelCutoffSlice_eval`,
+       `KernelSupportWithin.chartKernelCutoffSlice`,
+       `localRudin_varyingKernel_boundaryData_of_clm`,
        `exists_bound_localRudinIntegrand_varyingKernel`,
-       `continuousOn_localRudinEnvelope_varyingKernel_of_bound`, and then
        `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
        defining the mixed integral, prove continuity of the actual cutoff
        envelope integrand
