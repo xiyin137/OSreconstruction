@@ -3002,8 +3002,11 @@ lemma chartDistributionalEOW_local_envelope
     (x0 : Fin m -> ℝ) (hx0 : x0 ∈ E)
     (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
     (T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
-    -- plus the local wedge, slow-growth, and boundary-value hypotheses
-    -- restricted to the chosen chart box
+    -- exactly the `hlocal_wedge`, `hslow_plus`, `hslow_minus`,
+    -- `hplus_bv`, and `hminus_bv` hypotheses of
+    -- `SCV.local_distributional_edge_of_the_wedge_envelope`, specialized to
+    -- compact real boxes around `x0` and then transported by
+    -- `localEOWChart x0 ys`
     :
     ∃ (Ux0 Ux0plus Ux0minus : Set (Fin m -> ℂ))
       (Hx0 : (Fin m -> ℂ) -> ℂ),
@@ -3757,9 +3760,40 @@ Proof transcript for the next target:
        (Fplus Fminus : ComplexChartSpace m -> ℂ)
        (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
        (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
-       -- local chart/wedge data, fixed cutoff equal to 1 on all translated
-       -- kernels, compact subcones, slow-growth hypotheses, and OS-II
-       -- distributional boundary convergence hypotheses
+       (E B0 B1 B2 : Set (Fin m -> ℝ))
+       (hB0_sub_E : B0 ⊆ E) (hB1_sub_E : B1 ⊆ E)
+       (hB2_sub_E : B2 ⊆ E)
+       (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+       (hχ_one_B1 : ∀ x ∈ B1, χ x = 1)
+       (hχ_support_B2 :
+         tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ B2)
+       (hψ_translate_B1 :
+         ∀ w ∈ Ωplus ∪ Ωminus,
+           tsupport
+             (translateSchwartz (fun i => - (w i).re) ψ :
+               (Fin m -> ℝ) -> ℂ) ⊆ B1)
+       (hplus_slice_mem :
+         ∀ y ∈ Cplus, ∀ x ∈ B2,
+           (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) ∈ Ωplus)
+       (hminus_slice_mem :
+         ∀ y ∈ Cminus, ∀ x ∈ B2,
+           (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) ∈ Ωminus)
+       (hplus_bv_cutoff :
+         ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+           Tendsto (fun y =>
+             ∫ x : Fin m -> ℝ,
+               Fplus (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) *
+                 (SchwartzMap.smulLeftCLM ℂ
+                   (χ : (Fin m -> ℝ) -> ℂ) φ) x)
+             (nhdsWithin 0 Cplus) (nhds (Tchart φ)))
+       (hminus_bv_cutoff :
+         ∀ φ : SchwartzMap (Fin m -> ℝ) ℂ,
+           Tendsto (fun y =>
+             ∫ x : Fin m -> ℝ,
+               Fminus (fun i => (x i : ℂ) + (y i : ℂ) * Complex.I) *
+                 (SchwartzMap.smulLeftCLM ℂ
+                   (χ : (Fin m -> ℝ) -> ℂ) φ) x)
+             (nhdsWithin 0 Cminus) (nhds (Tchart φ)))
        :
        ∃ Tplus Tminus :
            (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ,
