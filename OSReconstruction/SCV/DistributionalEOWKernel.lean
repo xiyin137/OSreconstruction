@@ -39,6 +39,14 @@ def KernelSupportWithin {m : ℕ}
     (ψ : SchwartzMap (Fin m → ℝ) ℂ) (r : ℝ) : Prop :=
   tsupport (ψ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 r
 
+/-- Kernel support is monotone in the support radius. -/
+theorem KernelSupportWithin.mono {m : ℕ}
+    {ψ : SchwartzMap (Fin m → ℝ) ℂ} {r R : ℝ}
+    (hψ : KernelSupportWithin ψ r) (hrR : r ≤ R) :
+    KernelSupportWithin ψ R := by
+  intro x hx
+  exact Metric.closedBall_subset_closedBall hrR (hψ hx)
+
 /-- The real coordinate direction in the complex chart. -/
 def complexRealDir {m : ℕ} (j : Fin m) : ComplexChartSpace m :=
   fun k => if k = j then 1 else 0
@@ -378,6 +386,48 @@ theorem schwartzPartialEval₁CLM_compactSeminormBound {m : ℕ}
       ((Seminorm.le_finset_sup_apply
         (p := schwartzSeminormFamily ℂ (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
         (s := s) (x := F) ha))
+
+/-- Partial evaluation at a varying chart point is continuous in the Schwartz
+topology of the real-kernel variable. -/
+theorem continuous_schwartzPartialEval₁CLM {m : ℕ}
+    (F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ) :
+    Continuous (fun z : ComplexChartSpace m => schwartzPartialEval₁CLM z F) := by
+  have hcont :
+      Continuous (fun z : ComplexChartSpace m => schwartzPartialEval₁ F z) :=
+    continuous_schwartzPartialEval₁ F
+  have heq :
+      (fun z : ComplexChartSpace m => schwartzPartialEval₁CLM z F) =
+        fun z : ComplexChartSpace m => schwartzPartialEval₁ F z := by
+    funext z
+    ext t
+    simp [schwartzPartialEval₁CLM_apply, schwartzPartialEval₁_apply]
+  simpa [heq] using hcont
+
+/-- A continuous linear endomorphism of kernel Schwartz space transports any
+finite family of output Schwartz seminorms to a finite family of input
+seminorms. -/
+theorem SchwartzMap.exists_schwartzCLM_finsetSeminormBound {m : ℕ}
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ)
+    (s0 : Finset (ℕ × ℕ)) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        s0.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) (T ψ) ≤
+          C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+  let D := Fin m → ℝ
+  let p := schwartzSeminormFamily ℂ D ℂ
+  have hbounded : Seminorm.IsBounded p p T.toLinearMap := by
+    intro i
+    let qi : Seminorm ℂ (SchwartzMap D ℂ) := (p i).comp T.toLinearMap
+    have hqi_cont : Continuous qi := by
+      exact ((schwartz_withSeminorms ℂ D ℂ).continuous_seminorm i).comp T.continuous
+    obtain ⟨s, C, _hCne, hbound⟩ :=
+      Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ D ℂ) qi hqi_cont
+    exact ⟨s, C, hbound⟩
+  obtain ⟨Cnn, s, hsup⟩ := Seminorm.isBounded_sup hbounded s0
+  refine ⟨s, (Cnn : ℝ), Cnn.2, ?_⟩
+  intro ψ
+  have h := Seminorm.le_def.mp hsup ψ
+  simpa [D, p] using h
 
 /-- The real embedding as a continuous real-linear map. -/
 private def realEmbedCLM {m : ℕ} : (Fin m → ℝ) →L[ℝ] ComplexChartSpace m :=

@@ -300,6 +300,131 @@ theorem KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_translateSchw
   exact KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM ys hli
     (KernelSupportWithin.translateSchwartz a hφ)
 
+/-- Transport a compact-window value-CLM package from original real-edge
+kernels to local chart-coordinate kernels.  The proof performs both cutoff
+removals and transports the finite Schwartz-seminorm bound through the
+chart-kernel pushforward. -/
+theorem regularizedLocalEOW_chartKernelFamily_valueCLM
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    {Rcut r rcut rψ : ℝ}
+    (χr χψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (Gorig : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ)
+    (Lorig : ComplexChartSpace m →
+      SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hχr_one :
+      ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) r, χr t = 1)
+    (hχr_support :
+      tsupport (χr : (Fin m → ℝ) → ℂ) ⊆
+        Metric.closedBall 0 rcut)
+    (hAcut_le :
+      ‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ *
+          rcut ≤ rψ)
+    (hχψ_one :
+      ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rψ, χψ t = 1)
+    (hLorig_value :
+      ∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) Rcut,
+      ∀ η : SchwartzMap (Fin m → ℝ) ℂ,
+        Lorig z η =
+          Gorig
+            (SchwartzMap.smulLeftCLM ℂ
+              (χψ : (Fin m → ℝ) → ℂ) η) z)
+    (hLorig_bound :
+      ∃ s0 : Finset (ℕ × ℕ), ∃ C0 : ℝ, 0 ≤ C0 ∧
+        ∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) Rcut,
+        ∀ η : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖Lorig z η‖ ≤
+            C0 * s0.sup
+              (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) η) :
+    let P := localEOWRealLinearKernelPushforwardCLM ys hli
+    let Gchart : SchwartzMap (Fin m → ℝ) ℂ →
+        ComplexChartSpace m → ℂ :=
+      fun ψ z => Gorig (P ψ) z
+    ∃ Lchart : ComplexChartSpace m →
+        SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ,
+      (∀ z ψ,
+        Lchart z ψ =
+          Lorig z
+            (P (SchwartzMap.smulLeftCLM ℂ
+              (χr : (Fin m → ℝ) → ℂ) ψ))) ∧
+      (∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) Rcut,
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          KernelSupportWithin ψ r →
+            Lchart z ψ = Gchart ψ z) ∧
+      ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+        ∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) Rcut,
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖Lchart z ψ‖ ≤
+            C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+  let P := localEOWRealLinearKernelPushforwardCLM ys hli
+  let B : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ :=
+    P.comp (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ))
+  let Lchart : ComplexChartSpace m →
+      SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+    fun z => (Lorig z).comp B
+  refine ⟨Lchart, ?_, ?_, ?_⟩
+  · intro z ψ
+    simp [Lchart, B, P]
+  · intro z hz ψ hψ
+    have hχr_id :
+        SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ = ψ :=
+      KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall
+        χr hχr_one hψ
+    have hcut_support :
+        KernelSupportWithin
+          (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ) rcut :=
+      KernelSupportWithin.smulLeftCLM_of_leftSupport hχr_support ψ
+    have hpush0 :
+        KernelSupportWithin
+          (P (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ))
+          (‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * rcut) := by
+      simpa [P] using
+        KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM
+          ys hli hcut_support
+    have hpush :
+        KernelSupportWithin
+          (P (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ))
+          rψ :=
+      hpush0.mono hAcut_le
+    have hχψ_id :
+        SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m → ℝ) → ℂ)
+            (P (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ)) =
+          P (SchwartzMap.smulLeftCLM ℂ (χr : (Fin m → ℝ) → ℂ) ψ) :=
+      KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall
+        χψ hχψ_one hpush
+    calc
+      Lchart z ψ =
+          Lorig z (P (SchwartzMap.smulLeftCLM ℂ
+            (χr : (Fin m → ℝ) → ℂ) ψ)) := by
+          simp [Lchart, B, P]
+      _ = Gorig
+            (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m → ℝ) → ℂ)
+              (P (SchwartzMap.smulLeftCLM ℂ
+                (χr : (Fin m → ℝ) → ℂ) ψ))) z := by
+          exact hLorig_value z hz _
+      _ = Gorig
+            (P (SchwartzMap.smulLeftCLM ℂ
+              (χr : (Fin m → ℝ) → ℂ) ψ)) z := by
+          rw [hχψ_id]
+      _ = Gorig (P ψ) z := by
+          rw [hχr_id]
+  · rcases hLorig_bound with ⟨s0, C0, hC0, hbound0⟩
+    obtain ⟨s1, C1, hC1, hbound1⟩ :=
+      SchwartzMap.exists_schwartzCLM_finsetSeminormBound B s0
+    refine ⟨s1, C0 * C1, mul_nonneg hC0 hC1, ?_⟩
+    intro z hz ψ
+    calc
+      ‖Lchart z ψ‖ = ‖Lorig z (B ψ)‖ := by
+          simp [Lchart]
+      _ ≤ C0 * s0.sup
+            (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) (B ψ) :=
+          hbound0 z hz (B ψ)
+      _ ≤ C0 * (C1 * s1.sup
+            (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ) := by
+          exact mul_le_mul_of_nonneg_left (hbound1 ψ) hC0
+      _ = (C0 * C1) *
+            s1.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+          ring
+
 /-- Pull a distribution on the original real edge back to local chart
 coordinates.  The inverse absolute determinant is the usual Jacobian factor for
 the affine change of variables `y = x0 + A u`. -/

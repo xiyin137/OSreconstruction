@@ -1209,17 +1209,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The Lean implementation has checked the first helper layers feeding the
       pairing CLM: complex-chart cutoff, `SupportsInOpen` cutoff removal, and
       the SCV-local `schwartzPartialEval₁CLM` apply/tensor/seminorm package,
-      plus the compact value-CLM bound for `Lorig`.  The next Lean targets,
-      once the proof docs for this layer are accepted as complete, are
-      `continuous_schwartzPartialEval₁CLM`,
+      plus the compact value-CLM bound for `Lorig`.  The next chart-kernel
+      helpers are also checked: the generic
+      `SCV/SchwartzPartialEval.lean` first-variable continuity port, the
+      public kernel API theorem `continuous_schwartzPartialEval₁CLM`,
       `KernelSupportWithin.mono`,
-      `SchwartzMap.exists_schwartzCLM_finsetSeminormBound`, and then
-      `regularizedLocalEOW_chartKernelFamily_valueCLM`.  The chart-kernel
-      theorem must consume the original-family compact value-CLM package and
-      prove the chart cutoff removal, pushforward support enlargement
-      `‖A‖ * rcut ≤ rψ`, original-edge cutoff removal, and composed
-      finite-seminorm bound explicitly.  Before the mixed pairing CLM itself,
-      Lean must also prove
+      `SchwartzMap.exists_schwartzCLM_finsetSeminormBound`, and
+      `regularizedLocalEOW_chartKernelFamily_valueCLM`.  The checked
+      chart-kernel theorem consumes the original-family compact value-CLM
+      package and proves the chart cutoff removal, pushforward support
+      enlargement `‖A‖ * rcut ≤ rψ`, original-edge cutoff removal, and
+      composed finite-seminorm bound explicitly.  Before the mixed pairing CLM
+      itself, Lean must next prove
       `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`, so the
       set integral defining `K` is an integral of the actual continuous cutoff
       envelope and not of an arbitrary choice of `Lchart z`.  Only after that

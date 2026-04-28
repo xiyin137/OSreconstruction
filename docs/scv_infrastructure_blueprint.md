@@ -3987,17 +3987,18 @@ Proof transcript for the next target:
    the positive-imaginary seed required by
    `regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`.
 
-   Before the first theorem below is implemented, the following helper
-   surfaces must be proved in this order.  These are not wrappers: together
-   they are exactly the functional-analytic content needed to turn the local
-   family `Gchart` into one mixed Schwartz continuous linear functional.  The
-   cutoff helpers, the full partial-evaluation CLM/apply/tensor/seminorm
-   package, and the compact original-family value-CLM bound are already
-   checked.  The remaining helper surfaces before the mixed pairing are:
-   the SCV-local continuity-in-the-chart-variable theorem for partial
-   evaluation, support-radius monotonicity, and finite-seminorm transport for a
-   continuous Schwartz CLM.  The next substantive theorem is
-   `regularizedLocalEOW_chartKernelFamily_valueCLM`.
+   The helper surfaces in this chart-kernel layer are now checked.  These are
+   not wrappers: together they are exactly the functional-analytic content
+   needed to turn the local family `Gchart` into one mixed Schwartz continuous
+   linear functional.  The checked package includes the cutoff helpers, the
+   full partial-evaluation CLM/apply/tensor/seminorm package, the compact
+   original-family value-CLM bound, the SCV-local continuity-in-the-chart-
+   variable theorem for partial evaluation, support-radius monotonicity,
+   finite-seminorm transport through a continuous Schwartz CLM, and the
+   chart-kernel value-CLM theorem
+   `regularizedLocalEOW_chartKernelFamily_valueCLM`.  The next unimplemented
+   surface is the varying-slice continuity theorem for the actual cutoff
+   envelope integrand.
 
    ```lean
    theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
@@ -4146,8 +4147,31 @@ Proof transcript for the next target:
      Banach-Steinhaus input is used here.
    * `continuous_schwartzPartialEval₁CLM` is the SCV-local analogue of the
      existing Wightman-side `continuous_partialEval₂`, but it must be proved in
-     `SCV/SchwartzPartialEval.lean` or the SCV kernel layer rather than
-     imported.  The proof is the same Frechet-topology argument with the two
+     the SCV layer rather than imported.  To avoid an import cycle, put the
+     genuine Frechet-topology proof in `SCV/SchwartzPartialEval.lean` for the
+     generic first-variable partial-evaluation map:
+     ```lean
+     def schwartzPartialEval₁
+         (F : SchwartzMap (E₁ × E₂) G) (x : E₁) :
+         SchwartzMap E₂ G
+
+     theorem schwartzPartialEval₁_apply
+         (F : SchwartzMap (E₁ × E₂) G) (x : E₁) (y : E₂) :
+         schwartzPartialEval₁ F x y = F (x,y)
+
+     theorem continuous_schwartzPartialEval₁
+         (F : SchwartzMap (E₁ × E₂) G) :
+         Continuous (fun x : E₁ => schwartzPartialEval₁ F x)
+     ```
+     Then the public kernel theorem
+     `continuous_schwartzPartialEval₁CLM` is the consumer-facing corollary in
+     `SCV/DistributionalEOWKernel.lean`, proved by extensionality from
+     `schwartzPartialEval₁_apply` and `schwartzPartialEval₁CLM_apply`.  This
+     corollary is not a substitute for the proof; it connects the checked
+     generic continuity theorem to the actual CLM API used by the mixed
+     pairing.
+
+     The generic proof is the same Frechet-topology argument with the two
      factors swapped.  First prove a tail lemma:
      ```
      schwartzPartialEval₁_tail_small :
@@ -4438,10 +4462,12 @@ Proof transcript for the next target:
       `continuousAt_localRudinIntegral_of_bound`: positive angles use the plus
       side, negative angles use the minus side, and the endpoint values are
       controlled by the common boundary CLM.  The boundary term is continuous
-      in `z` because `z ↦ η z` is continuous into the Schwartz topology
-      (checked by the partial-evaluation CLM apply formula and finite-seminorm
-      bounds) and `Tchart` is a continuous linear map.  The compact product
-      of `closedBall 0 Rcut`, `closedBall 0 rψLarge`, and `[-π,π]` supplies a
+      in `z` because `z ↦ schwartzPartialEval₁CLM z F` is continuous by
+      `continuous_schwartzPartialEval₁CLM`, the cutoff maps
+      `χr • ·`, `localEOWRealLinearKernelPushforwardCLM ys hli`, and `χψ • ·`
+      are continuous linear maps on Schwartz space, and `Tchart` is a
+      continuous linear functional.  The compact product of
+      `closedBall 0 Rcut`, `closedBall 0 rψLarge`, and `[-π,π]` supplies a
       single dominating bound; apply
       `intervalIntegral.continuousAt_of_dominated_interval` exactly as in the
       checked local Rudin continuity proof.
@@ -4887,23 +4913,30 @@ Proof transcript for the next target:
    2b. `schwartzPartialEval₁CLM_compactSeminormBound`: checked; the compact
        finite-seminorm estimate for `z ∈ closedBall 0 Rcut`, with exact
        witnesses `s' = s` and `C = 1`.
-   2c. `continuous_schwartzPartialEval₁CLM`: unchecked SCV-local port of the
-       Wightman `continuous_partialEval₂` proof.  It is needed for the
-       varying-slice continuity theorem and must be proved without importing
-       the Wightman partial-evaluation file.
+   2c. `schwartzPartialEval₁`, `schwartzPartialEval₁_tail_small`,
+       `hasFDerivAt_iteratedFDeriv_partialEval₁_param`,
+       `norm_fderiv_iteratedFDeriv_partialEval₁_param_le`, and
+       `continuous_schwartzPartialEval₁`: checked SCV-local port of the
+       Wightman `partialEval₂_tail_small` / `continuous_partialEval₂` proof
+       with the product factors swapped.  The public
+       `continuous_schwartzPartialEval₁CLM` theorem in
+       `SCV/DistributionalEOWKernel.lean` is then proved by identifying
+       `schwartzPartialEval₁CLM z F` with `schwartzPartialEval₁ F z`.  This is
+       needed for the varying-slice continuity theorem and is proved without
+       importing the Wightman partial-evaluation file.
    3. `regularizedLocalEOW_originalFamily_compactValueCLM`: checked; the compact
       uniform version of `regularizedEnvelope_valueCLM_of_cutoff` on
       `closedBall 0 Rcut`, with one finite Schwartz seminorm bound for all
       `z` in the compact chart support.
    4a. `KernelSupportWithin.mono` and
-       `SchwartzMap.exists_schwartzCLM_finsetSeminormBound`: next helper
+       `SchwartzMap.exists_schwartzCLM_finsetSeminormBound`: checked helper
        targets before the chart-kernel value theorem.  The first is closed-ball
        support monotonicity.  The second packages the
        `Seminorm.bound_of_continuous`/`Seminorm.isBounded_sup` argument that
        transports any finite output Schwartz seminorm through a continuous
        kernel-to-kernel Schwartz CLM.
-   4b. `regularizedLocalEOW_chartKernelFamily_valueCLM`: next substantive
-      target; define
+   4b. `regularizedLocalEOW_chartKernelFamily_valueCLM`: checked substantive
+      chart-kernel target; define
       `Lchart z = Lorig z ∘ localEOWRealLinearKernelPushforwardCLM ys hli ∘
       (χr • ·)`.  On `KernelSupportWithin ψ r`, remove the chart cutoff,
       push the cutoff kernel support to radius `A * rcut`, enlarge it to the
