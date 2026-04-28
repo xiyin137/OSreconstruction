@@ -67,4 +67,29 @@ axiom schwartz_clm_fubini_exchange {m : ℕ}
       (∀ ξ : Fin m → ℝ, Φ ξ = ∫ x : Fin m → ℝ, g x ξ * f x) ∧
       (T Φ = ∫ x : Fin m → ℝ, T (g x) * f x)
 
+/-- **CLM exchange for ℝ-parametric Schwartz-valued integrals.**
+
+Analogous to `schwartz_clm_fubini_exchange` but for integration over `ℝ` with
+Schwartz functions on a (possibly different) domain `E`. Given a continuous
+ℂ-linear functional `w` on `SchwartzMap E ℂ` and a continuous family
+`G : ℝ → SchwartzMap E ℂ` with polynomial seminorm growth, the pointwise
+integral `Θ(ξ) = ∫ φ(t) · G(t)(ξ) dt` defines a Schwartz function, and
+`w(Θ) = ∫ w(G(t)) · φ(t) dt`.
+
+Mathematical content: identical to `schwartz_clm_fubini_exchange` — the
+Schwartz-valued integral is well-defined by polynomial growth × rapid decay,
+and the CLM exchange follows from continuity of `w`. The generalization is
+that the integration domain (`ℝ`) may differ from the Schwartz domain (`E`). -/
+theorem schwartz_clm_fubini_exchange_real
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (w : SchwartzMap E ℂ → ℂ) (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
+    (G : ℝ → SchwartzMap E ℂ) (hG_cont : Continuous G)
+    (hG_poly : ∀ (k j : ℕ), ∃ (C : ℝ) (N : ℕ), 0 < C ∧ ∀ t : ℝ,
+        SchwartzMap.seminorm ℝ k j (G t) ≤ C * (1 + ‖t‖) ^ N)
+    (φ : SchwartzMap ℝ ℂ) :
+    ∃ Θ : SchwartzMap E ℂ,
+      (∀ ξ : E, Θ ξ = ∫ t : ℝ, (φ : ℝ → ℂ) t * G t ξ) ∧
+      w Θ = ∫ t : ℝ, w (G t) * (φ : ℝ → ℂ) t := by
+  sorry
+
 end

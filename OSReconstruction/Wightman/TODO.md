@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-03-16
+Last updated: 2026-04-27
 
 This file tracks the active blocker picture on the OS reconstruction path.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -11,13 +11,13 @@ Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`)
 
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
-| `OSReconstruction/Wightman` | 33 |
-| `OSReconstruction/SCV` | 2 |
+| `OSReconstruction/Wightman` | 19 |
+| `OSReconstruction/SCV` | 0 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
-| `OSReconstruction/vNA` | 40 |
-| **Whole project** | **77** |
+| `OSReconstruction/vNA` | 36 |
+| **Whole project** | **58** |
 
-Count cross-checked on 2026-03-16 with:
+Count cross-checked on 2026-04-27 with:
 ```bash
 rg -c '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 ```
@@ -27,6 +27,27 @@ Tracked production tree also currently contains one explicit Route 1 axiom:
 `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`.
 
 ## Current Root Blockers
+
+### `Wightman/SpectralEquivalence.lean` (0) — COMPLETE ON THE ONE-WAY LANE
+
+Status:
+- `SpectralEquivalence.lean` is now direct-`sorry`-free.
+- The one-way theorem
+  `ForwardTubeAnalyticity d W → SpectralConditionDistribution d W`
+  is proved on the live branch.
+- The old two-way surface has been dropped intentionally; the reverse direction
+  under the global polynomial-growth interface is not part of the active file.
+
+What landed:
+- difference-variable factorization through `exists_diffVar_distribution`
+- analytic diagonal-translation invariance on the forward tube
+- product-tube extraction from forward-tube analyticity
+- converse Paley-Wiener support argument on the product forward cone
+
+Current role:
+- no longer a live blocker for the Wightman lane
+- keep follow-up work, if any, limited to cleanup or future reverse-direction
+  redesign, not to the active OS reconstruction path
 
 ## Priority Split In `Main.lean`
 
@@ -79,6 +100,11 @@ Immediate sharpened subgaps:
 - For `schwinger_continuation_base_step`: no more active effort on the original 1-point case; it is mathematically trivial from translation invariance and not a blocker.
 - For `schwinger_continuation_base_step`: the honest remaining choice is between a concrete Schwinger-side two-point/difference-variable reduction and, only if forced later, a deeper Schwartz kernel-extension theorem. The tensor insertion maps do not close the blocker by themselves.
 - For `boundary_values_tempered`: the generic DCT/integrability/tempered-boundary package is now in `SCV/LaplaceSchwartz.lean`; the genuine missing content is deriving the two growth hypotheses `hpoly` and `hunif` from the OS input.
+
+Non-blocker but now complete:
+- `Wightman/SpectralEquivalence.lean` has exited the live blocker set; do not
+  spend active effort re-opening the old two-way theorem surface while the
+  `OSToWightman*` lane is still incomplete.
 
 ### 2. `SCV` load-bearing infrastructure (2)
 
@@ -193,6 +219,8 @@ Current assessment:
 ## Secondary Blockers
 
 Not on the shortest OS reconstruction lane:
+- `Wightman/SpectralEquivalence.lean`: one-way implication complete; only future
+  reverse-direction or interface-cleanup work remains
 - `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
 - `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker
 - `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
@@ -214,7 +242,9 @@ Not on the shortest OS reconstruction lane:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
    - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster
    - `BHWTranslation.isPreconnected_baseFiber` is now optional old-route cleanup, not required for the merged proof path
-6. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
+6. Keep `SpectralEquivalence.lean` off the active queue unless a downstream file
+   needs a small interface adaptation; the one-way theorem is already landed.
+7. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
 
 ## Recently Completed (2026-03-14)
 
