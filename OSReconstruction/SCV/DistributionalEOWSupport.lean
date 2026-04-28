@@ -30,6 +30,168 @@ theorem KernelSupportWithin_hasCompactSupport
   exact IsCompact.of_isClosed_subset
     (isCompact_closedBall 0 r) (isClosed_tsupport _) hψ
 
+/-- The fixed-radius kernel support class is closed under addition. -/
+theorem KernelSupportWithin.add
+    {ψ η : SchwartzMap (Fin m → ℝ) ℂ} {r : ℝ}
+    (hψ : KernelSupportWithin ψ r)
+    (hη : KernelSupportWithin η r) :
+    KernelSupportWithin (ψ + η) r := by
+  intro x hx
+  have hx' :
+      x ∈ tsupport (ψ : (Fin m → ℝ) → ℂ) ∪
+          tsupport (η : (Fin m → ℝ) → ℂ) := by
+    simpa using
+      tsupport_add (ψ : (Fin m → ℝ) → ℂ) (η : (Fin m → ℝ) → ℂ) hx
+  rcases hx' with hxψ | hxη
+  · exact hψ hxψ
+  · exact hη hxη
+
+/-- The fixed-radius kernel support class is closed under scalar
+multiplication. -/
+theorem KernelSupportWithin.smul
+    (c : ℂ) {ψ : SchwartzMap (Fin m → ℝ) ℂ} {r : ℝ}
+    (hψ : KernelSupportWithin ψ r) :
+    KernelSupportWithin (c • ψ) r := by
+  intro x hx
+  exact hψ ((tsupport_smul_subset_right (fun _ : Fin m → ℝ => c)
+    (ψ : (Fin m → ℝ) → ℂ)) hx)
+
+/-- Multiplying a supported kernel by a Schwartz-side cutoff cannot enlarge
+the kernel support radius. -/
+theorem KernelSupportWithin.smulLeftCLM
+    (χ : (Fin m → ℝ) → ℂ)
+    {ψ : SchwartzMap (Fin m → ℝ) ℂ} {r : ℝ}
+    (hψ : KernelSupportWithin ψ r) :
+    KernelSupportWithin (SchwartzMap.smulLeftCLM ℂ χ ψ) r := by
+  intro x hx
+  exact hψ ((SchwartzMap.tsupport_smulLeftCLM_subset (F := ℂ) (g := χ)
+    (f := ψ) hx).1)
+
+/-- If the cutoff factor is supported in a radius, then multiplying any
+Schwartz kernel by that cutoff produces a kernel supported in that radius. -/
+theorem KernelSupportWithin.smulLeftCLM_of_leftSupport
+    {χ : SchwartzMap (Fin m → ℝ) ℂ} {r : ℝ}
+    (hχ : tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 r)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+    KernelSupportWithin (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) r := by
+  intro x hx
+  exact hχ ((SchwartzMap.tsupport_smulLeftCLM_subset (F := ℂ)
+    (g := (χ : (Fin m → ℝ) → ℂ)) (f := ψ) hx).2)
+
+/-- A Schwartz cutoff that is identically one on the closed support ball acts
+as the identity on kernels supported in that ball. -/
+theorem KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    {ψ : SchwartzMap (Fin m → ℝ) ℂ} {r : ℝ}
+    (hχ_one :
+      ∀ x : Fin m → ℝ, x ∈ Metric.closedBall (0 : Fin m → ℝ) r → χ x = 1)
+    (hψ : KernelSupportWithin ψ r) :
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ = ψ := by
+  ext x
+  rw [SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth]
+  by_cases hx : x ∈ tsupport (ψ : (Fin m → ℝ) → ℂ)
+  · exact by simp [hχ_one x (hψ hx)]
+  · have hψx : ψ x = 0 := by
+      have hxsupp : x ∉ Function.support (ψ : (Fin m → ℝ) → ℂ) := by
+        intro hs
+        exact hx (subset_closure hs)
+      simpa [Function.mem_support] using hxsupp
+    simp [hψx]
+
+/-- A compact Schwartz cutoff that is one on a prescribed closed ball and
+supported in a larger closed ball. -/
+theorem exists_schwartz_cutoff_eq_one_on_closedBall
+    {r rLarge : ℝ} (hr : 0 < r) (hrLarge : r < rLarge) :
+    ∃ χ : SchwartzMap (Fin m → ℝ) ℂ,
+      (∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) r, χ t = 1) ∧
+      tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 rLarge := by
+  let b : ContDiffBump (0 : Fin m → ℝ) := ⟨r, rLarge, hr, hrLarge⟩
+  let f : (Fin m → ℝ) → ℂ := fun t => (b t : ℂ)
+  have hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f :=
+    (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  let χ : SchwartzMap (Fin m → ℝ) ℂ :=
+    hf_compact.toSchwartzMap hf_smooth
+  have hχ_apply : ∀ t, χ t = f t :=
+    HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth
+  refine ⟨χ, ?_, ?_⟩
+  · intro t ht
+    rw [hχ_apply t]
+    simp [f, b.one_of_mem_closedBall ht]
+  · intro t ht
+    have htf : t ∈ tsupport f := by
+      simpa [χ, hχ_apply] using ht
+    have htb : t ∈ tsupport b := by
+      simpa [tsupport, f, Function.support] using htf
+    rw [b.tsupport_eq] at htb
+    exact htb
+
+/-- Integration over a real closed ball against a continuous-on-the-ball
+coefficient is a continuous linear functional on Schwartz kernels. -/
+theorem exists_closedBall_integral_clm_of_continuousOn
+    {R : ℝ} {g : (Fin m → ℝ) → ℂ}
+    (hg_cont : ContinuousOn g (Metric.closedBall (0 : Fin m → ℝ) R)) :
+    ∃ T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ,
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        T ψ = ∫ x in Metric.closedBall (0 : Fin m → ℝ) R, g x * ψ x := by
+  let s : Set (Fin m → ℝ) := Metric.closedBall (0 : Fin m → ℝ) R
+  have hs_compact : IsCompact s := isCompact_closedBall _ _
+  obtain ⟨C, hC⟩ := hs_compact.exists_bound_of_continuousOn hg_cont
+  let C' : ℝ := max C 0
+  have hC'_nonneg : 0 ≤ C' := by
+    simp [C']
+  have hs_fin : volume s < ⊤ := measure_closedBall_lt_top
+  refine ⟨SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ)
+      (fun ψ : SchwartzMap (Fin m → ℝ) ℂ => ∫ x in s, g x * ψ x) ?_ ?_ ?_, ?_⟩
+  · intro ψ φ
+    have hψint :
+        Integrable (fun x : Fin m → ℝ => g x * ψ x) (volume.restrict s) := by
+      exact ContinuousOn.integrableOn_compact hs_compact
+        (hg_cont.mul ψ.continuous.continuousOn)
+    have hφint :
+        Integrable (fun x : Fin m → ℝ => g x * φ x) (volume.restrict s) := by
+      exact ContinuousOn.integrableOn_compact hs_compact
+        (hg_cont.mul φ.continuous.continuousOn)
+    simpa [mul_add] using
+      (MeasureTheory.integral_add
+        (μ := volume.restrict s)
+        (f := fun x : Fin m → ℝ => g x * ψ x)
+        (g := fun x : Fin m → ℝ => g x * φ x)
+        hψint hφint)
+  · intro a ψ
+    have hmul :
+        (fun x : Fin m → ℝ => g x * (a * ψ x)) =
+          fun x => a * (g x * ψ x) := by
+      funext x
+      ring
+    change ∫ x in s, g x * (a * ψ x) = a * ∫ x in s, g x * ψ x
+    rw [hmul]
+    simpa using
+      (MeasureTheory.integral_const_mul a (fun x : Fin m → ℝ => g x * ψ x) : _)
+  · refine ⟨{(0, 0)}, C' * (volume s).toReal, ?_, ?_⟩
+    · exact mul_nonneg hC'_nonneg ENNReal.toReal_nonneg
+    · intro ψ
+      calc
+        ‖∫ x in s, g x * ψ x‖
+            ≤ (C' * SchwartzMap.seminorm ℂ 0 0 ψ) * (volume s).toReal := by
+              refine MeasureTheory.norm_setIntegral_le_of_norm_le_const hs_fin ?_
+              intro x hx
+              have hgx : ‖g x‖ ≤ C' := le_trans (hC x hx) (le_max_left _ _)
+              calc
+                ‖g x * ψ x‖ = ‖g x‖ * ‖ψ x‖ := norm_mul _ _
+                _ ≤ C' * SchwartzMap.seminorm ℂ 0 0 ψ := by
+                  gcongr
+                  simpa using (SchwartzMap.le_seminorm ℂ 0 0 ψ x)
+        _ = (C' * (volume s).toReal) * SchwartzMap.seminorm ℂ 0 0 ψ := by
+              ring
+        _ = (C' * (volume s).toReal) *
+              ({(0, 0)} : Finset (ℕ × ℕ)).sup
+                (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+              simp [mul_left_comm, mul_comm]
+  · intro ψ
+    rfl
+
 /-- Real directional derivatives of Schwartz tests do not enlarge topological
 support. -/
 theorem directionalDerivSchwartzCLM_tsupport_subset

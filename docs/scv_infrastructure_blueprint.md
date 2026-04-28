@@ -96,7 +96,54 @@ surfaces.  The following names are already checked and should be used exactly:
 `realMollifyLocal_eq_cutoffSliceCLM`,
 `tendsto_cutoffSliceCLM_of_boundaryValue`,
 `tendsto_mollified_boundary_of_clm`,
+`KernelSupportWithin.add`,
+`KernelSupportWithin.smul`,
+`KernelSupportWithin.smulLeftCLM`,
+`KernelSupportWithin.smulLeftCLM_of_leftSupport`,
+`KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall`,
+`exists_schwartz_cutoff_eq_one_on_closedBall`,
+`exists_closedBall_integral_clm_of_continuousOn`,
+`exists_realMollifyLocal_valueCLM_of_closedBall`,
+`exists_bound_realMollifyLocal_smulLeftCLM`,
+`exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds`,
+`exists_schwartz_bound_normalized_intervalIntegral_clm_family`,
+`exists_localRudinIntegrand_smulLeftCLM_clmFamily`,
+`exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value`,
+`regularizedEnvelope_valueCLM_of_cutoff`,
+`localEOWRealLinearPart`,
+`localEOWRealChart_eq_x0_add_linearPart`,
+`localEOWRealChart_sub`,
+`localEOWRealChart_add`,
+`localEOWChart_sub_realEmbed`,
+`localEOWChart_add_realEmbed`,
+`localEOWRealLinearMatrix`,
+`localEOWRealLinearMatrix_mulVec`,
+`localEOWRealLinearCLE`,
+`localEOWRealLinearCLE_apply`,
+`localEOWRealLinearPullbackCLM`,
+`localEOWRealLinearPullbackCLM_apply`,
+`KernelSupportWithin.localEOWRealLinearPullbackCLM`,
+`integrable_realMollifyLocal_integrand_of_translate_margin`,
 `localRealMollify_commonContinuousBoundary_of_clm`,
+`realMollifyLocal_translateSchwartz`,
+`realMollifyLocal_add_of_integrable`,
+`realMollifyLocal_add_of_translate_margin`,
+`realMollifyLocal_smul`,
+`local_continuous_edge_of_the_wedge_envelope`,
+`regularizedLocalEOW_fixedKernelEnvelope_from_clm`,
+`regularizedLocalEOW_fixedWindowEnvelope_from_clm`,
+`regularizedLocalEOW_family_from_fixedWindow`,
+`regularizedLocalEOW_family_add`,
+`regularizedLocalEOW_family_smul`,
+`exists_seminorm_bound_complexRealFiberIntegralRaw_zero`,
+`basePrecompCLM`,
+`baseFDerivSchwartzCLM`,
+`exists_seminorm_bound_baseFDerivSchwartz`,
+`exists_seminorm_bound_complexRealFiberIntegralRaw_deriv`,
+`complexRealFiberIntegralCLM`,
+`complexRealFiberIntegralCLM_apply`,
+`boundaryProductKernel_from_fiberIntegralCLM`,
+`boundaryProductKernel_from_complexRealFiberIntegralCLM`,
 `regularizedEnvelope_productKernel_dbar_eq_zero`,
 `translationCovariantKernel_distributionalHolomorphic`,
 `regularizedEnvelope_holomorphicDistribution_from_productKernel`,
@@ -108,7 +155,6 @@ The remaining public proof package should be split as the following theorem
 surfaces plus the final envelope theorem:
 
 ```lean
-theorem local_continuous_edge_of_the_wedge_envelope
 lemma sliceCLM_family_from_distributionalBoundary
 theorem regularizedLocalEOW_productKernel_from_continuousEOW
 lemma chartDistributionalEOW_local_envelope
@@ -213,40 +259,118 @@ Source ledger for the internal helper list:
 | `localEOW_choose_cone_basis` | Existing `open_set_contains_basis` in `SCV/TubeDomainExtension.lean`. |
 | `localEOWCoefficientSimplex`, `localEOWSimplexDirections`, `isCompact_localEOWCoefficientSimplex`, `isCompact_localEOWSimplexDirections`, `localEOWSimplexDirections_subset_cone`, `localEOW_positive_imag_normalized_mem_simplex` | Checked in `SCV/LocalContinuousEOW.lean`: compact closed coefficient simplex, compact image under the finite-dimensional chart-direction map, convex-combination inclusion in the cone, and normalization of positive imaginary chart directions. |
 | `localEOWRealChart`, `localEOWChart`, `continuous_localEOWRealChart`, `isCompact_localEOWRealChart_image`, `localEOWChart_real_imag`, `localEOWChart_twoSided_polywedge_mem` | Checked in `SCV/LocalContinuousEOW.lean`: public chart notation matching the private `Phi` shape in `TubeDomainExtension.lean`, compactness of real-chart images, decomposition of `localEOWChart x0 ys (u + i v)`, and the direct two-sided local wedge membership theorem in chart coordinates. |
+| `localEOWRealLinearPart`, `localEOWRealChart_eq_x0_add_linearPart`, `localEOWRealChart_sub`, `localEOWRealChart_add`, `localEOWChart_sub_realEmbed`, `localEOWChart_add_realEmbed`, `localEOWRealLinearCLE`, `localEOWRealLinearPullbackCLM`, `KernelSupportWithin.localEOWRealLinearPullbackCLM`, `localEOWRealLinearPushforwardCLM`, `KernelSupportWithin.localEOWRealLinearPushforwardCLM`, `localEOWRealLinearKernelPushforwardCLM`, `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM`, `localEOWAffineTestPushforwardCLM`, `localEOWAffineDistributionPullbackCLM` | Checked in `SCV/LocalEOWChartLinear.lean`: explicit affine/linear bookkeeping for the local EOW chart.  A coordinate displacement `v` in the Rudin chart moves the original real edge by `localEOWRealLinearPart ys v`, not by `v` unless `ys` is the standard basis.  If `ys` is linearly independent, `localEOWRealLinearCLE ys hli` is the corresponding continuous linear equivalence and `localEOWRealLinearPullbackCLM ys hli ψ u = ψ (localEOWRealLinearPart ys u)` is the checked Schwartz test-function pullback.  Pullback of `KernelSupportWithin ψ r` is supported in radius `‖(localEOWRealLinearCLE ys hli).symm.toContinuousLinearMap‖ * r`.  The chart-to-original pushforward has apply theorem `localEOWRealLinearPushforwardCLM ys hli φ y = φ ((localEOWRealLinearCLE ys hli).symm y)` and transports support to radius `‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * r`.  The kernel pushforward `localEOWRealLinearKernelPushforwardCLM` adds the inverse absolute determinant factor `((localEOWRealJacobianAbs ys)⁻¹ : ℂ)` without enlarging support. |
 | `localEOW_chart_real_box` | Finite-dimensional topology: open preimage under a linear equivalence contains a small axis box. |
 | `localEOW_chart_positive_polywedge_mem`, `localEOW_chart_negative_polywedge_mem`, `localEOW_chart_twoSided_polywedge_mem` | Checked in `SCV/LocalContinuousEOW.lean`: local replacements for the existing `Phi_pos_in_tube` / `Phi_neg_in_tube` lemmas in `TubeDomainExtension.lean`, using `hlocal_wedge` on the compact real box and compact chart-direction simplex.  The two-sided theorem preserves the single radius supplied by `hlocal_wedge`. |
 | `localEOW_pullback_boundary_value` | Standard distribution pullback under an affine real-linear equivalence with Jacobian. |
 | `localEOW_uniform_slowGrowth_order` | Compactness plus maxima of the two local slow-growth orders. |
 | `localEOW_nested_axis_boxes`, `localEOW_support_margin` | Finite-dimensional topology: choose `B0 ⋐ B1 ⋐ E` and kernel-support radius `r` so `B0 + supp ψ ⊆ B1`. |
+| `continuousAt_localEOWSmp_param` | Next checked helper for `local_continuous_edge_of_the_wedge_envelope`: local public replacement for the private `scaledMoebiusProd_continuousAt` in `TubeDomainExtension.lean`.  It proves continuity in the Rudin parameter `w` of `w ↦ localEOWSmp δ w l` on the unit-radius denominator domain. |
+| `exists_localRudin_coordinate_update_margin` | Next checked helper for `local_continuous_edge_of_the_wedge_envelope`: finite-dimensional metric margin used by the parametric-integral theorem.  If `z` is inside `ball 0 (δ / 2)`, it chooses `ε' > 0` so changing one coordinate by distance at most `2ε'`, and every Cauchy circle centered within `ε'` with radius `ε'`, stays inside the same ball. |
+| `differentiableAt_localRudin_parametric_integral` | Next checked helper for `local_continuous_edge_of_the_wedge_envelope`: public replacement for the private Cauchy-estimate/Leibniz lemma `differentiableAt_parametric_integral`.  It proves holomorphy of one coordinate of the Rudin integral from a uniform bound, a local update margin, a.e. measurability, pointwise holomorphy away from the two circle-boundary angles, and vanishing on `sin θ = 0`. |
+| `exists_localContinuousEOW_chart_window` | Next checked helper for `local_continuous_edge_of_the_wedge_envelope`: chooses the actual local Rudin chart data at a real edge point.  It combines `open_set_contains_basis`, `localEOWRealChart_closedBall_subset`, `localEOWChart_twoSided_polywedge_mem`, and `exists_localEOWChart_smp_delta` to return a cone basis, a real closed ball inside `E`, a two-sided local polywedge radius, and one `δ` whose Rudin arcs stay in `Ωplus`/`Ωminus`. |
+| `localEOWChart_smp_upper_mem_of_delta_on_sphere`, `localEOWChart_smp_lower_mem_of_delta_on_sphere` | Next checked helpers for the local Rudin envelope integral: unlike `localEOWChart_smp_upper_mem_of_delta`, these allow a complex Rudin center `w`.  If `w ∈ closedBall 0 (δ/2)` and `‖l‖ = 1` with `Im l` positive/negative, then the scaled Möbius image maps into `Ωplus`/`Ωminus`.  This is the missing local replacement for the global `Phi_pos_in_tube`/`Phi_neg_in_tube` use in holomorphy of the Rudin integral. |
+| `localRudinIntegrand`, `localRudinIntegral`, `localRudinEnvelope`, `aestronglyMeasurable_localRudinIntegrand`, `continuousAt_localRudinIntegrand_param`, `continuousAt_localRudinIntegral_of_bound`, `differentiableAt_localRudinIntegrand_update`, `localRudinIntegrand_zero_of_sin_eq_zero`, `differentiableAt_localRudinIntegral_of_bound`, `differentiableOn_localRudinIntegral_of_bound`, `differentiableOn_localRudinEnvelope_of_bound`, `exists_bound_localRudinIntegrand`, `differentiableOn_localRudinEnvelope`, `localRudinEnvelope_eq_boundary_of_real` | Checked in `SCV/LocalContinuousEOWEnvelope.lean`: the actual circle integrand used to define the local coordinate envelope, its integral and normalized envelope, its measurability on `[-π,π]`, pointwise continuity in the Rudin center, dominated continuity of the integral, coordinatewise holomorphy off the two boundary angles, its zero value at the boundary angles, coordinatewise holomorphy of the integral once a uniform compact bound is supplied, Osgood joint holomorphy on the coordinate ball, the compact-bound theorem itself, the final bound-free holomorphy theorem for the local Rudin envelope, and the real-boundary mean-value identity in terms of `localRudinEnvelope`.  The compact-bound proof is the local version of the `G_bound` block in `TubeDomainExtension.lean`, with boundary branch `bv` on the real edge. |
+| `localEOWLine`, `localEOWLine_im`, `localEOWLine_I`, `localEOWLine_real_im_zero`, `differentiable_localEOWLine`, `localEOWLine_zero_mem_ball`, `localEOWLine_norm_le_delta_ten_of_norm_le_two`, `localEOWLine_re_closedBall_of_norm_le_two`, `localEOWChart_line_upper_mem_of_delta`, `localEOWChart_line_lower_mem_of_delta`, `localEOWChart_line_upper_mem_of_delta_of_negative`, `localEOWChart_line_lower_mem_of_delta_of_negative`, `localEOWLine_affine_real_combo`, `localEOWLine_chart_real`, `tendsto_localEOWLine_upper_to_boundaryValue`, `tendsto_localEOWLine_lower_to_boundaryValue`, `tendsto_localEOWLine_upper_to_boundaryValue_of_negative`, `tendsto_localEOWLine_lower_to_boundaryValue_of_negative`, `localRudinEnvelope_line_eq_boundary_of_real`, `localRudinEnvelope_eq_plus_on_positive_ball`, `localRudinEnvelope_eq_minus_on_negative_ball` | Checked across `SCV/LocalContinuousEOWEnvelope.lean` and `SCV/LocalContinuousEOWSideAgreement.lean`: the local line-geometry and one-variable identity-theorem package replacing the inline `L(z)` estimates in `rudin_orthant_extension`.  For `ζ ∈ ball 0 (δ/2)`, `L(z)_j = Re ζ_j + z Im ζ_j`; `L` is differentiable, affine over real convex combinations, and `L(0)` remains in the small Rudin ball.  If `‖z‖ ≤ 2`, every coordinate is bounded by `δ * 10` and the real part stays in the `ρ`-chart ball.  Positive `ζ` maps upper/lower half-planes to the plus/minus sides, negative `ζ` swaps the sides, and the Rudin envelope is now proved to agree with the corresponding side branch on the strict positive/negative coordinate balls. |
+| `localEOWChart_ball_positive_mem_of_delta`, `localEOWChart_ball_negative_mem_of_delta` | Checked helpers for the side-agreement part of the local continuous EOW theorem: the small coordinate ball with strictly positive, respectively strictly negative, imaginary coordinates maps into `Ωplus`, respectively `Ωminus`.  These are the honest local side domains on which agreement is first proved; arbitrary extra components of an open `Ωplus/Ωminus` are not silently included. |
 | `localRealMollifySide_holomorphicOn_of_translate_margin` | Checked in `SCV/LocalDistributionalEOW.lean`: local version of `differentiableOn_realMollify_tubeDomain`; real-direction convolution of a holomorphic wedge function is holomorphic on the shrunken wedge whenever the support margin keeps all translates of the real-kernel support inside the original local wedge. |
+| `KernelSupportWithin.add`, `KernelSupportWithin.smul` | Checked in `SCV/DistributionalEOWSupport.lean`: the fixed-radius smoothing-kernel class is closed under addition and scalar multiplication.  These are the support-side inputs for proving linearity of the explicit fixed-window family on the supported-kernel class. |
+| `KernelSupportWithin.smulLeftCLM`, `KernelSupportWithin.smulLeftCLM_of_leftSupport`, `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: multiplying by a Schwartz-side cutoff preserves support either from the original kernel or from the cutoff itself, and a cutoff equal to `1` on `closedBall 0 r` acts as the identity on kernels with `KernelSupportWithin ψ r`.  These are the cutoff support lemmas needed to extend supported-kernel identities to full Schwartz-space CLMs without introducing a `SmallKernelSpace` wrapper. |
+| `exists_schwartz_cutoff_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: a direct `ContDiffBump` construction of a Schwartz cutoff equal to `1` on `closedBall 0 r` and topologically supported in `closedBall 0 rLarge`, for `0 < r < rLarge`.  This replaces the former blueprint-only `KernelCutoff`/`cutoffKernelCLM` placeholders. |
+| `exists_closedBall_integral_clm_of_continuousOn` | Checked in `SCV/DistributionalEOWSupport.lean`: integration over `Metric.closedBall 0 R` against a coefficient that is continuous on that closed ball is a continuous complex-linear functional on real-chart Schwartz kernels, with the explicit seminorm bound using `SchwartzMap.seminorm ℂ 0 0`.  This is the real-radius local replacement for the older natural-radius/global-continuity compact-ball integral CLM. |
+| `exists_realMollifyLocal_valueCLM_of_closedBall` | Checked in `SCV/LocalDistributionalEOW.lean`: for a fixed chart point `z`, if `F` is continuous on a side domain containing all translates `z + realEmbed t` for `t ∈ closedBall 0 r`, then `ψ ↦ realMollifyLocal F ψ z` is represented on `KernelSupportWithin ψ r` by a continuous complex-linear functional.  The proof uses the compact-ball integral CLM plus the support condition to replace the full integral by the closed-ball integral. |
+| `exists_bound_realMollifyLocal_smulLeftCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: after multiplying kernels by a fixed Schwartz cutoff whose topological support is inside `closedBall 0 r`, each side mollifier value is bounded by `C * SchwartzMap.seminorm ℂ 0 0 ψ`.  This is the explicit seminorm estimate needed before integrating the side value CLMs through the local Rudin envelope. |
+| `exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds` | Checked in `SCV/LocalDistributionalEOW.lean`: the direct Rudin-circle integration estimate.  If the plus and minus arc values are already uniformly bounded by the zeroth Schwartz seminorm after a fixed cutoff, then the normalized local Rudin envelope value is also bounded by that seminorm.  This is useful away from the real-edge endpoints, but by itself is too strong for a general distributional boundary value. |
+| `exists_schwartz_bound_normalized_intervalIntegral_clm_family` | Checked in `SCV/LocalDistributionalEOW.lean`: Banach-Steinhaus plus interval integration.  A pointwise bounded interval family of real-linear Schwartz CLMs has a single finite Schwartz-seminorm bound after normalized integration over `[-π,π]`.  This is the endpoint-facing quantitative theorem needed for the value-CLM construction. |
+| `exists_localRudinIntegrand_smulLeftCLM_clmFamily` | Checked in `SCV/LocalDistributionalEOW.lean`: for fixed `w` and cutoff `χ`, constructs the real-linear CLM family in the Rudin circle parameter.  Positive angles use the plus side value CLM precomposed with cutoff multiplication, negative angles use the minus side value CLM, and boundary angles are zero.  Pointwise boundedness is obtained from the checked compact bound for the continuous local EOW integrand. |
+| `exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value` | Checked in `SCV/LocalDistributionalEOW.lean`: for each coordinate-ball point `w`, the actual cutoff envelope value `ψ ↦ localRudinEnvelope ... (χ • ψ) w` is bounded by one finite Schwartz seminorm.  This is the quantitative endpoint estimate needed for `SchwartzMap.mkCLMtoNormedSpace`. |
+| `regularizedEnvelope_valueCLM_of_cutoff` | Checked in `SCV/LocalDistributionalEOW.lean`: for each coordinate-ball point `w`, constructs the complex continuous linear functional `Lw` represented by `ψ ↦ localRudinEnvelope ... (χ • ψ) w`.  The proof uses the finite seminorm bound plus checked additivity and complex homogeneity of the fixed-window family. |
+| `integrable_realMollifyLocal_integrand_of_translate_margin` | Checked in `SCV/LocalDistributionalEOW.lean`: compact kernel support plus local holomorphy/continuity on all real translates gives Bochner integrability of `t ↦ F (z + realEmbed t) * ψ t`.  This discharges the honest integrability hypothesis in `realMollifyLocal_add_of_integrable` on the side domains. |
 | `localRealMollify_commonContinuousBoundary_of_clm` | Checked extraction step: if the plus/minus slice CLMs converge pointwise to the same chart distribution and correctly evaluate the translated kernels appearing in `realMollifyLocal`, then the regularized plus/minus sides have the same continuous boundary value `x ↦ T (translateSchwartz (-x) ψ)`.  The remaining hard input is constructing these slice CLMs from the OS-II distributional boundary-value hypotheses, not assuming common continuous boundary. |
-| `regularizedLocalEOW_productKernel_from_continuousEOW` | The one remaining product-kernel-family theorem.  It applies local continuous EOW to every fixed smoothing kernel on one neighborhood, proves linearity/continuity in the kernel using uniqueness and a fixed cutoff on the allowed support ball, proves real-translation covariance by the same uniqueness argument, and outputs the exact `K,G,hcov,hG_holo,hK_rep,ψn` fields consumed by the checked theorem `regularizedEnvelope_chartEnvelope_from_productKernel`. |
+| `realMollifyLocal_translateSchwartz` | Checked in `SCV/LocalDistributionalEOW.lean`: translating the real smoothing kernel by `a` is exactly the same as evaluating the original real mollifier at `z - realEmbed a`.  This is the change-of-variables input for the fixed-window family covariance proof. |
+| `realMollifyLocal_localEOWRealLinearKernelPushforwardCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: applying `realMollifyLocal` to the Jacobian-normalized chart-kernel pushforward equals the chart-coordinate integral `∫ u, F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u`.  This is the chart-linear change-of-variables theorem needed before proving covariance for the regularized family. |
+| `regularizedLocalEOW_fixedKernelEnvelope_from_clm` | Checked in `SCV/LocalDistributionalEOW.lean`: for one compactly supported smoothing kernel, combines the local real-mollifier holomorphy margins, the CLM common-boundary extraction, and the checked coordinate local continuous EOW theorem to produce the local coordinate envelope with strict positive/negative side agreements and uniqueness.  This is the fixed-kernel bridge; it does not yet prove linearity/continuity in the kernel or construct the product kernel `K`. |
+| `regularizedLocalEOW_fixedWindowEnvelope_from_clm` | Checked in `SCV/LocalDistributionalEOW.lean`: the same fixed-kernel bridge, but with the Rudin chart data `ys, ρ, r, δ` supplied once instead of existentially chosen.  Its output is the explicit function `localRudinEnvelope δ x0 ys (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)` with holomorphy, strict side agreements, real-edge identity, and uniqueness.  This is required before building a coherent family `G ψ`; otherwise Lean could choose different local charts for different kernels. |
+| `regularizedLocalEOW_family_from_fixedWindow` | Checked in `SCV/LocalDistributionalEOW.lean`: packages the explicit fixed-window family `G ψ w = localRudinEnvelope δ x0 ys (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ) w` for every supported smoothing kernel.  It gives the exact family-level holomorphy, strict side-agreement, real-edge identity, and uniqueness facts needed before proving linearity, covariance, and the product-kernel construction. |
+| `regularizedLocalEOW_family_add` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.add`, side-domain additivity of `realMollifyLocal`, and the fixed-window uniqueness clause; it does not use real-linear slice CLMs as a substitute for complex-linearity. |
+| `regularizedLocalEOW_family_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: complex homogeneity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.smul`, `realMollifyLocal_smul`, and the same fixed-window uniqueness clause. |
+| `realMollifyLocal_add_of_integrable`, `realMollifyLocal_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity and complex homogeneity of the real-direction mollifier in the smoothing kernel.  Additivity carries the honest Bochner-integrability hypotheses; complex homogeneity follows from `integral_smul`.  These lemmas avoid faking complex linearity through the currently real-linear slice functionals `Tplus/Tminus`. |
+| `realMollifyLocal_add_of_translate_margin` | Checked in `SCV/LocalDistributionalEOW.lean`: side-domain additivity of the real mollifier, with the integrability hypotheses discharged by compact kernel support and translate-margin membership in the side holomorphy domain. |
+| `exists_seminorm_bound_complexRealFiberIntegralRaw_zero` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: the generic zeroth-derivative finite-seminorm bound for `complexRealFiberIntegralRaw`, uniform in the mixed Schwartz function.  The codomain is allowed to be any complete complex normed space with the compatible real scalar structure; this is necessary because the derivative induction passes through continuous-linear-map-valued Schwartz functions. |
+| `basePrecompCLM`, `baseFDerivSchwartzCLM`, `exists_seminorm_bound_baseFDerivSchwartz` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: the base-coordinate derivative field is now a genuine continuous complex-linear map on mixed Schwartz space, and every finite supremum of target Schwartz seminorms of `baseFDerivSchwartz F` is controlled by finitely many source seminorms of `F`. |
+| `exists_seminorm_bound_complexRealFiberIntegralRaw_deriv` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: the full derivative-induction finite-seminorm estimate for the raw real-fiber integral.  The proof uses the generic zeroth-order bound, the checked `fderiv_complexRealFiberIntegralRaw_eq`, and the finite-seminorm continuity of `baseFDerivSchwartzCLM`. |
+| `complexRealFiberIntegralCLM`, `complexRealFiberIntegralCLM_apply` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: real-fiber integration is now a continuous complex-linear map `SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] SchwartzMap (ComplexChartSpace m) ℂ`, with pointwise formula `∫ t, F (z,t)`.  Additivity and scalar compatibility are Bochner-integral linearity; smoothness is `contDiff_complexRealFiberIntegralRaw`; the `SchwartzMap.mkCLM` bound is `exists_seminorm_bound_complexRealFiberIntegralRaw_deriv`. |
+| `boundaryProductKernel_from_fiberIntegralCLM` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: the algebraic product-kernel construction.  Given a real-fiber integration operator as a genuine continuous linear map with pointwise formula, composing it with the real-convolution shear and `Tchart` gives a product kernel `K` with `ProductKernelRealTranslationCovariantGlobal K` and `K (schwartzTensorProduct₂ φ ψ) = Tchart (realConvolutionTest φ ψ)`. |
+| `boundaryProductKernel_from_complexRealFiberIntegralCLM` | Checked in `SCV/DistributionalEOWBoundaryProductKernel.lean`: the previous conditional product-kernel algebra instantiated with the now-checked `complexRealFiberIntegralCLM`.  Given a complex-chart distribution `Tchart : SchwartzMap (ComplexChartSpace m) ℂ →L[ℂ] ℂ`, it constructs the associated mixed product kernel with product-test representation and real-translation covariance.  It does **not** itself construct `Tchart` from the real-edge distributional boundary data; theorem 2 still needs the regularized-family/product-bilinear step that produces the `K,G,hK_rep` data consumed by `regularizedEnvelope_chartEnvelope_from_productKernel`. |
+| `regularizedLocalEOW_productKernel_from_continuousEOW` | The remaining product-kernel-family theorem.  It must upgrade the fixed-kernel bridge to one coherent family over kernels, prove linearity/continuity in the smoothing kernel using uniqueness and fixed cutoff estimates, first put the real smoothing variable in the same chart coordinates as the Rudin envelope, prove real-translation covariance by the same uniqueness argument, and output the exact `K,G,hcov,hG_holo,hK_rep,ψn` fields consumed by the checked theorem `regularizedEnvelope_chartEnvelope_from_productKernel`. |
 | `regularizedEnvelope_deltaLimit_agreesOnWedges` | Approximate-identity recovery: once kernel recovery has produced a holomorphic `H`, compactly supported approximate identities show `H` agrees with the original plus/minus wedge functions on the shrunken wedge pieces. |
-| `localContinuousEOW_envelope` | Next theorem: adapt the now-public `SCV.local_eow_extension` proof body by replacing global tube membership with local wedge membership. |
+| `local_continuous_edge_of_the_wedge_envelope` | Checked in `SCV/LocalContinuousEOWSideAgreement.lean`: local coordinate-ball continuous EOW extraction.  It packages the chart window, the Rudin envelope, holomorphy on `ball 0 (δ/2)`, agreement on the explicit strict positive/negative side balls, and real-boundary agreement on the coordinate real slice.  It intentionally does not claim agreement on arbitrary extra components of `Ωplus` or `Ωminus`. |
 | `chartDistributionalEOW_local_envelope` | Local distributional EOW envelope on one chart, obtained from the regularized-envelope family and delta-limit recovery. |
 | `distributionalEOW_extensions_compatible`, `localDistributionalEOW_patch_extensions` | Reuse the now-public `SCV.local_extensions_consistent` identity-theorem pattern and the global patching pattern in `edge_of_the_wedge_theorem`. |
 
 Do not write this as "apply `SCV.edge_of_the_wedge_theorem`" without further
 work.  The checked theorem `SCV.edge_of_the_wedge_theorem` is stated for global
 tubes `TubeDomain C` and `TubeDomain (-C)`, while the OS45 data are local wedge
-neighborhoods inside open sets `Ωplus/Ωminus`.  The local theorem must first
-extract a local continuous EOW lemma from the Cauchy-polydisc proof pattern in
-`SCV/TubeDomainExtension.lean`:
+neighborhoods inside open sets `Ωplus/Ωminus`.  Important side-component
+discipline: `hlocal_wedge` only says that the explicit truncated positive and
+negative wedge pieces lie inside `Ωplus` and `Ωminus`; it does **not** imply
+that every possible extra component of `U ∩ Ωplus` or `U ∩ Ωminus` is attached
+to the edge.  Therefore the implementation must first prove agreement on the
+constructed small side domains, such as
+`{w ∈ ball 0 (δ / 2) | ∀ j, 0 < (w j).im}` and its negative companion,
+transported by `localEOWChart`.  A theorem claiming agreement on all of
+`U ∩ Ωplus` or `U ∩ Ωminus` needs an additional side-connectedness hypothesis
+or an OS45-specific connected-component restriction.  The theorem-2 route only
+needs the explicit side-domain agreement for the regularized kernels and the
+later BHW common-chart connectedness step.
+
+Coordinate discipline for the product-kernel stage: the checked fixed-window
+family is written in the Rudin coordinate `w`, but the side mollifier
+`realMollifyLocal Fplus ψ (localEOWChart x0 ys w)` still uses the original
+real-edge variable unless the boundary distribution and smoothing kernels have
+already been pulled back by the real affine chart.  The checked identities in
+`SCV/LocalEOWChartLinear.lean` make the obstruction explicit:
+
+```lean
+localEOWChart x0 ys (w - realEmbed v) =
+  localEOWChart x0 ys w - realEmbed (localEOWRealLinearPart ys v)
+```
+
+Thus the product-kernel theorem must not claim covariance under
+`translateSchwartz v` on the original real-edge kernels merely from translating
+the Rudin coordinate by `v`.  The checked map
+`localEOWRealLinearPullbackCLM ys hli` supplies the test-function composition
+part of the chart pullback, and
+`KernelSupportWithin.localEOWRealLinearPullbackCLM` supplies the induced
+support-radius transport.  In the other direction,
+`localEOWRealLinearPushforwardCLM` and
+`localEOWRealLinearKernelPushforwardCLM` push chart-coordinate kernels to the
+original real edge; the latter includes the inverse absolute determinant factor
+needed for the change of variables and preserves the same operator-norm support
+radius as the unnormalized pushforward.  The corresponding mollifier
+change-of-variables theorem is now checked as
+`realMollifyLocal_localEOWRealLinearKernelPushforwardCLM`, giving the exact
+chart-coordinate integral after this Jacobian-normalized transport.  The
+remaining implementation stage is to use this identity in the fixed-window
+regularized family and product-kernel construction.  Only after that coordinate
+conversion does the covariance hypothesis in
+`regularizedEnvelope_chartEnvelope_from_productKernel` have the correct
+meaning.
+
+The local theorem must first extract a local continuous EOW lemma from the
+Cauchy-polydisc proof pattern in `SCV/TubeDomainExtension.lean`:
 
 ```lean
 theorem local_continuous_edge_of_the_wedge_envelope
-    {m : ℕ}
+    {m : ℕ} (hm : 0 < m)
     (Ωplus Ωminus : Set (Fin m -> ℂ))
-    (E : Set (Fin m -> ℝ))
+    (E C : Set (Fin m -> ℝ))
     (hΩplus_open : IsOpen Ωplus)
     (hΩminus_open : IsOpen Ωminus)
     (hE_open : IsOpen E)
-    (C : Set (Fin m -> ℝ))
     (hC_open : IsOpen C)
     (hC_conv : Convex ℝ C)
     (hC_ne : C.Nonempty)
-    (hC_not_zero : (0 : Fin m -> ℝ) ∉ C)
-    (hC_cone : ∀ (t : ℝ), 0 < t -> ∀ y ∈ C, t • y ∈ C)
     (hlocal_wedge :
       ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
         ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
@@ -265,34 +389,79 @@ theorem local_continuous_edge_of_the_wedge_envelope
     (hminus_bv :
       ∀ x ∈ E,
         Tendsto Fminus (nhdsWithin (realEmbed x) Ωminus) (nhds (bv x))) :
-    ∃ (U : Set (Fin m -> ℂ)) (F : (Fin m -> ℂ) -> ℂ),
-      IsOpen U ∧
-      (∀ x ∈ E, realEmbed x ∈ U) ∧
-      DifferentiableOn ℂ F U ∧
-      (∀ z ∈ U ∩ Ωplus, F z = Fplus z) ∧
-      (∀ z ∈ U ∩ Ωminus, F z = Fminus z) ∧
-      (∀ G : (Fin m -> ℂ) -> ℂ,
-        DifferentiableOn ℂ G U ->
-        (∀ z ∈ U ∩ Ωplus, G z = Fplus z) ->
-        ∀ z ∈ U, G z = F z)
+    (x0 : Fin m -> ℝ) (hx0 : x0 ∈ E) :
+    ∃ ys : Fin m -> Fin m -> ℝ,
+      (∀ j, ys j ∈ C) ∧ LinearIndependent ℝ ys ∧
+      ∃ ρ : ℝ, 0 < ρ ∧
+      ∃ r : ℝ, 0 < r ∧
+      ∃ δ : ℝ, 0 < δ ∧
+        δ * 10 ≤ ρ ∧
+        (Fintype.card (Fin m) : ℝ) * (δ * 10) < r ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+          localEOWRealChart x0 ys u ∈ E) ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+          ∀ v : Fin m -> ℝ,
+            (∀ j, 0 ≤ v j) ->
+            0 < ∑ j, v j ->
+            (∑ j, v j) < r ->
+              localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus) ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+          ∀ v : Fin m -> ℝ,
+            (∀ j, v j ≤ 0) ->
+            0 < ∑ j, -v j ->
+            (∑ j, -v j) < r ->
+              localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus) ∧
+        ∃ F0 : (Fin m -> ℂ) -> ℂ,
+          DifferentiableOn ℂ F0 (Metric.ball (0 : Fin m -> ℂ) (δ / 2)) ∧
+          (∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+            (∀ j, 0 < (w j).im) ->
+              localEOWChart x0 ys w ∈ Ωplus ∧
+              F0 w = Fplus (localEOWChart x0 ys w)) ∧
+          (∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+            (∀ j, (w j).im < 0) ->
+              localEOWChart x0 ys w ∈ Ωminus ∧
+              F0 w = Fminus (localEOWChart x0 ys w)) ∧
+          (∀ u : Fin m -> ℝ,
+            (fun j => (u j : ℂ)) ∈
+              Metric.ball (0 : Fin m -> ℂ) (δ / 2) ->
+              F0 (fun j => (u j : ℂ)) =
+                bv (localEOWRealChart x0 ys u)) ∧
+          (∀ G : (Fin m -> ℂ) -> ℂ,
+            DifferentiableOn ℂ G (Metric.ball (0 : Fin m -> ℂ) (δ / 2)) ->
+            (∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+              (∀ j, 0 < (w j).im) ->
+                G w = Fplus (localEOWChart x0 ys w)) ->
+            ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2), G w = F0 w)
 ```
 
-Its proof is a localization of the existing `TubeDomainExtension.lean` proof:
+This is deliberately the coordinate-ball local theorem, not a claim of
+agreement on all of `U ∩ Ωplus` or `U ∩ Ωminus`.  Agreement on larger side
+components requires a separate connected-component/identity-theorem argument.
 
-1. For `m = 0`, use `hC_ne` and `hC_not_zero` as in the global theorem.
-2. For `0 < m`, choose linearly independent `ys : Fin m -> Fin m -> ℝ` in the
-   open cone `C` using `open_set_contains_basis`.
-3. Define the same affine holomorphic chart, using the checked public names
-   `localEOWRealChart x0 ys` and `localEOWChart x0 ys`.
-4. Choose `ρ > 0` by `localEOWRealChart_closedBall_subset`, so
-   `localEOWRealChart x0 ys '' closedBall 0 ρ ⊆ E`.
-5. Apply `localEOWChart_twoSided_polywedge_mem` to
-   `B = closedBall 0 ρ`, the compact simplex direction set, and the local
-   wedge hypothesis.  This returns one polywedge radius `r > 0` for both signs.
-6. Choose `δ > 0` by `exists_localEOWChart_smp_delta`.  This single `δ`
-   simultaneously guarantees:
-   - real-part control inside `closedBall 0 ρ`;
-   - upper chart membership for `localEOWSmp δ w l` when `0 < Im l`;
+Its proof is now short from the checked Rudin substrate:
+
+1. Apply `exists_localContinuousEOW_chart_window` to obtain
+   `ys, ρ, r, δ, hE_mem, hplus, hminus` and the corresponding Rudin-arc
+   side-membership facts.
+2. Set
+   `F0 = localRudinEnvelope δ x0 ys Fplus Fminus`.
+3. Holomorphy of `F0` on `ball 0 (δ/2)` is exactly
+   `differentiableOn_localRudinEnvelope`.
+4. Positive side membership is
+   `localEOWChart_ball_positive_mem_of_delta`; positive side agreement is
+   `localRudinEnvelope_eq_plus_on_positive_ball`.
+5. Negative side membership is
+   `localEOWChart_ball_negative_mem_of_delta`; negative side agreement is
+   `localRudinEnvelope_eq_minus_on_negative_ball`.
+6. Real boundary agreement follows from `localRudinEnvelope_eq_boundary_of_real`
+   with `w = fun j => (u j : ℂ)`.  The path condition is supplied by
+   `localEOWSmp_re_mem_closedBall hδ hδρ` and `hE_mem`.
+7. The uniqueness clause uses the ordinary identity theorem on the convex ball
+   `ball 0 (δ/2)`.  The comparison function and `F0` are analytic by
+   `differentiableOn_analyticAt`; they agree on a neighborhood of the explicit
+   point `z0_j = (δ/4) I` inside the strict positive side ball.
    - lower chart membership when `Im l < 0`;
    - the finite sum bound needed by the local polywedge radius.
 7. Use the checked Rudin transcript lemmas
@@ -1158,6 +1327,807 @@ overlap.  This is the exact replacement for the current global
    Möbius geometry.  It introduces no new analytic assumption and no new
    source theorem.
 
+   The next local-envelope implementation should not grow
+   `SCV/LocalContinuousEOW.lean` further.  That file is now the checked local
+   Rudin substrate; the envelope proof belongs in a small companion module
+   `SCV/LocalContinuousEOWEnvelope.lean` importing it.  The first two public
+   helper surfaces in that module are:
+
+   ```lean
+   theorem continuousAt_localEOWSmp_param
+       {m : ℕ} (δ : ℝ) (l : ℂ) (hl : ‖l‖ ≤ 1)
+       (w0 : Fin m -> ℂ)
+       (hw0 : ∀ j, ‖w0 j / (δ : ℂ)‖ < 1) :
+       ContinuousAt (fun w : Fin m -> ℂ => localEOWSmp δ w l) w0
+
+   theorem differentiableAt_localRudin_parametric_integral
+       {m : ℕ} (G : (Fin m -> ℂ) -> ℝ -> ℂ)
+       {z : Fin m -> ℂ} {j : Fin m} {δ : ℝ}
+       (hz : z ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hε' : 0 < ε')
+       (h_upd : ∀ ζ, dist ζ (z j) ≤ 2 * ε' ->
+         Function.update z j ζ ∈
+           Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (h_upd_t : ∀ t ∈ Metric.ball (z j) ε',
+         ∀ ζ ∈ Metric.closedBall t ε',
+           Function.update z j ζ ∈
+             Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (h_G_meas : ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+         AEStronglyMeasurable (G w)
+           (MeasureTheory.volume.restrict (Set.uIoc (-Real.pi) Real.pi)))
+       (M : ℝ)
+       (hM : ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+         ∀ θ, ‖G w θ‖ ≤ M)
+       (h_G_diffAt : ∀ θ, Real.sin θ ≠ 0 -> ∀ t,
+         Function.update z j t ∈
+           Metric.ball (0 : Fin m -> ℂ) (δ / 2) ->
+         DifferentiableAt ℂ
+           (fun ζ => G (Function.update z j ζ) θ) t)
+       (hG_zero : ∀ w θ, Real.sin θ = 0 -> G w θ = 0) :
+       DifferentiableAt ℂ
+         (fun ζ => ∫ θ in (-Real.pi)..Real.pi,
+           G (Function.update z j ζ) θ) (z j)
+
+   theorem exists_localRudin_coordinate_update_margin
+       {m : ℕ} {δ : ℝ} {z : Fin m -> ℂ}
+       (hz : z ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (j : Fin m) :
+       ∃ ε' : ℝ, 0 < ε' ∧
+         (∀ ζ, dist ζ (z j) ≤ 2 * ε' ->
+           Function.update z j ζ ∈
+             Metric.ball (0 : Fin m -> ℂ) (δ / 2)) ∧
+         (∀ t ∈ Metric.ball (z j) ε',
+           ∀ ζ ∈ Metric.closedBall t ε',
+             Function.update z j ζ ∈
+               Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+
+   theorem exists_localContinuousEOW_chart_window
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (E C : Set (Fin m -> ℝ))
+       (hE_open : IsOpen E) (hC_open : IsOpen C)
+       (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+       (hlocal_wedge :
+         ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
+           ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
+             ∃ r : ℝ, 0 < r ∧
+               ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
+                 (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) *
+                   Complex.I) ∈ Ωplus ∧
+                 (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) *
+                   Complex.I) ∈ Ωminus)
+       (x0 : Fin m -> ℝ) (hx0 : x0 ∈ E) :
+       ∃ ys : Fin m -> Fin m -> ℝ,
+         (∀ j, ys j ∈ C) ∧ LinearIndependent ℝ ys ∧
+         ∃ ρ : ℝ, 0 < ρ ∧
+         ∃ r : ℝ, 0 < r ∧
+         ∃ δ : ℝ, 0 < δ ∧
+           δ * 10 ≤ ρ ∧
+           (Fintype.card (Fin m) : ℝ) * (δ * 10) < r ∧
+           (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+             localEOWRealChart x0 ys u ∈ E) ∧
+           (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+             ∀ v : Fin m -> ℝ, (∀ j, 0 ≤ v j) ->
+             0 < ∑ j, v j -> (∑ j, v j) < r ->
+               localEOWChart x0 ys
+                 (fun j => (u j : ℂ) + (v j : ℂ) *
+                   Complex.I) ∈ Ωplus) ∧
+           (∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+             ∀ v : Fin m -> ℝ, (∀ j, v j ≤ 0) ->
+             0 < ∑ j, -v j -> (∑ j, -v j) < r ->
+               localEOWChart x0 ys
+                 (fun j => (u j : ℂ) + (v j : ℂ) *
+                   Complex.I) ∈ Ωminus) ∧
+           (∀ {w : Fin m -> ℂ} {l : ℂ},
+             w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2) ->
+             (∀ j, (w j).im = 0) -> 0 < l.im -> ‖l‖ ≤ 2 ->
+               localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωplus) ∧
+           (∀ {w : Fin m -> ℂ} {l : ℂ},
+             w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2) ->
+             (∀ j, (w j).im = 0) -> l.im < 0 -> ‖l‖ ≤ 2 ->
+               localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωminus)
+
+   theorem localEOWChart_ball_positive_mem_of_delta
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {ρ δ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ, (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j -> (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       {w : Fin m -> ℂ}
+       (hw : w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hw_pos : ∀ j, 0 < (w j).im) :
+       localEOWChart x0 ys w ∈ Ωplus
+
+   theorem localEOWChart_ball_negative_mem_of_delta
+       -- same statement, with target `Ωminus`, hypotheses `(w j).im < 0`,
+       -- and the negative polywedge membership input.
+
+   theorem localEOWChart_smp_upper_mem_of_delta_on_sphere
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {ρ δ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+         ∀ v : Fin m -> ℝ, (∀ j, 0 ≤ v j) ->
+           0 < ∑ j, v j -> (∑ j, v j) < r ->
+             localEOWChart x0 ys
+               (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+       {w : Fin m -> ℂ} {l : ℂ}
+       (hw : w ∈ Metric.closedBall (0 : Fin m -> ℂ) (δ / 2))
+       (hl_norm : ‖l‖ = 1) (hl_pos : 0 < l.im) :
+       localEOWChart x0 ys (localEOWSmp δ w l) ∈ Ωplus
+
+   theorem localEOWChart_smp_lower_mem_of_delta_on_sphere
+       -- same statement, with target `Ωminus` and `l.im < 0`.
+
+   def localRudinIntegrand
+       {m : ℕ} (δ : ℝ) (x0 : Fin m -> ℝ)
+       (ys : Fin m -> Fin m -> ℝ)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (w : Fin m -> ℂ) (θ : ℝ) : ℂ :=
+     if 0 < Real.sin θ then
+       Fplus (localEOWChart x0 ys
+         (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))
+     else if Real.sin θ < 0 then
+       Fminus (localEOWChart x0 ys
+         (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))
+     else 0
+
+   def localRudinIntegral
+       {m : ℕ} (δ : ℝ) (x0 : Fin m -> ℝ)
+       (ys : Fin m -> Fin m -> ℝ)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (w : Fin m -> ℂ) : ℂ :=
+     ∫ θ in (-Real.pi)..Real.pi,
+       localRudinIntegrand δ x0 ys Fplus Fminus w θ
+
+   def localRudinEnvelope
+       {m : ℕ} (δ : ℝ) (x0 : Fin m -> ℝ)
+       (ys : Fin m -> Fin m -> ℝ)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (w : Fin m -> ℂ) : ℂ :=
+     ((2 * Real.pi)⁻¹ : ℝ) •
+       localRudinIntegral δ x0 ys Fplus Fminus w
+
+   theorem aestronglyMeasurable_localRudinIntegrand
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {w : Fin m -> ℂ}
+       (hw : w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2)) :
+       AEStronglyMeasurable
+         (localRudinIntegrand δ x0 ys Fplus Fminus w)
+         (MeasureTheory.volume.restrict (Set.uIoc (-Real.pi) Real.pi))
+
+   theorem continuousAt_localRudinIntegrand_param
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {w0 : Fin m -> ℂ}
+       (hw0 : w0 ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (θ : ℝ) :
+       ContinuousAt
+         (fun w => localRudinIntegrand δ x0 ys Fplus Fminus w θ) w0
+
+   theorem continuousAt_localRudinIntegral_of_bound
+       -- same local hypotheses, plus a bound
+       (M : ℝ)
+       (hM : ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+         ∀ θ, ‖localRudinIntegrand δ x0 ys Fplus Fminus w θ‖ ≤ M)
+       {w0 : Fin m -> ℂ}
+       (hw0 : w0 ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2)) :
+       ContinuousAt
+         (localRudinIntegral δ x0 ys Fplus Fminus) w0
+
+   theorem localRudinIntegrand_zero_of_sin_eq_zero
+       (hsin : Real.sin θ = 0) :
+       localRudinIntegrand δ x0 ys Fplus Fminus w θ = 0
+
+   theorem differentiableAt_localRudinIntegrand_update
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {z : Fin m -> ℂ} {j : Fin m} {t : ℂ} {θ : ℝ}
+       (hsin : Real.sin θ ≠ 0)
+       (ht : Function.update z j t ∈
+         Metric.ball (0 : Fin m -> ℂ) (δ / 2)) :
+       DifferentiableAt ℂ
+         (fun ζ =>
+           localRudinIntegrand δ x0 ys Fplus Fminus
+             (Function.update z j ζ) θ) t
+
+   theorem differentiableAt_localRudinIntegral_of_bound
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {z : Fin m -> ℂ} (hz : z ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (j : Fin m)
+       (M : ℝ)
+       (hM : ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+         ∀ θ, ‖localRudinIntegrand δ x0 ys Fplus Fminus w θ‖ ≤ M) :
+       DifferentiableAt ℂ
+         (fun ζ => ∫ θ in (-Real.pi)..Real.pi,
+           localRudinIntegrand δ x0 ys Fplus Fminus
+             (Function.update z j ζ) θ) (z j)
+
+   theorem differentiableOn_localRudinIntegral_of_bound
+       -- same local hypotheses, plus `M` and `hM`
+       DifferentiableOn ℂ
+         (localRudinIntegral δ x0 ys Fplus Fminus)
+         (Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+
+   theorem differentiableOn_localRudinEnvelope_of_bound
+       -- same local hypotheses, plus `M` and `hM`
+       DifferentiableOn ℂ
+         (localRudinEnvelope δ x0 ys Fplus Fminus)
+         (Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+
+   theorem differentiableOn_localRudinEnvelope
+       -- same local hypotheses as `exists_bound_localRudinIntegrand`
+       DifferentiableOn ℂ
+         (localRudinEnvelope δ x0 ys Fplus Fminus)
+         (Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+
+   theorem exists_bound_localRudinIntegrand
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (E : Set (Fin m -> ℝ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (bv : (Fin m -> ℝ) -> ℂ)
+       (hbv_cont : ContinuousOn bv E)
+       (hFplus_bv :
+         ∀ y ∈ E, Filter.Tendsto Fplus
+           (nhdsWithin (realEmbed y) Ωplus) (nhds (bv y)))
+       (hFminus_bv :
+         ∀ y ∈ E, Filter.Tendsto Fminus
+           (nhdsWithin (realEmbed y) Ωminus) (nhds (bv y)))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hE_mem :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+           localEOWRealChart x0 ys u ∈ E)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...) :
+       ∃ M : ℝ, ∀ w ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2),
+         ∀ θ, ‖localRudinIntegrand δ x0 ys Fplus Fminus w θ‖ ≤ M
+   ```
+
+   Proof transcript for `continuousAt_localEOWSmp_param`: first prove
+   continuity of `w ↦ fun k => w k / δ` at `w0`; use
+   `pi_norm_lt_iff` and `hw0` to put `w0 / δ` in the unit polydisc; apply
+   `moebiusProd_differentiable_w l hl` to get continuity of
+   `moebiusProd · l`; compose and multiply each coordinate by the constant
+   `(δ : ℂ)`.  This is exactly the public local form of the private checked
+   `scaledMoebiusProd_continuousAt`.
+
+   Proof transcript for `differentiableAt_localRudin_parametric_integral`:
+   use the local update-margin hypotheses to keep every Cauchy circle in the
+   ball `Metric.ball 0 (δ / 2)`; use
+   `norm_deriv_le_of_forall_mem_sphere_norm_le` and the uniform bound `hM` to
+   get `‖deriv (fun ζ => G (update z j ζ) θ) t‖ ≤ M / ε'` for `sin θ ≠ 0`;
+   define `F' t θ` to be that derivative off `sin θ = 0` and `0` on the
+   two boundary angles; prove `HasDerivAt` pointwise by `h_G_diffAt` and the
+   `hG_zero` constant-function case; prove measurability of `F'(z j, ·)` as
+   the a.e. limit of difference quotients along
+   `z j + ε'/(n+2)`; prove integrability of the base integrand from
+   `h_G_meas` and `hM`; then apply
+   `intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le`.
+   This is genuine Cauchy-estimate/Leibniz content needed to prove the Rudin
+   integral holomorphic in the envelope theorem.
+
+   Proof transcript for `exists_localRudin_coordinate_update_margin`: write
+   `R = δ / 2` and use `hz` to get `‖z‖ < R`; set
+   `ε' = (R - ‖z‖) / 4`.  If `dist ζ (z j) ≤ 2ε'`, then every unchanged
+   coordinate has norm at most `‖z‖`, while the changed coordinate has norm
+   at most `‖z j‖ + dist ζ (z j) ≤ ‖z‖ + 2ε' < R`.  The Pi norm criterion
+   gives `Function.update z j ζ ∈ ball 0 R`.  The Cauchy-circle version
+   follows by the triangle inequality:
+   `dist ζ (z j) ≤ dist ζ t + dist t (z j) ≤ ε' + ε'`.
+
+   Proof transcript for `exists_localContinuousEOW_chart_window`: choose
+   `ys` by `open_set_contains_basis hm C hC_open hC_ne`; use
+   `localEOWRealChart_closedBall_subset hE_open x0 hx0 ys` to choose
+   `ρ > 0` with the whole real chart closed ball inside `E`; apply
+   `localEOWChart_twoSided_polywedge_mem` to the compact closed ball
+   `Metric.closedBall 0 ρ`, using the image-in-`E` result as the `hB_E`
+   hypothesis, to obtain one radius `r > 0` and plus/minus polywedge
+   membership on the chart; finally apply `exists_localEOWSmp_delta` to obtain
+   one `δ > 0` together with the numeric shrink inequalities
+   `δ * 10 ≤ ρ` and `card * (δ * 10) < r`, then derive the plus/minus
+   Rudin-arc membership by `localEOWChart_smp_upper_mem_of_delta` and
+   `localEOWChart_smp_lower_mem_of_delta`.  This is the exact local
+   replacement for the global
+   "choose a cone basis and shrink the Rudin polydisc into the tube" step in
+   `TubeDomainExtension.lean`; it introduces no boundary-value or
+   holomorphy assumption.
+
+   Proof transcript for `localEOWChart_ball_positive_mem_of_delta`: write
+   `u j = (w j).re` and `v j = (w j).im`.  From
+   `w ∈ ball 0 (δ / 2)` get `‖u‖ ≤ δ / 2 ≤ ρ`, so
+   `u ∈ closedBall 0 ρ`; positivity of every `v j` gives `0 ≤ v j` and,
+   because `Fin m` is nonempty from `hm`, `0 < ∑ j, v j`; and
+   `∑ j, v j ≤ card * ‖w‖ < card * (δ / 2) < card * (δ * 10) < r`.
+   Applying `hplus u v` and rewriting by `localEOWChart_real_imag` gives the
+   result.  The negative theorem uses the same `u`, the same `v j = (w j).im`,
+   the hypotheses `v j < 0`, the positive sum `0 < ∑ j, -v j`, and the
+   analogous sum bound.  These lemmas are the precise side domains used for
+   identity-theorem propagation; without an additional side-connectedness
+   hypothesis, the proof must not claim agreement on arbitrary extra
+   components of `U ∩ Ωplus` or `U ∩ Ωminus`.
+
+   Proof transcript for
+   `localEOWChart_smp_upper_mem_of_delta_on_sphere`: the proof is the same
+   chart-polywedge decomposition as `localEOWChart_smp_upper_mem_of_delta`,
+   except that the imaginary-sign input comes from the full unit-circle
+   Möbius theorem `moebiusProd_im_pos`, not from the real-center theorem
+   `moebiusProd_im_pos_of_real`.  Use
+   `localEOWSmp_div_norm_lt_one_of_closedBall hδ hw` and `hl_norm` to prove
+   `0 < (localEOWSmp δ w l j).im` for every coordinate; the real-part and
+   finite-sum bounds are still supplied by
+   `localEOWSmp_re_mem_closedBall` and
+   `localEOWSmp_norm_le_extended_of_closedBall`.  The lower theorem uses
+   `moebiusProd_im_neg`.  These two lemmas are essential for holomorphy of the
+   Rudin integral as a function of the complex parameter `w`; the older real
+   center lemmas are only enough for the boundary mean-value identity.
+
+   Proof transcript for `aestronglyMeasurable_localRudinIntegrand`: split
+   `ℝ` into the measurable sets `{θ | 0 < sin θ}` and `{θ | sin θ < 0}`.
+   The map
+   `θ ↦ localEOWChart x0 ys (localEOWSmp δ w (exp (θ I)))` is continuous by
+   `continuous_localEOWSmp_theta` and `continuous_localEOWChart`.  On the
+   positive sine set, membership in `Ωplus` is exactly
+   `localEOWChart_smp_upper_mem_of_delta_on_sphere`, using
+   `‖exp (θ I)‖ = 1`; on the negative sine set, use the lower theorem.
+   Compose the continuous chart map with `hFplus_diff.continuousOn` and
+   `hFminus_diff.continuousOn`, then combine the two branches by
+   `AEStronglyMeasurable.piecewise`.  The zero-on-boundary theorem is a direct
+   definitional reduction from `sin θ = 0` and supplies the `hG_zero` input
+   for `differentiableAt_localRudin_parametric_integral`.
+
+   Proof transcript for `continuousAt_localRudinIntegrand_param`: fix `θ` and
+   set `l = exp (θ I)`, so `‖l‖ = 1`.  From
+   `w0 ∈ ball 0 (δ / 2)`, use
+   `localEOWSmp_div_norm_lt_one_of_closedBall hδ` to put `w0 / δ` in the
+   unit polydisc, then apply `continuousAt_localEOWSmp_param δ l` and compose
+   with `continuous_localEOWChart`.  If `0 < sin θ`, the integrand is locally
+   the plus branch; the base point lies in `Ωplus` by
+   `localEOWChart_smp_upper_mem_of_delta_on_sphere`, so
+   `hFplus_diff.continuousOn.continuousAt` applies.  If `sin θ < 0`, use the
+   lower theorem and `Fminus`.  If `sin θ = 0`, the integrand is the constant
+   zero function.
+
+   Proof transcript for `continuousAt_localRudinIntegral_of_bound`: apply
+   `intervalIntegral.continuousAt_of_dominated_interval` with constant bound
+   `M`.  Near `w0`, the ball is preserved by `Metric.isOpen_ball.mem_nhds`;
+   measurability is `aestronglyMeasurable_localRudinIntegrand`; the uniform
+   norm bound is `hM`; the bound is interval-integrable because it is constant;
+   and pointwise continuity in `w` is
+   `continuousAt_localRudinIntegrand_param`.
+
+   Proof transcript for `differentiableAt_localRudinIntegrand_update`: set
+   `l = exp (θ I)`, so `‖l‖ = 1`.  The map
+   `ζ ↦ localEOWSmp δ (Function.update z j ζ) l` is holomorphic at `t`:
+   divide by `δ`, use the coordinate update map into the unit polydisc at
+   `t`, apply `moebiusProd_differentiable_w l`, and multiply each component
+   by the constant `(δ : ℂ)`.  Composing with `localEOWChart` gives a
+   holomorphic chart map.  If `0 < sin θ`, use
+   `localEOWChart_smp_upper_mem_of_delta_on_sphere` to put the base point in
+   `Ωplus`, then compose with `hFplus_diff.differentiableAt`; if
+   `sin θ < 0`, use the lower theorem and `hFminus_diff`.  The impossible
+   `sin θ = 0` case is excluded by `hsin`.
+
+   Proof transcript for `differentiableAt_localRudinIntegral_of_bound`:
+   choose `ε'` by `exists_localRudin_coordinate_update_margin hz j`, then
+   apply `differentiableAt_localRudin_parametric_integral` with
+   `G = localRudinIntegrand δ x0 ys Fplus Fminus`.  The measurability input is
+   `aestronglyMeasurable_localRudinIntegrand`; the pointwise derivative input
+   is `differentiableAt_localRudinIntegrand_update`; the zero-boundary input
+   is `localRudinIntegrand_zero_of_sin_eq_zero`; and the only remaining
+   external hypothesis is exactly the uniform bound `hM`.  Thus after this
+   theorem the live analytic blocker for the coordinate envelope is only
+   `exists_bound_localRudinIntegrand`.
+
+   Proof transcript for `differentiableOn_localRudinIntegral_of_bound`: apply
+   `osgood_lemma` on the open coordinate ball.  The continuity input at every
+   point is `continuousAt_localRudinIntegral_of_bound`; the separately
+   holomorphic input in coordinate `j` is
+   `differentiableAt_localRudinIntegral_of_bound`.  The normalized envelope
+   theorem follows by `DifferentiableOn.const_smul`, since
+   `localRudinEnvelope` is the real scalar multiple
+   `((2 * Real.pi)⁻¹ : ℝ)` of `localRudinIntegral`.
+
+   Proof transcript for `differentiableOn_localRudinEnvelope`: obtain
+   `⟨M,hM⟩` from `exists_bound_localRudinIntegrand`, then apply
+   `differentiableOn_localRudinEnvelope_of_bound`.  This is the bound-free
+   holomorphy theorem that the local continuous EOW envelope proof consumes.
+
+   The next side-agreement block should be split before porting the full
+   identity-theorem argument.  Define the line through a point in the positive
+   or negative orthant:
+
+   ```lean
+   def localEOWLine {m : ℕ} (ζ : Fin m -> ℂ) (z : ℂ) : Fin m -> ℂ :=
+     fun j => ((ζ j).re : ℂ) + z * ((ζ j).im : ℂ)
+
+   theorem localEOWLine_I :
+       localEOWLine ζ Complex.I = ζ
+
+   theorem localEOWLine_im :
+       (localEOWLine ζ z j).im = z.im * (ζ j).im
+
+   theorem localEOWLine_real_im_zero :
+       (localEOWLine ζ (t : ℂ) j).im = 0
+
+   theorem localEOWLine_affine_real_combo
+       (ζ : Fin m -> ℂ) (z1 z2 : ℂ) (a b : ℝ) (hab : a + b = 1) :
+       localEOWLine ζ (a • z1 + b • z2) =
+         a • localEOWLine ζ z1 + b • localEOWLine ζ z2
+
+   theorem localEOWLine_chart_real
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       (ζ : Fin m -> ℂ) (t : ℝ) :
+       localEOWChart x0 ys (localEOWLine ζ (t : ℂ)) =
+         realEmbed (localEOWRealChart x0 ys
+           (fun j => (localEOWLine ζ (t : ℂ) j).re))
+
+   theorem localEOWLine_re_closedBall_of_norm_le_two
+       {m : ℕ} {δ ρ : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       {ζ : Fin m -> ℂ}
+       (hζ : ζ ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       {z : ℂ} (hz : ‖z‖ ≤ 2) :
+       (fun j => (localEOWLine ζ z j).re) ∈
+         Metric.closedBall (0 : Fin m -> ℝ) ρ
+
+   theorem localEOWChart_line_upper_mem_of_delta
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {ρ δ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       {ζ : Fin m -> ℂ}
+       (hζ : ζ ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hζ_pos : ∀ j, 0 < (ζ j).im)
+       {z : ℂ} (hz_norm : ‖z‖ ≤ 2) (hz_pos : 0 < z.im) :
+       localEOWChart x0 ys (localEOWLine ζ z) ∈ Ωplus
+
+   theorem localEOWChart_line_lower_mem_of_delta
+       -- same statement with target `Ωminus`, `hminus`, and `z.im < 0`
+       -- when `hζ_pos : ∀ j, 0 < (ζ j).im`.
+   ```
+
+   Proof transcript for the line-geometry lemmas:
+
+   - `localEOWLine_I`, `localEOWLine_im`, and
+     `localEOWLine_real_im_zero` are coordinatewise `Complex.ext`/`simp`
+     calculations.
+   - For the real-part bound, use
+     `|(localEOWLine ζ z j).re| = |(ζ j).re + z.re * (ζ j).im|`.
+     Bound this by `|(ζ j).re| + |z.re| * |(ζ j).im|`, then by
+     `(1 + ‖z‖) * ‖ζ j‖`, hence by `3 * ‖ζ‖ < 3 * (δ/2)`.  Since
+     `3 * (δ/2) ≤ δ * 10 ≤ ρ`, the Pi norm criterion gives membership in
+     `closedBall 0 ρ`.
+   - For upper line membership, set
+     `u j = (localEOWLine ζ z j).re` and
+     `v j = (localEOWLine ζ z j).im`.  The real-part lemma gives
+     `u ∈ closedBall 0 ρ`; `localEOWLine_im`, `hz_pos`, and `hζ_pos` give
+     `0 < v j` for every coordinate; the sum is positive because `0 < m`;
+     and `v j ≤ |v j| ≤ ‖localEOWLine ζ z j‖ ≤ δ * 10`, using
+     `‖localEOWLine ζ z j‖ ≤ ‖ζ j‖ + ‖z‖ * ‖ζ j‖ ≤ 3 * ‖ζ‖ < δ * 10`.
+     Apply `hplus u hu v`.  The lower theorem is identical with
+     `z.im < 0`, so every `v j < 0`, and applies `hminus`.
+   - `localEOWLine_affine_real_combo` is the coordinatewise identity
+     `Re ζ_j + (a z1 + b z2) Im ζ_j =
+      a (Re ζ_j + z1 Im ζ_j) + b (Re ζ_j + z2 Im ζ_j)`, using
+     `a + b = 1`.  This is the only convexity input needed for
+     `L ⁻¹' ball 0 (δ/2)`.
+   - `localEOWLine_chart_real` rewrites the chart on a real parameter line
+     to `realEmbed` by first proving
+     `localEOWLine ζ (t : ℂ) =
+      fun j => ((localEOWLine ζ (t : ℂ) j).re : ℂ)` from
+     `localEOWLine_real_im_zero`, then applying `localEOWChart_real`.
+
+   The checked boundary-tendsto helpers used by the side-agreement theorem are
+   written directly, not as abstract wrappers:
+
+   ```lean
+   theorem tendsto_localEOWLine_upper_to_boundaryValue
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus : Set (Fin m -> ℂ))
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {E : Set (Fin m -> ℝ)}
+       (Fplus : (Fin m -> ℂ) -> ℂ) (bv : (Fin m -> ℝ) -> ℂ)
+       (hFplus_bv :
+         ∀ y ∈ E, Filter.Tendsto Fplus
+           (nhdsWithin (realEmbed y) Ωplus) (nhds (bv y)))
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hplus : ...positive chart polywedge membership...)
+       {ζ : Fin m -> ℂ}
+       (hζ : ζ ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hζ_pos : ∀ j, 0 < (ζ j).im)
+       {x : ℝ} (hx : |x| < 2)
+       (hE_mem :
+         localEOWRealChart x0 ys
+           (fun j => (localEOWLine ζ (x : ℂ) j).re) ∈ E) :
+       Filter.Tendsto
+         (fun z : ℂ => Fplus (localEOWChart x0 ys (localEOWLine ζ z)))
+         (nhdsWithin (x : ℂ) EOW.UpperHalfPlane)
+         (nhds (bv (localEOWRealChart x0 ys
+           (fun j => (localEOWLine ζ (x : ℂ) j).re))))
+
+   theorem tendsto_localEOWLine_lower_to_boundaryValue
+       -- same statement with `Ωminus`, `Fminus`, `hFminus_bv`,
+       -- `hminus`, and `nhdsWithin (x : ℂ) EOW.LowerHalfPlane`.
+
+   theorem tendsto_localEOWLine_upper_to_boundaryValue_of_negative
+       -- reflected statement: if `∀ j, (ζ j).im < 0`, the upper half-plane
+       -- maps into `Ωminus`, so the branch is `Fminus`.
+
+   theorem tendsto_localEOWLine_lower_to_boundaryValue_of_negative
+       -- reflected statement: if `∀ j, (ζ j).im < 0`, the lower half-plane
+       -- maps into `Ωplus`, so the branch is `Fplus`.
+   ```
+
+   Proof transcript for these tendsto helpers: compose `hFplus_bv` (or
+   `hFminus_bv`) with
+   `z ↦ localEOWChart x0 ys (localEOWLine ζ z)`.  The `nhds` component is
+   continuity of `localEOWChart` composed with
+   `differentiable_localEOWLine`, rewritten on the real point by
+   `localEOWLine_chart_real`.  The principal-set component is eventual
+   membership in `Ωplus`/`Ωminus`: from `|x| < 2`, a neighborhood of `x`
+   inside the relevant half-plane also satisfies `‖z‖ < 2`; then apply
+   `localEOWChart_line_upper_mem_of_delta` or
+   `localEOWChart_line_lower_mem_of_delta`.
+
+   The checked real-line Rudin boundary identity used in the identity theorem
+   has the following exact inputs:
+
+   ```lean
+   theorem localRudinEnvelope_line_eq_boundary_of_real
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (E : Set (Fin m -> ℝ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (hE_open : IsOpen E)
+       (bv : (Fin m -> ℝ) -> ℂ) (hbv_cont : ContinuousOn bv E)
+       (hFplus_bv : ...)
+       (hFminus_bv : ...)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hE_mem :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+           localEOWRealChart x0 ys u ∈ E)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {ζ : Fin m -> ℂ} {t : ℝ}
+       (hLt : localEOWLine ζ (t : ℂ) ∈
+         Metric.ball (0 : Fin m -> ℂ) (δ / 2)) :
+       localRudinEnvelope δ x0 ys Fplus Fminus
+           (localEOWLine ζ (t : ℂ)) =
+         bv (localEOWRealChart x0 ys
+           (fun j => (localEOWLine ζ (t : ℂ) j).re))
+   ```
+
+   Proof transcript: apply `localRudinEnvelope_eq_boundary_of_real` to
+   `w = localEOWLine ζ (t : ℂ)`.  The realness hypothesis is
+   `localEOWLine_real_im_zero`; the closed-ball hypothesis is
+   `Metric.ball_subset_closedBall hLt`; and the path condition required by
+   `local_rudin_mean_value_real` is
+   `hE_mem _ (localEOWSmp_re_mem_closedBall hδ hδρ
+     (Metric.ball_subset_closedBall hLt) hs_norm)`.
+
+   The helper and positive/negative side-agreement declarations in this block
+   are now checked in
+   `OSReconstruction/SCV/LocalContinuousEOWSideAgreement.lean`.
+   With these line-geometry lemmas, the side-agreement theorem has the
+   following surface:
+
+   ```lean
+   theorem localRudinEnvelope_eq_plus_on_positive_ball
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (E : Set (Fin m -> ℝ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (hE_open : IsOpen E)
+       (bv : (Fin m -> ℝ) -> ℂ)
+       (hbv_cont : ContinuousOn bv E)
+       (hFplus_bv : ...)
+       (hFminus_bv : ...)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hE_mem :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+           localEOWRealChart x0 ys u ∈ E)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {ζ : Fin m -> ℂ}
+       (hζ : ζ ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hζ_pos : ∀ j, 0 < (ζ j).im) :
+       localRudinEnvelope δ x0 ys Fplus Fminus ζ =
+         Fplus (localEOWChart x0 ys ζ)
+   ```
+
+   Proof transcript for `localRudinEnvelope_eq_plus_on_positive_ball`:
+
+   1. Define `L z = localEOWLine ζ z`; then `L I = ζ`, `L` is
+      differentiable, and `L(t)` is real for real `t`.
+   2. Define `bv_line t = bv (localEOWRealChart x0 ys
+      (fun j => (L (t : ℂ) j).re))`.  Continuity of `bv_line` follows from
+      `hbv_cont` and `localEOWLine_re_closedBall_of_norm_le_two`.
+   3. Define
+      `gp z = if z.im > 0 then Fplus (localEOWChart x0 ys (L z))
+              else bv_line z.re`
+      and
+      `gm z = if z.im < 0 then Fminus (localEOWChart x0 ys (L z))
+              else bv_line z.re`.
+      The upper/lower branch holomorphy inputs for `local_edge_of_the_wedge_1d`
+      come from `hFplus_diff`/`hFminus_diff` composed with
+      `localEOWChart` and `L`; side-domain membership is exactly
+      `localEOWChart_line_upper_mem_of_delta`/`lower_mem`.
+   4. The boundary convergence inputs for `gp` and `gm` are
+      `hFplus_bv`/`hFminus_bv` composed with the chart line tendsto, using
+      `localEOWChart_line_*_mem_of_delta` as the eventual membership.  The
+      real-axis continuity input is `bv_line` continuity.
+   5. Apply `local_edge_of_the_wedge_1d (-2) 2` to obtain `F_1d` on a disk
+      containing `I`; on the upper half-plane, `F_1d I =
+      Fplus (localEOWChart x0 ys ζ)` by `L I = ζ`.
+   6. For real `t` near `0`, `L(t)` lies in `ball 0 (δ/2)` by continuity of
+      `L` and `L(0) = Re ζ`; apply `local_rudin_mean_value_real` to prove
+      `localRudinEnvelope δ x0 ys Fplus Fminus (L(t)) = bv_line t`.
+      The required real-edge path condition is supplied by
+      `localEOWSmp_re_mem_closedBall hδ hδρ` and `hE_mem`.
+   7. On
+      `V = L ⁻¹' Metric.ball 0 (δ/2) ∩ U_L`, both
+      `localRudinEnvelope ∘ L` and `F_1d` are analytic.  The first analytic
+      statement uses `differentiableOn_localRudinEnvelope`; the second uses the
+      holomorphy output of `local_edge_of_the_wedge_1d`.  They agree on real
+      points accumulating at `0`, so
+      `AnalyticOnNhd.eqOn_zero_of_preconnected_of_frequently_eq_zero` gives
+      equality throughout `V`, in particular at `I`.
+
+   The negative theorem is the same proof with the roles of the upper/lower
+   branches swapped: for `∀ j, (ζ j).im < 0`, `L` maps the upper half-plane to
+   the negative side and the lower half-plane to the positive side, so
+   `gp` uses `Fminus` and `gm` uses `Fplus`.
+
+   Its Lean surface is:
+
+   ```lean
+   theorem localRudinEnvelope_eq_minus_on_negative_ball
+       {m : ℕ} (hm : 0 < m)
+       (Ωplus Ωminus : Set (Fin m -> ℂ))
+       (E : Set (Fin m -> ℝ))
+       (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+       (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
+       (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+       (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+       (hE_open : IsOpen E)
+       (bv : (Fin m -> ℝ) -> ℂ)
+       (hbv_cont : ContinuousOn bv E)
+       (hFplus_bv : ...)
+       (hFminus_bv : ...)
+       (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+       {δ ρ r : ℝ} (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+       (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+       (hE_mem :
+         ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+           localEOWRealChart x0 ys u ∈ E)
+       (hplus : ...positive chart polywedge membership...)
+       (hminus : ...negative chart polywedge membership...)
+       {ζ : Fin m -> ℂ}
+       (hζ : ζ ∈ Metric.ball (0 : Fin m -> ℂ) (δ / 2))
+       (hζ_neg : ∀ j, (ζ j).im < 0) :
+       localRudinEnvelope δ x0 ys Fplus Fminus ζ =
+         Fminus (localEOWChart x0 ys ζ)
+   ```
+
+   Proof transcript for `exists_bound_localRudinIntegrand`: reproduce the
+   checked `G_bound` block in `TubeDomainExtension.lean` with the local chart
+   names and no source/QFT objects.  Let
+
+   `S = closedBall (0 : Fin m -> ℂ) (δ / 2) ×ˢ sphere (0 : ℂ) 1`
+
+   and define the continuous extension on `S` by
+
+   ```lean
+   h (w,l) =
+     if 0 < l.im then
+       Fplus (localEOWChart x0 ys (localEOWSmp δ w l))
+     else if l.im < 0 then
+       Fminus (localEOWChart x0 ys (localEOWSmp δ w l))
+     else
+       bv (localEOWRealChart x0 ys
+         (fun j => (localEOWSmp δ w l j).re))
+   ```
+
+   The compactness input is
+   `IsCompact.prod (isCompact_closedBall ...) (isCompact_sphere ...)`.
+   Continuity of `p ↦ localEOWChart x0 ys (localEOWSmp δ p.1 p.2)` on
+   `closedBall × closedBall` is proved coordinatewise from
+   `moebiusRudin_continuousOn`, using
+   `‖w j / δ‖ < 1` on the closed half-radius ball.  The real-coordinate map
+   `p ↦ localEOWRealChart x0 ys (fun j => (localEOWSmp δ p.1 p.2 j).re)` is
+   then continuous by composing with `continuous_re` and
+   `continuous_localEOWRealChart`.
+
+   For a point `(w0,l0) ∈ S`, split by `l0.im > 0`, `< 0`, or `= 0`.
+   In the positive case, `h` locally agrees with the `Fplus` branch and
+   `localEOWChart_smp_upper_mem_of_delta_on_sphere` puts the base point in
+   `Ωplus`; `hFplus_diff.differentiableAt` gives continuity.  The negative
+   case is identical with
+   `localEOWChart_smp_lower_mem_of_delta_on_sphere` and `Fminus`.
+   In the boundary case, set
+   `x' = localEOWRealChart x0 ys (fun j => (localEOWSmp δ w0 l0 j).re)`.
+   `localEOWChart_smp_realEdge_eq_of_unit_real` identifies the chart point
+   with `realEmbed x'`, while `localEOWSmp_re_mem_closedBall hδ hδρ` and
+   `hE_mem` prove `x' ∈ E`.  On the positive and negative pieces of a
+   neighborhood in `S`, compose the chart tendsto with
+   `hFplus_bv x'` and `hFminus_bv x'`; on the real piece, use
+   `hbv_cont.continuousWithinAt` composed with the real-coordinate map.
+   The three closed pieces `{Im l > 0}`, `{Im l < 0}`, `{Im l = 0}` cover
+   `S`, so `ContinuousWithinAt.union` combines the three tendsto statements.
+
+   With `ContinuousOn h S`, `hS_cpt.exists_bound_of_continuousOn h_cont`
+   gives `M` such that `‖h (w,l)‖ ≤ M` on `S`.  For any
+   `w ∈ ball 0 (δ / 2)` and real `θ`, put `l = exp (θ I)`, so
+   `l ∈ sphere 0 1` and `l.im = sin θ`.  If `sin θ > 0` or `< 0`, both
+   `localRudinIntegrand ... w θ` and `h (w,l)` choose the same side branch;
+   if `sin θ = 0`, the integrand is zero and the bound follows from
+   nonnegativity of the compact bound.  This proves the uniform bound needed
+   by `differentiableAt_localRudinIntegral_of_bound`.
+
    The two `localEOWChart_smp_*_mem_of_delta`
    theorems then prove the actual Rudin arc membership in the upper and lower
    local chart wedges: the real part is controlled by
@@ -1392,25 +2362,44 @@ def KernelSupportWithin
     {m : ℕ}
     (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
     (r : ℝ) : Prop :=
-  HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ) ∧
-    tsupport (ψ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 r
+  tsupport (ψ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 r
 
-def KernelCutoff
+theorem KernelSupportWithin_hasCompactSupport
+    {m : ℕ} {ψ : SchwartzMap (Fin m -> ℝ) ℂ} {r : ℝ}
+    (hψ : KernelSupportWithin ψ r) :
+    HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ)
+
+theorem KernelSupportWithin.smulLeftCLM
     {m : ℕ}
     (χ : (Fin m -> ℝ) -> ℂ)
-    (r rLarge : ℝ) : Prop :=
-  ContDiff ℝ ⊤ χ ∧
-    (∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r, χ t = 1) ∧
-    HasCompactSupport χ ∧
-    tsupport χ ⊆ Metric.closedBall 0 rLarge
+    {ψ : SchwartzMap (Fin m -> ℝ) ℂ} {r : ℝ}
+    (hψ : KernelSupportWithin ψ r) :
+    KernelSupportWithin (SchwartzMap.smulLeftCLM ℂ χ ψ) r
 
-noncomputable def cutoffKernelCLM
+theorem KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall
     {m : ℕ}
-    (χ : (Fin m -> ℝ) -> ℂ)
-    (hχ_temp : χ.HasTemperateGrowth) :
-    SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ]
-      SchwartzMap (Fin m -> ℝ) ℂ :=
-  SchwartzMap.smulLeftCLM ℂ χ
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    {ψ : SchwartzMap (Fin m -> ℝ) ℂ} {r : ℝ}
+    (hχ_one :
+      ∀ x : Fin m -> ℝ, x ∈ Metric.closedBall (0 : Fin m -> ℝ) r ->
+        χ x = 1)
+    (hψ : KernelSupportWithin ψ r) :
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ = ψ
+
+-- Checked cutoff existence used in the product-kernel step.  Do not cite the
+-- old `KernelCutoff` or `cutoffKernelCLM` placeholders as declarations.
+theorem exists_schwartz_cutoff_eq_one_on_closedBall
+    {m : ℕ} {r rLarge : ℝ} (hr : 0 < r) (hrLarge : r < rLarge) :
+    ∃ χ : SchwartzMap (Fin m -> ℝ) ℂ,
+      (∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r, χ t = 1) ∧
+      tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 rLarge
+
+theorem exists_closedBall_integral_clm_of_continuousOn
+    {m : ℕ} {R : ℝ} {g : (Fin m -> ℝ) -> ℂ}
+    (hg_cont : ContinuousOn g (Metric.closedBall (0 : Fin m -> ℝ) R)) :
+    ∃ T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ,
+      ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+        T ψ = ∫ x in Metric.closedBall (0 : Fin m -> ℝ) R, g x * ψ x
 
 def BoxMargin
     {m : ℕ}
@@ -1527,20 +2516,199 @@ lemma regularizedLocalEOW_window_from_continuousEOW
                 Hψ z = realMollifyLocal Fplus ψ z) ->
               ∀ z ∈ U0, Hψ z = Gψ z)
 
-lemma regularizedEnvelope_valueCLM_of_cutoff
+The old schematic `regularizedEnvelope_valueCLM_of_cutoff` surface with an
+abstract `G` and only a supported-kernel conclusion has been superseded by the
+checked theorem of the same mathematical role below.  The checked theorem
+works with the explicit fixed-window Rudin formula, constructs `Lw` on all
+Schwartz kernels after cutoff, and leaves cutoff removal for the smaller
+supported-kernel class as a separate identity step.
+
+This value-CLM theorem is **not** available from additivity/homogeneity alone.
+The next proof must supply the actual seminorm bound for the explicit local
+Rudin envelope value.  The checked first estimate is:
+
+```lean
+theorem exists_bound_realMollifyLocal_smulLeftCLM
     {m : ℕ}
-    (U0 : Set (Fin m -> ℂ))
-    (G : SchwartzMap (Fin m -> ℝ) ℂ ->
-      (Fin m -> ℂ) -> ℂ)
-    (r rLarge : ℝ)
-    (χ : (Fin m -> ℝ) -> ℂ)
-    (hχ : KernelCutoff χ r rLarge)
-    (hχ_temp : χ.HasTemperateGrowth) :
-    ∀ z ∈ U0,
-      ∃ Lz : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ,
+    (F : ComplexChartSpace m -> ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (z : ComplexChartSpace m)
+    (r : ℝ)
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (hF_cont : ContinuousOn F Ω)
+    (hmargin :
+      ∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r, z + realEmbed t ∈ Ω)
+    (hχ_support :
+      tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 r) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+        ‖realMollifyLocal F
+            (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ) z‖ ≤
+          C * SchwartzMap.seminorm ℂ 0 0 ψ
+```
+
+The first direct Rudin-envelope estimate is now checked:
+
+```lean
+theorem exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds
+    (δ : ℝ)
+    (x0 : Fin m -> ℝ) (ys : Fin m -> Fin m -> ℝ)
+    (Fplus Fminus : ComplexChartSpace m -> ℂ)
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (Cplus Cminus : ℝ)
+    (hplus_bound :
+      ∀ θ : ℝ, 0 < Real.sin θ ->
         ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
-          KernelSupportWithin ψ r ->
-            Lz ψ = G (cutoffKernelCLM χ hχ_temp ψ) z
+          ‖realMollifyLocal Fplus
+              (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ)
+              (localEOWChart x0 ys
+                (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))‖ ≤
+            Cplus * SchwartzMap.seminorm ℂ 0 0 ψ)
+    (hminus_bound :
+      ∀ θ : ℝ, Real.sin θ < 0 ->
+        ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+          ‖realMollifyLocal Fminus
+              (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ)
+              (localEOWChart x0 ys
+                (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))‖ ≤
+            Cminus * SchwartzMap.seminorm ℂ 0 0 ψ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+        ‖localRudinEnvelope δ x0 ys
+            (fun z =>
+              realMollifyLocal Fplus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ) z)
+            (fun z =>
+              realMollifyLocal Fminus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ) z)
+            w‖ ≤
+          C * SchwartzMap.seminorm ℂ 0 0 ψ
+```
+
+This theorem is **not** the full endpoint estimate.  It only applies once a
+uniform zeroth-seminorm side bound is already available.  Near the real edge,
+the OS-II distributional boundary value can require higher Schwartz seminorms;
+the correct endpoint-facing estimate uses Banach-Steinhaus:
+
+```lean
+theorem exists_schwartz_bound_normalized_intervalIntegral_clm_family
+    (T : ℝ -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
+    (hT_bound :
+      ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+        ∃ C : ℝ, ∀ θ ∈ Set.uIoc (-Real.pi) Real.pi, ‖T θ ψ‖ ≤ C) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+        ‖((2 * Real.pi)⁻¹ : ℝ) •
+            ∫ θ in (-Real.pi)..Real.pi, T θ ψ‖ ≤
+          C * s.sup (schwartzSeminormFamily ℂ (Fin m -> ℝ) ℂ) ψ
+```
+
+The endpoint value estimate is now checked with a finite Schwartz-seminorm
+bound, not with the false stronger `seminorm ℂ 0 0` bound:
+
+```lean
+theorem exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value
+    -- same fixed window hypotheses as
+    -- `regularizedLocalEOW_family_from_fixedWindow`, instantiated at the
+    -- larger cutoff support radius `rLarge`
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (hχ_support :
+      tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 rLarge) :
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+        ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+          ‖localRudinEnvelope δ x0 ys
+              (realMollifyLocal Fplus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ))
+              (realMollifyLocal Fminus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ))
+              w‖ ≤
+            C * s.sup (schwartzSeminormFamily ℂ (Fin m -> ℝ) ℂ) ψ
+```
+
+The checked proof factors through:
+
+1. For fixed `w`, define an interval family of real-linear CLMs `Tθ` on all
+   Schwartz kernels:
+   - if `0 < sin θ`, `Tθ` is the side value CLM for the plus sample point
+     `localEOWChart x0 ys (localEOWSmp δ w (exp (θ * I)))`;
+   - if `sin θ < 0`, `Tθ` is the analogous minus side value CLM;
+   - if `sin θ = 0`, `Tθ = 0`, matching `localRudinIntegrand`.
+2. The side value CLMs are constructed by
+   `exists_realMollifyLocal_valueCLM_of_closedBall`, using the closed-ball
+   translate-margin hypotheses for the larger cutoff radius `rLarge`.
+3. Prove the exact evaluation identity
+   `Tθ ψ = localRudinIntegrand δ x0 ys (realMollifyLocal Fplus (χ • ψ))
+     (realMollifyLocal Fminus (χ • ψ)) w θ` on `Set.uIoc (-π) π`.
+4. For each fixed `ψ`, apply the already checked local continuous EOW compact
+   bound to the regularized pair with kernel `χ • ψ`.  This gives pointwise
+   boundedness of `θ ↦ Tθ ψ`; it uses the real-edge boundary value and is the
+   endpoint step that prevents false zeroth-seminorm compactness assumptions.
+5. Apply `exists_schwartz_bound_normalized_intervalIntegral_clm_family` to get
+   one finite Schwartz-seminorm bound for the normalized Rudin integral.
+
+The value-CLM construction is now checked:
+
+```lean
+theorem regularizedEnvelope_valueCLM_of_cutoff
+    -- fixed-window hypotheses instantiated at `rLarge`
+    (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+    (hχ_support :
+      tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 rLarge) :
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      ∃ Lw : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ,
+        ∀ ψ : SchwartzMap (Fin m -> ℝ) ℂ,
+          Lw ψ =
+            localRudinEnvelope δ x0 ys
+              (fun z => realMollifyLocal Fplus
+                (SchwartzMap.smulLeftCLM ℂ
+                  (χ : (Fin m -> ℝ) -> ℂ) ψ) z)
+              (fun z => realMollifyLocal Fminus
+                (SchwartzMap.smulLeftCLM ℂ
+                  (χ : (Fin m -> ℝ) -> ℂ) ψ) z)
+              w
+```
+
+Its checked proof:
+
+1. Use `exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value` for the
+   finite seminorm bound.
+2. Prove additivity of `ψ ↦ G (χ • ψ) w` from the checked
+   `regularizedLocalEOW_family_add`, the larger-radius support theorem
+   `KernelSupportWithin.smulLeftCLM_of_leftSupport`, and linearity of
+   `SchwartzMap.smulLeftCLM`.
+3. Prove complex homogeneity the same way using
+   `regularizedLocalEOW_family_smul`.
+4. Feed additivity, homogeneity, and the finite seminorm bound into
+   `SchwartzMap.mkCLMtoNormedSpace`.
+5. For the downstream supported-kernel statement, use
+   `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall` to remove the
+   cutoff on kernels supported in the smaller ball `closedBall 0 r`.
+
+The next genuine theorem-2 product-kernel target is therefore no longer the
+pointwise value CLM.  It is the coherent family step that must output exactly
+the downstream data consumed by
+`regularizedEnvelope_chartEnvelope_from_productKernel`: a product kernel
+`K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ`, the
+explicit fixed-window family `G`, real-translation covariance
+`ProductKernelRealTranslationCovariantGlobal K`, holomorphy of `G ψ` on the
+fixed window for every `KernelSupportWithin ψ r`, and the product-test
+representation
+
+```lean
+∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+  (ψ : SchwartzMap (Fin m -> ℝ) ℂ),
+  SupportsInOpen (φ : ComplexChartSpace m -> ℂ) U0 ->
+  KernelSupportWithin ψ r ->
+    K (schwartzTensorProduct₂ φ ψ) =
+      ∫ z : ComplexChartSpace m, G ψ z * φ z
+```
+
+The proof should use `regularizedEnvelope_valueCLM_of_cutoff` for pointwise
+continuity in the smoothing kernel, the cutoff identity to remove `χ` on
+supported kernels, and the real-translation identity below to supply
+covariance.  It must not introduce a placeholder product-kernel theorem.
 
 lemma regularizedEnvelope_realTranslation_identity
     {m : ℕ}
@@ -2325,7 +3493,46 @@ Proof transcript for the next target:
    Streater-Wightman regularization extraction: it proves common continuous
    boundary values for each compact real kernel once the slice CLMs have been
    constructed and shown to converge to the same chart distribution.
-6. Remaining proof-doc gap before the next major implementation step:
+6. The fixed-kernel continuous-envelope bridge is now checked as
+   `SCV.regularizedLocalEOW_fixedKernelEnvelope_from_clm`.  It applies the two
+   holomorphy-margin lemmas to `realMollifyLocal Fplus ψ` and
+   `realMollifyLocal Fminus ψ`, uses
+   `SCV.localRealMollify_commonContinuousBoundary_of_clm` for the common
+   boundary value
+   `x ↦ Tchart (translateSchwartz (-x) ψ)`, and then calls
+   `SCV.local_continuous_edge_of_the_wedge_envelope` on the shrunken local
+   wedges `Dplus/Dminus`.  Its Lean proof is the following composition, with
+   no hidden boundary assumption:
+
+   ```lean
+   have hψ_compact := KernelSupportWithin_hasCompactSupport hψ_support
+   have hFplus_moll_holo :=
+     localRealMollifySide_holomorphicOn_of_translate_margin
+       Fplus ψ Ωplus Dplus hΩplus_open hDplus_open hFplus_diff
+       hψ_compact hplus_margin
+   have hFminus_moll_holo :=
+     localRealMollifySide_holomorphicOn_of_translate_margin
+       Fminus ψ Ωminus Dminus hΩminus_open hDminus_open hFminus_diff
+       hψ_compact hminus_margin
+   have hcommon :=
+     localRealMollify_commonContinuousBoundary_of_clm
+       Dplus Dminus Fplus Fminus Tplus Tminus Tchart ψ E hψ_compact
+       hDplus_sub hDminus_sub hplus_eval hminus_eval
+       hplus_limit hminus_limit
+   exact
+     local_continuous_edge_of_the_wedge_envelope hm
+       Dplus Dminus E C hDplus_open hDminus_open hE_open hC_open
+       hC_conv hC_ne hlocal_wedge
+       (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+       hFplus_moll_holo hFminus_moll_holo
+       (fun x => Tchart (translateSchwartz (-x) ψ))
+       hcommon.1 hcommon.2.1 hcommon.2.2 x0 hx0
+   ```
+
+   This checked theorem is exactly the per-kernel input for the next family
+   stage.  The next theorem may use it, but must not restate its conclusion as
+   an assumption.
+7. Remaining proof-doc gap before the next major implementation step:
    construct the local slice CLMs `Tplus y` and `Tminus y` from the OS-II
    distributional boundary-value hypotheses.  This is where the Fubini and
    slow-growth work belongs.  The required production theorem must show:
@@ -2794,7 +4001,11 @@ Kernel-recovery implementation substrate:
      -- Schwartz seminorm estimates in `SCV/DistributionalEOWKernel.lean`.
      schwartzTensorProductRaw φ ψ
 
-   theorem schwartzKernel₂_extension
+   -- Unimplemented theorem surface, not checked API.  The checked
+   -- product-density/descent files currently provide uniqueness and descent
+   -- from product tensors; they do not by themselves construct `K` from an
+   -- arbitrary separately continuous bilinear family.
+   theorem productKernel_from_continuous_bilinear_family
        {m : ℕ}
        (B : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ]
          (SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)) :
@@ -2802,10 +4013,22 @@ Kernel-recovery implementation substrate:
          SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ,
          ∀ φ ψ, K (schwartzTensorProduct₂ φ ψ) = B φ ψ
 
-   lemma kernelCutoff_exists
+   -- Unimplemented cutoff-existence theorem.  The checked support lemmas
+   -- below show how such a Schwartz cutoff acts once supplied.
+   lemma exists_schwartz_cutoff_eq_one_on_closedBall
        {m : ℕ} {r rLarge : ℝ} (hr : 0 < r) (hrLarge : r < rLarge) :
-       ∃ χ : (Fin m -> ℝ) -> ℂ,
-         KernelCutoff χ r rLarge ∧ χ.HasTemperateGrowth
+       ∃ χ : SchwartzMap (Fin m -> ℝ) ℂ,
+         (∀ t ∈ Metric.closedBall (0 : Fin m -> ℝ) r, χ t = 1) ∧
+         tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ Metric.closedBall 0 rLarge
+
+   theorem KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall
+       (χ : SchwartzMap (Fin m -> ℝ) ℂ)
+       {ψ : SchwartzMap (Fin m -> ℝ) ℂ} {r : ℝ}
+       (hχ_one :
+         ∀ x : Fin m -> ℝ, x ∈ Metric.closedBall (0 : Fin m -> ℝ) r ->
+           χ x = 1)
+       (hψ : KernelSupportWithin ψ r) :
+       SchwartzMap.smulLeftCLM ℂ (χ : (Fin m -> ℝ) -> ℂ) ψ = ψ
 
    lemma regularizedEnvelope_valueCLM_of_cutoff
        -- fixed cutoff, uniqueness of `Gψ`, slow-growth bounds, and explicit
@@ -2814,7 +4037,9 @@ Kernel-recovery implementation substrate:
        ∀ z ∈ U0,
          ∃ Lz : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ,
            ∀ ψ, KernelSupportWithin ψ r ->
-             Lz ψ = G (cutoffKernelCLM χ hχ_temp ψ) z
+             Lz ψ =
+               G (SchwartzMap.smulLeftCLM ℂ
+                    (χ : (Fin m -> ℝ) -> ℂ) ψ) z
 
    lemma regularizedEnvelope_covariance_of_uniqueness
        -- compare the translated-kernel envelope and translated envelope on a
@@ -2986,12 +4211,30 @@ Kernel-recovery implementation substrate:
    `fderiv_complexRealFiberIntegralRaw_eq`,
    `continuous_complexRealFiberIntegralRaw`,
    `contDiff_nat_complexRealFiberIntegralRaw`, and
-   `contDiff_complexRealFiberIntegralRaw`.  The next implementation target is
-   no longer the convolution-test construction: the higher-order decay
-   induction, `complexRealFiberIntegral`, `realConvolutionTest`, and the exact
-   apply theorem
+   `contDiff_complexRealFiberIntegralRaw`.  The higher-order decay induction,
+   `complexRealFiberIntegral`, `realConvolutionTest`, and the exact apply theorem
    `realConvolutionTest φ ψ z = ∫ t, φ (z - realEmbed t) * ψ t`
-   are checked, as are the first fiber-descent primitives
+   are checked.  The finite-seminorm upgrade needed for a continuous-linear
+   fiber-integral map is now also checked:
+   `exists_seminorm_bound_complexRealFiberIntegralRaw_zero` is the generic
+   zeroth-order estimate, `basePrecompCLM` and `baseFDerivSchwartzCLM` make the
+   base derivative field a continuous complex-linear Schwartz-space map,
+   `exists_seminorm_bound_baseFDerivSchwartz` controls its finite target
+   seminorm suprema by finite source seminorms, and
+   `exists_seminorm_bound_complexRealFiberIntegralRaw_deriv` is the full
+   derivative-induction estimate used by `SchwartzMap.mkCLM`.
+   Consequently `complexRealFiberIntegralCLM` and
+   `complexRealFiberIntegralCLM_apply` are checked, and
+   `boundaryProductKernel_from_complexRealFiberIntegralCLM` gives the chart
+   product kernel
+   `K F = Tchart (complexRealFiberIntegralCLM (shear F))` with product-test
+   representation and real-translation covariance once a complex-chart
+   distribution `Tchart` is available.  The theorem-2 supplier still has to
+   construct the mixed product kernel from the regularized family
+   `G ψ`; the fiber-integral theorem only removes the separate analytic
+   obstruction in the chart-distribution case.
+
+   The older fiber-descent primitives
    `complexRealFiberTranslateSchwartzCLM`,
    `complexRealFiberIntegral_fiberTranslate`,
    `complexRealFiberIntegral_schwartzTensorProduct₂`,
@@ -3002,11 +4245,8 @@ Kernel-recovery implementation substrate:
    `complexRealFiberTranslate_shearedTensor_eq`.  The mixed fiber quotient and
    normalized-cutoff factorization are now checked in
    `DistributionalEOWKernelTransport.lean` and
-   `DistributionalEOWKernelFactorization.lean`.  The next implementation target
-   is therefore the mixed product-tensor density/kernel-extension theorem; only
-   after that can product-test covariance be promoted to the sheared
-   product-kernel invariance theorem and the global translation-covariant
-   descent layer.
+   `DistributionalEOWKernelFactorization.lean`; they remain useful background
+   infrastructure but are no longer the active theorem-2 product-kernel route.
 
    The `realConvolutionTest` construction must be implemented by the following
    exact Lean route, not by an informal convolution placeholder.
@@ -3236,11 +4476,13 @@ Kernel-recovery implementation substrate:
        K (schwartzTensorProduct₂ φ (translateSchwartz a ψ))`
       compatible with the quotient map
       `(φ, ψ) ↦ realConvolutionTest φ ψ`.
-3. The proof transcript for `regularizedEnvelope_kernelRecovery` is fixed:
+3. The proof transcript for `regularizedEnvelope_kernelRecovery` is now
+   corrected to separate checked infrastructure from the remaining kernel
+   theorem:
    build the cutoff CLM; prove value CLMs by continuous-EOW uniqueness; prove
-   translation covariance by identity theorem/uniqueness; apply the pure
-   two-space Schwartz-kernel theorem `schwartzKernel₂_extension`; descend the
-   translation-covariant product kernel by
+   translation covariance by identity theorem/uniqueness; prove or consume the
+   still-unchecked mixed two-space product-density/kernel-extension theorem;
+   descend the translation-covariant product kernel by
    `translationCovariantProductKernel_descends`; use distributional
    Cauchy-Riemann regularity to get a holomorphic function; then apply the
    approximate identity theorem already present in
@@ -3252,7 +4494,9 @@ Detailed kernel-recovery proof transcript:
    `tsupport φ ⊆ Ucore` and real kernels `ψ`, define the bilinear pairing
    ```lean
    regularizedEnvelopeBilinear φ ψ :=
-     ∫ z : ComplexChartSpace m, G (cutoffKernelCLM χ hχ_temp ψ) z * φ z
+     ∫ z : ComplexChartSpace m,
+       G (SchwartzMap.smulLeftCLM ℂ
+            (χ : (Fin m -> ℝ) -> ℂ) ψ) z * φ z
    ```
    The support condition on `φ` keeps the integral inside `Ucore`.
 2. Prove `regularizedEnvelopeBilinear` is separately continuous:
@@ -3315,10 +4559,12 @@ Detailed kernel-recovery proof transcript:
 
 Exact product-kernel/descent subpackage:
 
-1. The product-kernel theorem is a mixed two-space Schwartz kernel theorem,
-   not the QFT-facing Wightman axiom:
+1. The remaining product-kernel theorem is a mixed two-space Schwartz kernel
+   theorem, not the QFT-facing Wightman axiom.  It is not currently checked in
+   Lean; the checked product-density/descent files supply uniqueness/descent
+   consequences, not this existence theorem:
    ```lean
-   theorem schwartzKernel₂_extension
+   theorem productKernel_from_continuous_bilinear_family
        {m : ℕ}
        (B : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ]
          (SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)) :
@@ -3334,7 +4580,8 @@ Exact product-kernel/descent subpackage:
      tensor product with the concrete mixed product Schwartz space;
    - uniqueness is exactly agreement on `schwartzTensorProduct₂` product tests.
    This is the pure-SCV analogue of the existing Wightman
-   `schwartz_nuclear_extension` axiom, but it must not import that axiom.
+   `schwartz_nuclear_extension` axiom, but it must not import that axiom or be
+   cited under a non-existent checked name.
 
 2. Convert product covariance into fiber-translation invariance by shearing:
    ```lean
@@ -3409,7 +4656,7 @@ Exact product-kernel/descent subpackage:
    `(SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (realConvolutionShearCLE m))
     (schwartzTensorProduct₂ φ ψ)`, where the already checked identity
    `realConvolutionTest_complexTranslate_eq_translateSchwartz` fixes the sign.
-   Then uniqueness/density from `schwartzKernel₂_extension` promotes the
+   Then uniqueness/density from the mixed product-tensor theorem promotes the
    tensor equality to CLM equality on the full mixed Schwartz space.
 
    The tensor-level covariance consequence is a separate checked theorem and
@@ -3452,7 +4699,8 @@ Exact product-kernel/descent subpackage:
    The remaining step is density/uniqueness: if two continuous functionals on
    the mixed product Schwartz space agree on the span of these sheared product
    tensors, then they agree everywhere.  That is precisely where
-   `schwartzKernel₂_extension` or the equivalent dense-span theorem is needed.
+   mixed product-tensor density/kernel-extension theorem or the equivalent
+   dense-span theorem is needed.
 
    The dense-span promotion layer should be implemented as an honest
    conditional theorem before the full nuclear/kernel theorem is proved:
@@ -3557,12 +4805,12 @@ Exact product-kernel/descent subpackage:
    `translationCovariantProductKernel_descends`: it retains the dense-span
    hypothesis explicitly.  The unqualified theorem follows only after proving
    `ShearedProductTensorDense m`, equivalently the mixed two-space
-   `schwartzKernel₂_extension`/product-density theorem.
+   mixed product-density/kernel-extension theorem.
 
    The conditional promotion/descent package is now checked in
    `SCV/DistributionalEOWProductKernel.lean`.  The remaining unproved theorem
    at this layer is exactly `ShearedProductTensorDense m` (or the stronger
-   `schwartzKernel₂_extension` from which it follows).
+   mixed product-density/kernel-extension theorem from which it follows).
 
    The checked coordinate-transport reduction is the pure shear part of that
    blocker.  It does **not** prove the Schwartz nuclear/product theorem; it
@@ -4166,11 +5414,10 @@ Exact product-kernel/descent subpackage:
    `IsComplexRealFiberTranslationInvariant (shearedProductKernelFunctional K)`
    from `ProductKernelRealTranslationCovariantGlobal K` on all mixed tests.
    The existing covariance predicate is an equality on product tensors; to
-   promote it to all of `SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ`
-   still requires the mixed product-tensor density/kernel-extension theorem
-   `schwartzKernel₂_extension` or an equivalent uniqueness principle.  That
-   density theorem is the next mathematical blocker after the normalized
-   factorization is checked.
+  promote it to all of `SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ`
+  still requires the mixed product-tensor density/kernel-extension theorem or
+  an equivalent uniqueness principle.  That density theorem is the next
+  mathematical blocker after the normalized factorization is checked.
 
    This is the mixed chart analogue of the already checked
    `HeadBlockTranslationInvariant` factorization theorem.  The proof cannot be

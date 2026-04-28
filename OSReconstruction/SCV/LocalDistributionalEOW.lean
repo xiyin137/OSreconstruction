@@ -4,7 +4,8 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalEOWKernelRecovery
-import OSReconstruction.SCV.LocalContinuousEOW
+import OSReconstruction.SCV.LocalEOWChartLinear
+import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 
 /-!
 # Local Distributional Edge-of-the-Wedge Support Lemmas
@@ -21,6 +22,373 @@ open Complex MeasureTheory Topology Metric Set Filter
 namespace SCV
 
 variable {m : ℕ}
+
+/-- The real-mollifier integrand is Bochner integrable when the side function is
+holomorphic on an open set containing all real translates used by the compact
+kernel support. -/
+theorem integrable_realMollifyLocal_integrand_of_translate_margin
+    (F : ComplexChartSpace m → ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (z : ComplexChartSpace m)
+    (hΩ_open : IsOpen Ω)
+    (hF_holo : DifferentiableOn ℂ F Ω)
+    (hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ))
+    (hmargin :
+      ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ω) :
+    Integrable (fun t : Fin m → ℝ => F (z + realEmbed t) * ψ t) := by
+  let I : (Fin m → ℝ) → ℂ := fun t => F (z + realEmbed t) * ψ t
+  have hrealEmbed_cont : Continuous (fun t : Fin m → ℝ => realEmbed t) :=
+    continuous_realEmbed (m := m)
+  have hI_cont : Continuous I := by
+    rw [continuous_iff_continuousAt]
+    intro t
+    by_cases ht : t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ)
+    · have hshift : z + realEmbed t ∈ Ω := hmargin t ht
+      have hF_at : ContinuousAt F (z + realEmbed t) :=
+        ((hF_holo (z + realEmbed t) hshift).differentiableAt
+          (hΩ_open.mem_nhds hshift)).continuousAt
+      have hshift_at :
+          ContinuousAt (fun u : Fin m → ℝ => z + realEmbed u) t :=
+        (continuous_const.add hrealEmbed_cont).continuousAt
+      have hleft : ContinuousAt (fun u : Fin m → ℝ => F (z + realEmbed u)) t :=
+        ContinuousAt.comp_of_eq hF_at hshift_at rfl
+      simpa [I] using hleft.mul ψ.continuous.continuousAt
+    · have hψ_zero :
+        (ψ : (Fin m → ℝ) → ℂ) =ᶠ[nhds t] fun _ => 0 := by
+          rwa [notMem_tsupport_iff_eventuallyEq] at ht
+      have hI_zero : I =ᶠ[nhds t] fun _ => 0 := by
+        filter_upwards [hψ_zero] with u hu
+        simp [I, hu]
+      exact hI_zero.continuousAt
+  have hI_support_subset :
+      Function.support I ⊆ Function.support (ψ : (Fin m → ℝ) → ℂ) := by
+    intro t ht
+    by_contra hnot
+    have hψt : ψ t = 0 := by
+      simpa [Function.mem_support] using hnot
+    have hIt : I t = 0 := by
+      simp [I, hψt]
+    exact ht (by simp [hIt])
+  have hI_compact : HasCompactSupport I := by
+    rw [HasCompactSupport]
+    refine hψ_compact.of_isClosed_subset isClosed_closure ?_
+    exact
+      closure_minimal
+        (fun t ht => subset_tsupport _ (hI_support_subset ht))
+        (isClosed_tsupport _)
+  simpa [I] using hI_cont.integrable_of_hasCompactSupport hI_compact
+
+/-- For a fixed chart point, real mollification is represented on
+fixed-radius supported kernels by a continuous linear functional of the kernel.
+
+The coefficient only needs to be continuous on the closed support ball after
+translation into the side domain. -/
+theorem exists_realMollifyLocal_valueCLM_of_closedBall
+    (F : ComplexChartSpace m → ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (z : ComplexChartSpace m)
+    (r : ℝ)
+    (hF_cont : ContinuousOn F Ω)
+    (hmargin :
+      ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) r, z + realEmbed t ∈ Ω) :
+    ∃ L : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ,
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        KernelSupportWithin ψ r → L ψ = realMollifyLocal F ψ z := by
+  let s : Set (Fin m → ℝ) := Metric.closedBall (0 : Fin m → ℝ) r
+  let g : (Fin m → ℝ) → ℂ := fun t => F (z + realEmbed t)
+  have hshift_cont : Continuous (fun t : Fin m → ℝ => z + realEmbed t) :=
+    continuous_const.add (continuous_realEmbed (m := m))
+  have hg_cont : ContinuousOn g s := by
+    exact hF_cont.comp hshift_cont.continuousOn hmargin
+  obtain ⟨L, hL⟩ :=
+    exists_closedBall_integral_clm_of_continuousOn (m := m) hg_cont
+  refine ⟨L, ?_⟩
+  intro ψ hψ
+  have hzero : ∀ t : Fin m → ℝ, t ∉ s → g t * ψ t = 0 := by
+    intro t ht
+    have ht_not_tsupport : t ∉ tsupport (ψ : (Fin m → ℝ) → ℂ) := by
+      intro htψ
+      exact ht (hψ htψ)
+    have hψt : ψ t = 0 := by
+      have ht_not_support : t ∉ Function.support (ψ : (Fin m → ℝ) → ℂ) := by
+        intro hsupp
+        exact ht_not_tsupport (subset_closure hsupp)
+      simpa [Function.mem_support] using ht_not_support
+    simp [hψt]
+  have hset : (∫ t in s, g t * ψ t) = ∫ t : Fin m → ℝ, g t * ψ t := by
+    exact MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hzero
+  rw [hL ψ, hset]
+  rfl
+
+/-- A cutoff-supported real mollifier value is bounded by the zeroth Schwartz
+seminorm of the unconstrained kernel. -/
+theorem exists_bound_realMollifyLocal_smulLeftCLM
+    (F : ComplexChartSpace m → ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (z : ComplexChartSpace m)
+    (r : ℝ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hF_cont : ContinuousOn F Ω)
+    (hmargin :
+      ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) r, z + realEmbed t ∈ Ω)
+    (hχ_support :
+      tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 r) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ‖realMollifyLocal F
+            (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z‖ ≤
+          C * SchwartzMap.seminorm ℂ 0 0 ψ := by
+  let s : Set (Fin m → ℝ) := Metric.closedBall (0 : Fin m → ℝ) r
+  let gχ : (Fin m → ℝ) → ℂ := fun t => F (z + realEmbed t) * χ t
+  have hs_compact : IsCompact s := isCompact_closedBall _ _
+  have hshift_cont : Continuous (fun t : Fin m → ℝ => z + realEmbed t) :=
+    continuous_const.add (continuous_realEmbed (m := m))
+  have hgχ_cont : ContinuousOn gχ s := by
+    exact (hF_cont.comp hshift_cont.continuousOn hmargin).mul
+      χ.continuous.continuousOn
+  obtain ⟨C0, hC0⟩ := hs_compact.exists_bound_of_continuousOn hgχ_cont
+  let C : ℝ := max C0 0 * (volume s).toReal
+  have hC_nonneg : 0 ≤ C := by
+    exact mul_nonneg (le_max_right C0 0) ENNReal.toReal_nonneg
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro ψ
+  let η : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ
+  have hzero :
+      ∀ t : Fin m → ℝ, t ∉ s → F (z + realEmbed t) * η t = 0 := by
+    intro t ht
+    have ht_not_tsupport : t ∉ tsupport (η : (Fin m → ℝ) → ℂ) := by
+      intro htη
+      have htχ : t ∈ tsupport (χ : (Fin m → ℝ) → ℂ) :=
+        (SchwartzMap.tsupport_smulLeftCLM_subset (F := ℂ)
+          (g := (χ : (Fin m → ℝ) → ℂ)) (f := ψ) htη).2
+      exact ht (hχ_support htχ)
+    have hηt : η t = 0 := by
+      have ht_not_support : t ∉ Function.support (η : (Fin m → ℝ) → ℂ) := by
+        intro hsupp
+        exact ht_not_tsupport (subset_closure hsupp)
+      simpa [Function.mem_support] using ht_not_support
+    simp [hηt]
+  have hset :
+      (∫ t in s, F (z + realEmbed t) * η t) =
+        ∫ t : Fin m → ℝ, F (z + realEmbed t) * η t := by
+    exact MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hzero
+  rw [realMollifyLocal]
+  rw [← hset]
+  have hs_fin : volume s < ⊤ := measure_closedBall_lt_top
+  calc
+    ‖∫ t in s, F (z + realEmbed t) * η t‖
+        ≤ (max C0 0 * SchwartzMap.seminorm ℂ 0 0 ψ) *
+            (volume s).toReal := by
+          refine MeasureTheory.norm_setIntegral_le_of_norm_le_const hs_fin ?_
+          intro t ht
+          have hgχt : ‖gχ t‖ ≤ max C0 0 :=
+            le_trans (hC0 t ht) (le_max_left _ _)
+          have hη_apply : η t = χ t * ψ t := by
+            simpa [η, smul_eq_mul] using
+              (SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth ψ t)
+          calc
+            ‖F (z + realEmbed t) * η t‖ = ‖gχ t * ψ t‖ := by
+              rw [hη_apply]
+              simp [gχ]
+              ring_nf
+            _ = ‖gχ t‖ * ‖ψ t‖ := norm_mul _ _
+            _ ≤ max C0 0 * SchwartzMap.seminorm ℂ 0 0 ψ := by
+              gcongr
+              simpa using (SchwartzMap.le_seminorm ℂ 0 0 ψ t)
+    _ = C * SchwartzMap.seminorm ℂ 0 0 ψ := by
+      simp [C]
+      ring
+
+/-- If the two side values along the Rudin circle are uniformly bounded by the
+zeroth Schwartz seminorm after applying a fixed cutoff, then the normalized
+local Rudin envelope value has the same kind of seminorm bound.
+
+This is the quantitative integration step needed for the value-CLM
+construction; the uniform side bounds are supplied by separate compactness and
+margin estimates. -/
+theorem exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds
+    (δ : ℝ)
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (w : ComplexChartSpace m)
+    (Cplus Cminus : ℝ)
+    (hplus_bound :
+      ∀ θ : ℝ, 0 < Real.sin θ →
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖realMollifyLocal Fplus
+              (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ)
+              (localEOWChart x0 ys
+                (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))‖ ≤
+            Cplus * SchwartzMap.seminorm ℂ 0 0 ψ)
+    (hminus_bound :
+      ∀ θ : ℝ, Real.sin θ < 0 →
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖realMollifyLocal Fminus
+              (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ)
+              (localEOWChart x0 ys
+                (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I))))‖ ≤
+            Cminus * SchwartzMap.seminorm ℂ 0 0 ψ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ‖localRudinEnvelope δ x0 ys
+            (fun z =>
+              realMollifyLocal Fplus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+            (fun z =>
+              realMollifyLocal Fminus
+                (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+            w‖ ≤
+          C * SchwartzMap.seminorm ℂ 0 0 ψ := by
+  let B : ℝ := max (max Cplus Cminus) 0
+  have hB_nonneg : 0 ≤ B := le_max_right (max Cplus Cminus) 0
+  let C : ℝ := ‖((2 * Real.pi)⁻¹ : ℝ)‖ * (B * |Real.pi - (-Real.pi)|)
+  have hC_nonneg : 0 ≤ C := by
+    exact mul_nonneg (norm_nonneg _) (mul_nonneg hB_nonneg (abs_nonneg _))
+  refine ⟨C, hC_nonneg, ?_⟩
+  intro ψ
+  let η : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ
+  have hseminorm_nonneg : 0 ≤ SchwartzMap.seminorm ℂ 0 0 ψ := by
+    positivity
+  have h_integrand_bound :
+      ∀ θ ∈ Set.uIoc (-Real.pi) Real.pi,
+        ‖localRudinIntegrand δ x0 ys
+            (fun z => realMollifyLocal Fplus η z)
+            (fun z => realMollifyLocal Fminus η z) w θ‖ ≤
+          B * SchwartzMap.seminorm ℂ 0 0 ψ := by
+    intro θ _hθ
+    by_cases hpos : 0 < Real.sin θ
+    · have hplus := hplus_bound θ hpos ψ
+      have hle :
+          Cplus * SchwartzMap.seminorm ℂ 0 0 ψ ≤
+            B * SchwartzMap.seminorm ℂ 0 0 ψ := by
+        exact mul_le_mul_of_nonneg_right
+          ((le_max_left Cplus Cminus).trans
+            (le_max_left (max Cplus Cminus) 0))
+          hseminorm_nonneg
+      exact le_trans (by
+        simpa [localRudinIntegrand, η, hpos] using hplus) hle
+    · by_cases hneg : Real.sin θ < 0
+      · have hminus := hminus_bound θ hneg ψ
+        have hle :
+            Cminus * SchwartzMap.seminorm ℂ 0 0 ψ ≤
+              B * SchwartzMap.seminorm ℂ 0 0 ψ := by
+          exact mul_le_mul_of_nonneg_right
+            ((le_max_right Cplus Cminus).trans
+              (le_max_left (max Cplus Cminus) 0))
+            hseminorm_nonneg
+        exact le_trans (by
+          simpa [localRudinIntegrand, η, hpos, hneg] using hminus) hle
+      · simp [localRudinIntegrand, hpos, hneg,
+          mul_nonneg hB_nonneg hseminorm_nonneg]
+  have h_interval_bound :
+      ‖∫ θ in (-Real.pi)..Real.pi,
+          localRudinIntegrand δ x0 ys
+            (fun z => realMollifyLocal Fplus η z)
+            (fun z => realMollifyLocal Fminus η z) w θ‖ ≤
+        (B * SchwartzMap.seminorm ℂ 0 0 ψ) * |Real.pi - (-Real.pi)| :=
+    intervalIntegral.norm_integral_le_of_norm_le_const h_integrand_bound
+  calc
+    ‖localRudinEnvelope δ x0 ys
+        (fun z => realMollifyLocal Fplus η z)
+        (fun z => realMollifyLocal Fminus η z) w‖
+        = ‖((2 * Real.pi)⁻¹ : ℝ)‖ *
+            ‖∫ θ in (-Real.pi)..Real.pi,
+              localRudinIntegrand δ x0 ys
+                (fun z => realMollifyLocal Fplus η z)
+                (fun z => realMollifyLocal Fminus η z) w θ‖ := by
+          simp [localRudinEnvelope, localRudinIntegral]
+    _ ≤ ‖((2 * Real.pi)⁻¹ : ℝ)‖ *
+          ((B * SchwartzMap.seminorm ℂ 0 0 ψ) * |Real.pi - (-Real.pi)|) := by
+        exact mul_le_mul_of_nonneg_left h_interval_bound (norm_nonneg _)
+    _ = C * SchwartzMap.seminorm ℂ 0 0 ψ := by
+        simp [C]
+        ring
+
+/-- Banach-Steinhaus plus interval integration for the Rudin-circle parameter.
+
+If an interval-indexed family of real-linear Schwartz functionals is
+pointwise bounded on every Schwartz test function, then the normalized
+interval integral is controlled by one finite Schwartz seminorm.  This is the
+functional-analytic estimate needed at the real-edge endpoints, where a
+zeroth-seminorm compact coefficient bound is too strong for a general
+distributional boundary value. -/
+theorem exists_schwartz_bound_normalized_intervalIntegral_clm_family
+    (T : ℝ → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (hT_bound :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ∃ C : ℝ, ∀ θ ∈ Set.uIoc (-Real.pi) Real.pi, ‖T θ ψ‖ ≤ C) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ‖((2 * Real.pi)⁻¹ : ℝ) •
+            ∫ θ in (-Real.pi)..Real.pi, T θ ψ‖ ≤
+          C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+  let I : Set ℝ := Set.uIoc (-Real.pi) Real.pi
+  let Tsub : I → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ :=
+    fun θ => T θ
+  have hTsub_bound :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ∃ C : ℝ, ∀ θ : I, ‖Tsub θ ψ‖ ≤ C := by
+    intro ψ
+    obtain ⟨C, hC⟩ := hT_bound ψ
+    exact ⟨C, fun θ => hC θ θ.property⟩
+  obtain ⟨s, Cnn, _hCnn_ne, hbound⟩ :=
+    SchwartzMap.tempered_uniform_schwartz_bound
+      (E := Fin m → ℝ) (F := ℂ) (G := ℂ) hTsub_bound
+  have sup_apply_real_eq_complex :
+      ∀ (s' : Finset (ℕ × ℕ)) (ψ' : SchwartzMap (Fin m → ℝ) ℂ),
+        (s'.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ' =
+          (s'.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)) ψ' := by
+    intro s' ψ'
+    induction s' using Finset.induction_on with
+    | empty => simp
+    | insert a s ha ih =>
+        have ha_eq :
+            (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ a) ψ' =
+              (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ a) ψ' := by
+          cases a
+          rfl
+        simp [Finset.sup_insert, ih, ha_eq]
+  let C : ℝ :=
+    ‖((2 * Real.pi)⁻¹ : ℝ)‖ * ((Cnn : ℝ) * |Real.pi - (-Real.pi)|)
+  have hC_nonneg : 0 ≤ C := by
+    exact mul_nonneg (norm_nonneg _)
+      (mul_nonneg (NNReal.coe_nonneg Cnn) (abs_nonneg _))
+  refine ⟨s, C, hC_nonneg, ?_⟩
+  intro ψ
+  let pℂ : Seminorm ℂ (SchwartzMap (Fin m → ℝ) ℂ) :=
+    s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ)
+  have hp_eq :
+      (s.sup (schwartzSeminormFamily ℝ (Fin m → ℝ) ℂ)) ψ = pℂ ψ := by
+    dsimp [pℂ]
+    exact sup_apply_real_eq_complex s ψ
+  have hp_nonneg : 0 ≤ pℂ ψ := by
+    positivity
+  have h_interval_bound :
+      ‖∫ θ in (-Real.pi)..Real.pi, T θ ψ‖ ≤
+        ((Cnn : ℝ) * pℂ ψ) * |Real.pi - (-Real.pi)| := by
+    refine intervalIntegral.norm_integral_le_of_norm_le_const ?_
+    intro θ hθ
+    have hθ' : θ ∈ I := hθ
+    have h := hbound ⟨θ, hθ'⟩ ψ
+    rw [← hp_eq]
+    simpa [Tsub] using h
+  calc
+    ‖((2 * Real.pi)⁻¹ : ℝ) •
+        ∫ θ in (-Real.pi)..Real.pi, T θ ψ‖
+        = ‖((2 * Real.pi)⁻¹ : ℝ)‖ *
+            ‖∫ θ in (-Real.pi)..Real.pi, T θ ψ‖ := by
+          simp
+    _ ≤ ‖((2 * Real.pi)⁻¹ : ℝ)‖ *
+          (((Cnn : ℝ) * pℂ ψ) * |Real.pi - (-Real.pi)|) := by
+        exact mul_le_mul_of_nonneg_left h_interval_bound (norm_nonneg _)
+    _ = C * pℂ ψ := by
+        simp [C, pℂ]
+        ring
 
 /-- Local real-direction mollification of a holomorphic function is
 holomorphic on the shrunken local domain when all real translates used by the
@@ -302,6 +670,182 @@ theorem realMollifyLocal_eq_sliceIntegral_translate
         ∫ x : Fin m → ℝ,
           F (fun i => (x i : ℂ) + ((w i).im : ℂ) * Complex.I) *
             translateSchwartz (fun i => - (w i).re) ψ x := rfl
+
+/-- Translating the real smoothing kernel is the same as translating the
+complex argument in the opposite real direction. -/
+theorem realMollifyLocal_translateSchwartz
+    (F : ComplexChartSpace m → ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (a : Fin m → ℝ)
+    (z : ComplexChartSpace m) :
+    realMollifyLocal F (translateSchwartz a ψ) z =
+      realMollifyLocal F ψ (z - realEmbed a) := by
+  let f : (Fin m → ℝ) → ℂ :=
+    fun x => F (z + realEmbed (x - a)) * ψ x
+  calc
+    realMollifyLocal F (translateSchwartz a ψ) z =
+        ∫ t : Fin m → ℝ, f (t + a) := by
+          apply integral_congr_ae
+          filter_upwards with t
+          dsimp [f, realMollifyLocal]
+          have hsub : t + a - a = t := by
+            ext i
+            simp
+          rw [hsub]
+    _ = ∫ x : Fin m → ℝ, f x := by
+          exact MeasureTheory.integral_add_right_eq_self (μ := volume) f a
+    _ = realMollifyLocal F ψ (z - realEmbed a) := by
+          apply integral_congr_ae
+          filter_upwards with x
+          dsimp [f, realMollifyLocal]
+          congr 2
+          ext i
+          simp [realEmbed]
+          ring
+
+/-- Change variables in the real mollifier through the local EOW chart's
+linear part.  The pushed kernel is the Jacobian-normalized chart-to-original
+kernel, so the original real-edge mollifier equals the chart-coordinate
+integral. -/
+theorem realMollifyLocal_localEOWRealLinearKernelPushforwardCLM
+    (F : ComplexChartSpace m → ℂ)
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ)
+    (z : ComplexChartSpace m) :
+    realMollifyLocal F (localEOWRealLinearKernelPushforwardCLM ys hli φ) z =
+      ∫ u : Fin m → ℝ,
+        F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u := by
+  let e := localEOWRealLinearCLE ys hli
+  let A : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := e.toContinuousLinearMap
+  have hlin :
+      (A : (Fin m → ℝ) →ₗ[ℝ] (Fin m → ℝ)) =
+        Matrix.toLin' (localEOWRealLinearMatrix ys) := by
+    apply LinearMap.ext
+    intro u
+    ext a
+    change (localEOWRealLinearCLE ys hli u) a =
+      (Matrix.toLin' (localEOWRealLinearMatrix ys) u) a
+    rw [localEOWRealLinearCLE_apply]
+    simpa [Matrix.toLin'_apply] using
+      (congrFun (localEOWRealLinearMatrix_mulVec ys u).symm a)
+  have hjac : localEOWRealJacobianAbs ys = |A.det| := by
+    rw [localEOWRealJacobianAbs]
+    change |(localEOWRealLinearMatrix ys).det| =
+      |LinearMap.det (A : (Fin m → ℝ) →ₗ[ℝ] (Fin m → ℝ))|
+    rw [hlin, LinearMap.det_toLin']
+  have hdet_ne : A.det ≠ 0 := by
+    exact (LinearEquiv.isUnit_det' e.toLinearEquiv).ne_zero
+  have hdet_abs_ne : |A.det| ≠ 0 := abs_ne_zero.mpr hdet_ne
+  have he_symm (u : Fin m → ℝ) :
+      e.symm (localEOWRealLinearPart ys u) = u := by
+    rw [← localEOWRealLinearCLE_apply ys hli u]
+    exact e.symm_apply_apply u
+  let g : (Fin m → ℝ) → ℂ := fun y =>
+    F (z + realEmbed y) *
+      (((localEOWRealJacobianAbs ys)⁻¹ : ℂ) * φ (e.symm y))
+  have hfderiv :
+      ∀ x ∈ (Set.univ : Set (Fin m → ℝ)),
+        HasFDerivWithinAt (fun u : Fin m → ℝ => e u) A Set.univ x := by
+    intro x _hx
+    exact e.hasFDerivAt.hasFDerivWithinAt
+  have hinj : Set.InjOn (fun u : Fin m → ℝ => e u) Set.univ := by
+    intro x _hx y _hy hxy
+    exact e.injective hxy
+  have hchange :=
+    MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul
+      (μ := volume) (s := (Set.univ : Set (Fin m → ℝ)))
+      (f := fun u : Fin m → ℝ => e u) (f' := fun _ => A)
+      MeasurableSet.univ hfderiv hinj g
+  have himage : (fun u : Fin m → ℝ => e u) '' Set.univ = Set.univ := by
+    ext y
+    constructor
+    · intro _hy
+      trivial
+    · intro _hy
+      exact ⟨e.symm y, trivial, by simp [e]⟩
+  rw [himage] at hchange
+  have hrhs :
+      ∀ u : Fin m → ℝ,
+        |A.det| • g (e u) =
+          F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u := by
+    intro u
+    dsimp [g]
+    rw [localEOWRealLinearCLE_apply, he_symm, hjac]
+    field_simp [hdet_abs_ne]
+  calc
+    realMollifyLocal F (localEOWRealLinearKernelPushforwardCLM ys hli φ) z =
+        ∫ y : Fin m → ℝ, g y := by
+          simp [realMollifyLocal, g, e,
+            localEOWRealLinearKernelPushforwardCLM_apply]
+    _ = ∫ u : Fin m → ℝ, |A.det| • g (e u) := by
+          simpa using hchange
+    _ = ∫ u : Fin m → ℝ,
+        F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u := by
+          apply integral_congr_ae
+          filter_upwards with u
+          exact hrhs u
+
+/-- Additivity of real-direction mollification in the smoothing kernel, with
+the required Bochner-integrability hypotheses explicit. -/
+theorem realMollifyLocal_add_of_integrable
+    (F : ComplexChartSpace m → ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (z : ComplexChartSpace m)
+    (hψ : Integrable fun t : Fin m → ℝ => F (z + realEmbed t) * ψ t)
+    (hη : Integrable fun t : Fin m → ℝ => F (z + realEmbed t) * η t) :
+    realMollifyLocal F (ψ + η) z =
+      realMollifyLocal F ψ z + realMollifyLocal F η z := by
+  rw [realMollifyLocal, realMollifyLocal, realMollifyLocal]
+  trans ∫ t : Fin m → ℝ,
+      (F (z + realEmbed t) * ψ t) + (F (z + realEmbed t) * η t)
+  · apply integral_congr_ae
+    filter_upwards with t
+    simp [mul_add]
+  · exact integral_add hψ hη
+
+/-- Complex homogeneity of real-direction mollification in the smoothing
+kernel. -/
+theorem realMollifyLocal_smul
+    (F : ComplexChartSpace m → ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (c : ℂ)
+    (z : ComplexChartSpace m) :
+    realMollifyLocal F (c • ψ) z =
+      c * realMollifyLocal F ψ z := by
+  rw [realMollifyLocal, realMollifyLocal]
+  trans ∫ t : Fin m → ℝ, c • (F (z + realEmbed t) * ψ t)
+  · apply integral_congr_ae
+    filter_upwards with t
+    simp
+    ring
+  · rw [integral_smul]
+    rfl
+
+/-- Additivity of real-direction mollification on a side domain, with
+integrability discharged from compact supports and the translate-margin
+hypotheses. -/
+theorem realMollifyLocal_add_of_translate_margin
+    (F : ComplexChartSpace m → ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (Ω : Set (ComplexChartSpace m))
+    (z : ComplexChartSpace m)
+    (hΩ_open : IsOpen Ω)
+    (hF_holo : DifferentiableOn ℂ F Ω)
+    (hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ))
+    (hη_compact : HasCompactSupport (η : (Fin m → ℝ) → ℂ))
+    (hψ_margin :
+      ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ω)
+    (hη_margin :
+      ∀ t ∈ tsupport (η : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ω) :
+    realMollifyLocal F (ψ + η) z =
+      realMollifyLocal F ψ z + realMollifyLocal F η z :=
+  realMollifyLocal_add_of_integrable F ψ η z
+    (integrable_realMollifyLocal_integrand_of_translate_margin
+      F ψ Ω z hΩ_open hF_holo hψ_compact hψ_margin)
+    (integrable_realMollifyLocal_integrand_of_translate_margin
+      F η Ω z hΩ_open hF_holo hη_compact hη_margin)
 
 /-- If the slice functional at imaginary part `y` is represented by integrating
 `F(x + i y)` against the test function, then local real mollification at `w`
@@ -663,5 +1207,1212 @@ theorem localRealMollify_commonContinuousBoundary_of_clm
     refine Tendsto.congr' ?_ hΩ
     filter_upwards [self_mem_nhdsWithin] with w hw
     exact (hminus_eval w hw).symm
+
+/-- Construct the real-linear CLM family represented by the local Rudin
+integrand after a fixed cutoff.
+
+For positive circle angles the family is the plus side value functional
+precomposed with the cutoff multiplication CLM; for negative angles it is the
+minus side functional; at the two boundary angles it is zero.  The second
+output is the pointwise boundedness needed by Banach-Steinhaus, obtained from
+the checked compact bound for the continuous local EOW integrand applied to
+each fixed cutoff kernel. -/
+theorem exists_localRudinIntegrand_smulLeftCLM_clmFamily
+    {Cplus Cminus : Set (Fin m → ℝ)} {rLarge ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin_closed :
+      ∀ z ∈ Dplus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωplus)
+    (hminus_margin_closed :
+      ∀ z ∈ Dminus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hχ_support :
+      tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 rLarge)
+    (w : ComplexChartSpace m)
+    (hw : w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2)) :
+    ∃ T : ℝ → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ,
+      (∀ θ ∈ Set.uIoc (-Real.pi) Real.pi,
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          T θ ψ =
+            localRudinIntegrand δ x0 ys
+              (fun z =>
+                realMollifyLocal Fplus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              (fun z =>
+                realMollifyLocal Fminus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              w θ) ∧
+      (∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        ∃ C : ℝ, ∀ θ ∈ Set.uIoc (-Real.pi) Real.pi, ‖T θ ψ‖ ≤ C) := by
+  let sample : ℝ → ComplexChartSpace m := fun θ =>
+    localEOWChart x0 ys
+      (localEOWSmp δ w (Complex.exp ((θ : ℂ) * Complex.I)))
+  have hw_closed : w ∈ Metric.closedBall (0 : ComplexChartSpace m) (δ / 2) :=
+    Metric.ball_subset_closedBall hw
+  have hsample_plus : ∀ θ : ℝ, 0 < Real.sin θ → sample θ ∈ Dplus := by
+    intro θ hθ
+    exact localEOWChart_smp_upper_mem_of_delta_on_sphere hm Dplus x0 ys
+      hδ hδρ hδsum hplus hw_closed
+      (Complex.norm_exp_ofReal_mul_I θ)
+      (by simpa [sample, Complex.exp_ofReal_mul_I_im] using hθ)
+  have hsample_minus : ∀ θ : ℝ, Real.sin θ < 0 → sample θ ∈ Dminus := by
+    intro θ hθ
+    exact localEOWChart_smp_lower_mem_of_delta_on_sphere hm Dminus x0 ys
+      hδ hδρ hδsum hminus hw_closed
+      (Complex.norm_exp_ofReal_mul_I θ)
+      (by simpa [sample, Complex.exp_ofReal_mul_I_im] using hθ)
+  let cutoffCLMℝ :
+      SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] SchwartzMap (Fin m → ℝ) ℂ :=
+    (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ)).restrictScalars ℝ
+  let plusL : (θ : ℝ) → 0 < Real.sin θ →
+      SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+    fun θ hθ =>
+      (exists_realMollifyLocal_valueCLM_of_closedBall
+        Fplus Ωplus (sample θ) rLarge hFplus_diff.continuousOn
+        (hplus_margin_closed (sample θ) (hsample_plus θ hθ))).choose
+  have plusL_spec :
+      ∀ (θ : ℝ) (hθ : 0 < Real.sin θ)
+        (φ : SchwartzMap (Fin m → ℝ) ℂ),
+        KernelSupportWithin φ rLarge →
+          plusL θ hθ φ = realMollifyLocal Fplus φ (sample θ) := by
+    intro θ hθ φ hφ
+    exact
+      (exists_realMollifyLocal_valueCLM_of_closedBall
+        Fplus Ωplus (sample θ) rLarge hFplus_diff.continuousOn
+        (hplus_margin_closed (sample θ) (hsample_plus θ hθ))).choose_spec φ hφ
+  let minusL : (θ : ℝ) → Real.sin θ < 0 →
+      SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+    fun θ hθ =>
+      (exists_realMollifyLocal_valueCLM_of_closedBall
+        Fminus Ωminus (sample θ) rLarge hFminus_diff.continuousOn
+        (hminus_margin_closed (sample θ) (hsample_minus θ hθ))).choose
+  have minusL_spec :
+      ∀ (θ : ℝ) (hθ : Real.sin θ < 0)
+        (φ : SchwartzMap (Fin m → ℝ) ℂ),
+        KernelSupportWithin φ rLarge →
+          minusL θ hθ φ = realMollifyLocal Fminus φ (sample θ) := by
+    intro θ hθ φ hφ
+    exact
+      (exists_realMollifyLocal_valueCLM_of_closedBall
+        Fminus Ωminus (sample θ) rLarge hFminus_diff.continuousOn
+        (hminus_margin_closed (sample θ) (hsample_minus θ hθ))).choose_spec φ hφ
+  let T : ℝ → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ := fun θ =>
+    if hθpos : 0 < Real.sin θ then
+      (plusL θ hθpos).restrictScalars ℝ |>.comp cutoffCLMℝ
+    else if hθneg : Real.sin θ < 0 then
+      (minusL θ hθneg).restrictScalars ℝ |>.comp cutoffCLMℝ
+    else 0
+  have hT_eval :
+      ∀ θ ∈ Set.uIoc (-Real.pi) Real.pi,
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          T θ ψ =
+            localRudinIntegrand δ x0 ys
+              (fun z =>
+                realMollifyLocal Fplus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              (fun z =>
+                realMollifyLocal Fminus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              w θ := by
+    intro θ _hθ ψ
+    let η : SchwartzMap (Fin m → ℝ) ℂ :=
+      SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ
+    have hη_support : KernelSupportWithin η rLarge :=
+      KernelSupportWithin.smulLeftCLM_of_leftSupport hχ_support ψ
+    by_cases hpos : 0 < Real.sin θ
+    · have hL := plusL_spec θ hpos η hη_support
+      simpa [T, η, cutoffCLMℝ, sample, localRudinIntegrand, hpos] using hL
+    · by_cases hneg : Real.sin θ < 0
+      · have hL := minusL_spec θ hneg η hη_support
+        simpa [T, η, cutoffCLMℝ, sample, localRudinIntegrand, hpos, hneg] using hL
+      · simp [T, localRudinIntegrand, hpos, hneg]
+  refine ⟨T, hT_eval, ?_⟩
+  intro ψ
+  let η : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ
+  have hη_support : KernelSupportWithin η rLarge :=
+    KernelSupportWithin.smulLeftCLM_of_leftSupport hχ_support ψ
+  have hη_compact : HasCompactSupport (η : (Fin m → ℝ) → ℂ) :=
+    KernelSupportWithin_hasCompactSupport hη_support
+  have hplus_margin_η :
+      ∀ z ∈ Dplus, ∀ t ∈ tsupport (η : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωplus := by
+    intro z hz t ht
+    exact hplus_margin_closed z hz t (hη_support ht)
+  have hminus_margin_η :
+      ∀ z ∈ Dminus, ∀ t ∈ tsupport (η : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωminus := by
+    intro z hz t ht
+    exact hminus_margin_closed z hz t (hη_support ht)
+  have hFplus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fplus η) Dplus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fplus η Ωplus Dplus hΩplus_open hDplus_open hFplus_diff
+      hη_compact hplus_margin_η
+  have hFminus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fminus η) Dminus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fminus η Ωminus Dminus hΩminus_open hDminus_open hFminus_diff
+      hη_compact hminus_margin_η
+  have hcommon :=
+    localRealMollify_commonContinuousBoundary_of_clm
+      Dplus Dminus Fplus Fminus Tplus Tminus Tchart η E hη_compact
+      hDplus_sub hDminus_sub (hplus_eval η hη_support)
+      (hminus_eval η hη_support) hplus_limit hminus_limit
+  let bv : (Fin m → ℝ) → ℂ := fun x => Tchart (translateSchwartz (-x) η)
+  obtain ⟨M, hM⟩ :=
+    exists_bound_localRudinIntegrand hm Dplus Dminus E
+      hDplus_open hDminus_open
+      (realMollifyLocal Fplus η) (realMollifyLocal Fminus η)
+      hFplus_moll_holo hFminus_moll_holo bv hcommon.1 hcommon.2.1
+      hcommon.2.2 x0 ys hδ hδρ hδsum hE_mem hplus hminus
+  refine ⟨M, ?_⟩
+  intro θ hθ
+  calc
+    ‖T θ ψ‖ =
+        ‖localRudinIntegrand δ x0 ys
+          (fun z => realMollifyLocal Fplus η z)
+          (fun z => realMollifyLocal Fminus η z) w θ‖ := by
+          rw [hT_eval θ hθ ψ]
+    _ ≤ M := hM w hw θ
+
+/-- Finite Schwartz-seminorm bound for the actual cutoff local Rudin envelope
+value.
+
+This is the quantitative endpoint estimate needed to turn
+`ψ ↦ G (χ • ψ) w` into a continuous linear functional.  The finite seminorm is
+produced by Banach-Steinhaus from pointwise boundedness of the interval CLM
+family; no zeroth-seminorm bound is assumed at the real-edge endpoints. -/
+theorem exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value
+    {Cplus Cminus : Set (Fin m → ℝ)} {rLarge ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin_closed :
+      ∀ z ∈ Dplus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωplus)
+    (hminus_margin_closed :
+      ∀ z ∈ Dminus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hχ_support :
+      tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 rLarge) :
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖localRudinEnvelope δ x0 ys
+              (fun z =>
+                realMollifyLocal Fplus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              (fun z =>
+                realMollifyLocal Fminus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              w‖ ≤
+            C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+  intro w hw
+  obtain ⟨T, hT_eval, hT_bound⟩ :=
+    exists_localRudinIntegrand_smulLeftCLM_clmFamily hm
+      Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+      hDplus_open hDminus_open Fplus Fminus hFplus_diff hFminus_diff
+      hplus_margin_closed hminus_margin_closed hDplus_sub hDminus_sub
+      Tplus Tminus Tchart hplus_eval hminus_eval hplus_limit hminus_limit
+      x0 ys hδ hδρ hδsum hE_mem hplus hminus χ hχ_support w hw
+  obtain ⟨s, C, hC_nonneg, hbound⟩ :=
+    exists_schwartz_bound_normalized_intervalIntegral_clm_family T hT_bound
+  refine ⟨s, C, hC_nonneg, ?_⟩
+  intro ψ
+  let η : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ
+  have hintegral :
+      (∫ θ in (-Real.pi)..Real.pi, T θ ψ) =
+        ∫ θ in (-Real.pi)..Real.pi,
+          localRudinIntegrand δ x0 ys
+            (fun z => realMollifyLocal Fplus η z)
+            (fun z => realMollifyLocal Fminus η z) w θ := by
+    apply intervalIntegral.integral_congr_ae
+    filter_upwards with θ hθ
+    exact hT_eval θ hθ ψ
+  calc
+    ‖localRudinEnvelope δ x0 ys
+        (fun z => realMollifyLocal Fplus η z)
+        (fun z => realMollifyLocal Fminus η z) w‖
+        = ‖((2 * Real.pi)⁻¹ : ℝ) •
+            ∫ θ in (-Real.pi)..Real.pi, T θ ψ‖ := by
+          simp [localRudinEnvelope, localRudinIntegral, hintegral]
+    _ ≤ C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ :=
+        hbound ψ
+
+/-- Fixed-window local regularized EOW envelope from distributional boundary
+slice data.
+
+Unlike `regularizedLocalEOW_fixedKernelEnvelope_from_clm`, this theorem does
+not choose the local Rudin chart window.  The data `ys, ρ, r, δ` are supplied
+once, so the output is the explicit envelope
+`localRudinEnvelope δ x0 ys (realMollifyLocal Fplus ψ)
+  (realMollifyLocal Fminus ψ)`.  This is the form needed before building a
+coherent family in the smoothing kernel. -/
+theorem regularizedLocalEOW_fixedWindowEnvelope_from_clm
+    {Cplus Cminus : Set (Fin m → ℝ)} {rψ ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ_support : KernelSupportWithin ψ rψ)
+    (hplus_margin :
+      ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωplus)
+    (hminus_margin :
+      ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ w ∈ Dplus,
+        realMollifyLocal Fplus ψ w =
+          Tplus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ w ∈ Dminus,
+        realMollifyLocal Fminus ψ w =
+          Tminus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) :
+    DifferentiableOn ℂ
+      (localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ))
+      (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) ∧
+    (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      (∀ j, 0 < (w j).im) →
+        localEOWChart x0 ys w ∈ Dplus ∧
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ) w =
+          realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) ∧
+    (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      (∀ j, (w j).im < 0) →
+        localEOWChart x0 ys w ∈ Dminus ∧
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ) w =
+          realMollifyLocal Fminus ψ (localEOWChart x0 ys w)) ∧
+    (∀ u : Fin m → ℝ,
+      (fun j => (u j : ℂ)) ∈
+        Metric.ball (0 : ComplexChartSpace m) (δ / 2) →
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+          (fun j => (u j : ℂ)) =
+          Tchart (translateSchwartz (-(localEOWRealChart x0 ys u)) ψ)) ∧
+    (∀ G : ComplexChartSpace m → ℂ,
+      DifferentiableOn ℂ G (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) →
+      (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, 0 < (w j).im) →
+          G w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) →
+      ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        G w =
+          localRudinEnvelope δ x0 ys
+            (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ) w) := by
+  have hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ) :=
+    KernelSupportWithin_hasCompactSupport hψ_support
+  have hFplus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fplus ψ) Dplus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fplus ψ Ωplus Dplus hΩplus_open hDplus_open hFplus_diff
+      hψ_compact hplus_margin
+  have hFminus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fminus ψ) Dminus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fminus ψ Ωminus Dminus hΩminus_open hDminus_open hFminus_diff
+      hψ_compact hminus_margin
+  have hcommon :=
+    localRealMollify_commonContinuousBoundary_of_clm
+      Dplus Dminus Fplus Fminus Tplus Tminus Tchart ψ E hψ_compact
+      hDplus_sub hDminus_sub hplus_eval hminus_eval hplus_limit hminus_limit
+  let bv : (Fin m → ℝ) → ℂ := fun x => Tchart (translateSchwartz (-x) ψ)
+  have hF0_diff : DifferentiableOn ℂ
+      (localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ))
+      (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) := by
+    exact differentiableOn_localRudinEnvelope hm Dplus Dminus E
+      hDplus_open hDminus_open (realMollifyLocal Fplus ψ)
+      (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+      bv hcommon.1 hcommon.2.1 hcommon.2.2 x0 ys hδ hδρ
+      hδsum hE_mem hplus hminus
+  refine ⟨hF0_diff, ?_, ?_, ?_, ?_⟩
+  · intro w hw hw_pos
+    constructor
+    · exact localEOWChart_ball_positive_mem_of_delta hm Dplus x0 ys
+        hδ hδρ hδsum hplus hw hw_pos
+    · simpa [bv] using
+        localRudinEnvelope_eq_plus_on_positive_ball hm Dplus Dminus E
+          hDplus_open hDminus_open (realMollifyLocal Fplus ψ)
+          (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+          hE_open bv hcommon.1 hcommon.2.1 hcommon.2.2 x0 ys hδ hδρ
+          hδsum hE_mem hplus hminus hw hw_pos
+  · intro w hw hw_neg
+    constructor
+    · exact localEOWChart_ball_negative_mem_of_delta hm Dminus x0 ys
+        hδ hδρ hδsum hminus hw hw_neg
+    · simpa [bv] using
+        localRudinEnvelope_eq_minus_on_negative_ball hm Dplus Dminus E
+          hDplus_open hDminus_open (realMollifyLocal Fplus ψ)
+          (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+          hE_open bv hcommon.1 hcommon.2.1 hcommon.2.2 x0 ys hδ hδρ
+          hδsum hE_mem hplus hminus hw hw_neg
+  · intro u hu
+    have hu_closed :
+        (fun j => (u j : ℂ)) ∈ Metric.closedBall (0 : ComplexChartSpace m) (δ / 2) :=
+      Metric.ball_subset_closedBall hu
+    have hu_real : ∀ j, ((fun j => (u j : ℂ)) j).im = 0 := by
+      intro j
+      simp
+    have hE_smp : ∀ s : ℝ, |s| < 2 →
+        localEOWRealChart x0 ys
+          (fun j => (localEOWSmp δ (fun j => (u j : ℂ)) (s : ℂ) j).re) ∈ E := by
+      intro s hs
+      apply hE_mem
+      have hs_norm : ‖(s : ℂ)‖ ≤ 2 := by
+        rw [Complex.norm_real, Real.norm_eq_abs]
+        exact le_of_lt hs
+      exact localEOWSmp_re_mem_closedBall hδ hδρ hu_closed hs_norm
+    simpa [bv] using
+      localRudinEnvelope_eq_boundary_of_real hm Dplus Dminus
+        hDplus_open hDminus_open (realMollifyLocal Fplus ψ)
+        (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+        hE_open bv hcommon.1 hcommon.2.1 hcommon.2.2 x0 ys hδ hδρ
+        hδsum hplus hminus hu_closed hu_real hE_smp
+  · intro G hG_diff hG_plus w hw
+    let F0 : ComplexChartSpace m → ℂ :=
+      localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+    let z0 : ComplexChartSpace m := fun _ => ((δ / 4 : ℝ) : ℂ) * Complex.I
+    have hz0_im : ∀ j, (z0 j).im = δ / 4 := by
+      intro j
+      simp [z0, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+        Complex.I_re, Complex.I_im]
+    have hz0_pos : ∀ j, 0 < (z0 j).im := by
+      intro j
+      rw [hz0_im j]
+      linarith
+    have hz0_ball : z0 ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2) := by
+      rw [Metric.mem_ball, dist_zero_right]
+      calc
+        ‖z0‖ = ‖((δ / 4 : ℝ) : ℂ) * Complex.I‖ := by
+          apply le_antisymm
+          · refine (pi_norm_le_iff_of_nonneg (norm_nonneg _)).2 ?_
+            intro j
+            rfl
+          · exact norm_le_pi_norm z0 ⟨0, hm⟩
+        _ = δ / 4 := by
+          rw [norm_mul, Complex.norm_real, Complex.norm_I, mul_one, Real.norm_eq_abs,
+            abs_of_pos (by linarith : 0 < δ / 4)]
+        _ < δ / 2 := by linarith
+    have hPos_open : IsOpen {w : ComplexChartSpace m | ∀ j, 0 < (w j).im} := by
+      simp only [Set.setOf_forall]
+      exact isOpen_iInter_of_finite fun j =>
+        isOpen_lt continuous_const (Complex.continuous_im.comp (continuous_apply j))
+    have hball_open : IsOpen (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) :=
+      Metric.isOpen_ball
+    have hF0_anal :
+        AnalyticOnNhd ℂ F0 (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) := fun z hz =>
+      SCV.differentiableOn_analyticAt hball_open hF0_diff hz
+    have hG_anal :
+        AnalyticOnNhd ℂ G (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) := fun z hz =>
+      SCV.differentiableOn_analyticAt hball_open hG_diff hz
+    have hpreconn : IsPreconnected (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) :=
+      (convex_ball (0 : ComplexChartSpace m) (δ / 2)).isPreconnected
+    have hF0_plus : ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, 0 < (w j).im) →
+          F0 w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w) := by
+      intro w hw hw_pos
+      simpa [F0, bv] using
+        localRudinEnvelope_eq_plus_on_positive_ball hm Dplus Dminus E
+          hDplus_open hDminus_open (realMollifyLocal Fplus ψ)
+          (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+          hE_open bv hcommon.1 hcommon.2.1 hcommon.2.2 x0 ys hδ hδρ
+          hδsum hE_mem hplus hminus hw hw_pos
+    have h_eq_near : G =ᶠ[nhds z0] F0 := by
+      rw [Filter.eventuallyEq_iff_exists_mem]
+      refine ⟨Metric.ball (0 : ComplexChartSpace m) (δ / 2) ∩
+          {w : ComplexChartSpace m | ∀ j, 0 < (w j).im}, ?_, ?_⟩
+      · exact Filter.inter_mem (Metric.isOpen_ball.mem_nhds hz0_ball)
+          (hPos_open.mem_nhds hz0_pos)
+      · intro z hz
+        exact (hG_plus z hz.1 hz.2).trans (hF0_plus z hz.1 hz.2).symm
+    have hEqOn : Set.EqOn G F0 (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) :=
+      hG_anal.eqOn_of_preconnected_of_eventuallyEq hF0_anal hpreconn hz0_ball h_eq_near
+    exact hEqOn hw
+
+/-- Uniform fixed-window regularized EOW family.
+
+This exposes the honest family
+`ψ ↦ localRudinEnvelope δ x0 ys (realMollifyLocal Fplus ψ)
+  (realMollifyLocal Fminus ψ)` on one fixed Rudin chart window.  It packages
+the holomorphy, side-agreement, real-edge, and uniqueness facts obtained by
+the fixed-window theorem for every supported smoothing kernel. -/
+theorem regularizedLocalEOW_family_from_fixedWindow
+    {Cplus Cminus : Set (Fin m → ℝ)} {rψ ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωplus)
+    (hminus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) :
+    let G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ :=
+      fun ψ =>
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+    (∀ ψ, KernelSupportWithin ψ rψ →
+      DifferentiableOn ℂ (G ψ) (Metric.ball (0 : ComplexChartSpace m) (δ / 2))) ∧
+    (∀ ψ, KernelSupportWithin ψ rψ →
+      ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, 0 < (w j).im) →
+          localEOWChart x0 ys w ∈ Dplus ∧
+          G ψ w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) ∧
+    (∀ ψ, KernelSupportWithin ψ rψ →
+      ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, (w j).im < 0) →
+          localEOWChart x0 ys w ∈ Dminus ∧
+          G ψ w = realMollifyLocal Fminus ψ (localEOWChart x0 ys w)) ∧
+    (∀ ψ, KernelSupportWithin ψ rψ →
+      ∀ u : Fin m → ℝ,
+        (fun j => (u j : ℂ)) ∈
+          Metric.ball (0 : ComplexChartSpace m) (δ / 2) →
+          G ψ (fun j => (u j : ℂ)) =
+            Tchart (translateSchwartz (-(localEOWRealChart x0 ys u)) ψ)) ∧
+    (∀ ψ, KernelSupportWithin ψ rψ →
+      ∀ H : ComplexChartSpace m → ℂ,
+        DifferentiableOn ℂ H (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) →
+        (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+          (∀ j, 0 < (w j).im) →
+            H w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) →
+        ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+          H w = G ψ w) := by
+  dsimp only
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro ψ hψ
+    exact
+      (regularizedLocalEOW_fixedWindowEnvelope_from_clm hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff ψ hψ (hplus_margin ψ hψ) (hminus_margin ψ hψ)
+        hDplus_sub hDminus_sub Tplus Tminus Tchart (hplus_eval ψ hψ)
+        (hminus_eval ψ hψ) hplus_limit hminus_limit x0 ys hδ hδρ
+        hδsum hE_mem hplus hminus).1
+  · intro ψ hψ w hw hw_pos
+    exact
+      (regularizedLocalEOW_fixedWindowEnvelope_from_clm hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff ψ hψ (hplus_margin ψ hψ) (hminus_margin ψ hψ)
+        hDplus_sub hDminus_sub Tplus Tminus Tchart (hplus_eval ψ hψ)
+        (hminus_eval ψ hψ) hplus_limit hminus_limit x0 ys hδ hδρ
+        hδsum hE_mem hplus hminus).2.1 w hw hw_pos
+  · intro ψ hψ w hw hw_neg
+    exact
+      (regularizedLocalEOW_fixedWindowEnvelope_from_clm hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff ψ hψ (hplus_margin ψ hψ) (hminus_margin ψ hψ)
+        hDplus_sub hDminus_sub Tplus Tminus Tchart (hplus_eval ψ hψ)
+        (hminus_eval ψ hψ) hplus_limit hminus_limit x0 ys hδ hδρ
+        hδsum hE_mem hplus hminus).2.2.1 w hw hw_neg
+  · intro ψ hψ u hu
+    exact
+      (regularizedLocalEOW_fixedWindowEnvelope_from_clm hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff ψ hψ (hplus_margin ψ hψ) (hminus_margin ψ hψ)
+        hDplus_sub hDminus_sub Tplus Tminus Tchart (hplus_eval ψ hψ)
+        (hminus_eval ψ hψ) hplus_limit hminus_limit x0 ys hδ hδρ
+        hδsum hE_mem hplus hminus).2.2.2.1 u hu
+  · intro ψ hψ H hH_diff hH_plus w hw
+    exact
+      (regularizedLocalEOW_fixedWindowEnvelope_from_clm hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff ψ hψ (hplus_margin ψ hψ) (hminus_margin ψ hψ)
+        hDplus_sub hDminus_sub Tplus Tminus Tchart (hplus_eval ψ hψ)
+        (hminus_eval ψ hψ) hplus_limit hminus_limit x0 ys hδ hδρ
+        hδsum hE_mem hplus hminus).2.2.2.2 H hH_diff hH_plus w hw
+
+/-- Additivity of the explicit fixed-window regularized EOW family on the
+supported-kernel class. -/
+theorem regularizedLocalEOW_family_add
+    {Cplus Cminus : Set (Fin m → ℝ)} {rψ ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωplus)
+    (hminus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ : KernelSupportWithin ψ rψ)
+    (hη : KernelSupportWithin η rψ) :
+    let G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ :=
+      fun ψ =>
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      G (ψ + η) w = G ψ w + G η w := by
+  dsimp only
+  have hfamily :=
+    regularizedLocalEOW_family_from_fixedWindow hm
+      Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open hDplus_open
+      hDminus_open hE_open Fplus Fminus hFplus_diff hFminus_diff
+      hplus_margin hminus_margin hDplus_sub hDminus_sub Tplus Tminus
+      Tchart hplus_eval hminus_eval hplus_limit hminus_limit x0 ys hδ
+      hδρ hδsum hE_mem hplus hminus
+  dsimp only at hfamily
+  have hsum : KernelSupportWithin (ψ + η) rψ := KernelSupportWithin.add hψ hη
+  let G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ :=
+    fun ψ =>
+      localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+  have hH_diff : DifferentiableOn ℂ (fun w => G ψ w + G η w)
+      (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) :=
+    (hfamily.1 ψ hψ).add (hfamily.1 η hη)
+  have hH_plus :
+      ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, 0 < (w j).im) →
+          G ψ w + G η w =
+            realMollifyLocal Fplus (ψ + η) (localEOWChart x0 ys w) := by
+    intro w hw hw_pos
+    have hψ_plus := hfamily.2.1 ψ hψ w hw hw_pos
+    have hη_plus := hfamily.2.1 η hη w hw hw_pos
+    have hadd :
+        realMollifyLocal Fplus (ψ + η) (localEOWChart x0 ys w) =
+          realMollifyLocal Fplus ψ (localEOWChart x0 ys w) +
+            realMollifyLocal Fplus η (localEOWChart x0 ys w) :=
+      realMollifyLocal_add_of_translate_margin Fplus ψ η Ωplus
+        (localEOWChart x0 ys w) hΩplus_open hFplus_diff
+        (KernelSupportWithin_hasCompactSupport hψ)
+        (KernelSupportWithin_hasCompactSupport hη)
+        (hplus_margin ψ hψ (localEOWChart x0 ys w) hψ_plus.1)
+        (hplus_margin η hη (localEOWChart x0 ys w) hη_plus.1)
+    dsimp [G]
+    rw [hψ_plus.2, hη_plus.2, hadd]
+  intro w hw
+  have huniq := hfamily.2.2.2.2 (ψ + η) hsum
+  exact (huniq (fun w => G ψ w + G η w) hH_diff hH_plus w hw).symm
+
+/-- Complex homogeneity of the explicit fixed-window regularized EOW family on
+the supported-kernel class. -/
+theorem regularizedLocalEOW_family_smul
+    {Cplus Cminus : Set (Fin m → ℝ)} {rψ ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωplus)
+    (hminus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+    (c : ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ : KernelSupportWithin ψ rψ) :
+    let G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ :=
+      fun ψ =>
+        localRudinEnvelope δ x0 ys
+          (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      G (c • ψ) w = c * G ψ w := by
+  dsimp only
+  have hfamily :=
+    regularizedLocalEOW_family_from_fixedWindow hm
+      Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open hDplus_open
+      hDminus_open hE_open Fplus Fminus hFplus_diff hFminus_diff
+      hplus_margin hminus_margin hDplus_sub hDminus_sub Tplus Tminus
+      Tchart hplus_eval hminus_eval hplus_limit hminus_limit x0 ys hδ
+      hδρ hδsum hE_mem hplus hminus
+  dsimp only at hfamily
+  have hsmul : KernelSupportWithin (c • ψ) rψ :=
+    KernelSupportWithin.smul c hψ
+  let G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ :=
+    fun ψ =>
+      localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus ψ) (realMollifyLocal Fminus ψ)
+  have hH_diff : DifferentiableOn ℂ (fun w => c * G ψ w)
+      (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) := by
+    simpa [smul_eq_mul] using (hfamily.1 ψ hψ).const_smul c
+  have hH_plus :
+      ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+        (∀ j, 0 < (w j).im) →
+          c * G ψ w =
+            realMollifyLocal Fplus (c • ψ) (localEOWChart x0 ys w) := by
+    intro w hw hw_pos
+    have hψ_plus := hfamily.2.1 ψ hψ w hw hw_pos
+    have hsmul_eq :=
+      realMollifyLocal_smul Fplus ψ c (localEOWChart x0 ys w)
+    dsimp [G]
+    rw [hψ_plus.2, hsmul_eq]
+  intro w hw
+  have huniq := hfamily.2.2.2.2 (c • ψ) hsmul
+  exact (huniq (fun w => c * G ψ w) hH_diff hH_plus w hw).symm
+
+/-- Pointwise continuous linear functional represented by the cutoff local
+Rudin envelope value.
+
+The fixed window hypotheses are instantiated at the larger cutoff support
+radius `rLarge`.  The functional acts on all Schwartz kernels by first
+multiplying by the cutoff `χ`, applying the regularized local EOW envelope,
+and evaluating at `w`. -/
+theorem regularizedEnvelope_valueCLM_of_cutoff
+    {Cplus Cminus : Set (Fin m → ℝ)} {rLarge ρ r δ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hplus_margin_closed :
+      ∀ z ∈ Dplus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωplus)
+    (hminus_margin_closed :
+      ∀ z ∈ Dminus, ∀ t ∈ Metric.closedBall (0 : Fin m → ℝ) rLarge,
+        z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+    (χ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hχ_support :
+      tsupport (χ : (Fin m → ℝ) → ℂ) ⊆ Metric.closedBall 0 rLarge) :
+    ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+      ∃ Lw : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ,
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          Lw ψ =
+            localRudinEnvelope δ x0 ys
+              (fun z =>
+                realMollifyLocal Fplus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              (fun z =>
+                realMollifyLocal Fminus
+                  (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ) ψ) z)
+              w := by
+  intro w hw
+  let cutoffCLM : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ)
+  let A : SchwartzMap (Fin m → ℝ) ℂ → ℂ := fun ψ =>
+    localRudinEnvelope δ x0 ys
+      (fun z => realMollifyLocal Fplus (cutoffCLM ψ) z)
+      (fun z => realMollifyLocal Fminus (cutoffCLM ψ) z) w
+  have hplus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωplus := by
+    intro ψ hψ z hz t ht
+    exact hplus_margin_closed z hz t (hψ ht)
+  have hminus_margin :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rLarge →
+        ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+          z + realEmbed t ∈ Ωminus := by
+    intro ψ hψ z hz t ht
+    exact hminus_margin_closed z hz t (hψ ht)
+  have hbound_exists :
+      ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+        ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+          ‖A ψ‖ ≤
+            C * s.sup (schwartzSeminormFamily ℂ (Fin m → ℝ) ℂ) ψ := by
+    obtain ⟨s, C, hC, hbound⟩ :=
+      exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open Fplus Fminus hFplus_diff hFminus_diff
+        hplus_margin_closed hminus_margin_closed hDplus_sub hDminus_sub
+        Tplus Tminus Tchart hplus_eval hminus_eval hplus_limit hminus_limit
+        x0 ys hδ hδρ hδsum hE_mem hplus hminus χ hχ_support w hw
+    exact ⟨s, C, hC, by intro ψ; simpa [A, cutoffCLM] using hbound ψ⟩
+  have hcut_support :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin (cutoffCLM ψ) rLarge := by
+    intro ψ
+    exact KernelSupportWithin.smulLeftCLM_of_leftSupport hχ_support ψ
+  have hadd : ∀ ψ η : SchwartzMap (Fin m → ℝ) ℂ, A (ψ + η) = A ψ + A η := by
+    intro ψ η
+    have hcut_add : cutoffCLM (ψ + η) = cutoffCLM ψ + cutoffCLM η := by
+      exact map_add cutoffCLM ψ η
+    have hGadd :=
+      regularizedLocalEOW_family_add hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff hplus_margin hminus_margin hDplus_sub hDminus_sub
+        Tplus Tminus Tchart hplus_eval hminus_eval hplus_limit hminus_limit
+        x0 ys hδ hδρ hδsum hE_mem hplus hminus
+        (cutoffCLM ψ) (cutoffCLM η) (hcut_support ψ) (hcut_support η) w hw
+    simpa [A, cutoffCLM, hcut_add] using hGadd
+  have hsmul :
+      ∀ (c : ℂ) (ψ : SchwartzMap (Fin m → ℝ) ℂ), A (c • ψ) = c • A ψ := by
+    intro c ψ
+    have hcut_smul : cutoffCLM (c • ψ) = c • cutoffCLM ψ := by
+      exact map_smul cutoffCLM c ψ
+    have hGsmul :=
+      regularizedLocalEOW_family_smul hm
+        Ωplus Ωminus Dplus Dminus E hΩplus_open hΩminus_open
+        hDplus_open hDminus_open hE_open Fplus Fminus hFplus_diff
+        hFminus_diff hplus_margin hminus_margin hDplus_sub hDminus_sub
+        Tplus Tminus Tchart hplus_eval hminus_eval hplus_limit hminus_limit
+        x0 ys hδ hδρ hδsum hE_mem hplus hminus
+        c (cutoffCLM ψ) (hcut_support ψ) w hw
+    simpa [A, cutoffCLM, hcut_smul, smul_eq_mul] using hGsmul
+  refine ⟨SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ) A hadd hsmul hbound_exists, ?_⟩
+  intro ψ
+  rfl
+
+/-- Fixed-kernel local regularized EOW envelope from distributional boundary
+slice data.
+
+This is the first upstream bridge from the Streater-Wightman distributional
+boundary hypotheses to the checked local continuous EOW theorem.  For one
+compactly supported smoothing kernel, the real-direction mollified plus/minus
+branches are holomorphic on shrunken wedge domains, have the common continuous
+boundary value supplied by the slice CLMs, and therefore have the checked
+local coordinate envelope. -/
+theorem regularizedLocalEOW_fixedKernelEnvelope_from_clm
+    {Cplus Cminus C : Set (Fin m → ℝ)} {rψ : ℝ}
+    (hm : 0 < m)
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (hDplus_open : IsOpen Dplus) (hDminus_open : IsOpen Dminus)
+    (hE_open : IsOpen E) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_ne : C.Nonempty)
+    (hlocal_wedge :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ r : ℝ, 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              (fun a => (x a : ℂ) + (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Dplus ∧
+              (fun a => (x a : ℂ) - (ε : ℂ) * (η a : ℂ) * Complex.I) ∈ Dminus)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ_support : KernelSupportWithin ψ rψ)
+    (hplus_margin :
+      ∀ z ∈ Dplus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωplus)
+    (hminus_margin :
+      ∀ z ∈ Dminus, ∀ t ∈ tsupport (ψ : (Fin m → ℝ) → ℂ),
+        z + realEmbed t ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ w ∈ Dplus,
+        realMollifyLocal Fplus ψ w =
+          Tplus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ w ∈ Dminus,
+        realMollifyLocal Fminus ψ w =
+          Tminus (fun i => (w i).im)
+            (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (hx0 : x0 ∈ E) :
+    ∃ ys : Fin m → Fin m → ℝ,
+      (∀ j, ys j ∈ C) ∧ LinearIndependent ℝ ys ∧
+      ∃ ρ : ℝ, 0 < ρ ∧
+      ∃ r : ℝ, 0 < r ∧
+      ∃ δ : ℝ, 0 < δ ∧
+        δ * 10 ≤ ρ ∧
+        (Fintype.card (Fin m) : ℝ) * (δ * 10) < r ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+          localEOWRealChart x0 ys u ∈ E) ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+          (∀ j, 0 ≤ v j) →
+          0 < ∑ j, v j →
+          (∑ j, v j) < r →
+            localEOWChart x0 ys
+              (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus) ∧
+        (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+          (∀ j, v j ≤ 0) →
+          0 < ∑ j, -v j →
+          (∑ j, -v j) < r →
+            localEOWChart x0 ys
+              (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) ∧
+        ∃ F0 : ComplexChartSpace m → ℂ,
+          DifferentiableOn ℂ F0 (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) ∧
+          (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+            (∀ j, 0 < (w j).im) →
+              localEOWChart x0 ys w ∈ Dplus ∧
+              F0 w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) ∧
+          (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+            (∀ j, (w j).im < 0) →
+              localEOWChart x0 ys w ∈ Dminus ∧
+              F0 w = realMollifyLocal Fminus ψ (localEOWChart x0 ys w)) ∧
+          (∀ u : Fin m → ℝ,
+            (fun j => (u j : ℂ)) ∈
+              Metric.ball (0 : ComplexChartSpace m) (δ / 2) →
+              F0 (fun j => (u j : ℂ)) =
+                Tchart (translateSchwartz (-(localEOWRealChart x0 ys u)) ψ)) ∧
+          (∀ G : ComplexChartSpace m → ℂ,
+            DifferentiableOn ℂ G (Metric.ball (0 : ComplexChartSpace m) (δ / 2)) →
+            (∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2),
+              (∀ j, 0 < (w j).im) →
+                G w = realMollifyLocal Fplus ψ (localEOWChart x0 ys w)) →
+            ∀ w ∈ Metric.ball (0 : ComplexChartSpace m) (δ / 2), G w = F0 w) := by
+  have hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ) :=
+    KernelSupportWithin_hasCompactSupport hψ_support
+  have hFplus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fplus ψ) Dplus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fplus ψ Ωplus Dplus hΩplus_open hDplus_open hFplus_diff
+      hψ_compact hplus_margin
+  have hFminus_moll_holo :
+      DifferentiableOn ℂ (realMollifyLocal Fminus ψ) Dminus :=
+    localRealMollifySide_holomorphicOn_of_translate_margin
+      Fminus ψ Ωminus Dminus hΩminus_open hDminus_open hFminus_diff
+      hψ_compact hminus_margin
+  have hcommon :=
+    localRealMollify_commonContinuousBoundary_of_clm
+      Dplus Dminus Fplus Fminus Tplus Tminus Tchart ψ E hψ_compact
+      hDplus_sub hDminus_sub hplus_eval hminus_eval hplus_limit hminus_limit
+  exact
+    local_continuous_edge_of_the_wedge_envelope hm
+      Dplus Dminus E C hDplus_open hDminus_open hE_open hC_open hC_conv
+      hC_ne hlocal_wedge (realMollifyLocal Fplus ψ)
+      (realMollifyLocal Fminus ψ) hFplus_moll_holo hFminus_moll_holo
+      (fun x : Fin m → ℝ => Tchart (translateSchwartz (-x) ψ))
+      hcommon.1 hcommon.2.1 hcommon.2.2 x0 hx0
 
 end SCV

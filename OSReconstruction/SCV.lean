@@ -45,6 +45,9 @@ import OSReconstruction.SCV.DistributionalEOWKernelFactorization
 import OSReconstruction.SCV.DistributionalEOWProductKernel
 import OSReconstruction.SCV.ProductDensity
 import OSReconstruction.SCV.DistributionalEOWKernelRecovery
+import OSReconstruction.SCV.DistributionalEOWBoundaryProductKernel
+import OSReconstruction.SCV.LocalEOWChartLinear
+import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 import OSReconstruction.SCV.LocalDistributionalEOW
 import OSReconstruction.SCV.HasFDerivAtProd
 import OSReconstruction.SCV.PartialFourierSpatial

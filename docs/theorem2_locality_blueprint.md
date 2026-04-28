@@ -840,6 +840,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
                    ∀ z ∈ U0, G z = F z)
    ```
 
+   Side-component discipline for this continuous layer: the local wedge
+   hypothesis supplies explicit small plus/minus chart wedges inside
+   `Ωplus/Ωminus`; it does not by itself rule out arbitrary extra open
+   components of `Ωplus/Ωminus` accumulating near the edge.  The implementation
+   must therefore prove agreement first on those explicit side domains (the
+   checked helpers are
+   `SCV.localEOWChart_ball_positive_mem_of_delta` and
+   `SCV.localEOWChart_ball_negative_mem_of_delta`) and only enlarge an
+   agreement statement to `U0 ∩ Ωplus` or `U0 ∩ Ωminus` when an explicit
+   side-connectedness/connected-component hypothesis is available.  The OS45
+   consumer gets that connected common chart later from the BHW layer; the pure
+   SCV regularization route only needs agreement on the constructed side
+   wedges.
+
    Proof transcript:
 
    1. choose for each `x0 ∈ E` a local polybox using `hlocal_wedge`, exactly as
@@ -989,8 +1003,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       transverse holomorphic functions, and the naive polynomial-correction
       shortcut is false.
    6. At a real edge point `x0 ∈ E`, choose cone-basis vectors
-      `ys : Fin m -> Fin m -> ℝ` with `ys j ∈ C`; the eventual distribution
-      pullback still needs a real linear chart, but the immediate
+      `ys : Fin m -> Fin m -> ℝ` with `ys j ∈ C`; the distribution pullback
+      needs the real affine chart and its linear part
+      `localEOWRealLinearPart ys`, while the immediate
       neighborhood-containment step only uses continuity of
       `localEOWRealChart x0 ys`.  The checked local target is
       `SCV.localEOWRealChart_closedBall_subset`: choose `ρ > 0` with
@@ -1047,11 +1062,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
        passage, the pointwise representation bridge, and the delta-limit wedge
        agreement are all production Lean theorems.  Therefore the live blocker
        is upstream of the checked recovery theorem: construct the regularized
-       local EOW family from the local continuous EOW theorem, prove its
-       linearity/continuity in the smoothing kernel, prove real-translation
-       covariance by uniqueness, and package those facts as the exact
-       `K,G,hcov,hG_holo,hK_rep` hypotheses consumed by
-       `regularizedEnvelope_chartEnvelope_from_productKernel`.
+       local EOW family from the local continuous EOW theorem, prove the
+       product-test functional
+       `φ,ψ ↦ ∫ z, G ψ z * φ z` is represented by a continuous mixed Schwartz
+       functional `K`, prove real-translation covariance by uniqueness, and
+       package those facts as the exact `K,G,hcov,hG_holo,hK_rep` hypotheses
+       consumed by `regularizedEnvelope_chartEnvelope_from_productKernel`.
 
       Lean pseudo-code for this remaining upstream package should use the
       checked recovery theorem's hypotheses verbatim.  The point is to construct
@@ -1061,13 +1077,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem SCV.regularizedLocalEOW_productKernel_from_continuousEOW
           {m : ℕ} {r : ℝ}
           (hm : 0 < m) (hr : 0 < r)
-          (Cplus Cminus : Set (Fin m -> ℝ))
+          (Cplus Cminus E C : Set (Fin m -> ℝ))
           (Ωplus Ωminus Ucore U0 DplusSmall DminusSmall :
             Set (ComplexChartSpace m))
           (Fplus Fminus : ComplexChartSpace m -> ℂ)
           (Tplus Tminus :
             (Fin m -> ℝ) -> SchwartzMap (Fin m -> ℝ) ℂ ->L[ℝ] ℂ)
-          (Tchart : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
+          (Treal : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
           (hUcore_open : IsOpen Ucore)
           (hU0_open : IsOpen U0)
           (hcore_U0 : Ucore ⊆ U0)
@@ -1093,27 +1109,31 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hplus_limit :
             ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
               Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
-                (nhds ((Tchart.restrictScalars ℝ) f)))
+                (nhds ((Treal.restrictScalars ℝ) f)))
           (hminus_limit :
             ∀ f : SchwartzMap (Fin m -> ℝ) ℂ,
               Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
-                (nhds ((Tchart.restrictScalars ℝ) f)))
-          -- This is the extracted local continuous EOW theorem with one fixed
-          -- chart `U0` and uniqueness on `U0`.
-          (hcontinuousEOW :
-            ∀ ψ, KernelSupportWithin ψ r ->
-              ∃ Gψ : ComplexChartSpace m -> ℂ,
-                DifferentiableOn ℂ Gψ U0 ∧
-                (∀ z ∈ Ucore ∩ DplusSmall,
-                  Gψ z = realMollifyLocal Fplus ψ z) ∧
-                (∀ z ∈ Ucore ∩ DminusSmall,
-                  Gψ z = realMollifyLocal Fminus ψ z) ∧
-                (∀ G', DifferentiableOn ℂ G' U0 ->
-                  (∀ z ∈ Ucore ∩ DplusSmall,
-                    G' z = realMollifyLocal Fplus ψ z) ->
-                  (∀ z ∈ Ucore ∩ DminusSmall,
-                    G' z = realMollifyLocal Fminus ψ z) ->
-                    ∀ z ∈ U0, G' z = Gψ z)) :
+                (nhds ((Treal.restrictScalars ℝ) f)))
+          -- fixed local Rudin chart data, obtained once from
+          -- `exists_localContinuousEOW_chart_window`; it must not vary with ψ
+          (x0 : Fin m -> ℝ) (hx0 : x0 ∈ E)
+          (ys : Fin m -> Fin m -> ℝ) (ρ rEOW δ : ℝ)
+          (hys_mem : ∀ j, ys j ∈ C)
+          (hys_li : LinearIndependent ℝ ys)
+          (hρ : 0 < ρ) (hrEOW : 0 < rEOW) (hδ : 0 < δ)
+          (hδρ : δ * 10 ≤ ρ)
+          (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < rEOW)
+          (hU0_eq : U0 = Metric.ball (0 : ComplexChartSpace m) (δ / 2))
+          (hE_mem :
+            ∀ u ∈ Metric.closedBall (0 : Fin m -> ℝ) ρ,
+              localEOWRealChart x0 ys u ∈ E)
+          (hplus_chart :
+            ∀ w ∈ U0, (∀ j, 0 < (w j).im) ->
+              localEOWChart x0 ys w ∈ DplusSmall)
+          (hminus_chart :
+            ∀ w ∈ U0, (∀ j, (w j).im < 0) ->
+              localEOWChart x0 ys w ∈ DminusSmall)
+          :
           ∃ (K : SchwartzMap
                 (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
             (G : SchwartzMap (Fin m -> ℝ) ℂ -> ComplexChartSpace m -> ℂ)
@@ -1144,27 +1164,282 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 atTop (nhds (Fminus z)))
       ```
 
-      The proof transcript is:
+      The proof transcript has been sharpened after the checked fixed-kernel
+      bridge.  Do not define `G ψ` by choosing an envelope only on
+      `KernelSupportWithin ψ r` and setting it to `0` outside that class: that
+      destroys the honest global linear/covariant structure needed to build
+      `K`.
 
-      1. use `exists_shrinking_normalized_schwartz_bump_sequence hr` for
-         `ψn`;
-      2. define `G ψ` by the unique `Gψ` selected from `hcontinuousEOW` when
-         `KernelSupportWithin ψ r`, and by `0` otherwise;
-      3. prove `hG_holo`, `hG_plus`, and `hG_minus` directly from
-         `hcontinuousEOW`;
-      4. prove linearity of `ψ ↦ G ψ` on the support-radius subspace by applying
-         the uniqueness clause of `hcontinuousEOW` to `G(ψ₁ + ψ₂)` and
-         `Gψ₁ + Gψ₂`, and similarly to scalar multiples;
-      5. prove continuity in the Schwartz topology from the uniform continuous
-         EOW construction plus the checked seminorm bounds in the local
-         mollifier layer;
-      6. build `K` as the continuous bilinear product-kernel functional
-         represented by `(φ,ψ) ↦ ∫ z, G ψ z * φ z`;
-      7. prove `ProductKernelRealTranslationCovariantGlobal K` by applying the
-         uniqueness clause to the real-translated regularized EOW family;
-      8. prove the two approximate-identity limits with
-         `tendsto_realConvolutionTest_of_shrinking_normalized_support` and the
-         checked pointwise real-mollifier identities.
+      The next implementation-ready decomposition is:
+
+      1. Prove the fixed-window version
+         `SCV.regularizedLocalEOW_fixedWindowEnvelope_from_clm`.  It takes the
+         Rudin chart data `ys, ρ, rEOW, δ` chosen once from
+         `exists_localContinuousEOW_chart_window` and outputs the explicit
+         envelope
+         ```lean
+         localRudinEnvelope δ x0 ys
+           (realMollifyLocal Fplus ψ)
+           (realMollifyLocal Fminus ψ)
+         ```
+         with holomorphy, strict positive/negative side agreements, real-edge
+         identity, and uniqueness.  This is the first Lean target after the
+         proof-doc correction: repeatedly using the existential theorem
+         `regularizedLocalEOW_fixedKernelEnvelope_from_clm` would allow the
+         chart window to vary with `ψ`, which is mathematically harmless for one
+         kernel but unusable for the coherent family `G ψ`.
+      2. Define the family on all Schwartz kernels by the fixed window:
+
+         ```lean
+         def G (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+             (w : ComplexChartSpace m) : ℂ :=
+           localRudinEnvelope δ x0 ys
+             (realMollifyLocal Fplus ψ)
+             (realMollifyLocal Fminus ψ) w
+         ```
+
+         There is no `if KernelSupportWithin ψ r then ... else 0` and no
+         choice of an envelope depending on `ψ`.
+      3. The family theorem
+         `SCV.regularizedLocalEOW_family_from_fixedWindow` is now checked:
+
+         ```lean
+         theorem SCV.regularizedLocalEOW_family_from_fixedWindow
+             {m : ℕ} {r : ℝ}
+             (hm : 0 < m) (hr : 0 < r)
+             -- same fixed chart/window, margin, CLM, and slice-limit
+             -- hypotheses as `regularizedLocalEOW_fixedWindowEnvelope_from_clm`,
+             -- uniformly for all `ψ` with `KernelSupportWithin ψ r`
+             :
+             let G : SchwartzMap (Fin m -> ℝ) ℂ ->
+                 ComplexChartSpace m -> ℂ :=
+               fun ψ w =>
+                 localRudinEnvelope δ x0 ys
+                   (realMollifyLocal Fplus ψ)
+                   (realMollifyLocal Fminus ψ) w
+             (∀ ψ, KernelSupportWithin ψ r ->
+               DifferentiableOn ℂ (G ψ) U0) ∧
+               (∀ ψ, KernelSupportWithin ψ r ->
+                 ∀ z ∈ Ucore ∩ DplusSmall,
+                   G ψ z = realMollifyLocal Fplus ψ z) ∧
+               (∀ ψ, KernelSupportWithin ψ r ->
+                 ∀ z ∈ Ucore ∩ DminusSmall,
+                   G ψ z = realMollifyLocal Fminus ψ z) ∧
+               (∀ ψ, KernelSupportWithin ψ r ->
+                 ∀ u : Fin m -> ℝ,
+                   (fun j => (u j : ℂ)) ∈ U0 ->
+                     G ψ (fun j => (u j : ℂ)) =
+                       Treal
+                         (translateSchwartz
+                           (-(localEOWRealChart x0 ys u)) ψ)) ∧
+               (∀ ψ, KernelSupportWithin ψ r ->
+                 ∀ H : ComplexChartSpace m -> ℂ,
+                   DifferentiableOn ℂ H U0 ->
+                   (∀ w ∈ U0, (∀ j, 0 < (w j).im) ->
+                     H w = realMollifyLocal Fplus ψ
+                       (localEOWChart x0 ys w)) ->
+                   ∀ w ∈ U0, H w = G ψ w)
+         ```
+
+         Covariance is **not** part of this checked theorem.  Additivity on the
+         supported-kernel class is now checked as
+         `SCV.regularizedLocalEOW_family_add`: compare the fixed-window
+         envelope for `ψ₁ + ψ₂` with the sum of the envelopes for `ψ₁` and
+         `ψ₂`, then use side-domain additivity of `realMollifyLocal` and the
+         fixed-window uniqueness clause.  Complex homogeneity is checked as
+         `SCV.regularizedLocalEOW_family_smul`, using
+         `SCV.KernelSupportWithin.smul`, `SCV.realMollifyLocal_smul`, and the
+         same uniqueness pattern.
+         The scalar step is complex-linear, so it must not be derived from the
+         current `Tplus/Tminus : ... →L[ℝ] ℂ` hypotheses alone.  The local
+         Bochner-integral route is now started by the checked lemmas
+         `SCV.integrable_realMollifyLocal_integrand_of_translate_margin`,
+         `SCV.realMollifyLocal_add_of_integrable`,
+         `SCV.realMollifyLocal_add_of_translate_margin`, and
+         `SCV.realMollifyLocal_smul`; the side-domain additivity proof can now
+         discharge the integrability hypotheses from compact kernel support and
+         local continuity of the side branch.
+         The next unproved family fact is covariance.  Its local analytic input
+         is the checked change-of-variables identity
+         `realMollifyLocal F (translateSchwartz a ψ) z =
+          realMollifyLocal F ψ (z - realEmbed a)`.
+         The coordinate-ball uniqueness theorem only applies directly when the
+         comparison function is holomorphic on the same fixed ball.  Therefore
+         arbitrary real-translation covariance cannot be obtained by silently
+         translating the whole ball; the implementation must either restrict
+         the pointwise family covariance to support/margin domains where both
+         `z` and `z - realEmbed a` lie in the chosen chart, or prove the global
+         product-kernel covariance after the cutoff/mixed-kernel construction.
+         There is also a chart-coordinate correction: the checked theorem
+         `SCV.localEOWChart_sub_realEmbed` says
+         ```lean
+         localEOWChart x0 ys (w - realEmbed a) =
+           localEOWChart x0 ys w -
+             realEmbed (localEOWRealLinearPart ys a)
+         ```
+         so translating the Rudin coordinate by `a` translates the original
+         real edge by `localEOWRealLinearPart ys a`, not by `a` itself.  The
+         covariance/product-kernel stage must therefore use chart-pulled
+         boundary data and chart-coordinate smoothing kernels.  The checked
+         `SCV.localEOWRealLinearPullbackCLM` gives the Schwartz test-function
+         composition part, and
+         `SCV.KernelSupportWithin.localEOWRealLinearPullbackCLM` gives the
+         induced support-radius transport.  The chart-to-original direction is
+         now checked as well:
+         `SCV.localEOWRealLinearPushforwardCLM` has apply theorem
+         `φ ((SCV.localEOWRealLinearCLE ys hli).symm y)` and support radius
+         `‖(SCV.localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * r`,
+         while `SCV.localEOWRealLinearKernelPushforwardCLM` adds the inverse
+         absolute determinant factor `((SCV.localEOWRealJacobianAbs ys)⁻¹ : ℂ)`
+         without enlarging support.  The associated real-mollifier
+         change-of-variables formula is now checked as
+         `SCV.realMollifyLocal_localEOWRealLinearKernelPushforwardCLM`:
+         applying `realMollifyLocal` to the Jacobian-normalized pushed kernel
+         equals the chart-coordinate integral
+         `∫ u, F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u`.
+         The covariance proof must use this theorem rather than treating chart
+         coordinates as original real-edge coordinates.
+      4. The checked real-fiber product-kernel theorem remains available when
+         a complex-chart distribution has already been constructed.  The
+         algebraic conditional form is
+         `SCV.boundaryProductKernel_from_fiberIntegralCLM`:
+
+         ```lean
+         theorem SCV.boundaryProductKernel_from_fiberIntegralCLM
+             (I : SchwartzMap
+                    (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ]
+                  SchwartzMap (ComplexChartSpace m) ℂ)
+             (hI_apply :
+               ∀ F z, I F z = ∫ t : Fin m -> ℝ, F (z, t))
+             (Tchart : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ) :
+             ∃ K : SchwartzMap
+                   (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ,
+               ProductKernelRealTranslationCovariantGlobal K ∧
+               ∀ φ ψ,
+                 K (schwartzTensorProduct₂ φ ψ) =
+                   Tchart (realConvolutionTest φ ψ)
+         ```
+
+         The analytic input needed to remove `I` is also checked:
+
+         ```lean
+         def SCV.complexRealFiberIntegralCLM :
+             SchwartzMap
+                 (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ]
+               SchwartzMap (ComplexChartSpace m) ℂ
+
+         theorem SCV.complexRealFiberIntegralCLM_apply
+             (F : SchwartzMap
+                 (ComplexChartSpace m × (Fin m -> ℝ)) ℂ)
+             (z : ComplexChartSpace m) :
+             complexRealFiberIntegralCLM F z =
+               ∫ t : Fin m -> ℝ, F (z, t)
+         ```
+
+         This is not the old missing `schwartzKernel₂_extension`; it is the
+         concrete fiber-integral product kernel dictated by the OS-II
+         regularization.  The proof strengthens the already checked
+         `complexRealFiberIntegral` construction from pointwise Schwartz map to
+         a continuous linear map.  The necessary seminorm estimate is the
+         checked theorem
+
+         ```lean
+         theorem SCV.exists_seminorm_bound_complexRealFiberIntegralRaw_deriv
+             {V : Type*} [NormedAddCommGroup V] [NormedSpace ℂ V]
+             [NormedSpace ℝ V] [SMulCommClass ℝ ℂ V] [CompleteSpace V]
+             (k n : ℕ) :
+             ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+               ∀ F z,
+                 ‖z‖ ^ k *
+                   ‖iteratedFDeriv ℝ n
+                      (complexRealFiberIntegralRaw F) z‖ ≤
+                 C * s.sup
+                   (schwartzSeminormFamily ℂ
+                     (ComplexChartSpace m × (Fin m -> ℝ)) V) F
+         ```
+
+         Checked Lean proof transcript:
+
+         - `n = 0`: this is exactly
+           `SCV.exists_seminorm_bound_complexRealFiberIntegralRaw_zero`,
+           followed by `simp [norm_iteratedFDeriv_zero]`.
+         - `n + 1`: rewrite with the checked identity
+           `norm_iteratedFDeriv_fderiv` and then
+           `SCV.fderiv_complexRealFiberIntegralRaw_eq`.
+         - apply the induction hypothesis to
+           `SCV.baseFDerivSchwartz F`.
+         - compose the resulting finite seminorm bound with the continuous
+           linear map
+           ```lean
+           baseFDerivSchwartzCLM :
+             SchwartzMap
+                 (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ]
+               SchwartzMap
+                 (ComplexChartSpace m × (Fin m -> ℝ))
+                 (ComplexChartSpace m ->L[ℝ] ℂ)
+           ```
+           where the definition is the existing expression in
+           `SCV.baseFDerivSchwartz`, namely
+           `SchwartzMap.postcompCLM (...)` composed with
+           `SchwartzMap.fderivCLM`.
+         - use `Seminorm.bound_of_continuous` and
+           `Seminorm.isBounded_sup` on the composed seminorms to replace
+           finite suprema of seminorms of `baseFDerivSchwartz F` by a finite
+           supremum of seminorms of `F`.  This is checked as
+           `SCV.exists_seminorm_bound_baseFDerivSchwartz`.
+         - multiply constants.  This gives the checked `hbound` argument for:
+           ```lean
+           def SCV.complexRealFiberIntegralCLM :
+               SchwartzMap
+                   (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ]
+                 SchwartzMap (ComplexChartSpace m) ℂ :=
+             SchwartzMap.mkCLM
+               (fun F z => ∫ t : Fin m -> ℝ, F (z,t))
+               -- additivity, scalar compatibility by integral algebra
+               -- smoothness by `contDiff_complexRealFiberIntegralRaw`
+               -- hbound by the derivative theorem above
+           ```
+         Finally,
+         ```lean
+         theorem SCV.boundaryProductKernel_from_complexRealFiberIntegralCLM
+             (Tchart : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ) :
+             ∃ K : SchwartzMap
+                   (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ,
+               ProductKernelRealTranslationCovariantGlobal K ∧
+               ∀ φ ψ,
+                 K (schwartzTensorProduct₂ φ ψ) =
+                   Tchart (realConvolutionTest φ ψ)
+         ```
+         is checked by instantiating the conditional algebra theorem with
+         `SCV.complexRealFiberIntegralCLM`.
+         Important: in theorem 2 this theorem can only be used after the
+         regularized-family pairing has produced a complex-chart distribution
+         `Tchart` or an equivalent continuous bilinear/product-kernel
+         functional.  It does not manufacture that distribution from the
+         original real-edge boundary value `Treal`.
+      5. Construct the mixed product kernel for the family from the bilinear
+         pairing
+         ```lean
+         (φ, ψ) ↦ ∫ z : ComplexChartSpace m, G ψ z * φ z
+         ```
+         on compactly supported `φ` inside `U0`.  Existence of this mixed
+         Schwartz functional is not a consequence of product-density alone:
+         density gives uniqueness and later descent.  The actual construction
+         must use the explicit fixed-window formula for `G`, Fubini/Tonelli for
+         the Rudin circle integral and the real mollifier integral, and the
+         uniform compact-window estimates to build a continuous linear
+         functional on
+         `SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ`.  Product-density
+         then proves uniqueness of the extension and supports the covariance
+         descent.  Real-translation covariance is proved by the fixed-window
+         uniqueness clause, not by assuming a new covariance axiom.  This
+         produces the actual `K,hcov,hK_rep` demanded by
+         `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`.
+      6. use `exists_realConvolutionTest_approxIdentity hr` for `ψn`, then feed
+         the side identities from step 3 as
+         `Filter.Eventually.of_forall`.  The two approximate-identity limits
+         are proved with the checked real-mollifier approximation theorem on
+         the shrunken side domains.
 
       Only after this theorem is proved should Lean call
       `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`; that call is
@@ -1538,20 +1813,30 @@ Implementation-readiness gate for the next Lean stage:
   recovery endpoint is
   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`; the remaining
   theorem-2 work is the upstream supplier data that feed it.
-* The next QFT-free SCV stage is the local continuous-EOW geometry supplier,
-  culminating in `SCV.local_continuous_edge_of_the_wedge_envelope`.  The
-  immediate checked support targets for that stage are
-  `SCV.localEOWRealChart_closedBall_subset` and
-  `SCV.localEOW_closedBall_support_margin`, followed by the local Rudin-map
-  sign, size, and chart-entry lemmas `SCV.localEOWSmp_*` and
-  `SCV.localEOWChart_smp_*`.
-* After the local continuous envelope exists, prove
+* The local continuous-EOW geometry supplier is now checked through
+  `SCV.local_continuous_edge_of_the_wedge_envelope`; the fixed-kernel
+  distributional-to-continuous bridge is checked as
+  `SCV.regularizedLocalEOW_fixedKernelEnvelope_from_clm`; the fixed-window
+  version needed for one coherent family is checked as
+  `SCV.regularizedLocalEOW_fixedWindowEnvelope_from_clm`; and the explicit
+  family package is checked as
+  `SCV.regularizedLocalEOW_family_from_fixedWindow`.
+* The next QFT-free SCV stage is therefore to prove
   `SCV.regularizedLocalEOW_productKernel_from_continuousEOW` in
   `SCV/LocalDistributionalEOW.lean`.  Its output fields must be exactly the
   hypotheses of `regularizedEnvelope_chartEnvelope_from_productKernel`:
   `K`, `G`, `ψn`, `ProductKernelRealTranslationCovariantGlobal K`,
   `∀ ψ, KernelSupportWithin ψ r -> DifferentiableOn ℂ (G ψ) U0`, and the
   product-test representation `hK_rep`.
+* Before proving the covariance field, use the checked
+  `SCV/LocalEOWChartLinear.lean` transport API.  The real smoothing kernel must
+  first be pushed from chart coordinates to the original real edge through
+  `SCV.localEOWRealLinearKernelPushforwardCLM`; this is the surface that carries
+  the inverse determinant factor and the checked support-radius transport.
+  Then apply
+  `SCV.realMollifyLocal_localEOWRealLinearKernelPushforwardCLM` to rewrite the
+  side mollifier as the corresponding chart-coordinate integral before invoking
+  fixed-window uniqueness/covariance.
 * The next OS-side boundary-value theorem is
   `bvt_boundary_values_uniformOnCompactDirections` in
   `OSToWightmanBoundaryValuesBase.lean`.  It is not in the `BHW` namespace, and
@@ -1577,6 +1862,19 @@ Current implementation order:
    `SCV.isCompact_localEOWSimplexDirections`,
    `SCV.localEOWRealChart`,
    `SCV.localEOWChart`,
+   `SCV.localEOWRealLinearPart`,
+   `SCV.localEOWRealChart_eq_x0_add_linearPart`,
+   `SCV.localEOWRealChart_sub`,
+   `SCV.localEOWRealChart_add`,
+   `SCV.localEOWChart_sub_realEmbed`,
+   `SCV.localEOWChart_add_realEmbed`,
+   `SCV.localEOWRealLinearMatrix`,
+   `SCV.localEOWRealLinearMatrix_mulVec`,
+   `SCV.localEOWRealLinearCLE`,
+   `SCV.localEOWRealLinearCLE_apply`,
+   `SCV.localEOWRealLinearPullbackCLM`,
+   `SCV.localEOWRealLinearPullbackCLM_apply`,
+   `SCV.KernelSupportWithin.localEOWRealLinearPullbackCLM`,
    `SCV.continuous_localEOWRealChart`,
    `SCV.localEOWChart_zero`,
    `SCV.differentiable_localEOWChart`,
@@ -1618,6 +1916,49 @@ Current implementation order:
    `SCV.tendsto_localEOWUpperBranch_smp_to_boundaryValue`,
    `SCV.tendsto_localEOWLowerBranch_smp_to_boundaryValue`,
    `SCV.local_rudin_mean_value_real`,
+   `SCV.continuousAt_localEOWSmp_param`,
+   `SCV.exists_localRudin_coordinate_update_margin`,
+   `SCV.differentiableAt_localRudin_parametric_integral`,
+   `SCV.exists_localContinuousEOW_chart_window`,
+   `SCV.localEOWChart_ball_positive_mem_of_delta`,
+   `SCV.localEOWChart_ball_negative_mem_of_delta`,
+   `SCV.localEOWChart_smp_upper_mem_of_delta_on_sphere`,
+   `SCV.localEOWChart_smp_lower_mem_of_delta_on_sphere`,
+   `SCV.localRudinIntegrand`,
+   `SCV.localRudinIntegral`,
+   `SCV.localRudinEnvelope`,
+   `SCV.aestronglyMeasurable_localRudinIntegrand`,
+   `SCV.continuousAt_localRudinIntegrand_param`,
+   `SCV.continuousAt_localRudinIntegral_of_bound`,
+   `SCV.differentiableAt_localRudinIntegrand_update`,
+   `SCV.localRudinIntegrand_zero_of_sin_eq_zero`,
+   `SCV.differentiableAt_localRudinIntegral_of_bound`,
+   `SCV.differentiableOn_localRudinIntegral_of_bound`,
+   `SCV.differentiableOn_localRudinEnvelope_of_bound`,
+   `SCV.exists_bound_localRudinIntegrand`,
+   `SCV.differentiableOn_localRudinEnvelope`,
+   `SCV.localRudinEnvelope_eq_boundary_of_real`,
+   `SCV.localEOWLine`,
+   `SCV.localEOWLine_I`,
+   `SCV.localEOWLine_im`,
+   `SCV.localEOWLine_real_im_zero`,
+   `SCV.differentiable_localEOWLine`,
+   `SCV.localEOWLine_zero_mem_ball`,
+   `SCV.localEOWLine_norm_le_delta_ten_of_norm_le_two`,
+   `SCV.localEOWLine_re_closedBall_of_norm_le_two`,
+   `SCV.localEOWChart_line_upper_mem_of_delta`,
+   `SCV.localEOWChart_line_lower_mem_of_delta`,
+   `SCV.localEOWChart_line_upper_mem_of_delta_of_negative`,
+   `SCV.localEOWChart_line_lower_mem_of_delta_of_negative`,
+   `SCV.localEOWLine_affine_real_combo`,
+   `SCV.localEOWLine_chart_real`,
+   `SCV.tendsto_localEOWLine_upper_to_boundaryValue`,
+   `SCV.tendsto_localEOWLine_lower_to_boundaryValue`,
+   `SCV.tendsto_localEOWLine_upper_to_boundaryValue_of_negative`,
+   `SCV.tendsto_localEOWLine_lower_to_boundaryValue_of_negative`,
+   `SCV.localRudinEnvelope_line_eq_boundary_of_real`,
+   `SCV.localRudinEnvelope_eq_plus_on_positive_ball`,
+   `SCV.localRudinEnvelope_eq_minus_on_negative_ball`,
    `SCV.localEOWSmp_re_mem_closedBall`,
    `SCV.exists_localEOWSmp_delta`,
    `SCV.localEOWChart_smp_upper_mem_of_delta`,
@@ -1631,17 +1972,50 @@ Current implementation order:
    `SCV.localEOW_chart_twoSided_polywedge_mem`,
    `SCV.localEOWChart_twoSided_polywedge_mem`,
    `SCV.local_edge_of_the_wedge_1d`,
+   `SCV.KernelSupportWithin.add`,
+   `SCV.KernelSupportWithin.smul`,
+   `SCV.KernelSupportWithin.smulLeftCLM`,
+   `SCV.KernelSupportWithin.smulLeftCLM_of_leftSupport`,
+   `SCV.KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall`,
+   `SCV.exists_schwartz_cutoff_eq_one_on_closedBall`,
+   `SCV.exists_closedBall_integral_clm_of_continuousOn`,
+   `SCV.exists_realMollifyLocal_valueCLM_of_closedBall`,
+   `SCV.exists_bound_realMollifyLocal_smulLeftCLM`,
+   `SCV.exists_bound_localRudinEnvelope_smulLeftCLM_of_side_bounds`,
+   `SCV.exists_schwartz_bound_normalized_intervalIntegral_clm_family`,
+   `SCV.exists_localRudinIntegrand_smulLeftCLM_clmFamily`,
+   `SCV.exists_schwartz_bound_localRudinEnvelope_smulLeftCLM_value`,
+   `SCV.regularizedEnvelope_valueCLM_of_cutoff`,
+   `SCV.integrable_realMollifyLocal_integrand_of_translate_margin`,
    `SCV.localRealMollifySide_holomorphicOn_of_translate_margin`,
    `SCV.localRealMollify_commonContinuousBoundary_of_clm`,
+   `SCV.realMollifyLocal_translateSchwartz`,
+   `SCV.realMollifyLocal_add_of_integrable`,
+   `SCV.realMollifyLocal_add_of_translate_margin`,
+   `SCV.realMollifyLocal_smul`,
+   `SCV.regularizedLocalEOW_fixedKernelEnvelope_from_clm`,
+   `SCV.regularizedLocalEOW_fixedWindowEnvelope_from_clm`,
+   `SCV.regularizedLocalEOW_family_from_fixedWindow`,
+   `SCV.regularizedLocalEOW_family_add`,
+   `SCV.regularizedLocalEOW_family_smul`,
+   `SCV.exists_seminorm_bound_complexRealFiberIntegralRaw_zero`,
+   `SCV.basePrecompCLM`,
+   `SCV.baseFDerivSchwartzCLM`,
+   `SCV.exists_seminorm_bound_baseFDerivSchwartz`,
+   `SCV.exists_seminorm_bound_complexRealFiberIntegralRaw_deriv`,
+   `SCV.complexRealFiberIntegralCLM`,
+   `SCV.complexRealFiberIntegralCLM_apply`,
+   `SCV.boundaryProductKernel_from_fiberIntegralCLM`,
+   `SCV.boundaryProductKernel_from_complexRealFiberIntegralCLM`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero`,
    `SCV.translationCovariantKernel_distributionalHolomorphic`,
    `SCV.regularizedEnvelope_holomorphicDistribution_from_productKernel`,
    `SCV.regularizedEnvelope_pointwiseRepresentation_of_productKernel`,
    `SCV.regularizedEnvelope_deltaLimit_agreesOnWedges`, and
-   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`.
-   The remaining pure-SCV declarations are the local continuous EOW extraction
-   `SCV.local_continuous_edge_of_the_wedge_envelope`, the product-kernel family
-   constructor
+   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`, and
+   `SCV.local_continuous_edge_of_the_wedge_envelope`.
+   The remaining pure-SCV declarations are now the kernel-family upgrade from
+   this fixed-kernel theorem,
    `SCV.regularizedLocalEOW_productKernel_from_continuousEOW`, and finally
    `SCV.local_distributional_edge_of_the_wedge_envelope`.  Older placeholder
    names such as `SCV.localRealMollify_commonContinuousBoundary`,
