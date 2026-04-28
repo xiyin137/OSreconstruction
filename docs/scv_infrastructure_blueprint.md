@@ -317,6 +317,7 @@ Source ledger for the internal helper list:
 | `KernelSupportWithin.add`, `KernelSupportWithin.smul` | Checked in `SCV/DistributionalEOWSupport.lean`: the fixed-radius smoothing-kernel class is closed under addition and scalar multiplication.  These are the support-side inputs for proving linearity of the explicit fixed-window family on the supported-kernel class. |
 | `KernelSupportWithin.smulLeftCLM`, `KernelSupportWithin.smulLeftCLM_of_leftSupport`, `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: multiplying by a Schwartz-side cutoff preserves support either from the original kernel or from the cutoff itself, and a cutoff equal to `1` on `closedBall 0 r` acts as the identity on kernels with `KernelSupportWithin ψ r`.  These are the cutoff support lemmas needed to extend supported-kernel identities to full Schwartz-space CLMs without introducing a `SmallKernelSpace` wrapper. |
 | `exists_schwartz_cutoff_eq_one_on_closedBall` | Checked in `SCV/DistributionalEOWSupport.lean`: a direct `ContDiffBump` construction of a Schwartz cutoff equal to `1` on `closedBall 0 r` and topologically supported in `closedBall 0 rLarge`, for `0 < r < rLarge`.  This replaces the former blueprint-only `KernelCutoff`/`cutoffKernelCLM` placeholders. |
+| `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`, `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` | Checked in `SCV/DistributionalEOWSupport.lean`: the complex-chart analogue of the closed-ball cutoff construction and the support-window cutoff-removal lemma.  These are the first helper layer for the local pairing CLM; the complex-chart cutoff makes the global mixed Schwartz CLM compactly supported in the chart variable, and the `SupportsInOpen` removal lemma proves the cutoff is invisible on product tests supported in `Ucov`. |
 | `exists_closedBall_integral_clm_of_continuousOn` | Checked in `SCV/DistributionalEOWSupport.lean`: integration over `Metric.closedBall 0 R` against a coefficient that is continuous on that closed ball is a continuous complex-linear functional on real-chart Schwartz kernels, with the explicit seminorm bound using `SchwartzMap.seminorm ℂ 0 0`.  This is the real-radius local replacement for the older natural-radius/global-continuity compact-ball integral CLM. |
 | `exists_realMollifyLocal_valueCLM_of_closedBall` | Checked in `SCV/LocalDistributionalEOW.lean`: for a fixed chart point `z`, if `F` is continuous on a side domain containing all translates `z + realEmbed t` for `t ∈ closedBall 0 r`, then `ψ ↦ realMollifyLocal F ψ z` is represented on `KernelSupportWithin ψ r` by a continuous complex-linear functional.  The proof uses the compact-ball integral CLM plus the support condition to replace the full integral by the closed-ball integral. |
 | `exists_bound_realMollifyLocal_smulLeftCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: after multiplying kernels by a fixed Schwartz cutoff whose topological support is inside `closedBall 0 r`, each side mollifier value is bounded by `C * SchwartzMap.seminorm ℂ 0 0 ψ`.  This is the explicit seminorm estimate needed before integrating the side value CLMs through the local Rudin envelope. |
@@ -3978,7 +3979,9 @@ Proof transcript for the next target:
    Before the first theorem below is implemented, the following helper
    surfaces must be proved in this order.  These are not wrappers: together
    they are exactly the functional-analytic content needed to turn the local
-   family `Gchart` into one mixed Schwartz continuous linear functional.
+   family `Gchart` into one mixed Schwartz continuous linear functional.  The
+   first two cutoff helpers are already checked; the next unchecked helper is
+   `schwartzPartialEval₁CLM`.
 
    ```lean
    theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
@@ -4055,15 +4058,14 @@ Proof transcript for the next target:
 
    Proof transcripts for these helpers:
 
-   * The complex-chart cutoff is the same `ContDiffBump` argument as
+   * The complex-chart cutoff is checked as
+     `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`.  It is the
+     same `ContDiffBump` argument as
      `exists_schwartz_cutoff_eq_one_on_closedBall`, but with center
-     `0 : ComplexChartSpace m`.  The proof uses `b.contDiff`,
-     `b.hasCompactSupport`, and `HasCompactSupport.toSchwartzMap`; the
-     support conclusion is the topological support of the bump.
-   * `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` is the complex-chart analogue
-     of `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall`: ext at
-     `z`; if `z ∈ tsupport φ`, use `hφ.2` and `hχ_one`; otherwise use
-     `image_eq_zero_of_notMem_tsupport`.
+     `0 : ComplexChartSpace m`.
+   * `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on` is checked as the
+     complex-chart analogue of
+     `KernelSupportWithin.smulLeftCLM_eq_of_eq_one_on_closedBall`.
    * `schwartzPartialEval₁CLM z` must be built in the SCV layer, not by
      importing the Wightman partial-evaluation file.  Use `SchwartzMap.compCLM`
      for the affine temperate map `t ↦ (z,t)`.  The reverse growth bound is
@@ -4401,11 +4403,14 @@ Proof transcript for the next target:
 
    Lean extraction order for the local package:
 
-   1. `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`: the
+   1. `exists_complexChart_schwartz_cutoff_eq_one_on_closedBall`: checked; the
       `ComplexChartSpace m` version of
       `exists_schwartz_cutoff_eq_one_on_closedBall`, built with
       `ContDiffBump`.  Output: a Schwartz multiplier equal to `1` on
       `closedBall 0 Rcov` and supported in `closedBall 0 Rcut`.
+   1b. `SupportsInOpen.smulLeftCLM_eq_of_eq_one_on`: checked; removes the
+       complex-chart cutoff on tests whose topological support lies in the
+       declared support window.
    2. `schwartzPartialEval₁CLM`: the continuous linear map
       `F ↦ (t ↦ F (z,t))`, built directly in the SCV layer from
       `SchwartzMap.compCLM` along the affine map `t ↦ (z,t)`.  Include its
@@ -4853,14 +4858,18 @@ Kernel-recovery implementation substrate:
    theorem translationCovariantProductKernel_descends_local
        {m : ℕ}
        (K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
-       (Ucore : Set (ComplexChartSpace m)) (r : ℝ)
-       (hcov : ProductKernelRealTranslationCovariantLocal K Ucore r)
-       -- plus the fixed-cutoff hypotheses making the localized kernel equal to
-       -- a globally covariant cutoff extension on supported product tests
+       (Udesc Ucov : Set (ComplexChartSpace m)) (r rη : ℝ)
+       (η : SchwartzMap (Fin m -> ℝ) ℂ)
+       (hη_norm : ∫ t : Fin m -> ℝ, η t = 1)
+       (hη_support : KernelSupportWithin η rη)
+       (hmargin :
+         ∀ z ∈ Udesc, ∀ t : Fin m -> ℝ, ‖t‖ ≤ r + rη ->
+           z + realEmbed t ∈ Ucov)
+       (hcov : ProductKernelRealTranslationCovariantLocal K Ucov (r + rη))
        :
        ∃ Hdist : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ,
          ∀ φ ψ,
-           SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Ucore ->
+           SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Udesc ->
            KernelSupportWithin ψ r ->
              K (schwartzTensorProduct₂ φ ψ) =
                Hdist (realConvolutionTest φ ψ)

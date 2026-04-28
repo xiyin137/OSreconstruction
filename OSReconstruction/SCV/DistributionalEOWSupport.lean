@@ -156,6 +156,55 @@ theorem exists_schwartz_cutoff_eq_one_on_closedBall
     rw [b.tsupport_eq] at htb
     exact htb
 
+/-- A compact Schwartz cutoff on the complex chart that is one on a prescribed
+closed ball and supported in a larger closed ball. -/
+theorem exists_complexChart_schwartz_cutoff_eq_one_on_closedBall
+    {R Rlarge : ℝ} (hR : 0 < R) (hRlarge : R < Rlarge) :
+    ∃ χ : SchwartzMap (ComplexChartSpace m) ℂ,
+      (∀ z ∈ Metric.closedBall (0 : ComplexChartSpace m) R, χ z = 1) ∧
+      tsupport (χ : ComplexChartSpace m → ℂ) ⊆ Metric.closedBall 0 Rlarge := by
+  let b : ContDiffBump (0 : ComplexChartSpace m) := ⟨R, Rlarge, hR, hRlarge⟩
+  let f : ComplexChartSpace m → ℂ := fun z => (b z : ℂ)
+  have hf_smooth : ContDiff ℝ (⊤ : ℕ∞) f :=
+    (Complex.ofRealCLM.contDiff.of_le le_top).comp b.contDiff
+  have hf_compact : HasCompactSupport f :=
+    b.hasCompactSupport.comp_left Complex.ofReal_zero
+  let χ : SchwartzMap (ComplexChartSpace m) ℂ :=
+    hf_compact.toSchwartzMap hf_smooth
+  have hχ_apply : ∀ z, χ z = f z :=
+    HasCompactSupport.toSchwartzMap_toFun hf_compact hf_smooth
+  refine ⟨χ, ?_, ?_⟩
+  · intro z hz
+    rw [hχ_apply z]
+    simp [f, b.one_of_mem_closedBall hz]
+  · intro z hz
+    have hzf : z ∈ tsupport f := by
+      simpa [χ, hχ_apply] using hz
+    have hzb : z ∈ tsupport b := by
+      simpa [tsupport, f, Function.support] using hzf
+    rw [b.tsupport_eq] at hzb
+    exact hzb
+
+/-- A complex-chart cutoff that is identically one on the declared support
+window acts as the identity on Schwartz tests supported in that window. -/
+theorem SupportsInOpen.smulLeftCLM_eq_of_eq_one_on
+    {U : Set (ComplexChartSpace m)}
+    (χ : SchwartzMap (ComplexChartSpace m) ℂ)
+    {φ : SchwartzMap (ComplexChartSpace m) ℂ}
+    (hχ_one : ∀ z, z ∈ U → χ z = 1)
+    (hφ : SupportsInOpen (φ : ComplexChartSpace m → ℂ) U) :
+    SchwartzMap.smulLeftCLM ℂ (χ : ComplexChartSpace m → ℂ) φ = φ := by
+  ext z
+  rw [SchwartzMap.smulLeftCLM_apply_apply χ.hasTemperateGrowth]
+  by_cases hz : z ∈ tsupport (φ : ComplexChartSpace m → ℂ)
+  · exact by simp [hχ_one z (hφ.2 hz)]
+  · have hφz : φ z = 0 := by
+      have hz_support : z ∉ Function.support (φ : ComplexChartSpace m → ℂ) := by
+        intro hs
+        exact hz (subset_closure hs)
+      simpa [Function.mem_support] using hz_support
+    simp [hφz]
+
 /-- Integration over a real closed ball against a continuous-on-the-ball
 coefficient is a continuous linear functional on Schwartz kernels. -/
 theorem exists_closedBall_integral_clm_of_continuousOn

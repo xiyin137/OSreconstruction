@@ -1105,18 +1105,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The remaining proof-doc theorem surfaces, in exact order, are:
 
       1. `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`.  It constructs a
-         genuine mixed Schwartz CLM `K` by fixed cutoffs
-         `χU(z)` and `χr(t)`:
+         genuine mixed Schwartz CLM `K` by fixed cutoffs: a complex-chart
+         cutoff `χU`, a chart-kernel cutoff `χr`, and the original-edge cutoff
+         hidden inside the value CLM for the pushed kernel:
          ```lean
          K F =
            ∫ z, χU z *
-             L z (χr • (fun t => F (z,t)))
+             Lchart z (schwartzPartialEval₁CLM z F)
          ```
-         where `L z` is the checked value CLM for `Gchart` at `z`.  The proof
-         must include the compact-uniform seminorm estimate for
-         `z ↦ L z`, the CLM version of partial evaluation in the real
-         variable, and the cutoff-removal proof on tests supported in
-         `Ucov`.
+         where `Lchart z` is
+         `Lorig z ∘ localEOWRealLinearKernelPushforwardCLM ys hli ∘ (χr • ·)`.
+         The proof must include the complex-chart cutoff theorem, the
+         SCV-local `schwartzPartialEval₁CLM` and compact seminorm estimate,
+         the compact-uniform value-CLM bound for `Lorig`, and the
+         cutoff-removal proof on tests supported in `Ucov`.
       2. `SCV.regularizedLocalEOW_pairingCLM_localCovariant`.  It proves
          `ProductKernelRealTranslationCovariantLocal K Ucov r`, not global
          covariance.  The proof expands both product pairings, changes
@@ -1189,10 +1191,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `SCV/LocalDistributionalEOW.lean`; the current covariance substrate is
          `SCV.regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`.
 
-      The next Lean implementation must start with the pairing CLM theorem
-      above, not with the retired global
-      `regularizedLocalEOW_productKernel_from_continuousEOW` surface.  In the
-      final `SCV.local_distributional_edge_of_the_wedge_envelope`
+      The next Lean implementation must start with the helper stack feeding
+      the pairing CLM: complex-chart cutoff, `SupportsInOpen` cutoff removal,
+      SCV-local `schwartzPartialEval₁CLM`, and the compact value-CLM bound.
+      Only after those are checked should Lean introduce
+      `regularizedLocalEOW_pairingCLM_of_fixedWindow`; it must not revive the
+      retired global `regularizedLocalEOW_productKernel_from_continuousEOW`
+      surface.  In the final `SCV.local_distributional_edge_of_the_wedge_envelope`
       implementation, `hcontinuousEOW` is not an extra assumption: it is
       obtained inside the proof by applying
       `SCV.localRealMollify_commonContinuousBoundary_of_clm` to `hplus_eval`,
@@ -1557,9 +1562,13 @@ in production code except as a cautionary note.
 Implementation-readiness gate for the next Lean stage:
 
 * Do **not** add another distributional EOW axiom or wrapper.  The checked SCV
-  recovery endpoint is
-  `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`; the remaining
-  theorem-2 work is the upstream supplier data that feed it.
+  global recovery endpoint
+  `SCV.regularizedEnvelope_chartEnvelope_from_productKernel` remains available
+  only for a genuinely globally covariant product kernel.  The active
+  pure-SCV theorem-2 route uses the local recovery consumer
+  `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`, because the
+  cutoff-localized mixed functional constructed from a local fixed-window
+  family satisfies only local covariance.
 * The local continuous-EOW geometry supplier is now checked through
   `SCV.local_continuous_edge_of_the_wedge_envelope`; the fixed-kernel
   distributional-to-continuous bridge is checked as
