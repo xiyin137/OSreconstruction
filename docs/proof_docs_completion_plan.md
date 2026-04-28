@@ -424,9 +424,7 @@ Current examples:
    difference characterization
    `sourceSymmetricRankExactStratum_eq_rankLE_diff`.  Thus the full algebraic
    identification is checked as
-   `sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety`, with the direct
-   rank-defined source characterization
-   `sourceComplexGramVariety_eq_rank_le` and stratum inclusion
+   `sourceComplexGramVariety_eq_rank_le`, with stratum inclusion
    `sourceSymmetricRankExactStratum_subset_sourceComplexGramVariety` also
    checked.  The closedness/regular-locus topology needed for the singular
    closure stage is now also checked:
@@ -564,9 +562,81 @@ Current examples:
 	   rank-exact density/continuity extension.
 	   The remaining
 	   proof-doc/Lean target is `sourceComplexGramVariety_identity_principle`;
-   the pairwise
-   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` proof should
-   be a direct `H := Φ - Ψ` consumer, not a wrapper ladder.  Deep Research audit
+	   the theorem-2 blueprint now separates the strict branch into two genuine
+	   missing packets before final implementation: the local identity
+	   propagation packet, using the checked BHW selected complex Gram chart /
+	   local image infrastructure rather than a new Schur-wrapper layer, and the
+	   connected-regular-locus theorem for connected relatively open subsets of
+	   the irreducible normal symmetric rank-bounded variety.  The latter is the
+	   Hall-Wightman irreducibility/normality content; it is not a corollary of
+	   density alone.  A principal-minor Schur cover is mathematically valid over
+	   `ℂ` and remains a possible Hall-Wightman-facing algebraic simplifier, but
+	   it is not the immediate implementation path unless we first prove the
+	   nonzero-principal-minor cover theorem; the checked local BHW chart path is
+	   closer to the current code.  The first algebraic bridge on this route is
+	   now checked in `BHWPermutation/SourceComplexDensity.lean`:
+	   `sourceMinkowskiGram_rank_le_sourceComplexConfigurationSpan_finrank` and
+	   `sourceSymmetricRankExactStratum_exists_complexRegular_realization`.
+	   The local complex-regular image packet is also checked there as
+	   `sourceComplexGramMap_localConnectedRelOpenImage_in_open_of_complexRegular`,
+	   giving the connected source ball and relatively open rank-exact image
+	   needed for the local identity-propagation theorem.  The pullback helper
+	   `SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram` and the local
+	   propagation theorem
+	   `sourceComplexGramVariety_rankExact_local_identity_near_point` are now
+	   checked as well.  The conditional global propagation theorem
+	   `sourceComplexGramVariety_rankExact_identity_principle_of_connected` is
+	   now checked too: from connectedness of
+	   `U ∩ sourceSymmetricRankExactStratum n (d + 1)`, it proves the full
+	   rank-exact identity principle by a nonempty clopen zero-patch argument;
+	   `sourceComplexGramVariety_identity_principle_of_connected_rankExact` then
+	   extends the result to all of `U` via the checked dense-rank-exact
+	   continuity theorem.  The remaining strict source-side blocker is
+	   therefore exactly the global connected regular-locus theorem, not local
+	   Schur/chart propagation, identity-principle assembly, or dense-extension
+	   assembly.  The theorem-2 blueprint now refines this global theorem into a
+	   Lean-ready strict connectedness packet: the pure topological assembly
+	   lemma
+	   `sourceComplexGramVariety_rankExact_inter_relOpen_isConnected_of_local_basis`
+	   is now checked, so the remaining packet consists of the source-specific
+	   local connected rank-exact basis theorem, the
+	   connected regular local-image strengthening and the connected rank-exact
+	   cone lemma.  The principal minor support lemma for symmetric matrices is
+	   now checked in `BHWPermutation/SourceComplexSchurPatch.lean`; it uses
+	   the checked complex symmetric rank factorization to turn a full-rank row
+	   minor of `A` in `Z = A Aᵀ` into a nonzero principal minor of `Z`.
+	   The Schur-complement rank-additivity theorem for singular
+	   principal blocks is now checked in
+	   `BHWPermutation/SourceComplexSchurPatch.lean`, together with direct
+	   source-rank `≤` and exact-rank Schur consequences.  The only remaining
+	   hard mathematical proof is the source
+	   local-basis theorem, i.e. Hall-Wightman's local irreducibility/normality
+	   of the symmetric scalar-product determinantal variety; it is now
+	   decomposed down to genuine Schur product charts plus the connected
+	   rank-exact cone lemma, with no zero-Schur wrapper hiding the lower-rank
+	   singular case.  The cone lemma must itself be proved through real
+	   finite-dimensional content: nonzero scalar rank invariance, cone
+	   invariance of `sourceSymmetricRankExactStratum`, dot-Gram scaling,
+	   path-connectedness of the full-rank complex source-configuration
+	   Stiefel space using `MatrixLieGroup.GL_isPathConnected`, and the
+	   small-ball radial contraction argument.  The implementation should not
+	   cite "rank-exact cone connectedness" as an opaque geometric black box.
+	   The first cone support file is now checked as
+	   `BHWPermutation/SourceComplexCone.lean`: it proves scalar rank
+	   invariance, exact-stratum cone invariance, dot-Gram scaling, the
+	   full-rank configuration predicate, the selected/standard coordinate
+	   frames and their full-rank membership, left/right determinant-unit action
+	   invariance for full-rank configurations, continuity of the dot-Gram map,
+	   the map from full-rank configurations to the exact stratum, the
+	   exact-stratum full-rank dot-Gram representative theorem, the image
+	   equality for the exact stratum, and the conditional path-connectedness
+	   theorem reducing exact-stratum path-connectedness to Stiefel
+	   path-connectedness.  The remaining cone work is therefore the
+	   Stiefel-space path-connectedness theorem itself and the small-ball radial
+	   contraction assembly.
+	   The pairwise
+	   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` proof should
+	   be a direct `H := Φ - Ψ` consumer, not a wrapper ladder.  Deep Research audit
    `v1_ChdsVFR2YVpiQUN0U1lfdU1Qa1pidjZBMBIXbFRUdmFaYkFDdFNZX3VNUGtaYnY2QTA`
    agrees with the rank-bounded-variety and irreducible-analytic-identity
    theorem shape, and flags the same hidden obligations: strong/local-ambient
@@ -1147,11 +1217,13 @@ Current examples:
 	   translated mollifier kernel, convergence of those cutoff CLMs from the
 	   raw distributional boundary-value hypothesis via
 	   `SchwartzMap.smulLeftCLM`, and the Streater-Wightman regularized
-	   common-boundary extraction.  The remaining pure-SCV blocker is now the
-	   local OS-II chart plumbing that supplies the plus/minus raw boundary
-	   hypotheses and the cutoff-one/support-margin data in the documented
-	   `sliceCLM_family_from_distributionalBoundary`, not another common
-	   boundary wrapper.
+	   common-boundary extraction.  The remaining theorem-2 supplier blocker is
+	   the local OS-II chart plumbing that feeds these checked SCV facts:
+	   supply the plus/minus raw boundary hypotheses and the
+	   cutoff-one/support-margin data in the documented
+	   `sliceCLM_family_from_distributionalBoundary`, then package the resulting
+	   common-boundary envelope for OS45.  This is not another distributional
+	   EOW theorem and not a common-boundary wrapper.
 	   The initial coordinate and trace-membership support
 	   `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
 	   `BHW.wickRotate_ordered_mem_acrOne`,
@@ -1160,24 +1232,26 @@ Current examples:
 	   the direct-envelope packaging
 	   `BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`, is checked in
 	   `OSToWightmanLocalityOS45CommonChart.lean` and
-	   `OSToWightmanLocalityOS45TraceMembership.lean`, so the next unresolved proof
-	   document/Lean targets are the pure-SCV local distributional envelope theorem
-	   and its OS45 instantiation.
-	   The theorem-2 blueprint now also states the exact Lean pseudo-code for the
-	   uniform local continuous EOW geometry theorem
-	   `SCV.local_continuous_edge_of_the_wedge_geometry`, whose key output is one
-	   fixed chart domain `U0` usable for every regularizing kernel, and for the
-	   remaining pure-SCV upstream package
-	   `SCV.regularizedLocalEOW_productKernel_from_continuousEOW`: it must build
-	   the actual `K,G,ψn,hcov,hG_holo,hK_rep` data consumed by the checked
-	   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel`, not wrap or
-	   restate that checked recovery theorem.
+	   `OSToWightmanLocalityOS45TraceMembership.lean`.  This should now be read
+	   as theorem-2 OS45 supplier plumbing, not as permission to redo
+	   distributional EOW.  The pure SCV/distributional EOW infrastructure is an
+	   existing input; the remaining theorem-2 task is to instantiate it in the
+	   common OS45 chart and package the output as the concrete envelope consumed
+	   by the checked direct-coordinate bridge.
+	   The theorem-2 blueprint records the still-needed local supplier surfaces
+	   `BHW.os45_adjacent_commonBoundaryEnvelope` and
+	   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII`.  If the
+	   implementation introduces a local SCV helper such as
+	   `SCV.local_distributional_edge_of_the_wedge_envelope`, that helper must be
+	   only a QFT-free packaging of the already checked distributional-EOW
+	   machinery into the exact local chart-envelope data needed here; it is not
+	   a new theorem-2 assumption and not a replacement for the OS45 supplier.
 	   `BHW.sourceRealEnvironment_of_os45JostPatch` supplies the Gram environment
 	   for that same `V`; and
-   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII` fills the
-   eleven fields of `SelectedAdjacentDistributionalJostAnchorData` before the
-   already checked bridge constructs
-   `BHW.SourceDistributionalAdjacentTubeAnchor`.
+	   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII` fills the
+	   fields of `SelectedAdjacentDistributionalJostAnchorData` before the
+	   already checked bridge constructs
+	   `BHW.SourceDistributionalAdjacentTubeAnchor`.
    The theorem-2 blueprint now also gives the full scalar-coordinate
    Hall-Wightman source packet needed after those suppliers are available:
    checked Gram-permutation/domain definitions, the

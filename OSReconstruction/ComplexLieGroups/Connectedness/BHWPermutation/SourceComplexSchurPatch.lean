@@ -148,6 +148,117 @@ theorem rank_fromBlocks_zero₂₂_le_card_left_rect
     _ ≤ Fintype.card r := by
           simpa using finrank_range_le_card (R := ℂ) rowVec
 
+/-- The rank of a block-diagonal matrix is the sum of the ranks of its
+diagonal blocks. -/
+theorem rank_fromBlocks_zero₂₁_zero₁₂
+    {r q : Type*} [Fintype r] [Fintype q] [DecidableEq r] [DecidableEq q]
+    (A : Matrix r r ℂ) (S : Matrix q q ℂ) :
+    (Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S).rank =
+      A.rank + S.rank := by
+  let M : Matrix (r ⊕ q) (r ⊕ q) ℂ :=
+    Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S
+  let e := LinearEquiv.sumArrowLequivProdArrow r q ℂ ℂ
+  let F : (r → ℂ) →ₗ[ℂ] (r → ℂ) := A.mulVecLin
+  let G : (q → ℂ) →ₗ[ℂ] (q → ℂ) := S.mulVecLin
+  have hconj :
+      e.toLinearMap.comp (M.mulVecLin.comp e.symm.toLinearMap) =
+        F.prodMap G := by
+    subst F
+    subst G
+    subst M
+    apply LinearMap.ext
+    intro x
+    have hx₁ :
+        (Equiv.sumArrowEquivProdArrow r q ℂ).symm x ∘ Sum.inl = x.1 := by
+      ext a
+      exact Equiv.sumArrowEquivProdArrow_symm_apply_inl x.1 x.2 a
+    have hx₂ :
+        (Equiv.sumArrowEquivProdArrow r q ℂ).symm x ∘ Sum.inr = x.2 := by
+      ext b
+      exact Equiv.sumArrowEquivProdArrow_symm_apply_inr x.1 x.2 b
+    apply Prod.ext
+    · ext i
+      have hrow₁ :
+          (fun j =>
+            Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S
+              (Sum.inl i) j) ∘ Sum.inl = fun j => A i j := by
+        rfl
+      have hrow₂ :
+          (fun j =>
+            Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S
+              (Sum.inl i) j) ∘ Sum.inr = 0 := by
+        rfl
+      simp [e, LinearEquiv.sumArrowLequivProdArrow, Matrix.mulVec,
+        Matrix.dotProduct_block, hx₁, hx₂, hrow₁, hrow₂]
+    · ext j
+      have hrow₁ :
+          (fun j₁ =>
+            Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S
+              (Sum.inr j) j₁) ∘ Sum.inl = 0 := by
+        rfl
+      have hrow₂ :
+          (fun j₁ =>
+            Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S
+              (Sum.inr j) j₁) ∘ Sum.inr = fun j₁ => S j j₁ := by
+        rfl
+      simp [e, LinearEquiv.sumArrowLequivProdArrow, Matrix.mulVec,
+        Matrix.dotProduct_block, hx₁, hx₂, hrow₁, hrow₂]
+  have hconj_finrank :
+      Module.finrank ℂ
+          (LinearMap.range
+            (e.toLinearMap.comp (M.mulVecLin.comp e.symm.toLinearMap))) =
+        Module.finrank ℂ (LinearMap.range M.mulVecLin) := by
+    rw [LinearMap.range_comp]
+    have hpre :
+        LinearMap.range (M.mulVecLin.comp e.symm.toLinearMap) =
+          LinearMap.range M.mulVecLin := by
+      rw [LinearMap.range_comp_of_range_eq_top M.mulVecLin e.symm.range]
+    rw [hpre]
+    exact LinearEquiv.finrank_map_eq e (LinearMap.range M.mulVecLin)
+  have hprod_finrank :
+      Module.finrank ℂ (LinearMap.range (F.prodMap G)) =
+        Module.finrank ℂ (LinearMap.range F) +
+          Module.finrank ℂ (LinearMap.range G) := by
+    rw [LinearMap.range_prodMap]
+    let P : Submodule ℂ ((r → ℂ) × (q → ℂ)) :=
+      (LinearMap.range F).prod (LinearMap.range G)
+    let ep : P ≃ₗ[ℂ] (LinearMap.range F) × (LinearMap.range G) :=
+      { toFun := fun x =>
+          (⟨x.1.1, (Submodule.mem_prod.mp x.2).1⟩,
+            ⟨x.1.2, (Submodule.mem_prod.mp x.2).2⟩)
+        invFun := fun y =>
+          ⟨(y.1.1, y.2.1), Submodule.mem_prod.mpr ⟨y.1.2, y.2.2⟩⟩
+        left_inv := by
+          intro x
+          ext <;> rfl
+        right_inv := by
+          intro y
+          ext <;> rfl
+        map_add' := by
+          intro x y
+          ext <;> rfl
+        map_smul' := by
+          intro c x
+          ext <;> rfl }
+    change Module.finrank ℂ P =
+      Module.finrank ℂ (LinearMap.range F) +
+        Module.finrank ℂ (LinearMap.range G)
+    rw [LinearEquiv.finrank_eq ep]
+    simp [Module.finrank_prod]
+  calc
+    (Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S).rank
+        = M.rank := rfl
+    _ = Module.finrank ℂ (LinearMap.range M.mulVecLin) := rfl
+    _ = Module.finrank ℂ
+          (LinearMap.range
+            (e.toLinearMap.comp (M.mulVecLin.comp e.symm.toLinearMap))) :=
+          hconj_finrank.symm
+    _ = Module.finrank ℂ (LinearMap.range (F.prodMap G)) := by rw [hconj]
+    _ = Module.finrank ℂ (LinearMap.range F) +
+          Module.finrank ℂ (LinearMap.range G) :=
+          hprod_finrank
+    _ = A.rank + S.rank := rfl
+
 /-- Rectangular Schur-complement obstruction: if the upper-left block is
 invertible and the whole block matrix has rank at most that block size, the
 Schur complement vanishes. -/
@@ -220,6 +331,54 @@ theorem rank_fromBlocks_le_of_schur_complement_eq_zero_rect
           rw [hschur']
     _ ≤ Fintype.card r :=
           rank_fromBlocks_zero₂₂_le_card_left_rect A
+
+/-- Gaussian block elimination with an invertible upper-left square block:
+the rank splits as the block size plus the rank of the Schur complement. -/
+theorem rank_fromBlocks_eq_card_add_rank_schur
+    {r q : Type*} [Fintype r] [Fintype q] [DecidableEq r] [DecidableEq q]
+    (A : Matrix r r ℂ) (B : Matrix r q ℂ)
+    (D : Matrix q r ℂ) (C : Matrix q q ℂ)
+    (hA : IsUnit A.det) :
+    (Matrix.fromBlocks A B D C).rank =
+      Fintype.card r + (C - D * A⁻¹ * B).rank := by
+  classical
+  cases ((Matrix.isUnit_iff_isUnit_det A).mpr hA).nonempty_invertible
+  let L : Matrix (r ⊕ q) (r ⊕ q) ℂ :=
+    Matrix.fromBlocks 1 (0 : Matrix r q ℂ) (D * ⅟A) 1
+  let R : Matrix (r ⊕ q) (r ⊕ q) ℂ :=
+    Matrix.fromBlocks 1 (⅟A * B) (0 : Matrix q r ℂ) 1
+  let S : Matrix q q ℂ := C - D * ⅟A * B
+  have hLdet : IsUnit L.det := by
+    subst L
+    rw [Matrix.det_fromBlocks_zero₁₂]
+    simp
+  have hRdet : IsUnit R.det := by
+    subst R
+    rw [Matrix.det_fromBlocks_zero₂₁]
+    simp
+  have hrank :
+      (Matrix.fromBlocks A B D C).rank =
+        (Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S).rank := by
+    rw [Matrix.fromBlocks_eq_of_invertible₁₁
+      (A := A) (B := B) (C := D) (D := C)]
+    change (L *
+        Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S *
+          R).rank =
+      (Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S).rank
+    rw [Matrix.rank_mul_eq_left_of_isUnit_det
+      (A := R)
+      (B := L *
+        Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S)
+      hRdet]
+    rw [Matrix.rank_mul_eq_right_of_isUnit_det
+      (A := L)
+      (B := Matrix.fromBlocks A (0 : Matrix r q ℂ) (0 : Matrix q r ℂ) S)
+      hLdet]
+  rw [hrank]
+  have hAunit : IsUnit A := (Matrix.isUnit_iff_isUnit_det A).mpr hA
+  rw [rank_fromBlocks_zero₂₁_zero₁₂]
+  rw [Matrix.rank_of_isUnit A hAunit]
+  simp [S, Matrix.invOf_eq_nonsing_inv]
 
 /-- Rectangular Schur chart for an arbitrary selected nonzero minor: exact rank
 equal to the selected block size is equivalent to Schur-complement zero after
@@ -415,6 +574,71 @@ theorem exists_sourceMatrixMinor_ne_zero_of_sourceSymmetricRankExactStratum
   refine ⟨I, J, ?_⟩
   simpa [sourceMatrixMinor, M] using hdet
 
+/-- A complex symmetric matrix of rank `r` has a nonzero principal
+`r × r` minor.  This is the principal-patch input for the singular Schur
+product charts. -/
+theorem exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
+    {n r : ℕ} {Z : Fin n → Fin n → ℂ}
+    (hZsym : Z ∈ sourceSymmetricMatrixSpace n)
+    (hrank : (Matrix.of fun i j : Fin n => Z i j).rank = r) :
+    ∃ I : Fin r → Fin n, Function.Injective I ∧
+      sourceMatrixMinor n r I I Z ≠ 0 := by
+  let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j : Fin n => Z i j
+  rcases complex_symmetric_matrix_factorization_of_rank_le n r hZsym
+      (by rw [hrank]) with
+    ⟨A, hA⟩
+  let P : Matrix (Fin n) (Fin r) ℂ := Matrix.of fun i a => A i a
+  have hM_eq : M = P * Pᵀ := by
+    ext i j
+    change Z i j = (P * Pᵀ) i j
+    rw [hA]
+    simp [P, sourceComplexDotGram, Matrix.mul_apply]
+  have hP_rank_ge : r ≤ P.rank := by
+    have hmul_le : (P * Pᵀ).rank ≤ P.rank :=
+      Matrix.rank_mul_le_left P Pᵀ
+    have hMrank : (P * Pᵀ).rank = r := by
+      rw [← hM_eq]
+      exact hrank
+    exact hMrank.ge.trans hmul_le
+  rcases exists_nondegenerate_square_submatrix_of_rank_ge P hP_rank_ge with
+    ⟨I, J, hdetIJ⟩
+  let PI : Matrix (Fin r) (Fin r) ℂ := fun a b => A (I a) b
+  have hJinj : Function.Injective J := by
+    intro a b hab
+    by_contra hne
+    have hzero : Matrix.det (fun x y : Fin r => P (I x) (J y)) = 0 :=
+      Matrix.det_zero_of_column_eq hne (by
+        intro x
+        simp [hab])
+    exact hdetIJ (by simpa using hzero)
+  let σ : Equiv.Perm (Fin r) :=
+    Equiv.ofBijective J
+      ((Fintype.bijective_iff_injective_and_card J).mpr ⟨hJinj, by simp⟩)
+  have hdet_perm_ne : (PI.submatrix id σ).det ≠ 0 := by
+    simpa [PI, P, σ] using hdetIJ
+  have hPI_det_ne : PI.det ≠ 0 := by
+    have hperm := Matrix.det_permute' σ PI
+    rw [hperm] at hdet_perm_ne
+    intro hzero
+    exact hdet_perm_ne (by simp [hzero])
+  refine ⟨I, ?_, ?_⟩
+  · intro a b hab
+    by_contra hne
+    have hzero : Matrix.det (fun x y : Fin r => P (I x) (J y)) = 0 :=
+      Matrix.det_zero_of_row_eq hne (by
+        ext y
+        simp [hab])
+    exact hdetIJ (by simpa using hzero)
+  · have hminor_eq : sourceMatrixMinor n r I I Z = (PI * PIᵀ).det := by
+      have hmatrix :
+          (fun a b : Fin r => sourceComplexDotGram r n A (I a) (I b)) =
+            PI * PIᵀ := by
+        ext a b
+        simp [sourceComplexDotGram, PI, Matrix.mul_apply]
+      rw [hA, sourceMatrixMinor, hmatrix]
+    rw [hminor_eq, Matrix.det_mul, Matrix.det_transpose]
+    exact mul_ne_zero hPI_det_ne hPI_det_ne
+
 /-- The selected rectangular Schur charts cover the rank-exact symmetric
 source stratum. -/
 theorem exists_selected_rect_schur_chart_of_sourceSymmetricRankExactStratum
@@ -524,6 +748,138 @@ theorem sourceComplexGramVariety_regularSelectedMinorPatch_relOpen
     rcases h with ⟨⟨hZU0, hminor⟩, hZvar⟩
     refine ⟨?_, hminor⟩
     simpa [hreg] using ⟨hZU0, hZvar⟩
+
+/-- On an invertible reindexed principal block, the rank splits as the block
+size plus the rank of the Schur complement.  This is the rank-additivity form
+needed at singular source-complex Gram points. -/
+theorem rank_reindexed_principal_eq_card_add_rank_schur
+    {ι r q : Type*} [Fintype ι] [Fintype r] [Fintype q]
+    [DecidableEq ι] [DecidableEq r] [DecidableEq q]
+    (Z : Matrix ι ι ℂ)
+    (e : ι ≃ r ⊕ q)
+    (hA : IsUnit ((Z.reindex e e).toBlocks₁₁.det)) :
+    Z.rank =
+      Fintype.card r +
+        ((Z.reindex e e).toBlocks₂₂ -
+          (Z.reindex e e).toBlocks₂₁ *
+            (Z.reindex e e).toBlocks₁₁⁻¹ *
+            (Z.reindex e e).toBlocks₁₂).rank := by
+  let M : Matrix (r ⊕ q) (r ⊕ q) ℂ := Z.reindex e e
+  let A : Matrix r r ℂ := M.toBlocks₁₁
+  let B : Matrix r q ℂ := M.toBlocks₁₂
+  let D : Matrix q r ℂ := M.toBlocks₂₁
+  let C : Matrix q q ℂ := M.toBlocks₂₂
+  have hA' : IsUnit A.det := by
+    simpa [M, A] using hA
+  have hblock : Matrix.fromBlocks A B D C = M := by
+    rw [← Matrix.fromBlocks_toBlocks M]
+  have hMrank : M.rank = Fintype.card r + (C - D * A⁻¹ * B).rank := by
+    rw [← hblock]
+    exact
+      rank_fromBlocks_eq_card_add_rank_schur
+        (A := A) (B := B) (D := D) (C := C) hA'
+  have hMrankZ : M.rank = Z.rank := by
+    simp [M]
+  rw [← hMrankZ]
+  simpa [M, A, B, C, D] using hMrank
+
+/-- Rank-`≤ D` in a principal Schur patch is equivalent to the corresponding
+rank bound on the Schur complement.  This direct rank formulation avoids
+introducing a coordinate wrapper for the complement index type. -/
+theorem sourceSymmetricRankLEVariety_iff_principal_schur_rank_le
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Z : Fin n → Fin n → ℂ}
+    (hA : IsUnit
+      (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁.det))
+    (hrD : Fintype.card r ≤ D) :
+    Z ∈ sourceSymmetricRankLEVariety n D ↔
+      Z ∈ sourceSymmetricMatrixSpace n ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₂₂ -
+          ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₂₁ *
+            ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁⁻¹ *
+            ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂).rank ≤
+          D - Fintype.card r := by
+  let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j : Fin n => Z i j
+  let S : Matrix q q ℂ :=
+    (M.reindex e e).toBlocks₂₂ -
+      (M.reindex e e).toBlocks₂₁ *
+        (M.reindex e e).toBlocks₁₁⁻¹ *
+        (M.reindex e e).toBlocks₁₂
+  have hrank : M.rank = Fintype.card r + S.rank := by
+    simpa [M, S] using
+      (rank_reindexed_principal_eq_card_add_rank_schur
+        (Z := M) (e := e) (by simpa [M] using hA))
+  rw [sourceSymmetricRankLEVariety_eq_rank_le]
+  constructor
+  · intro h
+    refine ⟨h.1, ?_⟩
+    have hsadd : Fintype.card r + S.rank ≤ D := by
+      have hMle : M.rank ≤ D := by
+        simpa [M] using h.2
+      simpa [hrank] using hMle
+    have hsadd' : S.rank + Fintype.card r ≤ D := by
+      simpa [Nat.add_comm] using hsadd
+    have hsle : S.rank ≤ D - Fintype.card r :=
+      Nat.le_sub_of_add_le hsadd'
+    simpa [M, S] using hsle
+  · intro h
+    refine ⟨h.1, ?_⟩
+    have hsle : S.rank ≤ D - Fintype.card r := by
+      simpa [M, S] using h.2
+    have hsadd' : S.rank + Fintype.card r ≤ D :=
+      Nat.add_le_of_le_sub hrD hsle
+    have hsadd : Fintype.card r + S.rank ≤ D := by
+      simpa [Nat.add_comm] using hsadd'
+    have hMle : M.rank ≤ D := by
+      simpa [hrank] using hsadd
+    simpa [M] using hMle
+
+/-- Rank-`D` in a principal Schur patch is equivalent to exact rank
+`D - card r` of the Schur complement. -/
+theorem sourceSymmetricRankExactStratum_iff_principal_schur_rank_eq
+    (n D : ℕ) {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Z : Fin n → Fin n → ℂ}
+    (hA : IsUnit
+      (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁.det))
+    (hrD : Fintype.card r ≤ D) :
+    Z ∈ sourceSymmetricRankExactStratum n D ↔
+      Z ∈ sourceSymmetricMatrixSpace n ∧
+        (((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₂₂ -
+          ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₂₁ *
+            ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₁⁻¹ *
+            ((Matrix.of fun i j : Fin n => Z i j).reindex e e).toBlocks₁₂).rank =
+          D - Fintype.card r := by
+  let M : Matrix (Fin n) (Fin n) ℂ := Matrix.of fun i j : Fin n => Z i j
+  let S : Matrix q q ℂ :=
+    (M.reindex e e).toBlocks₂₂ -
+      (M.reindex e e).toBlocks₂₁ *
+        (M.reindex e e).toBlocks₁₁⁻¹ *
+        (M.reindex e e).toBlocks₁₂
+  have hrank : M.rank = Fintype.card r + S.rank := by
+    simpa [M, S] using
+      (rank_reindexed_principal_eq_card_add_rank_schur
+        (Z := M) (e := e) (by simpa [M] using hA))
+  constructor
+  · intro h
+    refine ⟨h.1, ?_⟩
+    have hsadd : Fintype.card r + S.rank = D := by
+      simpa [M, hrank] using h.2
+    have hsadd' : S.rank + Fintype.card r = D := by
+      simpa [Nat.add_comm] using hsadd
+    have hs : S.rank = D - Fintype.card r :=
+      Nat.eq_sub_of_add_eq hsadd'
+    simpa [M, S] using hs
+  · intro h
+    refine ⟨h.1, ?_⟩
+    have hs : S.rank = D - Fintype.card r := by
+      simpa [M, S] using h.2
+    have hsadd : Fintype.card r + S.rank = D := by
+      simpa [hs] using Nat.add_sub_of_le hrD
+    simpa [M, hrank] using hsadd
 
 /-- On a symmetric matrix with an invertible reindexed principal block, exact
 rank equal to the block size is equivalent to Schur-complement zero. -/

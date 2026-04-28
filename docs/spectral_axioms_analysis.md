@@ -120,7 +120,13 @@ argument for `generator_selfadjoint` and the inner product ODE for
 `unique_from_generator` avoid the scalar-field mismatch (ℝ vs ℂ) that the
 Hille-Yosida bridge requires.
 
-However, Hille-Yosida remains valuable for the **E→R direction**: the
-Euclidean time-translation semigroup in `OSToWightmanSemigroup.lean` is a
-contraction semigroup, and Hille-Yosida directly gives the self-adjoint
-Hamiltonian H ≥ 0 without going through Stone's theorem.
+However, Hille-Yosida remains valuable for the **E→R direction** as the
+contraction-semigroup/generator bridge.  It should not be read as the source of
+self-adjointness by itself: the checked OS semigroup route in
+`OSToWightmanSemigroup.lean` proves positivity of the concrete bounded Hilbert
+time-shift operator from the half-shift identity
+`osTimeShiftLinear_inner_eq`, then obtains self-adjointness through
+`osTimeShiftHilbert_isPositive` and `osTimeShiftHilbert_isSelfAdjoint`.
+The lightweight `EuclideanSemigroup` record only stores semigroup,
+contraction, and diagonal real-part positivity data, so it is not a standalone
+self-adjointness interface.
