@@ -1186,7 +1186,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `mixedRealFiberIntegralCLM` with
          `continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
          so every parameter integral after applying `K` is an ordinary complex
-         integral.  It then uses local covariance only for parameters whose
+         integral.  The scalarization theorem is not a hidden
+         `SchwartzMap`-valued Bochner step: it constructs
+         `mixedRealFiberIntegralScalarCLM K` by finite Schwartz-seminorm
+         bounds, identifies it with `K.comp mixedRealFiberIntegralCLM` on the
+         dense span of split `mixedBaseFiberTensor` tests, and then extends by
+         continuity using `mixedBaseFiberProductTensorDense_all`.  It then
+         uses local covariance only for parameters whose
          nonzero kernel factor
          `κ a = η • translateSchwartz a ψ` forces
          `‖a‖ ≤ r + rη`.  The normalized cutoff enters through
@@ -2015,7 +2021,16 @@ Current implementation order:
    `SCV.schwartzTensorProduct₂CLMLeft`,
    `SCV.schwartzPartialEval₂CLM`,
    `SCV.mixedRealFiberIntegralCLM`,
+   `SCV.mixedBaseFiberTensor`,
+   `SCV.mixedBaseFiberProductTensorDense_all`,
+   `SCV.mixedRealFiberIntegralScalarCLM`,
+   `SCV.mixedRealFiberIntegralScalarCLM_apply`,
+   `SCV.mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
    `SCV.continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
+   `SCV.localDescentParamTestLeft`,
+   `SCV.localDescentParamTestRight`,
+   `SCV.mixedRealFiberIntegralCLM_localDescentParamTestLeft`,
+   `SCV.mixedRealFiberIntegralCLM_localDescentParamTestRight`,
    `SCV.shearedProductKernelFunctional_localQuotient_of_productCovariant`,
    `SCV.translationCovariantProductKernel_descends_local`,
    `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,
