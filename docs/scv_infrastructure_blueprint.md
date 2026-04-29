@@ -295,6 +295,8 @@ lemma HasCompactSupport.localEOWAffineTestPushforwardCLM
 lemma tsupport_localEOWAffineTestPushforwardCLM_subset
 lemma localEOWAffineTestPushforwardCLM_apply_realChart
 lemma integral_localEOWAffineTestPushforwardCLM_changeOfVariables
+lemma localEOWComplexAffineEquiv_symm_add_realEmbed
+lemma exists_localEOWRealLinearSymm_ball_subset
 lemma tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem
 lemma coordSum_tendsto_positiveOrthant_nhdsWithin_Ioi
 lemma coordNegSum_tendsto_negativeOrthant_nhdsWithin_Ioi
@@ -452,6 +454,7 @@ Source ledger for the internal helper list:
 | `sliceCLM_family_from_distributionalBoundary` | Checked in `SCV/LocalDistributionalEOWSlice.lean`: calls `exists_cutoffSliceCLM_family_of_boundaryValue` separately on the plus side cone and the negative-image minus side cone, extracts `Im w ∈ C±` from `D± ⊆ TubeDomain C±`, rewrites real-mollifier evaluations with `realMollifyLocal_eq_cutoffSliceCLM`, and rewrites both limit targets from `Traw (χ • φ)` to `(Tchart.restrictScalars ℝ) φ` using the explicit cutoff compatibility hypothesis `hTchart`. |
 | `localEOWRealChart`, `localEOWChart`, `continuous_localEOWRealChart`, `isCompact_localEOWRealChart_image`, `localEOWChart_real_imag`, `localEOWChart_twoSided_polywedge_mem` | Checked in `SCV/LocalContinuousEOW.lean`: public chart notation matching the private `Phi` shape in `TubeDomainExtension.lean`, compactness of real-chart images, decomposition of `localEOWChart x0 ys (u + i v)`, and the direct two-sided local wedge membership theorem in chart coordinates. |
 | `localEOWRealLinearPart`, `localEOWRealChart_eq_x0_add_linearPart`, `localEOWRealChart_sub`, `localEOWRealChart_add`, `localEOWChart_sub_realEmbed`, `localEOWChart_add_realEmbed`, `localEOWRealLinearCLE`, `localEOWRealLinearCLE_apply`, `localEOWRealLinearPullbackCLM`, `localEOWRealLinearPullbackCLM_apply`, `KernelSupportWithin.localEOWRealLinearPullbackCLM`, `localEOWRealLinearPushforwardCLM`, `localEOWRealLinearPushforwardCLM_apply`, `KernelSupportWithin.localEOWRealLinearPushforwardCLM`, `localEOWRealLinearKernelPushforwardCLM`, `localEOWRealLinearKernelPushforwardCLM_apply`, `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM`, `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_translateSchwartz`, `localEOWAffineTestPushforwardCLM`, `localEOWAffineDistributionPullbackCLM` | Checked in `SCV/LocalEOWChartLinear.lean`: explicit affine/linear bookkeeping for the local EOW chart.  A coordinate displacement `v` in the Rudin chart moves the original real edge by `localEOWRealLinearPart ys v`, not by `v` unless `ys` is the standard basis.  If `ys` is linearly independent, `localEOWRealLinearCLE ys hli` is the corresponding continuous linear equivalence and `localEOWRealLinearPullbackCLM ys hli ψ u = ψ (localEOWRealLinearPart ys u)` is the checked Schwartz test-function pullback.  Pullback of `KernelSupportWithin ψ r` is supported in radius `‖(localEOWRealLinearCLE ys hli).symm.toContinuousLinearMap‖ * r`.  The chart-to-original pushforward has apply theorem `localEOWRealLinearPushforwardCLM ys hli φ y = φ ((localEOWRealLinearCLE ys hli).symm y)` and transports support to radius `‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * r`.  The Jacobian-normalized kernel pushforward has apply theorem `localEOWRealLinearKernelPushforwardCLM ys hli φ y = ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) * φ ((localEOWRealLinearCLE ys hli).symm y)`; the scalar determinant factor does not enlarge support, and a translated chart kernel has support radius `‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * (r + ‖a‖)`. |
+| `localEOWComplexAffineEquiv_symm_add_realEmbed`, `exists_localEOWRealLinearSymm_ball_subset` | Checked small chart-linear helpers before `chartDistributionalEOW_local_envelope`: adding an original real displacement to an original chart point corresponds under `A.symm` to adding the chart real displacement `(localEOWRealLinearCLE ys hli).symm t`; and continuity of this inverse linear map gives an original support radius whose inverse-chart image lies in any prescribed chart-real ball.  These are the real-window margin facts needed for the affine cutoff and fixed-window side domains. |
 | `exists_localContinuousEOW_fixedBasis_chart_window` | Checked in `SCV/LocalEOWFixedBasis.lean`: fixed-basis extraction from `exists_localContinuousEOW_chart_window`.  The final theorem chooses `ys` once, so the per-point window theorem takes `ys` and `∀ j, ys j ∈ C` as inputs and returns only the local radii and Rudin `δ` at `x0`.  Linear independence is carried separately for chart equivalences; it is not an input to this radius lemma.  Its proof is the already checked body after the `open_set_contains_basis` line: `localEOWRealChart_closedBall_subset`, `localEOWChart_twoSided_polywedge_mem`, and `exists_localEOWSmp_delta`. |
 | `localEOWComplexAffineEquiv`, `localEOWComplexAffineEquiv_apply`, `localEOWComplexAffineEquiv_realEmbed`, `localEOWComplexAffineEquiv_image_open`, `differentiableOn_comp_localEOWComplexAffineEquiv_symm` | Checked in `SCV/LocalEOWFixedBasis.lean`: chart-to-original transport layer.  It packages the existing `localEOWChart_equiv` into an affine homeomorphism, proves real-slice compatibility `realEmbed u ↦ realEmbed (localEOWRealChart x0 ys u)`, transports openness of coordinate windows to original chart windows, and transports holomorphy of the coordinate envelope back through the inverse affine map. |
 | `localEOW_chart_real_box` | Finite-dimensional topology: open preimage under a linear equivalence contains a small axis box. |
@@ -4035,16 +4038,41 @@ Proof transcript for `chartDistributionalEOW_local_envelope`:
    `∑ v_j < r0`, which is preserved because the coordinate ball is smaller.
    The negative branch applies the same argument to `-v` and then uses
    `CminusLoc = Neg.neg '' CplusLoc`.
-3. Choose real support margins before any kernel is introduced.  Take nested
-   real chart balls `B0 ⊂ B1 ⊂ B2 ⊂ Metric.closedBall 0 ρ0` so that real
-   translations by the original-edge support radius stay in the next ball.
-   The support radius for an original-edge pushed chart kernel is controlled
-   by
-   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM`; if the chart
+3. Choose real support margins before any kernel is introduced.  This is a
+   chart/original-coordinate step and must not be treated as an ordinary ball
+   inclusion in the original coordinates.  Let
+   `e = localEOWRealLinearCLE ys hli` and
+   `A = localEOWComplexAffineEquiv x0 ys hli`.  Choose a chart-real radius
+   `ρr > 0` with `4 * ρr ≤ ρ0`.  The inner real window for side domains is
+   `‖(A.symm z).re‖ < ρr`; the cutoff-one real window is
+   `‖u‖ ≤ 2 * ρr`; and the cutoff support window is `‖u‖ ≤ 3 * ρr`, all in
+   chart real coordinates.  Since `e.symm` is continuous at `0`, choose an
+   original real support radius `rψOrig > 0` such that
+   ```
+   ‖t‖ ≤ rψOrig -> ‖e.symm t‖ < ρr.
+   ```
+   In Lean this should be an explicit finite-dimensional helper, parallel to
+   `exists_localEOWRealLinearPart_ball_subset`, for
+   `(localEOWRealLinearCLE ys hli).symm`.  Then if
+   `‖(A.symm z).re‖ < ρr` and `KernelSupportWithin ψ rψOrig`, every
+   `t ∈ tsupport ψ` satisfies
+   `‖(A.symm (z + realEmbed t)).re‖ < 2 * ρr`, because
+   ```
+   A.symm (z + realEmbed t)
+     = A.symm z + realEmbed (e.symm t).
+   ```
+   This inverse-chart translation identity is the checked
+   `localEOWComplexAffineEquiv_symm_add_realEmbed`, proved from
+   `localEOWChart_add_realEmbed` and the left/right inverse facts for `A`.
+
+   The support radius for a pushed chart kernel is controlled by
+   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM`: if the chart
    kernel has radius `rker`, choose `rker` so
-   `‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * rker` is inside
-   the original-edge margin.  For real translations expressed back in chart
-   coordinates, choose the margin using the inverse operator norm as well.
+   `‖e.toContinuousLinearMap‖ * rker ≤ rψOrig`.  The translated chart-kernel
+   support used in covariance is controlled by
+   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_translateSchwartz`,
+   so the same choice is made with `rker + ‖a‖` when the covariance theorem
+   requires it.
 4. Build the two-sided slice CLMs from the checked raw side limits, not as
    assumptions.  Keep the distribution names separated throughout this step:
    `Torig := T` is the original real-edge distribution in the OS-II boundary
@@ -4056,8 +4084,28 @@ Proof transcript for `chartDistributionalEOW_local_envelope`:
    original real-edge coordinates, so their raw limit target is
    `(Torig.restrictScalars ℝ)`.
 
-   Choose a cutoff `χ` with `χ = 1` on `B1` and
-   `tsupport χ ⊆ B2`.  Then call the checked
+   Choose the real cutoff in chart coordinates.  First call
+   `exists_schwartz_cutoff_eq_one_on_closedBall` to obtain
+   `χcoord : SchwartzMap (Fin m -> ℝ) ℂ` with
+   `χcoord = 1` on `Metric.closedBall 0 (2 * ρr)` and
+   `tsupport χcoord ⊆ Metric.closedBall 0 (3 * ρr)`.  Then set
+   ```
+   χ := localEOWAffineTestPushforwardCLM x0 ys hli χcoord.
+   ```
+   Compact support is
+   `HasCompactSupport.localEOWAffineTestPushforwardCLM`.  The support
+   inclusion `tsupport χ ⊆ E` is
+   `tsupport_localEOWAffineTestPushforwardCLM_subset`, the support bound for
+   `χcoord`, and the fixed-window real containment
+   `localEOWRealChart x0 ys '' closedBall 0 (3 * ρr) ⊆ E`.
+   The cutoff-one fact used by the slice theorem is:
+   if `x = localEOWRealChart x0 ys u` and `‖u‖ ≤ 2 * ρr`, then
+   ```
+   χ x = χcoord u = 1
+   ```
+   by `localEOWAffineTestPushforwardCLM_apply_realChart`.
+
+   Now call the checked
    `sliceCLM_family_from_distributionalBoundary` with the plus/minus raw
    limits restricted to `CplusLoc/CminusLoc`, the side margins for `χ`,
    `Dplus ⊆ TubeDomain CplusLoc`,
@@ -4070,6 +4118,29 @@ Proof transcript for `chartDistributionalEOW_local_envelope`:
    evaluation fields for every kernel with `KernelSupportWithin ψ rψ`; the
    translated support lies in `B1` by the support transport and cutoff
    construction.
+
+   The original side domains are therefore not merely
+   `Ωplus ∩ TubeDomain CplusLoc` and `Ωminus ∩ TubeDomain CminusLoc`.  They
+   are the open local real-window pieces
+   ```
+   Dplus  =
+     Ωplus ∩ TubeDomain CplusLoc ∩
+       {z | ‖(fun j => ((A.symm z) j).re)‖ < ρr}
+   Dminus =
+     Ωminus ∩ TubeDomain CminusLoc ∩
+       {z | ‖(fun j => ((A.symm z) j).re)‖ < ρr}.
+   ```
+   Openness uses `hΩ±_open`, `tubeDomain_isOpen`, continuity of `A.symm`,
+   and continuity of the coordinatewise real-part map.  The margin
+   `z + realEmbed t ∈ Ωplus/Ωminus` for `z ∈ D±` and
+   `t ∈ tsupport ψ` follows by rewriting the real part through the inverse
+   chart identity above, putting it in the cutoff-one window, and then using
+   the margins returned by
+   `exists_localEOW_truncatedSideCones_for_sliceMargin`.  The fixed-window
+   polywedge membership in `Dplus/Dminus` uses:
+   the fixed-window membership in `Ωplus/Ωminus`, the side-cone membership
+   plus the small-norm truncation for the imaginary part, and
+   `A.symm (localEOWChart x0 ys w) = w` for the real-window condition.
 5. Apply `regularizedLocalEOW_family_from_fixedWindow` to the original-side
    functions with `Tchart = TcutOrig`, the just-built `Tplus/Tminus`, the
    fixed-window data from step 1, and the side domains from step 2.  This

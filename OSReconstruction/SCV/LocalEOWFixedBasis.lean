@@ -1,4 +1,5 @@
 import OSReconstruction.SCV.LocalContinuousEOWEnvelope
+import OSReconstruction.SCV.LocalEOWChartLinear
 
 /-!
 # Fixed-Basis Local EOW Chart Windows
@@ -219,5 +220,39 @@ theorem differentiableOn_comp_localEOWComplexAffineEquiv_symm {m : ℕ}
       (localEOWComplexAffineEquiv x0 ys hli).symm (localEOWChart x0 ys w) = w := by
     simpa [localEOWComplexAffineEquiv, Φinv] using hΦ.2.1 w
   simpa [hleft] using hw
+
+/-- Adding an original real displacement corresponds, in local EOW chart
+coordinates, to adding the inverse real-linear displacement. -/
+theorem localEOWComplexAffineEquiv_symm_add_realEmbed {m : ℕ}
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hli : LinearIndependent ℝ ys)
+    (z : Fin m → ℂ) (t : Fin m → ℝ) :
+    (localEOWComplexAffineEquiv x0 ys hli).symm (z + realEmbed t) =
+      (localEOWComplexAffineEquiv x0 ys hli).symm z +
+        realEmbed ((localEOWRealLinearCLE ys hli).symm t) := by
+  let A := localEOWComplexAffineEquiv x0 ys hli
+  apply A.injective
+  calc
+    A (A.symm (z + realEmbed t)) = z + realEmbed t := by
+      exact A.apply_symm_apply (z + realEmbed t)
+    _ = A (A.symm z) + realEmbed t := by
+      rw [A.apply_symm_apply z]
+    _ = A (A.symm z) +
+        realEmbed (localEOWRealLinearPart ys
+          ((localEOWRealLinearCLE ys hli).symm t)) := by
+      have hlin :
+          localEOWRealLinearPart ys
+              ((localEOWRealLinearCLE ys hli).symm t) = t := by
+        rw [← localEOWRealLinearCLE_apply ys hli]
+        exact (localEOWRealLinearCLE ys hli).apply_symm_apply t
+      rw [hlin]
+    _ = A (A.symm z + realEmbed ((localEOWRealLinearCLE ys hli).symm t)) := by
+      change
+        localEOWChart x0 ys (A.symm z) +
+            realEmbed (localEOWRealLinearPart ys
+              ((localEOWRealLinearCLE ys hli).symm t)) =
+          localEOWChart x0 ys
+            (A.symm z + realEmbed ((localEOWRealLinearCLE ys hli).symm t))
+      rw [localEOWChart_add_realEmbed]
 
 end SCV

@@ -374,6 +374,30 @@ theorem KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_translateSchw
   exact KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM ys hli
     (KernelSupportWithin.translateSchwartz a hφ)
 
+/-- A sufficiently small original real displacement has arbitrarily small
+coordinates under the inverse local EOW real-linear chart. -/
+theorem exists_localEOWRealLinearSymm_ball_subset
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    {rside : ℝ} (hrside : 0 < rside) :
+    ∃ δside : ℝ, 0 < δside ∧
+      ∀ t : Fin m → ℝ, ‖t‖ < δside →
+        ‖(localEOWRealLinearCLE ys hli).symm t‖ < rside := by
+  let L : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) :=
+    (localEOWRealLinearCLE ys hli).symm.toContinuousLinearMap
+  have hpre :
+      (fun t : Fin m → ℝ => (localEOWRealLinearCLE ys hli).symm t) ⁻¹'
+          Metric.ball 0 rside ∈ nhds (0 : Fin m → ℝ) := by
+    have hball : Metric.ball (L 0) rside ∈ nhds (L 0) :=
+      Metric.ball_mem_nhds _ hrside
+    simpa [L] using L.continuous.continuousAt.preimage_mem_nhds hball
+  rcases Metric.mem_nhds_iff.mp hpre with ⟨δside, hδside_pos, hδside_sub⟩
+  refine ⟨δside, hδside_pos, ?_⟩
+  intro t ht
+  have ht_ball : t ∈ Metric.ball (0 : Fin m → ℝ) δside := by
+    simpa [Metric.mem_ball, dist_eq_norm] using ht
+  have ht_image := hδside_sub ht_ball
+  simpa [Metric.mem_ball, dist_eq_norm] using ht_image
+
 /-- Transport a compact-window value-CLM package from original real-edge
 kernels to local chart-coordinate kernels.  The proof performs both cutoff
 removals and transports the finite Schwartz-seminorm bound through the

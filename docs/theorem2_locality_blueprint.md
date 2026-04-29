@@ -2762,6 +2762,13 @@ Current implementation order:
    `realMollifyLocal_localEOWChart_kernelPushforwardCLM` providing the
    side-mollifier change of variables.  No step treats the chart kernel as an
    original-coordinate kernel without this pushforward/Jacobian transport.
+   The two small chart-linear real-window helpers documented in the SCV
+   blueprint are now checked:
+   `localEOWComplexAffineEquiv_symm_add_realEmbed` and
+   `exists_localEOWRealLinearSymm_ball_subset`.  They make the affine
+   cutoff-one and real-translation margin proof exact: the local real cutoff
+   is the affine pushforward of a chart-coordinate cutoff, not an arbitrary
+   original-coordinate cutoff.
    Then prove
    the OS45 instantiation
    `BHW.os45_adjacent_commonBoundaryEnvelope` and package its output as
