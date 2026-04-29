@@ -7262,13 +7262,15 @@ Proof transcript for the next target:
        (hH_holo : DifferentiableOn ℂ H Udesc)
        (hRep : RepresentsDistributionOnComplexDomain Hdist H Udesc)
        (hdesc_local :
-         ∀ φ η,
+         ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+           (η : SchwartzMap (Fin m -> ℝ) ℂ),
            SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Udesc ->
            KernelSupportWithin η r ->
              K (schwartzTensorProduct₂ φ η) =
                Hdist (realConvolutionTest φ η))
        (hK_rep :
-         ∀ φ η,
+         ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+           (η : SchwartzMap (Fin m -> ℝ) ℂ),
            SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Ucov ->
            KernelSupportWithin η r ->
              K (schwartzTensorProduct₂ φ η) =
@@ -7276,7 +7278,10 @@ Proof transcript for the next target:
        ∀ z ∈ Ucore,
          Gchart ψ z =
            ∫ t : Fin m -> ℝ, H (z + realEmbed t) * ψ t
+   ```
+   Status: checked in `OSReconstruction/SCV/LocalProductRecovery.lean`.
 
+   ```lean
    theorem regularizedEnvelope_chartEnvelope_from_localProductKernel
        {r : ℝ}
        (hm : 0 < m)
@@ -7288,7 +7293,6 @@ Proof transcript for the next target:
        (ψn : ℕ -> SchwartzMap (Fin m -> ℝ) ℂ)
        (hUcore_open : IsOpen Ucore)
        (hUdesc_open : IsOpen Udesc)
-       (hU0_open : IsOpen U0)
        (hcore_desc : Ucore ⊆ Udesc)
        (hdesc_cov : Udesc ⊆ Ucov)
        (hcov_window : Ucov ⊆ U0)
@@ -7339,6 +7343,7 @@ Proof transcript for the next target:
          (∀ z ∈ Ucore ∩ DplusSmall, H z = Fplus z) ∧
          (∀ z ∈ Ucore ∩ DminusSmall, H z = Fminus z)
    ```
+   Status: checked in `OSReconstruction/SCV/LocalProductRecovery.lean`.
 
    The recovery theorem above **consumes** `hCR`; it does not silently prove
    distributional holomorphy.  The full local product-kernel route obtains
@@ -7351,7 +7356,11 @@ Proof transcript for the next target:
       `realConvolutionTest θ (ψι i) -> θ`, and the local `∂bar` zero theorem.
    Thus the CR regularity input is a checked-style theorem consumer with its
    own hypotheses, not a field hidden in a wrapper and not an additional
-   assumption in the final SCV EOW assembly.
+   assumption in the final SCV EOW assembly.  Since this consumer starts after
+   `hCR` has already been proved on `Udesc`, it does not require
+   `hU0_open : IsOpen U0`; the openness needed for regularity is exactly
+   `hUdesc_open`, and `U0` appears only through the restriction
+   `Udesc ⊆ Ucov ⊆ U0` applied to `hG_holo`.
 
    Proof transcript for the local recovery consumer:
 
@@ -7388,6 +7397,54 @@ Proof transcript for the next target:
       The fundamental-lemma endpoint
       `regularizedEnvelope_pointwise_eq_of_test_integral_eq` then gives the
       pointwise identity on `Ucore`.
+      The Lean proof is now fixed down to the helper calls:
+      ```lean
+      let Hψ : ComplexChartSpace m -> ℂ :=
+        fun z => ∫ t : Fin m -> ℝ, H (z + realEmbed t) * ψ t
+      have hψ_compact :
+          HasCompactSupport (ψ : (Fin m -> ℝ) -> ℂ) :=
+        KernelSupportWithin_hasCompactSupport hψ_support
+      have hmargin :
+          ∀ z ∈ Ucore, ∀ t ∈ tsupport (ψ : (Fin m -> ℝ) -> ℂ),
+            z + realEmbed t ∈ Udesc := by
+        intro z hz t ht
+        exact hmargin_core z hz t
+          (by simpa [KernelSupportWithin, Metric.mem_closedBall, dist_eq_norm]
+            using hψ_support ht)
+      have hG_cont_core : ContinuousOn (Gchart ψ) Ucore :=
+        hG_holo.continuousOn.mono
+          (hcore_desc.trans (hdesc_cov.trans hcov_window))
+      have hHψ_cont : ContinuousOn Hψ Ucore := by
+        simpa [Hψ] using
+          continuousOn_realMollifyLocal_of_translate_margin
+            H ψ Ucore Udesc hUdesc_open hH_holo.continuousOn
+            hψ_compact hmargin
+      ```
+      For every `φ` supported in `Ucore`, use
+      `hφ_desc := ⟨hφ.1, hφ.2.trans hcore_desc⟩` and
+      `hφ_cov := ⟨hφ.1, hφ.2.trans (hcore_desc.trans hdesc_cov)⟩`.
+      The convolution support hypothesis is exactly
+      ```lean
+      realConvolutionTest_supportsInOpen_of_translate_margin
+        φ ψ Ucore Udesc hφ hψ_compact hmargin
+      ```
+      and the Fubini step is exactly
+      ```lean
+      realConvolutionTest_pairing_eq_mollifier_pairing
+        H φ ψ Ucore Udesc hUdesc_open hH_holo.continuousOn
+        hφ hψ_compact hmargin
+      ```
+      Thus no global descent theorem and no product-kernel representation on
+      all tests is used.
+      File ownership: this theorem is implemented in
+      `OSReconstruction/SCV/LocalProductRecovery.lean`, importing both
+      `OSReconstruction.SCV.DistributionalEOWKernelRecovery` for the checked
+      recovery helpers and
+      `OSReconstruction.SCV.LocalProductDescentIntegrals` for the checked local
+      descent theorem.  `LocalProductDescentIntegrals.lean` remains the Step 8
+      local quotient/descent file.  The companion chart-envelope theorem is
+      now also implemented in `LocalProductRecovery.lean`; it consumes the
+      checked local pointwise representation rather than replaying it.
    3. Apply this local pointwise theorem to every `ψn n`.  The hypotheses
       `hψ_support_r n` and `hG_holo (ψn n) (hψ_support_r n)` supply the
       kernel support and holomorphy inputs, and the common `hmargin_core`
@@ -7405,6 +7462,36 @@ Proof transcript for the next target:
       displayed agreement of `H` with `Fplus` on
       `Ucore ∩ DplusSmall` and with `Fminus` on
       `Ucore ∩ DminusSmall`.
+
+   Lean extraction is direct and contains no hidden domain conversions:
+   ```lean
+   obtain ⟨H, hH_holo, hRep⟩ :=
+     distributionalHolomorphic_regular Hdist hm hUdesc_open hCR
+   have hH_rep :
+       ∀ n, ∀ z ∈ Ucore,
+         Gchart (ψn n) z =
+           ∫ t : Fin m -> ℝ, H (z + realEmbed t) * ψn n t := by
+     intro n
+     exact
+       regularizedEnvelope_pointwiseRepresentation_of_localProductKernel
+         K Gchart H Hdist Ucore Udesc Ucov U0 (ψn n)
+         hUcore_open hUdesc_open hcore_desc hdesc_cov hcov_window
+         hmargin_core (hψ_support_r n)
+         (hG_holo (ψn n) (hψ_support_r n))
+         hH_holo hRep hdesc_local hK_rep
+   have hkernel_limit :
+       ∀ z ∈ Ucore,
+         Tendsto (fun n => Gchart (ψn n) z) atTop (nhds (H z)) :=
+     regularizedEnvelope_kernelLimit_from_representation
+       Ucore Udesc H Gchart ψn hUdesc_open hcore_desc
+       hH_holo.continuousOn hH_rep
+       hψ_nonneg hψ_real hψ_norm hψ_support_shrink
+   obtain ⟨hplus, hminus⟩ :=
+     regularizedEnvelope_deltaLimit_agreesOnWedges
+       Ucore Gchart Fplus Fminus H DplusSmall DminusSmall ψn
+       hG_plus hG_minus happrox_plus happrox_minus hkernel_limit
+   exact ⟨H, hH_holo, hRep, hplus, hminus⟩
+   ```
 
    This theorem is not a wrapper around
    `regularizedEnvelope_chartEnvelope_from_productKernel`.  It replaces the

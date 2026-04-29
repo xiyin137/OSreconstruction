@@ -1883,13 +1883,19 @@ Implementation-readiness gate for the next Lean stage:
   `SCV/LocalEOWPairingCLM.lean`.  The mixed-fiber change-of-variables and
   partial-evaluation identity layer is now checked in
   `SCV/LocalProductDescentIntegrals.lean`, and the same file now checks the
-  scalarized local quotient and local product-test descent.  The remaining
-  Lean order, now fully proof-documented in `docs/scv_infrastructure_blueprint.md`,
-  is: prove
-  `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
-  finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
-  the explicit approximate-identity and side-agreement hypotheses.  The
-  partial-evaluation helper is proved in the SCV layer from
+  scalarized local quotient and local product-test descent.  The local
+  pointwise representation theorem
+  `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel` is
+  now checked in `SCV/LocalProductRecovery.lean`, with `Udesc` as the
+  representation/Fubini domain and `Ucov` only as the product-kernel
+  representation domain.  The local chart-envelope recovery theorem
+  `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel` is also
+  checked in `SCV/LocalProductRecovery.lean`, using
+  the explicit approximate-identity and side-agreement hypotheses.  Its
+  consumer surface requires `IsOpen Udesc`, but not `IsOpen U0`, because `hCR`
+  has already been proved on `Udesc` and `U0` is used only as the holomorphy
+  window restricted through `Udesc ⊆ Ucov ⊆ U0`.  The partial-evaluation
+  helper is proved in the SCV layer from
   `SchwartzMap.compCLM`; importing the Wightman partial-evaluation file would
   be route drift for this pure-SCV theorem.
 * The next OS-side boundary-value theorem is
@@ -2152,12 +2158,11 @@ Current implementation order:
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestRight`,
    `SCV.shearedProductKernelFunctional_localQuotient_of_productCovariant`,
    `SCV.translationCovariantProductKernel_descends_local`,
+   `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,
+   `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
    `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local recovery
-   package
-   `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,
-   `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`, and finally
+   The remaining pure-SCV declaration on this route is now
    `SCV.local_distributional_edge_of_the_wedge_envelope`.  The retired
    `SCV.regularizedLocalEOW_productKernel_from_continuousEOW` name may only be
    reused later as an assembly wrapper around those local theorems, not as a
