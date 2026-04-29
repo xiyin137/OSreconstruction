@@ -204,6 +204,10 @@ def mixedRealFiberIntegralScalarCLM
 theorem mixedRealFiberIntegralScalarCLM_apply
 theorem mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM
 theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral
+def realParamKernelLeft
+theorem realParamKernelLeft_apply
+def realParamKernelRight
+theorem realParamKernelRight_apply
 def localDescentParamTestLeft
 def localDescentParamTestRight
 theorem mixedRealFiberIntegralCLM_localDescentParamTestLeft
@@ -6809,6 +6813,8 @@ Proof transcript for the next target:
        `mixedRealFiberIntegralScalarCLM_apply`,
        `mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
        `continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
+       `realParamKernelLeft`, `realParamKernelLeft_apply`,
+       `realParamKernelRight`, `realParamKernelRight_apply`,
        `SupportsInOpen.complexTranslateSchwartz_of_image_subset` (checked in
        `SCV/DistributionalEOWSupport.lean`), and
        `shearedProductKernelFunctional_localQuotient_of_productCovariant`:
