@@ -1108,15 +1108,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
          genuine mixed Schwartz CLM `K` by fixed cutoffs: a complex-chart
          cutoff `χU`, a chart-kernel cutoff `χr`, and the original-edge cutoff
          hidden inside the value CLM for the pushed kernel.  Here
-         `P = localEOWRealLinearKernelPushforwardCLM ys hli`:
+         `P = localEOWRealLinearKernelPushforwardCLM ys hli` and
+         ```
+         Gorig η z =
+           localRudinEnvelope δ x0 ys
+             (realMollifyLocal Fplus η)
+             (realMollifyLocal Fminus η) z.
+         ```
+         The theorem is stated after the value-CLM and continuity helpers have
+         supplied the exact inputs `Lchart`, `hLchart_cutoff`,
+         `hLchart_value`, `hLchart_bound`, `hcont_integrand`, and `hG_holo`;
+         this avoids repeating the full fixed-window hypothesis block while
+         still constructing a real mixed Schwartz CLM.  Its definition is:
          ```lean
          K F =
            ∫ z in closedBall 0 Rcut, χU z *
-             localRudinEnvelope δ x0 ys
-               (realMollifyLocal Fplus
-                 (χψ • P (χr • schwartzPartialEval₁CLM z F)))
-               (realMollifyLocal Fminus
-                 (χψ • P (χr • schwartzPartialEval₁CLM z F))) z
+             Gorig (χψ • P (χr • schwartzPartialEval₁CLM z F)) z
          ```
          where `Lchart z` is
          `Lorig z ∘ localEOWRealLinearKernelPushforwardCLM ys hli ∘ (χr • ·)`.
