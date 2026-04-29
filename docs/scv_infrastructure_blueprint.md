@@ -199,6 +199,9 @@ theorem schwartzTensorProduct₂CLMLeft
 def schwartzPartialEval₂CLM
 theorem continuous_schwartzPartialEval₂CLM
 theorem schwartzPartialEval₂CLM_finsetSeminorm_decay
+theorem exists_schwartzFunctional_finsetSeminormBound
+theorem integrable_apply_schwartzPartialEval₂CLM
+theorem exists_bound_apply_schwartzPartialEval₂CLM_integral
 def mixedRealFiberIntegralCLM
 def mixedBaseFiberTensor
 theorem mixedBaseFiberTensor_apply
@@ -7540,13 +7543,18 @@ Proof transcript for the next target:
        `mixedBaseFiberCLM_zero_of_zero_on_tensors`,
        `mixedBaseFiberProductTensorDense_zero`,
        `mixedBaseFiberProductTensorDense_of_pos`, and
-       `mixedBaseFiberProductTensorDense_all`.
-
-       Next local descent infrastructure:
+       `mixedBaseFiberProductTensorDense_all`.  The scalarized mixed
+       real-fiber integral packet is checked too:
+       `exists_schwartzFunctional_finsetSeminormBound`,
+       `integrable_apply_schwartzPartialEval₂CLM`,
+       `exists_bound_apply_schwartzPartialEval₂CLM_integral`,
        `mixedRealFiberIntegralScalarCLM`,
        `mixedRealFiberIntegralScalarCLM_apply`,
        `mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
-       `continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
+       and
+       `continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`.
+
+       Next local descent infrastructure:
        `realParamKernelLeft`, `realParamKernelLeft_apply`,
        `realParamKernelRight`, `realParamKernelRight_apply`,
        `SupportsInOpen.complexTranslateSchwartz_of_image_subset` (checked in

@@ -2078,6 +2078,9 @@ Current implementation order:
    `SCV.continuous_schwartzPartialEval₂CLM`,
    `SCV.schwartzPartialEval₂CLM_seminorm_decay_one`,
    `SCV.schwartzPartialEval₂CLM_finsetSeminorm_decay`,
+   `SCV.exists_schwartzFunctional_finsetSeminormBound`,
+   `SCV.integrable_apply_schwartzPartialEval₂CLM`,
+   `SCV.exists_bound_apply_schwartzPartialEval₂CLM_integral`,
    `SCV.mixedRealFiberIntegralRaw`,
    `SCV.integrable_mixedRealFiber`,
    `SCV.mixedBaseFDerivSchwartz`,
@@ -2108,14 +2111,14 @@ Current implementation order:
    `SCV.mixedBaseFiberProductTensorDense_zero`,
    `SCV.mixedBaseFiberProductTensorDense_of_pos`,
    `SCV.mixedBaseFiberProductTensorDense_all`,
-   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
-   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local descent
-   package
    `SCV.mixedRealFiberIntegralScalarCLM`,
    `SCV.mixedRealFiberIntegralScalarCLM_apply`,
    `SCV.mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
    `SCV.continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
+   The remaining pure-SCV declarations on this route are now the local descent
+   package
    `SCV.realParamKernelLeftCLE`,
    `SCV.realParamKernelLeftCLE_apply`,
    `SCV.realParamKernelLeft`,
@@ -2409,6 +2412,18 @@ Current implementation order:
    `SCV.mixedBaseFiberFlatCLE`.  The `m = 0` branch of
    `SCV.mixedBaseFiberProductTensorDense_all` is a direct singleton-constant
    calculation, not a generic zero-block flat theorem.
+   The scalarized mixed real-fiber integral is also now checked:
+   `SCV.integrable_apply_schwartzPartialEval₂CLM` and
+   `SCV.exists_bound_apply_schwartzPartialEval₂CLM_integral` build the
+   complex-valued parameter integral by finite seminorm bounds and the
+   integrablePower tail; `SCV.mixedRealFiberIntegralScalarCLM` packages it as
+   a CLM; and
+   `SCV.mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`
+   plus
+   `SCV.continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`
+   identify it with applying a base continuous functional after
+   `SCV.mixedRealFiberIntegralCLM`.  This is the intended scalarized
+   substitute for any unsupported Schwartz-valued Bochner integral.
    The pure-SCV local-EOW support-preservation bridge needed before the
    distributional holomorphy integration-by-parts theorem is now checked in
    `SCV/DistributionalEOWSupport.lean`:

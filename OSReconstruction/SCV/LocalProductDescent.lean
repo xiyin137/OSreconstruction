@@ -490,6 +490,128 @@ theorem schwartzPartialEval₂CLM_finsetSeminorm_decay {m : ℕ}
     _ ≤ C * r * S := by
       gcongr
 
+/-- A continuous linear functional on a Schwartz space is bounded by a finite
+supremum of Schwartz seminorms. -/
+theorem exists_schwartzFunctional_finsetSeminormBound
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (L : SchwartzMap E ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ φ : SchwartzMap E ℂ,
+        ‖L φ‖ ≤ C * s.sup (schwartzSeminormFamily ℂ E ℂ) φ := by
+  let q : Seminorm ℂ (SchwartzMap E ℂ) :=
+    (normSeminorm ℂ ℂ).comp L.toLinearMap
+  have hq_cont : Continuous q := by
+    change Continuous fun φ : SchwartzMap E ℂ => ‖L φ‖
+    simpa [q, Seminorm.comp_apply, coe_normSeminorm] using
+      continuous_norm.comp L.continuous
+  obtain ⟨s, C, _hC_ne, hbound⟩ :=
+    Seminorm.bound_of_continuous (schwartz_withSeminorms ℂ E ℂ) q hq_cont
+  refine ⟨s, (C : ℝ), C.2, fun φ => ?_⟩
+  calc
+    ‖L φ‖ = q φ := rfl
+    _ ≤ (C • s.sup (schwartzSeminormFamily ℂ E ℂ)) φ := hbound φ
+    _ = (C : ℝ) * s.sup (schwartzSeminormFamily ℂ E ℂ) φ := rfl
+
+/-- After applying a continuous functional to fixed-last-variable partial
+evaluations, the parameter function is integrable. -/
+theorem integrable_apply_schwartzPartialEval₂CLM {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (A : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) :
+    Integrable (fun a : Fin m → ℝ => L (schwartzPartialEval₂CLM a A)) := by
+  let B := ComplexChartSpace m × (Fin m → ℝ)
+  let P := Fin m → ℝ
+  let μ : Measure P := volume
+  obtain ⟨s0, C0, hC0, hLbound⟩ :=
+    exists_schwartzFunctional_finsetSeminormBound (E := B) L
+  obtain ⟨s, C, hC, hdecay⟩ :=
+    schwartzPartialEval₂CLM_finsetSeminorm_decay (m := m) s0
+  let S : ℝ := s.sup (schwartzSeminormFamily ℂ (B × P) ℂ) A
+  let K : ℝ := C0 * C * S
+  have hS_nonneg : 0 ≤ S := apply_nonneg _ _
+  have hK_nonneg : 0 ≤ K := mul_nonneg (mul_nonneg hC0 hC) hS_nonneg
+  have htail : Integrable
+      (fun a : P => (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ))) μ :=
+    Measure.integrable_pow_neg_integrablePower μ
+  have hmeas : AEStronglyMeasurable
+      (fun a : P => L (schwartzPartialEval₂CLM a A)) μ :=
+    (L.continuous.comp (continuous_schwartzPartialEval₂CLM A)).aestronglyMeasurable
+  refine Integrable.mono' (htail.mul_const K) hmeas (Filter.Eventually.of_forall ?_)
+  intro a
+  let r : ℝ := (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ))
+  have hr_nonneg : 0 ≤ r := by positivity
+  have hpoint :
+      ‖L (schwartzPartialEval₂CLM a A)‖ ≤ r * K := by
+    calc
+      ‖L (schwartzPartialEval₂CLM a A)‖
+          ≤ C0 * s0.sup (schwartzSeminormFamily ℂ B ℂ)
+              (schwartzPartialEval₂CLM a A) := hLbound _
+      _ ≤ C0 * (C * r * S) := by
+          gcongr
+          simpa [B, P, μ, S, r] using hdecay A a
+      _ = r * K := by
+          ring
+  have hrK_nonneg : 0 ≤ r * K := mul_nonneg hr_nonneg hK_nonneg
+  simpa [r, Real.norm_eq_abs, abs_of_nonneg hrK_nonneg] using hpoint
+
+/-- Uniform finite-seminorm bound for the scalar parameter integral. -/
+theorem exists_bound_apply_schwartzPartialEval₂CLM_integral {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ) :
+    ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+      ∀ A : SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ,
+        ‖∫ a : Fin m → ℝ, L (schwartzPartialEval₂CLM a A)‖ ≤
+          C * s.sup (schwartzSeminormFamily ℂ
+            ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) A := by
+  let B := ComplexChartSpace m × (Fin m → ℝ)
+  let P := Fin m → ℝ
+  let μ : Measure P := volume
+  obtain ⟨s0, C0, hC0, hLbound⟩ :=
+    exists_schwartzFunctional_finsetSeminormBound (E := B) L
+  obtain ⟨s, C, hC, hdecay⟩ :=
+    schwartzPartialEval₂CLM_finsetSeminorm_decay (m := m) s0
+  let I : ℝ := ∫ a : P, (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ))
+  refine ⟨s, C0 * C * I, ?_, ?_⟩
+  · have htail_nonneg : 0 ≤ I :=
+      integral_nonneg fun _ => by positivity
+    exact mul_nonneg (mul_nonneg hC0 hC) htail_nonneg
+  intro A
+  let S : ℝ := s.sup (schwartzSeminormFamily ℂ (B × P) ℂ) A
+  let K : ℝ := C0 * C * S
+  have hS_nonneg : 0 ≤ S := apply_nonneg _ _
+  have hK_nonneg : 0 ≤ K := mul_nonneg (mul_nonneg hC0 hC) hS_nonneg
+  have htail : Integrable
+      (fun a : P => (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ))) μ :=
+    Measure.integrable_pow_neg_integrablePower μ
+  have hdom : Integrable
+      (fun a : P => (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ)) * K) μ :=
+    htail.mul_const K
+  have hscalar_int := integrable_apply_schwartzPartialEval₂CLM L A
+  have hpoint : ∀ a : P,
+      ‖L (schwartzPartialEval₂CLM a A)‖ ≤
+        (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ)) * K := by
+    intro a
+    let r : ℝ := (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ))
+    calc
+      ‖L (schwartzPartialEval₂CLM a A)‖
+          ≤ C0 * s0.sup (schwartzSeminormFamily ℂ B ℂ)
+              (schwartzPartialEval₂CLM a A) := hLbound _
+      _ ≤ C0 * (C * r * S) := by
+          gcongr
+          simpa [B, P, μ, S, r] using hdecay A a
+      _ = r * K := by
+          ring
+  calc
+    ‖∫ a : P, L (schwartzPartialEval₂CLM a A)‖
+        ≤ ∫ a : P, ‖L (schwartzPartialEval₂CLM a A)‖ :=
+          norm_integral_le_integral_norm _
+    _ ≤ ∫ a : P, (1 + ‖a‖) ^ (-(μ.integrablePower : ℝ)) * K :=
+        integral_mono_ae hscalar_int.norm hdom
+          (Filter.Eventually.of_forall hpoint)
+    _ = (C0 * C * I) * S := by
+        rw [integral_mul_const]
+        ring
+
 /-- Raw real-fiber integral over the last real parameter with mixed base. -/
 def mixedRealFiberIntegralRaw {m : ℕ}
     {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [CompleteSpace V]
@@ -1426,5 +1548,105 @@ theorem mixedBaseFiberProductTensorDense_all (m : ℕ) :
   rcases Nat.eq_zero_or_pos m with rfl | hm
   · exact mixedBaseFiberProductTensorDense_zero
   · exact mixedBaseFiberProductTensorDense_of_pos hm
+
+/-- Scalarized mixed real-fiber integration after applying a continuous
+functional on the mixed base. -/
+noncomputable def mixedRealFiberIntegralScalarCLM {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ) :
+    SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ] ℂ :=
+  SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℂ)
+    (fun A => ∫ a : Fin m → ℝ, L (schwartzPartialEval₂CLM a A))
+    (fun A B => by
+      have hA := integrable_apply_schwartzPartialEval₂CLM L A
+      have hB := integrable_apply_schwartzPartialEval₂CLM L B
+      simpa [map_add] using integral_add hA hB)
+    (fun c A => by
+      simpa [map_smul] using
+        (integral_const_mul (μ := (volume : Measure (Fin m → ℝ))) c
+          (fun a : Fin m → ℝ => L (schwartzPartialEval₂CLM a A))))
+    (exists_bound_apply_schwartzPartialEval₂CLM_integral L)
+
+@[simp]
+theorem mixedRealFiberIntegralScalarCLM_apply {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (A : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) :
+    mixedRealFiberIntegralScalarCLM L A =
+      ∫ a : Fin m → ℝ, L (schwartzPartialEval₂CLM a A) := by
+  rfl
+
+/-- Continuous linear maps agreeing on a dense set agree everywhere. -/
+private theorem continuousLinearMap_eq_of_eq_on_dense
+    {𝕜 : Type*} [Semiring 𝕜]
+    {E : Type*} [TopologicalSpace E] [AddCommMonoid E] [Module 𝕜 E]
+    {F : Type*} [TopologicalSpace F] [AddCommGroup F] [Module 𝕜 F] [T2Space F]
+    (T₁ T₂ : E →L[𝕜] F) {S : Set E} (hS : Dense S)
+    (hT : ∀ x ∈ S, T₁ x = T₂ x) :
+    T₁ = T₂ := by
+  ext x
+  have hclosed : IsClosed {x : E | T₁ x = T₂ x} :=
+    isClosed_eq T₁.continuous T₂.continuous
+  exact hclosed.closure_subset_iff.mpr (fun y hy => hT y hy) (hS.closure_eq ▸ trivial)
+
+/-- The scalarized parameter integral agrees with applying the base functional
+after the mixed real-fiber Schwartz integral. -/
+theorem mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ) :
+    mixedRealFiberIntegralScalarCLM L =
+      L.comp mixedRealFiberIntegralCLM := by
+  let T₁ : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ] ℂ :=
+    mixedRealFiberIntegralScalarCLM L
+  let T₂ : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ] ℂ :=
+    L.comp mixedRealFiberIntegralCLM
+  change T₁ = T₂
+  apply continuousLinearMap_eq_of_eq_on_dense T₁ T₂
+    (mixedBaseFiberProductTensorDense_all m)
+  intro A hA
+  refine Submodule.span_induction ?_ ?_ ?_ ?_ hA
+  · intro A hgen
+    rcases hgen with ⟨G, ξ, rfl⟩
+    calc
+      T₁ (mixedBaseFiberTensor G ξ)
+          = ∫ a : Fin m → ℝ, L (ξ a • G) := by
+              simp [T₁]
+      _ = ∫ a : Fin m → ℝ, ξ a * L G := by
+              apply integral_congr_ae
+              filter_upwards with a
+              simp [smul_eq_mul]
+      _ = (∫ a : Fin m → ℝ, ξ a) * L G := by
+              simpa using
+                (integral_mul_const (L G) (fun a : Fin m → ℝ => ξ a))
+      _ = L ((∫ a : Fin m → ℝ, ξ a) • G) := by
+              simp [smul_eq_mul]
+      _ = T₂ (mixedBaseFiberTensor G ξ) := by
+              simp [T₂, ContinuousLinearMap.comp_apply]
+  · simp [T₁, T₂]
+  · intro A B _ _ hA hB
+    calc
+      T₁ (A + B) = T₁ A + T₁ B := by simp
+      _ = T₂ A + T₂ B := by rw [hA, hB]
+      _ = T₂ (A + B) := by simp
+  · intro c A _ hA
+    calc
+      T₁ (c • A) = c • T₁ A := by simp
+      _ = c • T₂ A := by rw [hA]
+      _ = T₂ (c • A) := by simp
+
+/-- Applying a continuous base functional to the mixed real-fiber integral is
+the same scalar integral of fixed-last-variable partial evaluations. -/
+theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral {m : ℕ}
+    (L : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (A : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) :
+    L (mixedRealFiberIntegralCLM A) =
+      ∫ a : Fin m → ℝ, L (schwartzPartialEval₂CLM a A) := by
+  have h := congrArg (fun T :
+      SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ] ℂ =>
+      T A) (mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM L)
+  simpa [ContinuousLinearMap.comp_apply] using h.symm
 
 end SCV
