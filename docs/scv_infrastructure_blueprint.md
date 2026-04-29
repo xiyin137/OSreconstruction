@@ -197,21 +197,39 @@ theorem regularizedLocalEOW_pairingCLM_localCovariant
 theorem SupportsInOpen.complexTranslateSchwartz_of_image_subset
 theorem schwartzTensorProduct₂CLMLeft
 def schwartzPartialEval₂CLM
+theorem continuous_schwartzPartialEval₂CLM
+theorem schwartzPartialEval₂CLM_finsetSeminorm_decay
 def mixedRealFiberIntegralCLM
 def mixedBaseFiberTensor
+theorem mixedBaseFiberTensor_apply
+theorem schwartzPartialEval₂CLM_mixedBaseFiberTensor
+theorem mixedRealFiberIntegralCLM_mixedBaseFiberTensor
 theorem mixedBaseFiberProductTensorDense_all
 def mixedRealFiberIntegralScalarCLM
 theorem mixedRealFiberIntegralScalarCLM_apply
 theorem mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM
 theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral
+def realParamKernelLeftCLE
+theorem realParamKernelLeftCLE_apply
 def realParamKernelLeft
 theorem realParamKernelLeft_apply
+def realParamKernelRightCLE
+theorem realParamKernelRightCLE_apply
 def realParamKernelRight
 theorem realParamKernelRight_apply
+def localDescentParamTestLeftCLE
+theorem localDescentParamTestLeftCLE_apply
 def localDescentParamTestLeft
+theorem localDescentParamTestLeft_apply
+def localDescentParamTestRightCLE
+theorem localDescentParamTestRightCLE_apply
 def localDescentParamTestRight
+theorem localDescentParamTestRight_apply
 theorem mixedRealFiberIntegralCLM_localDescentParamTestLeft
 theorem mixedRealFiberIntegralCLM_localDescentParamTestRight
+theorem schwartzPartialEval₂CLM_localDescentParamTestLeft
+theorem translateSchwartz_neg_smulLeft_eta_translate
+theorem schwartzPartialEval₂CLM_localDescentParamTestRight
 theorem shearedProductKernelFunctional_localQuotient_of_productCovariant
 theorem translationCovariantProductKernel_descends_local
 theorem regularizedEnvelope_productKernel_dbar_eq_zero_local
@@ -6076,6 +6094,25 @@ Proof transcript for the next target:
       Here `schwartzPartialEval₂CLM` denotes fixed partial evaluation in the
       last real variable, with the product association
       `((ComplexChartSpace m × (Fin m -> ℝ)) × (Fin m -> ℝ))`.
+      It is implemented by `SchwartzMap.compCLM` along
+      `b ↦ (b,a)` for
+      `B := ComplexChartSpace m × (Fin m -> ℝ)` and
+      `P := Fin m -> ℝ`; the temperate-growth lower-bound witness is
+      `⟨1, 1 + ‖a‖, ...⟩`, from
+      `‖b‖ ≤ ‖(b,a)‖ + ‖a‖ ≤ (1 + ‖a‖) * (1 + ‖(b,a)‖)`.
+      Also expose the parameter-continuity theorem used by the scalar
+      integrands:
+      ```lean
+      theorem continuous_schwartzPartialEval₂CLM
+          (A : SchwartzMap (B × P) ℂ) :
+          Continuous (fun a : P => schwartzPartialEval₂CLM a A)
+      ```
+      Prove this by applying the checked `continuous_schwartzPartialEval₁`
+      to the product-commuted test
+      `Acomm := (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (ContinuousLinearEquiv.prodComm ℝ B P)) A`;
+      `schwartzPartialEval₁ Acomm a` is extensionally
+      `schwartzPartialEval₂CLM a A`.
 
       The proof of `mixedRealFiberIntegralCLM` is a literal new mixed-base
       copy of the checked `complexRealFiberIntegralCLM` construction, not an
@@ -6186,21 +6223,59 @@ Proof transcript for the next target:
       `SchwartzMap`-valued Bochner statement.  From continuity of `L`, use
       `Seminorm.bound_of_continuous` for
       `schwartz_withSeminorms ℂ B ℂ` to get a finite family `s0` and constant
-      `C0` with `‖L G‖ ≤ C0 * s0.sup ... G`.  For each seminorm in `s0`,
-      prove the partial-evaluation decay estimate
+      `C0` with `‖L G‖ ≤ C0 * s0.sup ... G`.  The remaining estimate must be
+      stated as its own theorem, because a single high-weight Schwartz
+      seminorm does not control the value at `a = 0`:
+      ```lean
+      theorem schwartzPartialEval₂CLM_finsetSeminorm_decay
+          (s0 : Finset (ℕ × ℕ)) :
+          ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+            ∀ (A : SchwartzMap (B × P) ℂ) (a : P),
+              s0.sup (schwartzSeminormFamily ℂ B ℂ)
+                  (schwartzPartialEval₂CLM a A) ≤
+                C * (1 + ‖a‖) ^ (-(volume.integrablePower : ℝ)) *
+                  s.sup (schwartzSeminormFamily ℂ (B × P) ℂ) A
       ```
-      s0.sup ... (schwartzPartialEval₂CLM a A)
-        ≤ C1 * (1 + ‖a‖) ^ (-(volume.integrablePower : ℝ))
-            * s.sup ... A.
+      For one seminorm `(k,l)` of the output partial evaluation, set
+      `N := volume.integrablePower` for the Haar measure on `P`.  The two
+      source seminorms are `(k,l)` and `(k+N,l)` on `B × P`.  The first gives
       ```
-      The proof uses the full Schwartz weight in `B × P` with exponent
-      enlarged by `volume.integrablePower`; since
-      `‖b‖ ≤ ‖(b,a)‖` and `‖a‖ ≤ ‖(b,a)‖`, the extra weight is integrable in
-      `a`.  Therefore
-      `a ↦ L (schwartzPartialEval₂CLM a A)` is integrable and the scalar
-      integral is bounded by a finite supremum of Schwartz seminorms of `A`.
-      `SchwartzMap.mkCLMtoNormedSpace` then gives
-      `mixedRealFiberIntegralScalarCLM`.
+      ‖b‖^k * ‖D_B^l A(b,a)‖ ≤ C₁,
+      ```
+      using `norm_iteratedFDeriv_partialEval_le`.  The second gives
+      ```
+      ‖a‖^N * (‖b‖^k * ‖D_B^l A(b,a)‖) ≤ C₂,
+      ```
+      because `‖a‖ ≤ ‖(b,a)‖` and `‖b‖ ≤ ‖(b,a)‖`.  Apply the checked
+      radial-tail algebra `pow_mul_le_of_le_of_pow_mul_le` pointwise in `b`
+      to obtain
+      ```
+      ‖b‖^k * ‖D_B^l A(b,a)‖
+        ≤ 2^N * (C₁ + C₂) * (1 + ‖a‖)^(-(N : ℝ)).
+      ```
+      Taking the Schwartz seminorm supremum in `b`, then the finite supremum
+      over `s0`, gives the displayed finite-seminorm decay theorem.  The
+      integrability input is exactly
+      `Measure.integrable_pow_neg_integrablePower volume` on `P`.
+
+      Combining this decay theorem with the finite bound for `L` gives:
+      ```lean
+      theorem integrable_apply_schwartzPartialEval₂CLM
+          (L : SchwartzMap B ℂ ->L[ℂ] ℂ)
+          (A : SchwartzMap (B × P) ℂ) :
+          Integrable (fun a : P => L (schwartzPartialEval₂CLM a A))
+
+      theorem exists_bound_apply_schwartzPartialEval₂CLM_integral
+          (L : SchwartzMap B ℂ ->L[ℂ] ℂ) :
+          ∃ s : Finset (ℕ × ℕ), ∃ C : ℝ, 0 ≤ C ∧
+            ∀ A : SchwartzMap (B × P) ℂ,
+              ‖∫ a : P, L (schwartzPartialEval₂CLM a A)‖ ≤
+                C * s.sup (schwartzSeminormFamily ℂ (B × P) ℂ) A
+      ```
+      Additivity and scalar compatibility use `integral_add` and
+      `integral_const_mul` with these integrability lemmas.  Then
+      `SchwartzMap.mkCLMtoNormedSpace` gives
+      `mixedRealFiberIntegralScalarCLM`, and its apply theorem is `rfl`.
 
       To identify this scalar CLM with `L.comp mixedRealFiberIntegralCLM`,
       use dense product tensors in the split
@@ -6211,6 +6286,21 @@ Proof transcript for the next target:
           (ξ : SchwartzMap (Fin m -> ℝ) ℂ) :
           SchwartzMap
             ((ComplexChartSpace m × (Fin m -> ℝ)) × (Fin m -> ℝ)) ℂ
+
+      theorem mixedBaseFiberTensor_apply
+          (G : SchwartzMap B ℂ) (ξ : SchwartzMap P ℂ)
+          (b : B) (a : P) :
+          mixedBaseFiberTensor G ξ (b,a) = G b * ξ a
+
+      theorem schwartzPartialEval₂CLM_mixedBaseFiberTensor
+          (a : P) (G : SchwartzMap B ℂ) (ξ : SchwartzMap P ℂ) :
+          schwartzPartialEval₂CLM a (mixedBaseFiberTensor G ξ) =
+            ξ a • G
+
+      theorem mixedRealFiberIntegralCLM_mixedBaseFiberTensor
+          (G : SchwartzMap B ℂ) (ξ : SchwartzMap P ℂ) :
+          mixedRealFiberIntegralCLM (mixedBaseFiberTensor G ξ) =
+            (∫ a : P, ξ a) • G
 
       theorem mixedBaseFiberProductTensorDense_all (m : ℕ) :
           Dense ((Submodule.span ℂ
@@ -6226,6 +6316,29 @@ Proof transcript for the next target:
       Hermite products along
       `Fin ((m * 2 + m) + m)`, and use the zero-dimensional singleton case
       when `m = 0`.
+      The Lean extraction should first factor the positive-dimensional proof
+      of `ProductDensity.lean` into a two-block flat theorem:
+      ```lean
+      theorem flatTwoBlockProductDense_of_pos
+          {p q : ℕ} (hp : 0 < p) (hq : 0 < q) :
+          Dense ((Submodule.span ℂ
+            {F : SchwartzMap (Fin (p + q) -> ℝ) ℂ |
+              ∃ G ξ, F = twoBlockProductSchwartz G ξ}) :
+            Set (SchwartzMap (Fin (p + q) -> ℝ) ℂ))
+      ```
+      Its proof is literally the checked Hahn-Banach/Hermite proof, but with
+      `exists_hermite_twoBlockFactors (m := p) (n := q)`.  Instantiate it
+      with `p = m * 2 + m` and `q = m` when `0 < m`.  For `m = 0`, the domain
+      is a subsingleton and the proof is the same `singletonConstantSchwartz`
+      argument as `ProductTensorDense_zero`.  The mixed-base transport is a
+      continuous linear equivalence assembled from
+      `complexChartRealFlattenCLE m`, `finAppendCLE (m * 2) m`, and
+      `finAppendCLE (m * 2 + m) m`; its apply theorem must say exactly
+      ```
+      mixedBaseFiberFlatCLE m ((z,t),a) =
+        Fin.append
+          (Fin.append (complexChartRealFlattenCLE m z) t) a.
+      ```
 
       On a tensor `mixedBaseFiberTensor G ξ`,
       `mixedRealFiberIntegralCLM` gives `(∫ a, ξ a) • G`, while
@@ -6314,6 +6427,19 @@ Proof transcript for the next target:
       continuous linear equivalences, so the construction uses
       `SchwartzMap.compCLMOfContinuousLinearEquiv`, not an ad hoc smoothness
       proof.
+      Give the equivalences public names and apply theorems, because the signs
+      are consumed later:
+      ```lean
+      def realParamKernelLeftCLE (m : ℕ) :
+          (P × P) ≃L[ℝ] (P × P)
+      theorem realParamKernelLeftCLE_apply (t a : P) :
+          realParamKernelLeftCLE m (t,a) = (t, t + a)
+
+      def realParamKernelRightCLE (m : ℕ) :
+          (P × P) ≃L[ℝ] (P × P)
+      theorem realParamKernelRightCLE_apply (t a : P) :
+          realParamKernelRightCLE m (t,a) = (t - a, t)
+      ```
 
       Then define `localDescentParamTestLeft` as the external product of `φ`
       and `realParamKernelLeft ψ η`, precomposed by the continuous linear
@@ -6325,6 +6451,24 @@ Proof transcript for the next target:
       `realParamKernelRight ψ η`, precomposed by
       ```
       ((z,t),a) ↦ (z, (t,a)).
+      ```
+      Again name the equivalences:
+      ```lean
+      def localDescentParamTestLeftCLE (m : ℕ) :
+          ((ComplexChartSpace m × P) × P) ≃L[ℝ]
+            (ComplexChartSpace m × (P × P))
+      theorem localDescentParamTestLeftCLE_apply
+          (z : ComplexChartSpace m) (t a : P) :
+          localDescentParamTestLeftCLE m ((z,t),a) =
+            (z - realEmbed a, (t,a))
+
+      def localDescentParamTestRightCLE (m : ℕ) :
+          ((ComplexChartSpace m × P) × P) ≃L[ℝ]
+            (ComplexChartSpace m × (P × P))
+      theorem localDescentParamTestRightCLE_apply
+          (z : ComplexChartSpace m) (t a : P) :
+          localDescentParamTestRightCLE m ((z,t),a) =
+            (z, (t,a))
       ```
       The displayed `*_apply` theorems follow by `simp` from these four
       equivalence formulas, `realEmbed`, and `schwartzExternalProduct`.
@@ -6351,6 +6495,13 @@ Proof transcript for the next target:
       using the measure-preserving affine map `u = t - a` and `hη_norm`.
       No density or quotient theorem is used in these two identities; they are
       direct scalar change-of-variables calculations.
+      The right identity should use
+      `MeasureTheory.integral_sub_right_eq_self`; the left identity should use
+      `MeasureTheory.integral_add_right_eq_self` after rewriting with
+      `b = t + a`.  All scalar factors are pulled through the integral by
+      `integral_const_mul`/`integral_mul_const`; the needed integrability is
+      supplied by the `mixedRealFiberIntegralCLM_apply` integrability
+      infrastructure, not reproved ad hoc inside the algebra proof.
 
    5. Prove
       `shearedProductKernelFunctional_localQuotient_of_productCovariant`.  Let
@@ -6381,9 +6532,45 @@ Proof transcript for the next target:
         schwartzTensorProduct₂ φ
           (translateSchwartz (-a) (η • translateSchwartz a ψ)).
       ```
+      Make these two identities theorem surfaces:
+      ```lean
+      theorem schwartzPartialEval₂CLM_localDescentParamTestLeft
+          (a : P) :
+          schwartzPartialEval₂CLM a
+              (localDescentParamTestLeft φ ψ η) =
+            schwartzTensorProduct₂
+              (complexTranslateSchwartz (-a) φ)
+              (SchwartzMap.smulLeftCLM ℂ (η : P -> ℂ)
+                (translateSchwartz a ψ))
+
+      theorem translateSchwartz_neg_smulLeft_eta_translate
+          (a : P) :
+          translateSchwartz (-a)
+            (SchwartzMap.smulLeftCLM ℂ (η : P -> ℂ)
+              (translateSchwartz a ψ)) =
+            SchwartzMap.smulLeftCLM ℂ
+              ((translateSchwartz (-a) η : P -> ℂ)) ψ
+
+      theorem schwartzPartialEval₂CLM_localDescentParamTestRight
+          (a : P) :
+          schwartzPartialEval₂CLM a
+              (localDescentParamTestRight φ ψ η) =
+            schwartzTensorProduct₂ φ
+              (translateSchwartz (-a)
+                (SchwartzMap.smulLeftCLM ℂ (η : P -> ℂ)
+                  (translateSchwartz a ψ)))
+      ```
+      The middle theorem is pure extensionality:
+      both sides evaluate to `η (x - a) * ψ x`.  It is the support theorem
+      needed to see that the translated right kernel is supported where `ψ`
+      is supported.
       The theorems from Step 4 give
-      `K (mixedRealFiberIntegralCLM A) = T G` and
-      `K (mixedRealFiberIntegralCLM B) = T F`.
+      `K (mixedRealFiberIntegralCLM A) = Hdist (realConvolutionTest φ ψ)` and
+      `K (mixedRealFiberIntegralCLM B) = K (schwartzTensorProduct₂ φ ψ)`.
+      The first equality unfolds `Hdist =
+      complexRealFiberTranslationDescentCLM (shearedProductKernelFunctional K)
+      η`; the second uses
+      `mixedRealFiberIntegralCLM_localDescentParamTestRight`.
 
       Applying the scalarization theorem from Step 3 with `L = K` reduces the
       desired equality to
@@ -6395,21 +6582,22 @@ Proof transcript for the next target:
       an equality of ordinary complex integrals.  The scalar integrands are
       continuous by continuity of `a ↦ schwartzPartialEval₂CLM a A`,
       `a ↦ schwartzPartialEval₂CLM a B`, and `K`.  They are integrable by the
-      finite-seminorm construction of `mixedRealFiberIntegralScalarCLM`; in
-      this local application they are in fact compactly parameter-supported.
-      If `schwartzPartialEval₂CLM a A` or
-      `schwartzPartialEval₂CLM a B` is nonzero, the displayed formulas for the
-      tests give real support points in `tsupport η` and `tsupport ψ`, hence
-      `‖a‖ ≤ r + rη`.  Thus outside the closed ball of radius `r + rη` both
-      scalar integrands vanish.  It remains only to prove pointwise equality
-      inside that ball, which is exactly the local covariance call in Step 6.
+      finite-seminorm construction of `mixedRealFiberIntegralScalarCLM`.
+      Prove pointwise equality for every `a`; no extra density theorem and no
+      `SchwartzMap`-valued integral is used.  The proof splits on
+      `κ a = 0`, where
+      `κ a := SchwartzMap.smulLeftCLM ℂ (η : P -> ℂ)
+        (translateSchwartz a ψ)`.  If `κ a = 0`, both tensor evaluations are
+      zero by the two `schwartzPartialEval₂CLM_localDescentParamTest*`
+      theorems.  If `κ a ≠ 0`, Step 6 gives the support and margin hypotheses
+      needed to apply local covariance.
    6. In the local quotient proof, the only translated product tensors that
       occur have real-kernel factor
       `κ a := SchwartzMap.smulLeftCLM ℂ (η : (Fin m -> ℝ) -> ℂ)
         (translateSchwartz a ψ)`.
       If `κ a = 0`, the covariance identity for that parameter is trivial.
-      Otherwise choose an ordinary support point of `κ a`, hence a point
-      `t ∈ tsupport (κ a)`.  The checked
+      Otherwise choose `t` with `κ a t ≠ 0`; then
+      `t ∈ Function.support (κ a : P -> ℂ) ⊆ tsupport (κ a)`.  The checked
       `SchwartzMap.tsupport_smulLeftCLM_subset` gives
       `t ∈ tsupport η` and
       `t ∈ tsupport (translateSchwartz a ψ)`, and

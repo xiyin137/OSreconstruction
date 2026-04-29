@@ -1189,11 +1189,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
          integral.  The scalarization theorem is not a hidden
          `SchwartzMap`-valued Bochner step: it constructs
          `mixedRealFiberIntegralScalarCLM K` by finite Schwartz-seminorm
-         bounds, identifies it with `K.comp mixedRealFiberIntegralCLM` on the
-         dense span of split `mixedBaseFiberTensor` tests, and then extends by
+         bounds.  The key bound is the named decay theorem
+         `schwartzPartialEval₂CLM_finsetSeminorm_decay`: for every finite
+         output-seminorm family, partial evaluation at parameter `a` is
+         bounded by an integrable factor
+         `(1 + ‖a‖)^(-volume.integrablePower)` times finitely many source
+         seminorms of the triple Schwartz test.  Its proof uses the two
+         source weights `(k,l)` and `(k+volume.integrablePower,l)` to control
+         the origin and the tail separately.  The scalar CLM is then
+         identified with `K.comp mixedRealFiberIntegralCLM` on the dense span
+         of split `mixedBaseFiberTensor` tests, using the exact tensor
+         identities
+         `schwartzPartialEval₂CLM_mixedBaseFiberTensor` and
+         `mixedRealFiberIntegralCLM_mixedBaseFiberTensor`, and then extends by
          continuity using `mixedBaseFiberProductTensorDense_all`.  It then
-         uses local covariance only for parameters whose
-         nonzero kernel factor
+         uses local covariance only for parameters whose nonzero kernel factor
          `κ a = η • translateSchwartz a ψ` forces
          `‖a‖ ≤ r + rη`.  The normalized cutoff enters through
          `complexRealFiberIntegral_schwartzTensorProduct₂` and `∫ η = 1`.
@@ -2020,21 +2030,39 @@ Current implementation order:
    `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
    `SCV.schwartzTensorProduct₂CLMLeft`,
    `SCV.schwartzPartialEval₂CLM`,
+   `SCV.continuous_schwartzPartialEval₂CLM`,
+   `SCV.schwartzPartialEval₂CLM_finsetSeminorm_decay`,
    `SCV.mixedRealFiberIntegralCLM`,
    `SCV.mixedBaseFiberTensor`,
+   `SCV.mixedBaseFiberTensor_apply`,
+   `SCV.schwartzPartialEval₂CLM_mixedBaseFiberTensor`,
+   `SCV.mixedRealFiberIntegralCLM_mixedBaseFiberTensor`,
    `SCV.mixedBaseFiberProductTensorDense_all`,
    `SCV.mixedRealFiberIntegralScalarCLM`,
    `SCV.mixedRealFiberIntegralScalarCLM_apply`,
    `SCV.mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
    `SCV.continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
+   `SCV.realParamKernelLeftCLE`,
+   `SCV.realParamKernelLeftCLE_apply`,
    `SCV.realParamKernelLeft`,
    `SCV.realParamKernelLeft_apply`,
+   `SCV.realParamKernelRightCLE`,
+   `SCV.realParamKernelRightCLE_apply`,
    `SCV.realParamKernelRight`,
    `SCV.realParamKernelRight_apply`,
+   `SCV.localDescentParamTestLeftCLE`,
+   `SCV.localDescentParamTestLeftCLE_apply`,
    `SCV.localDescentParamTestLeft`,
+   `SCV.localDescentParamTestLeft_apply`,
+   `SCV.localDescentParamTestRightCLE`,
+   `SCV.localDescentParamTestRightCLE_apply`,
    `SCV.localDescentParamTestRight`,
+   `SCV.localDescentParamTestRight_apply`,
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestLeft`,
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestRight`,
+   `SCV.schwartzPartialEval₂CLM_localDescentParamTestLeft`,
+   `SCV.translateSchwartz_neg_smulLeft_eta_translate`,
+   `SCV.schwartzPartialEval₂CLM_localDescentParamTestRight`,
    `SCV.shearedProductKernelFunctional_localQuotient_of_productCovariant`,
    `SCV.translationCovariantProductKernel_descends_local`,
    `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,
