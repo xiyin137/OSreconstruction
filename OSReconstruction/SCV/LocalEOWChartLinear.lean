@@ -68,6 +68,14 @@ theorem localEOWRealLinearPart_smul
   simp [localEOWRealLinearPart, Finset.mul_sum]
   exact Finset.sum_congr rfl fun j _ => by ring
 
+/-- The real-linear chart displacement is the weighted sum of the chosen chart
+basis vectors. -/
+theorem localEOWRealLinearPart_eq_sum_smul
+    (ys : Fin m → Fin m → ℝ) (v : Fin m → ℝ) :
+    localEOWRealLinearPart ys v = ∑ j, v j • ys j := by
+  ext a
+  simp [localEOWRealLinearPart]
+
 /-- Matrix of the real-linear part of the local EOW chart.  Its columns are
 the chart basis vectors `ys j`. -/
 def localEOWRealLinearMatrix
@@ -721,6 +729,143 @@ theorem localEOWChart_real_add_imag
     ring
   rw [hI]
   ring
+
+/-- Transport uniform cone slow-growth estimates to strict coordinate orthants
+of a local EOW chart. -/
+theorem chartSlowGrowth_from_uniformConeSlowGrowth
+    (E C : Set (Fin m → ℝ))
+    (hC_conv : Convex ℝ C)
+    (ys : Fin m → Fin m → ℝ)
+    (hys_mem : ∀ j, ys j ∈ C)
+    (x0 : Fin m → ℝ)
+    (B : Set (Fin m → ℝ))
+    (hB_compact : IsCompact B)
+    (hB_Echart : ∀ u ∈ B, localEOWRealChart x0 ys u ∈ E)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hslow_plus :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ (A : ℝ) (N : ℕ) (r : ℝ), 0 < A ∧ 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              ‖Fplus (fun a => (x a : ℂ) +
+                (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤
+                A * (ε⁻¹) ^ N)
+    (hslow_minus :
+      ∀ K : Set (Fin m → ℝ), IsCompact K → K ⊆ E →
+        ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+          ∃ (A : ℝ) (N : ℕ) (r : ℝ), 0 < A ∧ 0 < r ∧
+            ∀ x ∈ K, ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε → ε < r →
+              ‖Fminus (fun a => (x a : ℂ) -
+                (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤
+                A * (ε⁻¹) ^ N) :
+    ∃ (Aplus Aminus : ℝ) (Nplus Nminus : ℕ) (rplus rminus : ℝ),
+      0 < Aplus ∧ 0 < Aminus ∧ 0 < rplus ∧ 0 < rminus ∧
+      (∀ u ∈ B, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < rplus →
+          ‖Fplus (localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I))‖ ≤
+            Aplus * ((∑ j, v j)⁻¹) ^ Nplus) ∧
+      (∀ u ∈ B, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < rminus →
+          ‖Fminus (localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I))‖ ≤
+            Aminus * ((∑ j, -v j)⁻¹) ^ Nminus) := by
+  let K : Set (Fin m → ℝ) := localEOWRealChart x0 ys '' B
+  let Kη : Set (Fin m → ℝ) := localEOWSimplexDirections ys
+  have hK_compact : IsCompact K := by
+    dsimp [K]
+    exact hB_compact.image (continuous_localEOWRealChart x0 ys)
+  have hK_E : K ⊆ E := by
+    rintro x ⟨u, hu, rfl⟩
+    exact hB_Echart u hu
+  have hKη_compact : IsCompact Kη := by
+    dsimp [Kη]
+    exact isCompact_localEOWSimplexDirections ys
+  have hKη_C : Kη ⊆ C := by
+    dsimp [Kη]
+    exact localEOWSimplexDirections_subset_cone C hC_conv ys hys_mem
+  obtain ⟨Aplus, Nplus, rplus, hAplus, hrplus, hplus_bound⟩ :=
+    hslow_plus K hK_compact hK_E Kη hKη_compact hKη_C
+  obtain ⟨Aminus, Nminus, rminus, hAminus, hrminus, hminus_bound⟩ :=
+    hslow_minus K hK_compact hK_E Kη hKη_compact hKη_C
+  refine ⟨Aplus, Aminus, Nplus, Nminus, rplus, rminus,
+    hAplus, hAminus, hrplus, hrminus, ?_, ?_⟩
+  · intro u hu v hv_nonneg hs_pos hs_lt
+    let s : ℝ := ∑ j, v j
+    let η : Fin m → ℝ := s⁻¹ • localEOWRealLinearPart ys v
+    have hη : η ∈ Kη := by
+      dsimp [η, s, Kη]
+      rw [localEOWRealLinearPart_eq_sum_smul]
+      exact localEOW_positive_imag_normalized_mem_simplex
+        (ys := ys) hv_nonneg hs_pos
+    have hs_ne : s ≠ 0 := ne_of_gt (by simpa [s] using hs_pos)
+    have hscale : ∀ a,
+        (s : ℂ) * (η a : ℂ) =
+          (localEOWRealLinearPart ys v a : ℂ) := by
+      intro a
+      have hreal : s * η a = localEOWRealLinearPart ys v a := by
+        dsimp [η]
+        change s * (s⁻¹ * localEOWRealLinearPart ys v a) =
+          localEOWRealLinearPart ys v a
+        field_simp [hs_ne]
+      exact_mod_cast hreal
+    have hpoint :
+        Fplus (localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I)) =
+          Fplus (fun a => (localEOWRealChart x0 ys u a : ℂ) +
+            (s : ℂ) * (η a : ℂ) * Complex.I) := by
+      congr 1
+      rw [localEOWChart_real_add_imag]
+      ext a
+      rw [hscale a]
+    rw [hpoint]
+    exact hplus_bound (localEOWRealChart x0 ys u)
+      ⟨u, hu, rfl⟩ η hη s (by simpa [s] using hs_pos)
+      (by simpa [s] using hs_lt)
+  · intro u hu v hv_nonpos hs_pos hs_lt
+    let s : ℝ := ∑ j, -v j
+    let η : Fin m → ℝ := s⁻¹ • localEOWRealLinearPart ys (-v)
+    have hw_nonneg : ∀ j, 0 ≤ (-v) j := by
+      intro j
+      exact neg_nonneg.mpr (hv_nonpos j)
+    have hη : η ∈ Kη := by
+      dsimp [η, s, Kη]
+      rw [localEOWRealLinearPart_eq_sum_smul]
+      exact localEOW_positive_imag_normalized_mem_simplex
+        (ys := ys) hw_nonneg hs_pos
+    have hs_ne : s ≠ 0 := ne_of_gt (by simpa [s] using hs_pos)
+    have hscale : ∀ a,
+        (s : ℂ) * (η a : ℂ) =
+          (localEOWRealLinearPart ys (-v) a : ℂ) := by
+      intro a
+      have hreal : s * η a = localEOWRealLinearPart ys (-v) a := by
+        dsimp [η]
+        change s * (s⁻¹ * localEOWRealLinearPart ys (-v) a) =
+          localEOWRealLinearPart ys (-v) a
+        field_simp [hs_ne]
+      exact_mod_cast hreal
+    have hpoint :
+        Fminus (localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I)) =
+          Fminus (fun a => (localEOWRealChart x0 ys u a : ℂ) -
+            (s : ℂ) * (η a : ℂ) * Complex.I) := by
+      congr 1
+      rw [localEOWChart_real_add_imag]
+      ext a
+      have hneg : localEOWRealLinearPart ys (-v) a =
+          -localEOWRealLinearPart ys v a := by
+        rw [localEOWRealLinearPart_neg]
+        rfl
+      rw [hscale a, hneg]
+      simp
+    rw [hpoint]
+    exact hminus_bound (localEOWRealChart x0 ys u)
+      ⟨u, hu, rfl⟩ η hη s (by simpa [s] using hs_pos)
+      (by simpa [s] using hs_lt)
 
 /-- Transport a uniform original-coordinate cone boundary value to the strict
 positive and negative coordinate orthants of a local EOW chart. -/

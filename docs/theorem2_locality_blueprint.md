@@ -1135,7 +1135,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
       factor of the real linear chart.  Apply the local wedge hypothesis and
       the slow-growth hypotheses on the compact closed box and the compact
       simplex of positive chart directions to get one radius and one order
-      `N0` valid for both signs.
+      `N0` valid for both signs.  The slow-growth transport is the checked
+      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` route: use
+      `K = localEOWRealChart x0 ys '' B` and
+      `Kη = localEOWSimplexDirections ys`; for positive chart imaginary
+      coordinates normalize by `s = ∑ j, v j` and
+      `η = s⁻¹ • localEOWRealLinearPart ys v`, while for negative coordinates
+      normalize by `s = ∑ j, -v j` and
+      `η = s⁻¹ • localEOWRealLinearPart ys (-v)`.  The helper
+      `localEOWRealLinearPart_eq_sum_smul` identifies these normalized
+      directions with simplex directions, and `localEOWChart_real_add_imag`
+      performs the final chart-to-original sign rewrite.
    9. Choose nested chart boxes `B0 ⋐ B1 ⋐ Echart` and a support radius
       `rψ > 0` so `u ∈ B0` and `t ∈ closedBall 0 rψ` imply `u + t ∈ B1`.
       The checked closed-ball version is

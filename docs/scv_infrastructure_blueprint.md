@@ -270,6 +270,7 @@ theorem regularizedEnvelope_chartEnvelope_from_localProductKernel
 theorem regularizedEnvelope_chartEnvelope_from_localCovariantProductKernel
 def StrictPositiveImagBall
 def StrictNegativeImagBall
+lemma localEOWRealLinearPart_eq_sum_smul
 lemma chartSlowGrowth_from_uniformConeSlowGrowth
 lemma HasCompactSupport.localEOWAffineTestPushforwardCLM
 lemma tsupport_localEOWAffineTestPushforwardCLM_subset
@@ -467,7 +468,7 @@ Source ledger for the internal helper list:
 | `regularizedLocalEOW_productKernel_from_continuousEOW` | Retired as a one-shot target under its old global-covariance shape.  The local fixed-window family can supply linearity, value CLMs, and shifted-overlap covariance, but a local pairing extended by cutoff does not honestly give `ProductKernelRealTranslationCovariantGlobal K`.  For the pure-SCV local distributional EOW theorem, the route is now the local descent package: construct a localized mixed CLM, prove `ProductKernelRealTranslationCovariantLocal` under explicit support/margin hypotheses, descend locally to `Hdist`, and feed a local recovery consumer.  A genuinely global covariant `K` may still be sourced later from OS/Wightman translation-invariant data, but that is not the proof of the QFT-free SCV theorem. |
 | `regularizedEnvelope_deltaLimit_agreesOnWedges` | Approximate-identity recovery: once kernel recovery has produced a holomorphic `H`, compactly supported approximate identities show `H` agrees with the original plus/minus wedge functions on the shrunken wedge pieces. |
 | `local_continuous_edge_of_the_wedge_envelope` | Checked in `SCV/LocalContinuousEOWSideAgreement.lean`: local coordinate-ball continuous EOW extraction.  It packages the chart window, the Rudin envelope, holomorphy on `ball 0 (δ/2)`, agreement on the explicit strict positive/negative side balls, and real-boundary agreement on the coordinate real slice.  It intentionally does not claim agreement on arbitrary extra components of `Ωplus` or `Ωminus`. |
-| `chartSlowGrowth_from_uniformConeSlowGrowth`, `HasCompactSupport.localEOWAffineTestPushforwardCLM`, `tsupport_localEOWAffineTestPushforwardCLM_subset`, `localEOWAffineTestPushforwardCLM_apply_realChart`, `integral_localEOWAffineTestPushforwardCLM_changeOfVariables`, `tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem`, `coordSum_tendsto_positiveOrthant_nhdsWithin_Ioi`, `coordNegSum_tendsto_negativeOrthant_nhdsWithin_Ioi`, `localEOWChart_real_add_imag`, `chartOrthantBoundaryValue_from_uniformConeBoundaryValue`, `chartHolomorphy_from_originalHolomorphy` | The exact chart-pullback layer for the final local distributional theorem.  The affine support lemmas are checked in `SCV/LocalEOWChartLinear.lean`: a compactly supported chart test pushes to a compactly supported original-edge test, and its pushed support is contained in the affine image of the chart support.  The real-chart evaluation identity proves that evaluating the pushed test at `localEOWRealChart x0 ys u` returns the original chart test value `φ u`; this is the pointwise cancellation that prevents treating chart coordinates as original coordinates.  The determinant change-of-variables lemma `integral_localEOWAffineTestPushforwardCLM_changeOfVariables` is checked and proves that the inverse determinant factor in `localEOWAffineDistributionPullbackCLM` converts original integrals into chart integrals.  The orthant BV theorem is checked: it uses one generic uniform-convergence composition helper, two coordinate-sum filter lemmas, and the complex-chart imaginary decomposition to rewrite the final distributional boundary-value hypotheses into coordinate `nhdsWithin 0 {y | ∀ j, 0 < y j}` and `nhdsWithin 0 {y | ∀ j, y j < 0}` limits.  Holomorphy transport is checked by composing the original `DifferentiableOn` hypothesis with `differentiable_localEOWChart`.  The remaining slow-growth theorem rewrites final compact-subcone estimates in the same fixed chart orthants using `localEOWRealLinearPart ys`.  These are not wrapper names: they are the sign, support, Jacobian, filter, and compact-direction reductions that make the one-chart theorem honest. |
+| `localEOWRealLinearPart_eq_sum_smul`, `chartSlowGrowth_from_uniformConeSlowGrowth`, `HasCompactSupport.localEOWAffineTestPushforwardCLM`, `tsupport_localEOWAffineTestPushforwardCLM_subset`, `localEOWAffineTestPushforwardCLM_apply_realChart`, `integral_localEOWAffineTestPushforwardCLM_changeOfVariables`, `tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem`, `coordSum_tendsto_positiveOrthant_nhdsWithin_Ioi`, `coordNegSum_tendsto_negativeOrthant_nhdsWithin_Ioi`, `localEOWChart_real_add_imag`, `chartOrthantBoundaryValue_from_uniformConeBoundaryValue`, `chartHolomorphy_from_originalHolomorphy` | The exact chart-pullback layer for the final local distributional theorem.  The affine support lemmas are checked in `SCV/LocalEOWChartLinear.lean`: a compactly supported chart test pushes to a compactly supported original-edge test, and its pushed support is contained in the affine image of the chart support.  The real-chart evaluation identity proves that evaluating the pushed test at `localEOWRealChart x0 ys u` returns the original chart test value `φ u`; this is the pointwise cancellation that prevents treating chart coordinates as original coordinates.  The determinant change-of-variables lemma `integral_localEOWAffineTestPushforwardCLM_changeOfVariables` is checked and proves that the inverse determinant factor in `localEOWAffineDistributionPullbackCLM` converts original integrals into chart integrals.  The orthant BV theorem is checked: it uses one generic uniform-convergence composition helper, two coordinate-sum filter lemmas, and the complex-chart imaginary decomposition to rewrite the final distributional boundary-value hypotheses into coordinate `nhdsWithin 0 {y | ∀ j, 0 < y j}` and `nhdsWithin 0 {y | ∀ j, y j < 0}` limits.  Holomorphy transport is checked by composing the original `DifferentiableOn` hypothesis with `differentiable_localEOWChart`.  Slow-growth transport is checked too: it rewrites final compact-subcone estimates in the same fixed chart orthants using `localEOWRealLinearPart ys`, with `localEOWRealLinearPart_eq_sum_smul` making the normalized cone direction exactly the simplex direction.  These are not wrapper names: they are the sign, support, Jacobian, filter, and compact-direction reductions that make the one-chart theorem honest. |
 | `chartDistributionalEOW_local_envelope` | Local distributional EOW envelope on one fixed-basis coordinate chart, obtained from the regularized-envelope family and delta-limit recovery after the chart-pullback layer above.  Its side identities are for `Fplus (localEOWChart x0 ys w)` and `Fminus (localEOWChart x0 ys w)` on the explicit strict positive/negative coordinate balls. |
 | `chartDistributionalEOW_transport_originalCoords` | Transports the coordinate envelope through `localEOWComplexAffineEquiv x0 ys hli` to an original-coordinate local patch.  This is genuine affine holomorphy/open-map content, not a rename; the output patch domain is the image of a coordinate ball and the side domains are the images of the strict positive/negative coordinate balls, exactly the shape consumed by the overlap/patching lemmas. |
 | `StrictPositiveImagBall`, `StrictNegativeImagBall`, `localEOWFixedBasis_overlap_positiveSeed`, `distributionalEOW_extensions_compatible`, `localDistributionalEOW_patch_extensions` | Reuse the now-public `SCV.local_extensions_consistent` identity-theorem pattern and the global patching pattern in `edge_of_the_wedge_theorem`, with the fixed-basis overlap seed described below.  The positive-seed lemma is the finite-dimensional geometry that makes patching honest: intersecting transported balls are convex and conjugation-invariant, hence meet the real slice, and the shared positive coordinate cone gives an open side seed. |
@@ -3335,8 +3336,14 @@ def StrictPositiveImagBall {m : ℕ} (R : ℝ) : Set (ComplexChartSpace m) :=
 def StrictNegativeImagBall {m : ℕ} (R : ℝ) : Set (ComplexChartSpace m) :=
   Metric.ball (0 : ComplexChartSpace m) R ∩ {w | ∀ j, (w j).im < 0}
 
+lemma localEOWRealLinearPart_eq_sum_smul
+    {m : ℕ}
+    (ys : Fin m -> Fin m -> ℝ)
+    (v : Fin m -> ℝ) :
+    localEOWRealLinearPart ys v = ∑ j, v j • ys j
+
 lemma chartSlowGrowth_from_uniformConeSlowGrowth
-    {m : ℕ} (hm : 0 < m)
+    {m : ℕ}
     (E C : Set (Fin m -> ℝ))
     (hC_conv : Convex ℝ C)
     (ys : Fin m -> Fin m -> ℝ)
@@ -3752,22 +3759,77 @@ lemma localDistributionalEOW_patch_extensions
 
 Proof transcript for the chart-pullback layer:
 
-1. For `chartSlowGrowth_from_uniformConeSlowGrowth`, apply the final
-   `hslow_plus` and `hslow_minus` to
-   `K = localEOWRealChart x0 ys '' B` and
-   `Kη = localEOWSimplexDirections ys`.  Compactness of `K` is the continuous
-   image of `hB_compact`; inclusion in `E` is `hB_Echart`; compactness and
-   inclusion of `Kη` are the checked simplex lemmas.  On the plus side set
-   `ε = ∑ j, v j` and
-   `η = ε⁻¹ • localEOWRealLinearPart ys v`; then `η ∈ Kη`,
-   `0 < ε`, and
-   `localEOWRealLinearPart ys v = ε • η`.  The chart point is therefore exactly
-   `realEmbed (localEOWRealChart x0 ys u) + εη * I`.  On the minus side use
-   `ε = ∑ j, -v j` and
-   `η = ε⁻¹ • localEOWRealLinearPart ys (-v)`, so
-   `localEOWRealLinearPart ys v = -ε • η`; this rewrites the same chart point
-   as `realEmbed (localEOWRealChart x0 ys u) - εη * I`.
-2. For `localEOWAffineTestPushforwardCLM_apply_realChart` and
+1. For `localEOWRealLinearPart_eq_sum_smul`, unfold
+   `localEOWRealLinearPart` and prove by `ext a; simp`.  This is the algebraic
+   bridge needed by the normalization lemmas: the chart-linear displacement is
+   literally the weighted sum `∑ j, v j • ys j`.
+
+2. For `chartSlowGrowth_from_uniformConeSlowGrowth`, first set
+   ```
+   K  = localEOWRealChart x0 ys '' B
+   Kη = localEOWSimplexDirections ys
+   ```
+   in the original real-edge coordinates.  Compactness of `K` is
+   `hB_compact.image (continuous_localEOWRealChart x0 ys)`, and `K ⊆ E`
+   follows from `hB_Echart`: if `x = localEOWRealChart x0 ys u` with `u ∈ B`,
+   then `x ∈ E`.  Compactness of `Kη` is
+   `isCompact_localEOWSimplexDirections ys`, and `Kη ⊆ C` is
+   `localEOWSimplexDirections_subset_cone C hC_conv ys hys_mem`.  Apply
+   `hslow_plus K ... Kη ...` and `hslow_minus K ... Kη ...` to obtain
+   ```
+   Aplus,  Nplus,  rplus,  hAplus,  hrplus,  hplus_bound
+   Aminus, Nminus, rminus, hAminus, hrminus, hminus_bound.
+   ```
+   Return these constants unchanged.  No `hm : 0 < m` hypothesis is needed:
+   the branch hypotheses already provide `0 < ∑ j, v j` or
+   `0 < ∑ j, -v j`, which is exactly the nonzero scalar needed for
+   normalization.
+
+   For the plus estimate, fix `u ∈ B`, `v`, `hv_nonneg : ∀ j, 0 ≤ v j`,
+   `hs_pos : 0 < s`, and `hs_lt : s < rplus`, where `s = ∑ j, v j`.  Define
+   `η = s⁻¹ • localEOWRealLinearPart ys v`.  By
+   `localEOWRealLinearPart_eq_sum_smul`, the direction is
+   `s⁻¹ • ∑ j, v j • ys j`; hence
+   `η ∈ Kη` by `localEOW_positive_imag_normalized_mem_simplex hv_nonneg hs_pos`.
+   Also `s • η = localEOWRealLinearPart ys v`, proved componentwise by
+   `field_simp [ne_of_gt hs_pos]`.
+
+   Apply `hplus_bound` at
+   `x = localEOWRealChart x0 ys u ∈ K`, this `η ∈ Kη`, and `ε = s`.  The
+   original-coordinate point in `hplus_bound` is
+   ```
+   fun a => (localEOWRealChart x0 ys u a : ℂ) +
+     (s : ℂ) * (η a : ℂ) * Complex.I.
+   ```
+   The chart point in the theorem statement rewrites to the same function:
+   use `localEOWChart_real_add_imag x0 ys u v` and the equality
+   `(s : ℂ) * (η a : ℂ) = (localEOWRealLinearPart ys v a : ℂ)`.  After this
+   pointwise rewrite, the bound is exactly
+   `Aplus * (s⁻¹) ^ Nplus`.
+
+   For the minus estimate, fix `u ∈ B`, `v`,
+   `hv_nonpos : ∀ j, v j ≤ 0`, and set
+   `w = -v`, `s = ∑ j, -v j`.  Then `0 ≤ w j`, and the branch hypothesis gives
+   `0 < s` and `s < rminus`.  Define
+   `η = s⁻¹ • localEOWRealLinearPart ys (-v)`.  As above,
+   `η ∈ Kη` by `localEOW_positive_imag_normalized_mem_simplex` applied to the
+   coefficients `w j = -v j`, and
+   `s • η = localEOWRealLinearPart ys (-v)`.  Apply `hminus_bound` at
+   `x = localEOWRealChart x0 ys u`, `η`, and `ε = s`.  The needed chart
+   equality is
+   ```
+   localEOWChart x0 ys (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I)
+     =
+   fun a => (localEOWRealChart x0 ys u a : ℂ) -
+     (s : ℂ) * (η a : ℂ) * Complex.I.
+   ```
+   It follows from `localEOWChart_real_add_imag`,
+   `localEOWRealLinearPart_neg ys v`, and the componentwise equality
+   `(s : ℂ) * (η a : ℂ) =
+     (localEOWRealLinearPart ys (-v) a : ℂ)`.  This consumes exactly the
+   `Fminus (x - εη i)` slow-growth hypothesis and yields
+   `Aminus * (s⁻¹) ^ Nminus`.
+3. For `localEOWAffineTestPushforwardCLM_apply_realChart` and
    `integral_localEOWAffineTestPushforwardCLM_changeOfVariables`, set
    `e = localEOWRealLinearCLE ys hli` and
    `A = e.toContinuousLinearMap`.  The pointwise identity is:
@@ -3804,7 +3866,7 @@ Proof transcript for the chart-pullback layer:
    part of the Lean surface, because the Mathlib change-of-variables theorem
    itself is stated for the Bochner integral; the later BV application supplies
    integrability from compact support and slow-growth estimates.
-3. For `chartOrthantBoundaryValue_from_uniformConeBoundaryValue`, fix a chart
+4. For `chartOrthantBoundaryValue_from_uniformConeBoundaryValue`, fix a chart
    test `φ` and set
    `ψ = localEOWAffineTestPushforwardCLM x0 ys hli φ`.  Compact support of
    `ψ` is `HasCompactSupport.localEOWAffineTestPushforwardCLM`; support inside
@@ -3865,7 +3927,7 @@ Proof transcript for the chart-pullback layer:
    `localEOWChart_real_add_imag` rewrites
    `FminusChart (u + i y)` as the original-coordinate integrand
    `Fminus (x - s₋ y η₋ y i)`.  This consumes exactly the `hminus_bv` sign.
-4. For `chartHolomorphy_from_originalHolomorphy`, compose the
+5. For `chartHolomorphy_from_originalHolomorphy`, compose the
    `DifferentiableOn` hypothesis for `Fplus/Fminus` with the checked affine
    holomorphic map `differentiable_localEOWChart x0 ys`.  The proof is exactly
    `hF.comp (differentiable_localEOWChart x0 ys).differentiableOn hU_mem`;
