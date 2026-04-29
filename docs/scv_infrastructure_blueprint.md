@@ -204,6 +204,17 @@ def mixedBaseFiberTensor
 theorem mixedBaseFiberTensor_apply
 theorem schwartzPartialEval₂CLM_mixedBaseFiberTensor
 theorem mixedRealFiberIntegralCLM_mixedBaseFiberTensor
+theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos
+theorem flatTwoBlockProductDense_of_pos
+def mixedBaseFlatCLE
+theorem mixedBaseFlatCLE_apply
+def mixedBaseFiberFlatCLE
+theorem mixedBaseFiberFlatCLE_apply
+theorem mixedBaseFiberFlatCLE_symm_append
+theorem flatTwoBlockProduct_eq_mixedBaseFiberTensor
+theorem mixedBaseFiberCLM_zero_of_zero_on_tensors
+theorem mixedBaseFiberProductTensorDense_zero
+theorem mixedBaseFiberProductTensorDense_of_pos
 theorem mixedBaseFiberProductTensorDense_all
 def mixedRealFiberIntegralScalarCLM
 theorem mixedRealFiberIntegralScalarCLM_apply
@@ -6500,15 +6511,28 @@ Proof transcript for the next target:
               ((ComplexChartSpace m × (Fin m -> ℝ)) ×
                 (Fin m -> ℝ)) ℂ))
       ```
-      The density proof is the same flat Hermite argument as
-      `ProductTensorDense_all`, now in real dimensions `3*m` for the base and
-      `m` for the fiber: flatten
-      `ComplexChartSpace m × (Fin m -> ℝ)` to `Fin (m * 2 + m) -> ℝ`, split
-      Hermite products along
-      `Fin ((m * 2 + m) + m)`, and use the zero-dimensional singleton case
-      when `m = 0`.
-      The Lean extraction should first factor the positive-dimensional proof
-      of `ProductDensity.lean` into a two-block flat theorem:
+      The density proof has one allowed route.  First factor the checked
+      positive-dimensional Hermite CLM-uniqueness proof from
+      `ProductDensity.lean` into a reusable flat two-block zero theorem:
+      ```lean
+      theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos
+          {p q : ℕ} (hp : 0 < p) (hq : 0 < q)
+          (Lflat : SchwartzMap (Fin (p + q) -> ℝ) ℂ ->L[ℂ] ℂ)
+          (hL : ∀ (G : SchwartzMap (Fin p -> ℝ) ℂ)
+              (ξ : SchwartzMap (Fin q -> ℝ) ℂ),
+            Lflat (twoBlockProductSchwartz G ξ) = 0) :
+          Lflat = 0
+      ```
+      Its proof is literally the checked Hermite proof, but with
+      `exists_hermite_twoBlockFactors (m := p) (n := q)`.  The proof splits
+      the real and imaginary parts with `complexSchwartzDecomposeCLE`, proves
+      both real functionals vanish by
+      `GaussianField.productHermite_schwartz_dense (D := ℝ) (p + q)`, and
+      closes by complex extensionality.  No generic zero-block flat theorem is
+      needed on this route.
+
+      Then factor the checked Hahn-Banach transcript into a reusable flat
+      two-block density theorem:
       ```lean
       theorem flatTwoBlockProductDense_of_pos
           {p q : ℕ} (hp : 0 < p) (hq : 0 < q) :
@@ -6517,13 +6541,117 @@ Proof transcript for the next target:
               ∃ G ξ, F = twoBlockProductSchwartz G ξ}) :
             Set (SchwartzMap (Fin (p + q) -> ℝ) ℂ))
       ```
-      Its proof is literally the checked Hahn-Banach/Hermite proof, but with
-      `exists_hermite_twoBlockFactors (m := p) (n := q)`.  Instantiate it
-      with `p = m * 2 + m` and `q = m` when `0 < m`.  For `m = 0`, the domain
-      is a subsingleton and the proof is the same `singletonConstantSchwartz`
-      argument as `ProductTensorDense_zero`.  The mixed-base transport is a
-      continuous linear equivalence assembled from
-      `complexChartRealFlattenCLE m`, `finAppendCLE (m * 2) m`, and
+      Its final contradiction applies
+      `flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos hp hq` to the
+      separating functional after showing the functional vanishes on the span
+      generators.
+
+      Then build the mixed-base flattening maps:
+      ```lean
+      def mixedBaseFlatCLE (m : ℕ) :
+          (ComplexChartSpace m × (Fin m -> ℝ)) ≃L[ℝ]
+            (Fin (m * 2 + m) -> ℝ)
+
+      theorem mixedBaseFlatCLE_apply
+          (z : ComplexChartSpace m) (t : Fin m -> ℝ) :
+          mixedBaseFlatCLE m (z,t) =
+            Fin.append (complexChartRealFlattenCLE m z) t
+
+      def mixedBaseFiberFlatCLE (m : ℕ) :
+          ((ComplexChartSpace m × (Fin m -> ℝ)) × (Fin m -> ℝ)) ≃L[ℝ]
+            (Fin ((m * 2 + m) + m) -> ℝ)
+
+      theorem mixedBaseFiberFlatCLE_apply
+          (z : ComplexChartSpace m) (t a : Fin m -> ℝ) :
+          mixedBaseFiberFlatCLE m ((z,t),a) =
+            Fin.append (Fin.append (complexChartRealFlattenCLE m z) t) a
+
+      theorem mixedBaseFiberFlatCLE_symm_append
+          (x : Fin (m * 2) -> ℝ) (t a : Fin m -> ℝ) :
+          (mixedBaseFiberFlatCLE m).symm
+              (Fin.append (Fin.append x t) a) =
+            (((complexChartRealFlattenCLE m).symm x, t), a)
+      ```
+      The displayed formulas fix the orientation: flat tests pull back to the
+      mixed domain by evaluating at `mixedBaseFiberFlatCLE m ((z,t),a)`.  The
+      transported product identity is:
+      ```lean
+      theorem flatTwoBlockProduct_eq_mixedBaseFiberTensor
+          (Gflat : SchwartzMap (Fin (m * 2 + m) -> ℝ) ℂ)
+          (ξ : SchwartzMap (Fin m -> ℝ) ℂ) :
+          (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (mixedBaseFiberFlatCLE m))
+            (twoBlockProductSchwartz
+              (m := m * 2 + m) (n := m) Gflat ξ) =
+          mixedBaseFiberTensor
+            ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+                (mixedBaseFlatCLE m)) Gflat)
+            ξ
+      ```
+      It is proved by extensionality and
+      `twoBlockProductSchwartz_apply`, using the apply formula above.
+
+      For `0 < m`, instantiate `flatTwoBlockProductDense_of_pos` with
+      `p = m * 2 + m` and `q = m`.  The first positivity proof is
+      `0 < m * 2 + m`, obtained from `0 < m`; the second is `hm`.  Transport
+      the flat CLM-uniqueness criterion through `mixedBaseFiberFlatCLE`:
+      ```lean
+      theorem mixedBaseFiberCLM_zero_of_zero_on_tensors
+          {m : ℕ} (hm : 0 < m)
+          (L :
+            SchwartzMap
+              ((ComplexChartSpace m × (Fin m -> ℝ)) × (Fin m -> ℝ)) ℂ
+              ->L[ℂ] ℂ)
+          (hL : ∀ G ξ, L (mixedBaseFiberTensor G ξ) = 0) :
+          L = 0
+      ```
+      The proof applies
+      `flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos`
+      with `p = m * 2 + m` and `q = m` to
+      `L.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (mixedBaseFiberFlatCLE m))`; the hypothesis on flat products is
+      exactly `hL` after rewriting by
+      `flatTwoBlockProduct_eq_mixedBaseFiberTensor`.  To show `L = 0`, evaluate
+      the resulting flat zero theorem at the pullback along
+      `(mixedBaseFiberFlatCLE m).symm`.
+
+      The positive mixed density theorem then repeats the checked
+      Hahn-Banach transcript from `ProductTensorDense_of_pos`, with
+      `mixedBaseFiberCLM_zero_of_zero_on_tensors` replacing
+      `mixedProductCLM_zero_of_zero_on_productTensor`:
+      ```lean
+      theorem mixedBaseFiberProductTensorDense_of_pos
+          {m : ℕ} (hm : 0 < m) :
+          Dense ((Submodule.span ℂ
+            {A | ∃ G ξ, A = mixedBaseFiberTensor G ξ}) :
+            Set (SchwartzMap
+              ((ComplexChartSpace m × (Fin m -> ℝ)) ×
+                (Fin m -> ℝ)) ℂ))
+      ```
+
+      The zero-dimensional branch is direct and is not delegated to any flat
+      theorem:
+      ```lean
+      theorem mixedBaseFiberProductTensorDense_zero :
+          Dense ((Submodule.span ℂ
+            {A | ∃ G ξ, A = mixedBaseFiberTensor G ξ}) :
+            Set (SchwartzMap
+              ((ComplexChartSpace 0 × (Fin 0 -> ℝ)) ×
+                (Fin 0 -> ℝ)) ℂ))
+      ```
+      Given `A`, set
+      `G := singletonConstantSchwartz
+        (A (((0 : ComplexChartSpace 0), (0 : Fin 0 -> ℝ)),
+            (0 : Fin 0 -> ℝ)))`
+      and `ξ := singletonConstantSchwartz 1`.  Since both factors are
+      subsingletons, `mixedBaseFiberTensor G ξ` is extensionally `A`, so `A`
+      lies in the closure of the span.  Finally,
+      `mixedBaseFiberProductTensorDense_all` dispatches on
+      `Nat.eq_zero_or_pos m`.  This is the only zero-dimensional reasoning
+      required for the mixed density step.
+
+      The mixed-base transport is a continuous linear equivalence assembled
+      from `complexChartRealFlattenCLE m`, `finAppendCLE (m * 2) m`, and
       `finAppendCLE (m * 2 + m) m`; its apply theorem must say exactly
       ```
       mixedBaseFiberFlatCLE m ((z,t),a) =
@@ -6609,48 +6737,13 @@ Proof transcript for the next target:
       theorem for the final CLM is definitionally `rfl`.
 
       Lean implementation lock for dense split tensors: factor the existing
-      `ProductDensity.lean` argument, do not postulate density.  The flat
-      theorem is first proved in reusable form:
-      ```lean
-      theorem flatTwoBlockProductDense_all (p q : ℕ) :
-          Dense ((Submodule.span ℂ
-            {F : SchwartzMap (Fin (p + q) -> ℝ) ℂ |
-              ∃ G ξ, F = twoBlockProductSchwartz G ξ}) :
-            Set (SchwartzMap (Fin (p + q) -> ℝ) ℂ))
-      ```
-      Its positive-dimensional branch is the existing Hahn-Banach/Hermite
-      proof with `exists_hermite_twoBlockFactors (m := p) (n := q)`.  Its
-      zero-dimensional branches are explicit: if `p = 0` or `q = 0`, the
-      corresponding `Fin 0 -> ℝ` factor is a subsingleton, so products with
-      `singletonConstantSchwartz 1` reduce the statement to the other factor;
-      if both are zero, both factors are singleton constants.  The mixed-base
-      transport then uses the continuous linear equivalence
-      ```lean
-      def mixedBaseFiberFlatCLE (m : ℕ) :
-          ((ComplexChartSpace m × P) × P) ≃L[ℝ]
-            (Fin ((m * 2 + m) + m) -> ℝ)
-      ```
-      assembled from `complexChartRealFlattenCLE m`, `finAppendCLE (m*2) m`,
-      and `finAppendCLE (m*2 + m) m`.  Its apply and inverse formulas are
-      fixed:
-      ```
-      mixedBaseFiberFlatCLE m ((z,t),a) =
-        Fin.append (Fin.append (complexChartRealFlattenCLE m z) t) a
-
-      (mixedBaseFiberFlatCLE m).symm
-        (Fin.append (Fin.append x t) a) =
-          (((complexChartRealFlattenCLE m).symm x, t), a)
-      ```
-      Under this equivalence, `twoBlockProductSchwartz G ξ` transports exactly
-      to `mixedBaseFiberTensor G' ξ`, where `G'` is the pullback of the first
-      flat factor along the base equivalence
-      `ComplexChartSpace m × P ≃L[ℝ] Fin (m*2 + m) -> ℝ`.  This gives
-      `mixedBaseFiberProductTensorDense_all` by dense image under a continuous
-      linear equivalence.  The `m = 0` case is not delegated to the
-      positive-dimensional theorem: `B` and `P` are subsingletons, and the
-      explicit tensor
-      `mixedBaseFiberTensor (singletonConstantSchwartz (A ((0,0),0)))
-        (singletonConstantSchwartz 1)` is extensionally `A`.
+      `ProductDensity.lean` argument, do not postulate density.  The only flat
+      theorems to add are
+      `flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos` and
+      `flatTwoBlockProductDense_of_pos`; their zero-block generalization is
+      intentionally not part of the route.  The mixed theorem handles `m = 0`
+      directly by singleton constants and handles `0 < m` by transporting the
+      positive flat theorem through `mixedBaseFiberFlatCLE`.
 
    4. Prove
       the two parameterized Schwartz tests and their mixed-fiber integrals:

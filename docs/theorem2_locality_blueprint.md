@@ -2096,6 +2096,17 @@ Current implementation order:
    `SCV.mixedBaseFiberTensor_apply`,
    `SCV.schwartzPartialEval₂CLM_mixedBaseFiberTensor`,
    `SCV.mixedRealFiberIntegralCLM_mixedBaseFiberTensor`,
+   `SCV.flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos`,
+   `SCV.flatTwoBlockProductDense_of_pos`,
+   `SCV.mixedBaseFlatCLE`,
+   `SCV.mixedBaseFlatCLE_apply`,
+   `SCV.mixedBaseFiberFlatCLE`,
+   `SCV.mixedBaseFiberFlatCLE_apply`,
+   `SCV.mixedBaseFiberFlatCLE_symm_append`,
+   `SCV.flatTwoBlockProduct_eq_mixedBaseFiberTensor`,
+   `SCV.mixedBaseFiberCLM_zero_of_zero_on_tensors`,
+   `SCV.mixedBaseFiberProductTensorDense_zero`,
+   `SCV.mixedBaseFiberProductTensorDense_of_pos`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
    `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
    The remaining pure-SCV declarations on this route are now the local descent
@@ -2390,6 +2401,14 @@ Current implementation order:
    `SCV.ProductTensorDense_of_pos`, `SCV.ProductTensorDense_zero`, and
    `SCV.ProductTensorDense_all`, culminating in
    `SCV.translationCovariantProductKernel_descends`.
+   The next mixed-base density step reuses that checked proof without adding
+   any new density assumption: first factor the positive flat theorem as
+   `SCV.flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos` and
+   `SCV.flatTwoBlockProductDense_of_pos`; then transport it through the
+   Lean-facing equivalences `SCV.mixedBaseFlatCLE` and
+   `SCV.mixedBaseFiberFlatCLE`.  The `m = 0` branch of
+   `SCV.mixedBaseFiberProductTensorDense_all` is a direct singleton-constant
+   calculation, not a generic zero-block flat theorem.
    The pure-SCV local-EOW support-preservation bridge needed before the
    distributional holomorphy integration-by-parts theorem is now checked in
    `SCV/DistributionalEOWSupport.lean`:
