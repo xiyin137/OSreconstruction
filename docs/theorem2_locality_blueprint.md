@@ -1731,13 +1731,19 @@ Implementation-readiness gate for the next Lean stage:
   cutoff, SCV-local `schwartzPartialEval₁CLM` apply/tensor/seminorm package,
   compact `Lorig` value-CLM bound, chart-kernel value-CLM transport,
   chart-linear kernel pushforward API, and first varying-kernel continuity
-  layer are checked.  The remaining helper order is now: split the
-  moving-kernel side limits, bundle the CLM boundary data, prove the
-  parametric Rudin-integrand bound, prove
-  `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`, and only then
-  construct the pairing CLM.  The partial-evaluation helper is proved in the
-  SCV layer from `SchwartzMap.compCLM`; importing the Wightman
-  partial-evaluation file would be route drift for this pure-SCV theorem.
+  layer are checked.  The remaining Lean order, now fully proof-documented in
+  `docs/scv_infrastructure_blueprint.md`, is: split the moving-kernel side
+  limits; bundle the CLM boundary data; prove the parametric Rudin-integrand
+  bound; prove `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`;
+  construct the pairing CLM through the explicit post-continuity/value-CLM
+  interface; prove local covariance; prove direct local product-test descent;
+  prove `translationCovariantKernel_distributionalHolomorphic_local`; prove
+  `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
+  finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
+  the explicit approximate-identity and side-agreement hypotheses.  The
+  partial-evaluation helper is proved in the SCV layer from
+  `SchwartzMap.compCLM`; importing the Wightman partial-evaluation file would
+  be route drift for this pure-SCV theorem.
 * The next OS-side boundary-value theorem is
   `bvt_boundary_values_uniformOnCompactDirections` in
   `OSToWightmanBoundaryValuesBase.lean`.  It is not in the `BHW` namespace, and

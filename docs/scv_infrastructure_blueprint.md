@@ -5815,7 +5815,46 @@ Proof transcript for the next target:
    `Udesc` and holomorphy of `Gchart ψ` on the larger fixed window.
 
    ```lean
+   theorem regularizedEnvelope_pointwiseRepresentation_of_localProductKernel
+       {r : ℝ}
+       (K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
+       (Gchart : SchwartzMap (Fin m -> ℝ) ℂ ->
+         ComplexChartSpace m -> ℂ)
+       (H : ComplexChartSpace m -> ℂ)
+       (Hdist : SchwartzMap (ComplexChartSpace m) ℂ ->L[ℂ] ℂ)
+       (Ucore Udesc Ucov U0 : Set (ComplexChartSpace m))
+       (ψ : SchwartzMap (Fin m -> ℝ) ℂ)
+       (hUcore_open : IsOpen Ucore)
+       (hUdesc_open : IsOpen Udesc)
+       (hcore_desc : Ucore ⊆ Udesc)
+       (hdesc_cov : Udesc ⊆ Ucov)
+       (hcov_window : Ucov ⊆ U0)
+       (hmargin_core :
+         ∀ z ∈ Ucore, ∀ t : Fin m -> ℝ, ‖t‖ ≤ r ->
+           z + realEmbed t ∈ Udesc)
+       (hψ_support : KernelSupportWithin ψ r)
+       (hG_holo : DifferentiableOn ℂ (Gchart ψ) U0)
+       (hH_holo : DifferentiableOn ℂ H Udesc)
+       (hRep : RepresentsDistributionOnComplexDomain Hdist H Udesc)
+       (hdesc_local :
+         ∀ φ η,
+           SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Udesc ->
+           KernelSupportWithin η r ->
+             K (schwartzTensorProduct₂ φ η) =
+               Hdist (realConvolutionTest φ η))
+       (hK_rep :
+         ∀ φ η,
+           SupportsInOpen (φ : ComplexChartSpace m -> ℂ) Ucov ->
+           KernelSupportWithin η r ->
+             K (schwartzTensorProduct₂ φ η) =
+               ∫ z : ComplexChartSpace m, Gchart η z * φ z) :
+       ∀ z ∈ Ucore,
+         Gchart ψ z =
+           ∫ t : Fin m -> ℝ, H (z + realEmbed t) * ψ t
+
    theorem regularizedEnvelope_chartEnvelope_from_localProductKernel
+       {r : ℝ}
+       (hm : 0 < m)
        (K : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ ->L[ℂ] ℂ)
        (Gchart : SchwartzMap (Fin m -> ℝ) ℂ -> ComplexChartSpace m -> ℂ)
        (Ucore Udesc Ucov U0 DplusSmall DminusSmall :
@@ -5847,10 +5886,26 @@ Proof transcript for the next target:
              K (schwartzTensorProduct₂ φ ψ) =
                Hdist (realConvolutionTest φ ψ))
        (hCR : IsDistributionalHolomorphicOn Hdist Udesc)
-       -- same approximate-identity and side-agreement hypotheses as
-       -- `regularizedEnvelope_chartEnvelope_from_productKernel`, restricted
-       -- to `Ucore`
-       :
+       (hψ_nonneg : ∀ n t, 0 ≤ (ψn n t).re)
+       (hψ_real : ∀ n t, (ψn n t).im = 0)
+       (hψ_norm : ∀ n, ∫ t : Fin m -> ℝ, ψn n t = 1)
+       (hψ_support_shrink :
+         ∀ n, KernelSupportWithin (ψn n) (1 / (n + 1 : ℝ)))
+       (hψ_support_r : ∀ n, KernelSupportWithin (ψn n) r)
+       (hG_plus :
+         ∀ᶠ n in atTop, ∀ z ∈ Ucore ∩ DplusSmall,
+           Gchart (ψn n) z = realMollifyLocal Fplus (ψn n) z)
+       (hG_minus :
+         ∀ᶠ n in atTop, ∀ z ∈ Ucore ∩ DminusSmall,
+           Gchart (ψn n) z = realMollifyLocal Fminus (ψn n) z)
+       (happrox_plus :
+         ∀ z ∈ Ucore ∩ DplusSmall,
+           Tendsto (fun n => realMollifyLocal Fplus (ψn n) z)
+             atTop (nhds (Fplus z)))
+       (happrox_minus :
+         ∀ z ∈ Ucore ∩ DminusSmall,
+           Tendsto (fun n => realMollifyLocal Fminus (ψn n) z)
+             atTop (nhds (Fminus z))) :
        ∃ H : ComplexChartSpace m -> ℂ,
          DifferentiableOn ℂ H Udesc ∧
          RepresentsDistributionOnComplexDomain Hdist H Udesc ∧
@@ -5863,19 +5918,53 @@ Proof transcript for the next target:
    1. Apply `distributionalHolomorphic_regular Hdist hm hUdesc_open hCR` to
       get `H`, holomorphic on `Udesc`, and its representing identity on tests
       supported in `Udesc`.
-   2. For each supported approximate-identity kernel `ψn n`, apply the checked
-      pointwise-representation proof with `Ucore` as the pointwise domain and
-      `Udesc` as the representing domain.  The only two changes from
-      `regularizedEnvelope_pointwiseRepresentation_of_productKernel` are:
-      use `hdesc_local φ (ψn n) hφ hψ` instead of global descent, and pass
-      `hK_rep` through `SupportsInOpen.mono hdesc_cov`.
-   3. The support margin `hmargin_core` gives
-      `SupportsInOpen (realConvolutionTest φ (ψn n)) Udesc`, so the
-      representation of `Hdist` is applied on the correct domain.
-   4. The resulting kernel-limit statement is exactly the input expected by
-      `regularizedEnvelope_deltaLimit_agreesOnWedges`; the plus/minus
-      side-agreement and real-mollifier approximate-identity limits are the
-      checked downstream hypotheses already used by the global consumer.
+   2. First prove
+      `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`.
+      The proof is the checked pointwise-representation proof with three
+      substitutions:
+      - `Ucore` remains the pointwise domain;
+      - `Udesc` is the representation domain for `Hdist` and the margin target
+        for `realConvolutionTest`;
+      - `Ucov` is only the product-kernel representation domain for `hK_rep`.
+
+      For a test `φ` supported in `Ucore`, monotonicity gives support in
+      `Udesc` and `Ucov` via `hcore_desc` and `hdesc_cov`; holomorphy of
+      `Gchart ψ` on `U0` restricts to continuity on `Ucore` via
+      `hcore_desc.trans (hdesc_cov.trans hcov_window)`.  The support margin
+      `hmargin_core` gives
+      `SupportsInOpen (realConvolutionTest φ ψ) Udesc`, so `hRep` applies on
+      the correct domain.  The test-pairing chain is
+      ```
+      ∫ z, Gchart ψ z * φ z
+        = K (schwartzTensorProduct₂ φ ψ)
+        = Hdist (realConvolutionTest φ ψ)
+        = ∫ y, H y * realConvolutionTest φ ψ y
+        = ∫ z, (∫ t, H (z + realEmbed t) * ψ t) * φ z.
+      ```
+      The first equality uses `hK_rep` on `Ucov`; the second uses
+      `hdesc_local` on `Udesc`; the third is `hRep`; the fourth is the checked
+      Fubini/change-of-variables theorem
+      `realConvolutionTest_pairing_eq_mollifier_pairing` with target `Udesc`.
+      The fundamental-lemma endpoint
+      `regularizedEnvelope_pointwise_eq_of_test_integral_eq` then gives the
+      pointwise identity on `Ucore`.
+   3. Apply this local pointwise theorem to every `ψn n`.  The hypotheses
+      `hψ_support_r n` and `hG_holo (ψn n) (hψ_support_r n)` supply the
+      kernel support and holomorphy inputs, and the common `hmargin_core`
+      supplies the translate margin for all `n`.
+   4. The checked kernel-limit proof
+      `regularizedEnvelope_kernelLimit_from_representation` applies with
+      `U0 := Udesc`, using the identities from step 3 together with
+      `hψ_nonneg`, `hψ_real`, `hψ_norm`, and `hψ_support_shrink`.  It gives
+      `Tendsto (fun n => Gchart (ψn n) z) atTop (nhds (H z))` for every
+      `z ∈ Ucore`.
+   5. Feed this kernel-limit statement, plus the explicit side-agreement
+      hypotheses `hG_plus` and `hG_minus` and the real-mollifier
+      approximate-identity limits `happrox_plus` and `happrox_minus`, into
+      `regularizedEnvelope_deltaLimit_agreesOnWedges`.  The result is the
+      displayed agreement of `H` with `Fplus` on
+      `Ucore ∩ DplusSmall` and with `Fminus` on
+      `Ucore ∩ DminusSmall`.
 
    This theorem is not a wrapper around
    `regularizedEnvelope_chartEnvelope_from_productKernel`.  It replaces the
