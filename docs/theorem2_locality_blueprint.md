@@ -1013,6 +1013,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.localEOW_basisSideCone_rawBoundaryValue`,
      `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`,
      `SCV.exists_localEOWRealLinearPart_ball_subset`,
+     `SCV.StrictPositiveImagBall`,
+     `SCV.StrictNegativeImagBall`,
+     `SCV.isOpen_StrictPositiveImagBall`,
+     `SCV.isOpen_StrictNegativeImagBall`,
+     `SCV.localEOWChart_im_eq_realLinearPart_im`,
+     `SCV.localEOWChart_mem_TubeDomain_truncatedSideCone_of_strictPositive`,
+     `SCV.localEOWChart_mem_TubeDomain_neg_truncatedSideCone_of_strictNegative`,
      `SCV.localEOWComplexAffineEquiv_symm_add_realEmbed`,
      `SCV.exists_localEOWRealLinearSymm_ball_subset`,
      `SCV.tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem`,
@@ -1129,6 +1136,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       direction simplex to an open side cone whose closed direction envelope
       lies in `C ∩ {η | η ≠ 0}`, then restrict to bounded side windows by
       `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`.  The checked
+      `SCV/LocalEOWChartEnvelope.lean` bridge now records the strict
+      chart-side version: positive/negative strict coordinate balls are open,
+      and `localEOWChart x0 ys` sends them into the `TubeDomain`s over
+      `localEOWSideCone ys ε ∩ ball 0 rside` and its negative image by the
+      identity
+      `Im (localEOWChart x0 ys w) = localEOWRealLinearPart ys (Im w)`.
+      Thus the one-chart theorem does not need to reprove, or silently assume,
+      that chart imaginary coordinates are original edge coordinates.  The checked
       `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` theorem remains an
       outer OS-II adapter if one is constructing `hplus_bv`/`hminus_bv` from
       slow-growth data, but it is not consumed by this one-chart core.

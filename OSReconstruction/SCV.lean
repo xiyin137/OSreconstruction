@@ -48,6 +48,7 @@ import OSReconstruction.SCV.DistributionalEOWKernelRecovery
 import OSReconstruction.SCV.DistributionalEOWBoundaryProductKernel
 import OSReconstruction.SCV.LocalEOWChartLinear
 import OSReconstruction.SCV.LocalEOWSideCone
+import OSReconstruction.SCV.LocalEOWChartEnvelope
 import OSReconstruction.SCV.LocalDistributionalEOWSlice
 import OSReconstruction.SCV.LocalEOWFixedBasis
 import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
