@@ -1751,6 +1751,21 @@ in production code except as a cautionary note.
 
 Implementation-readiness gate for the next Lean stage:
 
+* Hard proof-doc gate for the local descent step: no further Lean
+  implementation should proceed until the scalarized local quotient packet in
+  `docs/scv_infrastructure_blueprint.md` is treated as the authoritative
+  route transcript.  That packet now fixes the finite-seminorm decay theorem
+  for `schwartzPartialEval₂CLM` down to the singleton source family
+  `{(k,l), (k+N,l)}`, the finite-sup aggregation and empty-family case, the
+  mixed real-fiber integral CLM derivative/decay theorem surfaces, the dense
+  split-tensor reduction through the factored flat two-block Hermite theorem,
+  the zero-dimensional tensor case, all parameter-test CLE signs and inverse
+  formulas, the two scalar change-of-variables identities, the exact
+  scalarized local quotient equality chain, and the final packaging proof for
+  `translationCovariantProductKernel_descends_local`.  The Lean pass must
+  follow those theorem names and proof dependencies literally; it must not
+  invent a `SchwartzMap`-valued Bochner average, a global covariance quotient,
+  or a new density/quotient axiom while filling this step.
 * Do **not** add another distributional EOW axiom or wrapper.  The checked SCV
   global recovery endpoint
   `SCV.regularizedEnvelope_chartEnvelope_from_productKernel` remains available
