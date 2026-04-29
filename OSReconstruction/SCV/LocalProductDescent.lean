@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalEOWKernelFactorization
 import OSReconstruction.SCV.DistributionalEOWSupport
+import OSReconstruction.SCV.ProductDensity
 import OSReconstruction.SCV.SchwartzExternalProduct
 
 /-!
@@ -1193,5 +1194,237 @@ theorem mixedRealFiberIntegralCLM_mixedBaseFiberTensor {m : ℕ}
           (G (z, t)) (fun a : Fin m → ℝ => ξ a))
     _ = ((∫ a : Fin m → ℝ, ξ a) • G) (z, t) := by
       simp [smul_eq_mul, mul_comm]
+
+/-- Flatten the mixed base `ComplexChartSpace m × (Fin m → ℝ)` with the
+complex-chart real coordinates first and the real fiber coordinates second. -/
+def mixedBaseFlatCLE (m : ℕ) :
+    (ComplexChartSpace m × (Fin m → ℝ)) ≃L[ℝ]
+      (Fin (m * 2 + m) → ℝ) :=
+  ((ContinuousLinearEquiv.prodCongr
+      (complexChartRealFlattenCLE m)
+      (ContinuousLinearEquiv.refl ℝ (Fin m → ℝ))).trans
+    (finAppendCLE (m * 2) m))
+
+@[simp]
+theorem mixedBaseFlatCLE_apply {m : ℕ}
+    (z : ComplexChartSpace m) (t : Fin m → ℝ) :
+    mixedBaseFlatCLE m (z, t) =
+      Fin.append (complexChartRealFlattenCLE m z) t := by
+  ext k
+  refine Fin.addCases (motive := fun k =>
+    mixedBaseFlatCLE m (z, t) k =
+      Fin.append (complexChartRealFlattenCLE m z) t k) ?_ ?_ k
+  · intro i
+    simp [mixedBaseFlatCLE, Fin.append]
+  · intro i
+    simp [mixedBaseFlatCLE, Fin.append]
+
+/-- Flatten the mixed base/fiber split with the mixed base in the head block
+and the final real fiber in the tail block. -/
+def mixedBaseFiberFlatCLE (m : ℕ) :
+    ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃L[ℝ]
+      (Fin ((m * 2 + m) + m) → ℝ) :=
+  ((ContinuousLinearEquiv.prodCongr
+      (mixedBaseFlatCLE m)
+      (ContinuousLinearEquiv.refl ℝ (Fin m → ℝ))).trans
+    (finAppendCLE (m * 2 + m) m))
+
+@[simp]
+theorem mixedBaseFiberFlatCLE_apply {m : ℕ}
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    mixedBaseFiberFlatCLE m ((z, t), a) =
+      Fin.append (Fin.append (complexChartRealFlattenCLE m z) t) a := by
+  ext k
+  refine Fin.addCases (motive := fun k =>
+    mixedBaseFiberFlatCLE m ((z, t), a) k =
+      Fin.append (Fin.append (complexChartRealFlattenCLE m z) t) a k) ?_ ?_ k
+  · intro i
+    simp [mixedBaseFiberFlatCLE, Fin.append]
+  · intro i
+    simp [mixedBaseFiberFlatCLE, Fin.append]
+
+@[simp]
+theorem mixedBaseFiberFlatCLE_symm_append {m : ℕ}
+    (x : Fin (m * 2) → ℝ) (t a : Fin m → ℝ) :
+    (mixedBaseFiberFlatCLE m).symm
+        (Fin.append (Fin.append x t) a) =
+      (((complexChartRealFlattenCLE m).symm x, t), a) := by
+  apply (mixedBaseFiberFlatCLE m).injective
+  simp [mixedBaseFiberFlatCLE_apply]
+
+@[simp]
+theorem flatTwoBlockProduct_eq_mixedBaseFiberTensor {m : ℕ}
+    (Gflat : SchwartzMap (Fin (m * 2 + m) → ℝ) ℂ)
+    (ξ : SchwartzMap (Fin m → ℝ) ℂ) :
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (mixedBaseFiberFlatCLE m))
+      (twoBlockProductSchwartz
+        (m := m * 2 + m) (n := m) Gflat ξ) =
+    mixedBaseFiberTensor
+      ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+          (mixedBaseFlatCLE m)) Gflat)
+      ξ := by
+  ext p
+  rcases p with ⟨⟨z, t⟩, a⟩
+  simp [SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- A continuous linear functional on the mixed base/fiber space vanishes if it
+vanishes on all split mixed-base/fiber tensors. -/
+theorem mixedBaseFiberCLM_zero_of_zero_on_tensors {m : ℕ} (hm : 0 < m)
+    (L :
+      SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (hL : ∀ (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+        (ξ : SchwartzMap (Fin m → ℝ) ℂ),
+      L (mixedBaseFiberTensor G ξ) = 0) :
+    L = 0 := by
+  have hflat :
+      L.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (mixedBaseFiberFlatCLE m)) = 0 := by
+    apply flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos
+      (p := m * 2 + m) (q := m) (by omega) hm
+    intro Gflat ξ
+    change L ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (mixedBaseFiberFlatCLE m))
+      (twoBlockProductSchwartz
+        (m := m * 2 + m) (n := m) Gflat ξ)) = 0
+    rw [flatTwoBlockProduct_eq_mixedBaseFiberTensor]
+    exact hL _ _
+  ext A
+  have harg := congrArg (fun T :
+      SchwartzMap (Fin ((m * 2 + m) + m) → ℝ) ℂ →L[ℂ] ℂ =>
+      T ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (mixedBaseFiberFlatCLE m).symm) A)) hflat
+  simpa [ContinuousLinearMap.comp_apply,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply] using harg
+
+/-- For positive `m`, split mixed-base/fiber tensors have dense complex span. -/
+theorem mixedBaseFiberProductTensorDense_of_pos {m : ℕ} (hm : 0 < m) :
+    Dense ((Submodule.span ℂ
+      {A :
+        SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ |
+        ∃ G ξ, A = mixedBaseFiberTensor G ξ}) :
+      Set (SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)) := by
+  rw [Submodule.dense_iff_topologicalClosure_eq_top]
+  by_contra hM
+  let M : Submodule ℂ
+      (SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) :=
+    Submodule.span ℂ
+      {A :
+        SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ |
+        ∃ G ξ, A = mixedBaseFiberTensor G ξ}
+  have hx : ∃ x :
+      SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ,
+      x ∉ M.topologicalClosure := by
+    by_contra hx
+    apply hM
+    rw [Submodule.eq_top_iff']
+    intro x
+    by_contra hx'
+    exact hx ⟨x, hx'⟩
+  have hconv : Convex ℝ
+      (M.topologicalClosure :
+        Set (SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)) := by
+    simpa using (M.topologicalClosure.restrictScalars ℝ).convex
+  rcases hx with ⟨x, hx⟩
+  obtain ⟨f, u, hleft, hright⟩ :=
+    RCLike.geometric_hahn_banach_closed_point
+      (𝕜 := ℂ)
+      (E := SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)
+      (x := x)
+      (s := (M.topologicalClosure :
+        Set (SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)))
+      hconv M.isClosed_topologicalClosure hx
+  have hu_pos : 0 < u := by
+    have hzero := hleft 0 M.topologicalClosure.zero_mem
+    simpa using hzero
+  have hre_zero :
+      ∀ y ∈ M.topologicalClosure, (f y).re = 0 := by
+    intro y hy
+    by_contra hre
+    let r : ℝ := (u + 1) / (f y).re
+    have hlt := hleft ((r : ℂ) • y) (M.topologicalClosure.smul_mem (r : ℂ) hy)
+    have hreval : (f ((r : ℂ) • y)).re = u + 1 := by
+      calc
+        (f ((r : ℂ) • y)).re = r * (f y).re := by
+          simp [r, mul_comm]
+        _ = u + 1 := by
+          dsimp [r]
+          field_simp [hre]
+    have : ¬ u + 1 < u := by linarith
+    exact this (hreval ▸ hlt)
+  have hvanish :
+      ∀ y ∈ M.topologicalClosure, f y = 0 := by
+    intro y hy
+    have hre : (f y).re = 0 := hre_zero y hy
+    have hIy_re : (f ((Complex.I : ℂ) • y)).re = 0 := by
+      exact hre_zero ((Complex.I : ℂ) • y) (M.topologicalClosure.smul_mem Complex.I hy)
+    have him : (f y).im = 0 := by
+      have htmp : -(f y).im = 0 := by
+        simpa [ContinuousLinearMap.map_smul, mul_comm, mul_left_comm, mul_assoc] using hIy_re
+      linarith
+    exact Complex.ext hre him
+  have hfS : ∀ y ∈ M, f y = 0 := by
+    intro y hy
+    exact hvanish y (subset_closure hy)
+  have hf_prod :
+      ∀ (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+        (ξ : SchwartzMap (Fin m → ℝ) ℂ),
+        f (mixedBaseFiberTensor G ξ) = 0 := by
+    intro G ξ
+    exact hfS _ (Submodule.subset_span ⟨G, ξ, rfl⟩)
+  have hf_zero : f = 0 :=
+    mixedBaseFiberCLM_zero_of_zero_on_tensors hm f hf_prod
+  have : ¬ u < (0 : ℝ) := not_lt_of_ge hu_pos.le
+  apply this
+  simpa [hf_zero] using hright
+
+/-- In dimension zero, the mixed-base/fiber tensor span is the whole Schwartz
+space because the full domain is a singleton. -/
+theorem mixedBaseFiberProductTensorDense_zero :
+    Dense ((Submodule.span ℂ
+      {A :
+        SchwartzMap
+          ((ComplexChartSpace 0 × (Fin 0 → ℝ)) × (Fin 0 → ℝ)) ℂ |
+        ∃ G ξ, A = mixedBaseFiberTensor G ξ}) :
+      Set (SchwartzMap
+        ((ComplexChartSpace 0 × (Fin 0 → ℝ)) × (Fin 0 → ℝ)) ℂ)) := by
+  rw [Submodule.dense_iff_topologicalClosure_eq_top]
+  rw [Submodule.eq_top_iff']
+  intro A
+  let G : SchwartzMap (ComplexChartSpace 0 × (Fin 0 → ℝ)) ℂ :=
+    singletonConstantSchwartz
+      (A (((0 : ComplexChartSpace 0), (0 : Fin 0 → ℝ)), (0 : Fin 0 → ℝ)))
+  let ξ : SchwartzMap (Fin 0 → ℝ) ℂ :=
+    singletonConstantSchwartz 1
+  have hprod : A = mixedBaseFiberTensor G ξ := by
+    ext p
+    have hp : p =
+        (((0 : ComplexChartSpace 0), (0 : Fin 0 → ℝ)), (0 : Fin 0 → ℝ)) :=
+      Subsingleton.elim p _
+    subst p
+    simp [G, ξ]
+  exact subset_closure (Submodule.subset_span ⟨G, ξ, hprod⟩)
+
+/-- Split mixed-base/fiber tensors have dense complex span for every `m`. -/
+theorem mixedBaseFiberProductTensorDense_all (m : ℕ) :
+    Dense ((Submodule.span ℂ
+      {A :
+        SchwartzMap
+          ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ |
+        ∃ G ξ, A = mixedBaseFiberTensor G ξ}) :
+      Set (SchwartzMap
+        ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · exact mixedBaseFiberProductTensorDense_zero
+  · exact mixedBaseFiberProductTensorDense_of_pos hm
 
 end SCV

@@ -185,54 +185,56 @@ theorem flatTwoBlockProduct_eq_mixedProduct
     mixedChartFiberFirstCLE_apply_finAppend, schwartzTensorProduct₂_apply, mul_comm]
 
 /-- A complex continuous linear functional on the flat fiber-first domain is
-zero if it vanishes on all two-block product tests. -/
-theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts
-    {m : ℕ} (hm : 0 < m)
-    (Lflat : SchwartzMap (Fin (m + m * 2) → ℝ) ℂ →L[ℂ] ℂ)
-    (hL : ∀ (A : SchwartzMap (Fin (m * 2) → ℝ) ℂ)
-        (B : SchwartzMap (Fin m → ℝ) ℂ),
-      Lflat (twoBlockProductSchwartz (m := m) (n := m * 2) B A) = 0) :
+zero if it vanishes on all two-block product tests in a positive split. -/
+theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos
+    {p q : ℕ} (hp : 0 < p) (hq : 0 < q)
+    (Lflat : SchwartzMap (Fin (p + q) → ℝ) ℂ →L[ℂ] ℂ)
+    (hL : ∀ (G : SchwartzMap (Fin p → ℝ) ℂ)
+        (ξ : SchwartzMap (Fin q → ℝ) ℂ),
+      Lflat (twoBlockProductSchwartz G ξ) = 0) :
     Lflat = 0 := by
-  let Lre : SchwartzMap (Fin (m + m * 2) → ℝ) ℝ →L[ℝ] ℝ :=
+  let Lre : SchwartzMap (Fin (p + q) → ℝ) ℝ →L[ℝ] ℝ :=
     Complex.reCLM.comp
       ((Lflat.restrictScalars ℝ).comp schwartzOfRealCLM)
-  let Lim : SchwartzMap (Fin (m + m * 2) → ℝ) ℝ →L[ℝ] ℝ :=
+  let Lim : SchwartzMap (Fin (p + q) → ℝ) ℝ →L[ℝ] ℝ :=
     Complex.imCLM.comp
       ((Lflat.restrictScalars ℝ).comp schwartzOfRealCLM)
-  have hm_one : 1 ≤ m := by omega
-  have hmtwo_one : 1 ≤ m * 2 := by omega
+  have hp_one : 1 ≤ p := by omega
+  have hq_one : 1 ≤ q := by omega
   have hre : Lre = 0 := by
-    apply GaussianField.productHermite_schwartz_dense (D := ℝ) (m + m * 2) (by omega)
+    apply GaussianField.productHermite_schwartz_dense (D := ℝ) (p + q) (by omega)
     intro ks F hF
-    obtain ⟨B, A, _hB, _hA, hsplit⟩ :=
-      exists_hermite_twoBlockFactors (m := m) (n := m * 2) hm_one hmtwo_one ks
-    have hF' : ∀ x : Fin (m + m * 2) → ℝ,
-        F x = ∏ k : Fin (m + m * 2), realHermiteBasis (ks k) (x k) := by
+    obtain ⟨G, ξ, _hG, _hξ, hsplit⟩ :=
+      exists_hermite_twoBlockFactors (m := p) (n := q) hp_one hq_one ks
+    have hF' : ∀ x : Fin (p + q) → ℝ,
+        F x = ∏ k : Fin (p + q), realHermiteBasis (ks k) (x k) := by
       simpa [realHermiteBasis] using hF
     have hprod :
         schwartzOfRealCLM F =
-          twoBlockProductSchwartz (m := m) (n := m * 2)
-            (schwartzOfRealCLM B) (schwartzOfRealCLM A) :=
-      schwartzOfRealCLM_eq_twoBlockProduct_of_forall_append F B A (hsplit F hF')
+          twoBlockProductSchwartz (m := p) (n := q)
+            (schwartzOfRealCLM G) (schwartzOfRealCLM ξ) :=
+      schwartzOfRealCLM_eq_twoBlockProduct_of_forall_append F G ξ (hsplit F hF')
     change (Lflat (schwartzOfRealCLM F)).re = 0
     rw [hprod]
-    simpa using congrArg Complex.re (hL (schwartzOfRealCLM A) (schwartzOfRealCLM B))
+    simpa using
+      congrArg Complex.re (hL (schwartzOfRealCLM G) (schwartzOfRealCLM ξ))
   have him : Lim = 0 := by
-    apply GaussianField.productHermite_schwartz_dense (D := ℝ) (m + m * 2) (by omega)
+    apply GaussianField.productHermite_schwartz_dense (D := ℝ) (p + q) (by omega)
     intro ks F hF
-    obtain ⟨B, A, _hB, _hA, hsplit⟩ :=
-      exists_hermite_twoBlockFactors (m := m) (n := m * 2) hm_one hmtwo_one ks
-    have hF' : ∀ x : Fin (m + m * 2) → ℝ,
-        F x = ∏ k : Fin (m + m * 2), realHermiteBasis (ks k) (x k) := by
+    obtain ⟨G, ξ, _hG, _hξ, hsplit⟩ :=
+      exists_hermite_twoBlockFactors (m := p) (n := q) hp_one hq_one ks
+    have hF' : ∀ x : Fin (p + q) → ℝ,
+        F x = ∏ k : Fin (p + q), realHermiteBasis (ks k) (x k) := by
       simpa [realHermiteBasis] using hF
     have hprod :
         schwartzOfRealCLM F =
-          twoBlockProductSchwartz (m := m) (n := m * 2)
-            (schwartzOfRealCLM B) (schwartzOfRealCLM A) :=
-      schwartzOfRealCLM_eq_twoBlockProduct_of_forall_append F B A (hsplit F hF')
+          twoBlockProductSchwartz (m := p) (n := q)
+            (schwartzOfRealCLM G) (schwartzOfRealCLM ξ) :=
+      schwartzOfRealCLM_eq_twoBlockProduct_of_forall_append F G ξ (hsplit F hF')
     change (Lflat (schwartzOfRealCLM F)).im = 0
     rw [hprod]
-    simpa using congrArg Complex.im (hL (schwartzOfRealCLM A) (schwartzOfRealCLM B))
+    simpa using
+      congrArg Complex.im (hL (schwartzOfRealCLM G) (schwartzOfRealCLM ξ))
   ext F
   let R := (complexSchwartzDecomposeCLE F).1
   let I := (complexSchwartzDecomposeCLE F).2
@@ -257,6 +259,99 @@ theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts
       rfl
   rw [hdecomp, map_add, map_smul, hR, hI]
   simp
+
+/-- A complex continuous linear functional on the flat fiber-first domain is
+zero if it vanishes on all two-block product tests. -/
+theorem flatComplexCLM_zero_of_zero_on_twoBlockProducts
+    {m : ℕ} (hm : 0 < m)
+    (Lflat : SchwartzMap (Fin (m + m * 2) → ℝ) ℂ →L[ℂ] ℂ)
+    (hL : ∀ (A : SchwartzMap (Fin (m * 2) → ℝ) ℂ)
+        (B : SchwartzMap (Fin m → ℝ) ℂ),
+      Lflat (twoBlockProductSchwartz (m := m) (n := m * 2) B A) = 0) :
+    Lflat = 0 := by
+  exact flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos
+    (p := m) (q := m * 2) hm (by omega) Lflat (by
+      intro B A
+      exact hL A B)
+
+/-- For positive block dimensions, flat two-block product tests have dense
+complex span. -/
+theorem flatTwoBlockProductDense_of_pos
+    {p q : ℕ} (hp : 0 < p) (hq : 0 < q) :
+    Dense ((Submodule.span ℂ
+      {F : SchwartzMap (Fin (p + q) → ℝ) ℂ |
+        ∃ G ξ, F = twoBlockProductSchwartz G ξ}) :
+      Set (SchwartzMap (Fin (p + q) → ℝ) ℂ)) := by
+  rw [Submodule.dense_iff_topologicalClosure_eq_top]
+  by_contra hM
+  let M : Submodule ℂ (SchwartzMap (Fin (p + q) → ℝ) ℂ) :=
+    Submodule.span ℂ
+      {F : SchwartzMap (Fin (p + q) → ℝ) ℂ |
+        ∃ G ξ, F = twoBlockProductSchwartz G ξ}
+  have hx : ∃ x : SchwartzMap (Fin (p + q) → ℝ) ℂ,
+      x ∉ M.topologicalClosure := by
+    by_contra hx
+    apply hM
+    rw [Submodule.eq_top_iff']
+    intro x
+    by_contra hx'
+    exact hx ⟨x, hx'⟩
+  have hconv : Convex ℝ
+      (M.topologicalClosure :
+        Set (SchwartzMap (Fin (p + q) → ℝ) ℂ)) := by
+    simpa using (M.topologicalClosure.restrictScalars ℝ).convex
+  rcases hx with ⟨x, hx⟩
+  obtain ⟨f, u, hleft, hright⟩ :=
+    RCLike.geometric_hahn_banach_closed_point
+      (𝕜 := ℂ)
+      (E := SchwartzMap (Fin (p + q) → ℝ) ℂ)
+      (x := x)
+      (s := (M.topologicalClosure :
+        Set (SchwartzMap (Fin (p + q) → ℝ) ℂ)))
+      hconv M.isClosed_topologicalClosure hx
+  have hu_pos : 0 < u := by
+    have hzero := hleft 0 M.topologicalClosure.zero_mem
+    simpa using hzero
+  have hre_zero :
+      ∀ y ∈ M.topologicalClosure, (f y).re = 0 := by
+    intro y hy
+    by_contra hre
+    let r : ℝ := (u + 1) / (f y).re
+    have hlt := hleft ((r : ℂ) • y) (M.topologicalClosure.smul_mem (r : ℂ) hy)
+    have hreval : (f ((r : ℂ) • y)).re = u + 1 := by
+      calc
+        (f ((r : ℂ) • y)).re = r * (f y).re := by
+          simp [r, mul_comm]
+        _ = u + 1 := by
+          dsimp [r]
+          field_simp [hre]
+    have : ¬ u + 1 < u := by linarith
+    exact this (hreval ▸ hlt)
+  have hvanish :
+      ∀ y ∈ M.topologicalClosure, f y = 0 := by
+    intro y hy
+    have hre : (f y).re = 0 := hre_zero y hy
+    have hIy_re : (f ((Complex.I : ℂ) • y)).re = 0 := by
+      exact hre_zero ((Complex.I : ℂ) • y) (M.topologicalClosure.smul_mem Complex.I hy)
+    have him : (f y).im = 0 := by
+      have htmp : -(f y).im = 0 := by
+        simpa [ContinuousLinearMap.map_smul, mul_comm, mul_left_comm, mul_assoc] using hIy_re
+      linarith
+    exact Complex.ext hre him
+  have hfS : ∀ y ∈ M, f y = 0 := by
+    intro y hy
+    exact hvanish y (subset_closure hy)
+  have hf_prod :
+      ∀ (G : SchwartzMap (Fin p → ℝ) ℂ)
+        (ξ : SchwartzMap (Fin q → ℝ) ℂ),
+        f (twoBlockProductSchwartz G ξ) = 0 := by
+    intro G ξ
+    exact hfS _ (Submodule.subset_span ⟨G, ξ, rfl⟩)
+  have hf_zero : f = 0 :=
+    flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos hp hq f hf_prod
+  have : ¬ u < (0 : ℝ) := not_lt_of_ge hu_pos.le
+  apply this
+  simpa [hf_zero] using hright
 
 /-- A mixed-chart continuous linear functional is zero if it vanishes on all
 standard mixed product tensors. -/

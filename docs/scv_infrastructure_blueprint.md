@@ -6737,8 +6737,8 @@ Proof transcript for the next target:
       theorem for the final CLM is definitionally `rfl`.
 
       Lean implementation lock for dense split tensors: factor the existing
-      `ProductDensity.lean` argument, do not postulate density.  The only flat
-      theorems to add are
+      `ProductDensity.lean` argument, do not postulate density.  The checked
+      implementation adds exactly the positive flat theorems
       `flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos` and
       `flatTwoBlockProductDense_of_pos`; their zero-block generalization is
       intentionally not part of the route.  The mixed theorem handles `m = 0`
@@ -7530,10 +7530,19 @@ Proof transcript for the next target:
        The first split tensor identities are checked too:
        `mixedBaseFiberTensor`, `mixedBaseFiberTensor_apply`,
        `schwartzPartialEval₂CLM_mixedBaseFiberTensor`, and
-       `mixedRealFiberIntegralCLM_mixedBaseFiberTensor`.
+       `mixedRealFiberIntegralCLM_mixedBaseFiberTensor`.  The mixed-base
+       dense tensor packet is checked as well:
+       `flatComplexCLM_zero_of_zero_on_twoBlockProducts_of_pos`,
+       `flatTwoBlockProductDense_of_pos`, `mixedBaseFlatCLE`,
+       `mixedBaseFlatCLE_apply`, `mixedBaseFiberFlatCLE`,
+       `mixedBaseFiberFlatCLE_apply`, `mixedBaseFiberFlatCLE_symm_append`,
+       `flatTwoBlockProduct_eq_mixedBaseFiberTensor`,
+       `mixedBaseFiberCLM_zero_of_zero_on_tensors`,
+       `mixedBaseFiberProductTensorDense_zero`,
+       `mixedBaseFiberProductTensorDense_of_pos`, and
+       `mixedBaseFiberProductTensorDense_all`.
 
        Next local descent infrastructure:
-       `mixedBaseFiberProductTensorDense_all`,
        `mixedRealFiberIntegralScalarCLM`,
        `mixedRealFiberIntegralScalarCLM_apply`,
        `mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
