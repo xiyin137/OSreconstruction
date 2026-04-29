@@ -1649,4 +1649,231 @@ theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral {m : ℕ
       T A) (mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM L)
   simpa [ContinuousLinearMap.comp_apply] using h.symm
 
+/-- Real parameter shear `(t,a) ↦ (t,t+a)`. -/
+private def realParamKernelLeftLinearEquiv (m : ℕ) :
+    ((Fin m → ℝ) × (Fin m → ℝ)) ≃ₗ[ℝ]
+      ((Fin m → ℝ) × (Fin m → ℝ)) where
+  toFun := fun p => (p.1, p.1 + p.2)
+  invFun := fun p => (p.1, p.2 - p.1)
+  map_add' := by
+    intro x y
+    ext i <;> simp [add_assoc, add_comm, add_left_comm]
+  map_smul' := by
+    intro c x
+    ext i <;> simp [smul_add]
+  left_inv := by
+    intro p
+    ext i <;> simp [sub_eq_add_neg, add_comm, add_left_comm]
+  right_inv := by
+    intro p
+    ext i <;> simp [sub_eq_add_neg, add_comm]
+
+def realParamKernelLeftCLE (m : ℕ) :
+    ((Fin m → ℝ) × (Fin m → ℝ)) ≃L[ℝ]
+      ((Fin m → ℝ) × (Fin m → ℝ)) :=
+  (realParamKernelLeftLinearEquiv m).toContinuousLinearEquiv
+
+@[simp]
+theorem realParamKernelLeftCLE_apply {m : ℕ}
+    (t a : Fin m → ℝ) :
+    realParamKernelLeftCLE m (t, a) = (t, t + a) := by
+  rfl
+
+@[simp]
+theorem realParamKernelLeftCLE_symm_apply {m : ℕ}
+    (t b : Fin m → ℝ) :
+    (realParamKernelLeftCLE m).symm (t, b) = (t, b - t) := by
+  rfl
+
+/-- Real parameter shear `(t,a) ↦ (t-a,t)`. -/
+private def realParamKernelRightLinearEquiv (m : ℕ) :
+    ((Fin m → ℝ) × (Fin m → ℝ)) ≃ₗ[ℝ]
+      ((Fin m → ℝ) × (Fin m → ℝ)) where
+  toFun := fun p => (p.1 - p.2, p.1)
+  invFun := fun p => (p.2, p.2 - p.1)
+  map_add' := by
+    intro x y
+    ext i <;> simp [sub_eq_add_neg, add_assoc, add_comm, add_left_comm]
+  map_smul' := by
+    intro c x
+    ext i <;> simp [smul_sub]
+  left_inv := by
+    intro p
+    ext i <;> simp [sub_eq_add_neg, add_comm]
+  right_inv := by
+    intro p
+    ext i <;> simp [sub_eq_add_neg, add_comm, add_left_comm]
+
+def realParamKernelRightCLE (m : ℕ) :
+    ((Fin m → ℝ) × (Fin m → ℝ)) ≃L[ℝ]
+      ((Fin m → ℝ) × (Fin m → ℝ)) :=
+  (realParamKernelRightLinearEquiv m).toContinuousLinearEquiv
+
+@[simp]
+theorem realParamKernelRightCLE_apply {m : ℕ}
+    (t a : Fin m → ℝ) :
+    realParamKernelRightCLE m (t, a) = (t - a, t) := by
+  rfl
+
+@[simp]
+theorem realParamKernelRightCLE_symm_apply {m : ℕ}
+    (u t : Fin m → ℝ) :
+    (realParamKernelRightCLE m).symm (u, t) = (t, t - u) := by
+  rfl
+
+/-- Two-parameter real kernel for the left local descent test. -/
+def realParamKernelLeft {m : ℕ}
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap ((Fin m → ℝ) × (Fin m → ℝ)) ℂ :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (realParamKernelLeftCLE m))
+    (schwartzExternalProduct η ψ)
+
+@[simp]
+theorem realParamKernelLeft_apply {m : ℕ}
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (t a : Fin m → ℝ) :
+    realParamKernelLeft ψ η (t, a) = η t * ψ (t + a) := by
+  simp [realParamKernelLeft, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- Two-parameter real kernel for the right local descent test. -/
+def realParamKernelRight {m : ℕ}
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap ((Fin m → ℝ) × (Fin m → ℝ)) ℂ :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ (realParamKernelRightCLE m))
+    (schwartzExternalProduct η ψ)
+
+@[simp]
+theorem realParamKernelRight_apply {m : ℕ}
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (t a : Fin m → ℝ) :
+    realParamKernelRight ψ η (t, a) = η (t - a) * ψ t := by
+  simp [realParamKernelRight, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- Local descent shear for the left parameter test:
+`((z,t),a) ↦ (z - realEmbed a, (t,a))`. -/
+private def localDescentParamTestLeftLinearEquiv (m : ℕ) :
+    ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃ₗ[ℝ]
+      (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) where
+  toFun := fun p =>
+    (p.1.1 - realEmbedContinuousLinearMap m p.2, (p.1.2, p.2))
+  invFun := fun p =>
+    ((p.1 + realEmbedContinuousLinearMap m p.2.2, p.2.1), p.2.2)
+  map_add' := by
+    intro x y
+    ext i <;> simp [realEmbedContinuousLinearMap, sub_eq_add_neg,
+      add_assoc, add_comm, add_left_comm]
+  map_smul' := by
+    intro c x
+    ext i <;> simp [realEmbedContinuousLinearMap, smul_sub]
+    change (c : ℂ) * (x.2 i : ℂ) = (c : ℂ) * (x.2 i : ℂ)
+    rfl
+  left_inv := by
+    intro p
+    ext i <;> simp [realEmbedContinuousLinearMap, sub_eq_add_neg,
+      add_assoc]
+  right_inv := by
+    intro p
+    ext i <;> simp [realEmbedContinuousLinearMap, sub_eq_add_neg,
+      add_assoc]
+
+def localDescentParamTestLeftCLE (m : ℕ) :
+    ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃L[ℝ]
+      (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) :=
+  (localDescentParamTestLeftLinearEquiv m).toContinuousLinearEquiv
+
+@[simp]
+theorem localDescentParamTestLeftCLE_apply {m : ℕ}
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    localDescentParamTestLeftCLE m ((z, t), a) =
+      (z - realEmbed a, (t, a)) := by
+  ext i <;> simp [localDescentParamTestLeftCLE,
+    localDescentParamTestLeftLinearEquiv]
+
+@[simp]
+theorem localDescentParamTestLeftCLE_symm_apply {m : ℕ}
+    (w : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    (localDescentParamTestLeftCLE m).symm (w, (t, a)) =
+      ((w + realEmbed a, t), a) := by
+  ext i <;> simp [localDescentParamTestLeftCLE,
+    localDescentParamTestLeftLinearEquiv]
+
+/-- Local descent associator for the right parameter test:
+`((z,t),a) ↦ (z,(t,a))`. -/
+private def localDescentParamTestRightLinearEquiv (m : ℕ) :
+    ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃ₗ[ℝ]
+      (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) where
+  toFun := fun p => (p.1.1, (p.1.2, p.2))
+  invFun := fun p => ((p.1, p.2.1), p.2.2)
+  map_add' := by
+    intro x y
+    rfl
+  map_smul' := by
+    intro c x
+    rfl
+  left_inv := by
+    intro p
+    rfl
+  right_inv := by
+    intro p
+    rfl
+
+def localDescentParamTestRightCLE (m : ℕ) :
+    ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ≃L[ℝ]
+      (ComplexChartSpace m × ((Fin m → ℝ) × (Fin m → ℝ))) :=
+  (localDescentParamTestRightLinearEquiv m).toContinuousLinearEquiv
+
+@[simp]
+theorem localDescentParamTestRightCLE_apply {m : ℕ}
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    localDescentParamTestRightCLE m ((z, t), a) =
+      (z, (t, a)) := by
+  rfl
+
+@[simp]
+theorem localDescentParamTestRightCLE_symm_apply {m : ℕ}
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    (localDescentParamTestRightCLE m).symm (z, (t, a)) =
+      ((z, t), a) := by
+  rfl
+
+/-- Left three-variable local descent test. -/
+def localDescentParamTestLeft {m : ℕ}
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (localDescentParamTestLeftCLE m))
+    (schwartzExternalProduct φ (realParamKernelLeft ψ η))
+
+@[simp]
+theorem localDescentParamTestLeft_apply {m : ℕ}
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    localDescentParamTestLeft φ ψ η ((z, t), a) =
+      φ (z - realEmbed a) * η t * ψ (t + a) := by
+  simp [localDescentParamTestLeft,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply, mul_assoc]
+
+/-- Right three-variable local descent test. -/
+def localDescentParamTestRight {m : ℕ}
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ :=
+  (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (localDescentParamTestRightCLE m))
+    (schwartzExternalProduct φ (realParamKernelRight ψ η))
+
+@[simp]
+theorem localDescentParamTestRight_apply {m : ℕ}
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ η : SchwartzMap (Fin m → ℝ) ℂ)
+    (z : ComplexChartSpace m) (t a : Fin m → ℝ) :
+    localDescentParamTestRight φ ψ η ((z, t), a) =
+      φ z * η (t - a) * ψ t := by
+  simp [localDescentParamTestRight,
+    SchwartzMap.compCLMOfContinuousLinearEquiv_apply, mul_assoc]
+
 end SCV

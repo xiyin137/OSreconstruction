@@ -2115,26 +2115,30 @@ Current implementation order:
    `SCV.mixedRealFiberIntegralScalarCLM_apply`,
    `SCV.mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
    `SCV.continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`,
-   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
-   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local descent
-   package
    `SCV.realParamKernelLeftCLE`,
    `SCV.realParamKernelLeftCLE_apply`,
+   `SCV.realParamKernelLeftCLE_symm_apply`,
    `SCV.realParamKernelLeft`,
    `SCV.realParamKernelLeft_apply`,
    `SCV.realParamKernelRightCLE`,
    `SCV.realParamKernelRightCLE_apply`,
+   `SCV.realParamKernelRightCLE_symm_apply`,
    `SCV.realParamKernelRight`,
    `SCV.realParamKernelRight_apply`,
    `SCV.localDescentParamTestLeftCLE`,
    `SCV.localDescentParamTestLeftCLE_apply`,
+   `SCV.localDescentParamTestLeftCLE_symm_apply`,
    `SCV.localDescentParamTestLeft`,
    `SCV.localDescentParamTestLeft_apply`,
    `SCV.localDescentParamTestRightCLE`,
    `SCV.localDescentParamTestRightCLE_apply`,
+   `SCV.localDescentParamTestRightCLE_symm_apply`,
    `SCV.localDescentParamTestRight`,
    `SCV.localDescentParamTestRight_apply`,
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
+   The remaining pure-SCV declarations on this route are now the local descent
+   package
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestLeft`,
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestRight`,
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestLeft`,
@@ -2424,6 +2428,13 @@ Current implementation order:
    identify it with applying a base continuous functional after
    `SCV.mixedRealFiberIntegralCLM`.  This is the intended scalarized
    substitute for any unsupported Schwartz-valued Bochner integral.
+   The parameter-kernel constructors and actual three-variable local descent
+   tests are now checked up to their pointwise apply theorems:
+   `SCV.realParamKernelLeft`, `SCV.realParamKernelRight`,
+   `SCV.localDescentParamTestLeft`, and
+   `SCV.localDescentParamTestRight`, all built by honest continuous linear
+   equivalence precomposition.  Their remaining consumers are the two
+   mixed-fiber change-of-variables identities and the local quotient theorem.
    The pure-SCV local-EOW support-preservation bridge needed before the
    distributional holomorphy integration-by-parts theorem is now checked in
    `SCV/DistributionalEOWSupport.lean`:

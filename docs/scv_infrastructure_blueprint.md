@@ -225,18 +225,22 @@ theorem mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM
 theorem continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral
 def realParamKernelLeftCLE
 theorem realParamKernelLeftCLE_apply
+theorem realParamKernelLeftCLE_symm_apply
 def realParamKernelLeft
 theorem realParamKernelLeft_apply
 def realParamKernelRightCLE
 theorem realParamKernelRightCLE_apply
+theorem realParamKernelRightCLE_symm_apply
 def realParamKernelRight
 theorem realParamKernelRight_apply
 def localDescentParamTestLeftCLE
 theorem localDescentParamTestLeftCLE_apply
+theorem localDescentParamTestLeftCLE_symm_apply
 def localDescentParamTestLeft
 theorem localDescentParamTestLeft_apply
 def localDescentParamTestRightCLE
 theorem localDescentParamTestRightCLE_apply
+theorem localDescentParamTestRightCLE_symm_apply
 def localDescentParamTestRight
 theorem localDescentParamTestRight_apply
 theorem mixedRealFiberIntegralCLM_localDescentParamTestLeft
@@ -7553,10 +7557,24 @@ Proof transcript for the next target:
        `mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,
        and
        `continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral`.
+       The parameter-kernel and three-variable local-test constructors are
+       checked too:
+       `realParamKernelLeftCLE`, `realParamKernelLeftCLE_apply`,
+       `realParamKernelLeftCLE_symm_apply`, `realParamKernelLeft`,
+       `realParamKernelLeft_apply`, `realParamKernelRightCLE`,
+       `realParamKernelRightCLE_apply`,
+       `realParamKernelRightCLE_symm_apply`, `realParamKernelRight`,
+       `realParamKernelRight_apply`, `localDescentParamTestLeftCLE`,
+       `localDescentParamTestLeftCLE_apply`,
+       `localDescentParamTestLeftCLE_symm_apply`,
+       `localDescentParamTestLeft`, `localDescentParamTestLeft_apply`,
+       `localDescentParamTestRightCLE`,
+       `localDescentParamTestRightCLE_apply`,
+       `localDescentParamTestRightCLE_symm_apply`,
+       `localDescentParamTestRight`, and
+       `localDescentParamTestRight_apply`.
 
        Next local descent infrastructure:
-       `realParamKernelLeft`, `realParamKernelLeft_apply`,
-       `realParamKernelRight`, `realParamKernelRight_apply`,
        `SupportsInOpen.complexTranslateSchwartz_of_image_subset` (checked in
        `SCV/DistributionalEOWSupport.lean`), and
        `shearedProductKernelFunctional_localQuotient_of_productCovariant`:
