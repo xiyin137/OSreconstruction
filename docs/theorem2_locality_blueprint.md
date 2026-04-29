@@ -1323,10 +1323,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `hkernel_cont` as the Banach-Steinhaus input.  The bundled
       `localRudin_varyingKernel_boundaryData_of_clm` is also checked: it
       derives `hkernel_cont`, returns scalar `hbv_cont`, and packages the two
-      side limits.  The remaining Lean target before the mixed pairing CLM has
-      an exact proof transcript in `docs/scv_infrastructure_blueprint.md`: the
-      final cutoff-envelope continuity theorem.  The checked parametric bound
-      theorem only uses continuity of `Fplus`/`Fminus` on the original side domains;
+      side limits.  The final cutoff-envelope continuity theorem
+      `SCV.continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand` is now
+      checked too, so the next Lean target is the mixed pairing CLM itself.
+      The checked parametric bound theorem only uses continuity of
+      `Fplus`/`Fminus` on the original side domains;
       differentiability of the mollified side functions on `Dplus`/`Dminus`
       is derived separately for the measurability input to dominated
       continuity.  The boundary limits in that stack
@@ -2018,6 +2019,7 @@ Current implementation order:
    `SCV.local_continuous_edge_of_the_wedge_envelope`.  The local-descent and
    varying-kernel checked additions also include
    `SCV.exists_bound_localRudinIntegrand_varyingKernel`,
+   `SCV.continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`,
    `SCV.norm_realEmbed_eq`,
    `SCV.tsupport_subset_preimage_tsupport_complexTranslateSchwartz`,
    `SCV.integral_mul_complexTranslateSchwartz_eq_shift_of_support`,
@@ -2026,7 +2028,6 @@ Current implementation order:
    `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
    The remaining pure-SCV declarations on this route are now the local descent
    package
-   `SCV.continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`,
    `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`,
    `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
    `SCV.schwartzTensorProduct₂CLMLeft`,

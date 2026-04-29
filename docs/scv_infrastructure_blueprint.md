@@ -4500,7 +4500,8 @@ Proof transcript for the next target:
    choice-valued map `z ↦ Lchart z`: that would hide a measurability gap.
    Instead, define the integral from the actual cutoff envelope expression and
    use the chart-kernel value CLM only to prove linearity and the uniform
-   seminorm bound.  The continuity helper needed for the definition is:
+   seminorm bound.  The continuity helper needed for the definition is now
+   checked:
 
    ```lean
    theorem continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand
@@ -4601,6 +4602,9 @@ Proof transcript for the next target:
                (fun w => realMollifyLocal Fminus (η z) w) z)
          (Metric.closedBall (0 : ComplexChartSpace m) Rcut)
    ```
+   This is checked in `SCV/VaryingKernelContinuity.lean`; the proof consumes
+   the checked parametric Rudin-integrand bound, the moving-kernel boundary
+   data theorem, and the actual chart-kernel cutoff slice.
 
    Proof transcript for this continuity helper.  This theorem should not be
    implemented as one monolithic proof; the Lean-ready route is the following
@@ -6973,7 +6977,7 @@ Proof transcript for the next target:
        limits.  The same file now also checks
        `exists_bound_localRudinIntegrand_varyingKernel`, the compact
        parametric Rudin-integrand bound with the varying boundary branch.  The
-       remaining continuity-support target before the mixed pairing CLM is
+       same file now also checks
        `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
        defining the mixed integral, prove continuity of the actual cutoff
        envelope integrand
