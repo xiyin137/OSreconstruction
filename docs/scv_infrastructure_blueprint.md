@@ -6408,8 +6408,13 @@ Proof transcript for the next target:
       `κ a := SchwartzMap.smulLeftCLM ℂ (η : (Fin m -> ℝ) -> ℂ)
         (translateSchwartz a ψ)`.
       If `κ a = 0`, the covariance identity for that parameter is trivial.
-      Otherwise choose `t ∈ tsupport (κ a)`.  Then
-      `t ∈ tsupport η` and `t + a ∈ tsupport ψ`, so
+      Otherwise choose an ordinary support point of `κ a`, hence a point
+      `t ∈ tsupport (κ a)`.  The checked
+      `SchwartzMap.tsupport_smulLeftCLM_subset` gives
+      `t ∈ tsupport η` and
+      `t ∈ tsupport (translateSchwartz a ψ)`, and
+      `tsupport_comp_subset_preimage` for the real translation gives
+      `t + a ∈ tsupport ψ`.  Therefore
       `‖a‖ = ‖(t + a) - t‖ ≤ r + rη`.  This bound gives:
       - `SupportsInOpen φ Ucov`, from `hφ` and `hmargin` with translation `0`
         using `0 ≤ r + rη`;
@@ -6423,7 +6428,9 @@ Proof transcript for the next target:
         `hr_nonneg`;
       - `KernelSupportWithin (translateSchwartz (-a) (κ a)) (r + rη)`, from
         the pointwise formula
-        `(translateSchwartz (-a) (κ a)) x = η (x - a) * ψ x`, hence support
+        `(translateSchwartz (-a) (κ a)) x = η (x - a) * ψ x`; after rewriting
+        the translated factor as multiplication by `ψ`, the checked
+        `SchwartzMap.tsupport_smulLeftCLM_subset` puts the topological support
         inside `tsupport ψ`, then enlarge radius `r ≤ r + rη` using
         `hrη_nonneg`.
       Therefore `hcov (-a)` applies and gives
