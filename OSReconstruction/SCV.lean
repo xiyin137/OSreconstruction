@@ -53,6 +53,7 @@ import OSReconstruction.SCV.VaryingKernelContinuity
 import OSReconstruction.SCV.LocalEOWPairingCLM
 import OSReconstruction.SCV.LocalDescentSupport
 import OSReconstruction.SCV.LocalProductDescent
+import OSReconstruction.SCV.LocalProductDescentIntegrals
 import OSReconstruction.SCV.HasFDerivAtProd
 import OSReconstruction.SCV.PartialFourierSpatial
 

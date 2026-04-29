@@ -1880,9 +1880,11 @@ Implementation-readiness gate for the next Lean stage:
   checked.  The pairing CLM and local covariance layer are now checked as
   `regularizedLocalEOW_pairingCLM_of_fixedWindow` and
   `regularizedLocalEOW_pairingCLM_localCovariant` in
-  `SCV/LocalEOWPairingCLM.lean`.  The remaining Lean order, now fully
-  proof-documented in `docs/scv_infrastructure_blueprint.md`, is: prove the
-  scalarized local quotient and local product-test descent; prove
+  `SCV/LocalEOWPairingCLM.lean`.  The mixed-fiber change-of-variables and
+  partial-evaluation identity layer is now checked in
+  `SCV/LocalProductDescentIntegrals.lean`.  The remaining Lean order, now
+  fully proof-documented in `docs/scv_infrastructure_blueprint.md`, is: prove
+  the scalarized local quotient and local product-test descent; prove
   `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
   finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
   the explicit approximate-identity and side-agreement hypotheses.  The
@@ -2142,15 +2144,15 @@ Current implementation order:
    `SCV.localDescentParamTestRightCLE_symm_apply`,
    `SCV.localDescentParamTestRight`,
    `SCV.localDescentParamTestRight_apply`,
-   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
-   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local descent
-   package
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestLeft`,
    `SCV.mixedRealFiberIntegralCLM_localDescentParamTestRight`,
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestLeft`,
    `SCV.translateSchwartz_neg_smulLeft_eta_translate`,
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestRight`,
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
+   The remaining pure-SCV declarations on this route are now the local descent
+   package
    `SCV.shearedProductKernelFunctional_localQuotient_of_productCovariant`,
    `SCV.translationCovariantProductKernel_descends_local`,
    `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,

@@ -6756,13 +6756,13 @@ Proof transcript for the next target:
       File-ownership lock for the remaining local descent work: the checked
       substrate currently ends in `OSReconstruction/SCV/LocalProductDescent.lean`.
       That file is close to the hard split threshold, so the next Lean stage
-      must go into a companion file, e.g.
+      has begun in
       `OSReconstruction/SCV/LocalProductDescentIntegrals.lean`, importing
-      `OSReconstruction.SCV.LocalProductDescent`.  `OSReconstruction/SCV.lean`
-      should import the companion immediately after `LocalProductDescent`.
-      The companion owns exactly the Step 4 mixed-fiber change-of-variables
-      identities, the three partial-evaluation identities, the scalarized local
-      quotient, and `translationCovariantProductKernel_descends_local`.
+      `OSReconstruction.SCV.LocalProductDescent`; `OSReconstruction/SCV.lean`
+      imports the companion immediately after `LocalProductDescent`.  The
+      companion owns the Step 4 mixed-fiber change-of-variables identities, the
+      three partial-evaluation identities, the scalarized local quotient, and
+      `translationCovariantProductKernel_descends_local`.
       `LocalProductDescent.lean` stays the sorry-free substrate of dense
       split tensors, scalarization, and parameter-test constructors.
 
@@ -6812,6 +6812,9 @@ Proof transcript for the next target:
               (localDescentParamTestRight φ ψ η) =
             schwartzTensorProduct₂ φ ψ
       ```
+      Status: the parameter-test constructors are checked in
+      `LocalProductDescent.lean`, and the two displayed mixed-fiber integral
+      identities are checked in `LocalProductDescentIntegrals.lean`.
       These definitions are genuine Schwartz tests, not placeholders.  Build
       the real two-parameter factors first:
       ```lean
@@ -7002,6 +7005,8 @@ Proof transcript for the next target:
                 (SchwartzMap.smulLeftCLM ℂ (η : P -> ℂ)
                   (translateSchwartz a ψ)))
       ```
+      Status: these three partial-evaluation and translated-support
+      identities are checked in `LocalProductDescentIntegrals.lean`.
       The middle theorem is pure extensionality:
       both sides evaluate to `η (x - a) * ψ x`.  It is the support theorem
       needed to see that the translated right kernel is supported where `ψ`
