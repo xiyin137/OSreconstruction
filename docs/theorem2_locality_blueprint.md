@@ -1015,6 +1015,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.exists_localEOWRealLinearPart_ball_subset`,
      `SCV.StrictPositiveImagBall`,
      `SCV.StrictNegativeImagBall`,
+     `SCV.StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le`,
+     `SCV.StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le`,
      `SCV.isOpen_StrictPositiveImagBall`,
      `SCV.isOpen_StrictNegativeImagBall`,
      `SCV.StrictPositiveImagBall_im_nonneg`,
@@ -1555,7 +1557,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
        `closedBall 0 r`.  On the positive and negative wedge pieces, the side
        identities for `Gchart ψρ` reduce to real mollification with the pushed
        kernels, and the checked approximate-identity theorem gives convergence
-       to `FplusChart` and `FminusChart`.  The checked
+       to `FplusChart` and `FminusChart`.  The translate-margin hypotheses for
+       those approximate-identity calls are not implicit: for
+       `z ∈ StrictPositiveImagBall σ` or `z ∈ StrictNegativeImagBall σ` and
+       `‖t‖ ≤ σ`, the checked strict-side real-translation lemmas place
+       `z + realEmbed t` in `Metric.ball 0 (4 * σ)` with the same strict side
+       sign.  The checked
        `regularizedEnvelope_chartEnvelope_from_localCovariantProductKernel`
        constructs `Hdist`, proves local distributional holomorphy from local
        covariance, and proves that the same sequence converges pointwise to
@@ -2827,9 +2834,12 @@ Current implementation order:
    `exists_localEOW_truncatedSideCones_for_sliceMargin` applies.  The
    approximate-identity side limits are proved by
    `regularizedEnvelope_kernelLimit_from_representation` on the positive and
-   negative chart-side neighborhoods, with the representation identity
-   unfolding `realMollifyLocal`; no free `hkernel_limit` or slow-growth input
-   is permitted in the one-chart theorem.
+   negative chart-side neighborhoods, with
+   `StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le` and
+   `StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le` giving the exact
+   real-translation margins for kernels supported in `closedBall 0 σ`.  The
+   representation identity then unfolds `realMollifyLocal`; no free
+   `hkernel_limit` or slow-growth input is permitted in the one-chart theorem.
    Then prove
    the OS45 instantiation
    `BHW.os45_adjacent_commonBoundaryEnvelope` and package its output as

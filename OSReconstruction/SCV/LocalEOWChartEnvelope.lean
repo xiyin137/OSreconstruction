@@ -143,6 +143,60 @@ theorem StrictNegativeImagBall_neg_im_sum_le_card_mul {R : ℝ}
       Finset.sum_le_sum (fun j _ => hcoord j)
     _ = (Fintype.card (Fin m) : ℝ) * R := by simp
 
+/-- Adding a small real chart displacement to a strict positive side point
+preserves strict positivity and only enlarges the chart norm by the real
+displacement size. -/
+theorem StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le {R r Rbig : ℝ}
+    {w : ComplexChartSpace m}
+    (hw : w ∈ StrictPositiveImagBall (m := m) R)
+    {t : Fin m → ℝ} (ht : ‖t‖ ≤ r)
+    (hRr : R + r < Rbig) :
+    w + realEmbed t ∈ Metric.ball (0 : ComplexChartSpace m) Rbig ∧
+      ∀ j, 0 < ((w + realEmbed t) j).im := by
+  have hw_norm : ‖w‖ < R := by
+    simpa [Metric.mem_ball, dist_zero_right] using hw.1
+  have hreal_norm : ‖realEmbed t‖ ≤ ‖t‖ := by
+    rw [pi_norm_le_iff_of_nonneg (norm_nonneg t)]
+    intro j
+    simp [realEmbed, Complex.norm_real]
+    exact norm_le_pi_norm t j
+  constructor
+  · rw [Metric.mem_ball, dist_zero_right]
+    calc
+      ‖w + realEmbed t‖ ≤ ‖w‖ + ‖realEmbed t‖ := norm_add_le _ _
+      _ ≤ ‖w‖ + ‖t‖ := add_le_add le_rfl hreal_norm
+      _ < R + r := add_lt_add_of_lt_of_le hw_norm ht
+      _ < Rbig := hRr
+  · intro j
+    simpa [realEmbed] using hw.2 j
+
+/-- Adding a small real chart displacement to a strict negative side point
+preserves strict negativity and only enlarges the chart norm by the real
+displacement size. -/
+theorem StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le {R r Rbig : ℝ}
+    {w : ComplexChartSpace m}
+    (hw : w ∈ StrictNegativeImagBall (m := m) R)
+    {t : Fin m → ℝ} (ht : ‖t‖ ≤ r)
+    (hRr : R + r < Rbig) :
+    w + realEmbed t ∈ Metric.ball (0 : ComplexChartSpace m) Rbig ∧
+      ∀ j, ((w + realEmbed t) j).im < 0 := by
+  have hw_norm : ‖w‖ < R := by
+    simpa [Metric.mem_ball, dist_zero_right] using hw.1
+  have hreal_norm : ‖realEmbed t‖ ≤ ‖t‖ := by
+    rw [pi_norm_le_iff_of_nonneg (norm_nonneg t)]
+    intro j
+    simp [realEmbed, Complex.norm_real]
+    exact norm_le_pi_norm t j
+  constructor
+  · rw [Metric.mem_ball, dist_zero_right]
+    calc
+      ‖w + realEmbed t‖ ≤ ‖w‖ + ‖realEmbed t‖ := norm_add_le _ _
+      _ ≤ ‖w‖ + ‖t‖ := add_le_add le_rfl hreal_norm
+      _ < R + r := add_lt_add_of_lt_of_le hw_norm ht
+      _ < Rbig := hRr
+  · intro j
+    simpa [realEmbed] using hw.2 j
+
 /-- The imaginary part of the affine local EOW chart is the real-linear chart
 part applied to the coordinate imaginary vector. -/
 theorem localEOWChart_im_eq_realLinearPart_im
