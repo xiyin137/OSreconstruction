@@ -722,6 +722,305 @@ theorem localEOWChart_real_add_imag
   rw [hI]
   ring
 
+/-- Transport a uniform original-coordinate cone boundary value to the strict
+positive and negative coordinate orthants of a local EOW chart. -/
+theorem chartOrthantBoundaryValue_from_uniformConeBoundaryValue
+    {m : ℕ} (hm : 0 < m)
+    (E C : Set (Fin m → ℝ))
+    (hC_conv : Convex ℝ C)
+    (ys : Fin m → Fin m → ℝ)
+    (hys_mem : ∀ j, ys j ∈ C)
+    (hli : LinearIndependent ℝ ys)
+    (x0 : Fin m → ℝ)
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_bv :
+      ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+        ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+          HasCompactSupport (φ : (Fin m → ℝ) → ℂ) →
+          tsupport (φ : (Fin m → ℝ) → ℂ) ⊆ E →
+          TendstoUniformlyOn
+            (fun (ε : ℝ) η =>
+              ∫ x : Fin m → ℝ,
+                Fplus (fun a => (x a : ℂ) +
+                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
+            (fun _ : Fin m → ℝ => T φ)
+            (nhdsWithin 0 (Set.Ioi 0))
+            Kη)
+    (hminus_bv :
+      ∀ Kη : Set (Fin m → ℝ), IsCompact Kη → Kη ⊆ C →
+        ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+          HasCompactSupport (φ : (Fin m → ℝ) → ℂ) →
+          tsupport (φ : (Fin m → ℝ) → ℂ) ⊆ E →
+          TendstoUniformlyOn
+            (fun (ε : ℝ) η =>
+              ∫ x : Fin m → ℝ,
+                Fminus (fun a => (x a : ℂ) -
+                  (ε : ℂ) * (η a : ℂ) * Complex.I) * φ x)
+            (fun _ : Fin m → ℝ => T φ)
+            (nhdsWithin 0 (Set.Ioi 0))
+            Kη)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hφ_compact : HasCompactSupport (φ : (Fin m → ℝ) → ℂ))
+    (hφ_chart_support :
+      ∀ u ∈ tsupport (φ : (Fin m → ℝ) → ℂ),
+        localEOWRealChart x0 ys u ∈ E) :
+    let FplusChart : ComplexChartSpace m → ℂ :=
+      fun w => Fplus (localEOWChart x0 ys w)
+    let FminusChart : ComplexChartSpace m → ℂ :=
+      fun w => Fminus (localEOWChart x0 ys w)
+    let Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+      localEOWAffineDistributionPullbackCLM x0 ys hli T
+    (Filter.Tendsto
+      (fun y : Fin m → ℝ =>
+        ∫ u : Fin m → ℝ,
+          FplusChart (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I) * φ u)
+      (nhdsWithin 0 {y : Fin m → ℝ | ∀ j, 0 < y j})
+      (nhds (Tchart φ))) ∧
+    (Filter.Tendsto
+      (fun y : Fin m → ℝ =>
+        ∫ u : Fin m → ℝ,
+          FminusChart (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I) * φ u)
+      (nhdsWithin 0 {y : Fin m → ℝ | ∀ j, y j < 0})
+      (nhds (Tchart φ))) := by
+  dsimp
+  let ψ : SchwartzMap (Fin m → ℝ) ℂ :=
+    localEOWAffineTestPushforwardCLM x0 ys hli φ
+  have hψ_compact : HasCompactSupport (ψ : (Fin m → ℝ) → ℂ) := by
+    dsimp [ψ]
+    exact HasCompactSupport.localEOWAffineTestPushforwardCLM x0 ys hli
+      hφ_compact
+  have hψ_support : tsupport (ψ : (Fin m → ℝ) → ℂ) ⊆ E := by
+    intro x hx
+    have hx_img :=
+      tsupport_localEOWAffineTestPushforwardCLM_subset x0 ys hli φ hx
+    rcases hx_img with ⟨u, hu, rfl⟩
+    exact hφ_chart_support u hu
+  let Kη : Set (Fin m → ℝ) := localEOWSimplexDirections ys
+  have hKη_compact : IsCompact Kη := by
+    dsimp [Kη]
+    exact isCompact_localEOWSimplexDirections ys
+  have hKη_C : Kη ⊆ C := by
+    dsimp [Kη]
+    exact localEOWSimplexDirections_subset_cone C hC_conv ys hys_mem
+  constructor
+  · let lplus := nhdsWithin 0 {y : Fin m → ℝ | ∀ j, 0 < y j}
+    let splus : (Fin m → ℝ) → ℝ := fun y => ∑ j, y j
+    let etaplus : (Fin m → ℝ) → Fin m → ℝ :=
+      fun y => (splus y)⁻¹ • localEOWRealLinearPart ys y
+    have hη_event : ∀ᶠ y in lplus, etaplus y ∈ Kη := by
+      haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+      filter_upwards [self_mem_nhdsWithin] with y hy
+      have hy_nonneg : ∀ j, 0 ≤ y j := fun j => (hy j).le
+      have hsum_pos : 0 < ∑ j, y j :=
+        Finset.sum_pos (fun j _hj => hy j) Finset.univ_nonempty
+      dsimp [etaplus, splus, Kη]
+      rw [show localEOWRealLinearPart ys y = ∑ j, y j • ys j by
+        ext a
+        simp [localEOWRealLinearPart]]
+      exact localEOW_positive_imag_normalized_mem_simplex
+        (ys := ys) hy_nonneg hsum_pos
+    have hplus_uniform :=
+      hplus_bv Kη hKη_compact hKη_C ψ hψ_compact hψ_support
+    have hplus_orig :
+        Filter.Tendsto
+          (fun y : Fin m → ℝ =>
+            ∫ x : Fin m → ℝ,
+              Fplus (fun a => (x a : ℂ) +
+                (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I) * ψ x)
+          lplus (nhds (T ψ)) := by
+      exact tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem
+        (F := fun (ε : ℝ) (η : Fin m → ℝ) =>
+          ∫ x : Fin m → ℝ,
+            Fplus (fun a => (x a : ℂ) +
+              (ε : ℂ) * (η a : ℂ) * Complex.I) * ψ x)
+        (c := T ψ) (a := splus) (b := etaplus)
+        hplus_uniform
+        (coordSum_tendsto_positiveOrthant_nhdsWithin_Ioi hm)
+        hη_event
+    have hplus_scaled :
+        Filter.Tendsto
+          (fun y : Fin m → ℝ =>
+            ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+              ∫ x : Fin m → ℝ,
+                Fplus (fun a => (x a : ℂ) +
+                  (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I) * ψ x)
+          lplus
+          (nhds (localEOWAffineDistributionPullbackCLM x0 ys hli T φ)) := by
+      have h := hplus_orig.const_mul ((localEOWRealJacobianAbs ys)⁻¹ : ℂ)
+      simpa [ψ, localEOWAffineDistributionPullbackCLM_apply] using h
+    have hplus_eq :
+        (fun y : Fin m → ℝ =>
+            ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+              ∫ x : Fin m → ℝ,
+                Fplus (fun a => (x a : ℂ) +
+                  (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I) * ψ x) =ᶠ[lplus]
+          (fun y : Fin m → ℝ =>
+            ∫ u : Fin m → ℝ,
+              Fplus (localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) * φ u) := by
+      haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+      filter_upwards [self_mem_nhdsWithin] with y hy
+      have hsum_pos : 0 < splus y := by
+        dsimp [splus]
+        exact Finset.sum_pos (fun j _hj => hy j) Finset.univ_nonempty
+      have hs_ne : splus y ≠ 0 := ne_of_gt hsum_pos
+      have hscale : ∀ a,
+          (splus y : ℂ) * (etaplus y a : ℂ) =
+            (localEOWRealLinearPart ys y a : ℂ) := by
+        intro a
+        have hreal :
+            splus y * etaplus y a = localEOWRealLinearPart ys y a := by
+          dsimp [etaplus]
+          change splus y *
+              ((splus y)⁻¹ * localEOWRealLinearPart ys y a) =
+            localEOWRealLinearPart ys y a
+          field_simp [hs_ne]
+        exact_mod_cast hreal
+      have hpoint : ∀ u : Fin m → ℝ,
+          Fplus (localEOWChart x0 ys
+              (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) =
+            Fplus (fun a => (localEOWRealChart x0 ys u a : ℂ) +
+              (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I) := by
+        intro u
+        congr 1
+        rw [localEOWChart_real_add_imag]
+        ext a
+        rw [hscale a]
+      let g : (Fin m → ℝ) → ℂ := fun x =>
+        Fplus (fun a => (x a : ℂ) +
+          (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I)
+      calc
+        ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+            ∫ x : Fin m → ℝ,
+              Fplus (fun a => (x a : ℂ) +
+                (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I) * ψ x =
+          ∫ u : Fin m → ℝ, g (localEOWRealChart x0 ys u) * φ u := by
+            dsimp [g, ψ]
+            exact integral_localEOWAffineTestPushforwardCLM_changeOfVariables
+              x0 ys hli (fun x => Fplus (fun a => (x a : ℂ) +
+                (splus y : ℂ) * (etaplus y a : ℂ) * Complex.I)) φ
+        _ = ∫ u : Fin m → ℝ,
+              Fplus (localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) * φ u := by
+            apply MeasureTheory.integral_congr_ae
+            filter_upwards with u
+            dsimp [g]
+            rw [hpoint u]
+    exact hplus_scaled.congr' hplus_eq
+  · let lminus := nhdsWithin 0 {y : Fin m → ℝ | ∀ j, y j < 0}
+    let sminus : (Fin m → ℝ) → ℝ := fun y => ∑ j, -y j
+    let etaminus : (Fin m → ℝ) → Fin m → ℝ :=
+      fun y => (sminus y)⁻¹ • localEOWRealLinearPart ys (-y)
+    have hη_event : ∀ᶠ y in lminus, etaminus y ∈ Kη := by
+      haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+      filter_upwards [self_mem_nhdsWithin] with y hy
+      have hy_nonneg : ∀ j, 0 ≤ -y j :=
+        fun j => (neg_pos.mpr (hy j)).le
+      have hsum_pos : 0 < ∑ j, -y j :=
+        Finset.sum_pos (fun j _hj => neg_pos.mpr (hy j))
+          Finset.univ_nonempty
+      dsimp [etaminus, sminus, Kη]
+      rw [show localEOWRealLinearPart ys (-y) = ∑ j, (-y j) • ys j by
+        ext a
+        simp [localEOWRealLinearPart]]
+      exact localEOW_positive_imag_normalized_mem_simplex
+        (ys := ys) hy_nonneg hsum_pos
+    have hminus_uniform :=
+      hminus_bv Kη hKη_compact hKη_C ψ hψ_compact hψ_support
+    have hminus_orig :
+        Filter.Tendsto
+          (fun y : Fin m → ℝ =>
+            ∫ x : Fin m → ℝ,
+              Fminus (fun a => (x a : ℂ) -
+                (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I) * ψ x)
+          lminus (nhds (T ψ)) := by
+      exact tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem
+        (F := fun (ε : ℝ) (η : Fin m → ℝ) =>
+          ∫ x : Fin m → ℝ,
+            Fminus (fun a => (x a : ℂ) -
+              (ε : ℂ) * (η a : ℂ) * Complex.I) * ψ x)
+        (c := T ψ) (a := sminus) (b := etaminus)
+        hminus_uniform
+        (coordNegSum_tendsto_negativeOrthant_nhdsWithin_Ioi hm)
+        hη_event
+    have hminus_scaled :
+        Filter.Tendsto
+          (fun y : Fin m → ℝ =>
+            ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+              ∫ x : Fin m → ℝ,
+                Fminus (fun a => (x a : ℂ) -
+                  (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I) * ψ x)
+          lminus
+          (nhds (localEOWAffineDistributionPullbackCLM x0 ys hli T φ)) := by
+      have h := hminus_orig.const_mul ((localEOWRealJacobianAbs ys)⁻¹ : ℂ)
+      simpa [ψ, localEOWAffineDistributionPullbackCLM_apply] using h
+    have hminus_eq :
+        (fun y : Fin m → ℝ =>
+            ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+              ∫ x : Fin m → ℝ,
+                Fminus (fun a => (x a : ℂ) -
+                  (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I) * ψ x) =ᶠ[lminus]
+          (fun y : Fin m → ℝ =>
+            ∫ u : Fin m → ℝ,
+              Fminus (localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) * φ u) := by
+      haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+      filter_upwards [self_mem_nhdsWithin] with y hy
+      have hsum_pos : 0 < sminus y := by
+        dsimp [sminus]
+        exact Finset.sum_pos (fun j _hj => neg_pos.mpr (hy j))
+          Finset.univ_nonempty
+      have hs_ne : sminus y ≠ 0 := ne_of_gt hsum_pos
+      have hscale : ∀ a,
+          (sminus y : ℂ) * (etaminus y a : ℂ) =
+            (localEOWRealLinearPart ys (-y) a : ℂ) := by
+        intro a
+        have hreal :
+            sminus y * etaminus y a = localEOWRealLinearPart ys (-y) a := by
+          dsimp [etaminus]
+          change sminus y *
+              ((sminus y)⁻¹ * localEOWRealLinearPart ys (-y) a) =
+            localEOWRealLinearPart ys (-y) a
+          field_simp [hs_ne]
+        exact_mod_cast hreal
+      have hpoint : ∀ u : Fin m → ℝ,
+          Fminus (localEOWChart x0 ys
+              (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) =
+            Fminus (fun a => (localEOWRealChart x0 ys u a : ℂ) -
+              (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I) := by
+        intro u
+        congr 1
+        rw [localEOWChart_real_add_imag]
+        ext a
+        have hneg : localEOWRealLinearPart ys (-y) a =
+            -localEOWRealLinearPart ys y a := by
+          rw [localEOWRealLinearPart_neg]
+          rfl
+        rw [hscale a, hneg]
+        simp
+      let g : (Fin m → ℝ) → ℂ := fun x =>
+        Fminus (fun a => (x a : ℂ) -
+          (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I)
+      calc
+        ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+            ∫ x : Fin m → ℝ,
+              Fminus (fun a => (x a : ℂ) -
+                (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I) * ψ x =
+          ∫ u : Fin m → ℝ, g (localEOWRealChart x0 ys u) * φ u := by
+            dsimp [g, ψ]
+            exact integral_localEOWAffineTestPushforwardCLM_changeOfVariables
+              x0 ys hli (fun x => Fminus (fun a => (x a : ℂ) -
+                (sminus y : ℂ) * (etaminus y a : ℂ) * Complex.I)) φ
+        _ = ∫ u : Fin m → ℝ,
+              Fminus (localEOWChart x0 ys
+                (fun j => (u j : ℂ) + (y j : ℂ) * Complex.I)) * φ u := by
+            apply MeasureTheory.integral_congr_ae
+            filter_upwards with u
+            dsimp [g]
+            rw [hpoint u]
+    exact hminus_scaled.congr' hminus_eq
+
 /-- Real-coordinate translation in the local chart corresponds to translation
 by the chart's linear part on the original real edge. -/
 theorem localEOWRealChart_sub

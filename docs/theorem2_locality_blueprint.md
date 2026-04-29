@@ -1038,7 +1038,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.chartDistributionalEOW_local_envelope`, and
      `SCV.chartDistributionalEOW_transport_originalCoords`.
    * `SCV.chartOrthantBoundaryValue_from_uniformConeBoundaryValue` is the
-     mandatory sign/Jacobian theorem.  Positive chart directions use
+     checked sign/Jacobian theorem.  Positive chart directions use
      `s = ∑ j, y j` and
      `η = s⁻¹ • localEOWRealLinearPart ys y`; negative chart directions use
      `s = ∑ j, -y j` and
