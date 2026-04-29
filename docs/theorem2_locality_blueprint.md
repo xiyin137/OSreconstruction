@@ -905,24 +905,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
        (Fplus Fminus : (Fin m -> ℂ) -> ℂ)
        (hFplus : DifferentiableOn ℂ Fplus Ωplus)
        (hFminus : DifferentiableOn ℂ Fminus Ωminus)
-       (hslow_plus :
-         ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
-           ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-             ∃ (A : ℝ) (N : ℕ) (r : ℝ), 0 < A ∧ 0 < r ∧
-               ∀ x ∈ K,
-                 ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
-                   ‖Fplus (fun a => (x a : ℂ) +
-                     (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤
-                     A * (ε⁻¹) ^ N)
-       (hslow_minus :
-         ∀ K : Set (Fin m -> ℝ), IsCompact K -> K ⊆ E ->
-           ∀ Kη : Set (Fin m -> ℝ), IsCompact Kη -> Kη ⊆ C ->
-             ∃ (A : ℝ) (N : ℕ) (r : ℝ), 0 < A ∧ 0 < r ∧
-               ∀ x ∈ K,
-                 ∀ η ∈ Kη, ∀ ε : ℝ, 0 < ε -> ε < r ->
-                   ‖Fminus (fun a => (x a : ℂ) -
-                     (ε : ℂ) * (η a : ℂ) * Complex.I)‖ ≤
-                     A * (ε⁻¹) ^ N)
        (T : SchwartzMap (Fin m -> ℝ) ℂ ->L[ℂ] ℂ)
        -- In this repo, `SchwartzMap` plus compact support and support inside
        -- `E` is the current Lean representation of `C_c^∞(E)`.
@@ -1023,12 +1005,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
    Proof-doc readiness gate for this SCV theorem:
 
    * The final theorem may enter Lean only after the one-chart theorem surface
-     has no hidden hypothesis comments.  The proof-doc surface is now:
-     `SCV.chartSlowGrowth_from_uniformConeSlowGrowth`,
+     has no hidden hypothesis comments.  The one-chart proof-doc surface is now:
      `SCV.HasCompactSupport.localEOWAffineTestPushforwardCLM`,
      `SCV.tsupport_localEOWAffineTestPushforwardCLM_subset`,
      `SCV.localEOWAffineTestPushforwardCLM_apply_realChart`,
      `SCV.integral_localEOWAffineTestPushforwardCLM_changeOfVariables`,
+     `SCV.localEOW_basisSideCone_rawBoundaryValue`,
+     `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`,
+     `SCV.exists_localEOWRealLinearPart_ball_subset`,
+     `SCV.localEOWComplexAffineEquiv_symm_add_realEmbed`,
+     `SCV.exists_localEOWRealLinearSymm_ball_subset`,
      `SCV.tendstoUniformlyOn_const_comp_of_tendsto_of_eventually_mem`,
      `SCV.coordSum_tendsto_positiveOrthant_nhdsWithin_Ioi`,
      `SCV.coordNegSum_tendsto_negativeOrthant_nhdsWithin_Ioi`,
@@ -1037,6 +1023,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.chartHolomorphy_from_originalHolomorphy`,
      `SCV.chartDistributionalEOW_local_envelope`, and
      `SCV.chartDistributionalEOW_transport_originalCoords`.
+     `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` remains documented as an
+     outer OS-II boundary-value construction tool, but it is not a formal
+     argument of `SCV.chartDistributionalEOW_local_envelope` once
+     `hplus_bv` and `hminus_bv` are supplied.
    * `SCV.chartOrthantBoundaryValue_from_uniformConeBoundaryValue` is the
      checked sign/Jacobian theorem.  Positive chart directions use
      `s = ∑ j, y j` and
@@ -1059,16 +1049,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `localEOWRealLinearKernelPushforwardCLM ys hli`.
    * The affine support half of this gate is checked:
      `HasCompactSupport.localEOWAffineTestPushforwardCLM` and
-     `tsupport_localEOWAffineTestPushforwardCLM_subset`.  The remaining
-     determinant theorem is now fully specified: evaluate the pushed test on
-     `localEOWRealChart x0 ys u` to get `φ u`, then apply
-     `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` to the
-     affine map `u ↦ x0 + localEOWRealLinearCLE ys hli u`.  The derivative is
-     `(localEOWRealLinearCLE ys hli).hasFDerivAt.const_add x0`, the image of
-     `Set.univ` is all of real space by the inverse
-     `u = (localEOWRealLinearCLE ys hli).symm (x - x0)`, and the determinant
-     is exactly `localEOWRealJacobianAbs ys`.  Holomorphy transport through
-     `localEOWChart` is also checked as
+     `tsupport_localEOWAffineTestPushforwardCLM_subset`.  The determinant
+     theorem is also checked as
+     `SCV.integral_localEOWAffineTestPushforwardCLM_changeOfVariables`:
+     evaluate the pushed test on `localEOWRealChart x0 ys u` to get `φ u`,
+     then apply the finite-dimensional affine change-of-variables theorem.
+     Holomorphy transport through `localEOWChart` is checked as
      `SCV.chartHolomorphy_from_originalHolomorphy`.
    * The local output must be a transported coordinate ball with transported
      strict positive/negative side balls.  Patching consumes precisely these
@@ -1097,9 +1083,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       use `hlocal_wedge` to get a radius `r > 0` so the truncated wedges
       `x ± i εη`, `x ∈ K`, `η ∈ Kη`, `0 < ε < r`, lie in `Ωplus/Ωminus`.
       This is the local replacement for a global tube hypothesis.
-   3. Use `hslow_plus` and `hslow_minus` on the same `K,Kη` to obtain explicit
-      polynomial slow-growth orders.  These bounds supply the integrability and
-      equicontinuity estimates needed for distributional boundary values.
+   3. The OS-II slow-growth estimates are verified in the outer construction
+      of the distributional boundary values, not as assumptions of the
+      one-chart SCV envelope.  Once the Lean hypotheses `hplus_bv` and
+      `hminus_bv` below are supplied, no slow-growth argument is used in
+      `SCV.chartDistributionalEOW_local_envelope`.
    4. Use `hplus_bv` and `hminus_bv` as uniform compact-subcone boundary
       convergence statements.  In the current Lean surface, compactly supported
       `SchwartzMap`s with `tsupport ⊆ E` represent the local test space
@@ -1130,22 +1118,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `Metric.closedBall 0 ρ` mapped into `E`.  The positive and negative chart
       polywedges over the inner ball are then fed to
       `SCV.localEOWChart_twoSided_polywedge_mem`.
-   8. Pull `Fplus`, `Fminus`, and the common distribution `T` back to this
-      chart.  The distribution pullback must include the determinant/Jacobian
-      factor of the real linear chart.  Apply the local wedge hypothesis and
-      the slow-growth hypotheses on the compact closed box and the compact
-      simplex of positive chart directions to get one radius and one order
-      `N0` valid for both signs.  The slow-growth transport is the checked
-      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` route: use
-      `K = localEOWRealChart x0 ys '' B` and
-      `Kη = localEOWSimplexDirections ys`; for positive chart imaginary
-      coordinates normalize by `s = ∑ j, v j` and
-      `η = s⁻¹ • localEOWRealLinearPart ys v`, while for negative coordinates
-      normalize by `s = ∑ j, -v j` and
-      `η = s⁻¹ • localEOWRealLinearPart ys (-v)`.  The helper
-      `localEOWRealLinearPart_eq_sum_smul` identifies these normalized
-      directions with simplex directions, and `localEOWChart_real_add_imag`
-      performs the final chart-to-original sign rewrite.
+   8. Pull `Fplus`, `Fminus`, and the common distribution `T` through this
+      chart only at the points where a chart-coordinate object is actually
+      needed.  The affine distribution pullback includes the
+      determinant/Jacobian factor of the real linear chart, and the real
+      smoothing kernels are transported by
+      `SCV.localEOWRealLinearKernelPushforwardCLM`.  The boundary-value input
+      for the one-chart theorem is obtained by
+      `SCV.localEOW_basisSideCone_rawBoundaryValue`: first shrink the compact
+      direction simplex to an open side cone whose closed direction envelope
+      lies in `C ∩ {η | η ≠ 0}`, then restrict to bounded side windows by
+      `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`.  The checked
+      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` theorem remains an
+      outer OS-II adapter if one is constructing `hplus_bv`/`hminus_bv` from
+      slow-growth data, but it is not consumed by this one-chart core.
    9. Choose nested chart boxes `B0 ⋐ B1 ⋐ Echart` and a support radius
       `rψ > 0` so `u ∈ B0` and `t ∈ closedBall 0 rψ` imply `u + t ∈ B1`.
       The checked closed-ball version is
@@ -1160,8 +1146,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `Fminusψ z = ∫ t, FminusChart (z + realEmbed t) * ψ t`.  Prove these are
       holomorphic on the shrunken chart polywedges by the local version of
       `SCV.differentiableOn_realMollify_tubeDomain`.
-   11. Define the common continuous boundary value
-       `bvψ u = Tchart (translateSchwartz (-u) ψ)`.
+   11. Define the common continuous boundary value in original real-edge
+       coordinates first:
+       `bvψ u = TcutOrig (translateSchwartz (-u) ψ)`.
        The proof is the checked CLM route, not an informal Fubini step:
        construct the side slice CLMs with
        `sliceCLM_family_from_distributionalBoundary`, use
@@ -1170,17 +1157,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
        plus/minus limits, and then apply
        `SCV.localRealMollify_commonContinuousBoundary_of_clm` to obtain
        continuity of `bvψ` and the two continuous boundary traces.  The
-       coordinate-cone plumbing is fixed as follows: the plus CLM tends to
-       `Tchart` as the coordinate imaginary vector tends to `0` within
-       `{y | ∀ j, 0 < y j}`; writing
-       `localEOWRealLinearPart ys y = (∑ j, y j) • η`, normalized
-       `η` lies in `localEOWSimplexDirections ys ⊆ C`, so this is exactly the
-       `Fplus (x + εη i)` boundary hypothesis.  The minus CLM tends to
-       `Tchart` as `y -> 0` within `{y | ∀ j, y j < 0}`; writing
-       `localEOWRealLinearPart ys y =
-        -((∑ j, -y j) • η)` reduces it to the final hypothesis
-       `Fminus (x - εη i)`.  This sign check is part of the proof, not a
-       convention left to tactic search.
+       coordinate-cone plumbing is fixed as follows: the plus raw limit is on
+       `Cplus = localEOWSideCone ys ε`, and the minus raw limit is on
+       `Cminus = Neg.neg '' Cplus`.  The bounded sets
+       `CplusLoc = Cplus ∩ ball 0 rside` and
+       `CminusLoc = Neg.neg '' CplusLoc` provide the honest side margins for
+       the cutoff slice theorem.  For final strict positive chart-side balls,
+       `localEOWRealLinearPart ys v` lies in `CplusLoc` by the checked
+       positive-coordinate side-cone lemma plus the small linear-image radius;
+       for strict negative balls, apply the same argument to `-v` and then use
+       the negative-image identity.  This sign check is part of the proof, not
+       a convention left to tactic search.  Only after the real kernel is
+       pushed by `localEOWRealLinearKernelPushforwardCLM` is the chart
+       distribution
+       `localEOWAffineDistributionPullbackCLM x0 ys hli TcutOrig` recovered.
    12. Apply `SCV.local_continuous_edge_of_the_wedge_envelope` to the
        regularized pair for each `ψ`, producing `Gψ` on one fixed neighborhood
        `U0` determined only by `B0`, `B1`, `C`, and `rψ`.  The extracted local
@@ -2768,7 +2758,12 @@ Current implementation order:
    `exists_localEOWRealLinearSymm_ball_subset`.  They make the affine
    cutoff-one and real-translation margin proof exact: the local real cutoff
    is the affine pushforward of a chart-coordinate cutoff, not an arbitrary
-   original-coordinate cutoff.
+   original-coordinate cutoff.  The final one-chart implementation must keep
+   the fixed-window polywedge radius and the product-kernel support radius
+   separate: `rpoly` controls `localRudinEnvelope` side membership after
+   truncating the side cones, while `rker` is the chart-kernel support radius
+   used by the local covariant recovery theorem.  Reusing one variable `r` for
+   both would hide a real smallness obligation.
    Then prove
    the OS45 instantiation
    `BHW.os45_adjacent_commonBoundaryEnvelope` and package its output as
