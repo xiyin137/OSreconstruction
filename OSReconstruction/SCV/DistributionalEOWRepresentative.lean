@@ -226,6 +226,48 @@ theorem regularizedEnvelope_productKernel_dbar_eq_zero
     integral_holomorphic_mul_dbarSchwartz_eq_zero
       U0 hU0_open (G ψ) (hG_holo ψ hψ) φ hφ j
 
+/-- Localized version of `regularizedEnvelope_productKernel_dbar_eq_zero`
+where the product-kernel representation is valid on a covariance window and
+the holomorphic scalar kernel is known on a larger fixed window. -/
+theorem regularizedEnvelope_productKernel_dbar_eq_zero_local
+    {r : ℝ}
+    (K : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (G : SchwartzMap (Fin m → ℝ) ℂ → ComplexChartSpace m → ℂ)
+    (Udesc Ucov U0 : Set (ComplexChartSpace m))
+    (hUdesc_open : IsOpen Udesc)
+    (hdesc_cov : Udesc ⊆ Ucov)
+    (hcov_window : Ucov ⊆ U0)
+    (hG_holo :
+      ∀ ψ, KernelSupportWithin ψ r → DifferentiableOn ℂ (G ψ) U0)
+    (hK_rep :
+      ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+        (ψ : SchwartzMap (Fin m → ℝ) ℂ),
+        SupportsInOpen (φ : ComplexChartSpace m → ℂ) Ucov →
+        KernelSupportWithin ψ r →
+          K (schwartzTensorProduct₂ φ ψ) =
+            ∫ z : ComplexChartSpace m, G ψ z * φ z)
+    (j : Fin m)
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (hφ : SupportsInOpen (φ : ComplexChartSpace m → ℂ) Udesc)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ : KernelSupportWithin ψ r) :
+    K (schwartzTensorProduct₂ (dbarSchwartzCLM j φ) ψ) = 0 := by
+  have hdbar_desc :
+      SupportsInOpen
+        ((dbarSchwartzCLM j φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+          ComplexChartSpace m → ℂ) Udesc :=
+    hφ.dbar j
+  have hdbar_cov :
+      SupportsInOpen
+        ((dbarSchwartzCLM j φ : SchwartzMap (ComplexChartSpace m) ℂ) :
+          ComplexChartSpace m → ℂ) Ucov :=
+    ⟨hdbar_desc.1, hdbar_desc.2.trans hdesc_cov⟩
+  rw [hK_rep (dbarSchwartzCLM j φ) ψ hdbar_cov hψ]
+  exact
+    integral_holomorphic_mul_dbarSchwartz_eq_zero
+      Udesc hUdesc_open (G ψ)
+      ((hG_holo ψ hψ).mono (hdesc_cov.trans hcov_window)) φ hφ j
+
 /-- If the descended product kernel kills all `∂bar` product tests against a
 fixed compact-supported approximate identity, then the descended distribution
 is distributionally holomorphic on the chart domain. -/
@@ -264,6 +306,62 @@ theorem translationCovariantKernel_distributionalHolomorphic
     filter_upwards [hψ_support] with i hi
     have hK0 := hK_dbar_zero j φ (ψι i) hφ hi
     have hdesc_i := hdesc θ (ψι i)
+    rw [← hdesc_i]
+    exact hK0
+  have heq :
+      (fun i => Hdist (realConvolutionTest θ (ψι i))) =ᶠ[l]
+        fun _ => (0 : ℂ) :=
+    hzero_eventually
+  have hlim0 :
+      Tendsto (fun i => Hdist (realConvolutionTest θ (ψι i)))
+        l (nhds (0 : ℂ)) :=
+    tendsto_const_nhds.congr' heq.symm
+  exact tendsto_nhds_unique hlim hlim0
+
+/-- Local product-test descent version of
+`translationCovariantKernel_distributionalHolomorphic`.  The descent identity
+is only required for complex-chart tests supported in the local domain. -/
+theorem translationCovariantKernel_distributionalHolomorphic_local
+    {r : ℝ} {ι : Type*} {l : Filter ι} [NeBot l]
+    (Hdist : SchwartzMap (ComplexChartSpace m) ℂ →L[ℂ] ℂ)
+    (K : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (Udesc : Set (ComplexChartSpace m))
+    (ψι : ι → SchwartzMap (Fin m → ℝ) ℂ)
+    (hψ_support : ∀ᶠ i in l, KernelSupportWithin (ψι i) r)
+    (hψ_approx :
+      ∀ θ : SchwartzMap (ComplexChartSpace m) ℂ,
+        Tendsto
+          (fun i => realConvolutionTest θ (ψι i))
+          l
+          (nhds θ))
+    (hdesc_local :
+      ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+        (ψ : SchwartzMap (Fin m → ℝ) ℂ),
+        SupportsInOpen (φ : ComplexChartSpace m → ℂ) Udesc →
+        KernelSupportWithin ψ r →
+          K (schwartzTensorProduct₂ φ ψ) =
+            Hdist (realConvolutionTest φ ψ))
+    (hK_dbar_zero :
+      ∀ (j : Fin m) (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+        (ψ : SchwartzMap (Fin m → ℝ) ℂ),
+        SupportsInOpen (φ : ComplexChartSpace m → ℂ) Udesc →
+        KernelSupportWithin ψ r →
+          K (schwartzTensorProduct₂ (dbarSchwartzCLM j φ) ψ) = 0) :
+    IsDistributionalHolomorphicOn Hdist Udesc := by
+  intro j φ hφ
+  let θ : SchwartzMap (ComplexChartSpace m) ℂ := dbarSchwartzCLM j φ
+  have hθ_support :
+      SupportsInOpen (θ : ComplexChartSpace m → ℂ) Udesc := by
+    simpa [θ] using hφ.dbar j
+  have hlim :
+      Tendsto (fun i => Hdist (realConvolutionTest θ (ψι i)))
+        l (nhds (Hdist θ)) :=
+    (Hdist.continuous.tendsto θ).comp (hψ_approx θ)
+  have hzero_eventually :
+      ∀ᶠ i in l, Hdist (realConvolutionTest θ (ψι i)) = 0 := by
+    filter_upwards [hψ_support] with i hi
+    have hK0 := hK_dbar_zero j φ (ψι i) hφ hi
+    have hdesc_i := hdesc_local θ (ψι i) hθ_support hi
     rw [← hdesc_i]
     exact hK0
   have heq :

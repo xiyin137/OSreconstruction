@@ -1140,11 +1140,28 @@ Proof decomposition of this theorem, without hiding the analytic work:
       2. `SCV.regularizedLocalEOW_pairingCLM_localCovariant`.  It proves
          `ProductKernelRealTranslationCovariantLocal K Ucov r`, not global
          covariance.  The proof expands both product pairings, changes
-         variables in the complex-chart integral, and uses
+         variables in the complex-chart integral by the support-localized lemma
+         `integral_mul_complexTranslateSchwartz_eq_shift_of_support`, and uses
          `SCV.regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`
-         on the support of `φ`.  If `φ` is nonzero, the support hypotheses for
-         both `φ` and `complexTranslateSchwartz a φ` force
-         `‖a‖ < δ / 4`; if `φ = 0`, the covariance identity is trivial.
+         on the support of `φ`.  The theorem surface includes the local
+         continuity input `hG_cont` on the covariance ball, derived from the
+         fixed-window holomorphy of the regularized family, solely to justify
+         this all-space integral change of variables.  If `φ` is nonzero, the
+         support hypotheses for
+         both `φ` and `complexTranslateSchwartz a φ` give witnesses
+         `u ∈ Ucov` and `u - realEmbed a ∈ Ucov`, hence
+         `‖a‖ < 2 * Rcov < δ / 4`; if `φ = 0`, the covariance identity is
+         trivial.  The conversion from the complex-chart displacement to
+         `‖a‖` uses the required finite sup-norm equality
+         `norm_realEmbed_eq`, whose reverse direction is proved coordinatewise
+         from `norm_le_pi_norm (realEmbed a) i` and `Complex.norm_real`.  The
+         sign is the checked convention
+         `complexTranslateSchwartz a φ z = φ (z + realEmbed a)`, so the
+         changed left integrand is `Gchart ψ (z - realEmbed a) * φ z`, and
+         `hG_cov` rewrites it to
+         `Gchart (translateSchwartz a ψ) z * φ z` only on
+         `tsupport φ`.  Off `tsupport φ`, the factor `φ z` is zero; no global
+         regularity of `Gchart ψ` is used.
       3. `SCV.translationCovariantProductKernel_descends_local`.  It defines
          `Hdist := complexRealFiberTranslationDescentCLM
            (shearedProductKernelFunctional K) η` with a normalized real
@@ -1152,15 +1169,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
          fiber quotient.  Instead it proves the product-test identity directly:
          expand the sheared convolution tensor as a Bochner integral of
          translated product tensors, use local covariance only for parameters
-         whose nonzero kernel factor forces `‖a‖ ≤ r + rη`, and collapse
+         whose nonzero kernel factor
+         `κ a = η • translateSchwartz a ψ` forces
+         `‖a‖ ≤ r + rη`, and collapse
          `∫ a, translateSchwartz (-a) (η • translateSchwartz a ψ)` back to
          `ψ` using `∫ η = 1`.  The margin
          `Udesc + closedBall 0 (r + rη) ⊆ Ucov` is exactly what makes the two
-         complex-chart supports legal in those covariance calls.
+         complex-chart supports legal in those covariance calls, and the two
+         kernel-support inputs are obtained by support containment in
+         `tsupport η` and `tsupport ψ`, followed by monotonicity to radius
+         `r + rη`.  The compact-support half of
+         `SupportsInOpen (complexTranslateSchwartz (-a) φ) Ucov` is a named
+         translation-support helper, not an implicit property of the support
+         inclusion.
       4. `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`.  It
          first proves local distributional holomorphy of `Hdist` on `Udesc`
          using the local descent identity and the checked `∂bar` product
-         integral theorem; then it applies
+         integral theorem in its localized form: `hK_rep` is used only after
+         enlarging `SupportsInOpen (dbarSchwartzCLM j φ)` from `Udesc` to
+         `Ucov`, while holomorphy is restricted from `U0` back to `Udesc`.
+         Then it applies
          `SCV.distributionalHolomorphic_regular`, the checked pointwise
          representation bridge with `Ucore ⊂ Udesc`, and the checked
          delta-limit wedge-agreement theorem.
@@ -1755,13 +1783,22 @@ Implementation-readiness gate for the next Lean stage:
   compact `Lorig` value-CLM bound, chart-kernel value-CLM transport,
   chart-linear kernel pushforward API, and first varying-kernel continuity
   layer including the split moving-kernel side limits and bundled CLM boundary
-  data are checked.  The remaining Lean order, now fully proof-documented in
+  data are checked.  The newly exposed support helpers
+  `norm_realEmbed_eq`,
+  `SupportsInOpen.complexTranslateSchwartz_of_image_subset`,
+  `regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+  `translationCovariantKernel_distributionalHolomorphic_local` are also
+  checked.  The remaining Lean order, now fully proof-documented in
   `docs/scv_infrastructure_blueprint.md`, is: prove the parametric
   Rudin-integrand bound; prove
   `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`;
   construct the pairing CLM through the explicit post-continuity/value-CLM
-  interface; prove local covariance; prove direct local product-test descent;
-  prove `translationCovariantKernel_distributionalHolomorphic_local`; prove
+  interface; prove the support-localized translated-test integral
+  change-of-variables lemma; prove local covariance; prove direct local
+  product-test descent;
+  prove the separated-domain `∂bar` zero theorem
+  `regularizedEnvelope_productKernel_dbar_eq_zero_local`; prove
+  `translationCovariantKernel_distributionalHolomorphic_local`; prove
   `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
   finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
   the explicit approximate-identity and side-agreement hypotheses.  The

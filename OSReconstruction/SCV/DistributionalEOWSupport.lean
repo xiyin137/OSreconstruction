@@ -377,4 +377,43 @@ theorem SupportsInOpen.dbar
       ((subset_tsupport _).trans (dbarSchwartzCLM_tsupport_subset j φ))
   · exact (dbarSchwartzCLM_tsupport_subset j φ).trans hφ.2
 
+/-- Complex-chart translation transports compact support through the inverse
+translation and maps the translated topological support into the declared
+target set. -/
+theorem SupportsInOpen.complexTranslateSchwartz_of_image_subset
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (U V : Set (ComplexChartSpace m)) (a : Fin m → ℝ)
+    (hφ : SupportsInOpen (φ : ComplexChartSpace m → ℂ) U)
+    (himage :
+      ∀ y : ComplexChartSpace m, y + realEmbed a ∈ U → y ∈ V) :
+    SupportsInOpen
+      (complexTranslateSchwartz a φ : ComplexChartSpace m → ℂ) V := by
+  have hsub :
+      tsupport ((φ : ComplexChartSpace m → ℂ) ∘
+          fun y : ComplexChartSpace m => y + realEmbed a) ⊆
+        (fun y : ComplexChartSpace m => y + realEmbed a) ⁻¹'
+          tsupport (φ : ComplexChartSpace m → ℂ) := by
+    exact tsupport_comp_subset_preimage (φ : ComplexChartSpace m → ℂ)
+      (continuous_id.add continuous_const)
+  constructor
+  · have hK : IsCompact
+        ((fun u : ComplexChartSpace m => u - realEmbed a) ''
+          tsupport (φ : ComplexChartSpace m → ℂ)) :=
+      hφ.1.image (continuous_id.sub continuous_const)
+    refine IsCompact.of_isClosed_subset hK (isClosed_tsupport _) ?_
+    intro y hy
+    have hy' :
+        y ∈ tsupport ((φ : ComplexChartSpace m → ℂ) ∘
+          fun y : ComplexChartSpace m => y + realEmbed a) := by
+      simpa [Function.comp_def, complexTranslateSchwartz_apply] using hy
+    refine ⟨y + realEmbed a, hsub hy', ?_⟩
+    ext i
+    simp
+  · intro y hy
+    have hy' :
+        y ∈ tsupport ((φ : ComplexChartSpace m → ℂ) ∘
+          fun y : ComplexChartSpace m => y + realEmbed a) := by
+      simpa [Function.comp_def, complexTranslateSchwartz_apply] using hy
+    exact himage y (hφ.2 (hsub hy'))
+
 end SCV

@@ -175,6 +175,17 @@ theorem norm_realEmbed_le (t : Fin m → ℝ) :
   simp [realEmbed, Complex.norm_real]
   exact norm_le_pi_norm t i
 
+/-- The real embedding into the complex chart preserves the coordinate
+supremum norm. -/
+theorem norm_realEmbed_eq (t : Fin m → ℝ) :
+    ‖realEmbed t‖ = ‖t‖ := by
+  refine le_antisymm (norm_realEmbed_le (m := m) t) ?_
+  rw [pi_norm_le_iff_of_nonneg (norm_nonneg (realEmbed t))]
+  intro i
+  have hcoord : ‖(realEmbed t) i‖ ≤ ‖realEmbed t‖ :=
+    norm_le_pi_norm (realEmbed t) i
+  simpa [realEmbed, Complex.norm_real] using hcoord
+
 /-- The real embedding into the complex chart is continuous. -/
 theorem continuous_realEmbed :
     Continuous (realEmbed : (Fin m → ℝ) → ComplexChartSpace m) := by
