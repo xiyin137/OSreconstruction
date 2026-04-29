@@ -50,6 +50,7 @@ import OSReconstruction.SCV.LocalEOWChartLinear
 import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 import OSReconstruction.SCV.LocalDistributionalEOW
 import OSReconstruction.SCV.VaryingKernelContinuity
+import OSReconstruction.SCV.LocalDescentSupport
 import OSReconstruction.SCV.HasFDerivAtProd
 import OSReconstruction.SCV.PartialFourierSpatial
 

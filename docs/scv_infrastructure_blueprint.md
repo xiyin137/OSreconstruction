@@ -396,6 +396,7 @@ Source ledger for the internal helper list:
 | `realMollifyLocal_localEOWRealLinearKernelPushforwardCLM` | Checked in `SCV/LocalDistributionalEOW.lean`: applying `realMollifyLocal` to the Jacobian-normalized chart-kernel pushforward equals the chart-coordinate integral `∫ u, F (z + realEmbed (localEOWRealLinearPart ys u)) * φ u`.  This is the chart-linear change-of-variables theorem needed before proving covariance for the regularized family. |
 | `localEOWShiftedWindow`, `isOpen_localEOWShiftedWindow`, `convex_localEOWShiftedWindow`, `isPreconnected_localEOWShiftedWindow`, `exists_positive_imag_mem_localEOWShiftedWindow_of_norm_lt` | Checked in `SCV/LocalDistributionalEOW.lean`: the honest shifted-overlap domain for local covariance is `Metric.ball 0 (δ / 2) ∩ {w | w - realEmbed a ∈ Metric.ball 0 (δ / 2)}`.  It is open, convex, and preconnected, so the identity theorem can propagate equality from a positive-imaginary seed in the overlap.  The seed exists whenever `‖a‖ < δ / 4`, using the constant imaginary point with imaginary part `δ / 8` and `norm_realEmbed_le`. |
 | `norm_realEmbed_eq` | Checked in `SCV/DistributionalEOWApproxIdentity.lean`: the finite sup norm of the complex-chart real embedding equals the original real sup norm.  The local covariance proof uses it to convert two support points `u` and `u - realEmbed a` in the covariance ball into the real shift bound `‖a‖ < δ / 4`. |
+| `tsupport_subset_preimage_tsupport_complexTranslateSchwartz` | Checked in `SCV/LocalDescentSupport.lean`: topological support of `φ` is transported into the topological support of `complexTranslateSchwartz a φ` by the inverse real translation `z ↦ z - realEmbed a`.  This is the exact support input for the local covariance change-of-variables theorem. |
 | `SupportsInOpen.complexTranslateSchwartz_of_image_subset` | Checked in `SCV/DistributionalEOWSupport.lean`: complex-chart translation transports compact support by inverse translation and maps the translated topological support into a target open set under an explicit image hypothesis.  This is the support half of the direct local descent averaging theorem. |
 | `regularizedEnvelope_productKernel_dbar_eq_zero_local`, `translationCovariantKernel_distributionalHolomorphic_local` | Checked in `SCV/DistributionalEOWRepresentative.lean`: localized versions of the product-kernel `∂bar` annihilation theorem and the distributional-holomorphy passage.  They consume separated domains `Udesc ⊆ Ucov ⊆ U0`, local product-test descent, and approximate-identity convergence; they are not hidden hypotheses in the recovery consumer. |
 | `regularizedLocalEOW_fixedKernelEnvelope_from_clm` | Checked in `SCV/LocalDistributionalEOW.lean`: for one compactly supported smoothing kernel, combines the local real-mollifier holomorphy margins, the CLM common-boundary extraction, and the checked coordinate local continuous EOW theorem to produce the local coordinate envelope with strict positive/negative side agreements and uniqueness.  This is the fixed-kernel bridge; it does not yet prove linearity/continuity in the kernel or construct the product kernel `K`. |
@@ -6991,11 +6992,11 @@ Proof transcript for the next target:
        norms under `realEmbed`.  This turns the two complex-chart support
        points `u` and `u - realEmbed a` into the real shift bound
        `‖a‖ < δ / 4`.
-   6c. `tsupport_subset_preimage_tsupport_complexTranslateSchwartz`: prove the
-       topological-support transport lemma for the inverse complex-chart
-       translation.  This is what turns shifted support of
-       `complexTranslateSchwartz a φ` into the all-`tsupport φ` hypothesis
-       needed by local change of variables.
+   6c. `tsupport_subset_preimage_tsupport_complexTranslateSchwartz`: checked in
+       `SCV/LocalDescentSupport.lean`; the topological-support transport lemma
+       for the inverse complex-chart translation.  This is what turns shifted
+       support of `complexTranslateSchwartz a φ` into the all-`tsupport φ`
+       hypothesis needed by local change of variables.
    6d. `integral_mul_complexTranslateSchwartz_eq_shift_of_support`: prove the
        support-localized all-space change-of-variables lemma for locally
        continuous scalar kernels multiplied by a translated Schwartz test.
