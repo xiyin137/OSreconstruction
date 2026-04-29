@@ -1231,9 +1231,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       the real-seminorm uniform-on-compact translation estimate controlling
       both `k,l` and `0,l` seminorms, fixed-support joint continuity of
       `(z,u) ↦ translateSchwartz (-u) (η z)`, and the
-      varying-kernel Rudin-envelope dominated-continuity theorem.  The
-      remaining proof-doc-ready layer is the scalar evaluation/support theorem
-      for the actual chart-kernel slice, the CLM boundary-data derivation, the
+      varying-kernel Rudin-envelope dominated-continuity theorem.  The scalar
+      evaluation/support theorems for the actual chart-kernel slice are now
+      checked in the same file.  The remaining proof-doc-ready layer is the
+      CLM boundary-data derivation, the
       parametric Rudin-integrand bound over `closedBall 0 Rcut` with the inner
       Rudin side domains separated from the original holomorphy domains, and
       the final cutoff-envelope continuity theorem.  The

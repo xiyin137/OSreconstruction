@@ -416,6 +416,62 @@ theorem continuous_chartKernelCutoffSlice
     A.continuous.comp (continuous_schwartzPartialEval₁CLM F)
   simpa [A, P] using hA
 
+/-- The actual chart-kernel slice has jointly continuous scalar evaluation in
+the chart point and real-edge variable. -/
+theorem continuous_chartKernelCutoffSlice_eval
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    (χr χψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ) :
+    Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m → ℝ) → ℂ)
+        (localEOWRealLinearKernelPushforwardCLM ys hli
+          (SchwartzMap.smulLeftCLM ℂ
+          (χr : (Fin m → ℝ) → ℂ)
+          (schwartzPartialEval₁CLM p.1 F)))) p.2 := by
+  let e := localEOWRealLinearCLE ys hli
+  have he_cont : Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      e.symm p.2 :=
+    e.symm.continuous.comp continuous_snd
+  have hχψ : Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      χψ p.2 :=
+    χψ.continuous.comp continuous_snd
+  have hχr : Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      χr (e.symm p.2) :=
+    χr.continuous.comp he_cont
+  have hF : Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      F (p.1, e.symm p.2) :=
+    F.continuous.comp (continuous_fst.prodMk he_cont)
+  have hmain : Continuous fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+      χψ p.2 *
+        (((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+          (χr (e.symm p.2) * F (p.1, e.symm p.2))) :=
+    hχψ.mul (continuous_const.mul (hχr.mul hF))
+  simpa [e, localEOWRealLinearKernelPushforwardCLM_apply,
+    SchwartzMap.smulLeftCLM_apply_apply χψ.hasTemperateGrowth,
+    SchwartzMap.smulLeftCLM_apply_apply χr.hasTemperateGrowth,
+    schwartzPartialEval₁CLM_apply, mul_assoc] using hmain
+
+/-- The actual chart-kernel cutoff slice is supported wherever the final
+original-edge cutoff is supported. -/
+theorem KernelSupportWithin.chartKernelCutoffSlice
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    (χr χψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (F : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    {rψLarge : ℝ}
+    (hχψ_support :
+      tsupport (χψ : (Fin m → ℝ) → ℂ) ⊆
+        Metric.closedBall 0 rψLarge) :
+    ∀ z : ComplexChartSpace m,
+      KernelSupportWithin
+        (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m → ℝ) → ℂ)
+          (SCV.localEOWRealLinearKernelPushforwardCLM ys hli
+            (SchwartzMap.smulLeftCLM ℂ
+            (χr : (Fin m → ℝ) → ℂ)
+            (schwartzPartialEval₁CLM z F))))
+        rψLarge := by
+  intro z
+  exact KernelSupportWithin.smulLeftCLM_of_leftSupport hχψ_support _
+
 /-- Continuity of the normalized local Rudin envelope when the smoothing kernel
 varies with the outer chart point, assuming a uniform bound on the circle
 integrand. -/

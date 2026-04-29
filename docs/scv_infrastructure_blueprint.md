@@ -4480,10 +4480,10 @@ Proof transcript for the next target:
           (ys : Fin m -> Fin m -> ℝ) (hli : LinearIndependent ℝ ys)
           (χr χψ : SchwartzMap (Fin m -> ℝ) ℂ)
           (F : SchwartzMap (ComplexChartSpace m × (Fin m -> ℝ)) ℂ) :
-          let P := localEOWRealLinearKernelPushforwardCLM ys hli
           Continuous fun p : ComplexChartSpace m × (Fin m -> ℝ) =>
             (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m -> ℝ) -> ℂ)
-              (P (SchwartzMap.smulLeftCLM ℂ
+              (localEOWRealLinearKernelPushforwardCLM ys hli
+                (SchwartzMap.smulLeftCLM ℂ
                 (χr : (Fin m -> ℝ) -> ℂ)
                 (schwartzPartialEval₁CLM p.1 F)))) p.2
       ```
@@ -4506,11 +4506,11 @@ Proof transcript for the next target:
           (hχψ_support :
             tsupport (χψ : (Fin m -> ℝ) -> ℂ) ⊆
               Metric.closedBall 0 rψLarge) :
-          let P := localEOWRealLinearKernelPushforwardCLM ys hli
           ∀ z : ComplexChartSpace m,
             KernelSupportWithin
               (SchwartzMap.smulLeftCLM ℂ (χψ : (Fin m -> ℝ) -> ℂ)
-                (P (SchwartzMap.smulLeftCLM ℂ
+                (SCV.localEOWRealLinearKernelPushforwardCLM ys hli
+                  (SchwartzMap.smulLeftCLM ℂ
                   (χr : (Fin m -> ℝ) -> ℂ)
                   (schwartzPartialEval₁CLM z F))))
               rψLarge
@@ -5493,9 +5493,13 @@ Proof transcript for the next target:
        `seminorm_translateSchwartz_uniformOn` uses real Schwartz seminorms and
        controls the output `k,l` seminorm by both the input `k,l` and `0,l`
        seminorms; that `0,l` term is mathematically necessary near the origin.
-       The remaining continuity-support targets before the mixed pairing CLM
-       are `continuous_chartKernelCutoffSlice_eval`,
-       `KernelSupportWithin.chartKernelCutoffSlice`,
+       The scalar evaluation and final-cutoff support targets
+       `continuous_chartKernelCutoffSlice_eval` and
+       `KernelSupportWithin.chartKernelCutoffSlice` are also checked in the
+       same file; the support theorem qualifies
+       `SCV.localEOWRealLinearKernelPushforwardCLM` because the theorem lives
+       under the `KernelSupportWithin` namespace.  The remaining
+       continuity-support targets before the mixed pairing CLM are
        `localRudin_varyingKernel_boundaryData_of_clm`,
        `exists_bound_localRudinIntegrand_varyingKernel`,
        `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
