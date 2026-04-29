@@ -1882,9 +1882,10 @@ Implementation-readiness gate for the next Lean stage:
   `regularizedLocalEOW_pairingCLM_localCovariant` in
   `SCV/LocalEOWPairingCLM.lean`.  The mixed-fiber change-of-variables and
   partial-evaluation identity layer is now checked in
-  `SCV/LocalProductDescentIntegrals.lean`.  The remaining Lean order, now
-  fully proof-documented in `docs/scv_infrastructure_blueprint.md`, is: prove
-  the scalarized local quotient and local product-test descent; prove
+  `SCV/LocalProductDescentIntegrals.lean`, and the same file now checks the
+  scalarized local quotient and local product-test descent.  The remaining
+  Lean order, now fully proof-documented in `docs/scv_infrastructure_blueprint.md`,
+  is: prove
   `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
   finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
   the explicit approximate-identity and side-agreement hypotheses.  The
@@ -2149,12 +2150,12 @@ Current implementation order:
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestLeft`,
    `SCV.translateSchwartz_neg_smulLeft_eta_translate`,
    `SCV.schwartzPartialEval₂CLM_localDescentParamTestRight`,
-   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
-   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local descent
-   package
    `SCV.shearedProductKernelFunctional_localQuotient_of_productCovariant`,
    `SCV.translationCovariantProductKernel_descends_local`,
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
+   The remaining pure-SCV declarations on this route are now the local recovery
+   package
    `SCV.regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`,
    `SCV.regularizedEnvelope_chartEnvelope_from_localProductKernel`, and finally
    `SCV.local_distributional_edge_of_the_wedge_envelope`.  The retired

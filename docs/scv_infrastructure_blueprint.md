@@ -6949,7 +6949,8 @@ Proof transcript for the next target:
       infrastructure, not reproved ad hoc inside the algebra proof.
 
    5. Prove
-      `shearedProductKernelFunctional_localQuotient_of_productCovariant`.  Let
+      `shearedProductKernelFunctional_localQuotient_of_productCovariant`.
+      Status: checked in `LocalProductDescentIntegrals.lean`.  Let
       ```
       F =
         (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
@@ -7138,7 +7139,8 @@ Proof transcript for the next target:
       `complexRealFiberIntegral_schwartzTensorProduct₂`/pointwise
       `mixedRealFiberIntegralCLM` calculations above, not as a
       `SchwartzMap`-valued Bochner average.
-   7. `translationCovariantProductKernel_descends_local` now simply packages
+   7. `translationCovariantProductKernel_descends_local` is checked in
+      `LocalProductDescentIntegrals.lean`; it simply packages
       `Hdist` and calls
       `shearedProductKernelFunctional_localQuotient_of_productCovariant` for
       every product test `φ, ψ` supported in `Udesc` and radius `r`.  The

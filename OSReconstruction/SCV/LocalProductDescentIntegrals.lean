@@ -177,4 +177,196 @@ theorem schwartzPartialEval₂CLM_localDescentParamTestRight {m : ℕ}
   rw [SchwartzMap.smulLeftCLM_apply_apply η.hasTemperateGrowth]
   simp [translateSchwartz_apply, sub_eq_add_neg, add_assoc, mul_assoc]
 
+/-- Local product-kernel covariance is enough to identify a sheared product
+test with the normalized fiber quotient, provided all translated product tests
+stay inside the declared local support window. -/
+theorem shearedProductKernelFunctional_localQuotient_of_productCovariant {m : ℕ}
+    {r rη : ℝ}
+    (K : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (Udesc Ucov : Set (ComplexChartSpace m))
+    (hr_nonneg : 0 ≤ r) (hrη_nonneg : 0 ≤ rη)
+    (η : SchwartzMap (Fin m → ℝ) ℂ)
+    (hη_norm : ∫ t : Fin m → ℝ, η t = 1)
+    (hη_support : KernelSupportWithin η rη)
+    (hmargin :
+      ∀ z ∈ Udesc, ∀ t : Fin m → ℝ, ‖t‖ ≤ r + rη →
+        z + realEmbed t ∈ Ucov)
+    (hcov : ProductKernelRealTranslationCovariantLocal K Ucov (r + rη))
+    (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+    (ψ : SchwartzMap (Fin m → ℝ) ℂ)
+    (hφ : SupportsInOpen (φ : ComplexChartSpace m → ℂ) Udesc)
+    (hψ : KernelSupportWithin ψ r) :
+    K (schwartzTensorProduct₂ φ ψ) =
+      complexRealFiberTranslationDescentCLM
+        (shearedProductKernelFunctional K) η
+        (realConvolutionTest φ ψ) := by
+  let A := localDescentParamTestLeft φ ψ η
+  let B := localDescentParamTestRight φ ψ η
+  have hpoint : ∀ a : Fin m → ℝ,
+      K (schwartzPartialEval₂CLM a A) =
+        K (schwartzPartialEval₂CLM a B) := by
+    intro a
+    let κ : SchwartzMap (Fin m → ℝ) ℂ :=
+      SchwartzMap.smulLeftCLM ℂ (η : (Fin m → ℝ) → ℂ) (translateSchwartz a ψ)
+    have hAeval : schwartzPartialEval₂CLM a A =
+        schwartzTensorProduct₂ (complexTranslateSchwartz (-a) φ) κ := by
+      simpa [A, κ] using
+        schwartzPartialEval₂CLM_localDescentParamTestLeft a φ ψ η
+    have hBeval : schwartzPartialEval₂CLM a B =
+        schwartzTensorProduct₂ φ (translateSchwartz (-a) κ) := by
+      simpa [B, κ] using
+        schwartzPartialEval₂CLM_localDescentParamTestRight a φ ψ η
+    rw [hAeval, hBeval]
+    by_cases hκ_zero : κ = 0
+    · have hleft :
+          schwartzTensorProduct₂ (complexTranslateSchwartz (-a) φ) κ = 0 := by
+        ext p
+        rcases p with ⟨z, t⟩
+        simp [hκ_zero]
+      have hright :
+          schwartzTensorProduct₂ φ (translateSchwartz (-a) κ) = 0 := by
+        ext p
+        rcases p with ⟨z, t⟩
+        simp [hκ_zero]
+      simp [hleft, hright]
+    · have hκ_ne : κ ≠ 0 := hκ_zero
+      have hbound : ‖a‖ ≤ r + rη := by
+        obtain ⟨t, ht_ne⟩ : ∃ t : Fin m → ℝ, κ t ≠ 0 := by
+          by_contra hnone
+          apply hκ_ne
+          ext t
+          have ht_not : ¬ κ t ≠ 0 := by
+            intro ht
+            exact hnone ⟨t, ht⟩
+          exact not_not.mp ht_not
+        have ht_support : t ∈ Function.support (κ : (Fin m → ℝ) → ℂ) := ht_ne
+        have ht_tsupport : t ∈ tsupport (κ : (Fin m → ℝ) → ℂ) :=
+          (subset_tsupport (κ : (Fin m → ℝ) → ℂ)) ht_support
+        have hpair := SchwartzMap.tsupport_smulLeftCLM_subset
+          (𝕜 := ℂ) (F := ℂ) (g := (η : (Fin m → ℝ) → ℂ))
+          (f := translateSchwartz a ψ) ht_tsupport
+        have ht_translate :
+            t ∈ tsupport
+              ((translateSchwartz a ψ : SchwartzMap (Fin m → ℝ) ℂ) :
+                (Fin m → ℝ) → ℂ) := hpair.1
+        have ht_eta : t ∈ tsupport (η : (Fin m → ℝ) → ℂ) := hpair.2
+        have hsub :
+            tsupport ((ψ : (Fin m → ℝ) → ℂ) ∘ fun x : Fin m → ℝ => x + a) ⊆
+              (fun x : Fin m → ℝ => x + a) ⁻¹'
+                tsupport (ψ : (Fin m → ℝ) → ℂ) := by
+          exact tsupport_comp_subset_preimage (ψ : (Fin m → ℝ) → ℂ)
+            (continuous_id.add continuous_const)
+        have ht_translate' :
+            t ∈ tsupport
+              ((ψ : (Fin m → ℝ) → ℂ) ∘ fun x : Fin m → ℝ => x + a) := by
+          simpa [translateSchwartz_apply] using ht_translate
+        have hta_ψ : t + a ∈ tsupport (ψ : (Fin m → ℝ) → ℂ) :=
+          hsub ht_translate'
+        have htη_ball := hη_support ht_eta
+        have htaψ_ball := hψ hta_ψ
+        rw [Metric.mem_closedBall, dist_zero_right] at htη_ball htaψ_ball
+        have haeq : ‖a‖ = ‖(t + a) - t‖ := by
+          congr 1
+          ext i
+          simp
+        calc
+          ‖a‖ = ‖(t + a) - t‖ := haeq
+          _ ≤ ‖t + a‖ + ‖t‖ := norm_sub_le _ _
+          _ ≤ r + rη := by linarith
+      have hφ_cov : SupportsInOpen (φ : ComplexChartSpace m → ℂ) Ucov := by
+        constructor
+        · exact hφ.1
+        · intro z hz
+          have hz_cov :=
+            hmargin z (hφ.2 hz) 0 (by simpa using add_nonneg hr_nonneg hrη_nonneg)
+          have hz_eq : z + realEmbed (0 : Fin m → ℝ) = z := by
+            ext i
+            simp [realEmbed]
+          exact hz_eq ▸ hz_cov
+      have hφ_shift :
+          SupportsInOpen
+            (complexTranslateSchwartz (-a) φ : ComplexChartSpace m → ℂ) Ucov := by
+        apply SupportsInOpen.complexTranslateSchwartz_of_image_subset
+          φ Udesc Ucov (-a) hφ
+        intro y hy
+        have hycov := hmargin (y + realEmbed (-a)) hy a hbound
+        have hcancel : y + realEmbed (-a) + realEmbed a = y := by
+          ext i
+          simp [realEmbed, add_assoc]
+        exact hcancel ▸ hycov
+      have hκ_support : KernelSupportWithin κ (r + rη) := by
+        have hκ_rη : KernelSupportWithin κ rη := by
+          exact KernelSupportWithin.smulLeftCLM_of_leftSupport hη_support
+            (translateSchwartz a ψ)
+        exact KernelSupportWithin.mono hκ_rη (by linarith)
+      have hκ_shift : KernelSupportWithin (translateSchwartz (-a) κ) (r + rη) := by
+        have hrew : translateSchwartz (-a) κ =
+            SchwartzMap.smulLeftCLM ℂ
+              ((translateSchwartz (-a) η : SchwartzMap (Fin m → ℝ) ℂ) :
+                (Fin m → ℝ) → ℂ) ψ := by
+          simpa [κ] using translateSchwartz_neg_smulLeft_eta_translate a ψ η
+        have hκ_r :
+            KernelSupportWithin
+              (SchwartzMap.smulLeftCLM ℂ
+                ((translateSchwartz (-a) η : SchwartzMap (Fin m → ℝ) ℂ) :
+                  (Fin m → ℝ) → ℂ) ψ) r := by
+          exact KernelSupportWithin.smulLeftCLM
+            ((translateSchwartz (-a) η : SchwartzMap (Fin m → ℝ) ℂ) :
+              (Fin m → ℝ) → ℂ) hψ
+        simpa [hrew] using KernelSupportWithin.mono hκ_r (by linarith)
+      exact hcov (-a) φ κ hφ_cov hφ_shift hκ_support hκ_shift
+  have hint :
+      (∫ a : Fin m → ℝ, K (schwartzPartialEval₂CLM a A)) =
+        ∫ a : Fin m → ℝ, K (schwartzPartialEval₂CLM a B) := by
+    apply integral_congr_ae
+    filter_upwards with a
+    exact hpoint a
+  calc
+    K (schwartzTensorProduct₂ φ ψ)
+        = K (mixedRealFiberIntegralCLM B) := by
+            rw [mixedRealFiberIntegralCLM_localDescentParamTestRight φ ψ η hη_norm]
+    _ = ∫ a : Fin m → ℝ, K (schwartzPartialEval₂CLM a B) := by
+            exact continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral K B
+    _ = ∫ a : Fin m → ℝ, K (schwartzPartialEval₂CLM a A) := by
+            rw [hint]
+    _ = K (mixedRealFiberIntegralCLM A) := by
+            exact (continuousLinearMap_apply_mixedRealFiberIntegralCLM_eq_integral K A).symm
+    _ = K ((SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+              (realConvolutionShearCLE m).symm)
+              (schwartzTensorProduct₂ (realConvolutionTest φ ψ) η)) := by
+            rw [mixedRealFiberIntegralCLM_localDescentParamTestLeft]
+    _ = complexRealFiberTranslationDescentCLM
+          (shearedProductKernelFunctional K) η
+          (realConvolutionTest φ ψ) := by
+            simp [complexRealFiberTranslationDescentCLM, shearedProductKernelFunctional,
+              schwartzTensorProduct₂CLMRight_eq, ContinuousLinearMap.comp_apply]
+
+/-- Local product-test descent for translation-covariant product kernels.  This
+is deliberately only a product-test statement under the declared support
+window, not a quotient theorem for arbitrary mixed Schwartz tests. -/
+theorem translationCovariantProductKernel_descends_local {m : ℕ}
+    (K : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (Udesc Ucov : Set (ComplexChartSpace m)) (r rη : ℝ)
+    (hr_nonneg : 0 ≤ r) (hrη_nonneg : 0 ≤ rη)
+    (η : SchwartzMap (Fin m → ℝ) ℂ)
+    (hη_norm : ∫ t : Fin m → ℝ, η t = 1)
+    (hη_support : KernelSupportWithin η rη)
+    (hmargin :
+      ∀ z ∈ Udesc, ∀ t : Fin m → ℝ, ‖t‖ ≤ r + rη →
+        z + realEmbed t ∈ Ucov)
+    (hcov : ProductKernelRealTranslationCovariantLocal K Ucov (r + rη)) :
+    ∃ Hdist : SchwartzMap (ComplexChartSpace m) ℂ →L[ℂ] ℂ,
+      ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+        (ψ : SchwartzMap (Fin m → ℝ) ℂ),
+        SupportsInOpen (φ : ComplexChartSpace m → ℂ) Udesc →
+        KernelSupportWithin ψ r →
+          K (schwartzTensorProduct₂ φ ψ) =
+            Hdist (realConvolutionTest φ ψ) := by
+  refine ⟨complexRealFiberTranslationDescentCLM
+    (shearedProductKernelFunctional K) η, ?_⟩
+  intro φ ψ hφ hψ
+  exact shearedProductKernelFunctional_localQuotient_of_productCovariant
+    K Udesc Ucov hr_nonneg hrη_nonneg η hη_norm hη_support hmargin hcov
+    φ ψ hφ hψ
+
 end SCV
