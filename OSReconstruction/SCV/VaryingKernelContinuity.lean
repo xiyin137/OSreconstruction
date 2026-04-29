@@ -1063,6 +1063,129 @@ theorem tendsto_localRudinMinusBoundary_varyingKernel_of_clm
       simp [sample, realSample, localEOWChart, localEOWRealChart]
     simpa [imSample, hneg_re] using heval.symm)
 
+/-- Boundary-data package for the local Rudin circle with a varying smoothing
+kernel.  The proof first obtains Schwartz-valued translated-kernel continuity,
+then returns its scalar `Tchart` image together with the two side limits. -/
+theorem localRudin_varyingKernel_boundaryData_of_clm
+    {Cplus Cminus : Set (Fin m → ℝ)} {δ ρ r rψLarge : ℝ}
+    (hm : 0 < m)
+    (Dplus Dminus : Set (ComplexChartSpace m))
+    (E : Set (Fin m → ℝ))
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (Tplus Tminus :
+      (Fin m → ℝ) →
+        SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ)
+    (Tchart : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (hplus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        KernelSupportWithin ψ rψLarge →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hminus_eval :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ,
+        KernelSupportWithin ψ rψLarge →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ))
+    (hplus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tplus y f) (nhdsWithin 0 Cplus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (hminus_limit :
+      ∀ f : SchwartzMap (Fin m → ℝ) ℂ,
+        Tendsto (fun y => Tminus y f) (nhdsWithin 0 Cminus)
+          (nhds ((Tchart.restrictScalars ℝ) f)))
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hδ : 0 < δ) (hδρ : δ * 10 ≤ ρ)
+    (hδsum : (Fintype.card (Fin m) : ℝ) * (δ * 10) < r)
+    (Z : Set (ComplexChartSpace m))
+    (η : ComplexChartSpace m → SchwartzMap (Fin m → ℝ) ℂ)
+    (hZ_ball :
+      Z ⊆ Metric.ball (0 : ComplexChartSpace m) (δ / 2))
+    (hE_compact : IsCompact E)
+    (hη_cont : ContinuousOn η Z)
+    (hη_support : ∀ z ∈ Z, KernelSupportWithin (η z) rψLarge)
+    (hE_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+        localEOWRealChart x0 ys u ∈ E)
+    (hplus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+      ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < r →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus)
+    (hminus :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ,
+      ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < r →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) :
+    ContinuousOn
+      (fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+        Tchart (translateSchwartz (-p.2) (η p.1)))
+      (Z ×ˢ E) ∧
+    (∀ z0 ∈ Z, ∀ l0 ∈ Metric.sphere (0 : ℂ) 1,
+      l0.im = 0 →
+        Filter.Tendsto
+          (fun p : ComplexChartSpace m × ℂ =>
+            realMollifyLocal Fplus (η p.1)
+              (localEOWChart x0 ys (localEOWSmp δ p.1 p.2)))
+          (nhdsWithin (z0, l0)
+            ((Z ×ˢ Metric.sphere (0 : ℂ) 1) ∩
+              {p : ComplexChartSpace m × ℂ | 0 < p.2.im}))
+          (nhds
+            (Tchart
+              (translateSchwartz
+                (-(localEOWRealChart x0 ys
+                  (fun j => (localEOWSmp δ z0 l0 j).re)))
+                (η z0))))) ∧
+    (∀ z0 ∈ Z, ∀ l0 ∈ Metric.sphere (0 : ℂ) 1,
+      l0.im = 0 →
+        Filter.Tendsto
+          (fun p : ComplexChartSpace m × ℂ =>
+            realMollifyLocal Fminus (η p.1)
+              (localEOWChart x0 ys (localEOWSmp δ p.1 p.2)))
+          (nhdsWithin (z0, l0)
+            ((Z ×ˢ Metric.sphere (0 : ℂ) 1) ∩
+              {p : ComplexChartSpace m × ℂ | p.2.im < 0}))
+          (nhds
+            (Tchart
+              (translateSchwartz
+                (-(localEOWRealChart x0 ys
+                  (fun j => (localEOWSmp δ z0 l0 j).re)))
+                (η z0))))) := by
+  have hη_zero :
+      ∀ z ∈ Z, ∀ t ∉ Metric.closedBall (0 : Fin m → ℝ) rψLarge,
+        η z t = 0 := by
+    intro z hz t ht
+    exact KernelSupportWithin.eq_zero_of_not_mem_closedBall
+      (hη_support z hz) ht
+  have hkernel_cont :
+      ContinuousOn
+        (fun p : ComplexChartSpace m × (Fin m → ℝ) =>
+          translateSchwartz (-p.2) (η p.1))
+        (Z ×ˢ E) :=
+    continuousOn_translateSchwartz_varyingKernel_of_fixedSupport
+      Z E (Metric.closedBall (0 : Fin m → ℝ) rψLarge) η
+      hE_compact (isCompact_closedBall (0 : Fin m → ℝ) rψLarge)
+      hη_cont hη_zero
+  refine ⟨Tchart.continuous.comp_continuousOn hkernel_cont, ?_, ?_⟩
+  · exact tendsto_localRudinPlusBoundary_varyingKernel_of_clm hm Dplus E Z
+      Fplus hDplus_sub Tplus Tchart hplus_eval hplus_limit x0 ys
+      hδ hδρ hδsum η hZ_ball hη_support hkernel_cont hE_mem hplus
+  · exact tendsto_localRudinMinusBoundary_varyingKernel_of_clm hm Dminus E Z
+      Fminus hDminus_sub Tminus Tchart hminus_eval hminus_limit x0 ys
+      hδ hδρ hδsum η hZ_ball hη_support hkernel_cont hE_mem hminus
+
 /-- Continuity of the normalized local Rudin envelope when the smoothing kernel
 varies with the outer chart point, assuming a uniform bound on the circle
 integrand. -/

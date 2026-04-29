@@ -1256,10 +1256,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `tendsto_localRudinPlusBoundary_varyingKernel_of_clm` and
       `tendsto_localRudinMinusBoundary_varyingKernel_of_clm` are now checked
       in `SCV/VaryingKernelContinuity.lean`, with vector-valued
-      `hkernel_cont` as the Banach-Steinhaus input.  The remaining Lean targets
-      have exact proof transcripts in `docs/scv_infrastructure_blueprint.md`:
-      the bundled
-      `localRudin_varyingKernel_boundaryData_of_clm`, the parametric
+      `hkernel_cont` as the Banach-Steinhaus input.  The bundled
+      `localRudin_varyingKernel_boundaryData_of_clm` is also checked: it
+      derives `hkernel_cont`, returns scalar `hbv_cont`, and packages the two
+      side limits.  The remaining Lean targets have exact proof transcripts in
+      `docs/scv_infrastructure_blueprint.md`: the parametric
       Rudin-integrand bound over `closedBall 0 Rcut` with the inner Rudin side
       domains kept separate from the original holomorphy domains, and the final
       cutoff-envelope continuity theorem.  The boundary limits in that stack
@@ -1745,10 +1746,10 @@ Implementation-readiness gate for the next Lean stage:
   cutoff, SCV-local `schwartzPartialEval₁CLM` apply/tensor/seminorm package,
   compact `Lorig` value-CLM bound, chart-kernel value-CLM transport,
   chart-linear kernel pushforward API, and first varying-kernel continuity
-  layer including the split moving-kernel side limits are checked.  The
-  remaining Lean order, now fully proof-documented in
-  `docs/scv_infrastructure_blueprint.md`, is: bundle the CLM boundary data;
-  prove the parametric Rudin-integrand bound; prove
+  layer including the split moving-kernel side limits and bundled CLM boundary
+  data are checked.  The remaining Lean order, now fully proof-documented in
+  `docs/scv_infrastructure_blueprint.md`, is: prove the parametric
+  Rudin-integrand bound; prove
   `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`;
   construct the pairing CLM through the explicit post-continuity/value-CLM
   interface; prove local covariance; prove direct local product-test descent;

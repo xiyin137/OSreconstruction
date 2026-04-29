@@ -6081,9 +6081,11 @@ Proof transcript for the next target:
        `tendsto_localRudinMinusBoundary_varyingKernel_of_clm`; their theorem
        surfaces correctly consume vector-valued translated-kernel continuity
        `hkernel_cont`, not merely the scalar `Tchart`-applied boundary
-       continuity.  The remaining
+       continuity.  The same file also checks
+       `localRudin_varyingKernel_boundaryData_of_clm`, which derives
+       `hkernel_cont`, returns scalar `hbv_cont`, and bundles the two side
+       limits.  The remaining
        continuity-support targets before the mixed pairing CLM are
-       `localRudin_varyingKernel_boundaryData_of_clm`,
        `exists_bound_localRudinIntegrand_varyingKernel`,
        `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`: before
        defining the mixed integral, prove continuity of the actual cutoff
