@@ -234,4 +234,61 @@ theorem schwartzTensorProduct₂CLMLeft_eq {m : ℕ}
   ext p
   rfl
 
+/-- Partial evaluation of a triple mixed Schwartz test at a fixed last real
+parameter, as a continuous linear map in the ambient triple test. -/
+def schwartzPartialEval₂CLM {m : ℕ} (a : Fin m → ℝ) :
+    SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ →L[ℂ]
+        SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ := by
+  let B := ComplexChartSpace m × (Fin m → ℝ)
+  let P := Fin m → ℝ
+  let g : B → B × P := fun b => (b, a)
+  have hg : g.HasTemperateGrowth := by
+    have hconst : Function.HasTemperateGrowth
+        (fun _ : B => ((0, a) : B × P)) :=
+      Function.HasTemperateGrowth.const _
+    have hlin : Function.HasTemperateGrowth
+        (⇑(ContinuousLinearMap.inl ℝ B P)) :=
+      (ContinuousLinearMap.inl ℝ B P).hasTemperateGrowth
+    convert hlin.add hconst using 1
+    ext b <;> simp [g, B, P, ContinuousLinearMap.inl_apply, Prod.add_def]
+  have hg_upper : ∃ (k : ℕ) (C : ℝ), ∀ b, ‖b‖ ≤ C * (1 + ‖g b‖) ^ k := by
+    refine ⟨1, 1, ?_⟩
+    intro b
+    have hb : ‖b‖ ≤ ‖g b‖ := by
+      simp [g, Prod.norm_def]
+    have hnonneg : 0 ≤ ‖g b‖ := norm_nonneg _
+    nlinarith
+  exact SchwartzMap.compCLM (𝕜 := ℂ) (g := g) hg hg_upper
+
+@[simp]
+theorem schwartzPartialEval₂CLM_apply {m : ℕ}
+    (a : Fin m → ℝ)
+    (A : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ)
+    (z : ComplexChartSpace m) (t : Fin m → ℝ) :
+    schwartzPartialEval₂CLM a A (z, t) = A ((z, t), a) := rfl
+
+/-- The fixed-last-variable partial evaluations vary continuously in the last
+real parameter. -/
+theorem continuous_schwartzPartialEval₂CLM {m : ℕ}
+    (A : SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ) :
+    Continuous fun a : Fin m → ℝ => schwartzPartialEval₂CLM a A := by
+  let B := ComplexChartSpace m × (Fin m → ℝ)
+  let P := Fin m → ℝ
+  let Acomm : SchwartzMap (P × B) ℂ :=
+    (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (ContinuousLinearEquiv.prodComm ℝ P B)) A
+  have hcont : Continuous fun a : P => schwartzPartialEval₁ Acomm a :=
+    continuous_schwartzPartialEval₁ Acomm
+  have hfun :
+      (fun a : P => schwartzPartialEval₂CLM a A) =
+        fun a : P => schwartzPartialEval₁ Acomm a := by
+    funext a
+    ext b
+    rcases b with ⟨z, t⟩
+    rfl
+  simpa [B, P, hfun]
+
 end SCV

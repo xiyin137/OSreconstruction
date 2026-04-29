@@ -2058,12 +2058,13 @@ Current implementation order:
    `SCV.schwartzTensorProduct₂CLMLeft`,
    `SCV.schwartzTensorProduct₂CLMLeft_apply`,
    `SCV.schwartzTensorProduct₂CLMLeft_eq`,
+   `SCV.schwartzPartialEval₂CLM`,
+   `SCV.schwartzPartialEval₂CLM_apply`,
+   `SCV.continuous_schwartzPartialEval₂CLM`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
    `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
    The remaining pure-SCV declarations on this route are now the local descent
    package
-   `SCV.schwartzPartialEval₂CLM`,
-   `SCV.continuous_schwartzPartialEval₂CLM`,
    `SCV.schwartzPartialEval₂CLM_finsetSeminorm_decay`,
    `SCV.mixedRealFiberIntegralCLM`,
    `SCV.mixedBaseFiberTensor`,

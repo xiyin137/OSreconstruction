@@ -7213,9 +7213,15 @@ Proof transcript for the next target:
        product-test map needed for scalar CLM compositions; it is proved by an
        explicit finite-seminorm Leibniz estimate and is not a global descent
        theorem.
+       `schwartzPartialEval₂CLM`, `schwartzPartialEval₂CLM_apply`, and
+       `continuous_schwartzPartialEval₂CLM` are also checked in
+       `SCV/LocalProductDescent.lean`; they implement fixed-last-variable
+       partial evaluation on the triple mixed Schwartz space by
+       `SchwartzMap.compCLM` along `b ↦ (b,a)`, and prove parameter
+       continuity by product-commuting the checked `schwartzPartialEval₁`
+       theorem.
 
        Next local descent infrastructure:
-       `schwartzPartialEval₂CLM`,
        `mixedRealFiberIntegralCLM`,
        `mixedBaseFiberTensor`, `mixedBaseFiberProductTensorDense_all`,
        `mixedRealFiberIntegralScalarCLM`,
