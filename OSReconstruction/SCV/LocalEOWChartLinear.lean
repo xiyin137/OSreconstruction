@@ -521,6 +521,123 @@ theorem localEOWRealChart_eq_x0_add_linearPart
   ext a
   simp [localEOWRealChart, localEOWRealLinearPart]
 
+/-- Evaluating the affine pushed test on the real chart recovers the original
+chart-coordinate test. -/
+@[simp]
+theorem localEOWAffineTestPushforwardCLM_apply_realChart
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hli : LinearIndependent ℝ ys)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ) (u : Fin m → ℝ) :
+    localEOWAffineTestPushforwardCLM x0 ys hli φ
+        (localEOWRealChart x0 ys u) =
+      φ u := by
+  let e := localEOWRealLinearCLE ys hli
+  have he_symm : e.symm (localEOWRealLinearPart ys u) = u := by
+    rw [← localEOWRealLinearCLE_apply ys hli u]
+    exact e.symm_apply_apply u
+  simp [e, localEOWRealChart_eq_x0_add_linearPart, he_symm]
+
+/-- Affine real-chart change of variables for a pushed chart test.  The
+Jacobian factor is the inverse absolute determinant in
+`localEOWAffineDistributionPullbackCLM`. -/
+theorem integral_localEOWAffineTestPushforwardCLM_changeOfVariables
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hli : LinearIndependent ℝ ys)
+    (g : (Fin m → ℝ) → ℂ)
+    (φ : SchwartzMap (Fin m → ℝ) ℂ) :
+    ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+      ∫ x : Fin m → ℝ,
+        g x * localEOWAffineTestPushforwardCLM x0 ys hli φ x =
+    ∫ u : Fin m → ℝ, g (localEOWRealChart x0 ys u) * φ u := by
+  let e := localEOWRealLinearCLE ys hli
+  let A : (Fin m → ℝ) →L[ℝ] (Fin m → ℝ) := e.toContinuousLinearMap
+  have hlin :
+      (A : (Fin m → ℝ) →ₗ[ℝ] (Fin m → ℝ)) =
+        Matrix.toLin' (localEOWRealLinearMatrix ys) := by
+    apply LinearMap.ext
+    intro u
+    ext a
+    change (localEOWRealLinearCLE ys hli u) a =
+      (Matrix.toLin' (localEOWRealLinearMatrix ys) u) a
+    rw [localEOWRealLinearCLE_apply]
+    simpa [Matrix.toLin'_apply] using
+      (congrFun (localEOWRealLinearMatrix_mulVec ys u).symm a)
+  have hjac : localEOWRealJacobianAbs ys = |A.det| := by
+    rw [localEOWRealJacobianAbs]
+    change |(localEOWRealLinearMatrix ys).det| =
+      |LinearMap.det (A : (Fin m → ℝ) →ₗ[ℝ] (Fin m → ℝ))|
+    rw [hlin, LinearMap.det_toLin']
+  have hdet_ne : A.det ≠ 0 := by
+    exact (LinearEquiv.isUnit_det' e.toLinearEquiv).ne_zero
+  have hdet_abs_ne : |A.det| ≠ 0 := abs_ne_zero.mpr hdet_ne
+  let f : (Fin m → ℝ) → Fin m → ℝ := fun u => x0 + e u
+  let G : (Fin m → ℝ) → ℂ := fun x =>
+    ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+      (g x * localEOWAffineTestPushforwardCLM x0 ys hli φ x)
+  have hfderiv :
+      ∀ x ∈ (Set.univ : Set (Fin m → ℝ)),
+        HasFDerivWithinAt f A Set.univ x := by
+    intro x _hx
+    change HasFDerivWithinAt (fun u : Fin m → ℝ => x0 + e u) A Set.univ x
+    exact (e.hasFDerivAt.const_add x0).hasFDerivWithinAt
+  have hinj : Set.InjOn f Set.univ := by
+    intro x _hx y _hy hxy
+    have hxy' : x0 + e x = x0 + e y := by
+      simpa [f] using hxy
+    apply e.injective
+    calc
+      e x = -x0 + (x0 + e x) := by simp
+      _ = -x0 + (x0 + e y) := by rw [hxy']
+      _ = e y := by simp
+  have hchange :=
+    MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul
+      (μ := MeasureTheory.MeasureSpace.volume)
+      (s := (Set.univ : Set (Fin m → ℝ)))
+      (f := f) (f' := fun _ => A)
+      MeasurableSet.univ hfderiv hinj G
+  have himage : f '' Set.univ = Set.univ := by
+    ext y
+    constructor
+    · intro _hy
+      trivial
+    · intro _hy
+      refine ⟨e.symm (y - x0), trivial, ?_⟩
+      dsimp [f]
+      rw [ContinuousLinearEquiv.apply_symm_apply]
+      ext a
+      simp
+  rw [himage] at hchange
+  have hchart (u : Fin m → ℝ) :
+      x0 + e u = localEOWRealChart x0 ys u := by
+    rw [localEOWRealChart_eq_x0_add_linearPart]
+    ext a
+    simp [e, localEOWRealLinearCLE_apply]
+  have hrhs :
+      ∀ u : Fin m → ℝ,
+        |A.det| • G (f u) =
+          g (localEOWRealChart x0 ys u) * φ u := by
+    intro u
+    dsimp [G, f]
+    rw [hchart u, localEOWAffineTestPushforwardCLM_apply_realChart, hjac]
+    field_simp [hdet_abs_ne]
+  calc
+    ((localEOWRealJacobianAbs ys)⁻¹ : ℂ) *
+        ∫ x : Fin m → ℝ,
+          g x * localEOWAffineTestPushforwardCLM x0 ys hli φ x =
+        ∫ x : Fin m → ℝ, G x := by
+          simpa [G] using
+            (MeasureTheory.integral_const_mul
+              ((localEOWRealJacobianAbs ys)⁻¹ : ℂ)
+              (fun x : Fin m → ℝ =>
+                g x * localEOWAffineTestPushforwardCLM x0 ys hli φ x)).symm
+    _ = ∫ u : Fin m → ℝ, |A.det| • G (f u) := by
+          simpa using hchange
+    _ = ∫ u : Fin m → ℝ,
+        g (localEOWRealChart x0 ys u) * φ u := by
+          apply MeasureTheory.integral_congr_ae
+          filter_upwards with u
+          exact hrhs u
+
 /-- Real-coordinate translation in the local chart corresponds to translation
 by the chart's linear part on the original real edge. -/
 theorem localEOWRealChart_sub

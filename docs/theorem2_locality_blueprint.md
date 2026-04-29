@@ -1027,6 +1027,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth`,
      `SCV.HasCompactSupport.localEOWAffineTestPushforwardCLM`,
      `SCV.tsupport_localEOWAffineTestPushforwardCLM_subset`,
+     `SCV.localEOWAffineTestPushforwardCLM_apply_realChart`,
      `SCV.integral_localEOWAffineTestPushforwardCLM_changeOfVariables`,
      `SCV.chartOrthantBoundaryValue_from_uniformConeBoundaryValue`,
      `SCV.chartHolomorphy_from_originalHolomorphy`,
@@ -1040,18 +1041,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `η = s⁻¹ • localEOWRealLinearPart ys (-y)`.  The latter gives
      `localEOWRealLinearPart ys y = -s • η`, so it consumes exactly the final
      `Fminus (x - εη i)` hypothesis.
-	   * The distribution in chart coordinates is not `T`; it is
-	     `localEOWAffineDistributionPullbackCLM x0 ys hli T`, and the smoothing
-	     kernels used in the regularized family are pushed to the original edge by
-	     `localEOWRealLinearKernelPushforwardCLM ys hli`.
-	   * The affine support half of this gate is checked:
-	     `HasCompactSupport.localEOWAffineTestPushforwardCLM` and
-	     `tsupport_localEOWAffineTestPushforwardCLM_subset`.  The next
-	     implementation target in this gate is the determinant change-of-variables
-	     theorem
-	     `integral_localEOWAffineTestPushforwardCLM_changeOfVariables`.
-	   * The local output must be a transported coordinate ball with transported
-	     strict positive/negative side balls.  Patching consumes precisely these
+   * The distribution in chart coordinates is not `T`; it is
+     `localEOWAffineDistributionPullbackCLM x0 ys hli T`, and the smoothing
+     kernels used in the regularized family are pushed to the original edge by
+     `localEOWRealLinearKernelPushforwardCLM ys hli`.
+   * The affine support half of this gate is checked:
+     `HasCompactSupport.localEOWAffineTestPushforwardCLM` and
+     `tsupport_localEOWAffineTestPushforwardCLM_subset`.  The remaining
+     determinant theorem is now fully specified: evaluate the pushed test on
+     `localEOWRealChart x0 ys u` to get `φ u`, then apply
+     `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul` to the
+     affine map `u ↦ x0 + localEOWRealLinearCLE ys hli u`.  The derivative is
+     `(localEOWRealLinearCLE ys hli).hasFDerivAt.const_add x0`, the image of
+     `Set.univ` is all of real space by the inverse
+     `u = (localEOWRealLinearCLE ys hli).symm (x - x0)`, and the determinant
+     is exactly `localEOWRealJacobianAbs ys`.
+   * The local output must be a transported coordinate ball with transported
+     strict positive/negative side balls.  Patching consumes precisely these
      shapes:
      `(localEOWComplexAffineEquiv x0 ys hli) '' Metric.ball 0 R`,
      `(localEOWComplexAffineEquiv x0 ys hli) '' StrictPositiveImagBall R`,
