@@ -5890,7 +5890,8 @@ Proof transcript for the next target:
        (Rcov r : ℝ)
        (hRcov_small : 2 * Rcov < δ / 4)
        (hK_rep :
-         ∀ φ ψ,
+         ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+           (ψ : SchwartzMap (Fin m -> ℝ) ℂ),
            SupportsInOpen (φ : ComplexChartSpace m -> ℂ)
              (Metric.ball (0 : ComplexChartSpace m) Rcov) ->
            KernelSupportWithin ψ r ->
@@ -6012,8 +6013,14 @@ Proof transcript for the next target:
       expansion is legal because it supplies
       `SupportsInOpen φ Ucov` and
       `KernelSupportWithin (translateSchwartz a ψ) r`.
-   2. If `φ = 0`, both product tensors are zero.  Otherwise choose
-      `u` with `φ u ≠ 0` by extensionality of Schwartz maps.  Then
+   2. Split on `φ = 0`.  In the zero branch, both expanded integrands vanish
+      pointwise: `complexTranslateSchwartz a φ = 0` by
+      `complexTranslateSchwartz_apply`, and `φ = 0` on the right.  Thus the
+      covariance identity follows from the two `hK_rep` expansions and `simp`;
+      no shifted-window seed is needed.
+
+      In the nonzero branch choose `u` with `φ u ≠ 0` by extensionality of
+      Schwartz maps.  Then
       `u ∈ Function.support (φ : _ -> ℂ) ⊆ tsupport φ`, hence
       `u ∈ Ucov`.
       Also
@@ -6031,7 +6038,8 @@ Proof transcript for the next target:
       `‖a‖ < 2 * Rcov < δ / 4`.
    3. Use
       `exists_positive_imag_mem_localEOWShiftedWindow_of_norm_lt` to discharge
-      the seed hypothesis of `hG_cov`.
+      the seed hypothesis of `hG_cov`.  This is done only in the nonzero
+      branch from Step 2.
    4. Change variables in the left integral
       `∫ z, Gchart ψ z * complexTranslateSchwartz a φ z` by
       `integral_mul_complexTranslateSchwartz_eq_shift_of_support`, using
@@ -6058,8 +6066,9 @@ Proof transcript for the next target:
       `z ∈ Function.support (φ : _ -> ℂ) ⊆ tsupport φ`; the original support
       hypothesis gives `z ∈ Ucov`, and the transported topological-support
       inclusion from Step 4 gives `z - realEmbed a ∈ Ucov`.  The small-radius
-      hypothesis gives `Ucov ⊆ Metric.ball 0 (δ / 2)`, hence
-      `z ∈ localEOWShiftedWindow δ a`.  Therefore `hG_cov` rewrites
+      hypothesis gives `Ucov ⊆ Metric.ball 0 (δ / 2)` for both `z` and
+      `z - realEmbed a`, hence `z ∈ localEOWShiftedWindow δ a`.  Therefore
+      `hG_cov` rewrites
       ```
       Gchart ψ (z - realEmbed a)
       ```
@@ -6067,6 +6076,8 @@ Proof transcript for the next target:
       ```
       Gchart (translateSchwartz a ψ) z.
       ```
+      In Lean this last rewrite is oriented as the symmetry of
+      `hG_cov a ψ hψ hψ_shift hseed z hz_window`, then multiplied by `φ z`.
       The all-space integral equality is therefore proved by support
       localization, not by any global measurability or global regularity
       statement for `Gchart ψ`.  The result is the right integral and hence the
@@ -7114,8 +7125,12 @@ Proof transcript for the next target:
        `SCV/LocalDescentSupport.lean`; the support-localized all-space
        change-of-variables lemma for locally continuous scalar kernels
        multiplied by a translated Schwartz test.
-   7. `regularizedLocalEOW_pairingCLM_localCovariant`: prove
-      `ProductKernelRealTranslationCovariantLocal K Ucov r`.
+   7. `regularizedLocalEOW_pairingCLM_localCovariant`: checked in
+      `SCV/LocalEOWPairingCLM.lean`; proves
+      `ProductKernelRealTranslationCovariantLocal K Ucov r` from the
+      product-test representation, support-localized change of variables, the
+      shifted support transport lemma, and shifted-window covariance of
+      `Gchart`.
    8a. `schwartzTensorProduct₂CLMLeft`, `schwartzPartialEval₂CLM`,
        `mixedRealFiberIntegralCLM`,
        `mixedBaseFiberTensor`, `mixedBaseFiberProductTensorDense_all`,

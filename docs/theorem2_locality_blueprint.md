@@ -1146,7 +1146,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `∫ z, Gchart ψ z * φ z` from continuity of `Gchart ψ` only on
          `Ucov` and `tsupport φ ⊆ Ucov`; the proof must not assume global
          measurability or continuity of `Gchart ψ`.
-      2. `SCV.regularizedLocalEOW_pairingCLM_localCovariant`.  It proves
+      2. `SCV.regularizedLocalEOW_pairingCLM_localCovariant` is now checked in
+         `SCV/LocalEOWPairingCLM.lean`.  It proves
          `ProductKernelRealTranslationCovariantLocal K Ucov r`, not global
          covariance.  The proof expands both product pairings, changes
          variables in the complex-chart integral by the support-localized lemma
@@ -1849,17 +1850,12 @@ Implementation-readiness gate for the next Lean stage:
   `SupportsInOpen.complexTranslateSchwartz_of_image_subset`,
   `regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
   `translationCovariantKernel_distributionalHolomorphic_local` are also
-  checked.  The remaining Lean order, now fully proof-documented in
-  `docs/scv_infrastructure_blueprint.md`, is: prove the parametric
-  Rudin-integrand bound; prove
-  `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`;
-  construct the pairing CLM through the explicit post-continuity/value-CLM
-  interface; use the now-checked support transport theorem
-  `tsupport_subset_preimage_tsupport_complexTranslateSchwartz` and the
-  now-checked support-localized translated-test change-of-variables theorem
-  `integral_mul_complexTranslateSchwartz_eq_shift_of_support` to prove local
-  covariance; prove the scalarized local quotient and local product-test
-  descent; prove
+  checked.  The pairing CLM and local covariance layer are now checked as
+  `regularizedLocalEOW_pairingCLM_of_fixedWindow` and
+  `regularizedLocalEOW_pairingCLM_localCovariant` in
+  `SCV/LocalEOWPairingCLM.lean`.  The remaining Lean order, now fully
+  proof-documented in `docs/scv_infrastructure_blueprint.md`, is: prove the
+  scalarized local quotient and local product-test descent; prove
   `regularizedEnvelope_pointwiseRepresentation_of_localProductKernel`; and
   finish with `regularizedEnvelope_chartEnvelope_from_localProductKernel` using
   the explicit approximate-identity and side-agreement hypotheses.  The
@@ -2049,13 +2045,13 @@ Current implementation order:
    `SCV.norm_realEmbed_eq`,
    `SCV.tsupport_subset_preimage_tsupport_complexTranslateSchwartz`,
    `SCV.integral_mul_complexTranslateSchwartz_eq_shift_of_support`,
+   `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`,
+   `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
    `SCV.SupportsInOpen.complexTranslateSchwartz_of_image_subset`,
    `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
    `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
    The remaining pure-SCV declarations on this route are now the local descent
    package
-   `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`,
-   `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
    `SCV.schwartzTensorProduct₂CLMLeft`,
    `SCV.schwartzPartialEval₂CLM`,
    `SCV.continuous_schwartzPartialEval₂CLM`,

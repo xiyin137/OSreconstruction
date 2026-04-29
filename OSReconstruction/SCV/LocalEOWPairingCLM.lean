@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalEOWSupport
+import OSReconstruction.SCV.LocalDescentSupport
 import OSReconstruction.SCV.VaryingKernelContinuity
 
 /-!
@@ -483,5 +484,177 @@ theorem regularizedLocalEOW_pairingCLM_of_fixedWindow
           = A (schwartzTensorProduct₂ φ ψ) := rfl
       _ = ∫ z in sball, Gchart ψ z * φ z := hpure_set
       _ = ∫ z : ComplexChartSpace m, Gchart ψ z * φ z := hset_all
+
+/-- The mixed pairing CLM is locally covariant under real translations on the
+declared support window. -/
+theorem regularizedLocalEOW_pairingCLM_localCovariant
+    {m : ℕ} {δ : ℝ}
+    (hm : 0 < m) (hδ : 0 < δ)
+    (K : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ →L[ℂ] ℂ)
+    (Gchart : SchwartzMap (Fin m → ℝ) ℂ →
+      ComplexChartSpace m → ℂ)
+    (Rcov r : ℝ)
+    (hRcov_small : 2 * Rcov < δ / 4)
+    (hK_rep :
+      ∀ (φ : SchwartzMap (ComplexChartSpace m) ℂ)
+        (ψ : SchwartzMap (Fin m → ℝ) ℂ),
+        SupportsInOpen (φ : ComplexChartSpace m → ℂ)
+          (Metric.ball (0 : ComplexChartSpace m) Rcov) →
+        KernelSupportWithin ψ r →
+          K (schwartzTensorProduct₂ φ ψ) =
+            ∫ z : ComplexChartSpace m, Gchart ψ z * φ z)
+    (hG_cont :
+      ∀ ψ, KernelSupportWithin ψ r →
+        ContinuousOn (Gchart ψ)
+          (Metric.ball (0 : ComplexChartSpace m) Rcov))
+    (hG_cov :
+      ∀ a ψ,
+        KernelSupportWithin ψ r →
+        KernelSupportWithin (translateSchwartz a ψ) r →
+        (∃ z0, z0 ∈ localEOWShiftedWindow (m := m) δ a ∧
+          (∀ j, 0 < (z0 j).im)) →
+        ∀ w ∈ localEOWShiftedWindow (m := m) δ a,
+          Gchart (translateSchwartz a ψ) w =
+            Gchart ψ (w - realEmbed a)) :
+    ProductKernelRealTranslationCovariantLocal K
+      (Metric.ball (0 : ComplexChartSpace m) Rcov) r := by
+  intro a φ ψ hφ hφ_shift hψ hψ_shift
+  by_cases hφ_zero : φ = 0
+  · have hleft := hK_rep (complexTranslateSchwartz a φ) ψ hφ_shift hψ
+    have hright := hK_rep φ (translateSchwartz a ψ) hφ hψ_shift
+    calc
+      K (schwartzTensorProduct₂ (complexTranslateSchwartz a φ) ψ)
+          = ∫ z : ComplexChartSpace m,
+              Gchart ψ z * complexTranslateSchwartz a φ z := hleft
+      _ = 0 := by
+          simp [hφ_zero, complexTranslateSchwartz_apply]
+      _ = ∫ z : ComplexChartSpace m,
+              Gchart (translateSchwartz a ψ) z * φ z := by
+          simp [hφ_zero]
+      _ = K (schwartzTensorProduct₂ φ (translateSchwartz a ψ)) := hright.symm
+  · have hφ_nonzero_point :
+        ∃ u : ComplexChartSpace m, φ u ≠ 0 := by
+      by_contra hnone
+      apply hφ_zero
+      ext u
+      have hu_not : ¬ φ u ≠ 0 := (not_exists.mp hnone) u
+      exact not_not.mp hu_not
+    rcases hφ_nonzero_point with ⟨u, hu_ne⟩
+    have hu_support :
+        u ∈ Function.support (φ : ComplexChartSpace m → ℂ) := by
+      simpa [Function.mem_support] using hu_ne
+    have hu_tsupport :
+        u ∈ tsupport (φ : ComplexChartSpace m → ℂ) :=
+      subset_closure hu_support
+    have hu_U :
+        u ∈ Metric.ball (0 : ComplexChartSpace m) Rcov :=
+      hφ.2 hu_tsupport
+    have hu_shift_ne :
+        complexTranslateSchwartz a φ (u - realEmbed a) ≠ 0 := by
+      have harg : u - realEmbed a + realEmbed a = u := by
+        ext i
+        simp
+      simpa [complexTranslateSchwartz_apply, harg] using hu_ne
+    have hu_shift_support :
+        u - realEmbed a ∈
+          Function.support
+            (complexTranslateSchwartz a φ : ComplexChartSpace m → ℂ) := by
+      simpa [Function.mem_support] using hu_shift_ne
+    have hu_shift_tsupport :
+        u - realEmbed a ∈
+          tsupport
+            (complexTranslateSchwartz a φ : ComplexChartSpace m → ℂ) :=
+      subset_closure hu_shift_support
+    have hu_shift_U :
+        u - realEmbed a ∈ Metric.ball (0 : ComplexChartSpace m) Rcov :=
+      hφ_shift.2 hu_shift_tsupport
+    have hu_norm : ‖u‖ < Rcov := by
+      simpa [Metric.mem_ball, dist_eq_norm] using hu_U
+    have hu_shift_norm : ‖u - realEmbed a‖ < Rcov := by
+      simpa [Metric.mem_ball, dist_eq_norm] using hu_shift_U
+    have ha_complex : ‖realEmbed a‖ < 2 * Rcov := by
+      calc
+        ‖realEmbed a‖ = ‖u - (u - realEmbed a)‖ := by
+          congr 1
+          ext i
+          simp
+        _ ≤ ‖u‖ + ‖u - realEmbed a‖ := by
+          simpa using norm_sub_le u (u - realEmbed a)
+        _ < Rcov + Rcov := add_lt_add hu_norm hu_shift_norm
+        _ = 2 * Rcov := by ring
+    have ha : ‖a‖ < δ / 4 := by
+      rw [← norm_realEmbed_eq (m := m) a]
+      exact lt_trans ha_complex hRcov_small
+    have hseed :
+        ∃ z0, z0 ∈ localEOWShiftedWindow (m := m) δ a ∧
+          (∀ j, 0 < (z0 j).im) :=
+      exists_positive_imag_mem_localEOWShiftedWindow_of_norm_lt hm hδ ha
+    have hshift_support :
+        ∀ z ∈ tsupport (φ : ComplexChartSpace m → ℂ),
+          z - realEmbed a ∈ Metric.ball (0 : ComplexChartSpace m) Rcov := by
+      intro z hz
+      exact hφ_shift.2
+        (tsupport_subset_preimage_tsupport_complexTranslateSchwartz a φ hz)
+    have hleft := hK_rep (complexTranslateSchwartz a φ) ψ hφ_shift hψ
+    have hright := hK_rep φ (translateSchwartz a ψ) hφ hψ_shift
+    have hintegral :
+        (∫ z : ComplexChartSpace m,
+          Gchart ψ z * complexTranslateSchwartz a φ z) =
+          ∫ z : ComplexChartSpace m,
+            Gchart (translateSchwartz a ψ) z * φ z := by
+      calc
+        (∫ z : ComplexChartSpace m,
+          Gchart ψ z * complexTranslateSchwartz a φ z)
+            =
+          ∫ z : ComplexChartSpace m, Gchart ψ (z - realEmbed a) * φ z := by
+            exact
+              integral_mul_complexTranslateSchwartz_eq_shift_of_support
+                (Gchart ψ) φ a (Metric.ball (0 : ComplexChartSpace m) Rcov)
+                (hG_cont ψ hψ) hφ.1 hφ_shift hshift_support
+        _ = ∫ z : ComplexChartSpace m,
+              Gchart (translateSchwartz a ψ) z * φ z := by
+            apply integral_congr_ae
+            filter_upwards with z
+            by_cases hzφ : φ z = 0
+            · simp [hzφ]
+            · have hz_support :
+                  z ∈ Function.support (φ : ComplexChartSpace m → ℂ) := by
+                simpa [Function.mem_support] using hzφ
+              have hz_tsupport :
+                  z ∈ tsupport (φ : ComplexChartSpace m → ℂ) :=
+                subset_closure hz_support
+              have hz_U :
+                  z ∈ Metric.ball (0 : ComplexChartSpace m) Rcov :=
+                hφ.2 hz_tsupport
+              have hz_shift_U :
+                  z - realEmbed a ∈
+                    Metric.ball (0 : ComplexChartSpace m) Rcov :=
+                hshift_support z hz_tsupport
+              have hRcov_delta : Rcov ≤ δ / 2 := by
+                linarith [hRcov_small, hδ]
+              have hz_window :
+                  z ∈ localEOWShiftedWindow (m := m) δ a := by
+                constructor
+                · have hz_norm : ‖z‖ < Rcov := by
+                    simpa [Metric.mem_ball, dist_eq_norm] using hz_U
+                  exact Metric.mem_ball.mpr (by
+                    simpa [dist_eq_norm] using
+                      (lt_of_lt_of_le hz_norm hRcov_delta))
+                · have hz_shift_norm : ‖z - realEmbed a‖ < Rcov := by
+                    simpa [Metric.mem_ball, dist_eq_norm] using hz_shift_U
+                  change z - realEmbed a ∈
+                    Metric.ball (0 : ComplexChartSpace m) (δ / 2)
+                  exact Metric.mem_ball.mpr (by
+                    simpa [dist_eq_norm] using
+                      (lt_of_lt_of_le hz_shift_norm hRcov_delta))
+              have hcov := hG_cov a ψ hψ hψ_shift hseed z hz_window
+              rw [← hcov]
+    calc
+      K (schwartzTensorProduct₂ (complexTranslateSchwartz a φ) ψ)
+          = ∫ z : ComplexChartSpace m,
+              Gchart ψ z * complexTranslateSchwartz a φ z := hleft
+      _ = ∫ z : ComplexChartSpace m,
+              Gchart (translateSchwartz a ψ) z * φ z := hintegral
+      _ = K (schwartzTensorProduct₂ φ (translateSchwartz a ψ)) := hright.symm
 
 end SCV
