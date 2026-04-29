@@ -2745,7 +2745,10 @@ Current implementation order:
    explicit side-cone radius `ε` and closed direction envelope from
    `SCV.localEOW_basisSideCone_rawBoundaryValue`, then truncate the side cones
    by a small ball before calling the slice-family theorem so its holomorphy
-   margins are honest.  After that, prove
+   margins are honest.  The truncation radius also forces one more
+   finite-dimensional shrink of the Rudin coordinate radius so
+   `localEOWRealLinearPart ys v` actually lands in the truncated cone on the
+   strict coordinate side balls.  After that, prove
    `SCV.chartDistributionalEOW_local_envelope`: feed the checked slice
    families into the fixed-window family, use the chart-kernel transport
    `localEOWRealLinearKernelPushforwardCLM ys hli`, then call the local
