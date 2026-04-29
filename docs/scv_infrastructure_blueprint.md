@@ -7434,9 +7434,13 @@ Proof transcript for the next target:
        `exists_seminorm_bound_mixedBaseFDerivSchwartz`,
        `exists_seminorm_bound_mixedRealFiberIntegralRaw_deriv`,
        `mixedRealFiberIntegralCLM`, and `mixedRealFiberIntegralCLM_apply`.
+       The first split tensor identities are checked too:
+       `mixedBaseFiberTensor`, `mixedBaseFiberTensor_apply`,
+       `schwartzPartialEval₂CLM_mixedBaseFiberTensor`, and
+       `mixedRealFiberIntegralCLM_mixedBaseFiberTensor`.
 
        Next local descent infrastructure:
-       `mixedBaseFiberTensor`, `mixedBaseFiberProductTensorDense_all`,
+       `mixedBaseFiberProductTensorDense_all`,
        `mixedRealFiberIntegralScalarCLM`,
        `mixedRealFiberIntegralScalarCLM_apply`,
        `mixedRealFiberIntegralScalarCLM_eq_comp_mixedRealFiberIntegralCLM`,

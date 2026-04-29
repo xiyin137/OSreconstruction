@@ -5,6 +5,7 @@ Authors: ModularPhysics Contributors
 -/
 import OSReconstruction.SCV.DistributionalEOWKernelFactorization
 import OSReconstruction.SCV.DistributionalEOWSupport
+import OSReconstruction.SCV.SchwartzExternalProduct
 
 /-!
 # Local Product-Kernel Descent
@@ -1146,5 +1147,51 @@ theorem mixedRealFiberIntegralCLM_apply {m : ℕ}
     mixedRealFiberIntegralCLM A (z, t) =
       ∫ a : Fin m → ℝ, A ((z, t), a) := by
   rfl
+
+/-- Split tensors for the mixed base/fiber decomposition used in scalarization. -/
+def mixedBaseFiberTensor {m : ℕ}
+    (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (ξ : SchwartzMap (Fin m → ℝ) ℂ) :
+    SchwartzMap
+      ((ComplexChartSpace m × (Fin m → ℝ)) × (Fin m → ℝ)) ℂ :=
+  schwartzExternalProduct G ξ
+
+@[simp]
+theorem mixedBaseFiberTensor_apply {m : ℕ}
+    (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (ξ : SchwartzMap (Fin m → ℝ) ℂ)
+    (b : ComplexChartSpace m × (Fin m → ℝ)) (a : Fin m → ℝ) :
+    mixedBaseFiberTensor G ξ (b, a) = G b * ξ a := by
+  rfl
+
+@[simp]
+theorem schwartzPartialEval₂CLM_mixedBaseFiberTensor {m : ℕ}
+    (a : Fin m → ℝ)
+    (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (ξ : SchwartzMap (Fin m → ℝ) ℂ) :
+    schwartzPartialEval₂CLM a (mixedBaseFiberTensor G ξ) =
+      ξ a • G := by
+  ext b
+  rcases b with ⟨z, t⟩
+  simp [mixedBaseFiberTensor, smul_eq_mul, mul_comm]
+
+@[simp]
+theorem mixedRealFiberIntegralCLM_mixedBaseFiberTensor {m : ℕ}
+    (G : SchwartzMap (ComplexChartSpace m × (Fin m → ℝ)) ℂ)
+    (ξ : SchwartzMap (Fin m → ℝ) ℂ) :
+    mixedRealFiberIntegralCLM (mixedBaseFiberTensor G ξ) =
+      (∫ a : Fin m → ℝ, ξ a) • G := by
+  ext b
+  rcases b with ⟨z, t⟩
+  rw [mixedRealFiberIntegralCLM_apply]
+  simp only [mixedBaseFiberTensor_apply]
+  calc
+    ∫ a : Fin m → ℝ, G (z, t) * ξ a =
+        G (z, t) * ∫ a : Fin m → ℝ, ξ a := by
+      simpa [smul_eq_mul] using
+        (integral_const_mul (μ := (volume : Measure (Fin m → ℝ)))
+          (G (z, t)) (fun a : Fin m → ℝ => ξ a))
+    _ = ((∫ a : Fin m → ℝ, ξ a) • G) (z, t) := by
+      simp [smul_eq_mul, mul_comm]
 
 end SCV

@@ -2092,14 +2092,14 @@ Current implementation order:
    `SCV.exists_seminorm_bound_mixedRealFiberIntegralRaw_deriv`,
    `SCV.mixedRealFiberIntegralCLM`,
    `SCV.mixedRealFiberIntegralCLM_apply`,
-   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
-   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
-   The remaining pure-SCV declarations on this route are now the local descent
-   package
    `SCV.mixedBaseFiberTensor`,
    `SCV.mixedBaseFiberTensor_apply`,
    `SCV.schwartzPartialEval₂CLM_mixedBaseFiberTensor`,
    `SCV.mixedRealFiberIntegralCLM_mixedBaseFiberTensor`,
+   `SCV.regularizedEnvelope_productKernel_dbar_eq_zero_local`, and
+   `SCV.translationCovariantKernel_distributionalHolomorphic_local`.
+   The remaining pure-SCV declarations on this route are now the local descent
+   package
    `SCV.mixedBaseFiberProductTensorDense_all`,
    `SCV.mixedRealFiberIntegralScalarCLM`,
    `SCV.mixedRealFiberIntegralScalarCLM_apply`,
