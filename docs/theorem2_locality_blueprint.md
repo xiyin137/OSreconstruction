@@ -5338,22 +5338,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Exact branch-boundary theorem derived from the common germ:
 
       The only new cutoff infrastructure needed for this derivation is the
-      checked finite-dimensional smooth Urysohn lemma in Schwartz form:
+      finite-dimensional smooth Urysohn lemma in Schwartz form.  The currently
+      checked theorem
+      `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open` is the
+      support-in-open projection of this construction; the branch-BV consumer
+      should expose the compact-support field as well, using the same proof:
 
       ```lean
-      theorem SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open
+      theorem SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport
           {m : ℕ} {K U : Set (Fin m -> ℝ)}
           (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U) :
           ∃ χ : SchwartzMap (Fin m -> ℝ) ℂ,
+            HasCompactSupport (χ : (Fin m -> ℝ) -> ℂ) ∧
             (∀ x ∈ K, χ x = 1) ∧
             tsupport (χ : (Fin m -> ℝ) -> ℂ) ⊆ U
       ```
 
-      This is pure real analysis and is now checked in
-      `OSReconstruction/SCV/DistributionalEOWCutoff.lean`.  It is not a
-      theorem-2 shortcut: it only turns the regular one-branch real-slice value
-      into a global Schwartz CLM after the source common germ has already been
-      proved.
+      This is pure real analysis: the existing proof already constructs the
+      cutoff from a compactly supported smooth function before coercing it to
+      a `SchwartzMap`.  It is not a theorem-2 shortcut; it only turns the
+      regular one-branch real-slice value into a global Schwartz CLM after the
+      source common germ has already been proved.
 
       The real-analysis consumer of the common germ should be isolated before
       the OS-specific branch theorem is implemented:
@@ -5424,20 +5429,39 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       1. Let `Ureal = {y | BHW.realEmbed y ∈ U}`.  It is open by continuity
          of `BHW.realEmbed`, and `closure E ⊆ Ureal` by `hU_real`.
-      2. Choose `χ : SchwartzMap (NPointDomain d n) ℂ` with `χ = 1` on
-         `closure E` and `tsupport χ ⊆ Ureal` using
-         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open`.
-      3. Define
+      2. Choose `χ : SchwartzMap (NPointDomain d n) ℂ` with compact support,
+         `χ = 1` on `closure E`, and `tsupport χ ⊆ Ureal` using
+         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`.
+      3. Choose `Rχ > 0` with
+         `tsupport (χ : NPointDomain d n -> ℂ) ⊆ Metric.closedBall 0 Rχ`,
+         by boundedness of the compact support.  Define the continuous
+         coefficient on that closed ball
 
          ```lean
-         T φ = ∫ y, χ y * Hβ (BHW.realEmbed y) * φ y
+         g y := χ y * Hβ (BHW.realEmbed y)
          ```
 
-         as a continuous linear map by `SchwartzMap.mkCLMtoNormedSpace`.
-         The seminorm bound uses compactness of `tsupport χ`, continuity of
-         `y ↦ Hβ (BHW.realEmbed y)` on that compact set, and
-         `SchwartzMap.seminorm ℂ 0 0 φ` to dominate `‖φ y‖`.
-      4. For a test `φ` with `tsupport φ ⊆ E`, `χ y = 1` on `tsupport φ`
+         and construct the CLM by the checked real-analysis API
+         `SCV.exists_closedBall_integral_clm_of_continuousOn`:
+
+         ```lean
+         T φ =
+           ∫ y in Metric.closedBall (0 : NPointDomain d n) Rχ,
+             g y * φ y
+         ```
+
+         The continuity hypothesis for `g` is proved locally on the closed
+         ball.  At points of `tsupport χ`, `hH_cont` applies because
+         `tsupport χ ⊆ Ureal`; at points outside `tsupport χ`, the complement
+         of `tsupport χ` is open and `χ` is identically zero there, so `g` is
+         locally zero regardless of the arbitrary total values of `Hβ` outside
+         `U`.  This avoids reproving the `SchwartzMap.mkCLMtoNormedSpace`
+         seminorm estimate inside the OS file.
+      4. For all `φ`, the closed-ball formula equals the full-space integral
+         `∫ y, χ y * Hβ (BHW.realEmbed y) * φ y`, because `χ` vanishes off
+         its topological support and that support is contained in the chosen
+         closed ball.  For a test `φ` with `tsupport φ ⊆ E`, `χ y = 1` on
+         `tsupport φ`
          because `tsupport φ ⊆ E ⊆ closure E`; hence
          `T φ = ∫ y, Hβ (BHW.realEmbed y) * φ y`.
       5. For compact `Kη ⊆ C`, let `K = tsupport φ`.  It is compact by
@@ -5569,7 +5593,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `hE_precompact : IsCompact (closure E)` are exactly what turn this
          into the displayed global CLM: choose a smooth cutoff supported inside
          that real neighborhood and equal to one on `closure E` using
-         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open`, then integrate
+         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+         choose a closed ball containing the cutoff support, and build the CLM
+         by `SCV.exists_closedBall_integral_clm_of_continuousOn` applied to
          the compactly supported smooth density
          `χ y * Hβ (BHW.realEmbed y)`.  Compact supports and compact direction
          sets are used for the boundary limits; no physical real-edge

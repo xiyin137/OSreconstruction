@@ -129,11 +129,16 @@ surfaces are only consumers of this source layer: they must carry explicit
 source-germ theorems, then call the generic branch theorem.  Domain
 membership, local side windows, and precompactness do not by themselves prove
 that the ACR and pulled BHW formulas are restrictions of one holomorphic germ.
-The only auxiliary cutoff lemma on this path is the
-pure real-analysis statement
-`SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open`; this is now checked
-in `OSReconstruction/SCV/DistributionalEOWCutoff.lean`.  The coordinate and
-compactness layer for the local horizontal wedge is also now checked in
+The only auxiliary cutoff lemma on this path is the pure real-analysis
+Schwartz cutoff statement.  The checked theorem
+`SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open` already supplies
+the support-in-open projection; the branch-BV consumer should expose the same
+construction with the additional compact-support field as
+`SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`, so
+the regular boundary CLM can be built through the checked
+`SCV.exists_closedBall_integral_clm_of_continuousOn` API rather than a fresh
+seminorm proof.  The coordinate and compactness layer for the local horizontal
+wedge is also now checked in
 `OSToWightmanLocalityOS45TraceMembership.lean`: `BHW.os45ACRBranchDomain`,
 `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`,
 `BHW.realEdgeAddImag`, and
