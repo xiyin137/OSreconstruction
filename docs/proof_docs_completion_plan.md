@@ -359,7 +359,12 @@ content:
    the corresponding path as `hfig_x0`.  Without that input, the OS45
    quarter-turn scalar point has not been connected to the `S'_n` seed inside
    the adjacent double scalar domain, and the theorem would again be trying to
-   infer scalar branch agreement from domain membership.
+   infer scalar branch agreement from domain membership.  The closure-point
+   suppliers must also choose a fresh local open patch around each
+   `x ∈ closure V`; they must not pass the original open `V` to a scalar input
+   theorem when only `x ∈ closure V` is known.  The local patch is the finite
+   intersection of `Ufig`, the identity and swapped ordered-sector preimages,
+   and the relevant horizontal pulled-domain preimage.
 4. The compact common-germ theorem `BHW.os45BranchHorizontalCommonGerm` then
    glues these branch-specific germs over `closure E`; the identity and
    adjacent germs remain different branch packets.

@@ -2928,22 +2928,53 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (1 : Equiv.Perm (Fin n))
       ```
 
-      with `β = 1` and `x0 = x`.  The required membership of every
-      `x ∈ closure V` in `Uid` is obtained from `hVcl` and
-      `hV_ordered_closure`.  The adjacent supplier forms the relabelled open
-      source patch
+      with `β = 1` and `x0 = x`.  For a closure point
+      `x ∈ closure V`, this is an open neighborhood of `x`; the required
+      membership in `Uid` is obtained from `hVcl` and
+      `hV_ordered_closure`.  If the identity scalar input needs a named open
+      patch rather than `Uid` itself, shrink once more to
+      `Uid ∩ {u | realEmbed u ∈ ExtendedTube} ∩
+       {u | realEmbed (os45CommonEdgeRealPoint 1 u) ∈
+          os45PulledRealBranchDomain 1}`; `x` belongs to this patch by
+      `hUfig_source` and the closure-level pulled-domain field, and openness
+      supplies the Lean side conditions.
+
+      For the adjacent supplier, do not try to use the original `V` as the
+      scalar source patch for a boundary point `x ∈ closure V`.  Instead,
+      first choose a local open patch around that closure point:
+
+      ```lean
+      Ux := Ufig ∩
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+          (1 : Equiv.Perm (Fin n)) ∩
+        {u | (fun k => u (τ k)) ∈
+          EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ} ∩
+        {u | BHW.realEmbed
+          (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+            (1 : Equiv.Perm (Fin n)) u) ∈
+          BHW.os45PulledRealBranchDomain (d := d) (n := n) τ}
+      ```
+
+      The point `x` lies in `Ux` by `hVcl`, `hV_ordered_closure`,
+      `hV_swap_ordered_closure`, and the closure-level adjacent pulled-domain
+      field supplied by the source patch selector.  Openness comes from
+      `hUfig_open`, ordered-sector openness, continuity of
+      `os45CommonEdgeRealPoint`/`realEmbed`, and
+      `BHW.isOpen_os45PulledRealBranchDomain`.  The pointwise
+      `hfig_x0` input for the adjacent scalar source theorem is exactly
+      `hV_figPath_closure x hx`.
+
+      The older relabelled-patch view is only a reindexing explanation:
 
       ```lean
       Uτ := {u | ∃ x ∈ Ufig, u = fun k => x (τ k)}
       ```
 
-      then intersects it with the adjacent ordered sector.  It proves openness
-      by the finite permutation homeomorphism and ordered-sector openness,
-      proves `Uτ` is Jost by `BHW.jostSet_permutation_invariant`, proves its
-      ordinary ET field from the adjacent ET field of `hUfig_source`, proves
-      its ordered field from `hV_swap_ordered_closure` for the closure points
-      being packaged, and proves its horizontal BHW field from the last field
-      of `hUfig_source` plus
+      It proves openness by the finite permutation homeomorphism and
+      ordered-sector openness, proves `Uτ` is Jost by
+      `BHW.jostSet_permutation_invariant`, proves its ordinary ET field from
+      the adjacent ET field of `hUfig_source`, and proves its horizontal BHW
+      field from the last field of `hUfig_source` plus
       `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`.  It also consumes
       `hV_figPath_closure x hx`, because the Hall-Wightman scalar corridor
       must connect the OS45 quarter-turn scalar point for this closure point
