@@ -352,22 +352,23 @@ branch and the corresponding `y - v` sign on the negative branch, so openness
 at `y = 0` does not give the standard `hlocal_wedge` hypothesis.
 
 The active OS45 consumer instead first chooses the ordered identity-sector
-perturbation, works at that ordered horizontal common edge, proves the two
-horizontal branch arguments are honest forward-tube points, and obtains
-`Hplus = Hminus` on the edge from `BHW.extendF_eq_on_forwardTube`.  The
+perturbation and works at that ordered horizontal common edge.  The formerly
+documented shortcut claiming that both horizontal branch arguments are honest
+forward-tube points is rejected: the identity branch is forward, but the
+adjacent-swapped branch reverses the relevant time-imaginary gap under the
+repo convention `permAct σ z = fun k => z (σ k)`.  Thus
+`Hplus = Hminus` on the horizontal edge cannot be obtained by two direct uses
+of `BHW.extendF_eq_on_forwardTube`.  The
 identity-order selector is now checked as
 `BHW.choose_os45_identity_real_open_edge_for_adjacent_swap`, and the same-patch
 trace/geometry package is checked as
 `BHW.os45_adjacent_identity_localEOWGeometry`.  The
-ordered horizontal-edge local wedge is the ordinary compactness/openness
-argument at this ordered edge.  The boundary-value input to
-`chartDistributionalEOW_local_envelope` is then a compact-cutoff continuous
-edge functional, with compact-direction convergence proved by uniform
-continuity on local edge slabs.  The finite Wick and real traces are reached
-after the one-chart seed by holomorphic gluing through the positive and
-negative OS45 side components.  Thus the remaining work is OS45-side
-geometry/gluing, not more SCV recovery infrastructure and not a global `bvt_W`
-boundary transport.
+next OS45-side proof-doc task is to replace the false pointwise
+common-boundary shortcut with the genuine common-boundary theorem surface.
+Only then should the ordered horizontal-edge local wedge, boundary-value input
+to `chartDistributionalEOW_local_envelope`, and side-component gluing be
+implemented.  Thus the remaining work is OS45-side geometry/common-boundary
+and gluing, not more SCV recovery infrastructure.
 The future SCV targets `chartDistributionalEOW_transport_originalCoords` and
 the local chart-cover patching theorem remain useful for a global local EOW
 package, but they are not checked inputs and must not be cited as such in the

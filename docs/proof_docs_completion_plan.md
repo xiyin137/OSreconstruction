@@ -57,15 +57,18 @@ The next implementation gate is:
 Current local Slot 1 correction: the OS45 common-chart/EOW supplier is no
 longer the equal-time/post-radius plan.  The checked SCV input is
 `SCV.chartDistributionalEOW_local_envelope`; the OS45 proof must instantiate
-it at an ordered identity-sector horizontal edge.  The immediate proof-doc and
-Lean surfaces are the bounded identity perturbation, the horizontal-edge
-forward-tube pair, pointwise equality `Hplus = Hminus` from
-`BHW.extendF_eq_on_forwardTube`, the compact-cutoff continuous boundary CLM,
-the ordered horizontal-edge local-wedge lemma, the two compact-uniform
-continuous boundary-value lemmas, side-component paths from the local seed to
-the finite Wick/real traces, and the holomorphic gluing helper.  The global
-compact-direction `bvt_W` boundary transport remains useful elsewhere, but it
-is not the blocker for this ordered-edge local seed.
+it at an ordered identity-sector horizontal edge, but the next common-boundary
+surface is not yet ready.  The bounded identity perturbation and same-patch
+identity geometry are checked.  The proposed horizontal-edge forward-tube pair
+and pointwise equality `Hplus = Hminus` from two applications of
+`BHW.extendF_eq_on_forwardTube` are rejected: after the repo permutation action
+`permAct σ z = fun k => z (σ k)`, an adjacent swap reverses the relevant
+horizontal time-imaginary gap.  The immediate proof-doc task is therefore to
+replace that false pointwise common-boundary shortcut with the genuine OS45
+common-boundary theorem surface before building the compact-cutoff boundary
+CLM, local-wedge input, one-chart call, side-component paths, and holomorphic
+gluing helper.  The global compact-direction `bvt_W` boundary transport
+remains useful elsewhere.
 
 ## 0. Paper-authority rule
 
@@ -1138,11 +1141,12 @@ Current examples:
    EOW passes.  The active theorem-2 proof-doc frontier is now the
    identity-order OS45 instantiation of
    `SCV.chartDistributionalEOW_local_envelope`: choose an ordered perturbation,
-   prove the horizontal-edge forward-tube pair and pointwise common boundary,
-   call the one-chart theorem on that ordered edge, then glue to the finite
-   Wick/real traces through side components.  The equal-time local-wedge audit
-   remains as the reason the old post-radius plan is retired, not as the next
-   theorem to prove.  The blueprint
+   use the checked identity selector, reformulate the false horizontal-edge
+   common-boundary shortcut, call the one-chart theorem only after the corrected
+   boundary-value hypotheses are available, then glue to the finite Wick/real
+   traces through side components.  The equal-time local-wedge audit remains as
+   the reason the old post-radius plan is retired, not as the next theorem to
+   prove.  The blueprint
    still records the Lean
    helper sequence: `dzSchwartzCLM` and its support lemmas, the checked
    coordinate-Laplacian identity
@@ -1354,13 +1358,11 @@ Current examples:
 		   `SCV.localEOWChart`, `SCV.localEOWChart_real_imag`, and
 		   `SCV.localEOWChart_twoSided_polywedge_mem`.  The remaining
 		   theorem-2 supplier blocker is no longer an SCV splice.  It is the OS45
-		   identity-order instantiation layer: expose the ordered seed, prove the
-		   horizontal-edge forward-tube pair, prove the ordered horizontal-edge
-		   local wedge, build the compact-cutoff continuous edge boundary CLM,
-		   call the checked one-chart theorem, and glue the local seed to the
-		   side components containing the finite Wick and real traces.  This is
-		   not another distributional EOW theorem and not a common-boundary
-		   wrapper.
+		   identity-order instantiation layer: the ordered seed is checked, but
+		   the common-boundary theorem surface must be corrected before the
+		   ordered horizontal-edge local wedge, compact-cutoff boundary CLM,
+		   one-chart call, and side-component gluing can be implemented.  This is
+		   not another distributional EOW theorem and not a wrapper.
 	   The initial coordinate and trace-membership support
 	   `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
 	   `BHW.wickRotate_ordered_mem_acrOne`,
