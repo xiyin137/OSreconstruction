@@ -1030,6 +1030,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.localEOWChart_mem_TubeDomain_neg_truncatedSideCone_of_strictNegative`,
      `SCV.localEOWChart_mem_fixedWindow_of_strictPositiveImagBall`,
      `SCV.localEOWChart_mem_fixedWindow_of_strictNegativeImagBall`,
+     `SCV.KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`,
      `SCV.exists_oneChartRecoveryScale`,
      `SCV.oneChartRecoveryScale_radius_margins`,
      `SCV.oneChartRecoveryScale_core_translate_mem_desc`,
@@ -2863,9 +2864,9 @@ Current implementation order:
    which `χψ` is removed.  For local covariance, the two hypotheses
    `KernelSupportWithin ψ (2σ)` and
    `KernelSupportWithin (translateSchwartz a ψ) (2σ)` are pushed separately by
-   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM` and then
-   enlarged through
-   `‖e‖ * (2σ) ≤ ‖e‖ * (4σ) ≤ rψOne < rψLarge`.  This avoids any hidden claim
+   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`
+   using `2σ ≤ 4σ` and
+   `‖e‖ * (4σ) ≤ rψOne < rψLarge`.  This avoids any hidden claim
    that translation preserves a fixed support radius.  The continuity theorem
    `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand` is called
    with the compact real set

@@ -374,6 +374,25 @@ theorem KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_translateSchw
   exact KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM ys hli
     (KernelSupportWithin.translateSchwartz a hφ)
 
+/-- One-chart support budget for the Jacobian-normalized chart-kernel
+pushforward.  If a chart kernel is supported in any radius bounded by the
+cutoff support radius `4 * σ`, then the scale inequality for that cutoff radius
+puts the pushed original-edge kernel inside the target radius. -/
+theorem KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul
+    (ys : Fin m → Fin m → ℝ) (hli : LinearIndependent ℝ ys)
+    {φ : SchwartzMap (Fin m → ℝ) ℂ} {r σ rψ : ℝ}
+    (hφ : KernelSupportWithin φ r)
+    (hr : r ≤ 4 * σ)
+    (hA4 :
+      ‖(SCV.localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ *
+          (4 * σ) ≤ rψ) :
+    KernelSupportWithin (SCV.localEOWRealLinearKernelPushforwardCLM ys hli φ)
+      rψ := by
+  have hpush :=
+    KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM ys hli hφ
+  exact hpush.mono
+    ((mul_le_mul_of_nonneg_left hr (norm_nonneg _)).trans hA4)
+
 /-- A sufficiently small original real displacement has arbitrarily small
 coordinates under the inverse local EOW real-linear chart. -/
 theorem exists_localEOWRealLinearSymm_ball_subset
