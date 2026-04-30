@@ -1126,8 +1126,21 @@ Current examples:
    raywise in `η`; the theorem-2 consumer needs the documented
    `TendstoUniformlyOn` theorem over every compact direction set before the
    SCV envelope can be applied.
-   The next proof-doc frontier is now exactly
-   `SCV.distributionalHolomorphic_regular`.  The blueprint records the Lean
+   Historical note: the next proof-doc frontier at this point was
+   `SCV.distributionalHolomorphic_regular`.  That frontier is no longer the
+   theorem-2 Slot 1 blocker after the later checked SCV recovery and one-chart
+   EOW passes.  The active theorem-2 proof-doc frontier is now the OS45
+   single-chart instantiation of `SCV.chartDistributionalEOW_local_envelope`,
+   preceded by the compact-direction uniform OS-II boundary-value theorem and
+   the post-radius shrink of the equal-time OS45 edge patch.  A new
+   implementation-blocking chart audit is recorded in
+   `docs/theorem2_locality_blueprint.md`: the OS45 quarter-turn sends a
+   horizontal common-chart point `y + i v` to ACR-one sign data involving
+   `y + v` and `v - y`, so the standard local `hlocal_wedge` hypothesis is not
+   automatic at an equal-time center.  This finite-dimensional/SCV chart
+   obligation must be proved in the proof docs before Lean implementation of
+   the OS45 one-chart consumer starts.  The blueprint
+   still records the Lean
    helper sequence: `dzSchwartzCLM` and its support lemmas, the checked
    coordinate-Laplacian identity
    `complexChartLaplacianSchwartzCLM_eq_four_sum_dbar_dz`, the reduction from

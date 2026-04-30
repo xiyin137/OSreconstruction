@@ -60,6 +60,89 @@ Current critical-path ledger for the `2 <= d` implementation:
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, then do the final
    Jost-boundary transfer to locality.
 
+Current local frontier checkpoint, after the checked one-chart SCV pass:
+
+* `SCV.chartDistributionalEOW_local_envelope` is checked in
+  `OSReconstruction/SCV/LocalEOWDistributionalEnvelope.lean`.  It is now the
+  authoritative local distributional EOW input for theorem 2.  It consumes
+  local wedge geometry, a fixed cone basis, and compact-direction uniform
+  distributional boundary values, then returns one coordinate ball with strict
+  positive/negative side agreements.
+* The names
+  `SCV.local_distributional_edge_of_the_wedge_envelope`,
+  `SCV.chartDistributionalEOW_transport_originalCoords`, and
+  `SCV.localDistributionalEOW_patch_extensions` are still documentation
+  targets, not checked Lean declarations.  They must not be used as inputs for
+  Slot 1.  The theorem-2 path is the smaller single-chart OS45 instantiation
+  below.
+* The next proof-doc and Lean frontier is therefore not another SCV recovery
+  theorem.  It is:
+  1. the compact-direction uniform boundary-value strengthening of the OS-II
+     tube boundary values;
+  2. the OS45 equal-time single-chart selection and post-radius shrink;
+  3. the OS45 quarter-turn tilted-chart local-wedge/common-boundary lemma;
+  4. the two branchwise common-boundary transports in the OS45 common chart;
+  5. `BHW.os45_adjacent_commonBoundaryEnvelope`;
+  6. `BHW.os45_adjacent_singleChart_commonBoundaryValue`.
+
+Three corrections are mandatory before implementation.
+
+First, the selected OS45 Wick trace is a finite-height point.  It is not
+automatically inside the small strict positive side ball returned by
+`SCV.chartDistributionalEOW_local_envelope`.  Slot 1 must therefore choose the
+common-boundary chart at the equal-time adjacent Jost witness, run the one-chart
+SCV theorem to obtain its radius `R`, and only then choose a sufficiently small
+ordered time perturbation and a smaller real-open patch `V` whose Wick and real
+traces lie in the returned strict side balls.  Freezing the ordered patch before
+`R` is known leaves a genuine gap.
+
+Second, the fixed cone basis used in the one-chart theorem must be adapted to
+the small OS45 half-time direction.  The needed pure finite-dimensional lemma
+is:
+
+```lean
+theorem SCV.open_convex_cone_basis_with_positive_sum
+    {m : ℕ} (hm : 0 < m)
+    {C : Set (Fin m -> ℝ)}
+    (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+    (hC_cone : ∀ t : ℝ, 0 < t -> ∀ y ∈ C, t • y ∈ C)
+    {η0 : Fin m -> ℝ} (hη0 : η0 ∈ C) :
+    ∃ ys : Fin m -> Fin m -> ℝ,
+      (∀ j, ys j ∈ C) ∧ LinearIndependent ℝ ys ∧
+      (∑ j, ys j = η0)
+```
+
+Mathematically, choose a small affine simplex around `η0 / m` inside the open
+cone, with barycenter `η0 / m` and affinely independent vertices; scaling by
+the positive factor `m` gives basis vectors in `C` whose sum is `η0`.  With
+this basis, the model OS45 half-time direction has strictly positive chart
+coordinates, and continuity of the inverse linear chart keeps nearby
+perturbations in the strict positive orthant after shrinking `V`.
+
+Third, the equal-time post-radius selection is necessary but not sufficient by
+itself.  The OS45 quarter-turn does not preserve the standard tube wedge over
+the horizontal common real edge.  In the identity chart, writing a common-chart
+point as `y + i v`, the inverse quarter-turn has time-coordinate imaginary part
+`y₀ + v₀`; for the negative side it has the corresponding `y₀ - v₀` sign.  At
+an equal-time Jost center, no full real neighborhood of `y = 0` satisfies
+`y + εη ∈ ForwardConeAbs d n` for every sufficiently small `ε > 0`, because
+one may choose real time-difference directions in the neighborhood which point
+out of the cone.  Therefore the OS45 consumer may not justify the
+`hlocal_wedge` input of `SCV.chartDistributionalEOW_local_envelope` by a bare
+openness argument in the quarter-turn common chart.
+
+The proof document is not implementation-ready until this chart-geometry
+obligation is discharged explicitly.  The admissible Lean route must be
+QFT-free and must either prove a genuine tilted-chart local EOW variant, or
+prove a reduction from the tilted quarter-turn side domains to an already
+checked one-chart theorem without weakening its hypotheses.  In either case the
+theorem surface must expose the sign geometry `realPart + imagPart ∈ C` on the
+positive branch and `imagPart - realPart ∈ C` on the negative branch, plus the
+actual side neighborhoods on which the envelope identities are evaluated.  It
+is not acceptable to assume that `StrictPositiveImagBall` in the horizontal
+common chart is already contained in the ACR-one preimage at an equal-time edge
+point.
+
 The checked selected-adjacent monodromy consumer
 `bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData` may remain as
 conditional infrastructure.  It should not be treated as the theorem-2 gate
@@ -1882,15 +1965,165 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 Kη
       ```
 
-      The common boundary functional `Tcommon` is the compact-test distribution
-      on the common edge obtained from
-      `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` after the
-      `os45CommonEdgeRealCLE ρ` change of variables.  The plus side uses
-      `bvt_boundary_values` / `bvt_F_acrOne_package`; the minus side uses the
-      BHW branch pullback theorem defining `os45PulledRealBranch` and the same
-      common-edge test after the OS45 chart.  No locality theorem, PET
-      branch-independence theorem, or boundary-locality transfer theorem may
-      appear in this proof.
+      The common boundary functional `Tcommon` must be the branch-difference
+      boundary distribution identified by the OS45 tilted-chart
+      common-boundary theorem.  In the standard tube situation, each branch
+      label `σ ∈ {ρ, τ.symm * ρ}` pulls compact common-edge tests through the
+      real linear equivalence `os45CommonEdgeRealCLE σ`; the branch functional
+      is then `bvt_W OS lgc n` applied to that pulled test, multiplied by the
+      absolute determinant factor from the finite-dimensional real change of
+      variables around `SchwartzMap.compCLMOfContinuousLinearEquiv`, and the
+      difference is the swapped branch functional minus the identity branch
+      functional.  The OS45 quarter-turn case must not assume this standard
+      tube identification until the tilted-chart theorem proves that its
+      horizontal edge limit has the same boundary functional.  The Euclidean
+      equality theorem
+      `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` remains the
+      OS-symmetry source for the Wick-side zero used downstream; it is not a
+      license to assume the real-edge branch difference is zero before the EOW
+      bridge.  No locality theorem, PET branch-independence theorem, or
+      boundary-locality transfer theorem may appear in this proof.
+
+      The branchwise transport should be factored before proving the plus and
+      minus difference statements.  The Lean-facing helper package is concrete:
+      `os45CommonEdgeRealCLE σ` sends the original real branch coordinate `x`
+      to the common edge coordinate `y`.  Its absolute Jacobian is `2^{-n}`,
+      because it halves exactly one real time coordinate for each of the `n`
+      points and only permutes labels otherwise.  Therefore the branch test map
+      must be the Schwartz pullback along `os45CommonEdgeRealCLE σ`, multiplied
+      by `((2 : ℂ) ^ n)⁻¹`.
+
+      ```lean
+      theorem BHW.abs_det_os45CommonEdgeRealCLE
+          [NeZero d] (σ : Equiv.Perm (Fin n)) :
+          |(BHW.os45CommonEdgeRealCLE (d := d) (n := n) σ).toLinearEquiv.det|
+            = ((2 : ℝ) ^ n)⁻¹
+
+      noncomputable def BHW.os45CommonEdgeBranchTestCLM
+          [NeZero d]
+          (σ : Equiv.Perm (Fin n)) :
+          SchwartzMap (NPointDomain d n) ℂ ->L[ℂ]
+            SchwartzMap (NPointDomain d n) ℂ :=
+        ((2 : ℂ) ^ n)⁻¹ •
+          SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (BHW.os45CommonEdgeRealCLE (d := d) (n := n) σ)
+
+      theorem BHW.os45CommonEdgeBranchTestCLM_apply
+          [NeZero d]
+          (σ : Equiv.Perm (Fin n))
+          (φ : SchwartzMap (NPointDomain d n) ℂ)
+          (x : NPointDomain d n) :
+          BHW.os45CommonEdgeBranchTestCLM (d := d) (n := n) σ φ x =
+            ((2 : ℂ) ^ n)⁻¹ *
+              φ (BHW.os45CommonEdgeRealCLE (d := d) (n := n) σ x)
+
+      theorem BHW.hasCompactSupport_os45CommonEdgeBranchTestCLM
+          [NeZero d]
+          (σ : Equiv.Perm (Fin n))
+          (φ : SchwartzMap (NPointDomain d n) ℂ)
+          (hφ : HasCompactSupport (φ : NPointDomain d n -> ℂ)) :
+          HasCompactSupport
+            (BHW.os45CommonEdgeBranchTestCLM (d := d) (n := n) σ φ :
+              NPointDomain d n -> ℂ)
+
+      noncomputable def BHW.os45CommonEdgeBranchBoundaryCLM
+          [NeZero d]
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (σ : Equiv.Perm (Fin n)) :
+          SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ :=
+        (bvt_W OS lgc n).comp
+          (BHW.os45CommonEdgeBranchTestCLM (d := d) (n := n) σ)
+
+      noncomputable def BHW.os45CommonEdgeDifferenceBoundaryCLM
+          [NeZero d]
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (τ ρ : Equiv.Perm (Fin n)) :
+          SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ :=
+        BHW.os45CommonEdgeBranchBoundaryCLM (d := d) OS lgc n (τ.symm * ρ) -
+          BHW.os45CommonEdgeBranchBoundaryCLM (d := d) OS lgc n ρ
+      ```
+
+      The determinant scalar belongs in the test CLM, not in an informal
+      rewrite after the limit.  The change-of-variables theorem must state:
+
+      ```lean
+      theorem BHW.integral_os45CommonEdgeBranch_changeOfVariables
+          [NeZero d]
+          (σ : Equiv.Perm (Fin n))
+          (G : NPointDomain d n -> ℂ)
+          (φ : SchwartzMap (NPointDomain d n) ℂ) :
+          ∫ y : NPointDomain d n,
+              G ((BHW.os45CommonEdgeRealCLE (d := d) (n := n) σ).symm y) *
+                φ y
+            =
+          ∫ x : NPointDomain d n,
+              G x *
+                (BHW.os45CommonEdgeBranchTestCLM (d := d) (n := n) σ φ) x
+      ```
+
+      with the usual integrability hypotheses if Mathlib's integral API
+      requires them.  This theorem fixes the direction of the determinant and
+      prevents later sign/normalization drift.
+
+      The following standard-tube branch transports are useful support only
+      after the quarter-turn chart-geometry obligation is resolved.  They must
+      not be implemented as the active equal-time OS45 common-boundary theorem
+      with target `bvt_W` by themselves: for
+      `z = y + i εη`, the map
+      `(BHW.os45CommonChartCLE ρ).symm z` contains the horizontal real edge
+      variable `y` in its ACR-one imaginary part, so the limit `ε -> 0+` is not
+      the ordinary Wightman boundary value on a full horizontal real
+      neighborhood.  Once the tilted-chart theorem has identified the correct
+      side neighborhoods and boundary functional, the branch maps below are the
+      concrete finite-linear maps that replace any schematic branch argument.
+      The two positive-side maps are the ACR-one representatives of the
+      identity and swapped branches after the common chart:
+
+      ```lean
+      noncomputable def BHW.os45CommonChartPlusIdBranch
+          [NeZero d] (ρ : Equiv.Perm (Fin n)) :
+          (Fin n -> Fin (d + 1) -> ℂ) ->L[ℂ]
+            (Fin n -> Fin (d + 1) -> ℂ) :=
+        (BHW.configPermCLE (d := d) (n := n) ρ).toContinuousLinearMap.comp
+          (BHW.os45CommonChartCLE (d := d) (n := n) ρ).symm.toContinuousLinearMap
+
+      noncomputable def BHW.os45CommonChartPlusSwapBranch
+          [NeZero d]
+          (τ ρ : Equiv.Perm (Fin n)) :
+          (Fin n -> Fin (d + 1) -> ℂ) ->L[ℂ]
+            (Fin n -> Fin (d + 1) -> ℂ) :=
+        (BHW.configPermCLE (d := d) (n := n)
+            (τ.symm * ρ)).toContinuousLinearMap.comp
+          ((BHW.configPermCLE (d := d) (n := n) τ).toContinuousLinearMap.comp
+            (BHW.os45CommonChartCLE (d := d) (n := n) ρ).symm.toContinuousLinearMap)
+      ```
+
+      Prove `*_apply` lemmas for the two branch CLMs immediately.  The active
+      OS45 boundary theorem must be stated only after the tilted-chart theorem
+      identifies the correct boundary functional and side neighborhoods.  In
+      the standard-tube case, the proof pattern is to rewrite by the total
+      permutation-symmetry field of `bvt_F_acrOne_package`, apply
+      `bvt_boundary_values_uniformOnCompactDirections` to
+      `os45CommonEdgeBranchTestCLM σ φ`, and then use
+      `integral_os45CommonEdgeBranch_changeOfVariables` to return to common
+      edge coordinates.  The OS45 quarter-turn case needs the extra
+      chart-geometry theorem first.  It must not use the final adjacent
+      equality theorem, PET branch independence, or locality.
+
+      After the tilted-chart/common-boundary theorem supplies the correct
+      boundary functional, the difference-level boundary theorems already
+      listed above should again be plain subtraction:
+      `BHW.os45_Hplus_commonBoundary_uniform` is the swapped positive branch
+      theorem minus the identity positive branch theorem, and
+      `BHW.os45_Hminus_commonBoundary_uniform` is
+      the swapped pulled-real branch theorem minus the identity pulled-real
+      branch theorem.  The limit functional must be whatever the tilted-chart
+      theorem identifies as the common OS45 boundary distribution; it reduces
+      to `BHW.os45CommonEdgeDifferenceBoundaryCLM OS lgc n τ ρ` only in the
+      standard-tube boundary situation where the horizontal edge limit is the
+      ordinary `bvt_W` boundary value.
 
       The phrase "uses `bvt_boundary_values`" hides one genuine OS-II
       strengthening that must be implemented before the SCV theorem can be
@@ -1921,23 +2154,86 @@ Proof decomposition of this theorem, without hiding the analytic work:
             Kη
       ```
 
-      Proof transcript: strengthen
-      `SCV.tube_boundaryValueData_of_polyGrowth` to its compact-subcone
-      uniform form, not merely its raywise form.  For fixed compact
-      `tsupport φ` and compact `Kη`, the tube membership radius is uniform by
-      compactness and `hKη_sub`; the OS-II polynomial growth bound from
-      `full_analytic_continuation_with_acr_symmetry_growth` gives one
-      integrable Schwartz seminorm bound independent of `η ∈ Kη` and small
-      `ε`; continuity of the holomorphic integrand in `(ε,η,x)` gives local
-      uniform convergence in `η`; a finite subcover of `Kη` upgrades raywise
-      convergence to `TendstoUniformlyOn`.  After that, the OS45 common-chart
-      theorems `os45_Hplus_commonBoundary_uniform` and
-      `os45_Hminus_commonBoundary_uniform` are obtained by composing this
-      compact-subcone theorem with the finite linear maps
-      `os45CommonEdgeRealCLE`, `configPermCLE`, `os45CommonChartCLE`, and the
-      branch-pullback identities.  This is an OS-II boundary-value transport
-      step, not a locality or PET monodromy input.
-   8. Apply `SCV.local_distributional_edge_of_the_wedge_envelope` after
+      Proof transcript: strengthen the pure SCV theorem, not the OS wrapper.
+      The new theorem must be proved at the same layer as
+      `SCV.tube_boundaryValueData_of_polyGrowth`:
+
+      ```lean
+      theorem SCV.tube_boundaryValueData_uniformOnCompactDirections_of_polyGrowth
+          {n d : ℕ}
+          (C : Set (Fin n -> Fin (d + 1) -> ℝ))
+          (hC_open : IsOpen C) (hC_conv : Convex ℝ C)
+          (hC_cone : IsCone C) (hC_salient : IsSalientCone C)
+          {F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+          (hF_hol : DifferentiableOn ℂ F (TubeDomainSetPi C))
+          (C_bd : ℝ) (N : ℕ) (hC_bd : 0 < C_bd)
+          (hF_growth : ∀ z ∈ TubeDomainSetPi C,
+            ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N) :
+          ∃ W : SchwartzMap (Fin n -> Fin (d + 1) -> ℝ) ℂ ->L[ℂ] ℂ,
+            ∀ Kη : Set (Fin n -> Fin (d + 1) -> ℝ),
+              IsCompact Kη -> Kη ⊆ C ->
+              ∀ φ : SchwartzMap (Fin n -> Fin (d + 1) -> ℝ) ℂ,
+                TendstoUniformlyOn
+                  (fun ε η => ∫ x : Fin n -> Fin (d + 1) -> ℝ,
+                    F (fun k μ => (x k μ : ℂ) +
+                      (ε : ℂ) * (η k μ : ℂ) * Complex.I) * φ x)
+                  (fun _ => W φ)
+                  (nhdsWithin 0 (Set.Ioi 0))
+                  Kη
+      ```
+
+      This theorem must not be derived from the existing public raywise
+      statement alone; raywise convergence plus pointwise choice of the
+      boundary functional does not contain uniformity in `η`.  Prove the
+      compact-direction theorem first and recover the raywise theorem by
+      applying it to singleton compact sets.
+
+      The proof uses the same analytic construction as the raywise
+      Vladimirov/OS-II boundary-value theorem, with every estimate made uniform
+      on compact `Kη`:
+
+      1. Compactness gives `Bη` with `‖η‖ ≤ Bη` for all `η ∈ Kη`; since `C` is
+         a cone, `εη ∈ C` for every `η ∈ Kη` and `0 < ε`.
+      2. Replace the fixed-direction seminorm bound by
+         `tubeSliceIntegralCLM_compactDirection_uniformSeminormBound_of_polyGrowth`,
+         using the constant `C_bd * (1 + Bη) ^ N`.
+      3. State the dense-subset or Fourier-Laplace/Vladimirov core convergence
+         in compact-direction form.  For each dense test, dominated convergence
+         applies to the jointly continuous integrand
+         `(ε,η,x) ↦ F(x + i εη) φ x`, dominated by the single Schwartz seminorm
+         bound from step 2.
+      4. Repeat `tube_boundaryValueData_of_polyGrowth_of_denseSubset`, replacing
+         the fixed-direction seminorm bound by the compact-direction bound and
+         keeping the same approximating test for every `η ∈ Kη`.
+      5. The output functional `W` is independent of `Kη`; uniqueness follows
+         because two outputs agree on every singleton `{η}` with `η ∈ C`, hence
+         agree as continuous linear maps on all tests.
+
+      The OS theorem
+      `bvt_boundary_values_uniformOnCompactDirections` then instantiates this
+      pure theorem with `C = ForwardConeAbs d n`, the holomorphy/growth fields
+      from `full_analytic_continuation_with_acr_symmetry_growth`, and
+      identifies the chosen functional with the existing `bvt_W OS lgc n` by
+      singleton uniqueness against `bvt_boundary_values`.
+
+      This compact-direction theorem is still required, but it is not by
+      itself the OS45 common-chart theorem after the quarter-turn audit.  The
+      OS45 theorems `os45_Hplus_commonBoundary_uniform` and
+      `os45_Hminus_commonBoundary_uniform` must additionally consume the
+      tilted-chart local-wedge/common-boundary lemma described above.  Only
+      after that lemma identifies the correct horizontal-edge boundary
+      functional may the proof compose compact-direction BV with the finite
+      linear maps `os45CommonEdgeRealCLE`, `configPermCLE`,
+      `os45CommonChartCLE`, the branch real-linear pullbacks on tests via
+      `SchwartzMap.compCLMOfContinuousLinearEquiv`, and the branch-pullback
+      identities.  This remains an OS-II/SCV boundary-value transport step, not
+      a locality or PET monodromy input.
+   8. In the current single-chart Slot 1 route, apply the checked
+      `SCV.chartDistributionalEOW_local_envelope`, not the unimplemented
+      `SCV.local_distributional_edge_of_the_wedge_envelope`.  The old
+      patching theorem remains a future global SCV target.
+      The historical patched route would apply
+      `SCV.local_distributional_edge_of_the_wedge_envelope` after
       flattening the nested product by `flattenCLEquiv n (d + 1)` and
       `flattenCLEquivReal n (d + 1)`, then unflatten the output to get
       `Uc,Hc` in OS45 chart coordinates.
@@ -1971,7 +2267,77 @@ this local data.
 The branch-pullback support is genuine progress, but only as negative-side
 chart infrastructure for that later common-boundary packaging.
 
-Active decomposition of Slot 1:
+Active single-chart decomposition of Slot 1 after the SCV keystone:
+
+1. Use `BHW.adjacent_overlap_real_jost_witness_exists` to choose the
+   equal-time adjacent Jost witness `x₀`.  Let
+   `Uraw = adjacentOS45RawOverlap d n i hi`; the witness lies in `Uraw`, and
+   `Uraw` is open.
+2. Work in the identity OS45 order first.  The existing perturbation lemma
+   `exists_ordered_small_time_perturb_in_adjacent_overlap` already returns
+   order `ρ = 1`; the implementation should expose the bounded version
+   `exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt`, with an
+   extra input `a > 0` and output perturbation parameter `0 < ε < a`.  This is
+   the same proof with the final choice `ε < min δ a`.
+3. Before choosing that perturbation, form the common real edge
+   `y₀ = os45CommonEdgeRealPoint (d := d) (n := n) 1 x₀`.  The checked
+   one-chart theorem `SCV.chartDistributionalEOW_local_envelope` may be called
+   here only after the OS45 quarter-turn local-wedge obligation above has been
+   proved.  The naive argument is false: under
+   `(BHW.os45CommonChartCLE 1).symm`, a horizontal common-chart point
+   `y + i εη` contributes `y + εη` to the ACR-one time-imaginary
+   inequalities, so an equal-time center and a full real ball do not by
+   themselves give the `hlocal_wedge` hypothesis.  The missing theorem must
+   either produce the narrowed chart-side neighborhoods actually contained in
+   the ACR-one/real-branch domains, or replace this use of the standard
+   one-chart theorem by a proved QFT-free tilted-chart variant with the same
+   boundary-value and side-identity outputs.
+4. Choose the chart basis using
+   `SCV.open_convex_cone_basis_with_positive_sum` for the model half-time
+   direction
+
+   ```lean
+   ηmodel k μ := if μ = 0 then ((k : ℝ) + 1) / 2 else 0
+   ```
+
+   after flattening.  This gives `∑ j, ys j = ηmodel`, so a perturbation of
+   size `ε` has positive chart coordinates all equal to `ε` before the final
+   small continuity error.  This is the step that makes the finite Wick trace
+   land in the strict positive side ball, rather than merely in the ambient
+   cone.
+5. The one-chart theorem returns radii and a holomorphic coordinate envelope
+   on `Metric.ball 0 R`.  Use continuity of
+   `os45CommonEdgeRealCLE 1`, `os45CommonChartCLE 1`, the inverse real chart
+   `(localEOWRealLinearCLE ys hli).symm`, and the perturbation map
+   `adjacentTimePerturb x₀` to choose `ε` and then a real-open ball `V`
+   around `adjacentTimePerturb x₀ ε` such that, for every `x ∈ V`:
+   - the common real edge lies in the returned real chart window;
+   - the Wick trace lies in the transported strict positive side ball;
+   - the real trace lies in the transported strict negative side ball;
+   - Jost and extended-tube facts are inherited from `Uraw`;
+   - ordered-sector and `OS45OppositeTubeBranchGeometry` facts are inherited
+     from the open ordered-sector neighborhoods of the chosen perturbation.
+6. Define `Uc` as the image of the returned coordinate ball under the flattened
+   inverse chart and then under the OS45 common chart coordinates; define `Hc`
+   by composing the coordinate envelope with the corresponding inverse maps.
+   Connectedness comes from convexity of `Metric.ball 0 R` and image under a
+   homeomorphism.
+7. The Wick and real trace equations are then side-identity rewrites from
+   `SCV.chartDistributionalEOW_local_envelope`, followed by:
+   - `BHW.adjacent_wick_traces_mem_acrOne` and the definition of `Hplus` for
+     the Wick side;
+   - `BHW.os45PulledRealBranch_sub_eq_adjacentOS45RealEdgeDifference` for the
+     real side.
+8. Package the result with
+   `BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`.
+
+This decomposition avoids the two old gaps only after the new OS45
+quarter-turn local-wedge obligation is closed: it does not require the
+unimplemented global SCV patching theorem, and it does not assume a finite OS45
+Wick trace is already inside an arbitrarily small EOW side ball.  It is not yet
+a Lean-ready route while the `hlocal_wedge` input in step 3 is unproved.
+
+Coarse Slot 1 decomposition retained for context:
 
 1. build the local connected common-chart domain on which the adjacent Wick-side
    and real-side branch differences are both represented;
@@ -2002,7 +2368,16 @@ With that choice:
 The old "common-chart Wick difference" route is dead and should not be revived
 in production code except as a cautionary note.
 
-Implementation-readiness gate for the next Lean stage:
+Historical local-descent gate, superseded for Slot 1:
+
+The bullets below record the route that was active before
+`SCV.chartDistributionalEOW_local_envelope` was checked.  They remain useful
+as background for a future global/patching theorem, but they are no longer the
+implementation gate for theorem-2 Slot 1.  For the local proof work now in
+front of us, the authoritative gate is the checkpoint near the top of this
+file: compact-direction OS-II boundary values, equal-time OS45 chart
+selection, post-radius shrink, branchwise common-boundary transport, and then
+`BHW.os45_adjacent_commonBoundaryEnvelope`.
 
 * Hard proof-doc gate for the local descent step: no further Lean
   implementation should proceed until the scalarized local quotient packet in

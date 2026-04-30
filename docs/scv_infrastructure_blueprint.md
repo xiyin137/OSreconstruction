@@ -343,9 +343,28 @@ boundary values beyond compactly supported tests in `E`; and
 `SCV.localEOWSliceCLMs_from_preparedDomains` applies that package to the
 prepared affine real-window domains.  The one-chart implementation target
 `SCV.chartDistributionalEOW_local_envelope` is now checked in
-`SCV/LocalEOWDistributionalEnvelope.lean`; the next SCV targets are the
-affine transport theorem `chartDistributionalEOW_transport_originalCoords`
-and then the local chart-cover patching theorem.  Do not
+`SCV/LocalEOWDistributionalEnvelope.lean`.  For theorem 2 Slot 1, this checked
+one-chart theorem is the active SCV endpoint: the OS45 proof must shrink the
+selected real-open edge after the returned radius is known, so it does not need
+the still-unimplemented global transport and chart-cover patching theorem.
+However, the OS45 quarter-turn consumer still owes one finite-dimensional
+chart-geometry proof before it can instantiate this endpoint at the equal-time
+adjacent Jost center.  A horizontal common-chart point `y + i v` pulls back
+through the quarter-turn with ACR-one time-imaginary sign `y + v` on the plus
+branch and the corresponding `v - y` sign on the negative branch.  Thus the
+standard `hlocal_wedge` hypothesis of `chartDistributionalEOW_local_envelope`
+does not follow from openness at `y = 0`; no full real ball around the
+equal-time edge is automatically contained in the ACR-one preimage for all
+small positive side directions.  The OS45 proof must either prove a QFT-free
+tilted-chart local EOW variant with the same boundary-value and side-identity
+outputs, or prove a reduction from the tilted quarter-turn side domains to an
+already checked one-chart theorem without weakening that theorem's hypotheses.
+Until that lemma is checked, the SCV layer is ready but the OS45 instantiation
+is not.
+The future SCV targets `chartDistributionalEOW_transport_originalCoords` and
+the local chart-cover patching theorem remain useful for a global local EOW
+package, but they are not checked inputs and must not be cited as such in the
+current OS45 single-chart implementation.  Do not
 instantiate any slice limit on the whole ambient cone `C` from the
 uniform-on-compact OS-II boundary hypothesis; the Lean route first shrinks to
 a conic neighborhood whose projective base has compact closure inside `C`, and
@@ -479,6 +498,7 @@ Source ledger for the internal helper list:
 | `positive_dimension_of_nonempty_not_zero` | Checked in `SCV/LocalEOWFixedBasis.lean`: finite-dimensional sanity lemma for the final local theorem.  If `C.Nonempty` and `(0 : Fin m -> ℝ) ∉ C`, then `0 < m`; for `m = 0` every vector `Fin 0 -> ℝ` is definitionally equal to zero, contradicting the two hypotheses.  This lets the final theorem keep the natural OS-II cone hypotheses instead of adding an extra dimension assumption. |
 | `localWedge_truncated_maps_compact_subcone` | Direct compact-set use of the local wedge hypothesis. |
 | global cone-basis choice | Use the existing checked theorem `open_set_contains_basis` in `SCV/EOWMultiDim.lean` directly after deriving `hm : 0 < m`; do not add a production wrapper just to rename it.  For the final patched theorem this basis must be chosen once globally from `C`, not separately for each edge point; using one fixed linear part is what makes overlap side seeds compatible. |
+| `open_convex_cone_basis_with_positive_sum` | Needed for the theorem-2 OS45 single-chart instantiation, not for the already checked one-chart theorem.  Given `0 < m`, an open convex cone `C`, and a direction `η0 ∈ C`, choose basis vectors `ys j ∈ C` with `LinearIndependent ℝ ys` and `∑ j, ys j = η0`.  The proof is finite-dimensional: take a small affinely independent simplex around `η0 / m` inside `C`, with barycenter `η0 / m`, and scale the vertices by `m`.  This lets the OS45 model half-time direction have strictly positive chart coordinates, so the finite Wick trace can be made to land in the strict positive side ball after the EOW radius is known. |
 | `cone_positive_combination_mem` | Checked in `SCV/LocalEOWFixedBasis.lean`: convex-cone bookkeeping.  If `ys j ∈ C` and all coefficients are nonnegative with positive sum, normalize the coefficients to a convex combination in `C`, then rescale by the positive sum using `hC_cone`.  The checked simplex lemmas use the normalized version; this helper is the unnormalized form used when rewriting positive chart-imaginary directions. |
 | `localEOWCoefficientSimplex`, `localEOWSimplexDirections`, `isCompact_localEOWCoefficientSimplex`, `isCompact_localEOWSimplexDirections`, `localEOWSimplexDirections_subset_cone`, `localEOW_positive_imag_normalized_mem_simplex` | Checked in `SCV/LocalContinuousEOW.lean`: compact closed coefficient simplex, compact image under the finite-dimensional chart-direction map, convex-combination inclusion in the cone, and normalization of positive imaginary chart directions. |
 | `zero_not_mem_localEOWSimplexDirections`, `tendsto_neg_nhdsWithin_zero_neg_image`, `localEOWSideDirectionWindow_subset_closure`, `isCompact_localEOWSideDirectionClosure`, `localEOWSimplexDirections_subset_sideDirectionWindow`, `exists_localEOWSideCone_radius`, `isOpen_localEOWSideCone`, `isOpen_neg_image`, `localEOWRealLinearPart_mem_localEOWSideCone`, `localEOWSideCone_subset_cone`, `localEOWSideCone_direction_norm_bound`, `localEOWSideCone_scalar_le_norm_div`, `localEOW_basisSideCone_rawBoundaryValue` | Checked in `SCV/LocalEOWSideCone.lean`: linear independence excludes `0` from the fixed-basis direction simplex; an open thickening of the simplex and compact closed envelope are constructed inside `C ∩ {η | η ≠ 0}`; the generated side cone is open, lies in `C`, and contains every positive chart-imaginary direction after normalization; compactness gives the uniform lower norm bound on directions, hence the scalar in `y = s • η` tends to zero with `y`; and continuity of negation converts the lower side to the negative-image filter.  The strengthened raw boundary theorem returns the chosen `ε`, the identities `Cplus = localEOWSideCone ys ε` and `Cminus = Neg.neg '' Cplus`, the closed-envelope containment, and the plus/minus raw `nhdsWithin` limits on this relatively compact conic window and its negative image. |
@@ -18651,13 +18671,31 @@ theorem tube_boundaryValueData_uniformOnCompactDirections_of_polyGrowth
             Kη
 ```
 
-The proof is the raywise proof with every estimate made uniform on compact
-`Kη`: compactness supplies a bound on `‖η‖` and a single tube-radius margin for
-small `ε`; the polynomial-growth estimate gives one Schwartz seminorm
-dominating all slices; continuity of the integrand in `(ε,η,x)` plus that
-dominating seminorm gives local uniform convergence; a finite subcover of
-`Kη` gives `TendstoUniformlyOn`.  The existing private lemmas
-`tubeSlice_uniformPolyGrowth_of_polyGrowth` and
+The proof must be the boundary-value construction with every estimate made
+uniform on compact `Kη`; it must not be derived from the current public
+raywise theorem alone.  Raywise convergence plus a chosen boundary functional
+does not imply `TendstoUniformlyOn`.  Prove the compact-direction theorem
+first and recover the raywise theorem by singleton compact sets.
+
+The estimate/proof spine is:
+
+1. compactness supplies a bound `Bη` on `‖η‖` over `Kη`; the cone property gives
+   `ε • η ∈ C` for all `η ∈ Kη` and `0 < ε`;
+2. replace `tubeSlice_uniformPolyGrowth_of_polyGrowth` and
+   `tubeSliceIntegralCLM_uniformSeminormBound_of_polyGrowth` by
+   compact-direction versions using the constant
+   `C_bd * (1 + Bη) ^ N`;
+3. prove the dense-subset or Fourier-Laplace/Vladimirov core convergence in
+   compact-direction form, using dominated convergence for the jointly
+   continuous integrand `(ε,η,x) ↦ F(x + i εη) φ x`;
+4. repeat the dense-to-all-Schwartz argument from
+   `tube_boundaryValueData_of_polyGrowth_of_denseSubset`, keeping one
+   approximating test and one seminorm bound for every `η ∈ Kη`;
+5. prove the output `W` is independent of `Kη` by singleton uniqueness, then
+   expose `tube_boundaryValueData_of_polyGrowth` as the singleton corollary if
+   desired.
+
+The existing private lemmas `tubeSlice_uniformPolyGrowth_of_polyGrowth` and
 `tubeSliceIntegralCLM_uniformSeminormBound_of_polyGrowth` are the correct
 starting points, but their current statements are only fixed-direction
 uniformity and must be compact-direction versions before the theorem above can
