@@ -151,20 +151,27 @@ Current blocker sharpening (2026-03-10):
   on that overlap, extracted from the real Jost-support boundary theorem
   `wightman_real_on_jost_support`.
 
-`WickRotation/ForwardTubeLorentz.lean` (2):
-- `polynomial_growth_on_slice`
-- `wickRotation_not_in_PET_null`
+Current blocker sharpening (2026-04-29):
+- `W_analytic_cluster_integral` and `bhw_pointwise_cluster_forwardTube` are now blocked
+  on a single live geometric refinement: the **identity-permutation ForwardTube
+  refinement** — lifting the a.e. TranslatedPET triple to identity-permutation
+  ForwardTube triples that `bhw_pointwise_cluster_forwardTube` consumes.
+- Mechanical scaffolding now present (PR #72): `integral_fin_append_split` (Fubini
+  over `Fin.append`), `ae_joint_triple_translatedPET` (a.e. block + joint TranslatedPET),
+  `bhw_euclidean_kernel_perm_invariant_ae` (a.e. permutation invariance of the kernel).
+- Two viable routes: (i) a block-respecting joint sorting argument that preserves the
+  tensor-product test function structure — joint-sorting generally interleaves the
+  (n, m) blocks and breaks `f ⊗ g_a`; or (ii) a TranslatedPET version of
+  `bhw_pointwise_cluster_forwardTube` itself (i.e., lifting the SCV cluster axiom's
+  ForwardTube hypothesis to TranslatedPET). Both are research-boundary work.
 
-`WickRotation/BHWTranslation.lean` (1):
-- `isPreconnected_baseFiber` (base-variable fiber connectivity in PET)
-  - STATUS ON MERGED PATH: no longer needed to prove `bhw_translation_invariant`
-  - CURRENT ROLE: old-route residual theorem, kept as a separate geometric target
-  - ROOT CAUSE: our ForwardTube k=0 condition `Im(z₀) ∈ V⁺` breaks translation invariance
-  - MATHEMATICAL PROOF: PET is a domain of holomorphy (BEG 1967). baseFiber = PET ∩ (complex affine subspace). Intersection of DOH with complex affine subspace is connected (standard SCV).
-  - Alternative proof: fiber bundle over contractible base (tailDiffPermSector is convex) with connected fiber (stabilizer in SO(d+1;ℂ) is connected). See Proofideas/baseFiber_inflation_proof.lean.
-  - PROVED helpers (0 sorrys): inOpenForwardCone_add_time, forwardTube_add_broadcast_iTime, complexLorentzAction_add_broadcast, lorentz_action_inflation_dir (in test/proofideas_baseFiber_inflation.lean)
-  - Production reduction: baseFiber_isPreconnected_of_index_and_active_geometry reduces to index set connectivity + sector overlap
-  - FORMALIZATION GAP: needs SCV domain-of-holomorphy infrastructure OR Lie group fiber bundle theory, neither in Mathlib
+`WickRotation/ForwardTubeLorentz.lean` (0) — COMPLETE
+- `wickRotation_not_in_PET_null` retired by the TranslatedPET migration: extension `F` is realized on TranslatedPET rather than the old ForwardTube k=0 surface (which broke translation invariance). The W11 false-statement counterexample is preserved in `W11Counterexample.lean` for the record.
+- `polynomial_growth_on_slice` discharged.
+- PR #72 additions (0 sorrys): `ae_joint_triple_translatedPET` — simultaneous a.e. TranslatedPET admissibility on the product space.
+
+`WickRotation/BHWTranslation.lean` (0) — COMPLETE
+- `isPreconnected_baseFiber` deleted as retired old-route surface (PR #72). It was unreachable from any live R→E lane after the merged path migrated to using `bhw_translation_invariant` directly. The geometric content (PET fiber connectivity via DOH or Lie-group fiber bundle theory) is no longer load-bearing and has been removed from the active TODO.
 
 `WickRotation/BHWReducedExtension.lean` (axiom 1):
 - `reduced_bargmann_hall_wightman_of_input`
@@ -212,8 +219,7 @@ Not on the shortest OS reconstruction lane:
 4. After `boundary_values_tempered`, finish the six transfer theorems and `bvt_cluster` in `OSToWightmanBoundaryValues.lean`.
 5. In parallel or next, attack the live R→E front after the Route 1 merge:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
-   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster
-   - `BHWTranslation.isPreconnected_baseFiber` is now optional old-route cleanup, not required for the merged proof path
+   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster (live: identity-permutation ForwardTube refinement; see sharpening above)
 6. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
 
 ## Recently Completed (2026-03-14)
