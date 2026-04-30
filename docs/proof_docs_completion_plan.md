@@ -350,7 +350,11 @@ content:
    `BHW.os45OneBranchScalarGramEq_sourceInput_id` for `β = 1` and
    `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent` for the adjacent
    swap; any generic helper is private assembly from an already constructed
-   scalar corridor.
+   scalar corridor.  The adjacent supplier must carry the selected
+   Figure-2-4 path field `hV_figPath` on its theorem surface.  Without that
+   input, the OS45 quarter-turn scalar point has not been connected to the
+   `S'_n` seed inside the adjacent double scalar domain, and the theorem would
+   again be trying to infer scalar branch agreement from domain membership.
 4. The compact common-germ theorem `BHW.os45BranchHorizontalCommonGerm` then
    glues these branch-specific germs over `closure E`; the identity and
    adjacent germs remain different branch packets.

@@ -3024,8 +3024,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
       packaged mechanically by adding the definitional BHW-side equality on
       `os45PulledRealBranchDomain β`.
 
-      For Lean implementation, the theorem above should be proved by first
-      isolating the actual source input in the following sharper form:
+      For Lean implementation, the arbitrary-`β` theorem above must not be
+      exposed as a public theorem from only `hU_open`, `hU_jost`,
+      `hU_ordered`, `hU_ET`, and `hU_horiz_bhw`.  The display below records
+      the **conclusion shape** of the local source input.  In production it is
+      either a private assembly lemma whose hypotheses already include the
+      scalar packet produced by
+      `BHW.os45OneBranchScalarGramEq_sourceInput_id` or
+      `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`, or it is replaced
+      by the two public id/adjacent specializations.  It is not a license to
+      prove arbitrary permutation source compatibility from domain geometry.
 
       ```lean
       theorem BHW.os45OneBranchACRBHWAgreement_sourceInput
@@ -3206,6 +3214,168 @@ Proof decomposition of this theorem, without hiding the analytic work:
       - at most a private assembly helper
         `BHW.os45OneBranchScalarGramEq_of_scalarCorridor`, whose hypotheses
         already include the appropriate scalar corridor and seed equality.
+
+      The two public active surfaces must therefore be written explicitly.
+      The identity source input is the harmless normalization case:
+
+      ```lean
+      theorem BHW.os45OneBranchScalarGramEq_sourceInput_id
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat)
+          (V : Set (NPointDomain d n))
+          (hV_open : IsOpen V)
+          (hV_jost : forall x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            forall x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)))
+          (hV_ET :
+            forall x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_horiz_id :
+            forall x, x ∈ V ->
+              BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) x) ∈
+                BHW.os45PulledRealBranchDomain (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)))
+          {x0 : NPointDomain d n}
+          (hx0V : x0 ∈ V) :
+          let β : Equiv.Perm (Fin n) := 1
+          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+          let y0 :=
+            BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0
+          ∃ (hRep :
+              BHW.SourceScalarRepresentativeData
+                (d := d) n (bvt_F OS lgc n))
+            (Wscal : Set (Fin n -> Fin n -> ℂ))
+            (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
+              BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
+              IsOpen Uy ∧
+              BHW.realEmbed y0 ∈ Uy ∧
+              Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) β ∩
+                BHW.os45PulledRealBranchDomain (d := d) (n := n) β ∧
+              (forall z, z ∈ Uy ->
+                BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
+              Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n β.symm ∧
+              Set.EqOn
+                (fun Z =>
+                  hRep.Phi (BHW.sourcePermuteComplexGram n β.symm Z))
+                hRep.Phi
+                Wscal
+      ```
+
+      Its proof is only the identity simplification.  Obtain `hRep` from the
+      ordinary Hall-Wightman scalar-representative theorem, use
+      `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered` and
+      `hV_horiz_id x0 hx0V` to choose `Uy` inside the two branch domains, and
+      choose `Wscal` a small relatively open source-variety neighborhood of
+      `sourceMinkowskiGram d n (Q.symm (realEmbed y0))` inside the ordinary
+      scalar domain.  Since `β = 1`, both
+      `sourceDoublePermutationGramDomain d n β.symm` and
+      `sourcePermuteComplexGram n β.symm` reduce to the ordinary scalar domain
+      and the identity map.  The equality field is therefore `rfl` after
+      simp-normalizing `β`.
+
+      The adjacent source input is the genuine OS I §4.5 source theorem.  It
+      must carry the selected Figure-2-4 path field; without that field the
+      quarter-turn scalar point is not connected to the `S'_n` seed inside the
+      adjacent double scalar domain.
+
+      ```lean
+      theorem BHW.os45OneBranchScalarGramEq_sourceInput_adjacent
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_open : IsOpen V)
+          (hV_jost : forall x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            forall x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)))
+          (hV_swap_ordered :
+            let τ : Equiv.Perm (Fin n) :=
+              Equiv.swap i ⟨i.val + 1, hi⟩
+            forall x, x ∈ V ->
+              (fun k => x (τ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ)
+          (hV_horiz_swap :
+            let τ : Equiv.Perm (Fin n) :=
+              Equiv.swap i ⟨i.val + 1, hi⟩
+            forall x, x ∈ V ->
+              BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) x) ∈
+                BHW.os45PulledRealBranchDomain (d := d) (n := n) τ)
+          (hV_figPath :
+            let τ : Equiv.Perm (Fin n) :=
+              Equiv.swap i ⟨i.val + 1, hi⟩
+            let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+            forall x, x ∈ V ->
+              let y :=
+                BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                  (1 : Equiv.Perm (Fin n)) x
+              ∃ (Γ Δ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ),
+                Continuous Γ ∧
+                Continuous Δ ∧
+                Γ (0 : unitInterval) = (fun k => wickRotatePoint (x k)) ∧
+                Γ (1 : unitInterval) = Q.symm (BHW.realEmbed y) ∧
+                (forall t, Γ t ∈ BHW.ExtendedTube d n) ∧
+                (forall t, Δ t ∈ BHW.ExtendedTube d n) ∧
+                (forall t,
+                  BHW.sourceMinkowskiGram d n (Δ t) =
+                    BHW.sourcePermuteComplexGram n τ
+                      (BHW.sourceMinkowskiGram d n (Γ t))))
+          {x0 : NPointDomain d n}
+          (hx0V : x0 ∈ V) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+          let y0 :=
+            BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+              (1 : Equiv.Perm (Fin n)) x0
+          ∃ (hRep :
+              BHW.SourceScalarRepresentativeData
+                (d := d) n (bvt_F OS lgc n))
+            (Wscal : Set (Fin n -> Fin n -> ℂ))
+            (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
+              BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
+              IsConnected Wscal ∧
+              IsOpen Uy ∧
+              BHW.realEmbed y0 ∈ Uy ∧
+              Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) τ ∩
+                BHW.os45PulledRealBranchDomain (d := d) (n := n) τ ∧
+              (forall z, z ∈ Uy ->
+                BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
+              Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n τ ∧
+              Set.EqOn
+                (fun Z =>
+                  hRep.Phi (BHW.sourcePermuteComplexGram n τ Z))
+                hRep.Phi
+                Wscal
+      ```
+
+      Proof transcript for the adjacent surface: obtain `hRep` as in the
+      identity case.  Apply
+      `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq` with
+      the same selected patch `V`, the swapped ordering field, the horizontal
+      pulled-domain field, and `hV_figPath`; this gives the `S'_n` seed
+      equality and the scalar path from the seed to the OS45 quarter-turn
+      scalar point.  Apply
+      `BHW.os45AdjacentQuarterTurnScalarCorridor_of_figure24` to thicken that
+      path inside `sourceDoublePermutationGramDomain d n τ`, obtaining the
+      connected relatively open `Wscal` and the chart neighborhood `Uy`.
+      The equality of
+      `Z ↦ hRep.Phi (sourcePermuteComplexGram n τ Z)` and `hRep.Phi` on all
+      of `Wscal` is then the source-variety identity theorem: both functions
+      are holomorphic on the double scalar domain, they agree on the nonempty
+      relatively open seed `Wseed ⊆ Wscal`, and `Wscal` is connected.  This is
+      the only analytic continuation step in the adjacent source supplier.
+      It is not local EOW and it does not mention `bvt_W`.
 
       There is no route permission to prove an arbitrary-permutation public
       theorem here until the same `S'_n` seed and BHW corridor have been
