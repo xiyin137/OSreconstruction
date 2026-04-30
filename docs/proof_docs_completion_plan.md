@@ -391,6 +391,9 @@ content:
    for holomorphic gluing; the exact rewrites are the pure topology lemmas
    `SCV.ball_inter_positiveOrthantComponent_eq_strictPositiveImagBall` and
    `SCV.ball_inter_negativeOrthantComponent_eq_strictNegativeImagBall`.
+   The finite Wick/real trace membership in those components is reduced to
+   the generic helper `SCV.path_endpoint_mem_connectedComponentIn` plus the
+   explicit OS45 positive/negative path membership calculations.
    Do not replace this by a broad
    original-coordinate linear sign condition; that would reintroduce an
    unproved identity-theorem obligation on arbitrary overlap components.

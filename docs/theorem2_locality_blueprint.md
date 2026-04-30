@@ -6315,6 +6315,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `ExtendedTube` facts.  The adjacent swapped branch is the same
       calculation with the checked `os45CommonEdgeRealPoint_adjacent_swap_eq`
       and `os45HalfTimeDirection_adjacent_swap_eq`.
+
+      The generic topology helper for these path lemmas should be named once:
+
+      ```lean
+      theorem SCV.path_endpoint_mem_connectedComponentIn
+          {X : Type*} [TopologicalSpace X]
+          {D : Set X} {z0 z1 : X}
+          (γ : unitInterval -> X)
+          (hγ_cont : Continuous γ)
+          (hγ0 : γ 0 = z0)
+          (hγ1 : γ 1 = z1)
+          (hγD : ∀ t, γ t ∈ D) :
+          z1 ∈ connectedComponentIn D z0
+      ```
+
+      Proof: the image of `γ` is preconnected, lies in `D`, and contains
+      `z0`; apply `IsPreconnected.subset_connectedComponentIn`, then use
+      `hγ1`.  The OS45 positive and negative trace lemmas then only need to
+      supply the concrete continuous paths and the two membership calculations:
+      `Ωplus ∩ SCV.ChartPositiveOrthant m` for the Wick trace and
+      `Ωminus ∩ SCV.ChartNegativeOrthant m` for the real trace.
    12. Finish the trace equations by rewriting:
       - the positive trace by the definition of `Hplus`,
         `Qρe.symm_apply_apply`, `BHW.permAct_wickRotatePoint`, and `τ`;
