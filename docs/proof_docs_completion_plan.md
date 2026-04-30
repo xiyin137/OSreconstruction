@@ -374,6 +374,18 @@ content:
    adjacent germs remain different branch packets.
 5. The branchwise BV construction gives `Tid` and `Tτ`; only after subtracting
    those packets may `SCV.chartDistributionalEOW_local_envelope` be invoked.
+   The subsequent side-component gluing is fixed in those same one-chart
+   coordinates: choose `ys` with `∑ j, ys j = η₁`, shrink the selected patch
+   so `(SCV.localEOWRealLinearCLE ys hli).symm (η(x))` is coordinatewise
+   positive, and define the side components from
+   `Ωplus ∩ SCV.ChartPositiveOrthant m` and
+   `Ωminus ∩ SCV.ChartNegativeOrthant m`.  Then the local ball overlaps are
+   exactly `SCV.StrictPositiveImagBall R` and
+   `SCV.StrictNegativeImagBall R`, so the side identities returned by the
+   checked one-chart theorem are already the full overlap equalities needed
+   for holomorphic gluing.  Do not replace this by a broad
+   original-coordinate linear sign condition; that would reintroduce an
+   unproved identity-theorem obligation on arbitrary overlap components.
 6. The scalar theorem `BHW.os45AdjacentScalarGerm_of_OSII_Figure24` is
    downstream only.  It may be proved after
    `BHW.os45_adjacent_commonBoundaryEnvelope` and

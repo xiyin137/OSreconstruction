@@ -124,9 +124,10 @@ Current local frontier checkpoint, after the checked one-chart SCV pass:
      PET branch independence;
   3. only after the corrected common-boundary input is explicit, call
      `SCV.chartDistributionalEOW_local_envelope` at the ordered edge;
-  4. glue the returned local envelope to the positive and negative OS45 side
-     components, so the finite Wick/real traces only need to lie in the same
-     side components as the local seed, not in the small EOW ball itself;
+  4. glue the returned local envelope to the positive and negative
+     chart-orthant side components, so the finite Wick/real traces only need
+     to lie in the same side components as the local seed, not in the small
+     EOW ball itself;
   5. prove `BHW.os45_adjacent_commonBoundaryEnvelope` and then
      `BHW.os45_adjacent_singleChart_commonBoundaryValue`.
 
@@ -174,9 +175,9 @@ Third, the finite Wick and real traces are finite-height side points.  They
 are not required to lie inside the small strict side ball returned by
 `SCV.chartDistributionalEOW_local_envelope`.  The returned ball supplies only
 a local seed.  The OS45 proof then glues that seed to the positive and
-negative side components containing the actual traces.  This is why the
-proof needs explicit side-component/path lemmas, not a post-radius shrink
-that tries to force every trace into the EOW ball.
+negative chart-orthant side components containing the actual traces.  This is
+why the proof needs explicit side-component/path lemmas, not a post-radius
+shrink that tries to force every trace into the EOW ball.
 
 Fourth, the fixed cone basis used in the one-chart theorem is adapted to the
 ordered OS45 half-time direction at the seed.  The needed pure
@@ -198,8 +199,8 @@ Mathematically, choose a small affine simplex around `η0 / m` inside the open
 cone, with barycenter `η0 / m` and affinely independent vertices; scaling by
 the positive factor `m` gives basis vectors in `C` whose sum is `η0`.  With
 this basis, the OS45 half-time ray through the seed is a strict-positive chart
-ray.  This ray supplies the nonempty positive side overlap used for gluing.
-The negative ray gives the corresponding negative overlap.
+ray.  This ray supplies the nonempty positive chart-orthant overlap used for
+gluing.  The negative ray gives the corresponding negative overlap.
 
 Fifth, the local horizontal boundary functional used inside the one-chart EOW
 step is **not** a replacement for the OS-II `bvt_W` boundary distribution.
@@ -6093,117 +6094,164 @@ Proof decomposition of this theorem, without hiding the analytic work:
       half-time seed ray is a strict-positive chart ray.
    10. Glue the returned local envelope to the positive and negative side
       components.  This is a genuine holomorphic gluing step, not an
-      identity-theorem shortcut.  The side separation is fixed before taking
-      components.  Choose a real continuous linear functional `ℓseed` with
-      `0 < ℓseed η₁`, where `η₁` is the ordered seed half-time direction.  A
-      concrete choice is the Euclidean inner-product functional
-      `ℓseed v = ∑ k μ, η₁ k μ * v k μ`; since `η₁ ∈ InForwardCone d n`, it is
-      nonzero and `ℓseed η₁ = ‖η₁‖ ^ 2 > 0`.  Shrink `Vseed` so
-      `0 < ℓseed (η(x))` for every `x ∈ Vseed`.  Define:
+      identity-theorem shortcut.  The side separation is fixed in the same
+      chart coordinates used by `SCV.chartDistributionalEOW_local_envelope`,
+      not by an unrelated original-coordinate half-space.  Let
+      `A := SCV.localEOWComplexAffineEquiv x₁ ys hli` be the affine chart
+      (after the harmless `SCV.flattenCLE`/unflattening identification when
+      the OS45 configuration space is written as
+      `Fin n -> Fin (d + 1) -> ℂ`).  Define the open chart orthants
 
       ```lean
-      def BHW.configIm
-          (z : Fin n -> Fin (d + 1) -> ℂ) :
-          NPointDomain d n :=
-        fun k μ => (z k μ).im
+      def SCV.ChartPositiveOrthant (m : ℕ) :
+          Set (SCV.ComplexChartSpace m) :=
+        {w | ∀ j, 0 < (w j).im}
 
-      def BHW.os45PositiveSideSign
-          (ℓseed : NPointDomain d n ->L[ℝ] ℝ) :
-          Set (Fin n -> Fin (d + 1) -> ℂ) :=
-        {z | 0 < ℓseed (BHW.configIm (d := d) (n := n) z)}
-
-      def BHW.os45NegativeSideSign
-          (ℓseed : NPointDomain d n ->L[ℝ] ℝ) :
-          Set (Fin n -> Fin (d + 1) -> ℂ) :=
-        {z | ℓseed (BHW.configIm (d := d) (n := n) z) < 0}
+      def SCV.ChartNegativeOrthant (m : ℕ) :
+          Set (SCV.ComplexChartSpace m) :=
+        {w | ∀ j, (w j).im < 0}
       ```
 
-      The production components are the connected components of
-      `Ωplus ∩ os45PositiveSideSign ℓseed` and
-      `Ωminus ∩ os45NegativeSideSign ℓseed` containing the strict side seed
-      balls.  These two open sets are disjoint by the strict sign inequalities.
-      Their connected components are open because the ambient finite-dimensional
-      complex configuration space is locally connected.
+      In coordinate space set
+
+      ```lean
+      U0 := Metric.ball (0 : SCV.ComplexChartSpace m) R
+      Uplus :=
+        connectedComponentIn
+          (Ωplus ∩ SCV.ChartPositiveOrthant m) wplusSeed
+      Uminus :=
+        connectedComponentIn
+          (Ωminus ∩ SCV.ChartNegativeOrthant m) wminusSeed
+      ```
+
+      where `wplusSeed ∈ SCV.StrictPositiveImagBall R` and
+      `wminusSeed ∈ SCV.StrictNegativeImagBall R`.  The one-chart output gives
+      `SCV.StrictPositiveImagBall R ⊆ Ωplus` and
+      `SCV.StrictNegativeImagBall R ⊆ Ωminus`.  Since each strict side ball is
+      open and convex, it is contained in the corresponding connected
+      component.  Therefore the overlaps are exactly
+
+      ```lean
+      U0 ∩ Uplus  = SCV.StrictPositiveImagBall R
+      U0 ∩ Uminus = SCV.StrictNegativeImagBall R
+      ```
+
+      because `Uplus` is contained in the positive orthant and `Uminus` is
+      contained in the negative orthant.  This exact-overlap choice is the
+      important correction: the OS45 proof must not define side components by
+      a broad linear sign condition and then hope that equality on one strict
+      seed ball propagates to every possible overlap component.  The checked
+      one-chart side identities already give equality on the whole overlap
+      used for gluing.
+
+      The small pure topology lemmas needed here are elementary and should be
+      proved before the OS45 gluing theorem if Mathlib does not already expose
+      the exact forms:
+
+      ```lean
+      theorem SCV.isPreconnected_StrictPositiveImagBall
+          (hm : 0 < m) {R : ℝ} (hR : 0 < R) :
+          IsPreconnected (SCV.StrictPositiveImagBall (m := m) R)
+
+      theorem SCV.isPreconnected_StrictNegativeImagBall
+          (hm : 0 < m) {R : ℝ} (hR : 0 < R) :
+          IsPreconnected (SCV.StrictNegativeImagBall (m := m) R)
+
+      theorem SCV.strictPositiveImagBall_nonempty
+          (hm : 0 < m) {R : ℝ} (hR : 0 < R) :
+          (SCV.StrictPositiveImagBall (m := m) R).Nonempty
+
+      theorem SCV.strictNegativeImagBall_nonempty
+          (hm : 0 < m) {R : ℝ} (hR : 0 < R) :
+          (SCV.StrictNegativeImagBall (m := m) R).Nonempty
+      ```
+
+      The connected components of the open sets
+      `Ωplus ∩ SCV.ChartPositiveOrthant m` and
+      `Ωminus ∩ SCV.ChartNegativeOrthant m` are open because the
+      finite-dimensional chart space is locally connected.
       The pure complex-analysis helper should have the following concrete
       shape:
 
       ```lean
       theorem SCV.glue_localEnvelope_to_disjoint_sideComponents
-          {n d : ℕ}
-          {U0 Uplus Uminus :
-            Set (Fin n -> Fin (d + 1) -> ℂ)}
-          {H0 Hplus Hminus :
-            (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+          {m : ℕ}
+          {U0 Uplus Uminus : Set (SCV.ComplexChartSpace m)}
+          {H0 Hplus Hminus : SCV.ComplexChartSpace m -> ℂ}
           (hU0_open : IsOpen U0) (hUplus_open : IsOpen Uplus)
           (hUminus_open : IsOpen Uminus)
           (hU0_conn : IsConnected U0)
           (hUplus_conn : IsConnected Uplus)
           (hUminus_conn : IsConnected Uminus)
-	          (hH0_holo : DifferentiableOn ℂ H0 U0)
-	          (hHplus_holo : DifferentiableOn ℂ Hplus Uplus)
-	          (hHminus_holo : DifferentiableOn ℂ Hminus Uminus)
-	          (hplus_meets : (U0 ∩ Uplus).Nonempty)
-	          (hminus_meets : (U0 ∩ Uminus).Nonempty)
-	          (hplus_agree_on_overlap :
-	            EqOn H0 Hplus (U0 ∩ Uplus))
-	          (hminus_agree_on_overlap :
-	            EqOn H0 Hminus (U0 ∩ Uminus))
-	          (hplus_minus_disjoint : Disjoint Uplus Uminus) :
-	          ∃ U H, IsOpen U ∧ IsConnected U ∧
-	            DifferentiableOn ℂ H U ∧
-	            EqOn H H0 U0 ∧ EqOn H Hplus Uplus ∧ EqOn H Hminus Uminus
-	      ```
+          (hH0_holo : DifferentiableOn ℂ H0 U0)
+          (hHplus_holo : DifferentiableOn ℂ Hplus Uplus)
+          (hHminus_holo : DifferentiableOn ℂ Hminus Uminus)
+          (hplus_meets : (U0 ∩ Uplus).Nonempty)
+          (hminus_meets : (U0 ∩ Uminus).Nonempty)
+          (hplus_agree_on_overlap :
+            EqOn H0 Hplus (U0 ∩ Uplus))
+          (hminus_agree_on_overlap :
+            EqOn H0 Hminus (U0 ∩ Uminus))
+          (hplus_minus_disjoint : Disjoint Uplus Uminus) :
+          ∃ U H, IsOpen U ∧ IsConnected U ∧
+            DifferentiableOn ℂ H U ∧
+            EqOn H H0 U0 ∧ EqOn H Hplus Uplus ∧ EqOn H Hminus Uminus
+      ```
 
-	      The OS45 implementation must prove the two overlap equalities before
-	      calling this helper.  The strict side seed balls alone are not enough
-	      unless the identity-theorem propagation to the whole relevant overlap
-	      component has already been done.  In production, `Uplus` and `Uminus`
-	      are the side-sign restricted connected components containing the
-	      strict positive and negative seed balls, and the side-component path
-	      lemmas below put every trace point in those same components.  Then
-	      equality on `U0 ∩ Uplus` and `U0 ∩ Uminus` is obtained by the ordinary
-	      identity theorem on each connected overlap component, using the strict
-	      side seed balls as nonempty open zero sets.
+      In the OS45 instantiation, `hplus_agree_on_overlap` is obtained by
+      rewriting `U0 ∩ Uplus` to `StrictPositiveImagBall R` and using the
+      positive side identity returned by
+      `SCV.chartDistributionalEOW_local_envelope`; the negative side is
+      identical.  No additional identity theorem is used at this single-chart
+      side-gluing stage.
 
-	      Proof transcript for the gluing helper itself:
+      Proof transcript for the gluing helper itself:
 
-	      - Define `U := U0 ∪ Uplus ∪ Uminus`.
-	      - Define `H z` by cases: use `Hplus z` on `Uplus`, `Hminus z` on
-	        `Uminus`, and `H0 z` elsewhere in `U0`.  The disjointness of
-	        `Uplus` and `Uminus`, plus the two overlap equalities, makes this
-	        definition independent of case choices on overlaps.
-	      - `IsOpen U` follows from the three open sets.
-	      - `IsConnected U` follows because `U0` is connected and each side
-	        component meets `U0` in the seed region already used to prove the
-	        overlap equality; equivalently pass these nonempty intersections as
-	        explicit hypotheses if Lean automation cannot recover them from the
-	        equality proof packet.
-	      - `DifferentiableOn H U` is checked locally on the open cover
-	        `U0`, `Uplus`, `Uminus`, using the corresponding holomorphy
-	        hypotheses and the overlap equalities.
+      - Define `U := U0 ∪ Uplus ∪ Uminus`.
+      - Define `H z` by cases: use `Hplus z` on `Uplus`, `Hminus z` on
+        `Uminus`, and `H0 z` elsewhere in `U0`.  The disjointness of
+        `Uplus` and `Uminus`, plus the two overlap equalities, makes this
+        definition independent of case choices on overlaps.
+      - `IsOpen U` follows from the three open sets.
+      - `IsConnected U` follows because `U0` is connected and each side
+        component meets `U0` in the seed region already used to prove the
+        overlap equality; equivalently pass these nonempty intersections as
+        explicit hypotheses if Lean automation cannot recover them from the
+        equality proof packet.
+      - `DifferentiableOn H U` is checked locally on the open cover
+        `U0`, `Uplus`, `Uminus`, using the corresponding holomorphy
+        hypotheses and the overlap equalities.
 
-	      The side-sign restrictions are open subsets of `Ωplus` and `Ωminus`
-	      and are disjoint by the strict sign inequalities.  Their connected
-	      components are open in the finite-dimensional complex configuration
-	      space; if Mathlib does not infer this automatically, the OS45 file
-	      should expose the small topology lemma for open subsets of finite
-	      products of `ℂ`.
+      The chart-orthant restrictions are open subsets of `Ωplus` and `Ωminus`
+      and are disjoint by the strict coordinate inequalities.  Their connected
+      components are open in the finite-dimensional complex configuration
+      space; if Mathlib does not infer this automatically, the OS45 file
+      should expose the small topology lemma for open subsets of finite
+      products of `ℂ`.
    11. Prove the OS45 side-component path lemmas.  For `x ∈ V`, let
       `y(x) = os45CommonEdgeRealPoint 1 x` and
-      `η(x) = os45HalfTimeDirection 1 x`.  The positive path is
-      `s ↦ realEmbed y(x) + I * s • η(x)`; after inverse quarter-turn its
-      imaginary forward-cone part is `(1 + s)η(x)`, so it stays in `Ωplus` and
-      reaches the Wick trace at `s = 1`; moreover
-      `ℓseed (s • η(x)) > 0` for `0 < s`, so it stays in the positive
-      side-sign component.  The negative path is
-      `s ↦ realEmbed y(x) - I * s • η(x)`; after inverse quarter-turn its
-      imaginary part is `(1 - s)η(x)`, so it is in the forward tube for
-      `s < 1`, and at `s = 1` it is the real branch point already known to be
-      in the pulled-real branch domains by the selected `ExtendedTube` facts;
-      also `ℓseed (-(s • η(x))) < 0` for `0 < s`, so it stays in the negative
-      side-sign component.  The adjacent swapped branch is the same calculation
-      with the checked `os45CommonEdgeRealPoint_adjacent_swap_eq` and
-      `os45HalfTimeDirection_adjacent_swap_eq`.
+      `η(x) = os45HalfTimeDirection 1 x`.  In chart real coordinates set
+      `c(x) := (SCV.localEOWRealLinearCLE ys hli).symm η(x)`.  The basis was
+      chosen so `η₁ = ∑ j, ys j`, hence `c(x₁) j = 1` for every `j`; after
+      shrinking `V`, continuity gives `0 < c(x) j` for all `x ∈ V` and all
+      coordinates `j`.  The positive path is
+      `s ↦ realEmbed y(x) + I * s • η(x)`; in chart coordinates its imaginary
+      part is `s • c(x)`, so for `0 < s` it lies in
+      `SCV.ChartPositiveOrthant m`.  For sufficiently small `s₀ > 0`, the
+      chart coordinate is in `SCV.StrictPositiveImagBall R`, hence in
+      `U0 ∩ Uplus`; the path segment from `s₀` to `1` stays in
+      `Ωplus ∩ SCV.ChartPositiveOrthant m`, so the Wick trace lies in the same
+      positive side component.  The negative path is
+      `s ↦ realEmbed y(x) - I * s • η(x)`; its chart imaginary part is
+      `-s • c(x)`, so the same argument puts the real trace in the negative
+      component.  The domain membership along these paths is the existing
+      OS45 quarter-turn calculation: on the positive side, after inverse
+      quarter-turn the imaginary forward-cone part is `(1 + s)η(x)`; on the
+      negative side it is `(1 - s)η(x)` for `s < 1`, and the endpoint
+      `s = 1` is in the pulled-real branch domains by the selected
+      `ExtendedTube` facts.  The adjacent swapped branch is the same
+      calculation with the checked `os45CommonEdgeRealPoint_adjacent_swap_eq`
+      and `os45HalfTimeDirection_adjacent_swap_eq`.
    12. Finish the trace equations by rewriting:
       - the positive trace by the definition of `Hplus`,
         `Qρe.symm_apply_apply`, `BHW.permAct_wickRotatePoint`, and `τ`;
@@ -6261,10 +6309,11 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
    they do not by themselves carry the two horizontal pulled-domain fields.
 4. Choose the chart basis using
    `SCV.open_convex_cone_basis_with_positive_sum` with `η₁` after flattening.
-   This makes the seed half-time ray strict-positive in chart coordinates and
-   gives a nonempty strict-positive overlap between the local EOW ball and the
-   OS45 positive side component.  The negative ray gives the corresponding
-   strict-negative overlap.
+   This makes the seed half-time ray have coordinate vector `1` in the fixed
+   chart basis.  After shrinking the selected patch, every nearby half-time
+   direction has strictly positive chart coordinates.  These chart-coordinate
+   signs, not an auxiliary original-coordinate half-space, define the side
+   components used for gluing.
 5. Do **not** implement the retired ordered horizontal-edge forward-tube pair
    theorem.  The identity branch is in `BHW.ForwardTube d n`, but the adjacent
    swapped branch is generally not.  The proof document must first replace the
@@ -6295,21 +6344,24 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
    edge only after steps 5-7 provide true `hplus_bv` and `hminus_bv`
    hypotheses.  Its output is a local envelope `H0` on a small coordinate ball
    and side identities only on the strict positive/negative seed balls.
-9. Choose the separating real linear functional `ℓseed` with
-   `0 < ℓseed η₁`, shrink `Vseed` so `0 < ℓseed (η(x))` on the patch, and
-   define the positive and negative side components as the connected components
-   of `Ωplus ∩ os45PositiveSideSign ℓseed` and
-   `Ωminus ∩ os45NegativeSideSign ℓseed` containing the strict side seed balls.
-   The sign restrictions are part of the definition, so the two components are
-   disjoint.  Prove the finite Wick and real traces for every `x ∈ Vseed` lie
-   in those components by the explicit paths
+9. Define the positive and negative side components in the one-chart
+   coordinates as the connected components of
+   `Ωplus ∩ SCV.ChartPositiveOrthant m` and
+   `Ωminus ∩ SCV.ChartNegativeOrthant m` containing the strict side seed
+   balls.  Because the local ball is `Metric.ball 0 R`, its overlaps with
+   these components are exactly
+   `SCV.StrictPositiveImagBall R` and `SCV.StrictNegativeImagBall R`.
+   Prove the finite Wick and real traces for every `x ∈ Vseed` lie in those
+   components by the explicit paths
    `realEmbed y(x) + I * s • η(x)` and
-   `realEmbed y(x) - I * s • η(x)`.
+   `realEmbed y(x) - I * s • η(x)`, using positivity of the chart-coordinate
+   vector `(SCV.localEOWRealLinearCLE ys hli).symm (η(x))`.
 10. Glue `H0`, `Hplus`, and `Hminus` on the union of the local ball and the two
    side components.  Agreement on the local side overlaps is exactly the side
-   identity output of the checked one-chart theorem.  The union is connected
-   because the local ball intersects both side components in nonempty open side
-   seeds.
+   identity output of the checked one-chart theorem after rewriting the
+   overlaps to the strict positive/negative side balls.  The union is
+   connected because the local ball intersects both side components in
+   nonempty open side seeds.
 11. Finish the Wick and real trace equations from the glued function:
     - the Wick trace uses the `Hplus` agreement, `Qρe.symm_apply_apply`,
       `BHW.permAct_wickRotatePoint`, and `τ`;
