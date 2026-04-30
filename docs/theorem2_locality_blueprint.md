@@ -4055,8 +4055,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     (BHW.os45Figure24IdentityPath
                       (d := d) (n := n) xseed t))
             Continuous Δseed ∧
-              (forall t, Δseed t ∈ BHW.ExtendedTube d n) ∧
-              (forall t,
+              (∀ t, Δseed t ∈ BHW.ExtendedTube d n) ∧
+              (∀ t,
                 BHW.sourceMinkowskiGram d n (Δseed t) =
                   BHW.sourcePermuteComplexGram n τ
                     (BHW.sourceMinkowskiGram d n
@@ -4069,19 +4069,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (i : Fin n) (hi : i.val + 1 < n) :
           let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
           ∃ (Upath : Set (NPointDomain d n))
-            (xseed : NPointDomain d n),
-            IsOpen Upath ∧ xseed ∈ Upath ∧
-            (∀ x ∈ Upath,
-              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
-                (1 : Equiv.Perm (Fin n))) ∧
-            (∀ x ∈ Upath,
-              (fun k => x (τ k)) ∈
-                EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ) ∧
+            (xfig : NPointDomain d n),
+            IsOpen Upath ∧ xfig ∈ Upath ∧
+            (∀ k : Fin n, xfig k 0 = 0) ∧
+            xfig ∈ BHW.JostSet d n ∧
+            BHW.realEmbed xfig ∈ BHW.ExtendedTube d n ∧
+            BHW.realEmbed (fun k => xfig (τ k)) ∈
+              BHW.ExtendedTube d n ∧
             (∀ x ∈ Upath,
               ∃ Δ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ,
                 Continuous Δ ∧
-                (forall t, Δ t ∈ BHW.ExtendedTube d n) ∧
-                (forall t,
+                (∀ t, Δ t ∈ BHW.ExtendedTube d n) ∧
+                (∀ t,
                   BHW.sourceMinkowskiGram d n (Δ t) =
                     BHW.sourcePermuteComplexGram n τ
                       (BHW.sourceMinkowskiGram d n
@@ -4091,15 +4090,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       Proof transcript for
       `BHW.swFigure24_adjacentPathStableNeighborhood_exists`: start from the
-      seed theorem
-      `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`.  The
-      coordinate functions and all inequalities used by that certificate are
-      continuous in `(x,t)`; compactness of `unitInterval` gives one open
-      neighborhood `Upath` of the seed on which the same certificate works
-      uniformly.  Intersect `Upath` with the Figure-2-4 real environment and
-      the two ordered-sector preimages before taking the final precompact ball
-      `V` in
-      `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`.
+      same equal-time witness used by
+      `BHW.adjacent_overlap_real_jost_witness_exists`, together with the
+      concrete two-plane rotated witness from
+      `BHW.figure24_adjacentTwoPlaneRotationSupport`.  At this equal-time
+      anchor, `BHW.os45Figure24IdentityPath xfig t = BHW.realEmbed xfig` for
+      every `t`, so the rotated adjacent path is the constant
+      `BHW.realEmbed xrot` and lies in `ExtendedTube` by the checked
+      `ForwardJostSet` inclusion.  The map
+      `(x,t) ↦ figure24RotateAdjacentConfig hd
+        (permAct τ (os45Figure24IdentityPath x t))`
+      is continuous, so compactness of `unitInterval` and
+      `BHW.exists_open_nhds_forall_mem_of_compact_parameter` give one open
+      neighborhood `Upath` of the equal-time anchor on which the rotated
+      adjacent path stays in `ExtendedTube` for all `t`.  The scalar Gram
+      identity is algebraic and holds pointwise in `t` by the exported
+      Lorentz inverse and `sourceMinkowskiGram_perm`.
+
+      Crucial order: `Upath` is not an ordered-sector neighborhood; it is a
+      Figure-2-4 path-stability neighborhood around the equal-time anchor.
+      In `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`, first
+      intersect the Figure-2-4 real environment `Ufig` with this `Upath`, then
+      choose the positive-time perturbation inside `Ufig ∩ Upath`, and only
+      after that intersect with the identity and adjacent ordered-sector
+      preimages before taking the final precompact ball `V`.  This is what
+      makes the closure-level `hV_figPath` field share the same anchor as
+      the horizontal pulled-branch-domain fields.
 
       Proof transcript for
       `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`: start from
@@ -5869,14 +5885,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
          Proof transcript for the selector:
 
-         - Start from
-           `BHW.swFigure24_adjacentHorizontalRealEnvironment hd i hi`, not
-           from an already selected arbitrary OS45 patch.  This theorem is
-           proved from the checked adjacent witness and finite intersections
-           of open preimages.  It gives the equal-time Figure-2-4 witness
-           `x0` and an open source environment `Ufig` carrying Jost, the two
-           ordinary real extended-tube memberships, and the two horizontal
-           pulled-branch memberships.
+         - Start from one shared Figure-2-4 anchor, not from independently
+           chosen existential outputs.  In Lean this can be done either by
+           inlining the two constructions below, or by first proving the
+           combined selector
+           `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`.
+           It is proved from the checked adjacent witness and finite
+           intersections of open preimages.  It gives the same equal-time
+           Figure-2-4 witness `x0`, an open source environment `Ufig`
+           carrying Jost, the two ordinary real extended-tube memberships, and
+           the two horizontal pulled-branch memberships, and an open
+           path-stability neighborhood `Upath` around that same `x0`.
          - Apply
            `BHW.exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt`
            with `U := Ufig`.  The output seed `xseed` is identity ordered, its
@@ -6064,6 +6083,50 @@ Proof decomposition of this theorem, without hiding the analytic work:
               equality is the separate `OS45BranchHorizontalSourceGermAt`
               input above.
 
+         The path-stability neighborhood must share the same equal-time
+         anchor as this source environment.  The implementation contract is
+         therefore the combined theorem below; the two previous displayed
+         theorems are its projections and should not be called independently
+         in a way that loses anchor equality.
+
+         ```lean
+         theorem BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability
+             [NeZero d]
+             (hd : 2 <= d)
+             (i : Fin n) (hi : i.val + 1 < n) :
+             let τ : Equiv.Perm (Fin n) :=
+               Equiv.swap i ⟨i.val + 1, hi⟩
+             ∃ (Ufig Upath : Set (NPointDomain d n))
+               (x0 : NPointDomain d n),
+               IsOpen Ufig ∧ IsOpen Upath ∧
+               x0 ∈ Ufig ∧ x0 ∈ Upath ∧
+               (∀ k : Fin n, x0 k 0 = 0) ∧
+               (∀ x ∈ Ufig, x ∈ BHW.JostSet d n) ∧
+               (∀ x ∈ Ufig,
+                 BHW.realEmbed x ∈ BHW.ExtendedTube d n) ∧
+               (∀ x ∈ Ufig,
+                 BHW.realEmbed (fun k => x (τ k)) ∈
+                   BHW.ExtendedTube d n) ∧
+               (∀ x ∈ Ufig,
+                 BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x) ∈
+                   BHW.os45PulledRealBranchDomain (d := d) (n := n) 1) ∧
+               (∀ x ∈ Ufig,
+                 BHW.realEmbed
+                   (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x) ∈
+                   BHW.os45PulledRealBranchDomain (d := d) (n := n) τ) ∧
+               (∀ x ∈ Upath,
+                 ∃ Δ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ,
+                   Continuous Δ ∧
+                   (∀ t, Δ t ∈ BHW.ExtendedTube d n) ∧
+                   (∀ t,
+                     BHW.sourceMinkowskiGram d n (Δ t) =
+                       BHW.sourcePermuteComplexGram n τ
+                         (BHW.sourceMinkowskiGram d n
+                           (BHW.os45Figure24IdentityPath
+                             (d := d) (n := n) x t))))
+         ```
+
          2. The patch-shrinking step is separate finite-dimensional topology,
             not source geometry:
 
@@ -6085,16 +6148,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
          3. To prove
             `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`, start
             from
-            `BHW.swFigure24_adjacentHorizontalRealEnvironment hd i hi` and
-            obtain the source environment `Ufig` and equal-time witness `x0`.
-            Build the Figure-2-4 path-stability neighborhood around this same
-            equal-time witness before choosing the ordered perturbation: use
-            the two-plane rotation support calculation underlying
-            `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`,
-            together with the compact-parameter tube lemma, to obtain an open
-            `Upath` containing `x0` such that every `x ∈ Upath` carries the
-            two realization paths and the adjacent Gram identity.  This
-            `Upath` is source geometry only; it has no function values.
+            `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability hd i hi`
+            and obtain the source environment `Ufig`, the path-stability
+            neighborhood `Upath`, and their shared equal-time witness `x0`.
+            The construction of that combined theorem uses the two-plane
+            rotation support calculation and the compact-parameter tube lemma;
+            the important implementation point is that `Ufig` and `Upath`
+            are anchored at the same `x0`.  The `Upath` field is source
+            geometry only; it has no function values.
             Apply the checked bounded perturbation theorem
             `BHW.exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt`
             with `U := Ufig ∩ Upath`; this chooses an ordered identity-sector
@@ -6607,6 +6668,7 @@ the checked adjacent witness, but the analytic bridge still has to be finished
 in this non-circular order:
 
 1. implement the Figure-2-4 source environment/source-patch selector
+   `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability` and
    `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`;
 2. prove the branch-local OS I §4.5/BHW source suppliers
    `BHW.os45BranchHorizontalSourceGermAt_of_figure24_id` and
@@ -6861,7 +6923,10 @@ not as the next task.  The active next implementation order is:
 
 1. expose the bounded identity-order perturbation theorem and the identity
    ordered raw real-open ball selector; **checked**;
-2. implement the Figure-2-4 source environment and source-patch selector;
+2. implement the Figure-2-4 combined source/path-stability environment
+   `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability` and the
+   source-patch selector
+   `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`;
 3. prove the branch-local source-germ suppliers for the identity and adjacent
    branch labels from the OS I §4.5/BHW one-branch construction; these suppliers
    are upstream of EOW and must not use downstream adjacent equality;

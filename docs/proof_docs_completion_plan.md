@@ -292,13 +292,18 @@ content:
    ordinary-extended-tube realization of the adjacent permuted Gram point.
    Its adjacent branch is the Figure-2-4 two-plane rotated realization from
    the checked `AdjacentOverlapWitness.lean` model, made uniform around the
-   ordered seed by a compact-open shrink over `unitInterval`; it is not the
-   bare relabelled path `Γ t ∘ τ`.  The blueprint now pins the support names:
+   same equal-time Figure-2-4 anchor by a compact-open shrink over
+   `unitInterval`; it is not the bare relabelled path `Γ t ∘ τ`.  The ordered
+   seed is chosen only afterward inside `Ufig ∩ Upath`, and the final
+   precompact `V` is then shrunk inside the ordered-sector preimages.  The
+   blueprint now pins the support names:
    `BHW.os45Figure24IdentityPath`,
    `BHW.figure24RotateAdjacentConfig`,
    `BHW.figure24RotateAdjacentConfig_lorentz_inverse`, and
-   `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`.  The support
-   theorem must also export
+   `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`, whose
+   projections include `BHW.swFigure24_adjacentHorizontalRealEnvironment` and
+   `BHW.swFigure24_adjacentPathStableNeighborhood_exists`.  The support
+   theorem feeding the path-stability neighborhood must also export
    `realEmbed xrot = figure24RotateAdjacentConfig hd
      (realEmbed (fun k => xfig (τ k)))`; otherwise the compact-open
    path-stability proof has no identified base point.  Its proof transcript
@@ -382,8 +387,11 @@ content:
    and the relevant horizontal pulled-domain preimage.
    The selector construction must choose the ordered seed inside
    `Ufig ∩ Upath`, where `Upath` is the Figure-2-4 compact-open
-   path-stability neighborhood around the same equal-time witness; this is what
-   makes the closure-level `hV_figPath` field legitimate.
+   path-stability neighborhood around the same equal-time witness returned
+   with `Ufig`; this shared anchor is what makes the closure-level
+   `hV_figPath` field legitimate.  The implementation must not call two
+   independent existential theorems for `Ufig` and `Upath` and then assume the
+   witnesses agree.
 4. The compact common-germ theorem `BHW.os45BranchHorizontalCommonGerm` then
    glues these branch-specific germs over `closure E`; the identity and
    adjacent germs remain different branch packets.
