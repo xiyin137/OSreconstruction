@@ -6413,7 +6413,9 @@ in this non-circular order:
    `AdjacentOSEOWDifferenceEnvelope`;
 3. prove the compact common-germ gluing theorem
    `BHW.os45BranchHorizontalCommonGerm`;
-4. prove the regular boundary-CLM construction and branchwise BV theorem
+4. expose the pure real-analysis cutoff projection
+   `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+   then prove the regular boundary-CLM construction and branchwise BV theorem
    `BHW.os45RegularBoundaryValue_from_commonGerm` and
    `BHW.os45BranchHorizontalBoundaryValue`;
 5. subtract the checked identity/adjacent branchwise BV packets to obtain the
@@ -6655,8 +6657,10 @@ not as the next task.  The active next implementation order is:
 3. prove the branch-local source-germ suppliers for the identity and adjacent
    branch labels from the OS I §4.5/BHW one-branch construction; these suppliers
    are upstream of EOW and must not use downstream adjacent equality;
-4. prove the compact common-germ gluing theorem and the regular
-   boundary-CLM/branchwise BV construction;
+4. prove the compact common-germ gluing theorem, expose the compact-support
+   cutoff projection
+   `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+   and then prove the regular boundary-CLM/branchwise BV construction;
 5. reformulate the OS45 horizontal common-boundary theorem branchwise, since
    the proposed forward-tube pair and pointwise `Hplus = Hminus` shortcut is
    false.  The target data are `Tid`, `Tτ`, their ACR/BHW compact-direction BV
