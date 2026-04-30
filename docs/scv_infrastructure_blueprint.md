@@ -524,6 +524,7 @@ Source ledger for the internal helper list:
 | `regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow` | Checked in `SCV/LocalEOWChartAssembly.lean`: transports the fixed-window family outputs to the chart-kernel family `Gchart ψ = Gorig (localEOWRealLinearKernelPushforwardCLM ys hli ψ)`.  It returns the chart-family holomorphy field and the plus/minus side identities against `FplusCoord ζ = Fplus (localEOWChart x0 ys ζ)` and `FminusCoord ζ = Fminus (localEOWChart x0 ys ζ)`, using `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul` for the support radius and `realMollifyLocal_localEOWChart_kernelPushforwardCLM_pullback` for the mollifier change of variables. |
 | `chartSideFunction_continuousOn_strictBalls_from_fixedWindow` | Checked in `SCV/LocalEOWChartAssembly.lean`: supplies the two side-function continuity hypotheses for `regularizedEnvelope_chartEnvelope_from_oneChartScale`.  It applies `chartHolomorphy_from_originalHolomorphy` on `StrictPositiveImagBall (4σ)` and `StrictNegativeImagBall (4σ)`, with domain membership supplied by `localEOWChart_mem_fixedWindow_of_strictPositiveImagBall` and its negative companion from `4σ ≤ ρ` and `card * (4σ) < r`. |
 | `regularizedLocalEOW_pairingCLM_localCovariant_from_fixedWindow` | Checked in `SCV/LocalEOWPairingCLM.lean`: fixed-window covariance adapter for the mixed pairing CLM.  It applies `regularizedLocalEOW_pairingCLM_localCovariant` with `Gchart ψ = localRudinEnvelope δ x0 ys (realMollifyLocal Fplus (P ψ)) (realMollifyLocal Fminus (P ψ))`, supplies the shifted-overlap covariance input by `regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`, and discharges the two pushed-kernel support hypotheses separately with `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`. |
+| `regularizedLocalEOW_chartEnvelope_from_fixedWindowScale` | Checked in `SCV/LocalEOWChartAssembly.lean`: the fixed-window keystone assembly.  It takes the already prepared fixed-window side domains, slice CLMs, cutoffs, one-chart scale inequalities, and closed support margins; constructs `Lorig`, transports it to `Lchart`, builds the mixed pairing CLM `K`, proves local covariance, chooses the descent kernel and shrinking approximate identity, and calls `regularizedEnvelope_chartEnvelope_from_oneChartScale`.  This is the final local recovery assembly below the still larger `chartDistributionalEOW_local_envelope`; it contains no slow-growth input and no untransported original-coordinate kernel. |
 | `regularizedLocalEOW_family_add` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.add`, side-domain additivity of `realMollifyLocal`, and the fixed-window uniqueness clause; it does not use real-linear slice CLMs as a substitute for complex-linearity. |
 | `regularizedLocalEOW_family_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: complex homogeneity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.smul`, `realMollifyLocal_smul`, and the same fixed-window uniqueness clause. |
 | `realMollifyLocal_add_of_integrable`, `realMollifyLocal_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity and complex homogeneity of the real-direction mollifier in the smoothing kernel.  Additivity carries the honest Bochner-integrability hypotheses; complex homogeneity follows from `integral_smul`.  These lemmas avoid faking complex linearity through the currently real-linear slice functionals `Tplus/Tminus`. |
@@ -4570,6 +4571,87 @@ envelope assembly once the raw distributional limits are supplied.
    * No slow-growth hypothesis, global product-kernel covariance, free
      `hkernel_limit`, or untransported original-coordinate kernel is an input
      to `chartDistributionalEOW_local_envelope`.
+
+   Intermediate Lean target before the full side-cone/cutoff construction:
+
+   ```
+   theorem regularizedLocalEOW_chartEnvelope_from_fixedWindowScale
+       {Cplus Cminus : Set (Fin m -> ℝ)}
+       {rψLarge rψOne ρ r δ σ : ℝ}
+       (hm : 0 < m) (hδ : 0 < δ) (hσ : 0 < σ)
+       (hδscale : 128 * σ ≤ δ)
+       (hσρ : 4 * σ ≤ ρ)
+       (hcardσ : card * (4 * σ) < r)
+       (hA4_one : ‖localEOWRealLinearCLE ys hli‖ * (4 * σ) ≤ rψOne)
+       (hrψ_one_large : rψOne ≤ rψLarge)
+       -- fixed-window domains, side CLMs, cutoffs, and margin hypotheses
+       ... :
+     ∃ H, DifferentiableOn ℂ H (ball 0 (4 * σ)) ∧
+       ∃ Hdist, RepresentsDistributionOnComplexDomain Hdist H (ball 0 (4 * σ)) ∧
+       product-kernel representation for K on ball 0 (4 * σ), radius σ ∧
+       side identities on ball 0 σ ∩ StrictPositive/NegativeImagBall σ.
+   ```
+
+   This theorem is intentionally not the outer `chartDistributionalEOW_local_envelope`.
+   It assumes the fixed-window side domains, slice CLMs, and cutoffs have
+   already been built from the raw OS-II boundary-value inputs, but it does
+   not assume any of the local recovery inputs `K`, `η`, `ψn`, `hcov`,
+   `hG_plus`, or `hG_minus`.  It constructs all of those internally as follows:
+
+   1. Define
+      `Gorig η z = localRudinEnvelope δ x0 ys
+        (realMollifyLocal Fplus η) (realMollifyLocal Fminus η) z`.
+      The fixed-window support radius used for the regularized family is
+      `rψLarge`.  The `tsupport` margin hypotheses needed by
+      `regularizedLocalEOW_family_from_fixedWindow` are derived from the
+      closed margins
+      `z ∈ D±`, `t ∈ closedBall 0 rψLarge -> z + realEmbed t ∈ Ω±`
+      plus `KernelSupportWithin ψ rψLarge`.
+   2. Apply `regularizedLocalEOW_originalFamily_compactValueCLM` with
+      `Rcut = 16 * σ` and the original-edge cutoff `χψ`.  The window inclusion
+      is exactly
+      `oneChartRecoveryScale_cut_closedBall_subset_half hσ hδscale`.
+      This produces `Lorig`, the cutoff value identity, and the uniform finite
+      Schwartz-seminorm bound.
+   3. Apply `regularizedLocalEOW_chartKernelFamily_valueCLM` with
+      `r = 2 * σ`, `rcut = 4 * σ`, and `rψ = rψOne`.  The support budget is
+      `hA4_one`; `χr` is one on `closedBall 0 (2σ)` and supported in
+      `closedBall 0 (4σ)`, while `χψ` is one on `closedBall 0 rψOne`.
+      This gives `Lchart`, its uncut value identity on kernels supported in
+      `2σ`, and the transported seminorm bound.
+   4. Prove the integrand continuity input for
+      `regularizedLocalEOW_pairingCLM_of_fixedWindow` by
+      `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`, using the
+      compact real set supplied by the side-domain construction and the same
+      closed `rψLarge` margins.  The proof rewrites the theorem's explicit
+      `localRudinEnvelope` formula to `Gorig`.
+   5. Apply `regularizedLocalEOW_pairingCLM_of_fixedWindow` with
+      `Rcov = 8σ`, `Rcut = 16σ`, and `r = 2σ`.  Its holomorphy input is the
+      first output of
+      `regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow` at
+      chart radius `2σ`; the radius is allowed because `2σ ≤ 4σ` and
+      `hA4_one.trans hrψ_one_large` gives the fixed-window support budget.
+   6. Apply `regularizedLocalEOW_pairingCLM_localCovariant_from_fixedWindow`
+      to the resulting `K`, again at `Rmix = 2σ`.  The support comparison is
+      `2σ ≤ 4σ`; the covariance small-shift radius is supplied by
+      `oneChartRecoveryScale_radius_margins hσ hδscale`.
+   7. Choose `η` by `exists_normalized_schwartz_bump_kernelSupportWithin σ`
+      and choose `ψn` by `exists_shrinking_normalized_schwartz_bump_sequence σ`.
+      Enlarge the sequence's shrinking support from
+      `min (σ / 2) (1 / (n+1))` to `1 / (n+1)` with
+      `KernelSupportWithin.mono` and `min_le_right`, and derive
+      `hψ_approx` from `tendsto_realConvolutionTest_of_shrinking_normalized_support`.
+   8. Get the recovery side identities from the second and third outputs of
+      `regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow` at
+      chart radius `σ`.  The side-function continuity input is exactly
+      `chartSideFunction_continuousOn_strictBalls_from_fixedWindow` with
+      `4σ ≤ ρ` and `card * (4σ) < r`.
+   9. Call `regularizedEnvelope_chartEnvelope_from_oneChartScale` with the
+      coordinate side functions
+      `FplusCoord ζ = Fplus (localEOWChart x0 ys ζ)` and
+      `FminusCoord ζ = Fminus (localEOWChart x0 ys ζ)`.  The product-kernel
+      representation output from the pairing CLM is restricted from radius
+      `2σ` to `σ` by `KernelSupportWithin.mono`.
 
    Exact handoff to `regularizedEnvelope_chartEnvelope_from_oneChartScale`:
 

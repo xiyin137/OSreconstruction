@@ -1069,6 +1069,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.tendsto_realMollifyLocal_strictPositiveImagBall`,
      `SCV.tendsto_realMollifyLocal_strictNegativeImagBall`,
      `SCV.regularizedEnvelope_chartEnvelope_from_oneChartScale`,
+     `SCV.regularizedLocalEOW_chartEnvelope_from_fixedWindowScale`,
      `SCV.chartDistributionalEOW_local_envelope`, and
      `SCV.chartDistributionalEOW_transport_originalCoords`.
      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` remains documented as an
@@ -2817,11 +2818,16 @@ Current implementation order:
    packet is now checked as
    `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`, and the
    coordinate-radius shrink is checked as
-   `SCV.exists_localEOWRealLinearPart_ball_subset`.  The next Lean target is
-   `SCV.chartDistributionalEOW_local_envelope`: feed the checked slice
-   families into the fixed-window family, use the chart-kernel transport
-   `localEOWRealLinearKernelPushforwardCLM ys hli`, then call the local
-   recovery stack with the existing approximate-identity inputs.  The
+  `SCV.exists_localEOWRealLinearPart_ball_subset`.  The fixed-window keystone
+   assembly is now checked as
+   `SCV.regularizedLocalEOW_chartEnvelope_from_fixedWindowScale`: from
+   prepared fixed-window side domains, slice CLMs, cutoffs, closed support
+   margins, and the one-chart scale inequalities, it constructs `Lorig`,
+   `Lchart`, the mixed pairing CLM `K`, local covariance, the descent kernel,
+   and the shrinking approximate-identity sequence, then call the checked
+   scaled recovery theorem.  The next Lean target is
+   `SCV.chartDistributionalEOW_local_envelope`, obtained by constructing those prepared
+   fixed-window inputs from the raw OS-II boundary-value hypotheses.  The
    distribution bookkeeping is part of the proof surface: the side-cone and
    slice-family steps use the original edge distribution `Torig`; the cutoff
    fixed-window family uses
