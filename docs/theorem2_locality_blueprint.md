@@ -3589,9 +3589,98 @@ Proof decomposition of this theorem, without hiding the analytic work:
       at `β = τ`.
 
       The seed used by the corridor must carry its Figure-2-4 path
-      provenance.  First isolate the purely geometric path from the Wick
-      source point at the selected base `x0` to the OS45 quarter-turn scalar
-      point:
+      provenance.  This provenance is not a bare scalar-domain assertion.
+      First isolate the configuration-level realization path supplied by the
+      Streater-Wightman Figure-2-4 geometry, then obtain the scalar path by
+      applying `sourceMinkowskiGram`.
+
+      The realization-level theorem is the genuine paper-geometry input:
+
+      ```lean
+      theorem BHW.swFigure24_wickToQuarterTurn_doubleETRealizationPath
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_open : IsOpen V)
+          (hV_jost : forall x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            forall x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_swap_ordered :
+            forall x, x ∈ V ->
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          (hV_horiz_swap :
+            forall x, x ∈ V ->
+              BHW.realEmbed
+                (BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x) ∈
+                BHW.os45PulledRealBranchDomain (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          {x0 : NPointDomain d n}
+          (hx0V : x0 ∈ V) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+          let y0 :=
+            BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 x0
+          ∃ (Γ Δ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ),
+            Continuous Γ ∧
+            Continuous Δ ∧
+            Γ (0 : unitInterval) = (fun k => wickRotatePoint (x0 k)) ∧
+            Γ (1 : unitInterval) = Q.symm (BHW.realEmbed y0) ∧
+            (forall t, Γ t ∈ BHW.ExtendedTube d n) ∧
+            (forall t, Δ t ∈ BHW.ExtendedTube d n) ∧
+            (forall t,
+              BHW.sourceMinkowskiGram d n (Δ t) =
+                BHW.sourcePermuteComplexGram n τ
+                  (BHW.sourceMinkowskiGram d n (Γ t)))
+      ```
+
+      Proof transcript for the realization theorem:
+
+      1. Use `hd : 2 <= d` to choose a non-time spatial axis and work in the
+         real two-plane used in Streater-Wightman Figure 2-4.  The paper's
+         displayed adjacent model is for the transposition `P(j,j+1)`; all
+         spectator difference vectors are kept fixed, and only the three
+         adjacent difference vectors in that two-plane move.
+      2. Apply the Figure-2-4 inequalities to the chosen adjacent source
+         environment, not to an arbitrary later reselected patch.  The vector
+         families appearing in the paper are spacelike for all nonnegative
+         coefficients, not all zero; adjoining the spectator coordinates
+         gives a real Jost point for both the ordinary extended tube and the
+         adjacent permuted extended tube.  The same strict inequalities hold
+         on a small real neighborhood, which is exactly why the proof must
+         start from `BHW.swFigure24_adjacentHorizontalRealEnvironment` and
+         then shrink to the ordered patch `V`.
+      3. Construct `Γ` as the continuous Figure-2-4 deformation from the Wick
+         configuration `fun k => wickRotatePoint (x0 k)` to the inverse
+         quarter-turn configuration `Q.symm (realEmbed y0)`.  On the identity
+         side, the ordered-time hypotheses and the checked OS45 identities
+         put the endpoints in the ordinary extended tube; the Figure-2-4
+         spacelike-cone inequalities keep the whole path in
+         `BHW.ExtendedTube d n`.
+      4. Construct `Δ` as the corresponding realization of the adjacent
+         permuted scalar point.  The theorem must not claim that
+         `fun k => Γ t (τ k)` lies in the ordinary forward tube.  Instead
+         `Δ t` is the ordinary extended-tube realization supplied by the
+         adjacent Figure-2-4 branch, and its Gram matrix is
+         `sourcePermuteComplexGram n τ (sourceMinkowskiGram d n (Γ t))`.
+      5. Continuity of `Γ` and `Δ` is finite-dimensional coordinate
+         continuity of the displayed Figure-2-4 formula.  The endpoint
+         identity for `Γ 1` uses
+         `os45QuarterTurnCLE_symm_apply`,
+         `os45CommonEdgeRealPoint`, and the definition of `wickRotatePoint`;
+         the adjacent endpoint membership uses the checked
+         `hV_horiz_swap` field.
+      6. This theorem has no function-value equality, no `SourceScalarRepresentativeData`,
+         no local EOW output, no global PET branch independence, and no
+         `bvt_W` term.  If the broad `V` hypotheses above are not sufficient
+         in Lean, the source-patch selector must be strengthened to return
+         this realization path as Figure-2-4 data; it must not be replaced by
+         an unproved scalar-path assumption.
+
+      The scalar path is then the mechanical corollary used by the corridor:
 
       ```lean
       theorem BHW.swFigure24_wickToQuarterTurn_scalarPath
@@ -3633,24 +3722,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
               γfig t ∈ BHW.sourceDoublePermutationGramDomain d n τ)
       ```
 
-      Proof transcript: this is exactly the Streater-Wightman Section 2-4 /
-      Figure 2-4 adjacent scalar geometry, specialized to one adjacent
-      transposition.  The local OCR of
-      `references/pct-spin-and-statistics-and-all-that-9781400884230_compress.pdf`
-      around printed page 73 says that it suffices to discuss the adjacent
-      transposition `P(j,j+1)`, gives the displayed vectors in Figure 2-4,
-      and concludes that adjoining the remaining coordinates gives a Jost
-      point of both the ordinary extended tube and the adjacent permuted
-      extended tube, with the same property on a sufficiently small real
-      neighborhood.  The initial point is the Wick-rotated ordered
-      configuration, hence the identity scalar branch is in the ordinary
-      extended-tube Gram domain and the swapped scalar branch is in the
-      relabelled ordinary extended-tube Gram domain.  The endpoint is the
-      OS45 quarter-turn common-edge scalar point; `hV_horiz_swap` is precisely
-      the pulled BHW-domain membership for the swapped endpoint.  Along the
-      displayed Figure-2-4 path the two scalar realizations remain in the
-      ordinary and swapped extended-tube Gram domains, so the whole path lies
-      in `sourceDoublePermutationGramDomain d n τ`.  This theorem is geometry
+      Proof transcript: apply
+      `BHW.swFigure24_wickToQuarterTurn_doubleETRealizationPath` and set
+      `γfig t := BHW.sourceMinkowskiGram d n (Γ t)`.  Continuity is
+      `BHW.contDiff_sourceMinkowskiGram d n` composed with `hΓ_cont`.  The
+      endpoint equations are the corresponding equations for `Γ`.  For each
+      `t`, prove
+      `γfig t ∈ BHW.sourceDoublePermutationGramDomain d n τ` by
+      `BHW.mem_sourceDoublePermutationGramDomain_iff_exists_realizations`,
+      using realizations `Γ t` and `Δ t`, the two extended-tube membership
+      fields, `rfl` for the left Gram, and the realization theorem's Gram
+      identity for the right Gram.  This scalar theorem is therefore geometry
       only: it has no analytic equality field and no `hRep`.
 
       The non-topological BHW/Jost source package is therefore:

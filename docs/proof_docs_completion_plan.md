@@ -262,10 +262,18 @@ content:
    seed theorem records a distinguished `Gseed ∈ Wseed`, the source chart
    supplies a path from `Gseed` to
    `sourceMinkowskiGram d n (fun k => wickRotatePoint (x0 k))`, and
-   `BHW.swFigure24_wickToQuarterTurn_scalarPath` supplies the
-   Streater-Wightman Figure-2-4 scalar path from that Wick scalar point to the
-   OS45 quarter-turn scalar point inside the adjacent double scalar domain.
-   Its paper source is the local OCR of
+   `BHW.swFigure24_wickToQuarterTurn_doubleETRealizationPath` supplies the
+   Streater-Wightman Figure-2-4 configuration-level path from the Wick
+   configuration to the OS45 quarter-turn configuration, together with a
+   second continuous ordinary-extended-tube realization of the adjacent
+   permuted Gram point.  The scalar theorem
+   `BHW.swFigure24_wickToQuarterTurn_scalarPath` is then only the mechanical
+   corollary `γ t = sourceMinkowskiGram d n (Γ t)`, with double-domain
+   membership proved by
+   `BHW.mem_sourceDoublePermutationGramDomain_iff_exists_realizations`.
+   This correction is mandatory: do not assert the scalar path directly, and
+   do not claim that the adjacent relabelling of `Γ t` itself lies in the
+   ordinary forward tube.  Its paper source is the local OCR of
    `references/pct-spin-and-statistics-and-all-that-9781400884230_compress.pdf`
    around printed page 73: the adjacent transposition `P(j,j+1)` and Figure
    2-4 give a common real Jost environment for the ordinary and adjacent
