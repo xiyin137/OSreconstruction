@@ -218,6 +218,239 @@ theorem chartSideFunction_continuousOn_strictBalls_from_fixedWindow
     exact (chartHolomorphy_from_originalHolomorphy Ωminus x0 ys Fminus
       (StrictNegativeImagBall (m := m) (4 * σ)) hmem hFminus_diff).continuousOn
 
+/-- The explicit prepared side domains used by the one-chart distributional
+EOW assembly.
+
+The two domains are the intersections of the original holomorphy domains, the
+bounded local side tubes, and the inverse-affine real window.  The theorem
+packages their openness, projection facts, and the fixed-window polywedge
+membership hypotheses needed by the fixed-window family theorem. -/
+theorem localEOWPreparedSideDomains_from_fixedWindow
+    {ρ rpoly ε rside δside : ℝ}
+    (hρ : 0 < ρ) (hε : 0 < ε)
+    (Ωplus Ωminus : Set (ComplexChartSpace m))
+    (hΩplus_open : IsOpen Ωplus) (hΩminus_open : IsOpen Ωminus)
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hli : LinearIndependent ℝ ys)
+    (hrδ : rpoly ≤ δside)
+    (hδside :
+      ∀ v : Fin m → ℝ, ‖v‖ < δside →
+        ‖localEOWRealLinearPart ys v‖ < rside)
+    (hplusΩ :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < rpoly →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωplus)
+    (hminusΩ :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < rpoly →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Ωminus) :
+    let CplusLoc : Set (Fin m → ℝ) :=
+      localEOWSideCone ys ε ∩ Metric.ball 0 rside
+    let CminusLoc : Set (Fin m → ℝ) := Neg.neg '' CplusLoc
+    let Dplus : Set (ComplexChartSpace m) :=
+      Ωplus ∩ TubeDomain CplusLoc ∩
+        localEOWAffineRealWindow x0 ys hli (2 * ρ)
+    let Dminus : Set (ComplexChartSpace m) :=
+      Ωminus ∩ TubeDomain CminusLoc ∩
+        localEOWAffineRealWindow x0 ys hli (2 * ρ)
+    IsOpen Dplus ∧ IsOpen Dminus ∧
+    Dplus ⊆ Ωplus ∧ Dminus ⊆ Ωminus ∧
+    Dplus ⊆ TubeDomain CplusLoc ∧ Dminus ⊆ TubeDomain CminusLoc ∧
+    (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+      (∀ j, 0 ≤ v j) →
+      0 < ∑ j, v j →
+      (∑ j, v j) < rpoly →
+        localEOWChart x0 ys
+          (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus) ∧
+    (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+      (∀ j, v j ≤ 0) →
+      0 < ∑ j, -v j →
+      (∑ j, -v j) < rpoly →
+        localEOWChart x0 ys
+          (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus) := by
+  dsimp only
+  let CplusLoc : Set (Fin m → ℝ) :=
+    localEOWSideCone ys ε ∩ Metric.ball 0 rside
+  let CminusLoc : Set (Fin m → ℝ) := Neg.neg '' CplusLoc
+  let Dplus : Set (ComplexChartSpace m) :=
+    Ωplus ∩ TubeDomain CplusLoc ∩
+      localEOWAffineRealWindow x0 ys hli (2 * ρ)
+  let Dminus : Set (ComplexChartSpace m) :=
+    Ωminus ∩ TubeDomain CminusLoc ∩
+      localEOWAffineRealWindow x0 ys hli (2 * ρ)
+  have hCplusLoc_open : IsOpen CplusLoc := by
+    dsimp [CplusLoc]
+    exact (isOpen_localEOWSideCone ys ε).inter isOpen_ball
+  have hCminusLoc_open : IsOpen CminusLoc := by
+    dsimp [CminusLoc]
+    exact isOpen_neg_image CplusLoc hCplusLoc_open
+  have hDplus_open : IsOpen Dplus := by
+    dsimp [Dplus]
+    exact (hΩplus_open.inter (tubeDomain_isOpen hCplusLoc_open)).inter
+      (isOpen_localEOWAffineRealWindow x0 ys hli (2 * ρ))
+  have hDminus_open : IsOpen Dminus := by
+    dsimp [Dminus]
+    exact (hΩminus_open.inter (tubeDomain_isOpen hCminusLoc_open)).inter
+      (isOpen_localEOWAffineRealWindow x0 ys hli (2 * ρ))
+  have hDplus_Ω : Dplus ⊆ Ωplus := by
+    intro z hz
+    exact hz.1.1
+  have hDminus_Ω : Dminus ⊆ Ωminus := by
+    intro z hz
+    exact hz.1.1
+  have hDplus_tube : Dplus ⊆ TubeDomain CplusLoc := by
+    intro z hz
+    exact hz.1.2
+  have hDminus_tube : Dminus ⊆ TubeDomain CminusLoc := by
+    intro z hz
+    exact hz.1.2
+  have hnonneg_norm_lt :
+      ∀ v : Fin m → ℝ, (∀ j, 0 ≤ v j) →
+        (∑ j, v j) < rpoly → ‖v‖ < δside := by
+    intro v hv_nonneg hv_sum_lt
+    have hsum_nonneg : 0 ≤ ∑ j, v j :=
+      Finset.sum_nonneg fun j _ => hv_nonneg j
+    have hv_norm_le : ‖v‖ ≤ ∑ j, v j := by
+      rw [pi_norm_le_iff_of_nonneg hsum_nonneg]
+      intro j
+      rw [Real.norm_eq_abs, abs_of_nonneg (hv_nonneg j)]
+      exact Finset.single_le_sum (fun i _ => hv_nonneg i) (Finset.mem_univ j)
+    exact lt_of_le_of_lt hv_norm_le (lt_of_lt_of_le hv_sum_lt hrδ)
+  have hnonpos_norm_lt :
+      ∀ v : Fin m → ℝ, (∀ j, v j ≤ 0) →
+        (∑ j, -v j) < rpoly → ‖v‖ < δside := by
+    intro v hv_nonpos hv_sum_lt
+    let vneg : Fin m → ℝ := fun j => -v j
+    have hvneg_nonneg : ∀ j, 0 ≤ vneg j := by
+      intro j
+      exact neg_nonneg.mpr (hv_nonpos j)
+    have hvneg_norm_lt : ‖vneg‖ < δside :=
+      hnonneg_norm_lt vneg hvneg_nonneg (by simpa [vneg] using hv_sum_lt)
+    have hvnorm : ‖v‖ = ‖vneg‖ := by
+      dsimp [vneg]
+      rw [show (fun j : Fin m => -v j) = -v by
+        ext j
+        rfl]
+      exact (norm_neg v).symm
+    rwa [hvnorm]
+  have hplus_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, 0 ≤ v j) →
+        0 < ∑ j, v j →
+        (∑ j, v j) < rpoly →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus := by
+    intro u hu v hv_nonneg hv_sum_pos hv_sum_lt
+    let w : ComplexChartSpace m :=
+      fun j => (u j : ℂ) + (v j : ℂ) * Complex.I
+    have hΩ : localEOWChart x0 ys w ∈ Ωplus := by
+      exact hplusΩ u hu v hv_nonneg hv_sum_pos hv_sum_lt
+    have htube : localEOWChart x0 ys w ∈ TubeDomain CplusLoc := by
+      change (fun i => (localEOWChart x0 ys w i).im) ∈ CplusLoc
+      rw [localEOWChart_im_eq_realLinearPart_im]
+      have hv_norm_lt : ‖v‖ < δside :=
+        hnonneg_norm_lt v hv_nonneg hv_sum_lt
+      have him_eq : (fun j : Fin m => (w j).im) = v := by
+        ext j
+        simp [w]
+      rw [him_eq]
+      constructor
+      · exact localEOWRealLinearPart_mem_localEOWSideCone ys hε
+          hv_nonneg hv_sum_pos
+      · rw [Metric.mem_ball, dist_zero_right]
+        exact hδside v hv_norm_lt
+    have hwindow :
+        localEOWChart x0 ys w ∈
+          localEOWAffineRealWindow x0 ys hli (2 * ρ) := by
+      have hu_norm : ‖u‖ ≤ ρ := by
+        simpa [Metric.mem_closedBall, dist_zero_right] using hu
+      have hw_re : ‖(fun j : Fin m => (w j).re)‖ < 2 * ρ := by
+        have hrew : (fun j : Fin m => (w j).re) = u := by
+          ext j
+          simp [w]
+        rw [hrew]
+        nlinarith [hu_norm, hρ]
+      exact localEOWChart_mem_affineRealWindow_of_re_norm_lt
+        x0 ys hli hw_re
+    exact ⟨⟨hΩ, htube⟩, hwindow⟩
+  have hminus_mem :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+        (∀ j, v j ≤ 0) →
+        0 < ∑ j, -v j →
+        (∑ j, -v j) < rpoly →
+          localEOWChart x0 ys
+            (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus := by
+    intro u hu v hv_nonpos hv_sum_pos hv_sum_lt
+    let w : ComplexChartSpace m :=
+      fun j => (u j : ℂ) + (v j : ℂ) * Complex.I
+    let vneg : Fin m → ℝ := fun j => -v j
+    have hvneg_nonneg : ∀ j, 0 ≤ vneg j := by
+      intro j
+      exact neg_nonneg.mpr (hv_nonpos j)
+    have hvneg_sum_pos : 0 < ∑ j, vneg j := by
+      simpa [vneg] using hv_sum_pos
+    have hvneg_sum_lt : (∑ j, vneg j) < rpoly := by
+      simpa [vneg] using hv_sum_lt
+    have hΩ : localEOWChart x0 ys w ∈ Ωminus := by
+      exact hminusΩ u hu v hv_nonpos hv_sum_pos hv_sum_lt
+    have htube : localEOWChart x0 ys w ∈ TubeDomain CminusLoc := by
+      change (fun i => (localEOWChart x0 ys w i).im) ∈ CminusLoc
+      rw [localEOWChart_im_eq_realLinearPart_im]
+      have hvneg_norm_lt : ‖vneg‖ < δside :=
+        hnonneg_norm_lt vneg hvneg_nonneg hvneg_sum_lt
+      have him_eq : (fun j : Fin m => (w j).im) = v := by
+        ext j
+        simp [w]
+      rw [him_eq]
+      refine ⟨localEOWRealLinearPart ys vneg, ?_, ?_⟩
+      · constructor
+        · exact localEOWRealLinearPart_mem_localEOWSideCone ys hε
+            hvneg_nonneg hvneg_sum_pos
+        · rw [Metric.mem_ball, dist_zero_right]
+          exact hδside vneg hvneg_norm_lt
+      · have hv_eq : v = -vneg := by
+          ext j
+          simp [vneg]
+        rw [hv_eq, localEOWRealLinearPart_neg]
+    have hwindow :
+        localEOWChart x0 ys w ∈
+          localEOWAffineRealWindow x0 ys hli (2 * ρ) := by
+      have hu_norm : ‖u‖ ≤ ρ := by
+        simpa [Metric.mem_closedBall, dist_zero_right] using hu
+      have hw_re : ‖(fun j : Fin m => (w j).re)‖ < 2 * ρ := by
+        have hrew : (fun j : Fin m => (w j).re) = u := by
+          ext j
+          simp [w]
+        rw [hrew]
+        nlinarith [hu_norm, hρ]
+      exact localEOWChart_mem_affineRealWindow_of_re_norm_lt
+        x0 ys hli hw_re
+    exact ⟨⟨hΩ, htube⟩, hwindow⟩
+  change
+    IsOpen Dplus ∧ IsOpen Dminus ∧
+    Dplus ⊆ Ωplus ∧ Dminus ⊆ Ωminus ∧
+    Dplus ⊆ TubeDomain CplusLoc ∧ Dminus ⊆ TubeDomain CminusLoc ∧
+    (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+      (∀ j, 0 ≤ v j) →
+      0 < ∑ j, v j →
+      (∑ j, v j) < rpoly →
+        localEOWChart x0 ys
+          (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dplus) ∧
+    (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
+      (∀ j, v j ≤ 0) →
+      0 < ∑ j, -v j →
+      (∑ j, -v j) < rpoly →
+        localEOWChart x0 ys
+          (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
+  exact ⟨hDplus_open, hDminus_open, hDplus_Ω, hDminus_Ω,
+    hDplus_tube, hDminus_tube, hplus_mem, hminus_mem⟩
+
 /-- Assemble prepared fixed-window local EOW data into the scaled one-chart
 recovery theorem.
 

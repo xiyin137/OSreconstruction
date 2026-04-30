@@ -525,6 +525,7 @@ Source ledger for the internal helper list:
 | `chartSideFunction_continuousOn_strictBalls_from_fixedWindow` | Checked in `SCV/LocalEOWChartAssembly.lean`: supplies the two side-function continuity hypotheses for `regularizedEnvelope_chartEnvelope_from_oneChartScale`.  It applies `chartHolomorphy_from_originalHolomorphy` on `StrictPositiveImagBall (4σ)` and `StrictNegativeImagBall (4σ)`, with domain membership supplied by `localEOWChart_mem_fixedWindow_of_strictPositiveImagBall` and its negative companion from `4σ ≤ ρ` and `card * (4σ) < r`. |
 | `regularizedLocalEOW_pairingCLM_localCovariant_from_fixedWindow` | Checked in `SCV/LocalEOWPairingCLM.lean`: fixed-window covariance adapter for the mixed pairing CLM.  It applies `regularizedLocalEOW_pairingCLM_localCovariant` with `Gchart ψ = localRudinEnvelope δ x0 ys (realMollifyLocal Fplus (P ψ)) (realMollifyLocal Fminus (P ψ))`, supplies the shifted-overlap covariance input by `regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`, and discharges the two pushed-kernel support hypotheses separately with `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`. |
 | `regularizedLocalEOW_chartEnvelope_from_fixedWindowScale` | Checked in `SCV/LocalEOWChartAssembly.lean`: the fixed-window keystone assembly.  It takes the already prepared fixed-window side domains, slice CLMs, cutoffs, one-chart scale inequalities, and closed support margins; constructs `Lorig`, transports it to `Lchart`, builds the mixed pairing CLM `K`, proves local covariance, chooses the descent kernel and shrinking approximate identity, and calls `regularizedEnvelope_chartEnvelope_from_oneChartScale`.  This is the final local recovery assembly below the still larger `chartDistributionalEOW_local_envelope`; it contains no slow-growth input and no untransported original-coordinate kernel. |
+| `localEOWPreparedSideDomains_from_fixedWindow` | Checked in `SCV/LocalEOWChartAssembly.lean`: packages the actual side domains used by `chartDistributionalEOW_local_envelope`, namely `Dplus = Ωplus ∩ TubeDomain (localEOWSideCone ys ε ∩ ball 0 rside) ∩ localEOWAffineRealWindow x0 ys hli (2ρ)` and the corresponding negative domain.  It proves openness, the projections to `Ω±` and `TubeDomain C±Loc`, and the fixed-window polywedge membership hypotheses for arbitrary `u ∈ closedBall 0 ρ` and signed coordinate imaginary vectors with coordinate sum below `rpoly`.  The proof uses nonnegative-coordinate norm control by the coordinate sum, `localEOWRealLinearPart_mem_localEOWSideCone`, the linear-part smallness radius `δside`, and `localEOWChart_mem_affineRealWindow_of_re_norm_lt`. |
 | `regularizedLocalEOW_family_add` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.add`, side-domain additivity of `realMollifyLocal`, and the fixed-window uniqueness clause; it does not use real-linear slice CLMs as a substitute for complex-linearity. |
 | `regularizedLocalEOW_family_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: complex homogeneity of the explicit fixed-window family on the supported-kernel class.  The proof uses `KernelSupportWithin.smul`, `realMollifyLocal_smul`, and the same fixed-window uniqueness clause. |
 | `realMollifyLocal_add_of_integrable`, `realMollifyLocal_smul` | Checked in `SCV/LocalDistributionalEOW.lean`: additivity and complex homogeneity of the real-direction mollifier in the smoothing kernel.  Additivity carries the honest Bochner-integrability hypotheses; complex homogeneity follows from `integral_smul`.  These lemmas avoid faking complex linearity through the currently real-linear slice functionals `Tplus/Tminus`. |
@@ -4534,6 +4535,43 @@ envelope assembly once the raw distributional limits are supplied.
      It uses `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`
      to feed the original fixed-window radius and then rewrites the side
      mollifiers by `realMollifyLocal_localEOWChart_kernelPushforwardCLM_pullback`.
+
+   Exact prepared side-domain package before the keystone assembly:
+
+   ```
+   theorem localEOWPreparedSideDomains_from_fixedWindow
+       (hρ : 0 < ρ) (hε : 0 < ε)
+       (hrδ : rpoly ≤ δside)
+       (hδside :
+         ∀ v, ‖v‖ < δside -> ‖localEOWRealLinearPart ys v‖ < rside)
+       (hplusΩ : fixed-window polywedge membership in Ωplus)
+       (hminusΩ : fixed-window polywedge membership in Ωminus) :
+     let CplusLoc := localEOWSideCone ys ε ∩ ball 0 rside
+     let CminusLoc := Neg.neg '' CplusLoc
+     let Dplus := Ωplus ∩ TubeDomain CplusLoc ∩
+       localEOWAffineRealWindow x0 ys hli (2 * ρ)
+     let Dminus := Ωminus ∩ TubeDomain CminusLoc ∩
+       localEOWAffineRealWindow x0 ys hli (2 * ρ)
+     IsOpen Dplus ∧ IsOpen Dminus ∧
+     Dplus ⊆ Ωplus ∧ Dminus ⊆ Ωminus ∧
+     Dplus ⊆ TubeDomain CplusLoc ∧ Dminus ⊆ TubeDomain CminusLoc ∧
+     fixed-window membership into Dplus ∧
+     fixed-window membership into Dminus.
+   ```
+
+   The positive fixed-window membership proof for `Dplus` has exactly three
+   components.  The `Ωplus` component is the original fixed-window polywedge
+   theorem.  The tube component rewrites
+   `Im (localEOWChart x0 ys (u + i v))` to
+   `localEOWRealLinearPart ys v`; nonnegative coordinates and positive
+   coordinate sum put this vector in `localEOWSideCone ys ε`, while
+   `‖v‖ ≤ ∑ j, v j < rpoly ≤ δside` and `hδside` put it in
+   `ball 0 rside`.  The affine-window component uses
+   `Re (u + i v) = u`, `u ∈ closedBall 0 ρ`, and `0 < ρ` to get
+   `‖Re (u + i v)‖ < 2ρ`, then applies
+   `localEOWChart_mem_affineRealWindow_of_re_norm_lt`.  The negative side is
+   the same proof with `vneg j = -v j`, producing membership in
+   `Neg.neg '' CplusLoc` by `localEOWRealLinearPart_neg`.
    * The local recovery theorem is called with
      `Ucore = ball 0 σ`, `Udesc = ball 0 (4σ)`,
      `Ucov = ball 0 (8σ)`, `U0 = ball 0 (δ / 2)`, and

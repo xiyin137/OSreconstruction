@@ -1059,6 +1059,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`,
      `SCV.regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow`,
      `SCV.chartSideFunction_continuousOn_strictBalls_from_fixedWindow`,
+     `SCV.localEOWPreparedSideDomains_from_fixedWindow`,
      `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
      `SCV.regularizedLocalEOW_pairingCLM_localCovariant_from_fixedWindow`,
      `SCV.exists_normalized_schwartz_bump_kernelSupportWithin`,
@@ -2818,8 +2819,10 @@ Current implementation order:
    packet is now checked as
    `SCV.exists_localEOW_truncatedSideCones_for_sliceMargin`, and the
    coordinate-radius shrink is checked as
-  `SCV.exists_localEOWRealLinearPart_ball_subset`.  The fixed-window keystone
-   assembly is now checked as
+  `SCV.exists_localEOWRealLinearPart_ball_subset`.  The prepared side-domain
+   package is now checked as
+   `SCV.localEOWPreparedSideDomains_from_fixedWindow`, and the fixed-window
+   keystone assembly is now checked as
    `SCV.regularizedLocalEOW_chartEnvelope_from_fixedWindowScale`: from
    prepared fixed-window side domains, slice CLMs, cutoffs, closed support
    margins, and the one-chart scale inequalities, it constructs `Lorig`,
