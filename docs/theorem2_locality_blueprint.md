@@ -3759,15 +3759,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd z) =
               z
 
+      theorem BHW.sourceMinkowskiGram_complexLorentzAction
+          (Λ : ComplexLorentzGroup d)
+          (z : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.sourceMinkowskiGram d n
+              (BHW.complexLorentzAction Λ z) =
+            BHW.sourceMinkowskiGram d n z
+
       theorem BHW.figure24_adjacentTwoPlaneRotationSupport
           [NeZero d]
           (hd : 2 <= d)
           (i : Fin n) (hi : i.val + 1 < n) :
+          let τ : Equiv.Perm (Fin n) :=
+            Equiv.swap i ⟨i.val + 1, hi⟩
           ∃ (xfig xrot : NPointDomain d n)
             (Λfig : ComplexLorentzGroup d),
             (∀ k : Fin n, xfig k 0 = 0) ∧
             xfig ∈ BHW.JostSet d n ∧
             BHW.realEmbed xfig ∈ BHW.ExtendedTube d n ∧
+            BHW.realEmbed xrot =
+              BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+                (BHW.realEmbed (fun k => xfig (τ k))) ∧
             xrot ∈ BHW.ForwardJostSet d n
               (Nat.succ_le_of_lt (Nat.lt_of_lt_of_le
                 (Nat.zero_lt_succ _) hd)) ∧
@@ -3840,24 +3852,87 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       Proof transcript for
       `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`: start from
-      `BHW.figure24_adjacentTwoPlaneRotationSupport` and apply the checked
-      bounded perturbation theorem to the equal-time witness.  Choose the
-      perturbation size small enough that the displayed Figure-2-4 spacelike
-      inequalities remain strict for the whole coefficient family in printed
-      Figure 2-4 and for the OS45 coefficient
-      `c t = t / 2 + (1 - t / 2) * I`.  The formula for `Δseed` is now
-      explicit: first relabel the identity interpolation by the adjacent swap,
-      then apply the public `3-4-5` two-plane rotation
-      `BHW.figure24RotateAdjacentConfig`.  The endpoint proof in
-      `AdjacentOverlapWitness.lean` already contains the matrix calculation
-      needed for `BHW.figure24RotateAdjacentConfig_lorentz_inverse`; the path
-      proof reuses that Lorentz-invariance theorem for the Gram identity and
-      repeats the forward-cone strict-inequality calculation with `t` left as
-      a parameter.  The only inequalities to check are
-      `0 <= (t : ℝ)`, `(t : ℝ) <= 1`, and the strict Figure-2-4 two-plane
-      spacelike inequalities after the bounded ordered perturbation.  This is
-      the last purely geometric calculation that must be written before the
-      Lean implementation starts.
+      `BHW.figure24_adjacentTwoPlaneRotationSupport`; write
+      `τ := Equiv.swap i ⟨i.val + 1, hi⟩`, and choose the returned
+      equal-time witness `xfig`, rotated witness `xrot`, and Lorentz element
+      `Λfig`.  The support theorem must export the formula
+      `realEmbed xrot =
+      figure24RotateAdjacentConfig hd (realEmbed (fun k => xfig (τ k)))`;
+      this is not optional, because it is what identifies the path-stability
+      base point with the checked Figure-2-4 endpoint calculation.
+
+      Define the two-variable path map
+      `H x t :=
+        figure24RotateAdjacentConfig hd
+          (permAct τ (os45Figure24IdentityPath x t))`.
+      It is continuous in `(x,t)` by the coordinate formula for
+      `os45Figure24TimeCoeff`, continuity of `permAct`, and the finite
+      linear formula for `figure24RotateAdjacentConfig`.  Since `xfig` has
+      zero time coordinates, `os45Figure24IdentityPath xfig t` is
+      `realEmbed xfig` for every `t`; hence the exported rotation formula
+      gives `H xfig t = realEmbed xrot` for every `t`.  Because
+      `xrot ∈ ForwardJostSet`, `forwardJostSet_subset_extendedTube` gives
+      `realEmbed xrot ∈ ExtendedTube d n`; `BHW.isOpen_extendedTube` and the
+      compactness of `unitInterval` then give an open neighborhood `Upath` of
+      `xfig` such that
+      `∀ x ∈ Upath, ∀ t, H x t ∈ ExtendedTube d n`.
+
+      The compact-parameter step is the following reusable topology lemma,
+      whose proof is the standard finite-subcover tube lemma and contains no
+      BHW-specific mathematics:
+
+      ```lean
+      theorem BHW.exists_open_nhds_forall_mem_of_compact_parameter
+          {X Y Z : Type*}
+          [TopologicalSpace X] [TopologicalSpace Y]
+          [TopologicalSpace Z] [CompactSpace Y]
+          {f : X × Y -> Z} (hf : Continuous f)
+          {x0 : X} {U : Set Z} (hU_open : IsOpen U)
+          (hx0 : ∀ y : Y, f (x0, y) ∈ U) :
+          ∃ V : Set X,
+            IsOpen V ∧ x0 ∈ V ∧
+              ∀ x ∈ V, ∀ y : Y, f (x, y) ∈ U
+      ```
+
+      Apply the checked bounded perturbation theorem
+      `exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt` to this
+      `Upath`, the equal-time witness `xfig`, and the zero-time field
+      `∀ k, xfig k 0 = 0`.  It returns
+      `xseed = adjacentTimePerturb xfig ε` with `ε > 0`, `xseed ∈ Upath`,
+      `xseed` in the identity ordered positive-time sector, and
+      `(fun k => xseed (τ k))` in the `τ`-ordered sector.  With
+      `Δseed := H xseed`, continuity and
+      `∀ t, Δseed t ∈ ExtendedTube d n` are exactly the two fields already
+      proved for `H` and `Upath`.
+
+      The Gram identity for `Δseed` is pointwise in `t`.  From
+      `figure24RotateAdjacentConfig_lorentz_inverse`, choose `Λfig` with
+      `complexLorentzAction Λfig (Δseed t) =
+        permAct τ (os45Figure24IdentityPath xseed t)`.  Then
+      `sourceMinkowskiGram_complexLorentzAction` rewrites the left side to
+      the Gram matrix of the relabelled identity path, and
+      `sourceMinkowskiGram_perm` rewrites that as
+      `sourcePermuteComplexGram n τ
+        (sourceMinkowskiGram d n
+          (os45Figure24IdentityPath xseed t))`.
+      This proof never asserts that `permAct τ Γ` is in the forward tube:
+      for the adjacent swap it has the wrong ordered time orientation at the
+      swapped gap.  The route uses only the rotated extended-tube certificate
+      and Lorentz invariance of scalar products, exactly as OS I Figure 2-4
+      requires.
+
+      Proof transcript for
+      `BHW.sourceMinkowskiGram_complexLorentzAction`: extensionality in the
+      two source indices reduces the statement to preservation of the complex
+      bilinear Minkowski form.  Unfold `sourceMinkowskiGram` and
+      `complexLorentzAction`, expand the two finite sums, commute the sums,
+      factor
+      `∑ μ, (metricSignature d μ : ℂ) * Λ.val μ α * Λ.val μ β`, and replace
+      it by `if α = β then metricSignature d α else 0` using
+      `Λ.metric_preserving`; the diagonal collapse is the same finite-sum
+      calculation used by
+      `MinkowskiSpace.complexQuadratic_lorentz_invariant`, without needing
+      polarization or any new analytic input.
 
       With `hV_figPath` exported by the selected source patch, the
       per-point theorem below is only the Lean projection used by the scalar

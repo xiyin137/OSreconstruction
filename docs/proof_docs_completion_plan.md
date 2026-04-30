@@ -196,9 +196,9 @@ content:
    Figure-2-4 source patch and for one fixed branch label `β`, the OS-II ACR
    representative `bvt_F (permAct β.symm (Q.symm z))` and the pulled BHW
    representative `extendF (bvt_F) (permAct β.symm (Q.symm z))` are two
-   continuations of the same local germ.  This is the next proof-doc target:
-   it must be expanded as a one-branch BHW theorem, not as adjacent equality.
-   The theorem is now split in the blueprint into a pure source-neighborhood
+   continuations of the same local germ.  This former proof-doc target has now
+   been expanded as a one-branch BHW theorem, not as adjacent equality.  The
+   theorem is split in the blueprint into a pure source-neighborhood
    geometry part and the genuine value-agreement theorem
    `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch`.  The geometry fields
    choose the neighborhood, use ordered-sector membership for the ACR side,
@@ -274,7 +274,16 @@ content:
    `BHW.os45Figure24IdentityPath`,
    `BHW.figure24RotateAdjacentConfig`,
    `BHW.figure24RotateAdjacentConfig_lorentz_inverse`, and
-   `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`.  The optional theorem
+   `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`.  The support
+   theorem must also export
+   `realEmbed xrot = figure24RotateAdjacentConfig hd
+     (realEmbed (fun k => xfig (τ k)))`; otherwise the compact-open
+   path-stability proof has no identified base point.  The only new generic
+   helper on this subroute is the finite-subcover tube lemma
+   `BHW.exists_open_nhds_forall_mem_of_compact_parameter`, and the Gram
+   calculation uses the genuine scalar-product theorem
+   `BHW.sourceMinkowskiGram_complexLorentzAction` plus
+   `BHW.sourceMinkowskiGram_perm`.  The optional theorem
    `BHW.swFigure24_wickToQuarterTurn_doubleETRealizationPath` is only a
    projection from `hV_figPath`, not an independent broad theorem about an
    arbitrary real-open `V`.  The scalar theorem
