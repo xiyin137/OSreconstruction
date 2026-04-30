@@ -262,6 +262,8 @@ theorem localEOWPreparedSideDomains_from_fixedWindow
     IsOpen Dplus ∧ IsOpen Dminus ∧
     Dplus ⊆ Ωplus ∧ Dminus ⊆ Ωminus ∧
     Dplus ⊆ TubeDomain CplusLoc ∧ Dminus ⊆ TubeDomain CminusLoc ∧
+    Dplus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) ∧
+    Dminus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) ∧
     (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
       (∀ j, 0 ≤ v j) →
       0 < ∑ j, v j →
@@ -310,6 +312,14 @@ theorem localEOWPreparedSideDomains_from_fixedWindow
   have hDminus_tube : Dminus ⊆ TubeDomain CminusLoc := by
     intro z hz
     exact hz.1.2
+  have hDplus_window :
+      Dplus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) := by
+    intro z hz
+    exact hz.2
+  have hDminus_window :
+      Dminus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) := by
+    intro z hz
+    exact hz.2
   have hnonneg_norm_lt :
       ∀ v : Fin m → ℝ, (∀ j, 0 ≤ v j) →
         (∑ j, v j) < rpoly → ‖v‖ < δside := by
@@ -436,6 +446,8 @@ theorem localEOWPreparedSideDomains_from_fixedWindow
     IsOpen Dplus ∧ IsOpen Dminus ∧
     Dplus ⊆ Ωplus ∧ Dminus ⊆ Ωminus ∧
     Dplus ⊆ TubeDomain CplusLoc ∧ Dminus ⊆ TubeDomain CminusLoc ∧
+    Dplus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) ∧
+    Dminus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ) ∧
     (∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) ρ, ∀ v : Fin m → ℝ,
       (∀ j, 0 ≤ v j) →
       0 < ∑ j, v j →
@@ -449,7 +461,8 @@ theorem localEOWPreparedSideDomains_from_fixedWindow
         localEOWChart x0 ys
           (fun j => (u j : ℂ) + (v j : ℂ) * Complex.I) ∈ Dminus)
   exact ⟨hDplus_open, hDminus_open, hDplus_Ω, hDminus_Ω,
-    hDplus_tube, hDminus_tube, hplus_mem, hminus_mem⟩
+    hDplus_tube, hDminus_tube, hDplus_window, hDminus_window, hplus_mem,
+    hminus_mem⟩
 
 /-- Evaluating an affine pushed chart-coordinate test at the real part of an
 original complex chart point evaluates the original test at the real part of
