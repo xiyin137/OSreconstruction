@@ -5341,8 +5341,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       finite-dimensional smooth Urysohn lemma in Schwartz form.  The currently
       checked theorem
       `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open` is the
-      support-in-open projection of this construction; the branch-BV consumer
-      should expose the compact-support field as well, using the same proof:
+      support-in-open projection of this construction; the branch-BV route
+      exposes the compact-support field as the following pure real-analysis
+      theorem, using the same proof:
 
       ```lean
       theorem SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport
@@ -5360,8 +5361,63 @@ Proof decomposition of this theorem, without hiding the analytic work:
       regular one-branch real-slice value into a global Schwartz CLM after the
       source common germ has already been proved.
 
-      The real-analysis consumer of the common germ should be isolated before
-      the OS-specific branch theorem is implemented:
+      The OS45 branch theorem also needs the cutoff on
+      `NPointDomain d n`, so the flat cutoff theorem is transported through
+      the same real-coordinate equivalence:
+
+      ```lean
+      theorem BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport
+          {d n : ℕ} {K U : Set (NPointDomain d n)}
+          (hK : IsCompact K) (hU : IsOpen U) (hKU : K ⊆ U) :
+          ∃ χ : SchwartzMap (NPointDomain d n) ℂ,
+            HasCompactSupport (χ : NPointDomain d n -> ℂ) ∧
+            (∀ x ∈ K, χ x = 1) ∧
+            tsupport (χ : NPointDomain d n -> ℂ) ⊆ U
+      ```
+
+      Proof transcript: set `e := flattenCLEquivReal n (d + 1)`,
+      `Kflat := e '' K`, and `Uflat := e '' U`.  The homeomorphism
+      `e.toHomeomorph` sends compact sets to compact sets and open sets to
+      open sets, and `hKU` gives `Kflat ⊆ Uflat`.  Apply
+      `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`
+      on the flat sets, then pull the cutoff back by
+      `SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e`.  Compact support and
+      topological-support containment are transported by the homeomorphism,
+      and the equality-on-`K` field is the pointwise identity
+      `χ x = χflat (e x) = 1`.
+
+      The checked closed-ball integration CLM
+      `SCV.exists_closedBall_integral_clm_of_continuousOn` is stated on flat
+      coordinate spaces `Fin m -> ℝ`.  The OS45 branch theorem works on
+      `NPointDomain d n = Fin n -> SpacetimeDim d`, so the implementation
+      first proves the following flattening adapter before the branch theorem:
+
+      ```lean
+      theorem BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn
+          {d n : ℕ} {R : ℝ} {g : NPointDomain d n -> ℂ}
+          (hg_cont :
+            ContinuousOn g (Metric.closedBall (0 : NPointDomain d n) R)) :
+          ∃ T : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ,
+            ∀ ψ : SchwartzMap (NPointDomain d n) ℂ,
+              T ψ =
+                ∫ x in Metric.closedBall (0 : NPointDomain d n) R,
+                  g x * ψ x
+      ```
+
+      Proof transcript: set `e := flattenCLEquivReal n (d + 1)`.  The norm
+      identity `flattenCLEquivReal_norm_eq` identifies
+      `e '' Metric.closedBall 0 R` with the flat closed ball.  Apply
+      `SCV.exists_closedBall_integral_clm_of_continuousOn` to
+      `gflat u := g (e.symm u)`, with continuity transported through
+      `e.symm`.  Pull Schwartz tests forward by
+      `SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm`, define
+      `T ψ := Tflat (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm ψ)`,
+      and rewrite the restricted integral by
+      `integral_flattenCLEquivReal` applied to the closed-ball indicator.
+      This adapter is representation bookkeeping, not a new analytic input.
+
+      The real-analysis consumer of the common germ is isolated before the
+      OS-specific branch theorem is implemented:
 
       ```lean
       theorem BHW.os45RegularBoundaryValue_from_commonGerm
@@ -5431,7 +5487,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
          of `BHW.realEmbed`, and `closure E ⊆ Ureal` by `hU_real`.
       2. Choose `χ : SchwartzMap (NPointDomain d n) ℂ` with compact support,
          `χ = 1` on `closure E`, and `tsupport χ ⊆ Ureal` using
-         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`.
+         `BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`.
       3. Choose `Rχ > 0` with
          `tsupport (χ : NPointDomain d n -> ℂ) ⊆ Metric.closedBall 0 Rχ`,
          by boundedness of the compact support.  Define the continuous
@@ -5441,8 +5497,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
          g y := χ y * Hβ (BHW.realEmbed y)
          ```
 
-         and construct the CLM by the checked real-analysis API
-         `SCV.exists_closedBall_integral_clm_of_continuousOn`:
+         and construct the CLM by the flattened real-analysis adapter
+         `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn`:
 
          ```lean
          T φ =
@@ -5476,10 +5532,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `(y,η,t) ∈ K × Kη × closedBall 0 r ↦ realEdgeAddImag y η t`
          gives
          `Hβ (realEdgeAddImag y η (±ε)) → Hβ (BHW.realEmbed y)` uniformly in
-         `y ∈ K` and `η ∈ Kη`.  The integrand difference is supported in the
-         fixed compact `K`, so the integral difference is bounded by
-         `volume K` times that uniform sup times `SchwartzMap.seminorm ℂ 0 0 φ`.
-         This yields exactly the required `TendstoUniformlyOn` limits.
+         `y ∈ K` and `η ∈ Kη`.  Use compact support of `φ` only through the
+         facts `Function.support φ ⊆ tsupport φ = K` and
+         `Integrable (fun y => ‖φ y‖)`.  For all small `ε`, set
+         `Mε` to the supremum on `K × Kη` of
+         `‖Hβ (realEdgeAddImag y η (±ε)) - Hβ (BHW.realEmbed y)‖`.  Then
+         for every `η ∈ Kη`,
+         `‖∫ y, (Hβ (realEdgeAddImag y η (±ε)) -
+           Hβ (BHW.realEmbed y)) * φ y‖ ≤ Mε * ∫ y, ‖φ y‖`.
+         One may also bound the last integral by
+         `(sSup ((fun y => ‖φ y‖) '' K)) *
+          volume (Metric.closedBall (0 : NPointDomain d n) Rφ)`,
+         where `Rφ` is any radius with
+         `K ⊆ Metric.closedBall 0 Rφ`.  Equivalently, avoid the finite-volume
+         closed-ball bound and use
+         `(∫ y, ‖φ y‖)` as the fixed multiplier.  The multiplier is finite
+         because `φ` is Schwartz.  Since the last sup tends to zero uniformly
+         on `Kη`, the required `TendstoUniformlyOn` limits follow.  The proof
+         must not integrate over `K` as if arbitrary compact sets were the
+         canonical measure domain; the all-space integral is localized by
+         `φ = 0` off `tsupport φ`.
 
       ```lean
       theorem BHW.os45BranchHorizontalBoundaryValue
@@ -5593,10 +5665,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `hE_precompact : IsCompact (closure E)` are exactly what turn this
          into the displayed global CLM: choose a smooth cutoff supported inside
          that real neighborhood and equal to one on `closure E` using
-         `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+         `BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
          choose a closed ball containing the cutoff support, and build the CLM
-         by `SCV.exists_closedBall_integral_clm_of_continuousOn` applied to
-         the compactly supported smooth density
+         by the flattening adapter
+         `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn` applied
+         to the compactly supported smooth density
          `χ y * Hβ (BHW.realEmbed y)`.  Compact supports and compact direction
          sets are used for the boundary limits; no physical real-edge
          distribution is used.
@@ -5610,16 +5683,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `Hβ` on the compact image of
          `(y,η,ε) ↦ realEdgeAddImag y η (±ε)` gives uniform convergence to
          `Hβ (BHW.realEmbed y)` as `ε → 0+`, uniformly for `η ∈ Kη`.  Since
-         `φ` vanishes off `K`, the integral difference is bounded by
-
-         `(MeasureTheory.volume K).toReal *
-         SchwartzMap.seminorm ℂ 0 0 φ * δ ε`, where `δ ε` is the supremum of
+         `Function.support φ ⊆ tsupport φ ⊆ K`, the all-space integral
+         difference is bounded by
+         `δ ε * ∫ y, ‖φ y‖`, where `δ ε` is the supremum of
          `‖Hβ (realEdgeAddImag y η (±ε)) - Hβ (BHW.realEmbed y)‖` over
-         `y ∈ K` and `η ∈ Kη`.  In the finite-dimensional real chart, compact
-         sets are closed, Borel measurable, and finite-measure, so this bound
-         is available directly for `K`.  The compact-uniform continuity step
-         proves `δ ε -> 0`, giving the required `TendstoUniformlyOn` integral
-         convergence on `Kη`.
+         `y ∈ tsupport φ` and `η ∈ Kη`.  The factor `∫ y, ‖φ y‖` is finite
+         because `φ` is Schwartz.  The proof must not replace the all-space
+         integral by an integral over an arbitrary compact `K`; localization
+         comes from `φ = 0` off `tsupport φ`.  The compact-uniform continuity
+         step proves `δ ε -> 0`, giving the required `TendstoUniformlyOn`
+         integral convergence on `Kη`.
       8. Verify the compact Jost restriction of `T` by transporting a
          supported test through `BHW.os45CommonEdgePullbackCLM`, applying
          `BHW.zeroDiagonal_of_tsupport_subset_jostOverlap`, and then using
@@ -6170,8 +6243,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       one-chart side identities already give equality on the whole overlap
       used for gluing.
 
-      The small pure topology lemmas needed here are elementary and should be
-      proved before the OS45 gluing theorem if Mathlib does not already expose
+      The small pure topology lemmas needed here are elementary implementation
+      prerequisites for the OS45 gluing theorem unless Mathlib already exposes
       the exact forms:
 
       ```lean
@@ -6203,8 +6276,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       positive chart-dimension hypothesis already required by
       `SCV.chartDistributionalEOW_local_envelope`.
 
-      The exact-overlap rewrite used by the gluing theorem should be isolated
-      as two pure topology lemmas:
+      The exact-overlap rewrite used by the gluing theorem is isolated as two
+      pure topology lemmas:
 
       ```lean
       theorem SCV.ball_inter_positiveOrthantComponent_eq_strictPositiveImagBall
@@ -6244,8 +6317,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `Ωplus ∩ SCV.ChartPositiveOrthant m` and
       `Ωminus ∩ SCV.ChartNegativeOrthant m` are open because the
       finite-dimensional chart space is locally connected.  The component
-      hypotheses consumed by the gluing helper should be supplied by these
-      pure topology lemmas:
+      hypotheses consumed by the gluing helper are supplied by these pure
+      topology lemmas:
 
       ```lean
       theorem SCV.isOpen_connectedComponentIn_complexChart_of_isOpen
@@ -6266,8 +6339,29 @@ Proof decomposition of this theorem, without hiding the analytic work:
       connected-component-in fact; if Mathlib already exposes it under a
       different name, the OS45 file should use that name directly rather than
       adding a wrapper with no proof content.
-      The pure complex-analysis helper should have the following concrete
-      shape:
+      The only additional set-level gluing fact is the connected three-union
+      lemma.  It is pure topology and has the following implementation
+      contract:
+
+      ```lean
+      theorem SCV.isConnected_threeUnion_of_connected_core_meets
+          {X : Type*} [TopologicalSpace X]
+          {U0 Uplus Uminus : Set X}
+          (hU0_conn : IsConnected U0)
+          (hUplus_conn : IsConnected Uplus)
+          (hUminus_conn : IsConnected Uminus)
+          (hplus_meets : (U0 ∩ Uplus).Nonempty)
+          (hminus_meets : (U0 ∩ Uminus).Nonempty) :
+          IsConnected (U0 ∪ Uplus ∪ Uminus)
+      ```
+
+      Proof transcript: first apply `IsConnected.union hplus_meets` to
+      `U0` and `Uplus`.  The point in `U0 ∩ Uminus` also lies in
+      `(U0 ∪ Uplus) ∩ Uminus`, so a second `IsConnected.union` glues in
+      `Uminus`.  This helper is not an analytic shortcut; it only discharges
+      the connectedness hypothesis for the actual glued chart domain.
+
+      The pure complex-analysis helper has the following concrete shape:
 
       ```lean
       theorem SCV.glue_localEnvelope_to_disjoint_sideComponents
@@ -6289,7 +6383,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hminus_agree_on_overlap :
             EqOn H0 Hminus (U0 ∩ Uminus))
           (hplus_minus_disjoint : Disjoint Uplus Uminus) :
-          ∃ U H, IsOpen U ∧ IsConnected U ∧
+          ∃ U H, U = U0 ∪ Uplus ∪ Uminus ∧
+            IsOpen U ∧ IsConnected U ∧
             DifferentiableOn ℂ H U ∧
             EqOn H H0 U0 ∧ EqOn H Hplus Uplus ∧ EqOn H Hminus Uminus
       ```
@@ -6309,22 +6404,34 @@ Proof decomposition of this theorem, without hiding the analytic work:
         `Uplus` and `Uminus`, plus the two overlap equalities, makes this
         definition independent of case choices on overlaps.
       - `IsOpen U` follows from the three open sets.
-      - `IsConnected U` follows because `U0` is connected and each side
-        component meets `U0` in the seed region already used to prove the
-        overlap equality; equivalently pass these nonempty intersections as
-        explicit hypotheses if Lean automation cannot recover them from the
-        equality proof packet.
-      - `DifferentiableOn H U` is checked locally on the open cover
-        `U0`, `Uplus`, `Uminus`, using the corresponding holomorphy
-        hypotheses and the overlap equalities.
+      - `IsConnected U` is exactly
+        `SCV.isConnected_threeUnion_of_connected_core_meets hU0_conn
+        hUplus_conn hUminus_conn hplus_meets hminus_meets`.
+      - Prove the three local equality facts before differentiability:
+        on `Uplus`, `H = Hplus` by the first branch of the definition; on
+        `Uminus`, disjointness rules out the `Uplus` branch and then
+        `H = Hminus`; on `U0`, split into membership in `Uplus`,
+        membership in `Uminus`, or neither, and use
+        `hplus_agree_on_overlap.symm`, `hminus_agree_on_overlap.symm`, or
+        reflexivity respectively.
+      - Transport the three holomorphy hypotheses to `H` on the three open
+        pieces by `DifferentiableOn.congr`.
+      - Combine them by two applications of
+        `DifferentiableOn.union_of_isOpen`: first on `U0 ∪ Uplus`, then on
+        `(U0 ∪ Uplus) ∪ Uminus`.  Rewrite associativity of `∪` to the
+        displayed `U`.
+      - Return the definitional equality `U = U0 ∪ Uplus ∪ Uminus` in the
+        witness packet.  Downstream theorem-2 code must not treat the glued
+        domain as an unnamed superset; the side path and equality consumers
+        use exactly this three-piece union.
 
       The chart-orthant restrictions are open subsets of `Ωplus` and `Ωminus`
       and are disjoint by
       `SCV.disjoint_chartPositiveOrthant_chartNegativeOrthant hm`.  Their
-      connected components are open in the finite-dimensional complex
-      configuration space; if Mathlib does not infer this automatically, the
-      OS45 file should expose the small topology lemma for open subsets of
-      finite products of `ℂ`.
+      connected components are open by
+      `SCV.isOpen_connectedComponentIn_complexChart_of_isOpen`; the OS45 file
+      uses that lemma directly unless Mathlib already provides exactly the
+      same theorem under an upstream name.
    11. Prove the OS45 side-component path lemmas.  For `x ∈ V`, let
       `y(x) = os45CommonEdgeRealPoint 1 x` and
       `η(x) = os45HalfTimeDirection 1 x`.  In chart real coordinates set
@@ -6510,7 +6617,11 @@ in this non-circular order:
    `BHW.os45BranchHorizontalCommonGerm`;
 4. expose the pure real-analysis cutoff projection
    `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
-   then prove the regular boundary-CLM construction and branchwise BV theorem
+   expose its `NPointDomain` adapter
+   `BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+   expose the `NPointDomain` closed-ball adapter
+   `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn`, then prove the
+   regular boundary-CLM construction and branchwise BV theorem
    `BHW.os45RegularBoundaryValue_from_commonGerm` and
    `BHW.os45BranchHorizontalBoundaryValue`;
 5. subtract the checked identity/adjacent branchwise BV packets to obtain the
@@ -6518,7 +6629,9 @@ in this non-circular order:
 6. prove the OS45 branch-difference common-boundary envelope
    `BHW.os45_adjacent_commonBoundaryEnvelope` from those `Tid/Tτ`
    boundary-value packets and the checked one-chart local EOW theorem; this is
-   where the chart-linear kernel pushforward is used;
+   where the chart-linear kernel pushforward, chart-orthant side components,
+   exact-overlap rewrites, side path lemmas, and
+   `SCV.glue_localEnvelope_to_disjoint_sideComponents` are used;
 7. only after that, prove the downstream scalar consequence
    `BHW.os45AdjacentScalarGerm_of_OSII_Figure24` from the resulting
    `AdjacentOSEOWDifferenceEnvelope`, the real-edge compact equality consumer,
@@ -6755,7 +6868,11 @@ not as the next task.  The active next implementation order is:
 4. prove the compact common-germ gluing theorem, expose the compact-support
    cutoff projection
    `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
-   and then prove the regular boundary-CLM/branchwise BV construction;
+   its `NPointDomain` adapter
+   `BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`,
+   and the closed-ball adapter
+   `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn`; then prove the
+   regular boundary-CLM/branchwise BV construction;
 5. reformulate the OS45 horizontal common-boundary theorem branchwise, since
    the proposed forward-tube pair and pointwise `Hplus = Hminus` shortcut is
    false.  The target data are `Tid`, `Tτ`, their ACR/BHW compact-direction BV
@@ -6765,7 +6882,8 @@ not as the next task.  The active next implementation order is:
 7. derive the `hplus_bv` and `hminus_bv` hypotheses for the branch difference
    by subtracting the two branchwise BV packets;
 8. instantiate `SCV.chartDistributionalEOW_local_envelope` at the ordered edge;
-9. prove side-component path/gluing support and then
+9. prove the chart-orthant side-component topology/path/gluing support,
+   including `SCV.glue_localEnvelope_to_disjoint_sideComponents`, and then
    `BHW.os45_adjacent_commonBoundaryEnvelope`.
 10. prove `BHW.os45AdjacentScalarGerm_of_OSII_Figure24` from the resulting
    `AdjacentOSEOWDifferenceEnvelope` and pull its scalar germ back through the

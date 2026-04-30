@@ -132,12 +132,22 @@ that the ACR and pulled BHW formulas are restrictions of one holomorphic germ.
 The only auxiliary cutoff lemma on this path is the pure real-analysis
 Schwartz cutoff statement.  The checked theorem
 `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open` already supplies
-the support-in-open projection; the branch-BV consumer should expose the same
+the support-in-open projection; the branch-BV route exposes the same
 construction with the additional compact-support field as
 `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`, so
-the regular boundary CLM can be built through the checked
+the regular boundary CLM can be built through the checked flat-coordinate
 `SCV.exists_closedBall_integral_clm_of_continuousOn` API rather than a fresh
-seminorm proof.  The coordinate and compactness layer for the local horizontal
+seminorm proof.  Because the branch theorem is on `NPointDomain d n`, the
+proof first uses the flattening adapters
+`BHW.exists_nPoint_schwartz_cutoff_eq_one_on_compact_subset_open_compactSupport`
+and `BHW.exists_nPoint_closedBall_integral_clm_of_continuousOn`, based on
+`flattenCLEquivReal n (d + 1)`, `flattenCLEquivReal_norm_eq`,
+`SchwartzMap.compCLMOfContinuousLinearEquiv`, support transport by the
+associated homeomorphism, and `integral_flattenCLEquivReal`.  The
+boundary-limit estimate is an all-space integral localized by `φ = 0` off
+`tsupport φ`, bounded by the uniform supremum on `tsupport φ × Kη` times
+`∫ y, ‖φ y‖`; it must not treat an arbitrary compact support set as the
+measure domain.  The coordinate and compactness layer for the local horizontal
 wedge is also now checked in
 `OSToWightmanLocalityOS45TraceMembership.lean`: `BHW.os45ACRBranchDomain`,
 `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`,
@@ -402,6 +412,14 @@ content:
    chart dimension through
    `SCV.disjoint_chartPositiveOrthant_chartNegativeOrthant`; do not omit
    `hm : 0 < m`, since the zero-dimensional orthant predicates are vacuous.
+   The final holomorphic gluing theorem is
+   `SCV.glue_localEnvelope_to_disjoint_sideComponents`, and its output domain
+   is part of the contract: it returns `U = U0 ∪ Uplus ∪ Uminus`, not an
+   unnamed larger set.  Its proof uses the pure topology helper
+   `SCV.isConnected_threeUnion_of_connected_core_meets`, then proves the
+   three local `EqOn` facts for the nested-if glued function and combines
+   local holomorphy by `DifferentiableOn.congr` plus two applications of
+   `DifferentiableOn.union_of_isOpen`.
    Do not replace this by a broad
    original-coordinate linear sign condition; that would reintroduce an
    unproved identity-theorem obligation on arbitrary overlap components.
