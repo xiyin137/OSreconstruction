@@ -63,11 +63,13 @@ identity geometry are checked.  The proposed horizontal-edge forward-tube pair
 and pointwise equality `Hplus = Hminus` from two applications of
 `BHW.extendF_eq_on_forwardTube` are rejected: after the repo permutation action
 `permAct σ z = fun k => z (σ k)`, an adjacent swap reverses the relevant
-horizontal time-imaginary gap.  The immediate proof-doc task is therefore to
-replace that false pointwise common-boundary shortcut with the genuine OS45
-common-boundary theorem surface before building the compact-cutoff boundary
-CLM, local-wedge input, one-chart call, side-component paths, and holomorphic
-gluing helper.  The global compact-direction `bvt_W` boundary transport
+horizontal time-imaginary gap.  The replacement is a branchwise horizontal
+ACR/BHW common-boundary packet: construct the identity and swapped branch
+horizontal-edge CLMs `Tid` and `Tτ`, prove ACR-side and BHW-side uniform
+compact-direction boundary values for each branch, subtract to get the
+`hplus_bv`/`hminus_bv` input with `Tdiff = Tτ - Tid`, and only then call the
+one-chart theorem.  `Tdiff` is not assumed zero and is not the final real-edge
+locality distribution.  The global compact-direction `bvt_W` boundary transport
 remains useful elsewhere.
 
 ## 0. Paper-authority rule

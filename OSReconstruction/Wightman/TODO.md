@@ -172,6 +172,11 @@ Current blocker sharpening (2026-04-29):
 
 `WickRotation/BHWTranslation.lean` (0) — COMPLETE
 - `isPreconnected_baseFiber` deleted as retired old-route surface (PR #72). It was unreachable from any live R→E lane after the merged path migrated to using `bhw_translation_invariant` directly. The geometric content (PET fiber connectivity via DOH or Lie-group fiber bundle theory) is no longer load-bearing and has been removed from the active TODO.
+- Deleted/retired: `ae_euclidean_points_in_permutedTube`.  This statement and
+  the old absolute-coordinate `wickRotation_not_in_PET_null` surface are false
+  for the repo's absolute-coordinate PET/ForwardTube convention; do not
+  resurrect them.  Use the checked translated-PET a.e. facts only where the
+  consumer is stated on translated PET.
 
 `WickRotation/BHWReducedExtension.lean` (axiom 1):
 - `reduced_bargmann_hall_wightman_of_input`

@@ -77,15 +77,21 @@ Current local frontier checkpoint, after the checked one-chart SCV pass:
   below.
 * The next proof-doc and Lean frontier is therefore not another SCV recovery
   theorem.  The identity-order OS45 seed selector is now checked, but the
-  common-boundary part of the local seed still needs a corrected theorem
-  surface:
+  common-boundary part of the local seed still needs the corrected
+  branch-compatibility theorem surface:
   1. expose the bounded ordered perturbation with output order `ρ = 1`, and
      choose the final real-open patch as a connected ball inside the raw
      adjacent overlap and the two ordered sectors; this is checked as
      `BHW.choose_os45_identity_real_open_edge_for_adjacent_swap` and
      `BHW.os45_adjacent_identity_localEOWGeometry`;
   2. replace the retired pointwise horizontal-edge plan below with a true
-     common-boundary theorem.  The tempting claim that both
+     branchwise ACR/BHW common-boundary theorem on the OS45 horizontal edge.
+     The boundary distribution fed to
+     `SCV.chartDistributionalEOW_local_envelope` is the horizontal
+     common-edge distribution obtained by comparing the OS-II ACR branch with
+     the BHW extended-tube branch.  It is not the final real-edge locality
+     distribution, and it is not assumed to be zero.  The tempting claim that
+     both
      `Q.symm y` and `permAct τ (Q.symm y)` lie in `BHW.ForwardTube d n` at the
      identity ordered horizontal edge is false for the repo convention
      `permAct σ z = fun k => z (σ k)`;
@@ -99,11 +105,15 @@ Current local frontier checkpoint, after the checked one-chart SCV pass:
 
 The compact-direction strengthening
 `bvt_boundary_values_uniformOnCompactDirections` remains a useful OS-II
-boundary-value theorem, but the immediate Slot 1 gate is now again the exact
-OS45 common-boundary theorem surface.  The identity ordered seed fixes the
-equal-time local-wedge obstruction, but it does **not** by itself give
-pointwise horizontal-edge equality by two applications of
-`BHW.extendF_eq_on_forwardTube`.
+boundary-value theorem, but the immediate Slot 1 gate is now the exact OS45
+horizontal branch-compatibility theorem surface.  The identity ordered seed
+fixes the equal-time local-wedge obstruction, but it does **not** by itself
+give pointwise horizontal-edge equality by two applications of
+`BHW.extendF_eq_on_forwardTube`.  The remaining boundary object is a local
+horizontal-edge distribution: it compares the ACR-one OS-II branch with the
+BHW extended-tube branch at the quarter-turn edge, and it is consumed only to
+run the one-chart EOW/gluing argument.  It must not be identified with the
+final real-edge adjacent locality distribution.
 
 Five corrections are mandatory before implementation.
 
@@ -164,14 +174,26 @@ this basis, the OS45 half-time ray through the seed is a strict-positive chart
 ray.  This ray supplies the nonempty positive side overlap used for gluing.
 The negative ray gives the corresponding negative overlap.
 
-Fifth, the branch common-boundary functional on the ordered horizontal edge is
-not the `bvt_W` pullback through `os45CommonEdgeRealCLE`.  It is the local
-continuous edge integral of the common pointwise value
-`Hedge y = Hplus (realEmbed y) = Hminus (realEmbed y)`, with a compact cutoff
-equal to one on the real window passed to the one-chart theorem.  The old
-`os45CommonEdgeBranchTestCLM`/Jacobian packet remains useful for a future
-standard-tube boundary transport, but it is not the boundary functional used
-by the active identity-order OS45 seed.
+Fifth, the local horizontal boundary functional used inside the one-chart EOW
+step is **not** a replacement for the OS-II `bvt_W` boundary distribution.
+After the retired pointwise shortcut, there is no justified common pointwise
+edge value `Hplus = Hminus` from which to define a compact-cutoff edge
+functional.  The only admissible local boundary data are branchwise
+horizontal distributions `Tid` and `Tτ`, each proving compatibility of one
+OS-II ACR representative with the corresponding BHW extended-tube branch at
+the quarter-turn edge.  Their difference `Tdiff = Tτ - Tid` is auxiliary data
+for `SCV.chartDistributionalEOW_local_envelope`; it is not assumed zero and is
+not the final real-edge locality distribution.
+
+The final theorem-2 transfer must still pass through the OS-II boundary-value
+bridge: the local EOW output is packaged as an
+`AdjacentOSEOWDifferenceEnvelope`, the checked consumer
+`BHW.bvt_F_adjacent_extendF_edgeDistribution_eq_of_osEOWDifferenceEnvelope`
+derives compact-test equality of the two `extendF (bvt_F OS lgc n)` real-edge
+branches, and only the later boundary-transfer layer identifies those
+boundary distributions with `bvt_W OS lgc`.  Any proof that tries to close
+`bvt_W_swap_pairing_of_spacelike` directly from `Tid`, `Tτ`, or `Tdiff`
+without this OS-II transfer is off route.
 
 The checked selected-adjacent monodromy consumer
 `bvt_F_extendF_petBranchIndependence_of_selectedAdjacentEdgeData` may remain as
@@ -522,7 +544,12 @@ Mathematical content:
 
   i.e. `adjacentOS45RealEdgeDifference`;
 - use local common-boundary / EOW to construct one common holomorphic
-  branch-difference object on `U`;
+  branch-difference object on `U`.  The common boundary is branchwise and
+  horizontal: for each OS45 branch it identifies the OS-II ACR representative
+  with the BHW extended-tube representative at the quarter-turn edge.  After
+  subtracting the two branch packets, the one-chart theorem receives
+  `T := Tswap - Tid`.  This `T` is not postulated to be zero and is not the
+  final real-time edge distribution;
 - prove that its Wick trace is the direct adjacent `bvt_F` difference
 
   ```lean
@@ -664,6 +691,45 @@ mathematical content:
    difference using
    `BHW.os45PulledRealBranch_sub_eq_adjacentOS45RealEdgeDifference`;
 4. export connectedness of the one common chart domain used by both traces.
+
+Corrected common-boundary content:
+
+The theorem must be proved branchwise before subtracting.  For the identity
+order `ρ = 1`, there are two branch labels: the identity branch and the
+adjacent branch `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.  For each branch label
+`β ∈ {1, τ}`, form:
+
+* the ACR-side representative obtained by pulling the OS-II continuation
+  `bvt_F OS lgc n` through the OS45 common chart and the branch relabelling;
+* the BHW-side representative
+  `BHW.os45PulledRealBranch (d := d) (n := n) OS lgc β`;
+* a horizontal-edge distribution
+  `Tβ : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ`;
+* uniform compact-direction boundary-value statements saying that the ACR-side
+  and BHW-side representatives both converge to `Tβ` on the selected
+  quarter-turn edge.
+
+The adjacent branch-difference input to
+`SCV.chartDistributionalEOW_local_envelope` is then obtained by subtraction:
+
+```lean
+let Tdiff : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ := Tτ - Tid
+```
+
+with `hplus_bv` and `hminus_bv` proved by subtracting the two branchwise
+boundary-value statements.  This is the non-circular route.  The theorem does
+not assume `Tdiff = 0`; the checked downstream consumer proves the returned
+holomorphic branch-difference envelope is zero from the Wick trace and the
+distributional Wick-section identity theorem.
+
+The identity branch of the branchwise packet can use
+`BHW.extendF_eq_on_forwardTube`, because its horizontal argument lies in the
+ordinary forward tube.  The adjacent branch cannot: its horizontal argument is
+generally outside `BHW.ForwardTube d n` after the repo permutation action.  Its
+branchwise ACR/BHW compatibility must instead be supplied by the local
+Hall-Wightman/BHW common-boundary argument on the selected OS45 real
+environment.  That local argument is the actual missing mathematical content
+inside `BHW.os45_adjacent_commonBoundaryEnvelope`.
 
 The coordinate infrastructure needed by this transcript is now implemented in
 `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45CommonChart.lean`.
@@ -1942,7 +2008,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (1 : Equiv.Perm (Fin n)) z
       ```
 
-      The edge equality theorem is:
+      The following pointwise edge-equality theorem was the old target and is
+      now retired:
 
       ```lean
       theorem BHW.os45_Hplus_eq_Hminus_on_horizontalEdge_id
@@ -1968,20 +2035,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (1 : Equiv.Perm (Fin n)) x))
       ```
 
-      The proof is branchwise:
-      `BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)` changes the identity
-      pulled-real branch to `bvt_F` at `Q.symm y`, and changes the swapped
-      pulled-real branch to `bvt_F` at `permAct τ (Q.symm y)`.  No
-      permutation branch-independence theorem is used; the only permutation
-      equality is the syntactic adjacent swap already present in the two
-      definitions of `Hplus` and `Hminus`.
-      When `Eseed = os45CommonEdgeRealPoint 1 '' Vseed`, this theorem gives
-      the equality for every `y ∈ Eseed` by choosing its preimage in `Vseed`.
-
-      Status: this proof transcript depends on the rejected forward-tube pair
-      above and is not implementation-ready.  Do not introduce
-      `BHW.os45_Hplus_eq_Hminus_on_horizontalEdge_id` until the common-boundary
-      source is reformulated.
+      Status: this theorem depends on the rejected swapped forward-tube
+      membership above and must remain out of production.  The replacement is
+      **not** another pointwise equality theorem with the same conclusion.
+      The replacement is the branchwise horizontal common-boundary packet
+      described earlier: construct `Tid` and `Tτ`, prove ACR-side and BHW-side
+      uniform compact-direction boundary values for each branch, subtract those
+      two packets to obtain the `hplus_bv`/`hminus_bv` inputs for
+      `SCV.chartDistributionalEOW_local_envelope`, and only then use
+      holomorphic gluing plus the Wick trace zero theorem to reach the real
+      trace.
    7. Prove the ordered horizontal-edge local wedge input consumed by the
       checked one-chart theorem.  Use the coordinate helper:
 
@@ -2026,105 +2089,36 @@ Proof decomposition of this theorem, without hiding the analytic work:
       In the OS45 instantiation, `hedge_plus`/`hedge_minus` must be supplied by
       the corrected common-boundary/domain theorem.  They must not cite the
       retired `os45_horizontalEdge_forwardTube_pair_id`.
-   8. Build the local boundary CLM from continuous edge values, not from
-      `bvt_W`.  Choose a compact edge cutoff `χedge` equal to one on the real window
-      `Eseed` passed to the one-chart theorem and supported in the ordered
-      horizontal edge patch.  The CLM is the bounded integral functional
-      associated to the compactly supported local edge weight
-      `χedge y * os45CommonChartHplus_id OS lgc n i hi (realEmbed y)`.
-      Its Lean-facing surface is:
+   8. Build the one-chart boundary-value inputs from **branchwise horizontal
+      boundary distributions**, not from a common pointwise edge value.  The
+      previous `BHW.os45HorizontalEdgeBoundaryCLM_id` surface is retired
+      together with the false pointwise edge equality.  The replacement is:
+
+      The target may be implemented either as a theorem returning two CLMs
+      `Tid Tτ : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ` together with the
+      four explicit BV fields below, or by expanding those fields directly at
+      the call to `SCV.chartDistributionalEOW_local_envelope`.  A wrapper named
+      `BranchHorizontalBV` should be introduced only if it carries the real
+      mathematical data:
+
+      * the ACR-side representative converges to `Tβ`;
+      * the BHW extended-tube representative converges to the same `Tβ`;
+      * the convergence is uniform on compact direction sets in the chosen
+        local side cone;
+      * the theorem records the exact domains and branch labels, not an
+        anonymous "common boundary" predicate.
+
+      The adjacent difference input is then:
 
       ```lean
-      noncomputable def BHW.os45HorizontalEdgeBoundaryCLM_id
-          [NeZero d]
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
-          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
-          (χedge : SchwartzMap (NPointDomain d n) ℂ)
-          (hχ_compact : HasCompactSupport (χedge : NPointDomain d n -> ℂ)) :
-          SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ
-
-      theorem BHW.os45HorizontalEdgeBoundaryCLM_id_apply
-          [NeZero d]
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
-          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
-          (χedge φ : SchwartzMap (NPointDomain d n) ℂ)
-          (hχ_compact : HasCompactSupport (χedge : NPointDomain d n -> ℂ)) :
-          BHW.os45HorizontalEdgeBoundaryCLM_id
-              (d := d) OS lgc n i hi χedge hχ_compact φ =
-            ∫ y : NPointDomain d n,
-              χedge y *
-                BHW.os45CommonChartHplus_id (d := d) OS lgc n i hi
-                  (BHW.realEmbed y) *
-                φ y
+      let Tdiff : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ := Tτ - Tid
       ```
 
-      For tests with `tsupport φ ⊆ Eseed`, the cutoff is invisible, so this is
-      exactly the integral of the common pointwise edge value.  The two
-      boundary-value hypotheses consumed by
-      `SCV.chartDistributionalEOW_local_envelope` are proved by uniform
-      continuity on the compact sets
-      `{y + I * εη | y ∈ tsupport χedge, η ∈ Kη, 0 ≤ ε ≤ r}` and
-      `{y - I * εη | y ∈ tsupport χedge, η ∈ Kη, 0 ≤ ε ≤ r}` after the local
-      wedge radius has put those sets inside `Ωplus` and `Ωminus`.
-      The Lean surfaces are:
-
-      ```lean
-      theorem BHW.os45_Hplus_horizontalEdge_commonBoundary_uniform_id
-          [NeZero d]
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
-          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
-          (Eseed Cseed : Set (NPointDomain d n))
-          (χedge : SchwartzMap (NPointDomain d n) ℂ)
-          (hχ_compact : HasCompactSupport (χedge : NPointDomain d n -> ℂ))
-          (hχ_one : ∀ y ∈ Eseed, χedge y = 1) :
-          ∀ Kη : Set (NPointDomain d n), IsCompact Kη -> Kη ⊆ Cseed ->
-            ∀ φ : SchwartzMap (NPointDomain d n) ℂ,
-              HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
-              tsupport (φ : NPointDomain d n -> ℂ) ⊆ Eseed ->
-                TendstoUniformlyOn
-                  (fun ε η => ∫ y,
-                    BHW.os45CommonChartHplus_id (d := d) OS lgc n i hi
-                      (BHW.realEdgeAddImag (d := d) (n := n) y η ε) * φ y)
-                  (fun _ =>
-                    BHW.os45HorizontalEdgeBoundaryCLM_id (d := d)
-                      OS lgc n i hi χedge hχ_compact φ)
-                  (nhdsWithin 0 (Set.Ioi 0)) Kη
-
-      theorem BHW.os45_Hminus_horizontalEdge_commonBoundary_uniform_id
-          [NeZero d]
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
-          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
-          (Eseed Cseed : Set (NPointDomain d n))
-          (χedge : SchwartzMap (NPointDomain d n) ℂ)
-          (hχ_compact : HasCompactSupport (χedge : NPointDomain d n -> ℂ))
-          (hχ_one : ∀ y ∈ Eseed, χedge y = 1) :
-          ∀ Kη : Set (NPointDomain d n), IsCompact Kη -> Kη ⊆ Cseed ->
-            ∀ φ : SchwartzMap (NPointDomain d n) ℂ,
-              HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
-              tsupport (φ : NPointDomain d n -> ℂ) ⊆ Eseed ->
-                TendstoUniformlyOn
-                  (fun ε η => ∫ y,
-                    BHW.os45CommonChartHminus_id (d := d) OS lgc n i hi
-                      (BHW.realEdgeAddImag (d := d) (n := n) y η (-ε)) * φ y)
-                  (fun _ =>
-                    BHW.os45HorizontalEdgeBoundaryCLM_id (d := d)
-                      OS lgc n i hi χedge hχ_compact φ)
-                  (nhdsWithin 0 (Set.Ioi 0)) Kη
-      ```
-
-      The proof first shrinks `Eseed` so `tsupport χedge` has compact closure
-      inside the ordered horizontal edge patch.  For each compact `Kη ⊆ Cseed`,
-      openness of the branch domains gives `r > 0` with both slabs
-      `realEdgeAddImag y η ε` and `realEdgeAddImag y η (-ε)` inside the
-      corresponding domains whenever `y ∈ tsupport χedge`, `η ∈ Kη`, and
-      `0 ≤ ε < r`.  Continuity of the branch functions on these compact slabs
-      gives uniform convergence of the integrands to the horizontal edge
-      integrand.  Compact support of `χedge • φ` gives the single integrable
-      dominating function.
+      and the `hplus_bv`/`hminus_bv` hypotheses for the checked one-chart
+      theorem are obtained by subtracting the two branchwise BV statements.
+      This is non-circular: `Tdiff` is a horizontal quarter-turn boundary
+      distribution.  It is not asserted to be zero, and it is not the final
+      real-edge adjacent distribution whose vanishing proves locality.
    9. Apply the checked `SCV.chartDistributionalEOW_local_envelope` at the
       ordered horizontal edge.  The local wedge input now follows by openness
       of `Ωplus/Ωminus` at the ordered horizontal edge and compactness of
@@ -2267,16 +2261,22 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
    swapped branch is generally not.  The proof document must first replace the
    false pointwise equality
    `Hplus = Hminus` on `Eseed = os45CommonEdgeRealPoint 1 '' Vseed` with the
-   genuine OS45 common-boundary theorem surface.
+   genuine branchwise OS45 horizontal common-boundary theorem surface: produce
+   the identity and swapped branch CLMs `Tid` and `Tτ`, prove both ACR-side and
+   BHW-side uniform compact-direction boundary values for each branch, and
+   subtract them to obtain the one-chart `Tdiff = Tτ - Tid` input.
 6. After the corrected common-boundary source is fixed, prove
    `BHW.os45_orderedHorizontalEdge_localWedge_id` for
    `Eseed`, the chosen side cone `Cseed`, and the two branch domains
    `Ωplus/Ωminus`.  This is the ordered-edge compactness/openness argument:
    at `ε = 0`, the horizontal edge already lies in both branch domains, and
    compactness of `K × Kη` gives one side radius.
-7. Pick the compact edge cutoff and define the boundary CLM only after the
-   corrected common-boundary source identifies what that CLM is.  The earlier
-   "continuous pointwise edge value" choice is not yet justified.
+7. Do not define a compact-cutoff boundary CLM from a continuous pointwise
+   edge value.  The boundary CLMs are the branchwise horizontal distributions
+   `Tid` and `Tτ` supplied by step 5; the branch-difference CLM is their
+   difference.  If a cutoff is introduced in Lean, it is only an implementation
+   device inside the proof of the branchwise BV statements, not the
+   mathematical definition of the common boundary.
 8. Apply `SCV.chartDistributionalEOW_local_envelope` at the ordered horizontal
    edge only after steps 5-7 provide true `hplus_bv` and `hminus_bv`
    hypotheses.  Its output is a local envelope `H0` on a small coordinate ball
@@ -2304,11 +2304,14 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
 12. Package the result with
     `BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`.
 
-This decomposition is Lean-ready once the listed identity-order support lemmas
-and the side-component gluing helper are checked.  It avoids both retired gaps:
-the one-chart theorem is not applied at the equal-time edge, and finite traces
-are reached by holomorphic gluing through side components rather than forced
-inside the local EOW ball.
+This decomposition is **not** Lean-ready yet.  The identity-order support
+lemmas are checked, but the branchwise horizontal ACR/BHW common-boundary
+packet remains the live theorem-shape blocker.  Once that packet supplies the
+two branch CLMs `Tid` and `Tτ` with the exact compact-direction BV statements,
+the remaining Lean work is ordinary one-chart instantiation and side-component
+gluing.  The route avoids both retired gaps: the one-chart theorem is not
+applied at the equal-time edge, and finite traces are reached by holomorphic
+gluing through side components rather than forced inside the local EOW ball.
 
 Coarse Slot 1 decomposition retained for context:
 
@@ -2509,11 +2512,12 @@ boundary, one-chart local seed, side-component gluing, and then
   `exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt`,
   `BHW.choose_os45_identity_real_open_edge_for_adjacent_swap`, and
   `BHW.os45_adjacent_identity_localEOWGeometry`.  The next unready piece is the
-  corrected OS45 common-boundary theorem surface replacing the retired
+  corrected branchwise OS45 common-boundary theorem surface replacing the retired
   `BHW.os45_horizontalEdge_forwardTube_pair_id` and
   `BHW.os45_Hplus_eq_Hminus_on_horizontalEdge_id` shortcut.  Only after that
-  should the boundary CLM, boundary-value theorems, side-component path lemmas,
-  and final gluing theorem feed `BHW.os45_adjacent_commonBoundaryEnvelope`.
+  should the branchwise horizontal BV theorems, ordered local-wedge theorem,
+  side-component path lemmas, and final gluing theorem feed
+  `BHW.os45_adjacent_commonBoundaryEnvelope`.
   The theorem `bvt_boundary_values_uniformOnCompactDirections` remains a
   separate useful OS-II strengthening, but it must not be treated as a blocker
   for this ordered-edge local seed.
@@ -2525,12 +2529,14 @@ not as the next task.  The active next implementation order is:
 
 1. expose the bounded identity-order perturbation theorem and the identity
    ordered real-open ball selector; **checked**;
-2. reformulate the OS45 horizontal common-boundary theorem, since the proposed
-   forward-tube pair and pointwise `Hplus = Hminus` shortcut is false;
+2. reformulate the OS45 horizontal common-boundary theorem branchwise, since
+   the proposed forward-tube pair and pointwise `Hplus = Hminus` shortcut is
+   false.  The target data are `Tid`, `Tτ`, their ACR/BHW compact-direction BV
+   fields, and the branch-difference `Tdiff = Tτ - Tid`;
 3. prove the ordered horizontal-edge local wedge by compactness/openness after
    the corrected domain/common-boundary facts are available;
-4. build the compact-cutoff horizontal-edge boundary CLM and the two
-   continuous boundary-value theorems;
+4. derive the `hplus_bv` and `hminus_bv` hypotheses for the branch difference
+   by subtracting the two branchwise BV packets;
 5. instantiate `SCV.chartDistributionalEOW_local_envelope` at the ordered edge;
 6. prove side-component path/gluing support and then
    `BHW.os45_adjacent_commonBoundaryEnvelope`.
