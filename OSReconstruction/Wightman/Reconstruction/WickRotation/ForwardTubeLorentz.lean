@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction
 import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
 import OSReconstruction.GeneralResults.SinusoidSeparation
+import OSReconstruction.GeneralResults.FinProductIntegral
 import OSReconstruction.SCV.VladimirovTillmann
 
 /-!
@@ -1542,6 +1543,102 @@ theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
 -- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
 -- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).
 -- Use `wickRotation_in_translatedPET_null` / `ae_euclidean_points_in_translatedPET` instead.
+
+/-- **Joint TranslatedPET triple a.e. on the Fubini-split product space.**
+
+For a.e. `(y, z) ∈ NPointDomain d n × NPointDomain d m` under the product
+volume measure, all three of the Wick-rotated configurations that appear
+in the cluster decomposition lie in TranslatedPET:
+
+1. `wick(y) ∈ TranslatedPET d n` (the n-block),
+2. `wick(z) ∈ TranslatedPET d m` (the m-block),
+3. `wick(Fin.append y z) ∈ TranslatedPET d (n + m)` (the joint configuration).
+
+This is the post-Fubini-split a.e. statement needed by `W_analytic_cluster_integral`:
+after factoring the (n+m)-point integral via `integral_fin_append_split`, the
+integrand's `F_ext_on_translatedPET_total` kernel is well-defined a.e. on all
+three evaluation points of the cluster pointwise identity.
+
+Proof: each projection statement comes from `ae_euclidean_points_in_translatedPET`,
+and the joint one is transported from the (n+m)-point a.e. statement via the
+measure-preserving equiv `MeasurableEquiv.finAddProd`. -/
+theorem ae_joint_triple_translatedPET {d n m : ℕ} [NeZero d] :
+    ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+      ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+      (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n ∧
+      (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m ∧
+      (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+        TranslatedPET d (n + m) := by
+  -- (1) a.e. first projection in TranslatedPET d n (lift along Prod.fst projection)
+  have h1 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := n)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set S : Set (NPointDomain d n) :=
+      { y | (fun k => wickRotatePoint (y k)) ∉ TranslatedPET d n }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = S ×ˢ Set.univ := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, zero_mul]
+  -- (2) a.e. second projection in TranslatedPET d m (lift along Prod.snd projection)
+  have h2 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := m)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set T : Set (NPointDomain d m) :=
+      { z | (fun k => wickRotatePoint (z k)) ∉ TranslatedPET d m }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = Set.univ ×ˢ T := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, mul_zero]
+  -- (3) a.e. joint in TranslatedPET d (n+m) — transport from NPointDomain d (n+m)
+  have h3 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+          TranslatedPET d (n + m) := by
+    -- Transport via `finAddProd.symm : NPointDomain d n × NPointDomain d m
+    --                                   ≃ᵐ NPointDomain d (n + m)` (measure-preserving).
+    let e := MeasurableEquiv.finAddProd n m (SpacetimeDim d)
+    have hpres : MeasureTheory.MeasurePreserving e.symm
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m))
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d (n + m))) := by
+      have := MeasureTheory.volume_preserving_finAddProd n m (SpacetimeDim d)
+      simpa [e] using this.symm
+    have hvol :
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)) := by
+      rfl
+    have hpull : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint ((e.symm p) k)) ∈ TranslatedPET d (n + m) :=
+      hpres.quasiMeasurePreserving.ae (ae_euclidean_points_in_translatedPET (d := d) (n := n + m))
+    have hpull' : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+            TranslatedPET d (n + m) := by
+      filter_upwards [hpull] with p hp
+      convert hp using 2
+      ext k
+      rw [MeasurableEquiv.finAddProd_symm_apply]
+    rwa [hvol] at hpull'
+  -- Combine all three a.e. facts.
+  filter_upwards [h1, h2, h3] with p hp1 hp2 hp3 using ⟨hp1, hp2, hp3⟩
 
 /-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is

@@ -3608,22 +3608,30 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   -- Strategy: bhw_pointwise_cluster_forwardTube + dominated convergence.
   --
   -- Key steps:
-  -- (a) For a.e. x, the Wick-rotated config is in ForwardTube
-  --     (needs `wickRotation_not_in_PET_null`, sorry'd in ForwardTubeLorentz.lean).
-  --     Note: bhw_pointwise_cluster_forwardTube requires ForwardTube hypotheses,
-  --     not just PET membership — so the a.e. set must be refined to time-ordered
-  --     configurations where the specific (identity) permutation works.
+  -- (a) For a.e. x, the Wick-rotated config is in ForwardTube. Note that
+  --     `bhw_pointwise_cluster_forwardTube` requires full ForwardTube
+  --     hypotheses (not just PET membership) on all three evaluation points
+  --     (joint, n-block, m-block), which means the a.e. set needs the
+  --     identity-permutation variant: strictly-increasing-time configurations
+  --     in each block (and in the joint append).
   -- (b) The integrand is dominated by C(1+‖x‖)^N / infDist^q · |f| · |g|
-  --     (from HasForwardTubeGrowth), independent of a.
+  --     (from HasForwardTubeGrowth), independent of the spatial shift a.
   -- (c) Apply tendsto_integral_of_dominated_convergence.
-  -- (d) Factor the integral over Fin(n+m) into n-block × m-block products.
+  -- (d) Factor the integral over Fin(n+m) into n-block × m-block products via
+  --     Fubini; Mathlib provides `volume_measurePreserving_sumPiEquivProdPi`
+  --     and `volume_measurePreserving_piCongrLeft` over `finSumFinEquiv`.
   --
-  -- Blocked by:
-  -- (1) wickRotation_not_in_PET_null (a.e. ForwardTube membership;
-  --     sorry in ForwardTubeLorentz.lean — algebraic measure-zero step is
-  --     NOW PROVED in GeneralResults/PolynomialMeasureZeroProof.lean,
-  --     remaining gap is the Jost characterization)
-  -- (2) Fubini decomposition of Fin(n+m)-indexed integrals
+  -- Status of blockers (post-W11 migration):
+  -- (1) `wickRotation_in_translatedPET_null` is now a *theorem* (no sorry)
+  --     in ForwardTubeLorentz.lean. The outdated `wickRotation_not_in_PET_null`
+  --     was false for n ≥ d+2 and has been deleted (see W11Counterexample.lean).
+  --     What is still needed here is a *refinement* of that a.e. statement to
+  --     the identity-permutation variant: a.e. x with strictly increasing
+  --     positive times in each block of the Fin.append structure.
+  -- (2) Fubini decomposition of Fin(n+m)-indexed integrals is available via
+  --     `MeasurableEquiv.sumPiEquivProdPi` composed with a piCongrLeft
+  --     transport along `finSumFinEquiv`. A dedicated helper lemma would make
+  --     this clean to invoke here (future work).
   sorry
 
 /-- The Schwinger functions satisfy clustering (E4).

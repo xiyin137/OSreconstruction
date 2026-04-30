@@ -1049,14 +1049,17 @@ theorem baseFiber_isPreconnected_of_active_sector_geometry {m d : ℕ} [NeZero d
   · intro x y
     exact hactive x y
 
-/-- Combined reduction for the fixed-tail base fiber. To prove
-`isPreconnected_baseFiber`, it is enough to show:
-1. each nonempty sector has connected Lorentz index set of nonempty fixed-`Λ`
-   slices;
-2. the graph of nonempty sectors is connected under nonempty overlaps.
+/-- Combined reduction for the fixed-tail base fiber: preconnectedness of
+`baseFiber m d ζtail` follows from
+1. each nonempty sector having connected Lorentz index set of nonempty
+   fixed-`Λ` slices;
+2. the graph of nonempty sectors being connected under nonempty overlaps.
 
-This packages the current production strategy into the exact two geometric
-subproblems that remain after the slice-level convexity work. -/
+This packages the base-fiber preconnectedness target into the exact two
+geometric subproblems that remain after the slice-level convexity work. (The
+live BHW translation invariance proof uses Route 1 instead — see
+`bhw_translation_invariant` below — so this is a standalone geometric
+statement rather than a gating lemma.) -/
 theorem baseFiber_isPreconnected_of_index_and_active_geometry {m d : ℕ} [NeZero d]
     (ζtail : Fin m → Fin (d + 1) → ℂ)
     (hidx_conn :
@@ -1080,39 +1083,6 @@ theorem baseFiber_isPreconnected_of_index_and_active_geometry {m d : ℕ} [NeZer
         Set.eq_empty_iff_forall_notMem.mpr fun ζ₀ hζ₀ => hπ ⟨ζ₀, hζ₀⟩
       simpa [hempty] using (isPreconnected_empty : IsPreconnected (∅ : Set (Fin (d + 1) → ℂ)))
   · exact hactive
-
-/-- **Preconnectedness of the fixed-tail base fiber.**
-
-    For fixed tail difference coordinates `ζtail`, the set of base values `ζ₀`
-    for which `baseFiberConfig m d ζtail ζ₀` lies in the permuted extended tube
-    is preconnected.
-
-    This is the cleaner remaining geometric blocker for BHW translation
-    invariance. Once this theorem is available, the already-proved local
-    translation invariance in `bhw_translation_local` upgrades to global
-    constancy on the base fiber via
-    `bhw_translation_invariant_of_baseFiber_isPreconnected`.
-
-    Compared to the older overlap-domain theorem on
-    `PET ∩ {z | z + c ∈ PET}`, this fiber statement matches the actual
-    difference-variable geometry of translation invariance and avoids the
-    false-looking 1-dimensional line-fiber route that was removed.
-
-    The live production reduction is now
-    `baseFiber_isPreconnected_of_index_and_active_geometry`, so the remaining
-    work is exactly:
-    1. connectedness of the Lorentz index set for each nonempty fiber sector;
-    2. connectedness of the active sector graph under nonempty overlaps.
-
-    **Numerical status (2026-03-14).** In the tested `d = 1`, `n = 2` regime,
-    sampled base fibers remained connected even for the same shifts that split
-    the one-complex-dimensional line fiber `Ω = {t | z + t c ∈ PET}`.
-
-    Ref: Streater-Wightman §2.5; Jost, "General Theory of Quantized Fields" §III.1 -/
-theorem isPreconnected_baseFiber {m d : ℕ} [NeZero d]
-    (ζtail : Fin m → Fin (d + 1) → ℂ) :
-    IsPreconnected (baseFiber m d ζtail) := by
-  sorry
 
 /-! #### Route 1: Translation invariance via reduced difference coordinates
 
