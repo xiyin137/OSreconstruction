@@ -2726,6 +2726,45 @@ Proof decomposition of this theorem, without hiding the analytic work:
       a one-branch ACR/BHW compatibility statement for the relabelled branch,
       not an identity-vs-adjacent equality theorem.
 
+      The scalar equality needed to build that germ is a separate packet.  It
+      is deliberately stated as data, not as a theorem from source-patch
+      geometry:
+
+      ```lean
+      def BHW.OS45OneBranchScalarGramEqPacket
+          [NeZero d]
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (β : Equiv.Perm (Fin n))
+          (y0 : NPointDomain d n) : Prop :=
+        let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
+        ∃ (hRep :
+            BHW.SourceScalarRepresentativeData
+              (d := d) n (bvt_F OS lgc n))
+          (Wscal : Set (Fin n -> Fin n -> ℂ))
+          (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
+            BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
+            IsOpen Uy ∧
+            BHW.realEmbed y0 ∈ Uy ∧
+            Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) β ∩
+              BHW.os45PulledRealBranchDomain (d := d) (n := n) β ∧
+            (∀ z, z ∈ Uy ->
+              BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
+            Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n β.symm ∧
+            Set.EqOn
+              (fun Z =>
+                hRep.Phi (BHW.sourcePermuteComplexGram n β.symm Z))
+              hRep.Phi
+              Wscal
+      ```
+
+      On the active theorem-2 route, the only public producers of this packet
+      are `BHW.os45OneBranchScalarGramEq_sourceInput_id` and
+      `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`.  A generic
+      arbitrary-`β` assembly lemma may consume the packet, but no public theorem
+      may manufacture it from `hU_open`, `hU_jost`, `hU_ordered`, `hU_ET`, and
+      `hU_horiz_bhw` alone.
+
       Its proof source is:
 
       1. `bvt_F_acrOne_package`, whose total finite-permutation symmetry
@@ -2871,23 +2910,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x) ∈
                 BHW.os45PulledRealBranchDomain (d := d) (n := n) β)
           {x0 : NPointDomain d n}
-          (hx0U : x0 ∈ U) :
+          (hx0U : x0 ∈ U)
+          (hScalar :
+            BHW.OS45OneBranchScalarGramEqPacket
+              (d := d) OS lgc n β
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0)) :
           BHW.OS45BranchHorizontalSourceGermAt
             (d := d) OS lgc n β
             (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0)
       ```
 
-      Implementation restriction: the displayed arbitrary-`β` theorem is a
-      safe production target only after the scalar source theorem below has
-      been proved for that same `β`.  The current theorem-2 route needs only
-      two public source suppliers: `β = 1` and
+      Implementation restriction: this arbitrary-`β` theorem is only an
+      assembly target because it consumes `hScalar`.  The scalar packet is the
+      real mathematical source input.  The current theorem-2 route needs only
+      two public scalar-packet suppliers: `β = 1` and
       `β = Equiv.swap i ⟨i.val + 1, hi⟩`.  If the generic theorem is
       implemented before the full arbitrary-permutation Hall-Wightman source
-      theorem, it must be a private assembly lemma consuming the explicit
-      scalar source packet returned by the identity or adjacent scalar source
-      suppliers, not a theorem claiming that
-      `hU_open`, `hU_jost`, `hU_ordered`, `hU_ET`, and `hU_horiz_bhw` alone
-      prove arbitrary permutation source compatibility.
+      theorem, it must remain this private-style assembly lemma consuming the
+      explicit scalar source packet returned by the identity or adjacent scalar
+      source suppliers, not a theorem claiming that `hU_open`, `hU_jost`,
+      `hU_ordered`, `hU_ET`, and `hU_horiz_bhw` alone prove arbitrary
+      permutation source compatibility.
 
       Mathematical content of this one-branch theorem:
 
@@ -3030,7 +3073,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       side.  The one-branch theorem must carry ordered-sector data, so that
       `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered` supplies the
       ACR-side base membership.  The value-identification part must be
-      isolated as the following genuine one-branch source theorem:
+      isolated as the following genuine one-branch source theorem, whose value
+      input is the scalar packet:
 
       ```lean
       theorem BHW.os45OneBranchACRBHWAgreement_of_sourcePatch
@@ -3053,7 +3097,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x) ∈
                 BHW.os45PulledRealBranchDomain (d := d) (n := n) β)
           {x0 : NPointDomain d n}
-          (hx0U : x0 ∈ U) :
+          (hx0U : x0 ∈ U)
+          (hScalar :
+            BHW.OS45OneBranchScalarGramEqPacket
+              (d := d) OS lgc n β
+              (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0)) :
           let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
           let Wβ :=
             fun z : Fin n -> Fin (d + 1) -> ℂ =>
@@ -3074,46 +3122,30 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```
 
       This theorem is not a wrapper: its conclusion is exactly the
-      branch-local ACR/BHW equality that is otherwise missing from domain
-      geometry.  After it is proved, `OS45BranchHorizontalSourceGermAt` is
-      packaged mechanically by adding the definitional BHW-side equality on
+      branch-local ACR/BHW equality supplied by `hScalar`, together with the
+      domain and holomorphy fields needed by the source germ.  After it is
+      proved, `OS45BranchHorizontalSourceGermAt` is packaged mechanically by
+      adding the definitional BHW-side equality on
       `os45PulledRealBranchDomain β`.
 
       For Lean implementation, the arbitrary-`β` theorem above must not be
       exposed as a public theorem from only `hU_open`, `hU_jost`,
-      `hU_ordered`, `hU_ET`, and `hU_horiz_bhw`.  The display below records
-      the **conclusion shape** of the local source input.  In production it is
-      either a private assembly lemma whose hypotheses already include the
-      scalar packet produced by
-      `BHW.os45OneBranchScalarGramEq_sourceInput_id` or
-      `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`, or it is replaced
-      by the two public id/adjacent specializations.  It is not a license to
-      prove arbitrary permutation source compatibility from domain geometry.
+      `hU_ordered`, `hU_ET`, and `hU_horiz_bhw`.  The display below is the
+      private-style algebraic assembly from an already constructed scalar
+      packet; it is not a license to prove arbitrary permutation source
+      compatibility from domain geometry.
 
       ```lean
       theorem BHW.os45OneBranchACRBHWAgreement_sourceInput
           [NeZero d]
-          (hd : 2 <= d)
           (OS : OsterwalderSchraderAxioms d)
           (lgc : OSLinearGrowthCondition d OS)
           (n : Nat) (β : Equiv.Perm (Fin n))
-          (U : Set (NPointDomain d n))
-          (hU_open : IsOpen U)
-          (hU_jost : ∀ x, x ∈ U -> x ∈ BHW.JostSet d n)
-          (hU_ordered :
-            ∀ x, x ∈ U ->
-              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) β)
-          (hU_ET :
-            ∀ x, x ∈ U -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
-          (hU_horiz_bhw :
-            ∀ x, x ∈ U ->
-              BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x) ∈
-                BHW.os45PulledRealBranchDomain (d := d) (n := n) β)
-          {x0 : NPointDomain d n}
-          (hx0U : x0 ∈ U) :
+          (y0 : NPointDomain d n)
+          (hScalar :
+            BHW.OS45OneBranchScalarGramEqPacket
+              (d := d) OS lgc n β y0) :
           let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
-          let y0 := BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0
           let Wβ :=
             fun z : Fin n -> Fin (d + 1) -> ℂ =>
               BHW.permAct (d := d) β.symm (Q.symm z)
@@ -3129,12 +3161,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
               Uy
       ```
 
-      This sharper theorem is the true mathematical work.  The broader
-      `os45OneBranchACRBHWAgreement_of_sourcePatch` theorem then weakens the
-      equality from `Uy` to `Uy ∩ os45ACRBranchDomain β`, records
-      differentiability of the common representative using
-      `BHW.os45PulledRealBranch_holomorphicOn`, and packages the same
-      neighborhood for `OS45BranchHorizontalSourceGermAt`.
+      The hard mathematical work is producing `hScalar` by the identity or
+      adjacent OS I §4.5/BHW source theorem.  This assembly theorem then
+      converts the scalar packet to the ACR/BHW equality by the algebraic
+      reduction below.  The broader
+      `os45OneBranchACRBHWAgreement_of_sourcePatch` theorem adds the
+      source-patch domain hypotheses, records differentiability of the common
+      representative using `BHW.os45PulledRealBranch_holomorphicOn`, and
+      packages the same neighborhood for `OS45BranchHorizontalSourceGermAt`.
 
       The source input itself has one algebraic reduction that must be used in
       Lean before any harder Hall-Wightman continuation is attempted.  Once a
@@ -3212,55 +3246,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       That data only says that the ordinary extended-tube branch is represented
       by `Phi` on `sourceExtendedTubeGramDomain`; it does not assert any
       permutation invariance of `Phi`.  The missing input is a local
-      Hall-Wightman theorem for the symmetric `S'_n` datum:
-
-      ```lean
-      theorem BHW.os45OneBranchScalarGramEq_sourceInput
-          [NeZero d]
-          (hd : 2 <= d)
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
-          (n : Nat) (β : Equiv.Perm (Fin n))
-          (U : Set (NPointDomain d n))
-          (hU_open : IsOpen U)
-          (hU_jost : ∀ x, x ∈ U -> x ∈ BHW.JostSet d n)
-          (hU_ordered :
-            ∀ x, x ∈ U ->
-              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) β)
-          (hU_ET :
-            ∀ x, x ∈ U -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
-          (hU_horiz_bhw :
-            ∀ x, x ∈ U ->
-              BHW.realEmbed
-                (BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x) ∈
-                BHW.os45PulledRealBranchDomain (d := d) (n := n) β)
-          {x0 : NPointDomain d n}
-          (hx0U : x0 ∈ U) :
-          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
-          let y0 := BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0
-          ∃ (hRep :
-              BHW.SourceScalarRepresentativeData
-                (d := d) n (bvt_F OS lgc n))
-            (Wscal : Set (Fin n -> Fin n -> ℂ))
-            (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
-              BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
-              IsOpen Uy ∧
-              BHW.realEmbed y0 ∈ Uy ∧
-              Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) β ∩
-                BHW.os45PulledRealBranchDomain (d := d) (n := n) β ∧
-              (∀ z, z ∈ Uy ->
-                BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
-              Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n β.symm ∧
-              Set.EqOn
-                (fun Z =>
-                  hRep.Phi (BHW.sourcePermuteComplexGram n β.symm Z))
-                hRep.Phi
-                Wscal
-      ```
-
-      Implementation restriction: the displayed arbitrary-`β` statement is
-      the shared conclusion shape, not a public theorem to implement from the
-      five source-domain hypotheses alone.  The active Lean surfaces are:
+      Hall-Wightman theorem for the symmetric `S'_n` datum producing the
+      packet `BHW.OS45OneBranchScalarGramEqPacket`.  There is no public
+      arbitrary-`β` theorem that produces this packet from the five
+      source-domain hypotheses alone.  The active Lean surfaces are:
 
       - `BHW.os45OneBranchScalarGramEq_sourceInput_id`, the specialization
         `β = 1`;
@@ -3299,27 +3288,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {x0 : NPointDomain d n}
           (hx0V : x0 ∈ V) :
           let β : Equiv.Perm (Fin n) := 1
-          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
           let y0 :=
             BHW.os45CommonEdgeRealPoint (d := d) (n := n) β x0
-          ∃ (hRep :
-              BHW.SourceScalarRepresentativeData
-                (d := d) n (bvt_F OS lgc n))
-            (Wscal : Set (Fin n -> Fin n -> ℂ))
-            (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
-              BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
-              IsOpen Uy ∧
-              BHW.realEmbed y0 ∈ Uy ∧
-              Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) β ∩
-                BHW.os45PulledRealBranchDomain (d := d) (n := n) β ∧
-              (∀ z, z ∈ Uy ->
-                BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
-              Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n β.symm ∧
-              Set.EqOn
-                (fun Z =>
-                  hRep.Phi (BHW.sourcePermuteComplexGram n β.symm Z))
-                hRep.Phi
-                Wscal
+          BHW.OS45OneBranchScalarGramEqPacket
+            (d := d) OS lgc n β y0
       ```
 
       Its proof is only the identity simplification.  Obtain `hRep` from the
@@ -3388,29 +3360,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   BHW.sourcePermuteComplexGram n τ
                     (BHW.sourceMinkowskiGram d n (Γ t)))) :
           let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-          let Q := BHW.os45QuarterTurnCLE (d := d) (n := n)
           let y0 :=
             BHW.os45CommonEdgeRealPoint (d := d) (n := n)
               (1 : Equiv.Perm (Fin n)) x0
-          ∃ (hRep :
-              BHW.SourceScalarRepresentativeData
-                (d := d) n (bvt_F OS lgc n))
-            (Wscal : Set (Fin n -> Fin n -> ℂ))
-            (Uy : Set (Fin n -> Fin (d + 1) -> ℂ)),
-              BHW.IsRelOpenInSourceComplexGramVariety d n Wscal ∧
-              IsConnected Wscal ∧
-              IsOpen Uy ∧
-              BHW.realEmbed y0 ∈ Uy ∧
-              Uy ⊆ BHW.os45ACRBranchDomain (d := d) (n := n) τ ∩
-                BHW.os45PulledRealBranchDomain (d := d) (n := n) τ ∧
-              (∀ z, z ∈ Uy ->
-                BHW.sourceMinkowskiGram d n (Q.symm z) ∈ Wscal) ∧
-              Wscal ⊆ BHW.sourceDoublePermutationGramDomain d n τ ∧
-              Set.EqOn
-                (fun Z =>
-                  hRep.Phi (BHW.sourcePermuteComplexGram n τ Z))
-                hRep.Phi
-                Wscal
+          BHW.OS45OneBranchScalarGramEqPacket
+            (d := d) OS lgc n τ y0
       ```
 
       Proof transcript for the adjacent surface: obtain `hRep` as in the
@@ -4992,12 +4946,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`.  No new
       mathematics occurs in this last step.
 
-      The `hGram` production inside
-      `BHW.os45OneBranchACRBHWAgreement_sourceInput` is now split into the
-      active identity and adjacent scalar suppliers above.  Its allowed source
-      content is only the OS I §4.5
-      one-branch Hall-Wightman/BHW source theorem on the selected Figure-2-4
-      scalar corridor: construct the branch seed
+      The `hGram` production is now entirely inside the active identity and
+      adjacent scalar-packet suppliers above.  The assembly theorem
+      `BHW.os45OneBranchACRBHWAgreement_sourceInput` consumes
+      `BHW.OS45OneBranchScalarGramEqPacket`; it does not manufacture that
+      packet from geometry.  The allowed source content for the packet
+      producers is only the OS I §4.5 one-branch Hall-Wightman/BHW source
+      theorem on the selected Figure-2-4 scalar corridor: construct the
+      branch seed
       `z ↦ bvt_F OS lgc n (permAct β.symm z)` on the appropriate `S'_n`
       ordered/permuted tube side, use OS-II `bvt_F_perm` only to identify that
       seed with the selected symmetric `S'_n` datum there, enlarge that branch
@@ -5006,7 +4962,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       neighbourhood.  It must not compare the identity and adjacent pulled BHW
       branches by real-edge locality.
 
-      In particular, a Lean proof of this theorem may use:
+      In particular, a Lean proof of the packet-producing theorem may use:
 
       - `bvt_F_holomorphic`, `bvt_F_acrOne_package`, `bvt_F_perm`, and
         `bvt_F_restrictedLorentzInvariant_forwardTube` for the selected
@@ -5036,13 +4992,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `hU_horiz_bhw`, `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`,
          and openness of `os45ACRBranchDomain β` and
          `os45PulledRealBranchDomain β`;
-      2. prove `BHW.os45OneBranchACRBHWAgreement_sourceInput`, the genuine
-         one-branch source theorem above;
-      3. derive `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch` by adding
+      2. prove the public scalar-packet supplier
+         `BHW.os45OneBranchScalarGramEq_sourceInput_id` or
+         `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`;
+      3. consume that packet in
+         `BHW.os45OneBranchACRBHWAgreement_sourceInput`;
+      4. derive `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch` by adding
          the recorded holomorphy fields and restricting the `Set.EqOn`
          equality from `Uy` to the smaller domain requested by the packaging
          theorem;
-      4. package `BHW.OS45BranchHorizontalSourceGermAt` from that theorem and
+      5. package `BHW.OS45BranchHorizontalSourceGermAt` from that theorem and
          the definitional pulled-branch equality.
 
       Expanded source-germ proof transcript:

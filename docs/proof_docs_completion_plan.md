@@ -225,21 +225,24 @@ content:
    choose the neighborhood, use ordered-sector membership for the ACR side,
    and ensure the pulled BHW argument lies in the extended tube; they do
    **not** prove the ACR/BHW equality.  The agreement theorem is now further
-   split into the sharper source input
-   `BHW.os45OneBranchACRBHWAgreement_sourceInput`, which gives a neighborhood
-   contained in both branch domains and a `Set.EqOn` equality there, followed
-   by the packaging theorem
-   `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch`.  The algebraic
-   reduction from local Gram equality to ACR/BHW equality is now named
+   split around the explicit scalar packet
+   `BHW.OS45OneBranchScalarGramEqPacket`: the public identity and adjacent
+   source suppliers produce this packet, while
+   `BHW.os45OneBranchACRBHWAgreement_sourceInput` only consumes it and converts
+   it into a neighborhood contained in both branch domains plus the required
+   `Set.EqOn` equality.  The packaging theorem
+   `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch` also consumes the same
+   packet together with the source-patch geometry.  The algebraic reduction from
+   local Gram equality to ACR/BHW equality is now named
    `BHW.os45OneBranchACRBHWAgreement_of_scalarGramEq`: after a
    `SourceScalarRepresentativeData` packet supplies equality of the two
    scalar-product Gram arguments, the proof is just `branch_eq`,
    `sourceMinkowskiGram_perm`, `bvt_F_perm`, and
-   `BHW.extendF_eq_on_forwardTube`.  The source input must supply that local
-   Gram equality from the explicit local `S'_n` source suppliers
+   `BHW.extendF_eq_on_forwardTube`.  The scalar packet must be produced from
+   the explicit local `S'_n` source suppliers
    `BHW.os45OneBranchScalarGramEq_sourceInput_id` and
-   `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`; the displayed
-   arbitrary-`β` conclusion shape in the blueprint is private assembly only.
+   `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`; there is no public
+   arbitrary-`β` theorem manufacturing it from source-domain geometry alone.
    These suppliers obtain the ordinary `SourceScalarRepresentativeData`,
    construct a relatively open scalar neighbourhood inside the relevant double
    scalar domain, prove equality of `Phi` and its permuted pullback from the
@@ -367,7 +370,8 @@ content:
    The generic arbitrary-`β` theorem is not licensed as a standalone
    production source theorem until the same `S'_n` seed and BHW corridor are
    proved for arbitrary `β`; on the active theorem-2 path it should be
-   implemented only as an assembly lemma consuming the scalar packet.  The
+   implemented only as an assembly lemma consuming
+   `BHW.OS45OneBranchScalarGramEqPacket`.  The
    public scalar suppliers are
    `BHW.os45OneBranchScalarGramEq_sourceInput_id` for `β = 1` and
    `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent` for the adjacent
