@@ -3,6 +3,7 @@ Copyright (c) 2026 ModularPhysics Contributors.
 Released under Apache 2.0 license.
 Authors: ModularPhysics Contributors
 -/
+import OSReconstruction.SCV.LocalDistributionalEOWSlice
 import OSReconstruction.SCV.LocalEOWPairingCLM
 import OSReconstruction.SCV.LocalEOWChartRecovery
 
@@ -588,6 +589,136 @@ theorem localEOWAffineCutoff_one_on_translatedKernel
   rw [hx_eq]
   exact localEOWAffineCutoff_one_of_affineRealWindow_add
     x0 ys hli χcoord hχcoord_one hz (hsmall t ht_norm)
+
+/-- Construct the two local slice CLM families from prepared side domains and
+the affine chart cutoff.
+
+The raw boundary-value hypotheses are only required for compactly supported
+tests inside `E`; the affine pushed cutoff supplies this support before the
+cutoff-support slice-family theorem is applied. -/
+theorem localEOWSliceCLMs_from_preparedDomains
+    {Cplus Cminus E : Set (Fin m → ℝ)} {rψ ρ : ℝ}
+    (Ωplus Ωminus Dplus Dminus : Set (ComplexChartSpace m))
+    (Fplus Fminus : ComplexChartSpace m → ℂ)
+    (T : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ)
+    (x0 : Fin m → ℝ) (ys : Fin m → Fin m → ℝ)
+    (hli : LinearIndependent ℝ ys)
+    (χcoord : SchwartzMap (Fin m → ℝ) ℂ)
+    (hΩplus_open : IsOpen Ωplus)
+    (hΩminus_open : IsOpen Ωminus)
+    (hFplus_diff : DifferentiableOn ℂ Fplus Ωplus)
+    (hFminus_diff : DifferentiableOn ℂ Fminus Ωminus)
+    (hχcoord_compact : HasCompactSupport (χcoord : (Fin m → ℝ) → ℂ))
+    (hχ_support_E :
+      tsupport
+        (localEOWAffineTestPushforwardCLM x0 ys hli χcoord :
+          (Fin m → ℝ) → ℂ) ⊆ E)
+    (hχcoord_one :
+      ∀ u ∈ Metric.closedBall (0 : Fin m → ℝ) (3 * ρ),
+        χcoord u = 1)
+    (hplus_margin :
+      ∀ y ∈ Cplus, ∀ x ∈ tsupport
+          (localEOWAffineTestPushforwardCLM x0 ys hli χcoord :
+            (Fin m → ℝ) → ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ωplus)
+    (hminus_margin :
+      ∀ y ∈ Cminus, ∀ x ∈ tsupport
+          (localEOWAffineTestPushforwardCLM x0 ys hli χcoord :
+            (Fin m → ℝ) → ℂ),
+        (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) * Complex.I) ∈ Ωminus)
+    (hDplus_sub : Dplus ⊆ TubeDomain Cplus)
+    (hDminus_sub : Dminus ⊆ TubeDomain Cminus)
+    (hDplus_window :
+      Dplus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ))
+    (hDminus_window :
+      Dminus ⊆ localEOWAffineRealWindow x0 ys hli (2 * ρ))
+    (hsmall :
+      ∀ t : Fin m → ℝ, ‖t‖ ≤ rψ →
+        ‖(localEOWRealLinearCLE ys hli).symm t‖ < ρ)
+    (hplus_bv_raw :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        HasCompactSupport (φ : (Fin m → ℝ) → ℂ) →
+        tsupport (φ : (Fin m → ℝ) → ℂ) ⊆ E →
+          Tendsto (fun y =>
+            ∫ x : Fin m → ℝ,
+              Fplus (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) *
+                Complex.I) * φ x)
+            (nhdsWithin 0 Cplus) (nhds ((T.restrictScalars ℝ) φ)))
+    (hminus_bv_raw :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        HasCompactSupport (φ : (Fin m → ℝ) → ℂ) →
+        tsupport (φ : (Fin m → ℝ) → ℂ) ⊆ E →
+          Tendsto (fun y =>
+            ∫ x : Fin m → ℝ,
+              Fminus (fun i => (x i : ℂ) + ((y i : ℝ) : ℂ) *
+                Complex.I) * φ x)
+            (nhdsWithin 0 Cminus) (nhds ((T.restrictScalars ℝ) φ))) :
+    let χ : SchwartzMap (Fin m → ℝ) ℂ :=
+      localEOWAffineTestPushforwardCLM x0 ys hli χcoord
+    let Tcut : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+      T.comp (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ))
+    ∃ Tplus Tminus :
+        (Fin m → ℝ) → SchwartzMap (Fin m → ℝ) ℂ →L[ℝ] ℂ,
+      (∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dplus,
+          realMollifyLocal Fplus ψ w =
+            Tplus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ)) ∧
+      (∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dminus,
+          realMollifyLocal Fminus ψ w =
+            Tminus (fun i => (w i).im)
+              (translateSchwartz (fun i => - (w i).re) ψ)) ∧
+      (∀ φ, Tendsto (fun y => Tplus y φ) (nhdsWithin 0 Cplus)
+        (nhds ((Tcut.restrictScalars ℝ) φ))) ∧
+      (∀ φ, Tendsto (fun y => Tminus y φ) (nhdsWithin 0 Cminus)
+        (nhds ((Tcut.restrictScalars ℝ) φ))) := by
+  dsimp only
+  let χ : SchwartzMap (Fin m → ℝ) ℂ :=
+    localEOWAffineTestPushforwardCLM x0 ys hli χcoord
+  let Tcut : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] ℂ :=
+    T.comp (SchwartzMap.smulLeftCLM ℂ (χ : (Fin m → ℝ) → ℂ))
+  have hχ_compact : HasCompactSupport (χ : (Fin m → ℝ) → ℂ) := by
+    dsimp [χ]
+    exact HasCompactSupport.localEOWAffineTestPushforwardCLM x0 ys hli
+      hχcoord_compact
+  have hTcut :
+      ∀ φ : SchwartzMap (Fin m → ℝ) ℂ,
+        (Tcut.restrictScalars ℝ) φ =
+          (T.restrictScalars ℝ)
+            ((SchwartzMap.smulLeftCLM ℂ
+              (χ : (Fin m → ℝ) → ℂ)) φ) := by
+    intro φ
+    rfl
+  have hplus_cutoff_one :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dplus, ∀ x ∈
+          tsupport
+            (translateSchwartz (fun i => - (w i).re) ψ :
+              (Fin m → ℝ) → ℂ),
+          χ x = 1 := by
+    intro ψ hψ w hw x hx
+    exact localEOWAffineCutoff_one_on_translatedKernel
+      x0 ys hli χcoord hχcoord_one (hDplus_window hw) hsmall hψ hx
+  have hminus_cutoff_one :
+      ∀ ψ : SchwartzMap (Fin m → ℝ) ℂ, KernelSupportWithin ψ rψ →
+        ∀ w ∈ Dminus, ∀ x ∈
+          tsupport
+            (translateSchwartz (fun i => - (w i).re) ψ :
+              (Fin m → ℝ) → ℂ),
+          χ x = 1 := by
+    intro ψ hψ w hw x hx
+    exact localEOWAffineCutoff_one_on_translatedKernel
+      x0 ys hli χcoord hχcoord_one (hDminus_window hw) hsmall hψ hx
+  exact
+    sliceCLM_family_from_distributionalBoundary_of_cutoffSupport
+      (m := m) (rψ := rψ) Ωplus Ωminus Dplus Dminus
+      (Cplus := Cplus) (Cminus := Cminus) (E := E)
+      Fplus Fminus (T.restrictScalars ℝ) Tcut χ
+      hΩplus_open hΩminus_open hFplus_diff.continuousOn
+      hFminus_diff.continuousOn hχ_compact hχ_support_E hTcut
+      hplus_margin hminus_margin hDplus_sub hDminus_sub
+      hplus_cutoff_one hminus_cutoff_one hplus_bv_raw hminus_bv_raw
 
 /-- Assemble prepared fixed-window local EOW data into the scaled one-chart
 recovery theorem.
