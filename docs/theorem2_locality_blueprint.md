@@ -1057,6 +1057,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand`,
      `SCV.regularizedLocalEOW_pairingCLM_of_fixedWindow`,
      `SCV.regularizedLocalEOW_family_chartKernel_covariance_on_shiftedOverlap`,
+     `SCV.regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow`,
+     `SCV.chartSideFunction_continuousOn_strictBalls_from_fixedWindow`,
      `SCV.regularizedLocalEOW_pairingCLM_localCovariant`,
      `SCV.regularizedLocalEOW_pairingCLM_localCovariant_from_fixedWindow`,
      `SCV.exists_normalized_schwartz_bump_kernelSupportWithin`,
@@ -2874,7 +2876,17 @@ Current implementation order:
    `continuousOn_regularizedLocalEOW_chartKernelSliceIntegrand` is called
    with the compact real set
    `localEOWRealChart x0 ys '' closedBall 0 ρin`, not with the global open
-   edge set.
+   edge set.  The side identities and chart-family holomorphy are supplied by
+   the fixed-window chart-kernel adapter
+   `regularizedLocalEOW_chartKernelFamily_outputs_from_fixedWindow`, which
+   first pushes support by
+   `KernelSupportWithin.localEOWRealLinearKernelPushforwardCLM_of_le_four_mul`
+   and then rewrites the side mollifiers with
+   `realMollifyLocal_localEOWChart_kernelPushforwardCLM_pullback`.
+   The side-function continuity inputs for the scaled recovery theorem are
+   supplied by
+   `chartSideFunction_continuousOn_strictBalls_from_fixedWindow`, using
+   `4σ ≤ ρin` and `card * (4σ) < rpoly`.
    These inequalities close the real-window, truncated-side-cone,
    fixed-window coordinate-sum, pushed-kernel support, and local-recovery
    margin obligations on both the final core side ball and the larger

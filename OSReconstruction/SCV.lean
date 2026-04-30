@@ -61,6 +61,7 @@ import OSReconstruction.SCV.LocalProductDescent
 import OSReconstruction.SCV.LocalProductDescentIntegrals
 import OSReconstruction.SCV.LocalProductRecovery
 import OSReconstruction.SCV.LocalEOWChartRecovery
+import OSReconstruction.SCV.LocalEOWChartAssembly
 import OSReconstruction.SCV.HasFDerivAtProd
 import OSReconstruction.SCV.PartialFourierSpatial
 
