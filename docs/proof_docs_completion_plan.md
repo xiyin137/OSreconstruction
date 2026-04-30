@@ -54,6 +54,19 @@ The next implementation gate is:
    `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, and the
    OS specialization `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.
 
+Current local Slot 1 correction: the OS45 common-chart/EOW supplier is no
+longer the equal-time/post-radius plan.  The checked SCV input is
+`SCV.chartDistributionalEOW_local_envelope`; the OS45 proof must instantiate
+it at an ordered identity-sector horizontal edge.  The immediate proof-doc and
+Lean surfaces are the bounded identity perturbation, the horizontal-edge
+forward-tube pair, pointwise equality `Hplus = Hminus` from
+`BHW.extendF_eq_on_forwardTube`, the compact-cutoff continuous boundary CLM,
+the ordered horizontal-edge local-wedge lemma, the two compact-uniform
+continuous boundary-value lemmas, side-component paths from the local seed to
+the finite Wick/real traces, and the holomorphic gluing helper.  The global
+compact-direction `bvt_W` boundary transport remains useful elsewhere, but it
+is not the blocker for this ordered-edge local seed.
+
 ## 0. Paper-authority rule
 
 Every proof doc and production implementation must follow the OS papers
@@ -765,18 +778,14 @@ Current examples:
    `BHW.AdjacentOSEOWDifferenceEnvelope`.  The theorem-2 blueprint now separates
    the OS45 instantiation theorem
    `BHW.os45_adjacent_commonBoundaryEnvelope` from the direct-coordinate
-   packaging: it constructs the common chart, applies the pure-SCV local
-   distributional envelope theorem
-   `SCV.local_distributional_edge_of_the_wedge_envelope`, and exports a
-   holomorphic branch-difference function with the Wick/real trace identities.
-   The SCV theorem surface is now pinned to truncated local wedges, a local
-   continuous EOW lemma extracted from the Cauchy-polydisc proof,
-   Streater-Wightman real-direction regularization, compact-subcone-uniform
-   distributional boundary limits, kernel/nuclear-theorem recovery,
-   translation covariance, compactly supported approximate identities, and
-   explicit slow-growth bounds; this keeps the theorem in the OS-II
-   distributional category instead of silently upgrading to pointwise boundary
-   values.  The finite-order primitive shortcut is rejected because the
+   packaging: it constructs the common chart, instantiates the checked
+   one-chart theorem `SCV.chartDistributionalEOW_local_envelope` at an ordered
+   identity-sector horizontal edge, glues the local seed to the OS45 side
+   components, and exports a holomorphic branch-difference function with the
+   Wick/real trace identities.  The older global
+   `SCV.local_distributional_edge_of_the_wedge_envelope` surface is retained as
+   a future SCV packaging target, not as the active Slot 1 input.  The
+   finite-order primitive shortcut is rejected because the
    multi-variable integration constants are infinite-dimensional, and the
    final patching route has been sharpened further: derive `0 < m` from
    `C.Nonempty` and `0 ∉ C`, choose one global cone basis in `C`, use a
@@ -1119,27 +1128,21 @@ Current examples:
    `SCV.local_distributional_edge_of_the_wedge_envelope` theorem must include
    uniqueness on the constructed open set, the
    `distributionalHolomorphic_regular` input is preceded by a concrete
-   regularity package, and the OS45 boundary-value step requires a
-   compact-subcone-uniform strengthening of
-   `bvt_boundary_values` derived from the OS-II polynomial-growth boundary
-   value theorem.  In particular, `bvt_boundary_values` as currently checked is
-   raywise in `η`; the theorem-2 consumer needs the documented
-   `TendstoUniformlyOn` theorem over every compact direction set before the
-   SCV envelope can be applied.
+   regularity package.  The later ordered-edge correction changes the immediate
+   OS45 boundary-value step: Slot 1 now uses continuous horizontal-edge
+   boundary values on a compact local edge window, so the compact-subcone
+   strengthening of `bvt_boundary_values` is no longer the local seed blocker.
    Historical note: the next proof-doc frontier at this point was
    `SCV.distributionalHolomorphic_regular`.  That frontier is no longer the
    theorem-2 Slot 1 blocker after the later checked SCV recovery and one-chart
-   EOW passes.  The active theorem-2 proof-doc frontier is now the OS45
-   single-chart instantiation of `SCV.chartDistributionalEOW_local_envelope`,
-   preceded by the compact-direction uniform OS-II boundary-value theorem and
-   the post-radius shrink of the equal-time OS45 edge patch.  A new
-   implementation-blocking chart audit is recorded in
-   `docs/theorem2_locality_blueprint.md`: the OS45 quarter-turn sends a
-   horizontal common-chart point `y + i v` to ACR-one sign data involving
-   `y + v` and `v - y`, so the standard local `hlocal_wedge` hypothesis is not
-   automatic at an equal-time center.  This finite-dimensional/SCV chart
-   obligation must be proved in the proof docs before Lean implementation of
-   the OS45 one-chart consumer starts.  The blueprint
+   EOW passes.  The active theorem-2 proof-doc frontier is now the
+   identity-order OS45 instantiation of
+   `SCV.chartDistributionalEOW_local_envelope`: choose an ordered perturbation,
+   prove the horizontal-edge forward-tube pair and pointwise common boundary,
+   call the one-chart theorem on that ordered edge, then glue to the finite
+   Wick/real traces through side components.  The equal-time local-wedge audit
+   remains as the reason the old post-radius plan is retired, not as the next
+   theorem to prove.  The blueprint
    still records the Lean
    helper sequence: `dzSchwartzCLM` and its support lemmas, the checked
    coordinate-Laplacian identity
@@ -1349,17 +1352,15 @@ Current examples:
 		   two-sided package `SCV.localEOW_chart_twoSided_polywedge_mem`.  The
 		   public chart-coordinate layer is checked as `SCV.localEOWRealChart`,
 		   `SCV.localEOWChart`, `SCV.localEOWChart_real_imag`, and
-		   `SCV.localEOWChart_twoSided_polywedge_mem`.  These are not yet the OS45
-		   local-wedge theorem: the next SCV proof must splice these membership
-		   lemmas into the same Cauchy-polydisc proof bodies for
-		   `Ωplus`/`Ωminus`.  The remaining theorem-2 supplier
-		   blocker is therefore the local
-		   OS-II chart plumbing that feeds these checked SCV facts:
-	   supply the plus/minus raw boundary hypotheses and the
-	   cutoff-one/support-margin data in the documented
-	   `sliceCLM_family_from_distributionalBoundary`, then package the resulting
-	   common-boundary envelope for OS45.  This is not another distributional
-	   EOW theorem and not a common-boundary wrapper.
+		   `SCV.localEOWChart_twoSided_polywedge_mem`.  The remaining
+		   theorem-2 supplier blocker is no longer an SCV splice.  It is the OS45
+		   identity-order instantiation layer: expose the ordered seed, prove the
+		   horizontal-edge forward-tube pair, prove the ordered horizontal-edge
+		   local wedge, build the compact-cutoff continuous edge boundary CLM,
+		   call the checked one-chart theorem, and glue the local seed to the
+		   side components containing the finite Wick and real traces.  This is
+		   not another distributional EOW theorem and not a common-boundary
+		   wrapper.
 	   The initial coordinate and trace-membership support
 	   `BHW.configPermCLE`, `BHW.os45CommonChartCLE`,
 	   `BHW.wickRotate_ordered_mem_acrOne`,
@@ -1376,14 +1377,10 @@ Current examples:
 	   by the checked direct-coordinate bridge.
 	   The theorem-2 blueprint records the still-needed local supplier surfaces
 	   `BHW.os45_adjacent_commonBoundaryEnvelope` and
-	   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII`.  If the
-	   implementation of
-	   `SCV.local_distributional_edge_of_the_wedge_envelope` must be only a
-	   QFT-free packaging of the checked local distributional-EOW machinery into
-	   the exact local chart-envelope data needed here.  It must follow the
-	   fixed-basis/complex-affine-transport route recorded in
-	   `docs/scv_infrastructure_blueprint.md`; it is not a new theorem-2
-	   assumption and not a replacement for the OS45 supplier.
+	   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII`.  The old
+	   target `SCV.local_distributional_edge_of_the_wedge_envelope` remains a
+	   future global packaging theorem only; the current OS45 supplier consumes
+	   the checked `SCV.chartDistributionalEOW_local_envelope` directly.
 	   `BHW.exists_sourceDistributionalUniquenessEnvironment_of_open_jost_patch`
 	   supplies the Gram environment for that same `V`; and
 	   `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII` fills the

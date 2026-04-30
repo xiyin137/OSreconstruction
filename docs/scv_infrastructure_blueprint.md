@@ -344,23 +344,26 @@ boundary values beyond compactly supported tests in `E`; and
 prepared affine real-window domains.  The one-chart implementation target
 `SCV.chartDistributionalEOW_local_envelope` is now checked in
 `SCV/LocalEOWDistributionalEnvelope.lean`.  For theorem 2 Slot 1, this checked
-one-chart theorem is the active SCV endpoint: the OS45 proof must shrink the
-selected real-open edge after the returned radius is known, so it does not need
-the still-unimplemented global transport and chart-cover patching theorem.
-However, the OS45 quarter-turn consumer still owes one finite-dimensional
-chart-geometry proof before it can instantiate this endpoint at the equal-time
-adjacent Jost center.  A horizontal common-chart point `y + i v` pulls back
+one-chart theorem is the active SCV endpoint.  The OS45 proof no longer tries
+to instantiate it at the equal-time adjacent Jost center.  That equal-time
+attempt is retired because a horizontal common-chart point `y + i v` pulls back
 through the quarter-turn with ACR-one time-imaginary sign `y + v` on the plus
-branch and the corresponding `v - y` sign on the negative branch.  Thus the
-standard `hlocal_wedge` hypothesis of `chartDistributionalEOW_local_envelope`
-does not follow from openness at `y = 0`; no full real ball around the
-equal-time edge is automatically contained in the ACR-one preimage for all
-small positive side directions.  The OS45 proof must either prove a QFT-free
-tilted-chart local EOW variant with the same boundary-value and side-identity
-outputs, or prove a reduction from the tilted quarter-turn side domains to an
-already checked one-chart theorem without weakening that theorem's hypotheses.
-Until that lemma is checked, the SCV layer is ready but the OS45 instantiation
-is not.
+branch and the corresponding `y - v` sign on the negative branch, so openness
+at `y = 0` does not give the standard `hlocal_wedge` hypothesis.
+
+The active OS45 consumer instead first chooses the ordered identity-sector
+perturbation, works at that ordered horizontal common edge, proves the two
+horizontal branch arguments are honest forward-tube points, and obtains
+`Hplus = Hminus` on the edge from `BHW.extendF_eq_on_forwardTube`.  The
+ordered horizontal-edge local wedge is the ordinary compactness/openness
+argument at this ordered edge.  The boundary-value input to
+`chartDistributionalEOW_local_envelope` is then a compact-cutoff continuous
+edge functional, with compact-direction convergence proved by uniform
+continuity on local edge slabs.  The finite Wick and real traces are reached
+after the one-chart seed by holomorphic gluing through the positive and
+negative OS45 side components.  Thus the remaining work is OS45-side
+geometry/gluing, not more SCV recovery infrastructure and not a global `bvt_W`
+boundary transport.
 The future SCV targets `chartDistributionalEOW_transport_originalCoords` and
 the local chart-cover patching theorem remain useful for a global local EOW
 package, but they are not checked inputs and must not be cited as such in the
@@ -498,7 +501,7 @@ Source ledger for the internal helper list:
 | `positive_dimension_of_nonempty_not_zero` | Checked in `SCV/LocalEOWFixedBasis.lean`: finite-dimensional sanity lemma for the final local theorem.  If `C.Nonempty` and `(0 : Fin m -> ℝ) ∉ C`, then `0 < m`; for `m = 0` every vector `Fin 0 -> ℝ` is definitionally equal to zero, contradicting the two hypotheses.  This lets the final theorem keep the natural OS-II cone hypotheses instead of adding an extra dimension assumption. |
 | `localWedge_truncated_maps_compact_subcone` | Direct compact-set use of the local wedge hypothesis. |
 | global cone-basis choice | Use the existing checked theorem `open_set_contains_basis` in `SCV/EOWMultiDim.lean` directly after deriving `hm : 0 < m`; do not add a production wrapper just to rename it.  For the final patched theorem this basis must be chosen once globally from `C`, not separately for each edge point; using one fixed linear part is what makes overlap side seeds compatible. |
-| `open_convex_cone_basis_with_positive_sum` | Needed for the theorem-2 OS45 single-chart instantiation, not for the already checked one-chart theorem.  Given `0 < m`, an open convex cone `C`, and a direction `η0 ∈ C`, choose basis vectors `ys j ∈ C` with `LinearIndependent ℝ ys` and `∑ j, ys j = η0`.  The proof is finite-dimensional: take a small affinely independent simplex around `η0 / m` inside `C`, with barycenter `η0 / m`, and scale the vertices by `m`.  This lets the OS45 model half-time direction have strictly positive chart coordinates, so the finite Wick trace can be made to land in the strict positive side ball after the EOW radius is known. |
+| `open_convex_cone_basis_with_positive_sum` | Needed for the theorem-2 OS45 single-chart instantiation, not for the already checked one-chart theorem.  Given `0 < m`, an open convex cone `C`, and a direction `η0 ∈ C`, choose basis vectors `ys j ∈ C` with `LinearIndependent ℝ ys` and `∑ j, ys j = η0`.  The proof is finite-dimensional: take a small affinely independent simplex around `η0 / m` inside `C`, with barycenter `η0 / m`, and scale the vertices by `m`.  In the active ordered-edge route this makes the OS45 half-time seed ray strict-positive in chart coordinates, providing the nonempty side overlap used to glue the one-chart local seed to the positive OS45 side component. |
 | `cone_positive_combination_mem` | Checked in `SCV/LocalEOWFixedBasis.lean`: convex-cone bookkeeping.  If `ys j ∈ C` and all coefficients are nonnegative with positive sum, normalize the coefficients to a convex combination in `C`, then rescale by the positive sum using `hC_cone`.  The checked simplex lemmas use the normalized version; this helper is the unnormalized form used when rewriting positive chart-imaginary directions. |
 | `localEOWCoefficientSimplex`, `localEOWSimplexDirections`, `isCompact_localEOWCoefficientSimplex`, `isCompact_localEOWSimplexDirections`, `localEOWSimplexDirections_subset_cone`, `localEOW_positive_imag_normalized_mem_simplex` | Checked in `SCV/LocalContinuousEOW.lean`: compact closed coefficient simplex, compact image under the finite-dimensional chart-direction map, convex-combination inclusion in the cone, and normalization of positive imaginary chart directions. |
 | `zero_not_mem_localEOWSimplexDirections`, `tendsto_neg_nhdsWithin_zero_neg_image`, `localEOWSideDirectionWindow_subset_closure`, `isCompact_localEOWSideDirectionClosure`, `localEOWSimplexDirections_subset_sideDirectionWindow`, `exists_localEOWSideCone_radius`, `isOpen_localEOWSideCone`, `isOpen_neg_image`, `localEOWRealLinearPart_mem_localEOWSideCone`, `localEOWSideCone_subset_cone`, `localEOWSideCone_direction_norm_bound`, `localEOWSideCone_scalar_le_norm_div`, `localEOW_basisSideCone_rawBoundaryValue` | Checked in `SCV/LocalEOWSideCone.lean`: linear independence excludes `0` from the fixed-basis direction simplex; an open thickening of the simplex and compact closed envelope are constructed inside `C ∩ {η | η ≠ 0}`; the generated side cone is open, lies in `C`, and contains every positive chart-imaginary direction after normalization; compactness gives the uniform lower norm bound on directions, hence the scalar in `y = s • η` tends to zero with `y`; and continuity of negation converts the lower side to the negative-image filter.  The strengthened raw boundary theorem returns the chosen `ε`, the identities `Cplus = localEOWSideCone ys ε` and `Cminus = Neg.neg '' Cplus`, the closed-envelope containment, and the plus/minus raw `nhdsWithin` limits on this relatively compact conic window and its negative image. |
@@ -18640,12 +18643,14 @@ should proceed in the following order.
 8. Prove the recovered distribution gives back the original tube function by
    the standard Poisson/Fourier-Laplace reconstruction formula.
 
-For theorem 2, the boundary-value package also needs a compact-direction
-strengthening.  The public `tube_boundaryValueData_of_polyGrowth` is currently
-raywise; the OS45 local EOW supplier needs uniform convergence on every compact
-direction set `Kη ⊆ C`.  This must be proved in the same QFT-free SCV package,
-not added as a new axiom and not hidden in a BHW-specific theorem.  The
-uniform theorem should have the following shape before the OS specialization:
+For the general OS-II boundary-value package, a compact-direction strengthening
+is still useful.  The public `tube_boundaryValueData_of_polyGrowth` is currently
+raywise; future global tube-boundary transports may need uniform convergence on
+every compact direction set `Kη ⊆ C`.  This must be proved in the same QFT-free
+SCV package, not added as a new axiom and not hidden in a BHW-specific theorem.
+It is not the current ordered-edge OS45 Slot 1 blocker, because that local seed
+uses continuous horizontal-edge boundary values.  The uniform theorem should
+have the following shape before any OS specialization:
 
 ```lean
 theorem tube_boundaryValueData_uniformOnCompactDirections_of_polyGrowth
