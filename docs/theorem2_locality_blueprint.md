@@ -1048,6 +1048,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
      `SCV.localEOWChart_real_add_imag`,
      `SCV.chartOrthantBoundaryValue_from_uniformConeBoundaryValue`,
      `SCV.chartHolomorphy_from_originalHolomorphy`,
+     `SCV.StrictPositiveImagBall_mono`,
+     `SCV.StrictNegativeImagBall_mono`,
+     `SCV.tendsto_realMollifyLocal_strictPositiveImagBall`,
+     `SCV.tendsto_realMollifyLocal_strictNegativeImagBall`,
      `SCV.chartDistributionalEOW_local_envelope`, and
      `SCV.chartDistributionalEOW_transport_originalCoords`.
      `SCV.chartSlowGrowth_from_uniformConeSlowGrowth` remains documented as an
@@ -2842,7 +2846,9 @@ Current implementation order:
    `localEOWAffineRealWindow_add_realEmbed`; the fact that the translated real
    point lies where the cutoff equals `1` implies it lies in `tsupport χ`, so
    `exists_localEOW_truncatedSideCones_for_sliceMargin` applies.  The
-   approximate-identity side limits are proved by
+   approximate-identity side limits are the checked strict-side packages
+   `tendsto_realMollifyLocal_strictPositiveImagBall` and
+   `tendsto_realMollifyLocal_strictNegativeImagBall`; internally they apply
    `regularizedEnvelope_kernelLimit_from_representation` on the positive and
    negative chart-side neighborhoods, with
    `StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le` and

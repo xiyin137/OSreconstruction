@@ -51,6 +51,7 @@ import OSReconstruction.SCV.LocalEOWSideCone
 import OSReconstruction.SCV.LocalDistributionalEOWSlice
 import OSReconstruction.SCV.LocalEOWFixedBasis
 import OSReconstruction.SCV.LocalEOWChartEnvelope
+import OSReconstruction.SCV.LocalEOWChartApproxIdentity
 import OSReconstruction.SCV.LocalContinuousEOWSideAgreement
 import OSReconstruction.SCV.LocalDistributionalEOW
 import OSReconstruction.SCV.VaryingKernelContinuity
