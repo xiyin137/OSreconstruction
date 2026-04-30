@@ -148,3 +148,83 @@ connecting `wickRotatedBoundaryPairing` to `Wfn.W`.
 | `SCV/VladimirovTillmann.lean` | +2 axioms (`vladimirov_tillmann` pre-existing, `distributional_cluster_lifts_to_tube` new) |
 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean` | Bug fix + 4 new lemmas + sorry-free `bhw_pointwise_cluster_forwardTube` |
 | `README.md` | Documentation of fork changes |
+
+## Update 2026-04-30: Vetting + dependency mapping
+
+### Failed reduction attempt
+
+A proposed axiom `F_ext_pointwise_cluster_translatedPET` (pointwise cluster of
+`F_ext_on_translatedPET_total` lifted from `ForwardTube` to all of
+`TranslatedPET`) was drafted and vetted via Gemini deep-think. **Verdict:
+mathematically wrong in generic configurations.**
+
+Reason (Streater-Wightman 1964 ed. p.135 + Araki-Hepp-Ruelle 1962 *Helv. Phys.
+Acta* 35:164 Thm 2): for a configuration in the permuted-extended tube T'
+with complex Lorentz witness Λ, applying the cluster shift `+λ·a` (real
+spatial) yields `Im(Λ(ζ - λa)) = Im(Λ ζ) − λ·Im(Λa)`. For generic complex
+Λ, `Im(Λa) ≠ 0` even when `a` is real spatial — the shifted configuration
+**escapes the analytic continuation domain** as `λ → ∞`. Pointwise cluster
+on T' is therefore false, not just hard.
+
+The "Jost-point un-interleaving" hand-wave doesn't rescue it: Jost points are
+strictly real by definition (Streater-Wightman §3.3), so complex
+configurations cannot become Jost points under real shifts.
+
+### What the vetting confirmed
+
+- The standard textbook cluster axiom for OS reconstruction (Glimm-Jaffe Ch
+  19; OS 1973/75 axiom E4) is **distributional, on real Euclidean spacetime**,
+  not pointwise on complex tubes.
+- The Wightman-side analog is `Wfn.cluster` (R4), already an axiom of
+  `WightmanFunctions`. **No new axiom is needed.**
+- Pointwise cluster on the standard forward tube T (Araki-Hepp-Ruelle Thm 2)
+  is a corollary of the distributional version via Vitali. Restricted to T,
+  this is `bhw_pointwise_cluster_forwardTube` (already proved).
+
+### The actual dependency chain
+
+```
+W_analytic_cluster_integral
+  ← schwingerExtension_os_term_eq_wightman_term  (SchwingerAxioms.lean:2371, sorry)
+        bridge: wickRotatedBoundaryPairing = Wfn.W on OrderedPositiveTimeRegion supports
+  ← boundary_values_tempered + distributional BV infrastructure  (E→R lane)
+  ← Fourier-Laplace + Paley-Wiener + the OSToWightmanBoundaryValues plan
+```
+
+So the R→E cluster blocker is **structurally downstream of E→R
+boundary-values work**. The OS-W bridge theorem (sorried at line 2371)
+requires the same Edge-of-the-Wedge / Vitali / boundary-values plumbing
+that the E→R lane is building. Closing R→E cluster in isolation requires
+re-deriving this infrastructure.
+
+### Recommended path (Option 1)
+
+Wait for `boundary_values_tempered` to land via the E→R lane, then close
+`schwingerExtension_os_term_eq_wightman_term` for tensor-product test
+functions, then `W_analytic_cluster_integral` is a ~30-line corollary of
+`Wfn.cluster` + the bridge.
+
+Structural plumbing the cluster-corollary proof will need (Fubini split
+over `Fin.append`, push-through of `wickRotation` and `tensorProduct`):
+PR #72 (`integral_fin_append_split`, `MeasurableEquiv.finAddProd_symm_apply`,
+`ae_joint_triple_translatedPET`, `bhw_euclidean_kernel_perm_invariant_ae`)
+provides about half. The remaining `Fin.append`/`splitFirst`/`splitLast`
+simp bridges and componentwise composition lemma are minor and can ship
+in the same PR that closes the cluster integral.
+
+### Refinement of the resolution options
+
+The 2026-03-24 doc above proposed three resolution options. Updated assessment:
+
+- **Option 1 (strengthen axiom to PET)**: subsumed by the vetting finding —
+  pointwise cluster on PET / TranslatedPET is *false* in generic configs, not
+  just an open problem. This option is mathematically incorrect.
+- **Option 2 (sector decomposition)**: still plausible in principle but
+  would require careful handling of the witness-dependent translation /
+  permutation. Probably ~2–4 weeks of independent Edge-of-the-Wedge work
+  re-deriving content the E→R lane will provide. Don't pursue.
+- **Option 3 (direct distributional proof)**: confirmed as the right path.
+  The "new infrastructure connecting `wickRotatedBoundaryPairing` to
+  `Wfn.W`" is exactly the existing sorried theorem
+  `schwingerExtension_os_term_eq_wightman_term`, which depends on
+  `boundary_values_tempered`.
