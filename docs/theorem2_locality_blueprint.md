@@ -2819,13 +2819,15 @@ Current implementation order:
    both would hide a real smallness obligation.
    The final chart scale is chosen as in the SCV blueprint:
    `Rcore = rker = rη = σ`, `Rdesc = 4σ`, `Rcov = 8σ`, `Rcut = 16σ`, with
-   `128 * σ ≤ δ`, `σ < δside`, `σ < ρin`,
-   `(Fintype.card (Fin m) : ℝ) * σ < rpoly`, and
+   `128 * σ ≤ δ`, `4 * σ < δside`, `4 * σ < ρin`,
+   `(Fintype.card (Fin m) : ℝ) * (4 * σ) < rpoly`, and
    `‖(localEOWRealLinearCLE ys hli).toContinuousLinearMap‖ * (2 * σ) ≤ rψOrig`.
    These inequalities close the real-window, truncated-side-cone,
    fixed-window coordinate-sum, pushed-kernel support, and local-recovery
-   margin obligations.  In particular, the proof of the actual fixed-window
-   `hplus/hminus` hypotheses for `Dplus/Dminus` has three separate components:
+   margin obligations on both the final core side ball and the larger
+   side-neighborhood ball used by approximate identities.  In particular, the
+   proof of the actual fixed-window `hplus/hminus` hypotheses for
+   `Dplus/Dminus` has three separate components:
    fixed-window polywedge membership in `Ωplus/Ωminus`, truncated tube-domain
    membership in `TubeDomain CplusLoc/CminusLoc`, and affine real-window
    membership.  The translate-margin and slice cutoff-one hypotheses both use

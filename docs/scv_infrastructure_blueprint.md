@@ -3397,6 +3397,24 @@ def StrictPositiveImagBall {m : ℕ} (R : ℝ) : Set (ComplexChartSpace m) :=
 def StrictNegativeImagBall {m : ℕ} (R : ℝ) : Set (ComplexChartSpace m) :=
   Metric.ball (0 : ComplexChartSpace m) R ∩ {w | ∀ j, (w j).im < 0}
 
+theorem StrictPositiveImagBall_add_realEmbed_mem_ball_of_norm_le
+    {m : ℕ} {R r Rbig : ℝ}
+    {w : ComplexChartSpace m}
+    (hw : w ∈ StrictPositiveImagBall R)
+    {t : Fin m -> ℝ} (ht : ‖t‖ ≤ r)
+    (hRr : R + r < Rbig) :
+    w + realEmbed t ∈ Metric.ball (0 : ComplexChartSpace m) Rbig ∧
+      ∀ j, 0 < ((w + realEmbed t) j).im
+
+theorem StrictNegativeImagBall_add_realEmbed_mem_ball_of_norm_le
+    {m : ℕ} {R r Rbig : ℝ}
+    {w : ComplexChartSpace m}
+    (hw : w ∈ StrictNegativeImagBall R)
+    {t : Fin m -> ℝ} (ht : ‖t‖ ≤ r)
+    (hRr : R + r < Rbig) :
+    w + realEmbed t ∈ Metric.ball (0 : ComplexChartSpace m) Rbig ∧
+      ∀ j, ((w + realEmbed t) j).im < 0
+
 lemma localEOWRealLinearPart_eq_sum_smul
     {m : ℕ}
     (ys : Fin m -> Fin m -> ℝ)
@@ -4218,17 +4236,19 @@ envelope assembly once the raw distributional limits are supplied.
    `rψOrig` are known, choose `σ > 0` such that
    ```
    128 * σ ≤ δ,
-   σ < δside,
-   σ < ρin,
-   (Fintype.card (Fin m) : ℝ) * σ < rpoly,
+   4 * σ < δside,
+   4 * σ < ρin,
+   (Fintype.card (Fin m) : ℝ) * (4 * σ) < rpoly,
    ‖e.toContinuousLinearMap‖ * (2 * σ) ≤ rψOrig.
    ```
    The first inequality also gives `16 * σ < δ / 2` and
-   `2 * (8 * σ) < δ / 4`; the second sends strict side coordinate balls into
-   the truncated side cones; the third gives the real-window and fixed-window
-   real-coordinate smallness `Rcore ≤ ρin`; the fourth is the fixed-window
-   coordinate-sum smallness needed for the Rudin polywedge hypotheses; the
-   fifth ensures every chart kernel used by the pairing/covariance theorem
+   `2 * (8 * σ) < δ / 4`; the second sends the larger side-neighborhood
+   strict balls of radius `Rdesc = 4 * σ` into the truncated side cones; the
+   third gives the real-window and fixed-window real-coordinate smallness for
+   both `Rcore` and `Rdesc`; the fourth is the fixed-window coordinate-sum
+   smallness needed for the Rudin polywedge hypotheses on the same larger
+   side neighborhood; the fifth ensures every chart kernel used by the
+   pairing/covariance theorem
    pushes forward to an original-edge kernel inside the fixed-window support
    radius.
 
@@ -4267,6 +4287,8 @@ envelope assembly once the raw distributional limits are supplied.
    `v = Im w`, nonpositivity, positivity of `∑ j, -v_j`, and
    `StrictNegativeImagBall_neg_im_sum_le_card_mul`, then applies
    `localEOWChart_mem_fixedWindow_of_strictNegativeImagBall`.
+   The same argument is also available with radius `Rdesc = 4 * σ`; this is
+   the side-neighborhood used by the approximate-identity translate margin.
    For the local real-window factor in `Dplus/Dminus`, use
    `localEOWChart_mem_affineRealWindow_of_re_norm_lt` with
    `‖Re w‖ < Rcore < 2 * ρin`; for arbitrary fixed-window inputs
