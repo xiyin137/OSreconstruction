@@ -208,18 +208,28 @@ the quarter-turn edge.  Their difference `Tdiff = Tτ - Tid` is auxiliary data
 for `SCV.chartDistributionalEOW_local_envelope`; it is not assumed zero and is
 not the final real-edge locality distribution.
 
-The source of `Tid` and `Tτ` is deliberately branch-local.  For `Tid`, use the
-ordinary OS-II branch attached to the selected ordered patch `V`.  For `Tτ`,
-use the ordinary OS-II branch attached to the relabelled ordered patch
-`fun k => x (τ k)`, whose ordered-sector and extended-tube memberships are
-part of `BHW.os45_adjacent_identity_localEOWGeometry`.  The checked identity
-`BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then says that this
-relabelled branch has the same quarter-turn common-edge chart point as the
-identity branch.  Thus the adjacent packet does not assert that
+The source of `Tid` and `Tτ` is deliberately branch-local.  Because the checked
+one-chart EOW theorem requires a full
+`SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ`, these CLMs must not be defined
+only from the zero-diagonal Schwinger functional on compact Jost-supported
+tests.  They also must not be documented as direct pullbacks of the final
+physical real-time distribution `bvt_W OS lgc n`, because the OS45 horizontal
+edge is real in the quarter-turn chart, while its inverse image is generally a
+complex configuration, not the physical real edge of `bvt_W`.  The branchwise
+BV theorem must therefore produce the full CLMs as part of the OS45
+distributional boundary-value construction.  The OS.S/E3 zero-diagonal facts
+then prove that these branch CLMs have the expected Euclidean/Jost compact-test
+restrictions; they do not define the CLMs on all Schwartz tests.
+
+For `Tτ`, the ordered-sector and extended-tube memberships of the relabelled
+patch are part of `BHW.os45_adjacent_identity_localEOWGeometry`.  The checked
+identity `BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then says that
+this relabelled branch has the same quarter-turn common-edge chart point as
+the identity branch.  Thus the adjacent packet does not assert that
 `BHW.permAct τ (Q.symm y)` lies in the identity forward tube, and it does not
-use the later Hall-Wightman source theorem.  It is just the OS-II
-boundary-value construction applied twice, once before and once after the
-adjacent relabelling, plus OS45 common-edge bookkeeping.
+use the later Hall-Wightman source theorem.  It is the OS-II boundary-value
+construction applied twice, once before and once after the adjacent
+relabelling, plus OS45 common-edge bookkeeping.
 
 The final theorem-2 transfer must still pass through the OS-II boundary-value
 bridge: the local EOW output is packaged as an
@@ -799,9 +809,11 @@ fields from the OS-II boundary-value theorem on the relevant ordered branch.
 It is not acceptable as an anonymous "common boundary" wrapper.  For the
 adjacent branch, the proof first rewrites the test-function pairing along the
 linear homeomorphism `os45CommonEdgeRealCLE` and the adjacent relabelling, then
-uses the same OS-II boundary theorem as the identity branch.  OS symmetry
-enters only to identify Schwinger pairings under relabelled compact tests; it
-does not identify the real-time `extendF` branches.
+uses the same OS-II boundary theorem as the identity branch.  The `T` field is
+a full OS45 horizontal-edge boundary CLM produced by that theorem; OS symmetry
+enters only to identify Schwinger pairings under relabelled compact
+Jost-supported tests.  It does not identify the real-time `extendF` branches,
+does not come from a direct `bvt_W` pullback, and does not close locality.
 
 The adjacent branch-difference input to
 `SCV.chartDistributionalEOW_local_envelope` is then obtained by subtraction:
@@ -2204,6 +2216,158 @@ Proof decomposition of this theorem, without hiding the analytic work:
       * the theorem records the exact domains and branch labels, not an
         anonymous "common boundary" predicate.
 
+      Branch-BV proof ladder, with no global branch-law dependency:
+
+      1. Set `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and
+         `Eseed := BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 '' V`.
+         Use `BHW.os45CommonEdgeRealCLE` to pull a compact test on `Eseed`
+         back to a compact test on `V`.  The support inclusion is transported
+         by the linear homeomorphism, not by an ad hoc support argument.
+      2. Produce the full CLMs `Tid` and `Tτ` as outputs of the branchwise
+         OS45 distributional boundary-value theorem.  This theorem must prove
+         continuity on the whole Schwartz space in the quarter-turn edge
+         variables.  It cannot define the CLMs merely by `OS.S n`, because
+         `OS.S n` is defined only on `ZeroDiagonalSchwartz d n`; and it cannot
+         define them as direct pullbacks of `bvt_W`, because the OS45
+         horizontal edge is not the physical real-time edge.
+      3. For compact tests supported in `Eseed`, use `hV_jost` and
+         `BHW.zeroDiagonal_of_tsupport_subset_jostOverlap` to put the pulled
+         test in `ZeroDiagonalSchwartz d n`.  The relabelled test uses
+         `BHW.permuteZeroDiagonalSchwartz`; equality of the corresponding
+         Schwinger pairings under relabelling is exactly `OS.E3_symmetric`.
+         These facts identify the Jost-supported restriction of `Tid`/`Tτ`
+         with the OS Euclidean data, but they do not define the full CLMs.
+      4. Prove the ACR-side BV fields by applying the OS-II boundary-value
+         theorem `bvt_boundary_values` to the ordered identity branch and to
+         the ordered swapped branch.  The checked hypotheses are `hV_ordered`
+         and `hV_swap_ordered`, after the OS45 quarter-turn formulas rewrite
+         the approach directions into the corresponding forward-cone boundary
+         directions.  The checked Euclidean restriction theorem
+         `bvt_euclidean_restriction` and the existing compact-test model
+         `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` are used
+         only to verify the Euclidean/Jost restriction of these branch
+         boundary distributions.
+      5. Prove the BHW-side BV fields branchwise.  For the identity branch use
+         the ordinary `extendF` branch on `BHW.realEmbed x`.  For the adjacent
+         branch use the ordinary `extendF` branch on
+         `BHW.realEmbed (fun k => x (τ k))`; membership is supplied by
+         `hV_swapET`, not by a false identity-forward-tube claim.  The common
+         chart point is then rewritten by
+         `BHW.os45QuarterTurnConfig_reindexed_realBranch_eq`, and the real
+         trace subtraction later uses
+         `BHW.os45PulledRealBranch_sub_eq_adjacentOS45RealEdgeDifference`.
+      6. Subtract the two ACR BV fields and the two BHW BV fields to produce
+         the `hplus_bv` and `hminus_bv` hypotheses with
+         `Tdiff := Tτ - Tid`.  This subtraction is allowed because both
+         branch packets live on the same OS45 horizontal chart edge after the
+         reindexing step.
+
+      Lean theorem slots that must be written before implementation begins:
+
+      ```lean
+      noncomputable def BHW.os45CommonEdgePullbackCLM
+          (ρ : Equiv.Perm (Fin n)) :
+          SchwartzNPoint d n ->L[ℂ] SchwartzNPoint d n
+
+      @[simp] theorem BHW.os45CommonEdgePullbackCLM_apply
+          (ρ : Equiv.Perm (Fin n)) (φ : SchwartzNPoint d n)
+          (x : NPointDomain d n) :
+          BHW.os45CommonEdgePullbackCLM (d := d) (n := n) ρ φ x =
+            φ (BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρ x)
+
+      theorem BHW.os45CommonEdgePullback_tsupport_subset
+          (ρ : Equiv.Perm (Fin n))
+          {V : Set (NPointDomain d n)} {φ : SchwartzNPoint d n}
+          (hφ :
+            tsupport (φ : NPointDomain d n -> ℂ) ⊆
+              BHW.os45CommonEdgeRealPoint (d := d) (n := n) ρ '' V) :
+          tsupport
+              ((BHW.os45CommonEdgePullbackCLM (d := d) (n := n) ρ φ :
+                  SchwartzNPoint d n) : NPointDomain d n -> ℂ) ⊆ V
+      ```
+
+      For the active identity-order adjacent swap, the branch BV theorem returns
+      `Tid` for branch `1` and `Tτ` for branch `τ`.  The support theorem above
+      applies to the identity branch with `V`.  For the adjacent branch it
+      applies to the relabelled patch
+      `Vτ := {u | ∃ x ∈ V, u = fun k => x (τ k)}`; the Jost support needed to
+      use `BHW.zeroDiagonal_of_tsupport_subset_jostOverlap` follows from
+      `hV_jost` and `BHW.jostSet_permutation_invariant`.  These support and
+      zero-diagonal lemmas are bookkeeping, but they are required before the
+      branch BV theorem can be considered Lean-ready.
+
+      The branch BV theorems should then have this exact dependency profile:
+
+      ```lean
+      noncomputable def BHW.os45ACRBranchRepresentative
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (β : Equiv.Perm (Fin n)) :
+          (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+        fun z =>
+          bvt_F OS lgc n
+            (BHW.permAct (d := d) β
+              ((BHW.os45CommonChartCLE (d := d) (n := n) 1).symm z))
+
+      noncomputable def BHW.os45BHWBranchRepresentative
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (β : Equiv.Perm (Fin n)) :
+          (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+        BHW.os45PulledRealBranch (d := d) (n := n) OS lgc β
+
+      theorem BHW.os45BranchHorizontalBV_id
+          [NeZero d]
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+          (V E C : Set (NPointDomain d n))
+          (hV_ordered :
+            ∀ x ∈ V,
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_ET :
+            ∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hE :
+            E = BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 '' V) :
+          OS45BranchHorizontalBV OS lgc n 1 E C
+            (BHW.os45ACRBranchRepresentative (d := d) OS lgc n 1)
+            (BHW.os45BHWBranchRepresentative (d := d) OS lgc n 1)
+
+      theorem BHW.os45BranchHorizontalBV_adjacent
+          [NeZero d]
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+          (V E C : Set (NPointDomain d n))
+          (hV_swap_ordered :
+            ∀ x ∈ V,
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          (hV_swapET :
+            ∀ x ∈ V,
+              BHW.realEmbed
+                (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                  BHW.ExtendedTube d n)
+          (hE :
+            E = BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 '' V) :
+          OS45BranchHorizontalBV OS lgc n
+            (Equiv.swap i ⟨i.val + 1, hi⟩) E C
+            (BHW.os45ACRBranchRepresentative (d := d) OS lgc n
+              (Equiv.swap i ⟨i.val + 1, hi⟩))
+            (BHW.os45BHWBranchRepresentative (d := d) OS lgc n
+              (Equiv.swap i ⟨i.val + 1, hi⟩))
+      ```
+
+      The non-bookkeeping analytic input in these proofs is the OS-II
+      distributional boundary-value construction transported to the OS45
+      quarter-turn chart, plus the already checked BHW holomorphy of `extendF`
+      on `ExtendedTube`.  The adjacent theorem must not cite any global PET
+      single-valuedness result.  The support-pullback theorem is only
+      bookkeeping: `os45CommonEdgePullbackCLM` is
+      `SchwartzMap.compCLMOfContinuousLinearEquiv` applied to the already
+      checked `BHW.os45CommonEdgeRealCLE`.
+
       The adjacent difference input is then:
 
       ```lean
@@ -2406,14 +2570,19 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
 12. Package the result with
     `BHW.adjacentOSEOWDifferenceEnvelope_of_commonChartEnvelope`.
 
-This decomposition is **not** Lean-ready yet.  The identity-order support
-lemmas are checked, but the branchwise horizontal ACR/BHW common-boundary
-packet remains the live theorem-shape blocker.  Once that packet supplies the
-two branch CLMs `Tid` and `Tτ` with the exact compact-direction BV statements,
-the remaining Lean work is ordinary one-chart instantiation and side-component
-gluing.  The route avoids both retired gaps: the one-chart theorem is not
-applied at the equal-time edge, and finite traces are reached by holomorphic
-gluing through side components rather than forced inside the local EOW ball.
+This decomposition is **not** Lean-ready yet.  The dependency shape of the
+branchwise horizontal ACR/BHW packet is now fixed: the adjacent packet is the
+ordinary OS-II branch for `x ∘ τ`, transported to the common OS45 chart, and
+the theorem slots for support pullback, zero-diagonal transport, full OS45
+branch CLMs, and branchwise BV have been exposed above.  The
+remaining proof-doc work before Lean is to expand the two branch BV theorem
+proofs into line-by-line transcripts showing exactly how
+`bvt_boundary_values` sees the OS45 quarter-turn approach directions.  Once
+that transcript is fully specified, the remaining Lean work is ordinary
+one-chart instantiation and side-component gluing.  The route avoids both
+retired gaps: the one-chart theorem is not applied at the equal-time edge, and
+finite traces are reached by holomorphic gluing through side components rather
+than forced inside the local EOW ball.
 
 Coarse Slot 1 decomposition retained for context:
 

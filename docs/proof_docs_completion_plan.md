@@ -58,7 +58,12 @@ Current local Slot 1 correction: the OS45 common-chart/EOW supplier is no
 longer the equal-time/post-radius plan.  The checked SCV input is
 `SCV.chartDistributionalEOW_local_envelope`; the OS45 proof must instantiate
 it at an ordered identity-sector horizontal edge, but the next common-boundary
-surface is not yet ready.  The bounded identity perturbation and same-patch
+surface is still proof-doc work, not Lean work.  Its dependency shape is fixed,
+and the branch CLM theorem slots are now exposed: the adjacent branch is the
+ordinary OS-II branch for the relabelled patch `x ∘ τ`, transported back by
+the OS45 reindexing identity.  The remaining proof-doc work is the
+line-by-line `bvt_boundary_values` transcript for the two OS45 quarter-turn
+approach directions.  The bounded identity perturbation and same-patch
 identity geometry are checked.  The proposed horizontal-edge forward-tube pair
 and pointwise equality `Hplus = Hminus` from two applications of
 `BHW.extendF_eq_on_forwardTube` are rejected: after the repo permutation action
@@ -70,13 +75,19 @@ compact-direction boundary values for each branch, subtract to get the
 `hplus_bv`/`hminus_bv` input with `Tdiff = Tτ - Tid`, and only then call the
 one-chart theorem.  `Tdiff` is not assumed zero and is not the final real-edge
 locality distribution.  The branchwise packet is local and non-circular:
-`Tid` is the ordinary OS-II boundary branch on the selected ordered patch,
-while `Tτ` is the ordinary OS-II boundary branch on the relabelled ordered
-patch `x ∘ τ`; `BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then
-places both branches at the same quarter-turn chart point.  The later
-Hall-Wightman source theorem consumes the resulting compact-test anchor and
-must not be used to construct it.  The global compact-direction `bvt_W`
-boundary transport remains useful elsewhere.
+`Tid` and `Tτ` are full CLMs produced by the OS45 branchwise distributional
+boundary-value theorem, on the selected ordered quarter-turn edge and the
+relabelled ordered patch `x ∘ τ` respectively;
+`BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then places both branches
+at the same quarter-turn chart point.  The zero-diagonal Schwinger functional
+and `OS.E3_symmetric` verify the compact Jost-supported Euclidean restriction
+of those CLMs; they cannot by themselves define the full CLMs needed by SCV.
+Nor should these CLMs be treated as direct pullbacks of the final physical
+real-time distribution `bvt_W`, since the OS45 horizontal edge is real only in
+the quarter-turn chart.
+The later Hall-Wightman source theorem consumes the resulting compact-test
+anchor and must not be used to construct it.  The global compact-direction
+`bvt_W` boundary transport remains useful elsewhere.
 
 ## 0. Paper-authority rule
 

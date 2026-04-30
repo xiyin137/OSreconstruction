@@ -369,11 +369,15 @@ common-boundary theorem surface.  In the one-chart call, the common
 distribution is `Tdiff = Tτ - Tid`, the difference of the two branchwise
 horizontal-edge CLMs; it is not assumed zero and is not the final real-edge
 locality distribution.  The branchwise CLMs must be produced before any global
-PET branch theorem is used: `Tid` comes from the ordinary OS-II boundary branch
-on the selected ordered patch, `Tτ` comes from the ordinary OS-II boundary
-branch on the relabelled ordered patch `x ∘ τ`, and the OS45 reindexing lemma
-puts those two ordinary branches on the same quarter-turn chart edge.  This is
-the theorem-2-specific OS45 input to the checked SCV theorem, not a new SCV
+PET branch theorem is used: `Tid` and `Tτ` are full CLMs produced by the OS45
+branchwise distributional boundary-value theorem for the selected ordered
+branch and the relabelled ordered patch `x ∘ τ`, and the OS45 reindexing lemma
+puts those two ordinary branches on the same quarter-turn chart edge.  The
+zero-diagonal Schwinger/E3 checks identify their compact Jost-supported
+Euclidean restrictions, but they do not define the full CLMs.  These CLMs are
+also not direct pullbacks of the final physical real-time `bvt_W`, because the
+OS45 horizontal edge is real only in the quarter-turn chart.  This is the
+theorem-2-specific OS45 input to the checked SCV theorem, not a new SCV
 recovery axiom and not the later Hall-Wightman source theorem.
 Only then should the ordered horizontal-edge local wedge, boundary-value input
 to `chartDistributionalEOW_local_envelope`, and side-component gluing be
