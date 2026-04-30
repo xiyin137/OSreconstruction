@@ -5987,14 +5987,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
             from
             `BHW.swFigure24_adjacentHorizontalRealEnvironment hd i hi` and
             obtain the source environment `Ufig` and equal-time witness `x0`.
+            Build the Figure-2-4 path-stability neighborhood around this same
+            equal-time witness before choosing the ordered perturbation: use
+            the two-plane rotation support calculation underlying
+            `BHW.figure24_adjacentTwoPlanePathSupport_at_orderedSeed`,
+            together with the compact-parameter tube lemma, to obtain an open
+            `Upath` containing `x0` such that every `x ∈ Upath` carries the
+            two realization paths and the adjacent Gram identity.  This
+            `Upath` is source geometry only; it has no function values.
             Apply the checked bounded perturbation theorem
             `BHW.exists_ordered_small_time_perturb_in_adjacent_overlap_of_lt`
-            with `U := Ufig`; this chooses an ordered identity-sector seed
-            `xseed = BHW.adjacentTimePerturb x0 ε` still inside the Figure
-            2-4 source environment.  Then form the finite open intersection
-            of:
+            with `U := Ufig ∩ Upath`; this chooses an ordered identity-sector
+            seed `xseed = BHW.adjacentTimePerturb x0 ε` still inside both the
+            Figure-2-4 source environment and the path-stability neighborhood.
+            Then form the finite open intersection of:
 
             - `Ufig`;
+            - `Upath`;
             - the identity ordered sector;
             - the adjacent swapped ordered sector;
             - the preimages of `adjacentOS45WickSeedDomain` and
@@ -6009,9 +6018,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
             membership is supplied by the checked
             `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`; the pulled
             BHW closure memberships are the two Figure-2-4
-            source-environment fields.  This order of construction is
-            mandatory: first source environment, then ordered perturbation
-            inside it, then precompact shrink.
+            source-environment fields; and the Figure-2-4 path field on
+            `closure V` is inherited from `closure V ⊆ Upath`.  This order of
+            construction is mandatory: first source environment plus
+            path-stability neighborhood, then ordered perturbation inside
+            their intersection, then precompact shrink.
 
          This decomposition is the implementation contract for the selector.
          Any attempted proof that derives the horizontal pulled-branch fields

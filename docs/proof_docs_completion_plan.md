@@ -365,6 +365,10 @@ content:
    theorem when only `x ∈ closure V` is known.  The local patch is the finite
    intersection of `Ufig`, the identity and swapped ordered-sector preimages,
    and the relevant horizontal pulled-domain preimage.
+   The selector construction must choose the ordered seed inside
+   `Ufig ∩ Upath`, where `Upath` is the Figure-2-4 compact-open
+   path-stability neighborhood around the same equal-time witness; this is what
+   makes the closure-level `hV_figPath` field legitimate.
 4. The compact common-germ theorem `BHW.os45BranchHorizontalCommonGerm` then
    glues these branch-specific germs over `closure E`; the identity and
    adjacent germs remain different branch packets.
