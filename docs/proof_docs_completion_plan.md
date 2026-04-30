@@ -388,7 +388,10 @@ content:
    exactly `SCV.StrictPositiveImagBall R` and
    `SCV.StrictNegativeImagBall R`, so the side identities returned by the
    checked one-chart theorem are already the full overlap equalities needed
-   for holomorphic gluing.  Do not replace this by a broad
+   for holomorphic gluing; the exact rewrites are the pure topology lemmas
+   `SCV.ball_inter_positiveOrthantComponent_eq_strictPositiveImagBall` and
+   `SCV.ball_inter_negativeOrthantComponent_eq_strictNegativeImagBall`.
+   Do not replace this by a broad
    original-coordinate linear sign condition; that would reintroduce an
    unproved identity-theorem obligation on arbitrary overlap components.
 6. The scalar theorem `BHW.os45AdjacentScalarGerm_of_OSII_Figure24` is

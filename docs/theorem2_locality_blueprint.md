@@ -6192,6 +6192,43 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (SCV.StrictNegativeImagBall (m := m) R).Nonempty
       ```
 
+      The exact-overlap rewrite used by the gluing theorem should be isolated
+      as two pure topology lemmas:
+
+      ```lean
+      theorem SCV.ball_inter_positiveOrthantComponent_eq_strictPositiveImagBall
+          {m : ℕ} {R : ℝ} {Ωplus : Set (SCV.ComplexChartSpace m)}
+          {wplusSeed : SCV.ComplexChartSpace m}
+          (hwplusSeed :
+            wplusSeed ∈ SCV.StrictPositiveImagBall (m := m) R)
+          (hstrict_plus :
+            SCV.StrictPositiveImagBall (m := m) R ⊆ Ωplus) :
+          Metric.ball (0 : SCV.ComplexChartSpace m) R ∩
+              connectedComponentIn
+                (Ωplus ∩ SCV.ChartPositiveOrthant m) wplusSeed =
+            SCV.StrictPositiveImagBall (m := m) R
+
+      theorem SCV.ball_inter_negativeOrthantComponent_eq_strictNegativeImagBall
+          {m : ℕ} {R : ℝ} {Ωminus : Set (SCV.ComplexChartSpace m)}
+          {wminusSeed : SCV.ComplexChartSpace m}
+          (hwminusSeed :
+            wminusSeed ∈ SCV.StrictNegativeImagBall (m := m) R)
+          (hstrict_minus :
+            SCV.StrictNegativeImagBall (m := m) R ⊆ Ωminus) :
+          Metric.ball (0 : SCV.ComplexChartSpace m) R ∩
+              connectedComponentIn
+                (Ωminus ∩ SCV.ChartNegativeOrthant m) wminusSeed =
+            SCV.StrictNegativeImagBall (m := m) R
+      ```
+
+      Proof: the forward inclusion uses
+      `connectedComponentIn_subset` and the definition of the chart orthant.
+      For the reverse inclusion, the strict side ball is convex, hence
+      preconnected; it is contained in `Ω± ∩ Chart±Orthant` by the one-chart
+      side-domain inclusion and by definition of the strict side ball; and it
+      contains the chosen seed.  Apply
+      `IsPreconnected.subset_connectedComponentIn`.
+
       The connected components of the open sets
       `Ωplus ∩ SCV.ChartPositiveOrthant m` and
       `Ωminus ∩ SCV.ChartNegativeOrthant m` are open because the
@@ -6376,7 +6413,10 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
    `Ωminus ∩ SCV.ChartNegativeOrthant m` containing the strict side seed
    balls.  Because the local ball is `Metric.ball 0 R`, its overlaps with
    these components are exactly
-   `SCV.StrictPositiveImagBall R` and `SCV.StrictNegativeImagBall R`.
+   `SCV.StrictPositiveImagBall R` and `SCV.StrictNegativeImagBall R`; the
+   pure topology rewrite targets are
+   `SCV.ball_inter_positiveOrthantComponent_eq_strictPositiveImagBall` and
+   `SCV.ball_inter_negativeOrthantComponent_eq_strictNegativeImagBall`.
    Prove the finite Wick and real traces for every `x ∈ Vseed` lie in those
    components by the explicit paths
    `realEmbed y(x) + I * s • η(x)` and
