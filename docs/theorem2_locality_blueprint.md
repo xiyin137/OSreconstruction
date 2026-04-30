@@ -2222,9 +2222,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
 Why this does not smuggle in locality:
 
-- the only equality between `extendF` and `bvt_F` is
-  `BHW.extendF_eq_on_forwardTube`, applied at the ordered horizontal seed where
-  both branch arguments are explicitly in `BHW.ForwardTube d n`;
+- the retired shortcut would have smuggled in a false premise: the adjacent
+  swapped horizontal branch argument is not generally in `BHW.ForwardTube d n`.
+  The corrected common-boundary theorem must make its source explicit before
+  this "why no locality is smuggled" audit can be closed;
 - the finite Wick-side zero is still supplied downstream by the OS symmetry
   argument already present in
   `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` and the
