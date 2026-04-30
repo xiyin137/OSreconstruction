@@ -60,6 +60,23 @@ Current critical-path ledger for the `2 <= d` implementation:
    `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, then do the final
    Jost-boundary transfer to locality.
 
+Dependency guard for step 1: the OS45 local common-chart/EOW packet is an
+input to the later source theorem, not a consequence of it.  Its branchwise
+horizontal boundary values may use only:
+
+* OS-II boundary-value construction for `bvt_F OS lgc n`;
+* OS Euclidean permutation symmetry `E3`, via checked compact-test surfaces
+  such as `bvt_euclidean_restriction` and
+  `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`;
+* local OS45/Jost common-real-environment geometry showing that the identity
+  branch and the relabelled adjacent branch have ordinary branch boundary
+  values on the same quarter-turn edge chart.
+
+It must not use `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
+`bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`, or any lemma that is
+equivalent to global permuted-extended-tube branch independence.  Those theorems
+consume the local compact-test anchor produced by Slot 1.
+
 Current local frontier checkpoint, after the checked one-chart SCV pass:
 
 * `SCV.chartDistributionalEOW_local_envelope` is checked in
@@ -95,6 +112,12 @@ Current local frontier checkpoint, after the checked one-chart SCV pass:
      `Q.symm y` and `permAct τ (Q.symm y)` lie in `BHW.ForwardTube d n` at the
      identity ordered horizontal edge is false for the repo convention
      `permAct σ z = fun k => z (σ k)`;
+     the adjacent branch is instead handled by relabelling the real
+     configuration to `x ∘ τ`, applying the ordinary OS-II/BHW branch boundary
+     construction to that relabelled ordered patch, and then using the checked
+     OS45 reindexing identity to put its quarter-turn real edge in the same
+     chart point as the identity branch.  This is local branch data, not global
+     PET branch independence;
   3. only after the corrected common-boundary input is explicit, call
      `SCV.chartDistributionalEOW_local_envelope` at the ordered edge;
   4. glue the returned local envelope to the positive and negative OS45 side
@@ -184,6 +207,19 @@ OS-II ACR representative with the corresponding BHW extended-tube branch at
 the quarter-turn edge.  Their difference `Tdiff = Tτ - Tid` is auxiliary data
 for `SCV.chartDistributionalEOW_local_envelope`; it is not assumed zero and is
 not the final real-edge locality distribution.
+
+The source of `Tid` and `Tτ` is deliberately branch-local.  For `Tid`, use the
+ordinary OS-II branch attached to the selected ordered patch `V`.  For `Tτ`,
+use the ordinary OS-II branch attached to the relabelled ordered patch
+`fun k => x (τ k)`, whose ordered-sector and extended-tube memberships are
+part of `BHW.os45_adjacent_identity_localEOWGeometry`.  The checked identity
+`BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then says that this
+relabelled branch has the same quarter-turn common-edge chart point as the
+identity branch.  Thus the adjacent packet does not assert that
+`BHW.permAct τ (Q.symm y)` lies in the identity forward tube, and it does not
+use the later Hall-Wightman source theorem.  It is just the OS-II
+boundary-value construction applied twice, once before and once after the
+adjacent relabelling, plus OS45 common-edge bookkeeping.
 
 The final theorem-2 transfer must still pass through the OS-II boundary-value
 bridge: the local EOW output is packaged as an
@@ -709,6 +745,64 @@ adjacent branch `τ := Equiv.swap i ⟨i.val + 1, hi⟩`.  For each branch label
   and BHW-side representatives both converge to `Tβ` on the selected
   quarter-turn edge.
 
+The adjacent branch label is not a new global PET branch law.  In the general
+`ρ`-labelled transcript it is the relabelled ordinary branch
+`τ.symm * ρ`, evaluated on the relabelled real configuration
+`fun k => x (τ k)`.  For the active identity-order patch this is just `τ`.
+The hypotheses
+`hV_swap_ordered` and `hV_swapET` from
+`BHW.os45_adjacent_identity_localEOWGeometry` are exactly what let the ordinary
+OS-II ACR/BHW boundary construction be applied to that swapped configuration.
+The common-chart identity
+`BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then transports the
+swapped branch back to the same OS45 horizontal chart point.  This is the
+mathematical content that replaces the false forward-tube-pair theorem.
+
+Lean-facing branchwise BV surface:
+
+```lean
+structure OS45BranchHorizontalBV
+    [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (β : Equiv.Perm (Fin n))
+    (E C : Set (NPointDomain d n))
+    (Aβ Bβ : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) : Prop where
+  T : SchwartzMap (NPointDomain d n) ℂ ->L[ℂ] ℂ
+  acr_bv :
+    ∀ Kη : Set (NPointDomain d n), IsCompact Kη -> Kη ⊆ C ->
+      ∀ φ : SchwartzMap (NPointDomain d n) ℂ,
+        HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+        tsupport (φ : NPointDomain d n -> ℂ) ⊆ E ->
+        TendstoUniformlyOn
+          (fun (ε : ℝ) η =>
+            ∫ y : NPointDomain d n,
+              Aβ (BHW.realEdgeAddImag (d := d) (n := n) y η ε) * φ y)
+          (fun _ : NPointDomain d n => T φ)
+          (nhdsWithin 0 (Set.Ioi 0)) Kη
+  bhw_bv :
+    ∀ Kη : Set (NPointDomain d n), IsCompact Kη -> Kη ⊆ C ->
+      ∀ φ : SchwartzMap (NPointDomain d n) ℂ,
+        HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+        tsupport (φ : NPointDomain d n -> ℂ) ⊆ E ->
+        TendstoUniformlyOn
+          (fun (ε : ℝ) η =>
+            ∫ y : NPointDomain d n,
+              Bβ (BHW.realEdgeAddImag (d := d) (n := n) y η (-ε)) * φ y)
+          (fun _ : NPointDomain d n => T φ)
+          (nhdsWithin 0 (Set.Ioi 0)) Kη
+```
+
+This structure is acceptable only if its proof supplies the two displayed BV
+fields from the OS-II boundary-value theorem on the relevant ordered branch.
+It is not acceptable as an anonymous "common boundary" wrapper.  For the
+adjacent branch, the proof first rewrites the test-function pairing along the
+linear homeomorphism `os45CommonEdgeRealCLE` and the adjacent relabelling, then
+uses the same OS-II boundary theorem as the identity branch.  OS symmetry
+enters only to identify Schwinger pairings under relabelled compact tests; it
+does not identify the real-time `extendF` branches.
+
 The adjacent branch-difference input to
 `SCV.chartDistributionalEOW_local_envelope` is then obtained by subtraction:
 
@@ -726,10 +820,12 @@ The identity branch of the branchwise packet can use
 `BHW.extendF_eq_on_forwardTube`, because its horizontal argument lies in the
 ordinary forward tube.  The adjacent branch cannot: its horizontal argument is
 generally outside `BHW.ForwardTube d n` after the repo permutation action.  Its
-branchwise ACR/BHW compatibility must instead be supplied by the local
-Hall-Wightman/BHW common-boundary argument on the selected OS45 real
-environment.  That local argument is the actual missing mathematical content
-inside `BHW.os45_adjacent_commonBoundaryEnvelope`.
+branchwise ACR/BHW compatibility must instead be supplied by the same ordinary
+OS-II/BHW boundary construction applied to the swapped ordered configuration
+`fun k => x (τ k)`, then transported back to the common OS45 chart by
+`BHW.os45QuarterTurnConfig_reindexed_realBranch_eq`.  This is the local
+OS I §4.5 common-real-environment argument; it is not the global
+Hall-Wightman source theorem that later proves PET branch independence.
 
 The coordinate infrastructure needed by this transcript is now implemented in
 `Wightman/Reconstruction/WickRotation/OSToWightmanLocalityOS45CommonChart.lean`.
@@ -2218,8 +2314,9 @@ Why this does not smuggle in locality:
 
 - the retired shortcut would have smuggled in a false premise: the adjacent
   swapped horizontal branch argument is not generally in `BHW.ForwardTube d n`.
-  The corrected common-boundary theorem must make its source explicit before
-  this "why no locality is smuggled" audit can be closed;
+  The corrected common-boundary theorem sources the adjacent branch by treating
+  `x ∘ τ` as a separate ordinary OS-II branch and using the OS45 reindexing
+  identity to return to the same quarter-turn chart point;
 - the finite Wick-side zero is still supplied downstream by the OS symmetry
   argument already present in
   `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` and the
@@ -2228,7 +2325,9 @@ Why this does not smuggle in locality:
   by a pre-assumed real-edge equality;
 - no selected PET branch-independence, final locality theorem, or
   boundary-locality transfer theorem appears in the construction of the local
-  common-chart envelope.
+  common-chart envelope.  The later
+  `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`
+  theorem consumes the compact-test anchor produced here; it is not an input.
 
 Active single-chart decomposition of Slot 1 after the SCV keystone:
 
@@ -2264,7 +2363,10 @@ Active single-chart decomposition of Slot 1 after the SCV keystone:
    genuine branchwise OS45 horizontal common-boundary theorem surface: produce
    the identity and swapped branch CLMs `Tid` and `Tτ`, prove both ACR-side and
    BHW-side uniform compact-direction boundary values for each branch, and
-   subtract them to obtain the one-chart `Tdiff = Tτ - Tid` input.
+   subtract them to obtain the one-chart `Tdiff = Tτ - Tid` input.  The
+   swapped branch proof is the ordinary branch proof on the relabelled ordered
+   patch `x ∘ τ`, not a theorem saying that the swapped horizontal identity
+   edge lies in the identity forward tube.
 6. After the corrected common-boundary source is fixed, prove
    `BHW.os45_orderedHorizontalEdge_localWedge_id` for
    `Eseed`, the chosen side cone `Cseed`, and the two branch domains
@@ -3347,12 +3449,15 @@ Checked SCV declaration ledger:
    `DminusSmall = StrictNegativeImagBall σ`, and derives
    `happrox_plus/happrox_minus` from the strict-side convergence theorems.
    The next active target is the OS45 identity-order instantiation, not the
-   global SCV transport/patching package.  Prove
-   `BHW.os45_adjacent_commonBoundaryEnvelope` by calling the checked
+   global SCV transport/patching package.  First prove the branchwise
+   horizontal BV supplier for the identity branch and the relabelled adjacent
+   branch, using only the ordinary OS-II boundary-value construction on
+   `x` and on `x ∘ τ`, plus the checked OS45 common-edge reindexing.  Then
+   prove `BHW.os45_adjacent_commonBoundaryEnvelope` by calling the checked
    one-chart theorem `SCV.chartDistributionalEOW_local_envelope` directly at
-   the ordered horizontal edge, then package its output as
-   `AdjacentOSEOWDifferenceEnvelope` while exporting the same patch `V` for
-   Jost membership and both real extended-tube memberships.  The affine
+   the ordered horizontal edge, with `Tdiff = Tτ - Tid`, and package its
+   output as `AdjacentOSEOWDifferenceEnvelope` while exporting the same patch
+   `V` for Jost membership and both real extended-tube memberships.  The affine
    transport and fixed-basis overlap targets
    `SCV.chartDistributionalEOW_transport_originalCoords`,
    `SCV.localEOWComplexAffineEquiv_sameBasis_transition`,

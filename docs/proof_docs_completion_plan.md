@@ -69,8 +69,14 @@ horizontal-edge CLMs `Tid` and `Tτ`, prove ACR-side and BHW-side uniform
 compact-direction boundary values for each branch, subtract to get the
 `hplus_bv`/`hminus_bv` input with `Tdiff = Tτ - Tid`, and only then call the
 one-chart theorem.  `Tdiff` is not assumed zero and is not the final real-edge
-locality distribution.  The global compact-direction `bvt_W` boundary transport
-remains useful elsewhere.
+locality distribution.  The branchwise packet is local and non-circular:
+`Tid` is the ordinary OS-II boundary branch on the selected ordered patch,
+while `Tτ` is the ordinary OS-II boundary branch on the relabelled ordered
+patch `x ∘ τ`; `BHW.os45QuarterTurnConfig_reindexed_realBranch_eq` then
+places both branches at the same quarter-turn chart point.  The later
+Hall-Wightman source theorem consumes the resulting compact-test anchor and
+must not be used to construct it.  The global compact-direction `bvt_W`
+boundary transport remains useful elsewhere.
 
 ## 0. Paper-authority rule
 

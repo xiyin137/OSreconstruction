@@ -368,7 +368,13 @@ common-boundary shortcut with the genuine branchwise horizontal ACR/BHW
 common-boundary theorem surface.  In the one-chart call, the common
 distribution is `Tdiff = Tτ - Tid`, the difference of the two branchwise
 horizontal-edge CLMs; it is not assumed zero and is not the final real-edge
-locality distribution.
+locality distribution.  The branchwise CLMs must be produced before any global
+PET branch theorem is used: `Tid` comes from the ordinary OS-II boundary branch
+on the selected ordered patch, `Tτ` comes from the ordinary OS-II boundary
+branch on the relabelled ordered patch `x ∘ τ`, and the OS45 reindexing lemma
+puts those two ordinary branches on the same quarter-turn chart edge.  This is
+the theorem-2-specific OS45 input to the checked SCV theorem, not a new SCV
+recovery axiom and not the later Hall-Wightman source theorem.
 Only then should the ordered horizontal-edge local wedge, boundary-value input
 to `chartDistributionalEOW_local_envelope`, and side-component gluing be
 implemented.  Thus the remaining work is OS45-side geometry/common-boundary
