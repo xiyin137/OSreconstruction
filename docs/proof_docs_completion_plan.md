@@ -443,8 +443,19 @@ implementation contract is:
    root of the selected principal block near `1`,
    `BHW.hwLemma3_schurComplement_rank_bound` for the lower-right residual
    rank `<= d + 1 - r`,
-   `BHW.complexMinkowski_realizeSmallSymmetricRankLE` for Bargmann's uniform
-   small-vector realization estimate, the canonical normal-form data
+   `BHW.complexSymmetric_takagi_rankLE` and
+   `BHW.complexSymmetric_factorSmall_rankLE` for the finite-dimensional
+   Takagi/Bargmann factorization and its small-factor estimate,
+   `BHW.complexMinkowskiOrthogonalTailSubspace` and
+   `BHW.complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail` for
+   realizing the Schur residual in the orthogonal complement of the selected
+   normalized block, with the arithmetic and norm-control helpers
+   `BHW.exists_finTailEmbedding` and
+   `BHW.complexMinkowskiOrthogonalModel_symm_coord_bound`, and
+   `BHW.complexMinkowski_realizeSmallSymmetricRankLE` as only the `r = 0`
+   corollary of that tail theorem.  The normalized Schur proof must use the
+   tail theorem, not the full-space corollary, or the residual vectors could
+   disturb the selected block.  The canonical normal-form data are
    `BHW.hwLemma3CanonicalSource`,
    `BHW.hwLemma3CanonicalGram`, and
    `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource`, the normalized

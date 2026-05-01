@@ -4079,11 +4079,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `[[A, B], [Bᵀ, Bᵀ A⁻¹ B + S]]` with `S` symmetric of rank
          `<= d + 1 - r`.  Realize `A` and `B` by analytic perturbations of the
          first `r` source vectors and realize `S` by vectors in the
-         `(d + 1 - r)`-dimensional orthogonal complement.  The estimates are
-         Hall-Wightman's inequality (48), with `4 - r` replaced by
-         `d + 1 - r`.  Choose `ε` smaller than the coordinate tube radius of
-         the open set `BHW.ExtendedTube d n`; then all realized perturbations
-         remain in the ordinary extended tube.
+         `(d + 1 - r)`-dimensional orthogonal complement via
+         `complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail`.
+         The estimates are Hall-Wightman's inequality (48), with `4 - r`
+         replaced by `d + 1 - r`.  Choose `ε` smaller than the coordinate tube
+         radius of the open set `BHW.ExtendedTube d n`; then all realized
+         perturbations remain in the ordinary extended tube.
       4. `sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety` follows
          from the same Schur realization: every source Gram matrix is
          symmetric and has rank at most `d + 1`; conversely every complex
@@ -5513,6 +5514,84 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 ∀ i j,
                   BHW.complexMinkowskiBilinear d (q i) (q j) = S i j
 
+      /-- Finite-dimensional Takagi/Bargmann factorization in the standard
+      complex symmetric form, with the smallness estimate needed in
+      Hall-Wightman Lemma 3.  This is pure matrix linear algebra: if a complex
+      symmetric matrix has rank at most `k` and all entries are sufficiently
+      small, then it is `A * Aᵀ` with all entries of `A` small. -/
+      theorem BHW.complexSymmetric_takagi_rankLE
+          (m k : Nat)
+          {S : Matrix (Fin m) (Fin m) ℂ}
+          (hSym : S.transpose = S)
+          (hRank : Matrix.rank S <= k) :
+          ∃ A : Matrix (Fin m) (Fin k) ℂ,
+            S = A * A.transpose
+
+      theorem BHW.complexSymmetric_factorSmall_rankLE
+          (m k : Nat)
+          {ε : ℝ} (hε : 0 < ε) :
+          ∃ δ : ℝ, 0 < δ ∧
+            ∀ S : Matrix (Fin m) (Fin m) ℂ,
+              S.transpose = S ->
+              Matrix.rank S <= k ->
+              (∀ i j, ‖S i j‖ < δ) ->
+              ∃ A : Matrix (Fin m) (Fin k) ℂ,
+                (∀ i a, ‖A i a‖ < ε) ∧
+                S = A * A.transpose
+
+      /-- The tail subspace in the diagonalized complex Minkowski model:
+      vectors whose first `r` standard orthogonal coordinates vanish.  This is
+      the orthogonal complement used after the selected Hall-Wightman block
+      has been normalized to the first `r` standard coordinates. -/
+      def BHW.complexMinkowskiOrthogonalTailSubspace
+          (d r : Nat) :
+          Submodule ℂ (Fin (d + 1) -> ℂ)
+
+      theorem BHW.mem_complexMinkowskiOrthogonalTailSubspace_orthogonal
+          (d r : Nat) {v w : Fin (d + 1) -> ℂ}
+          (hv : v ∈ BHW.complexMinkowskiOrthogonalTailSubspace d r)
+          (hw :
+            ∀ μ, r <= μ.val ->
+              (BHW.complexMinkowskiOrthogonalModel d w) μ = 0) :
+          BHW.complexMinkowskiBilinear d v w = 0
+
+      theorem BHW.exists_finTailEmbedding
+          (D r k : Nat)
+          (hkr : k <= D - r) :
+          ∃ ι : Fin k -> Fin D,
+            Function.Injective ι ∧
+            ∀ a, r <= (ι a).val
+
+      theorem BHW.complexMinkowskiOrthogonalModel_symm_coord_bound
+          (d : Nat) :
+          ∃ C : ℝ, 0 < C ∧
+            ∀ v : Fin (d + 1) -> ℂ,
+              (∀ μ, ‖(BHW.complexMinkowskiOrthogonalModel d).symm v μ‖ <=
+                C * ∑ ν : Fin (d + 1), ‖v ν‖)
+
+      /-- Tail version of the residual realization theorem.  This is the form
+      consumed by Lemma 3 after Schur complement reduction: the residual
+      vectors are small and lie in the orthogonal complement of the selected
+      normalized block, so adding them changes only the residual Schur
+      complement scalar products. -/
+      theorem BHW.complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail
+          [NeZero d] (hd : 2 <= d)
+          (r m k : Nat)
+          (hr : r <= d + 1)
+          {ε : ℝ} (hε : 0 < ε) :
+          ∃ δ : ℝ, 0 < δ ∧
+            ∀ S : Fin m -> Fin m -> ℂ,
+              (∀ i j, S i j = S j i) ->
+              Matrix.rank (Matrix.of fun i j => S i j) <= k ->
+              k <= d + 1 - r ->
+              (∀ i j, ‖S i j‖ < δ) ->
+              ∃ q : Fin m -> Fin (d + 1) -> ℂ,
+                (∀ i μ, ‖q i μ‖ < ε) ∧
+                (∀ i, q i ∈
+                  BHW.complexMinkowskiOrthogonalTailSubspace d r) ∧
+                ∀ i j,
+                  BHW.complexMinkowskiBilinear d (q i) (q j) = S i j
+
       def BHW.hwLemma3CanonicalSource
           (d n r : Nat) :
           Fin n -> Fin (d + 1) -> ℂ
@@ -5556,6 +5635,44 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 BHW.sourceMinkowskiGram d n (fun i μ => z0 i μ + v i μ) = Z
       ```
 
+      Proof transcript for the residual small-realization theorem:
+
+      1. Prove `complexSymmetric_takagi_rankLE` by the standard
+         Autonne-Takagi/Bargmann factorization for complex symmetric matrices:
+         choose unitary `U` and nonnegative singular values `σ a` with
+         `S = U * diagonal σ * U.transpose`; discard zero singular values and
+         pad to `Fin k` using the rank hypothesis; set
+         `A i a = U i a * Real.sqrt (σ a)`.
+      2. Prove `complexSymmetric_factorSmall_rankLE` from the same
+         factorization with estimates.  Since
+         `‖S‖op <= m * sup_{i,j} ‖S i j‖`, choosing
+         `δ < ε^2 / max 1 m` gives `‖A i a‖ < ε`.  This step is finite
+         matrix linear algebra only; it has no BHW, OS, or locality content.
+      3. Define `complexMinkowskiOrthogonalTailSubspace d r` by transporting
+         the coordinate tail `{u | ∀ μ, μ.val < r -> u μ = 0}` through
+         `complexMinkowskiOrthogonalModel d`.  Orthogonality to the selected
+         block is then the ordinary standard-bilinear calculation
+         `∑ μ, u μ * w μ = 0`, because the supports are disjoint, transported
+         back by `complexMinkowskiOrthogonalModel_preserves_bilinear`.
+      4. For
+         `complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail`, first
+         apply `complexSymmetric_factorSmall_rankLE` with
+         `k <= d + 1 - r`.  Embed the resulting `Fin k` columns into the tail
+         coordinates using `exists_finTailEmbedding`; all other diagonalized
+         coordinates are zero.  Transport the vectors back by
+         `(complexMinkowskiOrthogonalModel d).symm`.  Finite-dimensional norm
+         equivalence for this fixed linear equivalence is exposed as
+         `complexMinkowskiOrthogonalModel_symm_coord_bound`, so the Takagi
+         factorization is requested with `ε / C`; after transport every
+         ambient coordinate is `< ε`.  The support proof is exactly the
+         inequality `r <= (ι a).val` from `exists_finTailEmbedding`.
+      5. The older theorem
+         `complexMinkowski_realizeSmallSymmetricRankLE` is the special case
+         `r = 0` of the tail theorem.  The normalized Schur-surjectivity proof
+         must use the tail theorem with `k = d + 1 - r`; otherwise it would
+         realize the residual matrix in directions that might not be
+         orthogonal to the selected block.
+
       Proof transcript for the quantitative theorem:
 
       1. Let `G0 := sourceMinkowskiGram d n z0` and
@@ -5589,11 +5706,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `S := C - B * (1 + B1)⁻¹ * Bᵀ`.  Because the full block matrix has
          rank at most `D` and the selected block has rank `r`,
          `hwLemma3_schurComplement_rank_bound` gives `rank S <= D - r`.
-      7. Realize this small symmetric residual by small vectors in an
-         orthogonal complement using
-         `complexMinkowski_realizeSmallSymmetricRankLE`.  This is the
-         dimension-general form of Hall-Wightman's estimate (48), with
-         `4 - r` replaced by `D - r`.
+      7. Realize this small symmetric residual by small vectors in the
+         normalized orthogonal tail using
+         `complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail`.
+         This is the dimension-general form of Hall-Wightman's estimate (48),
+         with `4 - r` replaced by `D - r`.  The tail membership is
+         load-bearing: it ensures that the residual vectors do not change the
+         selected block or the selected/residual cross scalar products after
+         the orthogonalization step.
       8. Add the selected-block perturbations and residual vectors, undo the
          orthogonalization and the initial normal-form transport, and shrink
          `η` one final time so every coordinate of the resulting perturbation
