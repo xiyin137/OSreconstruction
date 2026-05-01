@@ -2757,6 +2757,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
       scalar-product neighborhood theorem (Hall-Wightman Lemma 3 in the
       local audit language), including the singular scalar-rank cases.
 
+      Lean-shaped proof of the mechanical connectedness half:
+
+      ```lean
+      theorem BHW.sourceExtendedTubeGramDomain_relOpen_connected ... := by
+        refine ⟨?hRelOpen, ?hConnected⟩
+        · exact
+            BHW.sourceExtendedTubeGramDomain_relOpen
+              (d := d) hd n
+        · have hGram_cont :
+              Continuous (BHW.sourceMinkowskiGram d n) :=
+            (BHW.contDiff_sourceMinkowskiGram d n).continuous
+          have hImage :
+              IsConnected
+                ((BHW.sourceMinkowskiGram d n) ''
+                  BHW.ExtendedTube d n) :=
+            (BHW.isConnected_extendedTube (d := d) (n := n)).image
+              (BHW.sourceMinkowskiGram d n) hGram_cont.continuousOn
+          simpa [BHW.sourceExtendedTubeGramDomain] using hImage
+      ```
+
+      The only non-mechanical line in this theorem is therefore
+      `BHW.sourceExtendedTubeGramDomain_relOpen`.  That line is
+      the direct Lemma-3 relative-openness theorem described in the
+      quantitative subpacket below; it may not be replaced by continuity of
+      the Gram map or by connectedness of `ExtendedTube`.
+
       Third, perform the holomorphic descent through the source Gram map:
 
       ```lean

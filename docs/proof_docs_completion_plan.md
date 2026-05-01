@@ -530,6 +530,14 @@ implementation contract is:
    `BHW.isConnected_extendedTube` and
    `(BHW.contDiff_sourceMinkowskiGram d n).continuous`; the relative-openness
    half is the Hall-Wightman scalar-neighborhood theorem.
+   The connectedness proof is now Lean-pinned: set
+   `hGram_cont := (BHW.contDiff_sourceMinkowskiGram d n).continuous`, take
+   `(BHW.isConnected_extendedTube (d := d) (n := n)).image
+   (BHW.sourceMinkowskiGram d n) hGram_cont.continuousOn`, and finish by
+   `simpa [BHW.sourceExtendedTubeGramDomain]`.  Thus the only
+   non-mechanical content in this theorem is the relative-openness line
+   `BHW.sourceExtendedTubeGramDomain_relOpen`, whose proof is the Lemma-3
+   local-realization packet below.
    The local form is
    `BHW.sourceExtendedTubeGramDomain_relOpen_at`; its implementation is the
    Hall-Wightman Lemma-3 realization theorem
