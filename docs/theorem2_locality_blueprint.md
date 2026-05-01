@@ -4844,6 +4844,154 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceMinkowskiGram d n z) ∧
             BHW.HWLowRankSelectedSpanFrame d n r z w I
 
+      def BHW.ComplexMinkowskiTotallyIsotropicSubspace
+          (d : Nat)
+          (R : Submodule ℂ (Fin (d + 1) -> ℂ)) : Prop :=
+        ∀ x y : R,
+          BHW.complexMinkowskiBilinear d
+            (x : Fin (d + 1) -> ℂ)
+            (y : Fin (d + 1) -> ℂ) = 0
+
+      /-- Data obtained after the selected nondegenerate spans have first been
+      matched by a Witt-extension Lorentz transformation.  The common selected
+      span is the `w` selected span; only after applying `Λsel` to the left
+      endpoint do the two projected residual families live in the same
+      orthogonal complement. -/
+      structure BHW.HWLowRankSelectedSpanAlignment
+          (d n r : Nat) [NeZero d]
+          (z w : Fin n -> Fin (d + 1) -> ℂ)
+          (I : Fin r -> Fin n)
+          (S : BHW.HWLowRankSelectedSpanFrame d n r z w I) where
+        M : Submodule ℂ (Fin (d + 1) -> ℂ)
+        Λsel : ComplexLorentzGroup d
+        ξ : Fin n -> Fin (d + 1) -> ℂ
+        leftResidual : Fin n -> Fin (d + 1) -> ℂ
+        rightResidual : Fin n -> Fin (d + 1) -> ℂ
+        M_eq :
+          M = Submodule.span ℂ (Set.range (fun a : Fin r => w (I a)))
+        M_nondeg : BHW.ComplexMinkowskiNondegenerateSubspace d M
+        selected_mem : ∀ a, w (I a) ∈ M
+        Λsel_selected :
+          ∀ a,
+            BHW.complexLorentzVectorAction Λsel (z (I a)) = w (I a)
+        ξ_eq :
+          ∀ i, ξ i = ∑ b : Fin r, S.coeff i b • w (I b)
+        ξ_mem : ∀ i, ξ i ∈ M
+        leftResidual_eq :
+          ∀ i,
+            leftResidual i =
+              BHW.complexLorentzVectorAction Λsel (z i) - ξ i
+        rightResidual_eq :
+          ∀ i, rightResidual i = w i - ξ i
+        left_decomp :
+          ∀ i,
+            BHW.complexLorentzVectorAction Λsel (z i) =
+              ξ i + leftResidual i
+        right_decomp : ∀ i, w i = ξ i + rightResidual i
+        left_residual_orth_M :
+          ∀ i (m : M),
+            BHW.complexMinkowskiBilinear d
+              (leftResidual i)
+              (m : Fin (d + 1) -> ℂ) = 0
+        right_residual_orth_M :
+          ∀ i (m : M),
+            BHW.complexMinkowskiBilinear d
+              (rightResidual i)
+              (m : Fin (d + 1) -> ℂ) = 0
+        left_residual_pair_zero :
+          ∀ i j,
+            BHW.complexMinkowskiBilinear d
+              (leftResidual i) (leftResidual j) = 0
+        right_residual_pair_zero :
+          ∀ i j,
+            BHW.complexMinkowskiBilinear d
+              (rightResidual i) (rightResidual j) = 0
+
+      theorem BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
+          [NeZero d]
+          (hd : 2 <= d)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          {I : Fin r -> Fin n}
+          (S : BHW.HWLowRankSelectedSpanFrame d n r z w I) :
+          Nonempty
+            (BHW.HWLowRankSelectedSpanAlignment d n r z w I S)
+
+      /-- Once the selected spans are aligned, the projected residual vectors
+      on both sides lie in the orthogonal complement of the common selected
+      span and span totally isotropic subspaces. -/
+      theorem BHW.hw_lowRank_residualSubspaces_after_selectedAlignment
+          [NeZero d]
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          {I : Fin r -> Fin n}
+          {S : BHW.HWLowRankSelectedSpanFrame d n r z w I}
+          (A : BHW.HWLowRankSelectedSpanAlignment d n r z w I S) :
+          ∃ (Rleft Rright : Submodule ℂ (Fin (d + 1) -> ℂ)),
+            Rleft =
+              Submodule.span ℂ (Set.range A.leftResidual) ∧
+            Rright =
+              Submodule.span ℂ (Set.range A.rightResidual) ∧
+            (∀ x : Rleft, ∀ m : A.M,
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (m : Fin (d + 1) -> ℂ) = 0) ∧
+            (∀ x : Rright, ∀ m : A.M,
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (m : Fin (d + 1) -> ℂ) = 0) ∧
+            BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rleft ∧
+            BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rright
+
+      /-- Finite-dimensional Witt geometry in the orthogonal complement of the
+      selected span: two finite totally isotropic residual families can be put
+      into one common totally isotropic frame by a complex Lorentz
+      transformation fixing the selected nondegenerate span.  This is the
+      dimension-general replacement for Hall-Wightman's one-null-vector
+      alignment in four spacetime dimensions. -/
+      theorem BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame
+          [NeZero d]
+          (hd : 2 <= d)
+          {M Rz Rw : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M)
+          (hRz_orth :
+            ∀ x : Rz, ∀ m : M,
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (m : Fin (d + 1) -> ℂ) = 0)
+          (hRw_orth :
+            ∀ x : Rw, ∀ m : M,
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (m : Fin (d + 1) -> ℂ) = 0)
+          (hRz_iso : BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rz)
+          (hRw_iso : BHW.ComplexMinkowskiTotallyIsotropicSubspace d Rw) :
+          ∃ (Λfix : ComplexLorentzGroup d)
+            (s : Nat)
+            (q : Fin s -> Fin (d + 1) -> ℂ),
+            (∀ m : M,
+              BHW.complexLorentzVectorAction Λfix
+                (m : Fin (d + 1) -> ℂ) =
+              (m : Fin (d + 1) -> ℂ)) ∧
+            LinearIndependent ℂ q ∧
+            (∀ c c',
+              BHW.complexMinkowskiBilinear d (q c) (q c') = 0) ∧
+            (∀ c (m : M),
+              BHW.complexMinkowskiBilinear d
+                (q c) (m : Fin (d + 1) -> ℂ) = 0) ∧
+            (∀ x : Rz,
+              BHW.complexLorentzVectorAction Λfix
+                (x : Fin (d + 1) -> ℂ) ∈
+              Submodule.span ℂ (Set.range q)) ∧
+            (∀ x : Rw,
+              (x : Fin (d + 1) -> ℂ) ∈
+              Submodule.span ℂ (Set.range q))
+
+      theorem BHW.exists_coefficients_of_mem_span_finite_frame
+          {d s : Nat}
+          {q : Fin s -> Fin (d + 1) -> ℂ}
+          {v : Fin (d + 1) -> ℂ}
+          (hv : v ∈ Submodule.span ℂ (Set.range q)) :
+          ∃ a : Fin s -> ℂ, v = ∑ c : Fin s, a c • q c
+
       /-- After the selected nondegenerate spans have been matched by Witt
       extension, the low-rank discrepancy is contained in a finite totally
       isotropic residual frame in the orthogonal complement.  For `d = 3` this
@@ -6145,35 +6293,136 @@ Proof decomposition of this theorem, without hiding the analytic work:
       source-specialized corollary) plus `BHW.sourceMatrixMinor` to identify
       the determinant-unit selected block.
 
-      After applying that transform, the remaining discrepancy of `Λ0 z` from
-      `w` lies in
-      the totally isotropic radical of the common Gram form.  In the printed
-      four-vector theorem, this radical is at most one-dimensional in the
-      low-rank cases `r = 1,2`, which is why Hall-Wightman writes one null
-      vector.  For the repo's dimension-general statement, choose a finite
-      basis `q : Fin s -> Fin (d + 1) -> ℂ` for this residual isotropic space
-      and coefficients `aLeft aRight : Fin n -> Fin s -> ℂ` such that
+      The aligned residual-frame theorem is then a finite-dimensional Witt
+      alignment statement, not a notation choice, and it has two separate
+      stages.
+
+      First prove
+      `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame`.  Let
+      `Mz := Submodule.span ℂ (Set.range fun a : Fin r => z (I a))` and
+      `Mw := Submodule.span ℂ (Set.range fun a : Fin r => w (I a))`.  The
+      nonzero principal minor gives linear independence of the selected
+      vectors on both sides and nondegeneracy of the restricted form on both
+      selected spans.  The field `S.selected_gram_eq` defines the linear
+      isometry `Tsel : Mz ≃ₗ[ℂ] Mw` by
+      `Tsel ⟨z (I a), _⟩ = ⟨w (I a), _⟩`; well-definedness and preservation of
+      the form are proved by expanding in the selected basis and rewriting by
+      `S.selected_gram_eq`.  Witt extension gives
+      `Λsel : ComplexLorentzGroup d` with
+      `Λsel • z (I a) = w (I a)`.  Now set
+      `M := Mw`,
+      `ξ i := ∑ b : Fin r, S.coeff i b • w (I b)`,
+      `leftResidual i := Λsel • z i - ξ i`, and
+      `rightResidual i := w i - ξ i`.  The orthogonality fields in
+      `HWLowRankSelectedSpanFrame`, transported by `Λsel` on the left, prove
+      both residual families are orthogonal to `M`; the Schur-zero fields,
+      again transported by `Λsel` on the left, prove both residual families
+      have zero mutual pairings.  This is why
+      `BHW.hw_lowRank_residualSubspaces_after_selectedAlignment` takes the
+      alignment object as input: before `Λsel` is applied, there is no common
+      selected span in which the statement is true.
+
+      Lean-shaped selected-alignment skeleton:
+
+      ```lean
+      rcases BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame
+          (d := d) hd (n := n) (r := r) (z := z) (w := w)
+          (I := I) S with
+        ⟨A⟩
+      have hleft_residual_mem :
+          ∀ i,
+            A.leftResidual i ∈
+              Submodule.span ℂ (Set.range A.leftResidual) := by
+        intro i
+        exact Submodule.subset_span ⟨i, rfl⟩
+      have hright_residual_mem :
+          ∀ i,
+            A.rightResidual i ∈
+              Submodule.span ℂ (Set.range A.rightResidual) := by
+        intro i
+        exact Submodule.subset_span ⟨i, rfl⟩
+      ```
+
+      Second prove the common residual-frame theorem
+      `BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame`.
+      Apply `BHW.hw_lowRank_residualSubspaces_after_selectedAlignment A` to
+      get `Rleft` and `Rright` inside `A.Mᗮ`.  The proof of the alignment
+      theorem is the standard Witt-extension argument in the nondegenerate
+      quotient/complement of `A.M`: choose a maximal totally isotropic
+      subspace `Q` of `A.Mᗮ` containing `Rright`; choose an injective linear
+      map from `Rleft` into `Q` (possible because both are totally isotropic
+      and `Q` has maximal Witt dimension in the complement); the direct sum of
+      the identity on `A.M` and this zero-form isometry on `Rleft` preserves
+      the complex Minkowski form on its domain, because both residual
+      subspaces are orthogonal to `A.M` and have zero internal form.  Extending
+      this partial isometry by
+      `BHW.complexMinkowski_wittExtension_subspaceIsometry` gives `Λfix`,
+      fixing `A.M`, with `Λfix(Rleft) ⊆ Q` and `Rright ⊆ Q`.  Choose a finite
+      independent frame `q : Fin s -> Fin (d + 1) -> ℂ` for `Q`.  Membership
+      in `Submodule.span ℂ (Set.range q)` is converted to coefficient
+      functions by `BHW.exists_coefficients_of_mem_span_finite_frame`; this
+      step is explicit so that `aLeft` and `aRight` are not hidden choices.
+
+      Lean-shaped residual-frame extraction:
+
+      ```lean
+      rcases BHW.hw_lowRank_residualSubspaces_after_selectedAlignment
+          (d := d) (n := n) (r := r) (z := z) (w := w)
+          (I := I) (S := S) A with
+        ⟨Rleft, Rright, hRleft_eq, hRright_eq,
+          hRleft_orth, hRright_orth, hRleft_iso, hRright_iso⟩
+      rcases BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame
+          (d := d) hd
+          (M := A.M) (Rz := Rleft) (Rw := Rright)
+          A.M_nondeg hRleft_orth hRright_orth hRleft_iso hRright_iso with
+        ⟨Λfix, s, q, hΛfix_M, hq_independent, hq_pair_zero, hq_orth_M,
+          hleft_span, hright_span⟩
+      have hq_orth :
+          ∀ c i, BHW.complexMinkowskiBilinear d (q c) (A.ξ i) = 0 := by
+        intro c i
+        exact hq_orth_M c ⟨A.ξ i, A.ξ_mem i⟩
+      choose aLeft h_aLeft using
+        fun i =>
+          BHW.exists_coefficients_of_mem_span_finite_frame
+            (d := d) (s := s) (q := q)
+            (v := BHW.complexLorentzVectorAction Λfix (A.leftResidual i))
+            (hleft_span ⟨A.leftResidual i, by
+              simpa [hRleft_eq] using hleft_residual_mem i⟩)
+      choose aRight h_aRight using
+        fun i =>
+          BHW.exists_coefficients_of_mem_span_finite_frame
+            (d := d) (s := s) (q := q)
+            (v := A.rightResidual i)
+            (hright_span ⟨A.rightResidual i, by
+              simpa [hRright_eq] using hright_residual_mem i⟩)
+      let Λ0 : ComplexLorentzGroup d := Λfix * A.Λsel
+      ```
+
+      The equations
       `(BHW.complexLorentzAction Λ0 z) i =
-      ξ i + ∑ c, aLeft i c * q c` and
-      `w i = ξ i + ∑ c, aRight i c * q c`.  The frame satisfies
-      `BHW.complexMinkowskiBilinear d (q c) (q c') = 0` for all `c,c'` and is
-      orthogonal to the selected nondegenerate span `M` containing every
-      `ξ i`.  Choose a dual isotropic frame `qDual` by the Witt decomposition
-      of `Mᗮ`; in Lean this is exactly
+      A.ξ i + ∑ c, aLeft i c * q c` and
+      `w i = A.ξ i + ∑ c, aRight i c * q c` then follow by expanding
+      `BHW.complexLorentzAction_mul`, using `A.left_decomp`,
+      `A.right_decomp`, the fact that `Λfix` fixes `A.ξ i ∈ A.M`, and the
+      coefficient equations `h_aLeft` and `h_aRight`.  This is the
+      dimension-general version of Hall-Wightman's four-dimensional line
+      saying the singular residuals lie along null directions orthogonal to
+      the common base.  Choose a dual isotropic frame `qDual` by the Witt
+      decomposition of `A.Mᗮ`; in Lean this is exactly
       `BHW.complexMinkowski_isotropicDualFrame_of_residualFrame`, applied to
-      `M`, its nondegeneracy proof, the membership `ξ i ∈ M`, the orthogonality
-      of `q` to all `m : M`, and the recorded `LinearIndependent ℂ q` after
-      zero residual directions have been removed.  The returned dual fields
-      `qDual_pair_zero`, `q_dual`, and `qDual_orth` are stored in
-      `HWLowRankIsotropicNormalForm`; otherwise the later contraction family
-      would be an unexplained existence of Lorentz transformations.  Complete
-      `M ⊕ span q ⊕ span qDual` to an orthogonal basis, and define the
-      complex Lorentz boost which fixes the common span, sends every `q c` to
-      `Real.exp (-t) • q c`, and sends every corresponding dual vector to
-      `Real.exp t • qDual c`.  Applying this boost to the two endpoint
-      configurations `Λ0 z` and `w` proves both contracted configurations
-      remain in the extended tube; the scalar `Real.exp (-t)` tends to zero,
-      so both contracted configurations tend to `ξ`.
+      `A.M`, its nondegeneracy proof, the membership `A.ξ i ∈ A.M`, the
+      orthogonality of `q` to all `m : A.M`, and the recorded
+      `LinearIndependent ℂ q` after zero residual directions have been
+      removed.  The returned dual fields `qDual_pair_zero`, `q_dual`, and
+      `qDual_orth` are stored in `HWLowRankIsotropicNormalForm`; otherwise the
+      later contraction family would be an unexplained existence of Lorentz
+      transformations.  Complete `A.M ⊕ span q ⊕ span qDual` to an orthogonal
+      basis, and define the complex Lorentz boost which fixes the common span,
+      sends every `q c` to `Real.exp (-t) • q c`, and sends every corresponding
+      dual vector to `Real.exp t • qDual c`.  Applying this boost to the two
+      endpoint configurations `Λ0 z` and `w` proves both contracted
+      configurations remain in the extended tube; the scalar `Real.exp (-t)`
+      tends to zero, so both contracted configurations tend to `A.ξ`.
 
       The `base_mem`, `contracted_left_mem`, and `contracted_right_mem` fields
       of `HWLowRankIsotropicNormalForm` are not independent assumptions.  They

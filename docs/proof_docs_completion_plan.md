@@ -498,6 +498,12 @@ implementation contract is:
    `BHW.hw_lowRank_selected_residual_orthogonal`,
    `BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram`,
    `BHW.hw_lowRank_selected_residual_pairing_zero`,
+   `BHW.ComplexMinkowskiTotallyIsotropicSubspace`,
+   `BHW.HWLowRankSelectedSpanAlignment`,
+   `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame`,
+   `BHW.hw_lowRank_residualSubspaces_after_selectedAlignment`,
+   `BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame`,
+   `BHW.exists_coefficients_of_mem_span_finite_frame`,
    `BHW.hw_lowRank_alignedResidualFrame_of_sameSourceGram`,
    `BHW.ComplexMinkowskiNondegenerateSubspace`,
    `BHW.complexMinkowski_isotropicDualFrame_of_residualFrame`,
@@ -543,6 +549,19 @@ implementation contract is:
    the full source Gram matrix of rank exactly `r`, the Schur complement is
    zero; after expanding the projection coefficients this is exactly
    `BHW.hw_lowRank_selected_residual_pairing_zero`.
+   The common residual frame is a separate two-stage Witt-geometric theorem:
+   `BHW.hw_lowRank_selectedSpanAlignment_of_selectedSpanFrame` first builds
+   the Lorentz transform aligning the selected `z` span with the selected `w`
+   span, and only then
+   `BHW.hw_lowRank_residualSubspaces_after_selectedAlignment` builds the two
+   totally isotropic residual spans in the common orthogonal complement.  This
+   order is mandatory; before the selected-span Lorentz alignment there is no
+   common selected subspace in which the residual statement is true.  Then
+   `BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame`
+   supplies a Lorentz transformation fixing the selected span and placing the
+   two residual families in one finite totally isotropic frame `q`, and
+   `BHW.exists_coefficients_of_mem_span_finite_frame` extracts the coefficient
+   functions `aLeft` and `aRight` from the explicit span-membership fields.
    The later convergence proof must use the explicit contracted
    configurations and `Real.tendsto_exp_neg_atTop_nhds_zero`, not continuity
    of a noncomputably chosen `t ↦ contract t`.  The contraction data
