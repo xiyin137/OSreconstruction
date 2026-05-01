@@ -23,6 +23,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalit
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45CommonChart
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BranchPullback
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45TraceMembership
+import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Figure24
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
 
 /-!

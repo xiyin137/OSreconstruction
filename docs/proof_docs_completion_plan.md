@@ -36,23 +36,37 @@ confirmed this theorem-shape correction: `hOrbit` should be documented as an
 extra custom geometric theorem if pursued, while the faithful OS I §4.5 route
 targets direct source-backed BHW single-valuedness on `S''_n`.
 
-Current theorem-2 implementation ledger: the immediate Lean route is
-selected-adjacent OS/Jost source data plus the source-backed BHW
-single-valuedness packet on `S''_n`, not BHW/PET monodromy through `hOrbit`.
-The next implementation gate is:
+Current theorem-2 implementation ledger: the downstream Hall-Wightman/Jost
+source package remains the route after the local OS45 envelope has been
+constructed, but it is not the immediate Lean gate.  The immediate gate is
+local Slot 1:
 
-1. `bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII`, built from
-   the OS45 common-chart/EOW supplier and the Hall-Wightman scalar-product
-   real-environment theorem;
-2. the checked projection to
-   `BHW.SourceDistributionalAdjacentTubeAnchor`;
-3. checked local source support in `BHWPermutation/SourceExtension.lean`;
-4. the direct source frontier
-   `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
-   followed by
-   `BHW.permutedExtendedTube_extension_of_forwardTube_symmetry`,
-   `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`, and the
-   OS specialization `bvt_F_bhwSingleValuedOn_permutedExtendedTube_of_two_le`.
+1. keep the checked bounded identity-order perturbation and raw real-open ball
+   selector as support;
+2. checked: `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`
+   and `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch` now choose the
+   ordered seed inside `Ufig ∩ Upath`, shrink with compact closure, and export
+   the closure-level Figure-2-4 path field;
+3. next proof-document/Lean frontier: prove the branch-local source-germ layer
+   through the scalar-packet surfaces
+   `BHW.os45OneBranchScalarGramEq_sourceInput_id`,
+   `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`,
+   `BHW.os45OneBranchACRBHWAgreement_of_scalarGramEq`,
+   `BHW.os45OneBranchACRBHWAgreement_sourceInput`,
+   `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch`, and
+   `BHW.os45BranchHorizontalSourceGermAt_of_oneBranch_sourcePatch`;
+4. construct the identity and adjacent branch BV packets, subtract them, and
+   call the checked one-chart local EOW/gluing route to produce
+   `BHW.os45_adjacent_commonBoundaryEnvelope`.
+
+Only after this Slot 1 envelope exists does the route move to
+`bvt_F_selectedAdjacentDistributionalJostAnchorData_of_OSII`, the checked
+projection to `BHW.SourceDistributionalAdjacentTubeAnchor`, the direct source
+frontier `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
+and then the `S''_n` single-valuedness/Jost boundary-transfer layer.  This
+downstream package is still the alternative to BHW/PET monodromy through
+`hOrbit`; it must not be used to manufacture the local source-germ or EOW
+inputs.
 
 Current local Slot 1 correction: the OS45 common-chart/EOW supplier is no
 longer the equal-time/post-radius plan.  The checked SCV input is
@@ -123,12 +137,16 @@ is now fixed: the source theorem is split in the theorem-2 blueprint into the
 genuine one-branch germ statement `BHW.os45BranchHorizontalCommonGerm` and its
 boundary-CLM consumer `BHW.os45BranchHorizontalBoundaryValue`, whose outputs
 exactly match the `acr_bv` and `bhw_bv` fields of
-`OS45BranchHorizontalBV`.  The specialized identity and adjacent branch BV
-surfaces are only consumers of this source layer: they must carry explicit
-`hsource_id` and `hsource_adjacent` hypotheses produced by the one-branch
-source-germ theorems, then call the generic branch theorem.  Domain
-membership, local side windows, and precompactness do not by themselves prove
-that the ACR and pulled BHW formulas are restrictions of one holomorphic germ.
+`OS45BranchHorizontalBV`.  The route must not introduce public identity or
+adjacent branch BV wrappers that merely fix the branch label and forward
+generic inputs; any private assembly helper must genuinely derive the selected
+branch's `hsource`, `hlocal`, common edge, and openness/compactness data before
+calling the generic theorem.  The generic BV consumer now takes
+only the common edge `E`, compactness/openness data, `hsource`, and `hlocal`;
+Jost/order/extended-tube fields live upstream where `hsource` and `hlocal` are
+proved.  Domain membership, local side windows, and precompactness do not by
+themselves prove that the ACR and pulled BHW formulas are restrictions of one
+holomorphic germ.
 The only auxiliary cutoff lemma on this path is the pure real-analysis
 Schwartz cutoff statement.  The checked theorem
 `SCV.exists_schwartz_cutoff_eq_one_on_compact_subset_open` already supplies
@@ -147,7 +165,12 @@ associated homeomorphism, and `integral_flattenCLEquivReal`.  The
 boundary-limit estimate is an all-space integral localized by `φ = 0` off
 `tsupport φ`, bounded by the uniform supremum on `tsupport φ × Kη` times
 `∫ y, ‖φ y‖`; it must not treat an arbitrary compact support set as the
-measure domain.  The coordinate and compactness layer for the local horizontal
+measure domain.  The common-germ neighborhood shrink is its own pure topology
+lemma `BHW.exists_uniform_realEdgeAddImag_mem_open_of_compact`: compactness of
+`tsupport φ × Kη` and openness of the common-germ neighborhood give one radius
+so both `realEdgeAddImag y η ε` and `realEdgeAddImag y η (-ε)` stay where
+`Hβ` is continuous.  This is separate from the branch-domain local-wedge
+theorem.  The coordinate and compactness layer for the local horizontal
 wedge is also now checked in
 `OSToWightmanLocalityOS45TraceMembership.lean`: `BHW.os45ACRBranchDomain`,
 `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered`,
@@ -163,26 +186,40 @@ transcripts.  The theorem-2 blueprint now fixes those transcripts for
 `BHW.os45BranchHorizontalBoundaryValue`; the next implementation work must
 follow those named theorem surfaces in that order.
 
-The source-patch selector now has an explicit implementation contract in the
-theorem-2 blueprint.  The Figure-2-4 environment theorem
-`BHW.swFigure24_adjacentHorizontalRealEnvironment` has been reclassified as a
-Lean-provable topology refinement of the checked witness theorem
-`BHW.adjacent_overlap_real_jost_witness_exists`: start from the equal-time
-adjacent witness, use the zero-time identities
-`os45CommonEdgeRealPoint 1 x0 = x0` and
-`Q.symm (realEmbed (os45CommonEdgeRealPoint 1 x0)) = realEmbed x0`, then take
-the finite intersection of the Jost-set preimage, the two ordinary
-extended-tube preimages, and the two OS45 horizontal pulled-domain preimages.
-Openness comes from `BHW.isOpen_jostSet`, `BHW.isOpen_extendedTube`,
-`BHW.isOpen_os45PulledRealBranchDomain`, and the relevant continuity lemmas.
-The ordered seed is then chosen by the checked bounded time perturbation
-inside this source environment.  The shrink from that source environment to a
-connected open patch with compact closure is the separate finite-dimensional
-topology lemma `BHW.exists_connected_open_precompact_subset`.  This separation
-is mandatory: the Figure-2-4 environment supplies branch domains only, while
-the topology lemma supplies `closure V` containment; neither theorem compares
-branch values or invokes `bvt_W`.  The remaining non-topological source
-content is the branch-value compatibility predicate
+The source-patch selector is now checked in Lean.  The implemented theorem is
+the combined anchored selector
+`BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`, not two
+independently chosen selectors.  It starts from the same equal-time
+Figure-2-4 witness used by
+`BHW.swFigure24_adjacentPathStableNeighborhood_exists`, takes the finite
+intersection of the Jost-set preimage, the two ordinary extended-tube
+preimages, and the two OS45 horizontal pulled-domain preimages, and proves
+anchor membership in the pulled domains from the zero-time identities
+`os45CommonEdgeRealPoint 1 x0 = x0`,
+`Q.symm (realEmbed x0) = realEmbed x0`, and
+`permAct τ.symm (realEmbed x0) = realEmbed (x0 ∘ τ)`.  Openness comes from
+`BHW.isOpen_jostSet`, `BHW.isOpen_extendedTube`,
+`BHW.isOpen_os45PulledRealBranchDomain`, and the public finite-dimensional
+continuity helpers for `realEmbed`, point permutations, and the identity
+common-edge map.  Its path field is conditional on ordered identity-sector
+membership: `Γ` is `BHW.os45Figure24IdentityPath`, and `Δ` is the checked
+rotated Figure-2-4 realization from the compact-open path-stability
+neighborhood.  The theorem does not compare branch values or assert that the
+bare relabelled identity path is the adjacent branch.
+
+The checked patch theorem
+`BHW.os45_adjacent_identity_horizontalEdge_sourcePatch` is then a
+finite-dimensional shrink: first choose the positive identity-ordered seed
+inside `Ufig ∩ Upath`, then shrink inside
+`Ufig ∩ Upath ∩ ordered ∩ swappedOrdered` by
+`BHW.exists_connected_open_precompact_subset`.  The Wick-seed, real-edge, and
+opposite-tube fields are derived from the checked ordered/extended-tube
+lemmas; the closure-level ordered, pulled-domain, and Figure-2-4 path fields
+are inherited from the same finite intersection.  This separation is
+mandatory: the Figure-2-4 environment supplies branch domains only, while the
+topology lemma supplies `closure V` containment; neither theorem invokes
+`bvt_W`, `extendF` equality, or final locality.  The remaining
+non-topological source content is the branch-value compatibility predicate
 `BHW.OS45BranchHorizontalSourceGermAt`; domain membership alone is not enough
 to identify the ACR and BHW formulas.  The theorem-2 blueprint now isolates
 the predicate as a **branch-specific** canonical-germ statement using
@@ -191,6 +228,26 @@ route-hardening correction: using the unpermuted germ
 `z ↦ extendF (bvt_F OS lgc n) (Q.symm z)` for every branch would identify
 the identity and adjacent branch packets before the EOW step and would revive
 the retired tautological cancellation shortcut.
+
+Post-selector proof-doc frontier: do not start Lean implementation of the
+source-germ layer until the following two analytic inputs are transcript-ready.
+First, the ordinary Hall-Wightman scalar representative for the OS-II
+forward-tube function must be named explicitly, for example as
+`BHW.sourceScalarRepresentativeData_bvt_F`; it produces
+`BHW.SourceScalarRepresentativeData (d := d) n (bvt_F OS lgc n)` from
+`bvt_F_holomorphic` and the checked Lorentz-invariance theorem for `bvt_F`.
+This is a Hall-Wightman/BHW source theorem, not a locality or EOW theorem.
+Second, the adjacent `S'_n` seed package must be proved in the order
+documented below:
+`BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
+`BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
+`BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
+`BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`.  The
+checked `BHW.os45AdjacentQuarterTurnScalarCorridor_of_figure24` may only be
+called after that path-and-seed package exists.  None of these inputs may be
+replaced by final real-edge equality, `AdjacentOSEOWDifferenceEnvelope`,
+global PET branch independence, or a local boundary functional standing in
+for `bvt_W`.
 
 The current proof-document pass now separates upstream and downstream source
 content:
@@ -206,9 +263,14 @@ content:
    `hV_ordered_closure` and `hV_swap_ordered_closure` after relabelling.  These
    ordered fields are not optional, because they are what make
    `BHW.os45CommonEdge_mem_acrBranchDomain_of_ordered` available at the
-   horizontal base point.  The adjacent supplier works on the relabelled
-   ordered branch `x ∘ τ` and transports back by the checked OS45 reindexing
-   identities.  It must not use an
+   horizontal base point.  The adjacent scalar packet is produced in the
+   original identity coordinates at
+   `y0 = BHW.os45CommonEdgeRealPoint 1 x`; the one-branch source-patch assembly
+   is then applied on the relabelled ordered branch `x ∘ τ` after rewriting the
+   packet basepoint by `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`, and the
+   packaged source-germ predicate is rewritten back to `y0` by the same checked
+   equality.  This is only basepoint transport for one branch.  It must not use
+   an
    `AdjacentOSEOWDifferenceEnvelope`, real-edge adjacent equality, final
    `bvt_W` locality, or global PET branch independence.
 3. Both suppliers factor through the exact one-branch theorem
@@ -224,7 +286,10 @@ content:
    `BHW.os45OneBranchACRBHWAgreement_of_sourcePatch`.  The geometry fields
    choose the neighborhood, use ordered-sector membership for the ACR side,
    and ensure the pulled BHW argument lies in the extended tube; they do
-   **not** prove the ACR/BHW equality.  The agreement theorem is now further
+   **not** prove the ACR/BHW equality.  Jost and ordinary extended-tube fields
+   remain upstream in the scalar-packet suppliers; the generic source-patch
+   assembly no longer carries them after `hScalar` is supplied.  The agreement
+   theorem is now further
    split around the explicit scalar packet
    `BHW.OS45OneBranchScalarGramEqPacket`: the public identity and adjacent
    source suppliers produce this packet, while
@@ -236,8 +301,9 @@ content:
    local Gram equality to ACR/BHW equality is now named
    `BHW.os45OneBranchACRBHWAgreement_of_scalarGramEq`: after a
    `SourceScalarRepresentativeData` packet supplies equality of the two
-   scalar-product Gram arguments, the proof is just `branch_eq`,
-   `sourceMinkowskiGram_perm`, `bvt_F_perm`, and
+   scalar-product Gram arguments, the proof is just the checked orientation of
+   `SourceScalarRepresentativeData.branch_eq`, `sourceMinkowskiGram_perm`,
+   `bvt_F_perm`, and
    `BHW.extendF_eq_on_forwardTube`.  The scalar packet must be produced from
    the explicit local `S'_n` source suppliers
    `BHW.os45OneBranchScalarGramEq_sourceInput_id` and
@@ -287,7 +353,7 @@ content:
    supplies a path from `Gseed` to
    `sourceMinkowskiGram d n (fun k => wickRotatePoint (x0 k))`, and
    the selected Figure-2-4 source patch supplies the path-stability field
-   `hV_figPath`, now recorded on `closure V` because the branch source germ is
+   `hV_figPath_closure`, recorded on `closure V` because the branch source germ is
    required at every point of the compact edge closure.  That field is the
    actual Streater-Wightman Figure-2-4
    configuration-level path from the Wick configuration to the OS45
@@ -320,9 +386,10 @@ content:
    `BHW.exists_open_nhds_forall_mem_of_compact_parameter`, and the Gram
    calculation uses the genuine scalar-product theorem
    `BHW.sourceMinkowskiGram_complexLorentzAction` plus
-   `BHW.sourceMinkowskiGram_perm`.  The optional theorem
+   `BHW.sourceMinkowskiGram_perm`, with `Equiv.swap_inv` normalizing the
+   adjacent transposition inverse from `τ.symm` to `τ`.  The optional theorem
    `BHW.swFigure24_wickToQuarterTurn_doubleETRealizationPath` is only a
-   projection from `hV_figPath`, not an independent broad theorem about an
+   projection from `hV_figPath_closure`, not an independent broad theorem about an
    arbitrary real-open `V`.  The scalar theorem
    `BHW.swFigure24_wickToQuarterTurn_scalarPath` is then only the mechanical
    corollary `γ t = sourceMinkowskiGram d n (Γ t)`, with double-domain
@@ -388,14 +455,39 @@ content:
    `x ∈ closure V`; they must not pass the original open `V` to a scalar input
    theorem when only `x ∈ closure V` is known.  The local patch is the finite
    intersection of `Ufig`, the identity and swapped ordered-sector preimages,
-   and the relevant horizontal pulled-domain preimage.
+   and the relevant horizontal pulled-domain preimage.  In the adjacent case,
+   this local original-coordinate patch supplies the scalar packet at `y0`; the
+   source-germ assembly step separately transports to the relabelled patch
+   `Uτ := {u | (fun k => u (τ k)) ∈ Ux}` and rewrites the scalar packet along
+   `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq` before calling
+   `BHW.os45BranchHorizontalSourceGermAt_of_oneBranch_sourcePatch`.  This
+   preimage definition is equivalent to `{u | ∃ v ∈ Ux, u = fun k => v (τ k)}`
+   for an adjacent swap, but it makes openness and basepoint membership
+   Lean-direct.  The proof must explicitly transport all five one-branch
+   source-patch fields across this finite permutation: openness, Jost membership,
+   branch-`τ` ordered membership, ordinary extended-tube membership of the
+   relabelled configuration, and horizontal pulled-BHW membership after the
+   common-edge rewrite.  The basepoint proof is
+   `change (fun k => xτ (τ k)) ∈ Ux; simpa [xτ, τ] using hxUx`; it is not
+   automatic from the original `Ux` membership unless this relabelling step is
+   performed.  The theorem-2 blueprint now records the checked tactic-shaped
+   transport: `hUτ_open` is `hUx_open.preimage` along the continuous finite
+   permutation map; `hUτ_jost` applies `BHW.jostSet_permutation_invariant` to
+   `v := u ∘ τ`; `hUτ_ordered` consumes the swapped ordered field of `Ux`;
+   `hUτ_ET` consumes the adjacent ordinary-ET field; and `hUτ_horiz` rewrites
+   `os45CommonEdgeRealPoint τ u` to `os45CommonEdgeRealPoint 1 v` by
+   `BHW.os45CommonEdgeRealPoint_adjacent_swap_eq`.
    The selector construction must choose the ordered seed inside
    `Ufig ∩ Upath`, where `Upath` is the Figure-2-4 compact-open
    path-stability neighborhood around the same equal-time witness returned
    with `Ufig`; this shared anchor is what makes the closure-level
-   `hV_figPath` field legitimate.  The implementation must not call two
-   independent existential theorems for `Ufig` and `Upath` and then assume the
-   witnesses agree.
+   `hV_figPath_closure` field legitimate.  The `Upath` path field is
+   conditional on the identity ordered-sector hypothesis: `Upath` itself is an
+   open neighborhood of an equal-time anchor, while the final selector obtains
+   the full `Γ, Δ` field on `closure V` by combining `closure V ⊆ Upath` with
+   `hV_ordered_closure`.  The implementation must not call two independent
+   existential theorems for `Ufig` and `Upath` and then assume the witnesses
+   agree.
 4. The compact common-germ theorem `BHW.os45BranchHorizontalCommonGerm` then
    glues these branch-specific germs over `closure E`; the identity and
    adjacent germs remain different branch packets.
@@ -447,6 +539,27 @@ for the named support theorems above.  The previous circular dependence on
 the downstream scalar germ has been retired; implementation must still proceed
 in the documented order and may not skip ahead to local EOW, global PET branch
 independence, or final `bvt_W` locality.
+
+The first allowed Lean pass is the Figure-2-4 source-selector support packet,
+not the EOW step.  Its file/order contract is fixed: publicize only the
+concrete Figure-2-4 witness export
+`BHW.figure24_adjacentTwoPlaneRotationSupport` from
+`ComplexLieGroups/AdjacentOverlapWitness.lean`; the public axes
+`BHW.figure24Axis1`, `BHW.figure24Axis2`, and the finite formula
+`BHW.figure24RotateAdjacentConfig` also live there, as does
+`BHW.figure24RotateAdjacentConfig_lorentz_inverse`, so the witness export and
+the scalar path proof do not depend on the OS45 companion's path topology.
+This algebraic export is now checked.  The generic compact parameter tube
+lemma, the OS45 identity path, the zero-time identity-path lemma, joint
+identity-path continuity, rotation continuity, composed rotated-path
+continuity, Lorentz-invariance scalar identity, and
+`BHW.swFigure24_adjacentPathStableNeighborhood_exists` are also checked in the
+small OS45 Figure-2-4 companion file.  The next unchecked theorem pair is
+`BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability` and
+`BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`.  Any theorem that
+claims the bare adjacent relabelling of the identity path is forward-tube
+valued is off route; the adjacent certificate is the rotated Figure-2-4
+extended-tube realization.
 
 ## 0. Paper-authority rule
 
@@ -2132,12 +2245,28 @@ This doc is complete only when:
 
 This doc is complete only when:
 
-1. the continuity route is fixed on the flattened regular representation;
-2. Route B is fixed as the primary geometry route;
-3. Route A is documented as blocked-only fallback;
-4. ET-support and open-edge theorem slots are fully named;
-5. no section still treats continuity or geometry as abstract "candidate"
-   choices.
+1. the active route is uniquely the OS II / OS I §4.5 branch-difference path:
+   selected Figure-2-4 source patch, branchwise horizontal source germs,
+   branch BV packets, local EOW envelope, BHW/Jost source continuation, and
+   final OS-II boundary transfer to `bvt_W`;
+2. the source layer is fixed at the scalar-packet surfaces
+   `BHW.OS45OneBranchScalarGramEqPacket`,
+   `BHW.os45OneBranchScalarGramEq_sourceInput_id`, and
+   `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`, with no public
+   arbitrary-`β` geometry-only source theorem;
+3. the Figure-2-4 selector is closure-ready: `Ufig` and `Upath` share one
+   anchor, the ordered seed is chosen inside `Ufig ∩ Upath`, and the exported
+   path field is `hV_figPath_closure`;
+4. the branch-BV and local EOW theorem surfaces name the exact CLMs, side
+   wedges, chart-linear kernel pushforwards, and gluing consumers, without
+   treating the local boundary functional as `bvt_W`;
+5. the downstream Hall-Wightman/Jost and final boundary-transfer slots identify
+   which theorem packages consume the local EOW output and where the physical
+   `bvt_W` distribution re-enters;
+6. every historical shortcut is fenced off: pointwise horizontal equality,
+   quarter-turn bypass, boundary-functional demotion, generic PET branch
+   independence, and the archived adjacent-word source cover are not active
+   implementation options.
 
 ## 4.3. `theorem4_cluster_blueprint.md`
 
