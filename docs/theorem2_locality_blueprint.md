@@ -7440,6 +7440,56 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       Proof transcript for the residual small-realization theorem:
 
+      0. Prove `hwLemma3_selectedBlock_sqrt_near_identity` by a finite
+         matrix binomial square-root construction, not by an unnamed analytic
+         choice.  Use the operator norm on `Matrix (Fin r) (Fin r) ℂ`.
+         First expose the standard finite estimate
+         `BHW.matrix_opNorm_le_card_mul_sup_entry`, so an entrywise bound
+         `∀ i j, ‖B i j‖ < δ` implies `‖B‖ < 1/2` after shrinking `δ`.
+         Then define
+
+         ```lean
+         BHW.matrixSqrtOneAddNearZero r B :=
+           ∑' m : Nat,
+             (Ring.choose (1 / 2 : ℂ) m) • (B ^ m)
+         ```
+
+         and use absolute convergence of the scalar binomial series for
+         `‖B‖ < 1` plus submultiplicativity of the operator norm to prove:
+
+         ```lean
+         theorem BHW.matrixSqrtOneAddNearZero_sq
+             {B : Matrix (Fin r) (Fin r) ℂ}
+             (hB : ‖B‖ < 1) :
+             BHW.matrixSqrtOneAddNearZero r B *
+               BHW.matrixSqrtOneAddNearZero r B =
+             1 + B
+
+         theorem BHW.matrixSqrtOneAddNearZero_transpose
+             {B : Matrix (Fin r) (Fin r) ℂ}
+             (hBsymm : Bᵀ = B) :
+             (BHW.matrixSqrtOneAddNearZero r B)ᵀ =
+               BHW.matrixSqrtOneAddNearZero r B
+
+         theorem BHW.matrixSqrtOneAddNearZero_tendsto_identity :
+             Tendsto
+               (fun B : Matrix (Fin r) (Fin r) ℂ =>
+                 BHW.matrixSqrtOneAddNearZero r B)
+               (𝓝 0) (𝓝 1)
+         ```
+
+         The first theorem is the identity
+         `(1 + X)^(1/2) * (1 + X)^(1/2) = 1 + X` inside the Banach algebra of
+         finite matrices for `‖X‖ < 1`; the transpose theorem follows because
+         each power of a symmetric matrix is symmetric and transpose commutes
+         with the tsum; the tendsto theorem is the continuity of the same
+         convergent power series at `0`.  Finally choose the entrywise `δ`
+         small enough that `‖B‖ < 1` and every entry of
+         `matrixSqrtOneAddNearZero r B - 1` is `< ε`.  Set
+         `P := matrixSqrtOneAddNearZero r B`; since `Pᵀ = P`, the square
+         theorem gives `P * Pᵀ = 1 + B`.  This closes the selected-block
+         square-root theorem without importing spectral theory or any
+         Hall-Wightman-specific assumption.
       1. Prove `complexSymmetric_takagi_rankLE` by the standard
          Autonne-Takagi/Bargmann factorization for complex symmetric matrices:
          choose unitary `U` and nonnegative singular values `σ a` with

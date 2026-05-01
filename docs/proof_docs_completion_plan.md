@@ -668,7 +668,13 @@ implementation contract is:
    perturbation still inside that ball.  The theorem-2 blueprint now expands
    the quantitative theorem down to Hall-Wightman's actual Lemma-3 algebra:
    `BHW.hwLemma3_selectedBlock_sqrt_near_identity` for the analytic square
-   root of the selected principal block near `1`,
+   root of the selected principal block near `1`; this is now pinned to the
+   finite matrix binomial series
+   `matrixSqrtOneAddNearZero r B =
+   ∑' m, Ring.choose (1/2 : ℂ) m • B^m`, with operator
+   norm convergence for `‖B‖ < 1`, symmetry under transpose, the square
+   identity, and an entrywise smallness estimate obtained from
+   `BHW.matrix_opNorm_le_card_mul_sup_entry`,
    `BHW.hwLemma3_schurComplement_rank_bound` for the lower-right residual
    rank `<= d + 1 - r`,
    `BHW.complexSymmetric_takagi_rankLE` and
