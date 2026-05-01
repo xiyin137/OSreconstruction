@@ -963,7 +963,13 @@ implementation contract is:
    points inside any prescribed extended-tube neighborhood, then applies
    continuity of `extendF` on the ordinary extended tube.  It must not call
    `hallWightman_localScalarChart_at`, which would make the removability
-   argument circular.
+   argument circular.  The two topology helpers in this proof are now pinned
+   to direct `continuousOn_iff` proofs.  In particular,
+   `BHW.continuousOn_openDomain_preimage_nhds` takes only
+   `hf : ContinuousOn f Ω`, `hxΩ`, and the open target neighborhood; it does
+   not carry an unused `IsOpen Ω` hypothesis.  The open extended-tube theorem
+   is still used later when forming `Vsrc ∩ BHW.ExtendedTube d n`, not in this
+   helper.
    The max-rank chart helper
    `BHW.hallWightman_powerSeriesChart_branch_eq_of_sameGram` must carry the
    source-vector inclusion `Uvec ⊆ BHW.ExtendedTube d n`; the branch law cannot
@@ -985,7 +991,14 @@ implementation contract is:
    `Mathlib.Analysis.Calculus.MeanValue`, applied to the fixed-`u`
    auxiliary slice and `hUa_conn.isPreconnected`; before applying it, the
    proof must identify the slice derivative with the auxiliary derivative by
-   the chain rule for `v ↦ (u, v)` and `ContinuousLinearMap.inr`.  The product
+   the chain rule for `v ↦ (u, v)` and `ContinuousLinearMap.inr`.  The
+   scratch-checked Lean proof needs the ordinary complex-analysis import
+   `Mathlib.Analysis.Complex.Basic` in addition to `MeanValue`/`FDeriv.Comp`
+   when isolated, and the two differentiable slices are
+   `differentiable_id.prodMk (differentiable_const vbase)` and
+   `((differentiable_const u).prodMk differentiable_id)`.  The bare
+   `differentiable_const` and method-style
+   `differentiable_const.prodMk` forms do not elaborate.  The product
    chart itself must be obtained by shrinking the inverse-function-theorem
    coordinate target: `isOpen_prod_iff` gives a product neighborhood inside
    the target, then the auxiliary factor is shrunk to a finite-dimensional
@@ -999,7 +1012,11 @@ implementation contract is:
    `C.U0 ∩ {Z | C.scalarCoord Z ∈ Us}` after writing
    `C.Ucoord = Us × Ua`; the selected-coordinate differentiability input is
    exactly on `Us`, not on the larger projection set
-   `{u | ∃ v, (u,v) ∈ C.Ucoord}`.  The theorem
+   `{u | ∃ v, (u,v) ∈ C.Ucoord}`.  When extracting the base scalar coordinate
+   from `p0 ∈ C.Ucoord`, the Lean proof must first create
+   `hp0_prod : p0 ∈ Set.prod Us Ua` by rewriting with `hprod`; only
+   `hp0_prod.1` has type `p0.1 ∈ Us`.  Projecting `hp0.1` directly is invalid
+   before the rewrite.  The theorem
    `BHW.hallWightman_powerSeries_from_PDE_span` carries the maximal scalar-rank
    hypothesis `HWSourceGramMaxRankAt d n z0`; this is not redundant with the
    PDE-span hypothesis, because constant-rank shrinking is what makes the
@@ -1008,6 +1025,23 @@ implementation contract is:
    The same Lemma-5 packet must carry the full local differentiable chart
    data, not just a topological coordinate equivalence: `coordMap` and
    `coordSymmMap` are differentiable on the selected opens and inverse there.
+   The coordinate pullback theorem
+   `BHW.hallWightman_coord_pullback_extendF` is now pinned to the concrete
+   proof `g p := extendF F (C.coordSymmMap p)`,
+   `hF_holo_ext.comp C.coordSymmMap_diff`, and the maps-to proof
+   `p ∈ C.Ucoord ↦ C.Uvec_sub_extendedTube (C.coordSymmMap_mem p hp)`.
+   The branch equality is not a subtype-homeomorphism handwave: rewrite
+   `(C.coord z).1` by `← C.coordMap_eq_coord z`, then apply
+   `C.coordSymmMap_coordMap z.1 z.2`.  This pattern has been scratch-checked
+   in a simplified `HWPowerSeriesCoordinateSplit` structure.
+   The derivative version `BHW.fderiv_coord_pullback_extendF` must also take
+   `hF_holo_ext`; branch equality alone only gives
+   `g =ᶠ[𝓝 p] (fun q => extendF F (C.coordSymmMap q))` by
+   `Filter.EventuallyEq.fderiv_eq`.  The actual derivative formula then uses
+   `fderiv_comp'` with `hF_holo_ext.differentiableAt` on the open ordinary
+   extended tube and `C.coordSymmMap_diff.differentiableAt` on `C.Ucoord`.
+   Scratch Lean checked this proof pattern with
+   `Mathlib.Analysis.Calculus.FDeriv.Congr`.
    It must also carry local, not merely basepoint, scalar differential data:
    `BHW.HWPowerSeriesCoordinateSplit.sourceGramDifferentials_selected_local`
    says selected scalar differentials span the full source-Gram differential

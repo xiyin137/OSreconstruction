@@ -9614,13 +9614,33 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.continuousOn_openDomain_preimage_nhds
           {X Y : Type*} [TopologicalSpace X] [TopologicalSpace Y]
           {f : X -> Y} {Ω : Set X}
-          (hΩ_open : IsOpen Ω)
           (hf : ContinuousOn f Ω)
           {x : X} (hxΩ : x ∈ Ω)
           {T : Set Y} (hT_open : IsOpen T)
           (hxT : f x ∈ T) :
           ∃ V : Set X, IsOpen V ∧ x ∈ V ∧
             ∀ y, y ∈ Ω -> y ∈ V -> f y ∈ T
+
+      -- Scratch-checked proof body for
+      -- `continuousOn_of_open_nhdsWithin_control`.
+      theorem BHW.continuousOn_of_open_nhdsWithin_control ... := by
+        rw [continuousOn_iff]
+        intro x hx T hT_open hxT
+        rcases h x hx T hT_open hxT with
+          ⟨O, hO_open, hxO, hO_control⟩
+        refine ⟨O, hO_open, hxO, ?_⟩
+        intro y hy
+        exact hO_control y hy.1 hy.2
+
+      -- Scratch-checked proof body for
+      -- `continuousOn_openDomain_preimage_nhds`.
+      theorem BHW.continuousOn_openDomain_preimage_nhds ... := by
+        rw [continuousOn_iff] at hf
+        rcases hf x hxΩ T hT_open hxT with
+          ⟨V, hV_open, hxV, hV_sub⟩
+        refine ⟨V, hV_open, hxV, ?_⟩
+        intro y hyΩ hyV
+        exact hV_sub ⟨hyV, hyΩ⟩
 
       /-- Lean-facing structure for the concrete finite linear PDE system in
       Hall-Wightman Lemma 4.  Its single field is the infinitesimal generator;
@@ -9998,12 +10018,45 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ∀ z : C.Uvec,
               g (C.coord z).1 = BHW.extendF F z
 
+      Scratch-checked Lean pattern for this coordinate pullback:
+
+      ```lean
+      theorem BHW.hallWightman_coord_pullback_extendF ... := by
+        let g :
+            ((Fin e -> ℂ) × (Fin a -> ℂ)) -> ℂ :=
+          fun p => BHW.extendF F (C.coordSymmMap p)
+        have hmap :
+            Set.MapsTo C.coordSymmMap C.Ucoord
+              (BHW.ExtendedTube d n) := by
+          intro p hp
+          exact C.Uvec_sub_extendedTube (C.coordSymmMap_mem p hp)
+        have hg_diff : DifferentiableOn ℂ g C.Ucoord := by
+          exact hF_holo_ext.comp C.coordSymmMap_diff hmap
+        refine ⟨g, hg_diff, ?_⟩
+        intro z
+        have hsymm :
+            C.coordSymmMap (C.coord z).1 = z.1 := by
+          rw [← C.coordMap_eq_coord z]
+          exact C.coordSymmMap_coordMap z.1 z.2
+        simpa [g, hsymm]
+      ```
+
+      The equality proof uses the ambient map equation
+      `C.coordMap_eq_coord z` to rewrite the subtype coordinate
+      `(C.coord z).1` back to `C.coordMap z.1`, then applies
+      `C.coordSymmMap_coordMap`.  It should not use the subtype
+      homeomorphism inverse directly unless the production structure exposes
+      the needed ambient equality; otherwise the proof loses the link between
+      `coordSymmMap` and the subtype-valued `coord.symm`.
+
       theorem BHW.hallWightman_auxiliaryDerivative_zero
           [NeZero d]
           (hd : 2 <= d)
           (n e a : Nat)
           (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hF_holo_ext :
+            DifferentiableOn ℂ (BHW.extendF F) (BHW.ExtendedTube d n))
           (C : BHW.HWPowerSeriesCoordinateSplit d n e a z0)
           (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
           (hF_cinv :
@@ -10103,7 +10156,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {e a : Nat}
           {U : Set ((Fin e -> ℂ) × (Fin a -> ℂ))}
           {g : ((Fin e -> ℂ) × (Fin a -> ℂ)) -> ℂ}
-          (hU_open : IsOpen U)
           (hU_product :
             ∃ Us Ua, IsOpen Us ∧ IsOpen Ua ∧
               IsConnected Ua ∧ Ua.Nonempty ∧
@@ -10134,7 +10186,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           -- the inclusion `(u, vbase) ∈ Us ×ˢ Ua`.
           exact
             hg.comp
-              ((differentiable_id.prodMk differentiable_const).differentiableOn)
+              ((differentiable_id.prodMk
+                (differentiable_const vbase)).differentiableOn)
               (by intro u hu; exact ⟨hu, hvbase⟩)
         have hconst_aux :
             ∀ u, u ∈ Us -> ∀ v, v ∈ Ua -> g (u, v) = Ψs u := by
@@ -10145,7 +10198,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             -- `hasFDerivAt_prodMk_right`/`inr`.
             exact
               hg.comp
-                ((differentiable_const.prodMk differentiable_id).differentiableOn)
+                (((differentiable_const u).prodMk
+                  differentiable_id).differentiableOn)
                 (by intro v hv; exact ⟨hu, hv⟩)
           have hgu_zero :
               ∀ v, v ∈ Ua -> fderiv ℂ gu v = 0 := by
@@ -10436,6 +10490,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n e a : Nat)
           (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hF_holo_ext :
+            DifferentiableOn ℂ (BHW.extendF F) (BHW.ExtendedTube d n))
           (C : BHW.HWPowerSeriesCoordinateSplit d n e a z0)
           {g : ((Fin e -> ℂ) × (Fin a -> ℂ)) -> ℂ}
           (hg_branch :
@@ -10447,6 +10503,56 @@ Proof decomposition of this theorem, without hiding the analytic work:
           fderiv ℂ g p (0, v) =
             fderiv ℂ (BHW.extendF F) (C.coordSymmMap p)
               (BHW.auxiliaryCoordinateTangent C p hp v)
+
+      Lean-shaped proof of this derivative comparison:
+
+      ```lean
+      theorem BHW.fderiv_coord_pullback_extendF ... := by
+        let pull : ((Fin e -> ℂ) × (Fin a -> ℂ)) -> ℂ :=
+          fun q => BHW.extendF F (C.coordSymmMap q)
+        have hpull_eventually : g =ᶠ[𝓝 p] pull := by
+          filter_upwards [C.Ucoord_open.mem_nhds hp] with q hq
+          let z : C.Uvec :=
+            ⟨C.coordSymmMap q, C.coordSymmMap_mem q hq⟩
+          have hcoord : (C.coord z).1 = q := by
+            rw [← C.coordMap_eq_coord z]
+            exact C.coordMap_coordSymmMap q hq
+          simpa [pull, z, hcoord] using hg_branch z
+        have hsymm_at :
+            DifferentiableAt ℂ C.coordSymmMap p :=
+          C.coordSymmMap_diff.differentiableAt
+            (C.Ucoord_open.mem_nhds hp)
+        have hExt_at :
+            DifferentiableAt ℂ (BHW.extendF F)
+              (C.coordSymmMap p) :=
+          hF_holo_ext.differentiableAt
+            ((BHW.isOpen_extendedTube (d := d) (n := n)).mem_nhds
+              (C.Uvec_sub_extendedTube (C.coordSymmMap_mem p hp)))
+        have hfderiv_eq :
+            fderiv ℂ g p = fderiv ℂ pull p :=
+          Filter.EventuallyEq.fderiv_eq hpull_eventually
+        have hchain :
+            fderiv ℂ pull p =
+              (fderiv ℂ (BHW.extendF F) (C.coordSymmMap p)).comp
+                (fderiv ℂ C.coordSymmMap p) := by
+          simpa [pull] using
+            (fderiv_comp'
+              (x := p) (g := BHW.extendF F)
+              (f := C.coordSymmMap) hExt_at hsymm_at)
+        calc
+          fderiv ℂ g p (0, v)
+              = fderiv ℂ pull p (0, v) := by rw [hfderiv_eq]
+          _ = fderiv ℂ (BHW.extendF F) (C.coordSymmMap p)
+                (BHW.auxiliaryCoordinateTangent C p hp v) := by
+                rw [hchain]
+                rfl
+      ```
+
+      This theorem does not infer a derivative identity from branch equality
+      alone.  Branch equality supplies only the eventual equality
+      `g =ᶠ[𝓝 p] pull`; the chain-rule identification of the pullback
+      derivative uses the explicit holomorphy input `hF_holo_ext` and
+      `C.coordSymmMap_diff`.
 
       /-- Hall-Wightman Lemma 4: infinitesimal complex Lorentz invariance.
       The differential of an invariant holomorphic function annihilates every
@@ -10534,9 +10640,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
               ∀ v : Fin a -> ℂ,
                 fderiv ℂ g p (0, v) = 0 := by
           exact BHW.hallWightman_auxiliaryDerivative_zero
-            (d := d) hd n e a F C hF_holo hF_cinv hg_branch
+            (d := d) hd n e a F hF_holo_ext C
+              hF_holo hF_cinv hg_branch
         rcases BHW.holomorphic_product_independent_of_auxiliary
-            C.Ucoord_open C.Ucoord_product hg_diff haux with
+            C.Ucoord_product hg_diff haux with
           ⟨Us, Ua, Ψs, hUs_open, hUa_open, hUa_conn, hUa_ne,
             hprod, hΨs_diff, hΨs_eq⟩
         rcases BHW.hallWightman_selectedScalarFunction_to_fullGramChart
@@ -10827,7 +10934,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             fderiv ℂ g p (0, v) =
               fderiv ℂ (BHW.extendF F) z.1 X := by
           exact BHW.fderiv_coord_pullback_extendF
-            (d := d) hd n e a F C hg_branch p hp v
+            (d := d) hd n e a F hF_holo_ext C hg_branch p hp v
         have hPDE_z :
             BHW.SatisfiesLorentzInvariantPDE d n (BHW.extendF F) z.1 :=
           BHW.hallWightman_lorentzInfinitesimalEquations
@@ -11050,8 +11157,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
         let p0 := (C.coord ⟨z0, C.z0_mem⟩).1
         have hp0 : p0 ∈ C.Ucoord :=
           (C.coord ⟨z0, C.z0_mem⟩).2
+        have hp0_prod : p0 ∈ Set.prod Us Ua := by
+          simpa [p0, hprod] using hp0
         have hp0_Us : p0.1 ∈ Us := by
-          simpa [p0, hprod] using hp0.1
+          exact hp0_prod.1
         let U0 : Set (Fin n -> Fin n -> ℂ) :=
           C.U0 ∩ {Z | C.scalarCoord Z ∈ Us}
         let Ψ : (Fin n -> Fin n -> ℂ) -> ℂ :=
@@ -11077,6 +11186,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
             intro Z hZ
             rfl⟩
       ```
+
+      The intermediate `hp0_prod` is necessary in Lean: before rewriting
+      `C.Ucoord` by `hprod`, a proof `hp0 : p0 ∈ C.Ucoord` is not a product
+      membership proof and has no `.1` projection.  The same pattern should be
+      used anywhere a membership proof in `C.Ucoord` is projected into scalar
+      and auxiliary coordinates.
 
       theorem BHW.hallWightman_powerSeriesChart_branch_eq_of_sameGram
           [NeZero d]
@@ -11266,7 +11381,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 hsame.symm ▸ hphiZT
             rcases
               BHW.continuousOn_openDomain_preimage_nhds
-                (BHW.isOpen_extendedTube (d := d) (n := n))
                 hExt_cont hζ0 hT_open hExtζ_in_T with
               ⟨Vsrc, hVsrc_open, hζ0Vsrc, hVsrc_sub_T⟩
             let Vtube := Vsrc ∩ BHW.ExtendedTube d n
@@ -11315,7 +11429,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
             simpa [hsame_value] using hC_pos
           rcases
             BHW.continuousOn_openDomain_preimage_nhds
-              (BHW.isOpen_extendedTube (d := d) (n := n))
               hExt_cont hζ0 hNorm_open hζ_bound with
             ⟨Vsrc, hVsrc_open, hζ0Vsrc, hVsrc_bound⟩
           let Vtube := Vsrc ∩ BHW.ExtendedTube d n
