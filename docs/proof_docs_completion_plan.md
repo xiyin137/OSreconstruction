@@ -1553,6 +1553,39 @@ zero-diagonal compact-test symmetry.  This is still a genuine source theorem
 frontier, not a license to call raw adjacent pointwise equality, final
 locality, or Streater-Wightman Theorem 3-6.
 
+The theorem-2 blueprint now removes the last schematic `?osi45...` marker
+from the canonical-lift compact theorem.  The source boundary gate is pinned
+to two implementation-level pieces.  First,
+`BHW.OS45CanonicalAdjacentBranchBoundaryData` is a private/proof-local carrier
+for one compact test: it stores the exact `φZ`, `ψZ`, a connected analytic
+branch domain, the deterministic Figure-2-4 lift membership, the ordinary and
+adjacent analytic branches, equality of the ordinary branch with
+`extendF (bvt_F OS lgc n)` on the lift, a real Jost patch with boundary
+distribution equality, and the adjacent lift pairing
+`= OS.S n ψZ`.  Its only allowed producer is
+`BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45`, proved from OS I
+§4.5 equations (4.1), (4.12), and (4.14), the compact zero-diagonal Euclidean
+symmetry, BHW continuation, and the selected Figure-2-4 Jost real-boundary
+comparison.  This producer is still a genuine source proof obligation, not a
+wrapper around the canonical theorem.
+
+Second, the generic theorem
+`BHW.jostRuelle_uniqueContinuation_compactBoundary` now has an explicit
+Lean-facing signature: from the branch data above it proves equality of the
+ordinary and adjacent lift pairings by Ruelle/Jost uniqueness on the connected
+component containing the real Jost patch and the canonical lift.  It is a
+standard complex-analytic/Jost theorem with no OS, PET, EOW, scalar
+representative, locality, or `bvt_W` content.  With these pieces, the public
+`BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger` proof is the
+mechanical composition:
+ordinary lift integrand rewrite by `D.ordinary_eq_extendF_on_lift`, generic
+Jost/Ruelle lift-pairing equality, then
+`D.adjacent_lift_pairing_eq_permutedSchwinger`.  Therefore the adjacent
+`S'_n` proof docs are more precise, but still not production-Lean-ready until
+both `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` and the generic
+Jost/Ruelle compact theorem are proved or replaced by an already checked
+sorry-free support theorem with the same mathematical content.
+
 The raw pointwise theorem
 `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`, the raw
 compact theorem

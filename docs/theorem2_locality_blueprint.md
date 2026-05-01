@@ -12562,32 +12562,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The proof transcript for this gate has one non-mechanical analytic
       compact-boundary input and deterministic Figure-2-4 geometry.  The
       analytic input is not a raw-Wick theorem; it is the OS-I §4.5 statement
-      for the canonical lift itself:
-
-      ```lean
-      theorem BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger ... := by
-        classical
-        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
-        intro φ hφ_comp hφ_supp
-        let φZ : ZeroDiagonalSchwartz d n :=
-          ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
-            (d := d) (n := n) hChart.V0
-            (fun x hx => hV_jost x (hChart.V0_sub hx)) φ hφ_supp⟩
-        let ψZ : ZeroDiagonalSchwartz d n :=
-          permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
-        -- OS I §4.5/BHW/Jost compact-boundary theorem for the selected
-        -- deterministic Figure-2-4 lift.  This is the non-mechanical source
-        -- input of the adjacent `S'_n` scalarization proof.
-        -- The production proof must inline the four-step source transcript
-        -- listed below; do not replace this by a second public wrapper.
-        exact ?os45_section45_bhw_jost_compact_boundary
-      ```
-
-      The placeholder in this pseudocode is not a theorem name and must not
-      survive production.  It marks the source proof that has to be written
-      inside the public theorem (or, if readability requires it, as a private
-      implementation lemma with exactly the same mathematical content during
-      the same proof pass).  The production proof must establish the following
+      for the canonical lift itself.  The implementation must not contain an
+      `exact ?...` line here.  It must first build the zero-diagonal tests,
+      establish the four source subclaims below, then use the private
+      `OS45CanonicalAdjacentBranchBoundaryData` and the generic
+      `jostRuelle_uniqueContinuation_compactBoundary` skeleton displayed
+      after item 4.  The production proof must establish the following
       subclaims explicitly:
 
       1. `φZ` is the zero-diagonal compact test supported in `hChart.V0`, and
@@ -12708,7 +12688,33 @@ Proof decomposition of this theorem, without hiding the analytic work:
              OS.S n ψZ := by
            -- OS I §4.5: equations (4.1), (4.12), (4.14), BHW continuation,
            -- and Jost real-environment uniqueness for this compact test.
-           exact ?osi45_bhw_jost_canonical_compact_pairing
+           let D :=
+             BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
+               (d := d) hd OS lgc n i hi V hV_jost
+               hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+           have huniq :=
+             BHW.jostRuelle_uniqueContinuation_compactBoundary
+               (d := d) hd OS lgc n i hi V hV_jost hChart
+               φ hφ_comp hφ_supp D
+           have hord :
+               ∫ x : NPointDomain d n,
+                   BHW.extendF (bvt_F OS lgc n)
+                     (hChart.adjLift x (0 : unitInterval)) * φ x
+                 =
+               ∫ x : NPointDomain d n,
+                   D.ordinaryBranch
+                     (hChart.adjLift x (0 : unitInterval)) * φ x := by
+             refine integral_congr_ae ?_
+             filter_upwards with x
+             by_cases hx : x ∈ hChart.V0
+             · rw [D.ordinary_eq_extendF_on_lift x hx]
+             · have hφx : φ x = 0 := by
+                 exact
+                   (notMem_tsupport_iff_eventuallyEq.mp
+                     (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+               simp [hφx]
+           exact hord.trans
+             (huniq.trans D.adjacent_lift_pairing_eq_permutedSchwinger)
          ```
 
          This is the mathematical source boundary gate.  It is a compact
@@ -12800,6 +12806,195 @@ Proof decomposition of this theorem, without hiding the analytic work:
          Jost/Ruelle analytic theorems with the fields shown here; they must
          not be public wrappers around
          `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`.
+
+         The implementation-level shape of these labels is now fixed.  The
+         OS-I §4.5 source proof may use the following private data carrier to
+         remember the analytic branches before the compact equality is
+         extracted.  This carrier is not a substitute for the canonical-lift
+         theorem: its producer is exactly the source proof from equations
+         (4.1), (4.12), and (4.14), Euclidean symmetry of the compact
+         zero-diagonal test, Bargmann-Hall-Wightman continuation, and the
+         Figure-2-4 Jost real-boundary comparison.
+
+         ```lean
+         structure BHW.OS45CanonicalAdjacentBranchBoundaryData
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) where
+           τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+           φZ : ZeroDiagonalSchwartz d n
+           ψZ : ZeroDiagonalSchwartz d n
+           φZ_def :
+             φZ =
+               ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+                 (d := d) (n := n) hChart.V0
+                 (fun x hx => hV_jost x (hChart.V0_sub hx))
+                 φ hφ_supp⟩
+           ψZ_def :
+             ψZ =
+               permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+           Ω : Set (Fin n -> Fin (d + 1) -> ℂ)
+           Ω_open : IsOpen Ω
+           Ω_connected : IsConnected Ω
+           lift_mem :
+             ∀ x, x ∈ hChart.V0 ->
+               hChart.adjLift x (0 : unitInterval) ∈ Ω
+           jostPatch : Set (NPointDomain d n)
+           jostPatch_open : IsOpen jostPatch
+           jostPatch_nonempty : jostPatch.Nonempty
+           jostPatch_sub_chart : jostPatch ⊆ hChart.V0
+           jostPatch_jost :
+             ∀ x, x ∈ jostPatch -> x ∈ BHW.JostSet d n
+           ordinaryBranch :
+             (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+           adjacentBranch :
+             (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+           ordinary_holo :
+             DifferentiableOn ℂ ordinaryBranch Ω
+           adjacent_holo :
+             DifferentiableOn ℂ adjacentBranch Ω
+           ordinary_eq_extendF_on_lift :
+             ∀ x, x ∈ hChart.V0 ->
+               ordinaryBranch (hChart.adjLift x (0 : unitInterval)) =
+                 BHW.extendF (bvt_F OS lgc n)
+                   (hChart.adjLift x (0 : unitInterval))
+           realBoundary_eq :
+             ∀ χ : SchwartzNPoint d n,
+               HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+               tsupport (χ : NPointDomain d n -> ℂ) ⊆ jostPatch ->
+                 ∫ x : NPointDomain d n,
+                     ordinaryBranch (BHW.realEmbed x) * χ x
+                   =
+                 ∫ x : NPointDomain d n,
+                     adjacentBranch (BHW.realEmbed x) * χ x
+           adjacent_lift_pairing_eq_permutedSchwinger :
+             ∫ x : NPointDomain d n,
+                 adjacentBranch (hChart.adjLift x (0 : unitInterval)) *
+                   φ x
+               =
+             OS.S n ψZ
+         ```
+
+         The standard uniqueness theorem consumed by this data is the compact
+         Jost/Ruelle theorem, specialized to the finite source configuration
+         space.  It contains no OS, locality, PET, EOW, scalar representative,
+         or `bvt_W` content:
+
+         ```lean
+         theorem BHW.jostRuelle_uniqueContinuation_compactBoundary
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (D :
+               BHW.OS45CanonicalAdjacentBranchBoundaryData
+                 hd OS lgc n i hi V hV_jost hChart
+                 φ hφ_comp hφ_supp) :
+             ∫ x : NPointDomain d n,
+                 D.ordinaryBranch
+                   (hChart.adjLift x (0 : unitInterval)) * φ x
+               =
+             ∫ x : NPointDomain d n,
+                 D.adjacentBranch
+                   (hChart.adjLift x (0 : unitInterval)) * φ x
+         ```
+
+         Proof transcript for the generic theorem: use `D.realBoundary_eq` on
+         compact tests supported in the real Jost patch; by
+         `D.ordinary_holo`, `D.adjacent_holo`, `D.Ω_connected`, and the
+         single-valued `L_+(ℂ)`-invariant BHW/Jost hypotheses used in the
+         producer, apply the Ruelle/Jost uniqueness theorem to identify the
+         two analytic branches on the component of `D.Ω` containing
+         `D.jostPatch`.  The field `D.lift_mem` puts the deterministic
+         Figure-2-4 canonical lift in that component, and continuity of the
+         lift plus `hφ_comp` permits integration of the resulting pointwise
+         branch identity against `φ`.  The proof does not know what `bvt_F`
+         is and does not evaluate `SourceScalarRepresentativeData.branch_eq`.
+
+         With these two private/source-standard pieces, the public canonical
+         compact theorem has no hidden placeholder:
+
+         ```lean
+         theorem BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger
+             ... := by
+           classical
+           let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+           intro φ hφ_comp hφ_supp
+           let φZ : ZeroDiagonalSchwartz d n :=
+             ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+               (d := d) (n := n) hChart.V0
+               (fun x hx => hV_jost x (hChart.V0_sub hx))
+               φ hφ_supp⟩
+           let ψZ : ZeroDiagonalSchwartz d n :=
+             permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+           have D :
+               BHW.OS45CanonicalAdjacentBranchBoundaryData
+                 hd OS lgc n i hi V hV_jost hChart
+                 φ hφ_comp hφ_supp :=
+             BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
+               (d := d) hd OS lgc n i hi V hV_jost
+               hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+           have huniq :
+               ∫ x : NPointDomain d n,
+                   D.ordinaryBranch
+                     (hChart.adjLift x (0 : unitInterval)) * φ x
+                 =
+               ∫ x : NPointDomain d n,
+                   D.adjacentBranch
+                     (hChart.adjLift x (0 : unitInterval)) * φ x :=
+             BHW.jostRuelle_uniqueContinuation_compactBoundary
+               (d := d) hd OS lgc n i hi V hV_jost hChart
+               φ hφ_comp hφ_supp D
+           have hord :
+               ∫ x : NPointDomain d n,
+                   BHW.extendF (bvt_F OS lgc n)
+                     (hChart.adjLift x (0 : unitInterval)) * φ x
+                 =
+               ∫ x : NPointDomain d n,
+                   D.ordinaryBranch
+                     (hChart.adjLift x (0 : unitInterval)) * φ x := by
+             refine integral_congr_ae ?_
+             filter_upwards with x
+             by_cases hx : x ∈ hChart.V0
+             · rw [D.ordinary_eq_extendF_on_lift x hx]
+             · have hφx : φ x = 0 := by
+                 exact
+                   (notMem_tsupport_iff_eventuallyEq.mp
+                     (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+               simp [hφx]
+           exact hord.trans
+             (huniq.trans D.adjacent_lift_pairing_eq_permutedSchwinger)
+         ```
+
+         The remaining non-mechanical source proof is now exactly the producer
+         `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` plus the
+         standard generic Jost/Ruelle uniqueness theorem above.  Neither may
+         be introduced as an axiom or production `sorry`; if they are not
+         proved before the Lean port, the canonical compact theorem is still
+         not implementation-ready.
 
       This is the only non-mechanical input in
       `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`.
