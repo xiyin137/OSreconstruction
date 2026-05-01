@@ -1494,6 +1494,13 @@ is now pinned to a scratch-checked proof: unfold
 `sourceMinkowskiGram d n z` lies in the full source Gram variety by
 `⟨z, rfl⟩`, and take the preimage of the ambient open set by the existing
 continuous map `(BHW.contDiff_sourceMinkowskiGram d n).continuous`.
+The same chart block now pins
+`BHW.exists_connected_sourceNeighborhood_with_wickPreimage`: set
+`L := BHW.wickRealSectionLeftInverse d n`,
+`W := Ω ∩ L ⁻¹' V`, choose a metric ball inside `W` by
+`Metric.mem_nhds_iff`, use `Metric.isConnected_ball` for connectedness, and
+recover `x ∈ V` from
+`BHW.wickRealSectionLeftInverse_wickRotateRealConfig`.
 Set
 `D = BHW.sourceDoublePermutationGramDomain d n τ` and
 `Wscal = connectedComponentIn D Gseed`.  The rel-open field for `D` comes

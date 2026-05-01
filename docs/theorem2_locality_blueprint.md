@@ -15715,6 +15715,61 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (∀ x : NPointDomain d n,
               (fun k => wickRotatePoint (x k)) ∈ Usrc -> x ∈ V)
 
+      Lean-shaped proof of the connected source-neighborhood helper:
+
+      ```lean
+      theorem BHW.exists_connected_sourceNeighborhood_with_wickPreimage
+          (d n : Nat)
+          {Ω : Set (Fin n -> Fin (d + 1) -> ℂ)}
+          (hΩ_open : IsOpen Ω)
+          {x0 : NPointDomain d n}
+          (hz0Ω :
+            (fun k => wickRotatePoint (x0 k)) ∈ Ω)
+          {V : Set (NPointDomain d n)}
+          (hV_open : IsOpen V)
+          (hx0V : x0 ∈ V) :
+          ∃ Usrc : Set (Fin n -> Fin (d + 1) -> ℂ),
+            IsOpen Usrc ∧ IsConnected Usrc ∧
+            (fun k => wickRotatePoint (x0 k)) ∈ Usrc ∧
+            Usrc ⊆ Ω ∧
+            (∀ x : NPointDomain d n,
+              (fun k => wickRotatePoint (x k)) ∈ Usrc -> x ∈ V) := by
+        let L := BHW.wickRealSectionLeftInverse d n
+        let z0 : Fin n -> Fin (d + 1) -> ℂ :=
+          fun k => wickRotatePoint (x0 k)
+        let W : Set (Fin n -> Fin (d + 1) -> ℂ) :=
+          Ω ∩ L ⁻¹' V
+        have hW_open : IsOpen W :=
+          hΩ_open.inter
+            (hV_open.preimage
+              (BHW.continuous_wickRealSectionLeftInverse d n))
+        have hLz0 : L z0 = x0 := by
+          simpa [L, z0] using
+            BHW.wickRealSectionLeftInverse_wickRotateRealConfig d n x0
+        have hz0W : z0 ∈ W := by
+          exact ⟨hz0Ω, by simpa [hLz0] using hx0V⟩
+        rcases Metric.mem_nhds_iff.mp (hW_open.mem_nhds hz0W) with
+          ⟨r, hr_pos, hr_sub⟩
+        refine ⟨Metric.ball z0 r, Metric.isOpen_ball,
+          Metric.isConnected_ball hr_pos,
+          Metric.mem_ball_self hr_pos, ?_, ?_⟩
+        · intro z hz
+          exact (hr_sub hz).1
+        · intro x hx
+          have hLV : L (fun k => wickRotatePoint (x k)) ∈ V :=
+            (hr_sub hx).2
+          have hLwick : L (fun k => wickRotatePoint (x k)) = x := by
+            simpa [L] using
+              BHW.wickRealSectionLeftInverse_wickRotateRealConfig d n x
+          simpa [hLwick] using hLV
+      ```
+
+      This helper is pure finite-dimensional topology.  The only imported
+      analysis beyond continuity of the Wick real section is
+      `Mathlib.Analysis.Normed.Module.Connected`, for
+      `Metric.isConnected_ball`.  The proof does not use BHW analyticity,
+      branch equality, or Figure-2-4 geometry.
+
       theorem BHW.IsRelOpenInSourceComplexGramVariety.sourceMinkowskiGram_preimage_open
           (d n : Nat)
           {U : Set (Fin n -> Fin n -> ℂ)}
