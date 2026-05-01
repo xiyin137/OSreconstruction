@@ -9621,12 +9621,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (∀ x, x ∈ V0 ->
                 Φ0 (fun k => wickRotatePoint (x k)) =
                   bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
-              (∀ x, x ∈ V0 ->
-                Φτ (fun k => wickRotatePoint (x k)) =
-                  bvt_F OS lgc n
-                    (fun k =>
-                      wickRotatePoint
-                        (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))))
+              (∀ φ : SchwartzNPoint d n,
+                HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+                tsupport (φ : NPointDomain d n -> ℂ) ⊆ V0 ->
+                  ∫ x : NPointDomain d n,
+                      Φτ (fun k => wickRotatePoint (x k)) * φ x
+                    =
+                  ∫ x : NPointDomain d n,
+                      bvt_F OS lgc n
+                        (fun k =>
+                          wickRotatePoint
+                            (x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+                        φ x)
       ```
 
       Proof transcript: shrink the selected Jost/ordered patch around the
@@ -9651,16 +9657,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
       proved by `BHW.extendF_eq_on_forwardTube` at `wick (x ∘ τ)`, and the
       source chart must not export a field named `wick_tau_forwardTube`.
 
-      The missing adjacent step is a genuine OS-II/BHW scalar-trace theorem:
-      on the Figure-2-4 `S'_n` source chart, the OS-II Euclidean adjacent Wick
-      trace is represented by the same Hall-Wightman source scalar
-      representative evaluated at the permuted source Gram.  This theorem is
-      not a wrapper and not pointwise permutation symmetry; it is the
-      source-backed BHW/Jost comparison that OS I §4.5 uses before the
+      The missing adjacent step is a genuine OS-II/BHW scalar-trace theorem,
+      but its first usable form is **distributional**, not pointwise.  On the
+      Figure-2-4 `S'_n` source chart, the Hall-Wightman source scalar
+      representative evaluated at the permuted source Gram has the same
+      compact Wick pairings as the OS-II Euclidean adjacent Wick trace.  This
+      theorem is not a wrapper and not pointwise permutation symmetry; it is
+      the source-backed BHW/Jost comparison that OS I §4.5 uses before the
       corridor and real-edge EOW stage.
 
       ```lean
-      theorem BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24
+      theorem BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24
           [NeZero d]
           (hd : 2 <= d)
           (OS : OsterwalderSchraderAxioms d)
@@ -9704,13 +9711,35 @@ Proof decomposition of this theorem, without hiding the analytic work:
               hRep.Phi
                 (BHW.sourcePermuteComplexGram n τ
                   (BHW.sourceMinkowskiGram d n z))
-          ∀ x, x ∈ hChart.V0 ->
-            Φτ (fun k => wickRotatePoint (x k)) =
-              bvt_F OS lgc n
-                (fun k => wickRotatePoint (x (τ k)))
+          ∀ φ : SchwartzNPoint d n,
+            HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+            tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0 ->
+              ∫ x : NPointDomain d n,
+                  Φτ (fun k => wickRotatePoint (x k)) * φ x
+                =
+              ∫ x : NPointDomain d n,
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (x (τ k))) * φ x
       ```
 
-      Proof obligations for this new theorem:
+      The tempting pointwise theorem
+
+      ```lean
+      Φτ (fun k => wickRotatePoint (x k)) =
+        bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))
+      ```
+
+      must not be used as an input to
+      `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`.  In that
+      position it is circular: it already asserts the selected adjacent
+      `S'_n` scalarization on the Wick real section, while the purpose of the
+      compact-Wick-to-source step is precisely to prove the adjacent `S'_n`
+      source equality.  If a pointwise version is later needed, it may only be
+      derived after an independent adjacent `S'_n` source theorem supplies
+      continuity and boundary identification for the raw adjacent trace; it is
+      not part of the seed proof.
+
+      Proof obligations for the distributional theorem:
 
       1. Use only the OS-II ACR(1) continuation datum selected in
          `bvt_F_acrOne_package`, OS Euclidean permutation symmetry on
@@ -9725,21 +9754,151 @@ Proof decomposition of this theorem, without hiding the analytic work:
          and
          `SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`.
       3. The OS-II trace side is the adjacent Wick trace appearing in
-         `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.  Its local
-         continuity on `hChart.V0` is a conclusion of this scalar-trace
-         theorem, obtained by identifying it with the holomorphic source
-         pullback; it is not an independent global continuity property of the
-         total function `bvt_F`.
-      4. The equality is established on the Wick real section by the
-         OS-II compact-test identity plus the BHW source scalarization of the
-         permuted `S'_n` datum, then upgraded to pointwise equality on `V0`
-         by the checked compact-support uniqueness theorem.  This is exactly
-         the local OS I §4.5 source step; it is not local EOW, not final
-         `bvt_W` locality, and not global PET branch independence.
+         `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.  The proof
+         compares pairings against compact tests supported in `hChart.V0`; it
+         does not require, and must not assume, independent pointwise
+         continuity of the raw adjacent total function
+         `x ↦ bvt_F OS lgc n (wick (x ∘ τ))`.
+      4. On the source side, use the Figure-2-4 data to rewrite
+         `Φτ (wick x)` as the ordinary BHW extended-tube value on the
+         rotated adjacent realization `Δ_x(0)`: `hRep.branch_eq` applies to
+         `Δ_x(0) ∈ ExtendedTube`, and the displayed source-Gram equality
+         identifies its scalar product with
+         `sourcePermuteComplexGram τ (sourceMinkowskiGram (wick x))`.
+      5. The remaining equality of compact pairings is the OS I §4.5
+         symmetric `S'_n` boundary statement: the rotated Figure-2-4
+         extended-tube trace is the BHW continuation of the same Euclidean
+         adjacent compact-test germ selected by E3.  This is the local
+         source-import boundary if not proved internally; it must be stated as
+         a pairing theorem with the exact support hypothesis above.  It is not
+         local EOW, not final `bvt_W` locality, and not global PET branch
+         independence.
 
-      Until this theorem has a complete proof transcript, the adjacent
-      `S'_n` scalarization chart is not Lean-ready.  Any proof that replaces
-      it by `hRep.branch_eq` followed by
+      Implementation-level decomposition of item 5:
+
+      The source-side pairing theorem must be proved against the permuted
+      Schwinger functional, not by evaluating the raw adjacent Wick trace
+      pointwise.  For compact tests supported in the selected chart, package
+      the test as a zero-diagonal Schwinger test and permute it exactly as in
+      `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.
+
+      ```lean
+      theorem BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hRep :
+            BHW.SourceScalarRepresentativeData
+              (d := d) n (bvt_F OS lgc n))
+          {x0 : NPointDomain d n}
+          (hChart :
+            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          let Φτ :=
+            fun z : Fin n -> Fin (d + 1) -> ℂ =>
+              hRep.Phi
+                (BHW.sourcePermuteComplexGram n τ
+                  (BHW.sourceMinkowskiGram d n z))
+          ∀ (φ : SchwartzNPoint d n)
+            (_hφ_comp :
+              HasCompactSupport (φ : NPointDomain d n -> ℂ))
+            (hφ_supp :
+              tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0),
+            let φZ : ZeroDiagonalSchwartz d n :=
+              ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+                (d := d) (n := n) hChart.V0
+                (fun x hx => hV_jost x (hChart.V0_sub hx)) φ
+                hφ_supp⟩
+            let ψZ : ZeroDiagonalSchwartz d n :=
+              permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+            ∫ x : NPointDomain d n,
+                Φτ (fun k => wickRotatePoint (x k)) * φ x
+              =
+            OS.S n ψZ
+      ```
+
+      Mathematical content of this theorem: OS I §4.5 first constructs the
+      symmetric analytic continuation on `S'_n` from Euclidean permutation
+      symmetry before applying BHW.  The displayed theorem is the local
+      boundary-value form of that statement on the selected Figure-2-4
+      adjacent chart.  Its proof identifies the BHW source pullback
+      `Φτ ∘ wick` with the BHW continuation of the adjacent permuted
+      `S'_n` branch in pairings, then uses the OS-II Euclidean restriction of
+      that branch to `OS.S n ψZ`.  This is the exact place where the
+      Hall-Wightman source representative meets the OS-II compact-test data.
+      It is not a theorem about `bvt_W`, not a real-edge EOW theorem, and not
+      a PET branch-independence statement.
+
+      The theorem
+      `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`
+      is then a short composition:
+
+      1. apply
+         `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger` to get
+         the source-side pairing as `OS.S n ψZ`;
+      2. use `bvt_euclidean_restriction` for `ψZ`;
+      3. change variables by the checked finite permutation invariance of
+         product Lebesgue measure, the same `integral_perm_npoint_volume`
+         calculation used in
+         `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, and
+         `Equiv.swap_inv`, to rewrite the result as the raw adjacent Wick
+         pairing.  That helper is currently private in
+         `OSToWightmanLocalityOS45.lean`; the Lean port must either expose it
+         under a public support name or reprove the same
+         `MeasureTheory.volume_measurePreserving_piCongrLeft` one-liner at
+         the call site.
+
+      Lean-shaped proof of the composition:
+
+      ```lean
+      theorem BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24 ... := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        intro φ hφ_comp hφ_supp
+        let φZ : ZeroDiagonalSchwartz d n :=
+          ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+            (d := d) (n := n) hChart.V0
+            (fun x hx => hV_jost x (hChart.V0_sub hx)) φ hφ_supp⟩
+        let ψZ : ZeroDiagonalSchwartz d n :=
+          permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+        have hsrc :
+            ∫ x : NPointDomain d n,
+                Φτ (fun k => wickRotatePoint (x k)) * φ x =
+              OS.S n ψZ :=
+          BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger
+            (d := d) hd OS lgc n i hi V hV_jost hRep hChart
+            φ hφ_comp hφ_supp
+        have hψ :
+            OS.S n ψZ =
+              ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+                  φ (fun k => x (τ k)) := by
+          simpa [ψZ, φZ, τ] using
+            bvt_euclidean_restriction (d := d) OS lgc n ψZ
+        have hchange :
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+                  φ (fun k => x (τ k))
+              =
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n
+                  (fun k => wickRotatePoint (x (τ k))) * φ x := by
+          simpa [τ, BHW.permAct_wickRotatePoint, Equiv.swap_inv] using
+            (integral_perm_npoint_volume
+              (d := d) (n := n) τ
+              (fun x =>
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) *
+                  φ (fun k => x (τ k)))).symm
+        exact hsrc.trans (hψ.trans hchange)
+      ```
+
+      Until this distributional theorem has a complete proof transcript, the
+      adjacent `S'_n` scalarization chart is not Lean-ready.  Any proof that
+      replaces it by `hRep.branch_eq` followed by
       `BHW.extendF_eq_on_forwardTube` at `wick (x ∘ τ)` is rejected: it proves
       the wrong membership statement.
 
@@ -10077,12 +10236,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
                       (bvt_F OS lgc n)
                       hF_holo_BHW hF_restricted_BHW
                       _ (hwick_id_FT x hx)
-        have hΦτ_wick :
-            ∀ x, x ∈ V0 -> Φτ (fun k => wickRotatePoint (x k)) =
-              bvt_F OS lgc n
-                (fun k => wickRotatePoint (x (τ k))) := by
+        have hΦτ_pairing :
+            ∀ φ : SchwartzNPoint d n,
+              HasCompactSupport (φ : NPointDomain d n -> ℂ) ->
+              tsupport (φ : NPointDomain d n -> ℂ) ⊆ V0 ->
+                ∫ x : NPointDomain d n,
+                    Φτ (fun k => wickRotatePoint (x k)) * φ x
+                  =
+                ∫ x : NPointDomain d n,
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (x (τ k))) * φ x := by
           exact
-            BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24
+            BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24
               (d := d) hd OS lgc n i hi V hV_open hV_jost
               hV_ordered hV_swap_ordered hV_figPath hx0V hRep
               { V0 := V0, Usrc := Usrc,
@@ -10096,7 +10261,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           hUsrc_open, hUsrc_conn, hUsrc_ne,
           hwick_mem, hwick_realSection_iff,
           hdouble, hΦ0_diff, hΦτ_diff,
-          hΦ0_wick, by simpa [τ] using hΦτ_wick⟩
+          hΦ0_wick, by simpa [τ] using hΦτ_pairing⟩
       ```
 
       The source-neighborhood seed theorem is:
@@ -10162,7 +10327,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       1. Apply
          `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`, obtaining
          `V0`, `Usrc`, the double-domain field, differentiability of the two
-         scalar pullbacks, and the two Wick-section scalarization identities.
+         scalar pullbacks, the identity Wick-section scalarization identity,
+         and the adjacent scalar-trace compact-pairing identity.
       2. Invoke the checked compact Wick equality
          `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` with
          `ρ = 1` and with tests supported in `V0`.  The checked theorem is in
@@ -10177,20 +10343,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
          hypothesis is stated for `τ`.
       3. Apply
          `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
-         on `V0` to recover pointwise equality of the two `bvt_F`
-         Wick-section functions on `V0`.  The continuity hypotheses for this
-         theorem are not supplied directly by `bvt_F`; first prove
-         continuity of the scalarized pullbacks
+         on `V0` to recover pointwise equality of the two scalarized
+         source pullbacks
          `x ↦ Φ0 (wick x)` and `x ↦ Φτ (wick x)` from
          `hΦ0_diff`, `hΦτ_diff`, and
          `BHW.continuous_wickRotateRealConfig` by Mathlib
          `ContinuousOn.comp'` with the explicit `MapsTo` proof
          `fun x hx => hwick_mem x hx`; `ContinuousOn.comp_continuous` is the
          wrong API here because the Wick map is known to land in `Usrc` only
-         on `V0`, not globally.  Then transfer those continuity proofs to the
-         corresponding `bvt_F` real-section functions using the
-         scalarization identities `hΦ0_wick`, `hΦτ_wick` and Mathlib's
-         `ContinuousOn.congr`.
+         on `V0`, not globally.  The integral equality for these two
+         scalarized pullbacks is the chain
+         adjacent source-pairing theorem, checked compact Wick equality, and
+         the identity scalarization `hΦ0_wick` rewritten under the integral.
+         This step deliberately avoids any continuity assumption for the raw
+         adjacent total function
+         `x ↦ bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))`.
       4. Apply
          `eqOn_openConnected_of_eqOn_wickRealSection`
          to the connected complex source chart `Usrc`.  The holomorphic
@@ -10219,7 +10386,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             hUsrc_open, hUsrc_conn, hUsrc_ne,
             hwick_mem, hwick_realSection_iff,
             hdouble, hΦ0_diff, hΦτ_diff,
-            hΦ0_wick, hΦτ_wick⟩
+            hΦ0_wick, hΦτ_pairing⟩
         have hV0_ne : V0.Nonempty := ⟨x0, hx0V0⟩
         have hwick_ne :
             ∃ x : NPointDomain d n,
@@ -10248,58 +10415,52 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (by
                 intro x hx
                 exact hwick_mem x hx)
-          have hcont_bvt_τ :
-              ContinuousOn
-                (fun x : NPointDomain d n =>
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x (τ k)))) V0 :=
-            hcontΦτ_real.congr
-              (by
-                intro x hx
-                exact (hΦτ_wick x hx).symm)
-          have hcont_bvt_0 :
-              ContinuousOn
-                (fun x : NPointDomain d n =>
-                  bvt_F OS lgc n (fun k => wickRotatePoint (x k))) V0 :=
-            hcontΦ0_real.congr
-              (by
-                intro x hx
-                exact (hΦ0_wick x hx).symm)
-          -- First obtain pointwise equality of the two OS-II Wick branches on
-          -- `V0` from compact-test equality.
           have hpoint :
               Set.EqOn
                 (fun x : NPointDomain d n =>
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x (τ k))))
+                  Φτ (fun k => wickRotatePoint (x k)))
                 (fun x : NPointDomain d n =>
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x k)))
+                  Φ0 (fun k => wickRotatePoint (x k)))
                 V0 := by
             refine
               SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
-                hV0_open hcont_bvt_τ hcont_bvt_0 ?compact_eq
+                hV0_open hcontΦτ_real hcontΦ0_real ?compact_eq
             · intro φ hφ_comp hφ_supp
-              exact os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
-                (d := d) OS lgc n i hi V0
-                (fun x hx => hV_jost x (hV0_sub hx))
-                (1 : Equiv.Perm (Fin n))
-                (fun x hx => hV_ordered x (hV0_sub hx))
-                (fun x hx => by
-                  simpa [τ, Equiv.swap_inv] using
-                    hV_swap_ordered x (hV0_sub hx))
-                φ hφ_supp
+              calc
+                ∫ x : NPointDomain d n,
+                    Φτ (fun k => wickRotatePoint (x k)) * φ x
+                    =
+                  ∫ x : NPointDomain d n,
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (x (τ k))) * φ x :=
+                    hΦτ_pairing φ hφ_comp hφ_supp
+                _ =
+                  ∫ x : NPointDomain d n,
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (x k)) * φ x :=
+                    os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+                      (d := d) OS lgc n i hi V0
+                      (fun x hx => hV_jost x (hV0_sub hx))
+                      (1 : Equiv.Perm (Fin n))
+                      (fun x hx => hV_ordered x (hV0_sub hx))
+                      (fun x hx => by
+                        simpa [τ, Equiv.swap_inv] using
+                          hV_swap_ordered x (hV0_sub hx))
+                      φ hφ_supp
+                _ =
+                  ∫ x : NPointDomain d n,
+                    Φ0 (fun k => wickRotatePoint (x k)) * φ x := by
+                    refine integral_congr_ae ?_
+                    filter_upwards with x
+                    by_cases hx : x ∈ V0
+                    · simpa [hΦ0_wick x hx]
+                    · have hφx : φ x = 0 := by
+                        exact
+                          (notMem_tsupport_iff_eventuallyEq.mp
+                            (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+                      simp [hφx]
           intro x hx
-          calc
-            Φτ (fun k => wickRotatePoint (x k))
-                = bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x (τ k))) :=
-                    hΦτ_wick x hx
-            _ = bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x k)) :=
-                    hpoint x hx
-            _ = Φ0 (fun k => wickRotatePoint (x k)) :=
-                    (hΦ0_wick x hx).symm
+          exact hpoint x hx
         have hEqOnUsrc : Set.EqOn Φτ Φ0 Usrc :=
           eqOn_openConnected_of_eqOn_wickRealSection
             (d := d) (n := n) Usrc hUsrc_open hUsrc_conn hwick_ne
@@ -13779,7 +13940,8 @@ in this order:
    `BHW.hallWightman_sourceScalarRepresentativeData`; and the adjacent
    `S'_n` package
    `BHW.os45Figure24_sourceChart_at`,
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`,
+   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
    `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
@@ -14050,7 +14212,8 @@ not as the next task.  The active next implementation order is:
    `HWSourceGramLowRank` at threshold `min d n`, and the adjacent `S'_n`
    seed/path package
    `BHW.os45Figure24_sourceChart_at`,
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`,
+   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
    `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and

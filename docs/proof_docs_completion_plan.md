@@ -52,7 +52,8 @@ local Slot 1:
    `BHW.sourceScalarRepresentativeData_bvt_F` via the five-stage ordinary
    Hall-Wightman source descent, and the adjacent `S'_n` package
    `BHW.os45Figure24_sourceChart_at`,
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`,
+   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
    `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
@@ -1012,7 +1013,8 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
 Second, the adjacent `S'_n` seed package must be proved in the order
 documented below:
 `BHW.os45Figure24_sourceChart_at`,
-`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`,
+`BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
+`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
 `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
 `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
 `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
@@ -1022,6 +1024,18 @@ called after that path-and-seed package exists.  None of these inputs may be
 replaced by final real-edge equality, `AdjacentOSEOWDifferenceEnvelope`,
 global PET branch independence, or a local boundary functional standing in
 for `bvt_W`.
+
+The adjacent scalar-trace theorem has one genuine upstream source sublemma:
+`BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`.  It must compare
+the permuted Hall-Wightman source pullback with the permuted Schwinger
+functional `OS.S n ψZ` in compact pairings on the selected Figure-2-4 chart.
+Only after that source-pairing statement is proved may
+`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`
+rewrite `OS.S n ψZ` by `bvt_euclidean_restriction` and the finite permutation
+change of variables used in
+`os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.  The currently private
+helper `integral_perm_npoint_volume` must be exposed or reproved at the first
+public call site.
 
 For the path package, the exact Lean topology API is now pinned.  In the
 finite-dimensional source space, use
@@ -1117,16 +1131,19 @@ adjacent Wick identity by `SourceScalarRepresentativeData.branch_eq` followed
 by `BHW.extendF_eq_on_forwardTube` at `wick (x ∘ τ)`.
 
 The genuine missing theorem is now named explicitly:
-`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`.  It
-must prove, on the Figure-2-4 source chart, that the OS-II adjacent Wick trace
-`bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))` is represented by
-`hRep.Phi (sourcePermuteComplexGram n τ
-(sourceMinkowskiGram d n (fun k => wickRotatePoint (x k))))`.  Its proof is
-the local OS I §4.5/BHW scalar-trace comparison: use the OS-II ACR(1)
-Euclidean continuation package and compact-test permutation symmetry to
-identify the adjacent Wick trace with the permuted source scalar
-representative on the selected `S'_n` chart.  It must not be replaced by the
-global pointwise theorem `bvt_F_perm`, by final `bvt_W` locality, by
+`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`.  It
+must prove, on the Figure-2-4 source chart, equality of compact pairings
+between the permuted source pullback
+`x ↦ hRep.Phi (sourcePermuteComplexGram n τ
+(sourceMinkowskiGram d n (fun k => wickRotatePoint (x k))))`
+and the OS-II adjacent Wick trace
+`x ↦ bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))`.  The pointwise
+version is not an input to the seed proof; using it there is circular because
+it already asserts the adjacent `S'_n` scalarization on the Wick real section.
+Its proof is the local OS I §4.5/BHW scalar-trace comparison: use the OS-II
+ACR(1) Euclidean continuation package and compact-test permutation symmetry
+to identify pairings on the selected `S'_n` chart.  It must not be replaced by
+the global pointwise theorem `bvt_F_perm`, by final `bvt_W` locality, by
 `AdjacentOSEOWDifferenceEnvelope`, or by PET branch independence.  Until this
 theorem has a complete proof transcript, the adjacent `S'_n` package is not
 Lean-ready.
@@ -1242,22 +1259,25 @@ content:
    source-chart scalarization theorem
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`, which puts
    `sourceMinkowskiGram '' Usrc` inside the adjacent double scalar domain,
-   identifies the two `hRep.Phi` pullbacks with the two OS-II Wick branch
-   functions on the real section, and shrinks around the selected base point
-   `x0` so `x0 ∈ V0`.  Its identity branch reduction is the ordinary
+   identifies the identity `hRep.Phi` pullback pointwise with the identity
+   OS-II Wick branch, identifies the adjacent `hRep.Phi` pullback with the
+   adjacent OS-II Wick branch only in compact pairings, and shrinks around the
+   selected base point `x0` so `x0 ∈ V0`.  Its identity branch reduction is the ordinary
    forward-tube `branch_eq`/`extendF_eq_on_forwardTube` argument; its adjacent
    branch reduction is exactly
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_eq_of_figure24`,
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
    not an adjacent raw-Wick forward-tube argument.  In the
-   compact-Wick-to-pointwise step, continuity for
-   the two `bvt_F` real-section functions must be obtained by first composing
-   the differentiable scalar pullbacks with
+   compact-Wick-to-pointwise step, continuity is needed only for the two
+   scalarized source pullbacks.  Obtain it by composing the differentiable
+   scalar pullbacks with
    `BHW.continuous_wickRotateRealConfig` using Mathlib
    `ContinuousOn.comp'` and the explicit `MapsTo` proof
-   `fun x hx => hwick_mem x hx`, then transferring continuity along the
-   scalarization identities using Mathlib's `ContinuousOn.congr`; the proof
-   must not silently use continuity of unrelated total `bvt_F` values off the
-   Wick section, and must not use `ContinuousOn.comp_continuous` unless the
+   `fun x hx => hwick_mem x hx`.  The integral equality for those scalar
+   pullbacks is the chain: adjacent source-pairing theorem, checked compact
+   Wick equality, and the identity pointwise scalarization rewritten under the
+   integral.  The proof must not silently use continuity of unrelated total
+   `bvt_F` values off the Wick section, and must not use
+   `ContinuousOn.comp_continuous` unless the
    chart has been changed to a global Wick-image statement.  The checked
    compact Wick equality is called with
    `ρ = 1`, so its swapped-order hypothesis is labelled by
