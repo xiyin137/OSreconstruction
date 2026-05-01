@@ -980,13 +980,23 @@ implementation contract is:
    Gram point using either chart's `U0_sub` field, and then both chart values
    are rewritten to the same `extendF F w` by their `branch_eq` fields.  No
    equality of arbitrary ambient representatives off the source Gram variety
-   is used.
+   is used.  This helper has also been scratch-checked: from
+   `G ∈ (U ∩ V) ∩ sourceComplexGramVariety d n`, form
+   `hG_Uvar := ⟨hG.1.1, hG.2⟩`, use `hU_sub hG_Uvar` to get
+   `G ∈ sourceExtendedTubeGramDomain d n`, destruct as `⟨w, hw, rfl⟩`,
+   then close with
+   `(hΨ_branch w hw hG.1.1).trans (hΧ_branch w hw hG.1.2).symm`.
    The descent theorem itself uses
    `BHW.hallWightman_localScalarChart_eq_scalarValue` to convert each local
    branch chart into a `SourceVarietyGermHolomorphicOn` representative for the
    single branch-defined scalar value `Phi`; the exceptional removable chart
    consumes the same `Phi`, together with its continuity and local boundedness,
-   so there is no second hidden choice of scalar values.
+   so there is no second hidden choice of scalar values.  The helper has now
+   been scratch-checked exactly against `SourceExtension.lean`: for
+   `Z ∈ U0 ∩ sourceComplexGramVariety d n`, use `hU0_sub` to get
+   `Z ∈ sourceExtendedTubeGramDomain d n`, destruct it as
+   `⟨w, hw, rfl⟩`, and close with
+   `(hPhi_branch w hw).trans (hΨ_branch w hw hZ.1).symm`.
    The continuity/local-boundedness theorem is deliberately upstream of the
    exceptional chart theorem: it defines the scalar value by an
    extended-tube realization and uses Lemma 3 to realize nearby scalar-variety
@@ -999,7 +1009,14 @@ implementation contract is:
    `hf : ContinuousOn f Ω`, `hxΩ`, and the open target neighborhood; it does
    not carry an unused `IsOpen Ω` hypothesis.  The open extended-tube theorem
    is still used later when forming `Vsrc ∩ BHW.ExtendedTube d n`, not in this
-   helper.
+   helper.  The first branch-defined value step is now scratch-checked:
+   define
+   `phi Z := if hZ : Z ∈ sourceExtendedTubeGramDomain d n then
+   extendF F (Classical.choose hZ) else 0`; for
+   `Z = sourceMinkowskiGram d n w`, use
+   `hZ := ⟨w, hw, rfl⟩`, the two fields of `Classical.choose_spec hZ`, and
+   `hBranch hchoose_mem hw hchoose_gram` to prove
+   `phi (sourceMinkowskiGram d n w) = extendF F w`.
    The max-rank chart helper
    `BHW.hallWightman_powerSeriesChart_branch_eq_of_sameGram` must carry the
    source-vector inclusion `Uvec ⊆ BHW.ExtendedTube d n`; the branch law cannot

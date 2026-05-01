@@ -2864,7 +2864,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Set.EqOn Phi Ψ (U0 ∩ BHW.sourceComplexGramVariety d n)
       ```
 
-      Lean-shaped proof:
+      Scratch-checked proof with `SourceExtension.lean` imported:
 
       ```lean
       theorem BHW.hallWightman_localScalarChart_eq_scalarValue ... := by
@@ -9483,7 +9483,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Set.EqOn Ψ Χ
             ((U ∩ V) ∩ BHW.sourceComplexGramVariety d n)
 
-      Lean-shaped proof of the overlap helper:
+      Scratch-checked proof of the overlap helper.  The symmetric
+      `hV_sub` hypothesis is kept in the public theorem statement because
+      both charts are required to have domain control, but the proof only
+      needs one side to realize the scalar point as an extended-tube Gram
+      point; the other side is used through its branch equality.
 
       ```lean
       theorem BHW.hallWightman_localScalarChart_overlap_eq ... := by
@@ -11641,7 +11645,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       chart theorem consumes continuity/local boundedness.  Instead it uses
       Hall-Wightman Lemma 3 directly: every sufficiently near scalar-variety
       point has a realization in an arbitrarily small ordinary extended-tube
-      neighborhood of the chosen realization.
+      neighborhood of the chosen realization.  The initial `phi` definition
+      and branch-equality proof have been scratch-checked against
+      `SourceExtension.lean`: `Classical.choose hZ` has fields
+      `(Classical.choose_spec hZ).1 : _ ∈ ExtendedTube d n` and
+      `(Classical.choose_spec hZ).2 : sourceMinkowskiGram d n _ = Z`, so the
+      branch law rewrites the chosen representative to any other realization.
 
       ```lean
       theorem BHW.hallWightman_scalarGerm_continuous_locallyBounded ... := by
