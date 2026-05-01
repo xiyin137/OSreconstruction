@@ -7126,6 +7126,40 @@ Proof decomposition of this theorem, without hiding the analytic work:
               ∃ v : Fin n -> Fin (d + 1) -> ℂ,
                 (∀ i μ, ‖v i μ‖ < ε) ∧
                 BHW.sourceMinkowskiGram d n (fun i μ => z0 i μ + v i μ) = Z
+
+      /-- Finite source-Gram coordinate ball used to turn the quantitative
+      Lemma-3 estimate into an open scalar neighborhood. -/
+      def BHW.sourceGramCoordBall
+          (n : Nat)
+          (G0 : Fin n -> Fin n -> ℂ)
+          (η : ℝ) : Set (Fin n -> Fin n -> ℂ) :=
+        {Z | ∀ i j, ‖Z i j - G0 i j‖ < η}
+
+      theorem BHW.isOpen_sourceGramCoordBall
+          (n : Nat)
+          (G0 : Fin n -> Fin n -> ℂ)
+          {η : ℝ} (hη : 0 < η) :
+          IsOpen (BHW.sourceGramCoordBall n G0 η)
+
+      /-- The final quantitative Lemma-3 bridge: choose the perturbation
+      radius small enough that the vector perturbation produced by the
+      normal-form realization remains in the ordinary extended tube. -/
+      theorem BHW.hwLemma3_transport_smallPerturbation_extendedTube
+          [NeZero d] (hd : 2 <= d) (n : Nat)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          {ε : ℝ} (hε : 0 < ε) :
+          ∃ η : ℝ, 0 < η ∧
+            ∀ Z : Fin n -> Fin n -> ℂ,
+              Z ∈ BHW.sourceComplexGramVariety d n ->
+              Z ∈ BHW.sourceGramCoordBall n
+                (BHW.sourceMinkowskiGram d n z0) η ->
+              ∃ v : Fin n -> Fin (d + 1) -> ℂ,
+                (∀ i μ, ‖v i μ‖ < ε) ∧
+                (fun i μ => z0 i μ + v i μ) ∈
+                  BHW.ExtendedTube d n ∧
+                BHW.sourceMinkowskiGram d n
+                  (fun i μ => z0 i μ + v i μ) = Z
       ```
 
       Proof transcript for the residual small-realization theorem:
@@ -7210,9 +7244,63 @@ Proof decomposition of this theorem, without hiding the analytic work:
       8. Add the selected-block perturbations and residual vectors, undo the
          orthogonalization and the initial normal-form transport, and shrink
          `η` one final time so every coordinate of the resulting perturbation
-         is `< ε`.  Because the perturbation is inside the coordinate ball
-         chosen by `BHW.isOpen_extendedTube.mem_nhds hz0`, the realized vector
-         tuple remains in `BHW.ExtendedTube d n`.
+         is `< ε`.
+
+      The public small-perturbation Lemma-3 theorem has one additional
+      topological shrink that must be explicit in Lean.  Since
+      `BHW.ExtendedTube d n` is open and `hz0 : z0 ∈ BHW.ExtendedTube d n`,
+      `BHW.exists_coord_supnorm_ball_subset_of_isOpen` gives an
+      `εET > 0` such that every coordinate perturbation smaller than `εET`
+      stays inside the extended tube.  Apply
+      `BHW.hwLemma3_transport_from_normalForm` with
+      `ε' := min ε εET / 2`, then use
+      `BHW.sourceGramCoordBall` as the scalar neighborhood.  This is the only
+      place where extended-tube membership is recovered from the quantitative
+      normal-form algebra.
+
+      Lean-shaped final quantitative assembly:
+
+      ```lean
+      theorem BHW.hwLemma3_transport_smallPerturbation_extendedTube ... := by
+        rcases BHW.exists_coord_supnorm_ball_subset_of_isOpen
+            (x0 := z0)
+            (U := BHW.ExtendedTube d n)
+            (BHW.isOpen_extendedTube (d := d) (n := n)) hz0 with
+          ⟨εET, hεET_pos, hET_ball⟩
+        let ε' : ℝ := min ε εET / 2
+        have hε'_pos : 0 < ε' := by
+          positivity
+        rcases BHW.hwLemma3_transport_from_normalForm
+            (d := d) hd n (z0 := z0) hε'_pos with
+          ⟨η, hη_pos, hrealize⟩
+        refine ⟨η, hη_pos, ?_⟩
+        intro Z hZvar hZball
+        rcases hrealize Z hZvar hZball with ⟨v, hv_small, hgram⟩
+        have hv_target : ∀ i μ, ‖v i μ‖ < ε := by
+          intro i μ
+          exact lt_of_lt_of_le (hv_small i μ) (by
+            dsimp [ε']; nlinarith [min_le_left ε εET])
+        have hv_ET : ∀ i μ, ‖v i μ‖ < εET := by
+          intro i μ
+          exact lt_of_lt_of_le (hv_small i μ) (by
+            dsimp [ε']; nlinarith [min_le_right ε εET])
+        exact ⟨v, hv_target, hET_ball v hv_ET, hgram⟩
+
+      theorem BHW.hwLemma3_sourceGram_localVectorRealization_smallPerturbation
+          ... := by
+        rcases BHW.hwLemma3_transport_smallPerturbation_extendedTube
+            (d := d) hd n hz0 hε with
+          ⟨η, hη_pos, hrealize⟩
+        let O : Set (Fin n -> Fin n -> ℂ) :=
+          BHW.sourceGramCoordBall n
+            (BHW.sourceMinkowskiGram d n z0) η
+        refine ⟨O, BHW.isOpen_sourceGramCoordBall n _ hη_pos, ?_, ?_⟩
+        · intro i j
+          simp [O, BHW.sourceGramCoordBall]
+          exact hη_pos
+        · intro Z hZ
+          exact hrealize Z hZ.2 hZ.1
+      ```
 
       The orbit-rank and low-rank wrappers are only organizational views of
       this same Lemma-3 theorem, matching Hall-Wightman's discussion after

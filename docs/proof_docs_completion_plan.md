@@ -677,7 +677,12 @@ implementation contract is:
    `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource`, the normalized
    surjectivity theorem
    `BHW.hwLemma3_normalizedSchurSurjective`, and the transport theorem
-   `BHW.hwLemma3_transport_from_normalForm`.  The final conversion from the
+   `BHW.hwLemma3_transport_from_normalForm`.  The public quantitative theorem
+   also needs the explicit extended-tube shrink:
+   `BHW.sourceGramCoordBall`, `BHW.isOpen_sourceGramCoordBall`, and
+   `BHW.hwLemma3_transport_smallPerturbation_extendedTube`; this is where the
+   perturbation radius is made small enough that the realized source vectors
+   remain in `BHW.ExtendedTube d n`.  The final conversion from the
    quantitative `ε` theorem to arbitrary `Vsrc` is the finite-product
    open-ball helper `BHW.exists_coord_supnorm_ball_subset_of_isOpen` followed
    by
