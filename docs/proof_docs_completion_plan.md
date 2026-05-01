@@ -507,6 +507,18 @@ implementation contract is:
    invariance plus continuity.
    `BHW.SourceComplexGramRegularAt` remains reserved for the later local
    source-Gram image theorem; it is not the Hall-Wightman Lemma-2 predicate.
+   The arithmetic support for this split is mechanical and should not be
+   counted as a Hall-Wightman theorem: after unfolding
+   `HWSourceGramLowRank` and `HWSourceGramOrbitRank`,
+   `hwSourceGram_lowRank_iff_not_orbitRank` is `Nat.lt_of_not_ge` and
+   `not_lt_of_ge`; the analogous
+   `hwSourceGram_exceptionalRank_iff_not_maxRank` proves the local-chart
+   max-rank complement; and
+   `hwSourceGramOrbitRankAt_of_sourceGram_eq` is `simpa` from the displayed
+   equality of `sourceMinkowskiGram` values.  Thus the first genuine
+   mathematical branch-law obligations are the high-rank span-isometry/Witt
+   extension and the low-rank isotropic contraction packet, not the
+   predicate split itself.
    The high-rank nondegeneracy proof now has an explicit rank bridge:
    `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range` identifies the
    scalar Gram matrix rank with the rank of the complex Minkowski form
@@ -582,7 +594,12 @@ implementation contract is:
    relative-open theorem is the direct Lemma-3 neighborhood statement.  The
    global relative-open field is the union of those ambient neighborhoods,
    plus the elementary inclusion
-   `BHW.sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety`.
+   `BHW.sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety`.  That
+   inclusion is definitional in the current repo: destruct
+   `Z ∈ sourceMinkowskiGram d n '' ExtendedTube d n` as
+   `⟨z, hzET, rfl⟩`, then prove
+   `sourceMinkowskiGram d n z ∈ sourceComplexGramVariety d n` by the range
+   witness `⟨z, rfl⟩`; `hzET` is unused for the variety-membership proof.
 3. `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`: descend
    `BHW.extendF F` through `BHW.sourceMinkowskiGram d n` to a
    `BHW.SourceVarietyGermHolomorphicOn` scalar representative.  The branch law

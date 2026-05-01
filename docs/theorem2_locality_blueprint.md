@@ -4576,12 +4576,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hd : 2 <= d)
           {Z : Fin n -> Fin n -> ℂ} :
           BHW.HWSourceGramLowRank d n Z ↔
-            ¬ BHW.HWSourceGramOrbitRank d n Z
+            ¬ BHW.HWSourceGramOrbitRank d n Z := by
+        constructor
+        · intro hlow horbit
+          exact (not_lt_of_ge horbit) hlow
+        · intro hnot
+          exact Nat.lt_of_not_ge hnot
 
       theorem BHW.hwSourceGram_exceptionalRank_iff_not_maxRank
           {Z : Fin n -> Fin n -> ℂ} :
           BHW.HWSourceGramExceptionalRank d n Z ↔
-            ¬ BHW.HWSourceGramMaxRank d n Z
+            ¬ BHW.HWSourceGramMaxRank d n Z := by
+        constructor
+        · intro hlow hmax
+          exact (not_lt_of_ge hmax) hlow
+        · intro hnot
+          exact Nat.lt_of_not_ge hnot
 
       theorem BHW.hwSourceGramOrbitRankAt_of_sourceGram_eq
           {z w : Fin n -> Fin (d + 1) -> ℂ}
@@ -4589,7 +4599,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceMinkowskiGram d n z =
               BHW.sourceMinkowskiGram d n w) :
           BHW.HWSourceGramOrbitRankAt d n z ↔
-            BHW.HWSourceGramOrbitRankAt d n w
+            BHW.HWSourceGramOrbitRankAt d n w := by
+        simpa [BHW.HWSourceGramOrbitRankAt, hgram]
+
+      /- These rank-predicate lemmas are only arithmetic and definitional
+      bookkeeping.  The hypothesis `hd` on
+      `hwSourceGram_lowRank_iff_not_orbitRank` is retained only to match the
+      Hall-Wightman theorem surfaces where it is consumed; the proof itself is
+      `Nat.lt_of_not_ge` and `not_lt_of_ge`.  Thus none of the real
+      Hall-Wightman content is hidden in the rank split: the genuine work
+      starts with the high-rank span isometry and the low-rank isotropic
+      contraction data below. -/
 
       /-- Hall-Wightman Lemma-2 low-rank normal form before taking limits.
       After applying `Λ0` to the left configuration, the two equal-Gram
@@ -5758,6 +5778,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Lean-shaped proof:
 
       ```lean
+      theorem BHW.sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety
+          [NeZero d] (n : Nat) :
+          BHW.sourceExtendedTubeGramDomain d n ⊆
+            BHW.sourceComplexGramVariety d n := by
+        intro Z hZ
+        rcases hZ with ⟨z, hzET, rfl⟩
+        exact ⟨z, rfl⟩
+
       theorem BHW.sourceExtendedTubeGramDomain_connected ... := by
         simpa [BHW.sourceExtendedTubeGramDomain] using
           (BHW.isConnected_extendedTube (d := d) (n := n)).image
@@ -5769,6 +5797,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceExtendedTubeGramDomain_relOpen (d := d) hd n,
           BHW.sourceExtendedTubeGramDomain_connected (d := d) hd n⟩
       ```
+
+      The subset proof uses only the repo definitions:
+      `sourceExtendedTubeGramDomain d n` is the image of `ExtendedTube d n`
+      under `sourceMinkowskiGram d n`, while
+      `sourceComplexGramVariety d n` is the full range of that same Gram map.
+      The witness `hzET` is deliberately unused; extended-tube membership is
+      needed for scalar-domain membership, not for variety membership.  This
+      is a definitional support lemma, not Hall-Wightman content.
 
       The proof of `sourceExtendedTubeGramDomain_relOpen` is the
       Hall-Wightman neighborhood theorem: for
