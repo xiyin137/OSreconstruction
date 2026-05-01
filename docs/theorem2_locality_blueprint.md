@@ -3808,6 +3808,71 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceSymmetricRankLEVariety n D)
       ```
 
+      Normal/removable production-readiness gate.  The exceptional-rank
+      Hall-Wightman chart may enter Lean only after the normal source-Gram
+      analytic-space support has been proved in the following dependency
+      order:
+
+      ```lean
+      -- 1. Identify the source Gram variety with the symmetric rank-bounded
+      -- determinantal variety.  This is symmetry plus rank <= d+1 and the
+      -- converse finite Gram realization, not a bare rank statement.
+      have hVariety :
+          BHW.sourceComplexGramVariety d n =
+            BHW.sourceSymmetricRankLEVariety n (d + 1) :=
+        BHW.sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety
+          (d := d) (n := n)
+
+      -- 2. Prove normality through the genuine symmetric determinantal
+      -- package: Schur local product, singular locus, codimension, and
+      -- reduced Cohen-Macaulay coordinate ring.
+      have hNormal :
+          BHW.NormalAnalyticSubvariety
+            (BHW.sourceComplexGramVariety d n) :=
+        BHW.sourceComplexGramVariety_normal d n
+
+      -- 3. Prove density of the maximal scalar-rank locus in every relatively
+      -- open source-variety patch.
+      have hDense :
+          U ⊆ closure
+            (U ∩ {Z | BHW.HWSourceGramMaxRank d n Z}) :=
+        BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank
+          (d := d) (n := n) hU_rel
+
+      -- 4. Apply the normal-space Riemann theorem to the same branch-defined
+      -- scalar value `phi`; do not choose a new value function at the
+      -- exceptional locus.
+      have hExt :
+          ∀ Z, Z ∈ U ->
+            ∃ U0 Ψ,
+              IsOpen U0 ∧ Z ∈ U0 ∧
+              DifferentiableOn ℂ Ψ U0 ∧
+              U0 ∩ BHW.sourceComplexGramVariety d n ⊆ U ∧
+              Set.EqOn phi Ψ
+                (U0 ∩ BHW.sourceComplexGramVariety d n) :=
+        BHW.sourceGramVariety_normal_riemannExtension
+          (d := d) hd n hU_rel hphi_cont hphi_bdd
+          hExceptionalAnalytic hDense hregular
+      ```
+
+      Step 2 is not a placeholder for "normality of the target".  It must
+      contain `sourceSymmetricRankLEVariety_schurLocalProductModel`,
+      `sourceSymmetricRankLEVariety_singularLocus_eq_lowerRank`,
+      `sourceSymmetricRankExactStratum_complexDimension`,
+      `sourceSymmetricRankLEVariety_lowerRank_codim_ge_two`,
+      `sourceSymmetricRankLEVariety_reduced_cohenMacaulay`, and
+      `normalAnalyticSubvariety_of_serre`, or consume an already implemented
+      sorry-free theorem with exactly that finite-dimensional
+      algebraic-geometry content.  Step 4 must consume the OS-free
+      `normalAnalyticSubvariety_weaklyHolomorphic_localExtension`/Riemann
+      theorem and return the domain-control field
+      `U0 ∩ sourceComplexGramVariety d n ⊆ U`.  None of this support may
+      mention OS, Wightman fields, extended tubes beyond the source-domain
+      input, EOW, PET, theorem-2 locality, `bvt_W`, or
+      `sourceScalarRepresentativeData_bvt_F`.  If any of those appear in the
+      normality/removable proof term, the exceptional-rank chart is still not
+      production-Lean-ready.
+
       Implementation-level algebraic source of the last theorem.  The Lean
       port may either prove this in the SCV/algebraic-geometry support layer
       or consume an already implemented sorry-free theorem with exactly this

@@ -422,6 +422,26 @@ implementation contract is:
    algebraic-geometry content; it cannot replace the packet by a source-scalar
    representative wrapper.
 
+   Normal/removable production readiness is now componentwise.  Before Lean
+   may use `BHW.sourceGramVariety_normal_riemannExtension` or
+   `BHW.sourceGramVariety_removableAlongExceptionalRank`, the proof must first
+   identify `sourceComplexGramVariety d n` with the symmetric rank-`<= d+1`
+   variety, prove `BHW.sourceComplexGramVariety_normal` through the Schur
+   local product model, singular-locus equality, rank-exact dimension,
+   codimension-at-least-two calculation, reduced Cohen-Macaulay coordinate
+   ring theorem, and Serre assembly, and prove
+   `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank` for
+   every relatively open source-variety patch.  Only then may the OS-free
+   normal-space Riemann theorem
+   `BHW.normalAnalyticSubvariety_weaklyHolomorphic_localExtension` be applied
+   to the branch-defined scalar value `phi`, returning local ambient charts
+   with the domain-control field
+   `U0 ∩ BHW.sourceComplexGramVariety d n ⊆ U`.  This packet must not mention
+   OS, Wightman fields, EOW, PET, theorem-2 locality, `bvt_W`, or
+   `sourceScalarRepresentativeData_bvt_F`; it is finite-dimensional
+   SCV/algebraic geometry plus the already supplied branch-defined scalar
+   value.
+
    The theorem-2 blueprint still archives the stronger Siu/Cartan package
    `BHW.SteinOpen`,
    `BHW.sourceComplexGramVariety_closedAnalytic`,
