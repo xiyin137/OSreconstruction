@@ -7312,7 +7312,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       theorem BHW.sourceMinkowskiGram_hwLemma3CanonicalSource
           [NeZero d] (hd : 2 <= d)
-          (n r : Nat) (hr : r <= d + 1) :
+          (n r : Nat) (hrn : r <= n) (hrD : r <= d + 1) :
           BHW.sourceMinkowskiGram d n
             (BHW.hwLemma3CanonicalSource d n r) =
           BHW.hwLemma3CanonicalGram n r
@@ -7378,7 +7378,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.hwLemma3_normalizedSchurSurjective
           [NeZero d] (hd : 2 <= d)
           (n r : Nat)
-          (hr : r <= d + 1)
+          (hrn : r <= n)
+          (hrD : r <= d + 1)
           {ε : ℝ} (hε : 0 < ε) :
           ∃ η : ℝ, 0 < η ∧
             ∀ Z : Fin n -> Fin n -> ℂ,
@@ -7475,11 +7476,135 @@ Proof decomposition of this theorem, without hiding the analytic work:
          realize the residual matrix in directions that might not be
          orthogonal to the selected block.
 
+      Normalized Schur-surjectivity is the block construction in
+      Hall-Wightman Lemma 3.  After fixing `hrn : r <= n`, use the order
+      equivalence
+      `Fin n ≃ Fin r ⊕ Fin (n - r)` to write a nearby scalar matrix as
+      `Z = [[A, Bᵀ], [B, C]]`, where the canonical base is
+      `[[1, 0], [0, 0]]`.  The theorem is implemented by the following
+      proof-local block lemma, not by an unspecified inverse-function
+      theorem:
+
+      ```lean
+      def BHW.finSourceHead {n r : Nat} (hrn : r <= n) :
+          Fin r -> Fin n :=
+        fun a => ⟨a.val, lt_of_lt_of_le a.isLt hrn⟩
+
+      def BHW.finSourceTail {n r : Nat} (hrn : r <= n) :
+          Fin (n - r) -> Fin n :=
+        fun u => ⟨r + u.val, by omega⟩
+
+      theorem BHW.finSourceHead_tail_cases
+          {n r : Nat} (hrn : r <= n)
+          (i : Fin n) :
+          (∃ a : Fin r, i = BHW.finSourceHead hrn a) ∨
+          (∃ u : Fin (n - r), i = BHW.finSourceTail hrn u)
+
+      theorem BHW.hwLemma3_normalizedSchurBlockRealization
+          [NeZero d] (hd : 2 <= d)
+          (n r : Nat)
+          (hrn : r <= n)
+          (hrD : r <= d + 1)
+          {ε : ℝ} (hε : 0 < ε) :
+          ∃ η : ℝ, 0 < η ∧
+            ∀ Z : Fin n -> Fin n -> ℂ,
+              Z ∈ BHW.sourceComplexGramVariety d n ->
+              (∀ i j, ‖Z i j - BHW.hwLemma3CanonicalGram n r i j‖ < η) ->
+              ∃ (P : Matrix (Fin r) (Fin r) ℂ)
+                (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+                (q : Fin (n - r) -> Fin (d + 1) -> ℂ)
+                (v : Fin n -> Fin (d + 1) -> ℂ),
+                  (∀ a b, P a b = P b a) ∧
+                  (∀ a b,
+                    ∑ c : Fin r, P a c * P b c =
+                      Z (BHW.finSourceHead hrn a)
+                        (BHW.finSourceHead hrn b)) ∧
+                  (∀ u a,
+                    ∑ b : Fin r, L u b *
+                      Z (BHW.finSourceHead hrn b)
+                        (BHW.finSourceHead hrn a) =
+                      Z (BHW.finSourceTail hrn u)
+                        (BHW.finSourceHead hrn a)) ∧
+                  (∀ u v',
+                    BHW.complexMinkowskiBilinear d (q u) (q v') =
+                      Z (BHW.finSourceTail hrn u)
+                        (BHW.finSourceTail hrn v') -
+                      ∑ a : Fin r, ∑ b : Fin r,
+                        L u a *
+                          Z (BHW.finSourceHead hrn a)
+                            (BHW.finSourceHead hrn b) *
+                          L v' b) ∧
+                  (∀ u, q u ∈
+                    BHW.complexMinkowskiOrthogonalTailSubspace d r) ∧
+                  (∀ i μ, ‖v i μ‖ < ε) ∧
+                  BHW.sourceMinkowskiGram d n
+                    (BHW.hwLemma3CanonicalSource d n r + v) = Z
+      ```
+
+      Here `BHW.finSourceHead hrn : Fin r -> Fin n` and
+      `BHW.finSourceTail hrn : Fin (n - r) -> Fin n` are the standard finite
+      order embeddings selecting the first `r` and last `n-r` source
+      indices.  They are proof-local indexing helpers; their only content is
+      the equivalence `Fin n ≃ Fin r ⊕ Fin (n-r)`.
+
+      Proof transcript for `hwLemma3_normalizedSchurBlockRealization`:
+
+      1. Let `A` be the selected block of `Z` and write
+         `A = 1 + B1`.  Since `Z` is `η`-close to the canonical Gram matrix,
+         `B1` is small and symmetric.  Apply
+         `hwLemma3_selectedBlock_sqrt_near_identity` to obtain a symmetric
+         `P` close to `1` with `P * Pᵀ = A`.  The first `r` source vectors
+         are `x_a := ∑ b, P a b • e_b`, where `e_b` are the first `r`
+         standard orthogonal coordinates in the diagonalized complex
+         Minkowski model.
+      2. Because `A` is close to `1`, shrink `η` so `A.det` is a unit and
+         `A⁻¹` is close to `1`.  Set
+         `L u b := ∑ a, Z (tail u) (head a) * (A⁻¹) a b`.  Then
+         `∑ b, L u b * A b a = Z (tail u) (head a)`, so
+         `p_u := ∑ b, L u b • x_b` has the required selected cross
+         scalar products.
+      3. Define the residual Schur complement
+         `S u v := Z (tail u) (tail v) -
+           ∑ a b, L u a * A a b * L v b`.  By
+         `hwLemma3_schurComplement_rank_bound`, using
+         `Z ∈ sourceComplexGramVariety d n` and
+         `sourceComplexGramVariety_eq_rank_le`, `rank S <= d + 1 - r`.
+         Smallness of `S` follows from smallness of `Z - Gcan`,
+         `P - 1`, `A⁻¹ - 1`, and `L`.
+      4. Apply
+         `complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail` to
+         realize `S` by small `q_u` in the orthogonal tail.  Tail membership
+         gives `<q_u, x_a> = 0`, while the theorem gives
+         `<q_u, q_v> = S u v`.
+      5. For a tail source index set
+         `y_u := p_u + q_u`; for a head index use `x_a`.  The perturbation
+         `v` is `x_a - e_a` on the head and `y_u` on the tail.  The three
+         displayed identities prove the selected-selected,
+         tail-selected, and tail-tail entries of
+         `sourceMinkowskiGram d n (hwLemma3CanonicalSource d n r + v) = Z`.
+         Shrinking `η` one final time makes all coordinates of `v` smaller
+         than `ε`.
+
+      Lean-shaped proof of normalized Schur-surjectivity:
+
+      ```lean
+      theorem BHW.hwLemma3_normalizedSchurSurjective ... := by
+        rcases BHW.hwLemma3_normalizedSchurBlockRealization
+            (d := d) hd n r hrn hrD hε with
+          ⟨η, hη_pos, hblock⟩
+        refine ⟨η, hη_pos, ?_⟩
+        intro Z hZvar hZsmall
+        rcases hblock Z hZvar hZsmall with
+          ⟨P, L, q, v, hP_symm, hP_block, hL_cross,
+            hq_schur, hq_tail, hv_small, hgram⟩
+        exact ⟨v, hv_small, hgram⟩
+      ```
+
       Proof transcript for the quantitative theorem:
 
       1. Let `G0 := sourceMinkowskiGram d n z0` and
-         `r := sourceGramMatrixRank n G0`.  By
-         `sourceComplexGramVariety_eq_rank_le`, `r <= D`.
+         `r := sourceGramMatrixRank n G0`.  By finite matrix rank bounds and
+         `sourceComplexGramVariety_eq_rank_le`, `r <= n` and `r <= D`.
       2. Choose a nonzero principal `r × r` minor using the checked
          `exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank`; after
          a finite permutation of labels, treat this block as the upper-left
@@ -7546,14 +7671,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.hwLemma3_normalFormTransportData
             (d := d) hd n (z0 := z0) r hr with
           ⟨T, _⟩
-        have hr_le : r <= d + 1 := by
+        have hr_le_n : r <= n := by
+          exact BHW.sourceGramMatrixRank_le_arity
+            (n := n) G0
+        have hr_le_D : r <= d + 1 := by
           -- From `sourceComplexGramVariety_eq_rank_le` applied to `G0`.
           exact BHW.sourceGramMatrixRank_le_spacetime_of_sourceGram
             (d := d) (n := n) z0
         rcases T.perturb_back_small hε with
           ⟨εN, hεN_pos, hback⟩
         rcases BHW.hwLemma3_normalizedSchurSurjective
-            (d := d) hd n r hr_le hεN_pos with
+            (d := d) hd n r hr_le_n hr_le_D hεN_pos with
           ⟨ηN, hηN_pos, hnorm⟩
         rcases T.gram_ball_to_normal_ball hηN_pos with
           ⟨η, hη_pos, hη_to_normal⟩

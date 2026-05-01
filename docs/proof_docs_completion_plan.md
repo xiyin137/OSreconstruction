@@ -686,7 +686,18 @@ implementation contract is:
    disturb the selected block.  The canonical normal-form data are
    `BHW.hwLemma3CanonicalSource`,
    `BHW.hwLemma3CanonicalGram`, and
-   `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource`.  The normal-form
+   `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource`; these canonical
+   statements carry both `r <= n` and `r <= d + 1`, because the first `r`
+   source indices and the orthogonal tail split are not meaningful without
+   the source-arity bound.  The normalized Schur step is now pinned through
+   `BHW.hwLemma3_normalizedSchurBlockRealization`: decompose a nearby
+   canonical Gram matrix as `[[A, Bᵀ], [B, C]]` using
+   `Fin n ≃ Fin r ⊕ Fin (n-r)`, take the selected square root
+   `P * Pᵀ = A`, set the selected cross coefficients
+   `L := B * A⁻¹`, realize the Schur complement
+   `C - B * A⁻¹ * Bᵀ` in the orthogonal tail, and assemble the perturbation
+   from the selected vectors plus tail residual vectors.  This removes the
+   last informal "Schur realization" step from Lemma 3.  The normal-form
    transport must be an explicit finite-dimensional packet,
    `BHW.HWLemma3NormalFormTransport` with producer
    `BHW.hwLemma3_normalFormTransportData`; this records the source-index
