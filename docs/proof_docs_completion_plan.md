@@ -658,6 +658,17 @@ production file `BHWPermutation/SourceExtension.lean` intentionally keeps this
 Hall-Wightman/BHW branch-law theorem in proof docs until the proof or an
 approved source-import boundary is available.
 
+Current readiness verdict: production Lean must still stop before
+`BHW.sourceScalarRepresentativeData_bvt_F`.  The germ API and the downstream
+source-variety consumers are checked production infrastructure, and the
+adjacent path API has now been verified locally, but the upstream
+Hall-Wightman scalar representative theorem still depends on either
+implementation of the named Lemma-2, Lemma-3, Lemma-5--7, and normal
+analytic-space removable packets, or an explicit user-approved source-import
+boundary with exactly those theorem statements and no theorem-2/locality
+content.  Adding the five theorem names to production without those proofs
+would be wrapper churn, not mathematical progress.
+
 Germ-API migration transcript before any Hall-Wightman production theorem:
 
 1. In `BHWPermutation/SourceExtension.lean`, keep the existing
@@ -927,6 +938,23 @@ scalar path to the Figure-2-4 scalar path with `Path.trans` (method form
 `Path.trans_range`, or equivalently two applications of `JoinedIn.trans` if
 the proof is phrased as joined-in data.  Do not cite an unspecified "path
 concatenation lemma" here.
+
+Local API audit, 2026-05-01: the names in the preceding paragraph have been
+checked against the local Mathlib tree.  The exact files are:
+`Mathlib/Topology/Connected/LocPathConnected.lean` for
+`IsOpen.isConnected_iff_isPathConnected`,
+`Mathlib/Topology/Connected/PathConnected.lean` for
+`JoinedIn.somePath`, `JoinedIn.somePath_mem`, and `JoinedIn.trans`, and
+`Mathlib/Topology/Path.lean` for `Path.trans` and `Path.trans_range`.  If the
+archived overlap-cover connectedness proof is ever revived, the checked
+connected-union theorem is
+`IsConnected.biUnion_of_reflTransGen` in
+`Mathlib/Topology/Connected/Basic.lean`; its Lean signature requires an
+explicit nonempty index set `t.Nonempty` and a relation of the form
+`ReflTransGen (fun i j => (s i ∩ s j).Nonempty ∧ i ∈ t) i j`.  Therefore the
+proof docs must not say merely "the connected union theorem applies": they
+must provide the active-label nonemptiness and the exact intersection graph
+relation if this package becomes active.
 
 For the adjacent `S'_n` source-equality theorem, the exact analytic API is
 also pinned.  Pulling a scalar representative back to `Usrc` uses the germ

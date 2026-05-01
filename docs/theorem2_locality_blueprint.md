@@ -3052,6 +3052,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
       proof-doc subpacket is either formalized or imported as one explicitly
       approved BHW source boundary with the same fields:
 
+      Local source-text audit, 2026-05-01: the OCR text
+      `/tmp/hall_wightman_1957_current.txt`, generated from
+      `references/hall_wightman_invariant_analytic_functions_1957.pdf`, was
+      rechecked against this decomposition.  The source explicitly supports
+      the route split used here: Lemma 1 gives complex Lorentz invariance and
+      extended-tube single-valuedness; Lemma 2 is a rank-three/four orbit
+      theorem plus rank-one/two limiting argument in four-vector notation;
+      Lemma 3 is the scalar-product neighborhood theorem; Lemmas 4--7 give
+      the infinitesimal equations, power-series scalar dependence, and
+      non-exceptional scalar-product rank theorem; the final step invokes a
+      removable-singularity theorem and records that the scalar image is open
+      and connected as a continuous image of the tube.  This audit confirms
+      the theorem surfaces below, but it does not by itself close the Lean
+      implementation gate: the dimension-general replacements and the normal
+      analytic-space removable theorem still must be proved locally or
+      accepted as an explicit source-import boundary.
+
       Dimension and analytic-space audit for this source import:
 
       Hall-Wightman is printed for four-vectors.  The repo theorem surfaces
@@ -10224,6 +10241,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
       range/membership proof for the concatenated path is
       `Path.trans_range`, or `JoinedIn.trans` if the proof is kept in
       joined-in form; do not cite an unspecified path-concatenation lemma.
+      Local API audit, 2026-05-01: these exact names exist in the local
+      Mathlib tree.  `IsOpen.isConnected_iff_isPathConnected` is in
+      `Mathlib.Topology.Connected.LocPathConnected`; `JoinedIn.somePath`,
+      `JoinedIn.somePath_mem`, and `JoinedIn.trans` are in
+      `Mathlib.Topology.Connected.PathConnected`; `Path.trans` and
+      `Path.trans_range` are in `Mathlib.Topology.Path`.  The archived
+      connected-union route must use the checked theorem
+      `IsConnected.biUnion_of_reflTransGen` from
+      `Mathlib.Topology.Connected.Basic`, whose relation is exactly
+      `(s i ∩ s j).Nonempty ∧ i ∈ t` and whose connected version also requires
+      `t.Nonempty`.
       Its endpoint is the OS45 quarter-turn scalar point.  The
       resulting `γ` starts in `Wseed`,
       ends at `sourceMinkowskiGram d n (Q.symm (realEmbed y0))`, and stays in
