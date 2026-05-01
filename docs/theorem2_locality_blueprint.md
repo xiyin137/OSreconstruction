@@ -5437,32 +5437,37 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.complexMinkowski_wittExtension_subspaceIsometry
             (d := d) hd T hT_preserves with
           ⟨Λfix, hΛfix⟩
-        refine ⟨Λfix, F.s, F.q, ?_, F.q_independent,
-          F.q_pair_zero, ?_, ?_, ?_⟩
-        · intro m
-          have hmDomain : (m : Fin (d + 1) -> ℂ) ∈ Domain :=
-            Submodule.mem_sup_left m.2
-          exact hΛfix ⟨m, hmDomain⟩ |> congrArg Subtype.val
-        · intro c m
-          have hqN : F.q c ∈ N := F.q_mem c
-          exact hqN m
-        · intro x
-          have hxDomain : (x : Fin (d + 1) -> ℂ) ∈ Domain :=
-            Submodule.mem_sup_right x.2
-          have hTx : ((T ⟨x, hxDomain⟩ : Target) :
-              Fin (d + 1) -> ℂ) ∈ Qleft :=
-            BHW.directSum_identity_sum_isotropicEmbedding_maps_right
-              (d := d) M Rz Eleft x
-          have hTxQ : ((T ⟨x, hxDomain⟩ : Target) :
-              Fin (d + 1) -> ℂ) ∈ Qspan :=
-            hQleft_le_Qspan hTx
-          simpa [Qspan] using
-            (show BHW.complexLorentzVectorAction Λfix
-                (x : Fin (d + 1) -> ℂ) =
-              ((T ⟨x, hxDomain⟩ : Target) :
-                Fin (d + 1) -> ℂ) from hΛfix ⟨x, hxDomain⟩) ▸ hTxQ
-        · intro x
-          exact hRw_Q x.2
+        exact ⟨Λfix, F.s, F.q,
+          by
+            intro m
+            have hmDomain : (m : Fin (d + 1) -> ℂ) ∈ Domain :=
+              Submodule.mem_sup_left m.2
+            exact hΛfix ⟨m, hmDomain⟩ |> congrArg Subtype.val,
+          F.q_independent,
+          F.q_pair_zero,
+          by
+            intro c m
+            have hqN : F.q c ∈ N := F.q_mem c
+            exact hqN m,
+          by
+            intro x
+            have hxDomain : (x : Fin (d + 1) -> ℂ) ∈ Domain :=
+              Submodule.mem_sup_right x.2
+            have hTx : ((T ⟨x, hxDomain⟩ : Target) :
+                Fin (d + 1) -> ℂ) ∈ Qleft :=
+              BHW.directSum_identity_sum_isotropicEmbedding_maps_right
+                (d := d) M Rz Eleft x
+            have hTxQ : ((T ⟨x, hxDomain⟩ : Target) :
+                Fin (d + 1) -> ℂ) ∈ Qspan :=
+              hQleft_le_Qspan hTx
+            simpa [Qspan] using
+              (show BHW.complexLorentzVectorAction Λfix
+                  (x : Fin (d + 1) -> ℂ) =
+                ((T ⟨x, hxDomain⟩ : Target) :
+                  Fin (d + 1) -> ℂ) from hΛfix ⟨x, hxDomain⟩) ▸ hTxQ,
+          by
+            intro x
+            exact hRw_Q x.2⟩
       ```
 
       The pseudocode uses the proof-local helper
@@ -6667,42 +6672,42 @@ Proof decomposition of this theorem, without hiding the analytic work:
         refine
           { M := LinearMap.range evalZ
             N := LinearMap.range evalW
-            z_mem := ?_
-            w_mem := ?_
+            z_mem := by
+              intro i
+              exact ⟨Pi.single i (1 : ℂ), by
+                ext μ
+                simp [evalZ, BHW.sourceCoefficientEval]⟩
+            w_mem := by
+              intro i
+              exact ⟨Pi.single i (1 : ℂ), by
+                ext μ
+                simp [evalW, BHW.sourceCoefficientEval]⟩
             T := T
-            T_preserves := ?_
-            T_z := ?_ }
-        · intro i
-          exact ⟨Pi.single i (1 : ℂ), by
-            ext μ
-            simp [evalZ, BHW.sourceCoefficientEval]⟩
-        · intro i
-          exact ⟨Pi.single i (1 : ℂ), by
-            ext μ
-            simp [evalW, BHW.sourceCoefficientEval]⟩
-        · intro x y
-          rcases x with ⟨xv, hxv⟩
-          rcases hxv with ⟨ax, hax⟩
-          rcases y with ⟨yv, hyv⟩
-          rcases hyv with ⟨ay, hay⟩
-          -- Expand both sides through the coefficient representatives
-          -- `ax`, `ay`.  The quotient construction of `T` sends the class of
-          -- `ax` to the class of the same coefficient vector for `evalW`, and
-          -- the bilinear forms are equal because `hgram` identifies every
-          -- source Gram coefficient.
-          subst xv
-          subst yv
-          simp [T, QZ, QW, hkerEquiv, evalZ, evalW,
-            LinearMap.quotKerEquivRange_apply_mk,
-            BHW.sourceCoefficientEval, BHW.sourceMinkowskiGram, hgram,
-            Finset.mul_sum, Finset.sum_mul, mul_assoc, mul_left_comm,
-            mul_comm]
-        · intro i
-          apply Subtype.ext
-          ext μ
-          simp [T, QZ, QW, hkerEquiv, evalZ, evalW,
-            LinearMap.quotKerEquivRange_apply_mk,
-            BHW.sourceCoefficientEval]
+            T_preserves := by
+              intro x y
+              rcases x with ⟨xv, hxv⟩
+              rcases hxv with ⟨ax, hax⟩
+              rcases y with ⟨yv, hyv⟩
+              rcases hyv with ⟨ay, hay⟩
+              -- Expand both sides through the coefficient representatives
+              -- `ax`, `ay`.  The quotient construction of `T` sends the
+              -- class of `ax` to the class of the same coefficient vector for
+              -- `evalW`, and the bilinear forms are equal because `hgram`
+              -- identifies every source Gram coefficient.
+              subst xv
+              subst yv
+              simp [T, QZ, QW, hkerEquiv, evalZ, evalW,
+                LinearMap.quotKerEquivRange_apply_mk,
+                BHW.sourceCoefficientEval, BHW.sourceMinkowskiGram, hgram,
+                Finset.mul_sum, Finset.sum_mul, mul_assoc, mul_left_comm,
+                mul_comm]
+            T_z := by
+              intro i
+              apply Subtype.ext
+              ext μ
+              simp [T, QZ, QW, hkerEquiv, evalZ, evalW,
+                LinearMap.quotKerEquivRange_apply_mk,
+                BHW.sourceCoefficientEval] }
 
       theorem BHW.hw_sameSourceGram_regular_orbit ... := by
         rcases BHW.hw_highRank_spanIsometryData_of_sameSourceGram
@@ -6711,15 +6716,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.complexMinkowski_wittExtension
             (d := d) hd T hT_preserves with
           ⟨Λ, hΛ⟩
-        refine ⟨Λ, ?_⟩
-        ext i μ
-        have hΛi :
-            BHW.complexLorentzVectorAction Λ (z i) = w i := by
-          have hΛ_sub := hΛ ⟨z i, hzM i⟩
-          have hT_sub := hT_z i
-          exact Subtype.ext_iff.mp (hΛ_sub.trans hT_sub)
-        simpa [BHW.complexLorentzAction_apply_eq_vectorAction] using
-          congrArg (fun v => v μ) hΛi
+        refine ⟨Λ, by
+          ext i μ
+          have hΛi :
+              BHW.complexLorentzVectorAction Λ (z i) = w i := by
+            have hΛ_sub := hΛ ⟨z i, hzM i⟩
+            have hT_sub := hT_z i
+            exact Subtype.ext_iff.mp (hΛ_sub.trans hT_sub)
+          simpa [BHW.complexLorentzAction_apply_eq_vectorAction] using
+            congrArg (fun v => v μ) hΛi⟩
 
       theorem BHW.hw_sameSourceGram_singular_contractionData ... := by
         have N :=
@@ -6824,8 +6829,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0 := by
           intro i j
           exact (hres_pair i j).symm.trans (hleft_pair_zero i j)
-        refine ⟨r, I, rfl, ?_⟩
-        exact
+        exact ⟨r, I, rfl,
           { I_injective := hI_inj
             principal_minor_ne := by simpa [G] using hminor
             selected_gram_eq := hsel
@@ -6834,7 +6838,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             right_residual_orth := hright_orth
             residual_pairing_eq := hres_pair
             left_residual_pair_zero := hleft_pair_zero
-            right_residual_pair_zero := hright_pair_zero }
+            right_residual_pair_zero := hright_pair_zero }⟩
       ```
 
       The support theorem
@@ -7136,36 +7140,37 @@ Proof decomposition of this theorem, without hiding the analytic work:
               simpa [curve_left] using N.contracted_left_tendsto
             curve_right_tendsto_base := by
               simpa [curve_right] using N.contracted_right_tendsto
-            curve_left_orbit := ?_
-            curve_right_orbit := ?_ }
-        · intro t
-          refine ⟨N.contract t * N.Λ0, ?_⟩
-          ext i μ
-          calc
-            curve_left t i μ
-                =
-              BHW.complexLorentzAction (N.contract t)
-                (BHW.complexLorentzAction N.Λ0 z) i μ := by
-                  -- Expand `N.left_eq`, distribute the finite sum through
-                  -- the matrix action, and use `N.contract_fix_ξ` plus
-                  -- `N.contract_scale_q`.
-                  simp [curve_left, BHW.complexLorentzAction, N.left_eq,
-                    N.contract_fix_ξ, N.contract_scale_q,
-                    Finset.mul_sum, Finset.sum_mul, mul_assoc,
-                    mul_left_comm, mul_comm]
-            _ =
-              BHW.complexLorentzAction (N.contract t * N.Λ0) z i μ := by
-                  simpa using
-                    (BHW.complexLorentzAction_mul
-                      (d := d) (n := n) (N.contract t) N.Λ0 z).symm
-        · intro t
-          refine ⟨N.contract t, ?_⟩
-          ext i μ
-          -- Same finite-coordinate calculation, now using `N.right_eq`.
-          simp [curve_right, BHW.complexLorentzAction, N.right_eq,
-            N.contract_fix_ξ, N.contract_scale_q,
-            Finset.mul_sum, Finset.sum_mul, mul_assoc,
-            mul_left_comm, mul_comm]
+            curve_left_orbit := by
+              intro t
+              refine ⟨N.contract t * N.Λ0, by
+                ext i μ
+                calc
+                  curve_left t i μ
+                      =
+                    BHW.complexLorentzAction (N.contract t)
+                      (BHW.complexLorentzAction N.Λ0 z) i μ := by
+                        -- Expand `N.left_eq`, distribute the finite sum
+                        -- through the matrix action, and use
+                        -- `N.contract_fix_ξ` plus `N.contract_scale_q`.
+                        simp [curve_left, BHW.complexLorentzAction,
+                          N.left_eq, N.contract_fix_ξ,
+                          N.contract_scale_q, Finset.mul_sum,
+                          Finset.sum_mul, mul_assoc, mul_left_comm,
+                          mul_comm]
+                  _ =
+                    BHW.complexLorentzAction
+                      (N.contract t * N.Λ0) z i μ := by
+                        simpa using
+                          (BHW.complexLorentzAction_mul
+                            (d := d) (n := n) (N.contract t) N.Λ0 z).symm⟩
+            curve_right_orbit := by
+              intro t
+              refine ⟨N.contract t, by
+                ext i μ
+                -- Same finite-coordinate calculation, using `N.right_eq`.
+                simp [curve_right, BHW.complexLorentzAction, N.right_eq,
+                  N.contract_fix_ξ, N.contract_scale_q, Finset.mul_sum,
+                  Finset.sum_mul, mul_assoc, mul_left_comm, mul_comm]⟩ }
       ```
 
       Proof transcript for `BHW.extendF_complexLorentzInvariant_of_cinv`:
@@ -7221,8 +7226,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 ∃ Γ : ComplexLorentzGroup d,
                   BHW.complexLorentzAction Λ z =
                     BHW.complexLorentzAction Γ w := by
-          refine ⟨w0, hw0, Λ * Λ0, ?_⟩
-          rw [hz_eq, BHW.complexLorentzAction_mul]
+          exact ⟨w0, hw0, Λ * Λ0, by
+            rw [hz_eq, BHW.complexLorentzAction_mul]⟩
         simp only [BHW.extendF]
         rw [dif_pos hex_Lz, dif_pos hex_z]
         rcases hex_Lz.choose_spec with ⟨hwL, ΓL, hΓL⟩
@@ -7526,11 +7531,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.hwLemma3_adaptedBase_transport_smallPerturbation_extendedTube
             (d := d) hd n hζ0 hspan hε_pos with
           ⟨O, hO_open, hZO, hO_realize⟩
-        refine ⟨O, hO_open, hZO, ?_⟩
-        intro Z hZ
-        rcases hO_realize Z hZ.2 hZ.1 with ⟨v, hv_small, hET, hGram⟩
-        refine ⟨fun i μ => ζ0 i μ + v i μ, ?_, hGram⟩
-        exact hball_sub hv_small
+        refine ⟨O, hO_open, hZO, by
+          intro Z hZ
+          rcases hO_realize Z hZ.2 hZ.1 with
+            ⟨v, hv_small, hET, hGram⟩
+          exact ⟨fun i μ => ζ0 i μ + v i μ,
+            hball_sub hv_small, hGram⟩⟩
       ```
 
       Here `exists_coord_supnorm_ball_subset_of_isOpen` is only the standard
@@ -7554,18 +7560,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (fun i μ => x0 i μ + v i μ) ∈ U := by
         rcases Metric.mem_nhds_iff.mp (hU_open.mem_nhds hx0U) with
           ⟨ρ, hρ_pos, hρ_sub⟩
-        refine ⟨ρ, hρ_pos, ?_⟩
-        intro v hv
-        have hv_row : ∀ i : Fin n, ‖v i‖ < ρ := by
-          intro i
-          exact (pi_norm_lt_iff hρ_pos).2 (hv i)
-        have hv_norm : ‖v‖ < ρ :=
-          (pi_norm_lt_iff hρ_pos).2 hv_row
-        have hdiff : (fun i μ => x0 i μ + v i μ) - x0 = v := by
-          ext i μ
-          simp
-        exact hρ_sub (by
-          simpa [Metric.mem_ball, dist_eq_norm, hdiff] using hv_norm)
+        refine ⟨ρ, hρ_pos, by
+          intro v hv
+          have hv_row : ∀ i : Fin n, ‖v i‖ < ρ := by
+            intro i
+            exact (pi_norm_lt_iff hρ_pos).2 (hv i)
+          have hv_norm : ‖v‖ < ρ :=
+            (pi_norm_lt_iff hρ_pos).2 hv_row
+          have hdiff : (fun i μ => x0 i μ + v i μ) - x0 = v := by
+            ext i μ
+            simp
+          exact hρ_sub (by
+            simpa [Metric.mem_ball, dist_eq_norm, hdiff] using hv_norm)⟩
       ```
 
       The quantitative adapted-base theorem
@@ -7889,9 +7895,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             simpa [P, B, hu_apply, Matrix.toBilin'_apply, hs i]
           · simpa [P, B, hu_apply, Matrix.toBilin'_apply, hij,
               hb_ortho hij] using hb_ortho hij
-        refine ⟨P, hP_unit, ?_⟩
-        ext i j
-        simpa [Matrix.one_apply] using hentries i j
+        refine ⟨P, hP_unit, by
+          ext i j
+          simpa [Matrix.one_apply] using hentries i j⟩
       ```
 
       The displayed `u` construction can be implemented more simply using
@@ -8091,8 +8097,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.hwLemma3_extendedTube_adaptedRankRepresentative ... := by
         by_cases hn : n = 0
         · subst hn
-          refine ⟨z0, hz0, rfl, ?_⟩
-          simp [BHW.sourceGramMatrixRank, BHW.sourceCoefficientEval]
+          exact ⟨z0, hz0, rfl, by
+            simp [BHW.sourceGramMatrixRank, BHW.sourceCoefficientEval]⟩
         haveI : NeZero n := ⟨hn⟩
         let G := BHW.sourceMinkowskiGram d n z0
         let r := BHW.sourceGramMatrixRank n G
@@ -8126,12 +8132,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
             hq_pair_zero hqDual_pair_zero hq_dual
             hq_orth_ξ hqDual_orth_ξ with
           ⟨hbase_mem, _hall_coefficients⟩
-        refine ⟨ξ, hbase_mem, ?_, ?_⟩
-        · exact BHW.hwLemma3_selectedProjection_gram_eq
-            (d := d) hd n r (z0 := z0) (by rfl) hminor
-        · simpa [ξ, G, r] using
-            BHW.hwLemma3_selectedProjection_span_finrank_eq_rank
-              (d := d) hd n r (z0 := z0) (by rfl) hminor
+        exact ⟨ξ, hbase_mem,
+          BHW.hwLemma3_selectedProjection_gram_eq
+            (d := d) hd n r (z0 := z0) (by rfl) hminor,
+          by
+            simpa [ξ, G, r] using
+              BHW.hwLemma3_selectedProjection_span_finrank_eq_rank
+                (d := d) hd n r (z0 := z0) (by rfl) hminor⟩
       ```
 
       The call to `hw_isotropicFrame_allCoefficients_mem_extendedTube` uses
@@ -8802,16 +8809,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (m := m) with ⟨C, hC_pos, hC_bound⟩
         rcases BHW.exists_pos_mul_sqrt_lt hε hC_pos with
           ⟨δ, hδ_pos, hδ_small⟩
-        refine ⟨δ, hδ_pos, ?_⟩
-        intro S hSym hRank hS_entry
-        rcases BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm
-            (m := m) (k := k) hSym hRank with
-          ⟨A, hA_factor, hA_norm⟩
-        have hS_norm_small : Real.sqrt ‖S‖ < ε := by
-          exact BHW.real_sqrt_norm_lt_of_entry_bound
-            hC_bound hS_entry hδ_small
-        exact ⟨A, fun i a => lt_of_le_of_lt (hA_norm i a) hS_norm_small,
-          hA_factor⟩
+        exact ⟨δ, hδ_pos, by
+          intro S hSym hRank hS_entry
+          rcases BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm
+              (m := m) (k := k) hSym hRank with
+            ⟨A, hA_factor, hA_norm⟩
+          have hS_norm_small : Real.sqrt ‖S‖ < ε := by
+            exact BHW.real_sqrt_norm_lt_of_entry_bound
+              hC_bound hS_entry hδ_small
+          exact ⟨A, fun i a => lt_of_le_of_lt (hA_norm i a) hS_norm_small,
+            hA_factor⟩⟩
 
       theorem BHW.complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail
           ... := by
@@ -8823,50 +8830,54 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.complexSymmetric_factorSmall_rankLE
             (m := m) (k := k) hε0_pos with
           ⟨δ, hδ_pos, hfactor⟩
-        refine ⟨δ, hδ_pos, ?_⟩
-        intro S hSym hRank hk_tail hS_small
-        rcases hfactor (Matrix.of fun i j => S i j)
-            (by ext i j; exact hSym j i)
-            hRank
-            (by simpa using hS_small) with
-          ⟨A, hA_small, hA_factor⟩
-        rcases BHW.exists_finTailEmbedding (D := d + 1) (r := r) (k := k)
-            hk_tail with
-          ⟨ι, hι_inj, hι_tail⟩
-        let u : Fin m -> Fin (d + 1) -> ℂ :=
-          BHW.tailEmbeddedFactorVectors (d + 1) r m k ι A
-        let q : Fin m -> Fin (d + 1) -> ℂ :=
-          fun i => (BHW.complexMinkowskiOrthogonalModel d).symm (u i)
-        have hu_tail_and_pair :=
-          BHW.standardComplexSymmetricBilinear_tailEmbeddedFactor
-            (D := d + 1) (r := r) (m := m) (k := k)
-            hι_inj hι_tail A
-        have hu_small : ∀ i μ, ‖u i μ‖ < ε0 :=
-          BHW.tailEmbeddedFactorVectors_coord_bound
-            (D := d + 1) (r := r) (m := m) (k := k) hA_small
-        refine ⟨q, ?small, ?tail, ?pair⟩
-        · intro i μ
-          have hsum :
-              ∑ ν : Fin (d + 1), ‖u i ν‖ < (d + 1) * ε0 := by
-            exact BHW.sum_norm_lt_card_mul_of_coord_bound hu_small
-          exact lt_of_le_of_lt (hC_bound (u i) μ)
-            (by dsimp [ε0]; nlinarith [hC_pos, hsum, hε])
-        · intro i
-          -- Unfold the transported tail subspace; the first component of
-          -- `hu_tail_and_pair` says `u i` vanishes on the selected coordinates.
-          exact BHW.mem_complexMinkowskiOrthogonalTailSubspace_of_model_tail
-            (d := d) (r := r) (u := u i) hu_tail_and_pair.1
-        · intro i j
-          calc
-            BHW.complexMinkowskiBilinear d (q i) (q j)
-                =
-              BHW.standardComplexSymmetricBilinear (u i) (u j) := by
-                simpa [q] using
-                  BHW.complexMinkowskiOrthogonalModel_preserves_bilinear
-                    (d := d) (q i) (q j)
-            _ = (A * A.transpose) i j := hu_tail_and_pair.2 i j
-            _ = S i j := by
-                simpa using congrArg (fun M => M i j) hA_factor.symm
+        exact ⟨δ, hδ_pos, by
+          intro S hSym hRank hk_tail hS_small
+          rcases hfactor (Matrix.of fun i j => S i j)
+              (by ext i j; exact hSym j i)
+              hRank
+              (by simpa using hS_small) with
+            ⟨A, hA_small, hA_factor⟩
+          rcases BHW.exists_finTailEmbedding (D := d + 1) (r := r) (k := k)
+              hk_tail with
+            ⟨ι, hι_inj, hι_tail⟩
+          let u : Fin m -> Fin (d + 1) -> ℂ :=
+            BHW.tailEmbeddedFactorVectors (d + 1) r m k ι A
+          let q : Fin m -> Fin (d + 1) -> ℂ :=
+            fun i => (BHW.complexMinkowskiOrthogonalModel d).symm (u i)
+          have hu_tail_and_pair :=
+            BHW.standardComplexSymmetricBilinear_tailEmbeddedFactor
+              (D := d + 1) (r := r) (m := m) (k := k)
+              hι_inj hι_tail A
+          have hu_small : ∀ i μ, ‖u i μ‖ < ε0 :=
+            BHW.tailEmbeddedFactorVectors_coord_bound
+              (D := d + 1) (r := r) (m := m) (k := k) hA_small
+          exact ⟨q,
+            by
+              intro i μ
+              have hsum :
+                  ∑ ν : Fin (d + 1), ‖u i ν‖ < (d + 1) * ε0 := by
+                exact BHW.sum_norm_lt_card_mul_of_coord_bound hu_small
+              exact lt_of_le_of_lt (hC_bound (u i) μ)
+                (by dsimp [ε0]; nlinarith [hC_pos, hsum, hε]),
+            by
+              intro i
+              -- Unfold the transported tail subspace; the first component of
+              -- `hu_tail_and_pair` says `u i` vanishes on the selected
+              -- coordinates.
+              exact BHW.mem_complexMinkowskiOrthogonalTailSubspace_of_model_tail
+                (d := d) (r := r) (u := u i) hu_tail_and_pair.1,
+            by
+              intro i j
+              calc
+                BHW.complexMinkowskiBilinear d (q i) (q j)
+                    =
+                  BHW.standardComplexSymmetricBilinear (u i) (u j) := by
+                    simpa [q] using
+                      BHW.complexMinkowskiOrthogonalModel_preserves_bilinear
+                        (d := d) (q i) (q j)
+                _ = (A * A.transpose) i j := hu_tail_and_pair.2 i j
+                _ = S i j := by
+                    simpa using congrArg (fun M => M i j) hA_factor.symm⟩⟩
       ```
 
       The proof-local arithmetic helpers in this skeleton are elementary:
@@ -8994,12 +9005,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.hwLemma3_normalizedSchurBlockRealization
             (d := d) hd n r hrn hrD hε with
           ⟨η, hη_pos, hblock⟩
-        refine ⟨η, hη_pos, ?_⟩
-        intro Z hZvar hZsmall
-        rcases hblock Z hZvar hZsmall with
-          ⟨P, L, q, v, hP_symm, hP_block, hL_cross,
-            hq_schur, hq_tail, hv_small, hgram⟩
-        exact ⟨v, hv_small, hgram⟩
+        exact ⟨η, hη_pos, by
+          intro Z hZvar hZsmall
+          rcases hblock Z hZvar hZsmall with
+            ⟨P, L, q, v, hP_symm, hP_block, hL_cross,
+              hq_schur, hq_tail, hv_small, hgram⟩
+          exact ⟨v, hv_small, hgram⟩⟩
       ```
 
       Proof transcript for the quantitative theorem:
@@ -9255,41 +9266,41 @@ Proof decomposition of this theorem, without hiding the analytic work:
           toNormalVec := Lvec
           toNormalGram := Lgram
           z0_to_canonical := by simpa [Lvec, y] using hΛy
-          gram_commute := ?_
-          gram_variety_iff := ?_
+          gram_commute := by
+            intro z
+            simp [Lvec, Lgram,
+              BHW.sourceMinkowskiGram_sourceTupleLinearChange,
+              BHW.sourceMinkowskiGram_complexLorentzAction]
+          gram_variety_iff := by
+            intro Z
+            simpa [Lgram] using
+              BHW.sourceGramCongruence_mem_variety_iff
+                (d := d) (n := n) hM_unit Z
           gram_z0 := by simpa [Lgram] using hM_canon
-          gram_ball_to_normal_ball := ?_
-          perturb_back_small := ?_ }, trivial⟩
-        · intro z
-          simp [Lvec, Lgram,
-            BHW.sourceMinkowskiGram_sourceTupleLinearChange,
-            BHW.sourceMinkowskiGram_complexLorentzAction]
-        · intro Z
-          simpa [Lgram] using
-            BHW.sourceGramCongruence_mem_variety_iff
-              (d := d) (n := n) hM_unit Z
-        · intro ηN hηN
-          rcases BHW.linearEquiv_coord_ball_preimage Lgram G0 hηN with
-            ⟨η, hη, hsmall⟩
-          refine ⟨η, hη, ?_⟩
-          intro Z hZ
-          simpa [Lgram, hM_canon] using hsmall Z hZ
-        · intro ε hε
-          rcases BHW.linearEquiv_perturb_back_coord_bound Lvec hε with
-            ⟨εN, hεN, hbound⟩
-          refine ⟨εN, hεN, ?_⟩
-          intro vN hvN
-          refine ⟨Lvec.symm vN, hbound vN hvN, ?_⟩
-          calc
-            Lvec (fun i μ => z0 i μ + Lvec.symm vN i μ) =
-                Lvec z0 + vN := by
-              ext i μ
-              simp
-            _ =
-                fun i μ =>
-                  BHW.hwLemma3CanonicalSource d n r i μ + vN i μ := by
-              ext i μ
-              simpa [Lvec, y] using congrFun (congrFun hΛy i) μ
+          gram_ball_to_normal_ball := by
+            intro ηN hηN
+            rcases BHW.linearEquiv_coord_ball_preimage Lgram G0 hηN with
+              ⟨η, hη, hsmall⟩
+            exact ⟨η, hη, by
+              intro Z hZ
+              simpa [Lgram, hM_canon] using hsmall Z hZ⟩
+          perturb_back_small := by
+            intro ε hε
+            rcases BHW.linearEquiv_perturb_back_coord_bound Lvec hε with
+              ⟨εN, hεN, hbound⟩
+            exact ⟨εN, hεN, by
+              intro vN hvN
+              exact ⟨Lvec.symm vN, hbound vN hvN, by
+                calc
+                  Lvec (fun i μ => z0 i μ + Lvec.symm vN i μ) =
+                      Lvec z0 + vN := by
+                    ext i μ
+                    simp
+                  _ =
+                      fun i μ =>
+                        BHW.hwLemma3CanonicalSource d n r i μ + vN i μ := by
+                    ext i μ
+                    simpa [Lvec, y] using congrFun (congrFun hΛy i) μ⟩⟩ }, trivial⟩
       ```
 
       Lean-shaped transport proof of
@@ -9317,36 +9328,36 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ⟨ηN, hηN_pos, hnorm⟩
         rcases T.gram_ball_to_normal_ball hηN_pos with
           ⟨η, hη_pos, hη_to_normal⟩
-        refine ⟨η, hη_pos, ?_⟩
-        intro Z hZvar hZsmall
-        have hZnorm_var :
-            T.toNormalGram Z ∈ BHW.sourceComplexGramVariety d n :=
-          (T.gram_variety_iff Z).2 hZvar
-        have hZnorm_small :
-            ∀ i j,
-              ‖T.toNormalGram Z i j -
-                BHW.hwLemma3CanonicalGram n r i j‖ < ηN :=
-          hη_to_normal Z hZsmall
-        rcases hnorm (T.toNormalGram Z) hZnorm_var hZnorm_small with
-          ⟨vN, hvN_small, hgramN⟩
-        rcases hback vN hvN_small with ⟨v, hv_small, hvec_back⟩
-        refine ⟨v, hv_small, ?_⟩
-        apply T.toNormalGram.injective
-        calc
-          T.toNormalGram
-              (BHW.sourceMinkowskiGram d n
-                (fun i μ => z0 i μ + v i μ))
-              =
-            BHW.sourceMinkowskiGram d n
-              (T.toNormalVec (fun i μ => z0 i μ + v i μ)) := by
-                rw [T.gram_commute]
-                rfl
-          _ =
-            BHW.sourceMinkowskiGram d n
-              (fun i μ =>
-                BHW.hwLemma3CanonicalSource d n r i μ + vN i μ) := by
-                rw [hvec_back]
-          _ = T.toNormalGram Z := hgramN.symm
+        exact ⟨η, hη_pos, by
+          intro Z hZvar hZsmall
+          have hZnorm_var :
+              T.toNormalGram Z ∈ BHW.sourceComplexGramVariety d n :=
+            (T.gram_variety_iff Z).2 hZvar
+          have hZnorm_small :
+              ∀ i j,
+                ‖T.toNormalGram Z i j -
+                  BHW.hwLemma3CanonicalGram n r i j‖ < ηN :=
+            hη_to_normal Z hZsmall
+          rcases hnorm (T.toNormalGram Z) hZnorm_var hZnorm_small with
+            ⟨vN, hvN_small, hgramN⟩
+          rcases hback vN hvN_small with ⟨v, hv_small, hvec_back⟩
+          exact ⟨v, hv_small, by
+            apply T.toNormalGram.injective
+            calc
+              T.toNormalGram
+                  (BHW.sourceMinkowskiGram d n
+                    (fun i μ => z0 i μ + v i μ))
+                  =
+                BHW.sourceMinkowskiGram d n
+                  (T.toNormalVec (fun i μ => z0 i μ + v i μ)) := by
+                    rw [T.gram_commute]
+                    rfl
+              _ =
+                BHW.sourceMinkowskiGram d n
+                  (fun i μ =>
+                    BHW.hwLemma3CanonicalSource d n r i μ + vN i μ) := by
+                    rw [hvec_back]
+              _ = T.toNormalGram Z := hgramN.symm⟩⟩
       ```
 
       The adapted small-perturbation Lemma-3 theorem has one additional
@@ -9380,18 +9391,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.hwLemma3_transport_from_normalForm
             (d := d) hd n (z0 := ζ0) hspan hε'_pos with
           ⟨η, hη_pos, hrealize⟩
-        refine ⟨η, hη_pos, ?_⟩
-        intro Z hZvar hZball
-        rcases hrealize Z hZvar hZball with ⟨v, hv_small, hgram⟩
-        have hv_target : ∀ i μ, ‖v i μ‖ < ε := by
-          intro i μ
-          exact lt_of_lt_of_le (hv_small i μ) (by
-            dsimp [ε']; nlinarith [min_le_left ε εET])
-        have hv_ET : ∀ i μ, ‖v i μ‖ < εET := by
-          intro i μ
-          exact lt_of_lt_of_le (hv_small i μ) (by
-            dsimp [ε']; nlinarith [min_le_right ε εET])
-        exact ⟨v, hv_target, hET_ball v hv_ET, hgram⟩
+        exact ⟨η, hη_pos, by
+          intro Z hZvar hZball
+          rcases hrealize Z hZvar hZball with ⟨v, hv_small, hgram⟩
+          have hv_target : ∀ i μ, ‖v i μ‖ < ε := by
+            intro i μ
+            exact lt_of_lt_of_le (hv_small i μ) (by
+              dsimp [ε']; nlinarith [min_le_left ε εET])
+          have hv_ET : ∀ i μ, ‖v i μ‖ < εET := by
+            intro i μ
+            exact lt_of_lt_of_le (hv_small i μ) (by
+              dsimp [ε']; nlinarith [min_le_right ε εET])
+          exact ⟨v, hv_target, hET_ball v hv_ET, hgram⟩⟩
 
       theorem BHW.hwLemma3_sourceGram_localVectorRealization
           ... := by
@@ -9411,14 +9422,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
         let O : Set (Fin n -> Fin n -> ℂ) :=
           BHW.sourceGramCoordBall n
             (BHW.sourceMinkowskiGram d n ζ0) η
-        refine ⟨O, BHW.isOpen_sourceGramCoordBall n _ hη_pos, ?_, ?_⟩
-        · intro i j
-          simp [O, BHW.sourceGramCoordBall, hζ0Gram]
-          exact hη_pos
-        · intro Z hZ
-          rcases hrealize Z hZ.2 hZ.1 with
-            ⟨v, _hv_small, hzeta_v, hgram⟩
-          exact ⟨fun i μ => ζ0 i μ + v i μ, hzeta_v, hgram⟩
+        exact ⟨O, BHW.isOpen_sourceGramCoordBall n _ hη_pos,
+          by
+            intro i j
+            simp [O, BHW.sourceGramCoordBall, hζ0Gram]
+            exact hη_pos,
+          by
+            intro Z hZ
+            rcases hrealize Z hZ.2 hZ.1 with
+              ⟨v, _hv_small, hzeta_v, hgram⟩
+            exact ⟨fun i μ => ζ0 i μ + v i μ, hzeta_v, hgram⟩⟩
       ```
 
       The orbit-rank and low-rank wrappers are only organizational views of
@@ -9437,9 +9450,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases BHW.hwLemma3_sourceGram_localVectorRealization
             (d := d) hd n hz0 with
           ⟨O, hO_open, hZO, hO_sub_image⟩
-        refine ⟨O, hO_open, hZO, ?_⟩
-        intro W hW
-        exact hO_sub_image hW
+        exact ⟨O, hO_open, hZO, by
+          intro W hW
+          exact hO_sub_image hW⟩
       ```
 
       Scratch-checked relative-open assembly.  The explicit `hLocal`
@@ -9467,20 +9480,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
         choose O hO_open hZO hO_sub using hLocal
         refine ⟨⋃ Z : {Z : Fin n -> Fin n -> ℂ //
             Z ∈ BHW.sourceExtendedTubeGramDomain d n}, O Z.1 Z.2,
-          isOpen_iUnion (fun Z => hO_open Z.1 Z.2), ?_⟩
-        ext W
-        constructor
-        · intro hWdomain
-          constructor
-          · exact Set.mem_iUnion.mpr
-              ⟨⟨W, hWdomain⟩, hZO W hWdomain⟩
-          · exact
-            BHW.sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety
-              (d := d) (n := n) hWdomain
-        · intro hW
-          rcases hW with ⟨hWU0, hWvar⟩
-          rcases Set.mem_iUnion.mp hWU0 with ⟨Z, hWO⟩
-          exact hO_sub Z.1 Z.2 ⟨hWO, hWvar⟩
+          isOpen_iUnion (fun Z => hO_open Z.1 Z.2), by
+            ext W
+            constructor
+            · intro hWdomain
+              constructor
+              · exact Set.mem_iUnion.mpr
+                  ⟨⟨W, hWdomain⟩, hZO W hWdomain⟩
+              · exact
+                BHW.sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety
+                  (d := d) (n := n) hWdomain
+            · intro hW
+              rcases hW with ⟨hWU0, hWvar⟩
+              rcases Set.mem_iUnion.mp hWU0 with ⟨Z, hWO⟩
+              exact hO_sub Z.1 Z.2 ⟨hWO, hWvar⟩⟩
       ```
 
       Finally, the descent theorem must be sourced from the analytic part of
@@ -9891,9 +9904,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         intro x hx T hT_open hxT
         rcases h x hx T hT_open hxT with
           ⟨O, hO_open, hxO, hO_control⟩
-        refine ⟨O, hO_open, hxO, ?_⟩
-        intro y hy
-        exact hO_control y hy.1 hy.2
+        exact ⟨O, hO_open, hxO, by
+          intro y hy
+          exact hO_control y hy.1 hy.2⟩
 
       -- Scratch-checked proof body for
       -- `continuousOn_openDomain_preimage_nhds`.
@@ -9901,9 +9914,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rw [continuousOn_iff] at hf
         rcases hf x hxΩ T hT_open hxT with
           ⟨V, hV_open, hxV, hV_sub⟩
-        refine ⟨V, hV_open, hxV, ?_⟩
-        intro y hyΩ hyV
-        exact hV_sub ⟨hyV, hyΩ⟩
+        exact ⟨V, hV_open, hxV, by
+          intro y hyΩ hyV
+          exact hV_sub ⟨hyV, hyΩ⟩⟩
 
       /-- Lean-facing structure for the concrete finite linear PDE system in
       Hall-Wightman Lemma 4.  Its single field is the infinitesimal generator;
@@ -10188,32 +10201,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases ψRange.exists_extend with ⟨ψlin, hψlin⟩
         let ψ : F →L[ℂ] ℂ :=
           ⟨ψlin, LinearMap.continuous_of_finiteDimensional ψlin⟩
-        refine ⟨ψ, ?_⟩
-        ext x
-        have hxrange :
-            (⟨Llin x, ⟨x, rfl⟩⟩ : LinearMap.range Llin) =
-              Llin.quotKerEquivRange (Submodule.Quotient.mk x) := by
-          ext
-          simp [LinearMap.quotKerEquivRange_apply_mk]
-        have hψ_apply :
-            ψlin (Llin x) = ψRange ⟨Llin x, ⟨x, rfl⟩⟩ := by
-          have h :=
-            congrArg
-              (fun f : LinearMap.range Llin →ₗ[ℂ] ℂ =>
-                f ⟨Llin x, ⟨x, rfl⟩⟩)
-              hψlin
-          simpa [LinearMap.comp_apply] using h
-        calc
-          ℓ x = elllin x := rfl
-          _ = lifted (Submodule.Quotient.mk x) := by
-                rw [Submodule.liftQ_apply]
-          _ = ψRange
-                (Llin.quotKerEquivRange (Submodule.Quotient.mk x)) := by
-                simp [ψRange]
-          _ = ψRange ⟨Llin x, ⟨x, rfl⟩⟩ := by
-                rw [← hxrange]
-          _ = ψlin (Llin x) := hψ_apply.symm
-          _ = ψ (L x) := rfl
+        exact ⟨ψ, by
+          ext x
+          have hxrange :
+              (⟨Llin x, ⟨x, rfl⟩⟩ : LinearMap.range Llin) =
+                Llin.quotKerEquivRange (Submodule.Quotient.mk x) := by
+            ext
+            simp [LinearMap.quotKerEquivRange_apply_mk]
+          have hψ_apply :
+              ψlin (Llin x) = ψRange ⟨Llin x, ⟨x, rfl⟩⟩ := by
+            have h :=
+              congrArg
+                (fun f : LinearMap.range Llin →ₗ[ℂ] ℂ =>
+                  f ⟨Llin x, ⟨x, rfl⟩⟩)
+                hψlin
+            simpa [LinearMap.comp_apply] using h
+          calc
+            ℓ x = elllin x := rfl
+            _ = lifted (Submodule.Quotient.mk x) := by
+                  rw [Submodule.liftQ_apply]
+            _ = ψRange
+                  (Llin.quotKerEquivRange (Submodule.Quotient.mk x)) := by
+                  simp [ψRange]
+            _ = ψRange ⟨Llin x, ⟨x, rfl⟩⟩ := by
+                  rw [← hxrange]
+            _ = ψlin (Llin x) := hψ_apply.symm
+            _ = ψ (L x) := rfl⟩
       ```
 
       The proof is algebraic until the final coercion to a continuous linear
@@ -10327,28 +10340,28 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 c i j • BHW.sourceGramCoordinateDifferential d n z0 i j := by
         let c : Fin n → Fin n → ℂ :=
           fun i j => ψ (Pi.single i (Pi.single j (1 : ℂ)))
-        refine ⟨c, ?_⟩
-        have hψ := BHW.sourceGramTargetCoordinate_expand n ψ
-        ext X
-        calc
-          (ψ.comp (BHW.sourceGramDifferential d n z0)) X =
-              ψ (BHW.sourceGramDifferential d n z0 X) := rfl
-          _ =
-              (∑ i : Fin n, ∑ j : Fin n,
-                c i j • BHW.sourceGramTargetCoordinate n i j)
-                (BHW.sourceGramDifferential d n z0 X) := by
-            rw [hψ]
-          _ =
-              (∑ i : Fin n, ∑ j : Fin n,
-                c i j •
-                  (BHW.sourceGramTargetCoordinate n i j).comp
-                    (BHW.sourceGramDifferential d n z0)) X := by
-            simp [c]
-          _ =
-              (∑ i : Fin n, ∑ j : Fin n,
-                c i j •
-                  BHW.sourceGramCoordinateDifferential d n z0 i j) X := by
-            simp [BHW.sourceGramCoordinateDifferential_eq_targetCoordinate_comp]
+        exact ⟨c, by
+          have hψ := BHW.sourceGramTargetCoordinate_expand n ψ
+          ext X
+          calc
+            (ψ.comp (BHW.sourceGramDifferential d n z0)) X =
+                ψ (BHW.sourceGramDifferential d n z0 X) := rfl
+            _ =
+                (∑ i : Fin n, ∑ j : Fin n,
+                  c i j • BHW.sourceGramTargetCoordinate n i j)
+                  (BHW.sourceGramDifferential d n z0 X) := by
+              rw [hψ]
+            _ =
+                (∑ i : Fin n, ∑ j : Fin n,
+                  c i j •
+                    (BHW.sourceGramTargetCoordinate n i j).comp
+                      (BHW.sourceGramDifferential d n z0)) X := by
+              simp [c]
+            _ =
+                (∑ i : Fin n, ∑ j : Fin n,
+                  c i j •
+                    BHW.sourceGramCoordinateDifferential d n z0 i j) X := by
+              simp [BHW.sourceGramCoordinateDifferential_eq_targetCoordinate_comp]⟩
       ```
 
       This proof has no Hall-Wightman content hidden inside it: the only
@@ -10475,13 +10488,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact C.Uvec_sub_extendedTube (C.coordSymmMap_mem p hp)
         have hg_diff : DifferentiableOn ℂ g C.Ucoord := by
           exact hF_holo_ext.comp C.coordSymmMap_diff hmap
-        refine ⟨g, hg_diff, ?_⟩
-        intro z
-        have hsymm :
-            C.coordSymmMap (C.coord z).1 = z.1 := by
-          rw [← C.coordMap_eq_coord z]
-          exact C.coordSymmMap_coordMap z.1 z.2
-        simpa [g, hsymm]
+        exact ⟨g, hg_diff, by
+          intro z
+          have hsymm :
+              C.coordSymmMap (C.coord z).1 = z.1 := by
+            rw [← C.coordMap_eq_coord z]
+            exact C.coordSymmMap_coordMap z.1 z.2
+          simpa [g, hsymm]⟩
       ```
 
       The equality proof uses the ambient map equation
@@ -10547,9 +10560,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
           hUs0_open, Metric.isOpen_ball,
           hp1, Metric.mem_ball_self hr,
           Metric.isConnected_ball hr,
-          ⟨p.2, Metric.mem_ball_self hr⟩, ?_⟩
-        intro q hq
-        exact hprod_sub ⟨hq.1, hball_sub hq.2⟩
+          ⟨p.2, Metric.mem_ball_self hr⟩, by
+            intro q hq
+            exact hprod_sub ⟨hq.1, hball_sub hq.2⟩⟩
       ```
 
       The inverse-function theorem proof uses this helper only to choose the
@@ -10675,14 +10688,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
             rw [hslice]
             simpa [ContinuousLinearMap.comp_apply] using
               haux (u, v) ⟨hu, hv⟩ dv
-          exact
-            (BHW.eqOn_of_fderiv_eq_zero_of_isConnected_open
-              hUa_open hUa_conn hgu_diff hgu_zero v hv vbase hvbase).trans
-              rfl
-        refine ⟨Us, Ua, Ψs, hUs_open, hUa_open, hUa_conn,
-          ⟨vbase, hvbase⟩, rfl, hΨs_diff, ?_⟩
-        intro p hp
-        exact hconst_aux p.1 hp.1 p.2 hp.2
+        exact
+          (BHW.eqOn_of_fderiv_eq_zero_of_isConnected_open
+            hUa_open hUa_conn hgu_diff hgu_zero v hv vbase hvbase).trans
+            rfl
+        exact ⟨Us, Ua, Ψs, hUs_open, hUa_open, hUa_conn,
+          ⟨vbase, hvbase⟩, rfl, hΨs_diff, by
+            intro p hp
+            exact hconst_aux p.1 hp.1 p.2 hp.2⟩
       ```
 
       The displayed proof intentionally fixes `u` and applies constancy only
@@ -11093,24 +11106,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (d := d) hd n e a C hprod hUs_open hΨs_diff with
           ⟨U0, Ψ, hU0_open, hZU0, hU0_sub_C, hΨ_diff,
             hΨ_eq_selected⟩
-        refine ⟨C.Uvec ∩ BHW.ExtendedTube d n, U0, Ψ,
+        exact ⟨C.Uvec ∩ BHW.ExtendedTube d n, U0, Ψ,
           C.Uvec_open.inter (BHW.isOpen_extendedTube (d := d) (n := n)),
           ⟨C.z0_mem, hz0⟩, Set.inter_subset_right,
-          hU0_open, hZU0, hΨ_diff, ?_⟩
-        intro z hz hGramU0
-        have hscalar :
-            Ψ (BHW.sourceMinkowskiGram d n z) =
-              Ψs (C.scalarCoord (BHW.sourceMinkowskiGram d n z)) := by
-          exact hΨ_eq_selected _ ⟨hGramU0, ⟨z, rfl⟩⟩
-        calc
-          Ψ (BHW.sourceMinkowskiGram d n z)
-              = Ψs (C.scalarCoord (BHW.sourceMinkowskiGram d n z)) := hscalar
-          _ = Ψs (C.coord ⟨z, hz.1⟩).1.1 := by
-                rw [C.sourceGram_selected ⟨z, hz.1⟩]
-          _ = g (C.coord ⟨z, hz.1⟩).1 := by
-                exact (hΨs_eq _ (by
-                  simpa [hprod] using (C.coord ⟨z, hz.1⟩).2)).symm
-          _ = BHW.extendF F z := hg_branch ⟨z, hz.1⟩
+          hU0_open, hZU0, hΨ_diff, by
+            intro z hz hGramU0
+            have hscalar :
+                Ψ (BHW.sourceMinkowskiGram d n z) =
+                  Ψs (C.scalarCoord (BHW.sourceMinkowskiGram d n z)) := by
+              exact hΨ_eq_selected _ ⟨hGramU0, ⟨z, rfl⟩⟩
+            calc
+              Ψ (BHW.sourceMinkowskiGram d n z)
+                  = Ψs (C.scalarCoord (BHW.sourceMinkowskiGram d n z)) := hscalar
+              _ = Ψs (C.coord ⟨z, hz.1⟩).1.1 := by
+                    rw [C.sourceGram_selected ⟨z, hz.1⟩]
+              _ = g (C.coord ⟨z, hz.1⟩).1 := by
+                    exact (hΨs_eq _ (by
+                      simpa [hprod] using (C.coord ⟨z, hz.1⟩).2)).symm
+              _ = BHW.extendF F z := hg_branch ⟨z, hz.1⟩⟩
       ```
 
       The auxiliary product theorem has a real connectedness hypothesis.  Zero
@@ -11589,11 +11602,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceGramDifferential_dual_coordinate_expansion
               (d := d) n z0 ψ with
           ⟨c, hc⟩
-        refine ⟨c, ?_⟩
-        calc
-          ℓ = ψ.comp Dq := hψ
-          _ = ∑ i : Fin n, ∑ j : Fin n,
-                c i j • BHW.sourceGramCoordinateDifferential d n z0 i j := hc
+        exact ⟨c, by
+          calc
+            ℓ = ψ.comp Dq := hψ
+            _ = ∑ i : Fin n, ∑ j : Fin n,
+                  c i j • BHW.sourceGramCoordinateDifferential d n z0 i j := hc⟩
       ```
 
       The kernel theorem in that proof is Hall-Wightman Lemmas 6--7 in
@@ -11704,9 +11717,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
           fun Z => Ψs (C.scalarCoord Z)
         have hZ0U0 :
             BHW.sourceMinkowskiGram d n z0 ∈ U0 := by
-          refine ⟨C.gram_z0_mem, ?_⟩
-          simpa [p0, C.sourceGram_selected ⟨z0, C.z0_mem⟩] using
-            hp0_Us
+          exact ⟨C.gram_z0_mem, by
+            simpa [p0, C.sourceGram_selected ⟨z0, C.z0_mem⟩] using
+              hp0_Us⟩
         have hU0_open : IsOpen U0 :=
           C.U0_open.inter
             (hUs_open.preimage C.scalarCoord_diff.continuous)
@@ -11941,16 +11954,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (d := d) hd n hζ0 hspan
                 hVtube_open hζ0Vtube hVtube_sub with
               ⟨O, hO_open, hZO, hO_image⟩
-            refine ⟨O, hO_open, by simpa [hζ0Gram] using hZO, ?_⟩
-            intro G hGO hGdomain
-            have hGvar : G ∈ BHW.sourceComplexGramVariety d n :=
-              hU_sub hGdomain
-            rcases hO_image ⟨hGO, hGvar⟩ with
-              ⟨z, hzVtube, hGz⟩
-            have hzET : z ∈ BHW.ExtendedTube d n := hzVtube.2
-            have hphiG : phi G = BHW.extendF F z := by
-              simpa [hGz] using hphi_branch z hzET
-            simpa [hphiG] using hVsrc_sub_T z hzET hzVtube.1
+            exact ⟨O, hO_open, by simpa [hζ0Gram] using hZO, by
+              intro G hGO hGdomain
+              have hGvar : G ∈ BHW.sourceComplexGramVariety d n :=
+                hU_sub hGdomain
+              rcases hO_image ⟨hGO, hGvar⟩ with
+                ⟨z, hzVtube, hGz⟩
+              have hzET : z ∈ BHW.ExtendedTube d n := hzVtube.2
+              have hphiG : phi G = BHW.extendF F z := by
+                simpa [hGz] using hphi_branch z hzET
+              simpa [hphiG] using hVsrc_sub_T z hzET hzVtube.1⟩
         have hbdd :
             BHW.LocallyBoundedOn phi
               (BHW.sourceExtendedTubeGramDomain d n) := by
@@ -11989,18 +12002,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (d := d) hd n hζ0 hspan
               hVtube_open hζ0Vtube hVtube_sub with
             ⟨O, hO_open, hZO, hO_image⟩
-          refine ⟨O, hO_open, by simpa [hζ0Gram] using hZO, C,
-            hC_nonneg, ?_⟩
-          intro G hG
-          have hGvar : G ∈ BHW.sourceComplexGramVariety d n :=
-            hU_sub hG.2
-          rcases hO_image ⟨hG.1, hGvar⟩ with
-            ⟨z, hzVtube, hGz⟩
-          have hzET : z ∈ BHW.ExtendedTube d n := hzVtube.2
-          have hphiG : phi G = BHW.extendF F z := by
-            simpa [hGz] using hphi_branch z hzET
-          exact le_of_lt (by
-            simpa [hphiG] using hVsrc_bound z hzET hzVtube.1)
+          exact ⟨O, hO_open, by simpa [hζ0Gram] using hZO, C,
+            hC_nonneg, by
+              intro G hG
+              have hGvar : G ∈ BHW.sourceComplexGramVariety d n :=
+                hU_sub hG.2
+              rcases hO_image ⟨hG.1, hGvar⟩ with
+                ⟨z, hzVtube, hGz⟩
+              have hzET : z ∈ BHW.ExtendedTube d n := hzVtube.2
+              have hphiG : phi G = BHW.extendF F z := by
+                simpa [hGz] using hphi_branch z hzET
+              exact le_of_lt (by
+                simpa [hphiG] using hVsrc_bound z hzET hzVtube.1)⟩
         exact ⟨phi, hphi_branch, hcont, hbdd⟩
       ```
 
@@ -12199,19 +12212,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
             hUvec_open hz0Uvec hUvec_sub with
           ⟨O, hO_open, hZO, hO_sub_image⟩
         let Uscalar := U0 ∩ O
-        refine ⟨Uscalar, Ψ, hU0_open.inter hO_open,
-          ⟨hZU0, hZO⟩, hΨ_diff.mono (Set.inter_subset_left), ?_, ?_⟩
-        · intro G hG
-          rcases hO_sub_image ⟨hG.1.2, hG.2⟩ with ⟨z, hzUvec, rfl⟩
-          exact ⟨z, hUvec_sub hzUvec, rfl⟩
-        · intro w hw hwUscalar
-          have hwU_helper :
-              BHW.sourceMinkowskiGram d n w ∈
-                (U0 ∩ O) ∩ BHW.sourceComplexGramVariety d n :=
-            ⟨hwUscalar, ⟨w, rfl⟩⟩
-          exact BHW.hallWightman_powerSeriesChart_branch_eq_of_sameGram
-            (d := d) hd n F hBranch hΨ_branch_vec hUvec_sub hO_sub_image
-            hw hwU_helper
+        exact ⟨Uscalar, Ψ, hU0_open.inter hO_open,
+          ⟨hZU0, hZO⟩, hΨ_diff.mono (Set.inter_subset_left),
+          by
+            intro G hG
+            rcases hO_sub_image ⟨hG.1.2, hG.2⟩ with
+              ⟨z, hzUvec, rfl⟩
+            exact ⟨z, hUvec_sub hzUvec, rfl⟩,
+          by
+            intro w hw hwUscalar
+            have hwU_helper :
+                BHW.sourceMinkowskiGram d n w ∈
+                  (U0 ∩ O) ∩ BHW.sourceComplexGramVariety d n :=
+              ⟨hwUscalar, ⟨w, rfl⟩⟩
+            exact BHW.hallWightman_powerSeriesChart_branch_eq_of_sameGram
+              (d := d) hd n F hBranch hΨ_branch_vec hUvec_sub hO_sub_image
+              hw hwU_helper⟩
       ```
 
       The final helper in the last line is not a new source theorem: it is the
@@ -12264,23 +12280,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
           rcases BHW.hallWightman_maxRank_powerSeriesChart_at
               (d := d) hd n F hF_holo hF_cinv hBranch hWU hWmax with
             ⟨U0, Ψ, hU0_open, hWU0, hΨ_diff, hU0_sub, hΨ_branch⟩
-          refine ⟨U0, Ψ, hU0_open, hWU0, hΨ_diff, hU0_sub, ?_⟩
-          intro G hG
-          have hGdomain : G ∈ BHW.sourceExtendedTubeGramDomain d n :=
-            hU0_sub hG
-          rcases hGdomain with ⟨w, hw, rfl⟩
-          exact (hphi_branch w hw).trans (hΨ_branch w hw hG.1).symm
+          exact ⟨U0, Ψ, hU0_open, hWU0, hΨ_diff, hU0_sub, by
+            intro G hG
+            have hGdomain : G ∈ BHW.sourceExtendedTubeGramDomain d n :=
+              hU0_sub hG
+            rcases hGdomain with ⟨w, hw, rfl⟩
+            exact (hphi_branch w hw).trans (hΨ_branch w hw hG.1).symm⟩
         rcases BHW.hallWightman_removableScalarChart_at
             (d := d) hd n hphi_cont hphi_bdd
             (BHW.hwSourceGramExceptionalRank_isAnalyticSubvariety d n)
             hMaxCharts hZU hRank with
           ⟨U0, Ψ, hU0_open, hZU0, hΨ_diff, hU0_sub, hphi_eq⟩
-        refine ⟨U0, Ψ, hU0_open, hZU0, hΨ_diff, hU0_sub, ?_⟩
-        intro w hw hwU0
-        have hG : BHW.sourceMinkowskiGram d n w ∈
-            U0 ∩ BHW.sourceComplexGramVariety d n :=
-          ⟨hwU0, ⟨w, rfl⟩⟩
-        exact (hphi_eq hG).symm.trans (hphi_branch w hw)
+        exact ⟨U0, Ψ, hU0_open, hZU0, hΨ_diff, hU0_sub, by
+          intro w hw hwU0
+          have hG : BHW.sourceMinkowskiGram d n w ∈
+              U0 ∩ BHW.sourceComplexGramVariety d n :=
+            ⟨hwU0, ⟨w, rfl⟩⟩
+          exact (hphi_eq hG).symm.trans (hphi_branch w hw)⟩
       ```
 
       Do not add a separate production descent-core forwarding theorem merely
@@ -12601,11 +12617,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```lean
       have hperm_cont :
           Continuous (fun u : NPointDomain d n => fun k => u (τ k)) := by
-        refine continuous_pi ?_
-        intro k
-        refine continuous_pi ?_
-        intro μ
-        exact (continuous_apply μ).comp (continuous_apply (τ k))
+        exact continuous_pi (fun k =>
+          continuous_pi (fun μ =>
+            (continuous_apply μ).comp (continuous_apply (τ k))))
 
       have hUτ_open : IsOpen Uτ := by
         simpa [Uτ] using hUx_open.preimage hperm_cont
@@ -14252,41 +14266,41 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 hChart.V0 := by
             refine
               SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
-                hChart.V0_open hcontΦτ_real hcontΦ0_real ?compact_eq
-            intro φ hφ_comp hφ_supp
-            calc
-              ∫ x : NPointDomain d n,
-                  Φτ (fun k => wickRotatePoint (x k)) * φ x
-                  =
-                ∫ x : NPointDomain d n,
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x (τ k))) * φ x :=
-                  hΦτ_pairing φ hφ_comp hφ_supp
-              _ =
-                ∫ x : NPointDomain d n,
-                  bvt_F OS lgc n
-                    (fun k => wickRotatePoint (x k)) * φ x :=
-                  os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
-                    (d := d) OS lgc n i hi hChart.V0
-                    (fun x hx => hV_jost x (hChart.V0_sub hx))
-                    (1 : Equiv.Perm (Fin n))
-                    (fun x hx => hV_ordered x (hChart.V0_sub hx))
-                    (fun x hx => by
-                      simpa [τ, Equiv.swap_inv] using
-                        hV_swap_ordered x (hChart.V0_sub hx))
-                    φ hφ_supp
-              _ =
-                ∫ x : NPointDomain d n,
-                  Φ0 (fun k => wickRotatePoint (x k)) * φ x := by
-                  refine integral_congr_ae ?_
-                  filter_upwards with x
-                  by_cases hx : x ∈ hChart.V0
-                  · simpa [hΦ0_wick x hx]
-                  · have hφx : φ x = 0 := by
-                      exact
-                        (notMem_tsupport_iff_eventuallyEq.mp
-                          (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-                    simp [hφx]
+                hChart.V0_open hcontΦτ_real hcontΦ0_real (by
+                  intro φ hφ_comp hφ_supp
+                  calc
+                    ∫ x : NPointDomain d n,
+                        Φτ (fun k => wickRotatePoint (x k)) * φ x
+                        =
+                      ∫ x : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x (τ k))) * φ x :=
+                        hΦτ_pairing φ hφ_comp hφ_supp
+                    _ =
+                      ∫ x : NPointDomain d n,
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x k)) * φ x :=
+                        os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
+                          (d := d) OS lgc n i hi hChart.V0
+                          (fun x hx => hV_jost x (hChart.V0_sub hx))
+                          (1 : Equiv.Perm (Fin n))
+                          (fun x hx => hV_ordered x (hChart.V0_sub hx))
+                          (fun x hx => by
+                            simpa [τ, Equiv.swap_inv] using
+                              hV_swap_ordered x (hChart.V0_sub hx))
+                          φ hφ_supp
+                    _ =
+                      ∫ x : NPointDomain d n,
+                        Φ0 (fun k => wickRotatePoint (x k)) * φ x := by
+                        exact integral_congr_ae (by
+                          filter_upwards with x
+                          by_cases hx : x ∈ hChart.V0
+                          · simpa [hΦ0_wick x hx]
+                          · have hφx : φ x = 0 := by
+                              exact
+                                (notMem_tsupport_iff_eventuallyEq.mp
+                                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+                            simp [hφx]))
           intro x hx
           exact hpoint x hx
         have hwick_ne :
@@ -14781,25 +14795,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
               =
             ∫ x : NPointDomain d n,
                 bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
-          refine integral_congr_ae ?_
-          filter_upwards with x
-          by_cases hx : x ∈ hChart.V0
-          · have hwick_FT :
-                (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n :=
-              hChart.wick_id_forwardTube x hx
-            have hid :
-                BHW.extendF (bvt_F OS lgc n)
-                    (fun k => wickRotatePoint (x k)) =
-                  bvt_F OS lgc n (fun k => wickRotatePoint (x k)) :=
-              BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
-                hF_holo_BHW hF_restricted_BHW
-                _ hwick_FT
-            rw [hbranch x hx, hid]
-          · have hφx : φ x = 0 := by
-              exact
-                (notMem_tsupport_iff_eventuallyEq.mp
-                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-            simp [hφx]
+          exact integral_congr_ae (by
+            filter_upwards with x
+            by_cases hx : x ∈ hChart.V0
+            · have hwick_FT :
+                  (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n :=
+                hChart.wick_id_forwardTube x hx
+              have hid :
+                  BHW.extendF (bvt_F OS lgc n)
+                      (fun k => wickRotatePoint (x k)) =
+                    bvt_F OS lgc n (fun k => wickRotatePoint (x k)) :=
+                BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                  hF_holo_BHW hF_restricted_BHW
+                  _ hwick_FT
+              rw [hbranch x hx, hid]
+            · have hφx : φ x = 0 := by
+                exact
+                  (notMem_tsupport_iff_eventuallyEq.mp
+                    (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+              simp [hφx])
         have hφZ :
             OS.S n φZ =
               ∫ x : NPointDomain d n,
@@ -14807,13 +14821,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           simpa [φZ] using
             bvt_euclidean_restriction (d := d) OS lgc n φZ
         have hE3 : OS.S n φZ = OS.S n ψZ := by
-          refine OS.E3_symmetric (n := n) (σ := τ.symm) φZ ψZ ?_
-          intro x
-          change
-            (permuteZeroDiagonalSchwartz
-              (d := d) (n := n) τ.symm φZ).1 x =
-            φZ.1 (fun i => x (τ.symm i))
-          simp [ψZ]
+          exact OS.E3_symmetric (n := n) (σ := τ.symm) φZ ψZ (by
+            intro x
+            change
+              (permuteZeroDiagonalSchwartz
+                (d := d) (n := n) τ.symm φZ).1 x =
+              φZ.1 (fun i => x (τ.symm i))
+            simp [ψZ])
         exact hto_identity.trans (hφZ.symm.trans hE3)
       ```
 
@@ -15053,15 +15067,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∫ x : NPointDomain d n,
               D.jr.ordinaryBranch
                 (hChart.adjLift x (0 : unitInterval)) * φ x := by
-        refine integral_congr_ae ?_
-        filter_upwards with x
-        by_cases hx : x ∈ hChart.V0
-        · rw [D.ordinary_eq_extendF_on_lift x hx]
-        · have hφx : φ x = 0 := by
-            exact
-              (notMem_tsupport_iff_eventuallyEq.mp
-                (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-          simp [hφx]
+        exact integral_congr_ae (by
+          filter_upwards with x
+          by_cases hx : x ∈ hChart.V0
+          · rw [D.ordinary_eq_extendF_on_lift x hx]
+          · have hφx : φ x = 0 := by
+              exact
+                (notMem_tsupport_iff_eventuallyEq.mp
+                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+            simp [hφx])
       exact
         hord.trans
           ((by simpa [D.jr_lift_eq] using huniq).trans
@@ -15227,15 +15241,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
                ∫ x : NPointDomain d n,
                    D.jr.ordinaryBranch
                      (hChart.adjLift x (0 : unitInterval)) * φ x := by
-             refine integral_congr_ae ?_
-             filter_upwards with x
-             by_cases hx : x ∈ hChart.V0
-             · rw [D.ordinary_eq_extendF_on_lift x hx]
-             · have hφx : φ x = 0 := by
-                 exact
-                   (notMem_tsupport_iff_eventuallyEq.mp
-                     (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-               simp [hφx]
+             exact integral_congr_ae (by
+               filter_upwards with x
+               by_cases hx : x ∈ hChart.V0
+               · rw [D.ordinary_eq_extendF_on_lift x hx]
+               · have hφx : φ x = 0 := by
+                   exact
+                     (notMem_tsupport_iff_eventuallyEq.mp
+                       (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+                 simp [hφx])
            exact hord.trans
              (huniq.trans D.adjacent_lift_pairing_eq_permutedSchwinger)
          ```
@@ -15326,15 +15340,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
              ∫ x : NPointDomain d n,
                  D.jr.ordinaryBranch
                    (hChart.adjLift x (0 : unitInterval)) * φ x := by
-           refine integral_congr_ae ?_
-           filter_upwards with x
-           by_cases hx : x ∈ hChart.V0
-           · rw [D.ordinary_eq_extendF_on_lift x hx]
-           · have hφx : φ x = 0 := by
-               exact
-                 (notMem_tsupport_iff_eventuallyEq.mp
-                   (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-             simp [hφx]
+           exact integral_congr_ae (by
+             filter_upwards with x
+             by_cases hx : x ∈ hChart.V0
+             · rw [D.ordinary_eq_extendF_on_lift x hx]
+             · have hφx : φ x = 0 := by
+                 exact
+                   (notMem_tsupport_iff_eventuallyEq.mp
+                     (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+               simp [hφx])
          exact hord.trans
            (huniq.trans D.adjacent_lift_pairing_eq_permutedSchwinger)
          ```
@@ -15555,15 +15569,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
                Set.EqOn D.ordinaryBranch D.adjacentBranch D.Ω :=
              BHW.jostRuelle_branch_eqOn_connectedDomain
                (d := d) hd n φ hφ_comp D
-           refine integral_congr_ae ?_
-           filter_upwards with x
-           by_cases hx : x ∈ tsupport (φ : NPointDomain d n -> ℂ)
-           · exact congrArg (fun c => c * φ x)
-               (hΩeq (D.lift x) (D.lift_mem_of_support x hx))
-           · have hφx : φ x = 0 := by
-               exact
-                 (notMem_tsupport_iff_eventuallyEq.mp hx).self_of_nhds
-             simp [hφx]
+           exact integral_congr_ae (by
+             filter_upwards with x
+             by_cases hx : x ∈ tsupport (φ : NPointDomain d n -> ℂ)
+             · exact congrArg (fun c => c * φ x)
+                 (hΩeq (D.lift x) (D.lift_mem_of_support x hx))
+             · have hφx : φ x = 0 := by
+                 exact
+                   (notMem_tsupport_iff_eventuallyEq.mp hx).self_of_nhds
+               simp [hφx])
          ```
 
          With these two private/source-standard pieces, the public canonical
@@ -15610,15 +15624,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
                ∫ x : NPointDomain d n,
                    D.jr.ordinaryBranch
                      (hChart.adjLift x (0 : unitInterval)) * φ x := by
-             refine integral_congr_ae ?_
-             filter_upwards with x
-             by_cases hx : x ∈ hChart.V0
-             · rw [D.ordinary_eq_extendF_on_lift x hx]
-             · have hφx : φ x = 0 := by
-                 exact
-                   (notMem_tsupport_iff_eventuallyEq.mp
-                     (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-               simp [hφx]
+             exact integral_congr_ae (by
+               filter_upwards with x
+               by_cases hx : x ∈ hChart.V0
+               · rw [D.ordinary_eq_extendF_on_lift x hx]
+               · have hφx : φ x = 0 := by
+                   exact
+                     (notMem_tsupport_iff_eventuallyEq.mp
+                       (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+                 simp [hφx])
            exact hord.trans
              (huniq.trans D.adjacent_lift_pairing_eq_permutedSchwinger)
          ```
@@ -15664,24 +15678,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.extendF (bvt_F OS lgc n)
                 (BHW.permAct (d := d) τ
                   (fun k => wickRotatePoint (x k))) * φ x := by
-        refine integral_congr_ae ?_
-        filter_upwards with x
-        by_cases hx : x ∈ hChart.V0
-        · have hnorm :
-              BHW.extendF (bvt_F OS lgc n)
-                  (hChart.adjLift x (0 : unitInterval))
-                =
-              BHW.extendF (bvt_F OS lgc n)
-                (BHW.permAct (d := d) τ
-                  (fun k => wickRotatePoint (x k))) :=
-            BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero
-              (d := d) hd OS lgc n i hi V hChart x hx
-          rw [hnorm]
-        · have hφx : φ x = 0 := by
-            exact
-              (notMem_tsupport_iff_eventuallyEq.mp
-                (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-          simp [hφx]
+        exact integral_congr_ae (by
+          filter_upwards with x
+          by_cases hx : x ∈ hChart.V0
+          · have hnorm :
+                BHW.extendF (bvt_F OS lgc n)
+                    (hChart.adjLift x (0 : unitInterval))
+                  =
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) τ
+                    (fun k => wickRotatePoint (x k))) :=
+              BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero
+                (d := d) hd OS lgc n i hi V hChart x hx
+            rw [hnorm]
+          · have hφx : φ x = 0 := by
+              exact
+                (notMem_tsupport_iff_eventuallyEq.mp
+                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+            simp [hφx])
       exact hcanonical_to_raw.trans hBHWJost_raw
       ```
 
@@ -15923,46 +15937,46 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ∫ x : NPointDomain d n,
                 BHW.extendF (bvt_F OS lgc n)
                   (hChart.adjLift x (0 : unitInterval)) * φ x := by
-          refine integral_congr_ae ?_
-          filter_upwards with x
-          by_cases hx : x ∈ hChart.V0
-          · have hET :
-                hChart.adjLift x (0 : unitInterval) ∈
-                  BHW.ExtendedTube d n :=
-              hChart.adjLift_mem_extendedTube x hx (0 : unitInterval)
-            have hGram :
-                BHW.sourceMinkowskiGram d n
-                    (hChart.adjLift x (0 : unitInterval))
-                  =
-                BHW.sourcePermuteComplexGram n τ
-                  (BHW.sourceMinkowskiGram d n
-                    (fun k => wickRotatePoint (x k))) := by
-              simpa [τ, BHW.os45Figure24IdentityPath_zero] using
-                hChart.adjLift_sourceGram x hx (0 : unitInterval)
-            have hbranch :
-                hRep.Phi
+          exact integral_congr_ae (by
+            filter_upwards with x
+            by_cases hx : x ∈ hChart.V0
+            · have hET :
+                  hChart.adjLift x (0 : unitInterval) ∈
+                    BHW.ExtendedTube d n :=
+                hChart.adjLift_mem_extendedTube x hx (0 : unitInterval)
+              have hGram :
+                  BHW.sourceMinkowskiGram d n
+                      (hChart.adjLift x (0 : unitInterval))
+                    =
+                  BHW.sourcePermuteComplexGram n τ
                     (BHW.sourceMinkowskiGram d n
-                      (hChart.adjLift x (0 : unitInterval)))
-                  =
-                BHW.extendF (bvt_F OS lgc n)
-                  (hChart.adjLift x (0 : unitInterval)) :=
-              hRep.branch_eq _ hET
-            calc
-              Φτ (fun k => wickRotatePoint (x k)) * φ x
-                  =
-                hRep.Phi
-                    (BHW.sourceMinkowskiGram d n
-                      (hChart.adjLift x (0 : unitInterval))) * φ x := by
-                    simp [Φτ, hGram]
-              _ =
-                BHW.extendF (bvt_F OS lgc n)
-                  (hChart.adjLift x (0 : unitInterval)) * φ x := by
-                    rw [hbranch]
-          · have hφx : φ x = 0 := by
-              exact
-                (notMem_tsupport_iff_eventuallyEq.mp
-                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-            simp [hφx]
+                      (fun k => wickRotatePoint (x k))) := by
+                simpa [τ, BHW.os45Figure24IdentityPath_zero] using
+                  hChart.adjLift_sourceGram x hx (0 : unitInterval)
+              have hbranch :
+                  hRep.Phi
+                      (BHW.sourceMinkowskiGram d n
+                        (hChart.adjLift x (0 : unitInterval)))
+                    =
+                  BHW.extendF (bvt_F OS lgc n)
+                    (hChart.adjLift x (0 : unitInterval)) :=
+                hRep.branch_eq _ hET
+              calc
+                Φτ (fun k => wickRotatePoint (x k)) * φ x
+                    =
+                  hRep.Phi
+                      (BHW.sourceMinkowskiGram d n
+                        (hChart.adjLift x (0 : unitInterval))) * φ x := by
+                      simp [Φτ, hGram]
+                _ =
+                  BHW.extendF (bvt_F OS lgc n)
+                    (hChart.adjLift x (0 : unitInterval)) * φ x := by
+                      rw [hbranch]
+            · have hφx : φ x = 0 := by
+                exact
+                  (notMem_tsupport_iff_eventuallyEq.mp
+                    (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+              simp [hφx])
         have hlift :
             ∫ x : NPointDomain d n,
                 BHW.extendF (bvt_F OS lgc n)
@@ -16209,18 +16223,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact ⟨hz0Ω, by simpa [hLz0] using hx0V⟩
         rcases Metric.mem_nhds_iff.mp (hW_open.mem_nhds hz0W) with
           ⟨r, hr_pos, hr_sub⟩
-        refine ⟨Metric.ball z0 r, Metric.isOpen_ball,
+        exact ⟨Metric.ball z0 r, Metric.isOpen_ball,
           Metric.isConnected_ball hr_pos,
-          Metric.mem_ball_self hr_pos, ?_, ?_⟩
-        · intro z hz
-          exact (hr_sub hz).1
-        · intro x hx
-          have hLV : L (fun k => wickRotatePoint (x k)) ∈ V :=
-            (hr_sub hx).2
-          have hLwick : L (fun k => wickRotatePoint (x k)) = x := by
-            simpa [L] using
-              BHW.wickRealSectionLeftInverse_wickRotateRealConfig d n x
-          simpa [hLwick] using hLV
+          Metric.mem_ball_self hr_pos,
+          by
+            intro z hz
+            exact (hr_sub hz).1,
+          by
+            intro x hx
+            have hLV : L (fun k => wickRotatePoint (x k)) ∈ V :=
+              (hr_sub hx).2
+            have hLwick : L (fun k => wickRotatePoint (x k)) = x := by
+              simpa [L] using
+                BHW.wickRealSectionLeftInverse_wickRotateRealConfig d n x
+            simpa [hLwick] using hLV⟩
       ```
 
       This helper is pure finite-dimensional topology.  The only imported
@@ -16442,11 +16458,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
             let Δ0 :=
               BHW.os45Figure24AdjacentLift
                 (d := d) (n := n) hd τ x0 (0 : unitInterval)
-            refine ⟨Δ0, hV_adjLift_ET x0 hx0V (0 : unitInterval), ?_⟩
-            have hGram :=
-              BHW.os45Figure24AdjacentLift_sourceGram
-                (d := d) (n := n) hd τ x0 (0 : unitInterval)
-            simpa [Δ0, z0, BHW.os45Figure24IdentityPath_zero] using hGram
+            exact ⟨Δ0, hV_adjLift_ET x0 hx0V (0 : unitInterval), by
+              have hGram :=
+                BHW.os45Figure24AdjacentLift_sourceGram
+                  (d := d) (n := n) hd τ x0 (0 : unitInterval)
+              simpa [Δ0, z0, BHW.os45Figure24IdentityPath_zero] using hGram⟩
           exact ⟨hleft, hright⟩
         rcases BHW.exists_connected_sourceNeighborhood_with_wickPreimage
             (d := d) (n := n) hΩ_open hz0Ω hV_open hx0V with
@@ -16802,15 +16818,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 _ =
                   ∫ x : NPointDomain d n,
                     Φ0 (fun k => wickRotatePoint (x k)) * φ x := by
-                    refine integral_congr_ae ?_
-                    filter_upwards with x
-                    by_cases hx : x ∈ V0
-                    · simpa [hΦ0_wick x hx]
-                    · have hφx : φ x = 0 := by
-                        exact
-                          (notMem_tsupport_iff_eventuallyEq.mp
-                            (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
-                      simp [hφx]
+                    exact integral_congr_ae (by
+                      filter_upwards with x
+                      by_cases hx : x ∈ V0
+                      · simpa [hΦ0_wick x hx]
+                      · have hφx : φ x = 0 := by
+                          exact
+                            (notMem_tsupport_iff_eventuallyEq.mp
+                              (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+                        simp [hφx])
           intro x hx
           exact hpoint x hx
         have hEqOnUsrc : Set.EqOn Φτ Φ0 Usrc :=
@@ -17533,9 +17549,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             eventually_forall_of_forall_eventually hP
         rcases mem_nhds_iff.mp hEventually with
           ⟨V, hV_sub, hV_open, hx0V⟩
-        refine ⟨V, hV_open, hx0V, ?_⟩
-        intro x hx y
-        exact hV_sub hx y trivial
+        exact ⟨V, hV_open, hx0V, by
+          intro x hx y
+          exact hV_sub hx y trivial⟩
       ```
 
       Apply the checked bounded perturbation theorem
@@ -17924,10 +17940,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ∀ t, γfig t ∈
               BHW.sourceDoublePermutationGramDomain d n τ := by
           intro t
-          refine
+          exact
             (BHW.mem_sourceDoublePermutationGramDomain_iff_exists_realizations
-              (d := d) (n := n) τ (γfig t)).2 ?_
-          exact ⟨Γ t, Δ t, hΓ_ET t, hΔ_ET t, rfl, hΔ_gram t⟩
+              (d := d) (n := n) τ (γfig t)).2
+              ⟨Γ t, Δ t, hΓ_ET t, hΔ_ET t, rfl, hΔ_gram t⟩
         let γpath : Path
             (BHW.sourceMinkowskiGram d n zreg)
             (BHW.sourceMinkowskiGram d n (Q.symm (BHW.realEmbed y0))) :=
@@ -22607,10 +22623,11 @@ datum that Hall-Wightman consumes.
      have hR_cont : ContinuousOn R (hAnchor.realPatch π i hi) := by
        -- same, using `hAnchor.realPatch_right_sector`.
      have hEqOn : Set.EqOn L R (hAnchor.realPatch π i hi) := by
-       refine SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
-         (hAnchor.realPatch_open π i hi) hL_cont hR_cont ?_
-       intro φ hφ_compact hφ_tsupport
-       exact hAnchor.compact_branch_eq π i hi φ hφ_compact hφ_tsupport
+       exact SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+         (hAnchor.realPatch_open π i hi) hL_cont hR_cont
+         (by
+           intro φ hφ_compact hφ_tsupport
+           exact hAnchor.compact_branch_eq π i hi φ hφ_compact hφ_tsupport)
      exact hEqOn
    ```
 

@@ -106,12 +106,31 @@ with the same mathematical content:
    law must prove both the high scalar-rank complex Lorentz orbit case and the
    low-rank Hall-Wightman singular contraction/continuity case.  The rank
    split is `min d n <= sourceGramMatrixRank` versus `< min d n`; it is not
-   `SourceComplexGramRegularAt`.
+   `SourceComplexGramRegularAt`.  The high-rank quotient-span fields are now
+   written as Lean-shaped proofs: source generators enter the quotient ranges
+   by `Pi.single`, preservation of the restricted Minkowski form is the finite
+   coefficient expansion against the common source Gram matrix, and Witt
+   extension then maps every source vector.  The low-rank normal-form-to-data
+   step is also explicit: the orbit witnesses are exactly
+   `N.contract t * N.Λ0` on the left and `N.contract t` on the right, with the
+   finite coordinate proof using `N.left_eq`, `N.right_eq`,
+   `N.contract_fix_ξ`, `N.contract_scale_q`, and
+   `BHW.complexLorentzAction_mul`.  Remaining work in this blocker is the
+   finite-dimensional Hall-Wightman geometry producing the selected span,
+   residual isotropic frame, dual frame, and contraction family; it is not an
+   analytic-continuation or locality argument.
 2. `BHW.sourceExtendedTubeGramDomain_relOpen`: Hall-Wightman Lemma 3 must
    produce local vector realizations inside the ordinary extended tube for
    nearby scalar-variety points, including singular rank.  The connectedness
    half is mechanical, but relative openness is not a continuous-image
-   theorem.
+   theorem.  The open-neighborhood wrapper has now been reduced to two
+   concrete pieces: a finite Pi-coordinate ball shrink from an arbitrary
+   source neighborhood, and the Hall-Wightman adapted-base quantitative
+   perturbation theorem.  The arbitrary representative is first replaced by
+   the same-Gram adapted representative obtained by selected-span projection
+   and residual isotropic-frame deletion; this reuse of
+   `hw_isotropicFrame_allCoefficients_mem_extendedTube` is the singular-rank
+   content and must be proved before Lean consumes the relative-open theorem.
 3. `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`: the scalar value
    function must be the branch-defined `Phi`, and the proof must give
    `SourceVarietyGermHolomorphicOn` charts on the source Gram analytic
@@ -141,6 +160,20 @@ session proposes such a boundary, it must be proposition-valued, exact in
 parameters and conclusions, contain no OS/EOW/PET/locality/bvt_W language
 except where the OS I §4.5 compact producer necessarily mentions OS data, and
 be explicitly approved before any production Lean consumes it.
+
+Pseudo-code audit update (2026-05-01): the active scalar-source and adjacent
+`S'_n` transcripts no longer leave anonymous proof holes in the mechanical
+assembly layers.  The branch-law quotient-span fields, low-rank orbit fields,
+Lemma-3 finite topology wrappers, max-rank dual-coordinate/fiber-product
+support, branch-defined continuity/local boundedness, and canonical compact
+integral rewrites are written with explicit Lean-shaped `by` blocks.  This
+does not make the route production-Lean-ready: the remaining blockers are the
+named mathematical producers above, especially the finite-dimensional
+Hall-Wightman geometry, the normal/removable analytic-space packet, and the
+OS I §4.5 canonical compact producer.  Remaining schematic holes elsewhere in
+`theorem2_locality_blueprint.md` are archived optional bridges or downstream
+post-source-route sketches; they are not permission to start Lean on
+`BHW.sourceScalarRepresentativeData_bvt_F`.
 
 Current local Slot 1 correction: the OS45 common-chart/EOW supplier is no
 longer the equal-time/post-radius plan.  The checked SCV input is
