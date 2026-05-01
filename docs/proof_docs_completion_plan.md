@@ -683,12 +683,22 @@ implementation contract is:
    and `Nat.add_le_iff_le_sub`,
    `BHW.complexSymmetric_takagi_rankLE` and
    `BHW.complexSymmetric_factorSmall_rankLE` for the finite-dimensional
-   Takagi/Bargmann factorization and its small-factor estimate,
+   Takagi/Bargmann factorization and its small-factor estimate; the actual
+   implementation route now factors through
+   `BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm`, obtained from the
+   Autonne-Takagi theorem with unitary matrix, nonnegative singular values,
+   rank support, and the entry bound
+   `‖A i a‖ <= Real.sqrt ‖S‖`, then uses
+   `BHW.matrix_opNorm_le_card_mul_sup_entry` to make the factor entries
+   small,
    `BHW.complexMinkowskiOrthogonalTailSubspace` and
    `BHW.complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail` for
    realizing the Schur residual in the orthogonal complement of the selected
    normalized block, with the arithmetic and norm-control helpers
-   `BHW.exists_finTailEmbedding` and
+   `BHW.exists_finTailEmbedding`,
+   `BHW.tailEmbeddedFactorVectors`,
+   `BHW.standardComplexSymmetricBilinear_tailEmbeddedFactor`,
+   `BHW.tailEmbeddedFactorVectors_coord_bound`, and
    `BHW.complexMinkowskiOrthogonalModel_symm_coord_bound`, and
    `BHW.complexMinkowski_realizeSmallSymmetricRankLE` as only the `r = 0`
    corollary of that tail theorem.  The normalized Schur proof must use the

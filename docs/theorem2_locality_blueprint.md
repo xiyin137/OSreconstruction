@@ -7230,6 +7230,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Hall-Wightman Lemma 3.  This is pure matrix linear algebra: if a complex
       symmetric matrix has rank at most `k` and all entries are sufficiently
       small, then it is `A * Aᵀ` with all entries of `A` small. -/
+      theorem BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm
+          (m k : Nat)
+          {S : Matrix (Fin m) (Fin m) ℂ}
+          (hSym : S.transpose = S)
+          (hRank : Matrix.rank S <= k) :
+          ∃ A : Matrix (Fin m) (Fin k) ℂ,
+            S = A * A.transpose ∧
+            (∀ i a, ‖A i a‖ <= Real.sqrt ‖S‖)
+
       theorem BHW.complexSymmetric_takagi_rankLE
           (m k : Nat)
           {S : Matrix (Fin m) (Fin m) ℂ}
@@ -7272,6 +7281,39 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∃ ι : Fin k -> Fin D,
             Function.Injective ι ∧
             ∀ a, r <= (ι a).val
+
+      def BHW.tailEmbeddedFactorVectors
+          (D r m k : Nat)
+          (ι : Fin k -> Fin D)
+          (A : Matrix (Fin m) (Fin k) ℂ) :
+          Fin m -> Fin D -> ℂ :=
+        fun i μ =>
+          if h : ∃ a : Fin k, ι a = μ then
+            A i (Classical.choose h)
+          else 0
+
+      theorem BHW.standardComplexSymmetricBilinear_tailEmbeddedFactor
+          (D r m k : Nat)
+          {ι : Fin k -> Fin D}
+          (hι_inj : Function.Injective ι)
+          (hι_tail : ∀ a, r <= (ι a).val)
+          (A : Matrix (Fin m) (Fin k) ℂ) :
+          (∀ i μ, μ.val < r ->
+            BHW.tailEmbeddedFactorVectors D r m k ι A i μ = 0) ∧
+          (∀ i j,
+            BHW.standardComplexSymmetricBilinear
+              (BHW.tailEmbeddedFactorVectors D r m k ι A i)
+              (BHW.tailEmbeddedFactorVectors D r m k ι A j) =
+            (A * A.transpose) i j)
+
+      theorem BHW.tailEmbeddedFactorVectors_coord_bound
+          (D r m k : Nat)
+          {ι : Fin k -> Fin D}
+          {A : Matrix (Fin m) (Fin k) ℂ}
+          {ε : ℝ}
+          (hA_small : ∀ i a, ‖A i a‖ < ε) :
+          ∀ i μ,
+            ‖BHW.tailEmbeddedFactorVectors D r m k ι A i μ‖ < ε
 
       theorem BHW.complexMinkowskiOrthogonalModel_symm_coord_bound
           (d : Nat) :
@@ -7535,17 +7577,54 @@ Proof decomposition of this theorem, without hiding the analytic work:
           `rank full <= D`, obtain `r <= D`; then `Nat.add_le_iff_le_sub`
           gives `rank S <= D - r`.  This is pure finite matrix algebra and
           is the exact proof of the Schur-rank theorem used in Lemma 3.
-      1. Prove `complexSymmetric_takagi_rankLE` by the standard
-         Autonne-Takagi/Bargmann factorization for complex symmetric matrices:
-         choose unitary `U` and nonnegative singular values `σ a` with
-         `S = U * diagonal σ * U.transpose`; discard zero singular values and
-         pad to `Fin k` using the rank hypothesis; set
-         `A i a = U i a * Real.sqrt (σ a)`.
-      2. Prove `complexSymmetric_factorSmall_rankLE` from the same
-         factorization with estimates.  Since
-         `‖S‖op <= m * sup_{i,j} ‖S i j‖`, choosing
-         `δ < ε^2 / max 1 m` gives `‖A i a‖ < ε`.  This step is finite
-         matrix linear algebra only; it has no BHW, OS, or locality content.
+      1. Prove the norm-controlled Autonne-Takagi factor theorem
+         `complexSymmetric_autonneTakagi_factor_rankLE_norm` first; the older
+         theorem `complexSymmetric_takagi_rankLE` is only its first
+         projection.  The proof is the standard finite-dimensional
+         Autonne-Takagi theorem for complex symmetric matrices: there is a
+         unitary matrix `U` and nonnegative singular values `σ a` such that
+         `S = U * Matrix.diagonal (fun a => (σ a : ℂ)) * U.transpose`.
+         The singular values are the square roots of the eigenvalues of the
+         positive Hermitian matrix `star S * S`; Mathlib supplies the
+         Hermitian spectral theorem through `Matrix.IsHermitian.eigenvectorUnitary`.
+         The symmetric condition `Sᵀ = S` is the additional Autonne step which
+         chooses the phases so the right unitary is `U.transpose`, not an
+         unrelated unitary.  The local support theorem should expose this as:
+
+         ```lean
+         theorem BHW.complexSymmetric_autonneTakagi
+             (m : Nat)
+             {S : Matrix (Fin m) (Fin m) ℂ}
+             (hSym : S.transpose = S) :
+             ∃ (U : Matrix.unitaryGroup (Fin m) ℂ)
+               (σ : Fin m -> ℝ),
+                (∀ a, 0 <= σ a) ∧
+                S =
+                  (U : Matrix (Fin m) (Fin m) ℂ) *
+                    Matrix.diagonal (fun a => (σ a : ℂ)) *
+                    (U : Matrix (Fin m) (Fin m) ℂ).transpose ∧
+                (∀ a, σ a <= ‖S‖) ∧
+                Fintype.card {a : Fin m // σ a ≠ 0} = Matrix.rank S
+         ```
+
+         From this, use `hRank : Matrix.rank S <= k` to inject the finite
+         nonzero singular-value index subtype into `Fin k`; place the
+         corresponding columns
+         `U · a * Real.sqrt (σ a)` into a matrix
+         `A : Matrix (Fin m) (Fin k) ℂ` and set the remaining columns to
+         zero.  Then `S = A * A.transpose`.  Since columns of a unitary matrix
+         have coordinate norm at most `1` and `σ a <= ‖S‖`, every entry of
+         `A` satisfies `‖A i b‖ <= Real.sqrt ‖S‖`.  This gives
+         `complexSymmetric_autonneTakagi_factor_rankLE_norm`.
+      2. Prove `complexSymmetric_factorSmall_rankLE` from the norm-controlled
+         theorem.  Use `BHW.matrix_opNorm_le_card_mul_sup_entry` to obtain a
+         finite constant `C_m` with
+         `‖S‖ <= C_m * sup_{i,j} ‖S i j‖`.  Given `ε > 0`, choose
+         `δ > 0` with `Real.sqrt (C_m * δ) < ε`; then the entrywise bound on
+         `S` gives `Real.sqrt ‖S‖ < ε`, and the entry bound from
+         `complexSymmetric_autonneTakagi_factor_rankLE_norm` gives
+         `‖A i a‖ < ε`.  This step is finite matrix linear algebra only; it
+         has no BHW, OS, or locality content.
       3. Define `complexMinkowskiOrthogonalTailSubspace d r` by transporting
          the coordinate tail `{u | ∀ μ, μ.val < r -> u μ = 0}` through
          `complexMinkowskiOrthogonalModel d`.  Orthogonality to the selected
@@ -7556,8 +7635,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
          `complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail`, first
          apply `complexSymmetric_factorSmall_rankLE` with
          `k <= d + 1 - r`.  Embed the resulting `Fin k` columns into the tail
-         coordinates using `exists_finTailEmbedding`; all other diagonalized
-         coordinates are zero.  Transport the vectors back by
+         coordinates using `exists_finTailEmbedding` and
+         `tailEmbeddedFactorVectors`; all other diagonalized coordinates are
+         zero.  The theorem
+         `standardComplexSymmetricBilinear_tailEmbeddedFactor` proves both
+         support in the coordinate tail and
+         `standardComplexSymmetricBilinear q_i q_j = (A * Aᵀ) i j`.
+         The pointwise coordinate estimate is the direct helper
+         `tailEmbeddedFactorVectors_coord_bound`.
+         Transport the vectors back by
          `(complexMinkowskiOrthogonalModel d).symm`.  Finite-dimensional norm
          equivalence for this fixed linear equivalence is exposed as
          `complexMinkowskiOrthogonalModel_symm_coord_bound`, so the Takagi
@@ -7570,6 +7656,95 @@ Proof decomposition of this theorem, without hiding the analytic work:
          must use the tail theorem with `k = d + 1 - r`; otherwise it would
          realize the residual matrix in directions that might not be
          orthogonal to the selected block.
+
+      Lean-shaped proof of the small Takagi factor and tail realization:
+
+      ```lean
+      theorem BHW.complexSymmetric_takagi_rankLE ... := by
+        rcases BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm
+            (m := m) (k := k) hSym hRank with
+          ⟨A, hA_factor, _hA_norm⟩
+        exact ⟨A, hA_factor⟩
+
+      theorem BHW.complexSymmetric_factorSmall_rankLE ... := by
+        rcases BHW.matrix_opNorm_le_card_mul_sup_entry
+            (m := m) with ⟨C, hC_pos, hC_bound⟩
+        rcases BHW.exists_pos_mul_sqrt_lt hε hC_pos with
+          ⟨δ, hδ_pos, hδ_small⟩
+        refine ⟨δ, hδ_pos, ?_⟩
+        intro S hSym hRank hS_entry
+        rcases BHW.complexSymmetric_autonneTakagi_factor_rankLE_norm
+            (m := m) (k := k) hSym hRank with
+          ⟨A, hA_factor, hA_norm⟩
+        have hS_norm_small : Real.sqrt ‖S‖ < ε := by
+          exact BHW.real_sqrt_norm_lt_of_entry_bound
+            hC_bound hS_entry hδ_small
+        exact ⟨A, fun i a => lt_of_le_of_lt (hA_norm i a) hS_norm_small,
+          hA_factor⟩
+
+      theorem BHW.complexMinkowski_realizeSmallSymmetricRankLE_inOrthogonalTail
+          ... := by
+        rcases BHW.complexMinkowskiOrthogonalModel_symm_coord_bound
+            (d := d) with
+          ⟨C, hC_pos, hC_bound⟩
+        let ε0 : ℝ := ε / (C * (d + 1) + 1)
+        have hε0_pos : 0 < ε0 := by positivity
+        rcases BHW.complexSymmetric_factorSmall_rankLE
+            (m := m) (k := k) hε0_pos with
+          ⟨δ, hδ_pos, hfactor⟩
+        refine ⟨δ, hδ_pos, ?_⟩
+        intro S hSym hRank hk_tail hS_small
+        rcases hfactor (Matrix.of fun i j => S i j)
+            (by ext i j; exact hSym j i)
+            hRank
+            (by simpa using hS_small) with
+          ⟨A, hA_small, hA_factor⟩
+        rcases BHW.exists_finTailEmbedding (D := d + 1) (r := r) (k := k)
+            hk_tail with
+          ⟨ι, hι_inj, hι_tail⟩
+        let u : Fin m -> Fin (d + 1) -> ℂ :=
+          BHW.tailEmbeddedFactorVectors (d + 1) r m k ι A
+        let q : Fin m -> Fin (d + 1) -> ℂ :=
+          fun i => (BHW.complexMinkowskiOrthogonalModel d).symm (u i)
+        have hu_tail_and_pair :=
+          BHW.standardComplexSymmetricBilinear_tailEmbeddedFactor
+            (D := d + 1) (r := r) (m := m) (k := k)
+            hι_inj hι_tail A
+        have hu_small : ∀ i μ, ‖u i μ‖ < ε0 :=
+          BHW.tailEmbeddedFactorVectors_coord_bound
+            (D := d + 1) (r := r) (m := m) (k := k) hA_small
+        refine ⟨q, ?small, ?tail, ?pair⟩
+        · intro i μ
+          have hsum :
+              ∑ ν : Fin (d + 1), ‖u i ν‖ < (d + 1) * ε0 := by
+            exact BHW.sum_norm_lt_card_mul_of_coord_bound hu_small
+          exact lt_of_le_of_lt (hC_bound (u i) μ)
+            (by dsimp [ε0]; nlinarith [hC_pos, hsum, hε])
+        · intro i
+          -- Unfold the transported tail subspace; the first component of
+          -- `hu_tail_and_pair` says `u i` vanishes on the selected coordinates.
+          exact BHW.mem_complexMinkowskiOrthogonalTailSubspace_of_model_tail
+            (d := d) (r := r) (u := u i) hu_tail_and_pair.1
+        · intro i j
+          calc
+            BHW.complexMinkowskiBilinear d (q i) (q j)
+                =
+              BHW.standardComplexSymmetricBilinear (u i) (u j) := by
+                simpa [q] using
+                  BHW.complexMinkowskiOrthogonalModel_preserves_bilinear
+                    (d := d) (q i) (q j)
+            _ = (A * A.transpose) i j := hu_tail_and_pair.2 i j
+            _ = S i j := by
+                simpa using congrArg (fun M => M i j) hA_factor.symm
+      ```
+
+      The proof-local arithmetic helpers in this skeleton are elementary:
+      `exists_pos_mul_sqrt_lt` chooses `δ` so the operator-norm square-root
+      is below the requested factor radius;
+      `real_sqrt_norm_lt_of_entry_bound` combines that choice with
+      `matrix_opNorm_le_card_mul_sup_entry`; and
+      `sum_norm_lt_card_mul_of_coord_bound` is the finite sum estimate
+      `∑ν ‖uν‖ < card * ε0`.  They carry no BHW route content.
 
       Normalized Schur-surjectivity is the block construction in
       Hall-Wightman Lemma 3.  After fixing `hrn : r <= n`, use the order
