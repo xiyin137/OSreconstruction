@@ -27,8 +27,8 @@ theorem sourceDistributionalUniquenessSetOnVariety_of_realEnvironment
   refine ⟨hO_env.nonempty, ?_⟩
   intro U Φ Ψ hU_rel hU_conn hO_sub hΦ hΨ h_eq
   let H : (Fin n → Fin n → ℂ) → ℂ := fun Z => Φ Z - Ψ Z
-  have hH : SourceVarietyHolomorphicOn d n H U :=
-    SourceVarietyHolomorphicOn.sub (d := d) (n := n) hΦ hΨ
+  have hH : SourceVarietyGermHolomorphicOn d n H U :=
+    SourceVarietyGermHolomorphicOn.sub (d := d) (n := n) hΦ hΨ
   have hO_zero :
       ∀ G ∈ O, H (sourceRealGramComplexify n G) = 0 := by
     intro G hG

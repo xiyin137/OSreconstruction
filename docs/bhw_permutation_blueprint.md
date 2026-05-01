@@ -720,10 +720,9 @@ Implementation locus:
 	   `exists_sourceSelectedRealGramZeroSection_good_ball`,
 	   `sourceSelectedComplexGramBaseCoord_real_slice`,
 	   `sourceComplexGramVariety_selectedChart_of_realRegular`,
-	   legacy `SourceVarietyHolomorphicOn.comp_differentiableOn_chart`,
-	   and legacy `sourceVariety_localChart_totallyReal_zero`.  The active
-	   source-scalar route must expose the germ counterparts before consuming
-	   this packet downstream.
+	   `SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart`,
+	   and `sourceVariety_localChart_totallyReal_zero` with the germ
+	   hypothesis.
 	   The first global identity support lemmas are also checked:
 	   `complexMinkowskiToDotLinearEquiv`,
 	   `sourceComplexMinkowskiInner_eq_dot_after_equiv`,
@@ -862,9 +861,10 @@ Implementation locus:
 			   relatively open source-variety domain `U`, and the pure
 			   continuity extension: a continuous scalar-product representative
 			   on `U` that vanishes on this dense regular stratum vanishes on all
-			   of `U`.  The production `SourceVarietyHolomorphicOn` hypothesis
-			   now supplies that continuity by local ambient differentiability via
-			   the checked `SourceVarietyHolomorphicOn.continuousOn` theorem.
+			   of `U`.  The production `SourceVarietyGermHolomorphicOn`
+			   hypothesis now supplies that continuity by local ambient
+			   representatives via `SourceVarietyGermHolomorphicOn.continuousOn`
+			   and the relative-open subset helper.
 			   The easy-arity algebraic reduction should also be checked in
 			   `SourceComplexGlobalIdentity.lean`: if `n <= d + 1`, the
 			   rank-defined characterization collapses
@@ -882,14 +882,13 @@ Implementation locus:
 			   `sourceComplexGramVariety_identity_principle_easy`, by applying
 			   the ordinary SCV identity theorem on those coordinates and
 			   pushing the resulting equality back to `U`.  The final global
-			   identity principle should be a short arity split: checked easy
-			   theorem for `n <= d + 1`, and in the strict branch
-			   `d + 1 < n` the still-open regular-rank-stratum identity theorem
-			   followed by the already checked density/continuity extension.
-		   The remaining target for the legacy strong API was
-	   `sourceComplexGramVariety_identity_principle`; the active source-scalar
-	   route must use the germ analogue
-	   `sourceComplexGramVariety_identity_principle_germ`.  The pairwise
+			   identity principle is now the checked short arity split:
+			   the easy theorem for `n <= d + 1`, and in the strict branch
+			   `d + 1 < n` the regular-rank-stratum identity theorem followed
+			   by the checked density/continuity extension.  Its public
+			   signature uses `SourceVarietyGermHolomorphicOn`; no parallel
+			   strong/germ wrapper is part of the theorem-2 API.
+		   The pairwise
 	   `Φ`/`Ψ` version should not be implemented as a separate wrapper; the
 	   existing predicate `sourceDistributionalUniquenessSetOnVariety` derives it
 	   by setting `H := Φ - Ψ`.  The global identity step must include the
@@ -1051,7 +1050,15 @@ order:
    `sourceExtendedTubeGramDomain_relOpen_at` with its
    orbit-rank/low-rank local split and the Lemma-3 local realization
    theorems `hwLemma3_sourceGram_localVectorRealization_smallPerturbation`
-   and `hwLemma3_sourceGram_localVectorRealization`,
+   and `hwLemma3_sourceGram_localVectorRealization`, expanded through
+   `hwLemma3_selectedBlock_sqrt_near_identity`,
+   `hwLemma3_schurComplement_rank_bound`,
+   `complexMinkowski_realizeSmallSymmetricRankLE`,
+   `hwLemma3CanonicalSource`, `hwLemma3CanonicalGram`,
+   `sourceMinkowskiGram_hwLemma3CanonicalSource`,
+   `hwLemma3_normalizedSchurSurjective`,
+   `hwLemma3_transport_from_normalForm`, and
+   `hwLemma3_smallPerturbation_to_localVectorRealization`,
    `hallWightman_localScalarChart_at` with its
    max-rank/exceptional-rank local split,
    `hallWightman_localScalarChart_overlap_eq`,
@@ -1066,7 +1073,7 @@ order:
    `precomp_sourcePermuteComplexGram`, plus the consumer-side
    `comp_sourceMinkowskiGram`,
    `comp_differentiableOn_chart`, and
-   `sourceComplexGramVariety_identity_principle_germ`.  The older Cartan/Oka bridge
+   `sourceComplexGramVariety_identity_principle`.  The older Cartan/Oka bridge
    `SteinOpen`, `sourceComplexGramVariety_closedAnalytic`,
    `sourceExtendedTubeGramDomain_domainOfHolomorphy`,
    `domainOfHolomorphy_steinAnalyticSubspace`,
@@ -1093,7 +1100,17 @@ order:
    `sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety`,
    `sourceComplexGramVariety_eq_rank_le`,
    `sourceComplexGramVariety_normal`, and
-   `sourceGramVariety_normal_riemannExtension`.  The old compressed
+   `sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`,
+   `sourceSymmetricRankLEVariety_cohenMacaulay`,
+   `sourceSymmetricRankLEVariety_regularInCodimOne`,
+   `normalAnalyticSubvariety_of_serre`,
+   `normalAnalyticSubvariety_weaklyHolomorphic_localExtension`,
+   `sourceGramVariety_normal_riemannExtension`, with
+   `IsRelOpenIn`, `LocallyBoundedOn`, `IsAnalyticSubvarietyIn`,
+   `NormalAnalyticSubvariety`, `CohenMacaulayAnalyticSubvariety`, and
+   `RegularInCodimensionOne` declared as genuine standard
+   finite-dimensional SCV/local-ring predicates before they are consumed.
+   The old compressed
    `hallWightman_exists_sourceScalarRepresentative_of_forwardTube_lorentz`
    name is deliberately retired from the active route until it can be only a
    wrapper around those checked obligations, or an explicitly approved
@@ -1182,7 +1199,8 @@ definition is weaker than that.
 
 Current checked/unchecked boundary:
 
-1. checked in production Lean under the legacy strong source-holomorphy API:
+1. checked in production Lean, with the source-variety consumers migrated to
+   the germ source-holomorphy API where theorem 2 needs them:
    `differentiable_sourcePermuteComplexGram`,
    `SourceVarietyHolomorphicOn.precomp_sourcePermuteComplexGram`,
    `sourceAnchor_compactBranchEq_pointwise_on_realPatch`,
@@ -1201,6 +1219,14 @@ Current checked/unchecked boundary:
    `sourceGramMatrixRank`, `HWSourceGramOrbitRank`,
    `HWSourceGramLowRank` at threshold `min d n`,
    `hw_sameSourceGram_regular_orbit`,
+   with the high-rank coefficient-quotient support
+   `sourceCoefficientEval`, `sourceCoefficientGramKernel`,
+   `sourceCoefficientEval_ker_le_gramKernel`,
+   `hw_highRank_eval_range_nondegenerate`,
+   `hw_highRank_eval_ker_eq_gramKernel`,
+   `hw_highRank_sourceCoefficientEval_ker_eq_of_sameSourceGram`,
+   `HWHighRankSpanIsometryData`, and
+   `hw_highRank_spanIsometryData_of_sameSourceGram`,
    `hw_sameSourceGram_singular_contractionData`,
    `HWLowRankIsotropicNormalForm`,
    `hw_lowRank_isotropicNormalForm_of_sameSourceGram`,
@@ -1214,21 +1240,53 @@ Current checked/unchecked boundary:
    `complexMinkowski_isotropicDualFrame_of_residualFrame`,
    `complexMinkowski_isotropicContractionFamily`, and
    `hw_lowRank_isotropicContraction_staysIn_extendedTube`,
+   with the dual-frame fields `qDual_pair_zero`, `q_dual`, `qDual_orth`, and
+   `contract_scale_qDual` kept visible in the normal-form packet,
    with the singular data carrying two endpoint orbit curves contracting to a
    common base, not pairwise orbit equality of the approximating curves,
    `sourceExtendedTubeGramDomain_relOpen_at`,
    `hwLemma3_sourceGram_localVectorRealization_smallPerturbation`,
    `hwLemma3_sourceGram_localVectorRealization`,
+   `hwLemma3_selectedBlock_sqrt_near_identity`,
+   `hwLemma3_schurComplement_rank_bound`,
+   `complexMinkowski_realizeSmallSymmetricRankLE`,
+   `hwLemma3CanonicalSource`,
+   `hwLemma3CanonicalGram`,
+   `sourceMinkowskiGram_hwLemma3CanonicalSource`,
+   `hwLemma3_normalizedSchurSurjective`,
+   `hwLemma3_transport_from_normalForm`,
+   `hwLemma3_smallPerturbation_to_localVectorRealization`,
    `hwLemma3_sourceGram_localVectorRealization_orbitRank`,
    `hwLemma3_sourceGram_localVectorRealization_lowRank`,
    `HWSourceGramMaxRank`, `HWSourceGramExceptionalRank`,
    `hallWightman_localScalarChart_at`,
    `hallWightman_maxRank_localScalarChart_at`,
-   `hallWightman_exceptionalRank_localScalarChart_at`,
-   `hallWightman_maxRank_powerSeriesChart_at`,
-   `hallWightman_lorentzInfinitesimalEquations`,
-   `hallWightman_maxRank_scalarDifferentials_span_PDE`,
-   `HWPowerSeriesCoordinateSplit`,
+	   `hallWightman_exceptionalRank_localScalarChart_at`,
+	   `hallWightman_maxRank_powerSeriesChart_at`,
+	   `hallWightman_lorentzInfinitesimalEquations`,
+	   with support
+	   `complexMinkowskiSkewGenerator_isInLieAlgebra`,
+	   `ComplexMinkowskiSkewGenerator.expCurve`,
+	   `complexMinkowskiSkewGenerator_expCurve_val`,
+	   `complexMinkowskiSkewGenerator_expCurve_zero`,
+	   `complexLorentzAction_expCurve_mem_extendedTube`,
+	   `complexLorentz_expCurve_action_hasDerivAt`,
+	   `differentiableAt_extendF_of_mem_extendedTube`,
+	   `extendF_expCurve_invariant`,
+	   `hallWightman_maxRank_scalarDifferentials_span_PDE`,
+	   with support
+	   `sourceGramDifferential`,
+	   `sourceGramDifferential_apply`,
+	   `sourceGramCoordinateDifferential_apply`,
+	   `sourceGramDifferential_lorentzInfinitesimalTangent_zero`,
+	   `complexMinkowski_infinitesimalWittExtension`,
+	   `HWMaxRankSelectedRowsData`,
+	   `hwMaxRank_selectedRowsData`,
+	   `hwMaxRank_kernel_row_relation_transfer`,
+	   `sourceGramDifferential_kernel_eq_lorentzInfinitesimalTangent`,
+	   `continuousLinearFunctional_factor_through_of_vanishes_on_ker`,
+	   `sourceGramDifferential_dual_coordinate_expansion`,
+	   `HWPowerSeriesCoordinateSplit`,
    `SelectedScalarCoordinatesBasis`,
    `HWVectorCoordinateSplitData`,
    `hallWightman_independentScalarCoordinates`,
@@ -1279,13 +1337,13 @@ Current checked/unchecked boundary:
    `SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram`,
    `SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`,
    `SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart`,
-   `sourceComplexGramVariety_identity_principle_germ`,
+   `sourceComplexGramVariety_identity_principle`,
    with the germ-side internal identity ladder
-   `sourceComplexGramVariety_rankExact_local_identity_near_point_germ`,
-   `sourceComplexGramVariety_rankExact_identity_principle_of_connected_germ`,
-   `sourceComplexGramVariety_rankExact_identity_principle_germ`,
-   `sourceComplexGramVariety_identity_principle_of_connected_rankExact_germ`,
-   and `sourceComplexGramVariety_identity_principle_easy_germ`,
+   `sourceComplexGramVariety_rankExact_local_identity_near_point`,
+   `sourceComplexGramVariety_rankExact_identity_principle_of_connected`,
+   `sourceComplexGramVariety_rankExact_identity_principle`,
+   `sourceComplexGramVariety_identity_principle_of_connected_rankExact`,
+   and `sourceComplexGramVariety_identity_principle_easy`,
    the archived optional strong-API bridge
    `SteinOpen`, `sourceComplexGramVariety_closedAnalytic`,
    `sourceExtendedTubeGramDomain_domainOfHolomorphy`,
@@ -1306,7 +1364,16 @@ Current checked/unchecked boundary:
    `sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety`,
    `sourceComplexGramVariety_eq_rank_le`,
    `sourceComplexGramVariety_normal`,
+   `sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`,
+   `sourceSymmetricRankLEVariety_cohenMacaulay`,
+   `sourceSymmetricRankLEVariety_regularInCodimOne`,
+   `normalAnalyticSubvariety_of_serre`,
+   `normalAnalyticSubvariety_weaklyHolomorphic_localExtension`,
    `sourceGramVariety_normal_riemannExtension`,
+   with the active standard predicates `IsRelOpenIn`,
+   `LocallyBoundedOn`, `IsAnalyticSubvarietyIn`,
+   `NormalAnalyticSubvariety`, `CohenMacaulayAnalyticSubvariety`, and
+   `RegularInCodimensionOne` implemented as real SCV/local-ring predicates,
    the archived scalar-overlap witness/cover-reaching decomposition around
    `exists_sourceAdjacentOverlapWitness_of_mem_doubleDomain`,
    `hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,

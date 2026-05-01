@@ -869,25 +869,38 @@ theorem sourceComplexGramVariety_connectedRelOpenTube_around_compactPath
     simpa [Wtube, Zstart] using hγ_sub ⟨t, rfl⟩
 
 /-- Pull back a variety-holomorphic scalar along the source complex Gram map. -/
-theorem SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram
+theorem SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram
     (d n : ℕ)
     {U : Set (Fin n → Fin n → ℂ)}
     {H : (Fin n → Fin n → ℂ) → ℂ}
     {V : Set (Fin n → Fin (d + 1) → ℂ)}
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hGramU : sourceMinkowskiGram d n '' V ⊆ U) :
     DifferentiableOn ℂ (fun z => H (sourceMinkowskiGram d n z)) V := by
   intro z hzV
   have hG : sourceMinkowskiGram d n z ∈ U :=
     hGramU ⟨z, hzV, rfl⟩
   rcases hH (sourceMinkowskiGram d n z) hG with
-    ⟨U0, hU0_open, hGU0, hHdiffU0, _hU0_sub⟩
-  have hHat : DifferentiableAt ℂ H (sourceMinkowskiGram d n z) :=
-    (hHdiffU0 (sourceMinkowskiGram d n z) hGU0).differentiableAt
+    ⟨U0, H0, hU0_open, hGU0, hH0diffU0, hEq, _hU0_sub⟩
+  have hH0at : DifferentiableAt ℂ H0 (sourceMinkowskiGram d n z) :=
+    (hH0diffU0 (sourceMinkowskiGram d n z) hGU0).differentiableAt
       (hU0_open.mem_nhds hGU0)
   have hgram : Differentiable ℂ (sourceMinkowskiGram d n) :=
     (contDiff_sourceMinkowskiGram d n).differentiable (by simp)
-  exact (hHat.comp z hgram.differentiableAt).differentiableWithinAt
+  have hcomp :
+      DifferentiableWithinAt ℂ
+        (fun z => H0 (sourceMinkowskiGram d n z)) V z :=
+    (hH0at.comp z hgram.differentiableAt).differentiableWithinAt
+  have heq :
+      (fun z => H (sourceMinkowskiGram d n z)) =ᶠ[𝓝[V] z]
+        (fun z => H0 (sourceMinkowskiGram d n z)) := by
+    have hGramU0_event :
+        ∀ᶠ y in 𝓝[V] z, sourceMinkowskiGram d n y ∈ U0 :=
+      hgram.continuous.continuousAt.continuousWithinAt.preimage_mem_nhdsWithin
+        (hU0_open.mem_nhds hGU0)
+    filter_upwards [hGramU0_event] with y hyU0
+    exact hEq ⟨hyU0, ⟨y, rfl⟩⟩
+  exact hcomp.congr_of_eventuallyEq_of_mem heq hzV
 
 /-- Local identity propagation on the regular rank stratum of the source
 complex Gram variety. -/
@@ -897,7 +910,7 @@ theorem sourceComplexGramVariety_rankExact_local_identity_near_point
     {U : Set (Fin n → Fin n → ℂ)}
     {H : (Fin n → Fin n → ℂ) → ℂ}
     (hU_rel : IsRelOpenInSourceComplexGramVariety d n U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     {Z0 : Fin n → Fin n → ℂ}
     (hZ0U : Z0 ∈ U)
     (hZ0reg : Z0 ∈ sourceSymmetricRankExactStratum n (d + 1))
@@ -968,7 +981,7 @@ theorem sourceComplexGramVariety_rankExact_local_identity_near_point
   have hdiff :
       DifferentiableOn ℂ
         (fun z => H (sourceMinkowskiGram d n z)) Usrc :=
-    SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram
+    SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram
       d n hH hGramU
   have hagree :
       (fun z => H (sourceMinkowskiGram d n z)) =ᶠ[nhds z1]
@@ -1235,7 +1248,7 @@ theorem sourceComplexGramVariety_rankExact_identity_principle_of_connected
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0
       (U ∩ sourceSymmetricRankExactStratum n (d + 1)) := by
@@ -1407,7 +1420,7 @@ theorem sourceComplexGramVariety_rankExact_identity_principle
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0
       (U ∩ sourceSymmetricRankExactStratum n (d + 1)) :=
@@ -1463,7 +1476,7 @@ theorem sourceComplexGramVariety_identity_principle_of_connected_rankExact
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0 U := by
   have hDle : d + 1 ≤ n := Nat.le_of_lt hD
@@ -1474,7 +1487,9 @@ theorem sourceComplexGramVariety_identity_principle_of_connected_rankExact
       d n hD hU_rel hUreg_conn hW_rel hW_ne hW_sub hH hW_zero
   exact
     sourceComplexGramVariety_relOpen_eqOn_zero_of_eqOn_rankExact
-      d n hDle hU_rel (SourceVarietyHolomorphicOn.continuousOn d n hH)
+      d n hDle hU_rel
+      (SourceVarietyGermHolomorphicOn.continuousOn d n hH
+        (IsRelOpenInSourceComplexGramVariety.subset hU_rel))
       hzero_rankExact
 
 /-- Source complex Gram-variety identity principle in all arities.  The easy
@@ -1489,7 +1504,7 @@ theorem sourceComplexGramVariety_identity_principle
     (hW_rel : IsRelOpenInSourceComplexGramVariety d n W)
     (hW_ne : W.Nonempty)
     (hW_sub : W ⊆ U)
-    (hH : SourceVarietyHolomorphicOn d n H U)
+    (hH : SourceVarietyGermHolomorphicOn d n H U)
     (hW_zero : Set.EqOn H 0 W) :
     Set.EqOn H 0 U := by
   by_cases hn : n ≤ d + 1
@@ -1551,21 +1566,21 @@ theorem os45AdjacentScalarEq_on_quarterTurnCorridor
     have hdouble : Z ∈ BHW.sourceDoublePermutationGramDomain d n τ := by
       simpa [τ] using hWscal_double hZ
     simpa [hRep.U_eq] using hdouble.2
-  have hΨ_holo : BHW.SourceVarietyHolomorphicOn d n Ψ Wscal := by
-    exact BHW.SourceVarietyHolomorphicOn.of_subset_relOpen
+  have hΨ_holo : BHW.SourceVarietyGermHolomorphicOn d n Ψ Wscal := by
+    exact BHW.SourceVarietyGermHolomorphicOn.of_subset_relOpen
       (d := d) (n := n) hRep.Phi_holomorphic hWscal_relOpen hWscal_subset_U
-  have hΦ_holo : BHW.SourceVarietyHolomorphicOn d n Φ Wscal := by
-    have hpre : BHW.SourceVarietyHolomorphicOn d n Φ
+  have hΦ_holo : BHW.SourceVarietyGermHolomorphicOn d n Φ Wscal := by
+    have hpre : BHW.SourceVarietyGermHolomorphicOn d n Φ
         {Z | BHW.sourcePermuteComplexGram n τ Z ∈ hRep.U} := by
       simpa [Φ] using
-        BHW.SourceVarietyHolomorphicOn.precomp_sourcePermuteComplexGram
+        BHW.SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram
           (d := d) (n := n) hRep.Phi_holomorphic τ
-    exact BHW.SourceVarietyHolomorphicOn.of_subset_relOpen
+    exact BHW.SourceVarietyGermHolomorphicOn.of_subset_relOpen
       (d := d) (n := n) hpre hWscal_relOpen hWscal_subset_permU
   let H : (Fin n → Fin n → ℂ) → ℂ := fun Z => Φ Z - Ψ Z
-  have hH_holo : BHW.SourceVarietyHolomorphicOn d n H Wscal := by
+  have hH_holo : BHW.SourceVarietyGermHolomorphicOn d n H Wscal := by
     simpa [H] using
-      BHW.SourceVarietyHolomorphicOn.sub (d := d) (n := n) hΦ_holo hΨ_holo
+      BHW.SourceVarietyGermHolomorphicOn.sub (d := d) (n := n) hΦ_holo hΨ_holo
   have hW_zero : Set.EqOn H 0 Wseed := by
     intro Z hZW
     have hEq := hSeed hZW

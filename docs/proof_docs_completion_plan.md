@@ -237,9 +237,11 @@ route-hardening correction: using the unpermuted germ
 the identity and adjacent branch packets before the EOW step and would revive
 the retired tautological cancellation shortcut.
 
-Post-selector proof-doc frontier: do not start Lean implementation of the
-source-germ layer until the following two analytic inputs are transcript-ready.
-First, the ordinary Hall-Wightman scalar representative for the OS-II
+Post-selector proof-doc frontier: the production Lean germ-API migration is
+now allowed and has started only for the existing source-variety identity and
+uniqueness infrastructure.  Do not implement the Hall-Wightman scalar
+representative theorem itself until the following two analytic inputs are
+transcript-ready.  First, the ordinary Hall-Wightman scalar representative for the OS-II
 forward-tube function must be named explicitly, for example as
 `BHW.sourceScalarRepresentativeData_bvt_F`; on the theorem-2 route it carries
 the ambient dimension hypothesis `hd : 2 <= d` and produces
@@ -267,8 +269,22 @@ implementation contract is:
    `BHW.hwLemma3_sourceGram_localVectorRealization`,
    `BHW.sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety`,
    `BHW.sourceComplexGramVariety_eq_rank_le`,
-   `BHW.sourceComplexGramVariety_normal`, and
+   `BHW.sourceComplexGramVariety_normal`,
+   `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`,
+   `BHW.sourceSymmetricRankLEVariety_cohenMacaulay`,
+   `BHW.sourceSymmetricRankLEVariety_regularInCodimOne`,
+   `BHW.normalAnalyticSubvariety_of_serre`, and
+   `BHW.normalAnalyticSubvariety_weaklyHolomorphic_localExtension`, then
    `BHW.sourceGramVariety_normal_riemannExtension`, followed by the active
+   standard-geometry predicates
+   `BHW.IsRelOpenIn`, `BHW.LocallyBoundedOn`,
+   `BHW.IsAnalyticSubvarietyIn`,
+   `BHW.NormalAnalyticSubvariety`,
+   `BHW.CohenMacaulayAnalyticSubvariety`, and
+   `BHW.RegularInCodimensionOne`.  These predicates must be genuine
+   finite-dimensional SCV/local-ring notions or imports from the local SCV
+   support library; they cannot be implemented as vacuous placeholders or as
+   wrappers around the target scalar representative theorem.  The active
    germ API
    `BHW.SourceVarietyGermHolomorphicOn`,
    `BHW.SourceVarietyGermHolomorphicOn.continuousOn`,
@@ -278,7 +294,7 @@ implementation contract is:
    plus the pullback and identity-principle consumers
    `BHW.SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`,
    `BHW.SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart`, and
-   `BHW.sourceComplexGramVariety_identity_principle_germ`; the continuity
+   `BHW.sourceComplexGramVariety_identity_principle`; the continuity
    theorem must carry or derive the hypothesis
    `U ⊆ BHW.sourceComplexGramVariety d n`, supplied in this route by relative
    openness in the source variety.
@@ -287,9 +303,10 @@ implementation contract is:
    output is a holomorphic germ on the symmetric determinantal scalar-product
    variety, represented locally by ambient holomorphic charts that agree only
    on the variety.  Boundedness and continuity at singular points are used by
-   the normal analytic-space Riemann/removable theorem to produce those local
-   variety-germ representatives; they do not produce one global ambient
-   function holomorphic off the variety.
+   the normal analytic-space Riemann/removable theorem, together with density
+   of the maximal-rank locus in every relatively open source-variety patch, to
+   produce those local variety-germ representatives; they do not produce one
+   global ambient function holomorphic off the variety.
 
    The theorem-2 blueprint still archives the stronger Siu/Cartan package
    `BHW.SteinOpen`,
@@ -320,11 +337,12 @@ implementation contract is:
    BHW/Hall-Wightman germ-support theorems have proof transcripts detailed
    enough to implement without new `sorry`/`axiom`, or the user explicitly
    approves a source-import boundary with exactly these theorem statements and
-   no theorem-2/locality content.  In addition, the existing production
-   `SourceScalarRepresentativeData.Phi_holomorphic` field must be migrated
-   from `BHW.SourceVarietyHolomorphicOn` to
-   `BHW.SourceVarietyGermHolomorphicOn` before
-   `BHW.sourceScalarRepresentativeData_bvt_F` can honestly be implemented.
+   no theorem-2/locality content.  The existing production
+   `SourceScalarRepresentativeData.Phi_holomorphic` field has now been
+   migrated from `BHW.SourceVarietyHolomorphicOn` to
+   `BHW.SourceVarietyGermHolomorphicOn`; that migration removes the false
+   global-ambient holomorphy requirement but does not by itself implement
+   `BHW.sourceScalarRepresentativeData_bvt_F`.
 
 1. `BHW.extendedTube_same_sourceGram_extendF_eq`: for `z,w ∈
    BHW.ExtendedTube d n`, equality of
@@ -343,6 +361,15 @@ implementation contract is:
    the small-arity range.  The theorem-2 blueprint now expands this into the
    Lean-facing Lemma-2 alternative:
    `BHW.hw_sameSourceGram_fiberAlternative`, the high scalar-rank orbit theorem
+   with its coefficient-quotient support
+   `BHW.sourceCoefficientEval`,
+   `BHW.sourceCoefficientGramKernel`,
+   `BHW.sourceCoefficientEval_ker_le_gramKernel`,
+   `BHW.hw_highRank_eval_range_nondegenerate`,
+   `BHW.hw_highRank_eval_ker_eq_gramKernel`,
+   `BHW.hw_highRank_sourceCoefficientEval_ker_eq_of_sameSourceGram`,
+   `BHW.HWHighRankSpanIsometryData`, and
+   `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`, then
    `BHW.extendF_complexLorentzInvariant_of_cinv` with both `hF_holo` and
    `hF_cinv`, and the singular
    two-curve limit theorem
@@ -374,13 +401,26 @@ implementation contract is:
    `BHW.hw_lowRank_isotropicContraction_staysIn_extendedTube`.  The printed
    four-dimensional Hall-Wightman proof collapses the residual frame to one
    null vector in ranks one and two; the dimension-general Lean route must
-   contract a finite totally isotropic frame instead.  The contraction data
+   contract a finite totally isotropic frame instead.  The normal-form packet
+   must store the dual isotropic frame fields used by the contraction:
+   `qDual_pair_zero`, `q_dual`, `qDual_orth`, and the contraction-family
+   field `contract_scale_qDual`; otherwise the Lorentz-family construction is
+   hidden behind an unexplained existence theorem.  The contraction data
    consists of two Lorentz-orbit curves, one from each endpoint, converging to
    the same base configuration; it is not a claim that the two approximating
-   curve values are pairwise in one orbit.  The analytic value equality is
-   proved only later by Lorentz invariance plus continuity.
+   curve values are pairwise in one orbit.  The proof of those orbit fields
+   uses `BHW.complexLorentzAction_mul` for the left curve
+   (`N.contract t * N.Λ0`) and the direct `N.contract t` action for the right
+   curve.  The analytic value equality is proved only later by Lorentz
+   invariance plus continuity.
    `BHW.SourceComplexGramRegularAt` remains reserved for the later local
    source-Gram image theorem; it is not the Hall-Wightman Lemma-2 predicate.
+   The high-rank branch is equally not allowed to skip directly from equal
+   Gram entries to a Lorentz transform: the proof must first identify the
+   coefficient kernels of the two source tuples through the common scalar
+   Gram kernel, descend the identity map on coefficient space to an isometry
+   of the two vector spans, and only then apply
+   `BHW.complexMinkowski_wittExtension`.
 2. `BHW.sourceExtendedTubeGramDomain_relOpen_connected`: the scalar image
    `BHW.sourceExtendedTubeGramDomain d n` is relatively open in
    `BHW.sourceComplexGramVariety d n` and connected.  Continuity of the Gram
@@ -397,7 +437,24 @@ implementation contract is:
    `z0` inside the ordinary extended tube, and use the quantitative
    `BHW.hwLemma3_sourceGram_localVectorRealization_smallPerturbation` theorem
    to realize every nearby scalar point in the source Gram variety by a
-   perturbation still inside that ball.  The
+   perturbation still inside that ball.  The theorem-2 blueprint now expands
+   the quantitative theorem down to Hall-Wightman's actual Lemma-3 algebra:
+   `BHW.hwLemma3_selectedBlock_sqrt_near_identity` for the analytic square
+   root of the selected principal block near `1`,
+   `BHW.hwLemma3_schurComplement_rank_bound` for the lower-right residual
+   rank `<= d + 1 - r`,
+   `BHW.complexMinkowski_realizeSmallSymmetricRankLE` for Bargmann's uniform
+   small-vector realization estimate, the canonical normal-form data
+   `BHW.hwLemma3CanonicalSource`,
+   `BHW.hwLemma3CanonicalGram`, and
+   `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource`, the normalized
+   surjectivity theorem
+   `BHW.hwLemma3_normalizedSchurSurjective`, and the transport theorem
+   `BHW.hwLemma3_transport_from_normalForm`.  The final conversion from the
+   quantitative `ε` theorem to arbitrary `Vsrc` is the finite-product
+   open-ball helper
+   `BHW.hwLemma3_smallPerturbation_to_localVectorRealization`; it is not a
+   replacement for Lemma 3.  The
    orbit-rank/low-rank split remains internal as
    `BHW.hwLemma3_sourceGram_localVectorRealization_orbitRank` and
    `BHW.hwLemma3_sourceGram_localVectorRealization_lowRank`, but the exported
@@ -423,7 +480,7 @@ implementation contract is:
    `continuousOn`, `of_subset_relOpen`, `sub`,
    `precomp_sourcePermuteComplexGram`, `comp_sourceMinkowskiGram`,
    `comp_differentiableOn_chart`, and
-   `sourceComplexGramVariety_identity_principle_germ`.
+   `sourceComplexGramVariety_identity_principle`.
    If an atlas is useful during implementation, `BHW.HallWightmanScalarGermAtlas`,
    `BHW.hallWightman_consistentScalarGermAtlas`, and
    `BHW.hallWightman_scalarGermAtlas_glue` are proof-local organization only:
@@ -439,10 +496,31 @@ implementation contract is:
    non-exceptional scalar-product chart, exceptional-rank removable-singularity
    step, and chart-overlap gluing explicit.  The theorem-2 blueprint now
    further expands those local-chart lemmas into
-   `BHW.hallWightman_maxRank_powerSeriesChart_at`,
-   `BHW.hallWightman_lorentzInfinitesimalEquations`,
-   `BHW.hallWightman_maxRank_scalarDifferentials_span_PDE`,
-   `BHW.HWPowerSeriesCoordinateSplit`,
+	   `BHW.hallWightman_maxRank_powerSeriesChart_at`,
+	   `BHW.hallWightman_lorentzInfinitesimalEquations`,
+	   with the Lemma-4 exp-curve support
+	   `BHW.complexMinkowskiSkewGenerator_isInLieAlgebra`,
+	   `BHW.ComplexMinkowskiSkewGenerator.expCurve`,
+	   `BHW.complexMinkowskiSkewGenerator_expCurve_val`,
+	   `BHW.complexMinkowskiSkewGenerator_expCurve_zero`,
+	   `BHW.complexLorentzAction_expCurve_mem_extendedTube`,
+	   `BHW.complexLorentz_expCurve_action_hasDerivAt`,
+	   `BHW.differentiableAt_extendF_of_mem_extendedTube`, and
+	   `BHW.extendF_expCurve_invariant`,
+	   `BHW.hallWightman_maxRank_scalarDifferentials_span_PDE`,
+	   with the Lemmas-6--7 tangent/dual packet
+	   `BHW.sourceGramDifferential`,
+	   `BHW.sourceGramDifferential_apply`,
+	   `BHW.sourceGramCoordinateDifferential_apply`,
+	   `BHW.sourceGramDifferential_lorentzInfinitesimalTangent_zero`,
+	   `BHW.complexMinkowski_infinitesimalWittExtension`,
+	   `BHW.HWMaxRankSelectedRowsData`,
+	   `BHW.hwMaxRank_selectedRowsData`,
+	   `BHW.hwMaxRank_kernel_row_relation_transfer`,
+	   `BHW.sourceGramDifferential_kernel_eq_lorentzInfinitesimalTangent`,
+	   `BHW.continuousLinearFunctional_factor_through_of_vanishes_on_ker`, and
+	   `BHW.sourceGramDifferential_dual_coordinate_expansion`,
+	   `BHW.HWPowerSeriesCoordinateSplit`,
    `BHW.SelectedScalarCoordinatesBasis`,
    `BHW.HWVectorCoordinateSplitData`,
    `BHW.hallWightman_independentScalarCoordinates`,
@@ -470,7 +548,14 @@ implementation contract is:
    `BHW.hallWightman_removableScalarChart_at`, and
    `BHW.hallWightman_localScalarChart_eq_scalarValue`, so the power-series,
    boundedness/continuity, analytic exceptional-locus, and removability inputs
-   are no longer hidden in prose.  Chart constructors must still preserve
+   are no longer hidden in prose.  The removable theorem is now pinned as a
+   consumer of `BHW.sourceGramVariety_normal_riemannExtension`: apply the
+   normal analytic-space Riemann theorem to the max-rank chart section using
+   `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank` for
+   the dense complement hypothesis.  The Riemann theorem internally uses the
+   relative-open witness for `U` and returns the domain-control field
+   `U0 ∩ BHW.sourceComplexGramVariety d n ⊆ U`.  Chart constructors must
+   still preserve
    their branch-provenance fields until the descent theorem builds the
    `SourceVarietyGermHolomorphicOn` local representatives.
    The chart overlap compatibility is discharged by
@@ -527,13 +612,29 @@ implementation contract is:
    `SelectedScalarCoordinatesBasis.card_eq_expected : e =
    BHW.sourceGramExpectedDim d n`; independence of the selected differentials
    on the shrunken chart is not enough to prove that all source-Gram
-   coordinate differentials lie in their span without this dimension equality.
-   `BHW.hallWightman_auxiliaryDerivative_zero` first differentiates
-   `coordMap (coordSymmMap p) = p` to kill selected scalar derivatives on
-   auxiliary tangents, then uses the selected-span field to kill all source
-   Gram differentials, and finally derives Lemma-4 PDE pointwise from
-   `BHW.hallWightman_lorentzInfinitesimalEquations`.
-   In the
+	   coordinate differentials lie in their span without this dimension equality.
+	   `BHW.hallWightman_auxiliaryDerivative_zero` first differentiates
+	   `coordMap (coordSymmMap p) = p` to kill selected scalar derivatives on
+	   auxiliary tangents, then uses the selected-span field to kill all source
+	   Gram differentials, and finally derives Lemma-4 PDE pointwise from
+	   `BHW.hallWightman_lorentzInfinitesimalEquations`.  Lemma 4 itself is now
+	   implementation-level: convert the skew matrix to
+	   `ComplexLorentzGroup.IsInLieAlgebra`, define
+	   `expCurve A t = ComplexLorentzGroup.expLieAlg (t • A.val)`, prove the
+	   generated action has derivative
+	   `lorentzInfinitesimalTangent d n A z0` at `0`, compose with the
+	   differentiability of `extendF F` on the open ordinary extended tube, and
+	   identify the derivative with zero because
+	   `BHW.extendF_complexLorentzInvariant_of_cinv` makes
+	   `extendF F (expCurve A t · z0)` constant in `t`.  This step may not be
+	   replaced by an ambient invariant-function theorem.  Lemmas 6--7 are also
+	   expanded to implementation level: prove that the kernel of the source Gram
+	   differential at a max-rank point is exactly the range of infinitesimal
+	   Lorentz tangents, using the infinitesimal Witt-extension theorem, then
+	   factor every covector annihilating those tangents through the source Gram
+	   differential and expand the resulting finite-product dual functional in
+	   coordinate scalar-product differentials.
+	   In the
    Lean-shaped proof, destruct
    `hZU : Z ∈ sourceExtendedTubeGramDomain d n` as
    `⟨z0, hz0, rfl⟩`, and when applying the helper to a realized
@@ -548,7 +649,9 @@ implementation contract is:
    four obligations for a general forward-tube function; only then does
    `BHW.sourceScalarRepresentativeData_bvt_F` specialize it using
    `bvt_F_holomorphic` and
-   `bvt_F_complexLorentzInvariant_forwardTube`.
+   `bvt_F_complexLorentzInvariant_forwardTube`, both transported across
+   `BHW_forwardTube_eq` to the `BHW.ForwardTube` API used by the source
+   theorem statement.
 
 None of these five surfaces is currently implemented in Lean; the current
 production file `BHWPermutation/SourceExtension.lean` intentionally keeps this
@@ -629,8 +732,9 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
    a strong and a germ version.  The strong predicate can still map into the
    germ predicate by `SourceVarietyHolomorphicOn.to_germ`.
 
-3. In `BHWPermutation/SourceComplexDensity.lean`, port the consumers in this
-   order:
+3. In `BHWPermutation/SourceComplexDensity.lean`, the germ consumers are
+   ported under the production theorem names, rather than under parallel
+   `_germ` wrappers.  The checked declarations have the following shapes:
 
    ```lean
    theorem BHW.SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram
@@ -642,22 +746,22 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        DifferentiableOn ℂ
          (fun z => H (BHW.sourceMinkowskiGram d n z)) V
 
-  theorem BHW.sourceComplexGramVariety_identity_principle_germ
-      (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
-      (hU_conn : IsConnected U)
-      (hW_rel : BHW.IsRelOpenInSourceComplexGramVariety d n W)
-      (hW_ne : W.Nonempty)
+   theorem BHW.sourceComplexGramVariety_identity_principle
+       (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
+       (hU_conn : IsConnected U)
+       (hW_rel : BHW.IsRelOpenInSourceComplexGramVariety d n W)
+       (hW_ne : W.Nonempty)
        (hW_sub : W ⊆ U)
        (hH : BHW.SourceVarietyGermHolomorphicOn d n H U)
        (hW_zero : Set.EqOn H 0 W) :
-      Set.EqOn H 0 U
-  ```
+       Set.EqOn H 0 U
+   ```
 
    The identity-principle port is not one monolithic rename.  The internal
-   germ ladder must be present before the public theorem is used downstream:
+   germ ladder is present before the public theorem is used downstream:
 
    ```lean
-   theorem BHW.sourceComplexGramVariety_rankExact_local_identity_near_point_germ
+   theorem BHW.sourceComplexGramVariety_rankExact_local_identity_near_point
        (hD : d + 1 < n)
        (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
        (hH : BHW.SourceVarietyGermHolomorphicOn d n H U)
@@ -676,7 +780,7 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
              (U ∩ BHW.sourceSymmetricRankExactStratum n (d + 1))) ∧
          Set.EqOn H 0 V
 
-   theorem BHW.sourceComplexGramVariety_rankExact_identity_principle_of_connected_germ
+   theorem BHW.sourceComplexGramVariety_rankExact_identity_principle_of_connected
        (hD : d + 1 < n)
        (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
        (hUreg_conn :
@@ -690,7 +794,7 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        Set.EqOn H 0
          (U ∩ BHW.sourceSymmetricRankExactStratum n (d + 1))
 
-   theorem BHW.sourceComplexGramVariety_identity_principle_of_connected_rankExact_germ
+   theorem BHW.sourceComplexGramVariety_identity_principle_of_connected_rankExact
        (hD : d + 1 < n)
        (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
        (hUreg_conn :
@@ -703,7 +807,7 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        (hW_zero : Set.EqOn H 0 W) :
        Set.EqOn H 0 U
 
-   theorem BHW.sourceComplexGramVariety_rankExact_identity_principle_germ
+   theorem BHW.sourceComplexGramVariety_rankExact_identity_principle
        (hD : d + 1 < n)
        (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
        (hU_conn : IsConnected U)
@@ -715,7 +819,7 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        Set.EqOn H 0
          (U ∩ BHW.sourceSymmetricRankExactStratum n (d + 1))
 
-   theorem BHW.sourceComplexGramVariety_identity_principle_easy_germ
+   theorem BHW.sourceComplexGramVariety_identity_principle_easy
        (hn : n <= d + 1)
        (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U)
        (hU_conn : IsConnected U)
@@ -727,15 +831,15 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        Set.EqOn H 0 U
    ```
 
-   `sourceComplexGramVariety_identity_principle_germ` is then only the final
+   `sourceComplexGramVariety_identity_principle` is then only the final
    arity split:
 
    ```lean
    by_cases hn : n <= d + 1
-   · exact BHW.sourceComplexGramVariety_identity_principle_easy_germ
+   · exact BHW.sourceComplexGramVariety_identity_principle_easy
        hn hU_rel hU_conn hW_rel hW_ne hW_sub hH hW_zero
    · have hD : d + 1 < n := by omega
-     exact BHW.sourceComplexGramVariety_identity_principle_of_connected_rankExact_germ
+     exact BHW.sourceComplexGramVariety_identity_principle_of_connected_rankExact
        hD hU_rel
        (BHW.sourceComplexGramVariety_rankExact_inter_relOpen_isConnected
          d n hD hU_rel hU_conn)
@@ -743,7 +847,7 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
    ```
 
    The final dense-extension line inside
-   `sourceComplexGramVariety_identity_principle_of_connected_rankExact_germ`
+   `sourceComplexGramVariety_identity_principle_of_connected_rankExact`
    must call
 
    ```lean
@@ -760,18 +864,19 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
    `Ψ ∘ sourceMinkowskiGram` because every Gram value lies in
    `sourceComplexGramVariety d n` by definition.  The identity principle uses
    the same rank-exact, connected-regular-locus, and density proof already
-   checked for the strong API; the only changes are replacing composition by
+   checked before the migration; the only changes are replacing composition by
    the germ local representative and using
    `SourceVarietyGermHolomorphicOn.continuousOn
      (BHW.IsRelOpenInSourceComplexGramVariety.subset hU_rel)`
    in the dense lower-rank extension.
 
-   Then port `BHW.os45AdjacentScalarEq_on_quarterTurnCorridor`: prove
-   `hΨ_holo`, `hΦ_holo`, and `hH_holo` with the germ `of_subset_relOpen`,
-   `precomp_sourcePermuteComplexGram`, and `sub`, and call
-   `sourceComplexGramVariety_identity_principle_germ`.
+   `BHW.os45AdjacentScalarEq_on_quarterTurnCorridor` has been ported in the
+   same file: it proves `hΨ_holo`, `hΦ_holo`, and `hH_holo` with the germ
+   `of_subset_relOpen`, `precomp_sourcePermuteComplexGram`, and `sub`, and
+   calls `sourceComplexGramVariety_identity_principle`.
 
-4. In `BHWPermutation/SourceComplexLocalChart.lean`, port:
+4. In `BHWPermutation/SourceComplexLocalChart.lean`, the checked germ chart
+   pullback is:
 
    ```lean
    theorem BHW.SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart
@@ -784,16 +889,16 @@ Germ-API migration transcript before any Hall-Wightman production theorem:
        DifferentiableOn ℂ (fun z => H (Γ z)) D
    ```
 
-   and change `sourceVariety_localChart_totallyReal_zero` to take
+   and `sourceVariety_localChart_totallyReal_zero` now takes
    `SourceVarietyGermHolomorphicOn`.  The selected-chart theorem already
    exports `hΓvar`; this is exactly the missing equality domain for the germ
    representative.  No new Hall-Wightman theorem is hidden here.
 
-5. In `BHWPermutation/SourceDistributionalUniqueness.lean`, change
-   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` to set
-   `H := Φ - Ψ`, build `hH` using
-   `SourceVarietyGermHolomorphicOn.sub`, call the germ local-chart theorem,
-   then call `sourceComplexGramVariety_identity_principle_germ`.  The proof
+5. In `BHWPermutation/SourceDistributionalUniqueness.lean`,
+   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` now sets
+   `H := Φ - Ψ`, builds `hH` using
+   `SourceVarietyGermHolomorphicOn.sub`, calls the germ local-chart theorem,
+   then calls `sourceComplexGramVariety_identity_principle`.  The proof
    shape and mathematical content stay the same; only the analytic predicate
    is corrected.
 
@@ -836,9 +941,12 @@ Figure-2-4 source chart must export both the forward Wick membership
 real-section equivalence
 `∀ x, (fun k => wickRotatePoint (x k)) ∈ Usrc ↔ x ∈ V0`; the latter is what
 feeds the last hypothesis of `eqOn_openConnected_of_eqOn_wickRealSection`.
-The required continuity of the real Wick section is the public helper
-`BHW.continuous_wickRotateRealConfig`, proved coordinatewise if not already
-present.
+The required continuity of the real Wick section must be exposed as the public
+helper `BHW.continuous_wickRotateRealConfig`.  The proof already exists only
+as the private helper `continuous_wickRotateRealConfig` in
+`OSToWightmanTubeIdentity.lean`; the Lean port must either export that proof
+under the `BHW` support namespace or reprove it coordinatewise at the first
+call site.
 
 The theorem-2 blueprint now names the two implementation data carriers that
 must exist, or be kept as local variables with the same fields:
@@ -862,7 +970,8 @@ not `SourceComplexGramRegularAt`; the local holomorphic-chart split is the
 different maximum-rank threshold `min (d+1) n`.  After the latest doc pass
 those are named as the specific sublemmas above, including the power-series
 and removable-singularity packet; the
-remaining review question before Lean is whether each named Hall-Wightman
+remaining review question before Lean on the scalar-representative theorem is
+whether each named Hall-Wightman
 sublemma has a fully audited source proof or approved source-import boundary,
 not whether theorem-2 may bypass them.  The
 adjacent `S'_n` package is not implementation-ready unless the proof keeps the
@@ -956,7 +1065,7 @@ content:
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq` proves equality
    on a connected complex source-neighborhood `Usrc`, using the checked
    compact Wick equality
-   `BHW.os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, the
+   `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, the
    Wick-section identity principle, and the explicit OS-I §4.5 adjacent
    source-chart scalarization theorem
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`, which puts
@@ -986,9 +1095,12 @@ content:
    ordinary-extended-tube realization of the adjacent permuted Gram point.
    The provenance form must keep
    `Gseed_def : Gseed = sourceMinkowskiGram d n zreg`; the path proof should
-   `subst Gseed` (or equivalently cast the mapped source path) before defining
-   `γseed : Path Gseed (sourceMinkowskiGram d n zwick0)`.  Without this field
-   the scalar-only seed has lost the endpoint needed by `Path.trans`.
+   either `subst Gseed` and then define
+   `γseed : Path (sourceMinkowskiGram d n zreg)
+   (sourceMinkowskiGram d n zwick0)`, or keep `Gseed` and cast the mapped
+   source path along `Gseed_def`.  Defining `γseed : Path Gseed ...` after
+   `subst Gseed` is not Lean-shaped.  Without this field the scalar-only seed
+   has lost the endpoint needed by `Path.trans`.
    Its adjacent branch is the Figure-2-4 two-plane rotated realization from
    the checked `AdjacentOverlapWitness.lean` model, made uniform around the
    same equal-time Figure-2-4 anchor by a compact-open shrink over
@@ -1521,12 +1633,9 @@ Current examples:
    `exists_sourceSelectedRealGramZeroSection_good_ball`,
    `sourceSelectedComplexGramBaseCoord_real_slice`,
    `sourceComplexGramVariety_selectedChart_of_realRegular`,
-   legacy `SourceVarietyHolomorphicOn.comp_differentiableOn_chart`,
-   and legacy `sourceVariety_localChart_totallyReal_zero`,
-   all sorry-free).  The corrected route must expose the germ counterparts
-   `SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart` and
-   `sourceVariety_localChart_totallyReal_zero` with the germ hypothesis before
-   using this packet downstream.  The global identity support has started with the checked
+   `SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart`,
+   and `sourceVariety_localChart_totallyReal_zero` with the germ hypothesis,
+   all sorry-free).  The global identity support has started with the checked
    Minkowski-to-dot reduction
    `complexMinkowskiToDotLinearEquiv`,
    `sourceComplexMinkowskiInner_eq_dot_after_equiv`,
@@ -1675,10 +1784,11 @@ Current examples:
 	   proves the pure continuity-extension lemma: if a continuous scalar-product
 	   representative on `U` vanishes on
 	   `U ∩ sourceSymmetricRankExactStratum n (d + 1)`, it vanishes on all of
-	   `U`.  The production `SourceVarietyHolomorphicOn` hypothesis now also
-	   exposes `ContinuousOn` by local ambient differentiability through the
-	   checked `SourceVarietyHolomorphicOn.continuousOn`, so the
-	   continuity-extension lemma applies directly to theorem-2 representatives.
+	   `U`.  The production `SourceVarietyGermHolomorphicOn` hypothesis exposes
+	   `ContinuousOn` through the checked
+	   `SourceVarietyGermHolomorphicOn.continuousOn` plus the relative-open
+	   subset helper, so the continuity-extension lemma applies directly to
+	   theorem-2 representatives.
 	   The easy-arity algebraic reduction is now pinned next: when
 	   `n <= d + 1`, `sourceComplexGramVariety d n` equals
 	   `sourceSymmetricMatrixSpace n`, since the rank bound in
@@ -1722,10 +1832,10 @@ Current examples:
 	   giving the connected source ball and relatively open rank-exact image
 	   needed for the local identity-propagation theorem.  On the corrected
 	   route the pullback helper is
-	   `SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`; the old
-	   checked `SourceVarietyHolomorphicOn.comp_sourceMinkowskiGram` proof is
-	   the strong-API specialization.  The local propagation theorem
-	   `sourceComplexGramVariety_rankExact_local_identity_near_point` are now
+	   `SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`; it uses a
+	   germ local representative on the source-variety slice.  The local
+	   propagation theorem
+	   `sourceComplexGramVariety_rankExact_local_identity_near_point` is now
 	   checked as well.  The conditional global propagation theorem
 	   `sourceComplexGramVariety_rankExact_identity_principle_of_connected` is
 	   now checked too: from connectedness of
@@ -1916,7 +2026,7 @@ Current examples:
 	   legacy strong-API `sourceComplexGramVariety_identity_principle` in
 	   `BHWPermutation/SourceComplexDensity.lean`; the corrected route must
 	   expose the germ analogue
-	   `sourceComplexGramVariety_identity_principle_germ` using the same
+	   `sourceComplexGramVariety_identity_principle` using the same
 	   rank-exact/continuity proof.
 	   The pairwise
 	   `sourceDistributionalUniquenessSetOnVariety_of_realEnvironment` proof is
