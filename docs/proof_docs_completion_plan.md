@@ -53,6 +53,7 @@ local Slot 1:
    Hall-Wightman source descent, and the adjacent `S'_n` package
    `BHW.os45Figure24_sourceChart_at`,
    `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
    `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
    `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
    `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
@@ -1026,6 +1027,7 @@ Second, the adjacent `S'_n` seed package must be proved in the order
 documented below:
 `BHW.os45Figure24_sourceChart_at`,
 `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+`BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
 `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
 `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
 `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
@@ -1046,7 +1048,9 @@ replaced by final real-edge equality, `AdjacentOSEOWDifferenceEnvelope`,
 global PET branch independence, or a local boundary functional standing in
 for `bvt_W`.
 
-The adjacent scalar-trace theorem has eight genuine upstream pieces.
+The adjacent scalar-trace theorem has eight genuine upstream stages; the
+second stage is deliberately split into a scalar source equality and its
+pointwise branch-evaluation corollary.
 First,
 `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero` is a checked-geometry
 normalization: using `BHW.figure24RotateAdjacentConfig_lorentz_inverse`,
@@ -1056,13 +1060,27 @@ normalization: using `BHW.figure24RotateAdjacentConfig_lorentz_inverse`,
 canonical lift `hChart.adjLift x 0` to the raw adjacent Wick section
 `BHW.permAct τ (fun k => wickRotatePoint (x k))` under `extendF` and also
 gives that raw section ordinary-extended-tube membership.  Second, the real
-OS-I §4.5/BHW/Jost source theorem is isolated as
-`BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`: equations
-(4.1), (4.12), and (4.14) construct the symmetric adjacent `S'_n` datum on
-the selected chart; BHW gives single-valued complex-Lorentz continuation for
-the two sector branches meeting at `zraw`; and Jost real-environment
-uniqueness identifies that datum from the selected compact Schwinger/Jost
-boundary.  This local source theorem must not call
+OS-I §4.5/BHW/Jost source theorem first appears as the scalar equality
+`BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`:
+for `Z = sourceMinkowskiGram d n (wick x)` on the selected source chart,
+`hRep.Phi (sourcePermuteComplexGram n τ Z) = hRep.Phi Z`.  This theorem
+must use the ordinary representative
+`hRep := BHW.sourceScalarRepresentativeData_bvt_F hd OS lgc n`, the local
+Figure-2-4 compact Schwinger/Jost seed, and the checked germ identity
+principle on the source corridor.  Its seed proof is the OS-I §4.5 chain:
+identity Wick ACR branch selection, one compact-test E3 symmetry if needed,
+equations (4.1), (4.12), and (4.14), BHW continuation of the single symmetric
+datum, and Jost real-environment uniqueness.  It is not allowed to choose a
+second scalar function or to infer off-variety equality of ambient extensions.
+The pointwise branch theorem
+`BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost` then evaluates
+this scalar equality with `SourceScalarRepresentativeData.branch_eq` on the
+two ordinary extended-tube realizations `zraw` and `wick x`; its only extra
+work is the algebra
+`sourceMinkowskiGram d n zraw =
+ sourcePermuteComplexGram n τ (sourceMinkowskiGram d n (wick x))` by
+`sourceMinkowskiGram_perm`.  The local source theorem and its pointwise
+evaluation must not call
 `bvt_F_distributionalJostAnchor_of_OSII`,
 `BHW.hallWightman_source_permutedBranch_compatibility_of_distributionalAnchor`,
 or any global PET consumer; those belong to the later `S''_n` source package.

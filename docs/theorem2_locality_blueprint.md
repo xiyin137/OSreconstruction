@@ -10153,6 +10153,129 @@ Proof decomposition of this theorem, without hiding the analytic work:
       - `AdjacentOSEOWDifferenceEnvelope`;
       - final `bvt_W` locality or pointwise `bvt_F_perm`.
 
+      This local theorem is also not allowed to remain a one-line black box.
+      Its internal source step must be exposed as the scalar equality on the
+      selected Figure-2-4 source chart:
+
+      ```lean
+      theorem BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            ∀ x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_swap_ordered :
+            ∀ x, x ∈ V ->
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          {x0 : NPointDomain d n}
+          (hChart :
+            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+          (hRep :
+            BHW.SourceScalarRepresentativeData
+              (d := d) n (bvt_F OS lgc n)) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          ∀ x, x ∈ hChart.V0 ->
+            let Z : Fin n -> Fin n -> ℂ :=
+              BHW.sourceMinkowskiGram d n
+                (fun k => wickRotatePoint (x k))
+            hRep.Phi (BHW.sourcePermuteComplexGram n τ Z) =
+            hRep.Phi Z
+      ```
+
+      The proof of this scalar source equality is the actual local
+      Hall-Wightman/Jost content.  It has three required ingredients:
+
+      1. `hRep := BHW.sourceScalarRepresentativeData_bvt_F hd OS lgc n`,
+         supplied by the ordinary Hall-Wightman scalar representative theorem
+         above.  This is the only ordinary scalar representative input; the
+         local theorem may not postulate a second source scalar function.
+      2. A local Figure-2-4 compact Schwinger/Jost seed saying that the two
+         scalar branches agree on the selected real environment.  Its proof is
+         OS I §4.5: identity Wick ACR branch selection, one `OS.E3_symmetric`
+         compact-test symmetry if the orientation goes through `φZ`, equations
+         (4.1), (4.12), and (4.14), BHW continuation of that single symmetric
+         datum, and Jost real-environment uniqueness.  This seed is a compact
+         real-environment equality, not a pointwise `bvt_F_perm` theorem.
+      3. Propagation from the seed to the source chart by the checked germ
+         identity-principle infrastructure:
+         `SourceVarietyGermHolomorphicOn.precomp_sourcePermuteComplexGram`,
+         `SourceVarietyGermHolomorphicOn.sub`, and
+         `sourceComplexGramVariety_identity_principle`, with the source-chart
+         connectedness/path fields supplied by the Figure-2-4 chart.  This is
+         the local `S'_n` source corridor step; it is not the later global
+         `S''_n` PET independence package.
+
+      Once this scalar source equality is proved, the pointwise branch
+      compatibility theorem is only evaluation of the same `hRep` on the two
+      ordinary extended-tube realizations:
+
+      ```lean
+      theorem BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost
+          ... := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        let hRep :=
+          BHW.sourceScalarRepresentativeData_bvt_F
+            (d := d) hd OS lgc n
+        intro x hx
+        let zwick : Fin n -> Fin (d + 1) -> ℂ :=
+          fun k => wickRotatePoint (x k)
+        let zraw : Fin n -> Fin (d + 1) -> ℂ :=
+          BHW.permAct (d := d) τ zwick
+        intro hzraw_id hzraw_tau
+        have hwick_ET : zwick ∈ BHW.ExtendedTube d n :=
+          BHW.forwardTube_subset_extendedTube
+            (hChart.wick_id_forwardTube x hx)
+        have hzraw_ET : zraw ∈ BHW.ExtendedTube d n := by
+          simpa [BHW.permutedExtendedTubeSector] using hzraw_id
+        have hzraw_def : zraw = BHW.permAct (d := d) τ zwick := by
+          rfl
+        have hgram_raw :
+            BHW.sourceMinkowskiGram d n zraw =
+              BHW.sourcePermuteComplexGram n τ
+                (BHW.sourceMinkowskiGram d n zwick) := by
+          simpa [hzraw_def, BHW.permAct] using
+            BHW.sourceMinkowskiGram_perm d n τ zwick
+        have hsource :
+            hRep.Phi (BHW.sourcePermuteComplexGram n τ
+                (BHW.sourceMinkowskiGram d n zwick)) =
+              hRep.Phi (BHW.sourceMinkowskiGram d n zwick) := by
+          simpa [zwick] using
+            BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost
+              (d := d) hd OS lgc n i hi V hV_jost
+              hV_ordered hV_swap_ordered hChart hRep x hx
+        calc
+          BHW.extendF (bvt_F OS lgc n) (fun k => zraw k)
+              = hRep.Phi (BHW.sourceMinkowskiGram d n zraw) := by
+                  exact (hRep.branch_eq zraw hzraw_ET).symm
+          _ = hRep.Phi
+                (BHW.sourcePermuteComplexGram n τ
+                  (BHW.sourceMinkowskiGram d n zwick)) := by
+                  rw [hgram_raw]
+          _ = hRep.Phi (BHW.sourceMinkowskiGram d n zwick) := hsource
+          _ = BHW.extendF (bvt_F OS lgc n) zwick := by
+                  exact hRep.branch_eq zwick hwick_ET
+          _ = BHW.extendF (bvt_F OS lgc n) (fun k => zraw (τ k)) := by
+                  simp [zwick, hzraw_def, BHW.permAct, Equiv.swap_inv]
+      ```
+
+      This proof transcript makes the dependency order explicit: the local
+      theorem consumes the ordinary `sourceScalarRepresentativeData_bvt_F`
+      and a local OS-I §4.5 compact real-environment seed, then uses source
+      identity propagation.  It does **not** consume the downstream theorems
+      `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
+      `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, or
+      `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`; those
+      are later public packages extracted from the compact equality and
+      provenance, not inputs to this raw branch comparison.
+
       Lean-shaped proof of the specialized branch equality after this local
       source input exists:
 
@@ -15115,6 +15238,7 @@ in this order:
 	   `S'_n` package
 	   `BHW.os45Figure24_sourceChart_at`,
 	   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+	   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
 	   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
 	   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
 	   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
@@ -15398,6 +15522,7 @@ not as the next task.  The active next implementation order is:
    seed/path package
    `BHW.os45Figure24_sourceChart_at`,
    `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
    `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
    `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
    `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
