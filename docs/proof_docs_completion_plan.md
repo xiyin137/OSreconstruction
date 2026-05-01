@@ -687,10 +687,16 @@ implementation contract is:
    forward-tube point leaves a forward-tube point, and
    `BHW.hw_isotropicFrame_allCoefficients_mem_extendedTube` proves that once
    one coefficient tuple along the frame lies in the extended tube, every
-   coefficient tuple along that frame does, including the zero tuple.  Thus
-   `base_mem`, `contracted_left_mem`, and `contracted_right_mem` are theorem
-   outputs, not assumptions and not consequences of closedness of the open
-   extended tube.
+   coefficient tuple along that frame does, including the zero tuple.  The
+   blueprint now expands the latter theorem into its actual Lean steps:
+   transport the endpoint to the forward tube, apply the finite-frame forward
+   deletion theorem to get the transformed base in `ForwardTube`, use openness
+   of `ForwardTube` plus `Real.tendsto_exp_neg_atTop_nhds_zero` to put
+   `ξ + exp(-t) b q` in the forward tube for large `t`, and then apply the
+   inverse of the explicit contraction Lorentz transformation to recover
+   `ξ + b q` in the extended tube.  Thus `base_mem`,
+   `contracted_left_mem`, and `contracted_right_mem` are theorem outputs, not
+   assumptions and not consequences of closedness of the open extended tube.
    The selected-span step is also explicit: the coefficients are the inverse
    principal-Gram-block formula
    `hw_selectedSpanCoeff n r I G i = row_i(G) * A⁻¹`, where

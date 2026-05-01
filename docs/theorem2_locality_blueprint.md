@@ -5876,6 +5876,144 @@ Proof decomposition of this theorem, without hiding the analytic work:
       remarks following Lemma 2, generalized from one null vector to a finite
       totally isotropic frame.
 
+      The "sufficiently large `t`" step is not a hidden analytic theorem.  It
+      is the following finite-dimensional open-neighborhood calculation plus
+      the explicit inverse-contraction coordinate identity.
+
+      ```lean
+      theorem BHW.forwardTube_eventually_isotropicSmallCoefficients
+          [NeZero d]
+          (hd : 2 <= d)
+          {ξ : Fin n -> Fin (d + 1) -> ℂ}
+          (hξ : ξ ∈ BHW.ForwardTube d n)
+          {s : Nat}
+          (b : Fin n -> Fin s -> ℂ)
+          (q : Fin s -> Fin (d + 1) -> ℂ) :
+          ∀ᶠ t : ℝ in atTop,
+            (fun i μ =>
+              ξ i μ + ∑ c : Fin s, Real.exp (-t) * b i c * q c μ) ∈
+              BHW.ForwardTube d n := by
+        have hFT_open : IsOpen (BHW.ForwardTube d n) :=
+          BHW.isOpen_forwardTube (d := d) (n := n)
+        have hsmall :
+            Tendsto
+              (fun t : ℝ =>
+                fun i μ => ∑ c : Fin s,
+                  Real.exp (-t) * b i c * q c μ)
+              atTop
+              (nhds (0 : Fin n -> Fin (d + 1) -> ℂ)) :=
+          BHW.tendsto_isotropicResidual_exp_neg_zero
+            (b := b) (q := q)
+        have hto :
+            Tendsto
+              (fun t : ℝ =>
+                fun i μ =>
+                  ξ i μ + ∑ c : Fin s,
+                    Real.exp (-t) * b i c * q c μ)
+              atTop (nhds ξ) := by
+          simpa using hsmall.const_add ξ
+        exact hto.eventually (hFT_open.mem_nhds hξ)
+
+      theorem BHW.complexLorentzAction_inv_contract_scaled_isotropic
+          [NeZero d]
+          {ξ : Fin n -> Fin (d + 1) -> ℂ}
+          {s : Nat}
+          {q : Fin s -> Fin (d + 1) -> ℂ}
+          {contract : ℝ -> ComplexLorentzGroup d}
+          (hcontract_fix_ξ :
+            ∀ t i μ,
+              (∑ ν : Fin (d + 1), (contract t).val μ ν * ξ i ν) = ξ i μ)
+          (hcontract_scale_q :
+            ∀ t c μ,
+              (∑ ν : Fin (d + 1), (contract t).val μ ν * q c ν) =
+                Real.exp (-t) * q c μ)
+          (t : ℝ)
+          (b : Fin n -> Fin s -> ℂ) :
+          BHW.complexLorentzAction (contract t)⁻¹
+              (fun i μ =>
+                ξ i μ + ∑ c : Fin s,
+                  Real.exp (-t) * b i c * q c μ)
+            =
+          (fun i μ => ξ i μ + ∑ c : Fin s, b i c * q c μ)
+
+      theorem BHW.hw_isotropicFrame_allCoefficients_mem_extendedTube
+          ... := by
+        rcases hξq with ⟨Λ0, y, hyFT, hy_eq⟩
+        -- Transport the base and residual frame back to the forward tube.
+        let ξ0 : Fin n -> Fin (d + 1) -> ℂ :=
+          BHW.complexLorentzAction Λ0⁻¹ ξ
+        let q0 : Fin s -> Fin (d + 1) -> ℂ :=
+          fun c => BHW.complexLorentzVectorAction Λ0⁻¹ (q c)
+        have hy_decomp :
+            y = fun i μ => ξ0 i μ + ∑ c : Fin s, a i c * q0 c μ := by
+          -- Apply `Λ0⁻¹` to `hy_eq` and distribute the linear action.
+          ext i μ
+          simp [ξ0, q0, hy_eq, BHW.complexLorentzAction,
+            Finset.mul_sum, Finset.sum_mul, mul_assoc, mul_left_comm,
+            mul_comm]
+        have hξ0_FT :
+            ξ0 ∈ BHW.ForwardTube d n := by
+          -- Hall-Wightman's second remark, in the transformed forward-tube
+          -- frame.
+          exact BHW.hw_isotropicFrame_base_mem_forwardTube_of_endpoint
+            (d := d) hd (by simpa [hy_decomp] using hyFT)
+            (BHW.complexLorentzAction_preserves_isotropic_pairings
+              (d := d) Λ0⁻¹ hq_pair_zero)
+            (BHW.complexLorentzAction_preserves_base_orthogonality
+              (d := d) Λ0⁻¹ hq_orth)
+        rcases BHW.complexMinkowski_isotropicContractionFamily
+            (d := d) hd
+            (ξ := ξ0) (q := q0)
+            (qDual := fun c =>
+              BHW.complexLorentzVectorAction Λ0⁻¹ (qDual c))
+            (BHW.complexLorentzAction_preserves_isotropic_pairings
+              (d := d) Λ0⁻¹ hq_pair_zero)
+            (BHW.complexLorentzAction_preserves_isotropic_pairings
+              (d := d) Λ0⁻¹ hqDual_pair_zero)
+            (BHW.complexLorentzAction_preserves_dual_pairings
+              (d := d) Λ0⁻¹ hq_dual)
+            (BHW.complexLorentzAction_preserves_base_orthogonality
+              (d := d) Λ0⁻¹ hq_orth)
+            (BHW.complexLorentzAction_preserves_base_orthogonality
+              (d := d) Λ0⁻¹ hqDual_orth) with
+          ⟨contract, hfix, hscale, _hscaleDual⟩
+        have hall_forward :
+            ∀ b : Fin n -> Fin s -> ℂ,
+              (fun i μ => ξ0 i μ + ∑ c : Fin s, b i c * q0 c μ) ∈
+                BHW.ExtendedTube d n := by
+          intro b
+          rcases
+            (BHW.forwardTube_eventually_isotropicSmallCoefficients
+              (d := d) hd hξ0_FT b q0).exists with
+            ⟨t, htFT⟩
+          refine ⟨(contract t)⁻¹,
+            (fun i μ =>
+              ξ0 i μ + ∑ c : Fin s,
+                Real.exp (-t) * b i c * q0 c μ),
+            htFT, ?_⟩
+          exact
+            BHW.complexLorentzAction_inv_contract_scaled_isotropic
+              hfix hscale t b
+        have hξ0_ET : ξ0 ∈ BHW.ExtendedTube d n := by
+          simpa using hall_forward (fun _ _ => 0)
+        constructor
+        · exact BHW.complexLorentzAction_mem_extendedTube
+            (d := d) n Λ0 hξ0_ET
+        · intro b
+          have hb0 := hall_forward b
+          exact BHW.complexLorentzAction_mem_extendedTube
+            (d := d) n Λ0 hb0
+      ```
+
+      The placeholder-looking preservation lemmas in the skeleton above are
+      pure complex-Lorentz algebra: applying a complex Lorentz transformation
+      preserves `complexMinkowskiBilinear`, hence isotropy, dual pairings, and
+      orthogonality to the transformed base.  They should either be existing
+      `ComplexLieGroups` lemmas or private two-line `simpa` corollaries of
+      the current metric-preservation theorem.  The only topology in the proof
+      is openness of the forward tube and finite-coordinate convergence of
+      `Real.exp (-t)` to zero.
+
       /-- Hall-Wightman's tube lemma after Lemma 2: because the contraction is
       itself a complex Lorentz transformation, every contracted residual-frame
       configuration remains in the ordinary extended tube and converges to the
