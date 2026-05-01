@@ -7394,6 +7394,107 @@ Proof decomposition of this theorem, without hiding the analytic work:
             IsUnit P.det ∧
             P * A * P.transpose = 1
 
+      theorem BHW.complexSymmetric_invertible_orthogonalBasis
+          (r : Nat)
+          {A : Matrix (Fin r) (Fin r) ℂ}
+          (hSym : A.transpose = A)
+          (hInv : IsUnit A.det) :
+          ∃ b : Basis (Fin r) ℂ (Fin r -> ℂ),
+            (Matrix.toBilin' A).IsOrthoᵢ b ∧
+            ∀ i, Matrix.toBilin' A (b i) (b i) ≠ 0
+
+      theorem BHW.complexSymmetric_invertible_diagonalScaling
+          (r : Nat)
+          {A : Matrix (Fin r) (Fin r) ℂ}
+          {b : Basis (Fin r) ℂ (Fin r -> ℂ)}
+          (hb_ortho : (Matrix.toBilin' A).IsOrthoᵢ b)
+          (hb_diag : ∀ i, Matrix.toBilin' A (b i) (b i) ≠ 0) :
+          ∃ s : Fin r -> ℂ,
+            (∀ i,
+              s i * s i * Matrix.toBilin' A (b i) (b i) = 1)
+
+      theorem BHW.basis_smul_nonzero
+          {ι V : Type*} [Fintype ι] [DecidableEq ι]
+          [AddCommGroup V] [Module ℂ V]
+          (b : Basis ι ℂ V)
+          (s : ι -> ℂ)
+          (hs : ∀ i, s i ≠ 0) :
+          ∃ b' : Basis ι ℂ V, ∀ i, b' i = s i • b i
+
+      Proof transcript for
+      `BHW.complexSymmetric_invertible_congruence_to_identity`:
+
+      1. Let `B := Matrix.toBilin' A` on `Fin r -> ℂ`.  The hypothesis
+         `hSym : A.transpose = A` says `B` is symmetric; the determinant-unit
+         hypothesis says the left map of `B` is a linear equivalence, hence
+         `B` has zero radical.
+      2. Apply Mathlib's symmetric-bilinear orthogonal-basis theorem
+         `LinearMap.BilinForm.exists_orthogonal_basis` to obtain
+         `b : Basis (Fin r) ℂ (Fin r -> ℂ)` with `B.IsOrthoᵢ b`.  Because
+         `B` is nondegenerate, no diagonal value `B (b i) (b i)` can vanish:
+         if it did, orthogonality would make `b i` pair to zero with every
+         basis vector and hence with every vector, contradicting
+         nondegeneracy.  This is packaged as
+         `BHW.complexSymmetric_invertible_orthogonalBasis`.
+      3. For each `i`, choose `s i` with
+         `(s i)^2 * B (b i) (b i) = 1`.  Since `ℂ` is algebraically closed and
+         `B (b i) (b i) ≠ 0`, take
+         `s i := complexSquareRootChoice ((B (b i) (b i))⁻¹)`.  This is
+         `BHW.complexSymmetric_invertible_diagonalScaling`.
+      4. Let `u i := s i • b i`.  Then `u` is a basis, and its Gram matrix
+         for `B` is the identity: off-diagonal entries vanish by
+         `hb_ortho`, while diagonal entries are `1` by the scaling equation.
+      5. Let `P` be the matrix whose `i`th row is the coordinate vector of
+         `u i` in the standard basis.  Equivalently, `P` is the change-of-basis
+         matrix from the standard basis to `u`, with the orientation chosen so
+         `P * A * P.transpose` is the matrix of `B` on the row vectors `u i`.
+         Since `u` is a basis, `P.det` is a unit.  The matrix-entry
+         calculation gives `P * A * P.transpose = 1`.
+
+      Lean-shaped proof skeleton:
+
+      ```lean
+      theorem BHW.complexSymmetric_invertible_congruence_to_identity
+          ... := by
+        let B : LinearMap.BilinForm ℂ (Fin r -> ℂ) := Matrix.toBilin' A
+        rcases BHW.complexSymmetric_invertible_orthogonalBasis
+            (r := r) hSym hInv with
+          ⟨b, hb_ortho, hb_diag⟩
+        rcases BHW.complexSymmetric_invertible_diagonalScaling
+            (r := r) (A := A) hb_ortho hb_diag with
+          ⟨s, hs⟩
+        have hs_ne : ∀ i, s i ≠ 0 := by
+          intro i hs0
+          have := hs i
+          simp [hs0, hb_diag i] at this
+        rcases BHW.basis_smul_nonzero b s hs_ne with
+          ⟨u, hu_apply⟩
+        let P : Matrix (Fin r) (Fin r) ℂ :=
+          fun i j => (Pi.basisFun ℂ (Fin r)).repr (u i) j
+        have hP_unit : IsUnit P.det := by
+          -- `P` is the basis matrix of `u` in the standard basis.
+          exact BHW.isUnit_det_basis_rowMatrix u
+        have hentries :
+            ∀ i j, (P * A * P.transpose) i j = if i = j then 1 else 0 := by
+          intro i j
+          by_cases hij : i = j
+          · subst j
+            simpa [P, B, hu_apply, Matrix.toBilin'_apply, hs i]
+          · simpa [P, B, hu_apply, Matrix.toBilin'_apply, hij,
+              hb_ortho hij] using hb_ortho hij
+        refine ⟨P, hP_unit, ?_⟩
+        ext i j
+        simpa [Matrix.one_apply] using hentries i j
+      ```
+
+      The displayed `u` construction can be implemented more simply using
+      Mathlib's existing basis scaling API if available, for example a
+      `Basis.map` by the diagonal linear equivalence in the `b` coordinates.
+      The mathematical obligation is exactly the four finite-dimensional
+      facts above: symmetric bilinear orthogonal basis, nonzero diagonal from
+      nondegeneracy, square-root scaling over `ℂ`, and the row-matrix
+      congruence calculation.
+
       /-- Hall-Wightman's first reduction in Lemma 3: an extended-tube
       scalar point admits a same-Gram extended-tube representative whose
       source-vector span has dimension equal to the scalar Gram rank.

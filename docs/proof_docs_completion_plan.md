@@ -749,7 +749,13 @@ implementation contract is:
    pull the normalized realization back to the adapted base tuple.  The base
    selected-block normalization also needs the arbitrary invertible symmetric
    congruence theorem
-   `BHW.complexSymmetric_invertible_congruence_to_identity`, while the
+   `BHW.complexSymmetric_invertible_congruence_to_identity`, decomposed into
+   `BHW.complexSymmetric_invertible_orthogonalBasis`,
+   `BHW.complexSymmetric_invertible_diagonalScaling`, and
+   `BHW.basis_smul_nonzero`: use an orthogonal basis for the nondegenerate
+   symmetric bilinear form `Matrix.toBilin' A`, prove every diagonal value is
+   nonzero, scale by square roots of inverse diagonal values over `ℂ`, and
+   read off the row-matrix congruence `P * A * Pᵀ = 1`.  The
    perturbative selected block still uses
    `BHW.hwLemma3_selectedBlock_sqrt_near_identity`.  Then come the normalized
    surjectivity theorem
