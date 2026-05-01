@@ -9802,12 +9802,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       Implementation-level decomposition of item 5:
 
-      The source-side pairing theorem must be proved against the permuted
-      Schwinger functional, not by evaluating the raw adjacent Wick trace
+      The upstream non-mechanical theorem is the deterministic canonical-lift
+      compact pairing theorem
+      `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`, stated
+      below.  It must be proved directly from the OS I §4.5/BHW/Jost
+      compact-boundary argument for the selected Figure-2-4 lift.  It is not
+      derived from the raw pointwise branch comparison
+      `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
+      because that pointwise theorem is downstream of the chart-local source
+      equality and would make the source seed proof circular.
+
+      The source-side pairing theorem must therefore be proved against the
+      canonical lift first, not by evaluating the raw adjacent Wick trace
       pointwise and not by integrating an arbitrary chosen `Δ_x`.  For compact
       tests supported in the selected chart, package the test as a
       zero-diagonal Schwinger test and permute it exactly as in
-      `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.
+      `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`.  After the
+      canonical compact theorem is available, the raw pointwise branch
+      comparison and its compact corollaries are mechanical consequences of
+      the local scalar source equality, not inputs to it.
 
       The canonical lift support is:
 
@@ -11242,21 +11255,62 @@ Proof decomposition of this theorem, without hiding the analytic work:
       permuted-Wick, and any convenience canonical aliases are mechanical
       consequences of this theorem plus `hRep.branch_eq`,
       `hChart.adjLift_sourceGram`, and the Lorentz normalization theorem
-      above.  If the proof of the canonical theorem is organized by first
-      proving the raw OS-I §4.5 compact-boundary statement and then
-      transporting it to the canonical lift, that raw statement must be the
-      already scheduled raw theorem surface, not a second public theorem with
-      the same conclusion.  Do not add a duplicate canonical theorem name; this
-      theorem remains the source boundary gate.
+      above.  The proof of the canonical theorem itself is the source
+      boundary gate: it packages OS I equations (4.1), (4.12), and (4.14),
+      Euclidean symmetry on the compact test `ψZ`, BHW continuation of the
+      symmetric adjacent branch, and Jost real-environment uniqueness for the
+      selected Figure-2-4 chart.  It may use the deterministic lift geometry
+      and Lorentz normalization, but it must not call the raw pointwise branch
+      comparison or any theorem derived from the chart-local source equality.
+      Do not add a duplicate canonical theorem name; this theorem remains the
+      source boundary gate.
 
       The proof transcript for this gate has one non-mechanical analytic
-      comparison input and one checked geometric transport.  The analytic
-      input is
-      `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`; the raw
-      Schwinger-valued theorem immediately above packages that comparison
-      with `bvt_euclidean_restriction` and the finite permutation
-      change-of-variables.  The canonical theorem consumes that packaged raw
-      theorem:
+      compact-boundary input and deterministic Figure-2-4 geometry.  The
+      analytic input is not a raw-Wick theorem; it is the OS-I §4.5 statement
+      for the canonical lift itself:
+
+      ```lean
+      theorem BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger ... := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        intro φ hφ_comp hφ_supp
+        let φZ : ZeroDiagonalSchwartz d n :=
+          ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+            (d := d) (n := n) hChart.V0
+            (fun x hx => hV_jost x (hChart.V0_sub hx)) φ hφ_supp⟩
+        let ψZ : ZeroDiagonalSchwartz d n :=
+          permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+        -- OS I §4.5/BHW/Jost compact-boundary theorem for the selected
+        -- deterministic Figure-2-4 lift.  This is the non-mechanical source
+        -- input of the adjacent `S'_n` scalarization proof.
+        -- The production proof must inline the four-step source transcript
+        -- listed below; do not replace this by a second public wrapper.
+        exact ?os45_section45_bhw_jost_compact_boundary
+      ```
+
+      The placeholder in this pseudocode is not a theorem name and must not
+      survive production.  It marks the source proof that has to be written
+      inside the public theorem (or as a private implementation lemma during
+      the same proof pass).  Its proof transcript is:
+
+      1. form `φZ` and `ψZ` exactly as above and rewrite `OS.S n ψZ` by
+         `bvt_euclidean_restriction`;
+      2. use OS I equations (4.1), (4.12), and (4.14) plus `OS.E3_symmetric`
+         as needed to identify the same compact Euclidean branch on the
+         adjacent `S'_n` side;
+      3. apply the Bargmann-Hall-Wightman invariant-function theorem to
+         continue this compact branch to the deterministic lift
+         `hChart.adjLift x 0` in the ordinary extended tube;
+      4. use the selected Jost real-environment uniqueness for the compact
+         test family on `hChart.V0` to identify the BHW continuation with the
+         OS-II Euclidean compact branch.
+
+      This is the only non-mechanical input in
+      `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`.
+      The following raw/canonical transport is recorded only as a downstream
+      consequence after the local scalar source equality has produced the raw
+      pointwise branch theorem:
 
       ```lean
       have hBHWJost_raw :
@@ -11307,8 +11361,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       exact hcanonical_to_raw.trans hBHWJost_raw
       ```
 
-      This proof shape is the only allowed way to use the raw adjacent Wick
-      section in this block.  In particular, the already implemented
+      This downstream transport is the only allowed way to use the raw
+      adjacent Wick section after the source equality has been proved.  In
+      particular, the already implemented
       `BHW.extendF_eq_boundary_value` and
       `BHW.extendF_eq_boundary_value_ET` helpers are insufficient here:
       their conclusions concern real-embedded boundary configurations
@@ -11650,9 +11705,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```
 
       The theorem
-      `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger` is still
-      blocked on the raw adjacent-Wick BHW/Jost compact-boundary proof
-      transcript.  The displayed
+      `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger` is the
+      upstream OS-I §4.5/BHW/Jost compact-boundary proof obligation for the
+      adjacent trace theorem.  It is deliberately earlier than the raw
+      adjacent-Wick pointwise branch theorem; deriving it from that pointwise
+      theorem would be circular.  The displayed
       `BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary` theorem
       is a genuine derived theorem, not a wrapper: it removes only the
       already-checked Euclidean functional rewrite and the

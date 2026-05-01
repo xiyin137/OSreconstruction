@@ -1397,37 +1397,40 @@ and the OS-II adjacent Wick trace
 `x ↦ bvt_F OS lgc n (fun k => wickRotatePoint (x (τ k)))`.  The pointwise
 version is not an input to the seed proof; using it there is circular because
 it already asserts the adjacent `S'_n` scalarization on the Wick real section.
-Its proof is the local OS I §4.5/BHW scalar-trace comparison in six steps:
-first prove the specialized pointwise branch comparison
-`BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`;
-derive the left-side compact theorem
-`BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`
-by `extendF_eq_on_forwardTube`, `bvt_euclidean_restriction`, and E3; derive
-the right-side compact theorem
-`BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger` by finite
-permutation change of variables and `bvt_euclidean_restriction`; compose those
-two compact theorems as
-`BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`; derive the raw
-Schwinger-valued theorem
-`BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger` by
-that compact comparison and the right-side support theorem; transport that raw theorem by
-Figure-2-4 Lorentz normalization to the
-canonical-lift theorem
-`BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`; then derive the
-source-pullback theorem
+Its proof must not pass through the specialized pointwise raw branch
+comparison
+`BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`: that
+theorem consumes the chart-local source equality whose proof needs the
+adjacent trace theorem, so using it here would be circular.  The upstream
+non-mechanical input is instead the deterministic canonical-lift compact
+theorem
+`BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`, proved directly
+from OS I §4.5 equations (4.1), (4.12), and (4.14), Euclidean symmetry on
+the compact test `ψZ`, the BHW continuation of the symmetric adjacent branch,
+and Jost real-environment uniqueness on the selected Figure-2-4 chart.  Then
+derive
 `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger` by
-`hRep.branch_eq` and `hChart.adjLift_sourceGram`.
-Only after that may the final finite permutation change of variables identify
-the adjacent Wick trace pairing.  It must not be
+`hRep.branch_eq` and `hChart.adjLift_sourceGram`, and only after that apply
+the final finite permutation change of variables to identify the adjacent
+Wick trace pairing.
+
+The raw pointwise theorem
+`BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`, the raw
+compact theorem
+`BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`, and
+the comparison
+`BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F` are downstream
+consequences after the local source equality has been proved.  They must not
+be inputs to the adjacent trace theorem or to the seed proof.  The adjacent
+trace theorem also must not be
 replaced by the global pointwise theorem `bvt_F_perm`, by final `bvt_W`
 locality, by `AdjacentOSEOWDifferenceEnvelope`, or by the global PET
-branch-independence consumer.  Until the pointwise
-`extendF` branch comparison has a complete OS-I
-§4.5/Bargmann-Hall-Wightman/Jost proof transcript, until the raw comparison
-and canonical-lift theorems are obtained from it by the checked mechanical
-rewrites, and until the source-pullback rewrite has a complete mechanical
-transcript from the canonical theorem, the adjacent `S'_n` package is not
-Lean-ready.
+branch-independence consumer.  Until the canonical-lift compact theorem has a
+complete OS-I
+§4.5/Bargmann-Hall-Wightman/Jost proof transcript, until the source-pullback
+rewrite has a complete mechanical transcript from the canonical theorem, and
+until the downstream raw comparison is derived only after the local source
+equality exists, the adjacent `S'_n` package is not Lean-ready.
 
 Readiness gate for production Lean: the theorem-2 blueprint must remain the
 source of truth for Lean-shaped pseudocode.  The scalar-source theorem is not
