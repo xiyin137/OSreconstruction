@@ -4985,6 +4985,223 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (x : Fin (d + 1) -> ℂ) ∈
               Submodule.span ℂ (Set.range q))
 
+      The proof of this alignment theorem is a finite-dimensional Witt
+      construction in the orthogonal complement of `M`; it must not be left
+      as a black-box "put both residual spaces in the same null frame".  The
+      required support packet is:
+
+      ```lean
+      def BHW.complexMinkowskiOrthogonalSubmodule
+          (d : Nat)
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ)) :
+          Submodule ℂ (Fin (d + 1) -> ℂ) :=
+        { carrier := {v | ∀ m : M,
+              BHW.complexMinkowskiBilinear d v
+                (m : Fin (d + 1) -> ℂ) = 0}
+          zero_mem' := by simp
+          add_mem' := by
+            intro x y hx hy m
+            simp [BHW.complexMinkowskiBilinear_add_left, hx m, hy m]
+          smul_mem' := by
+            intro c x hx m
+            simp [BHW.complexMinkowskiBilinear_smul_left, hx m] }
+
+      theorem BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
+          [NeZero d]
+          (hd : 2 <= d)
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          BHW.ComplexMinkowskiNondegenerateSubspace d
+            (BHW.complexMinkowskiOrthogonalSubmodule d M)
+
+      theorem BHW.subspace_le_complexMinkowskiOrthogonalSubmodule
+          {M R : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hR_orth :
+            ∀ x : R, ∀ m : M,
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (m : Fin (d + 1) -> ℂ) = 0) :
+          R ≤ BHW.complexMinkowskiOrthogonalSubmodule d M
+
+      structure BHW.ComplexMinkowskiMaximalIsotropicFrameIn
+          (d : Nat)
+          (N : Submodule ℂ (Fin (d + 1) -> ℂ)) where
+        s : Nat
+        q : Fin s -> Fin (d + 1) -> ℂ
+        q_mem : ∀ c, q c ∈ N
+        q_independent : LinearIndependent ℂ q
+        q_pair_zero :
+          ∀ c c',
+            BHW.complexMinkowskiBilinear d (q c) (q c') = 0
+        maximal :
+          ∀ R : Submodule ℂ (Fin (d + 1) -> ℂ),
+            R ≤ N ->
+            BHW.ComplexMinkowskiTotallyIsotropicSubspace d R ->
+            Module.finrank ℂ R ≤ s
+
+      theorem BHW.complexMinkowski_maximalIsotropicFrameIn_exists
+          [NeZero d]
+          (hd : 2 <= d)
+          {N : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hN :
+            BHW.ComplexMinkowskiNondegenerateSubspace d N) :
+          Nonempty
+            (BHW.ComplexMinkowskiMaximalIsotropicFrameIn d N)
+
+      theorem BHW.complexMinkowski_maximalIsotropicFrameIn_extending
+          [NeZero d]
+          (hd : 2 <= d)
+          {N R : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hN :
+            BHW.ComplexMinkowskiNondegenerateSubspace d N)
+          (hR_le : R ≤ N)
+          (hR_iso : BHW.ComplexMinkowskiTotallyIsotropicSubspace d R) :
+          ∃ F : BHW.ComplexMinkowskiMaximalIsotropicFrameIn d N,
+            R ≤ Submodule.span ℂ (Set.range F.q)
+
+      theorem BHW.complexMinkowski_totallyIsotropic_embedding_into_frame
+          [NeZero d]
+          (hd : 2 <= d)
+          {N R : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (F : BHW.ComplexMinkowskiMaximalIsotropicFrameIn d N)
+          (hR_le : R ≤ N)
+          (hR_iso : BHW.ComplexMinkowskiTotallyIsotropicSubspace d R) :
+          ∃ E : R ->ₗ[ℂ] (Fin (d + 1) -> ℂ),
+            Function.Injective E ∧
+            (∀ x : R,
+              E x ∈ Submodule.span ℂ (Set.range F.q)) ∧
+            (∀ x y : R,
+              BHW.complexMinkowskiBilinear d
+                (E x)
+                (E y)
+              =
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (y : Fin (d + 1) -> ℂ))
+      ```
+
+      Proof transcript for this packet: `complexMinkowskiOrthogonalSubmodule`
+      is a submodule because the bilinear form is linear in the first
+      variable.  If `M` is nondegenerate in the ambient nondegenerate complex
+      Minkowski space, the standard finite-dimensional decomposition
+      `ambient = M ⊔ Mᗮ` gives nondegeneracy of `Mᗮ`; in Lean this is the
+      same Gram-matrix block diagonal argument used in
+      `complexMinkowski_wittExtension`.  A maximal isotropic frame in a
+      nondegenerate finite-dimensional complex bilinear space is obtained by
+      induction on finrank: if there is no nonzero isotropic vector, take
+      `s = 0`; otherwise split off a hyperbolic pair `(q, qDual)` and recurse
+      on the orthogonal complement of their span.  Maximality records the
+      Witt-index dimension bound for every totally isotropic subspace.  The
+      strengthened constructor
+      `complexMinkowski_maximalIsotropicFrameIn_extending` starts with a
+      basis of the given totally isotropic subspace `R`, splits off dual
+      hyperbolic partners for that basis, and then completes the basis to a
+      maximal isotropic frame inside the remaining orthogonal complement.  Its
+      output is essential here: the right residual subspace `Rw` must already
+      lie in the final frame span before the left residual subspace is moved.
+
+      For `complexMinkowski_totallyIsotropic_embedding_into_frame`, choose a
+      basis of `R`.  The maximality field gives
+      `finrank R <= F.s`, so inject that basis index into `Fin F.s` and send
+      the basis vectors of `R` to the corresponding `F.q` vectors.  Since the
+      bilinear form vanishes identically on `R` and on the span of the frame,
+      the map preserves pairings automatically; the selected `F.q` subfamily
+      is independent, so the map is injective.  The theorem deliberately
+      returns an injective map into the frame span, not an equivalence onto the
+      full frame span: `R` may have smaller dimension than the chosen maximal
+      frame.
+
+      Lean-shaped proof of the residual alignment theorem after the support
+      packet exists:
+
+      ```lean
+      theorem BHW.complexMinkowski_alignResidualSubspaces_to_commonIsotropicFrame
+          ... := by
+        let N := BHW.complexMinkowskiOrthogonalSubmodule d M
+        have hN_nondeg :
+            BHW.ComplexMinkowskiNondegenerateSubspace d N :=
+          BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
+            (d := d) hd hM
+        have hRz_le : Rz ≤ N :=
+          BHW.subspace_le_complexMinkowskiOrthogonalSubmodule
+            (d := d) hRz_orth
+        have hRw_le : Rw ≤ N :=
+          BHW.subspace_le_complexMinkowskiOrthogonalSubmodule
+            (d := d) hRw_orth
+        rcases BHW.complexMinkowski_maximalIsotropicFrameIn_extending
+            (d := d) hd hN_nondeg hRw_le hRw_iso with
+          ⟨F, hRw_Q⟩
+        rcases
+          BHW.complexMinkowski_totallyIsotropic_embedding_into_frame
+            (d := d) hd F hRz_le hRz_iso with
+          ⟨Eleft, hEleft_inj, hEleft_Q, hEleft_preserves⟩
+        let Qspan : Submodule ℂ (Fin (d + 1) -> ℂ) :=
+          Submodule.span ℂ (Set.range F.q)
+        let Qleft : Submodule ℂ (Fin (d + 1) -> ℂ) :=
+          LinearMap.range Eleft
+        have hQleft_le_Qspan : Qleft ≤ Qspan := by
+          rintro v ⟨x, rfl⟩
+          exact hEleft_Q x
+        let Domain : Submodule ℂ (Fin (d + 1) -> ℂ) := M ⊔ Rz
+        let Target : Submodule ℂ (Fin (d + 1) -> ℂ) := M ⊔ Qleft
+        let T : Domain ≃ₗ[ℂ] Target :=
+          BHW.directSum_identity_sum_isotropicEmbedding
+            (d := d) M Rz Eleft hM hRz_orth hRz_iso
+            hEleft_inj hEleft_Q hEleft_preserves
+        have hT_preserves :
+            ∀ x y : Domain,
+              BHW.complexMinkowskiBilinear d
+                ((T x : Target) : Fin (d + 1) -> ℂ)
+                ((T y : Target) : Fin (d + 1) -> ℂ) =
+              BHW.complexMinkowskiBilinear d
+                (x : Fin (d + 1) -> ℂ)
+                (y : Fin (d + 1) -> ℂ) :=
+          BHW.directSum_identity_sum_isotropicEmbedding_preserves
+            (d := d) M Rz Eleft hM hRz_orth hRz_iso
+            hEleft_Q F.q_mem F.q_pair_zero hEleft_preserves
+        rcases BHW.complexMinkowski_wittExtension_subspaceIsometry
+            (d := d) hd T hT_preserves with
+          ⟨Λfix, hΛfix⟩
+        refine ⟨Λfix, F.s, F.q, ?_, F.q_independent,
+          F.q_pair_zero, ?_, ?_, ?_⟩
+        · intro m
+          have hmDomain : (m : Fin (d + 1) -> ℂ) ∈ Domain :=
+            Submodule.mem_sup_left m.2
+          exact hΛfix ⟨m, hmDomain⟩ |> congrArg Subtype.val
+        · intro c m
+          have hqN : F.q c ∈ N := F.q_mem c
+          exact hqN m
+        · intro x
+          have hxDomain : (x : Fin (d + 1) -> ℂ) ∈ Domain :=
+            Submodule.mem_sup_right x.2
+          have hTx : ((T ⟨x, hxDomain⟩ : Target) :
+              Fin (d + 1) -> ℂ) ∈ Qleft :=
+            BHW.directSum_identity_sum_isotropicEmbedding_maps_right
+              (d := d) M Rz Eleft x
+          have hTxQ : ((T ⟨x, hxDomain⟩ : Target) :
+              Fin (d + 1) -> ℂ) ∈ Qspan :=
+            hQleft_le_Qspan hTx
+          simpa [Qspan] using
+            (show BHW.complexLorentzVectorAction Λfix
+                (x : Fin (d + 1) -> ℂ) =
+              ((T ⟨x, hxDomain⟩ : Target) :
+                Fin (d + 1) -> ℂ) from hΛfix ⟨x, hxDomain⟩) ▸ hTxQ
+        · intro x
+          exact hRw_Q x.2
+      ```
+
+      The pseudocode uses the proof-local helper
+      `directSum_identity_sum_isotropicEmbedding` and its `preserves` /
+      `maps_right` projections.  These are not new route assumptions: they are
+      the finite linear map on `M ⊔ Rz` which is the identity on `M` and
+      `Eleft` on `Rz`, with codomain `M ⊔ LinearMap.range Eleft`, not the
+      whole maximal frame span.  The proof that it preserves the bilinear form
+      is exactly the block calculation using nondegeneracy of `M`,
+      orthogonality of `Rz` and the frame span to `M`, and total isotropy of
+      both residual blocks.  If the Lean implementation avoids naming this
+      helper, it must still perform the same block calculation before applying
+      Witt extension.
+
       theorem BHW.exists_coefficients_of_mem_span_finite_frame
           {d s : Nat}
           {q : Fin s -> Fin (d + 1) -> ℂ}

@@ -562,6 +562,18 @@ implementation contract is:
    two residual families in one finite totally isotropic frame `q`, and
    `BHW.exists_coefficients_of_mem_span_finite_frame` extracts the coefficient
    functions `aLeft` and `aRight` from the explicit span-membership fields.
+   The residual-frame alignment now has an implementation-level support
+   packet in the blueprint: define
+   `BHW.complexMinkowskiOrthogonalSubmodule d M`; prove its nondegeneracy
+   from nondegeneracy of `M`; build a maximal isotropic frame in that
+   orthogonal complement extending the right residual subspace `Rw`; inject
+   the left residual subspace `Rz` into the span of that frame by the
+   Witt-index dimension bound; then define the partial isometry on
+   `M ⊔ Rz` as the identity on `M` and that injection on `Rz`, with codomain
+   `M ⊔ LinearMap.range Eleft`.  This correction is important: the map from
+   `Rz` is only an injective isometry into the frame span, not an equivalence
+   onto the whole maximal frame span, and the frame must be chosen to contain
+   `Rw` before Witt extension is applied.
    The later convergence proof must use the explicit contracted
    configurations and `Real.tendsto_exp_neg_atTop_nhds_zero`, not continuity
    of a noncomputably chosen `t ↦ contract t`.  The contraction data
