@@ -14947,6 +14947,74 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Do not add a duplicate canonical theorem name; this theorem remains the
       source boundary gate.
 
+      Canonical-lift compact-boundary readiness gate.  Production Lean may
+      introduce
+      `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger` only after
+      all of the following have source proofs in the same dependency
+      direction:
+
+      ```lean
+      -- A. Compact-test orientation: build the exact zero-diagonal tests.
+      let φZ : ZeroDiagonalSchwartz d n :=
+        ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+          (d := d) (n := n) hChart.V0
+          (fun x hx => hV_jost x (hChart.V0_sub hx)) φ hφ_supp⟩
+      let ψZ : ZeroDiagonalSchwartz d n :=
+        permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+
+      -- B. OS-I §4.5 source data for this deterministic lift, with no scalar
+      -- representative or local source equality as input.
+      have D :
+          BHW.OS45CanonicalAdjacentBranchBoundaryData
+            hd OS lgc n i hi V hV_jost hChart
+            φ hφ_comp hφ_supp :=
+        BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
+          (d := d) hd OS lgc n i hi V hV_jost
+          hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+
+      -- C. OS-free Jost/Ruelle uniqueness on the connected analytic branch
+      -- domain carried by `D.jr`.
+      have huniq :=
+        BHW.jostRuelle_uniqueContinuation_compactBoundary
+          (d := d) hd n φ hφ_comp D.jr
+
+      -- D. The public theorem is only the final integrand rewrite and
+      -- compact-support integration.
+      have hord :
+          ∫ x : NPointDomain d n,
+              BHW.extendF (bvt_F OS lgc n)
+                (hChart.adjLift x (0 : unitInterval)) * φ x
+            =
+          ∫ x : NPointDomain d n,
+              D.jr.ordinaryBranch
+                (hChart.adjLift x (0 : unitInterval)) * φ x := by
+        refine integral_congr_ae ?_
+        filter_upwards with x
+        by_cases hx : x ∈ hChart.V0
+        · rw [D.ordinary_eq_extendF_on_lift x hx]
+        · have hφx : φ x = 0 := by
+            exact
+              (notMem_tsupport_iff_eventuallyEq.mp
+                (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+          simp [hφx]
+      exact
+        hord.trans
+          ((by simpa [D.jr_lift_eq] using huniq).trans
+            D.adjacent_lift_pairing_eq_permutedSchwinger)
+      ```
+
+      Step B is the single allowed OS-specific source frontier here.  Its
+      proof must fill the displayed `D.jr` fields from OS I equations (4.1),
+      (4.12), and (4.14), Euclidean symmetry of `ψZ`, BHW continuation, and
+      the Figure-2-4 real Jost boundary comparison.  Step C is the only
+      allowed generic Jost/Ruelle theorem and must be OS-free.  Neither step
+      may depend on `SourceScalarRepresentativeData`, the adjacent trace
+      theorem, `os45SPrime_figure24LocalSourceEq_of_BHWJost`, the raw
+      pointwise comparison, final `bvt_W` locality,
+      `AdjacentOSEOWDifferenceEnvelope`, or global PET branch independence.
+      If any of these dependencies appears in the proof term, the adjacent
+      `S'_n` seed package is still not production-Lean-ready.
+
       The proof transcript for this gate has one non-mechanical analytic
       compact-boundary input and deterministic Figure-2-4 geometry.  The
       analytic input is not a raw-Wick theorem; it is the OS-I §4.5 statement

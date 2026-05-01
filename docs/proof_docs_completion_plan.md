@@ -1956,6 +1956,30 @@ both `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` and the generic
 Jost/Ruelle compact theorem are proved or replaced by an already checked
 sorry-free support theorem with the same mathematical content.
 
+Canonical-lift production readiness is now a four-part gate, not a theorem
+name.  First build the exact zero-diagonal compact tests
+`φZ` and `ψZ := permuteZeroDiagonalSchwartz τ.symm φZ`, with the orientation
+checked by `bvt_euclidean_restriction` and at most one `OS.E3_symmetric`
+call.  Second prove
+`BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` from OS I §4.5
+equations (4.1), (4.12), and (4.14), Euclidean symmetry of `ψZ`, BHW
+continuation, and the Figure-2-4 real Jost boundary comparison, filling all
+`D.jr` branch, Lorentz-invariance, real-boundary, lift-support, and adjacent
+pairing fields.  Third prove the OS-free
+`BHW.jostRuelle_uniqueContinuation_compactBoundary` through
+`BHW.jostRuelle_realPatch_eqOn_of_distributionEq` and
+`BHW.jostRuelle_branch_eqOn_connectedDomain`.  Fourth derive the public
+canonical theorem only by rewriting the ordinary lift integrand with
+`D.ordinary_eq_extendF_on_lift`, using
+`notMem_tsupport_iff_eventuallyEq` off the compact support, applying the
+generic Jost/Ruelle equality to `D.jr`, rewriting by `D.jr_lift_eq`, and
+finishing with `D.adjacent_lift_pairing_eq_permutedSchwinger`.
+Any dependency on `SourceScalarRepresentativeData`,
+`BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
+`BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`, the raw pointwise
+comparison, final `bvt_W` locality, `AdjacentOSEOWDifferenceEnvelope`, or
+global PET branch independence means this gate has not been proved on route.
+
 The raw pointwise theorem
 `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`, the raw
 compact theorem
