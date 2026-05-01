@@ -1232,8 +1232,14 @@ Current checked/unchecked boundary:
    `HWVectorCoordinateSplitData`,
    `hallWightman_independentScalarCoordinates`,
    `hallWightman_sourceVectorCoordinateSplit`,
+   `exists_open_selectedMinor_ne_zero_neighborhood`,
+   `sourceGramDifferential_image_basis_of_selected_minor`,
+   `hallWightman_maxRank_selectedScalarDifferentials_local`,
    `hallWightman_coordinateSplit_inverseFunction`,
+   `auxiliaryCoordinateTangent`,
+   `auxiliaryCoordinateTangent_selectedScalarDeriv_zero`,
    `hallWightman_auxiliaryTangent_sourceGramDifferentials_zero`,
+   `fderiv_coord_pullback_extendF`,
    `hallWightman_powerSeries_coordinateSplit`,
    `hallWightman_coord_pullback_extendF`,
    `hallWightman_auxiliaryDerivative_zero`,
@@ -1244,8 +1250,13 @@ Current checked/unchecked boundary:
    (with the explicit `Uvec ⊆ ExtendedTube` hypothesis needed by the branch
    law and with the selected-coordinate reinflation theorem using the local
    product projection `{u | ∃ v, (u,v) ∈ C.Ucoord}`, not a global
-   selected-coordinate image; the coordinate split also carries the local
-   scalar-differential span needed to kill auxiliary derivatives pointwise),
+   selected-coordinate image; the coordinate split also carries differentiable
+   ambient coordinate/inverse maps, the local selected-differential span of
+   the source-Gram differential image, and the local scalar-differential PDE
+   span needed to kill auxiliary derivatives pointwise, both sourced from
+   `hallWightman_maxRank_selectedScalarDifferentials_local`; the
+   `hallWightman_powerSeries_from_PDE_span` surface therefore includes the
+   maximal scalar-rank hypothesis used for the constant-rank shrink),
    `hallWightman_scalarGerm_continuous_locallyBounded`,
    `continuousOn_of_open_nhdsWithin_control`,
    `continuousOn_openDomain_preimage_nhds`,

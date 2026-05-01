@@ -445,8 +445,14 @@ implementation contract is:
    `BHW.HWVectorCoordinateSplitData`,
    `BHW.hallWightman_independentScalarCoordinates`,
    `BHW.hallWightman_sourceVectorCoordinateSplit`,
+   `BHW.exists_open_selectedMinor_ne_zero_neighborhood`,
+   `BHW.sourceGramDifferential_image_basis_of_selected_minor`,
+   `BHW.hallWightman_maxRank_selectedScalarDifferentials_local`,
    `BHW.hallWightman_coordinateSplit_inverseFunction`,
+   `BHW.auxiliaryCoordinateTangent`,
+   `BHW.auxiliaryCoordinateTangent_selectedScalarDeriv_zero`,
    `BHW.hallWightman_auxiliaryTangent_sourceGramDifferentials_zero`,
+   `BHW.fderiv_coord_pullback_extendF`,
    `BHW.hallWightman_powerSeries_coordinateSplit`,
    `BHW.hallWightman_coord_pullback_extendF`,
    `BHW.hallWightman_auxiliaryDerivative_zero`,
@@ -500,12 +506,27 @@ implementation contract is:
    `C.U0` to `C.U0 ∩ {Z | C.scalarCoord Z ∈ Us}` after writing
    `C.Ucoord = Us × Ua` and using the auxiliary coordinate of the base point as
    the witness that each selected scalar coordinate lies in the product
-   projection.
-   The same Lemma-5 packet must carry local, not merely basepoint, scalar
-   differential span: `BHW.HWPowerSeriesCoordinateSplit.span_local` is filled
-   after shrinking to the constant-rank non-exceptional chart, and
-   `BHW.hallWightman_auxiliaryDerivative_zero` derives Lemma-4 PDE pointwise
-   from `BHW.hallWightman_lorentzInfinitesimalEquations`.
+   projection.  The theorem
+   `BHW.hallWightman_powerSeries_from_PDE_span` carries the maximal scalar-rank
+   hypothesis `HWSourceGramMaxRankAt d n z0`; this is not redundant with the
+   PDE-span hypothesis, because constant-rank shrinking is what makes the
+   selected scalar coordinates control the full source-Gram differential image
+   throughout the product chart.
+   The same Lemma-5 packet must carry the full local differentiable chart
+   data, not just a topological coordinate equivalence: `coordMap` and
+   `coordSymmMap` are differentiable on the selected opens and inverse there.
+   It must also carry local, not merely basepoint, scalar differential data:
+   `BHW.HWPowerSeriesCoordinateSplit.sourceGramDifferentials_selected_local`
+   says selected scalar differentials span the full source-Gram differential
+   image at each chart point, while `BHW.HWPowerSeriesCoordinateSplit.span_local`
+   is filled after shrinking to the constant-rank non-exceptional chart.  The
+   named source of both fields is
+   `BHW.hallWightman_maxRank_selectedScalarDifferentials_local`.
+   `BHW.hallWightman_auxiliaryDerivative_zero` first differentiates
+   `coordMap (coordSymmMap p) = p` to kill selected scalar derivatives on
+   auxiliary tangents, then uses the selected-span field to kill all source
+   Gram differentials, and finally derives Lemma-4 PDE pointwise from
+   `BHW.hallWightman_lorentzInfinitesimalEquations`.
    In the
    Lean-shaped proof, destruct
    `hZU : Z ∈ sourceExtendedTubeGramDomain d n` as

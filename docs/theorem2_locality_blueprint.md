@@ -2870,7 +2870,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (U0 ∩ BHW.sourceComplexGramVariety d n) := by
           intro Z hZU hRank
           rcases BHW.hallWightman_maxRank_powerSeriesChart_at
-              (d := d) hd n F hF_holo hF_cinv hZU hRank with
+              (d := d) hd n F hF_holo hF_cinv hBranch hZU hRank with
             ⟨U0, Ψ, hU0_open, hZU0, hΨ_diff, hU0_sub, hΨ_branch⟩
           exact ⟨U0, Ψ, hU0_open, hZU0, hΨ_diff, hU0_sub,
             BHW.hallWightman_localScalarChart_eq_scalarValue
@@ -5289,6 +5289,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
         Ucoord : Set ((Fin e -> ℂ) × (Fin a -> ℂ))
         coord :
           Uvec ≃ₜ Ucoord
+        coordMap :
+          (Fin n -> Fin (d + 1) -> ℂ) ->
+            ((Fin e -> ℂ) × (Fin a -> ℂ))
+        coordSymmMap :
+          ((Fin e -> ℂ) × (Fin a -> ℂ)) ->
+            (Fin n -> Fin (d + 1) -> ℂ)
         z0_mem : z0 ∈ Uvec
         Uvec_open : IsOpen Uvec
         Uvec_sub_extendedTube : Uvec ⊆ BHW.ExtendedTube d n
@@ -5300,12 +5306,34 @@ Proof decomposition of this theorem, without hiding the analytic work:
         Ucoord_product :
           ∃ Us Ua, IsOpen Us ∧ IsOpen Ua ∧
             Ucoord = Set.prod Us Ua
+        coordMap_diff :
+          DifferentiableOn ℂ coordMap Uvec
+        coordSymmMap_diff :
+          DifferentiableOn ℂ coordSymmMap Ucoord
+        coordMap_eq_coord :
+          ∀ z : Uvec, coordMap z.1 = (coord z).1
+        coordSymmMap_eq_coord_symm :
+          ∀ p hp, coordSymmMap p = (coord.symm ⟨p, hp⟩).1
+        coordSymmMap_mem :
+          ∀ p, p ∈ Ucoord -> coordSymmMap p ∈ Uvec
+        coordMap_coordSymmMap :
+          ∀ p, p ∈ Ucoord -> coordMap (coordSymmMap p) = p
+        coordSymmMap_coordMap :
+          ∀ z, z ∈ Uvec -> coordSymmMap (coordMap z) = z
         scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ
         scalarCoord_diff : Differentiable ℂ scalarCoord
         sourceGram_selected :
           ∀ z : Uvec,
             scalarCoord (BHW.sourceMinkowskiGram d n z) =
               (coord z).1.1
+        sourceGramDifferentials_selected_local :
+          ∀ z : Uvec,
+            ∀ i j : Fin n,
+              ∃ c : Fin e -> ℂ,
+                BHW.sourceGramCoordinateDifferential d n z.1 i j =
+                  ∑ a : Fin e, c a •
+                    fderiv ℂ (fun y =>
+                      scalarCoord (BHW.sourceMinkowskiGram d n y) a) z.1
         span_local :
           ∀ z : Uvec,
             BHW.SourceScalarDifferentialsSpanInvariantPDE d n z
@@ -5318,16 +5346,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
             scalarCoord Z = scalarCoord W ->
             Z = W
 
-      /-- Hall-Wightman Lemma 5 coordinate preparation: under the scalar
-      differential span hypothesis, choose functionally independent scalar
-      products and complementary vector variables giving a local analytic
-      coordinate split. -/
+      /-- Hall-Wightman Lemma 5 coordinate preparation: at a maximal
+      scalar-rank point where the scalar differentials span the invariant PDE
+      covectors, choose functionally independent scalar products and
+      complementary vector variables giving a local analytic coordinate split.
+      -/
       theorem BHW.hallWightman_powerSeries_coordinateSplit
           [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
           (hSpan :
             BHW.SourceScalarDifferentialsSpanInvariantPDE d n z0) :
           ∃ e a,
@@ -5464,13 +5495,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hd : 2 <= d)
           (n : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
           (hSpan :
             BHW.SourceScalarDifferentialsSpanInvariantPDE d n z0) :
           ∃ e,
           ∃ scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ,
             Differentiable ℂ scalarCoord ∧
             BHW.SelectedScalarCoordinatesBasis
-              d n z0 e scalarCoord
+              d n e z0 scalarCoord
 
       theorem BHW.hallWightman_sourceVectorCoordinateSplit
           [NeZero d]
@@ -5479,11 +5512,88 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           {scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ}
           (hscalar :
-            BHW.SelectedScalarCoordinatesBasis d n z0 e scalarCoord) :
+            BHW.SelectedScalarCoordinatesBasis d n e z0 scalarCoord) :
           ∃ a,
           ∃ auxCoord : (Fin n -> Fin (d + 1) -> ℂ) -> Fin a -> ℂ,
             BHW.HWVectorCoordinateSplitData
               d n e a z0 scalarCoord auxCoord
+
+      theorem BHW.exists_open_selectedMinor_ne_zero_neighborhood
+          [NeZero d]
+          (hd : 2 <= d)
+          (n e : Nat)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
+          {scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ}
+          (hscalar :
+            BHW.SelectedScalarCoordinatesBasis d n e z0 scalarCoord) :
+          ∃ Uvec : Set (Fin n -> Fin (d + 1) -> ℂ),
+            IsOpen Uvec ∧ z0 ∈ Uvec ∧
+            Uvec ⊆ BHW.ExtendedTube d n ∧
+            (∀ z, z ∈ Uvec ->
+              BHW.HWSourceGramMaxRankAt d n z) ∧
+            (∀ z, z ∈ Uvec ->
+              LinearIndependent ℂ
+                (fun a : Fin e =>
+                  fderiv ℂ (fun y =>
+                    scalarCoord (BHW.sourceMinkowskiGram d n y) a) z))
+
+      theorem BHW.sourceGramDifferential_image_basis_of_selected_minor
+          [NeZero d]
+          (hd : 2 <= d)
+          (n e : Nat)
+          {Uvec : Set (Fin n -> Fin (d + 1) -> ℂ)}
+          {scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ}
+          (hU_rank :
+            ∀ z, z ∈ Uvec -> BHW.HWSourceGramMaxRankAt d n z)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hz : z ∈ Uvec)
+          (hU_selected_indep :
+            ∀ z, z ∈ Uvec ->
+              LinearIndependent ℂ
+                (fun a : Fin e =>
+                  fderiv ℂ (fun y =>
+                    scalarCoord (BHW.sourceMinkowskiGram d n y) a) z))
+          (i j : Fin n) :
+          ∃ c : Fin e -> ℂ,
+            BHW.sourceGramCoordinateDifferential d n z i j =
+              ∑ a : Fin e, c a •
+                fderiv ℂ (fun y =>
+                  scalarCoord (BHW.sourceMinkowskiGram d n y) a) z
+
+      /-- Constant-rank shrink for the selected scalar coordinates.  This is
+      the local finite-dimensional rank theorem that fills the two pointwise
+      fields of `HWPowerSeriesCoordinateSplit`: selected scalar differentials
+      span the source-Gram differential image, and Hall-Wightman Lemmas 6--7
+      give the invariant-PDE span at every point of the same chart. -/
+      theorem BHW.hallWightman_maxRank_selectedScalarDifferentials_local
+          [NeZero d]
+          (hd : 2 <= d)
+          (n e : Nat)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
+          {scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ}
+          (hscalar :
+            BHW.SelectedScalarCoordinatesBasis d n e z0 scalarCoord) :
+          ∃ Uvec : Set (Fin n -> Fin (d + 1) -> ℂ),
+            IsOpen Uvec ∧
+            z0 ∈ Uvec ∧
+            Uvec ⊆ BHW.ExtendedTube d n ∧
+            (∀ z, z ∈ Uvec ->
+              BHW.HWSourceGramMaxRankAt d n z) ∧
+            (∀ z, z ∈ Uvec ->
+              ∀ i j : Fin n,
+                ∃ c : Fin e -> ℂ,
+                  BHW.sourceGramCoordinateDifferential d n z i j =
+                    ∑ a : Fin e, c a •
+                      fderiv ℂ (fun y =>
+                        scalarCoord (BHW.sourceMinkowskiGram d n y) a) z) ∧
+            (∀ z, z ∈ Uvec ->
+              BHW.SourceScalarDifferentialsSpanInvariantPDE d n z)
 
       theorem BHW.hallWightman_coordinateSplit_inverseFunction
           [NeZero d]
@@ -5491,12 +5601,40 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n e a : Nat)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
           {scalarCoord : (Fin n -> Fin n -> ℂ) -> Fin e -> ℂ}
           {auxCoord : (Fin n -> Fin (d + 1) -> ℂ) -> Fin a -> ℂ}
           (hdata :
             BHW.HWVectorCoordinateSplitData
               d n e a z0 scalarCoord auxCoord) :
           BHW.HWPowerSeriesCoordinateSplit d n e a z0
+
+      noncomputable def BHW.auxiliaryCoordinateTangent
+          [NeZero d]
+          {n e a : Nat}
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (C : BHW.HWPowerSeriesCoordinateSplit d n e a z0)
+          (p : (Fin e -> ℂ) × (Fin a -> ℂ))
+          (hp : p ∈ C.Ucoord)
+          (v : Fin a -> ℂ) :
+          Fin n -> Fin (d + 1) -> ℂ :=
+        fderiv ℂ C.coordSymmMap p (0, v)
+
+      theorem BHW.auxiliaryCoordinateTangent_selectedScalarDeriv_zero
+          [NeZero d]
+          (hd : 2 <= d)
+          (n e a : Nat)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (C : BHW.HWPowerSeriesCoordinateSplit d n e a z0)
+          (p : (Fin e -> ℂ) × (Fin a -> ℂ))
+          (hp : p ∈ C.Ucoord)
+          (v : Fin a -> ℂ) :
+          ∀ b : Fin e,
+            fderiv ℂ (fun y =>
+              C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+              (C.coordSymmMap p)
+              (BHW.auxiliaryCoordinateTangent C p hp v) = 0
 
       theorem BHW.hallWightman_auxiliaryTangent_sourceGramDifferentials_zero
           [NeZero d]
@@ -5509,8 +5647,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (v : Fin a -> ℂ) :
           ∀ i j : Fin n,
             BHW.sourceGramCoordinateDifferential d n
-              (C.coord.symm ⟨p, hp⟩).1 i j
+              (C.coordSymmMap p) i j
               (BHW.auxiliaryCoordinateTangent C p hp v) = 0
+
+      theorem BHW.fderiv_coord_pullback_extendF
+          [NeZero d]
+          (hd : 2 <= d)
+          (n e a : Nat)
+          (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+          {z0 : Fin n -> Fin (d + 1) -> ℂ}
+          (C : BHW.HWPowerSeriesCoordinateSplit d n e a z0)
+          {g : ((Fin e -> ℂ) × (Fin a -> ℂ)) -> ℂ}
+          (hg_branch :
+            ∀ z : C.Uvec,
+              g (C.coord z).1 = BHW.extendF F z)
+          (p : (Fin e -> ℂ) × (Fin a -> ℂ))
+          (hp : p ∈ C.Ucoord)
+          (v : Fin a -> ℂ) :
+          fderiv ℂ g p (0, v) =
+            fderiv ℂ (BHW.extendF F) (C.coordSymmMap p)
+              (BHW.auxiliaryCoordinateTangent C p hp v)
 
       /-- Hall-Wightman Lemma 4: infinitesimal complex Lorentz invariance.
       The differential of an invariant holomorphic function annihilates every
@@ -5545,9 +5701,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.SourceScalarDifferentialsSpanInvariantPDE d n z0
 
       /-- Hall-Wightman Lemma 5: if the scalar-product differentials span the
-      invariant PDE solutions at `z0`, every holomorphic invariant branch is,
-      near `z0`, a convergent power series in a functionally independent set of
-      source scalar products. -/
+      invariant PDE solutions at a maximal scalar-rank point `z0`, every
+      holomorphic invariant branch is, near `z0`, a convergent power series in
+      a functionally independent set of source scalar products.  The maximal
+      rank hypothesis is part of the theorem surface: it is what lets the
+      coordinate split be shrunk so the selected scalar differentials span the
+      full source-Gram differential image at every point of the product chart.
+      -/
       theorem BHW.hallWightman_powerSeries_from_PDE_span
           [NeZero d]
           (hd : 2 <= d)
@@ -5555,6 +5715,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (F : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
+          (hz0Rank :
+            BHW.HWSourceGramMaxRankAt d n z0)
           (hF_holo : DifferentiableOn ℂ F (BHW.ForwardTube d n))
           (hF_cinv :
             ∀ (Λ : ComplexLorentzGroup d)
@@ -5582,7 +5744,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```lean
       theorem BHW.hallWightman_powerSeries_from_PDE_span ... := by
         rcases BHW.hallWightman_powerSeries_coordinateSplit
-            (d := d) hd n hz0 hSpan with
+            (d := d) hd n hz0 hz0Rank hSpan with
           ⟨e, a, C⟩
         rcases BHW.hallWightman_coord_pullback_extendF
             (d := d) hd n e a F hF_holo_ext C with
@@ -5624,10 +5786,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       coordinate-change proof for `extendF F` in the split variables.
       `hallWightman_auxiliaryDerivative_zero` is the finite-dimensional
       duality step: auxiliary coordinate tangent vectors are exactly the
-      directions annihilated by the selected scalar-product differentials; by
-      the local `span_local` field, their covectors are generated by
-      infinitesimal Lorentz tangent covectors, and Lemma 4 kills those
-      directions pointwise.  These support lemmas must
+      directions annihilated by the selected scalar-product differentials.
+      The local selected-differential span then makes every source-Gram
+      differential vanish on those tangents; the local `span_local` field
+      writes the invariant branch differential as a combination of those
+      source-Gram differentials, and Lemma 4 supplies the pointwise PDE input.
+      These support lemmas must
       be proved before the theorem above; they are not wrappers around the
       final scalar representative.
       In production Lean, declare the local implementation structures
@@ -5640,14 +5804,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```lean
       theorem BHW.hallWightman_powerSeries_coordinateSplit ... := by
         rcases BHW.hallWightman_independentScalarCoordinates
-            (d := d) hd n hSpan with
+            (d := d) hd n hz0Rank hSpan with
           ⟨e, scalarCoord, hscalar_diff, hscalar_basis⟩
         rcases BHW.hallWightman_sourceVectorCoordinateSplit
             (d := d) hd n e hscalar_basis with
           ⟨a, auxCoord, hcoord_data⟩
         exact
           BHW.hallWightman_coordinateSplit_inverseFunction
-            (d := d) hd n e a hz0 hcoord_data
+            (d := d) hd n e a hz0 hz0Rank hcoord_data
       ```
 
       The proof of
@@ -5655,19 +5819,191 @@ Proof decomposition of this theorem, without hiding the analytic work:
       dimensional inverse-function theorem applied to
       `z ↦ (scalarCoord (sourceMinkowskiGram d n z), auxCoord z)`.  Shrink the
       vector neighborhood to the ordinary extended tube using
-      `BHW.isOpen_extendedTube`; define `U0` as a scalar neighborhood on which
-      selected scalar coordinates are injective on
-      `sourceComplexGramVariety d n`; and record
-      `sourceGram_selected` by the first projection of the coordinate map.  The
-      field `span_local` is filled by shrinking to the constant-rank
-      non-exceptional scalar chart: on that neighborhood the selected scalar
-      differentials remain independent and Hall-Wightman Lemmas 6--7 give
-      `SourceScalarDifferentialsSpanInvariantPDE` at every vector point in
-      `Uvec`.
+      `BHW.isOpen_extendedTube`; keep both the subtype homeomorphism `coord`
+      and the ambient differentiable maps `coordMap`/`coordSymmMap`; define
+      `U0` as a scalar neighborhood on which selected scalar coordinates are
+      injective on `sourceComplexGramVariety d n`; and record
+      `sourceGram_selected` by the first projection of the coordinate map.
+      The maximal-rank hypothesis is used here, not hidden in the later
+      derivative proof: after shrinking, the full source-Gram differential
+      image is generated by the selected scalar differentials at every vector
+      point in `Uvec`, giving
+      `sourceGramDifferentials_selected_local`; Hall-Wightman Lemmas 6--7 give
+      `span_local` at every vector point in the same `Uvec`.
+      Both pointwise fields are supplied by
+      `BHW.hallWightman_maxRank_selectedScalarDifferentials_local` and then
+      intersected with the inverse-function-theorem coordinate neighborhood.
       The `scalarCoord_injective_on_U0_variety` field is not a convenience:
       it is the local scalar-variety chart assertion from Hall-Wightman Lemma
       5, proved from the same inverse-function chart plus Lemma 3's local image
       theorem.
+
+      Lean-shaped proof of the constant-rank local field theorem:
+
+      ```lean
+      theorem BHW.hallWightman_maxRank_selectedScalarDifferentials_local
+          ... := by
+        -- The selected differentials are independent at `z0`; independence of
+        -- a finite determinant/minor is open, and the ordinary extended tube is
+        -- open, so shrink to a neighborhood where the same selected minor is
+        -- nonzero and all points remain in the extended tube.
+        rcases BHW.exists_open_selectedMinor_ne_zero_neighborhood
+            (d := d) hd n e hz0 hz0Rank hscalar with
+          ⟨Uvec, hU_open, hz0U, hU_ET, hU_rank, hU_selected_indep⟩
+        have hselected_span :
+            ∀ z, z ∈ Uvec ->
+              ∀ i j : Fin n,
+                ∃ c : Fin e -> ℂ,
+                  BHW.sourceGramCoordinateDifferential d n z i j =
+                    ∑ a : Fin e, c a •
+                      fderiv ℂ (fun y =>
+                        scalarCoord (BHW.sourceMinkowskiGram d n y) a) z := by
+          intro z hz i j
+          exact
+            BHW.sourceGramDifferential_image_basis_of_selected_minor
+              (d := d) hd n e hU_rank z hz hU_selected_indep i j
+        have hPDE_span :
+            ∀ z, z ∈ Uvec ->
+              BHW.SourceScalarDifferentialsSpanInvariantPDE d n z := by
+          intro z hz
+          exact
+            BHW.hallWightman_maxRank_scalarDifferentials_span_PDE
+              (d := d) hd n (hU_rank z hz)
+        exact ⟨Uvec, hU_open, hz0U, hU_ET,
+          hU_rank, hselected_span, hPDE_span⟩
+      ```
+
+      The two internal finite-dimensional helpers in that transcript are the
+      ordinary constant-rank/minor facts: the first shrinks to a nonvanishing
+      selected scalar minor inside `ExtendedTube`; the second says that on such
+      a patch the selected scalar differentials are a basis for the image of
+      the source Gram differential.  They are linear algebra and inverse
+      function theorem support, not source-representative wrappers.
+
+      The two differentiability helpers used below are part of this chart
+      construction, not extra assumptions.  For
+      `g p := extendF F (C.coordSymmMap p)` on `C.Ucoord`,
+      `BHW.hallWightman_coord_pullback_extendF` proves differentiability by
+      `C.coordSymmMap_diff`, `C.coordSymmMap_mem`, and
+      `hF_holo_ext.mono C.Uvec_sub_extendedTube`; its branch equality follows
+      from `C.coordSymmMap_coordMap` and `C.coordMap_eq_coord`.  The tangent
+      helper defines
+      `auxiliaryCoordinateTangent C p hp v = fderiv ℂ C.coordSymmMap p (0,v)`.
+      Differentiating `C.coordMap (C.coordSymmMap q) = q` at `p` inside the
+      open set `C.Ucoord` shows that all selected scalar-coordinate
+      derivatives of this tangent are zero; then
+      `C.sourceGramDifferentials_selected_local` upgrades this to vanishing of
+      every source Gram coordinate differential.
+
+      Lean-shaped proof of the two auxiliary tangent helpers:
+
+      ```lean
+      theorem BHW.auxiliaryCoordinateTangent_selectedScalarDeriv_zero
+          ... := by
+        intro b
+        let X := BHW.auxiliaryCoordinateTangent C p hp v
+        have hright :
+            (fun q => (C.coordMap (C.coordSymmMap q)).1 b) =ᶠ[𝓝 p]
+              (fun q : (Fin e -> ℂ) × (Fin a -> ℂ) => q.1 b) := by
+          filter_upwards [C.Ucoord_open.mem_nhds hp] with q hq
+          simp [C.coordMap_coordSymmMap q hq]
+        have hcoord_first :
+            fderiv ℂ (fun q =>
+              (C.coordMap (C.coordSymmMap q)).1 b) p (0, v) = 0 := by
+          have hf :=
+            hright.fderiv_eq
+              ((C.coordMap_diff.comp p C.coordSymmMap_diff
+                (by intro q hq; exact C.coordSymmMap_mem q hq)))
+              differentiableAt_fst_apply
+          simpa using congrArg (fun L => L (0, v)) hf
+        have hselected_eventually :
+            (fun q =>
+              C.scalarCoord
+                (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b)
+                =ᶠ[𝓝 p]
+              (fun q => (C.coordMap (C.coordSymmMap q)).1 b) := by
+          filter_upwards [C.Ucoord_open.mem_nhds hp] with q hq
+          have hmem := C.coordSymmMap_mem q hq
+          have hsource :=
+            C.sourceGram_selected ⟨C.coordSymmMap q, hmem⟩
+          simpa [C.coordMap_eq_coord ⟨C.coordSymmMap q, hmem⟩] using hsource
+        have hleft_diff :
+            DifferentiableAt ℂ
+              (fun q =>
+                C.scalarCoord
+                  (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b) p := by
+          exact
+            (C.scalarCoord_diff.differentiableAt.comp p
+              ((BHW.contDiff_sourceMinkowskiGram d n).differentiableAt.comp p
+                (C.coordSymmMap_diff.differentiableAt
+                  (C.Ucoord_open.mem_nhds hp)))).apply b
+        have hright_diff :
+            DifferentiableAt ℂ
+              (fun q =>
+                (C.coordMap (C.coordSymmMap q)).1 b) p := by
+          exact
+            (continuousLinearMap_apply b).differentiable.comp p
+              ((continuousLinearMap_fst ℂ (Fin e -> ℂ) (Fin a -> ℂ)).differentiable.comp p
+                (C.coordMap_diff.differentiableAt
+                  (C.Uvec_open.mem_nhds (C.coordSymmMap_mem p hp))).comp p
+                  (C.coordSymmMap_diff.differentiableAt
+                    (C.Ucoord_open.mem_nhds hp)))
+        have hchain :
+            fderiv ℂ
+              (fun y =>
+                C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+              (C.coordSymmMap p) X =
+            fderiv ℂ
+              (fun q =>
+                C.scalarCoord
+                  (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b)
+              p (0, v) := by
+          exact (fderiv_comp_apply_of_eventually_mem_open
+            C.Ucoord_open hp C.coordSymmMap_diff
+            (C.scalarCoord_diff.differentiableAt.comp
+              ((BHW.contDiff_sourceMinkowskiGram d n).differentiableAt))).symm
+        calc
+          fderiv ℂ
+              (fun y =>
+                C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+              (C.coordSymmMap p) X
+              = fderiv ℂ
+                  (fun q =>
+                    C.scalarCoord
+                      (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b)
+                  p (0, v) := hchain
+          _ = fderiv ℂ
+                  (fun q =>
+                    (C.coordMap (C.coordSymmMap q)).1 b)
+                  p (0, v) := by
+                  exact congrArg (fun L => L (0, v))
+                    (hselected_eventually.fderiv_eq hleft_diff hright_diff)
+          _ = 0 := hcoord_first
+
+      theorem BHW.hallWightman_auxiliaryTangent_sourceGramDifferentials_zero
+          ... := by
+        intro i j
+        let zval := C.coordSymmMap p
+        have hzval : zval ∈ C.Uvec := C.coordSymmMap_mem p hp
+        let z : C.Uvec := ⟨zval, hzval⟩
+        let X := BHW.auxiliaryCoordinateTangent C p hp v
+        have hselzero :
+            ∀ b : Fin e,
+              fderiv ℂ (fun y =>
+                C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+                z.1 X = 0 :=
+          BHW.auxiliaryCoordinateTangent_selectedScalarDeriv_zero
+            (d := d) hd n e a C p hp v
+        rcases C.sourceGramDifferentials_selected_local z i j with
+          ⟨c, hc⟩
+        calc
+          BHW.sourceGramCoordinateDifferential d n z.1 i j X
+              = (∑ b : Fin e, c b •
+                  fderiv ℂ (fun y =>
+                    C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+                    z.1) X := by rw [hc]
+          _ = 0 := by simp [hselzero]
+      ```
 
       Lean-shaped proof of
       `BHW.hallWightman_auxiliaryDerivative_zero`:
@@ -5675,7 +6011,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```lean
       theorem BHW.hallWightman_auxiliaryDerivative_zero ... := by
         intro p hp v
-        let z : C.Uvec := C.coord.symm ⟨p, hp⟩
+        let zval := C.coordSymmMap p
+        have hzval : zval ∈ C.Uvec := C.coordSymmMap_mem p hp
+        let z : C.Uvec := ⟨zval, hzval⟩
         let X := BHW.auxiliaryCoordinateTangent C p hp v
         have hG_deriv :
             fderiv ℂ g p (0, v) =
@@ -5716,9 +6054,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```
 
       The displayed proof is why `HWPowerSeriesCoordinateSplit` carries
-      `span_local`: the auxiliary-derivative theorem must use the
-      Hall-Wightman Lemmas 6--7 scalar-differential span at the current chart
-      point.  Lemma 4 is derived pointwise from
+      both local fields: `sourceGramDifferentials_selected_local` kills all
+      source-Gram differentials on auxiliary tangents, and `span_local` writes
+      the covector `fderiv (extendF F)` as a linear combination of those
+      differentials at the current chart point.  Lemma 4 is derived pointwise from
       `BHW.hallWightman_lorentzInfinitesimalEquations`; no separate stronger
       PDE theorem is introduced.
 
@@ -5833,6 +6172,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
               z ∈ BHW.ForwardTube d n ->
               BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n ->
               F (BHW.complexLorentzAction Λ z) = F z)
+          (hBranch :
+            ∀ {z w : Fin n -> Fin (d + 1) -> ℂ},
+              z ∈ BHW.ExtendedTube d n ->
+              w ∈ BHW.ExtendedTube d n ->
+              BHW.sourceMinkowskiGram d n z =
+                BHW.sourceMinkowskiGram d n w ->
+              BHW.extendF F z = BHW.extendF F w)
           {Z : Fin n -> Fin n -> ℂ}
           (hZU : Z ∈ BHW.sourceExtendedTubeGramDomain d n)
           (hRank : BHW.HWSourceGramMaxRank d n Z) :
@@ -6137,7 +6483,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.hallWightman_maxRank_scalarDifferentials_span_PDE
             (d := d) hd n hz0Rank
         rcases BHW.hallWightman_powerSeries_from_PDE_span
-            (d := d) hd n F hz0 hF_holo hF_cinv hExt_holo hSpan with
+            (d := d) hd n F hz0 hz0Rank hF_holo hF_cinv hExt_holo hSpan with
           ⟨Uvec, U0, Ψ,
             hUvec_open, hz0Uvec, hUvec_sub,
             hU0_open, hZU0, hΨ_diff, hΨ_branch_vec⟩
@@ -6192,7 +6538,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       ```lean
       theorem BHW.hallWightman_maxRank_localScalarChart_at ... := by
         exact BHW.hallWightman_maxRank_powerSeriesChart_at
-          (d := d) hd n F hF_holo hF_cinv hZU hRank
+          (d := d) hd n F hF_holo hF_cinv hBranch hZU hRank
 
       theorem BHW.hallWightman_exceptionalRank_localScalarChart_at ... := by
         rcases BHW.hallWightman_scalarGerm_continuous_locallyBounded
@@ -6210,7 +6556,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   (U0 ∩ BHW.sourceComplexGramVariety d n) := by
           intro W hWU hWmax
           rcases BHW.hallWightman_maxRank_powerSeriesChart_at
-              (d := d) hd n F hF_holo hF_cinv hWU hWmax with
+              (d := d) hd n F hF_holo hF_cinv hBranch hWU hWmax with
             ⟨U0, Ψ, hU0_open, hWU0, hΨ_diff, hU0_sub, hΨ_branch⟩
           refine ⟨U0, Ψ, hU0_open, hWU0, hΨ_diff, hU0_sub, ?_⟩
           intro G hG
