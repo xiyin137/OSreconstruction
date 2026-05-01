@@ -1053,25 +1053,38 @@ implementation contract is:
    `SelectedScalarCoordinatesBasis.card_eq_expected : e =
    BHW.sourceGramExpectedDim d n`; independence of the selected differentials
    on the shrunken chart is not enough to prove that all source-Gram
-	   coordinate differentials lie in their span without this dimension equality.
-	   `BHW.hallWightman_auxiliaryDerivative_zero` first differentiates
-	   `coordMap (coordSymmMap p) = p` to kill selected scalar derivatives on
-	   auxiliary tangents, then uses the selected-span field to kill all source
-	   Gram differentials, and finally derives Lemma-4 PDE pointwise from
-	   `BHW.hallWightman_lorentzInfinitesimalEquations`.  Lemma 4 itself is now
-	   implementation-level: convert the skew matrix to
-	   `ComplexLorentzGroup.IsInLieAlgebra`, define
-	   `expCurve A t = ComplexLorentzGroup.expLieAlg (t • A.val)`, prove the
-	   generated action has derivative
-	   `lorentzInfinitesimalTangent d n A z0` at `0`, compose with the
-	   differentiability of `extendF F` on the open ordinary extended tube, and
-	   identify the derivative with zero because
-	   `BHW.extendF_complexLorentzInvariant_of_cinv` makes
-	   `extendF F (expCurve A t · z0)` constant in `t`.  This step may not be
-	   replaced by an ambient invariant-function theorem.  Lemmas 6--7 are also
-	   expanded to implementation level: prove that the kernel of the source Gram
-	   differential at a max-rank point is exactly the range of infinitesimal
-	   Lorentz tangents, using the infinitesimal Witt-extension theorem, then
+   coordinate differentials lie in their span without this dimension equality.
+   `BHW.hallWightman_auxiliaryDerivative_zero` first differentiates
+   `coordMap (coordSymmMap p) = p` to kill selected scalar derivatives on
+   auxiliary tangents, then uses the selected-span field to kill all source
+   Gram differentials, and finally derives Lemma-4 PDE pointwise from
+   `BHW.hallWightman_lorentzInfinitesimalEquations`.  The selected-derivative
+   sublemma now uses `Filter.EventuallyEq.fderiv_eq` directly; it does not
+   pass differentiability arguments to that theorem.  The zero derivative of
+   `q ↦ q.1 b` on an auxiliary vector is written explicitly as the continuous
+   linear map
+   `(ContinuousLinearMap.proj b).comp (ContinuousLinearMap.fst ℂ _ _)`,
+   whose `fderiv` is itself, so evaluation at `(0,v)` is definitionally zero.
+   The differentiability of the selected coordinate projection itself should
+   use `(ContinuousLinearMap.proj b).hasFDerivAt.differentiableAt`; this is the
+   checked `ContinuousLinearMap.hasFDerivAt` API exported by the usual
+   FDeriv affine/linear imports.
+   The chain step is `fderiv_comp'` for
+   `(fun y => C.scalarCoord (sourceMinkowskiGram d n y) b) ∘
+   C.coordSymmMap`.  Lemma 4 itself is now
+   implementation-level: convert the skew matrix to
+   `ComplexLorentzGroup.IsInLieAlgebra`, define
+   `expCurve A t = ComplexLorentzGroup.expLieAlg (t • A.val)`, prove the
+   generated action has derivative
+   `lorentzInfinitesimalTangent d n A z0` at `0`, compose with the
+   differentiability of `extendF F` on the open ordinary extended tube, and
+   identify the derivative with zero because
+   `BHW.extendF_complexLorentzInvariant_of_cinv` makes
+   `extendF F (expCurve A t · z0)` constant in `t`.  This step may not be
+   replaced by an ambient invariant-function theorem.  Lemmas 6--7 are also
+   expanded to implementation level: prove that the kernel of the source Gram
+   differential at a max-rank point is exactly the range of infinitesimal
+   Lorentz tangents, using the infinitesimal Witt-extension theorem, then
 	   factor every covector annihilating those tangents through the source Gram
 	   differential and expand the resulting finite-product dual functional in
 	   coordinate scalar-product differentials.

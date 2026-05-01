@@ -10825,12 +10825,34 @@ Proof decomposition of this theorem, without hiding the analytic work:
         have hcoord_first :
             fderiv ℂ (fun q =>
               (C.coordMap (C.coordSymmMap q)).1 b) p (0, v) = 0 := by
-          have hf :=
-            hright.fderiv_eq
-              ((C.coordMap_diff.comp p C.coordSymmMap_diff
-                (by intro q hq; exact C.coordSymmMap_mem q hq)))
-              differentiableAt_fst_apply
-          simpa using congrArg (fun L => L (0, v)) hf
+          have hfderiv_eq :
+              fderiv ℂ (fun q =>
+                (C.coordMap (C.coordSymmMap q)).1 b) p =
+              fderiv ℂ
+                (fun q : (Fin e -> ℂ) × (Fin a -> ℂ) => q.1 b) p :=
+            Filter.EventuallyEq.fderiv_eq hright
+          have hproj_zero :
+              fderiv ℂ
+                (fun q : (Fin e -> ℂ) × (Fin a -> ℂ) => q.1 b)
+                p (0, v) = 0 := by
+            let L1 :
+                ((Fin e -> ℂ) × (Fin a -> ℂ)) ->L[ℂ]
+                  (Fin e -> ℂ) :=
+              ContinuousLinearMap.fst ℂ (Fin e -> ℂ) (Fin a -> ℂ)
+            let L2 : (Fin e -> ℂ) ->L[ℂ] ℂ :=
+              ContinuousLinearMap.proj b
+            let L :
+                ((Fin e -> ℂ) × (Fin a -> ℂ)) ->L[ℂ] ℂ :=
+              L2.comp L1
+            have hL :
+                (fun q : (Fin e -> ℂ) × (Fin a -> ℂ) => q.1 b) =
+                  L := by
+              funext q
+              rfl
+            rw [hL, L.fderiv]
+            rfl
+          rw [hfderiv_eq]
+          exact hproj_zero
         have hselected_eventually :
             (fun q =>
               C.scalarCoord
@@ -10842,27 +10864,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
           have hsource :=
             C.sourceGram_selected ⟨C.coordSymmMap q, hmem⟩
           simpa [C.coordMap_eq_coord ⟨C.coordSymmMap q, hmem⟩] using hsource
-        have hleft_diff :
+        have hbase_at :
             DifferentiableAt ℂ
-              (fun q =>
-                C.scalarCoord
-                  (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b) p := by
+              (fun y =>
+                C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+              (C.coordSymmMap p) := by
           exact
-            (C.scalarCoord_diff.differentiableAt.comp p
-              ((BHW.contDiff_sourceMinkowskiGram d n).differentiableAt.comp p
-                (C.coordSymmMap_diff.differentiableAt
-                  (C.Ucoord_open.mem_nhds hp)))).apply b
-        have hright_diff :
-            DifferentiableAt ℂ
-              (fun q =>
-                (C.coordMap (C.coordSymmMap q)).1 b) p := by
-          exact
-            (continuousLinearMap_apply b).differentiable.comp p
-              ((continuousLinearMap_fst ℂ (Fin e -> ℂ) (Fin a -> ℂ)).differentiable.comp p
-                (C.coordMap_diff.differentiableAt
-                  (C.Uvec_open.mem_nhds (C.coordSymmMap_mem p hp))).comp p
-                  (C.coordSymmMap_diff.differentiableAt
-                    (C.Ucoord_open.mem_nhds hp)))
+            (ContinuousLinearMap.proj b).hasFDerivAt.differentiableAt.comp
+              (C.coordSymmMap p)
+              (C.scalarCoord_diff.differentiableAt.comp
+                (C.coordSymmMap p)
+                (BHW.contDiff_sourceMinkowskiGram d n).differentiableAt)
+        have hsymm_at :
+            DifferentiableAt ℂ C.coordSymmMap p :=
+          C.coordSymmMap_diff.differentiableAt
+            (C.Ucoord_open.mem_nhds hp)
         have hchain :
             fderiv ℂ
               (fun y =>
@@ -10873,10 +10889,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 C.scalarCoord
                   (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b)
               p (0, v) := by
-          exact (fderiv_comp_apply_of_eventually_mem_open
-            C.Ucoord_open hp C.coordSymmMap_diff
-            (C.scalarCoord_diff.differentiableAt.comp
-              ((BHW.contDiff_sourceMinkowskiGram d n).differentiableAt))).symm
+          have hchain_op :
+              fderiv ℂ
+                (fun q =>
+                  C.scalarCoord
+                    (BHW.sourceMinkowskiGram d n (C.coordSymmMap q)) b) p =
+              (fderiv ℂ
+                (fun y =>
+                  C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+                (C.coordSymmMap p)).comp
+                (fderiv ℂ C.coordSymmMap p) := by
+            simpa using
+              (fderiv_comp'
+                (x := p)
+                (g := fun y =>
+                  C.scalarCoord (BHW.sourceMinkowskiGram d n y) b)
+                (f := C.coordSymmMap) hbase_at hsymm_at)
+          rw [hchain_op]
+          rfl
         calc
           fderiv ℂ
               (fun y =>
@@ -10892,7 +10922,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     (C.coordMap (C.coordSymmMap q)).1 b)
                   p (0, v) := by
                   exact congrArg (fun L => L (0, v))
-                    (hselected_eventually.fderiv_eq hleft_diff hright_diff)
+                    (Filter.EventuallyEq.fderiv_eq hselected_eventually)
           _ = 0 := hcoord_first
 
       theorem BHW.hallWightman_auxiliaryTangent_sourceGramDifferentials_zero
