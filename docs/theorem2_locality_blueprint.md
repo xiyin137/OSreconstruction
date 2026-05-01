@@ -13966,6 +13966,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `BHW.sourceMinkowskiGram_perm`.  The new Lean port must expose it under
       a public name rather than reprove the same argument inside the integral.
 
+      Local production-code audit, 2026-05-01: the checked file
+      `OSToWightmanLocalityOS45Figure24.lean` currently exports
+      `BHW.swFigure24_adjacentPathStableNeighborhood_exists`,
+      `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`, and
+      `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`.  It does not
+      yet define the public deterministic lift
+      `BHW.os45Figure24AdjacentLift`, its continuity theorem,
+      `BHW.os45Figure24AdjacentLift_sourceGram`, or the carrier
+      `BHW.OS45Figure24SourceChartAt`.  The checked selector returns the
+      needed Figure-2-4 path data as existential fields; the adjacent `S'_n`
+      proof route below needs those fields promoted to the deterministic lift
+      and chart carrier, or consumed locally with exactly the same data.  It
+      is not valid to construct `hChart.adjLift` by an arbitrary choice of
+      `Δ_x` under the compact integral.
+
       The canonical lift as a map is only deterministic geometry: it is an
       ordinary-extended-tube representative of the same raw adjacent Wick
       section.  The boundary theorem is the later compact-pairing statement

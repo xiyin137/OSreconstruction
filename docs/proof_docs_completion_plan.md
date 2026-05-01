@@ -1961,6 +1961,24 @@ the explicit `BHW.wickRealSectionLeftInverse`,
 `V0 := {x | wick x ∈ Usrc}` so the reverse real-section equivalence is
 definitionally available.
 
+Local code audit after checkpoint `996ebc1` (2026-05-01): the checked
+Figure-2-4 support in
+`OSToWightmanLocalityOS45Figure24.lean` currently provides the selector
+theorems
+`BHW.swFigure24_adjacentPathStableNeighborhood_exists`,
+`BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`, and
+`BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`, but it does not yet
+provide production declarations for `BHW.os45Figure24AdjacentLift`,
+`BHW.continuous_os45Figure24AdjacentLift`,
+`BHW.os45Figure24AdjacentLift_sourceGram`, or
+`BHW.OS45Figure24SourceChartAt`.  Therefore the adjacent `S'_n` proof docs
+must keep the lift/chart promotion as an explicit pre-Lean task: either define
+the deterministic rotated lift and chart carrier from the checked selector
+fields, or consume the selector tuple directly with the same continuity,
+extended-tube membership, source-Gram identity, Wick membership, and
+real-section equivalence fields.  A later Lean port may not substitute an
+arbitrary choice of adjacent lift under the compact integral.
+
 New route correction for the adjacent scalarization chart: the Figure-2-4
 hypothesis
 `(fun k => x (τ k)) ∈ EuclideanOrderedPositiveTimeSector τ` does not imply
