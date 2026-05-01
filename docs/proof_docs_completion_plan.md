@@ -169,6 +169,33 @@ parameters and conclusions, contain no OS/EOW/PET/locality/bvt_W language
 except where the OS I §4.5 compact producer necessarily mentions OS data, and
 be explicitly approved before any production Lean consumes it.
 
+Local code audit after checkpoint `c789249` (2026-05-01): the supporting
+germ API is present, but the scalar-source producers are not.  The production
+tree defines `BHW.SourceVarietyGermHolomorphicOn`,
+`BHW.SourceScalarRepresentativeData` with
+`Phi_holomorphic : SourceVarietyGermHolomorphicOn`, and the downstream
+source-variety identity support
+`BHW.sourceComplexGramVariety_identity_principle`,
+`BHW.SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`, and
+`BHW.SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart`.  A local
+search of `OSReconstruction/` still finds no production declaration named
+`BHW.extendedTube_same_sourceGram_extendF_eq`,
+`BHW.sourceExtendedTubeGramDomain_relOpen_connected`,
+`BHW.sourceVarietyGermHolomorphicOn_extendF_descent`,
+`BHW.sourceScalarRepresentativeData_of_branchLaw`,
+`BHW.hallWightman_sourceScalarRepresentativeData`, or
+`BHW.sourceScalarRepresentativeData_bvt_F`.  It also finds no production
+declarations for the adjacent compact-source gates
+`BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45`,
+`BHW.jostRuelle_uniqueContinuation_compactBoundary`,
+`BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
+`BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
+`BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, or
+`BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`.  Therefore
+the available Lean support may be cited in proof docs, but it does not make
+the ordinary scalar representative or the adjacent `S'_n` seed package
+implementation-ready.
+
 Pseudo-code audit update (2026-05-01): the active scalar-source and adjacent
 `S'_n` transcripts no longer leave anonymous proof holes in the mechanical
 assembly layers.  The branch-law quotient-span fields, low-rank orbit fields,
@@ -4195,7 +4222,22 @@ This doc is complete only when:
 6. every historical shortcut is fenced off: pointwise horizontal equality,
    quarter-turn bypass, boundary-functional demotion, generic PET branch
    independence, and the archived adjacent-word source cover are not active
-   implementation options.
+   implementation options;
+7. the ordinary Hall-Wightman scalar representative packet separates checked
+   source-germ infrastructure from the missing producer theorems:
+   `BHW.extendedTube_same_sourceGram_extendF_eq`,
+   `BHW.sourceExtendedTubeGramDomain_relOpen_connected`,
+   `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`,
+   `BHW.sourceScalarRepresentativeData_of_branchLaw`,
+   `BHW.hallWightman_sourceScalarRepresentativeData`, and
+   `BHW.sourceScalarRepresentativeData_bvt_F`; each name must have either a
+   complete proof transcript or an explicit "not Lean-ready" status;
+8. the adjacent `S'_n` packet keeps the canonical compact-boundary producer,
+   the OS-free Jost/Ruelle theorem, the source-chart seed data, and the
+   Figure-2-4 scalar path/corridor in non-circular order, with the exact
+   `Path.trans`/`JoinedIn` API pinned and no dependency on final locality,
+   global PET branch independence, `AdjacentOSEOWDifferenceEnvelope`, or a
+   local boundary functional demotion.
 
 ## 4.3. `theorem4_cluster_blueprint.md`
 

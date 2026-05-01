@@ -13,6 +13,17 @@ There is no alternate active route. The only exception that could justify a
 route change would be an explicit OS-paper error documented locally first; no
 such exception is in scope here.
 
+Checkpoint status, 2026-05-01 after `c789249`: the local Figure-2-4 support
+and source-patch selector are checked, and the source-germ API is present in
+Lean, but the scalar-source producer layer is not yet production-ready.  The
+live proof-document frontier is the ordinary Hall-Wightman scalar
+representative
+`BHW.sourceScalarRepresentativeData_bvt_F` together with the adjacent
+`S'_n` seed/corridor package.  No production Lean may start from the final
+data constructor or from any adjacent `S'_n` theorem name until the source
+proof obligations below have complete proof transcripts or an explicitly
+approved sorry-free source-import boundary.
+
 This note should be read together with
 [`bhw_permutation_blueprint.md`](/Users/xiyin/OSReconstruction/docs/bhw_permutation_blueprint.md).
 That sibling note owns the BHW permutation-geometry obligations and records why
@@ -3023,6 +3034,41 @@ Proof decomposition of this theorem, without hiding the analytic work:
       is hidden in a choice field.  A future user approval for a boundary
       would have to name the exact proposition-level statements below and
       still carry no theorem-2, locality, PET, EOW, or OS-specific content.
+
+      Local production-code audit, 2026-05-01: the germ substrate has already
+      been migrated in Lean, but the Hall-Wightman scalar representative has
+      not.  `SourceExtension.lean` defines
+      `BHW.SourceVarietyGermHolomorphicOn` and
+      `BHW.SourceScalarRepresentativeData.Phi_holomorphic` already has the
+      germ predicate.  The supporting source-variety continuation declarations
+      `BHW.sourceComplexGramVariety_identity_principle`,
+      `BHW.SourceVarietyGermHolomorphicOn.comp_sourceMinkowskiGram`, and
+      `BHW.SourceVarietyGermHolomorphicOn.comp_differentiableOn_chart` are
+      present in the local BHWPermutation infrastructure.  However, a search
+      of `OSReconstruction/` finds no production declarations for the five
+      ordinary scalar-source surfaces in this block:
+      `BHW.extendedTube_same_sourceGram_extendF_eq`,
+      `BHW.sourceExtendedTubeGramDomain_relOpen_connected`,
+      `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`,
+      `BHW.sourceScalarRepresentativeData_of_branchLaw`, and
+      `BHW.hallWightman_sourceScalarRepresentativeData`, and no
+      `BHW.sourceScalarRepresentativeData_bvt_F`.  Thus the next Lean phase,
+      when reached, must implement or import these exact source theorems; it
+      may not treat the already checked germ/identity-principle infrastructure
+      as the scalar representative itself.
+
+      Lean-readiness decision for this checkpoint: the already checked
+      substrate may be cited only as support for proof documents or for
+      downstream consumers whose mathematical inputs are already proved.  It
+      does not authorize production declarations named
+      `BHW.sourceScalarRepresentativeData_bvt_F`,
+      `BHW.hallWightman_sourceScalarRepresentativeData`,
+      `BHW.sourceScalarRepresentativeData_of_branchLaw`, or the adjacent
+      `BHW.os45AdjacentSPrime...` producers.  The first later Lean target must
+      be the lowest dependency whose proof transcript is complete, for
+      example a finite-dimensional Hall-Wightman support theorem or the
+      generic OS-free Jost/Ruelle theorem, not a wrapper around the final
+      scalar representative.
 
       Implementation-readiness ledger for this packet:
 
@@ -16048,6 +16094,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
          proved before the Lean port, the canonical compact theorem is still
          not implementation-ready.
 
+         Local production-code audit, 2026-05-01: a search of
+         `OSReconstruction/` finds no declarations named
+         `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45`,
+         `BHW.jostRuelle_uniqueContinuation_compactBoundary`,
+         `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`,
+         `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
+         `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
+         `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, or
+         `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`.
+         These names are therefore still proof-doc targets on this branch,
+         not checked Lean inputs.  Downstream raw/canonical transports below
+         may be implemented only after these producer surfaces are either
+         proved locally or replaced by already checked sorry-free support with
+         the same OS I §4.5/BHW/Jost content.
+
       This is the only non-mechanical input in
       `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`.
       The following raw/canonical transport is recorded only as a downstream
@@ -20704,10 +20765,13 @@ zero-time identity lemma, joint identity-path continuity, rotated-path
 continuity, source-Gram Lorentz invariance, and
 `BHW.swFigure24_adjacentPathStableNeighborhood_exists` all compile and
 verify without new axioms or sorrys.  The Figure-2-4 source-selector pass is
-also now checked in checkpoint `bb009da`.  The next Lean pass is therefore not
-a local EOW pass, not a final `bvt_W` transport pass, and not another
-Figure-2-4 selector.  It is blocked on the upstream scalar-source proof gate,
-in this order:
+also now checked in checkpoint `bb009da`; checkpoint `c789249` then pinned the
+source-germ proof-document shape and the max-rank kernel decomposition.  A
+local production-code audit after `c789249` found the germ support but none of
+the ordinary scalar-source or adjacent `S'_n` producer declarations.  The next
+Lean pass is therefore not a local EOW pass, not a final `bvt_W` transport
+pass, and not another Figure-2-4 selector.  It remains blocked on the
+upstream scalar-source proof gate, in this order:
 
 1. checked Figure-2-4 support packet, without changing the route:
    - in `ComplexLieGroups/AdjacentOverlapWitness.lean`, keep the existing
@@ -20728,17 +20792,17 @@ in this order:
      forward-tube membership theorems,
      `BHW.os45Figure24IdentityPath_of_time_zero`,
      `BHW.continuous_os45Figure24IdentityPath_joint`,
-	     `BHW.continuous_figure24RotateAdjacentConfig`,
-	     `BHW.sourceMinkowskiGram_complexLorentzAction`,
-	     `BHW.continuous_figure24RotatedIdentityPath`, and
-	     `BHW.swFigure24_adjacentPathStableNeighborhood_exists`;
-	   - the checked proof of the path-stability theorem already uses the
-	     canonical rotated map internally.  Before the scalar-source Lean pass,
-	     its public export must be strengthened, or a public projection added, so
-	     that it exposes both the canonical
-	     `BHW.os45Figure24AdjacentLift` extended-tube field used by the source
-	     pairing and the closure-level Figure-2-4 path field needed by the
-	     scalar corridor;
+     `BHW.continuous_figure24RotateAdjacentConfig`,
+     `BHW.sourceMinkowskiGram_complexLorentzAction`,
+     `BHW.continuous_figure24RotatedIdentityPath`, and
+     `BHW.swFigure24_adjacentPathStableNeighborhood_exists`;
+   - the checked proof of the path-stability theorem already uses the
+     canonical rotated map internally.  Before the scalar-source Lean pass,
+     its public export must be strengthened, or a public projection added, so
+     that it exposes both the canonical
+     `BHW.os45Figure24AdjacentLift` extended-tube field used by the source
+     pairing and the closure-level Figure-2-4 path field needed by the
+     scalar corridor;
    - do not export a theorem asserting that the bare adjacent relabelling of
      the identity path lies in the forward tube.  The adjacent path is the
      rotated Figure-2-4 realization, and its scalar identity is Lorentz
@@ -20755,25 +20819,25 @@ in this order:
    `BHW.sourceExtendedTubeGramDomain_relOpen_connected`,
    `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`,
    `BHW.sourceScalarRepresentativeData_of_branchLaw`, and
-	   `BHW.hallWightman_sourceScalarRepresentativeData`; and the adjacent
-	   `S'_n` package
-	   `BHW.os45Figure24_sourceChart_at`,
-	   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
-	   `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`,
-	   `BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary`,
-	   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
-	   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
-	   `BHW.OS45SPrimeFigure24LocalSourceSeedData`,
-	   `BHW.os45SPrime_figure24SourceEqOnUsrc_of_compactWickPairing`,
-	   `BHW.os45SPrime_figure24LocalSourceSeedData_of_OSI45`,
-	   `BHW.os45SPrime_figure24LocalSourceEq_of_seedData`,
-	   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
-	   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
-	   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
-	   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
-	   `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
-	   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
-	   `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
+   `BHW.hallWightman_sourceScalarRepresentativeData`; and the adjacent
+   `S'_n` package
+   `BHW.os45Figure24_sourceChart_at`,
+   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+   `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`,
+   `BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary`,
+   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
+   `BHW.OS45SPrimeFigure24LocalSourceSeedData`,
+   `BHW.os45SPrime_figure24SourceEqOnUsrc_of_compactWickPairing`,
+   `BHW.os45SPrime_figure24LocalSourceSeedData_of_OSI45`,
+   `BHW.os45SPrime_figure24LocalSourceEq_of_seedData`,
+   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
+   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
+   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
+   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
+   `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
+   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
+   `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
    `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
