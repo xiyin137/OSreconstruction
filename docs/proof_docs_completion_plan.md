@@ -1194,7 +1194,21 @@ content:
    `sourceMinkowskiGram '' Usrc` inside the adjacent double scalar domain,
    identifies the two `hRep.Phi` pullbacks with the two OS-II Wick branch
    functions on the real section, and shrinks around the selected base point
-   `x0` so `x0 ∈ V0`.  Then a complex regular point is chosen near the Wick
+   `x0` so `x0 ∈ V0`.  In the compact-Wick-to-pointwise step, continuity for
+   the two `bvt_F` real-section functions must be obtained by first composing
+   the differentiable scalar pullbacks with
+   `BHW.continuous_wickRotateRealConfig` using Mathlib
+   `ContinuousOn.comp'` and the explicit `MapsTo` proof
+   `fun x hx => hwick_mem x hx`, then transferring continuity along the
+   scalarization identities using Mathlib's `ContinuousOn.congr`; the proof
+   must not silently use continuity of unrelated total `bvt_F` values off the
+   Wick section, and must not use `ContinuousOn.comp_continuous` unless the
+   chart has been changed to a global Wick-image statement.  The checked
+   compact Wick equality is called with
+   `ρ = 1`, so its swapped-order hypothesis is labelled by
+   `(Equiv.swap i ⟨i.val + 1, hi⟩).symm * 1`; normalize this to the local
+   adjacent transposition `τ` with `Equiv.swap_inv` and `mul_one` before
+   passing `hV_swap_ordered`.  Then a complex regular point is chosen near the Wick
    source point for `x0` by `BHW.dense_sourceComplexGramRegularAt`, and scalar coordinates are
    extracted with the all-arity connected local-image packet
    `BHW.sourceComplexGramMap_localConnectedRelOpenImage_in_open_of_complexRegular_allArity`;
@@ -1307,7 +1321,13 @@ content:
    `BHW.os45OneBranchScalarGramEq_sourceInput_id` for `β = 1` and
    `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent` for the adjacent
    swap; any generic helper is private assembly from an already constructed
-   scalar corridor.  The adjacent supplier must carry the selected
+   scalar corridor.  The identity supplier must reduce
+   `sourceDoublePermutationGramDomain d n 1` by the explicit helper
+   `BHW.sourceDoublePermutationGramDomain_one_eq`, proved by unfolding
+   `sourceDoublePermutationGramDomain` and using
+   `BHW.sourcePermuteComplexGram_one`; do not rely on an unstated
+   "definitional" simplification of the double-domain field.  The adjacent
+   supplier must carry the selected
    pointwise Figure-2-4 path field on its theorem surface.  The higher
    `BHW.os45BranchHorizontalSourceGermAt_of_figure24_adjacent` supplier
    therefore carries `hV_figPath_closure`; for each `x ∈ closure V` it passes

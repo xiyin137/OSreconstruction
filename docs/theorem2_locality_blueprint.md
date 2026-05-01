@@ -9252,11 +9252,56 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `Uy` because the ordered hypothesis puts `Q.symm (realEmbed y0)` in the
       forward tube, hence in the extended tube, and `hV_horiz_id` puts the
       branch-undone point in the pulled BHW domain.  Since `β = 1`,
-      `sourceDoublePermutationGramDomain d n β.symm` is just the ordinary
-      scalar domain with the same condition repeated, and
-      `sourcePermuteComplexGram n β.symm` is the identity map.  The equality
-      field is therefore `rfl` after simp-normalizing `β`; no connectedness,
-      path, or adjacent source theorem is used in the identity case.
+      `sourceDoublePermutationGramDomain d n β.symm` is reduced by the named
+      helper
+      `BHW.sourceDoublePermutationGramDomain_one_eq`; this is a `simp`
+      consequence of the actual definition and
+      `BHW.sourcePermuteComplexGram_one`, not a definitional equality to be
+      left implicit.  The equality field is then `rfl` after
+      simp-normalizing `β` and `sourcePermuteComplexGram_one`; no
+      connectedness, path, or adjacent source theorem is used in the identity
+      case.
+
+      Lean normalization used in the identity supplier:
+
+      ```lean
+      theorem BHW.sourceDoublePermutationGramDomain_one_eq
+          (d n : Nat) :
+          BHW.sourceDoublePermutationGramDomain d n
+              (1 : Equiv.Perm (Fin n)) =
+            BHW.sourceExtendedTubeGramDomain d n := by
+        ext Z
+        simp [BHW.sourceDoublePermutationGramDomain,
+          BHW.sourcePermuteComplexGram_one]
+
+      -- Inside `BHW.os45OneBranchScalarGramEq_sourceInput_id`.
+      let β : Equiv.Perm (Fin n) := 1
+      have hDouble_one :
+          BHW.sourceDoublePermutationGramDomain d n
+              (1 : Equiv.Perm (Fin n)) =
+            BHW.sourceExtendedTubeGramDomain d n :=
+        BHW.sourceDoublePermutationGramDomain_one_eq (d := d) (n := n)
+      have hW_double :
+          hRep.U ⊆
+            BHW.sourceDoublePermutationGramDomain d n β.symm := by
+        intro Z hZU
+        have hZU' : Z ∈ BHW.sourceExtendedTubeGramDomain d n := by
+          simpa [hRep.U_eq] using hZU
+        have hZdouble :
+            Z ∈ BHW.sourceDoublePermutationGramDomain d n
+              (1 : Equiv.Perm (Fin n)) := by
+          simpa [hDouble_one] using hZU'
+        simpa [β] using hZdouble
+      have hEq_id :
+          Set.EqOn
+            (fun Z =>
+              hRep.Phi
+                (BHW.sourcePermuteComplexGram n β.symm Z))
+            hRep.Phi
+            hRep.U := by
+        intro Z hZU
+        simp [β, BHW.sourcePermuteComplexGram_one]
+      ```
 
       The adjacent source input is the genuine OS I §4.5 source theorem.  It
       must carry the pointwise Figure-2-4 path field `hfig_x0`; without that
@@ -9369,10 +9414,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
          Choose a small relatively open scalar neighbourhood
          `Wscal ⊆ hRep.U = sourceExtendedTubeGramDomain d n` around `Z0`.
          Since `sourcePermuteComplexGram n 1 = id`,
-         `sourceDoublePermutationGramDomain d n 1` is just the ordinary
-         scalar domain with the same condition repeated, and the equality
-         `hRep.Phi (sourcePermuteComplexGram n 1 Z) = hRep.Phi Z` is
-         definitional after rewriting.
+         `BHW.sourceDoublePermutationGramDomain_one_eq` rewrites
+         `sourceDoublePermutationGramDomain d n 1` to the ordinary scalar
+         domain, and the equality
+         `hRep.Phi (sourcePermuteComplexGram n 1 Z) = hRep.Phi Z` is by
+         `simp [BHW.sourcePermuteComplexGram_one]`.
       4. For `BHW.os45OneBranchScalarGramEq_sourceInput_adjacent`, set
          `τ := Equiv.swap i ⟨i.val + 1, hi⟩` and apply
          `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq` to
@@ -9447,7 +9493,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   BHW.sourceDoublePermutationGramDomain d n β.symm)
       ```
 
-      For the identity supplier, the double-domain condition is definitional.
+      For the identity supplier, the double-domain condition is the
+      `β = 1` specialization of
+      `BHW.sourceDoublePermutationGramDomain_one_eq` after rewriting
+      `β.symm = 1`; it should be discharged by `simp [β,
+      BHW.sourceDoublePermutationGramDomain_one_eq]`.
       For the adjacent supplier, apply the same geometry to the relabelled
       ordered patch `x ∘ τ`.  The scalar packet is first produced at the
       identity common edge `y0`; before this geometry theorem is consumed by
@@ -9841,11 +9891,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
          hφ_tsupport`; it does not take `hd`, `hV_open`, or a separate
          compactness hypothesis.  Since `V0 ⊆ V`, the
          existing `hV_jost`, `hV_ordered`, and `hV_swap_ordered` hypotheses
-         restrict directly.
+         restrict directly, with the swapped-order target normalized by
+         `Equiv.swap_inv` and `mul_one`: the theorem asks for
+         `((Equiv.swap i ⟨i.val + 1, hi⟩).symm * 1)` while the local
+         hypothesis is stated for `τ`.
       3. Apply
          `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
-         on `V0` to recover pointwise equality of the two scalarized
-         Wick-section functions on `V0`.
+         on `V0` to recover pointwise equality of the two `bvt_F`
+         Wick-section functions on `V0`.  The continuity hypotheses for this
+         theorem are not supplied directly by `bvt_F`; first prove
+         continuity of the scalarized pullbacks
+         `x ↦ Φ0 (wick x)` and `x ↦ Φτ (wick x)` from
+         `hΦ0_diff`, `hΦτ_diff`, and
+         `BHW.continuous_wickRotateRealConfig` by Mathlib
+         `ContinuousOn.comp'` with the explicit `MapsTo` proof
+         `fun x hx => hwick_mem x hx`; `ContinuousOn.comp_continuous` is the
+         wrong API here because the Wick map is known to land in `Usrc` only
+         on `V0`, not globally.  Then transfer those continuity proofs to the
+         corresponding `bvt_F` real-section functions using the
+         scalarization identities `hΦ0_wick`, `hΦτ_wick` and Mathlib's
+         `ContinuousOn.congr`.
       4. Apply
          `eqOn_openConnected_of_eqOn_wickRealSection`
          to the connected complex source chart `Usrc`.  The holomorphic
@@ -9885,6 +9950,41 @@ Proof decomposition of this theorem, without hiding the analytic work:
               x ∈ V0 ->
                 Φτ (fun k => wickRotatePoint (x k)) =
                   Φ0 (fun k => wickRotatePoint (x k)) := by
+          have hcontΦτ_real :
+              ContinuousOn
+                (fun x : NPointDomain d n =>
+                  Φτ (fun k => wickRotatePoint (x k))) V0 :=
+            hΦτ_diff.continuousOn.comp'
+              (BHW.continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn
+              (by
+                intro x hx
+                exact hwick_mem x hx)
+          have hcontΦ0_real :
+              ContinuousOn
+                (fun x : NPointDomain d n =>
+                  Φ0 (fun k => wickRotatePoint (x k))) V0 :=
+            hΦ0_diff.continuousOn.comp'
+              (BHW.continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn
+              (by
+                intro x hx
+                exact hwick_mem x hx)
+          have hcont_bvt_τ :
+              ContinuousOn
+                (fun x : NPointDomain d n =>
+                  bvt_F OS lgc n
+                    (fun k => wickRotatePoint (x (τ k)))) V0 :=
+            hcontΦτ_real.congr
+              (by
+                intro x hx
+                exact (hΦτ_wick x hx).symm)
+          have hcont_bvt_0 :
+              ContinuousOn
+                (fun x : NPointDomain d n =>
+                  bvt_F OS lgc n (fun k => wickRotatePoint (x k))) V0 :=
+            hcontΦ0_real.congr
+              (by
+                intro x hx
+                exact (hΦ0_wick x hx).symm)
           -- First obtain pointwise equality of the two OS-II Wick branches on
           -- `V0` from compact-test equality.
           have hpoint :
@@ -9898,22 +9998,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 V0 := by
             refine
               SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
-                hV0_open ?contτ ?cont0 ?compact_eq
-            · -- continuity of the adjacent scalarized Wick branch on `V0`
-              exact (hΦτ_diff.continuousOn.comp_continuous
-                (BHW.continuous_wickRotateRealConfig (d := d) (n := n))
-                hwick_mem)
-            · -- continuity of the identity scalarized Wick branch on `V0`
-              exact (hΦ0_diff.continuousOn.comp_continuous
-                (BHW.continuous_wickRotateRealConfig (d := d) (n := n))
-                hwick_mem)
+                hV0_open hcont_bvt_τ hcont_bvt_0 ?compact_eq
             · intro φ hφ_comp hφ_supp
               exact os45_adjacent_euclideanEdge_pairing_eq_on_timeSector
                 (d := d) OS lgc n i hi V0
                 (fun x hx => hV_jost x (hV0_sub hx))
                 (1 : Equiv.Perm (Fin n))
                 (fun x hx => hV_ordered x (hV0_sub hx))
-                (fun x hx => hV_swap_ordered x (hV0_sub hx))
+                (fun x hx => by
+                  simpa [τ, Equiv.swap_inv] using
+                    hV_swap_ordered x (hV0_sub hx))
                 φ hφ_supp
           intro x hx
           calc
@@ -15376,6 +15470,15 @@ datum that Hall-Wightman consumes.
      {Z | Z ∈ BHW.sourceExtendedTubeGramDomain d n ∧
        BHW.sourcePermuteComplexGram n σ Z ∈
          BHW.sourceExtendedTubeGramDomain d n}
+
+   theorem BHW.sourceDoublePermutationGramDomain_one_eq
+       (d n : ℕ) :
+       BHW.sourceDoublePermutationGramDomain d n
+           (1 : Equiv.Perm (Fin n)) =
+         BHW.sourceExtendedTubeGramDomain d n := by
+     ext Z
+     simp [BHW.sourceDoublePermutationGramDomain,
+       BHW.sourcePermuteComplexGram_one]
 
    theorem BHW.sourceRealMinkowskiGram_perm
        (d n : ℕ)
