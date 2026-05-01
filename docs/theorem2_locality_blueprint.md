@@ -4720,6 +4720,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.complexMinkowskiBilinear d
               (w i - ∑ b : Fin r, coeff i b • w (I b))
               (w j - ∑ b : Fin r, coeff j b • w (I b))
+        left_residual_pair_zero :
+          ∀ i j,
+            BHW.complexMinkowskiBilinear d
+              (z i - ∑ b : Fin r, coeff i b • z (I b))
+              (z j - ∑ b : Fin r, coeff j b • z (I b)) = 0
+        right_residual_pair_zero :
+          ∀ i j,
+            BHW.complexMinkowskiBilinear d
+              (w i - ∑ b : Fin r, coeff i b • w (I b))
+              (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0
 
       def BHW.sourcePrincipalGramMatrix
           (n r : Nat)
@@ -4797,6 +4807,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 ∑ b : Fin r,
                   BHW.hw_selectedSpanCoeff n r I
                     (BHW.sourceMinkowskiGram d n z) j b • w (I b))
+
+      theorem BHW.hw_lowRank_selected_residual_pairing_zero
+          [NeZero d]
+          {z : Fin n -> Fin (d + 1) -> ℂ}
+          {I : Fin r -> Fin n}
+          (hrank :
+            BHW.sourceGramMatrixRank n
+              (BHW.sourceMinkowskiGram d n z) = r)
+          (hminor :
+            BHW.sourceMatrixMinor n r I I
+              (BHW.sourceMinkowskiGram d n z) ≠ 0) :
+          ∀ i j,
+            BHW.complexMinkowskiBilinear d
+              (z i -
+                ∑ b : Fin r,
+                  BHW.hw_selectedSpanCoeff n r I
+                    (BHW.sourceMinkowskiGram d n z) i b • z (I b))
+              (z j -
+                ∑ b : Fin r,
+                  BHW.hw_selectedSpanCoeff n r I
+                    (BHW.sourceMinkowskiGram d n z) j b • z (I b)) = 0
 
       theorem BHW.hw_lowRank_selectedSpanFrame_of_sameSourceGram
           [NeZero d]
@@ -6066,6 +6097,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram
               (d := d) (n := n) (r := r) (z := z) (w := w)
               (I := I) hunit hgram
+        have hleft_pair_zero :
+            ∀ i j,
+              BHW.complexMinkowskiBilinear d
+                (z i - ∑ b : Fin r, coeff i b • z (I b))
+                (z j - ∑ b : Fin r, coeff j b • z (I b)) = 0 := by
+          simpa [coeff, G] using
+            BHW.hw_lowRank_selected_residual_pairing_zero
+              (d := d) (n := n) (r := r) (z := z) (I := I)
+              (by rfl) hminor
+        have hright_pair_zero :
+            ∀ i j,
+              BHW.complexMinkowskiBilinear d
+                (w i - ∑ b : Fin r, coeff i b • w (I b))
+                (w j - ∑ b : Fin r, coeff j b • w (I b)) = 0 := by
+          intro i j
+          exact (hres_pair i j).symm.trans (hleft_pair_zero i j)
         refine ⟨r, I, rfl, ?_⟩
         exact
           { I_injective := hI_inj
@@ -6074,7 +6121,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             coeff := coeff
             left_residual_orth := hleft_orth
             right_residual_orth := hright_orth
-            residual_pairing_eq := hres_pair }
+            residual_pairing_eq := hres_pair
+            left_residual_pair_zero := hleft_pair_zero
+            right_residual_pair_zero := hright_pair_zero }
       ```
 
       The support theorem
@@ -6086,6 +6135,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
       in the common source Gram entries and the common coefficient formula,
       then rewrites by `hgram`.  Thus no source regularity, connectedness, or
       analytic continuation is used in this selected-span step.
+      The zero residual-pairing theorem is the Schur-complement rank step:
+      with the selected principal block invertible and the full source Gram
+      matrix having rank exactly `r`, the Schur complement of that block is
+      zero.  After expanding the projection coefficients, that Schur
+      complement is precisely the residual-residual Gram matrix.  In Lean it
+      should use the checked Schur theorem
+      `BHW.rank_eq_card_iff_reindexed_schur_complement_eq_zero` (or its
+      source-specialized corollary) plus `BHW.sourceMatrixMinor` to identify
+      the determinant-unit selected block.
 
       After applying that transform, the remaining discrepancy of `Λ0 z` from
       `w` lies in

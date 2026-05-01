@@ -497,6 +497,7 @@ implementation contract is:
    `BHW.hw_selectedSpanCoeff_projection_eq`,
    `BHW.hw_lowRank_selected_residual_orthogonal`,
    `BHW.hw_lowRank_residual_pairing_eq_of_sameSourceGram`,
+   `BHW.hw_lowRank_selected_residual_pairing_zero`,
    `BHW.hw_lowRank_alignedResidualFrame_of_sameSourceGram`,
    `BHW.ComplexMinkowskiNondegenerateSubspace`,
    `BHW.complexMinkowski_isotropicDualFrame_of_residualFrame`,
@@ -537,7 +538,11 @@ implementation contract is:
    `A = sourcePrincipalGramMatrix n r I G`; residual orthogonality is the
    finite identity `row_i * A⁻¹ * A = row_i`, and residual pairing equality
    follows by expanding both sides as polynomials in the common source Gram
-   entries and rewriting by `hgram`.
+   entries and rewriting by `hgram`.  The residual-residual pairings are
+   zero, not merely equal: with the selected principal block invertible and
+   the full source Gram matrix of rank exactly `r`, the Schur complement is
+   zero; after expanding the projection coefficients this is exactly
+   `BHW.hw_lowRank_selected_residual_pairing_zero`.
    The later convergence proof must use the explicit contracted
    configurations and `Real.tendsto_exp_neg_atTop_nhds_zero`, not continuity
    of a noncomputably chosen `t ↦ contract t`.  The contraction data
