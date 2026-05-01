@@ -154,6 +154,14 @@ with the same mathematical content:
    BHW continuation, and Jost/Ruelle real-environment uniqueness.  The generic
    `BHW.JostRuelleCompactBoundaryData` theorem is OS-free; the OS-specific
    producer is still genuine source mathematics, not a forwarding wrapper.
+   Its proof is now required to expose four internal packets: connected
+   Figure-2-4 Jost/Ruelle domain and lift membership, ordinary `extendF`
+   branch holomorphy/invariance from `bvt_F`, adjacent OS-I branch production
+   from (4.1)/(4.12)/(4.14), and the compact real Jost boundary comparison
+   using the exact `φZ`/`ψZ` orientation with one `OS.E3_symmetric` call.  The
+   final carrier fields `jr_lift_eq`, `ordinary_eq_extendF_on_lift`, and
+   `adjacent_lift_pairing_eq_permutedSchwinger` must be assembled from those
+   packets, not from scalar representatives or downstream source equality.
 
 No approved source-import boundary exists for these blockers.  If a future
 session proposes such a boundary, it must be proposition-valued, exact in
@@ -462,9 +470,15 @@ implementation contract is:
    variety, prove `BHW.sourceComplexGramVariety_normal` through the Schur
    local product model, singular-locus equality, rank-exact dimension,
    codimension-at-least-two calculation, reduced Cohen-Macaulay coordinate
-   ring theorem, and Serre assembly, and prove
-   `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank` for
-   every relatively open source-variety patch.  Only then may the OS-free
+   ring theorem, and Serre assembly, and prove density of the maximal-rank
+   locus by the Schur-product perturbation argument: at rank `r < min (d+1) n`,
+   add a tiny diagonal rank-`min(d+1,n)-r` Schur-complement path, transport it
+   back through the determinant-unit chart, and then localize the global
+   closure statement to every relatively open patch by
+   `closure_inter_open_of_mem_open`.  This is the theorem
+   `BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank`; it is
+   not an automatic consequence of analyticity of the exceptional locus.  Only
+   then may the OS-free
    normal-space Riemann theorem
    `BHW.normalAnalyticSubvariety_weaklyHolomorphic_localExtension` be applied
    to the branch-defined scalar value `phi`, returning local ambient charts

@@ -4616,6 +4616,73 @@ Proof decomposition of this theorem, without hiding the analytic work:
          the elementary density of invertible symmetric matrices inside the
          full symmetric coordinate space.  This theorem is what prevents the
          exceptional analytic set from becoming an unconstrained component.
+
+         Implementation-level density proof.  Work first on the symmetric
+         rank-bounded model `sourceSymmetricRankLEVariety n D`.
+
+         ```lean
+         /-- Rank-exact points are dense in the symmetric rank-`<= D`
+         determinantal variety.  At a point of rank `r <= D`, choose a
+         determinant-unit principal `r`-block and use the Schur product model.
+         In the residual symmetric cone, add the diagonal path
+         `t • diag(1,...,1,0,...)` of rank `D-r`; its Schur graph has total
+         rank `D`, stays in rank `<= D`, and tends to the original point as
+         `t -> 0`.  The cases `r = D`, `D = 0`, and `n <= D` are immediate. -/
+         theorem BHW.sourceSymmetricRankLEVariety_rankExact_dense
+             (n D : Nat) :
+             BHW.sourceSymmetricRankLEVariety n D ⊆
+               closure (BHW.sourceSymmetricRankExactStratum n (min D n))
+
+         theorem BHW.sourceComplexGramVariety_maxRank_dense
+             (d n : Nat) :
+             BHW.sourceComplexGramVariety d n ⊆
+               closure {Z | Z ∈ BHW.sourceComplexGramVariety d n ∧
+                 BHW.HWSourceGramMaxRank d n Z} := by
+           have hVar :
+               BHW.sourceComplexGramVariety d n =
+                 BHW.sourceSymmetricRankLEVariety n (d + 1) :=
+             BHW.sourceComplexGramVariety_eq_sourceSymmetricRankLEVariety
+               (d := d) (n := n)
+           have hRankSet :
+               {Z | Z ∈ BHW.sourceComplexGramVariety d n ∧
+                 BHW.HWSourceGramMaxRank d n Z} =
+               BHW.sourceSymmetricRankExactStratum n (min (d + 1) n) := by
+             ext Z
+             simp [hVar, BHW.HWSourceGramMaxRank,
+               BHW.sourceGramMatrixRank]
+           simpa [hVar, hRankSet] using
+             BHW.sourceSymmetricRankLEVariety_rankExact_dense n (d + 1)
+
+         theorem BHW.sourceComplexGramVariety_relOpen_subset_closure_inter_maxRank
+             (d n : Nat)
+             {U : Set (Fin n -> Fin n -> ℂ)}
+             (hU_rel : BHW.IsRelOpenInSourceComplexGramVariety d n U) :
+             U ⊆ closure
+               (U ∩ {Z | BHW.HWSourceGramMaxRank d n Z}) := by
+           rcases hU_rel with ⟨Ω, hΩ_open, hU_eq⟩
+           intro Z hZU
+           have hZV : Z ∈ BHW.sourceComplexGramVariety d n := by
+             simpa [hU_eq] using hZU.2
+           have hZΩ : Z ∈ Ω := by
+             simpa [hU_eq] using hZU.1
+           refine
+             BHW.closure_inter_open_of_mem_open
+               hΩ_open hZΩ
+               (BHW.sourceComplexGramVariety_maxRank_dense
+                 (d := d) (n := n) hZV)
+               ?rewrite
+           ext W
+           simp [hU_eq, Set.inter_assoc, Set.left_comm,
+             Set.inter_left_comm]
+         ```
+
+         The last helper
+         `BHW.closure_inter_open_of_mem_open` is the standard topological
+         lemma: if `x ∈ Ω` and `x ∈ closure A`, with `Ω` open, then
+         `x ∈ closure (Ω ∩ A)`.  Here `A` is the maximal-rank subset of the
+         source Gram variety, so rewriting `U = Ω ∩ sourceComplexGramVariety`
+         gives the required relative-open statement.  The proof does not use
+         extended tubes, OS data, or the scalar function `phi`.
       7. `sourceGramVariety_normal_riemannExtension` is the analytic Riemann
          extension theorem on normal analytic spaces, specialized to the
          source Gram variety.  Its inputs must include the analytic exceptional
@@ -15517,6 +15584,112 @@ Proof decomposition of this theorem, without hiding the analytic work:
                =
              OS.S n ψZ
          ```
+
+         The OS-specific producer must itself be decomposed before Lean.  It
+         is acceptable as one private frontier only if its proof term visibly
+         contains the following four source packets; otherwise it is just a
+         renamed compact theorem.
+
+         ```lean
+         theorem BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ordered :
+               ∀ x, x ∈ V ->
+                 x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+             (hV_swap_ordered :
+               ∀ x, x ∈ V ->
+                 (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                     (Equiv.swap i ⟨i.val + 1, hi⟩))
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
+             BHW.OS45CanonicalAdjacentBranchBoundaryData
+               hd OS lgc n i hi V hV_jost hChart φ hφ_comp hφ_supp
+
+         /-- Domain and lift geometry for the canonical Figure-2-4 compact
+         branch.  `Ω` is the connected BHW/Jost branch domain containing both
+         the real Jost patch and every canonical lift point over
+         `tsupport φ`. -/
+         theorem BHW.os45Figure24_jostRuelleDomainData_of_chart ... :
+           ∃ Ω,
+             IsOpen Ω ∧ IsConnected Ω ∧
+             (∀ x, x ∈ hChart.V0 ->
+               BHW.realEmbed x ∈ Ω) ∧
+             (∀ x, x ∈ tsupport (φ : NPointDomain d n -> ℂ) ->
+               hChart.adjLift x (0 : unitInterval) ∈ Ω)
+
+         /-- Ordinary branch data.  This is `extendF (bvt_F OS lgc n)` on the
+         connected domain, using `bvt_F_holomorphic`,
+         `bvt_F_complexLorentzInvariant_forwardTube`, BHW continuation, and
+         the deterministic lift membership. -/
+         theorem BHW.os45Figure24_ordinaryBranchData_of_bvt_F ... :
+           DifferentiableOn ℂ (BHW.extendF (bvt_F OS lgc n)) Ω ∧
+           (∀ Λ z, z ∈ Ω -> BHW.complexLorentzAction Λ z ∈ Ω ->
+             BHW.extendF (bvt_F OS lgc n)
+               (BHW.complexLorentzAction Λ z) =
+             BHW.extendF (bvt_F OS lgc n) z) ∧
+           (∀ x, x ∈ hChart.V0 ->
+             BHW.extendF (bvt_F OS lgc n)
+               (hChart.adjLift x (0 : unitInterval)) =
+             BHW.extendF (bvt_F OS lgc n)
+               (hChart.adjLift x (0 : unitInterval)))
+
+         /-- Adjacent OS-I branch data.  This is where equations (4.1),
+         (4.12), and (4.14) are consumed: (4.1) gives the compact Euclidean
+         zero-diagonal boundary functional, (4.12) identifies its
+         Fourier-Laplace analytic branch, and (4.14) supplies the Lorentz/BHW
+         continuation used on the adjacent Figure-2-4 branch. -/
+         theorem BHW.os45Figure24_adjacentBranchData_of_OSI45 ... :
+           ∃ Badj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+             DifferentiableOn ℂ Badj Ω ∧
+             (∀ Λ z, z ∈ Ω -> BHW.complexLorentzAction Λ z ∈ Ω ->
+               Badj (BHW.complexLorentzAction Λ z) = Badj z) ∧
+             (∫ x : NPointDomain d n,
+                 Badj (hChart.adjLift x (0 : unitInterval)) * φ x
+               =
+               OS.S n ψZ)
+
+         /-- Real Jost boundary comparison for the two branches.  The proof
+         is compact and distributional: orient `φZ`, set
+         `ψZ := permuteZeroDiagonalSchwartz τ.symm φZ`, use exactly one
+         `OS.E3_symmetric` call to identify `OS.S n φZ` and `OS.S n ψZ`, and
+         rewrite the two real-boundary pairings by OS I (4.1)/(4.12). -/
+         theorem BHW.os45Figure24_realBoundaryEq_of_OSI45 ... :
+           ∀ χ : SchwartzNPoint d n,
+             HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+             tsupport (χ : NPointDomain d n -> ℂ) ⊆ hChart.V0 ->
+               ∫ x : NPointDomain d n,
+                   BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * χ x
+                 =
+               ∫ x : NPointDomain d n,
+                   Badj (BHW.realEmbed x) * χ x
+         ```
+
+         The assembly of
+         `os45CanonicalAdjacentBranchBoundaryData_of_OSI45` then has no
+         discretion: define `τ`, `φZ`, and `ψZ` exactly as above; take
+         `jr.Ω`, `jr.lift`, and the two branch functions from the four
+         packets; fill `jr.lift_mem_of_support` from the domain/lift packet;
+         fill `jr.realBoundary_eq` from the real-boundary theorem; set
+         `jr_lift_eq` by `rfl`; fill
+         `ordinary_eq_extendF_on_lift` by the ordinary-branch definition; and
+         fill `adjacent_lift_pairing_eq_permutedSchwinger` from the adjacent
+         branch packet.  None of these fields may be obtained from
+         `SourceScalarRepresentativeData`, local source equality, raw
+         adjacent-Wick pointwise comparison, final Wightman locality, PET, or
+         EOW.
 
          Proof transcript for the two generic subtheorems.  First,
          `BHW.jostRuelle_realPatch_eqOn_of_distributionEq` applies
