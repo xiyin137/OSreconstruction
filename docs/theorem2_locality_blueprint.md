@@ -10055,26 +10055,281 @@ Proof decomposition of this theorem, without hiding the analytic work:
         exact hchange.trans hψ.symm
       ```
 
-      Thus the real mathematical proof content of
-      `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F` is the
-      left-side theorem
+      Thus the hard mathematical proof content behind
+      `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F` is even more
+      local than the compact comparison: it is the Figure-2-4/BHW/Jost
+      branch equality between the raw adjacent ordinary-extended-tube point
+      and the identity Wick ordinary-forward-tube point,
 
       ```lean
-      ∫ x, BHW.extendF (bvt_F OS lgc n)
-              (BHW.permAct τ (fun k => wickRotatePoint (x k))) * φ x
-        =
-      OS.S n ψZ
+      theorem BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            ∀ x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_swap_ordered :
+            ∀ x, x ∈ V ->
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          {x0 : NPointDomain d n}
+          (hChart :
+            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          ∀ x, x ∈ hChart.V0 ->
+            BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) τ
+                (fun k => wickRotatePoint (x k))) =
+            BHW.extendF (bvt_F OS lgc n)
+              (fun k => wickRotatePoint (x k))
       ```
 
-      on the same selected Figure-2-4 chart.  Once that OS-I §4.5 theorem is
-      proved, the displayed comparison theorem is the transitive composition
-      of this left-side equality with
+      This theorem is the local OS-I §4.5/BHW/Jost source boundary.  It is not
+      a global PET-independence theorem and must not be proved by calling the
+      global consumer
+      `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`.  Its
+      proof may internally use the same Hall-Wightman scalar-product
+      single-valuedness theorem, but only in the specialized Figure-2-4
+      setting: raw adjacent membership in the identity sector comes from
+      `BHW.os45Figure24_permutedWick_mem_extendedTube_zero`, membership in the
+      adjacent sector comes from `hChart.wick_id_forwardTube` and
+      `BHW.permAct_mul`/`Equiv.swap_inv`, and the equality is anchored by the
+      selected OS-II compact Schwinger/Jost real-environment data.  No final
+      `bvt_W` locality, no `AdjacentOSEOWDifferenceEnvelope`, and no
+      prepackaged global branch-independence corollary may be used here.
+
+      The implementation-level source input for this theorem must be local to
+      the Figure-2-4 chart, not the downstream global PET package.  The
+      allowed theorem surface is:
+
+      ```lean
+      theorem BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            ∀ x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_swap_ordered :
+            ∀ x, x ∈ V ->
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          {x0 : NPointDomain d n}
+          (hChart :
+            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          ∀ x, x ∈ hChart.V0 ->
+            let zraw : Fin n -> Fin (d + 1) -> ℂ :=
+              BHW.permAct (d := d) τ
+                (fun k => wickRotatePoint (x k))
+            zraw ∈ BHW.permutedExtendedTubeSector d n 1 ->
+            zraw ∈ BHW.permutedExtendedTubeSector d n τ ->
+            BHW.extendF (bvt_F OS lgc n) (fun k => zraw k) =
+            BHW.extendF (bvt_F OS lgc n) (fun k => zraw (τ k))
+      ```
+
+      This is the exact local OS-I §4.5/BHW/Jost theorem: equations (4.1),
+      (4.12), and (4.14) produce the symmetric adjacent `S'_n` datum on this
+      chart, BHW gives the single-valued complex-Lorentz continuation for
+      this datum on the two sector branches that meet at `zraw`, and Jost
+      real-environment uniqueness identifies the datum from the selected
+      compact Schwinger/Jost boundary.  It may be implemented inside the same
+      file as the raw comparison theorem, or as a source-support theorem, but
+      it must not be replaced by:
+
+      - `BHW.permutedExtendedTube_singleValued_of_forwardTube_symmetry`;
+      - `bvt_F_distributionalJostAnchor_of_OSII`;
+      - `AdjacentOSEOWDifferenceEnvelope`;
+      - final `bvt_W` locality or pointwise `bvt_F_perm`.
+
+      Lean-shaped proof of the specialized branch equality after this local
+      source input exists:
+
+      ```lean
+      theorem BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost
+          ... := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        intro x hx
+        let zraw : Fin n -> Fin (d + 1) -> ℂ :=
+          BHW.permAct (d := d) τ
+            (fun k => wickRotatePoint (x k))
+        have hzraw_id :
+            zraw ∈ BHW.permutedExtendedTubeSector d n 1 := by
+          have hET :
+              zraw ∈ BHW.ExtendedTube d n := by
+            simpa [zraw, τ] using
+              BHW.os45Figure24_permutedWick_mem_extendedTube_zero
+                (d := d) hd OS lgc n i hi V hChart x hx
+          simpa [BHW.permutedExtendedTubeSector] using hET
+        have hzraw_tau :
+            zraw ∈ BHW.permutedExtendedTubeSector d n τ := by
+          have hwick_ET :
+              (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n :=
+            BHW.forwardTube_subset_extendedTube
+              (hChart.wick_id_forwardTube x hx)
+          simpa [zraw, τ, BHW.permutedExtendedTubeSector,
+            BHW.permAct, Equiv.swap_inv] using hwick_ET
+        have hbranch :=
+          BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost
+            (d := d) hd OS lgc n i hi V hV_jost
+            hV_ordered hV_swap_ordered hChart x hx
+            hzraw_id hzraw_tau
+        simpa [zraw, τ, BHW.permAct, Equiv.swap_inv] using hbranch
+      ```
+
+      This keeps the adjacent `S'_n` proof local.  The later global
+      `SourceDistributionalAdjacentTubeAnchor`/`S''_n` package may reuse the
+      same OS-I §4.5 source mathematics, but it is not an input to this raw
+      Figure-2-4 comparison theorem.
+
+      After this source theorem is available, the left-side compact theorem is
+      mechanical:
+
+      ```lean
+      theorem BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger
+          [NeZero d]
+          (hd : 2 <= d)
+          (OS : OsterwalderSchraderAxioms d)
+          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+          (V : Set (NPointDomain d n))
+          (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ordered :
+            ∀ x, x ∈ V ->
+              x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+          (hV_swap_ordered :
+            ∀ x, x ∈ V ->
+              (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                  (Equiv.swap i ⟨i.val + 1, hi⟩))
+          {x0 : NPointDomain d n}
+          (hChart :
+            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          ∀ (φ : SchwartzNPoint d n)
+            (_hφ_comp :
+              HasCompactSupport (φ : NPointDomain d n -> ℂ))
+            (hφ_supp :
+              tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0),
+            let φZ : ZeroDiagonalSchwartz d n :=
+              ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+                (d := d) (n := n) hChart.V0
+                (fun x hx => hV_jost x (hChart.V0_sub hx)) φ
+                hφ_supp⟩
+            let ψZ : ZeroDiagonalSchwartz d n :=
+              permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+            ∫ x : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) τ
+                    (fun k => wickRotatePoint (x k))) * φ x
+              =
+            OS.S n ψZ
+      ```
+
+      Lean-shaped proof of the mechanical left-side theorem:
+
+      ```lean
+      theorem BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger
+          ... := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        intro φ hφ_comp hφ_supp
+        let φZ : ZeroDiagonalSchwartz d n :=
+          ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+            (d := d) (n := n) hChart.V0
+            (fun x hx => hV_jost x (hChart.V0_sub hx)) φ hφ_supp⟩
+        let ψZ : ZeroDiagonalSchwartz d n :=
+          permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
+        have hbranch :
+            ∀ x, x ∈ hChart.V0 ->
+              BHW.extendF (bvt_F OS lgc n)
+                (BHW.permAct (d := d) τ
+                  (fun k => wickRotatePoint (x k))) =
+              BHW.extendF (bvt_F OS lgc n)
+                (fun k => wickRotatePoint (x k)) :=
+          BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost
+            (d := d) hd OS lgc n i hi V hV_jost
+            hV_ordered hV_swap_ordered hChart
+        have hF_holo_BHW :
+            DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+          simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+            bvt_F_holomorphic (d := d) OS lgc n
+        have hF_restricted_BHW :
+            ∀ (Λ : RestrictedLorentzGroup d)
+              (z : Fin n -> Fin (d + 1) -> ℂ),
+              z ∈ BHW.ForwardTube d n ->
+              bvt_F OS lgc n
+                (fun k μ => ∑ ν, (Λ.val.val μ ν : ℂ) * z k ν) =
+              bvt_F OS lgc n z := by
+          intro Λ z hz
+          exact bvt_F_restrictedLorentzInvariant_forwardTube
+            (d := d) OS lgc n Λ z
+            ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+        have hto_identity :
+            ∫ x : NPointDomain d n,
+                BHW.extendF (bvt_F OS lgc n)
+                  (BHW.permAct (d := d) τ
+                    (fun k => wickRotatePoint (x k))) * φ x
+              =
+            ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
+          refine integral_congr_ae ?_
+          filter_upwards with x
+          by_cases hx : x ∈ hChart.V0
+          · have hwick_FT :
+                (fun k => wickRotatePoint (x k)) ∈ BHW.ForwardTube d n :=
+              hChart.wick_id_forwardTube x hx
+            have hid :
+                BHW.extendF (bvt_F OS lgc n)
+                    (fun k => wickRotatePoint (x k)) =
+                  bvt_F OS lgc n (fun k => wickRotatePoint (x k)) :=
+              BHW.extendF_eq_on_forwardTube n (bvt_F OS lgc n)
+                hF_holo_BHW hF_restricted_BHW
+                _ hwick_FT
+            rw [hbranch x hx, hid]
+          · have hφx : φ x = 0 := by
+              exact
+                (notMem_tsupport_iff_eventuallyEq.mp
+                  (fun hxSupp => hx (hφ_supp hxSupp))).self_of_nhds
+            simp [hφx]
+        have hφZ :
+            OS.S n φZ =
+              ∫ x : NPointDomain d n,
+                bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * φ x := by
+          simpa [φZ] using
+            bvt_euclidean_restriction (d := d) OS lgc n φZ
+        have hE3 : OS.S n φZ = OS.S n ψZ := by
+          refine OS.E3_symmetric (n := n) (σ := τ.symm) φZ ψZ ?_
+          intro x
+          change
+            (permuteZeroDiagonalSchwartz
+              (d := d) (n := n) τ.symm φZ).1 x =
+            φZ.1 (fun i => x (τ.symm i))
+          simp [ψZ]
+        exact hto_identity.trans (hφZ.symm.trans hE3)
+      ```
+
+      Once this specialized OS-I §4.5 theorem and its mechanical compact
+      corollary are proved, the displayed comparison theorem is the transitive
+      composition of this left-side equality with
       `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`.  If
       both lemmas are kept private in the implementation file, the public
       comparison theorem still exposes the correct compact-support boundary
       content without pretending that the raw adjacent point lies in ACR(1).
 
-      Proof transcript for the left-side OS-I §4.5 theorem:
+      Proof transcript for the specialized OS-I §4.5/BHW/Jost source theorem:
 
       1. Use the OS-II construction only at the identity Wick ACR branch after
          the finite change of variables selecting `ψZ`; the compact branch is
@@ -10516,25 +10771,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
          symmetric Euclidean compact-test branch selected by E3.  This is not
          local EOW, not final Wightman locality, not global PET branch
          independence, and not a pointwise permutation-symmetry shortcut.
-      5. Step 4 is supplied by the raw adjacent-Wick comparison theorem
-         `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`, followed
-         by `bvt_euclidean_restriction` and the finite permutation
-         change-of-variables; the resulting raw Schwinger-valued theorem is
-         transported to the canonical lift by
+      5. Step 4 is supplied by the specialized branch theorem
+         `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
+         its mechanical compact corollary
+         `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
+         and the Figure-2-4 Lorentz normalization
          `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`.
          Only after that theorem is available does the displayed ACR-kernel
          theorem follow by step 1.  Production Lean may not introduce the
-         theorem above until the raw OS-I §4.5/BHW/Jost comparison statement
-         has a complete proof or an explicitly approved source-import boundary
-         with that exact compact-support conclusion.
+         theorem above until the specialized OS-I §4.5/BHW/Jost branch
+         comparison has a complete proof or an explicitly approved
+         source-import boundary with that exact local branch conclusion.
 
-      The current proof-document gap is therefore the raw adjacent-Wick
-      `extendF`-to-`bvt_F` comparison theorem and its exact OS-I
-      §4.5/Bargmann-Hall-Wightman/Jost proof transcript.  The displayed
-      raw Schwinger-valued and canonical-lift theorems are deterministic
-      transports of that source statement.  Adding any of these statements to
-      Lean as a wrapper, `sorry`, `admit`, or unapproved axiom would violate
-      the implementation gate.
+      The current proof-document gap is therefore the specialized raw
+      adjacent-Wick `extendF` branch comparison with the identity Wick
+      `extendF` branch, and its exact OS-I §4.5/Bargmann-Hall-Wightman/Jost
+      proof transcript.  The displayed raw comparison, raw Schwinger-valued,
+      and canonical-lift theorems are deterministic transports of that source
+      statement plus the checked finite-permutation and Figure-2-4 geometry.
+      Adding any of these statements to Lean as a wrapper, `sorry`, `admit`,
+      or unapproved axiom would violate the implementation gate.
 
       Once this source theorem is proved, the ACR-kernel form is mechanical:
 
@@ -14859,6 +15115,9 @@ in this order:
 	   `S'_n` package
 	   `BHW.os45Figure24_sourceChart_at`,
 	   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+	   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
+	   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
+	   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
 	   `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
 	   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
 	   `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
@@ -15139,6 +15398,9 @@ not as the next task.  The active next implementation order is:
    seed/path package
    `BHW.os45Figure24_sourceChart_at`,
    `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
+   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
+   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
+   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
    `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
    `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
    `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
