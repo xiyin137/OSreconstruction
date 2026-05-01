@@ -2133,12 +2133,33 @@ Canonical-lift production readiness is now a four-part gate, not a theorem
 name.  First build the exact zero-diagonal compact tests
 `φZ` and `ψZ := permuteZeroDiagonalSchwartz τ.symm φZ`, with the orientation
 checked by `bvt_euclidean_restriction` and at most one `OS.E3_symmetric`
-call.  Second prove
+call.  The theorem surfaces at this gate must carry the checked Figure-2-4
+real-embedding hypotheses
+`∀ x ∈ V, BHW.realEmbed x ∈ BHW.ExtendedTube d n` and
+`∀ x ∈ V, BHW.realEmbed (fun k => x τ k) ∈ BHW.ExtendedTube d n`, with
+`τ := Equiv.swap i ⟨i.val + 1, hi⟩`; these come from the local source patch
+and are not to be inferred from bare `JostSet` membership.  Second prove
 `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` from OS I §4.5
 equations (4.1), (4.12), and (4.14), Euclidean symmetry of `ψZ`, BHW
-continuation, and the Figure-2-4 real Jost boundary comparison, filling all
-`D.jr` branch, Lorentz-invariance, real-boundary, lift-support, and adjacent
-pairing fields.  Third prove the OS-free
+continuation, and the Figure-2-4 real Jost boundary comparison.  The producer
+must now be assembled from the four Lean-facing packets named in the
+blueprint: `BHW.OS45Figure24JostRuelleDomainData`,
+`BHW.OS45Figure24OrdinaryBranchData`,
+`BHW.OS45Figure24AdjacentBranchData`, and
+`BHW.os45Figure24_realBoundaryEq_of_OSI45`.  The domain packet exports the
+load-bearing field `Ω ⊆ BHW.ExtendedTube d n`; the ordinary branch packet is
+then definitionally the actual restriction of
+`BHW.extendF (bvt_F OS lgc n)` to `Ω`, with differentiability from
+`BHW.extendF_holomorphicOn.mono` and Lorentz invariance from
+`BHW.extendF_complexLorentzInvariant_of_cinv`.  This replaces the older
+tautological ordinary-branch line and prevents the producer from silently
+introducing a second ordinary analytic branch.  The adjacent branch packet
+must carry the OS-I branch's holomorphy, Lorentz invariance, and compact lift
+pairing `= OS.S n ψZ`; the real-boundary theorem must compare
+`Dord.ordinaryBranch` and `Dadj.adjacentBranch` on compact tests supported in
+`hChart.V0`.  The final producer then fills all `D.jr` branch,
+Lorentz-invariance, real-boundary, lift-support, and adjacent pairing fields
+only from those four packets.  Third prove the OS-free
 `BHW.jostRuelle_uniqueContinuation_compactBoundary` through
 `BHW.jostRuelle_realPatch_eqOn_of_distributionEq` and
 `BHW.jostRuelle_branch_eqOn_connectedDomain`.  Fourth derive the public

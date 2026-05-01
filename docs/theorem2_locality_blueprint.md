@@ -13713,6 +13713,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (V : Set (NPointDomain d n))
           (hV_open : IsOpen V)
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -13813,6 +13819,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14376,6 +14388,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14504,6 +14522,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14552,6 +14576,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14600,6 +14630,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14681,6 +14717,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14720,6 +14762,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -14852,7 +14900,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           simpa [Φτ, τ] using
             BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24
               (d := d) hd OS lgc n i hi V
-              hV_jost hV_ordered hV_swap_ordered hRep hChart
+              hV_jost hV_ET hV_swapET hV_ordered hV_swap_ordered hRep hChart
         have hwick_eq :
             ∀ x : NPointDomain d n,
               x ∈ hChart.V0 ->
@@ -15001,7 +15049,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           simpa [τ] using
             BHW.os45SPrime_figure24SourceEqOnUsrc_of_compactWickPairing
               (d := d) hd OS lgc n i hi V
-              hV_jost hV_ordered hV_swap_ordered hChart hRep
+              hV_jost hV_ET hV_swapET hV_ordered hV_swap_ordered hChart hRep
         rcases hChart.Usrc_nonempty with ⟨zbase, hzbase⟩
         rcases BHW.exists_regular_sourcePoint_in_open_neighborhood
             (d := d) (n := n) hChart.Usrc_open hzbase with
@@ -15203,7 +15251,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         let hSeed :=
           BHW.os45SPrime_figure24LocalSourceSeedData_of_OSI45
             (d := d) hd OS lgc n i hi V hV_jost
-            hV_ordered hV_swap_ordered hChart hRep
+            hV_ET hV_swapET hV_ordered hV_swap_ordered hChart hRep
         exact
           BHW.os45SPrime_figure24LocalSourceEq_of_seedData
             (d := d) hd OS lgc n i hi V hChart hRep hSeed
@@ -15594,6 +15642,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -15624,6 +15678,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
               =
             OS.S n ψZ
       ```
+
+      The two `ExtendedTube` hypotheses are deliberately explicit.  The
+      checked Figure-2-4 source patch supplies them, while `hV_jost` records
+      the real Jost environment for uniqueness.  The proof must not infer
+      `BHW.realEmbed x ∈ BHW.ExtendedTube d n` from the bare local
+      `JostSet` predicate unless a separate checked lemma with exactly that
+      content is available.  This is what makes the later domain packet's
+      field `Ω ⊆ BHW.ExtendedTube d n` honest rather than a hidden
+      strengthening.
 
       Its statement is deliberately about the deterministic canonical
       Figure-2-4 rotated lift, not an arbitrary existence witness.  This is
@@ -15662,11 +15725,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       -- representative or local source equality as input.
       have D :
           BHW.OS45CanonicalAdjacentBranchBoundaryData
-            hd OS lgc n i hi V hV_jost hChart
+            hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
             φ hφ_comp hφ_supp :=
         BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
           (d := d) hd OS lgc n i hi V hV_jost
-          hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+          hV_ET hV_swapET hV_ordered hV_swap_ordered hChart
+          φ hφ_comp hφ_supp
 
       -- C. OS-free Jost/Ruelle uniqueness on the connected analytic branch
       -- domain carried by `D.jr`.
@@ -15843,7 +15907,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
            let D :=
              BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
                (d := d) hd OS lgc n i hi V hV_jost
-               hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+               hV_ET hV_swapET hV_ordered hV_swap_ordered hChart
+               φ hφ_comp hφ_supp
            have huniq :=
              by
                have huniq0 :=
@@ -15909,11 +15974,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
          ```lean
          have D :
              BHW.OS45CanonicalAdjacentBranchBoundaryData
-               hd OS lgc n i hi V hV_jost hChart
+               hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
                φ hφ_comp hφ_supp :=
            BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
              (d := d) hd OS lgc n i hi V hV_jost
-             hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+             hV_ET hV_swapET hV_ordered hV_swap_ordered hChart
+             φ hφ_comp hφ_supp
          -- The producer above is the source proof, not a wrapper:
          -- * use (4.1) to put the compact zero-diagonal Schwinger test in
          --   the ordered OS-I difference-variable branch;
@@ -16097,6 +16163,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
              (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
              (V : Set (NPointDomain d n))
              (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
              {x0 : NPointDomain d n}
              (hChart :
                BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
@@ -16149,6 +16221,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
              (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
              (V : Set (NPointDomain d n))
              (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
              (hV_ordered :
                ∀ x, x ∈ V ->
                  x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -16166,77 +16244,396 @@ Proof decomposition of this theorem, without hiding the analytic work:
              (hφ_supp :
                tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
              BHW.OS45CanonicalAdjacentBranchBoundaryData
-               hd OS lgc n i hi V hV_jost hChart φ hφ_comp hφ_supp
+               hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+               φ hφ_comp hφ_supp
 
          /-- Domain and lift geometry for the canonical Figure-2-4 compact
-         branch.  `Ω` is the connected BHW/Jost branch domain containing both
-         the real Jost patch and every canonical lift point over
-         `tsupport φ`. -/
-         theorem BHW.os45Figure24_jostRuelleDomainData_of_chart ... :
-           ∃ Ω,
-             IsOpen Ω ∧ IsConnected Ω ∧
-             (∀ x, x ∈ hChart.V0 ->
-               BHW.realEmbed x ∈ Ω) ∧
-             (∀ x, x ∈ tsupport (φ : NPointDomain d n -> ℂ) ->
-               hChart.adjLift x (0 : unitInterval) ∈ Ω)
+         branch.  `Ω` is the connected ordinary-extended-tube BHW/Jost branch
+         domain containing both the real Jost patch and every canonical lift
+         point over `tsupport φ`.  The subset field is load-bearing: it is
+         what lets the ordinary branch be the restriction of
+         `extendF (bvt_F OS lgc n)` rather than a second analytic function. -/
+         structure BHW.OS45Figure24JostRuelleDomainData
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) where
+           Ω : Set (Fin n -> Fin (d + 1) -> ℂ)
+           Ω_open : IsOpen Ω
+           Ω_connected : IsConnected Ω
+           Ω_sub_extendedTube : Ω ⊆ BHW.ExtendedTube d n
+           jostPatch_open : IsOpen hChart.V0 := hChart.V0_open
+           jostPatch_nonempty : hChart.V0.Nonempty := ⟨x0, hChart.x0_mem⟩
+           jostPatch_jost :
+             ∀ x, x ∈ hChart.V0 -> x ∈ BHW.JostSet d n :=
+             fun x hx => hV_jost x (hChart.V0_sub hx)
+           realEmbed_mem :
+             ∀ x, x ∈ hChart.V0 -> BHW.realEmbed x ∈ Ω
+           lift_mem_of_V0 :
+             ∀ x, x ∈ hChart.V0 ->
+               hChart.adjLift x (0 : unitInterval) ∈ Ω
+           lift_mem_of_support :
+             ∀ x, x ∈ tsupport (φ : NPointDomain d n -> ℂ) ->
+               hChart.adjLift x (0 : unitInterval) ∈ Ω :=
+             fun x hx => lift_mem_of_V0 x (hφ_supp hx)
 
-         /-- Ordinary branch data.  This is `extendF (bvt_F OS lgc n)` on the
-         connected domain, using `bvt_F_holomorphic`,
-         `bvt_F_complexLorentzInvariant_forwardTube`, BHW continuation, and
-         the deterministic lift membership. -/
-         theorem BHW.os45Figure24_ordinaryBranchData_of_bvt_F ... :
-           DifferentiableOn ℂ (BHW.extendF (bvt_F OS lgc n)) Ω ∧
-           (∀ Λ z, z ∈ Ω -> BHW.complexLorentzAction Λ z ∈ Ω ->
+         theorem BHW.os45Figure24_jostRuelleDomainData_of_chart
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
+             BHW.OS45Figure24JostRuelleDomainData
+               hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+               φ hφ_comp hφ_supp
+
+         /-- Ordinary branch data.  This branch is definitionally the BHW
+         ordinary continuation `extendF (bvt_F OS lgc n)` restricted to
+         `DΩ.Ω`; it is not a second analytic function. -/
+         structure BHW.OS45Figure24OrdinaryBranchData
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp) where
+           ordinaryBranch :
+             (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
              BHW.extendF (bvt_F OS lgc n)
-               (BHW.complexLorentzAction Λ z) =
-             BHW.extendF (bvt_F OS lgc n) z) ∧
-           (∀ x, x ∈ hChart.V0 ->
-             BHW.extendF (bvt_F OS lgc n)
-               (hChart.adjLift x (0 : unitInterval)) =
-             BHW.extendF (bvt_F OS lgc n)
-               (hChart.adjLift x (0 : unitInterval)))
+           ordinaryBranch_def :
+             ordinaryBranch = BHW.extendF (bvt_F OS lgc n) := rfl
+           ordinary_holo :
+             DifferentiableOn ℂ ordinaryBranch DΩ.Ω
+           ordinary_lorentzInvariant :
+             ∀ Λ z, z ∈ DΩ.Ω ->
+               BHW.complexLorentzAction Λ z ∈ DΩ.Ω ->
+                 ordinaryBranch (BHW.complexLorentzAction Λ z) =
+                   ordinaryBranch z
+           ordinary_eq_extendF_on_lift :
+             ∀ x, x ∈ hChart.V0 ->
+               ordinaryBranch (hChart.adjLift x (0 : unitInterval)) =
+                 BHW.extendF (bvt_F OS lgc n)
+                   (hChart.adjLift x (0 : unitInterval))
+
+         theorem BHW.os45Figure24_ordinaryBranchData_of_bvt_F
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp) :
+             BHW.OS45Figure24OrdinaryBranchData
+               hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+               φ hφ_comp hφ_supp DΩ
 
          /-- Adjacent OS-I branch data.  This is where equations (4.1),
          (4.12), and (4.14) are consumed: (4.1) gives the compact Euclidean
          zero-diagonal boundary functional, (4.12) identifies its
          Fourier-Laplace analytic branch, and (4.14) supplies the Lorentz/BHW
          continuation used on the adjacent Figure-2-4 branch. -/
-         theorem BHW.os45Figure24_adjacentBranchData_of_OSI45 ... :
-           ∃ Badj : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
-             DifferentiableOn ℂ Badj Ω ∧
-             (∀ Λ z, z ∈ Ω -> BHW.complexLorentzAction Λ z ∈ Ω ->
-               Badj (BHW.complexLorentzAction Λ z) = Badj z) ∧
-             (∫ x : NPointDomain d n,
-                 Badj (hChart.adjLift x (0 : unitInterval)) * φ x
+         structure BHW.OS45Figure24AdjacentBranchData
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (φZ ψZ : ZeroDiagonalSchwartz d n)
+             (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp) where
+           adjacentBranch :
+             (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+           adjacent_holo :
+             DifferentiableOn ℂ adjacentBranch DΩ.Ω
+           adjacent_lorentzInvariant :
+             ∀ Λ z, z ∈ DΩ.Ω ->
+               BHW.complexLorentzAction Λ z ∈ DΩ.Ω ->
+                 adjacentBranch (BHW.complexLorentzAction Λ z) =
+                   adjacentBranch z
+           adjacent_lift_pairing_eq_permutedSchwinger :
+             ∫ x : NPointDomain d n,
+                 adjacentBranch (hChart.adjLift x (0 : unitInterval)) *
+                   φ x
                =
-               OS.S n ψZ)
+             OS.S n ψZ
+
+         theorem BHW.os45Figure24_adjacentBranchData_of_OSI45
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             (hV_ordered :
+               ∀ x, x ∈ V ->
+                 x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+             (hV_swap_ordered :
+               ∀ x, x ∈ V ->
+                 (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                     (Equiv.swap i ⟨i.val + 1, hi⟩))
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (φZ ψZ : ZeroDiagonalSchwartz d n)
+             (hφZ_def :
+               φZ =
+                 ⟨φ, zeroDiagonal_of_tsupport_subset_jostOverlap
+                   (d := d) (n := n) hChart.V0
+                   (fun x hx => hV_jost x (hChart.V0_sub hx))
+                   φ hφ_supp⟩)
+             (hψZ_def :
+               ψZ =
+                 permuteZeroDiagonalSchwartz (d := d) (n := n)
+                   (Equiv.swap i ⟨i.val + 1, hi⟩).symm φZ)
+             (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp) :
+             BHW.OS45Figure24AdjacentBranchData
+               hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+               φ hφ_comp hφ_supp
+               φZ ψZ DΩ
 
          /-- Real Jost boundary comparison for the two branches.  The proof
          is compact and distributional: orient `φZ`, set
          `ψZ := permuteZeroDiagonalSchwartz τ.symm φZ`, use exactly one
          `OS.E3_symmetric` call to identify `OS.S n φZ` and `OS.S n ψZ`, and
          rewrite the two real-boundary pairings by OS I (4.1)/(4.12). -/
-         theorem BHW.os45Figure24_realBoundaryEq_of_OSI45 ... :
-           ∀ χ : SchwartzNPoint d n,
-             HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
-             tsupport (χ : NPointDomain d n -> ℂ) ⊆ hChart.V0 ->
-               ∫ x : NPointDomain d n,
-                   BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * χ x
-                 =
-               ∫ x : NPointDomain d n,
-                   Badj (BHW.realEmbed x) * χ x
+         theorem BHW.os45Figure24_realBoundaryEq_of_OSI45
+             [NeZero d]
+             (hd : 2 <= d)
+             (OS : OsterwalderSchraderAxioms d)
+             (lgc : OSLinearGrowthCondition d OS)
+             (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+             (V : Set (NPointDomain d n))
+             (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+             (hV_ET :
+               ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+             (hV_swapET :
+               ∀ x, x ∈ V ->
+                 BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   BHW.ExtendedTube d n)
+             (hV_ordered :
+               ∀ x, x ∈ V ->
+                 x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+             (hV_swap_ordered :
+               ∀ x, x ∈ V ->
+                 (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                   EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                     (Equiv.swap i ⟨i.val + 1, hi⟩))
+             {x0 : NPointDomain d n}
+             (hChart :
+               BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+             (φ : SchwartzNPoint d n)
+             (hφ_comp :
+               HasCompactSupport (φ : NPointDomain d n -> ℂ))
+             (hφ_supp :
+               tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0)
+             (φZ ψZ : ZeroDiagonalSchwartz d n)
+             (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp)
+             (Dord :
+               BHW.OS45Figure24OrdinaryBranchData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp DΩ)
+             (Dadj :
+               BHW.OS45Figure24AdjacentBranchData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp
+                 φZ ψZ DΩ) :
+             ∀ χ : SchwartzNPoint d n,
+               HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+               tsupport (χ : NPointDomain d n -> ℂ) ⊆ hChart.V0 ->
+                 ∫ x : NPointDomain d n,
+                     Dord.ordinaryBranch (BHW.realEmbed x) * χ x
+                   =
+                 ∫ x : NPointDomain d n,
+                     Dadj.adjacentBranch (BHW.realEmbed x) * χ x
          ```
+
+         Lean-shaped proof of the ordinary branch packet:
+
+         ```lean
+         theorem BHW.os45Figure24_ordinaryBranchData_of_bvt_F
+             ... (DΩ :
+               BHW.OS45Figure24JostRuelleDomainData
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
+                 φ hφ_comp hφ_supp) := by
+           let Bord : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ :=
+             BHW.extendF (bvt_F OS lgc n)
+           have hF_holo_BHW :
+               DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+             simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+               bvt_F_holomorphic (d := d) OS lgc n
+           have hF_cinv_BHW :
+               ∀ (Λ : ComplexLorentzGroup d)
+                 (z : Fin n -> Fin (d + 1) -> ℂ),
+                 z ∈ BHW.ForwardTube d n ->
+                 BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n ->
+                 bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
+                   bvt_F OS lgc n z := by
+             intro Λ z hz hΛz
+             exact bvt_F_complexLorentzInvariant_forwardTube
+               (d := d) OS lgc n Λ z
+               ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+               ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+           have hBord_diff :
+               DifferentiableOn ℂ Bord DΩ.Ω :=
+             (BHW.extendF_holomorphicOn n (bvt_F OS lgc n)
+               hF_holo_BHW hF_cinv_BHW).mono DΩ.Ω_sub_extendedTube
+           have hBord_inv :
+               ∀ Λ z, z ∈ DΩ.Ω ->
+                 BHW.complexLorentzAction Λ z ∈ DΩ.Ω ->
+                 Bord (BHW.complexLorentzAction Λ z) = Bord z := by
+             intro Λ z hz hΛz
+             exact
+               BHW.extendF_complexLorentzInvariant_of_cinv
+                 (d := d) hd n (bvt_F OS lgc n)
+                 hF_holo_BHW hF_cinv_BHW Λ (DΩ.Ω_sub_extendedTube hz)
+           exact
+             { ordinary_holo := by
+                 simpa [Bord]
+                   using hBord_diff
+               ordinary_lorentzInvariant := by
+                 intro Λ z hz hΛz
+                 simpa [Bord] using hBord_inv Λ z hz hΛz
+               ordinary_eq_extendF_on_lift := by
+                 intro x hx
+                 rfl }
+         ```
+
+         This proof uses only ordinary Hall-Wightman/BHW support already
+         required upstream: holomorphy of `bvt_F`, complex Lorentz invariance
+         on the forward tube, `extendF_holomorphicOn`, and
+         `extendF_complexLorentzInvariant_of_cinv`.  It does not use the
+         scalar representative, the adjacent trace theorem, local source
+         equality, PET, EOW, or final locality.
 
          The assembly of
          `os45CanonicalAdjacentBranchBoundaryData_of_OSI45` then has no
-         discretion: define `τ`, `φZ`, and `ψZ` exactly as above; take
-         `jr.Ω`, `jr.lift`, and the two branch functions from the four
-         packets; fill `jr.lift_mem_of_support` from the domain/lift packet;
-         fill `jr.realBoundary_eq` from the real-boundary theorem; set
-         `jr_lift_eq` by `rfl`; fill
-         `ordinary_eq_extendF_on_lift` by the ordinary-branch definition; and
-         fill `adjacent_lift_pairing_eq_permutedSchwinger` from the adjacent
-         branch packet.  None of these fields may be obtained from
+         discretion: define `τ`, `φZ`, and `ψZ` exactly as above; obtain
+         `DΩ := os45Figure24_jostRuelleDomainData_of_chart`, then
+         `Dord := os45Figure24_ordinaryBranchData_of_bvt_F ... DΩ`, then
+         `Dadj := os45Figure24_adjacentBranchData_of_OSI45 ... φZ ψZ DΩ`,
+         and finally
+         `hreal := os45Figure24_realBoundaryEq_of_OSI45 ... DΩ Dord Dadj`.
+         Build the generic `jr` record with
+         `Ω := DΩ.Ω`, `lift := fun x => hChart.adjLift x 0`,
+         `jostPatch := hChart.V0`, `ordinaryBranch := Dord.ordinaryBranch`,
+         and `adjacentBranch := Dadj.adjacentBranch`.  Fill
+         `jr.lift_mem_of_support` from `DΩ.lift_mem_of_support`,
+         `jr.jostPatch_*` and `jr.jostPatch_realEmbed_mem` from the domain
+         packet, `jr.ordinary_holo` and `jr.ordinary_lorentzInvariant` from
+         `Dord`, `jr.adjacent_holo` and `jr.adjacent_lorentzInvariant` from
+         `Dadj`, and `jr.realBoundary_eq` from `hreal`.  Set `jr_lift_eq`
+         by `rfl`, set `ordinary_eq_extendF_on_lift` from
+         `Dord.ordinary_eq_extendF_on_lift`, and set
+         `adjacent_lift_pairing_eq_permutedSchwinger` from
+         `Dadj.adjacent_lift_pairing_eq_permutedSchwinger`.  None of these
+         fields may be obtained from
          `SourceScalarRepresentativeData`, local source equality, raw
          adjacent-Wick pointwise comparison, final Wightman locality, PET, or
          EOW.
@@ -16321,11 +16718,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
              permuteZeroDiagonalSchwartz (d := d) (n := n) τ.symm φZ
            have D :
                BHW.OS45CanonicalAdjacentBranchBoundaryData
-                 hd OS lgc n i hi V hV_jost hChart
+                 hd OS lgc n i hi V hV_jost hV_ET hV_swapET hChart
                  φ hφ_comp hφ_supp :=
              BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45
                (d := d) hd OS lgc n i hi V hV_jost
-               hV_ordered hV_swap_ordered hChart φ hφ_comp hφ_supp
+               hV_ET hV_swapET hV_ordered hV_swap_ordered hChart
+               φ hφ_comp hφ_supp
            have huniq :
                ∫ x : NPointDomain d n,
                    D.jr.ordinaryBranch
@@ -16462,6 +16860,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -16559,6 +16963,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
           (V : Set (NPointDomain d n))
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -16723,7 +17133,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             OS.S n ψZ :=
           BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger
             (d := d) hd OS lgc n i hi V hV_jost
-            hV_ordered hV_swap_ordered hChart
+            hV_ET hV_swapET hV_ordered hV_swap_ordered hChart
             φ hφ_comp hφ_supp
         have hψ :
             OS.S n ψZ =
@@ -16764,7 +17174,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact
             BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary
               (d := d) hd OS lgc n i hi V hV_jost
-              hV_ordered hV_swap_ordered hRep hChart
+              hV_ET hV_swapET hV_ordered hV_swap_ordered hRep hChart
               φ hφ_comp hφ_supp
         have hψ :
             OS.S n ψZ =
@@ -16826,7 +17236,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               OS.S n ψZ :=
           BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger
             (d := d) hd OS lgc n i hi V hV_jost
-            hV_ordered hV_swap_ordered hRep hChart
+            hV_ET hV_swapET hV_ordered hV_swap_ordered hRep hChart
             φ hφ_comp hφ_supp
         have hψ :
             OS.S n ψZ =
@@ -17357,7 +17767,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact
             BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24
               (d := d) hd OS lgc n i hi V hV_jost
-              hV_ordered hV_swap_ordered hRep
+              hV_ET hV_swapET hV_ordered hV_swap_ordered hRep
               { V0 := V0, Usrc := Usrc,
                 V0_open := hV0_open, x0_mem := hx0V0, V0_sub := hV0_sub,
                 Usrc_open := hUsrc_open, Usrc_connected := hUsrc_conn,
@@ -17388,6 +17798,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (V : Set (NPointDomain d n))
           (hV_open : IsOpen V)
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -17487,7 +17903,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceMinkowskiGram d n z))
         rcases BHW.os45AdjacentSPrimeScalarizationChart_of_figure24
             (d := d) hd OS lgc n i hi V hV_open hV_jost
-            hV_ordered hV_swap_ordered hV_adjLift_ET hx0V hRep with
+            hV_ET hV_swapET hV_ordered hV_swap_ordered
+            hV_adjLift_ET hx0V hRep with
           ⟨V0, Usrc, hV0_open, hx0V0, hV0_sub,
             hUsrc_open, hUsrc_conn, hUsrc_ne,
             hwick_mem, hwick_realSection_iff,
@@ -17667,6 +18084,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (V : Set (NPointDomain d n))
           (hV_open : IsOpen V)
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -17737,7 +18160,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
         let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
         rcases BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq
             (d := d) hd OS lgc n i hi V hV_open hV_jost
-            hV_ordered hV_swap_ordered hV_adjLift_ET hx0V hRep with
+            hV_ET hV_swapET hV_ordered hV_swap_ordered
+            hV_adjLift_ET hx0V hRep with
           ⟨V0, Usrc, hV0_open, hx0V0, hV0_sub,
             hUsrc_open, hUsrc_conn, hUsrc_ne,
             hwick_mem, hdouble, hEq_src⟩
@@ -18499,6 +18923,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (V : Set (NPointDomain d n))
           (hV_open : IsOpen V)
           (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+          (hV_ET :
+            ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+          (hV_swapET :
+            ∀ x, x ∈ V ->
+              BHW.realEmbed (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                BHW.ExtendedTube d n)
           (hV_ordered :
             ∀ x, x ∈ V ->
               x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
@@ -18633,7 +19063,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
         -- retaining the source chart, `zreg`, and `Gseed` provenance.
         rcases BHW.os45AdjacentSPrimeScalarSeed_with_sourceProvenance
             (d := d) hd OS lgc n i hi V hV_open hV_jost
-            hV_ordered hV_swap_ordered hV_adjLift_ET hx0V hRep with
+            hV_ET hV_swapET hV_ordered hV_swap_ordered
+            hV_adjLift_ET hx0V hRep with
           ⟨V0, Usrc, zreg, Wseed, Gseed,
             hV0_open, hx0V0, hUsrc_open, hUsrc_conn,
             hwick_mem, hzregUsrc, hGseed_def, hW_rel, hW_conn, hW_ne,
