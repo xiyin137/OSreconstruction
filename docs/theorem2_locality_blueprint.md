@@ -9944,11 +9944,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
             OS.S n ψZ
       ```
 
-      This is the local Hall-Wightman/BHW import boundary for the selected
-      `S'_n` source chart if it is not proved internally.  It is deliberately
-      distributional: the conclusion is a compact-test boundary value, not a
-      pointwise assertion about the total function `bvt_F` at the adjacent
-      Wick trace.  The statement is local to the selected Figure-2-4 chart and
+      This is the local Hall-Wightman/BHW source boundary for the selected
+      `S'_n` source chart.  It is deliberately distributional: the conclusion
+      is a compact-test boundary value, not a pointwise assertion about the
+      total function `bvt_F` at the adjacent Wick trace.  If this step is
+      described as source-imported in the proof docs, that means only an exact
+      cited theorem boundary; production Lean still needs a proof or an
+      already-approved implemented theorem, not a new axiom, `sorry`, or
+      `admit`.  The statement is local to the selected Figure-2-4 chart and
       must not be replaced by `bvt_F_perm`, final `bvt_W` locality, local EOW,
       PET branch independence, or a global permuted-extended-tube
       single-valuedness theorem.
@@ -9977,8 +9980,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
          step is proved by the Hall-Wightman scalar-product branch law
          `BHW.extendedTube_same_sourceGram_extendF_eq`, the local
          Figure-2-4 source chart, and the OS-II ACR(1) compact boundary
-         construction; if source-imported, the exact statement above is the
-         import boundary.
+         construction.  If the proof docs cite this as an external
+         Hall-Wightman source theorem, the exact statement above is the
+         boundary; it is not permission to add an unproved production surface.
       5. The proof never evaluates `extendF_eq_on_forwardTube` at
          `permAct τ (wick x)`.  The adjacent Wick section is placed in the
          ordinary extended tube by the canonical Figure-2-4 Lorentz

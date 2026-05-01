@@ -1052,7 +1052,10 @@ selected ACR(1) compact boundary datum, and the Hall-Wightman source branch
 law on the local `S'_n` Figure-2-4 chart.  The canonical-lift theorem
 `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger` is derived from
 those first two pieces by compact-support integrand rewriting; it is no longer
-the hidden source-import boundary.  Third,
+the hidden source-import boundary.  "Source import" here means an exact
+documented external theorem boundary only; production Lean may consume it only
+after it has been proved or already exists as an approved implemented theorem,
+not by adding an axiom, `sorry`, or `admit`.  Third,
 `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`: it rewrites the
 permuted Hall-Wightman source pullback to that deterministic canonical lift by
 `SourceScalarRepresentativeData.branch_eq` and
