@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundar
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValueLimits
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesCompactApprox
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanBoundaryValuesEuclidean
+import OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceOrderedDensity
 import OSReconstruction.Wightman.Reconstruction.WightmanTwoPoint
 
 /-!
@@ -340,50 +341,52 @@ private theorem bvt_F_lorentz_ortho_wick
         simpa [hφ_coeff] using hφx
       simp [hφ0]
 
-/-- Theorem 2 frontier: locality / swap symmetry for the canonical BV pairing.
+/-- Theorem 2 frontier: locality / swap symmetry for the reconstructed
+boundary-value functional.
 
 OS paper target:
 - OS I Section 4.5 "Locality", pp. 104-105
 - OS II IV.2, p. 288, which says the remaining Wightman axioms are established
   as in Sections 4.2-4.5 of OS I
 
-This sorry is the locality transfer step on the boundary-value route. -/
-private theorem bvt_F_swapCanonical_pairing
+This sorry is the direct boundary-distributional adjacent-swap locality
+statement on the OS route.  It should be supplied by the OS Section 4.5
+branch-difference / boundary-transfer argument, not by any finite-height
+canonical-shell equality.
+-/
+private theorem bvt_W_swap_pairing_of_spacelike
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+    ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
       (∀ x, f.toFun x ≠ 0 →
-        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
-      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
-      =
-      ∫ x : NPointDomain d n,
-        bvt_F OS lgc n (fun k μ =>
-          ↑(x k μ) +
-            ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x) := by
+        MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+      (∀ x, g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
+      bvt_W OS lgc n f = bvt_W OS lgc n g := by
   sorry
 
-/-- Theorem 3 frontier: positivity of the reconstructed Wightman inner product.
+/-- Theorem 3 closure: positivity of the reconstructed Wightman inner product.
 
 OS paper target:
 - OS I Section 4.3 "Positivity", pp. 102-103
 - OS II IV.2, p. 288, reducing the remaining Wightman axioms to the OS I
   arguments after continuation
 
-Current active substep on the repo's OS route:
+Closure route on the repo's OS route:
 - OS II Theorem 4.3, p. 289, together with Chapter VI.1, pp. 297-298
 
-This sorry is the OS-isometry / boundary-value identification step, not any
-same-test-function equality `W_n(f) = S_n(f)`. -/
+This theorem is closed by the OS-isometry / boundary-value identification
+step, not by any same-test-function equality `W_n(f) = S_n(f)`. -/
 private theorem bvt_W_positive
     (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     ∀ F : BorchersSequence d,
       (WightmanInnerProduct d (bvt_W OS lgc) F F).re ≥ 0 := by
-  sorry
+  intro F
+  exact
+    OSReconstruction.bvt_W_positive_of_component_dense_preimage (d := d) OS lgc
+      (fun n =>
+        OSReconstruction.dense_section43FourierLaplace_compact_ordered_preimage_raw d n)
+      F
 
 /-- Theorem 4 frontier: cluster transfer for the canonical BV pairing.
 
@@ -636,7 +639,7 @@ private theorem bvt_F_lorentz_restricted_wick
       bvt_lorentz_covariant_restricted (d := d) OS lgc n Γ f g hfg)
     (bvt_F OS lgc n)
     (bvt_F_holomorphic OS lgc n)
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.2
     (bvt_boundary_values OS lgc n)
     Λ φ hφ_compact hφ_tsupport
 
@@ -679,7 +682,7 @@ private theorem bvt_F_lorentz_restrictedCanonical
       bvt_lorentz_covariant_restricted (d := d) OS lgc n Γ f g hfg)
     (bvt_F OS lgc n)
     (bvt_F_holomorphic OS lgc n)
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.2
     (bvt_boundary_values OS lgc n)
     Λ z hz
 
@@ -706,7 +709,7 @@ noncomputable def bvt_absoluteForwardTubeInput
         bvt_lorentz_covariant_restricted (d := d) OS lgc (m + 1) Λ f g hfg)
       (bvt_F OS lgc (m + 1))
       (bvt_F_holomorphic OS lgc (m + 1))
-      (full_analytic_continuation_with_symmetry_growth OS lgc (m + 1)).choose_spec.2.2.2.2.2
+      (full_analytic_continuation_with_acr_symmetry_growth OS lgc (m + 1)).choose_spec.2.2.2.2.2.2
       (bvt_boundary_values OS lgc (m + 1))
       Λ z ((BHW_forwardTube_eq (d := d) (n := m + 1)) ▸ hz)
   translation_invariant := by
@@ -724,13 +727,8 @@ theorem bvt_lorentz_covariant (OS : OsterwalderSchraderAxioms d)
 theorem bvt_locally_commutative (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
     IsLocallyCommutativeWeak d (bvt_W OS lgc) := by
-  intro n i j f g hsupp hswap
-  exact bv_local_commutativity_transfer_of_swap_pairing (d := d) n
-    (bvt_W OS lgc n)
-    (bvt_F OS lgc n)
-    (bvt_boundary_values OS lgc n)
-    (bvt_F_swapCanonical_pairing (d := d) OS lgc n)
-    i j f g hsupp hswap
+  intro n i hi f g hsupp hswap
+  exact bvt_W_swap_pairing_of_spacelike (d := d) OS lgc n i hi f g hsupp hswap
 
 theorem bvt_positive_definite (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
@@ -967,9 +965,11 @@ theorem bvt_cluster (OS : OsterwalderSchraderAxioms d)
               bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε := by
   exact bvt_W_cluster (d := d) OS lgc
 
-def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+/-- The checked `E' -> R'` output before the theorem-2 locality and theorem-4
+cluster frontiers are supplied. -/
+def constructWightmanFunctionsCore (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    WightmanFunctions d where
+    WightmanFunctionsCore d where
   W := bvt_W OS lgc
   linear := bvt_W_linear OS lgc
   tempered := bvt_W_continuous OS lgc
@@ -979,12 +979,25 @@ def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
   spectrum_condition := by
     intro n
     refine ⟨bvt_F OS lgc n, bvt_F_holomorphic OS lgc n, ?_, bvt_boundary_values OS lgc n⟩
-    -- Global polynomial growth from full_analytic_continuation_with_symmetry_growth (ACR(1)).
-    exact (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2
-  locally_commutative := bvt_locally_commutative OS lgc
+    -- Global polynomial growth for the same ACR-selected witness used by `bvt_F`.
+    exact (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.2
   positive_definite := bvt_positive_definite OS lgc
   hermitian := bvt_hermitian OS lgc
-  cluster := bvt_cluster OS lgc
+
+/-- Upgrade the checked core package to full Wightman functions once the
+adjacent locality and cluster frontiers are supplied explicitly. -/
+def constructWightmanFunctions (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hlocal : IsLocallyCommutativeWeak d (bvt_W OS lgc))
+    (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+      ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+        ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+          ∀ (g_a : SchwartzNPoint d m),
+            (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+            ‖bvt_W OS lgc (n + m) (f.tensorProduct g_a) -
+              bvt_W OS lgc n f * bvt_W OS lgc m g‖ < ε) :
+    WightmanFunctions d :=
+  (constructWightmanFunctionsCore OS lgc).toWightmanFunctions hlocal hcluster
 
 /-- The OS pre-Hilbert space constructed from the Wightman functions obtained
     data. -/
@@ -1006,19 +1019,65 @@ theorem wightman_to_os_full (Wfn : WightmanFunctions d) :
     simpa [constructZeroDiagonalSchwingerFunctions] using
       constructedZeroDiagonalSchwinger_linear Wfn n
   intro n
-  refine ⟨(W_analytic_BHW Wfn n).val,
-    (W_analytic_BHW Wfn n).property.1.mono
-      (ForwardTube_subset_ComplexExtended d n |>.trans
-        (ComplexExtended_subset_Permuted d n)),
-    ?_, fun _ => rfl⟩
-  · intro f η hη
-    exact bhw_distributional_boundary_values Wfn f η hη
+  -- Witness the analytic continuation via the TranslatedPET-extended kernel,
+  -- which agrees with F_ext on ForwardTube (⊆ PET) by
+  -- `F_ext_on_translatedPET_total_eq_on_PET`.
+  refine ⟨F_ext_on_translatedPET_total Wfn, ?_, ?_, fun _ => rfl⟩
+  · -- Differentiable on ForwardTube: transport differentiability of F_ext via
+    --   F_ext_on_translatedPET_total = F_ext on PET (hence on ForwardTube ⊆ PET).
+    have hFT_PET : ForwardTube d n ⊆ PermutedExtendedTube d n :=
+      ForwardTube_subset_ComplexExtended d n |>.trans
+        (ComplexExtended_subset_Permuted d n)
+    have hF_diff : DifferentiableOn ℂ (W_analytic_BHW Wfn n).val (ForwardTube d n) :=
+      (W_analytic_BHW Wfn n).property.1.mono hFT_PET
+    refine hF_diff.congr ?_
+    intro z hz
+    exact F_ext_on_translatedPET_total_eq_on_PET Wfn z (hFT_PET hz)
+  · -- Boundary values: the limits agree with those of F_ext on ForwardTube,
+    -- where the two kernels coincide pointwise.
+    intro f η hη
+    have hlim := bhw_distributional_boundary_values Wfn f η hη
+    refine Filter.Tendsto.congr' ?_ hlim
+    rw [Filter.eventuallyEq_iff_exists_mem]
+    refine ⟨Set.Ioi 0, self_mem_nhdsWithin, fun ε hε => ?_⟩
+    -- At each ε > 0 the integrands agree pointwise: x + iεη ∈ ForwardTube ⊆ PET.
+    refine MeasureTheory.integral_congr_ae ?_
+    filter_upwards with x
+    have hpoint : (fun k μ => (↑(x k μ) + ε * ↑(η k μ) * Complex.I : ℂ)) ∈
+        ForwardTube d n := by
+      intro k
+      show InOpenForwardCone d _
+      have him :
+          (fun μ =>
+              ((↑(x k μ) + ↑ε * ↑(η k μ) * Complex.I) -
+                (if h : k.val = 0 then (0 : Fin (d + 1) → ℂ) else
+                  fun μ => ↑(x ⟨k.val - 1, by omega⟩ μ) +
+                    ↑ε * ↑(η ⟨k.val - 1, by omega⟩ μ) * Complex.I) μ).im) =
+            ε • (fun μ => η k μ -
+              (if h : k.val = 0 then (0 : Fin (d + 1) → ℝ) else
+                η ⟨k.val - 1, by omega⟩) μ) := by
+        ext μ
+        by_cases hk : (k : ℕ) = 0
+        · simp [hk, Complex.add_im, Complex.mul_im, Complex.ofReal_im,
+                Complex.ofReal_re, Complex.I_im, Complex.I_re, Pi.smul_apply,
+                smul_eq_mul]
+        · simp [hk, Complex.sub_im, Complex.add_im, Complex.mul_im,
+                Complex.ofReal_im, Complex.ofReal_re, Complex.I_im, Complex.I_re,
+                Pi.smul_apply, smul_eq_mul]
+          ring
+      rw [him]
+      exact inOpenForwardCone_smul d ε (by simpa using hε) _ (hη k)
+    have hFT_PET : ForwardTube d n ⊆ PermutedExtendedTube d n :=
+      ForwardTube_subset_ComplexExtended d n |>.trans
+        (ComplexExtended_subset_Permuted d n)
+    have hpet := hFT_PET hpoint
+    rw [F_ext_on_translatedPET_total_eq_on_PET Wfn _ hpet]
 
 theorem os_to_wightman_full (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) :
-    ∃ (Wfn : WightmanFunctions d),
+    ∃ (Wfn : WightmanFunctionsCore d),
       IsWickRotationPair OS.schwinger Wfn.W := by
-  refine ⟨constructWightmanFunctions OS lgc, fun n => ?_⟩
+  refine ⟨constructWightmanFunctionsCore OS lgc, fun n => ?_⟩
   exact ⟨bvt_F OS lgc n,
     bvt_F_holomorphic OS lgc n,
     bvt_boundary_values OS lgc n,

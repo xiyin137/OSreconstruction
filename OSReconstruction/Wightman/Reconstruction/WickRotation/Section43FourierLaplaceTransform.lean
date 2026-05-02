@@ -726,6 +726,88 @@ theorem physicsFourierFlatCLM_surjective (m : ℕ) :
             rw [h_from_to]
     _ = K := h_scale
 
+/-- Continuous linear right inverse for the physics-convention flat Fourier
+transform.  This exposes the constructive inverse hidden in
+`physicsFourierFlatCLM_surjective`, so later quotient descents can use a
+linear/continuous section rather than arbitrary preimage choice. -/
+noncomputable def physicsFourierFlatInvCLM {m : ℕ} :
+    SchwartzMap (Fin m → ℝ) ℂ →L[ℂ] SchwartzMap (Fin m → ℝ) ℂ :=
+  let a : ℝˣ := Units.mk0 (-(1 / (2 * Real.pi) : ℝ)) <| by
+    apply neg_ne_zero.mpr
+    exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
+  let scaleNeg : (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
+    ContinuousLinearEquiv.smulLeft a
+  let e : EuclideanSpace ℝ (Fin m) ≃L[ℝ] (Fin m → ℝ) :=
+    EuclideanSpace.equiv (Fin m) ℝ
+  let toEuc : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ]
+      SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+  let fromEuc : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ →L[ℂ]
+      SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm
+  fromEuc.comp
+    ((FourierTransform.fourierInvCLM ℂ
+        (SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ)).comp
+      (toEuc.comp (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg.symm)))
+
+/-- The physics-convention flat Fourier transform composed with its explicit
+continuous linear right inverse is the identity. -/
+theorem physicsFourierFlatCLM_inv_right {m : ℕ}
+    (K : SchwartzMap (Fin m → ℝ) ℂ) :
+    physicsFourierFlatCLM (physicsFourierFlatInvCLM K) = K := by
+  let a : ℝˣ := Units.mk0 (-(1 / (2 * Real.pi) : ℝ)) <| by
+    apply neg_ne_zero.mpr
+    exact one_div_ne_zero (mul_ne_zero two_ne_zero Real.pi_ne_zero)
+  let scaleNeg : (Fin m → ℝ) ≃L[ℝ] (Fin m → ℝ) :=
+    ContinuousLinearEquiv.smulLeft a
+  let e : EuclideanSpace ℝ (Fin m) ≃L[ℝ] (Fin m → ℝ) :=
+    EuclideanSpace.equiv (Fin m) ℝ
+  let toEuc : SchwartzMap (Fin m → ℝ) ℂ →L[ℂ]
+      SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e
+  let fromEuc : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ →L[ℂ]
+      SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ e.symm
+  let unscaleK : SchwartzMap (Fin m → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg.symm K
+  let A : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ := toEuc unscaleK
+  let ψE : SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ :=
+    (FourierTransform.fourierInvCLM ℂ
+      (SchwartzMap (EuclideanSpace ℝ (Fin m)) ℂ)) A
+  let φ : SchwartzMap (Fin m → ℝ) ℂ := fromEuc ψE
+  have hφ_def : physicsFourierFlatInvCLM K = φ := by
+    rfl
+  have h_to_from : toEuc φ = ψE := by
+    ext y
+    simp [toEuc, fromEuc, φ, e]
+  have h_fourier : (SchwartzMap.fourierTransformCLM ℂ) (toEuc φ) = A := by
+    rw [h_to_from]
+    simp [ψE]
+  have h_from_to : fromEuc A = unscaleK := by
+    ext ξ
+    change K (scaleNeg.symm ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 ξ))) =
+      K (scaleNeg.symm ξ)
+    have hx : ((EuclideanSpace.equiv (Fin m) ℝ) (WithLp.toLp 2 ξ)) = ξ := by
+      ext i
+      simp [EuclideanSpace.equiv]
+    rw [hx]
+  have h_scale :
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) unscaleK = K := by
+    ext ξ
+    change K (scaleNeg.symm (scaleNeg ξ)) = K ξ
+    rw [ContinuousLinearEquiv.symm_apply_apply]
+  rw [hφ_def]
+  calc
+    physicsFourierFlatCLM φ
+        = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg)
+            (fromEuc ((SchwartzMap.fourierTransformCLM ℂ) (toEuc φ))) := by
+            rfl
+    _ = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) (fromEuc A) := by
+            rw [h_fourier]
+    _ = (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ scaleNeg) unscaleK := by
+            rw [h_from_to]
+    _ = K := h_scale
+
 /-- The deterministic Section 4.3 frequency representative map is onto. -/
 theorem section43FrequencyRepresentative_surjective
     (d n : ℕ) [NeZero d] :
@@ -756,6 +838,47 @@ theorem section43FrequencyRepresentative_surjective
       SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
           (section43CumulativeTailMomentumCLE d n).symm Kflat := by
           rw [hφflat]
+    _ = Φ := by
+          ext q
+          simp [Kflat, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
+
+/-- Continuous linear right inverse for the deterministic Section 4.3 frequency
+representative.  This is the quotient-safe replacement for choosing preimages
+from `section43FrequencyRepresentative_surjective`. -/
+noncomputable def section43FrequencyRepresentativeInv (d n : ℕ) [NeZero d] :
+    SchwartzNPoint d n →L[ℂ] SchwartzNPoint d n :=
+  (unflattenSchwartzNPoint (d := d)).comp
+    (physicsFourierFlatInvCLM.comp
+      (SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+        (section43CumulativeTailMomentumCLE d n)))
+
+/-- The deterministic frequency representative composed with its explicit
+continuous linear right inverse is the identity. -/
+theorem section43FrequencyRepresentativeInv_right
+    (d n : ℕ) [NeZero d]
+    (Φ : SchwartzNPoint d n) :
+    section43FrequencyRepresentative d n
+      (section43FrequencyRepresentativeInv d n Φ) = Φ := by
+  let Kflat : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ :=
+    SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+      (section43CumulativeTailMomentumCLE d n) Φ
+  have hflat :
+      flattenSchwartzNPoint (d := d)
+          (section43FrequencyRepresentativeInv d n Φ) =
+        physicsFourierFlatInvCLM Kflat := by
+    ext ξ
+    simp [section43FrequencyRepresentativeInv, Kflat,
+      flattenSchwartzNPoint_apply, unflattenSchwartzNPoint_apply]
+  calc
+    section43FrequencyRepresentative d n
+        (section43FrequencyRepresentativeInv d n Φ)
+        = SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (section43CumulativeTailMomentumCLE d n).symm
+            (physicsFourierFlatCLM (physicsFourierFlatInvCLM Kflat)) := by
+          simp [section43FrequencyRepresentative, hflat]
+    _ = SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+            (section43CumulativeTailMomentumCLE d n).symm Kflat := by
+          rw [physicsFourierFlatCLM_inv_right]
     _ = Φ := by
           ext q
           simp [Kflat, SchwartzMap.compCLMOfContinuousLinearEquiv_apply]
