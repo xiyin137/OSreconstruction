@@ -3695,7 +3695,8 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
       ν (Set.Iio 0) = 0 ∧
       ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν =
                ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂μ_F := by
-    -- Lift φ(t) = ⟪F, U₀(t)F⟫ to a function on Fin 1 → ℝ for bochner_theorem.
+    -- Lift φ(t) = ⟪F, U₀(t)F⟫ to a function on Fin 1 → ℝ for
+    -- `finiteDimensional_bochner_theorem`.
     let φ₁ : (Fin 1 → ℝ) → ℂ := fun x =>
       @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
         (𝒰₀.U (x 0) (F : GNSHilbertSpace Wfn))
@@ -4483,7 +4484,7 @@ private lemma scd_bochner_forwardCone_support
     1. Self-adjointness of each `Pμ` gives `re(⟪ψ, Pμ²ψ⟫) = ‖Pμψ‖²`, reducing
        the inequality to `‖P₀ψ‖² ≥ Σᵢ ‖Pᵢψ‖²`.
     2. The positive-definite function `a ↦ ⟪ψ, U(a)ψ⟫` on `ℝ^{d+1}` admits a
-       finite positive Bochner measure `μ` by `bochner_theorem`.
+       finite positive Bochner measure `μ` by `finiteDimensional_bochner_theorem`.
     3. `SpectralConditionDistribution` implies `supp(μ) ⊆ V̄₊`.
     4. Differentiating the Bochner integral gives the moment identity
        `‖P₀ψ‖² - Σᵢ ‖Pᵢψ‖² = ∫ (p₀² - |p⃗|²) dμ`.
