@@ -1433,205 +1433,12 @@ private lemma productConeCutoff_eq_one_on_cone {n : ℕ}
   rw [Real.smoothTransition.one_of_one_le (by linarith),
       Real.smoothTransition.one_of_one_le (by linarith), one_mul]
 
-/-- The pointwise Fourier-Laplace kernel: `ψ_z(q) = χ_Γ(q) · exp(i⟨z, q⟩)`.
-    This is the multivariate analogue of `SCV.psiZ` from `FourierLaplaceCore.lean`. -/
-private noncomputable def psiZMulti {n : ℕ}
-    (z : Fin n → Fin (d + 1) → ℂ) (q : Fin n → Fin (d + 1) → ℝ) : ℂ :=
-  ↑(productConeCutoff n q) * Complex.exp (Complex.I * complexNPointDot z q)
 
-/-- Smoothness of the kernel `ψ_z` in the `q` variable.
-    Follows from `productConeCutoff_smooth` and smoothness of `exp ∘ linear`. -/
-private lemma psiZMulti_contDiff {n : ℕ} (z : Fin n → Fin (d + 1) → ℂ) :
-    ContDiff ℝ (↑(⊤ : ℕ∞)) (psiZMulti z : (Fin n → Fin (d + 1) → ℝ) → ℂ) := by
-  unfold psiZMulti
-  apply ContDiff.mul
-  · -- ↑(productConeCutoff n q) is smooth: ofRealCLM ∘ productConeCutoff
-    exact Complex.ofRealCLM.contDiff.comp (productConeCutoff_smooth n)
-  · -- exp(I * complexNPointDot z q) is smooth: exp ∘ linear
-    apply ContDiff.comp Complex.contDiff_exp
-    apply contDiff_const.mul
-    -- complexNPointDot z q = ∑ k, ∑ μ, z k μ * ↑(q k μ) is smooth in q
-    unfold complexNPointDot
-    apply ContDiff.sum; intro k _
-    apply ContDiff.sum; intro μ _
-    exact contDiff_const.mul (Complex.ofRealCLM.contDiff.comp (contDiff_apply_apply ℝ _ k μ))
 
-/-- Rapid decay of `ψ_z` when `Im(z) ∈ V₊°ⁿ`.
-    The exponential factor `exp(-∑_k ⟨Im(z_k), q_k⟩_Eucl)` decays as `exp(-c·‖q‖)`
-    on supp(χ_Γ) by `euclideanDot_lower_bound`, dominating any polynomial growth.
-    Combined with `productConeCutoff_smooth`, this gives Schwartz decay. -/
-private lemma psiZMulti_rapid_decay {n : ℕ}
-    (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ProductForwardTube d n) :
-    ∀ (k : ℕ) (m : ℕ),
-      ∃ C : ℝ, ∀ q : Fin n → Fin (d + 1) → ℝ,
-        ‖q‖ ^ k * ‖iteratedFDeriv ℝ m (psiZMulti z) q‖ ≤ C := by
-  sorry
 
-/-- The Fourier-Laplace kernel bundled as a Schwartz function.
-    When Im(z) ∈ V₊°ⁿ, exponential damping from `euclideanDot_lower_bound`
-    makes `ψ_z(q) = χ_Γ(q) · exp(i⟨z,q⟩)` rapidly decreasing, hence Schwartz.
 
-    This is the multivariate analogue of `SCV.schwartzPsiZ` from
-    `FourierLaplaceCore.lean`. -/
-private noncomputable def schwartzPsiZMulti {n : ℕ}
-    (z : Fin n → Fin (d + 1) → ℂ)
-    (hz : z ∈ ProductForwardTube d n) :
-    SchwartzNPointSpace d n :=
-  ⟨psiZMulti z, psiZMulti_contDiff z, psiZMulti_rapid_decay z hz⟩
 
-@[simp] private lemma schwartzPsiZMulti_apply {n : ℕ}
-    (z : Fin n → Fin (d + 1) → ℂ) (hz : z ∈ ProductForwardTube d n)
-    (q : Fin n → Fin (d + 1) → ℝ) :
-    schwartzPsiZMulti z hz q = psiZMulti z q := rfl
 
-/-- The Fourier-Laplace extension: `F(z) = w(FT[ψ_z])`.
-
-    The tempered distribution `w` is applied to the n-point Fourier transform
-    of the Schwartz kernel `ψ_z`. Since the distributional Fourier transform
-    `ŵ(φ) := w(FT[φ])` has support in V̄₊ⁿ (by `hw_supp`), and `ψ_z` equals
-    `exp(i⟨z,·⟩)` on V̄₊ⁿ (by `productConeCutoff_eq_one_on_cone`), the value
-    `F(z)` captures the Fourier-Laplace transform of `ŵ`. -/
-private noncomputable def coneFourierLaplace {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ)
-    (z : Fin n → Fin (d + 1) → ℂ)
-    (hz : z ∈ ProductForwardTube d n) : ℂ :=
-  w ((schwartzPsiZMulti z hz).fourierTransform)
-
-/-- **Holomorphy** of `z ↦ w(FT[ψ_z])` on the product forward tube.
-
-    Proof strategy (following `SCV.paley_wiener_half_line`):
-    1. Define `F(z) = if hz : z ∈ ProductForwardTube then coneFourierLaplace w z hz else 0`
-    2. Show `z ↦ ψ_z` is holomorphic in the Schwartz topology by establishing
-       polynomial seminorm bounds along horizontal lines (multivariate analogue
-       of `SCV.schwartzPsiZ_seminorm_horizontal_bound`)
-    3. Since `w` is continuous and ℂ-linear, `z ↦ w(FT[ψ_z])` is holomorphic
-       as the composition of a holomorphic Schwartz-valued map with a CLM
-    4. The `dite` construction agrees with `coneFourierLaplace` on the open tube,
-       so `DifferentiableOn` follows -/
-private lemma coneFourierLaplace_holomorphic {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ)
-    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w) :
-    ∃ (F : (Fin n → Fin (d + 1) → ℂ) → ℂ),
-      (∀ z (hz : z ∈ ProductForwardTube d n),
-        F z = coneFourierLaplace w z hz) ∧
-      DifferentiableOn ℂ F (ProductForwardTube d n) := by
-  sorry
-
-/-- The smeared kernel `Ψ_ε`: the Schwartz function whose pointwise value at `p` is
-    `∫ φ(x) · FT[ψ_{x+iεη}](p) dx`. This is Schwartz by:
-    - Bochner integrability of `x ↦ φ(x) · FT[ψ_{x+iεη}](p)` (Schwartz decay of `φ`
-      + uniform bounds on FT[ψ])
-    - Smoothness + rapid decay of the resulting function (differentiation under
-      the integral sign + dominated convergence) -/
-private noncomputable def smearedKernel {n : ℕ}
-    (φ : SchwartzNPointSpace d n)
-    (η : Fin n → Fin (d + 1) → ℝ) (hη : ∀ k, InOpenForwardCone d (η k))
-    (ε : ℝ) (hε : 0 < ε) : SchwartzNPointSpace d n :=
-  ⟨fun p => ∫ x : NPointSpacetime d n,
-      let ψFT : SchwartzNPointSpace d n := (schwartzPsiZMulti
-        (fun k μ => ↑(x k μ) + ↑ε * ↑(η k μ) * Complex.I)
-        (shifted_point_in_productForwardTube η hη ε hε x)).fourierTransform
-      φ x * ψFT p,
-    sorry, sorry⟩
-
-/-- **CLM interchange**: the smeared Fourier-Laplace integral equals `w` applied
-    to the smeared kernel.
-
-    Mathematical content:
-    - Bundle `w` as a CLM (from `hw_cont` + `hw_lin`)
-    - Show `x ↦ φ(x) • FT[ψ_{x+iεη}]` is Bochner integrable in
-      `SchwartzNPointSpace` (uses `SchwartzMap.instCompleteSpace` +
-      Schwartz decay of `φ` + uniform Schwartz seminorm bounds on `ψ`)
-    - Apply `ContinuousLinearMap.integral_comp_comm` to interchange
-    - The result identifies `w` of the Bochner integral with `w(smearedKernel)`
-
-    Ref: `ContinuousLinearMap.integral_comp_comm` (Mathlib),
-    `SchwartzMap.instCompleteSpace` (`SchwartzComplete.lean`) -/
-private lemma smearedKernel_eq {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ) (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
-    (φ : SchwartzNPointSpace d n)
-    (η : Fin n → Fin (d + 1) → ℝ) (hη : ∀ k, InOpenForwardCone d (η k))
-    (ε : ℝ) (hε : 0 < ε) :
-    ∫ x : NPointSpacetime d n,
-      w ((schwartzPsiZMulti
-          (fun k μ => ↑(x k μ) + ↑ε * ↑(η k μ) * Complex.I)
-          (shifted_point_in_productForwardTube η hη ε hε x)).fourierTransform) * (φ x) =
-    w (smearedKernel φ η hη ε hε) := by
-  sorry
-
-/-- **Schwartz convergence of the smeared kernel**: as `ε → 0⁺`,
-    `smearedKernel φ η ε → φ` in the Schwartz topology.
-
-    Mathematical content (the core Fourier analysis):
-    1. **Fubini**: `(smearedKernel φ η ε)(q)` computes to
-       `χ_Γ(q) · exp(-ε⟨η,q⟩) · (FT⁻¹[φ])(q)` (up to normalization)
-    2. **Damping**: `exp(-ε⟨η,q⟩) → 1` pointwise on `V̄₊ⁿ`
-       with uniform Schwartz seminorm bounds via `euclideanDot_lower_bound`
-    3. **Support**: `χ_Γ = 1` on `V̄₊ⁿ` by `productConeCutoff_eq_one_on_cone`
-    4. **Fourier inversion**: `FT[FT⁻¹[φ]] = φ` -/
-private lemma smearedKernel_tendsto {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ)
-    (hw_supp : ∀ φ : SchwartzNPointSpace d n,
-      (∀ q : NPointSpacetime d n, φ q ≠ 0 →
-        ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
-      w (φ.fourierTransform) = 0)
-    (φ : SchwartzNPointSpace d n)
-    (η : Fin n → Fin (d + 1) → ℝ) (hη : ∀ k, InOpenForwardCone d (η k)) :
-    Filter.Tendsto
-      (fun ε : ℝ =>
-        if hε : 0 < ε then smearedKernel φ η hη ε hε
-        else (0 : SchwartzNPointSpace d n))
-      (nhdsWithin 0 (Set.Ioi 0))
-      (nhds φ) := by
-  sorry
-
-/-- **Boundary-value convergence**: `∫ F(x + iεη) φ(x) dx → w(φ)` as `ε → 0⁺`.
-
-    Proof: Decomposed into three steps using `Filter.tendsto_congr'`:
-    1. **Phase 1** (proved): Replace `F` with `w(FT[ψ])` via `hF_eq` +
-       `shifted_point_in_productForwardTube` for ε > 0
-    2. **Phase 2** (sorry'd): CLM interchange via `smearedKernel_eq`
-    3. **Phase 3+4** (sorry'd + proved): Schwartz convergence
-       `smearedKernel_tendsto` composed with continuity of `w` -/
-private lemma coneFourierLaplace_boundaryValue {n : ℕ}
-    (w : SchwartzNPointSpace d n → ℂ)
-    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
-    (hw_supp : ∀ φ : SchwartzNPointSpace d n,
-      (∀ q : NPointSpacetime d n, φ q ≠ 0 →
-        ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
-      w (φ.fourierTransform) = 0)
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_eq : ∀ z (hz : z ∈ ProductForwardTube d n),
-      F z = coneFourierLaplace w z hz) :
-    ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
-      (∀ k : Fin n, InOpenForwardCone d (η k)) →
-      Filter.Tendsto
-        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (w φ)) := by
-  intro φ η hη
-  -- Define the total wrapper for the smeared kernel
-  let Ψ : ℝ → SchwartzNPointSpace d n := fun ε =>
-    if hε : 0 < ε then smearedKernel φ η hη ε hε else 0
-  -- Phase 3+4: w(Ψ_ε) → w(φ) by continuity of w + Schwartz convergence
-  have hΨ_tendsto : Filter.Tendsto (w ∘ Ψ) (nhdsWithin 0 (Set.Ioi 0)) (nhds (w φ)) :=
-    hw_cont.continuousAt.tendsto.comp (smearedKernel_tendsto w hw_supp φ η hη)
-  -- Phase 1+2: For ε > 0, ∫ F(x+iεη) * φ(x) = w(Ψ(ε))
-  refine (Filter.tendsto_congr' ?_).mpr hΨ_tendsto
-  filter_upwards [self_mem_nhdsWithin] with ε hε
-  rw [Set.mem_Ioi] at hε
-  simp only [Function.comp_def, Ψ, dif_pos hε]
-  -- Phase 1: Replace F with w(FT[ψ]) inside the integral
-  have h_pointwise : ∀ x : NPointSpacetime d n,
-      F (fun k μ => ↑(x k μ) + ↑ε * ↑(η k μ) * Complex.I) =
-      w ((schwartzPsiZMulti
-        (fun k μ => ↑(x k μ) + ↑ε * ↑(η k μ) * Complex.I)
-        (shifted_point_in_productForwardTube η hη ε hε x)).fourierTransform) :=
-    fun x => hF_eq _ _
-  simp_rw [h_pointwise]
-  -- Phase 2: CLM interchange
-  exact smearedKernel_eq w hw_cont hw_lin φ η hη ε hε
 
 /-- **Forward Paley-Wiener-Schwartz for the product forward cone**
     (Vladimirov §25 Thm 25.1 / SW Thm 2-6).
@@ -1642,24 +1449,6 @@ private lemma coneFourierLaplace_boundaryValue {n : ℕ}
 
     Ref: Vladimirov, "Methods of the Theory of Generalized Functions", §25;
     Streater-Wightman, "PCT, Spin and Statistics, and All That", Thm 2-6. -/
-theorem cone_fourierLaplace_extension (d n : ℕ) [NeZero d]
-    (w : SchwartzNPointSpace d n → ℂ)
-    (hw_cont : Continuous w) (hw_lin : IsLinearMap ℂ w)
-    (hw_supp : ∀ φ : SchwartzNPointSpace d n,
-      (∀ q : NPointSpacetime d n, φ q ≠ 0 →
-        ∃ k : Fin n, q k ∉ ForwardMomentumCone d) →
-      w (φ.fourierTransform) = 0) :
-    ∃ (F : (Fin n → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ F (ProductForwardTube d n) ∧
-      (∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
-        (∀ k : Fin n, InOpenForwardCone d (η k)) →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-            F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (w φ))) := by
-  obtain ⟨F, hF_eq, hF_holo⟩ := coneFourierLaplace_holomorphic w hw_cont hw_lin
-  exact ⟨F, hF_holo, coneFourierLaplace_boundaryValue w hw_cont hw_lin hw_supp F hF_eq⟩
 
 private lemma exists_openForwardCone_pairing_neg_of_not_mem_forwardMomentumCone
     (d : ℕ) [NeZero d]
@@ -3986,56 +3775,6 @@ lemma exists_diffVar_distribution
     simpa [w] using hzero
   exact ⟨w, hw_cont, hw_lin, hw_det⟩
 
-variable (d) in
-/-- Deferred forward-direction helper: lift `F` from `ProductForwardTube` to
-`ForwardTube`.
-
-This helper is not used by the current main theorem
-`spectralConditionDistribution_of_forwardTubeAnalyticity`; it is retained only
-as scaffolding for a possible future reverse direction under a different
-analytic growth surface. -/
-lemma forwardTube_extension_of_productTube {n : ℕ}
-    {W : (m : ℕ) → SchwartzNPointSpace d m → ℂ}
-    (hW_tempered : ∀ m, Continuous (W m))
-    (hW_linear : ∀ m, IsLinearMap ℂ (W m))
-    (hW_transl : ∀ (m : ℕ) (a : Fin (d + 1) → ℝ)
-      (f g : SchwartzNPointSpace d m),
-      (∀ x : NPointSpacetime d m, g.toFun x = f.toFun (fun i => x i + a)) →
-      W m f = W m g)
-    (w : SchwartzNPointSpace d n → ℂ)
-    (hw_det : ∀ f : SchwartzNPointSpace d (n + 1), W (n + 1) f = w (diffVarReduction d n f))
-    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
-    (hF_holo : DifferentiableOn ℂ F (ProductForwardTube d n))
-    (hF_bv : ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
-      (∀ k : Fin n, InOpenForwardCone d (η k)) →
-      Filter.Tendsto
-        (fun ε : ℝ => ∫ x : NPointSpacetime d n,
-          F (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (φ x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (w φ))) :
-    ∃ (W_analytic : (Fin (n + 1) → Fin (d + 1) → ℂ) → ℂ),
-      DifferentiableOn ℂ W_analytic (ForwardTube d (n + 1)) ∧
-      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
-        ∀ z, z ∈ ForwardTube d (n + 1) → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
-      (∀ (f : SchwartzNPointSpace d (n + 1)) (η : Fin (n + 1) → Fin (d + 1) → ℝ),
-        InForwardCone d (n + 1) η →
-        Filter.Tendsto
-          (fun ε : ℝ => ∫ x : NPointSpacetime d (n + 1),
-            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
-          (nhdsWithin 0 (Set.Ioi 0))
-          (nhds (W (n + 1) f))) := by
-  -- Define W_analytic := F ∘ complexDiffCoord
-  refine ⟨F ∘ (complexDiffCoord d n), ?_, ?_⟩
-  · -- Holomorphicity
-    intro z hz
-    have hmaps := diffCoord_maps_forwardTube_to_productTube n z hz
-    have hF_at := hF_holo.differentiableAt
-      (IsOpen.mem_nhds (isOpen_productForwardTube n) hmaps)
-    have hL_diff : DifferentiableAt ℂ (complexDiffCoord d n) z :=
-      (complexDiffCoord d n).toContinuousLinearMap.differentiableAt
-    exact (hF_at.comp z hL_diff).differentiableWithinAt
-  · -- Growth + boundary values
-    sorry
 
 variable (d) in
 /-- Uniform real diagonal shifts preserve the absolute forward tube. -/
@@ -4698,8 +4437,65 @@ lemma productTube_function_of_forwardTube {n : ℕ}
   have hF_growth :
       ∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
         ∀ z, z ∈ ProductForwardTube d n → ‖F z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-    -- Growth transport needs the norm comparison for the shifted partial-sum section.
-    sorry
+    rcases hWa_growth with ⟨Cbd, N, hCbd_pos, hWa_bound⟩
+    refine ⟨Cbd * (1 + ‖z₀‖ + n) ^ N, N, ?_, ?_⟩
+    · positivity
+    · intro z hz
+      let s : Fin (n + 1) → Fin (d + 1) → ℂ :=
+        fun k μ => z₀ μ + complexDiffVarSection d n z k μ
+      have hs_mem : s ∈ ForwardTube d (n + 1) := by
+        simpa [s] using
+          shifted_section_maps_productTube_to_forwardTube (d := d) n z₀ hz₀ z hz
+      have hs_section :
+          ∀ k : Fin (n + 1), ‖complexDiffVarSection d n z k‖ ≤ n * ‖z‖ := by
+        intro k
+        refine (pi_norm_le_iff_of_nonneg
+          (mul_nonneg (Nat.cast_nonneg n) (norm_nonneg z))).2 ?_
+        intro μ
+        calc
+          ‖complexDiffVarSection d n z k μ‖
+              = ‖∑ j : Fin k.val, z ⟨j.val, by omega⟩ μ‖ := by
+                  simp [complexDiffVarSection]
+          _ ≤ ∑ j : Fin k.val, ‖z ⟨j.val, by omega⟩ μ‖ := norm_sum_le _ _
+          _ ≤ ∑ j : Fin k.val, ‖z‖ := by
+                gcongr with j
+                exact le_trans (norm_le_pi_norm (z ⟨j.val, by omega⟩) μ) (norm_le_pi_norm z _)
+          _ = k.val * ‖z‖ := by simp
+          _ ≤ n * ‖z‖ := by
+                gcongr
+                exact Nat.le_of_lt_succ k.is_lt
+      have hs_norm :
+          ‖s‖ ≤ ‖z₀‖ + n * ‖z‖ := by
+        refine (pi_norm_le_iff_of_nonneg
+          (add_nonneg (norm_nonneg z₀)
+            (mul_nonneg (Nat.cast_nonneg n) (norm_nonneg z)))).2 ?_
+        intro k
+        calc
+          ‖s k‖ = ‖z₀ + complexDiffVarSection d n z k‖ := by
+                    show ‖(fun μ => z₀ μ + complexDiffVarSection d n z k μ)‖ =
+                      ‖z₀ + complexDiffVarSection d n z k‖
+                    rfl
+          _ ≤ ‖z₀‖ + ‖complexDiffVarSection d n z k‖ := norm_add_le _ _
+          _ ≤ ‖z₀‖ + n * ‖z‖ := by
+                gcongr
+                exact hs_section k
+      have hbase := hWa_bound s hs_mem
+      have hmul :
+          1 + ‖s‖ ≤ (1 + ‖z₀‖ + n) * (1 + ‖z‖) := by
+        have hn_nonneg : (0 : ℝ) ≤ n := by positivity
+        have hz_nonneg : (0 : ℝ) ≤ ‖z‖ := norm_nonneg _
+        have hz0_nonneg : (0 : ℝ) ≤ ‖z₀‖ := norm_nonneg _
+        calc
+          1 + ‖s‖ ≤ 1 + (‖z₀‖ + n * ‖z‖) := by gcongr
+          _ ≤ (1 + ‖z₀‖ + n) * (1 + ‖z‖) := by
+                nlinarith
+      calc
+        ‖F z‖ = ‖W_analytic s‖ := rfl
+        _ ≤ Cbd * (1 + ‖s‖) ^ N := hbase
+        _ ≤ Cbd * ((1 + ‖z₀‖ + n) * (1 + ‖z‖)) ^ N := by
+              gcongr
+        _ = (Cbd * (1 + ‖z₀‖ + n) ^ N) * (1 + ‖z‖) ^ N := by
+              rw [mul_assoc, mul_pow]
   have hF_bv :
       ∀ (φ : SchwartzNPointSpace d n) (η : Fin n → Fin (d + 1) → ℝ),
         (∀ k : Fin n, InOpenForwardCone d (η k)) →

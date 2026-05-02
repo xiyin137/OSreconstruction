@@ -1743,7 +1743,7 @@ private theorem partial_convolution_fourier_factorization
     intro v t; ext i μ
     simp only [Function.update_apply]
     -- Unfold e.symm(...) through definitions and simplify
-    simp only [e, ej0, nPointToEuclidean, uncurryLinearEquiv, PiLp.single_apply,
+    simp only [e, ej0, nPointToEuclidean, uncurryLinearEquivSpec, PiLp.single_apply,
       PiLp.continuousLinearEquiv_symm_apply, Pi.sub_apply, Pi.smul_apply,
       smul_eq_mul, Prod.mk.injEq, and_comm, ContinuousLinearEquiv.trans_apply,
       ContinuousLinearEquiv.symm_trans_apply]
@@ -1751,7 +1751,7 @@ private theorem partial_convolution_fourier_factorization
   simp_rw [h_shift]
   -- ─── Step 2: Key coordinate / inner-product facts ─────────────
   have h_coord : w (j, (0 : Fin (d + 1))) = q j 0 := by
-    simp [w, e, nPointToEuclidean, uncurryLinearEquiv,
+    simp [w, e, nPointToEuclidean, uncurryLinearEquivSpec,
       PiLp.continuousLinearEquiv_symm_apply]
   have h_inner_ej0 : @inner ℝ _ _ ej0 w = q j 0 := by
     rw [EuclideanSpace.inner_single_left]; simp [h_coord]
@@ -2691,7 +2691,7 @@ private theorem partial_convolution_fourier_factorization_dir
   set FTφ_s := (SchwartzMap.fourierTransformCLM ℂ φ : SchwartzMap ℝ ℂ) with hFTφ_s_def
   -- ─── Coordinate and inner product identities ──────────────────
   have h_coord : ∀ μ : Fin (d + 1), w (j, μ) = q j μ := by
-    intro μ; simp [w, e, nPointToEuclidean, uncurryLinearEquiv,
+    intro μ; simp [w, e, nPointToEuclidean, uncurryLinearEquivSpec,
       PiLp.continuousLinearEquiv_symm_apply]
   have h_inner_ey : @inner ℝ _ _ ey w = ∑ μ : Fin (d + 1), y μ * q j μ := by
     simp only [ey, sum_inner, real_inner_smul_left, EuclideanSpace.inner_single_left]
@@ -2702,7 +2702,7 @@ private theorem partial_convolution_fourier_factorization_dir
       e.symm (v - t • ey) := by
     intro v t; ext i μ
     simp only [Function.update_apply]
-    simp only [e, ey, nPointToEuclidean, uncurryLinearEquiv,
+    simp only [e, ey, nPointToEuclidean, uncurryLinearEquivSpec,
       PiLp.continuousLinearEquiv_symm_apply, Pi.sub_apply, Pi.smul_apply,
       smul_eq_mul, ContinuousLinearEquiv.trans_apply,
       ContinuousLinearEquiv.symm_trans_apply, Finset.sum_apply,

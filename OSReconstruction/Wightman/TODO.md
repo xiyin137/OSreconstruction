@@ -1,6 +1,6 @@
 # Wightman TODO: OS Reconstruction Priority Queue
 
-Last updated: 2026-04-04
+Last updated: 2026-04-27
 
 This file tracks the active blocker picture on the OS reconstruction path.
 Policy lock: no wrappers, no useless lemmas, no code bloat; close `sorry`s with substantial mathematical proofs.
@@ -11,13 +11,13 @@ Count convention: direct tactic holes only (`^[[:space:]]*sorry([[:space:]]|$)`)
 
 | Scope | Direct `sorry` lines |
 |-------|----------------------:|
-| `OSReconstruction/Wightman` | 32 |
-| `OSReconstruction/SCV` | 2 |
+| `OSReconstruction/Wightman` | 19 |
+| `OSReconstruction/SCV` | 0 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
-| `OSReconstruction/vNA` | 37 |
-| **Whole project** | **73** |
+| `OSReconstruction/vNA` | 36 |
+| **Whole project** | **58** |
 
-Count cross-checked on 2026-04-04 with:
+Count cross-checked on 2026-04-27 with:
 ```bash
 rg -c '^[[:space:]]*sorry([[:space:]]|$)' OSReconstruction --glob '*.lean'
 ```
@@ -27,6 +27,27 @@ Tracked production tree also currently contains one explicit Route 1 axiom:
 `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean`.
 
 ## Current Root Blockers
+
+### `Wightman/SpectralEquivalence.lean` (0) — COMPLETE ON THE ONE-WAY LANE
+
+Status:
+- `SpectralEquivalence.lean` is now direct-`sorry`-free.
+- The one-way theorem
+  `ForwardTubeAnalyticity d W → SpectralConditionDistribution d W`
+  is proved on the live branch.
+- The old two-way surface has been dropped intentionally; the reverse direction
+  under the global polynomial-growth interface is not part of the active file.
+
+What landed:
+- difference-variable factorization through `exists_diffVar_distribution`
+- analytic diagonal-translation invariance on the forward tube
+- product-tube extraction from forward-tube analyticity
+- converse Paley-Wiener support argument on the product forward cone
+
+Current role:
+- no longer a live blocker for the Wightman lane
+- keep follow-up work, if any, limited to cleanup or future reverse-direction
+  redesign, not to the active OS reconstruction path
 
 ## Priority Split In `Main.lean`
 
@@ -79,6 +100,11 @@ Immediate sharpened subgaps:
 - For `schwinger_continuation_base_step`: no more active effort on the original 1-point case; it is mathematically trivial from translation invariance and not a blocker.
 - For `schwinger_continuation_base_step`: the honest remaining choice is between a concrete Schwinger-side two-point/difference-variable reduction and, only if forced later, a deeper Schwartz kernel-extension theorem. The tensor insertion maps do not close the blocker by themselves.
 - For `boundary_values_tempered`: the generic DCT/integrability/tempered-boundary package is now in `SCV/LaplaceSchwartz.lean`; the genuine missing content is deriving the two growth hypotheses `hpoly` and `hunif` from the OS input.
+
+Non-blocker but now complete:
+- `Wightman/SpectralEquivalence.lean` has exited the live blocker set; do not
+  spend active effort re-opening the old two-way theorem surface while the
+  `OSToWightman*` lane is still incomplete.
 
 ### 2. `SCV` load-bearing infrastructure (2)
 
@@ -135,26 +161,21 @@ Infrastructure (sorry-free):
 - `wick_rotated_kernel_mul_zeroDiagonal_integrable`
 - `constructedSchwinger_tempered_zeroDiagonal`
 
-`WickRotation/SchwingerAxioms.lean` (2):
-- `schwingerExtension_os_positivity` (corrected positivity route; old
-  `schwinger_os_term_eq_wightman_term` chain was mathematically incorrect —
-  the OS inner product is a Laplace-type pairing, not equal to the Wightman
-  Fourier-type pairing)
+`WickRotation/SchwingerAxioms.lean` (4):
+- `schwinger_os_term_eq_wightman_term`
+- `bhw_euclidean_reality_ae`
+- `bhw_pointwise_cluster_forwardTube`
 - `W_analytic_cluster_integral`
 
-`WickRotation/OSToWightmanPositivity.lean` (3) — NEW:
-- `bvt_W_nonneg_single_single`
-- `wightmanInnerProduct_tendsto_of_borchersSeq_tendsto`
-- `orderedPositiveTime_compact_dense`
-
-Current blocker sharpening (2026-04-04):
-- `bhw_euclidean_reality_ae` — PROVED via Schwarz reflection on the
-  hermitianReverse overlap domain.
-- `schwinger_os_term_eq_wightman_term` chain — REMOVED (mathematically
-  incorrect: OS Laplace-type pairing ≠ Wightman Fourier-type pairing).
-  Replaced by `schwingerExtension_os_positivity` following the correct
-  OS 1973 §4.3 strategy; proof infrastructure in new
-  `OSToWightmanPositivity.lean`.
+Current blocker sharpening (2026-03-10):
+- `bhw_euclidean_reality_ae` is now reduced to the honest overlap problem on
+  `D = {z ∈ PET | hermitianReverse z ∈ PET}`.
+- Infrastructure now present in `SchwingerAxioms.lean`:
+  `hermitianReverseOverlap`, `differentiableOn_hermitianReverse_partner`,
+  `ae_euclidean_points_in_hermitianReverseOverlap`.
+- What still needs to be proved is the Schwarz-reflection identity `F = conj(F ∘ hermitianReverse)`
+  on that overlap, extracted from the real Jost-support boundary theorem
+  `wightman_real_on_jost_support`.
 
 `WickRotation/ForwardTubeLorentz.lean` (2):
 - `polynomial_growth_on_slice`
@@ -190,22 +211,19 @@ New proved theorems (2026-03-10):
 - `analytic_boundary_local_commutativity_of_boundary_continuous` — raw W_analytic with honest ContinuousWithinAt hypotheses
 
 Current assessment:
-- `R→E` root blockers:
-  - coincidence-singularity / zero-diagonal integrability (unchanged)
-  - Euclidean reality / reflection — `bhw_euclidean_reality_ae` NOW PROVED
-  - OS positivity — `schwingerExtension_os_positivity` replaces the
-    mathematically incorrect old route; proof infrastructure in
-    `OSToWightmanPositivity.lean`
-- the `boundary_values_tempered` extraction work on the E→R side does not by itself close the remaining gaps; it mainly prepares the tempered Wightman boundary package after E→R continuation exists
+- `R→E` has two independent hard roots:
+  - coincidence-singularity / zero-diagonal integrability
+  - Euclidean reality / reflection
+- the `boundary_values_tempered` extraction work on the E→R side does not by itself close either of those; it mainly prepares the tempered Wightman boundary package after E→R continuation exists
 
 ## Secondary Blockers
 
 Not on the shortest OS reconstruction lane:
+- `Wightman/SpectralEquivalence.lean`: one-way implication complete; only future
+  reverse-direction or interface-cleanup work remains
 - `Wightman/Reconstruction/Main.lean`: `wightman_uniqueness`
-- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker (`gns_spectrum_condition`)
-- `Wightman/SpectralEquivalence.lean` (6): additive infrastructure proving
-  `SpectralConditionDistribution ↔ ForwardTubeAnalyticity`; depends on two
-  hard-analysis axioms (`cone_fourierLaplace_extension`, `converse_paleyWiener_tube`)
+- `Wightman/Reconstruction/GNSHilbertSpace.lean`: one remaining spectral-theory blocker
+- `Wightman/WightmanAxioms.lean`: 4 infrastructural sorrys
 - `Wightman/NuclearSpaces/*`: side development, not first execution lane
 - `ComplexLieGroups` residual blockers: see the CLG status files
 
@@ -222,10 +240,11 @@ Not on the shortest OS reconstruction lane:
 4. After `boundary_values_tempered`, finish the six transfer theorems and `bvt_cluster` in `OSToWightmanBoundaryValues.lean`.
 5. In parallel or next, attack the live R→E front after the Route 1 merge:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
-   - `SchwingerAxioms.lean`: OS positivity (`schwingerExtension_os_positivity`), cluster (`W_analytic_cluster_integral`)
-   - `OSToWightmanPositivity.lean`: dense image / Hilbert norm identification / density for positivity proof
+   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster
    - `BHWTranslation.isPreconnected_baseFiber` is now optional old-route cleanup, not required for the merged proof path
-6. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
+6. Keep `SpectralEquivalence.lean` off the active queue unless a downstream file
+   needs a small interface adaptation; the one-way theorem is already landed.
+7. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
 
 ## Recently Completed (2026-03-14)
 
