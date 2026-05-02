@@ -4,6 +4,7 @@ Released under Apache 2.0 license.
 Authors: Michael Douglas, ModularPhysics Contributors
 -/
 import OSReconstruction.Mathlib429Compat
+import OSReconstruction.Wightman.Reconstruction.WickRotation.ForwardTubeLorentz
 import OSReconstruction.Wightman.Reconstruction.WickRotation.SchwingerTemperedness
 import OSReconstruction.ComplexLieGroups.D1OrbitSet
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.JostWitnessGeneralSigma
@@ -2356,6 +2357,40 @@ private def partialOSReflection (n m : ℕ) (x : NPointDomain d (n + m)) :
     then timeReflection d (x ⟨n - 1 - i.val, by omega⟩)
     else x i
 
+/-- Unfold the constructed Wick-rotated Schwinger family inside the OS inner
+product, under positive-time support hypotheses that put every OS tensor product
+on the honest zero-diagonal branch. -/
+theorem OSInnerProduct_constructSchwinger_unfolded
+    (Wfn : WightmanFunctions d)
+    (F G : BorchersSequence d)
+    (hsuppF : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hsuppG : ∀ n,
+      tsupport ((G.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n) :
+    OSInnerProduct d (constructSchwingerFunctions Wfn) F G =
+      ∑ n ∈ Finset.range (F.bound + 1),
+        ∑ m ∈ Finset.range (G.bound + 1),
+          ∫ x : NPointDomain d (n + m),
+            F_ext_on_translatedPET_total Wfn
+              (fun k => wickRotatePoint (x k)) *
+            ((F.funcs n).osConjTensorProduct (G.funcs m)) x := by
+  classical
+  unfold OSInnerProduct constructSchwingerFunctions wickRotatedBoundaryPairing
+  apply Finset.sum_congr rfl
+  intro n _hn
+  apply Finset.sum_congr rfl
+  intro m _hm
+  have hzero :
+      VanishesToInfiniteOrderOnCoincidence
+        ((F.funcs n).osConjTensorProduct (G.funcs m)) :=
+    VanishesToInfiniteOrderOnCoincidence_osConjTensorProduct_of_tsupport_subset_orderedPositiveTimeRegion
+      (d := d) (f := F.funcs n) (g := G.funcs m)
+      (hsuppF n) (hsuppG m)
+  rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
+    ((F.funcs n).osConjTensorProduct (G.funcs m)) hzero]
+
 /-- The OS inner product for Wick-rotated Schwinger functions is non-negative
     for test functions supported at positive times.
 
@@ -2536,7 +2571,7 @@ private theorem wightman_perm_invariant_on_jost_support (Wfn : WightmanFunctions
         (hxJ.2 i ⟨i.val + 1, hi⟩ hij)
     have hswap0 :
         Wfn.W n gτ = Wfn.W n (permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) := by
-      refine Wfn.locally_commutative n i hi gτ
+      refine (WightmanFunctions.locally_commutative Wfn) n i hi gτ
         (permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) hsupp ?_
       intro x
       change permuteSchwartz (Equiv.swap i ⟨i.val + 1, hi⟩) gτ x =

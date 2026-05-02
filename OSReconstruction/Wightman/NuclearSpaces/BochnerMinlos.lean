@@ -27,7 +27,7 @@ Euclidean field theory measures from characteristic functionals.
   Σᵢⱼ c̄ᵢ cⱼ φ(xⱼ - xᵢ) ≥ 0 for all finite families.
 * `CharacteristicFunctional` - A continuous positive-definite functional C : E → ℂ
   with C(0) = 1, on a nuclear space E.
-* `bochner_theorem` - (ℝⁿ) Continuous positive-definite φ with φ(0) = 1 corresponds
+* `finiteDimensional_bochner_theorem` - (ℝⁿ) Continuous positive-definite φ with φ(0) = 1 corresponds
   to a unique probability measure via Fourier transform.
 * `minlos_theorem` - (Nuclear spaces) Continuous positive-definite C with C(0) = 1
   on a nuclear space E corresponds to a unique probability measure on E* (the dual).
@@ -312,7 +312,7 @@ end BochnerHelpers
     Proved by combining:
     - `bochner_existence` (construction via Fourier inversion + Riesz representation)
     - `bochner_uniqueness` (via `Measure.ext_of_charFunDual` from mathlib) -/
-theorem bochner_theorem {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
+theorem finiteDimensional_bochner_theorem {n : ℕ} (φ : (Fin n → ℝ) → ℂ)
     (hcont : Continuous φ) (hpd : IsPositiveDefiniteFn φ) (hφ0 : φ 0 = 1) :
     ∃! (μ : Measure (Fin n → ℝ)), IsProbabilityMeasure μ ∧
       ∀ t, φ t = ∫ x, exp (↑(∑ i, t i * x i) * I) ∂μ := by

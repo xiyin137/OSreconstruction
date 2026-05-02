@@ -725,7 +725,7 @@ private theorem locality_term_eq
     dsimp [i]
     omega
   refine
-    Wfn.locally_commutative (n + (k + 2)) i hi_adj
+    (WightmanFunctions.locally_commutative Wfn) (n + (k + 2)) i hi_adj
       (Hn.conjTensorProduct (SchwartzMap.prependField f (SchwartzMap.prependField g hk)))
       (Hn.conjTensorProduct (SchwartzMap.prependField g (SchwartzMap.prependField f hk)))
       ?_ ?_
@@ -3706,7 +3706,8 @@ private lemma spectralCondition_diagonalMeasure_nonneg_dense
       ν (Set.Iio 0) = 0 ∧
       ∀ t : ℝ, ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂ν =
                ∫ s, Complex.exp (Complex.I * ↑t * ↑s) ∂μ_F := by
-    -- Lift φ(t) = ⟪F, U₀(t)F⟫ to a function on Fin 1 → ℝ for bochner_theorem.
+    -- Lift φ(t) = ⟪F, U₀(t)F⟫ to a function on Fin 1 → ℝ for
+    -- `finiteDimensional_bochner_theorem`.
     let φ₁ : (Fin 1 → ℝ) → ℂ := fun x =>
       @inner ℂ _ _ (F : GNSHilbertSpace Wfn)
         (𝒰₀.U (x 0) (F : GNSHilbertSpace Wfn))
@@ -4494,7 +4495,7 @@ private lemma scd_bochner_forwardCone_support
     1. Self-adjointness of each `Pμ` gives `re(⟪ψ, Pμ²ψ⟫) = ‖Pμψ‖²`, reducing
        the inequality to `‖P₀ψ‖² ≥ Σᵢ ‖Pᵢψ‖²`.
     2. The positive-definite function `a ↦ ⟪ψ, U(a)ψ⟫` on `ℝ^{d+1}` admits a
-       finite positive Bochner measure `μ` by `bochner_theorem`.
+       finite positive Bochner measure `μ` by `finiteDimensional_bochner_theorem`.
     3. `SpectralConditionDistribution` implies `supp(μ) ⊆ V̄₊`.
     4. Differentiating the Bochner integral gives the moment identity
        `‖P₀ψ‖² - Σᵢ ‖Pᵢψ‖² = ∫ (p₀² - |p⃗|²) dμ`.
@@ -4782,6 +4783,61 @@ theorem gns_spectrum_condition :
     (wfn_spectralConditionDistribution Wfn) (gns_translationStronglyContinuous Wfn)
   mass_shell := gns_mass_shell Wfn
     (wfn_spectralConditionDistribution Wfn) (gns_translationStronglyContinuous Wfn)
+
+/-- Public wrapper exposing the spectral-condition distribution attached to a
+Wightman family. This is an API surface for downstream R→E proofs; the
+construction remains the private one used by `gns_spectrum_condition`. -/
+theorem wfn_spectralConditionDistribution_public :
+    SpectralConditionDistribution d Wfn.W :=
+  wfn_spectralConditionDistribution Wfn
+
+/-- Public wrapper: the GNS energy spectral projection onto negative energies is
+zero. This exposes the private support lemma without duplicating its proof. -/
+theorem gns_negative_energy_projection_zero_public :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).proj (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_negative_energy_projection_zero Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn))
+
+/-- Public wrapper: the diagonal spectral measure of the GNS energy operator has
+no mass on negative energies for every Hilbert vector. -/
+theorem gns_energy_diagonalMeasure_Iio_zero (ψ : GNSHilbertSpace Wfn) :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).diagonalMeasure ψ (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_energy_spectral_support_nonneg Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn) ψ)
+
+/-- Dense-vector version of `gns_energy_diagonalMeasure_Iio_zero`, convenient
+when a proof is still phrased on the algebraic GNS pre-Hilbert quotient. -/
+theorem gns_preHilbert_energy_diagonalMeasure_Iio_zero
+    (F : PreHilbertSpace Wfn) :
+    let hsc := (gns_spectrum_condition Wfn).strongly_continuous
+    let P₀ := (gnsPoincareRep Wfn).momentumOp 0 (hsc 0)
+    let hT := PoincareRepresentation.momentumOp_denselyDefined
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    let hsa := PoincareRepresentation.momentumOp_selfAdjoint
+      (gnsPoincareRep Wfn) 0 (hsc 0)
+    (P₀.spectralMeasure hT hsa).diagonalMeasure
+      (F : GNSHilbertSpace Wfn) (Set.Iio 0) = 0 := by
+  simpa using
+    (gns_energy_spectral_support_nonneg Wfn
+      (wfn_spectralConditionDistribution Wfn)
+      (gns_translationStronglyContinuous Wfn)
+      (F : GNSHilbertSpace Wfn))
 
 /-- The operator-valued distribution on the GNS Hilbert space, extracted as a
     standalone definition so that the cyclicity lemma can reference it. -/
