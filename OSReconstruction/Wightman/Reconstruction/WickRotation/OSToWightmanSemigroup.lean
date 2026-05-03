@@ -63,8 +63,11 @@ variable {d : ℕ} [NeZero d]
       nonnegative spectral support)
     - T(t) → I as t → 0⁺ (strong continuity, from E0)
 
-    By the Hille-Yosida theorem, T(t) = e^{-tH} where H ≥ 0 is self-adjoint.
-    This H is the Hamiltonian of the reconstructed QFT.
+    For the concrete OS time shift below, the half-shift identity proves
+    positivity of the bounded Hilbert operator `osTimeShiftHilbert`, and
+    Mathlib's complex polarization criterion then gives self-adjointness.  The
+    bare `EuclideanSemigroup` record is only a contraction/kernel package; it is
+    not used by itself as a generic self-adjointness API.
 
     The current honest gap is precisely the contraction/spectral-support step:
     the quotient kernel is semigroup-positive-definite, but that alone still

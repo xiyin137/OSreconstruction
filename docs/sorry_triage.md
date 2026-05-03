@@ -5,8 +5,10 @@ Purpose: this note is the repo-wide triage sheet for every direct production
 
 Count convention:
 - direct tactic holes only: `^[[:space:]]*sorry([[:space:]]|$)`
-- checked on `2026-04-05`
-- current live count: `60`
+- checked on `2026-04-20`
+- raw regex count: `56`
+- live elaborating count: `55` (one raw hit sits inside a commented legacy
+  block in `WickRotation/K2VI1/Frontier.lean`)
 
 This note should be read together with:
 - `docs/theorem2_locality_blueprint.md`
@@ -22,11 +24,15 @@ This note should be read together with:
 
 | Subsystem | Direct `sorry`s |
 |---|---:|
-| `OSReconstruction/Wightman` | 20 |
-| `OSReconstruction/SCV` | 2 |
+| `OSReconstruction/Wightman` | 18 |
+| `OSReconstruction/SCV` | 0 |
 | `OSReconstruction/ComplexLieGroups` | 2 |
 | `OSReconstruction/vNA` | 36 |
-| **Total** | **60** |
+| **Total** | **56** |
+
+The raw Wightman count includes one grep-only archaeological hit inside the
+commented legacy block in `WickRotation/K2VI1/Frontier.lean`; the live
+elaborating Wightman count is therefore `17`, and the live total is `55`.
 
 ## 2. Highest-priority OS-route frontiers
 
@@ -34,14 +40,20 @@ These are the blockers closest to the current public reconstruction lane.
 
 | ID | File:line | Theorem | Why it matters | Primary doc |
 |---|---|---|---|---|
-| W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:367` | `bvt_F_swapCanonical_pairing` | theorem 2 locality frontier | `docs/theorem2_locality_blueprint.md` |
-| W2 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:386` | `bvt_W_positive` | theorem 3 positivity frontier | `docs/theorem3_os_route_blueprint.md` |
-| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster frontier | `docs/theorem4_cluster_blueprint.md` |
+| W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:356` | `bvt_W_swap_pairing_of_spacelike` | theorem 2 locality frontier | `docs/theorem2_locality_blueprint.md` |
+| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster frontier | `docs/theorem4_cluster_blueprint.md` |
 
-Everything else in this document should be interpreted relative to those three
+Everything else in this document should be interpreted relative to those two
 live public blockers.
 
-## 3. Wightman-side direct `sorry`s (20)
+Note: theorem 3 positivity (`bvt_W_positive`) is now closed in production and
+no longer appears in the direct-`sorry` census, though its blueprint remains
+relevant as upstream support for theorem 4.
+
+Note: the raw regex census still sees one commented legacy `sorry` in
+`WickRotation/K2VI1/Frontier.lean`; that line is not a live theorem blocker.
+
+## 3. Wightman-side direct `sorry`s (18)
 
 ### 3.1. `E -> R` continuation and boundary-value lane
 
@@ -50,19 +62,17 @@ live public blockers.
 | W4 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean:66` | `exists_acrOne_productTensor_witness` | base-step support package | active |
 | W5 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean:209` | `acrOne_productTensor_witness_euclidKernelPackage` | base-step support package | active |
 | W6 | `Wightman/Reconstruction/WickRotation/OSToWightman.lean:376` | `compactlySupported_zeroDiagonal_subset_closure_admissibleProductTensorSet` | base-step closure/density package | active |
-| W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:367` | `bvt_F_swapCanonical_pairing` | theorem 2 locality | active |
-| W2 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:386` | `bvt_W_positive` | theorem 3 positivity | active |
-| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster | active |
-| W7 | `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133` | `hasCompactSupport_twoPointCenterShearDescent_reflected_local` | theorem-1 / K2 residual support theorem | medium |
+| W1 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:356` | `bvt_W_swap_pairing_of_spacelike` | theorem 2 locality | active |
+| W3 | `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401` | `bvt_F_clusterCanonicalEventually_translate` | theorem 4 cluster | active |
+| W7 | `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133` | commented legacy `exists_probeSeq_euclid_local` block | grep-only archaeology | not live |
 
 ### 3.2. `R -> E` / reverse-direction and historical side lanes
 
 | ID | File:line | Theorem | Lane | Status |
 |---|---|---|---|---|
-| W8 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2366` | `schwingerExtension_os_term_eq_wightman_term` | false positivity route | quarantine/delete |
-| W9 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3581` | `W_analytic_cluster_integral` | reverse-direction cluster | live but not on shortest path |
+| W8 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2379` | `schwingerExtension_os_term_eq_wightman_term` | false positivity route | quarantine/delete |
+| W9 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3627` | `W_analytic_cluster_integral` | reverse-direction cluster | live but not on shortest path |
 | W10 | `Wightman/Reconstruction/WickRotation/BHWTranslation.lean:1115` | `isPreconnected_baseFiber` | old-route PET connectivity | peripheral |
-| W11 | `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean:1129` | `wickRotation_not_in_PET_null` | reverse-direction measure-zero geometry | peripheral |
 
 ### 3.3. GNS / uniqueness / functional-analysis side lane
 
@@ -78,15 +88,12 @@ live public blockers.
 | W19 | `Wightman/NuclearSpaces/BochnerMinlos.lean:465` | `eval_maps_generate_sigma_algebra` | Minlos uniqueness | medium-low |
 | W20 | `Wightman/NuclearSpaces/BochnerMinlos.lean:485` | `eval_charfun_implies_fd_distributions` | Minlos uniqueness | medium-low |
 
-## 4. SCV direct `sorry`s (2)
+## 4. SCV direct `sorry`s (0)
 
-| ID | File:line | Theorem | Role | Primary doc |
-|---|---|---|---|---|
-| S1 | `SCV/BochnerTubeTheorem.lean:126` | `bochner_local_extension` | local convex patch extension | `docs/scv_infrastructure_blueprint.md` |
-| S2 | `SCV/BochnerTubeTheorem.lean:220` | `bochner_tube_extension` | global Bochner tube theorem | `docs/scv_infrastructure_blueprint.md` |
-
-These are not the first blockers on the current theorem-2/3/4 route, but they
-remain core SCV infrastructure for later general-`k` continuation.
+The SCV tree currently has no direct tactic-hole `sorry`s under the count
+convention above.  Its remaining deferred surfaces are explicit axioms, listed
+in the README axiom inventory; for example `bochner_tube_extension` is an
+axiom, not a direct `sorry`.
 
 ## 5. Complex-Lie-group direct `sorry`s (2)
 
@@ -95,8 +102,8 @@ remain core SCV infrastructure for later general-`k` continuation.
 | C1 | `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean:55` | `blocker_isConnected_permSeedSet_nontrivial` | higher-dimensional permutation-flow connectedness | `docs/bhw_permutation_blueprint.md` |
 | C2 | `ComplexLieGroups/Connectedness/BHWPermutation/PermutationFlowBlocker.lean:119` | `blocker_iterated_eow_hExtPerm_d1_nontrivial` | one-dimensional nontrivial branch | `docs/bhw_permutation_blueprint.md` |
 
-These are honest mathematical blockers, but they are currently peripheral to
-the theorem-2/3/4 OS-route work.
+These deferred surfaces are currently peripheral to the theorem-2/3/4 OS-route
+work.
 
 ## 6. vNA direct `sorry`s (36)
 
@@ -165,7 +172,7 @@ listed here for global completeness.
 | V35 | `vNA/Predual.lean:246` | `kaplansky_density` | operator-topology package |
 | V36 | `vNA/Unbounded/StoneTheorem.lean:1781` | `timeEvolution_generator` | unbounded spectral/Stone package |
 
-## 7. Tracked axioms not counted in the `60`
+## 7. Tracked axioms not counted in the direct-sorry census
 
 The repo also contains important production axioms that do not show up in the
 direct `sorry` census.
@@ -174,87 +181,64 @@ direct `sorry` census.
 |---|---|---|---|
 | `schwartz_nuclear_extension` | `Wightman/WightmanAxioms.lean` | kernel theorem | `docs/nuclear_spaces_blueprint.md` |
 | `exists_continuousMultilinear_ofSeparatelyContinuous` | `Wightman/WightmanAxioms.lean` | separate-to-joint continuity | `docs/nuclear_spaces_blueprint.md` |
+| `schwartz_clm_fubini_exchange` | `GeneralResults/SchwartzFubini.lean` | CLM/Schwartz Fubini exchange | `docs/scv_infrastructure_blueprint.md` |
+| `bv_implies_fourier_support` | `SCV/VladimirovTillmann.lean` | growth + BV implies dual-cone support | `docs/scv_infrastructure_blueprint.md` |
+| `fl_representation_from_bv` | `SCV/VladimirovTillmann.lean` | Fourier-Laplace representation from BV | `docs/scv_infrastructure_blueprint.md` |
+| `distributional_cluster_lifts_to_tube` | `SCV/VladimirovTillmann.lean` | reverse-direction cluster lift | `docs/scv_infrastructure_blueprint.md` |
 | `reduced_bargmann_hall_wightman_of_input` | `Wightman/Reconstruction/WickRotation/BHWReducedExtension.lean` | reduced Route 1 BHW bridge | `docs/general_k_continuation_blueprint.md` |
 | `tube_boundaryValueData_of_polyGrowth` | `SCV/TubeBoundaryValues.lean` | tube BV from growth | `docs/scv_infrastructure_blueprint.md` |
-| `vladimirov_tillmann` | `SCV/VladimirovTillmann.lean` | tube growth / Fourier-Laplace package | `docs/scv_infrastructure_blueprint.md` |
-| `distributional_cluster_lifts_to_tube` | `SCV/VladimirovTillmann.lean` | reverse-direction cluster lift | `docs/scv_infrastructure_blueprint.md` |
+| `tube_boundaryValue_of_vladimirov_growth` | `SCV/TubeBoundaryValueExistence.lean` | BV existence from Vladimirov growth | `docs/scv_infrastructure_blueprint.md` |
+| `tube_boundaryValue_realizes_dualCone_distribution` | `SCV/FourierSupportCone.lean` | BV realized by dual-cone distribution | `docs/scv_infrastructure_blueprint.md` |
+| `bochner_tube_extension` | `SCV/BochnerTubeTheorem.lean` | global Bochner tube extension | `docs/scv_infrastructure_blueprint.md` |
+
+`vladimirov_tillmann` is no longer listed here because it is now proved as a
+theorem from the SCV axiom inventory, not an explicit production axiom.
 
 ## 8. Immediate execution order implied by this triage
 
 If the user wants the shortest mathematically faithful route on current `main`,
 the next documentation-guided Lean execution order should be:
 
-1. theorem 3 public reduction in `docs/theorem3_os_route_blueprint.md`,
-2. theorem 4 one-factor extraction / cluster closure in
+1. theorem 4 one-factor extraction / cluster closure in
    `docs/theorem4_cluster_blueprint.md`,
-3. theorem 2 locality continuity / adapter package in
+2. theorem 2 locality continuity / adapter package in
    `docs/theorem2_locality_blueprint.md`,
-4. only then the broader general-`k`, reverse-direction, GNS, nuclear, and
+3. only then the broader general-`k`, reverse-direction, GNS, nuclear, and
    vNA backlogs.
 
 This file should be updated whenever the direct `sorry` count changes.
 
 ## 9. High-priority Wightman blockers with concrete next packages
 
-The repo-wide table above is useful for census purposes. The five frontiers
+The repo-wide table above is useful for census purposes. The four live frontiers
 below are the ones that currently deserve the most detailed implementation
-attention.
+attention, followed by one grep-only archaeological note for the commented K2
+block.
 
-### 9.1. `bvt_W_positive`
+### 9.1. Grep-only archaeological entry in `K2VI1/Frontier.lean`
 
 File:
-- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:386`
+- `Wightman/Reconstruction/WickRotation/K2VI1/Frontier.lean:133`
 
 Concrete next packages:
 
-1. keep theorem-3 Packages A-B from `OSToWightmanPositivity.lean` as valid
-   one-variable support infrastructure,
-2. treat Package C / `hschw` as false legacy infrastructure, not as a live
-   theorem target:
-   for the exact theorem surface, the free-field left-hand side carries the
-   Laplace factor `e^{-ω_p t}` while the right-hand side carries the
-   oscillatory factor `e^{-i ω_p t}`,
-3. the already-existing positive-time / compact-approximation `hschw`
-   consumers may remain compiled but are no longer part of the endorsed route,
-4. do **not** revive the old raw Package-F/G/H density route, because the naive
-   slogan "ordered-positive-time support is dense in full `SchwartzNPoint d n`"
-   is false on the full Schwartz space,
-5. implement Package I only in its corrected Section 4.3 form:
-   transformed positive-time Euclidean data -> dense transformed image in the
-   Section-4.3 half-space Schwartz codomain -> OS Hilbert-space vector,
-6. do **not** implement the naive raw theorem slogan
-   `WightmanInnerProduct(bvt_W)(F,F).re = ‖u(F)‖^2` on the same raw
-   `BorchersSequence d` input,
-7. prove the quadratic identity first on the transformed-image core (OS I
-   Lemma 4.1 and Eq. (4.28)),
-8. then close theorem 3 for arbitrary `BorchersSequence d` by the resulting
-   density/continuity extension theorem.
-
-Important theorem-3 clarification:
-
-1. the Section-4.3 test-function transport `(4.19)`-`(4.20)` is an explicit
-   Fourier-Laplace integral, not a spectral-measure definition;
-2. the Wightman-side kernel later used in `(4.24)`-`(4.28)` comes from the OS II
-   repaired `bvt_F` / `bvt_W` route (`OSLinearGrowthCondition`), not from the
-   broken OS I Lemma 8.8 derivation;
-3. the half-space dense-range theorem from Lemma 4.1 is a paper-faithfulness
-   side theorem, not the current minimal blocker for `bvt_W_positive`.
+1. do not schedule this line as active work; it sits inside a commented legacy
+   block,
+2. treat `K2VI1/Frontier.lean` as archaeology until a new live theorem is
+   intentionally reintroduced there.
 
 What should not happen:
 
-1. no more wrapper reductions,
-2. no new operator/GNS reformulation,
-3. no attempt to rehabilitate `hschw`,
-4. no same-test-function contour slogan.
+1. do not let this grep artifact re-enter blocker planning,
+2. do not reconstruct a fake K2 frontier from commented legacy text.
 
 Estimated remaining Lean size:
-- `260-620` lines, now concentrated in the corrected Section 4.3
-  transformed-image / quadratic-identity / density-closure infrastructure.
+- `0` on the current live frontier map.
 
 ### 9.2. `bvt_F_clusterCanonicalEventually_translate`
 
 File:
-- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:412`
+- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:401`
 
 Concrete next packages:
 
@@ -271,17 +255,17 @@ What should not happen:
 Estimated remaining Lean size:
 - `245-530` lines.
 
-### 9.3. `bvt_F_swapCanonical_pairing`
+### 9.3. `bvt_W_swap_pairing_of_spacelike`
 
 File:
-- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:367`
+- `Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean:356`
 
 Concrete next packages:
 
 1. flattened regular-input constructor from boundary data and growth,
 2. ET/open-edge support route,
 3. raw-boundary locality theorem,
-4. canonical-shell adapter.
+4. boundary-value transfer to the `bvt_W` swap statement.
 
 What should not happen:
 
@@ -335,9 +319,8 @@ current theorem-2/3/4 execution order:
 1. `schwingerExtension_os_term_eq_wightman_term`
 2. `W_analytic_cluster_integral`
 3. `isPreconnected_baseFiber`
-4. `wickRotation_not_in_PET_null`
-5. all of `BochnerMinlos.lean`
-6. all of the `vNA` backlog
+4. all of `BochnerMinlos.lean`
+5. all of the `vNA` backlog
 
 This note exists partly to keep that discipline explicit.
 
@@ -367,26 +350,20 @@ graph should be stated explicitly in one place.
    - [theorem2_locality_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem2_locality_blueprint.md)
    - [scv_infrastructure_blueprint.md](/Users/xiyin/OSReconstruction/docs/scv_infrastructure_blueprint.md)
    - current BHW / ET geometry files
-2. `W2 = theorem 3 positivity`
+2. `W3 = theorem 4 cluster`
    depends on:
-   - [theorem3_os_route_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem3_os_route_blueprint.md)
-   - [os1_detailed_proof_audit.md](/Users/xiyin/OSReconstruction/docs/os1_detailed_proof_audit.md)
-   - current K2 / compact-approximation production chain
-3. `W3 = theorem 4 cluster`
-   depends on:
-   - theorem 3 one-factor package first,
+   - the now-closed theorem-3 positivity package,
    - [theorem4_cluster_blueprint.md](/Users/xiyin/OSReconstruction/docs/theorem4_cluster_blueprint.md),
    - OS I Section 4.4 transport ideas from
      [os1_detailed_proof_audit.md](/Users/xiyin/OSReconstruction/docs/os1_detailed_proof_audit.md)
 
-So the public execution order remains:
+So the public execution order now becomes:
 
-1. theorem 3,
-2. theorem 4,
-3. theorem 2 separately,
+1. theorem 4,
+2. theorem 2 separately,
 
-with theorem 4 downstream of theorem 3 and theorem 2 largely independent of
-that positivity/cluster lane.
+with theorem 4 downstream of the already-closed theorem-3 package and theorem 2
+largely independent of that positivity/cluster lane.
 
 ### 12.2. Generalization and side lanes
 
@@ -414,7 +391,7 @@ that positivity/cluster lane.
 
 The graph above should guide later implementation order:
 
-1. do not pause the public `E -> R` theorem-3/theorem-4 lane for GNS or vNA;
+1. do not pause the public `E -> R` theorem-4/theorem-2 lane for GNS or vNA;
 2. do not start the full general-`k` OS II port before the SCV infrastructure
    it names has an honest implementation route;
 3. do not let reverse-direction cleanup drag the active theorem-2/3/4 route off
@@ -427,14 +404,12 @@ the public OS-route frontier, the docs should enforce the following phases.
 
 #### Phase 1. Public `E -> R` completion
 
-1. `W2` theorem 3 positivity,
-2. `W3` theorem 4 cluster,
-3. `W1` theorem 2 locality.
+1. `W3` theorem 4 cluster,
+2. `W1` theorem 2 locality.
 
 #### Phase 2. Immediate `E -> R` support cleanup
 
-1. `W4-W6` in `OSToWightman.lean`,
-2. `W7` in `K2VI1/Frontier.lean`.
+1. `W4-W6` in `OSToWightman.lean`.
 
 #### Phase 3. Generalization / SCV support
 

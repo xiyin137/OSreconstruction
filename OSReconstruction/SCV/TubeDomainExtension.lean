@@ -2396,7 +2396,7 @@ private lemma eow_extension_m2 {m : ℕ} (hm : 0 < m)
     Cauchy integral of bv over a real box. The Cauchy transform is separately
     holomorphic in each variable and continuous, hence jointly holomorphic by
     Osgood's lemma. Agreement with f₊/f₋ follows from contour deformation. -/
-private lemma local_eow_extension {m : ℕ} (hm : 0 < m)
+theorem local_eow_extension {m : ℕ} (hm : 0 < m)
     (C : Set (Fin m → ℝ)) (hC : IsOpen C) (hconv : Convex ℝ C) (h0 : (0 : Fin m → ℝ) ∉ C)
     (hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
     (hCne : C.Nonempty)
@@ -2769,7 +2769,7 @@ lemma nonempty_open_real_inter_tubeDomain {m : ℕ}
     This follows from the identity theorem: both F_loc x₁ and F_loc x₂ agree
     with f_plus on the tube domain portion. On a connected overlap that meets T(C),
     the identity theorem forces F_loc x₁ = F_loc x₂ everywhere on the overlap. -/
-private lemma local_extensions_consistent {m : ℕ} (_hm : 0 < m)
+theorem local_extensions_consistent {m : ℕ} (_hm : 0 < m)
     (C : Set (Fin m → ℝ)) (hC : IsOpen C) (_hconv : Convex ℝ C) (_h0 : (0 : Fin m → ℝ) ∉ C)
     (_hcone : ∀ (t : ℝ) (y : Fin m → ℝ), 0 < t → y ∈ C → t • y ∈ C)
     (_hCne : C.Nonempty)
