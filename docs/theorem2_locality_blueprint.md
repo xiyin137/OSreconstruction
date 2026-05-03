@@ -34,6 +34,12 @@ descent in scalar rank `d + 1`.  The paper-source audit separates
 Hall-Wightman's scalar-product theorem from OS I Section 4.5's proper-complex
 `L_+(C)` continuation formulation; theorem 2 follows the latter unless the
 former is separately imported with its missing full-component input.
+The first Lean work on this route has started only in lower oriented support:
+`SourceOriented.lean` checks the finite determinant invariant, its proper
+complex Lorentz/permutation algebra, the base oriented source variety and
+double-domain topology APIs, and connectedness of the oriented extended-tube
+image.  This does not discharge the remaining branch-law, relative-openness,
+descent, normality, real-uniqueness, or adjacent `S'_n` producer gates below.
 
 Paper-source audit for the scalar-source fork.  The Hall-Wightman paper's
 Theorem I starts from invariance under the real orthochronous homogeneous
@@ -746,16 +752,38 @@ Target common-chart supplier and checked direct-envelope transcript:
 ```lean
 let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
 let ρ : Equiv.Perm (Fin n) := 1
-rcases BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
-    (d := d) (n := n) hd i hi with
-  ⟨Ufig, V, _xseed, hUfig_open, hV_open, hV_conn, hV_ne, _hxseed,
-    hV_precompact, hV_closure_subset_Ufig, hUfig_source,
-    hV_jost, hV_ET, hV_swapET, hV_ordered, hV_swap_ordered,
-    hV_wick, hV_real, hV_geom, hV_swap_geom,
-    hV_horiz_id, hV_horiz_swap,
-    hV_ordered_closure, hV_swap_ordered_closure,
-    hV_horiz_id_closure, hV_horiz_swap_closure,
-    hV_figPath_closure, hV_orientedPath_closure⟩
+let Poriented :=
+  BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+    (d := d) (n := n) hd i hi
+let P := Poriented.toCanonical
+let Ufig := P.Ufig
+let V := P.V
+have hUfig_open := P.Ufig_open
+have hV_open := P.V_open
+have hV_conn := P.V_connected
+have hV_ne := P.V_nonempty
+have hV_precompact := P.closureV_compact
+have hV_closure_subset_Ufig := P.closureV_sub_Ufig
+have hUfig_source :=
+  ⟨P.Ufig_jost, P.Ufig_ET, P.Ufig_swapET,
+    P.Ufig_pulled_id, P.Ufig_pulled_tau⟩
+have hV_jost := P.V_jost
+have hV_ET := P.V_ET
+have hV_swapET := P.V_swapET
+have hV_ordered := P.V_ordered
+have hV_swap_ordered := P.V_swap_ordered
+have hV_wick := P.V_wick
+have hV_real := P.V_real
+have hV_geom := P.V_geom_id
+have hV_swap_geom := P.V_geom_tau
+have hV_horiz_id := P.V_pulled_id
+have hV_horiz_swap := P.V_pulled_tau
+have hV_ordered_closure := P.closure_ordered
+have hV_swap_ordered_closure := P.closure_swap_ordered
+have hV_horiz_id_closure := P.closure_pulled_id
+have hV_horiz_swap_closure := P.closure_pulled_tau
+have hV_figPath_closure := P.figPath_closure
+have hV_orientedPath_closure := Poriented.orientedPath_closure
 
 -- Active oriented route note: `hV_orientedPath_closure` is exported by the
 -- strengthened source-patch theorem
@@ -2923,8 +2951,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `det = 1` component. -/
       structure BHW.HallWightmanFullComplexLorentzGroup (d : Nat) where
         val : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ
-        metric_preserving :
-          val.transpose * ComplexLorentzGroup.ηℂ (d := d) * val =
+        metric_preserving : ∀ μ ν : Fin (d + 1),
+          ∑ α : Fin (d + 1),
+            (minkowskiSignature d α : ℂ) * val α μ * val α ν =
+          if μ = ν then (minkowskiSignature d μ : ℂ) else 0
+
+      theorem BHW.hallWightmanFullComplexLorentz_metric_preserving_matrix
+          (A : BHW.HallWightmanFullComplexLorentzGroup d) :
+          A.val.transpose * ComplexLorentzGroup.ηℂ (d := d) * A.val =
             ComplexLorentzGroup.ηℂ (d := d)
 
       def BHW.hallWightmanFullComplexLorentzDet
@@ -2939,8 +2973,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (Λ : ComplexLorentzGroup d) :
           BHW.HallWightmanFullComplexLorentzGroup d :=
         { val := Λ.val
-          metric_preserving :=
-            ComplexLorentzGroup.metric_preserving_matrix Λ }
+          metric_preserving := Λ.metric_preserving }
 
       def BHW.hallWightmanFullComplexLorentzAction
           (A : BHW.HallWightmanFullComplexLorentzGroup d)
@@ -3399,11 +3432,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
       production proof: the existing pure-Gram `SourceScalarRepresentativeData`
       cannot be reused with a hidden orientation hypothesis.
 
-      Active proper-complex/oriented source API.  This block is now the
-      theorem-2 proof-doc target, but it is not yet production-Lean-ready.  It
-      is the minimum theorem-shape correction required because strict OS §4.5
-      supplies proper complex Lorentz invariance.  The invariant data must
-      include both scalar products and ordered full-frame determinants:
+      Active proper-complex/oriented source API.  The base finite-dimensional
+      data type and determinant/permutation algebra in this block are now
+      checked in `SourceOriented.lean`.  The public scalar representative is
+      still not production-Lean-ready until the branch-law/descent gates below
+      are closed.  The invariant data must include both scalar products and
+      ordered full-frame determinants, and the ambient type is deliberately a
+      product-coordinate abbreviation so the later germ-holomorphic API has
+      the inherited complex normed vector-space structure required by
+      `DifferentiableOn`:
 
       ```lean
       abbrev BHW.SourceOrientedGramData (d n : Nat) :=
@@ -3424,15 +3461,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hgram : G.gram = H.gram)
           (hdet : G.det = H.det) :
           G = H := by
-        cases G with
-        | mk Ggram Gdet =>
-          cases H with
-          | mk Hgram Hdet =>
-            simp [BHW.SourceOrientedGramData.gram,
-              BHW.SourceOrientedGramData.det] at hgram hdet
-            cases hgram
-            cases hdet
-            rfl
+        cases G
+        cases H
+        simp [BHW.SourceOrientedGramData.gram,
+          BHW.SourceOrientedGramData.det] at hgram hdet
+        cases hgram
+        cases hdet
+        rfl
 
       def BHW.sourceOrientedMinkowskiInvariant
           (d n : Nat)
@@ -3618,7 +3653,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
         · simpa [BHW.permAct] using
             BHW.sourceMinkowskiGram_perm d n σ z
         · funext ι
-          exact BHW.sourceFullFrameDet_permAct d n σ ι z
+          exact BHW.sourceFullFrameDet_permAct
+            (d := d) (n := n) ι σ z
 
       theorem BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq
           [NeZero d]
@@ -3732,6 +3768,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         classical
         refine
           { U := BHW.sourceOrientedExtendedTubeDomain d n
+            U_eq := rfl
             U_relOpen := hGeom.1
             U_connected := hGeom.2
             Phi := Classical.choose hDesc
@@ -3892,7 +3929,34 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceFullFrameDet d n ι w /
               BHW.sourceFullFrameDet d n ι z =
             BHW.sourceFullFrameDet d n κ w /
-              BHW.sourceFullFrameDet d n κ z
+              BHW.sourceFullFrameDet d n κ z := by
+        -- `hfull` is used by callers to produce at least one nonzero full
+        -- frame.  Once `hι` and `hκ` are supplied, ratio independence follows
+        -- from the full-frame map built from `ι`.
+        let E := BHW.sourceFullFrameMap d n hgram ι hι
+        have hdet_ι :
+            LinearMap.det E.toLinearMap =
+              BHW.sourceFullFrameDet d n ι w /
+                BHW.sourceFullFrameDet d n ι z :=
+          BHW.det_sourceFullFrameMap_eq_ratio d n hgram ι hι
+        have hκ_action :
+            BHW.sourceFullFrameDet d n κ w =
+              BHW.sourceFullFrameDet d n κ z *
+                LinearMap.det E.toLinearMap := by
+          have hall : (fun i => E (z i)) = w := by
+            ext i
+            exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
+          rw [← hall]
+          exact BHW.sourceFullFrameDet_linearEquivAction d n E κ z
+        calc
+          BHW.sourceFullFrameDet d n ι w /
+              BHW.sourceFullFrameDet d n ι z
+              = LinearMap.det E.toLinearMap := hdet_ι.symm
+          _ =
+            BHW.sourceFullFrameDet d n κ w /
+              BHW.sourceFullFrameDet d n κ z := by
+                rw [hκ_action]
+                field_simp [hκ]
 
       theorem BHW.hwFullRankSameGramFrameMapDet_eq_det_ratio_of_fullFrame
           (d n : Nat)
@@ -4055,14 +4119,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hgram : Continuous gram)
           (hdet : Continuous det) :
           Continuous (fun x : α =>
-            ((gram x, det x) : BHW.SourceOrientedGramData d n)) :=
-        Continuous.prodMk hgram hdet
+            ((gram x, det x) :
+              BHW.SourceOrientedGramData d n)) := by
+        exact hgram.prodMk hdet
+
+      theorem BHW.continuous_sourceMinkowskiGram :
+          Continuous (BHW.sourceMinkowskiGram d n) := by
+        apply continuous_pi
+        intro i
+        apply continuous_pi
+        intro j
+        exact continuous_finset_sum _ fun μ _ => by
+          have hiμ :
+              Continuous
+                (fun z : Fin n -> Fin (d + 1) -> ℂ => z i μ) :=
+            (continuous_apply μ).comp (continuous_apply i)
+          have hjμ :
+              Continuous
+                (fun z : Fin n -> Fin (d + 1) -> ℂ => z j μ) :=
+            (continuous_apply μ).comp (continuous_apply j)
+          simpa [mul_assoc] using (continuous_const.mul hiμ).mul hjμ
 
       theorem BHW.continuous_sourceOrientedMinkowskiInvariant
           (d n : Nat) :
           Continuous (BHW.sourceOrientedMinkowskiInvariant d n) := by
         apply continuous_sourceOrientedGramData_mk
-        · exact (BHW.contDiff_sourceMinkowskiGram d n).continuous
+        · exact BHW.continuous_sourceMinkowskiGram
         · exact continuous_pi fun ι =>
             BHW.continuous_sourceFullFrameDet d n ι
 
@@ -7688,6 +7770,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
       an arbitrary preexisting realization of `T`, because the estimates and
       determinant sheet would be lost.
 
+      The local-image proof below needs the estimate-compatible strengthening
+      of the same induction, not just the one-way statement above.  The
+      strengthened form returns a pair of coordinate boxes:
+      `SourceTailOrientedCompatibleSmallRealization D m` stores
+      `epsilon`, `eta`, a realization theorem for every tail datum in the
+      `eta`-box, and the reverse inclusion saying that every vector tuple in
+      the `epsilon`-box has oriented tail data in the `eta`-box.  This is not
+      an extra theorem route; it is the same zero/full-rank/intermediate-rank
+      induction with the finite polynomial estimates carried along.  The
+      rank-deficient Schur neighborhood uses this paired theorem so the
+      connected parameter box and the ambient Schur neighborhood are
+      compatible in both directions.
+
       The Schur extraction theorem packages the algebra that the oriented
       determinant fields satisfy after the head block is inverted:
 
@@ -7856,7 +7951,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       def BHW.SourceTailOrientedMaxRankAt
           (D m : Nat)
-          (T : BHW.SourceTailOrientedData D m) : Prop :=
+          (T : BHW.SourceOrientedTailData D m) : Prop :=
         BHW.sourceGramMatrixRank m T.gram = min D m
 
       theorem BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail
@@ -9254,7 +9349,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hxΩ : x ∈ Ω)
           (hΨ_cont : ContinuousOn Ψ Ω)
           (hEq : Set.EqOn phi Ψ (Ω ∩ V)) :
-          ContinuousWithinAt phi U x
+          ContinuousWithinAt phi U x := by
+        have hΨ_at : ContinuousAt Ψ x :=
+          hΨ_cont.continuousAt (hΩ_open.mem_nhds hxΩ)
+        have hΨ_tendsto :
+            Tendsto Ψ (𝓝[U] x) (𝓝 (Ψ x)) :=
+          hΨ_at.tendsto.mono_left nhdsWithin_le_nhds
+        have hΩ_ev : ∀ᶠ y in 𝓝[U] x, y ∈ Ω := by
+          exact Filter.Eventually.filter_mono nhdsWithin_le_nhds
+            (hΩ_open.mem_nhds hxΩ)
+        have hV_ev : ∀ᶠ y in 𝓝[U] x, y ∈ V :=
+          eventually_mem_nhdsWithin.mono fun y hy => hU_sub hy
+        have hEq_ev : ∀ᶠ y in 𝓝[U] x, Ψ y = phi y :=
+          (hΩ_ev.and hV_ev).mono fun y hy =>
+            (hEq ⟨hy.1, hy.2⟩).symm
+        have hxEq : Ψ x = phi x :=
+          (hEq ⟨hxΩ, hU_sub hxU⟩).symm
+        simpa [hxEq] using hΨ_tendsto.congr' hEq_ev
 
       theorem SCV.locallyBoundedAt_of_local_eqOn_relNeighborhood
           {E : Type*} [TopologicalSpace E]
@@ -9267,7 +9378,33 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∃ Ω0 : Set E,
             IsOpen Ω0 ∧ x ∈ Ω0 ∧
             ∃ C : ℝ, 0 <= C ∧
-              ∀ y, y ∈ Ω0 ∩ U -> ‖phi y‖ <= C
+              ∀ y, y ∈ Ω0 ∩ U -> ‖phi y‖ <= C := by
+        have hΨ_at : ContinuousAt Ψ x :=
+          hΨ_cont.continuousAt (hΩ_open.mem_nhds hxΩ)
+        have hpre :
+            Ψ ⁻¹' Metric.ball (Ψ x) 1 ∈ 𝓝 x :=
+          hΨ_at (Metric.ball_mem_nhds (Ψ x) zero_lt_one)
+        rcases mem_nhds_iff.mp hpre with
+          ⟨S, hS_sub, hS_open, hxS⟩
+        let Ω0 : Set E := S ∩ Ω
+        refine
+          ⟨Ω0, hS_open.inter hΩ_open, ⟨hxS, hxΩ⟩,
+            ‖Ψ x‖ + 1, by positivity, ?_⟩
+        intro y hy
+        have hyS : y ∈ S := hy.1.1
+        have hyΩ : y ∈ Ω := hy.1.2
+        have hyU : y ∈ U := hy.2
+        have hball : Ψ y ∈ Metric.ball (Ψ x) 1 := hS_sub hyS
+        have hdist : dist (Ψ y) (Ψ x) < 1 := by
+          simpa [Metric.mem_ball] using hball
+        have hnorm : ‖Ψ y‖ <= ‖Ψ x‖ + 1 := by
+          calc
+            ‖Ψ y‖ <= ‖Ψ x‖ + dist (Ψ y) (Ψ x) := by
+              simpa [dist_eq_norm, norm_sub_rev, add_comm] using
+                norm_add_le (Ψ x) (Ψ y - Ψ x)
+            _ <= ‖Ψ x‖ + 1 := by linarith
+        have hphi : phi y = Ψ y := hEq ⟨hyΩ, hU_sub hyU⟩
+        simpa [hphi] using hnorm
 
       theorem BHW.sourceOrientedQuotientValue_continuous_locallyBounded
           [NeZero d]
@@ -9700,6 +9837,168 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.standardSOInvariantCoordinateRing D n →ₐ[ℂ]
             BHW.standardSOInvariantSubalgebra D n
 
+      def BHW.standardPairingInvariantElement
+          (D n : Nat)
+          (ij : Fin n × Fin n) :
+          BHW.standardSOInvariantSubalgebra D n :=
+        ⟨BHW.standardPairingCoordinatePolynomial D n ij,
+          BHW.standardPairingCoordinatePolynomial_invariant D n ij⟩
+
+      def BHW.standardVolumeInvariantElement
+          (D n : Nat)
+          (ι : Fin D ↪ Fin n) :
+          BHW.standardSOInvariantSubalgebra D n :=
+        ⟨BHW.standardVolumeCoordinatePolynomial D n ι,
+          BHW.standardVolumeCoordinatePolynomial_invariant D n ι⟩
+
+      theorem BHW.standardSOInvariantCoordinateMap_apply_pairing
+          (D n : Nat)
+          (ij : Fin n × Fin n) :
+          BHW.standardSOInvariantCoordinateMap D n
+              (MvPolynomial.X (Sum.inl ij)) =
+            BHW.standardPairingInvariantElement D n ij := by
+        rfl
+
+      theorem BHW.standardSOInvariantCoordinateMap_apply_volume
+          (D n : Nat)
+          (ι : Fin D ↪ Fin n) :
+          BHW.standardSOInvariantCoordinateMap D n
+              (MvPolynomial.X (Sum.inr ι)) =
+            BHW.standardVolumeInvariantElement D n ι := by
+        rfl
+
+      theorem BHW.algHom_range_le_adjoin_images_mvPolynomial_X
+          {σ A : Type*}
+          [CommSemiring A] [Algebra ℂ A]
+          (f : MvPolynomial σ ℂ →ₐ[ℂ] A) :
+          f.range ≤
+            Algebra.adjoin ℂ (Set.range (fun i : σ => f (MvPolynomial.X i))) := by
+        intro y hy
+        rcases hy with ⟨p, rfl⟩
+        induction p using MvPolynomial.induction_on with
+        | C a =>
+            simpa using
+              Algebra.algebraMap_mem
+                (Algebra.adjoin ℂ
+                  (Set.range (fun i : σ => f (MvPolynomial.X i)))) a
+        | add p q hp hq =>
+            simpa using
+              (Algebra.adjoin ℂ
+                (Set.range
+                  (fun i : σ => f (MvPolynomial.X i)))).add_mem hp hq
+        | mul_X p i hp =>
+            have hX :
+                f (MvPolynomial.X i) ∈
+                  Algebra.adjoin ℂ
+                    (Set.range
+                      (fun i : σ => f (MvPolynomial.X i))) :=
+              Algebra.subset_adjoin ⟨i, rfl⟩
+            simpa [map_mul] using
+              (Algebra.adjoin ℂ
+                (Set.range
+                  (fun i : σ => f (MvPolynomial.X i)))).mul_mem hp hX
+
+      theorem BHW.standardSOInvariantCoordinateMap_range_eq_generator_adjoin
+          (D n : Nat) :
+          (BHW.standardSOInvariantCoordinateMap D n).range =
+            Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingInvariantElement D n) ∪
+               Set.range (BHW.standardVolumeInvariantElement D n)) := by
+        classical
+        apply le_antisymm
+        · intro y hy
+          exact
+            (BHW.algHom_range_le_adjoin_images_mvPolynomial_X
+              (BHW.standardSOInvariantCoordinateMap D n)) y
+              (by simpa [Set.range_union, Set.range_comp,
+                BHW.standardSOInvariantCoordinateMap_apply_pairing,
+                BHW.standardSOInvariantCoordinateMap_apply_volume] using hy)
+        · refine Algebra.adjoin_le ?_
+          intro y hy
+          rcases hy with hy | hy
+          · rcases hy with ⟨ij, rfl⟩
+            exact
+              ⟨MvPolynomial.X (Sum.inl ij),
+                BHW.standardSOInvariantCoordinateMap_apply_pairing
+                  D n ij⟩
+          · rcases hy with ⟨ι, rfl⟩
+            exact
+              ⟨MvPolynomial.X (Sum.inr ι),
+                BHW.standardSOInvariantCoordinateMap_apply_volume
+                  D n ι⟩
+
+      theorem BHW.standardSOInvariantSubalgebra_mem_generator_adjoin_of_underlying
+          (D n : Nat)
+          {y : BHW.standardSOInvariantSubalgebra D n}
+          (hy :
+            (y : BHW.standardTupleCoordinateRing D n) ∈
+              Algebra.adjoin ℂ
+                (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+                 Set.range (BHW.standardVolumeCoordinatePolynomial D n))) :
+          y ∈
+            Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingInvariantElement D n) ∪
+               Set.range (BHW.standardVolumeInvariantElement D n)) := by
+        classical
+        refine
+          Algebra.adjoin_induction hy ?_ ?_ ?_ ?_
+        · intro p hp
+          rcases hp with hp | hp
+          · rcases hp with ⟨ij, rfl⟩
+            exact Algebra.subset_adjoin
+              (Or.inl ⟨ij, Subtype.ext rfl⟩)
+          · rcases hp with ⟨ι, rfl⟩
+            exact Algebra.subset_adjoin
+              (Or.inr ⟨ι, Subtype.ext rfl⟩)
+        · intro a
+          simpa using
+            Algebra.algebraMap_mem
+              (Algebra.adjoin ℂ
+                (Set.range (BHW.standardPairingInvariantElement D n) ∪
+                 Set.range (BHW.standardVolumeInvariantElement D n))) a
+        · intro a b _ha _hb ha hb
+          exact
+            (Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingInvariantElement D n) ∪
+               Set.range (BHW.standardVolumeInvariantElement D n))).add_mem
+              ha hb
+        · intro a b _ha _hb ha hb
+          exact
+            (Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingInvariantElement D n) ∪
+               Set.range (BHW.standardVolumeInvariantElement D n))).mul_mem
+              ha hb
+
+      theorem BHW.standardSOInvariantSubalgebra_top_eq_generator_adjoin
+          (D n : Nat)
+          (hFFT :
+            BHW.standardSOInvariantSubalgebra D n =
+              Algebra.adjoin ℂ
+                (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+                 Set.range (BHW.standardVolumeCoordinatePolynomial D n))) :
+          (⊤ : Subalgebra ℂ
+            (BHW.standardSOInvariantSubalgebra D n)) =
+            Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingInvariantElement D n) ∪
+               Set.range (BHW.standardVolumeInvariantElement D n)) := by
+        classical
+        ext y
+        constructor
+        · intro _hy
+          have hy_under :
+              (y : BHW.standardTupleCoordinateRing D n) ∈
+                Algebra.adjoin ℂ
+                  (Set.range
+                  (BHW.standardPairingCoordinatePolynomial D n) ∪
+                   Set.range
+                    (BHW.standardVolumeCoordinatePolynomial D n)) := by
+            simpa [← hFFT] using y.2
+          exact
+            BHW.standardSOInvariantSubalgebra_mem_generator_adjoin_of_underlying
+              D n hy_under
+        · intro _hy
+          exact Subalgebra.mem_top
+
       def BHW.sourceOrientedAlgebraicRelationGenerators
           (d n : Nat) :
           Set (BHW.sourceOrientedInvariantCoordinateRing d n) :=
@@ -9752,6 +10051,35 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (I : Ideal A) : Ideal B :=
         I.map e.toRingHom
 
+      def BHW.algEquivOfMappedSubalgebraEq
+          {A B : Type*} [CommSemiring A] [CommSemiring B]
+          [Algebra ℂ A] [Algebra ℂ B]
+          (e : A ≃ₐ[ℂ] B)
+          (S : Subalgebra ℂ A)
+          (T : Subalgebra ℂ B)
+          (hST : BHW.algEquivMapSubalgebra e S = T) :
+          S ≃ₐ[ℂ] T :=
+        { toFun := fun x =>
+            ⟨e x, by
+              simpa [← hST, BHW.algEquivMapSubalgebra] using
+                Subalgebra.mem_map.mpr ⟨x, x.2, rfl⟩⟩
+          invFun := fun y =>
+            ⟨e.symm y, by
+              have hy_map :
+                  (y : B) ∈ BHW.algEquivMapSubalgebra e S := by
+                simpa [hST] using y.2
+              rcases Subalgebra.mem_map.mp hy_map with
+                ⟨x, hxS, hx⟩
+              have : e.symm y = x := by
+                apply e.injective
+                simpa using hx.symm
+              simpa [this] using hxS⟩
+          left_inv := by intro x; ext; simp
+          right_inv := by intro y; ext; simp
+          map_mul' := by intro x y; ext; simp
+          map_add' := by intro x y; ext; simp
+          commutes' := by intro r; ext; simp }
+
       theorem BHW.algEquivMapSubalgebra_injective
           {A B : Type*} [CommSemiring A] [CommSemiring B]
           [Algebra ℂ A] [Algebra ℂ B]
@@ -9771,6 +10099,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
         simpa [BHW.algEquivMapIdeal, Ideal.map_comap_of_equiv,
           Ideal.comap_symm] using hcomap
 
+      theorem BHW.surjective_of_algEquiv_transport
+          {A B C D : Type*}
+          [CommSemiring A] [CommSemiring B]
+          [CommSemiring C] [CommSemiring D]
+          [Algebra ℂ A] [Algebra ℂ B]
+          [Algebra ℂ C] [Algebra ℂ D]
+          (eDomain : A ≃ₐ[ℂ] B)
+          (eCodomain : C ≃ₐ[ℂ] D)
+          (f : A →ₐ[ℂ] C)
+          (g : B →ₐ[ℂ] D)
+          (hmap : ∀ x, eCodomain (f x) = g (eDomain x))
+          (hg : Function.Surjective g) :
+          Function.Surjective f := by
+        intro y
+        rcases hg (eCodomain y) with ⟨x, hx⟩
+        refine ⟨eDomain.symm x, ?_⟩
+        apply eCodomain.injective
+        simpa [hmap] using hx.symm
+
       theorem BHW.standardSOInvariantRing_generated_by_pairings_and_volume
           (D n : Nat)
           (hD : 3 <= D) :
@@ -9785,6 +10132,98 @@ Proof decomposition of this theorem, without hiding the analytic work:
           RingHom.ker
               (BHW.standardSOInvariantCoordinateMap D n) =
             BHW.standardSOAlgebraicRelationIdeal D n
+
+      theorem BHW.standardSOInvariantCoordinateMap_surjective_of_generators
+          (D n : Nat)
+          (hFFT :
+            BHW.standardSOInvariantSubalgebra D n =
+              Algebra.adjoin ℂ
+                (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+                 Set.range (BHW.standardVolumeCoordinatePolynomial D n))) :
+          Function.Surjective
+            (BHW.standardSOInvariantCoordinateMap D n) := by
+        classical
+        rw [← AlgHom.range_eq_top]
+        rw [BHW.standardSOInvariantCoordinateMap_range_eq_generator_adjoin]
+        exact
+          (BHW.standardSOInvariantSubalgebra_top_eq_generator_adjoin
+            D n hFFT).symm
+
+      /-- Standard finite-dimensional invariant-theory support for the
+      special orthogonal group.  This is the only non-Hall-Wightman algebraic
+      source allowed in the oriented normality packet.  It is a theorem about
+      the polynomial representation of `SO_D(ℂ)` on `(ℂ^D)^n`, not about
+      Wightman functions. -/
+      theorem BHW.standardSO_FFT_SFT_coordinatePresentation
+          (D n : Nat)
+          (hD : 3 <= D) :
+          BHW.standardSOInvariantSubalgebra D n =
+            Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+               Set.range (BHW.standardVolumeCoordinatePolynomial D n)) ∧
+          RingHom.ker
+              (BHW.standardSOInvariantCoordinateMap D n) =
+            BHW.standardSOAlgebraicRelationIdeal D n ∧
+          Function.Surjective
+            (BHW.standardSOInvariantCoordinateMap D n) := by
+        have hFFT :
+            BHW.standardSOInvariantSubalgebra D n =
+              Algebra.adjoin ℂ
+                (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+                 Set.range (BHW.standardVolumeCoordinatePolynomial D n)) :=
+          BHW.standardSOInvariantRing_generated_by_pairings_and_volume
+            D n hD
+        have hSFT :
+            RingHom.ker
+                (BHW.standardSOInvariantCoordinateMap D n) =
+              BHW.standardSOAlgebraicRelationIdeal D n :=
+          BHW.standardSOInvariantRing_relations_kernel D n hD
+        exact
+          ⟨hFFT, hSFT,
+            BHW.standardSOInvariantCoordinateMap_surjective_of_generators
+              D n hFFT⟩
+
+      theorem BHW.standardSOInvariantRing_generated_by_pairings_and_volume_fromPresentation
+          (D n : Nat)
+          (hD : 3 <= D) :
+          BHW.standardSOInvariantSubalgebra D n =
+            Algebra.adjoin ℂ
+              (Set.range (BHW.standardPairingCoordinatePolynomial D n) ∪
+               Set.range (BHW.standardVolumeCoordinatePolynomial D n)) :=
+        (BHW.standardSO_FFT_SFT_coordinatePresentation D n hD).1
+
+      theorem BHW.standardSOInvariantRing_relations_kernel_fromPresentation
+          (D n : Nat)
+          (hD : 3 <= D) :
+          RingHom.ker
+              (BHW.standardSOInvariantCoordinateMap D n) =
+            BHW.standardSOAlgebraicRelationIdeal D n :=
+        (BHW.standardSO_FFT_SFT_coordinatePresentation D n hD).2.1
+
+      theorem BHW.standardSOInvariantCoordinateMap_surjective
+          (D n : Nat)
+          (hD : 3 <= D) :
+          Function.Surjective
+            (BHW.standardSOInvariantCoordinateMap D n) :=
+        (BHW.standardSO_FFT_SFT_coordinatePresentation D n hD).2.2
+
+      theorem BHW.specialComplexOrthogonalGroup_linearlyReductive
+          (D : Nat)
+          (hD : 3 <= D) :
+          BHW.LinearlyReductiveAlgebraicGroup
+            (BHW.standardSpecialOrthogonalAlgebraicGroup D)
+
+      theorem BHW.standardSOInvariantSubalgebra_integrallyClosed
+          (D n : Nat)
+          (hD : 3 <= D) :
+          IsIntegrallyClosed
+            (BHW.standardSOInvariantSubalgebra D n) := by
+        exact
+          BHW.linearlyReductive_invariants_integrallyClosed
+            (G := BHW.standardSpecialOrthogonalAlgebraicGroup D)
+            (A := BHW.standardTupleCoordinateRing D n)
+            (BHW.specialComplexOrthogonalGroup_linearlyReductive D hD)
+            (BHW.mvPolynomial_integrallyClosed ℂ (Fin n × Fin D))
 
       def BHW.sourceMinkowskiToDotCoordinateRingEquiv
           (d n : Nat)
@@ -9862,6 +10301,60 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceOrientedAlgebraicRelationIdeal d n) =
             BHW.standardSOAlgebraicRelationIdeal (d + 1) n
 
+      def BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d) :
+          BHW.sourceOrientedInvariantSubalgebra d n ≃ₐ[ℂ]
+            BHW.standardSOInvariantSubalgebra (d + 1) n :=
+        BHW.algEquivOfMappedSubalgebraEq
+          (BHW.sourceMinkowskiToDotCoordinateRingEquiv d n)
+          (BHW.sourceOrientedInvariantSubalgebra d n)
+          (BHW.standardSOInvariantSubalgebra (d + 1) n)
+          (BHW.sourceOrientedInvariantSubalgebra_transport_dot
+            (d := d) (n := n) hd)
+
+      theorem BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d)
+          (p : BHW.sourceOrientedInvariantCoordinateRing d n) :
+          BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd
+              (BHW.sourceOrientedInvariantCoordinateMap d n p) =
+            BHW.standardSOInvariantCoordinateMap (d + 1) n
+              (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n p) := by
+        -- Polynomial induction on `p`.  On `Sum.inl ij` this is exactly
+        -- `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram`; on
+        -- `Sum.inr ι` it is
+        -- `sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet`, with the
+        -- fixed nonzero determinant of the Minkowski-to-dot linear equivalence
+        -- absorbed by the volume-coordinate generator.  Constants and
+        -- addition/multiplication are functoriality of the two algebra maps.
+        induction p using MvPolynomial.induction_on with
+        | C a => simp
+        | add p q hp hq => simp [hp, hq]
+        | mul_X p a hp =>
+            cases a with
+            | inl ij =>
+                simp [hp,
+                  BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceGram]
+            | inr ι =>
+                simp [hp,
+                  BHW.sourceMinkowskiToDotCoordinateRingEquiv_apply_sourceDet]
+
+      theorem BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d)
+          (p : BHW.sourceOrientedInvariantCoordinateRing d n) :
+          BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd
+              (BHW.sourceOrientedInvariantCoordinateMap d n p) =
+            BHW.standardSOInvariantCoordinateMap (d + 1) n
+              (BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n p) := by
+        exact
+          BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators
+            (d := d) (n := n) hd p
+
       theorem BHW.sourceOrientedInvariantRing_generated_by_gram_det
           (d n : Nat)
           [NeZero d]
@@ -9881,6 +10374,30 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceOrientedInvariantCoordinateMap d n) =
             BHW.sourceOrientedAlgebraicRelationIdeal d n
 
+      theorem BHW.sourceOrientedInvariantCoordinateMap_surjective
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d) :
+          Function.Surjective
+            (BHW.sourceOrientedInvariantCoordinateMap d n) := by
+        have hD : 3 <= d + 1 := Nat.succ_le_succ hd
+        have hstd :
+            Function.Surjective
+              (BHW.standardSOInvariantCoordinateMap (d + 1) n) :=
+          BHW.standardSOInvariantCoordinateMap_surjective (d + 1) n hD
+        exact
+          BHW.surjective_of_algEquiv_transport
+            (eDomain :=
+              BHW.sourceMinkowskiToDotInvariantCoordinateEquiv d n)
+            (eCodomain :=
+              BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv d n hd)
+            (f := BHW.sourceOrientedInvariantCoordinateMap d n)
+            (g := BHW.standardSOInvariantCoordinateMap (d + 1) n)
+            (hmap :=
+              BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes
+                (d := d) (n := n) hd)
+            hstd
+
       theorem BHW.sourceOrientedInvariantRing_integrallyClosed
           (d n : Nat)
           [NeZero d]
@@ -9896,6 +10413,70 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (d := d) hd)
             (BHW.mvPolynomial_integrallyClosed ℂ (Fin n × Fin (d + 1)))
 
+      theorem BHW.coordinateRing_quotient_by_vanishingIdeal
+          {R : Type*} [CommRing R] [Algebra ℂ R]
+          (V : BHW.AffineAlgebraicSet ℂ R)
+          (I : Ideal R)
+          (hI : BHW.vanishingIdeal V = I) :
+          BHW.coordinateRing V ≃ₐ[ℂ] R ⧸ I := by
+        exact
+          (BHW.coordinateRing_quotient_vanishingIdeal V).trans
+            (Ideal.quotientEquivOfEq hI)
+
+      theorem BHW.sourceOrientedAlgebraicRelationIdeal_radical_vanishing
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d) :
+          BHW.vanishingIdeal
+              (BHW.sourceOrientedAlgebraicVariety d n) =
+            BHW.sourceOrientedAlgebraicRelationIdeal d n := by
+        have hker :
+            RingHom.ker
+                (BHW.sourceOrientedInvariantCoordinateMap d n) =
+              BHW.sourceOrientedAlgebraicRelationIdeal d n :=
+          BHW.sourceOrientedInvariantRing_relations_kernel
+            (d := d) (n := n) hd
+        have hrad :
+            (BHW.sourceOrientedAlgebraicRelationIdeal d n).IsRadical := by
+          rw [← hker]
+          exact
+            RingHom.ker_isRadical_of_target_reduced
+              (BHW.sourceOrientedInvariantCoordinateMap d n)
+              (BHW.sourceOrientedInvariantSubalgebra_reduced
+                (d := d) (n := n))
+        exact
+          BHW.vanishingIdeal_zeroLocus_eq_of_radical
+            (I := BHW.sourceOrientedAlgebraicRelationIdeal d n)
+            hrad
+            (BHW.sourceOrientedAlgebraicVariety_eq_zeroLocus_relations
+              (d := d) (n := n))
+
+      theorem BHW.sourceOrientedAlgebraicVariety_vanishingIdeal_eq
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d) :
+          BHW.vanishingIdeal
+              (BHW.sourceOrientedAlgebraicVariety d n) =
+            BHW.sourceOrientedAlgebraicRelationIdeal d n := by
+        exact
+          BHW.sourceOrientedAlgebraicRelationIdeal_radical_vanishing
+            (d := d) (n := n) hd
+
+      theorem BHW.sourceOrientedCoordinateRing_quotient_relationIdeal
+          (d n : Nat)
+          [NeZero d]
+          (hd : 2 <= d) :
+          BHW.coordinateRing
+              (BHW.sourceOrientedAlgebraicVariety d n) ≃ₐ[ℂ]
+            (BHW.sourceOrientedInvariantCoordinateRing d n ⧸
+              BHW.sourceOrientedAlgebraicRelationIdeal d n) := by
+        exact
+          BHW.coordinateRing_quotient_by_vanishingIdeal
+            (BHW.sourceOrientedAlgebraicVariety d n)
+            (BHW.sourceOrientedAlgebraicRelationIdeal d n)
+            (BHW.sourceOrientedAlgebraicVariety_vanishingIdeal_eq
+              (d := d) (n := n) hd)
+
       theorem BHW.sourceOrientedAlgebraicCoordinateRing_iso_invariants
           (d n : Nat)
           [NeZero d]
@@ -9903,7 +10484,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
           :
           BHW.coordinateRing
               (BHW.sourceOrientedAlgebraicVariety d n) ≃ₐ[ℂ]
-            BHW.sourceOrientedInvariantSubalgebra d n
+            BHW.sourceOrientedInvariantSubalgebra d n := by
+        let f := BHW.sourceOrientedInvariantCoordinateMap d n
+        have hsurj : Function.Surjective f :=
+          BHW.sourceOrientedInvariantCoordinateMap_surjective
+            (d := d) (n := n) hd
+        have hker :
+            RingHom.ker f =
+              BHW.sourceOrientedAlgebraicRelationIdeal d n :=
+          BHW.sourceOrientedInvariantRing_relations_kernel
+            (d := d) (n := n) hd
+        exact
+          (BHW.sourceOrientedCoordinateRing_quotient_relationIdeal
+            (d := d) (n := n) hd).trans
+            ((Ideal.quotientEquivOfEq hker.symm).trans
+              (Ideal.quotientKerAlgEquivOfSurjective f hsurj))
 
       theorem BHW.sourceOrientedAlgebraicVariety_normal_of_invariants
           (d n : Nat)
@@ -9932,19 +10527,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (d := d) (n := n) hd
       ```
 
-      The two generation/kernel theorems are exactly the first and second
-      fundamental theorems for the special complex orthogonal group in the
-      vector representation, transported through the explicit equivalence
-      between the complexified Minkowski form and the standard dot form.  They
-      must include the small-arity case: if `n < d + 1`, the determinant
-      generator range is empty and the statement reduces to the ordinary Gram
-      invariant theorem.  The integrally-closed theorem uses only standard
-      invariant theory: `SO_{d+1}(ℂ)` is reductive for `d + 1 >= 3`, hence
-      linearly reductive in characteristic zero; invariants of an integrally
-      closed finitely generated domain under a linearly reductive algebraic
-      group are integrally closed.  This is a permissible ordinary algebraic
-      geometry support theorem, but it is not a QFT source axiom and it must
-      not mention OS, Wightman functions, `extendF`, or locality.
+      The standard-dot presentation theorem
+      `BHW.standardSO_FFT_SFT_coordinatePresentation` is now the exact
+      invariant-theory boundary.  It bundles the first and second fundamental
+      theorems for the special complex orthogonal group in the vector
+      representation with the surjectivity statement actually consumed by the
+      coordinate-ring isomorphism.  If this theorem is not proved locally, it
+      may be consumed only from an existing sorry-free library theorem with
+      exactly these generators, kernel, and coordinate conventions.  It must
+      include the small-arity case: if `n < D`, the determinant generator
+      range is empty and the statement reduces to the ordinary Gram invariant
+      theorem.  The integrally-closed theorem uses only standard invariant
+      theory: `SO_D(ℂ)` is reductive for `D >= 3`, hence linearly reductive
+      in characteristic zero; invariants of an integrally closed finitely
+      generated domain under a linearly reductive algebraic group are
+      integrally closed.  This is permissible ordinary algebraic geometry
+      support, but it is not a QFT source axiom and it must not mention OS,
+      Wightman functions, `extendF`, EOW, PET, theorem 2, or locality.
 
       The kernel theorem is not allowed to hide the oriented equations in the
       words "the usual relations".  Its coordinate ideal is generated by
@@ -9955,58 +10554,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
       source coordinates the last family becomes
       `det(G[ι,κ]) = minkowskiMetricDet d * det_ι * det_κ`.  The coordinate
       ring equivalence is then the first isomorphism theorem applied to
-      `standardSOInvariantCoordinateMap` and transported to the source side:
-
-      ```lean
-      theorem BHW.standardSOInvariantCoordinateMap_surjective
-          (D n : Nat)
-          (hD : 3 <= D) :
-          Function.Surjective
-            (BHW.standardSOInvariantCoordinateMap D n)
-
-      theorem BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_surjective
-          (d n : Nat)
-          [NeZero d]
-          (hstd :
-            Function.Surjective
-              (BHW.standardSOInvariantCoordinateMap (d + 1) n)) :
-          Function.Surjective
-            (BHW.sourceOrientedInvariantCoordinateMap d n)
-
-      theorem BHW.sourceOrientedInvariantCoordinateMap_surjective
-          (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d)
-          :
-          Function.Surjective
-            (BHW.sourceOrientedInvariantCoordinateMap d n) := by
-        have hD : 3 <= d + 1 := Nat.succ_le_succ hd
-        exact
-          BHW.sourceMinkowskiToDotInvariantCoordinateEquiv_surjective
-            (d := d) (n := n)
-            (BHW.standardSOInvariantCoordinateMap_surjective
-              (D := d + 1) (n := n) hD)
-
-      theorem BHW.sourceOrientedAlgebraicCoordinateRing_iso_invariants
-          (d n : Nat)
-          [NeZero d]
-          (hd : 2 <= d)
-          :
-          BHW.coordinateRing
-              (BHW.sourceOrientedAlgebraicVariety d n) ≃ₐ[ℂ]
-            BHW.sourceOrientedInvariantSubalgebra d n := by
-        have hker :=
-          BHW.sourceOrientedInvariantRing_relations_kernel
-            (d := d) (n := n) hd
-        have hsurj :=
-          BHW.sourceOrientedInvariantCoordinateMap_surjective
-            (d := d) (n := n) hd
-        exact
-          (BHW.coordinateRing_eq_quotient_relationIdeal
-            (BHW.sourceOrientedAlgebraicRelationIdeal d n)).trans
-            ((Ideal.quotientEquivAlgOfEq ℂ hker).trans
-              (Ideal.quotientKerAlgEquivOfSurjective hsurj))
-      ```
+      `standardSOInvariantCoordinateMap` and transported to the source side.
+      The implementation-facing declarations for this assembly are the
+      earlier displayed
+      `BHW.sourceMinkowskiToDotInvariantSubalgebraEquiv`,
+      `BHW.sourceMinkowskiToDotInvariantCoordinateMap_commutes_on_generators`,
+      `BHW.sourceOrientedInvariantCoordinateMap_surjective`,
+      `BHW.sourceOrientedCoordinateRing_quotient_relationIdeal`, and
+      `BHW.sourceOrientedAlgebraicCoordinateRing_iso_invariants`; do not
+      introduce the older shortcut
+      `sourceMinkowskiToDotInvariantCoordinateEquiv_surjective`.
 
       This is the formal normality bridge: generation gives surjectivity,
       the second fundamental theorem gives the kernel, and the quotient
@@ -10227,12 +10784,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       | Surface | Current status | Required mathematical content |
       | --- | --- | --- |
-      | `BHW.sourceFullFrameMatrix`, `BHW.sourceFullFrameDet`, `BHW.sourceFullFrameDet_complexLorentzAction`, `BHW.continuous_sourceFullFrameDet`, `BHW.sourceFullFrameDet_permAct` | Lean-shaped proof pinned; production Lean not started. | Finite determinant algebra with the exact local row/action convention: selected frame matrix transforms as `Z * Λ.val.transpose`, `Matrix.det_mul` and `Λ.proper` give determinant invariance for `ComplexLorentzGroup d`, continuity follows from `continuous_matrix ... .matrix_det`, and source permutation transports the ordered embedding to `ι.trans σ.toEmbedding` with no hidden row sign. |
-      | `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`, `BHW.sourceOrientedMinkowskiInvariant_permAct` | Assembly transcript pinned; production Lean not started. | Pair the checked Gram invariance/permutation lemmas with the determinant lemmas above; no OS, EOW, PET, or locality input. |
+      | `BHW.SourceOrientedGramData`, `BHW.sourceFullFrameMatrix`, `BHW.sourceFullFrameDet`, `BHW.continuous_sourceFullFrameDet`, `BHW.sourceFullFrameDet_complexLorentzAction`, `BHW.sourceFullFrameDet_permAct` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Finite determinant algebra with the exact local row/action convention: selected frame matrix transforms as `Z * Λ.val.transpose`, `Matrix.det_mul` and `Λ.proper` give determinant invariance for `ComplexLorentzGroup d`, continuity is `continuous_sourceFullFrameMatrix.matrix_det`, and source permutation transports the ordered embedding to `ι.trans σ.toEmbedding` with no hidden row sign. |
+      | `BHW.sourceOrientedMinkowskiInvariant`, `BHW.sourcePermuteOrientedGram`, `BHW.sourceMinkowskiGram_complexLorentzAction`, `BHW.sourceOrientedMinkowskiInvariant_complexLorentzAction`, `BHW.sourceOrientedMinkowskiInvariant_permAct`, `BHW.differentiable_sourcePermuteOrientedGram` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Pair the source Gram invariance/permutation lemmas with the determinant lemmas above; no OS, EOW, PET, or locality input.  The oriented data type is a product-coordinate abbreviation, so the permutation map is differentiable and can be used by the germ precomposition API. |
+      | `BHW.sourceOrientedGramVariety`, `BHW.sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_subset_variety`, `BHW.sourcePermuteOrientedGram_mem_variety_iff`, `BHW.IsRelOpenInSourceOrientedGramVariety.preimage_sourcePermuteOrientedGram`, `BHW.IsRelOpenInSourceOrientedGramVariety.inter`, `BHW.IsRelOpenInSourceOrientedGramVariety.iUnion`, `BHW.sourceOrientedDoublePermutationDomain_one_eq`, `BHW.sourceOrientedDoublePermutationDomain_relOpen_of_sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_connected`, `BHW.SourceOrientedVarietyGermHolomorphicOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.continuousOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.of_subset_relOpen`, `BHW.SourceOrientedVarietyGermHolomorphicOn.sub`, `BHW.SourceOrientedVarietyGermHolomorphicOn.precomp_sourcePermuteOrientedGram` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Base oriented source-variety, double-domain topology, and germ-holomorphic calculus.  The double-domain relative-open theorem is deliberately conditional on relative openness of the oriented extended-tube image; the hard local-realization proof for that hypothesis remains in the `sourceOrientedExtendedTubeDomain_relOpen_connected` row. |
       | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean not started. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is implementation, not a remaining theorem-shape gap in this row. |
       | `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` | Assembly transcript pinned; not production-Lean-ready until the previous row's Hall-Wightman producers exist. | Apply the previous row's actual orbit alternative to determinant-`1` complex Lorentz invariance of `extendF` via `extendF_complexLorentzInvariant_of_cinv`; apply the singular alternative by the checked topology-limit transcript for `hw_sameSourceGram_singularLimit_extendF_eq`.  This theorem has no independent route choice and must not be implemented before `same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`. |
-      | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Componentwise local-realization transcript pinned; production Lean not started. | Connectedness is the continuous image of `BHW.isConnected_extendedTube` under `continuous_sourceOrientedMinkowskiInvariant`.  Relative openness must be proved by `sourceOrientedExtendedTube_localRealization`: small arity max-rank charts reduce to the ordinary Gram chart; full-frame max-rank charts are assembled by `SourceOrientedFullFrameMaxRankChartData`, whose selected-frame slice comes from `SourceOrientedFullFrameGaugeChartData` and the finite-dimensional theorem chain `sourceFullFrameOrientedEquation`, `sourceFullFrameOrientedHypersurface_regularAt`, `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, `sourceFullFrameSlice_localImage_eq_hypersurface`, `sourceFullFrameSlice_localImage_eq_variety`, and `sourceFullFrameGaugeSection_of_localImage`; the chart inverse is the explicit selected-frame/mixed-row reconstruction, and the tube-valued local section uses the ambient-open shrink `SourceOrientedFullFrameMaxRankChartData.tubeShrink`, not the relative variety domain; rank-deficient charts use `SourceOrientedRankDeficientResidualChartData` produced by `sourceTailOrientedSmallRealization`, `sourceOriented_schurResidualData`, and `sourceOriented_reconstruct_from_schurResidual`.  These are still first-order implementation targets, not a public-domain wrapper. |
-      | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started. | Define `Phi` as the quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, prove well-definedness from the oriented branch law, prove holomorphy on `SourceOrientedMaxRankAt` by `sourceOrientedMaxRank_localSection_smallArity` or `sourceOrientedMaxRank_localSection_fullFrame`, prove continuity/local boundedness of the quotient value near the exceptional locus using `sourceOrientedQuotientValue_locallyBounded_of_residualChart` and `sourceOrientedQuotientValue_continuous_of_residualChart`, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, analytic exceptional-rank locus, density of the max-rank stratum, and the normal analytic-space Riemann theorem.  The invariant-ring generator/kernel theorem is the only permitted standard algebraic-geometry import boundary here; it must have the explicit `SO` pairing/volume generators and Cauchy-Binet kernel, be sorry-free, and remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
+      | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Connectedness half checked as `BHW.sourceOrientedExtendedTubeDomain_connected`; relative-openness half has a componentwise local-realization transcript but production Lean has not started. | Relative openness must be proved by `sourceOrientedExtendedTube_localRealization`: small arity max-rank charts reduce to the ordinary Gram chart; full-frame max-rank charts are assembled by `SourceOrientedFullFrameMaxRankChartData`, whose selected-frame slice comes from `SourceOrientedFullFrameGaugeChartData` and the finite-dimensional theorem chain `sourceFullFrameOrientedEquation`, `sourceFullFrameOrientedHypersurface_regularAt`, `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, `sourceFullFrameSlice_localImage_eq_hypersurface`, `sourceFullFrameSlice_localImage_eq_variety`, and `sourceFullFrameGaugeSection_of_localImage`; the chart inverse is the explicit selected-frame/mixed-row reconstruction, and the tube-valued local section uses the ambient-open shrink `SourceOrientedFullFrameMaxRankChartData.tubeShrink`, not the relative variety domain; rank-deficient charts use `SourceOrientedRankDeficientResidualChartData` produced by `sourceTailOrientedSmallRealization`, `sourceOriented_schurResidualData`, and `sourceOriented_reconstruct_from_schurResidual`.  These are still first-order implementation targets, not a public-domain wrapper. |
+      | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started. | Define `Phi` as the quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, prove well-definedness from the oriented branch law, prove holomorphy on `SourceOrientedMaxRankAt` by `sourceOrientedMaxRank_localSection_smallArity` or `sourceOrientedMaxRank_localSection_fullFrame`, prove continuity/local boundedness of the quotient value near the exceptional locus using `sourceOrientedQuotientValue_locallyBounded_of_residualChart` and `sourceOrientedQuotientValue_continuous_of_residualChart`, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, analytic exceptional-rank locus, density of the max-rank stratum, and the normal analytic-space Riemann theorem.  The only permitted standard algebraic-geometry import boundary here is `BHW.standardSO_FFT_SFT_coordinatePresentation`: it must provide the explicit `SO` pairing/volume generators, Cauchy-Binet kernel, and coordinate-map surjectivity in one sorry-free theorem, and it must remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
       | `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, `BHW.hallWightman_sourceOrientedScalarRepresentativeData`, `BHW.sourceOrientedScalarRepresentativeData_bvt_F` | Assembly only after the preceding rows. | Specialize to `bvt_F` using `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, and `BHW_forwardTube_eq`; no full-component/improper invariant is needed on this proper-complex route. |
 
       In particular, `BHW.sourceOrientedScalarRepresentativeData_bvt_F` is the
@@ -10369,7 +10927,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.sourcePermuteOrientedGram d n τ
                 (BHW.sourceOrientedMinkowskiInvariant d n (Γ t)) := by
                   exact
-                    BHW.sourceOrientedMinkowskiInvariant_permAct d n τ
+                    BHW.sourceOrientedMinkowskiInvariant_permAct
+                      (d := d) (n := n) τ
                       (Γ t)
       ```
 
@@ -10379,12 +10938,70 @@ Proof decomposition of this theorem, without hiding the analytic work:
       equality one cannot recover determinant-coordinate equality without
       choosing a new lift.  Therefore the oriented proof must add the following
       strengthened checked-geometry theorem by replaying the existing
-      `swFigure24_adjacentHorizontalEnvironmentWithPathStability` /
-      `os45_adjacent_identity_horizontalEdge_sourcePatch` proof and exporting
+      `swFigure24_adjacentPathStableNeighborhood_exists` proof and exporting
       the definitional rotated path formula before it is compressed to
-      pure-Gram equality:
+      pure-Gram equality.  The first Lean slice is neighborhood-level,
+      because the current production file has no canonical source-patch
+      structure yet and because this theorem exposes exactly the path object
+      that the existing pure-Gram theorem hides:
 
       ```lean
+      theorem BHW.swFigure24_adjacentPathStableNeighborhood_rotated_exists
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n) :
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          ∃ (Upath : Set (NPointDomain d n))
+            (xfig : NPointDomain d n),
+            IsOpen Upath ∧ xfig ∈ Upath ∧
+            (∀ k : Fin n, xfig k 0 = 0) ∧
+            xfig ∈ BHW.JostSet d n ∧
+            BHW.realEmbed xfig ∈ BHW.ExtendedTube d n ∧
+            BHW.realEmbed (fun k => xfig (τ k)) ∈
+              BHW.ExtendedTube d n ∧
+            (∀ x ∈ Upath,
+              BHW.OS45Figure24RotatedPathFormulaField
+                (d := d) hd n i hi x) := by
+        classical
+        let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        -- Copy `swFigure24_adjacentPathStableNeighborhood_exists`
+        -- through the compact-open construction of `H`.
+        rcases BHW.figure24_adjacentTwoPlaneRotationSupport
+            (d := d) (n := n) hd i hi with
+          ⟨xfig, xrot, Λfig, hxfig_time0, hxfig_J, hxfig_ET,
+            hrot_formula, hxrot_FJ, hΛfig⟩
+        have hxrot_ET : BHW.realEmbed xrot ∈ BHW.ExtendedTube d n := ...
+        have hxfig_swapET :
+            BHW.realEmbed (fun k => xfig (τ k)) ∈
+              BHW.ExtendedTube d n := ...
+        let H : NPointDomain d n × unitInterval ->
+            Fin n -> Fin (d + 1) -> ℂ :=
+          fun p =>
+            BHW.figure24RotateAdjacentConfig (d := d) (n := n) hd
+              (BHW.permAct (d := d) τ
+                (BHW.os45Figure24IdentityPath
+                  (d := d) (n := n) p.1 p.2))
+        have hH_cont : Continuous H :=
+          by simpa [H] using
+            BHW.continuous_figure24RotatedIdentityPath
+              (d := d) (n := n) hd τ
+        have hH_base : ∀ t : unitInterval,
+            H (xfig, t) ∈ BHW.ExtendedTube d n := ...
+        rcases BHW.exists_open_nhds_forall_mem_of_compact_parameter
+            (X := NPointDomain d n) (Y := unitInterval)
+            (Z := Fin n -> Fin (d + 1) -> ℂ)
+            (f := H) hH_cont BHW.isOpen_extendedTube hH_base with
+          ⟨Upath, hUpath_open, hxfig_Upath, hUpath_path⟩
+        refine
+          ⟨Upath, xfig, hUpath_open, hxfig_Upath,
+            hxfig_time0, hxfig_J, hxfig_ET, hxfig_swapET, ?_⟩
+        intro x hxUpath
+        refine ⟨fun t => H (x, t), ?_, ?_, ?_⟩
+        · exact hH_cont.comp (continuous_const.prodMk continuous_id)
+        · exact hUpath_path x hxUpath
+        · intro t
+          rfl
+
       theorem BHW.swFigure24_adjacentHorizontalEnvironmentWithRotatedPathStability
           [NeZero d]
           (hd : 2 <= d)
@@ -10416,7 +11033,79 @@ Proof decomposition of this theorem, without hiding the analytic work:
               x ∈ EuclideanOrderedPositiveTimeSector
                 (d := d) (n := n) (1 : Equiv.Perm (Fin n)) ->
               BHW.OS45Figure24RotatedPathFormulaField
-                (d := d) hd n i hi x)
+                (d := d) hd n i hi x ∧
+              BHW.OS45Figure24OrientedPathField
+                (d := d) n i hi x)
+      ```
+
+      Its proof copies the construction of
+      `swFigure24_adjacentHorizontalEnvironmentWithPathStability`, but starts
+      from
+      `swFigure24_adjacentPathStableNeighborhood_rotated_exists`.  The final
+      field does not construct a new path: for `x ∈ Upath`, take the stored
+      `hRotated : OS45Figure24RotatedPathFormulaField ... x`; the first
+      conjunct is `hRotated`, and the second is
+      `OS45Figure24OrientedPathField_of_checked_figure24 hd n i hi x
+      hx_ordered hRotated`.  The proof of all `Ufig` fields is exactly the
+      checked proof of
+      `swFigure24_adjacentHorizontalEnvironmentWithPathStability` up to
+      replacing the final pure-Gram path consumer by this oriented-field
+      consumer.  This pins the exact Lean API: there is no use of an arbitrary
+      chosen lift from a Gram equality.
+
+      ```lean
+      theorem BHW.os45_adjacent_identity_horizontalEdge_sourcePatch_with_orientedPath
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n) :
+          ∃ (Ufig V : Set (NPointDomain d n)) (xseed : NPointDomain d n),
+            -- Same source-patch fields as
+            -- `os45_adjacent_identity_horizontalEdge_sourcePatch`, with the
+            -- final closure path field strengthened from pure Gram equality
+            -- to the full oriented Figure-2-4 path field.
+            IsOpen Ufig ∧
+            IsOpen V ∧ IsConnected V ∧ V.Nonempty ∧ xseed ∈ V ∧
+            IsCompact (closure V) ∧
+            closure V ⊆ Ufig ∧
+            ... ∧
+            (let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+             (∀ x ∈ V,
+               BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint
+                   (d := d) (n := n) 1 x) ∈
+                 BHW.os45PulledRealBranchDomain (d := d) (n := n) 1) ∧
+             (∀ x ∈ V,
+               BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint
+                   (d := d) (n := n) 1 x) ∈
+                 BHW.os45PulledRealBranchDomain (d := d) (n := n) τ) ∧
+             (∀ x ∈ closure V,
+               x ∈ EuclideanOrderedPositiveTimeSector
+                 (d := d) (n := n) (1 : Equiv.Perm (Fin n))) ∧
+             (∀ x ∈ closure V,
+               (fun k => x (τ k)) ∈
+                 EuclideanOrderedPositiveTimeSector
+                   (d := d) (n := n) τ) ∧
+             (∀ x ∈ closure V,
+               BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint
+                   (d := d) (n := n) 1 x) ∈
+                 BHW.os45PulledRealBranchDomain (d := d) (n := n) 1) ∧
+             (∀ x ∈ closure V,
+               BHW.realEmbed
+                 (BHW.os45CommonEdgeRealPoint
+                   (d := d) (n := n) 1 x) ∈
+                 BHW.os45PulledRealBranchDomain (d := d) (n := n) τ) ∧
+             (∀ x ∈ closure V,
+               BHW.OS45Figure24RotatedPathFormulaField
+                 (d := d) hd n i hi x) ∧
+             (∀ x ∈ closure V,
+               BHW.OS45Figure24OrientedPathField (d := d) n i hi x)) := by
+        -- Copy `os45_adjacent_identity_horizontalEdge_sourcePatch`, but call
+        -- `swFigure24_adjacentHorizontalEnvironmentWithRotatedPathStability`
+        -- and store `hclosureV_rotated` / `hclosureV_oriented` from its final
+        -- field.  All ordinary OS45 source-patch fields are unchanged.
+        ...
 
       structure BHW.OS45Figure24OrientedCanonicalSourcePatchData
           [NeZero d]
@@ -10432,34 +11121,47 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∀ x, x ∈ closure toCanonical.V ->
             BHW.OS45Figure24OrientedPathField (d := d) n i hi x
 
-      theorem BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+      theorem BHW.exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n) :
+          ∃ P :
+            BHW.OS45Figure24OrientedCanonicalSourcePatchData
+              (d := d) hd n i hi, True
+
+      noncomputable def BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
           [NeZero d]
           (hd : 2 <= d)
           (i : Fin n) (hi : i.val + 1 < n) :
           BHW.OS45Figure24OrientedCanonicalSourcePatchData
-            (d := d) hd n i hi
+            (d := d) hd n i hi :=
+        Classical.choose
+          (BHW.exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+            (d := d) (n := n) hd i hi)
       ```
 
       Production order: `OS45Figure24CanonicalSourcePatchData` is the
-      deterministic-lift packet defined in the adjacent-source section below;
-      the oriented extension must be declared after that packet, or the
-      oriented fields must be added to the canonical packet itself.  The
-      theorem is proved by the same compact-open shrink as the checked
-      pure-Gram patch: choose `V` inside `Ufig ∩ Upath ∩ ordered ∩
-      swappedOrdered`, use the existing closure-ordered fields to feed
-      `OS45Figure24RotatedPathFormulaField`, and then apply
-      `OS45Figure24OrientedPathField_of_checked_figure24`.  It is not a new
-      OS input and not a new route; it preserves the actual Figure-2-4 rotated
-      path before the pure-Gram projection forgets determinant signs.
+      deterministic-lift packet defined in the adjacent-source section below.
+      The production Lean port proves the oriented existential packet in
+      `Prop` and exposes both the oriented packet and its pure canonical
+      projection by `noncomputable def`, since data cannot be obtained from
+      upstream existential propositions by direct theorem elimination into
+      `Type`.  This is now checked in
+      `OSToWightmanLocalityOS45Figure24.lean`.  It is not a new OS input and
+      not a new route; it preserves the actual Figure-2-4 rotated path
+      before the pure-Gram projection forgets determinant signs, and it keeps
+      the compact real-patch contact separate from the quarter-turn complex
+      endpoint.
 
       The production-oriented environment theorem should not introduce a new
       path.  It should expose the same `Γ` and `Δ` already used in
       `swFigure24_adjacentPathStableNeighborhood_exists` and then replace the
-      final pure-Gram calculation by the oriented calculation above.  Thus the
-      remaining oriented Figure-2-4 work is not mathematical uncertainty
-      about the `(3,4,5)` rotation; it is the finite determinant algebra and
-      the migration of downstream scalar consumers from pure Gram data to the
-      oriented data structure.
+      final pure-Gram calculation by the oriented calculation above.  This
+      non-canonical oriented path/source-patch slice is now checked in Lean.
+      The remaining Figure-2-4 selector work is the canonical deterministic
+      adjacent-lift packet and the corrected two-point common-edge contact
+      producer; downstream scalar consumers still need migration from pure
+      Gram data to the oriented data structure.
 
       Because this route is now the active theorem-2 source route, every
       downstream consumer that currently
@@ -10524,41 +11226,38 @@ Proof decomposition of this theorem, without hiding the analytic work:
           refine ⟨BHW.permAct (d := d) τ z, ?_⟩
           exact
             BHW.sourceOrientedMinkowskiInvariant_permAct
-              d n τ z
+              (d := d) (n := n) τ z
 
       theorem BHW.IsRelOpenInSourceOrientedGramVariety.preimage_sourcePermuteOrientedGram
-          (d n : Nat)
           {U : Set (BHW.SourceOrientedGramData d n)}
           (hU : BHW.IsRelOpenInSourceOrientedGramVariety d n U)
-          (τ : Equiv.Perm (Fin n)) :
+          (σ : Equiv.Perm (Fin n)) :
           BHW.IsRelOpenInSourceOrientedGramVariety d n
-            {G | BHW.sourcePermuteOrientedGram d n τ G ∈ U} := by
+            {G | BHW.sourcePermuteOrientedGram d n σ G ∈ U} := by
         rcases hU with ⟨U0, hU0_open, rfl⟩
-        refine ⟨{G | BHW.sourcePermuteOrientedGram d n τ G ∈ U0},
+        refine ⟨{G | BHW.sourcePermuteOrientedGram d n σ G ∈ U0},
           hU0_open.preimage
-            (BHW.continuous_sourcePermuteOrientedGram d n τ), ?_⟩
+            (BHW.continuous_sourcePermuteOrientedGram
+              (d := d) (n := n) σ), ?_⟩
         ext G
         constructor
         · intro h
           exact ⟨h.1,
             (BHW.sourcePermuteOrientedGram_mem_variety_iff
-              d n τ G).1 h.2⟩
+              (d := d) (n := n) σ G).1 h.2⟩
         · intro h
           exact ⟨h.1,
             (BHW.sourcePermuteOrientedGram_mem_variety_iff
-              d n τ G).2 h.2⟩
+              (d := d) (n := n) σ G).2 h.2⟩
 
-      theorem BHW.sourceOrientedDoublePermutationDomain_relOpen
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat) (τ : Equiv.Perm (Fin n)) :
+      theorem BHW.sourceOrientedDoublePermutationDomain_relOpen_of_sourceOrientedExtendedTubeDomain
+          {d n : Nat}
+          (hU :
+            BHW.IsRelOpenInSourceOrientedGramVariety d n
+              (BHW.sourceOrientedExtendedTubeDomain d n))
+          (τ : Equiv.Perm (Fin n)) :
           BHW.IsRelOpenInSourceOrientedGramVariety d n
             (BHW.sourceOrientedDoublePermutationDomain d n τ) := by
-        have hU :
-            BHW.IsRelOpenInSourceOrientedGramVariety d n
-              (BHW.sourceOrientedExtendedTubeDomain d n) :=
-          (BHW.sourceOrientedExtendedTubeDomain_relOpen_connected
-            (d := d) hd n).1
         have hpre :
             BHW.IsRelOpenInSourceOrientedGramVariety d n
               {G | BHW.sourcePermuteOrientedGram d n τ G ∈
@@ -10579,15 +11278,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         choose U0 hU0_open hU0_eq using hU
         refine ⟨⋃ i, U0 i, isOpen_iUnion hU0_open, ?_⟩
         ext G
-        constructor
-        · intro hG
-          rcases hG with ⟨hGU, hGvar⟩
-          rcases Set.mem_iUnion.1 hGU with ⟨i, hi⟩
-          exact Set.mem_iUnion.2 ⟨i, by rw [hU0_eq i]; exact ⟨hi, hGvar⟩⟩
-        · intro hG
-          rcases Set.mem_iUnion.1 hG with ⟨i, hi⟩
-          rw [hU0_eq i] at hi
-          exact ⟨Set.mem_iUnion.2 ⟨i, hi.1⟩, hi.2⟩
+        simp [hU0_eq]
 
       theorem BHW.sourceOrientedGramVariety_connectedComponentIn_relOpen
           [NeZero d]
@@ -10599,7 +11290,63 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {G0 : BHW.SourceOrientedGramData d n}
           (hG0D : G0 ∈ D) :
           BHW.IsRelOpenInSourceOrientedGramVariety d n
-            (connectedComponentIn D G0)
+            (connectedComponentIn D G0) := by
+        classical
+        rcases hD_rel with ⟨D0, hD0_open, hD_eq⟩
+        let C : Set (BHW.SourceOrientedGramData d n) :=
+          connectedComponentIn D G0
+        have hpatch :
+            ∀ Y : {G // G ∈ C},
+              ∃ V : Set (BHW.SourceOrientedGramData d n),
+                Y.1 ∈ V ∧
+                BHW.IsRelOpenInSourceOrientedGramVariety d n V ∧
+                IsConnected V ∧
+                V ⊆ D ∧
+                V ⊆ C := by
+          intro Y
+          have hYD : Y.1 ∈ D :=
+            connectedComponentIn_subset D G0 Y.2
+          have hYD0 : Y.1 ∈ D0 := by
+            rw [hD_eq] at hYD
+            exact hYD.1
+          have hYvar : Y.1 ∈ BHW.sourceOrientedGramVariety d n := by
+            rw [hD_eq] at hYD
+            exact hYD.2
+          obtain ⟨V, hYV, hV_rel, hV_conn, hV_sub_D0var⟩ :=
+            BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis
+              (d := d) hd n hYvar hD0_open hYD0
+          have hV_sub_D : V ⊆ D := by
+            intro G hGV
+            rw [hD_eq]
+            exact hV_sub_D0var hGV
+          have hV_sub_component_Y :
+              V ⊆ connectedComponentIn D Y.1 :=
+            hV_conn.isPreconnected.subset_connectedComponentIn
+              hYV hV_sub_D
+          have hcomponent_eq :
+              connectedComponentIn D Y.1 = C := by
+            have hEq :=
+              connectedComponentIn_eq (F := D) (x := G0)
+                (y := Y.1) Y.2
+            simpa [C] using hEq.symm
+          refine
+            ⟨V, hYV, hV_rel, hV_conn, hV_sub_D, ?_⟩
+          intro G hGV
+          simpa [hcomponent_eq] using hV_sub_component_Y hGV
+        choose V hV_mem hV_rel hV_conn hV_sub_D hV_sub_C using hpatch
+        have hC_eq :
+            C = ⋃ Y : {G // G ∈ C}, V Y := by
+          ext G
+          constructor
+          · intro hGC
+            exact ⟨⟨G, hGC⟩, hV_mem ⟨G, hGC⟩⟩
+          · intro hGU
+            rcases hGU with ⟨Y, hGY⟩
+            exact hV_sub_C Y hGY
+        rw [show connectedComponentIn D G0 = C from rfl, hC_eq]
+        exact
+          BHW.IsRelOpenInSourceOrientedGramVariety.iUnion
+            d n hV_rel
       ```
 
       The local connected-basis theorem is genuine source geometry, not a
@@ -10617,8 +11364,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `IsPreconnected.subset_connectedComponentIn` to put the local connected
       patch inside the component, identify components by
       `connectedComponentIn_eq`, and express the component as an indexed
-      union of those relatively open patches.  The union is relatively open
-      by `BHW.IsRelOpenInSourceOrientedGramVariety.iUnion`.
+      union over `{G // G ∈ connectedComponentIn D G0}` of those relatively
+      open patches.  The displayed proof above is the intended Lean
+      assembly; the union is relatively open by
+      `BHW.IsRelOpenInSourceOrientedGramVariety.iUnion`.
 
       The local connected-basis theorem itself is implemented through a
       variety-local patch packet.  This packet is deliberately weaker than
@@ -10694,26 +11443,1360 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact ⟨P.V, P.center_mem, P.V_relOpen, P.V_connected, hPsub⟩
       ```
 
-      The max-rank patch uses exactly the full-frame/small-arity section
-      theorem already listed for the oriented quotient proof, but with the
-      `section_mem : section G ∈ ExtendedTube` field dropped.  After choosing
-      a sufficiently small connected ambient ball `Ω ⊆ N0` around `G0`, set
-      `V := Ω ∩ sourceOrientedGramVariety d n`; the local image theorem for
-      the max-rank section identifies this intersection with the image of a
-      connected slice ball, hence `V_connected`.  Relative openness is
-      immediate from the definition, and the subset field is the shrink
-      `Ω ⊆ N0`.
+      The two patch producers are now pinned at the same granularity as the
+      component theorem.  The max-rank patch is a generic connected-ball
+      restriction of an oriented local chart.  It uses exactly the
+      full-frame/small-arity chart theorem already listed for the oriented
+      quotient proof, but with the `section_mem : section G ∈ ExtendedTube`
+      field dropped.  The chart restriction may not assume that a relatively
+      open chart domain is ambient-open; the ball is chosen in chart
+      coordinates and pulled back by the local inverse.
 
-      The rank-deficient patch uses the residual-polydisc theorem before the
-      extended-tube shrink.  Take the open residual parameter polydisc `P`,
-      shrink it connected and small enough that the invariant image lies in
-      `N0`, and use the oriented Schur image-surjectivity theorem to identify
-      `Ω ∩ sourceOrientedGramVariety d n` with the image of that connected
-      parameter polydisc.  Connectedness is the continuous image of the
-      connected polydisc; relative openness is the local image statement from
-      the residual Schur theorem.  No compact `K` or `ExtendedTube` membership
-      is needed for this basis theorem; those are needed only for quotient
-      boundedness/continuity in the rank-deficient descent.
+      ```lean
+      theorem BHW.exists_connected_ball_in_localInverse_domain
+          {M E : Type*}
+          [NormedAddCommGroup M] [NormedSpace ℂ M]
+          [TopologicalSpace E]
+          {Dom : Set M}
+          {inv : M -> E}
+          {y0 : M}
+          {N0 : Set E}
+          (hDom_open : IsOpen Dom)
+          (hy0Dom : y0 ∈ Dom)
+          (hinv_cont : ContinuousOn inv Dom)
+          (hN0_open : IsOpen N0)
+          (hy0N0 : inv y0 ∈ N0) :
+          ∃ ε : ℝ, 0 < ε ∧
+            Metric.ball y0 ε ⊆ Dom ∧
+            (∀ y ∈ Metric.ball y0 ε, inv y ∈ N0) ∧
+            IsConnected (Metric.ball y0 ε) := by
+        classical
+        rcases Metric.isOpen_iff.mp hDom_open y0 hy0Dom with
+          ⟨εD, hεD, hballD⟩
+        rcases
+          (continuousOn_iff.mp hinv_cont)
+            y0 hy0Dom N0 hN0_open hy0N0 with
+          ⟨O, hO_open, hy0O, hO_sub⟩
+        rcases Metric.isOpen_iff.mp hO_open y0 hy0O with
+          ⟨εO, hεO, hballO⟩
+        let ε := min εD εO
+        refine ⟨ε, lt_min hεD hεO, ?_, ?_, ?_⟩
+        · intro y hy
+          exact hballD (lt_of_lt_of_le hy (min_le_left _ _))
+        · intro y hy
+          exact hO_sub
+            ⟨hballO (lt_of_lt_of_le hy (min_le_right _ _)),
+              hballD (lt_of_lt_of_le hy (min_le_left _ _))⟩
+        · exact BHW.isConnected_metric_ball_convex y0 ε
+
+      theorem BHW.SourceOrientedMaxRankChartData.exists_connected_chartBall
+          [NeZero d]
+          {G0 : BHW.SourceOrientedGramData d n}
+          (C : BHW.SourceOrientedMaxRankChartData d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ ε : ℝ, 0 < ε ∧
+            Metric.ball (C.chart G0) ε ⊆ C.chart '' C.Ω ∧
+            (∀ y ∈ Metric.ball (C.chart G0) ε,
+              C.chart_biholomorphic.inv y ∈ N0) ∧
+            IsConnected (Metric.ball (C.chart G0) ε) := by
+        -- `C.chart G0 ∈ C.chart '' C.Ω` by `C.center_mem` and
+        -- `C.chart_open`.  Continuity-on of the local inverse at
+        -- `C.chart G0`, together with `hN0_open` and
+        -- `C.chart_biholomorphic.left_inv_on G0 C.center_mem`, gives a
+        -- chart neighborhood whose inverse lies in `N0`.  Intersect it with
+        -- a smaller metric ball inside `C.chart '' C.Ω`.
+        -- Open balls in a complex normed vector space are convex, hence
+        -- connected.
+        exact
+          BHW.exists_connected_ball_in_localInverse_domain
+            C.chart_open
+            ⟨G0, C.center_mem, rfl⟩
+            C.chart_biholomorphic.inv_continuousOn
+            hN0_open
+            (by
+              simpa [C.chart_biholomorphic.left_inv_on G0 C.center_mem]
+                using hG0N0)
+
+      theorem BHW.SourceOrientedMaxRankChartData.inv_image_openBall_relOpen
+          [NeZero d]
+          {G0 : BHW.SourceOrientedGramData d n}
+          (C : BHW.SourceOrientedMaxRankChartData d n G0)
+          {ε : ℝ} (hε : 0 < ε)
+          (hball : Metric.ball (C.chart G0) ε ⊆ C.chart '' C.Ω) :
+          BHW.IsRelOpenInSourceOrientedGramVariety d n
+            (C.chart_biholomorphic.inv ''
+              Metric.ball (C.chart G0) ε) := by
+        -- On `C.Ω`, the inverse image of the ball is
+        -- `{G ∈ C.Ω | C.chart G ∈ Metric.ball (C.chart G0) ε}` by the
+        -- chart inverse laws.  This is relatively open because `C.Ω` is
+        -- relatively open in the oriented variety, the ball is open in the
+        -- model, and the chart map is continuous on the ambient chart
+        -- neighborhood supplied by the max-rank local-image theorem.
+        exact
+          BHW.LocalBiholomorphOnSourceOrientedVariety.inv_image_open_relOpen
+            (d := d) (n := n)
+            C.Ω_relOpen C.chart_biholomorphic
+            (Metric.isOpen_ball) hball
+
+      theorem BHW.SourceOrientedMaxRankChartData.connectedPatch_inside_open
+          [NeZero d]
+          {G0 : BHW.SourceOrientedGramData d n}
+          (C : BHW.SourceOrientedMaxRankChartData d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ P :
+            BHW.SourceOrientedVarietyLocalConnectedPatchData d n G0,
+            P.V ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+        classical
+        rcases C.exists_connected_chartBall hN0_open hG0N0 with
+          ⟨ε, hε, hball_dom, hball_N0, hball_conn⟩
+        let B : Set C.model := Metric.ball (C.chart G0) ε
+        let V : Set (BHW.SourceOrientedGramData d n) :=
+          C.chart_biholomorphic.inv '' B
+        have hcenter : G0 ∈ V := by
+          refine ⟨C.chart G0, ?_, ?_⟩
+          · exact Metric.mem_ball_self hε
+          · exact (C.chart_biholomorphic.left_inv_on G0 C.center_mem).symm
+        have hrel :
+            BHW.IsRelOpenInSourceOrientedGramVariety d n V :=
+          C.inv_image_openBall_relOpen hε hball_dom
+        have hconn : IsConnected V :=
+          hball_conn.image
+            C.chart_biholomorphic.inv
+            (C.chart_biholomorphic.inv_continuousOn.mono hball_dom)
+        have hsub :
+            V ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+          rintro G ⟨y, hyB, rfl⟩
+          constructor
+          · exact hball_N0 y hyB
+          · exact
+              BHW.IsRelOpenInSourceOrientedGramVariety.subset
+                C.Ω_relOpen
+                (C.chart_biholomorphic.inv_mem_on y (hball_dom hyB))
+        exact
+          ⟨{ V := V
+             center_mem := hcenter
+             V_relOpen := hrel
+             V_connected := hconn }, hsub⟩
+
+      theorem BHW.sourceOrientedMaxRankChart_at
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hmax : BHW.SourceOrientedMaxRankAt d n G0) :
+          BHW.SourceOrientedMaxRankChartData d n G0 := by
+        -- If `n < d+1`, use the ordinary source-Gram max-rank chart and the
+        -- empty determinant-coordinate extensionality theorem.  If
+        -- `d+1 <= n`, choose a nonzero full-frame determinant coordinate and
+        -- use `SourceOrientedFullFrameMaxRankChartData`, whose selected
+        -- frame is supplied by the special-orthogonal gauge slice.
+        by_cases hn : n < d + 1
+        · exact
+            BHW.sourceOrientedMaxRankChart_smallArity
+              (d := d) hd n hn hG0 hmax
+        · have hn_le : d + 1 <= n := Nat.le_of_not_lt hn
+          rcases
+            BHW.exists_nonzero_orientedFullFrameDet_of_maxRank
+              (d := d) hd n hn_le hG0 hmax with
+            ⟨ι, hι⟩
+          exact
+            (BHW.sourceOrientedFullFrameMaxRankChartData_at
+              (d := d) hd n hn_le hG0 ι hι).to_maxRankChart
+
+      theorem BHW.sourceOrientedVariety_localConnectedPatch_maxRank
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hmax : BHW.SourceOrientedMaxRankAt d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ P :
+            BHW.SourceOrientedVarietyLocalConnectedPatchData d n G0,
+            P.V ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+        exact
+          (BHW.sourceOrientedMaxRankChart_at
+            (d := d) hd n hG0 hmax).connectedPatch_inside_open
+            hN0_open hG0N0
+      ```
+
+      The rank-deficient patch is a separate no-tube algebraic local-image
+      theorem.  This is load-bearing: the connected-basis theorem is about an
+      arbitrary point of `sourceOrientedGramVariety d n`, not necessarily a
+      point in the extended-tube image.  Therefore it may not reuse
+      `sourceOriented_rankDeficient_residualChart`, whose compact polydisc
+      and tube-stability fields depend on an `ExtendedTube` base point.
+      Instead the proof uses the same Schur residual coordinates before the
+      compact/tube shrink and produces a local image of the algebraic oriented
+      variety itself.
+
+      ```lean
+      structure BHW.SourceOrientedRankDeficientAlgebraicNormalFormData
+          [NeZero d]
+          (d n : Nat)
+          (G0 : BHW.SourceOrientedGramData d n) where
+        z0 : Fin n -> Fin (d + 1) -> ℂ
+        z0_realizes :
+          BHW.sourceOrientedMinkowskiInvariant d n z0 = G0
+        r : Nat
+        hrD : r < d + 1
+        hrn : r <= n
+        normalBase : Fin n -> Fin (d + 1) -> ℂ
+        normalBase_eq :
+          normalBase = BHW.hwLemma3CanonicalSource d n r
+        normalTransport :
+          BHW.HWLemma3NormalFormTransport d n r z0
+        orientedTransport :
+          BHW.SourceOrientedInvariantTransportEquiv d n
+        toOriginal :
+          (Fin n -> Fin (d + 1) -> ℂ) ->
+            Fin n -> Fin (d + 1) -> ℂ
+        toOriginal_continuous : Continuous toOriginal
+        toOriginal_normalBase_invariant :
+          BHW.sourceOrientedMinkowskiInvariant d n
+              (toOriginal normalBase) = G0
+        toOriginal_oriented :
+          ∀ z,
+            BHW.sourceOrientedMinkowskiInvariant d n (toOriginal z) =
+              orientedTransport.invFun
+                (BHW.sourceOrientedMinkowskiInvariant d n z)
+
+      theorem BHW.sourceOriented_rankDeficient_algebraicNormalFormData
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0) :
+          BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0 := by
+        classical
+        rcases hG0 with ⟨z0, hz0⟩
+        subst hz0
+        have hrank_lt :
+            BHW.sourceGramMatrixRank n
+              (BHW.sourceMinkowskiGram d n z0) < d + 1 :=
+          BHW.sourceOriented_not_maxRank_sourceRank_lt_fullFrame
+            (d := d) (n := n) hlow
+        let r :=
+          BHW.sourceGramMatrixRank n
+            (BHW.sourceMinkowskiGram d n z0)
+        have hrD : r < d + 1 := by simpa [r] using hrank_lt
+        have hrn : r <= n :=
+          BHW.sourceGramMatrixRank_le_arity
+            (n := n) (BHW.sourceMinkowskiGram d n z0)
+        have hspan :
+            Module.finrank ℂ
+              (LinearMap.range (BHW.sourceCoefficientEval d n z0)) = r :=
+          BHW.sourceCoefficientEval_finrank_range_eq_sourceGramRank
+            (d := d) (n := n) z0
+        rcases
+          BHW.hwLemma3_normalFormTransportData
+            (d := d) hd n (z0 := z0) r rfl hspan with
+          ⟨Tnormal, _⟩
+        let normalBase := BHW.hwLemma3CanonicalSource d n r
+        let orientedTransport :=
+          BHW.SourceOrientedInvariantTransportEquiv.ofHWNormalFormTransport
+            (d := d) (n := n) r Tnormal
+        refine
+          { z0 := z0
+            z0_realizes := rfl
+            r := r
+            hrD := hrD
+            hrn := hrn
+            normalBase := normalBase
+            normalBase_eq := rfl
+            normalTransport := Tnormal
+            orientedTransport := orientedTransport
+            toOriginal := Tnormal.toNormalVec.symm
+            toOriginal_continuous := Tnormal.toNormalVec.symm.continuous
+            toOriginal_normalBase_invariant := by
+              rw [normalBase, ← Tnormal.z0_to_canonical]
+              simp [orientedTransport]
+            toOriginal_oriented := by
+              intro z
+              simpa [orientedTransport] using
+                BHW.sourceOrientedInvariant_toOriginal_of_normalFormTransport
+                  (d := d) (n := n) r Tnormal z }
+
+      structure BHW.SourceOrientedRankDeficientVarietyLocalImageData
+          [NeZero d]
+          (d n : Nat)
+          (G0 : BHW.SourceOrientedGramData d n) where
+        m : Nat
+        Ω : Set (BHW.SourceOrientedGramData d n)
+        Ω_open : IsOpen Ω
+        center_mem : G0 ∈ Ω
+        P : Set (Fin m -> ℂ)
+        P_open : IsOpen P
+        P_connected : IsConnected P
+        c0 : Fin m -> ℂ
+        c0_mem : c0 ∈ P
+        toInv : (Fin m -> ℂ) -> BHW.SourceOrientedGramData d n
+        toInv_continuousOn : ContinuousOn toInv P
+        toInv_c0 : toInv c0 = G0
+        toInv_mem :
+          ∀ c ∈ P, toInv c ∈ Ω ∩ BHW.sourceOrientedGramVariety d n
+        local_image_eq :
+          Ω ∩ BHW.sourceOrientedGramVariety d n = toInv '' P
+
+      theorem BHW.sourceOriented_rankDeficient_varietyLocalImage
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ C :
+            BHW.SourceOrientedRankDeficientVarietyLocalImageData d n G0,
+            C.Ω ⊆ N0 := by
+        classical
+        let N :=
+          BHW.sourceOriented_rankDeficient_algebraicNormalFormData
+            (d := d) hd n hG0 hlow
+        -- Choose finite coordinates for
+        -- `SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn`
+        -- and a small connected open ball `P` around the encoded normal
+        -- center.  Shrink it so the selected head Gram block remains
+        -- invertible and so the inverse oriented transport of the invariant
+        -- image lies inside `N0`.
+        rcases
+          BHW.sourceOriented_rankDeficient_algebraicParameterBall
+            (d := d) hd n N hN0_open hG0N0 with
+          ⟨m, encode, P, c0, Ωnf, hP_open, hP_conn, hc0,
+            hΩnf_open, himage_N0, hlocal_surj, htoInv_cont,
+            htoInv_c0, htoInv_mem⟩
+        let toInv : (Fin m -> ℂ) -> BHW.SourceOrientedGramData d n :=
+          fun c =>
+            N.orientedTransport.invFun
+              (BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn (encode.symm c)))
+        let Ω : Set (BHW.SourceOrientedGramData d n) :=
+          N.orientedTransport.invFun '' Ωnf
+        have hΩ_open : IsOpen Ω :=
+          N.orientedTransport.isOpen_invFun_image hΩnf_open
+        have hΩ_center : G0 ∈ Ω := by
+          simpa [Ω, toInv, htoInv_c0] using htoInv_c0
+        have hΩ_sub_N0 : Ω ⊆ N0 := himage_N0
+        have hlocal_image :
+            Ω ∩ BHW.sourceOrientedGramVariety d n = toInv '' P := by
+          -- Forward direction: transport `G` to normal coordinates, form
+          -- Schur residual data, factor the invertible head block, realize
+          -- the oriented tail by `sourceTailOrientedSmallRealization`, and
+          -- encode the resulting `(head,mixed,tail)` parameter.  Reverse
+          -- direction is `sourceOrientedNormalParameterVector_realizes_schur`
+          -- plus preservation of the variety by `N.orientedTransport`.
+          exact hlocal_surj
+        refine
+          ⟨{ m := m
+             Ω := Ω
+             Ω_open := hΩ_open
+             center_mem := hΩ_center
+             P := P
+             P_open := hP_open
+             P_connected := hP_conn
+             c0 := c0
+             c0_mem := hc0
+             toInv := toInv
+             toInv_continuousOn := htoInv_cont
+             toInv_c0 := htoInv_c0
+             toInv_mem := htoInv_mem
+             local_image_eq := hlocal_image },
+            hΩ_sub_N0⟩
+
+      theorem BHW.sourceOrientedVariety_localConnectedPatch_rankDeficient
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ P :
+            BHW.SourceOrientedVarietyLocalConnectedPatchData d n G0,
+            P.V ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+        classical
+        rcases
+          BHW.sourceOriented_rankDeficient_varietyLocalImage
+            (d := d) hd n hG0 hlow hN0_open hG0N0 with
+          ⟨C, hCsubN0⟩
+        let V := C.Ω ∩ BHW.sourceOrientedGramVariety d n
+        have hcenter : G0 ∈ V := ⟨C.center_mem, hG0⟩
+        have hrel :
+            BHW.IsRelOpenInSourceOrientedGramVariety d n V :=
+          BHW.IsRelOpenInSourceOrientedGramVariety.of_open_inter
+            (d := d) (n := n) C.Ω_open
+        have hconn : IsConnected V := by
+          rw [show V = C.toInv '' C.P by
+            simpa [V] using C.local_image_eq]
+          exact C.P_connected.image C.toInv C.toInv_continuousOn
+        have hsub :
+            V ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+          intro G hG
+          exact ⟨hCsubN0 hG.1, hG.2⟩
+        exact
+          ⟨{ V := V
+             center_mem := hcenter
+             V_relOpen := hrel
+             V_connected := hconn }, hsub⟩
+      ```
+
+      The algebraic parameter-ball theorem in this transcript is precisely the
+      no-tube part of the residual-polydisc construction: it chooses an
+      ordinary finite-dimensional normal-form representative for a variety
+      point, selects a connected open parameter ball, proves head-block
+      invertibility on that ball, and proves local surjectivity onto
+      `Ω ∩ sourceOrientedGramVariety d n` by Schur residual extraction and
+      `sourceTailOrientedSmallRealization`.  The compact set `K`,
+      `toVec_mem : _ ∈ ExtendedTube`, and compact boundedness/cluster-value
+      fields are added only later, when the base point is known to lie in
+      `ExtendedTube d n`.  This separation is now a proof-doc requirement for
+      Lean: the local connected-basis theorem consumes the algebraic
+      no-tube chart, while scalar descent at exceptional rank consumes the
+      compact/tube-stable residual chart.
+
+      The theorem `sourceOriented_rankDeficient_algebraicParameterBall` in
+      the preceding script is not an opaque local-surjectivity assertion.  It
+      is the following finite-dimensional normal-coordinate construction.
+      The only non-polynomial choice is the head Gram factor near the
+      identity, and that is fixed by an ordinary inverse-function chart at the
+      identity, not by a global square-root branch.
+
+      ```lean
+      abbrev BHW.SourceSymmetricMatrixCoord (r : Nat) :=
+        {A : Matrix (Fin r) (Fin r) ℂ // A.transpose = A}
+
+      structure BHW.SourceRankDeficientHeadGaugeData
+          (r : Nat) where
+        U : Set (BHW.SourceSymmetricMatrixCoord r)
+        U_open : IsOpen U
+        center_mem :
+          (⟨1, by simp⟩ : BHW.SourceSymmetricMatrixCoord r) ∈ U
+        factor : BHW.SourceSymmetricMatrixCoord r ->
+          Matrix (Fin r) (Fin r) ℂ
+        factor_continuousOn : ContinuousOn factor U
+        factor_center :
+          factor (⟨1, by simp⟩ : BHW.SourceSymmetricMatrixCoord r) = 1
+        factor_gram :
+          ∀ A ∈ U,
+            factor A * (factor A).transpose = (A : Matrix (Fin r) (Fin r) ℂ)
+        factor_det_unit :
+          ∀ A ∈ U, IsUnit (factor A).det
+
+      theorem BHW.sourceRankDeficientHeadGauge_at_identity
+          (r : Nat) :
+          BHW.SourceRankDeficientHeadGaugeData r := by
+        -- Apply the holomorphic inverse-function theorem to
+        -- `H ↦ H * Hᵀ` from matrices near `1` to the symmetric-matrix
+        -- subtype near `1`.  Its derivative at `1` is `X ↦ X + Xᵀ`; after
+        -- restricting the source to the symmetric slice this derivative is
+        -- the linear isomorphism `S ↦ 2 • S`, with inverse
+        -- `S ↦ (1 / 2) • S`.  Shrink the resulting neighborhood so
+        -- `det (factor A)` stays nonzero.
+        exact BHW.symmetricGramFactorGauge_at_identity r
+
+      def BHW.sourceOrientedSchurHeadBlock
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (G : BHW.SourceOrientedGramData d n) :
+          BHW.SourceSymmetricMatrixCoord r :=
+        ⟨fun a b =>
+            G.gram (BHW.finSourceHead hrn a)
+              (BHW.finSourceHead hrn b),
+          by
+            ext a b
+            exact BHW.sourceOrientedGramData_gram_symm d n G
+              (BHW.finSourceHead hrn b)
+              (BHW.finSourceHead hrn a)⟩
+
+      structure BHW.SourceOrientedSchurTailSmallFor
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (η : ℝ)
+          (G : BHW.SourceOrientedGramData d n) where
+        gram_bound :
+          ∀ u v,
+            ‖(BHW.sourceOrientedSchurResidualTailData
+              d n r hrD hrn G).gram u v‖ < η
+        det_bound :
+          ∀ ι,
+            ‖(BHW.sourceOrientedSchurResidualTailData
+              d n r hrD hrn G).det ι‖ < η
+
+      structure BHW.SourceOrientedRankDeficientNormalLocalImageData
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          where
+        m : Nat
+        encode :
+          BHW.SourceOrientedRankDeficientNormalParameter
+            d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ)
+        P : Set (Fin m -> ℂ)
+        P_open : IsOpen P
+        P_connected : IsConnected P
+        c0 : Fin m -> ℂ
+        c0_mem : c0 ∈ P
+        center_encode :
+          encode
+            (BHW.sourceOrientedNormalCenterParameter
+              d n N.r N.hrD N.hrn) = c0
+        Ωnf : Set (BHW.SourceOrientedGramData d n)
+        Ωnf_open : IsOpen Ωnf
+        Ωnf_center :
+          BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈ Ωnf
+        normalParam :
+          (Fin m -> ℂ) -> BHW.SourceOrientedGramData d n :=
+          fun c =>
+            BHW.sourceOrientedMinkowskiInvariant d n
+              (BHW.sourceOrientedNormalParameterVector
+                d n N.r N.hrD N.hrn (encode.symm c))
+        normalParam_continuousOn :
+          ContinuousOn normalParam P
+        normalParam_mem :
+          ∀ c ∈ P, normalParam c ∈ Ωnf ∩
+            BHW.sourceOrientedGramVariety d n
+        normal_local_image_eq :
+          Ωnf ∩ BHW.sourceOrientedGramVariety d n =
+            normalParam '' P
+
+      theorem BHW.sourceOriented_rankDeficient_normalLocalImageData
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0) :
+          BHW.SourceOrientedRankDeficientNormalLocalImageData d n N := by
+        classical
+        let Head := BHW.sourceRankDeficientHeadGauge_at_identity N.r
+        -- Pick a finite-coordinate equivalence `encode` for the product of
+        -- head, mixed, and residual-tail variables.  Let `P` be a sufficiently
+        -- small open ball around the encoded center.  Shrink it so:
+        -- (1) the head Gram block of every nearby normal invariant lies in
+        --     `Head.U`;
+        -- (2) the Schur mixed coefficients are bounded by the mixed radius;
+        -- (3) the oriented residual tail coordinates satisfy the smallness
+        --     hypotheses of `sourceTailOrientedSmallRealization`;
+        -- (4) the polynomial image of the parameter ball is contained in an
+        --     ambient open normal neighborhood `Ωnf`.
+        rcases
+          BHW.sourceOriented_rankDeficient_chooseNormalParameterBall
+            (d := d) hd n N Head with
+          ⟨m, encode, P, c0, hP_open, hP_conn, hc0, hcenter,
+            Ωnf, hΩnf_open, hΩnf_center, hparam_mem, hsurj⟩
+        refine
+          { m := m
+            encode := encode
+            P := P
+            P_open := hP_open
+            P_connected := hP_conn
+            c0 := c0
+            c0_mem := hc0
+            center_encode := hcenter
+            Ωnf := Ωnf
+            Ωnf_open := hΩnf_open
+            Ωnf_center := hΩnf_center
+            normalParam_continuousOn := by
+              exact
+                (BHW.continuous_sourceOrientedMinkowskiInvariant d n).continuousOn.comp
+                  ((BHW.continuous_sourceOrientedNormalParameterVector
+                    (d := d) n N.r N.hrD N.hrn).comp_continuousOn
+                    encode.symm.continuous.continuousOn)
+                  (by intro c hc; trivial)
+            normalParam_mem := hparam_mem
+            normal_local_image_eq := hsurj }
+
+      def BHW.sourceOrientedSchurMixedCoeffAt
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          (G : BHW.SourceOrientedGramData d n) :
+          Matrix (Fin (n - N.r)) (Fin N.r) ℂ :=
+        BHW.sourceSchurMixedCoeff n N.r N.hrn G.gram
+          (BHW.sourceOrientedSchurHeadBlock d n N.r N.hrD N.hrn G)
+
+      structure BHW.SourceOrientedRankDeficientSchurNeighborhoodData
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) where
+        m : Nat
+        encode :
+          BHW.SourceOrientedRankDeficientNormalParameter
+            d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ)
+        P : Set (Fin m -> ℂ)
+        P_open : IsOpen P
+        P_connected : IsConnected P
+        c0 : Fin m -> ℂ
+        c0_mem : c0 ∈ P
+        center_encode :
+          encode
+            (BHW.sourceOrientedNormalCenterParameter
+              d n N.r N.hrD N.hrn) = c0
+        tailEpsilon : ℝ
+        tailEpsilon_pos : 0 < tailEpsilon
+        tailEta : ℝ
+        tailEta_pos : 0 < tailEta
+        tailRealize :
+          ∀ T : BHW.SourceOrientedTailData (d + 1 - N.r) (n - N.r),
+            T ∈ BHW.sourceTailOrientedVariety (d + 1 - N.r) (n - N.r) ->
+            (∀ u v, ‖T.gram u v‖ < tailEta) ->
+            (∀ ι, ‖T.det ι‖ < tailEta) ->
+            ∃ q : Fin (n - N.r) -> Fin (d + 1 - N.r) -> ℂ,
+              (∀ u μ, ‖q u μ‖ < tailEpsilon) ∧
+              BHW.sourceTailOrientedInvariant
+                (d + 1 - N.r) (n - N.r) q = T
+        Ωnf : Set (BHW.SourceOrientedGramData d n)
+        Ωnf_open : IsOpen Ωnf
+        Ωnf_center :
+          BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈ Ωnf
+        normalParam :
+          (Fin m -> ℂ) -> BHW.SourceOrientedGramData d n :=
+          fun c =>
+            BHW.sourceOrientedMinkowskiInvariant d n
+              (BHW.sourceOrientedNormalParameterVector
+                d n N.r N.hrD N.hrn (encode.symm c))
+        normalParam_mem :
+          ∀ c ∈ P,
+            normalParam c ∈ Ωnf ∩ BHW.sourceOrientedGramVariety d n
+        head_mem :
+          ∀ G ∈ Ωnf ∩ BHW.sourceOrientedGramVariety d n,
+            BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G ∈ Head.U
+        tail_small :
+          ∀ G ∈ Ωnf ∩ BHW.sourceOrientedGramVariety d n,
+            BHW.sourceOrientedSchurTailSmallFor
+              d n N.r N.hrD N.hrn tailEta G
+        schurParam_mem :
+          ∀ {G : BHW.SourceOrientedGramData d n}
+            (hG : G ∈ Ωnf ∩ BHW.sourceOrientedGramVariety d n)
+            (p :
+              BHW.SourceOrientedRankDeficientNormalParameter
+                d n N.r N.hrD N.hrn),
+            p.head =
+              Head.factor
+                (BHW.sourceOrientedSchurHeadBlock
+                  d n N.r N.hrD N.hrn G) ->
+            p.mixed =
+              BHW.sourceOrientedSchurMixedCoeffAt d n N Head G ->
+            (∀ u μ, ‖p.tail u μ‖ < tailEpsilon) ->
+            encode p ∈ P
+
+      def BHW.sourceOrientedRankDeficientParameterBox
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (encode :
+            BHW.SourceOrientedRankDeficientNormalParameter
+              d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
+          (headRadius mixedRadius tailRadius : ℝ) :
+          Set (Fin m -> ℂ) :=
+        {c |
+          let p := encode.symm c
+          (∀ a b,
+            ‖p.head a b -
+              (1 : Matrix (Fin N.r) (Fin N.r) ℂ) a b‖ < headRadius) ∧
+          (∀ u a, ‖p.mixed u a‖ < mixedRadius) ∧
+          (∀ u μ, ‖p.tail u μ‖ < tailRadius)}
+
+      theorem BHW.sourceOrientedRankDeficientParameterBox_open_connected
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (encode :
+            BHW.SourceOrientedRankDeficientNormalParameter
+              d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
+          {headRadius mixedRadius tailRadius : ℝ}
+          (hhead : 0 < headRadius)
+          (hmixed : 0 < mixedRadius)
+          (htail : 0 < tailRadius) :
+          IsOpen
+            (BHW.sourceOrientedRankDeficientParameterBox
+              d n N encode headRadius mixedRadius tailRadius) ∧
+          IsConnected
+            (BHW.sourceOrientedRankDeficientParameterBox
+              d n N encode headRadius mixedRadius tailRadius) ∧
+          encode
+            (BHW.sourceOrientedNormalCenterParameter
+              d n N.r N.hrD N.hrn) ∈
+            BHW.sourceOrientedRankDeficientParameterBox
+              d n N encode headRadius mixedRadius tailRadius := by
+        -- The set is a finite intersection of inverse images of open balls
+        -- under continuous coordinate maps, hence open.  It is convex because
+        -- each coordinate inequality is a ball centered at a coordinate of
+        -- the normal center or at zero; finite intersections of convex sets
+        -- are convex, and convex subsets of finite-dimensional complex
+        -- normed spaces are preconnected.  The center membership is immediate
+        -- from the three positive radii and
+        -- `sourceOrientedNormalCenterParameter`.
+        exact
+          BHW.finiteCoordinateParameterBox_open_connected_contains_center
+            (d := d) (n := n) N encode hhead hmixed htail
+
+      def BHW.sourceOrientedSchurEstimateNeighborhood
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          (headRadius mixedRadius tailEta : ℝ) :
+          Set (BHW.SourceOrientedGramData d n) :=
+        {G |
+          BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G ∈ Head.U ∧
+          (∀ a b,
+            ‖Head.factor
+                (BHW.sourceOrientedSchurHeadBlock
+                  d n N.r N.hrD N.hrn G) a b -
+              (1 : Matrix (Fin N.r) (Fin N.r) ℂ) a b‖ < headRadius) ∧
+          (∀ u a,
+            ‖BHW.sourceOrientedSchurMixedCoeffAt
+                d n N Head G u a‖ < mixedRadius) ∧
+          BHW.SourceOrientedSchurTailSmallFor
+            d n N.r N.hrD N.hrn tailEta G}
+
+      theorem BHW.sourceOrientedSchurEstimateNeighborhood_open
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          {headRadius mixedRadius tailEta : ℝ}
+          (hheadRadius : 0 < headRadius)
+          (hmixedRadius : 0 < mixedRadius)
+          (htailEta : 0 < tailEta) :
+          IsOpen
+            (BHW.sourceOrientedSchurEstimateNeighborhood
+              d n N Head headRadius mixedRadius tailEta) := by
+        -- This is a finite-coordinate openness statement.  The head block is
+        -- polynomial in `G`.  On the open subtype preimage `Head.U`, the
+        -- chosen factor is continuous by `Head.factor_continuousOn`; the
+        -- mixed coefficient map is rational with denominator `det A`, and
+        -- `Head.factor_det_unit` keeps `det A` nonzero.  The residual Gram
+        -- and determinant maps are polynomial/rational in the same head
+        -- inverse.  Therefore every displayed strict inequality is an open
+        -- preimage of an open ball in `ℂ`.
+        exact
+          BHW.sourceOrientedSchurEstimateNeighborhood_open_from_rationalMaps
+            (d := d) (n := n) N Head
+            hheadRadius hmixedRadius htailEta
+
+      theorem BHW.sourceOrientedSchurEstimateNeighborhood_center
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          {headRadius mixedRadius tailEta : ℝ}
+          (hheadRadius : 0 < headRadius)
+          (hmixedRadius : 0 < mixedRadius)
+          (htailEta : 0 < tailEta) :
+          BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈
+            BHW.sourceOrientedSchurEstimateNeighborhood
+              d n N Head headRadius mixedRadius tailEta := by
+        -- At the normal base, the selected head block is `1`, the mixed
+        -- Schur coefficient is `0`, and the residual tail data are `0`.
+        -- The head membership is `Head.center_mem`; all strict inequalities
+        -- are exactly the positivity hypotheses.
+        simpa [N.normalBase_eq,
+          BHW.sourceOrientedSchurEstimateNeighborhood,
+          BHW.sourceOrientedSchurMixedCoeffAt] using
+          BHW.sourceOrientedSchurEstimateNeighborhood_center_normalForm
+            (d := d) (n := n) N Head
+            hheadRadius hmixedRadius htailEta
+
+      theorem BHW.sourceOriented_normalParam_mem_schurEstimateNeighborhood
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          (encode :
+            BHW.SourceOrientedRankDeficientNormalParameter
+              d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
+          {headRadius mixedRadius tailRadius tailEta : ℝ}
+          (hboxToHead :
+            ∀ p,
+              (∀ a b,
+                ‖p.head a b -
+                  (1 : Matrix (Fin N.r) (Fin N.r) ℂ) a b‖ <
+                    headRadius) ->
+              BHW.sourceOrientedSchurHeadBlock d n N.r N.hrD N.hrn
+                (BHW.sourceOrientedMinkowskiInvariant d n
+                  (BHW.sourceOrientedNormalParameterVector
+                    d n N.r N.hrD N.hrn p)) ∈ Head.U)
+          (htailPoly :
+            ∀ p,
+              (∀ u μ, ‖p.tail u μ‖ < tailRadius) ->
+              BHW.SourceOrientedSchurTailSmallFor
+                d n N.r N.hrD N.hrn tailEta
+                (BHW.sourceOrientedMinkowskiInvariant d n
+                  (BHW.sourceOrientedNormalParameterVector
+                    d n N.r N.hrD N.hrn p))) :
+          ∀ c ∈
+            BHW.sourceOrientedRankDeficientParameterBox
+              d n N encode headRadius mixedRadius tailRadius,
+            BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn (encode.symm c)) ∈
+              BHW.sourceOrientedSchurEstimateNeighborhood
+                d n N Head headRadius mixedRadius tailEta ∩
+              BHW.sourceOrientedGramVariety d n := by
+        intro c hc
+        let p := encode.symm c
+        have hvar :
+            BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn p) ∈
+              BHW.sourceOrientedGramVariety d n :=
+          ⟨BHW.sourceOrientedNormalParameterVector
+              d n N.r N.hrD N.hrn p, rfl⟩
+        have hhead_box := hc.1
+        have hmixed_box := hc.2.1
+        have htail_box := hc.2.2
+        refine ⟨?_, hvar⟩
+        refine ⟨hboxToHead p hhead_box, ?_, ?_, htailPoly p htail_box⟩
+        · -- The head factor on the normal-parameter image is the parameter
+          -- head itself on the chosen small sheet; this is the local
+          -- uniqueness part of the head gauge at `1`.
+          exact
+            BHW.sourceOrientedSchurHeadFactor_normalParam_close
+              (d := d) hd n N Head p hhead_box
+        · -- Mixed Schur coefficients of a normal-parameter vector are exactly
+          -- the stored mixed matrix.
+          simpa [p, BHW.sourceOrientedSchurMixedCoeffAt] using hmixed_box
+
+      theorem BHW.sourceOrientedSchurParameter_mem_parameterBox
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          (S :
+            BHW.SourceOrientedRankDeficientSchurNeighborhoodData
+              d n N Head)
+          {G : BHW.SourceOrientedGramData d n}
+          (hG : G ∈ S.Ωnf ∩ BHW.sourceOrientedGramVariety d n)
+          {p :
+            BHW.SourceOrientedRankDeficientNormalParameter
+              d n N.r N.hrD N.hrn}
+          (hhead :
+            p.head =
+              Head.factor
+                (BHW.sourceOrientedSchurHeadBlock
+                  d n N.r N.hrD N.hrn G))
+          (hmixed :
+            p.mixed =
+              BHW.sourceOrientedSchurMixedCoeffAt d n N Head G)
+          (htail : ∀ u μ, ‖p.tail u μ‖ < S.tailEpsilon) :
+          S.encode p ∈ S.P := by
+        exact S.schurParam_mem hG p hhead hmixed htail
+
+      structure BHW.SourceTailOrientedCompatibleSmallRealization
+          (D m : Nat) where
+        epsilon : ℝ
+        epsilon_pos : 0 < epsilon
+        eta : ℝ
+        eta_pos : 0 < eta
+        realize :
+          ∀ T : BHW.SourceOrientedTailData D m,
+            T ∈ BHW.sourceTailOrientedVariety D m ->
+            (∀ u v, ‖T.gram u v‖ < eta) ->
+            (∀ ι, ‖T.det ι‖ < eta) ->
+            ∃ q : Fin m -> Fin D -> ℂ,
+              (∀ u μ, ‖q u μ‖ < epsilon) ∧
+              BHW.sourceTailOrientedInvariant D m q = T
+        self_image_small :
+          ∀ q : Fin m -> Fin D -> ℂ,
+            (∀ u μ, ‖q u μ‖ < epsilon) ->
+            (∀ u v,
+              ‖(BHW.sourceTailOrientedInvariant D m q).gram u v‖ < eta) ∧
+            (∀ ι,
+              ‖(BHW.sourceTailOrientedInvariant D m q).det ι‖ < eta)
+
+      theorem BHW.sourceTailOrientedCompatibleSmallRealization
+          (D m : Nat)
+          (hD : 0 < D) :
+          BHW.SourceTailOrientedCompatibleSmallRealization D m := by
+        -- This is the estimate-compatible form of
+        -- `sourceTailOrientedSmallRealization`.  It is proved by the same
+        -- finite induction, but each branch constructs a pair of coordinate
+        -- neighborhoods, not just a one-way realization bound.  The
+        -- `epsilon`-box is mapped by the polynomial invariant map into the
+        -- `eta`-box, and every algebraic tail datum in the `eta`-box is
+        -- realized by a vector tuple in the `epsilon`-box.  In the zero-rank
+        -- case both boxes are centered at zero and the algebraic relations
+        -- force all determinants to vanish.  In the full-rank case the
+        -- small factor-with-determinant chart supplies the selected frame
+        -- and the mixed rows are controlled by the inverse selected Gram
+        -- block.  In the intermediate case the Schur complement gives the
+        -- lower-dimensional compatible pair and the reconstruction estimates
+        -- shrink the head/mixed/tail boxes simultaneously.  No arbitrary
+        -- realizing tuple is rescaled.
+        exact BHW.sourceTailOrientedSmallRealization_with_selfImageBounds D m hD
+
+      structure BHW.SourceOrientedRankDeficientSchurEstimateChoice
+          [NeZero d]
+          (d n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) where
+        m : Nat
+        encode :
+          BHW.SourceOrientedRankDeficientNormalParameter
+            d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ)
+        headRadius : ℝ
+        headRadius_pos : 0 < headRadius
+        mixedRadius : ℝ
+        mixedRadius_pos : 0 < mixedRadius
+        tail :
+          BHW.SourceTailOrientedCompatibleSmallRealization
+            (d + 1 - N.r) (n - N.r)
+        P : Set (Fin m -> ℂ) :=
+          BHW.sourceOrientedRankDeficientParameterBox
+            d n N encode headRadius mixedRadius tail.epsilon
+        c0 : Fin m -> ℂ :=
+          encode
+            (BHW.sourceOrientedNormalCenterParameter
+              d n N.r N.hrD N.hrn)
+        P_open : IsOpen P
+        P_connected : IsConnected P
+        c0_mem : c0 ∈ P
+        Ωnf : Set (BHW.SourceOrientedGramData d n) :=
+          BHW.sourceOrientedSchurEstimateNeighborhood
+            d n N Head headRadius mixedRadius tail.eta
+        Ωnf_open : IsOpen Ωnf
+        Ωnf_center :
+          BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈ Ωnf
+        normalParam_mem :
+          ∀ c ∈ P,
+            BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn (encode.symm c)) ∈
+              Ωnf ∩ BHW.sourceOrientedGramVariety d n
+        schurParam_mem :
+          ∀ {G : BHW.SourceOrientedGramData d n}
+            (hG : G ∈ Ωnf ∩ BHW.sourceOrientedGramVariety d n)
+            (p :
+              BHW.SourceOrientedRankDeficientNormalParameter
+                d n N.r N.hrD N.hrn),
+            p.head =
+              Head.factor
+                (BHW.sourceOrientedSchurHeadBlock
+                  d n N.r N.hrD N.hrn G) ->
+            p.mixed =
+              BHW.sourceOrientedSchurMixedCoeffAt d n N Head G ->
+            (∀ u μ, ‖p.tail u μ‖ < tail.epsilon) ->
+            encode p ∈ P
+
+      theorem BHW.sourceOriented_rankDeficient_schurEstimateChoice
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) :
+          BHW.SourceOrientedRankDeficientSchurEstimateChoice d n N Head := by
+        classical
+        -- Choose the finite coordinate equivalence.  The head radius is
+        -- obtained from the open neighborhood `Head.U` and the continuity of
+        -- the local factor at `1`; shrink it so the factor of any head block
+        -- in the resulting Schur neighborhood is inside the same coordinate
+        -- box.  The mixed radius is an ordinary positive coordinate bound.
+        let encode :=
+          BHW.sourceOrientedRankDeficientNormalParameterCoordEquiv
+            d n N.r N.hrD N.hrn
+        rcases
+          BHW.sourceRankDeficientHeadGauge_coordinateRadius
+            (d := d) hd n N Head with
+          ⟨headRadius, hheadRadius_pos, hheadRadius_box⟩
+        rcases
+          BHW.sourceRankDeficientMixed_coordinateRadius
+            (d := d) hd n N Head with
+          ⟨mixedRadius, hmixedRadius_pos⟩
+        let Tail :=
+          BHW.sourceTailOrientedCompatibleSmallRealization
+            (d + 1 - N.r) (n - N.r)
+            (BHW.sourceRankDeficient_tailDimension_pos
+              (d := d) (n := n) N)
+        let P :=
+          BHW.sourceOrientedRankDeficientParameterBox
+            d n N encode headRadius mixedRadius Tail.epsilon
+        obtain ⟨hP_open, hP_conn, hc0_mem⟩ :=
+          BHW.sourceOrientedRankDeficientParameterBox_open_connected
+            d n N encode hheadRadius_pos hmixedRadius_pos Tail.epsilon_pos
+        let Ωnf :=
+          BHW.sourceOrientedSchurEstimateNeighborhood
+            d n N Head headRadius mixedRadius Tail.eta
+        have hΩnf_open : IsOpen Ωnf :=
+          BHW.sourceOrientedSchurEstimateNeighborhood_open
+            d n N Head hheadRadius_pos hmixedRadius_pos Tail.eta_pos
+        have hΩnf_center :
+            BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈ Ωnf :=
+          BHW.sourceOrientedSchurEstimateNeighborhood_center
+            d n N Head hheadRadius_pos hmixedRadius_pos Tail.eta_pos
+        refine
+          { m := _
+            encode := encode
+            headRadius := headRadius
+            headRadius_pos := hheadRadius_pos
+            mixedRadius := mixedRadius
+            mixedRadius_pos := hmixedRadius_pos
+            tail := Tail
+            P_open := hP_open
+            P_connected := hP_conn
+            c0_mem := hc0_mem
+            Ωnf_open := hΩnf_open
+            Ωnf_center := hΩnf_center
+            normalParam_mem := ?_
+            schurParam_mem := ?_ }
+        · exact
+            BHW.sourceOriented_normalParam_mem_schurEstimateNeighborhood
+              (d := d) hd n N Head encode
+              (BHW.sourceOriented_normalParam_head_in_HeadU
+                (d := d) hd n N Head hheadRadius_box)
+              (BHW.sourceOriented_normalParam_tail_small_from_compatible
+                (d := d) hd n N Tail)
+        · intro G hG p hp_head hp_mixed hp_tail
+          -- Unfolding `P`, the three coordinate-box inequalities are exactly:
+          -- head-factor closeness from `Ωnf`, mixed-coordinate smallness from
+          -- `Ωnf`, and the tail vector bound supplied by the compatible tail
+          -- realization.
+          exact
+            BHW.sourceOrientedSchurParameter_mem_box_from_estimateNeighborhood
+              (d := d) hd n N Head encode
+              hheadRadius_box hmixedRadius_pos Tail G hG p
+              hp_head hp_mixed hp_tail
+
+      theorem BHW.sourceOriented_rankDeficient_schurNeighborhoodData_from_estimates
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) :
+          BHW.SourceOrientedRankDeficientSchurNeighborhoodData
+            d n N Head := by
+        classical
+        let C :=
+          BHW.sourceOriented_rankDeficient_schurEstimateChoice
+            (d := d) hd n N Head
+        refine
+          { m := C.m
+            encode := C.encode
+            P := C.P
+            P_open := C.P_open
+            P_connected := C.P_connected
+            c0 := C.c0
+            c0_mem := C.c0_mem
+            center_encode := rfl
+            tailEpsilon := C.tail.epsilon
+            tailEpsilon_pos := C.tail.epsilon_pos
+            tailEta := C.tail.eta
+            tailEta_pos := C.tail.eta_pos
+            tailRealize := C.tail.realize
+            Ωnf := C.Ωnf
+            Ωnf_open := C.Ωnf_open
+            Ωnf_center := C.Ωnf_center
+            normalParam_mem := C.normalParam_mem
+            head_mem := ?_
+            tail_small := ?_
+            schurParam_mem := ?_ }
+        · intro G hG
+          simpa [C.Ωnf, BHW.sourceOrientedSchurEstimateNeighborhood]
+            using hG.1.1
+        · intro G hG
+          simpa [C.Ωnf, BHW.sourceOrientedSchurEstimateNeighborhood]
+            using hG.1.2.2.2
+        · intro G hG p hp_head hp_mixed hp_tail
+          exact C.schurParam_mem hG p hp_head hp_mixed hp_tail
+
+      theorem BHW.sourceOriented_rankDeficient_schurNeighborhoodData
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) :
+          BHW.SourceOrientedRankDeficientSchurNeighborhoodData
+            d n N Head := by
+        classical
+        -- Choose the canonical finite-dimensional coordinate equivalence for
+        -- the product
+        -- `(head matrix) × (mixed coefficients) × (tail residual vectors)`.
+        -- Let `c0` be the encoded center.  Choose a small open ball `P`
+        -- around `c0`; open balls in the finite-dimensional complex model are
+        -- connected.  Shrink the radius in the following order:
+        -- 1. the symmetric head Gram block of every `G` in the normal image
+        --    neighborhood lies in `Head.U`;
+        -- 2. that head block remains invertible by `Head.factor_det_unit`;
+        -- 3. mixed coefficients remain in the prescribed coefficient ball;
+        -- 4. the Schur residual tail Gram and determinant coordinates satisfy
+        --    the hypotheses of `sourceTailOrientedSmallRealization`;
+        -- 5. the polynomial image of the parameter ball is contained in the
+        --    ambient normal image neighborhood `Ωnf`.
+        -- All five shrinkings are finite-coordinate continuity estimates at
+        -- the canonical normal point: the head block is `1`, the mixed block
+        -- is `0`, and the residual tail data are `0`.
+        exact
+          BHW.sourceOriented_rankDeficient_schurNeighborhoodData_from_estimates
+            (d := d) hd n N Head
+
+      theorem BHW.sourceOriented_rankDeficient_parameter_of_schurPoint
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r)
+          (S :
+            BHW.SourceOrientedRankDeficientSchurNeighborhoodData
+              d n N Head)
+          {G : BHW.SourceOrientedGramData d n}
+          (hG : G ∈ S.Ωnf ∩ BHW.sourceOrientedGramVariety d n) :
+          ∃ c ∈ S.P, S.normalParam c = G := by
+        classical
+        have hHead : BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G ∈ Head.U :=
+          S.head_mem G hG
+        let Mhead : Matrix (Fin N.r) (Fin N.r) ℂ :=
+          Head.factor
+            (BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G)
+        have hMhead_gram :
+            Mhead * Mhead.transpose =
+              (BHW.sourceOrientedSchurHeadBlock
+                d n N.r N.hrD N.hrn G :
+                Matrix (Fin N.r) (Fin N.r) ℂ) :=
+          Head.factor_gram
+            (BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G) hHead
+        have hMhead_unit : IsUnit Mhead.det :=
+          Head.factor_det_unit
+            (BHW.sourceOrientedSchurHeadBlock
+              d n N.r N.hrD N.hrn G) hHead
+        let R :=
+          BHW.sourceOriented_schurResidualData
+            (d := d) hd (n := n)
+            (r := N.r) N.hrD N.hrn hG.2
+            (BHW.sourceOrientedSchurHeadBlock_unit
+              (d := d) (n := n) N hG hMhead_unit)
+        have htailSmall := S.tail_small G hG
+        rcases
+          S.tailRealize R.tail R.tail_mem
+            htailSmall.gram_bound htailSmall.det_bound with
+          ⟨q, hq_small, hq_tail⟩
+        let p :
+            BHW.SourceOrientedRankDeficientNormalParameter
+              d n N.r N.hrD N.hrn :=
+          { head := Mhead
+            mixed := R.L
+            tail := q }
+        have hp_mem : S.encode p ∈ S.P :=
+          BHW.sourceOrientedSchurParameter_mem_parameterBox
+            (d := d) hd n N Head S hG
+            (p := p)
+            (by rfl)
+            (by
+              simpa [p, BHW.sourceOrientedSchurMixedCoeffAt, R.A_eq]
+                using R.L_eq)
+            hq_small
+        refine ⟨S.encode p, hp_mem, ?_⟩
+        have hp_realizes :
+            BHW.sourceOrientedMinkowskiInvariant d n
+              (BHW.sourceOrientedNormalParameterVector
+                d n N.r N.hrD N.hrn p) = G :=
+          BHW.sourceOrientedNormalParameterVector_realizes_schur
+            (d := d) hd n N.r N.hrD N.hrn R
+            hMhead_gram rfl hq_tail
+        simpa [S.normalParam, p] using hp_realizes
+
+      theorem BHW.sourceOriented_rankDeficient_chooseNormalParameterBall
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          (Head : BHW.SourceRankDeficientHeadGaugeData N.r) :
+          ∃ (m : Nat)
+            (encode :
+              BHW.SourceOrientedRankDeficientNormalParameter
+                d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
+            (P : Set (Fin m -> ℂ))
+            (c0 : Fin m -> ℂ)
+            (hP_open : IsOpen P)
+            (hP_conn : IsConnected P),
+            c0 ∈ P ∧
+            encode
+              (BHW.sourceOrientedNormalCenterParameter
+                d n N.r N.hrD N.hrn) = c0 ∧
+            ∃ Ωnf : Set (BHW.SourceOrientedGramData d n),
+              IsOpen Ωnf ∧
+              BHW.sourceOrientedMinkowskiInvariant d n N.normalBase ∈ Ωnf ∧
+              (∀ c ∈ P,
+                BHW.sourceOrientedMinkowskiInvariant d n
+                  (BHW.sourceOrientedNormalParameterVector
+                    d n N.r N.hrD N.hrn (encode.symm c)) ∈
+                    Ωnf ∩ BHW.sourceOrientedGramVariety d n) ∧
+              Ωnf ∩ BHW.sourceOrientedGramVariety d n =
+                (fun c =>
+                  BHW.sourceOrientedMinkowskiInvariant d n
+                    (BHW.sourceOrientedNormalParameterVector
+                      d n N.r N.hrD N.hrn (encode.symm c))) '' P := by
+        classical
+        let S :=
+          BHW.sourceOriented_rankDeficient_schurNeighborhoodData
+            (d := d) hd n N Head
+        refine
+          ⟨S.m, S.encode, S.P, S.c0, S.P_open, S.P_connected,
+            S.c0_mem, S.center_encode, S.Ωnf, S.Ωnf_open,
+            S.Ωnf_center, S.normalParam_mem, ?_⟩
+        ext G
+        constructor
+        · intro hG
+          rcases
+            BHW.sourceOriented_rankDeficient_parameter_of_schurPoint
+              (d := d) hd n N Head S hG with
+            ⟨c, hcP, hcG⟩
+          exact ⟨c, hcP, hcG.symm⟩
+        · rintro ⟨c, hcP, rfl⟩
+          exact S.normalParam_mem c hcP
+
+      -- The finite-coordinate estimate theorem
+      -- `sourceOriented_rankDeficient_schurNeighborhoodData_from_estimates`
+      -- has no Hall-Wightman analytic content.  Its proof is a compact list
+      -- of continuity shrinkings for polynomial/rational coordinate maps at
+      -- the normal point.  The head block map is polynomial and equals `1` at
+      -- the center, so the preimage of `Head.U` is open.  The mixed block map
+      -- is polynomial after restricting to the head-invertible neighborhood
+      -- because `A⁻¹` is given by `A.adjugate / A.det`.  The residual tail
+      -- Gram and determinant maps are polynomial/rational on the same
+      -- head-invertible neighborhood and vanish at the normal point.  The
+      -- tail step uses the stronger compatible small-realization theorem:
+      -- it returns a coordinate box `‖q‖ < epsilon` and a tail-data box
+      -- `‖T‖ < eta` with both inclusions
+      -- `sourceTailOrientedInvariant '' epsilonBox ⊆ etaBox` and
+      -- `etaBox ∩ sourceTailOrientedVariety ⊆
+      -- sourceTailOrientedInvariant '' epsilonBox`.  Thus the same
+      -- `epsilon` can define the parameter box and the same `eta` can define
+      -- the Schur neighborhood.  The `schurParam_mem` field is load-bearing:
+      -- it records that a point extracted from `Ωnf ∩ variety` by head-gauge
+      -- factorization, mixed Schur coefficients, and compatible tail
+      -- realization lands back in the chosen connected parameter box.  The
+      -- reverse image inclusion is direct because every parameter is an
+      -- actual source tuple.  The forward inclusion is exactly
+      -- `sourceOriented_rankDeficient_parameter_of_schurPoint`, whose proof
+      -- above performs Schur extraction, head gauge factorization, tail
+      -- realization, parameter-box membership, and reconstruction.
+
+      -- Production Lean order: prove
+      -- `sourceOriented_rankDeficient_chooseNormalParameterBall` before
+      -- `sourceOriented_rankDeficient_normalLocalImageData`; the latter is
+      -- only the bundled data form of the former.
+
+      theorem BHW.sourceOriented_rankDeficient_algebraicParameterBall
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (N :
+            BHW.SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ (m : Nat)
+            (encode :
+              BHW.SourceOrientedRankDeficientNormalParameter
+                d n N.r N.hrD N.hrn ≃L[ℂ] (Fin m -> ℂ))
+            (P : Set (Fin m -> ℂ))
+            (c0 : Fin m -> ℂ)
+            (Ωnf : Set (BHW.SourceOrientedGramData d n)),
+            IsOpen P ∧ IsConnected P ∧ c0 ∈ P ∧
+            IsOpen Ωnf ∧
+            (N.orientedTransport.invFun '' Ωnf ⊆ N0) ∧
+            (N.orientedTransport.invFun '' Ωnf) ∩
+                BHW.sourceOrientedGramVariety d n =
+              (fun c =>
+                N.orientedTransport.invFun
+                  (BHW.sourceOrientedMinkowskiInvariant d n
+                    (BHW.sourceOrientedNormalParameterVector
+                      d n N.r N.hrD N.hrn (encode.symm c)))) '' P ∧
+            ContinuousOn
+              (fun c =>
+                N.orientedTransport.invFun
+                  (BHW.sourceOrientedMinkowskiInvariant d n
+                    (BHW.sourceOrientedNormalParameterVector
+                      d n N.r N.hrD N.hrn (encode.symm c)))) P ∧
+            (N.orientedTransport.invFun
+              (BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn (encode.symm c0))) = G0) ∧
+            (∀ c ∈ P,
+              N.orientedTransport.invFun
+                (BHW.sourceOrientedMinkowskiInvariant d n
+                  (BHW.sourceOrientedNormalParameterVector
+                    d n N.r N.hrD N.hrn (encode.symm c))) ∈
+                  (N.orientedTransport.invFun '' Ωnf) ∩
+                    BHW.sourceOrientedGramVariety d n) := by
+        classical
+        let A :=
+          BHW.sourceOriented_rankDeficient_normalLocalImageData
+            (d := d) hd n N
+        -- Use continuity of `N.orientedTransport.invFun` and the ambient-open
+        -- target `N0` containing
+        -- `N.orientedTransport.invFun (sourceInvariant N.normalBase) = G0`
+        -- to shrink the normal image neighborhood from `A` inside `N0`.
+        -- Reuse the same connected parameter ball after shrink; the equality
+        -- of local images is transported by `N.orientedTransport.left_inv`,
+        -- `right_inv`, and `mem_variety_iff`.
+        exact
+          BHW.sourceOriented_rankDeficient_transportNormalLocalImage_inside
+            (d := d) hd n N A hN0_open hG0N0
+      ```
 
       The compact-path tube theorem needed by any oriented corridor proof is
       then an assembly lemma, not new analytic content:
@@ -10871,37 +12954,36 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       ```lean
       theorem BHW.SourceOrientedVarietyGermHolomorphicOn.precomp_sourcePermuteOrientedGram
-          [NeZero d]
-          (hd : 2 <= d)
           {Φ : BHW.SourceOrientedGramData d n -> ℂ}
           {U : Set (BHW.SourceOrientedGramData d n)}
           (hΦ :
             BHW.SourceOrientedVarietyGermHolomorphicOn d n Φ U)
-          (τ : Equiv.Perm (Fin n)) :
+          (σ : Equiv.Perm (Fin n)) :
           BHW.SourceOrientedVarietyGermHolomorphicOn d n
-            (fun G => Φ (BHW.sourcePermuteOrientedGram d n τ G))
-            {G | BHW.sourcePermuteOrientedGram d n τ G ∈ U} := by
+            (fun G => Φ (BHW.sourcePermuteOrientedGram d n σ G))
+            {G | BHW.sourcePermuteOrientedGram d n σ G ∈ U} := by
         intro G hG
-        rcases hΦ (BHW.sourcePermuteOrientedGram d n τ G) hG with
-          ⟨U0, Ψ, hU0_open, hGU0, hΨ, hEq, hU0_sub⟩
+        rcases hΦ (BHW.sourcePermuteOrientedGram d n σ G) hG with
+          ⟨U0, Ψ, hU0_open, hGU0, hDiffU0, hEq, hU0_sub⟩
         refine
-          ⟨{H | BHW.sourcePermuteOrientedGram d n τ H ∈ U0},
-            fun H => Ψ (BHW.sourcePermuteOrientedGram d n τ H),
+          ⟨{H | BHW.sourcePermuteOrientedGram d n σ H ∈ U0},
+            fun H => Ψ (BHW.sourcePermuteOrientedGram d n σ H),
             hU0_open.preimage
-              (BHW.continuous_sourcePermuteOrientedGram d n τ),
+              (BHW.continuous_sourcePermuteOrientedGram
+                (d := d) (n := n) σ),
             hGU0, ?_, ?_, ?_⟩
-        · exact hΨ.comp
-            ((BHW.differentiable_sourcePermuteOrientedGram d n τ)
-              .differentiableOn)
+        · exact hDiffU0.fun_comp
+            ((BHW.differentiable_sourcePermuteOrientedGram
+              (d := d) (n := n) σ).differentiableOn)
             (by intro H hH; exact hH)
         · intro H hH
           exact hEq ⟨hH.1,
             (BHW.sourcePermuteOrientedGram_mem_variety_iff
-              d n τ H).2 hH.2⟩
+              (d := d) (n := n) σ H).2 hH.2⟩
         · intro H hH
           exact hU0_sub ⟨hH.1,
             (BHW.sourcePermuteOrientedGram_mem_variety_iff
-              d n τ H).2 hH.2⟩
+              (d := d) (n := n) σ H).2 hH.2⟩
 
       theorem BHW.sourceOrientedGramVariety_identity_principle
           [NeZero d]
@@ -11641,6 +13723,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
         exact
           (BHW.os45_adjacent_identity_canonicalSourcePatch
             (d := d) hd i hi).adjLift_mem_extendedTube
+
+      theorem BHW.os45Figure24SourcePatch_closure_orientedPath
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+          ∀ x ∈ closure
+              (BHW.os45Figure24SourcePatch (d := d) n i hi),
+            BHW.OS45Figure24OrientedPathField (d := d) n i hi x := by
+        classical
+        let Poriented :=
+          BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+            (d := d) (n := n) hd i hi
+        have hsource :
+            BHW.os45Figure24SourcePatch (d := d) n i hi =
+              Poriented.toCanonical.V := by
+          exact BHW.os45Figure24SourcePatch_eq_canonical
+            (d := d) hd n i hi
+        intro x hx
+        exact Poriented.orientedPath_closure x (by simpa [hsource] using hx)
 
       theorem BHW.os45Figure24SourcePatch_sourceEnvironment
           [NeZero d]
@@ -12435,6 +14536,64 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases hE_ne with ⟨x, hxE⟩
         exact ⟨fun k => x (π k), x, hxE, rfl⟩
 
+      def BHW.sourceRealHeadFullFrameEmbedding
+          (d n : Nat)
+          (hn : d + 1 <= n) :
+          Fin (d + 1) ↪ Fin n :=
+        { toFun := fun a => ⟨a.val, lt_of_lt_of_le a.isLt hn⟩
+          inj' := by
+            intro a b hab
+            exact Fin.ext (Fin.ext_iff.mp hab) }
+
+      theorem BHW.sourceRealFullFrameDet_nonzero_dense
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          Dense
+            {x : Fin n -> Fin (d + 1) -> ℝ |
+              BHW.sourceRealFullFrameDet d n ι x ≠ 0} := by
+        -- `sourceRealFullFrameDet d n ι` is a nonzero real polynomial in the
+        -- finitely many source coordinates: at the tuple whose selected
+        -- rows are the standard basis and whose remaining rows are zero, the
+        -- determinant is `1`.  The zero set of a nonzero real polynomial has
+        -- empty interior in a finite-dimensional real vector space; hence
+        -- its complement is dense.
+        exact
+          BHW.dense_nonvanishing_locus_sourceRealFullFrameDet
+            (d := d) (n := n) ι
+
+      theorem BHW.nonempty_open_inter_sourceRealFullFrameDet_nonzero
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          {E : Set (Fin n -> Fin (d + 1) -> ℝ)}
+          (hE_open : IsOpen E)
+          (hE_ne : E.Nonempty) :
+          (E ∩
+            {x : Fin n -> Fin (d + 1) -> ℝ |
+              BHW.sourceRealFullFrameDet d n ι x ≠ 0}).Nonempty := by
+        rcases hE_ne with ⟨x, hxE⟩
+        have hdense :=
+          BHW.sourceRealFullFrameDet_nonzero_dense d n ι
+        exact
+          hdense.exists_mem_open hE_open hxE
+
+      theorem BHW.IsHWRealEnvironment.restrict_sourceOpen
+          (d n : Nat)
+          {E0 E : Set (Fin n -> Fin (d + 1) -> ℝ)}
+          (hEnv :
+            BHW.IsHWRealEnvironment d n
+              (BHW.sourceRealMinkowskiGram d n '' E0))
+          (hE_sub : E ⊆ E0)
+          (hE_open : IsOpen E)
+          (hE_ne : E.Nonempty) :
+          BHW.IsHWRealEnvironment d n
+            (BHW.sourceRealMinkowskiGram d n '' E) := by
+        -- The checked pure-Gram real-environment predicate is local on the
+        -- real source patch: nonempty open restrictions preserve the
+        -- regular/totally-real chart fields and the source-Gram image is
+        -- restricted by ordinary image monotonicity.
+        exact BHW.isHWRealEnvironment_restrict_sourceOpen
+          (d := d) (n := n) hEnv hE_sub hE_open hE_ne
+
       theorem BHW.os45Figure24_checkedRealPatch_fullFrameSubpatch
           [NeZero d]
           (hd : 2 <= d)
@@ -12456,7 +14615,68 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.JostSet d n ∧
             BHW.IsHWRealEnvironment d n
               (BHW.sourceRealMinkowskiGram d n ''
-                {y | ∃ x ∈ E, y = fun k => x (π k)})
+                {y | ∃ x ∈ E, y = fun k => x (π k)}) := by
+        let ι := BHW.sourceRealHeadFullFrameEmbedding d n hn
+        let H := BHW.realSourcePermuteHomeomorph d n π
+        let Eperm0 : Set (Fin n -> Fin (d + 1) -> ℝ) :=
+          {y | ∃ x ∈ E0, y = fun k => x (π k)}
+        have hEperm0_open : IsOpen Eperm0 :=
+          BHW.isOpen_realSourcePermuteImage d n π
+            hE0_is_checked_patch.open
+        have hEperm0_ne : Eperm0.Nonempty :=
+          BHW.nonempty_realSourcePermuteImage d n π
+            hE0_is_checked_patch.nonempty
+        let Eperm : Set (Fin n -> Fin (d + 1) -> ℝ) :=
+          Eperm0 ∩
+            {y | BHW.sourceRealFullFrameDet d n ι y ≠ 0}
+        have hEperm_open : IsOpen Eperm :=
+          hEperm0_open.inter
+            (BHW.sourceRealFullFrameDet_nonzero_isOpen d n ι)
+        have hEperm_ne : Eperm.Nonempty :=
+          BHW.nonempty_open_inter_sourceRealFullFrameDet_nonzero
+            d n ι hEperm0_open hEperm0_ne
+        let E : Set (Fin n -> Fin (d + 1) -> ℝ) := H.symm '' Eperm
+        have hE_open : IsOpen E := H.symm.isOpenMap Eperm hEperm_open
+        have hE_ne : E.Nonempty := by
+          rcases hEperm_ne with ⟨y, hy⟩
+          exact ⟨H.symm y, y, hy, rfl⟩
+        have hperm_image :
+            {y | ∃ x ∈ E, y = fun k => x (π k)} = Eperm := by
+          ext y
+          constructor
+          · rintro ⟨x, hxE, rfl⟩
+            rcases hxE with ⟨y0, hy0, rfl⟩
+            simpa [H] using hy0
+          · intro hy
+            refine ⟨H.symm y, ⟨y, hy, rfl⟩, ?_⟩
+            ext k μ
+            simp [H, BHW.realSourcePermuteHomeomorph]
+        have hE_sub : E ⊆ E0 := by
+          intro x hxE
+          rcases hxE with ⟨y, hyEperm, rfl⟩
+          have hyEperm0 : y ∈ Eperm0 := hyEperm.1
+          rcases hyEperm0 with ⟨x0, hx0E0, rfl⟩
+          simpa [H, BHW.realSourcePermuteHomeomorph] using hx0E0
+        have hEperm_jost :
+            Eperm ⊆ BHW.JostSet d n := by
+          intro y hy
+          exact hE0_is_checked_patch.permuted_jost hy.1
+        have hGramEnv :
+            BHW.IsHWRealEnvironment d n
+              (BHW.sourceRealMinkowskiGram d n '' Eperm) :=
+          BHW.IsHWRealEnvironment.restrict_sourceOpen
+            (d := d) (n := n)
+            hE0_is_checked_patch.gramEnvironment_permuted
+            (by intro y hy; exact hy.1)
+            hEperm_open hEperm_ne
+        refine
+          ⟨ι, E, hE_sub, hE_open, hE_ne, ?_, ?_, ?_, ?_, ?_⟩
+        · simpa [hperm_image] using hEperm_open
+        · simpa [hperm_image] using hEperm_ne
+        · intro y hy
+          simpa [hperm_image, Eperm] using hy.2
+        · simpa [hperm_image] using hEperm_jost
+        · simpa [hperm_image] using hGramEnv
 
       theorem BHW.os45Figure24_realPatch_orientedRegularSubpatch
           [NeZero d]
@@ -12532,10 +14752,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       invariant and a separate `quarterTurn_mem` field for the later
       quarter-turn path endpoint.  These two fields must not be identified:
       doing so would assert that the quarter-turned complex point is a real
-      embedding.  Thus the compact OS-I anchor supplies distributional
-      equality, real sector membership, and real common-edge contact, while
-      the seed producer supplies the oriented uniqueness patch after the
-      necessary shrink.
+      embedding.  The contact field is supplied by the corrected canonical
+      source patch: the real-patch point is the `π`-permutation of
+      `xcontact = os45CommonEdgeRealPoint 1 xseed`, while the source witness
+      in `hChart.commonEdge_mem` is `xseed`.  It is not supplied by an
+      equal-time property of `xseed`.  Thus the compact OS-I anchor supplies
+      distributional equality, real sector membership, and real common-edge
+      contact, while the seed producer supplies the oriented uniqueness patch
+      after the necessary shrink.
 
       Compact-to-oriented-seed transcript.  This is the oriented analog of
       the checked pure-Gram pair
@@ -12835,7 +15059,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 {G | BHW.sourcePermuteOrientedGram d n τ G ∈ hRep.U} := by
             simpa [Φ] using
               BHW.SourceOrientedVarietyGermHolomorphicOn.precomp_sourcePermuteOrientedGram
-                (d := d) (n := n) hd hRep.Phi_holomorphic τ
+                (d := d) (n := n) hRep.Phi_holomorphic τ
           exact
             BHW.SourceOrientedVarietyGermHolomorphicOn.of_subset_relOpen
               (d := d) (n := n) hpre hWscal_relOpen
@@ -13046,22 +15270,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact (BHW.os45Figure24SourcePatch_eq_canonical
             (d := d) hd n i hi).symm
         let u := P.xseed
+        let xcontact := P.xcontact
         have hu : u ∈ BHW.os45Figure24SourcePatch
             (d := d) (n := n) i hi := by
           simpa [u, hPsource] using P.xseed_mem
-        have hcommon_seed :
-            BHW.os45CommonEdgeRealPoint (d := d) (n := n)
-              (1 : Equiv.Perm (Fin n)) u = u := by
-          ext k μ
-          by_cases hμ : μ = 0
-          · subst hμ
-            simp [BHW.os45CommonEdgeRealPoint, u, P.xseed_time0 k]
-          · simp [BHW.os45CommonEdgeRealPoint, hμ]
+        have hxcontact : xcontact ∈
+            BHW.os45Figure24SourcePatch
+              (d := d) (n := n) i hi := by
+          simpa [xcontact, hPsource] using P.xcontact_mem
+        have hcontact :
+            xcontact =
+              BHW.os45CommonEdgeRealPoint (d := d) (n := n)
+                (1 : Equiv.Perm (Fin n)) u := by
+          simpa [xcontact, u] using P.xcontact_commonEdge
         refine
-          ⟨BHW.os45SourcePermutationHomeomorph d n π u,
-            ⟨u, hu, rfl⟩, u, hu, ?_⟩
+          ⟨BHW.os45SourcePermutationHomeomorph d n π xcontact,
+            ⟨xcontact, hxcontact, rfl⟩, u, hu, ?_⟩
         ext k μ
-        simp [BHW.os45SourcePermutationHomeomorph, hcommon_seed]
+        simp [BHW.os45SourcePermutationHomeomorph, hcontact]
 
       theorem BHW.os45Figure24CompactRealPatch_jost
           [NeZero d]
@@ -13111,20 +15337,36 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.os45Figure24SourcePatch_swapRealEmbed_mem_extendedTube
             (d := d) hd n i hi u hu
 
+      Lean-readiness boundary for the real-patch block: the eight declarations
+      above are now fully certified as a finite-permutation layer.  Their only
+      inputs are the checked canonical source patch, `Homeomorph.isOpenMap`,
+      `BHW.jostSet_permutation_invariant`, and the definitional API
+      `BHW.permutedExtendedTubeSector z π ↔
+      (fun k => z (π k)) ∈ BHW.ExtendedTube d n`.  They do not inspect
+      `extendF` and do not use compact Wick equality, scalar representatives,
+      PET independence, EOW, or locality.  The next declaration
+      `BHW.os45CompactRealPatch_pullbackSchwartz` is now also certified, but
+      only as a finite measure-preserving pullback: it uses
+      `BHW.permuteSchwartz`, `BHW.tsupport_permuteSchwartz`, injectivity of
+      `BHW.os45SourcePermutationHomeomorph`, and
+      `(BHW.integral_perm_eq_self π.symm h).symm`.  Its Lean surface is
+      generic in the branch integrand
+      `A : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ`; OS-specific consumers later
+      specialize `A := BHW.extendF (bvt_F OS lgc n)`.  It transports compact
+      tests; it still does not prove the compact branch equality stored in
+      `BHW.OS45CompactFigure24WickPairingEq`.
+
       theorem BHW.os45CompactRealPatch_pullbackSchwartz
           [NeZero d]
-          (d n : Nat)
-          (OS : OsterwalderSchraderAxioms d)
-          (lgc : OSLinearGrowthCondition d OS)
+          (n : Nat)
+          (A : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
           (i : Fin n) (hi : i.val + 1 < n)
           (π : Equiv.Perm (Fin n))
-          (φ : SchwartzMap (Fin n -> Fin (d + 1) -> ℝ) ℂ)
+          (φ : SchwartzMap (NPointDomain d n) ℂ)
           (hφ_comp :
-            HasCompactSupport
-              (φ : (Fin n -> Fin (d + 1) -> ℝ) -> ℂ))
+            HasCompactSupport (φ : NPointDomain d n -> ℂ))
           (hφ_supp :
-            tsupport
-              (φ : (Fin n -> Fin (d + 1) -> ℝ) -> ℂ) ⊆
+            tsupport (φ : NPointDomain d n -> ℂ) ⊆
               BHW.os45Figure24CompactRealPatch (d := d) n i hi π) :
           ∃ ψ : SchwartzNPoint d n,
             HasCompactSupport (ψ : NPointDomain d n -> ℂ) ∧
@@ -13133,24 +15375,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (∀ u,
               ψ u =
                 φ (BHW.os45SourcePermutationHomeomorph d n π u)) ∧
-            (∫ x : Fin n -> Fin (d + 1) -> ℝ,
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x (π k)) * φ x)
+            (∫ x : NPointDomain d n,
+                A (fun k => BHW.realEmbed x (π k)) * φ x)
               =
              ∫ u : NPointDomain d n,
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.realEmbed u) * ψ u) ∧
-            (∫ x : Fin n -> Fin (d + 1) -> ℝ,
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x
-                    ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) *
-                  φ x)
+                A (BHW.realEmbed u) * ψ u) ∧
+            (∫ x : NPointDomain d n,
+                A (fun k => BHW.realEmbed x
+                  ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) * φ x)
               =
              ∫ u : NPointDomain d n,
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.realEmbed
-                    (fun k => u (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
-                  ψ u) := by
+                A (BHW.realEmbed
+                  (fun k => u (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * ψ u := by
         let ψ : SchwartzNPoint d n :=
           BHW.permuteSchwartz (d := d) π.symm φ
         have hψ_apply :
@@ -13167,55 +15403,54 @@ Proof decomposition of this theorem, without hiding the analytic work:
             tsupport (ψ : NPointDomain d n -> ℂ) ⊆
               BHW.os45Figure24SourcePatch (d := d) (n := n) i hi := by
           intro u hu
-          rw [BHW.tsupport_permuteSchwartz] at hu
-          have himage :
+          have hpre :
+              (((LinearEquiv.funCongrLeft ℝ (Fin (d + 1) -> ℝ) π.symm).toContinuousLinearEquiv :
+                  NPointDomain d n ≃L[ℝ] NPointDomain d n).toHomeomorph u) ∈
+                tsupport (φ : NPointDomain d n -> ℂ) := by
+            rw [BHW.tsupport_permuteSchwartz (d := d) π.symm φ] at hu
+            exact hu
+          have hHu :
               BHW.os45SourcePermutationHomeomorph d n π u ∈
-                BHW.os45Figure24CompactRealPatch (d := d) n i hi π :=
-            hφ_supp hu
-          rcases himage with ⟨v, hv, hv_eq⟩
-          simpa [BHW.os45SourcePermutationHomeomorph] using
-            congrArg
-              (fun x : Fin n -> Fin (d + 1) -> ℝ =>
-                fun k μ => x (π k) μ) hv_eq.symm ▸ hv
+                tsupport (φ : NPointDomain d n -> ℂ) := by
+            simpa [BHW.os45SourcePermutationHomeomorph] using hpre
+          rcases hφ_supp hHu with ⟨v, hv, hv_eq⟩
+          have hvu : v = u :=
+            (BHW.os45SourcePermutationHomeomorph d n π).injective hv_eq
+          simpa [hvu] using hv
         have hleft_pullback :
-            (∫ x : Fin n -> Fin (d + 1) -> ℝ,
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x (π k)) * φ x)
+            (∫ x : NPointDomain d n,
+                A (fun k => BHW.realEmbed x (π k)) * φ x)
               =
              ∫ u : NPointDomain d n,
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.realEmbed u) * ψ u := by
-          -- Apply `BHW.integral_perm_eq_self π.symm` to the integrand
-          -- `x ↦ extendF (fun k => realEmbed x (π k)) * φ x` and rewrite
-          -- `(fun k => (fun j => u (π.symm j)) (π k)) = u`.
-          simpa [ψ, BHW.os45SourcePermutationHomeomorph, BHW.realEmbed,
-            Equiv.Perm.mul_apply] using
-            (BHW.integral_perm_eq_self (d := d) π.symm
-              (fun x : NPointDomain d n =>
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x (π k)) * φ x)).symm
+                A (BHW.realEmbed u) * ψ u := by
+          let h : NPointDomain d n -> ℂ := fun x =>
+            A (fun k => BHW.realEmbed x (π k)) * φ x
+          have hp :=
+            (BHW.integral_perm_eq_self (d := d) (n := n) π.symm h).symm
+          have harg : ∀ x : NPointDomain d n,
+              (fun k => BHW.realEmbed (fun k => x (π.symm k)) (π k)) =
+                BHW.realEmbed x := by
+            intro x; ext k μ; simp [BHW.realEmbed]
+          simpa [h, ψ, BHW.os45SourcePermutationHomeomorph, harg] using hp
         have hright_pullback :
-            (∫ x : Fin n -> Fin (d + 1) -> ℝ,
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x
-                    ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) *
-                  φ x)
+            (∫ x : NPointDomain d n,
+                A (fun k => BHW.realEmbed x
+                  ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) * φ x)
               =
              ∫ u : NPointDomain d n,
-                BHW.extendF (bvt_F OS lgc n)
-                  (BHW.realEmbed
-                    (fun k => u (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
-                  ψ u := by
-          -- Same change of variables; the branch argument rewrites by
-          -- `π.symm ((π * τ) k) = τ k`.
-          simpa [ψ, BHW.os45SourcePermutationHomeomorph, BHW.realEmbed,
-            Equiv.Perm.mul_apply] using
-            (BHW.integral_perm_eq_self (d := d) π.symm
-              (fun x : NPointDomain d n =>
-                BHW.extendF (bvt_F OS lgc n)
-                  (fun k => BHW.realEmbed x
-                    ((π * Equiv.swap i ⟨i.val + 1, hi⟩) k)) *
-                  φ x)).symm
+                A (BHW.realEmbed
+                  (fun k => u (Equiv.swap i ⟨i.val + 1, hi⟩ k))) * ψ u := by
+          let τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+          let h : NPointDomain d n -> ℂ := fun x =>
+            A (fun k => BHW.realEmbed x ((π * τ) k)) * φ x
+          have hp :=
+            (BHW.integral_perm_eq_self (d := d) (n := n) π.symm h).symm
+          have harg : ∀ x : NPointDomain d n,
+              (fun k => BHW.realEmbed (fun k => x (π.symm k)) (π (τ k))) =
+                BHW.realEmbed (fun k => x (τ k)) := by
+            intro x; ext k μ; simp [BHW.realEmbed]
+          simpa [h, ψ, τ, BHW.os45SourcePermutationHomeomorph, harg,
+            Equiv.Perm.mul_apply] using hp
         exact ⟨ψ, hψ_comp, hψ_supp, hψ_apply,
           hleft_pullback, hright_pullback⟩
 
@@ -13258,6 +15493,31 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∀ x ∈ closure V,
             BHW.OS45Figure24OrientedPathField (d := d) n i hi x
         x0_mem : x0 ∈ V
+
+      /-
+      ARCHIVED CIRCULAR TRANSCRIPT, DO NOT PORT.
+
+      The theorem body below instantiates
+      `BHW.os45_adjacent_commonBoundaryEnvelope` and the oriented branch-germ
+      suppliers.  That is now rejected: the common-boundary envelope is
+      downstream of
+      `BHW.OS45CompactFigure24WickPairingEq`, the oriented adjacent `S'_n`
+      seed/path package, and the branch-local oriented source germs.  The
+      active proof of
+      `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`
+      must instead be the direct OS I §4.5 / BHW-Jost compact producer
+      documented below:
+
+        checked Wick compact branch-difference zero
+          -> OS45SourcePatchBHWJostPairData
+          -> OS45SourcePatchBHWJostDifferenceData
+          -> os45_bhwJost_identity_of_wickDistributionZero
+          -> os45_sourcePatch_realTrace_zero_of_wickDistributionZero
+          -> source-patch compact branch equality.
+
+      This archived body is retained only to record which common-boundary
+      arguments were removed from the active route.
+      -/
 
       theorem BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45
           [NeZero d]
@@ -15978,7 +18238,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | Hall-Wightman source step | Lean-facing theorem/data surfaces | Readiness and exact remaining proof content |
       | --- | --- | --- |
       | Lemma 1: continuation to the extended tube and complex Lorentz invariance of the continuation. | Checked support surfaces: `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, and the direct `hF_cinv` bridge `BHW.extendF_complexLorentzInvariant_of_cinv`. | Proper determinant-`1` bridge implemented in `ComplexInvariance/Extend.lean`: the proof unfolds `extendF`, chooses forward-tube preimages, and applies `BHW.extendF_preimage_eq_of_cinv`; it imports no PET, EOW, locality, final `bvt_W`, or scalar representative target. |
-      | Lemma 2, high scalar-rank branch: same scalar products imply one complex Lorentz orbit. | Checked finite support: `BHW.HWSourceGramOrbitRankAt`, `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`; remaining orbit surface: `BHW.hw_sameSourceGram_regular_orbit`. | Coefficient quotient, common Gram kernel, restricted-span nondegeneracy, and span-isometry data are implemented in `BHWPermutation/SourceRank.lean`.  The remaining proof-doc-only part is the determinant-sensitive Witt extension/orbit theorem; the full-rank pure-Gram case remains conditional on the full-component/improper input, while the active route records the oriented determinant repair separately. |
+      | Lemma 2, high scalar-rank branch: same scalar products imply one complex Lorentz orbit. | Checked finite support: `BHW.HWSourceGramOrbitRankAt`, `BHW.HWHighRankSpanIsometryData`, `BHW.hw_highRank_spanIsometryData_of_sameSourceGram`; orbit assembly transcript pinned for `BHW.hw_sameSourceGram_regular_orbit` and `BHW.hw_sameSourceGram_regular_orbit_or_improper`. | Coefficient quotient, common Gram kernel, restricted-span nondegeneracy, and span-isometry data are implemented in `BHWPermutation/SourceRank.lean`.  The full-complex group algebra, nondegenerate-complement Witt extension transcript, complex symmetric-form classification helper, full-frame determinant-ratio computation, orthogonal-complement nontriviality, nonisotropic-vector extraction, Householder determinant repair, and final vectorwise-to-configuration orbit conversion now have Lean-shaped checked transcripts.  No theorem-shape gap remains in the high-rank row; the full-rank pure-Gram case remains conditional on the full-component/improper input, while the active oriented fork proves determinant `1` before consuming the proper orbit theorem. |
       | Lemma 2, low scalar-rank branch: singular same-Gram points are limits of two orbit curves with a common endpoint. | `BHW.HWSameSourceGramSingularContractionData`, `BHW.hw_sameSourceGram_singular_contractionData`, `BHW.hw_sameSourceGram_singularLimit_extendF_eq`. | Proof transcript pinned; production Lean not started.  The finite-dimensional data supplies the selected span, residual isotropic frame, dual frame, and contraction family.  Equality of values is then a topology limit from continuity of `extendF` on `ExtendedTube`; it is not stored as a field of the data and not a pairwise orbit equality. |
       | Lemma 3: scalar-product neighborhoods of the extended tube. | `BHW.hwLemma3_extendedTube_adaptedRankRepresentative`, `BHW.hwLemma3_adapted_sourceGram_localVectorRealization`, `BHW.hwLemma3_sourceGram_localVectorRealization`, `BHW.sourceExtendedTubeGramDomain_relOpen`. | Proof transcript pinned; production Lean not started.  The proof replaces an arbitrary realization by a same-Gram adapted realization, deletes residual isotropic-frame components in the singular case, and realizes all sufficiently near scalar-variety points inside `ExtendedTube d n`.  The connectedness half of `BHW.sourceExtendedTubeGramDomain_relOpen_connected` is mechanical; relative openness consumes the Lemma-3 realization theorem. |
       | Lemma 4: infinitesimal complex-Lorentz invariant differential equations. | `BHW.ComplexMinkowskiSkewGenerator`, `BHW.lorentzInfinitesimalTangent`, `BHW.SatisfiesLorentzInvariantPDE`, `BHW.hallWightman_lorentzInfinitesimalEquations`. | Proof transcript pinned; production Lean not started.  It differentiates the explicit complex Lorentz exponential curve at `0`, uses differentiability of `extendF` on the open extended tube, and uses extended-tube Lorentz invariance along that curve. |
@@ -21393,6 +23653,287 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.ComplexMinkowskiNondegenerateSubspace d S.M :=
         S.M_nondegenerate
 
+      The full-rank determinant ratio is not an additional analytic input.
+      It is the determinant of the unique linear isometry carrying one
+      ordered full frame of `z` to the corresponding ordered full frame of
+      `w`.  The proof must expose the uniqueness step, because this is what
+      makes the ratio independent of the chosen nonzero full frame.
+
+      Lean-shaped proof transcript for the full-frame ratio:
+
+      ```lean
+      noncomputable def BHW.sourceFullFrameBasis
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          Basis (Fin (d + 1)) ℂ (Fin (d + 1) -> ℂ) :=
+        let M := BHW.sourceFullFrameMatrix d n ι z
+        let hM : IsUnit M.transpose.det := by
+          rw [Matrix.det_transpose]
+          exact isUnit_iff_ne_zero.mpr hι
+        (Pi.basisFun ℂ (Fin (d + 1))).map
+          (Matrix.toLinearEquiv' (M.transpose) hM)
+
+      theorem BHW.sourceFullFrameBasis_apply
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0)
+          (a : Fin (d + 1)) :
+          BHW.sourceFullFrameBasis d n ι z hι a = z (ι a) := by
+        ext μ
+        simp [BHW.sourceFullFrameBasis, BHW.sourceFullFrameMatrix,
+          Matrix.toLinearEquiv'_apply, Matrix.toLin'_apply,
+          Matrix.mulVec_single_one]
+
+      theorem BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          BHW.sourceFullFrameDet d n ι w ≠ 0 := by
+        have hsel :
+            BHW.sourceFullFrameGram d
+                (BHW.sourceFullFrameMatrix d n ι z) =
+              BHW.sourceFullFrameGram d
+                (BHW.sourceFullFrameMatrix d n ι w) := by
+          ext a b
+          simpa [BHW.sourceFullFrameGram,
+            BHW.sourceFullFrameMatrix, BHW.sourceMinkowskiGram]
+            using congrFun (congrFun hgram (ι a)) (ι b)
+        intro hwzero
+        have hdet_eq := congrArg Matrix.det hsel
+        rw [BHW.sourceFullFrameGram_det_eq,
+          BHW.sourceFullFrameGram_det_eq, hwzero] at hdet_eq
+        have hzsq_ne :
+            (BHW.sourceFullFrameDet d n ι z)^2 ≠ 0 :=
+          pow_ne_zero 2 hι
+        have hmetric_ne :
+            BHW.minkowskiMetricDet d ≠ 0 :=
+          (BHW.minkowskiMetricDet_isUnit d).ne_zero
+        exact
+          (mul_ne_zero hmetric_ne hzsq_ne)
+            (by simpa using hdet_eq.symm)
+
+      noncomputable def BHW.sourceFullFrameMap
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          (Fin (d + 1) -> ℂ) ≃ₗ[ℂ] (Fin (d + 1) -> ℂ) :=
+        let hιw :=
+          BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+            (d := d) d n hgram ι hι
+        (BHW.sourceFullFrameBasis d n ι z hι).equiv
+          (BHW.sourceFullFrameBasis d n ι w hιw)
+          (Equiv.refl _)
+
+      theorem BHW.sourceFullFrameMap_apply_selected
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0)
+          (a : Fin (d + 1)) :
+          BHW.sourceFullFrameMap d n hgram ι hι (z (ι a)) =
+            w (ι a) := by
+        simp [BHW.sourceFullFrameMap,
+          BHW.sourceFullFrameBasis_apply, Basis.equiv_apply]
+
+      theorem BHW.bilinForm_eq_of_basis_values
+          {ι U : Type*}
+          [Fintype ι] [DecidableEq ι]
+          [AddCommGroup U] [Module ℂ U]
+          (B : LinearMap.BilinForm ℂ U)
+          (b : Basis ι ℂ U)
+          {L : U ≃ₗ[ℂ] U}
+          (hbasis : ∀ a b',
+            B (L (b a)) (L (b b')) = B (b a) (b b')) :
+          ∀ x y, B (L x) (L y) = B x y := by
+        intro x y
+        have hL :
+            B (L x) (L y) =
+              ((b.map L).repr (L x)).sum fun i xi =>
+                ((b.map L).repr (L y)).sum fun j yj =>
+                  xi • yj • B ((b.map L) i) ((b.map L) j) := by
+          exact
+            (LinearMap.sum_repr_mul_repr_mul
+              (b.map L) (b.map L) (B := B) (L x) (L y)).symm
+        have h0 :
+            B x y =
+              (b.repr x).sum fun i xi =>
+                (b.repr y).sum fun j yj =>
+                  xi • yj • B (b i) (b j) := by
+          exact
+            (LinearMap.sum_repr_mul_repr_mul
+              b b (B := B) x y).symm
+        rw [hL, h0]
+        simp [Basis.map, hbasis]
+
+      theorem BHW.basis_pairing_zero_ext
+          {ι U : Type*}
+          [Fintype ι]
+          [AddCommGroup U] [Module ℂ U]
+          (B : LinearMap.BilinForm ℂ U)
+          (b : Basis ι ℂ U)
+          {u : U}
+          (h : ∀ a, B (b a) u = 0) :
+          ∀ v, B v u = 0 := by
+        let f : U →ₗ[ℂ] ℂ :=
+          { toFun := fun v => B v u
+            map_add' := by intro x y; simp
+            map_smul' := by intro c x; simp }
+        have hf : f = 0 := by
+          apply b.ext
+          intro i
+          simp [f, h i]
+        intro v
+        simpa [f] using congrFun (congrArg DFunLike.coe hf) v
+
+      theorem BHW.sourceFullFrameMap_preserves_inner
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          ∀ x y,
+            BHW.sourceComplexMinkowskiInner d
+              (BHW.sourceFullFrameMap d n hgram ι hι x)
+              (BHW.sourceFullFrameMap d n hgram ι hι y) =
+            BHW.sourceComplexMinkowskiInner d x y := by
+        let bZ := BHW.sourceFullFrameBasis d n ι z hι
+        let E := BHW.sourceFullFrameMap d n hgram ι hι
+        have hbasis :
+            ∀ a b,
+              BHW.sourceComplexMinkowskiInner d
+                (E (bZ a)) (E (bZ b)) =
+              BHW.sourceComplexMinkowskiInner d (bZ a) (bZ b) := by
+          intro a b
+          simp [E, bZ, BHW.sourceFullFrameMap_apply_selected,
+            BHW.sourceFullFrameBasis_apply,
+            BHW.sourceMinkowskiGram, hgram]
+        exact
+          BHW.bilinForm_eq_of_basis_values
+            (BHW.sourceComplexMinkowskiBilinForm d) bZ hbasis
+
+      theorem BHW.sourceFullFrameMap_apply_all
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0)
+          (i : Fin n) :
+          BHW.sourceFullFrameMap d n hgram ι hι (z i) = w i := by
+        let E := BHW.sourceFullFrameMap d n hgram ι hι
+        have hpres :=
+          BHW.sourceFullFrameMap_preserves_inner
+            (d := d) d n hgram ι hι
+        let hιw :=
+          BHW.sourceFullFrameDet_ne_zero_of_sameGram_fullFrame
+            (d := d) d n hgram ι hι
+        let bW := BHW.sourceFullFrameBasis d n ι w hιw
+        apply BHW.sourceComplexMinkowskiInner_left_nonDegenerate d
+        intro v
+        -- Reduce `v` to the basis `bW`.  On a basis vector `w (ι a)`,
+        -- subtract the two pairings and use `hpres` plus `hgram`.
+        have hz :
+            BHW.sourceComplexMinkowskiInner d
+              v (E (z i) - w i) = 0 :=
+          BHW.basis_pairing_zero_ext
+            (BHW.sourceComplexMinkowskiBilinForm d) bW (fun a => by
+            calc
+              BHW.sourceComplexMinkowskiInner d
+                  (bW a) (E (z i) - w i)
+                  =
+                BHW.sourceComplexMinkowskiInner d
+                  (E (z (ι a))) (E (z i)) -
+                BHW.sourceComplexMinkowskiInner d
+                  (w (ι a)) (w i) := by
+                    simp [bW, BHW.sourceFullFrameBasis_apply,
+                      BHW.sourceComplexMinkowskiInner_sub_right,
+                      BHW.sourceFullFrameMap_apply_selected]
+              _ =
+                BHW.sourceComplexMinkowskiInner d
+                  (z (ι a)) (z i) -
+                BHW.sourceComplexMinkowskiInner d
+                  (w (ι a)) (w i) := by
+                    rw [hpres]
+              _ = 0 := by
+                    simpa [BHW.sourceMinkowskiGram]
+                      using congrFun (congrFun hgram (ι a)) i) v
+        rw [BHW.sourceComplexMinkowskiInner_comm d
+          (E (z i) - w i) v]
+        exact hz
+
+      theorem BHW.sourceFullFrameMatrix_linearEquivAction
+          (d n : Nat)
+          (L : (Fin (d + 1) -> ℂ) ≃ₗ[ℂ] (Fin (d + 1) -> ℂ))
+          (ι : Fin (d + 1) ↪ Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.sourceFullFrameMatrix d n ι (fun i => L (z i)) =
+            BHW.sourceFullFrameMatrix d n ι z *
+              (LinearMap.toMatrix
+                (Pi.basisFun ℂ (Fin (d + 1)))
+                (Pi.basisFun ℂ (Fin (d + 1))) L.toLinearMap).transpose := by
+        ext a μ
+        simp [BHW.sourceFullFrameMatrix, Matrix.mul_apply,
+          LinearMap.toMatrix_apply, Basis.repr_self]
+
+      theorem BHW.sourceFullFrameDet_linearEquivAction
+          (d n : Nat)
+          (L : (Fin (d + 1) -> ℂ) ≃ₗ[ℂ] (Fin (d + 1) -> ℂ))
+          (ι : Fin (d + 1) ↪ Fin n)
+          (z : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.sourceFullFrameDet d n ι (fun i => L (z i)) =
+            BHW.sourceFullFrameDet d n ι z *
+              LinearMap.det L.toLinearMap := by
+        unfold BHW.sourceFullFrameDet
+        rw [BHW.sourceFullFrameMatrix_linearEquivAction]
+        simp [Matrix.det_mul, Matrix.det_transpose,
+          LinearMap.det_toMatrix]
+
+      theorem BHW.det_sourceFullFrameMap_eq_ratio
+          [NeZero d]
+          (d n : Nat)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (hgram :
+            BHW.sourceMinkowskiGram d n z =
+              BHW.sourceMinkowskiGram d n w)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          LinearMap.det
+              (BHW.sourceFullFrameMap d n hgram ι hι).toLinearMap =
+            BHW.sourceFullFrameDet d n ι w /
+              BHW.sourceFullFrameDet d n ι z := by
+        let E := BHW.sourceFullFrameMap d n hgram ι hι
+        have hact :=
+          BHW.sourceFullFrameDet_linearEquivAction d n E ι z
+        have hall : (fun i => E (z i)) = w := by
+          ext i
+          exact BHW.sourceFullFrameMap_apply_all d n hgram ι hι i
+        rw [hall] at hact
+        exact (eq_div_iff hι).mpr hact.symm
+
+      ```
+
       /-- Independence of the full-frame determinant ratio in the full scalar
       rank case.  If two configurations have the same source Gram matrix and
       one ordered full frame of `z` is nonzero, then every nonzero ordered
@@ -21580,14 +24121,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Nontrivial
             (BHW.complexMinkowskiOrthogonalSubmodule d S.M)
 
+      theorem BHW.restrictedMinkowskiRank_eq_finrank_of_nondegenerate
+          (d : Nat)
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          BHW.restrictedMinkowskiRank d M = Module.finrank ℂ M
+
       theorem BHW.exists_nonisotropic_in_nondegenerate_subspace
           [NeZero d]
           (M : Submodule ℂ (Fin (d + 1) -> ℂ))
+          [Nontrivial M]
           (hM :
-            BHW.ComplexMinkowskiNondegenerateSubspace d M)
-          [Nontrivial M] :
+            BHW.ComplexMinkowskiNondegenerateSubspace d M) :
           ∃ u : M,
-            BHW.sourceComplexMinkowskiInner d u u ≠ 0
+            BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ) ≠ 0
 
       theorem BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
           [NeZero d]
@@ -21602,7 +24151,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
           (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
           (hu :
-            BHW.sourceComplexMinkowskiInner d u u ≠ 0) :
+            BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ) ≠ 0) :
           BHW.HallWightmanFullComplexLorentzGroup d
 
       theorem BHW.fullComplexLorentzReflection_det
@@ -21610,7 +24161,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
           (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
           (hu :
-            BHW.sourceComplexMinkowskiInner d u u ≠ 0) :
+            BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ) ≠ 0) :
           BHW.hallWightmanFullComplexLorentzDet
               (BHW.fullComplexLorentzReflection u hu) = -1
 
@@ -21619,7 +24172,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
           {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
           (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
           (hu :
-            BHW.sourceComplexMinkowskiInner d u u ≠ 0)
+            BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ) ≠ 0)
           (x : M) :
           BHW.hallWightmanFullComplexLorentzVectorAction
               (BHW.fullComplexLorentzReflection u hu) x = x
@@ -21877,7 +24432,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       alternative
       `BHW.complexMinkowski_wittExtension_or_improper_of_sourceSpan`, whose
       right branch records the improper full-complex-orthogonal orbit data.
-      No source-map regularity theorem is used in this high-rank branch.
+      No source-map regularity theorem is used in this high-rank branch.  The
+      Lean proof of the public high-rank alternative is only the conversion
+      from vectorwise source images to the configuration action; all
+      determinant-sensitive mathematics remains in the two Witt-extension
+      producers named below.
 
       Determinant-repair transcript for
       `complexMinkowski_wittExtension_detOne_of_sourceSpan`:
@@ -21968,6 +24527,374 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `HWSameSourceGramSOOrientationCompatible`.  This is the exact place
       where the oriented invariant eliminates the improper full-rank branch.
 
+      The ordinary full-complex Witt extension used in the first line above
+      is itself finite-dimensional linear algebra and must not remain an
+      unnamed black box.  In the high-rank row the domain and target source
+      spans are already nondegenerate, so the proof does not need the fully
+      degenerate version of Witt's theorem.  It extends the checked
+      `S.T : S.M ≃ₗ[ℂ] S.N` by choosing an isometry between the two
+      nondegenerate orthogonal complements and then assembling the direct-sum
+      map.
+
+      Lean-shaped proof transcript for
+      `complexMinkowski_wittExtension_full_of_sourceSpan`:
+
+      ```lean
+      theorem BHW.sourceComplexMinkowskiBilinForm_isSymm
+          (d : Nat) :
+          (BHW.sourceComplexMinkowskiBilinForm d).IsSymm := by
+        intro x y
+        exact BHW.sourceComplexMinkowskiInner_comm d x y
+
+      theorem BHW.exists_complex_unit_orthogonal_basis
+          {U : Type*}
+          [AddCommGroup U] [Module ℂ U] [FiniteDimensional ℂ U]
+          (B : LinearMap.BilinForm ℂ U)
+          (hB_symm : B.IsSymm)
+          (hB_nd : B.Nondegenerate) :
+          ∃ b : Basis (Fin (Module.finrank ℂ U)) ℂ U,
+            B.iIsOrtho b ∧ ∀ i, B (b i) (b i) = 1 := by
+        -- Import boundary:
+        --   Mathlib.LinearAlgebra.QuadraticForm.Basic
+        --   Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+        --   Mathlib.LinearAlgebra.Basis.SMul
+        --   Mathlib.FieldTheory.IsAlgClosed.Basic
+        have hsymm' : LinearMap.IsSymm B :=
+          LinearMap.BilinForm.isSymm_iff.mp hB_symm
+        rcases
+          LinearMap.BilinForm.exists_orthogonal_basis
+            (K := ℂ) (V := U) hsymm' with
+          ⟨b0, hb0_orth⟩
+        have hdiag_ne :
+            ∀ i, B (b0 i) (b0 i) ≠ 0 := by
+          intro i
+          exact
+            LinearMap.BilinForm.iIsOrtho
+              .not_isOrtho_basis_self_of_nondegenerate
+              hb0_orth hB_nd i
+        choose r hr using
+          fun i =>
+            IsAlgClosed.exists_pow_nat_eq
+              (B (b0 i) (b0 i)) (by norm_num : 0 < 2)
+        have hr_ne : ∀ i, r i ≠ 0 := by
+          intro i hzero
+          have : B (b0 i) (b0 i) = 0 := by
+            simpa [hzero] using (hr i).symm
+          exact hdiag_ne i this
+        let c : Fin (Module.finrank ℂ U) -> ℂ :=
+          fun i => (r i)⁻¹
+        have hc_unit : ∀ i, IsUnit (c i) := by
+          intro i
+          exact isUnit_iff_ne_zero.mpr (inv_ne_zero (hr_ne i))
+        let b : Basis (Fin (Module.finrank ℂ U)) ℂ U :=
+          b0.isUnitSMul hc_unit
+        refine ⟨b, ?_, ?_⟩
+        · intro i j hij
+          have hzero : B (b0 i) (b0 j) = 0 := hb0_orth hij
+          change B (b i) (b j) = 0
+          rw [Module.Basis.isUnitSMul_apply,
+            Module.Basis.isUnitSMul_apply]
+          simp [c, hzero]
+        · intro i
+          rw [Module.Basis.isUnitSMul_apply]
+          simp [c]
+          field_simp [hr_ne i]
+          simpa [pow_two] using (hr i).symm
+
+      theorem BHW.bilinForm_eq_sum_coords_of_unitOrthogonalBasis
+          {ι U : Type*}
+          [Fintype ι] [DecidableEq ι]
+          [AddCommGroup U] [Module ℂ U]
+          (B : LinearMap.BilinForm ℂ U)
+          (b : Basis ι ℂ U)
+          (horth : B.iIsOrtho b)
+          (hdiag : ∀ i, B (b i) (b i) = 1)
+          (x y : U) :
+          B x y = ∑ i, b.equivFun x i * b.equivFun y i := by
+        -- Import boundary: Mathlib.LinearAlgebra.Basis.Bilinear.
+        have h1 :
+            B x y =
+              ∑ i, ∑ j,
+                b.repr x i *
+                  (b.repr y j * B (b i) (b j)) := by
+          have hsum :=
+            (LinearMap.sum_repr_mul_repr_mul
+              b b (B := B) x y).symm
+          rw [hsum]
+          rw [Finsupp.sum_fintype]
+          · congr
+            ext i
+            rw [Finsupp.sum_fintype]
+            · simp [smul_eq_mul]
+            · intro j
+              simp
+          · intro i
+            simp
+        rw [h1]
+        simp only [Basis.equivFun_apply]
+        apply Finset.sum_congr rfl
+        intro i hi
+        calc
+          ∑ j,
+              b.repr x i *
+                (b.repr y j * B (b i) (b j))
+              =
+            b.repr x i *
+              (b.repr y i * B (b i) (b i)) := by
+                rw [← Finset.mul_sum]
+                congr 1
+                apply Finset.sum_eq_single i
+                · intro j _ hji
+                  have hz : B (b i) (b j) = 0 :=
+                    horth hji.symm
+                  simp [hz]
+                · intro hi_not
+                  simp at hi_not
+          _ = b.repr x i * b.repr y i := by
+                rw [hdiag i]
+                ring
+
+      theorem BHW.nondegenerate_complexSymmetricBilinForm_linearEquiv_of_finrank_eq
+          {U V : Type*}
+          [AddCommGroup U] [Module ℂ U] [FiniteDimensional ℂ U]
+          [AddCommGroup V] [Module ℂ V] [FiniteDimensional ℂ V]
+          (BU : LinearMap.BilinForm ℂ U)
+          (BV : LinearMap.BilinForm ℂ V)
+          (hBU_symm : BU.IsSymm)
+          (hBV_symm : BV.IsSymm)
+          (hBU_nd : BU.Nondegenerate)
+          (hBV_nd : BV.Nondegenerate)
+          (hfin : Module.finrank ℂ U = Module.finrank ℂ V) :
+          ∃ E : U ≃ₗ[ℂ] V,
+            ∀ x y, BV (E x) (E y) = BU x y := by
+        rcases
+          BHW.exists_complex_unit_orthogonal_basis
+            BU hBU_symm hBU_nd with
+          ⟨bU, hUorth, hUdiag⟩
+        rcases
+          BHW.exists_complex_unit_orthogonal_basis
+            BV hBV_symm hBV_nd with
+          ⟨bV0, hV0orth, hV0diag⟩
+        let eι :
+            Fin (Module.finrank ℂ U) ≃
+              Fin (Module.finrank ℂ V) :=
+          finCongr hfin
+        let bV : Basis (Fin (Module.finrank ℂ U)) ℂ V :=
+          bV0.reindex eι.symm
+        have hVorth : BV.iIsOrtho bV := by
+          intro i j hij
+          change BV (bV i) (bV j) = 0
+          have hij' : eι i ≠ eι j :=
+            fun h => hij (eι.injective h)
+          simpa [bV, Basis.reindex_apply] using hV0orth hij'
+        have hVdiag : ∀ i, BV (bV i) (bV i) = 1 := by
+          intro i
+          simp [bV, Basis.reindex_apply, hV0diag]
+        let E : U ≃ₗ[ℂ] V := bU.equiv bV (Equiv.refl _)
+        refine ⟨E, ?_⟩
+        intro x y
+        have hcoordx : bV.equivFun (E x) = bU.equivFun x := by
+          have hmap : bU.map E = bV := by
+            simpa [E] using
+              Basis.map_equiv bU bV (Equiv.refl _)
+          rw [← hmap, Basis.map_equivFun]
+          exact congrArg bU.equivFun (E.symm_apply_apply x)
+        have hcoordy : bV.equivFun (E y) = bU.equivFun y := by
+          have hmap : bU.map E = bV := by
+            simpa [E] using
+              Basis.map_equiv bU bV (Equiv.refl _)
+          rw [← hmap, Basis.map_equivFun]
+          exact congrArg bU.equivFun (E.symm_apply_apply y)
+        rw [
+          BHW.bilinForm_eq_sum_coords_of_unitOrthogonalBasis
+            BV bV hVorth hVdiag (E x) (E y)]
+        rw [
+          BHW.bilinForm_eq_sum_coords_of_unitOrthogonalBasis
+            BU bU hUorth hUdiag x y]
+        rw [hcoordx, hcoordy]
+
+      theorem BHW.exists_complexMinkowskiOrthogonalComplementIsometry
+          [NeZero d]
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (S : BHW.HWHighRankSpanIsometryData d n z w) :
+          ∃ C :
+              BHW.complexMinkowskiOrthogonalSubmodule d S.M ≃ₗ[ℂ]
+                BHW.complexMinkowskiOrthogonalSubmodule d S.N,
+            ∀ x y,
+              BHW.sourceComplexMinkowskiInner d
+                ((C x :
+                  BHW.complexMinkowskiOrthogonalSubmodule d S.N) :
+                    Fin (d + 1) -> ℂ)
+                ((C y :
+                  BHW.complexMinkowskiOrthogonalSubmodule d S.N) :
+                    Fin (d + 1) -> ℂ) =
+              BHW.sourceComplexMinkowskiInner d
+                (x : Fin (d + 1) -> ℂ)
+                (y : Fin (d + 1) -> ℂ) := by
+        let B := BHW.sourceComplexMinkowskiBilinForm d
+        have hB_nd : B.Nondegenerate :=
+          BHW.sourceComplexMinkowskiBilinForm_nondegenerate d
+        have hB_symm : B.IsSymm :=
+          BHW.sourceComplexMinkowskiBilinForm_isSymm d
+        have hOM_nd :
+            (B.restrict
+              (BHW.complexMinkowskiOrthogonalSubmodule d S.M)).Nondegenerate :=
+          BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+            d _ (BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
+              (d := d) S.M S.M_nondegenerate)
+        have hON_nd :
+            (B.restrict
+              (BHW.complexMinkowskiOrthogonalSubmodule d S.N)).Nondegenerate :=
+          BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+            d _ (BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
+              (d := d) S.N S.N_nondegenerate)
+        have hfin_MN : Module.finrank ℂ S.M = Module.finrank ℂ S.N :=
+          S.T.finrank_eq
+        have hfin_comp :
+            Module.finrank ℂ
+                (BHW.complexMinkowskiOrthogonalSubmodule d S.M) =
+              Module.finrank ℂ
+                (BHW.complexMinkowskiOrthogonalSubmodule d S.N) := by
+          have hM :=
+            LinearMap.BilinForm.finrank_orthogonal
+              (B := B) hB_nd S.M
+          have hN :=
+            LinearMap.BilinForm.finrank_orthogonal
+              (B := B) hB_nd S.N
+          omega
+        rcases
+          BHW.nondegenerate_complexSymmetricBilinForm_linearEquiv_of_finrank_eq
+            (B.restrict
+              (BHW.complexMinkowskiOrthogonalSubmodule d S.M))
+            (B.restrict
+              (BHW.complexMinkowskiOrthogonalSubmodule d S.N))
+            (BHW.restrict_isSymm_of_isSymm hB_symm _)
+            (BHW.restrict_isSymm_of_isSymm hB_symm _)
+            hOM_nd hON_nd hfin_comp with
+          ⟨C, hC⟩
+        exact ⟨C, by
+          intro x y
+          simpa [LinearMap.BilinForm.restrict,
+            BHW.sourceComplexMinkowskiBilinForm] using hC x y⟩
+
+      def BHW.HallWightmanFullComplexLorentzGroup.ofLinearEquiv
+          [NeZero d]
+          (L : (Fin (d + 1) -> ℂ) ≃ₗ[ℂ] (Fin (d + 1) -> ℂ))
+          (hL :
+            ∀ u v,
+              BHW.sourceComplexMinkowskiInner d (L u) (L v) =
+                BHW.sourceComplexMinkowskiInner d u v) :
+          BHW.HallWightmanFullComplexLorentzGroup d :=
+        { val :=
+            LinearMap.toMatrix
+              (Pi.basisFun ℂ (Fin (d + 1)))
+              (Pi.basisFun ℂ (Fin (d + 1))) L.toLinearMap
+          metric_preserving := by
+            exact
+              BHW.metric_preserving_components_of_preserves_sourceInner
+                d L hL }
+
+      theorem BHW.HallWightmanFullComplexLorentzGroup.ofLinearEquiv_vectorAction
+          [NeZero d]
+          (L : (Fin (d + 1) -> ℂ) ≃ₗ[ℂ] (Fin (d + 1) -> ℂ))
+          (hL :
+            ∀ u v,
+              BHW.sourceComplexMinkowskiInner d (L u) (L v) =
+                BHW.sourceComplexMinkowskiInner d u v)
+          (x : Fin (d + 1) -> ℂ) :
+          BHW.hallWightmanFullComplexLorentzVectorAction
+              (BHW.HallWightmanFullComplexLorentzGroup.ofLinearEquiv
+                L hL) x = L x := by
+        ext μ
+        simp [BHW.HallWightmanFullComplexLorentzGroup.ofLinearEquiv,
+          BHW.hallWightmanFullComplexLorentzVectorAction,
+          LinearMap.toMatrix, Matrix.mulVec, Pi.basisFun]
+
+      theorem BHW.complexMinkowski_wittExtension_full_of_sourceSpan
+          [NeZero d]
+          (hd : 2 <= d)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (S : BHW.HWHighRankSpanIsometryData d n z w) :
+          ∃ A : BHW.HallWightmanFullComplexLorentzGroup d,
+            ∀ i,
+              BHW.hallWightmanFullComplexLorentzVectorAction A (z i) =
+                w i := by
+        let B := BHW.sourceComplexMinkowskiBilinForm d
+        rcases
+          BHW.exists_complexMinkowskiOrthogonalComplementIsometry
+            (d := d) S with
+          ⟨C, hC⟩
+        have hSM_rest : (B.restrict S.M).Nondegenerate :=
+          BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+            d S.M S.M_nondegenerate
+        have hSN_rest : (B.restrict S.N).Nondegenerate :=
+          BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+            d S.N S.N_nondegenerate
+        have hSM_compl : IsCompl S.M (B.orthogonal S.M) :=
+          (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+            (B := B) (W := S.M)
+            (BHW.sourceComplexMinkowskiBilinForm_isRefl d)).mp hSM_rest
+        have hSN_compl : IsCompl S.N (B.orthogonal S.N) :=
+          (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+            (B := B) (W := S.N)
+            (BHW.sourceComplexMinkowskiBilinForm_isRefl d)).mp hSN_rest
+        let eM :
+            S.M × BHW.complexMinkowskiOrthogonalSubmodule d S.M
+              ≃ₗ[ℂ] (Fin (d + 1) -> ℂ) :=
+          Submodule.prodEquivOfIsCompl S.M
+            (BHW.complexMinkowskiOrthogonalSubmodule d S.M)
+            (by simpa [BHW.complexMinkowskiOrthogonalSubmodule, B]
+              using hSM_compl)
+        let eN :
+            S.N × BHW.complexMinkowskiOrthogonalSubmodule d S.N
+              ≃ₗ[ℂ] (Fin (d + 1) -> ℂ) :=
+          Submodule.prodEquivOfIsCompl S.N
+            (BHW.complexMinkowskiOrthogonalSubmodule d S.N)
+            (by simpa [BHW.complexMinkowskiOrthogonalSubmodule, B]
+              using hSN_compl)
+        let P :
+            S.M × BHW.complexMinkowskiOrthogonalSubmodule d S.M
+              ≃ₗ[ℂ]
+            S.N × BHW.complexMinkowskiOrthogonalSubmodule d S.N :=
+          S.T.prod C
+        let L : (Fin (d + 1) -> ℂ) ≃ₗ[ℂ]
+            (Fin (d + 1) -> ℂ) :=
+          eM.symm.trans (P.trans eN)
+        have hL :
+            ∀ u v,
+              BHW.sourceComplexMinkowskiInner d (L u) (L v) =
+                BHW.sourceComplexMinkowskiInner d u v := by
+          intro u v
+          exact
+            BHW.sourceInner_preserved_prodEquiv_of_span_and_orthogonal
+              (d := d) S C hC hSM_compl hSN_compl u v
+        let A :=
+          BHW.HallWightmanFullComplexLorentzGroup.ofLinearEquiv
+            (d := d) L hL
+        refine ⟨A, ?_⟩
+        intro i
+        calc
+          BHW.hallWightmanFullComplexLorentzVectorAction A (z i)
+              = L (z i) := by
+                exact
+                  BHW.HallWightmanFullComplexLorentzGroup
+                    .ofLinearEquiv_vectorAction L hL (z i)
+          _ = w i := by
+                simpa [L, P, eM, eN,
+                  Submodule.prodEquivOfIsCompl_symm_apply_left,
+                  S.T_z i]
+      ```
+
+      This closes the former standard-boundary placeholder
+      `complex_symmetric_nondegenerate_forms_isometric_of_finrank_eq` at
+      proof-doc level.  The local proof uses only finite-dimensional
+      bilinear algebra: Mathlib's orthogonal-basis theorem for symmetric
+      bilinear forms, nondegeneracy to make each diagonal entry nonzero,
+      algebraic closedness of `ℂ` for square roots, basis rescaling by
+      `Basis.isUnitSMul`, and `LinearMap.sum_repr_mul_repr_mul` to reduce
+      both forms to the same coordinate sum.  No new axiom is authorized or
+      needed for this helper.
+
       Proof transcript for
       `fullComplexLorentz_det_eq_frameMapDet_of_fullRank`:
 
@@ -22025,6 +24952,810 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `hallWightmanFullComplexLorentzDet A`.  This theorem is the full-group
       analog of the determinant-`1` lemma used for
       `sourceOrientedMinkowskiInvariant_complexLorentzAction`.
+
+      Implementation-level full-complex Lorentz ledger.  The determinant
+      repair theorem may not start by adding an opaque "full Lorentz" object.
+      The first Lean slice in this row is the following purely finite
+      matrix/submodule support, in this order:
+
+      ```lean
+      /-- Full complex Lorentz group `O(1,d;ℂ)`: preserve the same complex
+      Minkowski matrix as `ComplexLorentzGroup d`, but carry no determinant
+      condition. -/
+      structure BHW.HallWightmanFullComplexLorentzGroup (d : Nat) where
+        val : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ
+        metric_preserving : ∀ μ ν : Fin (d + 1),
+          ∑ α : Fin (d + 1),
+            (minkowskiSignature d α : ℂ) * val α μ * val α ν =
+          if μ = ν then (minkowskiSignature d μ : ℂ) else 0
+
+      def BHW.hallWightmanFullComplexLorentzVectorAction
+          (A : BHW.HallWightmanFullComplexLorentzGroup d)
+          (v : Fin (d + 1) -> ℂ) :
+          Fin (d + 1) -> ℂ :=
+        fun μ => ∑ ν : Fin (d + 1), A.val μ ν * v ν
+
+      def BHW.hallWightmanFullComplexLorentzAction
+          (A : BHW.HallWightmanFullComplexLorentzGroup d)
+          (z : Fin n -> Fin (d + 1) -> ℂ) :
+          Fin n -> Fin (d + 1) -> ℂ :=
+        fun i => BHW.hallWightmanFullComplexLorentzVectorAction A (z i)
+
+      def BHW.hallWightmanFullComplexLorentzDet
+          (A : BHW.HallWightmanFullComplexLorentzGroup d) : ℂ :=
+        A.val.det
+
+      def BHW.complexLorentzVectorAction
+          (Λ : ComplexLorentzGroup d)
+          (v : Fin (d + 1) -> ℂ) :
+          Fin (d + 1) -> ℂ :=
+        fun μ => ∑ ν : Fin (d + 1), Λ.val μ ν * v ν
+
+      theorem BHW.complexLorentzAction_apply_eq_vectorAction
+          (Λ : ComplexLorentzGroup d)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (i : Fin n) :
+          BHW.complexLorentzAction Λ z i =
+            BHW.complexLorentzVectorAction Λ (z i) := rfl
+
+      theorem BHW.hallWightmanFullComplexLorentz_metric_preserving_matrix
+          (A : BHW.HallWightmanFullComplexLorentzGroup d) :
+          A.val.transpose * ComplexLorentzGroup.ηℂ (d := d) * A.val =
+            ComplexLorentzGroup.ηℂ (d := d)
+
+      theorem BHW.complexLorentzEta_det_ne_zero (d : Nat) :
+          (ComplexLorentzGroup.ηℂ (d := d)).det ≠ 0 := by
+        rw [ComplexLorentzGroup.ηℂ, Matrix.det_diagonal]
+        apply Finset.prod_ne_zero_iff.mpr
+        intro i _
+        by_cases hi : i = 0
+        · simp [minkowskiSignature, hi]
+        · simp [minkowskiSignature, hi]
+
+      theorem BHW.hallWightmanFullComplexLorentz_det_sq_eq_one
+          (A : BHW.HallWightmanFullComplexLorentzGroup d) :
+          (BHW.hallWightmanFullComplexLorentzDet A) ^ 2 = 1 := by
+        have hmat :=
+          BHW.hallWightmanFullComplexLorentz_metric_preserving_matrix A
+        have hdet := congrArg Matrix.det hmat
+        have hη :
+            (ComplexLorentzGroup.ηℂ (d := d)).det ≠ 0 :=
+          BHW.complexLorentzEta_det_ne_zero d
+        rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_transpose] at hdet
+        have hdet' :
+            A.val.det * A.val.det *
+                (ComplexLorentzGroup.ηℂ (d := d)).det =
+              1 * (ComplexLorentzGroup.ηℂ (d := d)).det := by
+          calc
+            A.val.det * A.val.det *
+                (ComplexLorentzGroup.ηℂ (d := d)).det
+                =
+              A.val.det * (ComplexLorentzGroup.ηℂ (d := d)).det *
+                A.val.det := by ring
+            _ = (ComplexLorentzGroup.ηℂ (d := d)).det := hdet
+            _ = 1 * (ComplexLorentzGroup.ηℂ (d := d)).det := by ring
+        have hcancel := mul_right_cancel₀ hη hdet'
+        simpa [BHW.hallWightmanFullComplexLorentzDet, pow_two] using hcancel
+
+      theorem BHW.det_eq_neg_one_of_sq_one_of_ne_one
+          {a : ℂ} (hsq : a ^ 2 = 1) (hne : a ≠ 1) : a = -1 := by
+        have hfactor : (a - 1) * (a + 1) = 0 := by
+          calc
+            (a - 1) * (a + 1) = a ^ 2 - 1 := by ring
+            _ = 0 := by rw [hsq]; ring
+        rcases mul_eq_zero.mp hfactor with hminus | hplus
+        · exact False.elim (hne (sub_eq_zero.mp hminus))
+        · exact eq_neg_of_add_eq_zero_left hplus
+
+      def BHW.complexLorentzGroup_to_fullComplexLorentz
+          (Λ : ComplexLorentzGroup d) :
+          BHW.HallWightmanFullComplexLorentzGroup d :=
+        { val := Λ.val
+          metric_preserving := Λ.metric_preserving }
+
+      def BHW.hallWightmanFullComplexLorentzMul
+          (A B : BHW.HallWightmanFullComplexLorentzGroup d) :
+          BHW.HallWightmanFullComplexLorentzGroup d where
+        val := A.val * B.val
+        metric_preserving := by
+          apply ComplexLorentzGroup.of_metric_preserving_matrix
+          rw [Matrix.transpose_mul]
+          calc
+            B.val.transpose * A.val.transpose *
+                ComplexLorentzGroup.ηℂ * (A.val * B.val)
+                =
+              B.val.transpose *
+                  (A.val.transpose * ComplexLorentzGroup.ηℂ * A.val) *
+                B.val := by
+                  simp only [Matrix.mul_assoc]
+            _ = B.val.transpose * ComplexLorentzGroup.ηℂ * B.val := by
+                  rw [BHW.hallWightmanFullComplexLorentz_metric_preserving_matrix A]
+            _ = ComplexLorentzGroup.ηℂ :=
+                  BHW.hallWightmanFullComplexLorentz_metric_preserving_matrix B
+
+      theorem BHW.fullComplexLorentz_mul_det
+          (A B : BHW.HallWightmanFullComplexLorentzGroup d) :
+          BHW.hallWightmanFullComplexLorentzDet
+              (BHW.hallWightmanFullComplexLorentzMul A B) =
+            BHW.hallWightmanFullComplexLorentzDet A *
+              BHW.hallWightmanFullComplexLorentzDet B := by
+        simp [BHW.hallWightmanFullComplexLorentzDet,
+          BHW.hallWightmanFullComplexLorentzMul, Matrix.det_mul]
+
+      theorem BHW.fullComplexLorentz_mul_vectorAction
+          (A B : BHW.HallWightmanFullComplexLorentzGroup d)
+          (v : Fin (d + 1) -> ℂ) :
+          BHW.hallWightmanFullComplexLorentzVectorAction
+              (BHW.hallWightmanFullComplexLorentzMul A B) v =
+            BHW.hallWightmanFullComplexLorentzVectorAction A
+              (BHW.hallWightmanFullComplexLorentzVectorAction B v) := by
+        ext μ
+        simp only [BHW.hallWightmanFullComplexLorentzVectorAction,
+          BHW.hallWightmanFullComplexLorentzMul, Matrix.mul_apply]
+        simp_rw [Finset.sum_mul]
+        rw [Finset.sum_comm]
+        congr 1
+        ext ν
+        simp_rw [mul_assoc]
+        rw [← Finset.mul_sum]
+
+      theorem BHW.fullComplexLorentz_mul_configAction
+          (A B : BHW.HallWightmanFullComplexLorentzGroup d)
+          (z : Fin n -> Fin (d + 1) -> ℂ) :
+          BHW.hallWightmanFullComplexLorentzAction
+              (BHW.hallWightmanFullComplexLorentzMul A B) z =
+            BHW.hallWightmanFullComplexLorentzAction A
+              (BHW.hallWightmanFullComplexLorentzAction B z) := by
+        ext i μ
+        simpa [BHW.hallWightmanFullComplexLorentzAction] using
+          congrFun (BHW.fullComplexLorentz_mul_vectorAction A B (z i)) μ
+
+      theorem BHW.fullComplexLorentz_to_complexLorentzGroup_of_det_one
+          (A : BHW.HallWightmanFullComplexLorentzGroup d)
+          (hdet : BHW.hallWightmanFullComplexLorentzDet A = 1) :
+          ∃ Λ : ComplexLorentzGroup d,
+            ∀ v,
+              BHW.complexLorentzVectorAction Λ v =
+                BHW.hallWightmanFullComplexLorentzVectorAction A v := by
+        let Λ : ComplexLorentzGroup d :=
+          { val := A.val
+            metric_preserving := A.metric_preserving
+            proper := hdet }
+        exact ⟨Λ, fun v => rfl⟩
+      ```
+
+      The proof of
+      `hallWightmanFullComplexLorentz_metric_preserving_matrix` is the same
+      componentwise-to-matrix calculation already used in
+      `ComplexLorentzGroup.metric_preserving_matrix`, with the determinant
+      field omitted.  The determinant-square proof above was scratch-checked
+      against Lean's matrix API: take determinants in `Aᵀ η A = η`, rewrite
+      with `Matrix.det_mul` and `Matrix.det_transpose`, prove `det η ≠ 0`
+      from the diagonal `±1` entries of `ComplexLorentzGroup.ηℂ`, and cancel
+      `det η`.
+
+      The matrix equation, determinant square, multiplication, and vector
+      action lemmas above were scratch-checked against the local Lean APIs.
+      They are the only full-group algebra allowed before the Witt theorem.
+      They do not mention `extendF`, scalar representatives, theorem-2
+      locality, PET, EOW, or OS fields.
+
+      The orthogonal-complement bridge must be stated through Mathlib's
+      bilinear-form API, but the production pairing remains the already
+      implemented `BHW.sourceComplexMinkowskiInner`.
+
+      ```lean
+      def BHW.sourceComplexMinkowskiBilinForm
+          (d : Nat) :
+          LinearMap.BilinForm ℂ (Fin (d + 1) -> ℂ) where
+        toFun := fun u =>
+          { toFun := fun v => BHW.sourceComplexMinkowskiInner d u v
+            map_add' := BHW.sourceComplexMinkowskiInner_add_right d u
+            map_smul' := by
+              intro a v
+              exact BHW.sourceComplexMinkowskiInner_smul_right d a u v }
+        map_add' := by
+          intro u v
+          ext w
+          simp [BHW.sourceComplexMinkowskiInner_add_left]
+        map_smul' := by
+          intro a u
+          ext w
+          simp [BHW.sourceComplexMinkowskiInner_smul_left]
+
+      theorem BHW.sourceComplexMinkowskiBilinForm_isRefl
+          (d : Nat) :
+          (BHW.sourceComplexMinkowskiBilinForm d).IsRefl := by
+        intro x y hxy
+        simpa [BHW.sourceComplexMinkowskiBilinForm,
+          BHW.sourceComplexMinkowskiInner_comm d y x] using hxy
+
+      theorem BHW.sourceComplexMinkowskiBilinForm_nondegenerate
+          (d : Nat) :
+          (BHW.sourceComplexMinkowskiBilinForm d).Nondegenerate := by
+        apply LinearMap.BilinForm.Nondegenerate.ofSeparatingLeft
+        intro w hw
+        apply BHW.sourceComplexMinkowskiInner_left_nonDegenerate d
+        intro v
+        simpa [BHW.sourceComplexMinkowskiBilinForm] using hw v
+
+      theorem BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+          (d : Nat)
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ))
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          ((BHW.sourceComplexMinkowskiBilinForm d).restrict M).Nondegenerate := by
+        apply LinearMap.BilinForm.Nondegenerate.ofSeparatingLeft
+        intro x hx
+        apply hM x
+        intro y
+        simpa [LinearMap.BilinForm.restrict,
+          BHW.sourceComplexMinkowskiBilinForm] using hx y
+
+      theorem BHW.complexMinkowskiNondegenerateSubspace_of_restrict
+          (d : Nat)
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ))
+          (hM :
+            ((BHW.sourceComplexMinkowskiBilinForm d).restrict M).Nondegenerate) :
+          BHW.ComplexMinkowskiNondegenerateSubspace d M := by
+        intro x hx
+        have hxker :
+            x ∈ LinearMap.ker
+              ((BHW.sourceComplexMinkowskiBilinForm d).restrict M) := by
+          rw [LinearMap.mem_ker]
+          ext y
+          simpa [LinearMap.BilinForm.restrict,
+            BHW.sourceComplexMinkowskiBilinForm] using hx y
+        have hker := LinearMap.BilinForm.Nondegenerate.ker_eq_bot hM
+        have : x ∈ (⊥ : Submodule ℂ M) := by
+          simpa [hker] using hxker
+        simpa using this
+
+      def BHW.complexMinkowskiOrthogonalSubmodule
+          (d : Nat)
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ)) :
+          Submodule ℂ (Fin (d + 1) -> ℂ) :=
+        (BHW.sourceComplexMinkowskiBilinForm d).orthogonal M
+
+      theorem BHW.mem_complexMinkowskiOrthogonalSubmodule_iff
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          {u : Fin (d + 1) -> ℂ} :
+          u ∈ BHW.complexMinkowskiOrthogonalSubmodule d M ↔
+            ∀ x : M,
+              BHW.sourceComplexMinkowskiInner d
+                (x : Fin (d + 1) -> ℂ) u = 0 := by
+        rw [BHW.complexMinkowskiOrthogonalSubmodule,
+          LinearMap.BilinForm.mem_orthogonal_iff]
+        constructor
+        · intro h x
+          simpa [LinearMap.BilinForm.IsOrtho,
+            BHW.sourceComplexMinkowskiBilinForm] using
+            h (x : Fin (d + 1) -> ℂ) x.2
+        · intro h x hx
+          simpa [LinearMap.BilinForm.IsOrtho,
+            BHW.sourceComplexMinkowskiBilinForm] using
+            h ⟨x, hx⟩
+
+      theorem BHW.complexMinkowskiOrthogonalSubmodule_nondegenerate
+          [NeZero d]
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ))
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          BHW.ComplexMinkowskiNondegenerateSubspace d
+            (BHW.complexMinkowskiOrthogonalSubmodule d M) := by
+        let B := BHW.sourceComplexMinkowskiBilinForm d
+        have hB_refl : B.IsRefl :=
+          BHW.sourceComplexMinkowskiBilinForm_isRefl d
+        have hB_nd : B.Nondegenerate :=
+          BHW.sourceComplexMinkowskiBilinForm_nondegenerate d
+        have hMrest : (B.restrict M).Nondegenerate := by
+          simpa [B] using
+            BHW.complexMinkowskiNondegenerateSubspace_to_restrict
+              d M hM
+        have hCompl : IsCompl M (B.orthogonal M) :=
+          (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+            (B := B) (W := M) hB_refl).mp hMrest
+        have horthorth : B.orthogonal (B.orthogonal M) = M :=
+          LinearMap.BilinForm.orthogonal_orthogonal
+            (B := B) hB_nd hB_refl M
+        have hCompl2 :
+            IsCompl (B.orthogonal M)
+              (B.orthogonal (B.orthogonal M)) := by
+          simpa [horthorth] using hCompl.symm
+        have hOrest :
+            (B.restrict (B.orthogonal M)).Nondegenerate :=
+          (LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal
+            (B := B) (W := B.orthogonal M) hB_refl).mpr hCompl2
+        simpa [BHW.complexMinkowskiOrthogonalSubmodule, B] using
+          BHW.complexMinkowskiNondegenerateSubspace_of_restrict
+            d (B.orthogonal M) hOrest
+
+      theorem BHW.restrictedMinkowskiRank_eq_finrank_of_nondegenerate
+          (d : Nat)
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          BHW.restrictedMinkowskiRank d M = Module.finrank ℂ M := by
+        have hrad_bot :
+            BHW.restrictedMinkowskiRadical d M = ⊥ := by
+          apply le_antisymm
+          · intro x hx
+            have hx0 : x = 0 := by
+              apply hM x
+              intro y
+              have hxker :
+                  BHW.restrictedMinkowskiLeftMap d M x = 0 := by
+                simpa [BHW.restrictedMinkowskiRadical] using hx
+              exact congrFun (congrArg DFunLike.coe hxker) y
+            simp [hx0]
+          · exact bot_le
+        have hbotfin :
+            Module.finrank ℂ (⊥ : Submodule ℂ M) = 0 :=
+          finrank_bot ℂ M
+        rw [BHW.restrictedMinkowskiRank, hrad_bot, hbotfin,
+          Nat.sub_zero]
+
+      theorem BHW.sourceSpan_orthogonalComplement_nontrivial_of_proper
+          [NeZero d]
+          (_hd : 2 <= d)
+          {z w : Fin n -> Fin (d + 1) -> ℂ}
+          (S : BHW.HWHighRankSpanIsometryData d n z w)
+          (hproper :
+            BHW.sourceGramMatrixRank n
+                (BHW.sourceMinkowskiGram d n z) < d + 1) :
+          Nontrivial
+            (BHW.complexMinkowskiOrthogonalSubmodule d S.M) := by
+        let B := BHW.sourceComplexMinkowskiBilinForm d
+        have hB_nd : B.Nondegenerate :=
+          BHW.sourceComplexMinkowskiBilinForm_nondegenerate d
+        have hrank_eq :
+            BHW.sourceGramMatrixRank n
+                (BHW.sourceMinkowskiGram d n z) =
+              Module.finrank ℂ S.M := by
+          calc
+            BHW.sourceGramMatrixRank n
+                (BHW.sourceMinkowskiGram d n z)
+                =
+              BHW.restrictedMinkowskiRank d
+                (LinearMap.range
+                  (BHW.sourceCoefficientEval d n z)) :=
+                  BHW.sourceGramMatrixRank_eq_restrictedMinkowskiRank_range
+                    d n z
+            _ = BHW.restrictedMinkowskiRank d S.M := by
+                  rw [← S.M_eq_range]
+            _ = Module.finrank ℂ S.M :=
+                  BHW.restrictedMinkowskiRank_eq_finrank_of_nondegenerate
+                    d S.M_nondegenerate
+        have hM_lt : Module.finrank ℂ S.M < d + 1 := by
+          simpa [hrank_eq] using hproper
+        have horth_fin :
+            Module.finrank ℂ
+                (BHW.complexMinkowskiOrthogonalSubmodule d S.M) =
+              Module.finrank ℂ (Fin (d + 1) -> ℂ) -
+                Module.finrank ℂ S.M := by
+          simpa [BHW.complexMinkowskiOrthogonalSubmodule, B] using
+            LinearMap.BilinForm.finrank_orthogonal
+              (B := B) hB_nd S.M
+        have hOpos :
+            0 < Module.finrank ℂ
+              (BHW.complexMinkowskiOrthogonalSubmodule d S.M) := by
+          rw [horth_fin]
+          simpa [Module.finrank_fin_fun] using
+            Nat.sub_pos_of_lt hM_lt
+        exact Module.nontrivial_of_finrank_pos hOpos
+      ```
+
+      The proof of `sourceComplexMinkowskiBilinForm_nondegenerate` was
+      scratch-checked against Lean and reuses the already implemented
+      `sourceComplexMinkowskiInner_left_nonDegenerate`; no new diagonal-model
+      theorem is needed for this ambient nondegeneracy bridge.  The checked
+      diagonal scale `BHW.complexMinkowskiToDotLinearEquiv d` remains useful
+      for the full Witt-extension theorem and for symmetric source-variety
+      identification, but it is not the first proof of ambient
+      nondegeneracy.  The proof of
+      `complexMinkowskiOrthogonalSubmodule_nondegenerate` first converts
+      `ComplexMinkowskiNondegenerateSubspace d M` to
+      `(B.restrict M).Nondegenerate`, applies
+      `LinearMap.BilinForm.restrict_nondegenerate_iff_isCompl_orthogonal` to
+      get `IsCompl M (B.orthogonal M)`, and then uses the same theorem in the
+      complementary direction for `B.orthogonal M`, together with ambient
+      nondegeneracy and reflexivity.  The proof of
+      `restrictedMinkowskiRank_eq_finrank_of_nondegenerate` first proves the
+      restricted radical is bottom from `S.M_nondegenerate`, then unfolds
+      `restrictedMinkowskiRank`.  The proof of
+      `sourceSpan_orthogonalComplement_nontrivial_of_proper` rewrites `S.M`
+      as `LinearMap.range (sourceCoefficientEval d n z)`, uses the checked
+      `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range`, applies
+      `restrictedMinkowskiRank_eq_finrank_of_nondegenerate` to replace the
+      restricted rank by `finrank S.M`, and obtains `finrank S.M < d + 1`
+      from `hproper`.  Since the ambient vector space has finrank `d + 1`,
+      `LinearMap.BilinForm.finrank_orthogonal` gives positive finrank of
+      `S.Mᗮ`, and `Module.nontrivial_of_finrank_pos` turns this into
+      `Nontrivial S.Mᗮ`.  This complement proof transcript was
+      scratch-checked against the local Lean APIs.
+
+      Finally, the reflection theorem is not a sign-choice black box.  It is
+      the explicit Householder map.  The nonisotropic vector is produced from
+      nondegeneracy by polarization, and the determinant is computed by the
+      standard line/quotient determinant formula for a module reflection.
+
+      ```lean
+      theorem BHW.exists_nonisotropic_in_nondegenerate_subspace
+          (d : Nat)
+          (M : Submodule ℂ (Fin (d + 1) -> ℂ))
+          [Nontrivial M]
+          (hM : BHW.ComplexMinkowskiNondegenerateSubspace d M) :
+          ∃ u : M,
+            BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ) ≠ 0 := by
+        by_contra hnone
+        push Not at hnone
+        obtain ⟨x, hx_ne⟩ := exists_ne (0 : M)
+        have hx_zero : x = 0 := by
+          apply hM x
+          intro y
+          have hxy_diag := hnone (x + y)
+          have hx_diag := hnone x
+          have hy_diag := hnone y
+          have hexpand :
+              BHW.sourceComplexMinkowskiInner d
+                  ((x + y : M) : Fin (d + 1) -> ℂ)
+                  ((x + y : M) : Fin (d + 1) -> ℂ) =
+                BHW.sourceComplexMinkowskiInner d
+                    (x : Fin (d + 1) -> ℂ)
+                    (x : Fin (d + 1) -> ℂ) +
+                  BHW.sourceComplexMinkowskiInner d
+                    (x : Fin (d + 1) -> ℂ)
+                    (y : Fin (d + 1) -> ℂ) +
+                  BHW.sourceComplexMinkowskiInner d
+                    (y : Fin (d + 1) -> ℂ)
+                    (x : Fin (d + 1) -> ℂ) +
+                  BHW.sourceComplexMinkowskiInner d
+                    (y : Fin (d + 1) -> ℂ)
+                    (y : Fin (d + 1) -> ℂ) := by
+            simp [BHW.sourceComplexMinkowskiInner_add_left,
+              BHW.sourceComplexMinkowskiInner_add_right]
+            ring
+          have hsum :
+              BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) +
+                BHW.sourceComplexMinkowskiInner d
+                  (y : Fin (d + 1) -> ℂ)
+                  (x : Fin (d + 1) -> ℂ) = 0 := by
+            rw [hexpand, hx_diag, hy_diag] at hxy_diag
+            simpa using hxy_diag
+          have hsym :
+              BHW.sourceComplexMinkowskiInner d
+                  (y : Fin (d + 1) -> ℂ)
+                  (x : Fin (d + 1) -> ℂ) =
+                BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) :=
+            BHW.sourceComplexMinkowskiInner_comm d
+              (y : Fin (d + 1) -> ℂ)
+              (x : Fin (d + 1) -> ℂ)
+          have htwo :
+              (2 : ℂ) * BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) = 0 := by
+            calc
+              (2 : ℂ) * BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ)
+                  =
+                BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) +
+                BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) := by ring
+              _ =
+                BHW.sourceComplexMinkowskiInner d
+                  (x : Fin (d + 1) -> ℂ)
+                  (y : Fin (d + 1) -> ℂ) +
+                BHW.sourceComplexMinkowskiInner d
+                  (y : Fin (d + 1) -> ℂ)
+                  (x : Fin (d + 1) -> ℂ) := by
+                    rw [hsym]
+              _ = 0 := hsum
+          exact
+            (mul_eq_zero.mp htwo).resolve_left
+              (two_ne_zero (α := ℂ))
+        exact hx_ne hx_zero
+
+      def BHW.fullComplexLorentzReflectionLinear
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0) :
+          (Fin (d + 1) -> ℂ) →ₗ[ℂ] (Fin (d + 1) -> ℂ) :=
+        LinearMap.id -
+          ((2 / BHW.sourceComplexMinkowskiInner d
+              (u : Fin (d + 1) -> ℂ)
+              (u : Fin (d + 1) -> ℂ)) •
+            LinearMap.BilinForm.toLinHomFlip
+              (BHW.sourceComplexMinkowskiBilinForm d)
+              (u : Fin (d + 1) -> ℂ)).smulRight
+            (u : Fin (d + 1) -> ℂ)
+
+      theorem BHW.fullComplexLorentzReflectionLinear_apply
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0)
+          (v : Fin (d + 1) -> ℂ) :
+          BHW.fullComplexLorentzReflectionLinear u hu v =
+            v -
+              ((2 * BHW.sourceComplexMinkowskiInner d v
+                  (u : Fin (d + 1) -> ℂ)) /
+                BHW.sourceComplexMinkowskiInner d
+                  (u : Fin (d + 1) -> ℂ)
+                  (u : Fin (d + 1) -> ℂ)) •
+                (u : Fin (d + 1) -> ℂ) := by
+        simp [BHW.fullComplexLorentzReflectionLinear,
+          LinearMap.BilinForm.toLin'Flip_apply,
+          BHW.sourceComplexMinkowskiBilinForm,
+          div_eq_mul_inv, mul_comm, mul_left_comm]
+
+      theorem BHW.fullComplexLorentzReflectionLinear_preserves_inner
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0)
+          (v w : Fin (d + 1) -> ℂ) :
+          BHW.sourceComplexMinkowskiInner d
+              (BHW.fullComplexLorentzReflectionLinear u hu v)
+              (BHW.fullComplexLorentzReflectionLinear u hu w) =
+            BHW.sourceComplexMinkowskiInner d v w := by
+        rw [BHW.fullComplexLorentzReflectionLinear_apply u hu v,
+          BHW.fullComplexLorentzReflectionLinear_apply u hu w]
+        rw [BHW.sourceComplexMinkowskiInner_sub_left,
+          BHW.sourceComplexMinkowskiInner_sub_right,
+          BHW.sourceComplexMinkowskiInner_sub_right]
+        simp [BHW.sourceComplexMinkowskiInner_smul_left,
+          BHW.sourceComplexMinkowskiInner_smul_right]
+        have hwu_sym :
+            BHW.sourceComplexMinkowskiInner d
+                (u : Fin (d + 1) -> ℂ) w =
+              BHW.sourceComplexMinkowskiInner d w
+                (u : Fin (d + 1) -> ℂ) :=
+          BHW.sourceComplexMinkowskiInner_comm d
+            (u : Fin (d + 1) -> ℂ) w
+        rw [hwu_sym]
+        field_simp [hu]
+        ring
+
+      theorem BHW.det_eq_of_conj_by_linearEquiv
+          {V W : Type*}
+          [AddCommGroup V] [Module ℂ V]
+          [AddCommGroup W] [Module ℂ W]
+          [FiniteDimensional ℂ V] [FiniteDimensional ℂ W]
+          (L : V ≃ₗ[ℂ] W)
+          (T : W ->ₗ[ℂ] W)
+          (S : V ->ₗ[ℂ] V)
+          (h :
+            L.symm.toLinearMap.comp (T.comp L.toLinearMap) = S) :
+          LinearMap.det T = LinearMap.det S := by
+        have hdet := LinearMap.det_conj (A := ℂ) T L.symm
+        simpa [LinearMap.comp_assoc, h] using hdet.symm
+
+      theorem BHW.det_restrict_reflection_span
+          {V : Type*} [AddCommGroup V] [Module ℂ V]
+          [FiniteDimensional ℂ V]
+          (x : V) (hx : x ≠ 0)
+          (f : Module.Dual ℂ V)
+          (hf : f x = 2)
+          {e : V ->ₗ[ℂ] V}
+          (he :
+            e =
+              ((Module.reflection (x := x) (f := f) hf :
+                V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V))
+          (W : Submodule ℂ V)
+          (hWdef : W = ℂ ∙ x)
+          (hW : W ≤ W.comap e) :
+          LinearMap.det (e.restrict hW) = -1 := by
+        subst e
+        subst W
+        let L : ℂ ≃ₗ[ℂ] (ℂ ∙ x) :=
+          LinearEquiv.toSpanNonzeroSingleton ℂ V x hx
+        have hconj :
+            L.symm.toLinearMap.comp
+                (((Module.reflection (x := x) (f := f) hf :
+                  V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V).restrict hW).comp
+                  L.toLinearMap =
+              (-1 : ℂ) • LinearMap.id := by
+          ext a
+          -- Use `LinearEquiv.toSpanNonzeroSingleton_apply`,
+          -- `Module.reflection_apply_self hf`, and
+          -- `map_smul`; both sides are the scalar `-a`.
+          simp [L, Module.reflection_apply_self hf]
+        calc
+          LinearMap.det
+              (((Module.reflection (x := x) (f := f) hf :
+                V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V).restrict hW)
+              =
+            LinearMap.det ((-1 : ℂ) •
+              (LinearMap.id : ℂ ->ₗ[ℂ] ℂ)) := by
+                exact BHW.det_eq_of_conj_by_linearEquiv
+                  L _ _ hconj
+          _ = -1 := by
+                simp [LinearMap.det_smul, Module.finrank_self]
+
+      theorem BHW.det_quotient_reflection_span
+          {V : Type*} [AddCommGroup V] [Module ℂ V]
+          [FiniteDimensional ℂ V]
+          (x : V) (_hx : x ≠ 0)
+          (f : Module.Dual ℂ V)
+          (hf : f x = 2)
+          {e : V ->ₗ[ℂ] V}
+          (he :
+            e =
+              ((Module.reflection (x := x) (f := f) hf :
+                V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V))
+          (W : Submodule ℂ V)
+          (hWdef : W = ℂ ∙ x)
+          (hW : W ≤ W.comap e) :
+          LinearMap.det (W.mapQ W e hW) = 1 := by
+        subst e
+        subst W
+        have hmap :
+            (ℂ ∙ x).mapQ (ℂ ∙ x)
+                ((Module.reflection (x := x) (f := f) hf :
+                  V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V) hW =
+              LinearMap.id := by
+          ext q
+          induction q using Quotient.inductionOn with
+          | h y =>
+              rw [Submodule.mapQ_apply]
+              apply Quotient.sound
+              change
+                ((Module.reflection (x := x) (f := f) hf :
+                  V ≃ₗ[ℂ] V) y - y) ∈ ℂ ∙ x
+              rw [Module.reflection_apply]
+              change -(f y) • x ∈ ℂ ∙ x
+              exact Submodule.smul_mem _ (-(f y))
+                (Submodule.mem_span_singleton_self x)
+        rw [hmap, LinearMap.det_id]
+
+      theorem BHW.det_moduleReflection_of_nonzero
+          {V : Type*} [AddCommGroup V] [Module ℂ V]
+          [FiniteDimensional ℂ V]
+          (x : V) (hx : x ≠ 0)
+          (f : Module.Dual ℂ V)
+          (hf : f x = 2) :
+          LinearMap.det
+              ((Module.reflection (x := x) (f := f) hf :
+                V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V) = -1 := by
+        let e :=
+          ((Module.reflection (x := x) (f := f) hf :
+            V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V)
+        let W : Submodule ℂ V := ℂ ∙ x
+        have hW : W ≤ W.comap e := by
+          intro y hy
+          rw [Submodule.mem_comap]
+          rcases Submodule.mem_span_singleton.mp hy with ⟨a, rfl⟩
+          rw [map_smul, Module.reflection_apply_self hf]
+          exact W.smul_mem (-a) (Submodule.mem_span_singleton_self x)
+        have hdet := LinearMap.det_eq_det_mul_det W e hW
+        have hres :
+            LinearMap.det (e.restrict hW) = -1 := by
+          -- Conjugate `e.restrict hW` by
+          -- `LinearEquiv.toSpanNonzeroSingleton ℂ V x hx`; the conjugate is
+          -- scalar multiplication by `-1` on `ℂ`.
+          exact BHW.det_restrict_reflection_span
+            (x := x) hx f hf rfl W rfl hW
+        have hquot :
+            LinearMap.det (W.mapQ W e hW) = 1 := by
+          -- On the quotient by `ℂ ∙ x`, `e y = y - f y • x` is equal to
+          -- `y`; use `Submodule.mapQ_apply`, quotient induction, and
+          -- `LinearMap.det_id`.
+          exact BHW.det_quotient_reflection_span
+            (x := x) hx f hf rfl W rfl hW
+        rw [hdet, hres, hquot, mul_one]
+
+      theorem BHW.fullComplexLorentzReflectionLinear_det
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0) :
+          LinearMap.det
+              (BHW.fullComplexLorentzReflectionLinear u hu) = -1 := by
+        let V := Fin (d + 1) -> ℂ
+        let B := BHW.sourceComplexMinkowskiBilinForm d
+        let q :=
+          BHW.sourceComplexMinkowskiInner d
+            (u : V) (u : V)
+        have hu0 : (u : V) ≠ 0 := by
+          intro h0
+          exact hu (by simp [q, h0])
+        let f : Module.Dual ℂ V :=
+          (2 / q) • LinearMap.BilinForm.toLinHomFlip B (u : V)
+        have hf : f (u : V) = 2 := by
+          simp [f, B, q, BHW.sourceComplexMinkowskiBilinForm]
+          field_simp [hu]
+        have hR_eq :
+            BHW.fullComplexLorentzReflectionLinear u hu =
+              ((Module.reflection (x := (u : V)) (f := f) hf :
+                V ≃ₗ[ℂ] V) : V ->ₗ[ℂ] V) := by
+          ext v
+          simp [BHW.fullComplexLorentzReflectionLinear_apply,
+            Module.reflection_apply, f, q, B]
+        rw [hR_eq]
+        exact BHW.det_moduleReflection_of_nonzero
+          (x := (u : V)) hu0 f hf
+
+      def BHW.fullComplexLorentzReflection
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0) :
+          BHW.HallWightmanFullComplexLorentzGroup d
+
+      theorem BHW.fullComplexLorentzReflection_fix_subspace
+          [NeZero d]
+          {M : Submodule ℂ (Fin (d + 1) -> ℂ)}
+          (u : BHW.complexMinkowskiOrthogonalSubmodule d M)
+          (hu : BHW.sourceComplexMinkowskiInner d
+            (u : Fin (d + 1) -> ℂ)
+            (u : Fin (d + 1) -> ℂ) ≠ 0)
+          (x : M) :
+          BHW.hallWightmanFullComplexLorentzVectorAction
+              (BHW.fullComplexLorentzReflection u hu) x = x
+      ```
+
+      The nonisotropic-vector proof above was scratch-checked: assuming
+      `B(x,x)=0` for every `x`, applying the assumption to `x+y` and using
+      bilinearity gives `B(x,y)+B(y,x)=0`; symmetry turns this into
+      `(2 : ℂ) * B(x,y)=0`, and `two_ne_zero` gives `B(x,y)=0`, contradicting
+      nondegeneracy on any chosen nonzero `x`.
+
+      For `fullComplexLorentzReflectionLinear_preserves_inner`, expand
+      `R v = v - (2 * B v u / B u u) • u` and
+      `R w = w - (2 * B w u / B u u) • u`, use symmetry
+      `B u w = B w u`, and cancel the two linear correction terms against
+      the quadratic correction term using `hu`.  This expansion was
+      scratch-checked with the local
+      `sourceComplexMinkowskiInner_sub_left`,
+      `sourceComplexMinkowskiInner_sub_right`,
+      `sourceComplexMinkowskiInner_smul_left`, and
+      `sourceComplexMinkowskiInner_smul_right` lemmas.
+
+      The determinant proof is the standard determinant computation for a
+      module reflection, not an undeclared orientation choice.  Let
+      `W := ℂ ∙ u` and
+      `e := (Module.reflection (x := u) (f := (2 / B u u) • B(-,u)) hf)`
+      with `hf : f u = 2`.  The line `W` is invariant and `e` acts on it by
+      `-1`, proved after conjugating the restriction by
+      `LinearEquiv.toSpanNonzeroSingleton ℂ _ u hu0`.  On the quotient by
+      `W`, `e y = y - f y • u` is equal to `y`, because the correction term
+      lies in `W`; quotient induction and `Submodule.mapQ_apply` identify the
+      quotient map with `LinearMap.id`.  Finally
+      `LinearMap.det_eq_det_mul_det W e hW` gives
+      `det e = (-1) * 1 = -1`.  This is equivalent to decomposing into the
+      reflection line plus an invariant complement, but it uses the exact
+      quotient API Lean already exposes.
+
+      The fix-subspace theorem uses `u ∈ Mᗮ` to rewrite `B x u = 0`, so the
+      Householder correction term is zero.
+      The definition `fullComplexLorentzReflection` uses
+      `LinearMap.toMatrix (Pi.basisFun ℂ _) (Pi.basisFun ℂ _)` applied to
+      `fullComplexLorentzReflectionLinear u hu`; its `metric_preserving`
+      field is exactly
+      `fullComplexLorentzReflectionLinear_preserves_inner` rewritten through
+      the matrix/vector-action convention.
+
+      These reflection details are load-bearing.  Replacing them by a theorem
+      that merely says "choose the sign on the complement" would reintroduce
+      the old determinant gap.
 
       Proof transcript for the reflection support:
 
@@ -22691,6 +26422,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (by
               simpa [BHW.complexLorentzAction_apply_eq_vectorAction] using
                 congrArg (fun v => v μ) hΛi).symm⟩
+
+      theorem BHW.hw_sameSourceGram_regular_orbit_or_improper ... := by
+        let S : BHW.HWHighRankSpanIsometryData d n z w :=
+          BHW.hw_highRank_spanIsometryData_of_sameSourceGram
+            (d := d) (n := n) hzOrbit hgram
+        rcases
+          BHW.complexMinkowski_wittExtension_or_improper_of_sourceSpan
+            (d := d) hd S with hproper | himproper
+        · rcases hproper with ⟨Λ, hΛ⟩
+          exact Or.inl ⟨Λ, by
+            ext i μ
+            have hΛi :
+                BHW.complexLorentzVectorAction Λ (z i) = w i :=
+              hΛ i
+            exact
+              (by
+                simpa [BHW.complexLorentzAction_apply_eq_vectorAction] using
+                  congrArg (fun v => v μ) hΛi).symm⟩
+        · exact Or.inr himproper
 
       theorem BHW.hw_sameSourceGram_singular_contractionData ... := by
         have N :=
@@ -23420,7 +27170,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | Restricted-rank bridge: `sourceCoefficientGramMap_eq_toLin_transpose`, `sourceGramMatrixRank_eq_finrank_range_sourceCoefficientGramMap`, `sourceCoefficientEval_mem_restrictedMinkowskiRadical_iff`, `sourceCoefficientGramKernel_eq_eval_preimage_radical`, `finrank_range_sourceCoefficientGramMap_eq_restrictedRank`, and `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range` | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | The checked proof quotients coefficient space by `ker sourceCoefficientEval` with `Submodule.liftQ`, uses `Submodule.range_liftQ`, identifies the lifted kernel with the restricted radical through `sourceCoefficientEval.quotKerEquivRange`, applies `LinearMap.finrank_range_add_finrank_ker`, and rewrites the scalar matrix rank through the transposed coefficient Gram map. |
       | High-rank nondegeneracy and kernel transport | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Degenerate restricted span forces scalar rank `< min d n` using `Submodule.one_le_finrank_iff`, `Submodule.finrank_lt`, and `sourceComplexMinkowskiInner_left_nonDegenerate`; then `ker evalZ = gramKernel = ker evalW` under same Gram.  This is the checked step that prevents using `z i ↦ w i` before well-definedness is proved. |
       | High-rank span isometry data | Implemented and exact-file checked in `BHWPermutation/SourceRank.lean`. | Builds `HWHighRankSpanIsometryData` from the common coefficient quotient using `hwHighRankSpanIsometryOfKernelEq`, `hwHighRankSpanIsometry_apply_eval`, and `sourceCoefficientEval_pair_eq_sum_gram`; the producer is a `noncomputable def` because it returns data, while `HWHighRankSpanIsometryData_sourceGram_eq` is a proposition-valued theorem. |
-      | High-rank determinant orientation and orbit theorem | Proof transcript pinned; production Lean not started. | Start with full-complex Witt extension from `HWHighRankSpanIsometryData`, then repair the determinant by a reflection on a nontrivial orthogonal complement in the proper-span case, or by the full-frame determinant-ratio equality in the full-ambient-rank case.  The determinant-`-1` full-rank branch is exposed as `HWSameSourceGramImproperOrbitData` and may be consumed only by the conditional full-component Hall-Wightman fork; the active oriented fork proves the determinant ratio is `1` before calling the proper orbit theorem. |
+      | High-rank determinant orientation and orbit theorem | Full transcript pinned; production Lean not started. | Start with the full-complex extension from `HWHighRankSpanIsometryData`, now decomposed through source span plus orthogonal complement, complement-isometry classification over `ℂ`, product assembly, and matrix conversion.  The classification helper is pinned by orthogonal bases, complex square-root normalization, and the coordinate-sum identity.  In the proper-span case, `sourceSpan_orthogonalComplement_nontrivial_of_proper`, `exists_nonisotropic_in_nondegenerate_subspace`, and the Householder module-reflection determinant compute the determinant flip without a sign-choice black box.  In the full-ambient-rank case, the full-frame determinant-ratio equality is pinned by the unique selected-frame isometry and determinant action on frames.  The public high-rank orbit and orbit-or-improper theorems then only assemble `HWHighRankSpanIsometryData`, consume the determinant-sensitive Witt producer, and rewrite vectorwise action equality to configuration equality.  The determinant-`-1` full-rank branch is exposed as `HWSameSourceGramImproperOrbitData` and may be consumed only by the conditional full-component Hall-Wightman fork; the active oriented fork proves the determinant ratio is `1` before calling the proper orbit theorem. |
       | Principal minor extraction for low-rank selected block | Principal-minor extraction checked locally; selected-frame construction transcript pinned. | `BHW.exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank` is checked in `BHWPermutation/SourceComplexSchurPatch.lean`; the selected-span frame uses the inverse principal Gram block coefficient formula and the Schur-complement exact-rank theorem displayed above. |
       | Low-rank selected-span frame and residual Schur-zero theorem | Proof transcript pinned; production Lean not started. | Inverse principal Gram block coefficients, residual orthogonality, residual-pairing equality from `hgram`, and residual-residual zero from the indexed Schur-complement theorem at exact rank.  The proof uses `selectedIndexSumEquiv` and case-splits on selected versus complementary indices; no block-matrix prose is left as a mathematical step. |
       | Selected-span alignment and common residual subspaces | Proof transcript pinned; production Lean not started. | First align the selected `z` and `w` spans by determinant-repaired Witt extension; only then put the two residual families in the common orthogonal complement.  Reversing this order is false.  The residual subspaces and their isotropy/orthogonality fields are extracted from the aligned decomposition. |
@@ -29938,7 +33688,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       reduction is made explicit.  The branch label in the pulled BHW
       representative is `β.symm`, so the oriented invariant of the pulled
       point is rewritten by
-      `BHW.sourceOrientedMinkowskiInvariant_permAct d n β.symm`; the scalar
+      `BHW.sourceOrientedMinkowskiInvariant_permAct
+      (d := d) (n := n) β.symm`; the scalar
       equality packet is then applied to the unpermuted quarter-turn
       invariant.  Reversing `β` and `β.symm`, or putting
       `sourceOrientedMinkowskiInvariant d n (Wβ z)` directly into the packet
@@ -29999,7 +33750,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
            BHW.sourcePermuteOrientedGram d n β.symm
              (BHW.sourceOrientedMinkowskiInvariant d n u)
          ```
-         by `BHW.sourceOrientedMinkowskiInvariant_permAct d n β.symm u`.
+         by `BHW.sourceOrientedMinkowskiInvariant_permAct
+         (d := d) (n := n) β.symm u`.
       4. Apply `hOrient z hz` to pass from the permuted oriented invariant to
          the unpermuted one.  This is the only scalar equality used in the
          oriented consumer.
@@ -30454,7 +34206,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
         · simpa [BHW.sourcePermuteOrientedGram] using
             BHW.sourcePermuteComplexGram_one n G.gram
         · funext ι
-          simp [BHW.sourcePermuteOrientedGram]
+          have hι :
+              ι.trans (1 : Equiv.Perm (Fin n)).toEmbedding = ι := by
+            ext a
+            simp
+          simp [BHW.sourcePermuteOrientedGram, hι]
 
       theorem BHW.sourceOrientedDoublePermutationDomain_one_eq
           (d n : Nat) :
@@ -30462,12 +34218,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (1 : Equiv.Perm (Fin n)) =
             BHW.sourceOrientedExtendedTubeDomain d n := by
         ext G
-        constructor
-        · intro hG
-          exact hG.1
-        · intro hG
-          exact ⟨hG, by
-            simpa [BHW.sourcePermuteOrientedGram_one] using hG⟩
+        simp [BHW.sourceOrientedDoublePermutationDomain,
+          BHW.sourcePermuteOrientedGram_one]
 
       theorem BHW.os45OneBranchOrientedSourceEq_sourceInput_id
           [NeZero d]
@@ -30640,11 +34392,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
       whose source representative is oriented but whose downstream packet is
       `OS45OneBranchScalarGramEqPacket` is mathematically invalid.
 
-      Readiness hardening for the one-branch theorem:
+      Archived pure-Gram readiness hardening for the one-branch theorem:
 
-      The displayed `os45BranchHorizontalSourceGermAt_of_oneBranch_sourcePatch`
-      theorem must not be implemented as if its source-patch geometry
-      hypotheses alone implied value agreement.  Those hypotheses give only:
+      The following one-branch notes are retained only to document the
+      conditional ordinary pure-Gram fork and to explain why the old packet
+      names cannot be revived as wrappers.  They are not the active theorem-2
+      Lean route.  On the strict proper-complex route, replace the scalar
+      packet below by `BHW.OS45OneBranchOrientedSourceEqPacket`, replace the
+      source coordinates by `sourceOrientedMinkowskiInvariant` and
+      `sourcePermuteOrientedGram`, and use the oriented conversion theorems
+      displayed immediately above.
+
+      In that archived pure-Gram fork, the displayed
+      `os45BranchHorizontalSourceGermAt_of_oneBranch_sourcePatch` theorem must
+      not be implemented as if its source-patch geometry hypotheses alone
+      implied value agreement.  Those hypotheses give only:
 
       - a real source patch `U`;
       - ordered-sector membership, which supplies the ACR-side base point;
@@ -30893,11 +34655,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Do not try to prove `hGram` from `SourceScalarRepresentativeData` alone.
       That data only says that the ordinary extended-tube branch is represented
       by `Phi` on `sourceExtendedTubeGramDomain`; it does not assert any
-      permutation invariance of `Phi`.  The missing input is a local
-      Hall-Wightman theorem for the symmetric `S'_n` datum producing the
-      packet `BHW.OS45OneBranchScalarGramEqPacket`.  There is no public
-      arbitrary-`β` theorem that produces this packet from the five
-      source-domain hypotheses alone.  The active Lean surfaces are:
+      permutation invariance of `Phi`.  On this archived pure-Gram fork, the
+      missing input is a local Hall-Wightman theorem for the symmetric `S'_n`
+      datum producing the packet `BHW.OS45OneBranchScalarGramEqPacket`.  There
+      is no public arbitrary-`β` theorem that produces this packet from the
+      five source-domain hypotheses alone.  The only non-wrapper pure-Gram
+      surfaces would be:
 
       - `BHW.os45OneBranchScalarGramEq_sourceInput_id`, the specialization
         `β = 1`;
@@ -30907,8 +34670,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         `BHW.os45OneBranchScalarGramEq_of_scalarCorridor`, whose hypotheses
         already include the appropriate scalar corridor and seed equality.
 
-      The two public active surfaces must therefore be written explicitly.
-      The identity source input is the harmless normalization case:
+      These two public pure-Gram surfaces would therefore have to be written
+      explicitly on that separate fork.  The identity source input is the
+      harmless normalization case:
 
       ```lean
       theorem BHW.os45OneBranchScalarGramEq_sourceInput_id
@@ -31645,14 +35409,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   BHW.sourceMinkowskiGram_perm d n τ Γ
       ```
 
-      These three declarations are geometry only.  They use the already
+      These declarations are geometry only.  They are now checked in
+      `OSToWightmanLocalityOS45Figure24.lean`.  They use the already
       checked Figure-2-4 rotation support, the checked continuity theorem
       `BHW.continuous_figure24RotatedIdentityPath`, and source-Gram Lorentz
       invariance.  They do not mention `bvt_F`, `SourceScalarRepresentativeData`,
       OS I/II, EOW, PET, or locality.
 
-      The checked compact-open proof must then be re-exported in a
-      deterministic form:
+      The checked compact-open proof is re-exported in the deterministic form
+      below; this theorem is now checked as
+      `BHW.swFigure24_adjacentPathStableCanonicalLift_exists`:
 
       ```lean
       theorem BHW.swFigure24_adjacentPathStableCanonicalLift_exists
@@ -31673,6 +35439,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (d := d) (n := n) hd τ x t ∈
                 BHW.ExtendedTube d n) ∧
             (∀ x, x ∈ Upath ->
+              x ∈ EuclideanOrderedPositiveTimeSector
+                (d := d) (n := n) (1 : Equiv.Perm (Fin n)) ->
               ∃ (Γ : unitInterval -> Fin n -> Fin (d + 1) -> ℂ),
                 Continuous Γ ∧
                 Γ (0 : unitInterval) = (fun k => wickRotatePoint (x k)) ∧
@@ -31699,7 +35467,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `BHW.exists_open_nhds_forall_mem_of_compact_parameter`; the returned
       `hUpath_path` is exactly the canonical field
       `∀ x ∈ Upath, ∀ t, os45Figure24AdjacentLift hd τ x t ∈ ExtendedTube`.
-      For the second field set
+      The second field is conditional on the identity ordered sector, because
+      `Γ := os45Figure24IdentityPath x` is known to lie in the forward tube
+      only under that ordered hypothesis.  For that conditional field set
       `Γ := BHW.os45Figure24IdentityPath (d := d) (n := n) x`; its endpoint,
       continuity, and extended-tube membership are
       `BHW.os45Figure24IdentityPath_zero`,
@@ -31723,6 +35493,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hd : 2 <= d)
           (n : Nat) (i : Fin n) (hi : i.val + 1 < n) where
         τ : Equiv.Perm (Fin n) := Equiv.swap i ⟨i.val + 1, hi⟩
+        τ_eq : τ = Equiv.swap i ⟨i.val + 1, hi⟩
         Ufig V : Set (NPointDomain d n)
         xseed : NPointDomain d n
         Ufig_open : IsOpen Ufig
@@ -31750,7 +35521,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
         V_connected : IsConnected V
         V_nonempty : V.Nonempty
         xseed_mem : xseed ∈ V
-        xseed_time0 : ∀ k : Fin n, xseed k 0 = 0
+        xcontact : NPointDomain d n
+        xcontact_mem : xcontact ∈ V
+        xcontact_commonEdge :
+          xcontact =
+            BHW.os45CommonEdgeRealPoint
+              (d := d) (n := n) 1 xseed
         closureV_compact : IsCompact (closure V)
         closureV_sub_Ufig : closure V ⊆ Ufig
         V_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n
@@ -31768,6 +35544,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∀ x, x ∈ V ->
             (fun k => x (τ k)) ∈
               EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ
+        V_wick :
+          ∀ x, x ∈ V ->
+            (fun k => wickRotatePoint (x k)) ∈
+              adjacentOS45WickSeedDomain
+                (d := d) (n := n) i hi (1 : Equiv.Perm (Fin n))
+        V_real :
+          ∀ x, x ∈ V ->
+            BHW.realEmbed x ∈
+              adjacentOS45RealEdgeDomain (d := d) (n := n) i hi
+        V_geom_id :
+          ∀ x, x ∈ V ->
+            BHW.OS45OppositeTubeBranchGeometry
+              (d := d) (n := n) (1 : Equiv.Perm (Fin n)) x
+        V_geom_tau :
+          ∀ x, x ∈ V ->
+            BHW.OS45OppositeTubeBranchGeometry
+              (d := d) (n := n) τ (fun k => x (τ k))
         V_pulled_id :
           ∀ x, x ∈ V ->
             BHW.realEmbed
@@ -31790,6 +35583,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
           ∀ x, x ∈ closure V ->
             (fun k => x (τ k)) ∈
               EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ
+        closure_pulled_id :
+          ∀ x, x ∈ closure V ->
+            BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint
+                (d := d) (n := n) 1 x) ∈
+              BHW.os45PulledRealBranchDomain
+                (d := d) (n := n) 1
+        closure_pulled_tau :
+          ∀ x, x ∈ closure V ->
+            BHW.realEmbed
+              (BHW.os45CommonEdgeRealPoint
+                (d := d) (n := n) 1 x) ∈
+              BHW.os45PulledRealBranchDomain
+                (d := d) (n := n) τ
         adjLift_mem_extendedTube :
           ∀ x, x ∈ V -> ∀ t,
             BHW.os45Figure24AdjacentLift
@@ -31819,26 +35626,242 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 BHW.sourcePermuteComplexGram n τ
                   (BHW.sourceMinkowskiGram d n (Γ t)))
 
-      theorem BHW.os45_adjacent_identity_canonicalSourcePatch
+      theorem BHW.exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
           [NeZero d]
           (hd : 2 <= d)
           (i : Fin n) (hi : i.val + 1 < n) :
-          BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi
+          ∃ P :
+            BHW.OS45Figure24OrientedCanonicalSourcePatchData
+              (d := d) hd n i hi, True
+
+      noncomputable def BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n) :
+          BHW.OS45Figure24OrientedCanonicalSourcePatchData
+            (d := d) hd n i hi :=
+        Classical.choose
+          (BHW.exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+            (d := d) (n := n) hd i hi)
+
+      noncomputable def BHW.os45_adjacent_identity_canonicalSourcePatch
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n) :
+          BHW.OS45Figure24CanonicalSourcePatchData (d := d) hd n i hi :=
+        (BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath
+          (d := d) (n := n) hd i hi).toCanonical
       ```
 
-      Proof transcript: copy the checked proof of
-      `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`, but start from
-      `BHW.swFigure24_adjacentPathStableCanonicalLift_exists` instead of the
-      old existential path-stability theorem.  Intersect `Ufig` with
-      `Upath`, choose the same ordered perturbation inside
-      `Ufig ∩ Upath`, and perform the same precompact connected shrink.
-      The existing fields are filled exactly as in the checked theorem, and
-      the new `xseed_time0` field is the stored equal-time Figure-2-4 anchor
-      property from `swFigure24_adjacentPathStableCanonicalLift_exists`,
-      preserved because the source patch is shrunk around that anchor.  The
-      `V_ET` and `V_swapET` fields are the ordinary and swapped
-      extended-tube fields already exported by the checked horizontal source
-      patch.  The new `adjLift_mem_extendedTube` field is
+      Corrected proof transcript: prove the existential proposition
+      `exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath`
+      in `Prop`, then expose the selected packets by the two
+      `noncomputable def`s above.  This is required because the patch carrier
+      is data in `Type`, while the upstream environment and shrink producers
+      are existential propositions.  The construction starts from the checked
+      `BHW.swFigure24_adjacentHorizontalEnvironmentWithRotatedPathStability`,
+      so the same compact patch carries both the deterministic rotated lift and
+      the oriented determinant path; it then replaces the old one-point
+      precompact shrink by the two-point segment shrink.  The ordered seed
+      `xseed = adjacentTimePerturb x0 ε` is not equal-time, so the former
+      field `xseed_time0` is false and must not appear in production.
+
+      The needed contact point is instead
+      `xcontact := os45CommonEdgeRealPoint 1 xseed`.  The perturbation
+      theorem used here must be strengthened to choose `ε` so that both
+      `xseed` and `xcontact` lie in `Ufig ∩ Upath`, and so that both lie in
+      the identity and swapped ordered sectors.  This follows from the
+      continuity at `ε = 0` of both maps
+      `ε ↦ adjacentTimePerturb x0 ε` and
+      `ε ↦ os45CommonEdgeRealPoint 1 (adjacentTimePerturb x0 ε)`, because
+      both maps send `0` to the equal-time anchor `x0`; ordered-sector
+      membership follows from the explicit positive time-gap formulas and
+      remains true after halving the times.  The proof-doc helper is:
+
+      ```lean
+      theorem BHW.exists_ordered_small_time_perturb_with_commonEdge_in_adjacent_overlap_of_lt
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n)
+          (U : Set (NPointDomain d n)) (hU_open : IsOpen U)
+          (x0 : NPointDomain d n) (hx0U : x0 ∈ U)
+          (hx0_time0 : ∀ k : Fin n, x0 k 0 = 0)
+          {δ : ℝ} (hδ : 0 < δ) :
+          ∃ ε : ℝ, 0 < ε ∧ ε < δ ∧
+            let xseed := BHW.adjacentTimePerturb (d := d) (n := n) x0 ε
+            let xcontact :=
+              BHW.os45CommonEdgeRealPoint (d := d) (n := n) 1 xseed
+            xseed ∈ U ∧ xcontact ∈ U ∧
+            xseed ∈ EuclideanOrderedPositiveTimeSector
+              (d := d) (n := n) (1 : Equiv.Perm (Fin n)) ∧
+            (fun k => xseed (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+              EuclideanOrderedPositiveTimeSector
+                (d := d) (n := n) (Equiv.swap i ⟨i.val + 1, hi⟩) ∧
+            xcontact ∈ EuclideanOrderedPositiveTimeSector
+              (d := d) (n := n) (1 : Equiv.Perm (Fin n)) ∧
+            (fun k => xcontact (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+              EuclideanOrderedPositiveTimeSector
+                (d := d) (n := n) (Equiv.swap i ⟨i.val + 1, hi⟩)
+      ```
+
+      This perturb/contact helper is now checked in
+      `OSToWightmanLocalityOS45Figure24.lean`.  Its Lean proof does not
+      reprove the small-time perturbation estimate.  It sets
+      `common x := os45CommonEdgeRealPoint 1 x`, applies the already checked
+      bounded perturbation theorem to the open set
+      `U' := U ∩ {x | common x ∈ U}`, and uses
+      `BHW.os45CommonEdgeRealPoint_one_eq_self_of_time_zero` to show that the
+      equal-time anchor lies in `U'`.  The two contact ordering fields are
+      then supplied by the checked halving lemma
+      `BHW.os45CommonEdgeRealPoint_one_mem_orderedSector_of_mem`; the swapped
+      contact field is obtained by the definitional equality
+      `(fun k => common xseed (τ k)) =
+       os45CommonEdgeRealPoint 1 (fun k => xseed (τ k))`.  Thus the helper
+      is genuine two-point geometry and contains no scalar-source, EOW, PET,
+      or locality input.
+
+      The precompact pair shrink also needs the whole straight segment from
+      the seed to the contact point to lie in the same finite intersection,
+      not merely the two endpoints.  This is now a checked strengthening:
+
+      ```lean
+      theorem BHW.exists_ordered_small_time_perturb_with_commonEdge_segment_in_adjacent_overlap_of_lt
+          [NeZero d]
+          (hd : 2 <= d)
+          (i : Fin n) (hi : i.val + 1 < n)
+          (U : Set (NPointDomain d n)) (hU_open : IsOpen U)
+          (x0 : NPointDomain d n) (hx0U : x0 ∈ U)
+          (hx0_time0 : ∀ k : Fin n, x0 k 0 = 0)
+          {δ : ℝ} (hδ : 0 < δ) :
+          ∃ ε : ℝ, 0 < ε ∧ ε < δ ∧
+            let τ : Equiv.Perm (Fin n) :=
+              Equiv.swap i ⟨i.val + 1, hi⟩
+            let xseed :=
+              BHW.adjacentTimePerturb (d := d) (n := n) x0 ε
+            let xcontact :=
+              BHW.os45CommonEdgeRealPoint
+                (d := d) (n := n) 1 xseed
+            xseed ∈ U ∧ xcontact ∈ U ∧
+            xseed ∈ EuclideanOrderedPositiveTimeSector
+              (d := d) (n := n) 1 ∧
+            (fun k => xseed (τ k)) ∈
+              EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ ∧
+            xcontact ∈ EuclideanOrderedPositiveTimeSector
+              (d := d) (n := n) 1 ∧
+            (fun k => xcontact (τ k)) ∈
+              EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ ∧
+            segment ℝ xseed xcontact ⊆
+              U ∩
+                EuclideanOrderedPositiveTimeSector
+                  (d := d) (n := n) 1 ∩
+                {x |
+                  (fun k => x (τ k)) ∈
+                    EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ}
+      ```
+
+      Its proof is elementary but load-bearing.  The checked support lemmas
+      are `BHW.continuous_adjacentTimePerturb_realParam`,
+      `BHW.adjacentTimePerturb_mem_identity_sector_of_pos`,
+      `BHW.os45CommonEdgeRealPoint_one_adjacentTimePerturb_eq_half`, and
+      `BHW.adjacentTimePerturb_segment_commonEdge_subset_paramInterval`.
+      The last lemma identifies every point of
+      `segment ℝ xseed xcontact` as
+      `adjacentTimePerturb x0 s` for some `s ∈ [ε / 2, ε]`.  Choosing
+      `ε` inside the continuity radius for `U` therefore puts the whole
+      segment in `U`; since every such `s` is positive, the identity and
+      swapped ordered-sector fields hold on the whole segment by the explicit
+      time-gap formula.  No convexity of `Ufig`, `ExtendedTube`, or `Upath` is
+      assumed.
+
+      After choosing this `ε`, choose a connected open precompact `V` inside
+      `Ufig ∩ Upath ∩ ordered ∩ swappedOrdered` that contains both `xseed`
+      and `xcontact`.  Use the straight segment between these two points,
+      whose containment is provided by the checked segment perturbation
+      theorem above; then apply a compact-thickening lemma to that segment.
+      The helper theorem is:
+
+      ```lean
+      theorem BHW.exists_connected_open_precompact_subset_pair
+          {U : Set (NPointDomain d n)}
+          (hU_open : IsOpen U)
+          {x y : NPointDomain d n}
+          (hseg : segment ℝ x y ⊆ U) :
+          ∃ V : Set (NPointDomain d n),
+            IsOpen V ∧ IsConnected V ∧ x ∈ V ∧ y ∈ V ∧
+            IsCompact (closure V) ∧ closure V ⊆ U
+      ```
+
+      It is proved by compactness of `segment ℝ x y`, an
+      `exists_cthickening_subset_open` shrink inside `U`, and connectedness
+      of a small open thickening of a segment in the finite-dimensional real
+      normed space.  This is topology only; it carries no OS/BHW analytic
+      content.
+
+      Lean-shaped proof of the pair shrink:
+
+      ```lean
+      theorem BHW.exists_connected_open_precompact_subset_pair
+          {U : Set (NPointDomain d n)}
+          (hU_open : IsOpen U)
+          {x y : NPointDomain d n}
+          (hseg : segment ℝ x y ⊆ U) :
+          ∃ V : Set (NPointDomain d n),
+            IsOpen V ∧ IsConnected V ∧ x ∈ V ∧ y ∈ V ∧
+            IsCompact (closure V) ∧ closure V ⊆ U := by
+        classical
+        let K : Set (NPointDomain d n) := segment ℝ x y
+        have hK_compact : IsCompact K := by
+          have hpair_finite :
+              ({x, y} : Set (NPointDomain d n)).Finite := by
+            simp
+          simpa [K, convexHull_pair] using
+            hpair_finite.isCompact_convexHull ℝ
+        have hK_convex : Convex ℝ K := by
+          simpa [K] using convex_segment x y
+        obtain ⟨r0, hr0_pos, hr0_sub⟩ :=
+          hK_compact.exists_cthickening_subset_open
+            hU_open (by simpa [K] using hseg)
+        let r : ℝ := r0 / 2
+        have hr_pos : 0 < r := by linarith
+        let V : Set (NPointDomain d n) := Metric.thickening r K
+        have hV_open : IsOpen V := by
+          simpa [V] using Metric.isOpen_thickening
+        have hxV : x ∈ V := by
+          exact Metric.self_subset_thickening hr_pos K
+            (left_mem_segment ℝ x y)
+        have hyV : y ∈ V := by
+          exact Metric.self_subset_thickening hr_pos K
+            (right_mem_segment ℝ x y)
+        have hV_conn : IsConnected V := by
+          refine ⟨⟨x, hxV⟩, ?_⟩
+          exact (hK_convex.thickening r).isPreconnected
+        have hclosure_cthick :
+            closure V ⊆ Metric.cthickening r K := by
+          simpa [V] using
+            Metric.closure_thickening_subset_cthickening r K
+        have hclosure_U : closure V ⊆ U := by
+          exact hclosure_cthick.trans
+            ((Metric.cthickening_mono (by nlinarith : r <= r0) K).trans
+              hr0_sub)
+        have hclosure_compact : IsCompact (closure V) := by
+          exact IsCompact.of_isClosed_subset
+            (hK_compact.cthickening) isClosed_closure
+            hclosure_cthick
+        exact ⟨V, hV_open, hV_conn, hxV, hyV,
+          hclosure_compact, hclosure_U⟩
+      ```
+
+      The only import/API requirement beyond the existing metric shrink file
+      is `Mathlib.Analysis.Normed.Module.Convex`, for
+      `Convex.thickening`; `Metric.thickening` and
+      `IsCompact.exists_cthickening_subset_open` already come from
+      `Mathlib.Topology.MetricSpace.Thickening`.
+
+      The existing source-patch fields are then filled exactly as in the
+      checked theorem, with `xcontact_mem` coming from the two-point shrink
+      and `xcontact_commonEdge := rfl`.  The `V_ET` and `V_swapET` fields are
+      the ordinary and swapped extended-tube fields already exported by the
+      checked horizontal source patch.  The new `adjLift_mem_extendedTube` field is
       `hUpath_adjLift x (hclosureV_Upath (subset_closure hx)) t` restricted
       from `closure V` to `V`.  The new `figPath_closure` field uses
       `Γ := BHW.os45Figure24IdentityPath x`,
@@ -33397,10 +37420,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector` | Checked local Lean input for the Euclidean edge equality on ordered sectors. | Its public theorem statement; do not depend on the private helper `integral_perm_eq_self_locality` outside `OSToWightmanLocalityOS45.lean`. |
       | `BHW.OS45Figure24JostRuelleDomainData` and `BHW.os45Figure24_jostRuelleDomainData_of_chart` | Lean-shaped proof pinned; production Lean not started. | Choose `Ω := BHW.ExtendedTube d n`; use `BHW.isOpen_extendedTube`, `BHW.isConnected_extendedTube`, `hV_ET`, and `hChart.adjLift_mem_extendedTube`.  The swapped real-embedding field remains on the surrounding canonical surface for adjacent-source use, but this domain constructor must not infer extended-tube membership from bare `JostSet` membership or choose a second domain. |
       | `BHW.OS45Figure24OrdinaryBranchData` and `BHW.os45Figure24_ordinaryBranchData_of_bvt_F` | Transcript pinned but production Lean not started; mechanically ready after domain data. | `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, `bvt_F_restrictedLorentzInvariant_forwardTube`, `BHW.extendF_holomorphicOn`, `BHW.extendF_complex_lorentz_invariant`, and `DΩ.Ω_sub_extendedTube`. |
-      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Component transcript pinned; production Lean not started. | OS I §4.5 plus the Bargmann-Hall-Wightman theorem only, split through `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`: define the local hull as `pathComponentIn (os45BHWJostAmbient d n Dinit.τ) (fun k => wickRotatePoint (x0 (Dinit.τ k)))`, prove openness/connectedness/membership using the named `JoinedIn` Figure-2-4 paths, continue the adjacent branch to `WJ`, prove `WJ = Dinit.branchτ` on all of `Dinit.Ωτ`, prove complex-Lorentz invariance, prove real-boundary equality by fresh compact-test zero-diagonal data plus the source-patch branch-difference theorem, and prove deterministic-lift transport/pairing.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or generic Jost/Ruelle uniqueness. |
+      | `BHW.OS45BHWJostLocalContinuationData` and `BHW.os45_BHWJostLocalContinuationData_from_OSI45` | Split required by the route-cycle correction; production Lean not started. | The upstream BHW/Jost hull and branch-continuation pieces may feed `BHW.OS45SourcePatchBHWJostPairData`: `os45_BHWJostHullData_of_figure24`, `os45_BHWJostBranch_onLocalHull_of_OSI45`, the ordinary and selected adjacent branch continuations, holomorphy, complex-Lorentz invariance, and the Wick/real trace formulas from OS I equations (4.1), (4.12), and (4.14).  The full local-continuation data package, including `os45_BHWJostRealBoundaryEq_of_OSI45`, `os45_BHWJostLiftTransport_onSupport_of_OSI45`, and `os45_BHWJostLiftPairing_of_OSI45`, is downstream of the direct source-patch compact theorem and may consume it later.  No source scalar representative, PET independence, EOW envelope, `bvt_W`, final locality, or oriented common-boundary envelope. |
       | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Assembly transcript pinned once the local continuation carrier above is supplied; production Lean not started. | OS I §4.5 equations (4.1), (4.12), (4.14), compact zero-diagonal Euclidean symmetry, and BHW continuation of the adjacent branch, split through `OS45AdjacentPermutedTubeBoundaryFunctional`, `OS45AdjacentPermutedTubeLorentzInvariantBranch`, `os45Figure24_adjacentBHWContinuation_to_JostDomain`, the continuation-data producer `os45_bhwJostContinuation_adjacentPermutedBranch`, the assembly theorem `os45_BHWJost_continue_adjacentBranch_from_OSI45`, and the lower carrier theorem `os45_BHWJostLocalContinuationData_from_OSI45`.  The data must carry `adjacent_realBoundary_eq_ordinary` for every compact test supported in `hChart.V0`; this is source content consumed by generic Jost/Ruelle uniqueness, not a consequence of the final lift pairing. |
       | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Mechanical extraction from adjacent branch provenance; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary`.  The source proof is in the adjacent BHW/Jost continuation packet; no scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
-      | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Proof transcript pinned; production Lean not started. | Direct OS45 branch-difference compact theorem: checked Wick compact equality for every compact test supported in the chart, `BHW.os45_adjacent_commonBoundaryEnvelope`, distributional separation on the Wick trace, totally-real identity on the common chart, and real-trace integration. The surface must carry `V ⊆ os45Figure24SourcePatch` and the oriented path field on `closure hChart.V0`, then obtain the ambient `Ufig` from `BHW.os45Figure24SourcePatch_sourceEnvironment` before calling the branch suppliers on `hChart.V0`. No separate real-branch `= OS.S` theorem. |
+      | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; production Lean not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of `BHW.OS45SourcePatchBHWJostPairData`, construction of `BHW.OS45SourcePatchBHWJostDifferenceData` by subtraction, direct edge/totally-real uniqueness on that carrier, and real-trace integration.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
       | `BHW.os45CommonBoundary_wickTrace_zero_of_compactPairing_zero` and `BHW.os45CommonBoundary_identity_of_wickTrace_zero` | Proof transcript pinned; production Lean not started. | Genuine analytic extraction from the common-boundary envelope: universal compact Wick branch-difference vanishing gives pointwise zero on the Wick trace by `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, then holomorphic identity on the connected common chart by `BHW.identity_theorem_totally_real_product` after the complex-linear Wick-time chart calculation. |
       | `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` | Assembly transcript pinned; production Lean not started. | Field-by-field construction of `JostRuelleCompactBoundaryData`, `jr_lift_eq`, ordinary lift equality on the deterministic lift, and adjacent lift pairing `= OS.S n ψZ`, after the domain, ordinary-branch, adjacent-branch, and real-boundary packets above. It no longer carries individual source-to-Schwinger or lift-to-source PET-overlap fields. |
       | `BHW.jostRuelle_uniqueContinuation_compactBoundary` | OS-free analytic theorem; transcript pinned; production Lean not started. | `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, `BHW.identity_theorem_totally_real_product`, support restriction via `tsupport`, and no OS/theorem-2 inputs. |
@@ -34285,10 +38308,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
             branch-difference theorem
             `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`.
             Its proof uses the Wick compact equality from the checked
-            Euclidean edge theorem, then the OS45 common-boundary/EOW envelope
-            to continue the zero branch difference to the real source trace
+            Euclidean edge theorem, then the direct OS-I/BHW-Jost
+            source-patch difference carrier to continue the zero branch
+            difference to the real source trace
             `extendF (realEmbed x) = extendF (realEmbed (x ∘ τ))` under the
-            same compact test.
+            same compact test.  It must not call the downstream
+            `BHW.os45_adjacent_commonBoundaryEnvelope`.
 
          Paper-level OS-I transcript for these five subclaims.  The local
          scan of `references/Reconstruction theorem I.pdf` fixes the exact
@@ -35606,8 +39631,43 @@ Proof decomposition of this theorem, without hiding the analytic work:
            closure-level `OS45Figure24OrientedPathField` on `hChart.V0`.  They
            may be stored in `OS45Figure24SourceChartAt` or passed explicitly,
            but they must not be replaced by a global PET theorem, scalar
-           representative equality, final `bvt_W` locality, or the generic
-           `BHW.jostRuelle_uniqueContinuation_compactBoundary`.
+           representative equality, final `bvt_W` locality, the oriented
+           common-boundary envelope, or the later OS-specific
+           `JostRuelleCompactBoundaryData` package that consumes the compact
+           theorem.
+
+           Dependency-order check.  The call to
+           `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45`
+           in this real-boundary theorem is non-circular only because that
+           source-patch theorem is proved earlier by the direct OS I
+           §4.5/BHW-Jost compact producer, not by the branch-horizontal
+           common-boundary/EOW supplier.  It must not call
+           `BHW.os45_adjacent_commonBoundaryEnvelope`,
+           `BHW.os45Figure24_realBoundaryEq_of_OSI45`,
+           `BHW.os45_BHWJostRealBoundaryEq_of_OSI45`, any field of
+           `OS45Figure24AdjacentBranchData`, or the later OS-specific
+           `JostRuelleCompactBoundaryData` package.  Conversely,
+           `os45_BHWJostRealBoundaryEq_of_OSI45` may consume only the finished
+           source-patch compact branch-difference theorem as a compact-test
+           real-trace equality, then rewrite the adjacent trace pointwise by
+           `WJ_agrees_Ωτ` and `Dinit.branchτ_eq_correctedExtendF`.  This is the
+           corrected Lean DAG:
+
+           ```text
+           Wick compact branch-difference zero
+             -> OS45SourcePatchBHWJostPairData
+             -> OS45SourcePatchBHWJostDifferenceData
+             -> os45_sourcePatch_realTrace_zero_of_wickDistributionZero
+             -> os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45
+             -> os45_BHWJostRealBoundaryEq_of_OSI45
+             -> JostRuelleCompactBoundaryData.realBoundary_eq
+             -> jostRuelle_uniqueContinuation_compactBoundary
+           ```
+
+           The DAG direction is part of the theorem surface.  A Lean proof
+           that derives the source-patch compact branch-difference theorem
+           from the Jost/Ruelle package would be circular, even if each
+           individual statement typechecks.
 
          * `os45_BHWJostLiftTransport_onSupport_of_OSI45`.
            For `x ∈ tsupport φ`, set
@@ -35935,9 +39995,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
          Wick-rotated Euclidean values one branch at a time, which is not what
          `bvt_euclidean_restriction` says.  The OS I §4.5 theorem supplies
          only the branch-difference continuation: the compact Wick-side
-         difference vanishes by Euclidean symmetry, and the OS45
-         common-boundary/EOW chart transports that zero difference to the real
-         source PET-overlap trace.  The source-patch theorem surface is:
+         difference vanishes by Euclidean symmetry, and the direct OS I
+         §4.5/BHW-Jost source-patch carrier transports that same difference
+         to the selected real source PET-overlap trace.  This carrier is
+         upstream of the oriented common-boundary envelope and must not call
+         `BHW.os45_adjacent_commonBoundaryEnvelope`.  The source-patch theorem
+         surface is:
 
          ```lean
          theorem BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45
@@ -36115,62 +40178,793 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 _ = 0 := sub_eq_zero.mpr hpair
             ```
 
-         2. Instantiate `BHW.os45_adjacent_commonBoundaryEnvelope` on the
-            selected source chart.  The chart helpers used here are genuine
-            topology/geometry obligations, not wrappers:
-            `hChart.V0_connected` is stored in the source chart because it
-            cannot be recovered from connectedness of `hChart.Usrc` alone;
-            `BHW.os45Figure24_sourceChart_wickTrace_mem`,
-            `BHW.os45Figure24_sourceChart_realTrace_mem`,
-            `BHW.os45Figure24_sourceChart_geometry`, and
-            `BHW.os45Figure24_sourceChart_swappedGeometry` are the trace and
-            side-component membership facts needed to instantiate the
-            common-boundary theorem on the chart-selected `V0`;
-            `BHW.os45Figure24_sourceChart_precompact`,
-            `BHW.os45Figure24_sourceChart_horizontal_id`,
-            `BHW.os45Figure24_sourceChart_horizontal_swap`, and their closure
-            variants extract the precompact horizontal edge geometry from the
-            deterministic Figure-2-4 chart; and
-            `BHW.os45Figure24SourcePatch_sourceEnvironment` supplies the
-            ambient `Ufig`, its source-domain tuple, and
-            `closure (os45Figure24SourcePatch) ⊆ Ufig`.  Since
-            `hChart.V0 ⊆ V ⊆ os45Figure24SourcePatch`, the branch suppliers
-            are instantiated with `Ufig` and the local set `hChart.V0`, and
-            their closure-in-`Ufig` hypothesis is
-            `closure_mono (fun x hx => hV_sourcePatch (hChart.V0_sub hx))`
-            followed by the source-environment closure field.  Finally,
-            `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_id` /
-            `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_adjacent`
-            provide the one-branch ACR/BHW source germs on the identity and
-            adjacent horizontal branches by first proving the oriented
-            one-branch source packets and then forgetting only the scalar
-            representation method.  The identity supplier consumes
-            `BHW.os45Figure24_sourceChart_ordered_closure`; the adjacent
-            supplier consumes both chart closure-order fields,
-            `hChart.V0_connected`, the restricted source-patch inclusion, and
-            the supplied `hV_orientedPath_closure`.  The envelope returns
+         2. Construct the direct OS-I/BHW-Jost source-patch difference
+            carrier.  This is the active replacement for the earlier circular
+            common-boundary-envelope step.  First construct the
+            test-independent pair carrier:
 
             ```lean
-            Uc, Hc, hUc_open, hUc_conn, hHc_holo,
-            hwick_mem_c, hreal_mem_c, hwick_trace_c, hreal_trace_c
+            structure BHW.OS45SourcePatchBHWJostPairData
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n)) where
+              τ : Equiv.Perm (Fin n)
+              τ_eq : τ = Equiv.swap i ⟨i.val + 1, hi⟩
+              U : Set (Fin n -> Fin (d + 1) -> ℂ)
+              V_open : IsOpen V
+              V_nonempty : V.Nonempty
+              U_open : IsOpen U
+              U_connected : IsConnected U
+              wick_mem : ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U
+              real_mem : ∀ x ∈ V, BHW.realEmbed x ∈ U
+              Bord Bτ : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+              Bord_holo : DifferentiableOn ℂ Bord U
+              Bτ_holo : DifferentiableOn ℂ Bτ U
+              Bord_wick_trace :
+                ∀ x ∈ V,
+                  Bord (fun k => wickRotatePoint (x k)) =
+                    bvt_F OS lgc n (fun k => wickRotatePoint (x k))
+              Bτ_wick_trace :
+                ∀ x ∈ V,
+                  Bτ (fun k => wickRotatePoint (x k)) =
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (x (τ k)))
+              Bord_real_trace :
+                ∀ x ∈ V,
+                  Bord (BHW.realEmbed x) =
+                    BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)
+              Bτ_real_trace :
+                ∀ x ∈ V,
+                  Bτ (BHW.realEmbed x) =
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed (fun k => x (τ k)))
+
+            theorem BHW.os45_sourcePatch_bhwJostPairData_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                (hV_open : IsOpen V)
+                (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+                (hV_ET :
+                  ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+                (hV_swapET :
+                  ∀ x, x ∈ V ->
+                    BHW.realEmbed
+                      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                    BHW.ExtendedTube d n)
+                (hV_ordered :
+                  ∀ x, x ∈ V ->
+                    x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+                (hV_swap_ordered :
+                  ∀ x, x ∈ V ->
+                    (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                      EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                        (Equiv.swap i ⟨i.val + 1, hi⟩))
+                (hV_sourcePatch :
+                  V ⊆ BHW.os45Figure24SourcePatch (d := d) n i hi)
+                {x0 : NPointDomain d n}
+                (hx0V : x0 ∈ V)
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+                BHW.OS45SourcePatchBHWJostPairData
+                  hd OS lgc n i hi hChart.V0
             ```
 
-            with
+            `Bord` is the ordinary BHW/Jost branch and `Bτ` is the adjacent
+            continued branch on the same selected Figure-2-4 hull.  The proof
+            constructs that hull as the connected component of the local
+            proper-complex Lorentz ambient containing the identity Wick edge,
+            adjacent Wick edge, and real source patch; proves the two
+            holomorphy fields from BHW continuation; proves the Wick trace
+            formulas from OS-I equations (4.1), (4.12), and the checked Wick
+            restriction; and proves the real trace formulas from the
+            deterministic source-patch boundary identification with
+            `hV_ET`/`hV_swapET`.  This is the direct OS-I/BHW-Jost proof-doc
+            frontier; it is not final locality and not the oriented
+            common-boundary envelope.
+
+            The implementation-level split of this frontier is now fixed.
+            The public pair-data theorem may not be the first Lean target; it
+            must assemble the following lower surfaces:
 
             ```lean
-            Hc (commonChart (wick x)) =
-              bvt_F OS lgc n (wick (x ∘ τ)) -
-              bvt_F OS lgc n (wick x)
+            def BHW.os45SourcePatchBHWJostAmbient
+                (d n : Nat) (τ : Equiv.Perm (Fin n)) :
+                Set (Fin n -> Fin (d + 1) -> ℂ) :=
+              BHW.ExtendedTube d n ∪
+                {z | BHW.permAct (d := d) τ z ∈ BHW.ExtendedTube d n}
 
-            Hc (commonChart (realEmbed x)) =
-              extendF (bvt_F OS lgc n) (realEmbed (x ∘ τ)) -
-              extendF (bvt_F OS lgc n) (realEmbed x)
+            def BHW.os45SourcePatchBHWJostHull
+                (d n : Nat) (τ : Equiv.Perm (Fin n))
+                (z0 : Fin n -> Fin (d + 1) -> ℂ) :
+                Set (Fin n -> Fin (d + 1) -> ℂ) :=
+              pathComponentIn (BHW.os45SourcePatchBHWJostAmbient d n τ) z0
+
+            structure BHW.OS45SourcePatchBHWJostHullData
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                {x0 : NPointDomain d n}
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+                where
+              τ : Equiv.Perm (Fin n)
+              τ_eq : τ = Equiv.swap i ⟨i.val + 1, hi⟩
+              z0 : Fin n -> Fin (d + 1) -> ℂ
+              z0_eq : z0 = fun k => wickRotatePoint (x0 k)
+              U : Set (Fin n -> Fin (d + 1) -> ℂ)
+              U_eq : U = BHW.os45SourcePatchBHWJostHull d n τ z0
+              V_open : IsOpen hChart.V0
+              V_nonempty : hChart.V0.Nonempty
+              U_open : IsOpen U
+              U_connected : IsConnected U
+              wick_id_mem :
+                ∀ x, x ∈ hChart.V0 ->
+                  (fun k => wickRotatePoint (x k)) ∈ U
+              real_id_mem :
+                ∀ x, x ∈ hChart.V0 -> BHW.realEmbed x ∈ U
+              wick_id_ET :
+                ∀ x, x ∈ hChart.V0 ->
+                  (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n
+              wick_tau_ET :
+                ∀ x, x ∈ hChart.V0 ->
+                  BHW.permAct (d := d) τ (fun k => wickRotatePoint (x k)) ∈
+                    BHW.ExtendedTube d n
+              real_id_ET :
+                ∀ x, x ∈ hChart.V0 -> BHW.realEmbed x ∈ BHW.ExtendedTube d n
+              real_tau_ET :
+                ∀ x, x ∈ hChart.V0 ->
+                  BHW.permAct (d := d) τ (BHW.realEmbed x) ∈
+                    BHW.ExtendedTube d n
             ```
 
-            on `hChart.V0`.
+            `BHW.os45SourcePatchBHWJostAmbient_open` is the union of
+            `BHW.isOpen_extendedTube` and its preimage under the continuous
+            finite permutation map.  The hull theorem
+            `BHW.os45_sourcePatch_bhwJostHullData_of_chart` sets
+            `U := pathComponentIn Ambient z0`; `U_open` is
+            `IsOpen.pathComponentIn`, and `U_connected` follows from the path
+            component in the finite-dimensional locally path-connected
+            configuration space.  The four tube-membership fields are direct:
+            ordered-sector membership gives `wick_id_ET`; swapped
+            ordered-sector membership plus `BHW.permAct_wickRotatePoint`
+            gives `wick_tau_ET`; `hV_ET` and `hV_swapET`, restricted by
+            `hChart.V0_sub`, give the two real fields.  The two `U` membership
+            fields are path-component membership: join `z0` to Wick points
+            through the ordinary/adjacent tube sectors, and join `z0` to real
+            points through the checked Figure-2-4 lift/path in `hChart`.
+            The Lean API is pinned to `JoinedIn.refl`, `JoinedIn.trans`,
+            `JoinedIn.mono`, `IsOpen.pathComponentIn`,
+            `IsOpen.isConnected_iff_isPathConnected`, and `Path.trans`.
 
-         3. Convert `hwick_pairing_zero_all` into pointwise zero of `Hc` on the
-            Wick trace by the checked distributional separation theorem:
+            The generic continuation surface is:
+
+            ```lean
+            theorem BHW.bargmannHallWightman_continue_branch_on_sourcePatchHull
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ0_open : IsOpen Ω0)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hΩ0_sub_ambient :
+                  Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+                (hU_hull :
+                  ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+                (hB0_lorentzInvariant :
+                  ∀ Λ z, z ∈ Ω0 ->
+                    BHW.complexLorentzAction Λ z ∈ Ω0 ->
+                      B0 (BHW.complexLorentzAction Λ z) = B0 z) :
+                ∃ B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ B U ∧
+                  (∀ Λ z, z ∈ U ->
+                    BHW.complexLorentzAction Λ z ∈ U ->
+                      B (BHW.complexLorentzAction Λ z) = B z) ∧
+                  (∀ z, z ∈ Ω0 -> z ∈ U -> B z = B0 z)
+            ```
+
+            This theorem is exactly the local BHW/Jost content.  Its proof is
+            Hall-Wightman Lemma 1 in finite charts: real Lorentz covariance
+            gives local constancy on proper-complex Lorentz charts by the
+            totally-real identity theorem; path chains inside the selected
+            hull give single-valuedness; holomorphy is local in the final
+            chart.  It may use the OS-I `(4.14)` covariance input for `bvt_F`
+            and the local BHW proof, but it must not call `fullExtendF`,
+            global PET independence, source scalar representatives,
+            `BHW.os45_adjacent_commonBoundaryEnvelope`, or final locality.
+
+            The generic continuation theorem is itself implemented through
+            five lower BHW Lemma-I surfaces:
+
+            ```lean
+            theorem BHW.bhw_local_complexLorentz_invariance_of_real_invariance
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ_open : IsOpen Ω)
+                (hB_holo : DifferentiableOn ℂ B Ω)
+                (hB_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω ->
+                      B (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B z)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (hz : z ∈ Ω) :
+                ∃ C : Set (ComplexLorentzGroup d),
+                  IsOpen C ∧ (1 : ComplexLorentzGroup d) ∈ C ∧
+                  ∀ Λ, Λ ∈ C ->
+                    BHW.complexLorentzAction Λ z ∈ Ω ->
+                      B (BHW.complexLorentzAction Λ z) = B z
+
+            theorem BHW.bhw_branch_constant_along_complexLorentz_path
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ_open : IsOpen Ω)
+                (hB_holo : DifferentiableOn ℂ B Ω)
+                (hB_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω ->
+                      B (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B z)
+                {Λ0 Λ1 : ComplexLorentzGroup d}
+                (γ : Path Λ0 Λ1)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (hγΩ : ∀ t,
+                  BHW.complexLorentzAction (γ t) z ∈ Ω) :
+                B (BHW.complexLorentzAction Λ1 z) =
+                  B (BHW.complexLorentzAction Λ0 z)
+
+            structure BHW.BHWSourcePatchContinuationChain
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (z : Fin n -> Fin (d + 1) -> ℂ) where
+              m : Nat
+              chart : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ)
+              chart_open : ∀ j, IsOpen (chart j)
+              chart_sub_U : ∀ j, chart j ⊆ U
+              start_overlap : (Ω0 ∩ chart 0).Nonempty
+              consecutive_overlap :
+                ∀ j : Fin m,
+                  (chart (Fin.castSucc j) ∩ chart j.succ).Nonempty
+              final_mem : z ∈ chart (Fin.last m)
+              chart_is_lorentz_step :
+                ∀ j, ∃ Ωbase : Set (Fin n -> Fin (d + 1) -> ℂ),
+                  IsOpen Ωbase ∧
+                  Ωbase ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ ∧
+                  ∃ Λ : ComplexLorentzGroup d,
+                    chart j =
+                      (fun u => BHW.complexLorentzAction Λ u) '' Ωbase
+
+            theorem BHW.bhw_sourcePatchHull_has_continuationChain
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (hΩ0_open : IsOpen Ω0)
+                (hΩ0_sub_ambient :
+                  Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hU_hull :
+                  ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty) :
+                ∀ z, z ∈ U ->
+                  BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U z
+
+            noncomputable def BHW.bhw_continuedValueAlongChain
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                {z : Fin n -> Fin (d + 1) -> ℂ}
+                (C : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U z) : ℂ
+
+            theorem BHW.bhw_branch_chain_singleValued_on_sourcePatchHull
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ0_open : IsOpen Ω0)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hU_hull :
+                  ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+                (hB0_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+                      B0 (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B0 z)
+                {z : Fin n -> Fin (d + 1) -> ℂ}
+                (C₁ C₂ :
+                  BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U z) :
+                BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C₁ =
+                  BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C₂
+
+            theorem BHW.bhw_continue_branch_from_chains
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ0_open : IsOpen Ω0)
+                (hU_open : IsOpen U)
+                (hU_connected : IsConnected U)
+                (hΩ0_sub_ambient :
+                  Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+                (hU_hull :
+                  ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+                (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+                (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+                (hB0_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+                      B0 (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B0 z) :
+                ∃ B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ B U ∧
+                  (∀ Λ z, z ∈ U ->
+                    BHW.complexLorentzAction Λ z ∈ U ->
+                      B (BHW.complexLorentzAction Λ z) = B z) ∧
+                  (∀ z, z ∈ Ω0 -> z ∈ U -> B z = B0 z)
+            ```
+
+            The first theorem is the totally-real identity theorem on a
+            proper-complex Lorentz group chart, with real slice
+            `ComplexLorentzGroup.ofReal '' Set.univ`.  The path theorem uses
+            compactness of `unitInterval` to take a finite subcover by those
+            local charts and composes the equalities.  The single-valuedness
+            theorem is Hall-Wightman's closed-chain argument inside the
+            selected hull component.  The chain theorem unfolds the
+            path-component hull: since `U` is the path component of an open
+            ambient and `Ω0 ∩ U` is nonempty, a compact path from `Ω0` to
+            `z` has a finite cover by local Lorentz charts with consecutive
+            nonempty overlaps.  The final theorem defines the continued
+            branch by choosing such a chain to a neighborhood of `z`, uses
+            single-valuedness for choice independence, and proves holomorphy
+            in the final local chart.  This is the lowest BHW/Jost proof-doc
+            frontier for the source-patch compact theorem.
+
+            The first local theorem is pinned to the proper-complex Lorentz
+            group, not to the full orthogonal group.  Its Lie-chart inputs are:
+
+            ```lean
+            theorem BHW.complexLorentzGroup_has_local_complex_chart
+                [NeZero d] (hd : 2 <= d)
+                (Λ0 : ComplexLorentzGroup d) :
+                ∃ e : LocalHomeomorph (ComplexLorentzGroup d)
+                      (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ),
+                  Λ0 ∈ e.source ∧ IsOpen e.source
+
+            theorem BHW.restrictedLorentz_slice_totallyReal_in_complexLorentz_chart
+                [NeZero d] (hd : 2 <= d)
+                (e : LocalHomeomorph (ComplexLorentzGroup d)
+                      (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)) :
+                BHW.IsMaximalTotallyRealSubmanifold
+                  (e.toFun '' (e.source ∩ Set.range
+                    (ComplexLorentzGroup.ofReal :
+                      RestrictedLorentzGroup d -> ComplexLorentzGroup d)))
+                  e.target
+
+            theorem BHW.holomorphic_orbitValue_in_complexLorentz_chart
+                [NeZero d] (hd : 2 <= d)
+                (n : Nat)
+                (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ_open : IsOpen Ω)
+                (hB_holo : DifferentiableOn ℂ B Ω)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (e : LocalHomeomorph (ComplexLorentzGroup d)
+                      (Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)) :
+                DifferentiableOn ℂ
+                  (fun Λ : ComplexLorentzGroup d =>
+                    B (BHW.complexLorentzAction Λ z))
+                  {Λ | Λ ∈ e.source ∧
+                    BHW.complexLorentzAction Λ z ∈ Ω}
+            ```
+
+            The local invariance proof applies the totally-real identity
+            theorem to
+            `Λ ↦ B (BHW.complexLorentzAction Λ z)` in such a chart around
+            `1`.  The real slice is the image of
+            `RestrictedLorentzGroup d` under `ComplexLorentzGroup.ofReal`;
+            determinant-one/proper-complex membership is part of the group
+            type, so no improper `O(1,d;ℂ)` component enters this route.
+
+            The chain value is constructed by finite induction, not by a
+            hidden global representative.  For a chain `C`, choose
+            `a0 ∈ Ω0 ∩ C.chart 0`; the first local branch on `C.chart 0` is
+            the local Lorentz-chart continuation of `B0`, normalized to agree
+            with `B0` on the nonempty initial overlap.  If `Bj` is already
+            constructed on `C.chart j`, choose
+            `aj ∈ C.chart j ∩ C.chart j.succ` and construct `B(j+1)` on the
+            next chart by local continuation normalized by
+            `B(j+1) aj = Bj aj`.  The identity theorem on chart overlaps
+            proves independence of the chosen overlap point.  Then
+
+            ```lean
+            BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C =
+              Bm z
+            ```
+
+            with `Bm` the last local branch and
+            `C.final_mem : z ∈ C.chart (Fin.last C.m)`.  To compare two
+            chains, traverse the first chain and then the reverse of the
+            second; the closed finite chain returns to a chart meeting `Ω0`,
+            where both branches equal `B0` on a nonempty open set.  Repeated
+            identity-theorem applications give equality of the endpoint
+            values.  The global branch on `U` is then local in the final chart
+            of a chosen chain, and single-valuedness identifies the definitions
+            on chart overlaps.
+
+            The two branch producers are:
+
+            ```lean
+            theorem BHW.os45_sourcePatch_ordinaryBranch_onHull
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+                (H :
+                  BHW.OS45SourcePatchBHWJostHullData
+                    hd OS lgc n i hi V hChart) :
+                ∃ Bord : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ Bord H.U ∧
+                  (∀ x, x ∈ hChart.V0 ->
+                    Bord (fun k => wickRotatePoint (x k)) =
+                      bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
+                  (∀ x, x ∈ hChart.V0 ->
+                    Bord (BHW.realEmbed x) =
+                      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
+
+            theorem BHW.os45_sourcePatch_adjacentBranch_onHull_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+                (H :
+                  BHW.OS45SourcePatchBHWJostHullData
+                    hd OS lgc n i hi V hChart) :
+                ∃ Bτ : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
+                  DifferentiableOn ℂ Bτ H.U ∧
+                  (∀ x, x ∈ hChart.V0 ->
+                    Bτ (fun k => wickRotatePoint (x k)) =
+                      bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x (H.τ k)))) ∧
+                  (∀ x, x ∈ hChart.V0 ->
+                    Bτ (BHW.realEmbed x) =
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (H.τ k))))
+            ```
+
+            The ordinary theorem applies the generic continuation with
+            `Ω0 := BHW.ExtendedTube d n` and
+            `B0 := BHW.extendF (bvt_F OS lgc n)`; its real trace uses the
+            continuation agreement field on `H.real_id_ET`, not a separate
+            boundary theorem.  The adjacent theorem
+            applies it with
+            `Ω0 := {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}`
+            and
+            `B0 z := BHW.extendF (bvt_F OS lgc n)
+              (BHW.permAct (d := d) H.τ z)`.  The initial holomorphy is
+            `BHW.extendF_holomorphicOn` composed with `permAct`; the trace
+            rewrites use `BHW.permAct_wickRotatePoint`, the definitional
+            `realEmbed` permutation rewrite, and the tube fields in `H`.
+            After these three lower surfaces, the pair-data producer is
+            field-copying: build `H`, obtain `Bord` and `Bτ`, and copy
+            `H.U`, `H.V_open`, `H.V_nonempty`, `H.U_open`,
+            `H.U_connected`, `H.wick_id_mem`, `H.real_id_mem`, and the four
+            trace formulas.
+
+            The difference carrier is then:
+
+            ```lean
+            structure BHW.OS45SourcePatchBHWJostDifferenceData
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n)) where
+              τ : Equiv.Perm (Fin n)
+              τ_eq : τ = Equiv.swap i ⟨i.val + 1, hi⟩
+              U : Set (Fin n -> Fin (d + 1) -> ℂ)
+              H : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+              V_open : IsOpen V
+              V_nonempty : V.Nonempty
+              U_open : IsOpen U
+              U_connected : IsConnected U
+              wick_mem : ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U
+              real_mem : ∀ x ∈ V, BHW.realEmbed x ∈ U
+              H_holo : DifferentiableOn ℂ H U
+              H_wick_trace :
+                ∀ x ∈ V,
+                  H (fun k => wickRotatePoint (x k)) =
+                    bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x (τ k))) -
+                      bvt_F OS lgc n (fun k => wickRotatePoint (x k))
+              H_real_trace :
+                ∀ x ∈ V,
+                  H (BHW.realEmbed x) =
+                    BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (τ k))) -
+                      BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x)
+            ```
+
+            The producer
+            `BHW.os45_sourcePatch_bhwJostDifferenceData_of_OSI45` first calls
+            `BHW.os45_sourcePatch_bhwJostPairData_of_OSI45`, then sets
+            `H z := P.Bτ z - P.Bord z`.  `H_holo` is
+            `P.Bτ_holo.sub P.Bord_holo`; `H_wick_trace` and `H_real_trace`
+            are obtained by subtracting the corresponding pair-data trace
+            formulas.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`,
+            `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_id`,
+            `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_adjacent`,
+            or any oriented adjacent `S'_n` seed/path theorem.
+
+            The Lean-facing producer for a source chart returns the carrier on
+            the chart's shrunken patch:
+
+            ```lean
+            theorem BHW.os45_sourcePatch_bhwJostDifferenceData_of_OSI45
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                (hV_open : IsOpen V)
+                (hV_jost : ∀ x, x ∈ V -> x ∈ BHW.JostSet d n)
+                (hV_ET :
+                  ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+                (hV_swapET :
+                  ∀ x, x ∈ V ->
+                    BHW.realEmbed
+                      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                    BHW.ExtendedTube d n)
+                (hV_ordered :
+                  ∀ x, x ∈ V ->
+                    x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) 1)
+                (hV_swap_ordered :
+                  ∀ x, x ∈ V ->
+                    (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                      EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+                        (Equiv.swap i ⟨i.val + 1, hi⟩))
+                (hV_sourcePatch :
+                  V ⊆ BHW.os45Figure24SourcePatch (d := d) n i hi)
+                {x0 : NPointDomain d n}
+                (hx0V : x0 ∈ V)
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0) :
+                BHW.OS45SourcePatchBHWJostDifferenceData
+                  hd OS lgc n i hi hChart.V0
+            ```
+
+            The proof uses `hChart.V0_open`, `hChart.V0_connected`,
+            `⟨x0, hChart.x0_mem⟩`, `hChart.V0_sub`, and the displayed `V`
+            fields to restrict all OS-I/BHW-Jost hypotheses to `hChart.V0`.
+            It must not use the oriented common-boundary envelope or the
+            oriented branch-germ suppliers.
+
+         3. Convert `hwick_pairing_zero_all` first into holomorphic zero on
+            the direct carrier, then into zero of the real source trace.  The
+            Wick trace is not merely a set of sample points: `D.V_open`,
+            `D.V_nonempty`, and `D.wick_mem` make
+            `x ↦ fun k => wickRotatePoint (x k)` a nonempty open totally-real
+            slice inside the connected BHW/Jost hull `D.U`.
+
+            ```lean
+            theorem BHW.os45_bhwJost_identity_of_wickDistributionZero
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                (D : BHW.OS45SourcePatchBHWJostDifferenceData hd OS lgc n i hi V)
+                (hwick_zero :
+                  ∀ χ : SchwartzNPoint d n,
+                    HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+                    tsupport (χ : NPointDomain d n -> ℂ) ⊆ V ->
+                    ∫ x : NPointDomain d n,
+                      (bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x (D.τ k))) -
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x k))) * χ x = 0) :
+                ∀ z ∈ D.U, D.H z = 0
+            ```
+
+            The proof applies
+            `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`
+            to `x ↦ D.H (fun k => wickRotatePoint (x k))` on `V`, rewriting
+            the integrals by `D.H_wick_trace` and `hwick_zero`; then it applies
+            the product totally-real identity theorem to the holomorphic
+            function `D.H` on `D.U`.  The totally-real chart is the standard
+            Wick embedding of real coordinates into complex coordinates, not a
+            source-scalar or oriented common-boundary input.
+
+            The real-trace theorem is:
+
+            ```lean
+            theorem BHW.os45_sourcePatch_realTrace_zero_of_wickDistributionZero
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                (D : BHW.OS45SourcePatchBHWJostDifferenceData hd OS lgc n i hi V)
+                (hwick_zero :
+                  ∀ χ : SchwartzNPoint d n,
+                    HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+                    tsupport (χ : NPointDomain d n -> ℂ) ⊆ V ->
+                    ∫ x : NPointDomain d n,
+                      (bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x (D.τ k))) -
+                        bvt_F OS lgc n
+                          (fun k => wickRotatePoint (x k))) * χ x = 0)
+                (ψ : SchwartzNPoint d n)
+                (hψ_comp :
+                  HasCompactSupport (ψ : NPointDomain d n -> ℂ))
+                (hψ_supp :
+                  tsupport (ψ : NPointDomain d n -> ℂ) ⊆ V) :
+                ∫ x : NPointDomain d n,
+                    (BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (D.τ k))) -
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed x)) * ψ x = 0
+            ```
+
+            Its proof calls `BHW.os45_bhwJost_identity_of_wickDistributionZero`,
+            rewrites by `D.H_real_trace`, and uses compact support of `ψ` to
+            restrict the integral to `V`.  This is an OS-free edge/totally-real
+            uniqueness lemma for the holomorphic branch-difference carrier,
+            not the final Jost p. 83 locality theorem.  It is packaged below
+            the source-patch theorem and does not mention the later oriented
+            common-boundary envelope.
+
+         4. Public source-patch assembly.  The last bridge is pure measure
+            algebra:
+
+            ```lean
+            theorem BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart_of_ET
+                [NeZero d] (hd : 2 <= d)
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (V : Set (NPointDomain d n))
+                (hV_ET :
+                  ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
+                (hV_swapET :
+                  ∀ x, x ∈ V ->
+                    BHW.realEmbed
+                      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
+                    BHW.ExtendedTube d n)
+                {x0 : NPointDomain d n}
+                (hChart :
+                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+                (ρ : Equiv.Perm (Fin n))
+                (hρ :
+                  ρ = (1 : Equiv.Perm (Fin n)) ∨
+                  ρ = Equiv.swap i ⟨i.val + 1, hi⟩)
+                (φ : SchwartzNPoint d n)
+                (hφ_comp :
+                  HasCompactSupport (φ : NPointDomain d n -> ℂ))
+                (hφ_supp :
+                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
+                Integrable
+                  (fun u : NPointDomain d n =>
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed (fun k => u (ρ k))) * φ u)
+
+            theorem BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
+                [NeZero d]
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat) (τ : Equiv.Perm (Fin n))
+                (ψ : SchwartzNPoint d n)
+                (hid_int :
+                  Integrable
+                    (fun x : NPointDomain d n =>
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed x) * ψ x))
+                (hτ_int :
+                  Integrable
+                    (fun x : NPointDomain d n =>
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (τ k))) * ψ x))
+                (hzero :
+                  ∫ x : NPointDomain d n,
+                      (BHW.extendF (bvt_F OS lgc n)
+                          (BHW.realEmbed (fun k => x (τ k))) -
+                        BHW.extendF (bvt_F OS lgc n)
+                          (BHW.realEmbed x)) * ψ x = 0) :
+                ∫ x : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x) * ψ x
+                  =
+                ∫ x : NPointDomain d n,
+                    BHW.extendF (bvt_F OS lgc n)
+                      (BHW.realEmbed (fun k => x (τ k))) * ψ x := by
+              have hdiff :
+                  (∫ x : NPointDomain d n,
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed (fun k => x (τ k))) * ψ x) -
+                  (∫ x : NPointDomain d n,
+                      BHW.extendF (bvt_F OS lgc n)
+                        (BHW.realEmbed x) * ψ x) = 0 := by
+                simpa [sub_mul] using
+                  (by
+                    rw [MeasureTheory.integral_sub hτ_int hid_int]
+                    exact hzero)
+              exact (sub_eq_zero.mp hdiff).symm
+            ```
+
+            The public theorem then calls:
+
+            ```lean
+            have hwick_zero :=
+              BHW.os45_sourcePatch_wickDifference_pairing_zero
+                (d := d) hd OS lgc n i hi hChart.V0
+                (fun x hx => hV_jost x (hChart.V0_sub hx))
+                (fun x hx => hV_ordered x (hChart.V0_sub hx))
+                (fun x hx => by
+                  simpa [τ, Equiv.swap_inv, one_mul] using
+                    hV_swap_ordered x (hChart.V0_sub hx))
+            let D :=
+              BHW.os45_sourcePatch_bhwJostDifferenceData_of_OSI45
+                (d := d) hd OS lgc n i hi V
+                hV_open hV_jost hV_ET hV_swapET hV_ordered
+                hV_swap_ordered hV_sourcePatch hx0V hChart
+            have hwick_zero_D :
+                ∀ χ : SchwartzNPoint d n,
+                  HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
+                  tsupport (χ : NPointDomain d n -> ℂ) ⊆ hChart.V0 ->
+                  ∫ x : NPointDomain d n,
+                    (bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x (D.τ k))) -
+                      bvt_F OS lgc n
+                        (fun k => wickRotatePoint (x k))) * χ x = 0 := by
+              intro χ hχ_comp hχ_supp
+              simpa [D.τ_eq] using hwick_zero χ hχ_comp hχ_supp
+            have hreal_zero :=
+              BHW.os45_sourcePatch_realTrace_zero_of_wickDistributionZero
+                (d := d) hd OS lgc n i hi hChart.V0 D
+                hwick_zero_D ψ hψ_comp hψ_supp
+            have hpair :=
+              BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
+                (d := d) OS lgc n D.τ ψ hid_int hτ_int hreal_zero
+            simpa [D.τ_eq] using hpair
+            ```
+
+            Here `hid_int` and `hτ_int` are supplied by
+            `BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart_of_ET`,
+            with labels `1` and `D.τ` respectively.  This helper is the
+            checked continuity/integrability argument with only the two
+            extended-tube fields exposed: `hV_ET` handles `ρ = 1`, and
+            `hV_swapET` handles the adjacent branch.  The fields
+            `hV_adjLift_ET` and `hV_orientedPath_closure` are kept in the
+            public theorem signature for compatibility with downstream
+            Figure-2-4 consumers; the direct carrier itself is not allowed to
+            call oriented branch-germ suppliers.
+
+            Archived circular helper names, not active for this theorem:
 
             ```lean
             theorem BHW.os45CommonBoundary_wickTrace_zero_of_compactPairing_zero
@@ -36677,7 +41471,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
          compact theorem has no hidden placeholder as a theorem landing in
          `OS.S n ψZ`.  It is still only one output of the OS45 compact
          producer: the source-patch PET-overlap theorem additionally needs
-         the direct common-boundary branch-difference theorem above.
+         the direct OS-I/BHW-Jost branch-difference theorem above.
 
          ```lean
          theorem BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger
@@ -36761,6 +41555,35 @@ Proof decomposition of this theorem, without hiding the analytic work:
          may be implemented only after these producer surfaces are either
          proved locally or replaced by already checked sorry-free support with
          the same OS I §4.5/BHW/Jost content.
+
+      Strict-route status of the next raw/canonical transport block.  The
+      following statements with
+      `hRep : BHW.SourceScalarRepresentativeData (d := d) n (bvt_F OS lgc n)`
+      are retained only as the archived ordinary pure-Gram consumer form.  They
+      are not active theorem-2 Lean targets on the OS I §4.5 proper-complex
+      route.  On the active route, the canonical compact theorem above feeds
+      the oriented sequence
+
+      ```text
+      os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45
+        -> OS45CompactFigure24WickPairingEq
+        -> sourceOrientedAdjacentTubeAnchor_of_compactWickPairingEq
+        -> os45AdjacentSPrimeOrientedRealSeed_of_compactWickPairingEq
+        -> os45AdjacentSPrimeOrientedSourceEq_of_realSeed
+        -> os45AdjacentSPrimeOrientedSeedFigure24Path_of_compactWickPairingEq
+        -> os45OneBranchOrientedSourceEq_sourceInput_adjacent
+        -> os45BranchHorizontalOrientedSourceGermAt_of_figure24_adjacent
+        -> os45_adjacent_commonBoundaryEnvelope
+      ```
+
+      The ordinary raw/canonical block below may be ported only on the
+      conditional full-component Hall-Wightman fork, after
+      `BHW.sourceScalarRepresentativeData_bvt_F` is genuinely available.  It
+      must not be used to bypass the oriented real-seed theorem, the oriented
+      double-domain/corridor proof, or the branch-difference compact theorem.
+      In particular, the presence of a checked canonical lift equality
+      `= OS.S n ψZ` does not authorize an ordinary
+      `SourceScalarRepresentativeData.branch_eq` proof on the strict route.
 
       This is the only non-mechanical input in
       `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`.
@@ -41630,43 +46453,34 @@ upstream scalar-source proof gate, in this order:
 2. checked Figure-2-4 source environment/source-patch selector:
    `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability` and
    `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch`;
-3. finish the scalar-source analytic inputs before source-germ Lean:
-   the ordinary Hall-Wightman scalar representative on the pure-Gram fork,
-   namely the conditional
-   `BHW.sourceScalarRepresentativeData_bvt_F` through
-   `BHW.extendedTube_same_sourceGram_extendF_eq`,
-   `BHW.sourceGramMatrixRank`, `BHW.HWSourceGramOrbitRank`,
-   `BHW.HWSourceGramLowRank`,
-   `BHW.sourceExtendedTubeGramDomain_relOpen_connected`,
-   `BHW.sourceVarietyGermHolomorphicOn_extendF_descent`,
-   `BHW.sourceScalarRepresentativeData_of_branchLaw`, and
-   `BHW.hallWightman_sourceScalarRepresentativeData`, including the
-   full-component improper source input required for full source-Gram fibres.
-   If the source decision instead chooses the oriented scalar-source repair,
-   replace this row by the oriented representative and migrate the adjacent
-   `S'_n` package before Lean; do not keep the pure-Gram theorem names as
-   wrappers.  On the pure-Gram fork, the adjacent `S'_n` package is
-   `BHW.os45Figure24_sourceChart_at`,
-   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
-   `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary`,
-   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
-   `BHW.OS45SPrimeFigure24LocalSourceSeedData`,
-   `BHW.os45SPrime_figure24SourceEqOnUsrc_of_compactWickPairing`,
-   `BHW.os45SPrime_figure24LocalSourceSeedData_of_OSI45`,
-   `BHW.os45SPrime_figure24LocalSourceEq_of_seedData`,
-   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
-   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
-   `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
+3. finish the oriented scalar-source analytic inputs before source-germ Lean:
+   the active strict route uses
+   `BHW.sourceOrientedScalarRepresentativeData_bvt_F`, assembled only after
+   `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`,
+   `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`,
+   `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected`,
+   `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent`,
+   `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, and
+   `BHW.hallWightman_sourceOrientedScalarRepresentativeData`.  The adjacent
+   `S'_n` package is the oriented package:
+   `BHW.os45AdjacentSPrimeOrientedScalarizationChart_of_figure24`,
+   `BHW.OS45CompactFigure24WickPairingEq`,
+   `BHW.sourceOrientedAdjacentTubeAnchor_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedRealSeed_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedSourceEq_of_realSeed`,
+   `BHW.os45AdjacentSPrimeOrientedScalarSeed_of_realSeed`,
+   `BHW.os45AdjacentSPrimeOrientedScalarSeed_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedQuarterTurnMem_closure_of_figure24Path`,
+   `BHW.os45AdjacentSPrimeOrientedSeedFigure24Path`, and
+   `BHW.os45AdjacentSPrimeOrientedSeedFigure24Path_of_compactWickPairingEq`.
+   The ordinary pure-Gram names
+   `BHW.sourceScalarRepresentativeData_bvt_F`,
    `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
    `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
    `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
-   `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`;
+   `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq` are
+   conditional side-fork names only; they may not be ported as wrappers around
+   the oriented proof;
 4. prove the branch-local OS I §4.5/BHW source suppliers
    `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_id` and
    `BHW.os45BranchHorizontalOrientedSourceGermAt_of_figure24_adjacent`; these are
@@ -41928,37 +46742,36 @@ not as the next task.  The active next implementation order is:
    **checked in checkpoint `bb009da`**.  The scalar-source port must now add
    the public canonical-lift projection `hV_adjLift_ET` from the same checked
    compact-open proof before implementing the adjacent `S'_n` pairing layer;
-3. finish the scalar-source proof gate before source-germ Lean:
-   the conditional pure-Gram
-   `BHW.sourceScalarRepresentativeData_bvt_F` through the five-stage ordinary
-   Hall-Wightman scalar descent, including the explicit scalar-rank split
-   `sourceGramMatrixRank` / `HWSourceGramOrbitRank` /
-   `HWSourceGramLowRank` at threshold `min d n` and the full-component
-   improper invariant source input.  If the strict proper-complex resolution is
-   oriented instead, first replace the source representative and every adjacent
-   source consumer by the oriented API; do not port the pure-Gram names.  On
-   the pure-Gram fork, the adjacent `S'_n` seed/path package is
-   `BHW.os45Figure24_sourceChart_at`,
-   `BHW.os45Figure24AdjacentLift_extendF_eq_permutedWick_zero`,
-   `BHW.os45SPrime_canonicalLift_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_sourcePullback_pairing_eq_acrPermutedBoundary`,
-   `BHW.os45SPrime_sourcePullback_pairing_eq_permutedSchwinger`,
-   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`,
-   `BHW.OS45SPrimeFigure24LocalSourceSeedData`,
-   `BHW.os45SPrime_figure24SourceEqOnUsrc_of_compactWickPairing`,
-   `BHW.os45SPrime_figure24LocalSourceSeedData_of_OSI45`,
-   `BHW.os45SPrime_figure24LocalSourceEq_of_seedData`,
-   `BHW.os45SPrime_figure24LocalSourceEq_of_BHWJost`,
-   `BHW.os45SPrime_figure24LocalBranchCompatibility_of_BHWJost`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_eq_identityWick_of_BHWJost`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_rawAdjacentWick_bvtF_pairing_eq_permutedSchwinger`,
-   `BHW.os45SPrime_rawAdjacentWick_extendF_pairing_eq_bvt_F`,
-   `BHW.os45SPrime_permutedWickExtendF_pairing_eq_permutedSchwinger`,
-   `BHW.os45AdjacentSPrimeScalarizationChart_of_figure24`,
-   `BHW.os45AdjacentSPrimeSourceEq_of_compactWickPairingEq`,
-   `BHW.os45AdjacentSPrimeScalarSeed_of_compactWickPairingEq`, and
-   `BHW.os45AdjacentSPrimeSeedFigure24Path_of_compactWickPairingEq`;
+3. finish the oriented scalar-source proof gate before source-germ Lean:
+   the active strict OS-I/OS-II route uses
+   `BHW.sourceOrientedScalarRepresentativeData_bvt_F`, not the ordinary
+   pure-Gram `BHW.sourceScalarRepresentativeData_bvt_F`.  Its implementation
+   predecessors are the proper-complex Hall-Wightman/Jost oriented descent
+   stages
+   `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`,
+   `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq`,
+   `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected`,
+   `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent`,
+   `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, and
+   `BHW.hallWightman_sourceOrientedScalarRepresentativeData`, specialized by
+   `bvt_F_holomorphic` and
+   `bvt_F_complexLorentzInvariant_forwardTube`.  The compact Figure-2-4
+   equality then feeds the oriented adjacent `S'_n` package:
+   `BHW.os45AdjacentSPrimeOrientedScalarizationChart_of_figure24`,
+   `BHW.OS45CompactFigure24WickPairingEq`,
+   `BHW.sourceOrientedAdjacentTubeAnchor_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedRealSeed_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedSourceEq_of_realSeed`,
+   `BHW.os45AdjacentSPrimeOrientedScalarSeed_of_realSeed`,
+   `BHW.os45AdjacentSPrimeOrientedScalarSeed_of_compactWickPairingEq`,
+   `BHW.os45AdjacentSPrimeOrientedQuarterTurnMem_closure_of_figure24Path`,
+   `BHW.os45AdjacentSPrimeOrientedSeedFigure24Path`, and
+   `BHW.os45AdjacentSPrimeOrientedSeedFigure24Path_of_compactWickPairingEq`.
+   The ordinary pure-Gram names
+   `BHW.os45AdjacentWickTrace_sourceScalarRepresentative_pairing_eq_of_figure24`
+   and `BHW.os45SPrime_sourcePullback_*` remain archived conditional
+   full-component notes only; they must not be ported as wrappers around the
+   oriented proof;
 4. prove the branch-local source-germ layer in the oriented scalar-packet order:
    first `BHW.os45OneBranchOrientedSourceEq_sourceInput_id` and
    `BHW.os45OneBranchOrientedSourceEq_sourceInput_adjacent`, then
