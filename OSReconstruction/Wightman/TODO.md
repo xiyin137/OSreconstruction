@@ -240,8 +240,7 @@ Not on the shortest OS reconstruction lane:
 4. After `boundary_values_tempered`, finish the six transfer theorems and `bvt_cluster` in `OSToWightmanBoundaryValues.lean`.
 5. In parallel or next, attack the live R→E front after the Route 1 merge:
    - `SchwingerTemperedness.lean`: coincidence-singularity / zero-diagonal continuity
-   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster
-   - `BHWTranslation.isPreconnected_baseFiber` is now optional old-route cleanup, not required for the merged proof path
+   - `SchwingerAxioms.lean`: Euclidean reality / reflection, OS=W term, cluster (live: identity-permutation ForwardTube refinement; see sharpening above)
 6. Keep `SpectralEquivalence.lean` off the active queue unless a downstream file
    needs a small interface adaptation; the one-way theorem is already landed.
 7. Defer `StoneTheorem` / GNS operator-theoretic work until the analyticity lane is materially settled.
