@@ -7,6 +7,7 @@ import Mathlib.Geometry.Manifold.Algebra.LieGroup
 import Mathlib.Geometry.Manifold.Instances.UnitsOfNormedAlgebra
 import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
 import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
+import Mathlib.Topology.Algebra.Group.Matrix
 import Mathlib.Analysis.Complex.Basic
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Normed.Module.Connected

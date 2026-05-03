@@ -137,6 +137,35 @@ private theorem adjacent_sectors_overlap_right [NeZero d] (π : Equiv.Perm (Fin 
     · simpa [extendedTube_eq_core (d := 1) (n := n)] using hx
     · simpa [extendedTube_eq_core (d := 1) (n := n)] using hswapx
 
+/-- Each explicit PET sector is preconnected. -/
+theorem permutedExtendedTubeSector_isPreconnected (π : Equiv.Perm (Fin n)) :
+    IsPreconnected (permutedExtendedTubeSector d n π) := by
+  have hsector_eq :
+      lorentzPermSector (d := d) (n := n) π = permutedExtendedTubeSector d n π := by
+    ext z
+    exact mem_lorentzPermSector_iff_perm_mem_extendedTube (d := d) (n := n) π z
+  simpa [← hsector_eq] using lorentzPermSector_isPreconnected (d := d) (n := n) π
+
+/-- Adjacent explicit PET sectors have nonempty overlap. -/
+theorem permutedExtendedTubeSector_adjacent_overlap_nonempty [NeZero d]
+    (π : Equiv.Perm (Fin n))
+    (i : Fin n) (hi : i.val + 1 < n) :
+    (permutedExtendedTubeSector d n π ∩
+      permutedExtendedTubeSector d n
+        (π * Equiv.swap i ⟨i.val + 1, hi⟩)).Nonempty := by
+  have hsector_eq :
+      lorentzPermSector (d := d) (n := n) π = permutedExtendedTubeSector d n π := by
+    ext z
+    exact mem_lorentzPermSector_iff_perm_mem_extendedTube (d := d) (n := n) π z
+  have hsector_swap_eq :
+      lorentzPermSector (d := d) (n := n) (π * Equiv.swap i ⟨i.val + 1, hi⟩) =
+        permutedExtendedTubeSector d n (π * Equiv.swap i ⟨i.val + 1, hi⟩) := by
+    ext z
+    exact mem_lorentzPermSector_iff_perm_mem_extendedTube
+      (d := d) (n := n) (π * Equiv.swap i ⟨i.val + 1, hi⟩) z
+  simpa [← hsector_eq, ← hsector_swap_eq] using
+    adjacent_sectors_overlap_right (d := d) (n := n) π i hi
+
 /-- **The permuted extended tube is preconnected.** -/
 theorem permutedExtendedTube_isPreconnected [NeZero d] :
     IsPreconnected (@PermutedExtendedTube d n) := by

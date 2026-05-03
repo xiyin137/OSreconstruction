@@ -1,7 +1,7 @@
 # Theorem 3 OS-Route Blueprint
 
-Purpose: this note is the implementation blueprint for the live `E -> R`
-frontier theorem
+Purpose: this note is the implementation blueprint for the OS-route closure of
+the former theorem-3 `E -> R` frontier
 
 - `OSToWightmanBoundaryValues.lean`, private theorem `bvt_W_positive`.
 
@@ -16,9 +16,9 @@ This note should be read together with:
 - `docs/mathlib_gap_analysis.md`
 - `docs/sorry_triage.md`
 
-## 1. The live theorem and the current production situation
+## 1. The theorem and the current production situation
 
-The live theorem is:
+The theorem closed by this blueprint is:
 
 ```lean
 private theorem bvt_W_positive
@@ -30,8 +30,8 @@ private theorem bvt_W_positive
 
 The current production files still expose an older reduction chain through
 boundary-ray / Schwinger / compact-approximation consumer interfaces. Those
-surfaces are part of the current code graph, but they are **not** the theorem-3
-blueprint any more. They are legacy consumers.
+surfaces are part of the current code graph, but they are **not** the active
+theorem-3 frontier any more. They are legacy consumers.
 
 The theorem-3 blueprint now has exactly one endorsed route:
 
@@ -59,9 +59,9 @@ Implementation discipline:
 
 ### 1.0. Mandatory documentation readiness gate
 
-For this frontier, inability to close the live `bvt_W_positive` `sorry` is not
-an invitation to add more production Lean scaffolding. It means this blueprint
-is still missing mathematical proof detail.
+For any future refactor of this theorem surface, inability to reconstruct the
+`bvt_W_positive` closure route is not an invitation to add more production Lean
+scaffolding. It means this blueprint is still missing mathematical proof detail.
 
 Before any further blocker-facing Lean edit, the relevant subsection below must
 state:
@@ -1022,9 +1022,11 @@ Exact current-code milestone:
   `one_variable_time_interchange_for_wightman_pairing`, together with the
   kernel-reduction chain down to an ambient upper-half-plane witness, in
   [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
-- `OSToWightmanPositivity.lean` is now `sorry`-free; the active public
-  theorem-3 `sorry` remains `bvt_W_positive` in
-  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean);
+- `OSToWightmanPositivity.lean` is now `sorry`-free, and
+  `bvt_W_positive` in
+  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean)
+  is now closed by
+  `OSReconstruction.bvt_W_positive_of_component_dense_preimage`;
 - the slice-side vanishing package is now formalized on both pairing
   orientations, including
   `fourierInvPairingCLM_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
@@ -2791,11 +2793,15 @@ What is settled:
 5. If Lemma 4.1 is later formalized faithfully, it must be stated on the
    actual half-space codomain `L(R_+^{4n})` from Section 4.3, not on the
    support-restricted subtype currently used for Euclidean inputs.
-6. The positivity proof for theorem 3 does not need that Schwartz-density
-   theorem as a live prerequisite. What it needs is:
-   - the transport-map comparison on positive-time inputs,
-   - density of the resulting vectors in the Hilbert space `H`,
-   - continuity/closure on the `bvt_W` side.
+6. The positivity proof for theorem 3 does not need the withdrawn
+   `os1TransportComponent` density theorem as a live prerequisite.  It still
+   needs a real Section-4.3 transform-density/closure theorem, but that theorem
+   must be stated on the frequency-side quotient and/or on the Wightman
+   quadratic form, not on the support-restricted `os1TransportComponent`
+   source.  Hilbert-space density of positive-time vectors is useful, but by
+   itself it does **not** extend positivity to an arbitrary raw
+   `BorchersSequence d`; the raw Wightman test must first be approximated, or
+   represented, through the Section-4.3 transform quotient.
 
 So the current live route should not contain either
 `os1TransportOneVar_denseRange` or `os1TransportComponent_denseRange` as
@@ -2805,8 +2811,10 @@ the quotient-side maps
 `denseRange_section43PositiveEnergyQuotientMap`.
 
 The file should not attempt to prove `bvtTransportImage_dense` by separate
-topological arguments. The positivity route should go through injectivity /
-kernel-zero on the transport side and Hilbert-space density on the OS side.
+topological arguments for the old support-restricted transport image.  The
+positivity route should go through the genuine Fourier-Laplace transform image,
+the frequency-projection descent theorem, and a continuity/closure statement
+that explicitly controls the Wightman quadratic form.
 
 ### 5.9.3. Detailed proof of the on-image transport map
 
@@ -13786,13 +13794,156 @@ theorem physicsFourierFlatCLM_reindex_tensorProduct_apply
       physicsFourierFlatCLM G (section43SplitRightFlat d n r ξ)
 ```
 
-   Proof transcript: unfold `physicsFourierFlatCLM_integral`,
-   `reindexSchwartzFin_apply`, and `SchwartzMap.tensorProduct_apply`; transport
-   the integral through the finite-dimensional product equivalence
-   `Fin (n*(d+1)+r*(d+1)) ≃ (Fin (n*(d+1)) → ℝ) ×
-   (Fin (r*(d+1)) → ℝ)`; split the exponential with
-   `Finset.sum_add_distrib`; apply Fubini and identify the two factor
-   integrals with `physicsFourierFlatCLM_integral`.
+   Lean-ready proof packet:
+
+```lean
+private def section43FlatProductSplitMeasurableEquiv (a b : ℕ) :
+    (Fin (a + b) → ℝ) ≃ᵐ ((Fin a → ℝ) × (Fin b → ℝ)) :=
+  ((MeasurableEquiv.piCongrLeft (fun _ : Fin (a + b) => ℝ)
+    (finSumFinEquiv : Fin a ⊕ Fin b ≃ Fin (a + b))).symm).trans
+      (MeasurableEquiv.sumPiEquivProdPi (fun _ : Fin a ⊕ Fin b => ℝ))
+
+private theorem section43FlatProductSplitMeasurableEquiv_measurePreserving
+    (a b : ℕ) :
+    MeasureTheory.MeasurePreserving
+      (section43FlatProductSplitMeasurableEquiv a b)
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (a + b) → ℝ))
+      ((MeasureTheory.volume : MeasureTheory.Measure (Fin a → ℝ)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (Fin b → ℝ)))
+```
+
+The measure-preserving proof composes
+`MeasureTheory.volume_measurePreserving_piCongrLeft` for `finSumFinEquiv`
+with `MeasureTheory.volume_measurePreserving_sumPiEquivProdPi`.
+
+The coordinate apply lemmas are:
+
+```lean
+private theorem section43FlatProductSplitMeasurableEquiv_fst_apply
+    (a b : ℕ) (x : Fin (a + b) → ℝ) (i : Fin a) :
+    (section43FlatProductSplitMeasurableEquiv a b x).1 i =
+      x (Fin.castAdd b i)
+
+private theorem section43FlatProductSplitMeasurableEquiv_snd_apply
+    (a b : ℕ) (x : Fin (a + b) → ℝ) (j : Fin b) :
+    (section43FlatProductSplitMeasurableEquiv a b x).2 j =
+      x (Fin.natAdd a j)
+```
+
+Proof transcript for the first one: unfold the measurable equivalence, use
+`MeasurableEquiv.coe_sumPiEquivProdPi`, change the goal to the underlying
+`Equiv.piCongrLeft`, set
+`h := Equiv.piCongrLeft_apply_apply ... (Sum.inl i)`, then `rw [← h]` and
+`simp [finSumFinEquiv_apply_left]`.  The second proof is identical with
+`Sum.inr j` and `finSumFinEquiv_apply_right`.
+
+Lift this through the final arithmetic cast:
+
+```lean
+private def section43FullFlatProductSplitMeasurableEquiv
+    (d n r : ℕ) [NeZero d] :
+    (Fin ((n + r) * (d + 1)) → ℝ) ≃ᵐ
+      ((Fin (n * (d + 1)) → ℝ) × (Fin (r * (d + 1)) → ℝ)) :=
+  ((MeasurableEquiv.piCongrLeft
+    (fun _ : Fin ((n + r) * (d + 1)) => ℝ)
+    (finCongr (by ring : n * (d + 1) + r * (d + 1) =
+      (n + r) * (d + 1)))).symm).trans
+    (section43FlatProductSplitMeasurableEquiv
+      (n * (d + 1)) (r * (d + 1)))
+
+private theorem section43FullFlatProductSplitMeasurableEquiv_measurePreserving
+    (d n r : ℕ) [NeZero d] :
+    MeasureTheory.MeasurePreserving
+      (section43FullFlatProductSplitMeasurableEquiv d n r)
+      (MeasureTheory.volume : MeasureTheory.Measure
+        (Fin ((n + r) * (d + 1)) → ℝ))
+      ((MeasureTheory.volume : MeasureTheory.Measure
+          (Fin (n * (d + 1)) → ℝ)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure
+          (Fin (r * (d + 1)) → ℝ)))
+```
+
+Then prove the exact cast/split identifications:
+
+```lean
+private theorem splitFirst_castFinCLE_symm_eq_section43SplitLeftFlat
+    (d n r : ℕ) [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    splitFirst (n * (d + 1)) (r * (d + 1))
+        ((castFinCLE (by ring : n * (d + 1) + r * (d + 1) =
+          (n + r) * (d + 1))).symm ξ) =
+      section43SplitLeftFlat d n r ξ
+
+private theorem splitLast_castFinCLE_symm_eq_section43SplitRightFlat
+    (d n r : ℕ) [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    splitLast (n * (d + 1)) (r * (d + 1))
+        ((castFinCLE (by ring : n * (d + 1) + r * (d + 1) =
+          (n + r) * (d + 1))).symm ξ) =
+      section43SplitRightFlat d n r ξ
+```
+
+Each proof is by `ext a`, writing `a` as `finProdFinEquiv p`, rewriting the
+corresponding `section43Split..._apply`, then `Fin.ext`; the left closes by
+`simp [finProdFinEquiv]`, and the right by the same `simp` plus `ring`.
+
+The pointwise tensor identity is:
+
+```lean
+private theorem reindex_tensorProduct_apply_section43Split
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzMap (Fin (n * (d + 1)) → ℝ) ℂ)
+    (G : SchwartzMap (Fin (r * (d + 1)) → ℝ) ℂ)
+    (x : Fin ((n + r) * (d + 1)) → ℝ) :
+    reindexSchwartzFin
+        (by ring : n * (d + 1) + r * (d + 1) = (n + r) * (d + 1))
+        (F.tensorProduct G) x =
+      F (section43SplitLeftFlat d n r x) *
+        G (section43SplitRightFlat d n r x)
+```
+
+Proof: `rw [reindexSchwartzFin_apply, SchwartzMap.tensorProduct_apply]`, then
+the two cast/split lemmas.
+
+The phase split needed after change of variables is:
+
+```lean
+private theorem section43_fullFlat_pair_eq_splitFlat_pair
+    (d n r : ℕ) [NeZero d]
+    (x ξ : Fin ((n + r) * (d + 1)) → ℝ) :
+    (∑ a : Fin ((n + r) * (d + 1)), (x a : ℂ) * (ξ a : ℂ)) =
+      (∑ a : Fin (n * (d + 1)),
+        (section43SplitLeftFlat d n r x a : ℂ) *
+          (section43SplitLeftFlat d n r ξ a : ℂ)) +
+      (∑ a : Fin (r * (d + 1)),
+        (section43SplitRightFlat d n r x a : ℂ) *
+          (section43SplitRightFlat d n r ξ a : ℂ))
+```
+
+Proof transcript: set
+`h : n * (d + 1) + r * (d + 1) = (n + r) * (d + 1) := by ring`, rewrite the
+full sum by `← (finCongr h).sum_comp`, split it by
+`Fin.sum_univ_add`, and identify the two block terms with
+`section43SplitLeftFlat_apply` / `section43SplitRightFlat_apply`.  The left
+index equality is `Fin.ext; simp [finProdFinEquiv]`; the right is
+`Fin.ext; simp [finProdFinEquiv]; ring`.
+
+The final `physicsFourierFlatCLM_reindex_tensorProduct_apply` proof is:
+
+1. rewrite all three Fourier transforms by `← physicsFourierFlatCLM_integral`;
+2. set `e := section43FullFlatProductSplitMeasurableEquiv d n r`,
+   `ξL := section43SplitLeftFlat d n r ξ`,
+   `ξR := section43SplitRightFlat d n r ξ`;
+3. define
+   `g p := Complex.exp (Complex.I * ((∑ a, (p.1 a : ℂ) * (ξL a : ℂ)) +
+   (∑ b, (p.2 b : ℂ) * (ξR b : ℂ)))) * (F p.1 * G p.2)`;
+4. prove the original integrand equals `fun x => g (e x)` using the full-split
+   apply lemmas, the pointwise tensor identity, and
+   `section43_fullFlat_pair_eq_splitFlat_pair`;
+5. rewrite by
+   `section43FullFlatProductSplitMeasurableEquiv_measurePreserving.integral_comp'`;
+6. rewrite `g p` pointwise using `mul_add`, `Complex.exp_add`, and `ring`;
+7. finish with `MeasureTheory.integral_prod_mul`, simplifying by `mul_assoc`.
 
 2. Use this theorem with
 
@@ -13843,12 +13994,217 @@ theorem physicsFourierFlatCLM_borchersConj_apply
           (section43NegRevFlat d n ξL))
 ```
 
-   Proof transcript: use `physicsFourierFlatCLM_integral`, change variables by
-   the flat reversal equivalence induced by `Fin.rev` on the point block, and
-   use `map_integral`/`integral_conj` to move `star` outside the integral.
-   The exponent changes from `exp(i x·ξL)` to the conjugate of
-   `exp(i y·(-rev ξL))`, which is exactly the sign in
-   `section43NegRevFlat`.
+   Lean-ready helper packet for this theorem:
+
+```lean
+def section43FlatReverseEquiv (d n : ℕ) [NeZero d] :
+    Fin (n * (d + 1)) ≃ Fin (n * (d + 1)) :=
+  finProdFinEquiv.symm.trans
+    ((Equiv.prodCongr Fin.revPerm (Equiv.refl (Fin (d + 1)))).trans
+      finProdFinEquiv)
+
+noncomputable def section43FlatReverseCLE (d n : ℕ) [NeZero d] :
+    (Fin (n * (d + 1)) → ℝ) ≃L[ℝ] (Fin (n * (d + 1)) → ℝ) :=
+  (LinearEquiv.funCongrLeft ℝ ℝ
+    (section43FlatReverseEquiv d n)).toContinuousLinearEquiv
+
+@[simp] theorem section43FlatReverseCLE_apply
+    (x : Fin (n * (d + 1)) → ℝ) (i : Fin n) (μ : Fin (d + 1)) :
+    section43FlatReverseCLE d n x (finProdFinEquiv (i, μ)) =
+      x (finProdFinEquiv (Fin.rev i, μ)) := by
+  simp [section43FlatReverseCLE, section43FlatReverseEquiv]
+```
+
+The measure-preserving theorem should be named separately:
+
+```lean
+theorem section43FlatReverseCLE_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasureTheory.MeasurePreserving
+      (section43FlatReverseCLE d n)
+      (MeasureTheory.volume : MeasureTheory.Measure (Fin (n * (d + 1)) → ℝ))
+      MeasureTheory.volume
+```
+
+Proof transcript: realize the same map as the coordinate permutation
+`MeasurableEquiv.piCongrLeft (fun _ => ℝ)
+  (section43FlatReverseEquiv d n).symm`; then apply
+`MeasureTheory.volume_measurePreserving_piCongrLeft`.  The function equality
+is not definitional, but it is a short extensional proof:
+
+```lean
+by
+  convert
+    (MeasureTheory.volume_measurePreserving_piCongrLeft
+      (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm) using 1
+  ext x a
+  change x (section43FlatReverseEquiv d n a) =
+    (MeasurableEquiv.piCongrLeft (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm) x a
+  rw [MeasurableEquiv.coe_piCongrLeft]
+  simpa using
+    (Equiv.piCongrLeft_apply_apply
+      (fun _ : Fin (n * (d + 1)) => ℝ)
+      (section43FlatReverseEquiv d n).symm x
+      ((section43FlatReverseEquiv d n) a)).symm
+```
+
+Next expose the pointwise flattened Borchers-conjugation identity:
+
+```lean
+theorem flatten_borchersConj_eq_star_flatten_comp_flatReverse
+    (φ : SchwartzNPoint d n)
+    (x : Fin (n * (d + 1)) → ℝ) :
+    flattenSchwartzNPoint (d := d) φ.borchersConj x =
+      starRingEnd ℂ
+        (flattenSchwartzNPoint (d := d) φ
+          (section43FlatReverseCLE d n x))
+```
+
+Proof transcript: unfold `flattenSchwartzNPoint_apply` and
+`SchwartzMap.borchersConj_apply`, then use extensionality in `(i, μ)` to prove
+that `(flattenCLEquivReal n (d+1)).symm (section43FlatReverseCLE d n x)` is the
+point-reversal of `(flattenCLEquivReal n (d+1)).symm x`:
+
+```lean
+by
+  simp only [flattenSchwartzNPoint_apply, SchwartzMap.borchersConj_apply]
+  apply congrArg (starRingEnd ℂ)
+  congr 1
+  ext i μ
+  simp [section43FlatReverseCLE_apply]
+```
+
+Also expose the involutivity of flat reversal, since the Fourier
+change-of-variables proof needs to simplify `R (R x)`:
+
+```lean
+theorem section43FlatReverseCLE_involutive
+    (x : Fin (n * (d + 1)) → ℝ) :
+    section43FlatReverseCLE d n (section43FlatReverseCLE d n x) = x := by
+  ext a
+  obtain ⟨p, rfl⟩ := finProdFinEquiv.surjective a
+  rw [section43FlatReverseCLE_apply, section43FlatReverseCLE_apply,
+    Fin.rev_rev]
+```
+
+The exponent algebra should be isolated as:
+
+```lean
+theorem section43FlatReverse_pair_eq_neg_negRevFlat_pair
+    (x ξL : Fin (n * (d + 1)) → ℝ) :
+    (∑ a : Fin (n * (d + 1)),
+        (section43FlatReverseCLE d n x a : ℂ) * (ξL a : ℂ)) =
+      -∑ a : Fin (n * (d + 1)),
+        (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ)
+```
+
+Proof transcript: rewrite the left sum through
+`← finProdFinEquiv.sum_comp`, then identify each flat index as
+`finProdFinEquiv (i, μ)`.  The checked Lean proof is:
+
+```lean
+by
+  classical
+  calc
+    (∑ a : Fin (n * (d + 1)),
+        (section43FlatReverseCLE d n x a : ℂ) * (ξL a : ℂ))
+        = ∑ p : Fin n × Fin (d + 1),
+            (x (finProdFinEquiv (Fin.rev p.1, p.2)) : ℂ) *
+              (ξL (finProdFinEquiv p) : ℂ) := by
+          rw [← finProdFinEquiv.sum_comp]
+          refine Finset.sum_congr rfl ?_
+          intro p _hp
+          rw [section43FlatReverseCLE_apply]
+    _ = ∑ p : Fin n × Fin (d + 1),
+            (x (finProdFinEquiv p) : ℂ) *
+              (ξL (finProdFinEquiv (Fin.rev p.1, p.2)) : ℂ) := by
+          refine Finset.sum_bij
+            (fun p (_hp : p ∈ (Finset.univ :
+                Finset (Fin n × Fin (d + 1)))) =>
+              (Fin.rev p.1, p.2)) ?hmem ?hinj ?hsurj ?hval
+          · intro p _hp
+            simp
+          · intro a ha b hb h
+            have h' : (Fin.rev a.1, a.2) = (Fin.rev b.1, b.2) := by
+              simpa using h
+            injection h' with hfst hsnd
+            apply Prod.ext
+            · exact Fin.rev_injective hfst
+            · exact hsnd
+          · intro b _hb
+            exact ⟨(Fin.rev b.1, b.2), by simp⟩
+          · intro p _hp
+            simp
+    _ = -∑ a : Fin (n * (d + 1)),
+          (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ) := by
+          rw [← Finset.sum_neg_distrib]
+          rw [← finProdFinEquiv.sum_comp]
+          refine Finset.sum_congr rfl ?_
+          intro p _hp
+          simp [section43NegRevFlat]
+```
+
+With those helpers, `physicsFourierFlatCLM_borchersConj_apply` is now
+Lean-ready with the following proof transcript.  The proof changes variables
+on the left integral by the measure-preserving flat reversal `R`; this turns
+the left exponent into the conjugate of the right exponent and `R (R x)` into
+`x`.
+
+```lean
+theorem physicsFourierFlatCLM_borchersConj_apply
+    (φ : SchwartzNPoint d n)
+    (ξL : Fin (n * (d + 1)) → ℝ) :
+    physicsFourierFlatCLM
+        (flattenSchwartzNPoint (d := d) φ.borchersConj) ξL =
+      star
+        (physicsFourierFlatCLM
+          (flattenSchwartzNPoint (d := d) φ)
+          (section43NegRevFlat d n ξL)) := by
+  rw [← physicsFourierFlatCLM_integral, ← physicsFourierFlatCLM_integral]
+  let R := section43FlatReverseCLE d n
+  let η := section43NegRevFlat d n ξL
+  have hcomp := (section43FlatReverseCLE_measurePreserving d n).integral_comp
+    (R.toHomeomorph.measurableEmbedding)
+    (fun x : Fin (n * (d + 1)) → ℝ =>
+      Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξL i : ℂ)) *
+        flattenSchwartzNPoint (d := d) φ.borchersConj x)
+  calc
+    (∫ x : Fin (n * (d + 1)) → ℝ,
+      Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (ξL i : ℂ)) *
+        flattenSchwartzNPoint (d := d) φ.borchersConj x)
+        = ∫ x : Fin (n * (d + 1)) → ℝ,
+            Complex.exp (Complex.I * ∑ i, ((R x) i : ℂ) * (ξL i : ℂ)) *
+              flattenSchwartzNPoint (d := d) φ.borchersConj (R x) := by
+            exact hcomp.symm
+    _ = ∫ x : Fin (n * (d + 1)) → ℝ,
+          starRingEnd ℂ
+            (Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (η i : ℂ)) *
+              flattenSchwartzNPoint (d := d) φ x) := by
+          apply integral_congr_ae
+          filter_upwards with x
+          rw [flatten_borchersConj_eq_star_flatten_comp_flatReverse]
+          dsimp only [R, η]
+          rw [section43FlatReverseCLE_involutive]
+          rw [section43FlatReverse_pair_eq_neg_negRevFlat_pair]
+          simp only [map_mul]
+          congr 1
+          have harg : Complex.I * -∑ a,
+              (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ) =
+              starRingEnd ℂ (Complex.I * ∑ a,
+                (x a : ℂ) * (section43NegRevFlat d n ξL a : ℂ)) := by
+            simp
+          rw [harg, Complex.exp_conj]
+    _ = starRingEnd ℂ (∫ x : Fin (n * (d + 1)) → ℝ,
+          Complex.exp (Complex.I * ∑ i, (x i : ℂ) * (η i : ℂ)) *
+            flattenSchwartzNPoint (d := d) φ x) := by
+          exact _root_.integral_conj
+```
+
+This is still a support theorem, not the scalar interchange theorem.  If any
+of these helper statements fails to exact-check, the blueprint must be
+corrected before implementing the product factorization.
 
 5. Use
    `section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum` with the
@@ -14171,18 +14527,20 @@ Fourier-base-to-product draft.  It is permitted only on
 total-momentum support.
 
 ```lean
-private theorem
+theorem
     physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
     {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
     (hξ :
       ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
     let qξ :=
-      section43CumulativeTailMomentum d (n + (m + 1)) ξ
+      section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     physicsFourierFlatCLM
-      (OSReconstruction.reindexSchwartzFin
-        (Nat.add_mul n (m + 1) (d + 1)).symm
+      (reindexSchwartzFin
+        (by ring :
+          n * (d + 1) + (m + 1) * (d + 1) =
+            (n + (m + 1)) * (d + 1))
         (((flattenSchwartzNPoint (d := d) φ.borchersConj).tensorProduct
           (flattenSchwartzNPoint (d := d) ψ)))) ξ =
       star
@@ -14195,7 +14553,7 @@ private theorem
 Proof transcript:
 
 1. Split `hξ` into `hξ_dual` and `hξ_total`.
-2. Put `qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ`.
+2. Put `qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ`.
 3. Use `physicsFourierFlatCLM_reindex_tensorProduct_apply` to factor the
    full flattened transform into left and right flat Fourier transforms.  The
    split variables must be named by `section43SplitLeftFlat` and
@@ -14212,6 +14570,43 @@ Proof transcript:
 7. Unfold only `section43FrequencyRepresentative` at the end.  Do not unfold
    `section43FrequencyProjection`; this theorem is about deterministic
    representatives, not quotient classes.
+
+Checked production transcript, 2026-04-15:
+
+```lean
+by
+  classical
+  dsimp only
+  have hprod := physicsFourierFlatCLM_reindex_tensorProduct_apply
+    (d := d) (n := n) (r := m + 1)
+    (F := flattenSchwartzNPoint (d := d) φ.borchersConj)
+    (G := flattenSchwartzNPoint (d := d) ψ)
+    (ξ := ξ)
+  have hleftArg := section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+    (d := d) (n := n) (r := m + 1) (Nat.succ_pos m)
+    (ξ := ξ) hξ.2
+  have hleft :
+      physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ.borchersConj)
+          (section43SplitLeftFlat d n (m + 1) ξ) =
+        star
+          ((section43FrequencyRepresentative (d := d) n φ)
+            (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m)
+              (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ))) := by
+    rw [physicsFourierFlatCLM_borchersConj_apply]
+    rw [← hleftArg]
+    rfl
+  have hrightArg := section43SplitRightFlat_eq_cumulativeTail_rightTail
+    (d := d) (n := n) (r := m + 1) ξ
+  have hright :
+      physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ)
+          (section43SplitRightFlat d n (m + 1) ξ) =
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+          (section43RightTailBlock d n (m + 1)
+            (section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ)) := by
+    rw [hrightArg]
+    rfl
+  rw [hprod, hleft, hright]
+```
 
 Required coordinate helper slots before S2:
 
@@ -14234,22 +14629,29 @@ around the already implemented positive-energy block theorem plus
 allowed because it packages the exact `section43WightmanSpectralRegion`
 surface consumed by S2.
 
-Production status, 2026-04-15: the first lightweight factorization coordinate
-packet is implemented in the new file
-`Section43SpectralFactorization.lean` and exact-checks:
+Production status, 2026-04-15: Packet S2 is implemented in
+`Section43SpectralFactorization.lean` and exact-checks.  The production file
+now contains:
 
 ```lean
 section43SplitLeftFlat
 section43SplitRightFlat
 section43NegRevFlat
 section43LeftBorchersBlock
+section43CumulativeTailMomentumCLE_splitRightFlat
+section43SplitRightFlat_eq_cumulativeTail_rightTail
+section43CumulativeTailMomentumCLE_negRevFlat_splitLeft_of_totalMomentum
+section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+physicsFourierFlatCLM_borchersConj_apply
+physicsFourierFlatCLM_reindex_tensorProduct_apply
+physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion
 section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
 section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
 ```
 
-The inverse cumulative-tail coordinate lemmas are **not** implementation-ready
-as one-line `simp` proofs.  The next proof-doc gap is the finite-sum reindex
-packet needed for:
+Historical correction: the inverse cumulative-tail coordinate lemmas were not
+one-line `simp` proofs.  The finite-sum reindex packet below is the checked
+proof-doc record that was implemented to close:
 
 ```lean
 section43CumulativeTailMomentumCLE_splitRightFlat
@@ -14275,9 +14677,105 @@ The left helper reduces componentwise to
 ```
 
 using total momentum zero to replace the missing prefix by the negative tail.
-The Lean-ready next documentation task is to state and prove these two finite
-`Fin` sum reindex lemmas explicitly, preferably in
-`Section43SpectralFactorization.lean` before exposing the inverse CLE theorems.
+Lean-ready finite-sum packet, 2026-04-15:
+
+The right reindex lemma should be implemented as the private helper
+
+```lean
+private theorem section43_splitRight_tail_sum_eq_full_tail
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (j : Fin r) (μ : Fin (d + 1)) :
+    (∑ x : Fin r,
+      if j.val ≤ x.val then
+        ξ (finProdFinEquiv (Fin.natAdd n x, μ))
+      else 0) =
+    ∑ y : Fin (n + r),
+      if (Fin.natAdd n j).val ≤ y.val then
+        ξ (finProdFinEquiv (y, μ))
+      else 0
+```
+
+Proof transcript: rewrite both sides with `← Finset.sum_filter`; use
+`Finset.sum_bij` with forward map `x ↦ Fin.natAdd n x`.  Membership is
+`Nat.add_le_add_left`.  Injectivity follows by applying `Fin.val` and
+simplifying `Fin.natAdd`.  For surjectivity, from
+`(Fin.natAdd n j).val ≤ y.val`, define
+`x : Fin r := ⟨y.val - n, by omega⟩`; the filter obligation is
+`Fin.le_iff_val_le_val.mpr (by omega)`, and extensionality proves
+`Fin.natAdd n x = y`.
+
+The left reindex must be stated in the form Lean naturally produces after
+simplifying `section43LeftBorchersBlock`, namely with the complementary
+conditions `y.val + j.val < n` and `n ≤ y.val + j.val`:
+
+```lean
+private theorem section43_negRev_left_tail_sum_eq_neg_prefix
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (j : Fin n) (μ : Fin (d + 1)) :
+    (∑ x : Fin n,
+      if j ≤ x then
+        -ξ (finProdFinEquiv (Fin.castAdd r (Fin.rev x), μ))
+      else 0) =
+    -(∑ y : Fin (n + r),
+      if y.val + j.val < n then
+        ξ (finProdFinEquiv (y, μ))
+      else 0)
+
+private theorem section43_full_tail_sum_eq_neg_prefix_of_totalMomentum
+    {d n r : ℕ} [NeZero d]
+    (ξ : Fin ((n + r) * (d + 1)) → ℝ)
+    (hξ_total : section43TotalMomentumFlat d (n + r) ξ = 0)
+    (j : Fin n) (μ : Fin (d + 1)) :
+    (∑ y : Fin (n + r),
+      if n ≤ y.val + j.val then
+        ξ (finProdFinEquiv (y, μ))
+      else 0) =
+    -(∑ y : Fin (n + r),
+      if y.val + j.val < n then
+        ξ (finProdFinEquiv (y, μ))
+      else 0)
+```
+
+The first proof again uses `Finset.sum_bij`, now with forward map
+`x ↦ Fin.castAdd r (Fin.rev x)`.  The target filter condition is
+`(Fin.rev x).val + j.val < n`, which is pure `omega` from
+`Fin.le_iff_val_le_val.mp hx`; surjectivity uses
+`a : Fin n := ⟨y.val, by omega⟩` and `x := Fin.rev a`.
+
+For the second proof, specialize total momentum zero at component `μ`:
+
+```lean
+have htotalμ : (∑ y : Fin (n + r), ξ (finProdFinEquiv (y, μ))) = 0 := by
+  have h := congrArg (fun f : Fin (d + 1) → ℝ => f μ) hξ_total
+  simpa [section43TotalMomentumFlat] using h
+```
+
+Then partition the total sum into the complementary predicates
+`y.val + j.val < n` and `n ≤ y.val + j.val` using
+`Finset.sum_add_distrib`; the arithmetic complement is closed by `omega`, and
+the final scalar equality is `linarith`.
+
+Combining those two left helpers gives
+
+```lean
+private theorem section43_negRev_left_tail_sum_eq_full_tail_of_totalMomentum
+```
+
+as a one-line transitivity proof.  The public coordinate API then becomes:
+
+```lean
+theorem section43CumulativeTailMomentumCLE_splitRightFlat
+theorem section43SplitRightFlat_eq_cumulativeTail_rightTail
+theorem section43CumulativeTailMomentumCLE_negRevFlat_splitLeft_of_totalMomentum
+theorem section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+```
+
+The two inverse-CLE theorems are formal: rewrite by the corresponding
+cumulative-tail equality and close with `simp` for
+`ContinuousLinearEquiv.symm_apply_apply`.  This packet has been implemented in
+`Section43SpectralFactorization.lean`.
 
 #### Packet S3: derive representative normal forms from the transform hypotheses
 
@@ -14301,16 +14799,16 @@ have hψ_rep :
 The left factor normal form is:
 
 ```lean
-private theorem
+theorem
     section43_leftBorchers_frequencyRepresentative_eq_fourierLaplaceIntegral
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n)
     (f : euclideanPositiveTimeSubmodule (d := d) n)
     (hφ_rep :
       section43FourierLaplaceRepresentative d n f
         (section43FrequencyRepresentative (d := d) n φ))
     {q : NPointDomain d (n + (m + 1))}
-    (hq :
+    (_hq :
       q ∈ section43PositiveEnergyRegion d (n + (m + 1)))
     (hq_left :
       section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) q ∈
@@ -14327,16 +14825,16 @@ The right factor normal form for the scalar OS I `(4.24)` theorem is the same
 basic representative-apply theorem, not the descended-`ψ_Z` Packet-H theorem:
 
 ```lean
-private theorem
+theorem
     section43_rightTail_frequencyRepresentative_eq_fourierLaplaceIntegral
-    {n m : ℕ}
+    (d n m : ℕ) [NeZero d]
     (ψ : SchwartzNPoint d (m + 1))
     (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
     (hψ_rep :
       section43FourierLaplaceRepresentative d (m + 1) g
         (section43FrequencyRepresentative (d := d) (m + 1) ψ))
     {q : NPointDomain d (n + (m + 1))}
-    (hq :
+    (_hq :
       q ∈ section43PositiveEnergyRegion d (n + (m + 1)))
     (hq_right :
       section43RightTailBlock d n (m + 1) q ∈
@@ -14349,6 +14847,52 @@ private theorem
 
 Proof: exact `section43FourierLaplaceRepresentative_apply` with `hq_right`.
 
+Production status, 2026-04-15: the two representative normal-form lemmas above
+are implemented in `Section43SpectralFactorization.lean` and exact-check.
+This completes the local S3 apply layer.  The fully packaged
+quotient-to-representative conversion
+
+```lean
+section43FrequencyRepresentative_is_fourierLaplaceRepresentative
+```
+
+is still a future theorem, because the production code does not yet define the
+real `section43FourierLaplaceTransformComponent` map promised by the scalar
+OS-route theorem surface.  The honest transfer theorem that does not pretend
+this component map already exists is now implemented:
+
+```lean
+section43FrequencyRepresentative_is_fourierLaplaceRepresentative_of_quotient_eq
+```
+
+It assumes an explicit ambient witness `Φ`, a proof that `Φ` satisfies
+`section43FourierLaplaceRepresentative d n f Φ`, and the quotient equality
+
+```lean
+section43FrequencyProjection (d := d) n φ =
+  section43PositiveEnergyQuotientMap (d := d) n Φ
+```
+
+and derives the required representative predicate for
+`section43FrequencyRepresentative (d := d) n φ`.  Thus the remaining S3 gap is
+not quotient transfer; it is constructing or importing the actual
+Fourier-Laplace witness `Φ` and its projection equality from the eventual
+transform-image theorem.
+
+One additional production support lemma is now available:
+
+```lean
+section43FrequencyRepresentative_surjective
+```
+
+This proves that every ambient Schwartz witness `Φ : SchwartzNPoint d n` can
+be realized as `section43FrequencyRepresentative (d := d) n φ` for some
+ambient Wightman test `φ`.  It uses only surjectivity of
+`physicsFourierFlatCLM`, flatten/unflatten, and the cumulative-tail continuous
+linear equivalence.  This does **not** construct the Fourier-Laplace witness
+`Φ`; it only removes a later ambient-preimage bookkeeping obstacle once such a
+`Φ` has been built.
+
 This correction removes a fake zero-height blocker from the scalar theorem.
 The already implemented
 `section43FourierLaplaceRepresentative_rightTailBlock_eq_iterated_descendedPsiZ_of_height`
@@ -14358,9 +14902,13 @@ dependency of `section43OS24Kernel_pairing_eq_osScalar_succRight`.
 
 #### Packet S4: global kernel and spectral-support EqOn
 
-After S1-S3 are proved, first prove an existence theorem for the visible
-kernel as a real `SchwartzMap`.  The pointwise formula alone is not enough:
-the object passed to `Tflat` must live in the Schwartz space.
+After S1-S3 are proved, first prove an existence theorem for a real
+`SchwartzMap` kernel that agrees with the visible OS I `(4.24)` formula on the
+spectral region.  The formula cannot be required globally: the cutoff needed
+to make the extension Schwartz necessarily changes the function away from the
+spectral support.  The object passed to `Tflat` must live in the Schwartz
+space, and the Wightman support theorem only needs agreement on
+`section43WightmanSpectralRegion`.
 
 ```lean
 private theorem exists_section43OS24Kernel_succRight
@@ -14369,46 +14917,344 @@ private theorem exists_section43OS24Kernel_succRight
     (t : ℝ) (ht : 0 < t) :
     ∃ KOS : SchwartzMap
       (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ,
-      ∀ ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ,
-        let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
-        let lamξ : ℝ :=
-          ∑ i,
-            (((OSReconstruction.castFinCLE
-                (Nat.add_mul n (m + 1) (d + 1)).symm)
-              (OSReconstruction.zeroHeadBlockShift
-                (m := n * (d + 1)) (n := (m + 1) * (d + 1))
-                (flatTimeShiftDirection d (m + 1)))) i) * ξ i
-        let ηξ : ℝ := -lamξ / (2 * Real.pi)
-        KOS ξ =
+      Set.EqOn
+        (fun ξ => KOS ξ)
+        (fun ξ =>
+          let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+          let lamξ : ℝ :=
+            ∑ i,
+              (((OSReconstruction.castFinCLE
+                  (Nat.add_mul n (m + 1) (d + 1)).symm)
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+                  (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+          let ηξ : ℝ := -lamξ / (2 * Real.pi)
           (section43PsiZTimeTest t ht) ηξ *
             (star
               ((section43FrequencyRepresentative (d := d) n φ)
                 (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
               (section43FrequencyRepresentative (d := d) (m + 1) ψ)
-                (section43RightTailBlock d n (m + 1) qξ))
+                (section43RightTailBlock d n (m + 1) qξ)))
+        (section43WightmanSpectralRegion d (n + (m + 1)))
 ```
 
-Proof transcript for `exists_section43OS24Kernel_succRight`:
+Corrected proof transcript for `exists_section43OS24Kernel_succRight`,
+2026-04-15:
 
-1. Build the scalar multiplier
-   `ξ ↦ (section43PsiZTimeTest t ht) ηξ` by composing the Schwartz function
-   `section43PsiZTimeTest t ht : SchwartzMap ℝ ℂ` with the continuous linear
-   functional `ξ ↦ ηξ`.  Do **not** use the naked exponential globally: it has
-   the right formula only on the spectral cone and may grow in off-cone
-   directions.
-2. The left and right factors are Schwartz because they are compositions of
-   `section43FrequencyRepresentative` with continuous linear maps
-   `section43LeftBorchersBlock ∘ section43CumulativeTailMomentum` and
-   `section43RightTailBlock ∘ section43CumulativeTailMomentum`.
-3. Multiply the three Schwartz factors using the existing Schwartz algebra
-   product theorem.  If the product theorem is not exposed as a CLM, first add
-   the smallest local theorem that turns pointwise products of two
-   `SchwartzMap`s into a `SchwartzMap`.
-4. Return the constructed `KOS` and close its pointwise formula by extensional
-   unfolding only.  Do not use `Classical.choose` until this existence theorem
-   has the visible formula in its conclusion.
+The tempting direct construction is false as stated.  One cannot simply compose
+the two frequency representatives with
+`section43LeftBorchersBlock ∘ section43CumulativeTailMomentumCLE` and
+`section43RightTailBlock ∘ section43CumulativeTailMomentumCLE` and declare the
+result Schwartz.  In mathlib, `SchwartzMap.compCLM` requires the upper-growth
+condition
 
-Then define the kernel by choice and expose only the pointwise theorem:
+```lean
+∃ (k : ℕ) (C : ℝ), ∀ x, ‖x‖ ≤ C * (1 + ‖g x‖) ^ k
+```
+
+or, via `SchwartzMap.compCLMOfAntilipschitz`, an antilipschitz map.  The block
+maps above are projections; they forget the total-momentum coordinate, so this
+upper-growth condition fails.  Pulling a Schwartz function back by a nonproper
+projection is generally not Schwartz.  Therefore this packet must not be
+implemented by a raw projection-composition proof.
+
+The production CLM packet that is already implemented is still the right
+coordinate API:
+
+```lean
+section43LeftBorchersBlockCLM
+section43RightTailBlockCLM
+section43LeftBorchersFlatCLM
+section43RightTailFlatCLM
+```
+
+These CLMs are useful for pointwise formulas and future coordinate maps, but
+they are not a standalone Schwartzness proof.
+
+The implementation-ready construction must be:
+
+1. Work in cumulative-tail coordinates
+   `q = section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ`.  On
+   `section43WightmanSpectralRegion`, the zeroth cumulative-tail coordinate is
+   the total momentum and equals `0`.
+2. Split `q` into the total-momentum coordinate `q0 : SpacetimeDim d` and the
+   tail coordinates `qtail : Fin (n + m) → Fin (d + 1) → ℝ`, corresponding to
+   `q 1, ..., q (n + m)`.  This split should be a continuous linear
+   equivalence
+
+```lean
+noncomputable def section43CumulativeTailHeadTailCLE
+    (d N : ℕ) [NeZero d] :
+    NPointDomain d N ≃L[ℝ]
+      (SpacetimeDim d × (Fin (N - 1) → Fin (d + 1) → ℝ))
+```
+
+   or, if the `N - 1` arithmetic becomes noisy, the same construction with a
+   local successor parameter
+   `N = n + (m + 1)` and tail index `Fin (n + m)`.
+3. Add a total-momentum cutoff factor
+
+```lean
+χ0 : SchwartzMap (SpacetimeDim d) ℂ := unitBallBumpSchwartzPi (d + 1)
+```
+
+   and pull it back along the `q0` projection through a continuous linear
+   equivalence only.  On the spectral region, `q0 = 0`, so
+   `unitBallBumpSchwartzPi_one_of_mem_closedBall` gives `χ0 q0 = 1`.
+   This cutoff supplies exactly the missing decay in the forgotten
+   total-momentum directions.
+4. Build the tail-visible product as a Schwartz function of `qtail`, not of the
+   full `q` by projection, in the case `0 < n`.  Define a linear map
+
+```lean
+section43TailToBorchersProductCLM (hn : 0 < n) :
+    (Fin (n + m) → Fin (d + 1) → ℝ) →L[ℝ]
+      (NPointDomain d n × NPointDomain d (m + 1))
+```
+
+   whose value is
+   `(section43LeftBorchersBlock d n (m + 1) ... q,
+     section43RightTailBlock d n (m + 1) q)` for any `q` with head `q0 = 0`.
+   Concretely it maps the stored tail coordinates
+   `(q 1, ..., q (n + m))` to
+   `(q n, q (n - 1), ..., q 1)` on the left and
+   `(q n, q (n + 1), ..., q (n + m))` on the right.  The coordinate `q n` is
+   duplicated, but no coordinate is lost.
+5. Handle the degenerate case `n = 0` separately.  Then the right block is the
+   full cumulative-tail coordinate `q`, not a projection forgetting `q0`:
+
+```lean
+theorem section43RightTailBlock_zero_left
+    (q : NPointDomain d (m + 1)) :
+    section43RightTailBlock d 0 (m + 1) q = q
+```
+
+   The visible product is therefore a constant left/vacuum factor times the
+   existing Schwartz map `section43FrequencyRepresentative (d := d) (m + 1) ψ`
+   on full `q`.  Multiplication by the total-momentum cutoff is still allowed
+   because the final theorem is only `EqOn` the spectral region.
+6. Prove `section43TailToBorchersProductCLM hn` is injective.  Then obtain an
+   antilipschitz constant using finite-dimensional linear algebra:
+
+```lean
+have hanti :
+    ∃ K, AntilipschitzWith K (section43TailToBorchersProductCLM hn) :=
+  ((section43TailToBorchersProductCLM hn : _ →L[ℝ] _) : _ →ₗ[ℝ] _).injective_iff_antilipschitz.mp hinj
+```
+
+   The exact theorem exposed by mathlib is
+   `LinearMap.injective_iff_antilipschitz` under `[FiniteDimensional ℝ _]`.
+   This is the proper substitute for the invalid projection pullback.
+7. Build the separated product through the tensor-product domain
+   `NPointDomain d (n + (m + 1))`, not through an extra product-space
+   Schwartz construction.  Add the direct concat map
+
+```lean
+section43TailToBorchersConcatCLM (hn : 0 < n) :
+    NPointDomain d (n + m) →L[ℝ] NPointDomain d (n + (m + 1))
+```
+
+   whose first `n` coordinates are the Borchers-left block
+   `(q n, q (n - 1), ..., q 1)` and whose final `m + 1` coordinates are the
+   right tail `(q n, q (n + 1), ..., q (n + m))`.  Prove split apply lemmas:
+
+```lean
+section43TailToBorchersConcatCLM_splitFirst
+section43TailToBorchersConcatCLM_splitLast
+```
+
+   Prove this concat map injective/antilipschitz by the same coordinate
+   recovery as `section43TailToBorchersProductCLM`.  Then pull back
+
+```lean
+((section43FrequencyRepresentative (d := d) n φ).conj.tensorProduct
+  (section43FrequencyRepresentative (d := d) (m + 1) ψ))
+```
+
+   along `section43TailToBorchersConcatCLM hn` using
+   `SchwartzMap.compCLMOfAntilipschitz`.  The apply theorem then follows
+   directly from `SchwartzMap.tensorProduct_apply`,
+   `SchwartzMap.conj_apply`, and the two split lemmas.  The older product CLM
+   remains useful as an independently checked coordinate packet, but the
+   direct concat map is the Lean-clean route to the tensor-product pullback.
+8. Combine the total-momentum cutoff and the tail-visible product after the
+   head-tail equivalence, using `SchwartzMap.pairing (ContinuousLinearMap.mul
+   ℂ ℂ)` for pointwise multiplication.  This produces a genuine Schwartz
+   function of `q`, with the visible formula on the spectral region because
+   the cutoff is `1` when `q0 = 0`.
+9. Pull the resulting Schwartz function of `q` back to flat frequency
+   coordinates by
+   `SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+     (section43CumulativeTailMomentumCLE d (n + (m + 1)))`.
+10. Multiply the Paley/time-height factor
+   `ξ ↦ (section43PsiZTimeTest t ht) ηξ` by `SchwartzMap.smulLeftCLM`, not by
+   pretending that the one-dimensional projection pullback is automatically
+   Schwartz.  The scalar factor only needs `HasTemperateGrowth`; it is a
+   multiplier on the already-Schwartz cutoff-tail kernel.
+11. Return the constructed `KOS` and close its `EqOn` formula on the
+    spectral region using only:
+    `section43CumulativeTailMomentumCLE`, the head-zero consequence of
+    `section43TotalMomentumZeroFlat`, the cutoff identity at `0`, the
+    tail-map apply lemma, `SchwartzMap.pairing_apply_apply`, and
+    `SchwartzMap.smulLeftCLM_apply_apply`.
+
+S4 support packet status:
+
+Implemented and verified in `Section43SpectralFactorization.lean`:
+
+```lean
+section43SchwartzMul
+section43SchwartzMul_apply
+
+section43CumulativeTailMomentumCLE_head_zero_of_totalMomentumFlat
+section43WightmanSpectralRegion_cumulativeTail_head_zero
+
+section43CumulativeTailHeadTailLinearEquiv
+noncomputable def section43CumulativeTailHeadTailCLE
+section43CumulativeTailHeadTailCLE_head
+section43CumulativeTailHeadTailCLE_tail
+section43CumulativeTailHeadTailCLE_symm_zero
+section43CumulativeTailHeadTailCLE_symm_succ
+
+section43CumulativeTailHeadTailFlatForward
+section43CumulativeTailHeadTailFlatInverse
+section43CumulativeTailHeadTailFlatForward_head
+section43CumulativeTailHeadTailFlatForward_tail
+section43CumulativeTailHeadTailFlatInverse_zero
+section43CumulativeTailHeadTailFlatInverse_succ
+section43CumulativeTailHeadTailFlatLinearEquiv
+section43CumulativeTailHeadTailFlatCLE
+section43CumulativeTailHeadTailFlatCLE_splitFirst
+section43CumulativeTailHeadTailFlatCLE_splitLast
+
+section43LeftBorchersBlock_zero_left
+section43RightTailBlock_zero_left
+
+noncomputable def section43TailToBorchersProductCLM
+section43TailToBorchersProductCLM_left_apply
+section43TailToBorchersProductCLM_right_apply
+section43TailToBorchersProductCLM_injective
+section43TailToBorchersProductCLM_antilipschitz
+
+section43TailToBorchersConcatFun
+noncomputable def section43TailToBorchersConcatCLM
+section43TailToBorchersConcatCLM_left_apply
+section43TailToBorchersConcatCLM_right_apply
+section43TailToBorchersConcatCLM_splitFirst
+section43TailToBorchersConcatCLM_splitLast
+section43TailToBorchersConcatCLM_injective
+section43TailToBorchersConcatCLM_antilipschitz
+
+noncomputable def section43VisibleTailProductSchwartz
+theorem section43VisibleTailProductSchwartz_apply
+
+noncomputable def section43VisibleTailProductFlatSchwartz
+theorem section43VisibleTailProductFlatSchwartz_apply
+
+noncomputable def section43CutoffTailProductHeadTailSchwartz
+noncomputable def section43TotalMomentumCutoffSchwartz
+theorem section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero
+
+noncomputable def section43VisibleProductZeroLeftSchwartz
+theorem section43VisibleProductZeroLeftSchwartz_apply
+```
+
+Still needed before S4 is 100 percent Lean-ready:
+
+```lean
+exists_section43OS24Kernel_succRight
+section43OS24Kernel_succRight_eqOn_spectralRegion
+section43OS24Kernel_succRight_apply_of_mem_spectralRegion
+```
+
+The cutoff implementation is deliberately a cutoff-tail product, not a naked
+projection cutoff.  It flattens the visible tail product, extends it by
+`headBlockBumpExtension`, and pulls back through
+`section43CumulativeTailHeadTailFlatCLE`.  The theorem
+`section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero` says this
+extension agrees with the visible tail product when `q 0 = 0`.  The remaining
+final S4 theorem should case-split on `n`: for `n = 0`, use
+`section43VisibleProductZeroLeftSchwartz`; for `0 < n`, use
+`section43TotalMomentumCutoffSchwartz`.
+
+Important detail: the head statement is intentionally a zero theorem, not an
+unscaled equality with `section43TotalMomentumFlat`.  The corrected cumulative
+tail map rescales spatial components by `-(1 / (2 * Real.pi))`, so total
+momentum zero implies the zeroth cumulative-tail coordinate vanishes, but the
+coordinate is not literally the unscaled total momentum off the zero surface.
+
+Also expose or move the S1 Paley helpers currently local to
+`OSToWightmanPositivity.lean` before the EqOn theorem consumes them:
+
+```lean
+horizontalPhasePairingCLM
+horizontalPhasePairingCLM_apply
+horizontalPhasePairingCLM_fourierTransform
+horizontalPaley_frequency_nonneg_of_mem_dualCone
+```
+
+Implementation-ready refinement for the first S4 Lean pass, 2026-04-15:
+
+The `exists_section43OS24Kernel_succRight` theorem itself does not yet need the
+horizontal integral-collapse helpers above.  It only needs a production
+definition of the one-variable Paley time test and the linear frequency
+`eta = -lambda/(2*pi)` used to evaluate it.  Add these before the existence
+theorem:
+
+```lean
+noncomputable def section43PsiZTimeTest (t : ℝ) (ht : 0 < t) :
+    SchwartzMap ℝ ℂ :=
+  SCV.schwartzPsiZ (((2 * Real.pi : ℂ) * (t * Complex.I))) ...
+
+noncomputable def section43SuccRightTimeShiftFlatDirection
+    (d n m : ℕ) [NeZero d] :
+    Fin ((n + (m + 1)) * (d + 1)) → ℝ :=
+  castFinCLE (Nat.add_mul n (m + 1) (d + 1)).symm
+    (zeroHeadBlockShift
+      (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+      (section43FlatTimeShiftDirection d (m + 1)))
+
+noncomputable def section43SuccRightEtaCLM
+    (d n m : ℕ) [NeZero d] :
+    (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →L[ℝ] ℝ :=
+  -(1 / (2 * Real.pi)) •
+    sum_i (section43SuccRightTimeShiftFlatDirection d n m i) • proj_i
+```
+
+Then build the kernel directly as:
+
+1. A cumulative-tail product `Kq` by dependent case split on `n`.
+   For `n = 0`, use `section43VisibleProductZeroLeftSchwartz`.
+   For `n = n' + 1`, use `section43TotalMomentumCutoffSchwartz`.
+2. Pull `Kq` back by `section43CumulativeTailMomentumCLE`.
+3. Multiply by
+   `(section43PsiZTimeTest t ht) (section43SuccRightEtaCLM d n m xi)`
+   using `SchwartzMap.smulLeftCLM`; do not attempt to make the one-dimensional
+   projection pullback itself into a Schwartz function.
+
+The `EqOn` proof is pointwise:
+
+1. `hxi : xi in section43WightmanSpectralRegion d (n + (m + 1))` gives
+   `(section43CumulativeTailMomentumCLE ... xi) 0 = 0` by
+   `section43WightmanSpectralRegion_cumulativeTail_head_zero`.
+2. In the `n = 0` branch, `section43LeftBorchersBlock_zero_left` and
+   `section43RightTailBlock_zero_left` identify the visible product.
+3. In the `0 < n` branch,
+   `section43TotalMomentumCutoffSchwartz_one_on_totalMomentum_zero` reduces the
+   cutoff-tail product to `section43VisibleTailProductSchwartz`, and the
+   tail-product apply lemmas identify the left and right OS I `(4.24)` blocks.
+4. The final visible formula is obtained from
+   `SchwartzMap.smulLeftCLM_apply_apply` and the eta apply theorem.
+
+Until these items are filled in, S4 is not implementation-ready.  This is a
+productive blocker, not a wrapper gap: it is the exact Schwartz-extension
+issue needed to turn the spectral-region formula into a legal test function
+for `Tflat`.
+
+Then define the kernel by choice and expose only the spectral-region EqOn
+theorem, plus a pointwise theorem that requires a spectral-region hypothesis.
+Do not expose a global visible-formula apply theorem; it would be false for the
+cutoff extension.
 
 ```lean
 noncomputable def section43OS24Kernel_succRight
@@ -14421,12 +15267,41 @@ noncomputable def section43OS24Kernel_succRight
 ```
 
 ```lean
-theorem section43OS24Kernel_succRight_apply
+theorem section43OS24Kernel_succRight_eqOn_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {t : ℝ} (ht : 0 < t) :
+    Set.EqOn
+      (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+      (fun ξ =>
+        let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+        let lamξ : ℝ :=
+          ∑ i,
+            (((OSReconstruction.castFinCLE
+                (Nat.add_mul n (m + 1) (d + 1)).symm)
+              (OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := (m + 1) * (d + 1))
+                (flatTimeShiftDirection d (m + 1)))) i) * ξ i
+        let ηξ : ℝ := -lamξ / (2 * Real.pi)
+        (section43PsiZTimeTest t ht) ηξ *
+          (star
+            ((section43FrequencyRepresentative (d := d) n φ)
+              (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
+            (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+              (section43RightTailBlock d n (m + 1) qξ)))
+      (section43WightmanSpectralRegion d (n + (m + 1))) :=
+  Classical.choose_spec
+    (exists_section43OS24Kernel_succRight d n m φ ψ t ht)
+```
+
+```lean
+theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
     (d n m : ℕ) [NeZero d]
     (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
     {t : ℝ} (ht : 0 < t)
-    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
-    let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     let lamξ : ℝ :=
       ∑ i,
         (((OSReconstruction.castFinCLE
@@ -14444,10 +15319,24 @@ theorem section43OS24Kernel_succRight_apply
             (section43RightTailBlock d n (m + 1) qξ))
 ```
 
-Proof: this is `Classical.choose_spec
-  (exists_section43OS24Kernel_succRight d n m φ ψ t ht) ξ`.
+Proof: this is
+`section43OS24Kernel_succRight_eqOn_spectralRegion d n m φ ψ ht hξ`.
 
-Then S1 and S2 give the support EqOn theorem:
+Production status, 2026-04-15: the S4 kernel witness surface above is now
+implemented and verified in
+`Section43SpectralFactorization.lean`.  The production theorem uses the helper
+function `section43OS24VisibleKernel_succRight` for the visible scalar, rather
+than repeating the full `let qξ`, `let λξ`, `let ηξ` expression in every
+statement.  The pointwise theorem is:
+
+```lean
+theorem section43OS24Kernel_succRight_apply_of_mem_spectralRegion
+    ...
+    section43OS24Kernel_succRight d n m φ ψ t ht ξ =
+      section43OS24VisibleKernel_succRight d n m φ ψ t ht ξ
+```
+
+Next, S1 and S2 give the support EqOn theorem:
 
 ```lean
 private theorem
@@ -14473,14 +15362,22 @@ private theorem
 Proof transcript:
 
 1. Introduce `ξ hξ`; split `hξ` into dual-cone and total-momentum parts.
-2. Apply S1 using the dual-cone part.
-3. Rewrite `base` by S2 using the full spectral-region hypothesis.
-4. Rewrite the target with `section43OS24Kernel_succRight_apply`.
-5. Use `horizontalPaley_frequency_nonneg_of_mem_dualCone` and
-   `SCV.psiZ_eq_exp_of_nonneg` to replace
-   `(section43PsiZTimeTest t ht) ηξ` by
-   `Complex.exp (-(2 * Real.pi * t : ℂ) * (ηξ : ℂ))` on the spectral region.
-6. Close by associativity/commutativity of scalar multiplication only; do not
+2. Rewrite `hKψZ_eval ξ` using `timeShiftFlatOrbit_apply_phase` to identify
+   the integral with the one-variable oscillatory pairing
+   `section43HorizontalPhasePairingCLM base lam
+     ((SchwartzMap.fourierTransformCLM ℂ) (section43PsiZTimeTest t ht))`.
+3. Apply the direct Fourier identity
+   `section43HorizontalPhasePairingCLM_fourierTransform` to get
+   `base * (section43PsiZTimeTest t ht) (-lam/(2*pi))`.
+4. Rewrite `base` by S2 using the full spectral-region hypothesis.
+5. Rewrite the target with
+   `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
+6. Use `section43SuccRightEtaCLM_apply` to identify the eta argument with the
+   displayed `-lam/(2*pi)` frequency.  No finite-height `epsilon` factor and no
+   `SCV.psiZ_eq_exp_of_nonneg` rewrite are needed for this EqOn theorem,
+   because the OS24 visible kernel keeps the one-variable Paley test
+   `(section43PsiZTimeTest t ht)` unevaluated.
+7. Close by associativity/commutativity of scalar multiplication only; do not
    unfold the definitions of the left/right blocks.
 
 #### Packet S5: OS scalar recognition by the `bvt_F` Fourier-Laplace shell
@@ -14501,11 +15398,11 @@ restriction / `xiShift` bridge for the chosen continuation `bvt_F`.  Therefore
 Packet S5 must consume a full Fourier-Laplace witness for the same flattened
 distribution `Tflat`, not just the boundary-value equality `hTflat_bv`.
 
-Use the following local structure to keep theorem statements readable without
+Use the following public structure to keep theorem statements readable without
 hiding any data:
 
 ```lean
-private structure section43TflatFourierLaplaceWitness
+structure section43TflatFourierLaplaceWitness
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     (N : ℕ)
     (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ) where
@@ -14563,6 +15460,26 @@ section43Tflat_fourierLaplaceRep_of_boundaryValue_unique
 which recovers `hTflat_FL` from the boundary-value identity and support.
 Do not prove S5 for an unconstrained `Tflat`; that would leave the OS scalar
 unconnected to the actual analytic continuation.
+
+Production status, 2026-04-15: the witness structure is now public in
+`OSToWightmanBoundaryValueLimits.lean` as
+
+```lean
+section43TflatFourierLaplaceWitness
+```
+
+and the current public supplier is
+
+```lean
+bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+```
+
+It returns one and the same `Tflat` together with
+`HasFourierSupportIn (section43WightmanSpectralRegion d N) Tflat`, the
+boundary-value identity for `bvt_W`, and the Fourier-Laplace witness for
+`bvt_F`.  Downstream S5 theorems should consume this public packet; they should
+not duplicate the private `bv_implies_fourier_support` proof and should not
+attempt a uniqueness reconstruction from the boundary identity.
 
 S5 is split into four non-wrapper theorems.
 
@@ -14757,6 +15674,24 @@ private theorem
 
 Proof transcript:
 
+Production status, 2026-04-15: the support-ordering theorems are implemented
+and exact-checked in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43OSConjTensorProduct_support_left_reflected_ordered_succRight
+section43OSConjTensorProduct_support_right_ordered_succRight
+section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight
+section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
+```
+
+They use `Function.support` to split a nonzero OS tensor product into nonzero
+left and right factors, then move those factors into `tsupport` by
+`subset_tsupport` and apply `f.2`/`g.2`.  The strict-order theorem uses the
+three left/left, left/right, and right/right case split below.  The
+forward-tube membership theorem builds the globally translated real
+configuration `xs`, proves it is Wick-rotated back to the lift, and applies
+`euclidean_ordered_in_forwardTube`.
+
 1. For
    `section43OSConjTensorProduct_support_left_reflected_ordered_succRight`,
    unfold `SchwartzNPoint.osConjTensorProduct` and
@@ -14784,6 +15719,53 @@ Proof transcript:
    is `splitFirst n (m + 1) y 0 0 < 0`, while the first right-tail shifted time
    is `splitLast n (m + 1) y 0 0 + t`, which is positive by right support and
    `ht`.
+
+Lean-ready case split for
+`section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight`:
+
+1. Introduce `i j : Fin (n + (m + 1))` and `hij : i < j`.
+2. Split first on `hj_left : j.val < n`.  If true, then
+   `hi_left : i.val < n` follows from `i.val < j.val`.  Set
+   `ii : Fin n := ⟨i.val, hi_left⟩` and
+   `jj : Fin n := ⟨j.val, hj_left⟩`; rewrite
+   `i = Fin.castAdd (m + 1) ii` and
+   `j = Fin.castAdd (m + 1) jj` by `Fin.ext rfl`.  The coordinate normal form
+   reduces the goal to
+   `y (Fin.castAdd (m + 1) (Fin.rev ii)) 0 <
+    y (Fin.castAdd (m + 1) (Fin.rev jj)) 0`.  Prove
+   `Fin.rev jj < Fin.rev ii` with `Fin.rev_lt_iff` from `ii < jj`; apply the
+   left reflected ordered theorem at `Fin.rev jj`, `Fin.rev ii`; unfold
+   `timeReflectionN`, `timeReflection`, and `splitFirst`; close by `nlinarith`.
+3. If `¬ hj_left`, split on `hi_left : i.val < n`.  In the mixed case define
+   `ii : Fin n := ⟨i.val, hi_left⟩` and
+   `jj : Fin (m + 1) := ⟨j.val - n, by omega⟩`; rewrite
+   `i = Fin.castAdd (m + 1) ii` and `j = Fin.natAdd n jj`.
+   The left support theorem gives the left raw time is `< 0`; the right
+   support theorem gives `0 < y (Fin.natAdd n jj) 0`; with `ht`, the shifted
+   right time is positive, and `nlinarith` closes.
+4. In the right/right case define
+   `ii : Fin (m + 1) := ⟨i.val - n, by omega⟩` and
+   `jj : Fin (m + 1) := ⟨j.val - n, by omega⟩`; rewrite both indices as
+   `Fin.natAdd n _`.  From `i < j`, get `ii < jj` by `omega`.  The right
+   support theorem gives strict increase before the shift; the coordinate
+   normal forms add the same `t` to both sides and `nlinarith` closes.
+
+If Lean resists the index rewrites, add these local helpers before the
+strict-order theorem:
+
+```lean
+private theorem section43_eq_castAdd_of_val_lt
+    {n m : ℕ} {i : Fin (n + (m + 1))} (hi : i.val < n) :
+    i = Fin.castAdd (m + 1) (⟨i.val, hi⟩ : Fin n)
+
+private theorem section43_eq_natAdd_of_not_val_lt
+    {n m : ℕ} {i : Fin (n + (m + 1))} (hi : ¬ i.val < n) :
+    i = Fin.natAdd n (⟨i.val - n, by omega⟩ : Fin (m + 1))
+```
+
+Both are `Fin.ext` plus `omega`.  These helpers are not wrappers; they are the
+index-normalization lemmas needed by the strict chronological case split.
+
 6. The global translation makes the first imaginary time `1` and preserves
    every consecutive gap.  Define the real configuration
 
@@ -14843,8 +15825,23 @@ private theorem
           flattenCLEquiv (n + (m + 1)) (d + 1)
             (section43OSBorchersTimeShiftConfig_succRight (d := d) t y) i *
             (ξ i : ℂ))
+```
 
-private theorem
+Production status, 2026-04-15: the concrete raw shell, left-block reversal
+permutation, Borchers-ordered shell, forward-tube lift, left/right
+time-coordinate normal forms, lift-as-Wick-rotation theorem, forward-tube
+membership theorem, complex diagonal translation pairing, total-momentum-zero
+phase-cancellation theorem, and the `multiDimPsiZExt` evaluation theorem below
+are implemented and exact-checked in
+`Section43OS24KernelComparison.lean`.  The forward-tube lift definition and
+the `multiDimPsiZExt` evaluation theorem are exported because the companion
+Fubini file consumes them.  The left-block reversal is defined via
+`finSumFinEquiv` and `Fin.revPerm`, with compiled simp facts for both
+`Fin.castAdd` and `Fin.natAdd`, so later support proofs should use these
+objects directly rather than re-encoding the chronological permutation.
+
+```lean
+theorem
     section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_succRight
     (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
     {n m : ℕ}
@@ -14912,7 +15909,32 @@ private theorem
       section43OS24Kernel_succRight d n m φ ψ t ht ξ
 ```
 
-Proof uses:
+Production update, 2026-04-16: the forward-tube lift integral theorem is also
+compiled in `Section43OS24KernelFubini.lean`:
+
+```lean
+section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight
+```
+
+The proof is pointwise-on-support: if
+`(f.1.osConjTensorProduct g.1) y = 0`, both integrands vanish; otherwise `y`
+lies in `Function.support`, so
+`section43OSForwardTubeLift_multiDimPsiZExt_apply_of_spectralRegion_succRight`
+rewrites the lift kernel to the Borchers exponential, and the already-proved
+`section43OSBorchersPhaseKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
+closes the integral.  Fresh verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelComparison.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelComparison
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelFubini.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelFubini
+```
+
+All terminated successfully; narrow module builds completed at `8463/8463`
+and `8464/8464`, with warnings only from pre-existing imported files.
+
+Historical proof sketch for the now-compiled theorem:
 
 1. `multiDimPsiZExt_apply_of_mem_dualCone` with the dual-cone component of
    `hξ`.
@@ -14927,7 +15949,10 @@ Proof uses:
    `section43_rightTail_frequencyRepresentative_eq_fourierLaplaceIntegral`
    for the right tail.  Do not use the descended-`ψ_Z` Packet-H theorem in
    this scalar recognition step.
-5. `section43OS24Kernel_succRight_apply` to close.
+5. `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ` to
+   close.  The spectral-region hypothesis is essential here: the cutoff-based
+   Schwartz extension only agrees with the visible OS I `(4.24)` scalar on
+   `section43WightmanSpectralRegion`, not globally.
 
 The preceding five-line proof outline is not detailed enough for production.
 The implementation must expose the scalar expansion as a named theorem before
@@ -14964,6 +15989,23 @@ Proof transcript:
    `SCV.psiZ_eq_exp_of_nonneg`.
 4. Close by the algebra used in S1: unfold `section43PsiZTimeTest` and `ηξ`
    only at the final step, then `ring_nf`.
+
+Production status, 2026-04-15: the tail-shift sign and Paley-factor theorem
+are implemented and exact-checked in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43SuccRightEtaCLM_nonneg_of_mem_dualCone
+section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion
+section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight
+```
+
+The proof uses the public
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_dualCone`,
+rewrites the direction by
+`section43SuccRightTimeShiftFlatDirection_eq_flatTimeShiftDirection`, and then
+uses `SCV.psiZ_eq_exp_of_nonneg` at
+`section43SuccRightEtaCLM d n m ξ`.  This fixes the sign of the external
+tail-shift phase before the product factorization theorem.
 
 Then name the full scalar factorization of the Borchers-ordered phase:
 
@@ -15027,7 +16069,9 @@ Proof transcript:
    `section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion`.
 8. Rewrite the external phase with
    `section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight`.
-9. Close by `section43OS24Kernel_succRight_apply`.
+9. Close by `section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.
+   Do not replace this with a global apply theorem; the final kernel is only
+   specified by `EqOn` on the spectral region.
 
 If step 4 is not a one-screen proof, split it into these coordinate theorem
 slots before touching the scalar theorem:
@@ -15157,7 +16201,127 @@ continuous linear equivalences, it may replace this shear induction, but the
 theorem statement above must still be the local API and the proof must still
 record that the determinant/scaling factor is exactly `1`.
 
-With that measure theorem, add the one-factor absolute-phase bridge:
+Implementation refinement, 2026-04-15: the one-factor bridge also needs the
+time/spatial coordinate split as an explicit measure-preserving equivalence.
+Do not hide this inside the final Borchers/Fubini theorem.
+
+Add these local APIs in a small companion file, preferably
+`Section43WickRotateFourierLaplaceBridge.lean`, importing
+`Section43FourierLaplaceTransform`, `Section43SpectralSupport`, and
+`GeneralResults.FinProductIntegral`:
+
+```lean
+noncomputable def section43NPointTimeSpatialMeasurableEquiv
+    (d n : ℕ) [NeZero d] :
+    NPointDomain d n ≃ᵐ
+      (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d) :=
+  (nPointTimeSpatialCLE (d := d) n).toHomeomorph.toMeasurableEquiv
+
+theorem section43NPointTimeSpatialCLE_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasurePreserving
+      (section43NPointTimeSpatialMeasurableEquiv d n)
+      (MeasureTheory.volume : Measure (NPointDomain d n))
+      (MeasureTheory.volume :
+        Measure ((Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)))
+```
+
+Lean proof route for `section43NPointTimeSpatialCLE_measurePreserving`:
+
+1. First prove the finite-product version with spatial block represented as
+   functions:
+
+```lean
+noncomputable def section43TimeSpatialFunctionMeasurableEquiv
+    (d n : ℕ) [NeZero d] :
+    NPointDomain d n ≃ᵐ
+      (Fin n → ℝ) × (Fin n × Fin d → ℝ)
+
+theorem section43TimeSpatialFunctionMeasurableEquiv_measurePreserving
+    (d n : ℕ) [NeZero d] :
+    MeasurePreserving
+      (section43TimeSpatialFunctionMeasurableEquiv d n)
+      (MeasureTheory.volume : Measure (NPointDomain d n))
+      (MeasureTheory.volume :
+        Measure ((Fin n → ℝ) × (Fin n × Fin d → ℝ)))
+```
+
+   Construct it from:
+   `flattenMeasurableEquiv d n` style code, but with the index equivalence
+   separating `(k, 0)` from `(k, Fin.succ μ)`, then
+   `MeasurableEquiv.sumPiEquivProdPi`.  The proof is exactly the same finite
+   product-measure argument as
+   `flattenMeasurableEquiv_measurePreserving` in
+   `ForwardTubeDistributions.lean` and `integral_fin_add_split` in
+   `GeneralResults/FinProductIntegral.lean`: use
+   `MeasureTheory.volume_measurePreserving_piCongrLeft`,
+   `MeasureTheory.volume_measurePreserving_sumPiEquivProdPi`, and
+   `MeasureTheory.MeasurePreserving.trans`.
+2. Then bridge `(Fin n × Fin d → ℝ)` to
+   `EuclideanSpace ℝ (Fin n × Fin d)` through the standard Euclidean
+   coordinate equivalence:
+
+```lean
+noncomputable def section43EuclideanSpaceMeasurableEquiv
+    (ι : Type*) [Fintype ι] :
+    EuclideanSpace ℝ ι ≃ᵐ (ι → ℝ) :=
+  (EuclideanSpace.equiv (ι := ι) (𝕜 := ℝ)).toHomeomorph.toMeasurableEquiv
+
+theorem section43EuclideanSpaceMeasurableEquiv_measurePreserving
+    (ι : Type*) [Fintype ι] :
+    MeasurePreserving
+      (section43EuclideanSpaceMeasurableEquiv ι)
+      (MeasureTheory.volume : Measure (EuclideanSpace ℝ ι))
+      (MeasureTheory.volume : Measure (ι → ℝ))
+```
+
+   The exact Lean proof has been scratch-checked:
+
+```lean
+  simpa [section43EuclideanSpaceMeasurableEquiv, EuclideanSpace.equiv] using
+    (PiLp.volume_preserving_ofLp ι)
+```
+
+   The required import is `Mathlib.MeasureTheory.Measure.Haar.InnerProductSpace`.
+   This theorem is the preferred local API; do not rederive it from Haar
+   uniqueness in the Section 4.3 file.
+3. Compose the function-space split with
+   `(section43EuclideanSpaceMeasurableEquiv (Fin n × Fin d)).symm` on the
+   second factor via `MeasurePreserving.prod` / `MeasurePreserving.trans`.
+   This yields the exact measure-preserving theorem for
+   `nPointTimeSpatialCLE`.
+
+With the two measure-preservation theorems in hand, add the one-factor
+absolute-phase bridge:
+
+Production status, 2026-04-15:
+`Section43WickRotateFourierLaplaceBridge.lean` now contains and exact-checks:
+
+```lean
+section43DiffCoordRealMeasurableEquiv
+section43DiffCoordRealCLE_symm_measurePreserving
+section43DiffCoordRealCLE_measurePreserving
+section43FinSuccTimeSpatialEquiv
+section43TimeSpatialIndexEquiv
+section43TimeSpatialFunctionMeasurableEquiv
+section43TimeSpatialFunctionMeasurableEquiv_measurePreserving
+section43EuclideanSpaceMeasurableEquiv
+section43EuclideanSpaceMeasurableEquiv_measurePreserving
+section43NPointTimeSpatialMeasurableEquiv
+section43NPointTimeSpatialCLE_measurePreserving
+section43NPointTimeSpatialMeasurableEquiv_symm_apply_time
+section43NPointTimeSpatialMeasurableEquiv_symm_apply_spatial
+section43RawCumulativeTail_of_cumulativeTailMomentum_symm
+section43DiffCoord_pairing_coord_eq_rawCumulativeTail
+section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase
+integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy
+section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy
+```
+
+The coordinate-measure layer for the one-factor bridge is now production-backed.
+The scalar phase identity and the absolute Wick-rotated phase-integrability
+theorem are also production-backed.  The final change-of-variables/Fubini
+equality is now production-backed too, closing the one-factor bridge seam.
 
 ```lean
 private theorem
@@ -15214,38 +16378,73 @@ theorem
         f.1 x
 ```
 
+Production status, 2026-04-15: the phase algebra lemma, absolute Wick-rotated
+phase-integrability theorem, and final one-factor change-of-variables/Fubini
+equality are implemented and exact-checked in
+`Section43WickRotateFourierLaplaceBridge.lean`.
+
 Proof transcript for the phase algebra lemma:
 
-1. Rewrite `flattenCLEquiv` by `finProdFinEquiv`; split the finite sum over
-   `Fin (n * (d + 1))` as a double sum over `Fin n × Fin (d + 1)`.
-2. Split `Fin (d + 1)` into the time coordinate `0` and spatial coordinates
-   `Fin.succ μ`.
-3. For the time part, use
+1. Do not reprove the private prefix/tail algebra.  Reuse the public support
+   theorem from `Section43SpectralSupport.lean`:
+
+```lean
+section43DiffCoord_pairing_eq_rawCumulativeTail
+section43_fin_prefix_sum_eq_lower_sum_public
+section43_fin_prefix_mul_eq_sum_tail_public
+```
+
+2. Prove the cumulative-tail normalization lemma once:
+
+```lean
+theorem section43RawCumulativeTail_of_cumulativeTailMomentum_symm
+    (d n : ℕ) [NeZero d] (q : NPointDomain d n) :
+    section43RawCumulativeTailMomentumCLE d n
+      ((section43CumulativeTailMomentumCLE d n).symm q) =
+    (section43SpatialFourierScaleCLE d n).symm q
+```
+
+   This is an `ext k μ`; unfold
+   `section43CumulativeTailMomentumCLE` and simplify the inverse of the
+   transposed continuous-linear equivalence.
+3. Split the wick-rotated pairing into time and spatial pieces:
+
+```lean
+private theorem section43WickRotatePairing_timePart_after_diffCoord_symm
+private theorem section43WickRotatePairing_spatialPart_after_diffCoord_symm
+```
+
+   Each helper rewrites the relevant finite sum with
+   `section43DiffCoord_pairing_eq_rawCumulativeTail`, then applies
+   `section43RawCumulativeTail_of_cumulativeTailMomentum_symm`.
+4. For the time helper, use
    `wickRotatePoint x 0 = Complex.I * (x 0 : ℂ)` and
-   `section43CumulativeTailMomentumCLE_symm_apply` at `μ = 0`.  The external
-   `Complex.I` gives `Complex.I * Complex.I = -1`, hence the Laplace factor
-   `-∑ δ_time * q_time`.
-4. For the spatial part, use
+   `section43SpatialFourierScaleCLE_symm_apply` at `μ = 0`.  The external
+   `Complex.I` gives `Complex.I * Complex.I = -1`, producing exactly
+   `-∑ k, δ k 0 * section43QTime q k`.
+5. For the spatial helper, use
    `wickRotatePoint x (Fin.succ μ) = (x (Fin.succ μ) : ℂ)` and
-   `section43CumulativeTailMomentumCLE_symm_apply` at `μ ≠ 0`.  The inverse
-   cumulative map contributes `-(2 * Real.pi) * (q_k - q_{k+1})`; summation by
-   parts over absolute coordinates gives the spatial difference-coordinate
-   variables `δ k (Fin.succ μ)`, leaving
-   `-(2 * Real.pi) * Complex.I * ∑ δ_spatial * q_spatial`.
-5. Use `section43QTime` and `section43QSpatial_apply` to rewrite the `q`
-   coordinates.  Finish by `ring_nf` only after all finite-sum reindexing has
-   been discharged.
+   `section43SpatialFourierScaleCLE_symm_apply` at `μ ≠ 0`.  The scale gives
+   `-(2 * Real.pi) * q k (Fin.succ μ)`, so the external `Complex.I` produces
+   the factor
+   `-(2 * Real.pi : ℂ) * Complex.I`.
+6. Use `section43QTime`, `section43QSpatial`, `nPointTimeSpatialCLE`, and
+   `EuclideanSpace.equiv` only at the end to rewrite coordinates.  Finish by
+   `ring_nf` after all finite-sum and coordinate rewrites are done.
 
 Proof transcript for the integrability lemma:
 
-1. Change variables by `(section43DiffCoordRealCLE d n).symm`; it is enough to
-   prove integrability of the difference-coordinate integrand because
-   `section43DiffCoordRealCLE_symm_measurePreserving` preserves volume.
+1. Change variables by `(section43DiffCoordRealCLE d n).symm`; use
+   `section43DiffCoordRealCLE_symm_measurePreserving` and the exact orientation
+   pattern
+   `hmp.symm.integrable_comp_of_integrable` / `hmp.symm.integral_comp'`
+   appearing in `integral_fin_add_split`.
 2. Rewrite the phase by
    `section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase`.
-3. Split by `nPointTimeSpatialCLE`.  The spatial Fourier factor has norm `1`;
-   prove this after rewriting it to the Fourier-character/Circle form used by
-   `partialFourierSpatial_fun`:
+3. Split by `section43NPointTimeSpatialMeasurableEquiv` and
+   `section43NPointTimeSpatialCLE_measurePreserving`.  The spatial Fourier
+   factor has norm `1`; prove this after rewriting it to the
+   Fourier-character/Circle form used by `partialFourierSpatial_fun`:
 
 ```lean
 ‖((𝐞 (-(inner ℝ η ξ)) : Circle) : ℂ)‖ = 1
@@ -15263,7 +16462,10 @@ Proof transcript for the integrability lemma:
    `0 ≤ τ k`.
 5. The integrand is therefore bounded by the Schwartz function
    `‖section43DiffPullbackCLM d n f δ‖`, whose norm is integrable.  Use the
-   existing Schwartz integrability theorem for `SchwartzMap` norms.
+   existing theorem `SchwartzMap.integrable` and its `.norm` projection.
+   However, for the time-only domination do not redo the estimate: reuse
+   `integrable_section43FourierLaplace_timeIntegrand` after converting the
+   spatial integral by `partialFourierSpatial_fun_eq_integral`.
 
 Proof transcript:
 
@@ -15271,14 +16473,16 @@ Proof transcript:
    `(section43DiffCoordRealCLE d n).symm` and
    `section43DiffCoordRealCLE_symm_measurePreserving`, using
    `integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy` to
-   satisfy the Bochner integral change-of-variables side condition.
+   satisfy the Bochner integral side condition.
 2. Rewrite the transformed `f.1` as `section43DiffPullbackCLM d n f`.
-3. Apply
+3. Change variables again by
+   `section43NPointTimeSpatialMeasurableEquiv d n` using
+   `section43NPointTimeSpatialCLE_measurePreserving`.
+4. Apply
    `section43WickRotatePhase_after_diffCoord_symm_eq_fourierLaplacePhase`.
-4. Split the difference-coordinate variable by `nPointTimeSpatialCLE`.  The
-   time part is exactly the outer Laplace factor in
+5. The time part is exactly the outer Laplace factor in
    `section43FourierLaplaceIntegral_eq_time_spatial_integral`.
-5. For the spatial part, rewrite
+6. For the spatial part, rewrite
 
 ```lean
 Complex.exp
@@ -15294,7 +16498,7 @@ Complex.exp
 
    using `Real.fourierChar_apply`, `Circle.smul_def`, and the same algebra as
    `fourierTransformFlat_eval` / `physicsFourierFlatCLM_integral`.
-6. Close with
+7. Close with
    `section43FourierLaplaceIntegral_eq_time_spatial_integral`.
 
 This theorem is the normalization guard.  If the displayed formula needs a
@@ -15315,7 +16519,7 @@ private theorem
     (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
     (hξ :
       ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
-    let qξ := section43CumulativeTailMomentum d (n + (m + 1)) ξ
+    let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
     let qL :=
       section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ
     let qR := section43RightTailBlock d n (m + 1) qξ
@@ -15349,6 +16553,461 @@ left integral with the conjugate of
 by Fubini; move the external tail phase outside.  The positive-energy inputs
 for the one-factor bridge are the left and right block positivity theorems
 from S2/S3.
+
+Implementation-ready expansion of the scalar factorization:
+
+This is the next live production seam after the one-factor bridge.  It is an
+unnumbered OS II Section 4.3 step around the `(4.24)` kernel, not a new
+theorem-shape assertion: it only expands the Borchers-ordered absolute
+Euclidean phase integral into the two already-defined Section 4.3
+Fourier-Laplace factors and the already-proved `ψ_Z` tail phase.
+
+Use these local abbreviations throughout the proof:
+
+```lean
+let r : ℕ := m + 1
+let N : ℕ := n + r
+let qξ : NPointDomain d N :=
+  section43CumulativeTailMomentumCLE d N ξ
+let qL : NPointDomain d n :=
+  section43LeftBorchersBlock d n r (Nat.succ_pos m) qξ
+let qR : NPointDomain d r :=
+  section43RightTailBlock d n r qξ
+let ξL : Fin (n * (d + 1)) → ℝ :=
+  (section43CumulativeTailMomentumCLE d n).symm qL
+let ξR : Fin (r * (d + 1)) → ℝ :=
+  (section43CumulativeTailMomentumCLE d r).symm qR
+let lamξ : ℝ :=
+  ∑ i : Fin (N * (d + 1)),
+    (((castFinCLE (Nat.add_mul n r (d + 1)).symm)
+      (zeroHeadBlockShift
+        (m := n * (d + 1)) (n := r * (d + 1))
+        (flatTimeShiftDirection d r))) i) * ξ i
+let ηξ : ℝ := -lamξ / (2 * Real.pi)
+```
+
+The two inverse cumulative-tail coordinate identities are already public and
+must be used exactly in this form:
+
+```lean
+have hξL :
+    ξL = section43NegRevFlat d n (section43SplitLeftFlat d n r ξ) := by
+  exact section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum
+    (d := d) (n := n) (r := r) (Nat.succ_pos m)
+    (ξ := ξ) (by simpa [N, section43WightmanSpectralRegion] using hξ.2)
+
+have hξR :
+    ξR = section43SplitRightFlat d n r ξ := by
+  exact section43SplitRightFlat_eq_cumulativeTail_rightTail
+    (d := d) (n := n) (r := r) ξ
+```
+
+After splitting the absolute variable with the production helper
+`section43NPointProductSplitMeasurableEquiv d n r`, make one further
+measure-preserving change on the left variable:
+
+```lean
+let y_of : NPointDomain d n × NPointDomain d r → NPointDomain d N :=
+  fun p => (section43NPointProductSplitMeasurableEquiv d n r).symm p
+
+-- In the left factor proof, replace the split left absolute variable `yL`
+-- by `timeReflectionN d xL`; `timeReflectionN_measurePreserving` is public
+-- in `Core.lean`.
+```
+
+Production status, 2026-04-15: this absolute-variable split packet is now
+implemented in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43NPointProductSplitMeasurableEquiv
+section43NPointProductSplitMeasurableEquiv_measurePreserving
+section43NPointProductSplitMeasurableEquiv_fst_apply
+section43NPointProductSplitMeasurableEquiv_snd_apply
+section43NPointProductSplitMeasurableEquiv_fst_eq_splitFirst
+section43NPointProductSplitMeasurableEquiv_snd_eq_splitLast
+```
+
+Use these names rather than the previously sketched
+`MeasurableEquiv.finAddProd`; no such project API was present in the route
+files.
+
+The key pointwise identity to prove first is the exact scalar expansion after
+both of these changes.  It is the theorem that prevents sign drift:
+
+```lean
+private theorem
+    section43OSBorchersPhase_pointwise_factorized_succRight
+    {n m : ℕ}
+    {t : ℝ} (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
+    let r : ℕ := m + 1
+    let N : ℕ := n + r
+    let y : NPointDomain d N :=
+      (section43NPointProductSplitMeasurableEquiv d n r).symm
+        (timeReflectionN d xL, xR)
+    let ξL : Fin (n * (d + 1)) → ℝ :=
+      section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)
+    let ξR : Fin (r * (d + 1)) → ℝ :=
+      section43SplitRightFlat d n r ξ
+    let tailSum : ℂ :=
+      ∑ j : Fin r,
+        (t : ℂ) * (ξ (finProdFinEquiv
+          (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ)
+    Complex.exp
+      (Complex.I *
+        ∑ i : Fin (N * (d + 1)),
+          flattenCLEquiv N (d + 1)
+            (section43OSBorchersTimeShiftConfig_succRight
+              (d := d) t y) i *
+          (ξ i : ℂ)) =
+      Complex.exp (-tailSum) *
+        star
+          (Complex.exp
+            (Complex.I *
+              ∑ i : Fin (n * (d + 1)),
+                flattenCLEquiv n (d + 1)
+                  (fun k => wickRotatePoint (xL k)) i *
+                (ξL i : ℂ))) *
+        Complex.exp
+          (Complex.I *
+            ∑ i : Fin (r * (d + 1)),
+              flattenCLEquiv r (d + 1)
+                (fun k => wickRotatePoint (xR k)) i *
+              (ξR i : ℂ))
+```
+
+Proof transcript for the pointwise identity:
+
+1. Expand the full flattened sum with `finProdFinEquiv.sum_comp` and
+   `Finset.sum_product`.
+2. Split the point index with `Fin.castAdd r i` and `Fin.natAdd n j`.
+   For left points, `section43LeftBlockReversePerm_succRight_castAdd` rewrites
+   the Borchers order to `Fin.rev i` and the `xiShift` condition is false.
+   For right points, `section43LeftBlockReversePerm_succRight_natAdd` rewrites
+   the point to `Fin.natAdd n j` and the `xiShift` condition is true exactly
+   in the time coordinate.
+3. The right-block terms split into the unshifted Wick-rotated phase plus
+   the tail term
+   `Complex.I * ((t : ℂ) * Complex.I) * S`, where
+   `S = ∑ j, ξ (finProdFinEquiv (Fin.natAdd n j, 0))`.
+   Rewrite this as `-((t : ℂ) * S)` using `Complex.I_mul_I` and `ring`.
+4. The left block is where old drafts lost a sign.  With
+   `yL = timeReflectionN d xL`, the left phase is
+   `star` of the one-factor phase at
+   `ξL = section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)`.
+   Prove it coordinatewise after reindexing by `Fin.rev`: time coordinates use
+   `wickRotatePoint (timeReflection d (xL k)) 0 = -Complex.I * (xL k 0)`,
+   spatial coordinates use
+   `wickRotatePoint (timeReflection d (xL k)) (Fin.succ μ) =
+     (xL k (Fin.succ μ) : ℂ)`, and the extra minus in `section43NegRevFlat`
+   is exactly cancelled by complex conjugation of the phase.
+5. Finish with `Complex.exp_add`, `Complex.exp_neg`, `map_mul`, and ring
+   normalization.  Do not use `simp` to hide this step unless the three scalar
+   subidentities above have already been named.
+
+Lean implementation decomposition, 2026-04-16:
+
+Do not attempt the full pointwise theorem as one `simp` block.  Prove these
+local helpers in `Section43OS24KernelComparison.lean`, in this order.  Each
+helper is genuine coordinate/sign content and is directly consumed by the
+pointwise theorem.
+
+First expose the inverse form of the absolute split equivalence:
+
+```lean
+private theorem
+    section43NPointProductSplitMeasurableEquiv_symm_castAdd
+    (d n r : ℕ) (xL : NPointDomain d n) (xR : NPointDomain d r)
+    (i : Fin n) :
+    (section43NPointProductSplitMeasurableEquiv d n r).symm (xL, xR)
+        (Fin.castAdd r i) =
+      xL i
+
+private theorem
+    section43NPointProductSplitMeasurableEquiv_symm_natAdd
+    (d n r : ℕ) (xL : NPointDomain d n) (xR : NPointDomain d r)
+    (j : Fin r) :
+    (section43NPointProductSplitMeasurableEquiv d n r).symm (xL, xR)
+        (Fin.natAdd n j) =
+      xR j
+```
+
+Proof transcript: let
+`e := section43NPointProductSplitMeasurableEquiv d n r`; apply
+`e.apply_symm_apply (xL, xR)` and take `Prod.fst`/`Prod.snd`; rewrite by
+`section43NPointProductSplitMeasurableEquiv_fst_apply` or
+`section43NPointProductSplitMeasurableEquiv_snd_apply`.
+
+Then prove the two Borchers-shell coordinate identities after split and left
+time reflection:
+
+```lean
+private theorem
+    section43OSBorchersTimeShiftConfig_splitLeft_timeReflection_succRight
+    {n m : ℕ} (t : ℝ)
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1))
+    (i : Fin n) (μ : Fin (d + 1)) :
+    let r : ℕ := m + 1
+    let y : NPointDomain d (n + r) :=
+      (section43NPointProductSplitMeasurableEquiv d n r).symm
+        (timeReflectionN d xL, xR)
+    section43OSBorchersTimeShiftConfig_succRight (d := d) t y
+        (Fin.castAdd r i) μ =
+      wickRotatePoint (timeReflection d (xL (Fin.rev i))) μ
+
+private theorem
+    section43OSBorchersTimeShiftConfig_splitRight_shift_succRight
+    {n m : ℕ} (t : ℝ)
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1))
+    (j : Fin (m + 1)) (μ : Fin (d + 1)) :
+    let r : ℕ := m + 1
+    let y : NPointDomain d (n + r) :=
+      (section43NPointProductSplitMeasurableEquiv d n r).symm
+        (timeReflectionN d xL, xR)
+    section43OSBorchersTimeShiftConfig_succRight (d := d) t y
+        (Fin.natAdd n j) μ =
+      if μ = 0 then
+        wickRotatePoint (xR j) μ + (t : ℂ) * Complex.I
+      else
+        wickRotatePoint (xR j) μ
+```
+
+Proof transcript: unfold
+`section43OSBorchersTimeShiftConfig_succRight`,
+`section43RawXiShiftConfig_succRight`, and `xiShift`.  The left theorem uses
+`section43LeftBlockReversePerm_succRight_castAdd`, the inverse split
+`symm_castAdd`, and `omega` to prove the shift condition
+`¬ n ≤ (Fin.rev i).val`.  The right theorem uses
+`section43LeftBlockReversePerm_succRight_natAdd`, the inverse split
+`symm_natAdd`, and the fact that
+`n ≤ (Fin.natAdd n j).val`; split on `μ = 0`.
+
+Next prove scalar sum identities, not exponentials:
+
+```lean
+private theorem
+    section43OSBorchersPhase_left_sum_eq_neg_star_sum_succRight :
+    -- The left part of the full Borchers sum equals the negative of the
+    -- conjugate one-factor phase sum at
+    -- `section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)`.
+
+private theorem
+    section43OSBorchersPhase_right_sum_eq_factorized_succRight :
+    -- The right part of the full Borchers sum equals the ordinary right
+    -- one-factor phase sum plus `Complex.I * ((t : ℂ) * Complex.I) * tailSum`.
+
+private theorem
+    section43OSBorchersPhase_full_sum_eq_factorized_succRight :
+    -- Reindex the full flattened sum by `finProdFinEquiv.sum_comp`, split the
+    -- point sum by `Fin.sum_univ_add`, insert the two previous scalar
+    -- identities, and rewrite
+    -- `Complex.I * ((t : ℂ) * Complex.I) * tailSum = -tailSum`.
+```
+
+Only after those scalar identities are compiled should the exponential theorem
+be proved.  Its final proof should be a short algebraic conversion:
+`rw [section43OSBorchersPhase_full_sum_eq_factorized_succRight]`,
+`rw [mul_add, Complex.exp_add]`, rewrite the left summand using
+`map_exp`, `map_mul`, `map_sum`, and close the residual ring normalization.
+
+Production status, 2026-04-16: this coordinate and pointwise-sign layer is now
+implemented in `Section43OS24KernelComparison.lean`:
+
+```lean
+section43NPointProductSplitMeasurableEquiv_symm_castAdd
+section43NPointProductSplitMeasurableEquiv_symm_natAdd
+section43OSBorchersTimeShiftConfig_splitLeft_timeReflection_succRight
+section43OSBorchersTimeShiftConfig_splitRight_shift_succRight
+section43OSBorchersPhase_left_sum_eq_neg_star_sum
+section43OSBorchersPhase_right_sum_eq_sum_add_tail
+section43OSBorchersPhase_full_sum_eq_factorized_succRight
+section43OSBorchersPhase_pointwise_factorized_succRight
+```
+
+Fresh exact check:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelComparison.lean
+```
+
+The command terminated successfully with no output after the latest edit.
+The next implementation target was the explicit Fubini/integrability layer:
+`integrable_section43OSBorchersPhaseIntegral_succRight`, followed by
+`section43OSBorchersPhaseIntegral_factorizes_succRight`.  This layer is now
+implemented; see the production-status note below.
+
+The tail term is then converted to the existing `ηξ` convention by a separate
+lemma:
+
+```lean
+private theorem section43OSBorchersPhase_tailFactor_eq_eta_succRight
+    {n m : ℕ}
+    {t : ℝ}
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ) :
+    let r : ℕ := m + 1
+    let N : ℕ := n + r
+    let lamξ : ℝ :=
+      ∑ i : Fin (N * (d + 1)),
+        (((castFinCLE (Nat.add_mul n r (d + 1)).symm)
+          (zeroHeadBlockShift
+            (m := n * (d + 1)) (n := r * (d + 1))
+            (flatTimeShiftDirection d r))) i) * ξ i
+    let ηξ : ℝ := -lamξ / (2 * Real.pi)
+    Complex.exp
+      (-(t : ℂ) *
+        (∑ j : Fin r,
+          (ξ (finProdFinEquiv
+            (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ))) =
+      Complex.exp (-(2 * Real.pi * t : ℂ) * (ηξ : ℂ))
+```
+
+Proof transcript: use the public theorem
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum` from
+`OSToWightmanBoundaryValueLimits.lean`; do not restate the whole tail
+positivity package.  The algebra is
+`lamξ = -∑ j, ξ (finProdFinEquiv (Fin.natAdd n j, 0))`, hence
+`ηξ = (∑ j, ξ ...)/(2 * Real.pi)`, and `Real.two_pi_pos.ne'` discharges the
+division denominator.
+
+Production status, 2026-04-15: this tail normalization theorem is now proved
+in `Section43OS24KernelComparison.lean`.  The finite-sum theorem
+`zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum` was
+made public in `OSToWightmanBoundaryValueLimits.lean`; both the producer
+module and the consumer file have been exact-checked/refreshed.
+
+The right factor theorem is a direct application of the one-factor bridge:
+
+```lean
+private theorem
+    section43OSBorchersPhase_rightFactor_eq_fourierLaplaceIntegral_succRight
+    {n m : ℕ}
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let r : ℕ := m + 1
+    let qξ : NPointDomain d (n + r) :=
+      section43CumulativeTailMomentumCLE d (n + r) ξ
+    let qR : NPointDomain d r :=
+      section43RightTailBlock d n r qξ
+    (∫ xR : NPointDomain d r,
+        Complex.exp
+          (Complex.I *
+            ∑ i : Fin (r * (d + 1)),
+              flattenCLEquiv r (d + 1)
+                (fun k => wickRotatePoint (xR k)) i *
+              (section43SplitRightFlat d n r ξ i : ℂ)) *
+        g.1 xR) =
+      section43FourierLaplaceIntegral d r g qR
+```
+
+Proof transcript:
+
+1. Set `hqR := section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion
+   (d := d) (n := n) (r := m + 1) hξ`.
+2. Rewrite the right side with
+   `section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`.
+3. Rewrite the inverse cumulative-tail momentum by
+   `(section43SplitRightFlat_eq_cumulativeTail_rightTail
+      (d := d) (n := n) (r := m + 1) ξ).symm`.
+4. Close by `rfl`/`integral_congr_ae`.
+
+Production status, 2026-04-15: this right-tail factor theorem is now proved
+in `Section43OS24KernelComparison.lean` and exact-checked with:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelComparison.lean
+```
+
+The command terminated successfully with no output after first building the
+new bridge module `.olean` by the narrow command:
+
+```bash
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43WickRotateFourierLaplaceBridge
+```
+
+The left factor theorem is the conjugated version and must be proved before
+the scalar factorization theorem, because it is where the `Fin.rev` and OS
+time reflection interact:
+
+```lean
+private theorem
+    section43OSBorchersPhase_leftFactor_eq_star_fourierLaplaceIntegral_succRight
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (hξ :
+      ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let r : ℕ := m + 1
+    let qξ : NPointDomain d (n + r) :=
+      section43CumulativeTailMomentumCLE d (n + r) ξ
+    let qL : NPointDomain d n :=
+      section43LeftBorchersBlock d n r (Nat.succ_pos m) qξ
+    let ξL : Fin (n * (d + 1)) → ℝ :=
+      section43NegRevFlat d n (section43SplitLeftFlat d n r ξ)
+    (∫ xL : NPointDomain d n,
+        star
+          (Complex.exp
+            (Complex.I *
+              ∑ i : Fin (n * (d + 1)),
+                flattenCLEquiv n (d + 1)
+                  (fun k => wickRotatePoint (xL k)) i *
+                (ξL i : ℂ)) *
+            f.1 xL)) =
+      star (section43FourierLaplaceIntegral d n f qL)
+```
+
+Proof transcript:
+
+1. Set `hqL := section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion
+   (d := d) (n := n) (r := m + 1) (Nat.succ_pos m) hξ`.
+2. Rewrite `section43FourierLaplaceIntegral d n f qL` by
+   `section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`.
+3. Rewrite
+   `(section43CumulativeTailMomentumCLE d n).symm qL` by
+   `section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum`, using
+   `hξ.2` as the total-momentum-zero input.
+4. Use complex conjugation of Bochner integrals:
+   use `_root_.integral_conj`, as in
+   `physicsFourierFlatCLM_borchersConj_apply` in
+   `Section43SpectralFactorization.lean`.  The needed integrability is exactly
+   `integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy`
+   transported through the same coordinate rewrite.
+5. Push `star` through the product pointwise:
+   `star (Complex.exp phase * f.1 xL) =
+    star (Complex.exp phase * f.1 xL)`.
+   Do not unfold this further in the theorem statement; the pointwise
+   factorization theorem consumes the `star (...)` form directly.
+
+Production status, 2026-04-15: this left conjugated factor theorem is now
+proved in `Section43OS24KernelComparison.lean` using
+`section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion`,
+`section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum`, the
+one-factor bridge
+`section43FourierLaplaceIntegral_eq_wickRotatePhaseIntegral_of_mem_positiveEnergy`,
+and `_root_.integral_conj`.  The exact consumer check terminates with no
+output.
+
+With these three factor lemmas, the scalar theorem is now mechanical:
+
+1. Use `integral_fin_add_split n (m + 1)` with the explicit integrability
+   theorem below to rewrite the full integral over `y`.
+2. Change the left split variable by `timeReflectionN d` using
+   `timeReflectionN_measurePreserving.integral_comp'`.
+3. Rewrite the integrand by
+   `section43OSBorchersPhase_pointwise_factorized_succRight`.
+4. Pull the constant tail factor out with `MeasureTheory.integral_const_mul`.
+5. Separate the product integral with `MeasureTheory.integral_prod_mul`; this
+   is the same API already used in `Section43SpectralFactorization.lean` and
+   `OSToWightmanBoundaryValueLimits.lean`.  Use
+   `MeasureTheory.integral_const_mul` and `MeasureTheory.integral_mul_const`
+   only for scalar constants outside one of the one-variable integrals.  If
+   Lean requires a product-integrability proof, use the right and left factor
+   integrability corollaries from the one-factor bridge and
+   `Integrable.mul_const` / `Integrable.const_mul`.
+6. Replace the two one-factor integrals by the left/right factor theorems.
+7. Replace the tail factor by
+   `section43OSBorchersPhase_tailFactor_eq_eta_succRight`.
 
 Fubini side conditions for this theorem must be proved explicitly:
 
@@ -15387,15 +17046,292 @@ external tail phase has norm `1`, so it does not affect integrability.  Then
 use the standard product-integrability theorem already used in the
 Section-4.3 Fubini packet.
 
-Then
-`section43OSBorchersPhaseKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
-is short: rewrite by the factorization theorem, use
-`section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight`, rewrite
-the two Fourier-Laplace integrals back to frequency representatives using
-`hφ_rep` and `hψ_rep`, and close with
-`section43OS24Kernel_succRight_apply`.
+Lean-ready integrability/Fubini decomposition, 2026-04-16:
 
-The forward-tube lift kernel is then:
+The next production pass should not start with the final integral equality.
+First prove these local helpers.
+
+```lean
+private theorem section43TimeReflectionN_involutive
+    (d : ℕ) {n : ℕ} (x : NPointDomain d n) :
+    timeReflectionN d (timeReflectionN d x) = x
+```
+
+Proof transcript: `ext i μ`; use `timeReflection_timeReflection`.
+
+```lean
+private theorem
+    section43OSConjTensorProduct_split_timeReflection_succRight
+    {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d (m + 1))
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
+    let y : NPointDomain d (n + (m + 1)) :=
+      (section43NPointProductSplitMeasurableEquiv d n (m + 1)).symm
+        (timeReflectionN d xL, xR)
+    (f.osConjTensorProduct g) y =
+      star (f xL) * g xR
+```
+
+Proof transcript: unfold `SchwartzNPoint.osConjTensorProduct`; use
+`SchwartzMap.tensorProduct_apply`, the inverse split accessors
+`section43NPointProductSplitMeasurableEquiv_symm_castAdd` and
+`section43NPointProductSplitMeasurableEquiv_symm_natAdd`, then
+`SchwartzNPoint.osConj_apply` and `section43TimeReflectionN_involutive`.
+
+Then prove the split integrand factorization, which is the exact integrability
+normal form:
+
+```lean
+private theorem
+    section43OSBorchersPhase_splitIntegrand_factorized_succRight
+    {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d (m + 1))
+    {t : ℝ}
+    (ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ)
+    (xL : NPointDomain d n) (xR : NPointDomain d (m + 1)) :
+    let y : NPointDomain d (n + (m + 1)) :=
+      (section43NPointProductSplitMeasurableEquiv d n (m + 1)).symm
+        (timeReflectionN d xL, xR)
+    let Lphase : ℂ :=
+      ∑ a : Fin (n * (d + 1)),
+        flattenCLEquiv n (d + 1)
+          (fun k => wickRotatePoint (xL k)) a *
+        (section43NegRevFlat d n
+          (section43SplitLeftFlat d n (m + 1) ξ) a : ℂ)
+    let Rphase : ℂ :=
+      ∑ a : Fin ((m + 1) * (d + 1)),
+        flattenCLEquiv (m + 1) (d + 1)
+          (fun k => wickRotatePoint (xR k)) a *
+        (section43SplitRightFlat d n (m + 1) ξ a : ℂ)
+    let tail : ℂ :=
+      ∑ j : Fin (m + 1),
+        (t : ℂ) *
+          (ξ (finProdFinEquiv
+            (Fin.natAdd n j, (0 : Fin (d + 1)))) : ℂ)
+    Complex.exp
+      (Complex.I *
+        ∑ a : Fin ((n + (m + 1)) * (d + 1)),
+          flattenCLEquiv (n + (m + 1)) (d + 1)
+            (section43OSBorchersTimeShiftConfig_succRight
+              (d := d) t y) a *
+          (ξ a : ℂ)) *
+        (f.osConjTensorProduct g) y =
+      Complex.exp (-tail) *
+        (star (Complex.exp (Complex.I * Lphase) * f xL) *
+          (Complex.exp (Complex.I * Rphase) * g xR))
+```
+
+Proof transcript: combine
+`section43OSBorchersPhase_pointwise_factorized_succRight` with
+`section43OSConjTensorProduct_split_timeReflection_succRight`; use
+`map_mul` and commutative ring normalization to combine
+`star (Complex.exp ...) * star (f xL)` into
+`star (Complex.exp ... * f xL)`.
+
+Integrability proof transcript:
+
+1. Define
+   `qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ`,
+   `qL := section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ`,
+   and `qR := section43RightTailBlock d n (m + 1) qξ`.
+2. Obtain positive-energy witnesses with
+   `section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion`
+   and `section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion`.
+3. Let `leftFactor xL := Complex.exp (Complex.I * Lphase xL) * f.1 xL`.
+   Its integrability is exactly
+   `integrable_section43WickRotatePhaseIntegral_of_mem_positiveEnergy d n f qL hqL`,
+   after rewriting the inverse cumulative-tail coordinate by
+   `section43LeftBorchersBlock_symm_eq_negRevFlat_of_totalMomentum`.
+   The integrability of `fun xL => star (leftFactor xL)` follows by
+   `Integrable.continuousLinearMap` with `Complex.conjLIE` if no direct
+   `.conj` lemma is available.
+4. Let `rightFactor xR := Complex.exp (Complex.I * Rphase xR) * g.1 xR`.
+   Its integrability is exactly the same one-factor theorem at `qR`, after
+   rewriting by `section43SplitRightFlat_eq_cumulativeTail_rightTail`.
+5. Use `Integrable.mul_prod` for
+   `fun p : NPointDomain d n × NPointDomain d (m + 1) =>
+      star (leftFactor p.1) * rightFactor p.2`.
+   Multiplication by the constant `Complex.exp (-tail)` uses
+   `Integrable.const_mul`.
+6. Transfer this product integrability through the left reflection map
+   `Prod.map (timeReflectionN d) id` using
+   `(timeReflectionN_measurePreserving (d := d) (n := n)).prod
+      (MeasurePreserving.id volume)`
+   if the product-map API accepts it; otherwise use
+   `MeasurePreserving.prod`/`MeasurePreserving.map_prod_map` as in Mathlib's
+   `MeasureTheory.Measure.Prod`.
+7. Transfer from product variables back to the absolute `y` variable using
+   `section43NPointProductSplitMeasurableEquiv_measurePreserving`.
+
+Only after this integrability theorem compiles should the integral equality
+call `integral_comp'`, `integral_prod`, and `MeasureTheory.integral_prod_mul`.
+
+Production status, 2026-04-16: this integrability/Fubini layer is now proved.
+The support theorem
+`integrable_section43OSBorchersPhaseIntegral_succRight` lives in
+`Section43OS24KernelComparison.lean`.  Because that support file reached 1918
+lines after the coordinate and integrability packet, the scalar equality was
+put in the small companion file
+`Section43OS24KernelFubini.lean`:
+
+```lean
+section43OSBorchersPhaseIntegral_factorizes_succRight
+section43OSBorchersPhaseKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight
+```
+
+The proof uses a combined measurable equivalence
+`section43NPointProductSplitMeasurableEquiv.trans
+  (MeasurableEquiv.prodCongr θ id)` rather than a separate raw
+`integral_comp'` through the product reflection map.  This is the same
+mathematical change of variables, but avoids heartbeat-heavy elaboration of the
+expanded product integrand.
+
+Fresh checks after this implementation:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelComparison.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelComparison
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelFubini.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelFubini
+```
+
+The exact checks terminated successfully with no output; both narrow module
+builds terminated successfully, warnings only from pre-existing imported files.
+
+Production update, 2026-04-16: the spectral-region kernel recognition theorem
+`section43OSBorchersPhaseKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
+also compiles in `Section43OS24KernelFubini.lean`.  Its proof rewrites by the
+factorization theorem, uses
+`section43TailShiftPhase_eq_psiZTimeTest_of_spectralRegion_succRight`, rewrites
+the two Fourier-Laplace integrals back to frequency representatives via
+`hφ_rep` and `hψ_rep`, and closes with
+`section43OS24Kernel_succRight_apply_of_mem_spectralRegion ... hξ`.  Fresh
+verification after adding this theorem:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelFubini.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43OS24KernelFubini
+```
+
+Both terminated successfully; the module build completed at `8464/8464`, with
+warnings only from pre-existing imported files.
+
+Lean correction, 2026-04-16: the following Schwartz-valued Bochner-kernel
+plan is **not active** and must not be implemented as written.  A Lean sanity
+check fails already at the typeclass level:
+
+```lean
+#check (fun (F : ℝ → SchwartzMap (Fin 1 → ℝ) ℂ) => Integrable F)
+-- failed to synthesize `ContinuousENorm (SchwartzMap (Fin 1 → ℝ) ℂ)`
+
+#check (fun (F : ℝ → SchwartzMap (Fin 1 → ℝ) ℂ) => ∫ x, F x)
+-- failed to synthesize `NormedAddCommGroup (SchwartzMap (Fin 1 → ℝ) ℂ)`
+```
+
+So there is no production route that defines
+`section43OSForwardTubeLiftKernel_succRight` by a Bochner integral with values
+in `SchwartzMap`, nor any route that applies
+`ContinuousLinearMap.integral_comp_comm` to such an object.  This is a
+formalization-interface blocker, not a sign convention issue.  The scalar
+theorem
+`section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
+remains valid and useful, but it is only a pointwise scalar integral identity.
+
+Correction, 2026-04-16: the previously proposed theorem
+`section43PhysicsFourier_osConjTensorProduct_timeShift_eq_BorchersPhaseIntegral_succRight`
+is **withdrawn** and must not be implemented.  It confused two different
+transforms.  The left side was the real physics Fourier transform of the
+Euclidean time-shifted `osConjTensorProduct`; after unfolding
+`physicsFourierFlatCLM_integral` it contains the real oscillatory factor
+`Complex.exp (Complex.I * ∑ x_i ξ_i)`.  The Borchers phase integral instead
+contains `wickRotatePoint`; in the time coordinate
+`wickRotatePoint y 0 = Complex.I * y 0`, so the same outer `Complex.I`
+produces a Laplace damping factor, not a real oscillatory Fourier factor.
+Already in the one-right-point case (`n = 0`, `m = 0`) the two normal forms
+are different: a real time shift gives a Fourier multiplier
+`Complex.exp (-(Complex.I * (t : ℂ) * ξ₀))`, whereas the Wick-rotated
+Borchers shell gives `Complex.exp (-(t : ℂ) * ξ₀)` together with the Laplace
+factor in the Euclidean time variable.  This is a mathematical sign/transform
+seam, not merely a Lean API issue.
+
+The active replacement route is the already-established
+`timeShiftFlatOrbit`/Borchers-conjugation frequency packet, not a new Fourier
+unfolding of `osConjTensorProduct`:
+
+1. Use the compiled real-time horizontal Fubini theorem
+   `exists_timeShiftKernel_pairing_fourierTest` with
+   `χ = SchwartzMap.fourierTransformCLM ℂ (section43PsiZTimeTest t ht)`.
+   This produces a Schwartz kernel `KψZ_t` satisfying
+   ```lean
+   ∀ ξ,
+     KψZ_t ξ =
+       ∫ τ : ℝ,
+         timeShiftFlatOrbit (d := d) φ ψ τ ξ *
+           (SchwartzMap.fourierTransformCLM ℂ
+             (section43PsiZTimeTest t ht)) τ
+   ```
+   and
+   ```lean
+   (∫ τ : ℝ,
+      bvt_W OS lgc (n + (m + 1))
+        (φ.conjTensorProduct
+          (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+        (SchwartzMap.fourierTransformCLM ℂ
+          (section43PsiZTimeTest t ht)) τ)
+     = Tflat KψZ_t
+   ```
+
+2. Apply the already-compiled spectral-region identification
+   `section43_timeShiftKernel_psiZ_eq_OS24Kernel_on_spectralRegion_succRight`
+   to this same `KψZ_t`.  The conclusion is the genuine frequency-side EqOn
+   theorem:
+   ```lean
+   Set.EqOn
+     (fun ξ => KψZ_t ξ)
+     (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+     (section43WightmanSpectralRegion d (n + (m + 1)))
+   ```
+
+3. Use the support/EqOn transfer for `Tflat` to replace `Tflat KψZ_t` by
+   `Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)`.  This is the
+   correct place to use `hTflat_supp`/`hasFourierSupportIn_eqOn`; the theorem
+   being compared is a genuine Schwartz kernel on both sides.
+
+4. Only after this frequency-side transfer is in place should the proof cross
+   back to the Euclidean `OS.S` scalar.  That final bridge remains the
+   positive-time xiShift/boundary-value package, especially
+   `bvt_F_osConjTensorProduct_timeShift_eq_xiShift` or its public successor.
+   The support EqOn theorem alone does not identify the OS scalar.
+
+Production update, 2026-04-16: Step 1 and Step 2 of the corrected route are
+now packaged in `Section43OS24KernelFubini.lean`:
+
+```lean
+exists_section43TimeShiftKernel_psiZ_pairing_eq_OS24Kernel_on_spectralRegion_succRight
+section43TimeShiftKernel_psiZ_pairing_eq_Tflat_OS24Kernel_succRight
+```
+
+The theorem uses `exists_timeShiftKernel_pairing_fourierTest` with
+`χ = SchwartzMap.fourierTransformCLM ℂ (section43PsiZTimeTest t ht)` to obtain
+the real-time horizontal Schwartz kernel `KψZ_t`, then applies
+`section43_timeShiftKernel_psiZ_eq_OS24Kernel_on_spectralRegion_succRight` to
+prove EqOn with `section43OS24Kernel_succRight` on the Wightman spectral
+region.  It also carries the exact `Tflat` pairing identity for the
+corresponding real-time `bvt_W` horizontal integral.  The second theorem
+performs Step 3: using `HasFourierSupportIn
+(section43WightmanSpectralRegion d (n + (m + 1))) Tflat` and
+`hasFourierSupportIn_eqOn`, it replaces `Tflat KψZ_t` by
+`Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)`.
+
+Fresh verification:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43OS24KernelFubini.lean
+```
+
+The exact check terminated successfully with no output.
+
+Historical, withdrawn sketch of the non-active Bochner-kernel idea:
 
 ```lean
 private def section43OSForwardTubeLiftKernelIntegrand_succRight
@@ -15680,7 +17616,27 @@ Proof: use
 result by symmetry.  This step is the only place in S5 where `OS.S` is
 introduced.
 
-Fourth, compose the three previous theorems:
+Correction after the compiled `Tflat` bridge, 2026-04-16: the following direct
+OS scalar-recognition slot is **not implementation-ready** and is not an
+active theorem target.  The pointwise theorem
+`section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
+does not by itself prove
+`Tflat (section43OS24Kernel_succRight ...) = OS.S (...)`.  Such a proof would
+still need to move the distribution `Tflat` through the configuration-space
+integral
+
+```lean
+∫ y, multiDimPsiZExt (...) (section43OSForwardTubeLift_succRight t y) * ...
+```
+
+and that is exactly the operation the withdrawn Schwartz-valued Bochner-kernel
+plan failed to typecheck.  Therefore any proof of the scalar recognition must
+go through the transformed-image / descended-`ψ_Z` normal-form route described
+below, or through a newly documented functional-analysis theorem that
+legitimately supplies this exchange.  The latter theorem is not currently in
+the blueprint.
+
+Historical, withdrawn direct-composition target:
 
 ```lean
 private theorem
@@ -15722,11 +17678,12 @@ private theorem
       (d := d) OS lgc f g hg_compact ht
 ```
 
-This packet is implementation-ready only after the `hTflat_FL` witness
-structure is available in Lean.  The old proof idea
-"unfold `OS.S` after inverse Fourier/Fubini" is retired: it hides the
-analytic-continuation bridge and can regress to a same-test Wightman/Schwinger
-comparison.
+Do not implement this theorem from the displayed proof script.  The first
+transitivity step is the invalid exchange point unless a separate, Lean-typed
+`Tflat`/integral interchange theorem is proved.  The old proof idea "unfold
+`OS.S` after inverse Fourier/Fubini" remains retired: it hides the
+analytic-continuation bridge and can regress to a same-test
+Wightman/Schwinger comparison.
 
 The final scalar theorem is then:
 
@@ -15815,11 +17772,14 @@ have hOS :
 
 6. Close by `exact hT_eq.trans hOS`.
 
-After S1-S5 compile with the explicit `hTflat_FL` witness, the proof docs are
-ready for implementing `section43_OS24_scalar_interchange_succRight`.  Before
-that point, the only permitted Lean work is the named support infrastructure
-above; any direct edit of the final theorem would be another wrapper-shaped
-rush into a blocking sorry.
+The compiled theorem
+`section43TimeShiftKernel_psiZ_pairing_eq_Tflat_OS24Kernel_succRight` now
+supplies the frequency-side `Tflat` bridge that the historical
+`section43_OS24_scalar_interchange_succRight` wanted as Steps 1-4.  The
+missing Step 5 is the OS-side transformed-image scalar recognition.  Until the
+descended-`ψ_Z`/normal-form supplier below is Lean-ready, do not implement
+`section43_OS24_scalar_interchange_succRight`; it would only repackage the
+same missing scalar recognition seam.
 
 Fifth, audit the **left-block chronological reversal**.  The Wightman tensor
 product and the OS tensor product do not use the same left-block convention:
@@ -16408,6 +18368,5580 @@ Readiness rule for this subsection:
     file, run that exact support-file check first, then the downstream
     Positivity check. Do not replace these with a broad build.
 
+### 5.9.4d. Active S5 repair: support-localized forward-tube Fubini
+
+Current status after the compiled OS24 Fubini bridge:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_Tflat_OS24Kernel_succRight
+```
+
+has closed the frequency-side half of the seam.  For the actual flattened
+Wightman distribution `Tflat`, the real-time horizontal pairing against
+`𝓕(section43PsiZTimeTest t ht)` is now
+
+```lean
+Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)
+```
+
+provided `Tflat` has Wightman spectral support and represents `bvt_W` on
+flattened tests.  The remaining S5 work is exactly to identify this scalar
+with the OS semigroup/Schwinger scalar for the transformed Euclidean pair.
+
+The direct theorem is not allowed to use a Bochner integral in `SchwartzMap`;
+Lean has no `NormedAddCommGroup`/`ContinuousENorm` instance for
+`SchwartzMap`.  The only admissible exchange tool already present in the repo
+is the functional-analysis axiom
+
+```lean
+schwartz_clm_fubini_exchange
+```
+
+from `OSReconstruction/GeneralResults/SchwartzFubini.lean`.  Therefore the
+next proof packet must not define
+`section43OSForwardTubeLiftKernel_succRight` as
+
+```lean
+∫ y, (f.1.osConjTensorProduct g.1 y) • multiDimPsiZExt ...
+```
+
+Instead it must construct a Schwartz kernel abstractly through
+`schwartz_clm_fubini_exchange`, exactly as the existing finite-height shell
+packet does.
+
+There is one additional support-localization issue that the old withdrawn
+Bochner sketch did not handle.  The forward-tube lift
+
+```lean
+section43OSForwardTubeLift_succRight (d := d) t y
+```
+
+is proved to be in the forward tube only when
+
+```lean
+y ∈ Function.support
+  ((f.1.osConjTensorProduct g.1) :
+    NPointDomain d (n + (m + 1)) → ℂ)
+```
+
+by
+
+```lean
+section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight
+```
+
+The family
+
+```lean
+fun yflat =>
+  multiDimPsiZExt Cflat ... (flattenCLEquiv ... (
+    section43OSForwardTubeLift_succRight t
+      ((flattenCLEquivReal ...).symm yflat)))
+```
+
+is therefore not known to be a continuous tube-valued Schwartz family on all
+of flat configuration space.  It cannot be fed directly to
+`schwartz_clm_fubini_exchange`.
+
+The correct support-localized construction is:
+
+1. Let
+
+```lean
+Kfg : Set (NPointDomain d (n + (m + 1))) :=
+  tsupport
+    ((f.1.osConjTensorProduct g.1) :
+      NPointDomain d (n + (m + 1)) → ℂ)
+```
+
+or its flat image under `flattenCLEquivReal`.  Its compactness should be
+proved once as a support lemma, not reproved inside the Fubini packet:
+
+```lean
+theorem hasCompactSupport_osConjTensorProduct_of_hasCompactSupport
+    (d : ℕ) [NeZero d] {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g : NPointDomain d m → ℂ)) :
+    HasCompactSupport
+      ((f.osConjTensorProduct g : SchwartzNPoint d (n + m)) :
+        NPointDomain d (n + m) → ℂ)
+```
+
+Proof transcript: if the product is nonzero at `y`, then
+`f.osConj (splitFirst n m y) ≠ 0` and `g (splitLast n m y) ≠ 0`.  Hence
+`timeReflectionN d (splitFirst n m y) ∈ tsupport f` and
+`splitLast n m y ∈ tsupport g`.  The support is therefore contained in the
+image of the compact product
+
+```lean
+(timeReflectionN d '' tsupport f) ×ˢ tsupport g
+```
+
+under the inverse split map.  Compactness follows from compact image under the
+time-reflection homeomorphism, `hf_compact`, `hg_compact`, product compactness,
+and continuity of the inverse split map.  Close with
+`HasCompactSupport.of_support_subset_isCompact`.
+
+2. First export the chronological closed-support fact that is currently only
+used implicitly inside the `VanishesToInfiniteOrderOnCoincidence...` proofs:
+
+```lean
+theorem tsupport_osConjTensorProduct_subset_split_neg_pos
+    (d : ℕ) [NeZero d] {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) m) :
+    tsupport
+        ((f.1.osConjTensorProduct g.1) :
+          NPointDomain d (n + m) → ℂ) ⊆
+      {y | timeReflectionN d (splitFirst n m y) ∈
+          OrderedPositiveTimeRegion d n} ∩
+      {y | splitLast n m y ∈
+          OrderedPositiveTimeRegion d m}
+```
+
+The proof should reuse the same support-splitting argument already present in
+the core OS files:
+
+```lean
+tsupport (fun y => f.1.osConj (splitFirst n m y)) ⊆ ...
+tsupport (fun y => g.1 (splitLast n m y)) ⊆ ...
+tsupport (fun y =>
+  f.1.osConj (splitFirst n m y) * g.1 (splitLast n m y)) ⊆ ...
+```
+
+This is not a wrapper: it promotes the exact missing closed-support
+chronology needed for a compact cutoff.  With this in hand, strengthen the
+existing support theorem from `Function.support` to closed support:
+
+```lean
+theorem
+    section43OSForwardTubeLift_mem_forwardTube_of_osTsupport_succRight
+    (d : ℕ) [NeZero d] {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    {t : ℝ} (ht : 0 < t)
+    {y : NPointDomain d (n + (m + 1))}
+    (hy :
+      y ∈ tsupport
+        ((f.1.osConjTensorProduct g.1) :
+          NPointDomain d (n + (m + 1)) → ℂ)) :
+    section43OSForwardTubeLift_succRight d t y ∈
+      TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))
+```
+
+Proof transcript: replace the two current private `Function.support` helpers
+
+```lean
+section43OSConjTensorProduct_support_left_reflected_ordered_succRight
+section43OSConjTensorProduct_support_right_ordered_succRight
+```
+
+by `tsupport` versions using
+`tsupport_osConjTensorProduct_subset_split_neg_pos`.  Then copy the already
+compiled order proof
+`section43OSBorchersTimeShiftConfig_strictOrdered_of_osSupport_succRight`,
+changing only the support hypotheses.  The final tube step is identical to
+`section43OSForwardTubeLift_mem_forwardTube_of_osSupport_succRight`.
+
+3. Let
+
+```lean
+Ufg : Set (NPointDomain d (n + (m + 1))) :=
+  {y | section43OSForwardTubeLift_succRight d t y ∈
+        TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))}
+```
+
+Then `Ufg` is open because `section43OSForwardTubeLift_succRight` is
+continuous and `TubeDomainSetPi (ForwardConeAbs d N)` is open.  By Step 2,
+`Kfg ⊆ Ufg`.
+
+4. Use Mathlib's Urysohn cutoff theorem to build a continuous cutoff:
+
+```lean
+exists_continuous_one_zero_of_isCompact
+```
+
+Apply it with
+
+```lean
+X := NPointDomain d (n + (m + 1))
+s := Kfg
+t := Ufgᶜ
+```
+
+using compactness of `Kfg`, closedness of `Ufgᶜ`, and disjointness from
+`Kfg ⊆ Ufg`.  It returns a continuous map `ρc : C(X, ℝ)` such that
+`ρc = 1` on `Kfg`, `ρc = 0` on `Ufgᶜ`, `HasCompactSupport ρc`, and
+`0 ≤ ρc ≤ 1`.  Set
+
+```lean
+ρ : NPointDomain d (n + (m + 1)) → ℝ
+```
+
+with
+
+```lean
+0 ≤ ρ y
+ρ y ≤ 1
+ρ y = 1        for y ∈ Kfg
+Function.support ρ ⊆ Ufg
+HasCompactSupport ρ
+Continuous ρ
+```
+
+The support inclusion is a one-line consequence of the zero-on-complement
+property:
+
+```lean
+intro y hyρ
+by_contra hyU
+exact hyρ (hρ_zero hyU)
+```
+
+This cutoff is not optional bookkeeping: it is the device that makes the
+Schwartz-family parameter map globally tube-valued while preserving the
+integral on the support of `f.1.osConjTensorProduct g.1`.
+
+5. Choose a fixed tube point, for example
+
+```lean
+z0 : Fin (n + (m + 1)) → Fin (d + 1) → ℂ :=
+  fun k μ =>
+    ((0 : ℝ) : ℂ) +
+      ((canonicalForwardConeDirection (d := d) (n + (m + 1)) k μ : ℝ) : ℂ) *
+        Complex.I
+```
+
+with membership supplied by `canonicalForwardConeDirection_mem`.
+
+6. Define the safe lift
+
+```lean
+private def section43OSForwardTubeSafeLift_succRight
+    (d : ℕ) [NeZero d] {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    {t : ℝ} (ht : 0 < t)
+    (ρ : NPointDomain d (n + (m + 1)) → ℝ) :
+    NPointDomain d (n + (m + 1)) →
+      Fin (n + (m + 1)) → Fin (d + 1) → ℂ :=
+  fun y k μ =>
+    (ρ y : ℂ) * section43OSForwardTubeLift_succRight d t y k μ +
+      ((1 - ρ y : ℝ) : ℂ) * z0 k μ
+```
+
+The real scalar bounds `0 ≤ ρ ≤ 1`, support condition
+`Function.support ρ ⊆ Ufg`, convexity of `ForwardConeAbs`, and membership of
+`z0` prove:
+
+```lean
+private theorem
+    section43OSForwardTubeSafeLift_mem_forwardTube_succRight :
+    ∀ y,
+      section43OSForwardTubeSafeLift_succRight d f g ht ρ y ∈
+        TubeDomainSetPi (ForwardConeAbs d (n + (m + 1)))
+```
+
+and `ρ = 1` on `Kfg` proves:
+
+```lean
+private theorem
+    section43OSForwardTubeSafeLift_eq_lift_on_osTsupport_succRight :
+    ∀ y ∈ Kfg,
+      section43OSForwardTubeSafeLift_succRight d f g ht ρ y =
+        section43OSForwardTubeLift_succRight d t y
+```
+
+7. Define the globally safe Schwartz family in flat coordinates:
+
+```lean
+let gFamily :
+    (Fin ((n + (m + 1)) * (d + 1)) → ℝ) →
+      SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ :=
+  fun yflat =>
+    multiDimPsiZExt Cflat
+      hCflat_open hCflat_conv hCflat_cone hCflat_salient
+      (flattenCLEquiv (n + (m + 1)) (d + 1)
+        (section43OSForwardTubeSafeLift_succRight
+          (d := d) f g ht ρ
+          ((flattenCLEquivReal (n + (m + 1)) (d + 1)).symm yflat)))
+```
+
+The exact side conditions for `schwartz_clm_fubini_exchange` are:
+
+```lean
+private theorem
+    continuous_section43OSForwardTubeSafePsiZFamily_succRight :
+    Continuous gFamily
+
+private theorem
+    seminorm_section43OSForwardTubeSafePsiZFamily_bound_succRight :
+    ∀ k l : ℕ, ∃ C N, 0 < C ∧
+      ∀ yflat,
+        SchwartzMap.seminorm ℝ k l (gFamily yflat) ≤
+          C * (1 + ‖yflat‖) ^ N
+```
+
+Proof transcript:
+
+* `continuous_section43OSForwardTubeSafePsiZFamily_succRight` follows from
+  continuity of `ρ`, linearity/continuity of the safe lift, the global tube
+  membership theorem, and
+  `continuous_multiDimPsiZExt_comp_of_mem_tube`.
+* For the seminorm bound, do not introduce a new OS-specific estimate.  First
+  prove the following general SCV compact-tube-image theorem from the existing
+  local estimate `multiDimPsiZ_local_uniform_seminorm_bound`:
+
+```lean
+theorem multiDimPsiZExt_compactTubeSet_seminorm_bound
+    {m : ℕ}
+    (C : Set (Fin m → ℝ)) (hC_open : IsOpen C)
+    (hC_conv : Convex ℝ C) (hC_cone : IsCone C)
+    (hC_salient : IsSalientCone C)
+    {K : Set (Fin m → ℂ)} (hK : IsCompact K)
+    (hK_tube : K ⊆ SCV.TubeDomain C)
+    (k l : ℕ) :
+    ∃ B > 0,
+      ∀ z ∈ K,
+        SchwartzMap.seminorm ℝ k l
+          (multiDimPsiZExt C hC_open hC_conv hC_cone hC_salient z) ≤ B
+```
+
+The proof is finite-subcover compactness.  For each `z0 ∈ K`, apply
+`multiDimPsiZ_local_uniform_seminorm_bound` to obtain `Bz, δz`; the balls
+`Metric.ball z0 δz` cover `K`; extract a finite subcover and take the maximum
+of the finitely many `Bz`.  Rewrite `multiDimPsiZExt` to `multiDimPsiZ` on
+the tube with `multiDimPsiZExt_eq`.
+
+Then apply this theorem to the compact set
+
+```lean
+KsafeImage :=
+  (flattenCLEquiv (n + (m + 1)) (d + 1) ''
+    (section43OSForwardTubeSafeLift_succRight d f g ht ρ ''
+      tsupport ρ)) ∪
+  {flattenCLEquiv (n + (m + 1)) (d + 1) z0}
+```
+
+Here `tsupport ρ` is compact from `HasCompactSupport ρ`, its image is compact
+by continuity of the safe lift and `flattenCLEquiv`, and the singleton covers
+the complement of `Function.support ρ`, where `ρ = 0` and the safe lift is
+exactly `z0`.  Every safe-lift value lies in `KsafeImage`: if `ρ y = 0`, use
+the singleton case; otherwise `y ∈ Function.support ρ ⊆ tsupport ρ`.
+The compact bound gives a uniform seminorm bound for all `yflat`; turn it into
+the polynomial-growth side condition by taking exponent `0`.
+
+8. The actual Fubini packet is then a direct mirror of
+`canonicalShellPsiZExtFamily_pairing`:
+
+```lean
+private theorem
+    section43OSForwardTubeSafePsiZFamily_pairing_succRight
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d (m + 1) → ℂ))
+    {t : ℝ} (ht : 0 < t)
+    (Tflat : SchwartzMap
+        (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_FL :
+      section43TflatFourierLaplaceWitness
+        (d := d) OS lgc (n + (m + 1)) Tflat) :
+    ∃ Ksafe : SchwartzMap
+        (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ,
+      (∀ ξ,
+        Ksafe ξ =
+          ∫ yflat,
+            gFamily yflat ξ *
+              flattenSchwartzNPoint (d := d)
+                (f.1.osConjTensorProduct g.1) yflat) ∧
+      (∫ yflat,
+        Tflat (gFamily yflat) *
+          flattenSchwartzNPoint (d := d)
+            (f.1.osConjTensorProduct g.1) yflat) =
+        Tflat Ksafe
+```
+
+where `gFamily` is the safe family from Step 7.  The proof is:
+
+```lean
+obtain ⟨Ksafe, hK_eval, hK_pair⟩ :=
+  schwartz_clm_fubini_exchange Tflat gFamily
+    (flattenSchwartzNPoint (d := d) (f.1.osConjTensorProduct g.1))
+    hg_cont hg_bound
+```
+
+and then `simpa` as in `canonicalShellPsiZExtFamily_pairing`.
+
+9. Replace the safe family by the original forward lift inside scalar
+integrals.  Because `ρ = 1` on `Kfg` and
+`f.1.osConjTensorProduct g.1 = 0` off `Kfg`, both the pointwise kernel
+integral and the `Tflat`-inside integral are unchanged:
+
+```lean
+private theorem
+    section43OSForwardTubeSafeKernelIntegral_eq_liftKernelIntegral_succRight
+```
+
+and
+
+```lean
+private theorem
+    section43OSForwardTubeSafeTflatIntegral_eq_liftTflatIntegral_succRight
+```
+
+These are ordinary scalar integral congruence theorems after rewriting
+`flattenSchwartzNPoint_apply` and `unflatten`/`flatten` equivalences.
+
+10. Now the scalar recognition theorem is implementation-ready:
+
+```lean
+private theorem
+    section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (f : euclideanPositiveTimeSubmodule (d := d) n)
+    (g : euclideanPositiveTimeSubmodule (d := d) (m + 1))
+    (hf_compact : HasCompactSupport (f.1 : NPointDomain d n → ℂ))
+    (hg_compact : HasCompactSupport (g.1 : NPointDomain d (m + 1) → ℂ))
+    (hφ_rep :
+      section43FourierLaplaceRepresentative d n f
+        (section43FrequencyRepresentative (d := d) n φ))
+    (hψ_rep :
+      section43FourierLaplaceRepresentative d (m + 1) g
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ))
+    {t : ℝ} (ht : 0 < t)
+    (Tflat : SchwartzMap
+        (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_supp :
+      HasFourierSupportIn
+        (section43WightmanSpectralRegion d (n + (m + 1))) Tflat)
+    (hTflat_FL :
+      section43TflatFourierLaplaceWitness
+        (d := d) OS lgc (n + (m + 1)) Tflat) :
+    Tflat (section43OS24Kernel_succRight d n m φ ψ t ht) =
+      ∫ y : NPointDomain d (n + (m + 1)),
+        bvt_F OS lgc (n + (m + 1))
+          (section43OSForwardTubeLift_succRight (d := d) t y) *
+        (f.1.osConjTensorProduct g.1) y
+```
+
+Proof transcript:
+
+1. Obtain `Ksafe` from
+   `section43OSForwardTubeSafePsiZFamily_pairing_succRight`.
+2. Use `section43OSForwardTubeSafeKernelIntegral_eq_liftKernelIntegral_succRight`
+   and the already-compiled
+   `section43OSForwardTubeLiftKernelIntegral_eq_OS24Kernel_on_spectralRegion_succRight`
+   to prove
+   `Set.EqOn (fun ξ => Ksafe ξ)
+      (fun ξ => section43OS24Kernel_succRight d n m φ ψ t ht ξ)
+      (section43WightmanSpectralRegion d (n + (m + 1)))`.
+3. Apply `hasFourierSupportIn_eqOn hTflat_supp` to replace
+   `Tflat (section43OS24Kernel_succRight ...)` by `Tflat Ksafe`.
+4. Rewrite `Tflat Ksafe` by the pairing identity from Step 8.
+5. On `Kfg`, use `hTflat_FL.hFL` and
+   `fourierLaplaceExtMultiDim_eq_ext` to rewrite
+   `Tflat (gFamily yflat)` as
+   `bvt_F OS lgc ... (section43OSForwardTubeLift_succRight t y)`;
+   off `Kfg`, the scalar density is zero.  This closes the displayed scalar
+   integral.
+
+11. The remaining two scalar steps are already conceptually formal and should
+be implemented only after Step 10 compiles:
+
+```lean
+private theorem
+    section43_forwardTubeLiftIntegral_eq_xiShiftShell_succRight
+    ...
+```
+
+Use `bvt_F_perm` for the left chronological reversal and
+`bvt_F_translationInvariant` for the diagonal translation introduced by
+`section43OSForwardTubeLiftTranslation_succRight`, pointwise under the scalar
+integral.
+
+```lean
+private theorem
+    section43_xiShiftShell_eq_osScalar_succRight
+    ...
+```
+
+Use the existing positive-time bridge
+`bvt_F_osConjTensorProduct_timeShift_eq_xiShift`, oriented by symmetry.
+
+12. The combined S5 theorem is then:
+
+```lean
+private theorem
+    section43OS24Kernel_pairing_eq_osScalar_succRight
+    ...
+    Tflat (section43OS24Kernel_succRight d n m φ ψ t ht) =
+      OS.S (n + (m + 1))
+        (ZeroDiagonalSchwartz.ofClassical
+          (f.1.osConjTensorProduct
+            (timeShiftSchwartzNPoint (d := d) t g.1)))
+```
+
+This theorem may use `hφ_rep`/`hψ_rep`; it does not need the not-yet-existing
+`section43FourierLaplaceTransformComponent`.  The representative predicates
+are sufficient here because the only Wightman-side use of `φ, ψ` has already
+been converted to the frequency-side scalar
+`Tflat (section43OS24Kernel_succRight ...)`, and the spectral-support EqOn
+step makes the values of the ambient extensions outside
+`section43WightmanSpectralRegion` irrelevant.
+
+By contrast, a theorem comparing
+
+```lean
+bvt_W OS lgc ... (φ.conjTensorProduct ...)
+```
+
+directly with an OS scalar still must use the frequency-projection/descent
+surface; `section43FourierLaplaceRepresentative` alone is not enough for that
+direct ambient Wightman statement.  The new S5 theorem is safe precisely
+because it starts after the compiled `Tflat` frequency-side bridge.
+
+Compiled implementation status, 2026-04-16:
+
+* Steps 1-7 are now implemented and compile.  The support/cutoff pieces live
+  in `Section43OS24KernelComparison.lean`,
+  `SCV/PaleyWienerCompact.lean`, and
+  `Section43OS24KernelSafeFubini.lean`.
+* Step 8 is implemented as
+  `section43OSForwardTubeSafePsiZFamily_pairing_succRight`, with the
+  compact-tube seminorm bound
+  `seminorm_section43OSForwardTubeSafePsiZFamily_bound_succRight`.
+* Step 9 is implemented by the cutoff-removal lemmas
+  `integral_bvt_F_safeLift_eq_lift_of_rho_eq_one_on_tsupport_succRight`,
+  `section43OSForwardTubeLift_pairing_bvt_F_of_safeCutoff_succRight`, and
+  `section43OSForwardTubeSafeKernel_eval_eq_liftIntegral_of_rho_eq_one_on_tsupport_succRight`.
+* Step 10 is implemented as
+  `section43OS24Kernel_pairing_eq_forwardTubeLiftIntegral_succRight`.
+* Step 11 is implemented by
+  `section43_forwardTubeLiftIntegral_eq_xiShiftShell_succRight`, whose pointwise
+  proof removes the diagonal translation by `bvt_F_translationInvariant` and
+  the Borchers left-block reversal by `bvt_F_perm`.
+* Step 12 is implemented as
+  `section43OS24Kernel_pairing_eq_osScalar_succRight`.
+
+The next implementation target is no longer the S5 scalar-recognition seam.
+That downstream assembly step has also now been implemented as
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_succRight
+```
+
+It combines `section43TimeShiftKernel_psiZ_pairing_eq_Tflat_OS24Kernel_succRight`
+with `section43OS24Kernel_pairing_eq_osScalar_succRight`, turning the live
+real-time horizontal Wightman pairing into the OS scalar under the existing
+`Tflat` spectral-support, boundary-value, and Fourier-Laplace witness
+hypotheses.
+
+The immediate `Tflat`-packaging adapter is now also implemented:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_from_bvt_W_package_succRight
+```
+
+It obtains the common flattened Wightman distribution and its three required
+properties from
+
+```lean
+bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+```
+
+and then applies the assembled S5 theorem.  Its statement takes ordinary
+positive-time component data
+
+```lean
+f : SchwartzNPoint d n
+g : SchwartzNPoint d (m + 1)
+hf_ord : tsupport f ⊆ OrderedPositiveTimeRegion d n
+hg_ord : tsupport g ⊆ OrderedPositiveTimeRegion d (m + 1)
+hf_compact : HasCompactSupport f
+hg_compact : HasCompactSupport g
+```
+
+packages them as `euclideanPositiveTimeSubmodule` elements, and proves
+
+```lean
+∫ τ,
+  bvt_W OS lgc (n + (m + 1))
+    (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+  (SchwartzMap.fourierTransformCLM ℂ (section43PsiZTimeTest t ht)) τ
+=
+OS.S (n + (m + 1))
+  (ZeroDiagonalSchwartz.ofClassical
+    (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+```
+
+provided the two explicit Section-4.3 Fourier-Laplace representative
+hypotheses are available:
+
+```lean
+section43FourierLaplaceRepresentative d n ⟨f, hf_ord⟩
+  (section43FrequencyRepresentative (d := d) n φ)
+
+section43FourierLaplaceRepresentative d (m + 1) ⟨g, hg_ord⟩
+  (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+```
+
+Therefore the remaining consumer-side seam is no longer `Tflat` packaging.
+The quotient-transfer part of the representative seam is now implemented as
+
+```lean
+section43FrequencyRepresentative_is_fourierLaplaceRepresentative_of_quotient_eq
+```
+
+and the corresponding scalar bridge is also implemented:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_from_frequencyProjection_witness_succRight
+```
+
+This bridge assumes explicit Fourier-Laplace representative witnesses `Φφ`,
+`Φψ` and quotient equalities
+
+```lean
+section43FrequencyProjection (d := d) n φ =
+  section43PositiveEnergyQuotientMap (d := d) n Φφ
+
+section43FrequencyProjection (d := d) (m + 1) ψ =
+  section43PositiveEnergyQuotientMap (d := d) (m + 1) Φψ
+```
+
+then derives the two representative predicates and applies the canonical
+`Tflat` package theorem.  The next implementation target is therefore sharper:
+construct or import the actual component Fourier-Laplace witnesses `Φφ`, `Φψ`
+and their quotient equalities from the transform-image theorem, then handle
+the successor-right reindexing from a general positive `m` to `m' + 1` for
+`lemma42_matrix_element_time_interchange`.
+
+The ambient-preimage bookkeeping for such witnesses is already compiled as
+
+```lean
+section43FrequencyRepresentative_surjective
+```
+
+so the remaining hard proof is the existence and quotient-class construction
+of `Φ`, not the ability to realize `Φ` by a Wightman-side test.
+
+### 5.9.4e. Next frontier: actual Fourier-Laplace component witnesses
+
+The compiled S5 chain now has the following shape:
+
+```lean
+explicit Φφ, Φψ witnesses
+  ⟹ quotient-transfer
+  ⟹ representative predicates for section43FrequencyRepresentative φ, ψ
+  ⟹ canonical Tflat package
+  ⟹ real-time horizontal Wightman pairing = OS scalar
+```
+
+The remaining missing theorem is therefore not a boundary-value theorem and
+not a spectral-support theorem.  It is the construction of the actual
+Section-4.3 Fourier-Laplace component witnesses.
+
+The production target should be:
+
+```lean
+theorem exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ∃ Φ : SchwartzNPoint d n,
+      section43FourierLaplaceRepresentative d n ⟨f, hf_ord⟩ Φ
+```
+
+Compiled status, 2026-04-17: this theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.  Its proof first obtains
+the strict support margin from
+`exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset`, then
+applies the explicit-margin construction
+
+```lean
+exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin
+```
+
+and finally repackages the pointwise equality as the
+`section43FourierLaplaceRepresentative` predicate.  Thus the public theorem has
+no exposed `δ`/margin hypothesis.
+
+Once this is proved, define the genuine quotient-valued transform component by
+choosing the quotient class of any such witness:
+
+```lean
+noncomputable def section43FourierLaplaceTransformComponent
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    Section43PositiveEnergyComponent (d := d) n :=
+  section43PositiveEnergyQuotientMap (d := d) n
+    (Classical.choose
+      (exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport
+        d n f hf_ord hf_compact))
+```
+
+Compiled status, 2026-04-17: this definition is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+The associated apply theorem must expose the chosen representative without
+letting later proofs depend on the choice:
+
+```lean
+theorem section43FourierLaplaceTransformComponent_has_representative
+    ... :
+    ∃ Φ : SchwartzNPoint d n,
+      section43FourierLaplaceRepresentative d n ⟨f, hf_ord⟩ Φ ∧
+      section43PositiveEnergyQuotientMap (d := d) n Φ =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact
+```
+
+Compiled status, 2026-04-17: this theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.  The proof is only the
+`Classical.choose_spec` of the public representative theorem plus `rfl` for
+the quotient class; it introduces no new analytic gap.
+
+Then the compiled projection-witness scalar bridge can be specialized to the
+paper's transform-image surface:
+
+```lean
+theorem section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight
+    ...
+    (hφ_freq :
+      section43FrequencyProjection (d := d) n φ =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact)
+    (hψ_freq :
+      section43FrequencyProjection (d := d) (m + 1) ψ =
+        section43FourierLaplaceTransformComponent
+          d (m + 1) g hg_ord hg_compact)
+    {t : ℝ} (ht : 0 < t) :
+    ∫ τ, bvt_W OS lgc (n + (m + 1))
+      (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+      (SchwartzMap.fourierTransformCLM ℂ (section43PsiZTimeTest t ht)) τ
+    =
+    OS.S (n + (m + 1))
+      (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+```
+
+Proof:
+
+1. Obtain `⟨Φφ, hΦφ_rep, hΦφ_q⟩` and
+   `⟨Φψ, hΦψ_rep, hΦψ_q⟩` from
+   `section43FourierLaplaceTransformComponent_has_representative`.
+2. Build the quotient equalities required by the existing bridge as
+
+```lean
+hφ_proj : section43FrequencyProjection (d := d) n φ =
+    section43PositiveEnergyQuotientMap (d := d) n Φφ :=
+  hφ_freq.trans hΦφ_q.symm
+
+hψ_proj : section43FrequencyProjection (d := d) (m + 1) ψ =
+    section43PositiveEnergyQuotientMap (d := d) (m + 1) Φψ :=
+  hψ_freq.trans hΦψ_q.symm
+```
+
+3. Apply
+   `section43TimeShiftKernel_psiZ_pairing_eq_osScalar_from_frequencyProjection_witness_succRight`.
+
+Lean-ready proof skeleton:
+
+```lean
+obtain ⟨Φφ, hΦφ_rep, hΦφ_q⟩ :=
+  section43FourierLaplaceTransformComponent_has_representative
+    d n f hf_ord hf_compact
+obtain ⟨Φψ, hΦψ_rep, hΦψ_q⟩ :=
+  section43FourierLaplaceTransformComponent_has_representative
+    d (m + 1) g hg_ord hg_compact
+exact
+  section43TimeShiftKernel_psiZ_pairing_eq_osScalar_from_frequencyProjection_witness_succRight
+    (d := d) (n := n) (m := m) OS lgc φ ψ
+    f hf_ord hf_compact g hg_ord hg_compact
+    Φφ Φψ hΦφ_rep hΦψ_rep
+    (hφ_freq.trans hΦφ_q.symm)
+    (hψ_freq.trans hΦψ_q.symm)
+    ht
+```
+
+Compiled status, 2026-04-17: this theorem is implemented in the small companion
+module
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceComponentKernel.lean`,
+which imports both `Section43FourierLaplaceCompactDifferentiation` and
+`Section43OS24KernelSafeFubini` rather than reopening either large support
+file.  Fresh exact check:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceComponentKernel.lean
+```
+
+Result: terminated successfully with no output.
+
+Narrow module build also completed:
+
+```bash
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
+```
+
+Result: `Built ... Section43FourierLaplaceComponentKernel (22s)`;
+`Build completed successfully (8470 jobs)`.
+
+The same companion module now also compiles the positive-imaginary-axis
+canonical-witness identification:
+
+```lean
+theorem bvt_W_conjTensorProduct_timeShiftCanonicalExtension_imag_eq_osHolomorphicValue_of_transformComponent_succRight
+```
+
+Proof:
+
+1. rewrite the canonical witness at `(t : ℂ) * I` with
+   `bvt_W_conjTensorProduct_timeShiftCanonicalExtension_eq_fourierLaplaceIntegral`;
+2. identify the resulting real-time `ψ_Z` pairing with the OS scalar by
+   `section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight`;
+3. rewrite the OS scalar as
+   `OSInnerProductTimeShiftHolomorphicValue ... (t : ℂ)` by
+   `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single`.
+
+Fresh verification after adding this theorem:
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceComponentKernel.lean
+lake build OSReconstruction.Wightman.Reconstruction.WickRotation.Section43FourierLaplaceComponentKernel
+```
+
+Results: exact file check terminated successfully with no output; narrow module
+build terminated with
+`Built ... Section43FourierLaplaceComponentKernel (9.1s)` and
+`Build completed successfully (8470 jobs)`.
+
+The hard analytic content is entirely in
+`exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport`.
+Its proof is now compiled; the following details are retained as the audit
+trail for the analytic packet.
+
+First, compact support inside the open ordered-positive region gives a
+strict time-margin:
+
+```lean
+theorem exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ∃ δ > 0,
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}
+```
+
+Compiled status, 2026-04-16: this theorem is implemented in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceWitness.lean`.
+The Lean proof uses an auxiliary compact-minimum lemma
+`exists_pos_le_on_compact_of_forall_pos`, builds one finite index family
+containing a dummy positive constraint, all wall constraints `x i 0`, and all
+gap constraints `x j 0 - x i 0`, and takes the finite infimum of the resulting
+positive lower bounds.  The dummy constraint handles the `n = 0`/empty-family
+case without a separate theorem shape.
+
+The margin has also been pushed through the OS-I difference-coordinate
+pullback:
+
+```lean
+theorem tsupport_section43DiffPullback_subset_margin_positiveOrthant
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    tsupport
+      (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) ⊆
+        {ξ | ∀ k : Fin n, δ ≤ ξ k 0}
+```
+
+The proof uses the already compiled formula for
+`section43DiffCoordRealCLE_apply`: the zeroth difference coordinate is the
+first ordered time, and each later difference coordinate is the adjacent
+ordered gap.
+
+Consequently spatial Fourier transform does not enlarge the time support:
+
+```lean
+theorem partialFourierSpatial_section43DiffPullback_eq_zero_of_exists_time_lt_margin
+    ... :
+    partialFourierSpatial_fun
+      (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) (τ, ξ) = 0
+```
+
+whenever `∃ i, τ i < δ`.  This is the strengthened version of the existing
+nonnegative-orthant theorem
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_exists_time_neg`.
+It is the support input for all later dominated-convergence and rapid-decay
+estimates.
+
+The first damping estimate is also compiled:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum
+    ... :
+    ‖Complex.exp
+        (-(∑ k : Fin n,
+          (τ k : ℂ) * (section43QTime (d := d) (n := n) q k : ℂ))) *
+      partialFourierSpatial_fun
+        (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+        (τ, section43QSpatial (d := d) (n := n) q)‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        ‖partialFourierSpatial_fun
+          (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+The proof splits on whether some `τ i < δ`.  In the below-margin case the
+partial spatial Fourier slice is zero.  Otherwise all `τ i ≥ δ`, and
+positive-energy `q` gives
+
+```text
+∑ i τ_i q_i^0 ≥ δ ∑ i q_i^0.
+```
+
+This is the precise bridge from compact ordered support to exponential
+positive-energy damping.
+
+Second, prove the Fourier-Laplace integral is a Schwartz function on the
+closed positive-energy half-space.  The production witness is formulated using
+ambient derivatives restricted to the half-space, not intrinsic
+`iteratedFDerivWithin` derivatives.  This is stronger than the closed-set
+formulation, matches the compiled dominated-differentiation theorems, and
+avoids adding a separate `UniqueDiffOn`/closed-halfspace derivative-conversion
+seam before the extension theorem:
+
+```lean
+structure Section43PositiveEnergySchwartzWitness
+    (d n : ℕ) [NeZero d]
+    (F : NPointDomain d n → ℂ) : Prop where
+  smooth :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) F
+  rapid :
+    ∀ r s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s * ‖iteratedFDeriv ℝ r F q‖ ≤ C
+```
+
+For
+
+```lean
+F q := section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q
+```
+
+the proof should now be split into the following implementation lemmas.
+
+1. Base scalar bound on the closed positive-energy region:
+
+```lean
+theorem section43FourierLaplaceIntegral_norm_le_exp_margin_integral
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    ‖section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+      ∫ τ : Fin n → ℝ,
+        ‖partialFourierSpatial_fun
+          (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Compiled status, 2026-04-16: this theorem is implemented in
+`Section43FourierLaplaceWitness.lean`.  The proof unfolds
+`section43FourierLaplaceIntegral`, applies
+`norm_integral_le_integral_norm`, then uses
+`norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`.  The
+constant exponential factor is pulled through the integral by
+`integral_const_mul`; the needed integrability side condition is discharged
+from `integrable_partialFourierSpatial_timeSlice.norm.const_mul`.
+
+2. Spatial rapid bound for the remaining time integral:
+
+```lean
+theorem section43PartialFourier_timeIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (r : ℕ) :
+    ∃ C ≥ 0, ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+      (1 + ‖ξ‖) ^ r *
+        ∫ τ : Fin n → ℝ,
+          ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+Proof route: use the existing coordinate-power transport theorems in
+`PartialFourierSpatial.lean`,
+
+```lean
+exists_spatialCoordPow_norm_bound_partialFourierSpatial_fun
+exists_timeCoordPow_norm_bound_partialFourierSpatial_fun
+```
+
+together with the newly compiled uniform time-decay version in
+`Section43FourierLaplaceWitness.lean`:
+
+```lean
+theorem exists_normPow_bound_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (K : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ (τ : Fin n → ℝ) (ξ : EuclideanSpace ℝ (Fin n × Fin d)),
+        ‖τ‖ ^ K *
+          ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+and the uniform integral corollary:
+
+```lean
+theorem exists_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+The coordinatewise spatial integration-by-parts estimate is also compiled:
+
+```lean
+theorem exists_spatialCoordPow_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) (k : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖((((ξ i : ℝ) : ℂ)) ^ k) *
+            partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+```
+
+The first finite-coordinate comparison lemmas are compiled:
+
+```lean
+theorem euclidean_norm_le_sum_norm {ι : Type*} [Fintype ι]
+    (ξ : EuclideanSpace ℝ ι) :
+    ‖ξ‖ ≤ ∑ i : ι, ‖ξ i‖
+
+theorem one_add_euclidean_norm_le_sum_option_norm {ι : Type*} [Fintype ι]
+    (ξ : EuclideanSpace ℝ ι) :
+    1 + ‖ξ‖ ≤
+      ∑ a : Option ι, match a with | none => (1 : ℝ) | some i => ‖ξ i‖
+```
+
+The missing finite-power comparison and the resulting spatial rapid integral
+bound are now also compiled:
+
+```lean
+theorem one_add_euclidean_norm_pow_le_card_pow_sum_option_norm_pow
+    {ι : Type*} [Fintype ι] (r : ℕ)
+    (ξ : EuclideanSpace ℝ ι) :
+    (1 + ‖ξ‖) ^ r ≤
+      (Fintype.card (Option ι) : ℝ) ^ r *
+        ∑ a : Option ι,
+          (match a with | none => (1 : ℝ) | some i => ‖ξ i‖) ^ r
+
+theorem section43PartialFourier_timeIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (r : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ r *
+          ∫ τ : Fin n → ℝ,
+            ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+The finite-power comparison uses `pow_sum_le_card_mul_sum_pow` on the
+`Option ι` coordinate family.  The spatial rapid theorem then sums the
+compiled coordinate-power integral estimates: the `none` coordinate supplies
+the base integral bound, and each `some i` coordinate supplies the bound for
+`‖ξ i‖^r` times the time integral.  This closes the spatial half of the
+zero-derivative rapid estimate for the Fourier-Laplace witness.
+
+The important point is that the constant is independent of `ξ`; the older
+fixed-slice theorem exposed the same proof idea but with the quantifiers in a
+less useful order.
+
+3. Time rapid decay on the positive-energy half-space:
+
+```lean
+theorem exp_margin_sum_controls_positiveEnergy_time_polynomial
+    (d n : ℕ) [NeZero d]
+    {δ : ℝ} (hδ_pos : 0 < δ) (r : ℕ) :
+    ∃ C ≥ 0, ∀ q ∈ section43PositiveEnergyRegion d n,
+      (1 + ‖section43QTime (d := d) (n := n) q‖) ^ r *
+        Real.exp (-(δ * ∑ k : Fin n,
+          section43QTime (d := d) (n := n) q k)) ≤ C
+```
+
+Compiled status, 2026-04-16: this theorem is implemented in
+`Section43FourierLaplaceWitness.lean`, together with the finite sup-norm
+comparison lemmas
+
+```lean
+theorem pi_norm_le_sum_norm {ι : Type*} [Fintype ι]
+    (x : ι → ℝ) :
+    ‖x‖ ≤ ∑ i : ι, ‖x i‖
+
+theorem pi_norm_le_sum_of_nonneg {ι : Type*} [Fintype ι]
+    {x : ι → ℝ} (hx : ∀ i : ι, 0 ≤ x i) :
+    ‖x‖ ≤ ∑ i : ι, x i
+```
+
+On `section43PositiveEnergyRegion`, all time coordinates are nonnegative, so
+`‖section43QTime q‖` is bounded by the finite sum of the coordinates.  The
+proof then reduces to the already available one-variable real estimate
+
+```text
+∀ r, ∃ C, ∀ s ≥ 0, (1+s)^r * exp(-δ*s) ≤ C.
+```
+
+implemented as `SCV.pow_mul_exp_neg_le_const`; the harmless shift from `s` to
+`1+s` costs a factor `exp δ`.
+
+4. Base rapid estimate for `section43FourierLaplaceIntegral`:
+
+```lean
+theorem one_add_norm_le_section43_time_spatial_product
+    (d n : ℕ) [NeZero d] (q : NPointDomain d n) :
+    1 + ‖q‖ ≤
+      (1 + 2 * ‖(nPointTimeSpatialCLE (d := d) n).symm.toContinuousLinearMap‖) *
+        (1 + ‖section43QTime (d := d) (n := n) q‖) *
+          (1 + ‖section43QSpatial (d := d) (n := n) q‖)
+
+theorem section43FourierLaplaceIntegral_rapid_on_positiveEnergy_zeroDeriv
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ r : ℕ, ∃ C ≥ 0, ∀ q ∈ section43PositiveEnergyRegion d n,
+      (1 + ‖q‖) ^ r *
+        ‖section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q‖ ≤ C
+```
+
+Compiled status, 2026-04-16: both the product norm comparison and the
+zero-derivative rapid estimate are implemented in
+`Section43FourierLaplaceWitness.lean`.
+
+The proof decomposes `q` into time and spatial blocks by
+`nPointTimeSpatialCLE`.  The product-space constant is explicit:
+`1 + 2 * ‖(nPointTimeSpatialCLE d n).symm.toContinuousLinearMap‖`.  The final
+estimate multiplies three compiled inputs: the base scalar bound
+`section43FourierLaplaceIntegral_norm_le_exp_margin_integral`, the spatial
+rapid integral bound `section43PartialFourier_timeIntegral_spatialRapid`, and
+the time exponential-polynomial bound
+`exp_margin_sum_controls_positiveEnergy_time_polynomial`.
+
+5. Derivatives:
+
+The next Gap #2 task is the derivative rapid estimate feeding the `rapid`
+field of `Section43PositiveEnergySchwartzWitness`.  Spatial derivatives use
+the existing fderiv transport theorems for `partialFourierSpatial_fun`; time
+derivatives differentiate the Laplace exponential and introduce finite sums of
+time-coordinate powers `τ_i^k`.  These powers are controlled by
+`exists_timeCoordPow_norm_bound_partialFourierSpatial_fun`; the below-margin
+zero theorem remains available for the exponential damping.  The derivative
+statement should be developed as a direct theorem feeding the `rapid` field,
+not as an ambient-extension shortcut.
+
+Compiled derivative-domination subpacket, 2026-04-16:
+
+```lean
+theorem exists_timeMoment_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (K : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖τ‖ ^ K *
+            ‖partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+
+theorem exists_spatialCoordPow_timeMoment_integral_norm_partialFourierSpatial_timeSlice_uniform
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (i : Fin n × Fin d) (k K : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        ∫ τ : Fin n → ℝ,
+          ‖τ‖ ^ K *
+            ‖((((ξ i : ℝ) : ℂ)) ^ k) *
+              partialFourierSpatial_fun (d := d) (n := n) f (τ, ξ)‖ ≤ C
+
+theorem section43PartialFourier_timeMomentIntegral_spatialRapid
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (K r : ℕ) :
+    ∃ C ≥ 0,
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ r *
+          ∫ τ : Fin n → ℝ,
+            ‖τ‖ ^ K *
+              ‖partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ)‖ ≤ C
+```
+
+The first theorem is the `K`-moment version of the earlier zero-moment
+integral bound.  It reuses `integral_pow_mul_le_of_le_of_pow_mul_le` with
+`exists_normPow_bound_partialFourierSpatial_timeSlice_uniform` at exponent
+`K + μ.integrablePower`.  The coordinate-power theorem repeats the compiled
+spatial integration-by-parts induction, carrying the extra nonnegative factor
+`‖τ‖^K` through the integral.  The final theorem repeats the finite-coordinate
+`Option ι` summation argument to control the spatial rapid weight.
+
+These estimates are exactly the positive-half-space rapid-domination input for
+the first derivative formula: differentiating the exponential gives a factor
+bounded by `‖τ‖`, while differentiating the spatial momentum argument gives a
+finite sum of partial-Fourier transforms of transported Schwartz inputs.
+
+#### First-Derivative Rapid Packet
+
+This packet is now compiled and is retained here as the `r = 1` model for the
+all-order word induction.  The first-derivative rapid estimate for the compiled
+CLM-valued derivative candidate is:
+
+```lean
+theorem section43FourierLaplaceIntegral_fderivCandidate_rapid_on_positiveEnergy
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ r : ℕ, ∃ C ≥ 0, ∀ q ∈ section43PositiveEnergyRegion d n,
+      (1 + ‖q‖) ^ r *
+        ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖ ≤ C
+```
+
+Compiled status, 2026-04-17: this theorem is implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`.
+
+This theorem is the `k = 1` rapid field, because the compiled ambient
+first-derivative theorem identifies the derivative of
+`section43FourierLaplaceIntegral` with
+`section43FourierLaplaceIntegral_fderivCandidate`.
+
+The proof was split into the following Lean lemmas; the same decomposition is
+the template for the all-order word package.
+
+1. Lower-margin derivative vanishing:
+
+```lean
+theorem section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_exists_time_lt_margin
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n) (τ : Fin n → ℝ)
+    (hτ : ∃ i : Fin n, τ i < δ) :
+    section43FourierLaplace_timeIntegrandFDerivCLM d n
+      (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ = 0
+```
+
+Compiled status, 2026-04-16: this theorem is implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`.
+
+Transcript: copy the upper-slab derivative-vanishing proof, replacing
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound` by
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_exists_time_lt_margin`.
+The spatial derivative term is zero because the partial-Fourier slice is the
+zero function of `ξ`, hence its `fderiv` is zero.
+
+2. Operator-norm estimate for the pointwise derivative CLM on the positive
+half-space:
+
+Before the norm theorem, prove the coordinate expansion that removes the
+direction-dependent Schwartz input from
+`fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz`.
+
+```lean
+theorem fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTransport
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (τ : Fin n → ℝ)
+    (ξ v : EuclideanSpace ℝ (Fin n × Fin d)) :
+    fderiv ℝ
+      (fun ξ' : EuclideanSpace ℝ (Fin n × Fin d) =>
+        partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ'))
+      ξ v =
+      ∑ i : Fin n × Fin d,
+        ((v i : ℝ) : ℂ) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43SpatialMultiplierTransport d n F i) (τ, ξ)
+```
+
+Compiled status, 2026-04-16: this coordinate-expansion theorem is implemented
+and exact-file checked in `Section43FourierLaplaceWitness.lean`, together with
+local finite-sum linearity helpers
+`partialFourierSpatial_fun_finset_sum` and
+`partialFourierSpatial_fun_fintype_sum`.
+
+The immediate norm corollary is also implemented and exact-file checked:
+
+```lean
+theorem norm_fderiv_partialFourierSpatial_fun_spatial_apply_le_sum_multiplierTransport
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (τ : Fin n → ℝ)
+    (ξ v : EuclideanSpace ℝ (Fin n × Fin d)) :
+    ‖fderiv ℝ
+      (fun ξ' : EuclideanSpace ℝ (Fin n × Fin d) =>
+        partialFourierSpatial_fun (d := d) (n := n) F (τ, ξ'))
+      ξ v‖ ≤
+      ∑ i : Fin n × Fin d,
+        |v i| *
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43SpatialMultiplierTransport d n F i) (τ, ξ)‖
+```
+
+Transcript:
+
+- Start from
+  `fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz`.
+- Use `PiLp.inner_apply` / `EuclideanSpace.inner_eq_star_dotProduct` specialized
+  to real Euclidean space to rewrite `inner ℝ η v` as
+  `∑ i, η i * v i`.
+- Use linearity of `SchwartzMap.smulLeftCLM`, the linear equivalence
+  `(nPointSpatialTimeSchwartzCLE d n).symm`, and the compiled simp lemmas
+  `partialFourierSpatial_fun_add` and `partialFourierSpatial_fun_smul` to move
+  the finite sum through the partial Fourier transform.
+- The sign and `2πi` factor are already included in
+  `section43SpatialMultiplierTransport`.
+
+Then use coordinate projection CLM bounds:
+
+```lean
+theorem abs_section43QTime_coord_le_opNorm
+    (d n : ℕ) [NeZero d]
+    (m : NPointDomain d n) (k : Fin n) :
+    |section43QTime (d := d) (n := n) m k|
+      ≤ ‖((ContinuousLinearMap.proj
+             (R := ℝ) (ι := Fin n) (φ := fun _ => ℝ) k).comp
+            (section43QTimeCLM d n))‖ * ‖m‖
+
+theorem abs_section43QSpatial_coord_le_opNorm
+    (d n : ℕ) [NeZero d]
+    (m : NPointDomain d n) (i : Fin n × Fin d) :
+    |section43QSpatial (d := d) (n := n) m i|
+      ≤ ‖((EuclideanSpace.proj (𝕜 := ℝ) i).comp
+            (section43QSpatialCLM d n))‖ * ‖m‖
+```
+
+Compiled status, 2026-04-16: both coordinate projection bounds are implemented
+and exact-file checked in `Section43FourierLaplaceWitness.lean`.
+
+Transcript: each coordinate is itself a continuous-linear map out of
+`NPointDomain d n`; apply `ContinuousLinearMap.le_opNorm` directly and rewrite
+the real scalar norm as absolute value.  The finite constants in the final
+operator bound are sums of these coordinate-projection operator norms.
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_exp_margin_sum
+    ... :
+    ‖section43FourierLaplace_timeIntegrandFDerivCLM d n
+        (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ‖
+      ≤ Real.exp (-(δ * ∑ k : Fin n,
+          section43QTime (d := d) (n := n) q k)) *
+        (A_time * ‖τ‖ *
+          ‖partialFourierSpatial_fun
+            (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q)‖
+          + A_space *
+            ∑ i : Fin n × Fin d,
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+                (section43SpatialMultiplierTransport d n
+                  (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) i)
+                (τ, section43QSpatial (d := d) (n := n) q)‖)
+```
+
+Here the coordinate multiplier input should be defined as
+
+```lean
+noncomputable def section43SpatialMultiplierTransport
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (i : Fin n × Fin d) : SchwartzNPoint d n :=
+  (nPointSpatialTimeSchwartzCLE (d := d) (n := n)).symm
+    (-(2 * Real.pi * Complex.I) •
+      SchwartzMap.smulLeftCLM ℂ
+        (fun p : EuclideanSpace ℝ (Fin n × Fin d) × (Fin n → ℝ) =>
+          ((p.1 i : ℝ) : ℂ))
+        (nPointSpatialTimeSchwartzCLE (d := d) (n := n) F))
+```
+
+Compiled status, 2026-04-16: this definition is implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`.
+
+The production theorem may choose explicit names for `A_time`, `A_space`, and
+`section43SpatialMultiplierTransport`; the important point is that they are finite
+constants depending only on `d`, `n`, and the fixed continuous-linear
+projections, not on `q` or `τ`.
+
+Lean proof outline:
+
+- If `∃ i, τ i < δ`, close by the lower-margin derivative-vanishing lemma.
+- Otherwise `∀ i, δ ≤ τ i`, so the exponential factor satisfies the compiled
+  bound `norm_exp_neg_section43_timePair_le_exp_neg_margin_sum`.
+- Apply `ContinuousLinearMap.opNorm_le_bound` to the explicit apply formula
+  `section43FourierLaplace_timeIntegrandFDerivCLM_apply`.
+- Time part:
+  use `abs_section43QTime_coord_le_opNorm` and
+  `|τ k| ≤ ‖τ‖`; summing over `k` gives a finite constant times
+  `‖τ‖ * |E| * |P|`.
+- Spatial part:
+  rewrite with the compiled theorem
+  `fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTransport`.
+  This theorem has already expanded `inner η (section43QSpatial m)` into the
+  finite Euclidean coordinate sum and absorbed the `-(2πi)` factor into
+  `section43SpatialMultiplierTransport`.  It remains only to use
+  `abs_section43QSpatial_coord_le_opNorm` on each coefficient
+  `section43QSpatial m i` and sum the finitely many coordinate-transported
+  partial-Fourier norms.
+
+Compiled status, 2026-04-16: the two component pointwise bounds in this outline
+are implemented and exact-file checked:
+
+```lean
+theorem norm_section43FourierLaplace_timeDerivativeSum_le_exp_margin_sum
+theorem norm_section43FourierLaplace_spatialDerivativeTerm_le_exp_margin_sum
+```
+
+The combined applied-CLM bound is now also implemented and exact-file checked:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrandFDerivCLM_apply_le_exp_margin_sum
+```
+
+The operator-norm packaging is now implemented and exact-file checked:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_exp_margin_sum
+```
+
+The next implementation step is to specialize this bound to the OS-I
+difference-coordinate pullback and remove the explicit above-margin hypothesis
+by branching on `∃ i, τ i < δ`, closing the low-time branch with
+`section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_exists_time_lt_margin`.
+
+Compiled status, 2026-04-16: this margin-split specialization is implemented
+and exact-file checked:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrandFDerivCLM_le_exp_margin_sum_of_orderedSupport
+```
+
+This is the pointwise CLM-norm input for the integral estimate.
+
+3. Integral CLM norm estimate:
+
+```lean
+theorem section43FourierLaplaceIntegral_fderivCandidate_norm_le_exp_margin_integrals
+    ... :
+    ‖section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q‖
+      ≤ Real.exp (-(δ * ∑ k : Fin n,
+          section43QTime (d := d) (n := n) q k)) *
+        (A_time *
+          ∫ τ, ‖τ‖ *
+            ‖partialFourierSpatial_fun ... (τ, section43QSpatial q)‖
+          + A_space *
+            ∑ i, ∫ τ,
+              ‖partialFourierSpatial_fun
+                (section43SpatialMultiplierTransport d n f hf_ord i)
+                (τ, section43QSpatial q)‖)
+```
+
+Transcript: unfold `section43FourierLaplaceIntegral_fderivCandidate`, apply
+`norm_integral_le_integral_norm`, then integrate the pointwise operator-norm
+estimate.  Pull finite constants and finite sums through the integral using
+the already established integrability from the compact-slab/local-domination
+packet.
+
+4. Rapid conclusion:
+
+- Use `one_add_norm_le_section43_time_spatial_product` to split
+  `(1 + ‖q‖)^r` into a fixed constant times a time weight and a spatial weight.
+- For the time derivative term, use
+  `section43PartialFourier_timeMomentIntegral_spatialRapid` with `K = 1`.
+- For the spatial derivative terms, use the same theorem with `K = 0` applied
+  to each coordinate-transported Schwartz input.
+- Use `exp_margin_sum_controls_positiveEnergy_time_polynomial` for the time
+  exponential-polynomial factor.
+- Sum the finitely many constants.
+
+#### Higher-Derivative Smooth/Rapid Induction
+
+For `ContDiffOn ℝ (↑(⊤ : ℕ∞))` and the full rapid field, do not try to write each order
+by hand and do not introduce another first-derivative wrapper.  The compiled
+first derivative and C¹ package are the base case.  The remaining proof must
+encode the finite algebra of all higher derivatives of the same integrand.
+
+The correct finite algebra is a word expansion, not the earlier coarse
+`timeDegree/spatialInput/coeff` sketch.  The word records exactly which factor
+each derivative slot hits.
+
+Recommended data shape:
+
+```lean
+inductive Section43DerivativeAtom (d n : ℕ) where
+  | time (k : Fin n)
+  | spatial (i : Fin n × Fin d)
+  deriving DecidableEq, Fintype
+
+abbrev Section43DerivativeWord (d n r : ℕ) :=
+  Fin r → Section43DerivativeAtom d n
+```
+
+For a derivative order `r`, a word
+`a : Section43DerivativeWord d n r` is read against directions
+`m : Fin r → NPointDomain d n`.  Its scalar and transported input are defined
+recursively by adding the newest derivative slot on the left, matching
+`iteratedFDeriv_succ_apply_left`.
+
+Base word:
+
+```text
+wordScalar 0 empty τ m = 1
+wordInput  0 empty F     = F
+timeCount  0 empty       = 0
+```
+
+Step, with newest direction `v` and old word `a`:
+
+```text
+prepend (time k):
+  wordScalar := (-(τ k : ℂ) * (section43QTime v k : ℂ)) * oldScalar
+  wordInput  := oldInput
+  timeCount  := oldTimeCount + 1
+
+prepend (spatial i):
+  wordScalar := ((section43QSpatial v i : ℝ) : ℂ) * oldScalar
+  wordInput  := section43SpatialMultiplierTransport d n oldInput i
+  timeCount  := oldTimeCount
+```
+
+The implementation can realize this either as recursive definitions over
+`r`, using `Fin.cons`/`Fin.tail`, or as list definitions plus a length-indexed
+conversion.  The recursion-over-`r` version is preferred because the induction
+step aligns directly with `iteratedFDeriv_succ_apply_left`:
+
+```lean
+-- Pseudocode only; names should be stabilized in Lean when implemented.
+noncomputable def section43DerivativeWordScalar
+    (d n r : ℕ) [NeZero d]
+    (a : Section43DerivativeWord d n r)
+    (τ : Fin n → ℝ) (m : Fin r → NPointDomain d n) : ℂ := ...
+
+noncomputable def section43DerivativeWordInput
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (a : Section43DerivativeWord d n r) : SchwartzNPoint d n := ...
+
+def section43DerivativeWordTimeCount
+    (d n r : ℕ)
+    (a : Section43DerivativeWord d n r) : ℕ := ...
+```
+
+The first implementation theorem should be the pointwise applied
+`iteratedFDeriv` expansion for the integrand
+
+```text
+G_F(q, τ) =
+  exp(-∑ k, (τ k : ℂ) * (section43QTime q k : ℂ)) *
+    partialFourierSpatial_fun F (τ, section43QSpatial q).
+```
+
+Exact theorem shape:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    (m : Fin r → NPointDomain d n) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m =
+      ∑ a : Section43DerivativeWord d n r,
+        section43DerivativeWordScalar d n r a τ m *
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a)
+            (τ, section43QSpatial (d := d) (n := n) q)
+```
+
+Proof transcript:
+
+1. Base `r = 0`: `iteratedFDeriv ℝ 0` is the original function, and the only
+   word is the empty word.
+2. Step from `r` to `r + 1`: rewrite the left side using
+   `iteratedFDeriv_succ_apply_left`, so the new direction is
+   `v : NPointDomain d n` and the old directions are
+   `u : Fin r → NPointDomain d n`.
+3. Rewrite the inductive hypothesis for the `r`-th derivative as a finite sum
+   over old words.
+4. Differentiate each summand with `HasFDerivAt.mul`.
+5. If the derivative hits the exponential, prepend `time k`.  The derivative
+   of the exponent is the already compiled linear expression using
+   `section43QTimeCLM`; after evaluation on `v`, the scalar contribution is
+   `-(τ k : ℂ) * (section43QTime v k : ℂ)`.
+6. If the derivative hits the spatial partial-Fourier factor, use the compiled
+   coordinate expansion
+   `fderiv_partialFourierSpatial_fun_spatial_apply_eq_sum_multiplierTransport`
+   with `section43QSpatial v`.  Each coordinate `i` prepends `spatial i` and
+   replaces the old input by
+   `section43SpatialMultiplierTransport d n oldInput i`.
+7. Reindex the finite sum over
+   `Option (Fin n) ⊕ (Fin n × Fin d)` into
+   `Section43DerivativeWord d n (r + 1)` by the two constructors
+   `time` and `spatial`.  In Lean this should be expressed as two `Finset.sum`
+   pieces and then folded into the `Fintype` sum over words.
+
+The corresponding scalar norm theorem is the second implementation theorem:
+
+```lean
+theorem section43DerivativeWordScalar_norm_le
+    (d n r : ℕ) [NeZero d]
+    (a : Section43DerivativeWord d n r)
+    (τ : Fin n → ℝ) (m : Fin r → NPointDomain d n) :
+    ‖section43DerivativeWordScalar d n r a τ m‖ ≤
+      section43DerivativeWordCoeff d n r a *
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ∏ j : Fin r, ‖m j‖
+```
+
+Here `section43DerivativeWordCoeff` is a nonnegative finite product of the
+already compiled coordinate projection operator norms:
+
+```text
+time k    contributes section43QTimeCoordOpNorm d n k
+spatial i contributes section43QSpatialCoordOpNorm d n i
+```
+
+Proof transcript:
+
+1. Induct over the same word recursion.
+2. For a time atom, use
+   `abs_section43QTime_coord_le_opNorm` and `|τ k| ≤ ‖τ‖`.
+3. For a spatial atom, use
+   `abs_section43QSpatial_coord_le_opNorm`.
+4. Use `norm_mul`, finite-product associativity, and
+   `pow_succ` in the time case.
+
+The applied pointwise derivative bound follows by combining the expansion and
+the scalar norm theorem:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    {δ : ℝ}
+    (q : NPointDomain d n) (hq : q ∈ section43PositiveEnergyRegion d n)
+    (τ : Fin n → ℝ)
+    (hτ_margin : ∀ k : Fin n, δ ≤ τ k)
+    (m : Fin r → NPointDomain d n) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        (∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖) *
+        ∏ j : Fin r, ‖m j‖
+```
+
+Proof transcript:
+
+1. Rewrite by the finite-word expansion.
+2. Use `norm_sum_le`, `norm_mul`, and the scalar norm theorem.
+3. Bound the exponential by
+   `norm_exp_neg_section43_timePair_le_exp_neg_margin_sum` using
+   `hτ_margin` and `hq`.
+4. Pull the common factors
+   `Real.exp (...)` and `∏ j, ‖m j‖` outside the finite sum.
+
+Compiled status, 2026-04-17: the pointwise finite-word expansion and applied
+positive-energy norm bound are implemented and exact-file checked in
+`Section43FourierLaplaceHigherDerivatives.lean`:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words
+```
+
+For the lower-margin branch, do not prove that every transported word
+vanishes.  Prove instead that the original integrand is identically zero as a
+function of `q`, and therefore all of its iterated derivatives are zero:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (τ : Fin n → ℝ)
+    (hτ : ∃ i : Fin n, τ i < δ) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      =
+      0
+```
+
+Proof transcript:
+
+1. For every `q'`, the compiled lower-margin support theorem gives
+   `partialFourierSpatial_fun ... (τ, section43QSpatial q') = 0`.
+2. Hence the whole integrand function is definitionally equal to the zero
+   function by `funext`.
+3. Rewrite the `iteratedFDeriv` of that function to the derivative of `0`,
+   then close by simp.  This avoids any support claim about transported word
+   inputs.
+
+Combining the above-margin and lower-margin branches gives the CLM/operator
+norm estimate.  The applied estimate has the factor
+`∏ j, ‖m j‖`; use `ContinuousMultilinearMap.opNorm_le_bound` to remove the
+directions:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n) (hq : q ∈ section43PositiveEnergyRegion d n)
+    (τ : Fin n → ℝ) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q‖ ≤
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k)) *
+        ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r
+                (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Compiled status, 2026-04-17: the lower-margin all-order zero theorem and the
+operator-norm word bound are implemented and exact-file checked in
+`Section43FourierLaplaceHigherDerivatives.lean`:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words
+```
+
+The integrated rapid estimate should be implemented first for the
+Bochner-integral candidate.  There is no longer an "either/or" implementation
+choice here: the candidate is the CLM-valued Bochner integral of the pointwise
+`iteratedFDeriv`, while the finite-word expansion is used only to build a real
+majorant for its norm.  This keeps the candidate in the same category as the
+first-derivative candidate already compiled in
+`Section43FourierLaplaceWitness.lean`.
+
+```lean
+noncomputable def section43FourierLaplaceIntegral_iteratedFDerivCandidate
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ :=
+  ∫ τ : Fin n → ℝ,
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      q
+```
+
+The real finite-word majorant for fixed spatial momentum `ξ` is:
+
+```lean
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d))
+    (τ : Fin n → ℝ) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+        ‖partialFourierSpatial_fun (d := d) (n := n)
+          (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+
+noncomputable def section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) : ℝ :=
+  ∑ a : Section43DerivativeWord d n r,
+    section43DerivativeWordCoeff d n r a *
+      ∫ τ : Fin n → ℝ,
+        ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+          ‖partialFourierSpatial_fun (d := d) (n := n)
+            (section43DerivativeWordInput d n r F a) (τ, ξ)‖
+```
+
+The immediate Lean package before the rapid theorem is:
+
+```lean
+theorem integrable_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    Integrable
+      (section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ)
+      (volume : Measure (Fin n → ℝ))
+
+theorem integral_section43FourierLaplace_iteratedFDerivWordMajorant
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (ξ : EuclideanSpace ℝ (Fin n × Fin d)) :
+    (∫ τ : Fin n → ℝ,
+      section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ τ) =
+      section43FourierLaplace_iteratedFDerivWordMajorantIntegral d n r F ξ
+
+theorem section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (s : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ ξ : EuclideanSpace ℝ (Fin n × Fin d),
+        (1 + ‖ξ‖) ^ s *
+          section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+            d n r F ξ ≤ C
+```
+
+Proof transcript for this package:
+
+1. Integrability is a finite sum over words.  For each word `a`, use
+   `integrable_timeMoment_norm_partialFourierSpatial_timeSlice` on the
+   transported Schwartz input
+   `section43DerivativeWordInput d n r F a` and time moment
+   `section43DerivativeWordTimeCount d n r a`, then multiply by the constant
+   `section43DerivativeWordCoeff d n r a`.
+2. The integral identity is `MeasureTheory.integral_finset_sum` followed by
+   `MeasureTheory.integral_const_mul` for each word summand.
+3. The spatial rapid theorem chooses, for each word `a`, a constant from
+   `section43PartialFourier_timeMomentIntegral_spatialRapid` applied to the
+   same transported input and time moment.  Sum the finitely many constants
+   after multiplying by the nonnegative word coefficients.
+4. Nonnegativity of the word-majorant integral follows termwise from
+   `section43DerivativeWordCoeff_nonneg` and `integral_nonneg`.
+
+The candidate norm estimate is:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ}
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyRegion d n) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let E : ℝ :=
+      Real.exp (-(δ * ∑ k : Fin n,
+        section43QTime (d := d) (n := n) q k))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n r f hf_ord q‖ ≤
+      E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+          d n r F ξ
+```
+
+Proof transcript:
+
+1. Unfold the candidate as `∫ τ, G τ`, where `G τ` is the pointwise
+   `iteratedFDeriv` CLM.
+2. Apply `MeasureTheory.norm_integral_le_integral_norm`.
+3. Apply the compiled operator bound
+   `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`,
+   rewritten as
+   `‖G τ‖ ≤ E * section43FourierLaplace_iteratedFDerivWordMajorant ... τ`.
+4. Use integrability of `E * wordMajorant` from the finite-sum integrability
+   theorem and `MeasureTheory.integral_mono_of_nonneg`.
+5. Pull out the constant `E` with `MeasureTheory.integral_const_mul`, then
+   use the word-majorant integral identity.
+
+The rapid theorem then has the exact first-derivative proof skeleton, with
+`J` equal to the word-majorant integral:
+
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+            d n r f hf_ord q‖ ≤ C
+```
+
+Proof transcript:
+
+1. Use
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`.
+2. Use `one_add_norm_le_section43_time_spatial_product` exactly as in the
+   zero- and first-derivative rapid proofs to split `(1 + ‖q‖)^s` into time
+   and spatial weights.
+3. Use `exp_margin_sum_controls_positiveEnergy_time_polynomial` for the time
+   weight and exponential margin.
+4. Use
+   `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`
+   for the spatial weight and finite word sum.
+5. Finish with the same product estimate as the compiled zero- and
+   first-derivative rapid theorems.
+
+Only after the compact-support smoothness theorem identifies the candidate
+with the actual derivative should production state the actual
+`iteratedFDeriv` rapid theorem:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s *
+          ‖iteratedFDeriv ℝ r
+            (fun q' : NPointDomain d n =>
+              section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+            q‖ ≤ C
+```
+
+Proof transcript:
+
+1. Use the all-order compact-support dominated integral theorem below to
+   identify `iteratedFDeriv` of the integral with
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate`.
+2. Close by the candidate rapid theorem.
+
+Compiled status, 2026-04-17: the actual derivative rapid theorem is
+implemented in `Section43FourierLaplaceCompactDifferentiation.lean` as
+
+```lean
+section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy
+```
+
+The proof is exactly the two-line consumer described above: rewrite by
+`section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport`
+and apply
+`section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+
+The smoothness proof under compact support is a separate all-order dominated
+integral theorem.  It should use compact `τ`-slab domination, not the
+positive-energy exponential damping:
+
+```lean
+theorem section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ (↑(⊤ : ℕ∞))
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+```
+
+Implementation transcript:
+
+1. For each finite order `r`, define the integrated derivative candidate as
+   the Bochner integral of the pointwise `iteratedFDeriv` CLM, or equivalently
+   as the finite sum of the word integrals from the expansion.
+2. Prove fixed-`q` integrability from compact upper-slab support:
+   the existing upper-slab support theorem gives compact support in `τ`, and
+   the finite-word expansion is continuous on the compact product.
+3. Prove local domination on `Metric.closedBall q 1`: on the compact product
+   `Metric.closedBall q 1 ×ˢ Metric.closedBall 0 R`, joint continuity of each
+   word term gives a finite bound, and outside the `τ`-slab the original
+   integrand and all its derivatives vanish because the integrand is
+   identically zero.
+4. Apply Mathlib's dominated differentiation theorem at each finite order,
+   inducting with `contDiff_succ_iff_fderiv_apply` or the corresponding
+   finite-dimensional `ContDiff` theorem already used elsewhere in the repo.
+5. Upgrade finite-order smoothness to `ContDiff ℝ (↑(⊤ : ℕ∞))` by introducing the
+   arbitrary finite order at the start of the proof.
+
+Compiled status, 2026-04-17: this ambient smoothness theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Important Lean-order correction: ordinary `C∞` smoothness is written
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, not `ContDiff ℝ ⊤`.  The latter is a strictly
+stronger top order in Mathlib's `WithTop ℕ∞` scale and is not what follows
+from the all-finite-order dominated-differentiation induction.
+
+After the previous two theorem families are compiled, the positive-energy
+witness packet is implemented in production:
+
+```lean
+structure Section43PositiveEnergySchwartzWitness
+    (d n : ℕ) [NeZero d] (F : NPointDomain d n → ℂ) : Prop where
+  smooth :
+    ContDiff ℝ (↑(⊤ : ℕ∞)) F
+  rapid :
+    ∀ r s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        (1 + ‖q‖) ^ s * ‖iteratedFDeriv ℝ r F q‖ ≤ C
+```
+
+The bridge from ambient theorems to this structure is:
+
+1. `smooth` is exactly
+   `section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport`.
+2. The `rapid` field follows from
+   `section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy`;
+   no `iteratedFDerivWithin` conversion is needed in production.
+3. Only after this structure is populated should the general
+   positive-half-space Schwartz extension theorem be used to obtain an ambient
+   `SchwartzNPoint`.
+
+Compiled production theorem:
+
+```lean
+section43FourierLaplaceIntegral_positiveEnergySchwartzWitness_of_compact_orderedSupport
+```
+
+Implementation readiness checkpoint:
+
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `Section43DerivativeAtom`, `Section43DerivativeWord`,
+  `section43DerivativeWordScalar`, `section43DerivativeWordInput`,
+  `section43DerivativeWordTimeCount`, `section43DerivativeWordCoeff`,
+  `section43DerivativeWordCoeff_nonneg`,
+  `section43DerivativeWordScalar_norm_le`,
+  `section43DerivativeAtomEquivSum`,
+  `section43DerivativeAtom_sum`,
+  `section43DerivativeWordCons`,
+  `section43DerivativeWordEquivCons`,
+  `section43DerivativeWord_sum_cons`,
+  the cons/tail simp lemmas for word scalar/input/count/coeff, and the
+  one-letter expansion theorem
+  `section43FourierLaplace_timeIntegrandFDerivCLM_apply_eq_sum_atoms`.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `contDiff_section43FourierLaplace_timeIntegrand_q`,
+  `section43FourierLaplace_sum_words_fderivCLM_apply_eq_sum_cons`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`,
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin`,
+  and
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words`.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean`:
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate`,
+  `section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral`,
+  `integrable_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `integral_section43FourierLaplace_iteratedFDerivWordMajorant`,
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`,
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`,
+  and
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergy`.
+  Exact file check and narrow module build both terminated successfully on
+  2026-04-17.
+- Compiled now in `Section43FourierLaplaceHigherDerivatives.lean` and
+  exact-file checked on 2026-04-17:
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words_absExp`,
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words_absExp`,
+  `section43FourierLaplace_timeIntegrand_eq_zero_of_timeNorm_gt_bound`,
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound`,
+  and
+  `hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+- Compiled now in
+  `Section43FourierLaplaceCompactDifferentiation.lean` and exact-file checked
+  on 2026-04-17:
+  `norm_le_of_mem_time_closedBall_zero`,
+  `norm_nPoint_le_norm_add_one_of_mem_closedBall`,
+  `norm_exp_neg_section43_timePair_le_local_closedBall`, and
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact`.
+- Compiled now in
+  `Section43FourierLaplaceCompactDifferentiation.lean` and exact-file checked
+  on 2026-04-17:
+  `continuous_cmlm_apply_nPoint`,
+  `continuous_section43DerivativeWordScalar`,
+  `continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply`,
+  `continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv`,
+  `integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact`,
+  and
+  `aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+- Compiled next: the CMLM/CLM topology seam for
+  `hasFDerivAt_integral_of_dominated_of_fderiv_le` is closed by explicit
+  normed-topology `Integrable` hypotheses and a local `curryLI`.
+- Compiled next: `hasFDerivAt_integral_of_dominated_of_fderiv_le` identifies
+  the derivative of the integrated candidate with the next candidate.
+- Compiled next: the candidate is identified with actual `iteratedFDeriv` by
+  induction.
+- Compiled next: ambient smoothness is available as
+  `ContDiff ℝ (↑(⊤ : ℕ∞))`.
+- Then ready: derive the actual derivative rapid theorem from that
+  identification and the compiled candidate rapid theorem.
+- Not ready to implement yet: the positive-half-space Schwartz extension
+  theorem; it should be documented separately after the all-order witness
+  packet is compiled.
+
+The all-order candidate-identification theorem should be proved in the
+following smaller theorem order.  Do **not** jump straight to
+`ContDiff ℝ ⊤`; ordinary C∞ smoothness is
+`ContDiff ℝ (↑(⊤ : ℕ∞))`, and the local domination theorem is the real seam.
+
+First add the no-margin pointwise norm estimates.  These are the compact-slab
+analogues of the positive-energy word bounds, but with the exponential left as
+its actual norm:
+
+```lean
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_le_sum_words_absExp
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    (m : Fin r → NPointDomain d n) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q m‖ ≤
+      ‖Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q k : ℂ)))‖ *
+        (∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖) *
+        ∏ j : Fin r, ‖m j‖
+
+theorem norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words_absExp
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    ‖iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+      q‖ ≤
+      ‖Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q k : ℂ)))‖ *
+        ∑ a : Section43DerivativeWord d n r,
+          section43DerivativeWordCoeff d n r a *
+            ‖τ‖ ^ section43DerivativeWordTimeCount d n r a *
+            ‖partialFourierSpatial_fun (d := d) (n := n)
+              (section43DerivativeWordInput d n r F a)
+              (τ, section43QSpatial (d := d) (n := n) q)‖
+```
+
+Proof transcript:
+
+1. Repeat the compiled positive-energy proof, but do not use
+   `norm_exp_neg_section43_timePair_le_exp_neg_margin_sum`.
+2. Rewrite by
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`.
+3. Use `norm_sum_le`, `norm_mul`, and
+   `section43DerivativeWordScalar_norm_le`.
+4. Pull out the common factors
+   `‖Complex.exp ...‖` and `∏ j, ‖m j‖`.
+5. Convert the applied theorem to the operator-norm theorem with
+   `ContinuousMultilinearMap.opNorm_le_bound`.
+
+Second add the upper-slab all-order zero theorem.  This is exactly the
+upper-slab version of the already compiled lower-margin theorem:
+
+```lean
+theorem section43FourierLaplace_timeIntegrand_eq_zero_of_timeNorm_gt_bound
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {R : ℝ}
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (τ : Fin n → ℝ)
+    (hτ : R < ‖τ‖) :
+    (fun q' : NPointDomain d n =>
+      Complex.exp
+        (-(∑ k : Fin n,
+          (τ k : ℂ) *
+            (section43QTime (d := d) (n := n) q' k : ℂ))) *
+      partialFourierSpatial_fun (d := d) (n := n)
+        (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+        (τ, section43QSpatial (d := d) (n := n) q')) =
+      fun _ => 0
+
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {R : ℝ}
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (τ : Fin n → ℝ)
+    (hτ : R < ‖τ‖) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) *
+              (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n)
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+          (τ, section43QSpatial (d := d) (n := n) q')) =
+      0
+```
+
+Proof transcript: use
+`partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound`
+for every `q'`, `funext` the original integrand to the zero function, then
+`rw` and `simp` all iterated derivatives of `0`.
+
+Third prove the pointwise derivative of the pointwise `r`-th derivative.  The
+derivative target must be the left-curry of the `(r+1)`-linear map, because
+Mathlib's `iteratedFDeriv_succ_apply_left` convention puts the newest
+direction in slot `0`:
+
+```lean
+theorem hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        iteratedFDeriv ℝ r
+          (fun q'' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n) F
+              (τ, section43QSpatial (d := d) (n := n) q''))
+          q')
+      ((iteratedFDeriv ℝ (r + 1)
+        (fun q'' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q''))
+        q).curryLeft)
+      q
+```
+
+Proof transcript:
+
+1. Let `G τ q` be the scalar pointwise integrand.
+2. From `contDiff_section43FourierLaplace_timeIntegrand_q`, get
+   `DifferentiableAt ℝ (iteratedFDeriv ℝ r G) q` by
+   `ContDiffAt.differentiableAt_iteratedFDeriv`.
+3. The derivative supplied by `hdiff.hasFDerivAt` is
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q`.
+4. Prove
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q =
+    (iteratedFDeriv ℝ (r + 1) G q).curryLeft`
+   by extensionality in `v` and `mtail`; the application equality is
+   definitional from the `iteratedFDeriv` successor convention and
+   `ContinuousMultilinearMap.curryLeft_apply`.
+
+Fourth prove compact local domination for the candidate derivative:
+
+```lean
+theorem norm_exp_neg_section43_timePair_le_local_closedBall
+    (d n : ℕ) [NeZero d]
+    (q q' : NPointDomain d n)
+    (τ : Fin n → ℝ)
+    {R : ℝ} (hR_nonneg : 0 ≤ R)
+    (hτ : τ ∈ Metric.closedBall (0 : Fin n → ℝ) R)
+    (hq' : q' ∈ Metric.closedBall q (1 : ℝ)) :
+    ‖Complex.exp
+      (-(∑ k : Fin n,
+        (τ k : ℂ) *
+          (section43QTime (d := d) (n := n) q' k : ℂ)))‖ ≤
+      Real.exp
+        (R * ((∑ k : Fin n, section43QTimeCoordOpNorm d n k) *
+          (‖q‖ + 1)))
+
+theorem section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ q' ∈ Metric.closedBall q (1 : ℝ),
+        ‖(iteratedFDeriv ℝ (r + 1)
+          (fun q'' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q'' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n)
+              (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+              (τ, section43QSpatial (d := d) (n := n) q''))
+          q').curryLeft‖ ≤ bound τ
+```
+
+Proof transcript:
+
+1. Choose `R ≥ 0` from
+   `exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport`.
+2. Let `Kτ = Metric.closedBall (0 : Fin n → ℝ) R`.
+3. Prove the local exponential bound:
+   - From `hτ : τ ∈ Kτ`, obtain `‖τ‖ ≤ R` by rewriting
+     `Metric.mem_closedBall`, `dist_eq_norm`, and `sub_zero`.
+   - From `hq' : q' ∈ Metric.closedBall q 1`, obtain
+     `‖q'‖ ≤ ‖q‖ + 1` by combining
+     `‖q'‖ = ‖(q' - q) + q‖`, `norm_add_le`, and
+     `dist q' q ≤ 1`.
+   - For each `k`, combine `norm_le_pi_norm τ k` and
+     `abs_section43QTime_coord_le_opNorm d n q' k` to prove
+     `|τ k * section43QTime q' k| ≤
+      R * (section43QTimeCoordOpNorm d n k * (‖q‖ + 1))`.
+   - Use `Complex.norm_exp`, compute the real part of the exponent by `simp`,
+     bound `-(∑ k, τ k * section43QTime q' k)` by
+     `∑ k, |τ k * section43QTime q' k|` via
+     `neg_le_abs` and `Finset.abs_sum_le_sum_abs`, and finish with
+     `Real.exp_le_exp`.
+   - Rewrite the final finite sum as
+     `R * ((∑ k, section43QTimeCoordOpNorm d n k) * (‖q‖ + 1))`
+     using distributivity and commutativity.
+4. Off `Kτ`, the derivative is zero by the upper-slab all-order zero theorem,
+   so the bound can be zero there.
+5. On `Kτ` and `Metric.closedBall q 1`, use the no-margin operator norm
+   estimate for order `r + 1` plus `ContinuousMultilinearMap.curryLeft_norm`.
+6. For each word `a`, choose a global constant from
+   `exists_norm_bound_partialFourierSpatial_fun` for
+   `section43DerivativeWordInput d n (r + 1)
+      (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) a`.
+7. Use `‖τ‖ ^ K ≤ R ^ K` on `Kτ` and the nonnegativity of word
+   coefficients to build a single constant
+   `C = Cexp * ∑ a, coeff(a) * R ^ timeCount(a) * Cword(a)`, where
+   `Cexp =
+    Real.exp (R * ((∑ k, section43QTimeCoordOpNorm d n k) * (‖q‖ + 1)))`.
+8. Take `bound = Set.indicator Kτ (fun _ => C)`.  Integrability is exactly
+   `integrable_indicator_time_closedBall_const`.
+
+Fifth apply Mathlib's dominated parametric integral theorem to the
+CLM-valued candidate:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n (r + 1) f hf_ord q).curryLeft)
+      q
+```
+
+Proof transcript:
+
+1. Use
+   `hasFDerivAt_integral_of_dominated_of_fderiv_le` with codomain
+   `ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ`.
+2. Before this theorem, compile the fixed-`q` hypothesis packet:
+
+```lean
+theorem continuous_section43FourierLaplace_timeIntegrand_iteratedFDeriv
+    (d n r : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n) :
+    Continuous fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r
+        (fun q' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n) F
+            (τ, section43QSpatial (d := d) (n := n) q'))
+        q
+
+theorem integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    Integrable fun τ : Fin n → ℝ =>
+      iteratedFDeriv ℝ r
+        (fun q' : NPointDomain d n =>
+          Complex.exp
+            (-(∑ k : Fin n,
+              (τ k : ℂ) *
+                (section43QTime (d := d) (n := n) q' k : ℂ))) *
+          partialFourierSpatial_fun (d := d) (n := n)
+            (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+            (τ, section43QSpatial (d := d) (n := n) q'))
+        q
+
+theorem aestronglyMeasurable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    AEStronglyMeasurable
+      (fun τ : Fin n → ℝ =>
+        (iteratedFDeriv ℝ (r + 1)
+          (fun q' : NPointDomain d n =>
+            Complex.exp
+              (-(∑ k : Fin n,
+                (τ k : ℂ) *
+                  (section43QTime (d := d) (n := n) q' k : ℂ))) *
+            partialFourierSpatial_fun (d := d) (n := n)
+              (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+              (τ, section43QSpatial (d := d) (n := n) q'))
+          q).curryLeft)
+```
+
+Proof transcript for the continuity packet:
+
+1. Prove a finite-dimensional application criterion for CMLM-valued maps,
+   by induction on `r`, using `continuous_clm_apply` for the curry-left
+   representation and `continuousMultilinearCurryFin0` for the zero-arity
+   endpoint:
+   `Continuous (fun x => L x) ↔ ∀ m, Continuous (fun x => L x m)`.
+2. For each direction tuple `m`, rewrite the applied function by
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_apply_eq_sum_words`.
+3. Each finite-word scalar is continuous in `τ` by induction on the word
+   length; time atoms contribute the coordinate `τ k`, while spatial atoms
+   are independent of `τ`.
+4. Each partial-Fourier word term is continuous in `τ` by
+   `continuous_partialFourierSpatial_fun` composed with
+   `τ ↦ (τ, section43QSpatial q)`.
+5. Finite sums and products give applied continuity, hence CMLM-valued
+   continuity.
+6. Integrability follows from the compiled local domination theorem with
+   center `q`, together with the continuity/aestrong-measurability theorem
+   and `Integrable.mono'`/the dominated-bound integrability.
+7. The curry-left derivative measurability theorem uses the order `r + 1`
+   integrability theorem and then composes its `AEStronglyMeasurable` field
+   with the continuous curry-left linear isometry.  This is why the compiled
+   theorem includes the compact-support hypothesis.
+
+Resolved topology-transport seam for the dominated-integral theorem:
+
+1. The point was not new mathematics: it was an instance/topology alignment
+   between `ContinuousMultilinearMap.instTopologicalSpace` and the
+   pseudometric topology coming from the operator norm.
+2. The compiled solution does not add a wrapper theorem.  It keeps the
+   dominated-differentiation theorem at the real Section 4.3 surface and makes
+   the relevant `Integrable` hypotheses explicit with the normed/pseudometric
+   topology where Lean would otherwise infer the bundled CMLM/CLM topology.
+3. No `set_option maxHeartbeats 0` is used.  The compiled theorem has one
+   local finite `set_option maxHeartbeats 220000`, needed only for the final
+   Bochner integral/curry-left commutation after all implicit instances are
+   made explicit.  The same theorem times out at the default `200000`, while
+   `220000` exact-checks.
+4. The proof now uses the previously compiled ingredients exactly:
+   local bound, `hF_meas`, `hF_int`, `hF'_meas`, pointwise curry-left
+   derivative, and Bochner integral compatibility for the derivative integral.
+
+Lean-ready refinement of the topology seam:
+
+1. In the dominated-differentiation proof, define
+
+```lean
+let Fint : NPointDomain d n → (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+
+let Fderiv : NPointDomain d n → (Fin n → ℝ) →
+    NPointDomain d n →L[ℝ]
+      ContinuousMultilinearMap ℝ (fun _ : Fin r => NPointDomain d n) ℂ := ...
+```
+
+where `Fderiv q' τ` is the curry-left pointwise `(r+1)`-derivative.
+2. Build `hF_meas` from the compiled integrability theorem, not from the
+continuity theorem:
+
+```lean
+have hF_meas : ∀ᶠ q' in 𝓝 q, AEStronglyMeasurable (Fint q') := by
+  exact Filter.Eventually.of_forall fun q' =>
+    (integrable_section43FourierLaplace_timeIntegrand_iteratedFDeriv_of_compact
+      d n r f hf_ord hf_compact q').aestronglyMeasurable
+```
+
+This is the preferred first attempt because `Integrable` packages the
+measurability field through the same normed codomain structure that the
+parametric-integral theorem quantifies over.
+3. Build `hF'_meas` from a normed-topology integrability proof for the
+   curry-left derivative.  The compiled proof introduces
+
+```lean
+let Phi : (Fin n → ℝ) →
+    ContinuousMultilinearMap ℝ
+      (fun _ : Fin (r + 1) => NPointDomain d n) ℂ := ...
+```
+
+then proves `Integrable (Fderiv q)` from `Integrable Phi` by the
+`LipschitzWith 1` map `L ↦ L.curryLeft` and the norm identity
+`ContinuousMultilinearMap.curryLeft_norm`.
+4. The derivative integral returned by
+`hasFDerivAt_integral_of_dominated_of_fderiv_le` has target
+
+```lean
+∫ τ, (iteratedFDeriv ℝ (r + 1) ... q).curryLeft
+```
+
+and must be identified with
+
+```lean
+(section43FourierLaplaceIntegral_iteratedFDerivCandidate
+  d n (r + 1) f hf_ord q).curryLeft
+```
+
+by applying Bochner integral compatibility to a locally defined linear
+isometry `curryLI : L ↦ L.curryLeft`.  This avoids the bundled-instance
+choice in `continuousMultilinearCurryLeftEquiv` and keeps the codomain in the
+same normed topology expected by `hasFDerivAt_integral_of_dominated_of_fderiv_le`.
+
+Compiled status, 2026-04-17:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral_iteratedFDerivCandidate
+          d n r f hf_ord q')
+      ((section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n (r + 1) f hf_ord q).curryLeft)
+      q
+```
+
+3. The parameter set is `Metric.closedBall q 1`, which is in `𝓝 q`.
+4. The pointwise `HasFDerivAt` hypothesis is
+   `hasFDerivAt_section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft`.
+5. The dominated bound is
+   `section43FourierLaplace_timeIntegrand_iteratedFDeriv_curryLeft_local_bound_of_compact`.
+6. Simplify the resulting derivative integral to
+   `(section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n (r + 1) f hf_ord q).curryLeft` using
+   Bochner integral compatibility with a local normed linear isometry
+   `curryLI : L ↦ L.curryLeft`.  The local isometry avoids the bundled
+   topology chosen by the global `continuousMultilinearCurryLeftEquiv`.
+
+Finally identify the actual iterated derivative by induction:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    iteratedFDeriv ℝ r
+      (fun q' : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+      q =
+      section43FourierLaplaceIntegral_iteratedFDerivCandidate
+        d n r f hf_ord q
+```
+
+Proof transcript:
+
+1. Base `r = 0`: ext the zero-linear maps on `m : Fin 0 → NPointDomain d n`.
+   The left side evaluates to the Fourier-Laplace integral and the right side
+   evaluates to the Bochner integral of the zero-th pointwise derivative; close
+   by the definition of `section43FourierLaplaceIntegral` and integral
+   compatibility with fixed zero-linear-map evaluation.
+2. Step `r → r+1`: use the induction hypothesis as a function equality for
+   `q'`, differentiate it at `q`, and use
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`.
+3. Convert the resulting curried derivative equality back to an
+   `(r+1)`-linear map by applying `.uncurryLeft`; this is exactly
+   `ContinuousMultilinearMap.uncurry_curryLeft`.
+
+Compiled status, 2026-04-17: the induction theorem is implemented in
+`Section43FourierLaplaceCompactDifferentiation.lean`.
+
+Implementation notes:
+
+1. The induction is generalized over `q`, so the successor step has a function
+   equality for all ambient variables.
+2. The base case first changes the goal to the zero-arity integral statement,
+   then uses `ContinuousMultilinearMap.integral_apply` with the already
+   compiled order-`0` integrability theorem.
+3. The successor step rewrites
+   `fderiv ℝ (iteratedFDeriv ℝ r G) q` by differentiating the induction
+   equality and applying
+   `section43FourierLaplaceIntegral_iteratedFDerivCandidate_hasFDerivAt_of_compact_orderedSupport`;
+   the final `rfl` shape is discharged by
+   `ContinuousMultilinearMap.uncurry_curryLeft`.
+
+There is one important implementation correction before the derivative theorem:
+the positive-energy witness smoothness field should not be attacked by a
+custom closed-half-space parametric-integral theorem.  The target
+`exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport` assumes
+`hf_compact`, and compactness gives an **upper time slab** for the
+difference-coordinate pullback.  Therefore the Fourier-Laplace integral is
+ambient differentiable near every positive-energy boundary point; the
+closed-half-space condition is needed for rapid decay, not for basic
+differentiability.
+
+The next support lemmas are now compiled:
+
+```lean
+theorem exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ∃ R ≥ 0,
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R
+
+theorem partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound
+    ...
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (hτ : R < ‖τ‖) :
+    partialFourierSpatial_fun
+      (d := d) (n := n) (section43DiffPullbackCLM d n ⟨f, hf_ord⟩)
+      (τ, ξ) = 0
+```
+
+Proof transcript for the upper-slab lemma:
+
+1. Let `K = tsupport (f : NPointDomain d n → ℂ)`.  From `hf_compact`, obtain
+   `hK : IsCompact K`.
+2. Apply `hK.exists_bound_of_continuousOn` to the continuous real function
+   `y ↦ ‖section43QTime (d := d) (n := n)
+       ((section43DiffCoordRealCLE d n) y)‖`.
+3. Replace the resulting bound `R₀` by `R = max R₀ 0` to make nonnegativity
+   explicit.
+4. If `ξ` lies in the `tsupport` of the pullback, then
+   `y = (section43DiffCoordRealCLE d n).symm ξ` lies in `K`, by
+   `tsupport_comp_subset_preimage`.
+5. Since `(section43DiffCoordRealCLE d n) y = ξ`, the compact bound gives
+   `‖section43QTime ξ‖ ≤ R₀ ≤ R`.
+
+Proof transcript for the upper-slab zero theorem:
+
+1. Unfold `partialFourierSpatial_fun` to its spatial integral.
+2. Prove the integrand is a.e. zero.  For fixed spatial variable `η`, put
+   `x = (nPointTimeSpatialCLE (d := d) n).symm (τ, η)`.
+3. If `x` were in the pullback `tsupport`, the upper-slab hypothesis would give
+   `‖τ‖ = ‖section43QTime x‖ ≤ R`, contradicting `R < ‖τ‖`.
+4. Thus the pullback value at `x` is zero by
+   `image_eq_zero_of_notMem_tsupport`, and the spatial Fourier integrand
+   vanishes.
+
+Compiled status, 2026-04-16: both upper-slab lemmas are implemented in
+`Section43FourierLaplaceWitness.lean`.  The same file now also contains the
+compiled selector CLMs
+
+```lean
+section43QTimeCLM
+section43QSpatialCLM
+```
+
+the pointwise derivative CLM, and the integrated derivative candidate
+
+```lean
+section43FourierLaplace_timeIntegrandFDerivCLM
+section43FourierLaplace_timeIntegrandFDerivCLM_apply
+section43FourierLaplace_expArgCLM
+section43FourierLaplace_expArgCLM_apply
+hasFDerivAt_section43FourierLaplace_timeIntegrand
+section43FourierLaplaceIntegral_fderivCandidate
+```
+
+The integrated CLM candidate uses the same narrow
+`set_option backward.isDefEq.respectTransparency false in` compatibility wrapper
+as `OSReconstruction.Mathlib429Compat`, because Lean 4.29 otherwise fails to
+synthesize the real/complex scalar-commutation instances needed for the normed
+operator-space structure on `NPointDomain d n →L[ℝ] ℂ`.
+
+With the upper slab available, the first derivative theorem can use Mathlib's
+ambient parametric-integral theorem
+`hasFDerivAt_integral_of_dominated_of_fderiv_le` on a genuine neighborhood of
+`q`.  The domination has two factors:
+
+1. a local exponential bound on the compact τ-slab
+   `‖τ‖ ≤ R`, because `q'` ranges over a small ambient ball around `q`;
+2. a Schwartz time-slice bound for the partial-spatial Fourier factors and
+   their coordinate transport derivatives, already supplied by the
+   time-moment and spatial-coordinate packets above.
+
+Update, 2026-04-16: the pointwise derivative step below is now implemented and
+exact-file checked in `Section43FourierLaplaceWitness.lean`.  The same pass
+also compiled the support lemma
+
+```lean
+section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_timeNorm_gt_bound
+hasCompactSupport_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact
+```
+
+which says the entire pointwise derivative CLM vanishes when `R < ‖τ‖`, not
+just the base partial-Fourier value, and then packages this as compact support
+in the `τ` variable.  The remaining first-derivative seam is therefore no
+longer the product-rule calculation or the support cutoff; it is the boundedness
+/ integrability / local-domination packet needed to pass the pointwise
+derivative under the Bochner integral.
+
+Update, 2026-04-16, continued: the fixed-`q` continuity and compact-support
+integrability packet below is now also implemented and exact-file checked in
+`Section43FourierLaplaceWitness.lean`.
+
+```lean
+continuous_section43FourierLaplace_timeIntegrandFDerivCLM
+continuous_section43FourierLaplace_timeIntegrand
+integrable_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact
+hasCompactSupport_section43FourierLaplace_timeIntegrand_of_compact
+integrable_section43FourierLaplace_timeIntegrand_of_compact
+```
+
+The remaining first-derivative seam is now sharper: prove local domination of
+the derivative CLM uniformly for `q'` in a small ambient ball around `q`, and
+then invoke Mathlib's
+`hasFDerivAt_integral_of_dominated_of_fderiv_le`.
+
+Update, 2026-04-16, second continuation: the joint continuity theorem in
+step 1 of the local-domination plan is now implemented and exact-file checked:
+
+```lean
+continuous_section43FourierLaplace_timeIntegrandFDerivCLM_joint
+```
+
+Update, 2026-04-16, third continuation: the compact-product domination packet
+and the ambient first-derivative theorem are now also implemented and
+exact-file checked:
+
+```lean
+integrable_indicator_time_closedBall_const
+exists_section43FourierLaplace_timeIntegrandFDerivCLM_norm_bound_on_compact
+section43FourierLaplace_timeIntegrandFDerivCLM_local_bound_of_compact
+section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+```
+
+The first-derivative/dominated-convergence seam is closed.  The next
+implementation target is the all-derivatives smooth/rapid package for the
+positive-energy witness.
+
+Before the all-derivatives induction, there is one implementation-ready C¹
+packaging step which is not a wrapper: combine the compiled pointwise
+`HasFDerivAt` theorem with continuity of the integrated derivative candidate.
+This gives the first smoothness layer that the eventual
+`Section43PositiveEnergySchwartzWitness.smooth` field will consume.
+
+Recommended theorem statements:
+
+```lean
+theorem continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    Continuous fun q : NPointDomain d n =>
+      section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q
+
+theorem section43FourierLaplaceIntegral_contDiff_one_of_compact_orderedSupport
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    ContDiff ℝ 1
+      (fun q : NPointDomain d n =>
+        section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+```
+
+Implementation transcript for derivative-candidate continuity:
+
+1. Fix `q₀`.  Use
+   `section43FourierLaplace_timeIntegrandFDerivCLM_local_bound_of_compact` at
+   `q₀` to obtain an integrable scalar `bound` which dominates the
+   pointwise derivative CLM for all `q' ∈ Metric.closedBall q₀ 1`.
+2. Apply `MeasureTheory.continuousOn_of_dominated` on that closed ball to
+   the integrand
+   `fun q' τ =>
+      section43FourierLaplace_timeIntegrandFDerivCLM d n
+        (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q' τ`.
+3. The measurability hypothesis is supplied by the already compiled fixed-`q`
+   continuity theorem
+   `continuous_section43FourierLaplace_timeIntegrandFDerivCLM`.
+4. The pointwise continuity hypothesis is supplied by joint continuity
+   `continuous_section43FourierLaplace_timeIntegrandFDerivCLM_joint`, composed
+   with `q' ↦ (q', τ)`.
+5. Since `Metric.closedBall q₀ 1 ∈ 𝓝 q₀`, convert the closed-ball
+   `ContinuousOn` result to `ContinuousAt` using
+   `ContinuousOn.continuousAt`.
+6. Rewrite the integral as
+   `section43FourierLaplaceIntegral_fderivCandidate`.
+
+Implementation transcript for `ContDiff ℝ 1`:
+
+1. Use `contDiff_one_iff_fderiv`.
+2. Differentiability at every `q` is
+   `(section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+      ... q).differentiableAt`.
+3. Rewrite `fderiv` pointwise using the same `HasFDerivAt` theorem:
+   the derivative is exactly
+   `section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q`.
+4. Close the derivative-continuity field with
+   `continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport`.
+
+This C¹ theorem is the correct next production target because it uses the
+compiled first-derivative content and exposes a theorem surface consumed by the
+future smooth witness.  It does not define
+`section43FourierLaplaceTransformComponent`, does not introduce a new
+`Classical.choose`, and does not pretend to solve the all-order rapid/Seeley
+extension seam.
+
+Update, 2026-04-17: the C¹ packaging step is now implemented and exact-file
+checked in `Section43FourierLaplaceWitness.lean`:
+
+```lean
+continuous_section43FourierLaplaceIntegral_fderivCandidate_of_compact_orderedSupport
+section43FourierLaplaceIntegral_contDiff_one_of_compact_orderedSupport
+```
+
+The remaining proof-doc frontier is therefore genuinely the all-derivatives
+finite-term induction and the general positive-half-space Schwartz extension
+theorem.  Do not add another first-derivative wrapper; the C¹ layer is already
+available as production support.
+
+The compiled first derivative proof is summarized in the following order.
+
+Already compiled pointwise integrand derivative:
+
+```lean
+theorem hasFDerivAt_section43FourierLaplace_timeIntegrand
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    HasFDerivAt
+      (fun q' : NPointDomain d n =>
+        Complex.exp
+          (-(∑ k : Fin n,
+            (τ k : ℂ) * (section43QTime (d := d) (n := n) q' k : ℂ))) *
+        partialFourierSpatial_fun (d := d) (n := n) F
+          (τ, section43QSpatial (d := d) (n := n) q'))
+      (section43FourierLaplace_timeIntegrandFDerivCLM d n F q τ)
+      q
+```
+
+Compiled transcript:
+
+1. Define the time exponent argument CLM
+   `Lτ : NPointDomain d n →L[ℝ] ℂ` by the finite sum
+   `∑ k, ((proj k).comp (section43QTimeCLM d n)).smulRight (-(τ k : ℂ))`.
+   Then
+   `Lτ q = -(∑ k, (τ k : ℂ) * (section43QTime q k : ℂ))`.
+2. `Complex.hasDerivAt_exp (Lτ q)` composed with `Lτ.hasFDerivAt` gives
+   `HasFDerivAt (fun q' => Complex.exp (Lτ q')) (E • Lτ) q`.
+3. `differentiableAt_partialFourierSpatial_fun_spatial F τ (section43QSpatial q)`
+   composed with `section43QSpatialCLM` gives the spatial derivative term.
+4. Apply `HasFDerivAt.mul` to the exponential and spatial-Fourier factors.
+5. Extensionality on `m : NPointDomain d n`,
+   `ContinuousLinearMap.smulRight_apply`, and commutative ring normalization
+   identify the product-rule derivative with
+   `section43FourierLaplace_timeIntegrandFDerivCLM_apply`.
+
+The following fixed-`q` CLM-valued derivative integrability theorem is already
+compiled under compact ordered support:
+
+```lean
+theorem integrable_section43FourierLaplace_timeIntegrandFDerivCLM_of_compact
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (q : NPointDomain d n) :
+    Integrable
+      (fun τ : Fin n → ℝ =>
+        section43FourierLaplace_timeIntegrandFDerivCLM d n
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ)
+```
+
+Compiled transcript: obtain `R` from
+`exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport`, use the
+compiled theorem
+`section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_timeNorm_gt_bound`
+to package compact support in `τ`, prove CLM-valued continuity using
+`continuous_clm_apply`, `continuous_partialFourierSpatial_fun`, and
+`continuous_partialFourierSpatial_fun_spatialDerivative_apply`, then close with
+`Continuous.integrable_of_hasCompactSupport`.
+
+The following local dominated derivative bound needed by Mathlib is now
+compiled:
+
+```lean
+theorem section43FourierLaplace_timeIntegrandFDerivCLM_local_bound
+    ... :
+    ∃ bound : (Fin n → ℝ) → ℝ,
+      Integrable bound ∧
+      ∀ᵐ τ, ∀ q' ∈ Metric.ball q 1,
+        ‖section43FourierLaplace_timeIntegrandFDerivCLM d n
+          (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q' τ‖ ≤ bound τ
+```
+
+The bound is supported on the same compact τ-ball.  On that ball, the local
+exponential factor is bounded by
+`exp(R * (1 + ‖section43QTime q‖))`; the partial-Fourier terms are bounded by
+the already compiled uniform Schwartz estimates and their finite coordinate
+transport analogues.
+
+Compiled local-domination transcript:
+
+1. First prove joint continuity of the derivative CLM:
+
+```lean
+theorem continuous_section43FourierLaplace_timeIntegrandFDerivCLM_joint
+    (d n : ℕ) [NeZero d]
+    (F : SchwartzNPoint d n) :
+    Continuous fun p : NPointDomain d n × (Fin n → ℝ) =>
+      section43FourierLaplace_timeIntegrandFDerivCLM d n F p.1 p.2
+```
+
+Use the same proof as the fixed-`q` continuity theorem, replacing the path
+`τ ↦ (τ, section43QSpatial q)` by
+`p ↦ (p.2, section43QSpatial p.1)`.  The final extensionality step is again
+`section43FourierLaplace_timeIntegrandFDerivCLM_apply`.
+
+2. For fixed `q`, choose the local set
+   `s = Metric.closedBall q 1`.  From compact ordered support choose the
+   upper time-slab radius `R`.
+3. On the compact product
+   `Metric.closedBall q 1 ×ˢ Metric.closedBall (0 : Fin n → ℝ) R`, joint
+   continuity gives boundedness of
+   `(q', τ) ↦ ‖section43FourierLaplace_timeIntegrandFDerivCLM ... q' τ‖`.
+   Let the bound constant be `C`.
+4. Define the dominating scalar as
+   `fun τ => Set.indicator (Metric.closedBall (0 : Fin n → ℝ) R)
+      (fun _ => C) τ`.
+5. Integrability follows from compact support of the indicator on the finite
+   dimensional time space.  The pointwise domination is `0` off the slab by
+   `section43FourierLaplace_timeIntegrandFDerivCLM_eq_zero_of_timeNorm_gt_bound`
+   and bounded by `C` on the compact product.
+
+Recommended first derivative theorem shape:
+
+```lean
+noncomputable def section43QTimeCLM (d n : ℕ) [NeZero d] :
+    NPointDomain d n →L[ℝ] (Fin n → ℝ) := ...
+
+noncomputable def section43QSpatialCLM (d n : ℕ) [NeZero d] :
+    NPointDomain d n →L[ℝ] EuclideanSpace ℝ (Fin n × Fin d) := ...
+
+noncomputable def section43FourierLaplace_timeIntegrandFDerivCLM
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (q : NPointDomain d n)
+    (τ : Fin n → ℝ) :
+    NPointDomain d n →L[ℝ] ℂ := ...
+
+noncomputable def section43FourierLaplaceIntegral_fderivCandidate
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    NPointDomain d n →L[ℝ] ℂ :=
+  ∫ τ : Fin n → ℝ,
+    section43FourierLaplace_timeIntegrandFDerivCLM
+      d n (section43DiffPullbackCLM d n ⟨f, hf_ord⟩) q τ
+
+theorem section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport
+    ... :
+    HasFDerivAt
+      (fun q => section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q)
+      (section43FourierLaplaceIntegral_fderivCandidate d n f hf_ord q)
+      q
+```
+
+The pointwise expansion of `section43FourierLaplace_timeIntegrandFDerivCLM`
+applied to a direction `m : NPointDomain d n` is:
+
+```text
+E(q,τ) *
+  (-(∑ k, τ k * section43QTime m k) *
+      partialFourierSpatial_fun F (τ, section43QSpatial q)
+    + fderiv_ξ(partialFourierSpatial_fun F)(τ, section43QSpatial q)
+        (section43QSpatial m))
+```
+
+where `F = section43DiffPullbackCLM d n ⟨f, hf_ord⟩` and
+`E(q,τ) = exp(-∑ k τ k * section43QTime q k)`.  The spatial derivative term is
+rewritten by
+`fderiv_partialFourierSpatial_fun_spatial_apply_eq_transportSchwartz`; the
+operator-norm domination is obtained by expanding
+`section43QSpatial m` in the finite Euclidean basis, applying the coordinate
+transport estimates one coordinate at a time, and summing the finite constants.
+
+The ambient first-derivative theorem is now compiled.  It can be restricted to
+the positive-energy region by:
+
+```lean
+(section43FourierLaplaceIntegral_hasFDerivAt_of_compact_orderedSupport ...).hasFDerivWithinAt
+```
+
+The ambient `smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) ...` and positive-energy `rapid`
+fields are now compiled.  They are proved by iterating the same pointwise
+derivative construction and reusing the already compiled positive-half-space damping
+`norm_section43FourierLaplace_timeIntegrand_le_exp_neg_margin_sum`; this is
+where the time-moment theorem
+`section43PartialFourier_timeMomentIntegral_spatialRapid` is consumed.
+
+Third, prove or import the general extension theorem from the closed
+positive-energy half-space to ambient Schwartz space:
+
+```lean
+theorem exists_schwartz_extension_of_positiveEnergySchwartzWitness
+    (d n : ℕ) [NeZero d]
+    (F : NPointDomain d n → ℂ)
+    (hF : Section43PositiveEnergySchwartzWitness d n F) :
+    ∃ Φ : SchwartzNPoint d n,
+      ∀ q ∈ section43PositiveEnergyRegion d n, Φ q = F q
+```
+
+This is the real analysis theorem that replaces the earlier unsafe
+ambient-CLM/Seeley shortcut.  It may be implemented by a product
+half-space Schwartz extension theorem, but the theorem statement must remain
+independent of QFT-specific data.  Only after this extension theorem exists
+should production define `section43FourierLaplaceTransformComponent`.
+
+Refined implementation route after the positive-energy witness packet:
+
+The arbitrary-witness theorem above is mathematically a Whitney/Seeley
+extension theorem for Schwartz jets on a closed orthant.  It is true as a pure
+analysis theorem, but it is not the smallest Lean route for the concrete
+Fourier-Laplace representative.  The implementation should first follow the
+constructive cutoff route below.
+
+Compiled collar/cutoff packet in
+`Section43FourierLaplaceCompactDifferentiation.lean`:
+
+```lean
+section43PositiveEnergyThickening
+section43PositiveEnergyRegion_subset_thickening
+section43PositiveEnergyCutoff
+section43PositiveEnergyCutoff_eq_one_of_mem
+section43PositiveEnergyCutoff_eq_zero_of_time_le_neg_one
+section43PositiveEnergyCutoff_eq_zero_of_not_mem_thickening_one
+section43PositiveEnergyCutoff_contDiff
+```
+
+Here
+
+```lean
+section43PositiveEnergyCutoff d n q =
+  ∏ i : Fin n, (SCV.smoothCutoff (section43QTime (d := d) (n := n) q i) : ℂ)
+```
+
+so it equals `1` on `section43PositiveEnergyRegion d n` and vanishes when any
+time coordinate is at most `-1`.
+
+The one-sided collar is:
+
+```lean
+def section43PositiveEnergyThickening (d n : ℕ) [NeZero d] (ε : ℝ) :
+    Set (NPointDomain d n) :=
+  {q | ∀ i : Fin n, -ε ≤ section43QTime (d := d) (n := n) q i}
+```
+
+and the support theorem for the compiled cutoff is now compiled:
+
+```lean
+theorem section43PositiveEnergyCutoff_eq_zero_of_not_mem_thickening_one
+    (d n : ℕ) [NeZero d]
+    {q : NPointDomain d n}
+    (hq : q ∉ section43PositiveEnergyThickening d n 1) :
+    section43PositiveEnergyCutoff d n q = 0
+```
+
+The concrete Fourier-Laplace extension route then has three mathematical
+steps.
+
+Implementation status: this route is now compiled in
+`Section43FourierLaplaceCompactDifferentiation.lean`.  The production packet
+contains:
+
+```lean
+iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+schwartzMap_of_temperate_mul_rapid_on_derivSupport
+norm_exp_neg_timePair_le_exp_thickened_margin_sum
+exp_margin_sum_controls_thickened_time_polynomial
+section43PositiveEnergyCutoff_hasTemperateGrowth
+section43PositiveEnergyCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickening_one
+section43PositiveEnergyCutoff_iteratedFDeriv_support_subset_thickening_one
+section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_thickened_exp_word_integrals_of_timeNorm_bound
+section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergyThickening
+section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergyThickening
+exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin
+exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport
+section43FourierLaplaceTransformComponent
+section43FourierLaplaceTransformComponent_has_representative
+```
+
+The notes below are retained as the proof audit trail and as guidance for any
+future refactor of this support packet.
+
+Step A: thicken the rapid estimates.  The positive-energy rapid theorem should
+be generalized from `q_i^0 ≥ 0` to `q_i^0 ≥ -ε`:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergyThickening
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ ε : ℝ} (hδ_pos : 0 < δ) (hε_nonneg : 0 ≤ ε)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyThickening d n ε,
+        (1 + ‖q‖) ^ s *
+          ‖iteratedFDeriv ℝ r
+            (fun q' : NPointDomain d n =>
+              section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q')
+            q‖ ≤ C
+```
+
+Corrected proof packet for Step A:
+
+The tempting proof that only shifts `t_i` to `t_i + ε` is not valid by itself.
+For negative collar times the inequality direction in
+`τ_i * t_i` reverses, so the lower support margin `δ ≤ τ_i` does not control
+the exponential unless an upper bound on the relevant `τ`-support is also used.
+The required upper bound is already available from compact support:
+
+```lean
+exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport
+partialFourierSpatial_section43DiffPullback_eq_zero_of_timeNorm_gt_bound
+section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound
+```
+
+The Lean implementation should therefore split the thickened rapid theorem
+into the following support/exponential/candidate lemmas.
+
+First, prove the pure finite-dimensional exponential collar estimate.  State it
+with an explicit `R` and a raw time vector, so no `NPointDomain` bookkeeping is
+mixed into the scalar algebra:
+
+```lean
+theorem norm_exp_neg_timePair_le_exp_thickened_margin_sum
+    (n : ℕ)
+    {δ ε R : ℝ} (hδ_pos : 0 < δ) (hε_nonneg : 0 ≤ ε)
+    (hR_nonneg : 0 ≤ R)
+    (t τ : Fin n → ℝ)
+    (ht : ∀ i : Fin n, -ε ≤ t i)
+    (hτ_low : ∀ i : Fin n, δ ≤ τ i)
+    (hτ_norm : ‖τ‖ ≤ R) :
+    ‖Complex.exp (-(∑ k : Fin n, (τ k : ℂ) * (t k : ℂ)))‖ ≤
+      Real.exp (∑ _ : Fin n, R * ε) *
+        Real.exp (-(δ * ∑ k : Fin n, (t k + ε)))
+```
+
+Proof details:
+
+- From `hτ_low` and `hδ_pos`, get `0 ≤ τ i`.
+- From `hτ_norm`, get `|τ i| ≤ R`, hence `τ i ≤ R`.
+- Put `u_i = t_i + ε`.  Then `0 ≤ u_i`.
+- For each `i`,
+
+```lean
+δ * (t i + ε) - R * ε ≤ τ i * t i
+```
+
+because `τ i * (t i + ε) ≥ δ * (t i + ε)` and `τ i * ε ≤ R * ε`.
+- Sum this inequality over `i`, negate, and apply `Real.exp_le_exp.mpr`.
+- Use `Complex.norm_exp` and `simp` to identify the real part of the complex
+  exponent.
+
+Second, prove the pure time-polynomial estimate on a one-sided collar:
+
+```lean
+theorem exp_margin_sum_controls_thickened_time_polynomial
+    (n : ℕ)
+    {δ ε R : ℝ} (hδ_pos : 0 < δ) (hε_nonneg : 0 ≤ ε)
+    (hR_nonneg : 0 ≤ R) (s : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧
+      ∀ t : Fin n → ℝ,
+        (∀ i : Fin n, -ε ≤ t i) →
+          (1 + ‖t‖) ^ s *
+            (Real.exp (∑ _ : Fin n, R * ε) *
+              Real.exp (-(δ * ∑ k : Fin n, (t k + ε)))) ≤ C
+```
+
+Proof details:
+
+- Let `u : Fin n → ℝ := fun i => t i + ε`; then `0 ≤ u i`.
+- Use `t = u - fun _ => ε` to prove
+
+```lean
+‖t‖ ≤ ‖u‖ + ‖fun _ : Fin n => ε‖
+```
+
+and hence
+
+```lean
+1 + ‖t‖ ≤ (1 + ‖fun _ : Fin n => ε‖) * (1 + ‖u‖)
+```
+
+with a harmless finite-dimensional constant.
+- Apply `SCV.pow_mul_exp_neg_le_const hδ_pos s` to
+  `x := 1 + ∑ k, u k`, exactly as in
+  `exp_margin_sum_controls_positiveEnergy_time_polynomial`.
+- The proof may also reuse the same internal pattern as
+  `exp_margin_sum_controls_positiveEnergy_time_polynomial`: show
+  `‖u‖ ≤ ∑ k, u k` by `pi_norm_le_sum_of_nonneg`, then absorb the leading
+  `1` in the exponential by the usual `Real.exp δ` factor.
+- Multiply the resulting constant by `Real.exp (∑ _ : Fin n, R * ε)` and by
+  the polynomial comparison constant.
+
+Third, prove the candidate pointwise bound with an explicit compact time-slab
+constant:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_thickened_exp_word_integrals_of_timeNorm_bound
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    {δ ε R : ℝ}
+    (hδ_pos : 0 < δ) (hε_nonneg : 0 ≤ ε) (hR_nonneg : 0 ≤ R)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)})
+    (hR_supp :
+      ∀ ξ ∈ tsupport
+        (((section43DiffPullbackCLM d n ⟨f, hf_ord⟩ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)),
+        ‖section43QTime (d := d) (n := n) ξ‖ ≤ R)
+    (q : NPointDomain d n)
+    (hq : q ∈ section43PositiveEnergyThickening d n ε) :
+    let F : SchwartzNPoint d n := section43DiffPullbackCLM d n ⟨f, hf_ord⟩
+    let t : Fin n → ℝ := section43QTime (d := d) (n := n) q
+    let E : ℝ :=
+      Real.exp (∑ _ : Fin n, R * ε) *
+        Real.exp (-(δ * ∑ k : Fin n, (t k + ε)))
+    let ξ : EuclideanSpace ℝ (Fin n × Fin d) :=
+      section43QSpatial (d := d) (n := n) q
+    ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+      d n r f hf_ord q‖ ≤
+      E *
+        section43FourierLaplace_iteratedFDerivWordMajorantIntegral
+          d n r F ξ
+```
+
+Proof details:
+
+- Define `G τ` as in the existing positive-energy pointwise candidate bound.
+- Define `Jfun τ :=
+  section43FourierLaplace_iteratedFDerivWordMajorant d n r F ξ τ`;
+  integrability is exactly
+  `integrable_section43FourierLaplace_iteratedFDerivWordMajorant`.
+- For every `τ`, prove `‖G τ‖ ≤ E * Jfun τ` by three cases:
+- If `∃ i, τ i < δ`, use
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_exists_time_lt_margin`.
+- Else if `R < ‖τ‖`, use
+  `section43FourierLaplace_timeIntegrand_iteratedFDeriv_eq_zero_of_timeNorm_gt_bound`
+  with `hR_supp`.
+- Otherwise, obtain `∀ i, δ ≤ τ i` and `‖τ‖ ≤ R`; apply
+  `norm_section43FourierLaplace_timeIntegrand_iteratedFDeriv_le_sum_words_absExp`
+  and the new `norm_exp_neg_timePair_le_exp_thickened_margin_sum`.
+- Integrate exactly as in
+  `section43FourierLaplaceIntegral_iteratedFDerivCandidate_norm_le_exp_margin_word_integrals`:
+  use `MeasureTheory.norm_integral_le_integral_norm`,
+  `MeasureTheory.integral_mono_of_nonneg`, and
+  `MeasureTheory.integral_const_mul`.
+
+Fourth, prove the candidate rapid theorem on the collar:
+
+```lean
+theorem section43FourierLaplaceIntegral_iteratedFDerivCandidate_rapid_on_positiveEnergyThickening
+    (d n r : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ ε : ℝ} (hδ_pos : 0 < δ) (hε_nonneg : 0 ≤ ε)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∀ s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+      ∀ q ∈ section43PositiveEnergyThickening d n ε,
+        (1 + ‖q‖) ^ s *
+          ‖section43FourierLaplaceIntegral_iteratedFDerivCandidate
+            d n r f hf_ord q‖ ≤ C
+```
+
+Proof details:
+
+- Obtain `⟨R, hR_nonneg, hR_supp⟩` from
+  `exists_section43DiffPullback_timeNorm_bound_of_compact_tsupport`.
+- Reuse
+  `section43FourierLaplace_iteratedFDerivWordMajorantIntegral_spatialRapid`
+  for the spatial factor.
+- Use the new
+  `exp_margin_sum_controls_thickened_time_polynomial` for the time factor.
+- Reuse `one_add_norm_le_section43_time_spatial_product` exactly as in the
+  existing positive-energy rapid theorem to split the full `q` weight into a
+  time weight and a spatial weight.
+- The final constant has the same form as the existing proof:
+
+```lean
+A ^ s * Ct * Csp
+```
+
+where `A := 1 + 2 * ‖(nPointTimeSpatialCLE (d := d) n).symm.toContinuousLinearMap‖`,
+`Ct` is the new thickened time constant, and `Csp` is the spatial rapid
+constant.
+
+Finally, prove the actual derivative theorem stated at the beginning of Step A
+by rewriting
+
+```lean
+iteratedFDeriv ℝ r
+  (fun q' => section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q') q
+```
+
+with
+
+```lean
+section43FourierLaplaceIntegral_iteratedFDeriv_eq_candidate_of_compact_orderedSupport
+```
+
+and applying the candidate collar theorem.  This is the same final rewrite
+pattern as `section43FourierLaplaceIntegral_iteratedFDeriv_rapid_on_positiveEnergy`.
+
+Step B: prove a pure cutoff-Schwartz lemma using Mathlib's existing Leibniz
+bound `norm_iteratedFDeriv_mul_le`.  The most Lean-friendly version should use
+temperate growth for the cutoff rather than trying to prove every cutoff
+derivative is globally bounded:
+
+```lean
+noncomputable def schwartzMap_of_temperate_mul_rapid_on_derivSupport
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    (χ F : E → ℂ)
+    (S : Set E)
+    (hχ_temperate : Function.HasTemperateGrowth χ)
+    (hχ_deriv_support :
+      ∀ r : ℕ, ∀ x : E,
+        iteratedFDeriv ℝ r χ x ≠ 0 → x ∈ S)
+    (hF_smooth : ContDiff ℝ (↑(⊤ : ℕ∞)) F)
+    (hF_rapid_on_S :
+      ∀ r s : ℕ, ∃ C : ℝ, 0 ≤ C ∧
+        ∀ x ∈ S, (1 + ‖x‖) ^ s * ‖iteratedFDeriv ℝ r F x‖ ≤ C) :
+    SchwartzMap E ℂ
+```
+
+Its value should be `fun x => χ x * F x`.  The proof is formal:
+
+- Smoothness is `hχ_temperate.1.mul hF_smooth`.
+- For each seminorm `(s,r)`, apply
+  `norm_iteratedFDeriv_mul_le hχ_temperate.1 hF_smooth x`.
+- Use
+  `hχ_temperate.norm_iteratedFDeriv_le_uniform r` to get one polynomial
+  growth exponent `kχ` and one nonnegative constant `Bχ` for all derivatives
+  `i ≤ r` of `χ`.
+- Each Leibniz summand contains one derivative of `χ` and one derivative of
+  `F`.
+- If the `χ` derivative factor is zero, the summand is zero.
+- Otherwise `hχ_deriv_support` puts `x ∈ S`, so `hF_rapid_on_S` bounds the
+  `F` derivative with weight `s + kχ`.
+- Use `‖x‖ ^ s ≤ (1 + ‖x‖) ^ s` and
+  `(1 + ‖x‖) ^ s * (1 + ‖x‖) ^ kχ =
+    (1 + ‖x‖) ^ (s + kχ)` to absorb the temperate-growth polynomial.
+- A finite sum over `Finset.range (r + 1)` gives the Schwartz seminorm
+  constant.  The `SchwartzMap.decay'` field only asks for `∃ C`; if the proof
+  naturally produces a nonnegative constant, keep the stronger nonnegativity
+  locally.
+
+The cutoff-specific inputs to Step B should be proved before specializing it:
+
+```lean
+theorem iteratedFDeriv_eq_zero_of_eventuallyEq_zero
+    {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F]
+    {f : E → F} {x : E}
+    (hf : f =ᶠ[𝓝 x] 0) (r : ℕ) :
+    iteratedFDeriv ℝ r f x = 0
+```
+
+This is the public version of the private helper already used in
+`GeneralResults/SchwartzDamping.lean` and `GeneralResults/SchwartzCutoffExp.lean`;
+the proof is:
+
+```lean
+by
+  rw [(hf.iteratedFDeriv ℝ r).eq_of_nhds]
+  simp
+```
+
+Then prove that the positive-energy cutoff has temperate growth:
+
+```lean
+theorem section43PositiveEnergyCutoff_hasTemperateGrowth
+    (d n : ℕ) [NeZero d] :
+    Function.HasTemperateGrowth (section43PositiveEnergyCutoff d n)
+```
+
+Proof details:
+
+- For each `i : Fin n`, the factor
+
+```lean
+fun q : NPointDomain d n =>
+  (SCV.smoothCutoff (section43QTime (d := d) (n := n) q i) : ℂ)
+```
+
+has temperate growth by composing
+`SCV.smoothCutoff_complex_hasTemperateGrowth` with the continuous linear map
+`section43QTimeCLM d n` followed by coordinate projection.
+- Use `Function.HasTemperateGrowth.mul` and induction over `Finset.univ` to
+prove temperate growth of the finite product.
+- This theorem is stronger than the already compiled smoothness theorem
+`section43PositiveEnergyCutoff_contDiff`; the smoothness field follows from
+the temperate-growth theorem if needed.
+
+Next prove the derivative-support theorem for the cutoff:
+
+```lean
+theorem section43PositiveEnergyCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickening_one
+    (d n r : ℕ) [NeZero d]
+    {q : NPointDomain d n}
+    (hq : q ∉ section43PositiveEnergyThickening d n 1) :
+    iteratedFDeriv ℝ r (section43PositiveEnergyCutoff d n) q = 0
+```
+
+Proof details:
+
+- Expand `section43PositiveEnergyThickening` in `hq` and use
+  `not_forall.mp` / `not_le.mp` to get an index `i` with
+  `section43QTime q i < -1`.
+- By continuity of the coordinate map
+  `fun q => section43QTime (d := d) (n := n) q i`, obtain
+
+```lean
+∀ᶠ q' in 𝓝 q, section43QTime (d := d) (n := n) q' i < -1
+```
+
+using `isOpen_lt continuous_const hcoord.continuousAt` or the equivalent
+`eventually` form of continuity.
+- On that neighborhood,
+  `SCV.smoothCutoff_zero_of_le_neg_one (le_of_lt ...)` makes the `i`th factor
+  zero, so the whole product cutoff is zero.
+- Apply `iteratedFDeriv_eq_zero_of_eventuallyEq_zero`.
+
+Expose the contrapositive support form required by Step B:
+
+```lean
+theorem section43PositiveEnergyCutoff_iteratedFDeriv_support_subset_thickening_one
+    (d n r : ℕ) [NeZero d] :
+    ∀ q : NPointDomain d n,
+      iteratedFDeriv ℝ r (section43PositiveEnergyCutoff d n) q ≠ 0 →
+        q ∈ section43PositiveEnergyThickening d n 1
+```
+
+Proof: contrapose and apply
+`section43PositiveEnergyCutoff_iteratedFDeriv_eq_zero_of_not_mem_thickening_one`.
+
+Step C: specialize Step B to
+
+```lean
+χ q := section43PositiveEnergyCutoff d n q
+F q := section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q
+S := section43PositiveEnergyThickening d n 1
+```
+
+and obtain the concrete representative from an explicit strict support margin:
+
+```lean
+theorem exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    {δ : ℝ} (hδ_pos : 0 < δ)
+    (hδ_supp :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        {x |
+          (∀ i : Fin n, δ ≤ x i 0) ∧
+          (∀ i j : Fin n, i < j → δ ≤ x j 0 - x i 0)}) :
+    ∃ Φ : SchwartzNPoint d n,
+      ∀ q ∈ section43PositiveEnergyRegion d n,
+        Φ q = section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q
+```
+
+Proof sketch for Step C:
+
+- Define `F q := section43FourierLaplaceIntegral d n ⟨f, hf_ord⟩ q`.
+- Apply `schwartzMap_of_temperate_mul_rapid_on_derivSupport` with
+  `χ := section43PositiveEnergyCutoff d n`,
+  `S := section43PositiveEnergyThickening d n 1`, and this `F`.
+- The cutoff temperate-growth obligation is
+  `section43PositiveEnergyCutoff_hasTemperateGrowth`.
+- The cutoff derivative-support obligation is
+  `section43PositiveEnergyCutoff_iteratedFDeriv_support_subset_thickening_one`.
+- The smoothness obligation for `F` is
+  `section43FourierLaplaceIntegral_contDiff_of_compact_orderedSupport`.
+- The rapid-on-support obligation is Step A with `ε = 1`.
+- Define `Φ` to be the resulting `SchwartzMap`, coerced as a
+  `SchwartzNPoint d n`.
+- Use `section43PositiveEnergyCutoff_eq_one_of_mem` to prove equality on
+  `section43PositiveEnergyRegion`.
+
+Finally:
+
+```lean
+theorem exists_section43FourierLaplaceRepresentative_of_compact_orderedSupport
+```
+
+is compiled by first obtaining `⟨δ, hδ_pos, hδ_supp⟩` from
+`exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset`, applying
+`exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin`,
+and reading the returned pointwise equality as the public
+`section43FourierLaplaceRepresentative` predicate.  The same module now also
+compiles `section43FourierLaplaceTransformComponent` and
+`section43FourierLaplaceTransformComponent_has_representative`, which are the
+only choice-based surfaces later consumers should use.
+
+Do not route future consumers through the arbitrary
+`exists_schwartz_extension_of_positiveEnergySchwartzWitness` theorem unless
+that pure Whitney/Seeley theorem is separately proved later; the concrete
+cutoff route is the implementation path for the current OS frontier.
+
+The immediate next consumer packet has also been compiled in
+`Section43FourierLaplaceComponentKernel.lean`:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight
+bvt_W_conjTensorProduct_timeShiftCanonicalExtension_imag_eq_osHolomorphicValue_of_transformComponent_succRight
+```
+
+The first theorem is the real-time `ψ_Z` pairing bridge.  The second theorem
+uses the canonical witness Fourier-Laplace formula and the semigroup
+real-time specialization to supply the `hH_imag_os` side of
+`lemma42_matrix_element_time_interchange` under the explicit transform-component
+hypotheses.
+
+The remaining positivity-side seam is **not** another representative-existence
+or hPsi theorem.  It is the pointwise time-interchange/shell-limit supplier:
+for transform-component hypotheses, prove that the canonical `ξ`-shift shell
+has the canonical witness value as its boundary target.  Equivalently, because
+`tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift_boundaryValue`
+already proves that the same shell tends to the real-time shifted Wightman
+scalar, the missing theorem can be stated as:
+
+```lean
+theorem bvt_W_timeShift_eq_canonicalExtension_imagAxis_of_transformComponent_succRight
+    (d n m : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (hψ_compact : HasCompactSupport (ψ : NPointDomain d (m + 1) → ℂ))
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d (m + 1))
+    (hg_ord :
+      tsupport (g : NPointDomain d (m + 1) → ℂ) ⊆
+        OrderedPositiveTimeRegion d (m + 1))
+    (hg_compact : HasCompactSupport (g : NPointDomain d (m + 1) → ℂ))
+    (hφ_freq :
+      section43FrequencyProjection (d := d) n φ =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact)
+    (hψ_freq :
+      section43FrequencyProjection (d := d) (m + 1) ψ =
+        section43FourierLaplaceTransformComponent d (m + 1) g hg_ord hg_compact) :
+    ∀ t : ℝ, 0 < t →
+      bvt_W OS lgc (n + (m + 1))
+        (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ)) =
+      bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+        (d := d) OS lgc φ ψ hψ_compact ((t : ℂ) * Complex.I)
+```
+
+This is the exact non-formal blocker.  The already compiled
+`ψ_Z`-pairing bridge shows equality after testing the real-time shifted
+Wightman scalar against the Paley kernel `section43PsiZTimeTest`; it does not
+by itself prove the pointwise equality above.  Therefore the finite-height
+shell/horizontal residual must not be resurrected as an equality theorem.
+
+Implementation-ready formal consequences once the pointwise theorem is proved:
+
+1. Build the `hlimit` hypothesis for `lemma42_matrix_element_time_interchange`
+   by rewriting the target of
+   `tendsto_bvt_F_canonical_xiShift_conjTensorProduct_timeShift_boundaryValue`
+   with `bvt_W_timeShift_eq_canonicalExtension_imagAxis_of_transformComponent_succRight`.
+2. Use
+   `bvt_W_conjTensorProduct_timeShiftCanonicalExtension_imag_eq_osHolomorphicValue_of_transformComponent_succRight`
+   as `hH_imag_os`.
+3. Apply `lemma42_matrix_element_time_interchange` with
+   `H := bvt_W_conjTensorProduct_timeShiftCanonicalExtension (d := d) OS lgc φ ψ hψ_compact`.
+
+Correction, 2026-04-17: the displayed pointwise theorem is **not** the next
+Lean target and must not be treated as implementation-ready.  It has the same
+dangerous shape as the retired OS-1 shortcut: it asks for a bare real-time
+Wightman value
+
+```lean
+bvt_W OS lgc (n + (m + 1))
+  (φ.conjTensorProduct (timeShiftSchwartzNPoint (d := d) t ψ))
+```
+
+to equal a positive-imaginary Fourier-Laplace/Laplace value
+
+```lean
+bvt_W_conjTensorProduct_timeShiftCanonicalExtension
+  (d := d) OS lgc φ ψ hψ_compact ((t : ℂ) * Complex.I).
+```
+
+The compiled `ψ_Z` theorem proves equality only after the real-time orbit has
+been paired with the Paley kernel.  In spectral language it converts an
+oscillatory real-time orbit into a Laplace-damped scalar; it does not identify
+the unsmeared real-time value at `τ = t` with that Laplace value.  Therefore
+the theorem
+
+```lean
+bvt_W_timeShift_eq_canonicalExtension_imagAxis_of_transformComponent_succRight
+```
+
+is withdrawn as the next production target unless a separate
+Schwartz-approximate-identity / point-evaluation theorem is first proved and
+documented.  No implementation should try to close the `hlimit` hypothesis of
+`lemma42_matrix_element_time_interchange` by this pointwise equality.
+
+The OS I Lemma-4.2 content already compiled is the correct
+`(4.23) -> (4.24)` scalar interchange:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight
+```
+
+The next proof path is the limit-level closure of this scalar identity as the
+Paley height tends to zero:
+
+1. show the Wightman-side `ψ_Z`-paired scalar tends to the unsmeared
+   transformed-image Wightman scalar at zero time;
+2. show the OS-side shifted Schwinger scalar tends to the unshifted OS scalar;
+3. use uniqueness of limits to obtain the per-pair transformed-image kernel
+   equality needed by `bvt_wightmanInner_eq_transport_norm_sq_onImage_of_kernel_eq`.
+
+This is an Abel/approximate-identity statement for the already constructed
+Section-4.3 kernels, not a pointwise time-interchange theorem.
+
+#### 5.9.4f. Correct next target: zero-height limit of the compiled OS24 scalar bridge
+
+The direct transformed-image kernel theorem to implement next is:
+
+```lean
+theorem bvt_W_kernel_eq_osScalar_of_transformComponent_succRight
+    (d n m : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d (m + 1))
+    (hg_ord :
+      tsupport (g : NPointDomain d (m + 1) → ℂ) ⊆
+        OrderedPositiveTimeRegion d (m + 1))
+    (hg_compact : HasCompactSupport (g : NPointDomain d (m + 1) → ℂ))
+    (hφ_freq :
+      section43FrequencyProjection (d := d) n φ =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact)
+    (hψ_freq :
+      section43FrequencyProjection (d := d) (m + 1) ψ =
+        section43FourierLaplaceTransformComponent d (m + 1) g hg_ord hg_compact) :
+    bvt_W OS lgc (n + (m + 1)) (φ.conjTensorProduct ψ) =
+      OS.S (n + (m + 1))
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+```
+
+Its proof is not by `lemma42_matrix_element_time_interchange`.  The proof is a
+two-limit argument from the compiled scalar bridge:
+
+```lean
+section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight
+```
+
+For every `t > 0`, this bridge gives
+
+```lean
+I_W(t) = I_OS(t)
+```
+
+where
+
+```lean
+I_W(t) =
+  ∫ τ : ℝ,
+    bvt_W OS lgc (n + (m + 1))
+      (φ.conjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+    (SchwartzMap.fourierTransformCLM ℂ (section43PsiZTimeTest t ht)) τ
+
+I_OS(t) =
+  OS.S (n + (m + 1))
+    (ZeroDiagonalSchwartz.ofClassical
+      (f.osConjTensorProduct
+        (timeShiftSchwartzNPoint (d := d) t g))).
+```
+
+Required theorem A, Wightman Abel limit:
+
+```lean
+theorem tendsto_section43TimeShiftKernel_psiZ_pairing_to_bvt_W_succRight
+    (d n m : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        if ht : 0 < t then
+          ∫ τ : ℝ,
+            bvt_W OS lgc (n + (m + 1))
+              (φ.conjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+            (SchwartzMap.fourierTransformCLM ℂ
+              (section43PsiZTimeTest t ht)) τ
+        else
+          bvt_W OS lgc (n + (m + 1)) (φ.conjTensorProduct ψ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (bvt_W OS lgc (n + (m + 1)) (φ.conjTensorProduct ψ)))
+```
+
+This theorem is the genuine remaining analytic gap.  It should be proved in
+the already-safe frequency-side language, not by asserting pointwise
+real-time/Laplace equality.  The implementation transcript is:
+
+1. obtain the actual flattened Wightman distribution package
+   `Tflat`, `hTflat_supp`, `hTflat_bv`, `hTflat_FL` from
+   `bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness`;
+2. use the already compiled zero-height base kernel
+   `section43OS24FlatBaseKernel_succRight d n m φ ψ`; this is exactly the
+   cutoff-tail product pulled back through the cumulative-tail equivalence,
+   before multiplication by the Paley factor;
+3. define the global cutoff-zero kernel
+
+```lean
+noncomputable def section43OS24KernelCutoffZero_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ :=
+  SchwartzMap.smulLeftCLM ℂ
+    (fun ξ =>
+      (SCV.smoothCutoff (section43SuccRightEtaCLM d n m ξ) : ℂ))
+    (section43OS24FlatBaseKernel_succRight d n m φ ψ)
+```
+
+   This is the actual global limit of
+   `section43OS24KernelWitness_succRight t ht` as `t → 0+`.  Do **not** claim
+   global convergence to `section43OS24FlatBaseKernel_succRight`; `ψ_Z`
+   contains the fixed cutoff `smoothCutoff`, and off the nonnegative spectral
+   region its zero-height limit is not `1`.
+4. prove the two spectral-region formulas:
+
+```lean
+theorem section43OS24FlatBaseKernel_succRight_eqOn_spectralRegion
+theorem section43OS24KernelCutoffZero_succRight_eqOn_flatBase_spectralRegion
+```
+
+   The first exposes the visible product with no Paley factor.  The second uses
+   `SCV.smoothCutoff_one_of_nonneg` and the nonnegativity of
+   `section43SuccRightEtaCLM` on `section43WightmanSpectralRegion` to show the
+   cutoff-zero kernel agrees with the flat base kernel on the spectral region;
+   if the existing nonnegativity theorem is private, expose the smallest public
+   theorem needed here.
+5. prove the zero-height Fourier normal form
+   `physicsFourierFlatCLM_conjTensorProduct_eq_OS24FlatBaseKernel_on_spectralRegion_succRight`;
+   this is S1-S2 at `τ = 0`: the time-shift orbit has no oscillatory factor,
+   and the Borchers left block still uses total-momentum zero exactly as in
+   `physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion`;
+6. use `hTflat_bv` on `flattenSchwartzNPoint (φ.conjTensorProduct ψ)` and the
+   spectral-support EqOn theorem to identify
+   `bvt_W OS lgc ... (φ.conjTensorProduct ψ)` with
+   `Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)`;
+7. prove the Schwartz-space convergence of the concrete witness
+   `section43OS24KernelWitness_succRight t ht →
+    section43OS24KernelCutoffZero_succRight` as `t → 0+`;
+8. use spectral-support EqOn to replace the chosen
+   `section43OS24Kernel_succRight t ht` by the concrete witness inside
+   `Tflat`; do not try to prove definitional equality with the `Classical.choose`
+   wrapper;
+9. use spectral-support EqOn again to replace
+   `Tflat (section43OS24KernelCutoffZero_succRight d n m φ ψ)` by
+   `Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)`;
+10. apply continuity of `Tflat` to get the displayed Wightman Abel limit.
+
+The apparent hard estimate in step 7 should not be reproved from scratch.
+The repo already contains the needed finite-dimensional damping theorem:
+
+```lean
+schwartz_exp_damping_tendsto
+```
+
+from `OSReconstruction.GeneralResults.SchwartzDamping`.  The correct
+implementation route is to reduce the zero-height witness convergence to this
+compiled theorem.
+
+First define the cutoff-zero kernel as above.  Then prove the support
+lower-bound required by `schwartz_exp_damping_tendsto`:
+
+```lean
+theorem section43OS24KernelCutoffZero_succRight_eta_bddBelow_on_support
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    ∃ M : ℝ,
+      ∀ ξ,
+        ξ ∈ Function.support
+          (fun ξ =>
+            section43OS24KernelCutoffZero_succRight d n m φ ψ ξ) →
+        -M ≤ section43SuccRightEtaCLM d n m ξ
+```
+
+Proof transcript:
+
+1. choose `M = 1`;
+2. introduce `ξ hξ`;
+3. rewrite `Function.mem_support` at `hξ`, so `hξ` is the nonvanishing of
+   the cutoff-zero kernel at `ξ`;
+4. prove by contradiction; from `¬ -1 ≤ η` obtain `η ≤ -1` by `linarith`;
+5. set
+
+```lean
+have hcut : SCV.smoothCutoff (section43SuccRightEtaCLM d n m ξ) = 0 :=
+  SCV.smoothCutoff_zero_of_le_neg_one hle
+```
+
+6. apply `hξ`, unfold `section43OS24KernelCutoffZero_succRight`, change the
+   multiplier to explicit composition, rewrite by
+   `SchwartzMap.smulLeftCLM_apply_apply
+     (SCV.smoothCutoff_complex_hasTemperateGrowth.comp
+       (section43SuccRightEtaCLM d n m).hasTemperateGrowth)`;
+7. change the goal to
+
+```lean
+((SCV.smoothCutoff (section43SuccRightEtaCLM d n m ξ) : ℂ) •
+  section43OS24FlatBaseKernel_succRight d n m φ ψ ξ) = 0
+```
+
+   then `rw [hcut]; simp`.
+
+This proof skeleton has been checked in Lean with a local stand-in definition
+of the cutoff-zero kernel.
+
+Next prove the actual Schwartz-topology zero-height theorem:
+
+```lean
+theorem tendsto_section43OS24KernelWitness_succRight_to_cutoffZero
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        if ht : 0 < t then
+          section43OS24KernelWitness_succRight d n m φ ψ t ht
+        else
+          section43OS24KernelCutoffZero_succRight d n m φ ψ)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (section43OS24KernelCutoffZero_succRight d n m φ ψ))
+```
+
+Proof transcript:
+
+1. set
+
+```lean
+let K0 :=
+  section43OS24KernelCutoffZero_succRight d n m φ ψ
+let η :=
+  section43SuccRightEtaCLM d n m
+```
+
+2. obtain
+
+```lean
+obtain ⟨hε, hε_apply, hε_tendsto⟩ :=
+  schwartz_exp_damping_tendsto
+    (h := K0) (L := η)
+    (section43OS24KernelCutoffZero_succRight_eta_bddBelow_on_support
+      d n m φ ψ)
+```
+
+   Here `hε_apply` says that, for `0 < ε`,
+
+```lean
+hε ε ξ = Complex.exp (-(ε : ℂ) * (η ξ : ℂ)) * K0 ξ.
+```
+
+3. prove the positive-scaling filter lemma, exactly as in
+   `SCV/PaleyWiener.lean`:
+
+```lean
+have hscale_tendsto :
+    Filter.Tendsto
+      (fun t : ℝ => (2 * Real.pi) * t)
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhdsWithin 0 (Set.Ioi 0)) := by
+  refine tendsto_nhdsWithin_iff.mpr ?_
+  constructor
+  · have hcontWithin :
+        ContinuousWithinAt
+          (fun t : ℝ => (2 * Real.pi) * t)
+          (Set.Ioi 0) 0 := by
+      exact (continuous_const.mul continuous_id).continuousAt.continuousWithinAt
+    simpa using hcontWithin.tendsto
+  · filter_upwards [self_mem_nhdsWithin] with t ht
+    exact mul_pos Real.two_pi_pos ht
+```
+
+4. compose `hε_tendsto` with `hscale_tendsto`;
+5. use `Filter.Tendsto.congr'` to replace
+   `hε ((2 * Real.pi) * t)` by the concrete witness on the positive branch.
+   The event wrapper is:
+
+```lean
+have hEq :
+    (fun t : ℝ => hε ((2 * Real.pi) * t))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+    (fun t : ℝ =>
+      if ht : 0 < t then
+        section43OS24KernelWitness_succRight d n m φ ψ t ht
+      else
+        K0) := by
+  filter_upwards [self_mem_nhdsWithin] with t ht
+  have hpos : 0 < t := ht
+  rw [dif_pos hpos]
+  -- then use the pointwise congruence below with `ht := hpos`.
+```
+
+   The pointwise congruence inside that event is:
+
+```lean
+have hpoint :
+    hε ((2 * Real.pi) * t) =
+      section43OS24KernelWitness_succRight d n m φ ψ t ht := by
+  ext ξ
+  rw [hε_apply ((2 * Real.pi) * t) (mul_pos Real.two_pi_pos ht) ξ]
+  rw [section43OS24KernelWitness_succRight]
+  change Complex.exp (-(((2 * Real.pi) * t : ℝ) : ℂ) * (η ξ : ℂ)) *
+      (section43OS24KernelCutoffZero_succRight d n m φ ψ ξ) = _
+  rw [section43OS24KernelCutoffZero_succRight]
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (section43PsiZTimeTest_comp_eta_hasTemperateGrowth d n m ht)]
+  change Complex.exp (-(((2 * Real.pi) * t : ℝ) : ℂ) * (η ξ : ℂ)) *
+      (((SchwartzMap.smulLeftCLM ℂ
+        (((fun η : ℝ => (SCV.smoothCutoff η : ℂ)) ∘
+          (section43SuccRightEtaCLM d n m))))
+        (section43OS24FlatBaseKernel_succRight d n m φ ψ)) ξ) = _
+  rw [SchwartzMap.smulLeftCLM_apply_apply
+    (SCV.smoothCutoff_complex_hasTemperateGrowth.comp
+      (section43SuccRightEtaCLM d n m).hasTemperateGrowth)]
+  rw [section43PsiZTimeTest_apply, SCV.psiZ_eq]
+  have hexp :
+      Complex.I *
+          (((2 * Real.pi : ℂ) * (t * Complex.I))) *
+          (section43SuccRightEtaCLM d n m ξ : ℂ) =
+        -(((2 * Real.pi) * t : ℝ) : ℂ) *
+          (section43SuccRightEtaCLM d n m ξ : ℂ) := by
+    calc
+      Complex.I *
+          (((2 * Real.pi : ℂ) * (t * Complex.I))) *
+          (section43SuccRightEtaCLM d n m ξ : ℂ)
+          =
+        (Complex.I * Complex.I) *
+          (((2 * Real.pi : ℂ) * (t : ℂ)) *
+            (section43SuccRightEtaCLM d n m ξ : ℂ)) := by
+          ring
+      _ =
+        -(((2 * Real.pi) * t : ℝ) : ℂ) *
+          (section43SuccRightEtaCLM d n m ξ : ℂ) := by
+          rw [Complex.I_mul_I]
+          norm_num
+  rw [hexp]
+  simp [Function.comp, η, smul_eq_mul]
+  ring
+```
+
+   The full congruence proof above has been checked in Lean with a local
+   stand-in definition of the cutoff-zero kernel.  This congruence is the only
+   place where the `2π` normalization enters the zero-height proof.
+
+6. finish with:
+
+```lean
+simpa [K0, Function.comp] using Filter.Tendsto.congr' hEq hcomp
+```
+
+The scalar form used by theorem A should then be a short corollary:
+
+```lean
+theorem tendsto_Tflat_section43OS24Kernel_succRight_to_flatBase
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    (Tflat :
+      SchwartzMap (Fin ((n + (m + 1)) * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ)
+    (hTflat_supp :
+      HasFourierSupportIn
+        (section43WightmanSpectralRegion d (n + (m + 1))) Tflat) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        if ht : 0 < t then
+          Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)
+        else
+          Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)))
+```
+
+Proof transcript:
+
+1. apply `Tflat.continuous.tendsto` to
+   `tendsto_section43OS24KernelWitness_succRight_to_cutoffZero`;
+2. on the positive branch, replace the chosen
+   `section43OS24Kernel_succRight` by
+   `section43OS24KernelWitness_succRight` inside `Tflat` using
+   `hasFourierSupportIn_eqOn hTflat_supp`;
+3. the required EqOn is obtained by transitivity from
+   `section43OS24Kernel_succRight_eqOn_spectralRegion` and
+   `section43OS24KernelWitness_succRight_eqOn_spectralRegion`;
+4. replace the limit
+   `Tflat (section43OS24KernelCutoffZero_succRight d n m φ ψ)` by
+   `Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)` using
+   `section43OS24KernelCutoffZero_succRight_eqOn_flatBase_spectralRegion`
+   and `hasFourierSupportIn_eqOn hTflat_supp`.
+
+This removes the remaining analytic uncertainty in theorem A: the zero-height
+convergence is a direct use of the compiled damping theorem plus spectral
+support EqOn, not a new Paley-Wiener estimate and not a pointwise
+real-time/Laplace identification.
+
+Lean implementation status, 2026-04-17: the full scalar support rung above now
+compiles in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceComponentKernel.lean`.
+The compiled theorem is:
+
+```lean
+theorem tendsto_Tflat_section43OS24Kernel_succRight_to_flatBase
+```
+
+The exact file check
+
+```bash
+lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceComponentKernel.lean
+```
+
+terminated successfully after this theorem was added.  The next theorem-A
+implementation step should therefore start from this compiled scalar limit,
+not from the lower-level witness/cutoff proofs.
+
+With the scalar `Tflat` limit in hand, theorem A itself is formal:
+
+1. obtain `Tflat`, `hTflat_supp`, `hTflat_bv`, `hTflat_FL` from
+   `bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness`
+   with `N := n + (m + 1)`;
+2. prove `hW_base` as documented below, identifying the unsmeared Wightman
+   value with `Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)`;
+3. let `hT_limit :=
+   tendsto_Tflat_section43OS24Kernel_succRight_to_flatBase d n m φ ψ
+     Tflat hTflat_supp`;
+4. prove the eventual equality
+
+```lean
+have hIW_T :
+    (fun t : ℝ =>
+      if ht : 0 < t then
+        ∫ τ : ℝ,
+          bvt_W OS lgc (n + (m + 1))
+            (φ.conjTensorProduct
+              (timeShiftSchwartzNPoint (d := d) τ ψ)) *
+          (SchwartzMap.fourierTransformCLM ℂ
+            (section43PsiZTimeTest t ht)) τ
+      else
+        bvt_W OS lgc (n + (m + 1)) (φ.conjTensorProduct ψ))
+      =ᶠ[nhdsWithin 0 (Set.Ioi 0)]
+    (fun t : ℝ =>
+      if ht : 0 < t then
+        Tflat (section43OS24Kernel_succRight d n m φ ψ t ht)
+      else
+        Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ)) := by
+  filter_upwards [self_mem_nhdsWithin] with t ht
+  rw [dif_pos ht, dif_pos ht]
+  exact
+    section43TimeShiftKernel_psiZ_pairing_eq_Tflat_OS24Kernel_succRight
+      (d := d) (n := n) (m := m) OS lgc φ ψ ht
+      Tflat hTflat_supp hTflat_bv
+```
+
+   The negative branch does not need to be proved on the filter because
+   `self_mem_nhdsWithin` restricts to `0 < t`.  If a global equality is more
+   convenient, close the negative branch by `hW_base`.
+
+5. conclude theorem A by
+
+```lean
+simpa [hW_base] using Filter.Tendsto.congr' hIW_T.symm hT_limit
+```
+
+Lean implementation status, 2026-04-17: theorem A now compiles in
+`Section43FourierLaplaceComponentKernel.lean` as
+
+```lean
+theorem tendsto_section43TimeShiftKernel_psiZ_pairing_to_bvt_W_succRight
+```
+
+The proof follows the transcript above, with one implementation nuance:
+`hTflat_bv` comes from the boundary-value packet and uses the root
+forward-tube `unflattenSchwartzNPoint`, while the Section-4.3 spectral normal
+form uses the `OSReconstruction` block-flattening convention.  The compiled
+proof closes this seam by first proving the generic local identity
+
+```lean
+_root_.unflattenSchwartzNPoint (d := d)
+  (flattenSchwartzNPoint (d := d) F) = F
+```
+
+with an explicit coordinate step
+
+```lean
+rw [_root_.unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
+congr 1
+ext i μ
+simp [flattenCLEquivReal_apply]
+```
+
+and only then specializing to `F := φ.conjTensorProduct ψ`.  This prevents
+the simplifier from unfolding `conjTensorProduct` before the flattening
+convention bridge is established.
+
+Signature correction, 2026-04-17: theorem A does **not** require compact
+support of the Wightman-side test `ψ`.  The compactness hypotheses in the
+compiled successor-right kernel theorem are only the Euclidean source
+compactness hypotheses `hf_compact` and `hg_compact`.  The separate canonical
+extension theorem still needs `hψ_compact`, because its upper-half-plane
+witness is constructed from the Wightman-side time-shift distribution; theorem
+A and the final direct kernel equality do not.
+
+Concrete support slots needed before theorem A:
+
+```lean
+theorem section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
+    (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    0 ≤ section43SuccRightEtaCLM d n m ξ
+```
+
+This theorem already exists privately in
+`Section43OS24KernelComparison.lean`.  Expose it, or expose the smaller dual
+cone theorem it uses, before the cutoff-zero EqOn proof.
+
+```lean
+theorem section43OS24FlatBaseKernel_succRight_eqOn_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    Set.EqOn
+      (fun ξ => section43OS24FlatBaseKernel_succRight d n m φ ψ ξ)
+      (fun ξ =>
+        let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+        star
+          ((section43FrequencyRepresentative (d := d) n φ)
+            (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
+          (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+            (section43RightTailBlock d n (m + 1) qξ))
+      (section43WightmanSpectralRegion d (n + (m + 1)))
+```
+
+Proof transcript:
+
+1. introduce `ξ hξ`;
+2. get
+   `section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ 0 = 0` from
+   `section43WightmanSpectralRegion_cumulativeTail_head_zero`;
+3. change the goal to remove the `Set.EqOn` lambda wrappers:
+
+```lean
+change section43OS24FlatBaseKernel_succRight d n m φ ψ ξ = _
+```
+
+4. rewrite `section43OS24FlatBaseKernel_succRight_apply`;
+5. apply `section43OS24CumulativeTailProduct_eq_visible_of_head_zero`.
+
+This proof skeleton has been checked in Lean.
+
+```lean
+theorem section43OS24KernelCutoffZero_succRight_eqOn_flatBase_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    Set.EqOn
+      (fun ξ => section43OS24KernelCutoffZero_succRight d n m φ ψ ξ)
+      (fun ξ => section43OS24FlatBaseKernel_succRight d n m φ ψ ξ)
+      (section43WightmanSpectralRegion d (n + (m + 1)))
+```
+
+Proof transcript:
+
+1. unfold `section43OS24KernelCutoffZero_succRight`;
+2. change the multiplier to explicit composition, then rewrite
+   `SchwartzMap.smulLeftCLM_apply_apply` using
+   `SCV.smoothCutoff_complex_hasTemperateGrowth.comp
+     (section43SuccRightEtaCLM d n m).hasTemperateGrowth`;
+3. use `section43SuccRightEtaCLM_nonneg_of_mem_spectralRegion` to get
+   `heta_nonneg`;
+4. set
+
+```lean
+have hcut : SCV.smoothCutoff ((section43SuccRightEtaCLM d n m) ξ) = 1 :=
+  SCV.smoothCutoff_one_of_nonneg heta_nonneg
+```
+
+5. change the goal to the explicit scalar action form, rewrite `hcut`, and
+   simplify:
+
+```lean
+change ((SCV.smoothCutoff ((section43SuccRightEtaCLM d n m) ξ) : ℂ) •
+    section43OS24FlatBaseKernel_succRight d n m φ ψ ξ) = _
+rw [hcut]
+simp
+```
+
+This proof skeleton has been checked in Lean with the nonnegativity theorem
+represented by an axiom of the exposed type.
+
+```lean
+theorem physicsFourierFlatCLM_flatten_conjTensorProduct_eq_frequencyRepresentatives_on_spectralRegion
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1))
+    {ξ : Fin ((n + (m + 1)) * (d + 1)) → ℝ}
+    (hξ : ξ ∈ section43WightmanSpectralRegion d (n + (m + 1))) :
+    let qξ := section43CumulativeTailMomentumCLE d (n + (m + 1)) ξ
+    physicsFourierFlatCLM
+        (flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ)) ξ =
+      star
+        ((section43FrequencyRepresentative (d := d) n φ)
+          (section43LeftBorchersBlock d n (m + 1) (Nat.succ_pos m) qξ)) *
+        (section43FrequencyRepresentative (d := d) (m + 1) ψ)
+          (section43RightTailBlock d n (m + 1) qξ)
+```
+
+Proof transcript:
+
+1. expose the already compiled private theorem in
+   `OSToWightmanBoundaryValueLimits.lean`:
+
+```lean
+theorem reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
+    {d n m : ℕ} [NeZero d]
+    (f : SchwartzNPoint d n)
+    (g : SchwartzNPoint d m) :
+    reindexSchwartzFin
+        (by ring : (n + m) * (d + 1) =
+          n * (d + 1) + m * (d + 1))
+      (flattenSchwartzNPoint (d := d) (f.conjTensorProduct g)) =
+      (flattenSchwartzNPoint (d := d) f.borchersConj).tensorProduct
+        (flattenSchwartzNPoint (d := d) g)
+```
+
+   Do this as a visibility change in its current file.  The proof there
+   already has the exact private block-flattening simplifications it needs.
+
+2. add a tiny generic reindex inverse lemma in the new small support file:
+
+```lean
+theorem reindexSchwartzFin_symm_comp_self
+    {a b : ℕ} (h : a = b)
+    (F : SchwartzMap (Fin a → ℝ) ℂ) :
+    reindexSchwartzFin h.symm (reindexSchwartzFin h F) = F := by
+  subst h
+  ext x
+  change F x = F x
+  rfl
+```
+
+3. derive the unreindexed tensor form:
+
+```lean
+theorem flatten_conjTensorProduct_eq_reindex_tensor
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m) :
+    flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ) =
+      reindexSchwartzFin
+        (by ring : n * (d + 1) + m * (d + 1) =
+          (n + m) * (d + 1))
+        (((flattenSchwartzNPoint (d := d) φ.borchersConj).tensorProduct
+          (flattenSchwartzNPoint (d := d) ψ))) := by
+  let h₁ : (n + m) * (d + 1) =
+      n * (d + 1) + m * (d + 1) := by ring
+  let h₂ : n * (d + 1) + m * (d + 1) =
+      (n + m) * (d + 1) := by ring
+  have h₂eq : h₂ = h₁.symm := by
+    subst h₁
+    rfl
+  have hflat :=
+    reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
+      (d := d) (n := n) (m := m) φ ψ
+  have hflat' := congrArg (reindexSchwartzFin h₂) hflat
+  rw [h₂eq] at hflat'
+  simpa [reindexSchwartzFin_symm_comp_self] using hflat'
+```
+
+   This skeleton has been checked in Lean with the exposed theorem represented
+   by an axiom of the same type.
+
+4. prove the displayed zero-height Fourier normal form by:
+
+```lean
+  dsimp only
+  rw [flatten_conjTensorProduct_eq_reindex_tensor]
+  exact
+    physicsFourierFlatCLM_borchersTensor_eq_frequencyRepresentatives_on_spectralRegion
+      (d := d) (n := n) (m := m) φ ψ hξ
+```
+
+   This skeleton has also been checked in Lean under the same stand-in exposed
+   theorem.
+
+```lean
+theorem physicsFourierFlatCLM_flatten_conjTensorProduct_eq_OS24FlatBaseKernel_on_spectralRegion_succRight
+    (d n m : ℕ) [NeZero d]
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d (m + 1)) :
+    Set.EqOn
+      (fun ξ =>
+        physicsFourierFlatCLM
+          (flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ)) ξ)
+      (fun ξ => section43OS24FlatBaseKernel_succRight d n m φ ψ ξ)
+      (section43WightmanSpectralRegion d (n + (m + 1)))
+```
+
+Proof transcript:
+
+1. introduce `ξ hξ`;
+2. rewrite the left side by
+   `physicsFourierFlatCLM_flatten_conjTensorProduct_eq_frequencyRepresentatives_on_spectralRegion`;
+3. rewrite the right side by
+   `section43OS24FlatBaseKernel_succRight_eqOn_spectralRegion`;
+4. close by `rfl`.
+
+With these support slots, the identification of the Wightman zero-height limit
+target is:
+
+```lean
+have hW_base :
+    bvt_W OS lgc (n + (m + 1)) (φ.conjTensorProduct ψ) =
+      Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ) := by
+  have hBV :=
+    hTflat_bv (flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ))
+  have hunflatten :
+      unflattenSchwartzNPoint (d := d)
+        (flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ)) =
+        φ.conjTensorProduct ψ := by
+    simp
+  have hEqOn :=
+    physicsFourierFlatCLM_flatten_conjTensorProduct_eq_OS24FlatBaseKernel_on_spectralRegion_succRight
+      d n m φ ψ
+  have hT_eq :
+      Tflat
+        (physicsFourierFlatCLM
+          (flattenSchwartzNPoint (d := d) (φ.conjTensorProduct ψ))) =
+      Tflat (section43OS24FlatBaseKernel_succRight d n m φ ψ) :=
+    hasFourierSupportIn_eqOn hTflat_supp
+      (fun ξ hξ => hEqOn hξ)
+  simpa [hunflatten] using hBV.trans hT_eq
+```
+
+The support-EqOn step uses the existing
+`hasFourierSupportIn_eqOn` theorem from `SCV/FourierSupportCone.lean`; do not
+reprove the support-EqOn lemma.  The Wightman zero-height target is therefore
+fully reduced to the named support slots above, with no return to the pointwise
+`bvt_W_timeShift_eq_canonicalExtension_imagAxis` target.
+
+Required theorem B, OS continuity:
+
+```lean
+theorem tendsto_OS_S_osConjTensorProduct_timeShift_zero_succRight
+    (d n m : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (f : SchwartzNPoint d n)
+    (hf_ord : tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d (m + 1))
+    (hg_ord :
+      tsupport (g : NPointDomain d (m + 1) → ℂ) ⊆
+        OrderedPositiveTimeRegion d (m + 1))
+    (hg_compact : HasCompactSupport (g : NPointDomain d (m + 1) → ℂ)) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        if ht : 0 < t then
+          OS.S (n + (m + 1))
+            (ZeroDiagonalSchwartz.ofClassical
+              (f.osConjTensorProduct
+                (timeShiftSchwartzNPoint (d := d) t g)))
+        else
+          OS.S (n + (m + 1))
+            (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g)))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds
+        (OS.S (n + (m + 1))
+          (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))))
+```
+
+Implementation transcript for theorem B:
+
+1. expose the already proved private lemma in `OSToWightmanSemigroup.lean` as a
+   public theorem:
+
+```lean
+theorem tendsto_OSInnerProduct_right_timeShift_nhdsWithin_zero_of_isCompactSupport
+    (OS : OsterwalderSchraderAxioms d) (F G : BorchersSequence d)
+    (hF_pos : ∀ n,
+      tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hG_pos : ∀ n,
+      tsupport ((G.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hG_compact : ∀ n,
+      HasCompactSupport
+        ((G.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ)) :
+    Filter.Tendsto
+      (fun t : ℝ =>
+        OSInnerProduct d OS.S F (timeShiftBorchers (d := d) t G))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (OSInnerProduct d OS.S F G))
+```
+
+   This is only a visibility change; the existing proof already compiles.
+
+2. expose the private concentrated right-shift computation in the same file:
+
+```lean
+theorem OSInnerProduct_single_right_timeShift
+    (OS : OsterwalderSchraderAxioms d)
+    {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m) (t : ℝ) :
+    OSInnerProduct d OS.S (BorchersSequence.single n f)
+        (timeShiftBorchers (d := d) t (BorchersSequence.single m g)) =
+      OS.S (n + m) (ZeroDiagonalSchwartz.ofClassical
+        (f.osConjTensorProduct (timeShiftSchwartzNPoint (d := d) t g)))
+```
+
+   This is also only a visibility change; it is already used later in
+   `OSInnerProductTimeShiftHolomorphicValue_ofReal_eq_single`.
+
+3. prove theorem B with
+
+```lean
+let F : BorchersSequence d := BorchersSequence.single n f
+let G : BorchersSequence d := BorchersSequence.single (m + 1) g
+```
+
+4. supply `hF_pos`, `hG_pos`, and `hG_compact` by splitting on the concentrated
+   index:
+   for the matching index use `hf_ord`, `hg_ord`, `hg_compact`; for all other
+   indices rewrite the singleton component to `0` and close by empty support or
+   `HasCompactSupport.zero`;
+5. apply
+   `tendsto_OSInnerProduct_right_timeShift_nhdsWithin_zero_of_isCompactSupport`
+   to get the raw `OSInnerProduct` limit;
+6. on the positive branch, rewrite the raw function by
+   `OSInnerProduct_single_right_timeShift`;
+7. rewrite the limiting value by `OSInnerProduct_single_single d OS.S
+   OS.E0_linear n (m + 1) f g`;
+8. use `Filter.Tendsto.congr'` with `self_mem_nhdsWithin` to account for the
+   `if ht : 0 < t` wrapper.
+
+This route is preferable to the older
+`bvt_tendsto_singleSplit_xiShift_nhdsWithin_zero_schwinger` alternative:
+it stays entirely on the OS semigroup/inner-product surface and adds no
+Schwinger-vs-Wightman shell theorem to the current blocker.
+
+Lean implementation status, 2026-04-17: theorem B now compiles in
+`Section43FourierLaplaceComponentKernel.lean` as
+
+```lean
+theorem tendsto_OS_S_osConjTensorProduct_timeShift_zero_succRight
+```
+
+The compiled proof specializes
+`tendsto_OSInnerProduct_right_timeShift_nhdsWithin_zero_of_isCompactSupport`
+to the concentrated positive-time Borchers sequences
+`PositiveTimeBorchersSequence.single n f hf_ord` and
+`PositiveTimeBorchersSequence.single (m + 1) g hg_ord`.  Compactness is
+required only for the shifted right factor; the left compactness hypothesis is
+kept in the theorem surface for symmetry with the transform-component packet
+but is not used by the semigroup continuity theorem.
+
+Final proof transcript for
+`bvt_W_kernel_eq_osScalar_of_transformComponent_succRight`:
+
+1. let `LW` be theorem A;
+2. let `LOS` be theorem B;
+3. for the filter `nhdsWithin 0 (Set.Ioi 0)`, use the event
+   `self_mem_nhdsWithin` to rewrite both `if ht : 0 < t` branches to the
+   positive branch;
+4. on that event, rewrite `I_W(t)` to `I_OS(t)` with
+   `section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight`;
+5. apply `Filter.Tendsto.congr'` to transfer `LW` to a limit of the OS-side
+   scalar;
+6. use `tendsto_nhds_unique` with `LOS`.
+
+Consumer correction, 2026-04-17: this successor-right kernel theorem should
+**not** be fed directly into the current
+`BvtTransportImageSequence` consumer.  The current production carrier is the
+range of `os1TransportComponent`, i.e. positive-time Euclidean data viewed in
+the Section-4.3 quotient.  The compiled theorem above is instead for genuine
+Fourier-Laplace transform components:
+
+```lean
+section43FrequencyProjection (d := d) n φ =
+  section43FourierLaplaceTransformComponent d n f hf_ord hf_compact
+```
+
+Those are different hypotheses.  The next implementation stage must therefore
+introduce a source-decorated transform-component carrier, prove the finite-sum
+kernel identity on that carrier, and only then derive positivity/norm-square
+statements.  Do not route this proof through
+`lemma42_matrix_element_time_interchange`; that lemma is an overstrong
+shell-limit consumer for this branch and would require the withdrawn pointwise
+real-time/Laplace equality.
+
+Lean implementation status, 2026-04-17: the direct successor-right kernel
+theorem now compiles in `Section43FourierLaplaceComponentKernel.lean` as
+
+```lean
+theorem bvt_W_kernel_eq_osScalar_of_transformComponent_succRight
+```
+
+The proof is the documented two-limit argument:
+
+1. `tendsto_section43TimeShiftKernel_psiZ_pairing_to_bvt_W_succRight` supplies
+   the Wightman Abel limit;
+2. `tendsto_OS_S_osConjTensorProduct_timeShift_zero_succRight` supplies the
+   OS zero-time limit;
+3. `section43TimeShiftKernel_psiZ_pairing_eq_osScalar_of_transformComponent_succRight`
+   identifies the two moving scalars on the positive-height filter;
+4. `tendsto_nhds_unique` gives the zero-height kernel equality.
+
+This closes the corrected limit-level scalar-recognition seam for a single
+successor-right transform-component pair.
+
+#### 5.9.4g. Next target: transform-component carrier and all-degree finite sums
+
+This section is the implementation contract for the next production stage.
+The honest status is:
+
+1. the shell/Laplace Abel seam is closed for one successor-right
+   transform-component pair;
+2. the current `BvtTransportImageSequence` carrier is **not** the same
+   transform-component carrier;
+3. the finite-sum positivity consumer still needs the right-degree-zero terms;
+4. the next code should introduce a source-decorated carrier rather than
+   weakening the theorem above or adding wrapper hypotheses.
+
+The source-decorated carrier is the safest next production surface because it
+keeps both pieces of data that the proof actually uses: the target Minkowski
+Borchers sequence and the compact ordered Euclidean source sequence whose
+Fourier-Laplace transform component gives that target in the positive-energy
+quotient.
+
+Recommended carrier:
+
+```lean
+structure BvtTransformComponentSequence (d : ℕ) [NeZero d] where
+  toBorchers : BorchersSequence d
+  source : PositiveTimeBorchersSequence d
+  source_compact : ∀ n,
+    HasCompactSupport
+      ((((source : BorchersSequence d).funcs n : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ))
+  freq_eq : ∀ n,
+    section43FrequencyProjection (d := d) n (toBorchers.funcs n) =
+      section43FourierLaplaceTransformComponent d n
+        (((source : BorchersSequence d).funcs n : SchwartzNPoint d n))
+        (source.ordered_tsupport n)
+        (source_compact n)
+```
+
+Do not define this as a subtype of the existing `BvtTransportImageSequence`.
+The existing carrier remembers an `os1TransportComponent` preimage.  The
+transform-component carrier remembers a Fourier-Laplace source.  They may
+interact later, but conflating them now would reproduce the earlier wrapper
+mistake.
+
+The Hilbert transport on this source-decorated carrier is simply the OS vector
+of the source:
+
+```lean
+noncomputable def bvt_transform_to_osHilbert
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransformComponentSequence d) :
+    OSHilbertSpace OS :=
+  positiveTimeBorchersVectorCore (d := d) OS F.source
+```
+
+This avoids a premature well-definedness theorem for an undecorated image
+quotient.  If two different compact sources later produce the same
+transform-component target, source-independence should be proved from the
+finite-sum kernel identity, not assumed in the carrier definition.
+
+##### 5.9.4g.1. Frequency-projection surjectivity for building the core
+
+The compact transformed core needs a way to choose a Minkowski representative
+whose frequency projection is a prescribed transform component.  This should
+be implemented as a small theorem in the Section-4.3 transform file or in the
+new companion carrier file:
+
+```lean
+theorem section43FrequencyProjection_surjective
+    (d n : ℕ) [NeZero d] :
+    Function.Surjective
+      (section43FrequencyProjection (d := d) n :
+        SchwartzNPoint d n → Section43PositiveEnergyComponent (d := d) n)
+```
+
+Proof transcript:
+
+1. intro a quotient class `q`;
+2. obtain `Φ` with
+   `section43PositiveEnergyQuotientMap (d := d) n Φ = q` from
+   `surjective_section43PositiveEnergyQuotientMap`;
+3. obtain `φ` with
+   `section43FrequencyRepresentative d n φ = Φ` from
+   `section43FrequencyRepresentative_surjective`;
+4. use `φ`;
+5. close by `simpa [section43FrequencyProjection, hφ, hΦ]`.
+
+Scratch-checked Lean skeleton:
+
+```lean
+theorem section43FrequencyProjection_surjective
+    (d n : ℕ) [NeZero d] :
+    Function.Surjective
+      (section43FrequencyProjection (d := d) n :
+        SchwartzNPoint d n → Section43PositiveEnergyComponent (d := d) n) := by
+  intro q
+  obtain ⟨Φ, hΦ⟩ := surjective_section43PositiveEnergyQuotientMap (d := d) n q
+  obtain ⟨φ, hφ⟩ := section43FrequencyRepresentative_surjective d n Φ
+  refine ⟨φ, ?_⟩
+  simpa [section43FrequencyProjection, hφ] using hΦ
+```
+
+Before defining a canonical target representative, prove the zero-source
+normalization of the transform component:
+
+```lean
+theorem partialFourierSpatial_fun_zero
+    (d n : ℕ) [NeZero d]
+    (p : (Fin n → ℝ) × EuclideanSpace ℝ (Fin n × Fin d)) :
+    partialFourierSpatial_fun (d := d) (n := n)
+      (0 : SchwartzNPoint d n) p = 0
+
+theorem section43DiffPullback_zero
+    (d n : ℕ) [NeZero d]
+    (hzero_ord :
+      tsupport ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n) :
+    section43DiffPullbackCLM d n
+      ⟨(0 : SchwartzNPoint d n), hzero_ord⟩ = 0
+
+theorem section43FourierLaplaceIntegral_zero
+    (d n : ℕ) [NeZero d]
+    (hzero_ord :
+      tsupport ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (q : NPointDomain d n) :
+    section43FourierLaplaceIntegral d n
+      ⟨(0 : SchwartzNPoint d n), hzero_ord⟩ q = 0
+
+theorem section43FourierLaplaceTransformComponent_zero
+    (d n : ℕ) [NeZero d]
+    (hzero_ord :
+      tsupport ((0 : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hzero_compact :
+      HasCompactSupport ((0 : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ)) :
+    section43FourierLaplaceTransformComponent d n
+      (0 : SchwartzNPoint d n) hzero_ord hzero_compact = 0
+```
+
+Scratch-checked proof transcript:
+
+1. prove `partialFourierSpatial_fun_zero` by unfolding
+   `partialFourierSpatial_fun`, showing the time slice
+   `SchwartzMap.partialEval₂ ... = 0` by `ext η; rfl`, then rewriting the
+   Fourier transform of zero by `simp`;
+2. prove `section43DiffPullback_zero` by `ext x; simp
+   [section43DiffPullbackCLM_apply]`;
+3. prove `section43FourierLaplaceIntegral_zero` by unfolding
+   `section43FourierLaplaceIntegral` and simplifying with the two previous
+   lemmas;
+4. obtain `Φ, hΦ_rep, hΦ_q` from
+   `section43FourierLaplaceTransformComponent_has_representative`;
+5. define
+   ```lean
+   have hEqOn :
+       Set.EqOn (Φ : NPointDomain d n → ℂ) (0 : NPointDomain d n → ℂ)
+         (section43PositiveEnergyRegion d n) := by
+     intro q hq
+     rw [hΦ_rep q hq]
+     exact section43FourierLaplaceIntegral_zero d n hzero_ord q
+   ```
+6. close the quotient by
+   `section43PositiveEnergyQuotientMap_eq_of_eqOn_region`;
+7. finish with `exact hΦ_q ▸ hΦ_zero_q`.
+
+Then define the canonical target representative with an explicit zero branch:
+
+```lean
+noncomputable def section43TransformComponentTarget
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    SchwartzNPoint d n := by
+  classical
+  exact
+    if _hzero : f = 0 then
+      0
+    else
+      Classical.choose
+        (section43FrequencyProjection_surjective d n
+          (section43FourierLaplaceTransformComponent d n f hf_ord hf_compact))
+
+theorem section43TransformComponentTarget_freq_eq
+    (d n : ℕ) [NeZero d]
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ)) :
+    section43FrequencyProjection (d := d) n
+      (section43TransformComponentTarget d n f hf_ord hf_compact) =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact :=
+by
+  classical
+  by_cases hzero : f = 0
+  · subst f
+    simp [section43TransformComponentTarget,
+      section43FourierLaplaceTransformComponent_zero]
+  · simp [section43TransformComponentTarget, hzero,
+      Classical.choose_spec
+        (section43FrequencyProjection_surjective d n
+          (section43FourierLaplaceTransformComponent d n f hf_ord hf_compact))]
+```
+
+The `by classical` form is important: in scratch Lean, writing the `if` as a
+plain term left an unsynthesized `Decidable (f = 0)` instance.  The skeleton
+above compiles.
+
+This gives a direct constructor from compact positive-time Borchers data:
+
+```lean
+noncomputable def compactPositiveTime_to_BvtTransformComponentSequence
+    (F : PositiveTimeBorchersSequence d)
+    (hF_compact : ∀ n,
+      HasCompactSupport ((((F : BorchersSequence d).funcs n :
+        SchwartzNPoint d n) : NPointDomain d n → ℂ))) :
+    BvtTransformComponentSequence d where
+  toBorchers :=
+    { funcs := fun n =>
+        section43TransformComponentTarget d n
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))
+          (F.ordered_tsupport n)
+          (hF_compact n)
+      bound := (F : BorchersSequence d).bound
+      bound_spec := by
+        intro n hn
+        have hsrc0 :
+          (((F : BorchersSequence d).funcs n : SchwartzNPoint d n)) = 0 :=
+            (F : BorchersSequence d).bound_spec n hn
+        simp [section43TransformComponentTarget, hsrc0] }
+  source := F
+  source_compact := hF_compact
+  freq_eq := fun n =>
+    section43TransformComponentTarget_freq_eq d n
+      (((F : BorchersSequence d).funcs n : SchwartzNPoint d n))
+      (F.ordered_tsupport n)
+      (hF_compact n)
+```
+
+Implementation note: the explicit zero branch is not cosmetic.  Without it,
+the `Classical.choose` representative of the zero quotient need not be
+definitionally zero, and `BorchersSequence.bound_spec` would become a false
+definitional goal.  Do **not** solve this by changing the kernel theorem into a
+wrapper over arbitrary quotient classes.
+
+The constructor above has also been scratch-checked in Lean with a local
+`TestBvtTransformComponentSequence`: the `bound_spec` closes exactly by
+`simp [section43TransformComponentTarget, hsrc0]` after the zero branch is in
+place.
+
+##### 5.9.4g.2. All-degree pair kernel theorem
+
+The successor-right theorem already handles all pairs with right degree
+`k = m + 1`.  The finite-sum identity needs one public all-degree adapter:
+
+```lean
+theorem bvt_W_kernel_eq_osScalar_of_transformComponent_allDegrees
+    (d n k : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d k)
+    (f : SchwartzNPoint d n)
+    (hf_ord :
+      tsupport (f : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+    (hf_compact : HasCompactSupport (f : NPointDomain d n → ℂ))
+    (g : SchwartzNPoint d k)
+    (hg_ord :
+      tsupport (g : NPointDomain d k → ℂ) ⊆
+        OrderedPositiveTimeRegion d k)
+    (hg_compact : HasCompactSupport (g : NPointDomain d k → ℂ))
+    (hφ_freq :
+      section43FrequencyProjection (d := d) n φ =
+        section43FourierLaplaceTransformComponent d n f hf_ord hf_compact)
+    (hψ_freq :
+      section43FrequencyProjection (d := d) k ψ =
+        section43FourierLaplaceTransformComponent d k g hg_ord hg_compact) :
+    bvt_W OS lgc (n + k) (φ.conjTensorProduct ψ) =
+      OS.S (n + k)
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+```
+
+Branch `0 < k`:
+
+1. write `k = m + 1` using `Nat.exists_eq_succ_of_ne_zero`;
+2. substitute;
+3. apply the compiled
+   `bvt_W_kernel_eq_osScalar_of_transformComponent_succRight`.
+
+Branch `k = 0`, `n = 0`:
+
+1. prove the degree-zero transform evaluation lemma
+
+```lean
+theorem VanishesToInfiniteOrderOnCoincidence_zero_degree
+    {d : ℕ} (f : SchwartzNPoint d 0) :
+    VanishesToInfiniteOrderOnCoincidence f
+
+theorem section43TransformComponent_zero_eval_eq
+    (d : ℕ) [NeZero d]
+    (φ f : SchwartzNPoint d 0)
+    (hf_ord :
+      tsupport (f : NPointDomain d 0 → ℂ) ⊆
+        OrderedPositiveTimeRegion d 0)
+    (hf_compact : HasCompactSupport (f : NPointDomain d 0 → ℂ))
+    (hφ_freq :
+      section43FrequencyProjection (d := d) 0 φ =
+        section43FourierLaplaceTransformComponent d 0 f hf_ord hf_compact) :
+    φ 0 = f 0
+```
+
+2. prove it by obtaining the chosen Fourier-Laplace representative `Φ` from
+   `section43FourierLaplaceTransformComponent_has_representative`;
+3. convert quotient equality to pointwise equality on
+   `section43PositiveEnergyRegion d 0` using
+   `eqOn_region_of_section43PositiveEnergyQuotientMap_eq`;
+4. use the two degree-zero normal forms
+
+```lean
+theorem section43FrequencyRepresentative_zero_apply
+    (d : ℕ) [NeZero d] (φ : SchwartzNPoint d 0)
+    (q : NPointDomain d 0) :
+    section43FrequencyRepresentative d 0 φ q = φ 0
+
+theorem partialFourierSpatial_fun_zero_degree
+    (d : ℕ) [NeZero d]
+    (f : SchwartzNPoint d 0)
+    (hf_ord :
+      tsupport (f : NPointDomain d 0 → ℂ) ⊆ OrderedPositiveTimeRegion d 0)
+    (p : (Fin 0 → ℝ) × EuclideanSpace ℝ (Fin 0 × Fin d)) :
+    partialFourierSpatial_fun (d := d) (n := 0)
+      (section43DiffPullbackCLM d 0 ⟨f, hf_ord⟩) p = f 0
+
+theorem section43FourierLaplaceIntegral_zero_degree
+    (d : ℕ) [NeZero d]
+    (f : SchwartzNPoint d 0)
+    (hf_ord :
+      tsupport (f : NPointDomain d 0 → ℂ) ⊆ OrderedPositiveTimeRegion d 0)
+    (q : NPointDomain d 0) :
+    section43FourierLaplaceIntegral d 0 ⟨f, hf_ord⟩ q = f 0
+
+theorem section43FourierLaplaceRepresentative_zero_apply
+    (d : ℕ) [NeZero d]
+    (f Φ : SchwartzNPoint d 0)
+    (hf_ord :
+      tsupport (f : NPointDomain d 0 → ℂ) ⊆
+        OrderedPositiveTimeRegion d 0)
+    (hΦ :
+      section43FourierLaplaceRepresentative d 0 ⟨f, hf_ord⟩ Φ) :
+    Φ 0 = f 0
+
+theorem zero_degree_kernel_from_evals
+    (d : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ ψ f g : SchwartzNPoint d 0)
+    (hφ : φ 0 = f 0)
+    (hψ : ψ 0 = g 0) :
+    bvt_W OS lgc 0 (φ.conjTensorProduct ψ) =
+      OS.S 0 (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+```
+
+The zero-dimensional calculations have now been scratch-checked:
+
+1. `section43FrequencyRepresentative_zero_apply` unfolds to
+   `physicsFourierFlatCLM (flattenSchwartzNPoint φ)` at a zero-dimensional
+   frequency.  Rewrite by `← physicsFourierFlatCLM_integral`, use
+   `MeasureTheory.Measure.volume_pi_eq_dirac`, kill the empty sum by
+   `Finset.sum_eq_zero`, and finish by `Subsingleton.elim` on
+   `NPointDomain d 0`;
+2. `partialFourierSpatial_fun_zero_degree` rewrites by
+   `partialFourierSpatial_fun_eq_integral`, uses
+   `volume_euclideanSpace_eq_dirac (ι := Fin 0 × Fin d)`, and finishes by
+   `simp [section43DiffPullbackCLM_apply, nPointTimeSpatialSchwartzCLE]`
+   plus `Subsingleton.elim`;
+3. `section43FourierLaplaceIntegral_zero_degree` unfolds
+   `section43FourierLaplaceIntegral`, uses
+   `MeasureTheory.Measure.volume_pi_eq_dirac` on `Fin 0 → ℝ`, rewrites the
+   inner partial Fourier term by `partialFourierSpatial_fun_zero_degree`, and
+   closes by `simp`;
+4. `section43FourierLaplaceRepresentative_zero_apply` is just
+   `hΦ 0 (by simp [section43PositiveEnergyRegion])` followed by
+   `section43FourierLaplaceIntegral_zero_degree`;
+5. `section43TransformComponent_zero_eval_eq` obtains the representative
+   `Φ`, converts quotient equality to region equality with
+   `eqOn_region_of_section43PositiveEnergyQuotientMap_eq`, evaluates at
+   `0 ∈ section43PositiveEnergyRegion d 0`, then rewrites the two sides by
+   `section43FrequencyRepresentative_zero_apply` and
+   `section43FourierLaplaceRepresentative_zero_apply`;
+6. `VanishesToInfiniteOrderOnCoincidence_zero_degree` is vacuous:
+   destruct `hx : x ∈ CoincidenceLocus d 0` into `i j hij _` and close by
+   `False.elim (hij (Subsingleton.elim i j))`;
+7. `zero_degree_kernel_from_evals` rewrites the Wightman side by
+   `bvt_normalized OS lgc`, the Schwinger side by `lgc.normalized_zero`, then
+   uses `ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes` with
+   `VanishesToInfiniteOrderOnCoincidence_zero_degree` and finally `simp`
+   with `SchwartzMap.conjTensorProduct_apply`,
+   `SchwartzNPoint.osConjTensorProduct`,
+   `SchwartzNPoint.osConj_apply`, `SchwartzMap.tensorProduct_apply`, `hφ`,
+   and `hψ`.
+
+This branch is a normalization branch, not a shell/Laplace argument.  It should
+not mention `singleSplit`.
+
+Branch `k = 0`, `0 < n`:
+
+Implement this branch as a helper first:
+
+```lean
+theorem kernel_zero_right_of_transformComponent_succRight
+    (d m : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (φ : SchwartzNPoint d (m + 1)) (ψ : SchwartzNPoint d 0)
+    (f : SchwartzNPoint d (m + 1))
+    (hf_ord :
+      tsupport (f : NPointDomain d (m + 1) → ℂ) ⊆
+        OrderedPositiveTimeRegion d (m + 1))
+    (hf_compact : HasCompactSupport (f : NPointDomain d (m + 1) → ℂ))
+    (g : SchwartzNPoint d 0)
+    (hg_ord :
+      tsupport (g : NPointDomain d 0 → ℂ) ⊆ OrderedPositiveTimeRegion d 0)
+    (hg_compact : HasCompactSupport (g : NPointDomain d 0 → ℂ))
+    (hφ_freq :
+      section43FrequencyProjection (d := d) (m + 1) φ =
+        section43FourierLaplaceTransformComponent d (m + 1)
+          f hf_ord hf_compact)
+    (hψ_freq :
+      section43FrequencyProjection (d := d) 0 ψ =
+        section43FourierLaplaceTransformComponent d 0
+          g hg_ord hg_compact) :
+    bvt_W OS lgc ((m + 1) + 0) (φ.conjTensorProduct ψ) =
+      OS.S ((m + 1) + 0)
+        (ZeroDiagonalSchwartz.ofClassical (f.osConjTensorProduct g))
+```
+
+Scratch-checked proof transcript:
+
+1. set
+   ```lean
+   let Fφ : BorchersSequence d := BorchersSequence.single (m + 1) φ
+   let Gψ : BorchersSequence d := BorchersSequence.single 0 ψ
+   let Ff : PositiveTimeBorchersSequence d :=
+     PositiveTimeBorchersSequence.single (m + 1) f hf_ord
+   let Gg : PositiveTimeBorchersSequence d :=
+     PositiveTimeBorchersSequence.single 0 g hg_ord
+   ```
+2. apply the compiled successor-right theorem to the flipped pair:
+   ```lean
+   have hflip_kernel :
+       bvt_W OS lgc (0 + (m + 1)) (ψ.conjTensorProduct φ) =
+         OS.S (0 + (m + 1))
+           (ZeroDiagonalSchwartz.ofClassical (g.osConjTensorProduct f)) :=
+     bvt_W_kernel_eq_osScalar_of_transformComponent_succRight
+       (d := d) (n := 0) (m := m) (OS := OS) (lgc := lgc)
+       (φ := ψ) (ψ := φ) (f := g) (hf_ord := hg_ord)
+       (hf_compact := hg_compact) (g := f) (hg_ord := hf_ord)
+       (hg_compact := hf_compact) hψ_freq hφ_freq
+   ```
+3. rewrite `hflip_kernel` as a single/single inner-product equality using
+   `WightmanInnerProduct_single_single`, `PositiveTimeBorchersSequence.osInner`,
+   and `OSInnerProduct_single_single`;
+4. flip the Wightman side by
+   ```lean
+   WightmanInnerProduct_hermitian_of
+     (d := d) (W := bvt_W OS lgc)
+     (bvt_hermitian (d := d) OS lgc) Fφ Gψ
+   ```
+5. flip the OS side by
+   ```lean
+   (PositiveTimeBorchersSequence.osInner_hermitian OS Ff Gg).symm
+   ```
+6. rewrite back to the scalar target using
+   `WightmanInnerProduct_single_single`, unfold
+   `PositiveTimeBorchersSequence.osInner`, and use
+   `OSInnerProduct_single_single`.
+
+This is exactly the clean version of the older degree-zero repair, but with
+the new transform-component theorem as the positive-degree input.  Do not use
+the deprecated singleSplit shell theorem in this branch.
+
+With the helper above, the full all-degree adapter has a scratch-checked
+three-branch proof:
+
+```lean
+by
+  by_cases hk : k = 0
+  · subst k
+    by_cases hn : n = 0
+    · subst n
+      have hφ0 :=
+        section43TransformComponent_zero_eval_eq d φ f
+          hf_ord hf_compact hφ_freq
+      have hψ0 :=
+        section43TransformComponent_zero_eval_eq d ψ g
+          hg_ord hg_compact hψ_freq
+      exact zero_degree_kernel_from_evals d OS lgc φ ψ f g hφ0 hψ0
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
+      exact kernel_zero_right_of_transformComponent_succRight
+        d m OS lgc φ ψ f hf_ord hf_compact g hg_ord hg_compact
+        hφ_freq hψ_freq
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hk
+    exact bvt_W_kernel_eq_osScalar_of_transformComponent_succRight
+      (d := d) (n := n) (m := m) (OS := OS) (lgc := lgc)
+      (φ := φ) (ψ := ψ) (f := f) (hf_ord := hf_ord)
+      (hf_compact := hf_compact) (g := g) (hg_ord := hg_ord)
+      (hg_compact := hg_compact) hφ_freq hψ_freq
+```
+
+##### 5.9.4g.3. Finite-sum kernel identity on the transform carrier
+
+Once the all-degree pair theorem is compiled, the finite-sum theorem should be:
+
+```lean
+theorem bvt_wightmanInner_eq_transform_osInner
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F G : BvtTransformComponentSequence d) :
+    WightmanInnerProduct d (bvt_W OS lgc)
+        F.toBorchers G.toBorchers =
+      PositiveTimeBorchersSequence.osInner OS F.source G.source
+```
+
+Proof transcript:
+
+1. choose a common finite bound
+
+```lean
+let M :=
+  max F.toBorchers.bound
+    (max G.toBorchers.bound
+      (max ((F.source : BorchersSequence d).bound)
+        ((G.source : BorchersSequence d).bound)))
+```
+
+2. expand the Wightman inner product to `WightmanInnerProductN` at `(M+1,M+1)`
+   using `WightmanInnerProduct_eq_extended`;
+3. unfold `PositiveTimeBorchersSequence.osInner` and expand the OS inner
+   product to `OSInnerProductN` at `(M+1,M+1)` using the public
+   `OSInnerProduct_eq_extended`;
+4. apply `Finset.sum_congr` twice;
+5. for each pair `(n,k)`, use `F.freq_eq n`, `G.freq_eq k`,
+   `F.source.ordered_tsupport n`, `G.source.ordered_tsupport k`,
+   `F.source_compact n`, and `G.source_compact k`;
+6. close the term by
+   `bvt_W_kernel_eq_osScalar_of_transformComponent_allDegrees`;
+7. use `OSInnerProduct_single_single` to identify the OS term with the
+   single/single source scalar.
+
+The finite-sum skeleton has been scratch-checked assuming the exact all-degree
+kernel theorem above.  The proof is:
+
+```lean
+let M :=
+  max F.toBorchers.bound
+    (max G.toBorchers.bound
+      (max ((F.source : BorchersSequence d).bound)
+        ((G.source : BorchersSequence d).bound)))
+have hW :
+    WightmanInnerProduct d (bvt_W OS lgc) F.toBorchers G.toBorchers =
+      WightmanInnerProductN d (bvt_W OS lgc) F.toBorchers G.toBorchers
+        (M + 1) (M + 1) := by
+  apply WightmanInnerProduct_eq_extended
+    (d := d) (W := bvt_W OS lgc)
+    (hlin := bvt_W_linear (d := d) OS lgc)
+  · exact Nat.succ_le_succ
+      (le_trans (le_max_left _ _) (le_of_eq rfl))
+  · exact Nat.succ_le_succ
+      (le_trans (le_max_left _ _) (le_max_right _ _))
+have hOS :
+    PositiveTimeBorchersSequence.osInner OS F.source G.source =
+      OSInnerProductN d OS.S
+        (F.source : BorchersSequence d) (G.source : BorchersSequence d)
+        (M + 1) (M + 1) := by
+  unfold PositiveTimeBorchersSequence.osInner
+  apply OSInnerProduct_eq_extended (d := d) OS.S OS.E0_linear
+  · exact Nat.succ_le_succ
+      (le_trans (le_max_left _ _) (le_max_right _ _))
+  · exact Nat.succ_le_succ
+      (le_trans (le_max_right _ _) (le_max_right _ _))
+rw [hW, hOS]
+unfold WightmanInnerProductN OSInnerProductN
+refine Finset.sum_congr rfl ?_
+intro n hn
+refine Finset.sum_congr rfl ?_
+intro k hk
+exact bvt_W_kernel_eq_osScalar_of_transformComponent_allDegrees
+  d n k OS lgc
+  (F.toBorchers.funcs n) (G.toBorchers.funcs k)
+  (((F.source : BorchersSequence d).funcs n : SchwartzNPoint d n))
+  (F.source.ordered_tsupport n)
+  (F.source_compact n)
+  (((G.source : BorchersSequence d).funcs k : SchwartzNPoint d k))
+  (G.source.ordered_tsupport k)
+  (G.source_compact k)
+  (F.freq_eq n)
+  (G.freq_eq k)
+```
+
+The bound subgoals are just the displayed `Nat.succ_le_succ` / `le_max_left` /
+`le_max_right` / `le_trans` lines; no new mathematical lemma is needed.
+
+This avoids reusing the old transport-image private padded-sum lemmas.  Those
+lemmas remain useful as a pattern, but the transform-carrier proof should be
+based directly on the public `WightmanInnerProduct_eq_extended` and
+`OSInnerProduct_eq_extended` surfaces.
+
+No theorem in this proof should mention `BvtTransportImageSequence`.
+
+The self/norm-square corollary is then immediate:
+
+```lean
+theorem bvt_wightmanInner_self_nonneg_onTransformImage
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransformComponentSequence d) :
+    0 ≤
+      (WightmanInnerProduct d (bvt_W OS lgc)
+        F.toBorchers F.toBorchers).re
+```
+
+Proof transcript:
+
+1. rewrite by `bvt_wightmanInner_eq_transform_osInner`;
+2. close directly by `PositiveTimeBorchersSequence.osInner_nonneg_self`.
+
+Production status, 2026-04-17: this carrier packet is implemented in
+`Section43FourierLaplaceTransformCarrier.lean` and exact-checked.  The file
+imports `OSToWightmanBoundaryValuesComparison.lean`, not
+`OSToWightmanBoundaryValues.lean`, so it can later be imported by the public
+boundary-values layer without an import cycle.  The lower-layer helper theorems
+`bvt_normalized_from_boundaryValue` and
+`bvt_hermitian_from_boundaryValue` are implemented in
+`OSToWightmanBoundaryValuesComparison.lean` and exact-checked.
+
+##### 5.9.4g.4. Density/closure after the transform-carrier theorem
+
+The transform-carrier positivity theorem proves positivity on compact
+Fourier-Laplace transformed images.  The final public theorem still needs a
+separate density/continuity closure.  There is an important correction to the
+previous draft of this subsection: OS Hilbert-space density of positive-time
+vectors is **not sufficient by itself** to prove positivity for an arbitrary
+raw `BorchersSequence d`.  It only shows that compact positive-time source
+vectors are dense in the OS Hilbert completion.  The public theorem
+
+```lean
+∀ F : BorchersSequence d,
+  0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
+```
+
+also needs a Wightman-side closure mechanism saying that the raw Wightman
+quadratic form is the limit of compact transform-image quadratic forms.
+
+The lower-layer compact-source Hilbert approximation is still useful, and it
+should be exposed under a name that does not force an import of
+`OSToWightmanPositivity.lean`:
+
+```lean
+noncomputable def positiveTimeBorchersVectorCore
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    OSHilbertSpace OS :=
+  (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+
+theorem positiveTimeBorchersVectorCore_dense
+    (OS : OsterwalderSchraderAxioms d) :
+    Dense (Set.range (positiveTimeBorchersVectorCore (d := d) OS))
+
+theorem positiveTimeBorchersVectorCore_compactApprox_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        positiveTimeBorchersVectorCore (d := d) OS
+          (compactApproxPositiveTimeBorchers (d := d) F N))
+      Filter.atTop
+      (nhds (positiveTimeBorchersVectorCore (d := d) OS F))
+```
+
+This is already essentially proved inside
+`OSToWightmanSpatialMomentum.lean`: the private proof of
+`tendsto_compactApproxPositiveTimeBorchers_diff_osInner` is used there to show
+the Hilbert norm of
+`compactApproxPositiveTimeBorchers F N - F` tends to zero.  The next
+implementation should expose a small public theorem with the statement above,
+not duplicate the long spatial-momentum proof.  This theorem belongs in a
+lower import layer such as `OSToWightmanSpatialMomentum.lean`, because
+`OSToWightmanBoundaryValues.lean` cannot import
+`OSToWightmanPositivity.lean`.
+
+Production status, 2026-04-17: this lower-layer support packet is implemented
+and exact-checked in `OSToWightmanSpatialMomentum.lean`:
+
+```lean
+positiveTimeBorchersVectorCore
+positiveTimeBorchersVectorCore_dense
+positiveTimeBorchersVectorCore_compactApprox_tendsto
+```
+
+Then construct a dense range theorem for the transform carrier:
+
+```lean
+noncomputable def bvt_transform_to_osHilbert
+    (OS : OsterwalderSchraderAxioms d)
+    (F : BvtTransformComponentSequence d) :
+    OSHilbertSpace OS :=
+  positiveTimeBorchersVectorCore (d := d) OS F.source
+
+theorem bvt_transform_to_osHilbert_dense
+    (OS : OsterwalderSchraderAxioms d) :
+    Dense (Set.range (bvt_transform_to_osHilbert (d := d) OS))
+```
+
+Proof transcript:
+
+1. start from `positiveTimeBorchersVector_dense`;
+2. approximate each positive-time vector by compact approximants
+   `compactApproxPositiveTimeBorchers F N`;
+3. for each compact approximant, build a
+   `BvtTransformComponentSequence` using
+   `compactPositiveTime_to_BvtTransformComponentSequence` and
+   `compactApproxPositiveTimeBorchers_component_compact`;
+4. the transform Hilbert vector of that carrier is definitionally
+   `positiveTimeBorchersVector OS (compactApproxPositiveTimeBorchers F N)`;
+5. conclude density by closure.
+
+Production status, 2026-04-17: this carrier Hilbert-transport packet is
+implemented and exact-checked in `Section43FourierLaplaceTransformCarrier.lean`:
+
+```lean
+bvt_transform_to_osHilbert
+bvt_transform_to_osHilbert_compactPositiveTime
+bvt_transform_to_osHilbert_dense
+```
+
+The proof uses `mem_closure_of_tendsto` with the compiled
+`positiveTimeBorchersVectorCore_compactApprox_tendsto`, then closes density by
+`positiveTimeBorchersVectorCore_dense` and monotonicity of closure.
+
+This Hilbert-density theorem is a support theorem, not the final closure.
+After it, the remaining Wightman-side theorem must be one of the following
+two explicit surfaces.
+
+Preferred quotient-density surface:
+
+```lean
+structure Section43CompactOrderedSource (d n : ℕ) [NeZero d] where
+  f : SchwartzNPoint d n
+  ordered :
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n
+  compact : HasCompactSupport (f : NPointDomain d n → ℂ)
+
+noncomputable def section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    Section43CompactOrderedSource d n →
+      Section43PositiveEnergyComponent (d := d) n :=
+  fun f =>
+    section43FourierLaplaceTransformComponent d n f.f f.ordered f.compact
+
+theorem denseRange_section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    DenseRange (section43FourierLaplaceTransformComponentMap d n)
+```
+
+Direct Wightman-closure surface:
+
+```lean
+theorem exists_transformComponentSequence_approximating_wightmanQuadratic
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d) :
+    ∃ A : ℕ → BvtTransformComponentSequence d,
+      Filter.Tendsto
+        (fun N : ℕ =>
+          WightmanInnerProduct d (bvt_W OS lgc)
+            (A N).toBorchers (A N).toBorchers)
+        Filter.atTop
+        (nhds (WightmanInnerProduct d (bvt_W OS lgc) F F))
+```
+
+The preferred implementation should prove the quotient-density surface first
+and derive the direct Wightman-closure surface from it using finite support and
+continuity.  The direct theorem is acceptable only if its proof explicitly
+passes through frequency-projection descent and does not hide the same density
+problem behind an existential wrapper.
+
+The Wightman-side closure needs these lower-level facts:
+
+```lean
+theorem bvt_W_eq_of_section43FrequencyProjection_eq_public
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (φ ψ : SchwartzNPoint d N)
+    (hproj :
+      section43FrequencyProjection (d := d) N φ =
+        section43FrequencyProjection (d := d) N ψ) :
+    bvt_W OS lgc N φ = bvt_W OS lgc N ψ
+
+noncomputable def bvt_W_descended_frequencyProjection
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    Section43PositiveEnergyComponent (d := d) N →L[ℂ] ℂ
+```
+
+Current implementation status:
+
+1. `bvt_W_eq_of_section43FrequencyProjection_eq_public` is now implemented in
+   `OSToWightmanBoundaryValueLimits.lean`.  It is a public no-extra-argument
+   version of the already compiled `Section43WightmanDescent.lean` descent
+   lemma, using the private flattened `bvt_W` dual-cone distribution witness
+   from the same lower-layer file.  The exact file check
+   `lake env lean OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValueLimits.lean`
+   terminates successfully.
+2. `physicsFourierFlatInvCLM`,
+   `physicsFourierFlatCLM_inv_right`,
+   `section43FrequencyRepresentativeInv`, and
+   `section43FrequencyRepresentativeInv_right` are now implemented in
+   `Section43FourierLaplaceTransform.lean`.  These expose the continuous
+   linear right inverse of the deterministic frequency representative, using
+   Mathlib's inverse Fourier CLM.  This is the quotient-safe replacement for
+   arbitrary preimage choice.
+3. `bvt_W_descended_frequencyProjection` and
+   `bvt_W_descended_frequencyProjection_apply` are now implemented in
+   `OSToWightmanBoundaryValueLimits.lean`.  The raw representative functional
+   is
+   `Φ ↦ bvt_W OS lgc N (section43FrequencyRepresentativeInv d N Φ)`, and it
+   descends through `section43PositiveEnergyQuotientMap` because
+   `bvt_W_eq_of_section43FrequencyProjection_eq_public` proves vanishing on the
+   quotient kernel.
+
+The important non-regression point is that
+`bvt_W_descended_frequencyProjection` was **not** implemented by choosing
+arbitrary preimages of the surjective map `section43FrequencyProjection`.
+Choice would give a well-defined scalar only after the descent theorem, but it
+would not provide linearity or continuity.  The implemented route is the
+mathematically honest continuous-right-inverse route.
+
+If the implementation imports additional helper files for this quotient
+continuity package, those helper files must not import
+`OSToWightmanBoundaryValues.lean` or `OSToWightmanPositivity.lean`; otherwise
+they cannot be used to close the private `bvt_W_positive` theorem in
+`OSToWightmanBoundaryValues.lean`.
+
+Only after the Hilbert compact-approximation theorem, the transform-component
+density theorem, and the Wightman quotient-continuity/descent theorem are
+available should the proof attempt a public theorem-3 positivity closure beyond
+the compact transformed image.  The Wightman quotient-continuity/descent part is
+now implemented.  The remaining proof-doc work is the exact transformed-image
+density/finite-support closure theorem needed to pass from compact
+Fourier-Laplace transform images to an arbitrary public `BorchersSequence d`.
+
 ### 5.9.5. Detailed proof of the final public closure
 
 The final theorem
@@ -16436,6 +23970,1715 @@ is proved in four formal stages:
 The only continuity allowed here is the bounded finite-support continuity
 already documented in the repo. Rebuilding theorem 3 from a new global topology
 on raw `BorchersSequence d` remains off-route.
+
+### 5.9.6. Exact remaining closure packet after quotient descent
+
+After the compiled quotient-descent work, the final closure should no longer be
+phrased as a vague Hilbert-density slogan.  The exact remaining Lean packet is
+finite and componentwise.
+
+Already compiled inputs:
+
+```lean
+theorem bvt_W_descended_frequencyProjection_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (φ : SchwartzNPoint d N) :
+    bvt_W_descended_frequencyProjection (d := d) OS lgc N
+        (section43FrequencyProjection (d := d) N φ) =
+      bvt_W OS lgc N φ
+
+theorem bvt_wightmanInner_self_nonneg_onTransformImage
+    (d : ℕ) [NeZero d]
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BvtTransformComponentSequence d) :
+    0 ≤
+      (WightmanInnerProduct d (bvt_W OS lgc)
+        F.toBorchers F.toBorchers).re
+```
+
+The finite-support closure theorem with pairwise tensor-frequency convergence
+now has this compiled production surface:
+
+```lean
+theorem tendsto_wightmanInner_self_of_pairwise_frequencyProjection_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d)
+    (A : ℕ → BvtTransformComponentSequence d)
+    (hA_bound : ∀ K, (A K).toBorchers.bound ≤ F.bound)
+    (hpair :
+      ∀ n m, n ≤ F.bound → m ≤ F.bound →
+        Filter.Tendsto
+          (fun K =>
+            section43FrequencyProjection (d := d) (n + m)
+              (((A K).toBorchers.funcs n).conjTensorProduct
+                ((A K).toBorchers.funcs m)))
+          Filter.atTop
+          (nhds
+            (section43FrequencyProjection (d := d) (n + m)
+              ((F.funcs n).conjTensorProduct (F.funcs m))))) :
+    Filter.Tendsto
+      (fun K =>
+        WightmanInnerProduct d (bvt_W OS lgc)
+          (A K).toBorchers (A K).toBorchers)
+      Filter.atTop
+      (nhds (WightmanInnerProduct d (bvt_W OS lgc) F F))
+```
+
+Proof transcript:
+
+1. Rewrite both Wightman inner products as finite `WightmanInnerProductN` sums
+   over the fixed range `F.bound + 1`.  For `A K`, use `hA_bound` and
+   `WightmanInnerProduct_eq_extended`; for `F`, use `rfl` or the existing
+   `WightmanInnerProduct_eq_N`.
+2. For each fixed `n m` in the range, rewrite both scalar terms using
+   `bvt_W_descended_frequencyProjection_apply`:
+
+   ```lean
+   bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ)
+     =
+   bvt_W_descended_frequencyProjection (d := d) OS lgc (n + m)
+     (section43FrequencyProjection (d := d) (n + m)
+       (φ.conjTensorProduct ψ))
+   ```
+
+3. Apply continuity of the descended continuous linear map
+   `bvt_W_descended_frequencyProjection (d := d) OS lgc (n + m)` to `hpair`.
+4. Use finite `Finset.Tendsto.sum` twice to pass termwise convergence through
+   the fixed finite double sum.
+
+Then the positivity closure is a one-line closed-half-line argument:
+
+```lean
+theorem bvt_W_positive_of_pairwise_frequencyProjection_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d)
+    (A : ℕ → BvtTransformComponentSequence d)
+    (hA_bound : ∀ K, (A K).toBorchers.bound ≤ F.bound)
+    (hpair : ... same as above ...) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
+```
+
+Proof transcript:
+
+1. apply
+   `tendsto_wightmanInner_self_of_pairwise_frequencyProjection_tendsto`;
+2. compose with `Complex.continuous_re.continuousAt`;
+3. use `isClosed_Ici.mem_of_tendsto`;
+4. discharge eventual nonnegativity by
+   `bvt_wightmanInner_self_nonneg_onTransformImage (A K)`.
+
+Production status, 2026-04-17: both the convergence theorem and the positivity
+closure theorem are implemented and exact-checked in
+`Section43FourierLaplaceClosure.lean`:
+
+```lean
+tendsto_wightmanInner_self_of_pairwise_frequencyProjection_tendsto
+bvt_W_positive_of_pairwise_frequencyProjection_tendsto
+```
+
+This theorem is a correct sufficient finite-support closure theorem, but it
+must not be treated as the only final density surface.  Its hypothesis asks for
+convergence of the full tensor frequency projection
+
+```lean
+section43FrequencyProjection (d := d) (n + m)
+  (((A K).toBorchers.funcs n).conjTensorProduct
+    ((A K).toBorchers.funcs m))
+```
+
+in the full Section-4.3 positive-energy quotient.  That is stronger than what
+Lemma 8.2 naturally supplies componentwise.  The actual OS-route density step
+should therefore be phrased through a descended Wightman pair scalar, where the
+Wightman spectral support and the existing spectral-region factorization make
+component quotient convergence sufficient.
+
+The old pairwise-density theorem remains a useful optional sufficient target:
+
+```lean
+theorem exists_transformComponentSequence_pairwise_frequencyProjection_tendsto
+    (F : BorchersSequence d) :
+    ∃ A : ℕ → BvtTransformComponentSequence d,
+      (∀ K, (A K).toBorchers.bound ≤ F.bound) ∧
+      ∀ n m, n ≤ F.bound → m ≤ F.bound →
+        Filter.Tendsto
+          (fun K =>
+            section43FrequencyProjection (d := d) (n + m)
+              (((A K).toBorchers.funcs n).conjTensorProduct
+                ((A K).toBorchers.funcs m)))
+          Filter.atTop
+          (nhds
+            (section43FrequencyProjection (d := d) (n + m)
+              ((F.funcs n).conjTensorProduct (F.funcs m)))))
+```
+
+It should only be pursued if the proof explicitly establishes tensor-frequency
+projection convergence.  It must not be inferred just from component
+Fourier-Laplace density.
+
+### 5.9.7. Corrected final closure: finite product of component quotients
+
+The implementation-ready final closure should use the finite product of
+component Section-4.3 quotients, not the stronger pairwise tensor-projection
+surface.  This matches OS I Lemma 8.2: the Fourier-Laplace transform has dense
+range in the half-space component target, and zero kernel, but it does not
+provide arbitrary ambient Schwartz representatives.
+
+#### 5.9.7a. Descended Wightman pair scalar
+
+For each pair of degrees, prove that the Wightman tensor scalar descends through
+the two component frequency projections:
+
+```lean
+theorem bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {n m : ℕ}
+    (φ₁ φ₂ : SchwartzNPoint d n)
+    (ψ₁ ψ₂ : SchwartzNPoint d m)
+    (hφ :
+      section43FrequencyProjection (d := d) n φ₁ =
+        section43FrequencyProjection (d := d) n φ₂)
+    (hψ :
+      section43FrequencyProjection (d := d) m ψ₁ =
+        section43FrequencyProjection (d := d) m ψ₂) :
+    bvt_W OS lgc (n + m) (φ₁.conjTensorProduct ψ₁) =
+      bvt_W OS lgc (n + m) (φ₂.conjTensorProduct ψ₂)
+```
+
+The successor-right proof is fully determined by already compiled ingredients:
+
+1. Use `bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion`
+   to represent `bvt_W OS lgc (n + (m + 1))` by a flattened distribution
+   `Tflat` supported in `section43WightmanSpectralRegion`.
+2. Rewrite both flattened conjugate tensors on that spectral region using
+   `physicsFourierFlatCLM_flatten_conjTensorProduct_eq_frequencyRepresentatives_on_spectralRegion`.
+3. Convert the component projection equalities into equality of the two
+   frequency representatives on `section43PositiveEnergyRegion`, using
+   `eqOn_region_of_section43PositiveEnergyQuotientMap_eq` after unfolding
+   `section43FrequencyProjection`.
+4. Use
+   `section43LeftBorchersBlock_mem_positiveEnergy_of_mem_spectralRegion` and
+   `section43RightTailBlock_mem_positiveEnergy_of_mem_spectralRegion` to apply
+   those component EqOn statements to the left Borchers block and right tail
+   block.
+5. The two factorizations are therefore pointwise equal on
+   `section43WightmanSpectralRegion`; conclude by
+   `hasFourierSupportIn_eqOn`.
+
+The zero-right and zero-left degree cases are separate small packets.  They
+must not be hidden by a bogus successor rewrite.  Use the compiled degree-zero
+normal forms in `Section43FourierLaplaceTransformCarrier.lean`:
+
+```lean
+section43TransformComponent_zero_eval_eq
+zero_degree_kernel_from_evals
+kernel_zero_right_of_transformComponent_succRight
+```
+
+or prove the corresponding general zero-degree scalar descent directly from
+the degree-zero frequency representative/evaluation lemmas and
+`bvt_W_eq_of_section43FrequencyProjection_eq_public`.
+
+After scalar descent, define the continuous descended pair map:
+
+```lean
+noncomputable def bvt_W_pairing_descended_frequencyProjection
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ) :
+    Section43PositiveEnergyComponent (d := d) n →
+      Section43PositiveEnergyComponent (d := d) m → ℂ
+
+theorem continuous_bvt_W_pairing_descended_frequencyProjection
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ) :
+    Continuous
+      (fun p : Section43PositiveEnergyComponent (d := d) n ×
+          Section43PositiveEnergyComponent (d := d) m =>
+        bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m
+          p.1 p.2)
+
+theorem bvt_W_pairing_descended_frequencyProjection_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n m : ℕ)
+    (φ : SchwartzNPoint d n) (ψ : SchwartzNPoint d m) :
+    bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n m
+      (section43FrequencyProjection (d := d) n φ)
+      (section43FrequencyProjection (d := d) m ψ) =
+    bvt_W OS lgc (n + m) (φ.conjTensorProduct ψ)
+```
+
+Implementation note: continuity should be proved from the product open-quotient
+map, not from arbitrary preimage choice.  Use
+`IsOpenQuotientMap.prodMap` and `IsQuotientMap.continuous_iff` for the product
+of the two `section43PositiveEnergyQuotientMap`s.  The raw map behind the
+quotient is continuous because it is the composition of the continuous inverse
+frequency representative sections, `conjTensorProduct_continuous_bvt`-style
+continuity, and `bvt_W_continuous`.
+
+Production status, 2026-04-17: this pair-scalar packet is now compiled in
+`Section43FourierLaplaceClosure.lean`.
+
+Compiled theorems:
+
+```lean
+bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq_succRight
+section43FrequencyProjection_zero_eval_eq
+bvt_W_conjTensorProduct_eq_of_section43FrequencyProjection_eq
+bvt_W_pairing_descended_frequencyProjection
+bvt_W_pairing_descended_frequencyProjection_apply
+continuous_bvt_W_pairing_descended_frequencyProjection
+```
+
+The continuity proof follows the intended quotient route.  It uses a local copy
+of the already validated joint continuity proof for
+`SchwartzMap.conjTensorProduct`, composes it with the continuous inverse
+frequency representatives `section43FrequencyRepresentativeInv d n` and
+`section43FrequencyRepresentativeInv d m`, then applies
+`IsOpenQuotientMap.prodMap` to descend continuity from the raw representative
+map to the product of the two Section-4.3 quotients.  No arbitrary preimage
+choice and no tensor-projection wrapper is used.
+
+#### 5.9.7b. Finite product quadratic form
+
+For each bound `B`, define the finite product of component quotients:
+
+```lean
+abbrev Section43FiniteComponentProduct (d B : ℕ) [NeZero d] :=
+  (n : Fin (B + 1)) → Section43PositiveEnergyComponent (d := d) n.val
+```
+
+Then define the descended finite Wightman quadratic form:
+
+```lean
+noncomputable def bvt_W_finiteComponentQuadratic
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (B : ℕ) :
+    Section43FiniteComponentProduct d B → ℂ :=
+  fun u =>
+    ∑ n : Fin (B + 1), ∑ m : Fin (B + 1),
+      bvt_W_pairing_descended_frequencyProjection (d := d) OS lgc n.val m.val
+        (u n) (u m)
+```
+
+Prove:
+
+```lean
+theorem continuous_bvt_W_finiteComponentQuadratic ...
+
+theorem bvt_W_finiteComponentQuadratic_apply_borchers
+    (F : BorchersSequence d)
+    (hB : F.bound ≤ B) :
+    bvt_W_finiteComponentQuadratic (d := d) OS lgc B
+      (fun n => section43FrequencyProjection (d := d) n.val (F.funcs n.val)) =
+    WightmanInnerProduct d (bvt_W OS lgc) F F
+```
+
+The proof is a finite-sum rewrite using
+`bvt_W_pairing_descended_frequencyProjection_apply` and
+`WightmanInnerProduct_eq_extended`.
+
+Production status, 2026-04-17: this finite-product quadratic unit is now
+compiled in `Section43FourierLaplaceClosure.lean`.
+
+Compiled declarations:
+
+```lean
+Section43FiniteComponentProduct
+bvt_W_finiteComponentQuadratic
+continuous_bvt_W_finiteComponentQuadratic
+bvt_W_finiteComponentQuadratic_apply_borchers
+```
+
+The implemented proof follows this safe Lean order:
+
+1. Add `Section43FiniteComponentProduct` and
+   `bvt_W_finiteComponentQuadratic` to
+   `Section43FourierLaplaceClosure.lean`.
+2. Prove `continuous_bvt_W_finiteComponentQuadratic` by two nested
+   `continuous_finset_sum` calls.  For each summand, compose
+   `continuous_bvt_W_pairing_descended_frequencyProjection OS lgc n.val m.val`
+   with the continuous coordinate map
+   `u ↦ (u n, u m)`.  The coordinate maps are `continuous_apply n` and
+   `continuous_apply m`; the product map is `.prodMk`.
+3. Prove `bvt_W_finiteComponentQuadratic_apply_borchers` with the hypothesis
+   `hB : F.bound ≤ B`.  Rewrite
+   `WightmanInnerProduct d (bvt_W OS lgc) F F` as
+   `WightmanInnerProductN d (bvt_W OS lgc) F F (B + 1) (B + 1)` using
+   `WightmanInnerProduct_eq_extended` and `Nat.succ_le_succ hB`, then unfold
+   both finite sums and apply
+   `bvt_W_pairing_descended_frequencyProjection_apply` termwise.
+4. Keep the theorem statement indexed by `Fin (B + 1)`.  Do not switch to a
+   list or wrapper family; the `Fin` product is exactly what `DenseRange.piMap`
+   will consume later.
+
+The exact-check friction was only the standard
+`Finset.sum_fin_eq_sum_range` guard:
+
+```lean
+if h : n < B + 1 then ... else 0
+```
+
+It is discharged directly from the range-membership hypotheses produced by
+`Finset.sum_congr`.  No mathematical side condition is hidden there.
+
+#### 5.9.7c. Dense transform image in the finite product
+
+The analytic density input should be isolated at the component level:
+
+```lean
+structure Section43CompactOrderedSource (d n : ℕ) [NeZero d] where
+  f : SchwartzNPoint d n
+  ordered :
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n
+  compact : HasCompactSupport (f : NPointDomain d n → ℂ)
+
+noncomputable def section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    Section43CompactOrderedSource d n →
+      Section43PositiveEnergyComponent (d := d) n :=
+  fun f =>
+    section43FourierLaplaceTransformComponent d n f.f f.ordered f.compact
+
+theorem denseRange_section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    DenseRange (section43FourierLaplaceTransformComponentMap d n)
+```
+
+This is the exact Lean version of the OS I Lemma 8.2 dense-range input.  It is
+the next proof-doc item if the analytic proof is not yet implementation-ready.
+It should be proved by a non-QFT Fourier-Laplace density theorem for compactly
+supported smooth functions in the strict positive orthant, followed by the
+already compiled Section-4.3 coordinate changes.  It is not the old
+`os1TransportComponent` density theorem, which is false.
+
+The quotient-map formulation now compiled in Lean is:
+
+```lean
+theorem denseRange_section43FourierLaplaceTransformComponentMap_of_dense_preimage
+    (d n : ℕ) [NeZero d]
+    (hpre :
+      Dense
+        ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+          Set.range (section43FourierLaplaceTransformComponentMap d n))) :
+    DenseRange (section43FourierLaplaceTransformComponentMap d n)
+```
+
+It uses `IsOpenQuotientMap.dense_preimage_iff` for the open quotient map
+`section43PositiveEnergyQuotientMap`.  Thus the remaining analytic theorem can
+be stated entirely in current production types:
+
+```lean
+theorem dense_section43FourierLaplaceTransformComponentMap_preimage
+    (d n : ℕ) [NeZero d] :
+    Dense
+      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+        Set.range (section43FourierLaplaceTransformComponentMap d n))
+```
+
+This says that every ambient Schwartz representative can be approximated,
+modulo functions vanishing on `section43PositiveEnergyRegion`, by genuine OS I
+`(4.19)-(4.20)` Fourier-Laplace transforms of compact ordered positive-time
+sources.
+
+For a fixed finite bound, combine the component dense-range theorem with
+Mathlib's product theorem:
+
+```lean
+theorem denseRange_section43FiniteTransformComponentMap
+    (d B : ℕ) [NeZero d] :
+    DenseRange
+      (fun src : (n : Fin (B + 1)) =>
+          Section43CompactOrderedSource d n.val =>
+        fun n =>
+          section43FourierLaplaceTransformComponentMap d n.val (src n))
+```
+
+The proof should be `DenseRange.piMap`.
+
+This analytic density theorem is now the next proof-doc gap.  The finite-product closure is not fully
+implementation-ready until the docs specify the exact non-QFT
+Fourier-Laplace dense-range theorem being imported or proved, including:
+
+1. the source space of compact smooth/Schwartz functions supported in the
+   strict ordered positive-time region;
+2. the target topology, namely the Section-4.3 quotient
+   `Section43PositiveEnergyComponent d n`;
+3. the coordinate transport from the analytic half-space theorem to
+   `section43FourierLaplaceTransformComponent`;
+4. the zero-kernel statement only if it is needed for injectivity later, not
+   for the closed-set positivity argument itself.
+
+Until that analytic density theorem is documented at this level, the Lean
+implementation should stop after the finite quadratic form and transformed
+image positivity-on-dense-set bridge, rather than attacking `bvt_W_positive`
+directly.
+
+Production status, 2026-04-17: the product-topology/source-carrier split before
+the analytic theorem is now compiled.
+
+Compiled declarations:
+
+```lean
+Section43CompactOrderedSource
+section43FourierLaplaceTransformComponentMap
+section43FiniteTransformComponentMap
+denseRange_section43FiniteTransformComponentMap_of_components
+section43FiniteSource_to_positiveTimeBorchersSequence
+section43FiniteSource_to_positiveTimeBorchersSequence_compact
+section43FiniteSource_to_BvtTransformComponentSequence
+bvt_W_finiteComponentQuadratic_nonneg_on_finiteTransformComponentMap
+bvt_W_finiteComponentQuadratic_nonneg_of_component_denseRange
+bvt_W_positive_of_component_denseRange
+denseRange_section43FourierLaplaceTransformComponentMap_of_dense_preimage
+bvt_W_positive_of_component_dense_preimage
+```
+
+The implementation uses this split:
+
+```lean
+structure Section43CompactOrderedSource (d n : ℕ) [NeZero d] where
+  f : SchwartzNPoint d n
+  ordered :
+    tsupport (f : NPointDomain d n → ℂ) ⊆ OrderedPositiveTimeRegion d n
+  compact : HasCompactSupport (f : NPointDomain d n → ℂ)
+
+noncomputable def section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    Section43CompactOrderedSource d n →
+      Section43PositiveEnergyComponent (d := d) n :=
+  fun src =>
+    section43FourierLaplaceTransformComponent d n
+      src.f src.ordered src.compact
+
+noncomputable def section43FiniteTransformComponentMap
+    (d B : ℕ) [NeZero d] :
+    ((n : Fin (B + 1)) → Section43CompactOrderedSource d n.val) →
+      Section43FiniteComponentProduct d B :=
+  fun src n => section43FourierLaplaceTransformComponentMap d n.val (src n)
+```
+
+The finite-product density theorem should be conditional on component density:
+
+```lean
+theorem denseRange_section43FiniteTransformComponentMap_of_components
+    (d B : ℕ) [NeZero d]
+    (hdense :
+      ∀ n : Fin (B + 1),
+        DenseRange (section43FourierLaplaceTransformComponentMap d n.val)) :
+    DenseRange (section43FiniteTransformComponentMap d B)
+```
+
+Proof: unfold `section43FiniteTransformComponentMap`, then use
+`DenseRange.piMap hdense`.  This is a pure product-topology step and should be
+compiled before the analytic theorem is attempted.  This theorem is now
+compiled as `denseRange_section43FiniteTransformComponentMap_of_components`.
+
+The on-image positivity theorem should also be separated from analytic density:
+
+```lean
+theorem bvt_W_finiteComponentQuadratic_nonneg_on_finiteTransformComponentMap
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (B : ℕ)
+    (src : (n : Fin (B + 1)) → Section43CompactOrderedSource d n.val) :
+    0 ≤
+      (bvt_W_finiteComponentQuadratic (d := d) OS lgc B
+        (section43FiniteTransformComponentMap d B src)).re
+```
+
+Implementation transcript for this theorem:
+
+1. Build a `PositiveTimeBorchersSequence d` with bound `B`, whose component in
+   degree `k` is `src ⟨k, Nat.lt_succ_of_le hk⟩.f` when `hk : k ≤ B`, and `0`
+   otherwise.  Use `k ≤ B`, not `k < B + 1`, because Lean normalizes the latter
+   to the former in dependent `if` branches.
+2. Its ordered-support proof is
+   `src ⟨k, Nat.lt_succ_of_le hk⟩.ordered` in the in-bound branch, and the
+   zero-support proof out of bound.
+3. Its compact-support proof is
+   `src ⟨k, Nat.lt_succ_of_le hk⟩.compact` in the in-bound branch, and
+   `HasCompactSupport.zero` out of bound.
+4. Build a `BvtTransformComponentSequence d` using
+   `section43TransformComponentTarget` in the in-bound branch and `0` out of
+   bound.  Its `freq_eq` field is
+   `section43TransformComponentTarget_freq_eq` in bound; out of bound, both
+   sides are zero because the source component is zero and
+   `section43FourierLaplaceTransformComponent_zero` applies.
+5. The associated `toBorchers.bound` is `B`, so
+   `bvt_W_finiteComponentQuadratic_apply_borchers` applies with `hB := le_rfl`.
+6. Rewrite each finite component of the map by the carrier's `freq_eq`; then
+   close with `bvt_wightmanInner_self_nonneg_onTransformImage`.
+
+This theorem is now compiled as
+`bvt_W_finiteComponentQuadratic_nonneg_on_finiteTransformComponentMap`.
+
+After these two conditional/product theorems compile, the final finite
+component nonnegativity theorem is one line from
+`bvt_W_finiteComponentQuadratic_nonneg_of_denseRange`, with
+`T := section43FiniteTransformComponentMap d B`,
+`hT_dense := denseRange_section43FiniteTransformComponentMap_of_components ...`,
+and `hT_nonneg := bvt_W_finiteComponentQuadratic_nonneg_on_finiteTransformComponentMap ...`.
+This is now compiled as
+`bvt_W_finiteComponentQuadratic_nonneg_of_component_denseRange`, and the
+arbitrary Borchers-sequence conditional closure is compiled as
+`bvt_W_positive_of_component_denseRange`.
+
+The preimage-density variant is also compiled:
+
+```lean
+theorem bvt_W_positive_of_component_dense_preimage
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (hdense_pre :
+      ∀ n : ℕ,
+        Dense
+          ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+            Set.range (section43FourierLaplaceTransformComponentMap d n)))
+    (F : BorchersSequence d) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
+```
+
+Therefore the remaining theorem-3 positivity blocker is exactly:
+
+```lean
+theorem dense_section43FourierLaplaceTransformComponentMap_preimage
+    (d n : ℕ) [NeZero d] :
+    Dense
+      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+        Set.range (section43FourierLaplaceTransformComponentMap d n))
+```
+
+Once this theorem is proved, `bvt_W_positive_of_component_dense_preimage`
+supplies the positivity statement needed by `bvt_W_positive`.
+
+##### 5.9.7c.1. Analytic dense-preimage theorem: exact implementation packet
+
+The remaining theorem is a genuine OS I Lemma-4.1 / Lemma-8.2 density theorem.
+It is not a quotient-formality theorem and it is not the old
+`os1TransportComponent` statement.
+
+Current Lean target:
+
+```lean
+theorem dense_section43FourierLaplaceTransformComponentMap_preimage
+    (d n : ℕ) [NeZero d] :
+    Dense
+      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+        Set.range (section43FourierLaplaceTransformComponentMap d n))
+```
+
+Equivalent direct quotient form:
+
+```lean
+theorem denseRange_section43FourierLaplaceTransformComponentMap
+    (d n : ℕ) [NeZero d] :
+    DenseRange (section43FourierLaplaceTransformComponentMap d n)
+```
+
+Because `section43PositiveEnergyQuotientMap` is an open quotient map, either
+form proves the other by
+`section43PositiveEnergyVanishingSubmodule.isOpenQuotientMap_mkQ` and
+`IsOpenQuotientMap.dense_preimage_iff`.  The production file already contains
+the preimage-to-range direction as
+`denseRange_section43FourierLaplaceTransformComponentMap_of_dense_preimage`.
+If the analytic theorem is proved first in direct quotient form, add the
+reverse helper rather than reproving the closure machinery.
+
+The theorem means:
+
+```lean
+∀ Φ : SchwartzNPoint d n, Φ is in the ambient closure of the set of Ψ such that
+  section43PositiveEnergyQuotientMap Ψ =
+    section43FourierLaplaceTransformComponentMap d n src
+  for some compact ordered source src.
+```
+
+Equivalently, every positive-energy half-space restriction of an ambient
+Schwartz function can be approximated by the OS I `(4.19)-(4.20)`
+Fourier-Laplace transform of a compact ordered Euclidean source.
+
+The proof should be split into the following standard analytic lemmas, in a new
+small file such as
+`Section43FourierLaplaceDensity.lean`, imported by
+`Section43FourierLaplaceClosure.lean` only after the lemmas compile.
+The focused implementation note is
+`docs/section43_fourier_laplace_density.md`; keep that file and this subsection
+in sync.
+
+First, isolate the pure OS I Lemma-8.2 theorem in quotient language.  It should
+not mention OS axioms, Wightman functionals, Borchers sequences, or Hilbert
+spaces.
+
+```lean
+structure Section43CompactPositiveTimeSource1D where
+  f : SchwartzMap ℝ ℂ
+  positive :
+    tsupport (f : ℝ → ℂ) ⊆ Set.Ioi (0 : ℝ)
+  compact : HasCompactSupport (f : ℝ → ℂ)
+
+def section43OneSidedLaplaceRepresentative1D
+    (g : Section43CompactPositiveTimeSource1D)
+    (Φ : SchwartzMap ℝ ℂ) : Prop :=
+  ∀ σ : ℝ, 0 ≤ σ →
+    Φ σ =
+      ∫ t : ℝ,
+        Complex.exp (-(t : ℂ) * (σ : ℂ)) * g.f t
+
+theorem exists_section43OneSidedLaplaceRepresentative1D
+    (g : Section43CompactPositiveTimeSource1D) :
+    ∃ Φ : SchwartzMap ℝ ℂ,
+      section43OneSidedLaplaceRepresentative1D g Φ
+
+noncomputable def section43OneSidedLaplaceCompactTransform1D :
+    Section43CompactPositiveTimeSource1D → Section43PositiveEnergy1D :=
+  fun g =>
+    section43PositiveEnergyQuotientMap1D
+      (Classical.choose
+        (exists_section43OneSidedLaplaceRepresentative1D g))
+
+theorem dense_section43OneSidedLaplaceCompactTransform1D_preimage :
+    Dense
+      (section43PositiveEnergyQuotientMap1D ⁻¹'
+        Set.range section43OneSidedLaplaceCompactTransform1D)
+```
+
+The source support is deliberately strict, `Set.Ioi 0`, not `Set.Ici 0`.
+Compact support inside the strict positive half-line gives a positive margin
+from the boundary, matching the production multivariate theorem
+`exists_orderedPositiveTimeRegion_margin_of_compact_tsupport_subset`.  The
+target quotient remains `Section43PositiveEnergy1D`, whose equivalence relation
+is equality on the closed half-line `Set.Ici 0`.
+
+Production status, 2026-04-17: the new
+`Section43FourierLaplaceDensity.lean` file now compiles the strict-support
+margin lemma, the raw-Laplace-to-existing-`section43ComplexLaplaceTransform`
+identification, the raw-Laplace-to-canonical-extension bridge with the built-in
+`2π` scaling, the quotient-functional to one-sided-Fourier-support bridge, and
+the Paley-Wiener uniqueness endpoint
+`section43PositiveEnergy1D_ext_of_FL_zero`.  It also compiles the standard
+cutoff candidate
+`section43OneSidedLaplaceCutoffFun g σ =
+(SCV.smoothCutoff σ : ℂ) * section43OneSidedLaplaceRaw g σ`, proves that it
+agrees with the raw Laplace transform on `σ ≥ 0`, and proves that all cutoff
+derivative support lies in `σ ≥ -1`.  The remaining one-variable blocker is the
+raw-Laplace smoothness/rapid-decay package on `Set.Ici (-1)`, followed by the
+compact-source annihilator bridge:
+
+```lean
+exists_section43OneSidedLaplaceRepresentative1D
+section43OneSidedLaplaceCompactTransform1D
+section43OneSidedAnnihilatorFL_integral_zero_of_annihilates_laplace
+section43OneSidedAnnihilatorFLOnImag_eq_zero_of_annihilates_laplace
+section43OneSidedAnnihilatorFL_eq_zero_of_annihilates_laplace
+section43OneSidedLaplaceCompactTransform1D_dual_annihilator
+dense_section43OneSidedLaplaceCompactTransform1D_preimage
+```
+
+This is the Lean form of OS I Lemma 8.2 plus the OS I observation that compactly
+supported strict-positive-time Schwartz functions are dense in the positive-time
+source space.  The zero-kernel half of Lemma 8.2 is not needed for positivity
+closure and should not be added to this packet unless a later consumer needs
+injectivity.
+
+Second, prove the finite product version of the same theorem.  The clean target
+is a quotient-preimage statement on
+`SchwartzMap (Fin n → ℝ) ℂ` modulo vanishing on the positive orthant:
+
+Use these exact helper names:
+
+```lean
+def section43TimePositiveRegion (n : ℕ) : Set (Fin n → ℝ) :=
+  {τ | ∀ i : Fin n, 0 ≤ τ i}
+
+def section43TimeStrictPositiveRegion (n : ℕ) : Set (Fin n → ℝ) :=
+  {τ | ∀ i : Fin n, 0 < τ i}
+
+def section43TimeVanishingSubmodule (n : ℕ) :
+    Submodule ℂ (SchwartzMap (Fin n → ℝ) ℂ)
+
+abbrev Section43TimePositiveComponent (n : ℕ) :=
+  (SchwartzMap (Fin n → ℝ) ℂ) ⧸ section43TimeVanishingSubmodule n
+
+noncomputable def section43TimePositiveQuotientMap (n : ℕ) :
+    SchwartzMap (Fin n → ℝ) ℂ →L[ℂ]
+      Section43TimePositiveComponent n
+
+structure Section43CompactStrictPositiveTimeSource (n : ℕ) where
+  f : SchwartzMap (Fin n → ℝ) ℂ
+  positive :
+    tsupport (f : (Fin n → ℝ) → ℂ) ⊆
+      section43TimeStrictPositiveRegion n
+  compact : HasCompactSupport (f : (Fin n → ℝ) → ℂ)
+
+def section43IteratedLaplaceRepresentative
+    (n : ℕ)
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ) : Prop :=
+  ∀ σ : Fin n → ℝ, σ ∈ section43TimePositiveRegion n →
+    Φ σ =
+      ∫ τ : Fin n → ℝ,
+        Complex.exp (-(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ))) *
+          g.f τ
+
+theorem exists_section43IteratedLaplaceRepresentative
+    (n : ℕ)
+    (g : Section43CompactStrictPositiveTimeSource n) :
+    ∃ Φ : SchwartzMap (Fin n → ℝ) ℂ,
+      section43IteratedLaplaceRepresentative n g Φ
+
+noncomputable def section43IteratedLaplaceCompactTransform
+    (n : ℕ) :
+    Section43CompactStrictPositiveTimeSource n →
+      Section43TimePositiveComponent n :=
+  fun g =>
+    section43TimePositiveQuotientMap n
+      (Classical.choose
+        (exists_section43IteratedLaplaceRepresentative n g))
+
+theorem dense_section43IteratedLaplaceCompactTransform_preimage
+    (n : ℕ) :
+    Dense
+      ((section43TimePositiveQuotientMap n) ⁻¹'
+        Set.range (section43IteratedLaplaceCompactTransform n))
+```
+
+`section43TimeVanishingSubmodule` is the direct time-only copy of
+`section43PositiveEnergyVanishingSubmodule`: its carrier is
+`{Φ | Set.EqOn (Φ : (Fin n → ℝ) → ℂ) 0 (section43TimePositiveRegion n)}`.
+`section43TimePositiveQuotientMap` is the corresponding `Submodule.mkQ` CLM,
+with continuity from `isOpenQuotientMap_mkQ`, exactly as in
+`section43PositiveEnergyQuotientMap`.
+
+Updated proof transcript, 2026-04-18:
+
+The old coordinate-induction sketch is not implementation-ready and should not
+be used as the Lean route.  The current route is the tensor-density route
+documented in `docs/section43_fourier_laplace_density.md`.
+
+1. Use the compiled one-variable compact-Laplace dense preimage theorem in each
+   factor.
+2. Use the compiled transported product-tensor density theorem
+   `section43_timeProductTensor_span_dense_of_factor_dense`.
+3. Use the compiled product-source support and finite-product Fubini packet:
+   `section43TimeProductSource`,
+   `section43TimeProductSource_integral_eq_product_raw`, and
+   `section43TimeProductTensor_oneSidedLaplaceRepresentative`.
+4. Before defining the full arbitrary-source map
+   `section43IteratedLaplaceCompactTransform`, prove the time-only analogue of
+   `exists_section43FourierLaplaceRepresentative_eq_integral_of_compact_orderedSupport_of_margin`.
+   Its required sublemmas are:
+
+```lean
+section43TimePositiveThickening
+section43TimePositiveCutoff
+section43TimePositiveCutoff_eq_one_of_mem
+section43TimePositiveCutoff_hasTemperateGrowth
+section43TimePositiveCutoff_iteratedFDeriv_support_subset_thickening_one
+section43IteratedLaplaceRaw
+exists_positive_margin_of_compact_time_tsupport_subset_strictPositive
+exists_time_closedBall_of_compact_tsupport
+section43IteratedLaplaceRaw_iteratedFDerivCandidate
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+```
+
+Implementation correction for the local dominated-differentiation seam:
+
+The local-bound theorem for
+`section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt` should be
+proved from the explicit finite-time Laplace linear functional, not by copying
+the spatial derivative-word expansion from the ordered-support
+Fourier-Laplace proof.  The σ-dependence is
+
+```lean
+fun σ => Complex.exp (section43TimeLaplaceLinearCLM n τ σ)
+```
+
+where
+
+```lean
+section43TimeLaplaceLinearCLM n τ σ =
+  -(∑ i : Fin n, (τ i : ℂ) * (σ i : ℂ)).
+```
+
+The exact helper packet to compile before the local-bound theorem is:
+
+```lean
+section43TimeLaplaceLinearCLM
+section43TimeLaplaceLinearCLM_apply
+norm_time_le_norm_add_one_of_mem_closedBall
+norm_section43TimeLaplaceLinearCLM_le
+norm_exp_neg_timePair_le_local_time_closedBall
+exists_norm_bound_section43CompactStrictPositiveTimeSource_on_time_closedBall
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_eq_zero_of_not_mem_tsupport
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+```
+
+The bound is
+
+```lean
+Set.indicator (Metric.closedBall (0 : Fin n → ℝ) R)
+  (fun _ =>
+    (r + 1).factorial *
+      Real.exp (∑ _ : Fin n, R * (‖σ‖ + 1)) *
+      (∑ _ : Fin n, R) ^ (r + 1) *
+      Cg)
+```
+
+where `R` bounds `tsupport g.f` and `Cg` bounds `‖g.f τ‖` on that closed
+ball.  On the closed ball, use
+`norm_iteratedFDeriv_cexp_comp_clm_le` plus
+`iteratedFDeriv_smul_const_apply`; off the closed ball, use
+`tsupport g.f ⊆ Metric.closedBall 0 R` to show `g.f τ = 0`, hence every
+pointwise σ-derivative is zero.  This is the implementation-ready replacement
+for any older sketch involving finite-height shells, spatial derivative words,
+or wrapper reductions.
+
+Production status, 2026-04-18: the local-bound packet above is compiled in
+`Section43FourierLaplaceTimeProduct.lean`, including
+
+```lean
+section43IteratedLaplaceRaw_integrand_iteratedFDeriv_curryLeft_local_bound_of_compact
+integrable_section43IteratedLaplaceRaw_integrand_of_compact
+```
+
+The next theorem is
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+```
+
+and the remaining proof-doc gap is the all-order measurability side.  The
+successor integrability proof should reuse the compiled local bound exactly as
+the ordered-support theorem does, but it must first prove that
+
+```lean
+fun τ =>
+  iteratedFDeriv ℝ r
+    (fun σ' =>
+      Complex.exp (-(∑ i, (τ i : ℂ) * (σ' i : ℂ))) * g.f τ)
+    σ
+```
+
+is AEStronglyMeasurable.  The preferred route is an explicit continuity lemma
+in `τ`, proved from the finite-dimensional formula for the σ-derivatives of
+the exponential linear functional and continuity of `g.f`.  Do not add a
+measurability hypothesis to the theorem statement.
+
+Updated production status, 2026-04-18: the full arbitrary compact
+strict-positive finite-time representative packet is now compiled in
+`Section43FourierLaplaceTimeProduct.lean`.  In particular, the following
+previously planned theorems are no longer blockers:
+
+```lean
+integrable_section43IteratedLaplaceRaw_integrand_iteratedFDeriv_of_compact
+section43IteratedLaplaceRaw_iteratedFDerivCandidate_hasFDerivAt
+section43IteratedLaplaceRaw_iteratedFDeriv_eq_candidate
+section43IteratedLaplaceRaw_contDiff
+section43IteratedLaplaceRaw_iteratedFDeriv_rapid_on_timeThickening
+section43IteratedLaplaceSchwartzRepresentative
+exists_section43IteratedLaplaceRepresentative
+section43IteratedLaplaceCompactTransform
+section43IteratedLaplaceCompactTransform_productSource
+```
+
+Next stage: prove the finite-product dense-preimage theorem for
+`section43IteratedLaplaceCompactTransform` in a new small companion file rather
+than extending `Section43FourierLaplaceTimeProduct.lean` further.
+
+Updated production status, 2026-04-18: the finite-product dense-preimage stage
+is now compiled in
+`Section43FourierLaplaceTimeProductDensity.lean`.  The new file proves:
+
+```lean
+section43IteratedLaplaceCompactTransform_map_add
+section43IteratedLaplaceCompactTransform_map_smul
+section43IteratedLaplaceCompactTransformLinearMap
+section43TimeProductTensor_mem_iteratedLaplaceCompactTransform_preimage
+dense_section43IteratedLaplaceCompactTransform_preimage
+denseRange_section43IteratedLaplaceCompactTransformLinearMap
+```
+
+The key correction is that the finite-time transform range is used through the
+compiled linear map, so the span-density argument is mathematically sound:
+product tensors with one-variable compact-Laplace preimage factors lie in the
+finite-time preimage, and the finite-time preimage is the comap of the linear
+range submodule under `section43TimePositiveQuotientMap`.
+
+The next stage is not to attack `bvt_W_positive` directly.  First make Layer 3
+implementation-ready: transport the finite-time dense range through the spatial
+Fourier variables and identify the resulting representative with
+`partialFourierSpatial_fun`.
+
+5. The rapid-decay proof must reuse the compiled time-only estimates
+   `norm_exp_neg_timePair_le_exp_thickened_margin_sum` and
+   `exp_margin_sum_controls_thickened_time_polynomial`; do not introduce a new
+   analytic route.
+6. After `exists_section43IteratedLaplaceRepresentative` is compiled, define
+   `section43IteratedLaplaceCompactTransform` by choosing this representative,
+   prove `section43IteratedLaplaceCompactTransform_eq_quotient`, and discharge
+   `section43IteratedLaplaceCompactTransform_productSource` by applying the
+   already compiled product-source representative theorem.
+7. Keep the target as a quotient by vanishing on `∀ i, 0 ≤ τ i`; this avoids a
+   false support-restricted dense-range theorem.
+
+Third, insert the spatial Fourier transform.  This step has a critical compact
+support correction: the dense spatial-frequency factors must be Fourier
+transforms of compactly supported spatial Schwartz sources.  It is not enough
+to take `FourierTransform.fourierInv χ` for an arbitrary spatial-frequency
+factor `χ`, because that inverse Fourier transform is generally not compactly
+supported and would not produce a valid compact spacetime source.
+
+The detailed implementation transcript is maintained in
+`docs/section43_fourier_laplace_density.md`, Layer 3.  The exact subpacket is:
+
+```lean
+abbrev Section43SpatialSpace (d n : ℕ) [NeZero d] :=
+  EuclideanSpace ℝ (Fin n × Fin d)
+
+def Section43SpatialCompactSource (d n : ℕ) [NeZero d] :=
+  {κ : SchwartzMap (Section43SpatialSpace d n) ℂ //
+    HasCompactSupport (κ : Section43SpatialSpace d n → ℂ)}
+
+def section43SpatialFourierCompactRange
+    (d n : ℕ) [NeZero d] :
+    Set (SchwartzMap (Section43SpatialSpace d n) ℂ) :=
+  Set.range fun κ : Section43SpatialCompactSource d n =>
+    SchwartzMap.fourierTransformCLM ℂ κ.1
+
+theorem dense_section43SpatialFourierCompactRange
+    (d n : ℕ) [NeZero d] :
+    Dense (section43SpatialFourierCompactRange d n)
+
+noncomputable def section43TimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+    SchwartzNPoint d n
+
+theorem section43TimeSpatialTensor_apply
+    (d n : ℕ) [NeZero d]
+    (Φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (q : NPointDomain d n) :
+    section43TimeSpatialTensor d n Φ χ q =
+      Φ (section43QTime (d := d) (n := n) q) *
+      χ (section43QSpatial (d := d) (n := n) q)
+
+theorem dense_section43TimeSpatialTensor_span_of_factor_dense
+    (d n : ℕ) [NeZero d]
+    {St : Set (SchwartzMap (Fin n → ℝ) ℂ)}
+    {Sx : Set (SchwartzMap (Section43SpatialSpace d n) ℂ)}
+    (hSt : Dense St) (hSx : Dense Sx) :
+    Dense
+      (((Submodule.span ℂ
+        {F : SchwartzNPoint d n |
+          ∃ Φ ∈ St, ∃ χ ∈ Sx,
+            F = section43TimeSpatialTensor d n Φ χ}) :
+        Submodule ℂ (SchwartzNPoint d n)) :
+        Set (SchwartzNPoint d n))
+
+noncomputable def section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    Section43CompactStrictPositiveTimeSpatialSource d n
+
+theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) (ξ : Section43SpatialSpace d n) :
+    partialFourierSpatial_fun
+      (d := d) (n := n)
+      (section43TimeSpatialProductSource d n g κ).f
+      (τ, ξ) =
+    g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+```
+
+The spatial density proof uses the compiled compact-support density theorem
+`SchwartzMap.dense_hasCompactSupport`, transported from
+`SchwartzMap (Fin (n*d) → ℝ) ℂ` to
+`SchwartzMap (Section43SpatialSpace d n) ℂ` through
+`EuclideanSpace.equiv` and `finProdFinEquiv`.  Then for any spatial target
+`χ`, approximate `FourierTransform.fourierInv χ` by compactly supported
+spatial Schwartz functions and use continuity of
+`SchwartzMap.fourierTransformCLM ℂ` plus
+`FourierTransform.fourier_fourierInv_eq`.
+
+The time-spatial density proof uses
+`dense_section43IteratedLaplaceCompactTransform_preimage n` for the time
+factor and `dense_section43SpatialFourierCompactRange d n` for the spatial
+factor, then transports the restricted simple-tensor span through
+`nPointTimeSpatialSchwartzCLE`.  The representative identification is by
+unfolding `partialFourierSpatial_fun`: the fixed-time slice of
+`section43TimeSpatialProductSource d n g κ` is `g.f τ • κ.1`, so the spatial
+Fourier transform is obtained from `(SchwartzMap.fourierTransformCLM ℂ).map_smul`
+with no manual Fourier-normalization rewrite.
+
+The source-side product construction must use the following Lean-ready support
+packet; this is the next production target after the compiled
+`SchwartzNPoint` tensor-density transport.
+
+First, introduce the time-support control lemma:
+
+```lean
+theorem tsupport_section43NPointTimeSpatialTensor_subset_time_preimage
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ) :
+    tsupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+      ⊆
+    (section43QTime (d := d) (n := n)) ⁻¹'
+      tsupport (φ : (Fin n → ℝ) → ℂ)
+```
+
+Proof route: rewrite by `section43NPointTimeSpatialTensor_apply`, apply
+`tsupport_mul_subset_left` to the product
+`φ (section43QTime q) * χ (section43QSpatial q)`, and then use
+`tsupport_comp_subset_preimage` with the continuity supplied by
+`section43QTimeCLM d n`.  In Lean, first insert the explicit function
+equality
+`((section43NPointTimeSpatialTensor d n φ χ : SchwartzNPoint d n) :
+NPointDomain d n → ℂ) = fun q => φ (section43QTime q) *
+χ (section43QSpatial q)` by `funext; simp`, then call
+`tsupport_comp_subset_preimage (φ : (Fin n → ℝ) → ℂ)
+(f := section43QTime (d := d) (n := n)) ...`.
+
+Second, prove compact support without relying on a false generic compact
+preimage statement:
+
+```lean
+theorem hasCompactSupport_section43NPointTimeSpatialTensor
+    (d n : ℕ) [NeZero d]
+    (φ : SchwartzMap (Fin n → ℝ) ℂ)
+    (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+    (hφ : HasCompactSupport (φ : (Fin n → ℝ) → ℂ))
+    (hχ : HasCompactSupport (χ : Section43SpatialSpace d n → ℂ)) :
+    HasCompactSupport
+      ((section43NPointTimeSpatialTensor d n φ χ :
+          SchwartzNPoint d n) : NPointDomain d n → ℂ)
+```
+
+Proof route: set `e := nPointTimeSpatialCLE (d := d) n` and
+`K := e.symm '' (tsupport φ ×ˢ tsupport χ)`.  Compactness is
+`(hφ.isCompact.prod hχ.isCompact).image e.symm.continuous`.  For the support
+subset, if the product value at `q` is nonzero, then both factors are nonzero;
+convert them to topological-support membership with `subset_tsupport _` and
+`Function.mem_support.mpr`, then witness `q ∈ K` by
+`(section43QTime q, section43QSpatial q)`.
+
+Third, define:
+
+```lean
+noncomputable def section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n) :
+    Section43CompactStrictPositiveTimeSpatialSource d n
+```
+
+with underlying function `section43NPointTimeSpatialTensor d n g.f κ.1`.
+The `positive` field is the time-support lemma followed by `g.positive`; the
+`compact` field is the compact-support lemma applied to `g.compact` and
+`κ.2`.
+
+Fourth, prove the fixed-time slice identity before the Fourier identity:
+
+```lean
+theorem partialEval₂_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) :
+    SchwartzMap.partialEval₂
+      (nPointSpatialTimeSchwartzCLE (d := d) (n := n)
+        (section43TimeSpatialProductSource d n g κ).f) τ =
+    g.f τ • κ.1
+```
+
+Proof route: extensionality in the spatial variable, then simp using
+`nPointSpatialTimeSchwartzCLE_apply` and `smul_eq_mul`.  In compiled Lean this
+is clearest with explicit `change` steps:
+`partialEval₂` becomes evaluation of the spatial-time Schwartz map at
+`(η, τ)`, `nPointSpatialTimeSchwartzCLE_apply` rewrites it to the time-spatial
+value `(τ, η)`, and the transported tensor reduces to
+`section43TimeSpatialTensor d n g.f κ.1 (τ, η)`.  This confirms the
+orientation: `partialEval₂` fixes the time coordinate of the spatial-time
+Schwartz map.
+
+Finally:
+
+```lean
+theorem partialFourierSpatial_fun_section43TimeSpatialProductSource
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSource n)
+    (κ : Section43SpatialCompactSource d n)
+    (τ : Fin n → ℝ) (ξ : Section43SpatialSpace d n) :
+    partialFourierSpatial_fun
+      (d := d) (n := n)
+      (section43TimeSpatialProductSource d n g κ).f
+      (τ, ξ) =
+    g.f τ * (SchwartzMap.fourierTransformCLM ℂ κ.1) ξ
+```
+
+Proof route: unfold `partialFourierSpatial_fun`, rewrite the slice by
+`partialEval₂_section43TimeSpatialProductSource`, apply
+`(SchwartzMap.fourierTransformCLM ℂ).map_smul`, and normalize scalar
+multiplication with `simp [smul_eq_mul]`.
+
+Production status, 2026-04-18: the product-space density half of this Layer-3
+packet is compiled in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceSpatialDensity.lean`.
+It proves the compact spatial Fourier range density, the time/spatial product
+flattening, the pointwise product tensor formula, unrestricted block-tensor
+density, restricted dense-factor tensor density, and the route-relevant
+specialization:
+
+```lean
+dense_section43TimeSpatialTensor_span_compactLaplace_spatialFourier
+```
+
+This compiled theorem still lives on
+`SchwartzMap ((Fin n → ℝ) × Section43SpatialSpace d n) ℂ`.  The next
+implementation step is the honest transport through
+`nPointTimeSpatialSchwartzCLE` to `SchwartzNPoint d n`, with a pointwise formula
+using `section43QTime` and `section43QSpatial`.  The product-source definition
+and `partialFourierSpatial_fun_section43TimeSpatialProductSource` should follow
+that transport; they are not yet compiled.
+
+Production update, 2026-04-18: the `SchwartzNPoint d n` transport has now also
+compiled in
+`OSReconstruction/Wightman/Reconstruction/WickRotation/Section43FourierLaplaceSpatialDensity.lean`:
+
+```lean
+section43NPointTimeSpatialTensor
+section43NPointTimeSpatialTensor_apply
+dense_section43NPointTimeSpatialTensor_span_of_factor_dense
+dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourier
+```
+
+The next implementation target is now the source-side half:
+`section43TimeSpatialProductSource` and
+`partialFourierSpatial_fun_section43TimeSpatialProductSource`.
+
+The public Layer-3 target remains:
+
+Use this representative predicate rather than introducing an opaque
+placeholder map:
+
+```lean
+structure Section43CompactStrictPositiveTimeSpatialSource
+    (d n : ℕ) [NeZero d] where
+  f : SchwartzNPoint d n
+  positive :
+    tsupport (f : NPointDomain d n → ℂ) ⊆
+      {x | ∀ i : Fin n, 0 < section43QTime (d := d) (n := n) x i}
+  compact : HasCompactSupport (f : NPointDomain d n → ℂ)
+
+def section43TimeLaplaceSpatialFourierRepresentative
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSpatialSource d n)
+    (Φ : SchwartzNPoint d n) : Prop :=
+  ∀ q : NPointDomain d n, q ∈ section43PositiveEnergyRegion d n →
+    Φ q =
+      ∫ τ : Fin n → ℝ,
+        Complex.exp
+          (-(∑ i : Fin n,
+            (τ i : ℂ) * (section43QTime (d := d) (n := n) q i : ℂ))) *
+          partialFourierSpatial_fun
+            (d := d) (n := n) g.f
+            (τ, section43QSpatial (d := d) (n := n) q)
+
+theorem exists_section43TimeLaplaceSpatialFourierRepresentative
+    (d n : ℕ) [NeZero d]
+    (g : Section43CompactStrictPositiveTimeSpatialSource d n) :
+    ∃ Φ : SchwartzNPoint d n,
+      section43TimeLaplaceSpatialFourierRepresentative d n g Φ
+
+theorem dense_section43TimeLaplaceSpatialFourier_compact_preimage
+    (d n : ℕ) [NeZero d] :
+    Dense
+      {Φ : SchwartzNPoint d n |
+        ∃ (g : Section43CompactStrictPositiveTimeSpatialSource d n)
+          (Ψ : SchwartzNPoint d n),
+          section43TimeLaplaceSpatialFourierRepresentative d n g Ψ ∧
+          section43PositiveEnergyQuotientMap (d := d) n Φ =
+            section43PositiveEnergyQuotientMap (d := d) n Ψ}
+```
+
+Proof transcript:
+
+1. Let
+   `St := (section43TimePositiveQuotientMap n) ⁻¹'
+     Set.range (section43IteratedLaplaceCompactTransform n)` and
+   `Sx := section43SpatialFourierCompactRange d n`.
+2. Use
+   `dense_section43IteratedLaplaceCompactTransform_preimage n` and
+   `dense_section43SpatialFourierCompactRange d n`, then apply
+   `dense_section43TimeSpatialTensor_span_of_factor_dense`.
+3. For a generator `section43TimeSpatialTensor d n Φ χ` with
+   `Φ ∈ St` and `χ ∈ Sx`, choose
+   `g : Section43CompactStrictPositiveTimeSource n` and
+   `κ : Section43SpatialCompactSource d n` witnessing those memberships.
+4. Define `Ψt := section43IteratedLaplaceSchwartzRepresentative n g` and
+   `Ψ := section43TimeSpatialTensor d n Ψt χ`.  Quotient equality for the time
+   factor gives `Φ = Ψt` on `section43TimePositiveRegion n`, hence the full
+   tensors agree on `section43PositiveEnergyRegion d n`.
+5. Define `G := section43TimeSpatialProductSource d n g κ`.  Use
+   `partialFourierSpatial_fun_section43TimeSpatialProductSource` and
+   `section43IteratedLaplaceSchwartzRepresentative_apply_of_mem` to prove
+   `section43TimeLaplaceSpatialFourierRepresentative d n G Ψ`.
+   The first compiled theorem should be the product-generator case:
+   ```lean
+   theorem section43TimeLaplaceSpatialFourierRepresentative_productSource
+       (d n : ℕ) [NeZero d]
+       (g : Section43CompactStrictPositiveTimeSource n)
+       (κ : Section43SpatialCompactSource d n) :
+       section43TimeLaplaceSpatialFourierRepresentative d n
+         (section43TimeSpatialProductSource d n g κ)
+         (section43NPointTimeSpatialTensor d n
+           (section43IteratedLaplaceSchwartzRepresentative n g)
+           (SchwartzMap.fourierTransformCLM ℂ κ.1))
+   ```
+   Proof route: for `q ∈ section43PositiveEnergyRegion d n`, obtain
+   `section43QTime q ∈ section43TimePositiveRegion n` by unfolding
+   `section43PositiveEnergyRegion`, `section43QTime`, and
+   `nPointTimeSpatialCLE`.  Rewrite the target tensor by
+   `section43NPointTimeSpatialTensor_apply`, rewrite the time representative by
+   `section43IteratedLaplaceSchwartzRepresentative_apply_of_mem`, unfold
+   `section43IteratedLaplaceRaw`, rewrite the integrand by
+   `partialFourierSpatial_fun_section43TimeSpatialProductSource`, and pull the
+   constant spatial Fourier factor outside the time integral by applying
+   `MeasureTheory.integral_mul_const` explicitly to the spatial Fourier scalar
+   and the base finite-time Laplace integrand.
+   Production update, 2026-04-18: both
+   `section43TimeLaplaceSpatialFourierRepresentative` and
+   `section43TimeLaplaceSpatialFourierRepresentative_productSource` are
+   compiled in `Section43FourierLaplaceSpatialDensity.lean`.
+6. Package the time-spatial compact transform as a linear map, or prove the
+   representative target is closed under finite linear combinations directly.
+   The next compiled subpacket should first avoid any span closure issue and
+   prove generator containment.  The key quotient lemma is:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq
+       (d n : ℕ) [NeZero d]
+       {φ ψ : SchwartzMap (Fin n → ℝ) ℂ}
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφψ :
+         section43TimePositiveQuotientMap n φ =
+           section43TimePositiveQuotientMap n ψ) :
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n φ χ) =
+       section43PositiveEnergyQuotientMap (d := d) n
+         (section43NPointTimeSpatialTensor d n ψ χ)
+   ```
+   It is just `section43PositiveEnergyQuotientMap_eq_of_eqOn_region` plus
+   `eqOn_region_of_section43TimePositiveQuotientMap_eq` evaluated at
+   `section43QTime q`.
+
+   Then prove:
+   ```lean
+   theorem section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d]
+       (φ : SchwartzMap (Fin n → ℝ) ℂ)
+       (χ : SchwartzMap (Section43SpatialSpace d n) ℂ)
+       (hφ :
+         φ ∈ ((section43TimePositiveQuotientMap n) ⁻¹'
+           Set.range (section43IteratedLaplaceCompactTransform n)))
+       (hχ : χ ∈ section43SpatialFourierCompactRange d n) :
+       ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+         (Ψ : SchwartzNPoint d n),
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+         section43PositiveEnergyQuotientMap (d := d) n
+           (section43NPointTimeSpatialTensor d n φ χ) =
+         section43PositiveEnergyQuotientMap (d := d) n Ψ
+   ```
+   Here `hφ` chooses `g` with
+   `section43IteratedLaplaceCompactTransform n g =
+   section43TimePositiveQuotientMap n φ`, `hχ` chooses `κ`, the representative
+   is the product-source theorem above, and quotient equality follows from
+   `section43IteratedLaplaceCompactTransform_eq_quotient` for
+   `section43IteratedLaplaceSchwartzRepresentative n g`.
+   Production update, 2026-04-18: this generator-containment subpacket is
+   compiled in `Section43FourierLaplaceSpatialDensity.lean`:
+   `section43NPointTimeSpatialTensor_positiveEnergyQuotient_eq_of_timeQuotient_eq`
+   and
+   `section43NPointTimeSpatialTensor_mem_timeLaplaceSpatialFourierTarget`.
+   Production update, 2026-04-18: the finite-span bridge is now compiled as a
+   linear-closure packet, not as a new analytic identification.  The production
+   declarations are:
+   ```lean
+   namespace Section43CompactStrictPositiveTimeSpatialSource
+
+   instance (d n : ℕ) [NeZero d] :
+       Zero (Section43CompactStrictPositiveTimeSpatialSource d n)
+   instance (d n : ℕ) [NeZero d] :
+       Add (Section43CompactStrictPositiveTimeSpatialSource d n)
+   instance (d n : ℕ) [NeZero d] :
+       AddCommMonoid (Section43CompactStrictPositiveTimeSpatialSource d n)
+   instance (d n : ℕ) [NeZero d] :
+       SMul ℂ (Section43CompactStrictPositiveTimeSpatialSource d n)
+   instance (d n : ℕ) [NeZero d] :
+       Module ℂ (Section43CompactStrictPositiveTimeSpatialSource d n)
+
+   end Section43CompactStrictPositiveTimeSpatialSource
+
+   theorem section43TimeSpatialSource_tsupport_subset_positiveEnergy
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       tsupport (G.f : NPointDomain d n → ℂ) ⊆
+         section43PositiveEnergyRegion d n
+
+   theorem integrable_section43TimeLaplaceSpatialFourier_timeIntegrand
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+       (q : NPointDomain d n)
+       (hq : q ∈ section43PositiveEnergyRegion d n) :
+       Integrable
+         (fun τ : Fin n → ℝ =>
+           Complex.exp
+             (-(∑ i : Fin n,
+               (τ i : ℂ) *
+                 (section43QTime (d := d) (n := n) q i : ℂ))) *
+           partialFourierSpatial_fun
+             (d := d) (n := n) G.f
+             (τ, section43QSpatial (d := d) (n := n) q))
+
+   theorem section43TimeLaplaceSpatialFourierRepresentative_add
+       {G H : Section43CompactStrictPositiveTimeSpatialSource d n}
+       {Φ Ψ : SchwartzNPoint d n}
+       (hΦ : section43TimeLaplaceSpatialFourierRepresentative d n G Φ)
+       (hΨ : section43TimeLaplaceSpatialFourierRepresentative d n H Ψ) :
+       section43TimeLaplaceSpatialFourierRepresentative d n (G + H) (Φ + Ψ)
+
+   theorem section43TimeLaplaceSpatialFourierRepresentative_smul
+       (c : ℂ)
+       {G : Section43CompactStrictPositiveTimeSpatialSource d n}
+       {Φ : SchwartzNPoint d n}
+       (hΦ : section43TimeLaplaceSpatialFourierRepresentative d n G Φ) :
+       section43TimeLaplaceSpatialFourierRepresentative d n (c • G) (c • Φ)
+
+   def section43TimeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d] : Set (SchwartzNPoint d n)
+
+   theorem section43TimeLaplaceSpatialFourierTarget_zero
+       (d n : ℕ) [NeZero d] :
+       (0 : SchwartzNPoint d n) ∈
+         section43TimeLaplaceSpatialFourierTarget d n
+
+   theorem section43TimeLaplaceSpatialFourierTarget_add
+       (d n : ℕ) [NeZero d]
+       {Φ Ψ : SchwartzNPoint d n}
+       (hΦ : Φ ∈ section43TimeLaplaceSpatialFourierTarget d n)
+       (hΨ : Ψ ∈ section43TimeLaplaceSpatialFourierTarget d n) :
+       Φ + Ψ ∈ section43TimeLaplaceSpatialFourierTarget d n
+
+   theorem section43TimeLaplaceSpatialFourierTarget_smul
+       (d n : ℕ) [NeZero d]
+       (c : ℂ)
+       {Φ : SchwartzNPoint d n}
+       (hΦ : Φ ∈ section43TimeLaplaceSpatialFourierTarget d n) :
+       c • Φ ∈ section43TimeLaplaceSpatialFourierTarget d n
+
+   theorem section43NPointTimeSpatialTensor_span_le_timeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d] :
+       ((Submodule.span ℂ
+         {F : SchwartzNPoint d n |
+           ∃ φ : SchwartzMap (Fin n → ℝ) ℂ,
+           φ ∈
+             ((section43TimePositiveQuotientMap n) ⁻¹'
+               Set.range (section43IteratedLaplaceCompactTransform n)) ∧
+           ∃ χ : SchwartzMap (Section43SpatialSpace d n) ℂ,
+           χ ∈ section43SpatialFourierCompactRange d n ∧
+             F = section43NPointTimeSpatialTensor d n φ χ}) :
+         Set (SchwartzNPoint d n)) ⊆
+           section43TimeLaplaceSpatialFourierTarget d n
+
+   theorem dense_section43TimeLaplaceSpatialFourier_compact_preimage
+       (d n : ℕ) [NeZero d] :
+       Dense
+         {Φ : SchwartzNPoint d n |
+           ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+             (Ψ : SchwartzNPoint d n),
+             section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+             section43PositiveEnergyQuotientMap (d := d) n Φ =
+               section43PositiveEnergyQuotientMap (d := d) n Ψ}
+   ```
+   The source algebra is copied from
+   `Section43CompactStrictPositiveTimeSource`; support closure uses
+   `tsupport_add`, `tsupport_smul_subset_right`, `HasCompactSupport.add`, and
+   `HasCompactSupport.smul_left`.  The integrability proof is the existing
+   `integrable_section43FourierLaplace_timeIntegrand` argument with
+   `section43DiffPullbackCLM d n f` replaced by `G.f` and negative-time
+   vanishing supplied by
+   `section43PartialFourierSpatial_fun_eq_zero_of_neg_time_of_support_positiveEnergy`
+   plus `section43TimeSpatialSource_tsupport_subset_positiveEnergy`.
+   Representative add/smul are pointwise `calc` proofs using
+   `MeasureTheory.integral_add`, `MeasureTheory.integral_const_mul`,
+   `partialFourierSpatial_fun_add`, and `partialFourierSpatial_fun_smul`.
+
+   The target set is:
+   ```lean
+   def section43TimeLaplaceSpatialFourierTarget
+       (d n : ℕ) [NeZero d] : Set (SchwartzNPoint d n) :=
+     {Φ |
+       ∃ (G : Section43CompactStrictPositiveTimeSpatialSource d n)
+         (Ψ : SchwartzNPoint d n),
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ ∧
+         section43PositiveEnergyQuotientMap (d := d) n Φ =
+           section43PositiveEnergyQuotientMap (d := d) n Ψ}
+   ```
+   Add/smul closure of this target uses `map_add` and `map_smul` for
+   `section43PositiveEnergyQuotientMap`.  The span containment uses
+   `Submodule.span_induction` with the compiled generator-containment theorem
+   as the base case.  Density follows by `Dense.mono` from
+   `dense_section43NPointTimeSpatialTensor_span_compactLaplace_spatialFourier`.
+7. Treat `n = 0` explicitly if the finite-dimensional tensor construction does
+   not simplify by `simp`: the time integral is over the unique point and the
+   density is purely the spatial Fourier compact-range density.
+
+Fourth, transport from difference coordinates back to ordered Euclidean
+coordinates.  This is the already compiled map
+`section43DiffCoordRealCLE d n`.
+
+Implementation file: add a new downstream companion
+`Section43FourierLaplaceOrderedDensity.lean` importing
+`Section43FourierLaplaceSpatialDensity` and `Section43FourierLaplaceClosure`.
+Do not reopen the large transform or closure files for this packet.
+
+```lean
+theorem dense_section43FourierLaplace_compact_ordered_preimage_raw
+    (d n : ℕ) [NeZero d] :
+    Dense
+      ((section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+        Set.range (section43FourierLaplaceTransformComponentMap d n))
+```
+
+Proof transcript:
+
+1. Prove the order lemma:
+   ```lean
+   theorem section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+       (d n : ℕ) [NeZero d]
+       {δ : NPointDomain d n}
+       (hδ : ∀ i : Fin n, 0 < δ i 0) :
+       (section43DiffCoordRealCLE d n).symm δ ∈
+         OrderedPositiveTimeRegion d n
+   ```
+   Use `section43DiffCoordRealCLE_symm_apply`: ordered coordinates are partial
+   sums of positive difference times.  First-coordinate positivity is
+   `Finset.sum_pos`; strict ordering follows because the later partial sum is
+   the earlier one plus a nonempty positive block.  If Lean needs it, isolate:
+   ```lean
+   lemma partialSum_strictMono_of_pos
+       {n : ℕ} {a : Fin n → ℝ}
+       (ha : ∀ i, 0 < a i) :
+       StrictMono fun k : Fin n =>
+         ∑ r : Fin (k.val + 1), a ⟨r.val, by omega⟩
+   ```
+	   The concrete strict-order proof should rewrite both finite sums by
+	   `Finset.sum_fin_eq_sum_range`, decompose the larger range with
+	   `Finset.sum_range_add_sum_Ico`, prove the interval
+	   `Finset.Ico (i.val + 1) (j.val + 1)` is nonempty using `i < j`, and close
+	   with `lt_add_of_pos_right` plus `Finset.sum_pos`.  The compiled proof uses
+	   a local Nat-indexed function `fj` for the larger partial sum and rewrites
+	   the smaller partial sum into `fj` before applying
+	   `← Finset.sum_range_add_sum_Ico fj hle`; this is the robust Lean shape
+	   because the dependent coordinate `δ ⟨r, _⟩` needs the `r ≤ j.val` bound
+	   extracted from `r < j.val + 1`.
+2. Define the ordered pushforward source:
+   ```lean
+   noncomputable def section43OrderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       Section43CompactOrderedSource d n
+   ```
+   Carrier:
+   ```lean
+   SchwartzMap.compCLMOfContinuousLinearEquiv ℂ
+     (section43DiffCoordRealCLE d n) G.f
+   ```
+   Ordered support: map support through
+   `tsupport_comp_subset_preimage`, apply `G.positive`, then step 1.
+   Compactness: use `tsupport_comp_eq_preimage`, rewrite the preimage as the
+   image of `tsupport G.f` under `(section43DiffCoordRealCLE d n).symm`, and
+   apply compact image.
+3. Prove the pullback identity:
+   ```lean
+   theorem section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+       (d n : ℕ) [NeZero d]
+       (G : Section43CompactStrictPositiveTimeSpatialSource d n) :
+       section43DiffPullbackCLM d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ =
+       G.f
+   ```
+   This is an `ext δ` proof using `section43DiffPullbackCLM_apply` and
+   `ContinuousLinearEquiv.apply_symm_apply`.
+4. Convert Layer-3 representatives to OS-I representatives:
+   ```lean
+   theorem section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+       (d n : ℕ) [NeZero d]
+       {G : Section43CompactStrictPositiveTimeSpatialSource d n}
+       {Ψ : SchwartzNPoint d n}
+       (hΨ :
+         section43TimeLaplaceSpatialFourierRepresentative d n G Ψ) :
+       section43FourierLaplaceRepresentative d n
+         ⟨(section43OrderedSourceOfTimeSpatialSource d n G).f,
+          (section43OrderedSourceOfTimeSpatialSource d n G).ordered⟩ Ψ
+   ```
+   For `q ∈ section43PositiveEnergyRegion`, unfold
+   `section43FourierLaplaceIntegral` and rewrite the pullback by step 3; the
+   resulting integral is exactly `hΨ q hq`.
+5. Prove target containment:
+   ```lean
+   theorem section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+       (d n : ℕ) [NeZero d] :
+       section43TimeLaplaceSpatialFourierTarget d n ⊆
+         (section43PositiveEnergyQuotientMap (d := d) n) ⁻¹'
+           Set.range (section43FourierLaplaceTransformComponentMap d n)
+   ```
+   Given `Φ` with witness `G, Ψ, hΨ, hΦq`, set
+   `src := section43OrderedSourceOfTimeSpatialSource d n G`.  Step 4 makes
+   `Ψ` a `section43FourierLaplaceRepresentative` for `src`.  Use
+   `section43FourierLaplaceTransformComponent_has_representative` to obtain the
+   chosen component representative `Φc`; quotient equality between `Ψ` and
+   `Φc` follows by `section43PositiveEnergyQuotientMap_eq_of_eqOn_region`.
+   Combine that equality with `hΦq` and provide the range witness `src`.
+6. Conclude by `Dense.mono` from
+   `dense_section43TimeLaplaceSpatialFourier_compact_preimage`.
+
+Production update, 2026-04-18: this ordered-density bridge is compiled in
+`Section43FourierLaplaceOrderedDensity.lean`:
+```lean
+section43DiffCoordRealCLE_symm_mem_orderedPositiveTimeRegion_of_pos_time
+section43OrderedSourceOfTimeSpatialSource
+section43DiffPullbackCLM_orderedSourceOfTimeSpatialSource
+section43FourierLaplaceRepresentative_of_timeSpatialRepresentative
+section43TimeLaplaceSpatialFourierTarget_subset_component_preimage
+dense_section43FourierLaplace_compact_ordered_preimage_raw
+```
+
+Production update, 2026-04-18: the public theorem-3 positivity frontier
+`bvt_W_positive` in `OSToWightmanBoundaryValues.lean` is now closed by applying
+`OSReconstruction.bvt_W_positive_of_component_dense_preimage` to
+`OSReconstruction.dense_section43FourierLaplace_compact_ordered_preimage_raw`.
+This is the planned OS-route endpoint for Section 4.3 positivity: all analysis
+is in the Section 4.3 density/closure files, and the public frontier only
+connects the compiled density theorem to the closed-set positivity bridge.
+
+Implementation guardrails:
+
+1. Do not use `os1TransportComponent`; it is the raw quotient of the Euclidean
+   source, not the OS I Fourier-Laplace image.
+2. Do not use the support-restricted dense-range theorem shape; the correct
+   target is the positive-energy quotient or its ambient preimage.
+3. Do not introduce Wightman, OS Hilbert-space, or semigroup hypotheses into
+   the density theorem.  This is purely Schwartz / Fourier-Laplace analysis.
+4. Do not add zero-kernel or injectivity side goals unless a downstream theorem
+   actually consumes them.
+5. Keep the `n = 0` case explicit.  It is scalar evaluation, not an application
+   of the one-variable Laplace theorem.
+
+#### 5.9.7d. Final closed-set argument
+
+For fixed `B`, define the nonnegative set:
+
+```lean
+def bvt_W_finiteComponentPositiveSet
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (B : ℕ) :
+    Set (Section43FiniteComponentProduct d B) :=
+  {u | 0 ≤ (bvt_W_finiteComponentQuadratic (d := d) OS lgc B u).re}
+```
+
+Then prove:
+
+```lean
+theorem bvt_W_finiteComponentQuadratic_nonneg
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (B : ℕ)
+    (u : Section43FiniteComponentProduct d B) :
+    0 ≤ (bvt_W_finiteComponentQuadratic (d := d) OS lgc B u).re
+```
+
+Proof:
+
+1. `bvt_W_finiteComponentPositiveSet` is closed by continuity of the quadratic
+   form and closedness of `Set.Ici 0`.
+2. It contains the dense transform finite-product image.  Given a finite source
+   tuple, build a `BvtTransformComponentSequence` with bound `B` by using
+   `section43TransformComponentTarget` degreewise for `n ≤ B` and zero outside.
+3. The finite quadratic form of that image is
+   `WightmanInnerProduct d (bvt_W OS lgc) A.toBorchers A.toBorchers`, by the
+   apply theorem and finite-sum rewrite.
+4. Positivity on that image is exactly
+   `bvt_wightmanInner_self_nonneg_onTransformImage`.
+5. Closedness plus density gives positivity for all finite component tuples.
+
+Production status, 2026-04-17: the abstract closed-set bridge is compiled as:
+
+```lean
+theorem bvt_W_finiteComponentQuadratic_nonneg_of_denseRange
+    {X : Type*}
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (B : ℕ)
+    (T : X → Section43FiniteComponentProduct d B)
+    (hT_dense : DenseRange T)
+    (hT_nonneg :
+      ∀ x : X,
+        0 ≤
+          (bvt_W_finiteComponentQuadratic (d := d) OS lgc B (T x)).re)
+    (u : Section43FiniteComponentProduct d B) :
+    0 ≤ (bvt_W_finiteComponentQuadratic (d := d) OS lgc B u).re
+```
+
+This theorem intentionally keeps the analytic input explicit.  The remaining
+analytic work is **not** in this closed-set argument.  The instantiation with
+the finite product of genuine compact ordered Fourier-Laplace transform
+components is already compiled, including the proof of `hT_nonneg` from
+`bvt_wightmanInner_self_nonneg_onTransformImage`.  The topological part of the
+closed-set argument no longer needs proof-doc work.
+
+Finally instantiate the tuple with an arbitrary public `BorchersSequence F`
+and `B := F.bound`:
+
+```lean
+theorem bvt_W_positive_from_finiteComponentQuadratic
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (F : BorchersSequence d) :
+    0 ≤ (WightmanInnerProduct d (bvt_W OS lgc) F F).re
+```
+
+This is the theorem that should feed the private `bvt_W_positive` frontier in
+`OSToWightmanBoundaryValues.lean`.
+
+Production status, 2026-04-17: the finite product closed-set bridge,
+transform-image nonnegativity, component dense-range conditional closure, and
+component preimage-density conditional closure are compiled in
+`Section43FourierLaplaceClosure.lean`.  The only remaining analytic density
+input is
+`dense_section43FourierLaplaceTransformComponentMap_preimage` from
+§5.9.7c.1.  Until that theorem is proved, `bvt_W_positive` should not be
+attacked directly.
 
 Exact current implementation status:
 

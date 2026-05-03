@@ -22,10 +22,9 @@ Here "peripheral" does **not** mean mathematically unimportant. It means:
 
 | File:line | Theorem | Why peripheral right now | Primary doc |
 |---|---|---|---|
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2366` | `schwingerExtension_os_term_eq_wightman_term` | false route, should be quarantined not advanced | `docs/r_to_e_blueprint.md` |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3581` | `W_analytic_cluster_integral` | reverse-direction cluster, not current `E -> R` target | `docs/r_to_e_blueprint.md` |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2379` | `schwingerExtension_os_term_eq_wightman_term` | false route, should be quarantined not advanced | `docs/r_to_e_blueprint.md` |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3627` | `W_analytic_cluster_integral` | reverse-direction cluster, not current `E -> R` target | `docs/r_to_e_blueprint.md` |
 | `Wightman/Reconstruction/WickRotation/BHWTranslation.lean:1115` | `isPreconnected_baseFiber` | old-route residual, no longer needed on merged Route 1 path | `docs/r_to_e_blueprint.md` |
-| `Wightman/Reconstruction/WickRotation/ForwardTubeLorentz.lean:1129` | `wickRotation_not_in_PET_null` | reverse-direction measure-zero geometry | `docs/r_to_e_blueprint.md` |
 
 ## 2. GNS / uniqueness side lane
 
@@ -48,10 +47,10 @@ Here "peripheral" does **not** mean mathematically unimportant. It means:
 
 ## 4. SCV side infrastructure
 
-| File:line | Theorem | Why peripheral right now | Primary doc |
-|---|---|---|---|
-| `SCV/BochnerTubeTheorem.lean:126` | `bochner_local_extension` | important SCV infrastructure, but not first live blocker | `docs/scv_infrastructure_blueprint.md` |
-| `SCV/BochnerTubeTheorem.lean:220` | `bochner_tube_extension` | same | `docs/scv_infrastructure_blueprint.md` |
+The SCV tree currently has no direct production `sorry`s. Its remaining backlog
+surfaces are explicit axioms, tracked in the README axiom inventory and
+`docs/scv_infrastructure_blueprint.md`, rather than in this peripheral-sorry
+note.
 
 ## 5. Complex-Lie-group permutation side lane
 
@@ -66,11 +65,10 @@ If the user later wants to attack peripheral blockers without entering `vNA`,
 the recommended order is:
 
 1. GNS holomorphic bridge,
-2. nuclear/kernal theorem package,
+2. nuclear/kernel theorem package,
 3. standalone uniqueness,
-4. SCV Bochner tube theorem,
-5. BHW permutation blockers,
-6. reverse-direction historical residuals.
+4. BHW permutation blockers,
+5. reverse-direction historical residuals.
 
 This order keeps the mathematically reusable packages ahead of the mostly
 historical or side-lane blockers.

@@ -310,6 +310,262 @@ private theorem euclidean_forwardTube_section_nonempty :
     have : (0 : ℝ) < (i : ℝ) + 1 := by positivity
     simpa [x0] using this
 
+/-- Euclidean sector where the points become ordered positive-time points after
+the permutation `τ`.
+
+The positivity condition is essential for the absolute-coordinate forward tube:
+the first Wick-rotated point is compared with the origin. -/
+def EuclideanOrderedPositiveTimeSector
+    (τ : Equiv.Perm (Fin n)) : Set (NPointDomain d n) :=
+  {x | (fun k => x (τ k)) ∈ OrderedPositiveTimeRegion d n}
+
+/-- Uniform positive Euclidean time translation, leaving spatial coordinates
+unchanged. -/
+def positiveTimeTranslate (A : ℝ) (x : NPointDomain d n) :
+    NPointDomain d n :=
+  fun k μ => x k μ + if μ = 0 then A else 0
+
+omit [NeZero d] in
+private theorem continuous_positiveTimeTranslate (A : ℝ) :
+    Continuous (positiveTimeTranslate (d := d) (n := n) A) := by
+  apply continuous_pi
+  intro k
+  apply continuous_pi
+  intro μ
+  have hk : Continuous (fun x : NPointDomain d n => x k) := continuous_apply k
+  have hcoord : Continuous (fun x : NPointDomain d n => x k μ) :=
+    (continuous_apply μ).comp hk
+  simpa [positiveTimeTranslate] using
+    hcoord.add continuous_const
+
+omit [NeZero d] in
+private def positiveTimeTranslateHomeomorph (A : ℝ) :
+    NPointDomain d n ≃ₜ NPointDomain d n where
+  toFun := positiveTimeTranslate (d := d) (n := n) A
+  invFun := positiveTimeTranslate (d := d) (n := n) (-A)
+  left_inv x := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [positiveTimeTranslate]
+    · simp [positiveTimeTranslate, hμ]
+  right_inv x := by
+    ext k μ
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [positiveTimeTranslate]
+    · simp [positiveTimeTranslate, hμ]
+  continuous_toFun := continuous_positiveTimeTranslate (d := d) (n := n) A
+  continuous_invFun := continuous_positiveTimeTranslate (d := d) (n := n) (-A)
+
+omit [NeZero d] in
+theorem isOpen_positiveTimeTranslate_image
+    (A : ℝ) (V : Set (NPointDomain d n)) (hV_open : IsOpen V) :
+    IsOpen (positiveTimeTranslate (d := d) (n := n) A '' V) := by
+  exact (positiveTimeTranslateHomeomorph (d := d) (n := n) A).isOpenMap V hV_open
+
+omit [NeZero d] in
+@[simp] theorem positiveTimeTranslate_neg_eq_sub_timeShiftVec
+    (A : ℝ) (x : NPointDomain d n) :
+    positiveTimeTranslate (d := d) (n := n) (-A) x =
+      fun k => x k - timeShiftVec d A := by
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [positiveTimeTranslate, timeShiftVec, sub_eq_add_neg]
+  · simp [positiveTimeTranslate, timeShiftVec, hμ, sub_eq_add_neg]
+
+omit [NeZero d] in
+@[simp] theorem timeShiftSchwartzNPoint_apply_positiveTimeTranslate
+    (A : ℝ) (φ : SchwartzNPoint d n) (y : NPointDomain d n) :
+    timeShiftSchwartzNPoint (d := d) A φ y =
+      φ (positiveTimeTranslate (d := d) (n := n) (-A) y) := by
+  simp
+
+omit [NeZero d] in
+theorem hasCompactSupport_timeShiftSchwartzNPoint
+    (A : ℝ) (φ : SchwartzNPoint d n)
+    (hφ_compact : HasCompactSupport (φ : NPointDomain d n → ℂ)) :
+    HasCompactSupport
+      ((timeShiftSchwartzNPoint (d := d) A φ : SchwartzNPoint d n) :
+        NPointDomain d n → ℂ) := by
+  have hcomp :
+      HasCompactSupport
+        (fun y : NPointDomain d n =>
+          (φ : NPointDomain d n → ℂ)
+            (positiveTimeTranslate (d := d) (n := n) (-A) y)) := by
+    simpa [Function.comp_def, positiveTimeTranslateHomeomorph] using
+      hφ_compact.comp_homeomorph
+        (positiveTimeTranslateHomeomorph (d := d) (n := n) (-A))
+  simpa [timeShiftSchwartzNPoint_apply_positiveTimeTranslate] using hcomp
+
+omit [NeZero d] in
+private theorem tsupport_precomp_subset_of_continuous {X Y α : Type*}
+    [TopologicalSpace X] [TopologicalSpace Y] [Zero α]
+    {f : Y → α} {h : X → Y} (hh : Continuous h) :
+    tsupport (fun x => f (h x)) ⊆ h ⁻¹' tsupport f := by
+  refine closure_minimal ?_ ((isClosed_tsupport _).preimage hh)
+  intro x hx
+  exact subset_closure (by simpa [Function.mem_support] using hx)
+
+omit [NeZero d] in
+theorem tsupport_timeShiftSchwartzNPoint_subset_positiveTimeTranslate_image
+    (A : ℝ) (φ : SchwartzNPoint d n)
+    (V : Set (NPointDomain d n))
+    (hφ_tsupport : tsupport (φ : NPointDomain d n → ℂ) ⊆ V) :
+    tsupport
+        ((timeShiftSchwartzNPoint (d := d) A φ : SchwartzNPoint d n) :
+          NPointDomain d n → ℂ)
+      ⊆ positiveTimeTranslate (d := d) (n := n) A '' V := by
+  intro y hy
+  have hpre_subset :
+      tsupport
+          (fun y : NPointDomain d n =>
+            (φ : NPointDomain d n → ℂ)
+              (positiveTimeTranslate (d := d) (n := n) (-A) y))
+        ⊆
+          (positiveTimeTranslate (d := d) (n := n) (-A)) ⁻¹'
+            tsupport (φ : NPointDomain d n → ℂ) :=
+    tsupport_precomp_subset_of_continuous
+      (f := (φ : NPointDomain d n → ℂ))
+      (h := positiveTimeTranslate (d := d) (n := n) (-A))
+      (continuous_positiveTimeTranslate (d := d) (n := n) (-A))
+  have hy_pre : positiveTimeTranslate (d := d) (n := n) (-A) y ∈
+      tsupport (φ : NPointDomain d n → ℂ) := by
+    exact hpre_subset (by simpa [timeShiftSchwartzNPoint_apply_positiveTimeTranslate] using hy)
+  refine ⟨positiveTimeTranslate (d := d) (n := n) (-A) y, hφ_tsupport hy_pre, ?_⟩
+  ext k μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    simp [positiveTimeTranslate]
+  · simp [positiveTimeTranslate, hμ]
+
+omit [NeZero d] in
+/-- Each coincident-time hyperplane is Haar-null. -/
+theorem measure_timeCoord_eq_zero (i j : Fin n) (hij : i ≠ j) :
+    MeasureTheory.volume {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
+  let L : NPointDomain d n →ₗ[ℝ] ℝ :=
+    { toFun := fun x => x i 0 - x j 0
+      map_add' := by
+        intro x y
+        simp
+        ring
+      map_smul' := by
+        intro a x
+        simp
+        ring }
+  have hset :
+      {x : NPointDomain d n | x i 0 = x j 0} =
+        (LinearMap.ker L : Set (NPointDomain d n)) := by
+    ext x
+    simp [L, LinearMap.mem_ker, sub_eq_zero]
+  have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+    intro htop
+    have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+    have hval : L (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+      simpa using congrArg
+        (fun f => f (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+    have hji : j ≠ i := by
+      intro h
+      exact hij h.symm
+    have : (1 : ℝ) = 0 := by
+      simp [L, hji] at hval
+    norm_num at this
+  rw [hset]
+  exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume (LinearMap.ker L) hker_ne_top
+
+omit [NeZero d] in
+/-- Almost every configuration has pairwise distinct Euclidean time coordinates. -/
+theorem ae_pairwise_distinct_timeCoords :
+    ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      ∀ i j : Fin n, i ≠ j → x i 0 ≠ x j 0 := by
+  have hall : ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
+      ∀ p : {p : Fin n × Fin n // p.1 ≠ p.2}, x p.1.1 0 ≠ x p.1.2 0 := by
+    simpa using
+      ((Set.toFinite (Set.univ : Set {p : Fin n × Fin n // p.1 ≠ p.2})).eventually_all
+        (l := MeasureTheory.ae (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)))
+        (p := fun p => fun x : NPointDomain d n => x p.1.1 0 ≠ x p.1.2 0)).2
+        (fun p _ => by
+          let s : Set (NPointDomain d n) := {x | x p.1.1 0 = x p.1.2 0}
+          have hs0 : MeasureTheory.volume s = 0 := by
+            simpa [s] using measure_timeCoord_eq_zero (d := d) (n := n) p.1.1 p.1.2 p.2
+          have hsae :
+              sᶜ ∈ MeasureTheory.ae
+                (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)) :=
+            MeasureTheory.compl_mem_ae_iff.mpr hs0
+          simpa [s, Set.compl_setOf] using hsae)
+  filter_upwards [hall] with x hx i j hij
+  exact hx ⟨⟨i, j⟩, hij⟩
+
+omit [NeZero d] in
+/-- A compactly supported test has a uniform positive Euclidean time translate
+on its closed support. -/
+theorem exists_uniform_positiveTimeShift_of_compact_tsupport
+    (φ : SchwartzNPoint d n)
+    (hφ_compact : HasCompactSupport (φ : NPointDomain d n → ℂ)) :
+    ∃ A : ℝ,
+      0 < A ∧
+      ∀ x ∈ tsupport (φ : NPointDomain d n → ℂ),
+        ∀ k : Fin n, 0 < positiveTimeTranslate (d := d) (n := n) A x k 0 := by
+  have hK_compact : IsCompact (tsupport (φ : NPointDomain d n → ℂ)) :=
+    hφ_compact.isCompact
+  obtain ⟨C, hC⟩ := hK_compact.exists_bound_of_continuousOn
+    (f := fun x : NPointDomain d n => ‖x‖) continuous_norm.continuousOn
+  refine ⟨max C 0 + 1, by linarith [le_max_right C (0 : ℝ)], ?_⟩
+  intro x hx k
+  have hxnorm_le_C : ‖x‖ ≤ C := by
+    have := hC x hx
+    simpa using this
+  have hcoord_abs : |x k 0| ≤ ‖x‖ := by
+    simpa [Real.norm_eq_abs] using
+      (norm_le_pi_norm (x k) 0).trans (norm_le_pi_norm x k)
+  have hcoord_lower : -max C 0 ≤ x k 0 := by
+    have hneg_abs : -|x k 0| ≤ x k 0 := neg_abs_le (x k 0)
+    have habs_le_max : |x k 0| ≤ max C 0 :=
+      hcoord_abs.trans (hxnorm_le_C.trans (le_max_left C (0 : ℝ)))
+    linarith
+  have htarget : 0 < x k 0 + (max C 0 + 1) := by
+    linarith
+  simpa [positiveTimeTranslate] using htarget
+
+/-- Wick rotation of a permuted ordered positive-time Euclidean sector lies in
+the forward tube. -/
+theorem wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+    (τ : Equiv.Perm (Fin n))
+    {x : NPointDomain d n}
+    (hx : x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ) :
+    (fun k => wickRotatePoint (x (τ k))) ∈ ForwardTube d n := by
+  exact euclidean_ordered_in_forwardTube (d := d) (n := n) (fun k => x (τ k))
+    (fun k j hkj => (hx k).2 j hkj)
+    (fun k => (hx k).1)
+
+omit [NeZero d] in
+/-- Positive translated configurations with pairwise distinct Euclidean times
+belong to one of the ordered positive-time sectors. -/
+theorem positiveTimeTranslate_mem_orderedPositiveTimeSector_of_pairwise_distinct
+    (A : ℝ) {x : NPointDomain d n}
+    (hpos : ∀ k : Fin n, 0 < positiveTimeTranslate (d := d) (n := n) A x k 0)
+    (hdistinct : ∀ i j : Fin n, i ≠ j → x i 0 ≠ x j 0) :
+    ∃ τ : Equiv.Perm (Fin n),
+      positiveTimeTranslate (d := d) (n := n) A x ∈
+        EuclideanOrderedPositiveTimeSector (d := d) (n := n) τ := by
+  classical
+  let τ := Tuple.sort (fun k : Fin n => x k 0)
+  refine ⟨τ, ?_⟩
+  have hmono := Tuple.monotone_sort (fun k : Fin n => x k 0)
+  have hinj : Function.Injective (fun k : Fin n => x k 0) := by
+    intro i j h
+    by_contra hij
+    exact hdistinct i j hij h
+  have hstrict : StrictMono ((fun k : Fin n => x k 0) ∘ τ) :=
+    hmono.strictMono_of_injective (hinj.comp τ.injective)
+  intro i
+  constructor
+  · simpa [positiveTimeTranslate] using hpos (τ i)
+  · intro j hij
+    have hlt : x (τ i) 0 < x (τ j) 0 := hstrict hij
+    simpa [positiveTimeTranslate] using add_lt_add_right hlt A
+
 /-- On the Wick-rotated real section of the forward tube, Euclidean times are
 strictly increasing. -/
 private theorem strictMono_time_of_wickRotate_mem_forwardTube
@@ -631,6 +887,115 @@ theorem eqOn_openConnected_of_distributional_wickSection_eq
   exact eqOn_openConnected_of_eqOn_wickRealSection
     (d := d) (n := n) U hU_open hU_conn hU_wick_nonempty F G hF hG
     (fun x hx => hEqOn_wick hx)
+
+/-- Local real-open version of `eqOn_openConnected_of_distributional_wickSection_eq`.
+
+It is enough to know the Wick-section distributional equality on one nonempty
+real-open set `V` whose Wick image lies in the connected complex domain `U`.
+The preliminary compact-test step gives pointwise equality on `V`; the
+totally-real identity theorem then propagates it through `U`. -/
+theorem eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+    (U : Set (Fin n → Fin (d + 1) → ℂ))
+    (V : Set (NPointDomain d n))
+    (hU_open : IsOpen U)
+    (hU_conn : IsConnected U)
+    (hV_open : IsOpen V)
+    (hV_nonempty : V.Nonempty)
+    (hV_wick : ∀ x ∈ V, (fun k => wickRotatePoint (x k)) ∈ U)
+    (F G : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF : DifferentiableOn ℂ F U)
+    (hG : DifferentiableOn ℂ G U)
+    (hint :
+      ∀ φ : SchwartzNPoint d n,
+        HasCompactSupport (φ : NPointDomain d n → ℂ) →
+        tsupport (φ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ x : NPointDomain d n, F (fun k => wickRotatePoint (x k)) * φ x =
+          ∫ x : NPointDomain d n, G (fun k => wickRotatePoint (x k)) * φ x) :
+    Set.EqOn F G U := by
+  have hF_cont : ContinuousOn F U := by
+    intro z hz
+    exact (hF z hz).continuousWithinAt
+  have hG_cont : ContinuousOn G U := by
+    intro z hz
+    exact (hG z hz).continuousWithinAt
+  have hF_wick_cont :
+      ContinuousOn (fun x : NPointDomain d n => F (fun k => wickRotatePoint (x k))) V := by
+    refine hF_cont.comp (continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact hV_wick x hx
+  have hG_wick_cont :
+      ContinuousOn (fun x : NPointDomain d n => G (fun k => wickRotatePoint (x k))) V := by
+    refine hG_cont.comp (continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    exact hV_wick x hx
+  have hEqOn_wick :
+      Set.EqOn
+        (fun x : NPointDomain d n => F (fun k => wickRotatePoint (x k)))
+        (fun x : NPointDomain d n => G (fun k => wickRotatePoint (x k)))
+        V := by
+    refine SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn
+      hV_open hF_wick_cont hG_wick_cont ?_
+    intro φ hφ_compact hφ_tsupport
+    exact hint φ hφ_compact hφ_tsupport
+  let U' : Set (Fin n → Fin (d + 1) → ℂ) :=
+    {z | wickRotateComplexConfig z ∈ U}
+  have hU'_open : IsOpen U' := by
+    simpa [U'] using hU_open.preimage continuous_wickRotateComplexConfig
+  have himage :
+      wickUnrotateComplexConfig '' U = U' := by
+    ext z
+    constructor
+    · rintro ⟨w, hwU, rfl⟩
+      simpa [U', wickRotateComplexConfig_wickUnrotateComplexConfig] using hwU
+    · intro hz
+      refine ⟨wickRotateComplexConfig z, ?_, ?_⟩
+      · simpa [U'] using hz
+      · simpa [wickUnrotateComplexConfig_wickRotateComplexConfig]
+  have hU'_conn : IsConnected U' := by
+    rw [← himage]
+    exact hU_conn.image
+      (wickUnrotateComplexConfig (n := n) (d := d))
+      continuous_wickUnrotateComplexConfig.continuousOn
+  let H : (Fin n → Fin (d + 1) → ℂ) → ℂ := fun z =>
+    F (wickRotateComplexConfig z) - G (wickRotateComplexConfig z)
+  have hH_holo : DifferentiableOn ℂ H U' := by
+    intro z hz
+    have hwick_diff :
+        DifferentiableWithinAt ℂ
+          (wickRotateComplexConfig (n := n) (d := d)) U' z := by
+      have htmp : DifferentiableAt ℂ (wickRotateComplexConfig (n := n) (d := d)) z :=
+        (differentiable_wickRotateComplexConfig (d := d) (n := n)).differentiableAt
+      exact htmp.differentiableWithinAt
+    have hwick_maps :
+        Set.MapsTo (wickRotateComplexConfig (n := n) (d := d)) U' U := by
+      intro y hy
+      simpa [U'] using hy
+    have hcompF :
+        DifferentiableWithinAt ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ => F (wickRotateComplexConfig z)) U' z :=
+      (hF _ (by simpa [U'] using hz)).comp z hwick_diff hwick_maps
+    have hcompG :
+        DifferentiableWithinAt ℂ
+          (fun z : Fin n → Fin (d + 1) → ℂ => G (wickRotateComplexConfig z)) U' z :=
+      (hG _ (by simpa [U'] using hz)).comp z hwick_diff hwick_maps
+    exact hcompF.sub hcompG
+  have hV_sub : ∀ x ∈ V, SCV.realToComplexProduct x ∈ U' := by
+    intro x hx
+    simpa [U', wickRotateComplexConfig_realToComplexProduct] using hV_wick x hx
+  have hH_zero : ∀ x ∈ V, H (SCV.realToComplexProduct x) = 0 := by
+    intro x hx
+    simp [H, wickRotateComplexConfig_realToComplexProduct, hEqOn_wick hx]
+  have hzero_on_U' :=
+    SCV.identity_theorem_totally_real_product
+      (hD_open := hU'_open) (hD_conn := hU'_conn) (f := H) hH_holo
+      (V := V) hV_open hV_nonempty hV_sub hH_zero
+  intro z hz
+  have hw : wickUnrotateComplexConfig z ∈ U' := by
+    simpa [U', wickRotateComplexConfig_wickUnrotateComplexConfig] using hz
+  have hHzero : H (wickUnrotateComplexConfig z) = 0 := hzero_on_U' _ hw
+  have : F z - G z = 0 := by
+    simpa [H, wickRotateComplexConfig_wickUnrotateComplexConfig] using hHzero
+  exact sub_eq_zero.mp this
 
 /-- Intersection-domain specialization of the subdomain Wick-section identity
 theorem. This is the domain shape needed for the theorem-1 Lorentz lane: the

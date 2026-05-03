@@ -6,6 +6,8 @@ Authors: Michael Douglas, ModularPhysics Contributors
 import OSReconstruction.Wightman.Reconstruction
 import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
+import OSReconstruction.GeneralResults.SinusoidSeparation
+import OSReconstruction.GeneralResults.FinProductIntegral
 import OSReconstruction.SCV.VladimirovTillmann
 
 /-!
@@ -1171,51 +1173,538 @@ theorem lorentz_covariant_distributional_bv {d n : ℕ} [NeZero d]
     (fun Λ f g hfg => Wfn.lorentz_covariant n Λ f g hfg)
     F _hF_hol hF_bv Λ f η hη
 
-/-- The set of Euclidean configurations whose Wick rotation does NOT lie in the
-    permuted extended tube has Lebesgue measure zero.
+/-! ### W11: A.e. Wick-rotated Euclidean configs lie in the PET
 
-    **Proof strategy (Jost's theorem):** A Wick-rotated configuration lies in
-    the PET whenever some permutation σ makes the consecutive differences satisfy
-    the Jost condition (spacelike with sufficient spatial spread for a complex
-    Lorentz boost). The complement — configurations where NO permutation works —
-    is contained in a finite union of proper algebraic subvarieties (coincident
-    or collinear point configurations). Each such subvariety has codimension >= 1
-    in ℝ^{n(d+1)}, hence Lebesgue measure zero (by induction on dimension + Fubini).
+The standard physics forward tube uses only n-1 difference conditions, with
+no basepoint condition on `z₀`. Our `ForwardTube` definition adds `Im(z₀) ∈ V⁺`,
+making the PET slightly smaller. The `TranslatedPET` below corrects for this by
+allowing a uniform complex translation (which cancels in differences).
 
-    Blocked by: (1) Jost characterization of PET membership (`swap_jost_set_exists`).
-    (2) The algebraic-subvariety-measure-zero step is NOW PROVED:
-    `MvPolynomial.volume_zeroSet_eq_zero` in `GeneralResults/PolynomialMeasureZeroProof.lean`.
+See `W11Counterexample.lean` for a proof that the original statement using
+`PermutedExtendedTube` directly is false for n ≥ d+2.
 
-    Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
-    Streater-Wightman, Theorem 2-12 -/
-theorem wickRotation_not_in_PET_null {d n : ℕ} [NeZero d] :
+Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
+Streater-Wightman, Theorem 2-12 -/
+
+/-- The translated permuted extended tube: configurations that lie in the PET
+    after a uniform complex translation. The translation cancels in differences,
+    so this only relaxes the k=0 basepoint condition `Im(z₀) ∈ V⁺`. -/
+def TranslatedPET (d n : ℕ) [NeZero d] : Set (Fin n → Fin (d + 1) → ℂ) :=
+  { z | ∃ c : Fin (d + 1) → ℂ, (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n }
+
+/-- The PET is contained in the translated PET (take c = 0). -/
+theorem PermutedExtendedTube_subset_TranslatedPET {d n : ℕ} [NeZero d] :
+    PermutedExtendedTube d n ⊆ TranslatedPET d n := by
+  intro z hz
+  exact ⟨0, by simpa using hz⟩
+
+/-- `TranslatedPET` is stable under uniform complex translations. -/
+theorem translatedPET_translate {d n : ℕ} [NeZero d]
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n := by
+  rcases hz with ⟨a, ha⟩
+  refine ⟨fun μ => a μ - c μ, ?_⟩
+  simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using ha
+
+/-- Translation by a uniform complex vector is an equivalence on
+`TranslatedPET`. -/
+theorem translatedPET_translate_iff {d n : ℕ} [NeZero d]
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c : Fin (d + 1) → ℂ) :
+    (fun k μ => z k μ + c μ) ∈ TranslatedPET d n ↔
+      z ∈ TranslatedPET d n := by
+  constructor
+  · intro hz
+    simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using
+      translatedPET_translate (d := d) (n := n) hz (-c)
+  · intro hz
+    exact translatedPET_translate (d := d) (n := n) hz c
+
+/-- `TranslatedPET` is open: it is the union of translated preimages of the
+open permuted extended tube. -/
+theorem isOpen_translatedPET {d n : ℕ} [NeZero d] :
+    IsOpen (TranslatedPET d n) := by
+  rw [TranslatedPET]
+  have hset :
+      {z : Fin n → Fin (d + 1) → ℂ |
+        ∃ c : Fin (d + 1) → ℂ,
+          (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n} =
+        ⋃ c : Fin (d + 1) → ℂ,
+          {z : Fin n → Fin (d + 1) → ℂ |
+            (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n} := by
+    ext z
+    simp
+  rw [hset]
+  refine isOpen_iUnion fun c => ?_
+  have hcont :
+      Continuous
+        (fun z : Fin n → Fin (d + 1) → ℂ =>
+          fun k μ => z k μ + c μ) := by
+    apply continuous_pi
+    intro k
+    apply continuous_pi
+    intro μ
+    have hk :
+        Continuous
+          (fun z : Fin n → Fin (d + 1) → ℂ => z k) :=
+      continuous_apply k
+    have hcoord :
+        Continuous
+          (fun z : Fin n → Fin (d + 1) → ℂ => z k μ) :=
+      (continuous_apply μ).comp hk
+    exact hcoord.add continuous_const
+  exact
+    (BHW_permutedExtendedTube_eq (d := d) (n := n) ▸ BHW.isOpen_permutedExtendedTube).preimage
+      hcont
+
+/-- The permuted extended tube is stable under coordinate permutations. -/
+theorem permutedExtendedTube_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ PermutedExtendedTube d n) :
+    (fun k => z (σ k)) ∈ PermutedExtendedTube d n := by
+  rw [← BHW_permutedExtendedTube_eq (d := d) (n := n)] at hz ⊢
+  obtain ⟨π, hπ⟩ := Set.mem_iUnion.mp hz
+  rcases hπ with ⟨Λ, w, hw, hzw⟩
+  refine Set.mem_iUnion.mpr ⟨σ.symm * π, ⟨Λ, fun k => w (σ k), ?_, ?_⟩⟩
+  · simpa [BHW.PermutedForwardTube] using hw
+  · ext k μ
+    simp [hzw, BHW.complexLorentzAction]
+
+/-- `TranslatedPET` is stable under coordinate permutations. -/
+theorem translatedPET_perm {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ TranslatedPET d n) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n := by
+  rcases hz with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  simpa using permutedExtendedTube_perm (d := d) (n := n) σ hc
+
+/-- Coordinate permutation is an equivalence on `TranslatedPET`. -/
+theorem translatedPET_perm_iff {d n : ℕ} [NeZero d]
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    (fun k => z (σ k)) ∈ TranslatedPET d n ↔ z ∈ TranslatedPET d n := by
+  constructor
+  · intro hz
+    have hback :=
+      translatedPET_perm (d := d) (n := n) σ.symm
+        (z := fun k => z (σ k)) hz
+    simpa using hback
+  · intro hz
+    exact translatedPET_perm (d := d) (n := n) σ hz
+
+/-! #### Generic values on `TranslatedPET`
+
+The following small API separates the purely geometric witness-independence
+argument from the specific BHW or selected-OS analytic extension that supplies
+the PET value.  If a scalar `F` is invariant under uniform complex translations
+where both endpoints lie in `PermutedExtendedTube`, then evaluating `F` at any
+PET translate of a `TranslatedPET` point is independent of the chosen translate.
+-/
+
+/-- A PET scalar with uniform-translation invariance has a well-defined value
+at a translated-PET point: any two PET witnesses give the same scalar. -/
+theorem translatedPET_value_eq_of_translation_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (c₁ c₂ : Fin (d + 1) → ℂ)
+    (h₁ : (fun k μ => z k μ + c₁ μ) ∈ PermutedExtendedTube d n)
+    (h₂ : (fun k μ => z k μ + c₂ μ) ∈ PermutedExtendedTube d n) :
+    F (fun k μ => z k μ + c₁ μ) =
+      F (fun k μ => z k μ + c₂ μ) := by
+  have key := hF_translate (fun k μ => z k μ + c₁ μ)
+    (fun μ => c₂ μ - c₁ μ) h₁
+    (by
+      convert h₂ using 1
+      ext k μ
+      ring)
+  simpa [sub_eq_add_neg, add_assoc] using key.symm
+
+/-- Evaluate a PET scalar at a translated-PET point using the chosen PET
+witness.  `translatedPET_value_eq_of_translation_invariant` proves that this
+choice is independent once the PET scalar has uniform-translation invariance. -/
+noncomputable def translatedPETValue {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) : ℂ :=
+  F (fun k μ => z k μ + hz.choose μ)
+
+/-- On the original PET, the translated-PET value agrees with the PET scalar. -/
+theorem translatedPETValue_eq_on_PET {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz_pet : z ∈ PermutedExtendedTube d n)
+    (hz_tpet : z ∈ TranslatedPET d n) :
+    translatedPETValue F z hz_tpet = F z := by
+  unfold translatedPETValue
+  have hzero :
+      (fun k μ => z k μ + (0 : Fin (d + 1) → ℂ) μ) ∈
+        PermutedExtendedTube d n := by
+    simpa using hz_pet
+  have h :=
+    translatedPET_value_eq_of_translation_invariant
+      (d := d) (n := n) F hF_translate z hz_tpet.choose 0
+      hz_tpet.choose_spec hzero
+  simpa using h
+
+/-- The translated-PET value is invariant under uniform complex translations,
+provided both translated-PET memberships are supplied. -/
+theorem translatedPETValue_translation_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n)
+    (hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n) :
+    translatedPETValue F z hz =
+      translatedPETValue F (fun k μ => z k μ + c μ) hzc := by
+  unfold translatedPETValue
+  have h₂ :
+      (fun k μ => z k μ + (fun μ => c μ + hzc.choose μ) μ) ∈
+        PermutedExtendedTube d n := by
+    convert hzc.choose_spec using 1
+    ext k μ
+    ring
+  have h :=
+    translatedPET_value_eq_of_translation_invariant
+      (d := d) (n := n) F hF_translate z hz.choose
+      (fun μ => c μ + hzc.choose μ) hz.choose_spec h₂
+  convert h using 2
+  ext k μ
+  ring
+
+/-- The translated-PET value inherits coordinate-permutation invariance from a
+PET scalar that is translation-invariant and permutation-invariant on PET. -/
+theorem translatedPETValue_perm_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (hF_perm :
+      ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k => z (σ k)) ∈ PermutedExtendedTube d n →
+        F (fun k => z (σ k)) = F z)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n)
+    (hzσ : (fun k => z (σ k)) ∈ TranslatedPET d n) :
+    translatedPETValue F (fun k => z (σ k)) hzσ =
+      translatedPETValue F z hz := by
+  unfold translatedPETValue
+  let zσ : Fin n → Fin (d + 1) → ℂ := fun k => z (σ k)
+  have hzσ_with_hz_witness :
+      (fun k μ => zσ k μ + hz.choose μ) ∈ PermutedExtendedTube d n := by
+    have hperm :=
+      permutedExtendedTube_perm (d := d) (n := n) σ hz.choose_spec
+    simpa [zσ] using hperm
+  have hchange_witness :=
+    translatedPET_value_eq_of_translation_invariant
+      (d := d) (n := n) F hF_translate zσ
+      hzσ.choose hz.choose hzσ.choose_spec hzσ_with_hz_witness
+  have hperm_value :=
+    hF_perm σ (fun k μ => z k μ + hz.choose μ) hz.choose_spec
+      (by simpa [zσ] using hzσ_with_hz_witness)
+  exact hchange_witness.trans (by simpa [zσ] using hperm_value)
+
+/-- Total version of `translatedPETValue`: outside `TranslatedPET` it is zero.
+This is only an honest integrand when paired with a support or a.e. theorem
+showing the non-`TranslatedPET` locus is irrelevant. -/
+noncomputable def translatedPETValueTotal {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (z : Fin n → Fin (d + 1) → ℂ) : ℂ :=
+  if hz : z ∈ TranslatedPET d n then
+    translatedPETValue F z hz
+  else 0
+
+/-- On the original PET, the total translated-PET value agrees with the PET
+scalar. -/
+theorem translatedPETValueTotal_eq_on_PET {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz_pet : z ∈ PermutedExtendedTube d n) :
+    translatedPETValueTotal F z = F z := by
+  have hz_tpet : z ∈ TranslatedPET d n :=
+    PermutedExtendedTube_subset_TranslatedPET hz_pet
+  simp only [translatedPETValueTotal, dif_pos hz_tpet]
+  exact translatedPETValue_eq_on_PET F hF_translate z hz_pet hz_tpet
+
+/-- The total translated-PET value is translation-invariant on
+`TranslatedPET`. -/
+theorem translatedPETValueTotal_translation_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n) :
+    translatedPETValueTotal F z =
+      translatedPETValueTotal F (fun k μ => z k μ + c μ) := by
+  have hzc : (fun k μ => z k μ + c μ) ∈ TranslatedPET d n :=
+    translatedPET_translate hz c
+  simp only [translatedPETValueTotal, dif_pos hz, dif_pos hzc]
+  exact translatedPETValue_translation_invariant F hF_translate z c hz hzc
+
+/-- The total translated-PET value inherits coordinate-permutation invariance
+from a PET scalar that is translation-invariant and permutation-invariant on
+PET.  When the input is not in `TranslatedPET`, both sides are the harmless
+zero branch by permutation stability of `TranslatedPET`. -/
+theorem translatedPETValueTotal_perm_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (hF_perm :
+      ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k => z (σ k)) ∈ PermutedExtendedTube d n →
+        F (fun k => z (σ k)) = F z)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    translatedPETValueTotal F (fun k => z (σ k)) =
+      translatedPETValueTotal F z := by
+  by_cases hz : z ∈ TranslatedPET d n
+  · have hzσ : (fun k => z (σ k)) ∈ TranslatedPET d n :=
+      translatedPET_perm (d := d) (n := n) σ hz
+    simp only [translatedPETValueTotal, dif_pos hz, dif_pos hzσ]
+    exact translatedPETValue_perm_invariant F hF_translate hF_perm σ z hz hzσ
+  · have hzσ : (fun k => z (σ k)) ∉ TranslatedPET d n := by
+      intro hmem
+      exact hz ((translatedPET_perm_iff (d := d) (n := n) σ z).1 hmem)
+    simp only [translatedPETValueTotal, dif_neg hz, dif_neg hzσ]
+
+/-- The coincident-time hyperplane `{x : x i 0 = x j 0}` is Haar-null for
+    `i ≠ j`. -/
+private theorem measure_timeEq_zero_local {d n : ℕ} (i j : Fin n) (hij : i ≠ j) :
+    MeasureTheory.volume
+      {x : NPointDomain d n | x i 0 = x j 0} = 0 := by
+  let L : NPointDomain d n →ₗ[ℝ] ℝ :=
+    { toFun := fun x => x i 0 - x j 0
+      map_add' := by intro x y; simp; ring
+      map_smul' := by intro a x; simp; ring }
+  have hset :
+      {x : NPointDomain d n | x i 0 = x j 0} = (LinearMap.ker L : Set _) := by
+    ext x; simp [L, LinearMap.mem_ker, sub_eq_zero]
+  have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+    intro htop
+    have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+    have hval : L (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+      simpa using congrArg
+        (fun f => f (fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+    have hji : j ≠ i := fun h => hij h.symm
+    have : (1 : ℝ) = 0 := by simp [L, hji] at hval
+    norm_num at this
+  rw [hset]
+  exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume
+    (LinearMap.ker L) hker_ne_top
+
+/-- The set of configurations with at least one pair of coincident times is a
+    finite union of hyperplanes, hence Haar-null. -/
+private theorem measure_timeCoinc_zero {d n : ℕ} [NeZero d] :
+    MeasureTheory.volume
+      {x : NPointDomain d n | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0} = 0 := by
+  classical
+  set S : Set (NPointDomain d n) :=
+    {x | ∃ i j : Fin n, i ≠ j ∧ x i 0 = x j 0}
+  have hS_cover :
+      S ⊆ ⋃ p : {p : Fin n × Fin n // p.1 ≠ p.2}, {x | x p.1.1 0 = x p.1.2 0} := by
+    intro x hx
+    obtain ⟨i, j, hij, heq⟩ := hx
+    exact Set.mem_iUnion.mpr ⟨⟨(i, j), hij⟩, heq⟩
+  refine MeasureTheory.measure_mono_null hS_cover ?_
+  apply MeasureTheory.measure_iUnion_null
+  rintro ⟨⟨i, j⟩, hij⟩
+  exact measure_timeEq_zero_local (d := d) (n := n) i j hij
+
+/-- **A.e. Wick-rotated Euclidean configuration lies in the translated PET.**
+
+    Proof strategy: if `x` has pairwise distinct times (a full-measure condition),
+    shift by `a = (A, 0, …, 0)` where `A = 1 + Σ|x_i 0|`. Then `x + a` has
+    strictly positive pairwise-distinct times, so `wick(x + a) ∈ PET` by
+    `euclidean_distinct_in_permutedTube`. Since `wick(x + a) = wick(x) + wick(a)`
+    (with `wick(a) = (iA, 0, …, 0)`), the vector `c := wick(a)` witnesses
+    `wick(x) ∈ TranslatedPET`. -/
+theorem wickRotation_in_translatedPET_null {d n : ℕ} [NeZero d] :
     MeasureTheory.volume
       {x : NPointDomain d n |
-        (fun k => wickRotatePoint (x k)) ∉ PermutedExtendedTube d n} = 0 := by
-  sorry
+        (fun k => wickRotatePoint (x k)) ∉ TranslatedPET d n} = 0 := by
+  refine MeasureTheory.measure_mono_null ?_ (measure_timeCoinc_zero (d := d) (n := n))
+  intro x hx
+  simp only [Set.mem_setOf_eq] at hx ⊢
+  by_contra hdist_all
+  push_neg at hdist_all
+  -- hdist_all : ∀ i j, i ≠ j → x i 0 ≠ x j 0
+  apply hx
+  -- Goal: (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n
+  -- Construct the shift a = (A, 0, ..., 0)
+  let A : ℝ := 1 + ∑ i : Fin n, |x i 0|
+  let a : SpacetimeDim d := fun μ => if μ = 0 then A else 0
+  let xs : NPointDomain d n := fun k μ => x k μ + a μ
+  have hpos : ∀ i : Fin n, xs i 0 > 0 := by
+    intro i
+    have hi_le : |x i 0| ≤ ∑ j : Fin n, |x j 0| :=
+      Finset.single_le_sum (fun j _ => abs_nonneg (x j 0)) (Finset.mem_univ i)
+    have : 0 < x i 0 + A := by dsimp [A]; linarith [neg_abs_le (x i 0)]
+    simpa [xs, a] using this
+  have hdistinct_xs : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0 := by
+    intro i j hij
+    simpa [xs, a] using hdist_all i j hij
+  have hxs_pet : (fun k => wickRotatePoint (xs k)) ∈ PermutedExtendedTube d n :=
+    euclidean_distinct_in_permutedTube xs hdistinct_xs hpos
+  have hwick_add :
+      (fun k => wickRotatePoint (xs k)) =
+        (fun k μ => wickRotatePoint (x k) μ + wickRotatePoint a μ) := by
+    ext k μ
+    simp only [xs, a, wickRotatePoint]
+    split_ifs <;> push_cast <;> ring
+  exact ⟨wickRotatePoint a, hwick_add ▸ hxs_pet⟩
 
-/-- **Almost every Euclidean Wick-rotated configuration lies in the permuted extended tube.**
+/-- **Almost every Euclidean Wick-rotated configuration lies in the translated PET.**
 
     For a.e. configuration x = (x₁, ..., xₙ) of Euclidean spacetime points,
     the Wick-rotated configuration (iτ₁, x⃗₁, ..., iτₙ, x⃗ₙ) lies in the
-    permuted extended tube T''_n.
-
-    This is a consequence of Jost's theorem: the extended tube T'_n contains
-    all "Jost points" (real points where consecutive differences are spacelike).
-    The set of configurations that are NOT Jost points (after any permutation
-    and complex Lorentz transformation) has measure zero.
+    translated permuted extended tube.
 
     This suffices for all downstream uses: the Schwinger function properties
     (translation invariance, rotation invariance, permutation symmetry) are
-    proved via integral identities that only need pointwise equality a.e.
+    proved via integral identities that only need pointwise equality a.e.,
+    and the Wightman function value is unchanged by translation (axiom R3).
 
     Ref: Jost, "The General Theory of Quantized Fields" §IV.4, Theorem IV.4;
     Streater-Wightman, Theorem 2-12 -/
-theorem ae_euclidean_points_in_permutedTube {d n : ℕ} [NeZero d] :
+theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
     ∀ᵐ (x : NPointDomain d n) ∂MeasureTheory.volume,
-      (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n := by
+      (fun k => wickRotatePoint (x k)) ∈ TranslatedPET d n := by
   rw [Filter.Eventually, MeasureTheory.mem_ae_iff]
-  convert wickRotation_not_in_PET_null (d := d) (n := n) using 1
+  convert wickRotation_in_translatedPET_null (d := d) (n := n) using 1
+
+-- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
+-- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).
+-- Use `wickRotation_in_translatedPET_null` / `ae_euclidean_points_in_translatedPET` instead.
+
+/-- **Joint TranslatedPET triple a.e. on the Fubini-split product space.**
+
+For a.e. `(y, z) ∈ NPointDomain d n × NPointDomain d m` under the product
+volume measure, all three of the Wick-rotated configurations that appear
+in the cluster decomposition lie in TranslatedPET:
+
+1. `wick(y) ∈ TranslatedPET d n` (the n-block),
+2. `wick(z) ∈ TranslatedPET d m` (the m-block),
+3. `wick(Fin.append y z) ∈ TranslatedPET d (n + m)` (the joint configuration).
+
+This is the post-Fubini-split a.e. statement needed by `W_analytic_cluster_integral`:
+after factoring the (n+m)-point integral via `integral_fin_append_split`, the
+integrand's `F_ext_on_translatedPET_total` kernel is well-defined a.e. on all
+three evaluation points of the cluster pointwise identity.
+
+Proof: each projection statement comes from `ae_euclidean_points_in_translatedPET`,
+and the joint one is transported from the (n+m)-point a.e. statement via the
+measure-preserving equiv `MeasurableEquiv.finAddProd`. -/
+theorem ae_joint_triple_translatedPET {d n m : ℕ} [NeZero d] :
+    ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+      ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+      (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n ∧
+      (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m ∧
+      (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+        TranslatedPET d (n + m) := by
+  -- (1) a.e. first projection in TranslatedPET d n (lift along Prod.fst projection)
+  have h1 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := n)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set S : Set (NPointDomain d n) :=
+      { y | (fun k => wickRotatePoint (y k)) ∉ TranslatedPET d n }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = S ×ˢ Set.univ := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, zero_mul]
+  -- (2) a.e. second projection in TranslatedPET d m (lift along Prod.snd projection)
+  have h2 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := m)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set T : Set (NPointDomain d m) :=
+      { z | (fun k => wickRotatePoint (z k)) ∉ TranslatedPET d m }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = Set.univ ×ˢ T := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, mul_zero]
+  -- (3) a.e. joint in TranslatedPET d (n+m) — transport from NPointDomain d (n+m)
+  have h3 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+          TranslatedPET d (n + m) := by
+    -- Transport via `finAddProd.symm : NPointDomain d n × NPointDomain d m
+    --                                   ≃ᵐ NPointDomain d (n + m)` (measure-preserving).
+    let e := MeasurableEquiv.finAddProd n m (SpacetimeDim d)
+    have hpres : MeasureTheory.MeasurePreserving e.symm
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m))
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d (n + m))) := by
+      have := MeasureTheory.volume_preserving_finAddProd n m (SpacetimeDim d)
+      simpa [e] using this.symm
+    have hvol :
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)) := by
+      rfl
+    have hpull : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint ((e.symm p) k)) ∈ TranslatedPET d (n + m) :=
+      hpres.quasiMeasurePreserving.ae (ae_euclidean_points_in_translatedPET (d := d) (n := n + m))
+    have hpull' : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+            TranslatedPET d (n + m) := by
+      filter_upwards [hpull] with p hp
+      convert hp using 2
+      ext k
+      rw [MeasurableEquiv.finAddProd_symm_apply]
+    rwa [hvol] at hpull'
+  -- Combine all three a.e. facts.
+  filter_upwards [h1, h2, h3] with p hp1 hp2 hp3 using ⟨hp1, hp2, hp3⟩
 
 /-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is

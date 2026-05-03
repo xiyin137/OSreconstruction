@@ -87,32 +87,20 @@ theorem bvt_F_negCanonical (OS : OsterwalderSchraderAxioms d)
     have hF_negCanonical :
         ∀ (x : NPointDomain d n) (ε : ℝ), 0 < ε →
           starRingEnd ℂ
-            ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-              (fun j μ =>
-                ↑(x j μ) +
-                  ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)) =
-          (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-            (fun j μ =>
-              ↑(x j μ) -
-                ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I) := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.1
-    change
-      starRingEnd ℂ
-        ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-          (fun j μ =>
-            ↑(x j μ) +
-              ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)) =
-      (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
-        (fun j μ =>
-          ↑(x j μ) -
-            ε * ↑(canonicalForwardConeDirection (d := d) n j μ) * Complex.I)
-    simpa [bvt_F, canonicalForwardConeDirection] using
-      hF_negCanonical x ε hε
+            ((full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
+              (fun k μ =>
+                ↑(x k μ) +
+                  ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I)) =
+          (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
+            (fun k μ =>
+              ↑(x k μ) -
+                ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) := by
+      intro x ε hε
+      simpa [canonicalForwardConeDirection] using
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.2.1
+          x ε hε
+    unfold bvt_F
+    exact hF_negCanonical x ε hε
 
 /-! #### Helper lemmas for property transfer: OS axiom → F_analytic → W_n -/
 
@@ -1981,3 +1969,60 @@ theorem bv_hermiticity_transfer (n : ℕ)
         (nhds (W_n g)) :=
     Filter.Tendsto.congr' hEq hg
   simpa using (tendsto_nhds_unique hstar hg_as_star).symm
+
+/-- Lower-layer normalizedness of the reconstructed boundary-value family.
+
+This is intentionally available before `OSToWightmanBoundaryValues.lean`, so
+Section 4.3 support files can use degree-zero normalization without importing
+the final public Wightman-construction module. -/
+theorem bvt_normalized_from_boundaryValue (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    IsNormalized d (bvt_W OS lgc) := by
+  intro f
+  exact bv_zero_point_is_evaluation OS lgc
+    (bvt_W OS lgc 0)
+    (bvt_F OS lgc 0)
+    (bvt_boundary_values OS lgc 0)
+    (bvt_euclidean_restriction OS lgc 0)
+    f
+
+/-- Lower-layer Hermiticity of the reconstructed boundary-value family.
+
+The proof uses only the boundary-ray Hermiticity transfer and therefore can sit
+below the final positivity theorem.  Keeping this theorem below
+`OSToWightmanBoundaryValues.lean` avoids an import cycle for Section 4.3 carrier
+files that need Hermiticity in a zero-right branch. -/
+theorem bvt_hermitian_from_boundaryValue (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) :
+    ∀ (n : ℕ) (f g : SchwartzNPoint d n),
+      (∀ x : NPointDomain d n,
+        g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
+      bvt_W OS lgc n g = starRingEnd ℂ (bvt_W OS lgc n f) := by
+  have hF_reflect_pairing :
+      ∀ (n : ℕ) (f g : SchwartzNPoint d n) (ε : ℝ), 0 < ε →
+        (∀ x : NPointDomain d n,
+          g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
+        ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k μ =>
+            ↑(x k μ) +
+              ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (g x)
+          =
+        starRingEnd ℂ
+          (∫ x : NPointDomain d n,
+            bvt_F OS lgc n (fun k μ =>
+              ↑(x k μ) +
+                ε * ↑(canonicalForwardConeDirection (d := d) n k μ) * Complex.I) * (f x)) := by
+    intro n f g ε hε hfg
+    exact boundary_ray_hermitian_pairing_of_F_negCanonical (d := d) n
+      (bvt_F OS lgc n)
+      (bvt_F_perm OS lgc n)
+      (bvt_F_translationInvariant OS lgc n)
+      (bvt_F_negCanonical OS lgc n)
+      f g ε hε hfg
+  intro n f g hfg
+  exact bv_hermiticity_transfer (d := d) n
+    (bvt_W OS lgc n)
+    (bvt_F OS lgc n)
+    (bvt_boundary_values OS lgc n)
+    (hF_reflect_pairing n)
+    f g hfg

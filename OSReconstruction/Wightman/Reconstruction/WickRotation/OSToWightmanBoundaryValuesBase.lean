@@ -211,25 +211,22 @@ private theorem full_analytic_continuation_boundaryValueData
         InForwardCone d n η →
         Filter.Tendsto
           (fun ε : ℝ => ∫ x : NPointDomain d n,
-            (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+            (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
               (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W f)) := by
   let F_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
   have hF_hol : DifferentiableOn ℂ F_analytic (ForwardTube d n) :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.1
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.1
   have hGrowthPkg :
       ∃ (C_bd : ℝ) (N : ℕ),
         0 < C_bd ∧
         ∀ z ∈ ForwardTube d n,
           ‖F_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-    rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-      ⟨_hhol, hrest⟩
-    rcases hrest with ⟨_hF_euclid, hrest⟩
-    rcases hrest with ⟨_hF_perm, hrest⟩
-    rcases hrest with ⟨_hF_trans, hrest⟩
-    exact hrest.2
+    rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+      ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+    exact hGrowth
   obtain ⟨C_bd, N, hC, hgrowth⟩ :=
     hGrowthPkg
   obtain ⟨W, hW⟩ :=
@@ -276,35 +273,35 @@ theorem boundary_values_tempered
           InForwardCone d n η →
           Filter.Tendsto
             (fun ε : ℝ => ∫ x : NPointDomain d n,
-              (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+              (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
                 (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
             (nhdsWithin 0 (Set.Ioi 0))
             (nhds (W f)) :=
     full_analytic_continuation_boundaryValueData (d := d) OS lgc n
   have hF_hol :
       DifferentiableOn ℂ
-        ((full_analytic_continuation_with_symmetry_growth OS lgc n).choose)
+        ((full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose)
         (ForwardTube d n) :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.1
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.1
   have hF_euclid :
       ∀ (f : ZeroDiagonalSchwartz d n),
         OS.S n f = ∫ x : NPointDomain d n,
-          (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+          (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
             (fun k => wickRotatePoint (x k)) * (f.1 x) :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.1
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.1
   have hF_perm :
       ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
-        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
           (fun j => z (σ j)) =
-        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose z :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.1
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose z :=
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.1
   have hF_trans :
       ∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
-        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
           (fun j => z j + a) =
-        (full_analytic_continuation_with_symmetry_growth OS lgc n).choose z :=
-    (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.1
-  refine ⟨W, (full_analytic_continuation_with_symmetry_growth OS lgc n).choose, W.continuous,
+        (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose z :=
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.1
+  refine ⟨W, (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose, W.continuous,
     ?_, hF_hol, hW_bv, (fun f => hF_euclid f), hF_perm, hF_trans⟩
   · constructor
     · intro f g
@@ -328,7 +325,7 @@ def bvt_W (OS : OsterwalderSchraderAxioms d)
 def bvt_F (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     (Fin n → Fin (d + 1) → ℂ) → ℂ :=
-  (full_analytic_continuation_with_symmetry_growth OS lgc n).choose
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose
 
 theorem bvt_W_continuous (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
@@ -350,7 +347,28 @@ concentrated Borchers vectors already agrees with the honest OS inner product. -
 theorem bvt_F_holomorphic (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     DifferentiableOn ℂ (bvt_F OS lgc n) (ForwardTube d n) :=
-  (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.1
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.1
+
+theorem bvt_F_acrOne_holomorphic (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
+    DifferentiableOn ℂ (bvt_F OS lgc n) (AnalyticContinuationRegion d n 1) :=
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.1
+
+theorem bvt_F_acrOne_package (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
+    DifferentiableOn ℂ (bvt_F OS lgc n) (AnalyticContinuationRegion d n 1) ∧
+      (∀ (f : ZeroDiagonalSchwartz d n),
+        OS.S n f = ∫ x : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * (f.1 x)) ∧
+      (∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        bvt_F OS lgc n (fun j => z (σ j)) = bvt_F OS lgc n z) ∧
+      (∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
+        bvt_F OS lgc n (fun j => z j + a) = bvt_F OS lgc n z) := by
+  exact ⟨
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.1,
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.1,
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.1,
+    (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.1⟩
 
 theorem bvt_boundary_values (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
@@ -368,7 +386,7 @@ theorem bvt_euclidean_restriction (OS : OsterwalderSchraderAxioms d)
     ∀ (f : ZeroDiagonalSchwartz d n),
       OS.S n f = ∫ x : NPointDomain d n,
         bvt_F OS lgc n (fun k => wickRotatePoint (x k)) * (f.1 x) :=
-  (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.1
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.1
 
 /-- The generic OS one-variable holomorphic bridge specialized to the chosen
 boundary-value witness `bvt_F`. This is the direct BV-side connection between
@@ -2783,10 +2801,10 @@ theorem bvt_F_perm (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
       bvt_F OS lgc n (fun j => z (σ j)) = bvt_F OS lgc n z :=
-  (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.1
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.1
 
 theorem bvt_F_translationInvariant (OS : OsterwalderSchraderAxioms d)
     (lgc : OSLinearGrowthCondition d OS) (n : ℕ) :
     ∀ (z : Fin n → Fin (d + 1) → ℂ) (a : Fin (d + 1) → ℂ),
       bvt_F OS lgc n (fun j => z j + a) = bvt_F OS lgc n z :=
-  (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec.2.2.2.1
+  (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec.2.2.2.2.1

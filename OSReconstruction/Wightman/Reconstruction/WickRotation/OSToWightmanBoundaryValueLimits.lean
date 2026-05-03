@@ -288,12 +288,9 @@ private theorem exists_flattened_bvt_W_dualCone_distribution
           0 < C_bd ∧
           ∀ z ∈ ForwardTube d n,
             ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.2
+      rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+        ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+      exact hGrowth
     obtain ⟨C_bd, N, hC_pos, hbound⟩ := hGrowthPkg
     refine ⟨C_bd, N, hC_pos, ?_⟩
     intro z hz
@@ -344,6 +341,159 @@ theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion
   have htotal :=
     OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant d Tflat hphase
   exact OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero d N hdual htotal
+
+/-- Public Wightman descent through the Section 4.3 frequency projection.
+
+The private flattened dual-cone support witness for `bvt_W` implies that the
+boundary-value functional cannot distinguish two test functions whose Section
+4.3 positive-energy frequency projections agree.  This is the lower-layer
+descent theorem needed by the final positivity closure; it avoids importing the
+public `OSToWightmanBoundaryValues.lean` frontier back into this support file. -/
+theorem bvt_W_eq_of_section43FrequencyProjection_eq_public
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    {N : ℕ}
+    (φ ψ : SchwartzNPoint d N)
+    (hproj :
+      OSReconstruction.section43FrequencyProjection (d := d) N φ =
+        OSReconstruction.section43FrequencyProjection (d := d) N ψ) :
+    bvt_W OS lgc N φ = bvt_W OS lgc N ψ := by
+  obtain ⟨Tflat, hTflat_supp, hTflat_bv⟩ :=
+    exists_flattened_bvt_W_dualCone_distribution (d := d) OS lgc N
+  have hEqDual :=
+    OSReconstruction.physicsFourierFlat_eqOn_dualCone_of_section43FrequencyProjection_eq
+      (d := d) (N := N) φ ψ hproj
+  have hφ_flat :
+      unflattenSchwartzNPoint (d := d)
+          (flattenSchwartzNPoint (d := d) φ) = φ := by
+    ext x
+    simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
+  have hψ_flat :
+      unflattenSchwartzNPoint (d := d)
+          (flattenSchwartzNPoint (d := d) ψ) = ψ := by
+    ext x
+    simp [unflattenSchwartzNPoint_apply, flattenSchwartzNPoint_apply]
+  calc
+    bvt_W OS lgc N φ
+        = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (flattenSchwartzNPoint (d := d) φ)) := by
+          rw [hφ_flat]
+    _ = Tflat (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ)) := by
+          simpa using hTflat_bv (flattenSchwartzNPoint (d := d) φ)
+    _ = Tflat (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ)) := by
+          exact tflat_pairing_eq_of_eqOn_dualCone
+            (S := (flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+            Tflat hTflat_supp
+            (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) φ))
+            (physicsFourierFlatCLM (flattenSchwartzNPoint (d := d) ψ))
+            hEqDual
+    _ = bvt_W OS lgc N
+            (unflattenSchwartzNPoint (d := d)
+              (flattenSchwartzNPoint (d := d) ψ)) := by
+          simpa using (hTflat_bv (flattenSchwartzNPoint (d := d) ψ)).symm
+    _ = bvt_W OS lgc N ψ := by
+          rw [hψ_flat]
+
+/-- The reconstructed Wightman boundary-value functional descended to the
+Section 4.3 positive-energy frequency quotient.
+
+The raw representative functional first applies the explicit continuous linear
+right inverse of `section43FrequencyRepresentative`, then evaluates `bvt_W`.
+The public frequency-projection descent theorem proves this raw functional
+vanishes on the quotient kernel, so `Submodule.liftQ` gives a genuine
+continuous linear map on `Section43PositiveEnergyComponent`. -/
+noncomputable def bvt_W_descended_frequencyProjection
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    OSReconstruction.Section43PositiveEnergyComponent (d := d) N →L[ℂ] ℂ := by
+  let raw : SchwartzNPoint d N →L[ℂ] ℂ :=
+    { toLinearMap :=
+        { toFun := fun Φ =>
+            bvt_W OS lgc N
+              (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+          map_add' := by
+            intro Φ Ψ
+            rw [(OSReconstruction.section43FrequencyRepresentativeInv d N).map_add]
+            exact (bvt_W_linear (d := d) OS lgc N).map_add _ _
+          map_smul' := by
+            intro c Φ
+            rw [(OSReconstruction.section43FrequencyRepresentativeInv d N).map_smul]
+            exact (bvt_W_linear (d := d) OS lgc N).map_smul c _ }
+      cont := by
+        exact (bvt_W_continuous (d := d) OS lgc N).comp
+          (OSReconstruction.section43FrequencyRepresentativeInv d N).continuous }
+  have hker :
+      OSReconstruction.section43PositiveEnergyVanishingSubmodule (d := d) N ≤
+        LinearMap.ker raw.toLinearMap := by
+    intro Φ hΦ
+    rw [LinearMap.mem_ker]
+    change raw Φ = 0
+    have hq_zero :
+        OSReconstruction.section43PositiveEnergyQuotientMap (d := d) N Φ = 0 := by
+      change (Submodule.Quotient.mk Φ :
+          OSReconstruction.Section43PositiveEnergyComponent (d := d) N) = 0
+      rw [Submodule.Quotient.mk_eq_zero]
+      exact hΦ
+    have hproj :
+        OSReconstruction.section43FrequencyProjection (d := d) N
+            (OSReconstruction.section43FrequencyRepresentativeInv d N Φ) =
+          OSReconstruction.section43FrequencyProjection (d := d) N 0 := by
+      calc
+        OSReconstruction.section43FrequencyProjection (d := d) N
+            (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+            = OSReconstruction.section43PositiveEnergyQuotientMap (d := d) N Φ := by
+              simp [OSReconstruction.section43FrequencyProjection,
+                OSReconstruction.section43FrequencyRepresentativeInv_right]
+        _ = 0 := hq_zero
+        _ = OSReconstruction.section43FrequencyProjection (d := d) N 0 := by
+              simp [OSReconstruction.section43FrequencyProjection]
+    have hW :=
+      bvt_W_eq_of_section43FrequencyProjection_eq_public (d := d) OS lgc
+        (OSReconstruction.section43FrequencyRepresentativeInv d N Φ)
+        (0 : SchwartzNPoint d N) hproj
+    have hraw : raw Φ =
+        bvt_W OS lgc N
+          (OSReconstruction.section43FrequencyRepresentativeInv d N Φ) := rfl
+    rw [hraw, hW]
+    exact (bvt_W_linear (d := d) OS lgc N).map_zero
+  let descended :
+      OSReconstruction.Section43PositiveEnergyComponent (d := d) N →ₗ[ℂ] ℂ :=
+    (OSReconstruction.section43PositiveEnergyVanishingSubmodule (d := d) N).liftQ
+      raw.toLinearMap hker
+  refine ContinuousLinearMap.mk descended ?_
+  let hopen :=
+    (OSReconstruction.section43PositiveEnergyVanishingSubmodule
+      (d := d) N).isOpenQuotientMap_mkQ
+  exact hopen.isQuotientMap.continuous_iff.2 <| by
+    simpa [descended, raw, Function.comp] using raw.continuous
+
+/-- Evaluation rule for the descended Wightman functional on deterministic
+Section 4.3 frequency projections. -/
+theorem bvt_W_descended_frequencyProjection_apply
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (φ : SchwartzNPoint d N) :
+    bvt_W_descended_frequencyProjection (d := d) OS lgc N
+        (OSReconstruction.section43FrequencyProjection (d := d) N φ) =
+      bvt_W OS lgc N φ := by
+  change bvt_W OS lgc N
+      (OSReconstruction.section43FrequencyRepresentativeInv d N
+        (OSReconstruction.section43FrequencyRepresentative d N φ)) =
+    bvt_W OS lgc N φ
+  have hproj :
+      OSReconstruction.section43FrequencyProjection (d := d) N
+          (OSReconstruction.section43FrequencyRepresentativeInv d N
+            (OSReconstruction.section43FrequencyRepresentative d N φ)) =
+        OSReconstruction.section43FrequencyProjection (d := d) N φ := by
+    simp [OSReconstruction.section43FrequencyProjection,
+      OSReconstruction.section43FrequencyRepresentativeInv_right]
+  exact bvt_W_eq_of_section43FrequencyProjection_eq_public (d := d) OS lgc
+    (OSReconstruction.section43FrequencyRepresentativeInv d N
+      (OSReconstruction.section43FrequencyRepresentative d N φ))
+    φ hproj
 
 /-- Flattened dual-cone support package together with the Fourier-Laplace
 representation of the interior Wightman holomorphic function.
@@ -405,12 +555,9 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
           0 < C_bd ∧
           ∀ z ∈ ForwardTube d n,
             ‖bvt_F OS lgc n z‖ ≤ C_bd * (1 + ‖z‖) ^ N := by
-      rcases (full_analytic_continuation_with_symmetry_growth OS lgc n).choose_spec with
-        ⟨_hhol, hrest⟩
-      rcases hrest with ⟨_hF_euclid, hrest⟩
-      rcases hrest with ⟨_hF_perm, hrest⟩
-      rcases hrest with ⟨_hF_trans, hrest⟩
-      exact hrest.2
+      rcases (full_analytic_continuation_with_acr_symmetry_growth OS lgc n).choose_spec with
+        ⟨_hACR, _hFT, _hF_euclid, _hF_perm, _hF_trans, _hNegCanonical, hGrowth⟩
+      exact hGrowth
     obtain ⟨C_bd, N, hC_pos, hbound⟩ := hGrowthPkg
     refine ⟨C_bd, N, hC_pos, ?_⟩
     intro z hz
@@ -465,6 +612,73 @@ private theorem exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace
     simpa [Wcl, unflattenSchwartzNPoint] using hTflat_repr φ
   · intro z hz
     exact hFL_repr z hz
+
+/-- The Fourier-Laplace representation data for the same flattened
+frequency-side distribution used to represent the Wightman boundary value.
+
+This packet is deliberately small: it records only the flattened cone facts and
+the interior `bvt_F` Fourier-Laplace formula for the specified `Tflat`. -/
+structure section43TflatFourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ)
+    (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ) where
+  hCflat_open :
+    IsOpen
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_conv :
+    Convex ℝ
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_cone :
+    IsCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hCflat_salient :
+    IsSalientCone
+      ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+  hFL :
+    ∀ z : Fin N → Fin (d + 1) → ℂ,
+      z ∈ TubeDomainSetPi (ForwardConeAbs d N) →
+        bvt_F OS lgc N z =
+          fourierLaplaceExtMultiDim
+            ((flattenCLEquivReal N (d + 1)) '' ForwardConeAbs d N)
+            hCflat_open hCflat_conv hCflat_cone hCflat_salient
+            Tflat (flattenCLEquiv N (d + 1) z)
+
+/-- Public Section 4.3 `Tflat` packet with Wightman spectral support, boundary
+representation, and the interior Fourier-Laplace representation for the same
+flattened distribution.
+
+This is the data needed by the OS-route S5 scalar-recognition packet; the
+Fourier-Laplace witness is obtained before the boundary-value witness is
+projected to spectral-region support, so no uniqueness theorem is needed. -/
+theorem bvt_W_flattened_distribution_hasFourierSupportIn_wightmanSpectralRegion_with_fourierLaplaceWitness
+    (OS : OsterwalderSchraderAxioms d) (lgc : OSLinearGrowthCondition d OS)
+    (N : ℕ) :
+    ∃ (Tflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ →L[ℂ] ℂ),
+      HasFourierSupportIn (OSReconstruction.section43WightmanSpectralRegion d N) Tflat ∧
+        (∀ (φflat : SchwartzMap (Fin (N * (d + 1)) → ℝ) ℂ),
+          bvt_W OS lgc N (unflattenSchwartzNPoint (d := d) φflat) =
+            Tflat (physicsFourierFlatCLM φflat)) ∧
+        section43TflatFourierLaplaceWitness (d := d) OS lgc N Tflat := by
+  obtain
+    ⟨Tflat, hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+      hTflat_dualSupp, hTflat_bv, hTflat_FL⟩ :=
+    exists_flattened_bvt_F_dualCone_distribution_with_fourierLaplace_repr
+      (d := d) OS lgc N
+  refine ⟨Tflat, ?_, hTflat_bv, ?_⟩
+  · have hphase :=
+      tflat_totalMomentumPhase_invariant_of_bvt_W_translationInvariant_local
+        (d := d) OS lgc Tflat hTflat_bv
+    have htotal :=
+      OSReconstruction.hasFourierSupportIn_totalMomentumZero_of_phase_invariant
+        d Tflat hphase
+    exact
+      OSReconstruction.hasFourierSupportIn_inter_of_dualCone_and_totalMomentumZero
+        d N hTflat_dualSupp htotal
+  · exact
+      ⟨hCflat_open, hCflat_conv, hCflat_cone, hCflat_salient,
+        by
+          intro z hz
+          exact hTflat_FL z hz⟩
 
 /-- Reindex a flattened sum that only samples the time-coordinate slots. -/
 private theorem sum_over_flat_timeSlots
@@ -1342,140 +1556,6 @@ private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_nonpos_of_mem_
 
 -/
 
- /-
-/-- The inserted full-flat tail time-shift vector pairs with any frequency
-vector as the negative sum of the tail-block time-frequency coordinates.
-
-This is just the algebraic content of the inserted-tail geometry. It does not
-yet use the dual-cone hypothesis; that analytic sign step remains the live
-blocker. -/
-private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
-    {n m : ℕ}
-    (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
-    ∑ i,
-      (((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
-        (OSReconstruction.zeroHeadBlockShift
-          (m := n * (d + 1)) (n := m * (d + 1))
-          (flatTimeShiftDirection d m))) i) * ξ i =
-      - ∑ j : Fin m, ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1)))) := by
-  let S : ℝ :=
-    ∑ j : Fin m, ξ (finProdFinEquiv (Fin.natAdd n j, (0 : Fin (d + 1))))
-  let xSplit : Fin (n * (d + 1) + m * (d + 1)) → ℝ :=
-    OSReconstruction.zeroHeadBlockShift
-      (m := n * (d + 1)) (n := m * (d + 1))
-      (flatTimeShiftDirection d m)
-  let vEff : Fin ((n + m) * (d + 1)) → ℝ :=
-    ((OSReconstruction.castFinCLE
-      (by ring : (n + m) * (d + 1) = n * (d + 1) + m * (d + 1))).symm xSplit)
-  have hvEff_targetVec :
-      vEff =
-        ((OSReconstruction.castFinCLE
-          (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1))) xSplit) := by
-    ext i
-    rfl
-  let y : Fin (n + m) → Fin (d + 1) → ℝ :=
-    (flattenCLEquivReal (n + m) (d + 1)).symm vEff
-  have hsplitFirst :
-      splitFirst n m y = 0 := by
-    dsimp [y, vEff]
-    rw [splitFirst_reindex_flatten_symm_eq
-      (d := d) (n := n) (m := m)
-      (x := xSplit)]
-    simp
-  have hsplitLast :
-      splitLast n m y =
-        (flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m) := by
-    dsimp [y, vEff]
-    rw [splitLast_reindex_flatten_symm_eq
-      (d := d) (n := n) (m := m)
-      (x := xSplit)]
-    simp
-  have hy_formula :
-      ∀ k : Fin (n + m), ∀ μ : Fin (d + 1),
-        y k μ = if μ = 0 then if (k : ℕ) < n then 0 else -1 else 0 := by
-    intro k μ
-    by_cases hk : (k : ℕ) < n
-    · let k' : Fin n := ⟨k, hk⟩
-      have hk_cast : Fin.castAdd m k' = k := by
-        apply Fin.ext
-        simp [k']
-      have hval :
-          y k μ = 0 := by
-        have h := congrArg (fun z : Fin n → Fin (d + 1) → ℝ => z k') hsplitFirst
-        have h' := congrArg (fun f : Fin (d + 1) → ℝ => f μ) h
-        simpa [k', hk_cast] using h'
-      simp [hk, hval]
-    · let j : Fin m := ⟨(k : ℕ) - n, by omega⟩
-      have hk_tail : Fin.natAdd n j = k := by
-        apply Fin.ext
-        simp [j, Fin.natAdd]
-        omega
-      have hval :
-          y k μ =
-            ((flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m)) j μ := by
-        have h := congrArg (fun z : Fin m → Fin (d + 1) → ℝ => z j) hsplitLast
-        have h' := congrArg (fun f : Fin (d + 1) → ℝ => f μ) h
-        simpa [splitLast, j, hk_tail] using h'
-      have hflat :
-          ((flattenCLEquivReal m (d + 1)).symm (flatTimeShiftDirection d m)) j μ =
-            if μ = 0 then -1 else 0 := by
-        change flatTimeShiftDirection d m (finProdFinEquiv (j, μ)) = _
-        simp [flatTimeShiftDirection]
-      simp [hk, hval, hflat]
-  have hsum_eq :
-      ∑ i, vEff i * ξ i = -S := by
-    change ∑ i,
-        (if (finProdFinEquiv.symm i).2 = 0 then
-            if ((finProdFinEquiv.symm i).1 : ℕ) < n then 0 else (-1 : ℝ)
-          else 0) * ξ i = -S
-    rw [sum_over_flat_timeSlots
-      (d := d)
-      (a := fun k : Fin (n + m) => if (k : ℕ) < n then (0 : ℝ) else -1) ξ]
-    have htail :
-        ∑ k : Fin (n + m),
-          (if (k : ℕ) < n then (0 : ℝ) else -1) *
-            ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) = -S := by
-      rw [show ∑ k : Fin (n + m),
-            (if (k : ℕ) < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (k, (0 : Fin (d + 1)))) =
-            ∑ k in Finset.range (n + m),
-              (if k < n then (0 : ℝ) else -1) *
-                ξ (finProdFinEquiv (⟨k, by omega⟩, (0 : Fin (d + 1)))) by
-            simpa using
-              (Fin.sum_univ_eq_sum_range
-                (f := fun k : Fin (n + m) =>
-                  (if (k : ℕ) < n then (0 : ℝ) else -1) *
-                    ξ (finProdFinEquiv (k, (0 : Fin (d + 1))))))]
-      rw [Finset.sum_range_add]
-      have hhead_zero :
-          ∑ k in Finset.range n,
-            (if k < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (⟨k, by omega⟩, (0 : Fin (d + 1)))) = 0 := by
-        refine Finset.sum_eq_zero ?_
-        intro k hk
-        simp [hk]
-      have htail_eq :
-          ∑ k in Finset.range m,
-            (if n + k < n then (0 : ℝ) else -1) *
-              ξ (finProdFinEquiv (⟨n + k, by omega⟩, (0 : Fin (d + 1)))) = -S := by
-        rw [S, Fin.sum_univ_eq_sum_range]
-        refine Finset.sum_congr rfl ?_
-        intro k hk
-        have hk_not_lt : ¬ ((⟨n + k, by omega⟩ : Fin (n + m)) : ℕ) < n := by omega
-        congr 2
-        · simp [hk_not_lt]
-        · congr 1
-          apply congrArg (fun i : Fin (n + m) => finProdFinEquiv (i, (0 : Fin (d + 1))))
-          apply Fin.ext
-          simp [Fin.natAdd]
-      rw [hhead_zero, zero_add, htail_eq]
-    simpa [hy_formula] using htail
-  dsimp [vEff]
-  rw [hsum_eq]
-
--/
-
 /-- Reindexing a translated Schwartz function is the same as translating the
 reindexed Schwartz function by the correspondingly reindexed vector. This lets
 the flattened Stage-5 spectral step use the already-proved Fourier shift
@@ -1605,7 +1685,7 @@ vector as the negative sum of the tail-block time-frequency coordinates.
 This is just the algebraic content of the inserted-tail geometry. It does not
 yet use the dual-cone hypothesis; that analytic sign step remains the live
 blocker. -/
-private theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
+theorem zeroHeadBlockShift_flatTimeShiftDirection_pairing_eq_neg_tailTimeSum
     {n m : ℕ}
     (ξ : Fin ((n + m) * (d + 1)) → ℝ) :
     ∑ i,
@@ -1931,7 +2011,7 @@ ambient conjugated tensor product is exactly the ordinary flat tensor product of
 the left Borchers conjugate with the right factor. This is the precise
 factorization seam needed to turn the live Stage-5 right-block CLM into a
 consumer of the full flattened `(n+m)`-point spectral package. -/
-private theorem reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
+theorem reindex_flattenSchwartzNPoint_conjTensorProduct_eq_tensorProduct
     {n m : ℕ}
     (f : SchwartzNPoint d n)
     (g : SchwartzNPoint d m) :

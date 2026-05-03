@@ -582,9 +582,11 @@ Exact current-code milestone:
   `one_variable_time_interchange_for_wightman_pairing`, together with the
   kernel-reduction chain down to an ambient upper-half-plane witness, in
   [OSToWightmanPositivity.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanPositivity.lean);
-- `OSToWightmanPositivity.lean` is now `sorry`-free; the active public
-  theorem-3 `sorry` remains `bvt_W_positive` in
-  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean);
+- `OSToWightmanPositivity.lean` is now `sorry`-free, and
+  `bvt_W_positive` in
+  [OSToWightmanBoundaryValues.lean](/Users/xiyin/OSReconstruction/OSReconstruction/Wightman/Reconstruction/WickRotation/OSToWightmanBoundaryValues.lean)
+  is now closed by
+  `OSReconstruction.bvt_W_positive_of_component_dense_preimage`;
 - the slice-side vanishing package is now available on both pairing
   orientations, including
   `fourierInvPairingCLM_partialFourierSpatial_timeSlice_sub_eq_zero_of_repr_eq_transport`
@@ -785,8 +787,9 @@ The important point for the current repo is that the cluster step is downstream
 of the semigroup/Hilbert-space bridge. It is not the place where one should try
 to solve the positive-time analytic continuation problem.
 
-So if theorem 3 on the current `E -> R` side is still open, theorem 4 should be
-treated as a downstream consumer, not an independent route to repair theorem 3.
+Theorem 3 on the current `E -> R` side is now closed, so theorem 4 should be
+treated as a downstream consumer of that closed positivity/isometry package, not
+as an independent route to repair theorem 3.
 
 The internal proof shape is:
 1. use the Euclidean cluster axiom on the OS side for spatially translated
@@ -821,17 +824,24 @@ So the logical dependency is linear:
 
 ## 9. Section 4.5: Locality
 
-Locality is obtained from symmetry plus analytic continuation:
-- symmetry of Euclidean Green's functions;
-- analyticity on permuted domains;
-- then a gluing / edge-of-the-wedge style argument.
+Locality is obtained from symmetry plus analytic continuation, in the order OS
+uses it:
+- E3 and the earlier Fourier-Laplace/Lorentz-covariance equations produce a
+  symmetric selected analytic continuation on the permuted forward-tube union;
+- the Bargmann-Hall-Wightman theorem enlarges that continuation to the
+  complex-Lorentz saturation;
+- the cited Jost boundary theorem gives locality of the Wightman boundary
+  distributions.
 
 For the modern formalization this remains a good guide:
 - locality lives on the analytic continuation and permutation side;
 - it is not a semigroup positivity theorem.
 
 This supports the current project discipline that theorem 2 belongs to the BHW /
-Jost / PET / permutation package, not to the theorem-3 positivity lane.
+Jost / PET / permutation package, not to the theorem-3 positivity lane.  It
+also fixes the blueprint discipline: theorem-2 proof docs should follow OS I
+§4.5 closely, with external BHW/Jost theorems isolated as external analytic
+inputs rather than replaced by unrelated Lean-convenience routes.
 
 The proof package can be restated more concretely:
 1. use Euclidean symmetry to compare Schwinger functions on permuted real
@@ -840,6 +850,27 @@ The proof package can be restated more concretely:
 3. invoke uniqueness / edge-of-the-wedge style reasoning to identify the two
    analytic continuations;
 4. take boundary values to get locality of the Wightman distributions.
+
+Lean-facing correction: this is a **branch-difference** argument.  OS §4.5 does
+not identify the value of one Euclidean Wick branch at `iτ` with the value of
+the corresponding Wightman boundary branch at real time `τ`.  The safe formal
+shape is:
+- form the adjacent difference of two permuted analytic branches;
+- use E3 to show this difference has zero Euclidean/Wick edge distribution;
+- use EOW/BHW uniqueness to continue the same difference to the real Jost edge;
+- conclude the real-edge adjacent difference vanishes.
+
+Any theorem surface equating a single Wick value with a single real-time
+`extendF` value on the same real configuration should be treated as a category
+error unless an explicit paper bridge proves exactly that statement.
+
+Implementation detail for the local EOW bridge: it is not enough for the SCV
+theorem to return agreement on the two open tube sides.  The OS §4.5
+branch-difference consumer needs the value on the real Jost edge itself, so the
+local EOW strengthening must also export
+`F(realEmbed y) = bv y`, and the chart-data packet must identify
+`bv y` with the `extendF` real-edge branch difference.  This is still a boundary
+limit statement at the real edge, not a same-shell Wick-to-real equality.
 
 This is why locality should not be mixed into theorem 3:
 - theorem 3 is about positivity/isometry through the semigroup bridge;
@@ -861,6 +892,25 @@ The locality proof uses three layers of analytic continuation:
 4. Invoke the cited several-complex-variable theorem from the Wightman book to
    convert that symmetric analytic continuation into locality of the boundary
    distributions.
+
+Source-boundary update after the local Hall-Wightman and Streater-Wightman
+audits:
+
+1. Hall-Wightman and Streater-Wightman Theorem 2-11 justify the BHW analytic
+   continuation step: Lorentz-covariant holomorphic tube functions continue
+   single-valuedly to the extended tube.
+2. Streater-Wightman's adjacent permuted-tube paragraph and Figure 2-4 justify
+   only the local common-real-environment geometry for one adjacent
+   transposition.
+3. Neither source directly proves the fixed-`w` finite adjacent active-gallery
+   theorem currently used as the Lean-facing Slot-6 target. That theorem must
+   be treated as a derived chamber-stratification obligation, not as a direct
+   citation.
+4. Jost p. 83, second theorem, has been identified in the local image PDF as
+   the theorem OS I cites after the BHW step: Wightman-function properties
+   except locality, together with symmetry, imply locality. This supports the
+   Slot-10 boundary theorem surface after the symmetric `S''_n` continuation
+   has been supplied.
 
 This matters because it shows exactly where the heavy analytic input sits:
 - not in the semigroup package,

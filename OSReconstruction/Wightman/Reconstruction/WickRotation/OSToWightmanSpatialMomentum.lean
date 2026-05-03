@@ -1358,6 +1358,137 @@ private theorem tendsto_compactApproxPositiveTimeBorchers_diff_osInner
   refine Filter.Tendsto.congr' ?_ hsum_inner
   exact Filter.Eventually.of_forall hEq
 
+/-- Lower-layer positive-time OS Hilbert vector.  This duplicates the direct
+completion representative under a name available before
+`OSToWightmanPositivity.lean`, so theorem-3 closure support can be used by
+`OSToWightmanBoundaryValues.lean` without an import cycle. -/
+noncomputable def positiveTimeBorchersVectorCore
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    OSHilbertSpace OS :=
+  (((show OSPreHilbertSpace OS from (⟦F⟧)) : OSHilbertSpace OS))
+
+/-- Positive-time Borchers vectors are dense in the OS Hilbert completion. -/
+theorem positiveTimeBorchersVectorCore_dense
+    (OS : OsterwalderSchraderAxioms d) :
+    Dense (Set.range (positiveTimeBorchersVectorCore (d := d) OS)) := by
+  have hrange :
+      Set.range (positiveTimeBorchersVectorCore (d := d) OS) =
+        Set.range ((↑) : OSPreHilbertSpace OS → OSHilbertSpace OS) := by
+    ext x
+    constructor
+    · rintro ⟨F, rfl⟩
+      exact ⟨(⟦F⟧ : OSPreHilbertSpace OS), rfl⟩
+    · rintro ⟨xpre, rfl⟩
+      induction xpre using Quotient.inductionOn with
+      | h F =>
+          exact ⟨F, rfl⟩
+  rw [hrange]
+  exact UniformSpace.Completion.denseRange_coe
+
+/-- Compact positive-time Borchers cutoffs converge to the original
+positive-time OS Hilbert vector. -/
+theorem positiveTimeBorchersVectorCore_compactApprox_tendsto
+    (OS : OsterwalderSchraderAxioms d)
+    (F : PositiveTimeBorchersSequence d) :
+    Filter.Tendsto
+      (fun N : ℕ =>
+        positiveTimeBorchersVectorCore (d := d) OS
+          (compactApproxPositiveTimeBorchers (d := d) F N))
+      Filter.atTop
+      (nhds (positiveTimeBorchersVectorCore (d := d) OS F)) := by
+  let yN : ℕ → OSPreHilbertSpace OS := fun N =>
+    (⟦compactApproxPositiveTimeBorchers (d := d) F N - F⟧ : OSPreHilbertSpace OS)
+  have happrox_inner :=
+    tendsto_compactApproxPositiveTimeBorchers_diff_osInner (d := d) OS F
+  have happrox_norm :
+      Filter.Tendsto
+        (fun N : ℕ => ‖yN N‖)
+        Filter.atTop
+        (nhds (0 : ℝ)) := by
+    have hkernel :
+        Filter.Tendsto
+          (fun N : ℕ => ‖yN N‖ ^ 2)
+          Filter.atTop
+          (nhds (0 : ℝ)) := by
+      have hre :
+          Filter.Tendsto
+            (fun N : ℕ =>
+              RCLike.re
+                (PositiveTimeBorchersSequence.osInner OS
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F)))
+            Filter.atTop
+            (nhds (0 : ℝ)) := by
+        simpa [Function.comp] using
+          (Complex.continuous_re.continuousAt.tendsto.comp happrox_inner)
+      have hEq_kernel :
+          (fun N : ℕ => ‖yN N‖ ^ 2) =
+          (fun N : ℕ =>
+            RCLike.re
+              (PositiveTimeBorchersSequence.osInner OS
+                (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                (compactApproxPositiveTimeBorchers (d := d) F N - F))) := by
+        funext N
+        have hnorm :=
+          congrArg RCLike.re (inner_self_eq_norm_sq (𝕜 := ℂ) (yN N))
+        have hinner :
+            @inner ℂ (OSPreHilbertSpace OS)
+                (OSPreHilbertSpace.instInner OS) (yN N) (yN N) =
+              PositiveTimeBorchersSequence.osInner OS
+                (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                (compactApproxPositiveTimeBorchers (d := d) F N - F) := by
+          simpa [yN] using
+            (OSPreHilbertSpace.inner_eq (OS := OS)
+              (compactApproxPositiveTimeBorchers (d := d) F N - F)
+              (compactApproxPositiveTimeBorchers (d := d) F N - F))
+        calc
+          ‖yN N‖ ^ 2 =
+              RCLike.re
+                (@inner ℂ (OSPreHilbertSpace OS)
+                  (OSPreHilbertSpace.instInner OS) (yN N) (yN N)) := by
+            simpa using hnorm.symm
+          _ = RCLike.re
+                (PositiveTimeBorchersSequence.osInner OS
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F)
+                  (compactApproxPositiveTimeBorchers (d := d) F N - F)) := by
+            exact congrArg RCLike.re hinner
+      exact hEq_kernel.symm ▸ hre
+    refine Metric.tendsto_nhds.2 ?_
+    intro η hη
+    have hη2 : (0 : ℝ) < η ^ 2 := sq_pos_of_pos hη
+    filter_upwards [Metric.tendsto_nhds.1 hkernel (η ^ 2) hη2] with N hclose
+    have hnsq : ‖yN N‖ ^ 2 < η ^ 2 := by
+      simpa [Real.dist_eq] using hclose
+    exact lt_of_pow_lt_pow_left₀ 2 hη.le (by simpa using hnsq)
+  refine Metric.tendsto_nhds.2 ?_
+  intro ε hε
+  filter_upwards [Metric.tendsto_nhds.1 happrox_norm ε hε] with N hN
+  rw [dist_eq_norm]
+  let xFN_pre : OSPreHilbertSpace OS :=
+    (⟦compactApproxPositiveTimeBorchers (d := d) F N⟧ : OSPreHilbertSpace OS)
+  let xF_pre : OSPreHilbertSpace OS := (⟦F⟧ : OSPreHilbertSpace OS)
+  have hcoediff :
+      (((xFN_pre - xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS)) =
+        positiveTimeBorchersVectorCore (d := d) OS
+            (compactApproxPositiveTimeBorchers (d := d) F N) -
+          positiveTimeBorchersVectorCore (d := d) OS F := by
+    simpa [positiveTimeBorchersVectorCore, xFN_pre, xF_pre] using
+      (UniformSpace.Completion.coe_sub xFN_pre xF_pre)
+  have hpre : xFN_pre - xF_pre = yN N := by
+    dsimp [xFN_pre, xF_pre, yN]
+    rfl
+  calc
+    ‖positiveTimeBorchersVectorCore (d := d) OS
+          (compactApproxPositiveTimeBorchers (d := d) F N) -
+        positiveTimeBorchersVectorCore (d := d) OS F‖ =
+        ‖(((xFN_pre - xF_pre : OSPreHilbertSpace OS) : OSHilbertSpace OS))‖ := by
+          rw [← hcoediff]
+    _ = ‖((yN N : OSPreHilbertSpace OS) : OSHilbertSpace OS)‖ := by
+          rw [hpre]
+    _ < ε := by
+          simpa using hN
+
 private theorem osSpatialTranslateHilbert_norm_eq
     (OS : OsterwalderSchraderAxioms d)
     (a : Fin d → ℝ)

@@ -108,6 +108,12 @@ def PermutedExtendedTube (d n : ℕ) : Set (Fin n → Fin (d + 1) → ℂ) :=
       w ∈ PermutedForwardTube d n π ∧
       z = complexLorentzAction Λ w }
 
+/-- The `π`-branch sector of PET, written as the pullback of the ordinary
+extended tube by the coordinate permutation `π`. -/
+def permutedExtendedTubeSector (d n : ℕ) (π : Equiv.Perm (Fin n)) :
+    Set (Fin n → Fin (d + 1) → ℂ) :=
+  {z | (fun k => z (π k)) ∈ ExtendedTube d n}
+
 /-- The forward tube is contained in the extended tube. -/
 theorem forwardTube_subset_extendedTube :
     ForwardTube d n ⊆ ExtendedTube d n := by
@@ -218,6 +224,18 @@ theorem isOpen_permutedExtendedTube :
   · rintro ⟨Λ, w, hw, rfl⟩
     exact ⟨Λ, w, hw, rfl⟩
 
+/-- Each explicit PET sector is open. -/
+theorem isOpen_permutedExtendedTubeSector (π : Equiv.Perm (Fin n)) :
+    IsOpen (permutedExtendedTubeSector d n π) := by
+  have hcont : Continuous
+      (fun z : Fin n → Fin (d + 1) → ℂ => fun k => z (π k)) := by
+    refine continuous_pi ?_
+    intro k
+    refine continuous_pi ?_
+    intro μ
+    exact (continuous_apply μ).comp (continuous_apply (π k))
+  exact isOpen_extendedTube.preimage hcont
+
 /-- The permuted extended tube is stable under complex Lorentz action. -/
 theorem complexLorentzAction_mem_permutedExtendedTube
     {z : Fin n → Fin (d + 1) → ℂ} (hz : z ∈ PermutedExtendedTube d n)
@@ -226,5 +244,61 @@ theorem complexLorentzAction_mem_permutedExtendedTube
   obtain ⟨π, Λ', w, hw, hzw⟩ := Set.mem_iUnion.mp hz
   refine Set.mem_iUnion.mpr ⟨π, Λ * Λ', w, hw, ?_⟩
   rw [hzw, complexLorentzAction_mul]
+
+/-- Membership in the permuted extended tube is equivalently membership in one
+permutation pullback of the ordinary extended tube.  This is the explicit
+branch-cover form used by later gluing arguments. -/
+theorem mem_permutedExtendedTube_iff_exists_perm_mem_extendedTube :
+    z ∈ PermutedExtendedTube d n ↔
+      ∃ π : Equiv.Perm (Fin n), (fun k => z (π k)) ∈ ExtendedTube d n := by
+  constructor
+  · intro hz
+    rcases Set.mem_iUnion.mp hz with ⟨π, Λ, w, hwπ, rfl⟩
+    refine ⟨π, ?_⟩
+    refine Set.mem_iUnion.mpr ⟨Λ, ?_⟩
+    refine ⟨fun k => w (π k), ?_, ?_⟩
+    · simpa [PermutedForwardTube] using hwπ
+    · ext k μ
+      simp [complexLorentzAction]
+  · rintro ⟨π, hπz⟩
+    rcases Set.mem_iUnion.mp hπz with ⟨Λ, w, hw, hπz_eq⟩
+    refine Set.mem_iUnion.mpr ⟨π, Λ, fun k => w (π.symm k), ?_, ?_⟩
+    · simpa [PermutedForwardTube] using hw
+    · ext k μ
+      have hcoord := congrFun (congrFun hπz_eq (π.symm k)) μ
+      simpa [complexLorentzAction] using hcoord
+
+/-- The permuted extended tube is the union of its explicit permutation
+pullback sectors. -/
+theorem permutedExtendedTube_eq_iUnion_sectors :
+    PermutedExtendedTube d n =
+      ⋃ π : Equiv.Perm (Fin n), permutedExtendedTubeSector d n π := by
+  ext z
+  rw [mem_permutedExtendedTube_iff_exists_perm_mem_extendedTube]
+  simp [permutedExtendedTubeSector]
+
+/-- An explicit sector is contained in PET. -/
+theorem permutedExtendedTubeSector_subset_permutedExtendedTube
+    (π : Equiv.Perm (Fin n)) :
+    permutedExtendedTubeSector d n π ⊆ PermutedExtendedTube d n := by
+  intro z hz
+  rw [mem_permutedExtendedTube_iff_exists_perm_mem_extendedTube]
+  exact ⟨π, hz⟩
+
+/-- A chosen permutation branch witnessing membership in the permuted extended
+tube.  The accompanying theorem below is the preferred way to use this choice. -/
+noncomputable def permutedExtendedTubeBranch
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ PermutedExtendedTube d n) :
+    Equiv.Perm (Fin n) :=
+  (mem_permutedExtendedTube_iff_exists_perm_mem_extendedTube (d := d) (n := n)).1 hz |>.choose
+
+/-- The chosen branch of a PET point lands in the ordinary extended tube. -/
+theorem permutedExtendedTubeBranch_mem_extendedTube
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ PermutedExtendedTube d n) :
+    (fun k => z (permutedExtendedTubeBranch (d := d) (n := n) z hz k)) ∈
+      ExtendedTube d n :=
+  (mem_permutedExtendedTube_iff_exists_perm_mem_extendedTube (d := d) (n := n)).1 hz |>.choose_spec
 
 end BHW

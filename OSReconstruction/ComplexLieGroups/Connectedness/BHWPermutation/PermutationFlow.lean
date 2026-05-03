@@ -534,6 +534,23 @@ private theorem isConnected_permOrbitSeedSet_iff_permForwardOverlapSet
   simpa [permOrbitSeedSet] using
     isConnected_permSeedSet_iff_permForwardOverlapSet (d := d) n σ
 
+/-- The theorem-2-facing conversion from the geometric seed-set blocker to the
+connected forward-overlap chamber needed by the PET monodromy route.
+
+This theorem is dimension-agnostic. Any later `d ≥ 2` / `d = 1` split must
+enter in the subsequent chamber-to-reachable-label geometry, not here. -/
+theorem permForwardOverlap_connected_nontrivial [NeZero d]
+    (n : ℕ) (σ : Equiv.Perm (Fin n))
+    (hσ : σ ≠ 1) (hn : ¬ n ≤ 1) :
+    IsConnected (permForwardOverlapSet (d := d) n σ) := by
+  have hseed_conn : IsConnected (permOrbitSeedSet (d := d) n σ) := by
+    simpa [permOrbitSeedSet] using
+      blocker_isConnected_permSeedSet_nontrivial
+        (d := d) n σ hσ hn
+  exact
+    (isConnected_permOrbitSeedSet_iff_permForwardOverlapSet
+      (d := d) n σ).1 hseed_conn
+
 /-- Membership in the permutation index set is equivalent to existence of an ET seed
 whose Lorentz image lies in the forward tube. -/
 private theorem mem_permForwardOverlapIndexSet_iff_exists_seed
@@ -1428,7 +1445,7 @@ private theorem distributional_perm_invariant_on_jost_support
     have hswap0 :
         W n gτ =
           W n (permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) := by
-      refine hF_local_dist n i ⟨i.val + 1, hi⟩ gτ
+      refine hF_local_dist n i hi gτ
         (permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ) hsupp ?_
       intro x
       change permuteSchwartz (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩) gτ x =

@@ -127,24 +127,28 @@ def IsLorentzCovariantWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop
 /-- Local commutativity condition for Wightman functions.
 
     For a collection of n-point functions W_n, local commutativity means:
-    When points x_i and x_j are spacelike separated, swapping them in W_n
-    doesn't change the value (for bosonic fields; fermionic fields get a sign).
+    When adjacent points x_i and x_{i+1} are spacelike separated, swapping them
+    in W_n doesn't change the value (for bosonic fields; fermionic fields get a
+    sign).
 
     The precise condition is:
-    W_n(..., x_i, ..., x_j, ...) = W_n(..., x_j, ..., x_i, ...)
-    when (x_i - x_j)² > 0 (spacelike separation in mostly positive signature).
+    W_n(..., x_i, x_{i+1}, ...) = W_n(..., x_{i+1}, x_i, ...)
+    when (x_i - x_{i+1})² > 0 (spacelike separation in mostly positive
+    signature).
 
     At the distribution level, this is expressed via test functions with
     spacelike-separated supports: if supp(f) and supp(g) are spacelike separated,
     then W₂(f ⊗ g) = W₂(g ⊗ f). -/
 def IsLocallyCommutativeWeak (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
-  -- For Schwartz functions f, g where g is the swap of coordinates i, j in f,
-  -- and the supports of f have spacelike-separated i-th and j-th arguments,
-  -- we have W_n(f) = W_n(g). Avoids constructing the swapped Schwartz function.
-  ∀ (n : ℕ) (i j : Fin n) (f g : SchwartzNPoint d n),
+  -- For Schwartz functions f, g where g is the swap of adjacent coordinates
+  -- i and i+1 in f, and the supports of f have spacelike-separated adjacent
+  -- arguments, we have W_n(f) = W_n(g). Avoids constructing the swapped
+  -- Schwartz function.
+  ∀ (n : ℕ) (i : Fin n) (hi : i.val + 1 < n) (f g : SchwartzNPoint d n),
     (∀ x : NPointDomain d n, f.toFun x ≠ 0 →
-      MinkowskiSpace.AreSpacelikeSeparated d (x i) (x j)) →
-    (∀ x : NPointDomain d n, g.toFun x = f.toFun (fun k => x (Equiv.swap i j k))) →
+      MinkowskiSpace.AreSpacelikeSeparated d (x i) (x ⟨i.val + 1, hi⟩)) →
+    (∀ x : NPointDomain d n,
+      g.toFun x = f.toFun (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k))) →
     W n f = W n g
 
 /-! ### Positive Definiteness -/
@@ -624,15 +628,13 @@ def IsNormalized (W : (n : ℕ) → SchwartzNPoint d n → ℂ) : Prop :=
 
 /-! ### Wightman Functions Structure -/
 
-/-- A collection of public literal `n`-point Wightman functions satisfying the
-    reconstruction-side axioms.
+/-- The checked reconstruction-side core of the Wightman axioms.
 
-    The field `W n` is the public literal `n`-point family on Schwartz test
-    functions. Internal reduced-coordinate constructions later descend from
-    these public `n`-point objects to reduced `(m + 1) -> m` data when needed,
-    but that internal Route 1 bridge does not change the public meaning of
-    `W n`. -/
-structure WightmanFunctions (d : ℕ) [NeZero d] where
+    This packages the fields already established on the current OS `E' -> R'`
+    route before the theorem-2 locality and theorem-4 cluster frontiers are
+    discharged. The public literal `n`-point family `W n` keeps the same
+    meaning as in the full `WightmanFunctions` structure below. -/
+structure WightmanFunctionsCore (d : ℕ) [NeZero d] where
   /-- The n-point functions as tempered distributions -/
   W : (n : ℕ) → SchwartzNPoint d n → ℂ
   /-- Each W_n is linear -/
@@ -689,6 +691,74 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
             W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
           (nhdsWithin 0 (Set.Ioi 0))
           (nhds (W n f)))
+  /-- Positive definiteness -/
+  positive_definite : Wightman.IsPositiveDefinite d W
+  /-- Hermiticity: W_n(f̃) = conj(W_n(f)) where f̃(x₁,...,xₙ) = conj(f(xₙ,...,x₁)).
+
+      This is the standard Hermiticity axiom for Wightman functions at the distribution level:
+        W_n(x₁,...,xₙ)* = W_n(xₙ,...,x₁)
+
+      In the weak formulation: if g(x) = conj(f(rev(x))) for all x, then W_n(g) = conj(W_n(f)).
+      Here `Fin.rev` reverses the argument order: (x₁,...,xₙ) ↦ (xₙ,...,x₁). -/
+  hermitian : ∀ (n : ℕ) (f g : SchwartzNPoint d n),
+    (∀ x : NPointDomain d n, g.toFun x = starRingEnd ℂ (f.toFun (fun i => x (Fin.rev i)))) →
+    W n g = starRingEnd ℂ (W n f)
+
+/-- A collection of public literal `n`-point Wightman functions satisfying the
+    full reconstruction-side axioms.
+
+    The field `W n` is the public literal `n`-point family on Schwartz test
+    functions. Internal reduced-coordinate constructions later descend from
+    these public `n`-point objects to reduced `(m + 1) -> m` data when needed,
+    but that internal Route 1 bridge does not change the public meaning of
+    `W n`. -/
+structure WightmanFunctions (d : ℕ) [NeZero d] where
+  /-- The n-point functions as tempered distributions -/
+  W : (n : ℕ) → SchwartzNPoint d n → ℂ
+  /-- Each W_n is linear -/
+  linear : ∀ n, IsLinearMap ℂ (W n)
+  /-- Each W_n is continuous (tempered) -/
+  tempered : ∀ n, Continuous (W n)
+  /-- Normalization -/
+  normalized : IsNormalized d W
+  /-- Translation invariance (weak form) -/
+  translation_invariant : IsTranslationInvariantWeak d W
+  /-- Lorentz covariance (weak form) -/
+  lorentz_covariant : IsLorentzCovariantWeak d W
+  /-- Spectral-condition package used by the current reconstruction formalization.
+
+      For the public literal `n`-point family `W n`, we currently package the
+      analytic side as holomorphic continuation to the repo's `ForwardTube d n`
+      together with distributional boundary-value recovery of `W n`.
+
+      The important convention point is that `ForwardTube d n` is the current
+      repo forward tube, which includes the extra basepoint condition
+      `Im(z₀) ∈ V₊` in addition to the successive-difference conditions.
+      Therefore this is slightly stronger than the minimal literal `n`-point
+      tube often used in the standard literature.
+
+      This field is the public absolute-coordinate input used by the
+      reconstruction files. The internal Route 1 reduced layer later descends
+      from the arity `m + 1` witness here to reduced arity `m` difference
+      variables when building the reduced BHW bridge.
+
+      Concretely we require:
+      1. existence of an analytic continuation `W_analytic` on `ForwardTube d n`;
+      2. holomorphicity on that current repo tube;
+      3. distributional boundary values recovering the public literal
+         `n`-point functional `W n`. -/
+  spectrum_condition : ∀ (n : ℕ),
+    ∃ (W_analytic : (Fin n → Fin (d + 1) → ℂ) → ℂ),
+      DifferentiableOn ℂ W_analytic (ForwardTube d n) ∧
+      (∃ (C_bd : ℝ) (N : ℕ), C_bd > 0 ∧
+        ∀ z, z ∈ ForwardTube d n → ‖W_analytic z‖ ≤ C_bd * (1 + ‖z‖) ^ N) ∧
+      (∀ (f : SchwartzNPoint d n) (η : Fin n → Fin (d + 1) → ℝ),
+        InForwardCone d n η →
+        Filter.Tendsto
+          (fun ε : ℝ => ∫ x : NPointDomain d n,
+            W_analytic (fun k μ => ↑(x k μ) + ε * ↑(η k μ) * Complex.I) * (f x))
+          (nhdsWithin 0 (Set.Ioi 0))
+          (nhds (W n f)))
   /-- Local commutativity (weak form) -/
   locally_commutative : IsLocallyCommutativeWeak d W
   /-- Positive definiteness -/
@@ -720,6 +790,35 @@ structure WightmanFunctions (d : ℕ) [NeZero d] where
         ∀ (g_a : SchwartzNPoint d m),
           (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
           ‖W (n + m) (f.tensorProduct g_a) - W n f * W m g‖ < ε
+
+namespace WightmanFunctionsCore
+
+variable {d : ℕ} [NeZero d]
+
+/-- Upgrade a checked core package to full Wightman functions once the
+remaining locality and cluster frontiers are supplied. -/
+def toWightmanFunctions (Wcore : WightmanFunctionsCore d)
+    (hlocal : IsLocallyCommutativeWeak d Wcore.W)
+    (hcluster : ∀ (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m),
+      ∀ ε : ℝ, ε > 0 → ∃ R : ℝ, R > 0 ∧
+        ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+          ∀ (g_a : SchwartzNPoint d m),
+            (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+            ‖Wcore.W (n + m) (f.tensorProduct g_a) - Wcore.W n f * Wcore.W m g‖ < ε) :
+    WightmanFunctions d where
+  W := Wcore.W
+  linear := Wcore.linear
+  tempered := Wcore.tempered
+  normalized := Wcore.normalized
+  translation_invariant := Wcore.translation_invariant
+  lorentz_covariant := Wcore.lorentz_covariant
+  spectrum_condition := Wcore.spectrum_condition
+  locally_commutative := hlocal
+  positive_definite := Wcore.positive_definite
+  hermitian := Wcore.hermitian
+  cluster := hcluster
+
+end WightmanFunctionsCore
 /-! ### Inner Product Hermiticity and Cauchy-Schwarz -/
 
 /-- Forward-tube growth input needed for the corrected `R -> E` direction.
