@@ -18,6 +18,7 @@ import OSReconstruction.Wightman.Reconstruction.WickRotation.BHWReducedExtension
 import OSReconstruction.Wightman.Reconstruction.WickRotation.HermitianBoundaryPairing
 import OSReconstruction.Wightman.Reconstruction.WickRotation.BaseFiberInflation
 import OSReconstruction.Wightman.Reconstruction.WickRotation.WickRotationBridge
+import OSReconstruction.Wightman.Reconstruction.WickRotation.RToEReflectionPositivity
 
 /-!
 # Wick Rotation and the OS Bridge Theorems

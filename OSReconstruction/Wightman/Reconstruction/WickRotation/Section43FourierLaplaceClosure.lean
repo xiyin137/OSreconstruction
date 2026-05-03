@@ -22,7 +22,7 @@ namespace OSReconstruction
 variable {d : ℕ} [NeZero d]
 
 omit [NeZero d] in
-private theorem borchersConj_continuous_closure {n : ℕ} :
+theorem borchersConj_continuous_closure {n : ℕ} :
     Continuous (fun f : SchwartzNPoint d n => f.borchersConj) := by
   let revCLE : NPointDomain d n ≃L[ℝ] NPointDomain d n :=
     { toFun := fun y i => y (Fin.rev i)
@@ -69,7 +69,7 @@ private theorem borchersConj_continuous_closure {n : ℕ} :
     rfl)
 
 omit [NeZero d] in
-private theorem conjTensorProduct_continuous_closure {n m : ℕ} :
+theorem conjTensorProduct_continuous_closure {n m : ℕ} :
     Continuous
       (fun p : SchwartzNPoint d n × SchwartzNPoint d m => p.1.conjTensorProduct p.2) := by
   have hpair :
