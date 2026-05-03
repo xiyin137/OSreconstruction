@@ -53,7 +53,9 @@ algebraic geometry, or topology that are not specific to quantum field theory:
 | `exists_continuousMultilinear_ofSeparatelyContinuous` | FA (Banach-Steinhaus) | Proved in gaussian-field, needs import |
 
 Granting all of these, the **R→E direction becomes sorry-free** modulo:
-- W8 (`schwingerExtension_os_term_eq_wightman_term`): quarantined/false — should be deleted
+- W8 (`schwingerExtension_os_reflection_positive_from_spectralLaplace`):
+  honest direct reflection-positivity theorem boundary replacing the false
+  same-test-function bridge
 - W9 (`W_analytic_cluster_integral`): cluster integral, may be closable from remaining infrastructure
 
 ## QFT-specific sorrys: the irreducible core

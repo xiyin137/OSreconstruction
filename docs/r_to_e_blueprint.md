@@ -106,14 +106,18 @@ Those are not the same theorem surface, and the docs should keep them separate.
 
 ## 5. Honest current route constraints
 
-There is a false route still present elsewhere in `SchwingerAxioms.lean`:
+The earlier false route in `SchwingerAxioms.lean` has been removed from the
+Lean theorem surface:
 
-1. `schwingerExtension_os_term_eq_wightman_term`
-2. `schwingerExtension_os_inner_product_eq_wightman`
-3. `schwingerExtension_os_inner_product_eq_wightman_positivity`
+1. `schwingerExtension_os_term_eq_wightman_term`,
+2. `schwingerExtension_os_inner_product_eq_wightman`,
+3. `schwingerExtension_os_inner_product_eq_wightman_positivity`.
 
-That chain is off-paper. It tries to prove reverse-direction positivity by
-identifying the OS pairing with the Wightman pairing on the nose.
+That chain was off-paper. It tried to prove reverse-direction positivity by
+identifying the OS pairing with the Wightman pairing on the nose.  The
+replacement theorem slot is
+`schwingerExtension_os_reflection_positive_from_spectralLaplace`, which states
+only the direct OS reflection-positivity inequality.
 
 The current `wightman_to_os_full` theorem does **not** depend on that false
 chain. The blueprint should therefore treat the present reverse route as:
@@ -281,14 +285,16 @@ Wightman pairing on the nose.
 
 ### 12.2. Present in the file, but *not* documentation targets
 
-These theorems exist, but their current proof route is off-paper or depends on
-an earlier false theorem shape and therefore should not be copied into a future
-faithful implementation plan.
+These old theorem names no longer exist as Lean theorem surfaces because their
+statements encoded an off-paper same-test-function bridge:
 
 1. `schwingerExtension_os_term_eq_wightman_term`
 2. `schwingerExtension_os_inner_product_eq_wightman`
 3. `schwingerExtension_os_inner_product_eq_wightman_positivity`
-4. `wickRotatedBoundaryPairing_reflection_positive`
+
+The remaining public surface `wickRotatedBoundaryPairing_reflection_positive`
+is now a wrapper around the honest direct theorem
+`schwingerExtension_os_reflection_positive_from_spectralLaplace`.
 
 The future reverse-direction positivity proof should *not* cite those theorems.
 It should instead be documented as a fresh transport of the OS I Section 4.3
@@ -372,13 +378,16 @@ documented as:
 lemma constructSchwinger_positive
     (Wfn : WightmanFunctions d) :
     ReflectionPositive (constructSchwingerFunctions Wfn) := by
-  -- do *not* use `schwingerExtension_os_inner_product_eq_wightman`
-  -- reuse the OS I Section 4.3 transport package on the Wick-restricted family
+  -- do *not* use any same-test-function `OSInnerProduct = WightmanInnerProduct`
+  -- bridge
+  -- prove the direct spectral/Laplace wave-packet positivity theorem for the
+  -- Wick-restricted family
 ```
 
-The reverse blueprint should treat this as a transport theorem from the
-already-understood OS-I positivity package, not as a fresh spectral/semigroup
-construction and not as an algebraic identity of pairings.
+The reverse blueprint should treat this as a direct OS-I positivity theorem for
+the Wick-restricted family, proved through the spectral/Laplace wave-packet
+representation or an equivalent Section 4.3 transport package.  It must never
+be an algebraic identity of pairings on the same coordinate test function.
 
 This should also be documented explicitly as a reverse-direction transport:
 
@@ -553,26 +562,29 @@ The current reverse-direction file should distinguish three statuses:
 
 ### 17.1. DELETE from the active route
 
-These theorem surfaces encode the false "OS pairing = Wightman pairing"
-positivity route and should not appear in later reverse-direction proofs.
+These old theorem surfaces encoded the false "OS pairing = Wightman pairing"
+positivity route and should not reappear in later reverse-direction proofs.
 
 1. `schwingerExtension_os_term_eq_wightman_term`
 2. `schwingerExtension_os_inner_product_eq_wightman`
 3. `schwingerExtension_os_inner_product_eq_wightman_positivity`
 
-If the repo keeps them temporarily for historical reasons, the docs should
-still classify them as deleted from the active route.
+They have now been deleted from the Lean theorem surface.  If they are
+reintroduced for historical comparison, the docs should still classify them as
+deleted from the active route.
 
 ### 17.2. QUARANTINE until re-proved on the honest route
 
-These theorems are not themselves the false route, but they currently sit
-downstream of it and should not be consumed as trusted infrastructure until the
-proofs are rerouted.
+This theorem name is not itself the false route.  It is the public positivity
+surface, and it should remain only as a wrapper around the honest direct
+positivity theorem.
 
 1. `wickRotatedBoundaryPairing_reflection_positive`
 
-The right long-term fate is to re-prove this theorem from the Section 4.3
-transport package and then move it back into the `KEEP` class.
+The current internal target is
+`schwingerExtension_os_reflection_positive_from_spectralLaplace`: prove the OS
+quadratic form is a positive spectral/Laplace wave-packet integral for
+strictly ordered positive-time supports.
 
 ### 17.3. KEEP as honest current surfaces
 

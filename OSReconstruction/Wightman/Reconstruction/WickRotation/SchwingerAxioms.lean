@@ -2345,89 +2345,43 @@ private theorem hermitianRealOverlap_nonempty_of_two_le
     ⟨x, _, hxET, hrevET⟩
   exact ⟨x, hxET, by simpa [BHW.realEmbed] using hrevET⟩
 
-/-- Each (n,m)-term of the OS inner product with the constructed Schwinger functions
-    equals the corresponding term of the Wightman inner product.
+/-- Reflection positivity for the Wick-restricted Schwinger family.
 
-    The proof uses three key ingredients:
-    1. **Change of variables** (time reflection θ in first n coordinates):
-       converts osConj(f_n) = conj(f_n(θ·)) to conj(f_n(·)), and changes
-       F_ext evaluation from forward-tube to backward-tube for first n args.
+    This is the honest replacement for the deleted same-test-function bridge
+    `OSInnerProduct = WightmanInnerProduct`.  That bridge is false: the
+    Euclidean side pairs the Wick-restricted kernel with Laplace-in-time /
+    Fourier-in-space wave packets, while `Wfn.W` pairs the Minkowski boundary
+    value with Fourier-in-time wave packets.  A valid Hilbert-space comparison
+    would need a nontrivial wave-packet/isometry map `V`, not the identity on
+    coordinate Schwartz test functions.
 
-    2. **F_ext permutation invariance** (BHW property 4): allows reordering
-       the first n arguments, converting conj(f_n(y₁,...,yₙ)) to
-       conj(f_n(yₙ,...,y₁)) = borchersConj(f_n)(y₁,...,yₙ).
+    The mathematical content of this theorem is the OS I Section 3/5 spectral
+    argument: for test functions supported in strictly ordered positive
+    Euclidean time, rewrite the OS quadratic form as a positive spectral
+    measure integral of the corresponding Laplace-Fourier wave packet.  The
+    support hypothesis supplies the required time ordering, exponential
+    damping, and avoidance of coincidence singularities.
 
-    3. **Boundary value identity**: the integral of F_ext at mixed
-       backward/forward Euclidean points against a test function equals
-       the Wightman distributional pairing W(n+m)(·).
+    This is a genuine theorem boundary, not a wrapper around Wightman
+    positivity on the same Borchers sequence.  Any future stronger
+    Hilbert-space-isomorphism theorem must state the intervening map explicitly.
 
-    Steps 1-2 are provable from existing infrastructure. Step 3 is the
-    deep analytic content requiring the distributional boundary value theory
-    (Fourier-Laplace representation + Paley-Wiener).
-
-    Blocked by: `boundary_values_tempered` and distributional BV infrastructure.
-
-    Ref: OS I, Section 5; Streater-Wightman §3.4 -/
-theorem schwingerExtension_os_term_eq_wightman_term (Wfn : WightmanFunctions d)
-    (n m : ℕ) (f_n : SchwartzNPoint d n) (f_m : SchwartzNPoint d m)
-    (hsupp_n : tsupport ((f_n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n)
-    (hsupp_m : tsupport ((f_m : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
-      OrderedPositiveTimeRegion d m) :
-    wickRotatedBoundaryPairing Wfn (n + m) (f_n.osConjTensorProduct f_m) =
-    Wfn.W (n + m) (f_n.conjTensorProduct f_m) := by
-  sorry
-
-/-- The OS inner product for Wick-rotated Schwinger functions equals the
-    Wightman inner product for test functions supported at positive times.
-
-    This is the key identity: ⟨F,F⟩_OS = ⟨F,F⟩_W when F is supported at τ > 0.
-    Combined with Wightman positive definiteness (R2), this gives E2.
-
-    Proof: each (n,m)-term of the OS sum equals the (n,m)-term of the Wightman sum
-    (by `schwinger_os_term_eq_wightman_term`), so the sums are equal.
-
-    Ref: OS I, Section 5 -/
-theorem schwingerExtension_os_inner_product_eq_wightman (Wfn : WightmanFunctions d)
-    (F : BorchersSequence d)
-    (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n) :
-    OSInnerProduct d (constructSchwingerFunctions Wfn) F F =
-    WightmanInnerProduct d Wfn.W F F := by
-  have hzero : OSTensorAdmissible d F F :=
-    OSTensorAdmissible_of_tsupport_subset_orderedPositiveTimeRegion (d := d) F F hsupp hsupp
-  simp only [OSInnerProduct, WightmanInnerProduct]
-  congr 1
-  ext n
-  congr 1
-  ext m
-  rw [ZeroDiagonalSchwartz.ofClassical_of_vanishes
-    (f := (F.funcs n).osConjTensorProduct (F.funcs m)) (hzero n m)]
-  exact schwingerExtension_os_term_eq_wightman_term Wfn n m (F.funcs n) (F.funcs m)
-    (hsupp n) (hsupp m)
-
-/-- The OS inner product for Wick-rotated Schwinger functions reduces to
-    the Wightman positivity form after the rotation.
-
-    For test functions F supported in τ > 0, the OS inner product equals
-    the Wightman inner product (by `os_inner_product_eq_wightman`), which
-    is non-negative by R2 (positive definiteness).
-
-    Ref: OS I, Section 5 (proof that E2 follows from R2); Glimm-Jaffe Ch. 19 -/
-theorem schwingerExtension_os_inner_product_eq_wightman_positivity (Wfn : WightmanFunctions d)
+    Ref: OS I, Section 3 and Section 5; Glimm-Jaffe Ch. 19;
+    Reed-Simon II, Section IX.8. -/
+theorem schwingerExtension_os_reflection_positive_from_spectralLaplace
+    (Wfn : WightmanFunctions d)
     (F : BorchersSequence d)
     (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n) :
     (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 := by
-  rw [schwingerExtension_os_inner_product_eq_wightman Wfn F hsupp]
-  exact Wfn.positive_definite F
+  sorry
 
 theorem wickRotatedBoundaryPairing_reflection_positive (Wfn : WightmanFunctions d)
     (F : BorchersSequence d)
     (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n) :
     (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 :=
-  schwingerExtension_os_inner_product_eq_wightman_positivity Wfn F hsupp
+  schwingerExtension_os_reflection_positive_from_spectralLaplace Wfn F hsupp
 
 /-- F_ext is permutation-invariant on TranslatedPET. Same sorry pattern. -/
 theorem F_ext_permutation_invariant_translated (Wfn : WightmanFunctions d) (n : ℕ)

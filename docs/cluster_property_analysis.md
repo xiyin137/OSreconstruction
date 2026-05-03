@@ -183,26 +183,32 @@ configurations cannot become Jost points under real shifts.
 
 ### The actual dependency chain
 
+The old dependency chain through
+`schwingerExtension_os_term_eq_wightman_term` has been deleted from the active
+route.  That theorem asserted a false same-test-function equality between the
+Euclidean Wick-restricted pairing and the Minkowski Wightman pairing.
+
+The honest R→E cluster blocker is therefore:
+
 ```
 W_analytic_cluster_integral
-  ← schwingerExtension_os_term_eq_wightman_term  (SchwingerAxioms.lean:2371, sorry)
-        bridge: wickRotatedBoundaryPairing = Wfn.W on OrderedPositiveTimeRegion supports
-  ← boundary_values_tempered + distributional BV infrastructure  (E→R lane)
-  ← Fourier-Laplace + Paley-Wiener + the OSToWightmanBoundaryValues plan
+  ← pointwise Schwinger/Euclidean cluster for the Wick-restricted kernel
+  ← dominated convergence + Fubini on strictly ordered positive-time supports
+  ← BHW pointwise cluster and translated-PET a.e. support infrastructure
 ```
 
-So the R→E cluster blocker is **structurally downstream of E→R
-boundary-values work**. The OS-W bridge theorem (sorried at line 2371)
-requires the same Edge-of-the-Wedge / Vitali / boundary-values plumbing
-that the E→R lane is building. Closing R→E cluster in isolation requires
-re-deriving this infrastructure.
+So the R→E cluster blocker is **not** a corollary of a coordinate-level
+OS-W equality.  It is a direct Euclidean/Wick-restricted cluster theorem,
+parallel in spirit to the direct spectral/Laplace proof now used for
+reflection positivity.
 
-### Recommended path (Option 1)
+### Recommended path
 
-Wait for `boundary_values_tempered` to land via the E→R lane, then close
-`schwingerExtension_os_term_eq_wightman_term` for tensor-product test
-functions, then `W_analytic_cluster_integral` is a ~30-line corollary of
-`Wfn.cluster` + the bridge.
+Do not wait for or attempt to close the deleted
+`schwingerExtension_os_term_eq_wightman_term` bridge.  Prove
+`W_analytic_cluster_integral` directly on the Wick-restricted Euclidean kernel,
+with support hypotheses strong enough to avoid coincidence singularities and
+to justify dominated convergence.
 
 Structural plumbing the cluster-corollary proof will need (Fubini split
 over `Fin.append`, push-through of `wickRotation` and `tensorProduct`):
@@ -224,7 +230,7 @@ The 2026-03-24 doc above proposed three resolution options. Updated assessment:
   permutation. Probably ~2–4 weeks of independent Edge-of-the-Wedge work
   re-deriving content the E→R lane will provide. Don't pursue.
 - **Option 3 (direct distributional proof)**: confirmed as the right path.
-  The "new infrastructure connecting `wickRotatedBoundaryPairing` to
-  `Wfn.W`" is exactly the existing sorried theorem
-  `schwingerExtension_os_term_eq_wightman_term`, which depends on
-  `boundary_values_tempered`.
+  The needed infrastructure is not a same-test-function
+  `wickRotatedBoundaryPairing = Wfn.W` bridge.  It is a direct Euclidean
+  cluster proof for the Wick-restricted kernel, using the BHW pointwise cluster
+  theorem, Fubini, and dominated convergence.
