@@ -3736,24 +3736,6 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
   rw [hBHW_eq _ hmem_shift, hBHW_n_eq _ hmem_n, hBHW_m_eq _ hmem_m]
   exact hh
 
-/-- Cluster property of W_analytic at the integral level: when the (n+m)-point
-    analytic Wightman function is integrated against a tensor product f ⊗ g_a
-    where g_a is g translated by a large purely spatial vector a (a 0 = 0),
-    the result approaches the product S_n(f) * S_m(g).
-
-    The shift on the test function corresponds to a **real** spatial shift
-    on the BHW evaluation point (since wickRotatePoint is additive and
-    preserves real spatial components).
-
-    **Proof strategy:**  Change variables in the m-block integral to absorb the
-    translation into the BHW argument.  The integrand then involves the
-    truncated function H(x, a) = W_BHW(n+m)(z_n(x_n), z_m(x_m) + a) − product,
-    which goes to 0 pointwise by `bhw_pointwise_cluster_forwardTube` (for a.e. x
-    with distinct times).  Dominated convergence applies because W_BHW has
-    polynomial growth uniform in the spatial shift, and f, g are Schwartz.
-
-    Ref: Streater-Wightman, Theorem 3.5 (cluster decomposition);
-    Glimm-Jaffe, Chapter 19 -/
 -- **Weighted polynomial growth of W_BHW at Wick-rotated points.**
 --
 -- The forward-tube growth condition `HasForwardTubeGrowth` gives
@@ -3763,8 +3745,50 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
 -- This bound is independent of any spatial shift (imaginary parts unchanged).
 -- Available from `hasForwardTubeGrowth_of_wightman` (SchwingerTemperedness.lean).
 
+/-- Cluster property of `wickRotatedBoundaryPairing` at the integral level.
+
+    For test functions `f, g` with `tsupport ⊆ OrderedPositiveTimeRegion`, the
+    Wick-rotated integral against `f ⊗ g_a` (with `g_a` the spatial translate
+    of `g` by `a`) clusters to the product of single-block integrals as the
+    spatial shift `‖a‖ → ∞`.
+
+    The OPTR support hypothesis ensures:
+    - The integrands are well-defined (test functions vanish on the coincidence
+      locus, where `F_ext_on_translatedPET_total` has its `infDist^{q+1}`
+      singularity from `HasForwardTubeGrowth`). Without this hypothesis the
+      integrals diverge for generic Schwartz test functions, making the bound
+      vacuous (Lean's `∫ = 0` for non-integrable functions).
+    - The Wick-rotated configurations are well-controlled: each block's
+      Wick-rotated configuration is in `ForwardTube` (strictly increasing
+      positive times → successive Im differences in V⁺).
+
+    This is the OS reconstruction Schwinger cluster property (OS axiom E4),
+    captured at the level of integrals over OPTR-supported `𝒮_<` test
+    functions in OS 1973 §2 notation.
+
+    **Proof strategy** (for future implementation):
+    1. Use `OSTensorAdmissible_of_tsupport_subset_orderedPositiveTimeRegion` +
+       `wick_rotated_kernel_mul_zeroDiagonal_integrable` to establish
+       integrability of all three integrals.
+    2. Apply `integral_fin_append_split` (PR #72) for Fubini decomposition
+       of the (n+m)-integral.
+    3. Push `wickRotatePoint` through `Fin.append` via the Tier 2 helper
+       `Fin.append_comp_apply`; evaluate `tensorProduct` on `Fin.append` via
+       `tensorProduct_fin_append_apply`.
+    4. Apply `bhw_pointwise_cluster_forwardTube` for a.e. `(x_n, x_m)`
+       (using Step D.1's pattern for the joint TranslatedPET membership).
+    5. Lift via dominated convergence with the
+       `hasForwardTubeGrowth_of_wightman` polynomial-growth bound and
+       Schwartz decay of the test functions.
+
+    Refs: Osterwalder-Schrader 1973 §2 (definition of `𝒮_<`); §4 (Axiom E4).
+    Glimm-Jaffe Ch 19 (cluster decomposition for Schwinger functions). -/
 theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
       ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
@@ -3780,43 +3804,20 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
             (∫ x : NPointDomain d m,
               F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε := by
-  -- Strategy: bhw_pointwise_cluster_forwardTube + dominated convergence.
-  --
-  -- Key steps:
-  -- (a) For a.e. x, the Wick-rotated config is in ForwardTube. Note that
-  --     `bhw_pointwise_cluster_forwardTube` requires full ForwardTube
-  --     hypotheses (not just PET membership) on all three evaluation points
-  --     (joint, n-block, m-block), which means the a.e. set needs the
-  --     identity-permutation variant: strictly-increasing-time configurations
-  --     in each block (and in the joint append).
-  -- (b) The integrand is dominated by C(1+‖x‖)^N / infDist^q · |f| · |g|
-  --     (from HasForwardTubeGrowth), independent of the spatial shift a.
-  -- (c) Apply tendsto_integral_of_dominated_convergence.
-  -- (d) Factor the integral over Fin(n+m) into n-block × m-block products via
-  --     Fubini; Mathlib provides `volume_measurePreserving_sumPiEquivProdPi`
-  --     and `volume_measurePreserving_piCongrLeft` over `finSumFinEquiv`.
-  --
-  -- Status of blockers (post-W11 migration):
-  -- (1) `wickRotation_in_translatedPET_null` is now a *theorem* (no sorry)
-  --     in ForwardTubeLorentz.lean. The outdated `wickRotation_not_in_PET_null`
-  --     was false for n ≥ d+2 and has been deleted (see W11Counterexample.lean).
-  --     What is still needed here is a *refinement* of that a.e. statement to
-  --     the identity-permutation variant: a.e. x with strictly increasing
-  --     positive times in each block of the Fin.append structure.
-  -- (2) Fubini decomposition of Fin(n+m)-indexed integrals is available via
-  --     `MeasurableEquiv.sumPiEquivProdPi` composed with a piCongrLeft
-  --     transport along `finSumFinEquiv`. A dedicated helper lemma would make
-  --     this clean to invoke here (future work).
   sorry
 
-/-- The Schwinger functions satisfy clustering (E4).
+/-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
+    test functions.
 
-    Proof: Follows from cluster decomposition of Wightman functions (R4)
-    via the analytic continuation. The key input is `W_analytic_cluster_integral`,
-    which combines the pointwise cluster property of W_analytic with
-    dominated convergence using Schwartz function decay. -/
+    Wrapper around `W_analytic_cluster_integral` that exposes the
+    `wickRotatedBoundaryPairing` form. The same OPTR support hypothesis is
+    required for the integrals to be well-defined. -/
 theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
     (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
       ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
@@ -3827,7 +3828,7 @@ theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
             wickRotatedBoundaryPairing Wfn m g‖ < ε := by
   -- Unfold the raw Wick-rotated full-Schwartz pairing to expose the integrals.
   simp only [wickRotatedBoundaryPairing]
-  exact W_analytic_cluster_integral Wfn n m f g ε hε
+  exact W_analytic_cluster_integral Wfn n m f g hsupp_f hsupp_g ε hε
 
 
 end
