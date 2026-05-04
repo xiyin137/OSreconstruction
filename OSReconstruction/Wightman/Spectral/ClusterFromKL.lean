@@ -801,17 +801,92 @@ theorem cluster_inner_product_from_GNS (ψ φ : WR.H) :
         Bornology.cobounded (SpacetimeDim d))
       (nhds (@inner ℂ WR.H _ ψ WR.Ω * @inner ℂ WR.H _ WR.Ω φ)) := by
   -- Set up the decomposition.
-  set c_ψ : ℂ := @inner ℂ WR.H _ WR.Ω ψ with hc_ψ
-  set c_φ : ℂ := @inner ℂ WR.H _ WR.Ω φ with hc_φ
-  set ψ_perp : WR.H := ψ - c_ψ • WR.Ω with hψ_perp
-  set φ_perp : WR.H := φ - c_φ • WR.Ω with hφ_perp
-  -- Orthogonality of the projections.
+  set c_ψ : ℂ := @inner ℂ WR.H _ WR.Ω ψ with hc_ψ_def
+  set c_φ : ℂ := @inner ℂ WR.H _ WR.Ω φ with hc_φ_def
+  set ψ_perp : WR.H := ψ - c_ψ • WR.Ω with hψ_perp_def
+  set φ_perp : WR.H := φ - c_φ • WR.Ω with hφ_perp_def
+  -- Step 0: ⟨Ω, Ω⟩ = 1.
+  have h_omega_self : @inner ℂ WR.H _ WR.Ω WR.Ω = (1 : ℂ) := by
+    have h := inner_self_eq_norm_sq_to_K (𝕜 := ℂ) (E := WR.H) WR.Ω
+    rw [h, WR.vac_norm]
+    norm_num
+  -- Step 1: orthogonality ⟨Ω, ψ_perp⟩ = 0.
   have h_ψ_ortho : @inner ℂ WR.H _ WR.Ω ψ_perp = 0 := by
-    -- ⟨Ω, ψ - c_ψ•Ω⟩ = ⟨Ω,ψ⟩ - c_ψ ⟨Ω,Ω⟩ = c_ψ - c_ψ·1 = 0 (using ‖Ω‖=1).
-    sorry
+    show @inner ℂ WR.H _ WR.Ω (ψ - c_ψ • WR.Ω) = 0
+    rw [inner_sub_right, inner_smul_right, h_omega_self, ← hc_ψ_def]
+    ring
   have h_φ_ortho : @inner ℂ WR.H _ WR.Ω φ_perp = 0 := by
+    show @inner ℂ WR.H _ WR.Ω (φ - c_φ • WR.Ω) = 0
+    rw [inner_sub_right, inner_smul_right, h_omega_self, ← hc_φ_def]
+    ring
+  -- Step 2: ⟨Ω, U(a) χ⟩ = ⟨Ω, χ⟩ for all χ — uses U(a) ∈ unitary + vac_inv.
+  -- The argument: since U(a) is unitary, ⟨U(a) x, U(a) y⟩ = ⟨x, y⟩; with x=Ω
+  -- and using U(a) Ω = Ω (vac_inv) on the LHS, we get ⟨Ω, U(a) y⟩ = ⟨Ω, y⟩.
+  -- Mathlib API: `unitary` membership gives an isometry, so inner products
+  -- are preserved. The exact lemma name may require chasing through
+  -- `Mathlib.Analysis.InnerProductSpace.Adjoint` to convert
+  -- `WR.U a ∈ unitary (WR.H →L[ℂ] WR.H)` into the isometry/preservation form.
+  have h_U_isometry : ∀ (a : SpacetimeDim d) (x y : WR.H),
+      @inner ℂ WR.H _ (WR.U a x) (WR.U a y) = @inner ℂ WR.H _ x y := by
+    intro a x y
+    have hU := WR.unitary_rep a
+    -- For T ∈ unitary, T⋆ * T = 1 (in the StarRing on H →L[ℂ] H, where star = adjoint).
+    have h_star_mul : (star (WR.U a)) * WR.U a = 1 := Unitary.star_mul_self_of_mem hU
+    -- Apply both sides to y to get (star U)(U y) = y.
+    have h_apply : (star (WR.U a)) ((WR.U a) y) = y := by
+      have key := congr_fun (congr_arg DFunLike.coe h_star_mul) y
+      simpa [ContinuousLinearMap.mul_apply, ContinuousLinearMap.one_apply] using key
+    -- Use adjoint_inner_right: ⟨x, T y⟩ = ⟨T⋆ x, y⟩, in reverse:
+    -- ⟨U x, U y⟩ = ⟨(U)⋆ (U x), y⟩ = ⟨x, y⟩ ... but we need the right form.
+    -- Equivalently: ⟨U x, U y⟩ = ⟨x, (U)⋆ (U y)⟩ = ⟨x, y⟩
+    -- Mathlib: `ContinuousLinearMap.adjoint_inner_right`:
+    --   `⟨x, T.adjoint y⟩ = ⟨T x, y⟩` (or the symmetric form)
+    -- And `ContinuousLinearMap.star_eq_adjoint`: `star T = T.adjoint`
+    -- Rewrite only the y on the RHS using h_apply backwards.
+    conv_rhs => rw [← h_apply]
+    -- Goal: ⟨U x, U y⟩ = ⟨x, (star (U a)) ((U a) y)⟩
+    -- `star T = T.adjoint` definitionally on H →L[ℂ] H.
+    show @inner ℂ WR.H _ ((WR.U a) x) ((WR.U a) y) =
+          @inner ℂ WR.H _ x ((WR.U a).adjoint ((WR.U a) y))
+    exact ((WR.U a).adjoint_inner_right x ((WR.U a) y)).symm
+  have h_omega_U_invariant : ∀ (a : SpacetimeDim d) (χ : WR.H),
+      @inner ℂ WR.H _ WR.Ω (WR.U a χ) = @inner ℂ WR.H _ WR.Ω χ := by
+    intro a χ
+    have h1 : @inner ℂ WR.H _ (WR.U a WR.Ω) (WR.U a χ) =
+              @inner ℂ WR.H _ WR.Ω χ := h_U_isometry a WR.Ω χ
+    rw [WR.vac_inv a] at h1
+    exact h1
+  -- Step 3: ⟨ψ, U(a) φ⟩ = ⟨ψ, Ω⟩ ⟨Ω, φ⟩ + ⟨ψ_perp, U(a) φ_perp⟩.
+  -- Decompose φ = c_φ • Ω + φ_perp, expand the right slot (linear), use vac_inv.
+  -- Decompose ψ = c_ψ • Ω + ψ_perp, expand the left slot (conj-linear), use
+  -- h_omega_U_invariant on the cross terms.
+  have h_main_id : ∀ a : SpacetimeDim d,
+      @inner ℂ WR.H _ ψ (WR.U a φ) =
+      @inner ℂ WR.H _ ψ WR.Ω * @inner ℂ WR.H _ WR.Ω φ +
+      @inner ℂ WR.H _ ψ_perp (WR.U a φ_perp) := by
+    intro a
+    -- φ = c_φ • Ω + φ_perp, so U(a) φ = c_φ • U(a) Ω + U(a) φ_perp = c_φ • Ω + U(a) φ_perp
+    have hφ_eq : φ = c_φ • WR.Ω + φ_perp := by
+      show φ = c_φ • WR.Ω + (φ - c_φ • WR.Ω)
+      abel
+    have hψ_eq : ψ = c_ψ • WR.Ω + ψ_perp := by
+      show ψ = c_ψ • WR.Ω + (ψ - c_ψ • WR.Ω)
+      abel
+    have hUφ : WR.U a φ = c_φ • WR.Ω + WR.U a φ_perp := by
+      conv_lhs => rw [hφ_eq]
+      rw [map_add, ContinuousLinearMap.map_smul, WR.vac_inv]
+    -- Algebraic expansion: with ψ = c_ψ•Ω + ψ_perp, φ = c_φ•Ω + φ_perp,
+    -- and U(a) φ = c_φ•Ω + U(a) φ_perp (vac_inv), the inner product
+    -- ⟨ψ, U(a) φ⟩ expands to four terms. Three vanish or simplify to
+    -- the constant via h_omega_self, h_omega_U_invariant, h_φ_ortho,
+    -- h_ψ_ortho (with conjugation flip on the left side); the fourth
+    -- is ⟨ψ_perp, U(a) φ_perp⟩.
+    -- Tedious Lean (~30 lines of inner_add/sub/smul rewriting plus
+    -- conjugation bookkeeping in `starRingEnd`/`star` form). Routed
+    -- to follow-up.
     sorry
-  -- The orthogonal piece tends to 0 by `truncated_spatial_decay`.
+  -- Step 4: combine the algebraic identity with the perp-decay.
+  -- Both sides → ⟨ψ, Ω⟩⟨Ω, φ⟩ + 0 = ⟨ψ, Ω⟩⟨Ω, φ⟩.
   have h_perp_decay :
       Filter.Tendsto
         (fun a : SpacetimeDim d => @inner ℂ WR.H _ ψ_perp (WR.U a φ_perp))
@@ -819,12 +894,20 @@ theorem cluster_inner_product_from_GNS (ψ φ : WR.H) :
           Bornology.cobounded (SpacetimeDim d))
         (nhds 0) :=
     WR.truncated_spatial_decay ψ_perp φ_perp h_ψ_ortho h_φ_ortho
-  -- Algebraic identity:
-  --   ⟨ψ, U(a) φ⟩ = ⟨ψ, Ω⟩ ⟨Ω, φ⟩ + ⟨ψ_perp, U(a) φ_perp⟩
-  -- (using vac_inv to cancel the vacuum-vacuum term to ⟨ψ,Ω⟩⟨Ω,φ⟩, and
-  -- the cross terms vanishing by orthogonality + U(a)*Ω = Ω.)
-  -- Then add ⟨ψ,Ω⟩⟨Ω,φ⟩ to both sides of the limit and use h_perp_decay.
-  sorry
+  have h_const :
+      Filter.Tendsto
+        (fun _ : SpacetimeDim d =>
+          @inner ℂ WR.H _ ψ WR.Ω * @inner ℂ WR.H _ WR.Ω φ)
+        (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+          Bornology.cobounded (SpacetimeDim d))
+        (nhds (@inner ℂ WR.H _ ψ WR.Ω * @inner ℂ WR.H _ WR.Ω φ)) :=
+    tendsto_const_nhds
+  have h_sum := h_const.add h_perp_decay
+  simp only [add_zero] at h_sum
+  -- Rewrite via h_main_id pointwise.
+  refine h_sum.congr' ?_
+  filter_upwards with a
+  exact (h_main_id a).symm
 
 /-! #### Bridge to integral form
 
