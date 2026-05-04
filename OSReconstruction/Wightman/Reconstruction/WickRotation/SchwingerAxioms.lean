@@ -4052,22 +4052,66 @@ private theorem cluster_joint_kernel_polynomial_bound
   -- The remaining work: for a.e. (xy.1, xy.2), in the large-|⃗a| regime,
   -- bound the joint kernel norm by the polynomial-over-|⃗a|^{q+1} form.
   --
-  -- Outline (deferred):
-  -- 1. From `ae_pairwise_distinct_timeCoords` for `n+m`: a.e. all joint
-  --    times distinct.
-  -- 2. Shift-and-sort: pick `A := 1 + ∑ |xy.1 i 0| + ∑ |xy.2 j 0|`, time-shift
-  --    the joint config by A, then sort by time → joint shifted-and-sorted
-  --    config has strictly increasing positive times → Wick-rotated joint
-  --    in `ForwardTube d (n+m)`.
-  -- 3. Apply `_hgrowth` (the forward-tube growth bound) to get
-  --    `‖K_{n+m}(wick joint_sorted_shifted)‖ * infDist^{q+1} ≤ C(1+‖joint‖)^N`.
-  -- 4. F_ext is translation-invariant on TranslatedPET +
-  --    permutation-invariant via BHW, so
-  --    `‖F_ext(wick joint)‖ = ‖K_{n+m}(wick joint_sorted_shifted)‖`.
-  -- 5. infDist is shift- and permutation-invariant; in the large-|⃗a|
-  --    regime with `|⃗a|² > 4(‖xy.1‖+‖xy.2‖)² + 4`, inter-block distance
-  --    is ≥ |⃗a|/2.
-  -- 6. Combine: ‖F_ext‖ ≤ C(1+‖joint‖+|A|)^N / (|⃗a|/2)^{q+1}, simplify.
+  -- Detailed proof outline (deferred — ~120 lines):
+  --
+  -- Mirrors the technique of `wick_rotated_kernel_mul_zeroDiagonal_integrable`
+  -- (in `SchwingerTemperedness.lean`), adapted to the joint config.
+  --
+  -- Step 1. A.e. distinct joint times: from `ae_pairwise_distinct_timeCoords`
+  --   applied to `Fin.append xy.1 (xy.2 + a) : NPointDomain d (n+m)` via the
+  --   product-measure pushforward through `finSumFinEquiv`. Crucially, joint
+  --   times equal `Fin.append xy.1 xy.2` times since `a 0 = 0`, so
+  --   distinctness reduces to a.e. on the original product.
+  --
+  -- Step 2. Shift to positive: `A := 1 + ∑ |joint i 0|` makes times positive.
+  --   Define `joint_shifted := joint + (A in time slot)`.
+  --
+  -- Step 3. Sort: `π := Tuple.sort (fun k => joint_shifted k 0)`.
+  --   `wick(joint_shifted ∘ π) ∈ ForwardTube d (n+m)` via
+  --   `euclidean_ordered_in_forwardTube`.
+  --
+  -- Step 4. Translation invariance: F_ext_total joint = F_ext_total joint_shifted
+  --   (using `F_ext_value_on_translatedPET` + the time shift is a real shift).
+  --
+  -- Step 5. Permutation invariance: F_ext_total joint_shifted =
+  --   W_analytic_BHW(wick joint_shifted ∘ π) via BHW permutation invariance.
+  --
+  -- Step 6. ForwardTube agreement: W_analytic_BHW(wick joint_shifted ∘ π) =
+  --   `(Wfn.spectrum_condition (n+m)).choose (wick joint_shifted ∘ π)`.
+  --
+  -- Step 7. Forward-tube growth: applied to the ForwardTube point gives
+  --   `‖.‖ * infDist(joint_shifted ∘ π, coincidence)^{q+1} ≤ C(1+‖.‖)^N`.
+  --
+  -- Step 8. infDist invariance: shift + permutation are isometries that
+  --   preserve coincidence, so `infDist(joint_shifted ∘ π, .) = infDist(joint, .)`.
+  --
+  -- Step 9. Inter-block distance lower bound (using `_hregime`):
+  --   For i in n-block (say `joint i = xy.1 i'`) and j in m-block
+  --   (`joint j = xy.2 j' + a`):
+  --     ‖joint i - joint j‖² ≥ ∑_{μ≠0} (a μ - (xy.1 i' μ - xy.2 j' μ))²
+  --                          ≥ (|⃗a| - ‖xy.1‖ - ‖xy.2‖)²
+  --                          > (|⃗a|/2)²  using `_hregime`.
+  --   Combined with intra-block distance lower bounds (from a.e. distinct
+  --   times within each block, but these don't have a uniform-in-(xy)
+  --   lower bound — that's why the actual cluster proof requires the
+  --   tail-truncation strategy from D3 rather than a single uniform bound).
+  --
+  -- Step 10. Combine: in the regime where |⃗a|/2 is the dominant lower
+  --   bound on infDist (which holds whenever intra-block distances are
+  --   ≥ |⃗a|/2 — typically not the case for small intra-block gaps), the
+  --   bound simplifies to `C(1+‖joint‖+|A|)^N · 2^{q+1} / |⃗a|^{q+1}`.
+  --
+  -- **Key technical caveat**: the bound as stated in this theorem is
+  -- correct only when `|⃗a|/2 ≤ min(intra_n, intra_m)`. For small intra-
+  -- block gaps, the actual `infDist` is dominated by intra-block distances,
+  -- and the bound has a different form. The cluster theorem proof handles
+  -- this via tail truncation in `cluster_tail_bound` (Step D3), which
+  -- doesn't require a single uniform polynomial bound — it uses Schwartz
+  -- decay to dominate small intra-block gaps directly.
+  --
+  -- For this reason, the statement here may need adjustment when D3
+  -- is being written. Both D2 and D3 may benefit from being merged into
+  -- a single "tail integral bound" theorem.
   filter_upwards with xy _hregime
   sorry
 
