@@ -3900,61 +3900,58 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
           (g_zd.1 : NPointDomain d m → ℂ) x)
       MeasureTheory.volume :=
     wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn g_zd
-  -- Step 3 (in progress): Joint integral analysis via route (i)
-  --   — permuted-ForwardTube pointwise cluster + dominated convergence.
+  -- Step 3: Joint integral analysis via route (i) — permuted-ForwardTube
+  -- pointwise cluster + dominated convergence assembly.
   --
-  -- The load-bearing pointwise cluster `bhw_pointwise_cluster_permutedForwardTube`
-  -- (above) handles the central obstacle: OPTR per-block gives each block in
-  -- ForwardTube but the joint Fin.append config is in `ForwardTube d (n+m)`
-  -- only on a measure-zero set. The permuted-tube axiom replaces the
-  -- contiguous-tube hypothesis with an existential permutation hypothesis,
-  -- which holds a.e. (sort the (n+m) times in increasing order).
+  -- We split the proof into named sub-obligations corresponding to the 6-step
+  -- discharge plan. Each `have` is a self-contained lemma that can be
+  -- discharged independently in follow-up commits.
   --
-  -- **Discharge plan (~1–2 weeks):**
+  -- Step A: a.e. configurations are "good" — joint times distinct + each
+  -- block has positive times (from OPTR support after the integrand is
+  -- restricted to where `f.tensorProduct g_a ≠ 0`).
+  have hgood : ∀ᵐ (xy : NPointDomain d (n + m)) ∂MeasureTheory.volume,
+      (∀ i j : Fin (n + m), i ≠ j → xy i 0 ≠ xy j 0) := by
+    exact ae_pairwise_distinct_timeCoords
+  -- Step B: For each "good" config, the σ-permuted Wick rotation is in
+  -- `ForwardTube d (n + m)`. (Uses `exists_perm_wick_in_forwardTube_of_distinct_positive`
+  -- once we also have positivity, which comes from the OPTR support.)
   --
-  -- 1. **A.e. set of "good" configurations.** Intersect `ae_pairwise_distinct_timeCoords`
-  --    over the joint Fin (n+m) (gives all n+m time coordinates distinct a.e.),
-  --    with the OPTR support of `f.tensorProduct g_a` (gives positive times in
-  --    both blocks). On the intersection, all (n+m) times are strictly distinct
-  --    and positive.
+  -- The construction `σ := Tuple.sort (fun k => xy k 0)` works because the
+  -- (n+m) joint times are strictly distinct and (a.e. on the support) all
+  -- positive.
   --
-  -- 2. **Permutation witness.** For each good (x_n, x_m), let σ = `Tuple.sort`
-  --    on `(fun k => Fin.append (fun i => x_n i 0) (fun j => x_m j 0) k)`.
-  --    This σ sorts the joint times in increasing order. Since each block
-  --    separately has distinct times, the σ-sorted config has strictly
-  --    increasing positive times across the joint; therefore the σ-permuted
-  --    Wick-rotated config is in `ForwardTube d (n+m)` via
-  --    `euclidean_ordered_in_forwardTube`.
+  -- Step C: Apply `bhw_pointwise_cluster_permutedForwardTube` at the σ-witness
+  -- to get pointwise cluster: for each good (x_n, x_m), there exists
+  -- `R(x_n, x_m)` such that for `|⃗a| > R(x_n, x_m)`, the pointwise integrand
+  -- difference is small.
   --
-  -- 3. **Pointwise cluster.** Apply `bhw_pointwise_cluster_permutedForwardTube`
-  --    to (z_n, z_m, σ) to get: `‖F_ext(append wick(x_n) (wick(x_m) + a)) -
-  --    F_ext(wick x_n) F_ext(wick x_m)‖ < ε(x_n, x_m)` for `|⃗a|` large
-  --    enough (depending on the config).
+  -- Step D: Construct a uniform-in-a integrable dominator using
+  -- `hasForwardTubeGrowth_of_wightman` (polynomial growth) + Schwartz decay
+  -- of `f, g` (rapid decrease). The key technical fact: for Wick-rotated
+  -- configs with shifted m-block (real spatial shift `a`), the imaginary
+  -- parts of the configs are unchanged, so the forward-tube growth bound
+  -- gives `‖F_ext(z + spatial a)‖ ≤ C (1 + ‖z + spatial a‖)^N / infDist^{q+1}`.
+  -- Schwartz decay of `f, g` then gives a dominator
+  -- `D(x_n, x_m) := C (1 + ‖x_n‖)^{-K} (1 + ‖x_m‖)^{-K}` (uniform in `a` for
+  -- `|⃗a| ≥ 1`, say), integrable over `(x_n, x_m)`.
   --
-  -- 4. **Uniform integrable dominator.** From `hasForwardTubeGrowth_of_wightman`:
-  --    `‖F_ext(z)‖ · infDist(z, coincidence)^{q+1} ≤ C(1+‖z‖)^N` on the closed
-  --    forward tube. For Wick-rotated configs with shifted m-block, the
-  --    spatial shift `⃗a` only enters through the spatial coordinates (Im
-  --    parts unchanged), so the bound depends polynomially on `‖a‖`. Combined
-  --    with Schwartz decay of `f, g` (which beats any polynomial), we get
-  --    a dominator of the form `C (1+‖x_n‖)^{-K} (1+‖x_m‖)^{-K}` (uniform in
-  --    `a` for `|⃗a| > R₀`), integrable over `(x_n, x_m)`.
+  -- Step E: Fubini-decompose the (n+m)-integral on the LHS using
+  -- `integral_fin_append_split` (PR #72) + `Fin.append_comp_apply` (Tier 2
+  -- helper) + `SchwartzMap.tensorProduct_fin_append_apply` (simp bridge).
+  -- Change of variable `x_m → x_m + a` on the m-block via Lebesgue
+  -- translation invariance + `wickRotatePoint_add` with `a 0 = 0`.
   --
-  -- 5. **Fubini decomposition** of the (n+m)-integral on the LHS:
-  --    `integral_fin_append_split` + push `wickRotatePoint` through `Fin.append`
-  --    via `Fin.append_comp_apply` + evaluate `tensorProduct` via
-  --    `tensorProduct_fin_append_apply`. Change of variable `x_m → x_m + a`
-  --    on the m-block via Lebesgue translation invariance + `wickRotatePoint_add`
-  --    with `a 0 = 0` (gives `wick(x_m + a) = wick(x_m) + spatial_a`).
+  -- Step F: Apply `MeasureTheory.tendsto_integral_of_dominated_convergence`
+  -- to combine pointwise (Step C) + dominator (Step D), yielding the
+  -- integral cluster.
   --
-  -- 6. **Dominated convergence.** Apply
-  --    `MeasureTheory.tendsto_integral_of_dominated_convergence` with the
-  --    pointwise cluster (step 3) + uniform dominator (step 4) to get integral
-  --    cluster: `LHS - RHS → 0` as `|⃗a| → ∞`. Pick `R` via the resulting
-  --    `Tendsto` predicate and `ε`.
+  -- Witness `R`: use the union of (Steps A + Step B) measurability + the
+  -- ε/3 argument from the dominated convergence application.
   --
-  -- All five remaining steps are pure Lean engineering on top of the new axiom;
-  -- no further mathematical content is needed. Scheduled as follow-up commit.
+  -- Currently: only Step A is closed; Steps B–F remain as outer `sorry`.
+  -- The orchestration above is the actual proof structure once the
+  -- sub-obligations are discharged.
   sorry
 
 /-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
