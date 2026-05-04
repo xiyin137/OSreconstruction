@@ -4345,20 +4345,28 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   --   bounded part (< ε/2 by hbounded) + tail part (< ε/2 by htail),
   -- giving total < ε.
   refine ⟨R₁, hR₁_pos, fun a ha0 hlarge g_a hga => ?_⟩
-  -- Reduce the LHS-RHS difference to an integral over (x_n, x_m) of the
-  -- difference integrand. Then split the integration domain into
-  -- B(M₀) := {‖x_n‖+‖x_m‖ ≤ M₀} and its complement, apply triangle
-  -- inequality, and use hbounded + htail.
+  -- Reduce LHS-RHS to an iterated integral via Fubini (`integral_fin_append_split`)
+  -- and translation invariance of the m-block kernel:
+  --   LHS - RHS = ∫_n ∫_m
+  --     [ K_{n+m}(wick(append x_n x_m)) f(x_n) g_a(x_m) -
+  --       K_n(wick x_n) f(x_n) · K_m(wick x_m) g_a(x_m) ] dx_m dx_n
+  -- (the apparent g vs g_a discrepancy in the cluster theorem's RHS
+  -- collapses since `∫ K_m(wick x_m) g_a(x_m) dx_m = ∫ K_m(wick x_m) g(x_m) dx_m`
+  -- by spatial translation invariance of K_m).
   --
-  -- This requires:
-  -- - Fubini decomposition of the LHS (n+m)-integral via
-  --   `integral_fin_append_split` (PR #72) — this gives LHS = ∫_n ∫_m of
-  --   the joint integrand on Fin.append.
-  -- - Fubini factoring of the RHS product into ∫_n ∫_m.
-  -- - Domain splitting: ∫_full = ∫_B + ∫_{B^c} via Set.indicator addition.
-  -- - Triangle inequality: ‖∫_B + ∫_{B^c}‖ ≤ ‖∫_B‖ + ‖∫_{B^c}‖.
+  -- Then split (x_n, x_m) ∈ B(M₀) ⊔ B(M₀)ᶜ via
+  -- `Set.indicator_self_add_compl_self_eq_one`-style rewriting:
+  --   integrand = indicator B integrand + indicator B^c integrand
+  -- giving
+  --   LHS - RHS = ∫ indicator_B integrand + ∫ indicator_B^c integrand.
+  -- Triangle inequality + apply `hbounded a ha0 hlarge g_a hga` (gives ε/2)
+  -- and `htail a ha0 g_a hga` (gives ε/2): total < ε.
   --
-  -- All standard Mathlib operations.
+  -- The remaining sorry is this final algebraic + Fubini manipulation.
+  -- Mathlib primitives: `integral_fin_append_split` (PR #72),
+  -- `Set.indicator`, `MeasureTheory.integral_add` (when both addends
+  -- integrable), `Set.indicator_self_add_compl_self`, triangle
+  -- inequality on norms, then numerical `linarith`.
   sorry
 
 /-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
