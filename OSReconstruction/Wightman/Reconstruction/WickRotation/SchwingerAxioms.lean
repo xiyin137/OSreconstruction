@@ -3936,17 +3936,35 @@ private theorem W_analytic_BHW_cluster_pointwise_aux
 /-! ### Step D scaffolding — uniform-in-a tail bound auxiliaries
 
 Step D of the cluster discharge plan: construct a uniform-in-a bound that
-makes dominated convergence work via the tail-truncation approach.
+makes dominated convergence work.
 
-Strategy: split (x_n, x_m) ∈ NPointDomain d n × NPointDomain d m into
-- bounded region B(M₀) := {‖x_n‖ + ‖x_m‖ ≤ M₀}: uniformly bounded integrand
-  on B for any |⃗a| > 1 (since infDist is bounded below, ‖z‖ is bounded above);
-  pointwise cluster + DCT on B gives the integral on B → 0.
-- tail B(M₀)ᶜ: Schwartz decay of f, g dominates the polynomial growth
-  of the kernel; tail integral < δ uniformly in a for M₀ large enough.
+**Restructured (2026-05-04):** After working through the inter-block
+infDist analysis, the uniform polynomial bound on the joint kernel
+(originally `cluster_joint_kernel_polynomial_bound`) and the tail bound
+(`cluster_tail_bound`) are best unified into a single
+`cluster_uniform_dominator` lemma. The reason: the polynomial bound's
+exact form is configuration-dependent (intra-block gaps can dominate
+inter-block separation), so a single uniform polynomial-divided-by-`|⃗a|^{q+1}`
+bound is too strong. The right unified form is "an integrable dominator
+exists, uniform in a for `|⃗a|` large enough" — that's all DCT actually needs.
 
-Sub-lemmas below scaffold the auxiliary obligations. Each is a sorry
-pending careful Lean engineering. -/
+Old sub-lemmas (`cluster_joint_kernel_polynomial_bound` and
+`cluster_tail_bound`) are kept below as SCAFFOLDING with their
+configuration-dependent statements; they'll likely be replaced by the
+cleaner `cluster_uniform_dominator` once written.
+
+Strategy for the unified lemma:
+1. The disconnected piece `|K_n(wick x_n) f(x_n)| · |K_m(wick x_m) g(x_m)|`
+   is a-INDEPENDENT and integrable (proved: `cluster_disconnected_term_integrable`).
+2. The joint piece `|K_{n+m}(wick(append x_n (x_m+a))) f(x_n) g(x_m)|` is
+   bounded by:
+   - For (x_n, x_m) with bounded norm AND large |⃗a|: kernel is bounded,
+     dominator is `Schwartz_K · const_for_bounded_region`.
+   - For (x_n, x_m) with large norm: Schwartz decay dominates, dominator
+     is `Schwartz_K(1+‖x_n‖)^{-K} (1+‖x_m‖)^{-K}` for large K.
+   In both regimes, an integrable dominator exists.
+
+Sub-lemmas below scaffold the auxiliary obligations. -/
 
 /-- Auxiliary: integrability of the disconnected-product integrand on
 `NPointDomain d n × NPointDomain d m`.
