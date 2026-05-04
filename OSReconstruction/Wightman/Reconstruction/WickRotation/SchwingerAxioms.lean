@@ -1658,6 +1658,32 @@ private theorem euclidean_distinct_in_BHW_permutedForwardTube {d n : ℕ} [NeZer
   refine ⟨π, ?_⟩
   simpa [BHW_permutedForwardTube_eq (d := d) (n := n) π] using hfwd
 
+/-- **Reusable σ-permutation construction**: a configuration with all distinct
+positive times has a sorting permutation σ that puts its Wick rotation in
+the (unpermuted) forward tube.
+
+The same construction underlies `euclidean_distinct_in_BHW_permutedForwardTube`
+above, but here we expose the `ForwardTube` form directly (without the BHW
+permuted-tube wrapper), which is the form needed by
+`bhw_pointwise_cluster_permutedForwardTube`. Used inside
+`W_analytic_cluster_integral` for the joint `Fin.append` config. -/
+theorem exists_perm_wick_in_forwardTube_of_distinct_positive {d n : ℕ} [NeZero d]
+    (xs : NPointDomain d n)
+    (hdistinct : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0)
+    (hpos : ∀ i : Fin n, xs i 0 > 0) :
+    ∃ σ : Equiv.Perm (Fin n),
+      (fun k => wickRotatePoint (xs (σ k))) ∈ ForwardTube d n := by
+  let σ := Tuple.sort (fun k => xs k 0)
+  have hmono := Tuple.monotone_sort (fun k => xs k 0)
+  have hinj : Function.Injective (fun k => xs k 0) := by
+    intro i j h; by_contra hij; exact hdistinct i j hij h
+  have hstrict : StrictMono ((fun k => xs k 0) ∘ σ) :=
+    hmono.strictMono_of_injective (hinj.comp σ.injective)
+  have hord : ∀ k j : Fin n, k < j → xs (σ k) 0 < xs (σ j) 0 :=
+    fun k j hkj => hstrict hkj
+  have hpos' : ∀ k : Fin n, xs (σ k) 0 > 0 := fun k => hpos (σ k)
+  exact ⟨σ, euclidean_ordered_in_forwardTube (fun k => xs (σ k)) hord hpos'⟩
+
 private theorem euclidean_distinct_twisted_reverse_in_BHW_permutedForwardTube {d n : ℕ}
     [NeZero d] (xs : NPointDomain d n)
     (hdistinct : ∀ i j : Fin n, i ≠ j → xs i 0 ≠ xs j 0)
