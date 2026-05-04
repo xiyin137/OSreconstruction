@@ -29,19 +29,20 @@ decomposition (R4 / Källén-Lehmann route).
 ## Main definitions
 
 * `ProjectionValuedMeasureOn α H` — projection-valued measure on a measurable
-  space `α` taking values in projections on a Hilbert space `H`. Generalizes
-  `ProjectionValuedMeasure` (single-axis, `α = ℝ`) to arbitrary measurable
-  spaces.
-
-* `ProjectionValuedMeasureOn.diagonalMeasure` — for `ψ ∈ H`, the positive
-  finite Borel measure on `α` defined by `B ↦ Re ⟨ψ, E(B) ψ⟩`. Total mass
-  `‖ψ‖²`.
+  space `α` taking values in projections on a Hilbert space `H`. The
+  underlying assignment `proj` is indexed by *measurable sets only*
+  (`proj : ∀ B : Set α, MeasurableSet B → (H →L[ℂ] H)`), eliminating any
+  "junk" on non-measurable sets so that uniqueness in the SNAG conclusion
+  is genuine.
 
 ## Main result
 
 * `snag_theorem` — *(axiom)* Every strongly continuous unitary representation
   of `ℝⁿ` is the spectral integral of a unique projection-valued measure on
-  the Borel σ-algebra of `ℝⁿ`.
+  the Borel σ-algebra of `ℝⁿ`. The conclusion existentially binds the
+  diagonal spectral measure of each vector `ψ`, characterizing it on
+  measurable sets via `‖E(B) ψ‖²` and stating the Fourier inversion against
+  it.
 
 ## References
 
@@ -55,42 +56,40 @@ decomposition (R4 / Källén-Lehmann route).
 
 ## Notes
 
-The PVM structure gates `idempotent`, `selfAdjoint`, `inter`, and
-`sigma_additive` behind `MeasurableSet` hypotheses, matching the standard
-ZFC requirement that countably additive measures live on σ-algebras (the
-existing single-axis `ProjectionValuedMeasure` in
-`OSReconstruction/vNA/MeasureTheory/SpectralStieltjes.lean` does *not*
-gate, but should — flagged for separate audit).
-
 This axiom is **not yet proved** in this repo. The classical proof goes via
-Bochner's theorem (already in the `bochner` repo) applied to the continuous
-positive-definite function `a ↦ ⟨ψ, U(a) ψ⟩`, polarization to a sesquilinear
-measure, and projection-valuedness from the group law on `U`. Discharging
-the axiom is scheduled as a follow-up project (~5 weeks per current
-calibration; see `MEMORY.md` formalization estimates).
+Bochner's theorem (already in the `bochner` repo, `Bochner/Main.lean:1190`,
+proved) applied to the continuous positive-definite function
+`a ↦ ⟨ψ, U(a) ψ⟩`, polarization to a sesquilinear measure, and
+projection-valuedness from the group law on `U`. Discharging the axiom is
+scheduled as a follow-up project (~5 weeks per current calibration).
 
 ## Vetting status
 
-Vetted via Gemini chat (2026-05-03):
+Vetted via Gemini chat (2026-05-03) and Codex review:
 
-- Statement of `snag_theorem` itself: **excellent** — matches Reed-Simon
-  Theorem VIII.12 perfectly. The diagonal scalar inversion uniquely
-  determines the PVM via polarization + uniqueness of Fourier transform
-  on finite measures.
-- Hypotheses: exactly the right set (strong continuity + group +
-  unitary + identity element).
-- Edge cases: non-vacuous; `n = 0` collapses to a Dirac at `0`; `H = {0}`
-  is the trivial PVM.
-- Initial draft of the PVM structure required `idempotent`, `selfAdjoint`,
-  `inter`, `sigma_additive` on *all subsets*, which was flagged as
-  mathematically inconsistent (no non-trivial measure on the full power
-  set of `ℝⁿ` in ZFC). Fixed by gating all axioms behind `MeasurableSet`.
+- Statement of `snag_theorem` itself: matches Reed-Simon Theorem VIII.12.
+  Hypothesis set (strong continuity + group + unitary + identity) is
+  exactly the textbook set. Diagonal scalar inversion uniquely determines
+  the PVM via polarization + Fourier uniqueness on finite measures.
+- Initial draft of the PVM structure required PVM axioms on *all*
+  `Set α`; flagged by Gemini as ZFC-inconsistent (no non-trivial
+  countably additive measure on the full power set of `ℝⁿ`). Fixed
+  initially by gating axioms behind `MeasurableSet`, then strengthened
+  per Codex review by indexing `proj` itself on measurable sets so the
+  uniqueness claim is over genuine measurable-set-indexed data only.
+- Initial draft also defined `diagonalMeasure := 0` as a placeholder,
+  which (together with the axiom statement quantifying the Fourier
+  formula against that placeholder) was inconsistent — it forced
+  `⟨ψ, ψ⟩ = 0` for the identity representation on `ℂ`. Fixed by
+  removing the def and existentially binding the measure inside the
+  axiom statement, with an explicit characterization on measurable sets
+  via `‖E(B) ψ‖²`.
 
 Audit table entry:
 
 | Axiom | File:Line | Rating | Sources | Notes |
 |-------|-----------|--------|---------|-------|
-| `snag_theorem` | SNAGTheorem.lean | Standard | GR, LP | Reed-Simon I VIII.12; Schmüdgen 5.21; Birman-Solomjak VI.5.1 |
+| `snag_theorem` | SNAGTheorem.lean | Standard | GR, PR, LP | Reed-Simon I VIII.12; Schmüdgen 5.21; Birman-Solomjak VI.5.1 |
 -/
 
 namespace OSReconstruction
@@ -106,80 +105,58 @@ variable {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
 /-- A projection-valued measure on a measurable space `α` valued in
 projections on a Hilbert space `H`.
 
-The defining axioms `idempotent`, `selfAdjoint`, `inter`, `sigma_additive`
-are gated behind `MeasurableSet` hypotheses. Gating is essential: in ZFC
-no non-trivial countably additive measure is defined on the full power
-set of `ℝⁿ` (Vitali-style obstruction), so the PVM is only meaningful on
-the σ-algebra `MeasurableSpace α`.
+The underlying assignment `proj` takes a *pair* of a set and a proof that
+it is measurable. This eliminates "junk" data on non-measurable subsets:
+in ZFC there is no non-trivial countably additive measure defined on the
+full power set of `ℝⁿ` (Vitali-style obstruction), so the PVM is
+mathematically meaningful only on the σ-algebra `MeasurableSpace α`, and
+making the dependency explicit in the type is what allows uniqueness in
+the SNAG theorem to be a genuine extensional statement.
 
 Generalizes `OSReconstruction.vNA.MeasureTheory.SpectralStieltjes.ProjectionValuedMeasure`
-(which is specialized to `α = ℝ` and stated without explicit measurability
-guards — those guards are equally needed there but the existing structure
-predates this audit). The σ-additivity is stated in the strong operator
-topology. -/
+(specialized to `α = ℝ` and indexed on `Set ℝ` directly — that older
+structure should be retrofitted with the same gating in a separate audit).
+The σ-additivity is in the strong operator topology. -/
 structure ProjectionValuedMeasureOn (α : Type*) [MeasurableSpace α]
     (H : Type u) [NormedAddCommGroup H] [InnerProductSpace ℂ H]
     [CompleteSpace H] where
-  /-- The projection associated with each subset.
-
-  Only the values on `MeasurableSet`s carry meaning; the assignment on
-  non-measurable sets is unconstrained ("junk"). -/
-  proj : Set α → (H →L[ℂ] H)
+  /-- The projection associated with each *measurable* subset. -/
+  proj : ∀ B : Set α, MeasurableSet B → (H →L[ℂ] H)
   /-- `E(∅) = 0`. -/
-  empty : proj ∅ = 0
+  empty : proj ∅ MeasurableSet.empty = 0
   /-- `E(univ) = id`. -/
-  univ : proj Set.univ = ContinuousLinearMap.id ℂ H
-  /-- Each `E(B)` is idempotent on measurable `B`: `E(B)² = E(B)`. -/
-  idempotent : ∀ B, MeasurableSet B → proj B ∘L proj B = proj B
-  /-- Each `E(B)` is self-adjoint on measurable `B`: `E(B)* = E(B)`. -/
-  selfAdjoint : ∀ B, MeasurableSet B → (proj B).adjoint = proj B
-  /-- Multiplicativity on measurable sets:
-      `E(B ∩ C) = E(B) ∘ E(C)` for measurable `B, C`. (Combined with
-      idempotence + self-adjointness this implies pairwise commutativity
+  univ : proj Set.univ MeasurableSet.univ = ContinuousLinearMap.id ℂ H
+  /-- Each `E(B)` is idempotent. -/
+  idempotent : ∀ B (hB : MeasurableSet B),
+    proj B hB ∘L proj B hB = proj B hB
+  /-- Each `E(B)` is self-adjoint. -/
+  selfAdjoint : ∀ B (hB : MeasurableSet B),
+    (proj B hB).adjoint = proj B hB
+  /-- Multiplicativity: `E(B ∩ C) = E(B) ∘ E(C)`. (Combined with idempotence
+      and self-adjointness this implies pairwise commutativity
       `E(B) E(C) = E(C) E(B)`.) -/
-  inter : ∀ B C, MeasurableSet B → MeasurableSet C →
-    proj (B ∩ C) = proj B ∘L proj C
+  inter : ∀ B C (hB : MeasurableSet B) (hC : MeasurableSet C),
+    proj (B ∩ C) (hB.inter hC) = proj B hB ∘L proj C hC
   /-- σ-additivity in the strong operator topology, on measurable
       pairwise-disjoint families. -/
-  sigma_additive : ∀ (B : ℕ → Set α), (∀ i, MeasurableSet (B i)) →
+  sigma_additive : ∀ (B : ℕ → Set α) (hB : ∀ i, MeasurableSet (B i)),
     (∀ i j, i ≠ j → Disjoint (B i) (B j)) →
-    ∀ x : H, Filter.Tendsto (fun n => ∑ i ∈ Finset.range n, proj (B i) x)
-      Filter.atTop (nhds (proj (⋃ i, B i) x))
-
-/-- The diagonal scalar measure of a vector `ψ` under a PVM.
-
-For each `ψ`, the assignment `B ↦ Re ⟨ψ, E(B) ψ⟩` is a finite positive Borel
-measure on `α` of total mass `‖ψ‖²`, by self-adjointness + idempotence of
-`E(B)` (so `⟨ψ, E(B) ψ⟩ = ‖E(B) ψ‖²` is real and nonneg) and σ-additivity in
-SOT.
-
-This is the Wightman / Schwinger spectral measure of `ψ` under the unitary
-representation generated by the PVM. -/
-noncomputable def ProjectionValuedMeasureOn.diagonalMeasure
-    {α : Type*} [MeasurableSpace α]
-    {H : Type u} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
-    [CompleteSpace H]
-    (_E : ProjectionValuedMeasureOn α H) (_ψ : H) : Measure α :=
-  -- Constructed via Carathéodory from the function `B ↦ ‖E.proj B ψ‖²`.
-  -- Implementation deferred (uses standard PVM-to-scalar-measure construction;
-  -- generalizes the single-axis `SpectralDistribution.toMeasure` from
-  -- `vNA/MeasureTheory/SpectralStieltjes.lean`).
-  0  -- placeholder; real definition via Hahn-Carathéodory once PVM API matures
+    ∀ x : H, Filter.Tendsto
+      (fun n => ∑ i ∈ Finset.range n, proj (B i) (hB i) x)
+      Filter.atTop (nhds (proj (⋃ i, B i) (MeasurableSet.iUnion hB) x))
 
 /-- **SNAG theorem (Stone-Naimark-Ambrose-Godement).**
 
 Every strongly continuous unitary representation `U : ℝⁿ → 𝒰(H)` is the
-Fourier transform of a unique projection-valued measure `E` on `Borel(ℝⁿ)`:
-$$U(a) = \int_{\mathbb{R}^n} e^{i\, a \cdot p}\, dE(p)$$
-in strong-operator sense. Equivalently, the `n` commuting infinitesimal
-generators `P_j = -i ∂_{a_j} U` (closed self-adjoint) admit a unique joint
-spectral resolution.
+Fourier transform of a unique projection-valued measure `E` on `Borel(ℝⁿ)`.
+For each vector `ψ ∈ H` there is an associated finite positive Borel
+measure (the *diagonal spectral measure of `ψ`*) characterized by
+`μ_ψ(B) = ‖E(B) ψ‖²` on measurable `B`, and the matrix element
+`⟨ψ, U(a) ψ⟩` is its Fourier transform.
 
-The conclusion is stated via the diagonal scalar measure: for every vector
-`ψ ∈ H`, the matrix element `⟨ψ, U(a) ψ⟩` equals the Fourier integral of
-`a ↦ exp(i ⟨a, p⟩)` against the diagonal measure of `ψ`. The full PVM
-structure (off-diagonal sesquilinear form, σ-additivity in SOT) is captured
-by the existential.
+The full PVM structure (off-diagonal sesquilinear form, σ-additivity in
+SOT) is implied by the diagonal data via polarization and the uniqueness
+of Fourier transforms on finite measures.
 
 Specializes to **Stone's theorem** at `n = 1`.
 
@@ -187,14 +164,14 @@ Specializes to **Stone's theorem** at `n = 1`.
 Birman-Solomjak §VI.5; Schmüdgen Theorem 5.21.
 
 **Strategy (deferred):** For each `ψ ∈ H`, the function
-`a ↦ ⟨ψ, U(a) ψ⟩` is continuous positive-definite on `ℝⁿ` with value `‖ψ‖²`
-at `0`. Bochner's theorem gives a finite positive Borel measure `μ_ψ` on
+`a ↦ ⟨ψ, U(a) ψ⟩` is continuous positive-definite on `ℝⁿ` with value
+`‖ψ‖²` at `0`. Bochner's theorem (proved in the `bochner` repo at
+`Bochner/Main.lean:1190`) gives a finite positive Borel measure `μ_ψ` on
 `ℝⁿ` whose Fourier transform is this matrix element. Polarize to a
 sesquilinear `μ_{ψ,φ}`. The bounded sesquilinear form `B ↦ μ_{·,·}(B)`
 defines a bounded operator `E(B) ∈ B(H)` for each Borel `B`.
-Multiplicativity `μ_ψ(B₁ ∩ B₂) = ⟨E(B₁)ψ, E(B₂)ψ⟩` (from the group law
-`U(a+b) = U(a) U(b)`) gives `E(B)² = E(B)`; self-adjointness from `μ_ψ`
-real-valued. (NOT VERIFIED — to be vetted via Gemini deep-think + Codex.) -/
+Multiplicativity from the group law `U(a+b) = U(a) U(b)` gives
+`E(B)² = E(B)`; self-adjointness from `μ_ψ` real-valued. -/
 axiom snag_theorem
     {n : ℕ} {H : Type u}
     [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
@@ -204,10 +181,14 @@ axiom snag_theorem
     (_hU_unit : ∀ a, U a ∈ unitary (H →L[ℂ] H))
     (_hU_cont : ∀ ψ : H, Continuous (fun a => U a ψ)) :
     ∃! E : ProjectionValuedMeasureOn (Fin n → ℝ) H,
-      ∀ a : Fin n → ℝ, ∀ ψ : H,
-        (@inner ℂ H _ ψ (U a ψ) : ℂ) =
-          ∫ p : Fin n → ℝ,
-            Complex.exp (Complex.I * (∑ i, (a i : ℂ) * ((p i : ℝ) : ℂ)))
-              ∂(ProjectionValuedMeasureOn.diagonalMeasure E ψ)
+      ∀ ψ : H, ∃ μ : Measure (Fin n → ℝ),
+        IsFiniteMeasure μ ∧
+        (∀ B (hB : MeasurableSet B),
+          μ B = ENNReal.ofReal (‖E.proj B hB ψ‖^2)) ∧
+        ∀ a : Fin n → ℝ,
+          (@inner ℂ H _ ψ (U a ψ) : ℂ) =
+            ∫ p : Fin n → ℝ,
+              Complex.exp (Complex.I *
+                (∑ i, (a i : ℂ) * ((p i : ℝ) : ℂ))) ∂μ
 
 end OSReconstruction
