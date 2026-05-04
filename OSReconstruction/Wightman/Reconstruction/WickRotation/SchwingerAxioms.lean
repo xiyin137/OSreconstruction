@@ -4284,6 +4284,21 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   -- combine `hgood` (from Step A) with the OPTR-support positivity from
   -- `hsupp_f, hsupp_g`. Used inline at the dominated-convergence pointwise
   -- application below.
+  -- Get the tail bound from `cluster_tail_bound` with δ := ε/2.
+  obtain ⟨M₀, hM₀_pos, htail⟩ := cluster_tail_bound (Wfn := Wfn) (n := n) (m := m)
+    f g hsupp_f hsupp_g (ε / 2) (by linarith)
+  -- The cluster sorry remains, but the architecture now has the tail-bound
+  -- M₀ extracted and ready for the bounded-region argument. The remaining
+  -- work for the outer cluster theorem:
+  -- (1) Establish the bounded-region DCT result: ∃ R₁ > 0,
+  --     ∀ a (with conditions and |⃗a| > R₁),
+  --     ‖∫_{B(M₀)^c indicator complement} (difference integrand)‖ < ε/2.
+  --     Uses `W_analytic_BHW_cluster_pointwise_aux` for pointwise cluster
+  --     plus uniform-on-B(M₀) integrable dominator (the unified
+  --     `cluster_uniform_dominator` form discussed in the Step D restructure
+  --     comment above).
+  -- (2) Combine: |LHS - RHS| ≤ tail + bounded ≤ ε/2 + ε/2 = ε for
+  --     |⃗a| > max(... tail R, R₁).
   --
   -- Step D: Construct a uniform-in-a integrable dominator using
   -- `hasForwardTubeGrowth_of_wightman` (polynomial growth) + Schwartz decay
