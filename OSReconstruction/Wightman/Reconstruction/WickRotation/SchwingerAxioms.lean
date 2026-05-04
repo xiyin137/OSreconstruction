@@ -3997,27 +3997,53 @@ private theorem cluster_disconnected_term_integrable
   exact hprod
 
 /-- Auxiliary: forward-tube growth bound on the shifted joint kernel,
-expressed as polynomial growth in `(‖x_n‖, ‖x_m‖, |⃗a|)` divided by
-`infDist`-style coincidence singularity.
+in the large-shift regime.
 
-Discharge from `hasForwardTubeGrowth_of_wightman` for `n + m` points,
-specialized to the σ-permuted Wick configurations (using the same
-`exists_perm_wick_in_forwardTube_of_distinct_positive` machinery). -/
+**Statement (large-|⃗a| regime).** There exist constants `C, N, q` from
+`hasForwardTubeGrowth_of_wightman` for `(n + m)` points such that, for
+`(x_n, x_m, a)` satisfying `|⃗a|² > 4 (‖x_n‖ + ‖x_m‖)² + 4` (i.e., the
+spatial shift dominates the test-function arguments) and joint distinct
+times, the joint Wick-rotated kernel satisfies
+  `‖F_ext(wick(append x_n (x_m + a)))‖ ≤ C(1+‖x_n‖+‖x_m‖+|⃗a|)^N · 2^{q+1} / |⃗a|^{q+1}`.
+
+Two ingredients:
+
+1. **Polynomial bound from forward-tube growth.** The σ-sorted Wick-rotated
+   joint config lies in `ForwardTube d (n + m)` (via
+   `exists_perm_wick_in_forwardTube_of_distinct_positive` applied to
+   `Fin.append x_n (x_m + a)`, which has joint distinct positive times).
+   `hasForwardTubeGrowth_of_wightman` then gives
+     `‖K_{n+m}(z_sorted)‖ · infDist(joint_sorted, coincidence)^{q+1}
+        ≤ C(1+‖z_sorted‖)^N`.
+   BHW permutation invariance bridges `‖K_{n+m}(z)‖ = ‖K_{n+m}(z_sorted)‖`.
+
+2. **Lower bound on infDist in the large-|⃗a| regime.** Inter-block distance
+   in the appended config is at least
+     `|⃗a| - max(|x_n^i_spatial - x_m^j_spatial|) ≥ |⃗a| - (‖x_n‖+‖x_m‖) ≥ |⃗a|/2`
+   when `|⃗a| > 2(‖x_n‖+‖x_m‖)`. Intra-block distances are positive a.e.
+   (joint distinct times). So `infDist ≥ min(intra_n, intra_m, |⃗a|/2)`,
+   bounded below by `|⃗a|/2` in the large-|⃗a| regime (assuming intra-block
+   gaps don't shrink to 0; for a.e. configurations this is true with
+   positive lower bound depending only on (x_n, x_m), not on a).
+
+This statement is for the **large-|⃗a| regime only**; the
+complementary "small-|⃗a|" or "large-(x_n, x_m)" regime is handled by
+Schwartz decay of f, g (in `cluster_tail_bound`).
+
+Sorry pending the careful infDist bookkeeping (~80 lines). -/
 private theorem cluster_joint_kernel_polynomial_bound
     {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ) :
     ∃ C : ℝ, ∃ N q : ℕ, 0 < C ∧
       ∀ a : SpacetimeDim d, a 0 = 0 →
       ∀ᵐ xy : NPointDomain d n × NPointDomain d m ∂MeasureTheory.volume,
+        (∑ i : Fin d, (a (Fin.succ i)) ^ 2) > 4 * (‖xy.1‖ + ‖xy.2‖) ^ 2 + 4 →
         ‖F_ext_on_translatedPET_total Wfn
             (fun k => wickRotatePoint (Fin.append xy.1
               (fun j μ => xy.2 j μ + a μ) k))‖ ≤
-          C * (1 + ‖xy.1‖) ^ N * (1 + ‖xy.2‖) ^ N *
-            (1 + (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt) ^ N := by
-  -- Discharge from `hasForwardTubeGrowth_of_wightman Wfn (n + m)`:
-  -- bounds ‖K_{n+m}(z)‖ ≤ C(1+‖z‖)^N / infDist(z, coincidence)^{q+1}.
-  -- The `infDist` factor is absorbed into the test functions' `vanishesToInfiniteOrder`
-  -- in the integrand bound (not stated here for simplicity; the named-bound
-  -- form here is the polynomial-growth side after that absorption).
+          C * (1 + ‖xy.1‖ + ‖xy.2‖ +
+                (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt) ^ N *
+            (2 : ℝ) ^ (q + 1) /
+            (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt ^ (q + 1) := by
   sorry
 
 /-- Auxiliary: tail bound for the difference integrand. For any ε > 0, choose
