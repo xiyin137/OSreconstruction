@@ -4130,7 +4130,27 @@ private theorem cluster_joint_kernel_polynomial_bound
   -- For this reason, the statement here may need adjustment when D3
   -- is being written. Both D2 and D3 may benefit from being merged into
   -- a single "tail integral bound" theorem.
+  -- Filter on the a.e. set where the joint config has all distinct times.
+  -- Since `a 0 = 0`, joint times equal `Fin.append xy.1 xy.2` times, so
+  -- distinctness pushes through Fubini.
   filter_upwards with xy _hregime
+  -- For each "good" (xy, hregime), apply the forward-tube growth bound to
+  -- the σ-permuted shifted joint configuration.
+  -- Define the joint Wick-rotated config (with spatial shift on m-block).
+  set joint : NPointDomain d (n + m) :=
+    Fin.append xy.1 (fun j μ => xy.2 j μ + a μ) with hjoint_def
+  -- The joint Wick-rotated config (this is the input to F_ext).
+  set jointWick : Fin (n + m) → Fin (d + 1) → ℂ :=
+    fun k => wickRotatePoint (joint k) with hjointWick_def
+  -- Goal is a bound on `‖(W_analytic_BHW Wfn (n + m)).val (...)‖`. This
+  -- requires a chain of bridges:
+  --   F_ext_total → W_analytic on PET → W_analytic on ForwardTube via
+  --   permutation → spectrum_condition.choose value → forward-tube
+  --   growth bound applied at the sorted positive-time-shifted config.
+  --
+  -- The full chain (~120 lines) mirrors `wick_rotated_kernel_mul_zeroDiagonal_integrable`
+  -- (`SchwingerTemperedness.lean:1224ff`) adapted to the joint case.
+  -- Discharge deferred.
   sorry
 
 /-- Auxiliary: bounded-region DCT for the difference integrand. For each
