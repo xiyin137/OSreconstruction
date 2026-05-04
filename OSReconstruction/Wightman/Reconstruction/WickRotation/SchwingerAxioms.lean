@@ -3589,6 +3589,49 @@ theorem append_realSpatialShift_mem_PET_of_permutedForwardTube {n m : ℕ}
   rw [← BHW_permutedForwardTube_eq] at hpft
   exact permutedForwardTube_subset_permutedExtendedTube_BHW π hpft
 
+/-- **Pointwise cluster property of BHW extension on the permuted forward tube.**
+
+    Generalization of `bhw_pointwise_cluster_forwardTube` (below) that drops
+    the contiguous-Fin.append-in-tube hypothesis in favor of an existential
+    permutation hypothesis: there is *some* permutation `σ` of the joint
+    `(n+m)` indices that puts the joint config in the forward tube.
+
+    This is the form needed by `W_analytic_cluster_integral` for OPTR-supported
+    test functions: each block separately sits in ForwardTube (each block has
+    distinct positive times by OPTR), but inter-block time ordering is *not*
+    guaranteed, so the joint Fin.append config is in `ForwardTube d (n+m)`
+    only on a measure-zero set. Sorting all `(n+m)` times by an appropriate
+    permutation `σ` puts the σ-permuted config in ForwardTube — and BHW
+    permutation invariance of `W_analytic` lets us reduce the cluster
+    statement to that case.
+
+    Mathematically: the cluster decomposition of an `(n+m)`-point Wightman
+    function holds whenever any subset of `m` points is moved spatially to
+    infinity, not just the contiguous suffix. This follows from R4 (cluster
+    decomposition for the `(n,m)`-split) + the symmetry of the Wightman
+    function under index permutations preserving forward-cone causality.
+    Reference: Streater-Wightman §2.4 + Theorem 3-5; Glimm-Jaffe §19.4.
+
+    **Discharge plan (~few hundred lines):** From the existing
+    `bhw_pointwise_cluster_forwardTube` + BHW permutation invariance of
+    `W_analytic_BHW` (axiom in `BHWCore.lean`) + the symmetry property of
+    cluster under index relabeling (R4 + symmetry of Wightman functions). -/
+axiom bhw_pointwise_cluster_permutedForwardTube
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ)
+    (z_n : Fin n → Fin (d + 1) → ℂ) (z_m : Fin m → Fin (d + 1) → ℂ)
+    (_hz_n : IsEuclidean z_n) (_hz_m : IsEuclidean z_m)
+    (hmem_n : z_n ∈ ForwardTube d n)
+    (hmem_m : z_m ∈ ForwardTube d m)
+    (hperm : ∃ σ : Equiv.Perm (Fin (n + m)),
+      (fun k => Fin.append z_n z_m (σ k)) ∈ ForwardTube d (n + m))
+    (ε : ℝ) (hε : ε > 0) :
+    ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ‖(W_analytic_BHW Wfn (n + m)).val
+            (Fin.append z_n (fun k μ => z_m k μ + ↑(a μ))) -
+          (W_analytic_BHW Wfn n).val z_n *
+          (W_analytic_BHW Wfn m).val z_m‖ < ε
+
 /-- **Pointwise cluster property of BHW extension on the forward tube.**
 
     For points z_n, z_m in the forward tube whose concatenation is also in
