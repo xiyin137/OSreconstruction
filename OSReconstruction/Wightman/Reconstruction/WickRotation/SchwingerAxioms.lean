@@ -4345,28 +4345,25 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   --   bounded part (< ε/2 by hbounded) + tail part (< ε/2 by htail),
   -- giving total < ε.
   refine ⟨R₁, hR₁_pos, fun a ha0 hlarge g_a hga => ?_⟩
-  -- Reduce LHS-RHS to an iterated integral via Fubini (`integral_fin_append_split`)
-  -- and translation invariance of the m-block kernel:
-  --   LHS - RHS = ∫_n ∫_m
-  --     [ K_{n+m}(wick(append x_n x_m)) f(x_n) g_a(x_m) -
-  --       K_n(wick x_n) f(x_n) · K_m(wick x_m) g_a(x_m) ] dx_m dx_n
-  -- (the apparent g vs g_a discrepancy in the cluster theorem's RHS
-  -- collapses since `∫ K_m(wick x_m) g_a(x_m) dx_m = ∫ K_m(wick x_m) g(x_m) dx_m`
-  -- by spatial translation invariance of K_m).
-  --
-  -- Then split (x_n, x_m) ∈ B(M₀) ⊔ B(M₀)ᶜ via
-  -- `Set.indicator_self_add_compl_self_eq_one`-style rewriting:
-  --   integrand = indicator B integrand + indicator B^c integrand
-  -- giving
-  --   LHS - RHS = ∫ indicator_B integrand + ∫ indicator_B^c integrand.
-  -- Triangle inequality + apply `hbounded a ha0 hlarge g_a hga` (gives ε/2)
-  -- and `htail a ha0 g_a hga` (gives ε/2): total < ε.
-  --
-  -- The remaining sorry is this final algebraic + Fubini manipulation.
-  -- Mathlib primitives: `integral_fin_append_split` (PR #72),
-  -- `Set.indicator`, `MeasureTheory.integral_add` (when both addends
-  -- integrable), `Set.indicator_self_add_compl_self`, triangle
-  -- inequality on norms, then numerical `linarith`.
+  -- Apply the bounded sub-lemma at this `a, g_a`.
+  have hb_at_a := hbounded a ha0 hlarge g_a hga
+  -- Apply the tail sub-lemma at this `a, g_a` (note: htail's bound is uniform
+  -- in `a`, doesn't need `hlarge`).
+  have ht_at_a := htail a ha0 g_a hga
+  -- The cluster theorem's LHS - RHS is bounded by the sum of the two sub-lemma
+  -- bounds (ε/2 + ε/2 = ε). The combine step requires showing that
+  -- LHS - RHS = ∫ indicator_B (joint diff) + ∫ indicator_B^c (joint diff)
+  -- via:
+  --   1. Fubini: LHS = ∫_n ∫_m K_{n+m}(wick(append x_n x_m)) f(x_n) g_a(x_m).
+  --   2. Fubini: RHS = ∫_n ∫_m K_n(wick x_n) K_m(wick x_m) f(x_n) g(x_m).
+  --   3. Spatial translation invariance: ∫_m K_m(wick x_m) g(x_m) =
+  --      ∫_m K_m(wick x_m) g_a(x_m), so RHS = ∫_n ∫_m K_n K_m f g_a.
+  --   4. Subtract: LHS - RHS = ∫ over product (K_{n+m} - K_n K_m) f g_a.
+  --   5. Indicator decomposition: ∫_full = ∫_B + ∫_{B^c}.
+  --   6. Triangle inequality: ‖∫_full‖ ≤ ‖∫_B‖ + ‖∫_{B^c}‖ < ε/2 + ε/2 = ε.
+  -- Step 6 numerical bound is `linarith` once steps 1–5 are in place.
+  -- The whole thing fits as an `linarith [hb_at_a, ht_at_a]` modulo proving
+  -- the LHS - RHS = ‖∫_B‖ + ‖∫_{B^c}‖ identity.
   sorry
 
 /-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
