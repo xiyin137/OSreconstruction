@@ -4859,7 +4859,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         rcases Submodule.mem_sup.mp hx_sup with ⟨s, hs, k, hk, hsk⟩
         exact ⟨⟨s, hs⟩, ⟨k, hk⟩, hsk⟩
 
-      theorem BHW.sourceFullFrameGaugeSlice_exists
+      noncomputable def BHW.sourceFullFrameGaugeSlice_exists
           (d : Nat)
           {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
           (hM0 : IsUnit M0.det) :
@@ -4876,7 +4876,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (BHW.sourceFullFrameOrientedGram d M0) :=
           BHW.sourceFullFrameOrientedDifferential_range_eq_tangent
             (d := d) hM0
-        obtain ⟨S, hS⟩ := exists_isCompl K
+        let S := Classical.choose (Submodule.exists_isCompl K)
+        have hS : IsCompl S K :=
+          (Classical.choose_spec (Submodule.exists_isCompl K)).symm
         let T :=
           BHW.sourceFullFrameOrientedTangentSpace d
             (BHW.sourceFullFrameOrientedGram d M0)
@@ -4987,26 +4989,33 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	            BHW.sourceFullFrameOrientedTangentSpace d
 	              (BHW.sourceFullFrameOrientedGram d M0)
 
-	      theorem BHW.specialComplexLorentzLieAlgebra_finrank
-	          (d : Nat) :
-	          Module.finrank ℂ (BHW.specialComplexLorentzLieAlgebra d) =
-	            (d + 1) * d / 2
-
-	      theorem BHW.sourceFullFrameOrbitTangent_finrank
+	      theorem BHW.sourceFullFrameOrientedDifferential_constructedGram
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-	          (hM0 : IsUnit M0.det) :
-	          Module.finrank ℂ (BHW.sourceFullFrameOrbitTangent d M0) =
-	            (d + 1) * d / 2
+	          (hM0 : IsUnit M0.det)
+	          {Y : BHW.SourceFullFrameOrientedCoord d}
+	          (hYsym : ∀ a b : Fin (d + 1), Y.1 a b = Y.1 b a) :
+	          let G : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := Matrix.of Y.1
+	          let B : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+	            (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	              ComplexLorentzGroup.ηℂ (d := d))
+	          Matrix.of
+	              (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).1 = G
 
-	      theorem BHW.sourceFullFrameOrientedTangentSpace_finrank
+	      theorem BHW.sourceFullFrameOrientedDifferential_constructedDet
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-	          (hM0 : IsUnit M0.det) :
-	          Module.finrank ℂ
-	              (BHW.sourceFullFrameOrientedTangentSpace d
-	                (BHW.sourceFullFrameOrientedGram d M0)) =
-	            (d + 1) * (d + 2) / 2
+	          (hM0 : IsUnit M0.det)
+	          {Y : BHW.SourceFullFrameOrientedCoord d}
+	          (hY : Y ∈ BHW.sourceFullFrameOrientedTangentSpace d
+	            (BHW.sourceFullFrameOrientedGram d M0)) :
+	          let G : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := Matrix.of Y.1
+	          let B : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+	            (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	              ComplexLorentzGroup.ηℂ (d := d))
+	          Matrix.of
+	              (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).1 = G →
+	          (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).2 = Y.2
 
 	      theorem BHW.sourceFullFrameOrientedDifferential_range_eq_tangent
 	          (d : Nat)
@@ -5017,10 +5026,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceFullFrameOrientedTangentSpace d
               (BHW.sourceFullFrameOrientedGram d M0)
 
-      theorem BHW.sourceFullFrameSlice_differential_linearEquiv
+      noncomputable def BHW.sourceFullFrameSlice_differential_linearEquiv
           (d : Nat)
           {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-          (hM0 : IsUnit M0.det)
           (S : BHW.SourceFullFrameGaugeSliceData d M0) :
           LinearEquiv ℂ S.slice
             (BHW.sourceFullFrameOrientedTangentSpace d
@@ -5030,7 +5038,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.sourceFullFrameSlice_restricted_range_eq_tangent
           (d : Nat)
           {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-          (hM0 : IsUnit M0.det)
           (S : BHW.SourceFullFrameGaugeSliceData d M0) :
           LinearMap.range
               ((BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap.comp
@@ -5256,115 +5263,62 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	            0
 	            ((continuous_subtype_val.differentiableAt.const_add M0))
 
-	      theorem BHW.sourceFullFrameSlice_derivative_eq
+	      theorem BHW.sourceFullFrameGaugeSliceMap_hasFDerivAt
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
 	          (hM0 : IsUnit M0.det)
 	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
-	          (fderiv ℂ
-	            (fun X : S.slice =>
-	              BHW.sourceFullFrameOrientedGramCoord d
-	                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	            0).toLinearMap =
-	            (BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap.comp
-	              S.slice.subtype := by
-	        have hderiv :=
-	          BHW.sourceFullFrameOrientedGram_hasFDerivAt
-	            (d := d) hM0
-	        -- Translate by `M0` and restrict the derivative to the chosen slice.
-	        simpa [Function.comp_def, ContinuousLinearMap.coe_comp,
-	          ContinuousLinearMap.comp_apply] using
-	          hderiv.comp 0
-	            (S.slice.subtypeL.hasFDerivAt.const_add M0)
+	          HasFDerivAt
+	            (BHW.sourceFullFrameGaugeSliceMap d M0 S)
+	            ((BHW.sourceFullFrameOrientedDifferentialCLM d M0).comp
+	              S.slice.subtypeL) 0
 
-	      theorem BHW.sourceFullFrameSlice_derivative_range_eq_tangent
+	      theorem BHW.sourceFullFrameGaugeSliceMap_hasStrictFDerivAt
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
 	          (hM0 : IsUnit M0.det)
 	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
-	          ((LinearMap.range
-	              (fderiv ℂ
-	                (fun X : S.slice =>
-	                  BHW.sourceFullFrameOrientedGramCoord d
-	                    (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	                0).toLinearMap :
-	              Submodule ℂ (BHW.SourceFullFrameOrientedCoord d)) : Set
-	                (BHW.SourceFullFrameOrientedCoord d)) =
-	            {Y | Y ∈ BHW.sourceFullFrameSymmetricCoordSubmodule d ∧
-	              BHW.sourceFullFrameOrientedEquation_deriv d
-	                (BHW.sourceFullFrameOrientedGramCoord d M0) Y = 0} := by
-	        rw [BHW.sourceFullFrameSlice_derivative_eq (d := d) hM0 S]
-	        have hrange :=
-	          BHW.sourceFullFrameOrientedDifferential_range_eq_tangent
-	            (d := d) hM0
-	        have hiso := S.differential_iso
-	        -- The slice complement kills the kernel, so the range of the
-	        -- restricted derivative is the same tangent range.
-	        have hslice_range :
-	            LinearMap.range
-	                ((BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap.comp
-	                  S.slice.subtype) =
-	              BHW.sourceFullFrameOrientedTangentSpace d
-	                (BHW.sourceFullFrameOrientedGram d M0) :=
-	          BHW.sourceFullFrameSlice_restricted_range_eq_tangent
-	            (d := d) hM0 S
-	        rw [hslice_range]
-	        ext Y
-	        constructor
-	        · intro hY
-	          exact
-	            BHW.sourceFullFrameOrientedTangentSpace_mem_iff_symmetric_deriv_zero
-	              (d := d) hM0 Y |>.1 hY
-	        · intro hY
-	          exact
-	            BHW.sourceFullFrameOrientedTangentSpace_mem_iff_symmetric_deriv_zero
-	              (d := d) hM0 Y |>.2 hY
+	          HasStrictFDerivAt
+	            (BHW.sourceFullFrameGaugeSliceMap d M0 S)
+	            ((BHW.sourceFullFrameOrientedDifferentialCLM d M0).comp
+	              S.slice.subtypeL) 0
 
-	      theorem BHW.sourceFullFrameSlice_derivative_ker_eq_bot
+	      theorem BHW.sourceFullFrameGaugeSliceMap_fderiv_eq
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          fderiv ℂ (BHW.sourceFullFrameGaugeSliceMap d M0 S) 0 =
+	            (BHW.sourceFullFrameOrientedDifferentialCLM d M0).comp
+	              S.slice.subtypeL
+
+	      theorem BHW.sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          LinearMap.range
+	              (fderiv ℂ (BHW.sourceFullFrameGaugeSliceMap d M0 S)
+	                0).toLinearMap =
+	            BHW.sourceFullFrameOrientedTangentSpace d
+	              (BHW.sourceFullFrameOrientedGram d M0)
+
+	      theorem BHW.sourceFullFrameGaugeSliceMap_fderiv_kernel_eq_bot
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
 	          (hM0 : IsUnit M0.det)
 	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
 	          LinearMap.ker
-	              (fderiv ℂ
-	                (fun X : S.slice =>
-	                  BHW.sourceFullFrameOrientedGramCoord d
-	                    (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	                0).toLinearMap = ⊥ := by
-        rw [BHW.sourceFullFrameSlice_derivative_eq (d := d) hM0 S]
-        ext X
-        constructor
-        · intro hX
-          have hIsoVal :
-              (S.differential_iso X :
-                BHW.SourceFullFrameOrientedCoord d) = 0 := by
-            simpa [S.differential_iso_eq X,
-              BHW.sourceFullFrameOrientedDifferentialCLM,
-              BHW.sourceFullFrameOrientedDifferentialLinear] using hX
-          have hIso : S.differential_iso X = 0 :=
-            Subtype.ext hIsoVal
-          have hX_zero : X = 0 :=
-            S.differential_iso.injective (by simpa using hIso)
-          exact Submodule.mem_bot.mpr hX_zero
-        · intro hX
-          simpa [Submodule.mem_bot.mp hX]
+	              (fderiv ℂ (BHW.sourceFullFrameGaugeSliceMap d M0 S)
+	                0).toLinearMap = ⊥
 
-	      theorem BHW.sourceFullFrameOrientedGramCoord_mem_hypersurface_eventually
+	      theorem BHW.sourceFullFrameGaugeSliceMap_mem_hypersurface
 	          (d : Nat)
 	          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
-	          ∀ᶠ X : S.slice in 𝓝 0,
-	            (fun X : S.slice =>
-	              BHW.sourceFullFrameOrientedGramCoord d
-	                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ))) X ∈
-	              BHW.sourceFullFrameSymmetricCoordSubmodule d ∧
-	            BHW.sourceFullFrameOrientedEquation d
-	              ((fun X : S.slice =>
-	                BHW.sourceFullFrameOrientedGramCoord d
-	                  (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ))) X) = 0 := by
-	        filter_upwards with X
-	        exact BHW.sourceFullFrameOrientedGramCoord_mem_hypersurface d
-	          (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ))
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0)
+	          (X : S.slice) :
+	          BHW.sourceFullFrameGaugeSliceMap d M0 S X ∈
+	            BHW.sourceFullFrameOrientedHypersurfaceCoord d
 
 	      theorem BHW.sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface
 	          (d : Nat) :
@@ -5373,88 +5327,128 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	        rintro H ⟨M, rfl⟩
 	        exact BHW.sourceFullFrameOrientedGramCoord_mem_hypersurface d M
 
-	      theorem BHW.sourceFullFrameSlice_localImage_eq_hypersurface
+	      def BHW.sourceFullFrameGaugeSliceMapSymmetric
+	          (d : Nat)
+	          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          S.slice -> BHW.sourceFullFrameSymmetricCoordSubmodule d :=
+	        fun X =>
+	          ⟨BHW.sourceFullFrameGaugeSliceMap d M0 S X,
+	            (BHW.sourceFullFrameGaugeSliceMap_mem_hypersurface
+	              d M0 S X).1⟩
+
+	      theorem BHW.sourceFullFrameGaugeSliceMapSymmetric_hasStrictFDerivAt
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
 	          (hM0 : IsUnit M0.det)
-          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
-          BHW.LocalHolomorphicImageEquiv
-	            (fun X : S.slice =>
-	              BHW.sourceFullFrameOrientedGramCoord d
-	                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	            0
-	            (BHW.sourceFullFrameOrientedGramCoord d M0)
-	            (BHW.sourceFullFrameOrientedHypersurfaceCoord d) := by
-	        have hreg :=
-	          BHW.sourceFullFrameOrientedHypersurface_regularInSymmetricAt
-	            (d := d) hM0
-	        have hf :=
-	          BHW.sourceFullFrameOrientedGramCoord_differentiableAt_translate
-	            d M0 S
-	        have hmap :=
-	          BHW.sourceFullFrameOrientedGramCoord_mem_hypersurface_eventually
-	            d M0 S
-	        have hrange :=
-	          BHW.sourceFullFrameSlice_derivative_range_eq_tangent
-	            (d := d) hM0 S
-	        have hker :=
-	          BHW.sourceFullFrameSlice_derivative_ker_eq_bot
-	            (d := d) hM0 S
-	        simpa [BHW.sourceFullFrameOrientedHypersurfaceCoord_eq] using
-	          BHW.localHolomorphicImageEquiv_of_regularZeroLocus_slice
-	            (S := BHW.sourceFullFrameSymmetricCoordSubmodule d)
-	            (g := BHW.sourceFullFrameOrientedEquation d)
-	            (f := fun X : S.slice =>
-	              BHW.sourceFullFrameOrientedGramCoord d
-	                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	            (x0 := 0)
-	            (y0 := BHW.sourceFullFrameOrientedGramCoord d M0)
-	            hreg hf hmap hrange hker
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          HasStrictFDerivAt
+	            (BHW.sourceFullFrameGaugeSliceMapSymmetric d M0 S)
+	            (BHW.sourceFullFrameGaugeSliceSymmetricDerivCLM d hM0 S) 0
 
-	      theorem BHW.sourceFullFrameSlice_localImage_eq_variety
+	      noncomputable def
+	          BHW.sourceFullFrameGaugeSliceKernelDerivLinearEquiv
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
 	          (hM0 : IsUnit M0.det)
-          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
-          BHW.LocalHolomorphicImageEquiv
-	            (fun X : S.slice =>
-	              BHW.sourceFullFrameOrientedGramCoord d
-	                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-	            0
-	            (BHW.sourceFullFrameOrientedGramCoord d M0)
-	            (BHW.sourceFullFrameOrientedGramVarietyCoord d) := by
-	        let L :=
-	          BHW.sourceFullFrameSlice_localImage_eq_hypersurface
-	            (d := d) hM0 S
-	        refine
-	          { U := L.U
-	            W := L.W
-	            U_open := L.U_open
-	            W_open := L.W_open
-	            x0_mem := L.x0_mem
-	            y0_mem := L.y0_mem
-	            map_mem := ?_
-	            inv := L.inv
-	            inv_holomorphic := L.inv_holomorphic
-	            inv_mem := ?_
-	            right_inv := ?_
-	            left_inv := L.left_inv }
-	        · intro X hX
-	          refine ⟨(L.map_mem X hX).1, ?_⟩
-	          exact ⟨M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ), rfl⟩
-	        · intro Y hY
-	          exact L.inv_mem Y
-	            ⟨hY.1,
-	              BHW.sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface
-	                d hY.2⟩
-	        · intro Y hY
-	          exact L.right_inv Y
-	            ⟨hY.1,
-	              BHW.sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface
-	                d hY.2⟩
-	      ```
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          S.slice ≃ₗ[ℂ]
+	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
 
-      The last theorem is the finite-dimensional holomorphic constant-rank
+	      def BHW.sourceFullFrameGaugeSliceImplicitKernelMap
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          S.slice ->
+	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker :=
+	        fun X =>
+	          ((BHW.sourceFullFrameSymmetricEquation_implicitChart d M0 hM0)
+	            (BHW.sourceFullFrameGaugeSliceMapSymmetric d M0 S X)).2
+
+	      theorem BHW.sourceFullFrameGaugeSliceImplicitKernelMap_hasStrictFDerivAt
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          HasStrictFDerivAt
+	            (BHW.sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S)
+	            (BHW.sourceFullFrameGaugeSliceKernelDerivCLM d hM0 S) 0
+
+	      noncomputable def BHW.sourceFullFrameSlice_localImage_eq_hypersurface
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+	          OpenPartialHomeomorph S.slice
+	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
+      ```
+
+      The proof of the displayed packet is now mechanical.  The symmetric
+      restricted slice map is just `sourceFullFrameGaugeSliceMap` packaged
+      with the symmetric half of
+      `sourceFullFrameGaugeSliceMap_mem_hypersurface`.  Its strict derivative
+      is proved by composing with the subtype projection and extensionality;
+      no ambient submersion theorem is needed.  The kernel derivative is a
+      linear equivalence: injectivity is reduced, after coercing
+      equality out of the kernel subtype, to
+      `sourceFullFrameGaugeSliceMap_fderiv_kernel_eq_bot`; surjectivity sends a
+      kernel vector to
+      `sourceFullFrameOrientedTangentSpace` using
+      `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_fderiv_eq_zero`
+      and then chooses a slice preimage with
+      `sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent`.  The
+	      continuous-linear equivalence needed by the inverse-function theorem is
+	      the finite-dimensional continuous upgrade of this checked linear
+	      equivalence.  The checked Lean pass now contains
+	      `hasStrictFDerivAt_submodule_codRestrict`,
+	      `sourceFullFrameGaugeSliceMapSymmetric`,
+	      `sourceFullFrameGaugeSliceMapSymmetric_zero`,
+	      `sourceFullFrameGaugeSliceMapSymmetric_hasStrictFDerivAt`,
+	      `sourceFullFrameGaugeSliceKernelDerivCLM_ker_eq_bot`,
+	      `sourceFullFrameGaugeSliceKernelDerivCLM_range_eq_top`,
+	      `sourceFullFrameGaugeSliceKernelDerivLinearEquiv`,
+	      `sourceFullFrameSymmetricEquationKernelProjection`,
+	      `sourceFullFrameSymmetricEquationKernelProjection_apply_ker`,
+	      `sourceFullFrameSymmetricEquation_implicitChart_snd`,
+	      `sourceFullFrameGaugeSliceImplicitKernelMap`,
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_zero`, and
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_hasStrictFDerivAt`,
+	      `sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv`,
+	      `sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv_coe`,
+	      `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`, and
+	      `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph_coe`,
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget`,
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget`, and
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`.
+	      The checked
+	      `sourceFullFrameGaugeSliceImplicitKernelMap` derivative follows from
+	      Mathlib's implicit-chart identities
+	      `implicitToOpenPartialHomeomorph_self`,
+	      `implicitToOpenPartialHomeomorphOfComplemented_apply`, and the chosen
+	      finite-dimensional kernel projection: the second coordinate of
+	      `sourceFullFrameSymmetricEquation_implicitChart d M0 hM0` is exactly
+	      `sourceFullFrameSymmetricEquationKernelProjection d M0
+	      (H - sourceFullFrameSymmetricBase d M0)`, and this projection is the
+	      identity on kernel vectors.  Composing this identity with the checked
+	      symmetric slice derivative gives the displayed derivative.  The
+	      displayed linear equivalence is upgraded to a continuous linear
+	      equivalence by finite-dimensional continuity of the inverse linear map.
+	      Applying `HasStrictFDerivAt.toOpenPartialHomeomorph` to this continuous
+	      linear equivalence produces the checked local slice-to-kernel chart.
+
+      The final variety statement is then a restriction, not a new inverse
+      theorem: pull a target kernel neighborhood back through the implicit
+      chart inverse at first coordinate `0`, obtain a symmetric hypersurface
+      point by `map_implicitFunction_eq`, and restrict to the actual image
+      variety using only
+      `sourceFullFrameGaugeSliceMap_mem_varietyCoord` and
+      `sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface`.
+
+      This packet is the finite-dimensional holomorphic constant-rank
       theorem in the exact form needed downstream.  Its proof first produces
       the local image theorem into the smooth hypersurface cut out by the
       oriented full-frame equation, and only then restricts that local inverse
@@ -5518,43 +5512,40 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceFullFrameOrientedTangentSpace d
               (BHW.sourceFullFrameOrientedGram d M0)
 
-	      structure BHW.LocalHolomorphicImageEquiv
-	          {E F : Type} [NormedAddCommGroup E] [NormedSpace ℂ E]
-	          [NormedAddCommGroup F] [NormedSpace ℂ F]
-	          (f : E -> F) (x0 : E) (y0 : F) (V : Set F) where
-        U : Set E
-        W : Set F
-        U_open : IsOpen U
-        W_open : IsOpen W
-        x0_mem : x0 ∈ U
-        y0_mem : y0 ∈ W
-        map_mem : ∀ x ∈ U, f x ∈ W ∩ V
-        inv : F -> E
-        inv_holomorphic : DifferentiableOn ℂ inv W
-	        inv_mem : ∀ y ∈ W ∩ V, inv y ∈ U
-	        right_inv : ∀ y ∈ W ∩ V, f (inv y) = y
-	        left_inv : ∀ x ∈ U, inv (f x) = x
+		      def BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+		          (d : Nat)
+		          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+		          (hM0 : IsUnit M0.det)
+		          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+		          OpenPartialHomeomorph S.slice
+		            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+		              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
 
-	      theorem BHW.localHolomorphicImageEquiv_of_regularZeroLocus_slice
-	          {E F : Type} [NormedAddCommGroup E] [NormedSpace ℂ E]
-	          [NormedAddCommGroup F] [NormedSpace ℂ F]
-	          [FiniteDimensional ℂ E] [FiniteDimensional ℂ F]
-	          (S : Submodule ℂ F)
-	          (g : F -> ℂ)
-	          (f : E -> F)
-	          (x0 : E) (y0 : F)
-	          (hreg : BHW.RegularZeroLocusInSubmoduleAt S g y0)
-	          (hf : DifferentiableAt ℂ f x0)
-	          (hmap_germ :
-	            ∀ᶠ x in 𝓝 x0, f x ∈ S ∧ g (f x) = 0)
-	          (hderiv_range :
-	            ((LinearMap.range (fderiv ℂ f x0).toLinearMap :
-	                Submodule ℂ F) : Set F) =
-	              {Y : F | Y ∈ S ∧ hreg.deriv Y = 0})
-	          (hderiv_injective :
-	            LinearMap.ker (fderiv ℂ f x0).toLinearMap = ⊥) :
-	          BHW.LocalHolomorphicImageEquiv f x0 y0
-	            ((S : Set F) ∩ {Y | g Y = 0})
+		      theorem BHW.sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget
+		          (d : Nat)
+		          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+		          (hM0 : IsUnit M0.det)
+		          (S : BHW.SourceFullFrameGaugeSliceData d M0) :
+		          Set.SurjOn
+		            (BHW.sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S)
+		            (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+		              d hM0 S).source
+		            (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+		              d hM0 S).target
+
+		      theorem BHW.sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget
+		          (d : Nat)
+		          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+		          (hM0 : IsUnit M0.det)
+		          (S : BHW.SourceFullFrameGaugeSliceData d M0)
+		          {K : (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+		              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker}
+		          (hK : K ∈
+		            (BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+		              d hM0 S).target) :
+		          BHW.sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S
+		            ((BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+		              d hM0 S).symm K) = K
 	      ```
 
 	      Proof transcript for the full-frame local image:
@@ -5602,18 +5593,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	         `X = M0 * Aᵀ`, which is exactly membership in
 	         `sourceFullFrameOrbitTangent d M0`.  The reverse direction is the
 	         same calculation with `X = M0 * Aᵀ`.
-	      6. The range equality is inclusion plus rank-nullity.  Inclusion follows
-	         by differentiating the already proved identity
-	         `sourceFullFrameOrientedEquation d
-	            (sourceFullFrameOrientedGramCoord d (M0 + t • X)) = 0`
-	         and the symmetry identity at `t = 0`.  For dimensions:
-	         `finrank Mat_D = D^2`, the kernel is
-	         `sourceFullFrameOrbitTangent` with dimension `D(D-1)/2`, and the
-	         symmetric-plus-determinant coordinate submodule has dimension
-	         `D(D+1)/2 + 1`.  The oriented hypersurface equation has a
-	         nonzero determinant-coordinate derivative, so its tangent kernel
-	         has dimension `D(D+1)/2`; here `D = d + 1`.  Rank-nullity gives
-	         `finrank range = D(D+1)/2`, so the included submodules are equal.
+	      6. The range equality is constructive.  Inclusion is
+	         `sourceFullFrameOrientedDifferential_range_subset_tangent`.  For
+	         the reverse inclusion, let
+	         `G := Matrix.of Y.1` and
+	         `B := (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	           ComplexLorentzGroup.ηℂ (d := d))`, and take
+	         `X := M0 * B`.  The Gram component is
+	         `sourceFullFrameOrientedDifferential_constructedGram`: the two
+	         summands are both `(2 : ℂ)⁻¹` times
+	         `M0 * (M0⁻¹ * G * (M0.transpose)⁻¹) * M0.transpose`, hence sum to
+	         `G`.  The determinant component is
+	         `sourceFullFrameOrientedDifferential_constructedDet`: apply the
+	         trace identity to `X`, rewrite the tangent equation with
+	         `sourceFullFrameGram_det_eq`, and cancel `(2 : ℂ)`,
+	         `minkowskiMetricDet d`, and `M0.det`.
 	      7. `sourceFullFrameGaugeSlice_exists` chooses any finite-dimensional
 	         complement `S` of this kernel.  Since
 	         `range differential = tangent`, the restricted differential
@@ -5622,13 +5616,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	         `differential_iso_eq` is the statement that this linear equivalence is
 	         literally the restriction of
 	         `sourceFullFrameOrientedDifferential d M0`.
-	      8. `sourceFullFrameSlice_localImage_eq_hypersurface` applies
-	         `localHolomorphicImageEquiv_of_regularZeroLocus_slice` to
-	         `f X := sourceFullFrameOrientedGramCoord d (M0 + X)`, the symmetric
-	         submodule, and the regular equation above.  The derivative range
-	         hypothesis is exactly `sourceFullFrameSlice_differential_linearEquiv`;
-	         the injectivity hypothesis is the complement condition.  The output
-	         inverse is therefore holomorphic in the target invariant coordinates.
+		      8. `sourceFullFrameSlice_localImage_eq_hypersurface` consumes the
+		         checked
+		         `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`.
+		         The old generic regular-zero-locus local-image abstraction is no
+		         longer the implementation target.  The checked
+		         inputs are now the symmetric implicit chart
+		         `sourceFullFrameSymmetricEquation_implicitChart_snd`, the strict
+		         derivative
+		         `sourceFullFrameGaugeSliceImplicitKernelMap_hasStrictFDerivAt`, the
+		         continuous-linear equivalence
+		         `sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv`, and the
+		         chart inverse facts
+		         `sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget`,
+		         `sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget`,
+		         and
+		         `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`.
+		         Pointwise hypersurface membership is still
+		         `sourceFullFrameGaugeSliceMap_mem_hypersurface`.  The remaining
+		         proof is the explicit transport from a nearby hypersurface point
+		         through the symmetric implicit chart's second coordinate, then back
+		         through the kernel chart inverse.
 	      9. `sourceFullFrameSlice_localImage_eq_variety` is a restriction of the
 	         hypersurface local image, not a new local-surjectivity claim.  For
 	         `map_mem`, every slice point maps to the variety by definition of
@@ -5660,16 +5668,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	                  simp [Matrix.trace_smul, smul_eq_mul, mul_comm,
 	                    mul_left_comm, mul_assoc] })
 	            A := by
-	        -- This is Jacobi's formula.  In Lean it can be proved from the
-	        -- polynomial determinant derivative
-	        -- `Matrix.hasFDerivAt_det` and the adjugate identity
-	        -- `A.adjugate = A.det • A⁻¹` under `hA`.
-	        simpa [Matrix.trace_mul_cycle, Matrix.adjugate_eq_det_smul_inv hA]
-	          using Matrix.hasFDerivAt_det (A := A)
+	        -- Checked in
+	        -- `BHWPermutation/SourceOrientedFullFrameJacobi.lean`.
+	        -- The proof first differentiates the Leibniz expansion by
+	        -- `Matrix.det_apply'` and `HasFDerivAt.finset_prod`, obtaining
+	        -- `matrix_det_hasFDerivAt_expansion`.  It then proves the identity
+	        -- derivative at `1` by reducing every line `t ↦ det(1 + t • X)`
+	        -- to Mathlib's polynomial theorem
+	        -- `Matrix.derivative_det_one_add_X_smul`.  Finally, for invertible
+	        -- `A`, it writes `det B = A.det * det(A⁻¹ * B)`, applies the
+	        -- identity-case derivative at `A⁻¹ * A = 1`, and rewrites the
+	        -- resulting CLM as `X ↦ A.det * trace(A⁻¹ * X)`.
+	        ...
 
-	      theorem BHW.sourceFullFrameGram_hasFDerivAt
-	          (d : Nat)
-	          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+      theorem BHW.sourceFullFrameGram_hasFDerivAt
+          (d : Nat)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
 	          HasFDerivAt
 	            (fun M : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ =>
 	              BHW.sourceFullFrameGram d M)
@@ -5689,14 +5703,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	                  ext a b
 	                  simp [smul_eq_mul, mul_comm, mul_left_comm, mul_assoc] })
 	            M0 := by
-	        -- Expand `(M0 + X) * η * (M0 + X)ᵀ`, keep the linear terms,
-	        -- and absorb the quadratic term into the Frechet derivative error.
-	        simpa [BHW.sourceFullFrameGram, Matrix.mul_add, Matrix.add_mul,
-	          Matrix.transpose_add, add_comm, add_left_comm, add_assoc]
-	          using BHW.hasFDerivAt_matrix_bilinear_self
-	            (L := fun M N =>
-	              M * ComplexLorentzGroup.ηℂ (d := d) * N.transpose)
-	            M0 M0
+	        -- Checked in
+	        -- `BHWPermutation/SourceOrientedFullFrameJacobi.lean`.
+	        -- The proof uses `HasFDerivAt.mul'` for the noncommutative matrix
+	        -- product.  Differentiate `M ↦ M * η` by `mul_const'`,
+	        -- differentiate transpose as the continuous linear map
+	        -- `sourceFullFrameTransposeCLM d`, apply the product rule to
+	        -- `(M * η) * Mᵀ`, and prove the derivative CLM equality by
+	        -- extensionality:
+	        -- `X ↦ X * η * M0ᵀ + M0 * η * Xᵀ`.
+	        exact BHW.sourceFullFrameGram_hasFDerivAt d M0
 
 	      theorem BHW.sourceFullFrameDet_hasFDerivAt
 	          (d : Nat)
@@ -6114,143 +6130,72 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	            BHW.specialComplexLorentzLieAlgebra,
 	            Matrix.mul_assoc, A.property.1, A.property.2]
 
-	      theorem BHW.specialComplexLorentzLieAlgebra_finrank
-	          (d : Nat) :
-	          Module.finrank ℂ (BHW.specialComplexLorentzLieAlgebra d) =
-	            (d + 1) * d / 2 := by
-	        -- Conjugate by `η`.  Since `ηᵀ = η` and `η^2 = 1`,
-	        -- `Aᵀη + ηA = 0` is equivalent to
-	        -- `(ηA)ᵀ = -(ηA)`.  The trace equation is automatic in
-	        -- characteristic zero from the diagonal entries of a skew matrix.
-	        let skew :
-	            BHW.specialComplexLorentzLieAlgebra d ≃ₗ[ℂ]
-	              BHW.skewMatrixSubmodule (Fin (d + 1)) ℂ :=
-	          BHW.specialLorentzLieAlgebra_skewLinearEquiv d
-	        rw [← LinearEquiv.finrank_eq skew]
-	        exact BHW.skewMatrixSubmodule_finrank (Fin (d + 1)) ℂ
-
-	      theorem BHW.sourceFullFrameOrbitTangent_finrank
+	      theorem BHW.sourceFullFrameOrientedDifferential_constructedGram
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-	          (hM0 : IsUnit M0.det) :
-	          Module.finrank ℂ (BHW.sourceFullFrameOrbitTangent d M0) =
-	            (d + 1) * d / 2 := by
-	        have hinj :
-	            Function.Injective
-	              (BHW.infinitesimalRightSpecialLorentzAction d M0) := by
-	          intro A B hAB
-	          apply Subtype.ext
-	          have hleft :=
-	            congrArg
-	              (fun X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ =>
-	                M0⁻¹ * X) hAB
-	          have hAtBt :
-	              (A : Matrix _ _ ℂ).transpose =
-	                (B : Matrix _ _ ℂ).transpose := by
-	            simpa [BHW.infinitesimalRightSpecialLorentzAction,
-	              Matrix.mul_assoc] using hleft
-	          simpa using congrArg Matrix.transpose hAtBt
-	        rw [BHW.sourceFullFrameOrbitTangent]
+	          (hM0 : IsUnit M0.det)
+	          {Y : BHW.SourceFullFrameOrientedCoord d}
+	          (hYsym : ∀ a b : Fin (d + 1), Y.1 a b = Y.1 b a) :
+	          let G : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := Matrix.of Y.1
+	          let B : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+	            (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	              ComplexLorentzGroup.ηℂ (d := d))
+	          Matrix.of
+	              (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).1 =
+	            G := by
+	        -- The two Gram summands are both half of
+	        -- `M0 * (M0⁻¹ * G * (M0.transpose)⁻¹) * M0.transpose`.
+	        -- Use `η² = 1`, `Gᵀ = G`, `transpose_nonsing_inv`, and the
+	        -- left/right inverse identities for `M0` and `M0.transpose`.
 	        exact
-	          (LinearMap.finrank_range_of_inj
-	            (f := BHW.infinitesimalRightSpecialLorentzAction d M0)
-	            hinj).trans (BHW.specialComplexLorentzLieAlgebra_finrank d)
+	          BHW.sourceFullFrameOrientedDifferential_constructedGram
+	            (d := d) hM0 hYsym
 
-	      theorem BHW.sourceFullFrameSymmetricCoordSubmodule_finrank
-	          (d : Nat) :
-	          Module.finrank ℂ (BHW.sourceFullFrameSymmetricCoordSubmodule d) =
-	            (d + 1) * (d + 2) / 2 + 1 := by
-	        -- Off-diagonal entries are indexed by unordered pairs and diagonal
-	        -- entries by `Fin (d+1)`, and the oriented determinant coordinate
-	        -- is unconstrained.  The local implementation should use the repo's
-	        -- symmetric-matrix factorization API, as in
-	        -- `sourceSymmetricMatrix_factorization_finrank`, and then add the
-	        -- one-dimensional determinant factor.
-	        simpa [BHW.sourceFullFrameSymmetricCoordSubmodule] using
-	          BHW.sourceSymmetricMatrix_withDet_factorization_finrank (d + 1)
-
-	      theorem BHW.sourceFullFrameOrientedTangentSpace_finrank
+	      theorem BHW.sourceFullFrameOrientedDifferential_constructedDet
 	          (d : Nat)
 	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-	          (hM0 : IsUnit M0.det) :
-	          Module.finrank ℂ
-	              (BHW.sourceFullFrameOrientedTangentSpace d
-	                (BHW.sourceFullFrameOrientedGram d M0)) =
-	            (d + 1) * (d + 2) / 2 := by
-	        let S := BHW.sourceFullFrameSymmetricCoordSubmodule d
-	        let ell : S ->ₗ[ℂ] ℂ :=
-	          (BHW.sourceFullFrameOrientedEquation_deriv d
-	            (BHW.sourceFullFrameOrientedGramCoord d M0)).restrict S
-	        have hell_surj : Function.Surjective ell := by
-	          intro c
-	          rcases
-	            BHW.sourceFullFrameOrientedEquation_symmetricDetDirection_surj
-	              (d := d) hM0 c with ⟨Y, hY⟩
-	          exact ⟨Y, hY⟩
-	        have htangent_ker :
-	            BHW.sourceFullFrameOrientedTangentSpace d
-	                (BHW.sourceFullFrameOrientedGram d M0) ≃ₗ[ℂ]
-	              LinearMap.ker ell :=
-	          BHW.sourceFullFrameOrientedTangentSpace_linearEquiv_kernel
-	            (d := d) hM0
-	        have hrange :
-	            Module.finrank ℂ (LinearMap.range ell) = 1 :=
-	          LinearMap.finrank_range_of_surjective ell hell_surj
-	        have hrn := LinearMap.finrank_range_add_finrank_ker ell
-	        have hSdim :=
-	          BHW.sourceFullFrameSymmetricCoordSubmodule_finrank d
-	        have hkerdim :
-	            Module.finrank ℂ (LinearMap.ker ell) =
-	              (d + 1) * (d + 2) / 2 := by
-	          rw [hrange, hSdim] at hrn
-	          omega
-	        simpa [LinearEquiv.finrank_eq htangent_ker] using hkerdim
-
-	      theorem BHW.sourceFullFrameOrientedDifferential_rank_nullity
-	          (d : Nat)
-	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
-	          (hM0 : IsUnit M0.det) :
-	          Module.finrank ℂ
-	              (LinearMap.range
-	                (BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap) +
-	            Module.finrank ℂ
-	              (LinearMap.ker
-	                (BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap) =
-	            (d + 1) * (d + 1) := by
-	        have h :=
-	          LinearMap.finrank_range_add_finrank_ker
-	            ((BHW.sourceFullFrameOrientedDifferentialCLM d M0).toLinearMap)
-	        simpa [Module.finrank_matrix] using h
-
-	      theorem BHW.sourceFullFrame_finrank_arithmetic
-	          (d : Nat)
-	          {r : Nat}
-	          (h :
-	            r + (d + 1) * d / 2 =
-	              (d + 1) * (d + 1)) :
-	          r = (d + 1) * (d + 2) / 2 := by
-	        -- The parity facts are `2 ∣ (d+1)*d` and
-	        -- `2 ∣ (d+1)*(d+2)`.  After rewriting those divisions by their
-	        -- half-products, this is integer linear arithmetic.
-	        omega
+	          (hM0 : IsUnit M0.det)
+	          {Y : BHW.SourceFullFrameOrientedCoord d}
+	          (hY : Y ∈ BHW.sourceFullFrameOrientedTangentSpace d
+	            (BHW.sourceFullFrameOrientedGram d M0)) :
+	          let G : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := Matrix.of Y.1
+	          let B : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+	            (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	              ComplexLorentzGroup.ηℂ (d := d))
+	          Matrix.of
+	              (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).1 = G →
+	          (BHW.sourceFullFrameOrientedDifferential d M0 (M0 * B)).2 =
+	            Y.2 := by
+	        -- Apply the trace identity to `X = M0 * B`, rewrite
+	        -- `M0⁻¹ * (M0 * B) = B`, rewrite the tangent equation by
+	        -- `sourceFullFrameGram_det_eq`, and cancel
+	        -- `(2 : ℂ)`, `minkowskiMetricDet d`, and `M0.det`.
+	        exact
+	          BHW.sourceFullFrameOrientedDifferential_constructedDet
+	            (d := d) hM0 hY
 
 	      theorem BHW.sourceFullFrameOrientedDifferential_range_eq_tangent
 	          ... := by
-	        have hle :=
-	          BHW.sourceFullFrameOrientedDifferential_range_subset_tangent
-	            (d := d) hM0
-	        apply Submodule.eq_of_le_of_finrank_eq hle
-	        have hker :=
-	          BHW.sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent
-	            (d := d) hM0
-	        have hranknull :=
-	          BHW.sourceFullFrameOrientedDifferential_rank_nullity
-	            (d := d) hM0
-	        rw [hker,
-	          BHW.sourceFullFrameOrbitTangent_finrank (d := d) hM0,
-	          BHW.sourceFullFrameOrientedTangentSpace_finrank (d := d) hM0]
-	            at hranknull
-	        exact BHW.sourceFullFrame_finrank_arithmetic d hranknull
+	        apply le_antisymm
+	        · exact
+	            BHW.sourceFullFrameOrientedDifferential_range_subset_tangent
+	              (d := d) hM0
+	        · intro Y hY
+	          let G : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ := Matrix.of Y.1
+	          let B : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+	            (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+	              ComplexLorentzGroup.ηℂ (d := d))
+	          refine ⟨M0 * B, ?_⟩
+	          apply Prod.ext
+	          · ext a b
+	            exact congrArg (fun M => M a b)
+	              (BHW.sourceFullFrameOrientedDifferential_constructedGram
+	                (d := d) hM0 (Y := Y) hY.1)
+	          · exact
+	              BHW.sourceFullFrameOrientedDifferential_constructedDet
+	                (d := d) hM0 (Y := Y) hY
+	                (BHW.sourceFullFrameOrientedDifferential_constructedGram
+	                  (d := d) hM0 (Y := Y) hY.1)
 	      ```
 
 	      This is the only allowed source for the `frame` field of
@@ -6283,12 +6228,136 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface`, so the
       Cauchy-Binet/image-containment step is no longer a live blocker.  The
       tangent target is also checked as the symmetric-coordinate kernel of
-      the linearized equation.  The hard theorem targets immediately ahead
-      are still genuine: proving this linearized equation is the actual
-      Frechet derivative of `sourceFullFrameOrientedEquation`, the kernel
-      equality with the infinitesimal determinant-`1` Lorentz orbit, the
-      range equality onto the linearized tangent space, and then the local
-      holomorphic image theorem.
+      the linearized equation.  Lean checkpoint, 2026-05-03: the immediate
+      derivative implementation is now checked in
+      `BHWPermutation/SourceOrientedFullFrameDerivative.lean`, so the
+      regular-zero-locus part is no longer blocked by the full Jacobi trace
+      formula.  The companion module proves
+      `contDiff_sourceFullFrameOrientedEquation`,
+      `differentiable_sourceFullFrameOrientedEquation`,
+      `sourceFullFrameOrientedEquation_hasFDerivAt`,
+      `sourceFullFrameOrientedEquation_hasDerivAt_detLine`,
+      `sourceFullFrameOrientedEquation_fderiv_detDirection`,
+      `sourceFullFrameOrientedEquation_fderiv_detDirection_ne_zero`,
+      `sourceFullFrameOrientedEquation_fderiv_surjective_of_det_ne_zero`,
+      `sourceFullFrameOrientedEquation_fderiv_surjectiveOnSymmetric_of_det_ne_zero`,
+      `RegularZeroLocusAt`, `RegularZeroLocusInSubmoduleAt`,
+      and the noncomputable regularity data
+      `sourceFullFrameOrientedHypersurface_regularAt` and
+      `sourceFullFrameOrientedHypersurface_regularInSymmetricAt`.
+
+      The proof avoids a premature global determinant Jacobi formula.  First
+      prove smoothness of
+      `H ↦ (Matrix.of H.1).det - minkowskiMetricDet d * H.2 ^ 2` by expanding
+      `Matrix.det` as a finite sum of products of coordinate projections and
+      using `contDiff_snd` for the square.  Then compute the
+      one-variable line
+
+      ```lean
+      fun t : ℂ =>
+        BHW.sourceFullFrameOrientedEquation d
+          (H0.toCoord + t • BHW.sourceFullFrameDetDirection d)
+      ```
+
+      as
+      `Matrix.det (Matrix.of H0.gram) -
+        minkowskiMetricDet d * (H0.det + t) ^ 2`.  `HasDerivAt.const_sub`
+      and `HasDerivAt.pow` give derivative
+      `-((2 : ℂ) * minkowskiMetricDet d * H0.det)` at `0`.  Composing the
+      actual `HasFDerivAt` supplied by differentiability with
+      `t ↦ H0.toCoord + t • sourceFullFrameDetDirection d` identifies the
+      actual Frechet derivative on that direction.  If `H0.det ≠ 0`, this
+      value is nonzero, so the actual Frechet derivative is surjective; the
+      restricted symmetric-coordinate surjectivity uses the checked
+      `sourceFullFrameSymmetricDetDirection`.
+
+      Lean checkpoint, 2026-05-03: the algebraic orbit-kernel half is also
+      checked in `BHWPermutation/SourceOrientedFullFrameOrbit.lean` as
+      `sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent`.  The proof
+      is pure matrix algebra: a kernel vector is written as
+      `X = M0 * (M0⁻¹ * X)`, the zero Gram-variation equation is conjugated by
+      `M0⁻¹` and `(M0ᵀ)⁻¹` to get `B η + η Bᵀ = 0`, the determinant-coordinate
+      equation gives `trace B = 0`, and `Bᵀ` is exactly an element of
+      `specialComplexLorentzLieAlgebra d`.  The reverse inclusion expands
+      `M0 * Aᵀ` and uses `A.property.1` plus `A.property.2`.
+
+      The same file also checks the trace identity
+
+      ```lean
+      theorem BHW.sourceFullFrameOrientedDifferential_trace_identity
+          (d : ℕ)
+          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+          (hM0 : IsUnit M0.det)
+          (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+          Matrix.trace
+              ((Matrix.of (BHW.sourceFullFrameGram d M0))⁻¹ *
+                Matrix.of
+                  (BHW.sourceFullFrameOrientedDifferential d M0 X).1) =
+            (2 : ℂ) * Matrix.trace (M0⁻¹ * X)
+      ```
+
+      and uses it to prove
+      `sourceFullFrameOrientedDifferential_range_subset_tangent`.  The same
+      file now proves
+      `sourceFullFrameOrientedDifferential_constructedGram`,
+      `sourceFullFrameOrientedDifferential_constructedDet`, and the
+      constructive range equality
+      `sourceFullFrameOrientedDifferential_range_eq_tangent`.  It also checks
+      the next gauge-slice layer:
+      `sourceFullFrameGaugeSlice_exists` is a `noncomputable def` choosing a
+      complement by `Submodule.exists_isCompl`, not a theorem eliminating a
+      proposition into data; `sourceFullFrameSlice_differential_linearEquiv`
+      exposes the stored slice equivalence; and
+      `sourceFullFrameSlice_restricted_range_eq_tangent` proves the restricted
+      differential has exactly the oriented tangent-space range.
+      `contDiff_sourceFullFrameGaugeSliceMap` is checked too, by composing the
+      affine slice translation with
+      `contDiff_sourceFullFrameOrientedGramCoord`.
+      Lean checkpoint, 2026-05-03: the full Frechet/Jacobi packet is now
+      checked in `BHWPermutation/SourceOrientedFullFrameJacobi.lean`.  The
+      determinant chain is
+      `matrix_det_hasFDerivAt_expansion`,
+      `matrix_det_one_add_hasDerivAt_trace`,
+      `matrix_det_one_hasFDerivAt_trace`,
+      `matrix_det_hasFDerivAt_trace`, and
+      `sourceFullFrameDet_hasFDerivAt`; the Gram chain is
+      `sourceFullFrameTransposeCLM`,
+      `sourceFullFrameGramDifferentialCLM`,
+      `sourceFullFrameTranspose_hasFDerivAt`,
+      `sourceFullFrameGramMatrix_hasFDerivAt`, and
+      `sourceFullFrameGram_hasFDerivAt`.  They assemble as
+      `sourceFullFrameOrientedGram_hasFDerivAt`.
+      The same file also proves
+      `sourceFullFrameOrientedEquation_hasFDerivAt_trace` and
+      `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_fderiv_eq_zero`,
+      so the local-image theorem may use the actual `fderiv` of the oriented
+      hypersurface equation, not a parallel hand-written linearization.
+
+      The same checked Jacobi file now also contains the actual gauge-slice
+      derivative bridge: `sourceFullFrameGaugeSliceMap_zero`,
+      `sourceFullFrameGaugeSliceMap_mem_varietyCoord`,
+      `sourceFullFrameGaugeSliceMap_mem_hypersurface`,
+      `sourceFullFrameGaugeSliceMap_hasFDerivAt`,
+      `sourceFullFrameGaugeSliceMap_hasStrictFDerivAt`,
+      `sourceFullFrameGaugeSliceMap_fderiv_eq`,
+      `sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent`, and
+      `sourceFullFrameGaugeSliceMap_fderiv_kernel_eq_bot`.  Therefore the
+      local-image theorem no longer has a derivative blocker.
+
+      Lean checkpoint, 2026-05-03: the symmetric hypersurface IFT layer is
+      checked in `BHWPermutation/SourceOrientedFullFrameLocalImage.lean`.
+      The checked declarations are
+      `sourceFullFrameSymmetricEquation`,
+      `sourceFullFrameSymmetricEquationDerivCLM`,
+      `sourceFullFrameSymmetricBase`,
+      `sourceFullFrameSymmetricEquation_hasFDerivAt`,
+      `sourceFullFrameSymmetricEquation_hasStrictFDerivAt`,
+      `sourceFullFrameSymmetricEquationDerivCLM_range_eq_top_of_det_ne_zero`,
+      and `sourceFullFrameSymmetricEquation_implicitChart`.  The remaining
+      full-frame local-image target is now the comparison theorem between
+      this implicit hypersurface chart and the checked gauge-slice map:
+      first produce `sourceFullFrameSlice_localImage_eq_hypersurface`, then
+      restrict it to `sourceFullFrameSlice_localImage_eq_variety`.
 
       The same full-frame gauge packet has two different downstream uses, and
       the proof docs must keep them separate.  `sourceOrientedMaxRankChart_at`
@@ -6334,14 +6403,15 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceSelectedFrameOrientedCoord d n ι G0
         slice :
           BHW.SourceFullFrameGaugeSliceData d M0
-        localImage :
-          BHW.LocalHolomorphicImageEquiv
-            (fun X : slice.slice =>
-              BHW.sourceFullFrameOrientedGramCoord d
-                (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-            0
-            (BHW.sourceFullFrameOrientedGramCoord d M0)
-            (BHW.sourceFullFrameOrientedGramVarietyCoord d)
+	        kernelChart :
+	          OpenPartialHomeomorph slice.slice
+	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
+	        kernelChart_eq :
+	          (kernelChart : slice.slice ->
+	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker) =
+	            BHW.sourceFullFrameGaugeSliceImplicitKernelMap d M0_det_unit slice
         Ω : Set (BHW.SourceOrientedGramData d n)
         Ω_relOpen :
           BHW.IsRelOpenInSourceOrientedGramVariety d n Ω
@@ -6380,13 +6450,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
       -- split.  It is not a forward declaration in production Lean.
       ```
 
-      The chart map is concrete.  Its first component is the slice parameter
-      returned by `localImage.inv` applied to the selected full-frame oriented
-      coordinate
-      `sourceSelectedFrameOrientedCoord d n ι G`; its second component is the
-      mixed row matrix `sourceSelectedMixedRows d n ι G`.  The inverse first
-      reconstructs the selected full frame from the slice parameter by
-      `localImage`, then reconstructs every unselected vector by the
+	      The chart map is concrete.  Its first component is the slice parameter
+	      returned by `kernelChart.symm` applied to the kernel coordinate of the
+	      selected full-frame oriented coordinate under
+	      `sourceFullFrameSymmetricEquation_implicitChart`; its second component is
+	      the mixed row matrix `sourceSelectedMixedRows d n ι G`.  The inverse
+	      first reconstructs the selected full frame from the slice parameter,
+	      then reconstructs every unselected vector by the
       coefficient row
       `mixed(k, ·) * (selectedGram)⁻¹`.  The nonselected-nonselected Gram
       entries and every full-frame determinant are then forced by the
@@ -6395,7 +6465,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       frame/mixed-row reconstruction theorem plus the oriented relations; the
       proof of `right_inv_on` is the local-image inverse theorem and the
       mixed-row definition.  `chart_open` is the product of the open slice
-      image from `LocalHolomorphicImageEquiv` with the unrestricted mixed-row
+      image from `kernelChart.target` (transported through the symmetric
+      implicit chart at first coordinate `0`) with the unrestricted mixed-row
       coordinate ball after the final shrink.
 
       The reconstruction formula must be an actual definition, because both the
@@ -6518,9 +6589,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       matrix identity `(m * A⁻¹) * A = m`, using `hA_unit` to rewrite `A⁻¹ * A`
       and the selected-frame theorem above.  The proof of
       `sourceFullFrameGauge_reconstructVector_sourceInvariant_eq` then has three
-      independent pieces: selected-selected Gram and determinant coordinates are
-      the local-image right inverse for `C.localImage`; selected-unselected Gram
-      entries are `reconstructVector_mixedGram`; unselected-unselected Gram
+	      independent pieces: selected-selected Gram and determinant coordinates are
+	      the kernel-chart right inverse transported back through the symmetric
+	      implicit chart; selected-unselected Gram entries are
+	      `reconstructVector_mixedGram`; unselected-unselected Gram
       entries and every full determinant coordinate follow from the oriented
       algebraic relations on `G`, multilinearity, and the block determinant
       expansion after the selected frame determinant is nonzero.  This theorem is
@@ -6781,14 +6853,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (d : Nat) :
           IsOpen (BHW.sourceFullFrameOrientedCoord_detNonzero d)
 
-      theorem BHW.LocalHolomorphicImageEquiv.shrink_target
-          {E F : Type} [NormedAddCommGroup E] [NormedSpace ℂ E]
-          [NormedAddCommGroup F] [NormedSpace ℂ F]
-          {f : E -> F} {x0 : E} {y0 : F} {V P : Set F}
-          (L : BHW.LocalHolomorphicImageEquiv f x0 y0 V)
-          (hP_open : IsOpen P)
-          (hy0P : y0 ∈ P) :
-          BHW.LocalHolomorphicImageEquiv f x0 y0 (V ∩ P)
+	      -- There is no generic local-image wrapper layer in the current Lean
+	      -- route.  Shrinking is performed directly on the checked
+	      -- `OpenPartialHomeomorph` source/target sets of
+	      -- `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`, after
+	      -- transporting hypersurface points through
+	      -- `sourceFullFrameSymmetricEquation_implicitChart_snd`.
 
       abbrev BHW.FullFrameSliceMap
           (d : Nat)
@@ -6799,142 +6869,69 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceFullFrameOrientedGramCoord d
             (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ))
 
-      abbrev BHW.FullFrameLocalImage
-          (d : Nat)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          (V : Set (BHW.SourceFullFrameOrientedCoord d)) :=
-        BHW.LocalHolomorphicImageEquiv
-          (BHW.FullFrameSliceMap d M0 slice)
-          0
-          (BHW.sourceFullFrameOrientedGramCoord d M0)
-          V
+	      abbrev BHW.FullFrameKernelChart
+	          (d : Nat)
+	          {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+	          (hM0 : IsUnit M0.det)
+	          (slice : BHW.SourceFullFrameGaugeSliceData d M0) :=
+	        BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+	          d hM0 slice
 
-      def BHW.sourceFullFrameMaxRankChart_ambientDomain
-          [NeZero d]
-          (d n : Nat)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V) :
-          Set (BHW.SourceOrientedGramData d n) :=
-        {G | BHW.sourceSelectedFrameOrientedCoord d n ι G ∈ L.W}
+	      -- The ambient max-rank domain is the intersection of three checked
+	      -- conditions: the selected determinant is nonzero, the selected
+	      -- full-frame coordinate is in the symmetric implicit-chart source, and
+	      -- its kernel coordinate lies in `FullFrameKernelChart.target`.  In Lean
+	      -- this definition must carry the proof that the selected coordinate is
+	      -- symmetric from the current source-variety membership; it is not a
+	      -- total predicate on arbitrary ambient coordinates.
 
-      theorem BHW.sourceFullFrameMaxRankChart_ambientDomain_open
-          [NeZero d]
-          (d n : Nat)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V) :
-          IsOpen
-            (BHW.sourceFullFrameMaxRankChart_ambientDomain
-              d n ι M0 slice L) := by
-        exact L.W_open.preimage
-          (BHW.continuous_sourceSelectedFrameOrientedCoord d n ι)
+	      -- `sourceFullFrameMaxRankChart_ambientDomain_open` is proved from
+	      -- openness of the selected determinant sheet, the implicit chart source,
+	      -- and `kernelChart.open_target`, pulled back along the continuous
+	      -- selected-coordinate map and the continuous implicit-chart coordinate.
+	      -- `sourceFullFrameMaxRankChart_map` sends `G` to
+	      -- `(kernelChart.symm selectedKernelCoord, sourceSelectedMixedRows d n ι G)`.
+	      -- Its differentiability on the ambient domain is the product of
+	      -- differentiability of `kernelChart.symm` on `kernelChart.target`,
+	      -- differentiability of the selected implicit-coordinate map, and
+	      -- linearity of the mixed-row projection.
 
-      noncomputable def BHW.sourceFullFrameMaxRankChart_map
-          [NeZero d]
-          (d n : Nat)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V) :
-          BHW.SourceOrientedGramData d n ->
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ) :=
-        fun G =>
-          (L.inv (BHW.sourceSelectedFrameOrientedCoord d n ι G),
-            BHW.sourceSelectedMixedRows d n ι G)
+	      -- The remaining max-rank chart helper statements should be written in
+	      -- terms of the checked `FullFrameKernelChart`.  Their product target is
+	      -- `kernelChart.target ×ˢ Set.univ`, after the selected hypersurface
+	      -- coordinate is transported to kernel coordinates by
+	      -- `sourceFullFrameSymmetricEquation_implicitChart_snd`.  The local
+	      -- biholomorph inverse uses `kernelChart.symm` for the selected frame and
+	      -- the mixed-row reconstruction formula below for all unselected rows.
+	      -- The max-rank-domain theorem assumes the selected determinant-nonzero
+	      -- shrink explicitly; it does not refer to a `W` field.
+	      ```
 
-      theorem BHW.sourceFullFrameMaxRankChart_map_differentiableOn_ambient
-          [NeZero d]
-          (d n : Nat)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V) :
-          DifferentiableOn ℂ
-            (BHW.sourceFullFrameMaxRankChart_map d n ι M0 slice L)
-            (BHW.sourceFullFrameMaxRankChart_ambientDomain
-              d n ι M0 slice L)
-
-      theorem BHW.sourceFullFrameMaxRankChart_image_eq_product
-          [NeZero d]
-          (d n : Nat)
-          (hn : d + 1 <= n)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V)
-          (Ωamb :=
-            BHW.sourceFullFrameMaxRankChart_ambientDomain
-              d n ι M0 slice L)
-          (Ω :=
-            Ωamb ∩ BHW.sourceOrientedGramVariety d n) :
-          (BHW.sourceFullFrameMaxRankChart_map d n ι M0 slice L) '' Ω =
-            L.U ×ˢ Set.univ
-
-      theorem BHW.sourceFullFrameMaxRankChart_localBiholomorph
-          [NeZero d]
-          (d n : Nat)
-          (hn : d + 1 <= n)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V)
-          (Ωamb :=
-            BHW.sourceFullFrameMaxRankChart_ambientDomain
-              d n ι M0 slice L)
-          (Ω :=
-            Ωamb ∩ BHW.sourceOrientedGramVariety d n) :
-          BHW.LocalBiholomorphOnSourceOrientedVariety d n Ω
-            (BHW.sourceFullFrameMaxRankChart_map d n ι M0 slice L)
-
-      theorem BHW.sourceFullFrameMaxRankChart_domain_maxRank
-          [NeZero d]
-          (d n : Nat)
-          (hn : d + 1 <= n)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
-          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          {V : Set (BHW.SourceFullFrameOrientedCoord d)}
-          (L : BHW.FullFrameLocalImage d M0 slice V)
-          (hL_det :
-            L.W ⊆ BHW.sourceFullFrameOrientedCoord_detNonzero d) :
-          BHW.sourceFullFrameMaxRankChart_ambientDomain
-              d n ι M0 slice L ∩
-              BHW.sourceOrientedGramVariety d n ⊆
-            {G | BHW.SourceOrientedMaxRankAt d n G}
-      ```
-
-      Proof obligations for these chart helpers are finite-dimensional and
-      local.  `shrink_target` replaces `W` by `W ∩ P` and `U` by the preimage
-      of this new target under the slice map; all inverse fields are restricted
-      by monotonicity.  `sourceFullFrameMaxRankChart_image_eq_product` has two
-      directions.  For `G ∈ Ω`, the selected coordinate lies in `L.W`, so
-      `L.inv` is in `L.U` and the mixed component is unrestricted.  Conversely,
-      given `(X,m) ∈ L.U × univ`, reconstruct a source tuple from the selected
-      frame `M0 + X` and mixed rows `m`; `L.map_mem` gives the selected
-      oriented coordinate in `L.W ∩ sourceFullFrameOrientedGramVarietyCoord`,
-      and the reconstruction theorem gives an oriented source-variety point
-      whose chart is exactly `(X,m)`.  This converse is where
-      `sourceFullFrameGauge_reconstructVector_sourceInvariant_eq` is consumed.
-      `chart_open` is then `L.U_open.prod isOpen_univ`.
+	      Proof obligations for these chart helpers are finite-dimensional and
+	      local.  The target shrink intersects `kernelChart.target` with the
+	      transported determinant-nonzero condition and replaces
+	      `kernelChart.source` by the corresponding preimage under the
+	      implicit-kernel map.  `sourceFullFrameMaxRankChart_image_eq_product` has
+	      two directions.  For `G ∈ Ω`, the selected coordinate's kernel coordinate
+	      lies in `kernelChart.target`, so `kernelChart.symm` is in
+	      `kernelChart.source` and the mixed component is unrestricted.
+	      Conversely, given `(X,m) ∈ kernelChart.source × univ`, reconstruct a
+	      source tuple from the selected frame `M0 + X` and mixed rows `m`;
+	      `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`
+	      gives the selected coordinate, and the reconstruction theorem gives an
+	      oriented source-variety point whose chart is exactly `(X,m)`.  This
+	      converse is where
+	      `sourceFullFrameGauge_reconstructVector_sourceInvariant_eq` is consumed.
+	      `chart_open` is then `kernelChart.open_source.prod isOpen_univ` after
+	      the explicit shrink.
 
       The local biholomorph proof is the same product calculation.  `left_inv_on`
       says that reconstructing from `chart G` returns `G`; this is the
       source-invariant reconstruction theorem.  `right_inv_on` says that the
-      selected part is fixed by `L.right_inv`, while the mixed rows are fixed
-      by the definition of the reconstructed unselected vectors.  The inverse
-      is differentiable on the open product `L.U × univ` because the selected
-      frame map is polynomial in `X`, matrix inverse is holomorphic on the
+	      selected part is fixed by the kernel-chart right inverse, while the mixed rows are fixed
+	      by the definition of the reconstructed unselected vectors.  The inverse
+	      is differentiable on the open product `kernelChart.source × univ`
+	      because the selected frame map is polynomial in `X`, matrix inverse is holomorphic on the
       determinant-nonzero sheet, and the mixed-row reconstruction is a finite
       sum of products.  No choice of a vector realization occurs after the chart
       is built.
@@ -6972,26 +6969,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceMinkowskiGram, BHW.sourceFullFrameDet]
         let slice : BHW.SourceFullFrameGaugeSliceData d M0 :=
           BHW.sourceFullFrameGaugeSlice_exists d hM0_det
-        let L0 :
-            BHW.LocalHolomorphicImageEquiv
-              (fun X : slice.slice =>
-                BHW.sourceFullFrameOrientedGramCoord d
-                  (M0 + (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)))
-              0
-              (BHW.sourceFullFrameOrientedGramCoord d M0)
-              (BHW.sourceFullFrameOrientedGramVarietyCoord d) :=
-          BHW.sourceFullFrameSlice_localImage_eq_variety d hM0_det slice
+	        let L0 : BHW.FullFrameKernelChart d hM0_det slice :=
+	          BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+	            d hM0_det slice
         have hy0_det :
             BHW.sourceFullFrameOrientedGramCoord d M0 ∈
               BHW.sourceFullFrameOrientedCoord_detNonzero d := by
           simpa [BHW.sourceFullFrameOrientedCoord_detNonzero,
             BHW.sourceFullFrameOrientedGramCoord,
             BHW.sourceFullFrameOrientedGram, M0] using hι
-        let L := L0.shrink_target
-          (BHW.sourceFullFrameOrientedCoord_detNonzero_open d) hy0_det
-        let Ωamb :=
-          BHW.sourceFullFrameMaxRankChart_ambientDomain
-            d n ι M0 slice L
+	        -- The next implementation step is to shrink `L0.source` and
+	        -- `L0.target` directly so the transported selected-frame coordinate
+	        -- stays in the determinant-nonzero sheet.  The shrink is an
+	        -- `OpenPartialHomeomorph` source/target restriction, not a generic
+	        -- local-image wrapper call.
+	        let L := L0
+	        let Ωamb :=
+	          BHW.sourceFullFrameMaxRankChart_ambientDomain
+	            d n ι M0 slice L
         let Ω := Ωamb ∩ BHW.sourceOrientedGramVariety d n
         let chart :=
           BHW.sourceFullFrameMaxRankChart_map d n ι M0 slice L
@@ -7000,7 +6995,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             M0_det_unit := hM0_det
             M0_oriented := hM0_coord
             slice := slice
-            localImage := L
+	            kernelChart := L
             Ω := Ω
             Ω_relOpen := by
               exact
@@ -7034,12 +7029,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.sourceOrientedMinkowskiInvariant d n
                 (BHW.sourceFullFrameGauge_reconstructVector
                   d n hn ι M0 slice y)
-            chart_open := by
-              simpa [chart, Ω] using
-                (by
-                  rw [BHW.sourceFullFrameMaxRankChart_image_eq_product
-                    d n hn ι M0 slice L]
-                  exact L.U_open.prod isOpen_univ)
+	            chart_open := by
+	              -- Product openness of the explicitly shrunken
+	              -- `kernelChart.source ×ˢ univ`.
+	              exact BHW.sourceFullFrameMaxRankChart_image_open
+	                d n hn ι M0 slice L
             local_biholomorph :=
               BHW.sourceFullFrameMaxRankChart_localBiholomorph
                 d n hn ι M0 slice L

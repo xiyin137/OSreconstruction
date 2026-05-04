@@ -575,16 +575,17 @@ Full-frame chart constructor refinement, 2026-05-02: the constructor
 `BHW.sourceOrientedFullFrameMaxRankChartData_at` is now expanded into an
 implementation transcript.  It starts from a realizing tuple for
 `G0 ∈ sourceOrientedGramVariety`, selects `M0 := sourceFullFrameMatrix ι z0`,
-uses `G0.det ι ≠ 0` to obtain an invertible frame, calls
-`sourceFullFrameSlice_localImage_eq_variety`, shrinks the target to the
-determinant-nonzero sheet, defines `Ωamb` as the preimage of the local-image
-target under `sourceSelectedFrameOrientedCoord`, sets
-`Ω = Ωamb ∩ sourceOrientedGramVariety`, and defines the chart as
-`(localImage.inv selectedCoord, sourceSelectedMixedRows)`.  The chart image is
-proved to be `localImage.U ×ˢ univ`; the inverse is the explicit reconstructed
-source invariant.  This closes the constructor-shape gap, but the transcript
-still depends on the full-frame local-image theorem and determinant recovery
-subtheorems listed in the blueprint.
+uses `G0.det ι ≠ 0` to obtain an invertible frame, calls the checked
+`sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`, shrinks its
+source/target to the determinant-nonzero sheet after transport through the
+symmetric implicit chart, sets `Ω = Ωamb ∩ sourceOrientedGramVariety`, and
+defines the chart as
+`(kernelChart.symm selectedKernelCoord, sourceSelectedMixedRows)`.  The chart
+image is proved to be `kernelChart.source ×ˢ univ` after the explicit shrink;
+the inverse is the explicit reconstructed source invariant.  This closes the
+constructor-shape gap, but the transcript still depends on the hypersurface
+transport/local-image theorem and determinant recovery subtheorems listed in
+the blueprint.
 
 Full-frame determinant-recovery refinement, 2026-05-02: the reconstruction
 proof no longer hides the phrase "block determinant expansion."  The blueprint
@@ -1597,8 +1598,12 @@ implementation contract is:
    tangent target is now explicit:
    `sourceFullFrameOrientedTangentSpace`,
    `sourceFullFrameOrientedHypersurface_regularAt`,
-   `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, and
-   `LocalHolomorphicImageEquiv`.  The local equation is
+   `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`,
+   `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget`, and
+   `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`.  The
+   local equation is
    `det gram = minkowskiMetricDet d * det^2`, and its linearization is the
    trace formula used as the target tangent space.  The proof must not choose
    an unproved square-root branch or an unverified holomorphic Gram-Schmidt
@@ -1650,13 +1655,259 @@ implementation contract is:
    The tangent target has also been algebraically identified as the
    symmetric-coordinate kernel by
    `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_deriv_eq_zero`.
-   This does not close the full-frame local-image theorem: the remaining
-   hard finite-dimensional blockers are the theorem that this linearized
-   equation is the actual Frechet derivative of
-   `sourceFullFrameOrientedEquation`,
-   `sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent`,
-   `sourceFullFrameOrientedDifferential_range_eq_tangent`, and the
-   regular-zero-locus/local-image theorem consuming those calculations.
+   Lean implementation checkpoint, 2026-05-03: the first derivative pass is
+   now checked in
+   `BHWPermutation/SourceOrientedFullFrameDerivative.lean`.  It adds
+   `contDiff_sourceFullFrameOrientedEquation`,
+   `differentiable_sourceFullFrameOrientedEquation`,
+   `sourceFullFrameOrientedEquation_hasFDerivAt`,
+   `sourceFullFrameOrientedEquation_hasDerivAt_detLine`,
+   `sourceFullFrameOrientedEquation_fderiv_detDirection`,
+   `sourceFullFrameOrientedEquation_fderiv_detDirection_ne_zero`,
+   `sourceFullFrameOrientedEquation_fderiv_surjective_of_det_ne_zero`,
+   `sourceFullFrameOrientedEquation_fderiv_surjectiveOnSymmetric_of_det_ne_zero`,
+   `RegularZeroLocusAt`, `RegularZeroLocusInSubmoduleAt`, and the
+   noncomputable regularity data
+   `sourceFullFrameOrientedHypersurface_regularAt` and
+   `sourceFullFrameOrientedHypersurface_regularInSymmetricAt`.  The
+   regular-zero-locus theorem does **not** need the full Jacobi
+   trace formula: it is enough to prove the actual Frechet derivative of
+   `sourceFullFrameOrientedEquation d` is nonzero in the determinant
+   coordinate direction.  The checked proof is
+   mechanical: the determinant part is smooth by expanding `Matrix.det` as a
+   finite sum of products of coordinate projections; the second coordinate is
+   smooth by `contDiff_snd`.
+   For the line
+   `t ↦ H0.toCoord + t • sourceFullFrameDetDirection d`, the Gram coordinate
+   is constant and the determinant coordinate is `H0.det + t`, so
+   `HasDerivAt.pow` gives derivative
+   `-((2 : ℂ) * minkowskiMetricDet d * H0.det)` at `0`.  Composing the
+   actual `HasFDerivAt` of `sourceFullFrameOrientedEquation d` with this line
+   and using uniqueness of one-variable derivatives identifies
+   `(fderiv ℂ (sourceFullFrameOrientedEquation d) H0.toCoord)
+     (sourceFullFrameDetDirection d)` with that nonzero scalar.  Surjectivity
+   follows by scaling the determinant direction; the symmetric version uses
+   `sourceFullFrameSymmetricDetDirection d`.
+
+   Lean implementation checkpoint, 2026-05-03: the algebraic orbit-kernel
+   half is now checked in `BHWPermutation/SourceOrientedFullFrameOrbit.lean`
+   as `sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent`.  The
+   proof writes any kernel vector as `X = M0 * (M0⁻¹ * X)`, conjugates the
+   zero Gram-variation equation by `M0⁻¹` and `(M0ᵀ)⁻¹`, reads off
+   `B η + η Bᵀ = 0`, extracts the determinant-coordinate equation
+   `trace B = 0`, and packages `Bᵀ` as an element of
+   `specialComplexLorentzLieAlgebra d`.  The reverse inclusion is the same
+   calculation forward from `Aᵀ η + η A = 0` and `trace A = 0`.
+
+   The same file now also checks the trace identity and the range-subset
+   theorem:
+
+   ```lean
+   theorem BHW.sourceFullFrameOrientedDifferential_trace_identity
+       (d : ℕ)
+       {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+       (hM0 : IsUnit M0.det)
+       (X : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ) :
+       Matrix.trace
+           ((Matrix.of (BHW.sourceFullFrameGram d M0))⁻¹ *
+             (Matrix.of
+               (BHW.sourceFullFrameOrientedDifferential d M0 X).1)) =
+         (2 : ℂ) * Matrix.trace (M0⁻¹ * X)
+   ```
+
+   The proof is pure matrix algebra: use
+   `sourceFullFrameGram_eq_mul_eta_transpose`, invert
+   `M0 * η * M0ᵀ` as `(M0ᵀ)⁻¹ * η * M0⁻¹`, rewrite the two summands under
+   the trace to `M0⁻¹ * X` and its transpose using
+   `Matrix.trace_mul_cycle`, and finish with `Matrix.trace_transpose`.
+   It feeds the checked
+   `sourceFullFrameOrientedDifferential_range_subset_tangent`.
+
+   The range target is now checked constructively, without a rank-nullity
+   detour.  For
+   `Y ∈ sourceFullFrameOrientedTangentSpace d (sourceFullFrameOrientedGram d M0)`,
+   set
+   `G := Matrix.of Y.1` and
+   `B := (2 : ℂ)⁻¹ • (M0⁻¹ * G * (M0.transpose)⁻¹ *
+     ComplexLorentzGroup.ηℂ (d := d))`, and take the preimage
+   `X := M0 * B`.  The theorem
+   `sourceFullFrameOrientedDifferential_constructedGram` proves the Gram
+   component by using `η² = 1`, `Gᵀ = G`, and the two inverse identities for
+   `M0` and `M0ᵀ`.  The theorem
+   `sourceFullFrameOrientedDifferential_constructedDet` proves the determinant
+   component by applying the checked trace identity to `X = M0 * B`, rewriting
+   the tangent equation with `sourceFullFrameGram_det_eq`, and cancelling
+   `(2 : ℂ)`, `minkowskiMetricDet d`, and `M0.det`.  Thus
+   `sourceFullFrameOrientedDifferential_range_eq_tangent` is checked in
+   `BHWPermutation/SourceOrientedFullFrameOrbit.lean`.
+   The same file now checks the gauge-slice linear algebra as
+   data-valued definitions/theorems:
+   `sourceFullFrameGaugeSlice_exists` is a noncomputable definition, choosing
+   a complement by `Submodule.exists_isCompl`, restricting the checked
+   differential to that complement, and proving bijectivity by
+   `sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent` plus
+   `sourceFullFrameOrientedDifferential_range_eq_tangent`;
+   `sourceFullFrameSlice_differential_linearEquiv` exposes the stored linear
+   equivalence; and
+   `sourceFullFrameSlice_restricted_range_eq_tangent` proves the range of the
+   restricted differential is exactly the oriented tangent space.
+   `contDiff_sourceFullFrameGaugeSliceMap` proves the gauge-slice map is
+   holomorphic by composing the affine translation from the slice with the
+   already checked `contDiff_sourceFullFrameOrientedGramCoord`.  The
+   producer is intentionally a `noncomputable def`, not a theorem returning
+   data, because the complement is chosen from an existence proposition.
+   Lean implementation checkpoint, 2026-05-03: the full Jacobi/Frechet packet
+   is now checked in `BHWPermutation/SourceOrientedFullFrameJacobi.lean`.
+   The checked determinant spine is
+   `matrix_det_hasFDerivAt_expansion`,
+   `matrix_det_one_add_hasDerivAt_trace`,
+   `matrix_det_one_hasFDerivAt_trace`,
+   `matrix_det_hasFDerivAt_trace`, and
+   `sourceFullFrameDet_hasFDerivAt`; it proves Jacobi's formula by
+   differentiating the Leibniz determinant expansion, reducing the identity
+   case to Mathlib's polynomial theorem
+   `Matrix.derivative_det_one_add_X_smul`, and transporting from `1` to an
+   invertible `M0` by left multiplication with `M0⁻¹`.  The checked Gram spine
+   remains `sourceFullFrameTransposeCLM`,
+   `sourceFullFrameGramDifferentialCLM`,
+   `sourceFullFrameTranspose_hasFDerivAt`,
+   `sourceFullFrameGramMatrix_hasFDerivAt`, and
+   `sourceFullFrameGram_hasFDerivAt`, using `HasFDerivAt.mul'` for the
+   noncommutative product `M η Mᵀ`.  These assemble as the checked theorem
+   `sourceFullFrameOrientedGram_hasFDerivAt`.
+   The same file also closes the regular-zero-locus tangent mismatch by
+   proving `sourceFullFrameOrientedEquation_hasFDerivAt_trace`, the actual
+   Frechet derivative of
+   `det gram - minkowskiMetricDet d * det^2` in trace form, and
+   `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_fderiv_eq_zero`,
+   identifying the oriented tangent space with the kernel of the actual
+   `fderiv` inside symmetric coordinates.
+   The same file now checks the slice derivative bridge:
+   `sourceFullFrameGaugeSliceMap_zero`,
+   `sourceFullFrameGaugeSliceMap_mem_varietyCoord`,
+   `sourceFullFrameGaugeSliceMap_mem_hypersurface`,
+   `sourceFullFrameGaugeSliceMap_hasFDerivAt`,
+   `sourceFullFrameGaugeSliceMap_hasStrictFDerivAt`,
+   `sourceFullFrameGaugeSliceMap_fderiv_eq`,
+   `sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent`, and
+   `sourceFullFrameGaugeSliceMap_fderiv_kernel_eq_bot`.  Thus the next
+   unimplemented full-frame target is no longer a derivative calculation.
+   Lean implementation checkpoint, 2026-05-03: the next local-image support
+   layer is checked in
+   `BHWPermutation/SourceOrientedFullFrameLocalImage.lean`.  It defines the
+   symmetric restricted equation
+   `sourceFullFrameSymmetricEquation`, its actual derivative
+   `sourceFullFrameSymmetricEquationDerivCLM`, and the base point
+   `sourceFullFrameSymmetricBase`; proves
+   `sourceFullFrameSymmetricEquation_hasFDerivAt`,
+   `sourceFullFrameSymmetricEquation_hasStrictFDerivAt`, and
+   `sourceFullFrameSymmetricEquationDerivCLM_range_eq_top_of_det_ne_zero`;
+   and constructs the Mathlib IFT chart
+   `sourceFullFrameSymmetricEquation_implicitChart`.  It also names the exact
+   gauge-slice derivative maps into the IFT chart target:
+   `sourceFullFrameGaugeSliceSymmetricDerivCLM` and
+   `sourceFullFrameGaugeSliceKernelDerivCLM`.  The remaining
+   full-frame local-image target is to compare this implicit hypersurface
+   chart with the checked gauge-slice map, yielding
+   `sourceFullFrameSlice_localImage_eq_hypersurface`, then restrict to
+   `sourceFullFrameSlice_localImage_eq_variety`.
+   The comparison is now fixed at Lean-pseudocode level as follows.  First
+   define the nonlinear slice map with codomain already restricted to
+   symmetric coordinates:
+   `sourceFullFrameGaugeSliceMapSymmetric d M0 S X :=
+   ⟨sourceFullFrameGaugeSliceMap d M0 S X,
+   (sourceFullFrameGaugeSliceMap_mem_hypersurface d M0 S X).1⟩`.
+   Prove its zero value, hypersurface equation, and strict derivative at
+   `0` by composing `sourceFullFrameGaugeSliceMap_hasStrictFDerivAt` with the
+   symmetric-subtype embedding and then proving the restricted derivative by
+   extensionality after applying the subtype projection, with derivative
+   `sourceFullFrameGaugeSliceSymmetricDerivCLM d hM0 S`.
+   Next expose
+   `sourceFullFrameGaugeSliceKernelDerivLinearEquiv`: injectivity is
+   proved by coercing an equality in the kernel codomain to symmetric
+   coordinates, then to ambient oriented coordinates, and applying the already
+   checked kernel theorem
+   `sourceFullFrameGaugeSliceMap_fderiv_kernel_eq_bot`; surjectivity sends a
+   kernel vector `K` to the tangent space using
+   `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_fderiv_eq_zero`,
+   then uses
+   `sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent` to choose the slice
+   preimage.  This avoids doing subtraction inside the kernel subtype, which
+   triggers typeclass-heartbeat issues, and keeps the proof in ambient
+   coordinates.
+
+   With the linear equivalence in hand, define the nonlinear kernel-coordinate
+   map
+   `sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S X :=
+   ((sourceFullFrameSymmetricEquation_implicitChart d M0 hM0)
+     (sourceFullFrameGaugeSliceMapSymmetric d M0 S X)).2`.
+   At `X = 0`, Mathlib's theorem
+   `HasStrictFDerivAt.implicitToOpenPartialHomeomorph_self`, together with
+   `sourceFullFrameGaugeSliceMap_zero` and
+   `sourceFullFrameOrientedEquation d (sourceFullFrameOrientedGramCoord d M0)
+   = 0`, gives value `0`.  The derivative is obtained by the identity
+   theorem for the implicit chart on kernel directions,
+   `implicitToOpenPartialHomeomorph_apply_ker`, applied to
+   `sourceFullFrameGaugeSliceKernelDerivCLM d hM0 S X` and the base point
+   `sourceFullFrameSymmetricBase d M0`, plus a first-order expansion of
+   `sourceFullFrameGaugeSliceMapSymmetric` with the checked strict derivative.
+   Equivalently, and preferably in Lean, use
+   `HasStrictFDerivAt.to_local_left_inverse` on the implicit chart's local
+   inverse `implicitFunction` and compose with the strict derivative of the
+   slice map; the resulting derivative of the second coordinate is exactly
+   `sourceFullFrameGaugeSliceKernelDerivCLM d hM0 S`.  Finally apply
+   Mathlib's inverse-function theorem to this kernel-coordinate map through
+   `sourceFullFrameGaugeSliceKernelDerivLinearEquiv`; the continuous-linear
+   upgrade is a finite-dimensional API conversion when the inverse-function
+   theorem is applied.  The target
+   neighborhood in the kernel coordinate chart is then pulled back by the
+   implicit chart inverse with first coordinate `0`, giving
+   `sourceFullFrameSlice_localImage_eq_hypersurface`; restriction to the
+   actual image variety uses only
+   `sourceFullFrameGaugeSliceMap_mem_varietyCoord` and
+   `sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface`.
+   Lean implementation checkpoint, 2026-05-03: the first half of this
+   comparison is checked.  `SourceOrientedFullFrameLocalImage.lean` now adds
+   the generic codomain-restriction helper
+   `hasStrictFDerivAt_submodule_codRestrict`,
+   `sourceFullFrameGaugeSliceMapSymmetric`,
+   `sourceFullFrameGaugeSliceMapSymmetric_zero`,
+   `sourceFullFrameGaugeSliceMapSymmetric_hasStrictFDerivAt`,
+   `sourceFullFrameGaugeSliceKernelDerivCLM_ker_eq_bot`,
+   `sourceFullFrameGaugeSliceKernelDerivCLM_range_eq_top`,
+   `sourceFullFrameGaugeSliceKernelDerivLinearEquiv`,
+   `sourceFullFrameSymmetricEquationKernelProjection`,
+   `sourceFullFrameSymmetricEquationKernelProjection_apply_ker`,
+   `sourceFullFrameSymmetricEquation_implicitChart_snd`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_zero`, and
+   `sourceFullFrameGaugeSliceImplicitKernelMap_hasStrictFDerivAt`,
+   `sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv`,
+   `sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv_coe`,
+   `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph`, and
+   `sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph_coe`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget`,
+   `sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget`, and
+   `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`.  The
+   checked
+   proof of the symmetric strict derivative is the generic submodule codomain
+   restriction of the already checked ambient strict derivative.  The checked
+   proof of surjectivity is the intended ambient-coordinate proof: a kernel
+   vector is converted to the full-frame tangent space by
+   `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_fderiv_eq_zero`
+   and then lifted from the range theorem
+   `sourceFullFrameGaugeSliceMap_fderiv_range_eq_tangent`.  The checked
+   derivative of the implicit kernel map is the literal projection transcript:
+   Mathlib's implicit chart has second coordinate
+   `sourceFullFrameSymmetricEquationKernelProjection d M0
+   (H - sourceFullFrameSymmetricBase d M0)`, the projection is the identity on
+   the kernel, and composition with the checked symmetric slice derivative gives
+   exactly `sourceFullFrameGaugeSliceKernelDerivCLM d hM0 S`.  The next Lean
+   checked inverse-function step upgrades the checked linear equivalence to a
+   continuous linear equivalence by keeping the forward continuous-linear map
+   and proving inverse continuity as finite-dimensional linear-map continuity;
+   `HasStrictFDerivAt.toOpenPartialHomeomorph` then gives the checked local
+   chart.  The next Lean target is the local image theorem.
    The rank-deficient half has also been tightened: the proof must build
    `SourceOrientedRankDeficientResidualChartData` before it may return
    `SourceOrientedRankDeficientRealizationData`.  This residual chart stores a
