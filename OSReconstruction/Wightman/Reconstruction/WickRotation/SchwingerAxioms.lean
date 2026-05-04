@@ -4044,6 +4044,31 @@ private theorem cluster_joint_kernel_polynomial_bound
                 (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt) ^ N *
             (2 : ℝ) ^ (q + 1) /
             (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt ^ (q + 1) := by
+  -- Extract constants from `hasForwardTubeGrowth_of_wightman` for (n + m) points.
+  obtain ⟨C_bd, N, q, hC_pos, _hgrowth⟩ :=
+    hasForwardTubeGrowth_of_wightman Wfn (n + m)
+  refine ⟨C_bd, N, q, hC_pos, ?_⟩
+  intro a _ha0
+  -- The remaining work: for a.e. (xy.1, xy.2), in the large-|⃗a| regime,
+  -- bound the joint kernel norm by the polynomial-over-|⃗a|^{q+1} form.
+  --
+  -- Outline (deferred):
+  -- 1. From `ae_pairwise_distinct_timeCoords` for `n+m`: a.e. all joint
+  --    times distinct.
+  -- 2. Shift-and-sort: pick `A := 1 + ∑ |xy.1 i 0| + ∑ |xy.2 j 0|`, time-shift
+  --    the joint config by A, then sort by time → joint shifted-and-sorted
+  --    config has strictly increasing positive times → Wick-rotated joint
+  --    in `ForwardTube d (n+m)`.
+  -- 3. Apply `_hgrowth` (the forward-tube growth bound) to get
+  --    `‖K_{n+m}(wick joint_sorted_shifted)‖ * infDist^{q+1} ≤ C(1+‖joint‖)^N`.
+  -- 4. F_ext is translation-invariant on TranslatedPET +
+  --    permutation-invariant via BHW, so
+  --    `‖F_ext(wick joint)‖ = ‖K_{n+m}(wick joint_sorted_shifted)‖`.
+  -- 5. infDist is shift- and permutation-invariant; in the large-|⃗a|
+  --    regime with `|⃗a|² > 4(‖xy.1‖+‖xy.2‖)² + 4`, inter-block distance
+  --    is ≥ |⃗a|/2.
+  -- 6. Combine: ‖F_ext‖ ≤ C(1+‖joint‖+|A|)^N / (|⃗a|/2)^{q+1}, simplify.
+  filter_upwards with xy _hregime
   sorry
 
 /-- Auxiliary: tail bound for the difference integrand. For any ε > 0, choose
