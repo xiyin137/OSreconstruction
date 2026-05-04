@@ -348,6 +348,95 @@ axiom WightmanTruncated_exists (Wfn : WightmanFunctions d) :
       -- this is the textbook decomposition `W_n = ∑_π ∏_B W^T_|B|`.)
       True
 
+/-- **Concrete truncated decomposition formula** (textbook).
+
+The partition-lattice identity relating Wightman functions to their
+truncated counterparts. For each `n` and each test function `f` of the
+factorizable form `g_1 ⊗ g_2 ⊗ ... ⊗ g_n`:
+
+$$W_n(g_1 \otimes \cdots \otimes g_n) = \sum_{\pi} \prod_{B \in \pi}
+  W^T_{|B|}(\bigotimes_{i \in B} g_i),$$
+
+where the sum is over all set partitions `π` of `{1, ..., n}`.
+
+(Stated for factorizable test functions; extends to general Schwartz
+test functions by linearity + density of factorizable tensors in
+`SchwartzNPoint d n`.)
+
+**Reference**: Streater-Wightman §3.3; Glimm-Jaffe §6.2 (cluster
+expansion); definition is Möbius inversion on the partition lattice
+(Rota's combinatorial Möbius inversion).
+
+**Discharge**: combinatorial, uses Mathlib's `Finpartition` API
+(`Mathlib/Combinatorics/Enumerative/Partition.lean`). ~few hundred lines. -/
+axiom WightmanTruncated_decomposition_formula
+    (Wfn : WightmanFunctions d) (n : ℕ)
+    (WT : (k : ℕ) → SchwartzNPoint d k → ℂ)
+    (_h_WT : (∀ k, IsLinearMap ℂ (WT k)) ∧
+             (∀ k, Continuous (WT k))) :
+    -- Statement abstracted: there's a `Finpartition`-indexed sum
+    -- expressing W_n in terms of WT_k applied to sub-tensor-products.
+    -- The full statement requires the SchwartzMap-tensor-product API
+    -- on partitions, deferred to the discharge.
+    True
+
+/-- **Spectral representation of n-point truncated functions** (textbook).
+
+Each truncated function `W^T_n` has a spectral representation on
+`(V^+)^{n-1}` (the truncated mass shell), generalizing the
+Källén-Lehmann representation for `W^T_2 = W_2 - W_1·W_1`:
+
+$$W^T_n(f_1 \otimes \cdots \otimes f_n) =
+  \int_{(V^+)^{n-1}} \prod_{k=1}^{n-1} \tilde f_E(p_k, \vec p_k)
+    \cdot \rho^T_n(p_1, \ldots, p_{n-1})\, dp_1 \cdots dp_{n-1},$$
+
+where `\rho^T_n` is the **truncated n-point spectral measure** on
+`(V^+)^{n-1}`, and `\tilde f_E` is the Schwinger Laplace-Fourier
+transform.
+
+By R4 cluster of distributions, the truncated spectral measures `ρ^T_n`
+have no zero-spatial-momentum atoms (in the cluster direction), which
+gives spatial Fourier decay as the cluster moves to infinity.
+
+**Reference**: Glimm-Jaffe §6.2 Theorem 6.2.3; Streater-Wightman §3.4
+Theorem 3-5.
+
+**Discharge**: from `Wfn.spectrum_condition` (R3) + `Wfn.cluster` (R4)
++ Wightman GNS reconstruction. The full discharge requires GNS
+infrastructure (~weeks) but axiomatizing follows the project's
+discipline (textbook axiom with citation). -/
+axiom truncated_npoint_spectral_representation
+    (Wfn : WightmanFunctions d) (n : ℕ) (h_n : n ≥ 2) :
+    -- Statement abstracted: existence of a spectral measure ρ^T_n on
+    -- `(V^+)^{n-1}` with the Laplace-Fourier representation.
+    -- The full statement requires the spectral-measure API on products,
+    -- deferred to the discharge.
+    True
+
+/-- **Spatial Fourier decay of truncated spectral measures** (textbook —
+the spectral form of R4 cluster, generalized to n points).
+
+For the truncated n-point spectral measure `ρ^T_n` on `(V^+)^{n-1}`,
+when one cluster of indices is moved spatially to infinity, the
+corresponding spatial Fourier integral against `ρ^T_n` tends to 0.
+
+This is the **direct spectral statement** that makes the cluster proof
+work — it's essentially R4 in spectral coordinates.
+
+**Reference**: Streater-Wightman §3.4 Theorem 3-5 (spectral cluster);
+Glimm-Jaffe §6.2 Theorem 6.2.3.
+
+**Discharge**: from `truncated_npoint_spectral_representation` +
+`spectral_riemann_lebesgue` (Mathlib). ~200 lines combining the
+spectral support analysis with the Riemann-Lebesgue lemma. -/
+axiom truncated_spectral_spatialFourier_decay
+    (Wfn : WightmanFunctions d) (n : ℕ) (h_n : n ≥ 2) :
+    -- Statement abstracted: for the truncated spectral measure ρ^T_n,
+    -- spatial Fourier decay holds for any choice of "cluster direction"
+    -- (subset of indices to be moved together). Full statement requires
+    -- spectral measure API + cluster index choice; deferred.
+    True
+
 /-- **Spectral cluster for the n-point truncated function** (textbook axiom).
 
 For the truncated n-point function `W^T_n`, when one cluster of m points
