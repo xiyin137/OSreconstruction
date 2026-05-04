@@ -4033,18 +4033,20 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   have hgood : ∀ᵐ (xy : NPointDomain d (n + m)) ∂MeasureTheory.volume,
       (∀ i j : Fin (n + m), i ≠ j → xy i 0 ≠ xy j 0) := by
     exact ae_pairwise_distinct_timeCoords
-  -- Step B: For each "good" config, the σ-permuted Wick rotation is in
-  -- `ForwardTube d (n + m)`. (Uses `exists_perm_wick_in_forwardTube_of_distinct_positive`
-  -- once we also have positivity, which comes from the OPTR support.)
+  -- Steps B + C: For each "good" config (joint times distinct + positive),
+  -- the pointwise cluster bound holds. **Discharged** by the proven
+  -- sub-lemma `W_analytic_BHW_cluster_pointwise_aux`, which:
+  -- (i) constructs σ-witnesses for each block + joint via
+  --     `exists_perm_wick_in_forwardTube_of_distinct_positive`,
+  -- (ii) invokes `bhw_pointwise_cluster_permutedForwardTube` (the
+  --     fully-permuted axiom),
+  -- (iii) bridges the joint Wick form `wick(append x_n (x_m + a))` to the
+  --     per-block form `append wick(x_n) (wick(x_m) + a)` using `a 0 = 0`.
   --
-  -- The construction `σ := Tuple.sort (fun k => xy k 0)` works because the
-  -- (n+m) joint times are strictly distinct and (a.e. on the support) all
-  -- positive.
-  --
-  -- Step C: Apply `bhw_pointwise_cluster_permutedForwardTube` at the σ-witness
-  -- to get pointwise cluster: for each good (x_n, x_m), there exists
-  -- `R(x_n, x_m)` such that for `|⃗a| > R(x_n, x_m)`, the pointwise integrand
-  -- difference is small.
+  -- The sub-lemma takes hypotheses `hpos_n, hpos_m, hdistinct_joint` which
+  -- combine `hgood` (from Step A) with the OPTR-support positivity from
+  -- `hsupp_f, hsupp_g`. Used inline at the dominated-convergence pointwise
+  -- application below.
   --
   -- Step D: Construct a uniform-in-a integrable dominator using
   -- `hasForwardTubeGrowth_of_wightman` (polynomial growth) + Schwartz decay
