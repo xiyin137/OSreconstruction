@@ -3874,78 +3874,61 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
           (g_zd.1 : NPointDomain d m → ℂ) x)
       MeasureTheory.volume :=
     wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn g_zd
-  -- Step 3 (deferred): Joint integral analysis.
+  -- Step 3 (in progress): Joint integral analysis via route (i)
+  --   — permuted-ForwardTube pointwise cluster + dominated convergence.
   --
-  -- **Identified obstacle (2026-05-03):** The current existing pointwise
-  -- cluster lemma `bhw_pointwise_cluster_forwardTube` requires
-  --   `Fin.append z_n z_m ∈ ForwardTube d (n + m)`
-  -- on the *joint* config. But OPTR support on each block separately gives
-  -- only that x_n, x_m have strictly increasing positive times within each
-  -- block — there is no guaranteed inter-block time ordering between the
-  -- last n-point time and the first m-point time. Hence the Wick-rotated
-  -- joint config is in `ForwardTube d (n+m)` only on a measure-zero set.
+  -- The load-bearing pointwise cluster `bhw_pointwise_cluster_permutedForwardTube`
+  -- (above) handles the central obstacle: OPTR per-block gives each block in
+  -- ForwardTube but the joint Fin.append config is in `ForwardTube d (n+m)`
+  -- only on a measure-zero set. The permuted-tube axiom replaces the
+  -- contiguous-tube hypothesis with an existential permutation hypothesis,
+  -- which holds a.e. (sort the (n+m) times in increasing order).
   --
-  -- **Recommended route (iii) — Källén-Lehmann spectral.**
-  -- Bypass the BHW joint-tube hypothesis by going through the spectral
-  -- representation directly. Clustering of Schwinger functions is
-  -- equivalent to the absence of a Dirac mass at p = 0 in the truncated
-  -- correlation spectral measure (R4 + R2 → no zero-mode → cluster).
-  -- Prerequisites:
-  --   - SNAG theorem (axiomatized in `GeneralResults/SNAGTheorem.lean`,
-  --     2026-05-03; rated Standard, Reed-Simon VIII.12).
-  --   - Bochner (proved, `bochner` repo `Bochner/Main.lean:1190`).
-  --   - Schwartz Fourier (Mathlib `SchwartzMap.fourierTransformCLM`).
-  --   - Truncated/connected decomposition `W_n = ∑_π ∏ W^T_{|π_i|}` over
-  --     set partitions (pure combinatorics, ~few hundred lines).
-  -- This route is reusable across the Wightman lane (mass gap,
-  -- asymptotic completeness, particle interpretation, spectral form of
-  -- R3) and across sister projects (lgt, gaussian-field).
-  -- Estimated cost: ~6–9 weeks end-to-end if we avoid full Wightman GNS
-  -- by working with W_2(a, 0) as a continuous positive-definite scalar
-  -- function and applying Bochner directly (no GNS Hilbert space needed
-  -- for the vacuum spectral measure).
+  -- **Discharge plan (~1–2 weeks):**
   --
-  -- **Fallback route (i) — permuted-ForwardTube cluster.**
-  -- Generalize `bhw_pointwise_cluster_forwardTube` to a permuted variant
-  -- whose joint hypothesis is only a permuted ForwardTube. The proof
-  -- sorts the joint config by time and applies BHW permutation
-  -- invariance; the cluster decomposition into `(n + m) → n × m` is
-  -- sensitive to which permutation is used, so the statement requires
-  -- care. ~1–2 weeks. Surgical, single-use; no broader reuse.
+  -- 1. **A.e. set of "good" configurations.** Intersect `ae_pairwise_distinct_timeCoords`
+  --    over the joint Fin (n+m) (gives all n+m time coordinates distinct a.e.),
+  --    with the OPTR support of `f.tensorProduct g_a` (gives positive times in
+  --    both blocks). On the intersection, all (n+m) times are strictly distinct
+  --    and positive.
   --
-  -- **Alternate route (ii) — direct Poisson lift.**
-  -- Use `Wfn.cluster` (R4) with carefully constructed test functions
-  -- concentrated on (x_n, x_m); the Poisson integral representation
-  -- lifts distributional cluster to pointwise cluster on each block's
-  -- tube. This is the OS-1973 §3 spectral route, but applied within
-  -- BHW rather than as a generic spectral statement; effectively a
-  -- specialization of (iii) to our setting. Roughly 3–4 weeks.
+  -- 2. **Permutation witness.** For each good (x_n, x_m), let σ = `Tuple.sort`
+  --    on `(fun k => Fin.append (fun i => x_n i 0) (fun j => x_m j 0) k)`.
+  --    This σ sorts the joint times in increasing order. Since each block
+  --    separately has distinct times, the σ-sorted config has strictly
+  --    increasing positive times across the joint; therefore the σ-permuted
+  --    Wick-rotated config is in `ForwardTube d (n+m)` via
+  --    `euclidean_ordered_in_forwardTube`.
   --
-  -- **Proof-strategy steps assuming route (i) or (ii) (kept inline as
-  -- they share most of the dominated-convergence assembly):**
+  -- 3. **Pointwise cluster.** Apply `bhw_pointwise_cluster_permutedForwardTube`
+  --    to (z_n, z_m, σ) to get: `‖F_ext(append wick(x_n) (wick(x_m) + a)) -
+  --    F_ext(wick x_n) F_ext(wick x_m)‖ < ε(x_n, x_m)` for `|⃗a|` large
+  --    enough (depending on the config).
   --
-  -- 1. Pointwise convergence on a.e. (x_n, x_m): for a.e. configs (using
-  --    `ae_pairwise_distinct_timeCoords`), each x_n, x_m has distinct
-  --    positive times, so wick(x_n^{σ_n}), wick(x_m^{σ_m}) ∈ ForwardTube
-  --    via `euclidean_ordered_in_forwardTube`.
-  -- 2. Joint integrand: dominate `F_ext(append (wick x_n) (wick x_m + a))`
-  --    by the polynomial-growth bound from `hasForwardTubeGrowth_of_wightman`
-  --    against `infDist^{q+1}`, then absorb both polynomial-growth and
-  --    coincidence singularity into Schwartz decay of f, g.
-  -- 3. Uniform-in-a dominator: for |a| > R₀, the m-block points are spatially
-  --    far from the n-block by Schwartz decay, so the joint integrand is
-  --    bounded by an integrable function of (x_n, x_m) independent of a.
-  -- 4. Fubini: apply `integral_fin_append_split` (PR #72) to decompose the
-  --    (n+m)-integral; push `wickRotatePoint` past `Fin.append` via
-  --    `Fin.append_comp_apply`; evaluate `tensorProduct` via
-  --    `tensorProduct_fin_append_apply`.
-  -- 5. Change of variable x_m → x_m + a on the m-block: use translation
-  --    invariance of Lebesgue measure on `NPointDomain`, plus
-  --    `wickRotatePoint_add` and `a 0 = 0` to convert
-  --    `wickRotatePoint(x_m + a)` to `wickRotatePoint(x_m) + (real spatial a)`.
-  -- 6. Dominated convergence assembly: combine 1–3 with
-  --    `MeasureTheory.tendsto_integral_of_dominated_convergence`; pick R
-  --    via ε/3 from the pointwise bound and the dominator.
+  -- 4. **Uniform integrable dominator.** From `hasForwardTubeGrowth_of_wightman`:
+  --    `‖F_ext(z)‖ · infDist(z, coincidence)^{q+1} ≤ C(1+‖z‖)^N` on the closed
+  --    forward tube. For Wick-rotated configs with shifted m-block, the
+  --    spatial shift `⃗a` only enters through the spatial coordinates (Im
+  --    parts unchanged), so the bound depends polynomially on `‖a‖`. Combined
+  --    with Schwartz decay of `f, g` (which beats any polynomial), we get
+  --    a dominator of the form `C (1+‖x_n‖)^{-K} (1+‖x_m‖)^{-K}` (uniform in
+  --    `a` for `|⃗a| > R₀`), integrable over `(x_n, x_m)`.
+  --
+  -- 5. **Fubini decomposition** of the (n+m)-integral on the LHS:
+  --    `integral_fin_append_split` + push `wickRotatePoint` through `Fin.append`
+  --    via `Fin.append_comp_apply` + evaluate `tensorProduct` via
+  --    `tensorProduct_fin_append_apply`. Change of variable `x_m → x_m + a`
+  --    on the m-block via Lebesgue translation invariance + `wickRotatePoint_add`
+  --    with `a 0 = 0` (gives `wick(x_m + a) = wick(x_m) + spatial_a`).
+  --
+  -- 6. **Dominated convergence.** Apply
+  --    `MeasureTheory.tendsto_integral_of_dominated_convergence` with the
+  --    pointwise cluster (step 3) + uniform dominator (step 4) to get integral
+  --    cluster: `LHS - RHS → 0` as `|⃗a| → ∞`. Pick `R` via the resulting
+  --    `Tendsto` predicate and `ε`.
+  --
+  -- All five remaining steps are pure Lean engineering on top of the new axiom;
+  -- no further mathematical content is needed. Scheduled as follow-up commit.
   sorry
 
 /-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
