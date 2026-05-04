@@ -132,11 +132,126 @@ Latest source-patch refinement, 2026-05-03: the strict OS I §4.5
 BHW/Jost source-patch theorem is still **not** ready for production Lean at
 the public wrapper.  The docs now reject the false generic extension claim
 "open subset meets connected hull, therefore extends."  The real first Lean
-targets are the exposed exponential near-identity support, the local
-scalar-product continuation chart on the starting sector, the one-step
-overlap continuation theorem, and the compact-path continuation-chain/atlas
-producer.  Only after those are proved may
+targets are the exposed exponential near-identity support, the local invariant
+continuation chart on the starting sector, the one-step overlap continuation
+theorem, and the compact-path continuation-chain/atlas producer.  In the
+conditional ordinary fork this is the scalar-product chart; in the strict
+route it is the oriented source-invariant chart.  The one-step theorem now
+has an explicit chart-branch descent
+surface using `branch_same_sourceGram` in the conditional ordinary fork and
+`branch_same_sourceOrientedInvariant` in the strict fork, together with
+`branch_complexLorentzInvariant`;
+the compact-path theorem is pinned to Mathlib's
+`exists_monotone_Icc_subset_open_cover_unitInterval`; and chain
+single-valuedness is split through a genuine Hall-Wightman/Jost closed-loop
+monodromy theorem.  The chain carrier now fixes one base point
+`p0 ∈ Ω0 ∩ U` and stores `p0 ∈ start_patch`, so two-chain comparison and
+closed-loop monodromy have a real common normalization patch rather than an
+anonymous nonempty initial overlap.  Local chart carriers and invariant-domain
+patches are also required to be preconnected, because the identity theorem
+cannot silently jump between components of an open chart.  The compact-path
+layer now uses explicit branch-free transfer packages, so the finite
+subdivision cover is chosen from geometry neighborhoods rather than from
+already-constructed continuation chains; in the strict fork these are
+`BHW.BHWJostOrientedBranchFreeTransferNeighborhood`,
+`BHW.BHWJostOrientedSourceNormalFormGeometryPatch`, and
+`BHW.bhw_jost_uniformOrientedDescent_on_sourceNormalFormPatch`.  The
+closed-loop monodromy surface now carries local invariant charts, transition
+data, and a closing invariant patch, reducing the source-level equality to
+`BHW.bhw_jost_closedChain_orientedMonodromy_trivial` in the strict route.
+The plain-Gram version is now explicitly conditional on the
+full-component Hall-Wightman source input recorded in the paper-source audit
+below.  Proper-complex `L_+(C)` invariance alone does not justify
+`branch_same_sourceGram` in scalar rank `d + 1`; in the strict OS I §4.5
+route the same continuation-chain/closed-loop architecture must be ported to
+the oriented source invariant, with determinant coordinates replacing the
+plain rank-exact Gram monodromy surface.  Only after either that oriented
+strict-route packet is proof-ready, or the full-component Hall-Wightman input
+is formally adopted with exact parameters, may
 `BHW.os45_sourcePatch_bhwJostPairData_of_OSI45` be assembled.
+
+Current Lean checkpoint, 2026-05-03: production Lean has now started only at
+the lower oriented carrier/API layer, not at the public wrapper.  The checked
+file
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuation.lean`
+adds the OS45 source-patch ambient/hull, the one-way oriented invariant union
+domain, the checked `UnitIntervalOrderedSubdivision` wrapper around Mathlib's
+open-cover subdivision theorem, endpoint cover helpers
+`BHW.UnitIntervalOrderedSubdivision.interval_endpoints_mem_cover`,
+`BHW.UnitIntervalOrderedSubdivision.left_endpoint_mem_cover`,
+`BHW.UnitIntervalOrderedSubdivision.right_endpoint_mem_cover`, and the
+path-specialized selector
+`BHW.unitInterval_orderedSubdivision_of_path_openCover`; the branch-free
+transfer cover is specialized as
+`BHW.exists_unitInterval_orderedSubdivision_of_orientedTransferCover`,
+`BHW.unitInterval_orderedSubdivision_of_orientedTransferCover`, and
+`BHW.orientedTransferSubdivision_interval_endpoints_mem`.  The file also adds
+the checked open preconnected neighborhood shrinker, `SourceOrientedMaxRankAt`,
+the exceptional-rank bridges
+`BHW.sourceOrientedExceptionalRank_iff_not_maxRank` and
+`BHW.not_sourceOrientedExceptionalRank_iff_maxRank`,
+the oriented local chart/transition/chain/closed-loop/atlas carriers, and
+mechanical descent helpers from oriented germ equality to source-branch
+equality.  The realization fields are now
+operational in checked Lean through
+the local chart provenance field
+`BHW.BHWJostLocalOrientedContinuationChart.carrier_is_lorentz_step`,
+`BHW.BHWJostLocalOrientedContinuationChart.exists_source_realization_branch_eq`,
+`BHW.BHWJostLocalOrientedContinuationChart.exists_source_realization_mem_U_branch_eq`,
+`BHW.BHWJostOrientedTransitionData.sourcePatch_subset_U`,
+`BHW.BHWJostOrientedTransitionData.source_mem_U`,
+`BHW.BHWJostOrientedTransitionData.source_mem_right_carrier`,
+`BHW.BHWJostOrientedTransitionData.source_branch_agree_at_source`,
+`BHW.BHWJostOrientedTransitionData.exists_sourcePatch_realization_of_orientedPatch`,
+`BHW.BHWJostOrientedTransitionData.exists_sourcePatch_realization_mem_U_of_orientedPatch`,
+`BHW.BHWJostOrientedSourceNormalFormGeometryPatch.exists_source_realization`,
+`BHW.BHWJostOrientedSourceNormalFormGeometryPatch.exists_source_realization_mem_U`,
+`BHW.BHWJostOrientedBranchFreeTransferNeighborhood.ofSourceNormalFormPatch`,
+`BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_source_mem_next`,
+`BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_target_mem_next`,
+`BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_branch_agree_at_source`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.base`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.snoc`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_nodeSteps`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.ofNodeSteps`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_subdivision`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.ofSubdivision`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_transferCover`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.ofTransferCover`,
+`BHW.BHWJostOrientedSourcePatchContinuationChain.chart_is_lorentz_step_of_localChart`,
+`BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_initial_final_source_realizations`,
+and
+`BHW.BHWJostOrientedMaxRankClosedLoopSeed.terminal_branch_eq_B0_on_seedRealizedClosingPatch`.
+`BHW.BHWJostOrientedSourcePatchContinuationChain.localChart_consecutive_agree`
+now derives chart agreement from the stored chain-level branch equality and
+`branch_eq_local`; the earlier field `transition_patch_eq_sourcePatch` has
+been removed as redundant.  This introduces no new `sorry` and does not prove
+the hard Hall-Wightman/Jost closed-loop seed theorem; that seed remains the
+next genuine mathematical blocker after the local descent producers are in
+place.
+
+The producer-level assembly has been split into
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuationProducers.lean`.
+It checks
+`BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer`,
+which builds branch-free transfer neighborhoods from a normal-form patch
+producer plus uniform descent, and
+`BHW.bhw_jost_orientedContinuationChain_of_transferCover`, the top-level
+spelling of the compact transfer-cover chain fold.  This keeps the carrier/API
+file below the hard-frontier size limit and introduces no new analytic
+assumption.
+
+The rank bridge file
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`
+checks the finite-dimensional rank conversions needed by the next local-chart
+dispatch: `BHW.sourceGramMatrixRank_le_spacetime_source_min`,
+`BHW.sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt`,
+`BHW.sourceOrientedExceptionalRank_invariant_iff_hwSourceGramExceptionalRankAt`,
+the corresponding transport lemmas under equality of oriented invariants, and
+the fact that oriented max/exceptional rank depends only on the ordinary Gram
+coordinate.  The upper bound is proved from
+`sourceGramMatrixRank_eq_restrictedMinkowskiRank_range`,
+`finrank_range_sourceCoefficientEval_le`, and `Submodule.finrank_le`.
 
 Latest local connected-basis refinement, 2026-05-02: the rank-deficient
 no-tube local-image branch now has a two-sided Schur parameter-box transcript.
@@ -148,9 +263,14 @@ fact that every head-gauge/mixed/tail parameter extracted from
 `Ωnf ∩ sourceOrientedGramVariety` belongs to the connected parameter box.
 This removes the last known theorem-shape gap in the local
 `sourceOrientedGramVariety_local_connectedRelOpen_basis` transcript.  Its
-Lean implementation may start only at the lower finite-dimensional chart and
-tail-realization lemmas named in the blueprint, not at the public adjacent
-seed or scalar-representative wrappers.
+Lean implementation has now started at the lower support layer: the checked
+files `SourceOrientedConnected.lean`, `SourceOrientedLocalBasis.lean`, and
+`SourceOrientedRankDeficientLocalImage.lean` prove the connected-component
+topology, the max-rank/rank-deficient stratum dispatcher, and the topological
+extraction from an abstract rank-deficient local-image packet.  The remaining
+implementation targets are the finite-coordinate max-rank chart producer and
+the concrete Schur/residual local-image producer; Lean work should still not
+start at the public adjacent seed or scalar-representative wrappers.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
@@ -419,8 +539,10 @@ selected Gram block, and checks all determinant coordinates by oriented
 relations and block determinant expansion.  The extended-tube section is then
 the same chart after an extra shrink keeping the reconstructed vector map in
 `BHW.ExtendedTube d n`.  Thus this subpacket now has the right proof shape,
-but production Lean is not started until the finite-dimensional full-frame
-gauge slice/local-image theorem and its determinant algebra are implemented.
+and production Lean has started at the finite-dimensional full-frame
+coordinate, tangent, and slice substrate.  The max-rank chart constructor is
+still blocked until the full-frame gauge local-image theorem and
+determinant-recovery algebra are implemented.
 
 Full-frame reconstruction formula refinement, 2026-05-02: the blueprint now
 spells out the actual chart inverse used by
@@ -1484,6 +1606,57 @@ implementation contract is:
    whole ambient coordinate neighborhood into `ExtendedTube`, not merely the
    variety slice; otherwise the proof of holomorphy for `extendF F` composed
    with the section has no valid domain membership hypothesis.
+   Lean implementation checkpoint, 2026-05-03: the finite-dimensional
+   full-frame coordinate/tangent substrate is now checked in
+   `BHWPermutation/SourceOrientedFullFrame.lean`.  The checked names include
+   `sourceFullFrameGram`, `continuous_sourceFullFrameGram`,
+   `contDiff_sourceFullFrameGram`,
+   `differentiable_sourceFullFrameGram`,
+   `SourceFullFrameOrientedGramData`,
+   `SourceFullFrameOrientedCoord`,
+   `sourceFullFrameOrientedGramCoord`,
+   `sourceFullFrameOrientedGramVarietyCoord_eq_image`,
+   `continuous_sourceFullFrameOrientedGramCoord`,
+   `contDiff_sourceFullFrameOrientedGramCoord`,
+   `differentiable_sourceFullFrameOrientedGramCoord`,
+   `sourceFullFrameOrientedCoord_detNonzero_open`,
+   `sourceFullFrameSymmetricCoordSubmodule`,
+   `sourceFullFrameOrientedEquation`,
+   `sourceFullFrameOrientedHypersurfaceCoord`,
+   `sourceFullFrameOrientedEquationDerivLinear`,
+   `sourceFullFrameOrientedEquationDerivCLM`,
+   `sourceFullFrameDetDirection`,
+   `sourceFullFrameSymmetricDetDirection`,
+   `sourceFullFrameOrientedEquationDeriv_detDirection`,
+   `sourceFullFrameOrientedEquationDerivOnSymmetric_surjective_of_det_ne_zero`,
+   `specialComplexLorentzLieAlgebra`,
+   `infinitesimalRightSpecialLorentzAction`,
+   `sourceFullFrameOrbitTangent`,
+   `sourceFullFrameOrientedDifferentialLinear`,
+   `sourceFullFrameOrientedDifferentialCLM`,
+   `sourceFullFrameOrientedTangentSpace`,
+   `SourceFullFrameGaugeSliceData`,
+   `sourceFullFrameGaugeSliceMap`, and
+   `sourceFullFrameOrientedGramCoord_differentiableAt_translate`.
+   The same file now also checks
+   `minkowskiMetricDet_mul_self`,
+   `isUnit_minkowskiMetricDet`,
+   `minkowskiMetricDet_ne_zero`,
+   `sourceFullFrameGram_eq_mul_eta_transpose`,
+   `sourceFullFrameGram_det_eq`,
+   `sourceFullFrameGram_det_isUnit_of_frame_det_isUnit`,
+   `sourceFullFrameOrientedGramCoord_mem_hypersurface`, and
+   `sourceFullFrameOrientedGramVarietyCoord_subset_hypersurface`.
+   The tangent target has also been algebraically identified as the
+   symmetric-coordinate kernel by
+   `mem_sourceFullFrameOrientedTangentSpace_iff_symmetric_and_deriv_eq_zero`.
+   This does not close the full-frame local-image theorem: the remaining
+   hard finite-dimensional blockers are the theorem that this linearized
+   equation is the actual Frechet derivative of
+   `sourceFullFrameOrientedEquation`,
+   `sourceFullFrameOrientedDifferential_kernel_eq_orbitTangent`,
+   `sourceFullFrameOrientedDifferential_range_eq_tangent`, and the
+   regular-zero-locus/local-image theorem consuming those calculations.
    The rank-deficient half has also been tightened: the proof must build
    `SourceOrientedRankDeficientResidualChartData` before it may return
    `SourceOrientedRankDeficientRealizationData`.  This residual chart stores a
@@ -1896,9 +2069,9 @@ implementation contract is:
    `sourceOrientedRelOpen_inter_maxRank_nonempty`,
    `sourceOrientedMaxRankChart_at`,
    `SourceOrientedVarietyGermHolomorphicOn.to_maxRank_chart`, and
-   `sourceOrientedMaxRank_local_identity_near_point` supplying the local
+   `SourceOrientedMaxRankChartData.local_identity_near_point` supplying the local
    analytic continuation step on arbitrary complex max-rank points.  The local
-   step is itself decomposed: `sourceOrientedMaxRankChart_shrink_to_relOpen`
+   step is itself decomposed: `SourceOrientedMaxRankChartData.shrink_to_relOpen`
    shrinks the chart to a connected open image inside the given relative
    domain; `LocalBiholomorphOnSourceOrientedVariety.image_relOpenIn_chart`
    turns relative openness in the source variety into relative openness in the
@@ -2455,6 +2628,35 @@ implementation contract is:
    | Dual frame and contraction family | Proof transcript pinned; production Lean not started. | Store `qDual_pair_zero`, `q_dual`, `qDual_orth`, build the finite partial boost scaling `q`/`qDual`, and Witt-extend it; the dual frame is used only for null-boost contraction and the two-curve value equality/limit, not for the coefficient-freedom membership theorem. |
    | Tube stability and singular limit | Proof transcript pinned; corrected target for arbitrary endpoints is `ExtendedTube`, not `ForwardTube`. | Split off the trivial `n = 0` case.  For `[NeZero n]`, prove Hall-Wightman's second remark as `hw_secondRemark_forwardTube_singleNullResidual_normalForm`: real/imaginary null split, rule out the lightlike-collinear case by strict forward-cone non-orthogonality, project to `η + β q`, and apply the equation-(41) cone lemma.  Then prove the third-remark scaling theorem by the explicit complex two-plane rotation fixing the orthogonal complement and scaling `u + i v` by `exp t`; transport the one-null-vector coefficient theorem from a forward representative to an arbitrary extended-tube endpoint, and finite-induct to `hw_isotropicFrame_allCoefficients_mem_extendedTube`. |
    | `extendF_complexLorentzInvariant_of_cinv` | Implemented and exact-file checked in `ComplexInvariance/Extend.lean`. | Unfold `extendF`, choose forward-tube preimages, and use the new direct-preimage helper `BHW.extendF_preimage_eq_of_cinv`; no PET/EOW/locality and no scalar-representative content. |
+
+   The oriented max-rank continuation layer consumes the following public
+   corollary of the determinant/Witt row:
+
+   ```lean
+   theorem BHW.hw_sameSourceOrientedInvariant_maxRank_properOrbit
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat)
+       {z w : Fin n -> Fin (d + 1) -> ℂ}
+       (hzmax :
+         BHW.SourceOrientedMaxRankAt d n
+           (BHW.sourceOrientedMinkowskiInvariant d n z))
+       (hinv :
+         BHW.sourceOrientedMinkowskiInvariant d n z =
+           BHW.sourceOrientedMinkowskiInvariant d n w) :
+       ∃ Λ : ComplexLorentzGroup d,
+         w = BHW.complexLorentzAction Λ z
+   ```
+
+   Its proof unfolds the oriented invariant into ordinary same-Gram equality
+   plus equality of all selected full-frame determinants.  The ordinary
+   same-Gram equality supplies `HWHighRankSpanIsometryData`.  If the source
+   span is proper, determinant repair gives a determinant-`1` extension
+   directly.  If the source span is all of spacetime, choose any selected
+   full frame with nonzero determinant from `hzmax`; the determinant action
+   formula and `hinv` force the full-frame extension determinant to be `1`,
+   excluding the improper branch.  Convert the determinant-`1` full
+   Lorentz element to `ComplexLorentzGroup d` and rewrite the vectorwise
+   action equality to the displayed configuration equality.
 
    Therefore, after the theorem-2 proof-doc gate is fully closed, the first
    remaining Lean target in this block is now the high-rank
@@ -4651,18 +4853,730 @@ common-boundary envelope, or any theorem that already assumes locality.
    `bhw_sourcePatchHull_has_continuationAtlas`.  It is precisely the local
    Bargmann-Hall-Wightman/Jost theorem: real orthochronous Lorentz invariance
    gives local constancy in proper-complex Lorentz exponential charts; finite
-   continuation chains in the displayed hull give local branches; the
-   closed-chain argument gives overlap equality and single-valuedness.  It is
-   allowed to use the Hall-Wightman Lemma-1 proof and OS I `(4.14)` covariance
+   continuation chains in the displayed hull give local branches; and the
+   closed invariant-monodromy theorem gives overlap equality and
+   single-valuedness.  It is allowed to use the Hall-Wightman Lemma-1 proof
+   and OS I `(4.14)` covariance
    input for `bvt_F`; it is not allowed to call global PET branch
    independence, `fullExtendF`, global source-representative packages, or
    locality.
 
-   The atlas producer itself must be implemented through local scalar-product
+   The atlas producer itself must be implemented through local invariant
    continuation charts, not by postulating an atlas.  These charts are local
-   Hall-Wightman/Jost proof objects; they may use the scalar-product descent
-   argument inside their proof, but they must not consume the global
-   `SourceScalarRepresentativeData` package as an input.
+   Hall-Wightman/Jost proof objects; in the conditional ordinary fork they use
+   scalar-product descent, while in the strict route they use oriented-source
+   descent.  In either case they must not consume the global
+   `SourceScalarRepresentativeData` package as an input.  Each chart carrier
+   and scalar/oriented germ domain is explicitly preconnected: the identity
+   theorem only propagates branch equality across the active component, so
+   every Hall-Wightman/Jost neighborhood must be shrunk to an open
+   preconnected carrier and a preconnected invariant-domain patch before it
+   is stored in a local chart or continuation chain.
+
+   Critical route gate: the following plain-Gram `BHWJostLocalScalar...`
+   packet is a conditional ordinary fork, not yet the strict OS I §4.5
+   production target.  Its field `branch_same_sourceGram` is mathematically
+   available only from the full-component Hall-Wightman source theorem
+   discussed in the paper-source audit.  If the proof stays on the strict
+   proper-complex route, every occurrence of `sourceMinkowskiGram`,
+   `SourceVarietyGermHolomorphicOn`, and
+   `IsRelOpenInSourceComplexGramVariety` in this packet must be replaced by
+   the oriented invariant API:
+
+   ```lean
+   structure BHW.BHWJostLocalOrientedContinuationChart
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ)) where
+     carrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+     carrier_open : IsOpen carrier
+     carrier_preconnected : IsPreconnected carrier
+     carrier_sub_U : carrier ⊆ U
+     orientedDomain : Set (BHW.SourceOrientedGramData d n)
+     oriented_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n orientedDomain
+     oriented_preconnected : IsPreconnected orientedDomain
+     oriented_sub_variety :
+       orientedDomain ⊆ BHW.sourceOrientedGramVariety d n
+     oriented_mem :
+       ∀ z, z ∈ carrier ->
+         BHW.sourceOrientedMinkowskiInvariant d n z ∈ orientedDomain
+     oriented_realizes :
+       ∀ G, G ∈ orientedDomain ->
+         ∃ z, z ∈ carrier ∧
+           BHW.sourceOrientedMinkowskiInvariant d n z = G
+     Psi : BHW.SourceOrientedGramData d n -> ℂ
+     Psi_holo :
+       BHW.SourceOrientedVarietyGermHolomorphicOn d n Psi orientedDomain
+     branch : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+     branch_eq_orientedPullback :
+       ∀ z, z ∈ carrier ->
+         branch z =
+           Psi (BHW.sourceOrientedMinkowskiInvariant d n z)
+     branch_holo : DifferentiableOn ℂ branch carrier
+     branch_same_sourceOrientedInvariant :
+       ∀ z w, z ∈ carrier -> w ∈ carrier ->
+         BHW.sourceOrientedMinkowskiInvariant d n z =
+           BHW.sourceOrientedMinkowskiInvariant d n w ->
+         branch z = branch w
+     branch_complexLorentzInvariant :
+       ∀ Λ z, z ∈ carrier ->
+         BHW.complexLorentzAction Λ z ∈ carrier ->
+           branch (BHW.complexLorentzAction Λ z) = branch z
+
+   structure BHW.BHWJostOrientedTransitionData
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (Cleft Cright :
+         BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+       (p q : Fin n -> Fin (d + 1) -> ℂ) where
+     sourcePatch : Set (Fin n -> Fin (d + 1) -> ℂ)
+     sourcePatch_open : IsOpen sourcePatch
+     sourcePatch_preconnected : IsPreconnected sourcePatch
+     sourcePatch_nonempty : sourcePatch.Nonempty
+     source_mem : p ∈ sourcePatch
+     target_mem : q ∈ Cright.carrier
+     sourcePatch_sub :
+       sourcePatch ⊆ Cleft.carrier ∩ Cright.carrier
+     source_branch_agree :
+       Set.EqOn Cleft.branch Cright.branch sourcePatch
+     orientedPatch : Set (BHW.SourceOrientedGramData d n)
+     orientedPatch_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n orientedPatch
+     orientedPatch_preconnected : IsPreconnected orientedPatch
+     orientedPatch_nonempty : orientedPatch.Nonempty
+     orientedPatch_sub :
+       orientedPatch ⊆ Cleft.orientedDomain ∩ Cright.orientedDomain
+     sourcePatch_oriented_mem :
+       ∀ y, y ∈ sourcePatch ->
+         BHW.sourceOrientedMinkowskiInvariant d n y ∈ orientedPatch
+     orientedPatch_source_realizes :
+       ∀ G, G ∈ orientedPatch ->
+         ∃ y, y ∈ sourcePatch ∧
+           BHW.sourceOrientedMinkowskiInvariant d n y = G
+     oriented_psi_agree :
+       Set.EqOn Cleft.Psi Cright.Psi orientedPatch
+   ```
+
+   The strict-route local producers are the oriented replacements for the
+   plain-Gram one-step packet.  They have the same topology shape as the
+   conditional ordinary fork, but the seed descends through
+   `sourceOrientedMinkowskiInvariant` and `Psi`.
+
+   ```lean
+   theorem BHW.bhw_jost_initialOrientedContinuationChart_at
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p : Fin n -> Fin (d + 1) -> ℂ}
+       (hp : p ∈ Ω0 ∩ U) :
+       ∃ C : BHW.BHWJostLocalOrientedContinuationChart hd n τ U,
+       ∃ P : Set (Fin n -> Fin (d + 1) -> ℂ),
+         p ∈ P ∧
+         IsOpen P ∧ IsPreconnected P ∧ P.Nonempty ∧
+         P ⊆ Ω0 ∩ C.carrier ∧
+         Set.EqOn C.branch B0 P
+
+   theorem BHW.bhw_jost_localOrientedDescent_from_chartBranch_star
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (Cprev : BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+       {p : Fin n -> Fin (d + 1) -> ℂ}
+       (hpC : p ∈ Cprev.carrier)
+       (hpU : p ∈ U) :
+       ∃ N ∈ 𝓝 p, IsOpen N ∧ p ∈ N ∧
+         ∀ q, q ∈ N -> q ∈ U ->
+           Nonempty
+             (Σ Cnext : BHW.BHWJostLocalOrientedContinuationChart hd n τ U,
+               BHW.BHWJostOrientedTransitionData hd n τ U Cprev Cnext p q)
+
+   structure BHW.BHWJostOrientedSourceNormalFormGeometryPatch
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (center : Fin n -> Fin (d + 1) -> ℂ) where
+     carrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+     carrier_open : IsOpen carrier
+     carrier_preconnected : IsPreconnected carrier
+     center_mem : center ∈ carrier
+     carrier_sub_U : carrier ⊆ U
+     orientedDomain : Set (BHW.SourceOrientedGramData d n)
+     oriented_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n orientedDomain
+     oriented_preconnected : IsPreconnected orientedDomain
+     oriented_sub_variety :
+       orientedDomain ⊆ BHW.sourceOrientedGramVariety d n
+     oriented_mem :
+       ∀ z, z ∈ carrier ->
+         BHW.sourceOrientedMinkowskiInvariant d n z ∈ orientedDomain
+     oriented_realizes :
+       ∀ G, G ∈ orientedDomain ->
+         ∃ z, z ∈ carrier ∧
+           BHW.sourceOrientedMinkowskiInvariant d n z = G
+
+   noncomputable def BHW.bhw_jost_orientedSourceNormalFormGeometryPatch_at
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       {center : Fin n -> Fin (d + 1) -> ℂ}
+       (hcenter : center ∈ U) :
+       BHW.BHWJostOrientedSourceNormalFormGeometryPatch hd n τ U center
+
+   theorem BHW.bhw_jost_uniformOrientedDescent_on_sourceNormalFormPatch
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       {center : Fin n -> Fin (d + 1) -> ℂ}
+       (G : BHW.BHWJostOrientedSourceNormalFormGeometryPatch hd n τ U center)
+       (Cprev : BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+       {p q : Fin n -> Fin (d + 1) -> ℂ}
+       (hpG : p ∈ G.carrier)
+       (hqG : q ∈ G.carrier)
+       (hpC : p ∈ Cprev.carrier) :
+       Nonempty
+         (Σ Cnext : BHW.BHWJostLocalOrientedContinuationChart hd n τ U,
+           BHW.BHWJostOrientedTransitionData hd n τ U Cprev Cnext p q)
+
+   structure BHW.BHWJostOrientedBranchFreeTransferNeighborhood
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (center : Fin n -> Fin (d + 1) -> ℂ) where
+     N : Set (Fin n -> Fin (d + 1) -> ℂ)
+     N_mem_nhds : N ∈ 𝓝 center
+     N_open : IsOpen N
+     center_mem : center ∈ N
+     transfer :
+       ∀ p q, p ∈ N -> p ∈ U -> q ∈ N -> q ∈ U ->
+       ∀ Cprev : BHW.BHWJostLocalOrientedContinuationChart hd n τ U,
+         p ∈ Cprev.carrier ->
+           Σ Cnext : BHW.BHWJostLocalOrientedContinuationChart hd n τ U,
+             BHW.BHWJostOrientedTransitionData hd n τ U Cprev Cnext p q
+
+   noncomputable def BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       {p : Fin n -> Fin (d + 1) -> ℂ}
+       (hpU : p ∈ U) :
+       BHW.BHWJostOrientedBranchFreeTransferNeighborhood hd n τ U p
+   ```
+
+   The oriented chain and closed-loop carriers are the field-for-field
+   replacements of `BHWSourcePatchContinuationChain` and
+   `BHWJostClosedContinuationLoop`, with
+   `BHWJostLocalOrientedContinuationChart` replacing local scalar charts,
+   `BHWJostOrientedTransitionData` replacing scalar transitions, and
+   `closing_orientedPatch` replacing `closing_gramPatch`:
+
+   ```lean
+   structure BHW.BHWJostOrientedSourcePatchContinuationChain
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (p0 z : Fin n -> Fin (d + 1) -> ℂ) where
+     base_mem : p0 ∈ Ω0 ∩ U
+     m : Nat
+     node : Fin (m + 1) -> Fin n -> Fin (d + 1) -> ℂ
+     node_zero : node 0 = p0
+     node_last : node (Fin.last m) = z
+     chart : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ)
+     node_mem : ∀ j, node j ∈ chart j
+     localChart :
+       Fin (m + 1) ->
+         BHW.BHWJostLocalOrientedContinuationChart hd n τ U
+     branch : Fin (m + 1) ->
+       (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+     chart_open : ∀ j, IsOpen (chart j)
+     chart_preconnected : ∀ j, IsPreconnected (chart j)
+     chart_sub_U : ∀ j, chart j ⊆ U
+     chart_eq_local : ∀ j, chart j = (localChart j).carrier
+     branch_eq_local :
+       ∀ j y, y ∈ chart j -> branch j y = (localChart j).branch y
+     branch_holo : ∀ j, DifferentiableOn ℂ (branch j) (chart j)
+     start_patch : Set (Fin n -> Fin (d + 1) -> ℂ)
+     start_patch_open : IsOpen start_patch
+     start_patch_preconnected : IsPreconnected start_patch
+     start_patch_nonempty : start_patch.Nonempty
+     start_mem : p0 ∈ start_patch
+     start_patch_sub : start_patch ⊆ Ω0 ∩ chart 0
+     start_agree :
+       ∀ y, y ∈ start_patch -> branch 0 y = B0 y
+     transition_patch :
+       ∀ j : Fin m, Set (Fin n -> Fin (d + 1) -> ℂ)
+     transition_patch_open : ∀ j, IsOpen (transition_patch j)
+     transition_patch_nonempty : ∀ j, (transition_patch j).Nonempty
+     transition_patch_preconnected :
+       ∀ j, IsPreconnected (transition_patch j)
+     transition_patch_sub_left :
+       ∀ j, transition_patch j ⊆ chart (Fin.castSucc j)
+     transition_patch_sub_right :
+       ∀ j, transition_patch j ⊆ chart j.succ
+     consecutive_agree :
+       ∀ j : Fin m, ∀ y,
+         y ∈ transition_patch j ->
+           branch (Fin.castSucc j) y = branch j.succ y
+     oriented_transition :
+       ∀ j : Fin m,
+         BHW.BHWJostOrientedTransitionData hd n τ U
+           (localChart (Fin.castSucc j)) (localChart j.succ)
+           (node (Fin.castSucc j)) (node j.succ)
+     final_mem : z ∈ chart (Fin.last m)
+     chart_is_lorentz_step :
+       ∀ j, ∃ Ωbase : Set (Fin n -> Fin (d + 1) -> ℂ),
+         IsOpen Ωbase ∧
+         Ωbase ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ ∧
+         ∃ Λ : ComplexLorentzGroup d,
+           chart j =
+             (fun u => BHW.complexLorentzAction Λ u) '' Ωbase
+
+   theorem BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_nodeSteps
+       ... :
+       Nonempty
+         (BHW.BHWJostOrientedSourcePatchContinuationChain
+           hd n τ Ω0 U B0 p0 (node (Fin.last m)))
+
+   noncomputable def BHW.BHWJostOrientedSourcePatchContinuationChain.ofTransferCover
+       ... :
+       BHW.BHWJostOrientedSourcePatchContinuationChain
+         hd n τ Ω0 U B0 p0 (γ 1)
+
+   noncomputable def BHW.bhw_jost_orientedContinuationChain_of_compactPath
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p z : Fin n -> Fin (d + 1) -> ℂ}
+       (hp0 : p ∈ Ω0 ∩ U)
+       (γ : Path p z)
+       (hγU : ∀ t, γ t ∈ U) :
+       BHW.BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p z
+
+   noncomputable def BHW.bhw_sourcePatchHull_orientedContinuationChainData
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hU_hull :
+         ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+       (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z) :
+       Σ p0 : Fin n -> Fin (d + 1) -> ℂ,
+         (p0 ∈ Ω0 ∩ U) ×
+         ∀ z, z ∈ U ->
+           BHW.BHWJostOrientedSourcePatchContinuationChain
+             hd n τ Ω0 U B0 p0 z
+
+   noncomputable def BHW.bhw_continuedValueAlongOrientedChain
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C :
+         BHW.BHWJostOrientedSourcePatchContinuationChain
+           hd n τ Ω0 U B0 p0 z) : ℂ :=
+     C.branch (Fin.last C.m) z
+
+   structure BHW.BHWJostOrientedClosedContinuationLoop
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (p0 : Fin n -> Fin (d + 1) -> ℂ) where
+     chain :
+       BHW.BHWJostOrientedSourcePatchContinuationChain
+         hd n τ Ω0 U B0 p0 p0
+     final_base_mem : p0 ∈ chain.chart (Fin.last chain.m)
+     closing_patch : Set (Fin n -> Fin (d + 1) -> ℂ)
+     closing_patch_open : IsOpen closing_patch
+     closing_patch_preconnected : IsPreconnected closing_patch
+     closing_patch_nonempty : closing_patch.Nonempty
+     closing_patch_mem : p0 ∈ closing_patch
+     closing_patch_sub_start :
+       closing_patch ⊆ chain.start_patch
+     closing_patch_sub_final :
+       closing_patch ⊆ chain.chart (Fin.last chain.m)
+     closing_orientedPatch : Set (BHW.SourceOrientedGramData d n)
+     closing_orientedPatch_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n closing_orientedPatch
+     closing_orientedPatch_preconnected :
+       IsPreconnected closing_orientedPatch
+     closing_orientedPatch_nonempty : closing_orientedPatch.Nonempty
+     closing_orientedPatch_sub_start :
+       closing_orientedPatch ⊆ (chain.localChart 0).orientedDomain
+     closing_orientedPatch_sub_final :
+       closing_orientedPatch ⊆
+         (chain.localChart (Fin.last chain.m)).orientedDomain
+     closing_patch_oriented_mem :
+       ∀ y, y ∈ closing_patch ->
+         BHW.sourceOrientedMinkowskiInvariant d n y ∈ closing_orientedPatch
+
+   theorem BHW.bhw_jost_closedChain_orientedMonodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         L.closing_orientedPatch
+
+   structure BHW.BHWJostOrientedMaxRankClosedLoopSeed
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) where
+     seed : Set (BHW.SourceOrientedGramData d n)
+     seed_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n seed
+     seed_preconnected : IsPreconnected seed
+     seed_nonempty : seed.Nonempty
+     seed_sub :
+       seed ⊆ L.closing_orientedPatch ∩
+         {G | BHW.SourceOrientedMaxRankAt d n G}
+     seed_eq :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         seed
+
+   theorem BHW.bhw_jost_orientedMaxRankClosedLoopSeed_of_BHW
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Nonempty (BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L)
+
+   theorem BHW.bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hn : d + 1 <= n)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0)
+       (S :
+         BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         (L.closing_orientedPatch ∩
+           {G | BHW.SourceOrientedMaxRankAt d n G})
+
+   theorem BHW.bhw_jost_closedChain_orientedMaxRankMonodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hn : d + 1 <= n)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         (L.closing_orientedPatch ∩
+           {G | BHW.SourceOrientedMaxRankAt d n G})
+
+   theorem BHW.bhw_jost_closedChain_orientedMonodromy_extend_from_maxRank
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hn : d + 1 <= n)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0)
+       (hmax :
+         Set.EqOn
+           (L.chain.localChart (Fin.last L.chain.m)).Psi
+           (L.chain.localChart 0).Psi
+           (L.closing_orientedPatch ∩
+             {G | BHW.SourceOrientedMaxRankAt d n G})) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         L.closing_orientedPatch
+
+   theorem BHW.bhw_jost_closedChain_orientedMonodromy_smallArity
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hn : n < d + 1)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         L.closing_orientedPatch
+
+   theorem BHW.bhw_jost_orientedClosedChain_monodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L :
+         BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.branch (Fin.last L.chain.m)) B0 L.closing_patch
+
+   theorem BHW.bhw_jost_terminalOrientedBranches_eq_of_closed_monodromy
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C₁ C₂ :
+         BHW.BHWJostOrientedSourcePatchContinuationChain
+           hd n τ Ω0 U B0 p0 z) :
+       ∃ P : Set (Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ P ∧ IsOpen P ∧ IsPreconnected P ∧
+         P ⊆ C₁.chart (Fin.last C₁.m) ∩ C₂.chart (Fin.last C₂.m) ∧
+         Set.EqOn
+           (C₁.branch (Fin.last C₁.m))
+           (C₂.branch (Fin.last C₂.m)) P
+
+   theorem BHW.bhw_branch_orientedChain_singleValued_on_sourcePatchHull
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hU_hull :
+         ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C₁ C₂ :
+         BHW.BHWJostOrientedSourcePatchContinuationChain
+           hd n τ Ω0 U B0 p0 z) :
+       BHW.bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C₁ =
+         BHW.bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C₂
+
+   noncomputable def BHW.bhw_orientedContinuationAtlas_from_chains
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hU_hull :
+         ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
+       (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z) :
+       BHW.BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0
+   ```
+
+   The checked chain surface deliberately has no
+   `transition_patch_eq_sourcePatch` field.  The `snoc` constructor stores
+   `T.sourcePatch` as the new transition patch, but downstream agreement uses
+   only `consecutive_agree`, `transition_patch_sub_left/right`, and
+   `branch_eq_local`; this avoids dependent casts without weakening the
+   mathematical data.  The finite compactness part is now implemented by
+   `exists_of_nodeSteps`, `ofNodeSteps`, `exists_of_subdivision`,
+   `ofSubdivision`, `exists_of_transferCover`, and `ofTransferCover`; the
+   remaining non-mechanical content is the initial local chart and the
+   branch-free one-step Hall-Wightman/Jost transfer producer.
+
+   The chart fields `oriented_realizes` and
+   `orientedPatch_source_realizes` are load-bearing.  They are obtained from
+   the same source-normal-form patch that constructs the chart: after
+   shrinking to the local image of `sourceOrientedMinkowskiInvariant`, every
+   invariant in the stored oriented domain has a source representative in the
+   stored carrier, and every invariant in a transition patch has a source
+   representative in the stored source overlap.  The proof of
+   `oriented_psi_agree` is therefore a real source-to-invariant descent:
+   choose source representatives in `sourcePatch`, rewrite both branches by
+   `branch_eq_orientedPullback`, use `source_branch_agree`, and then use the
+   local identity theorem on the preconnected oriented patch.  No equality of
+   `Psi` values may be asserted from bare source-image inclusion alone.
+
+   The proof of `bhw_jost_closedChain_orientedMonodromy_trivial` is an arity
+   split.  If `n < d + 1`, the oriented determinant coordinates are vacuous,
+   and `bhw_jost_closedChain_orientedMonodromy_smallArity` transports the
+   checked pure-Gram small-arity identity-principle proof across the oriented
+   coordinate equivalence.  In the remaining case, first call the genuine
+   Hall-Wightman/Jost loop input
+   `bhw_jost_orientedMaxRankClosedLoopSeed_of_BHW`.  This theorem is the real
+   monodromy content.  Its proof is the formal version of Hall-Wightman
+   Lemma 1 as quoted by OS I §4.5: along a finite proper-complex Lorentz
+   continuation chain, local constancy near the identity and the finite
+   overlapping-neighborhood argument give a single-valued analytic
+   continuation on the extended tube.  In Lean terms, refine the closed chain
+   inside the smooth oriented max-rank source variety; use
+   `oriented_realizes` to choose source representatives in each local chart;
+   use the determinant/oriented orbit theorem
+   `BHW.hw_sameSourceOrientedInvariant_maxRank_properOrbit` to identify two
+   representatives of the same oriented invariant by an element of
+   `ComplexLorentzGroup d`; use each chart's
+   `branch_complexLorentzInvariant` and `branch_eq_orientedPullback` to prove
+   that the continued branch value depends only on the oriented invariant; and
+   use the BHW finite-overlap single-valuedness construction for the closed
+   proper-complex loop to obtain equality of the terminal and initial germs on
+   a nonempty relatively open max-rank seed inside
+   `L.closing_orientedPatch`.
+
+   The theorem `bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed` is then
+   the identity-principle propagation, not the monodromy theorem.  Let
+   `H := (L.chain.localChart (Fin.last L.chain.m)).Psi -
+     (L.chain.localChart 0).Psi` and let `S` be the seed above.  Restrict both
+   `Psi_holo` fields to `L.closing_orientedPatch`, apply
+   `SourceOrientedVarietyGermHolomorphicOn.sub`, and call
+   `sourceOrientedGramVariety_maxRank_identity_principle` with
+   `U := L.closing_orientedPatch`, `W := S.seed`, and
+   `Ureg := L.closing_orientedPatch ∩
+     {G | SourceOrientedMaxRankAt d n G}`.  The hypotheses are:
+   `L.closing_orientedPatch_relOpen`;
+   `IsConnected` from `L.closing_orientedPatch_nonempty` and
+   `L.closing_orientedPatch_preconnected`;
+   `S.seed_relOpen`, `S.seed_nonempty`, and `S.seed_sub`; and the zero
+   statement from `S.seed_eq` after rewriting subtraction.  This gives
+   equality on the whole max-rank part of the closing patch.  Finally
+   `bhw_jost_closedChain_orientedMaxRankMonodromy_trivial` is the two-line
+   assembly: obtain `⟨S⟩` from
+   `bhw_jost_orientedMaxRankClosedLoopSeed_of_BHW`, then call
+   `bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed`.
+
+   `bhw_jost_closedChain_orientedMonodromy_extend_from_maxRank` is then
+   mechanical.  Let
+   `H := (L.chain.localChart (Fin.last L.chain.m)).Psi -
+     (L.chain.localChart 0).Psi` on `L.closing_orientedPatch`.  Build
+   `hH_holo` by restricting both `Psi_holo` fields to
+   `L.closing_orientedPatch` and applying
+   `BHW.SourceOrientedVarietyGermHolomorphicOn.sub`.  The max-rank theorem
+   says `Set.EqOn H 0` on
+   `L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G}`.  Apply
+   the already audited continuity/density theorem
+   `sourceOrientedGramVariety_relOpen_eqOn_zero_of_eqOn_maxRank`, equivalently
+   the final extension step inside
+   `sourceOrientedGramVariety_identity_principle`, using
+   `SourceOrientedVarietyGermHolomorphicOn.continuousOn` and
+   `sourceOrientedMaxRank_dense_in_relOpen_inter`.  This yields `H = 0` on
+   all of `L.closing_orientedPatch`, which is exactly the main theorem.
+
+   The source-level theorem
+   `bhw_jost_orientedClosedChain_monodromy_trivial` is then mechanical.  For
+   `y ∈ L.closing_patch`, use `L.closing_patch_oriented_mem` to put
+   `G := sourceOrientedMinkowskiInvariant d n y` in
+   `L.closing_orientedPatch`.  The oriented monodromy theorem gives equality
+   of the final and initial `Psi` values at `G`.  The fields
+   `branch_eq_local` and each local chart's `branch_eq_orientedPullback`
+   rewrite the final and initial source branches to those two `Psi` values.
+   Since `L.closing_patch_sub_start hy` puts `y` in `chain.start_patch`,
+   `chain.start_agree y` rewrites the initial source branch to `B0 y`.
+
+   `bhw_jost_terminalOrientedBranches_eq_of_closed_monodromy` compares two
+   oriented chains only when they have the same fixed base point `p0`.  It
+   concatenates `C₁` with the reverse of `C₂`, forms the corresponding
+   `BHWJostOrientedClosedContinuationLoop` at `p0`, chooses the closing source
+   patch inside `C₁.start_patch ∩ C₂.start_patch`, and invokes the closed-loop
+   source theorem.  The stored oriented transition data then propagate the
+   equality forward to a small endpoint patch inside the intersection of the
+   two terminal charts at `z`.  Evaluating this endpoint equality gives
+   `bhw_branch_orientedChain_singleValued_on_sourcePatchHull`.
+
+   `bhw_orientedContinuationAtlas_from_chains` uses
+   `bhw_sourcePatchHull_orientedContinuationChainData` to choose the fixed
+   base point and one oriented terminal chain through every point of `U`.
+   The atlas charts are the terminal source charts of those chains, the local
+   branches are the stored terminal branches, `overlap_eq` is the
+   single-valuedness theorem above, and `base_agree` compares each terminal
+   chart meeting `Ω0 ∩ U` with the explicit restricted starting chart
+   `Ω0 ∩ U`.  Gluing this atlas is the same sheaf step
+   `bhw_glue_sourcePatchContinuationAtlas`.
+
+   The plain-Gram declarations below remain useful only if the full-component
+   Hall-Wightman input is supplied.
 
    ```lean
    structure BHW.BHWJostLocalScalarContinuationChart
@@ -4671,10 +5585,12 @@ common-boundary envelope, or any theorem that already assumes locality.
        (U : Set (Fin n -> Fin (d + 1) -> ℂ)) where
      carrier : Set (Fin n -> Fin (d + 1) -> ℂ)
      carrier_open : IsOpen carrier
+     carrier_preconnected : IsPreconnected carrier
      carrier_sub_U : carrier ⊆ U
      gramDomain : Set (Fin n -> Fin n -> ℂ)
      gram_relOpen :
        IsRelOpenInSourceComplexGramVariety d n gramDomain
+     gram_preconnected : IsPreconnected gramDomain
      gram_sub_variety :
        gramDomain ⊆ sourceComplexGramVariety d n
      gram_mem :
@@ -4705,6 +5621,8 @@ common-boundary envelope, or any theorem that already assumes locality.
        (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
        (hΩ0_open : IsOpen Ω0)
        (hU_open : IsOpen U)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
        (hB0_holo : DifferentiableOn ℂ B0 Ω0)
        (hB0_realLorentz :
          ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
@@ -4723,16 +5641,172 @@ common-boundary envelope, or any theorem that already assumes locality.
        [NeZero d] (hd : 2 <= d)
        (n : Nat) (τ : Equiv.Perm (Fin n))
        (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
        (Cprev : BHW.BHWJostLocalScalarContinuationChart hd n τ U)
        {p : Fin n -> Fin (d + 1) -> ℂ}
        (hpC : p ∈ Cprev.carrier) :
        ∃ N ∈ 𝓝 p, ∀ q, q ∈ N -> q ∈ U ->
          ∃ Cnext : BHW.BHWJostLocalScalarContinuationChart hd n τ U,
          ∃ P : Set (Fin n -> Fin (d + 1) -> ℂ),
-           q ∈ Cnext.carrier ∧
+           p ∈ P ∧ q ∈ Cnext.carrier ∧
            IsOpen P ∧ IsPreconnected P ∧ P.Nonempty ∧
            P ⊆ Cprev.carrier ∩ Cnext.carrier ∧
            Set.EqOn Cprev.branch Cnext.branch P
+
+   theorem BHW.bhw_jost_localDescent_from_chartBranch_star
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (Cprev : BHW.BHWJostLocalScalarContinuationChart hd n τ U)
+       {p : Fin n -> Fin (d + 1) -> ℂ}
+       (hpC : p ∈ Cprev.carrier)
+       (hpU : p ∈ U) :
+       ∃ N ∈ 𝓝 p, IsOpen N ∧ p ∈ N ∧
+         ∀ q, q ∈ N -> q ∈ U ->
+           ∃ Cnext : BHW.BHWJostLocalScalarContinuationChart hd n τ U,
+           ∃ P : Set (Fin n -> Fin (d + 1) -> ℂ),
+             p ∈ P ∧ q ∈ Cnext.carrier ∧
+             IsOpen P ∧ IsPreconnected P ∧ P.Nonempty ∧
+             P ⊆ Cprev.carrier ∩ Cnext.carrier ∧
+             Set.EqOn Cprev.branch Cnext.branch P
+
+   structure BHW.BHWJostScalarTransitionData
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (Cleft Cright :
+         BHW.BHWJostLocalScalarContinuationChart hd n τ U)
+       (p q : Fin n -> Fin (d + 1) -> ℂ) where
+     sourcePatch : Set (Fin n -> Fin (d + 1) -> ℂ)
+     sourcePatch_open : IsOpen sourcePatch
+     sourcePatch_preconnected : IsPreconnected sourcePatch
+     sourcePatch_nonempty : sourcePatch.Nonempty
+     source_mem : p ∈ sourcePatch
+     target_mem : q ∈ Cright.carrier
+     sourcePatch_sub :
+       sourcePatch ⊆ Cleft.carrier ∩ Cright.carrier
+     source_branch_agree :
+       Set.EqOn Cleft.branch Cright.branch sourcePatch
+     gramPatch : Set (Fin n -> Fin n -> ℂ)
+     gramPatch_relOpen :
+       IsRelOpenInSourceComplexGramVariety d n gramPatch
+     gramPatch_preconnected : IsPreconnected gramPatch
+     gramPatch_nonempty : gramPatch.Nonempty
+     gramPatch_sub :
+       gramPatch ⊆ Cleft.gramDomain ∩ Cright.gramDomain
+     sourcePatch_gram_mem :
+       ∀ y, y ∈ sourcePatch ->
+         BHW.sourceMinkowskiGram d n y ∈ gramPatch
+     gram_phi_agree :
+       Set.EqOn Cleft.Phi Cright.Phi gramPatch
+
+   structure BHW.BHWJostSourceNormalFormGeometryPatch
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (center : Fin n -> Fin (d + 1) -> ℂ) where
+     carrier : Set (Fin n -> Fin (d + 1) -> ℂ)
+     carrier_open : IsOpen carrier
+     carrier_preconnected : IsPreconnected carrier
+     center_mem : center ∈ carrier
+     carrier_sub_U : carrier ⊆ U
+     gramDomain : Set (Fin n -> Fin n -> ℂ)
+     gram_relOpen :
+       IsRelOpenInSourceComplexGramVariety d n gramDomain
+     gram_preconnected : IsPreconnected gramDomain
+     gram_sub_variety :
+       gramDomain ⊆ sourceComplexGramVariety d n
+     gram_mem :
+       ∀ z, z ∈ carrier ->
+         BHW.sourceMinkowskiGram d n z ∈ gramDomain
+
+   theorem BHW.bhw_jost_sourceNormalFormGeometryPatch_at
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       {center : Fin n -> Fin (d + 1) -> ℂ}
+       (hcenter : center ∈ U) :
+       BHW.BHWJostSourceNormalFormGeometryPatch hd n τ U center
+
+   theorem BHW.bhw_jost_uniformDescent_on_sourceNormalFormPatch
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       {center : Fin n -> Fin (d + 1) -> ℂ}
+       (G : BHW.BHWJostSourceNormalFormGeometryPatch hd n τ U center)
+       (Cprev : BHW.BHWJostLocalScalarContinuationChart hd n τ U)
+       {p q : Fin n -> Fin (d + 1) -> ℂ}
+       (hpG : p ∈ G.carrier)
+       (hqG : q ∈ G.carrier)
+       (hpC : p ∈ Cprev.carrier) :
+       ∃ Cnext : BHW.BHWJostLocalScalarContinuationChart hd n τ U,
+         BHW.BHWJostScalarTransitionData hd n τ U Cprev Cnext p q
+
+   structure BHW.BHWJostBranchFreeTransferNeighborhood
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (center : Fin n -> Fin (d + 1) -> ℂ) where
+     N : Set (Fin n -> Fin (d + 1) -> ℂ)
+     N_mem_nhds : N ∈ 𝓝 center
+     N_open : IsOpen N
+     center_mem : center ∈ N
+     transfer :
+       ∀ p q, p ∈ N -> p ∈ U -> q ∈ N -> q ∈ U ->
+       ∀ Cprev : BHW.BHWJostLocalScalarContinuationChart hd n τ U,
+         p ∈ Cprev.carrier ->
+           ∃ Cnext : BHW.BHWJostLocalScalarContinuationChart hd n τ U,
+             BHW.BHWJostScalarTransitionData hd n τ U Cprev Cnext p q
+
+   theorem BHW.bhw_jost_branchFreeTransferNeighborhood_at
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (hU_open : IsOpen U)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       {p : Fin n -> Fin (d + 1) -> ℂ}
+       (hpU : p ∈ U) :
+       BHW.BHWJostBranchFreeTransferNeighborhood hd n τ U p
+
+   structure BHW.UnitIntervalOrderedSubdivision
+       {ι : Type} (c : ι -> Set unitInterval) where
+     m : Nat
+     t : Fin (m + 1) -> unitInterval
+     t_zero : t 0 = 0
+     t_last : t (Fin.last m) = 1
+     t_mono : Monotone t
+     interval_sub :
+       ∀ j : Fin m, ∃ a : ι,
+         Set.Icc (t (Fin.castSucc j)) (t j.succ) ⊆ c a
+
+   theorem BHW.exists_unitInterval_orderedSubdivision_of_openCover
+       {ι : Type} (c : ι -> Set unitInterval)
+       (hc_open : ∀ a, IsOpen (c a))
+       (hc_cover : Set.univ ⊆ ⋃ a, c a) :
+       Nonempty (BHW.UnitIntervalOrderedSubdivision c)
+
+   noncomputable def BHW.unitInterval_orderedSubdivision_of_openCover
+       {ι : Type} (c : ι -> Set unitInterval)
+       (hc_open : ∀ a, IsOpen (c a))
+       (hc_cover : Set.univ ⊆ ⋃ a, c a) :
+       BHW.UnitIntervalOrderedSubdivision c
+
+   theorem BHW.exists_open_preconnected_neighborhood_subset
+       {E : Type} [NormedAddCommGroup E] [NormedSpace ℝ E]
+       {s : Set E} {p : E}
+       (hs : IsOpen s) (hp : p ∈ s) :
+       ∃ P : Set E,
+         p ∈ P ∧ IsOpen P ∧ IsPreconnected P ∧
+         P.Nonempty ∧ P ⊆ s
 
    theorem BHW.bhw_jost_continuationChain_of_compactPath
        [NeZero d] (hd : 2 <= d)
@@ -4741,6 +5815,10 @@ common-boundary envelope, or any theorem that already assumes locality.
        (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
        (hΩ0_open : IsOpen Ω0)
        (hU_open : IsOpen U)
+       (hΩ0_sub_ambient :
+         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
+       (hU_sub_ambient :
+         U ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
        (hB0_holo : DifferentiableOn ℂ B0 Ω0)
        (hB0_realLorentz :
          ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
@@ -4750,30 +5828,157 @@ common-boundary envelope, or any theorem that already assumes locality.
        (hp0 : p ∈ Ω0 ∩ U)
        (γ : Path p z)
        (hγU : ∀ t, γ t ∈ U) :
-       BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 z
+       BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p z
    ```
 
-   The proof of `bhw_jost_initialScalarContinuationChart_at` is the local
-   Hall-Wightman descent theorem on the starting sector `Ω0`: the
-   near-identity Lorentz invariance proved above makes `B0` constant on local
-   proper-complex Lorentz fibres; the local source-Gram chart theorem
-   identifies those fibres with the fibres of `sourceMinkowskiGram`;
-   holomorphic descent gives a germ-holomorphic `Phi`; and the
-   regular/singular source-variety cases are handled by the already documented
-   Hall-Wightman rank split plus the normal-variety removable-singularity
-   step.  The `branch_same_sourceGram` field is obtained by the pullback
-   formula, and `branch_complexLorentzInvariant` uses
-   `sourceMinkowskiGram_complexLorentzAction`.  The one-step theorem
-   propagates from an already constructed scalar chart to nearby points in
-   `U`: the previous chart's branch, together with its stored same-Gram and
-   complex-Lorentz invariance fields, becomes the starting branch for the
-   next local descent.  The proof then shrinks the two scalar charts to an open
-   preconnected overlap patch and applies the scalar identity theorem on
-   `sourceComplexGramVariety` to prove equality of the pulled-back branches.
-   The compact-path theorem covers `γ '' Set.univ` by the neighborhoods from
-   `bhw_jost_localContinuationStep`, takes a finite ordered subdivision of
-   `unitInterval`, and stores the resulting charts, branches, and transition
-   patches in `BHWSourcePatchContinuationChain`.
+   The strict-route proof of
+   `bhw_jost_initialOrientedContinuationChart_at` is the local
+   Hall-Wightman/Jost descent theorem on the starting sector `Ω0`.  The
+   near-identity proper-complex Lorentz theorem gives local constancy of `B0`
+   along determinant-one complex Lorentz fibres.  The oriented normal-form
+   source theorem then identifies those fibres, in max rank, with fibres of
+   `sourceOrientedMinkowskiInvariant`; in lower rank it uses the documented
+   Hall-Wightman singular contraction and continuity package.  Holomorphic
+   descent gives a germ-holomorphic `Psi` on a preconnected oriented patch.
+   Define `C.branch := Psi ∘ sourceOrientedMinkowskiInvariant`; then
+   `branch_eq_orientedPullback` is definitional on the shrunk carrier,
+   `branch_same_sourceOrientedInvariant` follows from the pullback formula,
+   and `branch_complexLorentzInvariant` is
+   `sourceOrientedMinkowskiInvariant_complexLorentzAction` followed by the
+   pullback rewrite.  The returned source patch `P` is a preconnected
+   shrink of `Ω0 ∩ C.carrier` around `p`, so `Set.EqOn C.branch B0 P`
+   is the local descent normalization, not a global source-representative
+   import.
+
+   The strict-route one-step theorem propagates from an already constructed
+   oriented chart by calling
+   `bhw_jost_localOrientedDescent_from_chartBranch_star`.  That theorem
+   produces an open star neighborhood `N ∈ 𝓝 p`, chosen before the endpoint
+   `q` is fixed and small enough that the Hall-Wightman oriented
+   source-normal-form chart at `p` and the chart at every `q ∈ N ∩ U` have a
+   nonempty preconnected oriented overlap.  On that overlap the seed is not
+   `B0`; it is exactly `Cprev.branch`.  Rewrite `Cprev.branch` as
+   `Cprev.Psi ∘ sourceOrientedMinkowskiInvariant` by
+   `Cprev.branch_eq_orientedPullback`; use
+   `Cprev.branch_same_sourceOrientedInvariant` for representative
+   independence; use `Cprev.branch_complexLorentzInvariant`, itself coming
+   from `sourceOrientedMinkowskiInvariant_complexLorentzAction`, for the local
+   proper-complex Lorentz constancy required by the Hall-Wightman descent; and
+   apply the oriented regular/singular local continuation theorem to obtain
+   `Cnext.Psi`.  The returned `BHWJostOrientedTransitionData` contains both
+   the source overlap where the branches agree and the oriented overlap where
+   `Cprev.Psi = Cnext.Psi`; these are the data consumed by the closed-loop
+   monodromy theorem.
+
+   In the conditional ordinary fork, the same proof reads with
+   `sourceMinkowskiGram`, `Phi`, `branch_same_sourceGram`,
+   `BHWJostScalarTransitionData`, and the full-component Hall-Wightman source
+   input replacing the oriented names.  That fork is not the strict
+   production route unless the full-component input is formally supplied.
+
+   `BHW.bhw_jost_orientedSourceNormalFormGeometryPatch_at` is the
+   branch-free geometry construction behind the strict compact-path cover.
+   At `center ∈ U`, use `hU_open` to shrink inside `U` and
+   `hU_sub_ambient` to invoke the local Hall-Wightman oriented
+   source-normal-form theorem.  In max rank this is the
+   `SourceOrientedMaxRankChartData` chart on a determinant-one full-frame
+   patch; in lower rank it is the oriented rank-deficient Schur normal-form
+   chart plus the normal-variety/removable-singularity packet already
+   required for exceptional ranks.  The carrier is then shrunk by
+   `BHW.exists_open_preconnected_neighborhood_subset`; `orientedDomain` is the
+   corresponding relatively open preconnected patch in
+   `sourceOrientedGramVariety`; `oriented_mem` records that every source point
+   in the carrier is controlled by this one oriented invariant patch.
+
+   `BHW.bhw_jost_uniformOrientedDescent_on_sourceNormalFormPatch` is where the
+   scalar branch enters.  Given `p ∈ G.carrier`, `q ∈ G.carrier`, and an old
+   oriented chart `Cprev` containing `p`, shrink an open preconnected
+   `P ⊆ Cprev.carrier ∩ G.carrier` around `p`.  On the image of `P` under
+   `sourceOrientedMinkowskiInvariant`, rewrite `Cprev.branch` as
+   `Cprev.Psi ∘ sourceOrientedMinkowskiInvariant`;
+   `Cprev.branch_same_sourceOrientedInvariant` makes this seed independent of
+   source representatives and `Cprev.branch_complexLorentzInvariant` supplies
+   the proper-complex Lorentz constancy needed by the local Hall-Wightman
+   descent.  The oriented max-rank source chart, and in lower rank the
+   oriented normal-variety Riemann extension theorem, continue that scalar
+   germ to `G.orientedDomain`.  Define
+   `Cnext.carrier := G.carrier`,
+   `Cnext.orientedDomain := G.orientedDomain`, and
+   `Cnext.branch := PsiNext ∘ sourceOrientedMinkowskiInvariant`; the `Cnext`
+   fields are exactly `G.oriented_*`, `G.carrier_*`, the new
+   `PsiNext_holo`, and
+   `sourceOrientedMinkowskiInvariant_complexLorentzAction`.  The returned
+   `BHWJostOrientedTransitionData` packages the source equality patch and the
+   oriented patch where `Cprev.Psi = Cnext.Psi`.
+
+   `BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at` is the
+   non-circular cover theorem consumed by compact path subdivision.  For each
+   `p ∈ U`, it chooses a geometry neighborhood `T.N ∈ 𝓝 p` before any
+   continued branch is selected.  Its `transfer` field is uniform over the
+   whole neighborhood: if `p' ∈ T.N ∩ U`, `q ∈ T.N ∩ U`, and an
+   already-constructed oriented chart contains `p'`, then that chart can be
+   continued to `q`, with an open preconnected overlap patch at `p'` on which
+   the old and new branches agree.  The set `T.N` is determined by the
+   Hall-Wightman oriented source-normal-form data and the ambient source-patch
+   hull, not by the scalar branch; only the produced `Cnext.Psi` depends on
+   `Cprev.branch`.  Its implementation is mechanical from the two lower
+   surfaces above: take the geometry patch supplied by
+   `bhw_jost_orientedSourceNormalFormGeometryPatch_at`, set `N := G.carrier`,
+   and call the checked constructor
+   `BHWJostOrientedBranchFreeTransferNeighborhood.ofSourceNormalFormPatch`;
+   the constructor's `transfer` field is exactly
+   `bhw_jost_uniformOrientedDescent_on_sourceNormalFormPatch G`.
+
+   The conditional ordinary fork has the same branch-free topology transcript
+   with `sourceMinkowskiGram`, `Phi`, `gramDomain`, and
+   `BHWJostScalarTransitionData`; it remains downstream of the full-component
+   Hall-Wightman source input.
+
+   `BHW.exists_open_preconnected_neighborhood_subset` is the finite-dimensional
+   topology shrinker used whenever the proof says "take a small connected
+   patch."  From `hs : IsOpen s` and `hp : p ∈ s`, choose `ε > 0` with
+   `Metric.ball p ε ⊆ s`; the ball is open and convex in the ambient real
+   normed vector space, hence preconnected.  This supplies the preconnected
+   local chart carriers, transition overlaps, common endpoint patch, and
+   closing patch at `p0`.
+
+   The compact-path theorem uses the pinned Mathlib topology API, not an
+   informal finite-subdivision step.  The helper
+   `BHW.exists_unitInterval_orderedSubdivision_of_openCover` is a thin
+   `Nonempty` wrapper around
+   `exists_monotone_Icc_subset_open_cover_unitInterval` from
+   `Mathlib.Topology.UnitInterval`: it obtains
+   `tN : Nat -> unitInterval`, `tN 0 = 0`, `Monotone tN`, an eventual index
+   `m` with `∀ k ≥ m, tN k = 1`, and
+   `∀ k, ∃ a, Set.Icc (tN k) (tN (k+1)) ⊆ c a`; then defines
+   `t : Fin (m+1) -> unitInterval` by `t j := tN j.val`.  The endpoint proof
+   is `hm m le_rfl`, monotonicity is inherited from `tN`, and
+   `interval_sub j` is `hsub j.val`.  The data-valued selector
+   `BHW.unitInterval_orderedSubdivision_of_openCover` is a
+   `noncomputable def` by `Classical.choice`.  `Path.subpath` and `Path.concat` from
+   `Mathlib.Topology.Subpath` provide the subpaths and their concatenation;
+   the range inclusion for each subpath is
+   `Path.range_subpath_of_le γ _ _ (S.t_mono (Fin.castSucc_le_succ j))`,
+   followed by the stored `interval_sub j`.  The strict-route open cover used here
+   is explicitly branch-free: for each `t : unitInterval`, apply
+   `bhw_jost_orientedBranchFreeTransferNeighborhood_at` to `γ t`, and set
+   `c t := γ ⁻¹' (T t).N`.  Continuity of `γ` and `(T t).N_open` give
+   `IsOpen (c t)`, and `(T t).center_mem` gives the cover.  After
+   subdivision, `interval_sub j`
+   supplies an index `a` whose geometry neighborhood contains the whole
+   subinterval.  Hence both
+   `γ (S.t (Fin.castSucc j))` and `γ (S.t j.succ)` lie in `(T a).N`; applying
+   `(T a).transfer` to the current chart at the left endpoint produces the
+   next chart and a full `BHWJostOrientedTransitionData`.  Its source
+   projection supplies the preconnected transition patch and
+   `consecutive_agree`, while its oriented projection supplies the
+   `Psi`-transition data for monodromy.
+   This removes the circular cover "by the one-step neighborhoods of chains
+   not yet constructed."  The chain producer then stores the resulting
+   local oriented charts, branches, source transition patches, and oriented
+   transitions in `BHWJostOrientedSourcePatchContinuationChain`.  The
+   conditional ordinary fork is obtained by replacing the branch-free cover
+   theorem and transition data with their plain-Gram names.
 
    Its own implementation split is:
 
@@ -4820,17 +6025,31 @@ common-boundary envelope, or any theorem that already assumes locality.
        (n : Nat) (τ : Equiv.Perm (Fin n))
        (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
        (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
-       (z : Fin n -> Fin (d + 1) -> ℂ) where
+       (p0 z : Fin n -> Fin (d + 1) -> ℂ) where
+     base_mem : p0 ∈ Ω0 ∩ U
      m : Nat
+     node : Fin (m + 1) -> Fin n -> Fin (d + 1) -> ℂ
+     node_zero : node 0 = p0
+     node_last : node (Fin.last m) = z
      chart : Fin (m + 1) -> Set (Fin n -> Fin (d + 1) -> ℂ)
+     node_mem : ∀ j, node j ∈ chart j
+     localChart :
+       Fin (m + 1) ->
+         BHW.BHWJostLocalScalarContinuationChart hd n τ U
      branch : Fin (m + 1) ->
        (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
      chart_open : ∀ j, IsOpen (chart j)
+     chart_preconnected : ∀ j, IsPreconnected (chart j)
      chart_sub_U : ∀ j, chart j ⊆ U
+     chart_eq_local : ∀ j, chart j = (localChart j).carrier
+     branch_eq_local :
+       ∀ j y, y ∈ chart j -> branch j y = (localChart j).branch y
      branch_holo : ∀ j, DifferentiableOn ℂ (branch j) (chart j)
      start_patch : Set (Fin n -> Fin (d + 1) -> ℂ)
      start_patch_open : IsOpen start_patch
+     start_patch_preconnected : IsPreconnected start_patch
      start_patch_nonempty : start_patch.Nonempty
+     start_mem : p0 ∈ start_patch
      start_patch_sub : start_patch ⊆ Ω0 ∩ chart 0
      start_agree :
        ∀ y, y ∈ start_patch -> branch 0 y = B0 y
@@ -4847,6 +6066,11 @@ common-boundary envelope, or any theorem that already assumes locality.
        ∀ j : Fin m, ∀ y,
          y ∈ transition_patch j ->
            branch (Fin.castSucc j) y = branch j.succ y
+     scalar_transition :
+       ∀ j : Fin m,
+         BHW.BHWJostScalarTransitionData hd n τ U
+           (localChart (Fin.castSucc j)) (localChart j.succ)
+           (node (Fin.castSucc j)) (node j.succ)
      final_mem : z ∈ chart (Fin.last m)
      chart_is_lorentz_step :
        ∀ j, ∃ Ωbase : Set (Fin n -> Fin (d + 1) -> ℂ),
@@ -4874,17 +6098,149 @@ common-boundary envelope, or any theorem that already assumes locality.
          ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
            BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
              B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z) :
-       ∀ z, z ∈ U ->
-         BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 z
+       ∃ p0, p0 ∈ Ω0 ∩ U ∧
+         ∀ z, z ∈ U ->
+           BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z
 
    noncomputable def BHW.bhw_continuedValueAlongChain
        [NeZero d] (hd : 2 <= d)
        (n : Nat) (τ : Equiv.Perm (Fin n))
        (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
        (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
-       {z : Fin n -> Fin (d + 1) -> ℂ}
-       (C : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 z) : ℂ :=
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z) : ℂ :=
      C.branch (Fin.last C.m) z
+
+   structure BHW.BHWJostClosedContinuationLoop
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (p0 : Fin n -> Fin (d + 1) -> ℂ) where
+     chain :
+       BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p0 p0
+     final_base_mem : p0 ∈ chain.chart (Fin.last chain.m)
+     closing_patch : Set (Fin n -> Fin (d + 1) -> ℂ)
+     closing_patch_open : IsOpen closing_patch
+     closing_patch_preconnected : IsPreconnected closing_patch
+     closing_patch_nonempty : closing_patch.Nonempty
+     closing_patch_mem : p0 ∈ closing_patch
+     closing_patch_sub_start :
+       closing_patch ⊆ chain.start_patch
+     closing_patch_sub_final :
+       closing_patch ⊆ chain.chart (Fin.last chain.m)
+     closing_gramPatch : Set (Fin n -> Fin n -> ℂ)
+     closing_gramPatch_relOpen :
+       IsRelOpenInSourceComplexGramVariety d n closing_gramPatch
+     closing_gramPatch_preconnected : IsPreconnected closing_gramPatch
+     closing_gramPatch_nonempty : closing_gramPatch.Nonempty
+     closing_gramPatch_sub_start :
+       closing_gramPatch ⊆ (chain.localChart 0).gramDomain
+     closing_gramPatch_sub_final :
+       closing_gramPatch ⊆
+         (chain.localChart (Fin.last chain.m)).gramDomain
+     closing_patch_gram_mem :
+       ∀ y, y ∈ closing_patch ->
+         BHW.sourceMinkowskiGram d n y ∈ closing_gramPatch
+
+   theorem BHW.bhw_jost_closedChain_gramMonodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Phi
+         (L.chain.localChart 0).Phi
+         L.closing_gramPatch
+
+   theorem BHW.bhw_jost_closedChain_regularGramMonodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hD : d + 1 < n)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Phi
+         (L.chain.localChart 0).Phi
+         (L.closing_gramPatch ∩
+           BHW.sourceSymmetricRankExactStratum n (d + 1))
+
+   theorem BHW.bhw_jost_closedChain_gramMonodromy_extend_from_regular
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hD : d + 1 < n)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostClosedContinuationLoop hd n τ Ω0 U B0 p0)
+       (hreg :
+         Set.EqOn
+           (L.chain.localChart (Fin.last L.chain.m)).Phi
+           (L.chain.localChart 0).Phi
+           (L.closing_gramPatch ∩
+             BHW.sourceSymmetricRankExactStratum n (d + 1))) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Phi
+         (L.chain.localChart 0).Phi
+         L.closing_gramPatch
+
+   theorem BHW.bhw_jost_closedChain_gramMonodromy_easy
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hn : n <= d + 1)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Phi
+         (L.chain.localChart 0).Phi
+         L.closing_gramPatch
+
+   theorem BHW.bhw_jost_closedChain_monodromy_trivial
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostClosedContinuationLoop hd n τ Ω0 U B0 p0) :
+       Set.EqOn (L.chain.branch (Fin.last L.chain.m)) B0 L.closing_patch
+
+   theorem BHW.bhw_jost_terminalBranches_eq_of_closed_monodromy
+       [NeZero d] (hd : 2 <= d)
+       (n : Nat) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       (hΩ0_open : IsOpen Ω0)
+       (hU_open : IsOpen U)
+       (hU_connected : IsConnected U)
+       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
+       (hB0_realLorentz :
+         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
+           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
+             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C₁ C₂ : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z) :
+       ∃ P : Set (Fin n -> Fin (d + 1) -> ℂ),
+         z ∈ P ∧ IsOpen P ∧ IsPreconnected P ∧
+         P ⊆ C₁.chart (Fin.last C₁.m) ∩ C₂.chart (Fin.last C₂.m) ∧
+         Set.EqOn
+           (C₁.branch (Fin.last C₁.m))
+           (C₂.branch (Fin.last C₂.m)) P
 
    theorem BHW.bhw_branch_chain_singleValued_on_sourcePatchHull
        [NeZero d] (hd : 2 <= d)
@@ -4901,8 +6257,8 @@ common-boundary envelope, or any theorem that already assumes locality.
          ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
            BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
              B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z)
-       {z : Fin n -> Fin (d + 1) -> ℂ}
-       (C₁ C₂ : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 z) :
+       {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+       (C₁ C₂ : BHW.BHWSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z) :
        BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C₁ =
          BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C₂
 
@@ -4932,19 +6288,95 @@ common-boundary envelope, or any theorem that already assumes locality.
    interval of a group `Path` by finitely many translated near-identity
    neighborhoods and composes the local constancy equalities.  The
    chain-carrier theorem is the only place where the definition of the
-   source-patch hull is used: since `U` is the path component of the open
-   ambient and `Ω0 ∩ U` is nonempty, compactness of a path from `Ω0` to `z`
-   gives a finite cover by BHW/Jost continuation charts with explicit open
-   preconnected transition patches between consecutive charts.  The
-   single-valuedness theorem is the Hall-Wightman
-   closed-chain step: two finite continuation chains ending at the same hull
-   point give the same branch value because their concatenation is a closed
-   chain in the selected component.  The atlas theorem takes as index the
-   local terminal charts of all finite chains, uses each chain's terminal
-   `branch (Fin.last C.m)` as the local branch, uses
+   source-patch hull is used.  It first chooses one fixed base point
+   `p0 ∈ Ω0 ∩ U` from `hΩ0_meets_U`.  Since `U` is the path component of the
+   open ambient, `pathComponentIn_subset` gives
+   `hU_sub_ambient : U ⊆ os45SourcePatchBHWJostAmbient d n τ`, and every
+   `z ∈ U` is joined to this same `p0` by a path in `U`.  The compact-path
+   theorem is then called with `hΩ0_sub_ambient` and this derived
+   `hU_sub_ambient`; compactness of the path gives a finite cover by BHW/Jost
+   continuation charts with explicit open preconnected transition patches
+   between consecutive charts.  The chain stores
+   `start_mem : p0 ∈ start_patch` and `start_patch_preconnected`, so the
+   initial normalization is a fixed base patch, not an anonymous nonempty
+   overlap somewhere in `Ω0`.
+
+   The single-valuedness theorem is no longer a slogan about closed chains.
+   The chain now stores enough scalar data to state the real obstruction.  Each
+   entry `C.scalar_transition j` contains both the source overlap used for
+   `consecutive_agree` and the relatively open preconnected Gram overlap on
+   which the scalar representatives
+   `(C.localChart (Fin.castSucc j)).Phi` and
+   `(C.localChart j.succ).Phi` agree.  A closed loop also stores
+   `closing_gramPatch`, a relatively open preconnected patch in the
+   intersection of the initial and final Gram domains, and a map from the
+   source closing patch into it.
+
+   In the conditional ordinary fork, the separate theorem
+   `bhw_jost_closedChain_gramMonodromy_trivial` is the Hall-Wightman/Jost
+   monodromy theorem after the full-component scalar-product input has been
+   supplied.  Its proof is split by arity.
+   In the easy case `n <= d + 1`, the source complex Gram variety is the full
+   symmetric coordinate space; `bhw_jost_closedChain_gramMonodromy_easy`
+   proves trivial monodromy by ordinary SCV analytic continuation on the
+   preconnected coordinate patches carried by the scalar transitions.  In the
+   hard case `d + 1 < n`,
+   `bhw_jost_closedChain_regularGramMonodromy_trivial` first proves equality
+   on
+   `closing_gramPatch ∩ sourceSymmetricRankExactStratum n (d + 1)`.  This is
+   the ordinary-fork Hall-Wightman regular-stratum monodromy input: the finite
+   scalar-transition chain is refined inside the smooth rank-exact source-Gram
+   stratum, where the source-normal-form charts are biholomorphic and the
+   transition equalities are equalities of ordinary holomorphic functions on
+   nonempty connected overlaps.  The loop is the one obtained from proper
+   complex Lorentz/Jost source-normal-form continuation inside the selected
+   source-patch hull; no PET, `fullExtendF`, common-boundary envelope, or final
+   locality may enter here.  Finally
+   `bhw_jost_closedChain_gramMonodromy_extend_from_regular` extends equality
+   from the dense rank-exact part to all of `closing_gramPatch` by applying
+   `SourceVarietyGermHolomorphicOn.sub`,
+   `SourceVarietyGermHolomorphicOn.continuousOn`, and the already pinned
+   normal-variety/removable-singularity density theorem
+   `sourceComplexGramVariety_relOpen_eqOn_zero_of_eqOn_rankExact` on the
+   relatively open patch `closing_gramPatch`.
+
+   The source-level theorem `bhw_jost_closedChain_monodromy_trivial` is then
+   mechanical inside that ordinary fork.  On the strict proper-complex route,
+   the identical proof script uses `closing_orientedPatch`,
+   `branch_eq_orientedPullback`, and
+   `bhw_jost_closedChain_orientedMonodromy_trivial` instead of the three
+   plain-Gram fields.  For `y ∈ L.closing_patch`, use
+   `L.closing_patch_gram_mem` to put `G := sourceMinkowskiGram d n y` in
+   `L.closing_gramPatch`.  The Gram monodromy theorem gives equality of the
+   final and initial `Phi` values at `G`.  The fields
+   `branch_eq_local` and each local chart's `branch_eq_pullback` rewrite the
+   final and initial source branches to those two `Phi` values.  Since
+   `L.closing_patch_sub_start hy` puts `y` in `chain.start_patch`,
+   `chain.start_agree y` rewrites the initial source branch to `B0 y`.
+   Thus
+   `L.chain.branch (Fin.last L.chain.m) y = B0 y`.
+
+   The comparison theorem
+   `bhw_jost_terminalBranches_eq_of_closed_monodromy` compares two chains only
+   when they have the same fixed base point `p0`.  It concatenates `C₁` with
+   the reverse of `C₂`, then closes the loop at `p0` on a small open
+   preconnected patch contained in `C₁.start_patch ∩ C₂.start_patch` (hence in
+   the initial chart of `C₁` and the final chart of the reversed `C₂`).  After
+   closed-chain monodromy gives equality on that base patch, the stored scalar
+   transition data propagate the equality forward to a small open preconnected
+   endpoint patch inside the intersection of the two terminal charts at `z`.
+   The public `bhw_branch_chain_singleValued_on_sourcePatchHull` is just
+   evaluation of this endpoint-overlap equality at `z`.
+
+   The atlas theorem chooses the fixed `p0` once, includes the restricted
+   starting chart `Ω0 ∩ U` with the branch `B0` restricted to that open subset
+   of `U`, and then indexes the terminal charts of all finite chains from that
+   `p0`.  It uses each chain's terminal `branch (Fin.last C.m)` as the local
+   branch, uses
    `bhw_continuedValueAlongChain` only as the point-value projection of that
-   branch, uses single-valuedness for overlap compatibility, and records base
-   agreement with `B0`.  The public
+   branch, uses single-valuedness for overlap compatibility, and proves
+   `base_agree` by comparing any terminal chain chart meeting `Ω0 ∩ U` with
+   the explicit restricted starting chart.  The public
    `bargmannHallWightman_continue_branch_on_sourcePatchHull` is
    `bhw_continuationAtlas_from_chains` followed by
    `bhw_glue_sourcePatchContinuationAtlas`.
@@ -5056,12 +6488,15 @@ common-boundary envelope, or any theorem that already assumes locality.
    determinant-one/proper-complex `SO(1,d;ℂ)` argument throughout; no
    `O(1,d;ℂ)` or improper component is introduced.
 
-   `bhw_continuedValueAlongChain` is now only the endpoint projection of a
-   chain that already carries its recursively constructed local branches.  The
-   producer of `BHWSourcePatchContinuationChain` is where the recursion lives:
-   choose `a0 ∈ Ω0 ∩ C.chart 0`; on `C.chart 0`, define the first local branch
-   by the local BHW/Jost continuation theorem applied to `B0` and normalize it
-   so it agrees with `B0` on the nonempty open overlap with `Ω0`.
+   `bhw_continuedValueAlongOrientedChain` is now only the endpoint projection
+   of a chain that already carries its recursively constructed local branches.
+   The producer of `BHWJostOrientedSourcePatchContinuationChain` is where the
+   strict-route recursion lives:
+   the base point is the fixed `p0` selected from `Ω0 ∩ U`, and the stored
+   `start_patch` is an open preconnected neighborhood with
+   `p0 ∈ start_patch ⊆ Ω0 ∩ C.chart 0`.  On `C.chart 0`, define the first
+   local branch by the local BHW/Jost continuation theorem applied to `B0` and
+   normalize it so it agrees with `B0` on that start patch.
    Inductively, suppose `C.branch j` is holomorphic on `C.chart j`.  Choose
    an open preconnected patch
    `Pj ⊆ C.chart j ∩ C.chart j.succ`; define `C.branch j.succ` on the next
@@ -5071,18 +6506,24 @@ common-boundary envelope, or any theorem that already assumes locality.
    Therefore
 
    ```lean
-   BHW.bhw_continuedValueAlongChain hd n τ Ω0 U B0 C =
+   BHW.bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C =
      C.branch (Fin.last C.m) z
    ```
 
    with `C.final_mem : z ∈ C.chart (Fin.last C.m)`.  Single-valuedness compares two
-   chains `C₁` and `C₂` by traversing `C₁`, then the reverse of `C₂`; the
-   resulting closed finite chain returns to a chart meeting `Ω0`, where both
-   branches agree with `B0` on a nonempty open set, so repeated identity
-   theorem applications force equality at the endpoint.  Holomorphy of the
-   assembled global branch on `U` is local: around `z`, use the final chart of
-   a chosen chain to define the branch; on overlaps of two such neighborhoods,
-   the chain single-valuedness theorem identifies the two local definitions.
+   chains `C₁` and `C₂` only when they have the same fixed `p0`: traverse
+   `C₁`, then the reverse of `C₂`; the resulting closed finite chain returns
+   to a chart containing `p0`, and its closing patch is chosen inside the
+   intersection of the two stored start patches, where both starting branches
+   agree with `B0`.  The oriented monodromy theorem, followed by the
+   source-level pullback calculation above, forces equality at the endpoint.
+   Holomorphy of the assembled global branch on `U` is local: around `z`, use
+   the final chart of a chosen chain to define the branch; on overlaps of two
+   such neighborhoods, the chain single-valuedness theorem identifies the two
+   local definitions.  The atlas
+   also includes the explicit restricted `Ω0 ∩ U`/`B0` chart, so base
+   agreement is a special case of the same comparison rather than a separate
+   hidden assumption.
 
    The ordinary and adjacent branch producers are then:
 
@@ -5649,7 +7090,7 @@ Adjacent `S'_n` readiness ledger:
 | --- | --- | --- |
 | `BHW.swFigure24_adjacentPathStableNeighborhood_exists`, `BHW.swFigure24_adjacentHorizontalEnvironmentWithPathStability`, `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch` | Checked local Lean geometry in `OSToWightmanLocalityOS45Figure24.lean`. | May supply `hV_adjLift_ET`, closure ordered-sector fields, and `hV_figPath_closure`; it supplies no scalar equality. |
 | `BHW.OS45Figure24RotatedPathFormulaField`, `BHW.swFigure24_adjacentPathStableNeighborhood_rotated_exists`, `BHW.OS45Figure24OrientedPathField_of_checked_figure24`, `BHW.swFigure24_adjacentHorizontalEnvironmentWithRotatedPathStability`, `BHW.os45_adjacent_identity_horizontalEdge_sourcePatch_with_orientedPath`, `BHW.os45Figure24AdjacentLift`, `BHW.continuous_os45Figure24AdjacentLift`, `BHW.os45Figure24AdjacentLift_sourceGram`, `BHW.swFigure24_adjacentPathStableCanonicalLift_exists`, `BHW.OS45Figure24CanonicalSourcePatchData`, `BHW.OS45Figure24OrientedCanonicalSourcePatchData`, `BHW.exists_os45_adjacent_identity_canonicalSourcePatch_with_orientedPath`, `BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath`, and `BHW.os45_adjacent_identity_canonicalSourcePatch` | Checked in `OSToWightmanLocalityOS45Figure24.lean`.  The final canonical packet is now packaged as an existential theorem in `Prop` plus `noncomputable def` selectors, which is the correct Lean shape for data chosen from upstream existence theorems. | The checked slice exposes the definitional rotated `Δ t = figure24RotateAdjacentConfig hd (permAct τ (os45Figure24IdentityPath x t))`, the deterministic lift `os45Figure24AdjacentLift`, source-Gram identity for that lift, full oriented invariant equality using `sourceOrientedMinkowskiInvariant_complexLorentzAction` and `sourceOrientedMinkowskiInvariant_permAct`, the corrected `xseed`/`xcontact = os45CommonEdgeRealPoint 1 xseed` contact fields, the whole segment containment needed for the compact shrink, and the closure-level oriented path field needed by the strict adjacent `S'_n` source-germ suppliers. |
-| `BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis`, `BHW.sourceOrientedGramVariety_connectedComponentIn_relOpen`, `BHW.sourceOrientedGramVariety_connectedRelOpenTube_around_compactPath` | Source-geometry transcript pinned; production Lean not started. | Needed because oriented `Wscal` is now a connected component of the oriented adjacent double domain.  The component theorem now has a Lean-shaped proof body: write `D = D0 ∩ sourceOrientedGramVariety`, index local connected patches by `{G // G ∈ connectedComponentIn D G0}`, get each patch from `sourceOrientedGramVariety_local_connectedRelOpen_basis` inside `D0`, put it into the component by `IsPreconnected.subset_connectedComponentIn`, identify components by `connectedComponentIn_eq`, and take an indexed union using `IsRelOpenInSourceOrientedGramVariety.iUnion`.  The local connected basis is now decomposed into two implementation-level producers: max-rank patches use `SourceOrientedMaxRankChartData.exists_connected_chartBall` plus inverse-image relative openness and connected-ball image, while rank-deficient patches use the no-tube algebraic local-image chart `SourceOrientedRankDeficientVarietyLocalImageData` built from `SourceOrientedRankDeficientAlgebraicNormalFormData`, the identity-neighborhood head gauge `SourceRankDeficientHeadGaugeData`, Schur residual extraction, and a compatible tail small-realization pair.  The algebraic parameter-ball output carries its normal image neighborhood `Ωnf` explicitly, the connected parameter box stores the same tail `epsilon` used by realization, the Schur neighborhood stores the same tail `eta`, and `schurParam_mem` records that extracted head/mixed/tail parameters land back in that box.  The extended-tube compact residual chart is explicitly not an input to this basis theorem.  First Lean targets are these local chart producers and connected-component support, not the Figure-2-4 seed wrapper. |
+| `BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis`, `BHW.sourceOrientedGramVariety_connectedComponentIn_relOpen`, `BHW.sourceOrientedGramVariety_connectedRelOpenTube_around_compactPath` | Source-geometry transcript partially checked: max-rank chart topology/germ-pullback/local-identity is checked in `SourceOrientedLocalChart.lean`; connected-component and path-tube assembly are checked in `SourceOrientedConnected.lean`; the stratum dispatcher is checked in `SourceOrientedLocalBasis.lean`; the rank-deficient local-image output interface is checked in `SourceOrientedRankDeficientLocalImage.lean`. | Needed because oriented `Wscal` is now a connected component of the oriented adjacent double domain.  The component theorem is now Lean, conditional only on a local connected basis: write `D = D0 ∩ sourceOrientedGramVariety`, index local connected patches by `{G // G ∈ connectedComponentIn D G0}`, get each patch from the local basis inside `D0`, put it into the component by `IsPreconnected.subset_connectedComponentIn`, identify components by `connectedComponentIn_eq`, and take an indexed union using `IsRelOpenInSourceOrientedGramVariety.iUnion`.  The local connected basis is decomposed into two producer inputs.  Max-rank patches use the checked `SourceOrientedMaxRankChartData.exists_connected_chartBall`, `inv_image_openBall_relOpen`, `connectedPatch_inside_open`, `shrink_to_relOpen`, finite-coordinate transport `finiteDimensionalCoordinateEquiv`, `to_finrankCoordinateChart`, and `local_identity_near_point_finiteDimensional`.  Germ pullback and relative-openness transfer through such a chart are checked as `LocalBiholomorphOnSourceOrientedVariety.germ_to_chart`, `SourceOrientedVarietyGermHolomorphicOn.to_maxRank_chart`, and `LocalBiholomorphOnSourceOrientedVariety.image_relOpenIn_chart`.  The chart-local identity theorem is checked as `SourceOrientedMaxRankChartData.local_identity_near_point` for finite coordinate models, using the finite-dimensional `SCV.identity_theorem_connected_open_zero`; the earlier arbitrary-normed-model identity statement is intentionally not used.  The chart packet explicitly carries `chart_continuousOn`, since relative openness of inverse-image patches otherwise would be unjustified.  Rank-deficient patches now have the checked abstract packet `SourceOrientedRankDeficientVarietyLocalImageData` and extraction theorem `to_connectedRelOpenPatch`; the concrete no-tube algebraic local-image producer still must be built from `SourceOrientedRankDeficientAlgebraicNormalFormData`, the identity-neighborhood head gauge `SourceRankDeficientHeadGaugeData`, Schur residual extraction, and a compatible tail small-realization pair.  The algebraic parameter-ball output must carry its normal image neighborhood `Ωnf` explicitly, the connected parameter box must store the same tail `epsilon` used by realization, the Schur neighborhood must store the same tail `eta`, and `schurParam_mem` must record that extracted head/mixed/tail parameters land back in that box.  The extended-tube compact residual chart is explicitly not an input to this basis theorem.  Next Lean targets are the finite-coordinate max-rank chart producer and the concrete rank-deficient Schur/residual local-image producer; not connected-component support and not the Figure-2-4 seed wrapper. |
 | `BHW.os45AdjacentSPrimeOrientedScalarizationChart_of_figure24` | Constructor transcript pinned; production Lean not started. | Must combine the checked source patch with `sourceOrientedExtendedTubeDomain_relOpen_connected`, oriented double-domain relative openness, Wick real-section topology, and oriented germ pullback APIs.  Its `Wscal` must also store `Wscal_component : ∃ Gbase ∈ Wscal, Wscal = connectedComponentIn (sourceOrientedDoublePermutationDomain d n τ) Gbase`; closure-level quarter-turn membership is not justified from relative openness alone. |
 | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; direct producer transcript pinned, production Lean must start below the public surface. | Must prove compact PET-overlap equality directly from OS I §4.5/BHW-Jost data: checked Wick compact equality for every compact test supported in the chart, zero-diagonal/ordered-sector conversion through equations (4.1), (4.12), and (4.14), `BHW.OS45SourcePatchBHWJostPairData`, `BHW.os45_sourcePatch_bhwJostPairData_of_OSI45`, `BHW.OS45SourcePatchBHWJostDifferenceData`, `BHW.os45_sourcePatch_bhwJostDifferenceData_of_OSI45`, `BHW.os45_sourcePatch_realTrace_zero_of_wickDistributionZero`, and compact-test real-boundary identification of the ordinary and adjacent source traces.  It cannot use `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
 | `BHW.os45CommonBoundary_wickTrace_zero_of_compactPairing_zero` and `BHW.os45CommonBoundary_identity_of_wickTrace_zero` | Proof transcript pinned; production Lean not started. | The first applies the checked `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn` to the Wick trace function `g`, with `ContinuousOn g V0` from `hHc_holo.continuousOn.comp`, and uses `BHW.integral_commonBoundary_wickTrace_eq_zero_of_wickDiff_zero` to rewrite the compact pairings. The second defines `Lρ := os45WickRotateCLE.trans (os45CommonChartCLE 1)`, `U' := Lρ ⁻¹' Uc`, `H' z := Hc (Lρ z)`, proves `IsConnected U'` by Mathlib `Homeomorph.isConnected_preimage` (`.2 hUc_conn`), and applies checked `BHW.identity_theorem_totally_real_product` on the standard real slice after `BHW.os45CommonChartCLE_wickRotateRealConfig_eq`. No scalar representative, PET, EOW shortcut, or locality input enters these two helpers. |

@@ -1,6 +1,7 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45CommonChart
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45BranchPullback
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComplexDensity
+import Mathlib.Analysis.Normed.Module.Convex
 import Mathlib.Topology.MetricSpace.Thickening
 
 noncomputable section
@@ -85,6 +86,62 @@ theorem exists_connected_open_precompact_subset
     apply hr_sub
     rw [Metric.mem_ball]
     exact lt_of_le_of_lt hydist (by linarith)
+
+/-- If the straight segment between two real configurations lies in an open
+finite-dimensional chart set, then there is a connected open precompact
+neighborhood inside the set containing both endpoints. -/
+theorem exists_connected_open_precompact_subset_pair
+    {U : Set (NPointDomain d n)}
+    (hU_open : IsOpen U)
+    {x y : NPointDomain d n}
+    (hseg : segment ℝ x y ⊆ U) :
+    ∃ V : Set (NPointDomain d n),
+      IsOpen V ∧ IsConnected V ∧ x ∈ V ∧ y ∈ V ∧
+      IsCompact (closure V) ∧ closure V ⊆ U := by
+  classical
+  let K : Set (NPointDomain d n) := segment ℝ x y
+  have hK_compact : IsCompact K := by
+    have hpair_finite :
+        ({x, y} : Set (NPointDomain d n)).Finite := by
+      simp
+    simpa [K, convexHull_pair] using
+      hpair_finite.isCompact_convexHull ℝ
+  have hK_convex : Convex ℝ K := by
+    simpa [K] using convex_segment x y
+  obtain ⟨r0, hr0_pos, hr0_sub⟩ :=
+    hK_compact.exists_cthickening_subset_open
+      hU_open (by simpa [K] using hseg)
+  let r : ℝ := r0 / 2
+  have hr_pos : 0 < r := by
+    dsimp [r]
+    linarith
+  let V : Set (NPointDomain d n) := Metric.thickening r K
+  have hV_open : IsOpen V := by
+    simpa [V] using Metric.isOpen_thickening
+  have hxV : x ∈ V :=
+    Metric.self_subset_thickening hr_pos K
+      (left_mem_segment ℝ x y)
+  have hyV : y ∈ V :=
+    Metric.self_subset_thickening hr_pos K
+      (right_mem_segment ℝ x y)
+  have hV_connected : IsConnected V := by
+    refine ⟨⟨x, hxV⟩, ?_⟩
+    exact (hK_convex.thickening r).isPreconnected
+  have hclosure_cthick :
+      closure V ⊆ Metric.cthickening r K := by
+    simpa [V] using
+      Metric.closure_thickening_subset_cthickening r K
+  have hr_le_r0 : r ≤ r0 := by
+    dsimp [r]
+    linarith
+  have hclosure_U : closure V ⊆ U :=
+    hclosure_cthick.trans
+      ((Metric.cthickening_mono hr_le_r0 K).trans hr0_sub)
+  have hclosure_compact : IsCompact (closure V) :=
+    IsCompact.of_isClosed_subset
+      (hK_compact.cthickening) isClosed_closure hclosure_cthick
+  exact ⟨V, hV_open, hV_connected, hxV, hyV,
+    hclosure_compact, hclosure_U⟩
 
 /-- Domain of the branch-specific ACR pullback in the OS45 horizontal chart.
 The branch label is recorded so the theorem surface matches the branchwise
