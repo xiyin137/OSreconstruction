@@ -3933,6 +3933,106 @@ private theorem W_analytic_BHW_cluster_pointwise_aux
   rw [hjoint_eq]
   exact hcluster a ha0 hlarge
 
+/-! ### Step D scaffolding — uniform-in-a tail bound auxiliaries
+
+Step D of the cluster discharge plan: construct a uniform-in-a bound that
+makes dominated convergence work via the tail-truncation approach.
+
+Strategy: split (x_n, x_m) ∈ NPointDomain d n × NPointDomain d m into
+- bounded region B(M₀) := {‖x_n‖ + ‖x_m‖ ≤ M₀}: uniformly bounded integrand
+  on B for any |⃗a| > 1 (since infDist is bounded below, ‖z‖ is bounded above);
+  pointwise cluster + DCT on B gives the integral on B → 0.
+- tail B(M₀)ᶜ: Schwartz decay of f, g dominates the polynomial growth
+  of the kernel; tail integral < δ uniformly in a for M₀ large enough.
+
+Sub-lemmas below scaffold the auxiliary obligations. Each is a sorry
+pending careful Lean engineering. -/
+
+/-- Auxiliary: integrability of the disconnected-product integrand on
+`NPointDomain d n × NPointDomain d m`.
+
+This is just the product `|K_n(wick x_n) f(x_n)| · |K_m(wick x_m) g(x_m)|`,
+integrable by Fubini + per-block integrability via
+`wick_rotated_kernel_mul_zeroDiagonal_integrable`. -/
+private theorem cluster_disconnected_term_integrable
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) {n m : ℕ}
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hf_zd : VanishesToInfiniteOrderOnCoincidence f)
+    (hg_zd : VanishesToInfiniteOrderOnCoincidence g) :
+    MeasureTheory.Integrable
+      (fun xy : NPointDomain d n × NPointDomain d m =>
+        ‖F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (xy.1 k))‖ *
+        ‖(f : NPointDomain d n → ℂ) xy.1‖ *
+        (‖F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (xy.2 k))‖ *
+        ‖(g : NPointDomain d m → ℂ) xy.2‖))
+      MeasureTheory.volume := by
+  -- Discharge: factor via Fubini (`MeasureTheory.Integrable.prod_mul`) using
+  -- per-block integrability:
+  --   `(wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn ⟨f, hf_zd⟩).norm`
+  --   `(wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn ⟨g, hg_zd⟩).norm`
+  sorry
+
+/-- Auxiliary: forward-tube growth bound on the shifted joint kernel,
+expressed as polynomial growth in `(‖x_n‖, ‖x_m‖, |⃗a|)` divided by
+`infDist`-style coincidence singularity.
+
+Discharge from `hasForwardTubeGrowth_of_wightman` for `n + m` points,
+specialized to the σ-permuted Wick configurations (using the same
+`exists_perm_wick_in_forwardTube_of_distinct_positive` machinery). -/
+private theorem cluster_joint_kernel_polynomial_bound
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ) :
+    ∃ C : ℝ, ∃ N q : ℕ, 0 < C ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 →
+      ∀ᵐ xy : NPointDomain d n × NPointDomain d m ∂MeasureTheory.volume,
+        ‖F_ext_on_translatedPET_total Wfn
+            (fun k => wickRotatePoint (Fin.append xy.1
+              (fun j μ => xy.2 j μ + a μ) k))‖ ≤
+          C * (1 + ‖xy.1‖) ^ N * (1 + ‖xy.2‖) ^ N *
+            (1 + (∑ i : Fin d, (a (Fin.succ i)) ^ 2).sqrt) ^ N := by
+  -- Discharge from `hasForwardTubeGrowth_of_wightman Wfn (n + m)`:
+  -- bounds ‖K_{n+m}(z)‖ ≤ C(1+‖z‖)^N / infDist(z, coincidence)^{q+1}.
+  -- The `infDist` factor is absorbed into the test functions' `vanishesToInfiniteOrder`
+  -- in the integrand bound (not stated here for simplicity; the named-bound
+  -- form here is the polynomial-growth side after that absorption).
+  sorry
+
+/-- Auxiliary: tail bound for the difference integrand. For any ε > 0, choose
+M₀ large enough that the integral of the difference over `‖x_n‖ + ‖x_m‖ > M₀`
+is less than ε, uniformly in `a`. -/
+private theorem cluster_tail_bound
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (δ : ℝ) (hδ : δ > 0) :
+    ∃ M₀ : ℝ, M₀ > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖∫ x_n : NPointDomain d n, ∫ x_m : NPointDomain d m,
+              (Set.indicator
+                {p : NPointDomain d n × NPointDomain d m | M₀ < ‖p.1‖ + ‖p.2‖}
+                (fun p =>
+                  F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (Fin.append p.1 p.2 k)) *
+                  (f.tensorProduct g_a) (Fin.append p.1 p.2) -
+                  F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (p.1 k)) * f p.1 *
+                  (F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (p.2 k)) * g_a p.2))
+                (x_n, x_m))‖ < δ := by
+  -- Discharge: use `cluster_joint_kernel_polynomial_bound` + Schwartz decay
+  -- of `f, g` (taking K large enough to absorb the polynomial growth in
+  -- (‖x_n‖, ‖x_m‖, |⃗a|)). The tail integrand is bounded by
+  --   C (1+‖x_n‖)^{N-K} (1+‖x_m‖)^{N-K} (1+|⃗a|)^N / infDist^{q+1}
+  -- where the `(1+|⃗a|)^N` factor is absorbed by additional Schwartz decay
+  -- on the m-block (since g_a is a translate of g, which has Schwartz
+  -- decay; the translation moves the support but doesn't change the
+  -- L¹-tail estimate).
+  sorry
+
 
 /-- Cluster property of `wickRotatedBoundaryPairing` at the integral level.
 
