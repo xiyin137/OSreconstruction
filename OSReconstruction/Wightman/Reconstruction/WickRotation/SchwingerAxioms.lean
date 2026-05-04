@@ -3617,37 +3617,42 @@ theorem append_realSpatialShift_mem_PET_of_permutedForwardTube {n m : ℕ}
 
 /-- **Pointwise cluster property of BHW extension on the permuted forward tube.**
 
-    Generalization of `bhw_pointwise_cluster_forwardTube` (below) that drops
-    the contiguous-Fin.append-in-tube hypothesis in favor of an existential
-    permutation hypothesis: there is *some* permutation `σ` of the joint
-    `(n+m)` indices that puts the joint config in the forward tube.
+    Fully-permuted generalization of `bhw_pointwise_cluster_forwardTube`
+    (below). All three tube-membership hypotheses are weakened to existential
+    permutation hypotheses:
+      * `hperm_n`: some permutation σ_n of the n-block puts it in `ForwardTube d n`;
+      * `hperm_m`: some permutation σ_m of the m-block puts it in `ForwardTube d m`;
+      * `hperm`: some permutation σ of the joint Fin (n+m) puts the
+        appended config in `ForwardTube d (n+m)`.
 
     This is the form needed by `W_analytic_cluster_integral` for OPTR-supported
-    test functions: each block separately sits in ForwardTube (each block has
-    distinct positive times by OPTR), but inter-block time ordering is *not*
-    guaranteed, so the joint Fin.append config is in `ForwardTube d (n+m)`
-    only on a measure-zero set. Sorting all `(n+m)` times by an appropriate
-    permutation `σ` puts the σ-permuted config in ForwardTube — and BHW
-    permutation invariance of `W_analytic` lets us reduce the cluster
-    statement to that case.
+    test functions: at a.e. configurations, each block has distinct positive
+    times (per-block witness via sorting) and the joint has distinct positive
+    times (joint witness via sorting), so all three permutation hypotheses
+    hold without requiring the unsorted `z_n`, `z_m` or joint to be in the
+    standard tube.
 
     Mathematically: the cluster decomposition of an `(n+m)`-point Wightman
     function holds whenever any subset of `m` points is moved spatially to
-    infinity, not just the contiguous suffix. This follows from R4 (cluster
-    decomposition for the `(n,m)`-split) + the symmetry of the Wightman
-    function under index permutations preserving forward-cone causality.
-    Reference: Streater-Wightman §2.4 + Theorem 3-5; Glimm-Jaffe §19.4.
+    infinity, regardless of how the indices are ordered. This follows from
+    R4 + BHW permutation invariance of `W_analytic_BHW`. Reference:
+    Streater-Wightman §2.4 + Theorem 3-5; Glimm-Jaffe §19.4.
 
-    **Discharge plan (~few hundred lines):** From the existing
-    `bhw_pointwise_cluster_forwardTube` + BHW permutation invariance of
-    `W_analytic_BHW` (axiom in `BHWCore.lean`) + the symmetry property of
-    cluster under index relabeling (R4 + symmetry of Wightman functions). -/
+    **Discharge plan:** From the existing `bhw_pointwise_cluster_forwardTube`
+    + BHW permutation invariance of `W_analytic_BHW` (axiom in `BHWCore.lean`)
+    + the symmetry property of cluster under index relabeling. The proof
+    obtains witnesses from the three existentials, applies BHW permutation
+    invariance to relate `W_analytic_BHW(z_n)` to `W_analytic_BHW(σ_n z_n)`
+    (and similarly for z_m), then invokes the original cluster lemma at the
+    sorted configurations. -/
 axiom bhw_pointwise_cluster_permutedForwardTube
     {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ)
     (z_n : Fin n → Fin (d + 1) → ℂ) (z_m : Fin m → Fin (d + 1) → ℂ)
     (_hz_n : IsEuclidean z_n) (_hz_m : IsEuclidean z_m)
-    (hmem_n : z_n ∈ ForwardTube d n)
-    (hmem_m : z_m ∈ ForwardTube d m)
+    (hperm_n : ∃ σ_n : Equiv.Perm (Fin n),
+      (fun k => z_n (σ_n k)) ∈ ForwardTube d n)
+    (hperm_m : ∃ σ_m : Equiv.Perm (Fin m),
+      (fun k => z_m (σ_m k)) ∈ ForwardTube d m)
     (hperm : ∃ σ : Equiv.Perm (Fin (n + m)),
       (fun k => Fin.append z_n z_m (σ k)) ∈ ForwardTube d (n + m))
     (ε : ℝ) (hε : ε > 0) :
