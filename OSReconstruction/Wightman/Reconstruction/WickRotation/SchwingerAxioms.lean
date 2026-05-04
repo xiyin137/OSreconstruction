@@ -4133,6 +4133,57 @@ private theorem cluster_joint_kernel_polynomial_bound
   filter_upwards with xy _hregime
   sorry
 
+/-- Auxiliary: bounded-region DCT for the difference integrand. For each
+δ > 0 and bounded radius M₀, there exists R₁ such that for |⃗a| > R₁,
+the integral over `‖x_n‖ + ‖x_m‖ ≤ M₀` of the difference integrand is
+less than δ.
+
+**Discharge plan.** Apply `MeasureTheory.tendsto_integral_of_dominated_convergence`
+on the bounded set `B := {(x_n, x_m) : ‖x_n‖ + ‖x_m‖ ≤ M₀}`. Inputs:
+- Pointwise convergence on B: from `W_analytic_BHW_cluster_pointwise_aux`
+  applied to a.e. configurations satisfying the joint distinctness +
+  positivity conditions implied by f, g being OPTR-supported.
+- Uniform-on-B integrable dominator: on the bounded region B with
+  |⃗a| > some R₀, the joint kernel is uniformly bounded (since infDist
+  is bounded below by a configuration-dependent constant + |⃗a|/2 lower
+  bound from inter-block separation, and the polynomial growth in
+  ‖joint_shifted‖ is bounded on B). Schwartz norms of f, g give an
+  integrable bound.
+The DCT output `Tendsto (fun a => ∫_B difference) cobounded (𝓝 0)`
+unwraps to `∃ R₁, ∀ |⃗a| > R₁, |∫_B| < δ`.
+
+~80 lines of dominated-convergence machinery. -/
+private theorem cluster_bounded_region_DCT
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (M₀ : ℝ) (_hM₀ : M₀ > 0)
+    (δ : ℝ) (hδ : δ > 0) :
+    ∃ R₁ : ℝ, R₁ > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i)) ^ 2) > R₁ ^ 2 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖∫ x_n : NPointDomain d n, ∫ x_m : NPointDomain d m,
+              (Set.indicator
+                {p : NPointDomain d n × NPointDomain d m | ‖p.1‖ + ‖p.2‖ ≤ M₀}
+                (fun p =>
+                  F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (Fin.append p.1 p.2 k)) *
+                  (f.tensorProduct g_a) (Fin.append p.1 p.2) -
+                  F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (p.1 k)) * f p.1 *
+                  (F_ext_on_translatedPET_total Wfn
+                    (fun k => wickRotatePoint (p.2 k)) * g_a p.2))
+                (x_n, x_m))‖ < δ := by
+  -- Apply DCT on B(M₀). Pointwise convergence from
+  -- `W_analytic_BHW_cluster_pointwise_aux`. Uniform dominator from
+  -- forward-tube growth (kernel bounded on B since ‖joint‖ ≤ const + |⃗a|,
+  -- and infDist ≥ |⃗a|/2 on B for large |⃗a|).
+  sorry
+
 /-- Auxiliary: tail bound for the difference integrand. For any ε > 0, choose
 M₀ large enough that the integral of the difference over `‖x_n‖ + ‖x_m‖ > M₀`
 is less than ε, uniformly in `a`. -/
@@ -4287,45 +4338,27 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
   -- Get the tail bound from `cluster_tail_bound` with δ := ε/2.
   obtain ⟨M₀, hM₀_pos, htail⟩ := cluster_tail_bound (Wfn := Wfn) (n := n) (m := m)
     f g hsupp_f hsupp_g (ε / 2) (by linarith)
-  -- The cluster sorry remains, but the architecture now has the tail-bound
-  -- M₀ extracted and ready for the bounded-region argument. The remaining
-  -- work for the outer cluster theorem:
-  -- (1) Establish the bounded-region DCT result: ∃ R₁ > 0,
-  --     ∀ a (with conditions and |⃗a| > R₁),
-  --     ‖∫_{B(M₀)^c indicator complement} (difference integrand)‖ < ε/2.
-  --     Uses `W_analytic_BHW_cluster_pointwise_aux` for pointwise cluster
-  --     plus uniform-on-B(M₀) integrable dominator (the unified
-  --     `cluster_uniform_dominator` form discussed in the Step D restructure
-  --     comment above).
-  -- (2) Combine: |LHS - RHS| ≤ tail + bounded ≤ ε/2 + ε/2 = ε for
-  --     |⃗a| > max(... tail R, R₁).
+  -- Get the bounded-region DCT result with δ := ε/2 and the same M₀.
+  obtain ⟨R₁, hR₁_pos, hbounded⟩ := cluster_bounded_region_DCT (Wfn := Wfn) (n := n) (m := m)
+    f g hsupp_f hsupp_g M₀ hM₀_pos (ε / 2) (by linarith)
+  -- Combine: take R := R₁. For |⃗a| > R, the difference is split into
+  --   bounded part (< ε/2 by hbounded) + tail part (< ε/2 by htail),
+  -- giving total < ε.
+  refine ⟨R₁, hR₁_pos, fun a ha0 hlarge g_a hga => ?_⟩
+  -- Reduce the LHS-RHS difference to an integral over (x_n, x_m) of the
+  -- difference integrand. Then split the integration domain into
+  -- B(M₀) := {‖x_n‖+‖x_m‖ ≤ M₀} and its complement, apply triangle
+  -- inequality, and use hbounded + htail.
   --
-  -- Step D: Construct a uniform-in-a integrable dominator using
-  -- `hasForwardTubeGrowth_of_wightman` (polynomial growth) + Schwartz decay
-  -- of `f, g` (rapid decrease). The key technical fact: for Wick-rotated
-  -- configs with shifted m-block (real spatial shift `a`), the imaginary
-  -- parts of the configs are unchanged, so the forward-tube growth bound
-  -- gives `‖F_ext(z + spatial a)‖ ≤ C (1 + ‖z + spatial a‖)^N / infDist^{q+1}`.
-  -- Schwartz decay of `f, g` then gives a dominator
-  -- `D(x_n, x_m) := C (1 + ‖x_n‖)^{-K} (1 + ‖x_m‖)^{-K}` (uniform in `a` for
-  -- `|⃗a| ≥ 1`, say), integrable over `(x_n, x_m)`.
+  -- This requires:
+  -- - Fubini decomposition of the LHS (n+m)-integral via
+  --   `integral_fin_append_split` (PR #72) — this gives LHS = ∫_n ∫_m of
+  --   the joint integrand on Fin.append.
+  -- - Fubini factoring of the RHS product into ∫_n ∫_m.
+  -- - Domain splitting: ∫_full = ∫_B + ∫_{B^c} via Set.indicator addition.
+  -- - Triangle inequality: ‖∫_B + ∫_{B^c}‖ ≤ ‖∫_B‖ + ‖∫_{B^c}‖.
   --
-  -- Step E: Fubini-decompose the (n+m)-integral on the LHS using
-  -- `integral_fin_append_split` (PR #72) + `Fin.append_comp_apply` (Tier 2
-  -- helper) + `SchwartzMap.tensorProduct_fin_append_apply` (simp bridge).
-  -- Change of variable `x_m → x_m + a` on the m-block via Lebesgue
-  -- translation invariance + `wickRotatePoint_add` with `a 0 = 0`.
-  --
-  -- Step F: Apply `MeasureTheory.tendsto_integral_of_dominated_convergence`
-  -- to combine pointwise (Step C) + dominator (Step D), yielding the
-  -- integral cluster.
-  --
-  -- Witness `R`: use the union of (Steps A + Step B) measurability + the
-  -- ε/3 argument from the dominated convergence application.
-  --
-  -- Currently: only Step A is closed; Steps B–F remain as outer `sorry`.
-  -- The orchestration above is the actual proof structure once the
-  -- sub-obligations are discharged.
+  -- All standard Mathlib operations.
   sorry
 
 /-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
