@@ -143,21 +143,67 @@ The ~140 lines of proved sub-pieces represent the hardest *mathematical* content
 
 ## Known issues to address during discharge
 
-- **`cluster_tail_bound` region is wrong.** Currently uses `‖x_n‖+‖x_m‖ > M₀`,
-  but Schwartz decay of `g_a` is in `x_m - a` coordinates (since `g_a(x_m) = g(x_m - a)`).
-  For `x_m ≈ a` (large `|⃗a|`), `‖x_m‖` can be huge while `‖x_m - a‖` is small,
-  and `g_a` is NOT suppressed there.
+### Issue 1: `cluster_tail_bound` region is wrong (surface fix)
 
-  **Fix**: change region to `‖x_n‖ + ‖x_m - a‖ > M₀` (Schwartz-natural after
-  the `x_m → x_m + a` change of variable). The whole cluster proof should
-  be reformulated in `(x_n, u := x_m - a)` coordinates, with the Schwartz
-  decay handled in `u`-direction. This will likely simplify the dominator
-  construction in `cluster_joint_kernel_polynomial_bound` as well.
+Currently uses `‖x_n‖+‖x_m‖ > M₀`, but Schwartz decay of `g_a` is in
+`x_m - a` coordinates. For `x_m ≈ a` (large `|⃗a|`), `‖x_m‖` is huge but
+`‖x_m - a‖` is small and `g_a` is NOT suppressed. Surface fix: reformulate
+the proof in `(x_n, u := x_m - a)` coordinates after change of variable;
+tail region becomes `‖x_n‖ + ‖u‖ > M₀`.
 
-- **`cluster_joint_kernel_polynomial_bound` bound form**. The polynomial-
-  divided-by-`|⃗a|^{q+1}` form is correct only when `|⃗a|/2 ≤ min(intra_n, intra_m)`.
-  For small intra-block gaps, the bound has a different form. Suggest unifying
-  D2 + D3 into a single `cluster_uniform_dominator` with corrected coordinates.
+### Issue 2: Route (i) may have a fundamental uniform-bound obstruction
+
+After working through the analysis carefully (2026-05-04):
+
+In `(x_n, u)` coordinates, the joint kernel
+`K_{n+m}(wick(append x_n (u+a)))` has polynomial growth bounded by
+`(1+‖x_n‖+‖u‖+|⃗a|)^N / infDist^{q+1}`. For large `|⃗a|` with cross-block
+infDist ≥ `|⃗a|/2`, this is `O(|⃗a|^{N-q-1})` (after Schwartz absorption of
+the `(x_n, u)` polynomial factors via test-function decay).
+
+**Without a mass-gap assumption (`N ≤ q+1`), this factor *grows* in `|⃗a|`.**
+Schwartz decay of `f, g` handles `(‖x_n‖, ‖u‖)` polynomial factors but
+cannot absorb the standalone `(1+|⃗a|)^N` factor.
+
+Mathlib's `tendsto_integral_filter_of_dominated_convergence` requires a
+**single uniform-in-parameter integrable dominator**. Without mass gap, no
+such uniform dominator exists for the difference integrand.
+
+**Implication**: route (i) may not actually close the cluster sorry as
+currently scoped. Specifically, all three Step D sub-lemmas
+(`cluster_joint_kernel_polynomial_bound`, `cluster_bounded_region_DCT`,
+`cluster_tail_bound`) inherit this uniform-in-a obstruction.
+
+### Possible resolutions
+
+(R1) **Use route (iii) KL infrastructure.** The parked
+`r2e/kallen-lehmann-step1` branch has the spectral-measure machinery
+(SNAG axiom, vacuum spectral measure, V⁺ support, vacuum atom). The
+spectral-side cluster argument bypasses the polynomial-growth obstruction
+because the `(1+|⃗a|)^N` factor doesn't appear in spectral coordinates —
+the Fourier integral of the spectral measure on `V⁺ \ {0}` decays
+naturally via Riemann-Lebesgue / no-zero-atom analysis.
+
+(R2) **Add a textbook axiom for "spectral cluster on Wick-rotated integrals".**
+Streater-Wightman §3.4 + Glimm-Jaffe §19.4 derive this from R4 + spectrum
+condition via the spectral measure decomposition. The axiom would directly
+state the cluster bound for Wick-rotated integrals on OPTR-supported test
+functions, citing those theorems. This effectively defers the spectral
+analysis to the textbooks.
+
+(R3) **Restrict the cluster theorem to a mass-gap-style hypothesis** (i.e.,
+add a hypothesis that `Wfn` has a mass gap, ensuring `N ≤ q+1` in the
+forward-tube growth bound). This makes route (i) work but limits the
+applicability. Likely not what we want for a generic cluster theorem.
+
+**Recommendation**: pursue (R1) — revive the KL infrastructure and use
+the spectral-cluster argument. The KL infrastructure is already on a
+parked branch and aligns with the textbook proof structure.
+
+The "press through D2/D3/E/F" plan in the previous version of this doc
+was based on a misreading: I assumed Schwartz decay of f, g would
+absorb the polynomial-in-|⃗a| factor. It doesn't — Schwartz decay is in
+the test-function-argument direction, not in the parameter `a`.
 
 ## References
 
