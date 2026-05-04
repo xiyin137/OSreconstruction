@@ -107,11 +107,13 @@ projections on a Hilbert space `H`.
 
 The underlying assignment `proj` takes a *pair* of a set and a proof that
 it is measurable. This eliminates "junk" data on non-measurable subsets:
-in ZFC there is no non-trivial countably additive measure defined on the
-full power set of `ℝⁿ` (Vitali-style obstruction), so the PVM is
-mathematically meaningful only on the σ-algebra `MeasurableSpace α`, and
-making the dependency explicit in the type is what allows uniqueness in
-the SNAG theorem to be a genuine extensional statement.
+the spectral measures of interest here (Borel / continuous, e.g. Lebesgue
+on `ℝⁿ` regularized by an `L¹` density) cannot be extended to the full
+power set under ZFC, so the PVM is meaningful only on the σ-algebra
+`MeasurableSpace α`. Indexing `proj` directly on measurable sets is what
+allows uniqueness in the SNAG theorem to be a genuine extensional
+statement (without the gate, two PVMs agreeing on every measurable set
+but differing on Vitali-type subsets would be distinct Lean structures).
 
 Generalizes `OSReconstruction.vNA.MeasureTheory.SpectralStieltjes.ProjectionValuedMeasure`
 (specialized to `α = ℝ` and indexed on `Set ℝ` directly — that older
