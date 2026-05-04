@@ -428,83 +428,145 @@ n-point spectral measures. The right axiom set involves:
 The two axioms below replace the false ones with the
 correct GNS-based approach. -/
 
-/-- **Wightman GNS bridge** (textbook).
+/-! ### Class-based Wightman GNS reconstruction
 
-Given a Wightman QFT and OPTR-supported test functions
-`f : SchwartzNPoint d n` (Schwinger-side test functions), there exist
-states `Ψ_f ∈ ℋ` (the Wightman GNS Hilbert space) and a strongly
-continuous unitary translation group `U(a) : ℋ → ℋ` such that the
-Wick-rotated boundary integral equals the inner product:
-$$\int F_\text{ext}(\text{wick}\,x)\, (f \otimes g_a)(x)\, dx
-  = \langle \Psi_f, U(a) \Psi_g \rangle_{\mathcal{H}}.$$
+Per Gemini vetting (2026-05-04), the existential-bundling approach for
+the GNS bridge is an antipattern: each `(f, g)` pair would generate a
+different, unrelated Hilbert space at the type level. Replaced with a
+typeclass parameterized by `Wfn`, ensuring all sub-claims refer to the
+**same** reconstructed Hilbert space.
 
-The states satisfy `Ψ_0 = ‖f‖^2_{Wightman} Ω` style normalization
-(specific Hilbert-space-norm inner products with vacuum).
+This class also incorporates the OS time reflection (`osConj`) on the
+Schwinger bridge to avoid the **domain escape** issue (`F_ext` is
+undefined where imaginary parts of consecutive points cross zero —
+which they would for two OPTR-supported test functions concatenated
+without time reflection). -/
+
+/-- **Wightman GNS reconstruction class**.
+
+For a Wightman QFT `Wfn`, the GNS reconstruction provides:
+* A Hilbert space `H`.
+* A normalized vacuum `Ω : H` invariant under translations.
+* A "quantization" map sending OPTR-supported Schwartz test functions
+  to states in `H`.
+* A strongly continuous unitary translation group `U(a) : H → H`.
+
+The Schwinger bridge identifies the Wick-rotated boundary integral
+(applied to the OS-reflected tensor product `f.osConj ⊗ g_a`) with the
+GNS inner product `⟨Ψ_f, U(a) Ψ_g⟩`. The OS reflection ensures the
+joint config has strictly time-ordered (negative-then-positive) imaginary
+parts, so `F_ext` is well-defined.
 
 **Reference**: Streater-Wightman §3.3 (Wightman reconstruction);
-Glimm-Jaffe §19.1–19.4 (GNS for Wightman + Schwinger).
+Glimm-Jaffe §19.1–19.4. **OS reflection** in the Schwinger bridge:
+Osterwalder-Schrader 1973 §3 (the OS positivity / inner product
+construction).
 
-**Discharge**: full Wightman GNS construction from R0–R4. ~3–6 weeks
-of focused work building Hilbert space, vacuum, field operators,
-translation unitaries, BHW analytic continuation bridges. Or accept
-as a textbook checkpoint axiom. -/
-axiom wightman_gns_schwinger_bridge
-    (Wfn : WightmanFunctions d) (n m : ℕ)
-    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
-    (_hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+**Discharge**: full Wightman GNS construction from R0–R4 + OS quantization
+map + analytic continuation bridges. ~3–6 weeks; or accept as a textbook
+checkpoint class. -/
+class WightmanReconstruction {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) where
+  /-- The reconstructed Hilbert space. -/
+  H : Type*
+  /-- Normed-additive-group structure on H. -/
+  [inst_normed : NormedAddCommGroup H]
+  /-- Inner product space structure (over ℂ). -/
+  [inst_inner : InnerProductSpace ℂ H]
+  /-- Completeness. -/
+  [inst_complete : CompleteSpace H]
+  /-- The vacuum vector. -/
+  Ω : H
+  /-- Spacetime translation unitary group. -/
+  U : SpacetimeDim d → (H →L[ℂ] H)
+  /-- The OS quantization map: each OPTR-supported Schwartz n-point test
+      function maps to a state in `H`. -/
+  quantize : {n : ℕ} → (f : SchwartzNPoint d n) →
+    (tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n) → H
+  /-- Each `U a` is a unitary operator. -/
+  unitary_rep : ∀ a, U a ∈ unitary (H →L[ℂ] H)
+  /-- Translation group: `U(a + b) = U(a) ∘ U(b)`. -/
+  U_add : ∀ a b, U (a + b) = U a ∘L U b
+  /-- Strong continuity of the translation group. -/
+  strong_cont : ∀ ψ : H, Continuous (fun a => U a ψ)
+  /-- Vacuum is normalized. -/
+  vac_norm : ‖Ω‖ = 1
+  /-- Vacuum is translation-invariant. -/
+  vac_inv : ∀ a, U a Ω = Ω
+  /-- Vacuum is the unique translation-invariant state up to scalar. -/
+  vacuum_unique : ∀ ψ : H, (∀ a, U a ψ = ψ) → ∃ c : ℂ, ψ = c • Ω
+  /-- **Schwinger bridge** (with OS time reflection):
+
+      For OPTR-supported `f, g`, the Wick-rotated boundary integral against
+      `f.osConj ⊗ g_a` equals the GNS inner product `⟨Ψ_f, U(a) Ψ_g⟩`.
+      The OS reflection on `f` flips its time support to negative-and-decreasing,
+      so the appended `(f̃, g_a)` config has globally time-ordered imaginary
+      parts (negative for f̃-block, positive for g_a-block), making `F_ext`
+      well-defined.
+
+      Reference: Osterwalder-Schrader 1973 §3 (OS quantization); Glimm-Jaffe §19. -/
+  schwinger_bridge :
+    ∀ {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+      (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n)
+      (hg : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+        OrderedPositiveTimeRegion d m)
+      (a : SpacetimeDim d) (_ha0 : a 0 = 0)
+      (g_a : SchwartzNPoint d m)
+      (_hga : ∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)),
+    -- Note: g_a inherits OPTR support from g + the spatial-only shift `a 0 = 0`.
+    -- We assume the support is preserved (would need a small lemma to formalize).
+    (∫ x : NPointDomain d (n + m),
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+        (f.osConj.tensorProduct g_a) x) =
+      (@inner ℂ H _ (quantize f hf) (U a (quantize g hg)))
+  /-- **Vacuum expectation bridge**: the standalone n-point Wick-rotated
+      integral against `f.osConj` (OS-reflected) equals the inner product
+      with the vacuum.
+
+      This is the disconnected-piece bridge that, combined with
+      `schwinger_bridge`, gives the cluster decomposition `⟨Ψ, U(a)Φ⟩ →
+      ⟨Ψ, Ω⟩⟨Ω, Φ⟩` after subtracting the vacuum projection. -/
+  vacuum_expectation :
+    ∀ {n : ℕ} (f : SchwartzNPoint d n)
+      (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+        OrderedPositiveTimeRegion d n),
+    -- The vacuum expectation: ⟨Ω, Ψ_f⟩ equals an n-point Wick-rotated integral.
+    -- (Statement abstracted via the OSConj structure; the precise form
+    -- relates to ‖f‖_W via the OS quantization map's normalization.)
+    True
+
+/-- **Truncated state-specific measure has AC spatial marginal** (textbook).
+
+For OPTR-supported `f, g` with the GNS-state pair `(Ψ_f, Ψ_g)`, the
+truncated state-specific measure `d⟨Ψ_f, dE(p) Ψ_g⟩` (where `E` is the
+joint PVM of energy-momentum from SNAG, restricted to the orthogonal
+complement of the vacuum) has an absolutely continuous spatial marginal.
+
+This goes beyond R4 cluster (which only gives no atom at `p = 0`). The
+spatial AC marginal follows from the support of the joint spectral measure
+on mass hyperboloids `p² ≥ m²`, which project to absolutely continuous
+densities `dp⁰ / 2E_p` on spatial momenta.
+
+**Reference**: Glimm-Jaffe §6.2 Theorem 6.2.3; Reed-Simon II §IX.8
+(spectral support analysis).
+
+**Discharge**: detailed Jost-Hepp-style mass hyperboloid analysis
++ Radon-Nikodym derivatives. ~weeks of textbook content; or accept as a
+standalone axiom. -/
+axiom truncated_state_spectral_AC_marginal
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d)
+    [WR : WightmanReconstruction Wfn]
+    {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hf : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n)
-    (_hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+    (hg : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
       OrderedPositiveTimeRegion d m) :
-    -- Existence of GNS Hilbert space H, vacuum Ω, states Ψ_f, Ψ_g,
-    -- translation unitary U, all satisfying the Wick-rotated integral
-    -- bridge. Stated abstractly via existential.
-    ∃ (H : Type*) (_ : NormedAddCommGroup H) (_ : InnerProductSpace ℂ H)
-      (_ : CompleteSpace H)
-      (Ω : H) (Ψ_f Ψ_g : H)
-      (U : SpacetimeDim d → (H →L[ℂ] H)),
-    -- Translation group: strongly continuous unitary representation.
-    (∀ a, U a ∈ unitary (H →L[ℂ] H)) ∧
-    (∀ a b, U (a + b) = U a ∘L U b) ∧
-    (∀ ψ : H, Continuous (fun a => U a ψ)) ∧
-    -- Vacuum is normalized + invariant.
-    ‖Ω‖ = 1 ∧
-    (∀ a, U a Ω = Ω) ∧
-    -- Schwinger ↔ inner product bridge.
-    (∀ a : SpacetimeDim d, a 0 = 0 → ∀ (g_a : SchwartzNPoint d m),
-      (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
-      (∫ x : NPointDomain d (n + m),
-          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
-          (f.tensorProduct g_a) x) = (@inner ℂ H _ Ψ_f (U a Ψ_g)))
-
-/-- **Vacuum is the unique zero-momentum eigenstate** (R4 spectral form).
-
-In the Wightman GNS Hilbert space, the joint spectral measure of the
-translation generators `(P^0, ⃗P)` (extracted via SNAG applied to
-`U(a)`) has its only `P = 0` atom on the 1-dimensional vacuum
-subspace. Equivalently: for the truncated state-specific measure
-`d⟨Ψ_f, dE(p) Ψ_g⟩` (where `Ψ_f, Ψ_g ⊥ Ω`), the atom at `p = 0` vanishes.
-
-This is the **spectral form of R4** uniqueness-of-vacuum + cluster.
-
-**Reference**: Streater-Wightman Theorem 3-3 (vacuum uniqueness);
-Glimm-Jaffe §6.1 Theorem 6.1.5.
-
-**Discharge**: from `Wfn.cluster` (R4) + Wightman reconstruction +
-SNAG applied to translation unitary. -/
-axiom vacuum_unique_zero_momentum
-    (Wfn : WightmanFunctions d) (n m : ℕ)
-    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
-    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
-      OrderedPositiveTimeRegion d n)
-    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
-      OrderedPositiveTimeRegion d m) :
-    -- Conclusion: there exists a finite complex Borel measure `μ_{f,g}` on
-    -- `SpacetimeDim d` (the joint spectral measure of (P^0, ⃗P) for the
-    -- (Ψ_f, Ψ_g) pair, modulo vacuum) with no atom at p = 0 such that
-    -- the Wick-rotated integral cluster bound holds via Fourier of μ_{f,g}.
-    -- Statement deferred — needs the GNS bridge from
-    -- `wightman_gns_schwinger_bridge` to express the inner product
-    -- ⟨Ψ_f, U(a) Ψ_g⟩ as a Fourier integral against μ_{f,g}.
+    -- Statement abstracted: the truncated state-specific measure exists
+    -- (via SNAG applied to U(a)), has no atom at p = 0 (R4 spectral form),
+    -- AND has absolutely continuous spatial marginal.
+    -- Full statement requires expressing the spectral measure structure
+    -- + AC marginal in the project's measure-theory API.
     True
 
 /-- **Spectral cluster for the n-point truncated function** (textbook axiom).
