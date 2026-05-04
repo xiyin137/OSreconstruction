@@ -141,6 +141,24 @@ The ~140 lines of proved sub-pieces represent the hardest *mathematical* content
 
 ---
 
+## Known issues to address during discharge
+
+- **`cluster_tail_bound` region is wrong.** Currently uses `‖x_n‖+‖x_m‖ > M₀`,
+  but Schwartz decay of `g_a` is in `x_m - a` coordinates (since `g_a(x_m) = g(x_m - a)`).
+  For `x_m ≈ a` (large `|⃗a|`), `‖x_m‖` can be huge while `‖x_m - a‖` is small,
+  and `g_a` is NOT suppressed there.
+
+  **Fix**: change region to `‖x_n‖ + ‖x_m - a‖ > M₀` (Schwartz-natural after
+  the `x_m → x_m + a` change of variable). The whole cluster proof should
+  be reformulated in `(x_n, u := x_m - a)` coordinates, with the Schwartz
+  decay handled in `u`-direction. This will likely simplify the dominator
+  construction in `cluster_joint_kernel_polynomial_bound` as well.
+
+- **`cluster_joint_kernel_polynomial_bound` bound form**. The polynomial-
+  divided-by-`|⃗a|^{q+1}` form is correct only when `|⃗a|/2 ≤ min(intra_n, intra_m)`.
+  For small intra-block gaps, the bound has a different form. Suggest unifying
+  D2 + D3 into a single `cluster_uniform_dominator` with corrected coordinates.
+
 ## References
 
 * Streater-Wightman, *PCT, Spin and Statistics, and All That*, §2.4 + Theorem 3-5.
