@@ -3819,6 +3819,121 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
 -- This bound is independent of any spatial shift (imaginary parts unchanged).
 -- Available from `hasForwardTubeGrowth_of_wightman` (SchwingerTemperedness.lean).
 
+
+/-- **Pointwise cluster bridge** for Wick-rotated joint configurations with
+distinct positive times.
+
+For a joint config `Fin.append x_n x_m : NPointDomain d (n+m)` with all
+(n+m) joint times distinct and each block having positive times (which
+implies distinct positive times in each block separately), the
+Wick-rotated `W_analytic_BHW` value clusters under spatial shift on the
+m-block.
+
+This is the direct application of `bhw_pointwise_cluster_permutedForwardTube`
+(now in fully-permuted form) to the σ-witnesses constructed via
+`exists_perm_wick_in_forwardTube_of_distinct_positive`. -/
+private theorem W_analytic_BHW_cluster_pointwise_aux
+    {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d) (n m : ℕ)
+    (x_n : NPointDomain d n) (x_m : NPointDomain d m)
+    (hpos_n : ∀ i : Fin n, x_n i 0 > 0)
+    (hpos_m : ∀ j : Fin m, x_m j 0 > 0)
+    (hdistinct_joint : ∀ i j : Fin (n + m), i ≠ j →
+      Fin.append x_n x_m i 0 ≠ Fin.append x_n x_m j 0)
+    (ε : ℝ) (hε : ε > 0) :
+    ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ‖(W_analytic_BHW Wfn (n + m)).val
+            (fun k => wickRotatePoint (Fin.append x_n
+              (fun j μ => x_m j μ + a μ) k)) -
+          (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x_n k)) *
+          (W_analytic_BHW Wfn m).val (fun k => wickRotatePoint (x_m k))‖ < ε := by
+  -- Distinct in each block follows from joint distinctness.
+  have hdistinct_n : ∀ i j : Fin n, i ≠ j → x_n i 0 ≠ x_n j 0 := by
+    intro i j hij
+    have hcastij : (Fin.castAdd m i : Fin (n + m)) ≠ Fin.castAdd m j := by
+      intro h
+      apply hij
+      have : (Fin.castAdd m i).val = (Fin.castAdd m j).val := congrArg _ h
+      simpa [Fin.castAdd, Fin.ext_iff] using this
+    have := hdistinct_joint _ _ hcastij
+    simpa [Fin.append_left] using this
+  have hdistinct_m : ∀ i j : Fin m, i ≠ j → x_m i 0 ≠ x_m j 0 := by
+    intro i j hij
+    have hnatij : (Fin.natAdd n i : Fin (n + m)) ≠ Fin.natAdd n j := by
+      intro h
+      apply hij
+      have : (Fin.natAdd n i).val = (Fin.natAdd n j).val := congrArg _ h
+      simp [Fin.natAdd, Fin.ext_iff] at this
+      omega
+    have := hdistinct_joint _ _ hnatij
+    simpa [Fin.append_right] using this
+  -- σ-witnesses for each block.
+  have hperm_n := exists_perm_wick_in_forwardTube_of_distinct_positive
+    x_n hdistinct_n hpos_n
+  have hperm_m := exists_perm_wick_in_forwardTube_of_distinct_positive
+    x_m hdistinct_m hpos_m
+  -- Joint positivity from per-block positivity.
+  have hpos_joint : ∀ i : Fin (n + m), Fin.append x_n x_m i 0 > 0 := by
+    intro i
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+    · simpa [Fin.append_left] using hpos_n i
+    · simpa [Fin.append_right] using hpos_m i
+  -- Joint σ-witness.
+  obtain ⟨σ, hσ⟩ := exists_perm_wick_in_forwardTube_of_distinct_positive
+    (Fin.append x_n x_m) hdistinct_joint hpos_joint
+  -- The wick-rotated joint config equals the appended wick-rotated blocks.
+  have hwick_append :
+      (fun k => wickRotatePoint (Fin.append x_n x_m k)) =
+      Fin.append (fun k => wickRotatePoint (x_n k))
+                 (fun k => wickRotatePoint (x_m k)) := by
+    funext k
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) k
+    · simp [Fin.append_left]
+    · simp [Fin.append_right]
+  -- Apply the fully-permuted cluster axiom and unwrap.
+  obtain ⟨R, hR, hcluster⟩ := bhw_pointwise_cluster_permutedForwardTube Wfn n m
+    (fun k => wickRotatePoint (x_n k))
+    (fun k => wickRotatePoint (x_m k))
+    (wickRotatePoint_isEuclidean (n := n) x_n)
+    (wickRotatePoint_isEuclidean (n := m) x_m)
+    hperm_n hperm_m
+    (by
+      refine ⟨σ, ?_⟩
+      have hbridge :
+          (fun k => Fin.append (fun k => wickRotatePoint (x_n k))
+            (fun k => wickRotatePoint (x_m k)) (σ k)) =
+          (fun k => wickRotatePoint (Fin.append x_n x_m (σ k))) := by
+        funext k
+        exact (congrFun hwick_append (σ k)).symm
+      rw [hbridge]
+      exact hσ)
+    ε hε
+  refine ⟨R, hR, fun a ha0 hlarge => ?_⟩
+  -- The cluster axiom gives a bound on
+  --   ‖F (append wick(x_n) (wick(x_m) + a)) - F(wick x_n) F(wick x_m)‖
+  -- We want a bound on
+  --   ‖F (wick (append x_n (x_m + a))) - F(wick x_n) F(wick x_m)‖
+  -- These joint configs are equal under `a 0 = 0` (since wickRotatePoint
+  -- only affects the time component and `a 0 = 0` means the spatial shift
+  -- doesn't disturb the wick rotation).
+  have hjoint_eq :
+      (fun k => wickRotatePoint (Fin.append x_n
+        (fun j μ => x_m j μ + a μ) k)) =
+      Fin.append (fun k => wickRotatePoint (x_n k))
+        (fun k μ => wickRotatePoint (x_m k) μ + ↑(a μ)) := by
+    funext k μ
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) k
+    · simp [Fin.append_left]
+    · simp only [Fin.append_right]
+      by_cases hμ : μ = 0
+      · subst hμ
+        have ha0_cast : (a 0 : ℂ) = 0 := by exact_mod_cast ha0
+        simp [wickRotatePoint, ha0_cast]
+      · simp [wickRotatePoint, hμ]
+  rw [hjoint_eq]
+  exact hcluster a ha0 hlarge
+
+
 /-- Cluster property of `wickRotatedBoundaryPairing` at the integral level.
 
     For test functions `f, g` with `tsupport ⊆ OrderedPositiveTimeRegion`, the
