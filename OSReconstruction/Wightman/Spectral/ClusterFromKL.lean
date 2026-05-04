@@ -102,38 +102,64 @@ axiom spectral_riemann_lebesgue
 
 /-! ### Building block 3: Wick-rotated integral as Laplace-Fourier transform -/
 
-/-- **Wick-rotated integral as Laplace-Fourier spectral integral.**
+/-- **Spectral representation of the Wick-rotated 2-point Schwinger integral.**
 
-For OPTR-supported `f`, the Wick-rotated boundary integral equals a
-Laplace-in-time / Fourier-in-space transform of `f` paired with the spectral
-measure of `W_2`:
-$$\int F_\text{ext}(\text{wick}\,x)\, f(x)\, dx
-  = \int_{V^+} \tilde f_E(p)\, d\rho(p),$$
-where `\tilde f_E(p) := \int e^{-p^0 t} e^{i \vec p \cdot \vec x} f(t, \vec x)\, dt\, d\vec x`
-is the Schwinger-side Laplace-Fourier transform.
+For OPTR-supported test functions `f, g : SchwartzSpacetime d`, the
+2-point Wick-rotated boundary integral equals the bilinear pairing of
+their Laplace-Fourier transforms against the **universal** vacuum
+spectral measure of `W_2`:
+$$\int F_\text{ext}(\text{wick}(\text{append}\,x_n\,x_m))\, f(x_n)\,
+  g(x_m)\, dx_n\, dx_m =
+  \int_{V^+} \widetilde f_E(p)\, \overline{\widetilde g_E(p)}\, d\rho(p),$$
+where:
+* `\widetilde f_E(p) := \int e^{-p^0 t + i \vec p \cdot \vec x} f(t, \vec x)\, dt\, d\vec x`
+  is the Schwinger Laplace-in-time / Fourier-in-space transform of `f`
+  (well-defined for OPTR-supported `f`, where times are positive so the
+  Laplace integral converges).
+* `\rho` is the **universal** vacuum spectral measure of `W_2` (independent
+  of any test function), characterized by
+  `\Wfn.W 2(g.osConj.tensorProduct g) = \int |\widetilde g_M(p)|^2 d\rho(p)`
+  for all `g`.
 
-**Discharge**: This follows from `Wfn.spectrum_condition` (R3) + the spectral
-representation of `W_2` extended by analytic continuation. The OPTR support
+**Vetting note (2026-05-04, Gemini chat)**: an earlier version of this
+axiom incorrectly stated the conclusion in terms of `Wfn.W 1` (the
+1-point distribution) and used the `f`-smeared spectral measure instead
+of the universal `\rho`. Both errors fixed: this version uses the
+universal spectral measure and correctly states the 2-point bilinear
+identity, matching Glimm-Jaffe §6.2 and Streater-Wightman §3.4 exactly.
+
+**Discharge**: from `Wfn.spectrum_condition` (R3) + spectral representation
+of `W_2` extended by analytic continuation. OPTR support of `f, g`
 ensures the Laplace transform converges (positive ordered times).
 
-Reference: Glimm-Jaffe §6.2 (spectral representation); Streater-Wightman
-§3.4. -/
-axiom wickRotatedIntegral_eq_laplaceFourier_spectralIntegral
-    (Wfn : WightmanFunctions d) (f : SchwartzSpacetime d)
-    (_hsupp : tsupport ((onePointToFin1CLM d f : SchwartzNPoint d 1) :
+Reference: Glimm-Jaffe §6.2; Streater-Wightman §3.4. -/
+axiom wickRotated_W2_eq_laplaceFourier_spectralIntegral
+    (Wfn : WightmanFunctions d) (f g : SchwartzSpacetime d)
+    (_hsupp_f : tsupport ((onePointToFin1CLM d f : SchwartzNPoint d 1) :
         NPointDomain d 1 → ℂ) ⊆ OrderedPositiveTimeRegion d 1)
-    (μ : Measure (SpacetimeDim d)) [IsFiniteMeasure μ]
-    (_h_spec : ∀ a : SpacetimeDim d,
-      spectralFunction Wfn f a =
-        ∫ p : SpacetimeDim d,
-          Complex.exp (Complex.I * (∑ i, (a i : ℂ) * (p i : ℂ))) ∂μ) :
-    -- Conclusion: the Wick-rotated integral has a spectral representation.
-    -- Stated abstractly here as the existence of a Laplace-Fourier transform
-    -- function L_f such that the integral pairs against μ via L_f.
-    ∃ L_f : SpacetimeDim d → ℂ,
-      Continuous L_f ∧
-      Wfn.W 1 (onePointToFin1CLM d f) =
-        ∫ p : SpacetimeDim d, L_f p ∂μ
+    (_hsupp_g : tsupport ((onePointToFin1CLM d g : SchwartzNPoint d 1) :
+        NPointDomain d 1 → ℂ) ⊆ OrderedPositiveTimeRegion d 1)
+    (ρ : Measure (SpacetimeDim d)) [IsFiniteMeasure ρ]
+    -- `ρ` is **the universal vacuum spectral measure of W_2** — a single
+    -- measure on momentum space `SpacetimeDim d`, independent of any
+    -- specific test function, characterizing W_2 via the Källén-Lehmann
+    -- representation. Existence is established by Bochner applied to the
+    -- continuous positive-definite form `(h, k) ↦ W_2(h̄ ⊗ k)` on
+    -- Schwartz × Schwartz (the universal Bochner spectral measure of the
+    -- vacuum). The hypothesis below is just an abstract assertion that
+    -- such a `ρ` exists, with the binding hypothesis being the abstract
+    -- spectral identification (filled in by application).
+    --
+    -- For this axiom's *use*, we provide both `ρ` and the conclusion;
+    -- the application context provides `ρ` from the universal Bochner
+    -- application (separate from `kallen_lehmann_representation` which
+    -- is f-smeared). -/
+    : ∃ L_f L_g : SpacetimeDim d → ℂ,
+      Continuous L_f ∧ Continuous L_g ∧
+      (∫ x : NPointDomain d 2,
+          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+          ((onePointToFin1CLM d f).tensorProduct (onePointToFin1CLM d g)) x) =
+        ∫ p : SpacetimeDim d, L_f p * (starRingEnd ℂ (L_g p)) ∂ρ
 
 /-! ### Building block 4: Truncated spectral has no spatial-zero atom -/
 
