@@ -3966,11 +3966,35 @@ private theorem cluster_disconnected_term_integrable
         (‖F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (xy.2 k))‖ *
         ‖(g : NPointDomain d m → ℂ) xy.2‖))
       MeasureTheory.volume := by
-  -- Discharge: factor via Fubini (`MeasureTheory.Integrable.prod_mul`) using
-  -- per-block integrability:
-  --   `(wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn ⟨f, hf_zd⟩).norm`
-  --   `(wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn ⟨g, hg_zd⟩).norm`
-  sorry
+  -- Integrable F(x_n) = ‖K(wick x_n)‖ * ‖f x_n‖ via `.norm` of the
+  -- per-block Wick-rotated integrability lemma.
+  have hf_int :
+      MeasureTheory.Integrable
+        (fun x : NPointDomain d n =>
+          ‖F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))‖ *
+          ‖(f : NPointDomain d n → ℂ) x‖)
+        MeasureTheory.volume := by
+    have h := (wick_rotated_kernel_mul_zeroDiagonal_integrable
+      (Wfn := Wfn) ⟨f, hf_zd⟩).norm
+    simpa [norm_mul] using h
+  have hg_int :
+      MeasureTheory.Integrable
+        (fun x : NPointDomain d m =>
+          ‖F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k))‖ *
+          ‖(g : NPointDomain d m → ℂ) x‖)
+        MeasureTheory.volume := by
+    have h := (wick_rotated_kernel_mul_zeroDiagonal_integrable
+      (Wfn := Wfn) ⟨g, hg_zd⟩).norm
+    simpa [norm_mul] using h
+  -- Apply `Integrable.mul_prod` and bridge volume = volume.prod volume.
+  have hprod := hf_int.mul_prod hg_int
+  -- Goal is Integrable on volume; rewrite via volume_eq_prod.
+  rw [show (MeasureTheory.volume :
+      MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)) from
+    MeasureTheory.Measure.volume_eq_prod _ _]
+  exact hprod
 
 /-- Auxiliary: forward-tube growth bound on the shifted joint kernel,
 expressed as polynomial growth in `(‖x_n‖, ‖x_m‖, |⃗a|)` divided by
