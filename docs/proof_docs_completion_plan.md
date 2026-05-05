@@ -259,13 +259,23 @@ the propagated-seed step
 the generic target-seed propagation theorem
 `BHW.exists_maxRankSeed_eqOn_of_connected_domain`,
 the seed-producing propagated step
-`BHW.BHWJostOrientedTransitionData.exists_propagatedSeed_to_right`,
-and the common-transition-seed constructor
-`BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_commonTransitionSeed`, and the
-closing-domain package theorem
-`BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`.
-This closes the
-previous-branch-as-seed gap for local proper-complex invariance: an already
+   `BHW.BHWJostOrientedTransitionData.exists_propagatedSeed_to_right`,
+   and the common-transition-seed constructor
+   `BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_commonTransitionSeed`, and the
+   closing-domain package theorem
+   `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`.
+The terminal finite-overlap data interface is checked in
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWFiniteOverlap.lean`;
+it provides `BHW.BHWJostOrientedFiniteOverlapPropagationData` and
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, plus
+`BHW.BHWJostOrientedSourcePatchContinuationChain.exists_terminalSeed_of_finiteOverlapDomains`,
+which iterates the checked one-step propagation theorem across an ordered
+finite-overlap family of connected max-rank domains.  The same file also checks
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData`,
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_finiteOverlapPropagationData`,
+and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`.
+   This closes the
+   previous-branch-as-seed gap for local proper-complex invariance: an already
 constructed holomorphic branch on an open source carrier can now be used as
 the starting branch for the next Hall-Wightman descent, provided it has the
 stored real restricted-Lorentz invariance on that carrier; the path theorem
@@ -284,10 +294,13 @@ oriented germ equality on a nonempty max-rank seed propagates across one
 oriented transition to the max-rank part of the next transition patch whenever
 the intermediate domain has connected max-rank part, and the chart layer now
 extracts a new nonempty preconnected relatively open max-rank seed inside that
-transition patch.  The remaining work is to iterate this propagated-seed step
-with the Hall-Wightman finite-overlap geometry and then feed the resulting
-source-realized equality into the checked seed constructor.  This introduces
-no new `sorry`.
+   transition patch.  The checked finite-overlap induction theorem now
+   performs that iteration once the Hall-Wightman geometry has supplied the
+   ordered connected domains and adjacency containments.  The remaining work is
+   to produce the terminal closing domain and assemble the resulting terminal
+   seed into `BHWJostOrientedFiniteOverlapPropagationData`; once that data is
+   available, `to_closedLoopSeed` feeds it into the checked closing-domain seed
+   package.  This introduces no new `sorry`.
 
 The rank bridge file
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`
@@ -6183,23 +6196,44 @@ common-boundary envelope, or any theorem that already assumes locality.
    coordinate equivalence.  In the remaining case, first call the genuine
    Hall-Wightman/Jost loop input
    `bhw_jost_orientedMaxRankClosedLoopSeed_of_BHW`.  This theorem is the real
-   monodromy content.  Its proof is the formal version of Hall-Wightman
-   Lemma 1 as quoted by OS I §4.5: along a finite proper-complex Lorentz
-   continuation chain, local constancy near the identity and the finite
-   overlapping-neighborhood argument give a single-valued analytic
-   continuation on the extended tube.  In Lean terms, refine the closed chain
-   inside the smooth oriented max-rank source variety; use
-   `oriented_realizes` to choose source representatives in each local chart;
-   use the determinant/oriented orbit theorem
-   `BHW.hw_sameSourceOrientedInvariant_maxRank_properOrbit` to identify two
-   representatives of the same oriented invariant by an element of
-   `ComplexLorentzGroup d`; use each chart's
-   `branch_complexLorentzInvariant` and `branch_eq_orientedPullback` to prove
-   that the continued branch value depends only on the oriented invariant; and
-   use the BHW finite-overlap single-valuedness construction for the closed
-   proper-complex loop to obtain equality of the terminal and initial germs on
-   a nonempty relatively open max-rank seed inside
-   `L.closing_orientedPatch`.
+   monodromy content, but it must not be implemented as a global source
+   representative shortcut or as a "common seed in every transition patch"
+   shortcut.  The checked `of_commonTransitionSeed` constructor is only a
+   sufficient degenerate telescope case; for a moving closed chain the common
+   intersection of all transition patches need not be nonempty.
+
+   The Lean-ready statement of the Hall-Wightman Lemma-1 argument is instead
+   a finite-overlap propagation trace.  Fix
+   `Φ := (L.chain.localChart 0).Psi`.  For every transition
+   `j : Fin L.chain.m`, the BHW/Jost geometry must supply a relatively open
+   intermediate oriented domain
+   `D j : Set (SourceOrientedGramData d n)` with
+   `IsConnected (D j ∩ {G | SourceOrientedMaxRankAt d n G})`,
+   `D j ⊆ (L.chain.localChart (Fin.castSucc j)).orientedDomain`,
+   `D j ⊆ (L.chain.localChart 0).orientedDomain`, and
+   `(L.chain.oriented_transition j).orientedPatch ⊆ D j`.  The incoming
+   equality seed for step `j` must be a nonempty relatively open max-rank seed
+   inside `D j` on which
+   `Φ = (L.chain.localChart (Fin.castSucc j)).Psi`.  Then the checked theorem
+   `BHWJostOrientedTransitionData.exists_propagatedSeed_to_right` produces a
+   fresh nonempty preconnected relatively open max-rank seed inside the next
+   transition patch on which
+   `Φ = (L.chain.localChart j.succ).Psi`.
+
+   Consecutive steps are glued by the finite-overlap covering condition:
+   the target seed produced inside the `j`-th transition patch must lie in the
+   next connected domain `D j.succ`, which is achieved by choosing
+   `D j.succ` to contain that previous transition patch.  Thus the BHW/Jost
+   proof supplies the ordered domains, not a single global branch.  The final
+   output is a terminal seed `seedF` and a closing domain `Dclose` such that
+   `Dclose` is relatively open, `Dclose ∩ MaxRank` is connected,
+   `Dclose ⊆ (L.chain.localChart (Fin.last L.chain.m)).orientedDomain`,
+   `Dclose ⊆ (L.chain.localChart 0).orientedDomain`,
+   `L.closing_orientedPatch ⊆ Dclose`, `seedF ⊆ Dclose ∩ MaxRank`, and
+   `Set.EqOn (L.chain.localChart (Fin.last L.chain.m)).Psi
+     (L.chain.localChart 0).Psi seedF`.  The checked theorem
+   `BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`
+   then turns this terminal propagation data into the exact closed-loop seed.
 
    The theorem `bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed` is then
    the identity-principle propagation, not the monodromy theorem.  Let
@@ -7440,6 +7474,215 @@ common-boundary envelope, or any theorem that already assumes locality.
    Iterating that propagated-seed step is the Lean-ready form of the
    Hall-Wightman/Jost finite-overlap argument; its output feeds the more
    general source-realized equality constructor above.
+
+   The next theorem surface should make the finite-overlap data explicit
+   before trying to prove that data exists.  A faithful Lean shape is:
+
+   ```lean
+   structure BHW.BHWJostOrientedFiniteOverlapPropagationData
+       [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+       {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+       {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostOrientedClosedContinuationLoop
+         hd n τ Ω0 U B0 p0) where
+     hn : d + 1 <= n
+     terminalDomain : Set (BHW.SourceOrientedGramData d n)
+     terminalDomain_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n terminalDomain
+     terminalDomain_maxRank_connected :
+       IsConnected
+         (terminalDomain ∩ {G | BHW.SourceOrientedMaxRankAt d n G})
+     terminalDomain_sub_final :
+       terminalDomain ⊆
+         (L.chain.localChart (Fin.last L.chain.m)).orientedDomain
+     terminalDomain_sub_start :
+       terminalDomain ⊆ (L.chain.localChart 0).orientedDomain
+     terminalSeed : Set (BHW.SourceOrientedGramData d n)
+     terminalSeed_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n terminalSeed
+     terminalSeed_nonempty : terminalSeed.Nonempty
+     terminalSeed_sub_domain : terminalSeed ⊆ terminalDomain
+     terminalSeed_sub_max :
+       terminalSeed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G}
+     terminalSeed_eq :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         terminalSeed
+     closingPatch_sub_terminalDomain :
+       L.closing_orientedPatch ⊆ terminalDomain
+   ```
+
+   Its consumer is completely mechanical:
+
+   ```lean
+   theorem BHW.BHWJostOrientedFiniteOverlapPropagationData
+       .to_closedLoopSeed
+       (P : BHW.BHWJostOrientedFiniteOverlapPropagationData L) :
+       Nonempty
+         (BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L)
+   ```
+
+   The proof is exactly
+   `BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`
+   applied to the fields of `P`.  This structure is not the hard theorem; it
+   is the honest terminal interface for the hard theorem.
+
+   The ordered finite induction has also been checked:
+
+   ```lean
+   theorem BHW.BHWJostOrientedSourcePatchContinuationChain
+       .exists_terminalSeed_of_finiteOverlapDomains
+       (C : BHW.BHWJostOrientedSourcePatchContinuationChain
+         hd n τ Ω0 U B0 p0 z)
+       (hn : d + 1 <= n)
+       {seed0 : Set (BHW.SourceOrientedGramData d n)}
+       (hseed0_rel :
+         BHW.IsRelOpenInSourceOrientedGramVariety d n seed0)
+       (hseed0_pre : IsPreconnected seed0)
+       (hseed0_nonempty : seed0.Nonempty)
+       (hseed0_sub_max :
+         seed0 ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+       (D : (j : Fin C.m) -> Set (BHW.SourceOrientedGramData d n))
+       (hD_rel :
+         ∀ j, BHW.IsRelOpenInSourceOrientedGramVariety d n (D j))
+       (hDmax_conn :
+         ∀ j, IsConnected
+           (D j ∩ {G | BHW.SourceOrientedMaxRankAt d n G}))
+       (hD_sub_start :
+         ∀ j, D j ⊆ (C.localChart 0).orientedDomain)
+       (hD_sub_left :
+         ∀ j, D j ⊆ (C.localChart (Fin.castSucc j)).orientedDomain)
+       (hT_sub_D :
+         ∀ j, (C.oriented_transition j).orientedPatch ⊆ D j)
+       (hseed0_sub_D0 :
+         ∀ h0 : 0 < C.m, seed0 ⊆ D ⟨0, h0⟩)
+       (hT_sub_nextD :
+         ∀ (j : Fin C.m) (hnext : j.val + 1 < C.m),
+           (C.oriented_transition j).orientedPatch ⊆
+             D ⟨j.val + 1, hnext⟩) :
+       ∃ terminalSeed : Set (BHW.SourceOrientedGramData d n),
+         BHW.IsRelOpenInSourceOrientedGramVariety d n terminalSeed ∧
+         IsPreconnected terminalSeed ∧
+         terminalSeed.Nonempty ∧
+         terminalSeed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G} ∧
+         Set.EqOn
+           (C.localChart (Fin.last C.m)).Psi
+           (C.localChart 0).Psi
+           terminalSeed ∧
+         (C.m = 0 -> terminalSeed ⊆ seed0) ∧
+         (∀ hpos : C.m ≠ 0,
+           terminalSeed ⊆
+             (C.oriented_transition
+               ⟨C.m.pred, Nat.pred_lt hpos⟩).orientedPatch)
+   ```
+
+   Its proof is a `Nat` induction on the ordered transition index.  At step
+   `j`, it applies `exists_propagatedSeed_to_right` on `D j`; the hypothesis
+   `hT_sub_nextD` makes the seed produced in the `j`-th transition patch a
+   valid incoming seed for the next domain.  The theorem also exposes the
+   terminal seed provenance: for `C.m = 0` the terminal seed remains inside
+   `seed0`; for `C.m ≠ 0` it lies inside the last oriented transition patch.
+   Therefore the hard BHW/Jost theorem no longer has to prove a Lean induction
+   principle.  It must now produce: the initial max-rank seed, the ordered
+   domains `D j`, the connectedness of each `D j ∩ MaxRank`, the current and
+   next containment hypotheses above, and the final closing domain used to build
+   `BHWJostOrientedFiniteOverlapPropagationData`.
+
+   The closed-loop producer target is now also checked:
+
+   ```lean
+   structure BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+       {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+       {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostOrientedClosedContinuationLoop
+         hd n τ Ω0 U B0 p0) where
+     hn : d + 1 <= n
+     initialSeed : Set (BHW.SourceOrientedGramData d n)
+     initialSeed_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n initialSeed
+     initialSeed_preconnected : IsPreconnected initialSeed
+     initialSeed_nonempty : initialSeed.Nonempty
+     initialSeed_sub_max :
+       initialSeed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G}
+     stepDomain : (j : Fin L.chain.m) ->
+       Set (BHW.SourceOrientedGramData d n)
+     stepDomain_relOpen :
+       ∀ j, BHW.IsRelOpenInSourceOrientedGramVariety d n (stepDomain j)
+     stepDomain_maxRank_connected :
+       ∀ j, IsConnected
+         (stepDomain j ∩ {G | BHW.SourceOrientedMaxRankAt d n G})
+     stepDomain_sub_start :
+       ∀ j, stepDomain j ⊆ (L.chain.localChart 0).orientedDomain
+     stepDomain_sub_left :
+       ∀ j, stepDomain j ⊆
+         (L.chain.localChart (Fin.castSucc j)).orientedDomain
+     transition_sub_stepDomain :
+       ∀ j, (L.chain.oriented_transition j).orientedPatch ⊆
+         stepDomain j
+     initialSeed_sub_firstDomain :
+       ∀ h0 : 0 < L.chain.m, initialSeed ⊆ stepDomain ⟨0, h0⟩
+     transition_sub_nextDomain :
+       ∀ (j : Fin L.chain.m) (hnext : j.val + 1 < L.chain.m),
+         (L.chain.oriented_transition j).orientedPatch ⊆
+           stepDomain ⟨j.val + 1, hnext⟩
+     closingDomain : Set (BHW.SourceOrientedGramData d n)
+     closingDomain_relOpen :
+       BHW.IsRelOpenInSourceOrientedGramVariety d n closingDomain
+     closingDomain_maxRank_connected :
+       IsConnected
+         (closingDomain ∩ {G | BHW.SourceOrientedMaxRankAt d n G})
+     closingDomain_sub_final :
+       closingDomain ⊆
+         (L.chain.localChart (Fin.last L.chain.m)).orientedDomain
+     closingDomain_sub_start :
+       closingDomain ⊆ (L.chain.localChart 0).orientedDomain
+     closingPatch_sub_closingDomain :
+       L.closing_orientedPatch ⊆ closingDomain
+     closingDomain_contains_initialSeed_of_zero :
+       L.chain.m = 0 -> initialSeed ⊆ closingDomain
+     closingDomain_contains_lastTransition_of_pos :
+       ∀ hpos : L.chain.m ≠ 0,
+         (L.chain.oriented_transition
+           ⟨L.chain.m.pred, Nat.pred_lt hpos⟩).orientedPatch ⊆
+             closingDomain
+   ```
+
+   The checked consumers are:
+
+   ```lean
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .to_finiteOverlapPropagationData
+       (P : BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L) :
+       Nonempty (BHW.BHWJostOrientedFiniteOverlapPropagationData L)
+
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .to_closedLoopSeed
+       (P : BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L) :
+       Nonempty
+         (BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L)
+   ```
+
+   Therefore the precise remaining BHW theorem is:
+
+   ```lean
+   theorem BHW.bhw_jost_orientedClosedLoopFiniteOverlapDomainData_of_BHW
+       [NeZero d] (hd : 2 <= d) (n : ℕ) (τ : Equiv.Perm (Fin n))
+       (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+       {p0 : Fin n -> Fin (d + 1) -> ℂ}
+       (L : BHW.BHWJostOrientedClosedContinuationLoop
+         hd n τ Ω0 U B0 p0)
+       (hn : d + 1 <= n) :
+       Nonempty
+         (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+   ```
+
+   Once this producer exists, the old seed theorem is one line: obtain `⟨P⟩`
+   from this theorem and call `P.to_closedLoopSeed`.
 
    `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is the
    checked one-step version.  Given an accumulated oriented germ `Φ`, a
