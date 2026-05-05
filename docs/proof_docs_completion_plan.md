@@ -675,7 +675,17 @@ false.  The hard input is now isolated as
 `sourceOrientedGramVariety d n` have the same Gram coordinate, an invertible
 selected head Gram block, and matching determinant coordinates on every
 selected `head ∪ lam` frame, then their full determinant-coordinate functions
-are equal.  The checked theorem
+are equal.  The determinant-nonzero branch of this input is already checked in
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedSchurPropagation.lean`
+as
+`sourceOrientedGramVariety_det_eq_of_gram_eq_headTailDet_eq_of_exists_nonzero`:
+if some selected `head ∪ lam` determinant is nonzero, it reduces to the
+existing full-frame chart identity
+`sourceOrientedGramData_eq_of_selectedCoord_eq_mixedRows_eq`.  Thus the only
+remaining branch of the propagation input is the low-rank case where every
+selected head-tail full-frame determinant vanishes; that branch must use the
+shifted-tail oriented rank-deficient relations to propagate zero/equality to
+all ordered full-frame determinant coordinates.  The checked theorem
 `sourceOrientedSchur_fullFrameDet_reconstruct_of_headTailPropagation` proves
 that this one propagation theorem mechanically gives the Schur full-frame
 determinant reconstruction by building the normal parameter from `R.tail_mem`,
