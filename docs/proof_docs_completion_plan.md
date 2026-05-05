@@ -600,14 +600,29 @@ exterior support lemmas include
 `BHW.exteriorAlgebra_basis_mul_iMulti_compl_repr`.  The remaining determinant
 work over `G` is therefore no longer finite row algebra; it is the separate
 reconstruction equality `sourceOrientedSchur_fullFrameDet_reconstruct`.
-Arbitrary ordered full frames are then routed through
-the finite Laplace theorem `matrix_det_blockColumn_laplace`,
-`sourceNormalFullFrameDetFromSchur`,
-`sourceFullFrameDet_normalParameter_eq_schurFormula`, and
-`sourceOrientedSchur_fullFrameDet_reconstruct`, so the final determinant field
-of `sourceOrientedNormalParameterVector_realizes_schur` is a mechanical call to
-`sourceOrientedNormalParameterVector_realizes_schur_det`.  No downstream proof
-may use an unnamed "block determinant expansion" anymore.
+The Schur residual coordinate packet consuming this determinant algebra is now
+also checked in
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedSchurResidual.lean`:
+`BHW.sourceOrientedSchurHeadBlock`,
+`BHW.sourceOrientedSchurHeadBlock_apply`,
+`BHW.sourceOrientedSchurMixedBlock`,
+`BHW.sourceOrientedSchurTailBlock`, `BHW.sourceSchurMixedCoeff`,
+`BHW.sourceSchurComplement`, `BHW.sourceSchurResidualDeterminants`,
+`BHW.sourceShiftedTailOrientedVariety`,
+`BHW.SourceOrientedSchurResidualData`, and the checked determinant consumer
+`BHW.sourceOrientedNormalParameterVector_realizes_schur_det_of_fullFrameReconstruct`.
+That consumer deliberately keeps the genuine Plucker/Cauchy-Binet
+reconstruction theorem as an explicit hypothesis.  Thus arbitrary ordered full
+frames are routed through the finite Laplace theorem
+`matrix_det_blockColumn_laplace`, `sourceNormalFullFrameDetFromSchur`,
+`sourceFullFrameDet_normalParameter_eq_schurFormula`, and the still-open
+`sourceOrientedSchur_fullFrameDet_reconstruct`; once that theorem is proved,
+the final determinant field of
+`sourceOrientedNormalParameterVector_realizes_schur` is a mechanical call to
+the checked
+`sourceOrientedNormalParameterVector_realizes_schur_det_of_fullFrameReconstruct`
+or its future no-hypothesis wrapper.  No downstream proof may use an unnamed
+"block determinant expansion" anymore.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
