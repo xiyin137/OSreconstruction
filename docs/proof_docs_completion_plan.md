@@ -845,6 +845,15 @@ The next producer-level target is the concrete Schur/residual local-image
 construction around that canonical center, starting with the
 existence/construction of the `SourceOrientedSchurResidualData` packet from a
 nearby source-variety point with an invertible selected head block.
+The canonical-center head-gauge facts are now checked in
+`SourceOrientedRankDeficientCanonical.lean`:
+`sourceOrientedSchurHeadBlockSymm_canonical` identifies the canonical head
+block with `sourceHeadMetricSymmCoord`, `hwLemma3CanonicalSource_headGauge_mem`
+puts that center in every local head gauge by `Head.center_mem`, and
+`sourceOriented_canonical_headGaugeNormalParameterData` instantiates the
+checked Witt/head-normalization consumer at the canonical center.  The local
+image producer can therefore start from an honest centered head-gauge chart,
+not from an abstract or global square-root branch.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
