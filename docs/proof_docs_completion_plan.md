@@ -2819,12 +2819,22 @@ implementation contract is:
    small-entry refinement of that same factorization.  The equality
    `det(A) = (T.det ι)^2` is exposed for arbitrary tail-variety points as
    `sourceTailOrientedVariety_selectedGram_det`, not reproved from a hidden
-   witness in the full-rank step.  Then solve every other vector by mixed-Gram
-   coefficients, use the rank-`D` Schur-complement zero theorem for Gram
-   equality, and use the mixed-minor relation
-   `det(T.gram (ι ·) (κ ·)) = T.det ι * T.det κ` to recover all determinant
-   coordinates with the selected sign.  This is a genuine top-rank branch,
-   not an arbitrary Gram-factorization shortcut.
+   witness in the full-rank step.  The full-rank realization route should
+   factor the entire small rank-`D` Gram matrix, not solve remaining rows by
+   inverse coefficients: after obtaining a small factor `q0` with the same
+   Gram, compare `det(q0 ∘ ι)` with `T.det ι`; if the sign is wrong, apply
+   the checked coordinate reflection `sourceTailOrientedInvariant_reflection`,
+   whose norm preservation is `sourceTail_reflection_norm`.  Once the
+   selected determinant matches, all determinant coordinates follow from
+   `sourceTailOrientedVariety_mixedGram_det` for `T` and
+   `sourceTailOrientedInvariant_mixedGram_det` for the factor, canceling the
+   nonzero selected determinant.  The assembled sign-repair consumer is
+   checked as
+   `sourceTailOrientedInvariant_or_reflection_eq_of_gram_eq`, so the full-rank
+   branch now waits only on the quantitative small same-Gram factorization
+   theorem.  This is a genuine top-rank branch, not an arbitrary
+   Gram-factorization shortcut, and it avoids unstable inverse estimates in
+   small blocks.
    The final `sourceTailOrientedSmallRealization` theorem is assembled by
    strong induction on tail arity and an explicit rank split, through
    `sourceTailOrientedSmallRealization_zeroRank_bound`,

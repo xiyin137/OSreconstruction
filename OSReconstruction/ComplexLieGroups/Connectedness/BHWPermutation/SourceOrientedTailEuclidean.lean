@@ -133,6 +133,35 @@ theorem sourceTailOrientedInvariant_selectedGram_det
         (sourceTailOrientedInvariant D m q).det ι := by
           rfl
 
+/-- For a realized Euclidean tail tuple, every mixed selected Gram determinant
+is the product of the two corresponding oriented determinant coordinates. -/
+theorem sourceTailOrientedInvariant_mixedGram_det
+    (D m : ℕ)
+    (q : Fin m → Fin D → ℂ)
+    (ι κ : Fin D ↪ Fin m) :
+    Matrix.det (fun a b : Fin D =>
+        (sourceTailOrientedInvariant D m q).gram (ι a) (κ b)) =
+      (sourceTailOrientedInvariant D m q).det ι *
+        (sourceTailOrientedInvariant D m q).det κ := by
+  let Mι : Matrix (Fin D) (Fin D) ℂ := fun a μ => q (ι a) μ
+  let Mκ : Matrix (Fin D) (Fin D) ℂ := fun a μ => q (κ a) μ
+  have hgram :
+      (fun a b : Fin D =>
+        (sourceTailOrientedInvariant D m q).gram (ι a) (κ b)) =
+        Mι * Mκᵀ := by
+    ext a b
+    simp [sourceTailOrientedInvariant, Mι, Mκ, Matrix.mul_apply,
+      Matrix.transpose_apply]
+  calc
+    Matrix.det (fun a b : Fin D =>
+        (sourceTailOrientedInvariant D m q).gram (ι a) (κ b))
+        = Matrix.det (Mι * Mκᵀ) := by rw [hgram]
+    _ = Matrix.det Mι * Matrix.det Mκ := by
+        rw [Matrix.det_mul, Matrix.det_transpose]
+    _ = (sourceTailOrientedInvariant D m q).det ι *
+        (sourceTailOrientedInvariant D m q).det κ := by
+          rfl
+
 /-- Every Euclidean tail-variety point satisfies the selected Gram determinant
 square relation with its oriented determinant coordinate. -/
 theorem sourceTailOrientedVariety_selectedGram_det
@@ -144,6 +173,180 @@ theorem sourceTailOrientedVariety_selectedGram_det
       T.det ι * T.det ι := by
   rcases hTvar with ⟨q, rfl⟩
   exact sourceTailOrientedInvariant_selectedGram_det D m q ι
+
+/-- Every Euclidean tail-variety point satisfies the mixed selected Gram
+determinant identity. -/
+theorem sourceTailOrientedVariety_mixedGram_det
+    (D m : ℕ)
+    {T : SourceTailOrientedData D m}
+    (hTvar : T ∈ sourceTailOrientedVariety D m)
+    (ι κ : Fin D ↪ Fin m) :
+    Matrix.det (fun a b : Fin D => T.gram (ι a) (κ b)) =
+      T.det ι * T.det κ := by
+  rcases hTvar with ⟨q, rfl⟩
+  exact sourceTailOrientedInvariant_mixedGram_det D m q ι κ
+
+/-- Multiplying one Euclidean coordinate by `-1` preserves all Gram coordinates
+and flips all oriented full-frame determinants. -/
+theorem sourceTailOrientedInvariant_reflection
+    (D m : ℕ)
+    (hD : 0 < D)
+    (q : Fin m → Fin D → ℂ) :
+    let i0 : Fin D := ⟨0, hD⟩
+    let sign : Fin D → ℂ := fun μ => if μ = i0 then -1 else 1
+    sourceTailOrientedInvariant D m (fun u μ => sign μ * q u μ) =
+      { gram := (sourceTailOrientedInvariant D m q).gram
+        det := fun ι => - (sourceTailOrientedInvariant D m q).det ι } := by
+  intro i0 sign
+  have hsign_sq : ∀ μ, sign μ * sign μ = 1 := by
+    intro μ
+    by_cases hμ : μ = i0
+    · simp [sign, hμ]
+    · simp [sign, hμ]
+  apply SourceTailOrientedData.ext
+  · ext u v
+    simp [sourceTailOrientedInvariant]
+    apply Finset.sum_congr rfl
+    intro μ _
+    calc
+      sign μ * q u μ * (sign μ * q v μ)
+          = (sign μ * sign μ) * q u μ * q v μ := by ring
+      _ = q u μ * q v μ := by rw [hsign_sq μ]; ring
+  · funext ι
+    let M : Matrix (Fin D) (Fin D) ℂ := fun a μ => q (ι a) μ
+    let R : Matrix (Fin D) (Fin D) ℂ := Matrix.diagonal sign
+    have hmat :
+        (fun a μ : Fin D => sign μ * q (ι a) μ) = M * R := by
+      ext a μ
+      simp [M, R, Matrix.mul_diagonal, mul_comm]
+    have hRdet : R.det = -1 := by
+      rw [Matrix.det_diagonal]
+      have hprod :
+          (∏ μ : Fin D, sign μ) = -1 := by
+        rw [Finset.prod_eq_single i0]
+        · simp [sign]
+        · intro μ _ hμ
+          simp [sign, hμ]
+        · intro hi0
+          exact False.elim (hi0 (Finset.mem_univ i0))
+      exact hprod
+    calc
+      Matrix.det (fun a μ : Fin D => sign μ * q (ι a) μ)
+          = Matrix.det (M * R) := by rw [hmat]
+      _ = Matrix.det M * Matrix.det R := Matrix.det_mul M R
+      _ = -Matrix.det M := by rw [hRdet]; ring
+
+/-- The determinant-flipping coordinate reflection preserves coordinate norms. -/
+theorem sourceTail_reflection_norm
+    (D m : ℕ)
+    (hD : 0 < D)
+    (q : Fin m → Fin D → ℂ) :
+    let i0 : Fin D := ⟨0, hD⟩
+    let sign : Fin D → ℂ := fun μ => if μ = i0 then -1 else 1
+    ∀ u μ, ‖sign μ * q u μ‖ = ‖q u μ‖ := by
+  intro i0 sign u μ
+  by_cases hμ : μ = i0
+  · simp [sign, hμ]
+  · simp [sign, hμ]
+
+/-- If two Euclidean tail data have the same Gram coordinates and agree on one
+nonzero selected determinant, then all determinant coordinates agree by the
+mixed-minor identity. -/
+theorem sourceTailOrientedInvariant_eq_of_gram_eq_selectedDet
+    (D m : ℕ)
+    {T : SourceTailOrientedData D m}
+    (hTvar : T ∈ sourceTailOrientedVariety D m)
+    (ι : Fin D ↪ Fin m)
+    (q : Fin m → Fin D → ℂ)
+    (hgram : (sourceTailOrientedInvariant D m q).gram = T.gram)
+    (hdetι : (sourceTailOrientedInvariant D m q).det ι = T.det ι)
+    (hdet_ne : T.det ι ≠ 0) :
+    sourceTailOrientedInvariant D m q = T := by
+  apply SourceTailOrientedData.ext
+  · exact hgram
+  · funext κ
+    have hq := sourceTailOrientedInvariant_mixedGram_det D m q ι κ
+    have hT := sourceTailOrientedVariety_mixedGram_det D m hTvar ι κ
+    have hleft :
+        Matrix.det (fun a b : Fin D =>
+            (sourceTailOrientedInvariant D m q).gram (ι a) (κ b)) =
+          Matrix.det (fun a b : Fin D => T.gram (ι a) (κ b)) := by
+      congr
+      ext a b
+      rw [hgram]
+    have hprod :
+        (sourceTailOrientedInvariant D m q).det ι *
+            (sourceTailOrientedInvariant D m q).det κ =
+          T.det ι * T.det κ := by
+      rw [← hq, hleft, hT]
+    rw [hdetι] at hprod
+    exact mul_left_cancel₀ hdet_ne hprod
+
+/-- A same-Gram factor of a full-rank Euclidean tail point can be oriented by
+at most one coordinate reflection, preserving all coordinate norms. -/
+theorem sourceTailOrientedInvariant_or_reflection_eq_of_gram_eq
+    (D m : ℕ)
+    (hD : 0 < D)
+    {T : SourceTailOrientedData D m}
+    (hTvar : T ∈ sourceTailOrientedVariety D m)
+    (ι : Fin D ↪ Fin m)
+    (hdet_ne : T.det ι ≠ 0)
+    (q : Fin m → Fin D → ℂ)
+    (hgram : (sourceTailOrientedInvariant D m q).gram = T.gram) :
+    ∃ q' : Fin m → Fin D → ℂ,
+      (∀ u μ, ‖q' u μ‖ = ‖q u μ‖) ∧
+      sourceTailOrientedInvariant D m q' = T := by
+  have hqsel := sourceTailOrientedInvariant_selectedGram_det D m q ι
+  have hTsel := sourceTailOrientedVariety_selectedGram_det D m hTvar ι
+  have hleft :
+      Matrix.det (fun a b : Fin D =>
+          (sourceTailOrientedInvariant D m q).gram (ι a) (ι b)) =
+        Matrix.det (fun a b : Fin D => T.gram (ι a) (ι b)) := by
+    congr
+    ext a b
+    rw [hgram]
+  have hsq :
+      (sourceTailOrientedInvariant D m q).det ι *
+          (sourceTailOrientedInvariant D m q).det ι =
+        T.det ι * T.det ι := by
+    rw [← hqsel, hleft, hTsel]
+  rcases mul_self_eq_mul_self_iff.mp hsq with hsame | hneg
+  · refine ⟨q, ?_, ?_⟩
+    · intro u μ
+      rfl
+    · exact
+        sourceTailOrientedInvariant_eq_of_gram_eq_selectedDet
+          D m hTvar ι q hgram hsame hdet_ne
+  · let i0 : Fin D := ⟨0, hD⟩
+    let sign : Fin D → ℂ := fun μ => if μ = i0 then -1 else 1
+    let q' : Fin m → Fin D → ℂ := fun u μ => sign μ * q u μ
+    have href :
+        sourceTailOrientedInvariant D m q' =
+          { gram := (sourceTailOrientedInvariant D m q).gram
+            det := fun ι => - (sourceTailOrientedInvariant D m q).det ι } := by
+      simpa [q', i0, sign] using
+        sourceTailOrientedInvariant_reflection D m hD q
+    have hgram' :
+        (sourceTailOrientedInvariant D m q').gram = T.gram := by
+      have h := congrArg SourceTailOrientedData.gram href
+      exact h.trans hgram
+    have hdetι' :
+        (sourceTailOrientedInvariant D m q').det ι = T.det ι := by
+      have h := congrFun (congrArg SourceTailOrientedData.det href) ι
+      calc
+        (sourceTailOrientedInvariant D m q').det ι
+            = - (sourceTailOrientedInvariant D m q).det ι := by
+              simpa using h
+        _ = T.det ι := by
+              rw [hneg]
+              ring
+    refine ⟨q', ?_, ?_⟩
+    · intro u μ
+      simpa [q', i0, sign] using
+        sourceTail_reflection_norm D m hD q u μ
+    · exact
+        sourceTailOrientedInvariant_eq_of_gram_eq_selectedDet
+          D m hTvar ι q' hgram' hdetι' hdet_ne
 
 /-- On the Euclidean tail variety in positive tail dimension, zero Gram
 coordinates force all top determinant coordinates to vanish. -/
