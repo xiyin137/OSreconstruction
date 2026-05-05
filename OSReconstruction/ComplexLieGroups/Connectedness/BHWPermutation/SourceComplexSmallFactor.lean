@@ -1,4 +1,5 @@
 import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.CStarAlgebra.Matrix
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComplexGlobalIdentity
 
 /-!
@@ -71,6 +72,38 @@ theorem real_sqrt_lt_of_lt_mul_bound
     (hsmall : Real.sqrt (C * δ) < ε) :
     Real.sqrt x < ε := by
   exact (Real.sqrt_lt_sqrt hx hxlt).trans hsmall
+
+/-- Entries of a unitary matrix have norm at most one. -/
+theorem matrix_unitary_entry_norm_le_one
+    (m : ℕ)
+    (U : Matrix.unitaryGroup (Fin m) ℂ)
+    (i a : Fin m) :
+    ‖(U : Matrix (Fin m) (Fin m) ℂ) i a‖ ≤ 1 := by
+  exact entry_norm_bound_of_unitary U.2 i a
+
+/-- Unit-entry bound combined with a real square-root column scaling. -/
+theorem matrix_unitary_entry_mul_real_sqrt_norm_le_sqrt
+    (m : ℕ)
+    (U : Matrix.unitaryGroup (Fin m) ℂ)
+    (i a : Fin m)
+    {σ L : ℝ}
+    (hσ_le : σ ≤ L) :
+    ‖(U : Matrix (Fin m) (Fin m) ℂ) i a * (Real.sqrt σ : ℂ)‖ ≤
+      Real.sqrt L := by
+  have hentry := matrix_unitary_entry_norm_le_one m U i a
+  have hsqrtnorm : ‖(Real.sqrt σ : ℂ)‖ = Real.sqrt σ :=
+    RCLike.norm_of_nonneg (K := ℂ) (Real.sqrt_nonneg σ)
+  calc
+    ‖(U : Matrix (Fin m) (Fin m) ℂ) i a * (Real.sqrt σ : ℂ)‖
+        = ‖(U : Matrix (Fin m) (Fin m) ℂ) i a‖ *
+            ‖(Real.sqrt σ : ℂ)‖ := by
+          rw [norm_mul]
+    _ = ‖(U : Matrix (Fin m) (Fin m) ℂ) i a‖ * Real.sqrt σ := by
+          rw [hsqrtnorm]
+    _ ≤ 1 * Real.sqrt σ := by
+          exact mul_le_mul_of_nonneg_right hentry (Real.sqrt_nonneg σ)
+    _ = Real.sqrt σ := by ring
+    _ ≤ Real.sqrt L := Real.sqrt_le_sqrt hσ_le
 
 /-- An entry-controlled complex symmetric factorization immediately gives the
 small-entry factorization needed by the tail realization theorem. -/
