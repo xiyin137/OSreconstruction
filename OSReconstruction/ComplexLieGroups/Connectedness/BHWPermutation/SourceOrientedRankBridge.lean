@@ -82,6 +82,42 @@ theorem sourceOrientedMaxRankAt_invariant_iff_sourceGramMatrixRank_eq_fullFrame
       (d := d) (n := n) hn
       (sourceOrientedMinkowskiInvariant d n z)
 
+/-- Failure of oriented max-rank for an actual source configuration means the
+ordinary source Gram rank is strictly below the spacetime/source minimum. -/
+theorem sourceOriented_notMaxRank_sourceGramMatrixRank_lt_min
+    (d n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hlow :
+      ¬ SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n z)) :
+    sourceGramMatrixRank n (sourceMinkowskiGram d n z) <
+      min (d + 1) n := by
+  have hle :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) ≤
+        min (d + 1) n :=
+    sourceGramMatrixRank_le_spacetime_source_min d n z
+  have hne :
+      sourceGramMatrixRank n (sourceMinkowskiGram d n z) ≠
+        min (d + 1) n := by
+    intro h
+    exact hlow (by
+      simpa [SourceOrientedMaxRankAt, sourceOrientedMinkowskiInvariant,
+        SourceOrientedGramData.gram] using h)
+  exact lt_of_le_of_ne hle hne
+
+/-- Failure of oriented max-rank for an actual source configuration gives the
+rank-deficient inequality used to select the Hall-Wightman normal-form rank. -/
+theorem sourceOriented_notMaxRank_sourceGramMatrixRank_lt_fullFrame
+    (d n : ℕ)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hlow :
+      ¬ SourceOrientedMaxRankAt d n
+        (sourceOrientedMinkowskiInvariant d n z)) :
+    sourceGramMatrixRank n (sourceMinkowskiGram d n z) < d + 1 :=
+  lt_of_lt_of_le
+    (sourceOriented_notMaxRank_sourceGramMatrixRank_lt_min d n z hlow)
+    (min_le_left (d + 1) n)
+
 /-- On actual source configurations, oriented max-rank equality is equivalent
 to the older scalar max-rank `≤` predicate. -/
 theorem sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt

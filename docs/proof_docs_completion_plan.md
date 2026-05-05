@@ -344,11 +344,15 @@ The rank bridge file
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`
 checks the finite-dimensional rank conversions needed by the next local-chart
 dispatch: `BHW.sourceGramMatrixRank_le_spacetime_source_min`,
+`BHW.sourceOriented_notMaxRank_sourceGramMatrixRank_lt_min`,
+`BHW.sourceOriented_notMaxRank_sourceGramMatrixRank_lt_fullFrame`,
 `BHW.sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt`,
 `BHW.sourceOrientedExceptionalRank_invariant_iff_hwSourceGramExceptionalRankAt`,
 the corresponding transport lemmas under equality of oriented invariants, and
 the fact that oriented max/exceptional rank depends only on the ordinary Gram
-coordinate.  The upper bound is proved from
+coordinate.  The rank-deficient strict inequalities are proved from the
+spacetime/source minimum upper bound plus failure of the equality defining
+`SourceOrientedMaxRankAt`.  The upper bound is proved from
 `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range`,
 `finrank_range_sourceCoefficientEval_le`, and `Submodule.finrank_le`.
 
