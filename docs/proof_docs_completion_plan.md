@@ -4026,7 +4026,13 @@ implementation contract is:
    `BHW.conjugationFixedComplexOrthonormalBasis` to
    `BHW.takagiPositiveEigenspaceConjugation` on each positive eigenspace,
    assemble the resulting fixed eigenbases into the unitary Takagi matrix, and
-   prove the diagonal identity plus entry-L1 singular-value bound.  It then
+   prove the diagonal identity.  The singular-value entry-L1 bound for any
+   produced Takagi diagonalization is now checked in
+   `BHWPermutation/SourceComplexTakagiEntry.lean` as
+   `BHW.takagi_singularValue_le_entryL1Bound`: it multiplies the Takagi
+   identity by the unitary inverses, extracts `(σ a : ℂ)` as a finite double
+   sum against the `a`th unitary column, and bounds that sum entrywise by
+   `BHW.matrixEntryL1Bound m S`.  It then
    spells out the finite
    support extraction: use `Fintype.nonempty_of_card_le` to embed the nonzero
    singular-value subtype into `Fin k`, define the rectangular factor by
