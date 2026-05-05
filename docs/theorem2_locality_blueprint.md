@@ -12536,8 +12536,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
           -- `isConnected_matrix_ball`; the last factor is the same theorem
           -- used in `sourceComplexGramVariety_local_rankExact_connected_basis_singular`,
           -- namely `matrixSymmetricRankExactCone_small_connected`.
-          -- Product connectedness and the linear coordinate equivalence
-          -- transport this to the displayed parameter set.
+          -- The checked parameter-side product lemma
+          -- `isConnected_sourcePrincipalSchur_rankExact_parameterSet` combines
+          -- the three factors before the linear coordinate equivalence
+          -- transports this to the displayed parameter set.
           --
           -- The determinant coordinates do not split this set into separate
           -- local branches: `SourceOrientedMaxRankAt` only reads `G.gram`, and
