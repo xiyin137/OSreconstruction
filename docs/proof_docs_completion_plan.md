@@ -2864,7 +2864,19 @@ implementation contract is:
    concentrated in the true tail-membership theorem for that explicit residual
    datum, plus the analytic inverse-function producer
    `sourceRankDeficientHeadGauge_at_sourceMetric` and the local radius choices
-   needed to feed the residual chart.  The forward normal-parameter check is
+   needed to feed the residual chart.  The checked companion
+   `SourceOrientedHeadGaugeSupport.lean` now also specializes the Schur
+   determinant propagation theorem to the head-gauge interface:
+   `sourceHeadRows_linearIndependent_of_headGauge` gives actual head-row
+   independence for a realizing source tuple,
+   `exists_headTail_fullFrameDet_ne_zero_of_headGauge_maxRank` gives the
+   max-rank nonzero selected head-tail determinant, and
+   `sourceOrientedGramData_eq_of_gram_eq_headTailDet_eq_of_headGauge` reduces
+   future normal-form comparison to ordinary Gram equality plus the selected
+   head-tail determinant coordinates.  This is the precise finite-dimensional
+   consumer that the local Witt/head-normalizing producer must feed; it still
+   does not prove the tail-membership theorem by itself.  The forward
+   normal-parameter check is
    now also in Lean:
    `sourceOrientedSchurResidualTailData_normalParameter` identifies the
    explicit residual tail datum of a normal-parameter invariant with
