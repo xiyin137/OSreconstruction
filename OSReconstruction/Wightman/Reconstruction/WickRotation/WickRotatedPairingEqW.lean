@@ -263,17 +263,36 @@ theorem g_deform_one_eq_pairing
 
 /-- As `s → 0⁺`, the deformation `g_deform` converges to `Wfn.W n f`.
 
-**Proof outline**: reduce to `bhw_distributional_boundary_values` via
-slicing on the time-coordinate hyperplanes. The full Wick direction
-`η(x) = (x⁰, 0⃗)` is `x`-dependent, but `bhw_distributional_boundary_values`
-is for constant `η` in the forward cone. Slice the OPTR support by
-diagonals where `η` is locally constant, apply the constant-`η`
-boundary-value lemma per slice, sum/integrate via Fubini.
+**Genuine subproblem**: `bhw_distributional_boundary_values` requires a
+constant-in-x direction `η : Fin n → Fin (d+1) → ℝ` in the forward
+cone. Our Wick direction is `η(x) = (x⁰, 0⃗)` — the time component
+depends on the integration variable `x⁰`. No clean change of variables
+or fiberwise slicing reduces this directly to the constant-η form,
+because:
 
-Alternative formulation: prove a generalized boundary-value lemma
-allowing `η` to depend on `x` (through the time coordinates) within
-the forward cone. More uniform but new infrastructure. The slicing
-approach is the path of least resistance — see plan doc. -/
+* Substituting `y_k⁰ = (1-s) x_k⁰` (to normalize the real part) makes
+  the imaginary shift `s y_k⁰/(1-s)` still depend on `y_k⁰`.
+* Slicing on time-coordinate hyperplanes gives constant η on each
+  slice, but `bhw_distributional_boundary_values` is stated for the
+  full NPointDomain integral, not for spatial-only sub-integrals.
+* The two-stage argument (deform to constant-η bhw-form, then deform
+  to Wick) requires the holomorphic-invariance machinery of step #2
+  (`g_deform_deriv_zero`) anyway.
+
+**Resolution path**: most likely route — prove a generalized
+distributional-boundary-value lemma (`bhw_distributional_boundary_values_xdep`)
+allowing `η` to depend on `x` within the forward cone. This is new
+infrastructure and probably ~150 lines on its own.
+
+**Alternative**: chain `g_deform_deriv_zero` (#35) plus
+`bhw_distributional_boundary_values` for a constant-η path to give
+the limit indirectly. The constant-η path's integral tends to
+`Wfn.W n f` by bhw, equals `g_deform 1` by holomorphic invariance
+(from #35), and `g_deform_one_eq_pairing` identifies `g_deform 1`
+with the Wick-rotated pairing. This routes through #35 rather than
+discharging #37 standalone, and may be the more economical assembly.
+
+Routed to follow-up; see the plan doc for the full strategy. -/
 theorem g_deform_tendsto_W
     (Wfn : WightmanFunctions d) (n : ℕ)
     (f : SchwartzNPoint d n)
