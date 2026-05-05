@@ -523,7 +523,10 @@ topology and continuous projections
 `BHW.continuous_sourceOrientedNormalParameter_tail`, the checked finite-product
 coordinate equivalence and topology bridge
 `BHW.sourceOrientedNormalParameterCoordEquiv` and
-`BHW.sourceOrientedNormalParameterCoordHomeomorph`, its center
+`BHW.sourceOrientedNormalParameterCoordHomeomorph`, the checked open
+invertible-head locus and center-neighborhood theorem
+`BHW.isOpen_sourceOrientedNormalParameter_head_det_isUnit` and
+`BHW.sourceOrientedNormalParameter_head_det_isUnit_mem_nhds_center`, its center
 `BHW.sourceOrientedNormalCenterParameter`, the padded tail embedding
 `BHW.sourceTailEmbed`, the canonical normal source
 `BHW.hwLemma3CanonicalSource`, the checked signature head metric

@@ -196,6 +196,18 @@ theorem continuous_sourceOrientedNormalParameter_head
     (continuous_sourceOrientedNormalParameterCoord
       (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn))
 
+/-- The determinant-unit condition on the normal head factor is open. -/
+theorem isOpen_sourceOrientedNormalParameter_head_det_isUnit
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    IsOpen
+      {p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn |
+        IsUnit p.head.det} := by
+  exact Units.isOpen.preimage
+    ((continuous_sourceOrientedNormalParameter_head
+      (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)).matrix_det)
+
 /-- The mixed-coordinate matrix is continuous. -/
 theorem continuous_sourceOrientedNormalParameter_mixed
     {d n r : ℕ}
@@ -231,6 +243,25 @@ def sourceOrientedNormalCenterParameter
   head := 1
   mixed := 0
   tail := 0
+
+@[simp]
+theorem sourceOrientedNormalCenterParameter_head_det_isUnit
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n) :
+    IsUnit (sourceOrientedNormalCenterParameter d n r hrD hrn).head.det := by
+  simp [sourceOrientedNormalCenterParameter]
+
+/-- The invertible-head locus is a neighborhood of the normal center. -/
+theorem sourceOrientedNormalParameter_head_det_isUnit_mem_nhds_center
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n) :
+    {p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn |
+      IsUnit p.head.det} ∈
+        𝓝 (sourceOrientedNormalCenterParameter d n r hrD hrn) :=
+  isOpen_sourceOrientedNormalParameter_head_det_isUnit.mem_nhds
+    (sourceOrientedNormalCenterParameter_head_det_isUnit d n r hrD hrn)
 
 /-- Embed an orthogonal-tail coordinate vector into the full spacetime
 coordinate space by padding the first `r` head coordinates with zero. -/

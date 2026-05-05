@@ -15460,6 +15460,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
         -- the local factor at `1`; shrink it so the factor of any head block
         -- in the resulting Schur neighborhood is inside the same coordinate
         -- box.  The mixed radius is an ordinary positive coordinate bound.
+        -- The head-invertible shrink is now Lean-level support:
+        -- `isOpen_sourceOrientedNormalParameter_head_det_isUnit` and
+        -- `sourceOrientedNormalParameter_head_det_isUnit_mem_nhds_center`
+        -- give the determinant-unit neighborhood needed before applying the
+        -- checked max-rank-to-tail-rank bridge.
         let encode :=
           BHW.sourceOrientedNormalParameterCoordHomeomorph
             (d := d) (n := n) (r := N.r)
