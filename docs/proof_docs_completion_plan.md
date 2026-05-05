@@ -2772,7 +2772,7 @@ implementation contract is:
    choice of an extended-tube lift is now explicitly insufficient because it
    gives neither boundedness nor continuity.  The residual chart itself is
    now decomposed through Schur residual realization: the Euclidean tail model
-   `SourceOrientedTailData`, `sourceTailOrientedInvariant`,
+   `SourceTailOrientedData`, `sourceTailOrientedInvariant`,
    `sourceTailOrientedVariety_eq_algebraic`, and
    `sourceTailOrientedSmallRealization` proves the finite constructive
    induction, while the OS-source residual chart consumes only the shifted
@@ -2798,9 +2798,11 @@ implementation contract is:
    actual selected injection `ι : Fin r ↪ Fin m` and a nonzero principal minor
    hypothesis; the wrapper
    `sourceTailOrientedSmallRealization_of_selectedBlock` first chooses such a
-   minor by `sourceTail_exists_principalMinor_of_rank`, moves it to the head
-   block by `sourceTail_permute_to_head`, and only then calls the Schur
-   recursion.  The recursive hypothesis now also carries the guard
+   minor by `sourceTail_exists_principalMinor_of_rank`, whose variety
+   hypothesis is essential because the principal-minor conclusion uses
+   symmetry of the Euclidean tail Gram coordinate.  It then moves the selected
+   block to the head block by `sourceTail_permute_to_head`, and only then calls
+   the Schur recursion.  The recursive hypothesis now also carries the guard
    `0 < D - r`.  Tail source permutations are explicit through
    `sourceTailPermuteOrientedData`, `sourceTailOrientedInvariant_perm`,
    `sourceTailOrientedVariety_perm_iff`, and

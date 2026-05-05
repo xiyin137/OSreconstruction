@@ -1,4 +1,5 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedSchurResidual
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComplexSchurPatch
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceRank
 
 /-!
@@ -273,6 +274,96 @@ theorem sourceTailOrientedVariety_perm_iff
         hcomp] using hdet
   · rintro ⟨q, rfl⟩
     exact ⟨fun u => q (σ u), sourceTailOrientedInvariant_perm D m σ q⟩
+
+/-- A Euclidean tail point on the oriented variety whose Gram matrix has rank
+`r` admits an invertible principal `r × r` Gram block. -/
+theorem sourceTail_exists_principalMinor_of_rank
+    (D m r : ℕ)
+    (T : SourceTailOrientedData D m)
+    (hTvar : T ∈ sourceTailOrientedVariety D m)
+    (hr : sourceGramMatrixRank m T.gram = r) :
+    ∃ ι : Fin r ↪ Fin m,
+      IsUnit (Matrix.det (fun a b : Fin r => T.gram (ι a) (ι b))) := by
+  rcases hTvar with ⟨q, rfl⟩
+  have hsym :
+      (sourceTailOrientedInvariant D m q).gram ∈
+        sourceSymmetricMatrixSpace m := by
+    intro u v
+    simp [sourceTailOrientedInvariant, mul_comm]
+  have hrank :
+      (Matrix.of fun i j : Fin m =>
+        (sourceTailOrientedInvariant D m q).gram i j).rank = r := by
+    simpa [sourceGramMatrixRank] using hr
+  rcases exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
+      (n := m) (r := r) hsym hrank with
+    ⟨I, hI, hdet⟩
+  refine ⟨⟨I, hI⟩, ?_⟩
+  have hdet' :
+      Matrix.det (fun a b : Fin r =>
+          (sourceTailOrientedInvariant D m q).gram (I a) (I b)) ≠ 0 := by
+    simpa [sourceMatrixMinor] using hdet
+  exact isUnit_iff_ne_zero.mpr hdet'
+
+/-- Any selected injection can be moved to the canonical head labels by a
+permutation of the finite source-label set. -/
+theorem sourceTail_permute_to_head
+    (m r : ℕ)
+    (hrm : r ≤ m)
+    (ι : Fin r ↪ Fin m) :
+    ∃ σ : Equiv.Perm (Fin m),
+      ∀ a : Fin r, σ (finSourceHead hrm a) = ι a := by
+  classical
+  let headEmb : Fin r ↪ Fin m :=
+    ⟨finSourceHead hrm, finSourceHead_injective hrm⟩
+  let e : Set.range headEmb ≃ Set.range ι :=
+    headEmb.toEquivRange.symm.trans ι.toEquivRange
+  refine ⟨e.extendSubtype, ?_⟩
+  intro a
+  have hmem : finSourceHead hrm a ∈ Set.range headEmb := by
+    exact Set.mem_range_self a
+  calc
+    e.extendSubtype (finSourceHead hrm a)
+        = e ⟨finSourceHead hrm a, hmem⟩ := by
+            exact Equiv.extendSubtype_apply_of_mem e (finSourceHead hrm a) hmem
+    _ = ι a := by
+        change
+          ((headEmb.toEquivRange.symm.trans ι.toEquivRange)
+            ⟨headEmb a, Set.mem_range_self a⟩).1 = ι a
+        change
+          (ι.toEquivRange
+            (headEmb.toEquivRange.symm
+              ⟨headEmb a, Set.mem_range_self a⟩)).1 = ι a
+        rw [Function.Embedding.toEquivRange_symm_apply_self]
+        rfl
+
+/-- A small realization of permuted Euclidean tail data transports back to a
+small realization of the original ordered data by undoing the source-label
+permutation. -/
+theorem sourceTailSmallRealization_transport_perm
+    (D m : ℕ)
+    (σ : Equiv.Perm (Fin m))
+    {ε : ℝ}
+    {T : SourceTailOrientedData D m}
+    {qσ : Fin m → Fin D → ℂ}
+    (hsmall : ∀ u μ, ‖qσ u μ‖ < ε)
+    (hrealizes :
+      sourceTailOrientedInvariant D m qσ =
+        sourceTailPermuteOrientedData D m σ T) :
+    ∃ q : Fin m → Fin D → ℂ,
+      (∀ u μ, ‖q u μ‖ < ε) ∧
+      sourceTailOrientedInvariant D m q = T := by
+  refine ⟨fun u => qσ (σ.symm u), ?_, ?_⟩
+  · intro u μ
+    exact hsmall (σ.symm u) μ
+  · calc
+      sourceTailOrientedInvariant D m (fun u => qσ (σ.symm u))
+          = sourceTailPermuteOrientedData D m σ.symm
+              (sourceTailOrientedInvariant D m qσ) := by
+            exact sourceTailOrientedInvariant_perm D m σ.symm qσ
+      _ = sourceTailPermuteOrientedData D m σ.symm
+              (sourceTailPermuteOrientedData D m σ T) := by
+            rw [hrealizes]
+      _ = T := sourceTailPermuteOrientedData_symm_apply D m σ T
 
 /-- Stored diagonal normalization from the shifted tail metric to the Euclidean
 tail dot product. -/
