@@ -248,4 +248,51 @@ noncomputable def takagiPositiveEigenspaceConjugation
     exact takagiConjugateLinearEuclideanMap_normalized_norm_of_eigen
       (m := m) (S := S) hSym hlambda x.2
 
+/-- A fixed vector of the normalized positive-eigenspace conjugation satisfies
+the unnormalized Takagi column equation. -/
+theorem takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    {lambda : ℝ} (hlambda : 0 < lambda)
+    (x : takagiHermitianEigenspace m S lambda)
+    (hx : takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym hlambda x = x) :
+    takagiConjugateLinearEuclideanMap m S (x : EuclideanSpace ℂ (Fin m)) =
+      (Real.sqrt lambda : ℂ) • (x : EuclideanSpace ℂ (Fin m)) := by
+  have hval := congrArg (fun y : takagiHermitianEigenspace m S lambda =>
+    (y : EuclideanSpace ℂ (Fin m))) hx
+  change (((Real.sqrt lambda)⁻¹ : ℝ) : ℂ) •
+      takagiConjugateLinearEuclideanMap m S (x : EuclideanSpace ℂ (Fin m)) =
+    (x : EuclideanSpace ℂ (Fin m)) at hval
+  have hsqrt_pos : 0 < Real.sqrt lambda := Real.sqrt_pos.mpr hlambda
+  have hsqrt_ne : Real.sqrt lambda ≠ 0 := ne_of_gt hsqrt_pos
+  have hscalar : ((Real.sqrt lambda : ℂ) * (((Real.sqrt lambda)⁻¹ : ℝ) : ℂ)) = 1 := by
+    have hreal : Real.sqrt lambda * (Real.sqrt lambda)⁻¹ = (1 : ℝ) := by
+      field_simp [hsqrt_ne]
+    exact_mod_cast hreal
+  calc
+    takagiConjugateLinearEuclideanMap m S (x : EuclideanSpace ℂ (Fin m)) =
+        (1 : ℂ) • takagiConjugateLinearEuclideanMap m S
+          (x : EuclideanSpace ℂ (Fin m)) := by
+      simp
+    _ = ((Real.sqrt lambda : ℂ) * (((Real.sqrt lambda)⁻¹ : ℝ) : ℂ)) •
+        takagiConjugateLinearEuclideanMap m S (x : EuclideanSpace ℂ (Fin m)) := by
+      rw [hscalar]
+    _ = (Real.sqrt lambda : ℂ) •
+        ((((Real.sqrt lambda)⁻¹ : ℝ) : ℂ) •
+          takagiConjugateLinearEuclideanMap m S (x : EuclideanSpace ℂ (Fin m))) := by
+      rw [smul_smul]
+    _ = (Real.sqrt lambda : ℂ) • (x : EuclideanSpace ℂ (Fin m)) := by
+      rw [hval]
+
+/-- Vectors in the zero eigenspace of `S * Sᴴ` are killed by the Takagi
+conjugate-linear map. -/
+theorem takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    {v : EuclideanSpace ℂ (Fin m)}
+    (hv : (S * Sᴴ) *ᵥ (v : Fin m → ℂ) = 0) :
+    takagiConjugateLinearEuclideanMap m S v = 0 := by
+  ext i
+  have hraw := takagiConjugateLinearMap_zero_eigenspace_eq_zero (m := m) (S := S) hSym hv
+  have hi := congrFun hraw i
+  simpa [takagiConjugateLinearEuclideanMap] using hi
+
 end BHW

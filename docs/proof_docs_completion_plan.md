@@ -4010,7 +4010,12 @@ implementation contract is:
    defines `BHW.takagiHermitianEigenspace`, proves the Euclidean norm-square
    and norm identities for `v ↦ S.mulVec (star v)` on each eigenspace, and
    bundles the normalized positive-eigenvalue map as
-   `BHW.takagiPositiveEigenspaceConjugation`.  The fixed-basis real-form layer
+   `BHW.takagiPositiveEigenspaceConjugation`.  It also checks the two column
+   equations needed by the final ONB assembly:
+   `BHW.takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed` for
+   fixed vectors in positive eigenspaces and
+   `BHW.takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero` for the
+   zero eigenspace.  The fixed-basis real-form layer
    is checked in
    `BHWPermutation/SourceComplexTakagiFixed.lean`: it defines the real fixed
    submodule `BHW.conjugationFixedSubmodule`, installs the induced real inner
