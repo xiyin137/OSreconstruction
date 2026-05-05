@@ -106,15 +106,16 @@ Wick-rotated point `wickRotatePoint ∘ x` (so each component's time
 becomes `i x_k⁰`) lies in `ForwardTube d n`: every successive
 imaginary-time difference `x_{k+1}⁰ - x_k⁰` is positive, hence in `V₊`.
 
-**Discharge**: direct unfolding. Imaginary part of
-`wickRotatePoint x_k` at index 0 is `x_k⁰`. Successive difference
-`x_{k+1}⁰ - x_k⁰ > 0` by OPTR. The basepoint condition
-`Im(z₀) ∈ V₊` is satisfied because `x_1⁰ > 0`. -/
+This is a thin wrapper around `euclidean_ordered_in_forwardTube` that
+extracts the two real-valued hypotheses (positive times + strictly
+increasing times) from OPTR membership. -/
 theorem wick_OPTR_in_forwardTube
     (n : ℕ) (x : NPointDomain d n)
     (hx : x ∈ OrderedPositiveTimeRegion d n) :
-    (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n := by
-  sorry
+    (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n :=
+  euclidean_ordered_in_forwardTube x
+    (fun k j hkj => (hx k).2 j hkj)
+    (fun k => (hx k).1)
 
 /-! ### Step 2: the deformation `g(s)` and its zero derivative -/
 
