@@ -477,8 +477,11 @@ bilinear form `BHW.sourceVectorMinkowskiInner`, the shifted residual-tail
 metric and Gram coordinates `BHW.sourceTailMetric`,
 `BHW.sourceTailMetric_det_isUnit`, the explicit diagonal normalizing scalars
 `BHW.sourceTailMetricScale`, `BHW.sourceTailMetricScale_ne_zero`,
-`BHW.sourceTailMetricScale_mul_self`, `BHW.sourceTailMetricDetScale`, and
-`BHW.sourceTailMetricDetScale_ne_zero`, and `BHW.sourceShiftedTailGram`, the checked
+`BHW.sourceTailMetricScale_mul_self`, `BHW.sourceTailMetricScale_norm`,
+`BHW.sourceTailMetricDetScale`, `BHW.sourceTailMetricDetScale_ne_zero`, and
+`BHW.sourceTailMetricDetScale_norm`, the checked full-frame head-tail
+embedding `BHW.sourceFullFrameEmbeddingOfHeadTail` with its head/tail
+evaluation theorems, and `BHW.sourceShiftedTailGram`, the checked
 head/head normal parameter Gram formula
 `BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, the checked
 head/tail orthogonality and mixed-block formulas
@@ -519,6 +522,14 @@ equivalence that rescales determinant coordinates by the product of the
 coordinate scalars.  The scalar and product nonzero facts are now checked as
 `sourceTailMetricScale_ne_zero` and `sourceTailMetricDetScale_ne_zero`;
 otherwise the Euclidean theorem proves the wrong tail theorem.
+The blueprint now gives the implementation transcript for
+`sourceShiftedTailCompatibleSmallRealization`: build the explicit
+normalization `sourceShiftedTailMetricNormalization`, call the Euclidean
+compatible theorem on `sourceShiftedTailDataToEuclidean T`, scale the realizing
+tuple back by `scale⁻¹`, use the norm-one scale lemmas for both directions of
+the `epsilon`/`eta` estimates, and use
+`sourceShiftedTailDataToEuclidean_injective` to recover the shifted invariant
+equality.
 
 Determinant-readiness correction: the proof docs now pin determinant recovery
 for the normal parameter vector as explicit finite theorem surfaces and record
@@ -534,6 +545,7 @@ selected-frame calculation is
 selected head block have determinant
 `p.head.det * (sourceShiftedTailOrientedInvariant ... p.tail).det λ`.
 Arbitrary ordered full frames are then routed through
+the finite Laplace theorem `matrix_det_blockColumn_laplace`,
 `sourceNormalFullFrameDetFromSchur`,
 `sourceFullFrameDet_normalParameter_eq_schurFormula`, and
 `sourceOrientedSchur_fullFrameDet_reconstruct`, so the final determinant field

@@ -8345,6 +8345,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
           detScale_ne_zero :=
             BHW.sourceTailMetricDetScale_ne_zero d r hrD }
 
+      theorem BHW.sourceTailMetricScale_norm
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (μ : Fin (d + 1 - r)) :
+          ‖BHW.sourceTailMetricScale d r hrD μ‖ = 1
+
+      theorem BHW.sourceTailMetricDetScale_norm
+          (d r : Nat)
+          (hrD : r < d + 1) :
+          ‖BHW.sourceTailMetricDetScale d r hrD‖ = 1
+
       def BHW.sourceShiftedTailDataToEuclidean
           (d r m : Nat)
           (hrD : r < d + 1)
@@ -8376,6 +8387,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.sourceTailOrientedVariety (d + 1 - r) m ↔
             T ∈ BHW.sourceShiftedTailOrientedVariety d r hrD m
 
+      theorem BHW.sourceShiftedTailDataToEuclidean_injective
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          (N :
+            BHW.SourceShiftedTailMetricNormalization d r hrD) :
+          Function.Injective
+            (BHW.sourceShiftedTailDataToEuclidean d r m hrD N)
+
+      theorem BHW.sourceShiftedTailInvariant_eq_of_toEuclidean_eq
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          (N :
+            BHW.SourceShiftedTailMetricNormalization d r hrD)
+          (q : Fin m -> Fin (d + 1 - r) -> ℂ)
+          (T : BHW.SourceShiftedTailOrientedData d r hrD m)
+          (hE :
+            BHW.sourceTailOrientedInvariant (d + 1 - r) m
+                (fun u μ => N.scale μ * q u μ) =
+              BHW.sourceShiftedTailDataToEuclidean d r m hrD N T) :
+          BHW.sourceShiftedTailOrientedInvariant d r hrD m q = T
+
       structure BHW.SourceShiftedTailCompatibleSmallRealization
           (d r : Nat)
           (hrD : r < d + 1)
@@ -8405,7 +8437,88 @@ Proof decomposition of this theorem, without hiding the analytic work:
       theorem BHW.sourceShiftedTailCompatibleSmallRealization
           (d r m : Nat)
           (hrD : r < d + 1) :
-          BHW.SourceShiftedTailCompatibleSmallRealization d r hrD m
+          BHW.SourceShiftedTailCompatibleSmallRealization d r hrD m := by
+        classical
+        let N := BHW.sourceShiftedTailMetricNormalization d r hrD
+        have hD : 0 < d + 1 - r := by omega
+        let E :=
+          BHW.sourceTailOrientedCompatibleSmallRealization
+            (d + 1 - r) m hD
+        refine
+          { epsilon := E.epsilon
+            epsilon_pos := E.epsilon_pos
+            eta := E.eta
+            eta_pos := E.eta_pos
+            realize := ?_
+            self_image_small := ?_ }
+        · intro T hTvar hTgram hTdet
+          have hTEvar :
+              BHW.sourceShiftedTailDataToEuclidean d r m hrD N T ∈
+                BHW.sourceTailOrientedVariety (d + 1 - r) m := by
+            exact
+              (BHW.sourceShiftedTailVariety_toEuclidean_iff
+                d r m hrD N T).2 hTvar
+          have hTEgram :
+              ∀ u v,
+                ‖(BHW.sourceShiftedTailDataToEuclidean
+                  d r m hrD N T).gram u v‖ < E.eta := by
+            intro u v
+            exact hTgram u v
+          have hTEdet :
+              ∀ ι,
+                ‖(BHW.sourceShiftedTailDataToEuclidean
+                  d r m hrD N T).det ι‖ < E.eta := by
+            intro ι
+            calc
+              ‖(BHW.sourceShiftedTailDataToEuclidean
+                    d r m hrD N T).det ι‖
+                  = ‖N.detScale‖ * ‖T.det ι‖ := by
+                      simp [BHW.sourceShiftedTailDataToEuclidean,
+                        norm_mul]
+              _ = ‖T.det ι‖ := by
+                  simp [N, BHW.sourceTailMetricDetScale_norm]
+              _ < E.eta := hTdet ι
+          rcases E.realize
+              (BHW.sourceShiftedTailDataToEuclidean d r m hrD N T)
+              hTEvar hTEgram hTEdet with
+            ⟨qE, hqE_small, hqE_realizes⟩
+          let q : Fin m -> Fin (d + 1 - r) -> ℂ :=
+            fun u μ => (N.scale μ)⁻¹ * qE u μ
+          refine ⟨q, ?_, ?_⟩
+          · intro u μ
+            -- `sourceTailMetricScale` has norm `1`; after the explicit
+            -- implementation this is `sourceTailMetricScale_norm`.
+            simpa [q, N] using hqE_small u μ
+          · -- Apply `sourceShiftedTailInvariant_toEuclidean` to `q`, rewrite
+            -- `N.scale μ * ((N.scale μ)⁻¹ * qE u μ) = qE u μ` by
+            -- `N.scale_ne_zero`, and use injectivity of
+            -- `sourceShiftedTailDataToEuclidean` on shifted-tail data.  The
+            -- injectivity proof is fieldwise: Gram coordinates are unchanged,
+            -- and determinant coordinates cancel `N.detScale` using
+            -- `N.detScale_ne_zero`.
+            exact
+              BHW.sourceShiftedTailInvariant_eq_of_toEuclidean_eq
+                d r m hrD N q T hqE_realizes
+        · intro q hq_small
+          have hqE_small :
+              ∀ u μ, ‖N.scale μ * q u μ‖ < E.epsilon := by
+            intro u μ
+            -- Again the normalizing scale has complex norm `1`.
+            simpa [N] using hq_small u μ
+          rcases E.self_image_small
+              (fun u μ => N.scale μ * q u μ) hqE_small with
+            ⟨hgramE, hdetE⟩
+          constructor
+          · intro u v
+            -- Gram coordinates agree by
+            -- `sourceShiftedTailInvariant_toEuclidean`.
+            simpa [BHW.sourceShiftedTailInvariant_toEuclidean,
+              BHW.sourceShiftedTailDataToEuclidean] using hgramE u v
+          · intro ι
+            -- Euclidean determinant is `N.detScale` times the shifted
+            -- determinant, and this scale has norm `1`.
+            simpa [N, BHW.sourceShiftedTailDataToEuclidean,
+              BHW.sourceTailMetricDetScale_norm, norm_mul] using hdetE ι
 
       structure BHW.SourceOrientedSchurResidualData
           (d n r : Nat)
@@ -8961,7 +9074,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `sourceSchurResidualDeterminants` is the cofactor/wedge formula for
       full-frame determinants after the local head gauge has selected the
       actual factor `H`: for frames containing the selected head block it is
-      `G.det(head ∪ λ) / H.det`, with the sign fixed by the ordered embedding;
+      `G.det(head ∪ lam) / H.det`, with the sign fixed by the ordered embedding;
       frames not containing the selected head block are then recovered by
       multilinearity from the head coordinates, mixed coefficients `L`, and
       the tail determinants.  The proof of
@@ -8986,16 +9099,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (d n r : Nat)
           (hrD : r < d + 1)
           (hrn : r <= n)
-          (λ : Fin (d + 1 - r) ↪ Fin (n - r)) :
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
           Fin (d + 1) ↪ Fin n
 
       theorem BHW.sourceFullFrameEmbeddingOfHeadTail_head
           (d n r : Nat)
           (hrD : r < d + 1)
           (hrn : r <= n)
-          (λ : Fin (d + 1 - r) ↪ Fin (n - r))
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r))
           (a : Fin r) :
-          BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn λ
+          BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam
               (BHW.finSourceHead (Nat.le_of_lt hrD) a) =
             BHW.finSourceHead hrn a
 
@@ -9003,11 +9116,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (d n r : Nat)
           (hrD : r < d + 1)
           (hrn : r <= n)
-          (λ : Fin (d + 1 - r) ↪ Fin (n - r))
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r))
           (u : Fin (d + 1 - r)) :
-          BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn λ
+          BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam
               (BHW.finSourceTail (Nat.le_of_lt hrD) u) =
-            BHW.finSourceTail hrn (λ u)
+            BHW.finSourceTail hrn (lam u)
 
       theorem BHW.sourceFullFrameDet_normalParameter_headTail
           [NeZero d]
@@ -9017,13 +9130,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hrn : r <= n)
           (p :
             BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
-          (λ : Fin (d + 1 - r) ↪ Fin (n - r)) :
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
           BHW.sourceFullFrameDet d n
-              (BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn λ)
+              (BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)
               (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p) =
             p.head.det *
               (BHW.sourceShiftedTailOrientedInvariant
-                d r hrD (n - r) p.tail).det λ
+                d r hrD (n - r) p.tail).det lam
       ```
 
       Proof of `sourceFullFrameDet_normalParameter_headTail`: use
@@ -9032,7 +9145,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       subtract the stored mixed linear combination of the selected head rows.
       This row operation has determinant `1`; the matrix becomes block lower
       triangular with head block `p.head`, upper-right block `0`, lower-left
-      block `0`, and lower-right block `(fun u μ => p.tail (λ u) μ)`.  Apply
+      block `0`, and lower-right block `(fun u μ => p.tail (lam u) μ)`.  Apply
       the finite block-triangular determinant theorem, with no sign because
       the embedding orders the first `r` rows by `finSourceHead` and the last
       `d+1-r` rows by `finSourceTail`.
@@ -9041,6 +9154,84 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Schur determinant formula:
 
       ```lean
+      structure BHW.MatrixBlockColumnRowSplit
+          (r D : Nat) where
+        headRows : Fin r ↪ Fin (r + D)
+        tailRows : Fin D ↪ Fin (r + D)
+        disjoint :
+          Disjoint (Set.range headRows) (Set.range tailRows)
+        exhaustive :
+          Set.range headRows ∪ Set.range tailRows = Set.univ
+        sign : ℂ
+
+      theorem BHW.matrix_det_blockColumn_laplace
+          (r D : Nat)
+          (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+          (Q : Matrix (Fin (r + D)) (Fin D) ℂ) :
+          (Matrix.of fun i j =>
+              if h : j.val < r then
+                M i ⟨j.val, h⟩
+              else
+                Q i ⟨j.val - r, by omega⟩).det =
+            ∑ S : BHW.MatrixBlockColumnRowSplit r D,
+              S.sign *
+                (Matrix.det
+                  (fun a b => M (S.headRows a) b)) *
+                (Matrix.det
+                  (fun a b => Q (S.tailRows a) b))
+
+      def BHW.sourceNormalFullFrameCoeff
+          (d n r : Nat)
+          (hrn : r <= n)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          Matrix (Fin (d + 1)) (Fin r) ℂ :=
+        fun k a =>
+          if hhead :
+              ∃ b : Fin r, ι k = BHW.finSourceHead hrn b then
+            if Classical.choose hhead = a then 1 else 0
+          else
+            let htail : ∃ u : Fin (n - r),
+                ι k = BHW.finSourceTail hrn u :=
+              (BHW.finSourceHead_tail_cases hrn (ι k)).resolve_left hhead
+            L (Classical.choose htail) a
+
+      def BHW.sourceNormalFullFrameHeadBlock
+          (d n r : Nat)
+          (hrn : r <= n)
+          (H : Matrix (Fin r) (Fin r) ℂ)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          Matrix (Fin (d + 1)) (Fin r) ℂ :=
+        BHW.sourceNormalFullFrameCoeff d n r hrn L ι * H
+
+      def BHW.sourceNormalFullFrameTailRowsDet
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (T : BHW.SourceShiftedTailOrientedData d r hrD (n - r))
+          (ι : Fin (d + 1) ↪ Fin n)
+          (rows : Fin (d + 1 - r) ↪ Fin (d + 1)) : ℂ :=
+        if htail :
+            ∀ μ : Fin (d + 1 - r),
+              ∃ u : Fin (n - r),
+                ι (rows μ) = BHW.finSourceTail hrn u then
+          T.det
+            { toFun := fun μ => Classical.choose (htail μ)
+              inj' := by
+                intro μ ν hμν
+                apply BHW.finSourceTail_injective hrn
+                calc
+                  BHW.finSourceTail hrn (Classical.choose (htail μ))
+                      = ι (rows μ) := (Classical.choose_spec (htail μ)).symm
+                  _ = ι (rows ν) := by
+                    exact congrArg ι (rows.injective hμν)
+                  _ = BHW.finSourceTail hrn
+                      (Classical.choose (htail ν)) :=
+                    Classical.choose_spec (htail ν) }
+        else
+          0
+
       def BHW.sourceNormalFullFrameDetFromSchur
           (d n r : Nat)
           (hrD : r < d + 1)
@@ -9048,7 +9239,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (H : Matrix (Fin r) (Fin r) ℂ)
           (L : Matrix (Fin (n - r)) (Fin r) ℂ)
           (T : BHW.SourceShiftedTailOrientedData d r hrD (n - r))
-          (ι : Fin (d + 1) ↪ Fin n) : ℂ
+          (ι : Fin (d + 1) ↪ Fin n) : ℂ :=
+        ∑ S : BHW.MatrixBlockColumnRowSplit r (d + 1 - r),
+          S.sign *
+            (Matrix.det
+              (fun a b =>
+                BHW.sourceNormalFullFrameHeadBlock
+                  d n r hrn H L ι
+                  (Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD))
+                    (S.headRows a)) b)) *
+            BHW.sourceNormalFullFrameTailRowsDet
+              d n r hrD hrn T ι
+              { toFun := fun μ =>
+                  Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD))
+                    (S.tailRows μ)
+                inj' := by
+                  intro μ ν hμν
+                  exact S.tailRows.injective
+                    (Fin.cast_injective.mp hμν) }
 
       theorem BHW.sourceFullFrameDet_normalParameter_eq_schurFormula
           [NeZero d]
@@ -9101,17 +9309,37 @@ Proof decomposition of this theorem, without hiding the analytic work:
               d n r hrD hrn p)).det = G.det
       ```
 
-      `sourceNormalFullFrameDetFromSchur` is defined by expanding each selected
-      source label of `ι` through `finSourceHead_tail_cases`: head labels
-      contribute the corresponding row of the head block, tail labels
-      contribute the mixed row `L u` in head columns and the residual
-      tail row recorded by `T.det` in the top exterior degree.  Its selected
-      head-tail specialization reduces to
-      `det_head_factor * T.det λ`; the arbitrary-frame theorem is then the
-      finite Plucker/Cauchy-Binet recovery from the oriented algebraic
-      relations of `G` and the definition of `R.tail_det_eq`.  This theorem is
-      the only place where non-selected full-frame determinants are recovered;
-      downstream code must call it rather than redoing multilinearity.
+      `sourceNormalFullFrameDetFromSchur` is now a concrete Laplace expansion.
+      It first forms the `(d+1) × r` head-column block: selected head labels
+      contribute standard coefficient rows, while selected tail labels
+      contribute their Schur mixed row `L u`; multiplying by `H` gives the
+      actual head-coordinate columns.  The residual-tail contribution for an
+      ordered row subset is zero unless every chosen row is a tail source
+      label; in the nonzero case it is exactly `T.det` of the induced ordered
+      embedding into `Fin (n-r)`.  The finite theorem
+      `matrix_det_blockColumn_laplace` is the ordinary determinant Laplace
+      expansion along the first `r` columns and the last `d+1-r` columns, with
+      `MatrixBlockColumnRowSplit.sign` carrying the row-shuffle sign.  Thus
+      `sourceFullFrameDet_normalParameter_eq_schurFormula` is proved by
+      rewriting the selected full-frame matrix as `[headBlock | residualTail]`
+      and applying this Laplace theorem.  No determinant relation from the
+      variety is used in this theorem; it is pure finite row algebra for the
+      explicit normal parameter vector.
+
+      The theorem `sourceOrientedSchur_fullFrameDet_reconstruct` is the only
+      place where non-selected full-frame determinants are recovered from the
+      original oriented datum `G`.  Its proof uses the oriented algebraic
+      relations of `G` in two steps.  First, `R.tail_det_eq` defines the
+      selected head-tail residual determinant coordinates by
+      `G.det(head ∪ lam) / R.headFactor.det`.  Second, the Plucker/Cauchy-Binet
+      relations for `G.det` rewrite every other ordered full-frame determinant
+      as the same Laplace sum with head coefficient rows, Schur mixed
+      coefficients `R.L`, and those selected residual determinants.  The
+      selected head-tail specialization of the formula reduces to
+      `R.headFactor.det * R.tail.det λ`, so the quotient definition is
+      cancellable using `R.headFactor_det_unit`.  Downstream code must call
+      this theorem rather than redoing multilinearity or dividing by a
+      determinant inferred only from the Gram block.
 
       From this chart the local analytic estimates become genuine theorem
       surfaces:
@@ -30439,16 +30667,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
              (m : Nat)
              {S : Matrix (Fin m) (Fin m) ℂ}
              (hSym : S.transpose = S)
-             {λ : ℝ} (hλ : 0 < λ) :
+             {lambda : ℝ} (hlambda : 0 < lambda) :
              ∃ J :
                (LinearMap.eigenspace
-                   (Matrix.toLin' (S * Sᴴ)) (λ : ℂ)) ≃ₗᵢ⋆[ℂ]
+                   (Matrix.toLin' (S * Sᴴ)) (lambda : ℂ)) ≃ₗᵢ⋆[ℂ]
                  (LinearMap.eigenspace
-                   (Matrix.toLin' (S * Sᴴ)) (λ : ℂ)),
+                   (Matrix.toLin' (S * Sᴴ)) (lambda : ℂ)),
                (∀ x, J (J x) = x) ∧
                ∀ x,
                  (J x : Fin m -> ℂ) =
-                   (Real.sqrt λ : ℂ)⁻¹ •
+                   (Real.sqrt lambda : ℂ)⁻¹ •
                      BHW.takagiConjugateLinearMap m S (x : Fin m -> ℂ)
          ```
 

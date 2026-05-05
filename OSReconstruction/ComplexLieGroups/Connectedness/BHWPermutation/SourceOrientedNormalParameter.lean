@@ -402,6 +402,16 @@ theorem sourceTailMetricScale_mul_self
   · simp [MinkowskiSpace.metricSignature, hzero]
   · simp [MinkowskiSpace.metricSignature, hzero]
 
+theorem sourceTailMetricScale_norm
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (u : Fin (d + 1 - r)) :
+    ‖sourceTailMetricScale d r hrD u‖ = 1 := by
+  unfold sourceTailMetricScale
+  by_cases hzero : finSourceTail (Nat.le_of_lt hrD) u = (0 : Fin (d + 1))
+  · simp [hzero]
+  · simp [hzero]
+
 /-- Product of the shifted-tail normalizing scalars.  This is the determinant
 rescaling factor for full tail-frame determinant coordinates. -/
 def sourceTailMetricDetScale
@@ -417,6 +427,82 @@ theorem sourceTailMetricDetScale_ne_zero
   apply Finset.prod_ne_zero_iff.mpr
   intro u _hu
   exact sourceTailMetricScale_ne_zero d r hrD u
+
+theorem sourceTailMetricDetScale_norm
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    ‖sourceTailMetricDetScale d r hrD‖ = 1 := by
+  rw [sourceTailMetricDetScale, norm_prod]
+  simp [sourceTailMetricScale_norm]
+
+/-- Full-frame source embedding that takes the selected head labels first and
+then an ordered tail frame. -/
+def sourceFullFrameEmbeddingOfHeadTail
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    Fin (d + 1) ↪ Fin n where
+  toFun k :=
+    if h : k.val < r then
+      finSourceHead hrn ⟨k.val, h⟩
+    else
+      finSourceTail hrn (lam ⟨k.val - r, by omega⟩)
+  inj' := by
+    intro i j hij
+    by_cases hi : i.val < r
+    · by_cases hj : j.val < r
+      · apply Fin.ext
+        simpa [hi, hj] using congrArg Fin.val hij
+      · have hval := congrArg Fin.val hij
+        simp [hi, hj] at hval
+        omega
+    · by_cases hj : j.val < r
+      · have hval := congrArg Fin.val hij
+        simp [hi, hj] at hval
+        omega
+      · have hval := congrArg Fin.val hij
+        simp [hi, hj] at hval
+        have h_lam :
+            lam ⟨i.val - r, by omega⟩ =
+              lam ⟨j.val - r, by omega⟩ := by
+          apply Fin.ext
+          exact hval
+        have htail :
+            (⟨i.val - r, by omega⟩ : Fin (d + 1 - r)) =
+              ⟨j.val - r, by omega⟩ :=
+          lam.injective h_lam
+        apply Fin.ext
+        have hsub : i.val - r = j.val - r := congrArg Fin.val htail
+        have hir : r ≤ i.val := Nat.le_of_not_gt hi
+        have hjr : r ≤ j.val := Nat.le_of_not_gt hj
+        omega
+
+@[simp]
+theorem sourceFullFrameEmbeddingOfHeadTail_head
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r))
+    (a : Fin r) :
+    sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam
+        (finSourceHead (Nat.le_of_lt hrD) a) =
+      finSourceHead hrn a := by
+  apply Fin.ext
+  simp [sourceFullFrameEmbeddingOfHeadTail]
+
+@[simp]
+theorem sourceFullFrameEmbeddingOfHeadTail_tail
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r))
+    (u : Fin (d + 1 - r)) :
+    sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam
+        (finSourceTail (Nat.le_of_lt hrD) u) =
+  finSourceTail hrn (lam u) := by
+  apply Fin.ext
+  simp [sourceFullFrameEmbeddingOfHeadTail]
 
 /-- The complex Minkowski bilinear form on two source vectors. -/
 def sourceVectorMinkowskiInner
