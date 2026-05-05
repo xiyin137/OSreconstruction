@@ -9345,6 +9345,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Matrix (Fin (d + 1)) (Fin r) ℂ :=
         BHW.sourceNormalFullFrameCoeff d n r hrn L ι * H
 
+      def BHW.sourceNormalFullFrameTailBlock
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (q : Fin (n - r) -> Fin (d + 1 - r) -> ℂ)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          Matrix (Fin (d + 1)) (Fin (d + 1 - r)) ℂ :=
+        fun k μ =>
+          if htail :
+              ∃ u : Fin (n - r),
+                ι k = BHW.finSourceTail hrn u then
+            q (Classical.choose htail) μ
+          else
+            0
+
       def BHW.sourceNormalFullFrameTailRowsDet
           (d n r : Nat)
           (hrD : r < d + 1)
@@ -9371,6 +9386,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     Classical.choose_spec (htail ν) }
         else
           0
+
+      theorem BHW.sourceNormalFullFrameTailRowsDet_eq_det_tailBlock
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (q : Fin (n - r) -> Fin (d + 1 - r) -> ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (rows : Fin (d + 1 - r) ↪ Fin (d + 1)) :
+          Matrix.det
+              (fun μ ν =>
+                BHW.sourceNormalFullFrameTailBlock
+                  d n r hrD hrn q ι (rows μ) ν) =
+            BHW.sourceNormalFullFrameTailRowsDet d n r hrD hrn
+              (BHW.sourceShiftedTailOrientedInvariant
+                d r hrD (n - r) q) ι rows
 
       def BHW.sourceNormalFullFrameDetFromSchur
           (d n r : Nat)
@@ -9461,10 +9491,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       actual head-coordinate columns.  The residual-tail contribution for an
       ordered row subset is zero unless every chosen row is a tail source
       label; in the nonzero case it is exactly `T.det` of the induced ordered
-      embedding into `Fin (n-r)`.  These four definition layers
-      (`sourceNormalFullFrameCoeff`, `sourceNormalFullFrameHeadBlock`, and
-      `sourceNormalFullFrameTailRowsDet`, plus
-      `sourceNormalFullFrameDetFromSchur`) are now checked in Lean.  The row
+      embedding into `Fin (n-r)`.  The checked theorem
+      `sourceNormalFullFrameTailRowsDet_eq_det_tailBlock` identifies these
+      stored coordinates with the ordinary minors of the explicit residual
+      tail-coordinate block, including the zero-row case when a chosen residual
+      row is actually a head source label.  These five definition layers
+      (`sourceNormalFullFrameCoeff`, `sourceNormalFullFrameHeadBlock`,
+      `sourceNormalFullFrameTailBlock`, `sourceNormalFullFrameTailRowsDet`,
+      and `sourceNormalFullFrameDetFromSchur`) are now checked in Lean.  The row
       subset bookkeeping definitions `matrixBlockColumns`,
       `matrixRowSubset_compl_card`, `matrixRowSubsetHeadRows`,
       `matrixRowSubsetTailRows`, `matrixRowSubsetSumEquiv`,

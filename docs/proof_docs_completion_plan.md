@@ -564,8 +564,10 @@ shifted-tail wrapper is now checked as
 `sourceShiftedTailOrientedInvariant_det`.  The arbitrary-frame Schur formula
 has also started in Lean with checked definitions
 `BHW.sourceNormalFullFrameCoeff`, `BHW.sourceNormalFullFrameHeadBlock`, and
+`BHW.sourceNormalFullFrameTailBlock`,
 `BHW.sourceNormalFullFrameTailRowsDet`, and
-`BHW.sourceNormalFullFrameDetFromSchur`.  The finite Laplace bookkeeping now
+`BHW.sourceNormalFullFrameDetFromSchur`, plus the checked bridge theorem
+`BHW.sourceNormalFullFrameTailRowsDet_eq_det_tailBlock`.  The finite Laplace bookkeeping now
 uses checked ordered-row-subset definitions
 `BHW.matrixBlockColumns`, `BHW.matrixRowSubset_compl_card`,
 `BHW.matrixRowSubsetHeadRows`, `BHW.matrixRowSubsetTailRows`,

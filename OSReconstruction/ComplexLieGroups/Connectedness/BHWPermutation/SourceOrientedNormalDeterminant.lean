@@ -310,6 +310,24 @@ def sourceNormalFullFrameHeadBlock
     Matrix (Fin (d + 1)) (Fin r) ℂ :=
   sourceNormalFullFrameCoeff d n r hrn L ι * H
 
+/-- The residual-tail coordinate block for an arbitrary ordered full frame.
+Rows selected from tail source labels contribute the corresponding shifted-tail
+coordinate row; rows selected from head labels contribute zero. -/
+def sourceNormalFullFrameTailBlock
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (q : Fin (n - r) → Fin (d + 1 - r) → ℂ)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Matrix (Fin (d + 1)) (Fin (d + 1 - r)) ℂ :=
+  let _ := hrD
+  fun k μ =>
+    if htail :
+        ∃ u : Fin (n - r), ι k = finSourceTail hrn u then
+      q (Classical.choose htail) μ
+    else
+      0
+
 /-- Residual-tail determinant attached to a chosen set of rows of an arbitrary
 ordered full frame.  It is zero unless all chosen rows are tail source labels. -/
 def sourceNormalFullFrameTailRowsDet
@@ -336,6 +354,34 @@ def sourceNormalFullFrameTailRowsDet
             _ = ι (rows ν) := (Classical.choose_spec (htail ν)).symm }
   else
     0
+
+theorem sourceNormalFullFrameTailRowsDet_eq_det_tailBlock
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (q : Fin (n - r) → Fin (d + 1 - r) → ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (rows : Fin (d + 1 - r) ↪ Fin (d + 1)) :
+    Matrix.det
+        (fun μ ν =>
+          sourceNormalFullFrameTailBlock d n r hrD hrn q ι (rows μ) ν) =
+      sourceNormalFullFrameTailRowsDet d n r hrD hrn
+        (sourceShiftedTailOrientedInvariant d r hrD (n - r) q) ι rows := by
+  unfold sourceNormalFullFrameTailRowsDet sourceNormalFullFrameTailBlock
+    sourceShiftedTailOrientedInvariant
+  by_cases htail :
+      ∀ μ : Fin (d + 1 - r),
+        ∃ u : Fin (n - r), ι (rows μ) = finSourceTail hrn u
+  · simp [htail]
+  · have hrow :
+        ∃ μ : Fin (d + 1 - r),
+          ¬ ∃ u : Fin (n - r), ι (rows μ) = finSourceTail hrn u := by
+      simpa [not_forall] using htail
+    rcases hrow with ⟨μ0, hμ0⟩
+    rw [Matrix.det_eq_zero_of_row_eq_zero μ0]
+    · simp [htail]
+    · intro ν
+      simp [hμ0]
 
 /-- The Schur/Laplace determinant formula for an arbitrary ordered full frame,
 expressed using the chosen head factor, mixed Schur coefficients, and
