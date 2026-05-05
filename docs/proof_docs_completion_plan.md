@@ -483,7 +483,7 @@ the remaining oriented normal-form proof only has to identify the checked
 normal subtype-valued parameter map with the principal Schur graph on the
 parameter box, prove that the concrete image agrees with
 `(N.originalNormalVarietyPoint p).1`, and then move connectedness through the
-finite normal-parameter coordinate equivalence.
+checked normal-parameter coordinate homeomorphism.
 There is no additional two-sheet obstruction from the determinant coordinates:
 `SourceOrientedMaxRankAt` is defined only from `G.gram`, and the determinant
 coordinates are continuous functions of the same source-vector parameters on
@@ -491,10 +491,8 @@ this local image.  The exact Lean proof should therefore:
 
 1. define
    `parameterMaxRank = P ∩ {c | SourceOrientedMaxRankAt d n (toInv c)}`;
-2. rewrite the predicate through `toInv`, the oriented-transport rank
-   invariance, and
-   `sourceOrientedMaxRankAt_iff_sourceGramMatrixRank_eq_fullFrame` to ordinary
-   source-matrix rank `sourceGramMatrixRank n ((toInv c).gram) = d + 1`;
+2. rewrite the predicate through `toInv` with
+   `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint_maxRank_iff_tail_rank`;
 3. identify the normal parameter coordinates with a subtype-valued principal
    Schur point of `BHW.SourceOrientedVariety d n` and use
    `isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq`
@@ -503,8 +501,8 @@ this local image.  The exact Lean proof should therefore:
 4. invoke `isConnected_symmetric_matrix_ball`, `isConnected_matrix_ball`, and
    `matrixSymmetricRankExactCone_small_connected`, combine them with the
    transported checked Schur theorem above, then transport connectedness
-   through the finite coordinate equivalence with
-   `isConnected_preimage_continuousLinearEquiv`.
+   through the checked finite-product coordinate homeomorphism
+   `sourceOrientedNormalParameterCoordHomeomorph`.
 The remaining implementation targets are the concrete exceptional
 Schur/residual max-rank-connected local-image producer, now using
 `BHW.SourceOrientedVarietyTransportEquiv` for source changes, and the
@@ -522,7 +520,10 @@ topology and continuous projections
 `BHW.continuous_sourceOrientedNormalParameterCoord`,
 `BHW.continuous_sourceOrientedNormalParameter_head`,
 `BHW.continuous_sourceOrientedNormalParameter_mixed`, and
-`BHW.continuous_sourceOrientedNormalParameter_tail`, its center
+`BHW.continuous_sourceOrientedNormalParameter_tail`, the checked finite-product
+coordinate equivalence and topology bridge
+`BHW.sourceOrientedNormalParameterCoordEquiv` and
+`BHW.sourceOrientedNormalParameterCoordHomeomorph`, its center
 `BHW.sourceOrientedNormalCenterParameter`, the padded tail embedding
 `BHW.sourceTailEmbed`, the canonical normal source
 `BHW.hwLemma3CanonicalSource`, the checked signature head metric

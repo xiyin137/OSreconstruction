@@ -121,6 +121,69 @@ theorem continuous_sourceOrientedNormalParameterCoord
         (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)) :=
   continuous_induced_dom
 
+/-- The normal-parameter record is equivalent to its finite product
+coordinates. -/
+def sourceOrientedNormalParameterCoordEquiv
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    SourceOrientedRankDeficientNormalParameter d n r hrD hrn ≃
+      Matrix (Fin r) (Fin r) ℂ ×
+        Matrix (Fin (n - r)) (Fin r) ℂ ×
+          (Fin (n - r) → Fin (d + 1 - r) → ℂ) where
+  toFun := sourceOrientedNormalParameterCoord
+  invFun := fun x => { head := x.1, mixed := x.2.1, tail := x.2.2 }
+  left_inv := by
+    intro p
+    cases p
+    rfl
+  right_inv := by
+    intro x
+    rcases x with ⟨A, L, q⟩
+    rfl
+
+@[simp]
+theorem sourceOrientedNormalParameterCoordEquiv_apply
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
+    sourceOrientedNormalParameterCoordEquiv p =
+      sourceOrientedNormalParameterCoord p :=
+  rfl
+
+@[simp]
+theorem sourceOrientedNormalParameterCoordEquiv_symm_apply
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    (x :
+      Matrix (Fin r) (Fin r) ℂ ×
+        Matrix (Fin (n - r)) (Fin r) ℂ ×
+          (Fin (n - r) → Fin (d + 1 - r) → ℂ)) :
+    (sourceOrientedNormalParameterCoordEquiv
+        (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)).symm x =
+      { head := x.1, mixed := x.2.1, tail := x.2.2 } :=
+  rfl
+
+/-- The induced topology on normal parameters is exactly the finite product
+coordinate topology. -/
+def sourceOrientedNormalParameterCoordHomeomorph
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    SourceOrientedRankDeficientNormalParameter d n r hrD hrn ≃ₜ
+      Matrix (Fin r) (Fin r) ℂ ×
+        Matrix (Fin (n - r)) (Fin r) ℂ ×
+          (Fin (n - r) → Fin (d + 1 - r) → ℂ) where
+  toEquiv := sourceOrientedNormalParameterCoordEquiv
+  continuous_toFun :=
+    continuous_sourceOrientedNormalParameterCoord
+      (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)
+  continuous_invFun := by
+    rw [continuous_induced_rng]
+    exact continuous_id
+
 /-- The head-factor coordinate is continuous. -/
 theorem continuous_sourceOrientedNormalParameter_head
     {d n r : ℕ}

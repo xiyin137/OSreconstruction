@@ -15451,14 +15451,19 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (Head : BHW.SourceRankDeficientHeadGaugeData d N.r N.hrD) :
           BHW.SourceOrientedRankDeficientSchurEstimateChoice d n N Head := by
         classical
-        -- Choose the finite coordinate equivalence.  The head radius is
+        -- Choose the checked finite-product coordinate homeomorphism
+        -- `sourceOrientedNormalParameterCoordHomeomorph`.  The older draft
+        -- used an unimplemented continuous-linear equivalence
+        -- `sourceOrientedRankDeficientNormalParameterCoordEquiv`; production
+        -- Lean should not require that stronger surface.  The head radius is
         -- obtained from the open neighborhood `Head.U` and the continuity of
         -- the local factor at `1`; shrink it so the factor of any head block
         -- in the resulting Schur neighborhood is inside the same coordinate
         -- box.  The mixed radius is an ordinary positive coordinate bound.
         let encode :=
-          BHW.sourceOrientedRankDeficientNormalParameterCoordEquiv
-            d n N.r N.hrD N.hrn
+          BHW.sourceOrientedNormalParameterCoordHomeomorph
+            (d := d) (n := n) (r := N.r)
+            (hrD := N.hrD) (hrn := N.hrn)
         rcases
           BHW.sourceRankDeficientHeadGauge_coordinateRadius
             (d := d) hd n N Head with
@@ -15582,8 +15587,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.SourceOrientedRankDeficientSchurNeighborhoodData
             d n N Head := by
         classical
-        -- Choose the canonical finite-dimensional coordinate equivalence for
-        -- the product
+        -- Choose the canonical checked finite-product coordinate homeomorphism
+        -- for the product
         -- `(head matrix) × (mixed coefficients) × (tail residual vectors)`.
         -- Let `c0` be the encoded center.  Choose a small open ball `P`
         -- around `c0`; open balls in the finite-dimensional complex model are
