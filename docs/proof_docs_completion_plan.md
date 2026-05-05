@@ -576,7 +576,9 @@ Most importantly,
 the normal-parameter determinant reconstruction from the single finite theorem
 `BHW.matrix_det_blockColumn_laplace`.  The finite Laplace bookkeeping now
 uses checked ordered-row-subset definitions
-`BHW.matrixBlockColumns`, `BHW.matrixRowSubset_compl_card`,
+`BHW.matrixBlockColumns`, `BHW.matrixBlockColumns_inl`,
+`BHW.matrixBlockColumns_inr`, `BHW.matrixBlockColumns_reindex_finSum`,
+`BHW.matrixRowSubset_compl_card`,
 `BHW.matrixRowSubsetHeadRows`, `BHW.matrixRowSubsetTailRows`,
 `BHW.matrixRowSubsetSumEquiv`, `BHW.matrixRowSubsetLaplaceSign`,
 `BHW.matrixBlockColumnLaplaceTerm`, and

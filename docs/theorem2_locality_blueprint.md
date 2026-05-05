@@ -9239,6 +9239,52 @@ Proof decomposition of this theorem, without hiding the analytic work:
           else
             Q i ⟨j.val - r, by omega⟩
 
+      theorem BHW.matrixBlockColumns_inl
+          (r D : Nat)
+          (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+          (Q : Matrix (Fin (r + D)) (Fin D) ℂ)
+          (i : Fin (r + D))
+          (a : Fin r) :
+          BHW.matrixBlockColumns r D M Q i
+              ((finSumFinEquiv :
+                Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) =
+            M i a
+
+      theorem BHW.matrixBlockColumns_inr
+          (r D : Nat)
+          (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+          (Q : Matrix (Fin (r + D)) (Fin D) ℂ)
+          (i : Fin (r + D))
+          (u : Fin D) :
+          BHW.matrixBlockColumns r D M Q i
+              ((finSumFinEquiv :
+                Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr u)) =
+            Q i u
+
+      theorem BHW.matrixBlockColumns_reindex_finSum
+          (r D : Nat)
+          (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+          (Q : Matrix (Fin (r + D)) (Fin D) ℂ) :
+          Matrix.reindex
+              (finSumFinEquiv :
+                Fin r ⊕ Fin D ≃ Fin (r + D)).symm
+              (finSumFinEquiv :
+                Fin r ⊕ Fin D ≃ Fin (r + D)).symm
+              (BHW.matrixBlockColumns r D M Q) =
+            Matrix.fromBlocks
+              (fun a b =>
+                M ((finSumFinEquiv :
+                  Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) b)
+              (fun a u =>
+                Q ((finSumFinEquiv :
+                  Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) u)
+              (fun v b =>
+                M ((finSumFinEquiv :
+                  Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr v)) b)
+              (fun v u =>
+                Q ((finSumFinEquiv :
+                  Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr v)) u)
+
       theorem BHW.matrixRowSubset_compl_card
           (r D : Nat)
           (s : Finset (Fin (r + D)))
@@ -9659,6 +9705,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `sourceNormalFullFrameTailRowsDet`, and
       `sourceNormalFullFrameDetFromSchur`) are now checked in Lean.  The row
       subset bookkeeping definitions `matrixBlockColumns`,
+      `matrixBlockColumns_inl`, `matrixBlockColumns_inr`,
+      `matrixBlockColumns_reindex_finSum`,
       `matrixRowSubset_compl_card`, `matrixRowSubsetHeadRows`,
       `matrixRowSubsetTailRows`, `matrixRowSubsetSumEquiv`,
       `matrixRowSubsetLaplaceSign`, `matrixBlockColumnLaplaceTerm`, and

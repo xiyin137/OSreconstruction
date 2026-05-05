@@ -196,6 +196,51 @@ def matrixBlockColumns
       Q i ⟨j.val - r, by omega⟩
 
 @[simp]
+theorem matrixBlockColumns_inl
+    (r D : ℕ)
+    (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+    (Q : Matrix (Fin (r + D)) (Fin D) ℂ)
+    (i : Fin (r + D))
+    (a : Fin r) :
+    matrixBlockColumns r D M Q i
+        ((finSumFinEquiv : Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) =
+      M i a := by
+  simp [matrixBlockColumns]
+
+@[simp]
+theorem matrixBlockColumns_inr
+    (r D : ℕ)
+    (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+    (Q : Matrix (Fin (r + D)) (Fin D) ℂ)
+    (i : Fin (r + D))
+    (u : Fin D) :
+    matrixBlockColumns r D M Q i
+        ((finSumFinEquiv : Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr u)) =
+      Q i u := by
+  simp [matrixBlockColumns]
+
+theorem matrixBlockColumns_reindex_finSum
+    (r D : ℕ)
+    (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+    (Q : Matrix (Fin (r + D)) (Fin D) ℂ) :
+    Matrix.reindex
+        (finSumFinEquiv : Fin r ⊕ Fin D ≃ Fin (r + D)).symm
+        (finSumFinEquiv : Fin r ⊕ Fin D ≃ Fin (r + D)).symm
+        (matrixBlockColumns r D M Q) =
+      Matrix.fromBlocks
+        (fun a b => M ((finSumFinEquiv :
+          Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) b)
+        (fun a u => Q ((finSumFinEquiv :
+          Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inl a)) u)
+        (fun v b => M ((finSumFinEquiv :
+          Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr v)) b)
+        (fun v u => Q ((finSumFinEquiv :
+          Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr v)) u) := by
+  ext row col
+  cases row <;> cases col <;>
+    simp [Matrix.reindex_apply, matrixBlockColumns]
+
+@[simp]
 theorem matrixRowSubset_compl_card
     (r D : ℕ)
     (s : Finset (Fin (r + D)))
