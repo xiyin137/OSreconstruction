@@ -3,6 +3,7 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComp
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedAdaptedRepresentative
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedHeadGaugeNormal
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedNormalParameter
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedTransport
 
 /-!
 # Finite source normal-form transport support
@@ -478,6 +479,59 @@ theorem sourceOrientedGramDataSourceMatrixTransform_one
   apply SourceOrientedGramData.ext
   · exact sourceGramCongruence_one n G.gram
   · exact sourceFullFrameDetSourceMatrixTransform_one d n G.det
+
+/-- Source Gram congruence is continuous in the Gram coordinate. -/
+theorem continuous_sourceGramCongruence
+    (n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ) :
+    Continuous (sourceGramCongruence n M) := by
+  apply continuous_pi
+  intro i
+  apply continuous_pi
+  intro j
+  continuity
+
+/-- The function-coordinate extension is continuous in the ordered embedding
+determinant-coordinate data. -/
+theorem continuous_sourceFullFrameDetFunctionCoord
+    (d n : ℕ)
+    (f : Fin (d + 1) → Fin n) :
+    Continuous (fun δ : (Fin (d + 1) ↪ Fin n) → ℂ =>
+      sourceFullFrameDetFunctionCoord d n δ f) := by
+  by_cases hfinj : Function.Injective f
+  · simpa [sourceFullFrameDetFunctionCoord, hfinj] using
+      (continuous_apply (⟨f, hfinj⟩ : Fin (d + 1) ↪ Fin n) :
+        Continuous (fun δ : (Fin (d + 1) ↪ Fin n) → ℂ =>
+          δ (⟨f, hfinj⟩ : Fin (d + 1) ↪ Fin n)))
+  · simpa [sourceFullFrameDetFunctionCoord, hfinj] using
+      (continuous_const : Continuous
+        (fun _ : (Fin (d + 1) ↪ Fin n) → ℂ => (0 : ℂ)))
+
+/-- The determinant-coordinate source-matrix transform is continuous in the
+determinant-coordinate data. -/
+theorem continuous_sourceFullFrameDetSourceMatrixTransform
+    (d n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ) :
+    Continuous (sourceFullFrameDetSourceMatrixTransform d n M) := by
+  apply continuous_pi
+  intro ι
+  simpa [sourceFullFrameDetSourceMatrixTransform] using
+    (continuous_finset_sum
+      (Finset.univ : Finset (Fin (d + 1) → Fin n))
+      (fun f _hf =>
+        continuous_const.mul
+          (continuous_sourceFullFrameDetFunctionCoord d n f)))
+
+/-- The full oriented source-coordinate source-matrix transform is continuous. -/
+theorem continuous_sourceOrientedGramDataSourceMatrixTransform
+    (d n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ) :
+    Continuous (sourceOrientedGramDataSourceMatrixTransform d n M) := by
+  apply continuous_sourceOrientedGramData_mk
+  · exact (continuous_sourceGramCongruence n M).comp
+      (continuous_sourceOrientedGramData_gram (d := d) (n := n))
+  · exact (continuous_sourceFullFrameDetSourceMatrixTransform d n M).comp
+      (continuous_sourceOrientedGramData_det (d := d) (n := n))
 
 /-- For determinant coordinates coming from an actual source tuple, the
 function-coordinate extension is exactly the row-alternating determinant.
@@ -1282,6 +1336,33 @@ noncomputable def sourceOrientedGramVarietySourceMatrixEquivOfMatrix
     rw [Matrix.mul_nonsing_inv (A := M) hM]
     rw [sourceTupleLinearChange_one]
 
+/-- Invertible source matrices act homeomorphically on the oriented source
+variety subtype.  This is the topological form of the safe variety-level
+transport. -/
+noncomputable def sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix
+    (d n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ)
+    (hM : IsUnit M.det) :
+    {G : SourceOrientedGramData d n // G ∈ sourceOrientedGramVariety d n} ≃ₜ
+      {G : SourceOrientedGramData d n // G ∈ sourceOrientedGramVariety d n} where
+  toEquiv := sourceOrientedGramVarietySourceMatrixEquivOfMatrix d n M hM
+  continuous_toFun := by
+    change Continuous
+      (fun G :
+        {G : SourceOrientedGramData d n // G ∈ sourceOrientedGramVariety d n} =>
+          sourceOrientedGramVarietySourceMatrixMap d n M G)
+    apply Continuous.subtype_mk
+    exact (continuous_sourceOrientedGramDataSourceMatrixTransform d n M).comp
+      continuous_subtype_val
+  continuous_invFun := by
+    change Continuous
+      (fun G :
+        {G : SourceOrientedGramData d n // G ∈ sourceOrientedGramVariety d n} =>
+          sourceOrientedGramVarietySourceMatrixMap d n M⁻¹ G)
+    apply Continuous.subtype_mk
+    exact (continuous_sourceOrientedGramDataSourceMatrixTransform d n M⁻¹).comp
+      continuous_subtype_val
+
 /-- Coefficient evaluation after a source-label linear change is coefficient
 evaluation against the original tuple after right multiplication of source
 coefficients by the same matrix. -/
@@ -1368,6 +1449,37 @@ theorem sourceGramMatrixRank_sourceGramCongruence
     (Matrix.isUnit_det_transpose M hM)]
   rw [Matrix.rank_mul_eq_right_of_isUnit_det
     (A := M) (B := Matrix.of Z) hM]
+
+/-- Invertible source-label changes preserve the maximal oriented source-rank
+predicate through the safe oriented coordinate transform. -/
+theorem sourceOrientedGramDataSourceMatrixTransform_maxRank_iff
+    (d n : ℕ)
+    {M : Matrix (Fin n) (Fin n) ℂ}
+    (hM : IsUnit M.det)
+    (G : SourceOrientedGramData d n) :
+    SourceOrientedMaxRankAt d n
+        (sourceOrientedGramDataSourceMatrixTransform d n M G) ↔
+      SourceOrientedMaxRankAt d n G := by
+  change
+    sourceGramMatrixRank n (sourceGramCongruence n M G.gram) =
+        min (d + 1) n ↔
+      sourceGramMatrixRank n G.gram = min (d + 1) n
+  rw [sourceGramMatrixRank_sourceGramCongruence n hM]
+
+/-- Invertible source matrices give the variety-relative transport interface. -/
+noncomputable def sourceOrientedVarietySourceMatrixTransportEquivOfMatrix
+    (d n : ℕ)
+    (M : Matrix (Fin n) (Fin n) ℂ)
+    (hM : IsUnit M.det) :
+    SourceOrientedVarietyTransportEquiv d n where
+  toHomeomorph :=
+    sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix d n M hM
+  maxRank_iff := by
+    intro G
+    simpa [sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix,
+      sourceOrientedGramVarietySourceMatrixEquivOfMatrix,
+      sourceOrientedGramVarietySourceMatrixMap] using
+      sourceOrientedGramDataSourceMatrixTransform_maxRank_iff d n hM G.1
 
 /-- Invertible source-label changes preserve adaptedness: the coefficient
 span dimension still equals the scalar Gram rank. -/

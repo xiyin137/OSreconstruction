@@ -112,6 +112,80 @@ def refl (d n : ℕ) :
 
 end SourceOrientedInvariantTransportEquiv
 
+/-- The oriented source variety as a subtype. -/
+abbrev SourceOrientedVariety (d n : ℕ) :=
+  {G : SourceOrientedGramData d n // G ∈ sourceOrientedGramVariety d n}
+
+/-- A homeomorphic transport internal to the oriented source variety, preserving
+the maximal-rank predicate.  This is the correct interface for transports
+whose determinant-coordinate formula is only meant on actual alternating
+oriented invariant data. -/
+structure SourceOrientedVarietyTransportEquiv (d n : ℕ) where
+  toHomeomorph : SourceOrientedVariety d n ≃ₜ SourceOrientedVariety d n
+  maxRank_iff :
+    ∀ G,
+      SourceOrientedMaxRankAt d n (toHomeomorph G).1 ↔
+        SourceOrientedMaxRankAt d n G.1
+
+namespace SourceOrientedVarietyTransportEquiv
+
+variable {d n : ℕ}
+
+/-- Forward variety transport. -/
+def toFun (T : SourceOrientedVarietyTransportEquiv d n) :
+    SourceOrientedVariety d n → SourceOrientedVariety d n :=
+  T.toHomeomorph
+
+/-- Inverse variety transport. -/
+def invFun (T : SourceOrientedVarietyTransportEquiv d n) :
+    SourceOrientedVariety d n → SourceOrientedVariety d n :=
+  T.toHomeomorph.symm
+
+/-- The inverse transport is a left inverse to the forward transport. -/
+theorem left_inv (T : SourceOrientedVarietyTransportEquiv d n) :
+    Function.LeftInverse T.invFun T.toFun := by
+  intro G
+  exact T.toHomeomorph.left_inv G
+
+/-- The inverse transport is a right inverse to the forward transport. -/
+theorem right_inv (T : SourceOrientedVarietyTransportEquiv d n) :
+    Function.RightInverse T.invFun T.toFun := by
+  intro G
+  exact T.toHomeomorph.right_inv G
+
+/-- Forward variety transport is continuous. -/
+theorem continuous_toFun (T : SourceOrientedVarietyTransportEquiv d n) :
+    Continuous T.toFun :=
+  T.toHomeomorph.continuous
+
+/-- Inverse variety transport is continuous. -/
+theorem continuous_invFun (T : SourceOrientedVarietyTransportEquiv d n) :
+    Continuous T.invFun :=
+  T.toHomeomorph.symm.continuous
+
+/-- The inverse variety transport preserves the maximal-rank predicate. -/
+theorem invFun_maxRank_iff
+    (T : SourceOrientedVarietyTransportEquiv d n)
+    (G : SourceOrientedVariety d n) :
+    SourceOrientedMaxRankAt d n (T.invFun G).1 ↔
+      SourceOrientedMaxRankAt d n G.1 := by
+  have h := T.maxRank_iff (T.invFun G)
+  have h' :
+      SourceOrientedMaxRankAt d n G.1 ↔
+        SourceOrientedMaxRankAt d n (T.invFun G).1 := by
+    simpa [toFun, invFun] using h
+  exact h'.symm
+
+/-- Identity transport internal to the oriented source variety. -/
+def refl (d n : ℕ) :
+    SourceOrientedVarietyTransportEquiv d n where
+  toHomeomorph := Homeomorph.refl (SourceOrientedVariety d n)
+  maxRank_iff := by
+    intro G
+    rfl
+
+end SourceOrientedVarietyTransportEquiv
+
 /-- Membership in a transported open set intersected with the oriented variety
 can be tested after applying the forward transport. -/
 theorem sourceOrientedInvariantTransport_mem_inter_iff
