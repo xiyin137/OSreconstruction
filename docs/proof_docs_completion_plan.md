@@ -450,6 +450,23 @@ Schur/residual max-rank-connected local-image producer and the source-backed
 finite-overlap domains; Lean work should still not start at the public adjacent
 seed or scalar-representative wrappers.
 
+The first normal-parameter support layer is now checked in
+`SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
+source-label split
+`BHW.finSourceHead`, `BHW.finSourceTail`,
+`BHW.finSourceHead_tail_cases`, injectivity/disjointness lemmas, the finite
+normal parameter record
+`BHW.SourceOrientedRankDeficientNormalParameter`, its center
+`BHW.sourceOrientedNormalCenterParameter`, the padded tail embedding
+`BHW.sourceTailEmbed`, the canonical normal source
+`BHW.hwLemma3CanonicalSource`, the head-vector and full normal-parameter maps,
+and the checked center theorems
+`BHW.sourceOrientedNormalHeadVector_center` and
+`BHW.sourceOrientedNormalParameterVector_center`.  The next nontrivial Lean
+target is not more index bookkeeping but the Schur reconstruction equality
+identifying `sourceOrientedMinkowskiInvariant` of this parameter vector with
+the transported principal Schur graph.
+
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
   low-rank Hall-Wightman isotropic contraction data;
