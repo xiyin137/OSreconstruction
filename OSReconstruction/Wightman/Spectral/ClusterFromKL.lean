@@ -940,12 +940,69 @@ joint integrals on OPTR-supported test functions.
 This bridge is left as concrete Lean engineering on top of the named
 class fields — no new mathematical content is needed. -/
 
+/-! #### Integral-form wrapper -/
+
+/-- **OS-reflected n-point cluster, integral form** (Route A).
+
+For OPTR-supported `f, g`, the Wick-rotated boundary integral against
+the OS-reflected joint config `f.osConj ⊗ g_a` clusters to the product
+of GNS inner products with the vacuum, as `|⃗a| → ∞` spatially.
+
+This is the integral-form lift of `cluster_inner_product_from_GNS`.
+The proof structure:
+
+1. Apply `cluster_inner_product_from_GNS` to `(quantize f, quantize g)`.
+   This gives `⟨ψ_f, U(a) ψ_g⟩ → ⟨ψ_f, Ω⟩ * ⟨Ω, ψ_g⟩`.
+2. Rewrite `⟨ψ_f, U(a) ψ_g⟩` in the LHS function via
+   `WR.schwinger_bridge`, converting it to
+   `∫ F_ext (f.osConj ⊗ g_a)`.
+
+The limit value here is deliberately left in inner-product form. A
+separate corollary can rewrite it to integrals via `WR.vacuum_expectation`
+plus `inner_conj_symm` (the bra-side conjugate flip). -/
+theorem cluster_npoint_OS_form_inner_limit
+    {n m : ℕ} (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (g_fun : SpacetimeDim d → SchwartzNPoint d m)
+    (h_g_fun : ∀ a : SpacetimeDim d, a 0 = 0 →
+      ∀ x : NPointDomain d m, (g_fun a) x = g (fun i => x i - a)) :
+    Filter.Tendsto
+      (fun a : SpacetimeDim d =>
+        ∫ x : NPointDomain d (n + m),
+          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+          (f.osConj.tensorProduct (g_fun a)) x)
+      (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+        Bornology.cobounded (SpacetimeDim d))
+      (nhds (@inner ℂ WR.H _ (WR.quantize f hsupp_f) WR.Ω *
+             @inner ℂ WR.H _ WR.Ω (WR.quantize g hsupp_g))) := by
+  -- Hilbert-space cluster on (quantize f, quantize g):
+  have h_tendsto :=
+    cluster_inner_product_from_GNS (Wfn := Wfn) (WR.quantize f hsupp_f) (WR.quantize g hsupp_g)
+  -- Convert via schwinger_bridge: equality on the principal filter
+  -- set {a | a 0 = 0}, then weaken to the inf filter.
+  refine h_tendsto.congr' ?_
+  -- Build the EventuallyEq on the principal filter, then drop to the inf.
+  have heq_P : (fun a : SpacetimeDim d =>
+        @inner ℂ WR.H _ (WR.quantize f hsupp_f) (WR.U a (WR.quantize g hsupp_g))) =ᶠ[
+        Filter.principal {a : SpacetimeDim d | a 0 = 0}]
+      (fun a : SpacetimeDim d =>
+        ∫ x : NPointDomain d (n + m),
+          F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+          (f.osConj.tensorProduct (g_fun a)) x) := by
+    rw [Filter.eventuallyEq_principal]
+    intro a ha0
+    exact (WR.schwinger_bridge f g hsupp_f hsupp_g a ha0 (g_fun a) (h_g_fun a ha0)).symm
+  exact heq_P.filter_mono inf_le_left
+
 /-! #### Architectural conclusion (Route A)
 
 `cluster_inner_product_from_GNS` proves cluster decomposition entirely
 within the `WightmanReconstruction` class — the analytic content is
 isolated in `WR.truncated_spatial_decay`, and everything else is
-algebra over ℂ-Hilbert spaces.
+algebra over ℂ-Hilbert spaces. **As of 2026-05-04 it is sorry-free.**
 
 This **strictly subsumes** Route B for the cluster critical path:
 - No need for `kallen_lehmann_representation` (still proved as
@@ -956,9 +1013,24 @@ This **strictly subsumes** Route B for the cluster critical path:
 - No need for `spectral_riemann_lebesgue` (the Riemann-Lebesgue content
   is bundled into `truncated_spatial_decay` directly).
 
-The remaining sorrys in this section are mechanical inner-product
-algebra (`h_ψ_ortho`, `h_φ_ortho`, the final identity) plus the
-schwinger-bridge → integral-form unfolding for the integral wrapper. -/
+Remaining work toward the project's main target
+`W_analytic_cluster_integral` (`SchwingerAxioms.lean:3786`):
+
+1. **`cluster_npoint_OS_form`** — the integral-form wrapper proved via
+   `WR.schwinger_bridge` (joint integral) + `WR.vacuum_expectation`
+   (each block) + `inner_conj_symm` (bra-side conjugate flip).
+   Mechanical given the class.
+
+2. **Theorem surface choice**: the current `W_analytic_cluster_integral`
+   uses `f.tensorProduct g_a` (un-reflected); Route A naturally gives
+   the OS-reflected `f.osConj.tensorProduct g_a` form. Two options:
+   either change the target's signature to the reflected form, or
+   add an explicit osConj-to-no-osConj bridge.
+
+3. **`WightmanReconstruction` instance** — without one, Route A is
+   conditional on "given GNS data exists". Either the full Wightman
+   GNS construction from R0–R4, or a textbook axiom set with
+   citations. See `docs/cluster_routeA_plan.md`. -/
 
 end ClusterRouteA
 
