@@ -348,4 +348,16 @@ noncomputable def conjugationFixedComplexOrthonormalBasis
     exact hli.span_eq_top_of_card_eq_finrank' (by simp)
   exact OrthonormalBasis.mk hon hspan.ge
 
+/-- Each vector of the complex orthonormal basis constructed from the fixed
+real form is fixed by the conjugate-linear involution. -/
+theorem conjugationFixedComplexOrthonormalBasis_fixed
+    [FiniteDimensional ℂ E]
+    (J : E ≃ₗᵢ⋆[ℂ] E) (hJ_sq : ∀ x, J (J x) = x)
+    (i : Fin (Module.finrank ℂ E)) :
+    J (conjugationFixedComplexOrthonormalBasis J hJ_sq i) =
+      conjugationFixedComplexOrthonormalBasis J hJ_sq i := by
+  unfold conjugationFixedComplexOrthonormalBasis
+  rw [OrthonormalBasis.coe_mk]
+  exact (conjugationFixedRealOrthonormalBasis J hJ_sq i).2
+
 end BHW

@@ -105,4 +105,73 @@ theorem complexSymmetric_takagi_exists_unitary_of_orthonormalBasis_col_eigen
   have h := congrArg (fun v : EuclideanSpace ℂ (Fin m) => (v : Fin m → ℂ) i) (hcol a)
   simpa [U, takagiConjugateLinearEuclideanMap, smul_eq_mul] using h
 
+/-- A Hermitian-square orthonormal eigenbasis whose positive eigenspace
+components are fixed by the normalized Takagi conjugation assembles to an
+Autonne-Takagi unitary.  This isolates the remaining global basis-construction
+problem from the matrix-algebra endpoint. -/
+theorem complexSymmetric_takagi_exists_unitary_of_fixedHermitianEigenbasis
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    (b : OrthonormalBasis (Fin m) ℂ (EuclideanSpace ℂ (Fin m)))
+    (lambda : Fin m → ℝ)
+    (hlambda_nonneg : ∀ a, 0 ≤ lambda a)
+    (heig : ∀ a,
+      (S * Sᴴ) *ᵥ ((b a : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ) =
+        (lambda a : ℂ) • ((b a : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ))
+    (hfixed : ∀ a (ha : 0 < lambda a),
+      takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym ha
+          (⟨b a, heig a⟩ : takagiHermitianEigenspace m S (lambda a)) =
+        (⟨b a, heig a⟩ : takagiHermitianEigenspace m S (lambda a))) :
+    ∃ U : Matrix.unitaryGroup (Fin m) ℂ,
+      S =
+        (U : Matrix (Fin m) (Fin m) ℂ) *
+          Matrix.diagonal (fun a => (Real.sqrt (lambda a) : ℂ)) *
+          (U : Matrix (Fin m) (Fin m) ℂ).transpose := by
+  apply complexSymmetric_takagi_exists_unitary_of_orthonormalBasis_col_eigen
+  intro a
+  by_cases ha : 0 < lambda a
+  · have hcol :=
+      takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed
+        (m := m) (S := S) (lambda := lambda a) hSym ha
+        (x := (⟨b a, heig a⟩ : takagiHermitianEigenspace m S (lambda a)))
+        (hfixed a ha)
+    simpa using hcol
+  · have hlambda_le : lambda a ≤ 0 := le_of_not_gt ha
+    have hlambda_zero : lambda a = 0 :=
+      le_antisymm hlambda_le (hlambda_nonneg a)
+    have hv0 : (S * Sᴴ) *ᵥ ((b a : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ) = 0 := by
+      have h := heig a
+      simpa [hlambda_zero] using h
+    have hzero :=
+      takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero
+        (m := m) (S := S) hSym (v := b a) hv0
+    simp [hzero, hlambda_zero]
+
+/-- Entry-controlled rectangular factorization once the fixed Hermitian
+eigenbasis and the rank-support identity are available. -/
+theorem complexSymmetric_entryL1_of_fixedHermitianEigenbasis
+    (m k : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    (b : OrthonormalBasis (Fin m) ℂ (EuclideanSpace ℂ (Fin m)))
+    (lambda : Fin m → ℝ)
+    (hlambda_nonneg : ∀ a, 0 ≤ lambda a)
+    (heig : ∀ a,
+      (S * Sᴴ) *ᵥ ((b a : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ) =
+        (lambda a : ℂ) • ((b a : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ))
+    (hfixed : ∀ a (ha : 0 < lambda a),
+      takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym ha
+          (⟨b a, heig a⟩ : takagiHermitianEigenspace m S (lambda a)) =
+        (⟨b a, heig a⟩ : takagiHermitianEigenspace m S (lambda a)))
+    (hrankSupport :
+      Fintype.card {a : Fin m // Real.sqrt (lambda a) ≠ 0} = S.rank)
+    (hRank : S.rank ≤ k) :
+    ∃ A : Matrix (Fin m) (Fin k) ℂ,
+      S = A * A.transpose ∧
+      ∀ i a, ‖A i a‖ ≤ Real.sqrt (matrixEntryL1Bound m S) := by
+  rcases complexSymmetric_takagi_exists_unitary_of_fixedHermitianEigenbasis
+      (m := m) (S := S) hSym b lambda hlambda_nonneg heig hfixed with
+    ⟨U, hTakagi⟩
+  exact complexSymmetric_entryL1_of_autonneTakagiDiagonalization
+    (m := m) (k := k) (S := S) (U := U)
+    (σ := fun a => Real.sqrt (lambda a))
+    (fun a => Real.sqrt_nonneg (lambda a)) hTakagi hrankSupport hRank
+
 end BHW

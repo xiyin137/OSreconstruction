@@ -283,6 +283,61 @@ theorem takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed
     _ = (Real.sqrt lambda : ℂ) • (x : EuclideanSpace ℂ (Fin m)) := by
       rw [hval]
 
+/-- The fixed orthonormal basis chosen inside a positive Hermitian-square
+eigenspace, using the normalized Takagi conjugation. -/
+noncomputable def takagiPositiveEigenspaceFixedBasis
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    {lambda : ℝ} (hlambda : 0 < lambda) :
+    OrthonormalBasis
+      (Fin (Module.finrank ℂ (takagiHermitianEigenspace m S lambda))) ℂ
+      (takagiHermitianEigenspace m S lambda) :=
+  conjugationFixedComplexOrthonormalBasis
+    (takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym hlambda)
+    (fun x =>
+      (takagiPositiveEigenspaceConjugation
+        (m := m) (S := S) hSym hlambda).left_inv x)
+
+/-- The positive-eigenspace fixed basis is fixed by the normalized Takagi
+conjugation. -/
+theorem takagiPositiveEigenspaceFixedBasis_fixed
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    {lambda : ℝ} (hlambda : 0 < lambda)
+    (i :
+      Fin (Module.finrank ℂ (takagiHermitianEigenspace m S lambda))) :
+    takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym hlambda
+        (takagiPositiveEigenspaceFixedBasis (m := m) (S := S) hSym hlambda i) =
+      takagiPositiveEigenspaceFixedBasis (m := m) (S := S) hSym hlambda i := by
+  unfold takagiPositiveEigenspaceFixedBasis
+  exact conjugationFixedComplexOrthonormalBasis_fixed
+    (E := takagiHermitianEigenspace m S lambda)
+    (takagiPositiveEigenspaceConjugation (m := m) (S := S) hSym hlambda)
+    (fun x =>
+      (takagiPositiveEigenspaceConjugation
+        (m := m) (S := S) hSym hlambda).left_inv x)
+    i
+
+/-- The fixed orthonormal basis chosen in a positive Hermitian-square
+eigenspace consists of Takagi columns with singular value `sqrt lambda`. -/
+theorem takagiPositiveEigenspace_fixedBasis_col_eigen
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    {lambda : ℝ} (hlambda : 0 < lambda)
+    (i :
+      Fin (Module.finrank ℂ (takagiHermitianEigenspace m S lambda))) :
+    takagiConjugateLinearEuclideanMap m S
+        ((takagiPositiveEigenspaceFixedBasis (m := m) (S := S) hSym hlambda i :
+          takagiHermitianEigenspace m S lambda) :
+          EuclideanSpace ℂ (Fin m)) =
+      (Real.sqrt lambda : ℂ) •
+        ((takagiPositiveEigenspaceFixedBasis (m := m) (S := S) hSym hlambda i :
+          takagiHermitianEigenspace m S lambda) :
+          EuclideanSpace ℂ (Fin m)) := by
+  exact
+    takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed
+      (m := m) (S := S) (lambda := lambda) hSym hlambda
+      (x := takagiPositiveEigenspaceFixedBasis (m := m) (S := S) hSym hlambda i)
+      (takagiPositiveEigenspaceFixedBasis_fixed
+        (m := m) (S := S) hSym hlambda i)
+
 /-- Vectors in the zero eigenspace of `S * Sᴴ` are killed by the Takagi
 conjugate-linear map. -/
 theorem takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero
@@ -294,5 +349,21 @@ theorem takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero
   have hraw := takagiConjugateLinearMap_zero_eigenspace_eq_zero (m := m) (S := S) hSym hv
   have hi := congrFun hraw i
   simpa [takagiConjugateLinearEuclideanMap] using hi
+
+/-- Vectors in the zero Hermitian-square eigenspace are Takagi columns with
+singular value zero. -/
+theorem takagiZeroEigenspace_col_eigen
+    (m : ℕ) {S : Matrix (Fin m) (Fin m) ℂ} (hSym : S.transpose = S)
+    (v : takagiHermitianEigenspace m S 0) :
+    takagiConjugateLinearEuclideanMap m S (v : EuclideanSpace ℂ (Fin m)) =
+      (0 : ℂ) • (v : EuclideanSpace ℂ (Fin m)) := by
+  have hv0 : (S * Sᴴ) *ᵥ ((v : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ) = 0 := by
+    have hv := v.2
+    change (S * Sᴴ) *ᵥ ((v : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ) =
+      (0 : ℂ) • (((v : EuclideanSpace ℂ (Fin m)) : Fin m → ℂ)) at hv
+    simpa using hv
+  simpa using
+    takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero
+      (m := m) (S := S) hSym (v := (v : EuclideanSpace ℂ (Fin m))) hv0
 
 end BHW

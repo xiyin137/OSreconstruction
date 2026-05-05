@@ -4010,12 +4010,17 @@ implementation contract is:
    defines `BHW.takagiHermitianEigenspace`, proves the Euclidean norm-square
    and norm identities for `v ↦ S.mulVec (star v)` on each eigenspace, and
    bundles the normalized positive-eigenvalue map as
-   `BHW.takagiPositiveEigenspaceConjugation`.  It also checks the two column
-   equations needed by the final ONB assembly:
+   `BHW.takagiPositiveEigenspaceConjugation`.  It also checks the local
+   fixed-basis objects and column equations needed by the final ONB assembly:
+   `BHW.takagiPositiveEigenspaceFixedBasis`,
+   `BHW.takagiPositiveEigenspaceFixedBasis_fixed`,
    `BHW.takagiConjugateLinearEuclideanMap_eq_sqrt_smul_of_positive_fixed` for
-   fixed vectors in positive eigenspaces and
+   fixed vectors in positive eigenspaces,
+   `BHW.takagiPositiveEigenspace_fixedBasis_col_eigen` for the selected
+   positive-eigenspace fixed basis,
    `BHW.takagiConjugateLinearEuclideanMap_zero_eigenspace_eq_zero` for the
-   zero eigenspace.  The fixed-basis real-form layer
+   zero eigenspace, and `BHW.takagiZeroEigenspace_col_eigen` for the
+   zero-eigenspace column equation with singular value `0`.  The fixed-basis real-form layer
    is checked in
    `BHWPermutation/SourceComplexTakagiFixed.lean`: it defines the real fixed
    submodule `BHW.conjugationFixedSubmodule`, installs the induced real inner
@@ -4026,12 +4031,16 @@ implementation contract is:
    real-linear equivalence `BHW.conjugationFixedPairLinearEquiv`, deduces
    `finrank ℝ fixed = finrank ℂ E` from `Module.finrank_prod` and
    `finrank_real_of_complex`, and constructs
-   `BHW.conjugationFixedComplexOrthonormalBasis`.  Thus the remaining
-   Autonne work starts after fixed-basis selection: apply
-   `BHW.conjugationFixedComplexOrthonormalBasis` to
-   `BHW.takagiPositiveEigenspaceConjugation` on each positive eigenspace,
-   assemble the resulting fixed eigenbases into the unitary Takagi matrix, and
-   prove the diagonal identity.  The singular-value entry-L1 bound for any
+   `BHW.conjugationFixedComplexOrthonormalBasis`, with checked pointwise
+   fixedness `BHW.conjugationFixedComplexOrthonormalBasis_fixed`.  Thus the
+   remaining Autonne work no longer includes the local fixed-basis column
+   equations; it is now the global finite-dimensional collection step: combine
+   the checked positive-eigenspace fixed bases and a zero-eigenspace
+   orthonormal basis into one `OrthonormalBasis (Fin m) ℂ
+   (EuclideanSpace ℂ (Fin m))`, carry the Hermitian-square eigenvalue labels
+   `lambda : Fin m -> ℝ`, prove nonnegativity and the rank-support identity
+   for `Real.sqrt ∘ lambda`, and feed this fixed Hermitian eigenbasis into the
+   checked assembly bridge.  The singular-value entry-L1 bound for any
    produced Takagi diagonalization is now checked in
    `BHWPermutation/SourceComplexTakagiEntry.lean` as
    `BHW.takagi_singularValue_le_entryL1Bound`: it multiplies the Takagi
@@ -4049,7 +4058,16 @@ implementation contract is:
    `S = U * diagonal σ * Uᵀ`; the same file checks
    `BHW.complexSymmetric_takagi_exists_unitary_of_orthonormalBasis_col_eigen`,
    which turns an orthonormal Euclidean basis satisfying this column equation
-   into the required unitary matrix.  It then
+   into the required unitary matrix.  It also checks
+   `BHW.complexSymmetric_takagi_exists_unitary_of_fixedHermitianEigenbasis`,
+   which proves the Autonne-Takagi unitary from an orthonormal
+   Hermitian-square eigenbasis whose positive-eigenvalue vectors are fixed by
+   the normalized Takagi conjugation, and
+   `BHW.complexSymmetric_entryL1_of_fixedHermitianEigenbasis`, which composes
+   that bridge with the checked entry-L1/rank-support endpoint.  Therefore the
+   last finite-dimensional blocker for the small-factor theorem is exactly the
+   global fixed Hermitian eigenbasis construction, not the matrix diagonal
+   identity or the entry estimate.  It then
    spells out the finite
    support extraction: use `Fintype.nonempty_of_card_le` to embed the nonzero
    singular-value subtype into `Fin k`, define the rectangular factor by
