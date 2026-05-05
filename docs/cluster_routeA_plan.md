@@ -60,8 +60,11 @@ Class fields used directly in the proof body:
   proof.
 
 Class fields **not** used in this theorem (but needed for the integral
-form below): `quantize`, `schwinger_bridge`, `vacuum_expectation`,
-`quantize_add`, `quantize_smul`, `U_add`, `vacuum_unique` (direct).
+form below): `quantize`, `schwinger_bridge`, `vacuum_expectation`.
+
+The `quantize_add`, `quantize_smul`, `U_add`, and `vacuum_unique`
+(direct) fields are **not on the cluster critical path** as currently
+scoped — they're forward-looking infrastructure.
 
 ---
 
@@ -111,18 +114,24 @@ the OS-reflected Schwinger integral:
 ```
 for OPTR-supported `f, g`, as `|⃗a| → ∞` spatially.
 
-**Class fields used**:
+**Class fields directly used by the bare wrapper**:
 - `schwinger_bridge` — converts the joint integral to the inner product
 - `vacuum_expectation` — converts each block integral to a bra-Ω inner
   product
-- `inner_conj_symm` — `⟨quantize f, Ω⟩ = (starRingEnd ℂ) ⟨Ω, quantize f⟩`
+- (Mathlib) `inner_conj_symm` — `⟨quantize f, Ω⟩ = (starRingEnd ℂ) ⟨Ω, quantize f⟩`.
+  Not a class field, just inner-product-space symmetry.
+
+`quantize_add`, `quantize_smul`, and `U_add` are **not** needed for the
+bare wrapper — they're forward-looking infrastructure for downstream
+distribution-level manipulations, not direct dependencies of this
+theorem.
 
 **Note**: this is **OS-reflected**. The `f.osConj` on the bra-block is
 forced by the schwinger bridge. The conjugate on the bra-block integral
 in the limit is forced by inner-product conjugate-linearity in the first
 argument.
 
-**Estimated effort**: ~50 lines once `h_main_id` is closed.
+**Estimated effort**: ~30–50 lines once `h_main_id` is closed.
 
 ---
 
@@ -221,8 +230,8 @@ W_analytic_cluster_integral (target, SchwingerAxioms.lean:3786)
     │
     └─ cluster_npoint_OS_form  (Subproblem 2 — to be written)
          │
-         ├─ requires: WR.schwinger_bridge, WR.vacuum_expectation,
-         │            WR.quantize_add, WR.quantize_smul, WR.U_add
+         ├─ requires (direct): WR.schwinger_bridge, WR.vacuum_expectation,
+         │                     Mathlib `inner_conj_symm`
          │
          └─ cluster_inner_product_from_GNS  (line 797, ClusterFromKL.lean)
               │
