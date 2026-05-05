@@ -359,14 +359,17 @@ spacetime/source minimum upper bound plus failure of the equality defining
 Latest local connected-basis refinement, 2026-05-02: the rank-deficient
 no-tube local-image branch now has a two-sided Schur parameter-box transcript.
 The proof docs no longer rely on a one-way small-tail realization estimate:
-`SourceTailOrientedCompatibleSmallRealization` supplies matching tail
-`epsilon`/`eta` boxes, and
+`SourceShiftedTailCompatibleSmallRealization` supplies matching shifted-tail
+`epsilon`/`eta` boxes after the finite diagonal normalization from the
+ambient shifted metric to the Euclidean tail model, and
 `SourceOrientedRankDeficientSchurNeighborhoodData.schurParam_mem` stores the
 fact that every head-gauge/mixed/tail parameter extracted from
 `Ωnf ∩ sourceOrientedGramVariety` belongs to the connected parameter box.
-This removes the last known theorem-shape gap in the local
-`sourceOrientedGramVariety_local_connectedRelOpen_basis` transcript.  Its
-Lean implementation has now started at the lower support layer: the checked
+This removes the old one-way-realization theorem-shape gap in the local
+`sourceOrientedGramVariety_local_connectedRelOpen_basis` transcript; the
+remaining local-image producer obligations are now explicit shifted-tail
+normalization, determinant recovery, and rank-slice connectedness theorems.
+Its Lean implementation has now started at the lower support layer: the checked
 files `SourceOrientedConnected.lean`, `SourceOrientedLocalBasis.lean`, and
 `SourceOrientedRankDeficientLocalImage.lean` prove the connected-component
 topology, the max-rank/rank-deficient stratum dispatcher, and the topological
@@ -470,19 +473,47 @@ topology and continuous projections
 `BHW.sourceHeadMetric_det_isUnit`, the canonical head-Gram identity
 `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource_head`, the derived canonical
 head-block unit theorem `BHW.hwLemma3CanonicalSource_head_unit`, the vector
-bilinear form `BHW.sourceVectorMinkowskiInner`, the checked head/head normal
-parameter Gram formula
-`BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, the
-head-vector and full normal-parameter maps, their head/tail evaluation
-equations, and their continuity theorems
+bilinear form `BHW.sourceVectorMinkowskiInner`, the shifted residual-tail
+metric and Gram coordinates `BHW.sourceTailMetric`,
+`BHW.sourceTailMetric_det_isUnit`, and `BHW.sourceShiftedTailGram`, the checked
+head/head normal parameter Gram formula
+`BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, the checked
+head/tail orthogonality and mixed-block formulas
+`BHW.sourceVectorMinkowskiInner_headVector_sourceTailEmbed`,
+`BHW.sourceVectorMinkowskiInner_sourceTailEmbed_headVector`,
+`BHW.sourceVectorMinkowskiInner_head_tailParameterVector`, and
+`BHW.sourceVectorMinkowskiInner_tailParameterVector_head`, the checked
+head-Gram symmetry theorem `BHW.sourceNormalHeadGram_transpose`, the checked
+mixed-head/tail helper formulas
+`BHW.sourceVectorMinkowskiInner_mixedHeadPart_sourceTailEmbed`,
+`BHW.sourceVectorMinkowskiInner_sourceTailEmbed_mixedHeadPart`, and
+`BHW.sourceVectorMinkowskiInner_mixedHeadPart_mixedHeadPart`, the checked
+tail/tail normal-parameter formula
+`BHW.sourceVectorMinkowskiInner_tailParameterVector_tail`, the head-vector and
+full normal-parameter maps, their head/tail evaluation equations, and their
+continuity theorems
 `BHW.continuous_sourceOrientedNormalHeadVector` and
 `BHW.continuous_sourceOrientedNormalParameterVector`, and the checked center
 theorems
 `BHW.sourceOrientedNormalHeadVector_center` and
-`BHW.sourceOrientedNormalParameterVector_center`.  The next nontrivial Lean
-target is not more index bookkeeping but the Schur reconstruction equality
-identifying `sourceOrientedMinkowskiInvariant` of this parameter vector with
-the transported principal Schur graph.
+`BHW.sourceOrientedNormalParameterVector_center`.  The ordinary Gram-coordinate
+part of the normal Schur reconstruction is now reduced to exact checked block
+formulas.  The next nontrivial Lean target is the determinant-coordinate
+expansion plus the shifted-tail realization packet needed for the full
+`sourceOrientedNormalParameterVector_realizes_schur` theorem.
+
+Tail-signature readiness correction: the residual tail in this normal form is
+not allowed to silently use the Euclidean tail dot product on
+`Fin (d + 1 - r)`.  It inherits the shifted full metric
+`MinkowskiSpace.metricSignature d (finSourceTail (Nat.le_of_lt hrD) μ)`;
+for `0 < r`, the time direction has already been selected into the head block.
+The proof docs now require shifted-tail oriented data
+`SourceShiftedTailOrientedData`, shifted invariant
+`sourceShiftedTailOrientedInvariant`, and shifted max-rank density/compatible
+small realization theorems.  The existing standard tail-realization induction
+may be consumed only through an explicit finite diagonal normalization
+equivalence that rescales determinant coordinates by the product of the
+coordinate scalars; otherwise it proves the wrong tail theorem.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
@@ -2492,19 +2523,24 @@ implementation contract is:
    `sourceOrientedQuotientValue_continuous_of_residualChart`.  Arbitrary
    choice of an extended-tube lift is now explicitly insufficient because it
    gives neither boundedness nor continuity.  The residual chart itself is
-   now decomposed through Schur residual realization:
+   now decomposed through Schur residual realization: the Euclidean tail model
    `SourceOrientedTailData`, `sourceTailOrientedInvariant`,
-   `sourceTailOrientedVariety_eq_algebraic`,
-   `sourceTailOrientedSmallRealization`,
+   `sourceTailOrientedVariety_eq_algebraic`, and
+   `sourceTailOrientedSmallRealization` proves the finite constructive
+   induction, while the OS-source residual chart consumes only the shifted
+   wrapper `SourceShiftedTailOrientedData`,
+   `sourceShiftedTailOrientedInvariant`, and
+   `sourceShiftedTailCompatibleSmallRealization`,
    `SourceOrientedSchurResidualData`,
    `sourceOriented_schurResidualData`, and
    `sourceOriented_reconstruct_from_schurResidual`.  The small tail theorem
    must be proved constructively by the normalized Schur/gauge recursion; it
    may not scale an arbitrary realizing tuple, because scaling changes the
    prescribed Gram and determinant coordinates.  The local-image consumer uses
-   the compatible paired form of the same induction, with one tail `epsilon`
-   for the parameter box and one tail `eta` for the Schur data box, plus both
-   inclusions between those boxes.  The blueprint now exposes the induction
+   the shifted compatible paired form obtained from the same induction by
+   diagonal normalization, with one tail `epsilon` for the parameter box and
+   one tail `eta` for the Schur data box, plus both inclusions between those
+   boxes.  The blueprint now exposes the Euclidean induction
    cases:
    `sourceTailOrientedSmallRealization_zeroGram`,
    `sourceTailFullFrame_smallFactorWithDet`,
@@ -2595,7 +2631,7 @@ implementation contract is:
    theorem uses head-factor, mixed-coefficient, and tail residual-vector
    coordinates; it is not allowed to recover surjectivity later from an
    arbitrary compact parameter set.  Its max-rank-density field is pinned by
-   `sourceTailOrientedMaxRank_dense_in_parameterOpen` plus
+   `sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen` plus
    `sourceOrientedNormalParameterVector_maxRank_iff_tail`, so the density
    argument perturbs only the Schur tail while the invertible head block stays
    fixed.  The downstream compactness support is also explicit:

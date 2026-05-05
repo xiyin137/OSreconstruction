@@ -8261,7 +8261,135 @@ Proof decomposition of this theorem, without hiding the analytic work:
       The Schur extraction theorem packages the algebra that the oriented
       determinant fields satisfy after the head block is inverted:
 
+      Signature convention for the residual tail.  The tail coordinates in
+      `sourceTailEmbed d r hrD` inherit the shifted full metric
+      `μ ↦ MinkowskiSpace.metricSignature d (finSourceTail (Nat.le_of_lt hrD) μ)`.
+      This is not the Euclidean dot product used by
+      `sourceTailOrientedInvariant`, and for `0 < r` it is the positive tail
+      block after the time direction has been selected into the head.
+      Therefore the Schur residual data below must use shifted-tail oriented
+      data.  The already-planned
+      `SourceTailOrientedCompatibleSmallRealization` for the Euclidean model is
+      still usable only through the finite diagonal normalization equivalence:
+      choose coordinate scalars whose squares are the shifted signs, transport
+      Gram data unchanged, multiply every full determinant coordinate by the
+      product of those scalars, call the Euclidean theorem, and scale the
+      realizing tuple back.
+
       ```lean
+      def BHW.sourceTailMetric
+          (d r : Nat)
+          (hrD : r < d + 1) :
+          Matrix (Fin (d + 1 - r)) (Fin (d + 1 - r)) ℂ :=
+        Matrix.diagonal fun μ =>
+          (MinkowskiSpace.metricSignature d
+            (BHW.finSourceTail (Nat.le_of_lt hrD) μ) : ℂ)
+
+      theorem BHW.sourceTailMetric_det_isUnit
+          (d r : Nat)
+          (hrD : r < d + 1) :
+          IsUnit (BHW.sourceTailMetric d r hrD).det
+
+      def BHW.sourceShiftedTailGram
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (m : Nat)
+          (q : Fin m -> Fin (d + 1 - r) -> ℂ) :
+          Matrix (Fin m) (Fin m) ℂ
+
+      structure BHW.SourceShiftedTailOrientedData
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (m : Nat) where
+        gram : Fin m -> Fin m -> ℂ
+        det : (Fin (d + 1 - r) ↪ Fin m) -> ℂ
+
+      def BHW.sourceShiftedTailOrientedInvariant
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (m : Nat)
+          (q : Fin m -> Fin (d + 1 - r) -> ℂ) :
+          BHW.SourceShiftedTailOrientedData d r hrD m :=
+        { gram := BHW.sourceShiftedTailGram d r hrD m q
+          det := fun ι =>
+            Matrix.det (fun a μ => q (ι a) μ) }
+
+      structure BHW.SourceShiftedTailMetricNormalization
+          (d r : Nat)
+          (hrD : r < d + 1) where
+        scale : Fin (d + 1 - r) -> ℂ
+        scale_ne_zero : ∀ μ, scale μ ≠ 0
+        scale_sq :
+          ∀ μ,
+            scale μ * scale μ =
+              (MinkowskiSpace.metricSignature d
+                (BHW.finSourceTail (Nat.le_of_lt hrD) μ) : ℂ)
+        detScale : ℂ
+        detScale_eq : detScale = ∏ μ, scale μ
+        detScale_ne_zero : detScale ≠ 0
+
+      def BHW.sourceShiftedTailDataToEuclidean
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          (N :
+            BHW.SourceShiftedTailMetricNormalization d r hrD)
+          (T : BHW.SourceShiftedTailOrientedData d r hrD m) :
+          BHW.SourceOrientedTailData (d + 1 - r) m :=
+        { gram := T.gram
+          det := fun ι => N.detScale * T.det ι }
+
+      theorem BHW.sourceShiftedTailInvariant_toEuclidean
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          (N :
+            BHW.SourceShiftedTailMetricNormalization d r hrD)
+          (q : Fin m -> Fin (d + 1 - r) -> ℂ) :
+          BHW.sourceTailOrientedInvariant (d + 1 - r) m
+              (fun u μ => N.scale μ * q u μ) =
+            BHW.sourceShiftedTailDataToEuclidean d r m hrD N
+              (BHW.sourceShiftedTailOrientedInvariant d r hrD m q)
+
+      theorem BHW.sourceShiftedTailVariety_toEuclidean_iff
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          (N :
+            BHW.SourceShiftedTailMetricNormalization d r hrD)
+          (T : BHW.SourceShiftedTailOrientedData d r hrD m) :
+          BHW.sourceShiftedTailDataToEuclidean d r m hrD N T ∈
+              BHW.sourceTailOrientedVariety (d + 1 - r) m ↔
+            T ∈ BHW.sourceShiftedTailOrientedVariety d r hrD m
+
+      structure BHW.SourceShiftedTailCompatibleSmallRealization
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (m : Nat) where
+        epsilon : ℝ
+        epsilon_pos : 0 < epsilon
+        eta : ℝ
+        eta_pos : 0 < eta
+        realize :
+          ∀ T : BHW.SourceShiftedTailOrientedData d r hrD m,
+            T ∈ BHW.sourceShiftedTailOrientedVariety d r hrD m ->
+            (∀ u v, ‖T.gram u v‖ < eta) ->
+            (∀ ι, ‖T.det ι‖ < eta) ->
+            ∃ q : Fin m -> Fin (d + 1 - r) -> ℂ,
+              (∀ u μ, ‖q u μ‖ < epsilon) ∧
+              BHW.sourceShiftedTailOrientedInvariant d r hrD m q = T
+        self_image_small :
+          ∀ q : Fin m -> Fin (d + 1 - r) -> ℂ,
+            (∀ u μ, ‖q u μ‖ < epsilon) ->
+            (∀ u v,
+              ‖(BHW.sourceShiftedTailOrientedInvariant
+                  d r hrD m q).gram u v‖ < eta) ∧
+            (∀ ι,
+              ‖(BHW.sourceShiftedTailOrientedInvariant
+                  d r hrD m q).det ι‖ < eta)
+
+      theorem BHW.sourceShiftedTailCompatibleSmallRealization
+          (d r m : Nat)
+          (hrD : r < d + 1) :
+          BHW.SourceShiftedTailCompatibleSmallRealization d r hrD m
+
       structure BHW.SourceOrientedSchurResidualData
           (d n r : Nat)
           (hrD : r < d + 1)
@@ -8276,7 +8404,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
         L : Matrix (Fin (n - r)) (Fin r) ℂ
         L_eq :
           L = BHW.sourceSchurMixedCoeff n r hrn G.gram A
-        tail : BHW.SourceOrientedTailData (d + 1 - r) (n - r)
+        tail : BHW.SourceShiftedTailOrientedData d r hrD (n - r)
         tail_gram_eq :
           tail.gram =
             BHW.sourceSchurComplement n r hrn G.gram A
@@ -8285,7 +8413,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceSchurResidualDeterminants d n r hrD hrn G A
         tail_mem :
           tail ∈
-            BHW.sourceTailOrientedVariety (d + 1 - r) (n - r)
+            BHW.sourceShiftedTailOrientedVariety d r hrD (n - r)
 
       theorem BHW.sourceOriented_schurResidualData
           [NeZero d]
@@ -8313,7 +8441,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (R : BHW.SourceOrientedSchurResidualData d n r hrD hrn G)
           {q : Fin (n - r) -> Fin (d + 1 - r) -> ℂ}
           (hq :
-            BHW.sourceTailOrientedInvariant (d + 1 - r) (n - r) q =
+            BHW.sourceShiftedTailOrientedInvariant d r hrD (n - r) q =
               R.tail) :
           ∃ z : Fin n -> Fin (d + 1) -> ℂ,
             BHW.sourceOrientedMinkowskiInvariant d n z = G ∧
@@ -8385,19 +8513,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.finSourceHead hrn b) =
             BHW.sourceHeadMetric d r hrD a b
 
-      theorem BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector
-          (d n r : Nat)
-          (hrD : r < d + 1)
-          (hrn : r <= n)
-          (p :
-            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
-          (a b : Fin r) :
-          BHW.sourceVectorMinkowskiInner d
-              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a)
-              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p b) =
-            (p.head * BHW.sourceHeadMetric d r hrD *
-              p.head.transpose) a b
-
       def BHW.sourceOrientedNormalHeadVector
           [NeZero d]
           (d n r : Nat)
@@ -8437,6 +8552,184 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     d n r hrD hrn p a μ) +
               BHW.sourceTailEmbed d r hrD (p.tail u) μ
 
+      theorem BHW.sourceOrientedNormalParameterVector_head
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (a : Fin r) :
+          BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+              (BHW.finSourceHead hrn a) =
+            BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a
+
+      theorem BHW.sourceOrientedNormalParameterVector_tail
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (u : Fin (n - r)) :
+          BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+              (BHW.finSourceTail hrn u) =
+            fun μ =>
+              (∑ a : Fin r,
+                p.mixed u a *
+                  BHW.sourceOrientedNormalHeadVector
+                    d n r hrD hrn p a μ) +
+              BHW.sourceTailEmbed d r hrD (p.tail u) μ
+
+      theorem BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (a b : Fin r) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a)
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p b) =
+            (p.head * BHW.sourceHeadMetric d r hrD *
+              p.head.transpose) a b
+
+      theorem BHW.sourceNormalHeadGram_transpose
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
+          (p.head * BHW.sourceHeadMetric d r hrD *
+              p.head.transpose).transpose =
+            p.head * BHW.sourceHeadMetric d r hrD * p.head.transpose
+
+      theorem BHW.sourceVectorMinkowskiInner_headVector_sourceTailEmbed
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (a : Fin r)
+          (q : Fin (d + 1 - r) -> ℂ) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a)
+              (BHW.sourceTailEmbed d r hrD q) = 0
+
+      theorem BHW.sourceVectorMinkowskiInner_sourceTailEmbed_headVector
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (a : Fin r)
+          (q : Fin (d + 1 - r) -> ℂ) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceTailEmbed d r hrD q)
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a) = 0
+
+      theorem BHW.sourceVectorMinkowskiInner_head_tailParameterVector
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (a : Fin r)
+          (u : Fin (n - r)) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a)
+              (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+                (BHW.finSourceTail hrn u)) =
+            ((p.head * BHW.sourceHeadMetric d r hrD * p.head.transpose) *
+              p.mixed.transpose) a u
+
+      theorem BHW.sourceVectorMinkowskiInner_tailParameterVector_head
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (u : Fin (n - r))
+          (a : Fin r) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+                (BHW.finSourceTail hrn u))
+              (BHW.sourceOrientedNormalHeadVector d n r hrD hrn p a) =
+            (p.mixed *
+              (p.head * BHW.sourceHeadMetric d r hrD *
+                p.head.transpose)) u a
+
+      theorem BHW.sourceVectorMinkowskiInner_mixedHeadPart_sourceTailEmbed
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (u : Fin (n - r))
+          (q : Fin (d + 1 - r) -> ℂ) :
+          BHW.sourceVectorMinkowskiInner d
+              (fun μ =>
+                ∑ a : Fin r,
+                  p.mixed u a *
+                    BHW.sourceOrientedNormalHeadVector
+                      d n r hrD hrn p a μ)
+              (BHW.sourceTailEmbed d r hrD q) = 0
+
+      theorem BHW.sourceVectorMinkowskiInner_sourceTailEmbed_mixedHeadPart
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (q : Fin (d + 1 - r) -> ℂ)
+          (v : Fin (n - r)) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceTailEmbed d r hrD q)
+              (fun μ =>
+                ∑ b : Fin r,
+                  p.mixed v b *
+                    BHW.sourceOrientedNormalHeadVector
+                      d n r hrD hrn p b μ) = 0
+
+      theorem BHW.sourceVectorMinkowskiInner_mixedHeadPart_mixedHeadPart
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (u v : Fin (n - r)) :
+          BHW.sourceVectorMinkowskiInner d
+              (fun μ =>
+                ∑ a : Fin r,
+                  p.mixed u a *
+                    BHW.sourceOrientedNormalHeadVector
+                      d n r hrD hrn p a μ)
+              (fun μ =>
+                ∑ b : Fin r,
+                  p.mixed v b *
+                    BHW.sourceOrientedNormalHeadVector
+                      d n r hrD hrn p b μ) =
+            (p.mixed *
+              (p.head * BHW.sourceHeadMetric d r hrD *
+                p.head.transpose) *
+              p.mixed.transpose) u v
+
+      theorem BHW.sourceVectorMinkowskiInner_tailParameterVector_tail
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (u v : Fin (n - r)) :
+          BHW.sourceVectorMinkowskiInner d
+              (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+                (BHW.finSourceTail hrn u))
+              (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+                (BHW.finSourceTail hrn v)) =
+            (p.mixed *
+                (p.head * BHW.sourceHeadMetric d r hrD *
+                  p.head.transpose) *
+                p.mixed.transpose +
+              BHW.sourceShiftedTailGram d r hrD (n - r) p.tail) u v
+
       theorem BHW.sourceOrientedNormalParameterVector_center
           [NeZero d]
           (d n r : Nat)
@@ -8469,15 +8762,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
               R.A)
           (hmixed : p.mixed = R.L)
           (htail :
-            BHW.sourceTailOrientedInvariant (d + 1 - r) (n - r) p.tail =
+            BHW.sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail =
               R.tail) :
           BHW.sourceOrientedMinkowskiInvariant d n
             (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p) = G
 
-      def BHW.SourceTailOrientedMaxRankAt
-          (D m : Nat)
-          (T : BHW.SourceOrientedTailData D m) : Prop :=
-        BHW.sourceGramMatrixRank m T.gram = min D m
+      def BHW.SourceShiftedTailOrientedMaxRankAt
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (m : Nat)
+          (T : BHW.SourceShiftedTailOrientedData d r hrD m) : Prop :=
+        BHW.sourceGramMatrixRank m T.gram = min (d + 1 - r) m
 
       theorem BHW.sourceOrientedNormalParameterVector_maxRank_iff_tail
           [NeZero d]
@@ -8491,21 +8786,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceOrientedMinkowskiInvariant d n
                 (BHW.sourceOrientedNormalParameterVector
                   d n r hrD hrn p)) ↔
-            BHW.SourceTailOrientedMaxRankAt (d + 1 - r) (n - r)
-              (BHW.sourceTailOrientedInvariant (d + 1 - r) (n - r)
+            BHW.SourceShiftedTailOrientedMaxRankAt d r hrD (n - r)
+              (BHW.sourceShiftedTailOrientedInvariant d r hrD (n - r)
                 p.tail)
 
-      theorem BHW.sourceTailOrientedMaxRank_dense_in_parameterOpen
-          (D m : Nat)
-          {P : Set (Fin m -> Fin D -> ℂ)}
+      theorem BHW.sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen
+          (d r m : Nat)
+          (hrD : r < d + 1)
+          {P : Set (Fin m -> Fin (d + 1 - r) -> ℂ)}
           (hP_open : IsOpen P) :
           ∀ q ∈ P,
-            BHW.sourceTailOrientedInvariant D m q ∈
+            BHW.sourceShiftedTailOrientedInvariant d r hrD m q ∈
               closure
-                (BHW.sourceTailOrientedInvariant D m ''
+                (BHW.sourceShiftedTailOrientedInvariant d r hrD m ''
                   {q' | q' ∈ P ∧
-                    BHW.SourceTailOrientedMaxRankAt D m
-                      (BHW.sourceTailOrientedInvariant D m q')})
+                    BHW.SourceShiftedTailOrientedMaxRankAt d r hrD m
+                      (BHW.sourceShiftedTailOrientedInvariant
+                        d r hrD m q')})
       ```
 
       The displayed definition is nonrecursive: it first defines the selected
@@ -8526,6 +8823,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
       nontrivial algebraic block of the reconstruction proof: head/head Gram
       entries of the parameterized normal tuple are exactly the
       signature-relative congruence `H η Hᵀ`.
+      The checked orthogonality and mixed-block lemmas then prove that embedded
+      tail directions are orthogonal to the head span and that head/tail Gram
+      entries are `(H η Hᵀ) * mixedᵀ`.  The checked mixed-head and tail/tail
+      lemmas finish the ordinary Gram-coordinate algebra:
+      tail/tail entries are
+      `mixed * (H η Hᵀ) * mixedᵀ + sourceShiftedTailGram p.tail`, with the
+      residual tail Gram computed using the shifted ambient metric.  The
+      remaining algebraic block for
+      `sourceOrientedNormalParameterVector_realizes_schur` is determinant
+      recovery for ordered full frames together with the shifted-tail
+      realization/normalization packet, not another Gram identity.
       The realization theorem is exactly the Schur reconstruction theorem
       above with the explicit parameter vector substituted; its determinant
       part is the same ordered block expansion used in
@@ -8611,11 +8919,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `G ∈ Ω ∩ sourceOrientedGramVariety`, form its Schur residual data by
       `sourceOriented_schurResidualData`, factor the head block by the
       signature-relative small head-gauge theorem, realize the residual tail
-      by `sourceTailOrientedSmallRealization`, encode the resulting
+      by `sourceShiftedTailCompatibleSmallRealization`, encode the resulting
       `(head,mixed,tail)` parameter, and finish with
       `sourceOrientedNormalParameterVector_realizes_schur`.  For max-rank
       density, perturb only the tail parameter inside the open ball using
-      `sourceTailOrientedMaxRank_dense_in_parameterOpen`; the head block
+      `sourceShiftedTailOrientedMaxRank_dense_in_parameterOpen`; the head block
       remains invertible by the prior shrink and the Schur rank-additivity
       theorem
       `sourceOrientedNormalParameterVector_maxRank_iff_tail` gives
@@ -9281,7 +9589,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
       every chosen residual tuple lands back in `ExtendedTube`.  Image
       surjectivity is the Schur theorem: for a nearby oriented-variety point,
       compute its head block, mixed coefficients, and residual oriented tail;
-      realize the residual tail by `sourceTailOrientedSmallRealization`;
+      realize the shifted residual tail by
+      `sourceShiftedTailCompatibleSmallRealization`;
       reconstruct the full normal-form source tuple; and transport back.
       Max-rank density perturbs only the residual Schur complement and
       determinant sheet inside `P`, then reconstructs by the same formula.
@@ -11316,11 +11625,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_local_basis`, `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected`, `BHW.sourceOrientedMaxRank_local_connectedMaxRank_basis_fullFrame`, `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_exceptionalLocalBasis`, `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_rankDeficientMaxRankLocalImageProducer`, `BHW.exists_preconnectedRelOpen_maxRankSeed_inside`, `BHW.BHWJostOrientedFiniteOverlapPropagationData`, `BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_terminalSeed_of_finiteOverlapDomains`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_finiteOverlapPropagationData`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`, `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWFiniteOverlap.lean`. | Terminal finite-overlap interface for the remaining BHW/Jost monodromy theorem.  The max-rank assembly lemmas reduce connectedness of `D ∩ MaxRank` to connectedness of `D`, hard-range max-rank density, and a local connected max-rank basis; the max-rank-center local case is checked from the full-frame chart shrinker, leaving only the exceptional-rank local-image case as the local topology input.  The rank-deficient max-rank local-image adapter is now checked, so a future concrete Schur/residual producer of `SourceOrientedRankDeficientMaxRankLocalImageData` feeds the connectedness consumer directly.  The seed extractor shrinks any nonempty relatively open oriented patch to a nonempty preconnected relatively open max-rank seed.  The terminal data records the final connected max-rank domain, terminal equality seed, and closing-patch containment that the ordered finite-overlap propagation must produce.  The consumer theorem is mechanical and calls `BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`; the finite-overlap induction theorem iterates `exists_propagatedSeed_to_right` across an ordered family of connected max-rank domains whose adjacency containments absorb each newly produced seed and records whether the terminal seed came from the initial seed or last transition patch.  The closed-loop domain-data consumers combine this induction with zero/positive provenance to package all the way into `BHWJostOrientedMaxRankClosedLoopSeed`, oriented monodromy, and source monodromy; the positive-length constructor extracts the initial seed from the first connected overlap domain, and the zero-transition edge case is reduced to extracting a seed inside the closing patch, assuming the closing max-rank part is connected.  The hard theorem is now the source-backed producer for the specific strict OS I §4.5 BHW/Jost loops, proving the ordered overlap domains, the exceptional local connected max-rank basis where needed, adjacency containments, and closing domain.  An arbitrary closed-loop statement with only `L` and `hn` is not a Lean-ready theorem surface.  No new `sorry` or axiom is introduced. |
       | `BHW.sourceGramMatrixRank_le_spacetime_source_min`, `BHW.sourceOriented_notMaxRank_sourceGramMatrixRank_lt_min`, `BHW.sourceOriented_notMaxRank_sourceGramMatrixRank_lt_fullFrame`, `BHW.sourceOrientedMaxRankAt_iff_of_gram_eq`, `BHW.sourceOrientedExceptionalRank_iff_of_gram_eq`, `BHW.sourceOrientedMaxRankAt_iff_sourceGramMatrixRank_eq_fullFrame`, `BHW.sourceOrientedMaxRankAt_invariant_iff_sourceGramMatrixRank_eq_fullFrame`, `BHW.sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt`, `BHW.hwSourceGramMaxRankAt_of_sourceOrientedInvariant_eq`, `BHW.sourceOrientedExceptionalRank_invariant_iff_hwSourceGramExceptionalRankAt`, `BHW.hwSourceGramExceptionalRankAt_of_sourceOrientedInvariant_eq` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`. | Rank bridge between the strict oriented max/exceptional-rank predicates and the existing scalar source-rank API.  The rank upper bound for actual source configurations is proved from the restricted-Minkowski-rank formula and finite-dimensional span bounds, so the equality-style oriented max-rank predicate is equivalent to the scalar `min (d+1) n ≤ rank` predicate.  Failure of oriented max-rank for an actual source configuration now gives strict rank deficiency below both `min (d+1) n` and `d+1`, which is the checked input for choosing the normal-form rank.  In the hard range `d + 1 ≤ n`, the max-rank predicate is also exposed directly as the ordinary full-frame equation `sourceGramMatrixRank n G.gram = d + 1`, both for arbitrary oriented Gram data and for actual source invariants.  This is support for the upcoming exceptional Schur/residual parameter connectedness proof, not a new analytic input. |
       | `BHW.sourcePrincipalSchurGraph_sourceGramMatrixRank_eq_iff_residual_rank`, `BHW.sourceOrientedMaxRankAt_sourcePrincipalSchurGraph_iff_residual_rank`, `BHW.sourcePrincipalSchur_orientedMaxRank_parameterSet_eq`, `BHW.isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet`, `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`, `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_preimage_of_eq` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedSchurParameter.lean`. | Principal-Schur residual bridge for the exceptional max-rank parameter proof.  It combines the ordinary Schur rank formula, the hard-range oriented max-rank rewrite, the transport inverse max-rank equivalence, and the checked product connectedness theorem to show that the parameter subset whose inverse-transported oriented Schur-graph image is max-rank is connected exactly when the residual exact-rank cone is connected.  The final preimage theorem lets the concrete normal-form producer use any parameter-box image that agrees on the box with the transported Schur graph, so the remaining obligation is the actual normal-coordinate reconstruction equality.  The determinant coordinates are arbitrary functions of the parameter and disappear because `SourceOrientedMaxRankAt` only reads the ordinary Gram coordinate.  No BHW analytic input is hidden here. |
-      | `BHW.finSourceHead`, `BHW.finSourceTail`, `BHW.finSourceHead_val`, `BHW.finSourceTail_val`, `BHW.finSourceHead_injective`, `BHW.finSourceTail_injective`, `BHW.finSourceHead_ne_finSourceTail`, `BHW.finSourceHead_tail_cases`, `BHW.SourceOrientedRankDeficientNormalParameter`, `BHW.sourceOrientedNormalParameterCoord`, `BHW.instTopologicalSpaceSourceOrientedRankDeficientNormalParameter`, `BHW.continuous_sourceOrientedNormalParameterCoord`, `BHW.continuous_sourceOrientedNormalParameter_head`, `BHW.continuous_sourceOrientedNormalParameter_mixed`, `BHW.continuous_sourceOrientedNormalParameter_tail`, `BHW.sourceOrientedNormalCenterParameter`, `BHW.sourceTailEmbed`, `BHW.sourceTailEmbed_head`, `BHW.sourceTailEmbed_tail`, `BHW.sourceTailEmbed_zero`, `BHW.hwLemma3CanonicalSource`, `BHW.hwLemma3CanonicalSource_head_apply`, `BHW.hwLemma3CanonicalSource_head_head`, `BHW.hwLemma3CanonicalSource_tail`, `BHW.sourceHeadMetric`, `BHW.sourceHeadMetric_apply`, `BHW.sourceHeadMetric_transpose`, `BHW.sourceHeadMetric_det_isUnit`, `BHW.sourceVectorMinkowskiInner`, `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource_head`, `BHW.hwLemma3CanonicalSource_head_unit`, `BHW.sourceVectorMinkowskiInner_hwLemma3CanonicalSource_head`, `BHW.sourceOrientedNormalHeadVector`, `BHW.sourceOrientedNormalHeadVector_center`, `BHW.continuous_sourceOrientedNormalHeadVector`, `BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, `BHW.sourceOrientedNormalParameterVector`, `BHW.sourceOrientedNormalParameterVector_head`, `BHW.sourceOrientedNormalParameterVector_tail`, `BHW.continuous_sourceOrientedNormalParameterVector`, `BHW.sourceOrientedNormalParameterVector_center` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedNormalParameter.lean`. | First concrete normal-parameter layer for the rank-deficient Schur producer.  The checked file fixes the finite source-label split `Fin n = head ⊔ tail`, the finite product of head/mixed/tail parameters with its coordinate-induced topology, the continuous coordinate projections, the padded orthogonal-tail embedding, the canonical source/normal-parameter center equality, head/tail evaluation equations, the signature-diagonal canonical head Gram block, the signature-relative head/head Gram formula, and continuity of the normal source tuple.  This does not yet prove the hard Schur reconstruction theorem; the next substantive target is `sourceOrientedNormalParameterVector_realizes_schur`, identifying the oriented invariant of the normal parameter vector with the transported principal Schur graph using the signature-relative head formula `p.head * sourceHeadMetric d r hrD * p.head.transpose = R.A`. |
+      | `BHW.finSourceHead`, `BHW.finSourceTail`, `BHW.finSourceHead_val`, `BHW.finSourceTail_val`, `BHW.finSourceHead_injective`, `BHW.finSourceTail_injective`, `BHW.finSourceHead_ne_finSourceTail`, `BHW.finSourceHead_tail_cases`, `BHW.SourceOrientedRankDeficientNormalParameter`, `BHW.sourceOrientedNormalParameterCoord`, `BHW.instTopologicalSpaceSourceOrientedRankDeficientNormalParameter`, `BHW.continuous_sourceOrientedNormalParameterCoord`, `BHW.continuous_sourceOrientedNormalParameter_head`, `BHW.continuous_sourceOrientedNormalParameter_mixed`, `BHW.continuous_sourceOrientedNormalParameter_tail`, `BHW.sourceOrientedNormalCenterParameter`, `BHW.sourceTailEmbed`, `BHW.sourceTailEmbed_head`, `BHW.sourceTailEmbed_tail`, `BHW.sourceTailEmbed_zero`, `BHW.hwLemma3CanonicalSource`, `BHW.hwLemma3CanonicalSource_head_apply`, `BHW.hwLemma3CanonicalSource_head_head`, `BHW.hwLemma3CanonicalSource_head_of_tailCoord`, `BHW.hwLemma3CanonicalSource_tail`, `BHW.sourceHeadMetric`, `BHW.sourceHeadMetric_apply`, `BHW.sourceHeadMetric_transpose`, `BHW.sourceHeadMetric_det_isUnit`, `BHW.sourceTailMetric`, `BHW.sourceTailMetric_apply`, `BHW.sourceTailMetric_det_isUnit`, `BHW.sourceVectorMinkowskiInner`, `BHW.sourceShiftedTailGram`, `BHW.sourceShiftedTailGram_apply`, `BHW.sourceVectorMinkowskiInner_add_right`, `BHW.sourceVectorMinkowskiInner_add_left`, `BHW.sourceVectorMinkowskiInner_sum_right`, `BHW.sourceVectorMinkowskiInner_sum_left`, `BHW.sourceVectorMinkowskiInner_smul_right`, `BHW.sourceVectorMinkowskiInner_smul_left`, `BHW.sourceMinkowskiGram_hwLemma3CanonicalSource_head`, `BHW.hwLemma3CanonicalSource_head_unit`, `BHW.sourceVectorMinkowskiInner_hwLemma3CanonicalSource_head`, `BHW.sourceOrientedNormalHeadVector`, `BHW.sourceOrientedNormalHeadVector_center`, `BHW.continuous_sourceOrientedNormalHeadVector`, `BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, `BHW.sourceNormalHeadGram_transpose`, `BHW.sourceVectorMinkowskiInner_headVector_sourceTailEmbed`, `BHW.sourceVectorMinkowskiInner_sourceTailEmbed_headVector`, `BHW.sourceOrientedNormalParameterVector`, `BHW.sourceOrientedNormalParameterVector_head`, `BHW.sourceOrientedNormalParameterVector_tail`, `BHW.sourceVectorMinkowskiInner_head_tailParameterVector`, `BHW.sourceVectorMinkowskiInner_tailParameterVector_head`, `BHW.sourceVectorMinkowskiInner_mixedHeadPart_sourceTailEmbed`, `BHW.sourceVectorMinkowskiInner_sourceTailEmbed_mixedHeadPart`, `BHW.sourceVectorMinkowskiInner_mixedHeadPart_mixedHeadPart`, `BHW.sourceVectorMinkowskiInner_tailParameterVector_tail`, `BHW.continuous_sourceOrientedNormalParameterVector`, `BHW.sourceOrientedNormalParameterVector_center` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedNormalParameter.lean`. | Concrete normal-parameter algebra for the rank-deficient Schur producer.  The checked file fixes the finite source-label split `Fin n = head ⊔ tail`, the finite product topology, continuous coordinate projections, padded shifted-tail embedding, canonical source/normal-parameter center equality, signature-diagonal head and shifted-tail metrics, bilinearity of the ambient Minkowski form, head/head, head/tail, tail/head, and tail/tail Gram formulas for the normal parameter vector, and continuity of the normal source tuple.  The ordinary Gram part of `sourceOrientedNormalParameterVector_realizes_schur` is now reduced to checked block identities; the remaining theorem-2 producer work is determinant recovery for ordered full frames plus the shifted-tail realization/normalization packet. |
       | `BHW.sourceOrientedMaxRankChartData_of_maxRankAt_fullFrame`, `BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedGramVariety_connectedRelOpenTube_around_compactPath_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedRelOpen_inter_maxRank_relOpen`, `BHW.sourceOrientedMaxRank_dense_in_relOpen_inter`, `BHW.sourceOrientedRelOpen_inter_maxRank_nonempty`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_relOpen_eqOn_zero_of_eqOn_maxRank`, `BHW.sourceOrientedGramVariety_identity_principle_of_connected_maxRank_fullFrame`, `BHW.sourceOrientedGramVariety_eqOn_of_connected_maxRank_fullFrame`, `BHW.bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_on_maxRankClosingPatch_of_seed`, `BHW.bhw_jost_closedChain_orientedMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_of_seed` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedFullFrameMaxRankProducer.lean` and `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedMaxRankIdentity.lean`. | The hard-range full-frame producer now removes the abstract max-rank chart hypothesis: oriented max rank of a source-variety point gives a nonzero selected full-frame determinant, hence a finite-coordinate max-rank chart.  The max-rank locus is relatively open inside the oriented source variety by the determinant-nonzero union characterization, and it is dense in every relatively open oriented patch by pulling back to source tuples and using `dense_sourceComplexGramRegularAt`.  The max-rank identity theorem is the checked clopen propagation on the connected max-rank subtype; density and continuity extend it to all ranks once the max-rank part of the domain is connected.  The closed-loop seed consumers turn a stored `BHWJostOrientedMaxRankClosedLoopSeed` into terminal-initial oriented germ equality and source-branch equality first on max-rank closing points and then on the whole closing patch.  This does not prove the Hall-Wightman closed-loop seed itself and it still takes connectedness of the closing max-rank part as an explicit geometric input. |
       | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean not started. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is implementation, not a remaining theorem-shape gap in this row. |
       | `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` | Assembly transcript pinned; not production-Lean-ready until the previous row's Hall-Wightman producers exist. | Apply the previous row's actual orbit alternative to determinant-`1` complex Lorentz invariance of `extendF` via `extendF_complexLorentzInvariant_of_cinv`; apply the singular alternative by the checked topology-limit transcript for `hw_sameSourceGram_singularLimit_extendF_eq`.  This theorem has no independent route choice and must not be implemented before `same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`. |
-      | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Connectedness half checked as `BHW.sourceOrientedExtendedTubeDomain_connected`; relative-openness half has a componentwise local-realization transcript but production Lean has not started. | Relative openness must be proved by `sourceOrientedExtendedTube_localRealization`: small arity max-rank charts reduce to the ordinary Gram chart; full-frame max-rank charts are assembled by `SourceOrientedFullFrameMaxRankChartData`, whose selected-frame slice comes from `SourceOrientedFullFrameGaugeChartData` and the finite-dimensional theorem chain `sourceFullFrameOrientedEquation`, `sourceFullFrameOrientedHypersurface_regularAt`, `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, `sourceFullFrameSlice_localImage_eq_hypersurface`, `sourceFullFrameSlice_localImage_eq_variety`, and `sourceFullFrameGaugeSection_of_localImage`; the chart inverse is the explicit selected-frame/mixed-row reconstruction, and the tube-valued local section uses the ambient-open shrink `SourceOrientedFullFrameMaxRankChartData.tubeShrink`, not the relative variety domain; rank-deficient charts use `SourceOrientedRankDeficientResidualChartData` produced by `sourceTailOrientedSmallRealization`, `sourceOriented_schurResidualData`, and `sourceOriented_reconstruct_from_schurResidual`.  These are still first-order implementation targets, not a public-domain wrapper. |
+      | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Connectedness half checked as `BHW.sourceOrientedExtendedTubeDomain_connected`; relative-openness half has a componentwise local-realization transcript but production Lean has not started. | Relative openness must be proved by `sourceOrientedExtendedTube_localRealization`: small arity max-rank charts reduce to the ordinary Gram chart; full-frame max-rank charts are assembled by `SourceOrientedFullFrameMaxRankChartData`, whose selected-frame slice comes from `SourceOrientedFullFrameGaugeChartData` and the finite-dimensional theorem chain `sourceFullFrameOrientedEquation`, `sourceFullFrameOrientedHypersurface_regularAt`, `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, `sourceFullFrameSlice_localImage_eq_hypersurface`, `sourceFullFrameSlice_localImage_eq_variety`, and `sourceFullFrameGaugeSection_of_localImage`; the chart inverse is the explicit selected-frame/mixed-row reconstruction, and the tube-valued local section uses the ambient-open shrink `SourceOrientedFullFrameMaxRankChartData.tubeShrink`, not the relative variety domain; rank-deficient charts use `SourceOrientedRankDeficientResidualChartData` produced by `sourceShiftedTailCompatibleSmallRealization`, `sourceOriented_schurResidualData`, and `sourceOriented_reconstruct_from_schurResidual`, with shifted-tail data compared to the Euclidean tail induction only through the explicit diagonal normalization.  These are still first-order implementation targets, not a public-domain wrapper. |
       | `BHW.sourceOrientedVarietyGermHolomorphicOn_extendF_descent` | Componentwise regular/removable transcript pinned; production Lean not started. | Define `Phi` as the quotient value of `extendF F` on `sourceOrientedExtendedTubeDomain`, prove well-definedness from the oriented branch law, prove holomorphy on `SourceOrientedMaxRankAt` by `sourceOrientedMaxRank_localSection_smallArity` or `sourceOrientedMaxRank_localSection_fullFrame`, prove continuity/local boundedness of the quotient value near the exceptional locus using `sourceOrientedQuotientValue_locallyBounded_of_residualChart` and `sourceOrientedQuotientValue_continuous_of_residualChart`, and extend across `SourceOrientedExceptionalRank` using the algebraic SO-invariant model: `sourceOrientedInvariantRing_generated_by_gram_det`, `sourceOrientedInvariantRing_relations_kernel`, `sourceOrientedInvariantRing_integrallyClosed`, `sourceOrientedAlgebraicCoordinateRing_iso_invariants`, analytic exceptional-rank locus, density of the max-rank stratum, and the normal analytic-space Riemann theorem.  The only permitted standard algebraic-geometry import boundary here is `BHW.standardSO_FFT_SFT_coordinatePresentation`: it must provide the explicit `SO` pairing/volume generators, Cauchy-Binet kernel, and coordinate-map surjectivity in one sorry-free theorem, and it must remain independent of OS, Wightman functions, EOW, PET, and locality.  No all-rank local-section theorem and no arbitrary ambient extension of `Phi` is allowed. |
       | `BHW.sourceOrientedScalarRepresentativeData_of_branchLaw`, `BHW.hallWightman_sourceOrientedScalarRepresentativeData`, `BHW.sourceOrientedScalarRepresentativeData_bvt_F` | Assembly only after the preceding rows. | Specialize to `bvt_F` using `bvt_F_holomorphic`, `bvt_F_complexLorentzInvariant_forwardTube`, and `BHW_forwardTube_eq`; no full-component/improper invariant is needed on this proper-complex route. |
 
@@ -12498,7 +12807,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.IsRelOpenInSourceOrientedGramVariety d n (toInv '' P) := by
           -- Forward direction: transport `G` to normal coordinates, form
           -- Schur residual data, factor the invertible head block, realize
-          -- the oriented tail by `sourceTailOrientedSmallRealization`, and
+          -- the shifted oriented tail by
+          -- `sourceShiftedTailCompatibleSmallRealization`, and
           -- encode the resulting `(head,mixed,tail)` parameter.  Reverse
           -- direction is `sourceOrientedNormalParameterVector_realizes_schur`
           -- plus preservation of the variety by `N.orientedTransport`.
@@ -12667,7 +12977,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       point, selects a connected open parameter ball, proves head-block
       invertibility on that ball, and proves local surjectivity onto
       `Ω ∩ sourceOrientedGramVariety d n` by Schur residual extraction and
-      `sourceTailOrientedSmallRealization`.  The compact set `K`,
+      `sourceShiftedTailCompatibleSmallRealization`.  The compact set `K`,
       `toVec_mem : _ ∈ ExtendedTube`, and compact boundedness/cluster-value
       fields are added only later, when the base point is known to lie in
       `ExtendedTube d n`.  This separation is now a proof-doc requirement for
@@ -12811,8 +13121,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         -- (1) the head Gram block of every nearby normal invariant lies in
         --     `Head.U`;
         -- (2) the Schur mixed coefficients are bounded by the mixed radius;
-        -- (3) the oriented residual tail coordinates satisfy the smallness
-        --     hypotheses of `sourceTailOrientedSmallRealization`;
+        -- (3) the shifted oriented residual tail coordinates satisfy the
+        --     smallness hypotheses of
+        --     `sourceShiftedTailCompatibleSmallRealization`;
         -- (4) the polynomial image of the parameter ball is contained in an
         --     ambient open normal neighborhood `Ωnf`.
         rcases
@@ -12879,14 +13190,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
         tailEta : ℝ
         tailEta_pos : 0 < tailEta
         tailRealize :
-          ∀ T : BHW.SourceOrientedTailData (d + 1 - N.r) (n - N.r),
-            T ∈ BHW.sourceTailOrientedVariety (d + 1 - N.r) (n - N.r) ->
+          ∀ T :
+            BHW.SourceShiftedTailOrientedData
+              d N.r N.hrD (n - N.r),
+            T ∈
+              BHW.sourceShiftedTailOrientedVariety
+                d N.r N.hrD (n - N.r) ->
             (∀ u v, ‖T.gram u v‖ < tailEta) ->
             (∀ ι, ‖T.det ι‖ < tailEta) ->
             ∃ q : Fin (n - N.r) -> Fin (d + 1 - N.r) -> ℂ,
               (∀ u μ, ‖q u μ‖ < tailEpsilon) ∧
-              BHW.sourceTailOrientedInvariant
-                (d + 1 - N.r) (n - N.r) q = T
+              BHW.sourceShiftedTailOrientedInvariant
+                d N.r N.hrD (n - N.r) q = T
         Ωnf : Set (BHW.SourceOrientedGramData d n)
         Ωnf_open : IsOpen Ωnf
         Ωnf_center :
@@ -13188,6 +13503,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
         -- realizing tuple is rescaled.
         exact BHW.sourceTailOrientedSmallRealization_with_selfImageBounds D m hD
 
+      -- The rank-deficient OS-source chart never consumes this Euclidean
+      -- compatible theorem directly.  It consumes
+      -- `sourceShiftedTailCompatibleSmallRealization`, whose proof applies
+      -- the diagonal normalization
+      -- `sourceShiftedTailInvariant_toEuclidean`, calls the Euclidean theorem
+      -- above, and rescales the resulting vector tuple back.
+
       structure BHW.SourceOrientedRankDeficientSchurEstimateChoice
           [NeZero d]
           (d n : Nat)
@@ -13204,8 +13526,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
         mixedRadius : ℝ
         mixedRadius_pos : 0 < mixedRadius
         tail :
-          BHW.SourceTailOrientedCompatibleSmallRealization
-            (d + 1 - N.r) (n - N.r)
+          BHW.SourceShiftedTailCompatibleSmallRealization
+            d N.r N.hrD (n - N.r)
         P : Set (Fin m -> ℂ) :=
           BHW.sourceOrientedRankDeficientParameterBox
             d n N encode headRadius mixedRadius tail.epsilon
@@ -13270,10 +13592,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             (d := d) hd n N Head with
           ⟨mixedRadius, hmixedRadius_pos⟩
         let Tail :=
-          BHW.sourceTailOrientedCompatibleSmallRealization
-            (d + 1 - N.r) (n - N.r)
-            (BHW.sourceRankDeficient_tailDimension_pos
-              (d := d) (n := n) N)
+          BHW.sourceShiftedTailCompatibleSmallRealization
+            d N.r (n - N.r) N.hrD
         let P :=
           BHW.sourceOrientedRankDeficientParameterBox
             d n N encode headRadius mixedRadius Tail.epsilon
@@ -13388,8 +13708,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
         --    neighborhood lies in `Head.U`;
         -- 2. that head block remains invertible by `Head.factor_det_unit`;
         -- 3. mixed coefficients remain in the prescribed coefficient ball;
-        -- 4. the Schur residual tail Gram and determinant coordinates satisfy
-        --    the hypotheses of `sourceTailOrientedSmallRealization`;
+        -- 4. the shifted Schur residual tail Gram and determinant coordinates
+        --    satisfy the hypotheses of
+        --    `sourceShiftedTailCompatibleSmallRealization`;
         -- 5. the polynomial image of the parameter ball is contained in the
         --    ambient normal image neighborhood `Ωnf`.
         -- All five shrinkings are finite-coordinate continuity estimates at
@@ -13535,9 +13856,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       -- tail step uses the stronger compatible small-realization theorem:
       -- it returns a coordinate box `‖q‖ < epsilon` and a tail-data box
       -- `‖T‖ < eta` with both inclusions
-      -- `sourceTailOrientedInvariant '' epsilonBox ⊆ etaBox` and
-      -- `etaBox ∩ sourceTailOrientedVariety ⊆
-      -- sourceTailOrientedInvariant '' epsilonBox`.  Thus the same
+      -- `sourceShiftedTailOrientedInvariant '' epsilonBox ⊆ etaBox` and
+      -- `etaBox ∩ sourceShiftedTailOrientedVariety ⊆
+      -- sourceShiftedTailOrientedInvariant '' epsilonBox`.  Thus the same
       -- `epsilon` can define the parameter box and the same `eta` can define
       -- the Schur neighborhood.  The `schurParam_mem` field is load-bearing:
       -- it records that a point extracted from `Ωnf ∩ variety` by head-gauge

@@ -260,6 +260,24 @@ theorem hwLemma3CanonicalSource_head_head
     simp [hwLemma3CanonicalSource, h, hval]
 
 @[simp]
+theorem hwLemma3CanonicalSource_head_of_tailCoord
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (a : Fin r)
+    {μ : Fin (d + 1)}
+    (hμ : r ≤ μ.val) :
+    hwLemma3CanonicalSource d n r (finSourceHead hrn a) μ = 0 := by
+  have hval : a.val ≠ μ.val := by
+    intro hv
+    have : a.val < a.val := by
+      calc
+        a.val < r := a.isLt
+        _ ≤ μ.val := hμ
+        _ = a.val := hv.symm
+    exact Nat.lt_irrefl a.val this
+  simp [hwLemma3CanonicalSource, hval]
+
+@[simp]
 theorem hwLemma3CanonicalSource_tail
     (d n r : ℕ)
     (hrn : r ≤ n)
@@ -314,12 +332,137 @@ theorem sourceHeadMetric_det_isUnit
   · simp [MinkowskiSpace.metricSignature, hzero]
   · simp [MinkowskiSpace.metricSignature, hzero]
 
+/-- The residual-tail metric inherited from the ambient source coordinates.
+This is the shifted full Minkowski signature, not the standard signature on
+`Fin (d + 1 - r)`. -/
+def sourceTailMetric
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    Matrix (Fin (d + 1 - r)) (Fin (d + 1 - r)) ℂ :=
+  Matrix.diagonal fun u =>
+    (MinkowskiSpace.metricSignature d
+      (finSourceTail (Nat.le_of_lt hrD) u) : ℂ)
+
+@[simp]
+theorem sourceTailMetric_apply
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (u v : Fin (d + 1 - r)) :
+    sourceTailMetric d r hrD u v =
+      if u = v then
+        (MinkowskiSpace.metricSignature d
+          (finSourceTail (Nat.le_of_lt hrD) u) : ℂ)
+      else 0 := by
+  by_cases h : u = v <;> simp [sourceTailMetric, h]
+
+theorem sourceTailMetric_det_isUnit
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    IsUnit (sourceTailMetric d r hrD).det := by
+  rw [sourceTailMetric]
+  simp only [det_diagonal]
+  apply isUnit_iff_ne_zero.mpr
+  apply Finset.prod_ne_zero_iff.mpr
+  intro u _hu
+  by_cases hzero : finSourceTail (Nat.le_of_lt hrD) u = (0 : Fin (d + 1))
+  · simp [MinkowskiSpace.metricSignature, hzero]
+  · simp [MinkowskiSpace.metricSignature, hzero]
+
 /-- The complex Minkowski bilinear form on two source vectors. -/
 def sourceVectorMinkowskiInner
     (d : ℕ)
     (x y : Fin (d + 1) → ℂ) : ℂ :=
   ∑ μ : Fin (d + 1),
     (MinkowskiSpace.metricSignature d μ : ℂ) * x μ * y μ
+
+/-- Shifted-tail Gram coordinates induced by `sourceTailEmbed`.  This
+definition deliberately uses the ambient Minkowski form after embedding, so it
+keeps the correct shifted-signature convention by construction. -/
+def sourceShiftedTailGram
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (m : ℕ)
+    (q : Fin m → Fin (d + 1 - r) → ℂ) :
+    Matrix (Fin m) (Fin m) ℂ :=
+  fun u v =>
+    sourceVectorMinkowskiInner d
+      (sourceTailEmbed d r hrD (q u))
+      (sourceTailEmbed d r hrD (q v))
+
+@[simp]
+theorem sourceShiftedTailGram_apply
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (m : ℕ)
+    (q : Fin m → Fin (d + 1 - r) → ℂ)
+    (u v : Fin m) :
+    sourceShiftedTailGram d r hrD m q u v =
+      sourceVectorMinkowskiInner d
+        (sourceTailEmbed d r hrD (q u))
+        (sourceTailEmbed d r hrD (q v)) := by
+  rfl
+
+theorem sourceVectorMinkowskiInner_add_right
+    (d : ℕ)
+    (x y z : Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d x (fun μ => y μ + z μ) =
+      sourceVectorMinkowskiInner d x y +
+        sourceVectorMinkowskiInner d x z := by
+  simp only [sourceVectorMinkowskiInner]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro μ _hμ
+  ring
+
+theorem sourceVectorMinkowskiInner_add_left
+    (d : ℕ)
+    (x y z : Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d (fun μ => x μ + y μ) z =
+      sourceVectorMinkowskiInner d x z +
+        sourceVectorMinkowskiInner d y z := by
+  simp only [sourceVectorMinkowskiInner]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro μ _hμ
+  ring
+
+theorem sourceVectorMinkowskiInner_sum_right
+    {ι : Type*} [Fintype ι]
+    (d : ℕ)
+    (x : Fin (d + 1) → ℂ)
+    (f : ι → Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d x (fun μ => ∑ i, f i μ) =
+      ∑ i, sourceVectorMinkowskiInner d x (f i) := by
+  simp only [sourceVectorMinkowskiInner, Finset.mul_sum]
+  rw [Finset.sum_comm]
+
+theorem sourceVectorMinkowskiInner_sum_left
+    {ι : Type*} [Fintype ι]
+    (d : ℕ)
+    (f : ι → Fin (d + 1) → ℂ)
+    (y : Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d (fun μ => ∑ i, f i μ) y =
+      ∑ i, sourceVectorMinkowskiInner d (f i) y := by
+  simp only [sourceVectorMinkowskiInner, Finset.mul_sum, Finset.sum_mul]
+  rw [Finset.sum_comm]
+
+theorem sourceVectorMinkowskiInner_smul_right
+    (d : ℕ)
+    (x y : Fin (d + 1) → ℂ)
+    (c : ℂ) :
+    sourceVectorMinkowskiInner d x (fun μ => c * y μ) =
+      c * sourceVectorMinkowskiInner d x y := by
+  simp [sourceVectorMinkowskiInner, Finset.mul_sum, mul_assoc,
+    mul_left_comm, mul_comm]
+
+theorem sourceVectorMinkowskiInner_smul_left
+    (d : ℕ)
+    (x y : Fin (d + 1) → ℂ)
+    (c : ℂ) :
+    sourceVectorMinkowskiInner d (fun μ => c * x μ) y =
+      c * sourceVectorMinkowskiInner d x y := by
+  simp [sourceVectorMinkowskiInner, Finset.mul_sum, mul_assoc,
+    mul_left_comm, mul_comm]
 
 theorem sourceMinkowskiGram_hwLemma3CanonicalSource_head
     (d n r : ℕ)
@@ -487,6 +630,53 @@ theorem sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector
     (finSourceHead_injective (Nat.le_of_lt hrD)).eq_iff,
     mul_assoc, mul_left_comm, mul_comm]
 
+theorem sourceNormalHeadGram_transpose
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
+    (p.head * sourceHeadMetric d r hrD * p.headᵀ)ᵀ =
+      p.head * sourceHeadMetric d r hrD * p.headᵀ := by
+  ext a b
+  simp [Matrix.mul_apply, Matrix.transpose_apply, sourceHeadMetric_apply,
+    mul_assoc, mul_comm]
+
+theorem sourceVectorMinkowskiInner_headVector_sourceTailEmbed
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (a : Fin r)
+    (q : Fin (d + 1 - r) → ℂ) :
+    sourceVectorMinkowskiInner d
+        (sourceOrientedNormalHeadVector d n r hrD hrn p a)
+        (sourceTailEmbed d r hrD q) = 0 := by
+  rw [sourceVectorMinkowskiInner]
+  apply Finset.sum_eq_zero
+  intro μ _hμ
+  unfold sourceTailEmbed
+  by_cases hμtail : r ≤ μ.val
+  · simp [hμtail, sourceOrientedNormalHeadVector]
+  · simp [hμtail]
+
+theorem sourceVectorMinkowskiInner_sourceTailEmbed_headVector
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (a : Fin r)
+    (q : Fin (d + 1 - r) → ℂ) :
+    sourceVectorMinkowskiInner d
+        (sourceTailEmbed d r hrD q)
+        (sourceOrientedNormalHeadVector d n r hrD hrn p a) = 0 := by
+  rw [sourceVectorMinkowskiInner]
+  apply Finset.sum_eq_zero
+  intro μ _hμ
+  unfold sourceTailEmbed
+  by_cases hμtail : r ≤ μ.val
+  · simp [hμtail, sourceOrientedNormalHeadVector]
+  · simp [hμtail]
+
 /-- Source tuple associated to a normal-form parameter.  Head source labels use
 the head-factor vectors; tail labels are a mixed head combination plus an
 embedded orthogonal-tail vector. -/
@@ -534,6 +724,171 @@ theorem sourceOrientedNormalParameterVector_tail
         sourceTailEmbed d r hrD (p.tail u) μ := by
   ext μ
   simp [sourceOrientedNormalParameterVector]
+
+theorem sourceVectorMinkowskiInner_head_tailParameterVector
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (a : Fin r)
+    (u : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (sourceOrientedNormalHeadVector d n r hrD hrn p a)
+        (sourceOrientedNormalParameterVector d n r hrD hrn p
+          (finSourceTail hrn u)) =
+      ((p.head * sourceHeadMetric d r hrD * p.headᵀ) *
+        p.mixedᵀ) a u := by
+  rw [sourceOrientedNormalParameterVector_tail]
+  rw [sourceVectorMinkowskiInner_add_right]
+  rw [sourceVectorMinkowskiInner_headVector_sourceTailEmbed]
+  simp only [add_zero]
+  rw [sourceVectorMinkowskiInner_sum_right]
+  simp_rw [sourceVectorMinkowskiInner_smul_right]
+  simp [sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector,
+    Matrix.mul_apply, Matrix.transpose_apply, mul_assoc, mul_left_comm,
+    mul_comm]
+
+theorem sourceVectorMinkowskiInner_tailParameterVector_head
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (u : Fin (n - r))
+    (a : Fin r) :
+    sourceVectorMinkowskiInner d
+        (sourceOrientedNormalParameterVector d n r hrD hrn p
+          (finSourceTail hrn u))
+        (sourceOrientedNormalHeadVector d n r hrD hrn p a) =
+      (p.mixed *
+        (p.head * sourceHeadMetric d r hrD * p.headᵀ)) u a := by
+  rw [sourceOrientedNormalParameterVector_tail]
+  rw [sourceVectorMinkowskiInner_add_left]
+  rw [sourceVectorMinkowskiInner_sourceTailEmbed_headVector]
+  simp only [add_zero]
+  rw [sourceVectorMinkowskiInner_sum_left]
+  simp_rw [sourceVectorMinkowskiInner_smul_left]
+  simp [sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector,
+    Matrix.mul_apply, Matrix.transpose_apply, mul_assoc, mul_left_comm,
+    mul_comm]
+
+theorem sourceVectorMinkowskiInner_mixedHeadPart_sourceTailEmbed
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (u : Fin (n - r))
+    (q : Fin (d + 1 - r) → ℂ) :
+    sourceVectorMinkowskiInner d
+        (fun μ =>
+          ∑ a : Fin r,
+            p.mixed u a *
+              sourceOrientedNormalHeadVector d n r hrD hrn p a μ)
+        (sourceTailEmbed d r hrD q) = 0 := by
+  rw [sourceVectorMinkowskiInner_sum_left]
+  simp_rw [sourceVectorMinkowskiInner_smul_left]
+  simp [sourceVectorMinkowskiInner_headVector_sourceTailEmbed]
+
+theorem sourceVectorMinkowskiInner_sourceTailEmbed_mixedHeadPart
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (q : Fin (d + 1 - r) → ℂ)
+    (v : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (sourceTailEmbed d r hrD q)
+        (fun μ =>
+          ∑ b : Fin r,
+            p.mixed v b *
+              sourceOrientedNormalHeadVector d n r hrD hrn p b μ) = 0 := by
+  rw [sourceVectorMinkowskiInner_sum_right]
+  simp_rw [sourceVectorMinkowskiInner_smul_right]
+  simp [sourceVectorMinkowskiInner_sourceTailEmbed_headVector]
+
+theorem sourceVectorMinkowskiInner_mixedHeadPart_mixedHeadPart
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (u v : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (fun μ =>
+          ∑ a : Fin r,
+            p.mixed u a *
+              sourceOrientedNormalHeadVector d n r hrD hrn p a μ)
+        (fun μ =>
+          ∑ b : Fin r,
+            p.mixed v b *
+              sourceOrientedNormalHeadVector d n r hrD hrn p b μ) =
+      (p.mixed *
+        (p.head * sourceHeadMetric d r hrD * p.headᵀ) *
+          p.mixedᵀ) u v := by
+  let S : Matrix (Fin r) (Fin r) ℂ :=
+    p.head * sourceHeadMetric d r hrD * p.headᵀ
+  have hleft :
+      sourceVectorMinkowskiInner d
+          (fun μ =>
+            ∑ a : Fin r,
+              p.mixed u a *
+                sourceOrientedNormalHeadVector d n r hrD hrn p a μ)
+          (fun μ =>
+            ∑ b : Fin r,
+              p.mixed v b *
+                sourceOrientedNormalHeadVector d n r hrD hrn p b μ) =
+        ∑ a : Fin r, ∑ b : Fin r,
+          p.mixed u a * p.mixed v b * S a b := by
+    rw [sourceVectorMinkowskiInner_sum_left]
+    simp_rw [sourceVectorMinkowskiInner_smul_left]
+    simp_rw [sourceVectorMinkowskiInner_sum_right]
+    simp_rw [sourceVectorMinkowskiInner_smul_right]
+    simp_rw [sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector]
+    change
+      (∑ a : Fin r, p.mixed u a * ∑ b : Fin r, p.mixed v b * S a b) =
+        ∑ a : Fin r, ∑ b : Fin r,
+          p.mixed u a * p.mixed v b * S a b
+    apply Finset.sum_congr rfl
+    intro a _ha
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro b _hb
+    ring
+  have hright :
+      (p.mixed * S * p.mixedᵀ) u v =
+        ∑ a : Fin r, ∑ b : Fin r,
+          p.mixed u a * p.mixed v b * S a b := by
+    simp only [Matrix.mul_apply, Matrix.transpose_apply]
+    rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro a _ha
+    rw [Finset.sum_mul]
+    apply Finset.sum_congr rfl
+    intro b _hb
+    ring
+  exact hleft.trans hright.symm
+
+theorem sourceVectorMinkowskiInner_tailParameterVector_tail
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (u v : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (sourceOrientedNormalParameterVector d n r hrD hrn p
+          (finSourceTail hrn u))
+        (sourceOrientedNormalParameterVector d n r hrD hrn p
+          (finSourceTail hrn v)) =
+      (p.mixed *
+          (p.head * sourceHeadMetric d r hrD * p.headᵀ) *
+            p.mixedᵀ +
+        sourceShiftedTailGram d r hrD (n - r) p.tail) u v := by
+  rw [sourceOrientedNormalParameterVector_tail]
+  rw [sourceOrientedNormalParameterVector_tail]
+  simp [sourceVectorMinkowskiInner_add_left,
+    sourceVectorMinkowskiInner_add_right,
+    sourceVectorMinkowskiInner_mixedHeadPart_sourceTailEmbed,
+    sourceVectorMinkowskiInner_sourceTailEmbed_mixedHeadPart,
+    sourceVectorMinkowskiInner_mixedHeadPart_mixedHeadPart,
+    sourceShiftedTailGram]
 
 /-- The normal-parameter source tuple is continuous in the finite product
 coordinates. -/
