@@ -310,6 +310,89 @@ def sourceNormalFullFrameHeadBlock
     Matrix (Fin (d + 1)) (Fin r) ℂ :=
   sourceNormalFullFrameCoeff d n r hrn L ι * H
 
+@[simp]
+theorem sourceNormalFullFrameCoeff_head
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (b a : Fin r)
+    (hk : ι k = finSourceHead hrn b) :
+    sourceNormalFullFrameCoeff d n r hrn L ι k a =
+      if b = a then 1 else 0 := by
+  unfold sourceNormalFullFrameCoeff
+  have hhead : ∃ b : Fin r, ι k = finSourceHead hrn b := ⟨b, hk⟩
+  rw [dif_pos hhead]
+  have hchoose : Classical.choose hhead = b := by
+    apply finSourceHead_injective hrn
+    rw [← Classical.choose_spec hhead, hk]
+  simp [hchoose]
+
+@[simp]
+theorem sourceNormalFullFrameCoeff_tail
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (u : Fin (n - r))
+    (a : Fin r)
+    (hk : ι k = finSourceTail hrn u) :
+    sourceNormalFullFrameCoeff d n r hrn L ι k a = L u a := by
+  unfold sourceNormalFullFrameCoeff
+  have hnothead :
+      ¬ ∃ b : Fin r, ι k = finSourceHead hrn b := by
+    rintro ⟨b, hb⟩
+    exact finSourceHead_ne_finSourceTail hrn b u (hb.symm.trans hk)
+  rw [dif_neg hnothead]
+  have htail :
+      ∃ u : Fin (n - r), ι k = finSourceTail hrn u :=
+    (finSourceHead_tail_cases hrn (ι k)).resolve_left hnothead
+  have hchoose : Classical.choose htail = u := by
+    apply finSourceTail_injective hrn
+    rw [← Classical.choose_spec htail, hk]
+  simp [hchoose]
+
+@[simp]
+theorem sourceNormalFullFrameHeadBlock_head
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (H : Matrix (Fin r) (Fin r) ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (b a : Fin r)
+    (hk : ι k = finSourceHead hrn b) :
+    sourceNormalFullFrameHeadBlock d n r hrn H L ι k a = H b a := by
+  have hcoeff :
+      ∀ j : Fin r,
+        sourceNormalFullFrameCoeff d n r hrn L ι k j =
+          if b = j then 1 else 0 := by
+    intro j
+    exact sourceNormalFullFrameCoeff_head d n r hrn L ι k b j hk
+  simp [sourceNormalFullFrameHeadBlock, Matrix.mul_apply, hcoeff]
+
+@[simp]
+theorem sourceNormalFullFrameHeadBlock_tail
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (H : Matrix (Fin r) (Fin r) ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (u : Fin (n - r))
+    (a : Fin r)
+    (hk : ι k = finSourceTail hrn u) :
+    sourceNormalFullFrameHeadBlock d n r hrn H L ι k a =
+      (L * H) u a := by
+  have hcoeff :
+      ∀ j : Fin r,
+        sourceNormalFullFrameCoeff d n r hrn L ι k j = L u j := by
+    intro j
+    exact sourceNormalFullFrameCoeff_tail d n r hrn L ι k u j hk
+  simp [sourceNormalFullFrameHeadBlock, Matrix.mul_apply, hcoeff]
+
 /-- The residual-tail coordinate block for an arbitrary ordered full frame.
 Rows selected from tail source labels contribute the corresponding shifted-tail
 coordinate row; rows selected from head labels contribute zero. -/
@@ -327,6 +410,117 @@ def sourceNormalFullFrameTailBlock
       q (Classical.choose htail) μ
     else
       0
+
+@[simp]
+theorem sourceNormalFullFrameTailBlock_head
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (q : Fin (n - r) → Fin (d + 1 - r) → ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (b : Fin r)
+    (μ : Fin (d + 1 - r))
+    (hk : ι k = finSourceHead hrn b) :
+    sourceNormalFullFrameTailBlock d n r hrD hrn q ι k μ = 0 := by
+  simp [sourceNormalFullFrameTailBlock, hk,
+    finSourceHead_ne_finSourceTail]
+
+@[simp]
+theorem sourceNormalFullFrameTailBlock_tail
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (q : Fin (n - r) → Fin (d + 1 - r) → ℂ)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (u : Fin (n - r))
+    (μ : Fin (d + 1 - r))
+    (hk : ι k = finSourceTail hrn u) :
+    sourceNormalFullFrameTailBlock d n r hrD hrn q ι k μ = q u μ := by
+  unfold sourceNormalFullFrameTailBlock
+  have htail :
+      ∃ u : Fin (n - r), ι k = finSourceTail hrn u := ⟨u, hk⟩
+  rw [dif_pos htail]
+  have hchoose : Classical.choose htail = u := by
+    apply finSourceTail_injective hrn
+    rw [← Classical.choose_spec htail, hk]
+  simp [hchoose]
+
+theorem sourceOrientedNormalParameterVector_headCoord_eq_headBlock
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (a : Fin r) :
+    sourceOrientedNormalParameterVector d n r hrD hrn p (ι k)
+        (finSourceHead (Nat.le_of_lt hrD) a) =
+      sourceNormalFullFrameHeadBlock d n r hrn p.head p.mixed ι k a := by
+  rcases finSourceHead_tail_cases hrn (ι k) with ⟨b, hb⟩ | ⟨u, hu⟩
+  · rw [hb, sourceOrientedNormalParameterVector_head,
+      sourceOrientedNormalHeadVector_headCoord,
+      sourceNormalFullFrameHeadBlock_head d n r hrn p.head p.mixed ι k b a hb]
+  · rw [hu, sourceOrientedNormalParameterVector_tail,
+      sourceNormalFullFrameHeadBlock_tail d n r hrn p.head p.mixed ι k u a hu]
+    simp [Matrix.mul_apply]
+
+theorem sourceOrientedNormalParameterVector_tailCoord_eq_tailBlock
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (ι : Fin (d + 1) ↪ Fin n)
+    (k : Fin (d + 1))
+    (μ : Fin (d + 1 - r)) :
+    sourceOrientedNormalParameterVector d n r hrD hrn p (ι k)
+        (finSourceTail (Nat.le_of_lt hrD) μ) =
+      sourceNormalFullFrameTailBlock d n r hrD hrn p.tail ι k μ := by
+  rcases finSourceHead_tail_cases hrn (ι k) with ⟨b, hb⟩ | ⟨u, hu⟩
+  · rw [hb, sourceOrientedNormalParameterVector_head,
+      sourceOrientedNormalHeadVector_tailCoord,
+      sourceNormalFullFrameTailBlock_head d n r hrD hrn p.tail ι k b μ hb]
+  · rw [hu, sourceOrientedNormalParameterVector_tail,
+      sourceNormalFullFrameTailBlock_tail d n r hrD hrn p.tail ι k u μ hu]
+    simp
+
+theorem sourceFullFrameMatrix_normalParameter_eq_blockColumns
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Matrix.reindex
+        (finCongr (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+        (finCongr (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+        (sourceFullFrameMatrix d n ι
+          (sourceOrientedNormalParameterVector d n r hrD hrn p)) =
+      matrixBlockColumns r (d + 1 - r)
+        (fun k a =>
+          sourceNormalFullFrameHeadBlock d n r hrn p.head p.mixed ι
+            (Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) a)
+        (fun k μ =>
+          sourceNormalFullFrameTailBlock d n r hrD hrn p.tail ι
+            (Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) μ) := by
+  ext k j
+  simp only [Matrix.reindex_apply, Matrix.submatrix_apply]
+  by_cases hcol : j.val < r
+  · have hj :
+        Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) j =
+          finSourceHead (Nat.le_of_lt hrD) ⟨j.val, hcol⟩ := by
+      apply Fin.ext
+      simp [finSourceHead]
+    simp [matrixBlockColumns, sourceFullFrameMatrix, hcol, hj,
+      sourceOrientedNormalParameterVector_headCoord_eq_headBlock]
+  · have hj :
+        Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) j =
+          finSourceTail (Nat.le_of_lt hrD) ⟨j.val - r, by omega⟩ := by
+      apply Fin.ext
+      simp [finSourceTail]
+      omega
+    simp [matrixBlockColumns, sourceFullFrameMatrix, hcol, hj,
+      sourceOrientedNormalParameterVector_tailCoord_eq_tailBlock]
 
 /-- Residual-tail determinant attached to a chosen set of rows of an arbitrary
 ordered full frame.  It is zero unless all chosen rows are tail source labels. -/
@@ -410,5 +604,60 @@ def sourceNormalFullFrameDetFromSchur
             exact (matrixRowSubsetTailRows r (d + 1 - r) S.1 S.2).injective
               (Fin.cast_injective
                 (Nat.add_sub_of_le (Nat.le_of_lt hrD)) hμν) }
+
+theorem sourceFullFrameDet_normalParameter_eq_schurFormula_of_laplace
+    (hlaplace :
+      ∀ (r D : ℕ)
+        (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+        (Q : Matrix (Fin (r + D)) (Fin D) ℂ),
+        (matrixBlockColumns r D M Q).det =
+          matrixBlockColumnLaplaceSum r D M Q)
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    sourceFullFrameDet d n ι
+        (sourceOrientedNormalParameterVector d n r hrD hrn p) =
+      sourceNormalFullFrameDetFromSchur d n r hrD hrn
+        p.head p.mixed
+        (sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail)
+        ι := by
+  let M : Matrix (Fin (r + (d + 1 - r))) (Fin r) ℂ :=
+    fun k a =>
+      sourceNormalFullFrameHeadBlock d n r hrn p.head p.mixed ι
+        (Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) a
+  let Q : Matrix (Fin (r + (d + 1 - r))) (Fin (d + 1 - r)) ℂ :=
+    fun k μ =>
+      sourceNormalFullFrameTailBlock d n r hrD hrn p.tail ι
+        (Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) μ
+  have hmat :
+      Matrix.reindex
+          (finCongr (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+          (finCongr (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+          (sourceFullFrameMatrix d n ι
+            (sourceOrientedNormalParameterVector d n r hrD hrn p)) =
+        matrixBlockColumns r (d + 1 - r) M Q := by
+    simpa [M, Q] using
+      sourceFullFrameMatrix_normalParameter_eq_blockColumns d n r hrD hrn p ι
+  have hdet := congrArg Matrix.det hmat
+  rw [Matrix.det_reindex_self] at hdet
+  rw [sourceFullFrameDet, hdet, hlaplace r (d + 1 - r) M Q]
+  unfold matrixBlockColumnLaplaceSum sourceNormalFullFrameDetFromSchur
+  apply Finset.sum_congr rfl
+  intro S _hS
+  unfold matrixBlockColumnLaplaceTerm
+  simp only [M, Q]
+  congr 2
+  exact sourceNormalFullFrameTailRowsDet_eq_det_tailBlock d n r hrD hrn
+    p.tail ι
+    { toFun := fun μ =>
+        Fin.cast (Nat.add_sub_of_le (Nat.le_of_lt hrD))
+          (matrixRowSubsetTailRows r (d + 1 - r) S.1 S.2 μ)
+      inj' := by
+        intro μ ν hμν
+        exact (matrixRowSubsetTailRows r (d + 1 - r) S.1 S.2).injective
+          (Fin.cast_injective
+            (Nat.add_sub_of_le (Nat.le_of_lt hrD)) hμν) }
 
 end BHW

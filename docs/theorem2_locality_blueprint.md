@@ -9402,6 +9402,133 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.sourceShiftedTailOrientedInvariant
                 d r hrD (n - r) q) ι rows
 
+      theorem BHW.sourceNormalFullFrameCoeff_head
+          (d n r : Nat)
+          (hrn : r <= n)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (b a : Fin r)
+          (hk : ι k = BHW.finSourceHead hrn b) :
+          BHW.sourceNormalFullFrameCoeff d n r hrn L ι k a =
+            if b = a then 1 else 0
+
+      theorem BHW.sourceNormalFullFrameCoeff_tail
+          (d n r : Nat)
+          (hrn : r <= n)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (u : Fin (n - r))
+          (a : Fin r)
+          (hk : ι k = BHW.finSourceTail hrn u) :
+          BHW.sourceNormalFullFrameCoeff d n r hrn L ι k a = L u a
+
+      theorem BHW.sourceNormalFullFrameHeadBlock_head
+          (d n r : Nat)
+          (hrn : r <= n)
+          (H : Matrix (Fin r) (Fin r) ℂ)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (b a : Fin r)
+          (hk : ι k = BHW.finSourceHead hrn b) :
+          BHW.sourceNormalFullFrameHeadBlock d n r hrn H L ι k a =
+            H b a
+
+      theorem BHW.sourceNormalFullFrameHeadBlock_tail
+          (d n r : Nat)
+          (hrn : r <= n)
+          (H : Matrix (Fin r) (Fin r) ℂ)
+          (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (u : Fin (n - r))
+          (a : Fin r)
+          (hk : ι k = BHW.finSourceTail hrn u) :
+          BHW.sourceNormalFullFrameHeadBlock d n r hrn H L ι k a =
+            (L * H) u a
+
+      theorem BHW.sourceNormalFullFrameTailBlock_head
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (q : Fin (n - r) -> Fin (d + 1 - r) -> ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (b : Fin r)
+          (μ : Fin (d + 1 - r))
+          (hk : ι k = BHW.finSourceHead hrn b) :
+          BHW.sourceNormalFullFrameTailBlock d n r hrD hrn q ι k μ = 0
+
+      theorem BHW.sourceNormalFullFrameTailBlock_tail
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (q : Fin (n - r) -> Fin (d + 1 - r) -> ℂ)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (u : Fin (n - r))
+          (μ : Fin (d + 1 - r))
+          (hk : ι k = BHW.finSourceTail hrn u) :
+          BHW.sourceNormalFullFrameTailBlock d n r hrD hrn q ι k μ =
+            q u μ
+
+      theorem BHW.sourceOrientedNormalParameterVector_headCoord_eq_headBlock
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p : BHW.SourceOrientedRankDeficientNormalParameter
+            d n r hrD hrn)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (a : Fin r) :
+          BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+              (ι k) (BHW.finSourceHead (Nat.le_of_lt hrD) a) =
+            BHW.sourceNormalFullFrameHeadBlock
+              d n r hrn p.head p.mixed ι k a
+
+      theorem BHW.sourceOrientedNormalParameterVector_tailCoord_eq_tailBlock
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p : BHW.SourceOrientedRankDeficientNormalParameter
+            d n r hrD hrn)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (k : Fin (d + 1))
+          (μ : Fin (d + 1 - r)) :
+          BHW.sourceOrientedNormalParameterVector d n r hrD hrn p
+              (ι k) (BHW.finSourceTail (Nat.le_of_lt hrD) μ) =
+            BHW.sourceNormalFullFrameTailBlock
+              d n r hrD hrn p.tail ι k μ
+
+      theorem BHW.sourceFullFrameMatrix_normalParameter_eq_blockColumns
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p : BHW.SourceOrientedRankDeficientNormalParameter
+            d n r hrD hrn)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          Matrix.reindex
+              (finCongr
+                (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+              (finCongr
+                (Nat.add_sub_of_le (Nat.le_of_lt hrD)).symm)
+              (BHW.sourceFullFrameMatrix d n ι
+                (BHW.sourceOrientedNormalParameterVector
+                  d n r hrD hrn p)) =
+            BHW.matrixBlockColumns r (d + 1 - r)
+              (fun k a =>
+                BHW.sourceNormalFullFrameHeadBlock
+                  d n r hrn p.head p.mixed ι
+                    (Fin.cast
+                      (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) a)
+              (fun k μ =>
+                BHW.sourceNormalFullFrameTailBlock
+                  d n r hrD hrn p.tail ι
+                    (Fin.cast
+                      (Nat.add_sub_of_le (Nat.le_of_lt hrD)) k) μ)
+
       def BHW.sourceNormalFullFrameDetFromSchur
           (d n r : Nat)
           (hrD : r < d + 1)
@@ -9444,6 +9571,28 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (ι : Fin (d + 1) ↪ Fin n) :
           BHW.sourceFullFrameDet d n ι
               (BHW.sourceOrientedNormalParameterVector d n r hrD hrn p) =
+            BHW.sourceNormalFullFrameDetFromSchur d n r hrD hrn
+              p.head p.mixed
+              (BHW.sourceShiftedTailOrientedInvariant
+                d r hrD (n - r) p.tail)
+              ι
+
+      theorem BHW.sourceFullFrameDet_normalParameter_eq_schurFormula_of_laplace
+          (hlaplace :
+            ∀ (r D : Nat)
+              (M : Matrix (Fin (r + D)) (Fin r) ℂ)
+              (Q : Matrix (Fin (r + D)) (Fin D) ℂ),
+              (BHW.matrixBlockColumns r D M Q).det =
+                BHW.matrixBlockColumnLaplaceSum r D M Q)
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p : BHW.SourceOrientedRankDeficientNormalParameter
+            d n r hrD hrn)
+          (ι : Fin (d + 1) ↪ Fin n) :
+          BHW.sourceFullFrameDet d n ι
+              (BHW.sourceOrientedNormalParameterVector
+                d n r hrD hrn p) =
             BHW.sourceNormalFullFrameDetFromSchur d n r hrD hrn
               p.head p.mixed
               (BHW.sourceShiftedTailOrientedInvariant
@@ -9495,10 +9644,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `sourceNormalFullFrameTailRowsDet_eq_det_tailBlock` identifies these
       stored coordinates with the ordinary minors of the explicit residual
       tail-coordinate block, including the zero-row case when a chosen residual
-      row is actually a head source label.  These five definition layers
-      (`sourceNormalFullFrameCoeff`, `sourceNormalFullFrameHeadBlock`,
-      `sourceNormalFullFrameTailBlock`, `sourceNormalFullFrameTailRowsDet`,
-      and `sourceNormalFullFrameDetFromSchur`) are now checked in Lean.  The row
+      row is actually a head source label.  The coefficient/head-block
+      evaluation lemmas, residual-tail block evaluation lemmas, and the
+      two coordinate projection theorems
+      `sourceOrientedNormalParameterVector_headCoord_eq_headBlock` and
+      `sourceOrientedNormalParameterVector_tailCoord_eq_tailBlock` are checked.
+      Consequently the arbitrary-frame matrix identity
+      `sourceFullFrameMatrix_normalParameter_eq_blockColumns` is also checked:
+      after reindexing `Fin (d+1)` as `Fin (r + (d+1-r))`, the selected full
+      frame matrix of the normal parameter vector is exactly
+      `matrixBlockColumns` of the explicit head and residual-tail blocks.
+      These five definition layers (`sourceNormalFullFrameCoeff`,
+      `sourceNormalFullFrameHeadBlock`, `sourceNormalFullFrameTailBlock`,
+      `sourceNormalFullFrameTailRowsDet`, and
+      `sourceNormalFullFrameDetFromSchur`) are now checked in Lean.  The row
       subset bookkeeping definitions `matrixBlockColumns`,
       `matrixRowSubset_compl_card`, `matrixRowSubsetHeadRows`,
       `matrixRowSubsetTailRows`, `matrixRowSubsetSumEquiv`,
@@ -9514,6 +9673,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
       and applying this Laplace theorem.  No determinant relation from the
       variety is used in this theorem; it is pure finite row algebra for the
       explicit normal parameter vector.
+      The conditional theorem
+      `sourceFullFrameDet_normalParameter_eq_schurFormula_of_laplace` is now
+      checked in Lean and proves exactly this implication from the finite
+      theorem `matrix_det_blockColumn_laplace`.  Therefore, once
+      `matrix_det_blockColumn_laplace` is proved, the unconditional
+      `sourceFullFrameDet_normalParameter_eq_schurFormula` is a one-line call
+      to the conditional theorem.
 
       Implementation transcript for `matrix_det_blockColumn_laplace`: unfold
       `Matrix.det_apply'` for the concatenated matrix.  For a permutation

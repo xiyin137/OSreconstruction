@@ -567,15 +567,21 @@ has also started in Lean with checked definitions
 `BHW.sourceNormalFullFrameTailBlock`,
 `BHW.sourceNormalFullFrameTailRowsDet`, and
 `BHW.sourceNormalFullFrameDetFromSchur`, plus the checked bridge theorem
-`BHW.sourceNormalFullFrameTailRowsDet_eq_det_tailBlock`.  The finite Laplace bookkeeping now
+`BHW.sourceNormalFullFrameTailRowsDet_eq_det_tailBlock`.  The coefficient and
+block evaluation lemmas, the two normal-parameter coordinate projection
+theorems, and the arbitrary-frame matrix identity
+`BHW.sourceFullFrameMatrix_normalParameter_eq_blockColumns` are also checked.
+Most importantly,
+`BHW.sourceFullFrameDet_normalParameter_eq_schurFormula_of_laplace` now proves
+the normal-parameter determinant reconstruction from the single finite theorem
+`BHW.matrix_det_blockColumn_laplace`.  The finite Laplace bookkeeping now
 uses checked ordered-row-subset definitions
 `BHW.matrixBlockColumns`, `BHW.matrixRowSubset_compl_card`,
 `BHW.matrixRowSubsetHeadRows`, `BHW.matrixRowSubsetTailRows`,
 `BHW.matrixRowSubsetSumEquiv`, `BHW.matrixRowSubsetLaplaceSign`,
 `BHW.matrixBlockColumnLaplaceTerm`, and
 `BHW.matrixBlockColumnLaplaceSum`; the still-open part is the canonical finite
-row-subset Laplace theorem, the normal-parameter equality to this Schur sum,
-and the reconstruction equality over `G`.
+row-subset Laplace theorem and the reconstruction equality over `G`.
 Arbitrary ordered full frames are then routed through
 the finite Laplace theorem `matrix_det_blockColumn_laplace`,
 `sourceNormalFullFrameDetFromSchur`,
