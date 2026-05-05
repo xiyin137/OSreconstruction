@@ -453,19 +453,27 @@ The pure principal-Schur oriented max-rank slice is now checked in
 `BHW.sourcePrincipalSchur_orientedMaxRank_parameterSet_eq` rewrites the
 max-rank parameter predicate to residual exact rank, and
 `BHW.isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet` packages
-the resulting product connectedness.  The inverse-transport variant
+the resulting product connectedness.  The ambient inverse-transport variants
 `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
-is checked as well: if a normal Schur graph is pulled back by a
-`SourceOrientedInvariantTransportEquiv.invFun`, the max-rank parameter set is
-definitionally the same connected product slice by
-`T.invFun_maxRank_iff`.  The even closer local-image form
+and
 `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_preimage_of_eq`
-is checked too: given an arbitrary parameter-box image that agrees on the box
-with the transported principal Schur graph, it proves connectedness of the
-actual max-rank preimage.  Consequently the remaining oriented normal-form
-proof only has to prove this image agreement for
-`N.orientedTransport.invFun (sourcePrincipalSchurGraph ..., δ p)` and then
-move connectedness through the finite normal-parameter coordinate equivalence.
+are checked for transports that really are homeomorphisms of the full
+oriented invariant coordinate space.  For source changes, the route now uses
+the checked variety-relative analogues
+`BHW.isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_parameterSet`
+and
+`BHW.isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq`:
+the normal Schur parameter is supplied as a
+`BHW.SourceOrientedVariety d n` point, it is identified on the parameter box
+with `(sourcePrincipalSchurGraph ..., δ p)`, and the max-rank slice is then
+definitionally the same connected product slice by
+`BHW.SourceOrientedVarietyTransportEquiv.invFun_maxRank_iff`.  Consequently
+the remaining oriented normal-form proof only has to construct the normal
+subtype-valued parameter map, prove this subtype point has underlying value
+`(sourcePrincipalSchurGraph ..., δ p)` on the parameter box, prove that the
+actual image agrees with
+`(N.sourceMatrixVarietyTransport.invFun (normal p)).1`, and then move
+connectedness through the finite normal-parameter coordinate equivalence.
 There is no additional two-sheet obstruction from the determinant coordinates:
 `SourceOrientedMaxRankAt` is defined only from `G.gram`, and the determinant
 coordinates are continuous functions of the same source-vector parameters on
@@ -477,9 +485,9 @@ this local image.  The exact Lean proof should therefore:
    invariance, and
    `sourceOrientedMaxRankAt_iff_sourceGramMatrixRank_eq_fullFrame` to ordinary
    source-matrix rank `sourceGramMatrixRank n ((toInv c).gram) = d + 1`;
-3. identify the normal parameter coordinates with a transported principal
-   Schur graph and use
-   `isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+3. identify the normal parameter coordinates with a subtype-valued principal
+   Schur point of `BHW.SourceOrientedVariety d n` and use
+   `isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq`
    to identify this set with the product of the head ball, mixed ball, and
    `C ∩ {S | Sᵀ = S ∧ S.rank = (d + 1) - N.r}`;
 4. invoke `isConnected_symmetric_matrix_ball`, `isConnected_matrix_ball`, and
@@ -488,9 +496,10 @@ this local image.  The exact Lean proof should therefore:
    through the finite coordinate equivalence with
    `isConnected_preimage_continuousLinearEquiv`.
 The remaining implementation targets are the concrete exceptional
-Schur/residual max-rank-connected local-image producer and the source-backed
-finite-overlap domains; Lean work should still not start at the public adjacent
-seed or scalar-representative wrappers.
+Schur/residual max-rank-connected local-image producer, now using
+`BHW.SourceOrientedVarietyTransportEquiv` for source changes, and the
+source-backed finite-overlap domains; Lean work should still not start at the
+public adjacent seed or scalar-representative wrappers.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -3072,9 +3081,14 @@ implementation contract is:
    argument perturbs only the Schur tail while the invertible head block stays
    fixed.  The downstream compactness support is also explicit:
    the checked theorem
-   `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+   `BHW.isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq`
    is the connectedness form to call once the normal-parameter vector has been
-   rewritten as `N.orientedTransport.invFun` of a principal Schur graph.
+   packaged as a `BHW.SourceOrientedVariety d n` point, identified with the
+   principal Schur graph on the parameter box, and pulled back by the checked
+   source-matrix variety transport.  The older ambient theorem
+   `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+   is reserved for genuine full-coordinate homeomorphisms, not for arbitrary
+   source changes.
    `sourceOrientedResidualChart_compactBound`,
    `sourceOrientedResidualChart_quotient_eq_parameter`, and
    `sourceOrientedResidualChart_clusterValue` are the only allowed route to
@@ -4357,6 +4371,11 @@ implementation contract is:
    `BHW.sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix`,
    `BHW.sourceOrientedGramDataSourceMatrixTransform_maxRank_iff`,
    `BHW.sourceOrientedVarietySourceMatrixTransportEquivOfMatrix`,
+   `BHW.sourceOrientedVarietyUnderlyingSet_relOpen_of_isOpen`,
+   `BHW.SourceOrientedVarietyTransportEquiv.isOpen_invFun_image`,
+   `BHW.sourceOrientedVarietyTransport_invFun_image_underlying_relOpen`,
+   `BHW.sourceOrientedVarietyTransport_invFun_image_eq`,
+   `BHW.sourceOrientedVarietyTransport_closure_maxRankDense`,
    `BHW.sourceLinearBlockMatrix`,
    `BHW.sourceTupleLinearEquivOfMatrix`,
    `BHW.hwLemma3_projectionSourceChangeMatrix_congruence`,

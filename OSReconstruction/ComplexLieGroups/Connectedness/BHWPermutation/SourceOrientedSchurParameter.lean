@@ -226,6 +226,81 @@ theorem isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSe
       (d := d) (n := n) hn e hA_unit hA_sym hS_sym hrD δ
       hA_conn hB_conn hS_conn
 
+/-- Variety-relative version of
+`isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`.
+The normal Schur parameter is supplied as a point of the oriented source
+variety, so source-matrix transports that only exist on actual oriented
+invariants can be used without inventing an ambient determinant-coordinate
+equivalence. -/
+theorem isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_parameterSet
+    (hn : d + 1 ≤ n)
+    (T : SourceOrientedVarietyTransportEquiv d n)
+    {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ {A : Matrix r r ℂ}, A ∈ Aset → IsUnit A.det)
+    (hA_sym : ∀ {A : Matrix r r ℂ}, A ∈ Aset → Aᵀ = A)
+    (hS_sym : ∀ {S : Matrix q q ℂ}, S ∈ Sset → Sᵀ = S)
+    (hrD : Fintype.card r ≤ d + 1)
+    (δ :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        (Fin (d + 1) ↪ Fin n) → ℂ)
+    (normal :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        SourceOrientedVariety d n)
+    (hnormal :
+      ∀ p,
+        p.1 ∈ Aset →
+        p.2.1 ∈ Bset →
+        p.2.2 ∈ Sset →
+          (normal p).1 =
+            ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+              SourceOrientedGramData d n))
+    (hA_conn : IsConnected Aset)
+    (hB_conn : IsConnected Bset)
+    (hS_conn :
+      IsConnected
+        (Sset ∩ {S : Matrix q q ℂ |
+          Sᵀ = S ∧ S.rank = d + 1 - Fintype.card r})) :
+    IsConnected
+      {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+        p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+          SourceOrientedMaxRankAt d n ((T.invFun (normal p)).1)} := by
+  let normalSet :
+      Set (Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ) :=
+    {p |
+      p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+        SourceOrientedMaxRankAt d n
+          ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+            SourceOrientedGramData d n)}
+  have hEq :
+      {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+        p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+          SourceOrientedMaxRankAt d n ((T.invFun (normal p)).1)} =
+        normalSet := by
+    ext p
+    constructor
+    · rintro ⟨hA, hB, hS, hmax⟩
+      have hnormalMax :
+          SourceOrientedMaxRankAt d n (normal p).1 :=
+        (T.invFun_maxRank_iff (normal p)).1 hmax
+      exact ⟨hA, hB, hS, by
+        simpa [hnormal p hA hB hS] using hnormalMax⟩
+    · rintro ⟨hA, hB, hS, hmax⟩
+      have hnormalMax :
+          SourceOrientedMaxRankAt d n (normal p).1 := by
+        simpa [hnormal p hA hB hS] using hmax
+      exact ⟨hA, hB, hS,
+        (T.invFun_maxRank_iff (normal p)).2 hnormalMax⟩
+  rw [hEq]
+  exact
+    isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet
+      (d := d) (n := n) hn e hA_unit hA_sym hS_sym hrD δ
+      hA_conn hB_conn hS_conn
+
 /-- If a concrete normal-form parameter map agrees on its parameter box with
 an inverse-transported principal Schur graph, then the max-rank preimage inside
 that box is connected.  This is the form consumed by the rank-deficient
@@ -298,6 +373,83 @@ theorem isConnected_sourcePrincipalSchur_transported_orientedMaxRank_preimage_of
   exact
     isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet
       (d := d) (n := n) hn T e hA_unit hA_sym hS_sym hrD δ
+      hA_conn hB_conn hS_conn
+
+/-- Variety-relative local-image form of the transported Schur connectedness
+theorem.  A concrete parameter-box image may be definitionally different from
+the inverse-transformed normal Schur point; equality on the box is enough to
+transfer connectedness of the max-rank preimage. -/
+theorem isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_preimage_of_eq
+    (hn : d + 1 ≤ n)
+    (T : SourceOrientedVarietyTransportEquiv d n)
+    {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ {A : Matrix r r ℂ}, A ∈ Aset → IsUnit A.det)
+    (hA_sym : ∀ {A : Matrix r r ℂ}, A ∈ Aset → Aᵀ = A)
+    (hS_sym : ∀ {S : Matrix q q ℂ}, S ∈ Sset → Sᵀ = S)
+    (hrD : Fintype.card r ≤ d + 1)
+    (δ :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        (Fin (d + 1) ↪ Fin n) → ℂ)
+    (normal :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        SourceOrientedVariety d n)
+    (hnormal :
+      ∀ p,
+        p.1 ∈ Aset →
+        p.2.1 ∈ Bset →
+        p.2.2 ∈ Sset →
+          (normal p).1 =
+            ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+              SourceOrientedGramData d n))
+    {parameterBox :
+      Set (Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ)}
+    {image :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        SourceOrientedGramData d n}
+    (hparameterBox :
+      parameterBox =
+        {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+          p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset})
+    (himage :
+      ∀ p ∈ parameterBox,
+        image p = (T.invFun (normal p)).1)
+    (hA_conn : IsConnected Aset)
+    (hB_conn : IsConnected Bset)
+    (hS_conn :
+      IsConnected
+        (Sset ∩ {S : Matrix q q ℂ |
+          Sᵀ = S ∧ S.rank = d + 1 - Fintype.card r})) :
+    IsConnected
+      (parameterBox ∩
+        {p | SourceOrientedMaxRankAt d n (image p)}) := by
+  have hEq :
+      parameterBox ∩
+          {p | SourceOrientedMaxRankAt d n (image p)} =
+        {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+          p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+            SourceOrientedMaxRankAt d n ((T.invFun (normal p)).1)} := by
+    ext p
+    constructor
+    · rintro ⟨hp, hmax⟩
+      have hpbox :
+          p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset := by
+        simpa [hparameterBox] using hp
+      exact
+        ⟨hpbox.1, hpbox.2.1, hpbox.2.2,
+          by simpa [himage p hp] using hmax⟩
+    · rintro ⟨hA, hB, hS, hmax⟩
+      have hp : p ∈ parameterBox := by
+        simpa [hparameterBox] using ⟨hA, hB, hS⟩
+      exact ⟨hp, by simpa [himage p hp] using hmax⟩
+  rw [hEq]
+  exact
+    isConnected_sourcePrincipalSchur_varietyTransported_orientedMaxRank_parameterSet
+      (d := d) (n := n) hn T e hA_unit hA_sym hS_sym hrD δ normal hnormal
       hA_conn hB_conn hS_conn
 
 end BHW
