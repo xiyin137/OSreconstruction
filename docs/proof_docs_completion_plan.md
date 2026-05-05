@@ -274,7 +274,8 @@ which iterates the checked one-step propagation theorem across an ordered
 finite-overlap family of connected max-rank domains.  The same file also checks
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData`,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_finiteOverlapPropagationData`,
-and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`.
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`, and
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`.
    This closes the
    previous-branch-as-seed gap for local proper-complex invariance: an already
 constructed holomorphic branch on an open source carrier can now be used as
@@ -7688,6 +7689,25 @@ common-boundary envelope, or any theorem that already assumes locality.
 
    Once this producer exists, the old seed theorem is one line: obtain `⟨P⟩`
    from this theorem and call `P.to_closedLoopSeed`.
+
+   The zero-transition closed-loop edge case is already checked:
+
+   ```lean
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .exists_of_zeroTransitions
+       (hn : d + 1 <= n)
+       (hm : L.chain.m = 0)
+       (hclosing_max_connected :
+         IsConnected
+           (L.closing_orientedPatch ∩
+             {G | BHW.SourceOrientedMaxRankAt d n G})) :
+       Nonempty
+         (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+   ```
+
+   It extracts the initial seed directly inside `L.closing_orientedPatch` and
+   uses the closing patch as the closing domain.  Thus the remaining positive
+   work is the nonzero finite-overlap geometry.
 
    `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is the
    checked one-step version.  Given an accumulated oriented germ `Φ`, a

@@ -377,6 +377,54 @@ theorem to_closedLoopSeed
   rcases P.to_finiteOverlapPropagationData with ⟨Pterminal⟩
   exact Pterminal.to_closedLoopSeed
 
+/-- Zero-transition closed loops produce finite-overlap domain data directly
+from the closing oriented patch, provided its max-rank part is connected. -/
+theorem exists_of_zeroTransitions
+    (hn : d + 1 ≤ n)
+    (hm : L.chain.m = 0)
+    (hclosing_max_connected :
+      IsConnected
+        (L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    Nonempty (BHWJostOrientedClosedLoopFiniteOverlapDomainData L) := by
+  rcases exists_preconnectedRelOpen_maxRankSeed_inside
+      (d := d) (n := n) hn L.closing_orientedPatch_relOpen
+      L.closing_orientedPatch_nonempty with
+    ⟨seed0, hseed0_rel, hseed0_pre, hseed0_nonempty, hseed0_sub⟩
+  have helim (j : Fin L.chain.m) : False :=
+    Nat.not_lt_zero j.val (by simpa [hm] using j.isLt)
+  refine ⟨?P⟩
+  exact
+    { hn := hn
+      initialSeed := seed0
+      initialSeed_relOpen := hseed0_rel
+      initialSeed_preconnected := hseed0_pre
+      initialSeed_nonempty := hseed0_nonempty
+      initialSeed_sub_max := by
+        intro G hG
+        exact (hseed0_sub hG).2
+      stepDomain := fun j => False.elim (helim j)
+      stepDomain_relOpen := fun j => False.elim (helim j)
+      stepDomain_maxRank_connected := fun j => False.elim (helim j)
+      stepDomain_sub_start := fun j => False.elim (helim j)
+      stepDomain_sub_left := fun j => False.elim (helim j)
+      transition_sub_stepDomain := fun j => False.elim (helim j)
+      initialSeed_sub_firstDomain := by
+        intro h0
+        exact False.elim (by omega)
+      transition_sub_nextDomain := fun j => False.elim (helim j)
+      closingDomain := L.closing_orientedPatch
+      closingDomain_relOpen := L.closing_orientedPatch_relOpen
+      closingDomain_maxRank_connected := hclosing_max_connected
+      closingDomain_sub_final := L.closing_orientedPatch_sub_final
+      closingDomain_sub_start := L.closing_orientedPatch_sub_start
+      closingPatch_sub_closingDomain := fun _ hG => hG
+      closingDomain_contains_initialSeed_of_zero := by
+        intro _hm0 G hG
+        exact (hseed0_sub hG).1
+      closingDomain_contains_lastTransition_of_pos := by
+        intro hpos
+        exact False.elim (hpos hm) }
+
 end BHWJostOrientedClosedLoopFiniteOverlapDomainData
 
 end BHW
