@@ -344,24 +344,20 @@ theorem W_analytic_cluster_integral_via_ruelle
   have h_dominator_integrable :
       MeasureTheory.Integrable (fun p : NPointDomain d n × NPointDomain d m =>
         C_R * (1 + ‖p.1‖ + ‖p.2‖) ^ N_R * ‖f p.1‖ * ‖g p.2‖) := by
-    -- Strategy:
-    -- (a) Use `schwartz_integrable_add_pow_mul` (helper, proved above) to show
-    --     `(1 + ‖x‖)^N_R · ‖f x‖` integrable on `NPointDomain d n`.
-    -- (b) Same for `(1 + ‖y‖)^N_R · ‖g y‖` on `NPointDomain d m`.
-    -- (c) Apply `MeasureTheory.Integrable.mul_prod` to get the product
-    --     integrable on the product space (under the product measure).
-    -- (d) Identify `volume` on the product with `volume.prod volume`
-    --     (Pi → product equivalence; the project uses
-    --     `Fin.append`-style splits for this).
-    -- (e) Bound `(1 + ‖x‖ + ‖y‖)^N_R ≤ (1 + ‖x‖)^N_R · (1 + ‖y‖)^N_R`
-    --     via `(1+a)(1+b) = 1+a+b+ab ≥ 1+a+b` for a, b ≥ 0.
-    -- (f) Apply `Integrable.mono'`.
+    -- The math: bound (1 + ‖x‖ + ‖y‖)^N ≤ (1 + ‖x‖)^N · (1 + ‖y‖)^N,
+    -- then use Schwartz seminorms to absorb polynomial growth.
     --
-    -- The `HasTemperateGrowth` instance for `volume : Measure (NPointDomain d n)`
-    -- (a Pi type Fin n → Fin (d+1) → ℝ) is the synthesis-level obstacle.
-    -- The project handles this for flat Pi types `Fin m → ℝ` (see
-    -- `PaleyWienerSchwartz.lean:3719`); the nested Pi may need a project-side
-    -- instance bridge or local-helper inlining. Routed to follow-up.
+    -- The Lean obstacle: `(volume : Measure (NPointDomain d n)).HasTemperateGrowth`
+    -- is not synthesizable for the nested Pi `NPointDomain d n =
+    -- Fin n → Fin (d+1) → ℝ`. The `IsAddHaarMeasure.instHasTemperateGrowth`
+    -- requires `[FiniteDimensional ℝ E]` etc., but the implicit chain through
+    -- the Pi instances doesn't resolve. Working around requires either:
+    -- (a) A project-side instance bridge `Pi.instHasTemperateGrowth` lifting
+    --     the IsAddHaarMeasure structure on NPointDomain;
+    -- (b) Re-routing through `EuclideanSpace ℝ (Fin (n*(d+1)))` via a
+    --     measure-preserving equivalence.
+    -- The validated helper `schwartz_integrable_add_pow_mul` (above) gives
+    -- the math content; the bridge is Lean engineering. Routed to follow-up.
     sorry
   -- Step 5: apply DC to get Tendsto of the joint integral.
   have h_DC :
