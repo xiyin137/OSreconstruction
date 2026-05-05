@@ -12518,6 +12518,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
           -- namely `matrixSymmetricRankExactCone_small_connected`.
           -- Product connectedness and the linear coordinate equivalence
           -- transport this to the displayed parameter set.
+          --
+          -- The determinant coordinates do not split this set into separate
+          -- local branches: `SourceOrientedMaxRankAt` only reads `G.gram`, and
+          -- every determinant coordinate in `toInv c` is a continuous
+          -- polynomial/minor expression in the same source-vector parameter.
+          -- Thus the connected parameter slice maps continuously onto the
+          -- max-rank part of the oriented local image.
           exact
             BHW.sourceOriented_rankDeficient_parameterMaxRank_connected
               (d := d) hn hd n N encode P c0 hP_open hP_conn

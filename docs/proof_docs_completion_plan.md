@@ -386,6 +386,21 @@ same product-connectedness pattern as the checked ordinary singular theorem
 `sourceComplexGramVariety_local_rankExact_connected_basis_singular`, using the
 connected symmetric head ball, connected mixed ball, and
 `matrixSymmetricRankExactCone_small_connected` for the residual tail.
+There is no additional two-sheet obstruction from the determinant coordinates:
+`SourceOrientedMaxRankAt` is defined only from `G.gram`, and the determinant
+coordinates are continuous functions of the same source-vector parameters on
+this local image.  The exact Lean proof should therefore:
+
+1. define
+   `parameterMaxRank = P ∩ {c | SourceOrientedMaxRankAt d n (toInv c)}`;
+2. rewrite the predicate through `toInv`, the oriented-transport rank
+   invariance, and `SourceOrientedMaxRankAt` to ordinary source-matrix rank;
+3. use the principal Schur rank theorem to identify this set with the product
+   of the head ball, mixed ball, and
+   `C ∩ {S | Sᵀ = S ∧ S.rank = (d + 1) - N.r}`;
+4. invoke `isConnected_symmetric_matrix_ball`, `isConnected_matrix_ball`, and
+   `matrixSymmetricRankExactCone_small_connected`, then transport connectedness
+   through the finite coordinate equivalence.
 The remaining implementation targets are the concrete exceptional
 Schur/residual max-rank-connected local-image producer and the source-backed
 finite-overlap domains; Lean work should still not start at the public adjacent
