@@ -561,7 +561,11 @@ Taking determinants gives the checked raw selected-frame theorem
 `BHW.sourceFullFrameDet_normalParameter_headTail_raw`; the remaining
 shifted-tail wrapper is now checked as
 `BHW.sourceFullFrameDet_normalParameter_headTail` using
-`sourceShiftedTailOrientedInvariant_det`.
+`sourceShiftedTailOrientedInvariant_det`.  The arbitrary-frame Schur formula
+has also started in Lean with checked definitions
+`BHW.sourceNormalFullFrameCoeff`, `BHW.sourceNormalFullFrameHeadBlock`, and
+`BHW.sourceNormalFullFrameTailRowsDet`; the still-open part is the canonical
+finite row-split Laplace theorem and the reconstruction equality over `G`.
 Arbitrary ordered full frames are then routed through
 the finite Laplace theorem `matrix_det_blockColumn_laplace`,
 `sourceNormalFullFrameDetFromSchur`,

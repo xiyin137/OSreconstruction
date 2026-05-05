@@ -180,4 +180,59 @@ theorem sourceFullFrameDet_normalParameter_headTail
   simpa using
     sourceFullFrameDet_normalParameter_headTail_raw d n r hrD hrn p lam
 
+/-- Head-column coefficients for an arbitrary ordered full frame in the
+rank-deficient Schur normal form.  Selected head labels contribute standard
+basis rows; tail labels contribute their stored mixed rows. -/
+def sourceNormalFullFrameCoeff
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Matrix (Fin (d + 1)) (Fin r) ℂ :=
+  fun k a =>
+    if hhead : ∃ b : Fin r, ι k = finSourceHead hrn b then
+      if Classical.choose hhead = a then 1 else 0
+    else
+      let htail : ∃ u : Fin (n - r), ι k = finSourceTail hrn u :=
+        (finSourceHead_tail_cases hrn (ι k)).resolve_left hhead
+      L (Classical.choose htail) a
+
+/-- The head-coordinate block of an arbitrary ordered full frame after applying
+the chosen head factor. -/
+def sourceNormalFullFrameHeadBlock
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (H : Matrix (Fin r) (Fin r) ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    Matrix (Fin (d + 1)) (Fin r) ℂ :=
+  sourceNormalFullFrameCoeff d n r hrn L ι * H
+
+/-- Residual-tail determinant attached to a chosen set of rows of an arbitrary
+ordered full frame.  It is zero unless all chosen rows are tail source labels. -/
+def sourceNormalFullFrameTailRowsDet
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (T : SourceShiftedTailOrientedData d r hrD (n - r))
+    (ι : Fin (d + 1) ↪ Fin n)
+    (rows : Fin (d + 1 - r) ↪ Fin (d + 1)) : ℂ :=
+  if htail :
+      ∀ μ : Fin (d + 1 - r),
+        ∃ u : Fin (n - r), ι (rows μ) = finSourceTail hrn u then
+    T.det
+      { toFun := fun μ => Classical.choose (htail μ)
+        inj' := by
+          intro μ ν hμν
+          apply rows.injective
+          apply ι.injective
+          calc
+            ι (rows μ) = finSourceTail hrn (Classical.choose (htail μ)) :=
+              Classical.choose_spec (htail μ)
+            _ = finSourceTail hrn (Classical.choose (htail ν)) := by
+              simpa using congrArg (finSourceTail hrn) hμν
+            _ = ι (rows ν) := (Classical.choose_spec (htail ν)).symm }
+  else
+    0
+
 end BHW

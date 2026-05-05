@@ -9410,7 +9410,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       actual head-coordinate columns.  The residual-tail contribution for an
       ordered row subset is zero unless every chosen row is a tail source
       label; in the nonzero case it is exactly `T.det` of the induced ordered
-      embedding into `Fin (n-r)`.  The finite theorem
+      embedding into `Fin (n-r)`.  These three definition layers
+      (`sourceNormalFullFrameCoeff`, `sourceNormalFullFrameHeadBlock`, and
+      `sourceNormalFullFrameTailRowsDet`) are now checked in Lean.  The finite theorem
       `matrix_det_blockColumn_laplace` is the ordinary determinant Laplace
       expansion along the first `r` columns and the last `d+1-r` columns, with
       `MatrixBlockColumnRowSplit.sign` carrying the row-shuffle sign.  Thus
