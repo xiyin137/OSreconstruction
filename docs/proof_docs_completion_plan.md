@@ -824,9 +824,27 @@ hard-range wrappers are also checked:
 `sourceOrientedNormalParameterVector_realizes_schur_det`, and
 `sourceOrientedNormalParameterVector_realizes_schur`.  No downstream proof may
 use an unnamed "block determinant expansion" anymore.  The next producer-level
-target is the existence/construction of the concrete
-`SourceOrientedSchurResidualData` packet from a rank-deficient source-variety
-point with an invertible selected head block.
+normal-form bridge is also now checked in `SourceNormalFormTransport.lean`:
+`sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical` selects an
+adapted representative, nonzero principal rank minor, source permutation,
+Schur complement, head-metric congruence, and Witt/Lorentz normalization to
+produce an invertible source-label matrix sending any exceptional oriented
+source-variety point to the canonical Lemma-3 invariant.  Its
+variety-relative consumer
+`sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical`
+packages the same result as a `SourceOrientedVarietyTransportEquiv` whose
+inverse carries `hwLemma3CanonicalSourceOrientedVariety` back to the original
+point.  The small companion file
+`SourceOrientedRankDeficientAlgebraicNormalForm.lean` now exposes this as the
+producer-facing data packet
+`SourceOrientedRankDeficientAlgebraicNormalFormData` and constructor
+`sourceOriented_rankDeficient_algebraicNormalFormData`.  This is the transport
+interface for the rank-deficient local-image producer; the old ambient
+`SourceOrientedInvariantTransportEquiv` normal-form shortcut remains rejected.
+The next producer-level target is the concrete Schur/residual local-image
+construction around that canonical center, starting with the
+existence/construction of the `SourceOrientedSchurResidualData` packet from a
+nearby source-variety point with an invertible selected head block.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the
@@ -4483,11 +4501,11 @@ implementation contract is:
    | Pointwise-to-global relative-open assembly | Mechanical after local realization. | Choose explicit `sourceExtendedTubeGramDomain_relOpen_at` neighborhoods, form the subtype-indexed union, and use the subset lemma. |
    | Adapted same-Gram representative | Proof transcript pinned; production Lean not started. | `hwLemma3_extendedTube_adaptedRankRepresentative` is reduced to the Lemma-2 residual-frame/all-coefficients extended-tube theorem, selected projection, Schur-zero residual theorem, and span-rank equality; the blueprint explicitly forbids source-changing an arbitrary representative to zero tail. |
    | Principal block/projection/Schur-zero algebra | Proof transcript pinned; principal-minor extraction checked locally. | The blueprint now gives the selected coefficient definition, projection Gram equality, residual orthogonality, residual-residual zero via the Schur complement, and span-finrank theorem.  These are finite algebra support targets, not final wrappers. |
-   | Normal-form source transport | Core source-change, canonical-Gram, adapted tail-zero, selected-head Witt/Lorentz orbit layer, actual determinant Cauchy-Binet, and variety-relative source-matrix transport checked in `SourceNormalFormTransport.lean`/`SourceOrientedTransport.lean`; downstream consumer migration remains. | Source permutation, projection matrix, congruence-to-identity, canonical Gram congruence, coefficient-span/rank preservation, tail-zero from adaptedness, the complex Lorentz transport to `hwLemma3CanonicalSource`, row-multilinearity for full-frame determinants, oriented invariant transport on actual tuples, the variety-subtype homeomorphism for invertible source matrices, and max-rank preservation are checked.  The old ambient `SourceOrientedInvariantTransportEquiv` source-change target is rejected for determinant coordinates; downstream normal-form local-image code must consume the checked `SourceOrientedVarietyTransportEquiv` interface.  Finite-dimensional estimate packaging around the source-vector linear equivalences still remains. |
+   | Normal-form source transport | Core source-change, canonical-Gram, adapted tail-zero, selected-head Witt/Lorentz orbit layer, actual determinant Cauchy-Binet, variety-relative source-matrix transport, and the exceptional-to-canonical transport theorem are checked in `SourceNormalFormTransport.lean`/`SourceOrientedTransport.lean`; downstream local-image construction remains. | Source permutation, projection matrix, congruence-to-identity, canonical Gram congruence, coefficient-span/rank preservation, tail-zero from adaptedness, the complex Lorentz transport to `hwLemma3CanonicalSource`, row-multilinearity for full-frame determinants, oriented invariant transport on actual tuples, the variety-subtype homeomorphism for invertible source matrices, max-rank preservation, `sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical`, and `sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical` are checked.  The old ambient `SourceOrientedInvariantTransportEquiv` source-change target is rejected for determinant coordinates; downstream normal-form local-image code must consume the checked `SourceOrientedVarietyTransportEquiv` interface.  Finite-dimensional estimate packaging around the canonical Schur/residual local image still remains. |
    | Near-identity square root | Proof transcript pinned; pure matrix analysis. | The blueprint gives the binomial-series construction of `(1 + B)^(1/2)`, convergence via a scalar power-series majorant, transpose compatibility, the square identity, and entrywise estimates from matrix norm bounds. |
    | Schur-rank/Takagi/tail factorization | Proof transcript pinned; pure finite linear algebra. | The proof is split into Mathlib Schur-complement rank factorization, Autonne-Takagi with rank support and explicit entry-L1 control, small factorization, and tail embedding with coordinate estimates. |
    | Orthogonal-tail residual realization | Proof transcript pinned; production Lean not started. | Takagi factors are transported into `complexMinkowskiOrthogonalTailSubspace`, paired to the Schur complement, kept orthogonal to the selected block, and transported back through the Minkowski orthogonal model with norm control. |
-   | Normalized Schur realization and transport back | Proof transcript pinned; production Lean not started. | The normalized theorem assembles selected vectors, cross coefficients, and tail residuals, proves the Gram equality, then uses `HWLemma3NormalFormTransport` estimates to return to the adapted base. |
+   | Normalized Schur realization and transport back | The canonical normal-form transport-to-center theorem is checked; the concrete local-image producer is not yet implemented. | The normalized theorem assembles selected vectors, cross coefficients, and tail residuals, proves the oriented Gram/determinant equality by `sourceOrientedNormalParameterVector_realizes_schur`, then transports the resulting subtype-valued normal image back with the checked `SourceOrientedVarietyTransportEquiv` from `sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical`. |
    | Extended-tube shrink and arbitrary-neighborhood conversion | Proof transcript pinned; topology helper standard. | `exists_coord_supnorm_ball_subset_of_isOpen` is used with openness of `ExtendedTube`; `hwLemma3_adaptedBase_transport_smallPerturbation_extendedTube` combines the shrink with the transported realization. |
    | Existing Schur/local-connectedness files | Checked support only. | `sourceComplexGramVariety_local_connectedRelOpen_basis*` and `sourcePrincipalSchurGraph_rankLE_image_eq_openCoordinatePatch` do not prove relative openness of the extended-tube Gram image. |
 

@@ -1821,4 +1821,166 @@ theorem exists_sourcePermutation_movingPrincipalBlockToHead
   rw [Equiv.symm_apply_eq]
   simp [selectedIndexSumEquiv_apply_selected I hI a]
 
+/-- Every exceptional oriented source point admits an invertible source-label
+change whose oriented invariant is the canonical Hall-Wightman Lemma-3 source
+invariant.  The proof first replaces the source realization by an adapted
+representative, then selects a nonzero principal rank minor, Schur-reduces the
+permuted scalar Gram matrix, normalizes the invertible head block to the
+signature head metric, and finally uses the checked Witt-extension theorem to
+remove the remaining Lorentz ambiguity. -/
+theorem sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical
+    (d n : ℕ)
+    {G0 : SourceOrientedGramData d n}
+    (hG0 : G0 ∈ sourceOrientedGramVariety d n)
+    (hlow : ¬ SourceOrientedMaxRankAt d n G0) :
+    ∃ (r : ℕ) (_ : r < d + 1) (_ : r ≤ n)
+      (M : Matrix (Fin n) (Fin n) ℂ),
+        IsUnit M.det ∧
+          sourceOrientedGramDataSourceMatrixTransform d n M G0 =
+            sourceOrientedMinkowskiInvariant d n
+              (hwLemma3CanonicalSource d n r) := by
+  classical
+  rcases sourceOriented_lowRank_exists_adaptedRepresentative
+      d n hG0 hlow with
+    ⟨z0, hz0, hadapt⟩
+  let G : Fin n → Fin n → ℂ := sourceMinkowskiGram d n z0
+  let r : ℕ := sourceGramMatrixRank n G
+  have hrD : r < d + 1 := by
+    have hlow_z0 :
+        ¬ SourceOrientedMaxRankAt d n
+          (sourceOrientedMinkowskiInvariant d n z0) := by
+      intro hmax
+      exact hlow (by simpa [hz0] using hmax)
+    simpa [r, G] using
+      sourceOriented_notMaxRank_sourceGramMatrixRank_lt_fullFrame
+        d n z0 hlow_z0
+  have hrn : r ≤ n := by
+    simpa [r, G] using sourceGramMatrixRank_le_arity n G
+  have hGsym : G ∈ sourceSymmetricMatrixSpace n := by
+    intro i j
+    exact sourceMinkowskiGram_symm d n z0 i j
+  have hGrank : (Matrix.of fun i j : Fin n => G i j).rank = r := by
+    change sourceGramMatrixRank n G = r
+    rfl
+  rcases exists_sourcePrincipalMinor_ne_zero_of_sourceSymmetricRank
+      (n := n) (r := r) (Z := G) hGsym hGrank with
+    ⟨I, hI, hminor⟩
+  rcases exists_sourcePermutation_movingPrincipalBlockToHead
+      n r hrn hI with
+    ⟨σ, hσ⟩
+  let Gp : Fin n → Fin n → ℂ := sourcePermuteComplexGram n σ G
+  have hGpsym : Gp ∈ sourceSymmetricMatrixSpace n :=
+    sourcePermuteComplexGram_mem_sourceSymmetricMatrixSpace n σ hGsym
+  let A : Matrix (Fin r) (Fin r) ℂ := sourceHeadHeadBlock n r hrn Gp
+  let B : Matrix (Fin (n - r)) (Fin r) ℂ := sourceTailHeadBlock n r hrn Gp
+  let C : Matrix (Fin (n - r)) (Fin (n - r)) ℂ :=
+    sourceTailTailBlock n r hrn Gp
+  have hBlock :
+      sourcePermuteComplexGram n σ G = sourceBlockMatrix n r hrn A B C := by
+    simpa [Gp, A, B, C] using
+      (sourceBlockMatrix_of_headTailBlocks n r hrn Gp hGpsym).symm
+  have hA_det_eq : A.det = sourceMatrixMinor n r I I G := by
+    change Matrix.det (sourceHeadHeadBlock n r hrn Gp) =
+      sourceMatrixMinor n r I I G
+    have hmat :
+        sourceHeadHeadBlock n r hrn Gp =
+          fun a b : Fin r => G (I a) (I b) := by
+      ext a b
+      simp [sourceHeadHeadBlock, Gp, sourcePermuteComplexGram, hσ a, hσ b]
+    rw [hmat]
+    rfl
+  have hA : IsUnit A.det := by
+    apply isUnit_iff_ne_zero.mpr
+    rw [hA_det_eq]
+    exact hminor
+  have hAsym : A.transpose = A := by
+    simpa [A] using
+      sourceHeadHeadBlock_symm_of_sourceSymmetric n r hrn hGpsym
+  have hRankGp : sourceGramMatrixRank n Gp = r := by
+    simpa [Gp, r] using
+      sourceGramMatrixRank_sourcePermuteComplexGram n σ G
+  have hSchur : C - B * A⁻¹ * B.transpose = 0 := by
+    exact hwLemma3_schurComplement_eq_zero_of_rank_eq
+      n r hrn hGpsym hBlock hRankGp hA
+  rcases complexSymmetric_invertible_congruence_to_sourceHeadMetric
+      d r hrD hAsym hA with
+    ⟨P, hPunit, hP⟩
+  let M : Matrix (Fin n) (Fin n) ℂ :=
+    hwLemma3_normalFormSourceChangeMatrix n r hrn σ A B P
+  have hMunit : IsUnit M.det := by
+    simpa [M] using
+      hwLemma3_normalFormSourceChangeMatrix_det_isUnit
+        n r hrn σ hA hPunit
+  have hGram :
+      sourceGramCongruence n M G =
+        hwLemma3CanonicalGram d n r hrD hrn := by
+    simpa [M, Gp, A, B, C] using
+      hwLemma3_normalFormSourceChangeMatrix_canonicalGram
+        d n r hrD hrn hBlock hA hAsym hSchur hP
+  rcases
+      hwLemma3_normalFormSourceChange_exists_complexLorentz_to_canonicalSource_of_adapted
+        d n r hrD hrn (σ := σ) (A := A) (B := B) (P := P)
+        hA hPunit hGram (by simpa [G] using hadapt) with
+    ⟨Λ, hΛ⟩
+  refine ⟨r, hrD, hrn, M, hMunit, ?_⟩
+  have htransport :
+      sourceOrientedGramDataSourceMatrixTransform d n M G0 =
+        sourceOrientedMinkowskiInvariant d n
+          (sourceTupleLinearChange d n M z0) := by
+    rw [← hz0]
+    exact
+      (sourceOrientedMinkowskiInvariant_sourceTupleLinearChange
+        d n M z0).symm
+  have hcanon :
+      sourceOrientedMinkowskiInvariant d n
+          (hwLemma3CanonicalSource d n r) =
+        sourceOrientedMinkowskiInvariant d n
+          (sourceTupleLinearChange d n M z0) := by
+    rw [← hΛ]
+    exact sourceOrientedMinkowskiInvariant_complexLorentzAction Λ
+      (sourceTupleLinearChange d n M z0)
+  exact htransport.trans hcanon.symm
+
+/-- The canonical Lemma-3 source point as a point of the oriented source
+variety subtype. -/
+noncomputable def hwLemma3CanonicalSourceOrientedVariety
+    (d n r : ℕ) : SourceOrientedVariety d n :=
+  ⟨sourceOrientedMinkowskiInvariant d n (hwLemma3CanonicalSource d n r),
+    ⟨hwLemma3CanonicalSource d n r, rfl⟩⟩
+
+/-- Variety-transport form of the exceptional normal-form theorem.  It is the
+shape consumed by the rank-deficient local-image producer: the normal chart is
+built at the canonical Lemma-3 source point, and the inverse
+variety-relative source-matrix transport carries that canonical center back to
+the original exceptional point. -/
+theorem sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical
+    (d n : ℕ)
+    {G0 : SourceOrientedGramData d n}
+    (hG0 : G0 ∈ sourceOrientedGramVariety d n)
+    (hlow : ¬ SourceOrientedMaxRankAt d n G0) :
+    ∃ (r : ℕ) (_ : r < d + 1) (_ : r ≤ n)
+      (T : SourceOrientedVarietyTransportEquiv d n),
+        (T.invFun (hwLemma3CanonicalSourceOrientedVariety d n r)).1 =
+          G0 := by
+  classical
+  rcases sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical
+      d n hG0 hlow with
+    ⟨r, hrD, hrn, M, hM, hMcanon⟩
+  let T : SourceOrientedVarietyTransportEquiv d n :=
+    sourceOrientedVarietySourceMatrixTransportEquivOfMatrix d n M hM
+  refine ⟨r, hrD, hrn, T, ?_⟩
+  have hto :
+      T.toFun ⟨G0, hG0⟩ =
+        hwLemma3CanonicalSourceOrientedVariety d n r := by
+    apply Subtype.ext
+    simpa [T, SourceOrientedVarietyTransportEquiv.toFun,
+      sourceOrientedVarietySourceMatrixTransportEquivOfMatrix,
+      sourceOrientedGramVarietySourceMatrixHomeomorphOfMatrix,
+      sourceOrientedGramVarietySourceMatrixEquivOfMatrix,
+      sourceOrientedGramVarietySourceMatrixMap,
+      hwLemma3CanonicalSourceOrientedVariety] using hMcanon
+  have hleft := T.left_inv ⟨G0, hG0⟩
+  rw [hto] at hleft
+  exact congrArg Subtype.val hleft
+
 end BHW
