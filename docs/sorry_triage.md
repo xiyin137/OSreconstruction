@@ -70,8 +70,8 @@ Note: the raw regex census still sees one commented legacy `sorry` in
 
 | ID | File:line | Theorem | Lane | Status |
 |---|---|---|---|---|
-| W8 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2379` | `schwingerExtension_os_term_eq_wightman_term` | false positivity route | quarantine/delete |
-| W9 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3627` | `W_analytic_cluster_integral` | reverse-direction cluster | live but not on shortest path |
+| W8 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2377` | `schwingerExtension_os_reflection_positive_from_spectralLaplace` | reverse reflection positivity | honest spectral/Laplace theorem boundary |
+| W9 | `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3545` | `W_analytic_cluster_integral` | reverse-direction cluster | live but not on shortest path |
 | W10 | `Wightman/Reconstruction/WickRotation/BHWTranslation.lean:1115` | `isPreconnected_baseFiber` | old-route PET connectivity | peripheral |
 
 ### 3.3. GNS / uniqueness / functional-analysis side lane
@@ -316,7 +316,7 @@ Estimated remaining Lean size:
 The following direct `sorry`s should remain documented but not distract the
 current theorem-2/3/4 execution order:
 
-1. `schwingerExtension_os_term_eq_wightman_term`
+1. `schwingerExtension_os_reflection_positive_from_spectralLaplace`
 2. `W_analytic_cluster_integral`
 3. `isPreconnected_baseFiber`
 4. all of `BochnerMinlos.lean`

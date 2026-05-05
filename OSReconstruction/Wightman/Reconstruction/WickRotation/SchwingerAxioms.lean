@@ -434,6 +434,22 @@ theorem wickRotatePoint_timeReflection (x : Fin (d + 1) → ℝ) (μ : Fin (d + 
   · subst hμ; simp [Complex.conj_ofReal]
   · simp [hμ, Complex.conj_ofReal]
 
+omit [NeZero d] in
+/-- Function-level form of `wickRotatePoint_timeReflection`, suitable for
+`simp_rw` at the lambda level inside `Fin.append`-shaped F_ext arguments. -/
+private theorem wickRotatePoint_timeReflection_fun (x : Fin (d + 1) → ℝ) :
+    wickRotatePoint (timeReflection d x) = fun μ => starRingEnd ℂ (wickRotatePoint x μ) := by
+  funext μ; exact wickRotatePoint_timeReflection x μ
+
+omit [NeZero d] in
+/-- Involutive property of `timeReflectionN d` on `NPointDomain d n`. -/
+private theorem timeReflectionN_involutive (x : NPointDomain d n) :
+    timeReflectionN d (timeReflectionN d x) = x := by
+  ext i μ
+  by_cases hμ : μ = 0
+  · subst hμ; simp [timeReflectionN, timeReflection]
+  · simp [timeReflectionN, timeReflection, hμ]
+
 /-- Reverse the point order and conjugate each complex coordinate. This is the
     complex-geometric involution underlying Wightman Hermiticity on Euclidean
     Wick points. -/
@@ -2391,38 +2407,258 @@ theorem OSInnerProduct_constructSchwinger_unfolded
   rw [ZeroDiagonalSchwartz.coe_ofClassical_of_vanishes
     ((F.funcs n).osConjTensorProduct (G.funcs m)) hzero]
 
-/-- The OS inner product for Wick-rotated Schwinger functions is non-negative
-    for test functions supported at positive times.
+/-- TranslatedPET membership for the back-forward Wick configuration.
 
-    The original proof strategy attempted to show equality between the OS inner
-    product and the Wightman inner product (⟨F,F⟩_OS = ⟨F,F⟩_W), then appeal to
-    Wightman positive definiteness (R2). However, this equality is **false**:
-    the OS inner product evaluates F_ext at Wick-rotated (purely imaginary time)
-    points, giving a Laplace-type pairing, while the Wightman inner product is
-    a Fourier-type distributional pairing. These differ by a Wick rotation of
-    the test functions (not the identity map).
+    For `x_n ∈ OrderedPositiveTimeRegion d n` and
+    `y ∈ OrderedPositiveTimeRegion d m`, the joint configuration with first n
+    indices Wick-rotated from time-reflected `x_n` (negative imaginary time)
+    and last m indices Wick-rotated from `y` (positive imaginary time) lies
+    in `TranslatedPET d (n+m)`.
 
-    The correct proof uses the spectral representation of W_analytic at
-    Wick-rotated points: for positive-time-supported test functions, the OS
-    inner product decomposes as ∫ |Lf(E)|² dρ(E) ≥ 0, where Lf is the
-    Laplace transform and ρ is the Kallen-Lehmann spectral measure.
+    Witness construction: a uniform time shift `β > x_n_(n-1)_0` makes the
+    shifted configuration `xs_shifted` have all positive distinct time
+    components. By `euclidean_distinct_in_permutedTube`,
+    `wick(xs_shifted) ∈ PermutedExtendedTube`. Wick additivity then gives
+    `wick(xs) + wick(shift) ∈ PET`, i.e., `wick(xs) ∈ TranslatedPET`.
 
-    Blocked by: spectral decomposition of the Wick-rotated boundary pairing.
+    Geometric verification: after σ reverses the first n indices,
+    `(σ · (wick∘timeReflection x_n))_i = wick(timeReflection (x_n_(n-1-i)))`
+    has Im(time) = -x_n_(n-1-i)_0. With x_n in OPTR (strictly increasing),
+    -x_n_(n-1-i)_0 is strictly increasing in i. After uniform shift α:
+    α - x_n_(n-1-i)_0 is also strictly increasing in i and positive for
+    α > x_n_(n-1)_0. Successive ForwardTube cone conditions all hold.
 
-    Ref: OS I, Section 5; Glimm-Jaffe Ch. 19 -/
-theorem schwingerExtension_os_positivity (Wfn : WightmanFunctions d)
+    Useful for the cluster theorem `W_analytic_cluster_integral` (under
+    appropriate `tsupport ⊆ OrderedPositiveTimeRegion` hypothesis on the
+    test functions) and any future Wick-restricted Schwinger work. -/
+private theorem mixed_back_forward_wick_in_translatedPET
+    {d n m : ℕ} [NeZero d]
+    (x_n : NPointDomain d n) (y : NPointDomain d m)
+    (hx_n : x_n ∈ OrderedPositiveTimeRegion d n)
+    (hy : y ∈ OrderedPositiveTimeRegion d m) :
+    (fun k => Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+        (wickRotatePoint ∘ y) k) ∈ TranslatedPET d (n + m) := by
+  -- Build the joint Euclidean configuration `xs : NPointDomain d (n+m)`.
+  let xs : NPointDomain d (n + m) :=
+    Fin.append (timeReflectionN d x_n) y
+  -- Pick a uniform shift β > all relevant times so xs_shifted has all positive times.
+  let β : ℝ := 1 + (∑ i : Fin n, x_n i 0) + (∑ j : Fin m, y j 0)
+  let shift : SpacetimeDim d := fun μ => if μ = 0 then β else 0
+  let xs_shifted : NPointDomain d (n + m) := fun k μ => xs k μ + shift μ
+  -- Sums of positive terms are nonneg; β > 0.
+  have hsumxn_nn : 0 ≤ ∑ i : Fin n, x_n i 0 :=
+    Finset.sum_nonneg (fun i _ => le_of_lt (hx_n i).1)
+  have hsumy_nn : 0 ≤ ∑ j : Fin m, y j 0 :=
+    Finset.sum_nonneg (fun j _ => le_of_lt (hy j).1)
+  have hβ_pos : 0 < β := by dsimp [β]; linarith
+  -- Each x_n_i_0 ≤ sum, each y_j_0 ≤ sum.
+  have hxn_le_sum : ∀ i : Fin n, x_n i 0 ≤ ∑ k : Fin n, x_n k 0 :=
+    fun i => Finset.single_le_sum (f := fun k => x_n k 0)
+      (fun k _ => le_of_lt (hx_n k).1) (Finset.mem_univ i)
+  have hy_le_sum : ∀ j : Fin m, y j 0 ≤ ∑ k : Fin m, y k 0 :=
+    fun j => Finset.single_le_sum (f := fun k => y k 0)
+      (fun k _ => le_of_lt (hy k).1) (Finset.mem_univ j)
+  -- xs_shifted k 0 > 0 for all k.
+  have hpos : ∀ k : Fin (n + m), xs_shifted k 0 > 0 := by
+    intro k
+    refine Fin.addCases (motive := fun k => xs_shifted k 0 > 0) ?_ ?_ k
+    · intro i
+      have : xs_shifted (Fin.castAdd m i) 0 = -x_n i 0 + β := by
+        simp [xs_shifted, xs, shift, timeReflectionN, timeReflection,
+          Fin.append_left]
+      rw [this]
+      have := hxn_le_sum i
+      dsimp [β]; linarith
+    · intro j
+      have : xs_shifted (Fin.natAdd n j) 0 = y j 0 + β := by
+        simp [xs_shifted, xs, shift, Fin.append_right]
+      rw [this]
+      linarith [(hy j).1]
+  -- xs_shifted has distinct time components.
+  have hdistinct : ∀ i j : Fin (n + m), i ≠ j → xs_shifted i 0 ≠ xs_shifted j 0 := by
+    intro a b hab heq
+    apply hab
+    have hxs_eq : xs a 0 = xs b 0 := by
+      have heq' : xs a 0 + β = xs b 0 + β := by
+        have : xs_shifted a 0 = xs a 0 + β := by simp [xs_shifted, shift]
+        have : xs_shifted b 0 = xs b 0 + β := by simp [xs_shifted, shift]
+        linarith [heq]
+      linarith
+    refine Fin.addCases (motive := fun a => ∀ b : Fin (n + m), xs a 0 = xs b 0 → a = b)
+      ?_ ?_ a b hxs_eq
+    · intro i b hxsb
+      refine Fin.addCases (motive := fun b => xs (Fin.castAdd m i) 0 = xs b 0 →
+          Fin.castAdd m i = b) ?_ ?_ b hxsb
+      · intro i' hii'
+        have : -x_n i 0 = -x_n i' 0 := by
+          simpa [xs, timeReflectionN, timeReflection, Fin.append_left] using hii'
+        have hxi : x_n i 0 = x_n i' 0 := by linarith
+        have hii_eq : i = i' := by
+          by_contra hne
+          rcases lt_or_gt_of_ne hne with h | h
+          · exact (ne_of_lt ((hx_n i).2 i' h)) hxi
+          · exact (ne_of_lt ((hx_n i').2 i h)) hxi.symm
+        subst hii_eq; rfl
+      · intro j' hij
+        have hl : -x_n i 0 = y j' 0 := by
+          simpa [xs, timeReflectionN, timeReflection, Fin.append_left,
+            Fin.append_right] using hij
+        have hl_neg : -x_n i 0 < 0 := by linarith [(hx_n i).1]
+        linarith [(hy j').1]
+    · intro j b hxsb
+      refine Fin.addCases (motive := fun b => xs (Fin.natAdd n j) 0 = xs b 0 →
+          Fin.natAdd n j = b) ?_ ?_ b hxsb
+      · intro i' hji
+        have hl : y j 0 = -x_n i' 0 := by
+          simpa [xs, timeReflectionN, timeReflection, Fin.append_left,
+            Fin.append_right] using hji
+        have hl_neg : -x_n i' 0 < 0 := by linarith [(hx_n i').1]
+        linarith [(hy j).1]
+      · intro j' hjj'
+        have : y j 0 = y j' 0 := by
+          simpa [xs, Fin.append_right] using hjj'
+        have hjj_eq : j = j' := by
+          by_contra hne
+          rcases lt_or_gt_of_ne hne with h | h
+          · exact (ne_of_lt ((hy j).2 j' h)) this
+          · exact (ne_of_lt ((hy j').2 j h)) this.symm
+        subst hjj_eq; rfl
+  -- Apply euclidean_distinct_in_permutedTube to xs_shifted.
+  have hpet : (fun k => wickRotatePoint (xs_shifted k)) ∈ PermutedExtendedTube d (n + m) :=
+    euclidean_distinct_in_permutedTube xs_shifted hdistinct hpos
+  -- Witness c := wickRotatePoint shift for TranslatedPET.
+  refine ⟨wickRotatePoint shift, ?_⟩
+  convert hpet using 1
+  funext k μ
+  refine Fin.addCases (motive := fun k =>
+      Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+          (wickRotatePoint ∘ y) k μ + wickRotatePoint shift μ =
+        wickRotatePoint (xs_shifted k) μ) ?_ ?_ k
+  · intro i
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [xs_shifted, xs, shift, timeReflectionN, timeReflection,
+        wickRotatePoint, Fin.append_left, Function.comp]
+      push_cast
+      ring
+    · simp [xs_shifted, xs, shift, timeReflectionN, timeReflection,
+        wickRotatePoint, Fin.append_left, Function.comp, hμ]
+  · intro j
+    by_cases hμ : μ = 0
+    · subst hμ
+      simp [xs_shifted, xs, shift, wickRotatePoint, Fin.append_right, Function.comp]
+      push_cast
+      ring
+    · simp [xs_shifted, xs, shift, wickRotatePoint, Fin.append_right, Function.comp, hμ]
+
+/-- F_ext at the back-forward Wick configuration equals
+    `(W_analytic_BHW Wfn (n+m)).val` at a translated PET configuration.
+
+    Combines `mixed_back_forward_wick_in_translatedPET` with
+    `F_ext_on_translatedPET_total_translation_invariant` and
+    `F_ext_on_translatedPET_total_eq_on_PET` to express the F_ext value
+    in terms of the BHW analytic function on PET.
+
+    The PET configuration is `joint + c` where `c` is the witness for
+    TranslatedPET membership (the wickRotatePoint of the uniform time shift). -/
+private theorem mixed_back_forward_wick_F_ext_eq_W_analytic_BHW
+    {d n m : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d)
+    (x_n : NPointDomain d n) (y : NPointDomain d m)
+    (hx_n : x_n ∈ OrderedPositiveTimeRegion d n)
+    (hy : y ∈ OrderedPositiveTimeRegion d m) :
+    ∃ (c : Fin (d + 1) → ℂ),
+      (fun k μ =>
+          Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+            (wickRotatePoint ∘ y) k μ + c μ) ∈ PermutedExtendedTube d (n + m) ∧
+      F_ext_on_translatedPET_total Wfn
+          (Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+            (wickRotatePoint ∘ y)) =
+        (W_analytic_BHW Wfn (n + m)).val
+          (fun k μ =>
+            Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+              (wickRotatePoint ∘ y) k μ + c μ) := by
+  -- Get the TranslatedPET membership + witness from D.1.
+  have htrans : (fun k => Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+        (wickRotatePoint ∘ y) k) ∈ TranslatedPET d (n + m) :=
+    mixed_back_forward_wick_in_translatedPET x_n y hx_n hy
+  -- Destructure the existence witness from TranslatedPET's def.
+  obtain ⟨c, hc⟩ := htrans
+  refine ⟨c, hc, ?_⟩
+  -- Re-derive TranslatedPET membership for the translation-invariance call.
+  have htrans' : (fun k => Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+        (wickRotatePoint ∘ y) k) ∈ TranslatedPET d (n + m) :=
+    mixed_back_forward_wick_in_translatedPET x_n y hx_n hy
+  -- F_ext(z) = F_ext(z + c) by translation invariance
+  have h1 :
+      F_ext_on_translatedPET_total Wfn
+          (fun k => Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+            (wickRotatePoint ∘ y) k) =
+        F_ext_on_translatedPET_total Wfn
+          (fun k μ =>
+            Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+              (wickRotatePoint ∘ y) k μ + c μ) :=
+    F_ext_on_translatedPET_total_translation_invariant Wfn _ c htrans'
+  -- F_ext(z + c) = W_analytic_BHW(z + c) since z + c ∈ PET
+  have h2 :
+      F_ext_on_translatedPET_total Wfn
+          (fun k μ =>
+            Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+              (wickRotatePoint ∘ y) k μ + c μ) =
+        (W_analytic_BHW Wfn (n + m)).val
+          (fun k μ =>
+            Fin.append (wickRotatePoint ∘ timeReflectionN d x_n)
+              (wickRotatePoint ∘ y) k μ + c μ) :=
+    F_ext_on_translatedPET_total_eq_on_PET Wfn _ hc
+  exact h1.trans h2
+
+/-- Reflection positivity for the Wick-restricted Schwinger family.
+
+    This is the honest replacement for the deleted same-test-function bridge
+    `OSInnerProduct = WightmanInnerProduct`.  That bridge is false: the
+    Euclidean side pairs the Wick-restricted kernel with Laplace-in-time /
+    Fourier-in-space wave packets, while `Wfn.W` pairs the Minkowski boundary
+    value with Fourier-in-time wave packets.  A valid Hilbert-space comparison
+    would need a nontrivial wave-packet/isometry map `V`, not the identity on
+    coordinate Schwartz test functions.
+
+    The mathematical content of this theorem is the OS I Section 3/5 spectral
+    argument: for test functions supported in strictly ordered positive
+    Euclidean time, rewrite the OS quadratic form as a positive spectral
+    measure integral of the corresponding Laplace-Fourier wave packet.  The
+    support hypothesis supplies the required time ordering, exponential
+    damping, and avoidance of coincidence singularities.
+
+    This is a genuine theorem boundary, not a wrapper around Wightman
+    positivity on the same Borchers sequence.  Any future stronger
+    Hilbert-space-isomorphism theorem must state the intervening map explicitly.
+
+    Ref: OS I, Section 3 and Section 5; Glimm-Jaffe Ch. 19;
+    Reed-Simon II, Section IX.8. -/
+theorem schwingerExtension_os_reflection_positive_from_spectralLaplace
+    (Wfn : WightmanFunctions d)
     (F : BorchersSequence d)
     (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n) :
     (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 := by
   sorry
 
+/-- Compatibility name for the older positivity boundary.  The canonical
+theorem is now `schwingerExtension_os_reflection_positive_from_spectralLaplace`,
+which records the spectral/Laplace route explicitly. -/
+theorem schwingerExtension_os_positivity (Wfn : WightmanFunctions d)
+    (F : BorchersSequence d)
+    (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n) :
+    (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 :=
+  schwingerExtension_os_reflection_positive_from_spectralLaplace Wfn F hsupp
+
 theorem wickRotatedBoundaryPairing_reflection_positive (Wfn : WightmanFunctions d)
     (F : BorchersSequence d)
     (hsupp : ∀ n, tsupport ((F.funcs n : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n) :
     (OSInnerProduct d (constructSchwingerFunctions Wfn) F F).re ≥ 0 :=
-  schwingerExtension_os_positivity Wfn F hsupp
+  schwingerExtension_os_reflection_positive_from_spectralLaplace Wfn F hsupp
 
 /-- F_ext is permutation-invariant on TranslatedPET. Same sorry pattern. -/
 theorem F_ext_permutation_invariant_translated (Wfn : WightmanFunctions d) (n : ℕ)
@@ -3556,24 +3792,6 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
   rw [hBHW_eq _ hmem_shift, hBHW_n_eq _ hmem_n, hBHW_m_eq _ hmem_m]
   exact hh
 
-/-- Cluster property of W_analytic at the integral level: when the (n+m)-point
-    analytic Wightman function is integrated against a tensor product f ⊗ g_a
-    where g_a is g translated by a large purely spatial vector a (a 0 = 0),
-    the result approaches the product S_n(f) * S_m(g).
-
-    The shift on the test function corresponds to a **real** spatial shift
-    on the BHW evaluation point (since wickRotatePoint is additive and
-    preserves real spatial components).
-
-    **Proof strategy:**  Change variables in the m-block integral to absorb the
-    translation into the BHW argument.  The integrand then involves the
-    truncated function H(x, a) = W_BHW(n+m)(z_n(x_n), z_m(x_m) + a) − product,
-    which goes to 0 pointwise by `bhw_pointwise_cluster_forwardTube` (for a.e. x
-    with distinct times).  Dominated convergence applies because W_BHW has
-    polynomial growth uniform in the spatial shift, and f, g are Schwartz.
-
-    Ref: Streater-Wightman, Theorem 3.5 (cluster decomposition);
-    Glimm-Jaffe, Chapter 19 -/
 -- **Weighted polynomial growth of W_BHW at Wick-rotated points.**
 --
 -- The forward-tube growth condition `HasForwardTubeGrowth` gives
@@ -3583,8 +3801,50 @@ theorem bhw_pointwise_cluster_forwardTube (Wfn : WightmanFunctions d) (n m : ℕ
 -- This bound is independent of any spatial shift (imaginary parts unchanged).
 -- Available from `hasForwardTubeGrowth_of_wightman` (SchwingerTemperedness.lean).
 
+/-- Cluster property of `wickRotatedBoundaryPairing` at the integral level.
+
+    For test functions `f, g` with `tsupport ⊆ OrderedPositiveTimeRegion`, the
+    Wick-rotated integral against `f ⊗ g_a` (with `g_a` the spatial translate
+    of `g` by `a`) clusters to the product of single-block integrals as the
+    spatial shift `‖a‖ → ∞`.
+
+    The OPTR support hypothesis ensures:
+    - The integrands are well-defined (test functions vanish on the coincidence
+      locus, where `F_ext_on_translatedPET_total` has its `infDist^{q+1}`
+      singularity from `HasForwardTubeGrowth`). Without this hypothesis the
+      integrals diverge for generic Schwartz test functions, making the bound
+      vacuous (Lean's `∫ = 0` for non-integrable functions).
+    - The Wick-rotated configurations are well-controlled: each block's
+      Wick-rotated configuration is in `ForwardTube` (strictly increasing
+      positive times → successive Im differences in V⁺).
+
+    This is the OS reconstruction Schwinger cluster property (OS axiom E4),
+    captured at the level of integrals over OPTR-supported `𝒮_<` test
+    functions in OS 1973 §2 notation.
+
+    **Proof strategy** (for future implementation):
+    1. Use `OSTensorAdmissible_of_tsupport_subset_orderedPositiveTimeRegion` +
+       `wick_rotated_kernel_mul_zeroDiagonal_integrable` to establish
+       integrability of all three integrals.
+    2. Apply `integral_fin_append_split` (PR #72) for Fubini decomposition
+       of the (n+m)-integral.
+    3. Push `wickRotatePoint` through `Fin.append` via the Tier 2 helper
+       `Fin.append_comp_apply`; evaluate `tensorProduct` on `Fin.append` via
+       `tensorProduct_fin_append_apply`.
+    4. Apply `bhw_pointwise_cluster_forwardTube` for a.e. `(x_n, x_m)`
+       (using Step D.1's pattern for the joint TranslatedPET membership).
+    5. Lift via dominated convergence with the
+       `hasForwardTubeGrowth_of_wightman` polynomial-growth bound and
+       Schwartz decay of the test functions.
+
+    Refs: Osterwalder-Schrader 1973 §2 (definition of `𝒮_<`); §4 (Axiom E4).
+    Glimm-Jaffe Ch 19 (cluster decomposition for Schwinger functions). -/
 theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
     (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
       ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
@@ -3600,43 +3860,119 @@ theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
             (∫ x : NPointDomain d m,
               F_ext_on_translatedPET_total Wfn
                 (fun k => wickRotatePoint (x k)) * g x)‖ < ε := by
-  -- Strategy: bhw_pointwise_cluster_forwardTube + dominated convergence.
+  classical
+  -- Step 1: Promote f, g to ZeroDiagonalSchwartz via the OPTR → vanishing
+  -- bridge. OPTR points have strictly distinct positive times → distinct
+  -- points → not on coincidence locus, so the OPTR support hypothesis lifts
+  -- through `VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion`.
+  have hf_zd : VanishesToInfiniteOrderOnCoincidence f :=
+    VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion
+      f hsupp_f
+  have hg_zd : VanishesToInfiniteOrderOnCoincidence g :=
+    VanishesToInfiniteOrderOnCoincidence_of_support_subset_orderedPositiveTimeRegion
+      g hsupp_g
+  let f_zd : ZeroDiagonalSchwartz d n := ⟨f, hf_zd⟩
+  let g_zd : ZeroDiagonalSchwartz d m := ⟨g, hg_zd⟩
+  -- Step 2: Integrability of the n-block and m-block integrals.
+  -- These are well-defined since f, g vanish on coincidence locus.
+  have _hf_int : MeasureTheory.Integrable
+      (fun x : NPointDomain d n =>
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+          (f_zd.1 : NPointDomain d n → ℂ) x)
+      MeasureTheory.volume :=
+    wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn f_zd
+  have _hg_int : MeasureTheory.Integrable
+      (fun x : NPointDomain d m =>
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+          (g_zd.1 : NPointDomain d m → ℂ) x)
+      MeasureTheory.volume :=
+    wick_rotated_kernel_mul_zeroDiagonal_integrable Wfn g_zd
+  -- Step 3 (deferred): Joint integral analysis.
   --
-  -- Key steps:
-  -- (a) For a.e. x, the Wick-rotated config is in ForwardTube. Note that
-  --     `bhw_pointwise_cluster_forwardTube` requires full ForwardTube
-  --     hypotheses (not just PET membership) on all three evaluation points
-  --     (joint, n-block, m-block), which means the a.e. set needs the
-  --     identity-permutation variant: strictly-increasing-time configurations
-  --     in each block (and in the joint append).
-  -- (b) The integrand is dominated by C(1+‖x‖)^N / infDist^q · |f| · |g|
-  --     (from HasForwardTubeGrowth), independent of the spatial shift a.
-  -- (c) Apply tendsto_integral_of_dominated_convergence.
-  -- (d) Factor the integral over Fin(n+m) into n-block × m-block products via
-  --     Fubini; Mathlib provides `volume_measurePreserving_sumPiEquivProdPi`
-  --     and `volume_measurePreserving_piCongrLeft` over `finSumFinEquiv`.
+  -- **Identified obstacle (2026-05-03):** The current existing pointwise
+  -- cluster lemma `bhw_pointwise_cluster_forwardTube` requires
+  --   `Fin.append z_n z_m ∈ ForwardTube d (n + m)`
+  -- on the *joint* config. But OPTR support on each block separately gives
+  -- only that x_n, x_m have strictly increasing positive times within each
+  -- block — there is no guaranteed inter-block time ordering between the
+  -- last n-point time and the first m-point time. Hence the Wick-rotated
+  -- joint config is in `ForwardTube d (n+m)` only on a measure-zero set.
   --
-  -- Status of blockers (post-W11 migration):
-  -- (1) `wickRotation_in_translatedPET_null` is now a *theorem* (no sorry)
-  --     in ForwardTubeLorentz.lean. The outdated `wickRotation_not_in_PET_null`
-  --     was false for n ≥ d+2 and has been deleted (see W11Counterexample.lean).
-  --     What is still needed here is a *refinement* of that a.e. statement to
-  --     the identity-permutation variant: a.e. x with strictly increasing
-  --     positive times in each block of the Fin.append structure.
-  -- (2) Fubini decomposition of Fin(n+m)-indexed integrals is available via
-  --     `MeasurableEquiv.sumPiEquivProdPi` composed with a piCongrLeft
-  --     transport along `finSumFinEquiv`. A dedicated helper lemma would make
-  --     this clean to invoke here (future work).
+  -- **Recommended route (iii) — Källén-Lehmann spectral.**
+  -- Bypass the BHW joint-tube hypothesis by going through the spectral
+  -- representation directly. Clustering of Schwinger functions is
+  -- equivalent to the absence of a Dirac mass at p = 0 in the truncated
+  -- correlation spectral measure (R4 + R2 → no zero-mode → cluster).
+  -- Prerequisites:
+  --   - SNAG theorem (axiomatized in `GeneralResults/SNAGTheorem.lean`,
+  --     2026-05-03; rated Standard, Reed-Simon VIII.12).
+  --   - Bochner (proved, `bochner` repo `Bochner/Main.lean:1190`).
+  --   - Schwartz Fourier (Mathlib `SchwartzMap.fourierTransformCLM`).
+  --   - Truncated/connected decomposition `W_n = ∑_π ∏ W^T_{|π_i|}` over
+  --     set partitions (pure combinatorics, ~few hundred lines).
+  -- This route is reusable across the Wightman lane (mass gap,
+  -- asymptotic completeness, particle interpretation, spectral form of
+  -- R3) and across sister projects (lgt, gaussian-field).
+  -- Estimated cost: ~6–9 weeks end-to-end if we avoid full Wightman GNS
+  -- by working with W_2(a, 0) as a continuous positive-definite scalar
+  -- function and applying Bochner directly (no GNS Hilbert space needed
+  -- for the vacuum spectral measure).
+  --
+  -- **Fallback route (i) — permuted-ForwardTube cluster.**
+  -- Generalize `bhw_pointwise_cluster_forwardTube` to a permuted variant
+  -- whose joint hypothesis is only a permuted ForwardTube. The proof
+  -- sorts the joint config by time and applies BHW permutation
+  -- invariance; the cluster decomposition into `(n + m) → n × m` is
+  -- sensitive to which permutation is used, so the statement requires
+  -- care. ~1–2 weeks. Surgical, single-use; no broader reuse.
+  --
+  -- **Alternate route (ii) — direct Poisson lift.**
+  -- Use `Wfn.cluster` (R4) with carefully constructed test functions
+  -- concentrated on (x_n, x_m); the Poisson integral representation
+  -- lifts distributional cluster to pointwise cluster on each block's
+  -- tube. This is the OS-1973 §3 spectral route, but applied within
+  -- BHW rather than as a generic spectral statement; effectively a
+  -- specialization of (iii) to our setting. Roughly 3–4 weeks.
+  --
+  -- **Proof-strategy steps assuming route (i) or (ii) (kept inline as
+  -- they share most of the dominated-convergence assembly):**
+  --
+  -- 1. Pointwise convergence on a.e. (x_n, x_m): for a.e. configs (using
+  --    `ae_pairwise_distinct_timeCoords`), each x_n, x_m has distinct
+  --    positive times, so wick(x_n^{σ_n}), wick(x_m^{σ_m}) ∈ ForwardTube
+  --    via `euclidean_ordered_in_forwardTube`.
+  -- 2. Joint integrand: dominate `F_ext(append (wick x_n) (wick x_m + a))`
+  --    by the polynomial-growth bound from `hasForwardTubeGrowth_of_wightman`
+  --    against `infDist^{q+1}`, then absorb both polynomial-growth and
+  --    coincidence singularity into Schwartz decay of f, g.
+  -- 3. Uniform-in-a dominator: for |a| > R₀, the m-block points are spatially
+  --    far from the n-block by Schwartz decay, so the joint integrand is
+  --    bounded by an integrable function of (x_n, x_m) independent of a.
+  -- 4. Fubini: apply `integral_fin_append_split` (PR #72) to decompose the
+  --    (n+m)-integral; push `wickRotatePoint` past `Fin.append` via
+  --    `Fin.append_comp_apply`; evaluate `tensorProduct` via
+  --    `tensorProduct_fin_append_apply`.
+  -- 5. Change of variable x_m → x_m + a on the m-block: use translation
+  --    invariance of Lebesgue measure on `NPointDomain`, plus
+  --    `wickRotatePoint_add` and `a 0 = 0` to convert
+  --    `wickRotatePoint(x_m + a)` to `wickRotatePoint(x_m) + (real spatial a)`.
+  -- 6. Dominated convergence assembly: combine 1–3 with
+  --    `MeasureTheory.tendsto_integral_of_dominated_convergence`; pick R
+  --    via ε/3 from the pointwise bound and the dominator.
   sorry
 
-/-- The Schwinger functions satisfy clustering (E4).
+/-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
+    test functions.
 
-    Proof: Follows from cluster decomposition of Wightman functions (R4)
-    via the analytic continuation. The key input is `W_analytic_cluster_integral`,
-    which combines the pointwise cluster property of W_analytic with
-    dominated convergence using Schwartz function decay. -/
+    Wrapper around `W_analytic_cluster_integral` that exposes the
+    `wickRotatedBoundaryPairing` form. The same OPTR support hypothesis is
+    required for the integrals to be well-defined. -/
 theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
     (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
     (ε : ℝ) (hε : ε > 0) :
     ∃ R : ℝ, R > 0 ∧
       ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
@@ -3647,7 +3983,7 @@ theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
             wickRotatedBoundaryPairing Wfn m g‖ < ε := by
   -- Unfold the raw Wick-rotated full-Schwartz pairing to expose the integrals.
   simp only [wickRotatedBoundaryPairing]
-  exact W_analytic_cluster_integral Wfn n m f g ε hε
+  exact W_analytic_cluster_integral Wfn n m f g hsupp_f hsupp_g ε hε
 
 
 end

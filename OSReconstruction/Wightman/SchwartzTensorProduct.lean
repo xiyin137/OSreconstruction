@@ -229,6 +229,18 @@ def splitFirst (m k : ℕ) (x : Fin (m + k) → E) : Fin m → E :=
 def splitLast (m k : ℕ) (x : Fin (m + k) → E) : Fin k → E :=
   fun j => x (Fin.natAdd m j)
 
+@[simp]
+theorem splitFirst_fin_append {m k : ℕ} (x : Fin m → E) (y : Fin k → E) :
+    splitFirst m k (Fin.append x y) = x := by
+  funext i
+  simp [splitFirst, Fin.append_left]
+
+@[simp]
+theorem splitLast_fin_append {m k : ℕ} (x : Fin m → E) (y : Fin k → E) :
+    splitLast m k (Fin.append x y) = y := by
+  funext j
+  simp [splitLast, Fin.append_right]
+
 /-- splitFirst is a continuous linear map (projection). -/
 theorem splitFirst_continuousLinear (m k : ℕ) :
     Continuous (splitFirst m k : (Fin (m + k) → E) → (Fin m → E)) :=
@@ -457,6 +469,16 @@ theorem SchwartzMap.tensorProduct_apply {m k : ℕ}
     (f : 𝓢(Fin m → E, ℂ)) (g : 𝓢(Fin k → E, ℂ))
     (x : Fin (m + k) → E) :
     f.tensorProduct g x = f (splitFirst m k x) * g (splitLast m k x) := rfl
+
+/-- Tensor product evaluated on a `Fin.append`: the QFT-side form of
+    `tensorProduct_apply`. Splits a joint configuration `Fin.append x y`
+    into the n-block factor `f x` and the m-block factor `g y`. -/
+@[simp]
+theorem SchwartzMap.tensorProduct_fin_append_apply {m k : ℕ}
+    (f : 𝓢(Fin m → E, ℂ)) (g : 𝓢(Fin k → E, ℂ))
+    (x : Fin m → E) (y : Fin k → E) :
+    f.tensorProduct g (Fin.append x y) = f x * g y := by
+  simp
 
 /-- The Borchers conjugated tensor product: f* ⊗ g where f* is the Borchers involution.
     This is the pairing used in the Wightman inner product:

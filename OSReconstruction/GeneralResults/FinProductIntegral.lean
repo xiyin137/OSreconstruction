@@ -133,4 +133,21 @@ theorem integral_fin_append_split (n m : ℕ) (f : (Fin (n + m) → α) → E)
   rw [integral_fin_add_split n m f hf]
   simp_rw [MeasurableEquiv.finAddProd_symm_apply]
 
+/-- **Componentwise composition through `Fin.append`.** Pushes a function `h`
+past a `Fin.append`: at each index `k`, applying `h` to the appended tuple
+agrees with the appended `(h ∘ x, h ∘ y)`. The call-site-shaped form of
+`Fin.append_castAdd_natAdd`: lets `(fun k => h ((Fin.append x y) k))` rewrite
+to `Fin.append (h ∘ x) (h ∘ y)`, which is what BHW cluster proofs need to
+push `wickRotatePoint` past the joint append.
+
+Not tagged `@[simp]` because the fully polymorphic `h` matches too aggressively
+(simp will pick `h := Eq` and warp `Fin.append_right` proof terms downstream).
+Invoke explicitly via `simp_rw [Fin.append_comp_apply]` or `rw`. -/
+theorem Fin.append_comp_apply {α β : Type*} {n m : ℕ}
+    (h : α → β) (x : Fin n → α) (y : Fin m → α) (k : Fin (n + m)) :
+    h (Fin.append x y k) = Fin.append (h ∘ x) (h ∘ y) k := by
+  refine Fin.addCases (fun i => ?_) (fun j => ?_) k
+  · simp [Fin.append_left, Function.comp]
+  · simp [Fin.append_right, Function.comp]
+
 end

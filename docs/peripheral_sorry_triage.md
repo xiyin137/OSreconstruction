@@ -22,8 +22,8 @@ Here "peripheral" does **not** mean mathematically unimportant. It means:
 
 | File:line | Theorem | Why peripheral right now | Primary doc |
 |---|---|---|---|
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2379` | `schwingerExtension_os_term_eq_wightman_term` | false route, should be quarantined not advanced | `docs/r_to_e_blueprint.md` |
-| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3627` | `W_analytic_cluster_integral` | reverse-direction cluster, not current `E -> R` target | `docs/r_to_e_blueprint.md` |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:2377` | `schwingerExtension_os_reflection_positive_from_spectralLaplace` | honest reverse reflection-positivity boundary, not current `E -> R` target | `docs/r_to_e_blueprint.md` |
+| `Wightman/Reconstruction/WickRotation/SchwingerAxioms.lean:3545` | `W_analytic_cluster_integral` | reverse-direction cluster, not current `E -> R` target | `docs/r_to_e_blueprint.md` |
 | `Wightman/Reconstruction/WickRotation/BHWTranslation.lean:1115` | `isPreconnected_baseFiber` | old-route residual, no longer needed on merged Route 1 path | `docs/r_to_e_blueprint.md` |
 
 ## 2. GNS / uniqueness side lane
