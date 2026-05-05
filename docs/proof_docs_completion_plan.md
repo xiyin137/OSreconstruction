@@ -355,6 +355,16 @@ spacetime/source minimum upper bound plus failure of the equality defining
 `SourceOrientedMaxRankAt`.  The upper bound is proved from
 `sourceGramMatrixRank_eq_restrictedMinkowskiRank_range`,
 `finrank_range_sourceCoefficientEval_le`, and `Submodule.finrank_le`.
+The companion file
+`OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedLowRankDeterminants.lean`
+now checks the determinant consequence used by the normal-form route:
+`BHW.sourceFullFrameDet_eq_zero_of_sourceRank_lt` proves that every full-frame
+determinant coordinate vanishes below source Gram rank `d + 1`, using the
+selected full-frame Gram determinant identity and the checked nonzero-minor
+rank bound.  It also checks
+`BHW.sourceOrientedMinkowskiInvariant_eq_of_sameGram_rank_lt`, so in the
+strict low-rank branch ordinary Gram equality already gives equality of the
+full oriented invariant.
 
 Latest local connected-basis refinement, 2026-05-05: the rank-deficient
 no-tube local-image branch uses the checked one-way shifted-tail realization
