@@ -2791,6 +2791,7 @@ implementation contract is:
    boxes.  The blueprint now exposes the Euclidean induction
    cases:
    `sourceTailOrientedSmallRealization_zeroGram`,
+   `sourceTailFullFrame_factorWithDet`,
    `sourceTailFullFrame_smallFactorWithDet`,
    `sourceTailOrientedSmallRealization_fullRankStep`, and
    `sourceTailOrientedSmallRealization_schurStep`, with an explicit
@@ -2812,9 +2813,15 @@ implementation contract is:
    invertible block was available to invert.  The full-rank tail case is no
    longer hidden inside the Schur recursion: after choosing
    `ι : Fin D ↪ Fin m`, factor the selected full residual Gram block with
-   determinant `T.det ι`, solve every other vector by mixed-Gram coefficients,
-   use the rank-`D` Schur-complement zero theorem for Gram equality, and use
-   the mixed-minor relation
+   determinant `T.det ι`.  The determinant-orientation core is checked as
+   `sourceTailFullFrame_factorWithDet`; the remaining
+   `sourceTailFullFrame_smallFactorWithDet` obligation is the quantitative
+   small-entry refinement of that same factorization.  The equality
+   `det(A) = (T.det ι)^2` is exposed for arbitrary tail-variety points as
+   `sourceTailOrientedVariety_selectedGram_det`, not reproved from a hidden
+   witness in the full-rank step.  Then solve every other vector by mixed-Gram
+   coefficients, use the rank-`D` Schur-complement zero theorem for Gram
+   equality, and use the mixed-minor relation
    `det(T.gram (ι ·) (κ ·)) = T.det ι * T.det κ` to recover all determinant
    coordinates with the selected sign.  This is a genuine top-rank branch,
    not an arbitrary Gram-factorization shortcut.

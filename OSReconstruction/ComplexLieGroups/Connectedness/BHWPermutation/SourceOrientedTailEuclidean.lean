@@ -133,6 +133,18 @@ theorem sourceTailOrientedInvariant_selectedGram_det
         (sourceTailOrientedInvariant D m q).det ι := by
           rfl
 
+/-- Every Euclidean tail-variety point satisfies the selected Gram determinant
+square relation with its oriented determinant coordinate. -/
+theorem sourceTailOrientedVariety_selectedGram_det
+    (D m : ℕ)
+    {T : SourceTailOrientedData D m}
+    (hTvar : T ∈ sourceTailOrientedVariety D m)
+    (ι : Fin D ↪ Fin m) :
+    Matrix.det (fun a b : Fin D => T.gram (ι a) (ι b)) =
+      T.det ι * T.det ι := by
+  rcases hTvar with ⟨q, rfl⟩
+  exact sourceTailOrientedInvariant_selectedGram_det D m q ι
+
 /-- On the Euclidean tail variety in positive tail dimension, zero Gram
 coordinates force all top determinant coordinates to vanish. -/
 theorem sourceTailOrientedVariety_det_eq_zero_of_gram_eq_zero
@@ -303,6 +315,79 @@ theorem sourceTail_exists_principalMinor_of_rank
           (sourceTailOrientedInvariant D m q).gram (I a) (I b)) ≠ 0 := by
     simpa [sourceMatrixMinor] using hdet
   exact isUnit_iff_ne_zero.mpr hdet'
+
+/-- Full-frame Euclidean orientation repair: if a symmetric square Gram block
+has determinant `δ^2`, then it has a square dot-factor whose determinant is
+exactly `δ`.  The only orientation adjustment is right multiplication by a
+one-coordinate reflection. -/
+theorem sourceTailFullFrame_factorWithDet
+    (D : ℕ)
+    (hD : 0 < D)
+    (A : Matrix (Fin D) (Fin D) ℂ)
+    (hAsym : (fun i j : Fin D => A i j) ∈ sourceSymmetricMatrixSpace D)
+    (δ : ℂ)
+    (hdet : A.det = δ * δ) :
+    ∃ M : Matrix (Fin D) (Fin D) ℂ,
+      M * Mᵀ = A ∧ M.det = δ := by
+  let Z : Fin D → Fin D → ℂ := fun i j => A i j
+  have hrank : (Matrix.of fun i j : Fin D => Z i j).rank ≤ D := by
+    simpa [Z] using Matrix.rank_le_width A
+  rcases complex_symmetric_matrix_factorization_of_rank_le D D hAsym hrank with
+    ⟨q, hq⟩
+  let M : Matrix (Fin D) (Fin D) ℂ := fun i μ => q i μ
+  have hM : M * Mᵀ = A := by
+    ext i j
+    have hij := congrFun (congrFun hq i) j
+    rw [hij]
+    simp [M, sourceComplexDotGram, Matrix.mul_apply]
+  have hMdet_sq : M.det * M.det = δ * δ := by
+    calc
+      M.det * M.det = (M * Mᵀ).det := by
+        rw [Matrix.det_mul, Matrix.det_transpose]
+      _ = A.det := by rw [hM]
+      _ = δ * δ := hdet
+  rcases (mul_self_eq_mul_self_iff.mp hMdet_sq) with hMdet | hMdet
+  · exact ⟨M, hM, hMdet⟩
+  · let i0 : Fin D := ⟨0, hD⟩
+    let sign : Fin D → ℂ := fun μ => if μ = i0 then -1 else 1
+    let R : Matrix (Fin D) (Fin D) ℂ := Matrix.diagonal sign
+    have hsign_sq : ∀ μ, sign μ * sign μ = 1 := by
+      intro μ
+      by_cases hμ : μ = i0
+      · simp [sign, hμ]
+      · simp [sign, hμ]
+    have hRR : R * Rᵀ = 1 := by
+      ext μ ν
+      by_cases hμν : μ = ν
+      · subst hμν
+        simp [R, Matrix.mul_apply, Matrix.diagonal, hsign_sq]
+      · simp [R, Matrix.mul_apply, Matrix.diagonal, hμν]
+    have hRdet : R.det = -1 := by
+      rw [Matrix.det_diagonal]
+      have hprod :
+          (∏ μ : Fin D, sign μ) = -1 := by
+        rw [Finset.prod_eq_single i0]
+        · simp [sign]
+        · intro μ _ hμ
+          simp [sign, hμ]
+        · intro hi0
+          exact False.elim (hi0 (Finset.mem_univ i0))
+      exact hprod
+    refine ⟨M * R, ?_, ?_⟩
+    · calc
+        (M * R) * (M * R)ᵀ
+            = (M * R) * (Rᵀ * Mᵀ) := by
+              rw [Matrix.transpose_mul]
+        _ = M * (R * Rᵀ) * Mᵀ := by
+              rw [Matrix.mul_assoc M R (Rᵀ * Mᵀ),
+                ← Matrix.mul_assoc R Rᵀ Mᵀ,
+                ← Matrix.mul_assoc M (R * Rᵀ) Mᵀ]
+        _ = M * Mᵀ := by simp [hRR]
+        _ = A := hM
+    · calc
+        (M * R).det = M.det * R.det := Matrix.det_mul M R
+        _ = (-δ) * (-1) := by rw [hMdet, hRdet]
+        _ = δ := by ring
 
 /-- Any selected injection can be moved to the canonical head labels by a
 permutation of the finite source-label set. -/
