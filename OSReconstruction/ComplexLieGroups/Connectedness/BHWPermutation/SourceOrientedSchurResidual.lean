@@ -82,12 +82,62 @@ theorem sourceSchurMixedCoeff_mul_headBlock
   rw [sourceSchurMixedCoeff, Matrix.mul_assoc, Matrix.nonsing_inv_mul A hA,
     Matrix.mul_one]
 
-  theorem sourceVectorMinkowskiInner_comm
+theorem sourceVectorMinkowskiInner_comm
     (d : ℕ)
     (x y : Fin (d + 1) → ℂ) :
     sourceVectorMinkowskiInner d x y =
       sourceVectorMinkowskiInner d y x := by
   simp [sourceVectorMinkowskiInner, mul_comm, mul_left_comm]
+
+theorem sourceVectorMinkowskiInner_sub_left
+    (d : ℕ)
+    (x y z : Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d (fun μ => x μ - y μ) z =
+      sourceVectorMinkowskiInner d x z -
+        sourceVectorMinkowskiInner d y z := by
+  simp only [sourceVectorMinkowskiInner]
+  rw [← Finset.sum_sub_distrib]
+  apply Finset.sum_congr rfl
+  intro μ _hμ
+  ring
+
+theorem sourceVectorMinkowskiInner_sub_right
+    (d : ℕ)
+    (x y z : Fin (d + 1) → ℂ) :
+    sourceVectorMinkowskiInner d x (fun μ => y μ - z μ) =
+      sourceVectorMinkowskiInner d x y -
+        sourceVectorMinkowskiInner d x z := by
+  simp only [sourceVectorMinkowskiInner]
+  rw [← Finset.sum_sub_distrib]
+  apply Finset.sum_congr rfl
+  intro μ _hμ
+  ring
+
+/-- Actual residual vector obtained by subtracting the Schur head projection
+from an actual tail source vector. -/
+def sourceActualSchurResidualVector
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (u : Fin (n - r)) :
+    Fin (d + 1) → ℂ :=
+  fun μ =>
+    z (finSourceTail hrn u) μ -
+      ∑ a : Fin r, L u a * z (finSourceHead hrn a) μ
+
+theorem sourceActualSchurResidualVector_decomp
+    (d n r : ℕ)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (u : Fin (n - r)) :
+    z (finSourceTail hrn u) =
+      fun μ =>
+        (∑ a : Fin r, L u a * z (finSourceHead hrn a) μ) +
+          sourceActualSchurResidualVector d n r hrn z L u μ := by
+  ext μ
+  simp [sourceActualSchurResidualVector]
 
 /-- Selected residual-tail full-frame determinant coordinates extracted from
 the original oriented determinant coordinate and the chosen head factor. -/
@@ -143,6 +193,64 @@ theorem SourceOrientedSchurResidualData.L_mul_A
     R.L * R.A = sourceOrientedSchurMixedBlock n r hrn G := by
   rw [R.L_eq]
   exact sourceSchurMixedCoeff_mul_headBlock n r hrn G R.A R.A_unit
+
+theorem sourceActualSchurResidualVector_inner_head
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (R :
+      SourceOrientedSchurResidualData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n z))
+    (u : Fin (n - r))
+    (a : Fin r) :
+    sourceVectorMinkowskiInner d
+        (sourceActualSchurResidualVector d n r hrn z R.L u)
+        (z (finSourceHead hrn a)) = 0 := by
+  change
+    sourceVectorMinkowskiInner d
+        (fun μ =>
+          z (finSourceTail hrn u) μ -
+            ∑ b : Fin r, R.L u b * z (finSourceHead hrn b) μ)
+        (z (finSourceHead hrn a)) = 0
+  rw [sourceVectorMinkowskiInner_sub_left, sourceVectorMinkowskiInner_sum_left]
+  simp_rw [sourceVectorMinkowskiInner_smul_left]
+  have hsum :
+      (∑ b : Fin r,
+          R.L u b *
+            sourceVectorMinkowskiInner d
+              (z (finSourceHead hrn b)) (z (finSourceHead hrn a))) =
+        (R.L * R.A) u a := by
+    simp [Matrix.mul_apply, R.A_eq, sourceOrientedSchurHeadBlock,
+      sourceOrientedMinkowskiInvariant, SourceOrientedGramData.gram,
+      sourceMinkowskiGram, sourceVectorMinkowskiInner]
+  have hentry :
+      (R.L * R.A) u a =
+        sourceVectorMinkowskiInner d
+          (z (finSourceTail hrn u)) (z (finSourceHead hrn a)) := by
+    have hLA := R.L_mul_A
+    simpa [sourceOrientedSchurMixedBlock, sourceOrientedMinkowskiInvariant,
+      SourceOrientedGramData.gram, sourceMinkowskiGram,
+      sourceVectorMinkowskiInner] using
+        congrFun (congrFun hLA u) a
+  rw [hsum, hentry]
+  ring
+
+theorem sourceActualSchurResidualVector_head_inner
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (R :
+      SourceOrientedSchurResidualData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n z))
+    (a : Fin r)
+    (u : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (z (finSourceHead hrn a))
+        (sourceActualSchurResidualVector d n r hrn z R.L u) = 0 := by
+  rw [sourceVectorMinkowskiInner_comm]
+  exact sourceActualSchurResidualVector_inner_head d n r hrD hrn z R u a
 
 /-- The normal Schur parameter realizes the ordinary Gram coordinates.  The
 range hypothesis is needed because arbitrary product-coordinate `G.gram` need

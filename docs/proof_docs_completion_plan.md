@@ -613,6 +613,12 @@ also checked in
 `BHW.SourceOrientedSchurResidualData`,
 `BHW.SourceOrientedSchurResidualData.L_mul_A`,
 `BHW.sourceVectorMinkowskiInner_comm`,
+`BHW.sourceVectorMinkowskiInner_sub_left`,
+`BHW.sourceVectorMinkowskiInner_sub_right`,
+`BHW.sourceActualSchurResidualVector`,
+`BHW.sourceActualSchurResidualVector_decomp`,
+`BHW.sourceActualSchurResidualVector_inner_head`,
+`BHW.sourceActualSchurResidualVector_head_inner`,
 `BHW.sourceOrientedNormalParameterVector_realizes_schur_gram`,
 `BHW.sourceNormalFullFrameDetFromSchur_headTail`,
 `BHW.sourceNormalFullFrameDetFromSchur_headTail_eq_source_det`, and the
