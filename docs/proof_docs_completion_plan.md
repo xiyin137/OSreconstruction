@@ -629,7 +629,8 @@ also checked in
 `BHW.sourceActualSchurResidual_selectedFrameDet_eq_headFactor_mul_tail_det`,
 `BHW.sourceOrientedNormalParameterVector_realizes_schur_gram`,
 `BHW.sourceNormalFullFrameDetFromSchur_headTail`,
-`BHW.sourceNormalFullFrameDetFromSchur_headTail_eq_source_det`, and the
+`BHW.sourceNormalFullFrameDetFromSchur_headTail_eq_source_det`,
+`BHW.sourceOrientedSchur_fullFrameDet_reconstruct_of_headTailPropagation`, and the
 checked determinant consumer
 `BHW.sourceOrientedNormalParameterVector_realizes_schur_det_of_fullFrameReconstruct`
 together with the full oriented-data consumer
@@ -669,7 +670,19 @@ is not a valid shortcut for arbitrary ordered full frames.  Gemini was
 consulted on 2026-05-05 and agreed that the remaining theorem is precisely an
 oriented residual-volume uniqueness/propagation input; it also warned that a
 Gram-only comparison and a naive arbitrary-frame row-operation argument are
-false.  Once that theorem is proved, the final
+false.  The hard input is now isolated as
+`sourceOrientedGramVariety_det_eq_of_gram_eq_headTailDet_eq`: if two points of
+`sourceOrientedGramVariety d n` have the same Gram coordinate, an invertible
+selected head Gram block, and matching determinant coordinates on every
+selected `head ∪ lam` frame, then their full determinant-coordinate functions
+are equal.  The checked theorem
+`sourceOrientedSchur_fullFrameDet_reconstruct_of_headTailPropagation` proves
+that this one propagation theorem mechanically gives the Schur full-frame
+determinant reconstruction by building the normal parameter from `R.tail_mem`,
+calling the checked Gram realization theorem, checking selected head-tail
+determinants, and rewriting through
+`sourceFullFrameDet_normalParameter_eq_schurFormula`.  Once the propagation
+theorem is proved, the final
 `sourceOrientedNormalParameterVector_realizes_schur` theorem is a mechanical
 call to the checked
 `sourceOrientedNormalParameterVector_realizes_schur_of_fullFrameReconstruct`

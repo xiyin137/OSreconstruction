@@ -628,6 +628,91 @@ theorem sourceNormalFullFrameDetFromSchur_headTail_eq_source_det
   rw [htail]
   field_simp [R.headFactor_det_unit.ne_zero]
 
+/-- Mechanical Schur determinant reconstruction from a separate oriented
+head-tail determinant propagation theorem on the source-oriented variety.  The
+hard input `hprop` is the genuine Plucker/Cauchy-Binet propagation step. -/
+theorem sourceOrientedSchur_fullFrameDet_reconstruct_of_headTailPropagation
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (hprop :
+      ∀ {G H : SourceOrientedGramData d n},
+        G ∈ sourceOrientedGramVariety d n →
+        H ∈ sourceOrientedGramVariety d n →
+        IsUnit (sourceOrientedSchurHeadBlock n r hrn G).det →
+        H.gram = G.gram →
+        (∀ lam : Fin (d + 1 - r) ↪ Fin (n - r),
+          H.det (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) =
+            G.det (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)) →
+        H.det = G.det)
+    {G : SourceOrientedGramData d n}
+    (hGvar : G ∈ sourceOrientedGramVariety d n)
+    (R : SourceOrientedSchurResidualData d n r hrD hrn G)
+    (ι : Fin (d + 1) ↪ Fin n) :
+    sourceNormalFullFrameDetFromSchur d n r hrD hrn
+        R.headFactor R.L R.tail ι = G.det ι := by
+  rcases R.tail_mem with ⟨q, hq⟩
+  let p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn :=
+    { head := R.headFactor
+      mixed := R.L
+      tail := q }
+  let H : SourceOrientedGramData d n :=
+    sourceOrientedMinkowskiInvariant d n
+      (sourceOrientedNormalParameterVector d n r hrD hrn p)
+  have hHvar : H ∈ sourceOrientedGramVariety d n := by
+    exact ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩
+  have hAunit : IsUnit (sourceOrientedSchurHeadBlock n r hrn G).det := by
+    rw [← R.A_eq]
+    exact R.A_unit
+  have hgram : H.gram = G.gram := by
+    exact sourceOrientedNormalParameterVector_realizes_schur_gram
+      d n r hrD hrn hGvar R rfl rfl (by simpa [p] using hq)
+  have hheadTail :
+      ∀ lam : Fin (d + 1 - r) ↪ Fin (n - r),
+        H.det (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) =
+          G.det (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) := by
+    intro lam
+    change sourceFullFrameDet d n
+        (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)
+        (sourceOrientedNormalParameterVector d n r hrD hrn p) = _
+    calc
+      sourceFullFrameDet d n
+          (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)
+          (sourceOrientedNormalParameterVector d n r hrD hrn p)
+          = sourceNormalFullFrameDetFromSchur d n r hrD hrn
+              p.head p.mixed
+              (sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail)
+              (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) :=
+            sourceFullFrameDet_normalParameter_eq_schurFormula
+              d n r hrD hrn p
+              (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)
+      _ = sourceNormalFullFrameDetFromSchur d n r hrD hrn
+              R.headFactor R.L R.tail
+              (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) := by
+            simp [p, hq]
+      _ = G.det (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) :=
+            sourceNormalFullFrameDetFromSchur_headTail_eq_source_det
+              d n r hrD hrn R lam
+  have hdet : H.det = G.det :=
+    hprop hGvar hHvar hAunit hgram hheadTail
+  calc
+    sourceNormalFullFrameDetFromSchur d n r hrD hrn
+        R.headFactor R.L R.tail ι
+        = sourceNormalFullFrameDetFromSchur d n r hrD hrn
+            p.head p.mixed
+            (sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail)
+            ι := by
+          simp [p, hq]
+    _ = H.det ι := by
+          change sourceNormalFullFrameDetFromSchur d n r hrD hrn
+            p.head p.mixed
+            (sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail) ι =
+              sourceFullFrameDet d n ι
+                (sourceOrientedNormalParameterVector d n r hrD hrn p)
+          exact (sourceFullFrameDet_normalParameter_eq_schurFormula
+            d n r hrD hrn p ι).symm
+    _ = G.det ι := congrFun hdet ι
+
 /-- Mechanical determinant-coordinate consumer for the normal-parameter Schur
 route.  The hard input is the genuine full-frame reconstruction theorem over
 the original oriented datum `G`, supplied as `hdet`. -/
