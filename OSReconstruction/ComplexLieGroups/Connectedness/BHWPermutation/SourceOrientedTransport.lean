@@ -134,6 +134,71 @@ theorem sourceOrientedInvariantTransport_mem_inter_iff
         _ = H := T.right_inv H
     simpa [hto] using hHΩ
 
+/-- The inverse transport of an open set, intersected with the oriented
+variety, is relatively open in the oriented source variety. -/
+theorem sourceOrientedInvariantTransport_invFun_image_inter_variety_relOpen
+    {d n : ℕ}
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {Ω : Set (SourceOrientedGramData d n)}
+    (hΩ : IsOpen Ω) :
+    IsRelOpenInSourceOrientedGramVariety d n
+      ((T.invFun '' Ω) ∩ sourceOrientedGramVariety d n) :=
+  ⟨T.invFun '' Ω, T.isOpen_invFun_image hΩ, rfl⟩
+
+/-- A normal-coordinate image-surjectivity statement transports through
+`invFun`.  This is the generic set-theoretic step used when a residual Schur
+chart first proves `Ω ∩ variety ⊆ f '' parameterBox` in normal coordinates
+and then moves the chart back to the original coordinates. -/
+theorem sourceOrientedInvariantTransport_invFun_image_inter_variety_subset_image
+    {d n : ℕ}
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {α : Type*}
+    {Ω : Set (SourceOrientedGramData d n)}
+    {s : Set α}
+    {f : α → SourceOrientedGramData d n}
+    (hsurj :
+      Ω ∩ sourceOrientedGramVariety d n ⊆ f '' s) :
+    (T.invFun '' Ω) ∩ sourceOrientedGramVariety d n ⊆
+      (fun a => T.invFun (f a)) '' s := by
+  intro G hG
+  have hto :
+      T.toFun G ∈ Ω ∩ sourceOrientedGramVariety d n :=
+    (sourceOrientedInvariantTransport_mem_inter_iff
+      (d := d) (n := n) T).2 hG
+  rcases hsurj hto with ⟨a, ha, hfa⟩
+  refine ⟨a, ha, ?_⟩
+  calc
+    T.invFun (f a) = T.invFun (T.toFun G) := by rw [hfa]
+    _ = G := T.left_inv G
+
+/-- If a normal-coordinate parameter map has image exactly the normal open
+variety slice, then the inverse-transported parameter map has image exactly
+the inverse-transported open variety slice. -/
+theorem sourceOrientedInvariantTransport_invFun_image_eq_inter_variety
+    {d n : ℕ}
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {α : Type*}
+    {Ω : Set (SourceOrientedGramData d n)}
+    {s : Set α}
+    {f : α → SourceOrientedGramData d n}
+    (hsurj :
+      Ω ∩ sourceOrientedGramVariety d n ⊆ f '' s)
+    (hmem :
+      ∀ a ∈ s, f a ∈ Ω ∩ sourceOrientedGramVariety d n) :
+    (fun a => T.invFun (f a)) '' s =
+      (T.invFun '' Ω) ∩ sourceOrientedGramVariety d n := by
+  ext G
+  constructor
+  · rintro ⟨a, ha, rfl⟩
+    have hfa := hmem a ha
+    exact
+      ⟨⟨f a, hfa.1, rfl⟩,
+        (T.invFun_mem_variety_iff (f a)).2 hfa.2⟩
+  · intro hG
+    exact
+      sourceOrientedInvariantTransport_invFun_image_inter_variety_subset_image
+        (d := d) (n := n) T hsurj hG
+
 /-- If a normal max-rank parameter image is dense at a point, then the
 inverse-transported parameter image is dense at the inverse-transported point.
 The max-rank predicate in the parameter subset is transported by

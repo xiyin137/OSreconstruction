@@ -2534,7 +2534,12 @@ implementation contract is:
    inverse max-rank/variety preservation lemmas.  It also now checks
    `BHW.sourceOrientedInvariantTransport_mem_inter_iff` for moving
    `Ω ∩ sourceOrientedGramVariety` through `toFun`/`invFun`, and
-   `BHW.sourceOrientedInvariantTransport_closure_maxRankDense` for transporting
+   `BHW.sourceOrientedInvariantTransport_invFun_image_inter_variety_relOpen`,
+   `BHW.sourceOrientedInvariantTransport_invFun_image_inter_variety_subset_image`,
+   and `BHW.sourceOrientedInvariantTransport_invFun_image_eq_inter_variety`
+   for pulling normal Schur image-surjectivity and relative openness back to
+   original oriented coordinates.  Finally,
+   `BHW.sourceOrientedInvariantTransport_closure_maxRankDense` transports
    residual max-rank-density closure statements through `invFun`.  The
    normal-form packet now separates the actual
    extended-tube adapted representative `adaptedBase` from the canonical
