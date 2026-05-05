@@ -105,6 +105,108 @@ theorem matrix_unitary_entry_mul_real_sqrt_norm_le_sqrt
     _ = Real.sqrt σ := by ring
     _ ≤ Real.sqrt L := Real.sqrt_le_sqrt hσ_le
 
+/-- Given a Takagi-style diagonalization and an embedding of the nonzero
+singular directions into `Fin k`, construct the rectangular `m × k` factor.
+
+The same statement also carries the entry estimate used downstream: if all
+singular values are bounded by `L`, then all entries of the rectangular factor
+are bounded by `sqrt L`. -/
+theorem complexSymmetric_takagi_factor_from_supportEmbedding
+    (m k : ℕ)
+    {U : Matrix.unitaryGroup (Fin m) ℂ}
+    {σ : Fin m → ℝ}
+    (hσ_nonneg : ∀ a, 0 ≤ σ a)
+    (e : {a : Fin m // σ a ≠ 0} ↪ Fin k)
+    (S : Matrix (Fin m) (Fin m) ℂ)
+    (hTakagi :
+      S =
+        (U : Matrix (Fin m) (Fin m) ℂ) *
+          Matrix.diagonal (fun a => (σ a : ℂ)) *
+          (U : Matrix (Fin m) (Fin m) ℂ).transpose) :
+    ∃ A : Matrix (Fin m) (Fin k) ℂ,
+      S = A * A.transpose ∧
+      ∀ {L : ℝ}, 0 ≤ L → (∀ a, σ a ≤ L) →
+        ∀ i b, ‖A i b‖ ≤ Real.sqrt L := by
+  let nz := {a : Fin m // σ a ≠ 0}
+  let A : Matrix (Fin m) (Fin k) ℂ := fun i b =>
+    if hb : b ∈ Set.range e then
+      (U : Matrix (Fin m) (Fin m) ℂ) i (Classical.choose hb).1 *
+        (Real.sqrt (σ (Classical.choose hb).1) : ℂ)
+    else 0
+  refine ⟨A, ?_, ?_⟩
+  · ext i j
+    rw [hTakagi]
+    have hdiag :
+        (((U : Matrix (Fin m) (Fin m) ℂ) *
+            Matrix.diagonal (fun a => (σ a : ℂ)) *
+            (U : Matrix (Fin m) (Fin m) ℂ).transpose) i j) =
+          ∑ a : Fin m,
+            (U : Matrix (Fin m) (Fin m) ℂ) i a * (σ a : ℂ) *
+              (U : Matrix (Fin m) (Fin m) ℂ) j a := by
+      simp [Matrix.mul_apply, Matrix.diagonal]
+    rw [hdiag]
+    have hright :
+        ((A * A.transpose) i j) =
+          ∑ a : nz,
+            ((U : Matrix (Fin m) (Fin m) ℂ) i a.1 *
+                (Real.sqrt (σ a.1) : ℂ)) *
+              ((U : Matrix (Fin m) (Fin m) ℂ) j a.1 *
+                (Real.sqrt (σ a.1) : ℂ)) := by
+      have hsum :=
+        sum_mul_indicator_embedding e
+          (fun a : nz =>
+            (U : Matrix (Fin m) (Fin m) ℂ) i a.1 *
+              (Real.sqrt (σ a.1) : ℂ))
+          (fun a : nz =>
+            (U : Matrix (Fin m) (Fin m) ℂ) j a.1 *
+              (Real.sqrt (σ a.1) : ℂ))
+      simpa [A, Matrix.mul_apply, Matrix.transpose_apply] using hsum
+    rw [hright]
+    let F : Fin m → ℂ := fun a =>
+      (U : Matrix (Fin m) (Fin m) ℂ) i a * (σ a : ℂ) *
+        (U : Matrix (Fin m) (Fin m) ℂ) j a
+    have hdrop :
+        (∑ a : Fin m, F a) = ∑ a : nz, F a.1 := by
+      calc
+        (∑ a : Fin m, F a)
+            = ∑ a : Fin m, if σ a ≠ 0 then F a else 0 := by
+              apply Finset.sum_congr rfl
+              intro a _ha
+              by_cases hσa : σ a ≠ 0
+              · simp [hσa]
+              · have hzero : σ a = 0 := not_ne_iff.mp hσa
+                simp [F, hzero]
+        _ = ∑ a ∈ Finset.univ.filter (fun a : Fin m => σ a ≠ 0), F a := by
+              rw [Finset.sum_filter]
+        _ = ∑ a : nz, F a.1 := by
+              simpa [nz] using
+                (Finset.sum_subtype_eq_sum_filter (s := Finset.univ)
+                  (p := fun a : Fin m => σ a ≠ 0) (f := F)).symm
+    rw [hdrop]
+    apply Finset.sum_congr rfl
+    intro a _ha
+    simp [F]
+    have hs :
+        (Real.sqrt (σ a.1) : ℂ) * (Real.sqrt (σ a.1) : ℂ) =
+          (σ a.1 : ℂ) := by
+      have hreal : Real.sqrt (σ a.1) * Real.sqrt (σ a.1) = σ a.1 := by
+        rw [← sq]
+        exact Real.sq_sqrt (hσ_nonneg a.1)
+      exact_mod_cast hreal
+    rw [← hs]
+    ring
+  · intro L _hL_nonneg hσ_le i b
+    by_cases hb : b ∈ Set.range e
+    · dsimp [A]
+      rw [dif_pos hb]
+      exact
+        matrix_unitary_entry_mul_real_sqrt_norm_le_sqrt
+          m U i (Classical.choose hb).1 (hσ_le (Classical.choose hb).1)
+    · dsimp [A]
+      rw [dif_neg hb]
+      rw [norm_zero]
+      exact Real.sqrt_nonneg L
+
 /-- An entry-controlled complex symmetric factorization immediately gives the
 small-entry factorization needed by the tail realization theorem. -/
 theorem complexSymmetric_factorSmall_rankLE_of_entryL1

@@ -3978,6 +3978,7 @@ implementation contract is:
    `real_sqrt_lt_of_lt_mul_bound`,
    `matrix_unitary_entry_norm_le_one`,
    `matrix_unitary_entry_mul_real_sqrt_norm_le_sqrt`,
+   `complexSymmetric_takagi_factor_from_supportEmbedding`,
    `complexSymmetric_factorSmall_rankLE_of_entryL1`, and
    `sourceComplexSymmetric_factorSmall_rankLE_of_entryL1`.  Thus the small
    factor theorem no longer has a hidden estimate step: once the entry-L1
