@@ -89,6 +89,76 @@ structure SourceOrientedRankDeficientNormalParameter
   mixed : Matrix (Fin (n - r)) (Fin r) ℂ
   tail : Fin (n - r) → Fin (d + 1 - r) → ℂ
 
+/-- Product coordinates for the normal-parameter structure. -/
+def sourceOrientedNormalParameterCoord
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
+    Matrix (Fin r) (Fin r) ℂ ×
+      Matrix (Fin (n - r)) (Fin r) ℂ ×
+        (Fin (n - r) → Fin (d + 1 - r) → ℂ) :=
+  (p.head, p.mixed, p.tail)
+
+/-- The normal-parameter topology is the topology induced by its finite
+product coordinates. -/
+instance instTopologicalSpaceSourceOrientedRankDeficientNormalParameter
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    TopologicalSpace
+      (SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :=
+  TopologicalSpace.induced sourceOrientedNormalParameterCoord inferInstance
+
+/-- The coordinate map from normal parameters to the finite product is
+continuous by definition of the induced topology. -/
+theorem continuous_sourceOrientedNormalParameterCoord
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    Continuous
+      (sourceOrientedNormalParameterCoord
+        (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)) :=
+  continuous_induced_dom
+
+/-- The head-factor coordinate is continuous. -/
+theorem continuous_sourceOrientedNormalParameter_head
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+        p.head) :=
+  continuous_fst.comp
+    (continuous_sourceOrientedNormalParameterCoord
+      (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn))
+
+/-- The mixed-coordinate matrix is continuous. -/
+theorem continuous_sourceOrientedNormalParameter_mixed
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+        p.mixed) :=
+  continuous_fst.comp
+    (continuous_snd.comp
+      (continuous_sourceOrientedNormalParameterCoord
+        (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)))
+
+/-- The residual-tail coordinate is continuous. -/
+theorem continuous_sourceOrientedNormalParameter_tail
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n} :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+        p.tail) :=
+  continuous_snd.comp
+    (continuous_snd.comp
+      (continuous_sourceOrientedNormalParameterCoord
+        (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)))
+
 /-- The center of the normal parameter chart. -/
 def sourceOrientedNormalCenterParameter
     (d n r : ℕ)
@@ -186,6 +256,36 @@ theorem sourceOrientedNormalHeadVector_center
   · intro ha
     simp at ha
 
+/-- The normal head-vector map is continuous in the finite head-factor
+coordinate. -/
+theorem continuous_sourceOrientedNormalHeadVector
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (a : Fin r) :
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+        sourceOrientedNormalHeadVector d n r hrD hrn p a) := by
+  apply continuous_pi
+  intro μ
+  change
+    Continuous
+      (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+        ∑ b : Fin r,
+          p.head a b *
+            hwLemma3CanonicalSource d n r (finSourceHead hrn b) μ)
+  refine continuous_finset_sum _ ?_
+  intro b _hb
+  have hhead_ab :
+      Continuous
+        (fun p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+          p.head a b) :=
+    (continuous_apply b).comp
+      ((continuous_apply a).comp
+        (continuous_sourceOrientedNormalParameter_head
+          (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)))
+  exact hhead_ab.mul continuous_const
+
 /-- Source tuple associated to a normal-form parameter.  Head source labels use
 the head-factor vectors; tail labels are a mixed head combination plus an
 embedded orthogonal-tail vector. -/
@@ -205,6 +305,73 @@ def sourceOrientedNormalParameterVector
           p.mixed u a *
             sourceOrientedNormalHeadVector d n r hrD hrn p a μ) +
         sourceTailEmbed d r hrD (p.tail u) μ
+
+/-- The normal-parameter source tuple is continuous in the finite product
+coordinates. -/
+theorem continuous_sourceOrientedNormalParameterVector
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n) :
+    Continuous
+      (sourceOrientedNormalParameterVector d n r hrD hrn) := by
+  apply continuous_pi
+  intro i
+  apply continuous_pi
+  intro μ
+  by_cases hi : i.val < r
+  · simpa [sourceOrientedNormalParameterVector, hi] using
+      (continuous_apply μ).comp
+        (continuous_sourceOrientedNormalHeadVector d n r hrD hrn
+          ⟨i.val, hi⟩)
+  · let u : Fin (n - r) := ⟨i.val - r, by omega⟩
+    have hmixed :
+        ∀ a : Fin r,
+          Continuous
+            (fun p :
+                SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+              p.mixed u a) := by
+      intro a
+      exact
+        (continuous_apply a).comp
+          ((continuous_apply u).comp
+            (continuous_sourceOrientedNormalParameter_mixed
+              (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)))
+    have hhead :
+        ∀ a : Fin r,
+          Continuous
+            (fun p :
+                SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+              sourceOrientedNormalHeadVector d n r hrD hrn p a μ) := by
+      intro a
+      exact
+        (continuous_apply μ).comp
+          (continuous_sourceOrientedNormalHeadVector d n r hrD hrn a)
+    have hsum :
+        Continuous
+          (fun p :
+              SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+            ∑ a : Fin r,
+              p.mixed u a *
+                sourceOrientedNormalHeadVector d n r hrD hrn p a μ) := by
+      refine continuous_finset_sum _ ?_
+      intro a _ha
+      exact (hmixed a).mul (hhead a)
+    have htail :
+        Continuous
+          (fun p :
+              SourceOrientedRankDeficientNormalParameter d n r hrD hrn =>
+            sourceTailEmbed d r hrD (p.tail u) μ) := by
+      unfold sourceTailEmbed
+      by_cases hμ : r ≤ μ.val
+      · simp [hμ]
+        exact
+          (continuous_apply ⟨μ.val - r, by omega⟩).comp
+            ((continuous_apply u).comp
+              (continuous_sourceOrientedNormalParameter_tail
+                (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn)))
+      · simp [hμ]
+        exact continuous_const
+    simpa [sourceOrientedNormalParameterVector, hi, u] using hsum.add htail
 
 /-- At the center parameter, the normal-parameter vector is the canonical
 rank-`r` source. -/

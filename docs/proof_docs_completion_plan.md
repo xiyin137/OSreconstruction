@@ -456,11 +456,19 @@ source-label split
 `BHW.finSourceHead`, `BHW.finSourceTail`,
 `BHW.finSourceHead_tail_cases`, injectivity/disjointness lemmas, the finite
 normal parameter record
-`BHW.SourceOrientedRankDeficientNormalParameter`, its center
+`BHW.SourceOrientedRankDeficientNormalParameter`, the induced coordinate
+topology and continuous projections
+`BHW.continuous_sourceOrientedNormalParameterCoord`,
+`BHW.continuous_sourceOrientedNormalParameter_head`,
+`BHW.continuous_sourceOrientedNormalParameter_mixed`, and
+`BHW.continuous_sourceOrientedNormalParameter_tail`, its center
 `BHW.sourceOrientedNormalCenterParameter`, the padded tail embedding
 `BHW.sourceTailEmbed`, the canonical normal source
 `BHW.hwLemma3CanonicalSource`, the head-vector and full normal-parameter maps,
-and the checked center theorems
+their continuity theorems
+`BHW.continuous_sourceOrientedNormalHeadVector` and
+`BHW.continuous_sourceOrientedNormalParameterVector`, and the checked center
+theorems
 `BHW.sourceOrientedNormalHeadVector_center` and
 `BHW.sourceOrientedNormalParameterVector_center`.  The next nontrivial Lean
 target is not more index bookkeeping but the Schur reconstruction equality
