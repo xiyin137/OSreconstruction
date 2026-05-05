@@ -1269,8 +1269,9 @@ tuple to a normal-parameter tuple whose head is the local gauge factor, then
 the matched head-gauge normal-parameter data follows by oriented-invariant
 preservation.
 
-The remaining hard theorem is therefore exactly the finite-dimensional
-construction of such a Lorentz normalization. -/
+This conditional adapter is useful for local proofs that already carry an
+explicit Lorentz-normalized tuple.  The unconditional head-gauge producer above
+constructs that tuple from a source-variety representative. -/
 def sourceOriented_headGaugeNormalParameterData_of_lorentz_normalized
     (d n r : ℕ)
     (hrD : r < d + 1)
@@ -1339,5 +1340,48 @@ def sourceOriented_headGaugeNormalParameterData_of_lorentz_head_tail
       rcases finSourceHead_tail_cases hrn i with ⟨a, rfl⟩ | ⟨u, rfl⟩
       · exact congrFun (hΛhead a) μ
       · exact congrFun (hΛtail u) μ)
+
+/-- The checked head-gauge Witt normalizer proves that the explicit Schur
+residual-tail datum lies on the shifted-tail oriented variety. -/
+theorem sourceOrientedSchurResidualTailData_mem_variety
+    [NeZero d]
+    (hd : 2 ≤ d)
+    {n r : ℕ}
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    {G : SourceOrientedGramData d n}
+    (hGvar : G ∈ sourceOrientedGramVariety d n)
+    (hHead : sourceOrientedSchurHeadBlockSymm d n r hrD hrn hGvar ∈ Head.U) :
+    sourceOrientedSchurResidualTailData d n r hrD hrn G
+        (Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn hGvar)) ∈
+      sourceShiftedTailOrientedVariety d r hrD (n - r) := by
+  let hGvar0 := hGvar
+  rcases hGvar0 with ⟨z, hz⟩
+  exact
+    SourceOrientedHeadGaugeNormalParameterData.residualTail_mem_variety
+      d n r hrD hrn Head hHead
+      (sourceOriented_headGaugeNormalParameterData
+        hd hrD hrn Head hGvar hHead hz.symm)
+
+/-- The local head gauge and checked Witt normalizer produce the full Schur
+residual packet for a source-variety point whose selected head block lies in
+the head-gauge neighborhood. -/
+def sourceOriented_schurResidualData_of_headGauge
+    [NeZero d]
+    (hd : 2 ≤ d)
+    {n r : ℕ}
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    {G : SourceOrientedGramData d n}
+    (hGvar : G ∈ sourceOrientedGramVariety d n)
+    (hHead : sourceOrientedSchurHeadBlockSymm d n r hrD hrn hGvar ∈ Head.U) :
+    SourceOrientedSchurResidualData d n r hrD hrn G :=
+  sourceOriented_schurResidualData_of_tail_mem
+    d n r hrD hrn hGvar Head hHead
+    (sourceOrientedSchurResidualTailData_mem_variety
+      hd hrD hrn Head hGvar hHead)
 
 end BHW

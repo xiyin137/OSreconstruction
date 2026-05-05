@@ -2864,11 +2864,14 @@ implementation contract is:
    `sourceOriented_schurResidualData_of_tail_mem` proves that a local
    signature-relative head factor plus membership of the explicit residual
    tail datum in the shifted-tail variety mechanically constructs
-   `SourceOrientedSchurResidualData`.  The remaining producer work is therefore
-   concentrated in the true tail-membership theorem for that explicit residual
-   datum, plus the analytic inverse-function producer
-   `sourceRankDeficientHeadGauge_at_sourceMetric` and the local radius choices
-   needed to feed the residual chart.  The checked companion
+   `SourceOrientedSchurResidualData`.  The explicit residual-tail membership
+   theorem is now checked in `SourceOrientedHeadGaugeNormal.lean` as
+   `sourceOrientedSchurResidualTailData_mem_variety`, and the full residual
+   packet producer is checked as
+   `sourceOriented_schurResidualData_of_headGauge`.  The remaining producer
+   work around this interface is therefore the analytic inverse-function
+   producer `sourceRankDeficientHeadGauge_at_sourceMetric` and the local radius
+   choices needed to feed the residual chart.  The checked companion
    `SourceOrientedHeadGaugeSupport.lean` now also specializes the Schur
    determinant propagation theorem to the head-gauge interface:
    `sourceHeadRows_linearIndependent_of_headGauge` gives actual head-row
@@ -2878,8 +2881,8 @@ implementation contract is:
    `sourceOrientedGramData_eq_of_gram_eq_headTailDet_eq_of_headGauge` reduces
    future normal-form comparison to ordinary Gram equality plus the selected
    head-tail determinant coordinates.  This is the precise finite-dimensional
-   consumer that the local Witt/head-normalizing producer must feed; it still
-   does not prove the tail-membership theorem by itself.  The next checked
+   consumer that the local Witt/head-normalizing producer now feeds through
+   the checked residual-tail theorem.  The next checked
    interface is `SourceOrientedHeadGaugeNormal.lean`: it defines
    `SourceOrientedHeadGaugeNormalParameterData`, storing a normal-parameter
    representative `p` with
@@ -2934,7 +2937,9 @@ implementation contract is:
    uses the checked signed `SOComplex` prefix-frame transitivity and Wick
    transport to reach the canonical head frame, then recomposes through `H`
    to reach the gauge normal head frame.  The fully assembled
-   `sourceOriented_headGaugeNormalParameterData` is now checked as well.
+   `sourceOriented_headGaugeNormalParameterData`,
+   `sourceOrientedSchurResidualTailData_mem_variety`, and
+   `sourceOriented_schurResidualData_of_headGauge` are now checked as well.
    The stabilizer support needed for the induction is now checked and public
    in `SOConnected.lean`: `SOComplex.embed_val_zero_zero`,
    `SOComplex.embed_val_zero_succ`, `SOComplex.embed_val_succ_zero`,
@@ -2961,9 +2966,8 @@ implementation contract is:
    tail frame by `B`; and assemble the ambient matrix as `A₀ * SOComplex.embed B`.
    The two checked `mul_embed` lemmas prove the first column is still `A₀`'s
    first column and the later columns are exactly `A₀` applied to the embedded
-   normalized tail columns.  The next production target is therefore the
-   induction theorem packaging this transcript, not another bilinear-algebra
-   helper.
+   normalized tail columns.  The induction theorem packaging this transcript is
+   now checked as `SOComplex.exists_so_with_signedPrefixCols`.
    The forward normal-parameter check is
    now also in Lean:
    `sourceOrientedSchurResidualTailData_normalParameter` identifies the
@@ -2972,9 +2976,9 @@ implementation contract is:
    `sourceOrientedSchurResidualTailData_normalParameter_mem_variety` gives the
    corresponding shifted-tail-variety membership.  The equality-transport
    bridge `sourceOrientedSchurResidualTailData_mem_variety_of_eq_normalParameter`
-   is also checked for the next Witt/head-gauge normal-form step.  The
-   all-variety membership theorem must extend this calculation through the
-   local head gauge, not redefine the residual tail.
+   is also checked, and the all-variety membership theorem now extends this
+   calculation through the checked local head-gauge normal form rather than
+   redefining the residual tail.
    The final `sourceTailOrientedSmallRealization` theorem is now assembled by
    a two-way rank split, not a strong Schur induction.  The top-rank branch
    calls `sourceTailOrientedSmallRealization_fullRank_bound`; the lower-rank
