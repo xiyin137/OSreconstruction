@@ -123,18 +123,27 @@ theorem wick_OPTR_in_forwardTube
 distribution form (`s → 0⁺`) and the Wick-rotated integral (`s = 1`).
 
 For a fixed Wightman family `Wfn`, an arity `n`, a Schwartz test
-function `f`, and a deformation parameter `s : ℝ`:
+function `f`, and a deformation parameter `s : ℝ`, define the
+time-component path
 ```
-g_deform s := ∫_x (W_analytic_BHW Wfn n).val (x + i s η(x)) · f(x)
+z₀(s, x⁰) := (1 - s) · x⁰ + s · i · x⁰ = x⁰ · ((1 - s) + i s),
 ```
-where `η(x) = (x⁰, 0⃗)` is the Wick-rotation imaginary direction. -/
+which interpolates between `x⁰` (real, at `s = 0`, the boundary value)
+and `i x⁰` (imaginary, at `s = 1`, the Wick rotation). The spatial
+components are unchanged.
+
+```
+g_deform s := ∫_x (W_analytic_BHW Wfn n).val (z(s, x)) · f(x)
+```
+where `z(s, x) k μ = z₀(s, x_k⁰)` for `μ = 0` and `z(s, x) k μ = x_k^μ`
+for `μ ≥ 1`. -/
 noncomputable def g_deform
     (Wfn : WightmanFunctions d) (n : ℕ) (f : SchwartzNPoint d n)
     (s : ℝ) : ℂ :=
   ∫ x : NPointDomain d n,
     (W_analytic_BHW Wfn n).val
       (fun k μ => (x k μ : ℂ) +
-        s * (if μ = 0 then (x k 0 : ℂ) else 0) * Complex.I) *
+        (s : ℂ) * (if μ = 0 then (Complex.I - 1) * (x k 0 : ℂ) else 0)) *
     (f x)
 
 /-- The deformation function has zero derivative in `s` on `(0, 1]`,
@@ -179,19 +188,76 @@ theorem g_deform_deriv_zero
 /-- At `s = 1`, the deformation `g_deform` coincides with
 `wickRotatedBoundaryPairing` for OPTR-supported test functions.
 
-**Proof**: direct unfolding. At `s = 1`, the integrand evaluates
-`W_analytic_BHW Wfn n` at the Wick-rotated point. By
-`F_ext_on_translatedPET_total_eq_on_PET` (or the analogous lemma on
-`ForwardTube ⊆ PET`) plus `wick_OPTR_in_forwardTube`, this equals
-`F_ext_on_translatedPET_total Wfn (wickRotatePoint ∘ x)` on the OPTR
-support of `f`. The integrals agree. -/
+**Proof**: pointwise equality of the integrands.
+* On `x ∈ OPTR`: the deformed argument coincides with
+  `wickRotatePoint`. By `wick_OPTR_in_forwardTube` plus the inclusion
+  `ForwardTube ⊆ PermutedExtendedTube`, the Wick-rotated config lies
+  in PET. Then `F_ext_on_translatedPET_total_eq_on_PET` identifies
+  `F_ext_on_translatedPET_total` with `(W_analytic_BHW Wfn n).val`.
+* On `x ∉ OPTR`: `f x = 0` by the support hypothesis (`tsupport f ⊆
+  OPTR` ⟹ `support f ⊆ OPTR`), so both integrands vanish. -/
 theorem g_deform_one_eq_pairing
     (Wfn : WightmanFunctions d) (n : ℕ)
     (f : SchwartzNPoint d n)
     (hsupp : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
       OrderedPositiveTimeRegion d n) :
     g_deform Wfn n f 1 = wickRotatedBoundaryPairing Wfn n f := by
-  sorry
+  unfold g_deform wickRotatedBoundaryPairing
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall ?_)
+  intro x
+  -- Pointwise: deformed-arg evaluation of W_analytic_BHW * f x
+  --          = F_ext_on_translatedPET_total at wickRotatePoint x * f x.
+  by_cases hx : x ∈ OrderedPositiveTimeRegion d n
+  · -- x ∈ OPTR: deformed argument at s=1 equals wickRotatePoint x pointwise.
+    have h_arg : ∀ k μ,
+        ((x k μ : ℂ) + ((1 : ℝ) : ℂ) *
+          (if μ = 0 then (Complex.I - 1) * (x k 0 : ℂ) else 0)) =
+        wickRotatePoint (x k) μ := by
+      intro k μ
+      by_cases hμ : μ = 0
+      · subst hμ
+        simp [wickRotatePoint]
+        ring
+      · simp [wickRotatePoint, hμ]
+    -- Wick rotation lands in ForwardTube ⊆ PermutedExtendedTube.
+    have h_wick_FT : (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n :=
+      wick_OPTR_in_forwardTube n x hx
+    -- Convert FT to PET via euclidean_distinct_in_permutedTube.
+    have h_wick_PET : (fun k => wickRotatePoint (x k)) ∈ PermutedExtendedTube d n :=
+      euclidean_distinct_in_permutedTube x
+        (fun i j hij => by
+          rcases lt_trichotomy i j with hlt | heq | hgt
+          · exact ne_of_lt ((hx i).2 j hlt)
+          · exact (hij heq).elim
+          · exact ne_of_gt ((hx j).2 i hgt))
+        (fun i => (hx i).1)
+    -- F_ext = W_analytic on PET.
+    have h_F_ext_eq :
+        F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+        (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) :=
+      F_ext_on_translatedPET_total_eq_on_PET Wfn _ h_wick_PET
+    -- Pointwise equality of arguments → equality of W_analytic_BHW evaluations.
+    have h_W_eq :
+        (W_analytic_BHW Wfn n).val
+          (fun k μ => (x k μ : ℂ) + ((1 : ℝ) : ℂ) *
+            (if μ = 0 then (Complex.I - 1) * (x k 0 : ℂ) else 0)) =
+        (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (x k)) := by
+      apply congrArg
+      funext k μ
+      exact h_arg k μ
+    show (W_analytic_BHW Wfn n).val
+        (fun k μ => (x k μ : ℂ) + ((1 : ℝ) : ℂ) *
+          (if μ = 0 then (Complex.I - 1) * (x k 0 : ℂ) else 0)) *
+        (f : NPointDomain d n → ℂ) x =
+      F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) *
+        (f : NPointDomain d n → ℂ) x
+    rw [h_W_eq, h_F_ext_eq]
+  · -- x ∉ OPTR: f x = 0 by support hypothesis.
+    have h_notInTsupp : x ∉ tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) :=
+      fun hxts => hx (hsupp hxts)
+    have hf_zero : (f : NPointDomain d n → ℂ) x = 0 :=
+      image_eq_zero_of_notMem_tsupport h_notInTsupp
+    simp [hf_zero]
 
 /-! ### Step 4: the deformation tends to the Wightman functional -/
 
