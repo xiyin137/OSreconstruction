@@ -2882,7 +2882,23 @@ implementation contract is:
    `G = sourceOrientedMinkowskiInvariant (sourceOrientedNormalParameterVector p)`
    and with `p.head` exactly the head-gauge factor of the selected Schur head
    block.  From this data, `residualTail_mem_variety` and
-   `schurResidualData` are now mechanical.  Therefore the remaining hard
+   `schurResidualData` are now mechanical.  The bridge
+   `sourceOriented_headGaugeNormalParameterData_of_lorentz_normalized` is also
+   checked: if a future proof supplies a realizing tuple `z`, a proper
+   complex Lorentz transformation `Λ`, and pointwise equality
+   `complexLorentzAction Λ z = sourceOrientedNormalParameterVector p`, then
+   the normal-parameter data follows immediately by
+   `sourceOrientedMinkowskiInvariant_complexLorentzAction`.  The same file now
+   also checks the head-frame inputs to Witt: `sourceOrientedHeadGaugeHeadParameter`
+   defines the gauge-head-only normal parameter,
+   `sourceOriented_headGauge_actualHeadGram_eq_normalHeadGram` proves equality
+   of the actual selected head Gram with the gauge normal-head Gram, and
+   `sourceOriented_headGauge_normalHead_linearIndependent` proves linear
+   independence of that gauge head frame.  The blockwise constructor
+   `sourceOriented_headGaugeNormalParameterData_of_lorentz_head_tail` is
+   checked as well, so future Lean can prove head and tail normalized
+   equalities separately and assemble the data by the checked head/tail source
+   split.  Therefore the remaining hard
    theorem is no longer an unstructured tail-membership assertion: it is the
    Witt/head-normalization producer for that data.  Its proof must choose a
    realizing source tuple, use the head-gauge equation to match the actual
