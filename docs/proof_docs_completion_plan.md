@@ -4009,13 +4009,15 @@ implementation contract is:
    the normalized conjugate-linear map must be bundled as an isometric
    involution, a fixed orthonormal basis must be chosen, and those bases must
    be assembled into the unitary Takagi matrix with the entry-L1 singular
-   value estimate.  That fixed-basis theorem
-   is now decomposed through the semilinear-isometry API `E ≃ₗᵢ⋆[ℂ] E`:
-   define the real fixed
-   submodule `BHW.conjugationFixedSubmodule`, prove the explicit real-linear
-   decomposition `x = (x + Jx)/2 + I • ((-I) • (x - Jx)/2)`, deduce
-   `finrank ℝ fixed = finrank ℂ E` from `Module.finrank_prod`, prove fixed
-   vectors have real complex inner products by antiunitarity, and use
+   value estimate.  The first fixed-basis layer is checked in
+   `BHWPermutation/SourceComplexTakagiFixed.lean`: it defines the real fixed
+   submodule `BHW.conjugationFixedSubmodule`, proves the explicit real-linear
+   decomposition `x = (x + Jx)/2 + I • (I • (Jx - x)/2)`, proves
+   injectivity and surjectivity of `(p,q) ↦ p + I • q`, bundles this as the
+   real-linear equivalence `BHW.conjugationFixedPairLinearEquiv`, and deduces
+   `finrank ℝ fixed = finrank ℂ E` from `Module.finrank_prod` and
+   `finrank_real_of_complex`.  The remaining fixed-basis work is now to prove
+   fixed vectors have real complex inner products by antiunitarity and use
    `OrthonormalBasis.mk` on the complex span of a real
    `stdOrthonormalBasis` of the fixed submodule.  It then spells out the finite
    support extraction: use `Fintype.nonempty_of_card_le` to embed the nonzero
