@@ -411,10 +411,15 @@ The pure principal-Schur oriented max-rank slice is now checked in
 `BHW.sourcePrincipalSchur_orientedMaxRank_parameterSet_eq` rewrites the
 max-rank parameter predicate to residual exact rank, and
 `BHW.isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet` packages
-the resulting product connectedness.  Consequently the remaining oriented
-normal-form proof only has to identify `(toInv c).gram` with the transported
-principal Schur graph and then move connectedness through the finite
-normal-parameter coordinate equivalence.
+the resulting product connectedness.  The inverse-transport variant
+`BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+is checked as well: if a normal Schur graph is pulled back by a
+`SourceOrientedInvariantTransportEquiv.invFun`, the max-rank parameter set is
+definitionally the same connected product slice by
+`T.invFun_maxRank_iff`.  Consequently the remaining oriented normal-form proof
+only has to identify the normal coordinates with
+`N.orientedTransport.invFun (sourcePrincipalSchurGraph ..., δ p)` and then
+move connectedness through the finite normal-parameter coordinate equivalence.
 There is no additional two-sheet obstruction from the determinant coordinates:
 `SourceOrientedMaxRankAt` is defined only from `G.gram`, and the determinant
 coordinates are continuous functions of the same source-vector parameters on
@@ -426,15 +431,15 @@ this local image.  The exact Lean proof should therefore:
    invariance, and
    `sourceOrientedMaxRankAt_iff_sourceGramMatrixRank_eq_fullFrame` to ordinary
    source-matrix rank `sourceGramMatrixRank n ((toInv c).gram) = d + 1`;
-3. identify the normal parameter coordinates with a principal Schur graph and
-   use `sourcePrincipalSchur_orientedMaxRank_parameterSet_eq` to identify this
-   set with the product of the head ball, mixed ball, and
+3. identify the normal parameter coordinates with a transported principal
+   Schur graph and use
+   `isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+   to identify this set with the product of the head ball, mixed ball, and
    `C ∩ {S | Sᵀ = S ∧ S.rank = (d + 1) - N.r}`;
 4. invoke `isConnected_symmetric_matrix_ball`, `isConnected_matrix_ball`, and
    `matrixSymmetricRankExactCone_small_connected`, combine them with the
-   checked
-   `isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet`, then
-   transport connectedness through the finite coordinate equivalence with
+   transported checked Schur theorem above, then transport connectedness
+   through the finite coordinate equivalence with
    `isConnected_preimage_continuousLinearEquiv`.
 The remaining implementation targets are the concrete exceptional
 Schur/residual max-rank-connected local-image producer and the source-backed
@@ -2526,8 +2531,12 @@ implementation contract is:
    can be assembled.  The transport interface is now checked in
    `SourceOrientedTransport.lean` as a homeomorphism preserving the oriented
    variety and max-rank predicate, with derived inverse-image openness and
-   inverse max-rank/variety preservation lemmas.  The normal-form packet now
-   separates the actual
+   inverse max-rank/variety preservation lemmas.  It also now checks
+   `BHW.sourceOrientedInvariantTransport_mem_inter_iff` for moving
+   `Ω ∩ sourceOrientedGramVariety` through `toFun`/`invFun`, and
+   `BHW.sourceOrientedInvariantTransport_closure_maxRankDense` for transporting
+   residual max-rank-density closure statements through `invFun`.  The
+   normal-form packet now separates the actual
    extended-tube adapted representative `adaptedBase` from the canonical
    normal coordinate source `normalBase = hwLemma3CanonicalSource d n r`.
    The latter supplies the identity head block and zero tail, but is not
@@ -2546,6 +2555,10 @@ implementation contract is:
    `sourceOrientedNormalParameterVector_maxRank_iff_tail`, so the density
    argument perturbs only the Schur tail while the invertible head block stays
    fixed.  The downstream compactness support is also explicit:
+   the checked theorem
+   `BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet`
+   is the connectedness form to call once the normal-parameter vector has been
+   rewritten as `N.orientedTransport.invFun` of a principal Schur graph.
    `sourceOrientedResidualChart_compactBound`,
    `sourceOrientedResidualChart_quotient_eq_parameter`, and
    `sourceOrientedResidualChart_clusterValue` are the only allowed route to

@@ -1,5 +1,6 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComplexSchurParameter
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankBridge
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedTransport
 
 /-!
 # Oriented max-rank on Schur parameter graphs
@@ -159,5 +160,70 @@ theorem isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet
   exact
     isConnected_sourcePrincipalSchur_rankExact_parameterSet
       (d + 1) hA_conn hB_conn hS_conn
+
+/-- The previous connected parameter-slice theorem is stable under an inverse
+oriented invariant transport.  This is the exact shape used by rank-deficient
+normal-form local images, where the normal Schur chart is transported back to
+the original oriented coordinates by `T.invFun`. -/
+theorem isConnected_sourcePrincipalSchur_transported_orientedMaxRank_parameterSet
+    (hn : d + 1 ≤ n)
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {r q : Type*} [Fintype r] [Fintype q]
+    [DecidableEq r] [DecidableEq q]
+    (e : Fin n ≃ r ⊕ q)
+    {Aset : Set (Matrix r r ℂ)}
+    {Bset : Set (Matrix r q ℂ)}
+    {Sset : Set (Matrix q q ℂ)}
+    (hA_unit : ∀ {A : Matrix r r ℂ}, A ∈ Aset → IsUnit A.det)
+    (hA_sym : ∀ {A : Matrix r r ℂ}, A ∈ Aset → Aᵀ = A)
+    (hS_sym : ∀ {S : Matrix q q ℂ}, S ∈ Sset → Sᵀ = S)
+    (hrD : Fintype.card r ≤ d + 1)
+    (δ :
+      Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ →
+        (Fin (d + 1) ↪ Fin n) → ℂ)
+    (hA_conn : IsConnected Aset)
+    (hB_conn : IsConnected Bset)
+    (hS_conn :
+      IsConnected
+        (Sset ∩ {S : Matrix q q ℂ |
+          Sᵀ = S ∧ S.rank = d + 1 - Fintype.card r})) :
+    IsConnected
+      {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+        p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+          SourceOrientedMaxRankAt d n
+            (T.invFun
+              ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+                SourceOrientedGramData d n))} := by
+  let normalSet :
+      Set (Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ) :=
+    {p |
+      p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+        SourceOrientedMaxRankAt d n
+          ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+            SourceOrientedGramData d n)}
+  have hEq :
+      {p : Matrix r r ℂ × Matrix r q ℂ × Matrix q q ℂ |
+        p.1 ∈ Aset ∧ p.2.1 ∈ Bset ∧ p.2.2 ∈ Sset ∧
+          SourceOrientedMaxRankAt d n
+            (T.invFun
+              ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+                SourceOrientedGramData d n))} = normalSet := by
+    ext p
+    constructor
+    · rintro ⟨hA, hB, hS, hmax⟩
+      exact ⟨hA, hB, hS,
+        (T.invFun_maxRank_iff
+          ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+            SourceOrientedGramData d n)).1 hmax⟩
+    · rintro ⟨hA, hB, hS, hmax⟩
+      exact ⟨hA, hB, hS,
+        (T.invFun_maxRank_iff
+          ((sourcePrincipalSchurGraph n e p.1 p.2.1 p.2.2, δ p) :
+            SourceOrientedGramData d n)).2 hmax⟩
+  rw [hEq]
+  exact
+    isConnected_sourcePrincipalSchur_orientedMaxRank_parameterSet
+      (d := d) (n := n) hn e hA_unit hA_sym hS_sym hrD δ
+      hA_conn hB_conn hS_conn
 
 end BHW

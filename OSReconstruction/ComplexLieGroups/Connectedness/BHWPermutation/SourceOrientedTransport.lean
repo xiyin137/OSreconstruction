@@ -112,4 +112,68 @@ def refl (d n : ℕ) :
 
 end SourceOrientedInvariantTransportEquiv
 
+/-- Membership in a transported open set intersected with the oriented variety
+can be tested after applying the forward transport. -/
+theorem sourceOrientedInvariantTransport_mem_inter_iff
+    {d n : ℕ}
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {Ω : Set (SourceOrientedGramData d n)}
+    {G : SourceOrientedGramData d n} :
+    T.toFun G ∈ Ω ∩ sourceOrientedGramVariety d n ↔
+      G ∈ T.invFun '' Ω ∩ sourceOrientedGramVariety d n := by
+  constructor
+  · rintro ⟨hΩ, hvar⟩
+    refine ⟨?_, (T.mem_variety_iff G).1 hvar⟩
+    exact ⟨T.toFun G, hΩ, T.left_inv G⟩
+  · rintro ⟨hΩ, hvar⟩
+    rcases hΩ with ⟨H, hHΩ, hHG⟩
+    refine ⟨?_, (T.mem_variety_iff G).2 hvar⟩
+    have hto : T.toFun G = H := by
+      calc
+        T.toFun G = T.toFun (T.invFun H) := by rw [hHG]
+        _ = H := T.right_inv H
+    simpa [hto] using hHΩ
+
+/-- If a normal max-rank parameter image is dense at a point, then the
+inverse-transported parameter image is dense at the inverse-transported point.
+The max-rank predicate in the parameter subset is transported by
+`invFun_maxRank_iff`. -/
+theorem sourceOrientedInvariantTransport_closure_maxRankDense
+    {d n : ℕ}
+    (T : SourceOrientedInvariantTransportEquiv d n)
+    {α : Type*}
+    {s : Set α}
+    {f : α → SourceOrientedGramData d n}
+    {a : α}
+    (h :
+      f a ∈
+        closure
+          (f ''
+            {a' : α |
+              a' ∈ s ∧ SourceOrientedMaxRankAt d n (f a')})) :
+    T.invFun (f a) ∈
+      closure
+        ((fun a' => T.invFun (f a')) ''
+          {a' : α |
+            a' ∈ s ∧
+              SourceOrientedMaxRankAt d n (T.invFun (f a'))}) := by
+  let A : Set α :=
+    {a' | a' ∈ s ∧ SourceOrientedMaxRankAt d n (f a')}
+  let B : Set α :=
+    {a' | a' ∈ s ∧ SourceOrientedMaxRankAt d n (T.invFun (f a'))}
+  have hcl :
+      T.invFun (f a) ∈ closure (T.invFun '' (f '' A)) := by
+    exact
+      image_closure_subset_closure_image T.continuous_invFun
+        ⟨f a, h, rfl⟩
+  have hsubset :
+      T.invFun '' (f '' A) ⊆
+        (fun a' => T.invFun (f a')) '' B := by
+    rintro y ⟨x, hx, rfl⟩
+    rcases hx with ⟨a', ha', rfl⟩
+    rcases ha' with ⟨ha's, hmax⟩
+    refine ⟨a', ⟨ha's, ?_⟩, rfl⟩
+    exact (T.invFun_maxRank_iff (f a')).2 hmax
+  exact closure_mono hsubset hcl
+
 end BHW
