@@ -173,6 +173,84 @@ theorem sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected
       (d := d) (n := n) hn hU_rel)
     hlocal
 
+/-- Max-rank centers have the local connected max-rank basis required by the
+oriented max-rank connectedness assembly theorem.  The proof is the full-frame
+chart shrinker: shrink inside `U ∩ N0` and use that the produced patch lies
+entirely in the max-rank stratum. -/
+theorem sourceOrientedMaxRank_local_connectedMaxRank_basis_fullFrame
+    (hn : d + 1 ≤ n)
+    {U : Set (SourceOrientedGramData d n)}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    {G0 : SourceOrientedGramData d n}
+    (hG0U : G0 ∈ U)
+    (hG0max : SourceOrientedMaxRankAt d n G0)
+    {N0 : Set (SourceOrientedGramData d n)}
+    (hN0_open : IsOpen N0)
+    (hG0N0 : G0 ∈ N0) :
+    ∃ V : Set (SourceOrientedGramData d n),
+      G0 ∈ V ∧
+      IsRelOpenInSourceOrientedGramVariety d n V ∧
+      V ⊆ U ∩ N0 ∧
+      IsConnected (V ∩ {G | SourceOrientedMaxRankAt d n G}) := by
+  let Nrel : Set (SourceOrientedGramData d n) :=
+    N0 ∩ sourceOrientedGramVariety d n
+  have hNrel_rel : IsRelOpenInSourceOrientedGramVariety d n Nrel :=
+    ⟨N0, hN0_open, rfl⟩
+  let W : Set (SourceOrientedGramData d n) := U ∩ Nrel
+  have hW_rel : IsRelOpenInSourceOrientedGramVariety d n W :=
+    IsRelOpenInSourceOrientedGramVariety.inter hU_rel hNrel_rel
+  have hG0var : G0 ∈ sourceOrientedGramVariety d n :=
+    IsRelOpenInSourceOrientedGramVariety.subset hU_rel hG0U
+  have hG0W : G0 ∈ W := ⟨hG0U, hG0N0, hG0var⟩
+  rcases sourceOrientedMaxRankChartData_of_maxRankAt_fullFrame
+      (d := d) (n := n) hn hG0var hG0max with
+    ⟨_m, C⟩
+  rcases C.connectedMaxRankPatch_inside_relOpen hW_rel hG0W with
+    ⟨P, hP_sub⟩
+  refine ⟨P.V, P.center_mem, P.V_relOpen, ?_, ?_⟩
+  · intro G hG
+    have hGW : G ∈ W := (hP_sub hG).1
+    exact ⟨hGW.1, hGW.2.1⟩
+  · have hV_inter :
+        P.V ∩ {G | SourceOrientedMaxRankAt d n G} = P.V := by
+      ext G
+      constructor
+      · intro hG
+        exact hG.1
+      · intro hG
+        exact ⟨hG, (hP_sub hG).2⟩
+    simpa [hV_inter] using P.V_connected
+
+/-- Hard-range connected max-rank assembly with the max-rank local case
+discharged by full-frame charts.  The only remaining local input is the
+exceptional-rank case. -/
+theorem sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_exceptionalLocalBasis
+    (hn : d + 1 ≤ n)
+    {U : Set (SourceOrientedGramData d n)}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    (hU_conn : IsConnected U)
+    (hexceptional :
+      ∀ G, G ∈ U →
+        SourceOrientedExceptionalRank d n G →
+          ∀ N0 : Set (SourceOrientedGramData d n), IsOpen N0 → G ∈ N0 →
+            ∃ V : Set (SourceOrientedGramData d n),
+              G ∈ V ∧
+              IsRelOpenInSourceOrientedGramVariety d n V ∧
+              V ⊆ U ∩ N0 ∧
+              IsConnected (V ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    IsConnected (U ∩ {G | SourceOrientedMaxRankAt d n G}) :=
+  sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected
+    (d := d) (n := n) hn hU_rel hU_conn
+    (by
+      intro G hGU N0 hN0_open hGN0
+      by_cases hGmax : SourceOrientedMaxRankAt d n G
+      · exact
+          sourceOrientedMaxRank_local_connectedMaxRank_basis_fullFrame
+            (d := d) (n := n) hn hU_rel hGU hGmax hN0_open hGN0
+      · have hGvar : G ∈ sourceOrientedGramVariety d n :=
+          IsRelOpenInSourceOrientedGramVariety.subset hU_rel hGU
+        exact hexceptional G hGU ⟨hGvar, hGmax⟩ N0 hN0_open hGN0)
+
 /-- Every nonempty relatively open source-oriented patch contains a nonempty
 preconnected relatively open seed in the max-rank stratum, in the hard range
 `d + 1 ≤ n`.  This is the seed-extraction helper used at the start and close

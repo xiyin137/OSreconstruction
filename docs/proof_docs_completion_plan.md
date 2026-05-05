@@ -269,6 +269,8 @@ The terminal finite-overlap data interface is checked in
 it provides
 `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_local_basis`,
 `BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected`,
+`BHW.sourceOrientedMaxRank_local_connectedMaxRank_basis_fullFrame`,
+`BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_exceptionalLocalBasis`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, and
 `BHW.exists_preconnectedRelOpen_maxRankSeed_inside`, plus
@@ -309,9 +311,12 @@ extracts a new nonempty preconnected relatively open max-rank seed inside that
    `D ∩ MaxRank` connected it is enough to prove `D` connected, use the
    checked hard-range density of `MaxRank` in every relatively open oriented
    patch, and supply arbitrarily small relatively open neighborhoods whose
-   max-rank parts are connected.  Thus the remaining geometric work is local
-   max-rank-basis production near both max-rank and exceptional-rank oriented
-   source points, plus the source-backed finite-overlap domains themselves.
+   max-rank parts are connected.  The max-rank-center half of that local basis
+   is now also checked by the full-frame chart shrinker; the remaining local
+   basis input is precisely the exceptional-rank source-oriented local-image
+   case.  Thus the remaining geometric work is the exceptional local
+   max-rank-basis production plus the source-backed finite-overlap domains
+   themselves.
    The remaining work is to produce the terminal closing domain and assemble
    the resulting terminal
    seed into `BHWJostOrientedFiniteOverlapPropagationData`; once that data is
