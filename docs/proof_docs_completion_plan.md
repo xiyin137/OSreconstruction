@@ -314,9 +314,22 @@ extracts a new nonempty preconnected relatively open max-rank seed inside that
    max-rank parts are connected.  The max-rank-center half of that local basis
    is now also checked by the full-frame chart shrinker; the remaining local
    basis input is precisely the exceptional-rank source-oriented local-image
-   case.  Thus the remaining geometric work is the exceptional local
-   max-rank-basis production plus the source-backed finite-overlap domains
-   themselves.
+   case.  The old connected local-image packet is not strong enough here:
+   it proves connectedness of the whole local image, while finite-overlap
+   propagation consumes connectedness after intersecting with the max-rank
+   stratum.  The checked interface
+   `BHW.SourceOrientedRankDeficientMaxRankLocalImageData` and extraction theorem
+   `BHW.sourceOrientedRankDeficientConnectedMaxRankPatchAt_of_localImageProducer`
+   now isolate the exact remaining Schur/residual obligation.  The helper
+   `BHW.isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage`
+   reduces the final connectedness field to the finite-dimensional parameter
+   statement
+   `IsConnected (parameterBox ∩ {p | SourceOrientedMaxRankAt d n (image p)})`;
+   the set equality between this preimage image and `image '' parameterBox ∩
+   MaxRank` is checked separately as
+   `BHW.image_inter_preimage_sourceOrientedMaxRank_eq`.  Thus the remaining
+   geometric work is the exceptional local max-rank-basis production plus the
+   source-backed finite-overlap domains themselves.
    The remaining work is to produce the terminal closing domain and assemble
    the resulting terminal
    seed into `BHWJostOrientedFiniteOverlapPropagationData`; once that data is
@@ -349,10 +362,33 @@ Lean implementation has now started at the lower support layer: the checked
 files `SourceOrientedConnected.lean`, `SourceOrientedLocalBasis.lean`, and
 `SourceOrientedRankDeficientLocalImage.lean` prove the connected-component
 topology, the max-rank/rank-deficient stratum dispatcher, and the topological
-extraction from an abstract rank-deficient local-image packet.  The remaining
-implementation targets are the finite-coordinate max-rank chart producer and
-the concrete Schur/residual local-image producer; Lean work should still not
-start at the public adjacent seed or scalar-representative wrappers.
+extraction from an abstract rank-deficient local-image packet.  The same
+local-image file now also contains the strengthened max-rank-connected packet:
+the Schur/residual producer must instantiate the finite head/mixed/tail
+parameter box and prove both relative openness of the image and
+`IsConnected (image '' parameterBox ∩ MaxRank)`.  The extraction theorem first
+shrinks an arbitrary relatively open target `U` to an ambient open slice and
+then returns exactly the exceptional input consumed by
+`sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_exceptionalLocalBasis`.
+The connectedness proof should use the checked image-transport helper: define
+the max-rank preimage inside the parameter box, rewrite it by the Schur rank
+formula to a product of the head/mixed box with the symmetric rank-exact
+residual cone, prove that product connected, and apply
+`isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage`.
+The remaining concrete lemma is
+`BHW.sourceOriented_rankDeficient_parameterMaxRank_connected` in the hard range
+`d + 1 <= n`: after expanding the normal-form map, ordinary rank is invariant
+under the stored oriented transport and the Schur complement gives
+`rank(full Gram) = N.r + rank(residual tail Gram)`, so maximal rank is exactly
+the residual exact-rank condition `rank = (d + 1) - N.r`.  The proof is the
+same product-connectedness pattern as the checked ordinary singular theorem
+`sourceComplexGramVariety_local_rankExact_connected_basis_singular`, using the
+connected symmetric head ball, connected mixed ball, and
+`matrixSymmetricRankExactCone_small_connected` for the residual tail.
+The remaining implementation targets are the concrete exceptional
+Schur/residual max-rank-connected local-image producer and the source-backed
+finite-overlap domains; Lean work should still not start at the public adjacent
+seed or scalar-representative wrappers.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the

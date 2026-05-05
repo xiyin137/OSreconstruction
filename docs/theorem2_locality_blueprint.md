@@ -12250,10 +12250,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       -- The checked topology-facing packet in
       -- `SourceOrientedRankDeficientLocalImage.lean` has the abstract
-      -- parameter-space shape below.  The Schur/residual construction must
-      -- instantiate `P` with its finite head/mixed/tail parameter box and
-      -- prove `image_relOpen` plus `image_sub`; then
-      -- `to_connectedRelOpenPatch` supplies the local-basis patch.
+      -- parameter-space shape below.  This older packet is still the right
+      -- input for the connected local-basis dispatcher.  It is not enough for
+      -- finite-overlap monodromy, because that later propagation needs
+      -- connectedness of the local image after intersecting with the max-rank
+      -- stratum.
       structure BHW.SourceOrientedRankDeficientVarietyLocalImageData
           {P : Type*} [TopologicalSpace P]
           (d n : Nat)
@@ -12273,6 +12274,119 @@ Proof decomposition of this theorem, without hiding the analytic work:
         image_sub :
           image '' parameterBox ⊆
             N0 ∩ BHW.sourceOrientedGramVariety d n
+
+      -- The active theorem-2 route therefore uses this checked strengthening.
+      -- The concrete Schur/residual construction must instantiate `P` with
+      -- the same finite head/mixed/tail parameter box and prove the extra
+      -- max-rank connectedness field.  This is not wrapper churn: it is exactly
+      -- the topological fact needed to pass from connected source-patch domains
+      -- to connected max-rank transition domains.
+      theorem BHW.isConnected_image_inter_sourceOrientedMaxRank_of_parameter_slice
+          {P : Type*} [TopologicalSpace P]
+          {parameterBox parameterMaxRank : Set P}
+          {image : P -> BHW.SourceOrientedGramData d n}
+          (hparameter_sub : parameterMaxRank ⊆ parameterBox)
+          (hparameter_conn : IsConnected parameterMaxRank)
+          (himage_eq :
+            image '' parameterMaxRank =
+              (image '' parameterBox) ∩
+                {G | BHW.SourceOrientedMaxRankAt d n G})
+          (himage_cont : ContinuousOn image parameterBox) :
+          IsConnected
+            ((image '' parameterBox) ∩
+              {G | BHW.SourceOrientedMaxRankAt d n G}) := by
+        -- Checked in production Lean: rewrite by `himage_eq`, then use
+        -- `hparameter_conn.image image (himage_cont.mono hparameter_sub)`.
+        exact
+          BHW.isConnected_image_inter_sourceOrientedMaxRank_of_parameter_slice
+            (d := d) (n := n) hparameter_sub hparameter_conn
+            himage_eq himage_cont
+
+      theorem BHW.image_inter_preimage_sourceOrientedMaxRank_eq
+          {P : Type*}
+          {parameterBox : Set P}
+          {image : P -> BHW.SourceOrientedGramData d n} :
+          image '' (parameterBox ∩
+              {p | BHW.SourceOrientedMaxRankAt d n (image p)}) =
+            (image '' parameterBox) ∩
+              {G | BHW.SourceOrientedMaxRankAt d n G} := by
+        -- Checked in production Lean by extensionality.
+        exact
+          BHW.image_inter_preimage_sourceOrientedMaxRank_eq
+            (d := d) (n := n)
+
+      theorem BHW.isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage
+          {P : Type*} [TopologicalSpace P]
+          {parameterBox : Set P}
+          {image : P -> BHW.SourceOrientedGramData d n}
+          (hparameter_conn :
+            IsConnected (parameterBox ∩
+              {p | BHW.SourceOrientedMaxRankAt d n (image p)}))
+          (himage_cont : ContinuousOn image parameterBox) :
+          IsConnected
+            ((image '' parameterBox) ∩
+              {G | BHW.SourceOrientedMaxRankAt d n G}) := by
+        -- Checked in production Lean by the previous two helpers.
+        exact
+          BHW.isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage
+            (d := d) (n := n) hparameter_conn himage_cont
+
+      structure BHW.SourceOrientedRankDeficientMaxRankLocalImageData
+          {P : Type*} [TopologicalSpace P]
+          (d n : Nat)
+          (G0 : BHW.SourceOrientedGramData d n)
+          (N0 : Set (BHW.SourceOrientedGramData d n)) where
+        parameterBox : Set P
+        parameterBox_open : IsOpen parameterBox
+        parameterBox_connected : IsConnected parameterBox
+        p0 : P
+        p0_mem : p0 ∈ parameterBox
+        image : P -> BHW.SourceOrientedGramData d n
+        image_continuousOn : ContinuousOn image parameterBox
+        center_eq : image p0 = G0
+        image_relOpen :
+          BHW.IsRelOpenInSourceOrientedGramVariety d n
+            (image '' parameterBox)
+        image_sub :
+          image '' parameterBox ⊆
+            N0 ∩ BHW.sourceOrientedGramVariety d n
+        image_maxRank_connected :
+          IsConnected
+            ((image '' parameterBox) ∩
+              {G | BHW.SourceOrientedMaxRankAt d n G})
+
+      theorem BHW.sourceOrientedRankDeficientConnectedMaxRankPatchAt_of_localImageProducer
+          (rankDeficientLocalImageAt :
+            ∀ {G0 : BHW.SourceOrientedGramData d n},
+              G0 ∈ BHW.sourceOrientedGramVariety d n ->
+              BHW.SourceOrientedExceptionalRank d n G0 ->
+              ∀ {N0 : Set (BHW.SourceOrientedGramData d n)},
+                IsOpen N0 -> G0 ∈ N0 ->
+                Σ P : Type, Σ _ : TopologicalSpace P,
+                  BHW.SourceOrientedRankDeficientMaxRankLocalImageData
+                    (d := d) (n := n) (P := P) G0 N0)
+          {U : Set (BHW.SourceOrientedGramData d n)}
+          (hU_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n U)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0U : G0 ∈ U)
+          (hex : BHW.SourceOrientedExceptionalRank d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          ∃ V : Set (BHW.SourceOrientedGramData d n),
+            G0 ∈ V ∧
+            BHW.IsRelOpenInSourceOrientedGramVariety d n V ∧
+            V ⊆ U ∩ N0 ∧
+            IsConnected
+              (V ∩ {G | BHW.SourceOrientedMaxRankAt d n G}) := by
+        -- Checked in production Lean.  The proof opens `hU_rel` as
+        -- `U = U0 ∩ sourceOrientedGramVariety`, calls the producer on the
+        -- ambient open shrink `U0 ∩ N0`, and transports `image_sub` back to
+        -- `V ⊆ U ∩ N0`.
+        exact
+          BHW.sourceOrientedRankDeficientConnectedMaxRankPatchAt_of_localImageProducer
+            (d := d) (n := n) rankDeficientLocalImageAt
+            hU_rel hG0U hex hN0_open hG0N0
 
       theorem BHW.sourceOriented_rankDeficient_varietyLocalImage
           [NeZero d]
@@ -12339,6 +12453,95 @@ Proof decomposition of this theorem, without hiding the analytic work:
               center_eq := htoInv_c0
               image_relOpen := himage_relOpen
               image_sub := himage_sub }⟩
+
+      theorem BHW.sourceOriented_rankDeficient_maxRankVarietyLocalImage
+          [NeZero d]
+          (hn : d + 1 <= n)
+          (hd : 2 <= d)
+          (n : Nat)
+          {G0 : BHW.SourceOrientedGramData d n}
+          (hG0 :
+            G0 ∈ BHW.sourceOrientedGramVariety d n)
+          (hlow : ¬ BHW.SourceOrientedMaxRankAt d n G0)
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (hN0_open : IsOpen N0)
+          (hG0N0 : G0 ∈ N0) :
+          Σ P : Type, Σ _ : TopologicalSpace P,
+            BHW.SourceOrientedRankDeficientMaxRankLocalImageData
+              (d := d) (n := n) (P := P) G0 N0 := by
+        classical
+        -- Same normal-form and parameter-ball construction as
+        -- `sourceOriented_rankDeficient_varietyLocalImage`.
+        let N :=
+          BHW.sourceOriented_rankDeficient_algebraicNormalFormData
+            (d := d) hd n hG0 hlow
+        rcases
+          BHW.sourceOriented_rankDeficient_algebraicParameterBall
+            (d := d) hd n N hN0_open hG0N0 with
+          ⟨m, encode, P, c0, Ωnf, hP_open, hP_conn, hc0,
+            hΩnf_open, himage_N0, hlocal_surj, htoInv_cont,
+            htoInv_c0, htoInv_mem⟩
+        let toInv : (Fin m -> ℂ) -> BHW.SourceOrientedGramData d n :=
+          fun c =>
+            N.orientedTransport.invFun
+              (BHW.sourceOrientedMinkowskiInvariant d n
+                (BHW.sourceOrientedNormalParameterVector
+                  d n N.r N.hrD N.hrn (encode.symm c)))
+        have himage_relOpen :
+            BHW.IsRelOpenInSourceOrientedGramVariety d n (toInv '' P) := by
+          exact hlocal_surj.relOpen
+        have himage_sub :
+            toInv '' P ⊆ N0 ∩ BHW.sourceOrientedGramVariety d n := by
+          exact himage_N0
+        have hparameter_maxRank_connected :
+            IsConnected
+              (P ∩ {c | BHW.SourceOrientedMaxRankAt d n (toInv c)}) := by
+          -- This is the remaining concrete exceptional local-image proof.
+          -- Expand `toInv`, use invariance of ordinary rank under
+          -- `N.orientedTransport`, and use the Schur rank formula for
+          -- `sourceOrientedNormalParameterVector`:
+          --
+          --   rank(full Gram) = N.r + rank(residual tail Gram).
+          --
+          -- Since `N.r < d+1`, the max-rank condition is equivalent to the
+          -- residual tail having rank `(d+1) - N.r`.  Under `encode`, the set
+          -- above is the product of:
+          --
+          -- * the connected head-gauge symmetric ball,
+          -- * the connected mixed-coordinate ball,
+          -- * the connected small symmetric residual cone at exact rank
+          --   `(d+1) - N.r`.
+          --
+          -- The first two factors use `isConnected_symmetric_matrix_ball` and
+          -- `isConnected_matrix_ball`; the last factor is the same theorem
+          -- used in `sourceComplexGramVariety_local_rankExact_connected_basis_singular`,
+          -- namely `matrixSymmetricRankExactCone_small_connected`.
+          -- Product connectedness and the linear coordinate equivalence
+          -- transport this to the displayed parameter set.
+          exact
+            BHW.sourceOriented_rankDeficient_parameterMaxRank_connected
+              (d := d) hn hd n N encode P c0 hP_open hP_conn
+        have himage_maxRank_connected :
+            IsConnected
+              ((toInv '' P) ∩
+                {G | BHW.SourceOrientedMaxRankAt d n G}) :=
+          BHW.isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage
+            (d := d) (n := n)
+            (parameterBox := P) (image := toInv)
+            hparameter_maxRank_connected htoInv_cont
+        refine
+          ⟨Fin m -> ℂ, inferInstance,
+            { parameterBox := P
+              parameterBox_open := hP_open
+              parameterBox_connected := hP_conn
+              p0 := c0
+              p0_mem := hc0
+              image := toInv
+              image_continuousOn := htoInv_cont
+              center_eq := htoInv_c0
+              image_relOpen := himage_relOpen
+              image_sub := himage_sub
+              image_maxRank_connected := himage_maxRank_connected }⟩
 
       theorem BHW.sourceOrientedVariety_localConnectedPatch_rankDeficient
           [NeZero d]
