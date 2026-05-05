@@ -22,7 +22,7 @@ local instance sourceFullFrameSymmetricCoordSubmodule_isUniformAddGroup
     IsUniformAddGroup (sourceFullFrameSymmetricCoordSubmodule d) :=
   (sourceFullFrameSymmetricCoordSubmodule d).toAddSubgroup.isUniformAddGroup
 
-local instance sourceFullFrameSymmetricCoordSubmodule_completeSpace
+instance sourceFullFrameSymmetricCoordSubmodule_completeSpace
     (d : ℕ) :
     CompleteSpace (sourceFullFrameSymmetricCoordSubmodule d) :=
   FiniteDimensional.complete ℂ (sourceFullFrameSymmetricCoordSubmodule d)
@@ -34,7 +34,7 @@ local instance sourceFullFrameGaugeSliceData_slice_isUniformAddGroup
     IsUniformAddGroup S.slice :=
   S.slice.toAddSubgroup.isUniformAddGroup
 
-local instance sourceFullFrameGaugeSliceData_slice_completeSpace
+instance sourceFullFrameGaugeSliceData_slice_completeSpace
     (d : ℕ)
     {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
     (S : SourceFullFrameGaugeSliceData d M0) :
@@ -155,6 +155,42 @@ noncomputable def sourceFullFrameSymmetricEquation_implicitChart
     @HasStrictFDerivAt.implicitToOpenPartialHomeomorph ℂ _ inferInstance
       (sourceFullFrameSymmetricCoordSubmodule d) _ _ hcompleteCheck
       ℂ _ _ inferInstance f f' H0S hstrict hrange
+
+set_option synthInstance.maxHeartbeats 100000 in
+theorem sourceFullFrameSymmetricBase_mem_implicitChart_source
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det) :
+    sourceFullFrameSymmetricBase d M0 ∈
+      (sourceFullFrameSymmetricEquation_implicitChart d M0 hM0).source := by
+  haveI : CompleteSpace (sourceFullFrameSymmetricCoordSubmodule d) :=
+    sourceFullFrameSymmetricCoordSubmodule_completeSpace d
+  let H0S := sourceFullFrameSymmetricBase d M0
+  let f := sourceFullFrameSymmetricEquation d
+  let f' := sourceFullFrameSymmetricEquationDerivCLM d
+      (sourceFullFrameOrientedGramCoord d M0)
+  have hstrict : HasStrictFDerivAt f f' H0S := by
+    simpa [f, f', H0S, sourceFullFrameSymmetricBase] using
+      sourceFullFrameSymmetricEquation_hasStrictFDerivAt d H0S
+  have hrange : f'.range = ⊤ := by
+    simpa [f'] using
+      sourceFullFrameSymmetricEquationDerivCLM_range_eq_top_of_det_ne_zero
+        (d := d) (H0 := sourceFullFrameOrientedGramCoord d M0) hM0.ne_zero
+  have hmem :=
+    @HasStrictFDerivAt.mem_implicitToOpenPartialHomeomorph_source
+      ℂ _ _ (sourceFullFrameSymmetricCoordSubmodule d) _ _
+      (sourceFullFrameSymmetricCoordSubmodule_completeSpace d) ℂ _ _ _
+      f f' H0S hstrict hrange
+  simpa [sourceFullFrameSymmetricEquation_implicitChart, H0S, f, f'] using hmem
+
+theorem sourceFullFrameSymmetricEquation_implicitChart_source_mem_nhds_base
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det) :
+    (sourceFullFrameSymmetricEquation_implicitChart d M0 hM0).source ∈
+      𝓝 (sourceFullFrameSymmetricBase d M0) :=
+  (sourceFullFrameSymmetricEquation_implicitChart d M0 hM0).open_source.mem_nhds
+    (sourceFullFrameSymmetricBase_mem_implicitChart_source d hM0)
 
 /-- The derivative of the gauge-slice map, with codomain restricted to
 symmetric full-frame coordinates. -/
@@ -424,6 +460,18 @@ theorem sourceFullFrameSymmetricEquationKernelProjection_apply_ker
       (sourceFullFrameOrientedGramCoord d M0)).ker_closedComplemented_of_finiteDimensional_range) K
 
 set_option synthInstance.maxHeartbeats 100000 in
+/-- The first coordinate of the symmetric implicit chart is the nonlinear
+full-frame hypersurface equation. -/
+theorem sourceFullFrameSymmetricEquation_implicitChart_fst
+    (d : ℕ)
+    (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+    (hM0 : IsUnit M0.det)
+    (H : sourceFullFrameSymmetricCoordSubmodule d) :
+    ((sourceFullFrameSymmetricEquation_implicitChart d M0 hM0) H).1 =
+      sourceFullFrameSymmetricEquation d H := by
+  rfl
+
+set_option synthInstance.maxHeartbeats 100000 in
 /-- The second coordinate of the symmetric implicit chart is the kernel
 projection of the displacement from the base point. -/
 theorem sourceFullFrameSymmetricEquation_implicitChart_snd
@@ -457,6 +505,21 @@ theorem sourceFullFrameSymmetricEquation_implicitChart_snd
   simpa [sourceFullFrameSymmetricEquation_implicitChart,
     HasStrictFDerivAt.implicitToOpenPartialHomeomorph,
     sourceFullFrameSymmetricEquationKernelProjection, H0S, f, f'] using hsnd
+
+theorem sourceFullFrameSymmetricEquation_implicitChart_eq_zero_kernelProjection
+    (d : ℕ)
+    (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+    (hM0 : IsUnit M0.det)
+    (H : sourceFullFrameSymmetricCoordSubmodule d)
+    (hH : sourceFullFrameSymmetricEquation d H = 0) :
+    (sourceFullFrameSymmetricEquation_implicitChart d M0 hM0) H =
+      (0,
+        sourceFullFrameSymmetricEquationKernelProjection d M0
+          (H - sourceFullFrameSymmetricBase d M0)) := by
+  exact
+    Prod.ext
+      (by rw [sourceFullFrameSymmetricEquation_implicitChart_fst, hH])
+      (by rw [sourceFullFrameSymmetricEquation_implicitChart_snd])
 
 /-- The nonlinear kernel-coordinate map obtained by putting the gauge-slice
 map through the symmetric implicit chart. -/
@@ -651,6 +714,70 @@ theorem sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph_coe
           (sourceFullFrameOrientedGramCoord d M0)).ker) =
       sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S := by
   rfl
+
+set_option synthInstance.maxHeartbeats 120000 in
+theorem sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartSource
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det)
+    (S : SourceFullFrameGaugeSliceData d M0) :
+    (0 : S.slice) ∈
+      (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).source := by
+  haveI : CompleteSpace S.slice :=
+    sourceFullFrameGaugeSliceData_slice_completeSpace d S
+  let f := sourceFullFrameGaugeSliceImplicitKernelMap d hM0 S
+  let e := sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv d hM0 S
+  have hderiv : HasStrictFDerivAt f
+      (e : S.slice →L[ℂ]
+        (sourceFullFrameSymmetricEquationDerivCLM d
+          (sourceFullFrameOrientedGramCoord d M0)).ker) 0 := by
+    rw [sourceFullFrameGaugeSliceKernelDerivContinuousLinearEquiv_coe]
+    exact sourceFullFrameGaugeSliceImplicitKernelMap_hasStrictFDerivAt d hM0 S
+  unfold sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph
+  simp only [HasStrictFDerivAt.toOpenPartialHomeomorph,
+    ApproximatesLinearOn.toOpenPartialHomeomorph_source]
+  exact (Classical.choose_spec hderiv.approximates_deriv_on_open_nhds).1
+
+set_option synthInstance.maxHeartbeats 120000 in
+theorem sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartTarget
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det)
+    (S : SourceFullFrameGaugeSliceData d M0) :
+    (0 :
+      (sourceFullFrameSymmetricEquationDerivCLM d
+        (sourceFullFrameOrientedGramCoord d M0)).ker) ∈
+      (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).target := by
+  have hsource :=
+    sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartSource d hM0 S
+  have htarget :=
+    (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).map_source
+      hsource
+  simpa [sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph_coe] using htarget
+
+set_option synthInstance.maxHeartbeats 120000 in
+theorem sourceFullFrameGaugeSliceImplicitKernel_chartSource_mem_nhds_zero
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det)
+    (S : SourceFullFrameGaugeSliceData d M0) :
+    (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).source ∈
+      𝓝 (0 : S.slice) :=
+  (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).open_source.mem_nhds
+    (sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartSource d hM0 S)
+
+set_option synthInstance.maxHeartbeats 120000 in
+theorem sourceFullFrameGaugeSliceImplicitKernel_chartTarget_mem_nhds_zero
+    (d : ℕ)
+    {M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ}
+    (hM0 : IsUnit M0.det)
+    (S : SourceFullFrameGaugeSliceData d M0) :
+    (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).target ∈
+      𝓝 (0 :
+        (sourceFullFrameSymmetricEquationDerivCLM d
+          (sourceFullFrameOrientedGramCoord d M0)).ker) :=
+  (sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph d hM0 S).open_target.mem_nhds
+    (sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartTarget d hM0 S)
 
 set_option synthInstance.maxHeartbeats 120000 in
 theorem sourceFullFrameGaugeSliceImplicitKernelMap_surjOn_chartTarget

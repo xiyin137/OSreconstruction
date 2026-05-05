@@ -627,6 +627,57 @@ theorem shrink_to_relOpen
   · rw [hchart_image_eq]
     exact hball_conn
 
+/-- A max-rank chart produces a connected relatively open seed inside any
+relatively open neighborhood of its center, and the seed stays in the max-rank
+stratum.  This is the seed-extraction form used when iterating the
+Hall-Wightman/Jost finite-overlap propagation step. -/
+theorem connectedMaxRankPatch_inside_relOpen
+    {M : Type*}
+    [NormedAddCommGroup M] [NormedSpace ℂ M]
+    {G0 : SourceOrientedGramData d n}
+    (C : SourceOrientedMaxRankChartData d n (M := M) G0)
+    {U : Set (SourceOrientedGramData d n)}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    (hG0U : G0 ∈ U) :
+    ∃ P : SourceOrientedVarietyLocalConnectedPatchData d n G0,
+      P.V ⊆ U ∩ {G | SourceOrientedMaxRankAt d n G} := by
+  classical
+  rcases hU_rel with ⟨U0, hU0_open, hU_eq⟩
+  have hG0U0var :
+      G0 ∈ U0 ∩ sourceOrientedGramVariety d n := by
+    simpa [hU_eq] using hG0U
+  rcases C.exists_connected_chartBall hU0_open hG0U0var.1 with
+    ⟨ε, hε, hball_dom, hball_U0, hball_conn⟩
+  let B : Set M := Metric.ball (C.chart G0) ε
+  let V : Set (SourceOrientedGramData d n) :=
+    C.chart_biholomorphic.inv '' B
+  have hcenter : G0 ∈ V := by
+    refine ⟨C.chart G0, ?_, ?_⟩
+    · exact Metric.mem_ball_self hε
+    · exact C.chart_biholomorphic.left_inv_on G0 C.center_mem
+  have hrel : IsRelOpenInSourceOrientedGramVariety d n V := by
+    exact C.inv_image_openBall_relOpen hball_dom
+  have hconn : IsConnected V := by
+    have hcont : ContinuousOn C.chart_biholomorphic.inv B :=
+      C.chart_biholomorphic.inv_continuousOn.mono hball_dom
+    simpa [V, B] using hball_conn.image C.chart_biholomorphic.inv hcont
+  have hsub : V ⊆ U ∩ {G | SourceOrientedMaxRankAt d n G} := by
+    rintro G ⟨y, hyB, rfl⟩
+    have hinvΩ : C.chart_biholomorphic.inv y ∈ C.Ω :=
+      C.chart_biholomorphic.inv_mem_on y (hball_dom hyB)
+    have hinvVar :
+        C.chart_biholomorphic.inv y ∈ sourceOrientedGramVariety d n :=
+      IsRelOpenInSourceOrientedGramVariety.subset C.Ω_relOpen hinvΩ
+    constructor
+    · rw [hU_eq]
+      exact ⟨hball_U0 y hyB, hinvVar⟩
+    · exact C.Ω_maxRank hinvΩ
+  exact
+    ⟨{ V := V
+       center_mem := hcenter
+       V_relOpen := hrel
+       V_connected := hconn }, hsub⟩
+
 /-- Local identity step at a max-rank point, assuming the supplied local chart
 uses a finite coordinate model.  This is the chart-local analytic continuation
 piece used by the max-rank branch of the oriented source-variety identity

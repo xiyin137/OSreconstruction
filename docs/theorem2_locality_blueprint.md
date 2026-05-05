@@ -5632,11 +5632,121 @@ Proof decomposition of this theorem, without hiding the analytic work:
 		         `sourceFullFrameGaugeSliceImplicitKernelMap_right_inv_on_chartTarget`,
 		         and
 		         `sourceFullFrameGaugeSliceImplicitKernelMap_left_inv_on_chartSource`.
-		         Pointwise hypersurface membership is still
-		         `sourceFullFrameGaugeSliceMap_mem_hypersurface`.  The remaining
-		         proof is the explicit transport from a nearby hypersurface point
-		         through the symmetric implicit chart's second coordinate, then back
-		         through the kernel chart inverse.
+		         The first transport consumer is now checked in
+		         `SourceOrientedFullFrameTransport.lean`:
+		         `sourceFullFrameSymmetricHypersurfaceCoord`,
+		         `sourceFullFrameGaugeSliceMapSymmetric_mem_hypersurface`, and
+		         `sourceFullFrameGaugeSliceImplicitKernel_target_lifts_to_hypersurface`.
+		         This proves that every kernel coordinate in the chart target
+		         is realized by a gauge-slice point on the symmetric hypersurface
+		         with that exact kernel-projection coordinate.  The
+		         neighborhood-at-zero/local-image strengthening is also checked:
+		         `sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartSource`,
+		         `sourceFullFrameGaugeSliceImplicitKernel_zero_mem_chartTarget`,
+		         `sourceFullFrameGaugeSliceImplicitKernel_chartSource_mem_nhds_zero`,
+		         `sourceFullFrameGaugeSliceImplicitKernel_chartTarget_mem_nhds_zero`,
+		         and the exported consumer
+		         `sourceFullFrameGaugeSliceImplicitKernel_eventually_lifts_to_hypersurface`.
+		         Thus every sufficiently small kernel coordinate is now realized
+		         on the symmetric full-frame hypersurface.  The restriction from
+		         the symmetric hypersurface statement to the actual full-frame
+		         source variety is now checked as
+		         `sourceFullFrameSymmetricVarietyCoord`,
+		         `sourceFullFrameGaugeSliceMapSymmetric_mem_varietyCoord`,
+		         `sourceFullFrameGaugeSliceImplicitKernel_target_lifts_to_varietyCoord`,
+		         and
+		         `sourceFullFrameGaugeSliceImplicitKernel_eventually_lifts_to_varietyCoord`.
+		         This is the gauge-slice image theorem, not a new analytic
+		         local-image argument.  The determinant-nonzero shrink is now
+		         checked as `sourceFullFrameSymmetricDetNonzeroCoord`,
+		         `sourceFullFrameSymmetricDetNonzeroCoord_open`,
+		         `sourceFullFrameSymmetricBase_mem_detNonzeroCoord`,
+		         `sourceFullFrameGaugeSliceMapSymmetric_detNonzero_mem_nhds_zero`,
+		         `sourceFullFrameGaugeSliceImplicitKernel_symm_detNonzero_mem_nhds_zero`,
+		         and
+		         `sourceFullFrameGaugeSliceImplicitKernel_eventually_lifts_to_detNonzero_varietyCoord`.
+		         Thus the selected full-frame lift can be shrunk to remain in the
+		         determinant-nonzero sheet.  The max-rank chart packet has now
+		         started in `SourceOrientedFullFrameChart.lean` with checked
+		         `sourceComplementIndex`, `sourceSelectedMixedRows`,
+		         `continuous_sourceSelectedMixedRows`,
+		         `sourceFullFrameSelectedDetNonzeroDomain`,
+		         `sourceFullFrameSelectedDetNonzeroDomain_open`,
+		         `sourceFullFrameSelectedSymmetricCoordOfSource`,
+		         `sourceFullFrameSelectedSymmetricCoordOfSource_mem_varietyCoord`,
+		         and
+		         `sourceFullFrameSelectedSymmetricCoordOfSource_mem_detNonzeroCoord`.
+		         The selected kernel-coordinate and first reconstruction layer are
+		         also checked:
+		         `sourceFullFrameSelectedKernelCoord`,
+		         `sourceFullFrameSelectedKernelCoord_eq_kernelProjection`,
+		         `sourceFullFrameSelectedKernelCoord_eq_zero_of_selected_eq_base`,
+		         `sourceSelectedIndexOfMem`, `sourceSelectedIndexOfMem_spec`,
+		         `sourceFullFrameGauge_reconstructFrame`,
+		         `sourceFullFrameGauge_reconstructVector`,
+		         `sourceFullFrameGauge_reconstructVector_selected`, and
+		         `sourceFullFrameGauge_reconstructVector_mixedGram`.  The generic
+		         coefficient-row algebra is also checked:
+		         `sourceFullFrameGauge_reconstructCoeff`,
+		         `sourceFullFrameGauge_reconstructCoeff_selected`,
+		         `sourceFullFrameGauge_reconstructVector_eq_sum_coeff_frame`,
+		         `sourceFullFrameGauge_reconstructVector_gram_eq_coeff_gram`,
+		         `sourceFullFrameGauge_reconstructMatrix_eq_coeff_mul`, and
+		         `sourceFullFrameGauge_reconstructDet_eq_coeff_det_mul`.  The
+		         selected/mixed source-Gram coordinate wrappers are checked as
+		         `sourceFullFrameGauge_reconstructVector_selectedSelectedGram`,
+		         `sourceFullFrameGauge_reconstructVector_mixedSourceGram_left`,
+		         and
+		         `sourceFullFrameGauge_reconstructVector_mixedSourceGram_right`.
+		         The input-side coefficient packet is checked as
+		         `sourceSelectedFrameGramMatrix`,
+		         `sourceSelectedFrameCoeff`, `sourceCoeffGramFromSelected`,
+		         `sourceSelectedFrameCoeff_selected`, and
+		         `sourceCoeffGramFromSelected_selectedSelected`; with invertible
+		         selected Gram block,
+		         `sourceCoeffGramFromSelected_unselectedSelected` also recovers
+		         the unselected-selected mixed entries.  The invertibility bridge
+		         from the source variety is checked as
+		         `sourceSelectedFrameGramMatrix_det_isUnit_of_variety_det_ne_zero`;
+		         the symmetry helpers are checked as
+		         `sourceOrientedGramVariety_gram_symm` and
+		         `sourceSelectedFrameGramMatrix_symm_of_variety`; coefficient
+		         Gram symmetry and selected-unselected recovery are checked as
+		         `sourceCoeffGramFromSelected_symm_of_selectedGram_symm` and
+		         `sourceCoeffGramFromSelected_selectedUnselected_of_variety`.
+		         The conditional Schur reduction is checked as
+		         `sourceCoeffGramFromSelected_eq_gram_of_invariant_vector_expansion`:
+		         once a realizing tuple expands through the selected-frame
+		         coefficients, the full Gram equality is just bilinearity.
+		         The next proof is now pinned:
+		         `sourceFullFrameMatrix_rows_span_top_of_det_ne_zero` supplies
+		         spanning selected rows from the selected determinant, and
+		         `sourceSelectedFrameCoeff_vector_expansion_of_invariant` proves
+		         the coefficient expansion by pairing the difference against each
+		         selected row, using
+		         `Matrix.nonsing_inv_mul_cancel_right (A := A)` and
+		         `sourceComplexMinkowskiInner_eq_zero_of_orthogonal_spanning_family`.
+		         This is now checked, and
+		         `sourceOrientedVariety_schurGram_eq_of_selectedDet_ne_zero`
+		         closes the full Schur Gram recovery theorem.
+		         Determinant recovery is pinned to the same expansion:
+		         `sourceSelectedFrameCoeff_matrix_eq_frame_of_invariant`
+		         gives `Mκ = Cκ * Mι`, and
+		         `sourceOrientedVariety_det_eq_coeff_det_selected` follows by
+		         `Matrix.det_mul`.
+		         The chart inverse bridge is now reduced to
+		         `sourceFullFrameGauge_reconstructVector_eq_of_frame_eq_mixedRows_eq`:
+		         if the reconstructed frame equals a realizing selected frame
+		         and the free rows equal `sourceSelectedMixedRows`, then the
+		         explicit reconstructed source tuple is definitionally the
+		         original tuple by selected-row recovery and the checked
+		         coefficient expansion theorem.
+		         This is now checked, together with the invariant wrapper
+		         `sourceFullFrameGauge_reconstructInvariant_eq_of_frame_eq_mixedRows_eq`.
+		         The
+		         remaining proof is the oriented Schur/determinant recovery
+		         theorem connecting these coefficient formulas to the input source
+		         invariant, followed by the local-biholomorph packet.
 	      9. `sourceFullFrameSlice_localImage_eq_variety` is a restriction of the
 	         hypersurface local image, not a new local-surjectivity claim.  For
 	         `map_mem`, every slice point maps to the variety by definition of
@@ -6370,13 +6480,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
       full-frame coordinates:
 
       ```lean
+      -- Checked in `SourceOrientedFullFrameChart.lean`; the complement index
+      -- now has a `Fintype` instance so the free mixed-row coordinate carries
+      -- Mathlib's product normed-vector-space instances.
       def BHW.sourceComplementIndex
           {n : Nat}
           {D : Nat}
           (ι : Fin D ↪ Fin n) : Type :=
         {k : Fin n // k ∉ Set.range ι}
 
-      def BHW.sourceSelectedFrameOrientedCoord
+      instance BHW.sourceComplementIndex_fintype
+          {n D : Nat}
+          (ι : Fin D ↪ Fin n) :
+          Fintype (BHW.sourceComplementIndex ι)
+
+      -- Existing checked selected full-frame oriented coordinate.
+      def BHW.sourceFullFrameOrientedCoordOfSource
           (d n : Nat)
           (ι : Fin (d + 1) ↪ Fin n)
           (G : BHW.SourceOrientedGramData d n) :
@@ -6390,28 +6509,133 @@ Proof decomposition of this theorem, without hiding the analytic work:
           BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ :=
         fun k a => G.gram k.1 (ι a)
 
-      structure BHW.SourceOrientedFullFrameMaxRankChartData
-          [NeZero d]
+      abbrev BHW.sourceFullFrameMaxRankChartModel
           (d n : Nat)
-          (hn : d + 1 <= n)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0) :=
+        slice.slice ×
+          (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)
+
+      noncomputable def BHW.sourceFullFrameGauge_reconstructInvariant
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
+          BHW.SourceOrientedGramData d n :=
+        BHW.sourceOrientedMinkowskiInvariant d n
+          (BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y)
+
+      theorem BHW.sourceFullFrameGauge_reconstructInvariant_mem_variety
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
+          BHW.sourceFullFrameGauge_reconstructInvariant d n ι M0 slice y ∈
+            BHW.sourceOrientedGramVariety d n
+
+      theorem BHW.sourceFullFrameOrientedCoordOfSource_reconstructInvariant_eq
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
+          BHW.sourceFullFrameOrientedCoordOfSource d n ι
+              (BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y) =
+            BHW.sourceFullFrameOrientedGramCoord d
+              (BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y)
+
+      theorem BHW.sourceSelectedFrameGramMatrix_reconstructInvariant_eq
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
+          BHW.sourceSelectedFrameGramMatrix d n ι
+              (BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y) =
+            Matrix.of
+              (BHW.sourceFullFrameGram d
+                (BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y))
+
+      theorem BHW.sourceFullFrameGauge_reconstructInvariant_selectedDet
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
+          (BHW.sourceFullFrameGauge_reconstructInvariant
+              d n ι M0 slice y).det ι =
+            (BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y).det
+
+      theorem BHW.sourceSelectedFrameGramMatrix_reconstructInvariant_det_isUnit
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
+          (hdet :
+            (BHW.sourceFullFrameGauge_reconstructFrame
+              d n ι M0 slice y).det ≠ 0) :
+          IsUnit
+            (BHW.sourceSelectedFrameGramMatrix d n ι
+              (BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y)).det
+
+      theorem BHW.sourceSelectedMixedRows_reconstructInvariant_eq
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
+          (hA_unit :
+            IsUnit
+              (Matrix.of
+                (BHW.sourceFullFrameGram d
+                  (BHW.sourceFullFrameGauge_reconstructFrame
+                    d n ι M0 slice y))).det) :
+          BHW.sourceSelectedMixedRows d n ι
+              (BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y) =
+            y.2
+
+      theorem BHW.sourceSelectedMixedRows_reconstructInvariant_eq_of_frame_det_ne_zero
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
+          (hdet :
+            (BHW.sourceFullFrameGauge_reconstructFrame
+              d n ι M0 slice y).det ≠ 0) :
+          BHW.sourceSelectedMixedRows d n ι
+              (BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y) =
+            y.2
+
+      structure BHW.SourceOrientedFullFrameMaxRankChartData
+          (d n : Nat)
           (ι : Fin (d + 1) ↪ Fin n)
           (G0 : BHW.SourceOrientedGramData d n) where
         M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ
         M0_det_unit : IsUnit M0.det
         M0_oriented :
           BHW.sourceFullFrameOrientedGramCoord d M0 =
-            BHW.sourceSelectedFrameOrientedCoord d n ι G0
+            BHW.sourceFullFrameOrientedCoordOfSource d n ι G0
         slice :
           BHW.SourceFullFrameGaugeSliceData d M0
-	        kernelChart :
-	          OpenPartialHomeomorph slice.slice
-	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
-	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
-	        kernelChart_eq :
-	          (kernelChart : slice.slice ->
-	            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
-	              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker) =
-	            BHW.sourceFullFrameGaugeSliceImplicitKernelMap d M0_det_unit slice
+        kernelChart :
+          OpenPartialHomeomorph slice.slice
+            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker
+        kernelChart_eq :
+          (kernelChart : slice.slice ->
+            (BHW.sourceFullFrameSymmetricEquationDerivCLM d
+              (BHW.sourceFullFrameOrientedGramCoord d M0)).ker) =
+            BHW.sourceFullFrameGaugeSliceImplicitKernelMap d M0_det_unit slice
         Ω : Set (BHW.SourceOrientedGramData d n)
         Ω_relOpen :
           BHW.IsRelOpenInSourceOrientedGramVariety d n Ω
@@ -6425,23 +6649,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Ω ⊆ {G | BHW.SourceOrientedMaxRankAt d n G}
         chart :
           BHW.SourceOrientedGramData d n ->
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)
-        chart_differentiableOn_amb :
-          DifferentiableOn ℂ chart Ωamb
-        inv :
-          slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ) ->
-            BHW.SourceOrientedGramData d n
+            BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice
+        chart_continuousOn_amb :
+          ContinuousOn chart Ωamb
         chart_open : IsOpen (chart '' Ω)
-        local_biholomorph :
+        chart_biholomorphic :
           BHW.LocalBiholomorphOnSourceOrientedVariety d n Ω chart
         inv_formula :
           ∀ y ∈ chart '' Ω,
-            inv y =
-              BHW.sourceOrientedMinkowskiInvariant d n
-                (BHW.sourceFullFrameGauge_reconstructVector
-                  d n hn ι M0 slice y)
+            chart_biholomorphic.inv y =
+              BHW.sourceFullFrameGauge_reconstructInvariant
+                d n ι M0 slice y
 
       -- The constructor theorem
       -- `BHW.sourceOrientedFullFrameMaxRankChartData_at` is displayed after
@@ -6461,13 +6679,14 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `mixed(k, ·) * (selectedGram)⁻¹`.  The nonselected-nonselected Gram
       entries and every full-frame determinant are then forced by the
       oriented algebraic relations and block determinant expansion.  The
-      proof of `local_biholomorph.left_inv_on` is therefore the selected
+      proof of `chart_biholomorphic.left_inv_on` is therefore the selected
       frame/mixed-row reconstruction theorem plus the oriented relations; the
       proof of `right_inv_on` is the local-image inverse theorem and the
-      mixed-row definition.  `chart_open` is the product of the open slice
-      image from `kernelChart.target` (transported through the symmetric
-      implicit chart at first coordinate `0`) with the unrestricted mixed-row
-      coordinate ball after the final shrink.
+      mixed-row definition.  `chart_open` is the product
+      `kernelChart.source ×ˢ Set.univ` after the determinant-nonzero shrink:
+      the chart coordinate is the slice point `kernelChart.symm K`, so the
+      first model coordinate lives on the source side of the
+      `OpenPartialHomeomorph`.
 
       The reconstruction formula must be an actual definition, because both the
       max-rank chart inverse and the extended-tube shrink depend on its
@@ -6497,59 +6716,47 @@ Proof decomposition of this theorem, without hiding the analytic work:
         Classical.choose_spec hj
 
       noncomputable def BHW.sourceFullFrameGauge_reconstructFrame
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
           (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          (y :
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)) :
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
           Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
         M0 + (y.1 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
 
       noncomputable def BHW.sourceFullFrameGauge_reconstructVector
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
           (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          (y :
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)) :
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
           Fin n -> Fin (d + 1) -> ℂ :=
         fun j μ =>
           if hj : j ∈ Set.range ι then
             BHW.sourceFullFrameGauge_reconstructFrame
-              d n hn ι M0 slice y
+              d n ι M0 slice y
               (BHW.sourceSelectedIndexOfMem ι hj) μ
           else
             let k : BHW.sourceComplementIndex ι := ⟨j, hj⟩
             let M :=
               BHW.sourceFullFrameGauge_reconstructFrame
-                d n hn ι M0 slice y
+                d n ι M0 slice y
             let A : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
               BHW.sourceFullFrameGram d M
             ∑ b : Fin (d + 1),
               (∑ a : Fin (d + 1), y.2 k a * A⁻¹ a b) * M b μ
 
       theorem BHW.sourceFullFrameGauge_reconstructVector_selected
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
           (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          (y :
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)) :
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice) :
           BHW.sourceFullFrameMatrix d n ι
               (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι M0 slice y) =
+                d n ι M0 slice y) =
             BHW.sourceFullFrameGauge_reconstructFrame
-              d n hn ι M0 slice y := by
+              d n ι M0 slice y := by
         ext a μ
         have hmem : ι a ∈ Set.range ι := ⟨a, rfl⟩
         have hidx :
@@ -6560,44 +6767,168 @@ Proof decomposition of this theorem, without hiding the analytic work:
         simp [BHW.sourceFullFrameGauge_reconstructVector, hmem, hidx]
 
       theorem BHW.sourceFullFrameGauge_reconstructVector_mixedGram
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
           (slice : BHW.SourceFullFrameGaugeSliceData d M0)
-          (y :
-            slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ))
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
           (hA_unit :
             IsUnit
-              (BHW.sourceFullFrameGram d
-                (BHW.sourceFullFrameGauge_reconstructFrame
-                  d n hn ι M0 slice y)).det)
+              (Matrix.of
+                (BHW.sourceFullFrameGram d
+                  (BHW.sourceFullFrameGauge_reconstructFrame
+                    d n ι M0 slice y))).det)
           (k : BHW.sourceComplementIndex ι)
           (a : Fin (d + 1)) :
           BHW.sourceComplexMinkowskiInner d
               (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι M0 slice y k.1)
+                d n ι M0 slice y k.1)
               (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι M0 slice y (ι a)) =
+                d n ι M0 slice y (ι a)) =
             y.2 k a
 
       ```
 
       The proof of `sourceFullFrameGauge_reconstructVector_mixedGram` is the
       matrix identity `(m * A⁻¹) * A = m`, using `hA_unit` to rewrite `A⁻¹ * A`
-      and the selected-frame theorem above.  The proof of
-      `sourceFullFrameGauge_reconstructVector_sourceInvariant_eq` then has three
-	      independent pieces: selected-selected Gram and determinant coordinates are
-	      the kernel-chart right inverse transported back through the symmetric
-	      implicit chart; selected-unselected Gram entries are
-	      `reconstructVector_mixedGram`; unselected-unselected Gram
-      entries and every full determinant coordinate follow from the oriented
-      algebraic relations on `G`, multilinearity, and the block determinant
-      expansion after the selected frame determinant is nonzero.  This theorem is
-      where the oriented relations are consumed; `SourceOrientedFullFrameMaxRankChartData`
+      and the selected-frame theorem above.  Lean-ready transcript:
+
+      ```lean
+      theorem BHW.sourceFullFrameGauge_reconstructVector_mixedGram
+          ... := by
+        let M :=
+          BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y
+        let z :=
+          BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y
+        let A : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
+          Matrix.of (BHW.sourceFullFrameGram d M)
+        let coeff : Fin (d + 1) -> ℂ :=
+          fun b => ∑ c : Fin (d + 1), y.2 k c * A⁻¹ c b
+        have hk_not : k.1 ∉ Set.range ι := k.2
+        have hz_k :
+            z k.1 = fun μ => ∑ b : Fin (d + 1), coeff b * M b μ := by
+          ext μ
+          simp [z, BHW.sourceFullFrameGauge_reconstructVector,
+            hk_not, coeff, M, A]
+        have hz_sel : z (ι a) = M a := by
+          have hsel :=
+            BHW.sourceFullFrameGauge_reconstructVector_selected
+              d n ι M0 slice y
+          exact congrFun (congrFun hsel a) -- extensional form
+        have hinner :
+            BHW.sourceComplexMinkowskiInner d
+                (fun μ => ∑ b : Fin (d + 1), coeff b * M b μ) (M a) =
+              ∑ b : Fin (d + 1), coeff b * A b a := by
+          -- expand `sourceComplexMinkowskiInner` and `sourceFullFrameGram`;
+          -- move finite sums with `Finset.mul_sum`, `Finset.sum_mul`, and
+          -- `Finset.sum_comm`.
+          simp [BHW.sourceComplexMinkowskiInner, BHW.sourceFullFrameGram,
+            A, Finset.mul_sum, Finset.sum_mul, Finset.sum_comm,
+            mul_assoc, mul_left_comm, mul_comm]
+        have hrow :
+            ∑ b : Fin (d + 1), coeff b * A b a = y.2 k a := by
+          let row : Matrix (Fin 1) (Fin (d + 1)) ℂ :=
+            fun _ b => y.2 k b
+          have hcancel :
+              row * A⁻¹ * A = row :=
+            Matrix.nonsing_inv_mul_cancel_right (A := A) row hA_unit
+          have happ := congrFun (congrFun hcancel (0 : Fin 1)) a
+          simpa [Matrix.mul_apply, coeff, row, Finset.mul_sum,
+            Finset.sum_mul, Finset.sum_comm, mul_assoc, mul_left_comm,
+            mul_comm] using happ
+        rw [hz_k, hz_sel, hinner, hrow]
+      ```
+
+      The theorem statement therefore uses
+      `hA_unit : IsUnit (Matrix.of (sourceFullFrameGram d M)).det`, because
+      `sourceFullFrameGram d M` is a function-valued coordinate and matrix
+      inversion is on `Matrix.of` of that coordinate.  The invariant recovery
+      is now split into checked algebra:
+      `sourceFullFrameGauge_reconstructInvariant_eq_of_frame_eq_mixedRows_eq`
+      proves full recovery once the local-image half supplies selected-frame
+      and mixed-row equality, while
+      `sourceFullFrameOrientedCoordOfSource_reconstructInvariant_eq`,
+      `sourceSelectedFrameGramMatrix_reconstructInvariant_eq`,
+      `sourceFullFrameGauge_reconstructInvariant_selectedDet`, and
+      `sourceSelectedMixedRows_reconstructInvariant_eq_of_frame_det_ne_zero`
+      provide the right-inverse readoff facts.  The local-image constructor is
+      therefore responsible only for producing the selected slice point and the
+      determinant-nonzero shrink; `SourceOrientedFullFrameMaxRankChartData`
       must not store `vector_det` as an unexplained field.
+
+      Lean implementation proceeds through a generic coefficient-row packet
+      before the `G`-specific Schur theorem is invoked.  Define
+      `sourceFullFrameGauge_reconstructCoeff` from the same reconstruction data:
+      it is the identity row for selected labels and the mixed row
+      `y.2 k * A⁻¹` for unselected labels, with
+      `A = Matrix.of (sourceFullFrameGram d reconstructedFrame)`.  The proof
+      obligation is:
+
+      ```lean
+      theorem BHW.sourceFullFrameGauge_reconstructVector_eq_sum_coeff_frame
+          (d n : Nat)
+          (ι : Fin (d + 1) ↪ Fin n)
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y :
+            slice.slice ×
+              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ))
+          (j : Fin n) :
+          BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y j =
+            ∑ b : Fin (d + 1),
+              BHW.sourceFullFrameGauge_reconstructCoeff
+                d n ι M0 slice y j b •
+              BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y b
+
+      theorem BHW.sourceFullFrameGauge_reconstructMatrix_eq_coeff_mul
+          ... (κ : Fin (d + 1) ↪ Fin n) :
+          BHW.sourceFullFrameMatrix d n κ
+              (BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y) =
+            (fun a b =>
+              BHW.sourceFullFrameGauge_reconstructCoeff
+                d n ι M0 slice y (κ a) b) *
+            BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y
+
+      theorem BHW.sourceFullFrameGauge_reconstructDet_eq_coeff_det_mul
+          ... (κ : Fin (d + 1) ↪ Fin n) :
+          BHW.sourceFullFrameDet d n κ
+              (BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y) =
+            (Matrix.det
+              (fun a b =>
+                BHW.sourceFullFrameGauge_reconstructCoeff
+                  d n ι M0 slice y (κ a) b)) *
+            (BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y).det
+      ```
+
+      The proofs are by the selected/unselected case split in the definition of
+      `sourceFullFrameGauge_reconstructVector`, followed by `Matrix.mul_apply`
+      and `Matrix.det_mul`.  They do not use the oriented source variety yet;
+      they only expose the algebraic spine to which the oriented determinant
+      relation will attach.  The companion Gram-expansion theorem is similarly
+      pure reconstruction algebra:
+
+      ```lean
+      theorem BHW.sourceFullFrameGauge_reconstructVector_gram_eq_coeff_gram
+          ... (i j : Fin n) :
+          BHW.sourceComplexMinkowskiInner d
+              (BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y i)
+              (BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y j) =
+            ∑ a : Fin (d + 1), ∑ b : Fin (d + 1),
+              BHW.sourceFullFrameGauge_reconstructCoeff
+                d n ι M0 slice y i a *
+              BHW.sourceFullFrameGauge_reconstructCoeff
+                d n ι M0 slice y j b *
+              Matrix.of
+                (BHW.sourceFullFrameGram d
+                  (BHW.sourceFullFrameGauge_reconstructFrame
+                    d n ι M0 slice y)) a b
+      ```
+
+      This follows from
+      `sourceFullFrameGauge_reconstructVector_eq_sum_coeff_frame`,
+      `sourceComplexMinkowskiInner_sum_smul_left`, and
+      `sourceComplexMinkowskiInner_sum_smul_right`.  The Schur theorem later
+      identifies this coefficient Gram expression with the input `G.gram`.
 
       The determinant/Schur algebra used in that last sentence must be exposed
       before implementation.  Fix a selected full frame `ι`, write
@@ -6609,110 +6940,82 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       ```lean
       noncomputable def BHW.sourceSelectedFrameCoeff
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
-          (G : BHW.SourceOrientedGramData d n)
-          (j : Fin n) : Fin (d + 1) -> ℂ :=
-        if hj : j ∈ Set.range ι then
-          fun a =>
-            if a = BHW.sourceSelectedIndexOfMem ι hj then 1 else 0
-        else
-          fun b =>
-            ∑ a : Fin (d + 1),
-              G.gram j (ι a) *
-                ((fun u v => G.gram (ι u) (ι v)) :
-                  Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)⁻¹ a b
+          (G : BHW.SourceOrientedGramData d n) :
+          Fin n -> Fin (d + 1) -> ℂ
 
       def BHW.sourceCoeffGramFromSelected
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (G : BHW.SourceOrientedGramData d n)
           (i j : Fin n) : ℂ :=
         ∑ a : Fin (d + 1),
           ∑ b : Fin (d + 1),
-            BHW.sourceSelectedFrameCoeff d n hn ι G i a *
+            BHW.sourceSelectedFrameCoeff d n ι G i a *
               G.gram (ι a) (ι b) *
-              BHW.sourceSelectedFrameCoeff d n hn ι G j b
+              BHW.sourceSelectedFrameCoeff d n ι G j b
 
       theorem BHW.sourceOrientedVariety_schurGram_eq_of_selectedDet_ne_zero
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           {G : BHW.SourceOrientedGramData d n}
           (hGvar : G ∈ BHW.sourceOrientedGramVariety d n)
           (hι : G.det ι ≠ 0) :
           ∀ i j,
             G.gram i j =
-              BHW.sourceCoeffGramFromSelected d n hn ι G i j
+              BHW.sourceCoeffGramFromSelected d n ι G i j
 
       theorem BHW.sourceOrientedVariety_det_eq_coeff_det_selected
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
+          (d n : Nat)
           (ι κ : Fin (d + 1) ↪ Fin n)
           {G : BHW.SourceOrientedGramData d n}
           (hGvar : G ∈ BHW.sourceOrientedGramVariety d n)
           (hι : G.det ι ≠ 0) :
-          Matrix.det
+          (Matrix.of
               (fun a b =>
-                BHW.sourceSelectedFrameCoeff d n hn ι G (κ a) b) *
+                BHW.sourceSelectedFrameCoeff d n ι G (κ a) b)).det *
             G.det ι =
           G.det κ
 
-      theorem BHW.sourceFullFrameGauge_reconstructVector_gram_eq
-          [NeZero d]
+      theorem BHW.sourceFullFrameGauge_reconstructVector_eq_of_frame_eq_mixedRows_eq
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
-          (G : BHW.SourceOrientedGramData d n)
-          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G)
-          (hG : G ∈ C.Ω ∩ BHW.sourceOrientedGramVariety d n) :
-          BHW.sourceMinkowskiGram d n
-              (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι C.M0 C.slice (C.chart G)) =
-            G.gram
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hframe :
+            BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y =
+              BHW.sourceFullFrameMatrix d n ι z)
+          (hmixed :
+            y.2 =
+              BHW.sourceSelectedMixedRows d n ι
+                (BHW.sourceOrientedMinkowskiInvariant d n z))
+          (hdet :
+            (BHW.sourceOrientedMinkowskiInvariant d n z).det ι ≠ 0) :
+          BHW.sourceFullFrameGauge_reconstructVector d n ι M0 slice y = z
 
-      theorem BHW.sourceFullFrameGauge_reconstructVector_det_eq
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
+      theorem BHW.sourceFullFrameGauge_reconstructInvariant_eq_of_frame_eq_mixedRows_eq
+          (d n : Nat)
           (ι : Fin (d + 1) ↪ Fin n)
-          (G : BHW.SourceOrientedGramData d n)
-          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G)
-          (hG : G ∈ C.Ω ∩ BHW.sourceOrientedGramVariety d n) :
-          (fun κ =>
-            BHW.sourceFullFrameDet d n κ
-              (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι C.M0 C.slice (C.chart G))) =
-            G.det
-
-      theorem BHW.sourceFullFrameGauge_reconstructVector_sourceInvariant_eq
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
-          (ι : Fin (d + 1) ↪ Fin n)
-          (G : BHW.SourceOrientedGramData d n)
-          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G)
-          (hG : G ∈ C.Ω ∩ BHW.sourceOrientedGramVariety d n) :
+          (M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
+          (slice : BHW.SourceFullFrameGaugeSliceData d M0)
+          (y : BHW.sourceFullFrameMaxRankChartModel d n ι M0 slice)
+          (z : Fin n -> Fin (d + 1) -> ℂ)
+          (hframe :
+            BHW.sourceFullFrameGauge_reconstructFrame d n ι M0 slice y =
+              BHW.sourceFullFrameMatrix d n ι z)
+          (hmixed :
+            y.2 =
+              BHW.sourceSelectedMixedRows d n ι
+                (BHW.sourceOrientedMinkowskiInvariant d n z))
+          (hdet :
+            (BHW.sourceOrientedMinkowskiInvariant d n z).det ι ≠ 0) :
           BHW.sourceOrientedMinkowskiInvariant d n
               (BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι C.M0 C.slice (C.chart G)) =
-            G := by
-        apply BHW.SourceOrientedGramData.ext
-        · exact
-            BHW.sourceFullFrameGauge_reconstructVector_gram_eq
-              (d := d) n hn ι G C hG
-        · exact
-            BHW.sourceFullFrameGauge_reconstructVector_det_eq
-              (d := d) hd n hn ι G C hG
+                d n ι M0 slice y) =
+            BHW.sourceOrientedMinkowskiInvariant d n z
       ```
 
       Proof transcript.  `sourceOrientedVariety_schurGram_eq_of_selectedDet_ne_zero`
@@ -6728,7 +7031,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       coordinates" slogan.
 
       For determinants, define the coefficient matrix
-      `Cκ a b := sourceSelectedFrameCoeff d n hn ι G (κ a) b`.  The reconstructed
+      `Cκ a b := sourceSelectedFrameCoeff d n ι G (κ a) b`.  The reconstructed
       selected-frame matrix for `κ` is `Cκ * Mι`, hence its determinant is
       `det Cκ * det Mι`.  The oriented relation for the mixed Gram minor
       `det(G[κ,ι]) = minkowskiMetricDet d * G.det κ * G.det ι`, together with
@@ -6743,44 +7046,40 @@ Proof decomposition of this theorem, without hiding the analytic work:
       Lean-facing proof skeleton for the Schur and determinant subtheorems:
 
       ```lean
-      theorem BHW.sourceSelectedFrameCoeff_vector_expansion
-          [NeZero d]
+      theorem BHW.sourceSelectedFrameCoeff_vector_expansion_of_invariant
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι : Fin (d + 1) ↪ Fin n)
           (z : Fin n -> Fin (d + 1) -> ℂ)
-          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          (hι :
+            (BHW.sourceOrientedMinkowskiInvariant d n z).det ι ≠ 0) :
           ∀ j,
             z j =
-              fun μ =>
-                ∑ a : Fin (d + 1),
-                  BHW.sourceSelectedFrameCoeff d n hn ι
-                    (BHW.sourceOrientedMinkowskiInvariant d n z) j a *
-                  z (ι a) μ := by
+              ∑ a : Fin (d + 1),
+                BHW.sourceSelectedFrameCoeff d n ι
+                  (BHW.sourceOrientedMinkowskiInvariant d n z) j a •
+                BHW.sourceFullFrameMatrix d n ι z a := by
         intro j
         by_cases hj : j ∈ Set.range ι
         · rcases hj with ⟨a, rfl⟩
-          ext μ
           simp [BHW.sourceSelectedFrameCoeff,
             BHW.sourceSelectedIndexOfMem_spec]
         · have hA_unit :
-              IsUnit
-                ((fun a b =>
-                  BHW.sourceMinkowskiGram d n z (ι a) (ι b)) :
-                    Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ).det := by
+              IsUnit (BHW.sourceSelectedFrameGramMatrix d n ι
+                (BHW.sourceOrientedMinkowskiInvariant d n z)).det := by
             exact
-              BHW.selectedGram_det_isUnit_of_sourceFullFrameDet_ne_zero
-                (d := d) (n := n) ι z hι
-          exact
-            BHW.sourceVector_expand_in_selectedFrame_by_gramInverse
-              (d := d) (n := n) (hn := hn) ι z hA_unit j
+              BHW.sourceSelectedFrameGramMatrix_det_isUnit_of_variety_det_ne_zero
+                d n ι ⟨z, rfl⟩ hι
+          -- pair the difference with every selected frame row, use
+          -- `row * A⁻¹ * A = row`, then use the checked spanning theorem
+          -- `sourceFullFrameMatrix_rows_span_top_of_det_ne_zero`.
+          ...
 
       theorem BHW.sourceOrientedVariety_schurGram_eq_of_selectedDet_ne_zero
           ... := by
         rcases hGvar with ⟨z, rfl⟩
         have hvec :=
-          BHW.sourceSelectedFrameCoeff_vector_expansion
-            (d := d) (n := n) hn ι z hι
+          BHW.sourceSelectedFrameCoeff_vector_expansion_of_invariant
+            d n ι z hι
         intro i j
         rw [hvec i, hvec j]
         simp [BHW.sourceCoeffGramFromSelected,
@@ -6788,23 +7087,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Finset.sum_mul, Finset.mul_sum, Finset.sum_comm,
           mul_assoc, mul_left_comm, mul_comm]
 
-      theorem BHW.sourceFullFrameMatrix_reconstruct_coeff_mul_selected
-          [NeZero d]
+      theorem BHW.sourceSelectedFrameCoeff_matrix_eq_frame_of_invariant
           (d n : Nat)
-          (hn : d + 1 <= n)
           (ι κ : Fin (d + 1) ↪ Fin n)
           (z : Fin n -> Fin (d + 1) -> ℂ)
-          (hι : BHW.sourceFullFrameDet d n ι z ≠ 0) :
+          (hι :
+            (BHW.sourceOrientedMinkowskiInvariant d n z).det ι ≠ 0) :
           BHW.sourceFullFrameMatrix d n κ z =
             (fun a b =>
-              BHW.sourceSelectedFrameCoeff d n hn ι
+              BHW.sourceSelectedFrameCoeff d n ι
                 (BHW.sourceOrientedMinkowskiInvariant d n z) (κ a) b) *
             BHW.sourceFullFrameMatrix d n ι z := by
         ext a μ
         simpa [Matrix.mul_apply, BHW.sourceFullFrameMatrix] using
           congrFun
-            (BHW.sourceSelectedFrameCoeff_vector_expansion
-              (d := d) (n := n) hn ι z hι (κ a)) μ
+            (BHW.sourceSelectedFrameCoeff_vector_expansion_of_invariant
+              d n ι z hι (κ a)) μ
 
       theorem BHW.sourceOrientedVariety_det_eq_coeff_det_selected
           ... := by
@@ -6813,8 +7111,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.sourceFullFrameDet d n ι z ≠ 0 := by
           simpa [BHW.sourceOrientedMinkowskiInvariant] using hι
         have hmat :=
-          BHW.sourceFullFrameMatrix_reconstruct_coeff_mul_selected
-            (d := d) (n := n) hn ι κ z hιz
+          BHW.sourceSelectedFrameCoeff_matrix_eq_frame_of_invariant
+            d n ι κ z hι
         have hdet := congrArg Matrix.det hmat
         -- `hdet` is
         -- `sourceFullFrameDet κ z =
@@ -6897,12 +7195,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	      -- linearity of the mixed-row projection.
 
 	      -- The remaining max-rank chart helper statements should be written in
-	      -- terms of the checked `FullFrameKernelChart`.  Their product target is
-	      -- `kernelChart.target ×ˢ Set.univ`, after the selected hypersurface
-	      -- coordinate is transported to kernel coordinates by
-	      -- `sourceFullFrameSymmetricEquation_implicitChart_snd`.  The local
-	      -- biholomorph inverse uses `kernelChart.symm` for the selected frame and
-	      -- the mixed-row reconstruction formula below for all unselected rows.
+	      -- terms of the checked `FullFrameKernelChart`.  Their product image is
+	      -- `kernelChart.source ×ˢ Set.univ`: the selected hypersurface
+	      -- coordinate is first transported to a kernel coordinate by
+	      -- `sourceFullFrameSymmetricEquation_implicitChart_snd`, then mapped
+	      -- back to a slice coordinate by `kernelChart.symm`.  The local
+	      -- biholomorph inverse uses the slice coordinate directly and the
+	      -- mixed-row reconstruction formula below for all unselected rows.
 	      -- The max-rank-domain theorem assumes the selected determinant-nonzero
 	      -- shrink explicitly; it does not refer to a `W` field.
 	      ```
@@ -6921,7 +7220,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	      gives the selected coordinate, and the reconstruction theorem gives an
 	      oriented source-variety point whose chart is exactly `(X,m)`.  This
 	      converse is where
-	      `sourceFullFrameGauge_reconstructVector_sourceInvariant_eq` is consumed.
+	      `sourceFullFrameGauge_reconstructInvariant_eq_of_frame_eq_mixedRows_eq`
+	      is consumed.
 	      `chart_open` is then `kernelChart.open_source.prod isOpen_univ` after
 	      the explicit shrink.
 
@@ -6941,7 +7241,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       ```lean
       theorem BHW.sourceOrientedFullFrameMaxRankChartData_at
-          [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           (hn : d + 1 <= n)
@@ -6949,7 +7248,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hG0_var : G0 ∈ BHW.sourceOrientedGramVariety d n)
           (ι : Fin (d + 1) ↪ Fin n)
           (hι : G0.det ι ≠ 0) :
-          BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G0 := by
+          BHW.SourceOrientedFullFrameMaxRankChartData d n ι G0 := by
         classical
         rcases hG0_var with ⟨z0, rfl⟩
         let M0 : Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ :=
@@ -6959,10 +7258,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
           exact isUnit_iff_ne_zero.mpr hι
         have hM0_coord :
             BHW.sourceFullFrameOrientedGramCoord d M0 =
-              BHW.sourceSelectedFrameOrientedCoord d n ι
+              BHW.sourceFullFrameOrientedCoordOfSource d n ι
                 (BHW.sourceOrientedMinkowskiInvariant d n z0) := by
           ext a b <;>
-          simp [M0, BHW.sourceSelectedFrameOrientedCoord,
+          simp [M0, BHW.sourceFullFrameOrientedCoordOfSource,
             BHW.sourceFullFrameOrientedGramCoord,
             BHW.sourceFullFrameOrientedGram,
             BHW.sourceFullFrameGram,
@@ -6996,6 +7295,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             M0_oriented := hM0_coord
             slice := slice
 	            kernelChart := L
+            kernelChart_eq := by
+              exact
+                BHW.sourceFullFrameGaugeSliceImplicitKernelOpenPartialHomeomorph_coe
+                  d hM0_det slice
             Ω := Ω
             Ω_relOpen := by
               exact
@@ -7021,33 +7324,76 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 (by
                   intro H hH
                   exact hH.2)
-            chart := chart
-            chart_differentiableOn_amb :=
-              BHW.sourceFullFrameMaxRankChart_map_differentiableOn_ambient
+            Ω_selectedDetNonzero :=
+              BHW.sourceFullFrameMaxRankChart_domain_selectedDetNonzero
                 d n ι M0 slice L
-            inv := fun y =>
-              BHW.sourceOrientedMinkowskiInvariant d n
-                (BHW.sourceFullFrameGauge_reconstructVector
-                  d n hn ι M0 slice y)
+            chart := chart
+            chart_eq_candidate := by
+              funext G
+              rfl
+            Ω_selectedSymmetric_mem_implicitSource :=
+              BHW.sourceFullFrameMaxRankChart_selectedSymmetric_mem_implicitSource
+                d n ι M0 hM0_det slice L
+            Ω_selectedKernel_mem_target :=
+              BHW.sourceFullFrameMaxRankChart_selectedKernel_mem_target
+                d n ι M0 hM0_det slice L
+            Ω_gaugeSlice_mem_implicitSource :=
+              BHW.sourceFullFrameMaxRankChart_gaugeSlice_mem_implicitSource
+                d n ι M0 hM0_det slice L
+            chart_continuousOn_amb :=
+              BHW.SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_continuousOn_Ωamb
+                shrink
 	            chart_open := by
 	              -- Product openness of the explicitly shrunken
 	              -- `kernelChart.source ×ˢ univ`.
 	              exact BHW.sourceFullFrameMaxRankChart_image_open
-	                d n hn ι M0 slice L
-            local_biholomorph :=
+	                d n ι M0 slice L
+            chart_biholomorphic :=
               BHW.sourceFullFrameMaxRankChart_localBiholomorph
-                d n hn ι M0 slice L
+                d n ι M0 slice L
             inv_formula := by
               intro y hy
               rfl }
       ```
 
-      The only nontrivial theorem used in this constructor is the full-frame
-      local image theorem `sourceFullFrameSlice_localImage_eq_variety`, already
-      decomposed above into tangent, kernel, range, hypersurface, and
-      constant-rank steps.  Everything after that is explicit coordinate
-      algebra: target shrink to the determinant-nonzero sheet, product with the
-      mixed rows, reconstruction, and open-product topology.
+      The nontrivial finite-dimensional input underneath this constructor is
+      now the model-open theorem consumed by
+      `SourceFullFrameMaxRankChartAmbientShrink.toFullFrameMaxRankChartData_of_modelOpen`.
+	      It starts from the ambient shrink, chooses an open model neighborhood
+	      `V` of the center, proves `V ⊆ kernelChart.source ×ˢ Set.univ`, proves
+	      the reconstructed selected determinant is nonzero on `V`, proves
+	      reconstruction maps `V` into the old relative domain, and proves the
+	      explicit reconstruction map is differentiable and continuous on `V`.
+	      The Lean-ready choice is
+	      `V = {y | y.1 ∈ kernelChart.source}
+	        ∩ ((sourceFullFrameGauge_reconstructInvariant d n ι M0 S) ⁻¹' T.Ωamb
+	            ∩ sourceFullFrameGaugeModelDetNonzero d n ι M0 S)`.
+	      Its openness follows from `kernelChart.open_source.preimage
+	      continuous_fst`, `sourceFullFrameGaugeModelDetNonzero_open`, and
+	      `continuousOn_iff'` applied to
+	      `continuousOn_sourceFullFrameGauge_reconstructInvariant_on_modelDetNonzero`.
+	      The center belongs to `V` because the selected kernel coordinate of
+	      `G0` is zero, `kernelChart.symm 0 = 0`, the reconstructed selected frame
+	      is `M0`, and
+	      `T.reconstructInvariant_chartCandidate_eq_of_mem_relDomain
+	      (T.center_mem_relDomain hG0)` puts the reconstructed invariant back at
+	      `G0 ∈ T.Ωamb`.
+	      The checked method
+	      `SourceOrientedFullFrameMaxRankChartData.reconstructInvariant_chart_eq_of_mem_Ω_from_fields`
+      supplies the stored-chart left-inverse invariant equality, while
+      `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate_reconstructInvariant_eq_of_chartSource_frameDet`
+      supplies the model-side right inverse.
+      The packet fields `Ω_selectedDetNonzero`,
+      `Ω_selectedSymmetric_mem_implicitSource`,
+      `Ω_selectedKernel_mem_target`,
+      `Ω_gaugeSlice_mem_implicitSource`, and `chart_eq_candidate` record the
+      shrink and formula facts explicitly, so downstream code no longer asks
+      the local-image theorem to rediscover determinant nonzero or the
+      implicit-chart source memberships.  The ambient chart formula uses
+      `sourceFullFrameSelectedSymmetricCoordAmbient` and
+      `sourceFullFrameSelectedKernelCoordAmbient`; on the source variety these
+      are checked equal to the proof-carrying selected symmetric and kernel
+      coordinates.
 
       This package gives the arbitrary complex max-rank chart used in the
       identity principle:
@@ -7074,25 +7420,21 @@ Proof decomposition of this theorem, without hiding the analytic work:
         exact ⟨ι, hι⟩
 
       theorem BHW.SourceOrientedFullFrameMaxRankChartData.to_maxRankChart
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
-          (hn : d + 1 <= n)
+          {d n : Nat}
           {G0 : BHW.SourceOrientedGramData d n}
           {ι : Fin (d + 1) ↪ Fin n}
           (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G0) :
-          BHW.SourceOrientedMaxRankChartData d n G0 :=
+            BHW.SourceOrientedFullFrameMaxRankChartData d n ι G0) :
+          BHW.SourceOrientedMaxRankChartData d n
+            (M := BHW.sourceFullFrameMaxRankChartModel d n ι C.M0 C.slice)
+            G0 :=
         { Ω := C.Ω
           Ω_relOpen := C.Ω_relOpen
           center_mem := C.center_mem
           Ω_maxRank := C.Ω_maxRank
-          model :=
-            C.slice.slice ×
-              (BHW.sourceComplementIndex ι -> Fin (d + 1) -> ℂ)
           chart := C.chart
           chart_open := C.chart_open
-          chart_biholomorphic := C.local_biholomorph }
+          chart_biholomorphic := C.chart_biholomorphic }
 
       theorem BHW.sourceOrientedMaxRankChart_at
           [NeZero d]
@@ -7123,36 +7465,32 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
       ```lean
       theorem BHW.sourceFullFrameGauge_reconstructVector_differentiableOn_ambient
-          [NeZero d]
           (d n : Nat)
-          (hn : d + 1 <= n)
           {ι : Fin (d + 1) ↪ Fin n}
           {G0 : BHW.SourceOrientedGramData d n}
-          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι G0) :
+          (C : BHW.SourceOrientedFullFrameMaxRankChartData d n ι G0) :
           DifferentiableOn ℂ
             (fun G =>
               BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι C.M0 C.slice (C.chart G))
+                d n ι C.M0 C.slice (C.chart G))
             C.Ωamb
 
       theorem BHW.sourceFullFrameGauge_reconstructVector_center_eq_lorentzAction
-          [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           (hn : d + 1 <= n)
           {z0 : Fin n -> Fin (d + 1) -> ℂ}
           {ι : Fin (d + 1) ↪ Fin n}
           (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι
+            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
               (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
           ∃ Λ : ComplexLorentzGroup d,
             BHW.sourceFullFrameGauge_reconstructVector
-                d n hn ι C.M0 C.slice
+                d n ι C.M0 C.slice
                 (C.chart (BHW.sourceOrientedMinkowskiInvariant d n z0)) =
               BHW.complexLorentzAction Λ z0
 
       theorem BHW.sourceFullFrameGauge_reconstructVector_center_mem_extendedTube
-          [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           (hn : d + 1 <= n)
@@ -7160,10 +7498,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
           {ι : Fin (d + 1) ↪ Fin n}
           (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι
+            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
               (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
           BHW.sourceFullFrameGauge_reconstructVector
-              d n hn ι C.M0 C.slice
+              d n ι C.M0 C.slice
               (C.chart (BHW.sourceOrientedMinkowskiInvariant d n z0)) ∈
             BHW.ExtendedTube d n := by
         rcases
@@ -7175,7 +7513,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (d := d) n Λ hz0
 
       theorem BHW.SourceOrientedFullFrameMaxRankChartData.tubeShrink
-          [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           (hn : d + 1 <= n)
@@ -7183,7 +7520,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
           {ι : Fin (d + 1) ↪ Fin n}
           (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι
+            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
               (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
           ∃ Ωtube : Set (BHW.SourceOrientedGramData d n),
             IsOpen Ωtube ∧
@@ -7191,11 +7528,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             Ωtube ⊆ C.Ωamb ∧
             (∀ G ∈ Ωtube,
               BHW.sourceFullFrameGauge_reconstructVector
-                  d n hn ι C.M0 C.slice (C.chart G) ∈
+                  d n ι C.M0 C.slice (C.chart G) ∈
                 BHW.ExtendedTube d n)
 
       theorem BHW.SourceOrientedFullFrameMaxRankChartData.shrink_to_extendedTube
-          [NeZero d]
           (hd : 2 <= d)
           (n : Nat)
           (hn : d + 1 <= n)
@@ -7203,7 +7539,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hz0 : z0 ∈ BHW.ExtendedTube d n)
           {ι : Fin (d + 1) ↪ Fin n}
           (C :
-            BHW.SourceOrientedFullFrameMaxRankChartData d n hn ι
+            BHW.SourceOrientedFullFrameMaxRankChartData d n ι
               (BHW.sourceOrientedMinkowskiInvariant d n z0)) :
           BHW.SourceOrientedLocalHolomorphicSectionData d n
             (BHW.sourceOrientedMinkowskiInvariant d n z0) := by
@@ -7214,7 +7550,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               Fin n -> Fin (d + 1) -> ℂ :=
           fun G =>
             BHW.sourceFullFrameGauge_reconstructVector
-              d n hn ι C.M0 C.slice (C.chart G)
+              d n ι C.M0 C.slice (C.chart G)
         refine
           { Ω := Ωtube
             Ω_open := hΩtube_open
@@ -7228,13 +7564,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
               have hG_CΩ : G ∈ C.Ω := by
                 rw [C.Ω_eq_ambient]
                 exact ⟨hΩtube_sub hG.1, hG.2⟩
+              have hG_var :
+                  G ∈ BHW.sourceOrientedGramVariety d n := by
+                rw [C.Ω_eq_ambient] at hG_CΩ
+                exact hG_CΩ.2
+              rcases
+                BHW.sourceFullFrameMaxRankChart_localImage_kernel_mixed_eq
+                  d n ι C G hG_CΩ with
+                ⟨hsel_source, hchart_source, hkernel, hmixed, hdet⟩
               simpa [section] using
-                BHW.sourceFullFrameGauge_reconstructVector_sourceInvariant_eq
-                  (d := d) hd n hn ι G C ⟨hG_CΩ, hG.2⟩
+                BHW.sourceFullFrameGauge_reconstructInvariant_eq_of_kernel_eq_mixedRows_eq
+                  d n ι C.M0_det_unit C.slice hG_var hdet (C.chart G)
+                  hsel_source hchart_source hkernel hmixed
             section_holomorphic := by
               exact
                 (BHW.sourceFullFrameGauge_reconstructVector_differentiableOn_ambient
-                  (d := d) n hn C).mono hΩtube_sub }
+                  d n C).mono hΩtube_sub }
 
       theorem BHW.sourceOrientedMaxRank_localSection_fullFrame
           [NeZero d]
@@ -7273,6 +7618,87 @@ Proof decomposition of this theorem, without hiding the analytic work:
       reconstructed vector remains in `ExtendedTube`.  This avoids the invalid
       shortcut "relative open chart domain is open" and keeps the identity
       principle chart separate from the scalar-descent local section.
+
+      Current checked max-rank inverse boundary, 2026-05-04: the future local
+      image theorem should be named and proved in the kernel/mixed-row form
+      shown above, not in the older selected-frame-equality form.  Production
+      Lean now proves that a source selected coordinate and a gauge-slice
+      coordinate in the symmetric implicit-chart source are equal as
+      full-frame oriented coordinates once their kernel coordinates agree:
+      `sourceFullFrameSelectedImplicitChart_eq_zero_kernelCoord`,
+      `sourceFullFrameGaugeSliceMapSymmetric_implicitChart_eq_zero_kernelMap`,
+      `sourceFullFrameOrientedCoordOfSource_eq_gaugeSliceMap_of_kernel_eq`,
+      and
+      `sourceFullFrameGauge_reconstructInvariant_selectedCoord_eq_of_kernel_eq`.
+      It also proves that selected coordinate plus mixed rows determine all
+      oriented Gram data on the determinant-nonzero sheet:
+      `sourceSelectedFrameCoeff_eq_of_selectedCoord_eq_mixedRows_eq`,
+      `sourceCoeffGramFromSelected_eq_of_selectedCoord_eq_mixedRows_eq`,
+      `sourceOrientedGramData_eq_of_selectedCoord_eq_mixedRows_eq`, and
+      `sourceFullFrameGauge_reconstructInvariant_eq_of_kernel_eq_mixedRows_eq`.
+      Thus `sourceFullFrameMaxRankChart_localImage_kernel_mixed_eq` must only
+      supply the source-membership/shrink facts, the kernel-coordinate identity
+      induced by the local inverse of
+      `sourceFullFrameGaugeSliceImplicitKernelMap`, the definitional mixed-row
+      choice for `C.chart G`, and the determinant-nonzero shrink.  The Schur
+      algebra and determinant recovery are no longer blockers for this step.
+
+      Current checked shrink boundary, 2026-05-04: the ambient-open shrink
+      itself is now a production Lean object.  The symmetric implicit chart
+      source is exposed as a neighborhood of `sourceFullFrameSymmetricBase`
+      by `sourceFullFrameSymmetricBase_mem_implicitChart_source` and
+      `sourceFullFrameSymmetricEquation_implicitChart_source_mem_nhds_base`.
+      The selected ambient coordinate is checked to hit this base at `G0`
+      when `M0` represents the selected coordinate of `G0`, and its kernel
+      coordinate is checked to be `0` there:
+      `sourceFullFrameSelectedSymmetricCoordAmbient_eq_base_of_oriented_eq`,
+      `sourceFullFrameSelectedSymmetricCoordAmbient_eventually_mem_implicitSource`,
+      `sourceFullFrameSelectedKernelCoordAmbient_eq_zero_at_base`, and
+      `continuousAt_sourceFullFrameSelectedKernelCoordAmbient_at_base`.
+      The kernel-chart target and lifted-gauge implicit-source shrink facts
+      are checked as
+      `sourceFullFrameSelectedKernelCoordAmbient_eventually_mem_kernelTarget`,
+      `sourceFullFrameGaugeSliceImplicitKernel_symm_implicitSource_mem_nhds_zero`,
+      and
+      `sourceFullFrameSelectedKernelCoordAmbient_eventually_gaugeSlice_mem_implicitSource`.
+      Finally,
+      `SourceFullFrameMaxRankChartAmbientShrink` and
+      `sourceFullFrameMaxRankChart_ambientShrink` package an actual open
+      ambient neighborhood satisfying all three source/target membership
+      fields plus the selected determinant-nonzero field.  The shrink now also
+      carries the relative domain API
+      `SourceFullFrameMaxRankChartAmbientShrink.relDomain`,
+      `relDomain_relOpen`, and `center_mem_relDomain`, together with the exact
+      chart formula
+      `SourceFullFrameMaxRankChartAmbientShrink.chartCandidate`,
+      its two projection readoffs, and the checked left inverse
+      `reconstructInvariant_chartCandidate_eq_of_mem_relDomain`.  The same
+      file now proves the determinant-to-rank bridge
+      `sourceOrientedMaxRankAt_of_selectedDet_ne_zero`, the relative-domain
+      max-rank field `maxRank_of_mem_relDomain`, chart continuity on both the
+      ambient and relative domains, and the model-side right inverse
+      `chartCandidate_reconstructInvariant_eq_of_chartSource_frameDet`.
+      The checked assembly lemmas are
+      `SourceFullFrameMaxRankChartAmbientShrink.localBiholomorph`,
+      `exists_restrict_modelOpen_image_eq`,
+      `toFullFrameMaxRankChartData`, and
+      `toFullFrameMaxRankChartData_of_modelOpen`.  Therefore the remaining
+	      constructor proof should consume this shrink directly and use the
+	      canonical model-coordinate set
+	      `V = {y | y.1 ∈ kernelChart.source}
+	        ∩ ((sourceFullFrameGauge_reconstructInvariant d n ι M0 S) ⁻¹' T.Ωamb
+	            ∩ sourceFullFrameGaugeModelDetNonzero d n ι M0 S)`.
+	      This set is open by the kernel-chart source openness, the checked
+	      determinant-nonzero model openness, and reconstruction continuity on the
+	      determinant-nonzero locus.  Its three membership projections give the
+	      source, determinant, and old-domain hypotheses of
+	      `toFullFrameMaxRankChartData_of_modelOpen`.  Reconstruction
+	      differentiability is the finite-dimensional rational-map theorem on the
+	      same determinant-nonzero locus: matrix inverse is `det⁻¹ • adjugate`,
+	      and all remaining coordinates are finite sums/products.  The checked
+	      model-open assembly then gives `chart_open`, the local biholomorph
+	      packet, max-rank, and the full
+	      `SourceOrientedFullFrameMaxRankChartData` fields.
 
       Thus the previously named `sourceOrientedMaxRankChart_at` is not a
       black box: it is the source-variety version of the full-frame gauge
@@ -10838,7 +11264,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.sourceOrientedGramVariety`, `BHW.sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_subset_variety`, `BHW.sourcePermuteOrientedGram_mem_variety_iff`, `BHW.IsRelOpenInSourceOrientedGramVariety.preimage_sourcePermuteOrientedGram`, `BHW.IsRelOpenInSourceOrientedGramVariety.inter`, `BHW.IsRelOpenInSourceOrientedGramVariety.iUnion`, `BHW.sourceOrientedDoublePermutationDomain_one_eq`, `BHW.sourceOrientedDoublePermutationDomain_relOpen_of_sourceOrientedExtendedTubeDomain`, `BHW.sourceOrientedExtendedTubeDomain_connected`, `BHW.SourceOrientedVarietyGermHolomorphicOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.continuousOn`, `BHW.SourceOrientedVarietyGermHolomorphicOn.of_subset_relOpen`, `BHW.SourceOrientedVarietyGermHolomorphicOn.sub`, `BHW.SourceOrientedVarietyGermHolomorphicOn.precomp_sourcePermuteOrientedGram` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOriented.lean`. | Base oriented source-variety, double-domain topology, and germ-holomorphic calculus.  The double-domain relative-open theorem is deliberately conditional on relative openness of the oriented extended-tube image; the hard local-realization proof for that hypothesis remains in the `sourceOrientedExtendedTubeDomain_relOpen_connected` row. |
       | `BHW.os45SourcePatchBHWJostAmbient`, `BHW.os45SourcePatchBHWJostHull`, `BHW.os45SourcePatchOrientedAmbientDomain`, `BHW.UnitIntervalOrderedSubdivision`, `BHW.UnitIntervalOrderedSubdivision.interval_endpoints_mem_cover`, `BHW.exists_unitInterval_orderedSubdivision_of_openCover`, `BHW.unitInterval_orderedSubdivision_of_openCover`, `BHW.exists_unitInterval_orderedSubdivision_of_path_openCover`, `BHW.unitInterval_orderedSubdivision_of_path_openCover`, `BHW.exists_unitInterval_orderedSubdivision_of_orientedTransferCover`, `BHW.unitInterval_orderedSubdivision_of_orientedTransferCover`, `BHW.orientedTransferSubdivision_interval_endpoints_mem`, `BHW.exists_open_preconnected_neighborhood_subset`, `BHW.SourceOrientedMaxRankAt`, `BHW.sourceOrientedExceptionalRank_iff_not_maxRank`, `BHW.not_sourceOrientedExceptionalRank_iff_maxRank`, `BHW.BHWJostLocalOrientedContinuationChart`, `BHW.BHWJostOrientedTransitionData`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood`, `BHW.BHWJostOrientedSourcePatchContinuationChain`, `BHW.BHWJostOrientedClosedContinuationLoop`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed`, `BHW.BHWSourcePatchContinuationAtlas`, `BHW.bhw_jost_orientedClosedChain_sourceMonodromy_of_orientedMonodromy`, and their mechanical branch/transition/closed-loop descent helpers, including `BHW.BHWJostLocalOrientedContinuationChart.carrier_is_lorentz_step`, `BHW.BHWJostLocalOrientedContinuationChart.exists_source_realization_branch_eq`, `BHW.BHWJostOrientedTransitionData.source_mem_right_carrier`, `BHW.BHWJostOrientedTransitionData.source_branch_agree_at_source`, `BHW.BHWJostOrientedTransitionData.exists_sourcePatch_realization_of_orientedPatch`, `BHW.BHWJostOrientedSourceNormalFormGeometryPatch.exists_source_realization`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.ofSourceNormalFormPatch`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_source_mem_next`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_target_mem_next`, `BHW.BHWJostOrientedBranchFreeTransferNeighborhood.transfer_branch_agree_at_source`, `BHW.BHWJostOrientedSourcePatchContinuationChain.base`, `BHW.BHWJostOrientedSourcePatchContinuationChain.snoc`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_nodeSteps`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofNodeSteps`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_subdivision`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofSubdivision`, `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_of_transferCover`, `BHW.BHWJostOrientedSourcePatchContinuationChain.ofTransferCover`, `BHW.BHWJostOrientedSourcePatchContinuationChain.chart_is_lorentz_step_of_localChart`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_initial_final_source_realizations`, and `BHW.BHWJostOrientedMaxRankClosedLoopSeed.terminal_branch_eq_B0_on_seedRealizedClosingPatch` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuation.lean`. | Lower strict-route carrier/API layer.  It proves the OS45 ambient is open, the path-component hull is contained in the ambient and is path-connected when based in the ambient, source points map one-way into the oriented union domain, the oriented union domain is relatively open assuming `sourceOrientedExtendedTubeDomain` is, the unit-interval open-cover subdivision is packaged in the correct `Nonempty` plus `noncomputable def` Lean shape, path-neighborhood and oriented-transfer covers have selected finite ordered subdivisions, subdivision interval endpoints lie in one common controlling cover/transfer member, open sets in real normed spaces have open preconnected local neighborhoods, max-rank transports across oriented invariant equality and complex-Lorentz action, exceptional-rank negation reduces definitionally to max-rank inside the oriented variety, local charts carry their Lorentz-step source-patch provenance intrinsically, source-normal-form patches with uniform descent become branch-free transfer neighborhoods, the zero-step and successor oriented continuation chain constructors are checked, selected node-step/subdivision/transfer-cover data are folded into full finite continuation chains, oriented germ equality descends to source-branch equality on transitions and closed loops, branch-free transfer neighborhoods expose the exact previous-chart-to-next-chart handoff at the old source point, and oriented realization fields now produce concrete source representatives for chart domains, transition patches, normal-form patches, and closed-loop max-rank seeds.  The redundant `transition_patch_eq_sourcePatch` field is not present in the checked chain; local chart agreement is derived from chain-level branch equality plus `branch_eq_local`.  It introduces no hard BHW monodromy theorem and no new `sorry`. |
       | `BHW.bhw_jost_orientedBranchFreeTransferNeighborhood_at_of_sourceNormalFormProducer`, `BHW.bhw_jost_orientedContinuationChain_of_transferCover` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedContinuationProducers.lean`. | Producer-level assembly only.  The first theorem turns a normal-form patch producer plus uniform oriented descent into branch-free transfer neighborhoods at every point of `U`; the second exposes the compact transfer-cover chain fold as a top-level name.  The hard analytic inputs remain the normal-form patch producer and uniform descent theorem; no new `sorry`, axiom, or public theorem-2 wrapper is introduced. |
+      | `BHW.complexLorentz_exp_nhd_of_one`, `BHW.exp_map_ofReal_bridge`, `BHW.reMatrixCLie`, `BHW.imMatrixCLie`, `BHW.matrix_re_im_decomp_CLie`, `BHW.reMatrixCLie_isInLorentzAlgebra`, `BHW.imMatrixCLie_isInLorentzAlgebra`, `BHW.norm_reMatrixCLie_map_le`, `BHW.norm_imMatrixCLie_map_le`, `BHW.bhw_near_identity_invariance_on_open`, `BHW.bhw_local_complexLorentz_invariance_of_real_invariance`, `BHW.bhw_branch_constant_along_complexLorentz_path`, `BHW.BHWJostLocalOrientedContinuationChart.branch_constant_along_complexLorentz_path`, `BHW.BHWJostOrientedSourcePatchContinuationChain.terminal_Psi_eq_initial_Psi_of_mem_all_orientedTransitions`, `BHW.BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank`, `BHW.exists_maxRankSeed_eqOn_of_connected_domain`, `BHW.BHWJostOrientedTransitionData.exists_propagatedSeed_to_right`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_sourceRealized_branch_eq`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_commonTransitionSeed`, `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`. | Proper-complex BHW local invariance on an arbitrary open source chart, plus the seed-constructor/telescope/propagation bridge.  This publicizes the exponential neighborhood, real/imaginary Lie-algebra splitting, norm estimates, and one-variable identity-theorem argument from the forward-tube BHW proof, but with `ForwardTube d n` replaced by an arbitrary open carrier `Ω` and with the real restricted-Lorentz invariance hypothesis conditional on both source and transformed point lying in `Ω`.  The path theorem turns the local neighborhood statement into constancy along any `ComplexLorentzGroup d` path whose source orbit remains in `Ω`, by proving local constancy on `unitInterval`; the chart-specialized theorem feeds this directly from a stored `BHWJostLocalOrientedContinuationChart` using its `carrier_open`, `branch_holo`, and `branch_complexLorentzInvariant` fields.  These are the checked inputs needed when a previous local chart branch, rather than the original `B0`, becomes the seed for the next Hall-Wightman descent.  The source-realized seed constructor packages any genuinely produced terminal/initial source-representative branch equality on a nonempty relatively open max-rank seed into the exact `BHWJostOrientedMaxRankClosedLoopSeed` consumer; the common-transition constructor handles the sufficient telescope case where one seed lies in every stored oriented transition patch; the propagated-seed theorems advance accumulated germ equality across connected intermediate domains, then shrink target max-rank patches to new nonempty preconnected relatively open seeds; and the closing-domain theorem turns a propagated terminal/initial equality seed in a connected domain containing the closing patch into the final closed-loop seed object.  This proves no closed-loop monodromy and introduces no new `sorry`. |
       | `BHW.sourceGramMatrixRank_le_spacetime_source_min`, `BHW.sourceOrientedMaxRankAt_iff_of_gram_eq`, `BHW.sourceOrientedExceptionalRank_iff_of_gram_eq`, `BHW.sourceOrientedMaxRankAt_invariant_iff_hwSourceGramMaxRankAt`, `BHW.hwSourceGramMaxRankAt_of_sourceOrientedInvariant_eq`, `BHW.sourceOrientedExceptionalRank_invariant_iff_hwSourceGramExceptionalRankAt`, `BHW.hwSourceGramExceptionalRankAt_of_sourceOrientedInvariant_eq` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedRankBridge.lean`. | Rank bridge between the strict oriented max/exceptional-rank predicates and the existing scalar source-rank API.  The rank upper bound for actual source configurations is proved from the restricted-Minkowski-rank formula and finite-dimensional span bounds, so the equality-style oriented max-rank predicate is equivalent to the scalar `min (d+1) n ≤ rank` predicate.  This is support for the upcoming max-rank versus rank-deficient local-chart dispatch, not a new analytic input. |
+      | `BHW.sourceOrientedMaxRankChartData_of_maxRankAt_fullFrame`, `BHW.sourceOrientedGramVariety_local_connectedRelOpen_basis_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedGramVariety_connectedRelOpenTube_around_compactPath_of_fullFrameMaxRank_and_localImage`, `BHW.sourceOrientedRelOpen_inter_maxRank_relOpen`, `BHW.sourceOrientedMaxRank_dense_in_relOpen_inter`, `BHW.sourceOrientedRelOpen_inter_maxRank_nonempty`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected`, `BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame`, `BHW.sourceOrientedGramVariety_relOpen_eqOn_zero_of_eqOn_maxRank`, `BHW.sourceOrientedGramVariety_identity_principle_of_connected_maxRank_fullFrame`, `BHW.sourceOrientedGramVariety_eqOn_of_connected_maxRank_fullFrame`, `BHW.bhw_jost_closedChain_orientedMaxRankMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_on_maxRankClosingPatch_of_seed`, `BHW.bhw_jost_closedChain_orientedMonodromy_of_seed`, `BHW.bhw_jost_closedChain_sourceMonodromy_of_seed` | Checked in `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedFullFrameMaxRankProducer.lean` and `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedMaxRankIdentity.lean`. | The hard-range full-frame producer now removes the abstract max-rank chart hypothesis: oriented max rank of a source-variety point gives a nonzero selected full-frame determinant, hence a finite-coordinate max-rank chart.  The max-rank locus is relatively open inside the oriented source variety by the determinant-nonzero union characterization, and it is dense in every relatively open oriented patch by pulling back to source tuples and using `dense_sourceComplexGramRegularAt`.  The max-rank identity theorem is the checked clopen propagation on the connected max-rank subtype; density and continuity extend it to all ranks once the max-rank part of the domain is connected.  The closed-loop seed consumers turn a stored `BHWJostOrientedMaxRankClosedLoopSeed` into terminal-initial oriented germ equality and source-branch equality first on max-rank closing points and then on the whole closing patch.  This does not prove the Hall-Wightman closed-loop seed itself and it still takes connectedness of the closing max-rank part as an explicit geometric input. |
       | `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit` | Componentwise proof transcript pinned; production Lean not started. | Split by `HWSourceGramOrbitRankAt`.  In the orbit-rank branch, extract Gram equality and determinant equality from `SourceOrientedGramData`, prove `HWSameSourceGramSOOrientationCompatible` via a nonzero full-frame determinant and the determinant-ratio formula for `HWFullRankSameGramFrameMapDet`, then call `hw_sameSourceGram_regular_orbit`.  In the low-rank branch, call the Hall-Wightman residual-frame contraction producer.  The lower support transcript expands coefficient kernels, restricted-rank nondegeneracy, determinant-repaired Witt extension, selected Schur residuals, common isotropic residual frames, dual frames, contraction curves, and the singular topology limit; the missing work is implementation, not a remaining theorem-shape gap in this row. |
       | `BHW.extendedTube_same_sourceOrientedInvariant_extendF_eq` | Assembly transcript pinned; not production-Lean-ready until the previous row's Hall-Wightman producers exist. | Apply the previous row's actual orbit alternative to determinant-`1` complex Lorentz invariance of `extendF` via `extendF_complexLorentzInvariant_of_cinv`; apply the singular alternative by the checked topology-limit transcript for `hw_sameSourceGram_singularLimit_extendF_eq`.  This theorem has no independent route choice and must not be implemented before `same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`. |
       | `BHW.sourceOrientedExtendedTubeDomain_relOpen_connected` | Connectedness half checked as `BHW.sourceOrientedExtendedTubeDomain_connected`; relative-openness half has a componentwise local-realization transcript but production Lean has not started. | Relative openness must be proved by `sourceOrientedExtendedTube_localRealization`: small arity max-rank charts reduce to the ordinary Gram chart; full-frame max-rank charts are assembled by `SourceOrientedFullFrameMaxRankChartData`, whose selected-frame slice comes from `SourceOrientedFullFrameGaugeChartData` and the finite-dimensional theorem chain `sourceFullFrameOrientedEquation`, `sourceFullFrameOrientedHypersurface_regularAt`, `sourceFullFrameOrientedTangentSpace_eq_linearizedEquation`, `sourceFullFrameSlice_localImage_eq_hypersurface`, `sourceFullFrameSlice_localImage_eq_variety`, and `sourceFullFrameGaugeSection_of_localImage`; the chart inverse is the explicit selected-frame/mixed-row reconstruction, and the tube-valued local section uses the ambient-open shrink `SourceOrientedFullFrameMaxRankChartData.tubeShrink`, not the relative variety domain; rank-deficient charts use `SourceOrientedRankDeficientResidualChartData` produced by `sourceTailOrientedSmallRealization`, `sourceOriented_schurResidualData`, and `sourceOriented_reconstruct_from_schurResidual`.  These are still first-order implementation targets, not a public-domain wrapper. |
@@ -13302,10 +13730,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
           Set.not_nonempty_iff_eq_empty.mp hEmpty
         simpa [hSet_empty] using hG0cl
 
-      theorem BHW.sourceOrientedGramVariety_maxRank_identity_principle
-          [NeZero d]
-          (hd : 2 <= d)
-          (n : Nat)
+      theorem BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame
+          {d n : Nat}
           (hn : d + 1 <= n)
           {U W : Set (BHW.SourceOrientedGramData d n)}
           {H : BHW.SourceOrientedGramData d n -> ℂ}
@@ -13318,6 +13744,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
             BHW.IsRelOpenInSourceOrientedGramVariety d n W)
           (hW_ne : W.Nonempty)
           (hW_sub : W ⊆ U)
+          (hW_sub_max :
+            W ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
           (hH :
             BHW.SourceOrientedVarietyGermHolomorphicOn d n H U)
           (hW_zero : Set.EqOn H 0 W) :
@@ -13345,17 +13773,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
           rcases hGA.1 with ⟨O, _hO_open, hGO, hO_zero⟩
           exact hO_zero ⟨hGO, hGA.2⟩
         have hA_nonempty : A.Nonempty := by
-          rcases
-            BHW.sourceOrientedRelOpen_inter_maxRank_nonempty
-              (d := d) hd n hn hW_relOpen hW_ne with
-            ⟨G, hGWmax⟩
-          have hGU : G ∈ U := hW_sub hGWmax.1
+          rcases hW_ne with ⟨G, hGW⟩
+          have hGU : G ∈ U := hW_sub hGW
+          have hGmax : BHW.SourceOrientedMaxRankAt d n G :=
+            hW_sub_max hGW
           refine ⟨G, ?_⟩
-          refine ⟨?_, ⟨hGU, by simpa [R] using hGWmax.2⟩⟩
+          refine ⟨?_, ⟨hGU, by simpa [R] using hGmax⟩⟩
           rcases hW_relOpen with ⟨W0, hW0_open, hW_eq⟩
           have hGW0 : G ∈ W0 := by
-            rw [hW_eq] at hGWmax
-            exact hGWmax.1.1
+            rw [hW_eq] at hGW
+            exact hGW.1
           refine ⟨W0, hW0_open, hGW0, ?_⟩
           intro Y hY
           have hYvar :
@@ -13387,8 +13814,8 @@ Proof decomposition of this theorem, without hiding the analytic work:
               BHW.SourceOrientedGramData d n) ∉ closure A := by
             intro hx_closure
             rcases
-              BHW.sourceOrientedMaxRankFiniteChart_at
-                (d := d) hd n hn
+              BHW.sourceOrientedMaxRankChartData_of_maxRankAt_fullFrame
+                (d := d) (n := n) hn
                 (BHW.IsRelOpenInSourceOrientedGramVariety.subset
                   hU_relOpen x.property.1)
                 (by simpa [Ureg, R] using x.property.2) with
@@ -13502,9 +13929,24 @@ Proof decomposition of this theorem, without hiding the analytic work:
         have hzero_max :
             Set.EqOn H 0
               (U ∩ {G | BHW.SourceOrientedMaxRankAt d n G}) :=
-          BHW.sourceOrientedGramVariety_maxRank_identity_principle
-            (d := d) hd n hn hU_relOpen hUmax_conn
-            hW_relOpen hW_ne hW_sub hH hW_zero
+          by
+            let Wmax : Set (BHW.SourceOrientedGramData d n) :=
+              W ∩ {G | BHW.SourceOrientedMaxRankAt d n G}
+            have hWmax_rel :
+                BHW.IsRelOpenInSourceOrientedGramVariety d n Wmax :=
+              BHW.sourceOrientedRelOpen_inter_maxRank_relOpen
+                (d := d) (n := n) hW_relOpen
+            have hWmax_ne : Wmax.Nonempty :=
+              BHW.sourceOrientedRelOpen_inter_maxRank_nonempty
+                (d := d) hd n hn hW_relOpen hW_ne
+            exact
+              BHW.sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame
+                (d := d) (n := n) hn hU_relOpen hUmax_conn
+                hWmax_rel hWmax_ne
+                (by intro G hG; exact hW_sub hG.1)
+                (by intro G hG; exact hG.2)
+                hH
+                (by intro G hG; exact hW_zero hG.1)
         exact
           BHW.sourceOrientedGramVariety_relOpen_eqOn_zero_of_eqOn_maxRank
             (d := d) hd n hn hU_relOpen
@@ -13541,24 +13983,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
       is a product whose second coordinate is a Pi over an empty index type.
 
       In the `d + 1 <= n` branch, the proof must first propagate zero on the
-      maximal oriented-rank stratum.  The theorem
-      `sourceOrientedGramVariety_maxRank_identity_principle` now follows the
-      checked pure-Gram clopen pattern.  It defines `Ureg := U ∩ MaxRank` and
-      lets `A0` be the union of ambient open sets on which `H` vanishes over
-      `Ureg`.  Nonemptiness of `A := A0 ∩ Ureg` comes from
-      `sourceOrientedRelOpen_inter_maxRank_nonempty` applied to the seed
-      domain `W`.  Relative closedness is the only analytic step:
-      the checked local theorem
-      `SourceOrientedMaxRankChartData.local_identity_near_point` uses a
-      finite-coordinate complex max-rank chart, converts
+      maximal oriented-rank stratum.  The checked theorem
+      `sourceOrientedGramVariety_maxRank_identity_principle_of_connected`
+      follows the pure-Gram clopen pattern, and the hard-range specialization
+      `sourceOrientedGramVariety_maxRank_identity_principle_of_connected_fullFrame`
+      supplies the finite-coordinate charts from the full-frame max-rank
+      producer.  It defines `Ureg := U ∩ MaxRank` and lets `A0` be the union of
+      ambient open sets on which `H` vanishes over `Ureg`.  In the checked
+      BHW/Jost seed form, nonemptiness of `A := A0 ∩ Ureg` comes from the
+      explicit hypothesis `W ⊆ MaxRank` (for closed loops this is exactly
+      `S.seed_sub`'s second projection), rather than from a separate density
+      theorem.  Relative closedness is the only analytic step: the checked
+      local theorem `SourceOrientedMaxRankChartData.local_identity_near_point`
+      uses a finite-coordinate complex max-rank chart, converts
       `SourceOrientedVarietyGermHolomorphicOn` to an ordinary holomorphic
       coordinate representative by `to_maxRank_chart`, applies the ordinary
       finite-dimensional identity theorem in that chart, and pushes the
-      resulting zero neighborhood back to the oriented variety.  The public
-      point theorem must first obtain such a finite-coordinate chart from the
-      max-rank chart producer; no arbitrary-normed-space identity theorem is
-      assumed.  Since `A` is nonempty, open, and closed in the connected
-      subtype `Ureg`, it is all of `Ureg`.
+      resulting zero neighborhood back to the oriented variety.  The checked
+      equality form
+      `sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame` is the
+      surface used by closed-loop branch propagation.  Since `A` is nonempty,
+      open, and closed in the connected subtype `Ureg`, it is all of `Ureg`.
 
       The final extension from max rank to all of `U` is purely topological:
       use the density theorem
@@ -41259,15 +41704,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (L.chain.localChart 0).Psi` and let `S` be the seed above.
             Restrict both `Psi_holo` fields to `L.closing_orientedPatch`,
             apply `SourceOrientedVarietyGermHolomorphicOn.sub`, and call
-            `sourceOrientedGramVariety_maxRank_identity_principle` with
+            `sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame` with
             `U := L.closing_orientedPatch`, `W := S.seed`, and
             `Ureg := L.closing_orientedPatch ∩
               {G | SourceOrientedMaxRankAt d n G}`.  The hypotheses come from
             `L.closing_orientedPatch_relOpen`, `IsConnected` built from
             `L.closing_orientedPatch_nonempty` and
             `L.closing_orientedPatch_preconnected`, `S.seed_relOpen`,
-            `S.seed_nonempty`, `S.seed_sub`, and the zero statement obtained
-            from `S.seed_eq` after rewriting subtraction.  The public
+            `S.seed_nonempty`, `S.seed_sub`, and the equality statement
+            `S.seed_eq`.  The extra max-rank seed-subset hypothesis is exactly
+            the second projection of `S.seed_sub`.  The public
             max-rank monodromy theorem first obtains this seed from BHW and
             then calls the propagation theorem.
 
@@ -42198,9 +42644,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
 
             The first local theorem is pinned to the proper-complex Lorentz
             group, not to the full orthogonal group, and it is not an abstract
-            chart placeholder.  Its proof must expose the exact exponential
-            machinery already present in
-            `ComplexLieGroups/Connectedness/ComplexInvariance/Core.lean`:
+            chart placeholder.  This local open-chart BHW input is now checked
+            in
+            `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`;
+            it exposes the exact exponential machinery from
+            `ComplexLieGroups/Connectedness/ComplexInvariance/Core.lean` in a
+            source-chart form:
 
             ```lean
             theorem BHW.complexLorentz_exp_nhd_of_one
@@ -42243,7 +42692,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     Matrix (Fin (d + 1)) (Fin (d + 1)) ℂ)
 
             theorem BHW.bhw_near_identity_invariance_on_open
-                [NeZero d] (hd : 2 <= d)
                 (n : Nat)
                 (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
                 (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
@@ -42260,6 +42708,220 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 ∀ᶠ Λ in 𝓝 (1 : ComplexLorentzGroup d),
                   BHW.complexLorentzAction Λ z ∈ Ω ->
                     B (BHW.complexLorentzAction Λ z) = B z
+
+            theorem BHW.bhw_local_complexLorentz_invariance_of_real_invariance
+                (n : Nat)
+                (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ_open : IsOpen Ω)
+                (hB_holo : DifferentiableOn ℂ B Ω)
+                (hB_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω ->
+                      B (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B z)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (hz : z ∈ Ω) :
+                ∃ C : Set (ComplexLorentzGroup d),
+                  IsOpen C ∧ (1 : ComplexLorentzGroup d) ∈ C ∧
+                    ∀ Λ, Λ ∈ C ->
+                      BHW.complexLorentzAction Λ z ∈ Ω ->
+                        B (BHW.complexLorentzAction Λ z) = B z
+
+            theorem BHW.bhw_branch_constant_along_complexLorentz_path
+                (n : Nat)
+                (Ω : Set (Fin n -> Fin (d + 1) -> ℂ))
+                (B : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
+                (hΩ_open : IsOpen Ω)
+                (hB_holo : DifferentiableOn ℂ B Ω)
+                (hB_realLorentz :
+                  ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω ->
+                    BHW.complexLorentzAction
+                        (ComplexLorentzGroup.ofReal R) z ∈ Ω ->
+                      B (BHW.complexLorentzAction
+                          (ComplexLorentzGroup.ofReal R) z) = B z)
+                {Λ0 Λ1 : ComplexLorentzGroup d}
+                (γ : Path Λ0 Λ1)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (hγΩ : ∀ t : unitInterval,
+                  BHW.complexLorentzAction (γ t) z ∈ Ω) :
+                B (BHW.complexLorentzAction Λ1 z) =
+                  B (BHW.complexLorentzAction Λ0 z)
+
+            theorem BHW.BHWJostLocalOrientedContinuationChart.branch_constant_along_complexLorentz_path
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                (C : BHW.BHWJostLocalOrientedContinuationChart hd n τ U)
+                {Λ0 Λ1 : ComplexLorentzGroup d}
+                (γ : Path Λ0 Λ1)
+                (z : Fin n -> Fin (d + 1) -> ℂ)
+                (hγC : ∀ t : unitInterval,
+                  BHW.complexLorentzAction (γ t) z ∈ C.carrier) :
+                C.branch (BHW.complexLorentzAction Λ1 z) =
+                  C.branch (BHW.complexLorentzAction Λ0 z)
+
+            theorem BHW.BHWJostOrientedSourcePatchContinuationChain
+                .terminal_Psi_eq_initial_Psi_of_mem_all_orientedTransitions
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p0 z : Fin n -> Fin (d + 1) -> ℂ}
+                (C :
+                  BHW.BHWJostOrientedSourcePatchContinuationChain
+                    hd n τ Ω0 U B0 p0 z)
+                {G : BHW.SourceOrientedGramData d n}
+                (hGtrans :
+                  ∀ j : Fin C.m,
+                    G ∈ (C.oriented_transition j).orientedPatch) :
+                (C.localChart (Fin.last C.m)).Psi G =
+                  (C.localChart 0).Psi G
+
+            theorem BHW.BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {Cleft Cright : BHW.BHWJostLocalOrientedContinuationChart hd n τ U}
+                {p q : Fin n -> Fin (d + 1) -> ℂ}
+                (hn : d + 1 <= n)
+                (T :
+                  BHW.BHWJostOrientedTransitionData hd n τ U Cleft Cright p q)
+                {Φ : BHW.SourceOrientedGramData d n -> ℂ}
+                {D seed : Set (BHW.SourceOrientedGramData d n)}
+                (hD_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n D)
+                (hDmax_conn :
+                  IsConnected (D ∩ {G | BHW.SourceOrientedMaxRankAt d n G}))
+                (hD_sub_left : D ⊆ Cleft.orientedDomain)
+                (hΦ : BHW.SourceOrientedVarietyGermHolomorphicOn d n Φ D)
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_sub_D : seed ⊆ D)
+                (hseed_sub_max : seed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hseed_eq : Set.EqOn Φ Cleft.Psi seed)
+                (hT_sub_D : T.orientedPatch ⊆ D) :
+                Set.EqOn Φ Cright.Psi
+                  (T.orientedPatch ∩ {G | BHW.SourceOrientedMaxRankAt d n G})
+
+            theorem BHW.exists_maxRankSeed_eqOn_of_connected_domain
+                (hn : d + 1 <= n)
+                {Φ Ψ : BHW.SourceOrientedGramData d n -> ℂ}
+                {D seed W : Set (BHW.SourceOrientedGramData d n)}
+                (hD_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n D)
+                (hDmax_conn :
+                  IsConnected (D ∩ {G | BHW.SourceOrientedMaxRankAt d n G}))
+                (hΦ : BHW.SourceOrientedVarietyGermHolomorphicOn d n Φ D)
+                (hΨ : BHW.SourceOrientedVarietyGermHolomorphicOn d n Ψ D)
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_sub_D : seed ⊆ D)
+                (hseed_sub_max : seed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hseed_eq : Set.EqOn Φ Ψ seed)
+                (hW_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n W)
+                (hW_nonempty : W.Nonempty)
+                (hW_sub_D : W ⊆ D) :
+                ∃ seedNext : Set (BHW.SourceOrientedGramData d n),
+                  BHW.IsRelOpenInSourceOrientedGramVariety d n seedNext ∧
+                  IsPreconnected seedNext ∧
+                  seedNext.Nonempty ∧
+                  seedNext ⊆ W ∩ {G | BHW.SourceOrientedMaxRankAt d n G} ∧
+                  Set.EqOn Φ Ψ seedNext
+
+            theorem BHW.BHWJostOrientedTransitionData.exists_propagatedSeed_to_right
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {Cleft Cright : BHW.BHWJostLocalOrientedContinuationChart hd n τ U}
+                {p q : Fin n -> Fin (d + 1) -> ℂ}
+                (hn : d + 1 <= n)
+                (T :
+                  BHW.BHWJostOrientedTransitionData hd n τ U Cleft Cright p q)
+                {Φ : BHW.SourceOrientedGramData d n -> ℂ}
+                {D seed : Set (BHW.SourceOrientedGramData d n)}
+                (hD_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n D)
+                (hDmax_conn :
+                  IsConnected (D ∩ {G | BHW.SourceOrientedMaxRankAt d n G}))
+                (hD_sub_left : D ⊆ Cleft.orientedDomain)
+                (hΦ : BHW.SourceOrientedVarietyGermHolomorphicOn d n Φ D)
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_sub_D : seed ⊆ D)
+                (hseed_sub_max : seed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hseed_eq : Set.EqOn Φ Cleft.Psi seed)
+                (hT_sub_D : T.orientedPatch ⊆ D) :
+                ∃ seedNext : Set (BHW.SourceOrientedGramData d n),
+                  BHW.IsRelOpenInSourceOrientedGramVariety d n seedNext ∧
+                  IsPreconnected seedNext ∧
+                  seedNext.Nonempty ∧
+                  seedNext ⊆
+                    T.orientedPatch ∩ {G | BHW.SourceOrientedMaxRankAt d n G} ∧
+                  Set.EqOn Φ Cright.Psi seedNext
+
+            def BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_sourceRealized_branch_eq
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p0 : Fin n -> Fin (d + 1) -> ℂ}
+                {L : BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0}
+                {seed : Set (BHW.SourceOrientedGramData d n)}
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_pre : IsPreconnected seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_sub :
+                  seed ⊆ L.closing_orientedPatch ∩
+                    {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hsource_eq :
+                  ∀ G, G ∈ seed ->
+                    ∃ y0 yF,
+                      y0 ∈ (L.chain.localChart 0).carrier ∧
+                      yF ∈ (L.chain.localChart (Fin.last L.chain.m)).carrier ∧
+                      BHW.sourceOrientedMinkowskiInvariant d n y0 = G ∧
+                      BHW.sourceOrientedMinkowskiInvariant d n yF = G ∧
+                      (L.chain.localChart (Fin.last L.chain.m)).branch yF =
+                        (L.chain.localChart 0).branch y0) :
+                BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L
+
+            def BHW.BHWJostOrientedMaxRankClosedLoopSeed.of_commonTransitionSeed
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p0 : Fin n -> Fin (d + 1) -> ℂ}
+                {L : BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0}
+                {seed : Set (BHW.SourceOrientedGramData d n)}
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_pre : IsPreconnected seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_closing : seed ⊆ L.closing_orientedPatch)
+                (hseed_max : seed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hseed_trans :
+                  ∀ j : Fin L.chain.m,
+                    seed ⊆ (L.chain.oriented_transition j).orientedPatch) :
+                BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L
+
+            theorem BHW.BHWJostOrientedMaxRankClosedLoopSeed
+                .exists_of_connectedDomainPropagation
+                [NeZero d] {hd : 2 <= d} {τ : Equiv.Perm (Fin n)}
+                {Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ)}
+                {B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ}
+                {p0 : Fin n -> Fin (d + 1) -> ℂ}
+                {L : BHW.BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0}
+                (hn : d + 1 <= n)
+                {D seed : Set (BHW.SourceOrientedGramData d n)}
+                (hD_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n D)
+                (hDmax_conn :
+                  IsConnected (D ∩ {G | BHW.SourceOrientedMaxRankAt d n G}))
+                (hD_sub_final :
+                  D ⊆ (L.chain.localChart (Fin.last L.chain.m)).orientedDomain)
+                (hD_sub_start : D ⊆ (L.chain.localChart 0).orientedDomain)
+                (hseed_rel : BHW.IsRelOpenInSourceOrientedGramVariety d n seed)
+                (hseed_nonempty : seed.Nonempty)
+                (hseed_sub_D : seed ⊆ D)
+                (hseed_sub_max : seed ⊆ {G | BHW.SourceOrientedMaxRankAt d n G})
+                (hseed_eq :
+                  Set.EqOn
+                    (L.chain.localChart (Fin.last L.chain.m)).Psi
+                    (L.chain.localChart 0).Psi
+                    seed)
+                (hclosing_sub_D : L.closing_orientedPatch ⊆ D) :
+                Nonempty
+                  (BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L)
             ```
 
             `BHW.complexLorentz_exp_nhd_of_one` is the publicized
@@ -42271,7 +42933,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             surfaced at the BHW-Jost boundary.
 
             The open-domain proof is the existing `near_identity_core` proof
-            with `ForwardTube d n` replaced by an arbitrary open `Ω`.  From
+            with `ForwardTube d n` replaced by an arbitrary open `Ω`; the Lean
+            file carries the required norm estimates as private helpers and
+            leaves no new theorem-level placeholder.  From
             `hΩ_open`, `hz`, and continuity of
             `A ↦ exp(A) · z`, choose `δ > 0` such that `‖A‖ < δ` keeps the
             orbit in `Ω`.  For a nearby `Λ`, write `Λ.val = exp X`,
@@ -42293,6 +42957,110 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `Filter.Eventually.exists_mem` and `mem_nhds_iff`.  The group is
             always `SO(1,d;ℂ)` as represented by `ComplexLorentzGroup d`;
             no improper `O(1,d;ℂ)` component enters the route.
+
+            The path theorem is also checked.  For a path
+            `γ : Path Λ0 Λ1`, set
+            `f t := B (complexLorentzAction (γ t) z)` on `unitInterval`.
+            At `t0`, apply the open-neighborhood theorem to
+            `z0 := complexLorentzAction (γ t0) z`; continuity of
+            `t ↦ γ t * (γ t0)⁻¹` gives a neighborhood of `t0` on which the
+            relative motion is in the BHW neighborhood `C`, and
+            `complexLorentzAction_mul` rewrites
+            `(γ t * (γ t0)⁻¹) · ((γ t0) · z)` to `(γ t) · z`.  Thus `f` is
+            locally constant; `unitInterval` is preconnected, so
+            `IsLocallyConstant.apply_eq_of_isPreconnected` gives
+            `f 1 = f 0`, i.e. constancy from `Λ0` to `Λ1`.  The
+            chart-specialized theorem is just this path theorem with
+            `Ω := C.carrier`, `B := C.branch`,
+            `hΩ_open := C.carrier_open`, `hB_holo := C.branch_holo`, and the
+            real-Lorentz hypothesis supplied by
+            `C.branch_complexLorentzInvariant (ComplexLorentzGroup.ofReal R)`.
+
+            `BHWJostOrientedMaxRankClosedLoopSeed.of_sourceRealized_branch_eq`
+            is the checked seed-constructor bridge used after the genuine
+            finite-overlap BHW/Jost argument has produced terminal/initial
+            branch equality on source representatives of a nonempty relatively
+            open max-rank seed.  It fills the seed structure from the supplied
+            relative-openness, preconnectedness, nonemptiness, and
+            max-rank/closing-patch containment data.  For `seed_eq`, it
+            extracts `y0`, `yF` from `hsource_eq`, rewrites both branch values
+            through the initial and final charts' `branch_eq_orientedPullback`
+            fields, and composes those rewrites with the supplied source-level
+            branch equality.  So the next live theorem must produce
+            `hsource_eq`; the Lean-level seed packaging itself is finished.
+
+            The finite-chain telescope is the other checked mechanical exit.
+            For a fixed `G`, set
+            `f j := (C.localChart j).Psi G`.  Each stored oriented transition
+            gives `f j.castSucc = f j.succ` whenever `G` lies in that
+            transition's `orientedPatch`; a private finite `Fin` lemma upgrades
+            adjacent equality along `Fin (m + 1)` to
+            `f (Fin.last m) = f 0`.  Therefore a seed contained in every
+            transition oriented patch gives terminal/initial `Psi` equality
+            pointwise, and `of_commonTransitionSeed` packages that telescope
+            with the supplied relative-openness, preconnectedness,
+            nonemptiness, closing-patch containment, and max-rank containment.
+            This is only a sufficient telescope case: for a moving
+            continuation chain the intersection of all transition patches need
+            not be nonempty.  The faithful next theorem is a propagated-seed
+            step: carry a nonempty relatively open max-rank equality seed
+            across one transition by an identity-principle argument on a
+            connected intermediate oriented domain, producing a new seed for
+            the next transition.  Iterating that propagated-seed step is the
+            Lean-ready form of the Hall-Wightman/Jost finite-overlap argument;
+            its output feeds the more general source-realized equality
+            constructor above.
+
+            `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is
+            the checked one-step version of that propagation.  Given an
+            accumulated oriented germ `Φ`, a transition `T : Cleft -> Cright`,
+            a relatively open intermediate domain `D ⊆ Cleft.orientedDomain`
+            whose max-rank part is connected, and a nonempty relatively open
+            seed inside `D ∩ MaxRank` where `Φ = Cleft.Psi`, the hard-range
+            identity theorem
+            `sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame`
+            gives `Φ = Cleft.Psi` on `D ∩ MaxRank`.  On
+            `T.orientedPatch ∩ MaxRank`, the hypothesis
+            `T.orientedPatch ⊆ D` restricts this equality, and the stored
+            transition equality `T.oriented_psi_agree` changes
+            `Cleft.Psi` to `Cright.Psi`.  The result is precisely
+            `Φ = Cright.Psi` on the max-rank part of the next transition
+            patch.
+
+            `exists_maxRankSeed_eqOn_of_connected_domain` is the generic
+            target-patch propagation form used both for ordinary transitions
+            and for the final closing overlap.  It applies
+            `sourceOrientedGramVariety_maxRank_eqOn_of_connected_fullFrame`
+            on `D` to extend equality from the old seed to `D ∩ MaxRank`;
+            then it proves `W ∩ MaxRank` is relatively open and nonempty,
+            chooses a max-rank center, builds the full-frame finite-coordinate
+            chart there, shrinks it by
+            `connectedMaxRankPatch_inside_relOpen`, and restricts the equality
+            to the resulting preconnected seed.
+
+            `exists_propagatedSeed_to_right` composes this equality theorem
+            with the checked max-rank seed extractor
+            `SourceOrientedMaxRankChartData.connectedMaxRankPatch_inside_relOpen`.
+            It proves that
+            `T.orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G}` is
+            relatively open and nonempty, chooses a max-rank center, builds
+            the finite-coordinate full-frame chart at that center, shrinks it
+            to a connected relatively open patch inside the transition
+            max-rank set, and restricts the propagated equality to that patch.
+            The result has exactly the rel-open/preconnected/nonempty/max-rank
+            shape needed for the next finite-overlap propagation step.
+
+            `BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`
+            is the checked closing-overlap package theorem.  If the propagated
+            equality between terminal and initial oriented germs has reached a
+            nonempty max-rank seed inside a relatively open domain `D`, if
+            `D ∩ MaxRank` is connected, and if `D` contains the closing
+            oriented patch while lying inside both terminal and initial
+            oriented domains, then the generic target-patch theorem with
+            `W := L.closing_orientedPatch` produces a fresh nonempty
+            preconnected relatively open max-rank seed inside the closing
+            patch and packages it as
+            `BHWJostOrientedMaxRankClosedLoopSeed`.
 
             The chain branches are constructed by finite induction, not by a
             hidden global representative.  In the strict-route producer of
