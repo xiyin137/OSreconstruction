@@ -12355,6 +12355,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ((image '' parameterBox) ∩
               {G | BHW.SourceOrientedMaxRankAt d n G})
 
+      def BHW.SourceOrientedRankDeficientVarietyLocalImageData
+          .to_maxRankLocalImageData_of_connected_preimage
+          {P : Type*} [TopologicalSpace P]
+          {G0 : BHW.SourceOrientedGramData d n}
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          (R :
+            BHW.SourceOrientedRankDeficientVarietyLocalImageData
+              (d := d) (n := n) (P := P) G0 N0)
+          (hpreimage_connected :
+            IsConnected (R.parameterBox ∩
+              {p | BHW.SourceOrientedMaxRankAt d n (R.image p)})) :
+          BHW.SourceOrientedRankDeficientMaxRankLocalImageData
+            (d := d) (n := n) (P := P) G0 N0 := by
+        -- Checked in production Lean by reusing the fields of `R` and filling
+        -- `image_maxRank_connected` with
+        -- `isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage`.
+        exact
+          R.to_maxRankLocalImageData_of_connected_preimage
+            hpreimage_connected
+
       theorem BHW.sourceOrientedRankDeficientConnectedMaxRankPatchAt_of_localImageProducer
           (rankDeficientLocalImageAt :
             ∀ {G0 : BHW.SourceOrientedGramData d n},

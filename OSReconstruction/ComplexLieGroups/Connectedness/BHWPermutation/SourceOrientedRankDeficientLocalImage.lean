@@ -136,6 +136,35 @@ theorem to_connectedRelOpenPatch
   · exact ⟨R.p0, R.p0_mem, R.center_eq⟩
   · exact R.parameterBox_connected.image R.image R.image_continuousOn
 
+/-- A connected rank-deficient local-image packet upgrades to the strengthened
+max-rank packet once the concrete producer proves connectedness of the
+max-rank preimage in parameter space. -/
+def to_maxRankLocalImageData_of_connected_preimage
+    {P : Type*} [TopologicalSpace P]
+    {G0 : SourceOrientedGramData d n}
+    {N0 : Set (SourceOrientedGramData d n)}
+    (R :
+      SourceOrientedRankDeficientVarietyLocalImageData
+        (d := d) (n := n) (P := P) G0 N0)
+    (hpreimage_connected :
+      IsConnected (R.parameterBox ∩
+        {p | SourceOrientedMaxRankAt d n (R.image p)})) :
+    SourceOrientedRankDeficientMaxRankLocalImageData
+      (d := d) (n := n) (P := P) G0 N0 where
+  parameterBox := R.parameterBox
+  parameterBox_open := R.parameterBox_open
+  parameterBox_connected := R.parameterBox_connected
+  p0 := R.p0
+  p0_mem := R.p0_mem
+  image := R.image
+  image_continuousOn := R.image_continuousOn
+  center_eq := R.center_eq
+  image_relOpen := R.image_relOpen
+  image_sub := R.image_sub
+  image_maxRank_connected :=
+    isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage
+      (d := d) (n := n) hpreimage_connected R.image_continuousOn
+
 end SourceOrientedRankDeficientVarietyLocalImageData
 
 namespace SourceOrientedRankDeficientMaxRankLocalImageData

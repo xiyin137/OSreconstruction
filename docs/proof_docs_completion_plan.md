@@ -328,8 +328,11 @@ extracts a new nonempty preconnected relatively open max-rank seed inside that
    `IsConnected (parameterBox ∩ {p | SourceOrientedMaxRankAt d n (image p)})`;
    the set equality between this preimage image and `image '' parameterBox ∩
    MaxRank` is checked separately as
-   `BHW.image_inter_preimage_sourceOrientedMaxRank_eq`.  Thus the remaining
-   geometric work is the exceptional local max-rank-basis production plus the
+   `BHW.image_inter_preimage_sourceOrientedMaxRank_eq`.  The checked adapter
+   `BHW.SourceOrientedRankDeficientVarietyLocalImageData.to_maxRankLocalImageData_of_connected_preimage`
+   upgrades the older connected local-image packet to the strengthened packet
+   once this preimage connectedness is supplied.  Thus the remaining geometric
+   work is the exceptional local max-rank-basis production plus the
    source-backed finite-overlap domains themselves.
    The remaining work is to produce the terminal closing domain and assemble
    the resulting terminal
