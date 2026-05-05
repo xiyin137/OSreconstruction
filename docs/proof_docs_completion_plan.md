@@ -4338,7 +4338,16 @@ implementation contract is:
    vanishing of tail vectors once the normalized Gram is canonical; without
    adaptedness the statement is false.  The normal-form source-change wrapper
    then applies the checked preservation of coefficient-span dimension and
-   scalar Gram rank under invertible source matrices.  The
+   scalar Gram rank under invertible source matrices.  The selected-head
+   Witt/Lorentz step is also now checked in the same file:
+   `BHW.hwLemma3_canonicalGram_exists_complexLorentz_to_canonicalSource_of_adapted`
+   applies the existing determinant-one complex Witt theorem
+   `BHW.complexMinkowski_detOneWittExtension_to_canonicalHeadFrame` to the
+   canonical head frame and uses the adapted tail-zero theorem on the tail;
+   `BHW.hwLemma3_normalFormSourceChange_exists_complexLorentz_to_canonicalSource_of_adapted`
+   composes this with the checked normal-form source-change matrix.  Thus the
+   normalized adapted tuple is proved, not merely asserted, to lie in the
+   complex Lorentz orbit of `BHW.hwLemma3CanonicalSource d n r`.  The
    base selected-block normalization also needs the arbitrary invertible
    symmetric congruence theorem to the inherited source-head metric,
    `BHW.complexSymmetric_invertible_congruence_to_sourceHeadMetric`.  This is
@@ -4400,7 +4409,7 @@ implementation contract is:
    | Pointwise-to-global relative-open assembly | Mechanical after local realization. | Choose explicit `sourceExtendedTubeGramDomain_relOpen_at` neighborhoods, form the subtype-indexed union, and use the subset lemma. |
    | Adapted same-Gram representative | Proof transcript pinned; production Lean not started. | `hwLemma3_extendedTube_adaptedRankRepresentative` is reduced to the Lemma-2 residual-frame/all-coefficients extended-tube theorem, selected projection, Schur-zero residual theorem, and span-rank equality; the blueprint explicitly forbids source-changing an arbitrary representative to zero tail. |
    | Principal block/projection/Schur-zero algebra | Proof transcript pinned; principal-minor extraction checked locally. | The blueprint now gives the selected coefficient definition, projection Gram equality, residual orthogonality, residual-residual zero via the Schur complement, and span-finrank theorem.  These are finite algebra support targets, not final wrappers. |
-   | Normal-form source transport | Proof transcript pinned; production Lean not started. | Source permutation, projection matrix, congruence-to-identity, canonical Gram congruence, tail-zero from adaptedness, Witt extension to the standard selected frame, and oriented invariant transport are all named with Lean-shaped constructor code. |
+   | Normal-form source transport | Core source-change, canonical-Gram, adapted tail-zero, and selected-head Witt/Lorentz orbit layer checked in `SourceNormalFormTransport.lean`; oriented invariant transport fields remain. | Source permutation, projection matrix, congruence-to-identity, canonical Gram congruence, coefficient-span/rank preservation, tail-zero from adaptedness, and the complex Lorentz transport to `hwLemma3CanonicalSource` are checked.  The remaining normal-form transport work is the Cauchy-Binet oriented invariant transport fields and the finite-dimensional estimate packaging around the resulting linear equivalences. |
    | Near-identity square root | Proof transcript pinned; pure matrix analysis. | The blueprint gives the binomial-series construction of `(1 + B)^(1/2)`, convergence via a scalar power-series majorant, transpose compatibility, the square identity, and entrywise estimates from matrix norm bounds. |
    | Schur-rank/Takagi/tail factorization | Proof transcript pinned; pure finite linear algebra. | The proof is split into Mathlib Schur-complement rank factorization, Autonne-Takagi with rank support and explicit entry-L1 control, small factorization, and tail embedding with coordinate estimates. |
    | Orthogonal-tail residual realization | Proof transcript pinned; production Lean not started. | Takagi factors are transported into `complexMinkowskiOrthogonalTailSubspace`, paired to the Schur complement, kept orthogonal to the selected block, and transported back through the Minkowski orthogonal model with norm control. |

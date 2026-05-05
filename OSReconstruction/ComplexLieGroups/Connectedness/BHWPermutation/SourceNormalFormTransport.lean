@@ -1,6 +1,7 @@
 import Mathlib.LinearAlgebra.Matrix.Permutation
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceComplexSchurPatch
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedAdaptedRepresentative
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedHeadGaugeNormal
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedNormalParameter
 
 /-!
@@ -1117,6 +1118,96 @@ theorem hwLemma3_normalFormSourceChange_tail_zero_of_adapted
   · exact hwLemma3_normalFormSourceChangeMatrix_det_isUnit n r hrn σ hA hP
   · exact hGram
   · exact hadapt
+
+/-- If an adapted source tuple already has the Lemma-3 canonical Gram, then a
+complex Lorentz transformation sends it to the canonical source tuple.  The
+head-frame normalization is the determinant-one complex Witt extension; the
+tail labels vanish by the checked adapted canonical-tail theorem. -/
+theorem hwLemma3_canonicalGram_exists_complexLorentz_to_canonicalSource_of_adapted
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    {w : Fin n → Fin (d + 1) → ℂ}
+    (hGram :
+      sourceMinkowskiGram d n w =
+        hwLemma3CanonicalGram d n r hrD hrn)
+    (hadapt :
+      Module.finrank ℂ
+          (LinearMap.range (sourceCoefficientEval d n w)) =
+        sourceGramMatrixRank n (sourceMinkowskiGram d n w)) :
+    ∃ Λ : ComplexLorentzGroup d,
+      complexLorentzAction Λ w = hwLemma3CanonicalSource d n r := by
+  let x : Fin r → Fin (d + 1) → ℂ := fun a => w (finSourceHead hrn a)
+  have hHeadGram :
+      ∀ a b : Fin r,
+        sourceVectorMinkowskiInner d (x a) (x b) =
+          if a = b then
+            (MinkowskiSpace.metricSignature d
+              (finSourceHead (Nat.le_of_lt hrD) a) : ℂ)
+          else 0 := by
+    intro a b
+    have h :=
+      congrFun (congrFun hGram (finSourceHead hrn a)) (finSourceHead hrn b)
+    simpa [x, hwLemma3CanonicalGram, sourceHeadMetric_apply] using h
+  obtain ⟨Λ, hΛhead⟩ :=
+    complexMinkowski_detOneWittExtension_to_canonicalHeadFrame
+      d r hrD x hHeadGram
+  refine ⟨Λ, ?_⟩
+  ext i μ
+  rcases finSourceHead_tail_cases hrn i with ⟨a, rfl⟩ | ⟨u, rfl⟩
+  · have h := congrFun (hΛhead a) μ
+    simpa [complexLorentzAction, x,
+      hwLemma3CanonicalSource_head_apply (hrD := hrD)] using h
+  · have htail :
+        w (finSourceTail hrn u) = 0 :=
+      hwLemma3_canonicalGram_tail_zero_of_adapted
+        d n r hrD hrn hGram hadapt u
+    have hΛtail :
+        complexLorentzAction Λ w (finSourceTail hrn u) = 0 := by
+      ext ν
+      simp [complexLorentzAction, complexLorentzVectorAction, htail]
+    have hcanon :
+        hwLemma3CanonicalSource d n r (finSourceTail hrn u) = 0 :=
+      hwLemma3CanonicalSource_tail d n r hrn u
+    exact congrFun hΛtail μ |>.trans (congrFun hcanon μ).symm
+
+/-- The checked normal-form source change has a complex Lorentz representative
+to the canonical source tuple, provided its scalar Gram is the canonical
+Lemma-3 Gram and the original tuple is adapted. -/
+theorem hwLemma3_normalFormSourceChange_exists_complexLorentz_to_canonicalSource_of_adapted
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    {σ : Equiv.Perm (Fin n)}
+    {A : Matrix (Fin r) (Fin r) ℂ}
+    {B : Matrix (Fin (n - r)) (Fin r) ℂ}
+    {P : Matrix (Fin r) (Fin r) ℂ}
+    (hA : IsUnit A.det)
+    (hP : IsUnit P.det)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hGram :
+      sourceGramCongruence n
+        (hwLemma3_normalFormSourceChangeMatrix
+          n r hrn σ A B P)
+        (sourceMinkowskiGram d n z) =
+      hwLemma3CanonicalGram d n r hrD hrn)
+    (hadapt :
+      Module.finrank ℂ
+          (LinearMap.range (sourceCoefficientEval d n z)) =
+        sourceGramMatrixRank n (sourceMinkowskiGram d n z)) :
+    ∃ Λ : ComplexLorentzGroup d,
+      complexLorentzAction Λ
+        (sourceTupleLinearChange d n
+          (hwLemma3_normalFormSourceChangeMatrix n r hrn σ A B P) z) =
+        hwLemma3CanonicalSource d n r := by
+  let M := hwLemma3_normalFormSourceChangeMatrix n r hrn σ A B P
+  have hM : IsUnit M.det :=
+    hwLemma3_normalFormSourceChangeMatrix_det_isUnit n r hrn σ hA hP
+  apply
+    hwLemma3_canonicalGram_exists_complexLorentz_to_canonicalSource_of_adapted
+      d n r hrD hrn
+  · simpa [M, sourceMinkowskiGram_sourceTupleLinearChange] using hGram
+  · simpa [M] using sourceTupleLinearChange_adapted_of_isUnit d n hM hadapt
 
 theorem hwLemma3_schurComplement_eq_zero_of_rank_eq
     (n r : ℕ) (hrn : r ≤ n)
