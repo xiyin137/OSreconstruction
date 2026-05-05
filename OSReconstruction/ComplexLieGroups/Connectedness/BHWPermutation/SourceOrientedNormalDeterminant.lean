@@ -1,4 +1,5 @@
 import Mathlib.Data.Fintype.Sort
+import Mathlib.LinearAlgebra.ExteriorPower.Basis
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedNormalParameter
 
 /-!
@@ -11,6 +12,7 @@ from the head/tail normal-parameter bookkeeping.
 noncomputable section
 
 open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
+open exteriorPower
 
 namespace BHW
 
@@ -239,6 +241,26 @@ theorem matrixBlockColumns_reindex_finSum
   ext row col
   cases row <;> cases col <;>
     simp [Matrix.reindex_apply, matrixBlockColumns]
+
+/-- Exterior-power coefficient form of the ordered-minor determinant.  For a
+matrix whose columns are vectors in `Fin N → ℂ`, the coordinate of their
+exterior product at an ordered `k`-subset is the determinant of the
+corresponding row minor. -/
+theorem exteriorPower_repr_iMulti_matrixColumns
+    (N k : ℕ)
+    (A : Matrix (Fin N) (Fin k) ℂ)
+    (s : Set.powersetCard (Fin N) k) :
+    (((Pi.basisFun ℂ (Fin N)).exteriorPower k).repr
+        (exteriorPower.ιMulti ℂ k
+          (fun j : Fin k => fun i : Fin N => A i j))) s =
+      Matrix.det
+        (fun i j : Fin k => A (Set.powersetCard.ofFinEmbEquiv.symm s i) j) := by
+  rw [exteriorPower.basis_repr_apply]
+  simp [exteriorPower.ιMultiDual_apply_ιMulti]
+  rw [← Matrix.det_transpose
+    (M := fun i j : Fin k =>
+      A (Set.powersetCard.ofFinEmbEquiv.symm s i) j)]
+  rfl
 
 @[simp]
 theorem matrixRowSubset_compl_card

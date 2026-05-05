@@ -582,8 +582,12 @@ uses checked ordered-row-subset definitions
 `BHW.matrixRowSubsetHeadRows`, `BHW.matrixRowSubsetTailRows`,
 `BHW.matrixRowSubsetSumEquiv`, `BHW.matrixRowSubsetLaplaceSign`,
 `BHW.matrixBlockColumnLaplaceTerm`, and
-`BHW.matrixBlockColumnLaplaceSum`; the still-open part is the canonical finite
-row-subset Laplace theorem and the reconstruction equality over `G`.
+`BHW.matrixBlockColumnLaplaceSum`.  The exterior-power coefficient lemma
+`BHW.exteriorPower_repr_iMulti_matrixColumns` is also checked and pins the
+ordered-minor determinant as the coordinate of `exteriorPower.ιMulti` in
+`(Pi.basisFun ℂ (Fin N)).exteriorPower k`; the still-open part is the
+canonical finite row-subset Laplace theorem and the reconstruction equality
+over `G`.
 Arbitrary ordered full frames are then routed through
 the finite Laplace theorem `matrix_det_blockColumn_laplace`,
 `sourceNormalFullFrameDetFromSchur`,

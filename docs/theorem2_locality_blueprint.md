@@ -9285,6 +9285,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 Q ((finSumFinEquiv :
                   Fin r ⊕ Fin D ≃ Fin (r + D)) (Sum.inr v)) u)
 
+      theorem BHW.exteriorPower_repr_iMulti_matrixColumns
+          (N k : Nat)
+          (A : Matrix (Fin N) (Fin k) ℂ)
+          (s : Set.powersetCard (Fin N) k) :
+          (((Pi.basisFun ℂ (Fin N)).exteriorPower k).repr
+              (exteriorPower.ιMulti ℂ k
+                (fun j : Fin k => fun i : Fin N => A i j))) s =
+            Matrix.det
+              (fun i j : Fin k =>
+                A (Set.powersetCard.ofFinEmbEquiv.symm s i) j)
+
       theorem BHW.matrixRowSubset_compl_card
           (r D : Nat)
           (s : Finset (Fin (r + D)))
@@ -9728,6 +9739,20 @@ Proof decomposition of this theorem, without hiding the analytic work:
       `matrix_det_blockColumn_laplace` is proved, the unconditional
       `sourceFullFrameDet_normalParameter_eq_schurFormula` is a one-line call
       to the conditional theorem.
+
+      The verified exterior-power route for proving
+      `matrix_det_blockColumn_laplace` starts with the checked lemma
+      `exteriorPower_repr_iMulti_matrixColumns`.  It specializes
+      `exteriorPower.basis_repr_apply` and
+      `exteriorPower.ιMultiDual_apply_ιMulti` to matrix columns, giving the
+      exact ordered-minor determinant as the coordinate of
+      `exteriorPower.ιMulti` in the basis
+      `(Pi.basisFun ℂ (Fin N)).exteriorPower k`.  The remaining exterior proof
+      should combine the expansions for the `M` and `Q` column wedges, use
+      `ExteriorAlgebra.basis_mul_of_not_disjoint` to kill non-complementary
+      row subsets, and use `ExteriorAlgebra.basis_mul_of_disjoint` plus
+      `Set.powersetCard.compl`/`Set.powersetCard.disjUnion` to identify the
+      surviving sign with `matrixRowSubsetLaplaceSign`.
 
       Implementation transcript for `matrix_det_blockColumn_laplace`: unfold
       `Matrix.det_apply'` for the concatenated matrix.  For a permutation
