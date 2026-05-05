@@ -357,8 +357,9 @@ spacetime/source minimum upper bound plus failure of the equality defining
 `finrank_range_sourceCoefficientEval_le`, and `Submodule.finrank_le`.
 The companion file
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedLowRankDeterminants.lean`
-now checks the determinant consequence used by the normal-form route:
-`BHW.sourceFullFrameDet_eq_zero_of_sourceRank_lt` proves that every full-frame
+now checks the arity/rank and determinant consequences used by the normal-form
+route: `BHW.sourceGramMatrixRank_le_arity` gives the selected rank bound
+`r ≤ n`, and `BHW.sourceFullFrameDet_eq_zero_of_sourceRank_lt` proves that every full-frame
 determinant coordinate vanishes below source Gram rank `d + 1`, using the
 selected full-frame Gram determinant identity and the checked nonzero-minor
 rank bound.  It also checks

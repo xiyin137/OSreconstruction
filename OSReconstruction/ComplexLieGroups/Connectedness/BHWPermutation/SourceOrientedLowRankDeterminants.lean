@@ -18,6 +18,15 @@ open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
 
 namespace BHW
 
+/-- The rank of an `n × n` source Gram coordinate is bounded by the source
+arity. -/
+theorem sourceGramMatrixRank_le_arity
+    (n : ℕ)
+    (Z : Fin n → Fin n → ℂ) :
+    sourceGramMatrixRank n Z ≤ n := by
+  simpa [sourceGramMatrixRank] using
+    (Matrix.rank_le_width (A := Matrix.of fun i j : Fin n => Z i j))
+
 /-- If the ordinary source Gram matrix has rank `< d + 1`, every selected
 spacetime-size source frame has zero determinant. -/
 theorem sourceFullFrameDet_eq_zero_of_sourceRank_lt
