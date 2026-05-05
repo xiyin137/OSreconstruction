@@ -7,6 +7,7 @@ import OSReconstruction.Wightman.Reconstruction
 import OSReconstruction.Wightman.Reconstruction.AnalyticContinuation
 import OSReconstruction.Wightman.Reconstruction.ForwardTubeDistributions
 import OSReconstruction.GeneralResults.SinusoidSeparation
+import OSReconstruction.GeneralResults.FinProductIntegral
 import OSReconstruction.SCV.VladimirovTillmann
 
 /-!
@@ -1389,6 +1390,42 @@ theorem translatedPETValue_translation_invariant {d n : ℕ} [NeZero d]
   ext k μ
   ring
 
+/-- The translated-PET value inherits coordinate-permutation invariance from a
+PET scalar that is translation-invariant and permutation-invariant on PET. -/
+theorem translatedPETValue_perm_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (hF_perm :
+      ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k => z (σ k)) ∈ PermutedExtendedTube d n →
+        F (fun k => z (σ k)) = F z)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (hz : z ∈ TranslatedPET d n)
+    (hzσ : (fun k => z (σ k)) ∈ TranslatedPET d n) :
+    translatedPETValue F (fun k => z (σ k)) hzσ =
+      translatedPETValue F z hz := by
+  unfold translatedPETValue
+  let zσ : Fin n → Fin (d + 1) → ℂ := fun k => z (σ k)
+  have hzσ_with_hz_witness :
+      (fun k μ => zσ k μ + hz.choose μ) ∈ PermutedExtendedTube d n := by
+    have hperm :=
+      permutedExtendedTube_perm (d := d) (n := n) σ hz.choose_spec
+    simpa [zσ] using hperm
+  have hchange_witness :=
+    translatedPET_value_eq_of_translation_invariant
+      (d := d) (n := n) F hF_translate zσ
+      hzσ.choose hz.choose hzσ.choose_spec hzσ_with_hz_witness
+  have hperm_value :=
+    hF_perm σ (fun k μ => z k μ + hz.choose μ) hz.choose_spec
+      (by simpa [zσ] using hzσ_with_hz_witness)
+  exact hchange_witness.trans (by simpa [zσ] using hperm_value)
+
 /-- Total version of `translatedPETValue`: outside `TranslatedPET` it is zero.
 This is only an honest integrand when paired with a support or a.e. theorem
 showing the non-`TranslatedPET` locus is irrelevant. -/
@@ -1433,6 +1470,36 @@ theorem translatedPETValueTotal_translation_invariant {d n : ℕ} [NeZero d]
     translatedPET_translate hz c
   simp only [translatedPETValueTotal, dif_pos hz, dif_pos hzc]
   exact translatedPETValue_translation_invariant F hF_translate z c hz hzc
+
+/-- The total translated-PET value inherits coordinate-permutation invariance
+from a PET scalar that is translation-invariant and permutation-invariant on
+PET.  When the input is not in `TranslatedPET`, both sides are the harmless
+zero branch by permutation stability of `TranslatedPET`. -/
+theorem translatedPETValueTotal_perm_invariant {d n : ℕ} [NeZero d]
+    (F : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (hF_translate :
+      ∀ (z : Fin n → Fin (d + 1) → ℂ) (c : Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k μ => z k μ + c μ) ∈ PermutedExtendedTube d n →
+        F (fun k μ => z k μ + c μ) = F z)
+    (hF_perm :
+      ∀ (σ : Equiv.Perm (Fin n)) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ PermutedExtendedTube d n →
+        (fun k => z (σ k)) ∈ PermutedExtendedTube d n →
+        F (fun k => z (σ k)) = F z)
+    (σ : Equiv.Perm (Fin n))
+    (z : Fin n → Fin (d + 1) → ℂ) :
+    translatedPETValueTotal F (fun k => z (σ k)) =
+      translatedPETValueTotal F z := by
+  by_cases hz : z ∈ TranslatedPET d n
+  · have hzσ : (fun k => z (σ k)) ∈ TranslatedPET d n :=
+      translatedPET_perm (d := d) (n := n) σ hz
+    simp only [translatedPETValueTotal, dif_pos hz, dif_pos hzσ]
+    exact translatedPETValue_perm_invariant F hF_translate hF_perm σ z hz hzσ
+  · have hzσ : (fun k => z (σ k)) ∉ TranslatedPET d n := by
+      intro hmem
+      exact hz ((translatedPET_perm_iff (d := d) (n := n) σ z).1 hmem)
+    simp only [translatedPETValueTotal, dif_neg hz, dif_neg hzσ]
 
 /-- The coincident-time hyperplane `{x : x i 0 = x j 0}` is Haar-null for
     `i ≠ j`. -/
@@ -1542,6 +1609,102 @@ theorem ae_euclidean_points_in_translatedPET {d n : ℕ} [NeZero d] :
 -- `wickRotation_not_in_PET_null` and `ae_euclidean_points_in_permutedTube`
 -- were DELETED because the statements are FALSE for n ≥ d+2 (see W11Counterexample.lean).
 -- Use `wickRotation_in_translatedPET_null` / `ae_euclidean_points_in_translatedPET` instead.
+
+/-- **Joint TranslatedPET triple a.e. on the Fubini-split product space.**
+
+For a.e. `(y, z) ∈ NPointDomain d n × NPointDomain d m` under the product
+volume measure, all three of the Wick-rotated configurations that appear
+in the cluster decomposition lie in TranslatedPET:
+
+1. `wick(y) ∈ TranslatedPET d n` (the n-block),
+2. `wick(z) ∈ TranslatedPET d m` (the m-block),
+3. `wick(Fin.append y z) ∈ TranslatedPET d (n + m)` (the joint configuration).
+
+This is the post-Fubini-split a.e. statement needed by `W_analytic_cluster_integral`:
+after factoring the (n+m)-point integral via `integral_fin_append_split`, the
+integrand's `F_ext_on_translatedPET_total` kernel is well-defined a.e. on all
+three evaluation points of the cluster pointwise identity.
+
+Proof: each projection statement comes from `ae_euclidean_points_in_translatedPET`,
+and the joint one is transported from the (n+m)-point a.e. statement via the
+measure-preserving equiv `MeasurableEquiv.finAddProd`. -/
+theorem ae_joint_triple_translatedPET {d n m : ℕ} [NeZero d] :
+    ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+      ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+      (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n ∧
+      (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m ∧
+      (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+        TranslatedPET d (n + m) := by
+  -- (1) a.e. first projection in TranslatedPET d n (lift along Prod.fst projection)
+  have h1 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun i : Fin n => wickRotatePoint (p.1 i)) ∈ TranslatedPET d n := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := n)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set S : Set (NPointDomain d n) :=
+      { y | (fun k => wickRotatePoint (y k)) ∉ TranslatedPET d n }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.1 ∈ S } = S ×ˢ Set.univ := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, zero_mul]
+  -- (2) a.e. second projection in TranslatedPET d m (lift along Prod.snd projection)
+  have h2 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun j : Fin m => wickRotatePoint (p.2 j)) ∈ TranslatedPET d m := by
+    have hae := ae_euclidean_points_in_translatedPET (d := d) (n := m)
+    rw [MeasureTheory.ae_iff] at hae ⊢
+    set T : Set (NPointDomain d m) :=
+      { z | (fun k => wickRotatePoint (z k)) ∉ TranslatedPET d m }
+    change ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)))
+      { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = 0
+    have hcover :
+        { p : NPointDomain d n × NPointDomain d m | p.2 ∈ T } = Set.univ ×ˢ T := by
+      ext ⟨y, z⟩; simp
+    rw [hcover, MeasureTheory.Measure.prod_prod, hae, mul_zero]
+  -- (3) a.e. joint in TranslatedPET d (n+m) — transport from NPointDomain d (n+m)
+  have h3 :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+        ((MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))),
+        (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+          TranslatedPET d (n + m) := by
+    -- Transport via `finAddProd.symm : NPointDomain d n × NPointDomain d m
+    --                                   ≃ᵐ NPointDomain d (n + m)` (measure-preserving).
+    let e := MeasurableEquiv.finAddProd n m (SpacetimeDim d)
+    have hpres : MeasureTheory.MeasurePreserving e.symm
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m))
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d (n + m))) := by
+      have := MeasureTheory.volume_preserving_finAddProd n m (SpacetimeDim d)
+      simpa [e] using this.symm
+    have hvol :
+        (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n)).prod
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m)) := by
+      rfl
+    have hpull : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint ((e.symm p) k)) ∈ TranslatedPET d (n + m) :=
+      hpres.quasiMeasurePreserving.ae (ae_euclidean_points_in_translatedPET (d := d) (n := n + m))
+    have hpull' : ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂
+          (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)),
+          (fun k : Fin (n + m) => wickRotatePoint (Fin.append p.1 p.2 k)) ∈
+            TranslatedPET d (n + m) := by
+      filter_upwards [hpull] with p hp
+      convert hp using 2
+      ext k
+      rw [MeasurableEquiv.finAddProd_symm_apply]
+    rwa [hvol] at hpull'
+  -- Combine all three a.e. facts.
+  filter_upwards [h1, h2, h3] with p hp1 hp2 hp3 using ⟨hp1, hp2, hp3⟩
 
 /-- Connected Lorentz covariance of the boundary distribution implies that the
 boundary values of `z ↦ F(Λ z)` and `z ↦ F(z)` agree distributionally. This is

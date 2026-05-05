@@ -720,6 +720,34 @@ theorem bhw_euclidean_kernel_measurable {d n : ℕ} [NeZero d]
   rw [hwick_add]
   exact key
 
+/-- **Permutation-invariance of the Wick-rotated BHW kernel, a.e. form.**
+
+For a.e. Euclidean configuration `x : NPointDomain d n`, the TranslatedPET
+extension kernel is invariant under post-composition with any permutation
+`σ : Equiv.Perm (Fin n)`:
+
+  F_ext_on_translatedPET_total(wick(x)) = F_ext_on_translatedPET_total(wick(x ∘ σ))
+
+This is the integrated-form consequence of
+`F_ext_on_translatedPET_total_perm_invariant` (a pointwise invariance on
+TranslatedPET) combined with `ae_euclidean_points_in_translatedPET`
+(a.e. TranslatedPET membership of Wick-rotated Euclidean configurations).
+
+Used by change-of-variables / symmetrization arguments in the cluster
+decomposition and similar permutation-averaged integral identities. -/
+theorem bhw_euclidean_kernel_perm_invariant_ae {d n : ℕ} [NeZero d]
+    (Wfn : WightmanFunctions d) (σ : Equiv.Perm (Fin n)) :
+    ∀ᵐ (x : NPointDomain d n) ∂(MeasureTheory.volume : MeasureTheory.Measure _),
+      F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x k)) =
+      F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (x (σ k))) := by
+  filter_upwards [ae_euclidean_points_in_translatedPET (d := d) (n := n)] with x hx
+  have hperm :=
+    F_ext_on_translatedPET_total_perm_invariant Wfn σ
+      (fun k => wickRotatePoint (x k)) hx
+  -- hperm : F_ext ... (fun k => wick(x k)) = F_ext ... (fun k => (fun j => wick(x j)) (σ k))
+  -- Collapse the inner composition to `fun k => wick(x (σ k))`.
+  convert hperm using 2
+
 theorem schwartz_polynomial_kernel_integrable {d n : ℕ} [NeZero d]
     (K : NPointDomain d n → ℂ)
     (hK_meas : MeasureTheory.AEStronglyMeasurable K MeasureTheory.volume)

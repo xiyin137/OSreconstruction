@@ -55,6 +55,14 @@ open scoped InnerProductSpace LineDeriv
 
 variable {d : ℕ} [NeZero d] (Wfn : WightmanFunctions d)
 
+private theorem nPointSpacetime_finrank_pos
+    (d n m : ℕ) (hn : 0 < n) (hm : 0 < m) :
+    0 < Module.finrank ℝ (NPointSpacetime d (n + m - 1)) := by
+  change 0 < Module.finrank ℝ (Fin (n + m - 1) → Fin (d + 1) → ℝ)
+  rw [Module.finrank_pi_fintype]
+  simp [Module.finrank_fintype_fun_eq_card]
+  nlinarith [Nat.sub_pos_of_lt (Nat.lt_add_of_pos_right hm : n < n + m)]
+
 /-! ## Phase 1: Algebraic Instances on PreHilbertSpace -/
 
 namespace PreHilbertSpace
@@ -724,8 +732,9 @@ private theorem locality_term_eq
   have hi_adj : i.val + 1 < n + (k + 2) := by
     dsimp [i]
     omega
+  let hlocal : IsLocallyCommutativeWeak d Wfn.W := Wfn.locally_commutative
   refine
-    (WightmanFunctions.locally_commutative Wfn) (n + (k + 2)) i hi_adj
+    hlocal (n + (k + 2)) i hi_adj
       (Hn.conjTensorProduct (SchwartzMap.prependField f (SchwartzMap.prependField g hk)))
       (Hn.conjTensorProduct (SchwartzMap.prependField g (SchwartzMap.prependField f hk)))
       ?_ ?_
@@ -2452,6 +2461,7 @@ private lemma scd_summand_nonneg_fourier_support
       -- w is already Continuous + IsLinearMap ℂ
       obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
         schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
+          (nPointSpacetime_finrank_pos d n m (by omega) (by omega))
           (SchwartzMap.fourierTransformCLM ℂ φ)
       -- ── Steps 2+3: ℱ⁻¹ of Θ gives ψ with ψ.fourierTransform = Θ and support condition ─
       obtain ⟨ψ, hψ_ft, hψ_supp⟩ :=
@@ -3253,6 +3263,7 @@ private lemma scd_summand_nonneg_fourier_support_dir
       -- w is already Continuous + IsLinearMap ℂ
       obtain ⟨Θ, hΘ_pointwise, hΘ_w⟩ :=
         schwartz_clm_fubini_exchange_real w hw_cont hw_lin _ hF_cont hF_poly
+          (nPointSpacetime_finrank_pos d n m (by omega) (by omega))
           (SchwartzMap.fourierTransformCLM ℂ φ)
       obtain ⟨ψ, hψ_ft, hψ_supp⟩ :=
         scd_fourierInv_translate_witness_dir (by omega : 0 < n) (by omega : 0 < m)
