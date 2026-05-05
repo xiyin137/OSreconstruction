@@ -9095,6 +9095,27 @@ Proof decomposition of this theorem, without hiding the analytic work:
       prose.  The selected-head case is the primitive calculation:
 
       ```lean
+      def BHW.sourceHeadTailSumEquiv
+          (d r : Nat)
+          (hrD : r < d + 1) :
+          (Fin r ⊕ Fin (d + 1 - r)) ≃ Fin (d + 1) :=
+        finSumFinEquiv.trans
+          (finCongr (Nat.add_sub_of_le (Nat.le_of_lt hrD)))
+
+      theorem BHW.sourceHeadTailSumEquiv_inl
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (a : Fin r) :
+          BHW.sourceHeadTailSumEquiv d r hrD (Sum.inl a) =
+            BHW.finSourceHead (Nat.le_of_lt hrD) a
+
+      theorem BHW.sourceHeadTailSumEquiv_inr
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (u : Fin (d + 1 - r)) :
+          BHW.sourceHeadTailSumEquiv d r hrD (Sum.inr u) =
+            BHW.finSourceTail (Nat.le_of_lt hrD) u
+
       def BHW.sourceFullFrameEmbeddingOfHeadTail
           (d n r : Nat)
           (hrD : r < d + 1)
@@ -9122,6 +9143,43 @@ Proof decomposition of this theorem, without hiding the analytic work:
               (BHW.finSourceTail (Nat.le_of_lt hrD) u) =
             BHW.finSourceTail hrn (lam u)
 
+      theorem BHW.sourceFullFrameMatrix_normalParameter_headTail_blocks
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+          Matrix.reindex
+              (BHW.sourceHeadTailSumEquiv d r hrD).symm
+              (BHW.sourceHeadTailSumEquiv d r hrD).symm
+              (BHW.sourceFullFrameMatrix d n
+                (BHW.sourceFullFrameEmbeddingOfHeadTail
+                  d n r hrD hrn lam)
+                (BHW.sourceOrientedNormalParameterVector
+                  d n r hrD hrn p)) =
+            Matrix.fromBlocks
+              p.head
+              (0 :
+                Matrix (Fin r) (Fin (d + 1 - r)) ℂ)
+              ((p.mixed.submatrix lam id) * p.head)
+              (fun u μ => p.tail (lam u) μ)
+
+      theorem BHW.sourceFullFrameDet_normalParameter_headTail_raw
+          (d n r : Nat)
+          (hrD : r < d + 1)
+          (hrn : r <= n)
+          (p :
+            BHW.SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+          (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+          BHW.sourceFullFrameDet d n
+              (BHW.sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam)
+              (BHW.sourceOrientedNormalParameterVector
+                d n r hrD hrn p) =
+            p.head.det *
+              Matrix.det
+                (fun u μ : Fin (d + 1 - r) => p.tail (lam u) μ)
+
       theorem BHW.sourceFullFrameDet_normalParameter_headTail
           [NeZero d]
           (hd : 2 <= d)
@@ -9139,16 +9197,30 @@ Proof decomposition of this theorem, without hiding the analytic work:
                 d r hrD (n - r) p.tail).det lam
       ```
 
-      Proof of `sourceFullFrameDet_normalParameter_headTail`: use
-      `sourceFullFrameEmbeddingOfHeadTail_head/tail` to rewrite the selected
-      full-frame matrix in head/tail row order.  For every selected tail row,
-      subtract the stored mixed linear combination of the selected head rows.
-      This row operation has determinant `1`; the matrix becomes block lower
-      triangular with head block `p.head`, upper-right block `0`, lower-left
-      block `0`, and lower-right block `(fun u μ => p.tail (lam u) μ)`.  Apply
-      the finite block-triangular determinant theorem, with no sign because
-      the embedding orders the first `r` rows by `finSourceHead` and the last
-      `d+1-r` rows by `finSourceTail`.
+      Proof of `sourceFullFrameMatrix_normalParameter_headTail_blocks`:
+      extensionality on the reindexed row and column indices, followed by four
+      cases on `Sum.inl/Sum.inr`.  The inl/inl block uses
+      `sourceFullFrameEmbeddingOfHeadTail_head`,
+      `sourceHeadTailSumEquiv_inl`, and
+      `sourceOrientedNormalParameterVector_head` to reduce the entry to
+      `p.head a b`.  The inl/inr block uses
+      `hwLemma3CanonicalSource_head_of_tailCoord` and is zero.  The inr/inl
+      block uses `sourceOrientedNormalParameterVector_tail`,
+      `sourceHeadTailSumEquiv_inl`, and `sourceTailEmbed_head` to reduce to
+      `((p.mixed.submatrix lam id) * p.head) u a`.  The inr/inr block uses
+      `sourceTailEmbed_tail` and the head-vector tail-coordinate zero lemma to
+      reduce to `p.tail (lam u) μ`.
+
+      Proof of `sourceFullFrameDet_normalParameter_headTail_raw`: take
+      determinants in `sourceFullFrameMatrix_normalParameter_headTail_blocks`,
+      use `Matrix.det_reindex_self` to remove the head/tail reindexing, and
+      use `Matrix.det_fromBlocks_zero₁₂`.  Proof of
+      `sourceFullFrameDet_normalParameter_headTail`: rewrite by the raw theorem
+      and identify the bottom-right determinant with
+      `(sourceShiftedTailOrientedInvariant d r hrD (n-r) p.tail).det lam` by
+      the definition of the shifted-tail determinant coordinate.  No row
+      operation theorem is needed here; the matrix is already block lower
+      triangular after the explicit reindexing.
 
       Arbitrary ordered full frames are recovered through a single explicit
       Schur determinant formula:
@@ -9158,11 +9230,31 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (r D : Nat) where
         headRows : Fin r ↪ Fin (r + D)
         tailRows : Fin D ↪ Fin (r + D)
+        headRows_strict :
+          StrictMono fun a : Fin r => (headRows a).val
+        tailRows_strict :
+          StrictMono fun u : Fin D => (tailRows u).val
         disjoint :
           Disjoint (Set.range headRows) (Set.range tailRows)
         exhaustive :
-          Set.range headRows ∪ Set.range tailRows = Set.univ
-        sign : ℂ
+          ∀ i : Fin (r + D),
+            (∃ a, headRows a = i) ∨ (∃ u, tailRows u = i)
+
+      noncomputable instance BHW.instFintypeMatrixBlockColumnRowSplit
+          (r D : Nat) :
+          Fintype (BHW.MatrixBlockColumnRowSplit r D)
+
+      noncomputable def BHW.MatrixBlockColumnRowSplit.rowEquiv
+          {r D : Nat}
+          (S : BHW.MatrixBlockColumnRowSplit r D) :
+          (Fin r ⊕ Fin D) ≃ Fin (r + D)
+
+      noncomputable def BHW.MatrixBlockColumnRowSplit.sign
+          {r D : Nat}
+          (S : BHW.MatrixBlockColumnRowSplit r D) : ℂ :=
+        ((Equiv.Perm.sign
+          ((finSumFinEquiv : (Fin r ⊕ Fin D) ≃ Fin (r + D)).symm.trans
+            S.rowEquiv) : ℤ) : ℂ)
 
       theorem BHW.matrix_det_blockColumn_laplace
           (r D : Nat)
@@ -9174,7 +9266,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
               else
                 Q i ⟨j.val - r, by omega⟩).det =
             ∑ S : BHW.MatrixBlockColumnRowSplit r D,
-              S.sign *
+              BHW.MatrixBlockColumnRowSplit.sign S *
                 (Matrix.det
                   (fun a b => M (S.headRows a) b)) *
                 (Matrix.det
@@ -9326,6 +9418,22 @@ Proof decomposition of this theorem, without hiding the analytic work:
       variety is used in this theorem; it is pure finite row algebra for the
       explicit normal parameter vector.
 
+      Implementation transcript for `matrix_det_blockColumn_laplace`: unfold
+      `Matrix.det_apply'` for the concatenated matrix.  For a permutation
+      `σ : Equiv.Perm (Fin (r+D))`, let `Sσ` be the canonical split whose
+      head rows are the increasing enumeration of
+      `σ '' {j | j.val < r}` and whose tail rows are the increasing
+      enumeration of the complement.  Terms whose row split is not exhaustive
+      are impossible by bijectivity of `σ`.  Reindex the finite sum by
+      `(S, σ_head, σ_tail)`, where `σ_head` and `σ_tail` are the induced
+      internal permutations of `Fin r` and `Fin D`; the sign factor decomposes
+      as `S.sign * σ_head.sign * σ_tail.sign`.  The product over the first
+      `r` columns becomes the Leibniz product for
+      `(fun a b => M (S.headRows a) b).det`, and the product over the last
+      `D` columns becomes the Leibniz product for
+      `(fun a b => Q (S.tailRows a) b).det`.  This is finite
+      Cauchy-Binet/Laplace only; it does not use source geometry.
+
       The theorem `sourceOrientedSchur_fullFrameDet_reconstruct` is the only
       place where non-selected full-frame determinants are recovered from the
       original oriented datum `G`.  Its proof uses the oriented algebraic
@@ -9336,7 +9444,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       as the same Laplace sum with head coefficient rows, Schur mixed
       coefficients `R.L`, and those selected residual determinants.  The
       selected head-tail specialization of the formula reduces to
-      `R.headFactor.det * R.tail.det λ`, so the quotient definition is
+      `R.headFactor.det * R.tail.det lam`, so the quotient definition is
       cancellable using `R.headFactor_det_unit`.  Downstream code must call
       this theorem rather than redoing multilinearity or dividing by a
       determinant inferred only from the Gram block.

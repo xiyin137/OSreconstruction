@@ -481,7 +481,9 @@ metric and Gram coordinates `BHW.sourceTailMetric`,
 `BHW.sourceTailMetricDetScale`, `BHW.sourceTailMetricDetScale_ne_zero`, and
 `BHW.sourceTailMetricDetScale_norm`, the checked full-frame head-tail
 embedding `BHW.sourceFullFrameEmbeddingOfHeadTail` with its head/tail
-evaluation theorems, and `BHW.sourceShiftedTailGram`, the checked
+evaluation theorems, the checked head/tail sum equivalence
+`BHW.sourceHeadTailSumEquiv` with its inl/inr evaluation theorems, and
+`BHW.sourceShiftedTailGram`, the checked
 head/head normal parameter Gram formula
 `BHW.sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector`, the checked
 head/tail orthogonality and mixed-block formulas
@@ -543,7 +545,18 @@ selected-frame calculation is
 `sourceFullFrameDet_normalParameter_headTail`, using the embedding
 `sourceFullFrameEmbeddingOfHeadTail`; it proves that frames containing the
 selected head block have determinant
-`p.head.det * (sourceShiftedTailOrientedInvariant ... p.tail).det λ`.
+`p.head.det * (sourceShiftedTailOrientedInvariant ... p.tail).det lam`.
+The blueprint now pins this selected-frame theorem to an explicit
+`sourceHeadTailSumEquiv` reindexing surface and mathlib's
+`Matrix.det_fromBlocks_zero₁₂`: after reindexing the selected full-frame
+matrix is exactly
+`Matrix.fromBlocks p.head 0 ((p.mixed.submatrix lam id) * p.head)
+  (fun u μ => p.tail (lam u) μ)`, and this block identification is now
+checked as `BHW.sourceFullFrameMatrix_normalParameter_headTail_blocks`.
+Taking determinants gives the checked raw selected-frame theorem
+`BHW.sourceFullFrameDet_normalParameter_headTail_raw`; the remaining
+shifted-tail wrapper only has to identify the raw bottom-right determinant
+with the determinant coordinate of `sourceShiftedTailOrientedInvariant`.
 Arbitrary ordered full frames are then routed through
 the finite Laplace theorem `matrix_det_blockColumn_laplace`,
 `sourceNormalFullFrameDetFromSchur`,
