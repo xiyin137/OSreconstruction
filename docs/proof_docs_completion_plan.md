@@ -2864,7 +2864,15 @@ implementation contract is:
    concentrated in the true tail-membership theorem for that explicit residual
    datum, plus the analytic inverse-function producer
    `sourceRankDeficientHeadGauge_at_sourceMetric` and the local radius choices
-   needed to feed the residual chart.
+   needed to feed the residual chart.  The forward normal-parameter check is
+   now also in Lean:
+   `sourceOrientedSchurResidualTailData_normalParameter` identifies the
+   explicit residual tail datum of a normal-parameter invariant with
+   `sourceShiftedTailOrientedInvariant p.tail`, and
+   `sourceOrientedSchurResidualTailData_normalParameter_mem_variety` gives the
+   corresponding shifted-tail-variety membership.  The all-variety membership
+   theorem must extend this calculation through the local head gauge, not
+   redefine the residual tail.
    The final `sourceTailOrientedSmallRealization` theorem is now assembled by
    a two-way rank split, not a strong Schur induction.  The top-rank branch
    calls `sourceTailOrientedSmallRealization_fullRank_bound`; the lower-rank
