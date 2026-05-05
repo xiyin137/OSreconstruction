@@ -14485,6 +14485,39 @@ Proof decomposition of this theorem, without hiding the analytic work:
           image '' parameterBox ⊆
             N0 ∩ BHW.sourceOrientedGramVariety d n
 
+      -- Checked subtype adapter for the corrected source-change route.  A
+      -- concrete normal-form producer may work with `imageV` valued directly
+      -- in `BHW.SourceOrientedVariety d n`, prove subtype openness of
+      -- `imageV '' parameterBox`, then expose the ambient packet by composing
+      -- with `Subtype.val`.
+      def BHW.SourceOrientedRankDeficientVarietyLocalImageData.ofSubtype
+          {P : Type*} [TopologicalSpace P]
+          {G0 : BHW.SourceOrientedGramData d n}
+          {N0 : Set (BHW.SourceOrientedGramData d n)}
+          {parameterBox : Set P}
+          (parameterBox_open : IsOpen parameterBox)
+          (parameterBox_connected : IsConnected parameterBox)
+          {p0 : P}
+          (p0_mem : p0 ∈ parameterBox)
+          {imageV : P -> BHW.SourceOrientedVariety d n}
+          (imageV_continuousOn : ContinuousOn imageV parameterBox)
+          (center_eq : (imageV p0).1 = G0)
+          (imageV_open : IsOpen (imageV '' parameterBox))
+          (imageV_sub :
+            BHW.sourceOrientedVarietyUnderlyingSet d n
+                (imageV '' parameterBox) ⊆
+              N0 ∩ BHW.sourceOrientedGramVariety d n) :
+          BHW.SourceOrientedRankDeficientVarietyLocalImageData
+            (d := d) (n := n) (P := P) G0 N0 := by
+        -- Checked in production Lean using
+        -- `sourceOrientedVarietyUnderlyingSet_image`,
+        -- `sourceOrientedVarietyUnderlyingSet_relOpen_of_isOpen`, and
+        -- continuity of `Subtype.val`.
+        exact
+          BHW.SourceOrientedRankDeficientVarietyLocalImageData.ofSubtype
+            (d := d) (n := n) parameterBox_open parameterBox_connected
+            p0_mem imageV_continuousOn center_eq imageV_open imageV_sub
+
       -- The active theorem-2 route therefore uses this checked strengthening.
       -- The concrete Schur/residual construction must instantiate `P` with
       -- the same finite head/mixed/tail parameter box and prove the extra

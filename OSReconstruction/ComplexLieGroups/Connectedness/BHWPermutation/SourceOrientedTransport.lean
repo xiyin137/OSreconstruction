@@ -122,6 +122,21 @@ def sourceOrientedVarietyUnderlyingSet
     Set (SourceOrientedGramData d n) :=
   Subtype.val '' S
 
+/-- The underlying ambient set of a parameterized subtype image is the image
+of the underlying ambient-valued map. -/
+theorem sourceOrientedVarietyUnderlyingSet_image
+    {d n : ℕ} {α : Type*}
+    (f : α → SourceOrientedVariety d n) (s : Set α) :
+    sourceOrientedVarietyUnderlyingSet d n (f '' s) =
+      (fun a => (f a).1) '' s := by
+  ext G
+  constructor
+  · rintro ⟨H, hH, rfl⟩
+    rcases hH with ⟨a, ha, rfl⟩
+    exact ⟨a, ha, rfl⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact ⟨f a, ⟨a, ha, rfl⟩, rfl⟩
+
 /-- Underlying sets of subtype sets are contained in the oriented source
 variety. -/
 theorem sourceOrientedVarietyUnderlyingSet_subset_variety

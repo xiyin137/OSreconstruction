@@ -1,4 +1,4 @@
-import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedContinuation
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedTransport
 
 /-!
 # Rank-deficient oriented local-image packets
@@ -117,6 +117,45 @@ theorem isConnected_image_inter_sourceOrientedMaxRank_of_connected_preimage
     himage_cont
 
 namespace SourceOrientedRankDeficientVarietyLocalImageData
+
+/-- Build the ambient local-image packet from a subtype-valued local image on
+the oriented source variety.  This is the preferred adapter for source-change
+normal forms, whose inverse transport is only available on
+`SourceOrientedVariety d n`. -/
+def ofSubtype
+    {P : Type*} [TopologicalSpace P]
+    {G0 : SourceOrientedGramData d n}
+    {N0 : Set (SourceOrientedGramData d n)}
+    {parameterBox : Set P}
+    (parameterBox_open : IsOpen parameterBox)
+    (parameterBox_connected : IsConnected parameterBox)
+    {p0 : P}
+    (p0_mem : p0 ∈ parameterBox)
+    {imageV : P → SourceOrientedVariety d n}
+    (imageV_continuousOn : ContinuousOn imageV parameterBox)
+    (center_eq : (imageV p0).1 = G0)
+    (imageV_open : IsOpen (imageV '' parameterBox))
+    (imageV_sub :
+      sourceOrientedVarietyUnderlyingSet d n (imageV '' parameterBox) ⊆
+        N0 ∩ sourceOrientedGramVariety d n) :
+    SourceOrientedRankDeficientVarietyLocalImageData
+      (d := d) (n := n) (P := P) G0 N0 where
+  parameterBox := parameterBox
+  parameterBox_open := parameterBox_open
+  parameterBox_connected := parameterBox_connected
+  p0 := p0
+  p0_mem := p0_mem
+  image := fun p => (imageV p).1
+  image_continuousOn := continuous_subtype_val.comp_continuousOn imageV_continuousOn
+  center_eq := center_eq
+  image_relOpen := by
+    rw [← sourceOrientedVarietyUnderlyingSet_image (d := d) (n := n)
+      imageV parameterBox]
+    exact sourceOrientedVarietyUnderlyingSet_relOpen_of_isOpen imageV_open
+  image_sub := by
+    rw [← sourceOrientedVarietyUnderlyingSet_image (d := d) (n := n)
+      imageV parameterBox]
+    exact imageV_sub
 
 /-- A rank-deficient local-image packet yields the connected relatively open
 patch required by the oriented local-basis theorem. -/
