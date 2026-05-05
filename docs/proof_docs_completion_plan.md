@@ -416,8 +416,12 @@ the resulting product connectedness.  The inverse-transport variant
 is checked as well: if a normal Schur graph is pulled back by a
 `SourceOrientedInvariantTransportEquiv.invFun`, the max-rank parameter set is
 definitionally the same connected product slice by
-`T.invFun_maxRank_iff`.  Consequently the remaining oriented normal-form proof
-only has to identify the normal coordinates with
+`T.invFun_maxRank_iff`.  The even closer local-image form
+`BHW.isConnected_sourcePrincipalSchur_transported_orientedMaxRank_preimage_of_eq`
+is checked too: given an arbitrary parameter-box image that agrees on the box
+with the transported principal Schur graph, it proves connectedness of the
+actual max-rank preimage.  Consequently the remaining oriented normal-form
+proof only has to prove this image agreement for
 `N.orientedTransport.invFun (sourcePrincipalSchurGraph ..., δ p)` and then
 move connectedness through the finite normal-parameter coordinate equivalence.
 There is no additional two-sheet obstruction from the determinant coordinates:
