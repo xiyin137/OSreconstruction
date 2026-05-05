@@ -252,6 +252,241 @@ theorem sourceActualSchurResidualVector_head_inner
   rw [sourceVectorMinkowskiInner_comm]
   exact sourceActualSchurResidualVector_inner_head d n r hrD hrn z R u a
 
+/-- The actual Schur residual vectors have Gram matrix equal to the stored
+residual-tail Schur complement. -/
+theorem sourceActualSchurResidualVector_inner_residual
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (R :
+      SourceOrientedSchurResidualData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n z))
+    (u v : Fin (n - r)) :
+    sourceVectorMinkowskiInner d
+        (sourceActualSchurResidualVector d n r hrn z R.L u)
+        (sourceActualSchurResidualVector d n r hrn z R.L v) =
+      R.tail.gram u v := by
+  have hproj_zero :
+      sourceVectorMinkowskiInner d
+          (fun μ =>
+            ∑ a : Fin r,
+              R.L u a * z (finSourceHead hrn a) μ)
+          (sourceActualSchurResidualVector d n r hrn z R.L v) = 0 := by
+    rw [sourceVectorMinkowskiInner_sum_left]
+    simp_rw [sourceVectorMinkowskiInner_smul_left]
+    simp_rw [sourceActualSchurResidualVector_head_inner]
+    simp
+  have hleft :
+      sourceVectorMinkowskiInner d
+          (z (finSourceTail hrn u))
+          (sourceActualSchurResidualVector d n r hrn z R.L v) =
+        sourceVectorMinkowskiInner d
+          (sourceActualSchurResidualVector d n r hrn z R.L u)
+          (sourceActualSchurResidualVector d n r hrn z R.L v) := by
+    rw [sourceActualSchurResidualVector_decomp d n r hrn z R.L u]
+    rw [sourceVectorMinkowskiInner_add_left, hproj_zero]
+    simp
+  have hsum :
+      (∑ b : Fin r,
+          R.L v b *
+            sourceVectorMinkowskiInner d
+              (z (finSourceTail hrn u))
+              (z (finSourceHead hrn b))) =
+        (R.L * R.A * R.Lᵀ) u v := by
+    have hLA := R.L_mul_A
+    have hentry : ∀ b : Fin r,
+        sourceVectorMinkowskiInner d
+              (z (finSourceTail hrn u))
+              (z (finSourceHead hrn b)) =
+          (R.L * R.A) u b := by
+      intro b
+      have h := congrFun (congrFun hLA u) b
+      simpa [sourceOrientedSchurMixedBlock, sourceOrientedMinkowskiInvariant,
+        SourceOrientedGramData.gram, sourceMinkowskiGram,
+        sourceVectorMinkowskiInner] using h.symm
+    simp_rw [hentry]
+    simp [Matrix.mul_apply, Matrix.transpose_apply, mul_comm]
+  have htail :
+      R.tail.gram u v =
+        sourceVectorMinkowskiInner d
+          (z (finSourceTail hrn u))
+          (z (finSourceTail hrn v)) -
+        (R.L * R.A * R.Lᵀ) u v := by
+    have h := congrFun (congrFun R.tail_gram_eq u) v
+    simpa [sourceSchurComplement, sourceOrientedSchurTailBlock,
+      R.L_eq, sourceOrientedMinkowskiInvariant, SourceOrientedGramData.gram,
+      sourceMinkowskiGram, sourceVectorMinkowskiInner, Matrix.sub_apply] using h
+  calc
+    sourceVectorMinkowskiInner d
+        (sourceActualSchurResidualVector d n r hrn z R.L u)
+        (sourceActualSchurResidualVector d n r hrn z R.L v)
+        = sourceVectorMinkowskiInner d
+            (z (finSourceTail hrn u))
+            (sourceActualSchurResidualVector d n r hrn z R.L v) := hleft.symm
+    _ = sourceVectorMinkowskiInner d
+            (z (finSourceTail hrn u))
+            (z (finSourceTail hrn v)) -
+          (∑ b : Fin r,
+            R.L v b *
+              sourceVectorMinkowskiInner d
+                (z (finSourceTail hrn u))
+                (z (finSourceHead hrn b))) := by
+          change
+            sourceVectorMinkowskiInner d
+              (z (finSourceTail hrn u))
+              (fun μ =>
+                z (finSourceTail hrn v) μ -
+                  ∑ b : Fin r,
+                    R.L v b * z (finSourceHead hrn b) μ) = _
+          rw [sourceVectorMinkowskiInner_sub_right]
+          rw [sourceVectorMinkowskiInner_sum_right]
+          simp_rw [sourceVectorMinkowskiInner_smul_right]
+    _ = sourceVectorMinkowskiInner d
+            (z (finSourceTail hrn u))
+            (z (finSourceTail hrn v)) -
+          (R.L * R.A * R.Lᵀ) u v := by
+          rw [hsum]
+    _ = R.tail.gram u v := htail.symm
+
+/-- The selected original head-tail full-frame matrix, reindexed by the
+head/tail row and column split. -/
+def sourceActualSchurSelectedOriginalMatrix
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    Matrix (Fin r ⊕ Fin (d + 1 - r)) (Fin r ⊕ Fin (d + 1 - r)) ℂ :=
+  Matrix.reindex
+    (sourceHeadTailSumEquiv d r hrD).symm
+    (sourceHeadTailSumEquiv d r hrD).symm
+    (sourceFullFrameMatrix d n
+      (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) z)
+
+/-- The selected head-tail full-frame matrix after replacing the selected tail
+rows by their actual Schur residual vectors. -/
+def sourceActualSchurSelectedResidualMatrix
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    Matrix (Fin r ⊕ Fin (d + 1 - r)) (Fin r ⊕ Fin (d + 1 - r)) ℂ :=
+  fun row col =>
+    match row with
+    | Sum.inl a =>
+        z (finSourceHead hrn a) (sourceHeadTailSumEquiv d r hrD col)
+    | Sum.inr u =>
+        sourceActualSchurResidualVector d n r hrn z L (lam u)
+          (sourceHeadTailSumEquiv d r hrD col)
+
+/-- Block lower-triangular row operation subtracting the Schur head projection
+from the selected tail rows. -/
+def sourceSchurHeadTailRowOperation
+    (d n r : ℕ)
+    (_hrD : r < d + 1)
+    (_hrn : r ≤ n)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    Matrix (Fin r ⊕ Fin (d + 1 - r)) (Fin r ⊕ Fin (d + 1 - r)) ℂ :=
+  Matrix.fromBlocks
+    (1 : Matrix (Fin r) (Fin r) ℂ)
+    (0 : Matrix (Fin r) (Fin (d + 1 - r)) ℂ)
+    (fun u a => - L (lam u) a)
+    (1 : Matrix (Fin (d + 1 - r)) (Fin (d + 1 - r)) ℂ)
+
+theorem sourceSchurHeadTailRowOperation_det
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    (sourceSchurHeadTailRowOperation d n r hrD hrn L lam).det = 1 := by
+  rw [sourceSchurHeadTailRowOperation]
+  rw [Matrix.det_fromBlocks_zero₁₂]
+  simp
+
+theorem sourceActualSchurSelectedResidualMatrix_eq_rowOperation_mul
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    sourceActualSchurSelectedResidualMatrix d n r hrD hrn z L lam =
+      sourceSchurHeadTailRowOperation d n r hrD hrn L lam *
+        sourceActualSchurSelectedOriginalMatrix d n r hrD hrn z lam := by
+  ext row col
+  cases row with
+  | inl a =>
+      simp [sourceActualSchurSelectedResidualMatrix,
+        sourceSchurHeadTailRowOperation,
+        sourceActualSchurSelectedOriginalMatrix,
+        sourceFullFrameMatrix, Matrix.mul_apply, Matrix.one_apply]
+  | inr u =>
+      simp [sourceActualSchurSelectedResidualMatrix,
+        sourceSchurHeadTailRowOperation,
+        sourceActualSchurSelectedOriginalMatrix,
+        sourceFullFrameMatrix, sourceActualSchurResidualVector,
+        Matrix.mul_apply, Matrix.one_apply]
+      ring
+
+/-- Selected head-tail determinant is unchanged when selected tail rows are
+replaced by their actual Schur residuals. -/
+theorem sourceActualSchurResidual_selectedFrameDet
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (L : Matrix (Fin (n - r)) (Fin r) ℂ)
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    (sourceActualSchurSelectedResidualMatrix d n r hrD hrn z L lam).det =
+      sourceFullFrameDet d n
+        (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) z := by
+  have hmat :=
+    sourceActualSchurSelectedResidualMatrix_eq_rowOperation_mul
+      d n r hrD hrn z L lam
+  calc
+    (sourceActualSchurSelectedResidualMatrix d n r hrD hrn z L lam).det
+        = (sourceSchurHeadTailRowOperation d n r hrD hrn L lam *
+            sourceActualSchurSelectedOriginalMatrix d n r hrD hrn z lam).det := by
+          rw [hmat]
+    _ = (sourceSchurHeadTailRowOperation d n r hrD hrn L lam).det *
+          (sourceActualSchurSelectedOriginalMatrix d n r hrD hrn z lam).det := by
+          rw [Matrix.det_mul]
+    _ = (sourceActualSchurSelectedOriginalMatrix d n r hrD hrn z lam).det := by
+          rw [sourceSchurHeadTailRowOperation_det]
+          simp
+    _ = sourceFullFrameDet d n
+        (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) z := by
+          rw [sourceActualSchurSelectedOriginalMatrix, sourceFullFrameDet]
+          rw [Matrix.det_reindex_self]
+
+/-- Selected actual residual determinants are calibrated by the stored
+shifted-tail determinant coordinates and the chosen head factor. -/
+theorem sourceActualSchurResidual_selectedFrameDet_eq_headFactor_mul_tail_det
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (z : Fin n → Fin (d + 1) → ℂ)
+    (R : SourceOrientedSchurResidualData d n r hrD hrn
+      (sourceOrientedMinkowskiInvariant d n z))
+    (lam : Fin (d + 1 - r) ↪ Fin (n - r)) :
+    (sourceActualSchurSelectedResidualMatrix d n r hrD hrn z R.L lam).det =
+      R.headFactor.det * R.tail.det lam := by
+  rw [sourceActualSchurResidual_selectedFrameDet]
+  have htail :
+      R.tail.det lam =
+        sourceFullFrameDet d n
+          (sourceFullFrameEmbeddingOfHeadTail d n r hrD hrn lam) z /
+          R.headFactor.det := by
+    simpa [sourceSchurResidualDeterminants, sourceOrientedMinkowskiInvariant,
+      SourceOrientedGramData.det] using congrFun R.tail_det_eq lam
+  rw [htail]
+  field_simp [R.headFactor_det_unit.ne_zero]
+
 /-- The normal Schur parameter realizes the ordinary Gram coordinates.  The
 range hypothesis is needed because arbitrary product-coordinate `G.gram` need
 not be symmetric. -/

@@ -619,6 +619,14 @@ also checked in
 `BHW.sourceActualSchurResidualVector_decomp`,
 `BHW.sourceActualSchurResidualVector_inner_head`,
 `BHW.sourceActualSchurResidualVector_head_inner`,
+`BHW.sourceActualSchurResidualVector_inner_residual`,
+`BHW.sourceActualSchurSelectedOriginalMatrix`,
+`BHW.sourceActualSchurSelectedResidualMatrix`,
+`BHW.sourceSchurHeadTailRowOperation`,
+`BHW.sourceSchurHeadTailRowOperation_det`,
+`BHW.sourceActualSchurSelectedResidualMatrix_eq_rowOperation_mul`,
+`BHW.sourceActualSchurResidual_selectedFrameDet`,
+`BHW.sourceActualSchurResidual_selectedFrameDet_eq_headFactor_mul_tail_det`,
 `BHW.sourceOrientedNormalParameterVector_realizes_schur_gram`,
 `BHW.sourceNormalFullFrameDetFromSchur_headTail`,
 `BHW.sourceNormalFullFrameDetFromSchur_headTail_eq_source_det`, and the
@@ -638,9 +646,30 @@ full frames are routed through the finite Laplace theorem
 `sourceOrientedSchur_fullFrameDet_reconstruct`.  Its selected head-tail
 specialization is already checked by
 `sourceNormalFullFrameDetFromSchur_headTail_eq_source_det`, using
-`R.tail_det_eq` and cancellation by `R.headFactor_det_unit`; the remaining
-work is only the non-selected Plucker/Cauchy-Binet propagation.  Once that
-theorem is proved, the final
+`R.tail_det_eq` and cancellation by `R.headFactor_det_unit`.  The actual
+residual Gram theorem is also now checked: for an actual representative `z`,
+`sourceActualSchurResidualVector_inner_residual` proves that the projected
+tail residuals have Gram matrix `R.tail.gram`.  The selected actual-residual
+row-operation theorem is checked too:
+`sourceActualSchurResidual_selectedFrameDet` packages the determinant-one block
+lower-triangular row operation that replaces selected tail rows by actual
+Schur residual rows without changing the selected full-frame determinant, and
+`sourceActualSchurResidual_selectedFrameDet_eq_headFactor_mul_tail_det`
+combines it with `R.tail_det_eq` to prove the exact selected calibration
+`det(actual head + actual residual_lam) = R.headFactor.det * R.tail.det lam`.
+Thus the remaining work is the non-selected complement-volume propagation
+theorem: first prove the finite multilinear expansion for arbitrary selected
+frames by substituting `tail = headProjection + actualResidual`, expanding the
+determinant, and killing repeated-head terms by alternation; then use the
+shifted-tail oriented variety relations plus selected determinant calibration
+to replace the actual complement-volume minors by `R.tail.det` in every row
+subset of that expansion.  The checked selected row-operation theorem is only
+the calibration case where the chosen frame contains the whole head block; it
+is not a valid shortcut for arbitrary ordered full frames.  Gemini was
+consulted on 2026-05-05 and agreed that the remaining theorem is precisely an
+oriented residual-volume uniqueness/propagation input; it also warned that a
+Gram-only comparison and a naive arbitrary-frame row-operation argument are
+false.  Once that theorem is proved, the final
 `sourceOrientedNormalParameterVector_realizes_schur` theorem is a mechanical
 call to the checked
 `sourceOrientedNormalParameterVector_realizes_schur_of_fullFrameReconstruct`
