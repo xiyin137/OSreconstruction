@@ -274,7 +274,9 @@ which iterates the checked one-step propagation theorem across an ordered
 finite-overlap family of connected max-rank domains.  The same file also checks
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData`,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_finiteOverlapPropagationData`,
-`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`, and
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`,
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy`,
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy`, and
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`
 and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`.
    This closes the
@@ -7671,6 +7673,30 @@ common-boundary envelope, or any theorem that already assumes locality.
        (P : BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L) :
        Nonempty
          (BHW.BHWJostOrientedMaxRankClosedLoopSeed hd n τ Ω0 U B0 L)
+
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .to_orientedMonodromy
+       (P : BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+       (hclosing_max_conn :
+         IsConnected
+           (L.closing_orientedPatch ∩
+             {G | BHW.SourceOrientedMaxRankAt d n G})) :
+       Set.EqOn
+         (L.chain.localChart (Fin.last L.chain.m)).Psi
+         (L.chain.localChart 0).Psi
+         L.closing_orientedPatch
+
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .to_sourceMonodromy
+       (P : BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+       (hclosing_max_conn :
+         IsConnected
+           (L.closing_orientedPatch ∩
+             {G | BHW.SourceOrientedMaxRankAt d n G})) :
+       Set.EqOn
+         (L.chain.branch (Fin.last L.chain.m))
+         B0
+         L.closing_patch
    ```
 
    Therefore the precise remaining BHW theorem is:

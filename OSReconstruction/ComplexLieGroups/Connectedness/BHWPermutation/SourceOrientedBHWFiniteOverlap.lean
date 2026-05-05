@@ -377,6 +377,38 @@ theorem to_closedLoopSeed
   rcases P.to_finiteOverlapPropagationData with ⟨Pterminal⟩
   exact Pterminal.to_closedLoopSeed
 
+/-- Closed-loop finite-overlap domain data gives oriented monodromy on the
+closing patch once the closing max-rank stratum is connected. -/
+theorem to_orientedMonodromy
+    (P : BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+    (hclosing_max_conn :
+      IsConnected
+        (L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    Set.EqOn
+      (L.chain.localChart (Fin.last L.chain.m)).Psi
+      (L.chain.localChart 0).Psi
+      L.closing_orientedPatch := by
+  rcases P.to_closedLoopSeed with ⟨S⟩
+  exact
+    bhw_jost_closedChain_orientedMonodromy_of_seed
+      (d := d) (n := n) P.hn L hclosing_max_conn S
+
+/-- Closed-loop finite-overlap domain data gives source-branch monodromy on
+the closing source patch once the closing max-rank stratum is connected. -/
+theorem to_sourceMonodromy
+    (P : BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+    (hclosing_max_conn :
+      IsConnected
+        (L.closing_orientedPatch ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch := by
+  rcases P.to_closedLoopSeed with ⟨S⟩
+  exact
+    bhw_jost_closedChain_sourceMonodromy_of_seed
+      (d := d) (n := n) P.hn L hclosing_max_conn S
+
 /-- Positive-length closed loops produce finite-overlap domain data from the
 ordered overlap domains and the closing domain.  The initial max-rank seed is
 extracted automatically from the first connected overlap domain. -/
