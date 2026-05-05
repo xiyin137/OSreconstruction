@@ -18,6 +18,161 @@ namespace BHW
 
 variable {d n : ℕ}
 
+/-- Topological assembly for connected max-rank strata in the oriented source
+variety.  If the max-rank stratum is dense in a connected relatively open
+domain and every point has arbitrarily small relatively open neighborhoods
+whose max-rank part is connected, then the whole max-rank part of the domain is
+connected.
+
+This is the oriented-source analogue of the rank-exact assembly theorem in
+`SourceComplexDensity.lean`.  The genuine geometric work for later BHW/Jost
+domains is therefore local: provide the small connected max-rank neighborhoods
+near both max-rank and exceptional-rank oriented source points. -/
+theorem sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_local_basis
+    {U : Set (SourceOrientedGramData d n)}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    (hU_conn : IsConnected U)
+    (hdense :
+      U ⊆ closure (U ∩ {G | SourceOrientedMaxRankAt d n G}))
+    (hlocal :
+      ∀ G, G ∈ U →
+        ∀ N0 : Set (SourceOrientedGramData d n), IsOpen N0 → G ∈ N0 →
+          ∃ V : Set (SourceOrientedGramData d n),
+            G ∈ V ∧
+            IsRelOpenInSourceOrientedGramVariety d n V ∧
+            V ⊆ U ∩ N0 ∧
+            IsConnected (V ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    IsConnected (U ∩ {G | SourceOrientedMaxRankAt d n G}) := by
+  let R : Set (SourceOrientedGramData d n) :=
+    {G | SourceOrientedMaxRankAt d n G}
+  let S : Set (SourceOrientedGramData d n) := U ∩ R
+  refine ⟨?_, ?_⟩
+  · rcases hU_conn.1 with ⟨G, hGU⟩
+    rcases hlocal G hGU Set.univ isOpen_univ trivial with
+      ⟨V, _hGV, _hV_rel, hV_sub, hVmax_conn⟩
+    rcases hVmax_conn.1 with ⟨Y, hYV, hYR⟩
+    exact ⟨Y, (hV_sub hYV).1, hYR⟩
+  · intro O1 O2 hO1 hO2 hS_cover hS_O1 hS_O2
+    let A : Set (SourceOrientedGramData d n) := S ∩ O1
+    let B : Set (SourceOrientedGramData d n) := S ∩ O2
+    have hS_subset_AB : S ⊆ A ∪ B := by
+      intro Y hYS
+      rcases hS_cover hYS with hYO1 | hYO2
+      · exact Or.inl ⟨hYS, hYO1⟩
+      · exact Or.inr ⟨hYS, hYO2⟩
+    have hU_subset_closure_AB : U ⊆ closure A ∪ closure B := by
+      intro G hGU
+      have hGclS : G ∈ closure S := by
+        simpa [S, R] using hdense hGU
+      have hGclUnion : G ∈ closure (A ∪ B) :=
+        closure_mono hS_subset_AB hGclS
+      simpa [closure_union] using hGclUnion
+    have hclosure_inter_nonempty :
+        (U ∩ closure A ∩ closure B).Nonempty := by
+      by_cases hinter : (U ∩ closure A ∩ closure B).Nonempty
+      · exact hinter
+      · have hno :
+          ∀ G, G ∈ U → G ∈ closure A → G ∈ closure B → False := by
+          intro G hGU hGA hGB
+          exact hinter ⟨G, ⟨hGU, hGA⟩, hGB⟩
+        let OA : Set (SourceOrientedGramData d n) := (closure B)ᶜ
+        let OB : Set (SourceOrientedGramData d n) := (closure A)ᶜ
+        have hOA_open : IsOpen OA := isClosed_closure.isOpen_compl
+        have hOB_open : IsOpen OB := isClosed_closure.isOpen_compl
+        have hU_sub_open : U ⊆ OA ∪ OB := by
+          intro G hGU
+          rcases hU_subset_closure_AB hGU with hGA | hGB
+          · have hGnotB : G ∉ closure B :=
+              fun hGB => hno G hGU hGA hGB
+            exact Or.inl hGnotB
+          · have hGnotA : G ∉ closure A :=
+              fun hGA => hno G hGU hGA hGB
+            exact Or.inr hGnotA
+        have hU_OA_nonempty : (U ∩ OA).Nonempty := by
+          rcases hS_O1 with ⟨Y, hYS, hYO1⟩
+          have hYA : Y ∈ A := ⟨hYS, hYO1⟩
+          have hYclA : Y ∈ closure A := subset_closure hYA
+          have hYnotB : Y ∉ closure B :=
+            fun hYB => hno Y hYS.1 hYclA hYB
+          exact ⟨Y, hYS.1, hYnotB⟩
+        have hU_OB_nonempty : (U ∩ OB).Nonempty := by
+          rcases hS_O2 with ⟨Y, hYS, hYO2⟩
+          have hYB : Y ∈ B := ⟨hYS, hYO2⟩
+          have hYclB : Y ∈ closure B := subset_closure hYB
+          have hYnotA : Y ∉ closure A :=
+            fun hYA => hno Y hYS.1 hYA hYclB
+          exact ⟨Y, hYS.1, hYnotA⟩
+        exfalso
+        rcases hU_conn.2 OA OB hOA_open hOB_open hU_sub_open
+            hU_OA_nonempty hU_OB_nonempty with
+          ⟨G, hGU, hGOA, hGOB⟩
+        rcases hU_subset_closure_AB hGU with hGA | hGB
+        · exact hGOB hGA
+        · exact hGOA hGB
+    rcases hclosure_inter_nonempty with ⟨G0, hG0U_clA, hG0clB⟩
+    have hG0U : G0 ∈ U := hG0U_clA.1
+    have hG0clA : G0 ∈ closure A := hG0U_clA.2
+    rcases hlocal G0 hG0U Set.univ isOpen_univ trivial with
+      ⟨V, hG0V, hV_rel, hV_sub, hVmax_conn⟩
+    rcases hV_rel with ⟨V0, hV0_open, hV_eq⟩
+    have hG0V0 : G0 ∈ V0 := by
+      rw [hV_eq] at hG0V
+      exact hG0V.1
+    have hVmax_sub_S : V ∩ R ⊆ S := by
+      intro Y hY
+      exact ⟨(hV_sub hY.1).1, hY.2⟩
+    have hVmax_cover : V ∩ R ⊆ O1 ∪ O2 :=
+      hVmax_sub_S.trans hS_cover
+    have hVmax_O1_nonempty : ((V ∩ R) ∩ O1).Nonempty := by
+      rw [mem_closure_iff] at hG0clA
+      rcases hG0clA V0 hV0_open hG0V0 with ⟨Y, hYV0, hYA⟩
+      have hYR : Y ∈ R := hYA.1.2
+      have hYU : Y ∈ U := hYA.1.1
+      have hYvar : Y ∈ sourceOrientedGramVariety d n :=
+        IsRelOpenInSourceOrientedGramVariety.subset hU_rel hYU
+      have hYV : Y ∈ V := by
+        rw [hV_eq]
+        exact ⟨hYV0, hYvar⟩
+      exact ⟨Y, ⟨hYV, hYR⟩, hYA.2⟩
+    have hVmax_O2_nonempty : ((V ∩ R) ∩ O2).Nonempty := by
+      rw [mem_closure_iff] at hG0clB
+      rcases hG0clB V0 hV0_open hG0V0 with ⟨Y, hYV0, hYB⟩
+      have hYR : Y ∈ R := hYB.1.2
+      have hYU : Y ∈ U := hYB.1.1
+      have hYvar : Y ∈ sourceOrientedGramVariety d n :=
+        IsRelOpenInSourceOrientedGramVariety.subset hU_rel hYU
+      have hYV : Y ∈ V := by
+        rw [hV_eq]
+        exact ⟨hYV0, hYvar⟩
+      exact ⟨Y, ⟨hYV, hYR⟩, hYB.2⟩
+    rcases hVmax_conn.2 O1 O2 hO1 hO2 hVmax_cover
+        hVmax_O1_nonempty hVmax_O2_nonempty with
+      ⟨Y, hYVmax, hYO1O2⟩
+    exact ⟨Y, hVmax_sub_S hYVmax, hYO1O2⟩
+
+/-- Hard-range connected max-rank assembly in a connected relatively open
+oriented source domain, with only the local connected max-rank basis left as
+input. -/
+theorem sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected
+    (hn : d + 1 ≤ n)
+    {U : Set (SourceOrientedGramData d n)}
+    (hU_rel : IsRelOpenInSourceOrientedGramVariety d n U)
+    (hU_conn : IsConnected U)
+    (hlocal :
+      ∀ G, G ∈ U →
+        ∀ N0 : Set (SourceOrientedGramData d n), IsOpen N0 → G ∈ N0 →
+          ∃ V : Set (SourceOrientedGramData d n),
+            G ∈ V ∧
+            IsRelOpenInSourceOrientedGramVariety d n V ∧
+            V ⊆ U ∩ N0 ∧
+            IsConnected (V ∩ {G | SourceOrientedMaxRankAt d n G})) :
+    IsConnected (U ∩ {G | SourceOrientedMaxRankAt d n G}) :=
+  sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_local_basis
+    (d := d) (n := n) hU_rel hU_conn
+    (sourceOrientedMaxRank_dense_in_relOpen_inter
+      (d := d) (n := n) hn hU_rel)
+    hlocal
+
 /-- Every nonempty relatively open source-oriented patch contains a nonempty
 preconnected relatively open seed in the max-rank stratum, in the hard range
 `d + 1 ≤ n`.  This is the seed-extraction helper used at the start and close

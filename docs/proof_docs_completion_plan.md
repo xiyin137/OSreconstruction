@@ -266,9 +266,12 @@ the seed-producing propagated step
    `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_of_connectedDomainPropagation`.
 The terminal finite-overlap data interface is checked in
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWFiniteOverlap.lean`;
-it provides `BHW.BHWJostOrientedFiniteOverlapPropagationData` and
-`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, plus
-`BHW.exists_preconnectedRelOpen_maxRankSeed_inside`,
+it provides
+`BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_local_basis`,
+`BHW.sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData`,
+`BHW.BHWJostOrientedFiniteOverlapPropagationData.to_closedLoopSeed`, and
+`BHW.exists_preconnectedRelOpen_maxRankSeed_inside`, plus
 `BHW.BHWJostOrientedSourcePatchContinuationChain.exists_terminalSeed_of_finiteOverlapDomains`,
 which iterates the checked one-step propagation theorem across an ordered
 finite-overlap family of connected max-rank domains.  The same file also checks
@@ -301,8 +304,16 @@ the intermediate domain has connected max-rank part, and the chart layer now
 extracts a new nonempty preconnected relatively open max-rank seed inside that
    transition patch.  The checked finite-overlap induction theorem now
    performs that iteration once the Hall-Wightman geometry has supplied the
-   ordered connected domains and adjacency containments.  The remaining work is
-   to produce the terminal closing domain and assemble the resulting terminal
+   ordered connected domains and adjacency containments.  The new max-rank
+   assembly theorem separates a reusable topology step: to prove
+   `D ∩ MaxRank` connected it is enough to prove `D` connected, use the
+   checked hard-range density of `MaxRank` in every relatively open oriented
+   patch, and supply arbitrarily small relatively open neighborhoods whose
+   max-rank parts are connected.  Thus the remaining geometric work is local
+   max-rank-basis production near both max-rank and exceptional-rank oriented
+   source points, plus the source-backed finite-overlap domains themselves.
+   The remaining work is to produce the terminal closing domain and assemble
+   the resulting terminal
    seed into `BHWJostOrientedFiniteOverlapPropagationData`; once that data is
    available, `to_closedLoopSeed` feeds it into the checked closing-domain seed
    package.  This introduces no new `sorry`.
@@ -6170,6 +6181,18 @@ common-boundary envelope, or any theorem that already assumes locality.
        BHW.BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0
    ```
 
+   Superseded-signature warning for the displayed monodromy block: the
+   theorem names remain the intended downstream consumers, but the displayed
+   `bhw_jost_orientedMaxRankClosedLoopSeed_of_BHW` hypothesis list is too
+   weak if read as an arbitrary-closed-loop theorem.  Its hard-range proof must
+   first obtain source-backed
+   `BHWJostOrientedClosedLoopFiniteOverlapDomainData` for the particular loop
+   produced by the strict OS I §4.5 BHW/Jost atlas; it may not consume only
+   `hU_open`, `hU_connected`, and an arbitrary
+   `BHWJostOrientedClosedContinuationLoop`.  The checked finite-overlap
+   consumers below are the replacement implementation surface for that seed
+   producer.
+
    The checked chain surface deliberately has no
    `transition_patch_eq_sourcePatch` field.  The `snoc` constructor stores
    `T.sourcePatch` as the new transition patch, but downstream agreement uses
@@ -6251,8 +6274,10 @@ common-boundary envelope, or any theorem that already assumes locality.
    `Ureg := L.closing_orientedPatch ∩
      {G | SourceOrientedMaxRankAt d n G}`.  The hypotheses are:
    `L.closing_orientedPatch_relOpen`;
-   `IsConnected` from `L.closing_orientedPatch_nonempty` and
-   `L.closing_orientedPatch_preconnected`;
+   the explicit connectedness of
+   `L.closing_orientedPatch ∩ MaxRank` supplied by the finite-overlap
+   source-backed data or by
+   `sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected`;
    `S.seed_relOpen`, `S.seed_nonempty`, and `S.seed_sub`; and the zero
    statement from `S.seed_eq` after rewriting subtraction.  The extra
    `W ⊆ MaxRank` hypothesis is exactly `S.seed_sub`'s second projection.
@@ -7699,7 +7724,8 @@ common-boundary envelope, or any theorem that already assumes locality.
          L.closing_patch
    ```
 
-   Therefore the precise remaining BHW theorem is:
+   Important theorem-shape correction: the following tempting public theorem
+   is **not** Lean-ready as an arbitrary-`L` statement:
 
    ```lean
    theorem BHW.bhw_jost_orientedClosedLoopFiniteOverlapDomainData_of_BHW
@@ -7714,8 +7740,19 @@ common-boundary envelope, or any theorem that already assumes locality.
          (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
    ```
 
-   Once this producer exists, the old seed theorem is one line: obtain `⟨P⟩`
-   from this theorem and call `P.to_closedLoopSeed`.
+   The checked loop structure by itself does not force every transition
+   domain to lie inside the initial oriented chart domain, and it does not
+   force the connected max-rank domains required by the propagation theorem.
+   Therefore this theorem must not be introduced in production Lean with only
+   `L` and `hn` as hypotheses.  The honest remaining producer is the
+   source-backed finite-overlap construction for the **specific loops produced
+   by the strict OS I §4.5 BHW/Jost atlas**, or equivalently the proof of the
+   hypotheses consumed by
+   `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`
+   and `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`.
+   Once such source-backed domain data is produced for the loop under
+   comparison, the old seed theorem is one line: obtain `⟨P⟩` and call
+   `P.to_closedLoopSeed`.
 
    The positive-length data constructor is also checked:
 
