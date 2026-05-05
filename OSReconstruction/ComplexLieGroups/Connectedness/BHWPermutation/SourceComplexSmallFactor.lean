@@ -207,6 +207,59 @@ theorem complexSymmetric_takagi_factor_from_supportEmbedding
       rw [norm_zero]
       exact Real.sqrt_nonneg L
 
+/-- A Takagi diagonalization with bounded nonzero support and singular values
+bounded by the entry-`ℓ¹` size gives the entry-controlled rectangular factor. -/
+theorem complexSymmetric_entryL1_of_takagiDiagonalData
+    (m k : ℕ)
+    {S : Matrix (Fin m) (Fin m) ℂ}
+    {U : Matrix.unitaryGroup (Fin m) ℂ}
+    {σ : Fin m → ℝ}
+    (hσ_nonneg : ∀ a, 0 ≤ σ a)
+    (hTakagi :
+      S =
+        (U : Matrix (Fin m) (Fin m) ℂ) *
+          Matrix.diagonal (fun a => (σ a : ℂ)) *
+          (U : Matrix (Fin m) (Fin m) ℂ).transpose)
+    (hcard : Fintype.card {a : Fin m // σ a ≠ 0} ≤ k)
+    (hσ_bound : ∀ a, σ a ≤ matrixEntryL1Bound m S) :
+    ∃ A : Matrix (Fin m) (Fin k) ℂ,
+      S = A * A.transpose ∧
+      ∀ i a, ‖A i a‖ ≤ Real.sqrt (matrixEntryL1Bound m S) := by
+  let nz := {a : Fin m // σ a ≠ 0}
+  have hnzEmb : Nonempty (nz ↪ Fin k) := by
+    rw [Function.Embedding.nonempty_iff_card_le, Fintype.card_fin]
+    exact hcard
+  let e : nz ↪ Fin k := Classical.choice hnzEmb
+  rcases complexSymmetric_takagi_factor_from_supportEmbedding
+      (m := m) (k := k) (U := U) (σ := σ) hσ_nonneg e S hTakagi with
+    ⟨A, hA_factor, hA_bound⟩
+  refine ⟨A, hA_factor, ?_⟩
+  intro i a
+  exact hA_bound (matrixEntryL1Bound_nonneg m S) hσ_bound i a
+
+/-- Same as `complexSymmetric_entryL1_of_takagiDiagonalData`, with the support
+bound supplied by the rank-support identity and the requested rank bound. -/
+theorem complexSymmetric_entryL1_of_takagiDiagonalData_rankSupport
+    (m k : ℕ)
+    {S : Matrix (Fin m) (Fin m) ℂ}
+    {U : Matrix.unitaryGroup (Fin m) ℂ}
+    {σ : Fin m → ℝ}
+    (hσ_nonneg : ∀ a, 0 ≤ σ a)
+    (hTakagi :
+      S =
+        (U : Matrix (Fin m) (Fin m) ℂ) *
+          Matrix.diagonal (fun a => (σ a : ℂ)) *
+          (U : Matrix (Fin m) (Fin m) ℂ).transpose)
+    (hrankSupport : Fintype.card {a : Fin m // σ a ≠ 0} = S.rank)
+    (hRank : S.rank ≤ k)
+    (hσ_bound : ∀ a, σ a ≤ matrixEntryL1Bound m S) :
+    ∃ A : Matrix (Fin m) (Fin k) ℂ,
+      S = A * A.transpose ∧
+      ∀ i a, ‖A i a‖ ≤ Real.sqrt (matrixEntryL1Bound m S) := by
+  exact complexSymmetric_entryL1_of_takagiDiagonalData
+    (m := m) (k := k) (S := S) (U := U) (σ := σ)
+    hσ_nonneg hTakagi (by simpa [hrankSupport] using hRank) hσ_bound
+
 /-- An entry-controlled complex symmetric factorization immediately gives the
 small-entry factorization needed by the tail realization theorem. -/
 theorem complexSymmetric_factorSmall_rankLE_of_entryL1
