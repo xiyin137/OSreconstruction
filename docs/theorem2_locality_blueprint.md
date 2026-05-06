@@ -46561,8 +46561,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
             closed-loop source monodromy is:
 
             ```lean
-            exact P.to_sourceMonodromy_headSliceIFT
+            exact
+              BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData P
             ```
+
+            Gemini theorem-shape sanity check, 2026-05-06: the arbitrary
+            theorem from only `L` and `hn` is not mathematically sound.
+            Abstract closed-loop chart data does not force the required
+            connected finite-overlap ribbon, because chart intersections may
+            split into multiple components.  The source-backed strict
+            OS I §4.5 path/atlas construction must supply the package above,
+            or the theorem must take it explicitly.
 
             After this data is built, the checked consumers
             `BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy_headSliceIFT`

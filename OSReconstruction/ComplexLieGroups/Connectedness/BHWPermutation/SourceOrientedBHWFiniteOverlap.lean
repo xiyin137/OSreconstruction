@@ -1166,4 +1166,21 @@ theorem to_sourceMonodromy_headSliceIFT
 
 end BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData
 
+/-- Stable public consumer for the source-backed finite-overlap producer.  The
+remaining BHW/Jost geometric theorem should output the preconnected
+finite-overlap data `P`; this theorem is then the whole source-monodromy
+consumer. -/
+theorem bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData
+    [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+    {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+    {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+    {p0 : Fin n → Fin (d + 1) → ℂ}
+    {L : BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0}
+    (P : BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData L) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch :=
+  P.to_sourceMonodromy_headSliceIFT
+
 end BHW

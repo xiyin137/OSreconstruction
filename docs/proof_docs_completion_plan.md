@@ -305,7 +305,9 @@ mechanical consumers
 `BHW.BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData.to_closedLoopSeed`,
 `BHW.BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData.to_orientedMonodromy_headSliceIFT`,
 and
-`BHW.BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData.to_sourceMonodromy_headSliceIFT`.
+`BHW.BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData.to_sourceMonodromy_headSliceIFT`,
+plus the public endpoint
+`BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData`.
    This closes the
    previous-branch-as-seed gap for local proper-complex invariance: an already
 constructed holomorphic branch on an open source carrier can now be used as
@@ -1029,6 +1031,14 @@ is now
    Therefore the remaining strict OS I §4.5 BHW/Jost producer theorem should
    output this preconnected data structure for the specific source-backed
    closed loop; once it does, monodromy is a mechanical one-line consumer.
+   The stable public consumer name is checked as
+   `BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData`:
+   its proof is just `P.to_sourceMonodromy_headSliceIFT`.
+   A Gemini theorem-shape sanity check on 2026-05-06 agreed with the route
+   discipline here: an arbitrary closed-loop statement from only `L` and
+   `hn` is too strong, because chart intersections can have multiple
+   components and the finite-overlap ribbon is supplied by the source-backed
+   path/atlas construction, not by the abstract loop fields alone.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -9419,7 +9429,7 @@ common-boundary envelope, or any theorem that already assumes locality.
    head-slice IFT max-rank connectedness theorem.  So a zero-step loop has no
    remaining Hall-Wightman/Jost geometric obligation.
 
-   The single theorem the future source-backed producer should call is now:
+   The low-level constructor behind the producer-facing package is:
 
    ```lean
    theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
@@ -9470,22 +9480,29 @@ common-boundary envelope, or any theorem that already assumes locality.
    `exists_of_zeroTransitions_closedLoop_headSliceIFT`, and the positive
    branch calls `exists_of_positivePreconnectedDomains_headSliceIFT`.
 
+   In production code, the future strict source-backed BHW/Jost theorem should
+   prefer returning
+   `BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData L` rather
+   than passing this long argument list directly.  That package is the exact
+   Lean boundary: the source-backed construction proves the ordered
+   relatively open nonempty preconnected domains and containment transcript;
+   the checked consumer converts it to monodromy.
+
    Once `P :
-   BHWJostOrientedClosedLoopFiniteOverlapDomainData L` is available, no extra
-   closing-patch max-rank connectedness input remains.  The checked consumers
-   `P.to_orientedMonodromy_headSliceIFT` and
+   BHWJostOrientedClosedLoopPreconnectedFiniteOverlapDomainData L` is
+   available, no extra closing-patch max-rank connectedness input remains.
+   The checked consumers `P.to_orientedMonodromy_headSliceIFT` and
    `P.to_sourceMonodromy_headSliceIFT` derive
    `IsConnected (L.closing_orientedPatch ∩ MaxRank)` from the stored
    nonempty/preconnected closing patch and
    `sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT`,
-   then call the existing monodromy consumers.  The future BHW/Jost producer
-   therefore ends with:
+   then call the existing monodromy consumers.  The public endpoint theorem is
+   `BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData`,
+   so the future BHW/Jost producer therefore ends with:
 
    ```lean
-   obtain ⟨P⟩ :=
-     BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
-       .exists_of_preconnectedDomains_headSliceIFT ...domainData...
-   exact P.to_sourceMonodromy_headSliceIFT
+   exact
+     BHW.bhw_jost_closedChain_sourceMonodromy_of_preconnectedFiniteOverlapData P
    ```
 
    `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is the
