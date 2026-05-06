@@ -284,6 +284,7 @@ it provides
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.of_terminalSeedOnClosingPatch_headSliceIFT`,
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData`,
+`BHW.BHWJostOrientedClosingPatchTerminalSeedData.of_sourceRealized_branch_eq`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.to_finiteOverlapPropagationData`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.to_closedLoopSeed`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.to_orientedMonodromy_headSliceIFT`,
@@ -9177,7 +9178,13 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHWJostOrientedClosingPatchTerminalSeedData L` stores `hn`, a terminal
    seed, relative openness, nonemptiness, max-rank containment, containment in
    `L.closing_orientedPatch`, and terminal/initial oriented-germ equality on
-   that seed.  Its method
+   that seed.  Its constructor
+   `of_sourceRealized_branch_eq` consumes the more natural Hall-Wightman/Jost
+   output: for each `G` in the terminal seed, source representatives `y0` and
+   `yF` in the initial and terminal carriers with oriented invariant `G`, plus
+   equality of the corresponding source branches.  The constructor rewrites
+   both sides through `branch_eq_orientedPullback`, so the hard proof no longer
+   has to manipulate `Psi` values directly.  Its method
    `to_finiteOverlapPropagationData` calls the constructor above, its method
    `to_closedLoopSeed` reaches the identity-principle seed layer, its method
    `to_orientedMonodromy_headSliceIFT` gives oriented monodromy on the closing

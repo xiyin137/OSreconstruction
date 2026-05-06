@@ -44921,9 +44921,11 @@ Proof decomposition of this theorem, without hiding the analytic work:
             max-rank chart shrinker.  Finally, on that seed, choose the stored
             initial and terminal source representatives, apply the
             Hall-Wightman/Jost closed-path equality of the corresponding
-            source branches, and rewrite both sides by the checked
-            `branch_eq_orientedPullback` fields to obtain terminal/initial
-            `Psi` equality.  The endpoint call is then
+            source branches, and call
+            `BHWJostOrientedClosingPatchTerminalSeedData.of_sourceRealized_branch_eq`.
+            That constructor performs the checked `branch_eq_orientedPullback`
+            rewrites needed to obtain terminal/initial `Psi` equality.  The
+            endpoint call is then
             `BHW.bhw_jost_closedChain_sourceMonodromy_of_closingPatchTerminalSeedData`.
 
             The theorem
@@ -46385,6 +46387,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
             Thus the patch-by-patch positive-length proof should return this
             package once it has propagated equality to a seed in the closing
             oriented patch.
+
+            The constructor
+            `BHWJostOrientedClosingPatchTerminalSeedData.of_sourceRealized_branch_eq`
+            is the preferred final packaging step.  It takes a terminal seed
+            in the closing oriented patch and, for each `G` in that seed,
+            source representatives `y0` and `yF` in the initial and terminal
+            carriers with oriented invariant `G`, plus equality of the source
+            branch values at `yF` and `y0`.  It rewrites both sides by the
+            checked `branch_eq_orientedPullback` fields to obtain the stored
+            terminal/initial `Psi` equality.  Thus the hard proof may stay
+            source-level until the final constructor call.
 
             The ordered finite induction has also been checked:
 

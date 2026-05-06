@@ -563,6 +563,55 @@ variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
 variable {p0 : Fin n → Fin (d + 1) → ℂ}
 variable {L : BHWJostOrientedClosedContinuationLoop hd n τ Ω0 U B0 p0}
 
+/-- Package source-realized terminal/initial branch equality on a closing-patch
+max-rank seed into the accumulated-germ terminal-seed data.  The mathematical
+input is the source-level closed-path equality; this constructor only rewrites
+both branches through their oriented pullback formulas. -/
+def of_sourceRealized_branch_eq
+    (hn : d + 1 ≤ n)
+    {terminalSeed : Set (SourceOrientedGramData d n)}
+    (terminalSeed_relOpen :
+      IsRelOpenInSourceOrientedGramVariety d n terminalSeed)
+    (terminalSeed_nonempty : terminalSeed.Nonempty)
+    (terminalSeed_sub_closing :
+      terminalSeed ⊆ L.closing_orientedPatch)
+    (terminalSeed_sub_max :
+      terminalSeed ⊆ {G | SourceOrientedMaxRankAt d n G})
+    (hsource_eq :
+      ∀ G, G ∈ terminalSeed →
+        ∃ y0 yF,
+          y0 ∈ (L.chain.localChart 0).carrier ∧
+          yF ∈ (L.chain.localChart (Fin.last L.chain.m)).carrier ∧
+          sourceOrientedMinkowskiInvariant d n y0 = G ∧
+          sourceOrientedMinkowskiInvariant d n yF = G ∧
+          (L.chain.localChart (Fin.last L.chain.m)).branch yF =
+            (L.chain.localChart 0).branch y0) :
+    BHWJostOrientedClosingPatchTerminalSeedData L where
+  hn := hn
+  terminalSeed := terminalSeed
+  terminalSeed_relOpen := terminalSeed_relOpen
+  terminalSeed_nonempty := terminalSeed_nonempty
+  terminalSeed_sub_closing := terminalSeed_sub_closing
+  terminalSeed_sub_max := terminalSeed_sub_max
+  terminalSeed_eq := by
+    intro G hG
+    rcases hsource_eq G hG with
+      ⟨y0, yF, hy0, hyF, hy0G, hyFG, hbranch⟩
+    have hfinal :
+        (L.chain.localChart (Fin.last L.chain.m)).branch yF =
+          (L.chain.localChart (Fin.last L.chain.m)).Psi G := by
+      rw [(L.chain.localChart (Fin.last L.chain.m)).branch_eq_orientedPullback
+        yF hyF, hyFG]
+    have hstart :
+        (L.chain.localChart 0).branch y0 =
+          (L.chain.localChart 0).Psi G := by
+      rw [(L.chain.localChart 0).branch_eq_orientedPullback y0 hy0, hy0G]
+    calc
+      (L.chain.localChart (Fin.last L.chain.m)).Psi G =
+          (L.chain.localChart (Fin.last L.chain.m)).branch yF := hfinal.symm
+      _ = (L.chain.localChart 0).branch y0 := hbranch
+      _ = (L.chain.localChart 0).Psi G := hstart
+
 /-- Closing-patch terminal-seed data packages into the terminal finite-overlap
 interface by taking the closing oriented patch itself as terminal domain. -/
 def to_finiteOverlapPropagationData
