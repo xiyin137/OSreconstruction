@@ -1261,4 +1261,68 @@ theorem W_analytic_cluster_integral_via_ruelle
   rw [h_change_of_var a ha₀ g_a hg_a]
   exact h_cluster_bound
 
+/-! ### Public-facing theorems
+
+The OS-side cluster theorem and its `wickRotatedBoundaryPairing` wrapper.
+Originally stated as sorry-stubs in `SchwingerAxioms.lean`; they live here
+because the proof goes through `W_analytic_cluster_integral_via_ruelle`,
+which depends on infrastructure (forward-tube measure-preservation,
+joint config bridge) only available in this file. -/
+
+/-- **Cluster theorem for the Wick-rotated boundary integral**
+(Ruelle 1962 / Araki-Hepp-Ruelle 1962, also Glimm-Jaffe Ch 19,
+Streater-Wightman §3.4).
+
+For OPTR-supported `f, g`, the (n+m)-point Wick-rotated integral against
+`f ⊗ g_a` (with `g_a` the spatial translate of `g` by `a`) clusters to
+the product of single-block integrals as `‖a⃗‖ → ∞`.
+
+This is the OS reconstruction Schwinger cluster property (OS axiom E4),
+captured at the level of integrals over OPTR-supported `𝒮_<` test
+functions. -/
+theorem W_analytic_cluster_integral (Wfn : WightmanFunctions d) (n m : ℕ)
+    (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (ε : ℝ) (hε : ε > 0) :
+    ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖(∫ x : NPointDomain d (n + m),
+              F_ext_on_translatedPET_total Wfn
+                (fun k => wickRotatePoint (x k)) *
+              (f.tensorProduct g_a) x) -
+            (∫ x : NPointDomain d n,
+              F_ext_on_translatedPET_total Wfn
+                (fun k => wickRotatePoint (x k)) * f x) *
+            (∫ x : NPointDomain d m,
+              F_ext_on_translatedPET_total Wfn
+                (fun k => wickRotatePoint (x k)) * g x)‖ < ε :=
+  W_analytic_cluster_integral_via_ruelle Wfn n m f g hsupp_f hsupp_g ε hε
+
+/-- The Schwinger functions satisfy clustering (OS axiom E4) for OPTR-supported
+test functions.
+
+Wrapper around `W_analytic_cluster_integral` that exposes the
+`wickRotatedBoundaryPairing` form. -/
+theorem wickRotatedBoundaryPairing_cluster (Wfn : WightmanFunctions d)
+    (n m : ℕ) (f : SchwartzNPoint d n) (g : SchwartzNPoint d m)
+    (hsupp_f : tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) ⊆
+      OrderedPositiveTimeRegion d n)
+    (hsupp_g : tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) ⊆
+      OrderedPositiveTimeRegion d m)
+    (ε : ℝ) (hε : ε > 0) :
+    ∃ R : ℝ, R > 0 ∧
+      ∀ a : SpacetimeDim d, a 0 = 0 → (∑ i : Fin d, (a (Fin.succ i))^2) > R^2 →
+        ∀ (g_a : SchwartzNPoint d m),
+          (∀ x : NPointDomain d m, g_a x = g (fun i => x i - a)) →
+          ‖wickRotatedBoundaryPairing Wfn (n + m) (f.tensorProduct g_a) -
+            wickRotatedBoundaryPairing Wfn n f *
+            wickRotatedBoundaryPairing Wfn m g‖ < ε := by
+  simp only [wickRotatedBoundaryPairing]
+  exact W_analytic_cluster_integral Wfn n m f g hsupp_f hsupp_g ε hε
+
 end OSReconstruction
