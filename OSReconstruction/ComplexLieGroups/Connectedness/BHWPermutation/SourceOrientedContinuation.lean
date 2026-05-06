@@ -546,6 +546,44 @@ variable {U : Set (Fin n → Fin (d + 1) → ℂ)}
 variable {Cleft Cright : BHWJostLocalOrientedContinuationChart hd n τ U}
 variable {p q : Fin n → Fin (d + 1) → ℂ}
 
+/-- The tautological transition from a local oriented chart to itself.  This
+is used to retarget a continuation chain from its stored terminal node to any
+other point in its terminal chart. -/
+def sameChart
+    (C : BHWJostLocalOrientedContinuationChart hd n τ U)
+    {p q : Fin n → Fin (d + 1) → ℂ}
+    (hp : p ∈ C.carrier) (hq : q ∈ C.carrier) :
+    BHWJostOrientedTransitionData hd n τ U C C p q where
+  sourcePatch := C.carrier
+  sourcePatch_open := C.carrier_open
+  sourcePatch_preconnected := C.carrier_preconnected
+  sourcePatch_nonempty := ⟨p, hp⟩
+  source_mem := hp
+  target_mem := hq
+  sourcePatch_sub := by
+    intro y hy
+    exact ⟨hy, hy⟩
+  source_branch_agree := by
+    intro _y _hy
+    rfl
+  orientedPatch := C.orientedDomain
+  orientedPatch_relOpen := C.oriented_relOpen
+  orientedPatch_preconnected := C.oriented_preconnected
+  orientedPatch_nonempty :=
+    ⟨sourceOrientedMinkowskiInvariant d n p, C.oriented_mem p hp⟩
+  orientedPatch_sub := by
+    intro G hG
+    exact ⟨hG, hG⟩
+  sourcePatch_oriented_mem := by
+    intro y hy
+    exact C.oriented_mem y hy
+  orientedPatch_source_realizes := by
+    intro G hG
+    exact C.oriented_realizes G hG
+  oriented_psi_agree := by
+    intro _G _hG
+    rfl
+
 /-- The source transition patch lies in the left chart carrier. -/
 theorem sourcePatch_subset_left
     (T : BHWJostOrientedTransitionData hd n τ U Cleft Cright p q) :
@@ -1267,6 +1305,24 @@ def snoc
     · intro i
       simpa [Fin.snoc_castSucc] using C.chart_is_lorentz_step i
 
+/-- Retarget a continuation chain to any point in its terminal chart by
+appending the tautological transition from the terminal chart to itself. -/
+def retargetTerminal
+    (C : BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z)
+    {y : Fin n → Fin (d + 1) → ℂ}
+    (hy : y ∈ C.chart (Fin.last C.m)) :
+    BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 y :=
+  snoc (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+    (p0 := p0) C (C.localChart (Fin.last C.m))
+    (BHWJostOrientedTransitionData.sameChart
+      (C.localChart (Fin.last C.m))
+      (p := C.node (Fin.last C.m)) (q := y)
+      (by
+        simpa [C.chart_eq_local (Fin.last C.m)] using
+          C.node_mem (Fin.last C.m))
+      (by
+        simpa [C.chart_eq_local (Fin.last C.m)] using hy))
+
 /-- A finite sequence of source nodes, together with a one-step transition
 rule for every adjacent pair, produces an oriented continuation chain.  This
 is the pure finite-recursion layer behind the compact-path construction. -/
@@ -1594,6 +1650,27 @@ def bhw_continuedValueAlongOrientedChain
     (C : BHWJostOrientedSourcePatchContinuationChain
       hd n τ Ω0 U B0 p0 z) : ℂ :=
   C.branch (Fin.last C.m) z
+
+namespace BHWJostOrientedSourcePatchContinuationChain
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+variable {p0 z : Fin n → Fin (d + 1) → ℂ}
+
+/-- The continued value of a terminal-retargeted chain is the original
+terminal branch evaluated at the new terminal point. -/
+theorem retargetTerminal_continuedValue_eq_branch
+    (C : BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z)
+    {y : Fin n → Fin (d + 1) → ℂ}
+    (hy : y ∈ C.chart (Fin.last C.m)) :
+    bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0
+        (C.retargetTerminal hy) =
+      C.branch (Fin.last C.m) y := by
+  simpa [bhw_continuedValueAlongOrientedChain, retargetTerminal, snoc] using
+    (C.branch_eq_local (Fin.last C.m) y hy).symm
+
+end BHWJostOrientedSourcePatchContinuationChain
 
 /-- A closed oriented continuation loop at the fixed base point. -/
 structure BHWJostOrientedClosedContinuationLoop

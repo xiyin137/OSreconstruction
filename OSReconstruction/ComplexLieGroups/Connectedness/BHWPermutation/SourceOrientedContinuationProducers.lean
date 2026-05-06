@@ -195,4 +195,72 @@ theorem continuedValue_eq
 
 end BHWOrientedTerminalChainComparisonData
 
+namespace BHWOrientedContinuationChainAtlasData
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+
+/-- Same-endpoint terminal comparison data for all retargeted chains supplies
+the terminal overlap field required by the source-patch continuation atlas.
+
+The point of this constructor is that atlas overlap is stronger than equality
+of two continued endpoint values: for a point `y` in the intersection of two
+terminal charts, retarget both terminal chains to end at `y` using the
+tautological same-chart transition, then compare those two same-endpoint
+chains with the selected chain ending at `y`. -/
+noncomputable def ofSameEndpointComparisons
+    (p0 : Fin n → Fin (d + 1) → ℂ)
+    (base_mem : p0 ∈ Ω0 ∩ U)
+    (chainAt :
+      ∀ z, z ∈ U →
+        BHWJostOrientedSourcePatchContinuationChain
+          hd n τ Ω0 U B0 p0 z)
+    (sameEndpointComparison :
+      ∀ {z : Fin n → Fin (d + 1) → ℂ}
+        (C₁ C₂ :
+          BHWJostOrientedSourcePatchContinuationChain
+            hd n τ Ω0 U B0 p0 z),
+          BHWOrientedTerminalChainComparisonData C₁ C₂)
+    (terminal_base_agree :
+      ∀ z (hz : z ∈ Ω0 ∩ U),
+        (chainAt z hz.2).branch
+          (Fin.last (chainAt z hz.2).m) z = B0 z) :
+    BHWOrientedContinuationChainAtlasData hd n τ Ω0 U B0 where
+  p0 := p0
+  base_mem := base_mem
+  chainAt := chainAt
+  terminal_overlap_eq := by
+    intro a b y hy
+    rcases hy with ⟨hya, hyb⟩
+    let Ca := chainAt a.1 a.2
+    let Cb := chainAt b.1 b.2
+    have hyU : y ∈ U := Ca.chart_sub_U (Fin.last Ca.m) hya
+    let Cy := chainAt y hyU
+    let Cay := Ca.retargetTerminal hya
+    let Cby := Cb.retargetTerminal hyb
+    have haCy :
+        bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cay =
+          bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cy :=
+      (sameEndpointComparison Cay Cy).continuedValue_eq
+    have hbCy :
+        bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cby =
+          bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cy :=
+      (sameEndpointComparison Cby Cy).continuedValue_eq
+    calc
+      Ca.branch (Fin.last Ca.m) y =
+          bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cay :=
+        (BHWJostOrientedSourcePatchContinuationChain.retargetTerminal_continuedValue_eq_branch
+          Ca hya).symm
+      _ = bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cy :=
+        haCy
+      _ = bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 Cby :=
+        hbCy.symm
+      _ = Cb.branch (Fin.last Cb.m) y :=
+        BHWJostOrientedSourcePatchContinuationChain.retargetTerminal_continuedValue_eq_branch
+          Cb hyb
+  terminal_base_agree := terminal_base_agree
+
+end BHWOrientedContinuationChainAtlasData
+
 end BHW
