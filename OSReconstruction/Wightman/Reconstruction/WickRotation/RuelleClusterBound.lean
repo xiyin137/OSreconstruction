@@ -550,12 +550,16 @@ theorem W_analytic_cluster_integral_via_ruelle
       refine MeasureTheory.AEStronglyMeasurable.mul ?_
         (f.continuous.comp continuous_fst).aestronglyMeasurable
       -- F_ext_on_translatedPET_total composed with the joint Wick-rotated
-      -- config (with m-block shifted by `(0, a)`) is AEStronglyMeasurable.
-      -- The single-block case is `bhw_euclidean_kernel_measurable`
-      -- (`SchwingerTemperedness.lean:616`); the joint case is structurally
-      -- the same: continuous shift + Wick rotation + measurability of
-      -- F_ext_on_translatedPET_total via PET membership.
-      -- ~50 lines following the model of the single-block lemma.
+      -- config (with m-block shifted by `(0, a)`).
+      -- Strategy: define `joint : NPD n × NPD m → NPD (n+m)` by
+      -- `joint p := Fin.append p.1 (p.2 + a)`. Then our function equals
+      -- `(F_ext_total ∘ wick) ∘ joint`. By `bhw_euclidean_kernel_measurable
+      -- Wfn (n := n+m)` the inner function is AEStronglyMeasurable; `joint`
+      -- is continuous (Fin.append + addition); compose via
+      -- `AEStronglyMeasurable.comp_measurable` after establishing
+      -- `(volume.prod volume).map joint = volume` (via Lebesgue
+      -- translation/relabeling invariance).
+      -- ~50 lines bridging the volume measure-preservation. Routed.
       sorry
     · -- The eventually-in-a bound `‖clusterIntegrand a p‖ ≤ bound p` for
       -- `‖a⃗‖ > R_R` (where R_R is from Ruelle's bound).
