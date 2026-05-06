@@ -688,6 +688,36 @@ theorem to_sourceMonodromy
     bhw_jost_closedChain_sourceMonodromy_of_seed
       (d := d) (n := n) P.hn L hclosing_max_conn S
 
+/-- Closed-loop finite-overlap domain data gives oriented monodromy with no
+extra closing-patch connectedness hypothesis.  The stored closing oriented
+patch is nonempty and preconnected, and the checked sliced-head IFT producer
+turns that into connectedness of its max-rank part. -/
+theorem to_orientedMonodromy_headSliceIFT
+    (P : BHWJostOrientedClosedLoopFiniteOverlapDomainData L) :
+    Set.EqOn
+      (L.chain.localChart (Fin.last L.chain.m)).Psi
+      (L.chain.localChart 0).Psi
+      L.closing_orientedPatch :=
+  P.to_orientedMonodromy
+    (sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
+      (d := d) (n := n) hd P.hn L.closing_orientedPatch_relOpen
+      ⟨L.closing_orientedPatch_nonempty,
+        L.closing_orientedPatch_preconnected⟩)
+
+/-- Closed-loop finite-overlap domain data gives source-branch monodromy with
+no extra closing-patch connectedness hypothesis. -/
+theorem to_sourceMonodromy_headSliceIFT
+    (P : BHWJostOrientedClosedLoopFiniteOverlapDomainData L) :
+    Set.EqOn
+      (L.chain.branch (Fin.last L.chain.m))
+      B0
+      L.closing_patch :=
+  P.to_sourceMonodromy
+    (sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT
+      (d := d) (n := n) hd P.hn L.closing_orientedPatch_relOpen
+      ⟨L.closing_orientedPatch_nonempty,
+        L.closing_orientedPatch_preconnected⟩)
+
 /-- Positive-length closed loops produce finite-overlap domain data from the
 ordered overlap domains and the closing domain.  The initial max-rank seed is
 extracted automatically from the first connected overlap domain. -/
@@ -959,6 +989,63 @@ theorem exists_of_zeroTransitions_closedLoop_headSliceIFT
   exists_of_zeroTransitions_headSliceIFT
     (d := d) (n := n) hn hm
     ⟨L.closing_orientedPatch_nonempty, L.closing_orientedPatch_preconnected⟩
+
+/-- Unified preconnected-domain consumer for the remaining source-backed
+finite-overlap producer.  In the zero-transition case the stored closing patch
+already supplies the whole construction; in the positive-length case this
+calls the ordered preconnected-domain constructor. -/
+theorem exists_of_preconnectedDomains_headSliceIFT
+    (hn : d + 1 ≤ n)
+    (stepDomain : (j : Fin L.chain.m) → Set (SourceOrientedGramData d n))
+    (stepDomain_relOpen :
+      ∀ j, IsRelOpenInSourceOrientedGramVariety d n (stepDomain j))
+    (stepDomain_preconnected :
+      ∀ j, IsPreconnected (stepDomain j))
+    (stepDomain_nonempty :
+      ∀ j, (stepDomain j).Nonempty)
+    (stepDomain_sub_start :
+      ∀ j, stepDomain j ⊆ (L.chain.localChart 0).orientedDomain)
+    (stepDomain_sub_left :
+      ∀ j,
+        stepDomain j ⊆
+          (L.chain.localChart (Fin.castSucc j)).orientedDomain)
+    (transition_sub_stepDomain :
+      ∀ j, (L.chain.oriented_transition j).orientedPatch ⊆ stepDomain j)
+    (transition_sub_nextDomain :
+      ∀ (j : Fin L.chain.m) (hnext : j.val + 1 < L.chain.m),
+        (L.chain.oriented_transition j).orientedPatch ⊆
+          stepDomain ⟨j.val + 1, hnext⟩)
+    (closingDomain : Set (SourceOrientedGramData d n))
+    (closingDomain_relOpen :
+      IsRelOpenInSourceOrientedGramVariety d n closingDomain)
+    (closingDomain_preconnected : IsPreconnected closingDomain)
+    (closingDomain_nonempty : closingDomain.Nonempty)
+    (closingDomain_sub_final :
+      closingDomain ⊆
+        (L.chain.localChart (Fin.last L.chain.m)).orientedDomain)
+    (closingDomain_sub_start :
+      closingDomain ⊆ (L.chain.localChart 0).orientedDomain)
+    (closingPatch_sub_closingDomain :
+      L.closing_orientedPatch ⊆ closingDomain)
+    (closingDomain_contains_lastTransition_of_pos :
+      ∀ hpos : L.chain.m ≠ 0,
+        (L.chain.oriented_transition
+          ⟨L.chain.m.pred, Nat.pred_lt hpos⟩).orientedPatch ⊆
+            closingDomain) :
+    Nonempty (BHWJostOrientedClosedLoopFiniteOverlapDomainData L) := by
+  by_cases hm : L.chain.m = 0
+  · exact exists_of_zeroTransitions_closedLoop_headSliceIFT
+      (d := d) (n := n) hn hm
+  · exact
+      exists_of_positivePreconnectedDomains_headSliceIFT
+        (d := d) (n := n) hn hm
+        stepDomain stepDomain_relOpen stepDomain_preconnected
+        stepDomain_nonempty stepDomain_sub_start stepDomain_sub_left
+        transition_sub_stepDomain transition_sub_nextDomain
+        closingDomain closingDomain_relOpen closingDomain_preconnected
+        closingDomain_nonempty closingDomain_sub_final closingDomain_sub_start
+        closingPatch_sub_closingDomain
+        closingDomain_contains_lastTransition_of_pos
 
 end BHWJostOrientedClosedLoopFiniteOverlapDomainData
 

@@ -282,13 +282,18 @@ finite-overlap family of connected max-rank domains.  The same file also checks
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_finiteOverlapPropagationData`,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_closedLoopSeed`,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy`,
-`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy`, and
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy`,
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy_headSliceIFT`,
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy_headSliceIFT`,
+and
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`
 and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`,
 with source-normal-form-friendly variants
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positivePreconnectedDomains_headSliceIFT`
 and
-`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions_closedLoop_headSliceIFT`.
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions_closedLoop_headSliceIFT`,
+and the zero/positive split wrapper
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_preconnectedDomains_headSliceIFT`.
    This closes the
    previous-branch-as-seed gap for local proper-complex invariance: an already
 constructed holomorphic branch on an open source carrier can now be used as
@@ -983,6 +988,10 @@ is now
    `BHWJostOrientedClosedContinuationLoop` already stores
    `closing_orientedPatch_preconnected` and
    `closing_orientedPatch_nonempty`.
+   For a producer that does not want to split on `L.chain.m`, the checked
+   `exists_of_preconnectedDomains_headSliceIFT` performs that case split:
+   zero-transition loops use the stored closing patch, and positive loops use
+   the supplied ordered preconnected domains.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -9372,6 +9381,75 @@ common-boundary envelope, or any theorem that already assumes locality.
    `L.closing_orientedPatch_nonempty`, then applies the same checked
    head-slice IFT max-rank connectedness theorem.  So a zero-step loop has no
    remaining Hall-Wightman/Jost geometric obligation.
+
+   The single theorem the future source-backed producer should call is now:
+
+   ```lean
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .exists_of_preconnectedDomains_headSliceIFT
+       (hn : d + 1 <= n)
+       (stepDomain : (j : Fin L.chain.m) ->
+         Set (BHW.SourceOrientedGramData d n))
+       (stepDomain_relOpen :
+         ∀ j, BHW.IsRelOpenInSourceOrientedGramVariety d n (stepDomain j))
+       (stepDomain_preconnected :
+         ∀ j, IsPreconnected (stepDomain j))
+       (stepDomain_nonempty :
+         ∀ j, (stepDomain j).Nonempty)
+       (stepDomain_sub_start :
+         ∀ j, stepDomain j ⊆ (L.chain.localChart 0).orientedDomain)
+       (stepDomain_sub_left :
+         ∀ j, stepDomain j ⊆
+           (L.chain.localChart (Fin.castSucc j)).orientedDomain)
+       (transition_sub_stepDomain :
+         ∀ j, (L.chain.oriented_transition j).orientedPatch ⊆
+           stepDomain j)
+       (transition_sub_nextDomain :
+         ∀ (j : Fin L.chain.m) (hnext : j.val + 1 < L.chain.m),
+           (L.chain.oriented_transition j).orientedPatch ⊆
+             stepDomain ⟨j.val + 1, hnext⟩)
+       (closingDomain : Set (BHW.SourceOrientedGramData d n))
+       (closingDomain_relOpen :
+         BHW.IsRelOpenInSourceOrientedGramVariety d n closingDomain)
+       (closingDomain_preconnected : IsPreconnected closingDomain)
+       (closingDomain_nonempty : closingDomain.Nonempty)
+       (closingDomain_sub_final :
+         closingDomain ⊆
+           (L.chain.localChart (Fin.last L.chain.m)).orientedDomain)
+       (closingDomain_sub_start :
+         closingDomain ⊆ (L.chain.localChart 0).orientedDomain)
+       (closingPatch_sub_closingDomain :
+         L.closing_orientedPatch ⊆ closingDomain)
+       (closingDomain_contains_lastTransition_of_pos :
+         ∀ hpos : L.chain.m ≠ 0,
+           (L.chain.oriented_transition
+             ⟨L.chain.m.pred, Nat.pred_lt hpos⟩).orientedPatch ⊆
+               closingDomain) :
+       Nonempty
+         (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+   ```
+
+   Its proof is only a `by_cases hm : L.chain.m = 0`: the zero branch calls
+   `exists_of_zeroTransitions_closedLoop_headSliceIFT`, and the positive
+   branch calls `exists_of_positivePreconnectedDomains_headSliceIFT`.
+
+   Once `P :
+   BHWJostOrientedClosedLoopFiniteOverlapDomainData L` is available, no extra
+   closing-patch max-rank connectedness input remains.  The checked consumers
+   `P.to_orientedMonodromy_headSliceIFT` and
+   `P.to_sourceMonodromy_headSliceIFT` derive
+   `IsConnected (L.closing_orientedPatch ∩ MaxRank)` from the stored
+   nonempty/preconnected closing patch and
+   `sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT`,
+   then call the existing monodromy consumers.  The future BHW/Jost producer
+   therefore ends with:
+
+   ```lean
+   obtain ⟨P⟩ :=
+     BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .exists_of_preconnectedDomains_headSliceIFT ...domainData...
+   exact P.to_sourceMonodromy_headSliceIFT
+   ```
 
    `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is the
    checked one-step version.  Given an accumulated oriented germ `Φ`, a
