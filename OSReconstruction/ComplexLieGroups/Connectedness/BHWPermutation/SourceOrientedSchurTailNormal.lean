@@ -40,6 +40,21 @@ theorem sourceOrientedSchurHeadBlock_normalParameter
     sourceOrientedNormalParameterVector_head,
     sourceVectorMinkowskiInner_sourceOrientedNormalHeadVector]
 
+/-- Subtype-valued form of `sourceOrientedSchurHeadBlock_normalParameter`. -/
+theorem sourceOrientedSchurHeadBlockSymm_normalParameter
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn) :
+    sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+        (G := sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p))
+        ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩ =
+      sourceHeadFactorGramSymmCoord d r hrD p.head := by
+  apply Subtype.ext
+  simp [sourceHeadFactorGramSymmCoord,
+    sourceOrientedSchurHeadBlock_normalParameter]
+
 /-- The Schur mixed block of a normal-parameter invariant is `mixed * A`,
 where `A` is the normal head Gram. -/
 theorem sourceOrientedSchurMixedBlock_normalParameter
@@ -163,6 +178,66 @@ theorem sourceOrientedSchurResidualTailData_normalParameter_mem_variety
       sourceShiftedTailOrientedVariety d r hrD (n - r) := by
   refine ⟨p.tail, ?_⟩
   exact (sourceOrientedSchurResidualTailData_normalParameter d n r hrD hrn p hH).symm
+
+/-- If the normal head lies in the remembered near-identity head-gauge
+factor domain, then the gauge-selected residual tail of the normal image is
+the stored shifted-tail invariant. -/
+theorem sourceOrientedSchurResidualTailData_normalParameter_headGauge
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (hphead : p.head ∈ Head.factorDomain) :
+    sourceOrientedSchurResidualTailData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p))
+        (Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+            (G := sourceOrientedMinkowskiInvariant d n
+              (sourceOrientedNormalParameterVector d n r hrD hrn p))
+            ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩)) =
+      sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail := by
+  have hfactor :
+      Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+            (G := sourceOrientedMinkowskiInvariant d n
+              (sourceOrientedNormalParameterVector d n r hrD hrn p))
+            ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩) =
+        p.head := by
+    rw [sourceOrientedSchurHeadBlockSymm_normalParameter]
+    exact Head.factor_left_inverse p.head hphead
+  have hH : IsUnit p.head.det := by
+    have hU : sourceHeadFactorGramSymmCoord d r hrD p.head ∈ Head.U :=
+      Head.factorDomain_mem p.head hphead
+    have hunit :=
+      Head.factor_det_unit (sourceHeadFactorGramSymmCoord d r hrD p.head) hU
+    simpa [Head.factor_left_inverse p.head hphead] using hunit
+  rw [hfactor]
+  exact sourceOrientedSchurResidualTailData_normalParameter d n r hrD hrn p hH
+
+/-- Gauge-selected residual tails of normal images lie on the shifted-tail
+variety whenever the stored head lies in the gauge factor domain. -/
+theorem sourceOrientedSchurResidualTailData_normalParameter_headGauge_mem_variety
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (hphead : p.head ∈ Head.factorDomain) :
+    sourceOrientedSchurResidualTailData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p))
+        (Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+            (G := sourceOrientedMinkowskiInvariant d n
+              (sourceOrientedNormalParameterVector d n r hrD hrn p))
+            ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩)) ∈
+      sourceShiftedTailOrientedVariety d r hrD (n - r) := by
+  refine ⟨p.tail, ?_⟩
+  exact
+    (sourceOrientedSchurResidualTailData_normalParameter_headGauge
+      d n r hrD hrn Head p hphead).symm
 
 /-- Transport the normal-parameter residual-tail membership across an already
 identified normal-parameter representative and the matching head factor. -/

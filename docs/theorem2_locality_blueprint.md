@@ -14876,9 +14876,26 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (hrD : r < d + 1) :
           BHW.SourceSymmetricMatrixCoord r
 
+      def BHW.sourceHeadFactorCoordinateWindow
+          (r : Nat) (rho : ℝ) :
+          Set (Matrix (Fin r) (Fin r) ℂ)
+
+      def BHW.sourceHeadFactorGramSymmCoord
+          (d r : Nat)
+          (hrD : r < d + 1)
+          (H : Matrix (Fin r) (Fin r) ℂ) :
+          BHW.SourceSymmetricMatrixCoord r
+
       structure BHW.SourceRankDeficientHeadGaugeData
           (d r : Nat)
           (hrD : r < d + 1) where
+        factorDomain : Set (Matrix (Fin r) (Fin r) ℂ)
+        factorDomain_open : IsOpen factorDomain
+        factorDomain_center_mem :
+          (1 : Matrix (Fin r) (Fin r) ℂ) ∈ factorDomain
+        factorDomain_coordinate :
+          ∃ rho : ℝ, 0 < rho ∧
+            BHW.sourceHeadFactorCoordinateWindow r rho ⊆ factorDomain
         U : Set (BHW.SourceSymmetricMatrixCoord r)
         U_open : IsOpen U
         center_mem :
@@ -14893,6 +14910,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
             factor A * BHW.sourceHeadMetric d r hrD *
                 (factor A).transpose =
               (A : Matrix (Fin r) (Fin r) ℂ)
+        factorDomain_mem :
+          ∀ H ∈ factorDomain,
+            BHW.sourceHeadFactorGramSymmCoord d r hrD H ∈ U
+        factor_left_inverse :
+          ∀ H ∈ factorDomain,
+            factor (BHW.sourceHeadFactorGramSymmCoord d r hrD H) = H
         factor_det_unit :
           ∀ A ∈ U, IsUnit (factor A).det
 
@@ -14949,6 +14972,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
       -- neighborhoods of the center Schur head/mixed/tail coordinates to a
       -- positive connected normal-parameter ball is now checked as
       -- `exists_sourceOrientedNormalParameterBall_subset_schur_nhds`.
+      --
+      -- Important head-gauge correction: the local factor chart must carry a
+      -- near-identity matrix domain and the left-inverse law on that domain.
+      -- Otherwise the forward inclusion for a normal parameter `p` has a gap:
+      -- Schur-window tail smallness controls the residual data computed with
+      -- `p.head`, while reverse Schur extraction computes residual data with
+      -- `Head.factor` of the selected head Gram block.  The canonical image
+      -- proof must shrink the head window so `p.head ∈ Head.factorDomain`;
+      -- then
+      -- `sourceOrientedSchurResidualTailData_normalParameter_headGauge`
+      -- identifies the gauge-selected residual tail with the stored shifted
+      -- tail invariant.
 
       structure BHW.SourceOrientedRankDeficientNormalLocalImageData
           [NeZero d]
@@ -33838,7 +33873,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | Pointwise-to-global relative-open assembly | Mechanically ready after local realization. | Choose explicit neighborhoods from `sourceExtendedTubeGramDomain_relOpen_at`, form the subtype-indexed union, and use `sourceExtendedTubeGramDomain_subset_sourceComplexGramVariety`; no Hall-Wightman geometry occurs here. |
       | Adapted same-Gram representative `hwLemma3_extendedTube_adaptedRankRepresentative` | Proof transcript pinned; production Lean not started. | Reduced to the Lemma-2 residual-frame/all-coefficients extended-tube theorem, selected projection, Schur-zero residual theorem, and span-rank equality; the blueprint explicitly forbids source-changing an arbitrary representative to zero tail. |
       | Principal block, projection, and Schur-zero residual algebra | Proof transcript pinned; principal-minor extraction checked locally. | The selected coefficient definition, projection Gram equality, residual orthogonality, residual-residual zero via the Schur complement, and span-finrank theorem are finite algebra support targets, not final wrappers. |
-      | Normal-form source transport | Core finite source-change, head-normalization, adaptedness preservation, tail-zero, selected-head Witt/Lorentz orbit layer, Cauchy-Binet determinant transport, variety-relative source-matrix transport, exceptional-to-canonical source transport, subtype-valued normal-image transport, local-image transport adapters, invertible-head principal-Schur equality, transported max-rank-to-tail-rank rewrite, residual-tail exact-rank connectedness, and final Schur-window shrink/topology packet checked in `SourceNormalFormTransport.lean`, `SourceOrientedRankDeficientNormalImage.lean`, `SourceOrientedRankDeficientLocalImageTransport.lean`, `SourceOrientedRankDeficientTailRankConnected.lean`, and `SourceOrientedRankDeficientSchurWindowShrink.lean`. | The checked layer builds the source permutation, projection matrix, invertible symmetric congruence to `sourceHeadMetric`, canonical Gram congruence, coefficient-span/rank preservation under invertible source matrices, nondegeneracy from adaptedness, the concrete normal-form source-change tail-zero theorem, the complex Lorentz transport to `hwLemma3CanonicalSource`, `sourceOrientedMinkowskiInvariant_sourceTupleLinearChange`, `sourceOrientedVarietySourceMatrixTransportEquivOfMatrix`, `sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical`, `sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical`, `sourceOrientedNormalParameterVarietyPoint`, `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint`, `sourceOrientedNormalParameterVarietyPoint_eq_sourcePrincipalSchurGraph`, `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint_maxRank_iff_tail_rank`, `SourceOrientedRankDeficientAlgebraicNormalFormData.parameterBox_maxRank_preimage_eq_tailRank`, the adapters `SourceOrientedRankDeficientVarietyLocalImageData.ofNormalImageTransport`/`SourceOrientedRankDeficientMaxRankLocalImageData.ofNormalImageTransport` together with their `_of_parameter_mem` and `_of_tailRank_connected` variants, the connectedness theorem for the shifted-tail exact-rank slice inside the target tail window, and the theorem choosing one Schur parameter window that simultaneously satisfies ambient containment, invertible-head containment, ordinary connectedness, and residual-tail exact-rank connectedness.  Remaining work is the concrete canonical Schur/residual image theorem: define/open the normal image `Omega` and prove the two Schur-extraction inclusions.  It is not an ambient determinant-coordinate transport field, transported openness bookkeeping, separate transported-containment proof, source-change max-rank rewrite, radial endpoint argument, residual-tail middle-path topology, or parameter-set shrink compatibility. |
+      | Normal-form source transport | Core finite source-change, head-normalization, adaptedness preservation, tail-zero, selected-head Witt/Lorentz orbit layer, Cauchy-Binet determinant transport, variety-relative source-matrix transport, exceptional-to-canonical source transport, subtype-valued normal-image transport, local-image transport adapters, invertible-head principal-Schur equality, transported max-rank-to-tail-rank rewrite, residual-tail exact-rank connectedness, and final Schur-window shrink/topology packet checked in `SourceNormalFormTransport.lean`, `SourceOrientedRankDeficientNormalImage.lean`, `SourceOrientedRankDeficientLocalImageTransport.lean`, `SourceOrientedRankDeficientTailRankConnected.lean`, and `SourceOrientedRankDeficientSchurWindowShrink.lean`; the head-gauge data now also stores the near-identity factor domain, coordinate shrink, and left inverse needed for forward residual-tail extraction. | The checked layer builds the source permutation, projection matrix, invertible symmetric congruence to `sourceHeadMetric`, canonical Gram congruence, coefficient-span/rank preservation under invertible source matrices, nondegeneracy from adaptedness, the concrete normal-form source-change tail-zero theorem, the complex Lorentz transport to `hwLemma3CanonicalSource`, `sourceOrientedMinkowskiInvariant_sourceTupleLinearChange`, `sourceOrientedVarietySourceMatrixTransportEquivOfMatrix`, `sourceOriented_lowRank_exists_normalFormSourceMatrix_to_canonical`, `sourceOriented_lowRank_exists_normalFormVarietyTransport_from_canonical`, `sourceOrientedNormalParameterVarietyPoint`, `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint`, `sourceOrientedNormalParameterVarietyPoint_eq_sourcePrincipalSchurGraph`, `SourceOrientedRankDeficientAlgebraicNormalFormData.originalNormalVarietyPoint_maxRank_iff_tail_rank`, `SourceOrientedRankDeficientAlgebraicNormalFormData.parameterBox_maxRank_preimage_eq_tailRank`, the adapters `SourceOrientedRankDeficientVarietyLocalImageData.ofNormalImageTransport`/`SourceOrientedRankDeficientMaxRankLocalImageData.ofNormalImageTransport` together with their `_of_parameter_mem` and `_of_tailRank_connected` variants, the connectedness theorem for the shifted-tail exact-rank slice inside the target tail window, the theorem choosing one Schur parameter window that simultaneously satisfies ambient containment, invertible-head containment, ordinary connectedness, and residual-tail exact-rank connectedness, the head-domain-aware window theorem `exists_schurParameterWindow_image_subset_open_headDomain_tailRank_connected`, and the forward bridge `schurWindow_normalParameter_headGauge_residualTail_eq`.  Remaining work is the concrete canonical Schur/residual image theorem: define/open the normal image `Omega`, use the head-domain-aware Schur window with `Head.factorDomain_coordinate`, use `sourceOrientedSchurResidualTailData_normalParameter_headGauge` for the forward inclusion, and prove the two Schur-extraction inclusions.  It is not an ambient determinant-coordinate transport field, transported openness bookkeeping, separate transported-containment proof, source-change max-rank rewrite, radial endpoint argument, residual-tail middle-path topology, or parameter-set shrink compatibility. |
       | Near-identity selected-block square root | Proof transcript pinned; pure matrix analysis. | Define the finite matrix binomial series for `(1 + B)^(1/2)`, prove convergence via a scalar power-series majorant, transpose compatibility, square identity, and entrywise smallness via `matrix_opNorm_le_card_mul_sup_entry`. |
       | Schur-rank bound and Takagi residual factorization | Proof transcript pinned; pure finite linear algebra. | Prove block Gaussian rank equality, Autonne-Takagi with rank support and explicit entry-L1 control, small factorization, and tail embedding with coordinate estimates. |
       | Orthogonal-tail residual realization | Proof transcript pinned; production Lean not started. | Transport the Takagi factors into `complexMinkowskiOrthogonalTailSubspace`, prove they pair to the Schur complement and are orthogonal to the selected block, then transport back through the Minkowski orthogonal model with norm control. |

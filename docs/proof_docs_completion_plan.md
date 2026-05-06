@@ -613,6 +613,37 @@ next theorem to prove; all shrink, transported containment, invertible-head,
 center, continuity, max-rank/tail-rank rewrite, and residual exact-rank
 connectedness fields are now assembled.
 
+Head-gauge correction, 2026-05-05: the canonical-image proof cannot use only
+`Head.factor_gram`.  For a normal parameter `p`, the forward residual-tail
+smallness available from the Schur window is stated for `p.head`; the
+Schur-extraction inverse uses the gauge-selected factor of the head Gram
+block.  Therefore the head-gauge data must remember a near-identity factor
+domain and the left-inverse law
+`Head.factor (sourceHeadFactorGramSymmCoord d r hrD H) = H` on that domain.
+This makes the forward normal-image inclusion honest: after shrinking the
+Schur head window into the factor domain, the gauge factor of the normal image
+is definitionally the stored normal head, so
+`sourceOrientedSchurResidualTailData_normalParameter_headGauge` reduces the
+gauge-selected residual tail to the checked shifted-tail invariant.  The next
+canonical-image transcript must therefore first produce a Schur window
+contained in this factor domain, then prove the open extracted image
+conditions.  A theorem that asserts openness of an arbitrary Schur-window image
+without these head-gauge-domain controls is not Lean-ready.
+
+Lean checkpoint for that correction: `SourceOrientedHeadGauge.lean` now
+defines `sourceHeadFactorCoordinateWindow` and
+`sourceHeadFactorGramSymmCoord`, and `SourceRankDeficientHeadGaugeData`
+stores `factorDomain`, `factorDomain_coordinate`, `factorDomain_mem`, and
+`factor_left_inverse`.  `SourceOrientedSchurTailNormal.lean` checks
+`sourceOrientedSchurHeadBlockSymm_normalParameter`,
+`sourceOrientedSchurResidualTailData_normalParameter_headGauge`, and its
+membership form.  `SourceOrientedRankDeficientSchurWindowShrink.lean` checks
+`exists_schurParameterWindow_image_subset_open_headDomain_tailRank_connected`
+and the two `schurWindow_normalParameter_headGauge_residualTail_*` bridges.
+Thus the remaining canonical-image theorem may assume a window already shrunk
+into the head-gauge factor domain; it no longer has to compare two different
+head factors by hand.
+
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
 `BHW.SourceOrientedRankDeficientVarietyLocalImageData.ofNormalImageTransport`

@@ -113,6 +113,183 @@ theorem exists_schurParameterWindow_image_subset_open_head_tailRank_connected
     exact hball_image p (hW_sub_ball hp)
   · simpa [W] using hW_tailRank_conn
 
+/-- Head-domain-aware version of
+`exists_schurParameterWindow_image_subset_open_head_tailRank_connected`.
+It chooses the Schur head radius small enough that the entire head-coordinate
+window lies in a prescribed near-identity head domain. -/
+theorem exists_schurParameterWindow_image_subset_open_headDomain_tailRank_connected
+    {d n : ℕ}
+    {G0 : SourceOrientedGramData d n}
+    (hn : d + 1 ≤ n)
+    (N : SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+    {headDomain : Set (Matrix (Fin N.r) (Fin N.r) ℂ)}
+    {headDomainRadius : ℝ}
+    (hheadDomainRadius : 0 < headDomainRadius)
+    (hheadDomain :
+      sourceHeadFactorCoordinateWindow N.r headDomainRadius ⊆ headDomain)
+    {N0 : Set (SourceOrientedGramData d n)}
+    (hN0_open : IsOpen N0)
+    (hG0N0 : G0 ∈ N0) :
+    ∃ (headRadius mixedRadius : ℝ)
+      (Tail : SourceOrientedRankDeficientTailWindowChoice d n N.r N.hrD N.hrn),
+      0 < headRadius ∧
+        0 < mixedRadius ∧
+        sourceOrientedHeadCoordinateWindow N.r headRadius ⊆ headDomain ∧
+        IsOpen
+          (sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail) ∧
+        IsConnected
+          (sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail) ∧
+        sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn ∈
+          sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail ∧
+        sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail ⊆
+          {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+            IsUnit p.head.det} ∧
+        (∀ p,
+          p ∈ sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail →
+            (N.originalNormalVarietyPoint p).1 ∈
+              N0 ∩ sourceOrientedGramVariety d n) ∧
+        IsConnected
+          (sourceOrientedRankDeficientSchurParameterWindow
+              d n N.r N.hrD N.hrn headRadius mixedRadius Tail ∩
+            {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+              (sourceOrientedNormalParameterSchurTail d n N.r N.hrD N.hrn p).rank =
+                d + 1 - N.r}) := by
+  rcases N.exists_normalParameterBall_image_subset_open_and_head
+      hN0_open hG0N0 with
+    ⟨ε₀, hε₀, _hball_open, _hball_conn, _hball_center, hball_head,
+      hball_image⟩
+  let δ : ℝ := headDomainRadius
+  have hδ : 0 < δ := hheadDomainRadius
+  let ε : ℝ := min ε₀ δ
+  have hε : 0 < ε := lt_min hε₀ hδ
+  have hε_le₀ : ε ≤ ε₀ := by
+    dsimp [ε]
+    exact min_le_left _ _
+  have hε_leδ : ε ≤ δ := by
+    dsimp [ε]
+    exact min_le_right _ _
+  let ρ : ℝ := ε / 2
+  have hρ_pos : 0 < ρ := by
+    positivity
+  have hρ_le_ε : ρ ≤ ε := by
+    dsimp [ρ]
+    linarith
+  have hρ_le₀ : ρ ≤ ε₀ := le_trans hρ_le_ε hε_le₀
+  have hρ_leδ : ρ ≤ δ := le_trans hρ_le_ε hε_leδ
+  let Tail : SourceOrientedRankDeficientTailWindowChoice d n N.r N.hrD N.hrn :=
+    sourceOriented_rankDeficient_tailWindowChoice
+      d n N.r N.hrD N.hrn hρ_pos
+  have htail_le : Tail.tailCoordRadius ≤ ε₀ := by
+    simpa [Tail, sourceOriented_rankDeficient_tailWindowChoice] using hρ_le₀
+  let W : Set (SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn) :=
+    sourceOrientedRankDeficientSchurParameterWindow
+      d n N.r N.hrD N.hrn ρ ρ Tail
+  have hW_headDomain : sourceOrientedHeadCoordinateWindow N.r ρ ⊆ headDomain := by
+    intro H hH
+    exact hheadDomain (by
+      intro a b
+      exact lt_of_lt_of_le (hH a b) hρ_leδ)
+  have hW_sub_ball :
+      W ⊆
+        sourceOrientedNormalParameterBall (d := d) (n := n) (r := N.r)
+          (hrD := N.hrD) (hrn := N.hrn) ε₀ := by
+    exact
+      sourceOrientedRankDeficientSchurParameterWindow_subset_normalParameterBall
+        d n N.r N.hrD N.hrn hε₀ hρ_le₀ hρ_le₀ Tail htail_le
+  rcases sourceOrientedRankDeficientSchurParameterWindow_open_connected
+      d n N.r N.hrD N.hrn hρ_pos hρ_pos Tail with
+    ⟨hW_open, hW_conn, hW_center⟩
+  have htailRank_conn :
+      IsConnected
+        (sourceShiftedTailTupleWindow d n N.r N.hrD N.hrn Tail ∩
+          {q : Fin (n - N.r) → Fin (d + 1 - N.r) → ℂ |
+            (sourceShiftedTailGram d N.r N.hrD (n - N.r) q).rank =
+              d + 1 - N.r}) :=
+    isConnected_sourceShiftedTailTupleWindow_tailRank
+      d n N.r N.hrD N.hrn hn Tail
+  have hW_tailRank_conn :
+      IsConnected
+        (W ∩
+          {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+            (sourceOrientedNormalParameterSchurTail d n N.r N.hrD N.hrn p).rank =
+              d + 1 - N.r}) := by
+    exact
+      isConnected_sourceOrientedRankDeficientSchurParameterWindow_tailRank
+        d n N.r N.hrD N.hrn hρ_pos hρ_pos Tail htailRank_conn
+  refine
+    ⟨ρ, ρ, Tail, hρ_pos, hρ_pos, hW_headDomain, hW_open, hW_conn,
+      hW_center, ?_, ?_, ?_⟩
+  · intro p hp
+    exact hball_head (hW_sub_ball hp)
+  · intro p hp
+    exact hball_image p (hW_sub_ball hp)
+  · simpa [W] using hW_tailRank_conn
+
+/-- If the head-coordinate part of a Schur window is contained in the
+near-identity factor domain of a head gauge, then on that window the
+gauge-selected residual tail of a normal image is exactly the stored shifted
+tail invariant.  This is the forward-inclusion bridge needed by the canonical
+normal-image theorem. -/
+theorem schurWindow_normalParameter_headGauge_residualTail_eq
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    {headRadius mixedRadius : ℝ}
+    {Tail : SourceOrientedRankDeficientTailWindowChoice d n r hrD hrn}
+    (hdomain :
+      sourceOrientedHeadCoordinateWindow r headRadius ⊆ Head.factorDomain)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (hp :
+      p ∈ sourceOrientedRankDeficientSchurParameterWindow
+        d n r hrD hrn headRadius mixedRadius Tail) :
+    sourceOrientedSchurResidualTailData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p))
+        (Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+            (G := sourceOrientedMinkowskiInvariant d n
+              (sourceOrientedNormalParameterVector d n r hrD hrn p))
+            ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩)) =
+      sourceShiftedTailOrientedInvariant d r hrD (n - r) p.tail := by
+  exact
+    sourceOrientedSchurResidualTailData_normalParameter_headGauge
+      d n r hrD hrn Head p (hdomain hp.1)
+
+/-- Membership form of
+`schurWindow_normalParameter_headGauge_residualTail_eq`. -/
+theorem schurWindow_normalParameter_headGauge_residualTail_mem_variety
+    {d n r : ℕ}
+    {hrD : r < d + 1}
+    {hrn : r ≤ n}
+    (Head : SourceRankDeficientHeadGaugeData d r hrD)
+    {headRadius mixedRadius : ℝ}
+    {Tail : SourceOrientedRankDeficientTailWindowChoice d n r hrD hrn}
+    (hdomain :
+      sourceOrientedHeadCoordinateWindow r headRadius ⊆ Head.factorDomain)
+    (p : SourceOrientedRankDeficientNormalParameter d n r hrD hrn)
+    (hp :
+      p ∈ sourceOrientedRankDeficientSchurParameterWindow
+        d n r hrD hrn headRadius mixedRadius Tail) :
+    sourceOrientedSchurResidualTailData d n r hrD hrn
+        (sourceOrientedMinkowskiInvariant d n
+          (sourceOrientedNormalParameterVector d n r hrD hrn p))
+        (Head.factor
+          (sourceOrientedSchurHeadBlockSymm d n r hrD hrn
+            (G := sourceOrientedMinkowskiInvariant d n
+              (sourceOrientedNormalParameterVector d n r hrD hrn p))
+            ⟨sourceOrientedNormalParameterVector d n r hrD hrn p, rfl⟩)) ∈
+      sourceShiftedTailOrientedVariety d r hrD (n - r) := by
+  refine ⟨p.tail, ?_⟩
+  exact
+    (schurWindow_normalParameter_headGauge_residualTail_eq
+      Head hdomain p hp).symm
+
 /-- Assemble the strengthened rank-deficient local-image packet once the
 remaining canonical Schur/residual image theorem has supplied the open normal
 image and the two image-covering inclusions for the chosen Schur window.  All

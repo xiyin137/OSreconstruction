@@ -28,6 +28,27 @@ def sourceHeadMetricSymmCoord
     SourceSymmetricMatrixCoord r :=
   ⟨sourceHeadMetric d r hrD, sourceHeadMetric_transpose d r hrD⟩
 
+/-- The signature Gram block of a candidate head factor, bundled as a
+symmetric coordinate. -/
+def sourceHeadFactorGramSymmCoord
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (H : Matrix (Fin r) (Fin r) ℂ) :
+    SourceSymmetricMatrixCoord r :=
+  ⟨H * sourceHeadMetric d r hrD * Hᵀ, by
+    simp [Matrix.transpose_mul, sourceHeadMetric_transpose d r hrD,
+      Matrix.mul_assoc]⟩
+
+/-- Entrywise coordinate window around the identity head factor.  This is
+kept in the head-gauge interface so the gauge constructor can record a
+concrete near-identity domain shrink without depending on the later Schur
+parameter-window files. -/
+def sourceHeadFactorCoordinateWindow
+    (r : ℕ)
+    (ρ : ℝ) :
+    Set (Matrix (Fin r) (Fin r) ℂ) :=
+  {H | ∀ a b, ‖H a b - (1 : Matrix (Fin r) (Fin r) ℂ) a b‖ < ρ}
+
 /-- The selected Schur head block of a source-variety point, bundled with its
 symmetry. -/
 def sourceOrientedSchurHeadBlockSymm
@@ -62,6 +83,11 @@ theorem sourceOrientedSchurHeadBlockSymm_coe
 structure SourceRankDeficientHeadGaugeData
     (d r : ℕ)
     (hrD : r < d + 1) where
+  factorDomain : Set (Matrix (Fin r) (Fin r) ℂ)
+  factorDomain_open : IsOpen factorDomain
+  factorDomain_center_mem : (1 : Matrix (Fin r) (Fin r) ℂ) ∈ factorDomain
+  factorDomain_coordinate :
+    ∃ ρ : ℝ, 0 < ρ ∧ sourceHeadFactorCoordinateWindow r ρ ⊆ factorDomain
   U : Set (SourceSymmetricMatrixCoord r)
   U_open : IsOpen U
   center_mem : sourceHeadMetricSymmCoord d r hrD ∈ U
@@ -72,6 +98,11 @@ structure SourceRankDeficientHeadGaugeData
     ∀ A ∈ U,
       factor A * sourceHeadMetric d r hrD * (factor A)ᵀ =
         (A : Matrix (Fin r) (Fin r) ℂ)
+  factorDomain_mem :
+    ∀ H ∈ factorDomain, sourceHeadFactorGramSymmCoord d r hrD H ∈ U
+  factor_left_inverse :
+    ∀ H ∈ factorDomain,
+      factor (sourceHeadFactorGramSymmCoord d r hrD H) = H
   factor_det_unit : ∀ A ∈ U, IsUnit (factor A).det
 
 /-- The explicit residual-tail datum associated to a selected head factor. -/
