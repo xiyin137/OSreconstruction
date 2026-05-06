@@ -192,6 +192,76 @@ theorem wickRotate_norm_eq {k : ℕ} (x : NPointDomain d k) :
   ext
   exact wickRotatePoint_norm_eq (x j)
 
+/-! ### Joint config bridge: F_ext_on_translatedPET_total ↔ W_analytic_BHW
+
+For OPTR-supported `p.1, p.2` and a purely-spatial translation `a`, the
+joint Wick-rotated config lies in `PermutedExtendedTube d (n+m)`
+provided the joint times are distinct (which holds a.e. in `(p.1, p.2)`,
+since the diagonal set where times overlap is a measure-zero
+sub-manifold).
+
+The bridge then follows from `F_ext_on_translatedPET_total_eq_on_PET`,
+which is a project-side lemma that does NOT depend on OPTR or
+distinctness — just PET membership. -/
+
+/-- The joint Wick-rotated config (with m-block spatially shifted) lies
+in `PermutedExtendedTube d (n+m)` when the joint times are distinct
+positive (which holds a.e. for OPTR-supported `p.1, p.2`).
+
+Specifically uses `euclidean_distinct_in_permutedTube` applied to the
+joint configuration — all (n+m) times are positive (from OPTR), and
+distinctness is the additional AE hypothesis. The spatial shift by `a`
+on the m-block does NOT affect the imaginary parts of the Wick rotation
+(which only encode times via `μ = 0`), so PET membership reduces to the
+`euclidean_distinct_in_permutedTube` argument. -/
+theorem joint_wick_config_in_PET
+    (n m : ℕ) (p₁ : NPointDomain d n) (p₂ : NPointDomain d m)
+    (a : SpacetimeDim d) (ha₀ : a 0 = 0)
+    (hp₁_pos : ∀ i : Fin n, p₁ i 0 > 0)
+    (hp₂_pos : ∀ i : Fin m, p₂ i 0 > 0)
+    (h_distinct_joint : ∀ i j : Fin (n + m), i ≠ j →
+      Fin.append (fun k => p₁ k 0) (fun k => p₂ k 0) i ≠
+      Fin.append (fun k => p₁ k 0) (fun k => p₂ k 0) j) :
+    (Fin.append (fun k => wickRotatePoint (p₁ k))
+                (fun k μ => wickRotatePoint (p₂ k) μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) ∈
+      PermutedExtendedTube d (n + m) := by
+  -- Strategy: express the joint complex config as `wickRotatePoint`
+  -- composed with a real config (joint with shifted m-block spatial),
+  -- then apply `euclidean_distinct_in_permutedTube`.
+  -- The spatial-shift-by-a doesn't affect the wick rotation's imaginary
+  -- parts (a 0 = 0), so the joint config equals
+  -- `fun k => wickRotatePoint (xs k)` where
+  --   xs := Fin.append p₁ (fun j => p₂ j + a)  (real-valued, joint)
+  -- Then `euclidean_distinct_in_permutedTube xs h_distinct_joint hpos_joint`.
+  sorry
+
+/-- **The joint F_ext bridge**: `F_ext_on_translatedPET_total =
+W_analytic_BHW` on the joint Wick-rotated config (with spatial m-block
+shift), for OPTR p.1, p.2 with distinct joint times.
+
+Combines `joint_wick_config_in_PET` with
+`F_ext_on_translatedPET_total_eq_on_PET`. Holds a.e. in (p.1, p.2). -/
+theorem joint_F_ext_eq_W_analytic
+    (Wfn : WightmanFunctions d) (n m : ℕ)
+    (p₁ : NPointDomain d n) (p₂ : NPointDomain d m)
+    (a : SpacetimeDim d) (ha₀ : a 0 = 0)
+    (hp₁_pos : ∀ i : Fin n, p₁ i 0 > 0)
+    (hp₂_pos : ∀ i : Fin m, p₂ i 0 > 0)
+    (h_distinct_joint : ∀ i j : Fin (n + m), i ≠ j →
+      Fin.append (fun k => p₁ k 0) (fun k => p₂ k 0) i ≠
+      Fin.append (fun k => p₁ k 0) (fun k => p₂ k 0) j) :
+    F_ext_on_translatedPET_total Wfn
+      (Fin.append (fun k => wickRotatePoint (p₁ k))
+                  (fun k μ => wickRotatePoint (p₂ k) μ +
+                    (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) =
+    (W_analytic_BHW Wfn (n + m)).val
+      (Fin.append (fun k => wickRotatePoint (p₁ k))
+                  (fun k μ => wickRotatePoint (p₂ k) μ +
+                    (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) :=
+  F_ext_on_translatedPET_total_eq_on_PET Wfn _
+    (joint_wick_config_in_PET n m p₁ p₂ a ha₀ hp₁_pos hp₂_pos h_distinct_joint)
+
 /-! ### OPTR Wick rotation lands in the forward tube -/
 
 /-- For OPTR-supported configurations, the Wick rotation lands in the
