@@ -161,6 +161,18 @@ axiom ruelle_analytic_cluster_pointwise
       (nhds ((W_analytic_BHW Wfn n).val z₁ *
              (W_analytic_BHW Wfn m).val z₂))
 
+/-! ### OPTR Wick rotation lands in the forward tube -/
+
+/-- For OPTR-supported configurations, the Wick rotation lands in the
+forward tube. Wrapper around `euclidean_ordered_in_forwardTube`. -/
+theorem wick_OPTR_in_forwardTube
+    (n : ℕ) (x : NPointDomain d n)
+    (hx : x ∈ OrderedPositiveTimeRegion d n) :
+    (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n :=
+  euclidean_ordered_in_forwardTube x
+    (fun k j hkj => (hx k).2 j hkj)
+    (fun k => (hx k).1)
+
 /-! ### Pi-instance bridge: HasTemperateGrowth for volume on NPointDomain
 
 `NPointDomain d n = Fin n → Fin (d+1) → ℝ` is a *nested* Pi type. Mathlib's
@@ -371,7 +383,44 @@ theorem W_analytic_cluster_integral_via_ruelle
           (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
             Bornology.cobounded (SpacetimeDim d))
           (nhds (clusterLimitIntegrand Wfn f g p)) := by
-    sorry  -- via ruelle_analytic_cluster_pointwise on OPTR support
+    refine Filter.Eventually.of_forall (fun p => ?_)
+    by_cases hp1 : p.1 ∈ OrderedPositiveTimeRegion d n
+    · by_cases hp2 : p.2 ∈ OrderedPositiveTimeRegion d m
+      · -- Both p.1, p.2 in OPTR: apply ruelle_analytic_cluster_pointwise.
+        -- wick(p.1) ∈ ForwardTube d n, wick(p.2) ∈ ForwardTube d m.
+        have hw1 : (fun k => wickRotatePoint (p.1 k)) ∈ ForwardTube d n :=
+          wick_OPTR_in_forwardTube n p.1 hp1
+        have hw2 : (fun k => wickRotatePoint (p.2 k)) ∈ ForwardTube d m :=
+          wick_OPTR_in_forwardTube m p.2 hp2
+        -- The Ruelle pointwise axiom gives Tendsto for W_analytic_BHW.
+        have h_ruelle_pt :=
+          ruelle_analytic_cluster_pointwise Wfn n m _ _ hw1 hw2
+        -- F_ext_on_translatedPET_total = W_analytic_BHW on PET configs
+        -- (joint config in PET via euclidean_distinct_in_permutedTube;
+        --  single configs in ForwardTube ⊆ PET).
+        -- Multiply both sides by `f(p.1) * g(p.2)` (constant in a).
+        unfold clusterIntegrand clusterLimitIntegrand
+        -- Routed: bridge `F_ext_on_translatedPET_total` with `W_analytic_BHW`
+        -- on each of the three configs (joint, single n, single m), then
+        -- transport h_ruelle_pt via Tendsto.const_mul × 2.
+        sorry
+      · -- p.2 ∉ OPTR-m: g(p.2) = 0 (by support hypothesis).
+        have h_g_zero : (g : NPointDomain d m → ℂ) p.2 = 0 := by
+          have h_notInTsupp :
+              p.2 ∉ tsupport ((g : SchwartzNPoint d m) : NPointDomain d m → ℂ) :=
+            fun hxts => hp2 (hsupp_g hxts)
+          exact image_eq_zero_of_notMem_tsupport h_notInTsupp
+        -- Both clusterIntegrand and clusterLimitIntegrand vanish: trivial.
+        simp [clusterIntegrand, clusterLimitIntegrand, h_g_zero]
+        exact tendsto_const_nhds
+    · -- p.1 ∉ OPTR-n: f(p.1) = 0.
+      have h_f_zero : (f : NPointDomain d n → ℂ) p.1 = 0 := by
+        have h_notInTsupp :
+            p.1 ∉ tsupport ((f : SchwartzNPoint d n) : NPointDomain d n → ℂ) :=
+          fun hxts => hp1 (hsupp_f hxts)
+        exact image_eq_zero_of_notMem_tsupport h_notInTsupp
+      simp [clusterIntegrand, clusterLimitIntegrand, h_f_zero]
+      exact tendsto_const_nhds
   -- Step 4 (dominator): construct a uniform-in-a integrable dominator on
   -- (NPointDomain d n × NPointDomain d m), valid for `|⃗a|` large enough.
   obtain ⟨C_R, N_R, R_R, hC_R_pos, hR_R_pos, h_ruelle⟩ :=
