@@ -623,15 +623,15 @@ theorem W_analytic_cluster_integral_via_ruelle
             have h_ruelle_bound :=
               h_ruelle (fun k => wickRotatePoint (p.1 k))
                 (fun k => wickRotatePoint (p.2 k)) hw1 hw2 a ha.1 ha.2
-            -- The bound: ‖W_analytic_BHW(joint)‖ ≤ C_R · (1 + ‖wick p.1‖ + ‖wick p.2‖)^N_R.
-            -- To convert to dominator form, we need:
-            --   (a) F_ext_on_translatedPET_total = W_analytic_BHW on the joint config
-            --       (PET-bridge via `euclidean_distinct_in_permutedTube` for joint
-            --        distinct positive times; modulo measure-zero set when times overlap).
-            --   (b) ‖wick z‖ = ‖z‖ (Wick rotation preserves Pi sup-norm — direct
-            --        per-component equality `|I · x⁰| = |x⁰|`).
-            -- (a) and (b) plus `norm_mul` + monotonicity assemble the chain to
-            -- the dominator. Routed to follow-up.
+            -- Use ‖wick z‖ = ‖z‖ to convert Ruelle's bound to dominator form.
+            rw [wickRotate_norm_eq, wickRotate_norm_eq] at h_ruelle_bound
+            -- Now h_ruelle_bound bounds ‖W_analytic_BHW(joint)‖ in terms of
+            -- (1 + ‖p.1‖ + ‖p.2‖)^N_R. We need:
+            --   F_ext_on_translatedPET_total Wfn (joint) = W_analytic_BHW Wfn (n+m) (joint)
+            -- via PET membership of the joint config (joint distinct positive
+            -- times → euclidean_distinct_in_permutedTube; boundary measure-zero).
+            -- Plus norm_mul on the f, g factors.
+            -- F_ext-bridge for joint config: routed to follow-up.
             sorry
           · -- p.2 ∉ OPTR-m: g(p.2) = 0, integrand = 0, bound trivial.
             have h_g_zero : (g : NPointDomain d m → ℂ) p.2 = 0 :=
