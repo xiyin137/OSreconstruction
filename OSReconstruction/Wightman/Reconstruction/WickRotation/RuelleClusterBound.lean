@@ -680,17 +680,96 @@ theorem W_analytic_cluster_integral_via_ruelle
             F_ext_on_translatedPET_total Wfn
               (fun k => wickRotatePoint (x k)) * (f.tensorProduct g_a) x) =
         ∫ p : NPointDomain d n × NPointDomain d m, clusterIntegrand Wfn f g a p := by
-    -- Step 1: change of variables via:
-    --   (i) `integral_fin_append_split` (project's Fubini for `Fin.append`)
-    --   (ii) Lebesgue translation invariance on the m-block (substitute y = x_m - a)
-    --   (iii) `Fin.append_comp_apply` to push wickRotatePoint past Fin.append
-    --   (iv) Fubini back to a single product-space integral
-    -- Each step: standard Mathlib + project infrastructure.
-    -- Required: integrability of the (n+m)-integrand for `integral_fin_append_split`
-    --   (uses `wick_rotated_kernel_mul_zeroDiagonal_integrable` after promoting f
-    --    and g_a to ZeroDiagonalSchwartz via OPTR support).
-    -- ~100 lines; routed to follow-up.
-    sorry
+    -- Strategy: use a single measure-preserving change of variables
+    --   J : NPD n × NPD m → NPD (n+m), J(p) = v_a + Fin.append p.1 p.2
+    -- where v_a := Fin.append 0 (fun _ μ => if μ=0 then 0 else a μ)
+    -- is the spatial-only shift on the m-block. Then
+    --   ∫ x, G(x) = ∫ p, G(J p)  (measure-preservation)
+    -- and the integrand at J(p) simplifies to clusterIntegrand a p.
+    intro a ha₀ g_a hg_a
+    -- The change-of-variables map.
+    let v_a : NPointDomain d (n + m) :=
+      Fin.append (0 : NPointDomain d n)
+        (fun _ μ => if μ = 0 then (0 : ℝ) else a μ)
+    let e_append : NPointDomain d n × NPointDomain d m ≃ᵐ NPointDomain d (n + m) :=
+      (MeasurableEquiv.finAddProd n m (Fin (d + 1) → ℝ)).symm
+    let e_trans : NPointDomain d (n + m) ≃ᵐ NPointDomain d (n + m) :=
+      MeasurableEquiv.addLeft v_a
+    let J : NPointDomain d n × NPointDomain d m ≃ᵐ NPointDomain d (n + m) :=
+      e_append.trans e_trans
+    have hJ_mp : MeasureTheory.MeasurePreserving J
+        (MeasureTheory.volume.prod MeasureTheory.volume) MeasureTheory.volume := by
+      have h_append_mp : MeasureTheory.MeasurePreserving e_append
+          (MeasureTheory.volume.prod MeasureTheory.volume) MeasureTheory.volume :=
+        (MeasureTheory.volume_preserving_finAddProd n m (Fin (d + 1) → ℝ)).symm
+      have h_trans_mp : MeasureTheory.MeasurePreserving e_trans
+          MeasureTheory.volume MeasureTheory.volume :=
+        MeasureTheory.measurePreserving_add_left MeasureTheory.volume v_a
+      exact h_append_mp.trans h_trans_mp
+    have hJ_apply : ∀ p : NPointDomain d n × NPointDomain d m,
+        J p = v_a + Fin.append p.1 p.2 := by
+      intro p
+      change v_a + (MeasurableEquiv.finAddProd n m (Fin (d + 1) → ℝ)).symm p =
+        v_a + Fin.append p.1 p.2
+      congr 1
+      exact MeasurableEquiv.finAddProd_symm_apply n m p.1 p.2
+    -- Apply measure-preserving change of variables.
+    have h_cov : (∫ x : NPointDomain d (n + m),
+            F_ext_on_translatedPET_total Wfn
+              (fun k => wickRotatePoint (x k)) * (f.tensorProduct g_a) x) =
+        ∫ p, F_ext_on_translatedPET_total Wfn
+              (fun k => wickRotatePoint (J p k)) *
+            (f.tensorProduct g_a) (J p) ∂(MeasureTheory.volume.prod MeasureTheory.volume) :=
+      (hJ_mp.integral_comp' _).symm
+    rw [show (MeasureTheory.volume :
+        MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+      MeasureTheory.volume.prod MeasureTheory.volume from rfl]
+    rw [h_cov]
+    -- Now show the integrand equals clusterIntegrand a p.
+    congr 1
+    funext p
+    rw [hJ_apply]
+    -- Identify v_a + Fin.append p.1 p.2 = Fin.append p.1 p'.2 where
+    --   p'.2 j μ := p.2 j μ + (if μ=0 then 0 else a μ).
+    have h_append_eq :
+        v_a + Fin.append p.1 p.2 =
+        Fin.append p.1
+          (fun j μ => p.2 j μ + (if μ = 0 then (0 : ℝ) else a μ)) := by
+      funext k μ
+      refine Fin.addCases (fun i' => ?_) (fun j' => ?_) k
+      · simp [v_a, Fin.append_left]
+      · simp [v_a, Fin.append_right, add_comm]
+    -- Wick rotation of the joint config: matches inner_config p.
+    have h_wick_eq :
+        (fun k => wickRotatePoint ((v_a + Fin.append p.1 p.2) k)) =
+        Fin.append (fun k => wickRotatePoint (p.1 k))
+          (fun k μ => wickRotatePoint (p.2 k) μ +
+            (if μ = 0 then (0 : ℂ) else (a μ : ℂ))) := by
+      funext k μ
+      refine Fin.addCases (fun i' => ?_) (fun j' => ?_) k
+      · simp [v_a, Fin.append_left]
+      · simp [v_a, Fin.append_right]
+        by_cases hμ : μ = 0
+        · subst hμ
+          simp [wickRotatePoint]
+        · simp [wickRotatePoint, hμ]
+          ring
+    -- Tensor product evaluation: f ⊗ g_a applied to the appended config.
+    have h_tensor_eq :
+        (f.tensorProduct g_a) (v_a + Fin.append p.1 p.2) = f p.1 * g p.2 := by
+      rw [h_append_eq, SchwartzMap.tensorProduct_fin_append_apply]
+      -- Goal: f p.1 * g_a (fun j μ => p.2 j μ + (if μ=0 then 0 else a μ)) = f p.1 * g p.2
+      congr 1
+      rw [hg_a]
+      congr 1
+      funext j μ
+      by_cases hμ : μ = 0
+      · subst hμ
+        simp [ha₀]
+      · simp [hμ]
+    rw [h_wick_eq, h_tensor_eq]
+    unfold clusterIntegrand
+    ring
   -- Step 2 (Fubini on the limit): the limit integrand integrates to L_n · L_m.
   have h_limit_eq_product :
       (∫ p : NPointDomain d n × NPointDomain d m, clusterLimitIntegrand Wfn f g p)
