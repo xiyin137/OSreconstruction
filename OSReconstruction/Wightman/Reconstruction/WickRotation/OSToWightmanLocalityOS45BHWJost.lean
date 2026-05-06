@@ -149,6 +149,85 @@ theorem integrable_extendF_realSource_mul_schwartz_of_ET
   exact SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
     (H := H) (ψ := ψ) (U := V) hV_open hH_cont ⟨hψ_comp, hψ_supp⟩
 
+/-- On the canonical Figure-2-4 source patch, every permuted Wick trace is
+integrable against every compactly supported Schwartz test supported in the
+patch. -/
+theorem integrable_wickEdge_bvt_F_mul_schwartz_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (ρ : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp :
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (ρ k))) * ψ u) := by
+  exact BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+    (d := d) OS lgc n
+    (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
+    (BHW.isOpen_os45Figure24SourcePatch (d := d) n i hi)
+    (BHW.os45Figure24SourcePatch_ordered (d := d) hd n i hi)
+    ρ ψ hψ_comp hψ_supp
+
+/-- On the canonical Figure-2-4 source patch, the ordinary real `extendF`
+trace is integrable against every compactly supported Schwartz test supported
+in the patch. -/
+theorem integrable_extendF_realSource_mul_schwartz_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp :
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed u) * ψ u) := by
+  simpa using
+    BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+      (d := d) OS lgc n
+      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
+      (BHW.isOpen_os45Figure24SourcePatch (d := d) n i hi)
+      (1 : Equiv.Perm (Fin n))
+      (BHW.os45Figure24SourcePatch_realEmbed_mem_extendedTube
+        (d := d) hd n i hi)
+      ψ hψ_comp hψ_supp
+
+/-- On the canonical Figure-2-4 source patch, the adjacent swapped real
+`extendF` trace is integrable against every compactly supported Schwartz test
+supported in the patch. -/
+theorem integrable_extendF_swapRealSource_mul_schwartz_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp :
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed
+            (fun k => u (Equiv.swap i ⟨i.val + 1, hi⟩ k))) *
+          ψ u) := by
+  exact
+    BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+      (d := d) OS lgc n
+      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)
+      (BHW.isOpen_os45Figure24SourcePatch (d := d) n i hi)
+      (Equiv.swap i ⟨i.val + 1, hi⟩)
+      (BHW.os45Figure24SourcePatch_swapRealEmbed_mem_extendedTube
+        (d := d) hd n i hi)
+      ψ hψ_comp hψ_supp
+
 /-- Equality of two compact Wick pairings gives zero of the paired Wick
 branch difference, once the two paired Wick traces are integrable. -/
 theorem integral_wickBranchDifference_mul_eq_zero_of_pairing_eq
@@ -980,5 +1059,146 @@ def bvt_F_distributionalJostAnchor_of_pairData_difference_zero
       (d := d) n (bvt_F OS lgc n) :=
   BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero
     (d := d) hd OS lgc n V P hsource_subset hid_int hτ_int hzero
+
+/-- Canonical-integrability variant of
+`os45CompactFigure24WickPairingEq_of_pairData_difference_zero`.
+
+After the Figure-2-4 source-patch membership lemmas, the ordinary and adjacent
+real `extendF` integrability hypotheses are supplied automatically. -/
+def os45CompactFigure24WickPairingEq_of_pairData_difference_zero_canonical
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    {V : Set (NPointDomain d n)}
+    (P : BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi V)
+    (hsource_subset :
+      BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ V)
+    (hzero :
+      ∀ ψ : SchwartzNPoint d n,
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ u : NPointDomain d n,
+            P.difference (BHW.realEmbed u) * ψ u = 0) :
+    BHW.OS45CompactFigure24WickPairingEq
+      (d := d) n i hi OS lgc :=
+  BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero
+    (d := d) hd OS lgc n i hi P hsource_subset
+    (BHW.integrable_extendF_realSource_mul_schwartz_on_figure24SourcePatch
+      (d := d) hd OS lgc n i hi)
+    (BHW.integrable_extendF_swapRealSource_mul_schwartz_on_figure24SourcePatch
+      (d := d) hd OS lgc n i hi)
+    hzero
+
+/-- Canonical-integrability variant of the full adjacent family compact
+packet producer from BHW/Jost pair carriers. -/
+def os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero_canonical
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : ∀ (i : Fin n), i.val + 1 < n → Set (NPointDomain d n))
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi (V i hi))
+    (hsource_subset :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ V i hi)
+    (hzero :
+      ∀ (i : Fin n) (hi : i.val + 1 < n) (ψ : SchwartzNPoint d n),
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V i hi →
+        ∫ u : NPointDomain d n,
+            (P i hi).difference (BHW.realEmbed u) * ψ u = 0) :
+    ∀ (i : Fin n) (hi : i.val + 1 < n),
+      BHW.OS45CompactFigure24WickPairingEq
+        (d := d) n i hi OS lgc :=
+  fun i hi =>
+    BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero_canonical
+      (d := d) hd OS lgc n i hi (P i hi) (hsource_subset i hi)
+      (hzero i hi)
+
+/-- Canonical-integrability variant of the direct source anchor producer from
+a full adjacent family of zero-difference BHW/Jost pair carriers. -/
+def sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero_canonical
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : ∀ (i : Fin n), i.val + 1 < n → Set (NPointDomain d n))
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi (V i hi))
+    (hsource_subset :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ V i hi)
+    (hzero :
+      ∀ (i : Fin n) (hi : i.val + 1 < n) (ψ : SchwartzNPoint d n),
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V i hi →
+        ∫ u : NPointDomain d n,
+            (P i hi).difference (BHW.realEmbed u) * ψ u = 0) :
+    BHW.SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) :=
+  BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq
+    (d := d) OS lgc n
+    (BHW.os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero_canonical
+      (d := d) hd OS lgc n V P hsource_subset hzero)
+
+/-- Canonical-integrability variant of the older selected-adjacent Jost anchor
+packet producer from BHW/Jost pair carriers. -/
+def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_difference_zero_canonical
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : ∀ (i : Fin n), i.val + 1 < n → Set (NPointDomain d n))
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi (V i hi))
+    (hsource_subset :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ V i hi)
+    (hzero :
+      ∀ (i : Fin n) (hi : i.val + 1 < n) (ψ : SchwartzNPoint d n),
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V i hi →
+        ∫ u : NPointDomain d n,
+            (P i hi).difference (BHW.realEmbed u) * ψ u = 0) :
+    SelectedAdjacentDistributionalJostAnchorData OS lgc n :=
+  BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq
+    (d := d) OS lgc n
+    (BHW.os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero_canonical
+      (d := d) hd OS lgc n V P hsource_subset hzero)
+
+/-- OS-selected naming wrapper for the canonical-integrability direct source
+anchor produced from BHW/Jost pair carriers. -/
+def bvt_F_distributionalJostAnchor_of_pairData_difference_zero_canonical
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : ∀ (i : Fin n), i.val + 1 < n → Set (NPointDomain d n))
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi (V i hi))
+    (hsource_subset :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ⊆ V i hi)
+    (hzero :
+      ∀ (i : Fin n) (hi : i.val + 1 < n) (ψ : SchwartzNPoint d n),
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V i hi →
+        ∫ u : NPointDomain d n,
+            (P i hi).difference (BHW.realEmbed u) * ψ u = 0) :
+    BHW.SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) :=
+  BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero_canonical
+    (d := d) hd OS lgc n V P hsource_subset hzero
 
 end BHW
