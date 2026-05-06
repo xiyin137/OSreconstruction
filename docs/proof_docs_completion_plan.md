@@ -761,9 +761,18 @@ support until refactored to the slice domain.  The corrected source file now
 adds `SourceHeadGaugeSlice`, `sourceHeadGaugeSliceCenter`,
 `sourceHeadGaugeSliceCoordinateWindow`,
 `isOpen_sourceHeadGaugeSliceCoordinateWindow`, and
-`SourceRankDeficientHeadSliceGaugeData`.  The future head-gauge existence
-theorem must construct this sliced data by the inverse-function theorem on the
-linear slice `H * η = (H * η)ᵀ`, not a full-matrix local inverse.  The bridge
+`SourceRankDeficientHeadSliceGaugeData`.  `SourceOrientedSchurTailSliceNormal.lean`
+now checks the first sliced algebraic consumers:
+`sourceRankDeficientHeadSliceGauge_factor_det_unit_of_domain`,
+`sourceOrientedSchurResidualTailData_normalParameter_headSliceGauge`,
+`sourceSchurMixedCoeff_normalParameter_headSliceGauge`, and
+`sourceOrientedSchurResidualTailData_normalParameter_headSliceGauge_mem_variety`.
+These are the exact replacements for the old full-domain forward extraction
+bridges: if a normal parameter's head matrix is the value of a slice point
+inside the gauge domain, then Schur extraction recovers the stored mixed
+coordinate and shifted residual tail.  The future head-gauge existence theorem
+must construct the sliced data by the inverse-function theorem on the linear
+slice `H * η = (H * η)ᵀ`, not a full-matrix local inverse.  The bridge
 `BHW.sourceRankDeficientHeadGauge_exists_matrix_nhds_factor_coordinate_bound`
 must likewise be replaced by a slice-to-matrix conversion for the sliced
 parameter box.
