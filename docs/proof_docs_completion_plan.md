@@ -284,7 +284,11 @@ finite-overlap family of connected max-rank domains.  The same file also checks
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_orientedMonodromy`,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.to_sourceMonodromy`, and
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`
-and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`.
+and `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`,
+with source-normal-form-friendly variants
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positivePreconnectedDomains_headSliceIFT`
+and
+`BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions_closedLoop_headSliceIFT`.
    This closes the
    previous-branch-as-seed gap for local proper-complex invariance: an already
 constructed holomorphic branch on an open source carrier can now be used as
@@ -307,7 +311,8 @@ the intermediate domain has connected max-rank part, and the chart layer now
 extracts a new nonempty preconnected relatively open max-rank seed inside that
    transition patch.  The checked finite-overlap induction theorem now
    performs that iteration once the Hall-Wightman geometry has supplied the
-   ordered connected domains and adjacency containments.  The new max-rank
+   ordered relatively open nonempty preconnected domains and adjacency
+   containments.  The new max-rank
    assembly theorem separates a reusable topology step: to prove
    `D ∩ MaxRank` connected it is enough to prove `D` connected, use the
    checked hard-range density of `MaxRank` in every relatively open oriented
@@ -965,9 +970,19 @@ connected-domain forms,
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveConnectedDomains_headSliceIFT`
 and
 `BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions_headSliceIFT`.
-These take connected relatively open overlap/closing domains and derive the
-needed max-rank connectedness internally from the checked sliced-head IFT
-local-image producer.
+The connected-domain forms take connected relatively open overlap/closing
+domains and derive the needed max-rank connectedness internally from the
+checked sliced-head IFT local-image producer.  The strongest checked surface
+is now
+   `exists_of_positivePreconnectedDomains_headSliceIFT`: it asks for the
+   exact topological data produced by local source-normal-form shrinkage
+   (`IsRelOpenInSourceOrientedGramVariety`, `IsPreconnected`, and
+   `Nonempty`) plus the ordered containment fields.  The zero-transition edge
+   case is completely mechanical as
+   `exists_of_zeroTransitions_closedLoop_headSliceIFT`, because
+   `BHWJostOrientedClosedContinuationLoop` already stores
+   `closing_orientedPatch_preconnected` and
+   `closing_orientedPatch_nonempty`.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail
@@ -9205,8 +9220,9 @@ common-boundary envelope, or any theorem that already assumes locality.
    source-backed finite-overlap construction for the **specific loops produced
    by the strict OS I §4.5 BHW/Jost atlas**, or equivalently the proof of the
    hypotheses consumed by
-   `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positiveDomains`
-   and `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions`.
+   `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_positivePreconnectedDomains_headSliceIFT`
+   and
+   `BHWJostOrientedClosedLoopFiniteOverlapDomainData.exists_of_zeroTransitions_closedLoop_headSliceIFT`.
    Once such source-backed domain data is produced for the loop under
    comparison, the old seed theorem is one line: obtain `⟨P⟩` and call
    `P.to_closedLoopSeed`.
@@ -9261,8 +9277,66 @@ common-boundary envelope, or any theorem that already assumes locality.
 
    This theorem extracts the initial seed from the first overlap domain using
    `exists_preconnectedRelOpen_maxRankSeed_inside`.  Consequently the
-   positive-length BHW/Jost proof now has to produce only the ordered connected
-   domains, adjacency containments, and closing domain.
+   positive-length BHW/Jost proof now has to produce only the ordered
+   nonempty preconnected domains, adjacency containments, and closing domain.
+
+   The checked head-slice IFT consumer is one step closer to the source-normal
+   form geometry:
+
+   ```lean
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .exists_of_positivePreconnectedDomains_headSliceIFT
+       (hn : d + 1 <= n)
+       (hpos : L.chain.m ≠ 0)
+       (stepDomain : (j : Fin L.chain.m) ->
+         Set (BHW.SourceOrientedGramData d n))
+       (stepDomain_relOpen :
+         ∀ j, BHW.IsRelOpenInSourceOrientedGramVariety d n (stepDomain j))
+       (stepDomain_preconnected :
+         ∀ j, IsPreconnected (stepDomain j))
+       (stepDomain_nonempty :
+         ∀ j, (stepDomain j).Nonempty)
+       (stepDomain_sub_start :
+         ∀ j, stepDomain j ⊆ (L.chain.localChart 0).orientedDomain)
+       (stepDomain_sub_left :
+         ∀ j, stepDomain j ⊆
+           (L.chain.localChart (Fin.castSucc j)).orientedDomain)
+       (transition_sub_stepDomain :
+         ∀ j, (L.chain.oriented_transition j).orientedPatch ⊆
+           stepDomain j)
+       (transition_sub_nextDomain :
+         ∀ (j : Fin L.chain.m) (hnext : j.val + 1 < L.chain.m),
+           (L.chain.oriented_transition j).orientedPatch ⊆
+             stepDomain ⟨j.val + 1, hnext⟩)
+       (closingDomain : Set (BHW.SourceOrientedGramData d n))
+       (closingDomain_relOpen :
+         BHW.IsRelOpenInSourceOrientedGramVariety d n closingDomain)
+       (closingDomain_preconnected : IsPreconnected closingDomain)
+       (closingDomain_nonempty : closingDomain.Nonempty)
+       (closingDomain_sub_final :
+         closingDomain ⊆
+           (L.chain.localChart (Fin.last L.chain.m)).orientedDomain)
+       (closingDomain_sub_start :
+         closingDomain ⊆ (L.chain.localChart 0).orientedDomain)
+       (closingPatch_sub_closingDomain :
+         L.closing_orientedPatch ⊆ closingDomain)
+       (closingDomain_contains_lastTransition_of_pos :
+         ∀ hpos : L.chain.m ≠ 0,
+           (L.chain.oriented_transition
+             ⟨L.chain.m.pred, Nat.pred_lt hpos⟩).orientedPatch ⊆
+               closingDomain) :
+       Nonempty
+         (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+   ```
+
+   This is the producer-facing target.  A source-normal-form shrink normally
+   gives a relatively open preconnected image patch with an explicit source
+   representative, not an already massaged max-rank-connected stratum.  The
+   theorem converts nonempty plus preconnected to `IsConnected` and then calls
+   `sourceOrientedGramVariety_maxRank_inter_relOpen_isConnected_of_headSliceIFT`.
+   Thus the remaining positive-length finite-overlap proof is exactly the
+   ordered-overlap geometry and containment transcript; it no longer includes
+   exceptional-rank local-image bookkeeping.
 
    The zero-transition closed-loop edge case is already checked:
 
@@ -9282,6 +9356,22 @@ common-boundary envelope, or any theorem that already assumes locality.
    It extracts the initial seed directly inside `L.closing_orientedPatch` and
    uses the closing patch as the closing domain.  Thus the remaining positive
    work is the nonzero finite-overlap geometry.
+
+   The even more concrete checked zero-transition endpoint is:
+
+   ```lean
+   theorem BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData
+       .exists_of_zeroTransitions_closedLoop_headSliceIFT
+       (hn : d + 1 <= n)
+       (hm : L.chain.m = 0) :
+       Nonempty
+         (BHW.BHWJostOrientedClosedLoopFiniteOverlapDomainData L)
+   ```
+
+   It uses the stored `L.closing_orientedPatch_preconnected` and
+   `L.closing_orientedPatch_nonempty`, then applies the same checked
+   head-slice IFT max-rank connectedness theorem.  So a zero-step loop has no
+   remaining Hall-Wightman/Jost geometric obligation.
 
    `BHWJostOrientedTransitionData.propagate_eqOn_to_right_maxRank` is the
    checked one-step version.  Given an accumulated oriented germ `Φ`, a
