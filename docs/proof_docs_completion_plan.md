@@ -225,6 +225,11 @@ the local chart provenance field
 `BHW.BHWJostOrientedSourcePatchContinuationChain.ofTransferCover`,
 `BHW.BHWJostOrientedSourcePatchContinuationChain.chart_is_lorentz_step_of_localChart`,
 `BHW.BHWJostOrientedMaxRankClosedLoopSeed.exists_initial_final_source_realizations`,
+`BHW.BHWSourcePatchContinuationAtlas.glued`,
+`BHW.BHWSourcePatchContinuationAtlas.glued_eq_branch_of_mem`,
+`BHW.BHWSourcePatchContinuationAtlas.glued_differentiableOn`,
+`BHW.BHWSourcePatchContinuationAtlas.glued_eq_B0_of_mem`,
+`BHW.bhw_glue_sourcePatchContinuationAtlas`,
 and
 `BHW.BHWJostOrientedMaxRankClosedLoopSeed.terminal_branch_eq_B0_on_seedRealizedClosingPatch`.
 `BHW.BHWJostOrientedSourcePatchContinuationChain.localChart_consecutive_agree`
@@ -7086,19 +7091,18 @@ common-boundary envelope, or any theorem that already assumes locality.
        (n : Nat) (τ : Equiv.Perm (Fin n))
        (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
        (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) where
-     ι : Type
-     chart : ι -> Set (Fin n -> Fin (d + 1) -> ℂ)
-     branch : ι -> (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
-     chart_open : ∀ a, IsOpen (chart a)
-     chart_sub_U : ∀ a, chart a ⊆ U
-     cover_U : ∀ z, z ∈ U -> ∃ a, z ∈ chart a
-     branch_holo : ∀ a, DifferentiableOn ℂ (branch a) (chart a)
+     chart : Type
+     carrier : chart -> Set (Fin n -> Fin (d + 1) -> ℂ)
+     branch : chart -> (Fin n -> Fin (d + 1) -> ℂ) -> ℂ
+     cover : ∀ z, z ∈ U -> ∃ a, z ∈ carrier a
+     carrier_open : ∀ a, IsOpen (carrier a)
+     carrier_sub_U : ∀ a, carrier a ⊆ U
+     branch_holo : ∀ a, DifferentiableOn ℂ (branch a) (carrier a)
      overlap_eq :
-       ∀ a b z, z ∈ chart a -> z ∈ chart b ->
-         branch a z = branch b z
+       ∀ a b, Set.EqOn (branch a) (branch b) (carrier a ∩ carrier b)
      base_agree :
-       ∀ a z, z ∈ chart a -> z ∈ Ω0 ->
-         branch a z = B0 z
+       ∀ z, z ∈ Ω0 ∩ U ->
+         ∃ a, z ∈ carrier a ∧ branch a z = B0 z
 
    theorem BHW.bhw_sourcePatchHull_has_continuationAtlas
        [NeZero d] (hd : 2 <= d)
@@ -7153,9 +7157,9 @@ common-boundary envelope, or any theorem that already assumes locality.
          (∀ z, z ∈ Ω0 -> z ∈ U -> B z = B0 z)
    ```
 
-   `bhw_glue_sourcePatchContinuationAtlas` is the sheaf step: define `B z`
-   by choosing a chart containing `z`, use `A.overlap_eq` for independence of
-   the chart choice, prove holomorphy locally from `A.branch_holo`, and prove
+   `bhw_glue_sourcePatchContinuationAtlas` is now checked.  It defines `B z`
+   by choosing a chart containing `z`, uses `A.overlap_eq` for independence of
+   the chart choice, proves holomorphy locally from `A.branch_holo`, and proves
    agreement with `B0` from `A.base_agree`.  The hard theorem is
    `bhw_sourcePatchHull_has_continuationAtlas`.  It is precisely the local
    Bargmann-Hall-Wightman/Jost theorem: real orthochronous Lorentz invariance

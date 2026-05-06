@@ -1914,4 +1914,79 @@ structure BHWSourcePatchContinuationAtlas
     ∀ z, z ∈ Ω0 ∩ U →
       ∃ a, z ∈ carrier a ∧ branch a z = B0 z
 
+namespace BHWSourcePatchContinuationAtlas
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+
+/-- The glued branch obtained by choosing any atlas chart through a point of
+`U`.  The overlap field proves this choice is independent on `U`. -/
+noncomputable def glued
+    (A : BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0) :
+    (Fin n → Fin (d + 1) → ℂ) → ℂ :=
+  fun z =>
+    if hz : z ∈ U then
+      A.branch (Classical.choose (A.cover z hz)) z
+    else 0
+
+/-- The glued branch agrees with any atlas branch on that branch's carrier. -/
+theorem glued_eq_branch_of_mem
+    (A : BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0)
+    {a : A.chart} {z : Fin n → Fin (d + 1) → ℂ}
+    (hzU : z ∈ U) (hza : z ∈ A.carrier a) :
+    A.glued z = A.branch a z := by
+  unfold glued
+  rw [dif_pos hzU]
+  let b := Classical.choose (A.cover z hzU)
+  have hzb : z ∈ A.carrier b :=
+    Classical.choose_spec (A.cover z hzU)
+  exact A.overlap_eq b a ⟨hzb, hza⟩
+
+/-- The glued atlas branch is holomorphic on the covered source patch `U`. -/
+theorem glued_differentiableOn
+    (A : BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0) :
+    DifferentiableOn ℂ A.glued U := by
+  intro z hzU
+  rcases A.cover z hzU with ⟨a, hza⟩
+  have hdiffAt : DifferentiableAt ℂ (A.branch a) z :=
+    (A.branch_holo a).differentiableAt
+      ((A.carrier_open a).mem_nhds hza)
+  refine hdiffAt.differentiableWithinAt.congr_of_eventuallyEq ?_ ?_
+  · filter_upwards [self_mem_nhdsWithin,
+      mem_nhdsWithin_of_mem_nhds ((A.carrier_open a).mem_nhds hza)]
+      with w hwU hwa
+    exact A.glued_eq_branch_of_mem hwU hwa
+  · exact A.glued_eq_branch_of_mem hzU hza
+
+/-- On the initial source patch, the glued branch has the prescribed initial
+branch value. -/
+theorem glued_eq_B0_of_mem
+    (A : BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0)
+    {z : Fin n → Fin (d + 1) → ℂ}
+    (hz : z ∈ Ω0 ∩ U) :
+    A.glued z = B0 z := by
+  rcases A.base_agree z hz with ⟨a, hza, hbranch⟩
+  calc
+    A.glued z = A.branch a z := A.glued_eq_branch_of_mem hz.2 hza
+    _ = B0 z := hbranch
+
+end BHWSourcePatchContinuationAtlas
+
+/-- Glue a source-patch continuation atlas into a single holomorphic branch on
+`U`.  All analytic continuation content is in the atlas fields; this theorem
+only performs the sheaf-style choice and overlap-independence step. -/
+theorem bhw_glue_sourcePatchContinuationAtlas
+    [NeZero d] (hd : 2 ≤ d)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (Ω0 U : Set (Fin n → Fin (d + 1) → ℂ))
+    (B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (A : BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0) :
+    ∃ B : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ B U ∧
+      (∀ z, z ∈ Ω0 → z ∈ U → B z = B0 z) := by
+  refine ⟨A.glued, A.glued_differentiableOn, ?_⟩
+  intro z hzΩ hzU
+  exact A.glued_eq_B0_of_mem ⟨hzΩ, hzU⟩
+
 end BHW
