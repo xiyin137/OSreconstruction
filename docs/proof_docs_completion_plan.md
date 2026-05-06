@@ -1065,6 +1065,13 @@ equivalent to exact rank `d + 1 - N.r` of the shifted residual-tail Schur
 coordinate.  The downstream parameter connectedness proof can therefore rewrite
 the max-rank slice directly as the exact-rank residual-tail cone; it no longer
 needs to reopen the source-change transport or determinant-coordinate layer.
+The set-level version
+`BHW.SourceOrientedRankDeficientAlgebraicNormalFormData.parameterBox_maxRank_preimage_eq_tailRank`
+is now checked too: for any parameter box contained in the invertible-head
+locus, its max-rank preimage under `N.originalNormalVarietyPoint` is literally
+the same subset as the residual-tail exact-rank slice.  The remaining
+connectedness proof may therefore focus only on the tail-rank geometry inside
+the chosen Schur window.
 
 - `BHW.same_sourceOrientedInvariant_detOneOrbit_or_singularLimit`, including
   the high-rank determinant-ratio/Witt-extension orbit theorem and the

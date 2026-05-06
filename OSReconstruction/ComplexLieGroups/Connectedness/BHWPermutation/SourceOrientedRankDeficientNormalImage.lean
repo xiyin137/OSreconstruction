@@ -378,6 +378,35 @@ theorem originalNormalVarietyPoint_maxRank_iff_tail_rank
       hA hAsym hSsym hrDle
       (sourceOrientedNormalParameterVarietyPoint d n N.r N.hrD N.hrn p).1.det)
 
+/-- On any parameter box already contained in the invertible-head locus, the
+max-rank preimage of the transported normal image is exactly the residual-tail
+exact-rank slice. -/
+theorem parameterBox_maxRank_preimage_eq_tailRank
+    {d n : ℕ}
+    {G0 : SourceOrientedGramData d n}
+    (hn : d + 1 ≤ n)
+    (N : SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+    {parameterBox :
+      Set (SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn)}
+    (hhead :
+      parameterBox ⊆
+        {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+          IsUnit p.head.det}) :
+    parameterBox ∩
+        {p | SourceOrientedMaxRankAt d n (N.originalNormalVarietyPoint p).1} =
+      parameterBox ∩
+        {p |
+          (sourceOrientedNormalParameterSchurTail d n N.r N.hrD N.hrn p).rank =
+            d + 1 - N.r} := by
+  ext p
+  constructor
+  · rintro ⟨hp, hmax⟩
+    exact ⟨hp, (N.originalNormalVarietyPoint_maxRank_iff_tail_rank
+      hn p (hhead hp)).1 hmax⟩
+  · rintro ⟨hp, hrank⟩
+    exact ⟨hp, (N.originalNormalVarietyPoint_maxRank_iff_tail_rank
+      hn p (hhead hp)).2 hrank⟩
+
 end SourceOrientedRankDeficientAlgebraicNormalFormData
 
 end BHW
