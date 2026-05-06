@@ -1,4 +1,5 @@
 import OSReconstruction.Wightman.Reconstruction.WickRotation.OSToWightmanLocalityOS45Compact
+import OSReconstruction.SCV.EuclideanWeylOpen
 
 /-!
 # OS45 BHW/Jost source-patch carriers
@@ -15,6 +16,138 @@ open Complex Topology MeasureTheory
 namespace BHW
 
 variable {d n : ℕ} [NeZero d]
+
+omit [NeZero d] in
+/-- The real Wick-rotation map on `n`-point Euclidean configurations is
+continuous.  This is the public version needed by OS45 source-patch
+integrability lemmas. -/
+theorem continuous_wickRotateRealConfig :
+    Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k)) := by
+  apply continuous_pi
+  intro k
+  apply continuous_pi
+  intro μ
+  by_cases hμ : μ = 0
+  · subst hμ
+    have hcoord : Continuous (fun x : NPointDomain d n => x k 0) :=
+      (continuous_apply 0).comp (continuous_apply k)
+    simpa [wickRotatePoint] using
+      continuous_const.mul (Complex.continuous_ofReal.comp hcoord)
+  · simpa [wickRotatePoint, hμ] using
+      (Complex.continuous_ofReal.comp
+        ((continuous_apply μ).comp (continuous_apply k)))
+
+/-- On an open Euclidean ordered source patch, the identity Wick trace is
+integrable against every compactly supported Schwartz test supported in the
+patch. -/
+theorem integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+        (1 : Equiv.Perm (Fin n)))
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp : tsupport (ψ : NPointDomain d n → ℂ) ⊆ V) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u) := by
+  let H : NPointDomain d n → ℂ :=
+    fun u => bvt_F OS lgc n (fun k => wickRotatePoint (u k))
+  have hF_cont : ContinuousOn (bvt_F OS lgc n) (_root_.ForwardTube d n) :=
+    (bvt_F_holomorphic OS lgc n).continuousOn
+  have hH_cont : ContinuousOn H V := by
+    refine hF_cont.comp
+      (BHW.continuous_wickRotateRealConfig (d := d) (n := n)).continuousOn ?_
+    intro x hx
+    simpa using
+      (wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+        (d := d) (n := n) (1 : Equiv.Perm (Fin n)) (hV_ordered x hx))
+  exact SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
+    (H := H) (ψ := ψ) (U := V) hV_open hH_cont ⟨hψ_comp, hψ_supp⟩
+
+/-- Any permuted Wick trace is integrable on the same ordered source patch.
+The only extra input is the already checked permutation invariance of the
+chosen OS boundary-value witness. -/
+theorem integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (hV_ordered : ∀ x ∈ V,
+      x ∈ EuclideanOrderedPositiveTimeSector (d := d) (n := n)
+        (1 : Equiv.Perm (Fin n)))
+    (ρ : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp : tsupport (ψ : NPointDomain d n → ℂ) ⊆ V) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (ρ k))) * ψ u) := by
+  have hid :=
+    BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector
+      (d := d) OS lgc n V hV_open hV_ordered ψ hψ_comp hψ_supp
+  refine hid.congr (ae_of_all _ ?_)
+  intro u
+  have hperm := bvt_F_perm (d := d) OS lgc n ρ (fun k => wickRotatePoint (u k))
+  simpa using congrArg (fun c : ℂ => c * ψ u) hperm.symm
+
+/-- On an open real source patch whose selected permutation lands in the
+extended tube, the corresponding `extendF` real-source trace is integrable
+against every compactly supported Schwartz test supported in the patch. -/
+theorem integrable_extendF_realSource_mul_schwartz_of_ET
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (V : Set (NPointDomain d n))
+    (hV_open : IsOpen V)
+    (ρ : Equiv.Perm (Fin n))
+    (hVρ_ET : ∀ x ∈ V,
+      BHW.realEmbed (fun k => x (ρ k)) ∈ BHW.ExtendedTube d n)
+    (ψ : SchwartzNPoint d n)
+    (hψ_comp : HasCompactSupport (ψ : NPointDomain d n → ℂ))
+    (hψ_supp : tsupport (ψ : NPointDomain d n → ℂ) ⊆ V) :
+    Integrable
+      (fun u : NPointDomain d n =>
+        BHW.extendF (bvt_F OS lgc n)
+          (BHW.realEmbed (fun k => u (ρ k))) * ψ u) := by
+  let H : NPointDomain d n → ℂ :=
+    fun u => BHW.extendF (bvt_F OS lgc n)
+      (BHW.realEmbed (fun k => u (ρ k)))
+  have hF_holo_BHW :
+      DifferentiableOn ℂ (bvt_F OS lgc n) (BHW.ForwardTube d n) := by
+    simpa [BHW_forwardTube_eq (d := d) (n := n)] using
+      bvt_F_holomorphic (d := d) OS lgc n
+  have hF_cinv_BHW :
+      ∀ (Λ : ComplexLorentzGroup d) (z : Fin n → Fin (d + 1) → ℂ),
+        z ∈ BHW.ForwardTube d n →
+        BHW.complexLorentzAction Λ z ∈ BHW.ForwardTube d n →
+        bvt_F OS lgc n (BHW.complexLorentzAction Λ z) =
+          bvt_F OS lgc n z := by
+    intro Λ z hz hΛz
+    exact bvt_F_complexLorentzInvariant_forwardTube
+      (d := d) OS lgc n Λ z
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hz)
+      ((BHW_forwardTube_eq (d := d) (n := n)) ▸ hΛz)
+  have hExt_cont :
+      ContinuousOn (BHW.extendF (bvt_F OS lgc n)) (BHW.ExtendedTube d n) :=
+    (BHW.extendF_holomorphicOn n (bvt_F OS lgc n)
+      hF_holo_BHW hF_cinv_BHW).continuousOn
+  have hmap_cont :
+      Continuous
+        (fun x : NPointDomain d n =>
+          BHW.realEmbed (fun k => x (ρ k))) :=
+    BHW.continuous_realEmbedNPoint.comp (BHW.continuous_permNPoint ρ)
+  have hH_cont : ContinuousOn H V := by
+    refine hExt_cont.comp hmap_cont.continuousOn ?_
+    intro x hx
+    exact hVρ_ET x hx
+  exact SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
+    (H := H) (ψ := ψ) (U := V) hV_open hH_cont ⟨hψ_comp, hψ_supp⟩
 
 /-- Equality of two compact Wick pairings gives zero of the paired Wick
 branch difference, once the two paired Wick traces are integrable. -/

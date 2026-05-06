@@ -19265,41 +19265,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	        · simpa using hInput.V_ET u huV
 	        · simpa using hInput.V_swapET u huV
 
-	      theorem BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart
-	          [NeZero d]
-	          (hd : 2 <= d)
-	          (OS : OsterwalderSchraderAxioms d)
-	          (lgc : OSLinearGrowthCondition d OS)
-	          (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
-	          (V : Set (NPointDomain d n))
-	          {x0 : NPointDomain d n}
-	          (hInput :
-	            BHW.Figure24LocalChartInput
-	              (d := d) hd OS lgc n i hi V x0)
-	          (hChart :
-	            BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
-	          (ρ : Equiv.Perm (Fin n))
-	          (hρ :
-	            ρ = (1 : Equiv.Perm (Fin n)) ∨
-	            ρ = Equiv.swap i ⟨i.val + 1, hi⟩)
-	          (φ : SchwartzNPoint d n)
-	          (hφ_comp :
-	            HasCompactSupport (φ : NPointDomain d n -> ℂ))
-	          (hφ_supp :
-	            tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
-	          Integrable
-	            (fun u : NPointDomain d n =>
-	              BHW.extendF (bvt_F OS lgc n)
-	                (BHW.realEmbed (fun k => u (ρ k))) * φ u) := by
-	        have hcont :=
-	          BHW.continuousOn_sourcePatch_branch_extendF_on_sourceChart
-	            (d := d) hd OS lgc n i hi V hInput hChart ρ hρ
-	        exact
-	          SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen
-	            hChart.V0_open hcont
-	            (⟨hφ_comp, hφ_supp⟩ :
-	              SCV.SupportsInOpen
-	                (φ : NPointDomain d n -> ℂ) hChart.V0)
+	      Real-source integrability on a source chart is no longer a separate
+	      production target.  The checked public helper
+	      `BHW.integrable_extendF_realSource_mul_schwartz_of_ET` is applied
+	      directly to `hChart.V0`; its only chart-specific input is the
+	      ordinary or swapped extended-tube membership transported along
+	      `hChart.V0_sub`.
 
 	      theorem BHW.integral_sourcePatch_branch_eq_of_finite_schwartz_sum
 	          [NeZero d]
@@ -19476,10 +19447,12 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	                  (BHW.realEmbed u) * ψa a u) := by
 	          intro a
 	          exact
-	            BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart
-	              (d := d) hd OS lgc n i hi (Va a)
-	              (hInputs a) (hCharta a)
-	              (1 : Equiv.Perm (Fin n)) (Or.inl rfl)
+	            BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+	              (d := d) OS lgc n (hCharta a).V0
+	              (hCharta a).V0_open (1 : Equiv.Perm (Fin n))
+	              (by
+	                intro u hu
+	                exact (hInputs a).V_ET u ((hCharta a).V0_sub hu))
 	              (ψa a) (hψa_comp a) (hψa_supp a)
 	        have hright_int :
 	            ∀ a, Integrable
@@ -19491,10 +19464,13 @@ Proof decomposition of this theorem, without hiding the analytic work:
 	                  ψa a u) := by
 	          intro a
 	          exact
-	            BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart
-	              (d := d) hd OS lgc n i hi (Va a)
-	              (hInputs a) (hCharta a)
-	              (Equiv.swap i ⟨i.val + 1, hi⟩) (Or.inr rfl)
+	            BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+	              (d := d) OS lgc n (hCharta a).V0
+	              (hCharta a).V0_open
+	              (Equiv.swap i ⟨i.val + 1, hi⟩)
+	              (by
+	                intro u hu
+	                exact (hInputs a).V_swapET u ((hCharta a).V0_sub hu))
 	              (ψa a) (hψa_comp a) (hψa_supp a)
 	        exact
 	          BHW.integral_sourcePatch_branch_eq_of_finite_schwartz_sum
@@ -41173,7 +41149,7 @@ Proof decomposition of this theorem, without hiding the analytic work:
       | `BHW.OS45Figure24AdjacentBranchData` and `BHW.os45Figure24_adjacentBranchData_of_OSI45` | Assembly transcript pinned once the local continuation carrier above is supplied; production Lean not started. | OS I §4.5 equations (4.1), (4.12), (4.14), compact zero-diagonal Euclidean symmetry, and BHW continuation of the adjacent branch, split through `OS45AdjacentPermutedTubeBoundaryFunctional`, `OS45AdjacentPermutedTubeLorentzInvariantBranch`, `os45Figure24_adjacentBHWContinuation_to_JostDomain`, the continuation-data producer `os45_bhwJostContinuation_adjacentPermutedBranch`, the assembly theorem `os45_BHWJost_continue_adjacentBranch_from_OSI45`, and the lower carrier theorem `os45_BHWJostLocalContinuationData_from_OSI45`.  The data must carry `adjacent_realBoundary_eq_ordinary` for every compact test supported in `hChart.V0`; this is source content consumed by generic Jost/Ruelle uniqueness, not a consequence of the final lift pairing. |
       | `BHW.os45Figure24_realBoundaryEq_of_OSI45` | Mechanical extraction from adjacent branch provenance; production Lean not started. | Rewrite `Dord.ordinaryBranch` by `Dord.ordinaryBranch_def` and use `Dadj.adjacent_realBoundary_eq_ordinary`.  The source proof is in the adjacent BHW/Jost continuation packet; no scalar representative, local source equality, separate source-branch `= OS.S`, PET independence, or final locality. |
       | `BHW.os45Figure24_sourcePatch_pairing_eq_swappedSourcePatch_of_OSI45` | Route-cycle corrected; first BHW/Jost carrier/algebra layer checked, OS I §4.5 producer not started. | Direct OS I §4.5/BHW-Jost compact producer: checked Wick compact equality for every compact test supported in the chart, zero-diagonal conversion through equations (4.1), (4.12), and (4.14), construction of the checked `BHW.OS45SourcePatchBHWJostPairData`, checked subtraction through `BHW.OS45SourcePatchBHWJostPairData.difference`, direct edge/totally-real uniqueness on that carrier, and checked real-trace integration via `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`.  A separate difference-data wrapper is optional only if it stores additional source provenance.  It must not call `BHW.os45_adjacent_commonBoundaryEnvelope`, the oriented branch-germ suppliers, the oriented adjacent `S'_n` seed/path package, individual real-branch `= OS.S` statements, PET independence, final locality, or the later OS-specific `JostRuelleCompactBoundaryData` package that consumes this compact theorem. |
-      | `BHW.OS45SourcePatchBHWJostPairData`, `BHW.integral_wickBranchDifference_mul_eq_zero_of_pairing_eq`, `BHW.os45_wickBranchDifference_zero_of_euclideanEdge_pairing_eq_on_timeSector`, `BHW.OS45SourcePatchBHWJostPairData.restrict`, `BHW.OS45SourcePatchBHWJostPairData.restrict_figure24SourcePatch`, `BHW.OS45SourcePatchBHWJostPairData.difference`, `BHW.OS45SourcePatchBHWJostPairData.difference_holo`, `BHW.OS45SourcePatchBHWJostPairData.difference_wick_trace`, `BHW.OS45SourcePatchBHWJostPairData.difference_real_trace`, `BHW.os45_pairData_difference_identity_of_wickDistributionZero`, `BHW.os45_pairData_difference_realTrace_zero_of_wickDistributionZero`, `BHW.realSourceBranchDifference_zero_of_pairData_difference_zero`, `BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq`, `BHW.os45Figure24_sourcePatch_pairing_eq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`, `BHW.os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_difference_zero`, and `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero` | Checked in `OSToWightmanLocalityOS45BHWJost.lean`. | This is the honest lower support layer for the compact source-patch theorem.  It stores two holomorphic branches on the same connected hull, their Wick traces, and their real source traces; the checked constructors restrict such a carrier to smaller open source patches, especially the canonical Figure-2-4 source patch.  The checked theorems subtract the branches, rewrite equality of the two compact Wick pairings as zero of the Wick branch-difference pairing under explicit integrability hypotheses, convert the checked OS45 Euclidean-edge pairing theorem into the exact Wick branch-difference zero input for pair data, upgrade compact-test Wick-trace distributional zero to pointwise zero of `P.difference` on the connected hull by the existing Wick-real-section identity theorem, rewrite this as the real-source `P.difference` distributional zero, translate it to the explicit `extendF` source difference, turn zero of that integrated real difference into equality of the compact real source pairings, package that equality into `BHW.OS45CompactFigure24WickPairingEq`, and fold a full adjacent family into both selected and direct source-anchor surfaces.  Integrability is still an explicit input.  The layer does not construct the pair from OS I §4.5 or supply the OS-I Wick/real integrability producers; those remain the next source obligations. |
+      | `BHW.OS45SourcePatchBHWJostPairData`, `BHW.continuous_wickRotateRealConfig`, `BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector`, `BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector`, `BHW.integrable_extendF_realSource_mul_schwartz_of_ET`, `BHW.integral_wickBranchDifference_mul_eq_zero_of_pairing_eq`, `BHW.os45_wickBranchDifference_zero_of_euclideanEdge_pairing_eq_on_timeSector`, `BHW.OS45SourcePatchBHWJostPairData.restrict`, `BHW.OS45SourcePatchBHWJostPairData.restrict_figure24SourcePatch`, `BHW.OS45SourcePatchBHWJostPairData.difference`, `BHW.OS45SourcePatchBHWJostPairData.difference_holo`, `BHW.OS45SourcePatchBHWJostPairData.difference_wick_trace`, `BHW.OS45SourcePatchBHWJostPairData.difference_real_trace`, `BHW.os45_pairData_difference_identity_of_wickDistributionZero`, `BHW.os45_pairData_difference_realTrace_zero_of_wickDistributionZero`, `BHW.realSourceBranchDifference_zero_of_pairData_difference_zero`, `BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq`, `BHW.os45Figure24_sourcePatch_pairing_eq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_realSourceBranchDifference_zero`, `BHW.os45CompactFigure24WickPairingEq_of_pairData_difference_zero`, `BHW.os45CompactFigure24WickPairingEq_family_of_pairData_difference_zero`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_difference_zero`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_difference_zero`, and `BHW.bvt_F_distributionalJostAnchor_of_pairData_difference_zero` | Checked in `OSToWightmanLocalityOS45BHWJost.lean`. | This is the honest lower support layer for the compact source-patch theorem.  It stores two holomorphic branches on the same connected hull, their Wick traces, and their real source traces; the checked constructors restrict such a carrier to smaller open source patches, especially the canonical Figure-2-4 source patch.  The checked Wick integrability support proves the identity Wick trace integrable on an ordered source patch and every permuted Wick trace integrable there by `bvt_F_perm`; the checked real-source integrability support proves the corresponding `extendF` traces integrable from extended-tube membership, continuity of real embedding/permutation, and `BHW.extendF_holomorphicOn`.  The checked theorems subtract the branches, rewrite equality of the two compact Wick pairings as zero of the Wick branch-difference pairing under explicit integrability hypotheses, convert the checked OS45 Euclidean-edge pairing theorem into the exact Wick branch-difference zero input for pair data, upgrade compact-test Wick-trace distributional zero to pointwise zero of `P.difference` on the connected hull by the existing Wick-real-section identity theorem, rewrite this as the real-source `P.difference` distributional zero, translate it to the explicit `extendF` source difference, turn zero of that integrated real difference into equality of the compact real source pairings, package that equality into `BHW.OS45CompactFigure24WickPairingEq`, and fold a full adjacent family into both selected and direct source-anchor surfaces.  The layer does not construct the pair from OS I §4.5; that carrier/difference-zero producer is the remaining direct BHW/Jost source obligation. |
       | `BHW.OS45CompactFigure24WickPairingEq`, `BHW.os45CompactFigure24WickPairingEq_of_sourcePatchPairing`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq`, and `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq` | Checked in `OSToWightmanLocalityOS45Compact.lean`. | This is a packaging layer after the direct source-patch compact theorem, not a proof of that theorem.  The constructor uses `os45CompactRealPatch_pullbackSchwartz` to move arbitrary `π`-labelled compact tests to the canonical source patch; a full adjacent family then produces the existing `SourceDistributionalAdjacentTubeAnchor` by using the Gram images of the unlabelled left source patches as uniqueness environments.  The selected-witness bridge takes the identity-labelled compact patch as the base patch and reuses the same compact equality, so downstream OS-II code can consume either the older `SelectedAdjacentDistributionalJostAnchorData` surface or the direct source anchor.  It supplies ordinary source-distributional anchor data; the oriented adjacent `S'_n` real-seed layer still requires determinant-regular shrinking and oriented source equality. |
       | `BHW.os45CommonBoundary_wickTrace_zero_of_compactPairing_zero` and `BHW.os45CommonBoundary_identity_of_wickTrace_zero` | Proof transcript pinned; production Lean not started. | Genuine analytic extraction from the common-boundary envelope: universal compact Wick branch-difference vanishing gives pointwise zero on the Wick trace by `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, then holomorphic identity on the connected common chart by `BHW.identity_theorem_totally_real_product` after the complex-linear Wick-time chart calculation. |
       | `BHW.os45CanonicalAdjacentBranchBoundaryData_of_OSI45` | Assembly transcript pinned; production Lean not started. | Field-by-field construction of `JostRuelleCompactBoundaryData`, `jr_lift_eq`, ordinary lift equality on the deterministic lift, and adjacent lift pairing `= OS.S n ψZ`, after the domain, ordinary-branch, adjacent-branch, and real-boundary packets above. It no longer carries individual source-to-Schwinger or lift-to-source PET-overlap fields. |
@@ -43876,37 +43852,62 @@ Proof decomposition of this theorem, without hiding the analytic work:
                       (fun k => wickRotatePoint (x k)) * χ x)
             ```
 
-            It is proved by the same zero-diagonal compact-test orientation as
-            `os45_adjacent_euclideanEdge_pairing_eq_on_timeSector`, together
-            with the integrability statements already implicit in
-            `bvt_euclidean_restriction` for `φZ` and the permuted test `ψZ`.
-            The source-chart specialization used in the public theorem is:
+            Production Lean now supplies this integrability input directly.
+            The identity Wick trace is continuous on the ordered source patch
+            by `bvt_F_holomorphic`,
+            `BHW.continuous_wickRotateRealConfig`, and
+            `wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector`;
+            compact support gives integrability by
+            `SCV.integrable_continuousOn_mul_schwartz_of_supportsInOpen`.
+            The permuted Wick trace is reduced pointwise to the identity trace
+            by the checked global permutation invariance `bvt_F_perm`.
 
             ```lean
-            theorem BHW.integrable_wickEdge_bvt_F_mul_schwartz_on_sourceChart_of_orderedSector
-                [NeZero d] (hd : 2 <= d)
+            theorem BHW.continuous_wickRotateRealConfig
+                {d n : Nat} :
+                Continuous
+                  (fun x : NPointDomain d n =>
+                    fun k => wickRotatePoint (x k))
+
+            theorem BHW.integrable_bvt_F_wickRotate_mul_schwartz_of_orderedSector
+                [NeZero d]
                 (OS : OsterwalderSchraderAxioms d)
                 (lgc : OSLinearGrowthCondition d OS)
-                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (n : Nat)
                 (V : Set (NPointDomain d n))
-                {x0 : NPointDomain d n}
-                (hChart :
-                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
-                (ρ : Equiv.Perm (Fin n))
-                (hρ : ρ = (1 : Equiv.Perm (Fin n)) ∨
-                  ρ = Equiv.swap i ⟨i.val + 1, hi⟩)
-                (hV_jost :
-                  ∀ x, x ∈ hChart.V0 -> x ∈ BHW.JostSet d n)
+                (hV_open : IsOpen V)
                 (hV_ordered :
-                  ∀ x, x ∈ hChart.V0 ->
-                    (fun k => x (ρ k)) ∈
-                      EuclideanOrderedPositiveTimeSector
-                        (d := d) (n := n) ρ)
+                  ∀ x, x ∈ V ->
+                    x ∈ EuclideanOrderedPositiveTimeSector
+                      (d := d) (n := n) (1 : Equiv.Perm (Fin n)))
                 (φ : SchwartzNPoint d n)
                 (hφ_comp :
                   HasCompactSupport (φ : NPointDomain d n -> ℂ))
                 (hφ_supp :
-                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
+                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ V) :
+                Integrable
+                  (fun u : NPointDomain d n =>
+                    bvt_F OS lgc n
+                      (fun k => wickRotatePoint (u k)) * φ u)
+
+            theorem BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+                [NeZero d]
+                (OS : OsterwalderSchraderAxioms d)
+                (lgc : OSLinearGrowthCondition d OS)
+                (n : Nat)
+                (V : Set (NPointDomain d n))
+                (hV_open : IsOpen V)
+                (hV_ordered :
+                  ∀ x, x ∈ V ->
+                    x ∈
+                      EuclideanOrderedPositiveTimeSector
+                        (d := d) (n := n) (1 : Equiv.Perm (Fin n)))
+                (ρ : Equiv.Perm (Fin n))
+                (φ : SchwartzNPoint d n)
+                (hφ_comp :
+                  HasCompactSupport (φ : NPointDomain d n -> ℂ))
+                (hφ_supp :
+                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ V) :
                 Integrable
                   (fun u : NPointDomain d n =>
                     bvt_F OS lgc n
@@ -47520,31 +47521,23 @@ Proof decomposition of this theorem, without hiding the analytic work:
             algebra:
 
             ```lean
-            theorem BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart_of_ET
-                [NeZero d] (hd : 2 <= d)
+            theorem BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+                [NeZero d]
                 (OS : OsterwalderSchraderAxioms d)
                 (lgc : OSLinearGrowthCondition d OS)
-                (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
+                (n : Nat)
                 (V : Set (NPointDomain d n))
-                (hV_ET :
-                  ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n)
-                (hV_swapET :
-                  ∀ x, x ∈ V ->
-                    BHW.realEmbed
-                      (fun k => x (Equiv.swap i ⟨i.val + 1, hi⟩ k)) ∈
-                    BHW.ExtendedTube d n)
-                {x0 : NPointDomain d n}
-                (hChart :
-                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
+                (hV_open : IsOpen V)
                 (ρ : Equiv.Perm (Fin n))
-                (hρ :
-                  ρ = (1 : Equiv.Perm (Fin n)) ∨
-                  ρ = Equiv.swap i ⟨i.val + 1, hi⟩)
+                (hVρ_ET :
+                  ∀ x, x ∈ V ->
+                    BHW.realEmbed (fun k => x (ρ k)) ∈
+                    BHW.ExtendedTube d n)
                 (φ : SchwartzNPoint d n)
                 (hφ_comp :
                   HasCompactSupport (φ : NPointDomain d n -> ℂ))
                 (hφ_supp :
-                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ hChart.V0) :
+                  tsupport (φ : NPointDomain d n -> ℂ) ⊆ V) :
                 Integrable
                   (fun u : NPointDomain d n =>
                     BHW.extendF (bvt_F OS lgc n)
@@ -47603,11 +47596,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     (fun x : NPointDomain d n =>
                       bvt_F OS lgc n
                         (fun k => wickRotatePoint (x (τ k))) * χ x) :=
-              BHW.integrable_wickEdge_bvt_F_mul_schwartz_on_sourceChart_of_orderedSector
-                (d := d) hd OS lgc n i hi V hChart τ (Or.inr rfl)
-                (fun x hx => hV_jost x (hChart.V0_sub hx))
-                (fun x hx => by
-                  simpa [τ] using hV_swap_ordered x (hChart.V0_sub hx))
+              BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+                (d := d) OS lgc n hChart.V0 hChart.V0_open
+                (fun x hx => hV_ordered x (hChart.V0_sub hx)) τ
             have hwickid_int :
                 ∀ χ : SchwartzNPoint d n,
                   HasCompactSupport (χ : NPointDomain d n -> ℂ) ->
@@ -47616,11 +47607,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
                     (fun x : NPointDomain d n =>
                       bvt_F OS lgc n
                         (fun k => wickRotatePoint (x k)) * χ x) :=
-              BHW.integrable_wickEdge_bvt_F_mul_schwartz_on_sourceChart_of_orderedSector
-                (d := d) hd OS lgc n i hi V hChart
-                (1 : Equiv.Perm (Fin n)) (Or.inl rfl)
-                (fun x hx => hV_jost x (hChart.V0_sub hx))
+              BHW.integrable_wickEdge_bvt_F_mul_schwartz_of_orderedSector
+                (d := d) OS lgc n hChart.V0 hChart.V0_open
                 (fun x hx => hV_ordered x (hChart.V0_sub hx))
+                (1 : Equiv.Perm (Fin n))
             have hwick_zero :=
               BHW.os45_wickBranchDifference_zero_of_euclideanEdge_pairing_eq_on_timeSector
                 (d := d) OS lgc n i hi hChart.V0
@@ -47658,17 +47648,29 @@ Proof decomposition of this theorem, without hiding the analytic work:
             have hreal_zero :=
               BHW.realSourceBranchDifference_zero_of_pairData_difference_zero
                 (d := d) (n := n) P hzero_P ψ hψ_comp hψ_supp
+            have hid_int :=
+              BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+                (d := d) OS lgc n hChart.V0 hChart.V0_open
+                (1 : Equiv.Perm (Fin n))
+                (fun x hx => by
+                  simpa using hV_ET x (hChart.V0_sub hx))
+                ψ hψ_comp hψ_supp
+            have hτ_int :=
+              BHW.integrable_extendF_realSource_mul_schwartz_of_ET
+                (d := d) OS lgc n hChart.V0 hChart.V0_open P.τ
+                (fun x hx => by
+                  simpa [P.τ_eq] using hV_swapET x (hChart.V0_sub hx))
+                ψ hψ_comp hψ_supp
             have hpair :=
               BHW.integral_realSourceBranchDifference_eq_zero_to_pairing_eq
                 (d := d) OS lgc n P.τ ψ hid_int hτ_int hreal_zero
             simpa [P.τ_eq] using hpair
             ```
 
-            Here `hid_int` and `hτ_int` are supplied by
-            `BHW.integrable_sourcePatch_branch_extendF_mul_schwartz_on_sourceChart_of_ET`,
-            with labels `1` and `P.τ` respectively.  This helper is the
-            checked continuity/integrability argument with only the two
-            extended-tube fields exposed: `hV_ET` handles `ρ = 1`, and
+            The helper
+            `BHW.integrable_extendF_realSource_mul_schwartz_of_ET` is the
+            checked continuity/integrability argument with only the selected
+            extended-tube field exposed; `hV_ET` handles `ρ = 1`, and
             `hV_swapET` handles the adjacent branch.  The fields
             `hV_adjLift_ET` and `hV_orientedPath_closure` are kept in the
             public theorem signature for compatibility with downstream
@@ -48802,12 +48804,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
       public finite-coordinate helper
       `BHW.continuous_wickRotateRealConfig (d := d) (n := n) :
       Continuous (fun x : NPointDomain d n => fun k => wickRotatePoint (x k))`;
-      the same proof currently exists only as the private helper
-      `continuous_wickRotateRealConfig` in
-      `OSToWightmanTubeIdentity.lean`.  During the Lean port, either export
-      that coordinate proof under the `BHW` support namespace or reprove it
-      immediately by `continuous_pi`, `continuous_apply_apply`, and the
-      coordinate definition of `wickRotatePoint`.
+      this helper is now checked in
+      `OSToWightmanLocalityOS45BHWJost.lean` by `continuous_pi`,
+      coordinate projections, and the coordinate definition of
+      `wickRotatePoint`.
 
       Lean-facing support surfaces for the helper:
 
