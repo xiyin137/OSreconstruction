@@ -7751,25 +7751,28 @@ common-boundary envelope, or any theorem that already assumes locality.
        BHW.bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C₁ =
          BHW.bhw_continuedValueAlongOrientedChain hd n τ Ω0 U B0 C₂
 
-   noncomputable def BHW.bhw_orientedContinuationAtlas_from_chains
+   structure BHW.BHWOrientedContinuationChainAtlasData
        [NeZero d] (hd : 2 <= d)
        (n : Nat) (τ : Equiv.Perm (Fin n))
        (Ω0 U : Set (Fin n -> Fin (d + 1) -> ℂ))
-       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ)
-       (hΩ0_open : IsOpen Ω0)
-       (hU_open : IsOpen U)
-       (hU_connected : IsConnected U)
-       (hΩ0_sub_ambient :
-         Ω0 ⊆ BHW.os45SourcePatchBHWJostAmbient d n τ)
-       (hU_hull :
-         ∃ z0, U = BHW.os45SourcePatchBHWJostHull d n τ z0)
-       (hΩ0_meets_U : (Ω0 ∩ U).Nonempty)
-       (hB0_holo : DifferentiableOn ℂ B0 Ω0)
-       (hB0_realLorentz :
-         ∀ R : RestrictedLorentzGroup d, ∀ z, z ∈ Ω0 ->
-           BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z ∈ Ω0 ->
-             B0 (BHW.complexLorentzAction (ComplexLorentzGroup.ofReal R) z) = B0 z) :
-       BHW.BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0
+       (B0 : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ) where
+     p0 : Fin n -> Fin (d + 1) -> ℂ
+     base_mem : p0 ∈ Ω0 ∩ U
+     chainAt :
+       ∀ z, z ∈ U ->
+         BHW.BHWJostOrientedSourcePatchContinuationChain
+           hd n τ Ω0 U B0 p0 z
+     terminal_overlap_eq :
+       ∀ a b : {z // z ∈ U},
+         Set.EqOn
+           ((chainAt a.1 a.2).branch (Fin.last (chainAt a.1 a.2).m))
+           ((chainAt b.1 b.2).branch (Fin.last (chainAt b.1 b.2).m))
+           ((chainAt a.1 a.2).chart (Fin.last (chainAt a.1 a.2).m) ∩
+             (chainAt b.1 b.2).chart (Fin.last (chainAt b.1 b.2).m))
+     terminal_base_agree :
+       ∀ z (hz : z ∈ Ω0 ∩ U),
+         (chainAt z hz.2).branch
+           (Fin.last (chainAt z hz.2).m) z = B0 z
    ```
 
    Superseded-signature warning for the displayed monodromy block: the
