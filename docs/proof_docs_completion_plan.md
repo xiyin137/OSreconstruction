@@ -866,6 +866,17 @@ theorem BHW.sourceHeadSliceGramPolynomial_eq_factorGram
     (sourceHeadGaugeSliceOfSymmCoord d r hrD K).1 *
       sourceHeadMetric d r hrD *
       (sourceHeadGaugeSliceOfSymmCoord d r hrD K).1ᵀ
+
+def BHW.sourceSymmetricMatrixCoordinateWindow
+  (r : ℕ) (ρ : ℝ) :
+  Set (sourceSymmetricMatrixSubmodule r)
+
+theorem BHW.exists_sourceHeadGaugeSliceCoordinateWindow_subset_of_mem_nhds_center
+  (d r : ℕ) (hrD : r < d + 1)
+  {V : Set (SourceHeadGaugeSlice d r hrD)}
+  (hV : V ∈ 𝓝 (sourceHeadGaugeSliceCenter d r hrD)) :
+  ∃ ρ : ℝ, 0 < ρ ∧
+    sourceHeadGaugeSliceCoordinateWindow d r hrD ρ ⊆ V
 ```
 
 Mathematically, if `H` is in the slice and `K = Hη - η`, then
@@ -878,15 +889,19 @@ The remaining Lean transcript for constructing
 `SourceRankDeficientHeadSliceGaugeData` is now exact:
 
 1. Register the local matrix sup-norm instances for
-   `Matrix (Fin r) (Fin r) ℂ`, prove the symmetric submodule is complete by
-   finite dimensionality (or by closed-submodule completeness), and prove
+   `Matrix (Fin r) (Fin r) ℂ`, use the checked finite-dimensional complete
+   instance for the symmetric submodule, and prove
    `HasStrictFDerivAt (sourceHeadSliceGramPolynomial d r hrD)
-   (sourceHeadSliceGramPolynomialDerivEquiv r : _ →L[ℂ] _) 0`.  The proof is
-   by unfolding the polynomial, applying finite-dimensional polynomial
-   `fun_prop` to the underlying matrix map, and using `Submodule.coe_norm` to
-   move the strict derivative through the symmetric-submodule subtype.  No
-   analytic or OS-specific theorem is hidden here; it is a finite-dimensional
-   quadratic-map calculation.
+   (sourceHeadSliceGramPolynomialDerivEquiv r : _ →L[ℂ] _) 0`.  The remaining
+   proof is an elementwise finite-dimensional quadratic-map estimate under the
+   elementwise matrix norm: for
+   `Q(K) = K * η * K`, prove
+   `Q(X) - Q(Y) = (X - Y) * η * X + Y * η * (X - Y)` and use the finite-entry
+   matrix norm bound to show this is `o(‖X - Y‖)` as `(X,Y) → (0,0)`.
+   The derivative of the affine-linear part is exactly `K ↦ 2K`, already
+   bundled as `sourceHeadSliceGramPolynomialDerivEquiv`.  No analytic or
+   OS-specific theorem is hidden here; it is a finite-dimensional quadratic
+   estimate.
 2. Apply
    `HasStrictFDerivAt.toOpenPartialHomeomorph` to get an open partial
    homeomorphism `e` on `sourceSymmetricMatrixSubmodule r` with forward map
@@ -899,11 +914,12 @@ The remaining Lean transcript for constructing
    `Head.factor A` by pulling `A` back to the symmetric submodule, applying
    `e.symm`, and converting the resulting `K` to the slice point
    `sourceHeadGaugeSliceOfSymmCoord d r hrD K`.
-4. Define `Head.factorDomain` as the preimage of `e.source` under
-   `sourceHeadGaugeSliceSymmCoordHomeomorph`.  Openness and center membership
-   follow from the checked homeomorphism and the source membership of `0`.
-   The required coordinate-window field follows from the finite product
-   neighborhood-basis lemma:
+4. Define `Head.factorDomain` as the preimage of `e.source`, additionally
+   shrunk inside the determinant-unit locus for the recovered slice factor.
+   Openness and center membership follow from the checked homeomorphism, the
+   source membership of `0`, and openness of the determinant-unit locus.  The
+   required coordinate-window field is now checked as
+   `exists_sourceHeadGaugeSliceCoordinateWindow_subset_of_mem_nhds_center`:
    every open neighborhood of `sourceHeadGaugeSliceCenter` in the slice
    contains some positive
    `sourceHeadGaugeSliceCoordinateWindow d r hrD ρ`.  In coordinates this is
@@ -922,11 +938,11 @@ The remaining Lean transcript for constructing
 
 This transcript is the finite-dimensional local-inverse construction needed
 for the sliced local-image producer.  It is independent of BHW continuation,
-OS positivity, Wightman functions, and the later monodromy atlas.  The only
-remaining proof-doc item inside this local producer is to pin the exact Lean
-neighborhood-basis lemma for the slice coordinate window; once that helper is
-checked, the `SourceRankDeficientHeadSliceGaugeData` constructor is a direct
-implementation task.
+OS positivity, Wightman functions, and the later monodromy atlas.  The
+coordinate-window neighborhood-basis helper is now checked.  The remaining
+implementation-level local-producer item is the strict-derivative estimate for
+the quadratic term under the elementwise matrix norm, followed by the
+mechanical `OpenPartialHomeomorph` packaging and determinant-unit shrink.
 
 The first normal-parameter support layer is now checked in
 `SourceOrientedNormalParameter.lean`.  The file supplies the finite head/tail

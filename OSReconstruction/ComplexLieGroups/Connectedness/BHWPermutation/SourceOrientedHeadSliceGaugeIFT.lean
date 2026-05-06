@@ -2,6 +2,7 @@ import Mathlib.Analysis.Calculus.InverseFunctionTheorem.FDeriv
 import Mathlib.Analysis.Matrix.Normed
 import Mathlib.Analysis.Normed.Group.Submodule
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedHeadGauge
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientTailWindow
 
 /-!
 # Source-oriented head-slice gauge by inverse-function coordinates
@@ -19,6 +20,7 @@ so its derivative at the origin is scalar multiplication by `2`.
 noncomputable section
 
 open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
+open scoped RightActions
 
 attribute [local instance] Matrix.normedAddCommGroup Matrix.normedSpace
 
@@ -38,6 +40,16 @@ def sourceSymmetricMatrixSubmodule (r : ℕ) :
     intro c A hA
     change (c • A)ᵀ = c • A
     rw [Matrix.transpose_smul, hA]
+
+local instance sourceSymmetricMatrixSubmodule_isUniformAddGroup
+    (r : ℕ) :
+    IsUniformAddGroup (sourceSymmetricMatrixSubmodule r) :=
+  (sourceSymmetricMatrixSubmodule r).toAddSubgroup.isUniformAddGroup
+
+instance sourceSymmetricMatrixSubmodule_completeSpace
+    (r : ℕ) :
+    CompleteSpace (sourceSymmetricMatrixSubmodule r) :=
+  FiniteDimensional.complete ℂ (sourceSymmetricMatrixSubmodule r)
 
 @[simp]
 theorem mem_sourceSymmetricMatrixSubmodule
@@ -205,6 +217,215 @@ theorem sourceHeadGaugeSliceSymmCoordHomeomorph_symm_apply
     (sourceHeadGaugeSliceSymmCoordHomeomorph d r hrD).symm K =
       sourceHeadGaugeSliceOfSymmCoord d r hrD K :=
   rfl
+
+@[simp]
+theorem sourceHeadGaugeSliceOfSymmCoord_symmCoord
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (H : SourceHeadGaugeSlice d r hrD) :
+    sourceHeadGaugeSliceOfSymmCoord d r hrD
+        (sourceHeadGaugeSliceSymmCoord d r hrD H) = H := by
+  simpa [sourceHeadGaugeSliceSymmCoordHomeomorph] using
+    (sourceHeadGaugeSliceSymmCoordHomeomorph d r hrD).left_inv H
+
+@[simp]
+theorem sourceHeadGaugeSliceSymmCoord_ofSymmCoord
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (K : sourceSymmetricMatrixSubmodule r) :
+    sourceHeadGaugeSliceSymmCoord d r hrD
+        (sourceHeadGaugeSliceOfSymmCoord d r hrD K) = K := by
+  simpa [sourceHeadGaugeSliceSymmCoordHomeomorph] using
+    (sourceHeadGaugeSliceSymmCoordHomeomorph d r hrD).right_inv K
+
+@[simp]
+theorem sourceHeadGaugeSliceSymmCoord_center
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    sourceHeadGaugeSliceSymmCoord d r hrD
+        (sourceHeadGaugeSliceCenter d r hrD) =
+      (0 : sourceSymmetricMatrixSubmodule r) := by
+  apply Subtype.ext
+  simp [sourceHeadGaugeSliceSymmCoord, sourceHeadGaugeSliceCenter]
+
+@[simp]
+theorem sourceHeadGaugeSliceOfSymmCoord_zero
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    sourceHeadGaugeSliceOfSymmCoord d r hrD
+        (0 : sourceSymmetricMatrixSubmodule r) =
+      sourceHeadGaugeSliceCenter d r hrD := by
+  apply Subtype.ext
+  simp [sourceHeadGaugeSliceOfSymmCoord, sourceHeadGaugeSliceCenter,
+    sourceHeadMetric_mul_self]
+
+@[simp]
+theorem sourceHeadGaugeSliceSymmCoordHomeomorph_symm_zero
+    (d r : ℕ)
+    (hrD : r < d + 1) :
+    (sourceHeadGaugeSliceSymmCoordHomeomorph d r hrD).symm
+        (0 : sourceSymmetricMatrixSubmodule r) =
+      sourceHeadGaugeSliceCenter d r hrD := by
+  simp [sourceHeadGaugeSliceSymmCoordHomeomorph]
+
+/-- Entrywise coordinate window around zero in the symmetric `K` coordinate. -/
+def sourceSymmetricMatrixCoordinateWindow
+    (r : ℕ)
+    (ρ : ℝ) :
+    Set (sourceSymmetricMatrixSubmodule r) :=
+  {K | ∀ a b, ‖(K : Matrix (Fin r) (Fin r) ℂ) a b‖ < ρ}
+
+theorem isOpen_sourceSymmetricMatrixCoordinateWindow
+    (r : ℕ)
+    (ρ : ℝ) :
+    IsOpen (sourceSymmetricMatrixCoordinateWindow r ρ) := by
+  have hfull :
+      IsOpen
+        (sourceMatrixCoordinateWindow
+          (0 : Matrix (Fin r) (Fin r) ℂ) ρ) :=
+    isOpen_sourceMatrixCoordinateWindow
+      (0 : Matrix (Fin r) (Fin r) ℂ) ρ
+  simpa [sourceSymmetricMatrixCoordinateWindow, sourceMatrixCoordinateWindow]
+    using hfull.preimage continuous_subtype_val
+
+theorem zero_mem_sourceSymmetricMatrixCoordinateWindow
+    (r : ℕ)
+    {ρ : ℝ}
+    (hρ : 0 < ρ) :
+    (0 : sourceSymmetricMatrixSubmodule r) ∈
+      sourceSymmetricMatrixCoordinateWindow r ρ := by
+  intro a b
+  simpa using hρ
+
+theorem sourceSymmetricMatrixCoordinateWindow_mem_nhds_zero
+    (r : ℕ)
+    {ρ : ℝ}
+    (hρ : 0 < ρ) :
+    sourceSymmetricMatrixCoordinateWindow r ρ ∈
+      𝓝 (0 : sourceSymmetricMatrixSubmodule r) :=
+  (isOpen_sourceSymmetricMatrixCoordinateWindow r ρ).mem_nhds
+    (zero_mem_sourceSymmetricMatrixCoordinateWindow r hρ)
+
+/-- The diagonal entries of the head metric have norm one. -/
+theorem norm_sourceHeadMetric_diag
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (b : Fin r) :
+    ‖(MinkowskiSpace.metricSignature d
+        (finSourceHead (Nat.le_of_lt hrD) b) : ℂ)‖ = 1 := by
+  by_cases hzero : finSourceHead (Nat.le_of_lt hrD) b = (0 : Fin (d + 1))
+  · simp [MinkowskiSpace.metricSignature, hzero]
+  · simp [MinkowskiSpace.metricSignature, hzero]
+
+/-- Multiplication by the diagonal head metric scales the `b`-th column. -/
+theorem sourceHeadMetric_mul_entry
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (M : Matrix (Fin r) (Fin r) ℂ)
+    (a b : Fin r) :
+    (M * sourceHeadMetric d r hrD) a b =
+      M a b *
+        (MinkowskiSpace.metricSignature d
+          (finSourceHead (Nat.le_of_lt hrD) b) : ℂ) := by
+  rw [sourceHeadMetric, Matrix.mul_apply]
+  rw [Finset.sum_eq_single b]
+  · simp [Matrix.diagonal]
+  · intro j _hj hjb
+    simp [Matrix.diagonal, hjb]
+  · intro hb
+    exact False.elim (hb (Finset.mem_univ b))
+
+/-- Entry formula for the symmetric coordinate `K = H * η - η`. -/
+theorem sourceHeadGaugeSliceSymmCoord_apply
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (H : SourceHeadGaugeSlice d r hrD)
+    (a b : Fin r) :
+    (sourceHeadGaugeSliceSymmCoord d r hrD H :
+        Matrix (Fin r) (Fin r) ℂ) a b =
+      (H.1 a b - (1 : Matrix (Fin r) (Fin r) ℂ) a b) *
+        (MinkowskiSpace.metricSignature d
+          (finSourceHead (Nat.le_of_lt hrD) b) : ℂ) := by
+  change
+    (H.1 * sourceHeadMetric d r hrD - sourceHeadMetric d r hrD) a b =
+      (H.1 a b - (1 : Matrix (Fin r) (Fin r) ℂ) a b) *
+        (MinkowskiSpace.metricSignature d
+          (finSourceHead (Nat.le_of_lt hrD) b) : ℂ)
+  rw [Matrix.sub_apply, sourceHeadMetric_mul_entry]
+  by_cases hab : a = b
+  · subst b
+    simp [sourceHeadMetric, sub_mul]
+  · simp [sourceHeadMetric, hab]
+
+/-- The slice coordinate window is exactly the zero-centered symmetric
+coordinate window under `K = H * η - η`. -/
+theorem sourceHeadGaugeSliceSymmCoord_mem_coordinateWindow_iff
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    (ρ : ℝ)
+    (H : SourceHeadGaugeSlice d r hrD) :
+    sourceHeadGaugeSliceSymmCoord d r hrD H ∈
+        sourceSymmetricMatrixCoordinateWindow r ρ ↔
+      H ∈ sourceHeadGaugeSliceCoordinateWindow d r hrD ρ := by
+  constructor
+  · intro hK a b
+    have hKab := hK a b
+    rw [sourceHeadGaugeSliceSymmCoord_apply d r hrD H a b,
+      norm_mul, norm_sourceHeadMetric_diag d r hrD b, mul_one] at hKab
+    simpa [sourceHeadGaugeSliceCoordinateWindow,
+      sourceHeadFactorCoordinateWindow] using hKab
+  · intro hH a b
+    have hHab : ‖H.1 a b - (1 : Matrix (Fin r) (Fin r) ℂ) a b‖ < ρ := by
+      simpa [sourceHeadGaugeSliceCoordinateWindow,
+        sourceHeadFactorCoordinateWindow] using hH a b
+    rw [sourceHeadGaugeSliceSymmCoord_apply d r hrD H a b,
+      norm_mul, norm_sourceHeadMetric_diag d r hrD b, mul_one]
+    exact hHab
+
+/-- Zero-centered symmetric coordinate windows form a neighborhood basis at
+zero for the finite-dimensional symmetric submodule. -/
+theorem exists_sourceSymmetricMatrixCoordinateWindow_subset_of_mem_nhds_zero
+    (r : ℕ)
+    {V : Set (sourceSymmetricMatrixSubmodule r)}
+    (hV : V ∈ 𝓝 (0 : sourceSymmetricMatrixSubmodule r)) :
+    ∃ ρ : ℝ, 0 < ρ ∧ sourceSymmetricMatrixCoordinateWindow r ρ ⊆ V := by
+  rcases Metric.mem_nhds_iff.mp hV with ⟨ε, hε, hεsub⟩
+  refine ⟨ε, hε, ?_⟩
+  intro K hK
+  apply hεsub
+  have hnorm :
+      ‖(K : Matrix (Fin r) (Fin r) ℂ)‖ < ε :=
+    (Matrix.norm_lt_iff hε).2 hK
+  have hdist : dist K 0 = ‖(K : Matrix (Fin r) (Fin r) ℂ)‖ := by
+    rw [Subtype.dist_eq, dist_eq_norm]
+    simp
+  simpa [Metric.mem_ball, hdist] using hnorm
+
+/-- Slice-coordinate windows form a neighborhood basis at the slice center. -/
+theorem exists_sourceHeadGaugeSliceCoordinateWindow_subset_of_mem_nhds_center
+    (d r : ℕ)
+    (hrD : r < d + 1)
+    {V : Set (SourceHeadGaugeSlice d r hrD)}
+    (hV : V ∈ 𝓝 (sourceHeadGaugeSliceCenter d r hrD)) :
+    ∃ ρ : ℝ, 0 < ρ ∧
+      sourceHeadGaugeSliceCoordinateWindow d r hrD ρ ⊆ V := by
+  let e := sourceHeadGaugeSliceSymmCoordHomeomorph d r hrD
+  let W : Set (sourceSymmetricMatrixSubmodule r) := e.symm ⁻¹' V
+  have hV' : V ∈ 𝓝 (e.symm (0 : sourceSymmetricMatrixSubmodule r)) := by
+    simpa [e] using hV
+  have hW : W ∈ 𝓝 (0 : sourceSymmetricMatrixSubmodule r) :=
+    e.symm.continuous.continuousAt hV'
+  rcases exists_sourceSymmetricMatrixCoordinateWindow_subset_of_mem_nhds_zero
+      r hW with ⟨ρ, hρ, hρsub⟩
+  refine ⟨ρ, hρ, ?_⟩
+  intro H hH
+  have hK :
+      e H ∈ sourceSymmetricMatrixCoordinateWindow r ρ := by
+    simpa [e] using
+      (sourceHeadGaugeSliceSymmCoord_mem_coordinateWindow_iff
+        d r hrD ρ H).2 hH
+  have hWin : e H ∈ W := hρsub hK
+  simpa [W] using hWin
 
 /-- The sliced Gram map in symmetric `K = H * η - η` coordinates. -/
 def sourceHeadSliceGramPolynomial
