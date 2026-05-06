@@ -612,6 +612,45 @@ def of_sourceRealized_branch_eq
       _ = (L.chain.localChart 0).branch y0 := hbranch
       _ = (L.chain.localChart 0).Psi G := hstart
 
+/-- Package equality on an actual source patch into terminal-seed data, once
+that source patch realizes every point of the oriented terminal seed.  This is
+the source-patch form expected from the strict OS I §4.5 BHW/Jost argument. -/
+def of_sourcePatch_eqOn
+    (hn : d + 1 ≤ n)
+    {sourceSeed : Set (Fin n → Fin (d + 1) → ℂ)}
+    {terminalSeed : Set (SourceOrientedGramData d n)}
+    (terminalSeed_relOpen :
+      IsRelOpenInSourceOrientedGramVariety d n terminalSeed)
+    (terminalSeed_nonempty : terminalSeed.Nonempty)
+    (terminalSeed_sub_closing :
+      terminalSeed ⊆ L.closing_orientedPatch)
+    (terminalSeed_sub_max :
+      terminalSeed ⊆ {G | SourceOrientedMaxRankAt d n G})
+    (sourceSeed_sub_initial :
+      sourceSeed ⊆ (L.chain.localChart 0).carrier)
+    (sourceSeed_sub_final :
+      sourceSeed ⊆ (L.chain.localChart (Fin.last L.chain.m)).carrier)
+    (sourceSeed_realizes :
+      ∀ G, G ∈ terminalSeed →
+        ∃ y, y ∈ sourceSeed ∧
+          sourceOrientedMinkowskiInvariant d n y = G)
+    (hsource_eq :
+      Set.EqOn
+        (L.chain.localChart (Fin.last L.chain.m)).branch
+        (L.chain.localChart 0).branch
+        sourceSeed) :
+    BHWJostOrientedClosingPatchTerminalSeedData L :=
+  of_sourceRealized_branch_eq
+    (d := d) (n := n) (hd := hd) (τ := τ)
+    (Ω0 := Ω0) (U := U) (B0 := B0) (p0 := p0) (L := L)
+    hn terminalSeed_relOpen terminalSeed_nonempty terminalSeed_sub_closing
+    terminalSeed_sub_max
+    (fun G hG => by
+      rcases sourceSeed_realizes G hG with ⟨y, hySeed, hyG⟩
+      exact
+        ⟨y, y, sourceSeed_sub_initial hySeed, sourceSeed_sub_final hySeed,
+          hyG, hyG, hsource_eq hySeed⟩)
+
 /-- If the Hall-Wightman/Jost closed-path argument proves source-branch
 equality for all matching initial/final representatives over the closing
 oriented patch, then the max-rank terminal seed can be extracted

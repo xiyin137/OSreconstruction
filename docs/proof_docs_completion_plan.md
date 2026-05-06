@@ -292,6 +292,7 @@ it provides
 `BHW.BHWJostOrientedFiniteOverlapPropagationData.sourceMonodromy_of_terminalSeedOnClosingPatch_headSliceIFT`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.of_sourceRealized_branch_eq`,
+`BHW.BHWJostOrientedClosingPatchTerminalSeedData.of_sourcePatch_eqOn`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.of_closingPatch_sourceBranch_eq`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.of_closingPatch_exists_sourceBranch_eq`,
 `BHW.BHWJostOrientedClosingPatchTerminalSeedData.to_finiteOverlapPropagationData`,
@@ -7830,17 +7831,32 @@ common-boundary envelope, or any theorem that already assumes locality.
    If the construction is patch-by-patch, the Lean-ready target is instead
    `BHWJostOrientedClosingPatchTerminalSeedData L`.  The hard proof carries
    the continued branch germ through the finite closed path using the current
-   local chart at each step, then chooses a nonempty relatively open max-rank
-   seed inside `L.closing_orientedPatch`.  For each `G` in that seed it
-   uses
+   local chart at each step, then chooses:
+   `sourceSeed`, an actual OS I §4.5 source patch contained in both the
+   initial and terminal carriers; and `terminalSeed`, a nonempty relatively
+   open max-rank oriented seed with
+   `terminalSeed ⊆ L.closing_orientedPatch`.  The source patch must realize
+   the oriented seed:
+   `∀ G ∈ terminalSeed, ∃ y ∈ sourceSeed,
+     sourceOrientedMinkowskiInvariant d n y = G`.
+   The genuine Hall-Wightman/Jost closed-path input is then exactly
+   `Set.EqOn (L.chain.localChart (Fin.last L.chain.m)).branch
+     (L.chain.localChart 0).branch sourceSeed`.
+   The checked final package is:
+   `BHWJostOrientedClosingPatchTerminalSeedData.of_sourcePatch_eqOn hn
+      terminalSeed_relOpen terminalSeed_nonempty terminalSeed_sub_closing
+      terminalSeed_sub_max sourceSeed_sub_initial sourceSeed_sub_final
+      sourceSeed_realizes hsource_eq`.
+   This is the strict OS I §4.5 source-patch transcript.  If the proof is
+   phrased pointwise instead, for each `G` in the seed use
    `BHWJostOrientedClosedContinuationLoop.exists_initial_final_source_realizations_of_closing`
    (or its branch-rewrite variant) to obtain source representatives `y0` and
    `yF` in the initial and terminal carriers with oriented invariant `G`.
-   The only new analytic content is equality of the terminal and initial
-   source branch values for those representatives.  The checked constructor
+   The checked constructor
    `BHWJostOrientedClosingPatchTerminalSeedData.of_sourceRealized_branch_eq`
-   rewrites this source-level equality into the required terminal/initial
-   `Psi` equality.  A useful stronger whole-closing-patch target is the
+   then rewrites this source-level equality into the required
+   terminal/initial `Psi` equality.
+   A useful stronger whole-closing-patch target is the
    existential checked constructor
    `BHWJostOrientedClosingPatchTerminalSeedData.of_closingPatch_exists_sourceBranch_eq`:
    for every `G ∈ L.closing_orientedPatch`, produce one initial source
@@ -9226,6 +9242,11 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHWJostOrientedClosedContinuationLoop.exists_initial_final_source_realizations_branch_eqs_of_closing`;
    the unproved part is precisely the source-branch equality supplied by the
    genuine closed-path continuation.  The stronger constructor
+   `of_sourcePatch_eqOn` consumes the source-patch form of that same input:
+   a source seed where terminal and initial branches agree, together with a
+   realization map from the oriented terminal seed into that source seed.  This
+   is the closest checked package to the OS I §4.5 continuation proof.  The
+   stronger constructor
    `of_closingPatch_sourceBranch_eq` goes one step further: from source-branch
    equality for all matching representatives over `L.closing_orientedPatch`,
    it uses the checked max-rank seed extractor and the closing-patch
