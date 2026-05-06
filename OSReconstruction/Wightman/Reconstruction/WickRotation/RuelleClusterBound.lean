@@ -432,7 +432,36 @@ theorem W_analytic_cluster_integral_via_ruelle
           Bornology.cobounded (SpacetimeDim d))
         (nhds (∫ p : NPointDomain d n × NPointDomain d m,
           clusterLimitIntegrand Wfn f g p)) := by
-    sorry  -- MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+    -- The filter is IsCountablyGenerated:
+    -- principal is auto-instance; cobounded on a metric space comes from
+    -- comap (dist · 0) atTop, with atTop on ℝ countably generated.
+    haveI hcb : (Bornology.cobounded (SpacetimeDim d)).IsCountablyGenerated := by
+      rw [← Metric.comap_dist_right_atTop (0 : SpacetimeDim d)]
+      infer_instance
+    refine MeasureTheory.tendsto_integral_filter_of_dominated_convergence
+      (fun p => C_R * (1 + ‖p.1‖ + ‖p.2‖) ^ N_R * ‖f p.1‖ * ‖g p.2‖) ?_ ?_
+      h_dominator_integrable h_pointwise
+    · -- AEStronglyMeasurable of clusterIntegrand a, eventually in a.
+      refine Filter.Eventually.of_forall (fun a => ?_)
+      unfold clusterIntegrand
+      refine MeasureTheory.AEStronglyMeasurable.mul ?_
+        (g.continuous.comp continuous_snd).aestronglyMeasurable
+      refine MeasureTheory.AEStronglyMeasurable.mul ?_
+        (f.continuous.comp continuous_fst).aestronglyMeasurable
+      -- F_ext_on_translatedPET_total composed with the wick-rotated config
+      -- is measurable (F_ext_total measurable + continuous composition).
+      sorry
+    · -- The eventually-in-a bound `‖clusterIntegrand a p‖ ≤ bound p` for
+      -- `‖a⃗‖ > R_R` (where R_R is from Ruelle's bound).
+      rw [Filter.eventually_iff_exists_mem]
+      refine ⟨{a : SpacetimeDim d | a 0 = 0 ∧
+        (∑ i : Fin d, (a (Fin.succ i))^2) > R_R^2}, ?_, ?_⟩
+      · -- This set is in the filter `principal {a 0 = 0} ⊓ cobounded`.
+        sorry
+      · intro a ha
+        refine Filter.Eventually.of_forall (fun p => ?_)
+        -- Bound |F_ext_total| by Ruelle, and combine with f, g norms.
+        sorry
   -- Step 6: combine — joint integral tends to L_n * L_m.
   have h_joint_tendsto :
       Filter.Tendsto
