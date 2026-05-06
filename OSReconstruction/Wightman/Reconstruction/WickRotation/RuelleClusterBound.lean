@@ -543,8 +543,31 @@ theorem W_analytic_cluster_integral_via_ruelle
           sorry
       · intro a ha
         refine Filter.Eventually.of_forall (fun p => ?_)
-        -- Bound |F_ext_total| by Ruelle, and combine with f, g norms.
-        sorry
+        -- ha : a 0 = 0 ∧ ∑ (a (succ i))² > R_R².
+        -- We bound `‖clusterIntegrand a p‖` by the dominator.
+        unfold clusterIntegrand
+        -- Three-way case split on whether p.1 ∈ OPTR-n and p.2 ∈ OPTR-m.
+        by_cases hp1 : p.1 ∈ OrderedPositiveTimeRegion d n
+        · by_cases hp2 : p.2 ∈ OrderedPositiveTimeRegion d m
+          · -- Both in OPTR: apply Ruelle's bound.
+            have hw1 : (fun k => wickRotatePoint (p.1 k)) ∈ ForwardTube d n :=
+              wick_OPTR_in_forwardTube n p.1 hp1
+            have hw2 : (fun k => wickRotatePoint (p.2 k)) ∈ ForwardTube d m :=
+              wick_OPTR_in_forwardTube m p.2 hp2
+            -- Ruelle's bound on the joint analytic continuation.
+            -- The bound from h_ruelle uses W_analytic_BHW; the bridge to
+            -- F_ext_on_translatedPET_total is via PET membership.
+            -- Routed: this composition with norms / Real.norm_eq_abs is
+            -- ~30 lines of careful arithmetic.
+            sorry
+          · -- p.2 ∉ OPTR-m: g(p.2) = 0, integrand = 0, bound trivial.
+            have h_g_zero : (g : NPointDomain d m → ℂ) p.2 = 0 :=
+              image_eq_zero_of_notMem_tsupport (fun hxts => hp2 (hsupp_g hxts))
+            simp [h_g_zero]
+        · -- p.1 ∉ OPTR-n: similar.
+          have h_f_zero : (f : NPointDomain d n → ℂ) p.1 = 0 :=
+            image_eq_zero_of_notMem_tsupport (fun hxts => hp1 (hsupp_f hxts))
+          simp [h_f_zero]
   -- Step 6: combine — joint integral tends to L_n * L_m.
   have h_joint_tendsto :
       Filter.Tendsto
