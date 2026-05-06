@@ -252,9 +252,13 @@ It checks
 which builds branch-free transfer neighborhoods from a normal-form patch
 producer plus uniform descent, and
 `BHW.bhw_jost_orientedContinuationChain_of_transferCover`, the top-level
-spelling of the compact transfer-cover chain fold.  This keeps the carrier/API
-file below the hard-frontier size limit and introduces no new analytic
-assumption.
+spelling of the compact transfer-cover chain fold.  It also provides
+`BHW.BHWOrientedContinuationChainAtlasData`,
+`BHW.BHWOrientedContinuationChainAtlasData.to_sourcePatchContinuationAtlas`,
+and `BHW.BHWOrientedContinuationChainAtlasData.exists_glued_branch`, which
+turn selected terminal chains plus terminal overlap/base agreement into the
+checked source-patch atlas and glued branch.  This keeps the carrier/API file
+below the hard-frontier size limit and introduces no new analytic assumption.
 
 The open-chart BHW near-identity input is now checked in
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`.
@@ -7940,14 +7944,14 @@ common-boundary envelope, or any theorem that already assumes locality.
    two terminal charts at `z`.  Evaluating this endpoint equality gives
    `bhw_branch_orientedChain_singleValued_on_sourcePatchHull`.
 
-   `bhw_orientedContinuationAtlas_from_chains` uses
-   `bhw_sourcePatchHull_orientedContinuationChainData` to choose the fixed
-   base point and one oriented terminal chain through every point of `U`.
-   The atlas charts are the terminal source charts of those chains, the local
-   branches are the stored terminal branches, `overlap_eq` is the
-   single-valuedness theorem above, and `base_agree` compares each terminal
-   chart meeting `Ω0 ∩ U` with the explicit restricted starting chart
-   `Ω0 ∩ U`.  Gluing this atlas is the same sheaf step
+   The checked assembly target for the atlas-from-chains step is
+   `BHWOrientedContinuationChainAtlasData`: choose the fixed base point and
+   one oriented terminal chain through every point of `U`, prove terminal
+   overlap equality on intersections of the terminal source charts, and prove
+   base agreement on `Ω0 ∩ U`.  Its method
+   `to_sourcePatchContinuationAtlas` builds the atlas whose charts are the
+   terminal source charts and whose branches are the stored terminal branches;
+   its method `exists_glued_branch` then calls the checked
    `bhw_glue_sourcePatchContinuationAtlas`.
 
    The plain-Gram declarations below remain useful only if the full-component

@@ -76,4 +76,79 @@ noncomputable def bhw_jost_orientedContinuationChain_of_transferCover
     hstart_open hstart_preconnected hstart_nonempty hstart_mem
     hstart_sub hstart_agree
 
+/-- Chain-level data sufficient to assemble a source-patch continuation atlas.
+The hard content is selecting one continuation chain through each point of
+`U`, proving terminal overlap equality for the selected chains, and proving
+agreement with the initial branch on `Ω0 ∩ U`. -/
+structure BHWOrientedContinuationChainAtlasData
+    [NeZero d] (hd : 2 ≤ d)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (Ω0 U : Set (Fin n → Fin (d + 1) → ℂ))
+    (B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ) where
+  p0 : Fin n → Fin (d + 1) → ℂ
+  base_mem : p0 ∈ Ω0 ∩ U
+  chainAt :
+    ∀ z, z ∈ U →
+      BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z
+  terminal_overlap_eq :
+    ∀ a b : {z // z ∈ U},
+      Set.EqOn
+        ((chainAt a.1 a.2).branch (Fin.last (chainAt a.1 a.2).m))
+        ((chainAt b.1 b.2).branch (Fin.last (chainAt b.1 b.2).m))
+        ((chainAt a.1 a.2).chart (Fin.last (chainAt a.1 a.2).m) ∩
+          (chainAt b.1 b.2).chart (Fin.last (chainAt b.1 b.2).m))
+  terminal_base_agree :
+    ∀ z (hz : z ∈ Ω0 ∩ U),
+      (chainAt z hz.2).branch (Fin.last (chainAt z hz.2).m) z = B0 z
+
+namespace BHWOrientedContinuationChainAtlasData
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+
+/-- Assemble a continuation atlas from selected terminal chains plus their
+terminal overlap and base-agreement proofs. -/
+noncomputable def to_sourcePatchContinuationAtlas
+    (D : BHWOrientedContinuationChainAtlasData hd n τ Ω0 U B0) :
+    BHWSourcePatchContinuationAtlas hd n τ Ω0 U B0 where
+  chart := {z // z ∈ U}
+  carrier := fun a =>
+    (D.chainAt a.1 a.2).chart (Fin.last (D.chainAt a.1 a.2).m)
+  branch := fun a =>
+    (D.chainAt a.1 a.2).branch (Fin.last (D.chainAt a.1 a.2).m)
+  cover := by
+    intro z hz
+    exact ⟨⟨z, hz⟩, (D.chainAt z hz).final_mem⟩
+  carrier_open := by
+    intro a
+    exact (D.chainAt a.1 a.2).chart_open
+      (Fin.last (D.chainAt a.1 a.2).m)
+  carrier_sub_U := by
+    intro a
+    exact (D.chainAt a.1 a.2).chart_sub_U
+      (Fin.last (D.chainAt a.1 a.2).m)
+  branch_holo := by
+    intro a
+    exact (D.chainAt a.1 a.2).branch_holo
+      (Fin.last (D.chainAt a.1 a.2).m)
+  overlap_eq := by
+    intro a b
+    exact D.terminal_overlap_eq a b
+  base_agree := by
+    intro z hz
+    exact ⟨⟨z, hz.2⟩, (D.chainAt z hz.2).final_mem,
+      D.terminal_base_agree z hz⟩
+
+/-- Chain-atlas data immediately gives a glued holomorphic branch on `U`. -/
+theorem exists_glued_branch
+    (D : BHWOrientedContinuationChainAtlasData hd n τ Ω0 U B0) :
+    ∃ B : (Fin n → Fin (d + 1) → ℂ) → ℂ,
+      DifferentiableOn ℂ B U ∧
+      (∀ z, z ∈ Ω0 → z ∈ U → B z = B0 z) :=
+  bhw_glue_sourcePatchContinuationAtlas hd n τ Ω0 U B0
+    D.to_sourcePatchContinuationAtlas
+
+end BHWOrientedContinuationChainAtlasData
+
 end BHW
