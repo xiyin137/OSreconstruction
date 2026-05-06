@@ -651,6 +651,55 @@ Thus the remaining canonical-image theorem may assume a window already shrunk
 into the head-gauge factor domain; it no longer has to compare two different
 head factors by hand.
 
+Canonical extracted-image checkpoint, 2026-05-05:
+`SourceOrientedRankDeficientCanonicalImage.lean` now defines the exact subtype
+image candidate
+`BHW.sourceOrientedHeadGaugeSchurExtractedImage`.  For a source-variety point
+`Gv`, membership means: with
+`Acoord := sourceOrientedSchurHeadBlockSymm d n r hrD hrn Gv.2`,
+`H := Head.factor Acoord`, and
+`T := sourceOrientedSchurResidualTailData d n r hrD hrn Gv.1 H`,
+one has `Acoord ∈ Head.U`, `H` in the chosen head window, the extracted Schur
+mixed coefficient in the chosen mixed window, and the gram/determinant
+coordinates of `T` satisfy the tail eta bounds.  Two inclusions are now
+checked:
+`sourceOrientedNormalParameterVarietyPoint_mem_headGaugeSchurExtractedImage`
+proves the forward image membership for every normal parameter in a
+head-domain-compatible Schur window, using the checked head-gauge residual and
+mixed extraction equalities; and
+`sourceOrientedHeadGaugeSchurExtractedImage_subset_normalParameter_image`
+proves the reverse inclusion in the hard source range by building the
+head-gauge Schur residual packet, applying `Tail.tailRealize`, and calling
+`sourceOriented_reconstruct_from_schurResidual`.  Therefore the remaining
+canonical-image proof is now exactly the openness of
+`sourceOrientedHeadGaugeSchurExtractedImage`; surjectivity and forward
+membership no longer remain as hidden algebraic blockers.
+
+Lean-ready openness transcript for the next slice: prove continuity of the
+extracted coordinate maps on `SourceOrientedVariety d n`.
+First, add `continuous_sourceOrientedSchurHeadBlock` on
+`SourceOrientedGramData d n`, then the subtype-valued
+`continuous_sourceOrientedSchurHeadBlockSymm_on_variety`.  The first proof is
+finite-coordinate projection from `G.gram`; the second is `Continuous.subtype_mk`
+after composing with `continuous_subtype_val`.  Next, for the head-gauge
+factor condition, use `Head.factor_continuousOn` and `Head.U_open` to prove
+that
+`{Gv | Acoord Gv ∈ Head.U ∧ Head.factor (Acoord Gv) ∈ headWindow}` is open in
+the subtype, by `ContinuousOn.isOpen_inter_preimage` after pulling back along
+`Acoord`.  The mixed map
+`Gv ↦ sourceSchurMixedCoeff n r hrn Gv.1 (sourceOrientedSchurHeadBlock n r hrn Gv.1)`
+and the residual-tail gram/determinant maps are finite sums/products plus
+matrix inverse on the unit-head patch; their continuity is needed only on the
+open set where the head-gauge condition holds, and the head-gauge determinant
+unit theorem supplies that unit patch.  Once these maps are continuous on that
+open patch, intersect the preimages of
+`sourceOrientedMixedCoordinateWindow n r mixedRadius`, the finitely many
+strict gram eta balls, and the finitely many strict determinant eta balls.
+This gives
+`isOpen_sourceOrientedHeadGaugeSchurExtractedImage`, after which the full
+canonical-image theorem is just the two checked inclusions above with
+`Ω := sourceOrientedHeadGaugeSchurExtractedImage ...`.
+
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
 `BHW.SourceOrientedRankDeficientVarietyLocalImageData.ofNormalImageTransport`
