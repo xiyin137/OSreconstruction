@@ -604,14 +604,15 @@ large Schur window with ambient containment of a smaller normal ball.  The same
 Schur window now supplies all topology and shrink fields.
 The checked assembly
 `BHW.SourceOrientedRankDeficientAlgebraicNormalFormData.maxRankLocalImageData_of_schurWindowCanonicalImage`
-then consumes exactly the remaining canonical-image theorem and returns the
-strengthened local-image packet.  Its only extra hypothesis is: for the chosen
-Schur window, there is an open subtype normal image `Omega` such that
+consumes a canonical-image theorem and returns the strengthened local-image
+packet.  Its only extra hypothesis is: for the chosen Schur window, there is
+an open subtype normal image `Omega` such that
 `Omega ⊆ sourceOrientedNormalParameterVarietyPoint '' parameterBox` and
-`sourceOrientedNormalParameterVarietyPoint parameterBox ⊆ Omega`.  This is the
-next theorem to prove; all shrink, transported containment, invertible-head,
-center, continuity, max-rank/tail-rank rewrite, and residual exact-rank
-connectedness fields are now assembled.
+`sourceOrientedNormalParameterVarietyPoint parameterBox ⊆ Omega`.  The
+head-gauge version below now supplies this canonical-image theorem.  All
+shrink, transported containment, invertible-head, center, continuity,
+max-rank/tail-rank rewrite, and residual exact-rank connectedness fields are
+assembled.
 
 Head-gauge correction, 2026-05-05: the canonical-image proof cannot use only
 `Head.factor_gram`.  For a normal parameter `p`, the forward residual-tail
@@ -651,7 +652,7 @@ Thus the remaining canonical-image theorem may assume a window already shrunk
 into the head-gauge factor domain; it no longer has to compare two different
 head factors by hand.
 
-Canonical extracted-image checkpoint, 2026-05-05:
+Canonical extracted-image checkpoint, 2026-05-05, now closed:
 `SourceOrientedRankDeficientCanonicalImage.lean` now defines the exact subtype
 image candidate
 `BHW.sourceOrientedHeadGaugeSchurExtractedImage`.  For a source-variety point
@@ -670,12 +671,12 @@ mixed extraction equalities; and
 `sourceOrientedHeadGaugeSchurExtractedImage_subset_normalParameter_image`
 proves the reverse inclusion in the hard source range by building the
 head-gauge Schur residual packet, applying `Tail.tailRealize`, and calling
-`sourceOriented_reconstruct_from_schurResidual`.  Therefore the remaining
-canonical-image proof is now exactly the openness of
-`sourceOrientedHeadGaugeSchurExtractedImage`; surjectivity and forward
-membership no longer remain as hidden algebraic blockers.
+`sourceOriented_reconstruct_from_schurResidual`.  The file also checks
+`isOpen_sourceOrientedHeadGaugeSchurExtractedImage` by finite-coordinate
+continuity on the gauge unit patch, and packages the result as
+`sourceOrientedHeadGaugeSchurWindowCanonicalImage`.
 
-Lean-ready openness transcript for the next slice: prove continuity of the
+Checked openness transcript: the proof first establishes continuity of the
 extracted coordinate maps on `SourceOrientedVariety d n`.
 First, add `continuous_sourceOrientedSchurHeadBlock` on
 `SourceOrientedGramData d n`, then the subtype-valued
@@ -698,7 +699,13 @@ strict gram eta balls, and the finitely many strict determinant eta balls.
 This gives
 `isOpen_sourceOrientedHeadGaugeSchurExtractedImage`, after which the full
 canonical-image theorem is just the two checked inclusions above with
-`Ω := sourceOrientedHeadGaugeSchurExtractedImage ...`.
+`Ω := sourceOrientedHeadGaugeSchurExtractedImage ...`.  Finally,
+`SourceOrientedRankDeficientAlgebraicNormalFormData.maxRankLocalImageData_of_headGaugeSchurWindow`
+feeds the canonical-image theorem into the checked Schur-window shrink and
+transport adapters.  The next producer-level blocker is no longer openness or
+surjectivity of the canonical image; it is supplying the local
+`SourceRankDeficientHeadGaugeData` at the canonical head metric, then invoking
+this checked head-gauge local-image packet.
 
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
