@@ -647,14 +647,40 @@ theorem W_analytic_cluster_integral_via_ruelle
   have ha_in_T₁ : a ∈ T₁ := hT₁_mem ha₀
   have ha_in_T₂ : a ∈ T₂ := by
     apply hR₀_sub
-    -- a ∉ closedBall 0 R₀ ↔ ‖a‖ > R₀.
     rw [Set.mem_compl_iff, Metric.mem_closedBall, dist_zero_right, not_le]
-    -- Spatial bound: (d+1) · ‖a‖² ≥ ∑ (a (succ i))² > (R₁ (d+1))² gives
-    -- ‖a‖² > R₁² (d+1) ≥ R₁² ≥ R₀² + something positive, hence ‖a‖ > R₀.
-    -- Algebraic conversion routed to follow-up: ~30 lines of nlinarith
-    -- with `pow_le_pow_left₀` + `Finset.sum_const` + multiplicative
-    -- inequality manipulation.
-    sorry
+    -- Spatial bound: ∑ (a (succ i))² ≤ d · ‖a‖² (sum of d terms each ≤ ‖a‖²).
+    have h_each : ∀ i : Fin d, (a (Fin.succ i))^2 ≤ ‖a‖^2 := fun i => by
+      calc (a (Fin.succ i))^2 = (|a (Fin.succ i)|)^2 := (sq_abs _).symm
+        _ ≤ ‖a‖^2 := pow_le_pow_left₀ (abs_nonneg _) (norm_le_pi_norm a _) 2
+    have h_sum_le : (∑ i : Fin d, (a (Fin.succ i))^2) ≤ (d : ℝ) * ‖a‖^2 := by
+      calc ∑ i : Fin d, (a (Fin.succ i))^2 ≤ ∑ _i : Fin d, ‖a‖^2 :=
+            Finset.sum_le_sum (fun i _ => h_each i)
+        _ = (d : ℝ) * ‖a‖^2 := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]; ring
+    -- Combine with ha_large: d · ‖a‖² ≥ ∑ > (R₁ (d+1))² ≥ R₁² · d.
+    have h_d_pos : (0 : ℝ) < d := by
+      have : 0 < d := Nat.pos_of_ne_zero (NeZero.ne d)
+      exact_mod_cast this
+    have h_R₁_nonneg : (0 : ℝ) ≤ R₁ := le_of_lt hR₁_pos
+    have h_norm_nonneg : (0 : ℝ) ≤ ‖a‖ := norm_nonneg _
+    have h_R₀_le_R₁ : R₀ ≤ R₁ := le_max_left R₀ 1
+    -- Key: d · ‖a‖² > (R₁ (d+1))² ≥ d · R₁² (using (d+1)² ≥ d).
+    have h_norm_sq : R₁^2 < ‖a‖^2 := by
+      have h1 : (R₁ * ((d : ℝ) + 1))^2 < (d : ℝ) * ‖a‖^2 := by
+        have h_sum_gt : (R₁ * ((d : ℝ) + 1))^2 <
+            ∑ i : Fin d, (a (Fin.succ i))^2 := ha_large
+        linarith [h_sum_gt, h_sum_le]
+      -- (R₁ (d+1))² ≥ R₁² · d (using (d+1)² ≥ d).
+      have h_R₁_sq_le : (d : ℝ) * R₁^2 ≤ (R₁ * ((d : ℝ) + 1))^2 := by
+        nlinarith [sq_nonneg R₁, sq_nonneg (((d : ℝ) + 1)), h_d_pos]
+      -- Combine: d · R₁² < d · ‖a‖², divide by d.
+      have h2 : (d : ℝ) * R₁^2 < (d : ℝ) * ‖a‖^2 :=
+        lt_of_le_of_lt h_R₁_sq_le h1
+      exact lt_of_mul_lt_mul_left h2 h_d_pos.le
+    -- ‖a‖² > R₁² → ‖a‖ > R₁ (both nonneg).
+    have h_norm_gt_R₁ : R₁ < ‖a‖ := by
+      nlinarith [h_norm_sq, h_R₁_nonneg, h_norm_nonneg]
+    linarith
   -- Bound the cluster integral via hS_bound.
   have h_in_S : a ∈ S := hT_sub ⟨ha_in_T₁, ha_in_T₂⟩
   have h_cluster_bound : ‖(∫ p : NPointDomain d n × NPointDomain d m,
