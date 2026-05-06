@@ -45023,7 +45023,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `bhw_glue_sourcePatchContinuationAtlas`.
 
             The plain rank-exact Gram monodromy theorem below remains only the
-            conditional ordinary fork.
+            conditional ordinary fork.  It is not the active strict OS II /
+            OS I §4.5 Lean target.  The production route uses the checked
+            oriented replacements
+            `BHWJostLocalOrientedContinuationChart`,
+            `BHWJostOrientedTransitionData`,
+            `BHWJostOrientedBranchFreeTransferNeighborhood`,
+            `BHWJostOrientedSourcePatchContinuationChain`,
+            `BHWJostOrientedClosedContinuationLoop`, and the terminal-seed
+            endpoints in `SourceOrientedBHWFiniteOverlap.lean`.  Therefore
+            the scalar `bhw_jost_localContinuationStep` block below is
+            documentation for the archived ordinary fork, not permission to
+            start new scalar production Lean on the active route.
 
             ```lean
             structure BHW.BHWJostLocalScalarContinuationChart

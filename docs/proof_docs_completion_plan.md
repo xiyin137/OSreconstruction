@@ -7931,7 +7931,19 @@ common-boundary envelope, or any theorem that already assumes locality.
    `bhw_glue_sourcePatchContinuationAtlas`.
 
    The plain-Gram declarations below remain useful only if the full-component
-   Hall-Wightman input is supplied.
+   Hall-Wightman input is supplied.  They are not the active strict OS II /
+   OS I §4.5 Lean targets.  On the current route, production Lean must use the
+   checked oriented replacements:
+   `BHWJostLocalOrientedContinuationChart`,
+   `BHWJostOrientedTransitionData`,
+   `BHWJostOrientedBranchFreeTransferNeighborhood`,
+   `BHWJostOrientedSourcePatchContinuationChain`,
+   `BHWJostOrientedClosedContinuationLoop`, and the terminal-seed consumers
+   in `SourceOrientedBHWFiniteOverlap.lean`.  In particular,
+   `bhw_jost_localContinuationStep` below should not be implemented as a
+   scalar theorem on the active route; its oriented replacement is the checked
+   branch-free transfer/transition API fed by the source-normal-form producer
+   and uniform oriented descent theorem.
 
    ```lean
    structure BHW.BHWJostLocalScalarContinuationChart
