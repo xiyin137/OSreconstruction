@@ -16,6 +16,53 @@ namespace BHW
 
 variable {d n : ℕ} [NeZero d]
 
+/-- Equality of two compact Wick pairings gives zero of the paired Wick
+branch difference, once the two paired Wick traces are integrable. -/
+theorem integral_wickBranchDifference_mul_eq_zero_of_pairing_eq
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (ψ : SchwartzNPoint d n)
+    (hτ_int :
+      Integrable
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) * ψ u))
+    (hid_int :
+      Integrable
+        (fun u : NPointDomain d n =>
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u))
+    (hpair :
+      (∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) * ψ u)
+        =
+      ∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u) :
+    ∫ u : NPointDomain d n,
+        (bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * ψ u = 0 := by
+  have hfun :
+      (fun u : NPointDomain d n =>
+          (bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * ψ u)
+        =
+      fun u : NPointDomain d n =>
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) * ψ u -
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u := by
+    funext u
+    ring
+  calc
+    (∫ u : NPointDomain d n,
+        (bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) * ψ u)
+        =
+      (∫ u : NPointDomain d n,
+        bvt_F OS lgc n (fun k => wickRotatePoint (u (τ k))) * ψ u) -
+        (∫ u : NPointDomain d n,
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k)) * ψ u) := by
+        rw [hfun]
+        exact MeasureTheory.integral_sub hτ_int hid_int
+    _ = 0 := sub_eq_zero.mpr hpair
+
 /-- Pair of ordinary/adjacent BHW-Jost branches on one selected OS45 source
 patch hull.
 
@@ -152,6 +199,124 @@ theorem difference_real_trace
   simp [difference, P.Btau_real_trace x hx, P.Bord_real_trace x hx]
 
 end OS45SourcePatchBHWJostPairData
+
+/-- Distributional vanishing of a BHW/Jost pair's Wick trace difference on a
+real source patch forces pointwise vanishing of the checked difference branch
+on the connected BHW/Jost hull.
+
+This is the OS-free Wick-real-section identity theorem specialized to
+`OS45SourcePatchBHWJostPairData`. -/
+theorem os45_pairData_difference_identity_of_wickDistributionZero
+    {hd : 2 ≤ d}
+    {OS : OsterwalderSchraderAxioms d}
+    {lgc : OSLinearGrowthCondition d OS}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {V : Set (NPointDomain d n)}
+    (P : BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi V)
+    (hwick_zero :
+      ∀ ψ : SchwartzNPoint d n,
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ u : NPointDomain d n,
+            (bvt_F OS lgc n
+                (fun k => wickRotatePoint (u (P.τ k))) -
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k))) *
+              ψ u = 0) :
+    Set.EqOn P.difference 0 P.U := by
+  refine
+    eqOn_openConnected_of_distributional_wickSection_eq_on_realOpen
+      (d := d) (n := n) P.U V P.U_open P.U_connected P.V_open
+      P.V_nonempty P.wick_mem P.difference (fun _ => 0)
+      P.difference_holo (differentiableOn_const (c := (0 : ℂ))) ?_
+  intro ψ hψ_comp hψ_supp
+  have htrace :
+      (∫ u : NPointDomain d n,
+          P.difference (fun k => wickRotatePoint (u k)) * ψ u)
+        =
+      ∫ u : NPointDomain d n,
+          (bvt_F OS lgc n
+              (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) *
+            ψ u := by
+    apply MeasureTheory.integral_congr_ae
+    apply Filter.Eventually.of_forall
+    intro u
+    by_cases hu : u ∈ V
+    · change
+        P.difference (fun k => wickRotatePoint (u k)) * ψ u =
+          (bvt_F OS lgc n
+              (fun k => wickRotatePoint (u (P.τ k))) -
+            bvt_F OS lgc n (fun k => wickRotatePoint (u k))) *
+            ψ u
+      rw [P.difference_wick_trace hu]
+    · have hψ_zero : ψ u = 0 := by
+        have hnot :
+            u ∉ tsupport (ψ : NPointDomain d n → ℂ) :=
+          fun hu_supp => hu (hψ_supp hu_supp)
+        exact image_eq_zero_of_notMem_tsupport hnot
+      simp [hψ_zero]
+  calc
+    (∫ u : NPointDomain d n,
+        P.difference (fun k => wickRotatePoint (u k)) * ψ u)
+        =
+      ∫ u : NPointDomain d n,
+        (bvt_F OS lgc n
+            (fun k => wickRotatePoint (u (P.τ k))) -
+          bvt_F OS lgc n (fun k => wickRotatePoint (u k))) *
+          ψ u := htrace
+    _ = 0 := hwick_zero ψ hψ_comp hψ_supp
+    _ = ∫ u : NPointDomain d n, (0 : ℂ) * ψ u := by simp
+
+/-- Distributional Wick trace zero for a BHW/Jost pair gives the exact
+`P.difference` real-trace zero consumed by the checked compact source-patch
+algebra. -/
+theorem os45_pairData_difference_realTrace_zero_of_wickDistributionZero
+    {hd : 2 ≤ d}
+    {OS : OsterwalderSchraderAxioms d}
+    {lgc : OSLinearGrowthCondition d OS}
+    {i : Fin n} {hi : i.val + 1 < n}
+    {V : Set (NPointDomain d n)}
+    (P : BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi V)
+    (hwick_zero :
+      ∀ ψ : SchwartzNPoint d n,
+        HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+        tsupport (ψ : NPointDomain d n → ℂ) ⊆ V →
+        ∫ u : NPointDomain d n,
+            (bvt_F OS lgc n
+                (fun k => wickRotatePoint (u (P.τ k))) -
+              bvt_F OS lgc n (fun k => wickRotatePoint (u k))) *
+              ψ u = 0) :
+    ∀ ψ : SchwartzNPoint d n,
+      HasCompactSupport (ψ : NPointDomain d n → ℂ) →
+      tsupport (ψ : NPointDomain d n → ℂ) ⊆ V →
+      ∫ u : NPointDomain d n,
+          P.difference (BHW.realEmbed u) * ψ u = 0 := by
+  intro ψ _hψ_comp hψ_supp
+  have hidentity :
+      Set.EqOn P.difference 0 P.U :=
+    BHW.os45_pairData_difference_identity_of_wickDistributionZero
+      (d := d) (n := n) P hwick_zero
+  calc
+    (∫ u : NPointDomain d n,
+        P.difference (BHW.realEmbed u) * ψ u)
+        =
+      ∫ u : NPointDomain d n, (0 : ℂ) := by
+        apply MeasureTheory.integral_congr_ae
+        apply Filter.Eventually.of_forall
+        intro u
+        by_cases hu : u ∈ V
+        · have hzero : P.difference (BHW.realEmbed u) = 0 :=
+            hidentity (P.real_mem u hu)
+          simp [hzero]
+        · have hψ_zero : ψ u = 0 := by
+            have hnot :
+                u ∉ tsupport (ψ : NPointDomain d n → ℂ) :=
+              fun hu_supp => hu (hψ_supp hu_supp)
+            exact image_eq_zero_of_notMem_tsupport hnot
+          simp [hψ_zero]
+    _ = 0 := by simp
 
 /-- If the BHW/Jost pair's abstract difference branch vanishes
 distributionally on tests supported in its real source patch, then the explicit
