@@ -3143,8 +3143,21 @@ theorem timeShiftFlatOrbit_apply_phase
                 (m := n * (d + 1)) (n := m * (d + 1))
                 (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * τ := by
     exact_mod_cast hsum_real
+  have hbase :
+      (∑ i,
+          ((OSReconstruction.castFinCLE
+            (Nat.add_mul n m (d + 1)).symm)
+            (OSReconstruction.zeroHeadBlockShift
+              (m := n * (d + 1)) (n := m * (d + 1))
+              (flatTimeShiftDirection d m))) i * ξ i) =
+        ∑ i,
+          OSReconstruction.zeroHeadBlockShift
+            (m := n * (d + 1)) (n := m * (d + 1))
+            (flatTimeShiftDirection d m)
+            (Fin.cast (Nat.add_mul n m (d + 1)) i) * ξ i := by
+    rfl
   congr 1
-  rw [hsum]
+  rw [hsum, hbase]
 
 /-- Arbitrary one-variable test version of the horizontal flat Fubini packet.
 It represents the real time-shift Wightman pairing against `χ` by the same
@@ -3493,24 +3506,51 @@ private theorem integral_bvt_W_flattened_translate_mul_fourierTransform_eq_zero_
         (d := d) (n := n) (m := m)
         (a := t • flatTimeShiftDirection d m) (Ψ := Ψ) (ξ := ξ)]
       congr 1
+      have hsum_real :
+          (∑ i,
+              ((OSReconstruction.castFinCLE
+                (Nat.add_mul n m (d + 1)).symm)
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := m * (d + 1))
+                  (t • flatTimeShiftDirection d m))) i * ξ i) =
+            (∑ i,
+              ((OSReconstruction.castFinCLE
+                (Nat.add_mul n m (d + 1)).symm)
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := m * (d + 1))
+                  (flatTimeShiftDirection d m))) i * ξ i) * t := by
+        simp [zeroHeadBlockShift_smul, Finset.mul_sum, Pi.smul_apply,
+          mul_assoc, mul_left_comm, mul_comm]
       have hsum :
           (∑ i,
               ((((OSReconstruction.castFinCLE
-                (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                (Nat.add_mul n m (d + 1)).symm)
                 (OSReconstruction.zeroHeadBlockShift
                   (m := n * (d + 1)) (n := m * (d + 1))
                   (t • flatTimeShiftDirection d m))) i : ℝ) : ℂ) *
                 (ξ i : ℂ)) =
             ((∑ i,
                 (((OSReconstruction.castFinCLE
-                  (by ring : n * (d + 1) + m * (d + 1) = (n + m) * (d + 1)))
+                  (Nat.add_mul n m (d + 1)).symm)
                   (OSReconstruction.zeroHeadBlockShift
                     (m := n * (d + 1)) (n := m * (d + 1))
                     (flatTimeShiftDirection d m))) i) * ξ i : ℝ) : ℂ) * t := by
-        norm_num
-        simp [zeroHeadBlockShift_smul, Finset.mul_sum, Pi.smul_apply,
-          mul_assoc, mul_left_comm, mul_comm]
-      rw [hsum]
+        exact_mod_cast hsum_real
+      have hbase :
+          (∑ i,
+              ((OSReconstruction.castFinCLE
+                (Nat.add_mul n m (d + 1)).symm)
+                (OSReconstruction.zeroHeadBlockShift
+                  (m := n * (d + 1)) (n := m * (d + 1))
+                  (flatTimeShiftDirection d m))) i * ξ i) =
+            ∑ i,
+              OSReconstruction.zeroHeadBlockShift
+                (m := n * (d + 1)) (n := m * (d + 1))
+                (flatTimeShiftDirection d m)
+                (Fin.cast (Nat.add_mul n m (d + 1)) i) *
+                ξ i := by
+        rfl
+      rw [hsum, hbase]
       ring
     let G : (Fin (k + 1) → ℝ) → ℂ := fun z => orbit (z 0) ξ * fpad0 z
     calc
