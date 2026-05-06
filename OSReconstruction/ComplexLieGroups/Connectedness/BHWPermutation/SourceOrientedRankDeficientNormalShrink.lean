@@ -40,6 +40,60 @@ theorem exists_sourceOrientedNormalParameterBall_subset_schurParameterWindow
     exists_sourceOrientedNormalParameterBall_subset_of_mem_nhds_center
       d n r hrD hrn (hopen.mem_nhds hcenter)
 
+/-- A Schur-parameter window with raw coordinate radii bounded by `ε` is
+contained in the normal finite-coordinate ball of radius `ε`.  The residual
+invariant inequalities in the tail window are irrelevant for this containment;
+only the raw head, mixed, and tail coordinate bounds are used. -/
+theorem sourceOrientedRankDeficientSchurParameterWindow_subset_normalParameterBall
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    {ε headRadius mixedRadius : ℝ}
+    (hε : 0 < ε)
+    (hhead_le : headRadius ≤ ε)
+    (hmixed_le : mixedRadius ≤ ε)
+    (Tail : SourceOrientedRankDeficientTailWindowChoice d n r hrD hrn)
+    (htail_le : Tail.tailCoordRadius ≤ ε) :
+    sourceOrientedRankDeficientSchurParameterWindow
+        d n r hrD hrn headRadius mixedRadius Tail ⊆
+      sourceOrientedNormalParameterBall (d := d) (n := n) (r := r)
+        (hrD := hrD) (hrn := hrn) ε := by
+  intro p hp
+  change
+    sourceOrientedNormalParameterFiniteCoordHomeomorph
+        (d := d) (n := n) (r := r) (hrD := hrD) (hrn := hrn) p ∈
+      sourceOrientedNormalParameterFiniteCoordBall d n r ε
+  rw [sourceOrientedNormalParameterFiniteCoordBall, Metric.mem_ball, dist_eq_norm]
+  rw [pi_norm_lt_iff hε]
+  intro idx
+  rcases hp with ⟨hhead, hmixed, htail⟩
+  rcases htail with ⟨htail_coord, _htail_gram, _htail_det⟩
+  rcases idx with ab | uaμ
+  · exact lt_of_lt_of_le
+      (by
+        simpa [sourceOrientedHeadCoordinateWindow, sourceMatrixCoordinateWindow,
+          sourceOrientedNormalParameterFiniteCoordHomeomorph,
+          sourceOrientedNormalParameterFiniteCoord,
+          sourceOrientedNormalParameterFiniteCenterCoord] using
+          hhead ab.1 ab.2)
+      hhead_le
+  · rcases uaμ with ua | uμ
+    · exact lt_of_lt_of_le
+        (by
+          simpa [sourceOrientedMixedCoordinateWindow, sourceMatrixCoordinateWindow,
+            sourceOrientedNormalParameterFiniteCoordHomeomorph,
+            sourceOrientedNormalParameterFiniteCoord,
+            sourceOrientedNormalParameterFiniteCenterCoord] using
+            hmixed ua.1 ua.2)
+        hmixed_le
+    · exact lt_of_lt_of_le
+        (by
+          simpa [sourceOrientedNormalParameterFiniteCoordHomeomorph,
+            sourceOrientedNormalParameterFiniteCoord,
+            sourceOrientedNormalParameterFiniteCenterCoord] using
+            htail_coord uμ.1 uμ.2)
+        htail_le
+
 namespace SourceOrientedRankDeficientAlgebraicNormalFormData
 
 /-- A single positive normal-parameter ball can be chosen to satisfy the

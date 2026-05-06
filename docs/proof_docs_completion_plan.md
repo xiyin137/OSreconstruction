@@ -585,6 +585,24 @@ invertible-head, head-gauge, and Schur-coordinate controls above.  This is the
 checked bridge from the connected window theorem to the finite ball used by
 the rank-deficient local-image producer.
 
+The converse shrink needed by the strengthened local-image packet is now
+checked as
+`BHW.sourceOrientedRankDeficientSchurParameterWindow_subset_normalParameterBall`
+and
+`BHW.SourceOrientedRankDeficientAlgebraicNormalFormData.exists_schurParameterWindow_image_subset_open_head_tailRank_connected`.
+The first theorem is the finite-coordinate estimate: if the raw Schur head,
+mixed, and tail radii are bounded by a positive normal-ball radius `epsilon`,
+then the whole target-shaped Schur parameter window lies in that normal ball.
+The second theorem applies the ambient normal-ball shrink, chooses one radius
+`rho = epsilon / 2`, builds the tail-window choice at `rho`, and returns a
+single Schur parameter window that is open, connected, centered, contained in
+the invertible-head locus, whose transported original image lies in
+`N0 ∩ sourceOrientedGramVariety`, and whose residual-tail exact-rank slice is
+connected in the hard range `d + 1 <= n`.  This corrects the earlier possible
+parameter-set mismatch: the producer will no longer combine connectedness of a
+large Schur window with ambient containment of a smaller normal ball.  The same
+Schur window now supplies all topology and shrink fields.
+
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
 `BHW.SourceOrientedRankDeficientVarietyLocalImageData.ofNormalImageTransport`
@@ -615,7 +633,12 @@ For the strengthened max-rank packet, the checked adapter
 now takes the connectedness hypothesis in the final residual-tail form:
 `parameterBox ∩ {p | rank (sourceOrientedNormalParameterSchurTail p) =
 d + 1 - N.r}`.  The producer no longer has to restate that as a transported
-`SourceOrientedMaxRankAt` preimage.
+`SourceOrientedMaxRankAt` preimage, and the new Schur-window shrink theorem
+now supplies that connectedness for the same parameterBox used for ambient
+containment.  The only remaining local-image inputs are the canonical normal
+image `Omega`, its openness in `SourceOrientedVariety d n`, and the two
+Schur-extraction inclusions `Omega ⊆ normalImage '' parameterBox` and
+`normalImage parameterBox ⊆ Omega`.
 
 The head-gauge shrink layer is now checked in
 `SourceOrientedHeadGaugeSupport.lean`:
