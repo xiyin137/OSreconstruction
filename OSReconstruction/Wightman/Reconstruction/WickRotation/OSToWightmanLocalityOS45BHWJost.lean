@@ -1378,4 +1378,92 @@ def bvt_F_distributionalJostAnchor_of_pairData_canonical
   BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_canonical
     (d := d) hd OS lgc n V P hsource_subset
 
+/-- If the BHW/Jost pair carrier is already built on the canonical
+Figure-2-4 source patch, no separate source-containment input remains. -/
+def os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ) (i : Fin n) (hi : i.val + 1 < n)
+    (P : BHW.OS45SourcePatchBHWJostPairData
+      (d := d) hd OS lgc n i hi
+        (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
+    BHW.OS45CompactFigure24WickPairingEq
+      (d := d) n i hi OS lgc :=
+  BHW.os45CompactFigure24WickPairingEq_of_pairData_canonical
+    (d := d) hd OS lgc n i hi P (by intro x hx; exact hx)
+
+/-- Full adjacent family version of
+`os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch`. -/
+def os45CompactFigure24WickPairingEq_family_of_pairData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi
+          (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
+    ∀ (i : Fin n) (hi : i.val + 1 < n),
+      BHW.OS45CompactFigure24WickPairingEq
+        (d := d) n i hi OS lgc :=
+  fun i hi =>
+    BHW.os45CompactFigure24WickPairingEq_of_pairData_on_figure24SourcePatch
+      (d := d) hd OS lgc n i hi (P i hi)
+
+/-- Direct source anchor from pair carriers constructed directly on the
+canonical Figure-2-4 source patches. -/
+def sourceDistributionalAdjacentTubeAnchor_of_pairData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi
+          (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
+    BHW.SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) :=
+  BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq
+    (d := d) OS lgc n
+    (BHW.os45CompactFigure24WickPairingEq_family_of_pairData_on_figure24SourcePatch
+      (d := d) hd OS lgc n P)
+
+/-- Older selected-adjacent Jost anchor packet from pair carriers constructed
+directly on the canonical Figure-2-4 source patches. -/
+def bvt_F_selectedAdjacentDistributionalJostAnchorData_of_pairData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi
+          (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
+    SelectedAdjacentDistributionalJostAnchorData OS lgc n :=
+  BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq
+    (d := d) OS lgc n
+    (BHW.os45CompactFigure24WickPairingEq_family_of_pairData_on_figure24SourcePatch
+      (d := d) hd OS lgc n P)
+
+/-- OS-selected naming wrapper for the direct source anchor produced from
+pair carriers on the canonical Figure-2-4 source patches. -/
+def bvt_F_distributionalJostAnchor_of_pairData_on_figure24SourcePatch
+    (hd : 2 ≤ d)
+    (OS : OsterwalderSchraderAxioms d)
+    (lgc : OSLinearGrowthCondition d OS)
+    (n : ℕ)
+    (P :
+      ∀ (i : Fin n) (hi : i.val + 1 < n),
+        BHW.OS45SourcePatchBHWJostPairData
+          (d := d) hd OS lgc n i hi
+          (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
+    BHW.SourceDistributionalAdjacentTubeAnchor
+      (d := d) n (bvt_F OS lgc n) :=
+  BHW.sourceDistributionalAdjacentTubeAnchor_of_pairData_on_figure24SourcePatch
+    (d := d) hd OS lgc n P
+
 end BHW
