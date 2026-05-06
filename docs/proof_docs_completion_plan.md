@@ -640,6 +640,10 @@ stores `factorDomain`, `factorDomain_coordinate`, `factorDomain_mem`, and
 membership form.  `SourceOrientedRankDeficientSchurWindowShrink.lean` checks
 `exists_schurParameterWindow_image_subset_open_headDomain_tailRank_connected`
 and the two `schurWindow_normalParameter_headGauge_residualTail_*` bridges.
+It also checks
+`SourceOrientedRankDeficientAlgebraicNormalFormData.maxRankLocalImageData_of_headGaugeSchurWindowCanonicalImage`,
+the head-gauge-aware assembly wrapper that consumes a canonical-image theorem
+with the head-domain containment as an explicit hypothesis.
 Thus the remaining canonical-image theorem may assume a window already shrunk
 into the head-gauge factor domain; it no longer has to compare two different
 head factors by hand.
