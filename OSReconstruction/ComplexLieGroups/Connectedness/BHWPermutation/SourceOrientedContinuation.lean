@@ -1832,15 +1832,15 @@ structure BHWJostOrientedTransferContinuationTrace
   chain : BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z
   stepControl :
     (j : Fin chain.m) →
-      BHWJostOrientedBranchFreeTransferNeighborhood
-        hd n τ U (chain.node (Fin.castSucc j))
+      Σ center : Fin n → Fin (d + 1) → ℂ,
+        BHWJostOrientedBranchFreeTransferNeighborhood hd n τ U center
   step_left_mem :
-    ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).N
+    ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).2.N
   step_right_mem :
-    ∀ j, chain.node j.succ ∈ (stepControl j).N
+    ∀ j, chain.node j.succ ∈ (stepControl j).2.N
   step_transfer_eq :
     ∀ j,
-      (stepControl j).transfer
+      (stepControl j).2.transfer
         (chain.node (Fin.castSucc j)) (chain.node j.succ)
         (step_left_mem j)
         (chain.chart_sub_U (Fin.castSucc j)

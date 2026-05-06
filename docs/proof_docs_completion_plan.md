@@ -8010,15 +8010,16 @@ common-boundary envelope, or any theorem that already assumes locality.
      -- neighborhoods used to produce each step of `chain`
      stepControl :
        (j : Fin chain.m) ->
-         BHWJostOrientedBranchFreeTransferNeighborhood
-           hd n τ U (chain.node (Fin.castSucc j))
+         Σ center : Fin n -> Fin (d + 1) -> ℂ,
+           BHWJostOrientedBranchFreeTransferNeighborhood
+             hd n τ U center
      step_left_mem :
-       ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).N
+       ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).2.N
      step_right_mem :
-       ∀ j, chain.node j.succ ∈ (stepControl j).N
+       ∀ j, chain.node j.succ ∈ (stepControl j).2.N
      step_transfer_eq :
        ∀ j,
-         (stepControl j).transfer
+         (stepControl j).2.transfer
            (chain.node (Fin.castSucc j)) (chain.node j.succ)
            (step_left_mem j)
            (chain.chart_sub_U (Fin.castSucc j)
@@ -8085,8 +8086,12 @@ common-boundary envelope, or any theorem that already assumes locality.
    ```
 
    `base` is the zero-step chain with all transfer-provenance fields over
-   `Fin 0`.  `ofTracePoint` is the exact atlas-overlap observation map, and
-   `atEndpoint` is its specialization using `T.chain.final_mem`.
+   `Fin 0`.  The trace deliberately stores the branch-free control as a
+   sigma-centered neighborhood: in the compact-cover construction the
+   controlling neighborhood is centered at the chosen cover point, not
+   necessarily at the left subdivision endpoint.  `ofTracePoint` is the exact
+   atlas-overlap observation map, and `atEndpoint` is its specialization using
+   `T.chain.final_mem`.
 
    The local output used by the trace induction is the chart-level analogue of
    terminal chain comparison:

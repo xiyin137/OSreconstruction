@@ -45040,15 +45040,16 @@ Proof decomposition of this theorem, without hiding the analytic work:
                   hd n τ Ω0 U B0 p0 z
               stepControl :
                 (j : Fin chain.m) ->
-                  BHWJostOrientedBranchFreeTransferNeighborhood
-                    hd n τ U (chain.node (Fin.castSucc j))
+                  Σ center : Fin n -> Fin (d + 1) -> ℂ,
+                    BHWJostOrientedBranchFreeTransferNeighborhood
+                      hd n τ U center
               step_left_mem :
-                ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).N
+                ∀ j, chain.node (Fin.castSucc j) ∈ (stepControl j).2.N
               step_right_mem :
-                ∀ j, chain.node j.succ ∈ (stepControl j).N
+                ∀ j, chain.node j.succ ∈ (stepControl j).2.N
               step_transfer_eq :
                 ∀ j,
-                  (stepControl j).transfer
+                  (stepControl j).2.transfer
                     (chain.node (Fin.castSucc j)) (chain.node j.succ)
                     (step_left_mem j)
                     (chain.chart_sub_U (Fin.castSucc j)
@@ -45115,7 +45116,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             ```
 
             `base` is the zero-step chain with all transfer-provenance fields
-            over `Fin 0`; `ofTracePoint` observes a trace at any terminal
+            over `Fin 0`.  The trace stores the branch-free control as a
+            sigma-centered neighborhood because compact-cover subdivision
+            chooses a cover center for each interval, not necessarily the
+            left endpoint.  `ofTracePoint` observes a trace at any terminal
             chart point; `atEndpoint` observes it at `T.chain.final_mem`.
 
             The local output used by the trace induction is the chart-level
