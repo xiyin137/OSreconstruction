@@ -4,10 +4,12 @@ import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrie
 /-!
 # Tail-radius data for rank-deficient source Schur charts
 
-This file records the exact tail-radius packet consumed by the
-rank-deficient Schur local-image route.  It does not construct the compatible
-tail estimates; it proves that such a shifted-tail compatible packet is
-precisely enough to supply the source-oriented tail-radius interface.
+This file records a conditional tail-radius adapter.  It does not construct
+same-radius compatible tail estimates; in general tail dimension that is not
+the active local-image shape.  The current route uses a target-shaped
+tail-window parameter set built from the one-way shifted realization theorem.
+This adapter remains useful only when an external compatible packet has
+already been supplied.
 -/
 
 noncomputable section
@@ -102,4 +104,3 @@ def ofShiftedCompatible
 end SourceOrientedRankDeficientTailRadiusChoice
 
 end BHW
-
