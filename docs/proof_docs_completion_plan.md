@@ -238,6 +238,15 @@ the local chart provenance field
 `BHW.BHWJostOrientedTransferContinuationTrace.ofTransferCover`,
 `BHW.BHWJostOrientedTransferContinuationTrace.HasUniqueSteps`,
 `BHW.BHWJostOrientedTransferContinuationTrace.hasUniqueSteps_base`,
+`BHW.BHWJostOrientedCertifiedTransferContinuationTrace`,
+`BHW.BHWJostOrientedCertifiedTransferContinuationTrace.base`,
+`BHW.BHWJostOrientedCertifiedTransferContinuationTrace.toTerminalPointTrace`,
+`BHW.BHWJostOrientedCertifiedTransferContinuationTrace.atEndpoint`,
+`BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace`,
+`BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.toTerminalPointTrace`,
+`BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.ofTracePoint`,
+`BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.atEndpoint`,
+`BHW.BHWJostOrientedCertifiedTransferTerminalPointTrace.point_mem_terminalLocalChart`,
 `BHW.BHWJostOrientedTransferTerminalPointTrace`,
 `BHW.BHWJostOrientedTransferTerminalPointTrace.ofTracePoint`,
 `BHW.BHWJostOrientedTransferTerminalPointTrace.atEndpoint`,
@@ -304,7 +313,9 @@ provides
 `BHW.BHWOrientedContinuationTraceAtlasData.exists_glued_branch`,
 `BHW.BHWOrientedContinuationTraceAtlasData.ofSelectedComparisonsAndInitialChart`,
 `BHW.BHWOrientedContinuationTraceAtlasData.ofTerminalPointComparisonsAndInitialChart`,
+`BHW.BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart`,
 `BHW.BHWOrientedContinuationTraceAtlasData.ofPathConnectedTransferCoverAndInitialChart`,
+`BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces`,
 `BHW.BHWOrientedTerminalChainComparisonData`, and
 `BHW.BHWOrientedTerminalChainComparisonData.ofLocalChartComparison`,
 `BHW.BHWOrientedTerminalChainComparisonData.continuedValue_eq`, which
@@ -323,8 +334,11 @@ trace-atlas constructor avoids the arbitrary-chain comparison surface
 altogether: it observes selected transfer traces at the overlap point, applies
 terminal-point trace comparison, rewrites by `branch_eq_local`, and proves
 base agreement by comparing against the zero-step base trace observed inside
-the initial chart.  This keeps the carrier/API file below the hard-frontier
-size limit and introduces no new analytic assumption.
+the initial chart.  The certified-trace variant strengthens the strict route
+surface by requiring each selected trace to carry
+`HasUniqueSteps`; the terminal comparison theorem then consumes certified
+terminal-point traces, not raw observations.  This keeps the carrier/API file
+below the hard-frontier size limit and introduces no new analytic assumption.
 
 The open-chart BHW near-identity input is now checked in
 `OSReconstruction/ComplexLieGroups/Connectedness/BHWPermutation/SourceOrientedBHWInvariance.lean`.
@@ -8214,42 +8228,53 @@ common-boundary envelope, or any theorem that already assumes locality.
    The trace-level certified-step predicate is checked as
    `BHWJostOrientedTransferContinuationTrace.HasUniqueSteps Tr`, with the
    zero-step trace certified by
-   `BHWJostOrientedTransferContinuationTrace.hasUniqueSteps_base`.  From this
-   one-step uniqueness theorem, prove a finite induction
+   `BHWJostOrientedTransferContinuationTrace.hasUniqueSteps_base`.  The
+   checked bundled carriers are
+   `BHWJostOrientedCertifiedTransferContinuationTrace` and
+   `BHWJostOrientedCertifiedTransferTerminalPointTrace`; they keep the
+   ordinary trace plus the step-uniqueness certificate, and they have
+   `base`, `ofTracePoint`, `atEndpoint`, and forgetful maps back to the raw
+   terminal-point trace API.  From this one-step uniqueness theorem, prove a
+   finite induction
    `bhw_jost_orientedTransferTrace_terminalComparison_of_sameTrace`: two
-   traces with the same finite nodes and same controlling branch-free
-   neighborhoods, and with equal starting germs on an initial source patch,
-   have terminal comparison data at the final node.  The induction state is a
-   source patch around `chain.node i` contained in both current local-chart
-   carriers, with equality of the current branches there; the successor case
-   is exactly `bhw_jost_orientedTransfer_unique_next`.
+   certified traces with the same finite nodes and same controlling
+   branch-free neighborhoods, and with equal starting germs on an initial
+   source patch, have terminal comparison data at the final node.  The
+   induction state is a source patch around `chain.node i` contained in both
+   current local-chart carriers, with equality of the current branches there;
+   the successor case is exactly `bhw_jost_orientedTransfer_unique_next`
+   applied to the stored `stepUnique j`.
 
    Finally the closed-path theorem for two terminal-point traces is:
 
    ```lean
    theorem BHW.bhw_jost_orientedTerminalPointComparison_of_transferTraces
        (T₁ T₂ :
-         BHWJostOrientedTransferTerminalPointTrace
+         BHWJostOrientedCertifiedTransferTerminalPointTrace
            hd n τ Ω0 U B0 p0 y) :
        BHWLocalChartTerminalComparisonData
-         (T₁.trace.chain.localChart (Fin.last T₁.trace.chain.m))
-         (T₂.trace.chain.localChart (Fin.last T₂.trace.chain.m)) y
+         (T₁.trace.trace.chain.localChart
+           (Fin.last T₁.trace.trace.chain.m))
+         (T₂.trace.trace.chain.localChart
+           (Fin.last T₂.trace.trace.chain.m)) y
    ```
 
    The hard proof forms the source closed path obtained by following
-   `T₁.trace` and then the reversed source nodes of `T₂.trace`, uses the
+   `T₁.trace.trace` and then the reversed source nodes of `T₂.trace.trace`, uses the
    branch-free transfer controls to continue the observed `T₁` terminal germ
    back to a closing patch at `p0`, constructs
    `BHWJostOrientedClosingPatchTerminalSeedData` for that closed loop by the
    strict OS I §4.5 BHW/Jost source-patch argument, and invokes
    `bhw_jost_closedChain_sourceMonodromy_of_closingPatchTerminalSeedData`.
    The resulting equality with `B0` on the closing patch, together with
-   equality of `T₂.trace`'s initial chart with `B0`, is transported forward
-   along the stored trace of `T₂` by the finite uniqueness induction, yielding
-   a terminal patch inside the two observed terminal charts at `y`.  For the
+   equality of the initial chart of the underlying raw trace
+   `T₂.trace.trace` with `B0`, is transported forward along the certified
+   stored trace of `T₂` by the finite uniqueness induction,
+   yielding a terminal patch inside the two observed terminal charts at `y`.  For the
    special case `y = z` with `point_mem := chain.final_mem`, this chart-level
    comparison packages into
-   `BHWOrientedTerminalChainComparisonData T₁.trace.chain T₂.trace.chain`;
+   `BHWOrientedTerminalChainComparisonData
+   T₁.trace.trace.chain T₂.trace.trace.chain`;
    its checked method `continuedValue_eq` is only the endpoint evaluation.
 
    The checked assembly target for the atlas-from-chains step is
@@ -8257,11 +8282,11 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisons` remains a
    useful high-level consumer if one has a theorem comparing arbitrary chain
    records, but the strict source-backed route must not try to manufacture
-   such a theorem from the current data.  The final producer should instead
-   use the checked trace-level variant
-   `BHWOrientedContinuationTraceAtlasData.ofTerminalPointComparisonsAndInitialChart`
-   whose comparison hypothesis ranges over terminal-point traces for the
-   selected transfer traces.  After the trace comparison produces terminal
+   such a theorem from the current data.  The final strict-route producer should
+   instead use the checked certified trace-level variant
+   `BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart`
+   whose comparison hypothesis ranges over certified terminal-point traces for
+   the certified selected transfer traces.  After the trace comparison produces terminal
    branch equality at an overlap point, the atlas forgets the trace provenance
    and stores only the underlying terminal chain chart.  The
    selected-chain field is checked from path-connectedness by
@@ -8331,20 +8356,30 @@ common-boundary envelope, or any theorem that already assumes locality.
    `traceAt b`, and base comparison between `traceAt z` and the initial chart
    for `z ∈ Ω0 ∩ U`.
 
-   Its checked constructor
+   The certified checked constructor
+   `BHWOrientedContinuationTraceAtlasData.ofCertifiedTerminalPointComparisonsAndInitialChart`
+   is now the strict-route atlas surface: it forgets certified selected traces
+   to raw traces for the stored atlas, derives the selected overlap field by
+   observing the certified selected traces as certified terminal-point traces,
+   and proves base agreement by comparing the certified selected trace at
+   `z ∈ Ω0 ∩ U` with the certified zero-step base trace observed at `z`.
+   The older checked constructor
    `BHWOrientedContinuationTraceAtlasData.ofTerminalPointComparisonsAndInitialChart`
-   is retained as a stronger convenience wrapper: it derives the selected
-   overlap field by observing the selected traces as terminal-point traces,
-   and proves base agreement by comparing the selected trace at
-   `z ∈ Ω0 ∩ U` with the zero-step base trace observed at `z`.
+   is retained only as a raw-trace convenience wrapper when an unbundled
+   terminal-point trace comparison theorem is already available.
 
    Consequently the checked atlas assembly now has exactly two remaining
    non-mechanical inputs: a source-normal-form/uniform-descent producer of
-   branch-free transfer neighborhoods on `U`, and the hard theorem
+   branch-free transfer neighborhoods on `U` whose stored controls carry
+   `HasUniqueSteps`, and the hard certified theorem
    `bhw_jost_orientedTerminalPointComparison_of_transferTraces`.  The checked
-   theorem `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_transferCover`
-   composes those inputs with the initial chart to produce the glued
-   holomorphic source-patch branch on `U`.
+   theorem `BHW.bhw_jost_orientedGluedBranch_of_certifiedTraces` composes
+   certified selected traces, certified terminal-point comparison, and the
+   initial chart to produce the glued holomorphic source-patch branch on `U`.
+   The raw theorem `BHW.bhw_jost_orientedGluedBranch_of_pathConnected_transferCover`
+   remains a convenience surface when one has an unbundled terminal-point
+   comparison theorem, but the strict route should target the certified
+   surface first.
 
    The variant
    `BHWOrientedContinuationChainAtlasData.ofSameEndpointComparisonsAndBaseChain`

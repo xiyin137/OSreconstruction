@@ -532,4 +532,150 @@ def hasUniqueSteps_base
 
 end BHWJostOrientedTransferContinuationTrace
 
+/-- A transfer trace bundled with certified one-step uniqueness for every
+stored transfer control.  This is the trace object consumed by the future
+finite uniqueness induction. -/
+structure BHWJostOrientedCertifiedTransferContinuationTrace
+    [NeZero d] (hd : 2 ≤ d)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (Ω0 U : Set (Fin n → Fin (d + 1) → ℂ))
+    (B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (p0 z : Fin n → Fin (d + 1) → ℂ) where
+  trace :
+    BHWJostOrientedTransferContinuationTrace hd n τ Ω0 U B0 p0 z
+  stepUnique :
+    BHWJostOrientedTransferContinuationTrace.HasUniqueSteps trace
+
+namespace BHWJostOrientedCertifiedTransferContinuationTrace
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+variable {p0 z y : Fin n → Fin (d + 1) → ℂ}
+
+/-- Forget the certified-step proof and retain only the underlying
+continuation chain. -/
+def chain
+    (T :
+      BHWJostOrientedCertifiedTransferContinuationTrace
+        hd n τ Ω0 U B0 p0 z) :
+    BHWJostOrientedSourcePatchContinuationChain hd n τ Ω0 U B0 p0 z :=
+  T.trace.chain
+
+/-- The zero-step transfer trace is certified vacuously. -/
+def base
+    (C0 : BHWJostLocalOrientedContinuationChart hd n τ U)
+    (hbase : p0 ∈ Ω0 ∩ U)
+    (hp0C : p0 ∈ C0.carrier)
+    (start_patch : Set (Fin n → Fin (d + 1) → ℂ))
+    (hstart_open : IsOpen start_patch)
+    (hstart_preconnected : IsPreconnected start_patch)
+    (hstart_nonempty : start_patch.Nonempty)
+    (hstart_mem : p0 ∈ start_patch)
+    (hstart_sub : start_patch ⊆ Ω0 ∩ C0.carrier)
+    (hstart_agree : ∀ y, y ∈ start_patch → C0.branch y = B0 y) :
+    BHWJostOrientedCertifiedTransferContinuationTrace
+      hd n τ Ω0 U B0 p0 p0 where
+  trace :=
+    BHWJostOrientedTransferContinuationTrace.base
+      (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+      (p0 := p0) C0 hbase hp0C start_patch hstart_open
+      hstart_preconnected hstart_nonempty hstart_mem hstart_sub
+      hstart_agree
+  stepUnique :=
+    BHWJostOrientedTransferContinuationTrace.hasUniqueSteps_base
+      (hd := hd) (τ := τ) (Ω0 := Ω0) (U := U) (B0 := B0)
+      (p0 := p0) C0 hbase hp0C start_patch hstart_open
+      hstart_preconnected hstart_nonempty hstart_mem hstart_sub
+      hstart_agree
+
+/-- Observe a certified transfer trace at any point of its terminal chart. -/
+def toTerminalPointTrace
+    (T :
+      BHWJostOrientedCertifiedTransferContinuationTrace
+        hd n τ Ω0 U B0 p0 z)
+    (hy : y ∈ T.trace.chain.chart (Fin.last T.trace.chain.m)) :
+    BHWJostOrientedTransferTerminalPointTrace
+      hd n τ Ω0 U B0 p0 y :=
+  BHWJostOrientedTransferTerminalPointTrace.ofTracePoint T.trace hy
+
+/-- Observe a certified transfer trace at its own endpoint. -/
+def atEndpoint
+    (T :
+      BHWJostOrientedCertifiedTransferContinuationTrace
+        hd n τ Ω0 U B0 p0 z) :
+    BHWJostOrientedTransferTerminalPointTrace
+      hd n τ Ω0 U B0 p0 z :=
+  BHWJostOrientedTransferTerminalPointTrace.atEndpoint T.trace
+
+end BHWJostOrientedCertifiedTransferContinuationTrace
+
+/-- A certified transfer trace observed at an arbitrary point of its terminal
+chart.  This is the certified version of
+`BHWJostOrientedTransferTerminalPointTrace`; it preserves the one-step
+uniqueness certificates needed by terminal trace comparison. -/
+structure BHWJostOrientedCertifiedTransferTerminalPointTrace
+    [NeZero d] (hd : 2 ≤ d)
+    (n : ℕ) (τ : Equiv.Perm (Fin n))
+    (Ω0 U : Set (Fin n → Fin (d + 1) → ℂ))
+    (B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ)
+    (p0 y : Fin n → Fin (d + 1) → ℂ) where
+  endpoint : Fin n → Fin (d + 1) → ℂ
+  trace :
+    BHWJostOrientedCertifiedTransferContinuationTrace
+      hd n τ Ω0 U B0 p0 endpoint
+  point_mem : y ∈ trace.trace.chain.chart (Fin.last trace.trace.chain.m)
+
+namespace BHWJostOrientedCertifiedTransferTerminalPointTrace
+
+variable [NeZero d] {hd : 2 ≤ d} {τ : Equiv.Perm (Fin n)}
+variable {Ω0 U : Set (Fin n → Fin (d + 1) → ℂ)}
+variable {B0 : (Fin n → Fin (d + 1) → ℂ) → ℂ}
+variable {p0 y : Fin n → Fin (d + 1) → ℂ}
+
+/-- Forget the certified-step proof and retain the ordinary terminal-point
+trace. -/
+def toTerminalPointTrace
+    (T :
+      BHWJostOrientedCertifiedTransferTerminalPointTrace
+        hd n τ Ω0 U B0 p0 y) :
+    BHWJostOrientedTransferTerminalPointTrace hd n τ Ω0 U B0 p0 y :=
+  BHWJostOrientedTransferTerminalPointTrace.ofTracePoint
+    T.trace.trace T.point_mem
+
+/-- Observe a certified transfer trace at any point of its terminal chart. -/
+def ofTracePoint
+    {endpoint : Fin n → Fin (d + 1) → ℂ}
+    (T :
+      BHWJostOrientedCertifiedTransferContinuationTrace
+        hd n τ Ω0 U B0 p0 endpoint)
+    (hy : y ∈ T.trace.chain.chart (Fin.last T.trace.chain.m)) :
+    BHWJostOrientedCertifiedTransferTerminalPointTrace
+      hd n τ Ω0 U B0 p0 y where
+  endpoint := endpoint
+  trace := T
+  point_mem := hy
+
+/-- Observe a certified transfer trace at its own endpoint. -/
+def atEndpoint
+    {endpoint : Fin n → Fin (d + 1) → ℂ}
+    (T :
+      BHWJostOrientedCertifiedTransferContinuationTrace
+        hd n τ Ω0 U B0 p0 endpoint) :
+    BHWJostOrientedCertifiedTransferTerminalPointTrace
+      hd n τ Ω0 U B0 p0 endpoint :=
+  ofTracePoint T T.trace.chain.final_mem
+
+/-- The observed point lies in the terminal local chart carrier. -/
+theorem point_mem_terminalLocalChart
+    (T :
+      BHWJostOrientedCertifiedTransferTerminalPointTrace
+        hd n τ Ω0 U B0 p0 y) :
+    y ∈ (T.trace.trace.chain.localChart
+      (Fin.last T.trace.trace.chain.m)).carrier := by
+  simpa [T.trace.trace.chain.chart_eq_local
+    (Fin.last T.trace.trace.chain.m)] using T.point_mem
+
+end BHWJostOrientedCertifiedTransferTerminalPointTrace
+
 end BHW
