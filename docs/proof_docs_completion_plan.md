@@ -602,6 +602,16 @@ connected in the hard range `d + 1 <= n`.  This corrects the earlier possible
 parameter-set mismatch: the producer will no longer combine connectedness of a
 large Schur window with ambient containment of a smaller normal ball.  The same
 Schur window now supplies all topology and shrink fields.
+The checked assembly
+`BHW.SourceOrientedRankDeficientAlgebraicNormalFormData.maxRankLocalImageData_of_schurWindowCanonicalImage`
+then consumes exactly the remaining canonical-image theorem and returns the
+strengthened local-image packet.  Its only extra hypothesis is: for the chosen
+Schur window, there is an open subtype normal image `Omega` such that
+`Omega ⊆ sourceOrientedNormalParameterVarietyPoint '' parameterBox` and
+`sourceOrientedNormalParameterVarietyPoint parameterBox ⊆ Omega`.  This is the
+next theorem to prove; all shrink, transported containment, invertible-head,
+center, continuity, max-rank/tail-rank rewrite, and residual exact-rank
+connectedness fields are now assembled.
 
 The downstream transport adapter for that producer is now checked in
 `SourceOrientedRankDeficientLocalImageTransport.lean`.  The theorems
