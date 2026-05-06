@@ -2575,6 +2575,46 @@ theorem os45Figure24SourcePatch_swap_ordered
   intro x hx
   simpa [P.τ_eq] using P.V_swap_ordered x hx
 
+/-- The Wick rotation of every point of the canonical Figure-2-4 source patch
+lies in the ordinary extended tube. -/
+theorem os45Figure24SourcePatch_wick_mem_extendedTube
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+    ∀ x ∈ BHW.os45Figure24SourcePatch (d := d) n i hi,
+      (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n := by
+  intro x hx
+  have hft_eq : BHW.ForwardTube d n = _root_.ForwardTube d n := by
+    ext z
+    simp only [BHW.ForwardTube, _root_.ForwardTube, Set.mem_setOf_eq]
+    exact forall_congr' fun k => inOpenForwardCone_iff _
+  have hroot :
+      (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+        _root_.ForwardTube d n :=
+    wickRotate_mem_forwardTube_of_mem_orderedPositiveTimeSector
+      (d := d) (n := n) (1 : Equiv.Perm (Fin n))
+      (BHW.os45Figure24SourcePatch_ordered
+        (d := d) hd n i hi x hx)
+  have hBHW :
+      (fun k => wickRotatePoint (x ((1 : Equiv.Perm (Fin n)) k))) ∈
+        BHW.ForwardTube d n := by
+    simpa [hft_eq] using hroot
+  exact BHW.forwardTube_subset_extendedTube (by simpa using hBHW)
+
+/-- The adjacent-permuted real embedding of every point of the canonical
+Figure-2-4 source patch lies in the ordinary extended tube. -/
+theorem os45Figure24SourcePatch_permAct_realEmbed_mem_extendedTube
+    [NeZero d]
+    (hd : 2 ≤ d)
+    (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+    ∀ x ∈ BHW.os45Figure24SourcePatch (d := d) n i hi,
+      BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+        (BHW.realEmbed x) ∈ BHW.ExtendedTube d n := by
+  intro x hx
+  simpa [BHW.permAct_realEmbed] using
+    (BHW.os45Figure24SourcePatch_swapRealEmbed_mem_extendedTube
+      (d := d) hd n i hi x hx)
+
 /-- The deterministic adjacent Figure-2-4 lift of any source-patch point stays
 in the ordinary extended tube. -/
 theorem os45Figure24SourcePatch_adjLift_mem_extendedTube

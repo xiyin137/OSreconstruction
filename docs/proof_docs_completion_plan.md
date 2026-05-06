@@ -7196,6 +7196,7 @@ common-boundary envelope, or any theorem that already assumes locality.
      `BHW.os45Figure24SourcePatch_jost`,
      `BHW.os45Figure24SourcePatch_realEmbed_mem_extendedTube`,
      `BHW.os45Figure24SourcePatch_swapRealEmbed_mem_extendedTube`,
+     `BHW.permAct_realEmbed`,
      `BHW.os45Figure24SourcePatch_ordered`, and
      `BHW.os45Figure24SourcePatch_swap_ordered`;
    - construct the selected BHW/Jost hull `U` as the connected component of
@@ -7263,10 +7264,6 @@ common-boundary envelope, or any theorem that already assumes locality.
      wick_id_ET :
        ∀ x, x ∈ V ->
          (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n
-     wick_tau_ET :
-       ∀ x, x ∈ V ->
-         BHW.permAct (d := d) τ (fun k => wickRotatePoint (x k)) ∈
-           BHW.ExtendedTube d n
      real_id_ET :
        ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n
      real_tau_ET :
@@ -7283,10 +7280,18 @@ common-boundary envelope, or any theorem that already assumes locality.
    `BHW.os45SourcePatchBHWJostHull_open`, whose local topological input is
    `BHW.isOpen_pathComponentIn_of_isOpen_normed`; `U_connected` is
    path-connectedness of the component.  `wick_id_ET` comes from the ordered
-   sector on the exact source patch; `wick_tau_ET` rewrites `permAct` by
-   `BHW.permAct_wickRotatePoint` and uses the swapped ordered-sector field;
-   `real_id_ET` and `real_tau_ET` are the checked exact source-patch
-   extended-tube fields.  The membership fields are obtained by
+   sector on the exact source patch and the checked
+   `BHW.os45Figure24SourcePatch_wick_mem_extendedTube`.  There is
+   deliberately no direct `wick_tau_ET` field: the checked swapped ordered
+   sector says the relabelled configuration belongs to its own adjacent
+   sector, and it does not by itself prove
+   `BHW.permAct τ (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n`.
+   The adjacent Wick trace is therefore an OS-I/BHW continuation output, not a
+   source-patch tube-membership accessor.
+   `real_id_ET` is the checked ordinary real source-patch extended-tube
+   field, and `real_tau_ET` rewrites by the checked
+   `BHW.permAct_realEmbed` before using the swapped real source-patch
+   extended-tube field.  The membership fields are obtained by
    joining `z0` to each Wick and real point inside the displayed ambient: for
    Wick points use the path-connectedness of the ordinary and adjacent tube
    sectors; for real points use the checked Figure-2-4 path/lift fields from
@@ -10445,37 +10450,35 @@ common-boundary envelope, or any theorem that already assumes locality.
    The ordinary and adjacent branch producers are then:
 
    ```lean
-   theorem BHW.os45_sourcePatch_ordinaryBranch_onHull
+   theorem BHW.os45_sourcePatch_ordinaryBranch_onHull_figure24SourcePatch
        [NeZero d] (hd : 2 <= d)
        (OS : OsterwalderSchraderAxioms d)
        (lgc : OSLinearGrowthCondition d OS)
        (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
-       (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
-       (hChart : BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
-       (H : BHW.OS45SourcePatchBHWJostHullData hd OS lgc n i hi V hChart) :
+       (H : BHW.OS45SourcePatchBHWJostHullData hd OS lgc n i hi
+         (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
        ∃ Bord : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
          DifferentiableOn ℂ Bord H.U ∧
-         (∀ x, x ∈ hChart.V0 ->
+         (∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
            Bord (fun k => wickRotatePoint (x k)) =
              bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
-         (∀ x, x ∈ hChart.V0 ->
+         (∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
            Bord (BHW.realEmbed x) =
              BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
 
-   theorem BHW.os45_sourcePatch_adjacentBranch_onHull_of_OSI45
+   theorem BHW.os45_sourcePatch_adjacentBranch_onHull_figure24SourcePatch_of_OSI45
        [NeZero d] (hd : 2 <= d)
        (OS : OsterwalderSchraderAxioms d)
        (lgc : OSLinearGrowthCondition d OS)
        (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
-       (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
-       (hChart : BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
-       (H : BHW.OS45SourcePatchBHWJostHullData hd OS lgc n i hi V hChart) :
+       (H : BHW.OS45SourcePatchBHWJostHullData hd OS lgc n i hi
+         (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
        ∃ Btau : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
          DifferentiableOn ℂ Btau H.U ∧
-         (∀ x, x ∈ hChart.V0 ->
+         (∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
            Btau (fun k => wickRotatePoint (x k)) =
              bvt_F OS lgc n (fun k => wickRotatePoint (x (H.τ k)))) ∧
-         (∀ x, x ∈ hChart.V0 ->
+         (∀ x, x ∈ BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
            Btau (BHW.realEmbed x) =
              BHW.extendF (bvt_F OS lgc n)
                (BHW.realEmbed (fun k => x (H.τ k))))
@@ -10488,11 +10491,13 @@ common-boundary envelope, or any theorem that already assumes locality.
    with `Ω0 := {z | BHW.permAct (d := d) H.τ z ∈ BHW.ExtendedTube d n}` and
    `B0 z := BHW.extendF (bvt_F OS lgc n) (BHW.permAct (d := d) H.τ z)`.
    Holomorphy is `BHW.extendF_holomorphicOn.comp` with the continuous linear
-   permutation map; the Wick and real trace formulas are just
-   `BHW.permAct_wickRotatePoint`, the definitional `realEmbed` permutation
-   rewrite, `H.wick_tau_ET`, and `H.real_tau_ET`.  The OS-I input is exactly
-   the covariance/branch-selection used to justify the local BHW continuation;
-   no later common-boundary or Jost/Ruelle uniqueness theorem is involved.
+   permutation map.  The real trace rewrite uses `BHW.permAct_realEmbed` and
+   `H.real_tau_ET`; the adjacent Wick trace is not obtained from a direct
+   `H.wick_tau_ET` field, but from the OS-I/BHW continuation datum that
+   transports the adjacent ordered Wick boundary formula to the selected hull.
+   The OS-I input is exactly this covariance/branch-selection used to justify
+   the local BHW continuation; no later common-boundary or Jost/Ruelle
+   uniqueness theorem is involved.
 
    With these three surfaces,
    `BHW.os45_sourcePatch_bhwJostPairData_on_figure24SourcePatch_of_OSI45`
@@ -11067,7 +11072,7 @@ Adjacent `S'_n` readiness ledger:
 | `BHW.os45SourcePermutationHomeomorph` and `BHW.os45Figure24CompactRealPatch_*` geometry accessors | Checked in `OSToWightmanLocalityOS45Figure24.lean`. | Defines the homeomorphism by `u ↦ fun k μ => u (π.symm k) μ` and the compact real patch as its image of `BHW.os45Figure24SourcePatch`.  Openness is `Homeomorph.isOpenMap`; nonemptiness and contact come from the checked canonical packet; Jost membership is `BHW.jostSet_permutation_invariant π.symm`; left/right sector fields unfold `BHW.permutedExtendedTubeSector` and use the checked source-patch ordinary/swapped `ExtendedTube` accessors.  No `extendF`, scalar representative, compact branch equality, PET, EOW, or locality input enters this layer. |
 | `BHW.os45CompactRealPatch_pullbackSchwartz` | Checked in `OSToWightmanLocalityOS45Figure24.lean`. | Sets `ψ := BHW.permuteSchwartz π.symm φ`, uses `BHW.permuteSchwartz_hasCompactSupport`, `BHW.tsupport_permuteSchwartz`, injectivity of `BHW.os45SourcePermutationHomeomorph`, and `(BHW.integral_perm_eq_self π.symm h).symm` twice.  The only branch rewrites are finite-coordinate equalities; no `bvt_F`, OS-I branch-difference, scalar representative, PET, EOW, or locality input enters. |
 | `BHW.OS45CompactFigure24WickPairingEq`, `BHW.os45CompactFigure24WickPairingEq_of_sourcePatchPairing`, `BHW.OS45CompactFigure24WickPairingEq.leftSourcePatch`, `BHW.sourceDistributionalAdjacentTubeAnchor_of_compactWickPairingEq`, `BHW.bvt_F_selectedAdjacentDistributionalJostAnchorData_of_compactWickPairingEq`, and `BHW.bvt_F_distributionalJostAnchor_of_compactWickPairingEq` | Compact packet, ordinary source-anchor conversion, and selected-witness compatibility bridge checked in `OSToWightmanLocalityOS45Compact.lean`; the hard compact branch equality remains the input.  The oriented real-seed/anchor layer is still downstream and not implemented. | The compact packet stores the `π`-permuted source real patches, left/right `ExtendedTube` sector fields, a separate common-edge contact, and compact distributional branch equality. The constructor from canonical source-patch pairing is mechanical: use the checked canonical packet fields, `BHW.os45CompactRealPatch_pullbackSchwartz`, and the source-patch equality over `extendF (realEmbed u)` and `extendF (realEmbed (u ∘ τ))`; it does not prove that equality.  A full family of compact packets over all adjacent swaps now builds the existing `BHW.SourceDistributionalAdjacentTubeAnchor` by taking Gram environments to be the images of the unlabelled left source patches under `sourceRealMinkowskiGram`; uniqueness is supplied by `BHW.sourceDistributionalUniquenessSetOnVariety_of_open_jost_patch`, and `gram_right_eq_perm_left` is the finite identity `sourceRealMinkowskiGram_perm`.  The selected-witness bridge takes the identity-labelled compact patch as the base patch and reuses the same uniqueness and compact equality fields, avoiding an import cycle in `OSToWightmanSelectedWitness.lean`.  The future oriented adjacent `S'_n` seed still must shrink to determinant-regular real subpatches and prove oriented source equality; it must not treat this ordinary source anchor as an oriented uniqueness theorem. |
-| `BHW.os45Figure24SourcePatch`, `BHW.os45Figure24SourcePatch_sourceEnvironment`, and source-patch accessors | Checked in `OSToWightmanLocalityOS45Figure24.lean`. | Defines `os45Figure24SourcePatch` as the proof-irrelevant canonical `V`, proves equality to `(os45_adjacent_identity_canonicalSourcePatch hd i hi).V`, and exports open/nonempty/Jost/ET/swapped-ET/ordered/swapped-ordered/deterministic-lift fields plus `os45Figure24SourcePatch_closure_orientedPath` and `os45Figure24SourcePatch_sourceEnvironment`.  The checked packet now carries an explicit `τ_eq` field; a default value for the structure field is not enough after `Classical.choose`.  These accessors are projections from the checked canonical/oriented packet, not new scalar equality or locality inputs. |
+| `BHW.os45Figure24SourcePatch`, `BHW.os45Figure24SourcePatch_sourceEnvironment`, and source-patch accessors | Checked in `OSToWightmanLocalityOS45Figure24.lean`. | Defines `os45Figure24SourcePatch` as the proof-irrelevant canonical `V`, proves equality to `(os45_adjacent_identity_canonicalSourcePatch hd i hi).V`, and exports open/nonempty/Jost/ET/swapped-ET/ordered/swapped-ordered/deterministic-lift fields plus `os45Figure24SourcePatch_wick_mem_extendedTube`, `os45Figure24SourcePatch_permAct_realEmbed_mem_extendedTube`, `os45Figure24SourcePatch_closure_orientedPath`, and `os45Figure24SourcePatch_sourceEnvironment`.  The checked packet now carries an explicit `τ_eq` field; a default value for the structure field is not enough after `Classical.choose`.  These accessors are projections from the checked canonical/oriented packet, not new scalar equality or locality inputs.  There is intentionally no `os45Figure24SourcePatch_permAct_wick_mem_extendedTube` accessor, since the swapped ordered-sector field does not imply that statement. |
 | `BHW.Figure24LocalChartInput` and the source-patch compact partition | Shape corrected for the oriented route; production Lean not started. | Every local chart input used by `os45CanonicalSourcePatch_extendF_eq` must carry both `V_sourcePatch : V ⊆ os45Figure24SourcePatch d n i hi` and `V_orientedPath_closure : ∀ x ∈ closure V, OS45Figure24OrientedPathField d n i hi x`.  For the direct compact branch-difference theorem, `V_sourcePatch` supplies the checked source-patch geometry and the local BHW/Jost carrier input on `hChart.V0`; it does not authorize a call to the oriented branch-germ suppliers.  The closure-level oriented path field is retained for the downstream oriented adjacent `S'_n` seed/path package and branch-germ suppliers after the compact packet is built.  The compact partition must use `BHW.os45_adjacent_identity_canonicalSourcePatch_with_orientedPath`, set `P := Poriented.toCanonical`, and fill the input fields by `P.V = os45Figure24SourcePatch` and `Poriented.orientedPath_closure`; otherwise the partition silently drops the determinant path or the pulled-domain source environment.  When a partition subchart `hChart.V0 ⊆ V` is used, transfer the oriented path field by `BHW.closure_sourceChart_sub_closure_input`.  The older pure-Gram `hV_figPath_closure` is insufficient for the active oriented source-germ suppliers. |
 | `BHW.sourceOrientedAnchor_compactBranchEq_pointwise_on_realPatch` | Proof-doc pseudo-code tightened. | Before using the scalar representative, convert `hAnchor.compact_branch_eq` to pointwise equality on the real patch by `SCV.eqOn_open_of_compactSupport_schwartz_integral_eq_of_continuousOn`, with continuity supplied by `extendF_continuousOn_realPatch_left/right`, the anchor's left/right sector fields, and the complex-Lorentz invariance input needed by `BHW.extendF_holomorphicOn`. |
 | `BHW.os45Figure24_checkedRealPatch_chartContact`, `BHW.os45Figure24_checkedRealPatch_shrink_into_orientedRelOpen`, `BHW.os45Figure24_realPatch_orientedRegularChartSubpatch` | Chart-compatible real-patch transcript pinned; production Lean not started. | First prove the raw checked real patch contacts `hChart.Wscal`; then shrink the checked patch through the relatively open chart preimage while preserving the checked OS45 real environment; only after that impose determinant-regular oriented environment. This supplies the explicit `hE_chart` membership needed by the seed theorem. |

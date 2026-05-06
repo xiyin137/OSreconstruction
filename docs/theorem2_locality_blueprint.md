@@ -16937,6 +16937,25 @@ Proof decomposition of this theorem, without hiding the analytic work:
           (BHW.os45_adjacent_identity_canonicalSourcePatch
             (d := d) hd i hi).V_swap_ordered
 
+      theorem BHW.os45Figure24SourcePatch_wick_mem_extendedTube
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+          ∀ x ∈ BHW.os45Figure24SourcePatch (d := d) n i hi,
+            (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n
+
+      theorem BHW.os45Figure24SourcePatch_permAct_realEmbed_mem_extendedTube
+          [NeZero d]
+          (hd : 2 <= d)
+          (n : Nat) (i : Fin n) (hi : i.val + 1 < n) :
+          ∀ x ∈ BHW.os45Figure24SourcePatch (d := d) n i hi,
+            BHW.permAct (d := d) (Equiv.swap i ⟨i.val + 1, hi⟩)
+              (BHW.realEmbed x) ∈ BHW.ExtendedTube d n
+
+      -- No corresponding
+      -- `os45Figure24SourcePatch_permAct_wick_mem_extendedTube` is claimed:
+      -- the swapped ordered-sector field is not that statement.
+
       theorem BHW.os45Figure24SourcePatch_adjLift_mem_extendedTube
           [NeZero d]
           (hd : 2 <= d)
@@ -44039,8 +44058,9 @@ Proof decomposition of this theorem, without hiding the analytic work:
             `Pcan := BHW.os45_adjacent_identity_canonicalSourcePatch hd i hi`,
             rewrites its `V` by `BHW.os45Figure24SourcePatch`, and uses the
             checked exact source-patch accessors for openness, nonemptiness,
-            Jost membership, ordered-sector membership, and ordinary/swapped
-            extended-tube membership.  It constructs the hull as the connected
+            Jost membership, ordered-sector membership, ordinary/swapped
+            extended-tube membership, and `BHW.permAct_realEmbed` for the
+            permuted real trace.  It constructs the hull as the connected
             component of the local proper-complex Lorentz ambient containing
             the identity Wick edge, adjacent Wick edge, and real source patch;
             proves the two
@@ -44100,10 +44120,6 @@ Proof decomposition of this theorem, without hiding the analytic work:
               wick_id_ET :
                 ∀ x, x ∈ V ->
                   (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n
-              wick_tau_ET :
-                ∀ x, x ∈ V ->
-                  BHW.permAct (d := d) τ (fun k => wickRotatePoint (x k)) ∈
-                    BHW.ExtendedTube d n
               real_id_ET :
                 ∀ x, x ∈ V -> BHW.realEmbed x ∈ BHW.ExtendedTube d n
               real_tau_ET :
@@ -44120,13 +44136,18 @@ Proof decomposition of this theorem, without hiding the analytic work:
             checked `BHW.os45SourcePatchBHWJostHull_open`, from
             `BHW.isOpen_pathComponentIn_of_isOpen_normed`, and `U_connected`
             follows from the path component in the finite-dimensional locally
-            path-connected configuration space.  The four tube-membership
-            fields are direct: ordered-sector membership gives `wick_id_ET`;
-            swapped
-            ordered-sector membership plus `BHW.permAct_wickRotatePoint`
-            gives `wick_tau_ET`; checked exact source-patch ordinary/swapped
-            extended-tube accessors give the two real fields.  The two `U`
-            membership fields are path-component membership: join `z0` to
+            path-connected configuration space.  The direct tube-membership
+            fields are: ordered-sector membership plus
+            `BHW.os45Figure24SourcePatch_wick_mem_extendedTube` gives
+            `wick_id_ET`; checked exact source-patch ordinary/swapped
+            extended-tube accessors, with `BHW.permAct_realEmbed` for the
+            permuted real configuration, give the two real fields.  There is
+            deliberately no direct `wick_tau_ET`: the checked swapped ordered
+            sector does not imply
+            `BHW.permAct τ (fun k => wickRotatePoint (x k)) ∈ BHW.ExtendedTube d n`.
+            The adjacent Wick trace is an OS-I/BHW continuation output, not a
+            source-patch tube-membership accessor.  The two `U` membership
+            fields are path-component membership: join `z0` to
             Wick points through the ordinary/adjacent tube sectors, and join
             `z0` to real points through the checked Figure-2-4 lift/path in
             the canonical packet.
@@ -47371,44 +47392,44 @@ Proof decomposition of this theorem, without hiding the analytic work:
             The two branch producers are:
 
             ```lean
-            theorem BHW.os45_sourcePatch_ordinaryBranch_onHull
+            theorem BHW.os45_sourcePatch_ordinaryBranch_onHull_figure24SourcePatch
                 [NeZero d] (hd : 2 <= d)
                 (OS : OsterwalderSchraderAxioms d)
                 (lgc : OSLinearGrowthCondition d OS)
                 (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
-                (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
-                (hChart :
-                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
                 (H :
                   BHW.OS45SourcePatchBHWJostHullData
-                    hd OS lgc n i hi V hChart) :
+                    hd OS lgc n i hi
+                      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
                 ∃ Bord : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
                   DifferentiableOn ℂ Bord H.U ∧
-                  (∀ x, x ∈ hChart.V0 ->
+                  (∀ x, x ∈
+                    BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
                     Bord (fun k => wickRotatePoint (x k)) =
                       bvt_F OS lgc n (fun k => wickRotatePoint (x k))) ∧
-                  (∀ x, x ∈ hChart.V0 ->
+                  (∀ x, x ∈
+                    BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
                     Bord (BHW.realEmbed x) =
                       BHW.extendF (bvt_F OS lgc n) (BHW.realEmbed x))
 
-            theorem BHW.os45_sourcePatch_adjacentBranch_onHull_of_OSI45
+            theorem BHW.os45_sourcePatch_adjacentBranch_onHull_figure24SourcePatch_of_OSI45
                 [NeZero d] (hd : 2 <= d)
                 (OS : OsterwalderSchraderAxioms d)
                 (lgc : OSLinearGrowthCondition d OS)
                 (n : Nat) (i : Fin n) (hi : i.val + 1 < n)
-                (V : Set (NPointDomain d n)) {x0 : NPointDomain d n}
-                (hChart :
-                  BHW.OS45Figure24SourceChartAt hd OS lgc n i hi V x0)
                 (H :
                   BHW.OS45SourcePatchBHWJostHullData
-                    hd OS lgc n i hi V hChart) :
+                    hd OS lgc n i hi
+                      (BHW.os45Figure24SourcePatch (d := d) (n := n) i hi)) :
                 ∃ Btau : (Fin n -> Fin (d + 1) -> ℂ) -> ℂ,
                   DifferentiableOn ℂ Btau H.U ∧
-                  (∀ x, x ∈ hChart.V0 ->
+                  (∀ x, x ∈
+                    BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
                     Btau (fun k => wickRotatePoint (x k)) =
                       bvt_F OS lgc n
                         (fun k => wickRotatePoint (x (H.τ k)))) ∧
-                  (∀ x, x ∈ hChart.V0 ->
+                  (∀ x, x ∈
+                    BHW.os45Figure24SourcePatch (d := d) (n := n) i hi ->
                     Btau (BHW.realEmbed x) =
                       BHW.extendF (bvt_F OS lgc n)
                         (BHW.realEmbed (fun k => x (H.τ k))))
@@ -47424,9 +47445,10 @@ Proof decomposition of this theorem, without hiding the analytic work:
             and
             `B0 z := BHW.extendF (bvt_F OS lgc n)
               (BHW.permAct (d := d) H.τ z)`.  The initial holomorphy is
-            `BHW.extendF_holomorphicOn` composed with `permAct`; the trace
-            rewrites use `BHW.permAct_wickRotatePoint`, the definitional
-            `realEmbed` permutation rewrite, and the tube fields in `H`.
+            `BHW.extendF_holomorphicOn` composed with `permAct`; the real trace
+            rewrite uses `BHW.permAct_realEmbed` and the tube fields in `H`,
+            while the adjacent Wick trace is supplied by the OS-I/BHW
+            continuation datum rather than by a direct `wick_tau_ET` field.
             After these three lower surfaces, the pair-data producer is
             field-copying: build `H`, obtain `Bord` and `Btau`, and copy
             `H.U`, `H.V_open`, `H.V_nonempty`, `H.U_open`,
