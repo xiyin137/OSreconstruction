@@ -575,6 +575,16 @@ coordinate bounds hold.  Thus the finite estimate proof no longer has to
 manually reconcile subtype neighborhoods with the ordinary matrix
 neighborhoods consumed by the normal-Schur continuity lemmas.
 
+The tail-window version of the same shrink is now checked as
+`BHW.exists_sourceOrientedNormalParameterBall_subset_schurParameterWindow`
+and
+`BHW.SourceOrientedRankDeficientAlgebraicNormalFormData.exists_normalParameterBall_image_subset_open_headGauge_schurParameterWindow`.
+It shrinks the normal ball once more so the parameter ball is contained in the
+full target-shaped Schur parameter window, while preserving the ambient-image,
+invertible-head, head-gauge, and Schur-coordinate controls above.  This is the
+checked bridge from the connected window theorem to the finite ball used by
+the rank-deficient local-image producer.
+
 The head-gauge shrink layer is now checked in
 `SourceOrientedHeadGaugeSupport.lean`:
 `BHW.sourceRankDeficientHeadGauge_factor_continuousAt_center`,

@@ -1,5 +1,6 @@
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientNormalBall
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientSchurShrink
+import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedRankDeficientTailWindow
 import OSReconstruction.ComplexLieGroups.Connectedness.BHWPermutation.SourceOrientedHeadGaugeSupport
 
 /-!
@@ -15,6 +16,30 @@ noncomputable section
 open Complex Topology Matrix LorentzLieGroup Classical Filter NormedSpace
 
 namespace BHW
+
+/-- A small normal-parameter ball can be chosen inside the full Schur
+parameter window. -/
+theorem exists_sourceOrientedNormalParameterBall_subset_schurParameterWindow
+    (d n r : ℕ)
+    (hrD : r < d + 1)
+    (hrn : r ≤ n)
+    {headRadius mixedRadius : ℝ}
+    (hheadRadius : 0 < headRadius)
+    (hmixedRadius : 0 < mixedRadius)
+    (Tail : SourceOrientedRankDeficientTailWindowChoice d n r hrD hrn) :
+    ∃ ε : ℝ,
+      0 < ε ∧
+        sourceOrientedNormalParameterBall (d := d) (n := n) (r := r)
+          (hrD := hrD) (hrn := hrn) ε ⊆
+          sourceOrientedRankDeficientSchurParameterWindow
+            d n r hrD hrn headRadius mixedRadius Tail := by
+  rcases sourceOrientedRankDeficientSchurParameterWindow_open_connected
+      d n r hrD hrn hheadRadius hmixedRadius Tail with
+    ⟨hopen, _hconn, hcenter⟩
+  exact
+    exists_sourceOrientedNormalParameterBall_subset_of_mem_nhds_center
+      d n r hrD hrn (hopen.mem_nhds hcenter)
+
 namespace SourceOrientedRankDeficientAlgebraicNormalFormData
 
 /-- A single positive normal-parameter ball can be chosen to satisfy the
@@ -195,6 +220,107 @@ theorem exists_normalParameterBall_image_subset_open_headGauge_schur_and_coordin
   · intro p hp
     have hp_schur := hschur hp
     exact ⟨hp_schur.2.1, hp_schur.2.2⟩
+
+/-- A single positive normal-parameter ball can be chosen inside the full
+Schur parameter window while preserving the ambient image, invertible-head,
+head-gauge, and Schur-coordinate shrink information. -/
+theorem exists_normalParameterBall_image_subset_open_headGauge_schurParameterWindow
+    {d n : ℕ}
+    {G0 : SourceOrientedGramData d n}
+    (N : SourceOrientedRankDeficientAlgebraicNormalFormData d n G0)
+    (Head : SourceRankDeficientHeadGaugeData d N.r N.hrD)
+    {N0 : Set (SourceOrientedGramData d n)}
+    (hN0_open : IsOpen N0)
+    (hG0N0 : G0 ∈ N0)
+    {Um : Set (Matrix (Fin N.r) (Fin (n - N.r)) ℂ)}
+    (hUm : Um ∈ 𝓝 (0 : Matrix (Fin N.r) (Fin (n - N.r)) ℂ))
+    {Ut : Set (Matrix (Fin (n - N.r)) (Fin (n - N.r)) ℂ)}
+    (hUt : Ut ∈ 𝓝 (0 : Matrix (Fin (n - N.r)) (Fin (n - N.r)) ℂ))
+    {factorRadius headRadius mixedRadius : ℝ}
+    (hfactorRadius : 0 < factorRadius)
+    (hheadRadius : 0 < headRadius)
+    (hmixedRadius : 0 < mixedRadius)
+    (Tail : SourceOrientedRankDeficientTailWindowChoice d n N.r N.hrD N.hrn) :
+    ∃ ε : ℝ,
+      0 < ε ∧
+        IsOpen (sourceOrientedNormalParameterBall (d := d) (n := n)
+          (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε) ∧
+        IsConnected (sourceOrientedNormalParameterBall (d := d) (n := n)
+          (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε) ∧
+        sourceOrientedNormalCenterParameter d n N.r N.hrD N.hrn ∈
+          sourceOrientedNormalParameterBall (d := d) (n := n)
+            (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε ∧
+        sourceOrientedNormalParameterBall (d := d) (n := n)
+          (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε ⊆
+          {p : SourceOrientedRankDeficientNormalParameter d n N.r N.hrD N.hrn |
+            IsUnit p.head.det} ∧
+        (∀ p,
+          p ∈ sourceOrientedNormalParameterBall (d := d) (n := n)
+            (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε →
+            (N.originalNormalVarietyPoint p).1 ∈
+              N0 ∩ sourceOrientedGramVariety d n) ∧
+        (∀ p,
+          p ∈ sourceOrientedNormalParameterBall (d := d) (n := n)
+            (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε →
+            (⟨sourceOrientedNormalParameterSchurHead d n N.r N.hrD N.hrn p,
+              sourceNormalHeadGram_transpose d n N.r N.hrD N.hrn p⟩ :
+                SourceSymmetricMatrixCoord N.r) ∈ Head.U ∧
+            ∀ a b,
+              ‖Head.factor
+                (⟨sourceOrientedNormalParameterSchurHead d n N.r N.hrD N.hrn p,
+                  sourceNormalHeadGram_transpose d n N.r N.hrD N.hrn p⟩ :
+                    SourceSymmetricMatrixCoord N.r) a b -
+                  (1 : Matrix (Fin N.r) (Fin N.r) ℂ) a b‖ <
+                factorRadius) ∧
+        (∀ p,
+          p ∈ sourceOrientedNormalParameterBall (d := d) (n := n)
+            (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε →
+            sourceOrientedNormalParameterSchurMixed d n N.r N.hrD N.hrn p ∈ Um ∧
+              sourceOrientedNormalParameterSchurTail d n N.r N.hrD N.hrn p ∈ Ut) ∧
+        sourceOrientedNormalParameterBall (d := d) (n := n)
+          (r := N.r) (hrD := N.hrD) (hrn := N.hrn) ε ⊆
+          sourceOrientedRankDeficientSchurParameterWindow
+            d n N.r N.hrD N.hrn headRadius mixedRadius Tail := by
+  rcases N.exists_normalParameterBall_image_subset_open_headGauge_schur_and_coordinate_bounds
+      Head hN0_open hG0N0 hUm hUt hfactorRadius hheadRadius hmixedRadius
+      Tail.tailCoordRadius_pos with
+    ⟨ε₀, hε₀, _hopen₀, _hconn₀, _hcenter₀, hhead₀, himage₀, hfactor₀,
+      hschur₀, _hcoord₀⟩
+  rcases exists_sourceOrientedNormalParameterBall_subset_schurParameterWindow
+      d n N.r N.hrD N.hrn hheadRadius hmixedRadius Tail with
+    ⟨ε₁, hε₁, hwindow₁⟩
+  let ε : ℝ := min ε₀ ε₁
+  have hε : 0 < ε := lt_min hε₀ hε₁
+  have hε_le₀ : ε ≤ ε₀ := by
+    dsimp [ε]
+    exact min_le_left _ _
+  have hε_le₁ : ε ≤ ε₁ := by
+    dsimp [ε]
+    exact min_le_right _ _
+  rcases sourceOrientedNormalParameterBall_open_connected_center
+      d n N.r N.hrD N.hrn hε with
+    ⟨hopen, hconn, hcenter⟩
+  refine ⟨ε, hε, hopen, hconn, hcenter, ?_, ?_, ?_, ?_, ?_⟩
+  · intro p hp
+    exact hhead₀
+      (sourceOrientedNormalParameterBall_mono
+        d n N.r N.hrD N.hrn hε_le₀ hp)
+  · intro p hp
+    exact himage₀ p
+      (sourceOrientedNormalParameterBall_mono
+        d n N.r N.hrD N.hrn hε_le₀ hp)
+  · intro p hp
+    exact hfactor₀ p
+      (sourceOrientedNormalParameterBall_mono
+        d n N.r N.hrD N.hrn hε_le₀ hp)
+  · intro p hp
+    exact hschur₀ p
+      (sourceOrientedNormalParameterBall_mono
+        d n N.r N.hrD N.hrn hε_le₀ hp)
+  · intro p hp
+    exact hwindow₁
+      (sourceOrientedNormalParameterBall_mono
+        d n N.r N.hrD N.hrn hε_le₁ hp)
 
 end SourceOrientedRankDeficientAlgebraicNormalFormData
 end BHW

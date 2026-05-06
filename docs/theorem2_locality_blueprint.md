@@ -15552,16 +15552,17 @@ Proof decomposition of this theorem, without hiding the analytic work:
         -- give the determinant-unit neighborhood needed before applying the
         -- checked max-rank-to-tail-rank bridge.
         -- The common-radius topological assembly can now be discharged by
-        -- `exists_normalParameterBall_image_subset_open_headGauge_schur_and_coordinate_bounds`.
+        -- `exists_normalParameterBall_image_subset_open_headGauge_schurParameterWindow`.
         -- This theorem includes the subtype-to-full-matrix bridge
         -- `sourceRankDeficientHeadGauge_exists_matrix_nhds_factor_coordinate_bound`,
         -- so the proof no longer has to manually reconcile `Head.U` in
         -- `SourceSymmetricMatrixCoord` with ordinary matrix neighborhoods of
-        -- the normal Schur head.  It still consumes an already supplied
-        -- `SourceRankDeficientHeadGaugeData`; it does not replace the
-        -- still-separate head-gauge existence theorem.  The remaining genuine
-        -- blockers are the shifted-tail quantitative radius choice and the
-        -- reverse Schur-extraction realization.
+        -- the normal Schur head, and it also shrinks the chosen ball inside
+        -- the full target-shaped Schur parameter window.  It still consumes
+        -- an already supplied `SourceRankDeficientHeadGaugeData`; it does not
+        -- replace the still-separate head-gauge existence theorem.  The
+        -- remaining genuine blocker is the reverse Schur-extraction
+        -- realization/image theorem, not parameter-window connectedness.
         let encode :=
           BHW.sourceOrientedNormalParameterFiniteCoordHomeomorph
             (d := d) (n := n) (r := N.r)
