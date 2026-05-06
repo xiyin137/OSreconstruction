@@ -294,18 +294,6 @@ theorem joint_F_ext_eq_W_analytic
   F_ext_on_translatedPET_total_eq_on_PET Wfn _
     (joint_wick_config_in_PET n m p₁ p₂ a ha₀ hp₁_pos hp₂_pos h_distinct_joint)
 
-/-! ### OPTR Wick rotation lands in the forward tube -/
-
-/-- For OPTR-supported configurations, the Wick rotation lands in the
-forward tube. Wrapper around `euclidean_ordered_in_forwardTube`. -/
-theorem wick_OPTR_in_forwardTube
-    (n : ℕ) (x : NPointDomain d n)
-    (hx : x ∈ OrderedPositiveTimeRegion d n) :
-    (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n :=
-  euclidean_ordered_in_forwardTube x
-    (fun k j hkj => (hx k).2 j hkj)
-    (fun k => (hx k).1)
-
 /-! ### Pi-instance bridge: HasTemperateGrowth for volume on NPointDomain
 
 `NPointDomain d n = Fin n → Fin (d+1) → ℝ` is a *nested* Pi type. Mathlib's
@@ -322,6 +310,218 @@ instance NPointDomain.volume_isAddHaarMeasure (d n : ℕ) :
     (MeasureTheory.volume :
       MeasureTheory.Measure (NPointDomain d n)).IsAddHaarMeasure :=
   MeasureTheory.Measure.instIsAddHaarMeasureForallVolumeOfMeasurableAddOfSigmaFinite
+
+/-! ### AE-distinct joint times on `NPointDomain d n × NPointDomain d m`
+
+For the joint Wick-rotated config to lie in PET, we need the joint times
+(combined `Fin.append (p₁ · 0) (p₂ · 0)`) to be pairwise distinct. This
+holds AE in `(p₁, p₂)`. -/
+
+/-- The cross hyperplane `{p | p.1 i 0 = p.2 j 0}` has measure zero in
+`NPointDomain d n × NPointDomain d m` under the product Lebesgue
+measure. -/
+private theorem measure_crossTimeEq_zero
+    {d n m : ℕ} (i : Fin n) (j : Fin m) :
+    (MeasureTheory.volume :
+        MeasureTheory.Measure (NPointDomain d n × NPointDomain d m))
+        {p | p.1 i 0 = p.2 j 0} = 0 := by
+  let L : NPointDomain d n × NPointDomain d m →ₗ[ℝ] ℝ :=
+    { toFun := fun p => p.1 i 0 - p.2 j 0
+      map_add' := by
+        intro p q
+        simp only [Prod.fst_add, Prod.snd_add, Pi.add_apply]
+        ring
+      map_smul' := by
+        intro c p
+        simp only [Prod.smul_fst, Prod.smul_snd, Pi.smul_apply, smul_eq_mul,
+          RingHom.id_apply]
+        ring }
+  have hset :
+      {p : NPointDomain d n × NPointDomain d m | p.1 i 0 = p.2 j 0} =
+      (LinearMap.ker L : Set _) := by
+    ext p; simp [L, LinearMap.mem_ker, sub_eq_zero]
+  have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+    intro htop
+    have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+    let p₁ : NPointDomain d n := fun k μ => if k = i ∧ μ = 0 then (1 : ℝ) else 0
+    let p₂ : NPointDomain d m := 0
+    have hLp : L (p₁, p₂) = 0 := by
+      simpa using congrArg (fun f => f (p₁, p₂)) hzero
+    have h_compute : L (p₁, p₂) = 1 := by
+      show p₁ i 0 - p₂ j 0 = 1
+      simp [p₁, p₂]
+    rw [h_compute] at hLp
+    norm_num at hLp
+  rw [hset]
+  haveI : (MeasureTheory.volume :
+      MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)).IsAddHaarMeasure := by
+    show (MeasureTheory.volume.prod MeasureTheory.volume :
+      MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)).IsAddHaarMeasure
+    exact MeasureTheory.Measure.prod.instIsAddHaarMeasure
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n))
+      (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))
+  exact MeasureTheory.Measure.addHaar_submodule _ (LinearMap.ker L) hker_ne_top
+
+/-- AE pairwise distinctness of joint time coordinates: for almost every
+`(p₁, p₂) ∈ NPointDomain d n × NPointDomain d m`, the joint time function
+`Fin.append (fun k => p₁ k 0) (fun k => p₂ k 0)` is injective. -/
+private theorem ae_pairwise_distinct_jointTimeCoords {d n m : ℕ} :
+    ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂MeasureTheory.volume,
+      ∀ i j : Fin (n + m), i ≠ j →
+        Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) i ≠
+        Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) j := by
+  -- For each pair (i, j) with i ≠ j, the bad set has measure zero.
+  -- We split into within-1, within-2, and cross cases.
+  have hbad : ∀ (q : {p : Fin (n + m) × Fin (n + m) // p.1 ≠ p.2}),
+      (MeasureTheory.volume :
+          MeasureTheory.Measure (NPointDomain d n × NPointDomain d m))
+        {p : NPointDomain d n × NPointDomain d m |
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.1 =
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.2} = 0 := by
+    rintro ⟨⟨i, j⟩, hij⟩
+    -- Case-split via Fin.addCases.
+    induction i using Fin.addCases with
+    | left i' =>
+      induction j using Fin.addCases with
+      | left j' =>
+        -- Within p.1: lift `measure_timeEq_zero` via the projection.
+        have hi'j' : i' ≠ j' := by
+          intro heq; apply hij; simp [heq]
+        have hcyl :
+            {p : NPointDomain d n × NPointDomain d m |
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.castAdd m i') =
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.castAdd m j')} =
+            {x : NPointDomain d n | x i' 0 = x j' 0} ×ˢ
+              (Set.univ : Set (NPointDomain d m)) := by
+          ext p; simp [Fin.append_left]
+        have hzero :
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d n))
+              {x : NPointDomain d n | x i' 0 = x j' 0} = 0 := by
+          let L : NPointDomain d n →ₗ[ℝ] ℝ :=
+            { toFun := fun x => x i' 0 - x j' 0
+              map_add' := by intros; simp; ring
+              map_smul' := by intros; simp; ring }
+          have hset_eq :
+              {x : NPointDomain d n | x i' 0 = x j' 0} =
+              (LinearMap.ker L : Set _) := by
+            ext x; simp [L, LinearMap.mem_ker, sub_eq_zero]
+          have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+            intro htop
+            have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+            have hji : j' ≠ i' := fun h => hi'j' h.symm
+            have hval : L (fun k μ => if k = i' ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+              simpa using congrArg
+                (fun f => f (fun k μ => if k = i' ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+            have : (1 : ℝ) = 0 := by simp [L, hji] at hval
+            norm_num at this
+          rw [hset_eq]
+          exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume
+            (LinearMap.ker L) hker_ne_top
+        rw [hcyl,
+          show (MeasureTheory.volume :
+              MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+            MeasureTheory.volume.prod MeasureTheory.volume from rfl,
+          MeasureTheory.Measure.prod_prod, hzero, zero_mul]
+      | right j' =>
+        -- Cross: p.1 i' 0 = p.2 j' 0.
+        have hcyl :
+            {p : NPointDomain d n × NPointDomain d m |
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.castAdd m i') =
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.natAdd n j')} =
+            {p : NPointDomain d n × NPointDomain d m | p.1 i' 0 = p.2 j' 0} := by
+          ext p; simp [Fin.append_left, Fin.append_right]
+        rw [hcyl]
+        exact measure_crossTimeEq_zero i' j'
+    | right i' =>
+      induction j using Fin.addCases with
+      | left j' =>
+        -- Cross (swapped): p.2 i' 0 = p.1 j' 0.
+        have hcyl :
+            {p : NPointDomain d n × NPointDomain d m |
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.natAdd n i') =
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.castAdd m j')} =
+            {p : NPointDomain d n × NPointDomain d m | p.1 j' 0 = p.2 i' 0} := by
+          ext p
+          simp [Fin.append_left, Fin.append_right]
+          exact eq_comm
+        rw [hcyl]
+        exact measure_crossTimeEq_zero j' i'
+      | right j' =>
+        -- Within p.2.
+        have hi'j' : i' ≠ j' := by
+          intro heq; apply hij; simp [heq]
+        have hcyl :
+            {p : NPointDomain d n × NPointDomain d m |
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.natAdd n i') =
+              Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0)
+                (Fin.natAdd n j')} =
+            (Set.univ : Set (NPointDomain d n)) ×ˢ
+              {y : NPointDomain d m | y i' 0 = y j' 0} := by
+          ext p; simp [Fin.append_right]
+        have hzero :
+            (MeasureTheory.volume : MeasureTheory.Measure (NPointDomain d m))
+              {y : NPointDomain d m | y i' 0 = y j' 0} = 0 := by
+          let L : NPointDomain d m →ₗ[ℝ] ℝ :=
+            { toFun := fun y => y i' 0 - y j' 0
+              map_add' := by intros; simp; ring
+              map_smul' := by intros; simp; ring }
+          have hset_eq :
+              {y : NPointDomain d m | y i' 0 = y j' 0} =
+              (LinearMap.ker L : Set _) := by
+            ext y; simp [L, LinearMap.mem_ker, sub_eq_zero]
+          have hker_ne_top : LinearMap.ker L ≠ ⊤ := by
+            intro htop
+            have hzero : L = 0 := LinearMap.ker_eq_top.mp htop
+            have hji : j' ≠ i' := fun h => hi'j' h.symm
+            have hval : L (fun k μ => if k = i' ∧ μ = 0 then (1 : ℝ) else 0) = 0 := by
+              simpa using congrArg
+                (fun f => f (fun k μ => if k = i' ∧ μ = 0 then (1 : ℝ) else 0)) hzero
+            have : (1 : ℝ) = 0 := by simp [L, hji] at hval
+            norm_num at this
+          rw [hset_eq]
+          exact MeasureTheory.Measure.addHaar_submodule MeasureTheory.volume
+            (LinearMap.ker L) hker_ne_top
+        rw [hcyl,
+          show (MeasureTheory.volume :
+              MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)) =
+            MeasureTheory.volume.prod MeasureTheory.volume from rfl,
+          MeasureTheory.Measure.prod_prod, hzero, mul_zero]
+  -- Combine over all (finitely many) bad pairs.
+  have hall :
+      ∀ᵐ (p : NPointDomain d n × NPointDomain d m) ∂MeasureTheory.volume,
+        ∀ q : {p : Fin (n + m) × Fin (n + m) // p.1 ≠ p.2},
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.1 ≠
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.2 := by
+    simpa using
+      ((Set.toFinite (Set.univ :
+          Set {p : Fin (n + m) × Fin (n + m) // p.1 ≠ p.2})).eventually_all
+        (l := MeasureTheory.ae (MeasureTheory.volume :
+          MeasureTheory.Measure (NPointDomain d n × NPointDomain d m)))
+        (p := fun q => fun p : NPointDomain d n × NPointDomain d m =>
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.1 ≠
+          Fin.append (fun k : Fin n => p.1 k 0) (fun k : Fin m => p.2 k 0) q.1.2)).2
+        (fun q _ => MeasureTheory.compl_mem_ae_iff.mpr (hbad q))
+  filter_upwards [hall] with p hp i j hij
+  exact hp ⟨⟨i, j⟩, hij⟩
+
+/-! ### OPTR Wick rotation lands in the forward tube -/
+
+/-- For OPTR-supported configurations, the Wick rotation lands in the
+forward tube. Wrapper around `euclidean_ordered_in_forwardTube`. -/
+theorem wick_OPTR_in_forwardTube
+    (n : ℕ) (x : NPointDomain d n)
+    (hx : x ∈ OrderedPositiveTimeRegion d n) :
+    (fun k => wickRotatePoint (x k)) ∈ ForwardTube d n :=
+  euclidean_ordered_in_forwardTube x
+    (fun k j hkj => (hx k).2 j hkj)
+    (fun k => (hx k).1)
 
 /-! ### Helper lemmas: Schwartz seminorms absorb polynomial growth -/
 
@@ -526,7 +726,8 @@ theorem W_analytic_cluster_integral_via_ruelle
           (Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
             Bornology.cobounded (SpacetimeDim d))
           (nhds (clusterLimitIntegrand Wfn f g p)) := by
-    refine Filter.Eventually.of_forall (fun p => ?_)
+    filter_upwards [ae_pairwise_distinct_jointTimeCoords (d := d) (n := n) (m := m)]
+      with p h_distinct_joint
     by_cases hp1 : p.1 ∈ OrderedPositiveTimeRegion d n
     · by_cases hp2 : p.2 ∈ OrderedPositiveTimeRegion d m
       · -- Both p.1, p.2 in OPTR: apply ruelle_analytic_cluster_pointwise.
@@ -535,18 +736,66 @@ theorem W_analytic_cluster_integral_via_ruelle
           wick_OPTR_in_forwardTube n p.1 hp1
         have hw2 : (fun k => wickRotatePoint (p.2 k)) ∈ ForwardTube d m :=
           wick_OPTR_in_forwardTube m p.2 hp2
+        -- Positivity of times from OPTR.
+        have hp1_pos : ∀ i : Fin n, p.1 i 0 > 0 := fun i => (hp1 i).1
+        have hp2_pos : ∀ i : Fin m, p.2 i 0 > 0 := fun i => (hp2 i).1
         -- The Ruelle pointwise axiom gives Tendsto for W_analytic_BHW.
         have h_ruelle_pt :=
           ruelle_analytic_cluster_pointwise Wfn n m _ _ hw1 hw2
-        -- F_ext_on_translatedPET_total = W_analytic_BHW on PET configs
-        -- (joint config in PET via euclidean_distinct_in_permutedTube;
-        --  single configs in ForwardTube ⊆ PET).
-        -- Multiply both sides by `f(p.1) * g(p.2)` (constant in a).
         unfold clusterIntegrand clusterLimitIntegrand
-        -- Routed: bridge `F_ext_on_translatedPET_total` with `W_analytic_BHW`
-        -- on each of the three configs (joint, single n, single m), then
-        -- transport h_ruelle_pt via Tendsto.const_mul × 2.
-        sorry
+        -- Bridge: F_ext_on_translatedPET_total = W_analytic_BHW on each config.
+        -- Single n-config: wick(p.1) ∈ ForwardTube ⊆ PET.
+        have h_single_n :
+            F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (p.1 k)) =
+            (W_analytic_BHW Wfn n).val (fun k => wickRotatePoint (p.1 k)) :=
+          F_ext_on_translatedPET_total_eq_on_PET Wfn _
+            ((ForwardTube_subset_ComplexExtended d n |>.trans
+              (ComplexExtended_subset_Permuted d n)) hw1)
+        have h_single_m :
+            F_ext_on_translatedPET_total Wfn (fun k => wickRotatePoint (p.2 k)) =
+            (W_analytic_BHW Wfn m).val (fun k => wickRotatePoint (p.2 k)) :=
+          F_ext_on_translatedPET_total_eq_on_PET Wfn _
+            ((ForwardTube_subset_ComplexExtended d m |>.trans
+              (ComplexExtended_subset_Permuted d m)) hw2)
+        -- Joint config: distinct positive times → PET.
+        have h_joint : ∀ a : SpacetimeDim d, a 0 = 0 →
+            F_ext_on_translatedPET_total Wfn
+              (Fin.append (fun k => wickRotatePoint (p.1 k))
+                (fun k μ => wickRotatePoint (p.2 k) μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) =
+            (W_analytic_BHW Wfn (n + m)).val
+              (Fin.append (fun k => wickRotatePoint (p.1 k))
+                (fun k μ => wickRotatePoint (p.2 k) μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) :=
+          fun a ha₀ =>
+            joint_F_ext_eq_W_analytic Wfn n m p.1 p.2 a ha₀ hp1_pos hp2_pos
+              h_distinct_joint
+        -- Transport h_ruelle_pt via congruence on the filter:
+        -- on the AE set {a 0 = 0} ⊓ cobounded (in fact on ALL of {a 0 = 0}),
+        -- F_ext_total(joint) = W_analytic_BHW(joint).
+        have h_filter_eq : ∀ᶠ a in
+            Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+              Bornology.cobounded (SpacetimeDim d),
+            (W_analytic_BHW Wfn (n + m)).val
+              (Fin.append (fun k => wickRotatePoint (p.1 k))
+                (fun k μ => wickRotatePoint (p.2 k) μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) =
+            F_ext_on_translatedPET_total Wfn
+              (Fin.append (fun k => wickRotatePoint (p.1 k))
+                (fun k μ => wickRotatePoint (p.2 k) μ +
+                  (if μ = 0 then (0 : ℂ) else (a μ : ℂ)))) := by
+          have h_in_principal : {a : SpacetimeDim d | a 0 = 0} ∈
+              Filter.principal {a : SpacetimeDim d | a 0 = 0} :=
+            Filter.mem_principal_self _
+          have h_in_inf : {a : SpacetimeDim d | a 0 = 0} ∈
+              Filter.principal {a : SpacetimeDim d | a 0 = 0} ⊓
+                Bornology.cobounded (SpacetimeDim d) :=
+            Filter.mem_inf_of_left h_in_principal
+          exact Filter.eventually_iff_exists_mem.mpr
+            ⟨_, h_in_inf, fun a ha => (h_joint a ha).symm⟩
+        -- Transport: replace W_analytic with F_ext via congruence.
+        rw [h_single_n, h_single_m]
+        refine ((h_ruelle_pt.congr' h_filter_eq).mul_const (f p.1)).mul_const (g p.2)
       · -- p.2 ∉ OPTR-m: g(p.2) = 0 (by support hypothesis).
         have h_g_zero : (g : NPointDomain d m → ℂ) p.2 = 0 := by
           have h_notInTsupp :
